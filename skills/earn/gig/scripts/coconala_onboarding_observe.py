@@ -7,6 +7,7 @@ import asyncio
 import hashlib
 import json
 import os
+import re
 import sys
 import time
 from pathlib import Path
@@ -92,12 +93,28 @@ def _required_form_complete(snapshot: dict[str, object]) -> bool:
     )
 
 
+def _sms_approved(body: str) -> bool:
+    text = re.sub(r"\s+", "", body)
+    return any(token in text for token in (
+        "SMS認証済み", "SMS認証済", "電話番号認証済み", "電話番号認証済",
+    ))
+
+
+def _identity_approved(body: str) -> bool:
+    text = re.sub(r"\s+", "", body)
+    approved = any(token in text for token in (
+        "本人確認✓", "本人確認✔", "本人確認済み", "本人確認承認済み",
+    ))
+    return approved and "非承認" not in text and "申請中" not in text
+
+
 def observe(home: Path) -> dict[str, object]:
     os.environ["CLOAK_CDP_BASE_URL"] = "http://127.0.0.1:9223"
     os.environ["CLOAK_TARGET_OWNERS_FILE"] = str(
         home / ".cloak" / "vault" / "gig-target-owners.json"
     )
     snapshots: dict[str, object] = {}
+    raw_bodies: dict[str, str] = {}
     for state, url in PAGES.items():
         tab = cdp_default_tab.open_tab(url, background=True, owner="gig-onboarding")
         try:
@@ -107,6 +124,7 @@ def observe(home: Path) -> dict[str, object]:
                 raw = asyncio.run(_evaluate(str(tab["ws"])))
                 if raw.get("ready") == "complete":
                     break
+            raw_bodies[state] = str(raw.get("body") or "")
             snapshots[state] = _safe_snapshot(raw)
         finally:
             cdp_default_tab.close_tab(str(tab["target_id"]), owner="gig-onboarding")
@@ -132,6 +150,18 @@ def observe(home: Path) -> dict[str, object]:
             ).hexdigest()
             record(home, state, digest)
             classifications[state] = True
+    if _sms_approved(raw_bodies.get("sms_verified", "")):
+        digest = hashlib.sha256(
+            json.dumps(snapshots["sms_verified"], sort_keys=True, separators=(",", ":")).encode("utf-8")
+        ).hexdigest()
+        record(home, "sms_verified", digest)
+        classifications["sms_verified"] = True
+    if _identity_approved(raw_bodies.get("identity_approved", "")):
+        digest = hashlib.sha256(
+            json.dumps(snapshots["identity_approved"], sort_keys=True, separators=(",", ":")).encode("utf-8")
+        ).hexdigest()
+        record(home, "identity_approved", digest)
+        classifications["identity_approved"] = True
     evidence["classifications"] = classifications
     _write_private(output, evidence)
     return evidence
