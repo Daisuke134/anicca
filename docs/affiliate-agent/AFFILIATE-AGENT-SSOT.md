@@ -8233,9 +8233,13 @@ composer emptied, discards dirty drafts through X UI, and exact-reads the public
 permalink. Preserve later permalink, quote-card, snowflake-floor, and
 unknown-effect fixes while restoring only that publish effect.
 
-- [ ] **XB01 Dual transport regression.** Restore the historical browser
-  publisher behind an explicit transport selector and prove Postiz and browser
-  paths cannot both run for one effect.
+- [x] **XB01 Dual transport regression.** Commit `c7c778660` restores the
+  `95d4c151e^` dedicated composer-tab effect behind an explicit `browser` or
+  `postiz` selector. It retains current readback, dirty-draft discard, and
+  unknown-effect fencing. Tests prove the selector never invokes both
+  transports, Quote types body plus source once, submits once, and closes the
+  clean composer. x_post tests are 15/15 and x-tweeter tests are 5/5. Production
+  remains Postiz until XB02 canaries pass.
 - [ ] **XB02 Generic browser canary.** Publish one x-repost Quote and one
   x-tweeter Original through the same shared browser publisher; exact-read both
   permalinks and replay with duplicate zero.
