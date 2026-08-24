@@ -104,9 +104,10 @@ Storefront work.
          path is verified here; a genuinely signed-out pilot remains required.
     3. [x] Create the private resumable onboarding receipt with no raw identity, OTP,
        document, password, bank or session value in Git/logs/model/report output.
-       `coconala_onboarding.py init` writes only platform/version and nine named
-       `pending/complete` gates. Fresh temp HOME proves directory `0700`, file `0600`,
-       compile success and byte-identical hash on the second init.
+       `coconala_onboarding.py` v2 writes only platform/version and nine named gates;
+       every completed gate requires a lowercase SHA-256 evidence binding, while pending
+       gates carry no evidence. Fresh temp HOME proves directory `0700`, file `0600`,
+       compile success, exact record/status readback and byte-identical repeated record.
     4. [ ] Show one prerequisite screen, then launch the dedicated CloakBrowser profile
        `~/.cloak/profiles/gig-daily-driver` on the official Coconala setup surface. Do not
        collect duplicate identity/bank facts in Life Manager. `start` is implemented using
