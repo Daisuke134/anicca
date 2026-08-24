@@ -117,4 +117,13 @@ if [ "$#" -eq 0 ]; then
   exec bash "$0" start
 fi
 
+if [ "${1:-}" = "finished" ]; then
+  venv="$HOME/.local/share/anicca/gig/venv"
+  [ -x "$venv/bin/python" ] || { echo "[coconala] run setup first" >&2; exit 2; }
+  curl -fsS http://127.0.0.1:9223/json/version >/dev/null 2>&1 || {
+    echo "[coconala] dedicated browser is not running" >&2; exit 2;
+  }
+  exec "$venv/bin/python" "$GIG_DIR/scripts/coconala_onboarding_observe.py"
+fi
+
 exec "${PYTHON:-python3}" "$GIG_DIR/scripts/money_loop_onboarding.py" "$@"
