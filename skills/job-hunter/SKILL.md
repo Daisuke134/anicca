@@ -8,7 +8,7 @@ description: >-
   interviews, assessments and offers without repeatedly asking the user. Never
   invents experience, metrics, dates, employers, titles, skills or legal facts.
 metadata:
-  status: workday-oss-public-beta
+  status: workday-local-production-before-oss
   provider_contract: codex-first-claude-generic
   private_data: true
 ---

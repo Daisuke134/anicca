@@ -49,9 +49,10 @@ login. Finish the official login, then run the exact same command again. Life
 Manager verifies Gmail and Telegram and starts the ready Job Hunter owners.
 Passwords and OTPs stay on official provider pages.
 
-Job Hunter is currently a public-beta loop: its Workday production path is proven
-on the maintainer's Mac, but independent clean-Mac acceptance is still open. Ashby,
-Greenhouse, Lever, Mercor and generic ATS lanes are not advertised as working.
+Job Hunter is pre-release until Dais's installed 30-minute Workday loop closes the
+current production acceptance: dynamic discovery, fit-qualified application,
+descriptive loop-owned Telegram, official Gmail/Ledger proof and duplicate zero.
+Ashby, Greenhouse, Lever, Mercor and generic ATS lanes are not working products.
 
 ### Run the server stack yourself
 

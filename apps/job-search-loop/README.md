@@ -79,9 +79,9 @@ zsh scripts/healthcheck.sh
 
 ### Public Terminal onboarding
 
-> **Public beta:** the code-owned onboarding path is available, but independent
-> clean-Mac real-application acceptance remains open. Do not describe it as fully
-> proven for another person until that receipt exists.
+> **Pre-release:** first close the installed Dais-device 30-minute Workday loop with
+> descriptive loop-owned Telegram, official Gmail/Ledger proof and duplicate zero.
+> Then publish this existing Terminal command; do not add another onboarding system.
 
 Run the Job Hunter command:
 
