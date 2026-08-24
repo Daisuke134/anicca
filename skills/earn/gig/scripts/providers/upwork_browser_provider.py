@@ -552,20 +552,13 @@ async def discover_affordable_proposal(
         packet_paths: list[Path] = []
         batch_identities: list[str] = []
         observed_by_id: dict[str, tuple[dict[str, str], str, str]] = {}
-        for offset, job in enumerate(jobs[:10], start=1):
+        selected_jobs = jobs[:10]
+        for job in selected_jobs:
             known.add(job["id"])
-            detail_read = None
-            for attempt in range(1, 4):
-                detail = Path(await navigate_and_snapshot(
-                    pass_id, f"{base + offset:02d}-{attempt}", "public-job",
-                    job["href"], "read_only", 2, 1440,
-                ))
-                try:
-                    detail_read = _read_evidence(detail, job["href"])
-                    break
-                except ValueError:
-                    if attempt < 3:
-                        await asyncio.sleep(attempt)
+        detail_results = await read_public_job_details(
+            selected_jobs, pass_id=pass_id, base=base,
+        )
+        for job, detail_read in detail_results:
             if detail_read is None:
                 state["proposal_discovery"]["incomplete"] = (
                     state["proposal_discovery"].get("incomplete", 0) + 1
@@ -626,6 +619,28 @@ def _read_evidence(path: Path, expected_url: str) -> tuple[str, str, list[dict[s
     if not isinstance(links, list):
         raise ValueError("upwork_readback_incomplete")
     return text, hashlib.sha256(path.read_bytes()).hexdigest(), links
+
+
+async def read_public_job_details(
+    jobs: list[dict[str, str]], *, pass_id: str, base: int,
+) -> list[tuple[dict[str, str], tuple[str, str, list[dict[str, Any]]] | None]]:
+    """Read independent hidden job targets concurrently, preserving source order."""
+    async def read_one(offset: int, job: dict[str, str]):
+        for attempt in range(1, 4):
+            detail = Path(await navigate_and_snapshot(
+                pass_id, f"{base + offset:02d}-{attempt}", "public-job",
+                job["href"], "read_only", 2, 1440,
+            ))
+            try:
+                return job, _read_evidence(detail, job["href"])
+            except ValueError:
+                if attempt < 3:
+                    await asyncio.sleep(attempt)
+        return job, None
+
+    return list(await asyncio.gather(*(
+        read_one(offset, job) for offset, job in enumerate(jobs, start=1)
+    )))
 
 
 def _atomic_write(path: Path, value: dict[str, Any]) -> None:

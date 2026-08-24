@@ -299,7 +299,10 @@ async def navigate_and_snapshot(
            "navigated_ok": navigated_ok, "evidence_kind": "rendered_dom_text",
            "artifact": evidence_path}
     with open(os.path.join(outdir, "trajectory.jsonl"), "a") as f:
+        fcntl.flock(f.fileno(), fcntl.LOCK_EX)
         f.write(json.dumps(row, ensure_ascii=False) + "\n")
+        f.flush()
+        os.fsync(f.fileno())
     return evidence_path
 
 
