@@ -207,6 +207,14 @@ ls -t ~/gig/evidence | head
 A lane that exits 0 and observed nothing is not working. `observed`,
 `official_services_read` and `replied` are the numbers that mean something.
 
+### Latest public-package verification
+
+Clean remote clone `f0984456d9d6e9bab44f876f05f3423d6cd138c5` passes the OSS
+self-contained contract (11/11), the public Apply and Negotiate suites (131/131),
+both production-entrypoint compilation checks, and scoped tree/history secret scans
+with zero findings. This verifies the package already used by an authenticated seller;
+it does not close the separate new-account onboarding boundary stated at the top.
+
 ---
 
 ## Configuration

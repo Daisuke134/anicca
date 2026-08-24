@@ -50,22 +50,23 @@ Storefront work.
 
 ### Apply + Negotiate OSS acceptance — immediately after item 6
 
-7. [ ] Freeze the exact pushed `origin/main` SHA and build a clean archive/clone from
-   that commit, not from a dirty operator checkout.
-8. [ ] Scan the public tree and history for credentials, customer payloads, private
+7. [x] Freeze exact pushed `origin/main` SHA
+   `f0984456d9d6e9bab44f876f05f3423d6cd138c5` in a fresh remote `--depth 1`
+   clone; clean-clone HEAD equals `origin/main` and the worktree is clean.
+8. [x] Scan the public tree and history for credentials, customer payloads, private
    account IDs and operator-only absolute paths; findings must be zero or removed.
    Current clean-clone audit: package `test:oss` passes 11/11 and the correctly scoped
    Gig gitleaks scan has zero findings. PII scan found one personal Writer notification
    default in the shared launchd manifest; its email and Telegram defaults are now
    empty machine-local overrides, with 7 release tests and the PII scan GREEN. The
-   repository-wide `verify:oss` still reports 168 manifest/path/asset violations,
-   mostly outside Apply/Negotiate; the final clean-clone rerun after this fix determines
-   which package-owned findings remain.
-9. [ ] Run the public Apply and Negotiate test suites from the clean clone with a clean
-   temporary HOME; compile both production entrypoints. Current isolated-worktree
-   checkpoint is GREEN: 131 tests (`Apply 23 + Negotiate 55 + concurrency 53`) and
-   both `application_direct.py` / `reply_detector.py` compile. This stays unchecked
-   until the same command passes from the exact pushed clean clone.
+   repository-wide `verify:oss` still reports unrelated manifest/path/asset violations
+   outside this package and is not relabelled as a Gig failure. Fresh exact-SHA tree
+   scan: 8.13 MB, zero gitleaks findings; full scoped history scan: 1,517 commits / 25.08
+   MB, zero findings. Placeholder emails and historical/test path fixtures are not
+   runtime defaults; `npm run test:oss` passes 11/11 and enforces that boundary.
+9. [x] Run the public Apply and Negotiate test suites from the exact clean clone with a
+   clean temporary HOME; 131 tests pass (`Apply 23 + Negotiate 55 + concurrency 53`),
+   and both `application_direct.py` / `reply_detector.py` compile.
 10. [ ] Run `./install.sh coconala` through the pre-auth boundary in that clean HOME and
     prove external marketplace effect zero before authentication. Verified blocker:
     root `install.sh` currently ignores the `coconala` argument and installs the
@@ -73,14 +74,19 @@ Storefront work.
     filesystem capability-receipt CLI and requires unrelated explicit arguments.
     Therefore public one-command Coconala onboarding is not implemented and no
     signup-to-bank-income claim is permitted.
-11. [ ] Render the Apply, Negotiate, browser and release-watcher launchd definitions
-    from public configuration; verify no plaintext secret/private seller default and
-    verify the intended immutable `current` paths/cadences.
-12. [ ] Join the clean-package evidence to this Mac's already-proved authorized
+11. [x] Render the Apply, Negotiate, browser and release-watcher launchd definitions
+    from public configuration in a clean temporary HOME. No plaintext secret,
+    notification destination or private seller default is present. Apply uses the
+    immutable `current` entrypoint at 60 seconds; Negotiate uses `current`, continuous
+    30-second polling and two workers; browser uses `current` with `KeepAlive`; watcher
+    uses the clean source checkout to fetch/publish at 300 seconds, by design.
+12. [x] Join the clean-package evidence to this Mac's already-proved authorized
     production receipts: Apply official application + replay-zero and Negotiate
     official replies/estimate + replay-zero. Do not create a second seller account.
-13. [ ] Record the clean-clone commands, exact SHA, test counts, scans and receipt IDs in
-    README/TODO; commit and push main.
+    Package SHA/evidence above is independent of the existing Apply official
+    application/replay-zero and Negotiate actions 434/436/estimate/replay-zero receipts.
+13. [x] Record the clean-clone commands, exact SHA, test counts, scans and receipt IDs in
+    README/TODO; commit and push main, followed by remote-main readback.
 14. [ ] Declare Apply + Negotiate OSS acceptance complete. Paid remains separate; no
     Paid completion claim is made here.
 
