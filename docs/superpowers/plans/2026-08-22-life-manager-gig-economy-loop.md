@@ -837,6 +837,12 @@ U13 atomic order:
     set, so unchanged candidates reuse the decision rather than repay the model. No regex/keyword job
     judgment or new agent/schema is added. Upwork regression is `156 passed`; next production wake must
     show at most one Luna call per ten inspected candidates and preserve both verified proposals.
+64. **VERIFIED EFFECTS NO LONGER BLOCK ACQUISITION:** the first batch release wake spent zero model
+    calls and zero Connects, but returned early on the already-verified second proposal instead of
+    reaching discovery. Add one generic `ConnectorOutbox` projection of verified resource IDs and
+    exclude only those IDs from the acquisition-ready queue; their proposal/history monitoring remains
+    intact. Unknown or unverified effects still preempt and reconcile. Regression remains `156 passed`;
+    next production wake must reach batched discovery without resubmitting either verified job.
 
 U14 atomic order:
 

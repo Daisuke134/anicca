@@ -1925,6 +1925,19 @@ class ConnectorOutbox:
             ).fetchone()
             return dict(row) if row is not None else None
 
+    def verified_provider_resource_ids(self, provider: str, action: str) -> set[str]:
+        """Project completed external effects out of an acquisition-ready queue."""
+        provider = self._require_key("provider", provider)
+        action = self._require_key("action", action)
+        with closing(self._connect()) as connection:
+            return {
+                str(row[0]) for row in connection.execute(
+                    """SELECT resource_id FROM provider_effect_intents
+                       WHERE provider=? AND action=? AND reconciliation_state='verified'""",
+                    (provider, action),
+                )
+            }
+
     def verify_provider_effect(
         self, intent: Any, *, proposal_id: str, connects_post: int,
         readback_hash: str, now: int,

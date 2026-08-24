@@ -302,6 +302,7 @@ def test_exact_free_capacity_selects_only_the_hash_bound_live_job(tmp_path):
     assert selected["job_id"] == "~01"
     assert selected["payload_sha256"] == digest
     assert selected["terms"]["required_connects"] == 7
+    assert planner(state, proposals, {"~01"}) is None
 
 
 def test_terminal_transition_is_fsynced_once_and_replay_is_zero(tmp_path):
