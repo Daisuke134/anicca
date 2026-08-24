@@ -98,11 +98,14 @@ effect history. Reusable skills, account references, browser sessions, and tools
 customer context, artifacts, history, and state are not. Secrets remain resolver references
 and are opened only by the adapter that needs them.
 
-Independent project owners may work concurrently. A lease serializes only the shared
-resource actually in use, such as one authenticated browser profile, account, desktop
-application, or rate-limited provider. Parallel work must never mean concurrent mutation of
-one account or mixing two customers' context. The model chooses the work plan and tools;
-deterministic code owns leases, hashes, receipts, effect fencing, and replay detection.
+Independent project owners work concurrently both inside one lane and across lanes. A shared
+authenticated browser or account is not an account-wide queue: each owner uses its own tab,
+target, client identity, URL, project state, and evidence root, so unrelated sends and
+readbacks may proceed at the same time. Only two attempts for the same exact entity and
+effect identity contend, through effect-key compare-and-swap/fencing rather than a global
+browser lock. Parallel work must never mix two customers' context. The model chooses the
+work plan and tools; deterministic code owns target identity, hashes, receipts, effect
+fencing, and replay detection. This is the `P0-four-lane-parallel` contract.
 
 Apply prioritizes work the installed AI/Mac/tool system can demonstrate it can deliver well,
 especially software, landing pages, writing, research, and strategy. It normally rejects work
