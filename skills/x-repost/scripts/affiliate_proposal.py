@@ -319,9 +319,26 @@ def distribution_payload(claims_path: Path, payloads_dir: Path) -> dict:
 
 
 def valid_distribution_result(row: dict) -> bool:
-    if not isinstance(row, dict) or row.get("state") not in {
-        "POSTED", "UNVERIFIED", "NO_EFFECT",
-    }:
+    if not isinstance(row, dict):
+        return False
+    if row.get("state") == "RETRY_READY":
+        hashes = (
+            "job_id", "effect_identity", "content_sha256", "text_sha256",
+            "prior_result_sha256",
+        )
+        return all((
+            row.get("schema_version") == 1,
+            row.get("receipt_type") == "X_REPOST_DISTRIBUTION_JOB_RETRY",
+            all(isinstance(row.get(key), str) and PROPOSAL_ID.fullmatch(row[key])
+                for key in hashes),
+            isinstance(row.get("placement_id"), str)
+            and PLACEMENT_ID.fullmatch(row["placement_id"]),
+            row.get("reason") == "CONFIRMED_NO_EFFECT",
+            row.get("retry_number") == 1,
+            row.get("owner_label") == "ai.anicca.x-repost-pass",
+            isinstance(row.get("observed_at"), str),
+        ))
+    if row.get("state") not in {"POSTED", "UNVERIFIED", "NO_EFFECT"}:
         return False
     hashes = ("job_id", "effect_identity", "content_sha256", "text_sha256")
     if any(not isinstance(row.get(key), str) or not PROPOSAL_ID.fullmatch(row[key])
@@ -370,7 +387,10 @@ def distribution_effect_state(claims_path: Path, payloads_dir: Path, results_pat
     payload = distribution_payload(claims_path, payloads_dir)
     results = distribution_results(results_path)
     if results:
-        return {**results[0], "changed": False}
+        if results[-1]["state"] == "RETRY_READY":
+            return {"state": "READY_TO_POST", "job_id": payload["job_id"],
+                    "payload": payload, "retry_number": 1, "changed": False}
+        return {**results[-1], "changed": False}
     return {"state": "READY_TO_POST", "job_id": payload["job_id"],
             "payload": payload, "changed": False}
 
@@ -405,17 +425,65 @@ def record_distribution_result(
         stream.seek(0)
         existing = [json.loads(line) for line in stream if line.strip()]
         if existing:
-            prior = existing[0]
-            comparable = {key: value for key, value in prior.items() if key != "observed_at"}
-            expected = {key: value for key, value in row.items() if key != "observed_at"}
-            if not valid_distribution_result(prior) or comparable != expected:
-                raise ValueError("distribution result conflicts with terminal receipt")
-            return {**prior, "changed": False}
+            if any(not valid_distribution_result(value) for value in existing):
+                raise ValueError("distribution result ledger invalid")
+            prior = existing[-1]
+            if prior["state"] != "RETRY_READY":
+                comparable = {key: value for key, value in prior.items() if key != "observed_at"}
+                expected = {key: value for key, value in row.items() if key != "observed_at"}
+                if comparable != expected:
+                    raise ValueError("distribution result conflicts with terminal receipt")
+                return {**prior, "changed": False}
         stream.seek(0, os.SEEK_END)
         stream.write(json.dumps(row, sort_keys=True, separators=(",", ":")) + "\n")
         stream.flush()
         os.fsync(stream.fileno())
     return {**row, "changed": True}
+
+
+def requeue_confirmed_no_effect(results_path: Path, job_id: str) -> dict:
+    if not isinstance(job_id, str) or not PROPOSAL_ID.fullmatch(job_id):
+        raise ValueError("invalid distribution job identity")
+    with results_path.open("a+", encoding="utf-8") as stream:
+        fcntl.flock(stream, fcntl.LOCK_EX)
+        stream.seek(0)
+        try:
+            values = [json.loads(line) for line in stream if line.strip()]
+        except ValueError as error:
+            raise ValueError("distribution result ledger invalid") from error
+        if not values or any(not valid_distribution_result(row) for row in values):
+            raise ValueError("distribution result ledger invalid")
+        latest = values[-1]
+        if latest.get("job_id") != job_id:
+            raise ValueError("distribution retry job mismatch")
+        if latest["state"] == "RETRY_READY":
+            return {**latest, "changed": False}
+        if latest["state"] != "NO_EFFECT" or any(
+            row.get("state") == "RETRY_READY" for row in values
+        ):
+            raise ValueError("distribution result is not safely retryable")
+        retry = {
+            "schema_version": 1,
+            "receipt_type": "X_REPOST_DISTRIBUTION_JOB_RETRY",
+            "state": "RETRY_READY",
+            "job_id": latest["job_id"],
+            "effect_identity": latest["effect_identity"],
+            "placement_id": latest["placement_id"],
+            "content_sha256": latest["content_sha256"],
+            "text_sha256": latest["text_sha256"],
+            "prior_result_sha256": hashlib.sha256(json.dumps(
+                latest, sort_keys=True, separators=(",", ":")
+            ).encode()).hexdigest(),
+            "reason": "CONFIRMED_NO_EFFECT",
+            "retry_number": 1,
+            "owner_label": "ai.anicca.x-repost-pass",
+            "observed_at": datetime.now(timezone.utc).isoformat(),
+        }
+        stream.seek(0, os.SEEK_END)
+        stream.write(json.dumps(retry, sort_keys=True, separators=(",", ":")) + "\n")
+        stream.flush()
+        os.fsync(stream.fileno())
+        return {**retry, "changed": True}
 
 
 def post_text(proposal: dict) -> str:
@@ -671,6 +739,8 @@ def main() -> int:
     parser.add_argument("--job-results", type=Path)
     parser.add_argument("--job-effect-state", action="store_true")
     parser.add_argument("--record-job-result", choices=("POSTED", "UNVERIFIED", "NO_EFFECT"))
+    parser.add_argument("--requeue-no-effect", action="store_true")
+    parser.add_argument("--job-id")
     parser.add_argument("--posted", type=Path)
     parser.add_argument("--record", choices=("POSTED", "UNVERIFIED", "NO_EFFECT"))
     parser.add_argument("--claim", action="store_true")
@@ -701,6 +771,13 @@ def main() -> int:
         print(json.dumps(record_distribution_result(
             args.job_claims, args.job_payload_dir, args.job_results,
             args.record_job_result, args.post_url, args.provider_submission_id,
+        ), sort_keys=True))
+        return 0
+    if args.requeue_no_effect:
+        if args.job_results is None or args.job_id is None:
+            parser.error("--requeue-no-effect requires --job-results and --job-id")
+        print(json.dumps(requeue_confirmed_no_effect(
+            args.job_results, args.job_id
         ), sort_keys=True))
         return 0
     if args.proposal is None or args.consumed is None:

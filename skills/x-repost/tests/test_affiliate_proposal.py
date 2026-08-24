@@ -19,6 +19,60 @@ SPEC.loader.exec_module(MODULE)
 
 
 class AffiliateProposalTests(unittest.TestCase):
+    def test_confirmed_no_effect_requeues_once_but_unverified_never_does(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            queue, claims = root / "jobs.jsonl", root / "claims.jsonl"
+            payloads, results = root / "payloads", root / "results.jsonl"
+            job = {
+                "schema_version": 1, "receipt_type": "AFFILIATE_X_DISTRIBUTION_JOB",
+                "state": "QUEUED", "job_id": "1" * 64,
+                "effect_identity": "2" * 64,
+                "placement_id": "elevenlabs-discovered-caption-generator-en-1",
+                "owned_article_url": "https://aniccaai.com/blog/caption-generator",
+                "content_sha256": "3" * 64,
+                "experiment_lineage": {"kind": "BASE", "decision_id": None,
+                                       "control_placement_id": None},
+                "target_x_account": "selawmqt",
+                "cadence_class": "AFFILIATE_MONETIZATION",
+                "policy_sha256": "4" * 64, "source_set_sha256": "5" * 64,
+                "created_at": "2026-08-24T00:00:00+00:00",
+                "private_tracking_url_state": "NOT_INCLUDED",
+                "revenue_credit_state": "NO_REVENUE_CREDIT",
+            }
+            queue.write_text(json.dumps(job) + "\n")
+            MODULE.claim_next_job(queue, claims)
+            MODULE.render_claimed_job(claims, payloads)
+            MODULE.record_distribution_result(
+                claims, payloads, results, "NO_EFFECT", None, "",
+            )
+
+            first = MODULE.requeue_confirmed_no_effect(results, job["job_id"])
+            second = MODULE.requeue_confirmed_no_effect(results, job["job_id"])
+
+            self.assertTrue(first["changed"])
+            self.assertFalse(second["changed"])
+            self.assertEqual(first["state"], "RETRY_READY")
+            self.assertEqual(first["reason"], "CONFIRMED_NO_EFFECT")
+            self.assertEqual(len(results.read_text().splitlines()), 2)
+            self.assertEqual(
+                MODULE.distribution_effect_state(claims, payloads, results)["state"],
+                "READY_TO_POST",
+            )
+            posted = MODULE.record_distribution_result(
+                claims, payloads, results, "POSTED",
+                "https://x.com/selawmqt/status/123", "postiz-123",
+            )
+            self.assertEqual(posted["state"], "POSTED")
+            self.assertEqual(len(results.read_text().splitlines()), 3)
+
+            other = root / "unverified.jsonl"
+            MODULE.record_distribution_result(
+                claims, payloads, other, "UNVERIFIED", None, "postiz-unknown",
+            )
+            with self.assertRaises(ValueError):
+                MODULE.requeue_confirmed_no_effect(other, job["job_id"])
+
     def test_distribution_post_result_is_exact_and_idempotent(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -81,6 +135,7 @@ class AffiliateProposalTests(unittest.TestCase):
         self.assertIn("affiliate distribution job published", shell)
         self.assertIn("X_REPOST_JOB_ID", shell)
         self.assertIn("--record-job-result", shell)
+        self.assertIn("--requeue-no-effect", shell)
         self.assertGreater(
             shell.index('run_x_post --cdp "$CDP" --text-file "$AFFILIATE_JOB_TEXT"'),
             shell.index('CDP="$(bash "$ENSURE_BROWSER"'),

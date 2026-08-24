@@ -425,7 +425,19 @@ if [ "$AFFILIATE_JOB_STATE" = "EFFECT_STARTED" ]; then
   fi
   AFFILIATE_EFFECT_STATE="$("$PY" -c 'import json,sys; print(json.load(sys.stdin).get("state","UNKNOWN"))' \
     <<<"$AFFILIATE_JOB_EFFECT" 2>/dev/null || echo UNKNOWN)"
-  if [ "$AFFILIATE_EFFECT_STATE" = "UNVERIFIED" ] || [ "$AFFILIATE_EFFECT_STATE" = "NO_EFFECT" ]; then
+  if [ "$AFFILIATE_EFFECT_STATE" = "NO_EFFECT" ]; then
+    AFFILIATE_RETRY_JOB="$("$PY" -c 'import json,sys; print(json.load(sys.stdin)["job_id"])' \
+      <<<"$AFFILIATE_JOB_EFFECT")"
+    if ! AFFILIATE_RETRY="$("$PY" "$SKILL/scripts/affiliate_proposal.py" \
+      --job-results "$AFFILIATE_JOB_RESULTS" --job-id "$AFFILIATE_RETRY_JOB" \
+      --requeue-no-effect 2>>"$EV/affiliate-job.err")"; then
+      report "🛑 Confirmed no-effect Affiliate job could not be safely requeued"
+      finish 1 "affiliate distribution requeue failed"
+    fi
+    report "✅ Confirmed no-effect Affiliate job requeued once\njob: $AFFILIATE_RETRY_JOB"
+    finish 0 "affiliate distribution job requeued"
+  fi
+  if [ "$AFFILIATE_EFFECT_STATE" = "UNVERIFIED" ]; then
     log "affiliate distribution job awaits D06 reconciliation ($AFFILIATE_EFFECT_STATE)"
     finish 0 "affiliate distribution job awaits reconciliation"
   fi
