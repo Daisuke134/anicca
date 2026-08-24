@@ -147,6 +147,29 @@ def _store_basics(value: dict[str, Any]) -> dict[str, Any]:
     return {"status": "stored", "fields": stored}
 
 
+def _export_profile() -> dict[str, Any]:
+    stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    output = Path.home() / "Documents" / "Life Manager" / f"profile-{stamp}.json"
+    code, value = _json_command([
+        sys.executable, str(PROFILE_CLI), "export", "--output", str(output),
+    ])
+    if code != 0:
+        raise RuntimeError("profile export failed")
+    return {**value, "location": "Documents/Life Manager"}
+
+
+def _uninstall(integration_id: str) -> dict[str, Any]:
+    manifest = _manifest(integration_id)
+    completed = subprocess.run(
+        manifest["lifecycle"]["uninstall"], cwd=REPO, capture_output=True,
+        text=True, timeout=60, check=False,
+    )
+    if completed.returncode != 0:
+        raise RuntimeError("integration uninstall failed")
+    return {"status": "uninstalled", "integration_id": integration_id,
+            "private_state": "preserved"}
+
+
 class Handler(BaseHTTPRequestHandler):
     token = ""
 
@@ -181,7 +204,7 @@ class Handler(BaseHTTPRequestHandler):
         self._json(HTTPStatus.NOT_FOUND, {"error": "not found"})
 
     def do_POST(self) -> None:  # noqa: N802
-        if self.path not in {"/api/connect", "/api/enable-all", "/api/profile"}:
+        if self.path not in {"/api/connect", "/api/enable-all", "/api/profile", "/api/export", "/api/uninstall"}:
             self._json(HTTPStatus.NOT_FOUND, {"error": "not found"})
             return
         if self.headers.get("x-life-manager-token") != self.token:
@@ -193,6 +216,18 @@ class Handler(BaseHTTPRequestHandler):
                 if length <= 0 or length > 8192:
                     raise ValueError("invalid request size")
                 self._json(HTTPStatus.OK, _store_basics(json.loads(self.rfile.read(length))))
+                return
+            if self.path == "/api/export":
+                self._json(HTTPStatus.OK, _export_profile())
+                return
+            if self.path == "/api/uninstall":
+                length = int(self.headers.get("content-length") or 0)
+                if length <= 0 or length > 8192:
+                    raise ValueError("invalid request size")
+                value = json.loads(self.rfile.read(length))
+                if value.get("confirm") != "UNINSTALL":
+                    raise ValueError("explicit uninstall confirmation required")
+                self._json(HTTPStatus.OK, _uninstall(str(value.get("integration_id") or "")))
                 return
             if self.path == "/api/enable-all":
                 manifests = [row for row in _graph()["integrations"] if row["state"] != "ready"]

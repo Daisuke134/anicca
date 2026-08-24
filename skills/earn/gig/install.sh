@@ -17,6 +17,9 @@ Commands:
   start      Start or resume the guided official Coconala setup
   finished   Verify the completed setup in the same browser and start eligible loops
   status     Print the secret-free private onboarding state
+  outcomes   Print customer-safe official outcome receipt states
+  stop       Stop the six Coconala jobs and preserve definitions/private state
+  uninstall  Stop jobs, remove their six plist files, and preserve private state
 HELP
   exit 0
 fi
@@ -112,6 +115,23 @@ if [ "${1:-}" = "outcomes" ]; then
   python="${PYTHON:-$venv/bin/python}"
   [ -x "$python" ] || { echo '{"status":"waiting","receipts":[]}' ; exit 0; }
   exec "$python" "$GIG_DIR/scripts/coconala_outcomes.py"
+fi
+
+if [ "${1:-}" = "stop" ] || [ "${1:-}" = "uninstall" ]; then
+  labels=(
+    ai.anicca.hf-gig-browser ai.anicca.hf-gig-apply-direct
+    ai.anicca.hf-gig-reply-detector ai.anicca.hf-gig-storefront-direct
+    ai.anicca.hf-gig-paid-direct ai.anicca.hf-gig-release-watch
+  )
+  domain="gui/$(id -u)"
+  for label in "${labels[@]}"; do
+    /bin/launchctl bootout "$domain/$label" >/dev/null 2>&1 || true
+    if [ "$1" = "uninstall" ]; then
+      rm -f "$HOME/Library/LaunchAgents/$label.plist"
+    fi
+  done
+  printf '{"status":"%s","jobs":6,"private_state":"preserved"}\n' "$1"
+  exit 0
 fi
 
 if [ "${1:-}" = "start" ]; then

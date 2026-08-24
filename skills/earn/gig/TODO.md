@@ -62,7 +62,10 @@ evidence and are not reported as coding work.
    simulation covers manifest validation/coverage, loopback HTML+graph, CSRF rejection,
    ask-once API with no values in responses and `0700/0600`, four UI states, Enable all
    isolation, Coconala receipts, clean-clone OSS 11/11, compile/ShellCheck, and scoped
-   gitleaks zero. Restart, update, uninstall/export and full managed-owner coverage remain.
+   gitleaks zero. Profile export now writes a timestamped mode-0600 file without echoing
+   values. Manifest uninstall requires explicit UI confirmation; Coconala stops/removes
+   exactly its six plist definitions and preserves profile/browser/state. Restart, update,
+   full uninstall simulation and managed-owner coverage remain.
 
 ### Completed and not TODO
 
