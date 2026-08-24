@@ -2219,7 +2219,9 @@ provider/payment/payout evidence.
 **Ponytail constraint:** Reuse the existing Coconala `work-events`, `telegram_report.py` and durable
 Telegram outbox. Add no scheduler, notifier, database or provider-specific semantic rules.
 
-- [ ] Project each new Upwork apply/skip/reply/offer/contract/delivery/money transition once with a
+- [x] Project each new Upwork apply/skip decision once with a provider-scoped event key and
+  model-authored natural-language reason. Reply/offer/contract/delivery/money projections remain.
+- [ ] Project each new Upwork reply/offer/contract/delivery/money transition once with a
   provider-scoped event key and model-authored reason.
 - [ ] Send it immediately through the existing outbox and prove a replay sends zero duplicates.
 - [ ] Emit one compact periodic funnel/KPI report and a stalled-stage alert; unchanged polls stay
