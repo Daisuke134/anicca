@@ -68,7 +68,7 @@ _COUNT_LABELS = {
     "offers": r"Offers\s*\((\d+)\)",
     "invites": r"Invites from clients\s*\((\d+)\)",
     "active_proposals": r"Active proposals\s*\((\d+)\)",
-    "submitted_proposals": r"Submitted proposals\s*\((\d+)\)",
+    "submitted_proposals": r"Submitted proposals?\s*\((\d+)\)",
 }
 _CONNECTS_REQUIRED = re.compile(
     r"Send a proposal for:\s*(\d+)\s+Connects|"
