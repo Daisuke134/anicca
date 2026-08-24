@@ -214,6 +214,16 @@ async def submit_proposal_after_fence(
             readback = await _call(ws, "Runtime.evaluate", {
                 "expression": submit_readback_expression(job_id), "returnByValue": True,
             }, cid + 5)
+            value = readback.get("result", {}).get("result", {}).get("value")
+            if isinstance(value, dict) and value.get("state") == "unknown":
+                diagnostic = await _call(ws, "Runtime.evaluate", {
+                    "expression": """(()=>{const n=x=>(x||'').replace(/\\s+/g,' ').trim();return{url:location.href,buttons:[...document.querySelectorAll('button')].filter(x=>x.offsetParent).map(x=>n(x.innerText)).filter(Boolean).slice(-12),dialogs:[...document.querySelectorAll('[role=dialog]')].filter(x=>x.offsetParent).map(x=>n(x.innerText).slice(0,300)),alerts:[...document.querySelectorAll('[role=alert],.air3-alert')].filter(x=>x.offsetParent).map(x=>n(x.innerText).slice(0,300))}})()""",
+                    "returnByValue": True,
+                }, cid + 6)
+                detail = diagnostic.get("result", {}).get("result", {}).get("value")
+                raise ValueError("upwork_proposal_submit_unconfirmed:" + json.dumps(
+                    detail, ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+                ))
     value = readback.get("result", {}).get("result", {}).get("value")
     return validate_submit_readback(value, payload)
 
