@@ -8115,12 +8115,15 @@ traffic cannot be assumed to reach D30.
 
 ElevenLabs' current terms also state under participation requirements that only
 natural persons may register and that bots, scripts, or other automated methods
-are prohibited. The scope of that sentence is ambiguous for scheduled promotion
-after a natural-person registration. Before scaling automated ElevenLabs link
-promotion, obtain written program clarification or admit a different program
-whose terms explicitly allow the intended automation. Growth loops may continue
-with non-Affiliate helpful content while this commission-enforceability gate is
-open.
+are prohibited. The user explicitly attests that they obtained written
+ElevenLabs permission for automated social scheduling. Record this as
+`USER_ATTESTED_WRITTEN_PERMISSION`: it supersedes the generic ambiguity for this
+owned account and makes automated Affiliate distribution admissible. Do not
+invent or quote the unseen permission text, and do not describe it as a fresh
+provider readback. Preserve the user's written artifact outside public logs if
+it becomes available; official transaction and commission readbacks remain the
+money authority. Affiliate and both Growth loops continue without a permission
+wait gate.
 
 ### Loop runtime protocol — not Codex's design TODO
 
