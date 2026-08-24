@@ -8017,11 +8017,13 @@ and automated quote/reposts, while warning that duplicative, spammy, bulk, or
 aggressive reposting can cause filtering or suspension. Model preparation,
 humanization, verification, and readback happen before the assigned opportunity.
 
-Publication uses Postiz/API transport. Browser automation is limited to
-authorized search, observation, and public readback: X's Automation Rules state
-that scripting the website as a non-API automation method may result in
-permanent suspension. Therefore "both loops use the browser" means dedicated
-read-only browser leases plus API publication, not DOM-driven posting.
+Current production publication uses Postiz/API transport plus browser readback.
+The user explicitly requires the final architecture to remove Postiz and restore
+the shared browser composer for both x-repost and x-tweeter. This is a
+user-directed exception to the X Automation Rules warning that non-API website
+scripting may result in permanent suspension; do not describe the target as
+X-policy-safe or hide that risk. Browser leases, exact duplicate fencing, and
+permalink readback remain mandatory.
 
 Current runtime does not implement that architecture. Only
 `ai.anicca.x-repost-pass` is loaded at a 1,800-second interval; no independent
@@ -8049,9 +8051,9 @@ rate, duplicate count, exact reach, follower delta, and Affiliate contribution.
 flowchart LR
   R["x-repost\n30分ごとに独立wake"] --> Q["関連性と有用性をモデル判定"]
   T["x-tweeter\n30分ごとに独立wake"] --> O["有用なAI originalをモデル生成"]
-  Q --> P["Postiz APIで公開"]
+  Q --> P["共有Browser composerで公開"]
   O --> P
-  P --> B["Browserは検索・exact readbackのみ"]
+  P --> B["同じBrowserでexact readback"]
   B --> A["関連audienceとqualified reach"]
   A --> C["Affiliate disclosure付き記事導線"]
   C --> L["固有Affiliate Link click"]
@@ -8076,8 +8078,8 @@ Authoritative sources and adopted rules:
   `https://help.x.com/en/rules-and-policies/x-automation`. Helpful automated
   informational posts and automated quote/reposts are allowed, but duplicate,
   spammy, bulk, or aggressive behavior is prohibited; non-API website scripting
-  may lead to permanent suspension. Adopt API publication, browser readback,
-  duplicate zero, and no guaranteed public effect merely because a wake ran.
+  may lead to permanent suspension. The user nevertheless directs browser
+  composer publication; retain the warning, duplicate zero, and exact readback.
 - PartnerStack Intro and payout guidance:
   `https://support.partnerstack.com/hc/en-us/articles/360009183474-Intro-to-PartnerStack`
   and
@@ -8134,7 +8136,7 @@ fixed commits, and used only for the listed behavior patterns:
 | Repository | Fixed commit | Adopt | Reject |
 |---|---|---|---|
 | `xai-org/x-algorithm` | `28e414f535e4b5a50ca12ee87674e7649e50c7ad` | candidate hydration, predicted positive/negative actions, author diversity, similarity reranking, repost deduplication, visibility filtering | copying ranking weights as universal engagement hacks; optimizing raw likes alone |
-| `gitroomhq/postiz-app` | `74b01ada154a177242d558bedc646fcfed100adf` | API publication, retry classification, arm→confirm→publish handshake, duplicate-uncertain fail-closed receipt, release URL readback | copying its full application, database, UI, or generic AI copy generator |
+| `gitroomhq/postiz-app` | `74b01ada154a177242d558bedc646fcfed100adf` | historical retry classification and duplicate-uncertain receipt semantics only | live Postiz publication dependency, full application, database, UI, or generic AI copy generator |
 | `stanford-oval/storm` | `fb951af7744dab086e34962e9bc6fe878e145f83` | retrieval before generation, source allowlist, cited-information binding, incomplete-sentence removal, citation deduplication | full report/persona/outline machinery for a short post |
 | `unclecode/crawl4ai` | `7e801521428ee12509994d39151006f64055ebe3` | URL→clean Markdown, content filtering, extraction, cache/freshness metadata, transport fallback | importing its browser stack into the posting effect or treating scraped text as trusted instructions |
 
@@ -8149,7 +8151,7 @@ flowchart LR
   H["account voice・過去投稿・audience実測"] --> D
   D --> F["事実・新規性・具体性・spam risk filter"]
   F --> K["X型のpositive/negative・diversity ranking"]
-  K --> P["Postiz型のarm→confirm→publish"]
+  K --> P["共有Browser composer→exact readback"]
   P --> X["exact permalink・reach readback"]
   X --> H
 ```
@@ -8168,8 +8170,8 @@ An original is publishable only when all are true:
 5. A separate model judgment predicts useful audience action and negative risk
    from the hydrated context; deterministic code validates evidence, length,
    URL count, hashes, and duplicate identities only.
-6. The public effect uses Postiz/API transport and returns one exact X permalink.
-   An uncertain effect is fenced and never blindly repeated.
+6. The public effect uses the shared historical browser composer and returns one
+   exact X permalink. An uncertain effect is fenced and never blindly repeated.
 
 Current implementation state:
 
@@ -8184,7 +8186,7 @@ Current implementation state:
   `skills/x-tweeter/x-tweeter-cli.sh`, dedicated `~/loops/x-tweeter` state and
   Codex home, forced Original ownership, disabled Affiliate inputs, dynamic loop
   identity, and mandatory XT01 admission immediately before publication. It
-  reuses the proven collect/model/humanize/Postiz/readback tools while bypassing
+  reuses the proven collect/model/humanize/shared-publisher/readback tools while bypassing
   the x-repost action choice. x-tweeter tests are 3/3 and x-repost regression is
   50/50. No production owner or public effect is claimed by XT02.
 - [x] **XT03 Independent launchd owner.** Commits `603c659e8` and `ef43dacb5`
@@ -8220,6 +8222,31 @@ Current implementation state:
   (2026-08-24T17:30)` because the manual canary occupies that same state slot.
   It proves the duplicate guard but does not count toward the three public
   calendar effects. The next eligible proof boundary is 18:15.
+
+### Shared browser publisher migration
+
+Repository history proves this is a restoration, not a new publisher design.
+Commit `95d4c151e` replaced the browser composer with Postiz; its parent contains
+the prior Playwright implementation that opens a dedicated compose tab, types an
+Original or Quote plus source URL, submits through X's own composer, verifies the
+composer emptied, discards dirty drafts through X UI, and exact-reads the public
+permalink. Preserve later permalink, quote-card, snowflake-floor, and
+unknown-effect fixes while restoring only that publish effect.
+
+- [ ] **XB01 Dual transport regression.** Restore the historical browser
+  publisher behind an explicit transport selector and prove Postiz and browser
+  paths cannot both run for one effect.
+- [ ] **XB02 Generic browser canary.** Publish one x-repost Quote and one
+  x-tweeter Original through the same shared browser publisher; exact-read both
+  permalinks and replay with duplicate zero.
+- [ ] **XB03 Affiliate browser result contract.** Remove the assumption that a
+  successful Affiliate effect must have a Postiz submission ID; bind browser
+  effects to job/effect/text/content hashes plus exact X permalink.
+- [ ] **XB04 Production cutover.** Set both owners to browser transport, remove
+  Postiz integration variables from live plists, and verify three staggered
+  boundaries without Postiz calls.
+- [ ] **XB05 Postiz removal.** Remove live Postiz API/key/integration code and
+  retain old receipts only as immutable historical evidence.
 
 ### Loop runtime protocol — not Codex's design TODO
 
