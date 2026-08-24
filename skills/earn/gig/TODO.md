@@ -102,8 +102,11 @@ Storefront work.
          `codex login status` readback. Official OpenAI documentation defines this as
          the default ChatGPT browser login and status command. The authenticated no-op
          path is verified here; a genuinely signed-out pilot remains required.
-    3. [ ] Create the private resumable onboarding receipt with no raw identity, OTP,
+    3. [x] Create the private resumable onboarding receipt with no raw identity, OTP,
        document, password, bank or session value in Git/logs/model/report output.
+       `coconala_onboarding.py init` writes only platform/version and nine named
+       `pending/complete` gates. Fresh temp HOME proves directory `0700`, file `0600`,
+       compile success and byte-identical hash on the second init.
     4. [ ] Show one prerequisite screen, then launch the dedicated CloakBrowser profile
        `~/.cloak/profiles/gig-daily-driver` on the official Coconala setup surface. Do not
        collect duplicate identity/bank facts in Life Manager.

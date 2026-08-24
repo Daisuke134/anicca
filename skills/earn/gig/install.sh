@@ -77,4 +77,8 @@ if [ "${1:-}" = "prepare" ]; then
   PYTHON="$venv/bin/python" exec bash "$0" preflight
 fi
 
+if [ "${1:-}" = "init" ]; then
+  exec "${PYTHON:-python3}" "$GIG_DIR/scripts/coconala_onboarding.py" init
+fi
+
 exec "${PYTHON:-python3}" "$GIG_DIR/scripts/money_loop_onboarding.py" "$@"
