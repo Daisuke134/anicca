@@ -79,6 +79,7 @@ def snapshot_candidates(
     ledger_path: Path,
     sources: tuple[dict[str, str], ...],
     fetch_jobs: Callable[[dict[str, str]], list[dict[str, Any]]],
+    exclusions: frozenset[str] = frozenset(),
 ) -> list[dict[str, str]]:
     ledger = Ledger(ledger_path)
     try:
@@ -90,7 +91,7 @@ def snapshot_candidates(
         ledger.close()
     candidates = []
     for source in sources:
-        if is_excluded_employer(source["company"]):
+        if is_excluded_employer(source["company"], exclusions):
             continue
         try:
             jobs = fetch_jobs(source)
@@ -149,6 +150,19 @@ def submitted_company_portfolio(ledger_path: Path) -> dict[str, int]:
     finally:
         ledger.close()
     return dict(Counter(str(row[0]) for row in rows))
+
+
+def candidate_employer_exclusions(candidate_memory_path: Path) -> frozenset[str]:
+    value = json.loads(candidate_memory_path.read_text(encoding="utf-8"))
+    for concept in value.get("concepts", []):
+        if concept.get("concept") == "candidate.employer_exclusions":
+            exclusions = concept.get("value")
+            if not isinstance(exclusions, list) or any(
+                not isinstance(item, str) or not item.strip() for item in exclusions
+            ):
+                raise ValueError("candidate employer exclusions are invalid")
+            return frozenset(item.strip() for item in exclusions)
+    return frozenset()
 
 
 def validate_shortlist(
@@ -267,6 +281,12 @@ def main() -> int:
     sources = unique_sources(
         tuple(dict(row) for row in source_payload.get("sources", []))
     )
+    employer_exclusions = candidate_employer_exclusions(args.candidate_memory)
+    sources = tuple(
+        source
+        for source in sources
+        if not is_excluded_employer(source["company"], employer_exclusions)
+    )
     allowed_hosts = {str(row["host"]).casefold() for row in sources}
     queued_ids = qualified_queue_ids(args.ledger, allowed_hosts)
     source_cursor = 0
@@ -276,6 +296,7 @@ def main() -> int:
         ledger_path=args.ledger,
         sources=sources,
         fetch_jobs=fetch_jobs,
+        exclusions=employer_exclusions,
     )
     snapshot = {
         "version": 1,

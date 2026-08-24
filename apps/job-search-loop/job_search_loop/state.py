@@ -9,21 +9,7 @@ class InvalidTransition(ValueError):
     pass
 
 
-DEFAULT_EMPLOYER_EXCLUSIONS = frozenset(
-    {
-        "Accenture",
-        "KPMG",
-        "Deloitte",
-        "Ernst & Young",
-        "EY",
-        "PwC",
-        "PricewaterhouseCoopers",
-        "OpenAI",
-        "Anthropic",
-        "Palantir",
-        "Cursor",
-    }
-)
+DEFAULT_EMPLOYER_EXCLUSIONS: frozenset[str] = frozenset()
 
 
 TRANSITIONS = {

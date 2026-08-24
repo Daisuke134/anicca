@@ -153,22 +153,25 @@ class WorkdayDiscoveryTests(unittest.TestCase):
         self.assertEqual({request["searchText"] for request in requests}, {""})
 
     def test_model_sources_accept_arbitrary_company_and_reject_explicit_exclusion(self):
-        sources = validate_sources({"sources": [
-            {
-                "company": "DifferentCo",
-                "host": "different.wd1.myworkdayjobs.com",
-                "tenant": "different",
-                "site": "Careers",
-                "search_text": "applied AI",
-            },
-            {
-                "company": "OpenAI",
-                "host": "openai.wd1.myworkdayjobs.com",
-                "tenant": "openai",
-                "site": "Careers",
-                "search_text": "applied AI",
-            },
-        ]})
+        sources = validate_sources(
+            {"sources": [
+                {
+                    "company": "DifferentCo",
+                    "host": "different.wd1.myworkdayjobs.com",
+                    "tenant": "different",
+                    "site": "Careers",
+                    "search_text": "applied AI",
+                },
+                {
+                    "company": "OpenAI",
+                    "host": "openai.wd1.myworkdayjobs.com",
+                    "tenant": "openai",
+                    "site": "Careers",
+                    "search_text": "applied AI",
+                },
+            ]},
+            frozenset({"OpenAI"}),
+        )
 
         self.assertEqual([row["company"] for row in sources], ["DifferentCo"])
 

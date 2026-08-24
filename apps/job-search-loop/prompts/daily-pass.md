@@ -12,8 +12,9 @@ Process every eligible ATS row returned by the runtime. Workday and Ashby use th
 - record an explicit provider/unavailable/ineligible outcome, report it, and continue
   the queue.
 
-Never apply to Salesforce JR355047. Never reopen `submitted` or
-`submit_unknown`. Never bypass a visible CAPTCHA or provider application limit.
+Never reopen `submitted` or `submit_unknown`. Never bypass a visible CAPTCHA or
+provider application limit. Employer exclusions come only from the private candidate
+profile; never invent or hardcode another company or job exclusion.
 
 ## Agent loop adopted from Browser Use and career-ops
 

@@ -15,7 +15,9 @@ from .state import is_excluded_employer
 _FIELDS = {"company", "host", "tenant", "site", "search_text"}
 
 
-def validate_sources(value: dict[str, Any]) -> tuple[dict[str, str], ...]:
+def validate_sources(
+    value: dict[str, Any], exclusions: frozenset[str] = frozenset()
+) -> tuple[dict[str, str], ...]:
     rows = value.get("sources") if isinstance(value, dict) else None
     if not isinstance(rows, list):
         raise ValueError("sources must be an array")
@@ -28,7 +30,7 @@ def validate_sources(value: dict[str, Any]) -> tuple[dict[str, str], ...]:
         host = source["host"].casefold()
         if (
             not source["company"]
-            or is_excluded_employer(source["company"])
+            or is_excluded_employer(source["company"], exclusions)
             or not host.endswith(".myworkdayjobs.com")
             or "/" in host
             or not re.fullmatch(r"[A-Za-z0-9_-]+", source["tenant"])
@@ -83,6 +85,21 @@ def main() -> int:
         previous = args.previous.read_text(encoding="utf-8")
         previous_sources = validate_sources(json.loads(previous))
     memory = args.candidate_memory.read_text(encoding="utf-8")
+    memory_value = json.loads(memory)
+    exclusions = frozenset()
+    for concept in memory_value.get("concepts", []):
+        if concept.get("concept") == "candidate.employer_exclusions":
+            raw = concept.get("value")
+            if isinstance(raw, list) and all(
+                isinstance(item, str) and item.strip() for item in raw
+            ):
+                exclusions = frozenset(item.strip() for item in raw)
+            break
+    previous_sources = tuple(
+        source
+        for source in previous_sources
+        if not is_excluded_employer(source["company"], exclusions)
+    )
     prompt = (
         "Act as the source-discovery agent for a Tokyo-based autonomous job hunter. "
         "Use available internet/search tools now. Find diverse companies currently "
@@ -112,7 +129,7 @@ def main() -> int:
         workdir=args.workdir,
         run_id=f"workday-sources-{uuid.uuid4().hex}",
     )
-    sources = merge_sources(previous_sources, validate_sources(result))
+    sources = merge_sources(previous_sources, validate_sources(result, exclusions))
     output = {"version": 1, "sources": list(sources)}
     args.output.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     args.output.write_text(

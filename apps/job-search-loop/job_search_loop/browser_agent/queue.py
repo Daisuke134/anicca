@@ -20,16 +20,6 @@ _STATUSES = frozenset(
         "submitted",
     }
 )
-_NEVER_REAPPLY = frozenset(
-    {
-        canonical_url(
-            "https://salesforce.wd12.myworkdayjobs.com/External_Career_Site/"
-            "job/Japan---Tokyo/Forward-Deployed-Engineer--Multiple-Levels-_JR355047"
-        )
-    }
-)
-
-
 class RowQueueSupervisor:
     """Run every unique queued row; one row failure never ends the wake."""
 
@@ -54,8 +44,6 @@ class RowQueueSupervisor:
                 detect_provider(identity) == "workday"
                 and not ledger.workday_fit_qualified(str(row["application_id"]))
             ):
-                continue
-            if identity in _NEVER_REAPPLY:
                 continue
             if identity in seen:
                 continue
@@ -87,7 +75,7 @@ class RowQueueSupervisor:
         for candidate in candidates:
             application_id = str(candidate["id"])
             identity = canonical_url(str(candidate["canonical_url"]))
-            if detect_provider(identity) != "workday" or identity in _NEVER_REAPPLY:
+            if detect_provider(identity) != "workday":
                 continue
             ledger.transition(
                 application_id,
