@@ -260,7 +260,7 @@ No later task may jump ahead of the first incomplete row:
 | U10 | Discover and qualify a first-job candidate | **DONE:** usability-test job `~022091106411892491962`; $15, 10–15 proposals, zero interviews, payment/phone verified, and all student/age/English/recording gates match owner evidence |
 | U11 | Resolve application capacity for that candidate | **DONE:** official proposal surface requires 7 Connects; balance/history, offers, invites and proposals are 0, no reward banner is exposed, and the only buy offer is 100 for $15 plus tax |
 | U12 | Freeze one tailored first-job proposal | **DONE:** immutable payload `c37eed9c…c68e926` contains the $15 terms, cover letter, five factual screening answers, no attachments, and zero unsupported claims |
-| U13 | Make acquisition fully loop-owned | **IN PROGRESS:** production searches current jobs, Luna qualifies against installed Skills and seals private proposals, and Terra owns changing UI. It selected current job `~022091742848386274963` at 8 Connects without static candidate editing; the effect did not start because exact form preflight mismatched. Fix that observed form generically, batch candidate judgment to avoid one Luna call per rejected job, then prove a second dynamic proposal receipt. |
+| U13 | Make acquisition fully loop-owned | **IN PROGRESS / COPY COCONALA PARENT:** production selected current job `~022091742848386274963` at 8 Connects without static candidate editing and stopped before the fence on exact form mismatch. Do not extend the per-job Upwork planner. Route Upwork discovery/details through existing `application_direct → application_parent`, which already batches ten candidates per Luna call, caches ineligible evidence, persists cursors/intents, reconciles uncertain effects and requires exact official IDs. Implement only an Upwork `ParentEffects`/snapshot adapter and prove the same sealed job through it. |
 | U14 | Close the first acquisition effect | **DONE:** one authorized $15 seed produced 150 Connects; proposal `2091740505918763009` is official and Connects readback is `150 -> 141`. No subscription, boost, badge or auto-top-up was enabled. |
 | U15 | Replay immediately | **DONE:** fresh launchd replay exited 0; official proposal count stayed 1 and balance stayed 141. |
 | U16 | Poll and answer the resulting thread | Official story/message IDs and no duplicate reply |
@@ -281,23 +281,26 @@ always preempt expansion.
 
 ### Completion order from the current state
 
-1. Reconcile the selected dynamic job and fix its click-free form preflight before any effect starts.
-2. Prove current search → Luna Skill-aware qualification → seal → Terra submit → official proposal
+1. Bind Upwork search/detail/form/history to the existing Coconala `application_parent` protocols;
+   retire the duplicate per-job planner path instead of fixing it into a second application engine.
+2. Reconcile the selected dynamic job and correct only its provider form adapter before any effect starts.
+3. Prove current search → batched Luna Skill-aware qualification → seal → Terra submit → official proposal
    ID/Connects delta, then prove replay zero without static candidate edits.
-3. Replace per-job Luna calls with one bounded candidate-set decision per search page; persist skips
-   and cursor progress so later wakes do not pay to reconsider unchanged evidence.
-4. Keep polling every submitted proposal, inbox, invitation, offer and contract; send each grounded
+4. Use the existing planner and ineligible caches plus cursor checkpoint so later wakes do not pay to
+   reconsider unchanged evidence.
+5. Route Upwork threads through the existing continuous `reply_detector`/`ConnectorOutbox`; send each grounded
    reply exactly once and promote the first profitable offer to an active contract.
-5. Freeze the contract into a private project, compose the installed delivery Skill, execute work,
+6. Route the Upwork contract through existing `paid_direct` project/workflow/QA parents; freeze a private
+   project, compose the installed delivery Skill, execute work,
    run independent QA, deliver once, process revisions and require official submission readback.
-6. Reconcile payment, fee, refund/chargeback and official payout `received`; close G4–G6 and publish
+7. Reconcile payment, fee, refund/chargeback and official payout `received`; close G4–G6 and publish
    OSS alpha only after secret/PII scan, redacted fixtures and isolated-home installer pass.
-7. Repeat three independent paid jobs, retain the winning Skill/price/niche experiments and close G7.
-8. In parallel after paid work is safe, run one-effect zero-spend canaries for Lancers, CrowdWorks,
+8. Repeat three independent paid jobs, retain the winning Skill/price/niche experiments and close G7.
+9. In parallel after paid work is safe, run one-effect zero-spend canaries for Lancers, CrowdWorks,
    Fiverr and authorized bounty sources through the same kernel; promote only verified profitable lanes.
-9. Extract the manifest/template and conformance suite, install on a clean device, complete one
+10. Extract the four provider-surface template and conformance suite, install on a clean device, complete one
    authorized receipt path and publish OSS stable with no private state.
-10. Continue the private portfolio until a complete calendar month proves USD 10,000 net `received`;
+11. Continue the private portfolio until a complete calendar month proves USD 10,000 net `received`;
     this is the scale outcome, not a substitute for the earlier end-to-end and OSS gates.
 
 The fresh official snapshot shows applications 0, replies 0, contracts 0 and payout `received` USD 0.
@@ -807,6 +810,14 @@ U13 atomic order:
     fence. Current money truth remains one submitted proposal, zero replies/offers/contracts and
     Connects 141. Inspect that exact live form, correct only the generic form-control contract, then
     resume the same sealed intent; never regenerate or blind-submit it.
+57. **RUNNING COCONALA LANES INSPECTED / REINVENTION CUT:** production is already four Life Manager
+    entrypoints from one immutable release: Apply (`application_direct → application_parent`), Reply
+    (`reply_detector → ConnectorOutbox`), Paid (`paid_direct → project/workflow/QA ledgers`) and
+    Storefront (`storefront_direct → capability/funnel allocator`). The application parent already
+    performs parallel discovery, ten-candidate Luna batches, planner/ineligible caches, cursor resume,
+    immutable intent fencing, delayed uncertain-effect reconciliation and exact-ID readback. Therefore
+    the Upwork per-job Luna loop is not promoted. Next implementation adds Upwork provider effects to
+    these existing parents, keeps its observer read-only, then deletes duplicated orchestration.
 
 U14 atomic order:
 

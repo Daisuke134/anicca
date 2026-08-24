@@ -630,6 +630,37 @@ at most three thin provider files, the third with at most two, and later markets
 exceptional transport glue only. If a market requires another scheduler, ledger or decision brain,
 the common primitive is missing and must be fixed before that adapter proceeds.
 
+### 4.9 Coconala copy-first lane contract
+
+The running Coconala system in the same Life Manager release is the implementation template. Upwork
+must not grow a second all-in-one provider loop. Four existing launchd entrypoints remain the lane
+owners; provider adapters supply only observations, fields, effects and official receipts:
+
+```mermaid
+flowchart TD
+  A[application_direct + application_parent] --> PA[Provider application effects]
+  R[reply_detector + ConnectorOutbox] --> PR[Provider inbox/message effects]
+  P[paid_direct + project/workflow ledgers] --> PD[Provider delivery effects]
+  S[storefront_direct + portfolio allocator] --> PS[Provider storefront effects]
+  PA --> K[Shared authorization, lease, fence and readback]
+  PR --> K
+  PD --> K
+  PS --> K
+```
+
+| Existing Coconala owner | Reused behavior | Upwork supplies |
+|---|---|---|
+| `application_direct.py` → `application_parent.py` | parallel read-only discovery, groups of ten per Luna call, planner/ineligible caches, durable cursor, immutable intent, pre-effect form readback, delayed reconciliation and exact-ID confirmation | search/detail normalization, proposal fields, Connects budget adjustment and proposal-history receipt |
+| `reply_detector.py` + `ConnectorOutbox` | continuous changed-thread detection, semantic reply, immutable message effect and official story readback | room/story normalization and Upwork message transport |
+| `paid_direct.py` + project/workflow ledgers | paid-work priority, one private workspace per contract, model-selected mode, bounded execution, independent artifact/visual QA, revision, exactly-once delivery and official readback | contract/milestone collector and Upwork submission transport |
+| `storefront_direct.py` | capability inventory, service creation/improvement, funnel join, experiment and portfolio allocation | Project Catalog observation/mutation/readback |
+
+The Upwork five-minute observer may remain a read-only provider collector, but it cannot own another
+planner, project lifecycle, negotiation ledger, Skill executor, learning allocator or scheduler.
+Existing Upwork code is migrated behind the four parent interfaces and then deleted where duplicated.
+This is also the OSS boundary: new markets implement the same four provider surfaces rather than copy
+the Coconala or Upwork controllers.
+
 ## 5. Market sequence
 
 Upwork closes the first proposal receipt before another marketplace mutation lane opens. Read-only
