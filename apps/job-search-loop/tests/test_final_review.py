@@ -17,7 +17,7 @@ class FinalReviewTests(unittest.TestCase):
                 "Tokyo/English-Role_1035746-62/apply/autofillWithResume"
             ),
             title="AI検索マーケティングの未来を創る プロダクト担当",
-            visible_text="Rakuten Careers 送信",
+            visible_text="送信",
             controls=(), validation_text=(), tabs=(),
             screenshot_path=Path("review.png"),
             screenshot_sha256="a" * 64, content_sha256="b" * 64,
