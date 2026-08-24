@@ -23,6 +23,45 @@ SPEC.loader.exec_module(MODULE)
 
 
 class LocalLoopTest(unittest.TestCase):
+    def test_funnel_experiment_lock_replays_same_and_blocks_sibling(self):
+        with tempfile.TemporaryDirectory() as root:
+            state = Path(root)
+            funnel = {
+                "transition_id": "a" * 64, "placement_id": "caption-en-1",
+                "job_id": "1" * 64, "post_url": "https://x.com/selawmqt/status/200",
+            }
+            MODULE.atomic_json(state / "money-funnel" / "latest.json", funnel)
+            decision = {
+                "state": "READY", "decision_id": "b" * 64,
+                "source_funnel_transition_id": funnel["transition_id"],
+                "bottleneck": "reach", "exposure_assessment": "insufficient",
+                "selected_variable": "distribution_mix",
+                "hypothesis": "More reach is needed.",
+                "action": "Use one more relevant channel.",
+                "official_success_metric": "Exact impressions >= 100.",
+            }
+
+            first = MODULE.activate_funnel_experiment(state, decision)
+            replay = MODULE.activate_funnel_experiment(state, decision)
+            sibling = MODULE.activate_funnel_experiment(
+                state, {**decision, "decision_id": "c" * 64},
+            )
+
+            self.assertEqual(first["state"], "ACTIVE")
+            self.assertTrue(first["changed"])
+            self.assertFalse(replay["changed"])
+            self.assertEqual(sibling["state"], "BLOCKED_ACTIVE_EXPERIMENT")
+            self.assertFalse(sibling["changed"])
+            self.assertEqual(first["control_placement_id"], funnel["placement_id"])
+            self.assertEqual(first["selected_variable"], "distribution_mix")
+            self.assertEqual(len(MODULE.json_rows(
+                state / "funnel-experiments" / "history.jsonl"
+            )), 1)
+            with self.assertRaises(ValueError):
+                MODULE.activate_funnel_experiment(
+                    state, {**decision, "source_funnel_transition_id": "d" * 64},
+                )
+
     def test_money_funnel_row_preserves_missing_post_attribution_as_unknown(self):
         with tempfile.TemporaryDirectory() as root:
             state, repost = Path(root) / "affiliate", Path(root) / "repost"

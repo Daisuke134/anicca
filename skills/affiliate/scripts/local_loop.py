@@ -405,6 +405,65 @@ def build_money_funnel_row(state):
     return {**receipt, "state": "OBSERVED", "changed": changed}
 
 
+def activate_funnel_experiment(state, decision):
+    if not isinstance(decision, dict) or decision.get("state") not in {
+        "READY", "ALREADY_DECIDED",
+    }:
+        return {"state": "WAITING_FOR_FUNNEL_DECISION", "changed": False}
+    funnel = json.loads((state / "money-funnel" / "latest.json").read_text(encoding="utf-8"))
+    source_transition = decision.get("source_funnel_transition_id")
+    decision_id = decision.get("decision_id")
+    if not (
+        isinstance(source_transition, str) and REPOST_PROPOSAL_ID_PATTERN.fullmatch(source_transition)
+        and source_transition == funnel.get("transition_id")
+        and isinstance(decision_id, str) and REPOST_PROPOSAL_ID_PATTERN.fullmatch(decision_id)
+        and isinstance(funnel.get("placement_id"), str)
+        and REPOST_PLACEMENT_ID_PATTERN.fullmatch(funnel["placement_id"])
+    ):
+        raise ValueError("funnel experiment control mismatch")
+    active_path = state / "funnel-experiments" / "active.json"
+    if active_path.is_file():
+        active = json.loads(active_path.read_text(encoding="utf-8"))
+        if active.get("state") == "ACTIVE" and active.get("decision_id") == decision_id:
+            return {**active, "changed": False}
+        if active.get("state") == "ACTIVE":
+            return {
+                "state": "BLOCKED_ACTIVE_EXPERIMENT", "changed": False,
+                "active_experiment_id": active.get("experiment_id"),
+                "active_decision_id": active.get("decision_id"),
+            }
+    material = {
+        "decision_id": decision_id,
+        "source_funnel_transition_id": source_transition,
+        "control_placement_id": funnel["placement_id"],
+        "control_job_id": funnel.get("job_id"),
+        "control_post_url": funnel.get("post_url"),
+        "selected_variable": decision.get("selected_variable"),
+        "official_success_metric": decision.get("official_success_metric"),
+    }
+    experiment_id = hashlib.sha256(json.dumps(
+        material, sort_keys=True, separators=(",", ":")
+    ).encode()).hexdigest()
+    receipt = {
+        "schema_version": 1,
+        "receipt_type": "AFFILIATE_FUNNEL_EXPERIMENT",
+        "state": "ACTIVE",
+        "experiment_id": experiment_id,
+        **material,
+        "bottleneck": decision.get("bottleneck"),
+        "exposure_assessment": decision.get("exposure_assessment"),
+        "hypothesis": decision.get("hypothesis"),
+        "action": decision.get("action"),
+        "observation_state": "OPEN",
+        "started_at": datetime.now(timezone.utc).isoformat(),
+    }
+    changed = append_unique(
+        state / "funnel-experiments" / "history.jsonl", receipt, ("experiment_id",)
+    )
+    atomic_json(active_path, receipt)
+    return {**receipt, "changed": changed}
+
+
 def focused_live_lineage(state):
     latest = state / "focused-cohort" / "latest.json"
     if not latest.is_file():
@@ -4573,6 +4632,17 @@ def _wake_once(args, started_at, run_id):
             "state": "DECISION_FAILED", "changed": False,
             "failure_type": type(error).__name__,
         }
+    try:
+        funnel_experiment = admit(
+            "acquisition.funnel-experiment", "LEDGER_ONLY",
+            {"funnel_decision_state": funnel_decision.get("state")},
+            lambda: activate_funnel_experiment(state, funnel_decision),
+        )
+    except Exception as error:
+        funnel_experiment = {
+            "state": "EXPERIMENT_LOCK_FAILED", "changed": False,
+            "failure_type": type(error).__name__,
+        }
     if provider["state"] == "AUTHENTICATED" and not placement_link_ready:
         status = placement_link["state"]
     elif not link:
@@ -4722,6 +4792,15 @@ def _wake_once(args, started_at, run_id):
                 "state", "changed", "decision_id", "source_funnel_transition_id",
                 "bottleneck", "exposure_assessment", "selected_variable",
                 "hypothesis", "action", "official_success_metric", "failure_type",
+            )
+        },
+        "funnel_experiment": {
+            key: funnel_experiment.get(key)
+            for key in (
+                "state", "changed", "experiment_id", "decision_id",
+                "source_funnel_transition_id", "control_placement_id",
+                "control_job_id", "control_post_url", "selected_variable",
+                "official_success_metric", "observation_state", "failure_type",
             )
         },
         "revenue_state": revenue["state"],
