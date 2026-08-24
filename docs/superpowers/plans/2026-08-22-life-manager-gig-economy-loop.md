@@ -884,6 +884,14 @@ U13 atomic order:
     contain the Upwork batching/durable-queue changes. The Upwork branch remains pushed and verified;
     do not overwrite the shared production symlink until that concurrent release owner is clear, then
     activate the integrated commit and prove unchanged batch model-call delta 0.
+67. **INTEGRATED PARALLEL RELEASE / EXACT CACHE REPLAY PASS:** integrated release `a6412f144`
+    contains the active Paid fix and all Upwork batching changes. Coconala Paid and Upwork ran
+    concurrently under separate pinned immutable SHAs; neither was stopped. The Upwork wake exited 0,
+    retained official proposals 2 and balance 133, and evaluated only changed/new candidate sets.
+    Replaying the exact saved ten-job packet set `1c776b…` against its stable evidence directory
+    returned the same skip with `summary.json` and `attempts.jsonl` mtime/size byte-for-byte unchanged,
+    proving new Luna calls 0. This closes candidate batching/cache hardening. The next atomic item is
+    continuous proposal-state/view/reply reconciliation while acquisition keeps running.
 
 U14 atomic order:
 
