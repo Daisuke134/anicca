@@ -6,12 +6,18 @@ from pathlib import Path
 class LaunchdTests(unittest.TestCase):
     def test_plists_have_separate_recurring_schedules(self):
         root = Path(__file__).parents[1] / "launchd"
+        browser = plistlib.loads(
+            (root / "ai.anicca.job-search-browser.plist").read_bytes()
+        )
         daily = plistlib.loads((root / "ai.anicca.job-search-daily.plist").read_bytes())
         inbox = plistlib.loads((root / "ai.anicca.job-search-inbox.plist").read_bytes())
         learning = plistlib.loads(
             (root / "ai.anicca.job-search-learning.plist").read_bytes()
         )
         self.assertTrue(daily["RunAtLoad"])
+        self.assertTrue(browser["RunAtLoad"])
+        self.assertTrue(browser["KeepAlive"])
+        self.assertEqual(browser["Label"], "ai.anicca.job-search-browser")
         self.assertEqual(daily["StartInterval"], 1800)
         self.assertEqual(inbox["StartInterval"], 900)
         self.assertTrue(learning["RunAtLoad"])

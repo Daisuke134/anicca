@@ -9,9 +9,10 @@ TEXT = SCRIPT.read_text(encoding="utf-8")
 class RunBrowserPreflightTests(unittest.TestCase):
     def test_uses_canonical_guard_and_fenced_child_environment(self) -> None:
         self.assertIn(
-            'gig/releases/life-manager/current/skills/earn/gig/scripts/gig_disk_guard.py',
+            '${SCRIPT_DIR:h:h:h}/skills/earn/gig/scripts/gig_disk_guard.py',
             TEXT,
         )
+        self.assertNotIn('$CANONICAL_HOME/gig/releases/', TEXT)
         self.assertIn("/usr/bin/python3 -I", TEXT)
         self.assertIn("pwd.getpwuid", TEXT)
         self.assertIn("GIG_DISK_HEADROOM_KIB=524288", TEXT)

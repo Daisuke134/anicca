@@ -20,7 +20,8 @@ PY
 fi
 export HOME="$CANONICAL_HOME"
 
-DISK_GUARD="$CANONICAL_HOME/gig/releases/life-manager/current/skills/earn/gig/scripts/gig_disk_guard.py"
+SCRIPT_DIR="${0:A:h}"
+DISK_GUARD="${SCRIPT_DIR:h:h:h}/skills/earn/gig/scripts/gig_disk_guard.py"
 if [[ ! -f "$DISK_GUARD" || -L "$DISK_GUARD" || ! -r "$DISK_GUARD" ]]; then
   print -u2 "job-search browser: disk guard is missing or unsafe"
   exit 1
