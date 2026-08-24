@@ -720,6 +720,11 @@ U13 atomic order:
     Replace only that no-effect dismissal with the platform-standard trusted Escape key, require that
     no visible dialog remains, then issue the single trusted Submit click. Failure to close aborts
     before Submit and remains reconcile-only.
+48. **EXPLAINER REJECTS ESCAPE:** trusted Escape also leaves the education dialog visible, and the
+    executor aborts before Submit; official evidence remains proposals `0`, balance `150`. Because
+    closing this exact first-use explanation has no marketplace effect, invoke only its exact `Close`
+    DOM control, verify the dialog disappeared, then retain trusted mouse input for the actual Submit.
+    No proposal mutation may use a JavaScript click.
 
 U14 atomic order:
 
