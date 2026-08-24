@@ -41,6 +41,26 @@ HARD_PROHIBITION_CLASSES = {
 }
 
 
+def common_marketplace_feasibility_policy() -> str:
+    """One semantic admission policy for every gig market; providers add no capability gate."""
+    return """COMMON MARKETPLACE FEASIBILITY POLICY:
+- Apply broadly to every legal opportunity whose required outcome the general agent can truthfully
+  complete using computer, browser, coding, research, writing, design, data and other available tools.
+- Installed Skills are execution recipes after selection, never an application whitelist. Missing an
+  exact Skill, tool history, domain job, testimonial, portfolio item or prior client result is never by
+  itself a reason to skip. Compose or build the execution method after contract while making no false
+  claim about prior experience.
+- Skip only when the actual required outcome is illegal/scam, requires unavoidable physical/on-site
+  work, mandatory human face/voice/phone/live presence, a legal qualification or immutable identity
+  fact that cannot be supplied truthfully, off-platform payment/contact, explicit AI prohibition, or
+  scope/deadline/economics the general agent truly cannot complete.
+- Preserve scope fidelity: do not make infeasible work appear feasible by silently replacing the
+  buyer's required outcome with a smaller or different deliverable. Ask concise pre-contract questions
+  when ordinary implementation details are missing.
+- Never invent experience or credentials. State verified transferable facts and a concrete plan, but
+  missing experience does not convert feasible work into prohibited work."""
+
+
 def _keys_equal(value: object, expected: frozenset[str], at: str, errors: list[str]) -> bool:
     if not isinstance(value, dict):
         errors.append(f"{at}_must_be_object")
@@ -208,11 +228,13 @@ def planner_prompt(envelope: dict) -> str:
         f"- {reason_code}: {description}"
         for reason_code, description in HARD_PROHIBITION_CLASSES.items()
     )
+    common_policy = common_marketplace_feasibility_policy()
     instructions = (
         # proposal_text is read by a human deciding whether to hire us. Until 2026-08-06
         # this prompt said nothing at all about who is writing, and the model answered as
         # the system it could infer from the schema: a status reporter.
         f"{PERSONA}\n\n"
+        f"{common_policy}\n\n"
         "以下はあなたが書く proposal_text に適用される人格です。判定（submit_required / hard_prohibited）そのものは\n"
         "下記の業務ルールに従ってください。\n\n"
         "You are the application-intent planner. Read the immutable marketplace snapshot below.\n"

@@ -77,11 +77,15 @@ def test_exact_private_packet_and_decision_seal_zero_connect_proposal(tmp_path):
 
 def test_prompts_require_owner_readable_natural_language_reasons(tmp_path, monkeypatch):
     _, packet = _packet(tmp_path)
-    single = planner.planner_prompt(packet, {}, {})
-    batch = planner.batch_planner_prompt([packet], {}, {})
+    single = planner.planner_prompt(packet, {})
+    batch = planner.batch_planner_prompt([packet], {})
     for prompt in (single, batch):
         assert "natural Japanese" in prompt
         assert "snake_case" in prompt
+        assert "Installed Skills are execution recipes" in prompt
+        assert "never an application whitelist" in prompt
+        assert "INSTALLED_SKILLS=" not in prompt
+        assert "installed Skills can complete" not in prompt
 
 
 @pytest.mark.parametrize("mutation", [
@@ -145,7 +149,6 @@ def test_batch_returns_every_profitable_proposal_and_every_candidate_event(tmp_p
         decision["proposal"]["status"] = "frozen_waiting_for_connects"
         decision["proposal"]["terms"].update(required_connects=8, available_connects_before=20)
     monkeypatch.setattr(planner, "_invoke_prompt", lambda *args, **kwargs: {"decisions": decisions})
-    monkeypatch.setattr(planner, "capability_inventory", lambda root: {"skills": []})
     profile = tmp_path / "profile.json"; profile.write_text("{}")
 
     events = []
@@ -172,7 +175,6 @@ def test_batch_skip_emits_one_natural_decision_per_candidate(tmp_path, monkeypat
         "reason_codes": [f"{packet['title']}は期待利益が正ではありません。"], "proposal": None,
     } for packet in (first, second)]
     monkeypatch.setattr(planner, "_invoke_prompt", lambda *args, **kwargs: {"decisions": decisions})
-    monkeypatch.setattr(planner, "capability_inventory", lambda root: {"skills": []})
     profile = tmp_path / "profile.json"; profile.write_text("{}")
     events = []
 

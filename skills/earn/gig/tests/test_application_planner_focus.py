@@ -24,3 +24,16 @@ def test_prompt_prioritizes_async_strengths_and_rejects_operational_labor():
     assert "outreach_or_account_operations" in prompt
     assert "mandatory_desktop_or_browser_operations" in prompt
     assert "定期購入・保守・運用のように毎月続くもの" not in prompt
+
+
+def test_common_policy_never_uses_skills_as_admission_or_execution_authority():
+    planner = load_planner()
+
+    policy = planner.common_marketplace_feasibility_policy()
+    prompt = planner.planner_prompt({"request_details": []})
+    normalized = " ".join(policy.split())
+
+    assert "never an application whitelist" in policy
+    assert "Missing an exact Skill" in normalized
+    assert "Compose or build the execution method after contract" in normalized
+    assert policy in prompt

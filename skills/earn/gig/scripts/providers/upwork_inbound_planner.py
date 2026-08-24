@@ -20,7 +20,7 @@ REPO_ROOT = HERE.parents[5]
 SCRIPTS = GIG_ROOT / "scripts"
 if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
-from storefront_bootstrap import inventory as capability_inventory  # noqa: E402
+from application_planner import common_marketplace_feasibility_policy  # noqa: E402
 
 DEFAULT_RUNNER = GIG_ROOT / "agent-runner/agent_runner.py"
 DEFAULT_SCHEMA = GIG_ROOT / "schemas/upwork_inbound_proposal.schema.json"
@@ -99,66 +99,61 @@ def load_packet(path: Path) -> dict[str, Any]:
 
 
 def planner_prompt(
-    packet: dict[str, Any], owner_profile: dict[str, Any], capabilities: dict[str, Any],
+    packet: dict[str, Any], owner_profile: dict[str, Any],
 ) -> str:
     facts = json.dumps(owner_profile, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     inbound = json.dumps(packet, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
-    skills = json.dumps(capabilities, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    common_policy = common_marketplace_feasibility_policy()
     required = packet.get("required_connects", 0)
     available = packet.get("available_connects_before", 0)
     status = "frozen_waiting_for_connects" if packet.get("kind") == "public_job" else "frozen_waiting_for_invitation"
     return f"""You decide one Upwork proposal. Return only schema-valid JSON with a decisions array
 containing exactly one item. Copy resource_id into both decision.job_id and proposal.job_id.
+{common_policy}
 Use only facts present in OWNER_PROFILE and OFFICIAL_INBOUND. Never invent experience, identity,
 availability, credentials, portfolio, results, client facts, requirements, questions, or scope.
 Although the legacy field is named reason_codes, write one to three concise natural Japanese
 sentences that an owner can understand. Never return enum names, snake_case slugs or keyword codes.
-Choose skip when delivery is not fully feasible, required facts are missing, synchronous/physical work
-is required, the client requests off-platform contact/payment, or exact questions cannot be answered.
-Installed Skills are executable delivery capabilities, not claims of prior client experience. Do not
-invent experience, but do not skip solely because an exact prior job, testimonial or portfolio item is
-absent when the work can be completed and independently verified with an installed Skill. Missing
-pre-contract implementation details may become concise client questions rather than automatic rejection.
+Choose skip only under the common policy. Missing pre-contract implementation details become concise
+client questions rather than automatic rejection.
 The market profile contains provider-published portfolio proof; use only its exact facts and public IDs.
 Bid and delivery estimate are seller decisions: choose them within the official displayed budget/rate
 when one exists. When the client displays no range, choose a reasonable seller rate from scope,
-verified Skill capacity, delivery effort and positive expected value; state the assumption.
+general agent delivery capacity, delivery effort and positive expected value; state the assumption.
 For submit, copy job_id, job_url and job_source_sha256 exactly; status is {status}, required_connects
 is {required}, available_connects_before is {available}; unsupported_claims and attachments are empty. Keep all
 pre-contract communication on Upwork. The proposal must be specific, concise, truthful, and answer
 every explicit screening question exactly once.
 OWNER_PROFILE={facts}
-INSTALLED_SKILLS={skills}
 OFFICIAL_INBOUND={inbound}"""
 
 
 def batch_planner_prompt(
-    packets: list[dict[str, Any]], owner_profile: dict[str, Any], capabilities: dict[str, Any],
+    packets: list[dict[str, Any]], owner_profile: dict[str, Any],
 ) -> str:
     facts = json.dumps(owner_profile, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     inbound = json.dumps(packets, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
-    skills = json.dumps(capabilities, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    common_policy = common_marketplace_feasibility_policy()
     return f"""Return one schema-valid decision for every item in OFFICIAL_CANDIDATES, in the same
-order, with no omission. Copy each resource_id into decision.job_id and proposal.job_id. Return submit
-for every candidate that installed Skills can complete and independently verify, has positive expected
-value, and whose official Connects cost is covered; otherwise return skip with that candidate's own
+order, with no omission. Copy each resource_id into decision.job_id and proposal.job_id.
+{common_policy}
+Return submit for every candidate the general agent can truthfully complete, whose expected value is
+positive, and whose official Connects cost is covered; otherwise return skip with that candidate's own
 natural-language reasons. Never limit the batch to one winner. Compare candidates, but do not suppress
 one profitable candidate because another is better. Use only supplied facts. Never invent experience, identity,
 availability, credentials, portfolio, results, client facts, requirements, questions or scope.
 Although the legacy field is named reason_codes, write one to three concise natural Japanese
 sentences that explain the actual comparison. Never return enum names, snake_case slugs or keyword codes.
-Installed Skills prove executable capability, not prior client experience. Missing implementation
-details may become concise pre-contract questions. The market profile contains provider-published
+Missing implementation details may become concise pre-contract questions. The market profile contains provider-published
 portfolio proof; use only its exact facts and public IDs. Bid and delivery estimate are seller
-decisions: choose them within the official displayed budget/rate and verified Skill capacity, with
+decisions: choose them within the official displayed budget/rate and general agent capacity, with
 positive expected value and an explicit assumption when needed. When no client range is displayed,
-choose a reasonable seller rate from scope, Skill capacity and delivery effort rather than treating
+choose a reasonable seller rate from scope, delivery capacity and effort rather than treating
 the missing client value as a blocker. For submit, copy the chosen resource_id, URL,
 detail hash, required_connects and available_connects_before exactly; status is
 frozen_waiting_for_connects; unsupported_claims and attachments are empty; answer every explicit
 screening question exactly once and keep communication on Upwork.
 OWNER_PROFILE={facts}
-INSTALLED_SKILLS={skills}
 OFFICIAL_CANDIDATES={inbound}"""
 
 
@@ -330,7 +325,7 @@ def invoke(
         "market": _market_proof(market_profile.expanduser()),
     }
     prompt = planner_prompt(
-        packet, facts, capability_inventory(REPO_ROOT),
+        packet, facts,
     )
     result = _invoke_prompt(prompt, runner=runner, schema=schema, evidence_dir=evidence_dir)
     decisions = validate_batch_result(result, [packet])
@@ -357,7 +352,7 @@ def invoke_batch(
         "market": _market_proof(market_profile.expanduser()),
     }
     prompt = batch_planner_prompt(
-        packets, facts, capability_inventory(REPO_ROOT),
+        packets, facts,
     )
     result = _invoke_prompt(prompt, runner=runner, schema=schema, evidence_dir=evidence_dir)
     decisions = validate_batch_result(result, packets)
