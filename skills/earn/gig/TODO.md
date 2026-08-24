@@ -203,6 +203,10 @@ Storefront work.
        `storefront_listing_readback` onboarding gate with that exact result hash. The outer
        Storefront wake now promotes the verified draft's `public_effect` and `readback`
        instead of incorrectly reporting the bootstrap publication as effect/readback zero.
+       On the next catalogue wake, the saved service ID, public URL, exact title and price
+       must all match the official source; direct verification then returns
+       `actionable/effect/readback/duplicate/pending = 0/0/1/0/0`. A mismatch fails closed
+       instead of being called replay-zero. Live two-wake evidence remains pilot work.
     10. [ ] From a clean HOME prove zero marketplace effects before authentication, exact
        resume after interruption, one owner per launchd label and zero secrets in output.
     11. [ ] Family pilot A: on their own clean Mac/account, complete setup while the
