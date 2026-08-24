@@ -46,7 +46,7 @@ INVITES_URL = "https://www.upwork.com/nx/find-work/invites"
 PROPOSALS_URL = "https://www.upwork.com/nx/proposals/"
 CATALOG_URL = "https://www.upwork.com/nx/project-dashboard/?step=approved"
 CONTRACTS_URL = "https://www.upwork.com/nx/wm/freelancer/home"
-MESSAGES_URL = "https://www.upwork.com/ab/messages/rooms/"
+MESSAGES_URL = "https://www.upwork.com/ab/messages/rooms"
 WORKING_STYLE_URL = "https://www.upwork.com/nx/skills-assesment/assessment-results"
 SEARCH_URL = "https://www.upwork.com/nx/search/jobs/?sort=recency"
 DEFAULT_CANDIDATES = SCRIPTS.parent / "config" / "upwork-candidates.public.json"
@@ -192,7 +192,7 @@ def parse_stable_entities(
         )).lower()
         if "offer" in context:
             target = offers
-        elif "submitted" in context:
+        elif "submitted" in context or "initiated" in context:
             target = submitted
         elif "active" in context:
             target = active
@@ -232,7 +232,10 @@ def parse_messages(text: str, links: list[dict[str, Any]]) -> dict[str, Any]:
         item for item in _dedupe_links(links)
         if "/ab/messages/rooms/" in item["href"]
     ]
-    if "Conversations will appear here" not in text and not rooms:
+    if not any(marker in text for marker in (
+        "Conversations will appear here", "Welcome to Messages",
+        "Once you connect with a client",
+    )) and not rooms:
         raise ValueError("upwork_readback_incomplete")
     unread = []
     for link in links:
