@@ -80,7 +80,13 @@ def main() -> int:
     parser.add_argument("--evidence-sha256")
     args = parser.parse_args()
     exit_code = 0
-    if args.command == "record":
+    if args.command == "status":
+        path = Path.home() / ".config" / "anicca" / "gig" / "coconala-onboarding.json"
+        if not path.exists():
+            print(json.dumps({"status": "uninitialized"}, sort_keys=True))
+            return 2
+        value = _validate(json.loads(path.read_text(encoding="utf-8")))
+    elif args.command == "record":
         if not args.state or not args.evidence_sha256:
             parser.error("record requires --state and --evidence-sha256")
         value = record(Path.home(), args.state, args.evidence_sha256)
