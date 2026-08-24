@@ -68,12 +68,12 @@ Storefront work.
    clean temporary HOME; 131 tests pass (`Apply 23 + Negotiate 55 + concurrency 53`),
    and both `application_direct.py` / `reply_detector.py` compile.
 10. [ ] Run `./install.sh coconala` through the pre-auth boundary in that clean HOME and
-    prove external marketplace effect zero before authentication. Verified blocker:
-    root `install.sh` currently ignores the `coconala` argument and installs the
-    generic self-funded runtime; `skills/earn/gig/install.sh` only invokes the
-    filesystem capability-receipt CLI and requires unrelated explicit arguments.
-    Therefore public one-command Coconala onboarding is not implemented and no
-    signup-to-bank-income claim is permitted.
+    prove external marketplace effect zero before authentication. The former root-dispatch
+    and capability-receipt blockers are removed: the public one-line clean-Mac bootstrap,
+    package installer, shared browser, evidence-bound account gates, six-job activation,
+    and zero-listing publisher are now implemented. This item remains open for actual
+    signed-out clean-Mac and pre-auth effect-zero receipts; no signup-to-bank-income claim
+    is permitted before the pilots and bank arrival below.
     Latest implementation checkpoint: fresh remote shallow clone
     `50d6e146b688a31047e999fb7e5097bc86106b9b` passes OSS self-contained 11/11,
     compiles all five onboarding/Storefront entrypoints, passes both installer shell

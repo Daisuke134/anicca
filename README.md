@@ -77,12 +77,11 @@ The repository also contains four macOS `launchd` lanes for a Coconala seller:
 Apply, Negotiate, Paid, and Storefront. See the dedicated
 [Coconala setup guide](skills/earn/gig/README.md) before inviting another user.
 
-Current boundary: the lanes can run an already-created, already-listed seller
-account after one manual browser login. The root `./install.sh coconala` command
-does **not yet** perform Coconala signup, seller/SMS/eKYC/bank registration, initial
-listing creation, or bank-payout verification. Do not promise friends a one-command
-signup-to-income flow until the clean-device onboarding acceptance in
-[the Coconala task list](skills/earn/gig/TODO.md) is closed.
+Current boundary: the one-command installer and zero-listing publisher are implemented,
+while the owner completes Coconala's official signup/SMS/eKYC/bank ceremony in the shared
+browser. Clean-device onboarding, natural four-lane outcomes, and bank arrival still need
+the receipts listed in [the Coconala task list](skills/earn/gig/TODO.md). Do not promise
+guaranteed income or call the OSS onboarding complete before those receipts exist.
 
 The accepted onboarding UX is one handoff, not field-by-field automation:
 `./install.sh coconala` completes `codex login`, opens the dedicated Coconala

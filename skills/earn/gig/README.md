@@ -1,13 +1,13 @@
 # The Coconala loop
 
-> **Current onboarding boundary:** this package runs an existing Coconala seller
-> account after one manual browser login. It does not yet create the account,
-> complete seller/SMS/eKYC/bank registration, create the first listing, or prove a
-> bank payout. Also, the repository-root `./install.sh coconala` argument is not yet
-> wired to this installer. Until that acceptance is closed, send friends this guide
-> as a preview, not as a one-command signup-to-income promise.
+> **Current onboarding boundary:** the public command, dependency/Codex preparation,
+> shared-browser setup, official account-gate readback, six-job activation, and
+> zero-listing Storefront publisher are implemented. The owner still completes the
+> official account/SMS/eKYC/bank ceremony. Three independent clean-Mac pilots and a
+> real bank-arrival receipt remain before the OSS flow is accepted; do not promise
+> guaranteed income or call the onboarding complete before those receipts exist.
 
-### Accepted onboarding flow (implementation pending)
+### Accepted onboarding flow (live pilots pending)
 
 1. On a clean Mac, run the one-line bootstrap (or run `./install.sh coconala` from an
    existing checkout):
