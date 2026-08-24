@@ -82,7 +82,9 @@ Storefront work.
     1. [x] Dispatch root `./install.sh coconala` to the package controller; reject unknown
        product arguments without running the generic self-funded installer. Root dispatch
        is GREEN at remote publication checkpoint: focused dispatch + legacy isolation =
-       3/3 tests; Coconala/unknown paths create no generic runtime root.
+       3/3 tests; Coconala/unknown paths create no generic runtime root. Fresh read-only
+       adversarial verification also passes argv forwarding, pre-dispatch effect zero,
+       no-argument compatibility, `bash -n` and `git diff --check` with no findings.
     2. [ ] Preflight macOS, Apple Silicon, supported Python, CloakBrowser and disk space;
        when Codex is unauthenticated, run `codex login` and require CLI auth readback.
     3. [ ] Create the private resumable onboarding receipt with no raw identity, OTP,
