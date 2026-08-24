@@ -8236,6 +8236,13 @@ Current implementation state:
   Therefore XT05 evidence is currently one manual Postiz permalink and zero
   natural-calendar Postiz permalinks; three consecutive natural effects remain
   unproven.
+  The 19:15 natural run then fails during recon while disk is exhausted. Model
+  evidence also exposes injected `using-superpowers`, `brainstorming`, and
+  `social-content` skill/tool execution instead of bounded JSON. Commit
+  `1c2142e5e` disables plugins, shell, browser, multi-agent, hooks, apps, and
+  workspace dependencies for posting model calls while retaining account-2
+  Luna/max JSON generation. Model boundary tests are 8/8 and x-tweeter tests are
+  5/5; production release `1c2142e5e` awaits the 19:45 natural run.
 
 ### Shared browser publisher migration
 
@@ -8290,9 +8297,11 @@ Current authoritative state:
   recovery archives increases availability to 1.7 GiB. The 19:00 x-repost
   natural run then creates evidence and claims the next Affiliate job with exit
   0; a 19:05 same-owner kickstart prepares its payload with exit 0 and no public
-  effect. The 19:30 boundary now owns the publish attempt. Additional durable
-  headroom is still desirable, but `No space left on device` is no longer the
-  active x-repost failure.
+  effect. The 19:30 natural run publishes
+  `https://x.com/selawmqt/status/2091835568003207246`; provider submission is
+  `cmt73hewv000emp0ye2qrnna7`, terminal state is `POSTED`, and owner exit is 0.
+  Additional durable headroom is still desirable, but `No space left on device`
+  is no longer the active x-repost failure.
 - Active placement is `elevenlabs-discovered-caption-generator-en-1`; its exact
   X permalink is `https://x.com/selawmqt/status/2091754957448040906`.
 - D01–D15 are complete. D16 has one public quote effect with duplicate zero; its
