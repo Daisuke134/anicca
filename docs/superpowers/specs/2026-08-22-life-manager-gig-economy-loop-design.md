@@ -659,12 +659,40 @@ cash → learning`. Paid work and buyer replies always preempt exploration. Cros
 winning Skill, buyer problem, proof type, price band, delivery time, revision rate and verified net;
 private customer content and credentials never cross projects.
 
+### 4.9 Cross-market blitz-scaling contract
+
+Upwork remains the first USD 10k outcome goal, not a serialization gate for other markets. Fiverr,
+Lancers, CrowdWorks, Freelancer, Mercor, uGig and later founder-discovered markets may run read-only
+discovery, authentication recovery, qualification, proposal/listing preparation and zero-spend
+canaries concurrently now. Paid work, buyer messages and unknown effects retain higher priority, but
+one market never pauses independent work on another.
+
+All markets use one commercial brain and one set of rails:
+
+```mermaid
+flowchart LR
+  C[Portfolio CEO and Luna judgment] --> A[Common browser ACI]
+  A --> P[Thin market profile and state manifest]
+  P --> E[Resource-scoped effect fence]
+  E --> W[Shared project, Skill and QA]
+  W --> M[Shared money truth]
+  M --> T[Shared Telegram and learning]
+  T --> C
+```
+
+A market may add only its authenticated profile reference, stable official entity/state mapping,
+fee/currency/payout normalization and unavoidable mutation/readback glue. It may not add a scheduler,
+planner, proposal brain, inbox brain, project system, QA system, notification service, funnel ledger,
+money ledger or learning agent. Navigation, pagination, filters and ordinary forms remain model-driven
+through `observe/extract/act/readback`. When a market needs more than about three glue files or 300 LOC,
+implementation stops and extracts the missing shared primitive before continuing.
+
 ## 5. Market sequence
 
-Upwork closes the first proposal receipt before another marketplace mutation lane opens. Read-only
-market research and adapter generation may proceed in parallel. After that receipt the CEO may run
-additional zero-spend canaries while Upwork keeps scaling, ordering markets from measured opportunity,
-margin, authorization and human-minute evidence.
+Every authorized market may progress concurrently from current evidence. Upwork retains primary
+revenue allocation until its USD 10k gate, while zero-spend canaries and profitable independent work on
+other markets proceed in parallel. Allocation follows measured opportunity, margin, authorization,
+delivery capacity and human-minute evidence, never a hardcoded market sequence.
 
 | Order | Market | Intended lane | Unique lesson / Skill |
 |---:|---|---|---|
@@ -873,9 +901,10 @@ delivery estimate and observed conversion prove higher expected verified net. Th
 only when one complete calendar month totals at least USD 10,000 official `verified_net_received` after
 fees, execution cost, refunds and occurrence-month chargebacks.
 
-`upwork-acquire` owns candidate replenishment. When fewer than three current submission-ready public
-jobs remain, it searches the authenticated Upwork market, opens current details, asks the model to
-select or skip, and atomically persists both the public evidence record and owner-only sealed proposal.
+`upwork-acquire` owns continuous candidate replenishment. It searches the authenticated Upwork market,
+opens every independently affordable current detail, asks one batched model call to decide every
+candidate, and atomically persists every positive-EV owner-only sealed proposal plus every natural-
+language skip event.
 A static candidate JSON is a cache/output of this Skill, never a human-maintained input dependency.
 The same wake may submit a newly sealed proposal only after a fresh official Connects read proves the
 exact cost is covered and the effect fence is clear. The owner authorized and completed the one-time
@@ -920,6 +949,12 @@ includes `apply`, `skip`, `reply`, `offer`, `contract`, `delivery`, `payment`, `
 `payout_received`, `incident` and `recovery`. Skip reasons come from the schema-bound model decision,
 not regexes or provider-specific keyword rules. Re-observing the same decision or receipt sends zero
 additional messages.
+
+Current implementation evidence: production release `a81ec3b630` returned ten schema-bound decisions
+from one Luna call. Main `e846b873e4` additionally batches all ten WorkEvents into one reporting handoff
+instead of invoking Telegram once per decision, but is not yet the production pointer because the
+immutable release build encountered 318 MiB free-space exhaustion. This is a release-workspace issue,
+not a 20 GiB operating cap; protected profiles, customer projects, ledgers and receipts remain intact.
 
 The owner also receives a compact funnel heartbeat instead of one message for every unchanged poll:
 
