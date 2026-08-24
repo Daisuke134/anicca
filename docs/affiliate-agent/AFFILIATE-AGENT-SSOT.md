@@ -7746,9 +7746,16 @@ the named production evidence:
   `UNVERIFIED` result remains non-retryable. A post-terminal owner wake keeps
   result rows 5→5 and exact job posts 1→1, proving duplicate external effects
   zero. D07 is now the first unchecked item.
-- [ ] **D07 Exact-join repair.** Backfill only provable historical X-to-placement
+- [x] **D07 Exact-join repair.** Backfill only provable historical X-to-placement
   joins and leave all others explicitly unjoined. Evidence: joined count rises
-  without guessed attribution; current baseline is 5 joined / 84 unjoined.
+  only from a proven delivery and no guessed attribution is added.
+  Done with zero speculative writes: after D05 the ledger contains 95 post
+  actions, 22 exact campaign owned URLs, 6 exact Affiliate joins, and 89
+  unjoined rows. A full row audit finds zero case where `source_url` exactly
+  matches a campaign owned URL while Affiliate placement fields are missing.
+  Therefore there is nothing safely backfillable; the 89 ordinary growth posts
+  remain explicitly unjoined and receive no revenue credit. The only count rise
+  is the proven D05 delivery, 5→6. D08 is now the first unchecked item.
 - [ ] **D08 Follower baseline.** Add official X profile follower-count readback
   for the target account. Evidence: timestamped immutable value or explicit
   `UNAVAILABLE`; post count is never substituted.
