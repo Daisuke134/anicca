@@ -90,11 +90,16 @@ def discover_one(
 ) -> dict[str, Any]:
     ledger = Ledger(ledger_path)
     try:
-        queued = tuple(
-            row
-            for row in ledger.pending_materials_ready_applications()
-            if "myworkdayjobs.com" in str(row["canonical_url"]).casefold()
-        )
+        queued = []
+        for row in ledger.pending_materials_ready_applications():
+            if "myworkdayjobs.com" not in str(row["canonical_url"]).casefold():
+                continue
+            fit = ledger.connection.execute(
+                "SELECT decision FROM workday_fit_decisions WHERE application_id = ?",
+                (row["application_id"],),
+            ).fetchone()
+            if fit is None or str(fit["decision"]) == "qualified":
+                queued.append(row)
         if queued:
             return {
                 "status": "queue_present",

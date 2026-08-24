@@ -71,6 +71,34 @@ class WorkdayDiscoveryTests(unittest.TestCase):
             self.assertEqual(result["status"], "queue_present")
             self.assertEqual(result["queued_application_ids"], [application_id])
 
+    def test_hold_fit_decision_does_not_block_next_fresh_job(self):
+        with tempfile.TemporaryDirectory() as directory:
+            ledger_path = Path(directory) / "ledger.sqlite3"
+            ledger = Ledger(ledger_path)
+            held_id = ledger.add_application(
+                "Salesforce",
+                "Stretch Role",
+                "https://salesforce.wd12.myworkdayjobs.com/External_Career_Site/job/Japan/Stretch_JR1",
+            )
+            ledger.transition(held_id, "qualified")
+            ledger.transition(held_id, "materials_ready")
+            ledger.record_workday_fit_decision(held_id, "hold", "a" * 64)
+            ledger.close()
+
+            def fake_fetch(source):
+                if source["company"] == "Workday":
+                    return [{
+                        "title": "Technical Account Manager",
+                        "locationsText": "Japan, Tokyo",
+                        "externalPath": "/job/Japan-Tokyo/Technical-Account-Manager_JR2",
+                    }]
+                return []
+
+            result = discover_one(ledger_path=ledger_path, fetch_jobs=fake_fetch)
+
+            self.assertEqual(result["status"], "discovered")
+            self.assertEqual(result["discovered"][0]["title"], "Technical Account Manager")
+
     def test_one_source_failure_does_not_stop_other_tenants(self):
         with tempfile.TemporaryDirectory() as directory:
             def fake_fetch(source):
