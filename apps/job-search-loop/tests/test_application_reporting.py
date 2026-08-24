@@ -7,9 +7,67 @@ from pathlib import Path
 
 from job_search_loop import telegram
 from job_search_loop.ledger import Ledger
+from job_search_loop.outbox import Outbox
 
 
 class ApplicationReportingTests(unittest.TestCase):
+    def test_application_progress_reuses_fit_reason_and_is_run_scoped(self):
+        reporting = importlib.import_module("job_search_loop.application_reporting")
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            ledger_path = root / "ledger.sqlite3"
+            outbox_path = root / "telegram.sqlite3"
+            ledger = Ledger(ledger_path)
+            application_id = ledger.add_application(
+                "Dream AI",
+                "Product Manager",
+                "https://dream.wd1.myworkdayjobs.com/job/1",
+            )
+            ledger.transition(application_id, "qualified")
+            ledger.transition(application_id, "materials_ready")
+            evidence = "a" * 64
+            ledger.record_workday_fit_decision(
+                application_id,
+                decision="qualified",
+                evidence_sha256=evidence,
+                policy_version="test-v1",
+            )
+            ledger.close()
+            outbox = Outbox(outbox_path)
+            fit_key = f"workday-fit:{application_id}:{evidence}"
+            fit_message = (
+                "Codex::: [Job Hunter][応募判断]\n"
+                "理由: Resume evidence matches the complete JD.\n"
+                "給与: Published salary meets the floor."
+            )
+            outbox.enqueue(fit_key, fit_message)
+            fence = outbox.claim(fit_key)
+            outbox.mark_send_started(fit_key, fence)
+            outbox.mark_sent(fit_key, fence, "fit-100")
+            outbox.close()
+            calls = []
+
+            def sender(**kwargs):
+                calls.append(kwargs)
+                return {"status": "sent", "message_id": "progress-101"}
+
+            receipt = reporting.deliver_application_progress(
+                ledger_path=ledger_path,
+                outbox_path=outbox_path,
+                application_id=application_id,
+                run_id="daily-1",
+                sender=sender,
+            )
+            self.assertEqual(receipt["message_id"], "progress-101")
+            self.assertIn("Dream AI", calls[0]["message"])
+            self.assertIn("Product Manager", calls[0]["message"])
+            self.assertIn("Resume evidence matches", calls[0]["message"])
+            self.assertIn("Published salary meets", calls[0]["message"])
+            self.assertEqual(
+                calls[0]["event_key"],
+                f"workday-application-progress:{application_id}:daily-1",
+            )
+
     def test_wake_report_prefers_semantic_failure_over_runner_success(self):
         reporting = importlib.import_module("job_search_loop.application_reporting")
         with tempfile.TemporaryDirectory() as directory:

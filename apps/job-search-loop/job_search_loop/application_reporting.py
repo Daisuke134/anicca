@@ -228,6 +228,66 @@ def deliver_fit_decision(
     )
 
 
+def deliver_application_progress(
+    *,
+    ledger_path: Path,
+    outbox_path: Path,
+    application_id: str,
+    run_id: str,
+    sender: Callable[..., dict[str, str | None]] = send_once,
+) -> dict[str, str | None]:
+    ledger = Ledger(ledger_path)
+    try:
+        row = ledger.connection.execute(
+            "SELECT company,title,current_state FROM applications WHERE id=?",
+            (application_id,),
+        ).fetchone()
+        fit = ledger.connection.execute(
+            "SELECT decision,evidence_sha256 FROM workday_fit_decisions WHERE application_id=?",
+            (application_id,),
+        ).fetchone()
+    finally:
+        ledger.close()
+    if row is None or fit is None or str(fit["decision"]) != "qualified":
+        raise ValueError("application progress requires a qualified Workday row")
+
+    fit_key = f"workday-fit:{application_id}:{fit['evidence_sha256']}"
+    from .outbox import Outbox
+
+    outbox = Outbox(outbox_path)
+    try:
+        fit_row = outbox.connection.execute(
+            "SELECT payload,telegram_message_id FROM outbox WHERE event_key=? AND status='sent'",
+            (fit_key,),
+        ).fetchone()
+    finally:
+        outbox.close()
+    detail_lines = []
+    if fit_row is not None:
+        for line in str(fit_row[0]).splitlines():
+            if line.startswith("理由:") or line.startswith("給与:"):
+                detail_lines.append(line)
+    if not detail_lines:
+        detail_lines.append("理由: 完全な公式JDと履歴書・希望条件をモデルが比較し、面接可能性ありと判断しました。")
+
+    message = (
+        "Codex::: [Job Hunter][応募処理]\n"
+        "📨 Workday応募を開始または再開しました\n\n"
+        f"会社: {row['company']}\n"
+        f"求人: {row['title']}\n"
+        + "\n".join(detail_lines)
+        + "\n\n状態\n"
+        f"現在の台帳状態 `{row['current_state']}` から、専用ブラウザで応募フォームを進めています。\n\n"
+        "次に自動で行うこと\n"
+        "公式完了画面とGmail receiptを確認し、結果を別メッセージで報告します。ユーザーの操作は必要ありません。"
+    )
+    return sender(
+        database=outbox_path,
+        event_key=f"workday-application-progress:{application_id}:{run_id}",
+        message=message,
+    )
+
+
 def deliver_submitted_resumes(
     *,
     ledger_path: Path,
@@ -270,7 +330,7 @@ def deliver_submitted_resumes(
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("command", choices=("deliver", "wake"))
+    parser.add_argument("command", choices=("deliver", "wake", "progress"))
     parser.add_argument("--ledger", type=Path, required=True)
     parser.add_argument("--outbox", type=Path, required=True)
     parser.add_argument("--media-root", type=Path)
@@ -279,7 +339,21 @@ def main() -> int:
     parser.add_argument("--day")
     parser.add_argument("--runner-summary", type=Path)
     parser.add_argument("--discovery", type=Path)
+    parser.add_argument("--application-id")
     args = parser.parse_args()
+
+    if args.command == "progress":
+        if not args.application_id or not args.run_id:
+            parser.error("progress requires --application-id and --run-id")
+        receipt = deliver_application_progress(
+            ledger_path=args.ledger,
+            outbox_path=args.outbox,
+            application_id=args.application_id,
+            run_id=args.run_id,
+        )
+        _write_private_json(args.output, receipt)
+        print(json.dumps(receipt, ensure_ascii=False, sort_keys=True))
+        return 0 if receipt.get("message_id") else 1
 
     if args.command == "wake":
         if not all((args.run_id, args.day, args.runner_summary, args.discovery)):

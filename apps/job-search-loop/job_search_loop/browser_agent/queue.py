@@ -64,6 +64,9 @@ class RowQueueSupervisor:
         rows.sort(
             key=lambda row: detect_provider(str(row["canonical_url"])) != "workday"
         )
+        preferred = os.environ.get("JOB_SEARCH_PREFERRED_APPLICATION_ID", "").strip()
+        if preferred:
+            rows.sort(key=lambda row: str(row["application_id"]) != preferred)
         return tuple(rows)
 
     @staticmethod

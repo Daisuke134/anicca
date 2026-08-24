@@ -190,6 +190,25 @@ path.write_text(
 os.chmod(path, 0o600)
 PY
 export JOB_SEARCH_WORKDAY_FAST_PATH_RESULT="$WORKDAY_FAST_PATH_RESULT"
+APPLICATION_ID=""
+if [[ -f "$WORKDAY_DISCOVERY_RESULT" ]]; then
+  APPLICATION_ID=$("$JOB_SEARCH_JQ" -r '.queued_application_ids[0] // empty' "$WORKDAY_DISCOVERY_RESULT")
+fi
+if [[ -n "$APPLICATION_ID" ]]; then
+  export JOB_SEARCH_PREFERRED_APPLICATION_ID="$APPLICATION_ID"
+  set +e
+  "$JOB_SEARCH_PYTHON" -m job_search_loop.application_reporting progress \
+    --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
+    --outbox "$TELEGRAM_OUTBOX" \
+    --application-id "$APPLICATION_ID" \
+    --run-id "$RUN_ID" \
+    --output "$EVIDENCE/application-progress.json"
+  PROGRESS_RC=$?
+  set -e
+  if [[ "$PROGRESS_RC" -ne 0 ]]; then
+    print -u2 "job-search daily: realtime application progress report failed"
+  fi
+fi
 MODEL_TIMEOUT_SECONDS="${JOB_SEARCH_BROWSER_TIMEOUT_SECONDS:-1800}"
 set +e
 "$JOB_SEARCH_PYTHON" -m job_search_loop.browser_agent.orchestrator \

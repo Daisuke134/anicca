@@ -4,6 +4,7 @@ import argparse
 import json
 import os
 import uuid
+from collections import Counter, deque
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -115,6 +116,41 @@ def snapshot_candidates(
     return candidates
 
 
+def interleave_companies(
+    candidates: list[dict[str, str]],
+) -> list[dict[str, str]]:
+    """Keep each ranking window company-diverse without deciding candidate fit."""
+    buckets: dict[str, deque[dict[str, str]]] = {}
+    order: list[str] = []
+    for row in candidates:
+        key = str(
+            row.get("company")
+            or urlsplit(str(row.get("url") or "")).hostname
+            or "unknown"
+        ).strip().casefold()
+        if key not in buckets:
+            buckets[key] = deque()
+            order.append(key)
+        buckets[key].append(row)
+    result: list[dict[str, str]] = []
+    while any(buckets[key] for key in order):
+        for key in order:
+            if buckets[key]:
+                result.append(buckets[key].popleft())
+    return result
+
+
+def submitted_company_portfolio(ledger_path: Path) -> dict[str, int]:
+    ledger = Ledger(ledger_path)
+    try:
+        rows = ledger.connection.execute(
+            "SELECT company FROM applications WHERE current_state='submitted'"
+        ).fetchall()
+    finally:
+        ledger.close()
+    return dict(Counter(str(row[0]) for row in rows))
+
+
 def validate_shortlist(
     result: dict[str, Any], candidates: list[dict[str, str]]
 ) -> tuple[str, ...]:
@@ -149,6 +185,7 @@ def rank_candidates(
         ]
         return validate_shortlist(rank_chunk(presented), presented)
 
+    candidates = interleave_companies(candidates)
     finalists: list[dict[str, str]] = []
     by_url = {row["url"].casefold(): row for row in candidates}
     for offset in range(0, len(candidates), chunk_size):
@@ -232,22 +269,6 @@ def main() -> int:
     )
     allowed_hosts = {str(row["host"]).casefold() for row in sources}
     queued_ids = qualified_queue_ids(args.ledger, allowed_hosts)
-    if queued_ids:
-        result = {
-            "status": "qualified_queue_present",
-            "queued_application_ids": list(queued_ids),
-            "discovered": [],
-            "decisions": [],
-            "shortlist": [],
-        }
-        args.output.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
-        args.output.write_text(
-            json.dumps(result, ensure_ascii=False, sort_keys=True) + "\n",
-            encoding="utf-8",
-        )
-        os.chmod(args.output, 0o600)
-        print(json.dumps(result, ensure_ascii=False, sort_keys=True))
-        return 0
     source_cursor = 0
     jobs_by_source: dict[str, list[dict[str, Any]]] = {}
     fetch_jobs = cached_source_fetcher(_fetch_jobs, jobs_by_source)
@@ -272,6 +293,7 @@ def main() -> int:
     preferred_urls: tuple[str, ...] = ()
     if candidates:
         candidate_memory = args.candidate_memory.read_text(encoding="utf-8")
+        portfolio = submitted_company_portfolio(args.ledger)
         def rank_chunk(chunk: list[dict[str, str]]) -> dict[str, Any]:
             return runner.run(
                 task="improve",
@@ -280,6 +302,11 @@ def main() -> int:
                 "an interview and reaching at least JPY 7M, prioritizing JPY 10M-30M. "
                 "Use the whole supplied snapshot, not company prestige or source order. "
                 "Prefer roles whose actual work is supported by demonstrated experience. "
+                "This is a company-wide portfolio search, not a single-company campaign. "
+                "When interview fit is comparable, prefer employers with fewer prior "
+                "submitted applications and keep credible finalists across different "
+                "companies. Do not repeatedly choose one employer merely because it has "
+                "more postings in the snapshot. "
                 "Do not invent requirements, compensation, or candidate facts. Return up "
                 f"exactly {min(SHORTLIST_SIZE, len(chunk))} unique candidate_id values, "
                 "best first, copied exactly from the snapshot. "
@@ -290,6 +317,11 @@ def main() -> int:
                 )
                 + "\n\n"
                 + wrap_untrusted("candidate_memory", candidate_memory)
+                + "\n\n"
+                + wrap_untrusted(
+                    "submitted_company_portfolio",
+                    json.dumps(portfolio, ensure_ascii=False, sort_keys=True),
+                )
             ),
                 schema_path=args.shortlist_schema,
                 workdir=args.workdir,
@@ -350,6 +382,18 @@ def main() -> int:
         for row in discovery.get("discovered", [])
     ]
     result["shortlist"] = list(preferred_urls)
+    newly_qualified = next(
+        (
+            str(decision["application_id"])
+            for decision in reversed(result["decisions"])
+            if decision.get("decision") == "qualified"
+            and decision.get("application_id")
+        ),
+        None,
+    )
+    result["queued_application_ids"] = list(
+        dict.fromkeys(([newly_qualified] if newly_qualified else []) + list(queued_ids))
+    )
     args.output.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     args.output.write_text(
         json.dumps(result, ensure_ascii=False, sort_keys=True) + "\n",

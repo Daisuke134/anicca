@@ -8,11 +8,13 @@ from pathlib import Path
 from job_search_loop.ledger import Ledger
 from job_search_loop.workday_search_loop import (
     cached_source_fetcher,
+    interleave_companies,
     qualified_queue_ids,
     rank_candidates,
     rotated_sources,
     search_until_qualified,
     snapshot_candidates,
+    submitted_company_portfolio,
     validate_shortlist,
     unique_sources,
 )
@@ -20,6 +22,41 @@ from job_search_loop.workday_qualification import qualify_one
 
 
 class WorkdayQualificationTests(unittest.TestCase):
+    def test_candidate_windows_interleave_companies_instead_of_source_volume(self):
+        rows = [
+            {"company": "Rakuten", "url": f"r-{index}"}
+            for index in range(4)
+        ] + [
+            {"company": "Salesforce", "url": "s-1"},
+            {"company": "Razer", "url": "z-1"},
+        ]
+        self.assertEqual(
+            [row["url"] for row in interleave_companies(rows)],
+            ["r-0", "s-1", "z-1", "r-1", "r-2", "r-3"],
+        )
+
+    def test_submitted_portfolio_is_counted_for_model_ranking(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "ledger.sqlite3"
+            ledger = Ledger(path)
+            for index, company in enumerate(("Rakuten", "Rakuten", "Razer")):
+                application_id = ledger.add_application(
+                    company,
+                    f"Role {index}",
+                    f"https://{company.lower()}.wd1.myworkdayjobs.com/job/{index}",
+                )
+                ledger.transition(application_id, "qualified")
+                ledger.transition(application_id, "materials_ready")
+                ledger.connection.execute(
+                    "UPDATE applications SET current_state='submitted' WHERE id=?",
+                    (application_id,),
+                )
+            ledger.connection.commit()
+            ledger.close()
+            self.assertEqual(
+                submitted_company_portfolio(path),
+                {"Rakuten": 2, "Razer": 1},
+            )
     def test_transient_qualification_failure_retries_same_wake(self):
         attempts = 0
 
