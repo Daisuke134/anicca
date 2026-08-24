@@ -4,6 +4,23 @@ set -euo pipefail
 GIG_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export PATH="/opt/homebrew/bin:$HOME/.local/bin:$PATH"
 
+if [ "${1:-}" = "--help" ] || [ "${1:-}" = "-h" ] || [ "${1:-}" = "help" ]; then
+  cat <<'HELP'
+Usage: ./install.sh coconala [command]
+
+Without a command, prepare the Mac, authenticate Codex, open the dedicated Coconala
+browser, and show the one-session account/SMS/seller/eKYC/bank checklist.
+
+Commands:
+  preflight  Read machine/browser/Codex readiness; make no changes
+  prepare    Install only missing public dependencies and authenticate Codex
+  start      Start or resume the guided official Coconala setup
+  finished   Verify the completed setup in the same browser and start eligible loops
+  status     Print the secret-free private onboarding state
+HELP
+  exit 0
+fi
+
 if [ "${1:-}" = "preflight" ]; then
   darwin=false; arm64=false; python=false; codex_cli=false
   codex_authenticated=false; cloakbrowser=false; disk_headroom=false
@@ -79,6 +96,13 @@ fi
 
 if [ "${1:-}" = "init" ]; then
   exec "${PYTHON:-python3}" "$GIG_DIR/scripts/coconala_onboarding.py" init
+fi
+
+if [ "${1:-}" = "status" ]; then
+  venv="$HOME/.local/share/anicca/gig/venv"
+  python="${PYTHON:-$venv/bin/python}"
+  [ -x "$python" ] || { echo "[coconala] onboarding is not initialized" >&2; exit 2; }
+  exec "$python" "$GIG_DIR/scripts/coconala_onboarding.py" status
 fi
 
 if [ "${1:-}" = "start" ]; then

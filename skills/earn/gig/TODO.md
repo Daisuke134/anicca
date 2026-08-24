@@ -115,7 +115,9 @@ Storefront work.
        shell syntax and immutable browser plist dry-render pass. Live execution is deferred
        to the first clean pilot because this Mac already has a production owner on that
        exact profile and must not be disrupted. The public no-argument package installer
-       now enters this `start` flow directly.
+       now enters this `start` flow directly. Public `--help` now documents only the new
+       preflight/prepare/start/finished/status UX; `status` is read-only and returns
+       `uninitialized` without creating HOME state.
     5. [ ] Let the owner complete account/email/SMS/seller/consent/eKYC/bank setup in that
        exact browser profile, then report completion once. Never request the password.
        The public `finished` command now exists and refuses to run without the prepared
