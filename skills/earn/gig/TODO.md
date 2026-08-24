@@ -104,9 +104,22 @@ contract, fee, payout, and bank receipts advance it.
    without asking for approval again. Count the first verified @5555daisuke5555 DM once; send 99
    additional unique DMs whose opening is personalized from fresh recipient evidence and whose
    common body exactly preserves the buyer's non-guaranteed estimate plus clickable LOXAD LINE
-   URL. After each effect retain official X Chat readback and a privacy-minimized screenshot.
+   URL. The buyer's explicit `csvは問題ありません` makes the approved 100-row CSV the candidate-
+   selection authority; do not require every eligibility attribute to be independently visible on X.
+   Freshly verify handle/DM reachability/opt-out state and source only the personalized public claim.
+   The historical @5555daisuke5555 qualification sample used superseded copy, does not count toward
+   the revised-copy total, and must not be resent. Send the revised copy to 100 other unique approved
+   CSV candidates. After each effect retain official X Chat readback and a privacy-minimized screenshot.
    Fresh-review one ZIP containing the 100-row ledger, 100 bound screenshots and hash manifest;
    formally deliver it, obtain buyer completion, and replay every effect class at zero.
+   Superseding platform constraint: X's official Platform Manipulation and Spam Policy prohibits
+   bulk/high-volume unsolicited direct messages. Production correctly verified @diceai0 and
+   produced zero new outreach effects. The account owner now sets a maximum of one confirmed DM per
+   rolling hour, but pacing is not a policy bypass: send only when a current official candidate
+   profile/post explicitly invites relevant work/business/recruitment DMs. Check the approved CSV in
+   order, bind the opt-in URL and personalized claim, send/read back/checkpoint at most one, then set
+   `retry_not_before` one hour after that receipt. If no candidate has explicit opt-in, stop with a
+   machine-readable exhaustion receipt and zero effect; do not send a scope-change message yet.
 
 ### Stage 3 — generalize the measured Paid owner into a job-doing agent
 
