@@ -271,6 +271,45 @@ CONTEXT_JSON=""" + json.dumps(context, ensure_ascii=False, separators=(",", ":")
     raise RuntimeError("storefront_bootstrap_listing_unreachable")
 
 
+def import_catalog(
+    *, sources: list[dict[str, Any]], capabilities: dict[str, Any], runner: Path,
+    schema: Path, evidence_dir: Path, workdir: Path, timeout_seconds: int = 180,
+) -> dict[str, Any]:
+    public_sources = [{key: row.get(key) for key in (
+        "service_id", "public_url", "title", "price_jpy", "category", "scope",
+        "service_version_sha256",
+    )} for row in sources]
+    prompt = """Map every official Coconala listing in OFFICIAL_LISTINGS exactly once to the
+single installed AI skill that can honestly produce and verify it. Return only the strict schema.
+The AI/Mac/tool system is the workforce; never rely on owner labor or personal experience. supported
+is true only when a listed skill directly covers the buyer-visible outcome from supplied inputs.
+For supported rows, copy an exact skill_path and provide concise Japanese outcome, inclusions,
+deliverables, required_inputs, inquiry principles, and reusable answer patterns grounded in the
+official listing. For unsupported rows set skill_path/outcome null and every array empty, explain why,
+and do not invent capability. Do not change listing copy or claim revenue.
+OFFICIAL_LISTINGS=""" + json.dumps(public_sources, ensure_ascii=False, separators=(",", ":")) + \
+        "\nCAPABILITIES=" + json.dumps(capabilities, ensure_ascii=False, separators=(",", ":"))
+    result = _invoke_listing_agent(
+        prompt, runner=runner, schema=schema, evidence_dir=evidence_dir,
+        workdir=workdir, timeout_seconds=timeout_seconds,
+    )
+    mappings = result.get("mappings")
+    wanted = {str(row.get("service_id") or "") for row in sources}
+    if not isinstance(mappings, list) or {row.get("service_id") for row in mappings} != wanted:
+        raise RuntimeError("storefront_bootstrap_import_coverage_invalid")
+    known = {row["skill_path"] for row in capabilities["skills"]}
+    for row in mappings:
+        arrays = ("inclusions", "deliverables", "required_inputs", "principles", "answer_patterns")
+        if row.get("supported") is True:
+            if (row.get("skill_path") not in known or not row.get("outcome")
+                    or any(not row.get(key) for key in arrays)):
+                raise RuntimeError("storefront_bootstrap_import_supported_invalid")
+        elif (row.get("skill_path") is not None or row.get("outcome") is not None
+              or any(row.get(key) for key in arrays)):
+            raise RuntimeError("storefront_bootstrap_import_unsupported_invalid")
+    return {"version": 1, "mappings": mappings}
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("command", choices=("inventory", "select"))

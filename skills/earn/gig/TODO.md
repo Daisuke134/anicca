@@ -163,9 +163,12 @@ Storefront work.
        The public-root path now skips the private bundle preflight, accepts an authoritative
        zero-service catalogue, releases its browser lease and returns durable
        `storefront_bootstrap_required`; a nonzero public catalogue returns
-       `storefront_import_required`. Direct function verification proves the zero-catalog
-       receipt and one lease release. Arbitrary pre-existing listing import remains live
-       pilot work; the zero-listing creation path below is implemented.
+       a hash-bound model import. Direct function verification proves the zero-catalog
+       receipt and one lease release. Existing listings are covered exactly once by
+       official service ID and mapped to installed AI skills with outcome, inclusions,
+       deliverables, required inputs and inquiry patterns. Real Codex imported two
+       synthetic official listings with 2/2 exact coverage; all-supported returns
+       `storefront_imported/readback=1/pending=0`, while unsupported rows remain explicit.
        Storefront now also derives a non-secret public inventory from every installed
        `SKILL.md`: current readback is 52 hash-bound skills / 7 live adapters, relative
        paths only, with one inventory SHA-256 recorded in the bootstrap receipt. The
