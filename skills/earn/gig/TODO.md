@@ -34,6 +34,10 @@ are not active work.
    plist, Python package or notification adapter work. The one-line bootstrap, five
    official owner ceremonies, same-browser handoff, six jobs, first-listing behavior and
    Terminal receipts are above the advanced recovery section.
+9a. [x] Make the post-setup ownership explicit: launchd keeps the browser and four business
+    lanes alive, browser restarts reuse the dedicated profile/session vault, and an expired
+    Coconala login reopens the official recovery surface in that same profile instead of
+    creating another account.
 10. [ ] Reuse the existing `gog` Gmail transport for reports: install `gogcli` only when
     missing, reuse a Gmail-scoped OAuth account or run one `gog auth add`, read the Coconala
     registration address from the authenticated official surface without asking twice,

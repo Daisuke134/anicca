@@ -31,6 +31,11 @@
 7. Storefront imports existing listings or creates the first truthful listing when the
    official count is zero; the other lanes then operate without ordinary approval gates.
 
+From there, launchd keeps the dedicated browser and all four business lanes running while
+the Mac is on. The same browser profile and private session vault survive normal browser
+restarts. If Coconala expires the login, the flow reopens the official login page in that
+same profile, verifies recovery, and resumes; it never creates a replacement account.
+
 That is the complete normal setup. Do not create a listing manually, install Python
 packages, edit JSON, configure launchd, or give Life Manager a Coconala password.
 Terminal is the setup and status surface. Official Coconala email remains active. Life

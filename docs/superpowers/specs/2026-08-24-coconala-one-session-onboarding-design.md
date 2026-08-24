@@ -70,6 +70,14 @@ separate Chrome profile. After completion, the controller attaches to the same r
 browser over CDP. The authenticated cookies remain in that profile, so the owner never
 hands a password to Life Manager and the agent never performs a second login.
 
+After activation, launchd keeps that dedicated browser and all four business lanes alive
+while the Mac is running. Browser restarts reuse the same profile and its private session
+vault; they do not create another account or ask for setup again. A marketplace-expired
+session is the only normal exception: Life Manager opens the official login recovery page
+in the same profile, verifies the restored session, and resumes the lanes. “Always on”
+means supervised restart and verified session reuse, not a promise that a third-party
+login cookie can never expire.
+
 The controller resumes from a private state receipt. Re-running the command never creates
 an account, repeats identity submission, duplicates a listing, or loads a second copy of
 a launchd job. Account creation and recovery remain owner actions on the official site.
@@ -91,6 +99,9 @@ flowchart TD
     APPROVED -->|Yes| ACTIVATE["Activate browser + four lanes + release watcher"]
     ACTIVATE --> STOREFRONT["Storefront imports listings or creates first listing"]
     STOREFRONT --> RECEIPT["Official listing + runtime status"]
+    RECEIPT --> KEEPALIVE["launchd keeps six jobs alive"]
+    KEEPALIVE -->|Session valid| RECEIPT
+    KEEPALIVE -->|Login expired| CORRECT
 ```
 
 ## Data handling
