@@ -916,6 +916,13 @@ U13 atomic order:
     submits or approves money; missing modality/evidence is `UNDETERMINABLE`. Skill validation and
     capability-inventory readback pass. A changed Skill inventory changes the prompt SHA, so native
     Best Matches receives one fresh Luna decision rather than reusing the prior skip.
+74. **PUBLISHED IOS CAPABILITY BECOMES A BOUNDED DELIVERY SKILL:** native Best Matches repeatedly
+    surfaces iOS/webapp and AI-mobile work, and the provider profile already publishes two iOS proofs,
+    but inventory had no mobile delivery Skill. Add an instruction-only `mobile-app-delivery` covering
+    Swift/SwiftUI, existing-repo repair, REST/documented AI integration, simulator/build/archive and
+    store preparation. Explicitly exclude unsupported Android-native, named specialized SDK experience,
+    unbounded rebuilds and unauthorized publication. It composes the independent verifier and changes
+    prompt SHA, allowing one fresh truthful Luna comparison without inventing prior client work.
 
 U14 atomic order:
 
