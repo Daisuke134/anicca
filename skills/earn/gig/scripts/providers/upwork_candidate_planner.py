@@ -19,7 +19,7 @@ GIG_ROOT = HERE.parents[2]
 DEFAULT_RUNNER = GIG_ROOT / "agent-runner/agent_runner.py"
 DEFAULT_SCHEMA = GIG_ROOT / "schemas/upwork_public_proposal.schema.json"
 DEFAULT_SEARCH_SCHEMA = GIG_ROOT / "schemas/upwork_search_queries.schema.json"
-DEFAULT_PROFILE = Path.home() / ".config/anicca/job-search/profile.json"
+DEFAULT_PROFILE = Path.home() / ".config/anicca/gig/owner-profile.json"
 
 
 class CandidatePlannerError(ValueError):

@@ -599,6 +599,11 @@ U13 atomic order:
     that guard and rely only on `required_connects <= balance`, preserving the existing sealed proposal
     and exactly-once submission path. Search/selection remains model-owned; regex is limited to fixed
     provider identifiers and numeric readback, never suitability judgment.
+31. **COCONALA SELLER POLICY RESTORED:** live zero-spend search exposed that the Upwork candidate
+    planner was reading the employee job-search profile, so its annual salary floor incorrectly
+    rejected bounded $400 freelance work. Coconala application planning does not use employee salary
+    policy. Point Upwork acquisition to the existing gig owner profile and installed Skill contracts;
+    do not add a new scoring rule, keyword list or marketplace-specific salary abstraction.
 
 U14 atomic order:
 
