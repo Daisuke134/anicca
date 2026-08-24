@@ -13,6 +13,15 @@ from .workday_discovery import discover_one
 from .workday_qualification import fetch_official_description, qualify_one
 
 
+def rotated_sources(
+    sources: tuple[dict[str, str], ...], index: int
+) -> tuple[dict[str, str], ...]:
+    if not sources:
+        return ()
+    offset = index % len(sources)
+    return sources[offset:] + sources[:offset]
+
+
 def search_until_qualified(
     *,
     discover: Callable[[], dict[str, Any]],
@@ -68,8 +77,16 @@ def main() -> int:
     runner = AgentRunner(evidence_root=args.evidence_root, runner_path=args.runner)
     source_payload = json.loads(args.sources.read_text(encoding="utf-8"))
     sources = tuple(dict(row) for row in source_payload.get("sources", []))
+    source_cursor = 0
+
+    def discover_next() -> dict[str, Any]:
+        nonlocal source_cursor
+        ordered = rotated_sources(sources, source_cursor)
+        source_cursor += 1
+        return discover_one(ledger_path=args.ledger, sources=ordered)
+
     result = search_until_qualified(
-        discover=lambda: discover_one(ledger_path=args.ledger, sources=sources),
+        discover=discover_next,
         qualify=lambda: qualify_one(
             ledger_path=args.ledger,
             candidate_memory_path=args.candidate_memory,

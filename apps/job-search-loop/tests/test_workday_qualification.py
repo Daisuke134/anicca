@@ -6,11 +6,18 @@ import unittest
 from pathlib import Path
 
 from job_search_loop.ledger import Ledger
-from job_search_loop.workday_search_loop import search_until_qualified
+from job_search_loop.workday_search_loop import rotated_sources, search_until_qualified
 from job_search_loop.workday_qualification import qualify_one
 
 
 class WorkdayQualificationTests(unittest.TestCase):
+    def test_sources_rotate_across_companies_in_one_wake(self):
+        sources = ({"company": "A"}, {"company": "B"}, {"company": "C"})
+        self.assertEqual(
+            [row["company"] for row in rotated_sources(sources, 1)],
+            ["B", "C", "A"],
+        )
+
     def test_same_wake_continues_after_reject_and_hold_until_qualified(self):
         decisions = iter(("rejected", "hold", "qualified"))
         discovered = []
