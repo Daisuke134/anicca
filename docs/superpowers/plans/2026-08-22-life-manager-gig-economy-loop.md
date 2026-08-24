@@ -692,6 +692,14 @@ U13 atomic order:
     fresh click-free production-profile preflight now returns `ready=true`, exact job
     `~022091170260597544595`, required Connects 9, available Connects 150 and evidence hash
     `77cf032a…1f84e`. No submit click or Connects deduction occurred during preflight.
+44. **UNTRUSTED CLICK PRODUCED OFFICIAL ABSENCE / TRUSTED INPUT NEXT:** the first current-UI wake
+    crossed the durable fence but its JavaScript `button.click()` produced no Upwork mutation.
+    Authoritative Proposals remained submitted/active 0 and Connects History remained 150, while the
+    exact intent entered `reconcile_unknown`. Current Upwork controls require trusted input, as the
+    Connects checkout did. Change only the post-fence action to focus the verified Submit proposal
+    control and dispatch a CDP Enter key sequence, wait five seconds, then require the official
+    proposal ID. Reset only this exact intent after binding the official absence evidence; no blind
+    retry is allowed.
 
 U14 atomic order:
 

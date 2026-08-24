@@ -86,7 +86,7 @@ def submit_click_expression(job_id: str) -> str:
     return f'''(()=>{{
 const job={sealed_job},norm=x=>(x||'').replace(/\\s+/g,' ').trim().toLowerCase(),submit=[...document.querySelectorAll('button')].find(x=>['submit proposal','send proposal'].includes(norm(x.innerText)))||document.querySelector('footer .air3-btn-primary,footer button[type="submit"],button[data-test*="submit" i]');
 if(!(location.pathname.includes('/ab/proposals/job/'+job+'/apply')||location.pathname.includes('/nx/proposals/job/'+job+'/apply'))||!submit||submit.disabled)throw Error('upwork_submit_control_missing');
-submit.click();return true;
+submit.focus();return true;
 }})()'''
 
 
@@ -191,10 +191,19 @@ async def submit_proposal_after_fence(
             await _call(ws, "Runtime.evaluate", {
                 "expression": submit_click_expression(job_id), "returnByValue": True,
             }, cid + 1)
-            await asyncio.sleep(2)
+            await _call(ws, "Input.dispatchKeyEvent", {
+                "type": "rawKeyDown", "key": "Enter", "code": "Enter",
+            }, cid + 2)
+            await _call(ws, "Input.dispatchKeyEvent", {
+                "type": "char", "key": "Enter", "code": "Enter", "text": "\r",
+            }, cid + 3)
+            await _call(ws, "Input.dispatchKeyEvent", {
+                "type": "keyUp", "key": "Enter", "code": "Enter",
+            }, cid + 4)
+            await asyncio.sleep(5)
             readback = await _call(ws, "Runtime.evaluate", {
                 "expression": submit_readback_expression(job_id), "returnByValue": True,
-            }, cid + 2)
+            }, cid + 5)
     value = readback.get("result", {}).get("result", {}).get("value")
     return validate_submit_readback(value, payload)
 
