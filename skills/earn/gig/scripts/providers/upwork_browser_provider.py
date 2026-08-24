@@ -538,11 +538,24 @@ async def discover_affordable_proposal(
         observed_by_id: dict[str, tuple[dict[str, str], str, str]] = {}
         for offset, job in enumerate(jobs[:10], start=1):
             known.add(job["id"])
-            detail = Path(await navigate_and_snapshot(
-                pass_id, f"{base + offset:02d}-1", "public-job",
-                job["href"], "read_only", 2, 1440,
-            ))
-            text, digest, _ = _read_evidence(detail, job["href"])
+            detail_read = None
+            for attempt in range(1, 4):
+                detail = Path(await navigate_and_snapshot(
+                    pass_id, f"{base + offset:02d}-{attempt}", "public-job",
+                    job["href"], "read_only", 2, 1440,
+                ))
+                try:
+                    detail_read = _read_evidence(detail, job["href"])
+                    break
+                except ValueError:
+                    if attempt < 3:
+                        await asyncio.sleep(attempt)
+            if detail_read is None:
+                state["proposal_discovery"]["incomplete"] = (
+                    state["proposal_discovery"].get("incomplete", 0) + 1
+                )
+                continue
+            text, digest, _ = detail_read
             candidate = {
                 "job_id": job["id"], "job_url": job["href"], "queue": "discovered",
                 "title": job["title"], "proposal_payload_sha256": "",

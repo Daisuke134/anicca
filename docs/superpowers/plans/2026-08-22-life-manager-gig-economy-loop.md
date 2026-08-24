@@ -936,6 +936,12 @@ U13 atomic order:
     choose bid and delivery estimate within the official displayed budget/rate and verified Skill
     capacity, requiring positive expected value and explicit assumptions. Scope, experience, identity,
     credentials and client facts remain non-inventable. Prompt SHA changes; regression stays `156 passed`.
+77. **ONE BAD DETAIL CANNOT KILL THE MONEY WAKE:** the pre-terms wake preserved both verified effects
+    but exited 1 when one read-only job snapshot redirected or returned incomplete evidence. Retry that
+    detail read at most three times with bounded backoff; if all fail, increment `proposal_discovery.incomplete`
+    and continue to the remaining candidates. Do not weaken or retry any external proposal effect.
+    Regression remains `156 passed`; next wake must exit 0 unless a required account-level surface,
+    rather than one optional acquisition candidate, is unavailable.
 
 U14 atomic order:
 
