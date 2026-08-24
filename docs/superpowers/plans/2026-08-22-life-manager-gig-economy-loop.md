@@ -810,6 +810,13 @@ U13 atomic order:
     cost 8, balance 141 and evidence `1009e093…b24a`; Upwork regression is `155 passed`. Next release
     must run the same immutable payload through the existing launchd loop and require proposal ID,
     `141 -> 133` Connects and replay zero.
+60. **SEALED PROPOSALS BECOME THE DURABLE READY QUEUE:** the next natural wake returned to discovery
+    because it rebuilt candidates only from the repository bootstrap JSON; the dynamic research
+    proposal existed privately but was not reloaded. This is restart bookkeeping, not market judgment.
+    On every wake, merge valid mode-600 immutable `frozen_waiting_for_connects` payloads from the
+    owner-only proposal store into the ready queue, deduped by job ID. No proposal content, score or
+    category is inferred. Regression remains `155 passed`; next release must resume the existing
+    research payload before spending another Luna call on unchanged discovery.
 
 U14 atomic order:
 
