@@ -97,46 +97,71 @@ contract, fee, payout, and bank receipts advance it.
 
 ### Stage 3 — generalize the measured Paid owner into a job-doing agent
 
-9. [ ] Give every new paid order one stable marketplace owner ID and lifecycle:
+9. [ ] Make Paid's project owner the website-neutral execution kernel. Give every discovered paid
+   job one stable global owner ID plus website/account/job identities and lifecycle:
    `ACTIVE`, `WAITING_EXTERNAL`, `AWAITING_BUYER`, `TERMINAL_PENDING_REPLAY`,
    `CLOSED_COMPLETED`, or `CLOSED_CANCELLED`. Worker processes are bounded; owner state survives
-   waits, failures, revisions, restarts, and model failover.
+   waits, failures, revisions, restarts, model failover, marketplace migration, and adapter updates.
+   The same owner contract must run Coconala, Upwork and a previously unseen website without
+   forking its context compiler, planner, skill composition, producer, reviewer, ledger, or lifecycle.
 10. [ ] Keep every verified effect as a checkpoint so a resumed owner never repeats successful
     work. Close only after official acceptance/transaction completion or cancellation plus an
     observe-only replay with every effect zero. Release capacity but retain immutable context,
     artifact, state, receipt, and effect-key tombstones.
-11. [ ] Let the model judge the complete job and choose skills/accounts/sessions/tools. Prefer
-    demonstrated software, landing-page, writing, research, and strategy capability. Do not use
+11. [ ] Let the model judge the complete job and choose skills/accounts/sessions/tools. Normalize
+    every site into one `JobContract`: authoritative brief/conversation/attachments, required
+    outcome, deadline, money/fees, permissions, delivery/acceptance rules and official identities.
+    Prefer demonstrated software, landing-page, writing, research, and strategy capability. Do not use
     buyer-name, category, or keyword routing. Deterministic code owns only identity, arithmetic,
-    checkpoints, fencing, receipts, and exact readback.
+    checkpoints, fencing, receipts, and exact readback. A model may compose or improve skills, but
+    it may not invent a platform effect or bypass a missing official adapter capability.
 12. [ ] Require a fresh isolated reviewer to compare exact current requirements with the exact
     artifact/message. Return every actionable finding to the same owner; never submit a known
     low-quality proxy. Only the installed project owner may send once and read back the result.
-13. [ ] Bind every provider/Coconala effect to launchd owner ID, run ID, marketplace entity,
-    effect key, exact payload/artifact hash, and official readback. Manual user, foreground Codex,
+13. [ ] Reduce each website integration to the smallest mechanical adapter: authenticate/recover,
+    discover jobs and events, observe one authoritative entity, apply/reply/deliver through typed
+    effects, and exact official readback. Selectors, URLs, upload limits and receipt parsing stay in
+    the adapter; job judgment, artifact production, quality review, retries, waits and revenue logic
+    stay in the shared kernel. Ship one adapter-conformance harness with recorded DOM/API fixtures,
+    a read-only live probe, one fenced live effect, exact readback, and replay-zero so a new website
+    is integrated in hours or minutes rather than by copying a lane for days. Bind every effect to
+    launchd owner ID, run ID, website/account/entity, effect key, exact payload/artifact hash, and
+    official readback. Manual user, foreground Codex,
     ad-hoc script, and uncheckpointed browser effects never satisfy acceptance.
 14. [ ] Remove ordinary human approval/customer-work fallbacks after setup. When a requirement
     truthfully needs identity, attendance, consent, physical presence, or unsupported tooling,
     select a disclosed-agent equivalent that satisfies the outcome, negotiate supported scope,
-    or complete official cancellation. Never impersonate or fabricate.
+    or complete official cancellation. Never impersonate or fabricate. Close the autonomous growth
+    loop: measure net cash and failure classes, discover higher-value opportunities, prefer proven
+    capabilities, add or repair the smallest reusable skill/adapter, validate it against the same
+    conformance gates, activate a bounded owner, and keep improvements only when official conversion,
+    accepted delivery, payout, quality, latency or cost improves without regressions. The model may
+    propose and implement its own bounded loops; immutable safety/effect/readback gates remain code-owned.
 
 ### Stage 4 — prove no-human Paid before claiming completion
 
 15. [ ] Add regressions patterned on Temporal `e652a4d0`, LangGraph `f09cfe8f`, and Hatchet
     `89d130f3`: process-exit resume, retained sibling checkpoints, stale invocation rejection,
     same-key dedupe, different-key full parallelism, terminal-before-replay rejection, and closed
-    tombstone no-op.
+    tombstone no-op. Add adapter conformance for auth expiry, pagination, attachment/download/upload,
+    buyer-event refresh, platform limits, apply/reply/delivery, terminal state, exact readback and
+    replay-zero. No adapter may contain job-category or customer-specific judgment.
 16. [ ] From the public one-line bootstrap on independent clean Apple Silicon Macs, prove three
-    varied real Paid cycles: artifact delivery, external-provider work, and revision/cancellation.
+    varied real Paid cycles across at least two websites: artifact delivery, external-provider work,
+    and revision/cancellation. Then onboard one previously unsupported site by adding only its thin
+    adapter and configuration; measure time-to-first-read-only-observation and time-to-first verified
+    effect, with a target of hours and a stretch target of minutes.
     Each starts from natural discovery, survives restart/update, carries installed-owner
     provenance, reaches official terminal state, and replays every effect class at zero without
     account-owner or foreground-Codex customer work.
 
 ### Stage 5 — improve acquisition and verified net cash
 
-17. [ ] Apply reads full posting/attachments, proves current capability, submits only high-fit
-    profitable work, reads back official application identity, and tracks application → reply →
-    contract → payment conversion rather than raw volume.
+17. [ ] Opportunity/Apply discovers work across registered websites, reads the complete posting and
+    attachments, proves current capability, submits only high-fit profitable work, reads back the
+    official application identity, and tracks opportunity → application → reply → contract → accepted
+    delivery → net payout conversion rather than raw volume. Optimize verified net cash per constrained
+    owner-hour, not application count or model-reported success.
 18. [ ] Reply/Negotiate consumes each buyer event once with complete cross-surface context,
     answers concisely without apologies/internal detail/unnecessary disclosure, and reads back the
     exact seller message or estimate.
