@@ -24,8 +24,11 @@ evidence and are not reported as coding work.
    integration ids/owners/receipts and conflicting ask-once field definitions fail closed.
    Current graph validates one Coconala integration with six owners, nine provider gates,
    five official receipts and state `unknown`, without running readiness or effects.
-3. [ ] Add one ask-once private profile with semantic field ids, source, scope, freshness,
-   consent, and secret-reference separation.
+3. [x] Add one ask-once private profile with semantic field ids, source, scope, freshness,
+   consent, and secret-reference separation. Values enter by stdin, directory/file modes
+   are `0700/0600`, status never echoes values, and reuse requires matching privacy,
+   purpose, consent, scope and freshness. Provider-only fields hold evidence hashes and
+   credentials remain refs. Coconala correctly requires zero duplicate profile facts.
 4. [ ] Add one local onboarding web UI opened by the root bootstrap; terminal commands are
    recovery-only.
 5. [ ] Render integration cards with prerequisites, owner time, official ceremonies,
