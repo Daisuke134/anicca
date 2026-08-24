@@ -9,5 +9,16 @@
       "hard": 8.0
     },
     "basis": "Sonnet hourly pass, three short one-shot calls over a DOM scrape."
+  },
+  "x-tweeter": {
+    "monthly_usd": {
+      "soft": 20.0,
+      "hard": 30.0
+    },
+    "weekly_usd": {
+      "soft": 5.0,
+      "hard": 8.0
+    },
+    "basis": "Independent half-hour Original opportunities using account-2 subscription execution; API-equivalent cost is reporting only."
   }
 }

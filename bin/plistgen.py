@@ -79,6 +79,11 @@ def build(loop: dict, job_name: str, job: dict, home: Path, current: Path, logs:
 
     if "interval_seconds" in job:
         plist["StartInterval"] = int(job["interval_seconds"])
+    elif "calendars" in job:
+        plist["StartCalendarInterval"] = [
+            {k.capitalize(): int(v) for k, v in calendar.items()}
+            for calendar in job["calendars"]
+        ]
     elif "calendar" in job:
         cal = job["calendar"]
         plist["StartCalendarInterval"] = {k.capitalize(): int(v) for k, v in cal.items()}
