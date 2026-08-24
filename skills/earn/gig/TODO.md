@@ -58,7 +58,11 @@ evidence and are not reported as coding work.
    bootstraps open the common UI; Connect/Resume invokes the existing evidence-gated flow,
    and the manifest retains all nine gates, six owners and five official receipts.
 9. [ ] Run a clean local simulation covering install, ask-once reuse, blocked/ready isolation,
-   restart resume, update and uninstall/export with secret/log/prompt/report scans.
+   restart resume, update and uninstall/export with secret/log/prompt/report scans. Current
+   simulation covers manifest validation/coverage, loopback HTML+graph, CSRF rejection,
+   ask-once API with no values in responses and `0700/0600`, four UI states, Enable all
+   isolation, Coconala receipts, clean-clone OSS 11/11, compile/ShellCheck, and scoped
+   gitleaks zero. Restart, update, uninstall/export and full managed-owner coverage remain.
 
 ### Completed and not TODO
 
