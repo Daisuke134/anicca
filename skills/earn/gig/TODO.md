@@ -85,9 +85,6 @@ Storefront work.
     shell syntax, ShellCheck and the refusal path pass.
     Atomic implementation order (design SSOT:
     `docs/superpowers/specs/2026-08-24-coconala-one-session-onboarding-design.md`):
-    Active implementation plan:
-    `docs/superpowers/plans/2026-08-24-coconala-installer-dispatch.md`. Only item 1
-    is active; later items remain untouched until its RED/GREEN/push closes.
     1. [x] Dispatch root `./install.sh coconala` to the package controller; reject unknown
        product arguments without running the generic self-funded installer. Root dispatch
        is GREEN at remote publication checkpoint: focused dispatch + legacy isolation =
@@ -167,7 +164,8 @@ Storefront work.
        zero-service catalogue, releases its browser lease and returns durable
        `storefront_bootstrap_required`; a nonzero public catalogue returns
        `storefront_import_required`. Direct function verification proves the zero-catalog
-       receipt and one lease release. Capability selection and creation remain next.
+       receipt and one lease release. Arbitrary pre-existing listing import remains live
+       pilot work; the zero-listing creation path below is implemented.
        Storefront now also derives a non-secret public inventory from every installed
        `SKILL.md`: current readback is 52 hash-bound skills / 7 live adapters, relative
        paths only, with one inventory SHA-256 recorded in the bootstrap receipt. The
@@ -179,6 +177,10 @@ Storefront work.
        crawls its official Coconala search query, scores only sold/reviewed comparables,
        and hash-binds the demand receipt. Score logic and compile pass; live official
        search evidence begins on the clean pilot browser, not this busy production profile.
+       An official known score of zero now appends a demand-hash rejection and invalidates
+       that exact skill/query for the next wake. A real Codex reselection skipped the
+       rejected objection-reply candidate and chose `user-interview-synthesizer` with a
+       different Japanese demand query; unknown/transient demand is not falsely rejected.
        When that official score is positive and Storefront owns effect authority, the
        bootstrap now reuses the existing recoverable blank-draft creator, reads the live
        seller form, and binds model choices to official master/sub/type category options.
