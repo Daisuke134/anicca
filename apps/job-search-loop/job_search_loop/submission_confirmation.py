@@ -328,6 +328,7 @@ def _gmail_confirmation_threads(account: str, executable: str) -> list[dict[str,
             "100",
             (
                 'newer_than:30d ("application received" OR '
+                '"received your application" OR '
                 '"thank you for applying" OR "thanks for applying" OR '
                 '"thank you for your interest" OR "has been received" OR '
                 '"got your application" OR '
