@@ -130,6 +130,11 @@ class ReleaseTests(unittest.TestCase):
                         "candidate": {
                             "name": "Artifact Candidate",
                             "application_email": "artifact@example.test",
+                            "target_role_families": ["Applied AI"],
+                            "location_preferences": ["Tokyo"],
+                            "compensation_floor_jpy": 12_000_000,
+                            "compensation_target_jpy": 15_000_000,
+                            "employer_exclusions": [],
                         },
                         "materials": {
                             "resumes": {"engineering": str(resume)}
