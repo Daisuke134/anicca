@@ -4500,14 +4500,24 @@ def _unique_orders(items: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], i
     return list(by_room.values()), len(items) - len(by_room)
 
 
-def _paid_queue_priority(args, item: dict[str, Any]) -> tuple[int, str, str]:
+def _paid_queue_priority(args, item: dict[str, Any]) -> tuple[int, int, str, str]:
     """Resume rejected artifacts before starting or revisiting other paid work."""
+    owner_rank = 100
+    try:
+        root = _paid_project_root(args, item)
+        priority = _load(root / "context" / "paid-priority.json")
+        value = priority.get("priority")
+        if (priority.get("version") == 1 and priority.get("authorized_by") == "account_owner"
+                and isinstance(value, int) and not isinstance(value, bool) and 0 <= value <= 100):
+            owner_rank = value
+    except (Failure, OSError, ValueError, TypeError, json.JSONDecodeError):
+        pass
     try:
         state = _load(_paid_project_root(args, item) / "context" / "paid-review-state.json")
         repair_rank = 0 if state.get("state") == "REPAIR_PENDING" else 1
     except (Failure, OSError, ValueError, TypeError, json.JSONDecodeError):
         repair_rank = 1
-    return repair_rank, _text(item.get("delivery_date")) or "9999-12-31", _text(item.get("talkroom_id"))
+    return owner_rank, repair_rank, _text(item.get("delivery_date")) or "9999-12-31", _text(item.get("talkroom_id"))
 
 
 def _disk_gate_reason() -> str | None:
@@ -4627,6 +4637,7 @@ def _admitted_paid_projects(args, items: list[dict[str, Any]]) -> list[dict[str,
     available = [item for item in items if not _paid_timed_retry_is_future(args, item)]
     if not available:
         return []
+    available.sort(key=lambda item: _paid_queue_priority(args, item))
     admission = paid_admission.plan(available, projects_root=args.projects_root, max_orders=1)
     paid_admission.record_decisions(
         admission, projects_root=args.projects_root,
