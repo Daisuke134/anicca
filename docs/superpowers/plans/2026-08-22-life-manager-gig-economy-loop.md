@@ -552,6 +552,11 @@ U13 atomic order:
     string `type`. The provider surfaced `candidate_replenishment=failed`, exited 0, preserved the two
     open candidates and produced zero proposals/effects. Add the required types, release, and replay;
     no selection or marketplace action is inferred from this failed call.
+24. **SECOND LIVE REPLENISHMENT REACHED STRICT ARRAY GATE:** release `6b2a00bdf000` accepted the
+    explicit scalar types and again reached the model provider with a fresh official job packet. The
+    response-format validator then required `items` even for arrays constrained to `maxItems: 0`.
+    Add inert item schemas for `unsupported_claims` and `attachments`; the wake remained exit 0,
+    `candidate_replenishment=failed`, proposals/effects 0 and the existing two ready jobs intact.
 
 U14 atomic order:
 

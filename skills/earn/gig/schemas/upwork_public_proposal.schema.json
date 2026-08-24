@@ -44,8 +44,8 @@
             }
           }
         },
-        "unsupported_claims": {"type": "array", "maxItems": 0},
-        "attachments": {"type": "array", "maxItems": 0}
+        "unsupported_claims": {"type": "array", "maxItems": 0, "items": {"type": "string"}},
+        "attachments": {"type": "array", "maxItems": 0, "items": {"type": "object", "additionalProperties": false, "properties": {}, "required": []}}
       }
     }
   }
