@@ -7766,9 +7766,16 @@ the named production evidence:
   owner persists `X_FOLLOWER_BASELINE` `67c534a4...` with followers 1 EXACT,
   following 27 EXACT, handle `selawmqt`, and baseline count 1. D09 is now the
   first unchecked item.
-- [ ] **D09 Post reach baseline.** Add exact-post impressions and engagement
+- [x] **D09 Post reach baseline.** Add exact-post impressions and engagement
   readback where X exposes them. Evidence: permalink-bound receipt or explicit
   `UNAVAILABLE`.
+  Done at `04d1c017c`: the existing Affiliate X browser opens the latest exact
+  `affiliate_distribution` permalink, binds article controls to that status
+  path, and parses only plain integer Views/reply/repost/like/bookmark labels;
+  abbreviated values become `UNAVAILABLE_EXACT`. Identical metrics append
+  nothing. Production owner persists baseline `d9e4800d...` for D05 permalink
+  with impressions 4 EXACT and replies/reposts/likes/bookmarks all 0 EXACT;
+  baseline count is 1. D10 is now the first unchecked item.
 - [ ] **D10 X growth ledger.** Join follower and post reach deltas to growth and
   monetization posts separately. Evidence: before/after denominators with no
   revenue credit.
