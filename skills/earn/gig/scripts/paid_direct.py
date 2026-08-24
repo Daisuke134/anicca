@@ -26,7 +26,6 @@ from gig_disk_guard import disk_headroom_ok  # noqa: E402
 DEFAULT_STEP_TIMEOUT_SECONDS = 2100
 TARGETED_READBACK_TIMEOUT_SECONDS = 180
 DM_CONTEXT_TIMEOUT_SECONDS = 180
-PAID_EFFECT_LOCK_TIMEOUT_SECONDS = 120
 # One prepare child owns up to three 60-minute production rounds plus three 30-minute reviews.
 # Its outer deadline must not expire before those already-bounded inner steps can settle.
 FILE_PREPARE_TIMEOUT_SECONDS = 21600
@@ -103,7 +102,8 @@ PAID_RUNNER_CANDIDATES = {
 PAID_FILE_POLICY_VERSION = "paid-file-build-review-v21"
 MAX_FILE_REVIEW_ITERATIONS = 1
 PAID_REMOTE_WAIT_RECHECK_SECONDS = 3600
-PAID_MAX_PARALLEL_READBACKS = 1
+PAID_MAX_PARALLEL_PROJECTS = 8
+PAID_MAX_PARALLEL_READBACKS = 8
 PAID_SOURCE_CENSUS_VERSION = "paid-source-census-v4"
 # The skills a paid order may be built with. A skill the lane cannot see is a skill it will
 # reimplement badly under time pressure, so the BUYMA and video contracts belong here now that both
@@ -4221,22 +4221,15 @@ def _write_file_effect(args, item_path: Path, output: Path, prepared: dict[str, 
         return 1
 
 def _write_one(args, item_path: Path, output: Path) -> int:
-    lock_dir = _text(os.environ.get("CDP_LOCK_DIR"))
-    expected_lock = args.cdp_lock_dir.expanduser().resolve()
-    try:
-        meta = Path(lock_dir).expanduser().resolve() / "meta" if lock_dir else None
-        owner = meta.read_text(encoding="utf-8").split()[0] if meta else ""
-    except (OSError, IndexError):
-        owner = ""
-    if (os.environ.get("GIG_CDP_LOCK_HELD") != "1" or not lock_dir
-            or Path(lock_dir).expanduser().resolve() != expected_lock
-            or owner != f"paid-direct-{item_path.stem}"):
-        _write(output, {"status": "failed", "talkroom_id": "", "failed": 1, "failed_step": "writer_lock", "effect": 0, "readback": 0})
-        return 1
     room = ""
     sent_effect = 0
     try:
         prepared = _load(item_path); item = prepared
+        room = _text(prepared.get("talkroom_id"))
+        if not room or os.environ.get("CLOAK_BROWSER_OWNER") != f"paid-direct-{room}":
+            _write(output, {"status": "failed", "talkroom_id": room, "failed": 1,
+                            "failed_step": "writer_owner", "effect": 0, "readback": 0})
+            return 1
         if _account_owner_observe_only(args, item) is not None:
             _write(output, {"status": "reserved_for_owner",
                             "talkroom_id": _text(prepared.get("talkroom_id")),
@@ -4335,22 +4328,19 @@ def _write_one(args, item_path: Path, output: Path) -> int:
 
 def _child_command(args, phase, item, output):
     return [sys.executable, str(HERE / "paid_direct.py"), phase, str(item), "--output", str(output),
-            "--evidence-dir", str(args.evidence_dir), "--projects-root", str(args.projects_root), "--collector", str(args.collector), "--run-with-cdp-lock", str(args.run_with_cdp_lock),
+            "--evidence-dir", str(args.evidence_dir), "--projects-root", str(args.projects_root), "--collector", str(args.collector),
             "--answer-browser", str(args.answer_browser), "--formal-browser", str(args.formal_browser),
             "--delivery-evidence-dir", str(args.delivery_evidence_dir),
             "--cdp-helper", str(args.cdp_helper), "--context-compiler", str(args.context_compiler),
             "--dm-collector", str(args.dm_collector),
             "--agent-runner", str(args.agent_runner), "--runner-schema", str(args.runner_schema),
-            "--artifact-schema", str(args.artifact_schema), "--cdp-lock-dir", str(args.cdp_lock_dir), "--today", args.today]
+            "--artifact-schema", str(args.artifact_schema), "--today", args.today]
 
 def _prepare_command(args, item, output):
     return _child_command(args, "--effect-item", item, output)
 
 def _effect_command(args, item, output):
-    return [str(args.run_with_cdp_lock), f"paid-direct-{item.stem}",
-            str(PAID_EFFECT_LOCK_TIMEOUT_SECONDS), "--"] + _child_command(
-                args, "--write-item", item, output,
-            )
+    return _child_command(args, "--write-item", item, output)
 
 
 def _effect_process_diagnostic(process: Any) -> dict[str, Any]:
@@ -4360,19 +4350,22 @@ def _effect_process_diagnostic(process: Any) -> dict[str, Any]:
         "stderr_tail": _text(getattr(process, "stderr", ""))[-2000:],
     }
 
-def _fresh_child_env(args):
+def _fresh_child_env(args, owner=None):
     env = {key: value for key, value in os.environ.items() if key != "GIG_CDP_LOCK_HELD"}
     env["CDP_LOCK_DIR"] = str(args.cdp_lock_dir)
+    if owner:
+        env["CLOAK_BROWSER_OWNER"] = owner
     return env
 
 
 def _run_paid_item(args, room: str, item_file: Path, prepared_file: Path,
                    effect_file: Path) -> tuple[dict[str, Any], int, int, int, str]:
+    browser_owner = f"paid-direct-{room}"
     prepared = {"status": "failed", "failed_step": "remote_resume"}
     for attempt in range(2):
         prepare = _run_bounded(
             _prepare_command(args, item_file, prepared_file),
-            env=_fresh_child_env(args), timeout=FILE_PREPARE_TIMEOUT_SECONDS,
+            env=_fresh_child_env(args, owner=browser_owner), timeout=FILE_PREPARE_TIMEOUT_SECONDS,
         )
         try:
             prepared = _load(prepared_file)
@@ -4411,7 +4404,10 @@ def _run_paid_item(args, room: str, item_file: Path, prepared_file: Path,
             return {"talkroom_id": room, "status": "failed", "failed_step": "disk_checkpoint"}, 0, 0, 1, "disk_checkpoint"
         return {"talkroom_id": room, "status": "pending", "checkpoint": "before_paid_effect",
                 "reason": gate_reason}, 0, 0, 0, ""
-    process = _run_bounded(_effect_command(args, prepared_file, effect_file), env=_fresh_child_env(args))
+    process = _run_bounded(
+        _effect_command(args, prepared_file, effect_file),
+        env=_fresh_child_env(args, owner=browser_owner),
+    )
     try:
         value = _load(effect_file)
     except (OSError, json.JSONDecodeError):
@@ -4636,7 +4632,10 @@ def _update_disk_checkpoint(path: Path, **updates: Any) -> bool:
 
 
 def _paid_project_executor() -> ThreadPoolExecutor:
-    return ThreadPoolExecutor(max_workers=1, thread_name_prefix="paid-project")
+    return ThreadPoolExecutor(
+        max_workers=PAID_MAX_PARALLEL_PROJECTS,
+        thread_name_prefix="paid-project",
+    )
 
 
 def _reported_paid_row(args, item: dict[str, Any]) -> dict[str, Any] | None:
@@ -4677,7 +4676,11 @@ def _admitted_paid_projects(args, items: list[dict[str, Any]]) -> list[dict[str,
     if not available:
         return []
     available.sort(key=lambda item: _paid_queue_priority(args, item))
-    admission = paid_admission.plan(available, projects_root=args.projects_root, max_orders=1)
+    admission = paid_admission.plan(
+        available,
+        projects_root=args.projects_root,
+        max_orders=PAID_MAX_PARALLEL_PROJECTS,
+    )
     paid_admission.record_decisions(
         admission, projects_root=args.projects_root,
         pass_id=f"paid-direct-{time.time_ns()}",
