@@ -42,6 +42,16 @@ contract, fee, payout, and bank receipts advance it.
    the three image paths, then let that adapter stage/commit/push the article JSON and obtain
    `https://aniccaai.com/blog/casican-review` readback. Do not clone Life Manager, install web
    dependencies, run a site build, or create another publisher.
+   Production owner has now published the three immutable images and article to
+   `https://aniccaai.com/blog/casican-review`: image commit `1e3c638e21828f74b949fd3433faed38d36e0ad8`,
+   article commit `a98e7b32e2a65967023018b1e1c8d301b6cbe90a`, HTTP 200, exact structural
+   body/title/tracking-link/image readback, rendered SHA256
+   `073bdaa6796d9f3e886436937442f5cdbdf6b3dd3cda80a9e8d639540c30776d`.
+   The installed Paid owner then sent the concise anicca AI URL handoff in the exact Coconala
+   room with `effect=1/readback=1/failed=0`, message SHA256
+   `1e785b86e51d8969762d63dfd87bbbf77fad429e6cd3cd7a141c26080b62439d`, and formal
+   delivery off. Remaining closure is the buyer's response, formal delivery, transaction
+   completion, and replay-zero; do not republish or resend the handoff while waiting.
 4. [ ] LBJ `18130722`: use only the latest explicit buyer approval and latest v98 project-manager
    package. Codex may inspect v98 and repair the generic approval/reviewer code, but must not send
    customer work. A seller acknowledgement must not erase buyer approval. The installed Paid
