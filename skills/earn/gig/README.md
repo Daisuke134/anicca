@@ -78,7 +78,7 @@ loop alone must use the person's real employment facts and availability.
 | A Mac, Apple Silicon, macOS 14 or newer | The jobs are launchd user agents and the browser build is a macOS app bundle. |
 | A **Codex subscription** and the `codex` CLI signed in | This is the default paid route. `codex login`, then check `~/.codex/auth.json` exists. |
 | A **Coconala seller account** with at least one listing | This is the only account you create. You do not need to finish identity verification or add a bank account to start — those matter when you withdraw, not when you sell. |
-| Python 3.13 or newer | `brew install python@3.14`. Then `pip3 install websockets beautifulsoup4 jsonschema`. These are the package's only third-party Python imports. |
+| Python 3.13 or newer | The installer creates a private venv with `websockets`, `beautifulsoup4`, `jsonschema`, `cloakbrowser`, and `pillow`; Pillow is required for Storefront listing images. |
 | A CloakBrowser Chromium build under `~/.cloakbrowser/chromium-*/` | An ordinary Chrome will not do: the lanes attach over CDP, and the launcher passes `--fingerprint`, a flag only this build has. See [the browser](#the-browser) below — the version matters. |
 
 Owner reports default to email. Install a sendmail-compatible client such as
