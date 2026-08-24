@@ -7667,7 +7667,67 @@ because a polling launchd job and manually successful CLIs are not an Agent.
   are GREEN and vendor hashes match. Production `current` resolves to immutable
   release `785309f57f8b42268c3b608cbdfbf783c13618bb` with LaunchAgents unchanged.
 
-### Atomic remaining TODO — active focused revenue path
+### Codex design and implementation TODO — authoritative remaining work
+
+This is the operator-facing TODO list for Codex. It is intentionally separate
+from the runtime protocol below. Codex designs, implements, tests, deploys, and
+repairs the money-making system; the installed owners execute it. Reporting an
+owner's next wake, post, or readback is not a substitute for completing these
+design items.
+
+Execute one design slice at a time in this order:
+
+1. **Affiliate-to-X distribution contract.** Replace the current loose proposal
+   observation with one durable queue owned by Affiliate and consumed by
+   x-repost. Each job binds exact placement ID, public owned-article URL,
+   experiment lineage, content hash, target X account, cadence class, and effect
+   identity. x-repost must publish the owned URL, never the private tracking URL,
+   and return the exact X permalink to Affiliate. This closes the current 5
+   exact joins versus 84 unjoined Repost actions.
+2. **X growth measurement.** Add owner-side official readback for follower
+   count and exact-post impressions/engagement where X exposes them. Persist
+   immutable before/after receipts and explicit `UNAVAILABLE` states. Stop
+   treating post count as growth. Feed real reach denominators into the
+   acquisition context.
+3. **Money-funnel controller.** Give the model the exact chain
+   impression → owned entry → CTA click → provider click → transaction →
+   approved/paid commission and let it identify the current bottleneck. Code
+   performs only evidence binding and arithmetic; it must not hardcode whether
+   title, hook, timing, CTA, offer, or distribution is the right business move.
+4. **Single active experiment scheduler.** Enforce one active placement lineage,
+   a sealed observation window, minimum real exposure before a conversion
+   verdict, and one selected-variable mutation. Prevent sibling experiments,
+   stale-baseline decisions, and repeated posting merely because a scheduler
+   wakes.
+5. **Offer and program acquisition.** Expand beyond one ElevenLabs offer. Build
+   an owner that discovers official affiliate programs, verifies commission and
+   payout terms, applies through the real provider, records approval state, and
+   admits only offers with a working exact-placement link and official
+   transaction readback. Rejected, sign-in-required, and unverified programs do
+   not enter distribution.
+6. **Revenue-weighted content selection.** Replace content-volume optimization
+   with model selection over approved offers, buyer intent, exact reach,
+   provider clicks, transaction rate, approved/paid commission, reversal rate,
+   and known cost. Exploration remains bounded; positive money evidence, not
+   clicks alone, controls exploitation.
+7. **Closed-loop X growth and monetization.** Make x-repost balance account
+   growth content and Affiliate distribution from the same measured state.
+   Growth posts earn reach; monetization posts route relevant users to the exact
+   owned article. The controller changes cadence and mix from official follower,
+   impression, entry, click, and money deltas rather than a fixed 50/50 rule.
+8. **Scale and stop rules.** Allocate more X distribution and owned content only
+   to placements with positive official approved/paid unit economics. Pause or
+   replace offers with sufficient exposure and zero transactions. Stop any lane
+   with reversals, unknown attribution, broken public readback, or negative
+   known net economics.
+9. **Production completion evidence.** Deploy each slice through immutable
+   releases and existing owners, then prove the full chain with exact public X
+   permalink, owned URL, entry receipt, CTA receipt, provider click, official
+   transaction, and approved/paid commission. Final completion is rolling
+   30-day official approved-or-paid net Affiliate revenue of at least USD
+   10,000 after known costs.
+
+### Loop runtime protocol — not Codex's design TODO
 
 Operator priority is money. Do not spend remaining-loop time or tokens on fresh
 review passes unless the user explicitly asks for review. Tests and exact
