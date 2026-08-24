@@ -427,9 +427,41 @@ Existing pending Workday rows are not grandfathered: they return to this gate be
 browser submission. Exact terminal URLs remain permanently deduped. A new URL or
 requisition for the same employer/title/location receives a model evidence comparison
 against prior rows; a supported repost decision creates no submit intent. After this
-safety gate is live, official discovery expands beyond the current fixed NVIDIA,
-Workday, and Salesforce tenants so the loop finds genuinely new positions rather
-than exhausting one employer's catalog.
+safety gate is live, the current `ROLE_RE`, `_priority`, and fixed company/tenant
+rotation are removed as discovery judgments. The model generates searches, discovers
+companies and official Workday postings, reads full descriptions, compares all unseen
+candidates, and chooses the best grounded match. Deterministic code only validates
+official HTTPS Workday identity/API responses, exact user exclusions, dedupe,
+schemas, evidence, budgets, and side-effect fences.
+
+There is no employer allowlist. The only deterministic employer rejection is the
+user's explicit exclusion set: OpenAI, Anthropic, Palantir, Cursor, Accenture, KPMG,
+Deloitte, Ernst & Young/EY, and PwC/PricewaterhouseCoopers. Legal impossibility,
+clearance the candidate cannot satisfy, non-Japan relocation-only work, an exact prior
+application/repost, and required fact fabrication remain safety exclusions. Every
+other company is eligible for model inspection.
+
+Within one wake, the agent continues `search → read official posting → compare →
+reject/hold/qualify` until it finds a qualified role or exhausts its explicit time and
+action budget. A rejected or held job never ends the wake. If no qualified job is
+found, the loop persists the search cursor, sources tried, and grounded rejection
+reasons, then resumes from that cursor next wake; it may not return an ungrounded
+"nothing found" result or lower the fit standard merely to submit something.
+
+```mermaid
+flowchart TD
+    A["30-minute launchd wake"] --> B["Model chooses searches and companies"]
+    B --> C["Tools fetch unseen official Workday postings"]
+    C --> D["Model compares full descriptions with resume and goals"]
+    D --> E{"Best grounded match?"}
+    E -- "No" --> F["Record reject or hold; continue search"]
+    F --> B
+    E -- "Yes" --> G["Fenced Workday application"]
+    G --> H["Gog exact receipt check"]
+    H -- "No mail" --> I["Not counted as applied; never blind retry"]
+    H -- "Exact mail" --> J["Ledger submitted + Telegram + continue"]
+    J --> B
+```
 
 #### Atomic execution steps
 
@@ -594,9 +626,9 @@ This is the remaining implementation-order SSOT. Only the first
 | 48db | Serialize an impatient model command through a bounded runtime lock | `implementation_done_release_gate` | At the end of `daily-20260824-083935`, Luna starts `observe` while a GitLab Resume Attach command is still waiting for `Page.fileChooserOpened`. The observe command fails the nonblocking command lock and the valid Attach button times out before any file is set, ending the row pre-fence. RED holds the command lock briefly and requires the second command to wait, and separately reproduces fileChooser timeout. GREEN serializes commands for at most 30 seconds and converts a no-chooser upload to fresh exit-zero `action_rejected / upload_control_did_not_open_file_chooser`; other upload failures and post-fence paths remain fail-closed. Direct runtime tests pass 16/16 and full regression passes 271/271. Release/live retry remain. |
 | 48dc | Park every non-Workday application lane | `live_proven` | RED proves production invoked Ashby, Greenhouse, and Lever discovery and passed `active-provider=all`. GREEN removes all three calls and passes only `active-provider=workday`; focused tests pass 15/15 and full regression passes 271/271. Release `374c2c744` in existing-owner run `daily-20260824-094943` writes no Ashby/Greenhouse/Lever evidence files, performs only one `runtime observe`, returns `queue_complete`, and creates zero non-Workday browser/intent/fence/Submit effects. This closes 10P1. |
 | 48dd | Replace broad Workday title matching with model-owned evidence qualification | `implementation_done_release_gate` | Earlier run `daily-20260824-094225` began the pre-existing Salesforce Principal Technical Support Engineer before 10P2 existed. The exact daily/model processes were terminated pre-submit; Ledger stayed `materials_ready` with intent=0. The first GREEN adds a Ledger-backed `workday_fit_decisions` browser gate; release `374c2c744` run `094943` proves both pending rows remain intent=0 with `observe → queue_complete`. The second RED requires the daily owner to qualify one row before the browser lane. GREEN fetches the exact official Workday CXS description, passes it with private Candidate Memory to the existing high-value model runner, validates one strict `qualified/rejected/hold` result, hashes and records it, rejects unsupported rows, and unlocks only `qualified`; model/fetch/schema failures remain fail-closed. No keyword list, regex, score, or title allowlist makes the judgment. Focused tests pass 3/3, full regression passes 275/275, shell and compile pass. Release and production decisions for the two pending rows remain; one unsupported role must be rejected without browser submission, and one genuinely matched fresh role aligned with the USD 120k goal must reach authoritative Gog-mail-backed `submitted`, Telegram, and next-wake duplicate 0 to close 10P2. |
-| 48de | Expand fresh Workday discovery without semantic repost duplication | `pending_after_48dd` | Replace the fixed NVIDIA/Workday/Salesforce-only source set with official Workday tenants discovered from the existing target-company/search context. Exact canonical URL/requisition dedupe remains deterministic. The model compares a proposed row with prior same-company/title/location history and identifies a repost or materially different position from evidence; code only validates and persists that structured judgment. A production wake discovers a new, fit-qualified Workday position outside the original three tenants, while a controlled repost is recorded without a new submit intent. This closes 10P3. |
+| 48de | Replace fixed Workday discovery with the continuous model search loop | `pending_actionable_after_48dd` | Delete `ROLE_RE`, `_priority`, and the fixed company/tenant rotation as selection logic. Reuse the existing model runner and official-fetch tools: the model generates searches, discovers arbitrary companies and official Workday URLs, batches unseen full descriptions, ranks them from resume/location/USD120k evidence, and continues within the same wake after every reject/hold until it finds a qualified role or reaches the explicit budget. Exact exclusions, HTTPS/provider validation, canonical/repost dedupe, Ledger, and fences remain deterministic. Production proof requires at least one company outside the former fixed list, multiple same-wake rejected/held rows without stopping, one matched application, exact Gog receipt, Telegram, and next-wake duplicate 0. This closes 10P3. |
 | 48df | Continue discovery after a model `hold` | `implementation_done_release_gate` | Release `b1e110900` live-evaluates Forward Deployed Engineer as `hold` for unsupported 5+ years, expert programming, LLM framework, data engineering, technical leadership and travel evidence plus uncertain compensation; run `100630` exits `queue_complete` with intent=0. The next launchd-owned run `101227` evaluates Principal Technical Support Engineer as `rejected` and exits with intent=0. RED proves the durable hold row then blocks every fresh discovery. GREEN keeps hold non-actionable but excludes it from discovery backlog blocking, so the next distinct official Workday job can be discovered one at a time. Focused tests pass 4/4 and full regression passes 276/276. Release/live fresh-row discovery remains. |
-| 48dg | Restore a distinct official Workday employer source | `implementation_done_release_gate` | Run `101827` safely rejects another Salesforce Principal Technical Support Engineer with intent=0, showing the original three-tenant pool remains narrow. Official CXS readback proves the existing Rakuten Workday identity at tenant `rakuten`, site `rakuteninc`. RED proves Rakuten is absent from discovery rotation; GREEN adds only that verified source. Focused discovery tests pass 5/5 and full regression passes 277/277. Release/live Rakuten-or-next-fit discovery remains. |
+| 48dg | Remove the temporary fixed-company expansion | `superseded_by_48de` | Adding Rakuten proved another official source can be fetched, but extending a hardcoded tenant tuple one company at a time repeats the wrong architecture. 48de replaces the whole fixed rotation with model-owned company/search discovery; the Rakuten evidence remains a provider-tool fixture, not an allowlist entry. |
 | 49 | Drive the fresh Workday form with the LLM agent only | `live_proven` | Two consecutive NVIDIA Workday rows were driven through CloakBrowser CDP `:9222` by Luna/xhigh from fresh visible observations and screenshots, without a scripted question mapper or fixed page workflow. |
 | 50 | Reuse or create the Workday tenant account inside the same agent session | `live_proven` | The same tenant credential/session was reused by Luna without a second browser or executor. |
 | 51 | Complete every Workday page and variable employer question | `live_proven` | Luna completed provider-varying Salesforce questions for two rows from fresh observations and reached Review. |
@@ -2333,7 +2365,7 @@ must accumulate in the live loop:
 | 10P | `JOB-WORKDAY-E2E-MODEL-10P`: full framework plus Workday E2E | `completed` | JR2008507 closes with exact UI, receipt `1a02ff31ecb7353d`, Ledger `submitted`, Telegram `30852`/`30853`, v2 agreement, immediate dedupe 0, and unseen JR2020208-1 continuation through the one existing owner. |
 | 10P1 | `JOB-WORKDAY-ONLY-10P1` | `completed` | Release `374c2c744`, launchd-owned run `094943`, non-Workday evidence/navigation/intent/fence/Submit effects 0 |
 | 10P2 | `JOB-WORKDAY-FIT-QUALIFICATION-10P2` | `in_progress` | Fail-closed DB/browser gate is live; prompt-owned full-description/resume/interview/target-compensation qualifier, current-row decisions, one unsupported rejection, and one Gog-mail-backed matched submission remain |
-| 10P3 | `JOB-WORKDAY-DIVERSE-DISCOVERY-10P3` | `pending_after_10P2` | Official Workday discovery expands beyond NVIDIA/Workday/Salesforce and model-owned semantic comparison prevents a repost with a new URL/requisition from creating another submit intent |
+| 10P3 | `JOB-WORKDAY-CONTINUOUS-SEARCH-10P3` | `pending_after_10P2` | Remove regex/fixed-company discovery; model searches all non-excluded companies, ranks full official postings, continues across rejects in the same wake, applies the best grounded match, and proves Gog receipt plus dedupe 0 |
 | 10Q | `JOB-ASHBY-E2E-MODEL-10Q` | `broken_unverified_pending_after_workday` | Historical `submit_unknown` evidence is not accepted; rebuild from zero only after Workday is complete |
 | 10R | `JOB-GREENHOUSE-E2E-MODEL-10R` | `broken_unverified_pending_after_10Q` | Historical form interaction and `submit_unknown` evidence are not accepted; rebuild from zero after Ashby |
 | 10S | `JOB-LEVER-E2E-MODEL-10S` | `broken_unverified_pending_after_10R` | Discovery without an authoritative completed application is zero progress; rebuild from zero after Greenhouse |
@@ -2359,7 +2391,7 @@ not start merely because their design is already written:
 | `JOB-WORKDAY-E2E-MODEL-10P` | `completed` | JR2008507 exact UI, authoritative receipt, Ledger, Telegram and immediate dedupe/next-row evidence agree. |
 | `JOB-WORKDAY-ONLY-10P1` | `completed` | Existing-owner run `094943` uses release `374c2c744`, writes no non-Workday evidence, performs only `observe → queue_complete`, and creates zero non-Workday effects. |
 | `JOB-WORKDAY-FIT-QUALIFICATION-10P2` | `in_progress` | Fail-closed Ledger/browser gate is live with both pending rows at intents=0. Full official description plus Candidate Memory/resume, Tokyo/Japan feasibility, interview thesis, and USD 120k target-compensation evidence must go to the model; one supported Gog-mail-backed submit and one unsupported rejection remain. |
-| `JOB-WORKDAY-DIVERSE-DISCOVERY-10P3` | `pending_after_10P2` | Official discovery expands beyond the fixed three tenants and model-owned semantic history comparison prevents a repost under a new URL/requisition from producing a duplicate submit intent. |
+| `JOB-WORKDAY-CONTINUOUS-SEARCH-10P3` | `pending_after_10P2` | Remove regex, fixed scoring, and company/tenant rotation. The model controls searches and ranking across all non-excluded companies; tools validate official Workday data and dedupe. Same-wake reject/continue, matched submit, Gog receipt, Telegram, and next-wake duplicate 0 are mandatory. |
 | `JOB-ASHBY-E2E-MODEL-10Q` | `broken_unverified_pending_after_workday` | Prior evidence is diagnostic only. Start from zero after Workday and require a fit-qualified job, authoritative provider completion, Ledger, Telegram, and next-wake duplicate 0. |
 | `JOB-GREENHOUSE-E2E-MODEL-10R` | `broken_unverified_pending_after_10Q` | Prior evidence is diagnostic only. Start from zero after Ashby under the same authoritative gate. |
 | `JOB-LEVER-E2E-MODEL-10S` | `broken_unverified_pending_after_10R` | Prior discovery is diagnostic only. Start from zero after Greenhouse under the same authoritative gate. |
