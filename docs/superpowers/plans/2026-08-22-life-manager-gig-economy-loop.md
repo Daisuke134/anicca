@@ -557,6 +557,13 @@ U13 atomic order:
     response-format validator then required `items` even for arrays constrained to `maxItems: 0`.
     Add inert item schemas for `unsupported_claims` and `attachments`; the wake remained exit 0,
     `candidate_replenishment=failed`, proposals/effects 0 and the existing two ready jobs intact.
+25. **MODEL-OWNED SEARCH/SKIP PROVED / READY REPLENISHMENT CONTINUES:** release `1cb151a2e430`
+    completed a production wake with exit 0, searched four current public jobs and passed four full
+    official detail receipts through schema-valid model judgment. All four were skipped for observed
+    capability/location/client/terms risks; no proposal or marketplace effect occurred. The run also
+    exposed that the prompt incorrectly allowed zero current Connects to count against qualification,
+    and that skipped IDs were not durable. Clarify that Connects gate execution rather than sealing,
+    persist rejected IDs in the runtime cache, and continue deeper into current results next wake.
 
 U14 atomic order:
 

@@ -276,6 +276,16 @@ def load_candidates(path: Path) -> list[dict[str, str]]:
     return result
 
 
+def load_rejected_job_ids(path: Path) -> set[str]:
+    if not path.exists():
+        return set()
+    value = json.loads(path.read_text(encoding="utf-8"))
+    rows = value.get("rejected_job_ids", []) if isinstance(value, dict) else []
+    if not isinstance(rows, list) or any(not re.fullmatch(r"~\d{15,}", str(x)) for x in rows):
+        raise ValueError("upwork_candidate_config_invalid")
+    return {str(x) for x in rows}
+
+
 def _search_jobs(links: list[dict[str, Any]], excluded: set[str]) -> list[dict[str, str]]:
     jobs = []
     seen = set(excluded)
@@ -304,7 +314,8 @@ async def replenish_candidates(
     ))
     _, search_hash, search_links = _read_evidence(artifact, SEARCH_URL)
     state["evidence_sha256"]["candidate-search"] = search_hash
-    existing = {str(row.get("job_id")) for row in state["candidate_jobs"]}
+    rejected = load_rejected_job_ids(cache)
+    existing = {str(row.get("job_id")) for row in state["candidate_jobs"]} | rejected
     skill_files = sorted(SCRIPTS.parent.parent.glob("upwork-*/SKILL.md"))
     retained = [
         {key: str(row.get(key) or "") for key in (
@@ -322,6 +333,7 @@ async def replenish_candidates(
         observed = parse_candidate({**job, "queue": "discovered", "proposal_payload_sha256": ""}, text, digest)
         if observed["status"] != "open" or type(observed["connects_required"]) is not int:
             result["skipped"].append({"job_id": job["job_id"], "reasons": ["not_open"]})
+            rejected.add(job["job_id"])
             continue
         packet = write_candidate_packet(
             **job, rendered_text=text, evidence_sha256=digest,
@@ -334,6 +346,7 @@ async def replenish_candidates(
         )
         if proposal is None:
             result["skipped"].append({"job_id": job["job_id"], "reasons": reasons})
+            rejected.add(job["job_id"])
             continue
         write_candidate_proposal(proposal, proposals)
         candidate = {**job, "queue": "ready", "proposal_payload_sha256": proposal["payload_sha256"]}
@@ -342,7 +355,10 @@ async def replenish_candidates(
         result["selected"].append(job["job_id"])
         if len(result["selected"]) >= deficit:
             break
-    _atomic_write(cache, {"version": 1, "candidates": retained})
+    _atomic_write(cache, {
+        "version": 1, "candidates": retained,
+        "rejected_job_ids": sorted(rejected),
+    })
     return result
 
 

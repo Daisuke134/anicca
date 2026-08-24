@@ -103,6 +103,9 @@ and all explicit screening questions can be answered truthfully. Otherwise skip 
 Do not use keyword matching. Read the complete evidence and reason about scope, acceptance criteria,
 client risk, competition, time, price, Connects, proof, and delivery capacity. Never invent experience,
 identity, credentials, availability, results, client facts, requirements, portfolio, or attachments.
+Available Connects are execution capacity, not job suitability: zero available Connects is never by
+itself a reason to skip an otherwise strong job. Seal an eligible proposal now so the loop can submit
+it later when granted/returned Connects cover the exact official cost.
 For submit, copy job_id, job_url, title, job_source_sha256, required_connects and
 available_connects_before exactly from OFFICIAL_JOB. Set status=frozen_waiting_for_connects,
 unsupported_claims=[], attachments=[]. Make the proposal specific and concise; ask a scope question
