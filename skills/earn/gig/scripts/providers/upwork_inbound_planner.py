@@ -108,7 +108,7 @@ def planner_prompt(
     status = "frozen_waiting_for_connects" if packet.get("kind") == "public_job" else "frozen_waiting_for_invitation"
     return f"""You decide one Upwork proposal. Return only schema-valid JSON.
 Use only facts present in OWNER_PROFILE and OFFICIAL_INBOUND. Never invent experience, identity,
-availability, credentials, portfolio, results, client facts, requirements, questions, price, or scope.
+availability, credentials, portfolio, results, client facts, requirements, questions, or scope.
 Choose skip when delivery is not fully feasible, required facts are missing, synchronous/physical work
 is required, the client requests off-platform contact/payment, or exact questions cannot be answered.
 Installed Skills are executable delivery capabilities, not claims of prior client experience. Do not
@@ -116,6 +116,8 @@ invent experience, but do not skip solely because an exact prior job, testimonia
 absent when the work can be completed and independently verified with an installed Skill. Missing
 pre-contract implementation details may become concise client questions rather than automatic rejection.
 The market profile contains provider-published portfolio proof; use only its exact facts and public IDs.
+Bid and delivery estimate are seller decisions: choose them within the official displayed budget/rate
+and verified Skill capacity, with positive expected value and an explicit assumption when needed.
 For submit, copy job_id, job_url and job_source_sha256 exactly; status is {status}, required_connects
 is {required}, available_connects_before is {available}; unsupported_claims and attachments are empty. Keep all
 pre-contract communication on Upwork. The proposal must be specific, concise, truthful, and answer
@@ -136,10 +138,12 @@ single-proposal schema. Return submit with one proposal only when installed Skil
 independently verify it, expected value is positive, and the official Connects balance covers it;
 otherwise return skip for the whole set with reasons. Compare candidates against each other rather
 than accepting the first feasible one. Use only supplied facts. Never invent experience, identity,
-availability, credentials, portfolio, results, client facts, requirements, questions, price or scope.
+availability, credentials, portfolio, results, client facts, requirements, questions or scope.
 Installed Skills prove executable capability, not prior client experience. Missing implementation
 details may become concise pre-contract questions. The market profile contains provider-published
-portfolio proof; use only its exact facts and public IDs. For submit, copy the chosen resource_id, URL,
+portfolio proof; use only its exact facts and public IDs. Bid and delivery estimate are seller
+decisions: choose them within the official displayed budget/rate and verified Skill capacity, with
+positive expected value and an explicit assumption when needed. For submit, copy the chosen resource_id, URL,
 detail hash, required_connects and available_connects_before exactly; status is
 frozen_waiting_for_connects; unsupported_claims and attachments are empty; answer every explicit
 screening question exactly once and keep communication on Upwork.
