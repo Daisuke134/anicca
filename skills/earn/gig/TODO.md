@@ -150,11 +150,12 @@ repository-wide migration is not part of this Coconala session.
     package installer, shared browser, evidence-bound account gates, six-job activation,
     and zero-listing publisher are now implemented. This item remains open for actual
     signed-out clean-Mac and pre-auth effect-zero receipts; no signup-to-bank-income claim
-    is permitted before the pilots and bank arrival below.
+    is permitted before deferred external acceptance and bank arrival.
     Latest implementation checkpoint: fresh remote shallow clone
-    `a2aa1aa31cd240ad10b698a6c592e1f0bd17cecb` passes OSS self-contained 11/11,
-    compiles all five onboarding/Storefront entrypoints, passes all three installer shell
-    syntax and ShellCheck checks, and has zero Gig-tree gitleaks findings. This is package evidence,
+    `a3cd1835b5c76c7fcef9013243e3b5fc4ee3b335` matches the public raw bootstrap,
+    passes OSS self-contained 11/11, validates the Coconala manifest, compiles all four
+    business lanes including tracked public Paid, passes installer ShellCheck, and has
+    zero scoped gitleaks findings. This is package evidence,
     not a substitute for the three live pilots below.
     A clean-Mac one-line bootstrap now uses macOS curl, installs Homebrew/Git only
     when missing, clones or fast-forwards `~/life-manager`, and enters the same Coconala
