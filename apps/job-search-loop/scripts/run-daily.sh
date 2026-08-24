@@ -103,6 +103,21 @@ set -e
 if [[ "$WORKDAY_DISCOVERY_RC" -ne 0 ]]; then
   printf '%s\n' "Workday discovery failed; existing eligible queue continues" >&2
 fi
+WORKDAY_QUALIFICATION_RESULT="$EVIDENCE/workday-qualification.json"
+set +e
+"$JOB_SEARCH_PYTHON" -m job_search_loop.workday_qualification \
+  --ledger "$JOB_SEARCH_STATE_ROOT/ledger.sqlite3" \
+  --candidate-memory "$CANDIDATE_MEMORY" \
+  --runner "$JOB_SEARCH_RUNNER" \
+  --schema "$JOB_SEARCH_APP_ROOT/schemas/workday-fit-decision.v1.schema.json" \
+  --workdir "$JOB_SEARCH_REPO_ROOT" \
+  --evidence-root "$EVIDENCE/qualification" \
+  --output "$WORKDAY_QUALIFICATION_RESULT"
+WORKDAY_QUALIFICATION_RC=$?
+set -e
+if [[ "$WORKDAY_QUALIFICATION_RC" -ne 0 ]]; then
+  printf '%s\n' "Workday qualification failed closed; no unqualified row can enter the browser lane" >&2
+fi
 WORKDAY_FAST_PATH_RESULT="$EVIDENCE/workday-fast-path.json"
 "$JOB_SEARCH_PYTHON" - "$WORKDAY_FAST_PATH_RESULT" <<'PY'
 import json

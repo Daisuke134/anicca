@@ -1430,6 +1430,32 @@ class Ledger:
         ).fetchone()
         return row is not None and str(row["decision"]) == "qualified"
 
+    def record_workday_fit_decision(
+        self, application_id: str, decision: str, evidence_sha256: str
+    ) -> None:
+        if decision not in {"qualified", "rejected", "hold"}:
+            raise ValueError("invalid Workday fit decision")
+        if not re.fullmatch(r"[a-f0-9]{64}", evidence_sha256):
+            raise ValueError("Workday fit evidence must be a lowercase SHA-256")
+        with self._transaction():
+            self.connection.execute(
+                """
+                INSERT INTO workday_fit_decisions
+                  (application_id, decision, evidence_sha256, created_at)
+                VALUES (?, ?, ?, ?)
+                """,
+                (application_id, decision, evidence_sha256, _now()),
+            )
+            if decision == "rejected":
+                self._transition_in_transaction(
+                    application_id,
+                    "rejected",
+                    {
+                        "reason": "model_workday_fit_rejected",
+                        "evidence_sha256": evidence_sha256,
+                    },
+                )
+
     def submission_attempts(self, application_id: str) -> list[dict[str, Any]]:
         rows = self.connection.execute(
             """
