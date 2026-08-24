@@ -679,6 +679,13 @@ U13 atomic order:
     billing charge, subscription, Plus upgrade, boost or badge effect occurred. After an explicit
     owner capital receipt, the existing loop can purchase once and proceed directly to focused
     proposals without another setup/research step.
+42. **SEED PURCHASED / COST-DRIFT BLOCKER FOUND:** explicit owner approval funded one $15 bundle;
+    checkout ID `2091725750142893820` completed and official Connects History reads +100 purchased,
+    +50 new-member credit and balance 150. The first application wake then failed before effect because
+    one sealed candidate's official cost changed from 11 to 14 Connects, and the planner raised instead
+    of reaching the next valid 9-Connect candidate. Preserve invalid-payload fail-closed behavior, but
+    treat an official cost change as stale qualification and continue to the next sealed candidate.
+    No proposal or Connects spend occurred in the failed wake.
 
 U14 atomic order:
 

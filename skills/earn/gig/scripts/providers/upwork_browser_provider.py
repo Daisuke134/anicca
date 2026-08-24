@@ -332,7 +332,6 @@ def plan_free_proposal(state: dict[str, Any], proposals_dir: Path) -> dict[str, 
             or not isinstance(payload.get("cover_letter"), str)
             or not payload["cover_letter"].strip()
             or not isinstance(terms, dict) or set(terms) != _SEALED_TERMS_KEYS
-            or terms.get("required_connects") != required
             or not isinstance(answers, list)
             or any(
                 not isinstance(answer, dict) or set(answer) != {"question", "answer"}
@@ -343,6 +342,8 @@ def plan_free_proposal(state: dict[str, Any], proposals_dir: Path) -> dict[str, 
             or not isinstance(payload.get("attachments"), list)
         ):
             raise ValueError("upwork_sealed_proposal_invalid")
+        if terms.get("required_connects") != required:
+            continue
         canonical = dict(payload)
         recorded_hash = canonical.pop("payload_sha256")
         canonical_line = json.dumps(
