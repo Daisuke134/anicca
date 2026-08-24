@@ -91,7 +91,7 @@ def _private_model_runner(root: Path, command: list[str], label: str) -> list[st
     profile.chmod(0o600)
     return ["/usr/bin/sandbox-exec", "-f", str(profile), *command]
 PAID_DECISION_SCHEMA_VERSION = 4
-PAID_DECISION_PROMPT_VERSION = "paid-semantic-decision-v14"
+PAID_DECISION_PROMPT_VERSION = "paid-semantic-decision-v15"
 PAID_DECISION_MODEL = "gpt-5.6-sol"
 PAID_FILE_MODEL = "gpt-5.6-sol"
 PAID_RUNNER_CANDIDATES = {
@@ -1189,10 +1189,12 @@ def _decision_prompt(context: Path, context_sha256: str, feedback: str,
         "uses delivery_stage none. Decide explicit approval from "
         "the complete semantic workflow, never from title or keyword matching. required_output and required_effect must "
         "state the bounded outcome. required_assets must list every buyer-visible screenshot, image, or linked asset "
-        "required by the accumulated contract before any builder runs; use [] only when no such media is required. "
+        "required for the current bounded output and available for honest verification in this cycle; use [] only when "
+        "the current output requires no such media. An asset that can exist only after a future event belongs in "
+        "unresolved and in the later required output, not in the current required_assets contract. "
         "Each required asset needs a stable lowercase asset_id, kind, minimum_count, buyer_visible_purpose, "
-        "source_authority builder/buyer/account_owner, and archive_required. Do not hide a required asset only in "
-        "unresolved. unresolved is an array of strings. "
+        "source_authority builder/buyer/account_owner, and archive_required. Never move an asset that is available and "
+        "required for the current output into unresolved. unresolved is an array of strings. "
         + policy_instruction
         + "Read the context and its read_these_first files. Do not use a browser or mutate anything."
     ).encode("utf-8")
