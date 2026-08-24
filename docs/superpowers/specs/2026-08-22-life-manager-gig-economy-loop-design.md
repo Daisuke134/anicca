@@ -700,8 +700,8 @@ maximum application volume. The deterministic acquisition order is:
 5. Monitor qualified invitations and direct offers, which require no purchased proposal capacity.
 6. Discover recent jobs and prefer clear acceptance criteria, low proposal count, verified payment,
    client hiring history, low Connects and one-to-three-day delivery.
-7. Maintain at least three live qualified candidates while free submission capacity is unavailable; re-read
-   official job state before every proposed effect.
+7. Continuously replenish every positive-EV qualified candidate while submission capacity is
+   unavailable; re-read official job state before every proposed effect.
 8. Freeze a tailored proposal only when the reusable proof matches the job; never deliver the
    client's complete solution as unpaid application work.
 9. Use invitations or granted/returned Connects when present; never purchase acquisition capacity.
@@ -817,16 +817,16 @@ ledger:
 ### 6.3A Parallel lane and USD 10k operating contract
 
 Current production truth and target architecture are distinct. Current production has one launchd
-wake every five minutes. A wake reconciles every official sales state, may inspect multiple pages and
-jobs, and executes at most one newly authorized acquisition effect after readback. It is not yet five
-independent Coconala-style workers. The target reuses the existing scheduler and durable queues to let
-the five Skill families make progress independently:
+wake every five minutes and still executes acquisition serially. That is a temporary implementation
+defect, not the target contract. The target reuses the Coconala pattern: every independent lane and
+independent provider resource progresses concurrently, with no marketplace exception and no arbitrary
+application, contract or worker cap.
 
 ```mermaid
 flowchart LR
-  A[Acquire lane\ndiscover qualify propose] --> X[Account effect lease]
-  S[Sell lane\nmessages offers contracts] --> X
-  F[Fulfill lanes x3\nbuild QA revise deliver] --> X
+  A[Acquire workers\ndiscover qualify propose] --> X[Resource effect leases]
+  S[Sell workers\nmessages offers contracts] --> X
+  F[Fulfill workers\nbuild QA revise deliver] --> X
   M[Money lane\nfees refunds payouts] --> R[Official receipts]
   L[Learn lane\nfunnel one-variable experiment] --> A
   X --> U[Upwork browser account]
@@ -835,30 +835,37 @@ flowchart LR
   T --> L
 ```
 
-Discovery, model judgment, artifact production, QA, accounting and learning may run concurrently.
-Mutations through the same Upwork account are serialized by the existing provider-effect lease so
-parallelism cannot duplicate a proposal, message, offer acceptance or delivery. Buyer messages,
-offers, paid deadlines, revisions and unknown-effect reconciliation preempt new proposals. Fulfillment
-may use the configured three concurrent contract slots; acquisition pauses before accepting work that
-would exceed them.
+Discovery, page inspection, model judgment, proposal generation, messages in different rooms,
+fulfillment for different contracts, QA, delivery, accounting and learning run concurrently. Effects
+are fenced by the narrowest provider resource: one job ID for a proposal, one room/head for a reply,
+one offer ID for acceptance and one contract/milestone for delivery. Distinct resources never wait on
+an account-wide browser lease merely because they use the same site or profile. Multiple tabs/pages are
+normal independent workers. Only genuinely shared mutable state receives a short global reservation:
+Connects balance, account settings, KYC, billing and payout. The reservation freezes the expected
+delta; official readback releases or reconciles it. Paid deadlines and buyer messages receive higher
+economic priority, but they do not stop unrelated acquisition or fulfillment workers.
 
-Application volume is an observed funnel output, not a fixed daily quota. At bootstrap the loop runs
-one ten-qualified-proposal diagnostic window, stopping earlier if Connects, capacity, account health or
-positive expected value is exhausted. Current official truth is three submitted proposals, 118
-Connects, zero replies, zero offers and zero contracts. Public proposal cost varies by job and can
-change, so the remaining proposal count is unknown until each fresh preflight; invitations and Direct
-Offers are prioritized because replying costs no Connects. No boost, badge, Plus, auto-top-up or new
-owner-funded Connects purchase is implied.
+Application volume is maximized subject only to current authority, truthful capability, positive
+expected verified net, provider/account health, available Connects and deliverable capacity. There is
+no daily quota, one-effect-per-wake rule, ten-proposal stop, three-candidate target or fixed contract
+count. Ten qualified proposals are only the first diagnostic checkpoint: the learner evaluates view
+and reply evidence there while acquisition continues for every independently profitable candidate.
+Worker count expands from queue depth and measured browser/model/provider capacity and contracts only
+when observed errors, throttling, duplicate risk, deadlines or negative economics require backpressure.
+Current official truth is three submitted proposals, 118 Connects, zero replies, zero offers and zero
+contracts. Public proposal cost varies by job and can change, so the remaining proposal count is
+unknown until each fresh preflight; invitations and Direct Offers are prioritized because replying
+costs no Connects. No boost, badge, Plus, auto-top-up or new owner-funded Connects purchase is implied.
 
 The sellable work ladder is deliberately narrow before reviews and expands only from delivery and
 cash evidence:
 
 | Stage | Preferred work | Operating quantity | Revenue role |
 |---|---|---:|---|
-| 0–1 paid review | One-to-three-day, explicit-acceptance API integration, automation repair, bounded research/data work, documentation or small iOS/web repair covered by installed Skills | Up to 3 live qualified candidates; at most 1 proposal effect per account reconciliation; 1 active job preferred | Prove delivery, payment and review rather than maximize ticket |
-| 1–3 paid reviews | Repeat the delivered Skill/package and adjacent work with the same proof | Up to 3 concurrent contracts; one ten-proposal diagnostic window at a time | Establish close rate, revision cost and repeatability |
-| Repeatable to USD 3k | Bounded USD 500–2,000 milestones or USD 30–60/hour work whose scope fits the proven Skill | 1–3 active contracts; replace a slot only after capacity readback | Raise verified net per constrained delivery hour |
-| USD 3k to USD 10k | Repeat-client retainers and bounded USD 2,000–5,000 milestones assembled from proven Skills | Maximum 3 concurrent contracts | Target a measured mix such as 2 x USD 3,000 plus 1 x USD 4,000 verified net, or any evidence-backed equivalent |
+| 0–1 paid review | One-to-three-day, explicit-acceptance API integration, automation repair, bounded research/data work, documentation or small iOS/web repair covered by installed Skills | Every positive-EV qualified candidate; independent workers scale to measured capacity | Prove delivery, payment and review without suppressing other profitable work |
+| 1–3 paid reviews | Repeat the delivered Skill/package and adjacent work with the same proof | Every profitable candidate and every deliverable contract; dynamic backpressure from real deadlines and compute | Establish close rate, revision cost and repeatability |
+| Repeatable to USD 3k | Bounded USD 500–2,000 milestones or USD 30–60/hour work whose scope fits the proven Skill | Dynamic concurrent portfolio allocated by verified net per constrained hour | Raise verified net per constrained delivery hour |
+| USD 3k to USD 10k | Repeat-client retainers and bounded USD 2,000–5,000 milestones assembled from proven Skills | No fixed contract count; accept while each additional contract remains truthfully deliverable and positive-EV | Reach the gate with the best measured mix rather than a prescribed number of jobs |
 
 The USD amounts are planning bands, not hardcoded acceptance rules or earnings promises. Luna may
 choose different work and prices when current official scope, competition, client history, fee,
