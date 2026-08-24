@@ -90,12 +90,12 @@ def publish_application_decisions(events: list[dict[str, Any]]) -> None:
     if appended == 0:
         return
     try:
-        subprocess.Popen([
+        subprocess.run([
             sys.executable, str(DEFAULT_TELEGRAM_REPORT),
             "--gig-dir", str(DEFAULT_GIG_DIR),
             "--telegram-database", str(DEFAULT_GIG_DIR / "telegram-outbox.sqlite3"),
-        ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
-    except OSError:
+        ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=210, check=False)
+    except (OSError, subprocess.TimeoutExpired):
         pass
 
 
@@ -861,6 +861,7 @@ async def execute_sealed_proposal(
     await asyncio.to_thread(
         operate_market_form, provider="upwork", resource_id=payload["job_id"],
         form_url=form_url, sealed_intent=payload,
+        cdp_base=os.environ["CLOAK_CDP_BASE_URL"],
     )
     proposal_artifact = Path(await navigate_and_snapshot(
         pass_id, f"{sequence:02d}-1", "proposal-post", PROPOSALS_URL,
