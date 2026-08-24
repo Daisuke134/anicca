@@ -7943,6 +7943,49 @@ the named production evidence:
   repeated readback returns the same money state. Posts, followers, impressions,
   clicks, pending estimates, and projected commissions do not complete D30.
 
+### Current USD 10k gap and exposure policy
+
+The present failure is not insufficient article count. Official evidence is one
+X follower, 38 aggregate exact impressions across four monetization posts,
+three cumulative provider clicks whose post-distribution attribution is not yet
+established, zero official transactions, zero pending/approved/paid commission,
+unknown actual cost, and only one admitted offer family. Therefore USD 10,000
+monthly revenue cannot yet be projected honestly: the system has no first exact
+transaction, approved/paid commission, or measured net revenue per qualified
+impression.
+
+Apply this priority order:
+
+1. Grow qualified X reach with useful, source-grounded AI information: original
+   workflow lessons, practical comparisons, failure/recovery lessons, and
+   relevant high-reach quotes. These growth posts are non-money until an exact
+   Affiliate placement produces an official transaction.
+2. Route Affiliate distribution to a relevant external audience when repeated
+   self-quotes have weak exact reach. Do not repeat low-reach self-quotes merely
+   to increase post count. Every Affiliate effect keeps disclosure, exact owned
+   URL, control placement, immutable content hash, and duplicate zero.
+3. Let official follower, exact-impression, placement-entry, provider-click,
+   transaction, approved/paid, reversal, and known-cost deltas control the mix
+   between useful growth posts and Affiliate posts. A fixed percentage is not a
+   permanent business rule.
+4. Create or improve an article only when the model identifies a buyer-intent,
+   search-demand, evidence, CTA, or conversion gap. More articles without
+   distribution and transaction measurement are not progress toward money.
+5. Treat note.com as an unadmitted channel until the owner proves account
+   control, relevant audience fit, public permalink readback, exact outbound CTA
+   measurement, duplicate safety, and compliance. Do not copy existing articles
+   there merely for volume.
+6. Add multiple approved and measurable Affiliate offers through D18–D21.
+   A single ElevenLabs offer cannot be assumed capable of USD 10,000 monthly net
+   revenue without official unit economics.
+
+Immediate atomic order is: publish the prepared relevant-external X quote in the
+next safe slot; read exact reach; refresh PartnerStack clicks and transactions;
+continue useful AI growth posting through the normal x-repost owner; close D16
+when the model exposure boundary is met or the channel is closed; execute D17;
+then D18–D30 without skipping first transaction, first approved/paid money, and
+unit-economics gates.
+
 ### Loop runtime protocol — not Codex's design TODO
 
 Operator priority is money. Do not spend remaining-loop time or tokens on fresh
