@@ -673,6 +673,12 @@ U13 atomic order:
     only, then self-fund up to 10% of verified net received capped at $15/month until three reviews.
     Add funnel stop/repair gates at ten no-view proposals and five viewed/no-interview proposals, then
     climb from one bounded review to repeat work, $100-$500 packages and $500-$2,000 milestones.
+41. **ONE-TIME SEED PREFLIGHT COMPLETE / NO CHARGE:** the authenticated Buy Connects page reads
+    balance 0, `100 for $15.00`, charge `$15.00 + Tax`, post-state 100 and expiration August 24,
+    2027; unused Connects roll over monthly. The ordinary `Buy Connects` control is enabled. No click,
+    billing charge, subscription, Plus upgrade, boost or badge effect occurred. After an explicit
+    owner capital receipt, the existing loop can purchase once and proceed directly to focused
+    proposals without another setup/research step.
 
 U14 atomic order:
 
