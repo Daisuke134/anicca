@@ -7759,6 +7759,10 @@ the named production evidence:
 - [ ] **D08 Follower baseline.** Add official X profile follower-count readback
   for the target account. Evidence: timestamped immutable value or explicit
   `UNAVAILABLE`; post count is never substituted.
+  Discovery checkpoint: authenticated X profile DOM currently shows 1 follower,
+  27 following, and 262 posts. The D05 Affiliate post is the newest visible
+  profile row. These values explain the immediate traffic constraint but do not
+  complete D08 until an existing owner persists an immutable follower receipt.
 - [ ] **D09 Post reach baseline.** Add exact-post impressions and engagement
   readback where X exposes them. Evidence: permalink-bound receipt or explicit
   `UNAVAILABLE`.
@@ -7854,6 +7858,11 @@ Current authoritative state:
   clicks / 2 unique at its fixed counter baseline and zero later delta or
   transaction. This low exact traffic plus zero conversion, not missing content
   volume, is the current direct reason revenue remains zero.
+- The delivery pipe itself now works end to end, but the official X audience is
+  only 1 follower at the D08 discovery checkpoint. Therefore the immediate
+  economic blocker is insufficient real reach, followed by still-zero official
+  transactions. More posting without D08–D14 denominators would repeat volume,
+  not prove growth or improve money allocation.
 - The first D01 job is still `QUEUED`. D03 is not implemented, so x-repost does
   not claim this queue, publish its owned URL, or return a permalink. This is
   the immediate system blocker. D08–D10 growth denominators and D11–D17 funnel
