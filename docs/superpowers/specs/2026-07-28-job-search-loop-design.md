@@ -16,9 +16,15 @@ to discover and operate fresh Workday roles rather than stopping at that proof.
 The application Ledger remains the state SSOT and `summary.v2` is rebuilt from its
 event stream on every wake. Every-wake and application-result Telegram delivery uses
 the direct fenced Bot API transport; OpenClaw is not in the daily reporting path.
-The active engineering gate is Lever 10S. Provider-all wakes retain Workday-first
-queue order, then continue through every remaining ATS row with the same
-model/browser owner and remaining budget. Run `daily-20260824-083935` refreshes the
+The active engineering gate is Workday fit qualification 10P2. Workday form
+operation, submission fencing, authoritative verification, Ledger recording,
+Telegram reporting, and exact-URL repeated-wake dedupe are live-proven in 10P, but
+discovery still promotes broad title-regex matches without comparing the official
+job description to the candidate's resume and grounded experience. Workday is not
+end-to-end complete as a useful Job Hunter until 10P2 and 10P3 close. Provider-all
+wakes retain Workday-first queue order, then continue through every remaining ATS
+row with the same model/browser owner and remaining budget. Run
+`daily-20260824-083935` refreshes the
 official Lever API, admits Offchain Labs `Head of Solutions Engineering` as an
 attributed `materials_ready` row, and later reports it truthfully as
 `provider_unavailable`; no Lever submit fence or terminal application outcome exists
@@ -27,10 +33,11 @@ the preceding Greenhouse upload safely. The existing health owner sees the daily
 owner still running, so its commit-bound request remains pending rather than spawning
 a second executor.
 
-**End-to-end closure bar:** `3/10 complete (30%)` — Workday 10P, Ashby 10Q, and
-Greenhouse 10R are live-proven. Lever 10S is active. Generic ATS 10T, guardian 11D,
-lifecycle 11E, career summary 11F, open-source Life Manager skill 11G, and salary
-outcome 11H remain in that order.
+**End-to-end closure bar:** `3/12 complete (25%)` — Workday mechanical E2E 10P,
+Ashby 10Q, and Greenhouse 10R are live-proven. Workday fit qualification 10P2 is
+active; Workday source diversity and semantic repost dedupe 10P3 follow. Lever 10S,
+generic ATS 10T, guardian 11D, lifecycle 11E, career summary 11F, open-source Life
+Manager skill 11G, and salary outcome 11H remain in that order.
 
 **Current execution truth supersedes earlier historical run notes below:** Workday
 10P is live-proven. Run `daily-20260824-033952` reaches exact NVIDIA
@@ -385,6 +392,36 @@ accepted as a substitute for the framework.
   repeated launchd kickstarts replace waiting for the clock; they do not bypass the
   canonical owner or duplicate an external effect.
 
+#### Workday useful-job qualification contract
+
+10P proves that the existing loop can operate Workday and produce authoritative
+effects. It does not prove that the selected jobs are realistic interview targets.
+10P2 and 10P3 close that separate product requirement before any additional ATS
+rollout resumes.
+
+The model owns every fit and semantic-repost judgment. Its private input is the full
+official job description, Candidate Memory, the available resume variants, explicit
+career preferences, and sanitized prior Ledger identities/outcomes. The prompt asks
+for evidence against each mandatory requirement, unsupported gaps, a concise
+interview thesis, the selected resume variant, and exactly one decision:
+`qualified`, `rejected`, or `hold`. A title, title keyword, employer, seniority word,
+or fixed numeric score is never sufficient evidence.
+
+Deterministic code may fetch official data, validate the output schema, enforce
+exact URL/requisition uniqueness, persist evidence hashes and decisions, and prevent
+submission without a current `qualified` decision. It must not use a regex, keyword
+allowlist/denylist, points table, title family, or years threshold to decide fit or
+semantic equivalence. Missing official text, missing candidate evidence, invalid
+model output, or unresolved mandatory gaps fail closed before `materials_ready`.
+
+Existing pending Workday rows are not grandfathered: they return to this gate before
+browser submission. Exact terminal URLs remain permanently deduped. A new URL or
+requisition for the same employer/title/location receives a model evidence comparison
+against prior rows; a supported repost decision creates no submit intent. After this
+safety gate is live, official discovery expands beyond the current fixed NVIDIA,
+Workday, and Salesforce tenants so the loop finds genuinely new positions rather
+than exhausting one employer's catalog.
+
 #### Atomic execution steps
 
 This is the remaining implementation-order SSOT. Only the first
@@ -546,6 +583,8 @@ This is the remaining implementation-order SSOT. Only the first
 | 48cz | Discover fresh official Lever rows into the shared model lane | `live_proven_discovery_outcome_pending` | Run `daily-20260824-083935` queries the official Lever API, admits Offchain Labs `Head of Solutions Engineering` with canonical `jobs.lever.co` URL as an attributed `materials_ready` row, and hands it to the unchanged provider-all orchestrator. Its first attempt is truthfully `provider_unavailable`, so one fenced terminal Lever outcome and repeated-wake dedupe remain the 10S gate. |
 | 48da | Project all five target ATS adapters from the event Ledger | `implementation_done_release_gate` | After the live Greenhouse outcome, `summary.v2` correctly counts Greenhouse `submit_unknown=1` but its required/confirmed adapter lists still contain only Ashby and Workday. RED requires Ashby, Greenhouse, Lever, Workday and generic. GREEN uses the same event-derived `ever_submitted` rule for all five; historical generic evidence remains visible, Lever stays unconfirmed until 10S, and overall completion remains false. Summary tests pass 3/3 and full regression passes 269/269. Release/live projection readback remain. |
 | 48db | Serialize an impatient model command through a bounded runtime lock | `implementation_done_release_gate` | At the end of `daily-20260824-083935`, Luna starts `observe` while a GitLab Resume Attach command is still waiting for `Page.fileChooserOpened`. The observe command fails the nonblocking command lock and the valid Attach button times out before any file is set, ending the row pre-fence. RED holds the command lock briefly and requires the second command to wait, and separately reproduces fileChooser timeout. GREEN serializes commands for at most 30 seconds and converts a no-chooser upload to fresh exit-zero `action_rejected / upload_control_did_not_open_file_chooser`; other upload failures and post-fence paths remain fail-closed. Direct runtime tests pass 16/16 and full regression passes 271/271. Release/live retry remain. |
+| 48dc | Replace broad Workday title matching with model-owned evidence qualification | `pending_actionable` | The current discovery promotes a role from title/location regex alone and never compares the official description with Candidate Memory or the selected resume. The existing model lane must receive the complete official job description, grounded candidate experience, preferences, and prior same-employer/title Ledger rows. It returns one schema-valid `qualified`, `rejected`, or `hold` decision with requirement-by-requirement resume evidence, unsupported gaps, interview thesis, and resume choice. No keyword list, regex, fixed score, title allowlist, or deterministic code may make the fit judgment. Missing description, missing grounding, invalid output, unsupported mandatory experience, or uncertainty fails closed before `materials_ready`. The two currently pending Salesforce Workday rows must pass this gate before any Submit. One obviously unsupported role is rejected without browser submission; one genuinely matched fresh role reaches authoritative `submitted`, Telegram, and next-wake duplicate 0. This closes 10P2. |
+| 48dd | Expand fresh Workday discovery without semantic repost duplication | `pending_after_48dc` | Replace the fixed NVIDIA/Workday/Salesforce-only source set with official Workday tenants discovered from the existing target-company/search context. Exact canonical URL/requisition dedupe remains deterministic. The model compares a proposed row with prior same-company/title/location history and identifies a repost or materially different position from evidence; code only validates and persists that structured judgment. A production wake discovers a new, fit-qualified Workday position outside the original three tenants, while a controlled repost is recorded without a new submit intent. This closes 10P3. |
 | 49 | Drive the fresh Workday form with the LLM agent only | `live_proven` | Two consecutive NVIDIA Workday rows were driven through CloakBrowser CDP `:9222` by Luna/xhigh from fresh visible observations and screenshots, without a scripted question mapper or fixed page workflow. |
 | 50 | Reuse or create the Workday tenant account inside the same agent session | `live_proven` | The same tenant credential/session was reused by Luna without a second browser or executor. |
 | 51 | Complete every Workday page and variable employer question | `live_proven` | Luna completed provider-varying Salesforce questions for two rows from fresh observations and reached Review. |
@@ -558,7 +597,7 @@ This is the remaining implementation-order SSOT. Only the first
 | 58 | Prove recurring Workday-only operation | `live_proven` | JR2008507 closes with exact UI, Gmail, Ledger and Telegram. Immediate existing-owner wake `daily-20260824-035611` excludes it, discovers unseen JR2020208-1, and starts only that row; duplicate side effects are zero. |
 | 59 | Close `JOB-WORKDAY-E2E-MODEL-10P` | `done` | One 30-minute owner, acct2 Luna, existing CDP, fresh Workday discovery, one fenced submit, exact completion UI, authoritative Gmail receipt, Ledger `submitted`, Telegram `30852`/`30853`, current v2 projection, immediate dedupe 0, and next-unseen-row continuation all agree. |
 | 60 | Unpark Ashby as `JOB-ASHBY-E2E-MODEL-10Q` | `done` | Run `daily-20260824-055750` records one fenced LangChain terminal outcome with Telegram `31008`; repeated wake `061424` excludes the canonical URL and proves duplicate submit 0. |
-| 61 | Extend the proven loop to Greenhouse, Lever, and generic ATS | `greenhouse_done_lever_next` | Greenhouse 10R is live-proven; Lever 10S is now the first active item, followed by generic ATS 10T. |
+| 61 | Finish Workday job selection, then extend Lever and generic ATS | `workday_fit_active` | 10P mechanical E2E and Greenhouse 10R are live-proven. Close 10P2 fit qualification and 10P3 diverse discovery/repost dedupe before resuming Lever 10S and generic ATS 10T. |
 | 62 | Package Job Hunter as a canonical open-source Life Manager skill/loop | `pending_after_61` | Reuse the current `apps/job-search-loop` implementation and fixed OSS-derived patterns; do not create a second executor. A clean-home install accepts finalized resume plus email, owns one release/launchd/state/credential/Telegram contract, and reproduces the verified behavior without private data. |
 | 63 | Close inbox, interview, assessment, offer, acceptance, and start lineage | `pending_after_62` | Every external event remains bound to one application with evidence, Telegram reporting, scheduling, preparation, and final-action fences. |
 | 64 | Prove the USD 10,000/month salary outcome and recurring soak | `pending_after_63` | One accepted and started role has authoritative gross base salary of at least USD 10,000 monthly equivalent, while the full application and follow-through loop remains healthy 24/7. |
@@ -2276,13 +2315,15 @@ must accumulate in the live loop:
 | 7 | Bilingual resume and official-posting language routing | `completed` | 107 tests; fourteen grounded Japanese points; A4 one-page Japanese PDF; extracted-text and visual inspection; real CLI selected the Japanese PDF for Japanese text and technical-business English PDF for English text; routed path/hash remains the Telegram receipt source |
 | 8 | Required-question autonomy | `superseded_by_10P` | Section 1.0 steps 18-21 replace the private-input wait with Candidate Memory, semantic Answer Memory, and stable always-answer inference policies |
 | 9 | Recurring interview preparation and real interview-email E2E | `implemented_waiting_external_e2e` | Persistent registration; 3-day/1-day/immediate windows; real Telegram immediate delivery plus second-tick dedupe; forced production launchd no-mail pass and private DB healthcheck; final real recruiter-email E2E waits for an interview message |
-| 10 | Shared browser-agent framework and ATS rollout | `in_progress_3_of_5` | Workday 10P, Ashby 10Q, and Greenhouse 10R are complete. Lever 10S is active; generic ATS 10T follows. |
+| 10 | Shared browser-agent framework and ATS rollout | `in_progress_workday_fit` | Workday form/submission mechanics 10P, Ashby 10Q, and Greenhouse 10R are complete. Workday is reopened for useful-job qualification in 10P2 and source diversity/repost dedupe in 10P3; Lever 10S and generic ATS 10T follow. |
 | 10N | `JOB-LEDGER-EVENT-10N`: repair the attributed-application transition contract | `completed` | `Ledger` appends the matching event before updating the trigger-guarded projection in the same transaction. Focused ledger tests pass (`17/17`); the live Cognition row advanced `discovered→qualified→materials_ready`, survived DB reopen, and the real ledger reports integrity `ok` with zero event/projection mismatches. |
 | 10O | `JOB-SCHEDULER-POLICY-10O`: align cadence and application objective | `implemented` | The quota short-circuit is removed and pending `materials_ready` rows are exposed. The installed production policy is every 30 minutes (`StartInterval=1800`); final completion evidence is owned by 10P. |
 | 10P | `JOB-WORKDAY-E2E-MODEL-10P`: full framework plus Workday E2E | `completed` | JR2008507 closes with exact UI, receipt `1a02ff31ecb7353d`, Ledger `submitted`, Telegram `30852`/`30853`, v2 agreement, immediate dedupe 0, and unseen JR2020208-1 continuation through the one existing owner. |
+| 10P2 | `JOB-WORKDAY-FIT-QUALIFICATION-10P2` | `in_progress` | Prompt-owned full-description/resume evidence qualification replaces title regex; current pending rows are requalified before Submit; one unsupported role is safely rejected and one matched fresh role closes with authoritative submission plus dedupe 0 |
+| 10P3 | `JOB-WORKDAY-DIVERSE-DISCOVERY-10P3` | `pending_after_10P2` | Official Workday discovery expands beyond NVIDIA/Workday/Salesforce and model-owned semantic comparison prevents a repost with a new URL/requisition from creating another submit intent |
 | 10Q | `JOB-ASHBY-E2E-MODEL-10Q`: reuse the framework for Ashby | `completed` | The same wake completes fresh NVIDIA Workday then records one fenced LangChain `submit_unknown` with Telegram `31008`; repeated wake `061424` excludes it with duplicate 0. |
 | 10R | `JOB-GREENHOUSE-E2E-MODEL-10R` | `completed` | Run `daily-20260824-080447` fills the official GitLab form, consumes one fence, records Ledger `submit_unknown / no_authoritative_completion_ui`, sends Telegram `31173`, then advances to the second GitLab row with duplicate submit 0. |
-| 10S | `JOB-LEVER-E2E-MODEL-10S` | `in_progress` | Official discovery and attributed queue admission are live-proven; one fenced terminal Lever outcome plus repeated-wake duplicate 0 remain |
+| 10S | `JOB-LEVER-E2E-MODEL-10S` | `pending_after_10P3` | Official discovery and attributed queue admission are live-proven; one fenced terminal Lever outcome plus repeated-wake duplicate 0 remain |
 | 10T | `JOB-GENERIC-ATS-MODEL-10T` | `pending_after_10S` | An unknown supported ATS form completes without a new fixed workflow |
 | 11 | Closed-loop Dream Job objective, self-improvement and self-healing | `in_progress` | 11A completed in PR #1364 (final CI `30473862095`). 11B adds immutable attribution and outcomes. 11C implements the resident weekly learning driver, deterministic two-arm assignment, held-out replay, Wilson promotion, immediate rollback, compare-and-swap pointer and hashed Telegram report; its real first pass remained truthfully inconclusive at 0/0 resolved with replay violations=0 and ACK `4530`, without changing the five application states. Guardian, lifecycle closure and `summary.v2` remain in 11D–11F |
 | 12 | Portable local OSS distribution | `completed` | 12A merged in PR #1296; 12B merged in PR #1302 (`a58f1838`, CI `30449915191`): guided interactive/JSON profile authoring with placeholder/overwrite/legal-inference fences; reproducible 105-entry merge-commit tar.gz + SHA-256 `f334202a`; extracted-artifact clean-HOME install; 149 job-loop + 7 runner tests; canonical health exit 0 and both SQLite integrity checks `ok` without scheduler reinstall |
@@ -2303,9 +2344,11 @@ not start merely because their design is already written:
 | `JOB-LEDGER-EVENT-10N` | `completed` | The production fix and focused ledger suite write event then projection atomically; Cognition was repaired and reopened successfully with integrity `ok` and zero mismatches. |
 | `JOB-SCHEDULER-POLICY-10O` | `completed` | The legacy two-slot gate is removed, pending `materials_ready` rows are exposed, and the installed owner runs every 1800 seconds. Authoritative Workday outcome and repeated-wake progress are proven in 10P. |
 | `JOB-WORKDAY-E2E-MODEL-10P` | `completed` | JR2008507 exact UI, authoritative receipt, Ledger, Telegram and immediate dedupe/next-row evidence agree. |
+| `JOB-WORKDAY-FIT-QUALIFICATION-10P2` | `in_progress` | Full official description plus Candidate Memory/resume evidence goes to the model; only grounded, schema-valid fit decisions can reach `materials_ready`; existing pending rows are requalified; one supported submit and one unsupported rejection are live-proven. |
+| `JOB-WORKDAY-DIVERSE-DISCOVERY-10P3` | `pending_after_10P2` | Official discovery expands beyond the fixed three tenants and model-owned semantic history comparison prevents a repost under a new URL/requisition from producing a duplicate submit intent. |
 | `JOB-ASHBY-E2E-MODEL-10Q` | `completed` | Terminal LangChain outcome plus repeated-wake duplicate 0 are live-proven. |
 | `JOB-GREENHOUSE-E2E-MODEL-10R` | `completed` | Official GitLab terminal outcome, Telegram ACK and same-wake duplicate 0 are live-proven. |
-| `JOB-LEVER-E2E-MODEL-10S` | `in_progress` | Official Offchain Labs discovery and attributed queue admission are live-proven; one fenced terminal Lever outcome and repeated-wake duplicate 0 close it. |
+| `JOB-LEVER-E2E-MODEL-10S` | `pending_after_10P3` | Official Offchain Labs discovery and attributed queue admission are live-proven; one fenced terminal Lever outcome and repeated-wake duplicate 0 close it. |
 | `JOB-GENERIC-ATS-MODEL-10T` | `pending_after_10S` | An unknown supported ATS form completes through the same framework. |
 | `JOB-GUARDIAN-PASS-11D` | `pending_after_10T` | A deterministic scheduled guardian checks launchd/timer freshness, DB integrity, provider/browser health and leases; repairs only pre-side-effect failures; deduplicates alerts and persists remediation |
 | `JOB-LIFECYCLE-CLOSE-11E` | `pending_after_11D` | Follow-up cadence, every interview round, offers, negotiation support and accepted/declined/started outcomes are durable; only final identity/judgment actions require the user |
