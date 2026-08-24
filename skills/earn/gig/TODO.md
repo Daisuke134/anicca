@@ -151,7 +151,9 @@ Storefront work.
        token. eKYC completes only on the official `本人確認✓/✔/済み/承認済み` token and
        explicitly rejects `申請中` and `非承認`. Raw page text is discarded rather than
        persisted or sent to a model. Status parser self-checks pass; live tokens remain
-       pilot readback.
+       pilot readback. When ready remains blocked, `finished` now opens only the first
+       missing gate's official Coconala page in the same browser; a missing preflight
+       returns to the installer instead of opening an unrelated page.
     7. [ ] Activate the browser, Apply, Negotiate, Storefront, Paid and release watcher
        only after all official account gates are accepted. A listing is not this gate.
        Direct implementation now records preflight evidence, requires all seven account
