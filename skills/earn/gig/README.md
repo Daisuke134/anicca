@@ -140,6 +140,34 @@ The lifecycle copies three proven OSS patterns without adding their runtimes as 
 | [LangGraph](https://github.com/langchain-ai/langgraph) `f09cfe8f` | One `thread_id` per isolated owner, checkpoints and pending writes survive a failed step | Reuse existing project files/ledgers as checkpoints; do not add another state store |
 | [Hatchet](https://github.com/hatchet-dev/hatchet) `89d130f3` | Entity-keyed concurrency, durable events, explicit completed/cancelled terminal states, stale invocation rejection | Key fencing by marketplace entity/effect; do not add Hatchet/Postgres |
 
+### Paid no-human production boundary
+
+The account owner performs only Coconala's mandatory official setup or recovery ceremonies,
+such as account registration, SMS/eKYC, bank registration, and a provider-required login
+challenge that no existing authorized session can satisfy. Those ceremonies are an explicit
+`NEEDS_OWNER_CEREMONY` product state, never hidden Paid work and never a successful delivery.
+After setup, normal Paid operation has no human approval gate and no foreground Codex/customer
+work path.
+
+For every purchased order, the launchd-selected project owner must resolve authorized skills,
+accounts, sessions, and tools; perform the provider work; build the exact deliverable; repair
+every actionable finding from a fresh isolated reviewer; submit once; and obtain official
+provider/Coconala readback. The effect receipt records the durable owner/run identity. A user,
+Codex, ad-hoc script, or uncheckpointed browser action cannot satisfy an acceptance gate.
+
+The owner never buys quality by fabricating identity, attendance, consent, physical presence,
+credentials, or completion. Apply normally rejects such work before purchase. If a legacy paid
+order exposes an unsupported requirement, its project owner autonomously selects a truthful,
+authorized disclosed-agent alternative when one satisfies the same buyer outcome; otherwise it
+negotiates a supported scope or completes official cancellation. It does not wait for a person to
+perform the work and does not submit a low-quality proxy.
+
+Paid no-human acceptance requires varied real production orders to reach
+`CLOSED_COMPLETED` or `CLOSED_CANCELLED` with owner-attributed provider effects, fresh QA,
+exact seller readback, terminal official state, restart/resume evidence, and next-wake effect
+zero. Tests, one successful message, one manually rescued order, and process liveness are not
+that proof.
+
 Apply prioritizes work the installed AI/Mac/tool system can demonstrate it can deliver well,
 especially software, landing pages, writing, research, and strategy. It normally rejects work
 whose success depends on a human meeting, undisclosed personal participation, unsupported
