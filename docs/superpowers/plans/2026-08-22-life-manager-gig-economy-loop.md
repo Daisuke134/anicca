@@ -2344,6 +2344,19 @@ Only the first unchecked row is active; a missing buyer event blocks that resour
 - [ ] Apply the same invariant to Fiverr, Lancers, CrowdWorks, Freelancer, Mercor, uGig and unknown
   markets through provider conformance; no provider-specific capability matrix or brain is allowed.
 
+### Task 64: Retire provider-specific application form scripts
+
+- [ ] Replace Upwork deterministic form filling/preflight selectors with one Terra common-Browser-ACI
+  task: inspect current form, fill the sealed intent, resolve ordinary validation feedback and submit.
+- [ ] Keep deterministic code only for immutable intent hash, resource lease, Connects reservation,
+  at-most-once effect fence and official Proposal ID/Connects readback.
+- [ ] Delete or reduce `upwork_proposal_browser.py` so it contains no provider workflow selectors,
+  field-filling JS, duration/rate-increase UI policy or application judgment.
+- [ ] Prove the same Terra form task works on two differently shaped Upwork jobs without code changes;
+  each returns official Proposal ID, exact Connects delta and replay effect 0.
+- [ ] Use the same ACI task unchanged for the first Fiverr/Lancers/CrowdWorks/Freelancer/Mercor/uGig
+  canary; add no site-specific form script.
+
 ## Final verification
 
 - [ ] `git diff --check` exits 0.
