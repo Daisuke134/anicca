@@ -35,3 +35,10 @@ def test_release_filter_rejects_symlink_outside_release(tmp_path):
 
     with pytest.raises(release.ReleaseError, match="symlink escapes root"):
         release._release_filter(member, str(tmp_path))
+
+
+def test_default_repo_is_repository_root():
+    release = load()
+
+    assert release.DEFAULT_REPO == SCRIPT.parents[4]
+    assert (release.DEFAULT_REPO / release.ENTRYPOINT).is_file()
