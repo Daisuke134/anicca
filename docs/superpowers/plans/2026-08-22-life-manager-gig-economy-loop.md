@@ -610,6 +610,11 @@ U13 atomic order:
     Coconala shape: read current listings, let the model decide from full detail, submit through the
     provider adapter, then require the official proposal ID. Code parses only fixed Upwork URLs, IDs
     and Connects amounts; it contains no keyword or regex suitability judgment.
+33. **COMMON LOOP LIVE / ZERO-CONNECT SCAN EXPANDED:** release `a76fb2e9c611` completed the first
+    production wake through the simplified path: ten current jobs inspected, zero official
+    zero-Connect jobs, proposals 0 and external effects 0. Reuse the marketplace's ordinary page
+    order and follow three bounded result pages per wake, exactly like the existing Coconala scanner;
+    no semantic query, score, category allowlist or custom judgment layer is added.
 
 U14 atomic order:
 
