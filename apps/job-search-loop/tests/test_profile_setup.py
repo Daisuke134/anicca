@@ -19,17 +19,25 @@ class ProfileSetupTests(unittest.TestCase):
         self.root = Path(self.temporary.name)
         self.answers = self.root / "answers.json"
         self.output = self.root / "private" / "profile.json"
+        self.resume = self.root / "resume.pdf"
+        self.resume.write_bytes(b"%PDF-1.4\nresume\n")
 
     def tearDown(self):
         self.temporary.cleanup()
 
-    @staticmethod
-    def _answers() -> dict:
+    def _answers(self) -> dict:
         return {
             "version": 1,
             "candidate": {
                 "name": "Release Candidate",
                 "application_email": "candidate@example.test",
+            },
+            "materials": {
+                "resumes": {
+                    "engineering": str(self.resume),
+                    "technical_business": str(self.resume),
+                    "japanese": str(self.resume),
+                }
             },
             "facts": [
                 {
@@ -122,6 +130,9 @@ class ProfileSetupTests(unittest.TestCase):
             [
                 "Interactive Candidate",
                 "interactive@example.test",
+                str(self.resume),
+                "",
+                "",
                 "Shipped an AI assistant.",
                 "Public product page supplied by user",
                 "",
@@ -142,7 +153,9 @@ class ProfileSetupTests(unittest.TestCase):
         self.assertNotIn("work_authorization", encoded)
 
     def test_interactive_collection_needs_at_least_one_verified_fact(self):
-        responses = iter(["Candidate", "candidate@example.test", ""])
+        responses = iter(
+            ["Candidate", "candidate@example.test", str(self.resume), "", "", ""]
+        )
         with patch("builtins.input", side_effect=lambda _prompt: next(responses)):
             with self.assertRaisesRegex(ProfileSetupError, "fact"):
                 collect_interactive()

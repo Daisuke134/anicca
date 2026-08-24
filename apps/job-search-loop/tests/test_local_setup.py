@@ -26,11 +26,16 @@ class LocalSetupTests(unittest.TestCase):
         self.codex_auth.write_text('{"test":"credential"}\n', encoding="utf-8")
         self.codex_auth.chmod(0o600)
         self.profile = self.root / "source-profile.json"
+        self.resume = self.root / "resume.pdf"
+        self.resume.write_bytes(b"%PDF-1.4\nportable resume\n")
         self.profile.write_text(
             json.dumps(
                 {
                     "version": 1,
                     "candidate": {"name": "Portable Candidate"},
+                    "materials": {
+                        "resumes": {"engineering": str(self.resume)}
+                    },
                     "facts": [
                         {
                             "id": "verified-experience",
@@ -110,6 +115,13 @@ class LocalSetupTests(unittest.TestCase):
             (self.data / "anicca" / "job-search").stat().st_mode & 0o777,
             0o700,
         )
+        manifest = self.data / "anicca/job-search/materials/manifest.v1.json"
+        self.assertEqual(manifest.stat().st_mode & 0o777, 0o600)
+        self.assertEqual(json.loads(manifest.read_text())["resumes"], {
+            "engineering": "resumes/engineering.pdf",
+            "japanese": "resumes/japanese.pdf",
+            "technical_business": "resumes/technical_business.pdf",
+        })
         encoded = install.read_text(encoding="utf-8")
         self.assertNotIn("Logged in using ChatGPT", encoded)
         self.assertNotIn("token", encoded.lower())

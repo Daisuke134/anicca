@@ -149,6 +149,40 @@ def _load_profile(path: Path) -> dict[str, Any]:
         raise SetupError(f"invalid profile: {error}") from error
 
 
+def _install_materials(profile: dict[str, Any], data_dir: Path) -> Path:
+    materials = profile.get("materials")
+    resumes = materials.get("resumes") if isinstance(materials, dict) else None
+    engineering = resumes.get("engineering") if isinstance(resumes, dict) else None
+    if not isinstance(engineering, str):
+        raise SetupError("profile.materials.resumes.engineering is required")
+    destination = data_dir / "materials"
+    resume_dir = destination / "resumes"
+    _private_dir(destination)
+    _private_dir(resume_dir)
+    installed = {}
+    for variant in ("engineering", "technical_business", "japanese"):
+        raw = resumes.get(variant) or engineering
+        source = Path(str(raw)).expanduser()
+        if not source.is_absolute() or not source.is_file():
+            raise SetupError(f"resume file is unavailable: {variant}")
+        target = resume_dir / f"{variant}.pdf"
+        _atomic_private_write(target, source.read_bytes())
+        installed[variant] = f"resumes/{variant}.pdf"
+    manifest = destination / "manifest.v1.json"
+    _atomic_private_write(
+        manifest,
+        (
+            json.dumps(
+                {"version": 1, "resumes": installed},
+                indent=2,
+                sort_keys=True,
+            )
+            + "\n"
+        ).encode("utf-8"),
+    )
+    return manifest
+
+
 def install(
     *,
     profile_source: Path,
@@ -180,6 +214,7 @@ def install(
 
     for directory in (config_dir, state_dir, data_dir):
         _private_dir(directory)
+    material_manifest = _install_materials(value, data_dir)
     auth_alias = (
         _install_codex_auth_alias(config_dir, env)
         if selected_provider == "codex"
@@ -199,6 +234,7 @@ def install(
         "profile_path": str(profile_path),
         "state_root": str(state_dir),
         "data_root": str(data_dir),
+        "material_manifest": str(material_manifest),
     }
     if auth_alias is not None:
         receipt["codex_auth_alias"] = str(auth_alias)

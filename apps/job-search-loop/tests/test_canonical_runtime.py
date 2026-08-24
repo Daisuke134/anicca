@@ -14,11 +14,16 @@ REPO_ROOT = APP_ROOT.parents[1]
 class CanonicalRuntimeTests(unittest.TestCase):
     @staticmethod
     def _valid_portable_profile(path: Path) -> None:
+        resume = path.with_name("resume.pdf")
+        resume.write_bytes(b"%PDF-1.4\nportable resume\n")
         path.write_text(
             json.dumps(
                 {
                     "version": 1,
                     "candidate": {"name": "Scheduler Candidate"},
+                    "materials": {
+                        "resumes": {"engineering": str(resume)}
+                    },
                     "facts": [
                         {
                             "id": "fact-1",

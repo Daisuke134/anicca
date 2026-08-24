@@ -52,12 +52,30 @@ def prepare_profile(value: Any) -> dict[str, Any]:
         raise ProfileSetupError(
             "profile.candidate.application_email must be a valid email"
         )
+    materials = profile.get("materials")
+    resumes = materials.get("resumes") if isinstance(materials, dict) else None
+    if not isinstance(resumes, dict):
+        raise ProfileSetupError("profile.materials.resumes is required")
+    engineering = resumes.get("engineering")
+    if not isinstance(engineering, str) or not Path(engineering).is_absolute():
+        raise ProfileSetupError("engineering resume path must be absolute")
+    for variant in ("engineering", "technical_business", "japanese"):
+        source = resumes.get(variant) or engineering
+        path = Path(source)
+        if not path.is_absolute() or not path.is_file():
+            raise ProfileSetupError(f"{variant} resume file is unavailable")
+        resumes[variant] = str(path)
     return profile
 
 
 def collect_interactive() -> dict[str, Any]:
     name = input("Full name: ").strip()
     email = input("Application email: ").strip()
+    engineering_resume = input("Engineering/default resume PDF (absolute path): ").strip()
+    business_resume = input(
+        "Technical-business resume PDF (blank to reuse default): "
+    ).strip()
+    japanese_resume = input("Japanese resume PDF (blank to reuse default): ").strip()
     facts: list[dict[str, str]] = []
     while True:
         claim = input("Verified fact claim (blank when finished): ").strip()
@@ -81,6 +99,13 @@ def collect_interactive() -> dict[str, Any]:
             "candidate": {
                 "name": name,
                 "application_email": email,
+            },
+            "materials": {
+                "resumes": {
+                    "engineering": engineering_resume,
+                    "technical_business": business_resume or engineering_resume,
+                    "japanese": japanese_resume or engineering_resume,
+                }
             },
             "facts": facts,
         }
