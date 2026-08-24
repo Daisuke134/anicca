@@ -8204,6 +8204,15 @@ Current implementation state:
 - [ ] **XT05 Production proof.** Require three consecutive x-tweeter public
   opportunities with source receipts, quality PASS, exact permalinks, duplicate
   zero, and exact reach readback before calling independent Original healthy.
+  Manual canary (not counted as a calendar opportunity) completes on production
+  release `44a6c6bf3`: owner run 1 exits 0 and publishes
+  `https://x.com/selawmqt/status/2091806528844259656`. Payload `6d1d663e...`
+  binds Teknium's Hermes `/review` source, exact evidence, source/draft/critic
+  hashes, procedure plus failure-condition value, weighted length 215,
+  `supported/useful/source_specific/novel=true`, spam risk low, unsupported claim
+  0, and near-duplicate 0. The canary takes about 12 minutes, so the first three
+  natural `:15/:45` opportunities must also reveal whether 15-minute staggering
+  is sufficient or preparation must move ahead of the public boundary.
 
 ### Loop runtime protocol — not Codex's design TODO
 
