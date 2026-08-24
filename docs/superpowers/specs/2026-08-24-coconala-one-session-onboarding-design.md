@@ -120,6 +120,24 @@ Paid remains independently subject to its production delivery acceptance. The on
 controller may activate the existing Paid job but cannot manufacture a Paid completion
 claim.
 
+## Execution subject and money maximization
+
+The AI system performs Coconala work. Qualification therefore measures the installed
+AI/Mac/tool system's demonstrated ability to produce and verify the requested outcome,
+not the account owner's personal skill, free time, health, sleep, or manual workload.
+Independent profitable projects run concurrently up to real compute, browser, external
+tool, platform, deadline, cost, and quality limits. There is no human-capacity throttle.
+
+The economic policy maximizes verified expected net income across eligible Coconala work:
+expected payment and repeat value, less marketplace fees, compute/tool cost, deadline and
+refund risk. Safety fences prevent duplicate applications, replies, listings, deliveries,
+and unsupported claims; they do not impose a human workload ceiling.
+
+Job Hunter is a separate exception because the human is the employee. It must bind jobs
+to the person's real history, eligibility, preferences, interview availability, and
+offer-acceptance authority. Those human constraints never leak into AI-delivered
+marketplace work such as Coconala, Upwork, or future money printers.
+
 ## Acceptance
 
 On a clean friend-owned Mac, the owner runs only `./install.sh coconala`. The installer

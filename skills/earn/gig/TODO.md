@@ -236,17 +236,21 @@ validate this package without this seller's private checkout, credentials, custo
 or runtime state.
 
 The public product principle is **fast, cheap, accurate, and minimal-human-loop**. Human work is
-front-loaded into one guided setup session. Before any 24/7 lane starts, the installer collects and
-completes every marketplace identity, SMS, eKYC, bank and consent step required for uninterrupted
-selling and bank payout. After activation, ordinary operation asks no questions and waits for no
-owner approval. The installer and loops own dependency installation, permitted signup/login automation,
-mailbox verification, capability discovery, listing construction, pricing research, application
-selection, negotiation, estimates, production, validation and delivery. They must not turn any
-of those responsibilities into an owner questionnaire or approval queue. The four independent
+front-loaded into one owner-controlled official setup session covering marketplace identity, SMS,
+eKYC, bank and consent steps required for uninterrupted selling and bank payout. After activation,
+ordinary operation asks no questions and waits for no owner approval. The installer and loops own
+dependency installation, session reuse, capability discovery, listing construction, pricing research,
+application selection, negotiation, estimates, production, validation and delivery. They must not
+turn any of those responsibilities into an owner questionnaire or approval queue. The four independent
 lanes then run in parallel. Apply finds and submits only work that a concrete preflight proves
-the installed system can deliver; Negotiate answers buyers and returns estimates; Paid builds,
+the installed AI/Mac/tool system can deliver; Negotiate answers buyers and returns estimates; Paid builds,
 verifies and delivers paid work; Storefront creates, measures and improves listings. Revenue
 claims come only from official marketplace/payment readback.
+The account owner is not the delivery workforce: personal skill, free time, health, sleep and manual
+workload never throttle AI-delivered Coconala, Upwork or future marketplace work. Independent jobs fan
+out up to measured compute, browser/tool, platform, deadline, cost and quality limits. Job Hunter is
+the explicit exception because the human is the employee, so it uses that person's real employment
+facts, eligibility, availability and offer authority.
 The public package must not promise guaranteed income or describe unverified activity as
 revenue. Owner notifications use a provider adapter; the distributable default is email,
 not this operator's Telegram identity.
@@ -1397,8 +1401,9 @@ self-cleaning and restartable, and all four may run concurrently.
 | Paid | one project owner per purchased talkroom | reconstruct complete contract/context → build/revise → verify → exact delivery → readback → await approval/payment | context-correct artifact delivered once, replay-zero |
 | Storefront | one portfolio/listing owner per service | observe demand/outcomes → select capability bundle → create/update truthful listing → readback → attribute sales | real listing mutation and attributable revenue |
 
-The Economic Manager allocates attention across lanes using expected value, deadline, buyer risk, marginal cost,
-capacity and evidence quality. It may call any registered skill whose input contract is satisfied: research,
+The Economic Manager allocates AI/Mac execution across lanes using expected net income, deadline, buyer risk,
+marginal compute/tool cost, measured machine/tool capacity and evidence quality. Human time, health, sleep and
+manual workload are not marketplace capacity. It may call any registered skill whose input contract is satisfied: research,
 writing, design, image, software, marketing, pricing, localization and future capabilities are not separate
 islands. A skill publishes `inputs`, `outputs`, `cost`, `permissions`, `evidence`, `quality history` and
 `marketplace constraints`; the manager composes skills for the current goal, while the outcome ledger updates
@@ -1410,7 +1415,7 @@ parallel, not from shortening or mixing their reasoning. The Paid supervisor per
 priority, lease and worker lifecycle. For every `platform + account + talkroom/contract`, exactly one durable
 Project Owner receives one project root, one conversation ledger, one artifact lineage and one effect namespace.
 It cannot read another buyer's project context. Sequential work inside one project stays with the same owner;
-independent projects may run concurrently up to the measured capacity limit.
+independent projects may run concurrently up to measured compute, browser and external-tool capacity.
 
 ```mermaid
 flowchart TB
@@ -3106,7 +3111,8 @@ messages, outreach or delivery. No manual/Codex effect may be used as that proof
   CAPTCHA, passkey, terms and identity ceremonies remain explicit resumable owner exceptions.
 - [ ] Replace the private capability-bundle onboarding requirement with automatic installed-tool
   discovery, bounded production preflights, official listing import and new-account storefront
-  generation. Unknown capability must fail closed without asking the owner what they can do.
+  generation. Capability means demonstrated AI/Mac/tool execution, never the owner's personal skill
+  or available labor. Unknown capability must fail closed without asking the owner what they can do.
 - [ ] Perform a fresh third-party/friend install through one continuous setup session; do not copy
   this operator's marketplace account, configuration, capability bundle, state or credentials.
 - [ ] Prove the clean install causes no marketplace effect before its own account/session is
@@ -3187,7 +3193,7 @@ counts and no delivery outcomes, and treated the counts as the whole story.
 
 So the honest reading of the numbers below is the opposite of what I wrote: **apply submitting
 nothing is not a system problem to be unlocked. Six of seven classes are correct, and the
-seventh is correct too.** The board genuinely does not have much this seller can do well, and
+seventh is correct too.** The board genuinely does not have much the installed AI/Mac/tool system can deliver, and
 the remaining lever is on the storefront and negotiate side — being faster and clearer on the
 work that does fit — not on widening what gets accepted.
 
@@ -3207,7 +3213,7 @@ retry a potentially duplicate priced proposal.
 
 Measured on `~/gig/b2-ineligible-cache.json`: 249 cached
 ineligible postings, and **every one of them is `hard_prohibited`**. Not one was turned down for
-being unwinnable, mispriced or outside the seller's skill. Every refusal is a policy class this
+being unwinnable, mispriced or outside the installed AI/Mac/tool capability. Every refusal is a policy class this
 loop applies to itself:
 
 | count | class |

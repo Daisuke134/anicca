@@ -35,7 +35,7 @@ replays, `tests/` the tests.
 
 | lane | job label | every | what it does |
 |---|---|---|---|
-| apply | `ai.anicca.hf-gig-apply-direct` | 60s | Reads the public job board, judges which postings this seller can actually do, and submits an application with a proposal. |
+| apply | `ai.anicca.hf-gig-apply-direct` | 60s | Reads the public job board, proves which postings the installed AI/Mac/tool system can deliver, and submits an application with a proposal. |
 | storefront | `ai.anicca.hf-gig-storefront-direct` | 60s | Reads the seller's own listings and their view/inquiry counts, and edits the ones people look at and never contact. |
 | negotiate | `ai.anicca.hf-gig-reply-detector` | continuous, 30s discovery | Watches talkrooms opened *before* purchase and answers the buyer's questions and estimate requests with two independent workers. |
 | paid | `ai.anicca.hf-gig-paid-direct` | 300s | Works orders that have been paid for: reads the requirement, builds or reviews the deliverable, and decides whether it is good enough to hand over. |
@@ -46,6 +46,12 @@ Two more jobs support them:
 |---|---|
 | `ai.anicca.hf-gig-browser` | Keeps one Chromium alive on a debugging port. All four lanes share it, because the login lives in its profile. |
 | `ai.anicca.hf-gig-release-watch` | Fast-forwards this checkout to `origin/main` and moves idle lanes onto the new code. |
+
+The AI system is the delivery workforce. The owner's personal free time, manual skill,
+sleep, health, or workload does not cap Coconala throughput. Independent profitable work
+runs concurrently up to measured compute, browser/tool, deadline, platform, cost, and
+quality limits. Job Hunter is different: because the human becomes the employee, that
+loop alone must use the person's real employment facts and availability.
 
 ---
 
