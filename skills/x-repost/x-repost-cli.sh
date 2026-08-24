@@ -403,7 +403,7 @@ if [ "$AFFILIATE_JOB_STATE" = "EFFECT_STARTED" ] && [ "$AFFILIATE_JOB_CHANGED" =
   finish 0 "affiliate distribution job claimed"
 fi
 if [ "$AFFILIATE_JOB_STATE" = "EFFECT_STARTED" ]; then
-  AFFILIATE_COPY_ARGS=()
+  AFFILIATE_COPY_FILE=""
   AFFILIATE_JOB_MODE="$("$PY" -c 'import json,sys; print((json.load(sys.stdin).get("job") or {}).get("distribution_mode") or "ORIGINAL")' <<<"$AFFILIATE_JOB_CLAIM")"
   AFFILIATE_CURRENT_JOB_ID="$("$PY" -c 'import json,sys; print(json.load(sys.stdin)["job_id"])' <<<"$AFFILIATE_JOB_CLAIM")"
   if [ "$AFFILIATE_JOB_MODE" = "QUOTE_CONTROL_POST" ] && \
@@ -431,12 +431,19 @@ EOF
       >"$EV/affiliate-copy.json"; then
       handle_model_failure "affiliate recirculation copy" "$EV/affiliate-copy.raw"
     fi
-    AFFILIATE_COPY_ARGS=(--job-copy "$EV/affiliate-copy.json")
+    AFFILIATE_COPY_FILE="$EV/affiliate-copy.json"
   fi
-  if ! AFFILIATE_JOB_PAYLOAD="$("$PY" "$SKILL/scripts/affiliate_proposal.py" \
-    --job-claims "$AFFILIATE_JOB_CLAIMS" --job-payload-dir "$AFFILIATE_JOB_PAYLOADS" \
-    "${AFFILIATE_COPY_ARGS[@]}" \
-    --render-claimed-job 2>>"$EV/affiliate-job.err")"; then
+  if [ -n "$AFFILIATE_COPY_FILE" ]; then
+    AFFILIATE_JOB_PAYLOAD="$("$PY" "$SKILL/scripts/affiliate_proposal.py" \
+      --job-claims "$AFFILIATE_JOB_CLAIMS" --job-payload-dir "$AFFILIATE_JOB_PAYLOADS" \
+      --job-copy "$AFFILIATE_COPY_FILE" --render-claimed-job \
+      2>>"$EV/affiliate-job.err")" || AFFILIATE_JOB_PAYLOAD=""
+  else
+    AFFILIATE_JOB_PAYLOAD="$("$PY" "$SKILL/scripts/affiliate_proposal.py" \
+      --job-claims "$AFFILIATE_JOB_CLAIMS" --job-payload-dir "$AFFILIATE_JOB_PAYLOADS" \
+      --render-claimed-job 2>>"$EV/affiliate-job.err")" || AFFILIATE_JOB_PAYLOAD=""
+  fi
+  if [ -z "$AFFILIATE_JOB_PAYLOAD" ]; then
     report "🛑 Affiliate distribution payload failed the public-link safety gate"
     finish 1 "affiliate distribution payload failed"
   fi
