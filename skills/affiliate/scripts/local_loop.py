@@ -1265,6 +1265,138 @@ def create_repost_proposal(state):
     }
 
 
+def create_x_distribution_job(state, proposal):
+    """Queue one public, effect-bound Affiliate job for the existing X owner."""
+    if not isinstance(proposal, dict):
+        return {"state": "WAITING_FOR_REPOST_PROPOSAL", "changed": False}
+    plan_id = proposal.get("plan_id")
+    placement_id = proposal.get("placement_id")
+    owned_url = proposal.get("owned_article_url")
+    if not (
+        isinstance(plan_id, str) and plan_id
+        and isinstance(placement_id, str)
+        and REPOST_PLACEMENT_ID_PATTERN.fullmatch(placement_id)
+        and is_owned_article_url(owned_url)
+    ):
+        return {"state": "WAITING_FOR_REPOST_PROPOSAL", "changed": False}
+    try:
+        campaign = json.loads((
+            state / "campaign-publications" / f"{plan_id}.json"
+        ).read_text(encoding="utf-8"))
+        policy_path = state / "campaign-policy" / f"{plan_id}.json"
+        policy_bytes = policy_path.read_bytes()
+        policy = json.loads(policy_bytes)
+    except (OSError, ValueError):
+        return {"state": "WAITING_FOR_POLICY_PASS", "changed": False}
+    content_sha256 = campaign.get("content_sha256")
+    source_set_sha256 = policy.get("source_set_sha256")
+    checks = policy.get("checks")
+    if not all((
+        campaign.get("placement_id") == placement_id,
+        campaign.get("owned_url") == owned_url,
+        isinstance(content_sha256, str)
+        and REPOST_PROPOSAL_ID_PATTERN.fullmatch(content_sha256),
+        policy.get("receipt_type") == "GENERIC_CAMPAIGN_POLICY",
+        policy.get("state") == policy.get("decision") == "PASS",
+        policy.get("plan_id") == plan_id,
+        isinstance(checks, dict) and checks and all(checks.values()),
+        (policy.get("semantic_audit") or {}).get("decision") == "PASS",
+        not (policy.get("semantic_audit") or {}).get("unsupported_claims"),
+        isinstance(source_set_sha256, str)
+        and REPOST_PROPOSAL_ID_PATTERN.fullmatch(source_set_sha256),
+    )):
+        return {"state": "WAITING_FOR_POLICY_PASS", "changed": False}
+    slug = campaign.get("slug")
+    try:
+        owned = json.loads((
+            state / "owned-publications" / f"{slug}.json"
+        ).read_text(encoding="utf-8"))
+    except (OSError, ValueError, TypeError):
+        return {"state": "WAITING_FOR_OWNED_READBACK", "changed": False}
+    if not all((
+        owned.get("state") == "LIVE",
+        owned.get("public_url") == owned_url,
+        owned.get("content_sha256") == content_sha256,
+        isinstance(owned.get("rendered_sha256"), str)
+        and REPOST_PROPOSAL_ID_PATTERN.fullmatch(owned["rendered_sha256"]),
+    )):
+        return {"state": "WAITING_FOR_OWNED_READBACK", "changed": False}
+    try:
+        x_profile = json.loads((
+            Path(__file__).resolve().parents[1] / "config" / "x-profiles" / "en.json"
+        ).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {"state": "WAITING_FOR_X_TARGET", "changed": False}
+    target = x_profile.get("handle")
+    if not isinstance(target, str) or not re.fullmatch(r"[A-Za-z0-9_]{1,15}", target):
+        return {"state": "WAITING_FOR_X_TARGET", "changed": False}
+    experiment = campaign.get("experiment")
+    if isinstance(experiment, dict):
+        decision_id = experiment.get("decision_id")
+        control = experiment.get("control_placement_id")
+        if not (
+            isinstance(decision_id, str) and REPOST_PROPOSAL_ID_PATTERN.fullmatch(decision_id)
+            and isinstance(control, str) and REPOST_PLACEMENT_ID_PATTERN.fullmatch(control)
+        ):
+            return {"state": "WAITING_FOR_EXPERIMENT_LINEAGE", "changed": False}
+        lineage = {
+            "kind": "EXPERIMENT",
+            "decision_id": decision_id,
+            "control_placement_id": control,
+        }
+    else:
+        lineage = {"kind": "BASE", "decision_id": None, "control_placement_id": None}
+    effect_core = {
+        "placement_id": placement_id,
+        "owned_article_url": owned_url,
+        "content_sha256": content_sha256,
+        "target_x_account": target,
+        "cadence_class": "AFFILIATE_MONETIZATION",
+    }
+    effect_identity = hashlib.sha256(json.dumps(
+        effect_core, sort_keys=True, separators=(",", ":")
+    ).encode()).hexdigest()
+    policy_sha256 = hashlib.sha256(policy_bytes).hexdigest()
+    job_material = {
+        **effect_core,
+        "effect_identity": effect_identity,
+        "experiment_lineage": lineage,
+        "policy_sha256": policy_sha256,
+        "source_set_sha256": source_set_sha256,
+    }
+    job_id = hashlib.sha256(json.dumps(
+        job_material, sort_keys=True, separators=(",", ":")
+    ).encode()).hexdigest()
+    existing = next((
+        row for row in json_rows(state / "x-distribution-jobs.jsonl")
+        if row.get("effect_identity") == effect_identity
+    ), None)
+    if existing:
+        return {**existing, "state": "ALREADY_QUEUED", "changed": False}
+    receipt = {
+        "schema_version": 1,
+        "receipt_type": "AFFILIATE_X_DISTRIBUTION_JOB",
+        "state": "QUEUED",
+        "job_id": job_id,
+        **job_material,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "private_tracking_url_state": "NOT_INCLUDED",
+        "revenue_credit_state": "NO_REVENUE_CREDIT",
+    }
+    changed = append_unique(
+        state / "x-distribution-jobs.jsonl", receipt, ("effect_identity",)
+    )
+    if not changed:
+        existing = next(
+            row for row in json_rows(state / "x-distribution-jobs.jsonl")
+            if row.get("effect_identity") == effect_identity
+        )
+        return {**existing, "state": "ALREADY_QUEUED", "changed": False}
+    atomic_json(state / "x-distribution-jobs" / f"{job_id}.json", receipt)
+    atomic_json(state / "x-distribution-jobs" / "latest.json", receipt)
+    return {**receipt, "changed": True}
+
+
 def latest_commission_rows(state):
     """Return one latest lifecycle row per provider transaction lineage."""
     latest = {}
@@ -3764,6 +3896,17 @@ def _wake_once(args, started_at, run_id):
             "state": "PROPOSAL_FAILED", "changed": False,
             "failure_type": type(error).__name__, "proposal_id": None,
         }
+    try:
+        x_distribution_job = admit(
+            "distribution.x-job", "LEDGER_ONLY",
+            {"proposal_id": repost_proposal.get("proposal_id")},
+            lambda: create_x_distribution_job(state, repost_proposal),
+        )
+    except Exception as error:
+        x_distribution_job = {
+            "state": "QUEUE_FAILED", "changed": False,
+            "failure_type": type(error).__name__, "job_id": None,
+        }
     link = admit(
         "tracking-link.read", "READ_ONLY", {"provider": "elevenlabs"},
         lambda: {"state": "AVAILABLE" if elevenlabs_link(args.private_markdown.expanduser()) else "MISSING"},
@@ -4185,6 +4328,13 @@ def _wake_once(args, started_at, run_id):
                 "state", "changed", "proposal_id", "placement_id", "plan_id",
                 "provider_click_count", "repost_delivery_state",
                 "revenue_credit_state", "tracking_link_state", "failure_type",
+            )
+        },
+        "x_distribution_job": {
+            key: x_distribution_job.get(key)
+            for key in (
+                "state", "changed", "job_id", "effect_identity", "placement_id",
+                "target_x_account", "cadence_class", "failure_type",
             )
         },
         "acquisition_decision_state": acquisition_decision.get("state"),

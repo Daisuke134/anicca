@@ -12,6 +12,7 @@ from datetime import datetime
 from pathlib import Path
 from unittest.mock import Mock, patch
 from zoneinfo import ZoneInfo
+from jsonschema import Draft202012Validator
 
 
 SCRIPT = Path(__file__).parents[1] / "scripts" / "local_loop.py"
@@ -22,6 +23,69 @@ SPEC.loader.exec_module(MODULE)
 
 
 class LocalLoopTest(unittest.TestCase):
+    def test_x_distribution_job_is_enqueued_once_after_policy_and_owned_readback(self):
+        with tempfile.TemporaryDirectory() as root:
+            state = Path(root)
+            plan_id = "subtitle-en-experiment-abcdef123456"
+            placement_id = f"{plan_id}-1"
+            slug = "subtitle-experiment-abcdef123456"
+            content_sha = "1" * 64
+            experiment = {
+                "decision_id": "2" * 64,
+                "control_placement_id": "subtitle-en-1",
+            }
+            MODULE.atomic_json(state / "campaign-publications" / f"{plan_id}.json", {
+                "state": "X_LIVE", "plan_id": plan_id, "placement_id": placement_id,
+                "slug": slug, "owned_url": f"https://aniccaai.com/blog/{slug}",
+                "content_sha256": content_sha, "experiment": experiment,
+                "created_at": "2026-08-24T00:00:00+00:00",
+            })
+            MODULE.atomic_json(state / "placement-ledger.json", {"placements": [{
+                "placement_id": placement_id, "provider_clicks": {"count": 0},
+            }]})
+            policy = {
+                "receipt_type": "GENERIC_CAMPAIGN_POLICY", "state": "PASS",
+                "decision": "PASS", "plan_id": plan_id,
+                "source_set_sha256": "3" * 64,
+                "checks": {"all": True},
+                "semantic_audit": {"decision": "PASS", "unsupported_claims": []},
+            }
+            MODULE.atomic_json(state / "campaign-policy" / f"{plan_id}.json", policy)
+            proposal = MODULE.create_repost_proposal(state)
+
+            waiting = MODULE.create_x_distribution_job(state, proposal)
+            self.assertEqual(waiting["state"], "WAITING_FOR_OWNED_READBACK")
+            self.assertFalse((state / "x-distribution-jobs.jsonl").exists())
+
+            MODULE.atomic_json(state / "owned-publications" / f"{slug}.json", {
+                "state": "LIVE", "slug": slug, "content_sha256": content_sha,
+                "public_url": f"https://aniccaai.com/blog/{slug}",
+                "rendered_sha256": "4" * 64,
+            })
+            first = MODULE.create_x_distribution_job(state, proposal)
+            second = MODULE.create_x_distribution_job(state, proposal)
+
+            self.assertEqual(first["state"], "QUEUED")
+            self.assertTrue(first["changed"])
+            self.assertEqual(second["state"], "ALREADY_QUEUED")
+            self.assertFalse(second["changed"])
+            self.assertEqual(first["job_id"], second["job_id"])
+            self.assertEqual(first["effect_identity"], second["effect_identity"])
+            rows = MODULE.json_rows(state / "x-distribution-jobs.jsonl")
+            self.assertEqual(rows, [{key: value for key, value in first.items()
+                                     if key not in {"changed"}}])
+            schema = json.loads((
+                SCRIPT.parents[1] / "config" / "schemas"
+                / "affiliate-x-distribution-job-v1.json"
+            ).read_text())
+            Draft202012Validator(schema).validate(rows[0])
+            self.assertEqual(first["target_x_account"], "selawmqt")
+            self.assertEqual(first["content_sha256"], content_sha)
+            self.assertEqual(first["experiment_lineage"], {
+                "kind": "EXPERIMENT", **experiment,
+            })
+            self.assertNotIn("try.elevenlabs.io", json.dumps(first))
+
     def test_funnel_snapshot_keeps_focused_live_experiment_below_rank_limit(self):
         with tempfile.TemporaryDirectory() as root:
             state = Path(root)
