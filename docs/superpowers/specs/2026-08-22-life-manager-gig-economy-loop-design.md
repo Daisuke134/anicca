@@ -814,6 +814,58 @@ ledger:
 | `upwork-money` | Reconcile contract transactions, fees, refunds, disputes, chargebacks and payouts without confusing earnings states with cash | Only official payout `received` enters revenue; Pending/Available excluded; later adjustments attributed once in occurrence month |
 | `upwork-learn` | Attribute the entire funnel and unit economics to Skill/strategy versions, diagnose the current bottleneck, change one variable, keep/revert from later evidence and prioritize repeat clients | Evidence-backed keep/pause/revert plus complete discovered-to-received funnel |
 
+### 6.3A Parallel lane and USD 10k operating contract
+
+Current production truth and target architecture are distinct. Current production has one launchd
+wake every five minutes. A wake reconciles every official sales state, may inspect multiple pages and
+jobs, and executes at most one newly authorized acquisition effect after readback. It is not yet five
+independent Coconala-style workers. The target reuses the existing scheduler and durable queues to let
+the five Skill families make progress independently:
+
+```mermaid
+flowchart LR
+  A[Acquire lane\ndiscover qualify propose] --> X[Account effect lease]
+  S[Sell lane\nmessages offers contracts] --> X
+  F[Fulfill lanes x3\nbuild QA revise deliver] --> X
+  M[Money lane\nfees refunds payouts] --> R[Official receipts]
+  L[Learn lane\nfunnel one-variable experiment] --> A
+  X --> U[Upwork browser account]
+  U --> R
+  R --> T[Telegram and funnel ledger]
+  T --> L
+```
+
+Discovery, model judgment, artifact production, QA, accounting and learning may run concurrently.
+Mutations through the same Upwork account are serialized by the existing provider-effect lease so
+parallelism cannot duplicate a proposal, message, offer acceptance or delivery. Buyer messages,
+offers, paid deadlines, revisions and unknown-effect reconciliation preempt new proposals. Fulfillment
+may use the configured three concurrent contract slots; acquisition pauses before accepting work that
+would exceed them.
+
+Application volume is an observed funnel output, not a fixed daily quota. At bootstrap the loop runs
+one ten-qualified-proposal diagnostic window, stopping earlier if Connects, capacity, account health or
+positive expected value is exhausted. Current official truth is three submitted proposals, 118
+Connects, zero replies, zero offers and zero contracts. Public proposal cost varies by job and can
+change, so the remaining proposal count is unknown until each fresh preflight; invitations and Direct
+Offers are prioritized because replying costs no Connects. No boost, badge, Plus, auto-top-up or new
+owner-funded Connects purchase is implied.
+
+The sellable work ladder is deliberately narrow before reviews and expands only from delivery and
+cash evidence:
+
+| Stage | Preferred work | Operating quantity | Revenue role |
+|---|---|---:|---|
+| 0–1 paid review | One-to-three-day, explicit-acceptance API integration, automation repair, bounded research/data work, documentation or small iOS/web repair covered by installed Skills | Up to 3 live qualified candidates; at most 1 proposal effect per account reconciliation; 1 active job preferred | Prove delivery, payment and review rather than maximize ticket |
+| 1–3 paid reviews | Repeat the delivered Skill/package and adjacent work with the same proof | Up to 3 concurrent contracts; one ten-proposal diagnostic window at a time | Establish close rate, revision cost and repeatability |
+| Repeatable to USD 3k | Bounded USD 500–2,000 milestones or USD 30–60/hour work whose scope fits the proven Skill | 1–3 active contracts; replace a slot only after capacity readback | Raise verified net per constrained delivery hour |
+| USD 3k to USD 10k | Repeat-client retainers and bounded USD 2,000–5,000 milestones assembled from proven Skills | Maximum 3 concurrent contracts | Target a measured mix such as 2 x USD 3,000 plus 1 x USD 4,000 verified net, or any evidence-backed equivalent |
+
+The USD amounts are planning bands, not hardcoded acceptance rules or earnings promises. Luna may
+choose different work and prices when current official scope, competition, client history, fee,
+delivery estimate and observed conversion prove higher expected verified net. The USD 10k gate closes
+only when one complete calendar month totals at least USD 10,000 official `verified_net_received` after
+fees, execution cost, refunds and occurrence-month chargebacks.
+
 `upwork-acquire` owns candidate replenishment. When fewer than three current submission-ready public
 jobs remain, it searches the authenticated Upwork market, opens current details, asks the model to
 select or skip, and atomically persists both the public evidence record and owner-only sealed proposal.

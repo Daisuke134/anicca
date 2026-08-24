@@ -2227,6 +2227,20 @@ Telegram outbox. Add no scheduler, notifier, database or provider-specific seman
 - [ ] Bind each one-variable Luna experiment to its strategy version and later keep/revert evidence.
 - [ ] Verify one real Upwork decision notification, Telegram message ID and duplicate send 0.
 
+### Task 59: Let Upwork lifecycle lanes progress independently
+
+**Ponytail constraint:** Reuse the existing wake, durable queues, provider-effect lease and configured
+three-contract capacity. Add no provider scheduler and never permit concurrent account mutations.
+
+- [ ] Split the current wake's durable work into acquire, sell, fulfill, money and learn queue items.
+- [ ] Allow read-only/model/artifact work concurrently while one account-effect lease serializes
+  proposal, reply, offer acceptance and delivery mutations.
+- [ ] Prove paid deadline/revision, unread buyer and unknown-effect work preempt acquisition.
+- [ ] Prove three fulfillment projects can progress independently while a fourth acceptance is
+  refused by current official capacity.
+- [ ] Expose per-lane last progress, queue depth, blocker and next action in the existing Telegram
+  funnel heartbeat.
+
 ## Final verification
 
 - [ ] `git diff --check` exits 0.
