@@ -7699,9 +7699,17 @@ the named production evidence:
   state is `NOT_INCLUDED`. A later production owner replay returns
   `ALREADY_QUEUED`, preserves the same job/effect identity, and keeps queue count
   exactly 1. D03 is now the first unchecked item.
-- [ ] **D03 Queue consumer.** Make existing x-repost claim the oldest eligible
+- [x] **D03 Queue consumer.** Make existing x-repost claim the oldest eligible
   job atomically. Evidence: queued → claimed transition owned by the launchd
   process, with two simultaneous wakes unable to claim the same job.
+  Done at `550be9f74`: the existing proposal helper strictly validates the D01
+  job contract, selects the oldest `(created_at, job_id)`, and flock-appends one
+  write-ahead claim. A two-process test produces one claim row and one unchanged
+  replay; an extra private field fails before claim. Production release
+  `20260824T132744-550be9f7` is active, and the launchd owner claims job
+  `4ceff8ec...` / effect `f9639316...` as `EFFECT_STARTED` with owner label
+  `ai.anicca.x-repost-pass`; claim count is exactly 1 and no X post occurs. D04
+  is now the first unchecked item.
 - [ ] **D04 Safe X payload.** Build the post from the job's public owned URL and
   forbid private provider tracking URLs. Evidence: sealed content hash and
   secret/link scan PASS.
