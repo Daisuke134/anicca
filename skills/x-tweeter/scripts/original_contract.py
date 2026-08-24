@@ -107,7 +107,7 @@ def admit(source_path: Path, draft_path: Path, critic_path: Path, posted_path: P
         isinstance(reader_value, str) and reader_value.strip(),
         isinstance(draft_values, list),
         len(set(draft_values) & VALUE_TYPES) >= 2,
-        weighted_length(f"{text}\n{source_url}") <= 250,
+        weighted_length(f"{text}\n{source_url}") <= 280,
     )):
         raise ValueError("draft lacks grounded concrete value")
 
