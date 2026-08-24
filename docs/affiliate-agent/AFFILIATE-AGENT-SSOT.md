@@ -7692,6 +7692,12 @@ the named production evidence:
 - [ ] **D02 Queue producer.** Make Affiliate enqueue exactly one job only after
   owned-page public readback and policy PASS. Evidence: one immutable queued
   receipt and duplicate enqueue count zero.
+  In progress at `c6a1059d1`: production owner emits job
+  `4ceff8ecf...` / effect `f9639316...` for exact caption-generator placement,
+  target `selawmqt`, public owned URL, BASE lineage, and bound
+  content/policy/source hashes. Queue count is exactly 1 and private tracking
+  state is `NOT_INCLUDED`. Unit replay proves `ALREADY_QUEUED` without a second
+  row; one later production owner replay remains required before checking D02.
 - [ ] **D03 Queue consumer.** Make existing x-repost claim the oldest eligible
   job atomically. Evidence: queued → claimed transition owned by the launchd
   process, with two simultaneous wakes unable to claim the same job.
@@ -7797,13 +7803,18 @@ Current authoritative state:
   before release replacement. It is no longer a valid wait gate; the next
   existing-owner wake retries immediately using ChatGPT account 2. Rolling
   money is `NO_TRANSACTIONS`; approved, paid, pending, and reversed are all zero.
-- X activity is not yet acquisition distribution: 89 Repost actions are
-  observed, but only 5 join an exact Affiliate campaign URL and 84 are unjoined.
+- X activity is not yet acquisition distribution: 94 Repost actions are
+  observed, but only 5 join an exact Affiliate campaign URL and 89 are unjoined.
   Follower growth and X impressions have no official denominator, so post count
   cannot be called account growth. The active CTA child has only 2 provider
   clicks / 2 unique at its fixed counter baseline and zero later delta or
   transaction. This low exact traffic plus zero conversion, not missing content
   volume, is the current direct reason revenue remains zero.
+- The first D01 job is still `QUEUED`. D03 is not implemented, so x-repost does
+  not claim this queue, publish its owned URL, or return a permalink. This is
+  the immediate system blocker. D08–D10 growth denominators and D11–D17 funnel
+  control are also absent, so the system cannot yet distinguish reach failure
+  from conversion failure or optimize toward money.
 - `CAMPAIGN_METADATA_INVALID` refers to the preserved oversized historical
   artifact. It must stay visible for audit, but it does not authorize deletion
   and must not supersede a later valid due campaign.
