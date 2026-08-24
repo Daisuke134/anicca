@@ -603,6 +603,26 @@ read-only replay of the same official evidence changed the decision from `skip` 
 test must reject a provider prompt containing `INSTALLED_SKILLS`, `installed Skills can complete`, or
 any missing-Skill skip authority.
 
+Feasible work is submit-by-default, with high-value work prioritized. A proposal is not an acceptance
+of unlimited duration or undefined scope. Missing budget/rate, unverified payment, new-client or low
+hire history, competition, Connects cost, advertised duration and ordinary unanswered implementation
+details affect ordering, price and questions but never independently authorize skip. Economic skip is
+valid only when official displayed compensation makes every truthful scoped offer clearly negative.
+
+Production verification: release `71d41b8e35` evaluated ten current candidates with one Luna call,
+returned two `submit` and eight `skip`, and produced zero missing-Skill reason. The two submits were a
+USD 500 translation job and a USD 30–50/hour AI/MCP integration job. A later Telegram message for
+`~022091501939090462355` still cited a mobile Skill, but its decision occurred at 18:41:30 before the
+repaired wake began at 18:51:54; the delayed outbox sent it at 18:59:26. It was stale notification
+delivery, not repaired-policy output. Three remaining pre-repair Skill-based unknown reports were
+fenced at the existing retry ceiling so they cannot be redriven; history and WorkEvents remain intact.
+
+The submit-by-default refinement was then replayed read-only over the same ten official candidates. It
+returned eight `submit` and two `skip`; the only skips required phone/live customer handling. Mobile
+App and Website, AI/MCP integration, Claude marketing, Voice AI product work and other feasible jobs
+all became submit. Missing Skill, unverified payment, new-client history, duration and Connects alone
+produced zero skip. External effects for this replay remained 0; production promotion is next.
+
 A Skill bundle is immutable and versioned:
 
 ```text

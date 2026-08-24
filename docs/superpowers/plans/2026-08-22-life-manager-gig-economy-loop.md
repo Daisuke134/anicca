@@ -2332,8 +2332,12 @@ Only the first unchecked row is active; a missing buyer event blocks that resour
 - [x] Replay the previously skipped Mobile App and Website Developer evidence through the repaired
   planner: the same job `~022091720689866384000` now returns `submit`, USD 35/hour and a phased
   iOS/Android/Web plan with external effects 0 and no missing-Skill reason.
-- [ ] Release the repaired prompt, observe a natural batch and prove zero skip reason cites missing
-  installed Skills. Any remaining skip must cite actual task facts under the common policy.
+- [x] Release the repaired prompt: production `71d41b8e35` returned 2 submit / 8 skip from ten current
+  candidates with zero missing-Skill reason. A delayed Skill-based Telegram message was traced to a
+  pre-repair event and remaining stale unknown reports were fenced from redrive without deleting history.
+- [x] Prove feasible high-value jobs are submit-by-default with a same-ten-candidate read-only replay:
+  8 submit / 2 skip; both skips require phone/live handling, while Skill/payment/history/duration/
+  Connects-only skips are 0. Production promotion remains.
 - [ ] Apply the same invariant to Fiverr, Lancers, CrowdWorks, Freelancer, Mercor, uGig and unknown
   markets through provider conformance; no provider-specific capability matrix or brain is allowed.
 
