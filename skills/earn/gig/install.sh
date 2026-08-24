@@ -113,4 +113,8 @@ GUIDE
   exit 0
 fi
 
+if [ "$#" -eq 0 ]; then
+  exec bash "$0" start
+fi
+
 exec "${PYTHON:-python3}" "$GIG_DIR/scripts/money_loop_onboarding.py" "$@"

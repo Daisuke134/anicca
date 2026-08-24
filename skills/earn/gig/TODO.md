@@ -113,7 +113,8 @@ Storefront work.
        the existing browser launchd job, CDP readiness readback and official signup tab;
        shell syntax and immutable browser plist dry-render pass. Live execution is deferred
        to the first clean pilot because this Mac already has a production owner on that
-       exact profile and must not be disrupted.
+       exact profile and must not be disrupted. The public no-argument package installer
+       now enters this `start` flow directly.
     5. [ ] Let the owner complete account/email/SMS/seller/consent/eKYC/bank setup in that
        exact browser profile, then report completion once. Never request the password.
     6. [ ] Attach over CDP to the same browser/session and read back authenticated, email,
