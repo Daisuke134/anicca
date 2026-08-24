@@ -91,10 +91,12 @@ def validate_shortlist(
     validated = []
     for value in ranked_urls:
         if not isinstance(value, str) or value.casefold() not in allowed:
-            raise ValueError("Workday shortlist contains an unknown URL")
+            continue
         url = allowed[value.casefold()]
         if url not in validated:
             validated.append(url)
+    if not validated:
+        raise ValueError("Workday shortlist contains no official snapshot URL")
     return tuple(validated)
 
 

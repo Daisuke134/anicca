@@ -48,12 +48,16 @@ class WorkdayDiscoveryTests(unittest.TestCase):
 
     def test_cxs_fetch_paginates_empty_search_until_official_total(self):
         payloads = [
-            {"total": 21, "jobPostings": [
+            {"total": 41, "jobPostings": [
                 {"title": f"Role {index}", "externalPath": f"/job/R{index}"}
                 for index in range(20)
             ]},
-            {"total": 21, "jobPostings": [
-                {"title": "Role 20", "externalPath": "/job/R20"}
+            {"total": 0, "jobPostings": [
+                {"title": f"Role {index}", "externalPath": f"/job/R{index}"}
+                for index in range(20, 40)
+            ]},
+            {"total": 0, "jobPostings": [
+                {"title": "Role 40", "externalPath": "/job/R40"}
             ]},
         ]
         requests = []
@@ -73,8 +77,8 @@ class WorkdayDiscoveryTests(unittest.TestCase):
         ):
             rows = _fetch_jobs(TEST_SOURCES[0])
 
-        self.assertEqual(len(rows), 21)
-        self.assertEqual([request["offset"] for request in requests], [0, 20])
+        self.assertEqual(len(rows), 41)
+        self.assertEqual([request["offset"] for request in requests], [0, 20, 40])
         self.assertEqual({request["searchText"] for request in requests}, {""})
 
     def test_model_sources_accept_arbitrary_company_and_reject_explicit_exclusion(self):

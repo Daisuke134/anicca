@@ -37,11 +37,22 @@ class WorkdayQualificationTests(unittest.TestCase):
 
             self.assertEqual([row["company"] for row in rows], ["Good"])
 
-    def test_shortlist_rejects_model_invented_url(self):
-        candidates = [{"url": "https://a.wd1.myworkdayjobs.com/Careers/job/A"}]
-        with self.assertRaisesRegex(ValueError, "unknown URL"):
+    def test_shortlist_drops_model_invented_url_and_keeps_official_rows(self):
+        official = "https://a.wd1.myworkdayjobs.com/Careers/job/A"
+        candidates = [{"url": official}]
+        self.assertEqual(
             validate_shortlist(
-                {"ranked_urls": ["https://invented.example/job/1"]}, candidates
+                {"ranked_urls": ["https://invented.example/job/1", official]},
+                candidates,
+            ),
+            (official,),
+        )
+
+    def test_shortlist_fails_closed_when_no_official_url_remains(self):
+        with self.assertRaisesRegex(ValueError, "no official snapshot URL"):
+            validate_shortlist(
+                {"ranked_urls": ["https://invented.example/job/1"]},
+                [{"url": "https://a.wd1.myworkdayjobs.com/Careers/job/A"}],
             )
 
     def test_each_source_is_fetched_once_per_wake(self):

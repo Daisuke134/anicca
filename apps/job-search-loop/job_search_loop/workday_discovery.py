@@ -22,6 +22,7 @@ def _fetch_jobs(source: dict[str, str]) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     offset = 0
     limit = 20
+    official_total: int | None = None
     while True:
         request = Request(
             endpoint,
@@ -45,9 +46,13 @@ def _fetch_jobs(source: dict[str, str]) -> list[dict[str, Any]]:
         postings = value.get("jobPostings") if isinstance(value, dict) else None
         page = [row for row in (postings or []) if isinstance(row, dict)]
         rows.extend(page)
-        total = int(value.get("total") or len(rows)) if isinstance(value, dict) else len(rows)
+        if official_total is None and isinstance(value, dict):
+            reported_total = int(value.get("total") or 0)
+            official_total = reported_total if reported_total > 0 else None
         offset += len(page)
-        if not page or offset >= total:
+        if not page or (
+            official_total is not None and offset >= official_total
+        ) or (official_total is None and len(page) < limit):
             return rows
 
 
