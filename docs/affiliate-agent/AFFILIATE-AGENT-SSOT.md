@@ -8229,7 +8229,10 @@ Current implementation state:
   The 18:27 Browser canary exits before publication because the select model
   returns unparseable output; public effect count remains zero for Browser. The
   18:45 natural Postiz opportunity starts normally, leases the browser, collects
-  94 candidates, and remains in model generation at the latest readback.
+  94 candidates, passes the quality pipeline, and receives Postiz submission
+  `cmt7280qe0r81qp0yjz3yxg6v`, but no matching X permalink is found. A same-owner
+  kickstart performs readback-only reconciliation, exits 0, makes no second
+  Postiz call, and leaves the row terminal `UNVERIFIED` with duplicate zero.
   Therefore XT05 evidence is currently one manual Postiz permalink and zero
   natural-calendar Postiz permalinks; three consecutive natural effects remain
   unproven.
@@ -8280,6 +8283,11 @@ Current authoritative state:
   terminal `UNVERIFIED` after Postiz acceptance and its 18:30 run exits on
   Affiliate distribution job claim failure. Both schedules are loaded, but
   constant successful publication remains the immediate runtime blocker.
+- Disk headroom is also a direct runtime blocker: the data volume reached 100%
+  with 232 MiB available, causing x-repost 18:30 to fail before creating its
+  evidence directory. Rotating only regenerable launchd logs retained recent
+  tails and increased availability to 342 MiB, but durable headroom repair is
+  still required before claiming constant loops.
 - Active placement is `elevenlabs-discovered-caption-generator-en-1`; its exact
   X permalink is `https://x.com/selawmqt/status/2091754957448040906`.
 - D01–D15 are complete. D16 has one public quote effect with duplicate zero; its
