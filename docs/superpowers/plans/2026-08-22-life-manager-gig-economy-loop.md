@@ -260,18 +260,18 @@ No later task may jump ahead of the first incomplete row:
 | U10 | Discover and qualify a first-job candidate | **DONE:** usability-test job `~022091106411892491962`; $15, 10–15 proposals, zero interviews, payment/phone verified, and all student/age/English/recording gates match owner evidence |
 | U11 | Resolve application capacity for that candidate | **DONE:** official proposal surface requires 7 Connects; balance/history, offers, invites and proposals are 0, no reward banner is exposed, and the only buy offer is 100 for $15 plus tax |
 | U12 | Freeze one tailored first-job proposal | **DONE:** immutable payload `c37eed9c…c68e926` contains the $15 terms, cover letter, five factual screening answers, no attachments, and zero unsupported claims |
-| U13 | Make acquisition fully loop-owned | **IN PROGRESS:** production scans page 1 plus two durable-cursor pages, reads exact proposal cost, reuses the existing proposal model/effect/readback path, and polls invitations, Direct Offers, Catalog orders and free Connects every five minutes; next prove cursor advances across wakes |
-| U14 | Close the first acquisition effect | **WAITING ONE BOUNDED CAPITAL RECEIPT OR FREE INBOUND:** recommend one $15/100-Connect seed, no subscription/boost/badge/auto-top-up. After approval the agent buys once, applies to recent low-competition bounded jobs, verifies one official proposal ID and replay 0; free inbound remains active |
-| U15 | Replay immediately | Same proposal ID; zero new proposal and zero additional Connects |
-| U16 | Poll and answer the resulting thread | Official story/message IDs and no duplicate reply |
+| U13 | Make acquisition fully loop-owned | **DONE:** five-minute main loop uses native Best Matches, ten-job Luna batches, prompt-bound cache, durable sealed queue, Terra browser operation, exact Connects/effect readback and one-candidate failure isolation. |
+| U14 | Close the first acquisition effect | **DONE:** owner-authorized seed produced 150 Connects; proposal `2091740505918763009`, exact `150 -> 141`, no subscription/boost/badge/auto-top-up. |
+| U15 | Replay immediately | **DONE:** same proposal ID, official count unchanged and additional Connects 0. Second dynamic proposal `2091760957211561985` is also verified `141 -> 133` with replay 0. |
+| U16 | Poll and answer the resulting thread | **IN PROGRESS:** official submitted entities 2, canonical Messages works, rooms/unread/offers/contracts 0. Next real buyer event must produce official story/message ID and duplicate reply 0. |
 | U17 | Negotiate and accept profitable terms | Offer ID, exact terms hash and active contract ID |
 | U18 | Fulfill and independently verify the work | Artifact hash and independent verifier PASS |
 | U19 | Deliver once | Official submission ID/state and replay with zero duplicate delivery |
 | U20 | Reconcile money and review | Official payout `received`, transaction, fee, actual costs and honest review evidence; Pending/Available excluded |
 | U21 | Repeat on three independent paid jobs | Three contract/payment/review IDs and complete per-job economics |
 | U22 | Operate the proven Upwork loop to USD 10k/month | One complete calendar-month window totals at least USD 10,000 verified net received; cross-month payouts and later chargebacks are attributed once to their actual months |
-| U23 | Compress the next-market path | After U14 proposal readback, extract only proven Coconala/Upwork duplication so the next gig or bounty site needs at most three thin provider files/about 300 LOC and zero kernel changes |
-| U24 | Let the agent onboard an unknown market | Agent observes rules/UI, performs ordinary signup/login, generates a manifest plus transport/readback glue, runs a zero-spend canary and joins the existing loop; only typed human ceremonies pause that provider |
+| U23 | Compress the next-market path | **IN PROGRESS:** general Luna/Terra market operation, shared effects/projects/accounting and Skill inventory are proven; next existing market adds only manifest plus fixed-format readback glue. |
+| U24 | Let the agent onboard an unknown market | Founder scout discovers demand, observes rules/UI/payout, performs ordinary signup/login, runs one zero-spend canary and joins the same lifecycle; only typed ceremonies pause that market. |
 
 Later implementation tasks are renumbered only when their first incomplete outcome becomes active.
 Marketplace mutations remain frozen only until U14 closes one official Upwork proposal receipt.
@@ -279,24 +279,26 @@ Read-only research and adapter generation may proceed earlier. After U14, additi
 canaries may run while Upwork continues through U15–U22; paid work and unknown-effect reconciliation
 always preempt expansion.
 
-The fresh official snapshot shows applications 0, replies 0, contracts 0 and payout `received` USD 0.
-Upwork finance main proof is `12d92846e`, its production proof is `c0c66c32f`, and release tests are
-40/40. The stale app-server was replaced, preflight now reads `anicca/Aqua/501/manager PID 1/gui 0`,
-the dedicated `gig-upwork` browser is live on 9233, and two provider wakes exited 0 with provider
-effects 0, transition delta 0 and unchanged official business counts.
+Current official truth is proposals 2, Connects 133, replies/offers/contracts 0 and payout `received`
+USD 0. The loop is merged to main, survives later shared releases and runs every five minutes through
+the dedicated authenticated 9233 browser. Finance proof remains `12d92846e`/`c0c66c32f` with 40/40;
+the live Upwork regression is 156/156.
 
 Remaining order to finish the local Upwork skill and business loop:
 
 | Order | Required closure |
 |---:|---|
-| 1 | **DONE:** Aqua preflight, dedicated `life-manager-upwork-browser`, profile `gig-upwork`, 9233 and two provider wakes with effect 0 |
-| 2 | Implement loop-owned current-job discovery, model qualification and atomic proposal sealing; prove one launchd wake replaces the closed candidate and restores three live ready candidates without manual config editing |
-| 3 | U14–U15 close one natural qualified acquisition with official ID, exact Connects delta and replay 0 |
-| 4 | U16–U17 close client reply, profitable terms and active contract with official IDs and replay 0 |
-| 5 | U18–U19 close immutable build, independent PASS, one delivery ID and duplicate 0; Task 20 runs only on a real revision |
-| 6 | U20 joins gross, fee, adjustment, cost and payout `received`; cross-month payout/chargeback follows occurrence month |
-| 7 | U21/Task 22 close three independent paid-review paths with complete economics and no unresolved or duplicate effect |
-| 8 | U22 repeats the winner to USD 3,000 then USD 10,000 verified net received, changing one strategy variable at a time |
+| 1 | **DONE:** account/profile/portfolio, dedicated browser, native discovery, two exact proposals and replay 0 |
+| 2 | **DONE:** batched Luna qualification, published-proof/Skill inventory, seller-owned pricing, Terra current-UI submission and continuous Sales zero-event baseline |
+| 3 | Submit the currently sealed hourly iOS proposal after hourly-form preflight, then continue qualified acquisition while preserving the funnel spend gates |
+| 4 | U16–U17 close the first real client reply, profitable terms and active contract with official IDs and replay 0 |
+| 5 | U18–U19 close immutable project, Skill execution, independent PASS, one delivery ID and duplicate 0; run revision only from real buyer feedback |
+| 6 | U20 joins gross, fee, Connects/model/tool cost, refund/chargeback and payout `received`; cross-month events follow occurrence month |
+| 7 | Publish OSS alpha after the first complete discovery-to-received path, redacted fixtures, secret scan and isolated installer pass |
+| 8 | U21 closes three independent paid-review paths; retain the winning Skill/problem/proof/price and prioritize repeat clients |
+| 9 | Run zero-spend canaries on configured uGig, Freelancer, Lancers, CrowdWorks, Fiverr and Mercor through the same agent/tools while Upwork paid work remains first |
+| 10 | Enable Founder discovery for unknown markets, promote only official positive-net canaries, then close clean-device OSS stable |
+| 11 | U22 repeats the winners to USD 3,000 then USD 10,000 verified net received, changing one causal strategy variable at a time |
 
 The remaining work belongs to the resident Upwork loop, not to Codex as a marketplace operator.
 Codex's atomic engineering TODO is ordered as follows; it only edits, activates and verifies the loop:
@@ -948,6 +950,15 @@ U13 atomic order:
     shown, Luna stays within it. When absent, Luna chooses a reasonable rate from scope, verified Skill
     capacity, delivery effort and positive expected value and states the assumption. Experience,
     credentials, scope and client facts remain immutable. Prompt SHA changes; regression is `156 passed`.
+79. **THIRD HIGH-VALUE PROPOSAL SELECTED / HOURLY PREFLIGHT READY:** with current balance 133,
+    provider-published iOS proof, `mobile-app-delivery`, independent verifier and seller-owned pricing,
+    Luna selected `~022091764251902772206` (`Transform a webapp to IOS appstore!`) at `$40/hour`,
+    14-day estimate and 15 Connects. No effect started because the proposal code required a fixed-price
+    duration control that hourly forms do not have. Bind hourly rate to official `#step-rate`, leave
+    optional rate increase/boost untouched, and represent duration readback as null for hourly while
+    retaining the sealed estimate. Fresh click-free production preflight returns `ready=true`, exact
+    job, available 133, required 15 and evidence `5c9e52cc…544cd`; regression remains `156 passed`.
+    Next release must produce proposal ID, exact `133 -> 118` and replay 0.
 
 U14 atomic order:
 
