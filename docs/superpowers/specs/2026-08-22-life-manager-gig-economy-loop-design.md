@@ -450,8 +450,12 @@ list_projects() -> ProjectState[]
 list_payments() -> PaymentState[]
 ```
 
-Adapters own transport, selectors/API schema and provider normalization. The kernel owns eligibility,
-pricing bounds, capacity, intent, QA, ledger, learning and reporting.
+Adapters own authentication/session transport, fixed provider identifiers and provider normalization.
+The shared browser operator owns open-ended UI navigation: it observes the current page, chooses the
+next control from environmental feedback and continues until the requested state or a typed ceremony.
+Provider code must not encode dialog sequences, button-label decision trees or page-by-page workflows.
+The kernel owns eligibility, pricing bounds, capacity, immutable intent, QA, ledger, learning and
+reporting; deterministic effect tools expose `prepare`, `commit` and official `readback` to the operator.
 
 ### 4.2A Adapter compression law
 
@@ -473,12 +477,13 @@ flowchart LR
   G --> P
 ```
 
-Directly reusable across every market are pagination and bounded snapshots, model-owned qualification/
-pricing/proposals, leases and effect fencing, project/QA/delivery, received-cash accounting and funnel
-learning. Provider-specific code is limited to authenticated transport, stable entity extraction,
-form actions, official state/readback mapping, provider fees/currency and unavoidable signup/KYC/
-payout ceremonies. Semantic fit, category routing, price and proposal content never enter provider
-code. Fixed-format provider IDs, URLs, amounts and official states may be parsed mechanically.
+Directly reusable across every market are the Terra-first `browser-lane-agent`, pagination and bounded
+snapshots, model-owned qualification/pricing/proposals, leases and effect fencing, project/QA/delivery,
+received-cash accounting and funnel learning. Provider-specific code is limited to authenticated
+transport, stable entity extraction, official state/readback mapping, provider fees/currency and
+unavoidable signup/KYC/payout ceremonies. Semantic fit, category routing, price, proposal content and
+the current UI path never enter provider code. Fixed-format provider IDs, URLs, amounts and official
+states may be parsed mechanically.
 
 | Provider generation | Intended maximum new production surface | Kernel change |
 |---|---:|---|

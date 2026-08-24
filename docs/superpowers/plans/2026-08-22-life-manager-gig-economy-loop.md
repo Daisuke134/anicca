@@ -725,6 +725,15 @@ U13 atomic order:
     closing this exact first-use explanation has no marketplace effect, invoke only its exact `Close`
     DOM control, verify the dialog disappeared, then retain trusted mouse input for the actual Submit.
     No proposal mutation may use a JavaScript click.
+49. **ARCHITECTURE CORRECTION — UI JUDGMENT RETURNS TO THE AGENT:** the growing Upwork-specific
+    submit sequence is the wrong abstraction. The production proposal model is Luna-first, but the
+    submit transport is fixed Python and cannot reason over first-use UI; Coconala already routes
+    open-ended browser work through the shared Terra-first `browser-lane-agent` with Sonnet/Gemini
+    fallback. Reuse that operator for Upwork and every later market. Deterministic code retains only
+    immutable proposal intent, spend/capacity checks, exactly-once fence and official proposal/
+    Connects readback. Remove provider-coded dialog/button workflows; give the operator the current
+    page, natural-language objective, bounded browser tools and those effect contracts. One loop can
+    then adapt to changed or unknown marketplace UI without adding another site script.
 
 U14 atomic order:
 
