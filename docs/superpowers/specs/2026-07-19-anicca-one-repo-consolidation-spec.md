@@ -1618,7 +1618,7 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
 
 **状態: spec approved / implementation pending。**
 
-全local launchd loopのCodex subscription routingは、account 1をprimary、account 2をfallbackとする。
+Life Managerの共有Codex execution boundaryは、account 1をprimary、account 2をfallbackとする。
 各accountは独立した`CODEX_HOME`、auth、session、quota stateを持つ。account 1のquotaが回復した後に人が
 「戻して」と指示する運用にはせず、新しい実行は常にaccount 1から開始する。account 1が利用可能ならaccount 2を
 消費しない。account 3は現在存在しないため、このsliceへ架空のthird accountを追加しない。
@@ -1641,17 +1641,6 @@ flowchart LR
   これは緊急切替であり、account 1→2 failoverではない。
 - runnerにはquota/auth/timeout/unavailableをtransient failureとして次candidateへ移す既存契約があるが、
   同じCodex provider内の複数ChatGPT accountはcandidateとして表現されていない。
-- `x-repost`は共有runnerを通らず、generated plistから`/opt/homebrew/bin/codex`を直接解決する。
-  そのため緊急切替後もaccount 1を使い、実`model.stdout`に
-  `You've hit your usage limit`を記録して連続失敗した。
-- `x-repost`のquota判定は`select.raw`だけを見るが、Codex CLIのquota errorはJSON event streamの
-  `model.stdout`に出る。`select.raw`は生成されないため、実際のquota failureを
-  `select step returned unparseable output`へ誤分類した。
-- `.last-pass`は成功または安全なdecisionでだけ更新される。launchd pass自体は継続起動しても、上記の
-  model failureでheartbeatが更新されず、healthcheckは`last completed pass was 8h ago (limit 3h)`を正しく通知した。
-- installed LaunchAgentsは`life-manager`だけでなく、`.openclaw`、`.local`、`gig/releases`、`anicca`、
-  `profitable-claude`、`loops/current`等の複数rootを参照する。`x-repost`のsourceはcanonical
-  `life-manager` commitから作るread-only releaseだが、「全launchd loopのsourceがcanonical repo内」は未達である。
 
 #### Routing contract
 
@@ -1668,25 +1657,15 @@ flowchart LR
    account ID、token、auth本文を保存せず、account alias・failure class・observed/reset timestampだけを記録する。
 7. account 2も利用不能なら、そのtask classに既に定義されたClaude/Hermes candidateだけへ進む。Codex-only taskは
    正直にterminal failureとなり、未定義providerやaccount 3を暗黙追加しない。
-8. generated plist、release artifact、direct Codex callerはcanonical sourceから生成する。mutable releaseや
+8. runner、config、test、release artifactはcanonical sourceから生成する。mutable releaseや
    `~/Library/LaunchAgents`だけを手編集してdoneにしない。
-
-#### Canonical source boundary
-
-`life-manager`が所有する全loop source、runner、test、loop registry、plist generator、installer、healthcheckは
-canonical repositoryに置く。runtime state、logs、browser profile、OAuth/auth、append-only ledger、evidenceはrepo外に
-残す。別product固有loopは別repoに存在してよいが、Life Manager launchd jobが別repoやuntracked local scriptを
-production sourceとして参照する状態はこのsliceのacceptanceを満たさない。
 
 #### Plan size / implementation slices
 
-- Slice A（x-repost immediate regression）: production 1–2 files、test 1 file、約30–70 LOC。
-  quota eventが`model.stdout`にある場合の正しいclassification、account 1 failure→account 2 success、
-  non-quota invalid outputでaccount 2を呼ばないことをRED→GREENする。
-- Slice B（shared account candidates）: runner/config production 2–4 files、test 1–2 files、約80–140 LOC。
+- Slice A（shared account candidates）: runner/config production 2–4 files、test 1–2 files、約80–140 LOC。
   account alias別env/auth isolation、quota/auth fallback、effect開始後fail-closed、既存provider fallback順を実装する。
-- Slice C（direct caller migration / canonical audit）: x-repostと検出されたdirect Codex callersを共有boundaryへ移し、
-  registry/plist generation regressionを追加する。対象file数はaudit後に確定し、無関係loopを同時refactorしない。
+- Slice B（release wiring）: Life Manager共有runnerのconfig/release wiringだけを更新する。個別loopや
+  別repo sourceの修理はこのsliceに含めない。
 - 100 LOCまたは3 production filesを超えるsliceは分割する。新daemon、DB、account broker serviceは作らない。
 
 #### Acceptance criteria
@@ -1697,26 +1676,20 @@ production sourceとして参照する状態はこのsliceのacceptanceを満た
 4. account 1がeffectを開始してから失敗するfixtureではaccount 2 callは0、terminalはfail closed。
 5. account 1/2両方quota fixtureでは、task classに定義済みの次providerだけへ進む。Codex-only classは明示failure。
 6. account別automation homeのauth targetは正しいsourceだけを指し、token、account ID、auth本文はlog/evidence/specへ0件。
-7. x-repostの過去のusage-limit eventをreplayすると`transient_quota`となり、`unparseable output`にならない。
-8. account 2を使うcontrolled generation E2Eがreal responseを返し、同じpassの`.last-pass`が更新され、
-   healthcheckが`x-repost: OK`になる。投稿は重複防止のため、既存hourly guardがno-opとなるslotか、投稿前までの
-   effect-free acceptanceで検証する。
-9. installed Life Manager plistのProgramArguments/WorkingDirectoryを全件readbackし、production sourceがcanonical
-   mainのexact releaseだけを指す。repo外runtime state参照は許可するが、repo外source参照は0。
-10. exact main commitをrelease deployし、対象launchd jobを安全にreloadした後、account routing、exit、heartbeat、
-    duplicate external effect 0をreadbackする。isolated app-serverの`launchctl 141`をsuccess扱いしない。
+7. account 1 quota fixture→account 2 real responseのcontrolled generation E2Eを行い、account alias、exit、
+   duplicate external effect 0をreadbackする。
+8. exact main commitをrelease deployし、共有runnerを使う対象jobの次回実行でaccount routingをreadbackする。
+   isolated app-serverの`launchctl 141`をsuccess扱いしない。
 
 #### Remaining TODO
 
 | Order | TODO | Done evidence |
 |---:|---|---|
-| 1 | failing regressionを先に追加し、x-repostのquota誤分類を再現する | named REDがexpected failure |
-| 2 | account 1/2を独立candidateとして表す共有execution contractを実装する | focused RED→GREEN、auth isolation |
+| 1 | account 1/2を独立candidateとして表す共有execution contractのfailing regressionを追加する | named REDがexpected failure |
+| 2 | account alias別auth isolationとquota/auth fallbackを実装する | focused RED→GREEN、auth isolation |
 | 3 | effect-aware fail-closed gateを既存effect evidenceへ接続する | effect後fallback 0のregression |
-| 4 | x-repostを共有boundaryへ移し、usage-limit replayを正しくfallbackさせる | replay `transient_quota`、account 2 response |
-| 5 | 全installed Life Manager LaunchAgentのsource rootを監査し、repo外sourceをcanonicalへ移す | machine-readable inventory、repo外source 0 |
-| 6 | exact main releaseをdeployし、対象jobをreloadする | deployed SHA / plist / launchd readback |
-| 7 | controlled E2Eとhealthcheckを閉じる | account 1→2、heartbeat fresh、healthcheck OK、duplicate effect 0 |
+| 4 | canonical configとrelease wiringへaccount orderを反映する | account 1 primary / account 2 fallback readback |
+| 5 | controlled E2Eを閉じる | account 1 quota→account 2 real response、duplicate effect 0 |
 
 
 
