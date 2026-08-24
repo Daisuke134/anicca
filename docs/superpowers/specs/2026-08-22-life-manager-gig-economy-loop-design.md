@@ -880,8 +880,11 @@ count. Ten qualified proposals are only the first diagnostic checkpoint: the lea
 and reply evidence there while acquisition continues for every independently profitable candidate.
 Worker count expands from queue depth and measured browser/model/provider capacity and contracts only
 when observed errors, throttling, duplicate risk, deadlines or negative economics require backpressure.
-Current official truth is three submitted proposals, 118 Connects, zero replies, zero offers and zero
-contracts. Public proposal cost varies by job and can change, so the remaining proposal count is
+Current official truth is four submitted proposals, 92 Connects, zero replies, zero offers and zero
+contracts. The fourth is proposal `2091811328085401601` for job `~022091778584504223418`, with
+official Connects `118 → 92`. The runtime snapshot still reports three because it reads the Proposals
+count before the effect and does not refresh that page afterward; fixing this stale post-effect state
+is the next atomic readback task. Public proposal cost varies by job and can change, so the remaining proposal count is
 unknown until each fresh preflight; invitations and Direct Offers are prioritized because replying
 costs no Connects. No boost, badge, Plus, auto-top-up or new owner-funded Connects purchase is implied.
 
