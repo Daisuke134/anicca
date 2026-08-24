@@ -171,8 +171,38 @@ finished() {
     print '{"status":"blocked","missing":["browser"]}'
     return 2
   }
-  print '{"status":"blocked","missing":["gmail","telegram"],"next":"connector_preflight"}'
-  return 2
+  if ! preflight >/dev/null; then
+    print '{"status":"blocked","missing":["machine_preflight"]}'
+    return 2
+  fi
+  source "$SCRIPT_DIR/private-env.sh"
+  if ! job_search_load_private_env GOG_KEYRING_PASSWORD || ! command -v gog >/dev/null 2>&1; then
+    print '{"status":"blocked","missing":["gmail"]}'
+    return 2
+  fi
+  local connector_receipt="$JOB_SEARCH_STATE_ROOT/connector-preflight.json"
+  export PYTHONPATH="$JOB_SEARCH_APP_ROOT${PYTHONPATH:+:$PYTHONPATH}"
+  if ! "$JOB_SEARCH_PYTHON" -m job_search_loop.connector_preflight \
+    --profile "$JOB_SEARCH_PROFILE" \
+    --outbox "$JOB_SEARCH_STATE_ROOT/telegram-outbox.sqlite3" \
+    --output "$connector_receipt"; then
+    print '{"status":"blocked","missing":["gmail_or_telegram"]}'
+    return 2
+  fi
+  "$SCRIPT_DIR/install-launchd.sh"
+  record_state activated
+  "$JOB_SEARCH_PYTHON" - "$connector_receipt" <<'PY'
+import json,sys
+from pathlib import Path
+value=json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+print(json.dumps({
+    "status":"ready",
+    "gmail":"ready",
+    "telegram":"ready",
+    "telegram_message_id":value["telegram"]["message_id"],
+    "owners":5,
+}, sort_keys=True))
+PY
 }
 
 outcomes() {
