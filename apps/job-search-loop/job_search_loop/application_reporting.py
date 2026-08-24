@@ -102,10 +102,37 @@ def deliver_wake_report(
         next_action = "discover_next_eligible_workday"
     else:
         next_action = "resume_same_row_next_wake"
+    checked = len(discovery.get("shortlist") or discovery.get("discovered") or [])
+    if outcome == "success" and company != "none":
+        heading = "✅ 今回のWorkday処理を完了しました"
+        result_text = f"会社: {company}\n求人: {role}"
+    elif outcome == "success":
+        heading = "🔎 新しい応募対象を確認しました"
+        result_text = "今回は新しい応募の完了には至りませんでした。"
+    else:
+        heading = "⚠️ Workday処理を完了できませんでした"
+        result_text = (
+            f"会社: {company}\n求人: {role}"
+            if company != "none"
+            else "応募対象を確定する前に処理が止まりました。"
+        )
+    next_text = {
+        "continue_next_eligible_workday": "次の新しい適合求人の確認を続けます。",
+        "retry_with_available_provider_capacity": "利用可能なモデル容量で同じ安全な処理を再開します。",
+        "discover_next_eligible_workday": "登録済みsourceと新しい公式Workday会社の探索を続けます。",
+        "resume_same_row_next_wake": "同じ求人の保存済みcheckpointから安全に再開します。",
+    }.get(next_action, "30分後に次の安全な処理を続けます。")
     message = (
-        f"Codex::: {japan_day} JST {run_id} final. "
-        f"{company} — {role}; outcome={outcome}; reason={reason}; "
-        f"next_action={next_action}."
+        "Codex::: [Job Hunter][30分確認]\n"
+        f"{heading}\n\n"
+        "確認したこと\n"
+        f"公式Workday候補を{checked}件、現在のLedgerと照合しました。\n\n"
+        "結果\n"
+        f"{result_text}\n\n"
+        "理由\n"
+        f"{reason}\n\n"
+        "次に自動で行うこと\n"
+        f"{next_text}\nユーザーの操作は必要ありません。"
     )
     digest = hashlib.sha256(message.encode("utf-8")).hexdigest()
     delivery = sender(

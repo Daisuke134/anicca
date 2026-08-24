@@ -136,7 +136,8 @@ class ApplicationReportingTests(unittest.TestCase):
                 receipt["reason"],
                 "transport_failed_without_command_failure",
             )
-            self.assertIn("outcome=failed", calls[0]["message"])
+            self.assertIn("Workday処理を完了できませんでした", calls[0]["message"])
+            self.assertIn("transport_failed_without_command_failure", calls[0]["message"])
     def test_quota_failed_wake_reports_queued_company_role_and_next_action(self):
         reporting = importlib.import_module("job_search_loop.application_reporting")
         deliver = getattr(reporting, "deliver_wake_report", None)
@@ -205,13 +206,12 @@ class ApplicationReportingTests(unittest.TestCase):
 
             message = calls[0]["message"]
             self.assertIn("Codex:::", message)
-            self.assertIn("NVIDIA — Senior AI Partner Manager", message)
-            self.assertIn("outcome=failed", message)
-            self.assertIn("reason=transient_quota", message)
-            self.assertIn(
-                "next_action=retry_with_available_provider_capacity",
-                message,
-            )
+            self.assertIn("会社: NVIDIA", message)
+            self.assertIn("求人: Senior AI Partner Manager", message)
+            self.assertIn("Workday処理を完了できませんでした", message)
+            self.assertIn("transient_quota", message)
+            self.assertIn("利用可能なモデル容量", message)
+            self.assertIn("ユーザーの操作は必要ありません", message)
             self.assertEqual(receipt["message_id"], "wake-901")
             self.assertEqual(receipt, json.loads(output.read_text(encoding="utf-8")))
             self.assertEqual(output.stat().st_mode & 0o777, 0o600)
