@@ -1903,6 +1903,20 @@ class LocalLoopTest(unittest.TestCase):
             self.assertFalse(MODULE.revenue_cycle_due(state, now=4599))
             self.assertTrue(MODULE.revenue_cycle_due(state, now=4600))
 
+    def test_new_affiliate_post_bypasses_revenue_cooldown_once(self):
+        with tempfile.TemporaryDirectory() as root:
+            state, repost = Path(root) / "affiliate", Path(root) / "repost"
+            MODULE.atomic_json(state / "revenue-cycle.json", {"completed_at": 1000})
+            MODULE.append(repost / "posted.jsonl", {
+                "kind": "affiliate_distribution_quote",
+                "posted_at": "1970-01-01T00:20:00+00:00",
+                "affiliate_job_id": "1" * 64,
+            })
+            with patch.dict(MODULE.os.environ, {"AFFILIATE_REPOST_STATE_DIR": str(repost)}):
+                self.assertTrue(MODULE.revenue_cycle_due(state, now=1250))
+                MODULE.atomic_json(state / "revenue-cycle.json", {"completed_at": 1300})
+                self.assertFalse(MODULE.revenue_cycle_due(state, now=1400))
+
     def test_revenue_failure_preserves_typed_retry_metadata(self):
         with tempfile.TemporaryDirectory() as root:
             state = Path(root)

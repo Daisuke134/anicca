@@ -4044,6 +4044,26 @@ def revenue_cycle_due(state, now=None, cooldown_seconds=3600):
         except (OSError, ValueError, KeyError, TypeError):
             completed_at = None
     if completed_at is not None and current_time - completed_at < cooldown_seconds:
+        repost_root = Path(os.environ.get(
+            "AFFILIATE_REPOST_STATE_DIR", Path.home() / "loops" / "x-repost"
+        )).expanduser()
+        newest_affiliate_post = None
+        for row in json_rows(repost_root / "posted.jsonl"):
+            if row.get("kind") not in {
+                "affiliate_distribution", "affiliate_distribution_quote",
+            }:
+                continue
+            try:
+                posted_at = int(datetime.fromisoformat(
+                    str(row.get("posted_at")).replace("Z", "+00:00")
+                ).timestamp())
+            except ValueError:
+                continue
+            newest_affiliate_post = max(newest_affiliate_post or posted_at, posted_at)
+        if newest_affiliate_post is None or newest_affiliate_post <= completed_at:
+            return False
+        if newest_affiliate_post <= current_time:
+            return True
         return False
     try:
         failure = json.loads(
