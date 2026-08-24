@@ -592,26 +592,65 @@ The CEO chooses one next action from all active lanes:
 This is the general money-maximizing agent: not an unconstrained model, but a durable portfolio
 allocator whose rewards come only from external receipts.
 
+### 4.8 Money-first lane policy
+
+The first portfolio is gig work and bounties because installed digital Skills can convert existing
+capacity into cash without product-development lead time or speculative capital. The CEO does not
+create a separate agent per site. It runs one commercial state machine through interchangeable market
+manifests and one Skill inventory:
+
+```mermaid
+flowchart LR
+  CEO[Money CEO] --> S[Scout gig and bounty demand]
+  S --> J[Luna judges fit, margin and Skill coverage]
+  J --> B[Terra operates the live market UI]
+  B --> K[Effect fence and official readback]
+  K --> F[Skill fulfillment and independent QA]
+  F --> C[Payout received]
+  C --> E[Keep, pause, price, specialize or expand]
+  E --> CEO
+```
+
+Luna handles high-volume opportunity comparison, qualification, pricing and proposal composition.
+Terra handles open-ended browser navigation. Deterministic tools own credentials, money bounds,
+capacity, immutable effects, reconciliation and accounting. A provider manifest owns only URLs,
+fixed identifiers, official states, fee/currency mapping and typed ceremonies. New UI paths remain
+model-directed; they never become provider-specific dialog scripts.
+
+The CEO allocates in this order: protect paid work, answer buyers, close offers, deliver, reconcile
+cash, replenish qualified applications, then probe new markets. Lancers, CrowdWorks, Fiverr and
+authorized bounty sources may run zero-spend canaries after Upwork G3 while Upwork continues toward
+first cash and USD 10k. A canary consumes no owner capital, creates at most one external effect and
+cannot promote its adapter until official readback succeeds. Mobile-app and trading lanes remain
+lower priority until gig/bounty received cash proves spare capacity; trading additionally requires
+its own capital and risk authorization.
+
+Expansion cost must shrink: the second new market reuses the common browser operator and kernel with
+at most three thin provider files, the third with at most two, and later markets with a manifest plus
+exceptional transport glue only. If a market requires another scheduler, ledger or decision brain,
+the common primitive is missing and must be fixed before that adapter proceeds.
+
 ## 5. Market sequence
 
 Upwork closes the first proposal receipt before another marketplace mutation lane opens. Read-only
 market research and adapter generation may proceed in parallel. After that receipt the CEO may run
 additional zero-spend canaries while Upwork keeps scaling, ordering markets from measured opportunity,
-margin, authorization and human-minute evidence.
+margin, authorization and human-minute evidence. Upwork first cash remains the OSS-alpha proof gate;
+USD 10k is a scale gate, not a prerequisite for learning whether a second market fits the kernel.
 
 | Order | Market | Intended lane | Unique lesson / Skill |
 |---:|---|---|---|
 | 0 | Coconala | Existing full sales/fulfillment/payment loop | Reference effect fence, inbox, paid project, receipt and learning |
 | 1 | Upwork | First complete new autonomous adapter | Outbound proposals, Connects economics, contract/milestone lifecycle |
-| 2 | Fiverr | Inbound catalogue plus custom offers | Storefront/Gig experiments, inquiry qualification, order/revision lifecycle |
-| 3 | LinkedIn | Lead discovery and approved outreach to off-platform service sales | Relationship graph, lead qualification, CRM attribution |
-| 4 | Mercor | Role matching and approved post-onboarding work | Resume/role matching, scheduling, identity ceremony boundary |
-| 5 | Welocalize | Project-specific language/data work | Project authorization, locale QA, heterogeneous task normalization |
-| 6 | TELUS Digital | Assessor/data projects with human-minute accounting | Human-assisted workflow packets and evidence-bound submission |
-| 7 | uTest | Confidential testing cycles | Isolated client workspace, reproduction evidence, bug-report QA |
-| 8 | Prolific | Study-specific eligible tasks | Per-study AI permission and short-task profitability |
-| 9 | Outlier | Project-specific authorized AI work | Rubric-bound production and strict provenance |
-| 10 | Babel Audio | Human voice/data contribution | Physical-capture ceremony, audio QA and submission receipts |
+| 2 | Lancers | Japanese outbound proposals and packages | Reuse Japanese profile, delivery Skills and bank payout truth |
+| 3 | CrowdWorks | Japanese projects and task work | Project/task eligibility, contract and escrow state mapping |
+| 4 | Fiverr | Inbound catalogue plus custom offers | Storefront/Gig experiments, inquiry qualification, order/revision lifecycle |
+| 5 | Authorized bounty sources | Fixed-scope rewards | Claim ownership, acceptance proof and payout identity |
+| 6 | LinkedIn | Lead discovery and approved outreach to off-platform service sales | Relationship graph, lead qualification, CRM attribution |
+| 7 | Mercor | Role matching and approved post-onboarding work | Resume/role matching, scheduling, identity ceremony boundary |
+| 8 | Welocalize | Project-specific language/data work | Project authorization, locale QA, heterogeneous task normalization |
+| 9 | TELUS Digital | Assessor/data projects with human-minute accounting | Human-assisted workflow packets and evidence-bound submission |
+| 10 | uTest / Prolific / Outlier | Authorized task/project work | Confidentiality, AI permission and provenance boundaries |
 
 Each later market may finish as `active`, `assisted`, `denied` or `unprofitable`. Upwork denial or
 negative margin remains visible evidence and never weakens the shared kernel; the CEO may redirect
@@ -817,6 +856,15 @@ Every installer owns their accounts and authorization. Safe public defaults are 
 authorization receipt enables approved actions. The product is reproducible automation, not a
 promise of earnings.
 
+### 8.1 OSS release gates
+
+`OSS alpha` requires Upwork G6: one real discovery-to-`received` path, replay zero, redacted fixtures,
+no tracked secret/customer data, zero-spend public defaults and a local installer. It may ship while
+the private owner continues toward USD 10k. `OSS stable` requires G7 plus one second-market canary,
+provider conformance, clean-device installation and one authorized receipt path on that clean device.
+The repository never ships the owner's browser profile, credentials, proposal bodies, client files,
+authorization receipts, runtime ledgers or payout identifiers.
+
 ## 9. Stage gates
 
 | Gate | Acceptance evidence |
@@ -837,6 +885,11 @@ promise of earnings.
 | G11 Upwork USD 10k | One complete calendar-month source window proves at least USD 10,000 `verified_net_received`; Pending/Available are excluded and later chargebacks enter their occurrence month |
 | G12 JPY 10m | Provider and bank sources prove JPY 10,000,000 verified monthly net |
 | G13 replication | A clean third device completes setup and one authorized receipt path |
+| G14 OSS alpha | Upwork G6, replay zero, redacted fixtures, secret scan and local installer |
+| G15 OSS stable | G7, one second-market canary, conformance suite and clean-device receipt |
+
+Current gate truth: G0–G3 are complete. G3 is proposal `2091740505918763009`, Connects
+`150 -> 141`, and a fresh replay with proposal count `1` and balance `141`. G4–G15 remain open.
 
 ### 9.1 Upwork live-path test matrix
 

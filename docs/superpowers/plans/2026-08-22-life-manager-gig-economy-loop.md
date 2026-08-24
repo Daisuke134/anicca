@@ -260,9 +260,9 @@ No later task may jump ahead of the first incomplete row:
 | U10 | Discover and qualify a first-job candidate | **DONE:** usability-test job `~022091106411892491962`; $15, 10–15 proposals, zero interviews, payment/phone verified, and all student/age/English/recording gates match owner evidence |
 | U11 | Resolve application capacity for that candidate | **DONE:** official proposal surface requires 7 Connects; balance/history, offers, invites and proposals are 0, no reward banner is exposed, and the only buy offer is 100 for $15 plus tax |
 | U12 | Freeze one tailored first-job proposal | **DONE:** immutable payload `c37eed9c…c68e926` contains the $15 terms, cover letter, five factual screening answers, no attachments, and zero unsupported claims |
-| U13 | Make acquisition fully loop-owned | **IN PROGRESS:** production scans page 1 plus two durable-cursor pages, reads exact proposal cost, reuses the existing proposal model/effect/readback path, and polls invitations, Direct Offers, Catalog orders and free Connects every five minutes; next prove cursor advances across wakes |
-| U14 | Close the first acquisition effect | **WAITING ONE BOUNDED CAPITAL RECEIPT OR FREE INBOUND:** recommend one $15/100-Connect seed, no subscription/boost/badge/auto-top-up. After approval the agent buys once, applies to recent low-competition bounded jobs, verifies one official proposal ID and replay 0; free inbound remains active |
-| U15 | Replay immediately | Same proposal ID; zero new proposal and zero additional Connects |
+| U13 | Make acquisition fully loop-owned | **IN PROGRESS:** production searches current jobs, Luna qualifies against installed Skills and seals private proposals, and Terra owns changing UI. It selected current job `~022091742848386274963` at 8 Connects without static candidate editing; the effect did not start because exact form preflight mismatched. Fix that observed form generically, batch candidate judgment to avoid one Luna call per rejected job, then prove a second dynamic proposal receipt. |
+| U14 | Close the first acquisition effect | **DONE:** one authorized $15 seed produced 150 Connects; proposal `2091740505918763009` is official and Connects readback is `150 -> 141`. No subscription, boost, badge or auto-top-up was enabled. |
+| U15 | Replay immediately | **DONE:** fresh launchd replay exited 0; official proposal count stayed 1 and balance stayed 141. |
 | U16 | Poll and answer the resulting thread | Official story/message IDs and no duplicate reply |
 | U17 | Negotiate and accept profitable terms | Offer ID, exact terms hash and active contract ID |
 | U18 | Fulfill and independently verify the work | Artifact hash and independent verifier PASS |
@@ -270,7 +270,7 @@ No later task may jump ahead of the first incomplete row:
 | U20 | Reconcile money and review | Official payout `received`, transaction, fee, actual costs and honest review evidence; Pending/Available excluded |
 | U21 | Repeat on three independent paid jobs | Three contract/payment/review IDs and complete per-job economics |
 | U22 | Operate the proven Upwork loop to USD 10k/month | One complete calendar-month window totals at least USD 10,000 verified net received; cross-month payouts and later chargebacks are attributed once to their actual months |
-| U23 | Compress the next-market path | After U14 proposal readback, extract only proven Coconala/Upwork duplication so the next gig or bounty site needs at most three thin provider files/about 300 LOC and zero kernel changes |
+| U23 | Compress the next-market path | **IN PROGRESS AFTER G3:** extract only proven Coconala/Upwork duplication so Lancers, CrowdWorks, Fiverr or an authorized bounty source needs at most three thin provider files/about 300 LOC and zero kernel changes; zero-spend canaries may run while Upwork proceeds to first cash. |
 | U24 | Let the agent onboard an unknown market | Agent observes rules/UI, performs ordinary signup/login, generates a manifest plus transport/readback glue, runs a zero-spend canary and joins the existing loop; only typed human ceremonies pause that provider |
 
 Later implementation tasks are renumbered only when their first incomplete outcome becomes active.
@@ -278,6 +278,27 @@ Marketplace mutations remain frozen only until U14 closes one official Upwork pr
 Read-only research and adapter generation may proceed earlier. After U14, additional zero-spend
 canaries may run while Upwork continues through U15–U22; paid work and unknown-effect reconciliation
 always preempt expansion.
+
+### Completion order from the current state
+
+1. Reconcile the selected dynamic job and fix its click-free form preflight before any effect starts.
+2. Prove current search → Luna Skill-aware qualification → seal → Terra submit → official proposal
+   ID/Connects delta, then prove replay zero without static candidate edits.
+3. Replace per-job Luna calls with one bounded candidate-set decision per search page; persist skips
+   and cursor progress so later wakes do not pay to reconsider unchanged evidence.
+4. Keep polling every submitted proposal, inbox, invitation, offer and contract; send each grounded
+   reply exactly once and promote the first profitable offer to an active contract.
+5. Freeze the contract into a private project, compose the installed delivery Skill, execute work,
+   run independent QA, deliver once, process revisions and require official submission readback.
+6. Reconcile payment, fee, refund/chargeback and official payout `received`; close G4–G6 and publish
+   OSS alpha only after secret/PII scan, redacted fixtures and isolated-home installer pass.
+7. Repeat three independent paid jobs, retain the winning Skill/price/niche experiments and close G7.
+8. In parallel after paid work is safe, run one-effect zero-spend canaries for Lancers, CrowdWorks,
+   Fiverr and authorized bounty sources through the same kernel; promote only verified profitable lanes.
+9. Extract the manifest/template and conformance suite, install on a clean device, complete one
+   authorized receipt path and publish OSS stable with no private state.
+10. Continue the private portfolio until a complete calendar month proves USD 10,000 net `received`;
+    this is the scale outcome, not a substitute for the earlier end-to-end and OSS gates.
 
 The fresh official snapshot shows applications 0, replies 0, contracts 0 and payout `received` USD 0.
 Upwork finance main proof is `12d92846e`, its production proof is `c0c66c32f`, and release tests are
@@ -779,6 +800,13 @@ U13 atomic order:
     not fabricate experience, but exact prior work, testimonial or portfolio absence alone is no longer
     a skip reason when a Skill can complete the work; missing implementation details become concise
     pre-contract questions. Regression remains `155 passed`.
+56. **FIRST SKILL-AWARE DYNAMIC SELECTION REACHED PREFLIGHT:** production Luna selected and privately
+    sealed current job `~022091742848386274963`, `Research and Compile a List of Companies from
+    Specific Industries With Issues and Concerns`, at an official cost of 8 Connects and balance 141.
+    No provider effect row was created because click-free form validation failed before the durable
+    fence. Current money truth remains one submitted proposal, zero replies/offers/contracts and
+    Connects 141. Inspect that exact live form, correct only the generic form-control contract, then
+    resume the same sealed intent; never regenerate or blind-submit it.
 
 U14 atomic order:
 
@@ -1474,10 +1502,13 @@ lacks join/cost evidence, and reject duplicate transaction IDs.
 - [ ] Repeat the winning Skill and change one strategy variable at a time until a complete month
   returns at least `1_000_000`; then close G11 and unlock Phase C.
 
-## Phase C — Fiverr second complete adapter
+## Phase C — Next gig/bounty canaries
 
-Phase C is locked until Task 22A closes G11. A first Upwork payment or three-job repeatability alone
-does not unlock a second growth market.
+G3 unlocks one-effect zero-spend canaries for Lancers, CrowdWorks, Fiverr and authorized bounty
+sources while Upwork continues. Paid work, replies, offers, delivery and unknown effects always
+preempt these canaries. No second adapter becomes an active allocation lane until its official
+readback and economics pass; Upwork G6 remains the OSS-alpha gate and G11 remains the private scale
+gate.
 
 ### Task 23: Record Fiverr authorization and authenticated transport
 
