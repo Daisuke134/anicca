@@ -749,6 +749,13 @@ U13 atomic order:
     do not change proposal, price, contract, identity, tax or payment facts are part of the authorized
     browser task; CAPTCHA, identity proof and personal legal/tax declarations remain typed human
     ceremonies. This is one general prompt rule, not an Upwork dialog string or scripted path.
+52. **FIRST LOOP-OWNED PROPOSAL VERIFIED:** the second Terra run handled the live safety acknowledgement
+    and submitted the immutable proposal exactly once. Official receipt is proposal
+    `2091740505918763009`; Connects History names the target job and proves `150 -> 141` (`-9`), while
+    a fresh Proposals page proves submitted count `1`. The next wake found no duplicate effect but
+    failed read-only inventory because Upwork renders the one-item label as singular `Submitted
+    proposal (1)`. Accept singular/plural for this fixed official count field, then prove replay leaves
+    proposal count `1` and Connects `141`.
 
 U14 atomic order:
 

@@ -66,6 +66,13 @@ def test_completed_working_style_result_overrides_stale_todo_banner():
     }
 
 
+def test_parses_singular_submitted_proposal_count():
+    state = parse_inventory(
+        "Offers (0)\nInvites from clients (0)\nActive proposals (0)\nSubmitted proposal (1)\n"
+    )
+    assert state["submitted_proposals"] == 1
+
+
 def test_parses_visible_catalog_inventory_without_inventing_an_order():
     state = parse_catalog(
         "Approved (1)\nUnder Review (0)\nDrafts (0)\n"
