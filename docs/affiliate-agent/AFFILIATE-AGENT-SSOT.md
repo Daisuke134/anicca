@@ -8213,6 +8213,11 @@ Current implementation state:
   0, and near-duplicate 0. The canary takes about 12 minutes, so the first three
   natural `:15/:45` opportunities must also reveal whether 15-minute staggering
   is sufficient or preparation must move ahead of the public boundary.
+  The first natural opportunity starts at 17:45 with launchctl runs 2 and exits
+  0, but correctly returns `already published this half-hour slot
+  (2026-08-24T17:30)` because the manual canary occupies that same state slot.
+  It proves the duplicate guard but does not count toward the three public
+  calendar effects. The next eligible proof boundary is 18:15.
 
 ### Loop runtime protocol — not Codex's design TODO
 
