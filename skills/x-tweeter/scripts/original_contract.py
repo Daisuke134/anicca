@@ -71,6 +71,11 @@ def posted_text_hashes(path: Path) -> set[str]:
         text = row.get("text") if isinstance(row, dict) else None
         if isinstance(text, str) and text:
             hashes.add(hashlib.sha256(text.encode()).hexdigest())
+            lines = text.rstrip().splitlines()
+            if lines and re.fullmatch(r"https?://\S+", lines[-1]):
+                body = "\n".join(lines[:-1]).rstrip()
+                if body:
+                    hashes.add(hashlib.sha256(body.encode()).hexdigest())
     return hashes
 
 

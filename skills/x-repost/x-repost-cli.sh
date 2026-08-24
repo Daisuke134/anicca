@@ -23,6 +23,7 @@ REPO_ROOT="$(cd "$SKILL/../.." && pwd)"
 # taking the posted ledger, and with it the duplicate protection, along with it.
 STATE="${X_REPOST_STATE_DIR:-$SKILL/state}"
 POSTED="$STATE/posted.jsonl"
+LOOP_NAME="${X_LOOP_NAME:-x-repost}"
 PY=/opt/homebrew/bin/python3; [ -x "$PY" ] || PY=python3
 CODEX="$(command -v codex || echo "$HOME/.local/bin/codex")"
 MODEL_BOUNDARY="$SKILL/scripts/model_boundary.py"
@@ -50,7 +51,7 @@ EV="$STATE/evidence/$PASS_ID"
 mkdir -p "$EV" "$STATE"
 touch "$POSTED"
 
-log() { echo "$(date '+%F %T') x-repost[$PASS_ID]: $*"; }
+log() { echo "$(date '+%F %T') ${LOOP_NAME}[$PASS_ID]: $*"; }
 
 # Same channel/target every other migrated cron reports to (chat 0000000000 = Dais), but the
 # response is kept: telegram-notify.sh discards it, and a report whose messageId was thrown away
@@ -112,9 +113,9 @@ report() {
   # The sender is this loop, not the interactive session that happened to write it, and not a
   # vendor. With hundreds of loops reporting into one thread the useful identity is WHICH LOOP,
   # and a hardcoded model name would start lying the moment someone runs this on another model.
-  local body="x-repost::: $1
+  local body="${LOOP_NAME}::: $1
 
-— loop x-repost · model ${MODEL} · effort ${REASONING_EFFORT} · pass ${PASS_ID}"
+— loop ${LOOP_NAME} · model ${MODEL} · effort ${REASONING_EFFORT} · pass ${PASS_ID}"
   send_telegram "$body" && return 0
   log "telegram report outcome is ambiguous; no retry is allowed"
   "$PY" -c 'import datetime,json,sys; open(sys.argv[1],"a",encoding="utf-8").write(json.dumps({"ts":datetime.datetime.now().astimezone().isoformat(),"body_sha256":sys.argv[2],"status":"ambiguous_no_retry"})+"\n")' \
@@ -990,7 +991,7 @@ rows.sort(key=lambda r: (
     (r.get("engagement") or {}).get("reposts", 0),
     (r.get("engagement") or {}).get("views", 0),
 ), reverse=True)
-json.dump([{"tone": r.get("tone"), "text": r.get("text"),
+json.dump([{"post_id": r.get("post_url"), "tone": r.get("tone"), "text": r.get("text"),
             "engagement": r.get("engagement") or {}} for r in rows[:5]],
           sys.stdout, ensure_ascii=False, indent=1)
 PYEOF
@@ -1031,7 +1032,7 @@ if int(strategy.get("original_ratio_bootstrap_version", 0)) < 2:
         os.fsync(stream.fileno())
     os.replace(tmp, path)
 PYEOF
-read -r KIND TARGET_LANGUAGE <<<"$("$PY" - "$STRATEGY" "$POSTED" "$TODAY" <<'PYEOF'
+read -r KIND TARGET_LANGUAGE <<<"$("$PY" - "$STRATEGY" "$POSTED" "$TODAY" "${X_REPOST_FORCE_KIND:-}" <<'PYEOF'
 import json, random, re, sys
 try:
     strategy = json.load(open(sys.argv[1], encoding="utf-8"))
@@ -1049,7 +1050,10 @@ for line in open(sys.argv[2], encoding="utf-8"):
         rows.append(row)
 has_original_today = any(r.get("posted_at", "").startswith(sys.argv[3]) and
                          r.get("kind") == "original" for r in rows)
-if not has_original_today or random.random() < max(0.0, min(1.0, original_ratio)):
+forced = sys.argv[4]
+if forced in {"original", "quote", "reply"}:
+    kind = forced
+elif not has_original_today or random.random() < max(0.0, min(1.0, original_ratio)):
     kind = "original"
 else:
     kind = "reply" if random.random() < max(0.0, min(1.0, reply_ratio)) else "quote"
@@ -1350,10 +1354,14 @@ SRC_METRICS="$("$PY" -c 'import json,sys; print(json.load(open(sys.argv[1]))["me
   echo "読者が実行できる手順、判断基準、失敗条件、比較方法のうち異なる2種類を具体的に足した時だけ useful=true。"
   echo "source固有の仕組み・数字・制約を少なくとも1つ使わない一般論は useful=false。"
   echo "URL、文体、viralらしさではなく事実支持と読者効用を別々に判定する。"
+  if [ "$KIND" = "original" ]; then
+    echo "Originalについてはrecent postsとの主張・角度・表現のnear-duplicateも判定し、novel、spam_risk、near_duplicate_post_idsを返す。"
+    echo; echo "## recent originals / posts"; cat "$EV/fewshot.json"
+  fi
   echo; echo "## source"; cat "$EV/source.json"
   echo; echo "## sourceから解決したexact evidence"; "$PY" -c 'import json,sys; print(json.load(open(sys.argv[1])).get("canonical_evidence","")); d=json.load(open(sys.argv[2])); print(d.get("reader_value",""))' "$EV/grounding.json" "$EV/select.json"
   echo; echo "## final post"; cat "$EV/post.txt"
-  echo; echo '## 出力（最後にJSONだけ）'; echo '{"supported":true,"useful":true,"source_specific":true,"value_types":["procedure","failure_condition"],"reason":"1文"}'
+  echo; echo '## 出力（最後にJSONだけ）'; echo '{"supported":true,"useful":true,"source_specific":true,"novel":true,"spam_risk":"low","unsupported_claims":[],"near_duplicate_post_ids":[],"value_types":["procedure","failure_condition"],"reason":"1文"}'
 } >"$EV/prompt-verify.txt"
 if ! ask_model "$EV/prompt-verify.txt" "$EV/verify.raw" >"$EV/verify.json"; then
   handle_model_failure "source-grounding critic" "$EV/verify.raw"
@@ -1361,6 +1369,70 @@ fi
 if [ "$("$PY" -c 'import json,sys; d=json.load(open(sys.argv[1])); allowed={"procedure","decision_criterion","failure_condition","comparison_method"}; values=d.get("value_types") or []; print(d.get("supported") is True and d.get("useful") is True and d.get("source_specific") is True and len(set(values) & allowed) >= 2)' "$EV/verify.json" 2>/dev/null)" != "True" ]; then
   report "⚠️ 最終本文がsource支持または具体的な読者効用gateを満たさないため投稿を見送り"
   finish 0 "source grounding or utility critic rejected draft"
+fi
+if [ "$KIND" = "original" ]; then
+  if ! "$PY" - "$EV" "$SOURCE_URL" <<'PYEOF'
+import datetime, hashlib, json, os, sys
+ev, source_url = sys.argv[1:3]
+def read(name):
+    return json.load(open(os.path.join(ev, name), encoding="utf-8"))
+def write(name, value):
+    path = os.path.join(ev, name)
+    with open(path, "x", encoding="utf-8") as stream:
+        json.dump(value, stream, ensure_ascii=False, sort_keys=True)
+        stream.write("\n"); stream.flush(); os.fsync(stream.fileno())
+candidates, selected = read("candidates.json"), read("select.json")
+grounding, verify = read("grounding.json"), read("verify.json")
+candidate = next((row for row in candidates.get("candidates", [])
+                  if row.get("url") == source_url), None)
+if candidate is None: raise SystemExit(1)
+source = {
+    "url": source_url,
+    "title": (candidate.get("handle") or source_url).strip(),
+    "text": (candidate.get("text") or "").strip(),
+    "source_kind": "public_source_post",
+    "observed_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+}
+text = open(os.path.join(ev, "post.txt"), encoding="utf-8").read().strip()
+lines = text.splitlines()
+if lines and lines[-1].strip() == source_url:
+    text = "\n".join(lines[:-1]).rstrip()
+draft = {
+    "text": text,
+    "source_url": source_url,
+    "evidence_quote": grounding.get("canonical_evidence"),
+    "reader_value": selected.get("reader_value"),
+    "value_types": verify.get("value_types") or [],
+}
+write("original-source.json", source)
+write("original-draft.json", draft)
+def sha(name):
+    return hashlib.sha256(open(os.path.join(ev, name), "rb").read()).hexdigest()
+critic = {
+    "source_sha256": sha("original-source.json"),
+    "draft_sha256": sha("original-draft.json"),
+    "supported": verify.get("supported"),
+    "useful": verify.get("useful"),
+    "novel": verify.get("novel"),
+    "spam_risk": verify.get("spam_risk"),
+    "unsupported_claims": verify.get("unsupported_claims"),
+    "near_duplicate_post_ids": verify.get("near_duplicate_post_ids"),
+    "value_types": verify.get("value_types") or [],
+    "reason": verify.get("reason"),
+}
+write("original-critic.json", critic)
+PYEOF
+  then
+    report "⚠️ Original source/draft/critic receipt binding failed"
+    finish 1 "original receipt binding failed"
+  fi
+  if ! "$PY" "$SKILL/../x-tweeter/scripts/original_contract.py" \
+      --source "$EV/original-source.json" --draft "$EV/original-draft.json" \
+      --critic "$EV/original-critic.json" --posted "$POSTED" \
+      >"$EV/original-payload.json" 2>>"$EV/original-contract.err"; then
+    report "⚠️ Original failed the independent source/usefulness/novelty contract"
+    finish 0 "original admission contract rejected draft"
+  fi
 fi
 
 # ---------------------------------------------------------------- 6. publish
@@ -1432,5 +1504,5 @@ fi
 # difference between a pass that fits in its hour and one that does not. The cooldown is
 # fourteen days, so one new seed a day is plenty: the digest job does it.
 
-bash "$REPO_ROOT/bin/record-cost-event.sh" x-repost "${X_REPOST_PASS_COST_USD:-0.12}" >/dev/null 2>&1 || true
+bash "$REPO_ROOT/bin/record-cost-event.sh" "$LOOP_NAME" "${X_REPOST_PASS_COST_USD:-0.12}" >/dev/null 2>&1 || true
 finish 0 "published $POST_URL"
