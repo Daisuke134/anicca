@@ -116,13 +116,21 @@ class Handler(BaseHTTPRequestHandler):
         self._json(HTTPStatus.NOT_FOUND, {"error": "not found"})
 
     def do_POST(self) -> None:  # noqa: N802
-        if self.path != "/api/connect":
+        if self.path not in {"/api/connect", "/api/enable-all"}:
             self._json(HTTPStatus.NOT_FOUND, {"error": "not found"})
             return
         if self.headers.get("x-life-manager-token") != self.token:
             self._json(HTTPStatus.FORBIDDEN, {"error": "invalid local action token"})
             return
         try:
+            if self.path == "/api/enable-all":
+                manifests = [row for row in _graph()["integrations"] if row["state"] != "ready"]
+                results = [_connect(row["integration_id"]) for row in manifests]
+                self._json(HTTPStatus.ACCEPTED, {
+                    "status": "started", "started": len(results),
+                    "integrations": [row["integration_id"] for row in results],
+                })
+                return
             length = int(self.headers.get("content-length") or 0)
             if length <= 0 or length > 8192:
                 raise ValueError("invalid request size")
