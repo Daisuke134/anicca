@@ -23,6 +23,52 @@ SPEC.loader.exec_module(MODULE)
 
 
 class LocalLoopTest(unittest.TestCase):
+    def test_x_channel_ledger_separates_growth_and_monetization_with_follower_delta(self):
+        with tempfile.TemporaryDirectory() as root:
+            state, repost = Path(root) / "affiliate", Path(root) / "repost"
+            repost.mkdir(parents=True)
+            growth_url = "https://x.com/selawmqt/status/100"
+            money_url = "https://x.com/selawmqt/status/200"
+            MODULE.append(repost / "posted.jsonl", {
+                "kind": "quote", "source_url": "https://x.com/source/status/1",
+                "post_url": growth_url,
+            })
+            MODULE.append(repost / "posted.jsonl", {
+                "kind": "affiliate_distribution", "affiliate_job_id": "1" * 64,
+                "affiliate_placement_id": "caption-en-1",
+                "affiliate_owned_article_url": "https://aniccaai.com/blog/caption",
+                "source_url": "https://aniccaai.com/blog/caption", "post_url": money_url,
+            })
+            for count, transition in ((1, "a" * 64), (2, "b" * 64)):
+                MODULE.append(state / "x-growth" / "follower-baselines.jsonl", {
+                    "transition_id": transition, "followers": {"count": count, "state": "EXACT"},
+                })
+            MODULE.atomic_json(state / "x-growth" / "latest-post-metrics.json", {
+                "transition_id": "c" * 64, "post_url": money_url,
+                "job_id": "1" * 64, "placement_id": "caption-en-1",
+                "impressions": {"count": 4, "state": "EXACT"},
+                "replies": {"count": 0, "state": "EXACT"},
+                "reposts": {"count": 0, "state": "EXACT"},
+                "likes": {"count": 0, "state": "EXACT"},
+                "bookmarks": {"count": 0, "state": "EXACT"},
+            })
+            inspector = lambda *_args: {
+                "views": 10, "replies": 1, "reposts": 0, "likes": 2, "bookmarks": 0,
+            }
+            with patch.dict(MODULE.os.environ, {"AFFILIATE_REPOST_STATE_DIR": str(repost)}):
+                first = MODULE.observe_x_channel_ledger(state, 9326, inspector=inspector)
+                replay = MODULE.observe_x_channel_ledger(state, 9326, inspector=inspector)
+
+            self.assertEqual(first["followers_delta"], {"count": 1, "state": "EXACT"})
+            self.assertEqual(first["lanes"]["growth"]["post_url"], growth_url)
+            self.assertEqual(first["lanes"]["growth"]["impressions"]["count"], 10)
+            self.assertEqual(first["lanes"]["monetization"]["post_url"], money_url)
+            self.assertEqual(first["lanes"]["monetization"]["impressions"]["count"], 4)
+            self.assertFalse(replay["changed"])
+            self.assertEqual(len(MODULE.json_rows(
+                state / "x-growth" / "channel-ledger.jsonl"
+            )), 1)
+
     def test_x_post_metrics_append_only_when_exact_reach_changes(self):
         with tempfile.TemporaryDirectory() as root:
             state, repost = Path(root) / "affiliate", Path(root) / "repost"

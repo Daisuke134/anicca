@@ -197,6 +197,91 @@ def observe_x_post_metrics(state, cdp_port, inspector=x_profile_cli.inspect_post
     return {**receipt, "state": "OBSERVED", "changed": changed}
 
 
+def observe_x_channel_ledger(state, cdp_port, inspector=x_profile_cli.inspect_post_metrics):
+    follower_rows = json_rows(state / "x-growth" / "follower-baselines.jsonl")
+    exact_followers = [
+        row for row in follower_rows
+        if isinstance((row.get("followers") or {}).get("count"), int)
+        and (row.get("followers") or {}).get("state") == "EXACT"
+    ]
+    if not exact_followers:
+        return {"state": "WAITING_FOR_FOLLOWER_BASELINE", "changed": False}
+    follower_delta = (
+        exact_followers[-1]["followers"]["count"]
+        - exact_followers[-2]["followers"]["count"]
+        if len(exact_followers) >= 2 else None
+    )
+    money_path = state / "x-growth" / "latest-post-metrics.json"
+    if not money_path.is_file():
+        return {"state": "WAITING_FOR_MONETIZATION_METRICS", "changed": False}
+    money = json.loads(money_path.read_text(encoding="utf-8"))
+    repost_root = Path(os.environ.get(
+        "AFFILIATE_REPOST_STATE_DIR", Path.home() / "loops" / "x-repost"
+    )).expanduser()
+    posted_path = repost_root / "posted.jsonl"
+    raw = posted_path.read_bytes()
+    posted = [json.loads(line) for line in raw.decode("utf-8").splitlines() if line.strip()]
+    growth = next((
+        row for row in reversed(posted)
+        if row.get("kind") in {"quote", "reply", "original"}
+        and isinstance(row.get("post_url"), str)
+    ), None)
+    if growth is None:
+        return {"state": "WAITING_FOR_GROWTH_POST", "changed": False}
+    config = x_profile_cli.load_config(Path(__file__).resolve().parents[1], "en")
+    observed = inspector(SimpleNamespace(
+        cdp_host="127.0.0.1", cdp_port=cdp_port, state=state,
+    ), config, growth["post_url"])
+
+    def metrics(value):
+        return {
+            key if key != "views" else "impressions": {
+                "count": value.get(key),
+                "state": "EXACT" if isinstance(value.get(key), int) else "UNAVAILABLE_EXACT",
+            }
+            for key in ("views", "replies", "reposts", "likes", "bookmarks")
+        }
+
+    core = {
+        "schema_version": 1,
+        "receipt_type": "X_GROWTH_MONETIZATION_LEDGER",
+        "handle": config["handle"],
+        "followers_before_transition_id": (
+            exact_followers[-2].get("transition_id") if len(exact_followers) >= 2 else None
+        ),
+        "followers_after_transition_id": exact_followers[-1].get("transition_id"),
+        "followers_delta": {
+            "count": follower_delta,
+            "state": "EXACT" if follower_delta is not None else "NO_PRIOR_BASELINE",
+        },
+        "lanes": {
+            "growth": {
+                "post_url": growth["post_url"], "kind": growth["kind"],
+                **metrics(observed),
+            },
+            "monetization": {
+                key: money.get(key) for key in (
+                    "post_url", "job_id", "placement_id", "impressions",
+                    "replies", "reposts", "likes", "bookmarks",
+                )
+            },
+        },
+        "source_posted_sha256": hashlib.sha256(raw).hexdigest(),
+        "monetization_metrics_transition_id": money.get("transition_id"),
+        "money_state": "NON_MONEY",
+    }
+    transition_id = hashlib.sha256(json.dumps(
+        core, sort_keys=True, separators=(",", ":")
+    ).encode()).hexdigest()
+    receipt = {**core, "transition_id": transition_id,
+               "observed_at": datetime.now(timezone.utc).isoformat()}
+    changed = append_unique(
+        state / "x-growth" / "channel-ledger.jsonl", receipt, ("transition_id",)
+    )
+    atomic_json(state / "x-growth" / "latest-channel-ledger.json", receipt)
+    return {**receipt, "state": "OBSERVED", "changed": changed}
+
+
 def focused_live_lineage(state):
     latest = state / "focused-cohort" / "latest.json"
     if not latest.is_file():
@@ -3999,6 +4084,17 @@ def _wake_once(args, started_at, run_id):
             "impressions": {"count": None, "state": "UNAVAILABLE_EXACT"},
         }
     try:
+        x_channel_ledger = admit(
+            "growth.x-channel-ledger", "READ_ONLY",
+            {"post_metrics_state": x_post_metrics.get("state")},
+            lambda: observe_x_channel_ledger(state, getattr(args, "x_cdp_port", 9326)),
+        )
+    except Exception as error:
+        x_channel_ledger = {
+            "state": "OBSERVATION_FAILED", "changed": False,
+            "failure_type": type(error).__name__,
+        }
+    try:
         repost_proposal = admit(
             "repost.propose", "LEDGER_ONLY", {"owner": "existing-x-repost"},
             lambda: create_repost_proposal(state),
@@ -4447,6 +4543,13 @@ def _wake_once(args, started_at, run_id):
                 "state", "changed", "transition_id", "post_url", "job_id",
                 "placement_id", "impressions", "replies", "reposts", "likes",
                 "bookmarks", "failure_type",
+            )
+        },
+        "x_channel_ledger": {
+            key: x_channel_ledger.get(key)
+            for key in (
+                "state", "changed", "transition_id", "followers_delta", "lanes",
+                "money_state", "failure_type",
             )
         },
         "repost_proposal": {
