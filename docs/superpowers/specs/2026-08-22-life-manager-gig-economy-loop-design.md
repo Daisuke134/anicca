@@ -537,10 +537,13 @@ notification path, funnel ledger or learning loop.
 Ordinary marketplace forms are never provider code. Luna seals the truthful commercial intent; Terra
 uses the common Browser ACI to inspect the current page, fill every visible required field, respond to
 validation feedback and submit. Deterministic code may reserve spend/capacity, fence the exact intent
-and parse official machine-stable IDs/balances after Terra acts. Provider-specific selector/fill scripts,
-including the current Upwork `fill_preflight_expression`, are legacy and must be retired rather than
-debugged or copied to another market. DOM selectors may exist only inside a generic browser tool for
-mechanical element access chosen from live model observation, never as one site's workflow brain.
+and parse official machine-stable IDs/balances after Terra acts. Provider-specific selector/fill code
+is permitted only as an optional compiled fast path that reduces model tokens after the common Terra
+path has proved the same form. It has zero judgment or authority: it cannot decide eligibility, change
+intent, cause skip, block the wake or become the only route. On missing control, validation mismatch,
+unknown UI or any failure before effect, the same sealed intent falls through immediately to Terra in
+the same wake. Official ID/balance readback and replay rules are identical for fast and agentic
+transports. DOM selectors never become one site's workflow brain.
 
 First common-operator canary reached Terra for the AI/MCP proposal but Terra created an isolated
 context, was redirected to login and made no external effect. The operator contract now requires the
