@@ -89,11 +89,39 @@ def publish_application_decisions(events: list[dict[str, Any]]) -> None:
     )
     if appended == 0:
         return
-    subprocess.run([
-        sys.executable, str(DEFAULT_TELEGRAM_REPORT),
-        "--gig-dir", str(DEFAULT_GIG_DIR),
-        "--telegram-database", str(DEFAULT_GIG_DIR / "telegram-outbox.sqlite3"),
-    ], capture_output=True, text=True, timeout=240, check=False)
+    try:
+        subprocess.Popen([
+            sys.executable, str(DEFAULT_TELEGRAM_REPORT),
+            "--gig-dir", str(DEFAULT_GIG_DIR),
+            "--telegram-database", str(DEFAULT_GIG_DIR / "telegram-outbox.sqlite3"),
+        ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+    except OSError:
+        pass
+
+
+def proposal_submitted_event(
+    payload: dict[str, Any], *, proposal_id: str, connects_after: int,
+) -> dict[str, Any]:
+    terms = payload["terms"]
+    connects_before = terms["available_connects_before"]
+    return {
+        "event_key": f"gig:application:upwork:{proposal_id}",
+        "kind": "application",
+        "entity_id": payload["job_id"],
+        "occurred_at": datetime.now(timezone.utc).isoformat(),
+        "state": "verified",
+        "action": "応募送信",
+        "result": "公式Proposal IDとConnects差分を確認しました",
+        "next_action": "返信、Offer、契約を自動で監視します",
+        "evidence": ["proposal_id", "connects_readback", "provider_effect_ledger"],
+        "attributes": {
+            "platform": "upwork", "title": payload["title"], "url": payload["job_url"],
+            "job_id": payload["job_id"], "proposal_id": proposal_id,
+            "connects_before": connects_before, "connects_after": connects_after,
+            "connects_spent": connects_before - connects_after,
+            "quote": {"currency": "USD", "amount": terms["bid_usd"], "unit": terms["type"]},
+        },
+    }
 
 
 def parse_connects(text: str) -> dict[str, Any]:
@@ -813,6 +841,9 @@ async def execute_sealed_proposal(
         holder["intent"], receipt, connects_post=post_connects["balance"],
         connects_evidence_sha256=post_hash,
     )
+    publish_application_decisions([proposal_submitted_event(
+        payload, proposal_id=receipt["proposal_id"], connects_after=post_connects["balance"],
+    )])
     return {
         **base, "state": "submitted", "proposal_id": receipt["proposal_id"],
     }, post_connects, post_hash

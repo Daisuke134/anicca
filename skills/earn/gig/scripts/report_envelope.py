@@ -174,6 +174,26 @@ def _work_event_messages(event: dict[str, Any]) -> tuple[str, str]:
                 "No user action is required.",
             ))
             return ja, en
+        if state == "verified" and _clean(attributes.get("platform")) != "coconala":
+            platform = _clean(attributes.get("platform_display_name")) or _clean(
+                attributes.get("platform"), "Gig"
+            ).capitalize()
+            quote = attributes.get("quote") if isinstance(attributes.get("quote"), dict) else {}
+            ja = "\n".join((
+                f"[{platform}][応募完了]",
+                "✅ 実際に応募しました",
+                "",
+                f"案件: {title}",
+                f"依頼ID: {event['entity_id']}",
+                f"Proposal ID: {_clean(attributes.get('proposal_id'), '確認済み')}",
+                f"提案: {_clean(quote.get('currency'))} {_clean(quote.get('amount'))} / {_clean(quote.get('unit'))}",
+                f"Connects: {attributes.get('connects_before')} → {attributes.get('connects_after')} (-{attributes.get('connects_spent')})",
+                "",
+                "次に自動で行うこと",
+                str(event["next_action"]),
+                "ユーザーの操作は必要ありません。",
+            ))
+            return ja, ja
         bucket = "継続" if attributes.get("bucket") == "retainer" else "単発"
         amount = _money(attributes.get("price_jpy"))
         ja = "\n".join((

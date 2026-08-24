@@ -2299,6 +2299,9 @@ Only the first unchecked row is active; a missing buyer event blocks that resour
   `2091811328085401601`, official Submitted proposals 4 and Connects `92 → 92`.
 - [ ] Make Telegram delivery a durable independent queue effect; acquisition never waits for OpenClaw
   send/ACK or fails because a notification times out.
+- [x] Code the separation: decision events launch the existing reporter asynchronously, while a new
+  verified application event is created only from official Proposal ID plus Connects before/after and
+  renders `[Upwork][応募完了]`. Production receipt remains.
 - [ ] Replace one-proposal-per-wake with job-scoped proposal workers plus an atomic shared Connects
   reservation; prove two sibling jobs can progress and same-job replay effect 0.
 - [ ] On the first official buyer message, append its exact room/head before Luna, send one truthful
