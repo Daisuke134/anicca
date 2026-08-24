@@ -605,7 +605,8 @@ with open(posted, "a+", encoding="utf-8") as stream:
            for line in stream if line.strip()): raise SystemExit(0)
     row = {"posted_at": datetime.datetime.now().astimezone().isoformat(),
            "kind": ("affiliate_distribution_quote" if payload.get("distribution_mode")
-                    == "QUOTE_CONTROL_POST" else "affiliate_distribution"),
+                    in {"QUOTE_CONTROL_POST", "QUOTE_RELEVANT_EXTERNAL"}
+                    else "affiliate_distribution"),
            "source_url": payload.get("source_url") or payload["owned_article_url"],
            "affiliate_job_id": payload["job_id"],
            "affiliate_effect_identity": payload["effect_identity"],
