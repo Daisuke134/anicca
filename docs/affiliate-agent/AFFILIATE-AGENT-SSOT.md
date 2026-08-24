@@ -7788,10 +7788,19 @@ the named production evidence:
   `2091754957448040906` at 5 impressions, all engagement counts zero EXACT,
   follower delta unavailable due one baseline, and `money_state=NON_MONEY`.
   D11 is now the first unchecked item.
-- [ ] **D11 Complete funnel row.** Produce one exact-placement row containing
+- [x] **D11 Complete funnel row.** Produce one exact-placement row containing
   impressions, owned entries, CTA clicks, provider clicks, unique clicks,
   transactions, approved/paid commission, reversals, and known costs. Missing
   fields remain `UNKNOWN` or `UNAVAILABLE`.
+  Done at `7bc667755`: owner joins the exact D05 job/placement/permalink with D09
+  impressions, entry/CTA observations, PartnerStack clicks and transactions,
+  commission lifecycle, and actual-cost state. Production row `3658e967...`
+  records impressions 6 EXACT; owned entry and CTA as
+  `UNKNOWN_NOT_IN_COHORT`; provider cumulative clicks 3 / unique 3 observed
+  before D05, therefore post-distribution delta
+  `WAITING_FOR_POST_PROVIDER_READBACK`; transactions 0 OBSERVED; all commission
+  statuses zero; approved/paid `NO_APPROVED_OR_PAID`; cost UNKNOWN. No missing
+  denominator is replaced with zero. D12 is now the first unchecked item.
 - [ ] **D12 Bottleneck decision contract.** Give that row to the model and require
   one bottleneck, one selected variable, one falsifiable hypothesis, one action,
   and one official success metric. Deterministic code binds evidence only.
