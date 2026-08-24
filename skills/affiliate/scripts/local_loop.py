@@ -1931,7 +1931,14 @@ def create_x_recirculation_job(state, plan):
         "content_sha256": control["content_sha256"],
         "target_x_account": control["target_x_account"],
         "cadence_class": control["cadence_class"],
+        "distribution_mode": "QUOTE_CONTROL_POST",
+        "control_post_url": plan.get("control_post_url"),
     }
+    if not isinstance(effect_core["control_post_url"], str) or not re.fullmatch(
+        r"https://x\.com/[A-Za-z0-9_]{1,15}/status/[0-9]+",
+        effect_core["control_post_url"],
+    ):
+        raise ValueError("recirculation control post unavailable")
     effect_identity = hashlib.sha256(json.dumps(
         effect_core, sort_keys=True, separators=(",", ":")
     ).encode()).hexdigest()

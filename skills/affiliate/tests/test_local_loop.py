@@ -50,6 +50,7 @@ class LocalLoopTest(unittest.TestCase):
                 "control_placement_id": control["placement_id"],
                 "control_job_id": control["job_id"],
                 "control_content_sha256": control["content_sha256"],
+                "control_post_url": "https://x.com/selawmqt/status/200",
                 "next_action": "SAFE_X_RECIRCULATION",
                 "content_mutation_allowed": False,
             }
@@ -62,6 +63,8 @@ class LocalLoopTest(unittest.TestCase):
             self.assertEqual(first["content_sha256"], control["content_sha256"])
             self.assertEqual(first["owned_article_url"], control["owned_article_url"])
             self.assertNotEqual(first["placement_id"], control["placement_id"])
+            self.assertEqual(first["distribution_mode"], "QUOTE_CONTROL_POST")
+            self.assertEqual(first["control_post_url"], plan["control_post_url"])
             self.assertEqual(first["experiment_lineage"], {
                 "kind": "EXPERIMENT", "decision_id": plan["decision_id"],
                 "control_placement_id": control["placement_id"],

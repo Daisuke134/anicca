@@ -73,6 +73,11 @@
       "pattern": "^[A-Za-z0-9_]+$"
     },
     "cadence_class": {"const": "AFFILIATE_MONETIZATION"},
+    "distribution_mode": {"const": "QUOTE_CONTROL_POST"},
+    "control_post_url": {
+      "type": "string",
+      "pattern": "^https://x\\.com/[A-Za-z0-9_]{1,15}/status/[0-9]+$"
+    },
     "policy_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
     "source_set_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
     "created_at": {"type": "string", "format": "date-time"},
