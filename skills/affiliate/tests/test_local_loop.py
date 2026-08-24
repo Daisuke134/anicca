@@ -23,6 +23,32 @@ SPEC.loader.exec_module(MODULE)
 
 
 class LocalLoopTest(unittest.TestCase):
+    def test_x_growth_baseline_appends_only_when_official_count_changes(self):
+        with tempfile.TemporaryDirectory() as root:
+            state = Path(root)
+            profiles = iter((
+                {"handle": "selawmqt", "owner": True, "rendered_url": "https://x.com/selawmqt",
+                 "followers_text": "1 フォロワー", "following_text": "27 フォロー中"},
+                {"handle": "selawmqt", "owner": True, "rendered_url": "https://x.com/selawmqt",
+                 "followers_text": "1 フォロワー", "following_text": "27 フォロー中"},
+                {"handle": "selawmqt", "owner": True, "rendered_url": "https://x.com/selawmqt",
+                 "followers_text": "2 フォロワー", "following_text": "27 フォロー中"},
+            ))
+            inspector = lambda *_args: next(profiles)
+
+            first = MODULE.observe_x_growth(state, 9326, inspector=inspector)
+            replay = MODULE.observe_x_growth(state, 9326, inspector=inspector)
+            changed = MODULE.observe_x_growth(state, 9326, inspector=inspector)
+
+            self.assertEqual(first["followers"], {"count": 1, "state": "EXACT"})
+            self.assertTrue(first["changed"])
+            self.assertFalse(replay["changed"])
+            self.assertTrue(changed["changed"])
+            self.assertEqual(changed["followers"]["count"], 2)
+            self.assertEqual(len(MODULE.json_rows(
+                state / "x-growth" / "follower-baselines.jsonl"
+            )), 2)
+
     def test_x_distribution_job_is_enqueued_once_after_policy_and_owned_readback(self):
         with tempfile.TemporaryDirectory() as root:
             state = Path(root)

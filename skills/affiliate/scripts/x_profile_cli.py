@@ -20,6 +20,18 @@ class XProfileError(Exception):
     pass
 
 
+def exact_profile_count(text, kind):
+    labels = {
+        "followers": r"(?:フォロワー|Followers?)",
+        "following": r"(?:フォロー中|Following)",
+    }
+    pattern = labels.get(kind)
+    if not isinstance(text, str) or pattern is None:
+        return None
+    match = re.fullmatch(rf"([0-9][0-9,]*)\s+{pattern}", text.strip(), re.I)
+    return int(match.group(1).replace(",", "")) if match else None
+
+
 def load_config(root, locale):
     if locale != "en":
         raise XProfileError("unsupported X locale")
@@ -71,11 +83,18 @@ def navigate(ws, request_id, url):
 def evaluate_profile(ws, request_id):
     expression = """(() => {
       const rawName = document.querySelector('[data-testid="UserName"]')?.innerText || '';
+      const handle = (rawName.split('\\n').find(v => v.startsWith('@')) || '').slice(1);
+      const links = [...document.querySelectorAll('a[href]')];
+      const following = links.find(a => a.getAttribute('href') === `/${handle}/following`);
+      const followers = links.find(a => [`/${handle}/followers`, `/${handle}/verified_followers`]
+        .includes(a.getAttribute('href')));
       return {
         name: rawName.split('\\n')[0] || '',
-        handle: (rawName.split('\\n').find(v => v.startsWith('@')) || '').slice(1),
+        handle,
         bio: document.querySelector('[data-testid="UserDescription"]')?.innerText || '',
         url: document.querySelector('[data-testid="UserUrl"]')?.innerText || '',
+        followers_text: followers?.innerText || '',
+        following_text: following?.innerText || '',
         owner: Boolean(document.querySelector('[data-testid="editProfileButton"]')),
         rendered_url: location.href
       };
@@ -204,6 +223,20 @@ def main():
         "url": profile["url"],
         "changed": changed,
         "matches_config": matches(profile, config),
+        "followers": {
+            "count": exact_profile_count(profile.get("followers_text"), "followers"),
+            "state": (
+                "EXACT" if exact_profile_count(profile.get("followers_text"), "followers") is not None
+                else "UNAVAILABLE_EXACT"
+            ),
+        },
+        "following": {
+            "count": exact_profile_count(profile.get("following_text"), "following"),
+            "state": (
+                "EXACT" if exact_profile_count(profile.get("following_text"), "following") is not None
+                else "UNAVAILABLE_EXACT"
+            ),
+        },
         "observed_at": datetime.now(timezone.utc).isoformat(),
     }
     atomic_write(args.receipt.expanduser(), receipt)

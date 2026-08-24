@@ -31,6 +31,7 @@ from cta_instrumentation import (
     observe_entries,
 )
 from runtime_guard import runtime_guard
+import x_profile_cli
 
 
 SYSTEME_LOGIN = "https://systeme.io/en/login"
@@ -106,6 +107,43 @@ def json_rows(path):
         except ValueError:
             continue
     return rows
+
+
+def observe_x_growth(state, cdp_port, inspector=x_profile_cli.inspect):
+    config = x_profile_cli.load_config(Path(__file__).resolve().parents[1], "en")
+    profile = inspector(SimpleNamespace(
+        cdp_host="127.0.0.1", cdp_port=cdp_port, state=state,
+    ), config)
+    followers = x_profile_cli.exact_profile_count(
+        profile.get("followers_text"), "followers"
+    )
+    following = x_profile_cli.exact_profile_count(
+        profile.get("following_text"), "following"
+    )
+    core = {
+        "schema_version": 1,
+        "receipt_type": "X_FOLLOWER_BASELINE",
+        "handle": config["handle"],
+        "rendered_url": profile.get("rendered_url"),
+        "followers": {"count": followers,
+                      "state": "EXACT" if followers is not None else "UNAVAILABLE_EXACT"},
+        "following": {"count": following,
+                      "state": "EXACT" if following is not None else "UNAVAILABLE_EXACT"},
+    }
+    transition_id = hashlib.sha256(json.dumps(
+        core, sort_keys=True, separators=(",", ":")
+    ).encode()).hexdigest()
+    receipt = {
+        **core, "transition_id": transition_id,
+        "observed_at": datetime.now(timezone.utc).isoformat(),
+    }
+    changed = append_unique(
+        state / "x-growth" / "follower-baselines.jsonl", receipt, ("transition_id",)
+    )
+    atomic_json(state / "x-growth" / "latest-followers.json", receipt)
+    return {**receipt,
+            "state": "OBSERVED" if followers is not None else "UNAVAILABLE_EXACT",
+            "changed": changed}
 
 
 def focused_live_lineage(state):
@@ -3887,6 +3925,18 @@ def _wake_once(args, started_at, run_id):
             "revenue_credit_state": "NO_REVENUE_CREDIT",
         }
     try:
+        x_growth = admit(
+            "growth.x-followers", "READ_ONLY", {"owner": "affiliate-x-browser"},
+            lambda: observe_x_growth(state, getattr(args, "x_cdp_port", 9326)),
+        )
+    except Exception as error:
+        x_growth = {
+            "state": "OBSERVATION_FAILED", "changed": False,
+            "failure_type": type(error).__name__, "followers": {
+                "count": None, "state": "UNAVAILABLE_EXACT",
+            },
+        }
+    try:
         repost_proposal = admit(
             "repost.propose", "LEDGER_ONLY", {"owner": "existing-x-repost"},
             lambda: create_repost_proposal(state),
@@ -4320,6 +4370,13 @@ def _wake_once(args, started_at, run_id):
                 "post_action_count", "joined_campaign_count",
                 "unjoined_post_action_count", "invalid_row_count", "join_state",
                 "denominator_state", "revenue_credit_state", "failure_type",
+            )
+        },
+        "x_growth": {
+            key: x_growth.get(key)
+            for key in (
+                "state", "changed", "transition_id", "handle", "rendered_url",
+                "followers", "following", "failure_type",
             )
         },
         "repost_proposal": {
