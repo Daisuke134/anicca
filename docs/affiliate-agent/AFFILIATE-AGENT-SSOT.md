@@ -7986,6 +7986,32 @@ when the model exposure boundary is met or the channel is closed; execute D17;
 then D18–D30 without skipping first transaction, first approved/paid money, and
 unit-economics gates.
 
+For the next seven observed days, use this bounded X bootstrap cadence rather
+than the prior near-half-hour posting volume:
+
+- Three useful original AI posts per day. Each gives one concrete workflow,
+  comparison, failure/recovery lesson, or reproducible action. It carries no
+  Affiliate link unless it is the day's admitted monetization placement.
+- Two relevant external quote-posts per day. The model selects a directly
+  relevant harvested source with meaningful official reach and adds a distinct,
+  source-grounded practical insight. Plain reposts without commentary default to
+  zero because they create no owned learning signal.
+- At most one Affiliate-disclosed placement per day during bootstrap. Prefer a
+  relevant external-audience quote; do not repeat identical copy, and do not
+  self-quote the same placement more than once in seven days unless the model
+  observes material incremental reach.
+- Space public effects by at least two hours. Scheduler wakes may measure,
+  decide, claim, or prepare payloads between effects, but they do not authorize
+  another public post.
+
+This is six public X effects per day, not six Affiliate posts. After seven days,
+the model reallocates the three growth slots and two quote slots using official
+median impressions, follower delta, engagement, exact Affiliate reach, provider
+click delta, and transactions. If an Affiliate placement has at least 100 exact
+impressions and zero post-attributable provider clicks, change the distribution,
+CTA, offer, or article according to the sealed bottleneck decision; do not solve
+it by increasing duplicate post volume.
+
 ### Loop runtime protocol — not Codex's design TODO
 
 Operator priority is money. Do not spend remaining-loop time or tokens on fresh
