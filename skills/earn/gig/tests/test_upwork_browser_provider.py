@@ -29,6 +29,27 @@ from upwork_browser_provider import (  # noqa: E402
 )
 
 
+def test_application_decision_uses_shared_work_event_and_reporter_once(tmp_path, monkeypatch):
+    calls = []
+    monkeypatch.setattr(provider, "DEFAULT_GIG_DIR", tmp_path)
+    monkeypatch.setattr(provider.subprocess, "run", lambda command, **kwargs: calls.append(command))
+    event = {
+        "kind": "application", "event_key": "gig:decision:upwork:job-1",
+        "entity_id": "job-1", "occurred_at": "2026-08-24T08:00:00+00:00",
+        "state": "skipped", "action": "応募見送り", "result": "見送り",
+        "next_action": "次の案件確認を続けます", "evidence": ["model_decision"],
+        "attributes": {"platform": "upwork", "title": "Job", "reason_codes": ["Not feasible"]},
+    }
+
+    provider.publish_application_decision(event)
+    provider.publish_application_decision(event)
+
+    assert len(calls) == 1
+    assert "instant-work-events" in calls[0]
+    rows = [json.loads(line) for line in (tmp_path / "work-events.jsonl").read_text().splitlines()]
+    assert rows == [event]
+
+
 def test_parses_zero_connects_without_inventing_a_reward():
     state = parse_connects(
         "Connects History\nMy balance\n0 Connects\nNo Connects transactions.\n"
