@@ -39,7 +39,10 @@ evidence and are not reported as coding work.
    Coconala card shows 15 owner minutes, five reasons, six declared owners and `Needs you`;
    the same action smart-resumes `finished` when receipt plus browser session exist.
 6. [ ] Start every ready loop from the graph, leave blocked loops independent, and read back
-   exactly one persistent owner per declared label.
+   exactly one persistent owner per declared label. The CSRF-bound `Enable all` action now
+   starts every manifested non-ready integration independently and never restarts a ready
+   one; one child in Waiting does not block other cards. Generic launchd owner readback and
+   the remaining 74 owner-to-manifest migrations are still open.
 7. [ ] Add one Money/Body/Mind home showing only Running, Needs you, Waiting for external
    result, or Issue detected, backed by official outcome receipts.
 8. [ ] Migrate Coconala's installer/gates/six jobs/receipts into the shared manifest without
