@@ -56,6 +56,7 @@ def discover_one(
     ledger_path: Path,
     sources: tuple[dict[str, str], ...],
     fetch_jobs: Callable[[dict[str, str]], list[dict[str, Any]]] = _fetch_jobs,
+    preferred_urls: tuple[str, ...] = (),
 ) -> dict[str, Any]:
     ledger = Ledger(ledger_path)
     try:
@@ -109,6 +110,15 @@ def discover_one(
                 )
         if not candidates:
             return {"status": "no_fresh_workday", "errors": errors, "discovered": []}
+        preferred_rank = {
+            canonical_url(url).casefold(): index
+            for index, url in enumerate(preferred_urls)
+        }
+        candidates.sort(
+            key=lambda row: preferred_rank.get(
+                canonical_url(str(row["url"])).casefold(), len(preferred_rank)
+            )
+        )
         selected = candidates[0]
         application_id = ledger.add_application(
             str(selected["company"]), str(selected["title"]), str(selected["url"])

@@ -28,6 +28,24 @@ TEST_SOURCES = tuple(
 
 
 class WorkdayDiscoveryTests(unittest.TestCase):
+    def test_model_shortlist_can_select_later_snapshot_job_first(self):
+        with tempfile.TemporaryDirectory() as directory:
+            source = TEST_SOURCES[0]
+            first_url = f"https://{source['host']}/{source['site']}/job/Tokyo/First_R1"
+            best_url = f"https://{source['host']}/{source['site']}/job/Tokyo/Best_R2"
+
+            result = discover_one(
+                ledger_path=Path(directory) / "ledger.sqlite3",
+                sources=(source,),
+                fetch_jobs=lambda _source: [
+                    {"title": "First", "locationsText": "Tokyo", "externalPath": "/job/Tokyo/First_R1"},
+                    {"title": "Best", "locationsText": "Tokyo", "externalPath": "/job/Tokyo/Best_R2"},
+                ],
+                preferred_urls=(best_url, first_url),
+            )
+
+            self.assertEqual(result["discovered"][0]["title"], "Best")
+
     def test_cxs_fetch_paginates_empty_search_until_official_total(self):
         payloads = [
             {"total": 21, "jobPostings": [

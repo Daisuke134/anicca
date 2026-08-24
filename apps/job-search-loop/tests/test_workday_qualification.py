@@ -10,11 +10,40 @@ from job_search_loop.workday_search_loop import (
     cached_source_fetcher,
     rotated_sources,
     search_until_qualified,
+    snapshot_candidates,
+    validate_shortlist,
 )
 from job_search_loop.workday_qualification import qualify_one
 
 
 class WorkdayQualificationTests(unittest.TestCase):
+    def test_snapshot_skips_failed_source_and_keeps_other_company(self):
+        with tempfile.TemporaryDirectory() as directory:
+            sources = (
+                {"company": "Broken", "host": "broken.wd1.myworkdayjobs.com", "site": "Careers"},
+                {"company": "Good", "host": "good.wd1.myworkdayjobs.com", "site": "Careers"},
+            )
+
+            def fetch(source):
+                if source["company"] == "Broken":
+                    raise TimeoutError
+                return [{"title": "Good Role", "locationsText": "Tokyo", "externalPath": "/job/Good_R1"}]
+
+            rows = snapshot_candidates(
+                ledger_path=Path(directory) / "ledger.sqlite3",
+                sources=sources,
+                fetch_jobs=fetch,
+            )
+
+            self.assertEqual([row["company"] for row in rows], ["Good"])
+
+    def test_shortlist_rejects_model_invented_url(self):
+        candidates = [{"url": "https://a.wd1.myworkdayjobs.com/Careers/job/A"}]
+        with self.assertRaisesRegex(ValueError, "unknown URL"):
+            validate_shortlist(
+                {"ranked_urls": ["https://invented.example/job/1"]}, candidates
+            )
+
     def test_each_source_is_fetched_once_per_wake(self):
         calls = []
         source = {"company": "A", "host": "a.myworkdayjobs.com"}

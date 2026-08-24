@@ -8,7 +8,9 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from .agent_runner import AgentRunner
+from .agent_runner import AgentRunner, wrap_untrusted
+from .ledger import Ledger
+from .state import canonical_url, is_excluded_employer
 from .workday_discovery import _fetch_jobs, discover_one
 from .workday_qualification import fetch_official_description, qualify_one
 
@@ -35,6 +37,65 @@ def cached_source_fetcher(
         return values[key]
 
     return cached
+
+
+def snapshot_candidates(
+    *,
+    ledger_path: Path,
+    sources: tuple[dict[str, str], ...],
+    fetch_jobs: Callable[[dict[str, str]], list[dict[str, Any]]],
+) -> list[dict[str, str]]:
+    ledger = Ledger(ledger_path)
+    try:
+        seen = {
+            canonical_url(str(row[0])).casefold()
+            for row in ledger.connection.execute("SELECT canonical_url FROM applications")
+        }
+    finally:
+        ledger.close()
+    candidates = []
+    for source in sources:
+        if is_excluded_employer(source["company"]):
+            continue
+        try:
+            jobs = fetch_jobs(source)
+        except Exception:
+            continue
+        for job in jobs:
+            title = " ".join(str(job.get("title") or "").split())
+            location = " ".join(str(job.get("locationsText") or "").split())
+            path = str(job.get("externalPath") or "")
+            if not title or not path.startswith("/job/"):
+                continue
+            url = canonical_url(f"https://{source['host']}/{source['site']}{path}")
+            if url.casefold() in seen:
+                continue
+            candidates.append(
+                {
+                    "company": source["company"],
+                    "title": title,
+                    "location": location,
+                    "url": url,
+                }
+            )
+    return candidates
+
+
+def validate_shortlist(
+    result: dict[str, Any], candidates: list[dict[str, str]]
+) -> tuple[str, ...]:
+    ranked_urls = result.get("ranked_urls")
+    if not isinstance(ranked_urls, list) or not ranked_urls:
+        raise ValueError("Workday shortlist must contain ranked_urls")
+    allowed = {row["url"].casefold(): row["url"] for row in candidates}
+    validated = []
+    for value in ranked_urls:
+        if not isinstance(value, str) or value.casefold() not in allowed:
+            raise ValueError("Workday shortlist contains an unknown URL")
+        url = allowed[value.casefold()]
+        if url not in validated:
+            validated.append(url)
+    return tuple(validated)
 
 
 def search_until_qualified(
@@ -84,6 +145,7 @@ def main() -> int:
     parser.add_argument("--sources", required=True, type=Path)
     parser.add_argument("--runner", required=True, type=Path)
     parser.add_argument("--schema", required=True, type=Path)
+    parser.add_argument("--shortlist-schema", required=True, type=Path)
     parser.add_argument("--workdir", required=True, type=Path)
     parser.add_argument("--evidence-root", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
@@ -97,6 +159,49 @@ def main() -> int:
     source_cursor = 0
     jobs_by_source: dict[str, list[dict[str, Any]]] = {}
     fetch_jobs = cached_source_fetcher(_fetch_jobs, jobs_by_source)
+    candidates = snapshot_candidates(
+        ledger_path=args.ledger,
+        sources=sources,
+        fetch_jobs=fetch_jobs,
+    )
+    snapshot = {
+        "version": 1,
+        "sources": [
+            {"source": json.loads(key), "jobs": jobs}
+            for key, jobs in jobs_by_source.items()
+        ],
+    }
+    args.snapshot.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    args.snapshot.write_text(
+        json.dumps(snapshot, ensure_ascii=False, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    os.chmod(args.snapshot, 0o600)
+    preferred_urls: tuple[str, ...] = ()
+    if candidates:
+        candidate_memory = args.candidate_memory.read_text(encoding="utf-8")
+        shortlist = runner.run(
+            task="improve",
+            prompt=(
+                "Rank the Workday jobs for this candidate's realistic chance of winning "
+                "an interview and reaching at least JPY 7M, prioritizing JPY 10M-30M. "
+                "Use the whole supplied snapshot, not company prestige or source order. "
+                "Prefer roles whose actual work is supported by demonstrated experience. "
+                "Do not invent requirements, compensation, or candidate facts. Return up "
+                "to 8 unique candidate URLs, best first, and only URLs from the snapshot. "
+                "Return only the schema.\n\n"
+                + wrap_untrusted(
+                    "workday_snapshot",
+                    json.dumps(candidates, ensure_ascii=False),
+                )
+                + "\n\n"
+                + wrap_untrusted("candidate_memory", candidate_memory)
+            ),
+            schema_path=args.shortlist_schema,
+            workdir=args.workdir,
+            run_id=f"workday-shortlist-{uuid.uuid4().hex}",
+        )
+        preferred_urls = validate_shortlist(shortlist, candidates)
 
     def discover_next() -> dict[str, Any]:
         nonlocal source_cursor
@@ -106,6 +211,7 @@ def main() -> int:
             ledger_path=args.ledger,
             sources=ordered,
             fetch_jobs=fetch_jobs,
+            preferred_urls=preferred_urls,
         )
 
     result = search_until_qualified(
@@ -130,19 +236,7 @@ def main() -> int:
         for discovery in result["discoveries"]
         for row in discovery.get("discovered", [])
     ]
-    snapshot = {
-        "version": 1,
-        "sources": [
-            {"source": json.loads(key), "jobs": jobs}
-            for key, jobs in jobs_by_source.items()
-        ],
-    }
-    args.snapshot.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
-    args.snapshot.write_text(
-        json.dumps(snapshot, ensure_ascii=False, sort_keys=True) + "\n",
-        encoding="utf-8",
-    )
-    os.chmod(args.snapshot, 0o600)
+    result["shortlist"] = list(preferred_urls)
     args.output.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     args.output.write_text(
         json.dumps(result, ensure_ascii=False, sort_keys=True) + "\n",
