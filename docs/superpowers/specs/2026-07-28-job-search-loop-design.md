@@ -18,9 +18,13 @@ event stream on every wake. Every-wake and application-result Telegram delivery 
 the direct fenced Bot API transport; OpenClaw is not in the daily reporting path.
 The active engineering gate is continuous Workday search 10P3. Workday form
 operation, submission fencing, authoritative verification, Ledger recording,
-Telegram reporting, and exact-URL repeated-wake dedupe are live-proven in 10P, but
-discovery still promotes broad title-regex matches without comparing the official
-job description to the candidate's resume and grounded experience. Workday is not
+Telegram reporting, and exact-URL repeated-wake dedupe are live-proven in 10P.
+Discovery now snapshots every posting from the persisted Workday company registry,
+model-ranks every unseen row, and compares each selected official job description
+to Candidate Memory before browser access. It does not use title regex or a fixed
+company preference for job judgment. However, the registry is not yet an autonomous
+accumulating catalog of all discoverable Workday employers, and unpublished salary
+remains explicitly unverified rather than assumed. Workday is not
 end-to-end complete as a useful Job Hunter until 10P1, 10P2, and 10P3 close. Until
 then the owner must process Workday only; implementing and live-proving that park is
 the first atomic task. Historical non-Workday runs are diagnostic evidence only and
@@ -58,6 +62,15 @@ bound Gog receipt promotes it to `submitted`.
 | 6 | Self-heal provider and transport failures | Official-source timeout, auth expiry, browser checkpoint, Gog timeout, and model failure retry only before uncertain effects; alerts dedupe |
 | 7 | Prove recurring useful applications | Multiple distinct fit-qualified Workday jobs from different companies reach Gog-backed `submitted`, Telegram, and duplicate 0 |
 | 8 | Soak the installed loop | Scheduled 30-minute ownership remains healthy without manual executor, duplicate submits, excluded employers, secret leaks, or false success |
+
+The target Workday acquisition path is: maintain an accumulating registry of
+official company boards; snapshot every posting from every healthy board; remove
+Ledger-seen identities; model-rank all remaining rows using Candidate Memory and
+the salary policy; fetch exact official descriptions for finalists; reject
+unsupported work; apply through the browser only to a qualified row; accept success
+only after authoritative Gog mail; then continue with the next unseen identity.
+Company prestige or membership in the registry is never evidence of fit. An
+unpublished salary is `compensation_unverified`, never an invented pass.
 
 **Current execution truth supersedes earlier historical run notes below:** Workday
 10P is live-proven. Run `daily-20260824-033952` reaches exact NVIDIA
@@ -666,6 +679,7 @@ This is the remaining implementation-order SSOT. Only the first
 | 48dq | Make Workday receipt interpretation semantic and format-independent | `pending_after_48dp` | Rakuten proves the message can be authoritative and affirmative while omitting the role title and using unseen Japanese wording. Gog discovery must search authoritative Workday sender/company/time context broadly, then the model classifies confirmation meaning. Deterministic code verifies sender, recipient, post-submit time and unique uncertain intent only; exact title and phrase lists are optional evidence. Canonical positive, translated/roleless positive, spoof, wrong-recipient, pre-submit and ambiguous same-company examples must pass before release. |
 | 48dr | Cache each dynamic Workday source once per wake | `implementation_done_release_gate` | Run `124600` reaches five model decisions then stalls in discovery with no model child because every candidate iteration re-fetches every dynamic CXS source; timeout sources multiply latency. The pre-submit search processes are terminated with no intent or browser effect. `workday_search_loop` now caches each source response once for the wake and reuses it while rotating unseen candidates. Focused tests pass 8/8 and full regression passes 286/286. Release/live bounded search remains. |
 | 48ds | Replace per-wake generated searches with registry plus complete CXS snapshot | `selection_live_proven_application_pending` | Adopt Serai `08a6103449be14fe6e5f6c53a5ea81ff98e9c3bf`: normal wakes reuse the persisted company registry instead of regenerating companies/queries. Each enabled source POSTs empty `searchText` in pages of 20 until the first page's official `total`; source responses are fetched once per wake and written to mode-0600 evidence plus persistent `workday-job-snapshot.v1.json`. Ledger remains the durable seen/application cursor. Models rank every unseen snapshot row from Candidate Memory, interview likelihood and the JPY 7M minimum / JPY 10M–30M priority. A later source/page can therefore beat the first source without a title regex, keyword score, fixed company order, or random query. One failed tenant is skipped without losing healthy-company candidates. Runs `130826`, `131258`, `131836`, and `132405` expose and safely stop on page-total, OS argument-limit, URL-rewrite, and zero-padded-ID defects with external effects zero. Run `132822` proves exhaustive chunk and finalist ranking but exposes an absent-source queue mismatch. Sixth release `c8e4a3b4c`, launchd run `133439`, is the first complete selection-and-fit production proof: the loop deduplicates sources, persists the complete 527-KiB snapshot, succeeds on six exhaustive chunks plus finalist ranking, creates the top eight official rows, fetches each exact official JD, and continues through all eight decisions in one wake. It rejects all eight as unsupported senior architect, customer-success, or pre-sales scope, with browser/submit effects zero, rather than applying blindly. Call-local opaque IDs `c0…c399` map model choices back to immutable official URLs. No deterministic job score or title/location keyword judgment is introduced. Full regression passes 294/294. Remaining: keep consuming unseen ranked batches until a genuinely matched row reaches browser submission, Gog, Telegram and next-wake dedupe; then add low-frequency accumulating registry maintenance. |
+| 48dt | Accumulate Workday companies and continue ranked batches until useful work exists | `pending_after_48ds` | The current persisted registry contains only the boards already discovered; it is not a complete employer universe. Add low-frequency model-owned board discovery that merges validated official host/tenant/site identities into the registry instead of replacing it. Every normal wake keeps using the last good registry, records per-source health, and continues with the next unseen ranked batch after rejects. No company allowlist, title regex, keyword score, invented compensation, or empty-success result is allowed. Production completion requires a newly accumulated company or later unseen batch to yield a realistic fit, browser submission, authoritative Gog receipt, Telegram and next-wake duplicate zero. |
 | 49 | Drive the fresh Workday form with the LLM agent only | `live_proven` | Two consecutive NVIDIA Workday rows were driven through CloakBrowser CDP `:9222` by Luna/xhigh from fresh visible observations and screenshots, without a scripted question mapper or fixed page workflow. |
 | 50 | Reuse or create the Workday tenant account inside the same agent session | `live_proven` | The same tenant credential/session was reused by Luna without a second browser or executor. |
 | 51 | Complete every Workday page and variable employer question | `live_proven` | Luna completed provider-varying Salesforce questions for two rows from fresh observations and reached Review. |
