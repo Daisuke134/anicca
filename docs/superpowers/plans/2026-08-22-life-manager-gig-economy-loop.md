@@ -779,6 +779,37 @@ U13 atomic order:
     not fabricate experience, but exact prior work, testimonial or portfolio absence alone is no longer
     a skip reason when a Skill can complete the work; missing implementation details become concise
     pre-contract questions. Regression remains `155 passed`.
+56. **FIRST SKILL-AWARE DYNAMIC SELECTION REACHED PREFLIGHT:** production Luna selected and privately
+    sealed current job `~022091742848386274963`, `Research and Compile a List of Companies from
+    Specific Industries With Issues and Concerns`, at an official cost of 8 Connects and balance 141.
+    No provider effect row was created because click-free form validation failed before the durable
+    fence. Current money truth remains one submitted proposal, zero replies/offers/contracts and
+    Connects 141. Inspect that exact live form, correct only the generic form-control contract, then
+    resume the same sealed intent; never regenerate or blind-submit it.
+57. **RUNNING COCONALA LANES INSPECTED / REINVENTION CUT:** production is already four Life Manager
+    entrypoints from one immutable release: Apply (`application_direct → application_parent`), Reply
+    (`reply_detector → ConnectorOutbox`), Paid (`paid_direct → project/workflow/QA ledgers`) and
+    Storefront (`storefront_direct → capability/funnel allocator`). The application parent already
+    performs parallel discovery, ten-candidate Luna batches, planner/ineligible caches, cursor resume,
+    immutable intent fencing, delayed uncertain-effect reconciliation and exact-ID readback. Therefore
+    the Upwork per-job Luna loop is not promoted. Next implementation adds Upwork provider effects to
+    these existing parents, keeps its observer read-only, then deletes duplicated orchestration.
+58. **SCALABILITY CORRECTION — COPY CONTRACTS, NOT CONTROLLERS:** the Coconala inspection proves
+    useful lane priority, parallel read-only work, batching/cache/cursor, durable effects, project/QA
+    and official receipts. Its large site-specific parent scripts are not the cross-market API.
+    Luna/Terra remains the general looping market agent and owns navigation, form interpretation,
+    qualification, proposals, replies and ordinary UI across websites. Shared deterministic services
+    expose authorization, money/capacity, leases, effects, projects and readback. New markets add a
+    manifest plus unavoidable fixed-format transport/readback only; no site gets four copied controllers.
+    Item 58 supersedes item 57's instruction to bind new markets directly to Coconala parents.
+59. **DYNAMIC JOB PREFLIGHT ROOT CAUSE CLOSED:** the sealed research job's cover, bid `$10`, duration,
+    zero screening answers, Connects cost `8`, available balance `141` and enabled Submit control all
+    matched. The mismatch came solely from collecting a hidden ARIA live-region message as a validation
+    error; the page had zero visible/native invalid controls. Restrict existing error collection to
+    visible elements. Fresh click-free production-profile preflight now returns `ready=true`, exact job,
+    cost 8, balance 141 and evidence `1009e093…b24a`; Upwork regression is `155 passed`. Next release
+    must run the same immutable payload through the existing launchd loop and require proposal ID,
+    `141 -> 133` Connects and replay zero.
 
 U14 atomic order:
 
