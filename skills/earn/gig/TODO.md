@@ -131,6 +131,11 @@ Storefront work.
        intentionally not run while the separate Paid owner uses this profile.
     7. [ ] Activate the browser, Apply, Negotiate, Storefront, Paid and release watcher
        only after all official account gates are accepted. A listing is not this gate.
+       Direct implementation now records preflight evidence, requires all seven account
+       gates through `coconala_onboarding.py ready`, returns exact missing state names with
+       exit 2, and calls only the existing four-lane/release-watch activator after ready.
+       A temp HOME proves 7 missing blocks and 7 evidence-bound completions pass; launchd
+       readback is hash-bound. Live activation remains first-pilot evidence.
     8. [ ] Make Storefront import existing listings; when listing count is zero, it probes
        capabilities and owns initial service/category/scope/price/copy/assets creation.
     9. [ ] Require one official initial-listing readback and rerun duplicate zero from
