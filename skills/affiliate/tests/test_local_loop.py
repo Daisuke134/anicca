@@ -23,6 +23,53 @@ SPEC.loader.exec_module(MODULE)
 
 
 class LocalLoopTest(unittest.TestCase):
+    def test_distribution_plan_queues_one_content_preserving_child_job(self):
+        with tempfile.TemporaryDirectory() as root:
+            state = Path(root)
+            control = {
+                "schema_version": 1, "receipt_type": "AFFILIATE_X_DISTRIBUTION_JOB",
+                "state": "QUEUED", "job_id": "a" * 64,
+                "effect_identity": "b" * 64, "placement_id": "caption-en-1",
+                "owned_article_url": "https://aniccaai.com/blog/caption",
+                "content_sha256": "c" * 64,
+                "experiment_lineage": {"kind": "BASE", "decision_id": None,
+                                       "control_placement_id": None},
+                "target_x_account": "selawmqt",
+                "cadence_class": "AFFILIATE_MONETIZATION",
+                "policy_sha256": "d" * 64, "source_set_sha256": "e" * 64,
+                "created_at": "2026-08-24T00:00:00+00:00",
+                "private_tracking_url_state": "NOT_INCLUDED",
+                "revenue_credit_state": "NO_REVENUE_CREDIT",
+            }
+            MODULE.atomic_json(state / "x-distribution-jobs" / f'{"a" * 64}.json', control)
+            MODULE.append(state / "x-distribution-jobs.jsonl", control)
+            plan = {
+                "state": "READY", "plan_id": "f" * 64,
+                "experiment_id": "1" * 64, "decision_id": "2" * 64,
+                "selected_variable": "distribution_mix",
+                "control_placement_id": control["placement_id"],
+                "control_job_id": control["job_id"],
+                "control_content_sha256": control["content_sha256"],
+                "next_action": "SAFE_X_RECIRCULATION",
+                "content_mutation_allowed": False,
+            }
+
+            first = MODULE.create_x_recirculation_job(state, plan)
+            replay = MODULE.create_x_recirculation_job(state, plan)
+
+            self.assertEqual(first["state"], "QUEUED")
+            self.assertTrue(first["changed"])
+            self.assertEqual(first["content_sha256"], control["content_sha256"])
+            self.assertEqual(first["owned_article_url"], control["owned_article_url"])
+            self.assertNotEqual(first["placement_id"], control["placement_id"])
+            self.assertEqual(first["experiment_lineage"], {
+                "kind": "EXPERIMENT", "decision_id": plan["decision_id"],
+                "control_placement_id": control["placement_id"],
+            })
+            self.assertEqual(replay["state"], "ALREADY_QUEUED")
+            self.assertFalse(replay["changed"])
+            self.assertEqual(len(MODULE.json_rows(state / "x-distribution-jobs.jsonl")), 2)
+
     def test_distribution_mix_plan_preserves_content_and_dedupes(self):
         with tempfile.TemporaryDirectory() as root:
             state = Path(root)

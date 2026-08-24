@@ -1889,6 +1889,91 @@ def create_x_distribution_job(state, proposal):
     return {**receipt, "changed": True}
 
 
+def create_x_recirculation_job(state, plan):
+    """Queue the one content-preserving X child selected by a distribution plan."""
+    if not isinstance(plan, dict) or plan.get("state") != "READY":
+        return {"state": "WAITING_FOR_DISTRIBUTION_PLAN", "changed": False}
+    if not all((
+        plan.get("selected_variable") == "distribution_mix",
+        plan.get("next_action") == "SAFE_X_RECIRCULATION",
+        plan.get("content_mutation_allowed") is False,
+    )):
+        raise ValueError("invalid recirculation plan")
+    plan_id = plan.get("plan_id")
+    decision_id = plan.get("decision_id")
+    control_job_id = plan.get("control_job_id")
+    control_placement = plan.get("control_placement_id")
+    if not all((
+        isinstance(plan_id, str) and REPOST_PROPOSAL_ID_PATTERN.fullmatch(plan_id),
+        isinstance(decision_id, str) and REPOST_PROPOSAL_ID_PATTERN.fullmatch(decision_id),
+        isinstance(control_job_id, str)
+        and REPOST_PROPOSAL_ID_PATTERN.fullmatch(control_job_id),
+        isinstance(control_placement, str)
+        and REPOST_PLACEMENT_ID_PATTERN.fullmatch(control_placement),
+    )):
+        raise ValueError("recirculation plan lineage invalid")
+    control_path = state / "x-distribution-jobs" / f"{control_job_id}.json"
+    try:
+        control = json.loads(control_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as error:
+        raise ValueError("control distribution job unavailable") from error
+    if not all((
+        control.get("job_id") == control_job_id,
+        control.get("placement_id") == control_placement,
+        control.get("content_sha256") == plan.get("control_content_sha256"),
+    )):
+        raise ValueError("recirculation control mismatch")
+    suffix = f"-mix-{plan_id[:8]}"
+    placement_id = f"{control_placement[:80 - len(suffix)].rstrip('-')}{suffix}"
+    effect_core = {
+        "placement_id": placement_id,
+        "owned_article_url": control["owned_article_url"],
+        "content_sha256": control["content_sha256"],
+        "target_x_account": control["target_x_account"],
+        "cadence_class": control["cadence_class"],
+    }
+    effect_identity = hashlib.sha256(json.dumps(
+        effect_core, sort_keys=True, separators=(",", ":")
+    ).encode()).hexdigest()
+    lineage = {
+        "kind": "EXPERIMENT", "decision_id": decision_id,
+        "control_placement_id": control_placement,
+    }
+    job_material = {
+        **effect_core,
+        "effect_identity": effect_identity,
+        "experiment_lineage": lineage,
+        "policy_sha256": control["policy_sha256"],
+        "source_set_sha256": control["source_set_sha256"],
+    }
+    job_id = hashlib.sha256(json.dumps(
+        job_material, sort_keys=True, separators=(",", ":")
+    ).encode()).hexdigest()
+    existing = next((
+        row for row in json_rows(state / "x-distribution-jobs.jsonl")
+        if row.get("effect_identity") == effect_identity
+    ), None)
+    if existing:
+        return {**existing, "state": "ALREADY_QUEUED", "changed": False}
+    receipt = {
+        "schema_version": 1,
+        "receipt_type": "AFFILIATE_X_DISTRIBUTION_JOB",
+        "state": "QUEUED", "job_id": job_id,
+        **job_material,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "private_tracking_url_state": "NOT_INCLUDED",
+        "revenue_credit_state": "NO_REVENUE_CREDIT",
+    }
+    changed = append_unique(
+        state / "x-distribution-jobs.jsonl", receipt, ("effect_identity",)
+    )
+    if not changed:
+        raise ValueError("recirculation effect identity race")
+    atomic_json(state / "x-distribution-jobs" / f"{job_id}.json", receipt)
+    atomic_json(state / "x-distribution-jobs" / "latest.json", receipt)
+    return {**receipt, "changed": True}
+
+
 def latest_commission_rows(state):
     """Return one latest lifecycle row per provider transaction lineage."""
     latest = {}
@@ -4801,6 +4886,17 @@ def _wake_once(args, started_at, run_id):
             "state": "DISTRIBUTION_PLAN_FAILED", "changed": False,
             "failure_type": type(error).__name__,
         }
+    try:
+        recirculation_job = admit(
+            "acquisition.x-recirculation-job", "LEDGER_ONLY",
+            {"distribution_plan_state": distribution_plan.get("state")},
+            lambda: create_x_recirculation_job(state, distribution_plan),
+        )
+    except Exception as error:
+        recirculation_job = {
+            "state": "RECIRCULATION_JOB_FAILED", "changed": False,
+            "failure_type": type(error).__name__,
+        }
     if provider["state"] == "AUTHENTICATED" and not placement_link_ready:
         status = placement_link["state"]
     elif not link:
@@ -4981,6 +5077,14 @@ def _wake_once(args, started_at, run_id):
                 "live_surfaces", "next_action", "cadence_rule",
                 "maximize_relevant_exposure", "official_success_metric",
                 "content_mutation_allowed", "failure_type",
+            )
+        },
+        "recirculation_job": {
+            key: recirculation_job.get(key)
+            for key in (
+                "state", "changed", "job_id", "effect_identity", "placement_id",
+                "owned_article_url", "content_sha256", "experiment_lineage",
+                "target_x_account", "cadence_class", "failure_type",
             )
         },
         "revenue_state": revenue["state"],
