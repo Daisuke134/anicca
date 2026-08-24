@@ -7669,6 +7669,12 @@ because a polling launchd job and manually successful CLIs are not an Agent.
 
 ### Atomic remaining TODO — active focused revenue path
 
+Operator priority is money. Do not spend remaining-loop time or tokens on fresh
+review passes unless the user explicitly asks for review. Tests and exact
+production readback remain required, but the next work must advance traffic,
+exact-placement transactions, approved/paid commission, or a blocker directly
+preventing one of those outcomes.
+
 Current authoritative state:
 
 - Production Affiliate release is
@@ -7680,6 +7686,13 @@ Current authoritative state:
   before release replacement. It is no longer a valid wait gate; the next
   existing-owner wake retries immediately using ChatGPT account 2. Rolling
   money is `NO_TRANSACTIONS`; approved, paid, pending, and reversed are all zero.
+- X activity is not yet acquisition distribution: 89 Repost actions are
+  observed, but only 5 join an exact Affiliate campaign URL and 84 are unjoined.
+  Follower growth and X impressions have no official denominator, so post count
+  cannot be called account growth. The active CTA child has only 2 provider
+  clicks / 2 unique at its fixed counter baseline and zero later delta or
+  transaction. This low exact traffic plus zero conversion, not missing content
+  volume, is the current direct reason revenue remains zero.
 - `CAMPAIGN_METADATA_INVALID` refers to the preserved oversized historical
   artifact. It must stay visible for audit, but it does not authorize deletion
   and must not supersede a later valid due campaign.
