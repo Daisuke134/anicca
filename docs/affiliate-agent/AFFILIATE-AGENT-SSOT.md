@@ -7829,12 +7829,21 @@ the named production evidence:
 - [ ] **D14 Exposure gate.** Prevent a conversion verdict until the active
   placement has a sealed observation window and sufficient real reach chosen by
   the model. Scheduler time or post count alone cannot satisfy exposure.
+  While the gate is waiting, maximize relevant exposure toward the model-chosen
+  threshold using every approved, measurable channel and safe X cadence. Do not
+  wait passively and do not substitute indiscriminate spam: every added
+  distribution effect must bind the active placement, preserve duplicate zero,
+  respect account/provider safety, and return an exact reach delta.
 - [ ] **D15 One-variable builder.** Materialize exactly the selected title,
   hook, structure, CTA, offer, timing, or distribution change while preserving
   every non-selected field and the exact provider link.
 - [ ] **D16 Experiment publication.** Publish the owned page and X placement once
   through existing owners. Evidence: exact owned URL, X permalink, placement
   link, hashes, and duplicate-zero second wake.
+  For a `distribution_mix` experiment, publication means repeated bounded
+  expansion across relevant approved surfaces until the D14 exposure threshold
+  is met or the model closes a channel for safety/negative evidence; it is not
+  satisfied by one low-reach post.
 - [ ] **D17 Observation close.** At the model-selected boundary, seal the full
   funnel delta and classify it as insufficient exposure, no transaction,
   transaction pending, approved/paid winner, reversed, or attribution failure.
