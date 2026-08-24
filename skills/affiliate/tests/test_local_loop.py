@@ -23,6 +23,64 @@ SPEC.loader.exec_module(MODULE)
 
 
 class LocalLoopTest(unittest.TestCase):
+    def test_money_funnel_row_preserves_missing_post_attribution_as_unknown(self):
+        with tempfile.TemporaryDirectory() as root:
+            state, repost = Path(root) / "affiliate", Path(root) / "repost"
+            placement = "caption-en-1"
+            post_url = "https://x.com/selawmqt/status/200"
+            MODULE.atomic_json(state / "x-growth" / "latest-channel-ledger.json", {
+                "transition_id": "a" * 64,
+                "lanes": {"monetization": {
+                    "post_url": post_url, "job_id": "1" * 64,
+                    "placement_id": placement,
+                    "impressions": {"count": 5, "state": "EXACT"},
+                    "replies": {"count": 0, "state": "EXACT"},
+                    "reposts": {"count": 0, "state": "EXACT"},
+                    "likes": {"count": 0, "state": "EXACT"},
+                    "bookmarks": {"count": 0, "state": "EXACT"},
+                }},
+            })
+            ledger = {"schema_version": 1, "receipt_type": "AFFILIATE_PLACEMENT_LEDGER",
+                      "observed_at": "2026-08-24T00:00:00+00:00", "placements": [{
+                "placement_id": placement,
+                "provider_clicks": {"count": 3, "unique_count": 3,
+                                    "observed_at": "2026-08-24T00:00:00+00:00"},
+                "commission": {"transaction_count": 0, "status_counts": {
+                    "pending": 0, "approved": 0, "paid": 0, "reversed": 0,
+                }, "approved_or_paid_net_minor_by_currency": {}},
+                "cost": {"actual_cash_state": "UNKNOWN",
+                         "actual_cash_amount_by_currency": None},
+            }]}
+            ledger["ledger_sha256"] = hashlib.sha256(json.dumps(
+                ledger, sort_keys=True, separators=(",", ":")
+            ).encode()).hexdigest()
+            MODULE.atomic_json(state / "placement-ledger.json", ledger)
+            repost.mkdir(parents=True)
+            MODULE.append(repost / "posted.jsonl", {
+                "kind": "affiliate_distribution", "affiliate_job_id": "1" * 64,
+                "affiliate_placement_id": placement, "post_url": post_url,
+                "posted_at": "2026-08-24T01:00:00+00:00",
+            })
+            with patch.dict(MODULE.os.environ, {"AFFILIATE_REPOST_STATE_DIR": str(repost)}):
+                first = MODULE.build_money_funnel_row(state)
+                replay = MODULE.build_money_funnel_row(state)
+
+            self.assertEqual(first["impressions"], {"count": 5, "state": "EXACT"})
+            self.assertEqual(first["owned_entries"]["state"], "UNKNOWN_NOT_IN_COHORT")
+            self.assertEqual(first["cta_clicks"]["state"], "UNKNOWN_NOT_IN_COHORT")
+            self.assertEqual(first["provider_clicks"]["cumulative_count"], 3)
+            self.assertEqual(
+                first["provider_clicks"]["post_distribution_state"],
+                "WAITING_FOR_POST_PROVIDER_READBACK",
+            )
+            self.assertEqual(first["transactions"], {"count": 0, "state": "OBSERVED"})
+            self.assertEqual(first["approved_or_paid_money_state"], "NO_APPROVED_OR_PAID")
+            self.assertEqual(first["cost"]["state"], "UNKNOWN")
+            self.assertFalse(replay["changed"])
+            self.assertEqual(len(MODULE.json_rows(
+                state / "money-funnel" / "rows.jsonl"
+            )), 1)
+
     def test_x_channel_ledger_separates_growth_and_monetization_with_follower_delta(self):
         with tempfile.TemporaryDirectory() as root:
             state, repost = Path(root) / "affiliate", Path(root) / "repost"

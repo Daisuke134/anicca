@@ -282,6 +282,128 @@ def observe_x_channel_ledger(state, cdp_port, inspector=x_profile_cli.inspect_po
     return {**receipt, "state": "OBSERVED", "changed": changed}
 
 
+def build_money_funnel_row(state):
+    channel_path = state / "x-growth" / "latest-channel-ledger.json"
+    ledger_path = state / "placement-ledger.json"
+    if not channel_path.is_file() or not ledger_path.is_file():
+        return {"state": "WAITING_FOR_FUNNEL_SOURCES", "changed": False}
+    channel = json.loads(channel_path.read_text(encoding="utf-8"))
+    monetization = (channel.get("lanes") or {}).get("monetization") or {}
+    placement_id = monetization.get("placement_id")
+    ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
+    ledger_core = {key: value for key, value in ledger.items() if key != "ledger_sha256"}
+    if ledger.get("ledger_sha256") != hashlib.sha256(json.dumps(
+        ledger_core, sort_keys=True, separators=(",", ":")
+    ).encode()).hexdigest():
+        raise ValueError("placement ledger hash mismatch")
+    matches = [
+        row for row in ledger.get("placements", [])
+        if isinstance(row, dict) and row.get("placement_id") == placement_id
+    ]
+    if len(matches) != 1:
+        return {"state": "WAITING_FOR_EXACT_PLACEMENT", "changed": False}
+    placement = matches[0]
+
+    def cohort_metric(path, field):
+        try:
+            receipt = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return {"count": None, "state": "UNKNOWN_NOT_IN_COHORT"}, None
+        rows = [row for row in receipt.get("placements", [])
+                if row.get("placement_id") == placement_id]
+        if len(rows) != 1 or not isinstance(rows[0].get("count"), int):
+            return {"count": None, "state": "UNKNOWN_NOT_IN_COHORT"}, None
+        return {"count": rows[0]["count"], "state": rows[0].get("state", "OBSERVED")}, (
+            receipt.get("receipt_sha256") or hashlib.sha256(path.read_bytes()).hexdigest()
+        )
+
+    entries, entries_source = cohort_metric(
+        state / "owned-entry-observations" / "latest.json", "owned_entries"
+    )
+    cta, cta_source = cohort_metric(
+        state / "cta-click-observations" / "latest.json", "cta_clicks"
+    )
+    repost_root = Path(os.environ.get(
+        "AFFILIATE_REPOST_STATE_DIR", Path.home() / "loops" / "x-repost"
+    )).expanduser()
+    posted_path = repost_root / "posted.jsonl"
+    posted_raw = posted_path.read_bytes()
+    posted_rows = [json.loads(line) for line in posted_raw.decode("utf-8").splitlines()
+                   if line.strip()]
+    post = next((row for row in reversed(posted_rows)
+                 if row.get("affiliate_job_id") == monetization.get("job_id")
+                 and row.get("post_url") == monetization.get("post_url")), None)
+    if post is None:
+        return {"state": "WAITING_FOR_EXACT_POST", "changed": False}
+    provider = placement.get("provider_clicks") or {}
+    provider_observed_at = provider.get("observed_at")
+    try:
+        provider_at = datetime.fromisoformat(str(provider_observed_at).replace("Z", "+00:00"))
+        posted_at = datetime.fromisoformat(str(post.get("posted_at")).replace("Z", "+00:00"))
+        provider_after_post = provider_at >= posted_at
+    except ValueError:
+        provider_after_post = False
+    commission = placement.get("commission") or {}
+    statuses = commission.get("status_counts") or {}
+    approved_or_paid = int(statuses.get("approved") or 0) + int(statuses.get("paid") or 0)
+    cost = placement.get("cost") or {}
+    core = {
+        "schema_version": 1,
+        "receipt_type": "AFFILIATE_MONEY_FUNNEL_ROW",
+        "job_id": monetization.get("job_id"),
+        "placement_id": placement_id,
+        "post_url": monetization.get("post_url"),
+        "impressions": monetization.get("impressions"),
+        "owned_entries": entries,
+        "cta_clicks": cta,
+        "provider_clicks": {
+            "cumulative_count": provider.get("count"),
+            "cumulative_unique_count": provider.get("unique_count"),
+            "observed_at": provider_observed_at,
+            "post_distribution_count": None,
+            "post_distribution_state": (
+                "BASELINE_UNAVAILABLE" if provider_after_post
+                else "WAITING_FOR_POST_PROVIDER_READBACK"
+            ),
+        },
+        "transactions": {
+            "count": commission.get("transaction_count"),
+            "state": "OBSERVED" if isinstance(commission.get("transaction_count"), int)
+            else "UNKNOWN",
+        },
+        "commission_status_counts": {
+            key: statuses.get(key) for key in ("pending", "approved", "paid", "reversed")
+        },
+        "approved_or_paid_net_minor_by_currency": (
+            commission.get("approved_or_paid_net_minor_by_currency") or {}
+        ),
+        "approved_or_paid_money_state": (
+            "APPROVED_OR_PAID" if approved_or_paid else "NO_APPROVED_OR_PAID"
+        ),
+        "cost": {
+            "state": cost.get("actual_cash_state", "UNKNOWN"),
+            "actual_cash_amount_by_currency": cost.get("actual_cash_amount_by_currency"),
+        },
+        "source_receipts": {
+            "x_channel_transition_id": channel.get("transition_id"),
+            "placement_ledger_sha256": ledger.get("ledger_sha256"),
+            "owned_entries": entries_source,
+            "cta_clicks": cta_source,
+            "posted_sha256": hashlib.sha256(posted_raw).hexdigest(),
+        },
+    }
+    transition_id = hashlib.sha256(json.dumps(
+        core, sort_keys=True, separators=(",", ":")
+    ).encode()).hexdigest()
+    receipt = {**core, "transition_id": transition_id,
+               "observed_at": datetime.now(timezone.utc).isoformat()}
+    changed = append_unique(
+        state / "money-funnel" / "rows.jsonl", receipt, ("transition_id",)
+    )
+    atomic_json(state / "money-funnel" / "latest.json", receipt)
+    return {**receipt, "state": "OBSERVED", "changed": changed}
+
+
 def focused_live_lineage(state):
     latest = state / "focused-cohort" / "latest.json"
     if not latest.is_file():
@@ -4344,6 +4466,11 @@ def _wake_once(args, started_at, run_id):
         "ledger.placement-refresh", "LEDGER_ONLY", {"revenue_state": revenue.get("state")},
         lambda: refresh_placement_ledger(state),
     )
+    money_funnel = admit(
+        "ledger.money-funnel", "LEDGER_ONLY",
+        {"placement_ledger_state": placement_ledger.get("state")},
+        lambda: build_money_funnel_row(state),
+    )
     funnel_snapshot = admit(
         "ledger.funnel-snapshot", "LEDGER_ONLY",
         {"placement_ledger_state": placement_ledger.get("state")},
@@ -4583,6 +4710,15 @@ def _wake_once(args, started_at, run_id):
         "placement_ledger_state": placement_ledger["state"],
         "placement_ledger_sha256": placement_ledger.get("ledger_sha256"),
         "placement_ledger_count": placement_ledger.get("placement_count"),
+        "money_funnel": {
+            key: money_funnel.get(key)
+            for key in (
+                "state", "changed", "transition_id", "job_id", "placement_id",
+                "post_url", "impressions", "owned_entries", "cta_clicks",
+                "provider_clicks", "transactions", "commission_status_counts",
+                "approved_or_paid_money_state", "cost", "failure_type",
+            )
+        },
         "placement_ledger_failure_type": placement_ledger.get("failure_type"),
         "funnel_snapshot_state": funnel_snapshot.get("state"),
         "funnel_snapshot_sha256": funnel_snapshot.get("snapshot_sha256"),
