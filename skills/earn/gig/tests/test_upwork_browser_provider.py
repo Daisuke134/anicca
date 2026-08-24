@@ -45,7 +45,8 @@ def test_application_decision_uses_shared_work_event_and_reporter_once(tmp_path,
     provider.publish_application_decision(event)
 
     assert len(calls) == 1
-    assert "instant-work-events" in calls[0]
+    assert str(provider.DEFAULT_TELEGRAM_REPORT) in calls[0]
+    assert "instant-work-events" not in calls[0]
     rows = [json.loads(line) for line in (tmp_path / "work-events.jsonl").read_text().splitlines()]
     assert rows == [event]
 

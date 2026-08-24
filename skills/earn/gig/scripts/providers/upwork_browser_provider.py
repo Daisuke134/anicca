@@ -66,7 +66,7 @@ DEFAULT_INBOX_LEDGER = Path.home() / "gig/state/upwork-inbox.jsonl"
 DEFAULT_NEGOTIATION_EVIDENCE = Path.home() / "gig/state/upwork-negotiation-planner"
 DEFAULT_OWNER_PROFILE = Path.home() / ".config/anicca/gig/owner-profile.json"
 DEFAULT_GIG_DIR = Path.home() / "gig"
-DEFAULT_TELEGRAM_REPORT = SCRIPTS / "telegram_report.py"
+DEFAULT_TELEGRAM_REPORT = SCRIPTS / "apply_telegram_report.py"
 TERMINAL_JOB_STATUSES = {"closed", "removed"}
 _COUNT_LABELS = {
     "offers": r"Offers\s*\((\d+)\)",
@@ -87,7 +87,7 @@ def publish_application_decision(event: dict[str, Any]) -> None:
     if result["appended"] != 1:
         return
     subprocess.run([
-        sys.executable, str(DEFAULT_TELEGRAM_REPORT), "instant-work-events",
+        sys.executable, str(DEFAULT_TELEGRAM_REPORT),
         "--gig-dir", str(DEFAULT_GIG_DIR),
         "--telegram-database", str(DEFAULT_GIG_DIR / "telegram-outbox.sqlite3"),
     ], capture_output=True, text=True, timeout=240, check=False)
