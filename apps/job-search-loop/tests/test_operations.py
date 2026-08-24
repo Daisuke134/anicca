@@ -142,6 +142,7 @@ class OperationsTests(unittest.TestCase):
                         "thread_id": "thread-1",
                         "subject": "Interview invitation",
                         "sender": "jobs@example.com",
+                        "received_at": "1970-01-01T00:18:20+00:00",
                         "body": "Choose a time.",
                     }
                 ],

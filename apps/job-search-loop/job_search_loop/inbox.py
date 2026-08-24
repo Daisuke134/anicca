@@ -5,6 +5,7 @@ import json
 import os
 import re
 import subprocess
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -328,6 +329,9 @@ def select_new_recruiting_messages(
                     "thread_id": thread_id,
                     "subject": subject,
                     "sender": sender,
+                    "received_at": datetime.fromtimestamp(
+                        received_epoch, timezone.utc
+                    ).isoformat(),
                     # The thread loader already requests --wrap-untrusted and
                     # --sanitize-content.  Persist the exact fetched content
                     # privately so the model lane never needs a second Gmail
