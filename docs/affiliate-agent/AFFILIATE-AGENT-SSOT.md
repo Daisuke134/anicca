@@ -7756,13 +7756,16 @@ the named production evidence:
   Therefore there is nothing safely backfillable; the 89 ordinary growth posts
   remain explicitly unjoined and receive no revenue credit. The only count rise
   is the proven D05 delivery, 5→6. D08 is now the first unchecked item.
-- [ ] **D08 Follower baseline.** Add official X profile follower-count readback
+- [x] **D08 Follower baseline.** Add official X profile follower-count readback
   for the target account. Evidence: timestamped immutable value or explicit
   `UNAVAILABLE`; post count is never substituted.
-  Discovery checkpoint: authenticated X profile DOM currently shows 1 follower,
-  27 following, and 262 posts. The D05 Affiliate post is the newest visible
-  profile row. These values explain the immediate traffic constraint but do not
-  complete D08 until an existing owner persists an immutable follower receipt.
+  Done at `a015b47dc`: the existing Affiliate X browser reads only exact integer
+  `/followers` or `/verified_followers` and `/following` labels; abbreviated
+  values become `UNAVAILABLE_EXACT` rather than estimates. Identical counts
+  append nothing, changed counts create a new immutable transition. Production
+  owner persists `X_FOLLOWER_BASELINE` `67c534a4...` with followers 1 EXACT,
+  following 27 EXACT, handle `selawmqt`, and baseline count 1. D09 is now the
+  first unchecked item.
 - [ ] **D09 Post reach baseline.** Add exact-post impressions and engagement
   readback where X exposes them. Evidence: permalink-bound receipt or explicit
   `UNAVAILABLE`.
