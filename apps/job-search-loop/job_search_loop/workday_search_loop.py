@@ -98,19 +98,19 @@ def snapshot_candidates(
 def validate_shortlist(
     result: dict[str, Any], candidates: list[dict[str, str]]
 ) -> tuple[str, ...]:
-    ranked_urls = result.get("ranked_urls")
-    if not isinstance(ranked_urls, list) or not ranked_urls:
-        raise ValueError("Workday shortlist must contain ranked_urls")
-    allowed = {row["url"].casefold(): row["url"] for row in candidates}
+    ranked_ids = result.get("ranked_candidate_ids")
+    if not isinstance(ranked_ids, list) or not ranked_ids:
+        raise ValueError("Workday shortlist must contain ranked_candidate_ids")
+    allowed = {row["candidate_id"]: row["url"] for row in candidates}
     validated = []
-    for value in ranked_urls:
-        if not isinstance(value, str) or value.casefold() not in allowed:
+    for value in ranked_ids:
+        if not isinstance(value, str) or value not in allowed:
             continue
-        url = allowed[value.casefold()]
+        url = allowed[value]
         if url not in validated:
             validated.append(url)
     if not validated:
-        raise ValueError("Workday shortlist contains no official snapshot URL")
+        raise ValueError("Workday shortlist contains no official candidate ID")
     return tuple(validated)
 
 
@@ -122,10 +122,14 @@ def rank_candidates(
 ) -> tuple[str, ...]:
     if chunk_size < 1:
         raise ValueError("chunk_size must be positive")
+    identified = [
+        {**row, "candidate_id": f"candidate-{index:06d}"}
+        for index, row in enumerate(candidates)
+    ]
     finalists: list[dict[str, str]] = []
-    by_url = {row["url"].casefold(): row for row in candidates}
-    for offset in range(0, len(candidates), chunk_size):
-        chunk = candidates[offset : offset + chunk_size]
+    by_url = {row["url"].casefold(): row for row in identified}
+    for offset in range(0, len(identified), chunk_size):
+        chunk = identified[offset : offset + chunk_size]
         for url in validate_shortlist(rank_chunk(chunk), chunk):
             row = by_url[url.casefold()]
             if row not in finalists:
@@ -228,7 +232,7 @@ def main() -> int:
                 "Use the whole supplied snapshot, not company prestige or source order. "
                 "Prefer roles whose actual work is supported by demonstrated experience. "
                 "Do not invent requirements, compensation, or candidate facts. Return up "
-                "to 8 unique candidate URLs, best first, and only URLs from the snapshot. "
+                "to 8 unique candidate_id values, best first, copied exactly from the snapshot. "
                 "Return only the schema.\n\n"
                 + wrap_untrusted(
                     "workday_snapshot",

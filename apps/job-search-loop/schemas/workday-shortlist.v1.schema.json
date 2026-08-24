@@ -3,7 +3,7 @@
   "type": "object",
   "additionalProperties": false,
   "properties": {
-    "ranked_urls": {
+    "ranked_candidate_ids": {
       "type": "array",
       "minItems": 1,
       "maxItems": 8,
@@ -11,5 +11,5 @@
       "items": {"type": "string", "minLength": 1}
     }
   },
-  "required": ["ranked_urls"]
+  "required": ["ranked_candidate_ids"]
 }

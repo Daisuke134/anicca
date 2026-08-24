@@ -35,7 +35,7 @@ class WorkdayQualificationTests(unittest.TestCase):
 
         def rank(chunk):
             calls.append([row["url"] for row in chunk])
-            return {"ranked_urls": [chunk[-1]["url"]]}
+            return {"ranked_candidate_ids": [chunk[-1]["candidate_id"]]}
 
         result = rank_candidates(
             candidates=candidates,
@@ -69,20 +69,20 @@ class WorkdayQualificationTests(unittest.TestCase):
 
     def test_shortlist_drops_model_invented_url_and_keeps_official_rows(self):
         official = "https://a.wd1.myworkdayjobs.com/Careers/job/A"
-        candidates = [{"url": official}]
+        candidates = [{"candidate_id": "candidate-1", "url": official}]
         self.assertEqual(
             validate_shortlist(
-                {"ranked_urls": ["https://invented.example/job/1", official]},
+                {"ranked_candidate_ids": ["invented", "candidate-1"]},
                 candidates,
             ),
             (official,),
         )
 
     def test_shortlist_fails_closed_when_no_official_url_remains(self):
-        with self.assertRaisesRegex(ValueError, "no official snapshot URL"):
+        with self.assertRaisesRegex(ValueError, "no official candidate ID"):
             validate_shortlist(
-                {"ranked_urls": ["https://invented.example/job/1"]},
-                [{"url": "https://a.wd1.myworkdayjobs.com/Careers/job/A"}],
+                {"ranked_candidate_ids": ["invented"]},
+                [{"candidate_id": "candidate-1", "url": "https://a.wd1.myworkdayjobs.com/Careers/job/A"}],
             )
 
     def test_each_source_is_fetched_once_per_wake(self):
