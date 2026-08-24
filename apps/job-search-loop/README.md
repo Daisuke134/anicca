@@ -73,9 +73,6 @@ unlimited loop.
 ```bash
 cd /path/to/life-manager/apps/job-search-loop
 python3 -m unittest discover -s tests -v
-zsh scripts/render-resume.sh
-zsh scripts/render-business-resume.sh
-zsh scripts/render-japanese-resume.sh
 zsh scripts/install-launchd.sh
 zsh scripts/healthcheck.sh
 ```

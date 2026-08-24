@@ -369,7 +369,9 @@ def ensure_interview_event(
     }
 
 
-def build_confirmation_reply(slot: CandidateSlot) -> dict[str, Any]:
+def build_confirmation_reply(
+    slot: CandidateSlot, *, candidate_name: str
+) -> dict[str, Any]:
     japan = ZoneInfo("Asia/Tokyo")
     start = slot.start.astimezone(japan)
     end = slot.end.astimezone(japan)
@@ -385,7 +387,7 @@ def build_confirmation_reply(slot: CandidateSlot) -> dict[str, Any]:
         "body": (
             "Thank you for sharing the interview options.\n\n"
             f"I confirm {human_time}. I look forward to speaking with you.\n\n"
-            "Best regards,\nDaisuke Narita"
+            f"Best regards,\n{candidate_name.strip()}"
         ),
     }
 
@@ -401,6 +403,7 @@ def confirm_interview_slot(
     thread_id: str,
     company: str,
     role: str,
+    candidate_name: str,
     raw_slots: list[dict[str, Any]],
     now: datetime,
     calendar_executable: str = "/opt/homebrew/bin/gog",
@@ -472,7 +475,7 @@ def confirm_interview_slot(
         account=account,
         inbound_message_id=inbound_message_id,
         inbound_subject=inbound_subject,
-        decision=build_confirmation_reply(selected),
+        decision=build_confirmation_reply(selected, candidate_name=candidate_name),
         executable=gmail_executable,
         allow_self_recipient=allow_self_recipient,
     )

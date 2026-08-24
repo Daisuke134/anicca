@@ -121,6 +121,8 @@ class ReleaseTests(unittest.TestCase):
             app = release_root / "apps" / "job-search-loop"
 
             answers = root / "answers.json"
+            resume = root / "resume.pdf"
+            resume.write_bytes(b"%PDF-1.4\nartifact resume\n")
             answers.write_text(
                 json.dumps(
                     {
@@ -128,6 +130,9 @@ class ReleaseTests(unittest.TestCase):
                         "candidate": {
                             "name": "Artifact Candidate",
                             "application_email": "artifact@example.test",
+                        },
+                        "materials": {
+                            "resumes": {"engineering": str(resume)}
                         },
                         "facts": [
                             {

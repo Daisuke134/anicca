@@ -131,7 +131,8 @@ def build_approved_reply(
         "Thank you for your message.\n\n"
         f"{answer}\n\n"
         "Please let me know if any additional verified information would be helpful.\n\n"
-        "Best regards,\nDaisuke Narita"
+        "Best regards,\n"
+        + _clean(_candidate(profile, "name"), name="candidate name", maximum=160)
     )
     return {
         "action": "auto_reply",

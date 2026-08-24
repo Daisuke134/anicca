@@ -78,6 +78,7 @@ at most 20 candidates as timezone-aware RFC3339 `start`/`end` values. Preserve a
 verbatim `source_span` for every candidate; do not infer a timezone, duration, or
 date. Call `job_search_loop.interview_scheduling.confirm_interview_slot` with those
 candidates, the Gmail message/thread IDs, grounded company/role names, and
+the exact candidate name from the appended private profile as `candidate_name`, plus
 `prep_database=Path("~/.local/state/anicca/job-search/interview-prep.sqlite3").expanduser()`.
 The workflow checks the primary Calendar, selects the earliest explicit
 non-conflicting candidate, rereads by a stable private thread key, creates or updates

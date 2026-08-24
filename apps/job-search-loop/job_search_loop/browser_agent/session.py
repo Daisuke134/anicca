@@ -28,8 +28,6 @@ class BrowserSession:
         configured = os.environ.get("JOB_SEARCH_CDP_LEASE_SCRIPT")
         candidates = [
             Path(configured) if configured else None,
-            Path("/Users/anicca/Projects/life-manager-main/skills/browser/scripts/cdp_context_lease.py"),
-            Path("/Users/anicca/gig/releases/life-manager/current/skills/browser/scripts/cdp_context_lease.py"),
         ]
         for candidate in candidates:
             if candidate is not None and candidate.is_file():
