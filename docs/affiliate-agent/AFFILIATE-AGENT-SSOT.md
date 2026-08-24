@@ -7885,6 +7885,19 @@ the named production evidence:
   93-character model wrapper and awaits the next safe X slot. D16 remains open
   until aggregate exact reach reaches 100 or a later model decision closes the
   channel for safety/negative evidence.
+  Round 3 publishes at
+  `https://x.com/selawmqt/status/2091782859816333786` with provider submission
+  `cmt6w04lg0gcaqk0yotevs9iy`; four-post aggregate later reaches 38 while
+  transactions remain zero. Repeated self-quotes produce only 5→9, 1, and 1→3
+  exact impressions with zero engagement. Commit `9d3a91413` adds one sealed
+  distribution-route model choice instead of hardcoding the next surface.
+  Production route `231b64ae...` selects `x_relevant_external_quote` because all
+  owned surfaces are live and self-quote reach is weak. x-repost `aa5ca581a`
+  skips stale unclaimed decisions, lets the model select only from harvested
+  candidates, and validates candidate membership. External job `99c69e13...`
+  chooses source `https://x.com/c_valenzuelab/status/2091584754386714846`, whose
+  harvested receipt shows 127,044 views, and seals an Affiliate-disclosed
+  172-weighted-character payload for the next safe slot.
 - [ ] **D17 Observation close.** At the model-selected boundary, seal the full
   funnel delta and classify it as insufficient exposure, no transaction,
   transaction pending, approved/paid winner, reversed, or attribution failure.
@@ -7940,15 +7953,15 @@ preventing one of those outcomes.
 
 Current authoritative state:
 
-- Production Affiliate release is `f145037908730ede2ec848832c08e4d0410b1cc2`.
+- Production Affiliate release is `9d3a91413b96b6eb1e9b8a9bf1892ee35fd3dc69`.
   Production x-repost release is
-  `5cc750278b9f9428c8fc771d502b5db1da914cd1`.
+  `aa5ca581ab498763c46986e5c6e64a51954124db`.
 - Active placement is `elevenlabs-discovered-caption-generator-en-1`; its exact
   X permalink is `https://x.com/selawmqt/status/2091754957448040906`.
 - D01–D15 are complete. D16 has one public quote effect with duplicate zero; its
   exact reach and post-effect money readback remain the sole active item.
 - Exact impressions have increased from the experiment baseline 9 to aggregate
-  35 across three monetization posts, but
+  38 across four monetization posts, but
   exposure remains insufficient by the model-selected boundary. Official
   transactions, pending, approved, paid, and reversed commission remain zero;
   therefore the result is still non-money.
