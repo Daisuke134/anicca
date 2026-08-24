@@ -21,6 +21,22 @@
 7. Storefront imports existing listings or creates the first truthful listing when the
    official count is zero; the other lanes then operate without ordinary approval gates.
 
+### Clean-device acceptance sequence
+
+The installer is not accepted from the maintainer's Mac alone. Three independent
+non-technical owners test it with their own Mac, Coconala account, browser profile and
+private state:
+
+1. first family pilot with observation but no maintainer typing;
+2. second family pilot using only this README and no verbal instructions;
+3. friend pilot from a cold public clone with no copied credentials, configuration,
+   listing bundle, browser profile or state.
+
+Each must finish account-gate readback, load one owner for every job, import or create a
+listing through Storefront, and replay with duplicate zero. Questions and terminal repair
+become installer/README defects; coaching is not counted as acceptance. These trials
+validate setup and continuous operation, not guaranteed income or time to first sale.
+
 Four background jobs that run a [Coconala](https://coconala.com) seller account
 around the clock: they read the job board and apply, keep the storefront honest,
 answer buyers who ask questions before they buy, and work the orders that get

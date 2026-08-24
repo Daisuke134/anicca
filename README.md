@@ -99,6 +99,11 @@ health, or workload is not a throughput limit. Job Hunter is the separate case w
 human is the employee, so only that loop binds opportunities to the person's real history,
 eligibility, availability, and acceptance authority.
 
+Coconala remains the first OSS onboarding target. Its installer must pass three separate
+clean-device trials—two family pilots and one friend pilot—before this repository starts
+generic multi-market onboarding work. Each pilot uses only their own account, browser
+profile, configuration and state; README-only completion is the product gate.
+
 ---
 
 ## One product, two execution surfaces

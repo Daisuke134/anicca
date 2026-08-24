@@ -98,9 +98,18 @@ Storefront work.
        Storefront. Apply may run before it; Negotiate/Paid wait for buyer activity.
     10. [ ] From a clean HOME prove zero marketplace effects before authentication, exact
        resume after interruption, one owner per launchd label and zero secrets in output.
-    11. [ ] On a clean friend-owned Mac complete the one-session setup and collect the
-        four independent business receipts plus permitted bank-arrival receipt. Paid
-        completion remains owned by its separate production acceptance.
+    11. [ ] Family pilot A: on their own clean Mac/account, complete setup while the
+        maintainer observes but never types; record account-gate, launchd, Storefront
+        import/create and replay-zero receipts without copying operator state.
+    12. [ ] Family pilot B: complete the same flow from the public README with no verbal
+        instructions; any question or manual terminal repair is a product defect to fix
+        before retrying.
+    13. [ ] Friend pilot: cold-clone the public repository with no prior pilot credential,
+        browser profile, configuration, listing bundle or runtime state; require the same
+        setup/ownership/listing/replay-zero receipts.
+    14. [ ] Join the three onboarding receipts to the four independent Coconala business
+        receipts and one permitted bank-arrival receipt. Paid completion remains owned by
+        its separate production acceptance; pilot setup does not guarantee time to sale.
 11. [x] Render the Apply, Negotiate, browser and release-watcher launchd definitions
     from public configuration in a clean temporary HOME. No plaintext secret,
     notification destination or private seller default is present. Apply uses the
@@ -114,8 +123,15 @@ Storefront work.
     application/replay-zero and Negotiate actions 434/436/estimate/replay-zero receipts.
 13. [x] Record the clean-clone commands, exact SHA, test counts, scans and receipt IDs in
     README/TODO; commit and push main, followed by remote-main readback.
-14. [ ] Declare Apply + Negotiate OSS acceptance complete. Paid remains separate; no
-    Paid completion claim is made here.
+14. [ ] Declare Coconala onboarding OSS acceptance complete only after atomic item 10 and
+    all three clean-device pilots pass. Paid remains separate until its owner supplies
+    production delivery/replay-zero evidence; no Paid completion claim is made here.
+
+### Scope fence until Coconala OSS acceptance
+
+This cursor implements no Upwork, Mercor or generic multi-market onboarding. Reusable
+contracts may be documented, but implementation stays on the first unchecked Coconala
+item above until the three clean-device pilots pass.
 
 ## Current execution cursor override
 
