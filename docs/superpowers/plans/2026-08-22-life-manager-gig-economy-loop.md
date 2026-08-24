@@ -882,6 +882,14 @@ U13 atomic order:
     Sales monitoring does not serialize or disable Apply. The next external reply/offer must preempt
     acquisition and flow through Luna composition, immutable outbox effect and official message/
     contract readback; until one exists, no synthetic effect can close that live gate.
+70. **UPWORK LOOP MERGED TO MAIN / SURVIVES SHARED RELEASES:** the focused Upwork production delta
+    was rebuilt from clean remote main, passed 156 tests and compile/diff checks, and fast-forwarded to
+    main at `1820eb65a` without unrelated Paid/Storefront changes. Later main Paid release
+    `c9a0d00ea` still contains `invoke_batch`, durable verified-effect projection and canonical Messages
+    route, proving shared-release updates no longer remove the Upwork loop. Its natural wake exits 0
+    with proposal IDs 2, balance 133, rooms/offers/contracts 0, duplicate 0 and 27 affordable jobs
+    inspected while other lanes remain independently scheduled. Apply is now a persistent 24/7 main
+    capability; the next live gate is an external client reply or offer.
 
 U14 atomic order:
 
