@@ -56,6 +56,15 @@ contract, fee, payout, and bank receipts advance it.
    package. Codex may inspect v98 and repair the generic approval/reviewer code, but must not send
    customer work. A seller acknowledgement must not erase buyer approval. The installed Paid
    owner fresh-reviews v98, formally submits it, reads it back, closes, and proves replay-zero.
+   Production release `f315f0b6a9e4b429910d5153c72e34d696ae83a5` generated a fresh v16
+   decision with `mode=file`, `delivery_stage=formal`, latest seller identity
+   `js-talkroomMessage-220162081`, and the preceding explicit buyer approval identity
+   `js-talkroomMessage-220162036`. It performed no effect because this legacy project lacked its
+   project-owned `delivery/` workspace. Main and current release
+   `608b4b348243cdb62ceead9e54b2126fb629b724` now initialize that workspace idempotently before
+   every file prepare; the complete Paid regression passes 39/39. The next installed-owner wake
+   must resume the existing approved package, formally deliver it once, obtain official readback,
+   and replay with zero duplicate effect.
 5. [ ] `18183618`: continue the JAIC path without impersonation; use a truthful disclosed-agent
    equivalent, negotiate supported scope, or complete official cancellation when the exact
    provider requirement cannot be performed autonomously. Otherwise obtain completion evidence,
