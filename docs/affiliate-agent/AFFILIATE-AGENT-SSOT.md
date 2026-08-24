@@ -7655,3 +7655,64 @@ because a polling launchd job and manually successful CLIs are not an Agent.
   terminal `READY_FOR_PUBLICATION`. The decision call remains retryable
   `BUDGET_BLOCKED` until the next JST budget day; money remains
   `NO_TRANSACTIONS` with all commission status counts zero.
+
+### Atomic remaining TODO — active focused revenue path
+
+Current authoritative state:
+
+- Production Affiliate release is
+  `bbf2b8bfdfae54c24bcf23d18c5b4208955f1b42`; owner health is `HEALTHY`.
+- Active focus is CTA child placement
+  `elevenlabs-discovered-subtitle-translator-en-experiment-1ecf26fe47e1-1`.
+- Latest active focused baseline content SHA is `d07bcf15e4ac1703ceb4e2e12b84c1022c677c062e88396ed20e4fd14d9a34e2`.
+- Acquisition is retryable `BUDGET_BLOCKED`. Rolling money is
+  `NO_TRANSACTIONS`; approved, paid, pending, and reversed are all zero.
+- `CAMPAIGN_METADATA_INVALID` refers to the preserved oversized historical
+  artifact. It must stay visible for audit, but it does not authorize deletion
+  and must not supersede a later valid due campaign.
+
+Execute the remaining work strictly in this order:
+
+1. **External budget gate.** Wait for the next JST acquisition budget day. The
+   existing owner retries; no manual model executor or manual publication is
+   allowed.
+2. **Active-child decision.** Require one sealed acquisition decision whose
+   baseline SHA equals the then-current active CTA-child baseline, whose
+   `control_placement_id` is the active child, and whose success metric uses
+   exact official `transaction_count` or `customer_count`. Views, clicks,
+   engagement, estimates, and money claims are invalid decision metrics.
+3. **One-variable materialization.** Source and composition owners create one
+   compact child plan. Verify that exactly the selected variable changes and
+   title, hook, structure, CTA, provider link, and distribution remain identical
+   unless that field is the selected variable. Placement length remains at most
+   80 characters and lineage hashes bind decision, control, sources, handoff,
+   and policy.
+4. **Policy and real publication.** Require all deterministic policy checks and
+   semantic audit to PASS with zero unsupported claims. The existing publication
+   owner then publishes the owned article and X placement exactly once. Read
+   back the owned URL, exact X permalink, content hash, provider link key, and
+   terminal receipts; a dry run, manual post, or provider ID without public
+   readback is not completion.
+5. **Post-fix funnel measurement.** Preserve the current provider counter
+   baseline and measure only later entry receipts, CTA clicks, provider clicks,
+   unique clicks, customers, and transactions for the exact new placement.
+   Synthetic diagnostic clicks are forbidden because they contaminate the
+   experiment. Clicks and URLs remain non-money.
+6. **Official transaction join.** Re-fetch PartnerStack official links and
+   transactions, join by exact placement/sub-ID or sealed link fingerprint, and
+   record pending, approved, paid, or reversed status without inventing
+   attribution. Zero rows remains `NO_TRANSACTIONS`.
+7. **Iterate without parallel experiments.** If official transaction count
+   remains zero after the bounded observation interval, advance focus to the
+   latest live child and repeat steps 1–6 with one new model-selected variable.
+   Do not reopen historical Dev.to or base baselines and do not run sibling
+   experiments concurrently.
+8. **First-money gate.** Count success only when PartnerStack returns one real
+   non-test transaction for the exact placement. Pending is transaction evidence
+   but not approved cash; approved or paid is the first money evidence.
+9. **Scale gate.** Continue the same measured loop, retain only experiments with
+   better official approved/paid unit economics, and expand distribution only
+   after exact-placement evidence. Completion requires rolling 30-day official
+   approved-or-paid affiliate net revenue of at least USD 10,000, with known
+   costs reconciled. Posts, page views, clicks, provider IDs, and projected
+   commissions never satisfy this gate.
