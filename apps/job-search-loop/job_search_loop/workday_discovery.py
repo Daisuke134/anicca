@@ -8,6 +8,7 @@ import os
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit
 from urllib.request import Request, urlopen
 
 from .ledger import Ledger
@@ -65,9 +66,13 @@ def discover_one(
 ) -> dict[str, Any]:
     ledger = Ledger(ledger_path)
     try:
+        source_hosts = {source["host"].casefold() for source in sources}
         queued = []
         for row in ledger.pending_materials_ready_applications():
             if "myworkdayjobs.com" not in str(row["canonical_url"]).casefold():
+                continue
+            host = (urlsplit(str(row["canonical_url"])).hostname or "").casefold()
+            if host not in source_hosts:
                 continue
             fit = ledger.connection.execute(
                 "SELECT decision FROM workday_fit_decisions WHERE application_id = ?",

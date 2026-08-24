@@ -28,6 +28,31 @@ TEST_SOURCES = tuple(
 
 
 class WorkdayDiscoveryTests(unittest.TestCase):
+    def test_unqualified_row_from_missing_source_does_not_block_current_registry(self):
+        with tempfile.TemporaryDirectory() as directory:
+            ledger_path = Path(directory) / "ledger.sqlite3"
+            ledger = Ledger(ledger_path)
+            old_id = ledger.add_application(
+                "Old",
+                "Old Role",
+                "https://old.wd1.myworkdayjobs.com/Careers/job/Old_R0",
+            )
+            ledger.transition(old_id, "qualified")
+            ledger.transition(old_id, "materials_ready")
+            ledger.close()
+            source = TEST_SOURCES[0]
+
+            result = discover_one(
+                ledger_path=ledger_path,
+                sources=(source,),
+                fetch_jobs=lambda _source: [
+                    {"title": "Fresh", "locationsText": "Tokyo", "externalPath": "/job/Fresh_R1"}
+                ],
+            )
+
+            self.assertEqual(result["status"], "discovered")
+            self.assertEqual(result["discovered"][0]["title"], "Fresh")
+
     def test_model_shortlist_can_select_later_snapshot_job_first(self):
         with tempfile.TemporaryDirectory() as directory:
             source = TEST_SOURCES[0]
@@ -191,7 +216,7 @@ class WorkdayDiscoveryTests(unittest.TestCase):
             application_id = ledger.add_application(
                 "NVIDIA",
                 "Agent Engineer",
-                "https://nvidia.wd5.myworkdayjobs.com/NVIDIAExternalCareerSite/job/Japan-Tokyo/Agent-Engineer_JR1",
+                f"https://{TEST_SOURCES[0]['host']}/{TEST_SOURCES[0]['site']}/job/Japan-Tokyo/Agent-Engineer_JR1",
             )
             ledger.transition(application_id, "qualified")
             ledger.transition(application_id, "materials_ready")
