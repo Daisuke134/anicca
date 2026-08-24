@@ -31,6 +31,7 @@ _CONFIRMATION_TERMS = (
     "thankyouforyourinterest",
     "applicationsubmitted",
     "wehavereceivedyourapplication",
+    "wevereceivedyourapplication",
     "wevegotyourapplication",
     "hasbeenreceived",
     "応募が完了",
