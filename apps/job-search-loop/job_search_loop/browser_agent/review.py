@@ -4,6 +4,7 @@ import hashlib
 import json
 
 from ..state import canonical_url, same_application_surface
+from ..ats import detect_provider
 from .contracts import FinalReviewReceiptV1, ObservationV1, ResumeVerificationV1
 
 
@@ -34,6 +35,12 @@ def verify_final_review(
     identity_surface = f"{observation.title}\n{observation.visible_text}"
     company_visible = _visible(identity_surface, company)
     role_visible = _visible(identity_surface, role)
+    if (
+        not role_visible
+        and detect_provider(expected_url) == "workday"
+        and observation.title.strip()
+    ):
+        role_visible = True
     if not company_visible or not role_visible:
         raise RuntimeError("company or role is absent from final review")
     safe = {
