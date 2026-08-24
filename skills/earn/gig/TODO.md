@@ -156,7 +156,10 @@ Storefront work.
        inventory hash and persists the result. A real tool-disabled Codex selection chose
        `sales-objection-reply-builder` with Japanese demand query, buyer outcome,
        deliverable and three required buyer inputs; external marketplace effect remains
-       zero. Storefront now reuses that selection until the public skill inventory changes.
+       zero. Storefront now reuses that selection until the public skill inventory changes,
+       crawls its official Coconala search query, scores only sold/reviewed comparables,
+       and hash-binds the demand receipt. Score logic and compile pass; live official
+       search evidence begins on the clean pilot browser, not this busy production profile.
     9. [ ] Require one official initial-listing readback and rerun duplicate zero from
        Storefront. Apply may run before it; Negotiate/Paid wait for buyer activity.
     10. [ ] From a clean HOME prove zero marketplace effects before authentication, exact

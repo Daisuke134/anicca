@@ -5121,6 +5121,41 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                         "selection": selection,
                     }
                     _atomic_write(selection_path, selection_record)
+                demand_record = None
+                selection = (selection_record or {}).get("selection") or {}
+                if observed == 0 and selection.get("decision") == "sell":
+                    demand_path = args.state_dir / "storefront-bootstrap-demand.json"
+                    if demand_path.exists():
+                        try:
+                            candidate = json.loads(demand_path.read_text(encoding="utf-8"))
+                            if (candidate.get("version") == 1
+                                    and candidate.get("inventory_sha256") == capability_inventory["inventory_sha256"]
+                                    and candidate.get("skill_path") == selection.get("skill_path")
+                                    and candidate.get("query") == selection.get("service_query")):
+                                demand_record = candidate
+                        except (OSError, json.JSONDecodeError):
+                            pass
+                    if demand_record is None:
+                        cluster = _crawl_demand_cluster(
+                            getattr(args, "default_tab_script", DEFAULT_TAB),
+                            inventory_path.parent / "bootstrap-demand",
+                            str(selection["service_query"]),
+                        )
+                        score = _score_demand_cluster(cluster)
+                        demand_record = {
+                            "version": 1,
+                            "inventory_sha256": capability_inventory["inventory_sha256"],
+                            "skill_path": selection["skill_path"],
+                            "query": selection["service_query"],
+                            "search_url": cluster.get("search_url"),
+                            "evidence_path": str(cluster.get("evidence_path") or ""),
+                            "evidence_sha256": hashlib.sha256(
+                                json.dumps(cluster, ensure_ascii=False, sort_keys=True,
+                                           separators=(",", ":")).encode("utf-8")
+                            ).hexdigest(),
+                            "score": score,
+                        }
+                        _atomic_write(demand_path, demand_record)
                 release = _lease(args.lease_script, "release", task, lease)
                 released = release.get("released") == task
                 if not released:
@@ -5137,6 +5172,14 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     bootstrap_selection=(selection_record or {}).get("selection"),
                     bootstrap_selection_path=("storefront-bootstrap-selection.json"
                                               if selection_record is not None else None),
+                    bootstrap_demand=({
+                        "query": demand_record.get("query"),
+                        "search_url": demand_record.get("search_url"),
+                        "evidence_sha256": demand_record.get("evidence_sha256"),
+                        "score": demand_record.get("score"),
+                    } if demand_record is not None else None),
+                    bootstrap_demand_path=("storefront-bootstrap-demand.json"
+                                           if demand_record is not None else None),
                 )
                 row = _persist_receipt(args, output, row)
                 return 0, row
