@@ -7861,6 +7861,17 @@ the named production evidence:
   expansion across relevant approved surfaces until the D14 exposure threshold
   is met or the model closes a channel for safety/negative evidence; it is not
   satisfied by one low-reach post.
+  In progress: Affiliate release `781cce949` materializes one content-preserving
+  distribution child, job `2cb24bda...`, placement
+  `elevenlabs-discovered-caption-generator-en-1-mix-2bab9753`, and effect
+  `a81706fe...`; queue count is 2 and the control content SHA remains
+  `c2de6762...`. The first 14:55 owner attempt correctly defers because a normal
+  X post already owns that half-hour slot. x-repost commit `b685657af` fixes the
+  newly exposed multi-job bug by advancing FIFO only after the current job has a
+  terminal `POSTED` or `UNVERIFIED` result; `NO_EFFECT` and `RETRY_READY` remain
+  on the current job. All 47 x-repost tests pass. D16 stays open until that
+  release is active and the child returns an exact public permalink plus
+  duplicate-zero replay and exact reach readback.
 - [ ] **D17 Observation close.** At the model-selected boundary, seal the full
   funnel delta and classify it as insufficient exposure, no transaction,
   transaction pending, approved/paid winner, reversed, or attribution failure.
@@ -7916,7 +7927,7 @@ preventing one of those outcomes.
 
 Current authoritative state:
 
-- Production Affiliate release is `27540b452e7d796825789f8398e6df9d19fea414`;
+- Production Affiliate release is `781cce949886ee4264160a0a2e716e662d89e725`;
   two existing-owner wakes exit 0.
 - Active placement is `elevenlabs-discovered-caption-generator-en-1`; its exact
   X permalink is `https://x.com/selawmqt/status/2091754957448040906`.
