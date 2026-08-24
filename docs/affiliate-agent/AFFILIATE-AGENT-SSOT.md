@@ -8195,9 +8195,12 @@ Current implementation state:
   `ai.anicca.x-tweeter-healthcheck` every 300 seconds; launchctl readback shows
   both labels present, pass runs 0 before its first calendar boundary, and the
   grace healthcheck returns OK.
-- [ ] **XT04 Remove Original publication from x-repost.** Keep quote/repost and
-  Affiliate distribution ownership in x-repost; historical Original receipts
-  remain immutable evidence.
+- [x] **XT04 Remove Original publication from x-repost.** Commit `44a6c6bf3`
+  declares `X_REPOST_FORCE_KIND=quote`; role-separation tests require quote-only
+  x-repost, original-only x-tweeter, and distinct state roots. Production release
+  `44a6c6bf3` reloads `ai.anicca.x-repost-pass`; launchctl environment readback
+  returns `X_REPOST_FORCE_KIND => quote`. Historical Original receipts remain
+  immutable evidence.
 - [ ] **XT05 Production proof.** Require three consecutive x-tweeter public
   opportunities with source receipts, quality PASS, exact permalinks, duplicate
   zero, and exact reach readback before calling independent Original healthy.
