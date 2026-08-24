@@ -158,7 +158,7 @@ def observe_x_post_metrics(state, cdp_port, inspector=x_profile_cli.inspect_post
     rows = [json.loads(line) for line in raw.decode("utf-8").splitlines() if line.strip()]
     selected = next((
         row for row in reversed(rows)
-        if row.get("kind") == "affiliate_distribution"
+        if row.get("kind") in {"affiliate_distribution", "affiliate_distribution_quote"}
         and isinstance(row.get("affiliate_job_id"), str)
         and isinstance(row.get("affiliate_placement_id"), str)
         and is_owned_article_url(row.get("affiliate_owned_article_url"))

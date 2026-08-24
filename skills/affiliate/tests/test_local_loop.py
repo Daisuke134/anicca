@@ -235,7 +235,7 @@ class LocalLoopTest(unittest.TestCase):
             MODULE.atomic_json(state / "placement-ledger.json", ledger)
             repost.mkdir(parents=True)
             MODULE.append(repost / "posted.jsonl", {
-                "kind": "affiliate_distribution", "affiliate_job_id": "1" * 64,
+                "kind": "affiliate_distribution_quote", "affiliate_job_id": "1" * 64,
                 "affiliate_placement_id": placement, "post_url": post_url,
                 "posted_at": "2026-08-24T01:00:00+00:00",
             })
