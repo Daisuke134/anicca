@@ -62,6 +62,49 @@ class AffiliateProposalTests(unittest.TestCase):
                 claims, payloads, results
             )["state"], "READY_TO_POST")
 
+    def test_external_quote_source_must_be_harvested(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            queue, claims = root / "jobs.jsonl", root / "claims.jsonl"
+            payloads, results = root / "payloads", root / "results.jsonl"
+            candidate_url = "https://x.com/creator/status/300"
+            job = {
+                "schema_version": 1, "receipt_type": "AFFILIATE_X_DISTRIBUTION_JOB",
+                "state": "QUEUED", "job_id": "1" * 64,
+                "effect_identity": "2" * 64, "placement_id": "caption-en-mix-2",
+                "owned_article_url": "https://aniccaai.com/blog/caption",
+                "content_sha256": "3" * 64,
+                "experiment_lineage": {"kind": "EXPERIMENT", "decision_id": "4" * 64,
+                                       "control_placement_id": "caption-en-1"},
+                "target_x_account": "selawmqt", "cadence_class": "AFFILIATE_MONETIZATION",
+                "distribution_mode": "QUOTE_RELEVANT_EXTERNAL",
+                "distribution_route_id": "7" * 64,
+                "control_post_url": "https://x.com/selawmqt/status/200",
+                "policy_sha256": "5" * 64, "source_set_sha256": "6" * 64,
+                "created_at": "2026-08-24T00:00:00+00:00",
+                "private_tracking_url_state": "NOT_INCLUDED",
+                "revenue_credit_state": "NO_REVENUE_CREDIT",
+            }
+            queue.write_text(json.dumps(job) + "\n")
+            MODULE.claim_next_job(queue, claims, results)
+            candidates = root / "candidates.json"
+            candidates.write_text(json.dumps({"candidates": [{"url": candidate_url}]}))
+            copy = root / "copy.json"
+            copy.write_text(json.dumps({
+                "text": "Caption workflow trade-offs matter most when publishing at scale.",
+                "claims": [], "source_url": candidate_url,
+            }))
+
+            payload = MODULE.render_claimed_job(claims, payloads, copy, candidates)
+
+            self.assertEqual(payload["distribution_mode"], "QUOTE_RELEVANT_EXTERNAL")
+            self.assertEqual(payload["source_url"], candidate_url)
+            self.assertEqual(
+                re.findall(r"https?://\S+", payload["text"]),
+                [job["owned_article_url"]],
+            )
+            self.assertIn("Affiliate disclosure", payload["text"])
+
     def test_terminal_job_advances_to_next_queue_item_without_overlap(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
