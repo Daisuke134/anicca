@@ -648,8 +648,13 @@ returned eight `submit` and two `skip`; the only skips required phone/live custo
 App and Website, AI/MCP integration, Claude marketing, Voice AI product work and other feasible jobs
 all became submit. Missing Skill, unverified payment, new-client history, duration and Connects alone
 produced zero skip. External effects for this replay remained 0. The AI/MCP sealed intent remains the
-first production transport canary; official truth remains four proposals until a fifth Proposal ID and
-the exact Connects delta are read back.
+first production transport canary. Production release `2d9802bfddbe` closed it as official Proposal
+`2091839815472439297`, exact Connects `104 -> 78`, bringing official submitted proposals to five.
+The first instant notification used the proposal payload's stale historical balance and was ACKed as
+message `32120`; it is not money truth. The shared event constructor now requires the provider effect
+ledger's actual pre/post balances, and the same WorkEvent/outbox rail delivered the truthful correction
+as message `32123`. Future direct and reconciled submissions use that same measured delta. Current
+replies, offers, contracts and payout-received remain zero.
 
 A Skill bundle is immutable and versioned:
 
