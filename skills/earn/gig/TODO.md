@@ -177,7 +177,8 @@ Storefront work.
        `publish_draft` and exact public readback. Before any publish it first attempts
        official recovery of an already-public candidate, so a crash after acceptance but
        before ledger append cannot cause a second publish. Live effect/readback/replay-zero
-       remain pilot evidence.
+       remain pilot evidence. A successful public readback now completes the shared
+       `storefront_listing_readback` onboarding gate with that exact result hash.
     10. [ ] From a clean HOME prove zero marketplace effects before authentication, exact
        resume after interruption, one owner per launchd label and zero secrets in output.
     11. [ ] Family pilot A: on their own clean Mac/account, complete setup while the
