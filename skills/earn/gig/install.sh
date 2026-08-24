@@ -81,4 +81,36 @@ if [ "${1:-}" = "init" ]; then
   exec "${PYTHON:-python3}" "$GIG_DIR/scripts/coconala_onboarding.py" init
 fi
 
+if [ "${1:-}" = "start" ]; then
+  bash "$0" prepare >/dev/null
+  venv="$HOME/.local/share/anicca/gig/venv"
+  PYTHON="$venv/bin/python" bash "$0" init >/dev/null
+  "$venv/bin/python" "$GIG_DIR/scripts/gig_release.py" activate \
+    --jobs ai.anicca.hf-gig-browser
+  for _ in {1..30}; do
+    curl -fsS http://127.0.0.1:9223/json/version >/dev/null 2>&1 && break
+    sleep 1
+  done
+  curl -fsS http://127.0.0.1:9223/json/version >/dev/null 2>&1 || {
+    echo "[coconala] dedicated browser did not become ready" >&2; exit 2;
+  }
+  curl -fsS -X PUT \
+    'http://127.0.0.1:9223/json/new?https%3A%2F%2Fcoconala.com%2Fusers%2Fsignup' \
+    >/dev/null
+  cat <<'GUIDE'
+
+Coconala setup is open in the dedicated Life Manager browser.
+Complete all of these on the official site in that same browser/profile:
+  1. Create or recover the Coconala account and verify email
+  2. Complete SMS verification
+  3. Complete seller information and required consents
+  4. Complete smartphone eKYC and wait for approval
+  5. Register the matching domestic bank account
+
+Do not send Life Manager your password, OTP, identity document, face image, or bank data.
+When every item is complete, return here and run: ./install.sh coconala finished
+GUIDE
+  exit 0
+fi
+
 exec "${PYTHON:-python3}" "$GIG_DIR/scripts/money_loop_onboarding.py" "$@"
