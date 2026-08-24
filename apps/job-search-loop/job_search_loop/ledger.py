@@ -153,6 +153,13 @@ class Ledger:
                 received_at TEXT NOT NULL,
                 created_at TEXT NOT NULL
             );
+            CREATE TABLE IF NOT EXISTS workday_fit_decisions (
+                application_id TEXT PRIMARY KEY REFERENCES applications(id),
+                decision TEXT NOT NULL
+                    CHECK (decision IN ('qualified', 'rejected', 'hold')),
+                evidence_sha256 TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            );
             CREATE TABLE IF NOT EXISTS strategy_generations (
                 strategy_generation_id TEXT PRIMARY KEY,
                 parent_generation_id TEXT
@@ -1411,6 +1418,17 @@ class Ledger:
             }
             for row in rows
         ]
+
+    def workday_fit_qualified(self, application_id: str) -> bool:
+        row = self.connection.execute(
+            """
+            SELECT decision
+            FROM workday_fit_decisions
+            WHERE application_id = ?
+            """,
+            (application_id,),
+        ).fetchone()
+        return row is not None and str(row["decision"]) == "qualified"
 
     def submission_attempts(self, application_id: str) -> list[dict[str, Any]]:
         rows = self.connection.execute(

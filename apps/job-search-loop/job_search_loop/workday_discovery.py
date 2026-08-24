@@ -11,7 +11,6 @@ from pathlib import Path
 from typing import Any
 from urllib.request import Request, urlopen
 
-from .browser_agent.queue import RowQueueSupervisor
 from .ledger import Ledger
 from .state import canonical_url, is_excluded_employer
 
@@ -91,7 +90,11 @@ def discover_one(
 ) -> dict[str, Any]:
     ledger = Ledger(ledger_path)
     try:
-        queued = RowQueueSupervisor.collect(ledger, active_provider="workday")
+        queued = tuple(
+            row
+            for row in ledger.pending_materials_ready_applications()
+            if "myworkdayjobs.com" in str(row["canonical_url"]).casefold()
+        )
         if queued:
             return {
                 "status": "queue_present",

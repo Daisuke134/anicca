@@ -50,6 +50,11 @@ class RowQueueSupervisor:
             identity = canonical_url(str(row["canonical_url"]))
             if provider and detect_provider(identity) != provider:
                 continue
+            if (
+                detect_provider(identity) == "workday"
+                and not ledger.workday_fit_qualified(str(row["application_id"]))
+            ):
+                continue
             if identity in _NEVER_REAPPLY:
                 continue
             if identity in seen:

@@ -81,12 +81,31 @@ class ModelBrowserLoopContractTests(unittest.TestCase):
         ledger = Mock()
         ledger.pending_materials_ready_applications.return_value = rows
         ledger.retryable_applications.return_value = []
+        ledger.workday_fit_qualified.return_value = True
 
         collected = RowQueueSupervisor.collect(ledger, active_provider=None)
 
         self.assertEqual(
             [row["application_id"] for row in collected],
             ["workday", "ashby"],
+        )
+
+    def test_workday_row_without_model_fit_receipt_never_enters_browser_lane(self):
+        from job_search_loop.browser_agent.queue import RowQueueSupervisor
+
+        row = {
+            "application_id": "workday-unqualified",
+            "company": "Example",
+            "title": "Principal Stretch Role",
+            "canonical_url": "https://example.wd5.myworkdayjobs.com/job/role_JR1",
+        }
+        ledger = Mock()
+        ledger.pending_materials_ready_applications.return_value = [row]
+        ledger.retryable_applications.return_value = []
+        ledger.workday_fit_qualified.return_value = False
+
+        self.assertEqual(
+            RowQueueSupervisor.collect(ledger, active_provider="workday"), ()
         )
 
     def test_transport_failed_requires_a_real_nonzero_runtime_command(self):
