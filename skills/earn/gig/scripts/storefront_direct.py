@@ -40,6 +40,7 @@ DEFAULT_CATEGORY_PROPOSAL_SCHEMA = GIG_DIR / "schemas" / "storefront_category_pr
 DEFAULT_CATEGORY_CHILD_SCHEMA = GIG_DIR / "schemas" / "storefront_category_child.schema.json"
 DEFAULT_BOOTSTRAP_SELECTION_SCHEMA = GIG_DIR / "schemas" / "storefront_bootstrap_selection.schema.json"
 DEFAULT_BOOTSTRAP_LISTING_SCHEMA = GIG_DIR / "schemas" / "storefront_bootstrap_listing.schema.json"
+DEFAULT_BOOTSTRAP_IMPORT_SCHEMA = GIG_DIR / "schemas" / "storefront_bootstrap_import.schema.json"
 DEFAULT_STOREFRONT_ROOT = Path(
     os.environ.get("GIG_STOREFRONT_ROOT") or "/nonexistent/storefront-root-required"
 )
@@ -5186,7 +5187,8 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
             inventory, contract_sources, observed = _read_official_catalog()
             if public_bootstrap:
                 from storefront_bootstrap import (
-                    compose_listing, inventory as bootstrap_inventory, select_capability,
+                    compose_listing, import_catalog, inventory as bootstrap_inventory,
+                    select_capability,
                 )
                 capability_inventory = bootstrap_inventory()
                 capability_path = args.state_dir / "storefront-capabilities.json"
@@ -5223,6 +5225,37 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                                    separators=(",", ":")).encode("utf-8")
                     ).hexdigest()
                     record_onboarding(Path.home(), "storefront_listing_readback", replay_evidence)
+                import_record = None
+                if observed > 0 and public_contract is None:
+                    import_path = args.state_dir / "storefront-import.json"
+                    catalog_sha = str(inventory.get("content_sha256") or "")
+                    if import_path.exists():
+                        try:
+                            candidate = json.loads(import_path.read_text(encoding="utf-8"))
+                            if (candidate.get("version") == 1
+                                    and candidate.get("inventory_sha256") == capability_inventory["inventory_sha256"]
+                                    and candidate.get("catalog_sha256") == catalog_sha
+                                    and isinstance(candidate.get("mappings"), list)):
+                                import_record = candidate
+                        except (OSError, json.JSONDecodeError):
+                            pass
+                    if import_record is None:
+                        mapped = import_catalog(
+                            sources=contract_sources, capabilities=capability_inventory,
+                            runner=getattr(args, "runner", DEFAULT_RUNNER),
+                            schema=getattr(args, "bootstrap_import_schema", DEFAULT_BOOTSTRAP_IMPORT_SCHEMA),
+                            evidence_dir=inventory_path.parent / "bootstrap-import-agent",
+                            workdir=args.workdir, timeout_seconds=args.timeout_seconds,
+                        )
+                        import_record = {
+                            **mapped,
+                            "inventory_sha256": capability_inventory["inventory_sha256"],
+                            "catalog_sha256": catalog_sha,
+                        }
+                        _atomic_write(import_path, import_record)
+                import_complete = bool(import_record) and all(
+                    row.get("supported") is True for row in import_record.get("mappings", [])
+                )
                 selection_path = args.state_dir / "storefront-bootstrap-selection.json"
                 rejection_path = args.state_dir / "storefront-bootstrap-rejections.jsonl"
                 rejected_rows = _jsonl_rows(rejection_path)[0] if rejection_path.exists() else []
@@ -5482,15 +5515,17 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     reason=("storefront_bootstrap_published" if bootstrap_result is not None
                             and bootstrap_result.get("status") == "published"
                             else "storefront_bootstrap_readback" if bootstrap_result is not None
+                            else "storefront_imported" if import_complete
+                            else "storefront_import_blocked" if import_record is not None
                             else "storefront_bootstrap_required" if observed == 0
                             else "storefront_import_required"),
                     official_services_read=observed,
                     actionable=int((bootstrap_result or {}).get("status") == "published"),
                     effect=int((bootstrap_result or {}).get("public_effect") or 0),
-                    readback=int((bootstrap_result or {}).get("readback") or 0),
+                    readback=max(int((bootstrap_result or {}).get("readback") or 0), int(import_complete)),
                     duplicate=0,
-                    pending=(0 if bootstrap_result is not None
-                             and int(bootstrap_result.get("readback") or 0) == 1 else 1),
+                    pending=(0 if import_complete or (bootstrap_result is not None
+                             and int(bootstrap_result.get("readback") or 0) == 1) else 1),
                     capability_inventory_count=len(capability_inventory["skills"]),
                     capability_inventory_sha256=capability_inventory["inventory_sha256"],
                     capability_inventory_path="storefront-capabilities.json",
@@ -5512,6 +5547,12 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     bootstrap_contract_path=("storefront-bootstrap-contract.json"
                                              if bootstrap_contract is not None else None),
                     new_listing_draft=bootstrap_result,
+                    imported_listings=({
+                        "count": len(import_record.get("mappings", [])),
+                        "supported": sum(row.get("supported") is True
+                                         for row in import_record.get("mappings", [])),
+                        "catalog_sha256": import_record.get("catalog_sha256"),
+                    } if import_record is not None else None),
                 )
                 row = _persist_receipt(args, output, row)
                 return 0, row
@@ -6868,6 +6909,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--category-child-schema", type=Path, default=DEFAULT_CATEGORY_CHILD_SCHEMA)
     parser.add_argument("--bootstrap-selection-schema", type=Path, default=DEFAULT_BOOTSTRAP_SELECTION_SCHEMA)
     parser.add_argument("--bootstrap-listing-schema", type=Path, default=DEFAULT_BOOTSTRAP_LISTING_SCHEMA)
+    parser.add_argument("--bootstrap-import-schema", type=Path, default=DEFAULT_BOOTSTRAP_IMPORT_SCHEMA)
     parser.add_argument("--scorecard", type=Path, default=storefront["scorecard"])
     parser.add_argument("--image-contract", type=Path, default=storefront["image"])
     parser.add_argument("--gallery-contract", type=Path, default=storefront["gallery"])
