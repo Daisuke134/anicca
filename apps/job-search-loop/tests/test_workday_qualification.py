@@ -6,11 +6,26 @@ import unittest
 from pathlib import Path
 
 from job_search_loop.ledger import Ledger
-from job_search_loop.workday_search_loop import rotated_sources, search_until_qualified
+from job_search_loop.workday_search_loop import (
+    cached_source_fetcher,
+    rotated_sources,
+    search_until_qualified,
+)
 from job_search_loop.workday_qualification import qualify_one
 
 
 class WorkdayQualificationTests(unittest.TestCase):
+    def test_each_source_is_fetched_once_per_wake(self):
+        calls = []
+        source = {"company": "A", "host": "a.myworkdayjobs.com"}
+        fetch = cached_source_fetcher(
+            lambda row: calls.append(row["company"]) or [{"title": "Role"}]
+        )
+
+        self.assertEqual(fetch(source), [{"title": "Role"}])
+        self.assertEqual(fetch(source), [{"title": "Role"}])
+        self.assertEqual(calls, ["A"])
+
     def test_sources_rotate_across_companies_in_one_wake(self):
         sources = ({"company": "A"}, {"company": "B"}, {"company": "C"})
         self.assertEqual(

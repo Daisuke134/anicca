@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from .agent_runner import AgentRunner
-from .workday_discovery import discover_one
+from .workday_discovery import _fetch_jobs, discover_one
 from .workday_qualification import fetch_official_description, qualify_one
 
 
@@ -20,6 +20,20 @@ def rotated_sources(
         return ()
     offset = index % len(sources)
     return sources[offset:] + sources[:offset]
+
+
+def cached_source_fetcher(
+    fetch: Callable[[dict[str, str]], list[dict[str, Any]]]
+) -> Callable[[dict[str, str]], list[dict[str, Any]]]:
+    cache: dict[str, list[dict[str, Any]]] = {}
+
+    def cached(source: dict[str, str]) -> list[dict[str, Any]]:
+        key = json.dumps(source, ensure_ascii=False, sort_keys=True)
+        if key not in cache:
+            cache[key] = fetch(source)
+        return cache[key]
+
+    return cached
 
 
 def search_until_qualified(
@@ -79,12 +93,17 @@ def main() -> int:
     sources = tuple(dict(row) for row in source_payload.get("sources", []))
     allowed_hosts = {str(row["host"]).casefold() for row in sources}
     source_cursor = 0
+    fetch_jobs = cached_source_fetcher(_fetch_jobs)
 
     def discover_next() -> dict[str, Any]:
         nonlocal source_cursor
         ordered = rotated_sources(sources, source_cursor)
         source_cursor += 1
-        return discover_one(ledger_path=args.ledger, sources=ordered)
+        return discover_one(
+            ledger_path=args.ledger,
+            sources=ordered,
+            fetch_jobs=fetch_jobs,
+        )
 
     result = search_until_qualified(
         discover=discover_next,
