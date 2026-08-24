@@ -34,6 +34,9 @@ class CapafyHealthcheckQuotaBackoffTest(unittest.TestCase):
                 + json.dumps({"provider": "claude", "error_class": "transient_quota"}) + "\n",
                 encoding="utf-8",
             )
+            # A terminated newer run can leave an evidence directory without a
+            # terminal summary. It must not hide the newest completed receipt.
+            (evidence.parent / "101-2").mkdir()
 
             calls = root / "launchctl-calls"
             fake_bin = root / "bin"

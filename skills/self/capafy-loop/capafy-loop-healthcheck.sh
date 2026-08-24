@@ -27,7 +27,8 @@ fi
 
 # Provider quota is not a dead scheduler. The hourly owner will try again on
 # its normal cadence; a five-minute kickstart here only amplifies the outage.
-LATEST="$(find "$EVIDENCE_ROOT" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort | tail -1)"
+LATEST_SUMMARY="$(find "$EVIDENCE_ROOT" -mindepth 2 -maxdepth 2 -type f -name summary.json 2>/dev/null | sort | tail -1)"
+LATEST="${LATEST_SUMMARY%/summary.json}"
 if [ -n "$LATEST" ] && python3 - "$LATEST/summary.json" "$LATEST/attempts.jsonl" <<'PY'
 import json
 import sys
