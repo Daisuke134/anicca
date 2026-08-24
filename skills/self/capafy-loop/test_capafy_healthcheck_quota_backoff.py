@@ -13,7 +13,7 @@ HEALTHCHECK = ROOT / "skills" / "self" / "capafy-loop" / "capafy-loop-healthchec
 
 
 class CapafyHealthcheckQuotaBackoffTest(unittest.TestCase):
-    def test_stale_marker_with_quota_does_not_kickstart(self):
+    def run_healthcheck(self, error_class, incomplete_name):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             state_home = root / "state-home"
@@ -30,13 +30,10 @@ class CapafyHealthcheckQuotaBackoffTest(unittest.TestCase):
                 encoding="utf-8",
             )
             (evidence / "attempts.jsonl").write_text(
-                json.dumps({"provider": "codex", "error_class": "transient_quota"}) + "\n"
-                + json.dumps({"provider": "claude", "error_class": "transient_quota"}) + "\n",
+                json.dumps({"provider": "codex", "error_class": error_class}) + "\n",
                 encoding="utf-8",
             )
-            # A terminated newer run can leave an evidence directory without a
-            # terminal summary. It must not hide the newest completed receipt.
-            (evidence.parent / "101-2").mkdir()
+            (evidence.parent / incomplete_name).mkdir()
 
             calls = root / "launchctl-calls"
             fake_bin = root / "bin"
@@ -59,12 +56,19 @@ class CapafyHealthcheckQuotaBackoffTest(unittest.TestCase):
 
             self.assertEqual(result.returncode, 0, result.stderr)
             recorded = calls.read_text(encoding="utf-8")
+            receipt_path = state_home / "state" / "capafy-provider-backoff.json"
+            receipt = json.loads(receipt_path.read_text(encoding="utf-8")) if receipt_path.exists() else None
+            return recorded, receipt
+
+    def test_stale_marker_with_quota_does_not_kickstart(self):
+            recorded, receipt = self.run_healthcheck("transient_quota", "101-2")
             self.assertNotIn("kickstart", recorded)
-            receipt = json.loads(
-                (state_home / "state" / "capafy-provider-backoff.json").read_text(encoding="utf-8")
-            )
             self.assertEqual(receipt["error_class"], "transient_quota")
             self.assertGreater(receipt["next_eligible_at_epoch"], int(time.time()))
+
+    def test_recent_incomplete_attempt_gets_grace_without_kickstart(self):
+            recorded, _ = self.run_healthcheck("transient_unavailable", f"{int(time.time())}-2")
+            self.assertNotIn("kickstart", recorded)
 
 
 if __name__ == "__main__":
