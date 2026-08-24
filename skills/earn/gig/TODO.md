@@ -44,9 +44,13 @@ contract, fee, payout, and bank receipts advance it.
 7. [ ] `18180857`: use the already-authorized TikTok account/session and never ask Chii for
    another code. Perform the exact scope, verify the live result, deliver, obtain buyer completion,
    and prove replay-zero.
-8. [ ] `18169985`: keep additional outreach at zero until the buyer explicitly approves the
-   already-sent private-DM sample format. After approval, complete only that approved batch,
-   report verified recipients/results, formally deliver, obtain buyer completion, and replay-zero.
+8. [ ] `18169985`: the buyer has now explicitly approved the unchanged @diceai0 account, the
+   shown DM format with a recipient-specific introduction, a total of 100 DMs, and formal
+   delivery with evidence. Count the first verified @5555daisuke5555 DM once; send 99 additional
+   unique, freshly qualified, personalized DMs with the clickable LOXAD LINE URL. After each
+   effect retain official X Chat readback plus a privacy-minimized screenshot. Fresh-review one
+   ZIP containing the 100-row ledger, 100 bound screenshots and hash manifest; then formally
+   deliver it, obtain buyer completion, and replay every effect class at zero.
 
 ### Stage 3 — generalize the measured Paid owner into a job-doing agent
 
