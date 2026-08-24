@@ -73,14 +73,17 @@ contract, fee, payout, and bank receipts advance it.
    contains the re-share message. Current action is now only to await a genuinely newer buyer reply.
    Do not perform another formal delivery unless that newer buyer reply explicitly approves the
    re-shared package; the earlier premature formal event remains historical evidence and must not be
-   repeated or represented as this new approval.
+   repeated or represented as this new approval. No newer buyer reply is currently present.
 5. [ ] `18183618`: continue the JAIC path without impersonation; use a truthful disclosed-agent
    equivalent, negotiate supported scope, or complete official cancellation when the exact
    provider requirement cannot be performed autonomously. Otherwise obtain completion evidence,
    the four-part report, fresh review, formal delivery, buyer completion, and replay-zero.
+   Current durable v4 is buyer-visible and the latest buyer message is an acknowledgement; do not
+   send another progress message while awaiting the buyer's substantive feedback.
 6. [ ] `18184558`: make no guessed seller-side delivery/cancellation action. Observe official
    Coconala cancellation, enter terminal pending replay, prove all effects zero, and close as
-   cancelled.
+   cancelled. The latest buyer message says they contacted Coconala support and asks us to wait for
+   cancellation completion; remain observe-only.
 7. [ ] `18180857`: use the buyer-authorized TikTok account and stored credential. The historical
    code is no longer reusable. At the first official observation outside Chii's unavailable
    19:00–22:00 JST window, ask once only whether TikTok authentication can be handled now; do not
@@ -96,13 +99,16 @@ contract, fee, payout, and bank receipts advance it.
    `evidence/tiktok-login-preflight-20260824T122433Z.json`. Do not submit login again or contact the
    buyer while that provider state remains. The next TikTok action is read-only provider-state
    observation; only after the limit clears may the owner make one new login attempt and follow the
-   OTP continuation above.
+   OTP continuation above. The installed owner subsequently asked for a safe authentication window
+   and obtained exact buyer readback `22時にお願いいたします🙇‍♀️`. At 22:00 JST, make exactly one
+   stored-credential login submit. If TikTok still shows the attempt limit, stop without another
+   buyer message. If it issues a fresh OTP, ask for that code and enter it immediately in the same
+   continuation.
 8. [ ] `18169985`: the buyer has now explicitly approved the unchanged @diceai0 account, the
    shown DM format with a recipient-specific introduction, a total of 100 DMs, and formal
    delivery with evidence. The buyer then replaced the common body with an explicitly estimated
    monthly compensation-uplift version. Have the installed owner acknowledge that change once
-   without asking for approval again. Count the first verified @5555daisuke5555 DM once; send 99
-   additional unique DMs whose opening is personalized from fresh recipient evidence and whose
+   without asking for approval again. Send unique DMs whose opening is personalized from fresh recipient evidence and whose
    common body exactly preserves the buyer's non-guaranteed estimate plus clickable LOXAD LINE
    URL. The buyer's explicit `csvは問題ありません` makes the approved 100-row CSV the candidate-
    selection authority; do not require every eligibility attribute to be independently visible on X.
