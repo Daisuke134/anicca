@@ -464,6 +464,67 @@ def activate_funnel_experiment(state, decision):
     return {**receipt, "changed": changed}
 
 
+def enforce_exposure_gate(state):
+    active_path = state / "funnel-experiments" / "active.json"
+    latest_path = state / "money-funnel" / "latest.json"
+    if not active_path.is_file() or not latest_path.is_file():
+        return {"state": "WAITING_FOR_ACTIVE_EXPERIMENT", "changed": False}
+    active = json.loads(active_path.read_text(encoding="utf-8"))
+    latest = json.loads(latest_path.read_text(encoding="utf-8"))
+    source = next((
+        row for row in json_rows(state / "money-funnel" / "rows.jsonl")
+        if row.get("transition_id") == active.get("source_funnel_transition_id")
+    ), None)
+    if active.get("state") != "ACTIVE" or source is None:
+        raise ValueError("active exposure source unavailable")
+    assessment = active.get("exposure_assessment")
+    if assessment not in {"insufficient", "sufficient", "unknown"}:
+        raise ValueError("invalid exposure assessment")
+    baseline_impressions = (source.get("impressions") or {}).get("count")
+    current_impressions = (latest.get("impressions") or {}).get("count")
+    sufficient = assessment == "sufficient"
+    state_name = (
+        "EXPOSURE_SUFFICIENT" if sufficient else
+        "WAITING_FOR_EXPOSURE" if assessment == "insufficient" else
+        "EXPOSURE_UNKNOWN"
+    )
+    transactions = (latest.get("transactions") or {}).get("count")
+    core = {
+        "schema_version": 1,
+        "receipt_type": "AFFILIATE_EXPOSURE_GATE",
+        "state": state_name,
+        "experiment_id": active.get("experiment_id"),
+        "decision_id": active.get("decision_id"),
+        "control_placement_id": active.get("control_placement_id"),
+        "selected_variable": active.get("selected_variable"),
+        "source_funnel_transition_id": active.get("source_funnel_transition_id"),
+        "current_funnel_transition_id": latest.get("transition_id"),
+        "official_success_metric": active.get("official_success_metric"),
+        "baseline_impressions": baseline_impressions,
+        "current_impressions": current_impressions,
+        "conversion_verdict_allowed": sufficient,
+        "distribution_required": not sufficient,
+        "maximize_relevant_exposure": not sufficient,
+        "transactions_observed": transactions,
+        "transactions_verdict_state": (
+            "ELIGIBLE_FOR_JUDGMENT" if sufficient
+            else "NOT_JUDGED_INSUFFICIENT_EXPOSURE"
+            if assessment == "insufficient" else "NOT_JUDGED_UNKNOWN_EXPOSURE"
+        ),
+    }
+    transition_id = hashlib.sha256(json.dumps(
+        core, sort_keys=True, separators=(",", ":")
+    ).encode()).hexdigest()
+    receipt = {**core, "transition_id": transition_id,
+               "observed_at": datetime.now(timezone.utc).isoformat()}
+    changed = append_unique(
+        state / "funnel-experiments" / "exposure-gates.jsonl",
+        receipt, ("transition_id",),
+    )
+    atomic_json(state / "funnel-experiments" / "latest-exposure-gate.json", receipt)
+    return {**receipt, "changed": changed}
+
+
 def focused_live_lineage(state):
     latest = state / "focused-cohort" / "latest.json"
     if not latest.is_file():
@@ -4643,6 +4704,17 @@ def _wake_once(args, started_at, run_id):
             "state": "EXPERIMENT_LOCK_FAILED", "changed": False,
             "failure_type": type(error).__name__,
         }
+    try:
+        exposure_gate = admit(
+            "acquisition.exposure-gate", "LEDGER_ONLY",
+            {"funnel_experiment_state": funnel_experiment.get("state")},
+            lambda: enforce_exposure_gate(state),
+        )
+    except Exception as error:
+        exposure_gate = {
+            "state": "EXPOSURE_GATE_FAILED", "changed": False,
+            "failure_type": type(error).__name__,
+        }
     if provider["state"] == "AUTHENTICATED" and not placement_link_ready:
         status = placement_link["state"]
     elif not link:
@@ -4801,6 +4873,17 @@ def _wake_once(args, started_at, run_id):
                 "source_funnel_transition_id", "control_placement_id",
                 "control_job_id", "control_post_url", "selected_variable",
                 "official_success_metric", "observation_state", "failure_type",
+            )
+        },
+        "exposure_gate": {
+            key: exposure_gate.get(key)
+            for key in (
+                "state", "changed", "transition_id", "experiment_id",
+                "control_placement_id", "selected_variable",
+                "official_success_metric", "baseline_impressions",
+                "current_impressions", "conversion_verdict_allowed",
+                "distribution_required", "maximize_relevant_exposure",
+                "transactions_observed", "transactions_verdict_state", "failure_type",
             )
         },
         "revenue_state": revenue["state"],

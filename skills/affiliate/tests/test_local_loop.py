@@ -23,6 +23,41 @@ SPEC.loader.exec_module(MODULE)
 
 
 class LocalLoopTest(unittest.TestCase):
+    def test_exposure_gate_blocks_conversion_verdict_for_insufficient_reach(self):
+        with tempfile.TemporaryDirectory() as root:
+            state = Path(root)
+            baseline = {
+                "transition_id": "a" * 64,
+                "impressions": {"count": 9, "state": "EXACT"},
+                "transactions": {"count": 0, "state": "OBSERVED"},
+            }
+            MODULE.append(state / "money-funnel" / "rows.jsonl", baseline)
+            MODULE.atomic_json(state / "money-funnel" / "latest.json", baseline)
+            MODULE.atomic_json(state / "funnel-experiments" / "active.json", {
+                "state": "ACTIVE", "experiment_id": "b" * 64,
+                "decision_id": "c" * 64,
+                "source_funnel_transition_id": baseline["transition_id"],
+                "control_placement_id": "caption-en-1",
+                "selected_variable": "distribution_mix",
+                "exposure_assessment": "insufficient",
+                "official_success_metric": "Exact impressions increase from baseline 9.",
+                "observation_state": "OPEN",
+            })
+
+            first = MODULE.enforce_exposure_gate(state)
+            replay = MODULE.enforce_exposure_gate(state)
+
+            self.assertEqual(first["state"], "WAITING_FOR_EXPOSURE")
+            self.assertFalse(first["conversion_verdict_allowed"])
+            self.assertEqual(first["baseline_impressions"], 9)
+            self.assertEqual(first["current_impressions"], 9)
+            self.assertEqual(first["transactions_observed"], 0)
+            self.assertEqual(first["transactions_verdict_state"], "NOT_JUDGED_INSUFFICIENT_EXPOSURE")
+            self.assertFalse(replay["changed"])
+            self.assertEqual(len(MODULE.json_rows(
+                state / "funnel-experiments" / "exposure-gates.jsonl"
+            )), 1)
+
     def test_funnel_experiment_lock_replays_same_and_blocks_sibling(self):
         with tempfile.TemporaryDirectory() as root:
             state = Path(root)
