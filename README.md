@@ -38,6 +38,10 @@ skills declare onboarding through a shared manifest instead of adding another in
 or asking the same questions again. See the
 [OSS onboarding design](docs/superpowers/specs/2026-08-24-life-manager-oss-onboarding-design.md).
 
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Daisuke134/life-manager/main/scripts/bootstrap.sh)"
+```
+
 ### Use it — cloud (nothing to install)
 
 [Start in Telegram](https://t.me/LifeManagerBotbot?start=lp), or open the

@@ -17,9 +17,9 @@
    ```
 
    It installs Homebrew/Git only when missing, creates or fast-forwards
-   `~/life-manager`, and enters the same package installer. It never deletes or replaces
-   a non-Git directory.
-2. The installer runs `codex login` when the CLI is not authenticated.
+   `~/life-manager`, and opens the shared local Life Manager setup UI. It never deletes
+   or replaces a non-Git directory.
+2. Select Coconala. The integration installer runs `codex login` when the CLI is not authenticated.
 3. It opens Coconala in the dedicated agent browser profile at
    `~/.cloak/profiles/gig-daily-driver` and shows the whole checklist once.
 4. In that browser, the owner completes account or login, email, SMS, seller

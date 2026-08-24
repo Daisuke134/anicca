@@ -3,8 +3,8 @@
   "type": "object",
   "additionalProperties": false,
   "required": [
-    "version", "integration_id", "display_name", "organ", "outcome", "platforms",
-    "prerequisites", "profile_fields", "ceremonies", "gate_states", "browser", "readiness",
+    "version", "integration_id", "display_name", "organ", "outcome", "owner_time_minutes", "platforms",
+    "prerequisites", "profile_fields", "ceremonies", "gate_states", "browser", "connect", "preflight", "readiness",
     "activation", "receipts", "lifecycle", "authority"
   ],
   "properties": {
@@ -14,6 +14,7 @@
     "display_name": {"type": "string", "minLength": 1, "maxLength": 80},
     "organ": {"type": "string", "enum": ["money", "body", "mind"]},
     "outcome": {"type": "string", "minLength": 1, "maxLength": 240},
+    "owner_time_minutes": {"type": "integer", "minimum": 0, "maximum": 240},
     "platforms": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["macos-arm64", "linux-x64", "cloud"]}},
     "prerequisites": {
       "type": "array", "items": {"$ref": "#/$defs/requirement"}
@@ -33,12 +34,13 @@
     "ceremonies": {
       "type": "array", "items": {
         "type": "object", "additionalProperties": false,
-        "required": ["ceremony_id", "label", "official_url", "owner_action", "completion_state"],
+        "required": ["ceremony_id", "label", "official_url", "owner_action", "why", "completion_state"],
         "properties": {
           "ceremony_id": {"type": "string", "pattern": "^[a-z][a-z0-9_.-]{1,79}$"},
           "label": {"type": "string", "minLength": 1, "maxLength": 120},
           "official_url": {"type": "string", "pattern": "^https://"},
           "owner_action": {"type": "string", "minLength": 1, "maxLength": 240},
+          "why": {"type": "string", "minLength": 1, "maxLength": 240},
           "completion_state": {"type": "string", "pattern": "^[a-z][a-z0-9_.-]{1,79}$"}
         }
       }
@@ -57,6 +59,8 @@
         "session_policy": {"enum": ["persistent-dedicated", "isolated-per-effect", "provider-oauth"]}
       }
     },
+    "connect": {"$ref": "#/$defs/command"},
+    "preflight": {"$ref": "#/$defs/commandContract"},
     "readiness": {"$ref": "#/$defs/commandContract"},
     "activation": {
       "allOf": [{"$ref": "#/$defs/commandContract"}],

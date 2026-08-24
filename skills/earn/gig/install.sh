@@ -137,13 +137,10 @@ Complete all of these on the official site in that same browser/profile:
   5. Register the matching domestic bank account
 
 Do not send Life Manager your password, OTP, identity document, face image, or bank data.
-When every item is complete, return here and run: ./install.sh coconala finished
+When every item is complete, return to Life Manager and click Resume.
+Recovery-only terminal command: ./install.sh coconala finished
 GUIDE
   exit 0
-fi
-
-if [ "$#" -eq 0 ]; then
-  exec bash "$0" start
 fi
 
 if [ "${1:-}" = "finished" ]; then
@@ -182,6 +179,15 @@ if [ "${1:-}" = "finished" ]; then
     --state launchd_readback --evidence-sha256 "$launchd_sha" >/dev/null
   printf '%s\n%s\n%s\n' "$ready" "$four_lanes" "$release_watch"
   exit 0
+fi
+
+if [ "$#" -eq 0 ]; then
+  receipt="$HOME/.config/anicca/gig/coconala-onboarding.json"
+  if [ -f "$receipt" ] \
+    && curl -fsS http://127.0.0.1:9223/json/version >/dev/null 2>&1; then
+    exec bash "$0" finished
+  fi
+  exec bash "$0" start
 fi
 
 exec "${PYTHON:-python3}" "$GIG_DIR/scripts/money_loop_onboarding.py" "$@"
