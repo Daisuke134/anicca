@@ -5412,6 +5412,13 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                         "demand_evidence_path": demand_record["evidence_path"],
                         "contract_path": "storefront-bootstrap-contract.json",
                     })
+                    if int(bootstrap_result.get("readback") or 0) == 1:
+                        from coconala_onboarding import record as record_onboarding
+                        listing_evidence = hashlib.sha256(
+                            json.dumps(bootstrap_result, ensure_ascii=False, sort_keys=True,
+                                       separators=(",", ":")).encode("utf-8")
+                        ).hexdigest()
+                        record_onboarding(Path.home(), "storefront_listing_readback", listing_evidence)
                 release = _lease(args.lease_script, "release", task, lease)
                 released = release.get("released") == task
                 if not released:
