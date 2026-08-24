@@ -342,6 +342,7 @@ def main() -> int:
             sources=ordered,
             fetch_jobs=fetch_jobs,
             preferred_urls=preferred_urls,
+            prefer_fresh=True,
         )
 
     def qualify_next() -> dict[str, Any]:

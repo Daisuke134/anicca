@@ -28,6 +28,46 @@ TEST_SOURCES = tuple(
 
 
 class WorkdayDiscoveryTests(unittest.TestCase):
+    def test_portfolio_search_prefers_fresh_finalist_over_existing_checkpoint(self):
+        with tempfile.TemporaryDirectory() as directory:
+            ledger_path = Path(directory) / "ledger.sqlite3"
+            ledger = Ledger(ledger_path)
+            existing = ledger.add_application(
+                "Rakuten",
+                "Existing Role",
+                "https://rakuten.wd1.myworkdayjobs.com/RakutenInc/job/Existing_R1",
+            )
+            ledger.transition(existing, "qualified")
+            ledger.transition(existing, "materials_ready")
+            ledger.record_workday_fit_decision(
+                existing, "qualified", "a" * 64, policy_version="test"
+            )
+            ledger.close()
+            fresh_url = "https://salesforce.wd12.myworkdayjobs.com/External/job/Fresh_R2"
+            result = discover_one(
+                ledger_path=ledger_path,
+                sources=(
+                    {
+                        "company": "Salesforce",
+                        "host": "salesforce.wd12.myworkdayjobs.com",
+                        "tenant": "salesforce",
+                        "site": "External",
+                    },
+                ),
+                fetch_jobs=lambda source: [
+                    {
+                        "title": "Fresh Role",
+                        "locationsText": "Tokyo",
+                        "externalPath": "/job/Fresh_R2",
+                    }
+                ],
+                preferred_urls=(fresh_url,),
+                prefer_fresh=True,
+            )
+            self.assertEqual(result["status"], "discovered")
+            self.assertEqual(result["discovered"][0]["company"], "Salesforce")
+            self.assertNotEqual(result["discovered"][0]["application_id"], existing)
+
     def test_source_maintenance_accumulates_new_boards_without_replacing_old(self):
         old = TEST_SOURCES[:1]
         new = TEST_SOURCES[1:3]

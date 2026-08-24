@@ -63,6 +63,7 @@ def discover_one(
     sources: tuple[dict[str, str], ...],
     fetch_jobs: Callable[[dict[str, str]], list[dict[str, Any]]] = _fetch_jobs,
     preferred_urls: tuple[str, ...] = (),
+    prefer_fresh: bool = False,
 ) -> dict[str, Any]:
     ledger = Ledger(ledger_path)
     try:
@@ -80,7 +81,7 @@ def discover_one(
             ).fetchone()
             if fit is None or str(fit["decision"]) == "qualified":
                 queued.append(row)
-        if queued:
+        if queued and not prefer_fresh:
             return {
                 "status": "queue_present",
                 "errors": [],
@@ -119,6 +120,15 @@ def discover_one(
                     }
                 )
         if not candidates:
+            if queued:
+                return {
+                    "status": "queue_present",
+                    "errors": errors,
+                    "discovered": [],
+                    "queued_application_ids": [
+                        str(row["application_id"]) for row in queued
+                    ],
+                }
             return {"status": "no_fresh_workday", "errors": errors, "discovered": []}
         preferred_rank = {
             canonical_url(url).casefold(): index
