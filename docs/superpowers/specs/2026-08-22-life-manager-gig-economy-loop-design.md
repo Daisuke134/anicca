@@ -3,12 +3,12 @@
 ## 0. Decision
 
 Life Manager ultimately contains one revenue system, not one harness per marketplace. The active
-delivery slice is now **Upwork only**. Coconala continues running independently and is neither an
-Upwork dependency nor an Upwork capacity source. Fiverr, LinkedIn, Mercor, TELUS Digital,
-Welocalize, uTest, Prolific, Outlier and Babel Audio stay frozen until Upwork closes one real
-proposal-to-received-payment path. Upwork remains the only growth market until one complete calendar
-month reaches USD 10,000 verified net received revenue; a first payment unlocks learning, not another
-market implementation.
+delivery slice starts with **Upwork**, while Coconala is the proven reference implementation. Upwork
+must close one real proposal readback before another marketplace mutation lane opens, but read-only
+research and thin-adapter generation for other gig and bounty markets may proceed earlier. After that
+receipt, the same resident agent may activate additional zero-spend canaries while Upwork continues
+toward one complete calendar month at USD 10,000 verified net received. A new market never receives a
+new decision brain.
 
 The target is an open-source, local-first agent that discovers demand, builds or selects Skills,
 sells work, fulfills it, verifies delivery and payment, and reallocates effort toward the highest
@@ -225,7 +225,8 @@ otherwise equal.
 - No self-modification of authorization, effect fences, receipt validation or accounting rules.
 - No simultaneous implementation of ten markets before the preceding market closes its gate.
 - No Google/Apple/social login for the owner Upwork account.
-- No new cross-provider abstraction before the first Upwork proposal is submitted and read back.
+- No speculative framework. Extract only behavior already proven by Coconala and Upwork, then require
+  every later market to reuse it without kernel changes.
 
 ## 2. Evidence and repository lessons
 
@@ -399,6 +400,47 @@ list_payments() -> PaymentState[]
 
 Adapters own transport, selectors/API schema and provider normalization. The kernel owns eligibility,
 pricing bounds, capacity, intent, QA, ledger, learning and reporting.
+
+### 4.2A Adapter compression law
+
+Marketplace expansion becomes smaller with every proven provider. The resident agent owns one
+commercial loop; provider adapters are replaceable I/O skins, not mini-products.
+
+```mermaid
+flowchart LR
+  A[Common money agent] --> D[Discover and inspect]
+  D --> J[Model judgment and proposal]
+  J --> E[Exactly-once effect kernel]
+  E --> P[Thin provider adapter]
+  P --> R[Official readback]
+  R --> W[Reply, contract, work, QA, delivery]
+  W --> M[Received money and learning]
+  M --> A
+  X[Unknown gig or bounty site] --> O[Agent observes UI, rules and states]
+  O --> G[Generate manifest and thin tools]
+  G --> P
+```
+
+Directly reusable across every market are pagination and bounded snapshots, model-owned qualification/
+pricing/proposals, leases and effect fencing, project/QA/delivery, received-cash accounting and funnel
+learning. Provider-specific code is limited to authenticated transport, stable entity extraction,
+form actions, official state/readback mapping, provider fees/currency and unavoidable signup/KYC/
+payout ceremonies. Semantic fit, category routing, price and proposal content never enter provider
+code. Fixed-format provider IDs, URLs, amounts and official states may be parsed mechanically.
+
+| Provider generation | Intended maximum new production surface | Kernel change |
+|---|---:|---|
+| Coconala + Upwork | Source patterns to consolidate | Only deletion of proven duplication |
+| Next market | At most 3 provider files / about 300 LOC | None |
+| Third market | At most 2 provider files / about 150 LOC | None |
+| Later market | One manifest plus exceptional transport glue / about 100 LOC | None |
+
+Exceeding a target pauses that adapter and first identifies the missing common primitive; it never
+justifies another scheduler, planner, ledger or provider-specific decision engine. For an unknown
+market the agent performs `observe → map states → read-only replay → generate manifest → one canary
+effect → official readback`. It completes ordinary signup/login itself. CAPTCHA, identity proof, tax,
+payout ownership and legally human-only acts become typed resumable ceremonies. A new delivery Skill
+is created only after an observed profitable opportunity cannot use existing Skills.
 
 ### 4.3 Sales loop
 

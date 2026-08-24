@@ -270,9 +270,14 @@ No later task may jump ahead of the first incomplete row:
 | U20 | Reconcile money and review | Official payout `received`, transaction, fee, actual costs and honest review evidence; Pending/Available excluded |
 | U21 | Repeat on three independent paid jobs | Three contract/payment/review IDs and complete per-job economics |
 | U22 | Operate the proven Upwork loop to USD 10k/month | One complete calendar-month window totals at least USD 10,000 verified net received; cross-month payouts and later chargebacks are attributed once to their actual months |
+| U23 | Compress the next-market path | After U14 proposal readback, extract only proven Coconala/Upwork duplication so the next gig or bounty site needs at most three thin provider files/about 300 LOC and zero kernel changes |
+| U24 | Let the agent onboard an unknown market | Agent observes rules/UI, performs ordinary signup/login, generates a manifest plus transport/readback glue, runs a zero-spend canary and joins the existing loop; only typed human ceremonies pause that provider |
 
 Later implementation tasks are renumbered only when their first incomplete outcome becomes active.
-All cross-market tasks remain frozen until U22 closes.
+Marketplace mutations remain frozen only until U14 closes one official Upwork proposal receipt.
+Read-only research and adapter generation may proceed earlier. After U14, additional zero-spend
+canaries may run while Upwork continues through U15–U22; paid work and unknown-effect reconciliation
+always preempt expansion.
 
 The fresh official snapshot shows applications 0, replies 0, contracts 0 and payout `received` USD 0.
 Upwork finance main proof is `12d92846e`, its production proof is `c0c66c32f`, and release tests are
@@ -615,6 +620,13 @@ U13 atomic order:
     zero-Connect jobs, proposals 0 and external effects 0. Reuse the marketplace's ordinary page
     order and follow three bounded result pages per wake, exactly like the existing Coconala scanner;
     no semantic query, score, category allowlist or custom judgment layer is added.
+34. **ADAPTER COMPRESSION IS THE EXPANSION CONTRACT:** current Upwork support spans eighteen provider
+    files and roughly 4,200 lines, so copying it would make later markets slower rather than faster.
+    Preserve the running Upwork canary, then after its first proposal receipt extract only behavior
+    already proven by Coconala plus Upwork. The next gig or bounty market must fit in at most three
+    provider files/about 300 production lines with zero kernel changes; later markets shrink toward
+    one manifest plus transport glue. Unknown-site signup and adapter generation belong to the resident
+    agent, not manual Skill authoring, except for typed human-only identity/tax/payout ceremonies.
 
 U14 atomic order:
 
