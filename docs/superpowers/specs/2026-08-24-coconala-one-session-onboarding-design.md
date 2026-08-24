@@ -13,7 +13,7 @@ Mercor, shared cross-market onboarding, and other money printers are deferred un
 this Coconala package passes the clean-device acceptance below.
 
 Public product status must remain explicit in the root README and this package README:
-Coconala is the only marketplace offered as a one-command OSS public preview; other
+Coconala is the only marketplace offered as a one-command OSS product; other
 marketplaces are not productized until they independently have one-command onboarding,
 official account gates, persistent loop owners, effect readback, and replay-zero. The
 long-term product is many concurrent 24/7 money loops, but roadmap intent is never shown
@@ -199,3 +199,10 @@ Time-dependent sales, buyer traffic, eKYC review duration, and bank-arrival wait
 acceptance evidence only. They are not coding TODOs and never keep an implementation
 session open. The code-owned terminal condition is completion of the ordered atomic TODO
 in `skills/earn/gig/TODO.md`.
+
+The code-owned terminal condition is complete. Clean-HOME pre-auth returns blocked with
+zero HOME writes; the bootstrap contains no local onboarding UI route and opens the
+official Coconala signup URL; rerun selects `finished`; six unique launchd labels render;
+all four business entrypoints compile; OSS self-containment passes 11/11; ShellCheck and
+the scoped Gig secret scan pass with zero findings. `gog` setup has an acknowledged real
+send and same-inbox nonce readback.
