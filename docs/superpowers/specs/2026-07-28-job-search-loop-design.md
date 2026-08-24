@@ -35,13 +35,29 @@ provider receipt is not provider completion. All non-Workday application lanes m
 stay parked until Workday closes 10P1, 10P2, and 10P3 with loop-owned production
 evidence.
 
-**Workday mail rule:** no exact authoritative application-received message found by
-the authenticated Gog inbox owner means the application is not accepted as applied,
-with no exceptions. Completion UI alone remains an internal non-retryable uncertain
-state for duplicate-effect safety, but contributes zero submitted count and is
-reported to the user as unverified/not applied. Only the exact company, role,
-recipient, authoritative sender, and post-submit-time Gog receipt promotes it to
-`submitted`.
+**Workday mail rule:** no authoritative application-received message found by the
+authenticated Gog inbox owner means the application is not accepted as applied, with
+no exceptions. The provider may omit the role, translate it, change the subject, or
+use new wording. The model judges the message's meaning from sender, recipient,
+subject, body, company context, and timing; code verifies the authoritative sender,
+exact recipient, post-submit time, and that exactly one uncertain intent can own the
+message. Role/title/phrase equality is supporting evidence, never a mandatory gate.
+Completion UI alone remains an internal non-retryable uncertain state for duplicate
+safety but contributes zero submitted count. A semantically affirmative, uniquely
+bound Gog receipt promotes it to `submitted`.
+
+#### Forever-running Workday closure order
+
+| Order | Atomic outcome | Done evidence |
+|---:|---|---|
+| 1 | Reconcile the already-found Rakuten receipt | Message `1a031c8ef3be0dbd`, authoritative sender, recipient, post-submit time, unique intent, Ledger `submitted`, Telegram ACK |
+| 2 | Prove next-wake duplicate 0 | Same Rakuten canonical/repost identity produces no new submit intent, fence, or click |
+| 3 | Replace confirmation phrase/title routing with semantic mail judgment | Unseen Japanese and English receipt wordings classify correctly; spoofed sender, wrong recipient, pre-submit mail, and multiple same-company uncertain intents fail closed |
+| 4 | Persist search/source cursor across every wake | Model-generated companies, queries, tried URLs, reject/hold reasons, and remaining sources resume without restarting or returning an ungrounded empty result |
+| 5 | Keep searching after every reject/hold/submit | Same owner continues until qualified job, source exhaustion receipt, or explicit wake budget; next wake resumes immediately |
+| 6 | Self-heal provider and transport failures | Official-source timeout, auth expiry, browser checkpoint, Gog timeout, and model failure retry only before uncertain effects; alerts dedupe |
+| 7 | Prove recurring useful applications | Multiple distinct fit-qualified Workday jobs from different companies reach Gog-backed `submitted`, Telegram, and duplicate 0 |
+| 8 | Soak the installed loop | Scheduled 30-minute ownership remains healthy without manual executor, duplicate submits, excluded employers, secret leaks, or false success |
 
 **Current execution truth supersedes earlier historical run notes below:** Workday
 10P is live-proven. Run `daily-20260824-033952` reaches exact NVIDIA
@@ -638,6 +654,7 @@ This is the remaining implementation-order SSOT. Only the first
 | 48dn | Remove redundant Workday company/title text fences | `implementation_done_release_gate` | The model already reads the final Review, while exact Workday requisition URL, resume hash, validation state, and one-shot Submit capability bind the external effect. Localized company/title substring checks add no independent identity protection and can reject correct reviews. Workday no longer requires those two text matches; other providers retain them. The one-shot submission fence, exact URL/requisition, resume, validation, and Gog receipt gates remain. Focused tests pass 2/2 and full regression passes 284/284. Release/resume remains. |
 | 48do | Reconcile an authoritative Workday receipt that omits role title | `implementation_done_release_gate` | Run `121844` submits Rakuten Product & Growth Specialist with exact completion UI and Telegram `31449`; Gog inbox `122450` reads authoritative `Rakuten@myworkday.com`, exact recipient, post-submit message `1a031c8ef3be0dbd`, and body `ご応募いただきありがとうございます`, but the provider omits the role title. Exact matching therefore returns `no_exact_uncertain_application`. Reconciliation now falls back only when title match finds zero rows and exactly one uncertain intent matches authoritative sender, recipient, company context, confirmation terms, and time/fence constraints. Multiple same-company intents remain ambiguous. Focused tests pass 7/7 and full regression passes 285/285. Release/inbox readback remains. |
 | 48dp | Search Gog for Rakuten's exact Japanese receipt subject | `implementation_done_release_gate` | Inbox runs `123025` and `123213` still inspect only 22 older confirmation threads because the Gmail confirmation query omits Rakuten's subject `ご応募ありがとうございます`, even though generic inbox scan sees message `1a031c8ef3be0dbd`. The exact Japanese phrase is added to both confirmation-term recognition and Gog search. Full regression passes 285/285. Release/inbox reconciliation remains. |
+| 48dq | Make Workday receipt interpretation semantic and format-independent | `pending_after_48dp` | Rakuten proves the message can be authoritative and affirmative while omitting the role title and using unseen Japanese wording. Gog discovery must search authoritative Workday sender/company/time context broadly, then the model classifies confirmation meaning. Deterministic code verifies sender, recipient, post-submit time and unique uncertain intent only; exact title and phrase lists are optional evidence. Canonical positive, translated/roleless positive, spoof, wrong-recipient, pre-submit and ambiguous same-company examples must pass before release. |
 | 49 | Drive the fresh Workday form with the LLM agent only | `live_proven` | Two consecutive NVIDIA Workday rows were driven through CloakBrowser CDP `:9222` by Luna/xhigh from fresh visible observations and screenshots, without a scripted question mapper or fixed page workflow. |
 | 50 | Reuse or create the Workday tenant account inside the same agent session | `live_proven` | The same tenant credential/session was reused by Luna without a second browser or executor. |
 | 51 | Complete every Workday page and variable employer question | `live_proven` | Luna completed provider-varying Salesforce questions for two rows from fresh observations and reached Review. |
@@ -2373,8 +2390,8 @@ must accumulate in the live loop:
 | 10O | `JOB-SCHEDULER-POLICY-10O`: align cadence and application objective | `implemented` | The quota short-circuit is removed and pending `materials_ready` rows are exposed. The installed production policy is every 30 minutes (`StartInterval=1800`); final completion evidence is owned by 10P. |
 | 10P | `JOB-WORKDAY-E2E-MODEL-10P`: full framework plus Workday E2E | `completed` | JR2008507 closes with exact UI, receipt `1a02ff31ecb7353d`, Ledger `submitted`, Telegram `30852`/`30853`, v2 agreement, immediate dedupe 0, and unseen JR2020208-1 continuation through the one existing owner. |
 | 10P1 | `JOB-WORKDAY-ONLY-10P1` | `completed` | Release `374c2c744`, launchd-owned run `094943`, non-Workday evidence/navigation/intent/fence/Submit effects 0 |
-| 10P2 | `JOB-WORKDAY-FIT-QUALIFICATION-10P2` | `in_progress` | Fail-closed DB/browser gate is live; prompt-owned full-description/resume/interview/target-compensation qualifier, current-row decisions, one unsupported rejection, and one Gog-mail-backed matched submission remain |
-| 10P3 | `JOB-WORKDAY-CONTINUOUS-SEARCH-10P3` | `pending_after_10P2` | Remove regex/fixed-company discovery; model searches all non-excluded companies, ranks full official postings, continues across rejects in the same wake, applies the best grounded match, and proves Gog receipt plus dedupe 0 |
+| 10P2 | `JOB-WORKDAY-FIT-QUALIFICATION-10P2` | `in_progress_receipt_reconciliation` | Fit qualifier is live and Rakuten matched application reached exact completion UI plus authoritative Gog mail; semantic receipt binding, Ledger submitted, Telegram and duplicate 0 remain |
+| 10P3 | `JOB-WORKDAY-CONTINUOUS-SEARCH-10P3` | `in_progress` | Regex/fixed-company discovery is removed; model searches dynamic companies and queries and continues across rejects. Rakuten plus cross-company production evidence is live; recurring Gog-backed submissions, cursor persistence and soak remain |
 | 10Q | `JOB-ASHBY-E2E-MODEL-10Q` | `broken_unverified_pending_after_workday` | Historical `submit_unknown` evidence is not accepted; rebuild from zero only after Workday is complete |
 | 10R | `JOB-GREENHOUSE-E2E-MODEL-10R` | `broken_unverified_pending_after_10Q` | Historical form interaction and `submit_unknown` evidence are not accepted; rebuild from zero after Ashby |
 | 10S | `JOB-LEVER-E2E-MODEL-10S` | `broken_unverified_pending_after_10R` | Discovery without an authoritative completed application is zero progress; rebuild from zero after Greenhouse |
