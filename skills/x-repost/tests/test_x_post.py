@@ -65,6 +65,90 @@ class Page:
 
 
 class XPostTests(unittest.TestCase):
+    def test_browser_quote_uses_historical_single_composer_effect(self) -> None:
+        class Keyboard:
+            def __init__(self):
+                self.typed, self.pressed = [], []
+
+            def type(self, value, delay):
+                self.typed.append((value, delay))
+
+            def press(self, value):
+                self.pressed.append(value)
+
+        class Button:
+            clicked = 0
+
+            def is_enabled(self):
+                return True
+
+            def click(self):
+                self.clicked += 1
+
+        class Compose:
+            def __init__(self):
+                self.keyboard, self.button, self.closed = Keyboard(), Button(), False
+
+            def goto(self, *_args, **_kwargs): pass
+            def wait_for_selector(self, *_args, **_kwargs): return True
+            def click(self, *_args): pass
+            def wait_for_timeout(self, *_args): pass
+            def query_selector(self, selector):
+                return self.button if "tweetButton" in selector else None
+            def close(self): self.closed = True
+
+        compose = Compose()
+
+        class Context:
+            pages = []
+            def new_page(self): return compose
+
+        class Browser:
+            contexts = [Context()]
+
+        class Chromium:
+            def connect_over_cdp(self, _cdp): return Browser()
+
+        class Playwright:
+            chromium = Chromium()
+
+        source = "https://x.com/source/status/123"
+        with patch.object(MODULE, "ensure_logged_in", return_value="selawmqt"), \
+                patch.object(MODULE, "get_page", return_value=object()):
+            result = MODULE.browser_publish(
+                Playwright(), "http://127.0.0.1:1", "Useful comparison", "quote", source
+            )
+
+        self.assertEqual(result, {"handle": "selawmqt", "published": True})
+        self.assertEqual(compose.keyboard.typed, [("Useful comparison", 18), (source, 12)])
+        self.assertEqual(compose.keyboard.pressed, ["Enter"])
+        self.assertEqual(compose.button.clicked, 1)
+        self.assertTrue(compose.closed)
+
+    def test_transport_selector_never_calls_both_publishers(self) -> None:
+        calls = []
+
+        def postiz(*_args):
+            calls.append("postiz")
+            return "provider-1"
+
+        def browser(*_args):
+            calls.append("browser")
+            return {"handle": "selawmqt", "published": True}
+
+        browser_result = MODULE.submit_effect(
+            "browser", "Useful post", "original", None, postiz, browser,
+        )
+        self.assertEqual(calls, ["browser"])
+        self.assertEqual(browser_result["provider"], "x_browser")
+        calls.clear()
+
+        postiz_result = MODULE.submit_effect(
+            "postiz", "Useful post", "original", None, postiz, browser,
+        )
+        self.assertEqual(calls, ["postiz"])
+        self.assertEqual(postiz_result["provider_submission_id"], "provider-1")
+
     def test_postiz_http_error_summary_keeps_message_and_redacts_urls(self) -> None:
         error = urllib.error.HTTPError(
             "https://api.postiz.com/public/v1/posts", 400, "Bad Request", {},

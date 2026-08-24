@@ -94,6 +94,79 @@ def postiz_publish(text: str, mode: str, source_url: str | None) -> str:
     return str(submission_id)
 
 
+def submit_effect(transport, text, mode, source_url, postiz_submit, browser_submit):
+    """Select exactly one external effect transport."""
+    if transport == "postiz":
+        submission_id = postiz_submit(text, mode, source_url)
+        return {"provider": "postiz", "provider_submission_id": submission_id}
+    if transport == "browser":
+        result = browser_submit(text, mode, source_url)
+        if not isinstance(result, dict) or result.get("published") is not True:
+            raise ValueError("browser composer did not confirm submission")
+        return {**result, "provider": "x_browser", "provider_submission_id": None}
+    raise ValueError("unsupported X publish transport")
+
+
+def browser_publish(pw, cdp: str, text: str, mode: str, source_url: str | None) -> dict:
+    """Historical leased-browser composer effect restored from 95d4c151e^."""
+    browser = pw.chromium.connect_over_cdp(cdp)
+    ctx = browser.contexts[0] if browser.contexts else browser.new_context()
+    handle = ensure_logged_in(get_page(browser))
+    compose = ctx.new_page()
+    published = False
+    try:
+        if mode == "reply":
+            compose.goto(source_url, wait_until="domcontentloaded", timeout=60000)
+            compose.wait_for_selector('[data-testid="tweetTextarea_0"]', timeout=45000)
+            compose.click('[data-testid="tweetTextarea_0"]')
+            compose.keyboard.type(text, delay=18)
+            compose.wait_for_timeout(2000)
+        elif mode == "quote":
+            compose.goto("https://x.com/compose/post", wait_until="domcontentloaded", timeout=60000)
+            compose.wait_for_selector('[data-testid="tweetTextarea_0"]', timeout=45000)
+            compose.click('[data-testid="tweetTextarea_0"]')
+            compose.keyboard.type(text, delay=18)
+            compose.keyboard.press("Enter")
+            compose.keyboard.type(source_url, delay=12)
+            compose.wait_for_timeout(6000)
+        else:
+            compose.goto("https://x.com/compose/post", wait_until="domcontentloaded", timeout=60000)
+            compose.wait_for_selector('[data-testid="tweetTextarea_0"]', timeout=45000)
+            compose.click('[data-testid="tweetTextarea_0"]')
+            compose.keyboard.type(text, delay=18)
+            compose.wait_for_timeout(2000)
+
+        button = (compose.query_selector('[data-testid="tweetButtonInline"]')
+                  or compose.query_selector('[data-testid="tweetButton"]'))
+        if button and button.is_enabled():
+            button.click()
+        else:
+            compose.keyboard.press("Meta+Enter")
+        try:
+            compose.wait_for_selector(
+                '[data-testid="tweetTextarea_0"]', state="detached", timeout=30000
+            )
+            published = True
+        except Exception:
+            body = compose.query_selector('[data-testid="tweetTextarea_0"]')
+            published = bool(body) and not (body.inner_text() or "").strip()
+    finally:
+        if not published:
+            try:
+                compose.keyboard.press("Escape")
+                compose.wait_for_timeout(1500)
+                confirm = compose.query_selector('[data-testid="confirmationSheetConfirm"]')
+                if confirm:
+                    confirm.click(); compose.wait_for_timeout(1500)
+            except Exception as exc:
+                print(f"x_post: could not discard the draft: {exc}", file=sys.stderr)
+        try:
+            compose.close()
+        except Exception as exc:
+            print(f"x_post: leaving the compose tab open: {exc}", file=sys.stderr)
+    return {"handle": handle, "published": published}
+
+
 def ensure_logged_in(page) -> str:
     for attempt in (1, 2, 3):
         page.goto("https://x.com/home", wait_until="domcontentloaded", timeout=60000)
@@ -322,25 +395,41 @@ def main():
         print()
         return
     transport = os.environ.get("X_REPOST_PUBLISH_TRANSPORT", "postiz").strip().lower()
-    if transport != "postiz":
-        raise SystemExit("x_post: non-API publish transport is disabled")
+    if transport not in {"postiz", "browser"}:
+        raise SystemExit("x_post: unsupported publish transport")
     minimum_status_id = snowflake_floor(datetime.now(timezone.utc))
-    try:
-        submission_id = postiz_publish(text, args.mode, args.source_url)
-    except (ValueError, OSError, urllib.error.HTTPError) as exc:
-        status = exc.code if isinstance(exc, urllib.error.HTTPError) else None
-        receipt = {"posted": False, "mode": args.mode, "source_url": args.source_url,
-                   "provider": "postiz", "provider_status": status,
-                   "reason": type(exc).__name__}
-        if isinstance(exc, urllib.error.HTTPError):
-            receipt["provider_error"] = http_error_summary(exc)
-        json.dump(receipt, sys.stdout, ensure_ascii=False)
-        print()
-        sys.exit(1)
+    effect = None
+    if transport == "postiz":
+        try:
+            effect = submit_effect(
+                transport, text, args.mode, args.source_url,
+                postiz_publish, lambda *_args: None,
+            )
+        except (ValueError, OSError, urllib.error.HTTPError) as exc:
+            status = exc.code if isinstance(exc, urllib.error.HTTPError) else None
+            receipt = {"posted": False, "mode": args.mode, "source_url": args.source_url,
+                       "provider": "postiz", "provider_status": status,
+                       "reason": type(exc).__name__}
+            if isinstance(exc, urllib.error.HTTPError):
+                receipt["provider_error"] = http_error_summary(exc)
+            json.dump(receipt, sys.stdout, ensure_ascii=False)
+            print(); sys.exit(1)
+    browser_attempted = False
     try:
         with sync_playwright() as pw:
-            browser = pw.chromium.connect_over_cdp(args.cdp)
-            handle = ensure_logged_in(get_page(browser))
+            if transport == "browser":
+                browser_attempted = True
+                effect = submit_effect(
+                    transport, text, args.mode, args.source_url,
+                    postiz_publish,
+                    lambda body, mode, source: browser_publish(
+                        pw, args.cdp, body, mode, source
+                    ),
+                )
+                handle = effect["handle"]
+            else:
+                browser = pw.chromium.connect_over_cdp(args.cdp)
+                handle = ensure_logged_in(get_page(browser))
             if args.mode == "reply":
                 permalink = find_reply_permalink(
                     pw, args.cdp, args.source_url, handle, needle, minimum_status_id
@@ -351,27 +440,33 @@ def main():
                     text if expected_url else None, minimum_status_id
                 )
     except (Exception, SystemExit) as exc:
-        # The Postiz effect already happened above. A readback/session failure is therefore an
-        # unknown external effect, never a safe publish failure. Return the provider receipt so
-        # the owner records an absorbing unverified row and cannot submit the source again.
+        if effect is None and not browser_attempted:
+            json.dump({"posted": False, "mode": args.mode,
+                       "source_url": args.source_url, "provider": transport,
+                       "reason": type(exc).__name__}, sys.stdout, ensure_ascii=False)
+            print(); sys.exit(1)
         json.dump({"posted": "unverified", "mode": args.mode,
-                   "source_url": args.source_url, "provider": "postiz",
-                   "provider_submission_id": submission_id,
+                   "source_url": args.source_url,
+                   "provider": (effect or {}).get("provider", "x_browser"),
+                   "provider_submission_id": (effect or {}).get("provider_submission_id"),
                    "reason": f"readback failed: {type(exc).__name__}"},
                   sys.stdout, ensure_ascii=False)
         print()
         sys.exit(2)
     if not permalink:
         json.dump({"posted": "unverified", "mode": args.mode, "handle": handle,
-                   "needle": needle, "source_url": args.source_url, "provider": "postiz",
-                   "provider_submission_id": submission_id,
-                   "reason": "API accepted but no matching post was found on the timeline"},
+                   "needle": needle, "source_url": args.source_url,
+                   "provider": effect["provider"],
+                   "provider_submission_id": effect.get("provider_submission_id"),
+                   "reason": "effect accepted but no matching post was found on the timeline"},
                   sys.stdout, ensure_ascii=False)
         print()
         sys.exit(2)
     json.dump({"posted": True, "mode": args.mode, "handle": handle,
-               "post_url": permalink, "source_url": args.source_url, "provider": "postiz",
-               "provider_submission_id": submission_id}, sys.stdout, ensure_ascii=False)
+               "post_url": permalink, "source_url": args.source_url,
+               "provider": effect["provider"],
+               "provider_submission_id": effect.get("provider_submission_id")},
+              sys.stdout, ensure_ascii=False)
     print()
 
 
