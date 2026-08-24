@@ -52,8 +52,23 @@ def _graph() -> dict[str, Any]:
         readiness_code, readiness = _json_command(integration["readiness"]["command"])
         status = readiness.get("status")
         if readiness_code == 0 and status == "ready":
-            integration["state"] = "ready"
-            integration["next_action"] = None
+            owners = integration["activation"]["owners"]
+            loaded = 0
+            if "macos-arm64" in integration["platforms"] and sys.platform == "darwin":
+                domain = f"gui/{os.getuid()}"
+                loaded = sum(subprocess.run(
+                    ["/bin/launchctl", "print", f"{domain}/{owner}"],
+                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False,
+                ).returncode == 0 for owner in owners)
+            else:
+                loaded = len(owners)
+            integration["owner_readback"] = {"declared": len(owners), "loaded": loaded}
+            if loaded == len(owners):
+                integration["state"] = "ready"
+                integration["next_action"] = None
+            else:
+                integration["state"] = "issue"
+                integration["next_action"] = "Restore persistent loop owners"
         elif status in {"uninitialized", "needs_setup", "blocked"}:
             integration["state"] = "needs_you"
             integration["next_action"] = "Connect or resume official setup"
