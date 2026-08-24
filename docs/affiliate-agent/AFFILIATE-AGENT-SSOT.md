@@ -7689,15 +7689,16 @@ the named production evidence:
   tracking fields, and private tracking URL inclusion. Schema and repository
   contract tests are GREEN. No producer, consumer, or external effect is part of
   D01; D02 is now the first unchecked item.
-- [ ] **D02 Queue producer.** Make Affiliate enqueue exactly one job only after
+- [x] **D02 Queue producer.** Make Affiliate enqueue exactly one job only after
   owned-page public readback and policy PASS. Evidence: one immutable queued
   receipt and duplicate enqueue count zero.
-  In progress at `c6a1059d1`: production owner emits job
+  Done at `c6a1059d1`: production owner emits job
   `4ceff8ecf...` / effect `f9639316...` for exact caption-generator placement,
   target `selawmqt`, public owned URL, BASE lineage, and bound
   content/policy/source hashes. Queue count is exactly 1 and private tracking
-  state is `NOT_INCLUDED`. Unit replay proves `ALREADY_QUEUED` without a second
-  row; one later production owner replay remains required before checking D02.
+  state is `NOT_INCLUDED`. A later production owner replay returns
+  `ALREADY_QUEUED`, preserves the same job/effect identity, and keeps queue count
+  exactly 1. D03 is now the first unchecked item.
 - [ ] **D03 Queue consumer.** Make existing x-repost claim the oldest eligible
   job atomically. Evidence: queued → claimed transition owned by the launchd
   process, with two simultaneous wakes unable to claim the same job.
