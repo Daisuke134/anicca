@@ -834,6 +834,9 @@ async def execute_sealed_proposal(
                 planned, receipt, connects_post=connects_pre,
                 connects_evidence_sha256=connects_pre_hash,
             )
+            publish_application_decisions([proposal_submitted_event(
+                payload, proposal_id=receipt["proposal_id"], connects_after=connects_pre,
+            )])
             return {**base, "state": "submitted", "proposal_id": receipt["proposal_id"]}, None, None
         if not matches and connects_pre == existing["connects_pre"]:
             no_effect_hash = hashlib.sha256(json.dumps({
