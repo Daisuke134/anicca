@@ -282,6 +282,37 @@ _SEALED_TERMS_KEYS = {
 }
 
 
+def load_sealed_candidates(root: Path) -> list[dict[str, str]]:
+    """Resume immutable proposals as the durable ready queue across wakes."""
+    root = root.expanduser()
+    if root.is_symlink() or not root.is_dir() or root.stat().st_mode & 0o777 != 0o700:
+        raise ValueError("upwork_proposal_store_invalid")
+    rows = []
+    for path in sorted(root.glob("*.json")):
+        if path.is_symlink() or path.stat().st_mode & 0o777 != 0o600:
+            raise ValueError("upwork_sealed_proposal_invalid")
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+            raise ValueError("upwork_sealed_proposal_invalid") from exc
+        if (
+            not isinstance(payload, dict) or set(payload) != _SEALED_PROPOSAL_KEYS
+            or payload.get("provider") != "upwork"
+            or payload.get("status") != "frozen_waiting_for_connects"
+            or not isinstance(payload.get("job_id"), str)
+            or not isinstance(payload.get("job_url"), str)
+            or not isinstance(payload.get("title"), str)
+            or not re.fullmatch(r"[0-9a-f]{64}", str(payload.get("payload_sha256") or ""))
+        ):
+            raise ValueError("upwork_sealed_proposal_invalid")
+        rows.append({
+            "job_id": payload["job_id"], "job_url": payload["job_url"],
+            "queue": "ready", "title": payload["title"],
+            "proposal_payload_sha256": payload["payload_sha256"],
+        })
+    return rows
+
+
 def plan_free_proposal(state: dict[str, Any], proposals_dir: Path) -> dict[str, Any] | None:
     """Return the first exact sealed proposal covered by the observed free balance."""
     balance = state.get("balance")
@@ -808,6 +839,11 @@ async def observe(
     pages: dict[str, str] = {}
     links: dict[str, list[dict[str, Any]]] = {}
     candidates = load_candidates(candidates_path)
+    known_candidate_ids = {item["job_id"] for item in candidates}
+    candidates.extend(
+        item for item in load_sealed_candidates(proposals_dir)
+        if item["job_id"] not in known_candidate_ids
+    )
     targets = [
         ("connects", CONNECTS_URL), ("invites", INVITES_URL),
         ("proposals", PROPOSALS_URL), ("catalog", CATALOG_URL),
