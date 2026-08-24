@@ -100,10 +100,10 @@ def publish_application_decisions(events: list[dict[str, Any]]) -> None:
 
 
 def proposal_submitted_event(
-    payload: dict[str, Any], *, proposal_id: str, connects_after: int,
+    payload: dict[str, Any], *, proposal_id: str, connects_before: int,
+    connects_after: int,
 ) -> dict[str, Any]:
     terms = payload["terms"]
-    connects_before = terms["available_connects_before"]
     return {
         "event_key": f"gig:application:upwork:{proposal_id}",
         "kind": "application",
@@ -835,7 +835,8 @@ async def execute_sealed_proposal(
                 connects_evidence_sha256=connects_pre_hash,
             )
             publish_application_decisions([proposal_submitted_event(
-                payload, proposal_id=receipt["proposal_id"], connects_after=connects_pre,
+                payload, proposal_id=receipt["proposal_id"],
+                connects_before=int(existing["connects_pre"]), connects_after=connects_pre,
             )])
             return {**base, "state": "submitted", "proposal_id": receipt["proposal_id"]}, None, None
         if not matches and connects_pre == existing["connects_pre"]:
@@ -892,7 +893,8 @@ async def execute_sealed_proposal(
         connects_evidence_sha256=post_hash,
     )
     publish_application_decisions([proposal_submitted_event(
-        payload, proposal_id=receipt["proposal_id"], connects_after=post_connects["balance"],
+        payload, proposal_id=receipt["proposal_id"], connects_before=connects_pre,
+        connects_after=post_connects["balance"],
     )])
     return {
         **base, "state": "submitted", "proposal_id": receipt["proposal_id"],
