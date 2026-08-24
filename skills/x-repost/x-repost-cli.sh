@@ -1275,7 +1275,9 @@ fi
 # over-length post: X disables the Post button and the click is a silent no-op, so an oversized
 # draft costs a whole pass and looks like a browser bug. Japanese counts 2 per character and the
 # quoted URL costs 23, so the budget is far tighter than a naive character count suggests.
-if ! "$PY" - "$EV/chosen.json" "$EV/humanized.json" "$EV/post.txt" "${X_REPOST_TEXT_BUDGET:-250}" \
+TEXT_BUDGET="${X_REPOST_TEXT_BUDGET:-250}"
+[ "$KIND" = "original" ] && TEXT_BUDGET="${X_TWEETER_TEXT_BUDGET:-226}"
+if ! "$PY" - "$EV/chosen.json" "$EV/humanized.json" "$EV/post.txt" "$TEXT_BUDGET" \
      >"$EV/length.json"; then
   report "⚠️ 3案とも X の文字数上限を超えていたので今回は見送り（$(cat "$EV/length.json" 2>/dev/null | head -c 200)）"
   lesson "3案とも文字数超過" "日本語は1文字2カウント。プロンプトの上限表記が実単位とずれていないか見る"

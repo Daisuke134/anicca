@@ -47,7 +47,7 @@ def _disk_preflight(home: Path | None = None) -> bool:
         child_env.update(
             {
                 "HOME": str(home),
-                "GIG_DISK_HEADROOM_KIB": "524288",
+                "GIG_DISK_HEADROOM_KIB": "0",
                 "GIG_HOST_STATE_DIR": str(home / ".openclaw/state"),
                 "GIG_STATE_DIR": str(home / ".local/state/life-manager/browser-provision"),
             }
