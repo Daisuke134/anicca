@@ -247,6 +247,22 @@ def test_file_prepare_creates_missing_project_delivery_directory(tmp_path, monke
         )
 
 
+def test_prior_artifact_candidates_include_only_project_receipt_linked_zips(tmp_path):
+    paid = load("paid_direct")
+    root = tmp_path / "project"
+    delivery_zip = root / "delivery" / "current.zip"
+    receipt_zip = root / "deliverables" / "approved" / "final.zip"
+    unrelated_zip = root / "deliverables" / "unrelated.zip"
+    for path in (delivery_zip, receipt_zip, unrelated_zip):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(path.name.encode())
+    write_json(root / "acceptance" / "upload-receipt.json", {
+        "status": "uploaded", "artifact": str(receipt_zip),
+    })
+
+    assert paid._prior_artifact_candidates(root) == [delivery_zip, receipt_zip]
+
+
 def test_wait_accepts_supplementary_receipt_when_another_has_readback(tmp_path):
     remote = load("paid_remote_result")
     root, feedback, digest = blocked_project(tmp_path)

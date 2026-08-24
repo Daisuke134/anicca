@@ -2522,6 +2522,44 @@ def _clone_prior_artifact(source: Path, target: Path) -> None:
         shutil.copy2(source, target)
 
 
+def _prior_artifact_candidates(root: Path) -> list[Path]:
+    """Return existing ZIPs already bound by project-owned state or receipts."""
+    root = root.resolve()
+    candidates: list[Path] = []
+
+    def add(raw: str | Path) -> None:
+        path = Path(raw)
+        path = path if path.is_absolute() else root / path
+        try:
+            resolved = path.resolve()
+            resolved.relative_to(root)
+        except (OSError, ValueError):
+            return
+        if resolved.suffix.casefold() == ".zip" and _regular_file(resolved) and resolved not in candidates:
+            candidates.append(resolved)
+
+    def visit(value: Any) -> None:
+        if isinstance(value, dict):
+            for child in value.values():
+                visit(child)
+        elif isinstance(value, list):
+            for child in value:
+                visit(child)
+        elif isinstance(value, str) and value.casefold().endswith(".zip"):
+            add(value)
+
+    for path in sorted((root / "delivery").glob("*.zip")):
+        add(path)
+    references = [root / "state.json", root / "context" / "current.json"]
+    references.extend(sorted((root / "acceptance").rglob("*.json")))
+    for path in references:
+        try:
+            visit(_load(path))
+        except (OSError, json.JSONDecodeError):
+            continue
+    return candidates
+
+
 def _prepare_file_owner_staging(root: Path, context: Path, staging: Path) -> Path | None:
     shutil.copytree(root / "requirements", staging / "requirements")
     restricted = set(restricted_attachment_paths(root))
@@ -2628,7 +2666,7 @@ def _run_isolated_file_owner(args, root: Path, context: Path, prompt_text: str,
             _prepare_file_owner_staging(root, context, staging)
             prior_dir = staging / "work" / "prior-artifact"
         prior_dir.mkdir(parents=True, exist_ok=True)
-        for candidate in sorted((root / "delivery").glob("*.zip")):
+        for candidate in _prior_artifact_candidates(root):
             target = prior_dir / candidate.name
             if not target.exists():
                 _clone_prior_artifact(candidate, target)
