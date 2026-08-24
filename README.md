@@ -44,6 +44,13 @@ The owner enters account, SMS, identity, and bank information only on official C
 pages. After finishing those pages, run the same command again. See the
 [Coconala setup guide](skills/earn/gig/README.md) for prerequisites and exact boundaries.
 
+The four lanes and command are already open source. The remaining public-beta gate is
+Paid no-human production acceptance: after the official setup ceremonies, a purchased order
+must be detected, worked, independently reviewed, delivered, accepted or cancelled, and
+replay-checked by the installed launchd owners without the account owner or a foreground
+Codex session performing customer work. Until that receipt exists across varied real orders,
+the package must not claim autonomous Paid completion.
+
 ### OSS productization status
 
 | Surface | Public code | One-command owner setup | Current status |

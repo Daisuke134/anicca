@@ -51,6 +51,19 @@ payout, and bank receipts advance it.
     LangGraph `f09cfe8f`, and Hatchet `89d130f3`: wait survives process exit, successful sibling
     checkpoints are not rerun, stale invocation is rejected, completion/cancellation cannot
     close before replay-zero, and two different entity keys remain fully parallel.
+4e. [ ] Bind every Paid provider/Coconala effect to the installed launchd project-owner ID,
+    run ID, marketplace entity, effect key, exact payload/artifact hash, and official readback.
+    Reject manual user, foreground Codex, ad-hoc script, or uncheckpointed browser effects as
+    acceptance evidence even when the external result happens to be correct.
+4f. [ ] Remove ordinary human approval and customer-work fallbacks after setup. Resolve the
+    next skill/account/session/tool autonomously. When the exact requirement cannot be completed
+    truthfully without identity, attendance, consent, physical presence, or unsupported tooling,
+    choose a disclosed-agent equivalent that satisfies the buyer outcome, negotiate supported
+    scope, or complete official cancellation. Never impersonate, fabricate, or ship a proxy.
+4g. [ ] Prove the no-human contract on varied real Paid orders: one artifact delivery, one
+    external-provider job, and one revision/cancellation lifecycle. Each starts from natural
+    discovery, survives a process restart, closes from official terminal state, and replays with
+    every effect class zero; no account-owner/Codex customer-work receipt appears in the cycle.
 
 ### Acquisition and conversion
 
@@ -74,9 +87,9 @@ payout, and bank receipts advance it.
    provider work that can be performed truthfully without impersonation, produce the requested
    four-part report and completion evidence, pass fresh review, formally deliver, obtain buyer
    completion, and prove replay-zero.
-10. [ ] `18184558`: compile all current buyer context and attachments, build the exact requested
-    deliverable, pass fresh review, formally deliver, obtain buyer completion, and prove
-    replay-zero.
+10. [ ] `18184558`: honor the latest cancellation/support flow with no seller-side delivery or
+    cancellation-control guess. Observe the official Coconala cancellation, enter terminal
+    pending replay, prove all effects zero, and close as cancelled.
 11. [ ] `18180857`: use the already-authorized TikTok account/session without asking Chii for
     another code; perform the exact current scope, verify the live result, deliver, obtain buyer
     completion, and prove replay-zero.
@@ -84,17 +97,23 @@ payout, and bank receipts advance it.
     already-sent private-DM sample format; after approval, complete only the approved batch,
     report verified recipients/results, formally deliver, obtain buyer completion, and prove
     replay-zero.
-13. [ ] Exclude byusco from new work. Keep LBJ `18130722` eligible only through the latest buyer
-    request and latest artifact/project-manager version; never resume an obsolete version.
-    Repair the generic approval-state defect, then let the Paid owner review, submit, read back,
-    close, and replay-check it. Codex repairs the loop and does not become the delivery worker.
+13. [ ] byusco `18171890`: consume the latest buyer requirement that replaces the stale note-only
+    decision, publish the already-reviewed article to the agreed anicca AI blog through the
+    installed owner, read back the public URL, report and formally deliver it, obtain buyer
+    completion, and prove replay-zero. Do not count the earlier note handoff as completion.
+13a. [ ] LBJ `18130722`: use only the latest buyer request and latest v98 project-manager package;
+     never resume an obsolete version. Repair the generic approval-state defect so a seller
+     acknowledgement cannot erase the buyer's explicit approval, then let the Paid owner fresh-
+     review, formally submit, read back, close, and replay-check it. Codex repairs the loop and
+     does not become the delivery worker.
 
 ### OSS acceptance
 
 14. [ ] Run the public one-line bootstrap on independent clean Apple Silicon Macs through
     official signup gates, six-owner activation, restart/update recovery, one real application,
-    one reply, one storefront mutation, and one paid delivery. For every effect retain official
-    readback and next-wake duplicate zero; publish no income guarantee or unverified completion.
+    one reply, one storefront mutation, and the three varied no-human Paid cycles in 4g. For every
+    effect retain installed-owner provenance, official readback, terminal state, and next-wake
+    duplicate zero; publish no income guarantee or unverified autonomous-completion claim.
 
 ## Historical onboarding checklist — supporting evidence
 
