@@ -261,7 +261,7 @@ No later task may jump ahead of the first incomplete row:
 | U11 | Resolve application capacity for that candidate | **DONE:** official proposal surface requires 7 Connects; balance/history, offers, invites and proposals are 0, no reward banner is exposed, and the only buy offer is 100 for $15 plus tax |
 | U12 | Freeze one tailored first-job proposal | **DONE:** immutable payload `c37eed9c…c68e926` contains the $15 terms, cover letter, five factual screening answers, no attachments, and zero unsupported claims |
 | U13 | Make acquisition fully loop-owned | **IN PROGRESS:** production scans page 1 plus two durable-cursor pages, reads exact proposal cost, reuses the existing proposal model/effect/readback path, and polls invitations, Direct Offers, Catalog orders and free Connects every five minutes; next prove cursor advances across wakes |
-| U14 | Close the first acquisition effect | **WAITING PROVIDER CAPACITY:** the latest production wake inspected 28 jobs and found zero official zero-Connect jobs; balance/invites/offers/Catalog orders remain 0. The loop submits immediately when any zero-spend path becomes actionable and then verifies official proposal/order ID and exact balance delta |
+| U14 | Close the first acquisition effect | **WAITING OWNER SPEND DECISION OR FREE INBOUND:** production covered current pages through cursor 14 without a zero-Connect public job; official and user evidence does not support zero-Connect public proposals as a reliable acquisition class. Keep free inbound monitoring, but the fastest reproducible public-application path is a one-time Connects bundle followed by model-selected low-competition proposals; any purchase still requires explicit owner approval |
 | U15 | Replay immediately | Same proposal ID; zero new proposal and zero additional Connects |
 | U16 | Poll and answer the resulting thread | Official story/message IDs and no duplicate reply |
 | U17 | Negotiate and accept profitable terms | Offer ID, exact terms hash and active contract ID |
@@ -654,6 +654,15 @@ U13 atomic order:
     returned `Project has been saved successfully`, but the public service still reads $75. Treat the
     price experiment as pending, not live, until the public URL itself reads $10; continue job, invite,
     offer, order and free-Connect monitoring meanwhile.
+39. **ZERO-CONNECT HACK HYPOTHESIS REJECTED / APPLY PATH REQUIRES CAPACITY:** Upwork's current help
+    says Connects are the tokens used for job proposals and that most jobs require them; free awards
+    are account-specific and not guaranteed. Current official help says invitations cost zero, while
+    Direct Offers and Catalog bypass public applications. User reports largely say balance 0 prevents
+    applications; isolated zero-cost public-job reports describe experiments or bugs, not a searchable
+    category. Production cursor reached page 14 with no zero-cost public proposal. Stop treating a
+    rare exception as the primary strategy. Continue free inbound monitoring, but require an explicit
+    owner decision before the reproducible one-time $15/100-Connect public-application canary. Reject
+    fake-client, self-interview, multi-account or other manipulation as fraud, not growth tactics.
 
 U14 atomic order:
 
