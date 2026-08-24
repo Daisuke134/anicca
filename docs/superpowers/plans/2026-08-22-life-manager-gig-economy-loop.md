@@ -849,6 +849,11 @@ U13 atomic order:
     exact research job with `-8`. No purchase, boost, identity, tax or payment action occurred. The
     next wake must preserve both proposal IDs and spend zero additional Connects on either while any
     newly qualified proposal remains a distinct effect.
+62. **SECOND PROPOSAL REPLAY ZERO:** replaying the exact sealed payload returns the same official
+    proposal `2091760957211561985` from the verified effect row before any browser mutation. A fresh
+    independent Upwork read remains submitted proposals `2` and balance `133`; duplicate proposal and
+    additional Connects delta are both zero. The next atomic item is replacing one-job Luna discovery
+    with one bounded candidate-set market-agent turn while the reply/offer monitor continues.
 
 U14 atomic order:
 
