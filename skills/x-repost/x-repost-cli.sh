@@ -576,7 +576,7 @@ with open(target, "x", encoding="utf-8") as stream:
     stream.write(text)
     stream.flush(); os.fsync(stream.fileno())
 PYEOF
-    AFFILIATE_POST_MODE="$("$PY" -c 'import json,sys; p=json.load(sys.stdin).get("payload") or {}; print("quote" if p.get("distribution_mode")=="QUOTE_CONTROL_POST" else "original")' <<<"$AFFILIATE_JOB_EFFECT")"
+    AFFILIATE_POST_MODE="$("$PY" -c 'import json,sys; p=json.load(sys.stdin).get("payload") or {}; print("quote" if p.get("distribution_mode") in {"QUOTE_CONTROL_POST","QUOTE_RELEVANT_EXTERNAL"} else "original")' <<<"$AFFILIATE_JOB_EFFECT")"
     AFFILIATE_SOURCE_URL="$("$PY" -c 'import json,sys; print((json.load(sys.stdin).get("payload") or {}).get("source_url") or "")' <<<"$AFFILIATE_JOB_EFFECT")"
     if [ "$AFFILIATE_POST_MODE" = "quote" ]; then
       run_x_post --cdp "$CDP" --text-file "$AFFILIATE_JOB_TEXT" --mode quote \
