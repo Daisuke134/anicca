@@ -545,6 +545,13 @@ U13 atomic order:
     cache. Existing replies/inbound and already-ready covered proposals preempt discovery; discovery
     failure is fail-visible without killing those lanes. All current Upwork tests pass 154/154. The
     next closure is immutable release activation followed by one live replenishment and replay.
+23. **FIRST LIVE REPLENISHMENT REACHED MODEL GATE / SCHEMA FIX ACTIVE:** release `e0c2ae15034e`
+    completed authenticated account, candidate, inbox, contract, finance, recency-search and current
+    job-detail reads. The loop created a private evidence packet itself, then the existing model runner
+    rejected the new response schema because `provider` and `status` used `const` without explicit
+    string `type`. The provider surfaced `candidate_replenishment=failed`, exited 0, preserved the two
+    open candidates and produced zero proposals/effects. Add the required types, release, and replay;
+    no selection or marketplace action is inferred from this failed call.
 
 U14 atomic order:
 

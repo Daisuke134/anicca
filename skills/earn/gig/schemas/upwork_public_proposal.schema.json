@@ -5,25 +5,25 @@
   "additionalProperties": false,
   "required": ["decision", "reason_codes", "proposal"],
   "properties": {
-    "decision": {"enum": ["submit", "skip"]},
+    "decision": {"type": "string", "enum": ["submit", "skip"]},
     "reason_codes": {"type": "array", "items": {"type": "string", "minLength": 1}},
     "proposal": {
       "type": ["object", "null"],
       "additionalProperties": false,
       "required": ["provider", "job_id", "job_url", "job_source_sha256", "title", "status", "terms", "cover_letter", "screening_answers", "unsupported_claims", "attachments"],
       "properties": {
-        "provider": {"const": "upwork"},
+        "provider": {"type": "string", "const": "upwork"},
         "job_id": {"type": "string", "pattern": "^~[0-9]{15,}$"},
         "job_url": {"type": "string", "pattern": "^https://www\\.upwork\\.com/jobs/"},
         "job_source_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
         "title": {"type": "string", "minLength": 1, "maxLength": 500},
-        "status": {"const": "frozen_waiting_for_connects"},
+        "status": {"type": "string", "const": "frozen_waiting_for_connects"},
         "terms": {
           "type": "object",
           "additionalProperties": false,
           "required": ["type", "bid_usd", "delivery_days", "required_connects", "available_connects_before"],
           "properties": {
-            "type": {"enum": ["fixed_price", "hourly"]},
+            "type": {"type": "string", "enum": ["fixed_price", "hourly"]},
             "bid_usd": {"type": "number", "exclusiveMinimum": 0},
             "delivery_days": {"type": "integer", "minimum": 1, "maximum": 365},
             "required_connects": {"type": "integer", "minimum": 0},

@@ -165,7 +165,8 @@ def invoke(
     evidence_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
     os.chmod(evidence_dir, 0o700)
     summary = evidence_dir / "summary.json"
-    if not summary.is_file():
+    prior = _object(summary, "planner_summary") if summary.is_file() else {}
+    if prior.get("status") != "success":
         completed = subprocess.run([
             sys.executable, str(runner), "--task-class", "application-intent-planner",
             "--prompt-stdin", "--schema", str(schema), "--evidence-dir", str(evidence_dir),
