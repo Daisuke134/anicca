@@ -249,7 +249,8 @@ installs, trials, or revenue.
 | Anicca EN Card `@anicca.encards` | Instagram Reel `https://www.instagram.com/reel/DceOe0OnGn2/`; native owner/caption/hook visually match the approved Card pack | `34261` | immediate post counts are measured `0`; account analytics is unavailable/empty response | verified canary; scheduled 0/day, default-off |
 | Anicca JA Larry `@ani.cca1234` | Instagram carousel `https://www.instagram.com/p/DceW-whAQT7/`; all six native slides match the ordered LM objects | `34328` | immediate post counts are measured `0`; account analytics is unavailable/empty response | verified canary; scheduled 0/day, default-off |
 | Anicca EN Widget `@anicca.en` | Instagram Reel `https://www.instagram.com/reel/DcekGtmjmOf/`; full native video matches the approved Widget pack | `34435` | immediate Views `14`; Reach/Saves/Likes/Comments/Shares `0`; account and product funnel sources unavailable | verified canary; scheduled 0/day, default-off |
-| Remaining integrations without a verified canary, including `@anicca.jp.videos` and YouTube candidates | no Life Manager verified publication receipt | none | no current Life Manager observation row | classified/default-off or held/unassigned; no provider write |
+| Anicca JA Widget `@anicca.jp.videos` | Instagram Reel `https://www.instagram.com/reel/DcetvubDA4Z/`; exact owner/caption and full native video match the approved Widget pack | `34523` | immediate Views `173`, Reach `134`, Likes `1`, Saves/Comments/Shares `0`; account and product funnel sources unavailable | verified canary; scheduled 0/day, default-off |
+| Remaining integrations without a verified canary, including Anicca JA Card and YouTube candidates | no new Life Manager verified publication receipt | none | no current Life Manager observation row | classified/default-off or held/unassigned; no provider write |
 
 The remaining metric gap is explicit: TikTok, Instagram, and YouTube must each
 produce platform-post observations at 2h/24h/72h/7d, then App Store Connect,
@@ -2183,8 +2184,8 @@ order is the §12.3 recovery checklist: `MKT-09R0 → MKT-09R1 → MKT-09R2 →
 MKT-09R3-01..13 → MKT-09R4..R9 → MKT-10 → MKT-11 → MKT-12 → MKT-13`.
 No later row starts early.
 
-Current TODO state: **incident recovery remains open at MKT-09R8-09 / Order
-23F.** R0 through R8-08 are terminal: capacity is safe, the shared publication
+Current TODO state: **incident recovery remains open at MKT-09R8-10 / Order
+23G.** R0 through R8-09 are terminal: capacity is safe, the shared publication
 fence remains closed,
 the JP4 false completion is quarantined, and the 13-effect set is 12 `present`
 plus one truthful `absent`. The full publication ledger is 43 `completed`,
@@ -2201,8 +2202,18 @@ An external observation clock is not an active implementation item. It remains
 terminal acceptance evidence. Exactly one executable atomic item remains active;
 when the clock fires, its readback is reconciled before any dependent account arm.
 
-**Active executable atomic item:** MKT-09R8-09 / Order 23F runs exactly one
-controlled canary for Anicca iOS / JA / Instagram `@anicca.jp.videos` using
+**Active executable atomic item:** MKT-09R8-10 / Order 23G classifies exactly
+one next retained account: Anicca iOS / JA / Instagram Card
+`@anicca.jp1`, integration `cmn8ycvtn02djqx0ytuisn9mw`. It must prove the
+native account/product/locale identity and bind one allowed renderer, format,
+and future approved asset pack while keeping actual cadence 0/day, armed 0,
+and the shared fence closed. Provider, Telegram, scheduler, and legacy-job
+writes are prohibited in this classification item. Larry EN and every other
+account remain later single-account items.
+
+**Completed immediately preceding atomic item:** MKT-09R8-09 / Order 23F ran
+exactly one controlled canary for Anicca iOS / JA / Instagram
+`@anicca.jp.videos` using
 pack `object://sha256/16d4452d5e3d408d76b915b76e80bf014a57b6354bf133391c785542db6f7696`
 and Postiz integration `cmmzzg2es0539p30ycb94ayx0`. Before the one provider
 call, a dedicated fail-closed runner must bind the exact account, integration,
@@ -2303,9 +2314,22 @@ falls back only on DNS errors, accepts only valid CNAME rows plus public IPv4 A
 records, disables ambient proxies, and invokes bounded/no-redirect HTTPS curl
 with `--resolve` so Host/TLS SNI remain native. Focused runner tests pass 25/25
 and combined tests pass 89/89. A real fallback read gets embed/media HTTP 200 and
-the fetched native SHA is exactly `4d450f…02154`. The next allowed action is
-same-slot replay with corrected verification `1980f230…8a318f`; it may create
-only the one natural Telegram receipt and must create no provider effect.
+the fetched native SHA is exactly `4d450f…02154`. At that state, the only
+allowed action was a same-slot replay with corrected verification
+`1980f230…8a318f`; it could create only the one natural Telegram receipt and no
+provider effect.
+That replay is now terminal: natural publication Telegram `34523` contains the
+same direct URL, and a further same-slot replay returns publication 0, message
+0, and Telegram transport calls 0. The message job has exactly one
+enqueue/claim/complete sequence and one receipt. Immediate Postiz post analytics
+measures Views `173`, Reach `134`, Likes `1`, and Saves/Comments/Shares `0`;
+account analytics is HTTP 200 with an empty response and remains `unavailable`,
+not zero. Product attribution is also unavailable, while 2h/24h/72h/7d owner
+registration remains explicitly `pending`, in metric status
+`object://sha256/fab4b0ed640af823fe99ee13b5b65248cca1c8ad728951a9750fcf1e5c2539c6`.
+Manifest `marketing-lane-manifest:1d9ce1df6b639bf6a0ef282a61f5ca506b8748dfe0390cda5b378bee19ec8d15`
+records only this target's `canary-verified` transition; all lanes remain
+default-off/armed 0 and the fence remains closed.
 
 The MKT-09R8-06 external effect is **terminal verified**.
 The dedicated runner and combined publication/ledger/liveness tests are green,
@@ -2540,8 +2564,8 @@ Their dependent account arm remains blocked until the observation is terminal.
 | 23C | **done — MKT-09R8-06:** run one canary for only that account | Order 23B passes | exact one Postiz row `cmt95nd89023fp20yna8g8olx` is verified at `https://www.instagram.com/reel/DcekGtmjmOf/`: CaptionUsername is `anicca.en`, caption bytes match, CDN native video `90f8e841…dcd390` and all 30 frames show the approved woman/hook/complete Widget install. Fresh adversary returned SHIP on the bounded Instagram transcode gate; focused 12/12 and combined 76/76 pass while wrong-tail and 13.5s truncation fail. Evidence is `756925fa…bc6e44`, verification is `d0abae76…184eba`, natural Telegram is `34435`, and replay is publication 0/message 0. Immediate Views 14 and Reach/Saves/Likes/Comments/Shares 0 are measured; account and product funnel sources remain explicitly unavailable in corrected status `ef76f419…d9c646`, whose future-window registration remains pending. Manifest `f72c663e…ab9d42` is canary-verified/default-off/actual 0/day/armed 0; fence closed; no legacy job touched | accept provider state alone, notify before native verification, retry, or claim pending metric windows are registered |
 | 23D | **done — MKT-09R8-07:** classify exactly one next retained account | Order 23C terminal | Anicca iOS / JA / Instagram `@anicca.jp.videos` / Postiz `cmmzzg2es0539p30ycb94ayx0` is bound only to `reelclaw-widget`, `widget-demo-reel`, planned pack `anicca-ios-reelclaw-widget-ja.pack.json`, and healthy target 2/day at 08:05/18:20 JST. Full native visual inspection proves the Widget install flow and separately proves that the account's affirmation/Card history must be excluded. Manifest `20e4570f…7997a` validates with 10 targets/20 holds, actual 0/day, armed 0, mode `0600`, fence closed; provider/Telegram/scheduler/legacy writes 0 | infer content from a handle, adopt the mixed Card history, or reuse the obsolete legacy integration ID |
 | 23E | **done — MKT-09R8-08:** import or build exactly one approved Widget JA pack for that account | Order 23D passes | Pack `16d4452d…f7696` binds exactly one 17.717-second H.264/AAC video `0c67b0a4…cd188`, caption `b57c4f89…e1c6d`, and full-frame evidence `f1c5b5c2…3a8b7`. Full-timeline native comparison has SSIM min `0.977367`/mean `0.991391`; direct visual inspection rejects Card `v1`, different-hook `v2`, and incomplete `v3`. All objects are SHA-exact/mode `0600`; pack has no OpenClaw runtime dependency. Manifest `d3ee329a…906b9` is pack-ready, actual 0/day, armed 0, fence closed; provider/Telegram/scheduler/legacy writes 0 | import several packs, accept Card/incomplete content, decouple caption from the baked hook, or retain an OpenClaw runtime dependency |
-| 23F | **active — MKT-09R8-09:** run one canary for only that account | Order 23E passes | the sole effect completed as Postiz `cmt98nnld02pdp20ypm3ohqna` at direct Reel `DcetvubDA4Z`; controls restored, armed 0, Telegram held 0. Public embed owner/caption match exactly; native `4d450f92…02154` passes full-video comparison and parent 36-frame visual inspection against source. The retained first evidence pair omitted only the approved caption's final LF and is superseded without deletion. Fresh readback again proves exact owner/caption/native SHA; corrected evidence `65401d93…13c1f9` and verification `1980f230…8a318f` are caption-byte exact and mode `0600`. Exact-host/TLS DNS fallback and escaped URL TDD pass runner 25/25 and combined 89/89; fresh review returned `SHIP`. Next: same-slot existing-receipt replay with corrected verification may create only one natural Telegram. Terminal evidence still requires replay 0 and explicit metric-source status | fan out, accept Postiz state alone, retry an ambiguous effect, or call unavailable zero/success |
-| 23G | **MKT-09R8:** repeat Orders 23D–23F for the next single retained account | prior account terminal | each retained account has an isolated product/locale/renderer/pack/effect/metric lineage | classify or enable several accounts together |
+| 23F | **done — MKT-09R8-09:** run one canary for only that account | Order 23E passes | the sole effect completed as Postiz `cmt98nnld02pdp20ypm3ohqna` at direct Reel `DcetvubDA4Z`; public owner/caption/native content match the approved pack. The retained first evidence pair omitted only the caption's final LF and is superseded without deletion; corrected evidence `65401d93…13c1f9` and verification `1980f230…8a318f` are byte-exact/mode `0600`. Natural Telegram `34523` carries the same URL; replay is publication 0/message 0/transport call 0 with one message ledger sequence. Immediate metrics are Views `173`, Reach `134`, Likes `1`, Saves/Comments/Shares `0`; account/product sources are unavailable and future windows pending in `fab4b0ed…2539c6`. Manifest `1d9ce1df…ec8d15` is canary-verified/default-off/armed 0; fence closed | fan out, accept Postiz state alone, retry an ambiguous effect, or call unavailable zero/success |
+| 23G | **active — MKT-09R8-10:** classify exactly Anicca JA Card `@anicca.jp1` / integration `cmn8ycvtn02djqx0ytuisn9mw` | Order 23F terminal | bind exact Anicca iOS/JA/Instagram account to one allowed Card renderer/format/pack plan; actual 0/day, armed 0, fence closed, external writes 0 | classify Larry EN or several accounts in parallel, infer product from a handle, or enable cadence during classification |
 | 24 | **MKT-09R9:** provision dedicated Honne Instagram and YouTube integrations one platform/account at a time | existing Postiz inventory has no Honne route for that platform | ownership and Honne product/locale are verified; canary passes Order 22 | relabel an Anicca account as Honne |
 | 25 | **MKT-10:** arm only one healthy verified account, ramping from one canary/day to at most three posts/day | exact account has direct-native, Telegram, replay, and usable metric-source evidence | expected/published/missed/duplicate counts remain healthy at each ramp; platform policy permits cadence | jump directly to three/day everywhere |
 | 26 | **MKT-11:** collect 2h/24h/72h/7d social metrics and join ASC, RevenueCat, and product analytics | exact published effect has immutable creative/campaign lineage | views, likes, comments, shares, saves, watch/retention fields when supported, installs, activation, trials, paid, proceeds, and attribution coverage are source-labelled; unavailable stays unavailable | substitute account aggregates for post outcomes or infer installs from timing |
