@@ -10,6 +10,7 @@ import json
 import os
 import re
 import sys
+import tempfile
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from urllib.parse import urlparse
@@ -33,6 +34,7 @@ QUOTE_JOB_FIELDS = {"distribution_mode", "control_post_url"}
 ROUTE_JOB_FIELDS = {"distribution_route_id"}
 X_TRANSFORMED_URL_LENGTH = 23
 UNVERIFIED_RECOVERY_WINDOW = timedelta(hours=6)
+REVISION_REASONS = frozenset({"POSTIZ_RAW_LENGTH", "CONFIRMED_NO_EFFECT"})
 URL = re.compile(r"https?://\S+")
 
 
@@ -431,14 +433,16 @@ def distribution_payload(claims_path: Path, payloads_dir: Path) -> dict:
             "source_url": source_url,
         })
     revision = payload.get("revision", 0)
+    revision_reason = payload.get("revision_reason")
     if revision == 1:
         comparable.update({
             "revision": 1,
             "prior_text_sha256": payload.get("prior_text_sha256"),
-            "revision_reason": "POSTIZ_RAW_LENGTH",
+            "revision_reason": revision_reason,
         })
     if (
         revision not in {0, 1}
+        or (revision == 1 and revision_reason not in REVISION_REASONS)
         or {key: value for key, value in payload.items() if key != "created_at"} != comparable
         or not isinstance(payload.get("created_at"), str)
         or urls != (
@@ -459,38 +463,68 @@ def distribution_payload(claims_path: Path, payloads_dir: Path) -> dict:
     return payload
 
 
-def revise_payload_for_raw_limit(claims_path: Path, payloads_dir: Path) -> dict:
+def revise_payload_for_raw_limit(
+    claims_path: Path, payloads_dir: Path, results_path: Path,
+) -> dict:
     current = distribution_payload(claims_path, payloads_dir)
+    results = [row for row in distribution_results(results_path)
+               if row.get("job_id") == current["job_id"]]
+    retry_count = sum(row.get("state") == "RETRY_READY" for row in results)
+    if not results or results[-1].get("state") != "NO_EFFECT" or retry_count < 1:
+        raise ValueError("distribution payload revision requires confirmed no-effect retry")
     if current.get("revision") == 1:
         return {**current, "changed": False}
-    if len(current["text"]) <= 280:
-        raise ValueError("distribution payload does not need raw-length revision")
-    text = (
-        "Check whether this AI tool fits your workflow, limits, and budget before subscribing.\n\n"
-        "Affiliate disclosure: I may earn a commission through this link.\n"
-        f"{current['owned_article_url']}"
+    revision_reason = "POSTIZ_RAW_LENGTH" if len(current["text"]) > 280 else "CONFIRMED_NO_EFFECT"
+    subject_candidates = (
+        "Check whether this AI tool fits your workflow, limits, and budget before subscribing.",
+        "Compare workflow fit, limits, and total price before subscribing.",
     )
-    if len(text) > 280 or URL.findall(text) != [current["owned_article_url"]]:
-        raise ValueError("revised distribution payload remains invalid")
-    receipt = {
-        **{key: value for key, value in current.items()
-           if key not in {"text", "text_sha256", "weighted_length", "created_at"}},
-        "text": text,
-        "text_sha256": hashlib.sha256(text.encode()).hexdigest(),
-        "weighted_length": len(URL.sub("x" * X_TRANSFORMED_URL_LENGTH, text)),
-        "revision": 1,
-        "prior_text_sha256": current["text_sha256"],
-        "revision_reason": "POSTIZ_RAW_LENGTH",
-        "created_at": datetime.now(timezone.utc).isoformat(),
-    }
+    mode = current.get("distribution_mode")
+    if mode == "QUOTE_CONTROL_POST":
+        text_candidates = subject_candidates
+    else:
+        text_candidates = tuple(
+            f"{subject}\n\nAffiliate disclosure: I may earn a commission through this link.\n"
+            f"{current['owned_article_url']}"
+            for subject in subject_candidates
+        )
     path = payloads_dir / f"{current['job_id']}-r1.json"
-    temporary = path.with_name(f".{path.name}.{os.getpid()}")
-    with temporary.open("x", encoding="utf-8") as stream:
-        json.dump(receipt, stream, sort_keys=True, separators=(",", ":"))
-        stream.write("\n"); stream.flush(); os.fsync(stream.fileno())
-    os.replace(temporary, path)
-    distribution_payload(claims_path, payloads_dir)
-    return {**receipt, "changed": True}
+    expected_urls = (
+        [] if mode == "QUOTE_CONTROL_POST" else [current["owned_article_url"]]
+    )
+    for text in text_candidates:
+        text_sha256 = hashlib.sha256(text.encode()).hexdigest()
+        if text_sha256 == current["text_sha256"]:
+            continue
+        weighted_length = len(URL.sub("x" * X_TRANSFORMED_URL_LENGTH, text))
+        if len(text) > 280 or URL.findall(text) != expected_urls or weighted_length > 280:
+            continue
+        receipt = {
+            **{key: value for key, value in current.items()
+               if key not in {"text", "text_sha256", "weighted_length", "created_at"}},
+            "text": text,
+            "text_sha256": text_sha256,
+            "weighted_length": weighted_length,
+            "revision": 1,
+            "prior_text_sha256": current["text_sha256"],
+            "revision_reason": revision_reason,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        }
+        with tempfile.TemporaryDirectory(dir=payloads_dir) as directory:
+            temporary_dir = Path(directory)
+            temporary = temporary_dir / path.name
+            with temporary.open("x", encoding="utf-8") as stream:
+                json.dump(receipt, stream, sort_keys=True, separators=(",", ":"))
+                stream.write("\n")
+                stream.flush()
+                os.fsync(stream.fileno())
+            try:
+                validated = distribution_payload(claims_path, temporary_dir)
+            except ValueError:
+                continue
+            os.replace(temporary, path)
+            return {**validated, "changed": True}
+    raise ValueError("revised distribution payload remains invalid")
 
 
 def valid_distribution_result(row: dict) -> bool:
@@ -989,10 +1023,10 @@ def main() -> int:
         ), sort_keys=True))
         return 0
     if args.revise_raw_limit:
-        if args.job_claims is None or args.job_payload_dir is None:
-            parser.error("--revise-raw-limit requires claim and payload paths")
+        if args.job_claims is None or args.job_payload_dir is None or args.job_results is None:
+            parser.error("--revise-raw-limit requires claim, payload, and result paths")
         print(json.dumps(revise_payload_for_raw_limit(
-            args.job_claims, args.job_payload_dir
+            args.job_claims, args.job_payload_dir, args.job_results
         ), sort_keys=True))
         return 0
     if args.proposal is None or args.consumed is None:

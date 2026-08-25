@@ -105,6 +105,216 @@ class AffiliateProposalTests(unittest.TestCase):
             )
             self.assertIn("Affiliate disclosure", payload["text"])
 
+    def test_short_external_quote_revises_after_second_no_effect(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            queue, claims = root / "jobs.jsonl", root / "claims.jsonl"
+            payloads, results = root / "payloads", root / "results.jsonl"
+            candidate_url = "https://x.com/creator/status/301"
+            job = {
+                "schema_version": 1, "receipt_type": "AFFILIATE_X_DISTRIBUTION_JOB",
+                "state": "QUEUED", "job_id": "8" * 64,
+                "effect_identity": "9" * 64, "placement_id": "caption-en-mix-short",
+                "owned_article_url": "https://aniccaai.com/blog/caption",
+                "content_sha256": "a" * 64,
+                "experiment_lineage": {"kind": "EXPERIMENT", "decision_id": "b" * 64,
+                                       "control_placement_id": "caption-en-1"},
+                "target_x_account": "selawmqt", "cadence_class": "AFFILIATE_MONETIZATION",
+                "distribution_mode": "QUOTE_RELEVANT_EXTERNAL",
+                "distribution_route_id": "c" * 64,
+                "control_post_url": "https://x.com/selawmqt/status/200",
+                "policy_sha256": "d" * 64, "source_set_sha256": "e" * 64,
+                "created_at": "2026-08-24T00:00:00+00:00",
+                "private_tracking_url_state": "NOT_INCLUDED",
+                "revenue_credit_state": "NO_REVENUE_CREDIT",
+            }
+            queue.write_text(json.dumps(job) + "\n")
+            MODULE.claim_next_job(queue, claims, results)
+            candidates = root / "candidates.json"
+            candidates.write_text(json.dumps({"candidates": [{"url": candidate_url}]}))
+            copy = root / "copy.json"
+            copy.write_text(json.dumps({
+                "text": "A short external quote about practical workflow trade-offs for creators.",
+                "claims": [], "source_url": candidate_url,
+            }))
+
+            payload = MODULE.render_claimed_job(claims, payloads, copy, candidates)
+            self.assertLessEqual(len(payload["text"]), 280)
+            self.assertLessEqual(payload["weighted_length"], 280)
+            MODULE.record_distribution_result(
+                claims, payloads, results, "NO_EFFECT", None, "",
+            )
+            first = MODULE.requeue_confirmed_no_effect(results, job["job_id"])
+            self.assertEqual(first["retry_number"], 1)
+            MODULE.record_distribution_result(
+                claims, payloads, results, "NO_EFFECT", None, "",
+            )
+
+            revised = MODULE.revise_payload_for_raw_limit(claims, payloads, results)
+            self.assertTrue(revised["changed"])
+            self.assertLessEqual(len(revised["text"]), 280)
+            self.assertLessEqual(revised["weighted_length"], 280)
+            self.assertNotEqual(revised["text_sha256"], first["text_sha256"])
+            self.assertEqual(revised["distribution_mode"], "QUOTE_RELEVANT_EXTERNAL")
+            self.assertEqual(revised["source_url"], candidate_url)
+            self.assertEqual(revised["revision_reason"], "CONFIRMED_NO_EFFECT")
+            self.assertEqual(
+                MODULE.distribution_payload(claims, payloads)["source_url"], candidate_url,
+            )
+            retry_two = MODULE.requeue_confirmed_no_effect(
+                results, job["job_id"], revised["text_sha256"],
+            )
+            self.assertEqual(retry_two["retry_number"], 2)
+            self.assertEqual(retry_two["reason"], "PAYLOAD_REVISED_AFTER_CONFIRMED_NO_EFFECT")
+
+    def test_short_control_quote_revises_without_urls_after_second_no_effect(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            queue, claims = root / "jobs.jsonl", root / "claims.jsonl"
+            payloads, results = root / "payloads", root / "results.jsonl"
+            job = {
+                "schema_version": 1, "receipt_type": "AFFILIATE_X_DISTRIBUTION_JOB",
+                "state": "QUEUED", "job_id": "f" * 64,
+                "effect_identity": "0" * 64, "placement_id": "caption-en-control-short",
+                "owned_article_url": "https://aniccaai.com/blog/caption",
+                "content_sha256": "1" * 64,
+                "experiment_lineage": {"kind": "EXPERIMENT", "decision_id": "2" * 64,
+                                       "control_placement_id": "caption-en-1"},
+                "target_x_account": "selawmqt", "cadence_class": "AFFILIATE_MONETIZATION",
+                "distribution_mode": "QUOTE_CONTROL_POST",
+                "control_post_url": "https://x.com/selawmqt/status/200",
+                "policy_sha256": "3" * 64, "source_set_sha256": "4" * 64,
+                "created_at": "2026-08-24T00:00:00+00:00",
+                "private_tracking_url_state": "NOT_INCLUDED",
+                "revenue_credit_state": "NO_REVENUE_CREDIT",
+            }
+            queue.write_text(json.dumps(job) + "\n")
+            MODULE.claim_next_job(queue, claims, results)
+            copy = root / "copy.json"
+            copy.write_text(json.dumps({
+                "text": "A short control quote about practical workflow trade-offs for creators.",
+                "claims": [],
+            }))
+            payload = MODULE.render_claimed_job(claims, payloads, copy)
+            self.assertLessEqual(len(payload["text"]), 280)
+            MODULE.record_distribution_result(
+                claims, payloads, results, "NO_EFFECT", None, "",
+            )
+            first = MODULE.requeue_confirmed_no_effect(results, job["job_id"])
+            MODULE.record_distribution_result(
+                claims, payloads, results, "NO_EFFECT", None, "",
+            )
+
+            revised = MODULE.revise_payload_for_raw_limit(claims, payloads, results)
+            self.assertTrue(revised["changed"])
+            self.assertLessEqual(len(revised["text"]), 280)
+            self.assertLessEqual(revised["weighted_length"], 280)
+            self.assertEqual(re.findall(r"https?://\S+", revised["text"]), [])
+            self.assertNotIn("Affiliate disclosure", revised["text"])
+            self.assertNotEqual(revised["text_sha256"], first["text_sha256"])
+            self.assertEqual(revised["distribution_mode"], "QUOTE_CONTROL_POST")
+            self.assertEqual(revised["source_url"], job["control_post_url"])
+            self.assertEqual(
+                MODULE.distribution_payload(claims, payloads)["source_url"],
+                job["control_post_url"],
+            )
+            retry_two = MODULE.requeue_confirmed_no_effect(
+                results, job["job_id"], revised["text_sha256"],
+            )
+            self.assertEqual(retry_two["retry_number"], 2)
+
+    def test_external_quote_collision_uses_second_revision_fallback(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            queue, claims = root / "jobs.jsonl", root / "claims.jsonl"
+            payloads, results = root / "payloads", root / "results.jsonl"
+            candidate_url = "https://x.com/creator/status/302"
+            job = {
+                "schema_version": 1, "receipt_type": "AFFILIATE_X_DISTRIBUTION_JOB",
+                "state": "QUEUED", "job_id": "5" * 64,
+                "effect_identity": "6" * 64, "placement_id": "caption-en-external-collision",
+                "owned_article_url": "https://aniccaai.com/blog/caption",
+                "content_sha256": "7" * 64,
+                "experiment_lineage": {"kind": "BASE", "decision_id": None,
+                                       "control_placement_id": None},
+                "target_x_account": "selawmqt", "cadence_class": "AFFILIATE_MONETIZATION",
+                "distribution_mode": "QUOTE_RELEVANT_EXTERNAL",
+                "distribution_route_id": "8" * 64,
+                "control_post_url": "https://x.com/selawmqt/status/200",
+                "policy_sha256": "9" * 64, "source_set_sha256": "a" * 64,
+                "created_at": "2026-08-24T00:00:00+00:00",
+                "private_tracking_url_state": "NOT_INCLUDED",
+                "revenue_credit_state": "NO_REVENUE_CREDIT",
+            }
+            queue.write_text(json.dumps(job) + "\n")
+            MODULE.claim_next_job(queue, claims, results)
+            candidates = root / "candidates.json"
+            candidates.write_text(json.dumps({"candidates": [{"url": candidate_url}]}))
+            copy = root / "copy.json"
+            copy.write_text(json.dumps({
+                "text": (
+                    "Check whether this AI tool fits your workflow, limits, and budget "
+                    "before subscribing."
+                ),
+                "claims": [], "source_url": candidate_url,
+            }))
+            payload = MODULE.render_claimed_job(claims, payloads, copy, candidates)
+            MODULE.record_distribution_result(
+                claims, payloads, results, "NO_EFFECT", None, "",
+            )
+            first = MODULE.requeue_confirmed_no_effect(results, job["job_id"])
+            MODULE.record_distribution_result(
+                claims, payloads, results, "NO_EFFECT", None, "",
+            )
+
+            revised = MODULE.revise_payload_for_raw_limit(claims, payloads, results)
+            self.assertNotEqual(revised["text_sha256"], first["text_sha256"])
+            self.assertEqual(
+                revised["text"],
+                "Compare workflow fit, limits, and total price before subscribing.\n\n"
+                "Affiliate disclosure: I may earn a commission through this link.\n"
+                f"{job['owned_article_url']}",
+            )
+            self.assertEqual(revised["source_url"], candidate_url)
+
+    def test_short_revision_requires_second_no_effect_evidence_before_write(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            queue, claims = root / "jobs.jsonl", root / "claims.jsonl"
+            payloads, results = root / "payloads", root / "results.jsonl"
+            candidate_url = "https://x.com/creator/status/303"
+            job = {
+                "schema_version": 1, "receipt_type": "AFFILIATE_X_DISTRIBUTION_JOB",
+                "state": "QUEUED", "job_id": "b" * 64,
+                "effect_identity": "c" * 64, "placement_id": "caption-en-external-evidence",
+                "owned_article_url": "https://aniccaai.com/blog/caption",
+                "content_sha256": "d" * 64,
+                "experiment_lineage": {"kind": "BASE", "decision_id": None,
+                                       "control_placement_id": None},
+                "target_x_account": "selawmqt", "cadence_class": "AFFILIATE_MONETIZATION",
+                "distribution_mode": "QUOTE_RELEVANT_EXTERNAL",
+                "distribution_route_id": "0" * 64,
+                "control_post_url": "https://x.com/selawmqt/status/200",
+                "policy_sha256": "e" * 64, "source_set_sha256": "f" * 64,
+                "created_at": "2026-08-24T00:00:00+00:00",
+                "private_tracking_url_state": "NOT_INCLUDED",
+                "revenue_credit_state": "NO_REVENUE_CREDIT",
+            }
+            queue.write_text(json.dumps(job) + "\n")
+            MODULE.claim_next_job(queue, claims, results)
+            candidates = root / "candidates.json"
+            candidates.write_text(json.dumps({"candidates": [{"url": candidate_url}]}))
+            copy = root / "copy.json"
+            copy.write_text(json.dumps({
+                "text": "A short external quote about practical workflow trade-offs for creators.",
+                "claims": [], "source_url": candidate_url,
+            }))
+            MODULE.render_claimed_job(claims, payloads, copy, candidates)
+
+            with self.assertRaisesRegex(ValueError, "confirmed no-effect retry"):
+                MODULE.revise_payload_for_raw_limit(claims, payloads, results)
+            self.assertFalse((payloads / f"{job['job_id']}-r1.json").exists())
+
     def test_terminal_job_advances_to_next_queue_item_without_overlap(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -225,10 +435,11 @@ class AffiliateProposalTests(unittest.TestCase):
             MODULE.record_distribution_result(
                 claims, payloads, results, "NO_EFFECT", None, "",
             )
-            revised = MODULE.revise_payload_for_raw_limit(claims, payloads)
+            revised = MODULE.revise_payload_for_raw_limit(claims, payloads, results)
             self.assertTrue(revised["changed"])
             self.assertLessEqual(len(revised["text"]), 280)
             self.assertNotEqual(revised["text_sha256"], first["text_sha256"])
+            self.assertEqual(revised["revision_reason"], "POSTIZ_RAW_LENGTH")
             retry_two = MODULE.requeue_confirmed_no_effect(
                 results, job["job_id"], revised["text_sha256"],
             )
@@ -311,6 +522,10 @@ class AffiliateProposalTests(unittest.TestCase):
         self.assertIn("X_REPOST_JOB_ID", shell)
         self.assertIn("--record-job-result", shell)
         self.assertIn("--requeue-no-effect", shell)
+        self.assertRegex(
+            shell,
+            r'--job-results "\$AFFILIATE_JOB_RESULTS" \\\n+\s+--revise-raw-limit',
+        )
         self.assertGreater(
             shell.index('run_x_post --cdp "$CDP" --text-file "$AFFILIATE_JOB_TEXT"'),
             shell.index('CDP="$(bash "$ENSURE_BROWSER"'),

@@ -531,6 +531,7 @@ EOF
     if [ "$AFFILIATE_RETRY_COUNT" -ge 1 ]; then
       if ! AFFILIATE_REVISED_PAYLOAD="$("$PY" "$SKILL/scripts/affiliate_proposal.py" \
         --job-claims "$AFFILIATE_JOB_CLAIMS" --job-payload-dir "$AFFILIATE_JOB_PAYLOADS" \
+        --job-results "$AFFILIATE_JOB_RESULTS" \
         --revise-raw-limit 2>>"$EV/affiliate-job.err")"; then
         report "🛑 Postiz raw-length payload revision failed"
         finish 1 "affiliate distribution payload revision failed"
