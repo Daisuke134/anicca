@@ -297,7 +297,10 @@ def test_provider_section_clicks_one_counted_button_then_requires_path() -> None
 
     class _Page:
         def __init__(self):
-            self.states = iter(({"count": 0}, {"ok": True, "x": 10, "y": 20}, {"count": 1}))
+            self.states = iter((
+                {"count": 0}, {"ok": False, "reason": "configured-proxy-field-count"},
+                {"ok": True, "x": 10, "y": 20}, {"count": 1},
+            ))
             self.calls = []
 
         def evaluate(self, expression):
@@ -341,7 +344,10 @@ def test_provider_section_polls_delayed_provider_path() -> None:
 
     class _Page:
         def __init__(self):
-            self.states = iter(({"count": 0}, {"ok": False, "count": 0}, {"count": 1}))
+            self.states = iter((
+                {"count": 0}, {"ok": False, "reason": "configured-proxy-field-count"},
+                {"ok": False, "count": 0}, {"count": 1},
+            ))
 
         def evaluate(self, _expression):
             return next(self.states)
@@ -359,8 +365,8 @@ def test_provider_section_polls_delayed_counted_button_and_path() -> None:
     class _Page:
         def __init__(self):
             self.states = iter((
-                {"count": 0}, {"ok": False, "count": 0},
-                {"count": 0}, {"ok": True, "x": 10, "y": 20},
+                {"count": 0}, {"ok": False, "reason": "configured-proxy-field-count"}, {"ok": False, "count": 0},
+                {"count": 0}, {"ok": False, "reason": "configured-proxy-field-count"}, {"ok": True, "x": 10, "y": 20},
                 {"count": 1},
             ))
             self.calls = []
@@ -374,6 +380,46 @@ def test_provider_section_polls_delayed_counted_button_and_path() -> None:
     page = _Page()
     module._ensure_raw_provider_section(page)
     assert page.calls == ["Input.dispatchMouseEvent", "Input.dispatchMouseEvent"]
+
+
+def test_provider_section_accepts_expanded_configured_proxy_form() -> None:
+    module = load_module()
+
+    class _Page:
+        def evaluate(self, expression):
+            if "urlName" in expression:
+                return {"ok": True}
+            return {"count": 0}
+
+        def call(self, *_args, **_kwargs):
+            pytest.fail("configured proxy form must not click the detected-keys button")
+
+    assert module._ensure_raw_provider_section(_Page()) == "configured_proxy"
+
+
+def test_raw_configure_proxy_form_writes_provider_contract_without_model_field() -> None:
+    module = load_module()
+    focused = []
+    calls = []
+
+    class _Page:
+        def evaluate(self, expression):
+            if "configured-proxy-field-count" in expression:
+                return {"ok": True}
+            focused.append(expression)
+            return {"ok": True}
+
+        def call(self, method, params=None):
+            calls.append((method, params))
+
+    module._raw_configure_proxy_form(_Page(), "test-secret")
+    assert len(focused) == 4
+    assert calls == [
+        ("Input.insertText", {"text": module.OPENROUTER_BASE_URL_PATH}),
+        ("Input.insertText", {"text": module.OPENROUTER_API_KEY_PATH}),
+        ("Input.insertText", {"text": module.BASE_URL}),
+        ("Input.insertText", {"text": "test-secret"}),
+    ]
 
 
 def test_provider_section_missing_times_out_and_ambiguous_path_fails_immediately() -> None:
