@@ -34021,3 +34021,4 @@
 {"ts":1787614269,"wake_id":"00MT7VDPUN7BD59983BD184FF5","kind":"wake_error","sleep_s":60,"model":"auto"}
 {"ts":1787614335,"wake_id":"00MT7VF4MIB3CAFB099F8C4C7C","kind":"wake_error","sleep_s":60,"model":"auto"}
 {"ts":1787614400,"wake_id":"00MT7VGJEQF94C4477AA704156","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1787624441,"wake_id":"00MT81FQZR19050F601BA24107","kind":"narrate","sleep_s":120,"model":"auto"}
