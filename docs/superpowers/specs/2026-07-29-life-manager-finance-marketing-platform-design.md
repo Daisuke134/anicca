@@ -2181,8 +2181,9 @@ order is the §12.3 recovery checklist: `MKT-09R0 → MKT-09R1 → MKT-09R2 →
 MKT-09R3-01..13 → MKT-09R4..R9 → MKT-10 → MKT-11 → MKT-12 → MKT-13`.
 No later row starts early.
 
-Current TODO state: **incident recovery remains open at MKT-09R8-06.** R0 through
-R8-05 are terminal: capacity is safe, the shared publication fence remains closed,
+Current TODO state: **incident recovery remains open at MKT-09R8-07 / Order
+23D.** R0 through R8-06 are terminal: capacity is safe, the shared publication
+fence remains closed,
 the JP4 false completion is quarantined, and the 13-effect set is 12 `present`
 plus one truthful `absent`. The full publication ledger is 43 `completed`,
 one `conflict`, and zero unknown/running/reconciling jobs. This does not prove
@@ -2198,20 +2199,15 @@ An external observation clock is not an active implementation item. It remains
 terminal acceptance evidence. Exactly one executable atomic item remains active;
 when the clock fires, its readback is reconciled before any dependent account arm.
 
-**Active executable atomic item:** MKT-09R8-06 runs exactly one canary for Anicca
-iOS / EN / Instagram `@anicca.en` / Postiz integration
-`cmn8y95rg02d2qx0y09bbk5pb` using approved pack
-`object://sha256/645cedb029b36a2c29412b0d37d2fd756f32c7f45b7c2d2abb7d2bb08f5a524d`.
-Only its exact effect may be temporarily armed. Success requires a direct native
-Instagram Reel whose owner, exact approved caption, English hook, and Widget demo
-visibly match the LM objects; then and only then may the LM natural-language
-Telegram receipt be sent. Replay must create publication 0 and message 0, and
-post/account metric-source status must be explicit without turning unavailable
-into zero. The lane returns default-off at 0 scheduled posts/day and the shared
-fence returns closed before the item is terminal.
+**Active executable atomic item:** MKT-09R8-07 / Order 23D classifies exactly one
+next retained Instagram or TikTok account. It binds product, locale, native
+account, Postiz integration, allowed renderer, format, approved-pack name, and
+healthy target cadence while leaving actual cadence 0/day, every lane unarmed,
+and the shared fence closed. It performs no provider, Telegram, scheduler, or
+legacy-job write. Only after that classification is committed may its one-pack
+import and one-canary rows start.
 
-The external-effect state is currently **one candidate published; native
-verification active**.
+The MKT-09R8-06 external effect is **terminal verified**.
 The dedicated runner and combined publication/ledger/liveness tests are green,
 the live target integration is enabled, the exact caption has 0 target rows in
 the last 24 hours, all 9 lanes remain unarmed, and the fence remains closed.
@@ -2277,8 +2273,28 @@ required before evidence import or Telegram release. That fresh review returned
 SHIP: it independently reproduced the actual 30-frame score distribution and
 the new Instagram-like regression, reran focused 12/12 and combined 76/76, and
 confirmed that wrong solid content, changed tail, and 15-to-13.5-second
-truncation still fail closed. Immutable evidence import is now the next action;
-Telegram remains held until the runner performs its own live refetch.
+truncation still fail closed. The immutable evidence import and runner live
+refetch passed. LM natural-language Telegram `34435` carries the same direct
+URL; same-slot replay created publication 0 and message 0 with the same message
+ID. Native video
+`object://sha256/90f8e8413ffa0ae0e539a7a4f00160031f8f479998ac35c09dc99ebb26dcd390`,
+contact sheet `object://sha256/6ca2d141d79e71d8f5d083d4f61a6b6d7c2625d1626a1ff46d3279e31fde5f2b`,
+evidence `object://sha256/756925fa1f7505f45a6a4821b633477dff3779538f5b24b94f547ddd46bc6e44`,
+and verification
+`object://sha256/d0abae7654a5ebe0f59aa659ad5ece0004305bac69691a49159c63e501184eba`
+all read back at mode `0600`.
+
+Immediate Postiz post analytics measured Views `14`, Reach `0`, Saves `0`,
+Likes `0`, Comments `0`, and Shares `0`. Account analytics is explicitly
+`unavailable/empty_provider_response`; installs, activations, trials, paid,
+and proceeds are explicitly `unavailable/attribution_not_configured`, never
+zero. Corrected metric status
+`object://sha256/ef76f419e368998866e9086fea5ac7ba9f3c4b7cc2e564b43e370dc29ed9c646`
+marks 2h/24h/72h/7d collection registration `pending`; due times alone are not
+claimed as a running loop. Final manifest
+`marketing-lane-manifest:f72c663ebc28c8e4d3bc28d236d4c38b200e1fe2e5074455d9d1f7c222ab9d42`
+records `canary-verified`, default-off, target limit 2/day, actual scheduled
+0/day, armed 0, and 21 holds; the fence is closed.
 
 | ID | Atomic action | Account/lane | Done evidence |
 |---|---|---|---|
@@ -2292,7 +2308,7 @@ Telegram remains held until the runner performs its own live refetch.
 | MKT-06 | Restore Honne JA on-demand publishing and record its account receipt | Honne JA `@honnevideo` | **done —** creative `HJA-011-ed3318c496f4` published at `https://www.tiktok.com/@honnevideo/video/7676425660641889537`, provider row `cmt2siqgp0009nt0yoi1qz7lf`, Telegram `message_id=27515`, replay 0; old `honne-ja-fresh` remains disabled |
 | MKT-07 | Repair and canary the JP4 lane | Anicca JP4 `@anicca.jp4` | **done —** the failed `AJ-CARD-002-7e24db967bf7` effect remains reconciled `absent` and was never retried. A new Life Manager-only `AJ-CARD-003-5639e14832ad` nudge-card effect used the approved card media `5639e148…`, JP4 approval `97f2c5fb…`, and Postiz row `cmt328uot00s2qk0y23e8ptii`. Postiz's numeric release suffix was not trusted: caption/profile readback verified `https://www.tiktok.com/@anicca.jp4/video/7676495865816632583` (HTTP 200). Natural Telegram receipt `message_id=27939` carried that same direct URL; replay created zero publication and zero message effects. The JP4 runner rejects any non-pack media, wrong approval, wrong integration, or terminal job before claim |
 | MKT-08 | Repair and canary the iOS lane | Anicca iOS `@anicca.jp` | **done —** `AJ-CARD-001-35a15c7ce990` remains verified at TikTok `https://www.tiktok.com/@anicca.jp/video/7676422253638176020` (Telegram `27500`) and Instagram `https://www.instagram.com/reel/DcTFx_UjSio/` (Telegram `27510`); current local replay for both jobs returned `created=false`. TikTok account metrics are Followers `257`, Videos `470`, Views `5,252`; TikTok post-level analytics returned an empty array and is recorded unavailable, while Instagram recorded Views/Reach `6` and Saves/Likes/Comments/Shares `0` |
-| MKT-09 | Migrate and recover the remaining Larry/ReelClaw accounts one by one, preserving each measured account/locale contract | remaining Anicca/Honne accounts | **in progress —** R0 through R5 are terminal: all 13 unknown/stale effects are closed as 12 `present` and one `absent`, the JP4 false completion is quarantined, the 30-integration policy is enforced, and `@anicca.encards` is the first newly classified 0/day lane. R6 through R9 remain mandatory before its canary or any cadence arm |
+| MKT-09 | Migrate and recover the remaining Larry/ReelClaw accounts one by one, preserving each measured account/locale contract | remaining Anicca/Honne accounts | **in progress —** R0 through R8-06 are terminal: all 13 unknown/stale effects are closed as 12 `present` and one `absent`; `@anicca.encards`, `@ani.cca1234`, and `@anicca.en` each have isolated direct-native canaries, natural Telegram, replay 0, and explicit metric-source status while remaining default-off at actual 0/day. R8-07 now classifies exactly one next retained account; no cadence arm starts early |
 | MKT-09A | Encode the §8.8.1 target and hold dispositions in the Life Manager lane manifest; no provider write | all measured TikTok/Instagram/YouTube integrations | **done —** owner-directed YouTube skip advanced the validated schema-v2 manifest to `marketing-lane-manifest:55eb386417bd38547ceaad2a80936e51f272bec964387b0751c55a1fa60efda9`: six classified non-YouTube target rows, 22 `hold` rows at `0/day`, exact `@anicca-jp` YouTube row held with `provider_disabled=true`, armed rows `0`, file mode `0600`, provider writes `0`. The prior seven-target manifest remains historical state evidence |
 | MKT-09B1 | Repair and read back the exact selected YouTube integration; no publication | YouTube `@anicca-jp` (`cmn1oukj9012nnq0yqhouc3ib`) only | **skipped by owner instruction; 0/day.** The first exact canary effect remains terminal `absent`: local job `marketing-video-publication:272c9640dbb10b04706d3f4a52335c8a54d92e764485b66a10fcedf137bfba00`, Postiz row `cmt41nl0809imqp0yx5rls3zp`, provider state `ERROR`, error `Refresh channel needed`, no direct URL/release ID/Telegram receipt, and no retry. OAuth diagnosis remains evidence only; no owner login is required while the lane is skipped |
 | MKT-09B2 | Publish and verify one selected Anicca JA YouTube Shorts canary | YouTube `@anicca-jp` (`cmn1oukj9012nnq0yqhouc3ib`) only | **skipped by owner instruction; 0/day.** No replacement effect, success receipt, metrics claim, or scheduler arm |
@@ -2379,8 +2395,8 @@ Their dependent account arm remains blocked until the observation is terminal.
 | 22B | **done — MKT-09R8-03B:** run one canary for only that account | Order 22A passes | exact effect `marketing:carousel:anicca-ios:LARRY-JA-CANARY:…` completed once as Postiz row `cmt91js0200afmp0yll86hhqj` at direct `https://www.instagram.com/p/DceW-whAQT7/`. Public captioned embed binds owner `ani.cca1234` and the exact Japanese caption; its GraphSidecar has six ordered native JPEGs and every slide is pixel-identical to its ordered LM object (RMSE `0`). Visual evidence is `object://sha256/f5ec74bc99f63a2461668648d8dc903e900953e1e67e46ae40a8e8ef74fb3d76`; native verification is `object://sha256/419dac51f71c2fce5cdb9507531ba9523e9df13d49eaef3734849baecf462cff`. Natural Telegram `34328` carries the same URL; replay creates publication `0` and message `0`. Immediate post analytics measures Views/Reach/Saves/Likes/Comments/Shares as 0; account analytics is `unavailable/empty_response`, not zero, in `object://sha256/ccf7caf29a27537a7023c09c0def8c8a49f26fda86ea302f263675a25cf61e40`. The outer tool stream ended after the provider effect but before its wrapper restored temporary controls; the exact Postiz row was read back without retry, then fence and manifest were restored before verification. Final manifest `marketing-lane-manifest:819788f19f24d5dd19926ee48273c9098efd8760dbbef1c39297a475f5a8bf8f` records `canary-verified`, default-off, armed 0; fence is closed and no legacy job was touched | fan out, send a Reel/video, notify before native verification, retry an ambiguous effect, or accept provider state alone |
 | 23A | **done — MKT-09R8-04:** classify exactly one next retained account | Order 22B terminal | Anicca iOS / EN / Instagram `@anicca.en` / Postiz `cmn8y95rg02d2qx0y09bbk5pb` is bound only to renderer `reelclaw-widget`, format `widget-demo-reel`, planned pack `anicca-ios-reelclaw-widget-en.pack.json`, and healthy target 2/day at 09:30 and 19:00 JST. The live Postiz registry names `Daily Anicca Nudges`, provider `instagram-standalone`, disabled=false; native profile `Anicca Videos (@anicca.en)` has 565 posts and an indexed App Store/self-care bio. Direct `https://www.instagram.com/reel/DbInY17DSpI/` binds owner `anicca.en` to the exact English widget caption. Postiz has 392 historical rows for this integration, with recent direct Reel rows dominated by Widget EN; Card EN remains isolated on `@anicca.encards`, so old card/widget mixing is not adopted. `@aniccaen2` remains held because native availability is unproved and recent Postiz rows are 0; unavailable `@anicca.affirmation` remains held; live `@anicca.bochi` remains held because its 233-row history mixes the AI memorial/tomb product with mental-health content. Manifest `marketing-lane-manifest:d81822e8997a6b76e9085a44260f6ca2d4a50dbcfb10d76b538b090285d8e938` validates with 30 total, 9 targets/21 holds, armed 0, mode `0600`; actual schedule is 0/day, fence closed, and provider/Telegram/scheduler/legacy writes are 0 | classify several accounts, infer ownership from a handle, mix Card EN into this lane, or promote a dead/mixed account |
 | 23B | **done — MKT-09R8-05:** import one approved pack for only that account | Order 23A passes | approved pack `object://sha256/645cedb029b36a2c29412b0d37d2fd756f32c7f45b7c2d2abb7d2bb08f5a524d` binds Anicca iOS / EN / Instagram `@anicca.en` / integration `cmn8y95rg02d2qx0y09bbk5pb` / `reelclaw-widget` / `widget-demo-reel` to exactly one ordered video `object://sha256/98f4ce8c607ab9122a3252ebed05b293d09698ef77400203644bef61f31a6bad` and caption `object://sha256/a9d94b852845f692aa9f63534d66386a29764f71601158ce2de65020b583787c`. All refs read back at mode `0600`; caption bytes equal the pack exactly. The 15.0-second 1080x1920 H.264/AAC object has the English hook `Since you are always on your phone / Put affirmations on your lockscreen`, a shock reaction, and only the Anicca lock-screen Widget installation demo. Direct visual inspection of all 30 half-second frames found no CTA/demo overlay, foreign language, Card content, blank, or clipping; evidence is `object://sha256/7b179dd350d06b7179bdf8527ff881ba414909d8e6f1a3779f40330ef4c9012e`. A same-hook render with baked `try Anicca — link in bio` CTA and a 40.47-second in-app Nudge/Card render were rejected. Manifest `marketing-lane-manifest:11ace472e123b4f025bce13d10a61b89f1d851863dd907107daadade5d3058be` records `pack-ready`, 9 targets/21 holds, armed 0; fence is closed. OpenClaw supplied read-only migration bytes only; the final pack contains LM object refs and no OpenClaw path/env/assets dependency. Provider/history/Telegram/scheduler/legacy-job writes are 0 | import several packs, accept a CTA/wrong-form render, or retain a runtime OpenClaw dependency |
-| 23C | **active / evidence-import ready — MKT-09R8-06:** run one canary for only that account | exact owner/caption/CDN bytes and the full 30-frame visual sequence match; native SHA is `90f8e841…dcd390`; fresh adversary reproduced actual/new-regression score distributions, returned SHIP, and reran focused 12/12 plus combined 76/76 while wrong solid/changed-tail/13.5s truncation remain rejected; Telegram remains held, armed 0, fence closed | import immutable native video/contact-sheet/evidence/verification → runner live re-verification → natural Telegram → replay 0 → explicit metric-source status | waive immutable evidence, retry publication, or weaken duration/timeline gates |
-| 23D | **MKT-09R8:** repeat Orders 23A–23C one account at a time | prior account terminal | all retained Instagram/TikTok accounts and both non-skipped YouTube accounts have isolated terminal evidence | enable all accounts together |
+| 23C | **done — MKT-09R8-06:** run one canary for only that account | Order 23B passes | exact one Postiz row `cmt95nd89023fp20yna8g8olx` is verified at `https://www.instagram.com/reel/DcekGtmjmOf/`: CaptionUsername is `anicca.en`, caption bytes match, CDN native video `90f8e841…dcd390` and all 30 frames show the approved woman/hook/complete Widget install. Fresh adversary returned SHIP on the bounded Instagram transcode gate; focused 12/12 and combined 76/76 pass while wrong-tail and 13.5s truncation fail. Evidence is `756925fa…bc6e44`, verification is `d0abae76…184eba`, natural Telegram is `34435`, and replay is publication 0/message 0. Immediate Views 14 and Reach/Saves/Likes/Comments/Shares 0 are measured; account and product funnel sources remain explicitly unavailable in corrected status `ef76f419…d9c646`, whose future-window registration remains pending. Manifest `f72c663e…ab9d42` is canary-verified/default-off/actual 0/day/armed 0; fence closed; no legacy job touched | accept provider state alone, notify before native verification, retry, or claim pending metric windows are registered |
+| 23D | **active — MKT-09R8-07:** classify exactly one next retained account, then repeat Orders 23B–23C only for that account | Order 23C terminal | one product/locale/native account/Postiz integration/renderer/format/pack/cadence contract is committed at actual 0/day with provider/Telegram/scheduler/legacy writes 0 | enable all accounts together or import/post before classification |
 | 24 | **MKT-09R9:** provision dedicated Honne Instagram and YouTube integrations one platform/account at a time | existing Postiz inventory has no Honne route for that platform | ownership and Honne product/locale are verified; canary passes Order 22 | relabel an Anicca account as Honne |
 | 25 | **MKT-10:** arm only one healthy verified account, ramping from one canary/day to at most three posts/day | exact account has direct-native, Telegram, replay, and usable metric-source evidence | expected/published/missed/duplicate counts remain healthy at each ramp; platform policy permits cadence | jump directly to three/day everywhere |
 | 26 | **MKT-11:** collect 2h/24h/72h/7d social metrics and join ASC, RevenueCat, and product analytics | exact published effect has immutable creative/campaign lineage | views, likes, comments, shares, saves, watch/retention fields when supported, installs, activation, trials, paid, proceeds, and attribution coverage are source-labelled; unavailable stays unavailable | substitute account aggregates for post outcomes or infer installs from timing |
