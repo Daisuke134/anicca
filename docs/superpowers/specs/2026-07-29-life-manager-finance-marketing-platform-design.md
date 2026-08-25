@@ -394,6 +394,18 @@ frame. Reconciliation appended one job and one receipt event, replay appended
 `0/0`, and the same Postiz window remained four rows. No Telegram or provider
 write and no legacy job operation ran.
 
+MKT-09R3-02 reconciles Honne EN effect `0b1f8c3f…9784` as `present` without a
+new effect. Exact lineage is slot `2026-08-23T02:00:00.000Z`, creative
+`HEN-007-154a1508e0a8`, video `154a1508…d36e`, and caption `the dev who built
+this deserves a medal`. Postiz row `cmt55ufo008dlqk0yunxhqmlb` matched exact
+integration/caption/time but its internal suffix `7677041102414923784` failed
+official oEmbed with HTTP 400. Profile readback exposed direct candidate
+`7677041244052131080`; official oEmbed returned `@honne_reveal` and the exact
+caption, and its fresh thumbnail visually matched the exact video frame and
+hook `my friends are actually evil`. Reconciliation events were `1/1`, replay
+`0/0`, and the Postiz window remained two rows. No Telegram/provider write or
+legacy job operation ran.
+
 The public GitHub `main` tree contains the current Life Manager marketing
 source, but not the live LM `.env`, ledgers, or object-store MP4s. This audit
 does not prove that the full Git history is secret-free. The official Postiz
@@ -2019,8 +2031,8 @@ An external observation clock is not an active implementation item. It remains
 terminal acceptance evidence. Exactly one executable atomic item remains active;
 when the clock fires, its readback is reconciled before any dependent account arm.
 
-**Active executable atomic item:** MKT-09R3-02 reconciles existing unknown
-effect `0b1f8c3fcfadb59ce46813e4081d461664ed66c038ea6a90fe54b63973299784`.
+**Active executable atomic item:** MKT-09R3-03 reconciles existing unknown
+effect `3d52f25e190e211350511aa472c29b2a5ab8117a5efa9e482602c0d1e0c00fb9`.
 It may become present only with one caption/account-bound direct native URL and
 unique non-conflicting provider/media lineage; otherwise it becomes terminal
 `absent` or `conflict`. No retry or new provider effect is permitted.
@@ -2102,8 +2114,8 @@ Their dependent account arm remains blocked until the observation is terminal.
 | 1 | **done — MKT-09R1:** add one LM-owned publication effect fence shared by every mobile cycle | Order 0 passes and before the next scheduled mobile slot | shared ledger enqueue/claim gate; mode-0600 closed state; real HEN-015 cycle and replay leave publication `42`, Telegram `140`, Postiz `16`; generation `53→54→54`; durable refusal; RED 2, GREEN 2/2, ledger 20/20, cycle/canary 26/26 | stop/restart/unload/delete a job or rely on the non-enforced manifest |
 | 2 | **done — MKT-09R2:** repair JP4 caption-only false-positive reconciliation with TDD | Order 1 passes | exact media-lineage ownership across Postiz preflight, distribution reuse, and metrics; first native URL/oEmbed/thumbnail visually matches first object; second publication and Telegram `30370` terminal `conflict` with superseded receipts retained; first publication and Telegram `29982` unchanged; correction events `2/2`; replay `0/0`; metric rows for URL `1`; Python 50/50 and Node 44/44 | mutate the native post, reuse the first URL for the second video, or erase historical evidence |
 | 3 | **done — MKT-09R3-01:** reconcile `b9b214111c86b0b861ce1737dedaba3a55de3ef16e1868d3e00ed9b001cd917c` | Order 2 passes | Honne JA `HJA-013` is terminal `present` at direct `https://www.tiktok.com/@honnevideo/video/7677002249733786896`; exact caption/account oEmbed; fresh thumbnail matches video object; Postiz internal suffix rejected; correction events `1/1`; replay `0/0`; provider window unchanged at 4 | treat profile URL, numeric suffix, HTTP 200, or `PUBLISHED` alone as present |
-| 4 | **active — MKT-09R3-02:** reconcile `0b1f8c3fcfadb59ce46813e4081d461664ed66c038ea6a90fe54b63973299784` | Order 3 terminal | same exact-effect evidence contract | retry or replace |
-| 5 | **MKT-09R3-03:** reconcile `3d52f25e190e211350511aa472c29b2a5ab8117a5efa9e482602c0d1e0c00fb9` | Order 4 terminal | same exact-effect evidence contract | retry or replace |
+| 4 | **done — MKT-09R3-02:** reconcile `0b1f8c3fcfadb59ce46813e4081d461664ed66c038ea6a90fe54b63973299784` | Order 3 terminal | Honne EN `HEN-007` is terminal `present` at direct `https://www.tiktok.com/@honne_reveal/video/7677041244052131080`; exact caption/account oEmbed; fresh thumbnail matches video object; internal suffix rejected; correction `1/1`; replay `0/0`; provider window unchanged at 2 | retry or replace |
+| 5 | **active — MKT-09R3-03:** reconcile `3d52f25e190e211350511aa472c29b2a5ab8117a5efa9e482602c0d1e0c00fb9` | Order 4 terminal | same exact-effect evidence contract | retry or replace |
 | 6 | **MKT-09R3-04:** reconcile `50d36c4ecdee8b99141d867c3c3dc5feac06da6302a287c9c08528884870fae0` | Order 5 terminal | same exact-effect evidence contract | retry or replace |
 | 7 | **MKT-09R3-05:** reconcile `e97d54e5415eb593dc7ec613ae4da3205eb6e86daecba37f3367e2b1cc2663d8` | Order 6 terminal | same exact-effect evidence contract | retry or replace |
 | 8 | **MKT-09R3-06:** reconcile `9cf83b4855c8d9f97d300ed584b74d92e05cb4e1715743cb9fe43e042c988389` | Order 7 terminal | same exact-effect evidence contract | retry or replace |
