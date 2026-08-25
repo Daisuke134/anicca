@@ -2214,7 +2214,8 @@ replay 0, and explicit metric-source status. Profile URLs, numeric releases,
 Postiz `PUBLISHED`, or HTTP 200 alone never pass. No scheduler, fan-out, retry,
 second account, or legacy-job action is allowed.
 
-The MKT-09R8-09 **runner gate is green; the external effect has not started**.
+The MKT-09R8-09 **runner and native-evidence gates are green; its sole external
+effect is complete and no second effect is allowed**.
 Copying the 500-line EN runner was rejected. The existing Widget canary is now
 shared through immutable EN and JA lane definitions, while the new
 `anicca-ja-widget-canary.js` is only a thin exact-lane CLI wrapper. The JA
@@ -2282,10 +2283,17 @@ correctly held at 0. The public captioned embed binds owner
 is 17.831 seconds H.264/AAC; the full-video comparator passes and parent visual
 inspection of both 36-frame contact sheets confirms the exact Japanese hook,
 woman, and complete Anicca lock-screen Widget installation. Native contact
-sheet is `object://sha256/24e62343ba84f6b645a9351fe8cc89028e254bdcbdb7ac16a6cf7755d9ac023a`;
-evidence is `object://sha256/a615234df0428269b3d4f4c6f499fedf862959cdc503a5e19d979119c9473eb0`;
-verification is `object://sha256/e1dae40fb8fe775aa38d69ed700e0e782cca88321e6c35016ad56da0e8fa34d2`;
-all are SHA-exact/mode `0600`. The remaining runtime gate is to make the
+sheet is `object://sha256/24e62343ba84f6b645a9351fe8cc89028e254bdcbdb7ac16a6cf7755d9ac023a`.
+The first immutable evidence/verification pair `a615234d…473eb0` /
+`e1dae40f…fa34d2` remains retained but is superseded because its embedded
+caption omitted the approved caption object's final LF. A fresh live readback
+again proves exact owner/caption/direct URL and fetches the same native SHA.
+Corrected evidence
+`object://sha256/65401d93fbd845bdbcd957673c2f2daa6e42b1d0df2184d03bc1a5392213c1f9`
+is byte-identical to caption object `b57c4f89…e1c6d`, including its final LF;
+corrected verification is
+`object://sha256/1980f2309b600d948262f1f3aed8544ee6ec7ea2ee2b19a160d5ed2d4f8a318f`.
+Both are SHA-exact/mode `0600`. The remaining runtime gate is to make the
 runner's live embed/media re-fetch tolerate the same DNS outage and Instagram's
 double-escaped `video_url` without weakening host/TLS/content checks. No second
 publication is allowed; the existing receipt is the only input to this TDD fix.
@@ -2296,8 +2304,8 @@ records, disables ambient proxies, and invokes bounded/no-redirect HTTPS curl
 with `--resolve` so Host/TLS SNI remain native. Focused runner tests pass 25/25
 and combined tests pass 89/89. A real fallback read gets embed/media HTTP 200 and
 the fetched native SHA is exactly `4d450f…02154`. The next allowed action is
-same-slot replay with verification `e1dae40f…fa34d2`; it may create only the one
-natural Telegram receipt and must create no provider effect.
+same-slot replay with corrected verification `1980f230…8a318f`; it may create
+only the one natural Telegram receipt and must create no provider effect.
 
 The MKT-09R8-06 external effect is **terminal verified**.
 The dedicated runner and combined publication/ledger/liveness tests are green,
@@ -2532,7 +2540,7 @@ Their dependent account arm remains blocked until the observation is terminal.
 | 23C | **done — MKT-09R8-06:** run one canary for only that account | Order 23B passes | exact one Postiz row `cmt95nd89023fp20yna8g8olx` is verified at `https://www.instagram.com/reel/DcekGtmjmOf/`: CaptionUsername is `anicca.en`, caption bytes match, CDN native video `90f8e841…dcd390` and all 30 frames show the approved woman/hook/complete Widget install. Fresh adversary returned SHIP on the bounded Instagram transcode gate; focused 12/12 and combined 76/76 pass while wrong-tail and 13.5s truncation fail. Evidence is `756925fa…bc6e44`, verification is `d0abae76…184eba`, natural Telegram is `34435`, and replay is publication 0/message 0. Immediate Views 14 and Reach/Saves/Likes/Comments/Shares 0 are measured; account and product funnel sources remain explicitly unavailable in corrected status `ef76f419…d9c646`, whose future-window registration remains pending. Manifest `f72c663e…ab9d42` is canary-verified/default-off/actual 0/day/armed 0; fence closed; no legacy job touched | accept provider state alone, notify before native verification, retry, or claim pending metric windows are registered |
 | 23D | **done — MKT-09R8-07:** classify exactly one next retained account | Order 23C terminal | Anicca iOS / JA / Instagram `@anicca.jp.videos` / Postiz `cmmzzg2es0539p30ycb94ayx0` is bound only to `reelclaw-widget`, `widget-demo-reel`, planned pack `anicca-ios-reelclaw-widget-ja.pack.json`, and healthy target 2/day at 08:05/18:20 JST. Full native visual inspection proves the Widget install flow and separately proves that the account's affirmation/Card history must be excluded. Manifest `20e4570f…7997a` validates with 10 targets/20 holds, actual 0/day, armed 0, mode `0600`, fence closed; provider/Telegram/scheduler/legacy writes 0 | infer content from a handle, adopt the mixed Card history, or reuse the obsolete legacy integration ID |
 | 23E | **done — MKT-09R8-08:** import or build exactly one approved Widget JA pack for that account | Order 23D passes | Pack `16d4452d…f7696` binds exactly one 17.717-second H.264/AAC video `0c67b0a4…cd188`, caption `b57c4f89…e1c6d`, and full-frame evidence `f1c5b5c2…3a8b7`. Full-timeline native comparison has SSIM min `0.977367`/mean `0.991391`; direct visual inspection rejects Card `v1`, different-hook `v2`, and incomplete `v3`. All objects are SHA-exact/mode `0600`; pack has no OpenClaw runtime dependency. Manifest `d3ee329a…906b9` is pack-ready, actual 0/day, armed 0, fence closed; provider/Telegram/scheduler/legacy writes 0 | import several packs, accept Card/incomplete content, decouple caption from the baked hook, or retain an OpenClaw runtime dependency |
-| 23F | **active — MKT-09R8-09:** run one canary for only that account | Order 23E passes | the sole effect completed as Postiz `cmt98nnld02pdp20ypm3ohqna` at direct Reel `DcetvubDA4Z`; controls restored, armed 0, Telegram held 0. Public embed owner/caption match exactly; native `4d450f92…02154` passes full-video comparison and parent 36-frame visual inspection against source; evidence `a615234d…473eb0` and verification `e1dae40f…fa34d2` are SHA-exact/mode `0600`. Exact-host/TLS DNS fallback and escaped URL TDD pass runner 25/25 and combined 89/89; live fallback gets embed/media 200 with exact SHA; fresh review returned `SHIP`. Next: same-slot existing-receipt replay may create only one natural Telegram. Terminal evidence still requires replay 0 and explicit metric-source status | fan out, accept Postiz state alone, retry an ambiguous effect, or call unavailable zero/success |
+| 23F | **active — MKT-09R8-09:** run one canary for only that account | Order 23E passes | the sole effect completed as Postiz `cmt98nnld02pdp20ypm3ohqna` at direct Reel `DcetvubDA4Z`; controls restored, armed 0, Telegram held 0. Public embed owner/caption match exactly; native `4d450f92…02154` passes full-video comparison and parent 36-frame visual inspection against source. The retained first evidence pair omitted only the approved caption's final LF and is superseded without deletion. Fresh readback again proves exact owner/caption/native SHA; corrected evidence `65401d93…13c1f9` and verification `1980f230…8a318f` are caption-byte exact and mode `0600`. Exact-host/TLS DNS fallback and escaped URL TDD pass runner 25/25 and combined 89/89; fresh review returned `SHIP`. Next: same-slot existing-receipt replay with corrected verification may create only one natural Telegram. Terminal evidence still requires replay 0 and explicit metric-source status | fan out, accept Postiz state alone, retry an ambiguous effect, or call unavailable zero/success |
 | 23G | **MKT-09R8:** repeat Orders 23D–23F for the next single retained account | prior account terminal | each retained account has an isolated product/locale/renderer/pack/effect/metric lineage | classify or enable several accounts together |
 | 24 | **MKT-09R9:** provision dedicated Honne Instagram and YouTube integrations one platform/account at a time | existing Postiz inventory has no Honne route for that platform | ownership and Honne product/locale are verified; canary passes Order 22 | relabel an Anicca account as Honne |
 | 25 | **MKT-10:** arm only one healthy verified account, ramping from one canary/day to at most three posts/day | exact account has direct-native, Telegram, replay, and usable metric-source evidence | expected/published/missed/duplicate counts remain healthy at each ramp; platform policy permits cadence | jump directly to three/day everywhere |
