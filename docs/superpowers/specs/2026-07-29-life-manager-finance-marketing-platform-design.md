@@ -499,6 +499,21 @@ frame and hook `my friends are actually evil`. Reconciliation events were
 `1/1`, replay `0/0`, and the Postiz window remained three rows. No
 Telegram/provider write or legacy job operation ran.
 
+MKT-09R3-10 closes stale-running Anicca JA effect `8d6553d3…501da` as
+`present` without reclaiming or submitting it. Exact lineage is slot
+`2026-08-24T23:00:00.000Z`, creative `AJ-CARD-001-7e24db967bf7`, video
+`7e24db96…9ae9`, and caption `強い人の口癖、5つだけ`. Postiz row
+`cmt7u9up1091mp20yh5fc4zyq` was the only exact integration/caption/time row
+but exposed only the `@anicca.jp` profile and internal suffix
+`7677736820393920513`; official oEmbed rejected that suffix with HTTP 400.
+Profile readback exposed direct candidate `7677736873061551377` at 23:00:17
+UTC; official oEmbed returned exact account/caption, and its fresh thumbnail
+visually matched the exact object and hook `やらなきゃいけないのに動けない自分が嫌になる`.
+Only after readback, the expired external-effect claim returned `null` and
+moved `running→reconciling` with lease owner/expiry cleared; resolution then
+completed `present`. Job events were `2`, receipt events `1`, replay
+`0/0`, and no provider execution or legacy job operation ran.
+
 The public GitHub `main` tree contains the current Life Manager marketing
 source, but not the live LM `.env`, ledgers, or object-store MP4s. This audit
 does not prove that the full Git history is secret-free. The official Postiz
@@ -2124,8 +2139,8 @@ An external observation clock is not an active implementation item. It remains
 terminal acceptance evidence. Exactly one executable atomic item remains active;
 when the clock fires, its readback is reconciled before any dependent account arm.
 
-**Active executable atomic item:** MKT-09R3-10 reconciles stale-running effect
-`8d6553d3e292f2a080875d0152daa1ea43709ef1983e79f993606939a4d501da`.
+**Active executable atomic item:** MKT-09R3-11 reconciles existing unknown
+effect `404ff87aa9cc660e8656436275dd6cfe303d3053f74817fae58c595d57041741`.
 It may become present only with one caption/account-bound direct native URL and
 unique non-conflicting provider/media lineage; otherwise it becomes terminal
 `absent` or `conflict`. No retry or new provider effect is permitted.
@@ -2215,8 +2230,8 @@ Their dependent account arm remains blocked until the observation is terminal.
 | 9 | **done — MKT-09R3-07:** reconcile `05024c43b9774d985bd9ea1c14dab9dc5a118057f29de84f689db3898b0b93a6` | Order 8 terminal | Honne EN `HEN-011` is terminal `present` at direct `https://www.tiktok.com/@honne_reveal/video/7677558878862675201`; exact caption/account/time oEmbed; fresh thumbnail matches video object; internal suffix rejected; correction `1/1`; replay `0/0`; provider window remains four rows | retry or replace |
 | 10 | **done — MKT-09R3-08:** reconcile `78685a6f6e3f5c1b88db6f2cf7a0a3f7e2d9b59a1068117fe61a5c0cc16f9f5a` | Order 9 terminal | Honne JA `HJA-018` is terminal `present` at direct `https://www.tiktok.com/@honnevideo/video/7677574370595753232`; exact caption/account/time oEmbed; fresh thumbnail matches video object; internal suffix rejected; correction `1/1`; replay `0/0`; provider window remains two rows | retry or replace |
 | 11 | **done — MKT-09R3-09:** reconcile `1eacd207e3c651c367badb07a65bcdbc8233896e685db1dd6b179aaa60a4586e` | Order 10 terminal | Honne EN `HEN-012` is terminal `present` at direct `https://www.tiktok.com/@honne_reveal/video/7677724501978713365`; exact caption/account/time oEmbed; fresh thumbnail matches video object; internal suffix rejected; correction `1/1`; replay `0/0`; provider window remains three rows | retry or replace |
-| 12 | **active — MKT-09R3-10:** reconcile stale-running `8d6553d3e292f2a080875d0152daa1ea43709ef1983e79f993606939a4d501da` | Order 11 terminal | lease is durably closed and exact effect is `present`, `absent`, or `conflict`; replay `0` | reclaim and submit before readback |
-| 13 | **MKT-09R3-11:** reconcile `404ff87aa9cc660e8656436275dd6cfe303d3053f74817fae58c595d57041741` | Order 12 terminal | same exact-effect evidence contract | retry or replace |
+| 12 | **done — MKT-09R3-10:** reconcile stale-running `8d6553d3e292f2a080875d0152daa1ea43709ef1983e79f993606939a4d501da` | Order 11 terminal | Anicca JA `AJ-CARD-001` is terminal `present` at direct `https://www.tiktok.com/@anicca.jp/video/7677736873061551377`; exact caption/account/time oEmbed and visual match; stale claim returned null and lease cleared before resolution; internal suffix rejected; job/receipt events `2/1`; replay `0/0` | reclaim and submit before readback |
+| 13 | **active — MKT-09R3-11:** reconcile `404ff87aa9cc660e8656436275dd6cfe303d3053f74817fae58c595d57041741` | Order 12 terminal | same exact-effect evidence contract | retry or replace |
 | 14 | **MKT-09R3-12:** reconcile `72454c23e24342175fa4d45274a6631c91b1a91530e5dedcc47ba6223e269d45` | Order 13 terminal | same exact-effect evidence contract | retry or replace |
 | 15 | **MKT-09R3-13:** reconcile `f9aa4089d72fb3b77542cd967ed9f1c5d8c4f710de79d6a268cad7b0448b5c81` | Order 14 terminal | all 13 nonterminal effects are terminal; provider and local counts reconcile; no new effect | collapse multiple effects into one direct URL |
 | 16 | **MKT-09R4:** make the 30-integration registry and enforced lane policy agree | Order 15 passes | all 17 TikTok, 8 Instagram, 3 YouTube, and 2 X rows have explicit owner/disposition; every mobile cycle reads the same policy; the one YouTube skip is `@anicca-jp`; clone and code-audit the official Postiz CLI at a fixed commit for reusable readback/auth shapes; inspect legacy OpenClaw cron code and stored schedule read-only to map every Larry/ReelClaw lane without changing job state; provider writes `0` | mass-disable or mass-enable Postiz accounts, trust a CLI README without reading its entrypoints, or enable/kickstart/stop/restart/delete legacy jobs |
