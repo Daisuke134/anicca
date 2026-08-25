@@ -1572,7 +1572,7 @@ Manager must never read the OpenClaw map, credentials, or assets at runtime.
 | Honne JA | `@honnevideo` (`cmnit95mg015rrm0ye5vm8dhl`) | **unassigned** — no live Honne Instagram profile in the 2026-08-21 registry | **not used** | TikTok only until an explicit live Instagram assignment exists |
 | Anicca JP4 | `@anicca.jp4` (`cmn8x8hdv028uqx0y4gdfse5t`) | not frozen | no dedicated target recorded | one lane at a time |
 | Anicca iOS / main JA | `@anicca.jp` (`cmp9sdev5012voh0y58qs45xc`) | `@anicca.jp1` (`cmn8ycvtn02djqx0ytuisn9mw`) | `@anicca-jp` (`cmn1oukj9012nnq0yqhouc3ib`) skipped by owner instruction, LM lane disabled | TikTok/Instagram only; YouTube remains 0/day |
-| Anicca EN / main | not in the incident canary | `@anicca.en` (`cmn8y95rg02d2qx0y09bbk5pb`) | live candidate `@anicca-ai` (`cmq3u37gi005iqp0y90a2w92n`), LM lane disabled | separate product pack; default-off |
+| Anicca EN / main | not in the incident canary | `@anicca.encards` (`cmpc3gx4001nklg0y27a8o66q`) | live candidate `@anicca-ai` (`cmq3u37gi005iqp0y90a2w92n`), LM lane disabled | EN Card Instagram is classified at 0/day; separate pack remains to import |
 | Affirmation pack | not an Anicca iOS lane | not an Anicca iOS lane | historical candidate `@anicca-affirmation-video` (`cmn8ymq6c02oio70y5ea1trv8`) | do not mix rewards |
 
 #### 8.8.1 Target account, creative, and cadence contract
@@ -1592,6 +1592,7 @@ not a command to fan every creative out to every connected Postiz integration.
 | Anicca iOS JA main | Instagram `@anicca.jp1` | `cmn8ycvtn02djqx0ytuisn9mw` | one selected Anicca JA nudge-card MP4 as a Reel; the same creative lineage may be reused across platforms but has its own publication effect | 1/day | verified canary; scheduled 0/day; default-off |
 | Anicca iOS JA expansion | TikTok `@anicca.jp4` | `cmn8x8hdv028uqx0y4gdfse5t` | Anicca JA `reelclaw-card` / `nudge-card` slideshow-style MP4 from the approved card pack | 3/day | verified repeatable 24h metric source; production-armed at max 3/day |
 | Anicca iOS JA expansion | TikTok `@anicca.he` | `cmq2aoena08bhqp0yx1epjcik` | Anicca JA `reelclaw-card` / `nudge-card` slideshow-style MP4 from the approved card pack | 3/day | recovered effect plus verified repeatable 24h metric source; production-armed at max 3/day |
+| Anicca iOS EN Card | Instagram `@anicca.encards` | `cmpc3gx4001nklg0y27a8o66q` | English `reelclaw-card` / `nudge-card` 9:16 MP4 Reel; planned LM pack `anicca-ios-reelclaw-card-en.pack.json`; never JA or Larry copy | 2/day at 12:45 and 21:30 JST | native profile and exact pre-quarantine commands verified; classified at 0/day, default-off, awaiting pack |
 | Anicca iOS JA main | YouTube Shorts `@anicca-jp` | `cmn1oukj9012nnq0yqhouc3ib` | one selected Anicca JA nudge-card MP4 per day, with a Shorts title/description and the same immutable creative/campaign lineage | 0/day | **skipped by owner instruction** after the exact canary effect ended absent and channel ownership could not be refreshed; LM-disabled |
 
 Honne has no assigned Instagram account and no YouTube route. Do not create a
@@ -1610,7 +1611,7 @@ includes:
   `@monk_anicca` (provider-disabled), `@anicca.daily`, `@anicca_slideshow`,
   `@aniccajp`, `@anicca.jp8` (measured dead), `@aniccajp2`, `@anicca.jpx`
   (measured dead), `@obou_anicca`, `@anicca_buddha`, and `@anicca.comedy`.
-- Instagram: `@anicca.jp.videos`, `@anicca.encards`, `@anicca.en`,
+- Instagram: `@anicca.jp.videos`, `@anicca.en`,
   `@anicca.affirmation`, `@obou.anicca`, `@anicca.bochi`, and `@ani.cca1234`.
 - YouTube: `@anicca-ai` and `@anicca-affirmation-video`.
 
@@ -2178,8 +2179,8 @@ order is the §12.3 recovery checklist: `MKT-09R0 → MKT-09R1 → MKT-09R2 →
 MKT-09R3-01..13 → MKT-09R4..R9 → MKT-10 → MKT-11 → MKT-12 → MKT-13`.
 No later row starts early.
 
-Current TODO state: **incident recovery remains open at MKT-09R5.** R0 through
-R4 are terminal: capacity is safe, the shared publication fence remains closed,
+Current TODO state: **incident recovery remains open at MKT-09R6.** R0 through
+R5 are terminal: capacity is safe, the shared publication fence remains closed,
 the JP4 false completion is quarantined, and the 13-effect set is 12 `present`
 plus one truthful `absent`. The full publication ledger is 41 `completed`,
 one `conflict`, and zero unknown/running/reconciling jobs. This does not prove
@@ -2195,10 +2196,9 @@ An external observation clock is not an active implementation item. It remains
 terminal acceptance evidence. Exactly one executable atomic item remains active;
 when the clock fires, its readback is reconciled before any dependent account arm.
 
-**Active executable atomic item:** MKT-09R5 classifies exactly one remaining
-non-skipped mobile account. It records product, locale, native account,
-integration, renderer, asset pack, and target cadence while leaving the account
-at `0/day`; it does not render, publish, or alter provider/legacy job state.
+**Active executable atomic item:** MKT-09R6 imports or builds only the classified
+Anicca iOS EN Card pack for Instagram `@anicca.encards` in Life Manager object
+storage. It does not publish, arm a lane, or read OpenClaw assets at runtime.
 
 | ID | Atomic action | Account/lane | Done evidence |
 |---|---|---|---|
@@ -2212,7 +2212,7 @@ at `0/day`; it does not render, publish, or alter provider/legacy job state.
 | MKT-06 | Restore Honne JA on-demand publishing and record its account receipt | Honne JA `@honnevideo` | **done —** creative `HJA-011-ed3318c496f4` published at `https://www.tiktok.com/@honnevideo/video/7676425660641889537`, provider row `cmt2siqgp0009nt0yoi1qz7lf`, Telegram `message_id=27515`, replay 0; old `honne-ja-fresh` remains disabled |
 | MKT-07 | Repair and canary the JP4 lane | Anicca JP4 `@anicca.jp4` | **done —** the failed `AJ-CARD-002-7e24db967bf7` effect remains reconciled `absent` and was never retried. A new Life Manager-only `AJ-CARD-003-5639e14832ad` nudge-card effect used the approved card media `5639e148…`, JP4 approval `97f2c5fb…`, and Postiz row `cmt328uot00s2qk0y23e8ptii`. Postiz's numeric release suffix was not trusted: caption/profile readback verified `https://www.tiktok.com/@anicca.jp4/video/7676495865816632583` (HTTP 200). Natural Telegram receipt `message_id=27939` carried that same direct URL; replay created zero publication and zero message effects. The JP4 runner rejects any non-pack media, wrong approval, wrong integration, or terminal job before claim |
 | MKT-08 | Repair and canary the iOS lane | Anicca iOS `@anicca.jp` | **done —** `AJ-CARD-001-35a15c7ce990` remains verified at TikTok `https://www.tiktok.com/@anicca.jp/video/7676422253638176020` (Telegram `27500`) and Instagram `https://www.instagram.com/reel/DcTFx_UjSio/` (Telegram `27510`); current local replay for both jobs returned `created=false`. TikTok account metrics are Followers `257`, Videos `470`, Views `5,252`; TikTok post-level analytics returned an empty array and is recorded unavailable, while Instagram recorded Views/Reach `6` and Saves/Likes/Comments/Shares `0` |
-| MKT-09 | Migrate and recover the remaining Larry/ReelClaw accounts one by one, preserving each measured account/locale contract | remaining Anicca/Honne accounts | **in progress —** R0 through R3 are terminal: all 13 unknown/stale effects are closed as 12 `present` and one `absent`, and the JP4 false completion is quarantined. R4 through R9 remain mandatory before classification or any new canary |
+| MKT-09 | Migrate and recover the remaining Larry/ReelClaw accounts one by one, preserving each measured account/locale contract | remaining Anicca/Honne accounts | **in progress —** R0 through R5 are terminal: all 13 unknown/stale effects are closed as 12 `present` and one `absent`, the JP4 false completion is quarantined, the 30-integration policy is enforced, and `@anicca.encards` is the first newly classified 0/day lane. R6 through R9 remain mandatory before its canary or any cadence arm |
 | MKT-09A | Encode the §8.8.1 target and hold dispositions in the Life Manager lane manifest; no provider write | all measured TikTok/Instagram/YouTube integrations | **done —** owner-directed YouTube skip advanced the validated schema-v2 manifest to `marketing-lane-manifest:55eb386417bd38547ceaad2a80936e51f272bec964387b0751c55a1fa60efda9`: six classified non-YouTube target rows, 22 `hold` rows at `0/day`, exact `@anicca-jp` YouTube row held with `provider_disabled=true`, armed rows `0`, file mode `0600`, provider writes `0`. The prior seven-target manifest remains historical state evidence |
 | MKT-09B1 | Repair and read back the exact selected YouTube integration; no publication | YouTube `@anicca-jp` (`cmn1oukj9012nnq0yqhouc3ib`) only | **skipped by owner instruction; 0/day.** The first exact canary effect remains terminal `absent`: local job `marketing-video-publication:272c9640dbb10b04706d3f4a52335c8a54d92e764485b66a10fcedf137bfba00`, Postiz row `cmt41nl0809imqp0yx5rls3zp`, provider state `ERROR`, error `Refresh channel needed`, no direct URL/release ID/Telegram receipt, and no retry. OAuth diagnosis remains evidence only; no owner login is required while the lane is skipped |
 | MKT-09B2 | Publish and verify one selected Anicca JA YouTube Shorts canary | YouTube `@anicca-jp` (`cmn1oukj9012nnq0yqhouc3ib`) only | **skipped by owner instruction; 0/day.** No replacement effect, success receipt, metrics claim, or scheduler arm |
@@ -2290,8 +2290,8 @@ Their dependent account arm remains blocked until the observation is terminal.
 | 14 | **done — MKT-09R3-12:** reconcile `72454c23e24342175fa4d45274a6631c91b1a91530e5dedcc47ba6223e269d45` | Order 13 terminal | Honne EN `HEN-013` is terminal `present` at direct `https://www.tiktok.com/@honne_reveal/video/7677893103830764816`; exact caption/account oEmbed and visual match; internal suffix rejected; logical slot 02:00 and actual publish 09:07 remain distinct; correction `1/1`; replay `0/0` | retry, replace, or erase the seven-hour miss |
 | 15 | **done — MKT-09R3-13:** reconcile `f9aa4089d72fb3b77542cd967ed9f1c5d8c4f710de79d6a268cad7b0448b5c81` | Order 14 terminal | Honne JA `HJA-019` is terminal `present` at direct `https://www.tiktok.com/@honnevideo/video/7677893274102811920`; exact caption/account oEmbed and visual match; logical slot 03:30 and actual publish 09:07 remain distinct; all 13 effects are 12 present/1 absent; publication ledger 41 completed/1 conflict/open 0; replay `0/0` | collapse multiple effects into one direct URL |
 | 16 | **done — MKT-09R4:** make the 30-integration registry and enforced lane policy agree | Order 15 passes | live manifest `marketing-lane-manifest:537ad257ea887097f60b07d0e439f1bfb30b8f8a4703cd960b27b31c8fab3639` validates at mode `0600`: 17 TikTok, 8 Instagram, 3 YouTube, 2 X; all 30 owner=`life-manager`; six classified targets are `default-off`, 24 are 0/day; only YouTube `@anicca-jp` is `skip`; provider-disabled mismatches 0; armed 0. Shared enqueue/claim policy rejects an open-fence effect unless tenant/product/locale/platform/integration and exact armed target all agree; RED 35/38, GREEN 38/38. Official `postiz-agent` source was audited at `77d09c668cb2f7793989a185844d0a0c3d65c951`; legacy cron/source inventory remained read-only; provider writes 0 | mass-disable or mass-enable Postiz accounts, trust a CLI README without reading its entrypoints, or enable/kickstart/stop/restart/delete legacy jobs |
-| 17 | **active — MKT-09R5:** classify exactly one remaining non-skipped mobile account | Order 16 passes | product, locale, native account, integration, allowed renderer, approved asset pack, and target cadence are explicit; starts at `0/day` | infer product from handle or reuse another product's account |
-| 18 | **MKT-09R6:** import or build that account's one approved pack in LM object storage | Order 17 passes | immutable pack/object SHA readback; renderer has no OpenClaw path/env/assets dependency | execute legacy OpenClaw publisher or copy an already migrated pack |
+| 17 | **done — MKT-09R5:** classify exactly one remaining non-skipped mobile account | Order 16 passes | Anicca iOS / EN / Instagram `@anicca.encards` / Postiz `cmpc3gx4001nklg0y27a8o66q` is bound to `reelclaw-card`, `nudge-card-reel`, planned pack `anicca-ios-reelclaw-card-en.pack.json`, and healthy target 2/day at 12:45/21:30 JST. Native profile readback names `Anicca iOS`, exact pre-quarantine commands agree on the integration, and live manifest `marketing-lane-manifest:2e1dc72f045dd672476652c3f1d3d9c39b12bb1245d232e9546b74764c7c0c13` validates with 30 total, 7 targets/23 holds, armed 0, mode `0600`; provider/legacy writes 0 | infer product from handle or reuse another product's account |
+| 18 | **active — MKT-09R6:** import or build that account's one approved pack in LM object storage | Order 17 passes | immutable pack/object SHA readback; renderer has no OpenClaw path/env/assets dependency | execute legacy OpenClaw publisher or copy an already migrated pack |
 | 19 | **MKT-09R7:** run one canary for that exact account | Order 18 passes and fence is opened only for this effect | correct content and account are verified at a caption-matching direct native URL; natural Telegram carries it; publication/message replay `0`; metric source status is explicit | fan out, accept a profile URL, or call unavailable success/zero |
 | 20 | **MKT-09R8:** repeat Orders 17–19 one account at a time | prior account terminal | all retained Instagram/TikTok accounts and both non-skipped YouTube accounts have isolated terminal evidence | enable all accounts together |
 | 21 | **MKT-09R9:** provision dedicated Honne Instagram and YouTube integrations one platform/account at a time | existing Postiz inventory has no Honne route for that platform | ownership and Honne product/locale are verified; canary passes Order 19 | relabel an Anicca account as Honne |
