@@ -339,11 +339,16 @@ keep/revert decision changes the next generation; and the static
 `honne_en_base_20260823` campaign token has been shared by eleven hooks. MKT-12A0
 is therefore invalid as a causal hook cohort and is reopened after recovery.
 
-Host-wide disk exhaustion is a concurrent safety blocker: the Data volume has
-about 266 MiB available at 100% utilization, ordinary writes have returned
-`ENOSPC`, and several publication logs contain both space and ledger failures.
-No new external effect is allowed until a regeneration-only cleanup and fresh
-durable ledger/object write readback pass.
+Host-wide disk exhaustion was a concurrent safety blocker: the Data volume had
+about 266 MiB available at 100% utilization, ordinary writes returned `ENOSPC`,
+and several publication logs contained both space and ledger failures.
+MKT-09R0 removed only regeneration-safe bun/npm/browser/Codex dependency and
+user cache contents, restoring `1,610,212 KiB` available. The content-object and
+local-ledger suite passes 20/20; a fresh isolated write below the LM data root
+returned object bytes equal, first enqueue `created=true`, replay
+`created=false`, and an intact queued job readback. The probe was then deleted.
+No LM evidence/state/object pack or OpenClaw file was removed and no provider
+adapter ran. Re-download is the recovery path for the removed cache contents.
 
 The public GitHub `main` tree contains the current Life Manager marketing
 source, but not the live LM `.env`, ledgers, or object-store MP4s. This audit
@@ -1970,12 +1975,12 @@ An external observation clock is not an active implementation item. It remains
 terminal acceptance evidence. Exactly one executable atomic item remains active;
 when the clock fires, its readback is reconciled before any dependent account arm.
 
-**Active executable atomic item:** MKT-09R0 restores a safe disk margin using
-only regeneration-safe cache and agent-owned temporary files, then proves fresh
-Life Manager ledger and object-store writes plus replay. No marketing evidence,
-receipt, object, state JSONL, OpenClaw asset, plist, or log is removed, and this
-item performs zero provider writes. The publication effect fence is the next
-item and must finish before the first 07:00 JST mobile schedule.
+**Active executable atomic item:** MKT-09R1 adds one shared Life Manager
+publication effect fence before any mobile cycle can enqueue or claim a new
+provider effect. It uses TDD, performs a real no-provider cycle readback, and
+does not unload, stop, restart, kickstart, enable, or delete any current or
+legacy job. Publication jobs, Postiz rows, and Telegram success receipts must
+remain unchanged.
 
 | ID | Atomic action | Account/lane | Done evidence |
 |---|---|---|---|
@@ -2050,8 +2055,8 @@ Their dependent account arm remains blocked until the observation is terminal.
 
 | Order | Atomic action | Start only when | Done evidence | Never do |
 |---:|---|---|---|---|
-| 0 | **active — MKT-09R0:** restore safe writable capacity using only regeneration-safe caches and agent-owned temporary files | always; currently about 266 MiB free and `ENOSPC` observed | capacity floor is documented; fresh atomic object write, ledger append, and replay readback pass; external effects `0` | delete evidence, state JSONL, receipts, object packs, OpenClaw assets, plists, or logs |
-| 1 | **MKT-09R1:** add one LM-owned publication effect fence shared by every mobile cycle | Order 0 passes and before the next scheduled mobile slot | every selected cycle reaches the same fence; a real no-provider cycle records a durable refusal; publication jobs/Postiz rows/Telegram success receipts remain unchanged | stop/restart/unload/delete a job or rely on the non-enforced manifest |
+| 0 | **done — MKT-09R0:** restore safe writable capacity using only regeneration-safe caches and agent-owned temporary files | always | `1,610,212 KiB` available; bun/npm/hyperframes/Codex dependency/user cache contents only; 20/20 object/ledger tests; isolated LM-root probe object bytes equal, first enqueue `true`, replay `false`, readback intact; probe removed; provider effects `0` | delete evidence, state JSONL, receipts, object packs, OpenClaw assets, plists, or logs |
+| 1 | **active — MKT-09R1:** add one LM-owned publication effect fence shared by every mobile cycle | Order 0 passes and before the next scheduled mobile slot | every selected cycle reaches the same fence; a real no-provider cycle records a durable refusal; publication jobs/Postiz rows/Telegram success receipts remain unchanged | stop/restart/unload/delete a job or rely on the non-enforced manifest |
 | 2 | **MKT-09R2:** repair JP4 caption-only false-positive reconciliation with TDD | Order 1 passes | provider reuse requires non-conflicting effect/media lineage; the second JP4 effect is durably superseded or terminal `conflict`, never `completed`; Telegram `30370` is quarantined; replay `0` | mutate the native post, reuse the first URL for the second video, or erase historical evidence |
 | 3 | **MKT-09R3-01:** reconcile `b9b214111c86b0b861ce1737dedaba3a55de3ef16e1868d3e00ed9b001cd917c` | Order 2 passes | one caption/account-bound direct URL with unique non-conflicting provider/media lineage, or terminal `absent/conflict`; no retry/new effect | treat profile URL, numeric suffix, HTTP 200, or `PUBLISHED` alone as present |
 | 4 | **MKT-09R3-02:** reconcile `0b1f8c3fcfadb59ce46813e4081d461664ed66c038ea6a90fe54b63973299784` | Order 3 terminal | same exact-effect evidence contract | retry or replace |
