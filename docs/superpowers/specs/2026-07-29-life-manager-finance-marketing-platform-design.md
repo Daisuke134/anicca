@@ -1592,16 +1592,16 @@ not a command to fan every creative out to every connected Postiz integration.
 | Anicca iOS JA main | Instagram `@anicca.jp1` | `cmn8ycvtn02djqx0ytuisn9mw` | one selected Anicca JA nudge-card MP4 as a Reel; the same creative lineage may be reused across platforms but has its own publication effect | 1/day | verified canary; scheduled 0/day; default-off |
 | Anicca iOS JA expansion | TikTok `@anicca.jp4` | `cmn8x8hdv028uqx0y4gdfse5t` | Anicca JA `reelclaw-card` / `nudge-card` slideshow-style MP4 from the approved card pack | 3/day | verified repeatable 24h metric source; production-armed at max 3/day |
 | Anicca iOS JA expansion | TikTok `@anicca.he` | `cmq2aoena08bhqp0yx1epjcik` | Anicca JA `reelclaw-card` / `nudge-card` slideshow-style MP4 from the approved card pack | 3/day | recovered effect plus verified repeatable 24h metric source; production-armed at max 3/day |
-| Anicca iOS JA Larry | Instagram `@ani.cca1234` | `cmq3sq7mc000eqp0y7azfm8yk` | Larry JA v1 six-image native photo carousel: one fixed Japanese hook plus five Japanese body slides, JPEG for Instagram; not an MP4 Reel | 1/day at 16:30 JST | native profile, live integration, and exact disabled cron command verified; classified at 0/day, default-off, awaiting pack |
+| Anicca iOS JA Larry | Instagram `@ani.cca1234` | `cmq3sq7mc000eqp0y7azfm8yk` | Larry JA v1 six-image native photo carousel: one fixed Japanese hook plus five Japanese body slides, JPEG for Instagram; not an MP4 Reel | 1/day at 16:30 JST | approved six-image pack imported and visually verified; 0/day, default-off, awaiting the dedicated carousel publisher and one canary |
 | Anicca iOS EN Card | Instagram `@anicca.encards` | `cmpc3gx4001nklg0y27a8o66q` | English `reelclaw-card` / `nudge-card` 9:16 MP4 Reel from LM pack `anicca-ios-reelclaw-card-en.pack.json`; never JA or Larry copy | 2/day at 12:45 and 21:30 JST | direct native canary, natural Telegram, replay, and metric source verified; scheduled 0/day, default-off |
 | Anicca iOS JA main | YouTube Shorts `@anicca-jp` | `cmn1oukj9012nnq0yqhouc3ib` | one selected Anicca JA nudge-card MP4 per day, with a Shorts title/description and the same immutable creative/campaign lineage | 0/day | **skipped by owner instruction** after the exact canary effect ended absent and channel ownership could not be refreshed; LM-disabled |
 
 Honne has no assigned Instagram account and no YouTube route. Do not create a
 Honne Instagram/YouTube effect by borrowing an Anicca account. Native Larry
-photo/carousel slideshows are also **not** in the armed portfolio yet: Life
-Manager currently has approved Honne ReelClaw packs and an Anicca JA card pack,
-but no imported, account-bound Larry pack that has passed the render audit and
-canary contract.
+photo/carousel slideshows are also **not** in the armed portfolio yet. Life
+Manager now has one imported, account-bound Larry JA pack that passed its
+six-frame render audit, but it has not passed the dedicated carousel publication,
+direct-native-artifact, replay, Telegram, or metric-source canary contract.
 
 Every other live Postiz TikTok/Instagram/YouTube integration has a target
 cadence of **0/day** until a later atomic classification binds it to a product,
@@ -2180,8 +2180,8 @@ order is the §12.3 recovery checklist: `MKT-09R0 → MKT-09R1 → MKT-09R2 →
 MKT-09R3-01..13 → MKT-09R4..R9 → MKT-10 → MKT-11 → MKT-12 → MKT-13`.
 No later row starts early.
 
-Current TODO state: **incident recovery remains open at MKT-09R8-02.** R0 through
-R8-01 are terminal: capacity is safe, the shared publication fence remains closed,
+Current TODO state: **incident recovery remains open at MKT-09R8-03.** R0 through
+R8-02 are terminal: capacity is safe, the shared publication fence remains closed,
 the JP4 false completion is quarantined, and the 13-effect set is 12 `present`
 plus one truthful `absent`. The full publication ledger is 41 `completed`,
 one `conflict`, and zero unknown/running/reconciling jobs. This does not prove
@@ -2197,9 +2197,15 @@ An external observation clock is not an active implementation item. It remains
 terminal acceptance evidence. Exactly one executable atomic item remains active;
 when the clock fires, its readback is reconciled before any dependent account arm.
 
-**Active executable atomic item:** MKT-09R8-02 imports or builds only the
-Anicca iOS JA Larry v1 six-image pack for Instagram `@ani.cca1234` in Life
-Manager object storage. It does not arm a lane, publish, or touch a legacy job.
+**Active executable atomic item:** MKT-09R8-03 adds the smallest dedicated Life
+Manager native-photo-carousel publication contract under TDD, then runs exactly
+one canary for Instagram `@ani.cca1234`. Before the effect is allowed, the
+contract must bind the imported six-image pack, exact integration, account,
+caption, image order, and one effect key. Success still requires the exact native
+account, caption-matching direct Instagram artifact, visual verification of the
+carousel, natural Telegram receipt, replay 0, and explicit metric-source status.
+The lane remains 0/day and default-off; no legacy job is touched and no other
+account starts.
 
 | ID | Atomic action | Account/lane | Done evidence |
 |---|---|---|---|
@@ -2295,8 +2301,8 @@ Their dependent account arm remains blocked until the observation is terminal.
 | 18 | **done — MKT-09R6:** import or build that account's one approved pack in LM object storage | Order 17 passes | the imported canary pack is `object://sha256/cd255b6f676f0692f002ee2c9805a67fa8a32779dc2bc04f757ed068e0bcc14c` and its sole media is `object://sha256/b8e15711140e8fef6dcb37bb7ba2cce5a1a5332708a53ed8be752dbc2bf6da29`; both SHA read back exactly at mode `0600`. Direct frames from the stored object show the matching English hook `when nothing is wrong / but something is wrong` followed by two English Anicca affirmation cards. The first legacy candidate was rejected because its frame was Japanese; it remains immutable and is not referenced by this import. One hook plus one media prevents the generic selector from pairing this canary caption with a different rendered hook. Import/generation tests pass 7/7; live manifest `marketing-lane-manifest:4cb892e0bfd70aa8d97d74f043fe95aac61e593b692db2fd534842c500101113` records `pack-ready`, 0 armed lanes, and the fence remains closed. Runtime inputs are LM object refs only; no OpenClaw path/env/assets dependency and no provider or legacy-job write occurred | execute a legacy OpenClaw publisher, retain the Japanese v1 candidate, or import multiple rendered hooks that the current selector can mismatch |
 | 19 | **done — MKT-09R7:** run one canary for that exact account | Order 18 passes and fence is opened only for this effect | creative `EN-CARD-A0A1D2FE-b8e15711140e` is directly verified at `https://www.instagram.com/reel/DceOe0OnGn2/`: the captioned native embed binds owner `anicca.encards` and the exact LM caption, while the native `og:image` visibly matches the English hook, person, clothing, and background in media object `b8e157…6da29`. Natural Telegram `34261` carries the same URL; generation/publication/message replay all return `created=false`. Initial Postiz post analytics measures Views/Reach/Saves/Likes/Comments/Shares as 0; account analytics is `unavailable/empty_response`, not zero. Evidence is `object://sha256/c6a40d9a66b6ac08cef710601fed36f0a2fd0d816259c55516158c19049c29be`; manifest `marketing-lane-manifest:ab627e1b5c3e9a47e6946c381343824edcf1421f21ef4c2792c81b3551c872b9` records `canary-verified`, default-off, armed 0; fence is closed. Focused tests pass 50/50 | fan out, notify before native verification, accept a profile URL, or call unavailable success/zero |
 | 20 | **done — MKT-09R8-01:** classify exactly one next retained account | Order 19 terminal | Anicca iOS / JA / Instagram `@ani.cca1234` / Postiz `cmq3sq7mc000eqp0y7azfm8yk` is bound to renderer `larry`, format `native-photo-carousel`, planned pack `anicca-ios-larry-ja-v1.pack.json`, and healthy target 1/day at 16:30 JST. Native profile `アニッチャ` and its Japanese affirmation/App Store bio match the product and locale; live Postiz is `instagram-standalone`, disabled=false. The adopted disabled cron command passes this ID only as `--ig`; a separate cron that incorrectly passes the Instagram ID as `--tt`, plus legacy `|| true` and IG-failure omission, are explicitly rejected. Manifest `marketing-lane-manifest:aaf7a513cb7f19e6b4af80d3c6b8741accc1e15d24e3eab60cd535791f9a8b5f` validates with 30 total, 8 targets/22 holds, armed 0; provider/legacy writes 0 | classify multiple accounts, infer ownership from a handle, or copy the broken platform mapping |
-| 21 | **active — MKT-09R8-02:** import or build only that account's approved pack | Order 20 passes | immutable LM pack/media refs and direct frame audit; no runtime OpenClaw dependency | execute a legacy publisher or reuse a different product's pack |
-| 22 | **MKT-09R8-03:** run one canary for only that account | Order 21 passes | exact native account/caption/visual URL, natural Telegram, replay 0, and explicit metric-source status | fan out or accept provider state alone |
+| 21 | **done — MKT-09R8-02:** import or build only that account's approved pack | Order 20 passes | account-bound pack `object://sha256/3d6acc97e59f270a403b39a27e070265fc79d0c5d842ede19c64a5be8a9db79e` references exactly six ordered JPEG objects (`d4f003…`, `ac47a0…`, `bbd5ba…`, `366527…`, `7d1ca4…`, `052566…`); every object SHA reads back exactly at mode `0600`. Direct visual audit confirms the fixed Japanese hook plus five Japanese body slides with no blank, clipped, or foreign frame. Body source `7467383752117718303` was selected after rejecting repeated timestamp-less source `7197571464126549291`; `include_cta=false` proves six, not seven, slides. Read-only adversarial verification returned `ship`. Manifest `marketing-lane-manifest:cef325cc72d308910dde59ee5f351c9b85b4952b1f5da1c7ce75c9a5f56ab06d` records `pack-ready`, default-off, target 1/day, armed 0; fence remains closed. The one-time legacy renderer supplied migration input only: LM runtime has no OpenClaw path/env/assets dependency, and provider/history/legacy-job writes are 0 | execute a legacy publisher, add a CTA slide, reuse the repeatedly selected source, or retain a runtime OpenClaw dependency |
+| 22 | **active — MKT-09R8-03:** implement the dedicated native-carousel publication contract under TDD, then run one canary for only that account | Order 21 passes | exact native account/caption/image order/direct visual URL, natural Telegram, replay 0, and explicit metric-source status | fan out, send a Reel/video, notify before native verification, or accept provider state alone |
 | 23 | **MKT-09R8:** repeat Orders 20–22 one account at a time | prior account terminal | all retained Instagram/TikTok accounts and both non-skipped YouTube accounts have isolated terminal evidence | enable all accounts together |
 | 24 | **MKT-09R9:** provision dedicated Honne Instagram and YouTube integrations one platform/account at a time | existing Postiz inventory has no Honne route for that platform | ownership and Honne product/locale are verified; canary passes Order 22 | relabel an Anicca account as Honne |
 | 25 | **MKT-10:** arm only one healthy verified account, ramping from one canary/day to at most three posts/day | exact account has direct-native, Telegram, replay, and usable metric-source evidence | expected/published/missed/duplicate counts remain healthy at each ramp; platform policy permits cadence | jump directly to three/day everywhere |
