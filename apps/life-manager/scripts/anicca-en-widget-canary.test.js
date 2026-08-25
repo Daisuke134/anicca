@@ -11,11 +11,15 @@ const { createContentObjectStore, importContentObject } = require("../lib/conten
 const { createMarketingLaneManifest, writeMarketingLaneManifest } = require("../lib/marketing-lane-manifest.js");
 const {
   compareNativeVideo,
+  curlResponse,
+  defaultLiveFetch,
+  embedVideoUrl,
   EN_LANE,
   JA_LANE,
   parseArgs,
   runAniccaEnWidgetCanary,
   runAniccaWidgetCanary,
+  resolvePublicIPv4,
 } = require("./anicca-en-widget-canary.js");
 const { parseArgs: parseJaArgs, runAniccaJaWidgetCanary } = require("./anicca-ja-widget-canary.js");
 
@@ -32,6 +36,79 @@ const CAPTION = "Since you are always\non your phone\n\n#affirmations #lockscree
 const DIRECT_REEL = "https://www.instagram.com/reel/DbInY17DSpI/";
 const NATIVE_URL = "https://scontent.cdninstagram.com/anicca-widget-native.mp4";
 const NATIVE_BYTES = Buffer.from("native video");
+
+test("double-escaped GraphVideo URL decodes JSON unicode escapes before validation", () => {
+  const html = '<script>{"GraphVideo":{"video_url":"https:\\/\\/scontent.cdninstagram.com\\/video.mp4?efg=abc\\\\u00253Ddef"}}</script>';
+  assert.equal(embedVideoUrl(html), "https://scontent.cdninstagram.com/video.mp4?efg=abc%3Ddef");
+  for (const url of [
+    "https://user:pass@scontent.cdninstagram.com/video.mp4",
+    "https://scontent.cdninstagram.com:444/video.mp4",
+    "https://scontent.cdninstagram.com/video.mp4#fragment",
+  ]) {
+    assert.equal(embedVideoUrl(`<script>{"GraphVideo":{"video_url":"${url}"}}</script>`), null);
+  }
+});
+
+test("default live DNS fallback is exact-host, public-IP, HTTPS-only, and no-redirect", async () => {
+  const digCalls = [];
+  const curlCalls = [];
+  const response = await defaultLiveFetch("https://www.instagram.com/reel/DcetvubDA4Z/embed/captioned/", { method: "GET", redirect: "follow" }, {
+    defaultFetch: async () => { throw Object.assign(new Error("getaddrinfo ENOTFOUND"), { code: "ENOTFOUND" }); },
+    digRunner: (args) => { digCalls.push(args); return { status: 0, stdout: "93.184.216.34\n" }; },
+    curlRunner: (args) => {
+      curlCalls.push(args);
+      return { status: 0, stdout: Buffer.from("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\nembed") };
+    },
+  });
+  assert.equal(response.status, 200);
+  assert.equal(response.url, "https://www.instagram.com/reel/DcetvubDA4Z/embed/captioned/");
+  assert.equal(await response.text(), "embed");
+  assert.deepEqual(digCalls, [["@1.1.1.1", "+short", "A", "www.instagram.com"]]);
+  assert.equal(curlCalls.length, 1);
+  assert.deepEqual(curlCalls[0].slice(curlCalls[0].indexOf("--resolve"), curlCalls[0].indexOf("--resolve") + 2), ["--resolve", "www.instagram.com:443:93.184.216.34"]);
+  assert.equal(curlCalls[0].includes("--proto"), true);
+  assert.equal(curlCalls[0].includes("=https"), true);
+  assert.equal(curlCalls[0].includes("--max-time"), true);
+  assert.equal(curlCalls[0].includes("--max-redirs"), true);
+  assert.deepEqual(curlCalls[0].slice(curlCalls[0].indexOf("--noproxy"), curlCalls[0].indexOf("--noproxy") + 2), ["--noproxy", "*"]);
+  assert.equal(curlCalls[0].includes("--location") || curlCalls[0].includes("-L"), false);
+});
+
+test("fallback accepts valid CNAME and public A rows but rejects unsafe DNS and arbitrary hosts", () => {
+  for (const stdout of ["10.0.0.1\n", "127.0.0.1\n", "169.254.1.1\n", "224.0.0.1\n", "240.0.0.1\n", "valid.example.\n93.184.216.34\n10.0.0.1\n", "not a dns row\n93.184.216.34\n"]) {
+    assert.throws(() => resolvePublicIPv4("www.instagram.com", { digRunner: () => ({ status: 0, stdout }) }), /fallback DNS/i);
+  }
+  assert.equal(resolvePublicIPv4("www.instagram.com", {
+    digRunner: () => ({ status: 0, stdout: "z-p42-instagram.c10r.instagram.com.\n57.144.44.34\n157.240.31.63\n" }),
+  }), "57.144.44.34");
+  let called = false;
+  assert.throws(() => resolvePublicIPv4("evil.example", { digRunner: () => { called = true; return { status: 0, stdout: "93.184.216.34" }; } }), /host is not allowed/i);
+  assert.equal(called, false);
+});
+
+test("default fallback is only for DNS errors, not HTTP or other network errors", async () => {
+  let digCalls = 0;
+  const options = {
+    digRunner: () => { digCalls += 1; return { status: 0, stdout: "93.184.216.34" }; },
+    curlRunner: () => ({ status: 0, stdout: Buffer.from("HTTP/1.1 200 OK\r\n\r\nshould-not-run") }),
+  };
+  const http = await defaultLiveFetch("https://www.instagram.com/reel/DcetvubDA4Z/embed/captioned/", {}, { ...options, defaultFetch: async () => ({ status: 503, url: "requested" }) });
+  assert.equal(http.status, 503);
+  await assert.rejects(defaultLiveFetch("https://www.instagram.com/reel/DcetvubDA4Z/embed/captioned/", {}, { ...options, defaultFetch: async () => { throw Object.assign(new Error("connection reset"), { code: "ECONNRESET" }); } }), /connection reset/);
+  assert.equal(digCalls, 0);
+});
+
+test("fallback response output is bounded before media verification", () => {
+  const oversized = Buffer.concat([Buffer.from("HTTP/1.1 200 OK\r\n\r\n"), Buffer.alloc(50 * 1024 * 1024 + 1)]);
+  assert.throws(() => curlResponse("https://scontent.cdninstagram.com/video.mp4", {
+    digRunner: () => ({ status: 0, stdout: "93.184.216.34" }),
+    curlRunner: () => ({ status: 0, stdout: oversized }),
+  }), /too large/i);
+  assert.throws(() => curlResponse("https://scontent.cdninstagram.com/video.mp4", {
+    digRunner: () => ({ status: 0, stdout: "93.184.216.34" }),
+    curlRunner: () => ({ status: 6, stdout: Buffer.alloc(0), stderr: "Could not resolve host" }),
+  }), /transport failed/i);
+});
 
 function capturedLiveEmbed({ owner = "anicca.en", caption = CAPTION, videoUrl = NATIVE_URL } = {}) {
   const nested = JSON.stringify({ GraphVideo: { video_url: videoUrl } })
@@ -668,6 +745,38 @@ test("JA verified native release sends one Telegram and same-slot replay is zero
   assert.equal(third.publication.created, false);
   assert.equal(publicationCalls.length, 1);
   assert.equal(telegramCalls.length, 1);
+});
+
+test("default native verification uses DNS fallback for embed and media only", async () => {
+  const value = fixture();
+  const publicationCalls = [];
+  const telegramCalls = [];
+  const first = await runAniccaEnWidgetCanary(["run", "--slot", SLOT], genericOptions(value, publicationCalls, telegramCalls));
+  const receipt = JSON.parse(fs.readFileSync(path.join(value.dataDir, "marketing", "receipts.jsonl"), "utf8")).receipt;
+  value.env[EN_LANE.verificationEnv] = verification(value, receipt);
+  const digHosts = [];
+  const curlHosts = [];
+  const fallbackOptions = {
+    env: value.env,
+    now: () => VERIFIED_NOW,
+    defaultFetch: async () => { throw Object.assign(new Error("getaddrinfo ENOTFOUND"), { code: "ENOTFOUND" }); },
+    digRunner: (args) => { digHosts.push(args.at(-1)); return { status: 0, stdout: "93.184.216.34" }; },
+    curlRunner: (args) => {
+      const url = args.at(-1);
+      curlHosts.push(args[args.indexOf("--resolve") + 1]);
+      const body = url.endsWith("embed/captioned/")
+        ? `<a class="CaptionUsername" href="https://www.instagram.com/${ACCOUNT.slice(1)}/">${ACCOUNT}</a><div data-testid="caption">${CAPTION}</div><script>{"GraphVideo":{"video_url":"${NATIVE_URL}"}}</script>`
+        : NATIVE_BYTES;
+      return { status: 0, stdout: Buffer.concat([Buffer.from("HTTP/1.1 200 OK\r\n\r\n"), Buffer.from(body)]) };
+    },
+    sendTelegram: async (...args) => { telegramCalls.push(args); return { ok: true, result: { message_id: 42 } }; },
+    videoComparator: async () => true,
+  };
+  const released = await runAniccaEnWidgetCanary(["run", "--slot", SLOT], fallbackOptions);
+  assert.equal(first.telegram.held, true);
+  assert.deepEqual(released.telegram, { created: true, held: false, message_id: 42 });
+  assert.deepEqual(digHosts, ["www.instagram.com", "scontent.cdninstagram.com"]);
+  assert.deepEqual(curlHosts, ["www.instagram.com:443:93.184.216.34", "scontent.cdninstagram.com:443:93.184.216.34"]);
 });
 
 test("lane clones are rejected before JA secret/provider/state access", async () => {

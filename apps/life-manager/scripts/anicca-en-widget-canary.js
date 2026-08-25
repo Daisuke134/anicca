@@ -4,6 +4,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const crypto = require("node:crypto");
+const net = require("node:net");
 const { spawnSync } = require("node:child_process");
 const { createContentObjectStore } = require("../lib/content-object-store.js");
 const { createMarketingLocalLedger } = require("../lib/marketing-local-ledger.js");
@@ -151,6 +152,10 @@ function visibleCaption(html) {
   return meta ? htmlText(meta[1]) : "";
 }
 
+function decodeJsonUnicodeEscapes(value) {
+  return String(value || "").replace(/\\+u([0-9a-f]{4})/gi, (_match, code) => String.fromCharCode(parseInt(code, 16)));
+}
+
 function embedVideoUrl(html) {
   if (!/GraphVideo/i.test(html)) return null;
   let decoded = String(html || "");
@@ -158,10 +163,130 @@ function embedVideoUrl(html) {
   const match = /["']video_url["']\s*:\s*["']([^"']+)["']/i.exec(decoded);
   if (!match) return null;
   try {
-    const parsed = new URL(match[1]);
-    if (parsed.protocol !== "https:" || !/(^|\.)cdninstagram\.com$|(^|\.)fbcdn\.net$/i.test(parsed.hostname)) return null;
+    const parsed = new URL(decodeJsonUnicodeEscapes(match[1]));
+    if (parsed.protocol !== "https:" || parsed.port || parsed.username || parsed.password || parsed.hash
+      || !/(^|\.)cdninstagram\.com$|(^|\.)fbcdn\.net$/i.test(parsed.hostname)) return null;
     return parsed.toString();
   } catch { return null; }
+}
+
+const MAX_LIVE_RESPONSE_BYTES = 50 * 1024 * 1024;
+const DNS_ERROR_CODES = new Set(["ENOTFOUND", "EAI_AGAIN", "EAI_FAIL", "EAI_NONAME", "EAI_NODATA"]);
+
+function ipv4Number(value) {
+  if (!net.isIPv4(value)) return null;
+  const parts = String(value).split(".");
+  if (parts.length !== 4 || parts.some((part) => !/^\d{1,3}$/.test(part) || Number(part) > 255)) return null;
+  return (((Number(parts[0]) << 24) >>> 0) | (Number(parts[1]) << 16) | (Number(parts[2]) << 8) | Number(parts[3])) >>> 0;
+}
+
+function isPublicIPv4(value) {
+  const address = ipv4Number(value);
+  if (address == null) return false;
+  const ranges = [
+    [0x00000000, 8], // unspecified / "this" network
+    [0x0a000000, 8], // private
+    [0x64400000, 10], // shared address space
+    [0x7f000000, 8], // loopback
+    [0xa9fe0000, 16], // link-local
+    [0xac100000, 12], // private
+    [0xc0000000, 24], // IETF protocol assignments / reserved
+    [0xc0000200, 24], // documentation
+    [0xc0586300, 24], // deprecated 6to4 anycast
+    [0xc0a80000, 16], // private
+    [0xc6120000, 15], // benchmarking
+    [0xc6336400, 24], // documentation
+    [0xcb007100, 24], // documentation
+    [0xe0000000, 4], // multicast
+    [0xf0000000, 4], // reserved
+  ];
+  return !ranges.some(([base, bits]) => {
+    const mask = bits === 0 ? 0 : (0xffffffff << (32 - bits)) >>> 0;
+    return (address & mask) >>> 0 === base;
+  });
+}
+
+function isAllowedFallbackHost(host) {
+  return host === "www.instagram.com"
+    || /(^|\.)cdninstagram\.com$/i.test(host)
+    || /(^|\.)fbcdn\.net$/i.test(host);
+}
+
+function fallbackTarget(url) {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== "https:" || parsed.port || parsed.username || parsed.password || parsed.hash || !isAllowedFallbackHost(parsed.hostname)) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function resolvePublicIPv4(host, options = {}) {
+  if (!isAllowedFallbackHost(host)) throw new Error("Instagram fallback host is not allowed");
+  const digRunner = options.digRunner || ((args) => spawnSync("dig", args, { encoding: "utf8", timeout: 5_000, maxBuffer: 64 * 1024 }));
+  const result = digRunner(["@1.1.1.1", "+short", "A", host]);
+  const output = String(result && result.stdout || "").trim();
+  const rows = output ? output.split(/\s+/) : [];
+  const addresses = rows.filter((row) => net.isIPv4(row));
+  const aliases = rows.filter((row) => !net.isIPv4(row));
+  if (!result || result.status !== 0 || addresses.length < 1
+    || addresses.some((address) => !isPublicIPv4(address))
+    || aliases.some((alias) => !/^(?:[A-Za-z0-9-]+\.)+[A-Za-z0-9-]+\.$/.test(alias))) {
+    throw new Error("Instagram fallback DNS result is invalid");
+  }
+  return addresses[0];
+}
+
+function curlResponse(url, options = {}) {
+  const parsed = fallbackTarget(url);
+  if (!parsed) throw new Error("Instagram fallback URL is not allowed");
+  const host = parsed.hostname;
+  const address = resolvePublicIPv4(host, options);
+  const args = [
+    "--silent", "--show-error", "--fail-with-body", "--max-time", "20", "--connect-timeout", "5",
+    "--max-filesize", String(MAX_LIVE_RESPONSE_BYTES), "--max-redirs", "0",
+    "--proto", "=https", "--proto-redir", "=https",
+    "--noproxy", "*",
+    "--resolve", `${host}:443:${address}`, "--dump-header", "-", "--url", url,
+  ];
+  const curlRunner = options.curlRunner || ((commandArgs) => spawnSync("curl", commandArgs, { timeout: 25_000, maxBuffer: MAX_LIVE_RESPONSE_BYTES + 64 * 1024 }));
+  const result = curlRunner(args);
+  if (!result || result.status !== 0) throw new Error("Instagram fallback transport failed");
+  const raw = Buffer.isBuffer(result && result.stdout) ? result.stdout : Buffer.from(String(result && result.stdout || ""));
+  const separator = Buffer.from("\r\n\r\n");
+  const offset = raw.indexOf(separator);
+  const headers = offset >= 0 ? raw.subarray(0, offset).toString("latin1") : "";
+  const body = offset >= 0 ? raw.subarray(offset + separator.length) : raw;
+  if (body.length > MAX_LIVE_RESPONSE_BYTES) throw new Error("Instagram fallback response is too large");
+  const statuses = [...headers.matchAll(/^HTTP\/\d(?:\.\d)?\s+(\d{3})/gm)].map((match) => Number(match[1]));
+  const status = statuses.at(-1) || 0;
+  return {
+    status,
+    url,
+    text: async () => body.toString("utf8"),
+    arrayBuffer: async () => body.buffer.slice(body.byteOffset, body.byteOffset + body.byteLength),
+  };
+}
+
+function isDnsLookupError(error) {
+  let current = error;
+  for (let depth = 0; current && depth < 5; depth += 1, current = current.cause) {
+    if (DNS_ERROR_CODES.has(String(current.code || "").toUpperCase())) return true;
+    if (/getaddrinfo\s+(?:ENOTFOUND|EAI_[A-Z_]+)/i.test(String(current.message || ""))) return true;
+  }
+  return false;
+}
+
+async function defaultLiveFetch(url, init, options = {}) {
+  const fetcher = options.defaultFetch || globalThis.fetch;
+  if (typeof fetcher !== "function") return null;
+  try {
+    return await fetcher(url, init);
+  } catch (error) {
+    if (!isDnsLookupError(error)) throw error;
+    return curlResponse(url, options);
+  }
 }
 
 function probeVideo(file, ffprobeBin = "ffprobe") {
@@ -332,8 +457,8 @@ async function verifyNativeObject(ref, store, config, receipt, trustedNow, optio
       && evidence.observation_method === "instagram-captioned-embed+native-video-frame-comparison"
       && evidence.source_contact_sheet_ref === config.visualEvidenceRef
       && !["account_match", "caption_match", "content_match"].some((key) => Object.hasOwn(evidence, key)))) return false;
-    const fetchImpl = options.fetchImpl || globalThis.fetch;
-    if (typeof fetchImpl !== "function") return false;
+    if (options.fetchImpl !== undefined && options.fetchImpl !== null && typeof options.fetchImpl !== "function") return false;
+    const fetchImpl = options.fetchImpl || ((url, init) => defaultLiveFetch(url, init, options));
     const embedUrl = `${receipt.public_url}embed/captioned/`;
     const embedResponse = await fetchImpl(embedUrl, { method: "GET", redirect: "follow" });
     if (!embedResponse || Number(embedResponse.status) !== 200 || typeof embedResponse.text !== "function") return false;
@@ -544,7 +669,13 @@ async function runAniccaWidgetCanary(argv = [], deps = {}, lane = EN_LANE) {
   const publication = publicationRun.receipt;
   if (!verifyMarketingVideoPublicationReceipt(publication) || publication.provider_reconciled !== true || publication.platform !== lane.platform || !directReel(publication.public_url)) { const error = new Error(`Anicca ${lane.name} widget publication receipt is not reconciled`); error.unknownEffect = true; throw error; }
   const publicationResult = { created: publicationQueued.created && publicationRun.created, public_url: publication.public_url, provider_post_id: publication.provider_post_id };
-  if (!(await verifyNativeObject(config.verificationRef, storeObject, config, publication, trustedNow, { fetchImpl: deps.fetchImpl, comparator: deps.videoComparator }, lane))) return { slot: config.slot, publication: publicationResult, telegram: { created: false, held: true, message_id: null } };
+  if (!(await verifyNativeObject(config.verificationRef, storeObject, config, publication, trustedNow, {
+    fetchImpl: deps.fetchImpl,
+    defaultFetch: deps.defaultFetch,
+    digRunner: deps.digRunner,
+    curlRunner: deps.curlRunner,
+    comparator: deps.videoComparator,
+  }, lane))) return { slot: config.slot, publication: publicationResult, telegram: { created: false, held: true, message_id: null } };
 
   const telegramJob = buildMarketingLivenessJob({ tenantId: config.tenantId, telegramTokenRef: lane.telegramTokenRef, telegramChatRef: lane.chatRef, payload: { lane: lane.lane, product: lane.product, locale: lane.locale, platform: lane.platform, account: lane.account, slot: config.slot, status: "published", public_url: publication.public_url, retry_state: "not_required" } });
   const telegramQueued = await store.enqueueJob({ ...telegramJob, availableAt: trustedNow });
@@ -567,7 +698,14 @@ module.exports = {
   LANE,
   PROFILE_REF,
   compareNativeVideo,
+  curlResponse,
+  decodeJsonUnicodeEscapes,
+  defaultLiveFetch,
+  embedVideoUrl,
+  isDnsLookupError,
+  isPublicIPv4,
   parseArgs,
+  resolvePublicIPv4,
   runAniccaEnWidgetCanary,
   runAniccaWidgetCanary,
   verifyNativeObject,
