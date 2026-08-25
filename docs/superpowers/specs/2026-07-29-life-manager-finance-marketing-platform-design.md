@@ -241,12 +241,15 @@ installs, trials, or revenue.
 
 | Product/account | Verified destination and latest Life Manager proof | Telegram | Current provider metric state | Operational state |
 |---|---|---|---|---|
-| Honne EN `@honne_reveal` | TikTok; approved ReelClaw direct URL `7676419421304425748` | `27482` | 24h native post and account metrics are preserved with unsupported fields unavailable; 72h/7d observations remain pending | verified metric source; production-armed at max 3/day |
-| Honne JA `@honnevideo` | TikTok; approved ReelClaw direct URL `7676425660641889537` | `27515` | 24h native post Views `1,035`, Likes `11`, Comments/Shares/Saves `0`, engagement `1.06%`; Followers `4`, Following `8`, Total Likes `923`, Videos `278`, latest-20 Views `5,650` / Likes `42` / Comments `0` / Shares `0`; reach/watch time/completion unavailable | verified metric source; production-armed at max 3/day |
+| Honne EN `@honne_reveal` | TikTok; approved ReelClaw direct URL `7676419421304425748` | `27482` | 24h native post and account metrics are preserved with unsupported fields unavailable; 72h/7d observations remain pending | verified metric source; scheduled 0/day, default-off during recovery |
+| Honne JA `@honnevideo` | TikTok; approved ReelClaw direct URL `7676425660641889537` | `27515` | 24h native post Views `1,035`, Likes `11`, Comments/Shares/Saves `0`, engagement `1.06%`; Followers `4`, Following `8`, Total Likes `923`, Videos `278`, latest-20 Views `5,650` / Likes `42` / Comments `0` / Shares `0`; reach/watch time/completion unavailable | verified metric source; scheduled 0/day, default-off during recovery |
 | Anicca iOS main `@anicca.jp` / `@anicca.jp1` | TikTok `7676422253638176020`; Instagram `DcTFx_UjSio` from the approved card pack | `27500` / `27510` | TikTok 24h native post Views `108`, Likes/Comments/Shares/Saves `0`, engagement `0%`; Reach/Watch time/Completion unavailable. TikTok account Followers `257`, Following `33`, Total Likes `17,662`, Videos `470`, latest-20 Views `5,296` / Likes `51` / Comments `1` / Shares `2`; Instagram post Views/Reach `6`, other reported counts `0` | verified canaries + TikTok combined metric source; default-off |
 | Anicca JP4 `@anicca.jp4` | TikTok; approved card direct URL `7676495865816632583` | `27939` | Followers `122`, Videos `304`, account Views `11,868`; post-level/install/revenue join open | verified canary; default-off |
 | Anicca HE `@anicca.he` | TikTok; existing Postiz row `cmt32u9dj00jxqp0yqdh6yi96` reconciled by exact native profile-caption readback to `https://www.tiktok.com/@anicca.he/video/7676500512308481296` | `28431` | post-level metric collection remains open | verified recovered effect; default-off |
-| All other Postiz integrations, including YouTube candidates | no Life Manager verified publication receipt | none | no current Life Manager observation row | disabled/default-off/unassigned; no provider write |
+| Anicca EN Card `@anicca.encards` | Instagram Reel `https://www.instagram.com/reel/DceOe0OnGn2/`; native owner/caption/hook visually match the approved Card pack | `34261` | immediate post counts are measured `0`; account analytics is unavailable/empty response | verified canary; scheduled 0/day, default-off |
+| Anicca JA Larry `@ani.cca1234` | Instagram carousel `https://www.instagram.com/p/DceW-whAQT7/`; all six native slides match the ordered LM objects | `34328` | immediate post counts are measured `0`; account analytics is unavailable/empty response | verified canary; scheduled 0/day, default-off |
+| Anicca EN Widget `@anicca.en` | Instagram Reel `https://www.instagram.com/reel/DcekGtmjmOf/`; full native video matches the approved Widget pack | `34435` | immediate Views `14`; Reach/Saves/Likes/Comments/Shares `0`; account and product funnel sources unavailable | verified canary; scheduled 0/day, default-off |
+| Remaining integrations without a verified canary, including `@anicca.jp.videos` and YouTube candidates | no Life Manager verified publication receipt | none | no current Life Manager observation row | classified/default-off or held/unassigned; no provider write |
 
 The remaining metric gap is explicit: TikTok, Instagram, and YouTube must each
 produce platform-post observations at 2h/24h/72h/7d, then App Store Connect,
@@ -303,11 +306,10 @@ first video and contradicts the second. The current completed-receipt API
 cannot supersede that provider/video lineage, so this is a code and durable
 state repair, not a profile-URL correction.
 
-Current unarmed mobile inventory remains `0/day` and unclassified until handled
-one account at a time:
+Current not-yet-classified mobile inventory remains `0/day` until handled one
+account at a time:
 
-- Instagram: `@ani.cca1234`, `@anicca.affirmation`, `@anicca.bochi`,
-  `@anicca.en`, `@anicca.encards`, `@anicca.jp.videos`, `@obou.anicca`.
+- Instagram: `@anicca.affirmation`, `@anicca.bochi`, and `@obou.anicca`.
 - TikTok: `@anicca_buddha`, `@anicca_slideshow`, `@anicca.comedy`,
   `@anicca.daily`, `@anicca.jp8`, `@anicca.jpx`, `@aniccaaffirmation`,
   `@aniccaen2`, `@aniccajp`, `@aniccajp2`, `@monk_anicca`,
@@ -1586,13 +1588,14 @@ not a command to fan every creative out to every connected Postiz integration.
 
 | Product / locale | Platform and exact account | Integration | Creative that belongs there | Target cadence after that row is healthy | Current state |
 |---|---|---|---|---:|---|
-| Honne EN | TikTok `@honne_reveal` | `cmoig11ew001zlv0yk6vqo1us` | `reelclaw` 9:16 relationship-confession video: a short message/situation followed by the honest meaning, English captions, app CTA | 3/day | verified metric source; production-armed at max 3/day |
-| Honne JA | TikTok `@honnevideo` | `cmnit95mg015rrm0ye5vm8dhl` | `reelclaw` 9:16 relationship-confession video in Japanese; not an Anicca affirmation/card creative | 3/day | verified metric source; production-armed at max 3/day |
+| Honne EN | TikTok `@honne_reveal` | `cmoig11ew001zlv0yk6vqo1us` | `reelclaw` 9:16 relationship-confession video: a short message/situation followed by the honest meaning, English captions, app CTA | 3/day | verified metric source; scheduled 0/day, default-off during recovery |
+| Honne JA | TikTok `@honnevideo` | `cmnit95mg015rrm0ye5vm8dhl` | `reelclaw` 9:16 relationship-confession video in Japanese; not an Anicca affirmation/card creative | 3/day | verified metric source; scheduled 0/day, default-off during recovery |
 | Anicca iOS JA main | TikTok `@anicca.jp` | `cmp9sdev5012voh0y58qs45xc` | `reelclaw-card` / `nudge-card`: a hook plus short self-regulation/affirmation cards rendered as a 9:16 MP4; slideshow-style **video**, not a native photo carousel | 3/day | verified canary; scheduled 0/day; default-off |
 | Anicca iOS JA main | Instagram `@anicca.jp1` | `cmn8ycvtn02djqx0ytuisn9mw` | one selected Anicca JA nudge-card MP4 as a Reel; the same creative lineage may be reused across platforms but has its own publication effect | 1/day | verified canary; scheduled 0/day; default-off |
-| Anicca iOS JA expansion | TikTok `@anicca.jp4` | `cmn8x8hdv028uqx0y4gdfse5t` | Anicca JA `reelclaw-card` / `nudge-card` slideshow-style MP4 from the approved card pack | 3/day | verified repeatable 24h metric source; production-armed at max 3/day |
-| Anicca iOS JA expansion | TikTok `@anicca.he` | `cmq2aoena08bhqp0yx1epjcik` | Anicca JA `reelclaw-card` / `nudge-card` slideshow-style MP4 from the approved card pack | 3/day | recovered effect plus verified repeatable 24h metric source; production-armed at max 3/day |
-| Anicca iOS JA Larry | Instagram `@ani.cca1234` | `cmq3sq7mc000eqp0y7azfm8yk` | Larry JA v1 six-image native photo carousel: one fixed Japanese hook plus five Japanese body slides, JPEG for Instagram; not an MP4 Reel | 1/day at 16:30 JST | approved six-image pack and dedicated fail-closed carousel publication contract verified; 0/day, default-off, awaiting one canary |
+| Anicca iOS JA expansion | TikTok `@anicca.jp4` | `cmn8x8hdv028uqx0y4gdfse5t` | Anicca JA `reelclaw-card` / `nudge-card` slideshow-style MP4 from the approved card pack | 3/day | verified repeatable 24h metric source; scheduled 0/day, default-off during recovery |
+| Anicca iOS JA expansion | TikTok `@anicca.he` | `cmq2aoena08bhqp0yx1epjcik` | Anicca JA `reelclaw-card` / `nudge-card` slideshow-style MP4 from the approved card pack | 3/day | recovered effect plus verified repeatable 24h metric source; scheduled 0/day, default-off during recovery |
+| Anicca iOS JA Larry | Instagram `@ani.cca1234` | `cmq3sq7mc000eqp0y7azfm8yk` | Larry JA v1 six-image native photo carousel: one fixed Japanese hook plus five Japanese body slides, JPEG for Instagram; not an MP4 Reel | 1/day at 16:30 JST | direct native canary, natural Telegram, replay, and metric source verified; scheduled 0/day, default-off |
+| Anicca iOS JA Widget | Instagram `@anicca.jp.videos` | `cmmzzg2es0539p30ycb94ayx0` | Japanese `reelclaw-widget` / `widget-demo-reel`: a Japanese hook followed by the iPhone lock-screen Widget installation flow and visible Anicca widget; never the separate affirmation/Card sequence historically mixed into this account | 2/day at 08:05 and 18:20 JST | directly classified from native Reel content; 0/day, default-off, pack not imported |
 | Anicca iOS EN Card | Instagram `@anicca.encards` | `cmpc3gx4001nklg0y27a8o66q` | English `reelclaw-card` / `nudge-card` 9:16 MP4 Reel from LM pack `anicca-ios-reelclaw-card-en.pack.json`; never JA or Larry copy | 2/day at 12:45 and 21:30 JST | direct native canary, natural Telegram, replay, and metric source verified; scheduled 0/day, default-off |
 | Anicca iOS JA main | YouTube Shorts `@anicca-jp` | `cmn1oukj9012nnq0yqhouc3ib` | one selected Anicca JA nudge-card MP4 per day, with a Shorts title/description and the same immutable creative/campaign lineage | 0/day | **skipped by owner instruction** after the exact canary effect ended absent and channel ownership could not be refreshed; LM-disabled |
 
@@ -1613,8 +1616,7 @@ includes:
   `@monk_anicca` (provider-disabled), `@anicca.daily`, `@anicca_slideshow`,
   `@aniccajp`, `@anicca.jp8` (measured dead), `@aniccajp2`, `@anicca.jpx`
   (measured dead), `@obou_anicca`, `@anicca_buddha`, and `@anicca.comedy`.
-- Instagram: `@anicca.jp.videos`, `@anicca.en`,
-  `@anicca.affirmation`, `@obou.anicca`, and `@anicca.bochi`.
+- Instagram: `@anicca.affirmation`, `@obou.anicca`, and `@anicca.bochi`.
 - YouTube: `@anicca-ai` and `@anicca-affirmation-video`.
 
 An enabled Postiz connection in this hold list is routing configuration only.
@@ -2181,8 +2183,8 @@ order is the §12.3 recovery checklist: `MKT-09R0 → MKT-09R1 → MKT-09R2 →
 MKT-09R3-01..13 → MKT-09R4..R9 → MKT-10 → MKT-11 → MKT-12 → MKT-13`.
 No later row starts early.
 
-Current TODO state: **incident recovery remains open at MKT-09R8-07 / Order
-23D.** R0 through R8-06 are terminal: capacity is safe, the shared publication
+Current TODO state: **incident recovery remains open at MKT-09R8-08 / Order
+23E.** R0 through R8-07 are terminal: capacity is safe, the shared publication
 fence remains closed,
 the JP4 false completion is quarantined, and the 13-effect set is 12 `present`
 plus one truthful `absent`. The full publication ledger is 43 `completed`,
@@ -2199,13 +2201,17 @@ An external observation clock is not an active implementation item. It remains
 terminal acceptance evidence. Exactly one executable atomic item remains active;
 when the clock fires, its readback is reconciled before any dependent account arm.
 
-**Active executable atomic item:** MKT-09R8-07 / Order 23D classifies exactly one
-next retained Instagram or TikTok account. It binds product, locale, native
-account, Postiz integration, allowed renderer, format, approved-pack name, and
-healthy target cadence while leaving actual cadence 0/day, every lane unarmed,
-and the shared fence closed. It performs no provider, Telegram, scheduler, or
-legacy-job write. Only after that classification is committed may its one-pack
-import and one-canary rows start.
+**Active executable atomic item:** MKT-09R8-08 / Order 23E imports or builds
+exactly one approved Life Manager pack for Anicca iOS / JA / Instagram
+`@anicca.jp.videos` / Postiz `cmmzzg2es0539p30ycb94ayx0` / renderer
+`reelclaw-widget` / format `widget-demo-reel`. The pack may contain only the
+Japanese hook and the complete Anicca lock-screen Widget installation flow;
+the separate affirmation/Card sequence is rejected. Legacy bytes may be read
+only as migration input, while the final runtime pack uses only immutable Life
+Manager object references. It performs no publication, Telegram, scheduler,
+or legacy-job write and leaves all lanes unarmed, actual cadence 0/day, and the
+shared fence closed. No canary or second account starts before this pack is
+terminal.
 
 The MKT-09R8-06 external effect is **terminal verified**.
 The dedicated runner and combined publication/ledger/liveness tests are green,
@@ -2226,10 +2232,10 @@ closed: duration tolerance is capped at 0.25 seconds, both streams are sampled a
 2 fps across the longer timeline, at most one terminal frame may be absent, every
 compared SSIM score must be at least 0.95, and the 15.0-second versus 13.5-second
 regression fails closed. The fifth fresh read-only review returned SHIP after
-focused 12/12 and combined 76/76 tests. MKT-09R8-06 remains the only active item;
-the next state transition is to import its exact final approval object, re-read all
-closed controls and absent effect evidence, and only then allow one Postiz call.
-No retry, fan-out, scheduler arm, or legacy-job action is allowed.
+focused 12/12 and combined 76/76 tests. At that pre-effect gate, MKT-09R8-06 was
+the only active item and required the exact final approval object plus closed
+control readback before its one Postiz call. No retry, fan-out, scheduler arm,
+or legacy-job action was allowed.
 
 The exact final approval is now
 `object://sha256/9c7514fc4c49f4632c0f35cb25f692fd9106960500ae936dfefc89aaddac01a3`
@@ -2295,6 +2301,24 @@ claimed as a running loop. Final manifest
 `marketing-lane-manifest:f72c663ebc28c8e4d3bc28d236d4c38b200e1fe2e5074455d9d1f7c222ab9d42`
 records `canary-verified`, default-off, target limit 2/day, actual scheduled
 0/day, armed 0, and 21 holds; the fence is closed.
+
+MKT-09R8-07 is now **terminal classified** for exactly one next account. Live
+Postiz integration `cmmzzg2es0539p30ycb94ayx0` is enabled and binds Instagram
+profile `@anicca.jp.videos`. Direct native Reel
+`https://www.instagram.com/reel/DbYPO6SoOQU/` binds that owner to the exact
+Japanese Widget caption; visual inspection across the full 17.83-second native
+video shows a Japanese hook, iPhone lock-screen customization, and the visible
+Anicca Widget installation flow. A second direct Reel,
+`https://www.instagram.com/reel/DbY5kvdICul/`, proves the same account also has
+a distinct Japanese affirmation/Card sequence, so that creative is explicitly
+excluded from this lane instead of inheriting the mixed history. The two
+disabled legacy Widget JA crons remain untouched; their 08:05 and 18:20 JST
+cadence supplies the healthy target only, while their obsolete Instagram
+integration ID is rejected. Manifest
+`marketing-lane-manifest:20e4570fe02f5675465fa3846b21133d346e36f31d0856a68f3625164557997a`
+validates at mode `0600` with 10 targets, 20 holds, every target `default-off`,
+armed 0, and the fence closed. Provider, Telegram, scheduler, and legacy-job
+writes were 0; actual cadence remains 0/day.
 
 | ID | Atomic action | Account/lane | Done evidence |
 |---|---|---|---|
@@ -2396,7 +2420,10 @@ Their dependent account arm remains blocked until the observation is terminal.
 | 23A | **done — MKT-09R8-04:** classify exactly one next retained account | Order 22B terminal | Anicca iOS / EN / Instagram `@anicca.en` / Postiz `cmn8y95rg02d2qx0y09bbk5pb` is bound only to renderer `reelclaw-widget`, format `widget-demo-reel`, planned pack `anicca-ios-reelclaw-widget-en.pack.json`, and healthy target 2/day at 09:30 and 19:00 JST. The live Postiz registry names `Daily Anicca Nudges`, provider `instagram-standalone`, disabled=false; native profile `Anicca Videos (@anicca.en)` has 565 posts and an indexed App Store/self-care bio. Direct `https://www.instagram.com/reel/DbInY17DSpI/` binds owner `anicca.en` to the exact English widget caption. Postiz has 392 historical rows for this integration, with recent direct Reel rows dominated by Widget EN; Card EN remains isolated on `@anicca.encards`, so old card/widget mixing is not adopted. `@aniccaen2` remains held because native availability is unproved and recent Postiz rows are 0; unavailable `@anicca.affirmation` remains held; live `@anicca.bochi` remains held because its 233-row history mixes the AI memorial/tomb product with mental-health content. Manifest `marketing-lane-manifest:d81822e8997a6b76e9085a44260f6ca2d4a50dbcfb10d76b538b090285d8e938` validates with 30 total, 9 targets/21 holds, armed 0, mode `0600`; actual schedule is 0/day, fence closed, and provider/Telegram/scheduler/legacy writes are 0 | classify several accounts, infer ownership from a handle, mix Card EN into this lane, or promote a dead/mixed account |
 | 23B | **done — MKT-09R8-05:** import one approved pack for only that account | Order 23A passes | approved pack `object://sha256/645cedb029b36a2c29412b0d37d2fd756f32c7f45b7c2d2abb7d2bb08f5a524d` binds Anicca iOS / EN / Instagram `@anicca.en` / integration `cmn8y95rg02d2qx0y09bbk5pb` / `reelclaw-widget` / `widget-demo-reel` to exactly one ordered video `object://sha256/98f4ce8c607ab9122a3252ebed05b293d09698ef77400203644bef61f31a6bad` and caption `object://sha256/a9d94b852845f692aa9f63534d66386a29764f71601158ce2de65020b583787c`. All refs read back at mode `0600`; caption bytes equal the pack exactly. The 15.0-second 1080x1920 H.264/AAC object has the English hook `Since you are always on your phone / Put affirmations on your lockscreen`, a shock reaction, and only the Anicca lock-screen Widget installation demo. Direct visual inspection of all 30 half-second frames found no CTA/demo overlay, foreign language, Card content, blank, or clipping; evidence is `object://sha256/7b179dd350d06b7179bdf8527ff881ba414909d8e6f1a3779f40330ef4c9012e`. A same-hook render with baked `try Anicca — link in bio` CTA and a 40.47-second in-app Nudge/Card render were rejected. Manifest `marketing-lane-manifest:11ace472e123b4f025bce13d10a61b89f1d851863dd907107daadade5d3058be` records `pack-ready`, 9 targets/21 holds, armed 0; fence is closed. OpenClaw supplied read-only migration bytes only; the final pack contains LM object refs and no OpenClaw path/env/assets dependency. Provider/history/Telegram/scheduler/legacy-job writes are 0 | import several packs, accept a CTA/wrong-form render, or retain a runtime OpenClaw dependency |
 | 23C | **done — MKT-09R8-06:** run one canary for only that account | Order 23B passes | exact one Postiz row `cmt95nd89023fp20yna8g8olx` is verified at `https://www.instagram.com/reel/DcekGtmjmOf/`: CaptionUsername is `anicca.en`, caption bytes match, CDN native video `90f8e841…dcd390` and all 30 frames show the approved woman/hook/complete Widget install. Fresh adversary returned SHIP on the bounded Instagram transcode gate; focused 12/12 and combined 76/76 pass while wrong-tail and 13.5s truncation fail. Evidence is `756925fa…bc6e44`, verification is `d0abae76…184eba`, natural Telegram is `34435`, and replay is publication 0/message 0. Immediate Views 14 and Reach/Saves/Likes/Comments/Shares 0 are measured; account and product funnel sources remain explicitly unavailable in corrected status `ef76f419…d9c646`, whose future-window registration remains pending. Manifest `f72c663e…ab9d42` is canary-verified/default-off/actual 0/day/armed 0; fence closed; no legacy job touched | accept provider state alone, notify before native verification, retry, or claim pending metric windows are registered |
-| 23D | **active — MKT-09R8-07:** classify exactly one next retained account, then repeat Orders 23B–23C only for that account | Order 23C terminal | one product/locale/native account/Postiz integration/renderer/format/pack/cadence contract is committed at actual 0/day with provider/Telegram/scheduler/legacy writes 0 | enable all accounts together or import/post before classification |
+| 23D | **done — MKT-09R8-07:** classify exactly one next retained account | Order 23C terminal | Anicca iOS / JA / Instagram `@anicca.jp.videos` / Postiz `cmmzzg2es0539p30ycb94ayx0` is bound only to `reelclaw-widget`, `widget-demo-reel`, planned pack `anicca-ios-reelclaw-widget-ja.pack.json`, and healthy target 2/day at 08:05/18:20 JST. Full native visual inspection proves the Widget install flow and separately proves that the account's affirmation/Card history must be excluded. Manifest `20e4570f…7997a` validates with 10 targets/20 holds, actual 0/day, armed 0, mode `0600`, fence closed; provider/Telegram/scheduler/legacy writes 0 | infer content from a handle, adopt the mixed Card history, or reuse the obsolete legacy integration ID |
+| 23E | **active — MKT-09R8-08:** import or build exactly one approved Widget JA pack for that account | Order 23D passes | every LM object SHA, Japanese hook, complete Widget flow, format, caption, and account binding is directly verified; lane remains 0/day/unarmed | import several packs, accept Card content, or retain an OpenClaw runtime dependency |
+| 23F | **MKT-09R8-09:** run one canary for only that account | Order 23E passes | direct native owner/caption/content URL, natural Telegram, replay 0, and explicit metric-source status | fan out, accept Postiz state alone, or call unavailable zero/success |
+| 23G | **MKT-09R8:** repeat Orders 23D–23F for the next single retained account | prior account terminal | each retained account has an isolated product/locale/renderer/pack/effect/metric lineage | classify or enable several accounts together |
 | 24 | **MKT-09R9:** provision dedicated Honne Instagram and YouTube integrations one platform/account at a time | existing Postiz inventory has no Honne route for that platform | ownership and Honne product/locale are verified; canary passes Order 22 | relabel an Anicca account as Honne |
 | 25 | **MKT-10:** arm only one healthy verified account, ramping from one canary/day to at most three posts/day | exact account has direct-native, Telegram, replay, and usable metric-source evidence | expected/published/missed/duplicate counts remain healthy at each ramp; platform policy permits cadence | jump directly to three/day everywhere |
 | 26 | **MKT-11:** collect 2h/24h/72h/7d social metrics and join ASC, RevenueCat, and product analytics | exact published effect has immutable creative/campaign lineage | views, likes, comments, shares, saves, watch/retention fields when supported, installs, activation, trials, paid, proceeds, and attribution coverage are source-labelled; unavailable stays unavailable | substitute account aggregates for post outcomes or infer installs from timing |
