@@ -11,9 +11,13 @@ const { createContentObjectStore, importContentObject } = require("../lib/conten
 const { createMarketingLaneManifest, writeMarketingLaneManifest } = require("../lib/marketing-lane-manifest.js");
 const {
   compareNativeVideo,
+  EN_LANE,
+  JA_LANE,
   parseArgs,
   runAniccaEnWidgetCanary,
+  runAniccaWidgetCanary,
 } = require("./anicca-en-widget-canary.js");
+const { parseArgs: parseJaArgs, runAniccaJaWidgetCanary } = require("./anicca-ja-widget-canary.js");
 
 const SLOT = "2026-08-26T07:30:00.000Z";
 const FIRST_NOW = "2026-08-26T07:31:00.000Z";
@@ -36,8 +40,8 @@ function capturedLiveEmbed({ owner = "anicca.en", caption = CAPTION, videoUrl = 
   return `<div class="Caption"><a class="CaptionUsername" href="https://www.instagram.com/${owner}/?utm_source=ig_web_copy_link">${owner}</a><br /><br />${caption}</div><script>${nested}</script>`;
 }
 
-function fixture() {
-  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "lm-anicca-en-widget-canary-"));
+function fixture(lane = EN_LANE, laneCaption = CAPTION) {
+  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), `lm-anicca-${lane.name.toLowerCase()}-widget-canary-`));
   const objectDir = path.join(dataDir, "objects");
   const objectStore = createContentObjectStore({ objectDir });
   const importBytes = (name, bytes) => {
@@ -46,20 +50,20 @@ function fixture() {
     return importContentObject(source, { objectDir }).ref;
   };
   const videoRef = importBytes("widget.mp4", Buffer.from("widget-video-fixture"));
-  const captionRef = importBytes("caption.txt", Buffer.from(CAPTION));
+  const captionRef = importBytes("caption.txt", Buffer.from(laneCaption));
   const visualEvidenceRef = importBytes("contact-sheet.txt", Buffer.from("pack contact sheet"));
   const pack = {
     schema_version: 1,
     kind: "marketing_video_asset_pack",
-    product_id: PRODUCT,
-    locale: "en",
-    platform: "instagram",
-    account_id: ACCOUNT,
-    integration_id: INTEGRATION_ID,
-    renderer_id: "reelclaw-widget",
-    format_id: "widget-demo-reel",
-    form: "lockscreen-affirmation-widget",
-    caption: CAPTION,
+    product_id: lane.product,
+    locale: lane.locale,
+    platform: lane.platform,
+    account_id: lane.account,
+    integration_id: lane.integrationId,
+    renderer_id: lane.renderer,
+    format_id: lane.packFormat,
+    form: lane.form,
+    caption: laneCaption,
     caption_ref: captionRef,
     visual_evidence_ref: visualEvidenceRef,
     media: [{ position: 1, role: "hook-then-widget-demo", media_type: "video/mp4", video_ref: videoRef }],
@@ -71,14 +75,14 @@ function fixture() {
     status: "approved",
     tenant_id: "dais-local",
     product_id: PRODUCT,
-    format_id: "reelclaw-widget",
-    form: "lockscreen-affirmation-widget",
-    locale: "en",
-    platform: "instagram",
-    account_id: ACCOUNT,
-    integration_ref: INTEGRATION_REF,
+    format_id: lane.format,
+    form: lane.form,
+    locale: lane.locale,
+    platform: lane.platform,
+    account_id: lane.account,
+    integration_ref: lane.integrationRef,
     pack_ref: packRef,
-    creative_id: CREATIVE_ID,
+    creative_id: lane.creativeId,
     video_sha256: videoRef.slice(-64),
     caption_sha256: captionRef.slice(-64),
   };
@@ -86,10 +90,10 @@ function fixture() {
   const env = {
     LM_DATA_DIR: dataDir,
     LM_RUNTIME_TENANT_ID: "dais-local",
-    LM_ANICCA_EN_WIDGET_PACK_REF: packRef,
-    LM_ANICCA_EN_WIDGET_VIDEO_REF: videoRef,
-    LM_ANICCA_EN_WIDGET_CAPTION_REF: captionRef,
-    LM_ANICCA_EN_WIDGET_APPROVAL_REF: approvalRef,
+    [lane.packEnv]: packRef,
+    [lane.videoEnv]: videoRef,
+    [lane.captionEnv]: captionRef,
+    [lane.approvalEnv]: approvalRef,
     LM_POSTIZ_API_KEY: "postiz-secret-fixture",
     LM_TELEGRAM_BOT_TOKEN: "telegram-secret-fixture",
     LM_TELEGRAM_ALERT_CHAT_ID: "123456789",
@@ -104,24 +108,26 @@ function fixture() {
     captionRef,
     approvalRef,
     visualEvidenceRef,
+    lane,
+    caption: laneCaption,
   };
   const target = {
-    id: INTEGRATION_ID,
+    id: lane.integrationId,
     provider: "postiz",
     platform: "instagram",
-    profile: ACCOUNT,
-    account: "anicca-ios-en-widget-instagram",
+    profile: lane.account,
+    account: lane.manifestAccount,
     product_id: "anicca",
-    locale: "en",
+    locale: lane.locale,
     disabled: false,
     verified: true,
     owner: "life-manager",
     lane_state: "default-off",
     production_armed: false,
     disposition: "target",
-    renderer: "reelclaw-widget",
-    format: "widget-demo-reel",
-    approved_pack: "anicca-ios-reelclaw-widget-en.pack.json",
+    renderer: lane.renderer,
+    format: lane.packFormat,
+    approved_pack: lane.approvedPackName,
     canary_state: "pack-ready",
     target_daily_limit: 2,
   };
@@ -153,11 +159,11 @@ function fixture() {
   });
 }
 
-function providerCalls(calls, result = {}) {
+function providerCalls(calls, result = {}, lane = EN_LANE) {
   return async (input) => {
     calls.push(input);
     return {
-      creative_id: CREATIVE_ID,
+      creative_id: lane.creativeId,
       video_sha256: input.videoPath.split("/").at(-1),
       caption_sha256: input.captionPath.split("/").at(-1),
       platform: "instagram",
@@ -176,18 +182,18 @@ function replaceJson(value, name, patch) {
   return value.importBytes(`${name}-replacement.json`, Buffer.from(JSON.stringify(next)));
 }
 
-function verification(value, receipt, overrides = {}, evidenceOverrides = {}) {
+function verification(value, receipt, overrides = {}, evidenceOverrides = {}, lane = EN_LANE) {
   const nativeVideoRef = value.importBytes("native-video.mp4", NATIVE_BYTES);
   const nativeContactSheetRef = value.importBytes("native-contact-sheet.jpg", Buffer.from("native contact sheet"));
   const evidence = typeof evidenceOverrides === "string" ? null : {
     schema_version: 1,
     kind: "marketing_video_native_evidence",
     status: "verified",
-    platform: "instagram",
+    platform: lane.platform,
     public_url: receipt.public_url,
-    account_id: ACCOUNT,
-    integration_ref: INTEGRATION_REF,
-    caption: CAPTION,
+    account_id: lane.account,
+    integration_ref: lane.integrationRef,
+    caption: value.caption,
     caption_sha256: value.captionRef.slice(-64),
     video_sha256: value.videoRef.slice(-64),
     observation_method: "instagram-captioned-embed+native-video-frame-comparison",
@@ -204,9 +210,9 @@ function verification(value, receipt, overrides = {}, evidenceOverrides = {}) {
     schema_version: 1,
     kind: "marketing_video_native_verification",
     status: "verified",
-    product_id: PRODUCT,
-    account_id: ACCOUNT,
-    integration_ref: INTEGRATION_REF,
+    product_id: lane.product,
+    account_id: lane.account,
+    integration_ref: lane.integrationRef,
     public_url: receipt.public_url,
     pack_sha256: value.packRef.slice(-64),
     video_sha256: value.videoRef.slice(-64),
@@ -217,21 +223,25 @@ function verification(value, receipt, overrides = {}, evidenceOverrides = {}) {
   })));
 }
 
-function genericOptions(value, publicationCalls, telegramCalls = [], overrides = {}) {
+function genericOptionsFor(value, publicationCalls, telegramCalls = [], lane = EN_LANE, overrides = {}) {
   return {
     env: value.env,
-    runDistribution: providerCalls(publicationCalls),
+    runDistribution: providerCalls(publicationCalls, {}, lane),
     sendTelegram: async (...args) => {
       telegramCalls.push(args);
       return { ok: true, result: { message_id: 42 } };
     },
     fetchImpl: async (url) => (String(url).endsWith("embed/captioned/")
-      ? { status: 200, text: async () => `<a class="CaptionUsername" href="https://www.instagram.com/${ACCOUNT.slice(1)}/">${ACCOUNT}</a><div data-testid="caption">${CAPTION}</div><script>{"GraphVideo":{"video_url":"${NATIVE_URL}"}}</script>` }
+      ? { status: 200, text: async () => `<a class="CaptionUsername" href="https://www.instagram.com/${lane.account.slice(1)}/">${lane.account}</a><div data-testid="caption">${value.caption}</div><script>{"GraphVideo":{"video_url":"${NATIVE_URL}"}}</script>` }
       : { status: 200, arrayBuffer: async () => NATIVE_BYTES.buffer.slice(NATIVE_BYTES.byteOffset, NATIVE_BYTES.byteOffset + NATIVE_BYTES.byteLength) }),
     videoComparator: async () => true,
     now: () => FIRST_NOW,
     ...overrides,
   };
+}
+
+function genericOptions(value, publicationCalls, telegramCalls = [], overrides = {}) {
+  return genericOptionsFor(value, publicationCalls, telegramCalls, EN_LANE, overrides);
 }
 
 test("default native comparator accepts same/transcoded video but rejects visible differences", () => {
@@ -505,4 +515,177 @@ test("/p/, profile, and numeric Reel URLs become unknown and never notify", asyn
     const jobs = fs.readFileSync(path.join(value.dataDir, "marketing", "jobs.jsonl"), "utf8");
     assert.match(jobs, /"unknown_effect":true/);
   }
+});
+
+const JA_CAPTION = "ロック画面にアファメーション\n置けるの知らなかった\n\n#ロック画面 #アファメーション #ウィジェット #メンタルヘルス #アニッチャ\n";
+
+test("JA widget wrapper is exact-lane and exact-slot only", () => {
+  assert.deepEqual(parseJaArgs(["run", "--slot", SLOT]), { command: "run", slot: SLOT });
+  assert.throws(() => parseJaArgs(["run", "--slot", "2026-08-26T07:30:00Z"]), /invalid|usage/i);
+  assert.throws(() => parseJaArgs(["publish"]), /usage/i);
+  assert.deepEqual(
+    {
+      tenant: JA_LANE.tenant,
+      product: JA_LANE.product,
+      locale: JA_LANE.locale,
+      platform: JA_LANE.platform,
+      account: JA_LANE.account,
+      manifestAccount: JA_LANE.manifestAccount,
+      profileRef: JA_LANE.profileRef,
+      integrationId: JA_LANE.integrationId,
+      integrationRef: JA_LANE.integrationRef,
+      renderer: JA_LANE.renderer,
+      format: JA_LANE.format,
+      packFormat: JA_LANE.packFormat,
+      form: JA_LANE.form,
+      lane: JA_LANE.lane,
+      creativeId: JA_LANE.creativeId,
+      packEnv: JA_LANE.packEnv,
+      videoEnv: JA_LANE.videoEnv,
+      captionEnv: JA_LANE.captionEnv,
+      approvalEnv: JA_LANE.approvalEnv,
+      verificationEnv: JA_LANE.verificationEnv,
+      approvedPackName: JA_LANE.approvedPackName,
+      workerLabel: JA_LANE.workerLabel,
+    },
+    {
+      tenant: "dais-local",
+      product: "anicca-ios",
+      locale: "ja",
+      platform: "instagram",
+      account: "@anicca.jp.videos",
+      manifestAccount: "anicca-ios-ja-widget-instagram",
+      profileRef: "profile://instagram/anicca.jp.videos",
+      integrationId: "cmmzzg2es0539p30ycb94ayx0",
+      integrationRef: "integration://postiz/instagram/cmmzzg2es0539p30ycb94ayx0",
+      renderer: "reelclaw-widget",
+      format: "reelclaw-widget",
+      packFormat: "widget-demo-reel",
+      form: "lockscreen-affirmation-widget",
+      lane: "anicca-ja-widget-instagram",
+      creativeId: "JA-WIDGET-CANARY-0c67b0a4d1de",
+      packEnv: "LM_ANICCA_JA_WIDGET_PACK_REF",
+      videoEnv: "LM_ANICCA_JA_WIDGET_VIDEO_REF",
+      captionEnv: "LM_ANICCA_JA_WIDGET_CAPTION_REF",
+      approvalEnv: "LM_ANICCA_JA_WIDGET_APPROVAL_REF",
+      verificationEnv: "LM_ANICCA_JA_WIDGET_NATIVE_VERIFICATION_REF",
+      approvedPackName: "anicca-ios-reelclaw-widget-ja.pack.json",
+      workerLabel: "anicca-ja-widget-canary",
+    },
+  );
+});
+
+test("JA first publication binds exact integration and holds Telegram", async () => {
+  const value = fixture(JA_LANE, JA_CAPTION);
+  const publicationCalls = [];
+  const telegramCalls = [];
+  const result = await runAniccaJaWidgetCanary(
+    ["run", "--slot", SLOT],
+    genericOptionsFor(value, publicationCalls, telegramCalls, JA_LANE),
+  );
+  assert.equal(result.publication.created, true);
+  assert.deepEqual(result.telegram, { created: false, held: true, message_id: null });
+  assert.equal(publicationCalls.length, 1);
+  assert.equal(publicationCalls[0].instagramIntegration, JA_LANE.integrationId);
+  assert.equal(publicationCalls[0].instagramProfileStatePath, "");
+  assert.equal(telegramCalls.length, 0);
+  assert.doesNotMatch(fs.readFileSync(path.join(value.dataDir, "marketing", "jobs.jsonl"), "utf8"), /postiz-secret|telegram-secret|openclaw|\/Users\//i);
+});
+
+test("JA first effect arms only the target and restores exact controls", async () => {
+  const value = fixture(JA_LANE, JA_CAPTION);
+  const publicationCalls = [];
+  let during;
+  const result = await runAniccaJaWidgetCanary(["run", "--slot", SLOT], genericOptionsFor(value, publicationCalls, [], JA_LANE, {
+    runDistribution: async (input) => {
+      during = {
+        manifest: JSON.parse(fs.readFileSync(value.manifestPath, "utf8")),
+        fence: JSON.parse(fs.readFileSync(value.fencePath, "utf8")),
+      };
+      return providerCalls(publicationCalls, {}, JA_LANE)(input);
+    },
+  }));
+  assert.equal(result.publication.created, true);
+  assert.equal(during.fence.state, "open");
+  assert.equal(during.fence.allowed_effect_key, `marketing:video:${JA_LANE.product}:instagram:${JA_LANE.creativeId}:${value.videoRef.slice(-64)}:${value.captionRef.slice(-64)}`);
+  assert.deepEqual(during.manifest.lanes.map(({ integration_id, production_armed, lane_state }) => ({ integration_id, production_armed, lane_state })), [{ integration_id: JA_LANE.integrationId, production_armed: true, lane_state: "production-armed" }]);
+  assert.deepEqual(fs.readFileSync(value.manifestPath), value.originalManifest);
+  assert.deepEqual(fs.readFileSync(value.fencePath), value.originalFence);
+  assert.equal(fs.statSync(value.manifestPath).mode & 0o777, value.originalManifestMode);
+  assert.equal(fs.statSync(value.fencePath).mode & 0o777, value.originalFenceMode);
+});
+
+test("JA provider failure restores controls and is unknown effect", async () => {
+  const value = fixture(JA_LANE, JA_CAPTION);
+  const publicationCalls = [];
+  await assert.rejects(runAniccaJaWidgetCanary(["run", "--slot", SLOT], genericOptionsFor(value, publicationCalls, [], JA_LANE, {
+    runDistribution: async () => { publicationCalls.push(true); throw new Error("JA provider boundary failed"); },
+  })), (error) => error.unknownEffect === true);
+  assert.equal(publicationCalls.length, 1);
+  assert.deepEqual(fs.readFileSync(value.manifestPath), value.originalManifest);
+  assert.deepEqual(fs.readFileSync(value.fencePath), value.originalFence);
+  assert.equal(fs.statSync(value.manifestPath).mode & 0o777, value.originalManifestMode);
+  assert.equal(fs.statSync(value.fencePath).mode & 0o777, value.originalFenceMode);
+});
+
+test("JA identity mismatch blocks before secret and provider", async () => {
+  for (const [target, patch, message] of [
+    ["packRef", { account_id: "@wrong.ja" }, /pack/i],
+    ["approvalRef", { integration_ref: "integration://postiz/instagram/wrong" }, /approval/i],
+  ]) {
+    const value = fixture(JA_LANE, JA_CAPTION);
+    value.env[target === "packRef" ? JA_LANE.packEnv : JA_LANE.approvalEnv] = replaceJson(value, target, patch);
+    const publicationCalls = [];
+    const secretCalls = [];
+    const integrationCalls = [];
+    await assert.rejects(
+      runAniccaJaWidgetCanary(["run", "--slot", SLOT], genericOptionsFor(value, publicationCalls, [], JA_LANE, {
+        secretProvider: { get: async (...args) => { secretCalls.push(args); return "secret"; } },
+        integrationProvider: { get: async (...args) => { integrationCalls.push(args); return JA_LANE.integrationId; } },
+      })),
+      message,
+    );
+    assert.equal(publicationCalls.length, 0);
+    assert.equal(secretCalls.length, 0);
+    assert.equal(integrationCalls.length, 0);
+  }
+});
+
+test("JA verified native release sends one Telegram and same-slot replay is zero", async () => {
+  const value = fixture(JA_LANE, JA_CAPTION);
+  const publicationCalls = [];
+  const telegramCalls = [];
+  const options = genericOptionsFor(value, publicationCalls, telegramCalls, JA_LANE);
+  const first = await runAniccaJaWidgetCanary(["run", "--slot", SLOT], options);
+  const receipt = JSON.parse(fs.readFileSync(path.join(value.dataDir, "marketing", "receipts.jsonl"), "utf8")).receipt;
+  value.env[JA_LANE.verificationEnv] = verification(value, receipt, {}, {}, JA_LANE);
+  const second = await runAniccaJaWidgetCanary(["run", "--slot", SLOT], { ...options, now: () => VERIFIED_NOW });
+  const third = await runAniccaJaWidgetCanary(["run", "--slot", SLOT], { ...options, now: () => VERIFIED_NOW });
+  assert.equal(first.telegram.held, true);
+  assert.deepEqual(second.telegram, { created: true, held: false, message_id: 42 });
+  assert.deepEqual(third.telegram, { created: false, held: false, message_id: 42 });
+  assert.equal(second.publication.created, false);
+  assert.equal(third.publication.created, false);
+  assert.equal(publicationCalls.length, 1);
+  assert.equal(telegramCalls.length, 1);
+});
+
+test("lane clones are rejected before JA secret/provider/state access", async () => {
+  const value = fixture(JA_LANE, JA_CAPTION);
+  const untrusted = { ...JA_LANE };
+  const secretCalls = [];
+  const providerCallsSeen = [];
+  assert.throws(() => parseArgs(["run", "--slot", SLOT], untrusted), /trusted|identity/i);
+  await assert.rejects(
+    runAniccaWidgetCanary(["run", "--slot", SLOT], {
+      env: value.env,
+      secretProvider: { get: async (...args) => { secretCalls.push(args); return "secret"; } },
+      runDistribution: async (input) => { providerCallsSeen.push(input); return {}; },
+    }, untrusted),
+    /trusted|identity/i,
+  );
+  assert.equal(secretCalls.length, 0);
+  assert.equal(providerCallsSeen.length, 0);
+  assert.deepEqual(fs.readFileSync(value.manifestPath), value.originalManifest);
+  assert.deepEqual(fs.readFileSync(value.fencePath), value.originalFence);
 });
