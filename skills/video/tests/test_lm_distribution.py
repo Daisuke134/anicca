@@ -154,6 +154,25 @@ class DistributionTests(unittest.TestCase):
         self.assertEqual(second["tiktok_url"], first["tiktok_url"])
         self.assertEqual(len(self.ledger.read_text().splitlines()), 2)
 
+    def test_provider_row_and_native_url_cannot_be_reused_by_different_video_lineage(self):
+        first = {
+            "platform": "tiktok", "status": "published", "creative_id": "JP4-first",
+            "video_sha256": "a" * 64, "caption_sha256": "c" * 64,
+            "public_url": "https://www.tiktok.com/@anicca.jp4/video/7677106804039355656",
+            "provider_id": "cmt5exlqb00cjqk0yu6q2xftc",
+        }
+        second = {
+            **first, "creative_id": "JP4-second", "video_sha256": "b" * 64,
+        }
+        rows = [first, second]
+        self.assertEqual(
+            lm_distribution._existing(rows, "tiktok", "JP4-first", "a" * 64, "c" * 64),
+            first,
+        )
+        self.assertIsNone(
+            lm_distribution._existing(rows, "tiktok", "JP4-second", "b" * 64, "c" * 64),
+        )
+
     def test_direct_route_cost_and_logged_out_provenance_survive_into_ledger(self):
         self.run_distribution(
             tt_extra={

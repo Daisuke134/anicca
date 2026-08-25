@@ -25,9 +25,14 @@ function discoverTarget(dataDir, target) {
   const file = path.join(dataDir, "tenants/dais-local/marketing/video-publication", target.publication_dir, "distribution.jsonl");
   let rows = fs.existsSync(file) ? fs.readFileSync(file, "utf8").split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line)) : [];
   if (target.receipt_job_id && !rows.some((row) => row.public_url?.includes(target.native_owner))) { const receipts = path.join(dataDir, "marketing/receipts.jsonl"); const matched = fs.existsSync(receipts) ? fs.readFileSync(receipts, "utf8").split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line)).find((row) => row.job_id === target.receipt_job_id)?.receipt : null; if (matched) rows = rows.concat({ ...matched, ts: matched.published_at, provider_id: matched.provider_post_id, caption_path: path.join(dataDir, "objects/sha256", matched.caption_sha256) }); }
-  return rows.filter((row) => {
+  const candidates = rows.filter((row) => {
     const match = /^https:\/\/www\.tiktok\.com\/@([^/]+)\/video\/(\d+)\/?$/.exec(String(row.public_url || ""));
     return row.platform === "tiktok" && row.status === "published" && row.provider_reconciled === true && row.format_id === target.format_id && row.form === target.form && row.locale === target.locale && match && `@${match[1]}` === target.account_id;
+  });
+  const seenUrls = new Set(); const seenProviderIds = new Set();
+  return candidates.filter((row) => {
+    if (seenUrls.has(row.public_url) || seenProviderIds.has(row.provider_id)) return false;
+    seenUrls.add(row.public_url); seenProviderIds.add(row.provider_id); return true;
   }).map((row) => {
     const match = /\/video\/(\d+)/.exec(row.public_url); const captionPath = path.resolve(String(row.caption_path || ""));
     if (row.format_id !== target.format_id || row.form !== target.form || row.locale !== target.locale || !/^c[a-z0-9]+$/.test(String(row.provider_id || "")) || !fs.statSync(captionPath, { throwIfNoEntry: false })?.isFile() || !Number.isFinite(Date.parse(row.ts))) throw new Error(`${target.account_id} verified distribution row invalid`);

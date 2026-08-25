@@ -146,6 +146,68 @@ test("a completed external receipt preserves lineage while correcting only its d
   assert.equal(fs.readFileSync(path.join(dataDir, "marketing", "receipts.jsonl"), "utf8").trim().split("\n").length, 2);
 });
 
+test("a caption-collision receipt becomes a durable non-retryable conflict without erasing history", async () => {
+  const dataDir = tempDataDir();
+  const ledger = createMarketingLocalLedger({ dataDir, now: () => "2026-08-26T02:00:00.000Z" });
+  const firstReceipt = {
+    status: "published",
+    provider_post_id: "postiz-jp4-1",
+    video_sha256: "a".repeat(64),
+    caption_sha256: "c".repeat(64),
+    public_url: "https://www.tiktok.com/@anicca.jp4/video/7677106804039355656",
+  };
+  const secondReceipt = { ...firstReceipt, video_sha256: "b".repeat(64) };
+
+  for (const [jobId, effectKey, receipt] of [
+    ["jp4-first", "tiktok:jp4:first", firstReceipt],
+    ["jp4-second", "tiktok:jp4:second", secondReceipt],
+  ]) {
+    await ledger.enqueueJob(job({
+      job_id: jobId,
+      effect_key: effectKey,
+      available_at: "2026-08-26T01:59:00.000Z",
+    }));
+    const claim = await ledger.claimJob({
+      tenantId: "dais-local", jobId, capability: "marketing.video.publish",
+      workerId: "worker", leaseSeconds: 30,
+    });
+    await ledger.completeJob({
+      tenantId: "dais-local", jobId, attempt: claim.attempt, workerId: "worker", receipt,
+    });
+  }
+
+  const input = {
+    tenantId: "dais-local",
+    jobId: "jp4-second",
+    confirmation: "QUARANTINE_CONFIRMED_EFFECT_CONFLICT",
+    expectedReceipt: secondReceipt,
+    reason: "caption_only_provider_reuse_conflicts_with_video_lineage",
+    conflictsWithJobId: "jp4-first",
+  };
+  const conflicted = await ledger.quarantineCompletedEffectConflict(input);
+  assert.equal(conflicted.status, "conflict");
+  assert.equal(conflicted.unknown_effect, false);
+  assert.equal(conflicted.conflicts_with_job_id, "jp4-first");
+  assert.deepEqual(await ledger.readReceipt({ tenantId: "dais-local", jobId: "jp4-first" }), firstReceipt);
+  assert.deepEqual(await ledger.readReceipt({ tenantId: "dais-local", jobId: "jp4-second" }), {
+    schema_version: 1,
+    kind: "marketing_effect_conflict",
+    status: "conflict",
+    reason: input.reason,
+    conflicts_with_job_id: "jp4-first",
+    superseded_receipt: secondReceipt,
+    quarantined_at: "2026-08-26T02:00:00.000Z",
+  });
+
+  const replay = await ledger.quarantineCompletedEffectConflict(input);
+  assert.deepEqual(replay, conflicted);
+  const history = fs.readFileSync(path.join(dataDir, "marketing", "receipts.jsonl"), "utf8")
+    .trim().split("\n").map((line) => JSON.parse(line));
+  assert.equal(history.length, 3);
+  assert.deepEqual(history[1].receipt, secondReceipt);
+  assert.equal(history[2].receipt.status, "conflict");
+});
+
 test("JSONL partial tails recover while a complete no-newline record remains appendable", async () => {
   const dataDir = tempDataDir();
   const first = createMarketingLocalLedger({

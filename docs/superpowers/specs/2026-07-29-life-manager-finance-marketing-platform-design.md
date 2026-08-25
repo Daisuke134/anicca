@@ -1990,11 +1990,11 @@ terminal acceptance evidence. Exactly one executable atomic item remains active;
 when the clock fires, its readback is reconciled before any dependent account arm.
 
 **Active executable atomic item:** MKT-09R2 repairs the JP4 caption-only
-false-positive reconciliation using TDD. Provider-row reuse must require
-non-conflicting media/effect lineage; the second video effect becomes durably
-`conflict` or superseded rather than `completed`; the incorrect Telegram
-receipt `30370` is quarantined without deleting history. The native post and
-the first correct receipt remain unchanged and no provider effect is created.
+false-positive reconciliation using TDD. Implementation is GREEN: caption-only
+provider reuse fails closed, provider/native identity is owned by the first
+media lineage, and completed effects can be durably conflict-quarantined
+without deleting the superseded receipt. Live correction of the second JP4
+publication and Telegram `30370`, plus replay-zero readback, remains pending.
 
 | ID | Atomic action | Account/lane | Done evidence |
 |---|---|---|---|
@@ -2071,7 +2071,7 @@ Their dependent account arm remains blocked until the observation is terminal.
 |---:|---|---|---|---|
 | 0 | **done — MKT-09R0:** restore safe writable capacity using only regeneration-safe caches and agent-owned temporary files | always | `1,610,212 KiB` available; bun/npm/hyperframes/Codex dependency/user cache contents only; 20/20 object/ledger tests; isolated LM-root probe object bytes equal, first enqueue `true`, replay `false`, readback intact; probe removed; provider effects `0` | delete evidence, state JSONL, receipts, object packs, OpenClaw assets, plists, or logs |
 | 1 | **done — MKT-09R1:** add one LM-owned publication effect fence shared by every mobile cycle | Order 0 passes and before the next scheduled mobile slot | shared ledger enqueue/claim gate; mode-0600 closed state; real HEN-015 cycle and replay leave publication `42`, Telegram `140`, Postiz `16`; generation `53→54→54`; durable refusal; RED 2, GREEN 2/2, ledger 20/20, cycle/canary 26/26 | stop/restart/unload/delete a job or rely on the non-enforced manifest |
-| 2 | **active — MKT-09R2:** repair JP4 caption-only false-positive reconciliation with TDD | Order 1 passes | provider reuse requires non-conflicting effect/media lineage; the second JP4 effect is durably superseded or terminal `conflict`, never `completed`; Telegram `30370` is quarantined; replay `0` | mutate the native post, reuse the first URL for the second video, or erase historical evidence |
+| 2 | **active — MKT-09R2 (implementation GREEN; live correction pending):** repair JP4 caption-only false-positive reconciliation with TDD | Order 1 passes | caption-only provider reuse now fails closed without exact video lineage; distribution and metric discovery assign a provider row/native URL to its first media lineage; completed-effect conflict quarantine preserves the superseded receipt and is replay-idempotent; focused RED 4 then GREEN 4/4; full Python 50/50 and Node 44/44. Pending: apply exact conflict correction to the second JP4 publication and Telegram `30370`, then prove replay `0` and the first receipt unchanged | mutate the native post, reuse the first URL for the second video, or erase historical evidence |
 | 3 | **MKT-09R3-01:** reconcile `b9b214111c86b0b861ce1737dedaba3a55de3ef16e1868d3e00ed9b001cd917c` | Order 2 passes | one caption/account-bound direct URL with unique non-conflicting provider/media lineage, or terminal `absent/conflict`; no retry/new effect | treat profile URL, numeric suffix, HTTP 200, or `PUBLISHED` alone as present |
 | 4 | **MKT-09R3-02:** reconcile `0b1f8c3fcfadb59ce46813e4081d461664ed66c038ea6a90fe54b63973299784` | Order 3 terminal | same exact-effect evidence contract | retry or replace |
 | 5 | **MKT-09R3-03:** reconcile `3d52f25e190e211350511aa472c29b2a5ab8117a5efa9e482602c0d1e0c00fb9` | Order 4 terminal | same exact-effect evidence contract | retry or replace |
@@ -2085,7 +2085,7 @@ Their dependent account arm remains blocked until the observation is terminal.
 | 13 | **MKT-09R3-11:** reconcile `404ff87aa9cc660e8656436275dd6cfe303d3053f74817fae58c595d57041741` | Order 12 terminal | same exact-effect evidence contract | retry or replace |
 | 14 | **MKT-09R3-12:** reconcile `72454c23e24342175fa4d45274a6631c91b1a91530e5dedcc47ba6223e269d45` | Order 13 terminal | same exact-effect evidence contract | retry or replace |
 | 15 | **MKT-09R3-13:** reconcile `f9aa4089d72fb3b77542cd967ed9f1c5d8c4f710de79d6a268cad7b0448b5c81` | Order 14 terminal | all 13 nonterminal effects are terminal; provider and local counts reconcile; no new effect | collapse multiple effects into one direct URL |
-| 16 | **MKT-09R4:** make the 30-integration registry and enforced lane policy agree | Order 15 passes | all 17 TikTok, 8 Instagram, 3 YouTube, and 2 X rows have explicit owner/disposition; every mobile cycle reads the same policy; the one YouTube skip is `@anicca-jp`; provider writes `0` | mass-disable or mass-enable Postiz accounts |
+| 16 | **MKT-09R4:** make the 30-integration registry and enforced lane policy agree | Order 15 passes | all 17 TikTok, 8 Instagram, 3 YouTube, and 2 X rows have explicit owner/disposition; every mobile cycle reads the same policy; the one YouTube skip is `@anicca-jp`; clone and code-audit the official Postiz CLI at a fixed commit for reusable readback/auth shapes; inspect legacy OpenClaw cron code and stored schedule read-only to map every Larry/ReelClaw lane without changing job state; provider writes `0` | mass-disable or mass-enable Postiz accounts, trust a CLI README without reading its entrypoints, or enable/kickstart/stop/restart/delete legacy jobs |
 | 17 | **MKT-09R5:** classify exactly one remaining non-skipped mobile account | Order 16 passes | product, locale, native account, integration, allowed renderer, approved asset pack, and target cadence are explicit; starts at `0/day` | infer product from handle or reuse another product's account |
 | 18 | **MKT-09R6:** import or build that account's one approved pack in LM object storage | Order 17 passes | immutable pack/object SHA readback; renderer has no OpenClaw path/env/assets dependency | execute legacy OpenClaw publisher or copy an already migrated pack |
 | 19 | **MKT-09R7:** run one canary for that exact account | Order 18 passes and fence is opened only for this effect | correct content and account are verified at a caption-matching direct native URL; natural Telegram carries it; publication/message replay `0`; metric source status is explicit | fan out, accept a profile URL, or call unavailable success/zero |

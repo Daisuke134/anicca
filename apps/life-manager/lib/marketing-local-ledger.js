@@ -872,6 +872,82 @@ function createMarketingLocalLedger(options = {}) {
     });
   }
 
+  function quarantineCompletedEffectConflict(input = {}) {
+    const tenantId = identifier(input.tenantId ?? input.tenant_id, "local ledger tenant id");
+    const jobId = identifier(input.jobId ?? input.job_id, "local ledger job id");
+    const conflictsWithJobId = identifier(
+      input.conflictsWithJobId ?? input.conflicts_with_job_id,
+      "local ledger conflicting job id",
+    );
+    if (jobId === conflictsWithJobId) throw new Error("local ledger conflict must reference another job");
+    if (input.confirmation !== "QUARANTINE_CONFIRMED_EFFECT_CONFLICT") {
+      throw new Error("local ledger effect conflict confirmation is invalid");
+    }
+    const reason = identifier(input.reason, "local ledger effect conflict reason");
+    const expectedReceipt = input.expectedReceipt ?? input.expected_receipt;
+    if (!expectedReceipt || typeof expectedReceipt !== "object" || Array.isArray(expectedReceipt)) {
+      throw new Error("local ledger expected conflict receipt is invalid");
+    }
+    if (Buffer.byteLength(JSON.stringify(expectedReceipt)) > 16_384) {
+      throw new Error("local ledger expected conflict receipt is too large");
+    }
+    return withLock(() => {
+      const state = snapshot();
+      const job = jobFor(state, tenantId, jobId);
+      const retained = receiptFor(state, tenantId, jobId);
+      const conflictingJob = jobFor(state, tenantId, conflictsWithJobId);
+      const conflictingReceipt = receiptFor(state, tenantId, conflictsWithJobId);
+      if (
+        job?.status === "conflict"
+        && retained?.kind === "marketing_effect_conflict"
+        && retained.reason === reason
+        && retained.conflicts_with_job_id === conflictsWithJobId
+        && isDeepStrictEqual(retained.superseded_receipt, expectedReceipt)
+      ) return clone(job);
+      if (
+        !job || job.status !== "completed" || job.effect_class === "none" || !retained
+        || !conflictingJob || conflictingJob.status !== "completed" || !conflictingReceipt
+      ) {
+        throw new Error("local ledger completed effect is not conflict-quarantinable");
+      }
+      if (!isDeepStrictEqual(retained, expectedReceipt)) {
+        throw new Error("local ledger effect conflict receipt changed");
+      }
+      const observedAt = nowInstant(now);
+      const conflictReceipt = {
+        schema_version: 1,
+        kind: "marketing_effect_conflict",
+        status: "conflict",
+        reason,
+        conflicts_with_job_id: conflictsWithJobId,
+        superseded_receipt: clone(retained),
+        quarantined_at: observedAt,
+      };
+      if (Buffer.byteLength(JSON.stringify(conflictReceipt)) > 16_384) {
+        throw new Error("local ledger effect conflict receipt is too large");
+      }
+      append(receiptsFile, {
+        schema_version: 1, kind: "receipt", tenant_id: tenantId, job_id: jobId,
+        attempt: job.attempt, receipt: clone(conflictReceipt), correction: "confirmed_effect_conflict",
+        corrected_at: observedAt,
+      });
+      atomicJson(path.join(receiptsDirectory, `${keyFor(tenantId, jobId)}.json`), {
+        schema_version: 1, tenant_id: tenantId, job_id: jobId, receipt: conflictReceipt,
+      });
+      const conflicted = {
+        ...job,
+        status: "conflict",
+        unknown_effect: false,
+        conflict_reason: reason,
+        conflicts_with_job_id: conflictsWithJobId,
+        conflicted_at: observedAt,
+        updated_at: observedAt,
+      };
+      append(jobsFile, { schema_version: 1, kind: "job", event: "conflict_quarantine", job: conflicted });
+      return clone(conflicted);
+    });
+  }
+
   function readJob(input = {}) {
     const tenantId = identifier(input.tenantId ?? input.tenant_id, "local ledger tenant id");
     const jobId = identifier(input.jobId ?? input.job_id, "local ledger job id");
@@ -896,6 +972,7 @@ function createMarketingLocalLedger(options = {}) {
     retryJob: async (input) => retryJob(input),
     resolveReconciliation: async (input) => resolveReconciliation(input),
     correctReceiptDirectUrl: async (input) => correctReceiptDirectUrl(input),
+    quarantineCompletedEffectConflict: async (input) => quarantineCompletedEffectConflict(input),
     readJob: async (input) => readJob(input),
     readReceipt: async (input) => readReceipt(input),
   });

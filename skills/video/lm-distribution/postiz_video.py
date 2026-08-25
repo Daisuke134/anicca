@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 from datetime import datetime, timedelta, timezone
+import hashlib
 import json
 import mimetypes
 import os
@@ -131,7 +132,14 @@ def find_post(response, post_id: str, platform: str = "tiktok") -> dict:
     return {"state": state, "post_url": url if isinstance(url, str) else None}
 
 
-def find_existing_post(response, *, integration: str, caption: str, platform: str = "tiktok") -> dict | None:
+def find_existing_post(
+    response,
+    *,
+    integration: str,
+    caption: str,
+    video_sha256: str,
+    platform: str = "tiktok",
+) -> dict | None:
     posts = response.get("posts", []) if isinstance(response, dict) else response
     if not isinstance(posts, list):
         raise PostizError("Postiz list response has no posts array")
@@ -142,7 +150,15 @@ def find_existing_post(response, *, integration: str, caption: str, platform: st
         integration_id = (
             row_integration.get("id") if isinstance(row_integration, dict) else row.get("integrationId")
         )
-        if integration_id != integration or _normalized(str(row.get("content") or "")) != _normalized(caption):
+        # Caption equality cannot identify a publication effect: scheduled lanes
+        # legitimately reuse copy for different video bytes. Postiz's normal list
+        # response does not carry this Life Manager digest, so it fails closed and
+        # the exact creative/video/caption local ledger remains the only reuse path.
+        if (
+            integration_id != integration
+            or _normalized(str(row.get("content") or "")) != _normalized(caption)
+            or row.get("lifeManagerVideoSha256") != video_sha256
+        ):
             continue
         post_id = row.get("id")
         if not isinstance(post_id, str) or not post_id:
@@ -456,6 +472,7 @@ def main() -> int:
         read_recent_posts(api_key),
         integration=args.integration,
         caption=caption,
+        video_sha256=hashlib.sha256(args.video.read_bytes()).hexdigest(),
         platform=args.platform,
     )
     if existing:

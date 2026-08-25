@@ -76,7 +76,7 @@ class PostizVideoTests(unittest.TestCase):
             {"state": "PUBLISHED", "post_url": "https://www.tiktok.com/@life.manager"},
         )
 
-    def test_exact_recent_provider_effect_reconciles_direct_provider_url_before_upload(self):
+    def test_caption_only_provider_effect_never_reconciles_a_different_video(self):
         rows = {
             "posts": [{
                 "id": "post-1",
@@ -87,18 +87,13 @@ class PostizVideoTests(unittest.TestCase):
                 "releaseId": "internal-provider-id",
             }],
         }
-        self.assertEqual(
+        self.assertIsNone(
             postiz_video.find_existing_post(
                 rows,
                 integration="integration-1",
                 caption="Exact caption\n#line",
+                video_sha256="b" * 64,
             ),
-            {
-                "post_id": "post-1",
-                "state": "PUBLISHED",
-                "post_url": "https://www.tiktok.com/@life/video/222",
-                "reconciled": True,
-            },
         )
 
     def test_profile_release_url_resolves_to_matching_recent_video(self):
