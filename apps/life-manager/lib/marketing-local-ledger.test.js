@@ -9,6 +9,10 @@ const path = require("node:path");
 const test = require("node:test");
 
 const { createMarketingLocalLedger } = require("./marketing-local-ledger.js");
+const {
+  createMarketingLaneManifest,
+  writeMarketingLaneManifest,
+} = require("./marketing-lane-manifest.js");
 
 const PROMOTION_CONFIRMATION = "PROMOTE_HONNE_EN_TIKTOK_CANARY";
 const PUBLIC_URL = "https://www.tiktok.com/@honne_reveal/video/7999999999999999999";
@@ -34,6 +38,44 @@ function job(overrides = {}) {
 
 function tempDataDir() {
   return fs.mkdtempSync(path.join(os.tmpdir(), "lm-marketing-ledger-"));
+}
+
+function writeLanePolicy(dataDir, laneState) {
+  const lane = {
+    id: "live-tt-honne-en",
+    provider: "postiz",
+    platform: "tiktok",
+    profile: "@honne_reveal",
+    account: "@honne_reveal",
+    product_id: "honne-ai",
+    locale: "en",
+    disabled: false,
+    verified: true,
+    owner: "life-manager",
+    lane_state: laneState,
+    disposition: "target",
+    renderer: "reelclaw",
+    format: "relationship-confession",
+    approved_pack: "honne-ai-reelclaw-en.pack.json",
+    canary_state: "verified",
+    target_daily_limit: 3,
+  };
+  const manifest = createMarketingLaneManifest({
+    tenant_id: "dais-local",
+    integrations: [lane],
+    holds: [{
+      integration_id: "live-x-hold",
+      platform: "x",
+      account: "@aniccaxxx",
+      provider: "postiz",
+      provider_disabled: false,
+      owner: "life-manager",
+      disposition: "hold",
+      target_daily_limit: 0,
+      verified: true,
+    }],
+  }, { tenantId: "dais-local", assignments: [lane] });
+  writeMarketingLaneManifest(manifest, { dataDir });
 }
 
 test("local ledger uses the portable runtime data root and rejects legacy roots", () => {
@@ -96,6 +138,48 @@ test("closed publication effect fence rejects claim of an already queued provide
     (error) => error.code === "MARKETING_PUBLICATION_EFFECT_FENCED",
   );
 
+  assert.equal((await ledger.readJob({ tenantId: "dais-local", jobId: "publication-job" })).status, "queued");
+});
+
+test("open publication fence still requires the exact armed Life Manager lane at enqueue and claim", async () => {
+  const dataDir = tempDataDir();
+  const marketingDir = path.join(dataDir, "marketing");
+  fs.mkdirSync(marketingDir, { recursive: true, mode: 0o700 });
+  fs.writeFileSync(path.join(marketingDir, "publication-effect-fence.json"), `${JSON.stringify({
+    schema_version: 1,
+    state: "open",
+    allowed_effect_key: "tiktok:honne-ai:en:2026-08-21T02:00:00.000Z",
+    reason: "one canary",
+  })}\n`, { mode: 0o600 });
+  const value = job({
+    available_at: "2026-08-26T01:31:00.000Z",
+    input_refs: {
+      ...job().input_refs,
+      tiktok_integration_ref: "integration://postiz/tiktok/live-tt-honne-en",
+    },
+  });
+  const ledger = createMarketingLocalLedger({ dataDir, now: () => "2026-08-26T01:31:00.000Z" });
+
+  writeLanePolicy(dataDir, "default-off");
+  await assert.rejects(
+    ledger.enqueueJob(value),
+    (error) => error.code === "MARKETING_PUBLICATION_LANE_FORBIDDEN",
+  );
+
+  writeLanePolicy(dataDir, "production-armed");
+  assert.equal((await ledger.enqueueJob(value)).created, true);
+
+  writeLanePolicy(dataDir, "default-off");
+  await assert.rejects(
+    ledger.claimJob({
+      tenantId: "dais-local",
+      jobId: "publication-job",
+      capability: "marketing.video.publish",
+      workerId: "policy-worker",
+      leaseSeconds: 30,
+    }),
+    (error) => error.code === "MARKETING_PUBLICATION_LANE_FORBIDDEN",
+  );
   assert.equal((await ledger.readJob({ tenantId: "dais-local", jobId: "publication-job" })).status, "queued");
 });
 

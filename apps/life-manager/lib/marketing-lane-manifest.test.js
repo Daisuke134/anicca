@@ -87,6 +87,7 @@ test("creates a frozen secret-free manifest from explicit live routes", () => {
 
 test("encodes classified targets separately from unclassified zero-day holds", () => {
   const target = row({
+    owner: "life-manager",
     lane_state: "default-off",
     disposition: "target",
     renderer: "reelclaw",
@@ -104,6 +105,7 @@ test("encodes classified targets separately from unclassified zero-day holds", (
       account: "@unclassified",
       provider: "postiz",
       provider_disabled: false,
+      owner: "life-manager",
       disposition: "hold",
       target_daily_limit: 0,
       verified: true,
@@ -118,6 +120,7 @@ test("encodes classified targets separately from unclassified zero-day holds", (
     account: "@unclassified",
     provider: "postiz",
     provider_disabled: false,
+    owner: "life-manager",
     disposition: "hold",
     target_daily_limit: 0,
   }]);
@@ -131,6 +134,72 @@ test("encodes classified targets separately from unclassified zero-day holds", (
       tenant_id: "dais-local",
       integrations: [target],
       holds: [{ ...manifest.holds[0], target_daily_limit: 1, verified: true }],
+    }),
+    /hold disposition invalid/i,
+  );
+});
+
+test("keeps X as a zero-day hold and permits only the selected Anicca YouTube skip", () => {
+  const target = row({
+    owner: "life-manager",
+    lane_state: "default-off",
+    disposition: "target",
+    renderer: "reelclaw",
+    format: "relationship-confession",
+    approved_pack: "honne-ai-reelclaw-en.pack.json",
+    canary_state: "verified",
+    target_daily_limit: 3,
+  });
+  const manifest = createManifest({
+    tenant_id: "dais-local",
+    integrations: [target],
+    holds: [
+      {
+        integration_id: "live-x-anicca",
+        platform: "x",
+        account: "@aniccaxxx",
+        provider: "postiz",
+        provider_disabled: false,
+        owner: "life-manager",
+        disposition: "hold",
+        target_daily_limit: 0,
+        verified: true,
+      },
+      {
+        integration_id: "live-yt-anicca-skip",
+        platform: "youtube",
+        account: "@anicca-jp",
+        provider: "postiz",
+        provider_disabled: false,
+        owner: "life-manager",
+        disposition: "skip",
+        target_daily_limit: 0,
+        verified: true,
+      },
+    ],
+  });
+  assert.deepEqual(manifest.holds.map(({ platform, account, owner, disposition }) => ({
+    platform, account, owner, disposition,
+  })), [
+    { platform: "x", account: "@aniccaxxx", owner: "life-manager", disposition: "hold" },
+    { platform: "youtube", account: "@anicca-jp", owner: "life-manager", disposition: "skip" },
+  ]);
+  assert.equal(isMarketingLaneManifest(manifest), true);
+  assert.throws(
+    () => createManifest({
+      tenant_id: "dais-local",
+      integrations: [target],
+      holds: [{
+        integration_id: "wrong-skip",
+        platform: "youtube",
+        account: "@another-channel",
+        provider: "postiz",
+        provider_disabled: false,
+        owner: "life-manager",
+        disposition: "skip",
+        target_daily_limit: 0,
+        verified: true,
+      }],
     }),
     /hold disposition invalid/i,
   );

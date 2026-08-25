@@ -568,6 +568,17 @@ credential store, and is AGPL. It is not embedded or invoked. Life Manager
 keeps its own minimal client, durable effect ledger, no automatic POST retry,
 and GET-only readback/reconciliation. Third-party Postiz CLIs are rejected.
 
+The read-only legacy inventory confirms that all marketing OpenClaw cron
+targets are disabled and the corresponding launchd agents are unloaded; old
+backups prove only that they were previously enabled. ReelClaw Widget JA has
+inconsistent account mappings, Widget/Card EN lacks an approved hook bank, and
+Larry JA/EN lacks a reliable native-artifact verification contract. Life
+Manager reuses only the creative responsibilities that survive review — fixed
+string slideshow composition, 14-day anti-repeat, normalization, Instagram
+PNG-to-JPEG conversion, and approved asset pools. It does not copy the legacy
+scheduler, account mappings, wrappers, `postId`/`QUEUE` success logic, or
+`|| true` error suppression. No legacy job state changed during this audit.
+
 ### 3.3 Historical marketing launch state before quarantine
 
 The table preserves the pre-quarantine schedules for behavior equivalence. Its
@@ -2167,14 +2178,14 @@ order is the §12.3 recovery checklist: `MKT-09R0 → MKT-09R1 → MKT-09R2 →
 MKT-09R3-01..13 → MKT-09R4..R9 → MKT-10 → MKT-11 → MKT-12 → MKT-13`.
 No later row starts early.
 
-Current TODO state: **incident recovery remains open at MKT-09R4.** R0 through
-R3 are terminal: capacity is safe, the shared publication fence remains closed,
+Current TODO state: **incident recovery remains open at MKT-09R5.** R0 through
+R4 are terminal: capacity is safe, the shared publication fence remains closed,
 the JP4 false completion is quarantined, and the 13-effect set is 12 `present`
 plus one truthful `absent`. The full publication ledger is 41 `completed`,
 one `conflict`, and zero unknown/running/reconciling jobs. This does not prove
 all accounts or schedules healthy: the measured live schedules still produced
-only 32 of 64 expected provider rows, the manifest is not yet an enforced
-control plane, and two delayed effects missed their logical slots by hours.
+only 32 of 64 expected provider rows, most accounts remain unclassified at
+0/day, and two delayed effects missed their logical slots by hours.
 MKT-12A0 and every cadence expansion remain blocked. Honne still has TikTok
 destinations only; dedicated Honne Instagram and YouTube integrations do not
 yet exist.
@@ -2184,10 +2195,10 @@ An external observation clock is not an active implementation item. It remains
 terminal acceptance evidence. Exactly one executable atomic item remains active;
 when the clock fires, its readback is reconciled before any dependent account arm.
 
-**Active executable atomic item:** MKT-09R4 makes the 30-integration live
-registry, explicit owner/disposition inventory, and enforced Life Manager lane
-policy agree. It is readback/configuration work only; no account may be armed
-and no provider or legacy job state may change.
+**Active executable atomic item:** MKT-09R5 classifies exactly one remaining
+non-skipped mobile account. It records product, locale, native account,
+integration, renderer, asset pack, and target cadence while leaving the account
+at `0/day`; it does not render, publish, or alter provider/legacy job state.
 
 | ID | Atomic action | Account/lane | Done evidence |
 |---|---|---|---|
@@ -2278,8 +2289,8 @@ Their dependent account arm remains blocked until the observation is terminal.
 | 13 | **done — MKT-09R3-11:** reconcile `404ff87aa9cc660e8656436275dd6cfe303d3053f74817fae58c595d57041741` | Order 12 terminal | Anicca JP4 `AJ-CARD-003` is terminal `present` at direct `https://www.tiktok.com/@anicca.jp4/video/7677848633974344977`; exact caption/account/time oEmbed; fresh thumbnail matches video object; internal suffix rejected; correction `1/1`; replay `0/0`; provider window remains two rows | retry or replace |
 | 14 | **done — MKT-09R3-12:** reconcile `72454c23e24342175fa4d45274a6631c91b1a91530e5dedcc47ba6223e269d45` | Order 13 terminal | Honne EN `HEN-013` is terminal `present` at direct `https://www.tiktok.com/@honne_reveal/video/7677893103830764816`; exact caption/account oEmbed and visual match; internal suffix rejected; logical slot 02:00 and actual publish 09:07 remain distinct; correction `1/1`; replay `0/0` | retry, replace, or erase the seven-hour miss |
 | 15 | **done — MKT-09R3-13:** reconcile `f9aa4089d72fb3b77542cd967ed9f1c5d8c4f710de79d6a268cad7b0448b5c81` | Order 14 terminal | Honne JA `HJA-019` is terminal `present` at direct `https://www.tiktok.com/@honnevideo/video/7677893274102811920`; exact caption/account oEmbed and visual match; logical slot 03:30 and actual publish 09:07 remain distinct; all 13 effects are 12 present/1 absent; publication ledger 41 completed/1 conflict/open 0; replay `0/0` | collapse multiple effects into one direct URL |
-| 16 | **active — MKT-09R4:** make the 30-integration registry and enforced lane policy agree | Order 15 passes | all 17 TikTok, 8 Instagram, 3 YouTube, and 2 X rows have explicit owner/disposition; every mobile cycle reads the same policy; the one YouTube skip is `@anicca-jp`; clone and code-audit the official Postiz CLI at a fixed commit for reusable readback/auth shapes; inspect legacy OpenClaw cron code and stored schedule read-only to map every Larry/ReelClaw lane without changing job state; provider writes `0` | mass-disable or mass-enable Postiz accounts, trust a CLI README without reading its entrypoints, or enable/kickstart/stop/restart/delete legacy jobs |
-| 17 | **MKT-09R5:** classify exactly one remaining non-skipped mobile account | Order 16 passes | product, locale, native account, integration, allowed renderer, approved asset pack, and target cadence are explicit; starts at `0/day` | infer product from handle or reuse another product's account |
+| 16 | **done — MKT-09R4:** make the 30-integration registry and enforced lane policy agree | Order 15 passes | live manifest `marketing-lane-manifest:537ad257ea887097f60b07d0e439f1bfb30b8f8a4703cd960b27b31c8fab3639` validates at mode `0600`: 17 TikTok, 8 Instagram, 3 YouTube, 2 X; all 30 owner=`life-manager`; six classified targets are `default-off`, 24 are 0/day; only YouTube `@anicca-jp` is `skip`; provider-disabled mismatches 0; armed 0. Shared enqueue/claim policy rejects an open-fence effect unless tenant/product/locale/platform/integration and exact armed target all agree; RED 35/38, GREEN 38/38. Official `postiz-agent` source was audited at `77d09c668cb2f7793989a185844d0a0c3d65c951`; legacy cron/source inventory remained read-only; provider writes 0 | mass-disable or mass-enable Postiz accounts, trust a CLI README without reading its entrypoints, or enable/kickstart/stop/restart/delete legacy jobs |
+| 17 | **active — MKT-09R5:** classify exactly one remaining non-skipped mobile account | Order 16 passes | product, locale, native account, integration, allowed renderer, approved asset pack, and target cadence are explicit; starts at `0/day` | infer product from handle or reuse another product's account |
 | 18 | **MKT-09R6:** import or build that account's one approved pack in LM object storage | Order 17 passes | immutable pack/object SHA readback; renderer has no OpenClaw path/env/assets dependency | execute legacy OpenClaw publisher or copy an already migrated pack |
 | 19 | **MKT-09R7:** run one canary for that exact account | Order 18 passes and fence is opened only for this effect | correct content and account are verified at a caption-matching direct native URL; natural Telegram carries it; publication/message replay `0`; metric source status is explicit | fan out, accept a profile URL, or call unavailable success/zero |
 | 20 | **MKT-09R8:** repeat Orders 17–19 one account at a time | prior account terminal | all retained Instagram/TikTok accounts and both non-skipped YouTube accounts have isolated terminal evidence | enable all accounts together |

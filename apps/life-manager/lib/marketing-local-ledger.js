@@ -5,6 +5,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { isDeepStrictEqual } = require("node:util");
 const { resolveDataRoot } = require("./runtime-paths.js");
+const { isMarketingLaneManifest } = require("./marketing-lane-manifest.js");
 
 const SHADOW_HOLD_AVAILABLE_AT = "9999-12-31T23:59:59.000Z";
 const EFFECT_CLASSES = new Set(["none", "publish", "message", "money"]);
@@ -123,6 +124,8 @@ function createMarketingLocalLedger(options = {}) {
   const reclaimLockFile = path.join(directory, ".ledger.reclaim");
   const publicationFenceFile = path.join(directory, "publication-effect-fence.json");
   const publicationFenceRefusalsFile = path.join(directory, "publication-effect-fence-refusals.jsonl");
+  const laneManifestFile = path.join(directory, "lane-manifest.json");
+  const lanePolicyRefusalsFile = path.join(directory, "lane-policy-refusals.jsonl");
   const claimsDirectory = path.join(directory, "claims");
   const receiptsDirectory = path.join(directory, "receipts");
   const now = options.now || (() => new Date().toISOString());
@@ -157,21 +160,84 @@ function createMarketingLocalLedger(options = {}) {
   function assertPublicationEffectAllowed(job, phase) {
     if (job.capability !== "marketing.video.publish") return;
     const fence = publicationFence();
-    if (!fence || (fence.state === "open" && fence.allowed_effect_key === job.effect_key)) return;
-    const observedAt = nowInstant(now);
-    append(publicationFenceRefusalsFile, {
+    if (fence && !(fence.state === "open" && fence.allowed_effect_key === job.effect_key)) {
+      const observedAt = nowInstant(now);
+      append(publicationFenceRefusalsFile, {
+        schema_version: 1,
+        kind: "marketing_publication_effect_refusal",
+        tenant_id: job.tenant_id,
+        job_id: job.job_id,
+        effect_key: job.effect_key,
+        phase,
+        fence_state: fence.state,
+        reason: required(fence.reason || "publication effect is not explicitly allowed", "publication effect fence reason", 500),
+        recorded_at: observedAt,
+      });
+      const error = new Error("marketing publication effect fenced");
+      error.code = "MARKETING_PUBLICATION_EFFECT_FENCED";
+      throw error;
+    }
+    assertPublicationLaneAllowed(job, phase, fence !== null);
+  }
+
+  function laneManifest(requiredByFence) {
+    let stat;
+    let value;
+    try {
+      stat = fs.statSync(laneManifestFile);
+      value = JSON.parse(fs.readFileSync(laneManifestFile, "utf8"));
+    } catch (error) {
+      if (error.code === "ENOENT" && !requiredByFence) return null;
+      throw new Error("local marketing lane manifest invalid");
+    }
+    if ((stat.mode & 0o077) !== 0 || !isMarketingLaneManifest(value)) {
+      throw new Error("local marketing lane manifest invalid");
+    }
+    return value;
+  }
+
+  function publicationLane(job, manifest) {
+    const refs = job.input_refs || {};
+    const productMatch = /^product:\/\/([A-Za-z0-9._-]+)$/.exec(String(refs.product_ref || ""));
+    const localeMatch = /^locale:\/\/([a-z]{2}(?:-[A-Z]{2})?)$/.exec(String(refs.locale_ref || ""));
+    const platformMatch = /^platform:\/\/(instagram|tiktok|youtube)$/.exec(String(refs.platform_ref || ""));
+    if (!productMatch || !localeMatch || !platformMatch) return null;
+    const platform = platformMatch[1];
+    const integrationMatch = new RegExp(`^integration://postiz/${platform}/([A-Za-z0-9._:-]+)$`)
+      .exec(String(refs[`${platform}_integration_ref`] || ""));
+    if (!integrationMatch) return null;
+    const product = productMatch[1] === "anicca-ios" ? "anicca" : productMatch[1];
+    return manifest.lanes.find((lane) => (
+      lane.tenant_id === job.tenant_id
+      && lane.product_id === product
+      && lane.locale === localeMatch[1]
+      && lane.platform === platform
+      && lane.integration_id === integrationMatch[1]
+      && lane.owner === "life-manager"
+      && lane.disposition === "target"
+      && lane.disabled === false
+      && lane.lane_state === "production-armed"
+      && lane.production_armed === true
+      && lane.target_daily_limit >= 1
+    )) || null;
+  }
+
+  function assertPublicationLaneAllowed(job, phase, requiredByFence) {
+    const manifest = laneManifest(requiredByFence);
+    if (!manifest || publicationLane(job, manifest)) return;
+    append(lanePolicyRefusalsFile, {
       schema_version: 1,
-      kind: "marketing_publication_effect_refusal",
+      kind: "marketing_publication_lane_refusal",
       tenant_id: job.tenant_id,
       job_id: job.job_id,
       effect_key: job.effect_key,
       phase,
-      fence_state: fence.state,
-      reason: required(fence.reason || "publication effect is not explicitly allowed", "publication effect fence reason", 500),
-      recorded_at: observedAt,
+      manifest_id: manifest.manifest_id,
+      reason: "exact Life Manager production lane is not armed",
+      recorded_at: nowInstant(now),
     });
-    const error = new Error("marketing publication effect fenced");
-    error.code = "MARKETING_PUBLICATION_EFFECT_FENCED";
+    const error = new Error("marketing publication lane forbidden");
+    error.code = "MARKETING_PUBLICATION_LANE_FORBIDDEN";
     throw error;
   }
 

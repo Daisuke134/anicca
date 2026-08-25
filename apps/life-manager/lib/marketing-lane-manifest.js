@@ -7,6 +7,7 @@ const { resolveDataRoot } = require("./runtime-paths.js");
 
 const POSTIZ_INTEGRATIONS_URL = "https://api.postiz.com/public/v1/integrations";
 const PLATFORMS = new Set(["instagram", "tiktok", "youtube"]);
+const HOLD_PLATFORMS = new Set([...PLATFORMS, "x"]);
 const LANE_STATES = new Set(["production-armed", "shadow", "default-off", "disabled"]);
 const ACCOUNT = /^@?[A-Za-z0-9._-]{1,80}$/;
 const IDENTIFIER = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
@@ -181,6 +182,7 @@ function canonicalIdentity(value) {
     production_armed: aliasValue(value, ["production_armed"], "marketing lane production_armed", (candidate) => normalizeBoolean(candidate, "marketing lane production_armed")),
     verified: aliasValue(value, ["verified"], "marketing lane verified", (candidate) => normalizeBoolean(candidate, "marketing lane verified")),
     disposition: aliasValue(value, ["disposition"], "marketing lane disposition", (candidate) => text(candidate, "marketing lane disposition", IDENTIFIER)),
+    owner: aliasValue(value, ["owner"], "marketing lane owner", (candidate) => text(candidate, "marketing lane owner", IDENTIFIER)),
     renderer: aliasValue(value, ["renderer"], "marketing lane renderer", (candidate) => text(candidate, "marketing lane renderer", IDENTIFIER)),
     format: aliasValue(value, ["format"], "marketing lane format", (candidate) => text(candidate, "marketing lane format", IDENTIFIER)),
     approved_pack: aliasValue(value, ["approved_pack"], "marketing lane approved pack", (candidate) => text(candidate, "marketing lane approved pack", IDENTIFIER)),
@@ -194,6 +196,7 @@ const IDENTITY_FIELDS = [
   "integration_id", "tenant_id", "product_id", "locale", "platform", "account",
   "profile", "provider", "disabled", "lane_state", "production_armed", "verified",
   "disposition", "renderer", "format", "approved_pack", "canary_state", "target_daily_limit",
+  "owner",
 ];
 
 function compareIdentities(left, right) {
@@ -313,6 +316,9 @@ function normalizeLane(row, options, assignments) {
     disabled,
     lane_state: laneState,
     production_armed: productionArmed,
+    ...(rawIdentity.owner ?? assignmentRecord.identity.owner ? {
+      owner: rawIdentity.owner ?? assignmentRecord.identity.owner,
+    } : {}),
     ...(hasPortfolioMetadata ? {
       disposition: portfolioValues[0],
       renderer: portfolioValues[1],
@@ -334,10 +340,15 @@ function normalizeHold(value) {
     account: normalizeAccount(value.account),
     provider: normalizeProvider(value.provider),
     provider_disabled: normalizeDisabled(value.provider_disabled),
+    ...(value.owner === undefined ? {} : { owner: text(value.owner, "marketing hold owner", IDENTIFIER) }),
     disposition: text(value.disposition, "marketing hold disposition", IDENTIFIER),
     target_daily_limit: normalizeDailyLimit(value.target_daily_limit, "marketing hold daily limit"),
   };
-  if (!PLATFORMS.has(hold.platform) || hold.provider !== "postiz" || hold.disposition !== "hold" || hold.target_daily_limit !== 0) {
+  const validSkip = hold.disposition === "skip"
+    && hold.platform === "youtube"
+    && hold.account.toLowerCase() === "@anicca-jp";
+  if (!HOLD_PLATFORMS.has(hold.platform) || hold.provider !== "postiz"
+    || (!validSkip && hold.disposition !== "hold") || hold.target_daily_limit !== 0) {
     invalid("marketing hold disposition invalid");
   }
   return hold;
