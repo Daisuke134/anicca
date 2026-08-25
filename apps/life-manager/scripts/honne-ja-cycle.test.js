@@ -2,7 +2,7 @@
 
 const assert = require("node:assert/strict");
 const test = require("node:test");
-const { ANICCA_HE_SLOTS, ANICCA_JP4_SLOTS, ANICCA_MAIN_INSTAGRAM_SLOTS, ANICCA_MAIN_SLOTS, PRODUCTION_SLOTS, parseArgs, runSlot } = require("./honne-ja-cycle.js");
+const { ANICCA_EN_CARD_INSTAGRAM_SLOTS, ANICCA_HE_SLOTS, ANICCA_JP4_SLOTS, ANICCA_MAIN_INSTAGRAM_SLOTS, ANICCA_MAIN_SLOTS, PRODUCTION_SLOTS, parseArgs, runSlot, telegramNativeUrlVerified } = require("./honne-ja-cycle.js");
 
 test("Honne JA production cadence has three exact idempotent slots", () => {
   assert.deepEqual([...PRODUCTION_SLOTS], ["08:30", "12:30", "21:30"]);
@@ -15,6 +15,21 @@ test("Anicca main Instagram has one exact daily Reel slot", () => {
   assert.deepEqual([...ANICCA_MAIN_INSTAGRAM_SLOTS], ["19:10"]);
   const lane = parseArgs(["run-anicca-main-instagram"]).lane;
   assert.equal(lane.platform, "instagram"); assert.equal(lane.account, "@anicca.jp1");
+});
+
+test("Anicca EN Card Instagram is exact-account bound and holds Telegram until native verification", () => {
+  assert.deepEqual([...ANICCA_EN_CARD_INSTAGRAM_SLOTS], ["12:45", "21:30"]);
+  const lane = parseArgs(["run-anicca-en-card-instagram"]).lane;
+  assert.equal(lane.platform, "instagram");
+  assert.equal(lane.account, "@anicca.encards");
+  assert.equal(lane.integrationId, "cmpc3gx4001nklg0y27a8o66q");
+  assert.equal(lane.instagramProfileRef, "profile://instagram/anicca.encards");
+  assert.equal(lane.packKey, "LM_ANICCA_EN_CARD_PACK_REF");
+  assert.equal(lane.mediaKey, "LM_ANICCA_EN_CARD_MEDIA_REFS");
+  const url = "https://www.instagram.com/reel/ExactArtifact1/";
+  assert.equal(telegramNativeUrlVerified(lane, {}, url), false);
+  assert.equal(telegramNativeUrlVerified(lane, { LM_ANICCA_EN_CARD_VERIFIED_DIRECT_URL: url }, url), true);
+  assert.equal(telegramNativeUrlVerified(lane, { LM_ANICCA_EN_CARD_VERIFIED_DIRECT_URL: "https://www.instagram.com/reel/Wrong/" }, url), false);
 });
 
 test("Honne JA production CLI accepts only an optional exact slot", () => {
