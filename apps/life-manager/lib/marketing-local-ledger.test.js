@@ -50,6 +50,55 @@ test("local ledger uses the portable runtime data root and rejects legacy roots"
   );
 });
 
+test("closed publication effect fence rejects a new provider job and records the refusal", async () => {
+  const dataDir = tempDataDir();
+  const marketingDir = path.join(dataDir, "marketing");
+  fs.mkdirSync(marketingDir, { recursive: true, mode: 0o700 });
+  fs.writeFileSync(path.join(marketingDir, "publication-effect-fence.json"), `${JSON.stringify({
+    schema_version: 1,
+    state: "closed",
+    reason: "MKT-09 incident recovery",
+  })}\n`, { mode: 0o600 });
+  const ledger = createMarketingLocalLedger({ dataDir, now: () => "2026-08-26T01:30:00.000Z" });
+
+  await assert.rejects(
+    ledger.enqueueJob(job({ available_at: "2026-08-26T01:30:00.000Z" })),
+    (error) => error.code === "MARKETING_PUBLICATION_EFFECT_FENCED",
+  );
+
+  assert.equal(await ledger.readJob({ tenantId: "dais-local", jobId: "publication-job" }), null);
+  const [refusal] = fs.readFileSync(path.join(marketingDir, "publication-effect-fence-refusals.jsonl"), "utf8")
+    .trim().split("\n").map((line) => JSON.parse(line));
+  assert.equal(refusal.phase, "enqueue");
+  assert.equal(refusal.effect_key, "tiktok:honne-ai:en:2026-08-21T02:00:00.000Z");
+  assert.equal(refusal.reason, "MKT-09 incident recovery");
+});
+
+test("closed publication effect fence rejects claim of an already queued provider job", async () => {
+  const dataDir = tempDataDir();
+  const ledger = createMarketingLocalLedger({ dataDir, now: () => "2026-08-26T01:31:00.000Z" });
+  await ledger.enqueueJob(job({ available_at: "2026-08-26T01:31:00.000Z" }));
+  const fenceFile = path.join(dataDir, "marketing", "publication-effect-fence.json");
+  fs.writeFileSync(fenceFile, `${JSON.stringify({
+    schema_version: 1,
+    state: "closed",
+    reason: "MKT-09 incident recovery",
+  })}\n`, { mode: 0o600 });
+
+  await assert.rejects(
+    ledger.claimJob({
+      tenantId: "dais-local",
+      jobId: "publication-job",
+      capability: "marketing.video.publish",
+      workerId: "fenced-worker",
+      leaseSeconds: 30,
+    }),
+    (error) => error.code === "MARKETING_PUBLICATION_EFFECT_FENCED",
+  );
+
+  assert.equal((await ledger.readJob({ tenantId: "dais-local", jobId: "publication-job" })).status, "queued");
+});
+
 test("receipt identity is tenant-scoped even when identifiers contain separators", async () => {
   const ledger = createMarketingLocalLedger({
     dataDir: tempDataDir(),

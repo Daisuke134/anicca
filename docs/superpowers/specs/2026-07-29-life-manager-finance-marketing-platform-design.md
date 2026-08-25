@@ -350,6 +350,20 @@ returned object bytes equal, first enqueue `created=true`, replay
 No LM evidence/state/object pack or OpenClaw file was removed and no provider
 adapter ran. Re-download is the recovery path for the removed cache contents.
 
+MKT-09R1 now enforces the recovery fence at the shared local-ledger boundary,
+so every cycle using `marketing.video.publish` is checked both before a new
+publication enqueue and before an existing queued effect claim. The explicit
+LM state file is mode `0600` and `closed`; a future `open` state must name the
+one exact allowed effect key. A real Honne EN cycle for the next 07:00 JST slot
+created one generation receipt, then durably refused publication job
+`marketing-video-publication:7184e3bdde21ee6fd2bfd520ad61585048ebedf3c14ef6a9905ea917bddbe904`
+at enqueue. Before/after/replay counts stayed publication jobs `42`, Telegram
+jobs `140`, and Postiz window rows `16`; generation moved once from `53` to
+`54` and then stayed `54`. Two refusal readbacks are mode `0600`; no job was
+loaded, stopped, restarted, unloaded, enabled, deleted, or kickstarted. TDD
+proved the missing behavior RED twice, then the focused fence tests pass 2/2,
+the full local-ledger suite 20/20, and the affected cycle/canary suite 26/26.
+
 The public GitHub `main` tree contains the current Life Manager marketing
 source, but not the live LM `.env`, ledgers, or object-store MP4s. This audit
 does not prove that the full Git history is secret-free. The official Postiz
@@ -1975,12 +1989,12 @@ An external observation clock is not an active implementation item. It remains
 terminal acceptance evidence. Exactly one executable atomic item remains active;
 when the clock fires, its readback is reconciled before any dependent account arm.
 
-**Active executable atomic item:** MKT-09R1 adds one shared Life Manager
-publication effect fence before any mobile cycle can enqueue or claim a new
-provider effect. It uses TDD, performs a real no-provider cycle readback, and
-does not unload, stop, restart, kickstart, enable, or delete any current or
-legacy job. Publication jobs, Postiz rows, and Telegram success receipts must
-remain unchanged.
+**Active executable atomic item:** MKT-09R2 repairs the JP4 caption-only
+false-positive reconciliation using TDD. Provider-row reuse must require
+non-conflicting media/effect lineage; the second video effect becomes durably
+`conflict` or superseded rather than `completed`; the incorrect Telegram
+receipt `30370` is quarantined without deleting history. The native post and
+the first correct receipt remain unchanged and no provider effect is created.
 
 | ID | Atomic action | Account/lane | Done evidence |
 |---|---|---|---|
@@ -2056,8 +2070,8 @@ Their dependent account arm remains blocked until the observation is terminal.
 | Order | Atomic action | Start only when | Done evidence | Never do |
 |---:|---|---|---|---|
 | 0 | **done — MKT-09R0:** restore safe writable capacity using only regeneration-safe caches and agent-owned temporary files | always | `1,610,212 KiB` available; bun/npm/hyperframes/Codex dependency/user cache contents only; 20/20 object/ledger tests; isolated LM-root probe object bytes equal, first enqueue `true`, replay `false`, readback intact; probe removed; provider effects `0` | delete evidence, state JSONL, receipts, object packs, OpenClaw assets, plists, or logs |
-| 1 | **active — MKT-09R1:** add one LM-owned publication effect fence shared by every mobile cycle | Order 0 passes and before the next scheduled mobile slot | every selected cycle reaches the same fence; a real no-provider cycle records a durable refusal; publication jobs/Postiz rows/Telegram success receipts remain unchanged | stop/restart/unload/delete a job or rely on the non-enforced manifest |
-| 2 | **MKT-09R2:** repair JP4 caption-only false-positive reconciliation with TDD | Order 1 passes | provider reuse requires non-conflicting effect/media lineage; the second JP4 effect is durably superseded or terminal `conflict`, never `completed`; Telegram `30370` is quarantined; replay `0` | mutate the native post, reuse the first URL for the second video, or erase historical evidence |
+| 1 | **done — MKT-09R1:** add one LM-owned publication effect fence shared by every mobile cycle | Order 0 passes and before the next scheduled mobile slot | shared ledger enqueue/claim gate; mode-0600 closed state; real HEN-015 cycle and replay leave publication `42`, Telegram `140`, Postiz `16`; generation `53→54→54`; durable refusal; RED 2, GREEN 2/2, ledger 20/20, cycle/canary 26/26 | stop/restart/unload/delete a job or rely on the non-enforced manifest |
+| 2 | **active — MKT-09R2:** repair JP4 caption-only false-positive reconciliation with TDD | Order 1 passes | provider reuse requires non-conflicting effect/media lineage; the second JP4 effect is durably superseded or terminal `conflict`, never `completed`; Telegram `30370` is quarantined; replay `0` | mutate the native post, reuse the first URL for the second video, or erase historical evidence |
 | 3 | **MKT-09R3-01:** reconcile `b9b214111c86b0b861ce1737dedaba3a55de3ef16e1868d3e00ed9b001cd917c` | Order 2 passes | one caption/account-bound direct URL with unique non-conflicting provider/media lineage, or terminal `absent/conflict`; no retry/new effect | treat profile URL, numeric suffix, HTTP 200, or `PUBLISHED` alone as present |
 | 4 | **MKT-09R3-02:** reconcile `0b1f8c3fcfadb59ce46813e4081d461664ed66c038ea6a90fe54b63973299784` | Order 3 terminal | same exact-effect evidence contract | retry or replace |
 | 5 | **MKT-09R3-03:** reconcile `3d52f25e190e211350511aa472c29b2a5ab8117a5efa9e482602c0d1e0c00fb9` | Order 4 terminal | same exact-effect evidence contract | retry or replace |

@@ -121,6 +121,8 @@ function createMarketingLocalLedger(options = {}) {
   const receiptsFile = path.join(directory, "receipts.jsonl");
   const lockFile = path.join(directory, ".ledger.lock");
   const reclaimLockFile = path.join(directory, ".ledger.reclaim");
+  const publicationFenceFile = path.join(directory, "publication-effect-fence.json");
+  const publicationFenceRefusalsFile = path.join(directory, "publication-effect-fence-refusals.jsonl");
   const claimsDirectory = path.join(directory, "claims");
   const receiptsDirectory = path.join(directory, "receipts");
   const now = options.now || (() => new Date().toISOString());
@@ -130,6 +132,47 @@ function createMarketingLocalLedger(options = {}) {
     fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
     fs.mkdirSync(claimsDirectory, { recursive: true, mode: 0o700 });
     fs.mkdirSync(receiptsDirectory, { recursive: true, mode: 0o700 });
+  }
+
+  function publicationFence() {
+    let stat;
+    let value;
+    try {
+      stat = fs.statSync(publicationFenceFile);
+      value = JSON.parse(fs.readFileSync(publicationFenceFile, "utf8"));
+    } catch (error) {
+      if (error.code === "ENOENT") return null;
+      throw new Error("local marketing publication effect fence invalid");
+    }
+    if ((stat.mode & 0o077) !== 0 || !value || value.schema_version !== 1
+      || !["closed", "open"].includes(value.state)) {
+      throw new Error("local marketing publication effect fence invalid");
+    }
+    if (value.state === "open" && (typeof value.allowed_effect_key !== "string" || !value.allowed_effect_key.trim())) {
+      throw new Error("local marketing publication effect fence invalid");
+    }
+    return value;
+  }
+
+  function assertPublicationEffectAllowed(job, phase) {
+    if (job.capability !== "marketing.video.publish") return;
+    const fence = publicationFence();
+    if (!fence || (fence.state === "open" && fence.allowed_effect_key === job.effect_key)) return;
+    const observedAt = nowInstant(now);
+    append(publicationFenceRefusalsFile, {
+      schema_version: 1,
+      kind: "marketing_publication_effect_refusal",
+      tenant_id: job.tenant_id,
+      job_id: job.job_id,
+      effect_key: job.effect_key,
+      phase,
+      fence_state: fence.state,
+      reason: required(fence.reason || "publication effect is not explicitly allowed", "publication effect fence reason", 500),
+      recorded_at: observedAt,
+    });
+    const error = new Error("marketing publication effect fenced");
+    error.code = "MARKETING_PUBLICATION_EFFECT_FENCED";
+    throw error;
   }
 
   function readLockRecord(file = lockFile) {
@@ -501,6 +544,7 @@ function createMarketingLocalLedger(options = {}) {
         if (!sameImmutableJob(existing, normalized)) throw new Error("local ledger job id collision");
         return { created: false, job: clone(existing) };
       }
+      assertPublicationEffectAllowed(normalized, "enqueue");
       if (normalized.effect_key && [...state.jobs.values()].some((job) => (
         job.tenant_id === normalized.tenant_id
         && job.effect_key === normalized.effect_key
@@ -587,6 +631,7 @@ function createMarketingLocalLedger(options = {}) {
         return null;
       }
       if (Date.parse(job.available_at) > Date.parse(observedAt) || job.attempt >= job.max_attempts) return null;
+      assertPublicationEffectAllowed(job, "claim");
       const claimed = {
         ...job,
         status: "running",
