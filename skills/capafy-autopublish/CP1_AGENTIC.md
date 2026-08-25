@@ -13,12 +13,14 @@ positional price/cap script scrambles values → price tab red → card never sa
 `isConfirmedSkills=0` → the daily loop STOPs). This procedure is robust to UI drift
 because a human-like agent verifies each step by looking.
 
-## The tool (run with the cloak venv)
+## The tool (run with the resolved browser Python)
 ```
-VENV=$LIFE_MANAGER_REPO/skills/_shared/venv-cloak/bin/python
 SHOT=<scratchpad>/cp1.png
-CP1_SHOT=$SHOT $VENV scripts/cp1_agent.py <cmd> ...
+CP1_SHOT=$SHOT scripts/cp1_python.sh scripts/cp1_agent.py <cmd> ...
 ```
+`cp1_python.sh` selects a locally installed Python with both `playwright` and
+`websocket` (normally `/opt/homebrew/bin/python3`) and fails clearly if none is
+available. Override it only when necessary with `CP1_PYTHON=/path/to/python`.
 Commands: `open <url>` · `shot` · `state` · `click <x> <y>` · `clicktext "<text>" [nth]`
 · `fill <idx> "<v>"` · `typeinto <idx> "<v>"` · `press <key>` · `upload <idx> <path>`
 · `scroll <dy>` (mouse-wheel; page uses an INNER scroll container, window.scrollTo is

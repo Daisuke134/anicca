@@ -287,13 +287,35 @@ def _raw_upload(pg, idx, path):
     """
     if not os.path.isfile(path):
         raise RuntimeError(f"CP1 upload file does not exist: {path}")
+    # `idx` is the index printed by STATE_JS, which enumerates every visible
+    # field (title, description, file inputs, etc.).  DOM.querySelectorAll
+    # below only returns file inputs, so using `idx` directly made an otherwise
+    # valid `upload 2 …` fail whenever text fields preceded the logo chooser.
+    # Convert the public field index to the file-input ordinal using the exact
+    # same selector and visibility rule as STATE_JS.
+    fields = pg.evaluate("""(() => { const vis=e=>{const r=e.getBoundingClientRect(),s=getComputedStyle(e);return r.width>0&&r.height>0&&s.visibility!=='hidden'&&s.display!=='none'&&r.bottom>0&&r.top<innerHeight+400}; return [...document.querySelectorAll('input,textarea,select')].filter(e=>vis(e)||e.type==='file').map(e=>({type:e.type||'',cls:e.className||''})) })()""")
+    if idx < 0 or idx >= len(fields) or fields[idx]["type"] != "file":
+        raise RuntimeError(f"CP1 field idx {idx} is not a file input")
+    file_idx = sum(1 for field in fields[:idx] if field["type"] == "file")
     root = pg.call("DOM.getDocument", {"depth": 1}).get("root", {})
+    # Capafy's logo and markdown attachment inputs use different classes.  Use
+    # the class for the logo rather than trusting DOM enumeration across a
+    # React remount: without this, a logo upload can land in the markdown
+    # attachment input and leave the required logo unset.
+    if "agentFormLogoFileInput" in fields[idx]["cls"]:
+        logo_node = pg.call("DOM.querySelector", {
+            "nodeId": root.get("nodeId"), "selector": "input.agentFormLogoFileInput"
+        }).get("nodeId", 0)
+        if not logo_node:
+            raise RuntimeError("CP1 logo input not found")
+        pg.call("DOM.setFileInputFiles", {"files": [os.path.abspath(path)], "nodeId": logo_node})
+        return
     node_ids = pg.call("DOM.querySelectorAll", {
         "nodeId": root.get("nodeId"), "selector": "input[type=file]"
     }).get("nodeIds", [])
-    if idx < 0 or idx >= len(node_ids):
-        raise RuntimeError(f"CP1 file input idx {idx} out of range ({len(node_ids)})")
-    pg.call("DOM.setFileInputFiles", {"files": [os.path.abspath(path)], "nodeId": node_ids[idx]})
+    if file_idx >= len(node_ids):
+        raise RuntimeError(f"CP1 file input ordinal {file_idx} out of range ({len(node_ids)})")
+    pg.call("DOM.setFileInputFiles", {"files": [os.path.abspath(path)], "nodeId": node_ids[file_idx]})
 
 
 def raw_main(cmd):
