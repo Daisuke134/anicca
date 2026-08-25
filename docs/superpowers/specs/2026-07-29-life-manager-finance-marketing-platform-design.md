@@ -2184,8 +2184,8 @@ order is the §12.3 recovery checklist: `MKT-09R0 → MKT-09R1 → MKT-09R2 →
 MKT-09R3-01..13 → MKT-09R4..R9 → MKT-10 → MKT-11 → MKT-12 → MKT-13`.
 No later row starts early.
 
-Current TODO state: **incident recovery remains open at MKT-09R8-10 / Order
-23G.** R0 through R8-09 are terminal: capacity is safe, the shared publication
+Current TODO state: **incident recovery remains open at MKT-09R8-11 / Order
+23H.** R0 through R8-10 are terminal: capacity is safe, the shared publication
 fence remains closed,
 the JP4 false completion is quarantined, and the 13-effect set is 12 `present`
 plus one truthful `absent`. The full publication ledger is 43 `completed`,
@@ -2202,16 +2202,55 @@ An external observation clock is not an active implementation item. It remains
 terminal acceptance evidence. Exactly one executable atomic item remains active;
 when the clock fires, its readback is reconciled before any dependent account arm.
 
-**Active executable atomic item:** MKT-09R8-10 / Order 23G classifies exactly
-one next retained account: Anicca iOS / JA / Instagram Card
-`@anicca.jp1`, integration `cmn8ycvtn02djqx0ytuisn9mw`. It must prove the
-native account/product/locale identity and bind one allowed renderer, format,
-and future approved asset pack while keeping actual cadence 0/day, armed 0,
-and the shared fence closed. Provider, Telegram, scheduler, and legacy-job
-writes are prohibited in this classification item. Larry EN and every other
-account remain later single-account items.
+**Active executable atomic item:** MKT-09R8-11 / Order 23H revalidates and
+re-adopts exactly one existing Anicca iOS / JA / Instagram Card pack for
+`@anicca.jp1`. Object
+`object://sha256/694e3ab634e1276e06fd73e654783a14c9e31cc28413f918dcb4fa431237d480`
+and its four existing LM media objects are reused; copying or importing a
+duplicate pack is prohibited. Acceptance requires one selected media whose
+full timeline is directly inspected as Japanese Anicca Nudge Card content,
+exact caption bytes, account-bound approval, SHA/mode readback, and immutable
+visual evidence. Actual cadence remains 0/day, armed 0, and the shared fence
+closed. Provider, Telegram, scheduler, and legacy-job writes remain prohibited.
 
-**Completed immediately preceding atomic item:** MKT-09R8-09 / Order 23F ran
+**Completed immediately preceding atomic item:** MKT-09R8-10 / Order 23G
+classifies Anicca iOS / JA / Instagram Card Postiz alias `@anicca.jp1` and
+native owner `@anicca.ios.jp` as one lane only: integration
+`cmn8ycvtn02djqx0ytuisn9mw`, renderer `reelclaw-card`, format
+`nudge-card-reel`, form `nudge-card`, and pack
+`anicca-ios-reelclaw-card-ja.pack.json`. The live Postiz registry returns the
+integration exactly once as enabled `instagram-standalone`; five target rows in
+the measured range are direct Reels with Japanese Anicca/self-care captions.
+Only the known canary below is visually classified as Card. Direct
+`https://www.instagram.com/reel/DcTFx_UjSio/` binds native owner
+`anicca.ios.jp`, exact caption `強い人の口癖、5つだけ`, and the approved
+woman → Japanese Anicca Card → My Path flow. Instagram's current transcode is
+preserved as `object://sha256/ae07770e5a74f9ff04ee68e2504cdb040c67c3c7e8fef06fcd38c2ea85fb5640`
+with contact sheet
+`object://sha256/cd167041abe6a24858542f6ba90b0d1cc1de363e640c12b37c0e80b4142a38fc`.
+Parent full-timeline visual inspection matches the approved media; the generic
+strict comparator does not pass (`2 fps`, 21 frames, SSIM min `0.921209`, mean
+`0.956471`), so this is classification evidence only and is not promoted into
+a terminal native-verification claim. The first immutable classification object
+`48fc8782…e2e34` remains retained but is superseded because its embedded caption
+omitted the approved caption object's final LF and its history-family wording
+was too broad. Corrected evidence
+`object://sha256/5728925f0480b785b182e9c7dc63e27ef07bb296f536fd47eadad825657c5c6c`
+is byte-identical to caption object `bdef736e…601d9`, including final LF, and
+limits the Card visual claim to the known canary.
+The existing manifest already has the exact assignment and stronger historical
+`verified` canary state, so no manifest bytes are changed or downgraded. Target
+is 1/day at 19:10 JST; actual remains 0/day/default-off/armed 0, fence closed.
+The targeted runtime path reads LM env/object refs and scans zero OpenClaw
+paths/env/assets. `launchctl print` is currently unavailable with GUI bootstrap
+error 141, so no claim is made that either plist is registered; neither plist
+nor any legacy job was changed. Fresh read-only adversarial review returned
+`SHIP`: it verified the corrected final-LF caption, alias/native-owner binding,
+runtime `anicca-ios` to manifest `anicca` normalization, existing receipt/media
+lineage, classification-only SSIM scope, default-off/armed 0/fence closed state,
+zero external writes, and zero targeted OpenClaw runtime dependencies.
+
+**Earlier completed atomic item:** MKT-09R8-09 / Order 23F ran
 exactly one controlled canary for Anicca iOS / JA / Instagram
 `@anicca.jp.videos` using
 pack `object://sha256/16d4452d5e3d408d76b915b76e80bf014a57b6354bf133391c785542db6f7696`
@@ -2565,7 +2604,9 @@ Their dependent account arm remains blocked until the observation is terminal.
 | 23D | **done — MKT-09R8-07:** classify exactly one next retained account | Order 23C terminal | Anicca iOS / JA / Instagram `@anicca.jp.videos` / Postiz `cmmzzg2es0539p30ycb94ayx0` is bound only to `reelclaw-widget`, `widget-demo-reel`, planned pack `anicca-ios-reelclaw-widget-ja.pack.json`, and healthy target 2/day at 08:05/18:20 JST. Full native visual inspection proves the Widget install flow and separately proves that the account's affirmation/Card history must be excluded. Manifest `20e4570f…7997a` validates with 10 targets/20 holds, actual 0/day, armed 0, mode `0600`, fence closed; provider/Telegram/scheduler/legacy writes 0 | infer content from a handle, adopt the mixed Card history, or reuse the obsolete legacy integration ID |
 | 23E | **done — MKT-09R8-08:** import or build exactly one approved Widget JA pack for that account | Order 23D passes | Pack `16d4452d…f7696` binds exactly one 17.717-second H.264/AAC video `0c67b0a4…cd188`, caption `b57c4f89…e1c6d`, and full-frame evidence `f1c5b5c2…3a8b7`. Full-timeline native comparison has SSIM min `0.977367`/mean `0.991391`; direct visual inspection rejects Card `v1`, different-hook `v2`, and incomplete `v3`. All objects are SHA-exact/mode `0600`; pack has no OpenClaw runtime dependency. Manifest `d3ee329a…906b9` is pack-ready, actual 0/day, armed 0, fence closed; provider/Telegram/scheduler/legacy writes 0 | import several packs, accept Card/incomplete content, decouple caption from the baked hook, or retain an OpenClaw runtime dependency |
 | 23F | **done — MKT-09R8-09:** run one canary for only that account | Order 23E passes | the sole effect completed as Postiz `cmt98nnld02pdp20ypm3ohqna` at direct Reel `DcetvubDA4Z`; public owner/caption/native content match the approved pack. The retained first evidence pair omitted only the caption's final LF and is superseded without deletion; corrected evidence `65401d93…13c1f9` and verification `1980f230…8a318f` are byte-exact/mode `0600`. Natural Telegram `34523` carries the same URL; replay is publication 0/message 0/transport call 0 with one message ledger sequence. Immediate metrics are Views `173`, Reach `134`, Likes `1`, Saves/Comments/Shares `0`; account/product sources are unavailable and future windows pending in `fab4b0ed…2539c6`. Manifest `1d9ce1df…ec8d15` is canary-verified/default-off/armed 0; fence closed | fan out, accept Postiz state alone, retry an ambiguous effect, or call unavailable zero/success |
-| 23G | **active — MKT-09R8-10:** classify exactly Anicca JA Card `@anicca.jp1` / integration `cmn8ycvtn02djqx0ytuisn9mw` | Order 23F terminal | bind exact Anicca iOS/JA/Instagram account to one allowed Card renderer/format/pack plan; actual 0/day, armed 0, fence closed, external writes 0 | classify Larry EN or several accounts in parallel, infer product from a handle, or enable cadence during classification |
+| 23G | **done — MKT-09R8-10:** classify exactly Anicca JA Card `@anicca.jp1` / integration `cmn8ycvtn02djqx0ytuisn9mw` | Order 23F terminal | live Postiz uniquely binds the enabled Instagram integration; direct `DcTFx_UjSio` binds native owner `anicca.ios.jp`, exact Japanese caption, and visually matching woman → Anicca Card → My Path content. Corrected classification `5728925f…7c5c6c` binds only `anicca-ios` / JA / Instagram / `reelclaw-card` / `nudge-card-reel` / existing pack `694e3ab6…7d480`, and its caption is byte-identical to `bdef736e…601d9` including final LF; superseded `48fc8782…e2e34` is retained. The other four recent rows are classified only as direct Reels with Japanese Anicca/self-care captions, not visually asserted as Card. Target 1/day at 19:10 JST, actual 0/day/default-off/armed 0, fence closed. Current native transcode/contact sheet `ae07770e…b5640` / `cd167041…a38fc` are classification-only because strict SSIM min is `0.921209`; no terminal comparator claim is made. Existing stronger manifest state is preserved byte-for-byte; provider/Telegram/scheduler/legacy writes 0 | classify Larry EN or several accounts in parallel, infer product from a handle, or treat visual classification as terminal native verification |
+| 23H | **active — MKT-09R8-11:** revalidate and re-adopt exactly one existing JA Card pack | Order 23G terminal | reuse pack `694e3ab6…7d480`; select one of its four existing media objects, prove full Japanese Anicca Card timeline, exact caption and account-bound approval, and persist immutable evidence; no duplicate import, effect, notification, schedule, or legacy write | copy the already migrated pack, accept a Widget/Larry/wrong-product asset, or create a provider effect during pack work |
+| 23I | **MKT-09R8-12:** reconcile the existing verified canary lineage before considering any new effect | Order 23H passes | direct native URL, exact content/account/caption, natural Telegram, replay 0, and metric source are all terminal from one effect; if existing evidence suffices, no new provider row is created | post again merely because the account is being revisited, accept profile/provider state alone, or weaken the native gate |
 | 24 | **MKT-09R9:** provision dedicated Honne Instagram and YouTube integrations one platform/account at a time | existing Postiz inventory has no Honne route for that platform | ownership and Honne product/locale are verified; canary passes Order 22 | relabel an Anicca account as Honne |
 | 25 | **MKT-10:** arm only one healthy verified account, ramping from one canary/day to at most three posts/day | exact account has direct-native, Telegram, replay, and usable metric-source evidence | expected/published/missed/duplicate counts remain healthy at each ramp; platform policy permits cadence | jump directly to three/day everywhere |
 | 26 | **MKT-11:** collect 2h/24h/72h/7d social metrics and join ASC, RevenueCat, and product analytics | exact published effect has immutable creative/campaign lineage | views, likes, comments, shares, saves, watch/retention fields when supported, installs, activation, trials, paid, proceeds, and attribution coverage are source-labelled; unavailable stays unavailable | substitute account aggregates for post outcomes or infer installs from timing |
