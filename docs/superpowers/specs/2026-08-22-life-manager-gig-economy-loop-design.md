@@ -6,11 +6,14 @@ Life Manager ultimately contains one revenue system, not one harness per marketp
 proven reference implementation, Upwork remains an active acquisition lane, and **Lancers is the next
 atomic provider-neutral proof**. No market must wait for another market's revenue gate when its account,
 resource lease, delivery capacity and effect fence are independent. The resident agent may run
-read-only inventory and zero-spend canaries across markets concurrently; paid work, buyer messages and
+authorized read-only inventory and zero-spend canaries across markets concurrently; an `unknown`
+authorization permits only public-policy research, offline fixtures, or explicit manual observation.
+Paid work, buyer messages and
 unknown effects still preempt acquisition. A new market never receives a new decision brain.
 
-Execution is vertical and atomic rather than a big-bang rewrite. Lancers first closes authenticated
-read-only inventory with external effects zero, then truthful profile/external-proof grounding, then one
+Execution is vertical and atomic rather than a big-bang rewrite. Lancers first closes explicitly
+authorized authenticated read-only inventory with external effects zero, then truthful
+profile/external-proof grounding, then one
 review-bearing non-negative-net application canary with an official proposal ID and replay duplicate
 zero. Every later slice closes the next real provider boundary. The full common architecture is fixed
 up front, but production acceptance advances one official receipt at a time.
@@ -26,7 +29,14 @@ force those lanes into read-only mode. Public OSS installations start with no pr
 must establish their own action-level authorization receipts.
 
 This document changes design and implementation order only. It does not start, stop or modify the
-current Coconala runtime. `skills/earn/gig/TODO.md` remains the production-repair SSOT.
+current provider runtimes. `skills/earn/gig/TODO.md` remains the shared production-repair SSOT,
+while each provider spec owns its transport/runtime sequence.
+
+The target receipt contract is not implemented end-to-end today. The tracked shared marketplace
+contract has Application/Delivery/Payment-shaped records but no mandatory Contract,
+Authorization, or QA receipt, and its payment record does not prove actual costs or a bank/payout
+match. No provider may claim closed-loop net revenue until that shared gap and its provider adapter
+migration pass G5A below.
 
 The Upwork account bootstrap uses the owner's normal email/password flow. It MUST NOT choose Google,
 Apple or another social-login button. It creates an account only when the owner email has no Upwork
@@ -52,8 +62,9 @@ schemas. U5 performs two independent discoveries before any Connects purchase de
 
 U5 is closed: two independent reads of the same recency query returned the same ordered ten job IDs.
 Saved jobs, proposals, messages, Connects spend and payments remained zero. U6 may now qualify one
-live job using the general agent's model/tools and Upwork-owned capacity; Coconala activity is not
-part of the capacity calculation.
+live job using the general agent's model/tools and Upwork-local acquisition capacity. Portfolio
+admission separately joins official accepted/funded work from every provider, including Coconala,
+before allowing a new commitment.
 
 U6/U7 proved qualification, proposal freezing and effect fencing on job
 `~022091070478975551162`, but the job is **parked, not the first acquisition target**. It requires 26
@@ -341,7 +352,10 @@ terms version.
 
 | Provider | Public evidence used by default installations | Design consequence |
 |---|---|---|
-| Upwork | [Automation policy](https://support.upwork.com/hc/en-us/articles/43342677368467-Use-bots-and-other-automation-properly) directs automation users to request an API key. [GraphQL docs](https://www.upwork.com/developer/documentation/graphql/api/docs/index.html) expose scoped read/write operations. | Dais's special approval enables the recorded actions; API is preferred and approved CloakBrowser fills authorized UI gaps. |
+| Upwork | [Automation policy](https://support.upwork.com/hc/en-us/articles/43342677368467-Use-bots-and-other-automation-properly) directs automation users to request an API key. [GraphQL docs](https://www.upwork.com/developer/documentation/graphql/api/docs/index.html) expose scoped read/write operations. | Public OSS sends no provider-facing automated request until an approved API/action receipt exists. Dais's special approval enables only its recorded actions; API is preferred and approved CloakBrowser fills authorized UI gaps. |
+| Coconala | [User terms](https://coconala.com/pages/terms_user) prohibit using a device, software, or algorithm that “自動的に応答する” to delivered services. [Seller flow](https://coconala.com/pages/guide_sell) separates formal delivery, buyer acceptance, room closure, and sales reflection. | Never automate buyer-reserved acceptance. Seller automation requires an action-specific receipt; revenue starts only after official room closure/sales reflection. |
+| Lancers | [Terms](https://www.lancers.jp/help/terms) define monthly work as a function where “特段の操作なく契約が更新され、毎月自動で報酬が支払われる”. | The native monthly-payment contract is not blanket permission for external bots. Resolve authorization for each automated read or effect before provider contact. |
+| CrowdWorks | [Terms](https://crowdworks.jp/pages/agreement) require client inspection of delivered work, and [official flow](https://crowdworks.jp/pages/guides/employer/index) states “契約後は、『仮払い』を行うことで業務開始が可能”. | Resolve explicit authorization before any automated provider request. Work begins only from an escrow-backed contract receipt and payment only after inspection/official payout state. |
 | Fiverr | [Community Standards](https://help.fiverr.com/hc/en-us/articles/32242973123985-Our-Community-Standards) reject unauthorized access and automated mass messaging. [AI guidelines](https://help.fiverr.com/hc/en-us/articles/34998793899665-Using-AI-on-Fiverr-Guidelines-for-freelancers-and-clients) preserve freelancer accountability. | Record exact approval before external automation; reuse official Personal Assistant/Auto-reply where useful, not as a human handoff. |
 | LinkedIn | [User Agreement §8.2](https://www.linkedin.com/legal/user-agreement) rejects unauthorized bots, scraping and messages. | Only recorded approved/API actions become effects; otherwise it remains a lead source. |
 | Mercor | [AI interview guidance](https://talent.docs.mercor.com/support/ai-interview) restricts LLM-generated interview performance. | Agent handles discovery, profile assets, scheduling and post-hire work only to the exact approved boundary; identity/interview stays a ceremony when required. |
@@ -387,7 +401,7 @@ declares the schema and safe defaults.
 | `approved_browser` | Special/project approval authorizes browser execution | Autonomous CloakBrowser effect behind the same fence |
 | `approved_assisted` | Agent may assist but an explicit human act is required | Produce a typed ceremony and resume from provider readback |
 | `denied` | Current evidence prohibits the action | Do not execute or repeatedly retry |
-| `unknown` | No valid evidence | Research and read-only probe only |
+| `unknown` | No valid evidence | Public-policy research, offline fixtures, or explicit manual observation only; send no automated provider request |
 
 No agent or self-improvement Skill may create, broaden or renew its own authorization receipt.
 
@@ -427,7 +441,8 @@ The installer performs one bounded ceremony:
 3. Connect one provider at a time through its normal login/KYC/payout flow.
 4. Record action-level authorization without storing proof or secrets in Git.
 5. Configure hard caps: spend, Connects/bids, concurrent jobs, minimum margin and human minutes.
-6. Run a read-only capability probe and produce an account health receipt.
+6. Run an authenticated read-only capability probe only when the exact action and transport are
+   authorized; otherwise persist `unknown` without contacting the provider automatically.
 7. Generate service packages the general agent can truthfully fulfill and verify; a named Skill is optional.
 8. Start the first canary with one external effect at a time.
 
@@ -439,7 +454,8 @@ has evidence:
 ```text
 research
 → authorization matrix
-→ authenticated read-only probe
+→ explicit authorization for the exact read action
+→ authenticated bounded read-only probe
 → normalized opportunity
 → eligible offer fixture
 → one canary sales effect
@@ -503,8 +519,10 @@ code. Fixed-format provider IDs, URLs, amounts and official states may be parsed
 
 Exceeding a target pauses that adapter and first identifies the missing common primitive; it never
 justifies another scheduler, planner, ledger or provider-specific decision engine. For an unknown
-market the agent performs `observe → map states → read-only replay → generate manifest → one canary
-effect → official readback`. It completes ordinary signup/login itself. CAPTCHA, identity proof, tax,
+market the agent performs public-policy research and offline fixtures only. After an exact
+action/transport authorization receipt, it may perform
+`observe → map states → bounded read-only replay → generate manifest → one canary effect → official
+readback`. It completes ordinary signup/login only when authorized. CAPTCHA, identity proof, tax,
 payout ownership and legally human-only acts become typed resumable ceremonies. A new delivery Skill
 is created only after an observed profitable opportunity cannot use existing Skills.
 
@@ -762,8 +780,9 @@ allocator whose rewards come only from external receipts.
 ### 4.8 Founder exploration loop
 
 The portfolio agent does not wait for a human to name every market. After paid work, replies, offers
-and unknown effects are safe, it spends bounded read-only capacity discovering new gig, bounty and
-contracting markets. The model—not a keyword list—evaluates visible demand, general-agent feasibility, expected
+and unknown effects are safe, it spends bounded public-policy/offline research capacity discovering
+new gig, bounty and contracting markets. Provider-facing observation starts only after exact read
+authorization. The model—not a keyword list—evaluates visible demand, general-agent feasibility, expected
 net cash, payout accessibility, platform rules, automation permission, competition, required human
 minutes and account ceremony cost.
 
@@ -772,7 +791,7 @@ flowchart LR
   D[Discover markets and demand] --> O[Observe rules, UI and payout]
   O --> J[Luna compares opportunity and risk]
   J --> M[Create minimal private market state]
-  M --> B[Terra signup/login and read-only probe]
+  M --> B[Authorization then bounded read probe]
   B --> C[One zero-spend canary effect]
   C --> R[Official work and payment readback]
   R --> P{Promote, pause, deny or retire}
@@ -797,11 +816,11 @@ private customer content and credentials never cross projects.
 
 ### 4.9 Cross-market blitz-scaling contract
 
-Upwork remains an active USD 10k scale goal, not a serialization gate for other markets. **Lancers is
-the current implementation cursor.** Fiverr, CrowdWorks, Freelancer, Mercor, uGig and later
-founder-discovered markets may run read-only
-discovery, authentication recovery, qualification, proposal/listing preparation and zero-spend
-canaries concurrently now. Paid work, buyer messages and unknown effects retain higher priority, but
+Upwork remains an active USD 10k scale goal, not a serialization gate for other markets. The
+user-directed active engineering slice is Mercor resident-runtime recovery; Lancers remains the next
+provider-neutral acquisition proof after that slice. Other markets may run public-policy research,
+offline preparation, and authorized provider actions concurrently. No `unknown` lane sends an
+automated provider request. Paid work, buyer messages and unknown effects retain higher priority, but
 one market never pauses independent work on another.
 
 All markets use one commercial brain and one set of rails:
@@ -930,12 +949,12 @@ long-run utility, authorization, delivery capacity and human-minute evidence.
 |---|---|---|---|
 | Reference | Coconala | Existing full sales/fulfillment/payment loop | Reference effect fence, inbox, paid project, receipt and learning |
 | Running | Upwork | Continue acquisition and event-driven downstream lanes | Outbound proposals, Connects economics, contract/milestone lifecycle |
-| **Current cursor** | **Lancers** | First-trust profile → application canary → review-bearing payout | Unknown-site ACI, external proof, Japanese contracts and payout |
+| Next provider proof | Lancers | First-trust profile → application canary → review-bearing payout | Unknown-site ACI, external proof, Japanese contracts and payout |
 | Next evidence | Freelancer | Existing account, projects and bids | Bid economics and milestone/payment mapping |
 | Next evidence | CrowdWorks | Existing Japanese account | Project/task contracts and escrow mapping |
-| Parallel read-only | uGig | Existing account and invoice flow | Fast conformance using already-configured state |
-| Parallel read-only | Fiverr | Inbound catalogue plus custom offers | Gig experiments, inquiry and order/revision lifecycle |
-| Parallel read-only | Mercor | Existing role/account workflow | Matching, interviews, task work and identity ceremony |
+| Authorized read-only | uGig | Existing account and invoice flow | Fast conformance using already-configured state |
+| Authorized read-only | Fiverr | Inbound catalogue plus custom offers | Gig experiments, inquiry and order/revision lifecycle |
+| **Current recovery** | **Mercor** | Open-source browser owner → resident wakes → shared money receipts → selection/contract/work/payout | Matching, interviews, authorized task work and identity ceremony |
 | Discovered | Authorized bounty and new markets | One bounded zero-spend canary at a time | Founder discovery and shrinking adapter cost |
 
 Each later market may finish as `active`, `assisted`, `denied` or `unprofitable`. Upwork denial or
@@ -944,7 +963,8 @@ capacity only after the active paid/unknown work is safe.
 
 ## 6. Upwork reference adapter
 
-Upwork is the first proof that the Coconala kernel generalizes.
+Upwork is the reference adapter for Connects accounting and outbound proposal effects. It is not a
+global gate for independent Coconala, Lancers, Mercor, or CrowdWorks lanes.
 
 ### 6.1 First-contract acquisition policy
 
@@ -1224,12 +1244,14 @@ readback or sibling work. A pre-repair Skill-based message for `~022091530074067
 decision at 18:41:30 and delivered after the repaired wake began; it was stale queue delivery, not a
 new repaired-policy judgment.
 
-Current implementation evidence: main and production release `908ea66550b0` contain ordered
+Historical implementation checkpoint: main and production release `908ea66550b0` contained ordered
 per-candidate batch decisions, exact authenticated CDP routing, one batched WorkEvent handoff,
-fresh-first reporting and parallel hidden job reads. The latest effect reconciles official proposal
+fresh-first reporting and parallel hidden job reads. That checkpoint's effect reconciled official proposal
 `2091845545298235393` and Connects `67 -> 46`; Telegram ACK is message `32169`. The earlier
-release-workspace failure is no longer the active runtime blocker. Disk headroom is 6.4 GiB without a
-20 GiB operating cap or deletion of protected profiles, projects, ledgers or receipts.
+release-workspace failure was no longer the active blocker at that checkpoint, when disk headroom was
+6.4 GiB without a 20 GiB operating cap or deletion of protected profiles, projects, ledgers or
+receipts. This is not a current disk claim; the current Mercor runtime read-back is below the 512 MiB
+write floor in its provider spec.
 
 The owner also receives a compact funnel heartbeat instead of one message for every unchanged poll:
 
@@ -1343,18 +1365,19 @@ promise of earnings.
 | G3 Upwork proposal | One bootstrap-qualified intent, one proposal, proposal ID and Connects readback |
 | G4 Upwork contract | Message, offer and active contract IDs reconcile |
 | G5 Upwork delivery | Artifact QA, one delivery effect and official submission state |
+| G5A shared money contract | Contract, Authorization, QA, Delivery and net Payment receipts are implemented; actual fee/cost and official payout/bank evidence join idempotently; Mercor plus every active provider adapter passes fixtures |
 | G6 first cash | Received payment, fee, cost and payout evidence reconcile to the project |
-| G7 repeatability | Three independent paid Upwork jobs; zero blind duplicate effects |
+| G7 repeatability | Three independent paid projects across at least two providers; zero blind duplicate effects |
 | G2L Lancers inventory | Two fresh authenticated common inventories, source complete, marketplace effect zero |
 | G3L Lancers trust | Truthful profile/external-proof official state or an evidence-backed provider block; replay effect zero |
 | G4L Lancers proposal | One review-bearing positive-lifetime-EV decision, proposal ID and replay duplicate zero |
 | G5L Lancers contract | Buyer message/offer and funded contract IDs reconcile without fabricated events |
 | G6L Lancers delivery | General-agent work, independent QA and official delivery readback bind the contract |
 | G7L Lancers cash/review | Fee/cost/refund and payout `received` reconcile; honest review identity is observed or explicitly absent |
-| G8 second market | One configured market reaches an official zero-spend canary while independent lanes continue |
+| G8 multi-market continuity | Coconala, Lancers, Upwork and Mercor owners each produce fresh independent health receipts; any unauthorized CrowdWorks lane remains no-effect |
 | G9 market factory | A third market is added through common ACI without changing kernel contracts |
 | G10 learning | One strategy/Skill canary produces an evidence-backed keep or revert |
-| G11 Upwork USD 10k | One complete calendar-month source window proves at least USD 10,000 `verified_net_received`; Pending/Available are excluded and later chargebacks enter their occurrence month |
+| G11 portfolio USD 10k | One complete calendar-month source window proves at least USD 10,000 aggregate `verified_net_received`, with provider/project attribution; Pending/Available are excluded and later chargebacks enter their occurrence month |
 | G12 JPY 10m | Provider and bank sources prove JPY 10,000,000 verified monthly net |
 | G13 replication | A clean third device completes setup and one authorized receipt path |
 | G14 OSS alpha | Upwork G6, replay zero, redacted fixtures, secret scan and isolated installer |
@@ -1370,7 +1393,7 @@ promise of earnings.
 | Discovery reflects current Upwork state | Same job IDs across two authenticated reads | Required |
 | Discovery and ready-queue replenishment are loop-owned | With fewer than three ready candidates, one launchd wake searches current jobs, model-selects or skips with evidence, and atomically seals truthful proposals without manual candidate editing | Required |
 | First-job qualification rejects high-competition broad builds | Bounded 1-3 day deliverable, proposals <=20, explicit acceptance and evidence-backed proof | Required |
-| Qualification ignores Coconala runtime state | Upwork active-contract count and provider-scoped ledger query | Required |
+| Qualification separates local and portfolio capacity | Upwork-local acquisition capacity plus an official cross-provider join of every accepted/funded deadline, including Coconala | Required |
 | Proposal submits at most once | Proposal ID and Connects before/after, then zero-delta replay | Required |
 | Applied work is continuously reconciled | Every official proposal ID maps to one current canonical state and last-observed receipt | Required |
 | Stopped work has an evidence-backed reason | Declined, archived, job closed, platform removed or owner-withdrawn requires matching official readback; absence remains unknown | Required |
@@ -1389,13 +1412,13 @@ promise of earnings.
 
 | Scenario | Result |
 |---|---|
-| Worst | Lancers authentication, economics or account rules produce an evidence-backed terminal state; its effects stop while Upwork and independent market inventory continue. |
-| Base | Lancers closes one review-bearing payout path, repeats the proven unit, and supplies the second-market conformance evidence while Upwork continues. |
-| Best | Lancers' common-ACI trace closes quickly, the same unchanged agent contract works on Freelancer/CrowdWorks and the CEO reallocates toward the highest verified long-run return. |
+| Worst | Every lane remains stopped, denied, or negative-margin; effects stop safely and the ledger exposes no verified received cash. |
+| Base | Two providers reach repeat paid work; the CEO shifts capacity using verified conversion, margin, retention, and human minutes. |
+| Best | Several independent lanes reach USD 10k aggregate verified net received in one calendar month without duplicate effects or policy incidents. |
 
 The strongest argument for implementing all provider adapters immediately is faster apparent market
 coverage. It is rejected because thick unproved transports hide whether demand, conversion,
-fulfillment or payment is broken. Concurrent read-only inventory is cheap; mutation glue is extracted
+fulfillment or payment is broken. Authorized concurrent read-only inventory is cheap; mutation glue is extracted
 only from real canaries and receipts.
 
 The most likely way this design is wrong is that initial reputation value does not compensate for low
@@ -1406,7 +1429,10 @@ may not report a guarantee or substitute Pending/Available for revenue.
 ## 11. Implementation boundary
 
 The portfolio plan remains
-`docs/superpowers/plans/2026-08-22-life-manager-gig-economy-loop.md`. The current Lancers execution
-cursor is `docs/superpowers/plans/2026-08-24-lancers-general-money-agent.md`; only its first unfinished
-task is active. Each coding slice targets at most three production/test files and about 100 changed
-production/test lines; larger slices are split before execution.
+`docs/superpowers/plans/2026-08-22-life-manager-gig-economy-loop.md`. The current user-directed slice
+is the first unchecked item in
+`docs/superpowers/specs/2026-08-22-mercor-life-manager-consolidation.md`: portable Mercor browser
+ownership. The Lancers plan at
+`docs/superpowers/plans/2026-08-24-lancers-general-money-agent.md` remains the next provider-neutral
+lane after the active Mercor slice. Each coding slice targets at most three production/test files and
+about 100 changed production/test lines; larger slices are split before execution.
