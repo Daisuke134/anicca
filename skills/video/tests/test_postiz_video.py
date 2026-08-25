@@ -3,6 +3,7 @@ import importlib.util
 import json
 from pathlib import Path
 import subprocess
+import tempfile
 import unittest
 
 
@@ -31,6 +32,69 @@ class PostizVideoTests(unittest.TestCase):
         self.assertEqual(post["settings"]["content_posting_method"], "DIRECT_POST")
         self.assertEqual(post["settings"]["privacy_level"], "PUBLIC_TO_EVERYONE")
         self.assertTrue(post["settings"]["video_made_with_ai"])
+
+    def test_instagram_carousel_payload_preserves_order_and_native_post_settings(self):
+        payload = postiz_video.build_payload(
+            integration="cmq3sq7mc000eqp0y7azfm8yk",
+            caption="メンタルが勝手に安定する\n口癖５選",
+            title="Life Manager",
+            upload_ids=["upload-1", "upload-2", "upload-3"],
+            upload_paths=["https://uploads.example/1.jpg", "https://uploads.example/2.jpg", "https://uploads.example/3.jpg"],
+            now_iso="2026-08-26T07:30:00.000Z",
+            platform="instagram",
+        )
+        post = payload["posts"][0]
+        self.assertEqual(post["integration"]["id"], "cmq3sq7mc000eqp0y7azfm8yk")
+        self.assertEqual(post["settings"], {
+            "__type": "instagram-standalone",
+            "post_type": "post",
+            "is_trial_reel": False,
+            "collaborators": [],
+        })
+        self.assertEqual([item["id"] for item in post["value"][0]["image"]], ["upload-1", "upload-2", "upload-3"])
+        self.assertEqual([item["path"] for item in post["value"][0]["image"]], [
+            "https://uploads.example/1.jpg", "https://uploads.example/2.jpg", "https://uploads.example/3.jpg",
+        ])
+
+    def test_carousel_payload_rejects_short_or_video_image_mix(self):
+        with self.assertRaises(postiz_video.PostizError):
+            postiz_video.build_payload(
+                integration="i", caption="caption", title="title",
+                upload_ids=["upload-1"], upload_paths=["https://uploads.example/1.jpg"],
+                now_iso="2026-08-26T07:30:00.000Z", platform="instagram",
+            )
+        with self.assertRaises(postiz_video.PostizError):
+            postiz_video.build_payload(
+                integration="i", caption="caption", title="title",
+                upload_ids=["upload-1", "upload-2"], upload_paths=["1.jpg", "2.jpg"],
+                now_iso="2026-08-26T07:30:00.000Z", platform="tiktok",
+            )
+
+    def test_image_upload_rejects_empty_and_non_jpeg_inputs(self):
+        with tempfile.TemporaryDirectory() as directory:
+            empty = Path(directory) / "empty.jpg"
+            empty.write_bytes(b"")
+            with self.assertRaises(postiz_video.PostizError):
+                postiz_video.upload_image(empty, "token")
+            png = Path(directory) / "image.png"
+            png.write_bytes(b"\x89PNG\r\n")
+            with self.assertRaises(postiz_video.PostizError):
+                postiz_video.upload_image(png, "token")
+
+    def test_carousel_caption_reader_preserves_raw_utf8_while_video_reader_trims(self):
+        with tempfile.TemporaryDirectory() as directory:
+            caption_file = Path(directory) / "caption.txt"
+            raw_caption = " \nExact caption\n  \n"
+            caption_file.write_text(raw_caption, encoding="utf-8")
+            self.assertEqual(postiz_video.read_caption(caption_file, carousel=True), raw_caption)
+            self.assertEqual(postiz_video.read_caption(caption_file, carousel=False), raw_caption.strip())
+
+    def test_direct_carousel_url_only_accepts_instagram_post(self):
+        self.assertTrue(postiz_video._valid_instagram_carousel_url("https://www.instagram.com/p/ABC_123/"))
+        self.assertFalse(postiz_video._valid_instagram_carousel_url("https://www.instagram.com/reel/ABC_123/"))
+        self.assertFalse(postiz_video._valid_instagram_carousel_url("https://www.instagram.com/@ani.cca1234"))
+        self.assertFalse(postiz_video._valid_instagram_carousel_url("https://www.instagram.com/p/12345678901234567890/"))
+        self.assertTrue(postiz_video._valid_public_url("instagram", "https://www.instagram.com/reel/ABC_123/"))
 
     def test_extract_post_id_accepts_the_real_postiz_array_shape_only(self):
         self.assertEqual(postiz_video.extract_post_id([{"postId": "post-1"}]), "post-1")
