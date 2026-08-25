@@ -34531,3 +34531,8 @@
 {"ts":1787692613,"wake_id":"00MT960X078823624802D045B6","kind":"wake_error","sleep_s":60,"model":"auto"}
 {"ts":1787692685,"wake_id":"00MT962GBD54996374331647AC","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1787692818,"wake_id":"00MT965AJS14C54EB11ACB4F1A","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787692957,"wake_id":"00MT968AELFC11D10EDFB5461C","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787693089,"wake_id":"00MT96B3WQ746EA8DE03CB4A39","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787693272,"wake_id":"00MT96F1FEC1160714C5F84C82","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1787694033,"wake_id":"00MT96VC2N600319D367E9419A","kind":"shutdown","sleep_s":0}
+{"ts":1787694200,"wake_id":"00MT96YX5C93969C52C3F7453A","kind":"wake_error","sleep_s":60,"model":"auto"}
