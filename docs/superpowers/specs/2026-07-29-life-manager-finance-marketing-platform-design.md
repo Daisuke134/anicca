@@ -364,6 +364,23 @@ loaded, stopped, restarted, unloaded, enabled, deleted, or kickstarted. TDD
 proved the missing behavior RED twice, then the focused fence tests pass 2/2,
 the full local-ledger suite 20/20, and the affected cycle/canary suite 26/26.
 
+MKT-09R2 repairs the JP4 caption-collision incident without a provider effect.
+Postiz caption-only preflight reuse now fails closed unless the row carries the
+exact video digest, and both distribution reuse and TikTok metric discovery
+assign one provider row/native URL to its first media lineage. The first JP4
+effect remains `published` at provider row `cmt5exlqb00cjqk0yu6q2xftc` and
+`https://www.tiktok.com/@anicca.jp4/video/7677106804039355656`; TikTok oEmbed
+returned account `@anicca.jp4` and caption `心を整える5つの言葉`, while its fresh
+thumbnail visually matched first object `35a15c7c…9a15` (woman at a laptop,
+hook `怠けてるんじゃない。脳が限界なだけ。`) and contradicted second object
+`7e24db96…9ae9` (different person and hook). The second publication job and its
+dependent Telegram `30370` receipt are now terminal `conflict`, each retaining
+the superseded receipt in append-only history; the correct Telegram `29982`
+and first publication receipt are unchanged. The correction added exactly two
+job and two receipt events, replay added `0/0`, and metrics discovery returns
+one row for the native URL. Focused RED 4 then GREEN 4/4; full Python 50/50 and
+Node 44/44 pass. No Postiz/TikTok/Telegram write or legacy job operation ran.
+
 The public GitHub `main` tree contains the current Life Manager marketing
 source, but not the live LM `.env`, ledgers, or object-store MP4s. This audit
 does not prove that the full Git history is secret-free. The official Postiz
@@ -1989,12 +2006,11 @@ An external observation clock is not an active implementation item. It remains
 terminal acceptance evidence. Exactly one executable atomic item remains active;
 when the clock fires, its readback is reconciled before any dependent account arm.
 
-**Active executable atomic item:** MKT-09R2 repairs the JP4 caption-only
-false-positive reconciliation using TDD. Implementation is GREEN: caption-only
-provider reuse fails closed, provider/native identity is owned by the first
-media lineage, and completed effects can be durably conflict-quarantined
-without deleting the superseded receipt. Live correction of the second JP4
-publication and Telegram `30370`, plus replay-zero readback, remains pending.
+**Active executable atomic item:** MKT-09R3-01 reconciles existing unknown
+effect `b9b214111c86b0b861ce1737dedaba3a55de3ef16e1868d3e00ed9b001cd917c`.
+It may become present only with one caption/account-bound direct native URL and
+unique non-conflicting provider/media lineage; otherwise it becomes terminal
+`absent` or `conflict`. No retry or new provider effect is permitted.
 
 | ID | Atomic action | Account/lane | Done evidence |
 |---|---|---|---|
@@ -2071,8 +2087,8 @@ Their dependent account arm remains blocked until the observation is terminal.
 |---:|---|---|---|---|
 | 0 | **done — MKT-09R0:** restore safe writable capacity using only regeneration-safe caches and agent-owned temporary files | always | `1,610,212 KiB` available; bun/npm/hyperframes/Codex dependency/user cache contents only; 20/20 object/ledger tests; isolated LM-root probe object bytes equal, first enqueue `true`, replay `false`, readback intact; probe removed; provider effects `0` | delete evidence, state JSONL, receipts, object packs, OpenClaw assets, plists, or logs |
 | 1 | **done — MKT-09R1:** add one LM-owned publication effect fence shared by every mobile cycle | Order 0 passes and before the next scheduled mobile slot | shared ledger enqueue/claim gate; mode-0600 closed state; real HEN-015 cycle and replay leave publication `42`, Telegram `140`, Postiz `16`; generation `53→54→54`; durable refusal; RED 2, GREEN 2/2, ledger 20/20, cycle/canary 26/26 | stop/restart/unload/delete a job or rely on the non-enforced manifest |
-| 2 | **active — MKT-09R2 (implementation GREEN; live correction pending):** repair JP4 caption-only false-positive reconciliation with TDD | Order 1 passes | caption-only provider reuse now fails closed without exact video lineage; distribution and metric discovery assign a provider row/native URL to its first media lineage; completed-effect conflict quarantine preserves the superseded receipt and is replay-idempotent; focused RED 4 then GREEN 4/4; full Python 50/50 and Node 44/44. Pending: apply exact conflict correction to the second JP4 publication and Telegram `30370`, then prove replay `0` and the first receipt unchanged | mutate the native post, reuse the first URL for the second video, or erase historical evidence |
-| 3 | **MKT-09R3-01:** reconcile `b9b214111c86b0b861ce1737dedaba3a55de3ef16e1868d3e00ed9b001cd917c` | Order 2 passes | one caption/account-bound direct URL with unique non-conflicting provider/media lineage, or terminal `absent/conflict`; no retry/new effect | treat profile URL, numeric suffix, HTTP 200, or `PUBLISHED` alone as present |
+| 2 | **done — MKT-09R2:** repair JP4 caption-only false-positive reconciliation with TDD | Order 1 passes | exact media-lineage ownership across Postiz preflight, distribution reuse, and metrics; first native URL/oEmbed/thumbnail visually matches first object; second publication and Telegram `30370` terminal `conflict` with superseded receipts retained; first publication and Telegram `29982` unchanged; correction events `2/2`; replay `0/0`; metric rows for URL `1`; Python 50/50 and Node 44/44 | mutate the native post, reuse the first URL for the second video, or erase historical evidence |
+| 3 | **active — MKT-09R3-01:** reconcile `b9b214111c86b0b861ce1737dedaba3a55de3ef16e1868d3e00ed9b001cd917c` | Order 2 passes | one caption/account-bound direct URL with unique non-conflicting provider/media lineage, or terminal `absent/conflict`; no retry/new effect | treat profile URL, numeric suffix, HTTP 200, or `PUBLISHED` alone as present |
 | 4 | **MKT-09R3-02:** reconcile `0b1f8c3fcfadb59ce46813e4081d461664ed66c038ea6a90fe54b63973299784` | Order 3 terminal | same exact-effect evidence contract | retry or replace |
 | 5 | **MKT-09R3-03:** reconcile `3d52f25e190e211350511aa472c29b2a5ab8117a5efa9e482602c0d1e0c00fb9` | Order 4 terminal | same exact-effect evidence contract | retry or replace |
 | 6 | **MKT-09R3-04:** reconcile `50d36c4ecdee8b99141d867c3c3dc5feac06da6302a287c9c08528884870fae0` | Order 5 terminal | same exact-effect evidence contract | retry or replace |
