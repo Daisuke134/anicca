@@ -15,4 +15,9 @@ done
 
 rg -q 'CAPAFY_PUBLISH_WORK_DIR=.*agents/\$ID' "$ROOT/scripts/publish_prepare.sh"
 rg -q 'CAPAFY_PUBLISH_WORK_DIR=.*agents/\$ID' "$ROOT/scripts/publish_finish.sh"
+if rg -q 'CAPAFY_PUBLISH_WORK_DIR="\$\{CAPAFY_PUBLISH_WORK_DIR:-' \
+  "$ROOT/scripts/publish_prepare.sh" "$ROOT/scripts/publish_finish.sh"; then
+  echo "FAIL: publisher resume may inherit another agent's work-state" >&2
+  exit 1
+fi
 echo PASS

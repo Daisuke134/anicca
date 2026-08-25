@@ -6,7 +6,7 @@
 # remote-status is status=1 (under review) AND isConfirmedConfigKeys=1.
 #
 # Usage: publish_finish.sh <agent-id> <skill-name> [LISTING.md]
-set -uo pipefail
+set -euo pipefail
 
 ID="${1:?agent-id required}"
 SKILL_NAME="${2:?skill-name required}"
@@ -21,7 +21,10 @@ VENV="${CAPAFY_BROWSER_PYTHON:-python3}"
 # Keep configure/ship bound to the selected agent even when a previous retry
 # left a recoverable manifest behind.  The publisher reads this before parsing
 # its command, so it must be exported before the first Python invocation.
-export CAPAFY_PUBLISH_WORK_DIR="${CAPAFY_PUBLISH_WORK_DIR:-$PUB/.temp/agents/$ID}"
+# The selected remote agent is the isolation boundary.  Do not preserve an
+# inherited work directory: a launcher can carry one over from a different
+# candidate, making configure/ship silently operate on that other manifest.
+export CAPAFY_PUBLISH_WORK_DIR="$PUB/.temp/agents/$ID"
 
 # Direct recovery and launchd must resolve credentials from the same repo-external
 # SSOT. Load them before the key-health gate; values stay process-local.

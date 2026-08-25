@@ -13,7 +13,7 @@
 #
 # Usage: publish_prepare.sh <skill-dir> <LISTING.md> <icon.png> [draft-agent-id]
 # Prints (machine-greppable):  AGENT_ID=<id>  EDIT_URL=<url>  then the target pricing.
-set -uo pipefail
+set -euo pipefail
 
 SKILL_DIR="${1:?skill-dir required}"
 LISTING="${2:?LISTING.md required}"
@@ -131,7 +131,9 @@ if [ -n "$ID" ]; then
   fi
   # The publisher resolves this once at Python process startup.  Bind before
   # publish-init so this retry cannot reset or ship a previous agent's state.
-  export CAPAFY_PUBLISH_WORK_DIR="${CAPAFY_PUBLISH_WORK_DIR:-$PUB/.temp/agents/$ID}"
+  # A scheduler/agent-runner may inherit this from an unrelated prior attempt.
+  # Never let that ambient value redirect a resume into another agent's manifest.
+  export CAPAFY_PUBLISH_WORK_DIR="$PUB/.temp/agents/$ID"
   # BUG FIX 2026-07-17: this branch used to skip publish-init entirely, leaving the
   # LOCAL publish work-state (.temp/publish-work-state.json) pointed at whatever
   # agent_id a PRIOR run last touched. publish-ship then failed closed with
