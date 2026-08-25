@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
 import importlib.util
 import json
+import os
 from pathlib import Path
+import socket
 import subprocess
+import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -16,6 +20,62 @@ SPEC.loader.exec_module(postiz_video)
 
 
 class PostizVideoTests(unittest.TestCase):
+    def test_resolve_ip_accepts_only_public_ipv4_and_rejects_non_public_values(self):
+        self.assertIsNone(postiz_video.validate_resolve_ip(None))
+        self.assertEqual(postiz_video.validate_resolve_ip("93.184.216.34"), "93.184.216.34")
+        for value in (
+            "",
+            "127.0.0.1",
+            "10.0.0.1",
+            "169.254.1.1",
+            "224.0.0.1",
+            "192.0.2.1",
+            "255.255.255.255",
+            "::1",
+            "93.184.216.34,1.1.1.1",
+            "not-an-ip",
+        ):
+            with self.subTest(value=value):
+                with self.assertRaises(postiz_video.PostizError):
+                    postiz_video.validate_resolve_ip(value)
+
+    def test_resolve_override_is_exact_host_only_and_restores_global_resolver(self):
+        original = socket.getaddrinfo
+        calls = []
+
+        def delegated(host, port, family=0, type=0, proto=0, flags=0):
+            calls.append((host, port, family, type, proto, flags))
+            return [(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP, "", (str(host), port))]
+
+        with patch.object(postiz_video.socket, "getaddrinfo", side_effect=delegated) as delegated_mock:
+            with postiz_video.postiz_resolve_override("93.184.216.34"):
+                resolved = postiz_video.socket.getaddrinfo("api.postiz.com", 443, 0, socket.SOCK_STREAM)
+                self.assertEqual(resolved[0][4][0], "93.184.216.34")
+                postiz_video.socket.getaddrinfo("other.example", 443, 0, socket.SOCK_STREAM)
+            self.assertIs(postiz_video.socket.getaddrinfo, delegated_mock)
+        self.assertIs(postiz_video.socket.getaddrinfo, original)
+        self.assertEqual(calls[0][0], "93.184.216.34")
+        self.assertEqual(calls[1][0], "other.example")
+
+    def test_main_installs_override_before_first_network_call_and_restores_it(self):
+        original = socket.getaddrinfo
+        with tempfile.TemporaryDirectory() as directory:
+            video = Path(directory) / "video.mp4"
+            video.write_bytes(b"video")
+            caption = Path(directory) / "caption.txt"
+            caption.write_text("caption", encoding="utf-8")
+
+            def observe_first_network_call(_api_key):
+                self.assertIsNot(postiz_video.socket.getaddrinfo, original)
+                raise RuntimeError("stop after resolver install")
+
+            with patch.dict(os.environ, {"POSTIZ_API_KEY": "fixture", "LM_POSTIZ_RESOLVE_IP": "93.184.216.34"}, clear=False):
+                with patch.object(sys, "argv", ["postiz_video.py", "--video", str(video), "--caption-file", str(caption), "--integration", "integration-1"]):
+                    with patch.object(postiz_video, "read_recent_posts", side_effect=observe_first_network_call):
+                        with self.assertRaisesRegex(RuntimeError, "stop after resolver install"):
+                            postiz_video.main()
+            self.assertIs(postiz_video.socket.getaddrinfo, original)
+
     def test_payload_is_direct_public_video_with_exact_caption_and_media(self):
         payload = postiz_video.build_payload(
             integration="cmp9txjdp01c8oh0yb6dhlarr",
