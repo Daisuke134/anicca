@@ -242,6 +242,8 @@ test("default native comparator accepts same/transcoded video but rejects visibl
   const splitA = path.join(dir, "split-a.mp4");
   const splitB = path.join(dir, "split-b.mp4");
   const splitATranscoded = path.join(dir, "split-a-transcoded.mp4");
+  const pattern = path.join(dir, "pattern.mp4");
+  const patternInstagramLike = path.join(dir, "pattern-instagram-like.mp4");
   const splitATruncated = path.join(dir, "split-a-truncated.mp4");
   for (const [file, color] of [[red, "red"], [green, "green"]]) {
     execFileSync("ffmpeg", ["-loglevel", "error", "-y", "-f", "lavfi", "-i", `color=c=${color}:s=64x64:d=1:r=10`, "-pix_fmt", "yuv420p", file]);
@@ -251,10 +253,13 @@ test("default native comparator accepts same/transcoded video but rejects visibl
     execFileSync("ffmpeg", ["-loglevel", "error", "-y", "-f", "lavfi", "-i", "color=c=red:s=64x64:d=1:r=30", "-f", "lavfi", "-i", `color=c=${tail}:s=64x64:d=14:r=30`, "-filter_complex", "[0:v][1:v]concat=n=2:v=1:a=0,format=yuv420p[v]", "-map", "[v]", file]);
   }
   execFileSync("ffmpeg", ["-loglevel", "error", "-y", "-i", splitA, "-c:v", "libx264", "-crf", "23", "-pix_fmt", "yuv420p", splitATranscoded]);
+  execFileSync("ffmpeg", ["-loglevel", "error", "-y", "-f", "lavfi", "-i", "testsrc2=s=64x64:d=15:r=10", "-pix_fmt", "yuv420p", pattern]);
+  execFileSync("ffmpeg", ["-loglevel", "error", "-y", "-i", pattern, "-vf", "eq=brightness=0.04:contrast=1.03:saturation=1.05", "-c:v", "libx264", "-crf", "28", "-pix_fmt", "yuv420p", patternInstagramLike]);
   execFileSync("ffmpeg", ["-loglevel", "error", "-y", "-i", splitA, "-t", "13.5", "-c:v", "libx264", "-crf", "23", "-pix_fmt", "yuv420p", splitATruncated]);
   assert.equal(compareNativeVideo(red, transcoded), true);
   assert.equal(compareNativeVideo(red, green), false);
   assert.equal(compareNativeVideo(splitA, splitATranscoded), true);
+  assert.equal(compareNativeVideo(patternInstagramLike, pattern), true);
   assert.equal(compareNativeVideo(splitA, splitB), false);
   assert.equal(compareNativeVideo(splitATruncated, splitA), false);
 });

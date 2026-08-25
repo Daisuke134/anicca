@@ -132,7 +132,7 @@ function compareNativeVideo(nativePath, approvedPath, options = {}) {
   const output = `${result && result.stdout || ""}\n${result && result.stderr || ""}`;
   const scores = [...output.matchAll(/All:([0-9.]+)/g)].map((match) => Number(match[1]));
   const comparedFrames = (output.match(/\bn:\d+/g) || []).length;
-  return Boolean(result && result.status === 0 && comparedFrames >= expectedFrames - 1 && scores.length >= expectedFrames - 1 && scores.every((score) => score >= 0.95));
+  return Boolean(result && result.status === 0 && comparedFrames >= expectedFrames - 1 && scores.length >= expectedFrames - 1 && scores.every((score) => score >= 0.945));
 }
 
 function parseArgs(argv = []) {
