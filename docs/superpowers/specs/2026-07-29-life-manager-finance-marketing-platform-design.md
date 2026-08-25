@@ -264,6 +264,97 @@ publisher is used. An enabled Postiz integration is routing configuration, not
 a claim of current posting, a direct public artifact, Telegram receipt, or
 metrics completeness.
 
+### 3.2.2 Recovery re-audit and corrected current truth
+
+This later audit overrides stale completion and cadence claims elsewhere in
+this document. It changes no provider or launchd state. The host currently has
+30 live Postiz integrations: 17 TikTok, 8 Instagram, 3 YouTube, and 2 X. Of
+those, 29 are provider-enabled. The Life Manager manifest describes the 28
+mobile integrations as six `target` rows and 22 `hold` rows, but production
+cycles do not read that manifest. It is therefore an inventory, not an effect
+fence or scheduling control plane. Two enabled X integrations are outside it;
+one produced 46 `PUBLISHED` rows and two `ERROR` rows during the same four-day
+window.
+
+The six selected mobile schedules remain loaded with calendar triggers. They
+are not currently running, but automatic publication paths are still armed.
+From 2026-08-22 through 2026-08-25 JST, their expected/provider-published
+counts were:
+
+| Destination | Runtime object and format | Configured cadence | Expected / Postiz `PUBLISHED` | Latest caption/account-bound native proof |
+|---|---|---:|---:|---|
+| Honne EN TikTok `@honne_reveal` | existing vertical MP4; `reelclaw/relationship-confession`; English | 07:00, 11:00, 20:30 JST | 12 / 8 | `https://www.tiktok.com/@honne_reveal/video/7677930257042787605` |
+| Honne JA TikTok `@honnevideo` | existing vertical MP4; `reelclaw/relationship-confession`; Japanese | 08:30, 12:30, 21:30 JST | 12 / 9 | `https://www.tiktok.com/@honnevideo/video/7677945699123629333` |
+| Anicca main TikTok `@anicca.jp` | existing vertical MP4; `reelclaw-card/nudge-card`; Japanese | 08:00, 16:00, 22:37 JST | 12 / 5 | `https://www.tiktok.com/@anicca.jp/video/7677365911833070866` |
+| Anicca JP4 TikTok `@anicca.jp4` | existing vertical MP4; `reelclaw-card/nudge-card`; Japanese | 09:15, 15:15, 20:45 JST | 12 / 2 | `https://www.tiktok.com/@anicca.jp4/video/7677106804039355656` for one exact effect only |
+| Anicca HE TikTok `@anicca.he` | existing vertical MP4; `reelclaw-card/nudge-card`; Japanese | 07:15, 13:45, 18:15 JST | 12 / 5 | `https://www.tiktok.com/@anicca.he/video/7677725253916773653` |
+| Anicca main Instagram Postiz `@anicca.jp1`, native `anicca.ios.jp` | same Anicca vertical MP4 as a Reel | 19:10 JST | 4 / 3 | `https://www.instagram.com/reel/DcdZEvtET7s/`; latest unauthenticated HTML readback is not independently caption-verifiable |
+
+The total is 32 `PUBLISHED` rows against 64 expected slots. Only 19 rows have
+unique direct-native receipts under the current caption/account criterion; 13
+provider-success/local-nonterminal effects remain: 12 `failed` jobs with
+`unknown_effect=true` and one stale `running` job. They must be reconciled in
+oldest-first order without retry or replacement publication. A separate false
+completion also exists: two different JP4 video effects were bound to Postiz
+row `cmt5exlqb00cjqk0yu6q2xftc` and native TikTok URL
+`7677106804039355656` because provider reuse compared integration and caption
+but not video hash, creative, or slot. Native thumbnail evidence supports the
+first video and contradicts the second. The current completed-receipt API
+cannot supersede that provider/video lineage, so this is a code and durable
+state repair, not a profile-URL correction.
+
+Current unarmed mobile inventory remains `0/day` and unclassified until handled
+one account at a time:
+
+- Instagram: `@ani.cca1234`, `@anicca.affirmation`, `@anicca.bochi`,
+  `@anicca.en`, `@anicca.encards`, `@anicca.jp.videos`, `@obou.anicca`.
+- TikTok: `@anicca_buddha`, `@anicca_slideshow`, `@anicca.comedy`,
+  `@anicca.daily`, `@anicca.jp8`, `@anicca.jpx`, `@aniccaaffirmation`,
+  `@aniccaen2`, `@aniccajp`, `@aniccajp2`, `@monk_anicca`,
+  `@obou_anicca`.
+- YouTube: `@anicca-affirmation-video`, `@anicca-ai`, and owner-skipped
+  `@anicca-jp`. Only the last remains the one allowed YouTube skip.
+
+There is no live Honne Instagram or YouTube integration, so dedicated Honne
+profiles must be provisioned before either platform can be classified or
+armed. No Anicca destination may be borrowed and relabelled as Honne.
+
+The current publisher does not generate Larry photo slideshows. Legacy Larry
+did generate six/seven-image affirmation slideshows and could cross-post an
+Instagram carousel. Legacy ReelClaw card/widget jobs copied pre-rendered MP4
+assets and changed captions; they were not per-run renderers. All audited
+Larry/ReelClaw mobile OpenClaw cron jobs are now disabled and their related
+LaunchAgents are unloaded. The pre-quarantine snapshot proves that some were
+previously enabled, but their code accepted Postiz IDs, profile URLs, or
+YouTube `QUEUE` as success, swallowed child failures, contained stale or wrong
+integration wiring, and produced no caption-matching direct-native receipt.
+They remain rollback evidence only. Reusable creative responsibilities are the
+Larry fixed-string slide composition, 14-day anti-repeat, image normalization,
+Instagram PNG-to-JPEG conversion, and retained asset pools. Existing Honne and
+Anicca Card JA packs are already migrated; copying them again is prohibited.
+
+The current hook chooser is LRU rotation, not self-improvement. Metrics and
+reward are not chooser inputs; `preferred` is not consumed as a winner; no
+keep/revert decision changes the next generation; and the static
+`honne_en_base_20260823` campaign token has been shared by eleven hooks. MKT-12A0
+is therefore invalid as a causal hook cohort and is reopened after recovery.
+
+Host-wide disk exhaustion is a concurrent safety blocker: the Data volume has
+about 266 MiB available at 100% utilization, ordinary writes have returned
+`ENOSPC`, and several publication logs contain both space and ledger failures.
+No new external effect is allowed until a regeneration-only cleanup and fresh
+durable ledger/object write readback pass.
+
+The public GitHub `main` tree contains the current Life Manager marketing
+source, but not the live LM `.env`, ledgers, or object-store MP4s. This audit
+does not prove that the full Git history is secret-free. The official Postiz
+CLI at fixed commit `77d09c668cb2f7793989a185844d0a0c3d65c951` documents useful
+endpoint and payload shapes, but it has no create idempotency or automatic
+effect reconciliation, recommends blind create retries, uses a second
+credential store, and is AGPL. It is not embedded or invoked. Life Manager
+keeps its own minimal client, durable effect ledger, no automatic POST retry,
+and GET-only readback/reconciliation. Third-party Postiz CLIs are rejected.
+
 ### 3.3 Historical marketing launch state before quarantine
 
 The table preserves the pre-quarantine schedules for behavior equivalence. Its
@@ -1858,24 +1949,33 @@ schedulers or revive known-broken producers:
 This is the remaining operational list for returning the existing mobile
 marketing fleet. It does not create a second scheduler and it does not enable
 the quarantined OpenClaw fleet. Only the first unchecked item is active.
-This table is the complete start-to-end sequence; the `A`/`B` rows run directly
-after the preceding numbered row, and no later row is started early:
-`MKT-01 → MKT-02 → MKT-03 → MKT-03A → MKT-03B → MKT-05 → MKT-06 →
-MKT-07 → MKT-08 → MKT-09 → MKT-10 → MKT-11 → MKT-11A → MKT-11B → MKT-12 →
-MKT-13`.
+The historical rows below remain evidence, but the complete current execution
+order is the §12.3 recovery checklist: `MKT-09R0 → MKT-09R1 → MKT-09R2 →
+MKT-09R3-01..13 → MKT-09R4..R9 → MKT-10 → MKT-11 → MKT-12 → MKT-13`.
+No later row starts early.
 
-Current TODO state: **MKT-01 done; MKT-02 done; MKT-03 done with the earlier generic row quarantined; MKT-03A contract done; MKT-03B partly done; MKT-04 seven-cycle gate removed; MKT-05 through MKT-08 done; MKT-09 Order 0 is reconciled; MKT-09A manifest encoding is done; MKT-09B1/B2 and §12.3 Order 5 are skipped at 0/day by owner instruction; verified canaries and metric observations remain valid; MKT-11P1, MKT-11A4H/A4A/A4W, JP4M3/M4, HEM1/M2, and MKT-11B1/B2/B3/B4 are done; all six selected non-YouTube destinations are isolated and armed within their limits; MKT-12A0 establishes one Honne EN campaign-linked cohort before the first bounded hook challenger; future windows remain time-gated; learning remains open**. Honne
-has TikTok destinations only; Instagram and YouTube remain Anicca-only lanes.
+Current TODO state: **incident recovery is reopened at MKT-09.** Earlier
+caption/account-bound native canaries remain evidence, but the claim that all
+six schedules are healthy is withdrawn. The live schedules produced 32 of 64
+expected provider rows over four days, 13 provider-success effects remain
+locally nonterminal, one completed JP4 receipt is falsely bound to a different
+video effect, the manifest is not an enforced control plane, and host-wide
+`ENOSPC` threatens durable state. MKT-12A0 and every cadence expansion are
+blocked until the recovery checklist below is terminal. Honne still has TikTok
+destinations only; dedicated Honne Instagram and YouTube integrations do not
+yet exist.
 
 An external observation clock is not an active implementation item. It remains
 `time-gated pending` only when it has an exact due time, a durable LM owner, and
 terminal acceptance evidence. Exactly one executable atomic item remains active;
 when the clock fires, its readback is reconciled before any dependent account arm.
 
-**Active executable atomic item:** MKT-12A0 establishes one Honne EN
-campaign-linked cohort and its official product readback before any hook is
-changed. Product totals are not assigned to an unverified campaign or creative.
-YouTube and every held account stay off.
+**Active executable atomic item:** MKT-09R0 restores a safe disk margin using
+only regeneration-safe cache and agent-owned temporary files, then proves fresh
+Life Manager ledger and object-store writes plus replay. No marketing evidence,
+receipt, object, state JSONL, OpenClaw asset, plist, or log is removed, and this
+item performs zero provider writes. The publication effect fence is the next
+item and must finish before the first 07:00 JST mobile schedule.
 
 | ID | Atomic action | Account/lane | Done evidence |
 |---|---|---|---|
@@ -1889,7 +1989,7 @@ YouTube and every held account stay off.
 | MKT-06 | Restore Honne JA on-demand publishing and record its account receipt | Honne JA `@honnevideo` | **done —** creative `HJA-011-ed3318c496f4` published at `https://www.tiktok.com/@honnevideo/video/7676425660641889537`, provider row `cmt2siqgp0009nt0yoi1qz7lf`, Telegram `message_id=27515`, replay 0; old `honne-ja-fresh` remains disabled |
 | MKT-07 | Repair and canary the JP4 lane | Anicca JP4 `@anicca.jp4` | **done —** the failed `AJ-CARD-002-7e24db967bf7` effect remains reconciled `absent` and was never retried. A new Life Manager-only `AJ-CARD-003-5639e14832ad` nudge-card effect used the approved card media `5639e148…`, JP4 approval `97f2c5fb…`, and Postiz row `cmt328uot00s2qk0y23e8ptii`. Postiz's numeric release suffix was not trusted: caption/profile readback verified `https://www.tiktok.com/@anicca.jp4/video/7676495865816632583` (HTTP 200). Natural Telegram receipt `message_id=27939` carried that same direct URL; replay created zero publication and zero message effects. The JP4 runner rejects any non-pack media, wrong approval, wrong integration, or terminal job before claim |
 | MKT-08 | Repair and canary the iOS lane | Anicca iOS `@anicca.jp` | **done —** `AJ-CARD-001-35a15c7ce990` remains verified at TikTok `https://www.tiktok.com/@anicca.jp/video/7676422253638176020` (Telegram `27500`) and Instagram `https://www.instagram.com/reel/DcTFx_UjSio/` (Telegram `27510`); current local replay for both jobs returned `created=false`. TikTok account metrics are Followers `257`, Videos `470`, Views `5,252`; TikTok post-level analytics returned an empty array and is recorded unavailable, while Instagram recorded Views/Reach `6` and Saves/Likes/Comments/Shares `0` |
-| MKT-09 | Migrate the remaining Larry/ReelClaw accounts one by one, preserving each measured account/locale contract | remaining Anicca/Honne accounts | **partly done —** `@anicca.en` remains excluded because its retained registry declares product `ebook-en` and disallows `reelclaw-card`. The existing `@anicca.he` `AJ-CARD-004-5639e14832ad` effect was reconciled without retry: Postiz row `cmt32u9dj00jxqp0yqdh6yi96` retained the exact caption while TikTok's native profile DOM linked that caption to `https://www.tiktok.com/@anicca.he/video/7676500512308481296`; the numeric release suffix instead resolved to native status `10204 item doesn't exist` and was correctly rejected. The local job is completed with decision `present`, Telegram `message_id=28431`, and publication/message replay both created zero effects. Next: classify exactly one remaining account; no mass re-enable |
+| MKT-09 | Migrate and recover the remaining Larry/ReelClaw accounts one by one, preserving each measured account/locale contract | remaining Anicca/Honne accounts | **reopened —** the earlier `@anicca.he` effect remains terminal evidence, but the fleet now has 12 `unknown_effect` failures, one stale-running effect, and one separate JP4 false completion. Execute MKT-09R0 through MKT-09R9 exactly as ordered in §12.3 before classification or any new canary |
 | MKT-09A | Encode the §8.8.1 target and hold dispositions in the Life Manager lane manifest; no provider write | all measured TikTok/Instagram/YouTube integrations | **done —** owner-directed YouTube skip advanced the validated schema-v2 manifest to `marketing-lane-manifest:55eb386417bd38547ceaad2a80936e51f272bec964387b0751c55a1fa60efda9`: six classified non-YouTube target rows, 22 `hold` rows at `0/day`, exact `@anicca-jp` YouTube row held with `provider_disabled=true`, armed rows `0`, file mode `0600`, provider writes `0`. The prior seven-target manifest remains historical state evidence |
 | MKT-09B1 | Repair and read back the exact selected YouTube integration; no publication | YouTube `@anicca-jp` (`cmn1oukj9012nnq0yqhouc3ib`) only | **skipped by owner instruction; 0/day.** The first exact canary effect remains terminal `absent`: local job `marketing-video-publication:272c9640dbb10b04706d3f4a52335c8a54d92e764485b66a10fcedf137bfba00`, Postiz row `cmt41nl0809imqp0yx5rls3zp`, provider state `ERROR`, error `Refresh channel needed`, no direct URL/release ID/Telegram receipt, and no retry. OAuth diagnosis remains evidence only; no owner login is required while the lane is skipped |
 | MKT-09B2 | Publish and verify one selected Anicca JA YouTube Shorts canary | YouTube `@anicca-jp` (`cmn1oukj9012nnq0yqhouc3ib`) only | **skipped by owner instruction; 0/day.** No replacement effect, success receipt, metrics claim, or scheduler arm |
@@ -1930,7 +2030,7 @@ YouTube and every held account stay off.
 | MKT-11B2 | Join App Store Connect acquisition observations without inventing creative attribution | Honne and Anicca independently | **done —** App inventory readback bound Anicca `6755129214` and Honne `6759667221` to separate API requests. Anicca's official App Downloads Standard and Discovery/Engagement Detailed segments for data `2026-08-19..21` produced First-time downloads `1`, Updates `1`, Total downloads `1`, Impressions `9`, Unique impressions `5`, Product page views `0`, and Unique product page views `0`; product totals remain `unattributed` with confidence `official_product_total_no_campaign` and are never copied to one of the four Anicca social rows. Honne had only a stale one-time snapshot, so ongoing request `c7c05836-181e-49cc-ae71-b57b7a0b466e` was created; its first report remains `unavailable/report_pending`, never zero. Immutable joined snapshot `object://sha256/a583c9d48c955941d3af54d1a52f4804018fe7bcbfb30af7466ecac13dd92e6b` binds B1 lineage `592db5…4df1`; all six social rows remain unattributed. Same-day replay returned `created=false`. The existing LM-owned 30-minute TikTok metrics loop collects ASC once after 22:00 JST; readback was runs `23`, last exit `0`. API timeout/empty data fails product-local to unavailable. The initial UTC/empty-parser zero snapshot is quarantined and not consumed |
 | MKT-11B3 | Join RevenueCat trial, subscription, renewal, cancellation, and proceeds observations | Honne and Anicca independently | **done —** Life Manager does not administer RevenueCat or read another runtime's path/env. It accepts only a schema-checked product-owned observation from its product-pack inbox, rejects product identity mixing and any unavailable metric represented as zero, and imports it after the exact ASC snapshot. No valid RevenueCat API credential or product export was available without a new login, so Anicca and Honne independently remain `unavailable/product_pack_observation_missing` for trials, active subscriptions, renewals, cancellations, and proceeds; every value is `null`, never zero. Immutable snapshot `object://sha256/46769d5e1ae5f980bf24b342316fbf70f9cc7aab9254851f17efc601f9cacbc4` binds ASC `a583c9…92e6b`, forbids timing-only attribution, and labels RevenueCat proceeds as an estimate rather than store settlement. Immediate replay returned `created=false`. The existing LM-owned 22:00 metrics path now imports this product-pack observation after ASC; focused checks pass 4/4 |
 | MKT-11B4 | Join product activation/retention and publish attribution coverage | Honne and Anicca independently | **done —** the existing summary renderer now joins the exact ASC and RevenueCat immutable inputs with a schema-checked product-owned activation/retention inbox. Missing product observations remain `null/unavailable`; a measured source cannot contain unavailable fields, product identity mixing fails closed, and D1/D7 retention is accepted only as an explicit cohort observation. Daily coverage `object://sha256/e03e723f04ba94b9ac57954856b7fcbe7be037ff650a1d8bf7f715276dad74e3` reports Anicca official Install `1`, with activation/trial/paid/retained/D1/D7/proceeds unavailable; Honne remains unavailable including pending ASC. Campaign attribution rate remains unavailable rather than zero. Natural Telegram `29142` was sent through the LM summary receipt path; immediate replay returned `summary_replay`. The 22:00 LM metrics path now runs ASC → RevenueCat → product coverage → natural Telegram → weekly review; future product daily/weekly summaries consume the same coverage. Focused checks pass 8/8 |
-| MKT-12A0 | Establish one campaign-linked cohort before changing a hook | Honne EN only | **active; publication time-gated to the normal 07:00 JST slot —** Postiz source at fixed commit `74b01ada154a177242d558bedc646fcfed100adf` confirms its TikTok providers expose posting and user-info but no bio/website mutation, and no existing Honne TikTok browser credential/session is available; no login or recovery is attempted. The LM-owned arm-specific campaign URL `https://apps.apple.com/app/id6759667221?pt=93486075&ct=honne_en_base_20260823&mt=8` resolves to the Honne App Store page at final HTTP `200` with `pt/ct` preserved. The Honne EN cycle validates that exact app/provider/baseline-arm tuple, appends it to the immutable caption object, and the exact-caption lineage parser records `campaign_id=honne_en_base_20260823` as `partial/configured`, never as attributed before product readback. An account-static token was rejected because it would mix baseline and challenger hooks; each later challenger gets a distinct `honne_en_hook_*` token. The non-secret URL is present once in the mode-0600 LM env. ASC inventory proves `r4` is App Downloads Detailed; Apple documents its `Campaign` column and the privacy threshold, so missing rows remain unavailable rather than zero. The next normal slot is `2026-08-23 07:00 JST`; no extra post is created and the 3/day cap remains intact. After that slot, require caption-matching direct TikTok URL, natural Telegram, replay 0, social metric status, and official campaign/product readback before changing a hook |
+| MKT-12A0 | Establish one campaign-linked cohort before changing a hook | Honne EN only | **reopened and blocked by MKT-09 recovery —** `honne_en_base_20260823` was shared by eleven changing hooks, so it is not a one-hook baseline cohort. Rebuild it only after recovery with one immutable campaign token per baseline/challenger, then require direct-native publication, natural Telegram, replay 0, social metrics, and official product readback before changing the hook |
 | MKT-12 | Run bounded learning: change one hook/format/CTA variable, keep or revert from receipts, and prove the next run consumed the decision | Honne and Anicca separately | one-variable challenger, keep/revert receipt, and next-run consumption receipt |
 | MKT-12A | Run the first one-variable hook challenger from a usable attributed cohort | Honne EN only | freeze format/CTA/asset family; change one hook; compare source-labelled cohort; keep or revert; next generated publication proves it consumed the decision |
 | MKT-12B | Repeat bounded hook learning without cross-product leakage | Honne JA only | same gate as MKT-12A with independent locale/account weights |
@@ -1950,18 +2050,32 @@ Their dependent account arm remains blocked until the observation is terminal.
 
 | Order | Atomic action | Start only when | Done evidence | Never do |
 |---:|---|---|---|---|
-| 0 | **done —** Reconcile the existing Anicca HE effect `cmt32u9dj00jxqp0yqdh6yi96` | always | native profile-caption readback proved `https://www.tiktok.com/@anicca.he/video/7676500512308481296`; local decision `present`; natural Telegram `28431`; publication/message replay `0`; no retry or replacement effect | retry it, create a replacement effect, or notify success without the direct artifact |
-| 1 | **done —** Encode §8.8.1 in the Life Manager lane manifest | Order 0 is terminal `present` | current schema-v2 manifest `marketing-lane-manifest:55eb386417bd38547ceaad2a80936e51f272bec964387b0751c55a1fa60efda9`; six non-YouTube targets; 22 holds at `0/day`, including owner-skipped `@anicca-jp`; armed rows `0`; provider writes `0` | infer product from an integration name, create a worktree, or arm any row |
-| 2 | **done —** Verify the selected target packs already exist in LM object storage | Order 1 validates | Honne EN/JA ReelClaw packs and Anicca JA card pack exist under `LM_DATA_DIR`; SHA-256 readback completed; no missing target pack requires migration | run or enable an old OpenClaw/launchd job |
-| 3 | **done for the six non-YouTube destinations —** Canary one selected target row at a time | Order 2 passes and provider preflight is healthy | Honne EN/JA TikTok, Anicca main TikTok/Instagram, JP4 TikTok, and HE TikTok each have the direct native URL/content/account/Telegram/replay evidence recorded above | fan out to another account or silently turn unavailable into success/zero |
-| 4 | **done for the six non-YouTube destinations —** Repeat Orders 2–3 one target row at a time; classify held accounts only in later separate atomic items | prior row is terminal and recorded | six verified destinations are terminal; all 21 held rows remain `0/day`; YouTube is isolated as Order 5 | mass-enable the legacy fleet |
-| 5 | **skipped by owner instruction —** selected Anicca JA YouTube route remains disabled | prior effects are terminal | target stays 0/day; failed effect stays terminal absent; no replacement post, success receipt, or metrics claim | retry the terminal-absent effect, silently revive YouTube, or count it as verified |
-| 6 | **done for Honne EN only —** prove complete metric-source status, make collection repeatable, then enable the §8.8.1 channel-specific daily policy per account | that exact account has a healthy canary; arming additionally requires a repeatable usable metric source | Honne EN has a repeatable identity-bound metric source and is the only armed lane at TikTok max 3/day; every other account remains off pending its own metric gate | use the old scheduler, arm from a one-off/manual snapshot, exceed the row limit, or enable all accounts together |
-| 7 | **done for all six selected non-YouTube destinations —** collect due social observations and enable one healthy account at a time | each verified post reaches its required observation gate | JP4 and HE both have exact 24h snapshots, natural Telegram, replay 0, and isolated max-3/day schedules. Future windows continue; owner-skipped YouTube remains excluded | report account-level views as an attributed install or paid conversion, retry terminal publications, or arm held accounts |
-| 8 | **done —** both product daily effects and the weekly review are source-labelled and replay-deduped | source accounts have direct verified publications and immutable daily snapshots | Honne Telegram `28973`, Anicca Telegram `28983`, weekly Telegram `29050`; all have immutable refs and replay 0 | overlap external effects, hide unavailable attribution, transfer a winner across products, or send raw logs/profile URLs/internal integration names |
-| 9 | **done —** compute attribution coverage in MKT-11B1→B4 order | at least one reporting lane has exact creative/publication lineage and immutable observations | MKT-11B1 lineage, MKT-11B2 ASC `a583c9…92e6b`, MKT-11B3 RevenueCat `46769d…acbc4`, and MKT-11B4 natural coverage `e03e72…74e3` / Telegram `29142` are joined. Anicca Install `1` remains an unattributed product total; every missing funnel value and campaign rate is unavailable, not zero | infer causality from timing alone or merge Honne and Anicca weights |
-| 10 | **active at MKT-12A0 —** run bounded hook learning in MKT-12A0→A→C order | one product/account has a usable source-labelled cohort from Orders 8–9 | first establish one Honne EN campaign-linked cohort without changing the hook; then freeze every variable except one hook, keep/revert, and prove next-run consumption; repeat Honne JA, then Anicca independently | cross-product learning, multi-variable edits, or changing hooks from views without install/subscription evidence |
-| 11 | Retire legacy marketing ownership | every retained route has Orders 1–10 evidence | Life Manager is sole owner; legacy disabled state stays archived rollback evidence | delete or mass-reenable legacy jobs |
+| 0 | **active — MKT-09R0:** restore safe writable capacity using only regeneration-safe caches and agent-owned temporary files | always; currently about 266 MiB free and `ENOSPC` observed | capacity floor is documented; fresh atomic object write, ledger append, and replay readback pass; external effects `0` | delete evidence, state JSONL, receipts, object packs, OpenClaw assets, plists, or logs |
+| 1 | **MKT-09R1:** add one LM-owned publication effect fence shared by every mobile cycle | Order 0 passes and before the next scheduled mobile slot | every selected cycle reaches the same fence; a real no-provider cycle records a durable refusal; publication jobs/Postiz rows/Telegram success receipts remain unchanged | stop/restart/unload/delete a job or rely on the non-enforced manifest |
+| 2 | **MKT-09R2:** repair JP4 caption-only false-positive reconciliation with TDD | Order 1 passes | provider reuse requires non-conflicting effect/media lineage; the second JP4 effect is durably superseded or terminal `conflict`, never `completed`; Telegram `30370` is quarantined; replay `0` | mutate the native post, reuse the first URL for the second video, or erase historical evidence |
+| 3 | **MKT-09R3-01:** reconcile `b9b214111c86b0b861ce1737dedaba3a55de3ef16e1868d3e00ed9b001cd917c` | Order 2 passes | one caption/account-bound direct URL with unique non-conflicting provider/media lineage, or terminal `absent/conflict`; no retry/new effect | treat profile URL, numeric suffix, HTTP 200, or `PUBLISHED` alone as present |
+| 4 | **MKT-09R3-02:** reconcile `0b1f8c3fcfadb59ce46813e4081d461664ed66c038ea6a90fe54b63973299784` | Order 3 terminal | same exact-effect evidence contract | retry or replace |
+| 5 | **MKT-09R3-03:** reconcile `3d52f25e190e211350511aa472c29b2a5ab8117a5efa9e482602c0d1e0c00fb9` | Order 4 terminal | same exact-effect evidence contract | retry or replace |
+| 6 | **MKT-09R3-04:** reconcile `50d36c4ecdee8b99141d867c3c3dc5feac06da6302a287c9c08528884870fae0` | Order 5 terminal | same exact-effect evidence contract | retry or replace |
+| 7 | **MKT-09R3-05:** reconcile `e97d54e5415eb593dc7ec613ae4da3205eb6e86daecba37f3367e2b1cc2663d8` | Order 6 terminal | same exact-effect evidence contract | retry or replace |
+| 8 | **MKT-09R3-06:** reconcile `9cf83b4855c8d9f97d300ed584b74d92e05cb4e1715743cb9fe43e042c988389` | Order 7 terminal | same exact-effect evidence contract | retry or replace |
+| 9 | **MKT-09R3-07:** reconcile `05024c43b9774d985bd9ea1c14dab9dc5a118057f29de84f689db3898b0b93a6` | Order 8 terminal | same exact-effect evidence contract | retry or replace |
+| 10 | **MKT-09R3-08:** reconcile `78685a6f6e3f5c1b88db6f2cf7a0a3f7e2d9b59a1068117fe61a5c0cc16f9f5a` | Order 9 terminal | same exact-effect evidence contract | retry or replace |
+| 11 | **MKT-09R3-09:** reconcile `1eacd207e3c651c367badb07a65bcdbc8233896e685db1dd6b179aaa60a4586e` | Order 10 terminal | same exact-effect evidence contract | retry or replace |
+| 12 | **MKT-09R3-10:** reconcile stale-running `8d6553d3e292f2a080875d0152daa1ea43709ef1983e79f993606939a4d501da` | Order 11 terminal | lease is durably closed and exact effect is `present`, `absent`, or `conflict`; replay `0` | reclaim and submit before readback |
+| 13 | **MKT-09R3-11:** reconcile `404ff87aa9cc660e8656436275dd6cfe303d3053f74817fae58c595d57041741` | Order 12 terminal | same exact-effect evidence contract | retry or replace |
+| 14 | **MKT-09R3-12:** reconcile `72454c23e24342175fa4d45274a6631c91b1a91530e5dedcc47ba6223e269d45` | Order 13 terminal | same exact-effect evidence contract | retry or replace |
+| 15 | **MKT-09R3-13:** reconcile `f9aa4089d72fb3b77542cd967ed9f1c5d8c4f710de79d6a268cad7b0448b5c81` | Order 14 terminal | all 13 nonterminal effects are terminal; provider and local counts reconcile; no new effect | collapse multiple effects into one direct URL |
+| 16 | **MKT-09R4:** make the 30-integration registry and enforced lane policy agree | Order 15 passes | all 17 TikTok, 8 Instagram, 3 YouTube, and 2 X rows have explicit owner/disposition; every mobile cycle reads the same policy; the one YouTube skip is `@anicca-jp`; provider writes `0` | mass-disable or mass-enable Postiz accounts |
+| 17 | **MKT-09R5:** classify exactly one remaining non-skipped mobile account | Order 16 passes | product, locale, native account, integration, allowed renderer, approved asset pack, and target cadence are explicit; starts at `0/day` | infer product from handle or reuse another product's account |
+| 18 | **MKT-09R6:** import or build that account's one approved pack in LM object storage | Order 17 passes | immutable pack/object SHA readback; renderer has no OpenClaw path/env/assets dependency | execute legacy OpenClaw publisher or copy an already migrated pack |
+| 19 | **MKT-09R7:** run one canary for that exact account | Order 18 passes and fence is opened only for this effect | correct content and account are verified at a caption-matching direct native URL; natural Telegram carries it; publication/message replay `0`; metric source status is explicit | fan out, accept a profile URL, or call unavailable success/zero |
+| 20 | **MKT-09R8:** repeat Orders 17–19 one account at a time | prior account terminal | all retained Instagram/TikTok accounts and both non-skipped YouTube accounts have isolated terminal evidence | enable all accounts together |
+| 21 | **MKT-09R9:** provision dedicated Honne Instagram and YouTube integrations one platform/account at a time | existing Postiz inventory has no Honne route for that platform | ownership and Honne product/locale are verified; canary passes Order 19 | relabel an Anicca account as Honne |
+| 22 | **MKT-10:** arm only one healthy verified account, ramping from one canary/day to at most three posts/day | exact account has direct-native, Telegram, replay, and usable metric-source evidence | expected/published/missed/duplicate counts remain healthy at each ramp; platform policy permits cadence | jump directly to three/day everywhere |
+| 23 | **MKT-11:** collect 2h/24h/72h/7d social metrics and join ASC, RevenueCat, and product analytics | exact published effect has immutable creative/campaign lineage | views, likes, comments, shares, saves, watch/retention fields when supported, installs, activation, trials, paid, proceeds, and attribution coverage are source-labelled; unavailable stays unavailable | substitute account aggregates for post outcomes or infer installs from timing |
+| 24 | **MKT-12:** close bounded hook learning independently for Honne EN, Honne JA, and Anicca | one product/account has a usable attributed cohort | stable assignment; one hook token per baseline/challenger; immutable outcome; keep/revert CAS decision; next generation proves it consumed the decision | LRU rotation, shared campaign token, cross-product winner, or multi-variable edit |
+| 25 | **MKT-13:** finish daily/weekly natural Telegram reporting, then retire legacy ownership | every retained route has Orders 16–24 evidence | reports cover every retained lane and funnel source with replay dedupe; LM is sole owner; legacy disabled state stays archived rollback evidence | raw integration/profile receipts, hidden unavailable data, or deleting legacy evidence |
 
 The product-growth sequence after incident recovery remains: (1) close and prove
 marketing, (2) use App Store Connect, RevenueCat, Mixpanel/PostHog, reviews, and
