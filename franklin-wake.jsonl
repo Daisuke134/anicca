@@ -34066,3 +34066,12 @@
 {"ts":1787634594,"wake_id":"00MT87HCZ15AF75786857543AD","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1787634732,"wake_id":"00MT87KB3SE253DC9C287F412A","kind":"wake_error","sleep_s":60,"model":"auto"}
 {"ts":1787634800,"wake_id":"00MT87LS4W7790E8F1D0F04B40","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1787634871,"wake_id":"00MT87NAOX50366762512940EE","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787635009,"wake_id":"00MT87Q91DD14C7FA67ABD45D9","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1787635078,"wake_id":"00MT87RQ7T530B7E409EF94AA5","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1787635175,"wake_id":"00MT87TTIL6C3929465E5C4E5F","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1787635244,"wake_id":"00MT87VA5C3CA3625A10C64CAC","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787635375,"wake_id":"00MT87Y3J41D806A5188604FDC","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
+{"ts":1787635505,"wake_id":"00MT880VNGC921BDE2F4344EBA","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: new earning methods for solana agent [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates surfaced for the mod"}
+{"ts":1787635633,"wake_id":"00MT883MMY12C4DBFC60FC43DD","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1787635701,"wake_id":"00MT88532E128AE9017A064F0F","kind":"wake_error","sleep_s":60,"model":"auto"}
