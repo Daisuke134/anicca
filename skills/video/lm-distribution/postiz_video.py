@@ -188,11 +188,13 @@ def find_post(response, post_id: str, platform: str = "tiktok") -> dict:
         return {"state": "UNKNOWN", "post_url": None}
     state = match.get("state") or "UNKNOWN"
     url = match.get("releaseURL") or match.get("releaseUrl")
-    # Postiz's TikTok ``releaseId`` is an internal publication identifier, not
-    # the native TikTok video id.  It can look numeric and still resolve to a
-    # different public video (the provider profile is the authority).  Keep a
-    # profile URL here so the caller must perform a public profile/caption/time
-    # readback before it can record a direct artifact URL.
+    if state == "PUBLISHED" and platform == "tiktok" and re.fullmatch(
+        r"https://www\.tiktok\.com/@[^/]+/?", url or "",
+    ):
+        release_id = str(match.get("releaseId") or "")
+        video = re.fullmatch(r"v_pub_file~v2(?:-1)?\.([0-9]+)", release_id)
+        if video:
+            url = f"{url.rstrip('/')}/video/{video.group(1)}"
     if state == "PUBLISHED" and platform == "youtube" and not _valid_public_url(platform, url):
         # Postiz may expose a channel URL while the provider row carries the
         # authoritative YouTube video id. Construct only from that exact id;

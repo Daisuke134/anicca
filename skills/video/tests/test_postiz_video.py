@@ -224,7 +224,7 @@ class PostizVideoTests(unittest.TestCase):
         with self.assertRaises(postiz_video.PostizError):
             postiz_video.find_post([{"id": "p", "state": "PUBLISHED"}], "p")
 
-    def test_find_post_does_not_derive_tiktok_url_from_internal_release_id(self):
+    def test_find_post_derives_tiktok_candidate_only_from_exact_published_row(self):
         row = {
             "id": "post-1",
             "state": "PUBLISHED",
@@ -233,7 +233,7 @@ class PostizVideoTests(unittest.TestCase):
         }
         self.assertEqual(
             postiz_video.find_post([row], "post-1"),
-            {"state": "PUBLISHED", "post_url": "https://www.tiktok.com/@life.manager"},
+            {"state": "PUBLISHED", "post_url": "https://www.tiktok.com/@life.manager/video/7999999999999999999"},
         )
 
     def test_caption_only_provider_effect_never_reconciles_a_different_video(self):
