@@ -11,6 +11,11 @@ queue together with prior receipts. Before X discovery, broad Web discovery, or
 any unlisted candidate, process every `apply_now` program in queue order: open its
 current official application, complete every truthful authorized field, and either
 obtain an official submission receipt or record the exact current checkpoint.
+Read each priority item's complete current `reason`, not only its program, URL,
+and action. The current reason is the authority source and overrides an older
+checkpoint when it explicitly authorizes a previously unresolved application-stage
+acknowledgement, consent, answer derivation, or artifact. In that case reopen the
+official form during this wake; never carry the stale checkpoint forward unchanged.
 Checking the landing page is not processing the application.
 Do not reopen the same video, voice, binding-term, attendance,
 travel, KYC, or CAPTCHA checkpoint every wake unless new evidence indicates the
