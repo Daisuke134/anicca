@@ -649,7 +649,7 @@ async def discover_affordable_proposal(
         packet_paths: list[Path] = []
         batch_identities: list[str] = []
         observed_by_id: dict[str, tuple[dict[str, str], str, str]] = {}
-        selected_jobs = jobs[:10]
+        selected_jobs = jobs
         for job in selected_jobs:
             known.add(job["id"])
         detail_results = await read_public_job_details(

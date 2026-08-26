@@ -148,6 +148,40 @@ def test_independent_public_job_details_are_read_concurrently_in_source_order(tm
     assert all(detail is not None for _, detail in results)
 
 
+def test_discovery_inspects_every_unique_job_on_provider_page(tmp_path, monkeypatch):
+    inspected = []
+
+    async def navigate(pass_id, seq, label, url, action, settle_seconds, viewport_width):
+        path = tmp_path / f"{seq}.json"
+        path.write_text(json.dumps({
+            "navigated_ok": True, "url": url, "rendered_text": "Search jobs",
+            "rendered_links": [
+                {"href": f"https://www.upwork.com/jobs/Job-{index}_~0{index}",
+                 "text": f"Job {index}"}
+                for index in range(11)
+            ],
+        }))
+        return str(path)
+
+    async def read_details(jobs, **kwargs):
+        inspected.append([job["id"] for job in jobs])
+        return [(job, None) for job in jobs]
+
+    monkeypatch.setattr(provider, "navigate_and_snapshot", navigate)
+    monkeypatch.setattr(provider, "read_public_job_details", read_details)
+    state = {
+        "candidate_jobs": [], "balance": 0, "observed_at": "now",
+        "evidence_sha256": {},
+    }
+    asyncio.run(provider.discover_affordable_proposal(
+        state, pass_id="pass", sequence=30, proposals_dir=tmp_path / "proposals",
+        inbound_dir=tmp_path / "inbound", inbound_evidence=tmp_path / "evidence",
+        cursor_path=tmp_path / "cursor.json",
+    ))
+
+    assert len(inspected[0]) == 11
+
+
 def test_read_evidence_allows_only_canonical_message_room_redirect(tmp_path):
     def evidence(name, url):
         path = tmp_path / name
