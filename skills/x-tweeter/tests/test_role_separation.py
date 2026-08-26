@@ -27,6 +27,18 @@ class XRoleSeparationTests(unittest.TestCase):
             tomllib.loads((ROOT / "loops" / "x-tweeter" / "loop.toml").read_text())["state_dir"],
         )
 
+    def test_repost_enforces_persona_points_and_rolling_70_30_language_mix(self) -> None:
+        source = (ROOT / "skills" / "x-repost" / "x-repost-cli.sh").read_text()
+        for key in (
+            "does_not_disparage", "includes_positive_note", "adds_own_experience",
+            "avoids_excessive_self_focus", "leads_to_action",
+        ):
+            self.assertIn(key, source)
+        self.assertIn('all(d.get("five_points", {}).get(key) is True', source)
+        self.assertIn('${X_REPOST_FORCE_LANGUAGE:-}', source)
+        self.assertIn('ja_count < 3', source)
+        self.assertIn('rolling EN 7 / JA 3', source)
+
 
 if __name__ == "__main__":
     unittest.main()

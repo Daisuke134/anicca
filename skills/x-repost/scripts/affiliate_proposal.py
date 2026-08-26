@@ -226,6 +226,7 @@ def claim_next_job(
     queue_path: Path, claims_path: Path, results_path: Path | None = None,
 ) -> dict:
     jobs = distribution_jobs(queue_path)
+    terminal = False
     claims_path.parent.mkdir(parents=True, exist_ok=True)
     with claims_path.open("a+", encoding="utf-8") as stream:
         fcntl.flock(stream, fcntl.LOCK_EX)
@@ -245,9 +246,14 @@ def claim_next_job(
             current_results = [
                 row for row in results if row.get("job_id") == current["job_id"]
             ]
-            terminal = bool(
-                current_results and current_results[-1].get("state") in {"POSTED", "UNVERIFIED"}
+            exhausted_no_effect = bool(
+                current_results and current_results[-1].get("state") == "NO_EFFECT"
+                and sum(row.get("state") == "RETRY_READY" for row in current_results) >= 2
             )
+            terminal = bool(current_results and (
+                current_results[-1].get("state") in {"POSTED", "UNVERIFIED"}
+                or exhausted_no_effect
+            ))
             if not terminal:
                 return {**current, "changed": False}
             claimed_ids = {row["job_id"] for row in claims}
@@ -267,8 +273,8 @@ def claim_next_job(
                     latest_experiments[control] = job
             jobs = passthrough + list(latest_experiments.values())
         if not jobs:
-            return ({**claims[-1], "changed": False} if claims
-                    else {"state": "NO_JOB", "changed": False})
+            return ({"state": "NO_JOB", "changed": False} if terminal or not claims
+                    else {**claims[-1], "changed": False})
         job = min(jobs, key=lambda value: (value["created_at"], value["job_id"]))
         row = {
             "schema_version": 1,

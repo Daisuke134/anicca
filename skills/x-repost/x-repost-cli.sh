@@ -1038,7 +1038,7 @@ if int(strategy.get("original_ratio_bootstrap_version", 0)) < 2:
         os.fsync(stream.fileno())
     os.replace(tmp, path)
 PYEOF
-read -r KIND TARGET_LANGUAGE <<<"$("$PY" - "$STRATEGY" "$POSTED" "$TODAY" "${X_REPOST_FORCE_KIND:-}" <<'PYEOF'
+read -r KIND TARGET_LANGUAGE <<<"$("$PY" - "$STRATEGY" "$POSTED" "$TODAY" "${X_REPOST_FORCE_KIND:-}" "${X_REPOST_FORCE_LANGUAGE:-}" <<'PYEOF'
 import json, random, re, sys
 try:
     strategy = json.load(open(sys.argv[1], encoding="utf-8"))
@@ -1063,12 +1063,14 @@ elif not has_original_today or random.random() < max(0.0, min(1.0, original_rati
     kind = "original"
 else:
     kind = "reply" if random.random() < max(0.0, min(1.0, reply_ratio)) else "quote"
-since_ja = 0
-for row in reversed(rows):
-    if re.search(r"[\u3040-\u30ff\u4e00-\u9fff]", row.get("text", "")):
-        break
-    since_ja += 1
-print(kind, "ja" if since_ja >= 9 else "en")
+forced_language = sys.argv[5]
+recent = rows[-10:]
+ja_count = sum(bool(re.search(r"[\u3040-\u30ff\u4e00-\u9fff]", row.get("text", "")))
+               for row in recent)
+language = forced_language if forced_language in {"en", "ja"} else (
+    "ja" if ja_count < 3 else "en"
+)
+print(kind, language)
 PYEOF
 )"
 TARGET_TONE="$("$PY" -c 'import json,random,sys
@@ -1076,7 +1078,7 @@ w=(json.load(open(sys.argv[1])).get("tone_weights") or {"primary":1,"empathy":1,
 ks=list(w); print(random.choices(ks,[max(0.0,float(w[k])) for k in ks])[0])' "$STRATEGY" 2>/dev/null || echo primary)"
 log "target tone: $TARGET_TONE"
 log "action this pass: $KIND (original_ratio=$("$PY" -c 'import json,sys; print(json.load(open(sys.argv[1])).get("original_ratio", 0.50))' "$STRATEGY" 2>/dev/null), reply_ratio=$("$PY" -c 'import json,sys; print(json.load(open(sys.argv[1])).get("reply_ratio"))' "$STRATEGY" 2>/dev/null))"
-log "target language: $TARGET_LANGUAGE (rolling EN 9 / JA 1)"
+log "target language: $TARGET_LANGUAGE (rolling EN 7 / JA 3)"
 
 {
   cat <<'EOF'
@@ -1095,10 +1097,11 @@ log "target language: $TARGET_LANGUAGE (rolling EN 9 / JA 1)"
 ## 3案が必ず守ること
 1. 相手をディスらない（否定・反論・訂正から入らない）
 2. ポジティブな話を入れる
-3. 読者が保存して試せる具体を **異なる2種類** 入れる（手順 / 判断基準 / 失敗条件 / 比較方法）
-4. 一次情報の種が自然に合う時だけ使う。無理に自分の話へ戻さない
+3. 自分にしかできない話をする（一次情報の種が自然に合う時だけ。無いことは書かない）
+4. 自分の話をしすぎない（相手と読者が主役。自分への言及は1回まで）
 5. アクションにつなげる（読んだ人が次に何を試すか）
 6. source本文または一次情報の種に無い数値・期間・回数を新しく作らない
+7. 読者が保存して試せる具体を入れる（手順 / 判断基準 / 失敗条件 / 比較方法）
 
 構成は **具体的な結論 → なぜ効くか → すぐ試せる一手**。引用元を要約しただけの
 感想文は禁止。自虐・「私も〜しがち」・空虚な共感は不要で、事実として本当に価値を
@@ -1361,6 +1364,7 @@ SRC_METRICS="$("$PY" -c 'import json,sys; print(json.load(open(sys.argv[1]))["me
   echo "さらに、sourceの要約や『幅が広がる』『試したい』だけなら useful=false。"
   echo "読者が実行できる手順、判断基準、失敗条件、比較方法のうち異なる2種類を具体的に足した時だけ useful=true。"
   echo "source固有の仕組み・数字・制約を少なくとも1つ使わない一般論は useful=false。"
+  echo "five_points は画像の5点を最終本文そのものについて個別判定し、1つでも欠ければ false にする。"
   echo "URL、文体、viralらしさではなく事実支持と読者効用を別々に判定する。"
   if [ "$KIND" = "original" ]; then
     echo "Originalについてはrecent postsとの主張・角度・表現のnear-duplicateも判定し、novel、spam_risk、near_duplicate_post_idsを返す。"
@@ -1369,12 +1373,12 @@ SRC_METRICS="$("$PY" -c 'import json,sys; print(json.load(open(sys.argv[1]))["me
   echo; echo "## source"; cat "$EV/source.json"
   echo; echo "## sourceから解決したexact evidence"; "$PY" -c 'import json,sys; print(json.load(open(sys.argv[1])).get("canonical_evidence","")); d=json.load(open(sys.argv[2])); print(d.get("reader_value",""))' "$EV/grounding.json" "$EV/select.json"
   echo; echo "## final post"; cat "$EV/post.txt"
-  echo; echo '## 出力（最後にJSONだけ）'; echo '{"supported":true,"useful":true,"source_specific":true,"novel":true,"spam_risk":"low","unsupported_claims":[],"near_duplicate_post_ids":[],"value_types":["procedure","failure_condition"],"reason":"1文"}'
+  echo; echo '## 出力（最後にJSONだけ）'; echo '{"supported":true,"useful":true,"source_specific":true,"five_points":{"does_not_disparage":true,"includes_positive_note":true,"adds_own_experience":true,"avoids_excessive_self_focus":true,"leads_to_action":true},"novel":true,"spam_risk":"low","unsupported_claims":[],"near_duplicate_post_ids":[],"value_types":["procedure","failure_condition"],"reason":"1文"}'
 } >"$EV/prompt-verify.txt"
 if ! ask_model "$EV/prompt-verify.txt" "$EV/verify.raw" >"$EV/verify.json"; then
   handle_model_failure "source-grounding critic" "$EV/verify.raw"
 fi
-if [ "$("$PY" -c 'import json,sys; d=json.load(open(sys.argv[1])); allowed={"procedure","decision_criterion","failure_condition","comparison_method"}; values=d.get("value_types") or []; print(d.get("supported") is True and d.get("useful") is True and d.get("source_specific") is True and len(set(values) & allowed) >= 2)' "$EV/verify.json" 2>/dev/null)" != "True" ]; then
+if [ "$("$PY" -c 'import json,sys; d=json.load(open(sys.argv[1])); allowed={"procedure","decision_criterion","failure_condition","comparison_method"}; values=d.get("value_types") or []; points=("does_not_disparage","includes_positive_note","adds_own_experience","avoids_excessive_self_focus","leads_to_action"); print(d.get("supported") is True and d.get("useful") is True and d.get("source_specific") is True and all(d.get("five_points", {}).get(key) is True for key in points) and len(set(values) & allowed) >= 2)' "$EV/verify.json" 2>/dev/null)" != "True" ]; then
   report "⚠️ 最終本文がsource支持または具体的な読者効用gateを満たさないため投稿を見送り"
   finish 0 "source grounding or utility critic rejected draft"
 fi

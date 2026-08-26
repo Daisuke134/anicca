@@ -19,6 +19,44 @@ SPEC.loader.exec_module(MODULE)
 
 
 class AffiliateProposalTests(unittest.TestCase):
+    def test_exhausted_no_effect_job_stops_starving_generic_reposts(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            queue, claims = root / "jobs.jsonl", root / "claims.jsonl"
+            payloads, results = root / "payloads", root / "results.jsonl"
+            job = {
+                "schema_version": 1, "receipt_type": "AFFILIATE_X_DISTRIBUTION_JOB",
+                "state": "QUEUED", "job_id": "1" * 64, "effect_identity": "2" * 64,
+                "placement_id": "caption-en-1",
+                "owned_article_url": "https://aniccaai.com/blog/caption",
+                "content_sha256": "3" * 64,
+                "experiment_lineage": {"kind": "BASE", "decision_id": None,
+                                       "control_placement_id": None},
+                "target_x_account": "selawmqt", "cadence_class": "AFFILIATE_MONETIZATION",
+                "policy_sha256": "4" * 64, "source_set_sha256": "5" * 64,
+                "created_at": "2026-08-24T00:00:00+00:00",
+                "private_tracking_url_state": "NOT_INCLUDED",
+                "revenue_credit_state": "NO_REVENUE_CREDIT",
+            }
+            queue.write_text(json.dumps(job) + "\n")
+            MODULE.claim_next_job(queue, claims, results)
+            MODULE.render_claimed_job(claims, payloads)
+            for retry in (1, 2):
+                MODULE.record_distribution_result(
+                    claims, payloads, results, "NO_EFFECT", None, f"provider-{retry}"
+                )
+                MODULE.requeue_confirmed_no_effect(
+                    results, job["job_id"], "6" * 64 if retry == 2 else None
+                )
+            MODULE.record_distribution_result(
+                claims, payloads, results, "NO_EFFECT", None, "provider-3"
+            )
+
+            self.assertEqual(
+                MODULE.claim_next_job(queue, claims, results),
+                {"state": "NO_JOB", "changed": False},
+            )
+
     def test_quote_job_requires_model_copy_and_binds_control_post(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
