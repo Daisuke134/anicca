@@ -121,6 +121,7 @@ class ContractReceipt:
     schema_version: int
     record_type: str
     platform: str
+    application_external_id: str
     work_external_id: str
     contract_external_id: str
     status: str
@@ -598,6 +599,52 @@ def parse_payout_match_receipt(record: Mapping[str, Any]) -> PayoutMatchReceipt:
     return parsed
 
 
+def validate_receipt_chain(values: Sequence[Mapping[str, object]]) -> Tuple[Contract, ...]:
+    """Validate one complete provider-observed application-to-bank chain."""
+
+    records = tuple(parse_contract(value) for value in values)
+    expected = (
+        ApplicationReceipt,
+        ContractReceipt,
+        AuthorizationReceipt,
+        QAReceipt,
+        DeliveryReceipt,
+        PaymentReceipt,
+        PayoutMatchReceipt,
+    )
+    if len(records) != len(expected) or any(
+        not isinstance(record, record_type)
+        for record, record_type in zip(records, expected)
+    ):
+        raise ContractValidationError(("$: incomplete_or_out_of_order_receipt_chain",))
+
+    application, contract, authorization, qa, delivery, payment, payout = records
+    if len({record.platform for record in records}) != 1:
+        raise ContractValidationError(("$: receipt platforms do not match",))
+    if application.status != "verified" or contract.status != "accepted":
+        raise ContractValidationError(("$: application or contract is not accepted",))
+    if authorization.status != "authorized" or qa.status != "passed":
+        raise ContractValidationError(("$: work is not authorized and QA-passed",))
+    if delivery.status != "verified" or payment.status != "settled" or payout.status != "matched":
+        raise ContractValidationError(("$: delivery payment or payout is not final",))
+    if application.application_external_id != contract.application_external_id:
+        raise ContractValidationError(("$: application IDs do not match",))
+    if contract.contract_external_id != authorization.contract_external_id:
+        raise ContractValidationError(("$: contract IDs do not match",))
+    if len({contract.work_external_id, qa.work_external_id, delivery.work_external_id, payment.work_external_id}) != 1:
+        raise ContractValidationError(("$: work IDs do not match",))
+    if qa.qa_external_id != delivery.qa_external_id or qa.artifact_sha256 != delivery.artifact_sha256:
+        raise ContractValidationError(("$: QA and delivery evidence do not match",))
+    if payment.payment_external_id != payout.payment_external_id:
+        raise ContractValidationError(("$: payment IDs do not match",))
+    if payment.net_amount_minor != payout.amount_minor or payment.currency != payout.currency:
+        raise ContractValidationError(("$: payout amount or currency does not match net payment",))
+    observed = [record.observed_at for record in records]
+    if observed != sorted(observed):
+        raise ContractValidationError(("$: receipt observation times are out of order",))
+    return records
+
+
 def parse_work_event(record: Mapping[str, Any]) -> WorkEvent:
     parsed = parse_contract(record)
     if not isinstance(parsed, WorkEvent):
@@ -668,6 +715,7 @@ __all__ = [
     "validate",
     "validate_contract",
     "validate_record",
+    "validate_receipt_chain",
     "validator_for_record",
     "validator_for_schema",
 ]

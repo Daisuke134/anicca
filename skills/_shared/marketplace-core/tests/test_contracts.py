@@ -1,3 +1,5 @@
+import copy
+import json
 import sys
 import unittest
 from pathlib import Path
@@ -14,17 +16,23 @@ from contracts import (  # noqa: E402
     PayoutMatchReceipt,
     QAReceipt,
     parse_contract,
+    validate_receipt_chain,
 )
 from ledger import normalize_event  # noqa: E402
 
 
 class ContractReceiptTests(unittest.TestCase):
+    def _mercor_chain(self):
+        path = Path(__file__).parent / "fixtures" / "mercor-full-chain.json"
+        return json.loads(path.read_text(encoding="utf-8"))
+
     def test_parses_provider_observed_accepted_contract(self):
         receipt = parse_contract(
             {
                 "schema_version": 1,
                 "record_type": "contract_receipt",
                 "platform": "mercor",
+                "application_external_id": "application-123",
                 "work_external_id": "work-123",
                 "contract_external_id": "contract-456",
                 "status": "accepted",
@@ -135,6 +143,18 @@ class ContractReceiptTests(unittest.TestCase):
 
         self.assertIsInstance(receipt, PayoutMatchReceipt)
         self.assertEqual(receipt.bank_transaction_external_id, "bank-567")
+
+    def test_validates_linked_mercor_full_chain(self):
+        records = validate_receipt_chain(self._mercor_chain())
+
+        self.assertEqual(records[-1].bank_transaction_external_id, "bank-1")
+
+    def test_rejects_mismatched_bank_amount(self):
+        chain = copy.deepcopy(self._mercor_chain())
+        chain[-1]["amount_minor"] = 8499
+
+        with self.assertRaisesRegex(ContractValidationError, "payout amount"):
+            validate_receipt_chain(chain)
 
 
 if __name__ == "__main__":
