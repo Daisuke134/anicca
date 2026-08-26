@@ -13,6 +13,7 @@ const KEYS = Object.freeze([
 const SNAPSHOT_ID = /^event-coverage:[0-9a-f]{64}$/;
 const TENANT = /^[a-z0-9][a-z0-9._-]{0,199}$/;
 const DATE_KEY = /^\d{4}-\d{2}-\d{2}$/;
+const HORIZON_DAYS = 28;
 const STATUSES = new Set(["open", "covered_existing", "covered_new", "unavailable"]);
 const SNAPSHOT_REF = /^event-coverage:\/\/([a-z0-9][a-z0-9._-]{0,199})\/([0-9a-f]{64})$/;
 
@@ -23,8 +24,8 @@ function normalizeRow(row) {
   if (Object.keys(row).sort().join(",") !== [...KEYS].sort().join(",")) invalid();
   if (!SNAPSHOT_ID.test(row.coverage_snapshot_id) || !TENANT.test(row.tenant_id)) invalid();
   if (typeof row.timezone !== "string" || row.timezone.length < 1 || row.timezone.length > 100) invalid();
-  if (!DATE_KEY.test(row.window_start_date) || !DATE_KEY.test(row.window_end_date) || row.horizon_days !== 21) invalid();
-  if (!Array.isArray(row.days) || row.days.length !== 21) invalid();
+  if (!DATE_KEY.test(row.window_start_date) || !DATE_KEY.test(row.window_end_date) || row.horizon_days !== HORIZON_DAYS) invalid();
+  if (!Array.isArray(row.days) || row.days.length !== HORIZON_DAYS) invalid();
   const days = row.days.map((day) => {
     if (!day || Object.keys(day).sort().join(",") !== "date,evidence_refs,status") invalid();
     if (!DATE_KEY.test(day.date) || !STATUSES.has(day.status) || !Array.isArray(day.evidence_refs)) invalid();
@@ -33,7 +34,7 @@ function normalizeRow(row) {
   const counts = row.counts;
   if (!counts || Object.keys(counts).sort().join(",") !== "covered_existing,covered_new,open,unavailable") invalid();
   if (![counts.open, counts.covered_existing, counts.covered_new, counts.unavailable].every(Number.isInteger)) invalid();
-  if (counts.open + counts.covered_existing + counts.covered_new + counts.unavailable !== 21) invalid();
+  if (counts.open + counts.covered_existing + counts.covered_new + counts.unavailable !== HORIZON_DAYS) invalid();
   return { ...row, days, counts: { ...counts } };
 }
 

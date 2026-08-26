@@ -89,7 +89,7 @@ test("completed runtime receipt is reverified from E1/E2/E3 before Calendar may 
   const [result] = await reader.listForCoverage({ tenantId: TENANT, coverage: coverage() });
 
   assert.equal(calls.length, 1);
-  assert.deepEqual(calls[0].params, [TENANT, "2026-08-02", "2026-08-23"]);
+  assert.deepEqual(calls[0].params, [TENANT, "2026-08-02", "2026-08-30"]);
   assert.match(calls[0].sql, /outcome\s*=\s*'completed'/i);
   assert.equal(result.event_ref, value.job.input_refs.event_ref);
   assert.equal(result.job.attempt, 1);
