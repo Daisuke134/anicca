@@ -8829,16 +8829,7 @@ Connpass semantic rankingは67,106ms後にsafe failureとなり、Peatix discove
 
 immutable release `cf6843d4c8ba7ced84c420afcb035844433682fc`は隔離106/106 testをPASSし、native owner exact 1、`StartInterval=3600`へloadした。official wake `wake-a27f9e8bba85c87d84dda625`はCalendar 3,508ms、Luma 47,558ms、Connpass 589,180ms、Connpass action boundary 22,561msでsuccess。`connpass-action-boundary-deliveries.jsonl`は0→1、candidate snapshot SHA-256 `433b9497834cfba6d2c0d708ed78c114ba4b55d7a492eace264a817345ad4e04`、Telegram provider ID `36655`、wake delivery ID `36656`を保存した。Connpass Submit、Calendar create、applied bundleは0。ownerはprocess/lockを残さず終了したが、合計が10分を越えたためterminalは意図どおり`circuit_open / wake_deadline`、launchd last exit 1。CG-46をacceptし、次のatomic cursorはrankingをwake budget内へ収める性能修復である。
 
-残るatomic orderは次だけを正本とする。
-
-1. **CG-PERF-01** Connpass rankingの全model request数・bisect数・最大/合計時間を候補本文やpromptなしで計測する。
-2. **CG-PERF-02** 125候補を10分wake内に収める最小変更をTDDし、Luma→Connpass→boundary→terminal reportを600,000ms未満で実測する。
-3. **CG-28** connpass providerのofficial responseをreadbackし、許可なし/未回答ならTelegram action boundaryをfinal behaviorとして固定する。
-4. **CG-44** 本物のLuma strong/moderate一件をofficial readback、Calendar exact 1、PNG/receipt、Telegram IDs、bundleまで完成する。
-5. **CG-45** 次の自然hourly wakeで同event Submit 0、Calendar exact 1、bundle reuse、次candidate continuationを証明する。
-6. **CG-47** open LT一件をtalk application receiptまで進め、attendance stateと独立readbackする。
-7. **CG-48** 24回の自然hourly receiptでduplicate effect 0、concurrent owner 0、page/lock cleanupを証明する。
-8. **CG-51** final test/effect/provider-limit stateを更新し、main integration、immutable release、remote readback、Telegram milestoneでDONEにする。
+残るatomic orderは進捗520のlistだけを正本とする。この旧listは履歴である。
 
 ### O1B-25進捗518（Connector Growth ranking/LT performance accepted）
 
@@ -8853,3 +8844,18 @@ CG-PERF-02としてopen-talk候補だけを検証する既存gateを維持した
 immutable release `a4de36d94781ad548c068fbea56c3e2966893fbb`は隔離143/143 testをPASSし、hourly native owner exact 1へloadした。official wake `wake-23ea2ae091732a256c6c4955`はCalendar 3,453ms、Luma 50,231ms、Connpass 351,453ms、manual action boundary 11,271ms、Peatix 93,165msを経て約528秒で`completed_no_effect / providers_exhausted / consecutive_failure_count 0`、exit 0。Connpass candidate Telegram provider ID `36746`、wake provider ID `36748`、bundle `32→32`。boundary後のConnpass provider cache/direct/Harness/readbackは全0で、未許可external Submit 0のままfallbackへ継続した。process/lock残留0。
 
 CG-28のofficial Gmail threadをread-only再取得し、message countは2。provider起点messageと問い合わせ送信message `1a03ed4ba35ffa46`だけで、その後のofficial responseは0。permissionは未確認のためmanual Telegram boundaryをcurrent final behaviorとして維持する。CG-44は同wakeのLuma Calendar-free候補がsemantic strong/moderate gateを通らず実bundle 0であり、既存過去Luma bundleをcurrent acceptanceへ代用しない。次のnatural hourly inventoryで継続する。
+
+### O1B-25進捗520（main統合 / final release canary accepted）
+
+fallback providerを完了可能時間未満で開始しない160,000ms reserveを追加した。main canary `wake-bb5f1355ebc26383bfac3adc`はLumaとConnpassを約520秒で終え、Peatixを開始せずwake deadline内へ収めたが、意図したdeferを`circuit_open / wake_deadline`としてexit 1にしていた。これはprimary provider失敗ではないため、RED→GREENでterminalを`completed_no_effect / fallback_deferred_for_wake_budget / consecutive_failure_count 0`へ修正した。focused 92/92、diff check、gitleaksがPASSし、feature commit `01ac42f0d`、main merge commit `2cd76436ef99dd744d0dccb1f07ebd90e0d40632`をremote mainへpushした。
+
+origin/main祖先のread-only immutable release `/Users/anicca/loops/connector/releases/20260827T062731-2cd76436`を切り、隔離92/92 test後にhourly native owner exact 1へloadした。official canary `wake-7da1a87dbbe80c08f7815f43`はCalendar 3,395ms、Luma 40,040ms、Connpass 374,794ms、manual action boundary 20,201ms、ranking wall 234,454msで約480秒後に狙ったhealthy terminalへ到達した。Connpass candidate Telegram ID `36827`、wake Telegram ID `36830`、launchd `runs 1 / exit 0 / not running`。Luma inventoryは`35/35/32/11/2`、Connpass inventoryは`283/283/264/125`、bundle `32→32`、新規talk receipt 0、Peatix discovery 0、未許可Connpass Submit 0、Calendar create 0、process/owner lock残留0。性能・manual boundary・release provenanceはacceptするが、候補依存のCG-44/45/47と24自然wakeのCG-48は代用せず未完を維持する。
+
+残るatomic orderは次だけを正本とする。各項目は前項のofficial receiptなしにskipしない。
+
+1. **CG-28 response watch** official Gmail threadを各監視境界でread-only再取得する。明示許可が届くまではConnpass external Submit 0とmanual Telegram boundaryを維持し、許可が届いた時だけscopeを保存して次の自然wakeから有効化する。
+2. **CG-44 Luma live bundle** 自然hourly wakeで本物のLuma strong/moderate候補を待ち、official registration/pending readback、event Calendar exact 1、PNG/receipt、Telegram IDs、applied bundle exact 1を同一event identityで閉じる。候補不在を過去bundleで代用せず次wakeへ継続する。
+3. **CG-45 replay-zero** CG-44直後の自然hourly wakeで同event Submit 0、Calendar duplicate 0、既存bundle reuse exact 1、後続candidate continuation、exit 0を証明する。
+4. **CG-47 LT receipt** open LT候補を自然inventoryで検出し、attendance registrationとは独立したtalk application receipt、official readback、Telegram IDを保存する。LT枠不在を申込成功へ昇格しない。
+5. **CG-48 24-hour soak** このfinal releaseの自然hourly receiptを24回連続で収集し、各wakeのexit 0または明示的healthy no-effect、duplicate external effect 0、concurrent owner 0、page/owner-lock cleanup、positive Telegram deliveryを集計する。manual kickstartは24回へ数えない。
+6. **CG-51 final closure** CG-28/44/45/47/48のterminal evidence後にfinal test/effect/provider-limit stateを更新し、remote main ancestry、loaded immutable SHA、launchd cadence、official receipts、replay-zeroを再読backする。差分があればmainへcommit/pushしreleaseを再検証、差分がなければ現releaseを維持し、Telegram milestoneを送ってDONEにする。
