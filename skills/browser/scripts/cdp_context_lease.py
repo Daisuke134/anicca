@@ -205,7 +205,14 @@ def acquire(task, url="about:blank", no_seed=False):
     with _ledger_lock():
         leases = _leases()
         held = leases.get(task)
-        if held and not target_responds(held.get("ws") or _page_ws(held.get("target_id") or "")):
+        held_ws = held and (held.get("ws") or _page_ws(held.get("target_id") or ""))
+        held_responds = bool(held and target_responds(held_ws))
+        if held and not held_responds:
+            # A busy rendered form can miss one cheap probe while processing a real click.
+            # Never destroy an in-progress application on that single transient miss.
+            time.sleep(0.5)
+            held_responds = target_responds(held_ws)
+        if held and not held_responds:
             # Dead renderer. Drop the whole context so the next block builds a fresh one;
             # reusing it would fail this lane on every pass until a human noticed.
             try:

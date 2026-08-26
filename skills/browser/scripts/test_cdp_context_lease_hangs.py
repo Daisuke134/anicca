@@ -102,3 +102,28 @@ def test_release_with_a_wrong_fence_still_refuses(monkeypatch, tmp_path):
     result = module.release("gig-task", token="b" * 32, generation=2)
     assert result["ok"] is False
     assert json.loads(leases_file.read_text(encoding="utf-8")) != {}
+
+
+def test_acquire_keeps_held_context_after_one_transient_probe_miss(monkeypatch, tmp_path):
+    module = load_module()
+    leases_file = tmp_path / "leases.json"
+    monkeypatch.setenv("CLOAK_CONTEXT_LEASES_FILE", str(leases_file))
+    leases_file.write_text(json.dumps({
+        "fundraiser": {
+            "context_id": "live-context",
+            "target_id": "live-target",
+            "ws": "ws://127.0.0.1:9222/devtools/page/live-target",
+            "ts": 0,
+            "token": "a" * 32,
+            "generation": 1,
+        }
+    }), encoding="utf-8")
+    answers = iter((False, True))
+    monkeypatch.setattr(module, "target_responds", lambda *_: next(answers))
+    monkeypatch.setattr(module.time, "sleep", lambda *_: None)
+
+    result = module.acquire("fundraiser")
+
+    assert result["reused"] is True
+    assert result["target_id"] == "live-target"
+    assert json.loads(leases_file.read_text(encoding="utf-8"))["fundraiser"]["target_id"] == "live-target"
