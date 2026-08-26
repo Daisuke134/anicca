@@ -11,6 +11,7 @@ const PRIORITY_ORDER = new Map(PRIORITY_CLASSES.map((value, index) => [value, in
 const FIT_ORDER = new Map(FITS.map((value, index) => [value, index]));
 const DATE_KEY = /^\d{4}-\d{2}-\d{2}$/;
 const PROVIDER_RANK_CHUNK_SIZE = 25;
+const PROVIDER_RANK_CHUNK_BYTES = 24_000;
 const EVENT_KEYS = Object.freeze(["event_ref", "preference_fit", "preference_reason"]);
 const PROVIDER_EVENT_KEYS = Object.freeze(["event_ref", "preference_fit", "preference_reason", "priority_class"]);
 const DECISION_KEYS = Object.freeze(["ranked_events"]);
@@ -214,13 +215,32 @@ async function inferProviderRankingChunk(input, options) {
   } catch { throw new Error("event preference ranking unavailable"); }
 }
 
+function providerRankingChunks(candidates) {
+  const chunks = [];
+  let current = [];
+  let currentBytes = 0;
+  for (const candidate of candidates) {
+    const candidateBytes = Buffer.byteLength(JSON.stringify(candidate), "utf8") + 1;
+    if (current.length > 0 && (current.length >= PROVIDER_RANK_CHUNK_SIZE
+      || currentBytes + candidateBytes > PROVIDER_RANK_CHUNK_BYTES)) {
+      chunks.push(current);
+      current = [];
+      currentBytes = 0;
+    }
+    current.push(candidate);
+    currentBytes += candidateBytes;
+  }
+  if (current.length > 0) chunks.push(current);
+  return chunks;
+}
+
 async function inferProviderCandidateRanking(input, options = {}) {
   const source = normalizeProviderInput(input);
   if (source.candidates.length === 0) return validateProviderCandidateRanking({ ranked_events: [] }, source);
   const rankedEvents = [];
-  for (let offset = 0; offset < source.candidates.length; offset += PROVIDER_RANK_CHUNK_SIZE) {
+  for (const candidates of providerRankingChunks(source.candidates)) {
     rankedEvents.push(...await inferProviderRankingChunk({
-      candidates: source.candidates.slice(offset, offset + PROVIDER_RANK_CHUNK_SIZE),
+      candidates,
       preferences: source.preferences,
     }, options));
   }
