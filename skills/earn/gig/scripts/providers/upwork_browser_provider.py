@@ -199,6 +199,20 @@ def parse_catalog(text: str) -> dict[str, Any]:
 
 def _stable_link(link: dict[str, Any]) -> dict[str, str] | None:
     href = str(link.get("href") or "")
+    parsed = urlsplit(href)
+    if parsed.path.startswith("/nx/proposals/interview"):
+        match = re.fullmatch(r"/nx/proposals/interview/uid/(\d+)", parsed.path)
+        if (
+            match is None
+            or parsed.scheme != "https"
+            or parsed.netloc != "www.upwork.com"
+        ):
+            return None
+        return {
+            "id": match.group(1),
+            "href": f"https://www.upwork.com{parsed.path}",
+            "title": str(link.get("text") or "").strip(),
+        }
     match = re.search(r"/jobs/[^/?#]*(~[A-Za-z0-9]+)(?:[/?#]|$)", href)
     if match is None:
         match = re.search(
@@ -242,7 +256,12 @@ def parse_stable_entities(
         context = " ".join(str(link.get(key) or "") for key in (
             "context", "text", "aria", "data_qa", "class_name",
         )).lower()
-        if "offer" in context:
+        if re.fullmatch(
+            r"https://www\.upwork\.com/nx/proposals/interview/uid/\d+",
+            entity["href"],
+        ):
+            target = invitations
+        elif "offer" in context:
             target = offers
         elif "submitted" in context or "initiated" in context:
             target = submitted

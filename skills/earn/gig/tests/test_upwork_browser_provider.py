@@ -260,7 +260,7 @@ def test_extracts_stable_official_ids_instead_of_titles():
     assert state["submitted_proposal_entities"][0]["id"] == "submitted-99"
 
 
-def test_classifies_numeric_received_proposal_but_not_interview_as_active():
+def test_classifies_numeric_received_proposal_and_interview_as_invitation():
     state = parse_stable_entities(
         invite_links=[],
         proposal_links=[
@@ -269,7 +269,7 @@ def test_classifies_numeric_received_proposal_but_not_interview_as_active():
                 "text": "Python API", "context": "Received",
             },
             {
-                "href": "https://www.upwork.com/nx/proposals/interview/uid/2091851780096692225",
+                "href": "https://www.upwork.com/nx/proposals/interview/uid/2092250550587497010",
                 "text": "Interview", "context": "Received",
             },
         ],
@@ -277,9 +277,17 @@ def test_classifies_numeric_received_proposal_but_not_interview_as_active():
     assert [item["id"] for item in state["active_proposal_entities"]] == [
         "2091851780096692225"
     ]
-    assert [item["id"] for item in state["unclassified_proposal_entities"]] == [
-        "interview"
-    ]
+    assert state["invitation_entities"] == [{
+        "id": "2092250550587497010",
+        "href": "https://www.upwork.com/nx/proposals/interview/uid/2092250550587497010",
+        "title": "Interview",
+    }]
+    assert state["unclassified_proposal_entities"] == []
+    assert provider.plan_zero_connect_inbound(state) == {
+        "state": "invitation_detected",
+        "resource_id": "2092250550587497010",
+        "resource_url": "https://www.upwork.com/nx/proposals/interview/uid/2092250550587497010",
+    }
 
 
 def test_zero_connect_inbound_precedes_public_job_capacity():
