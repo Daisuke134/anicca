@@ -2,34 +2,189 @@
 # requires-python = ">=3.11"
 # dependencies = ["playwright>=1.40"]
 # ///
-"""Publish one standalone post, quote, or reply through the leased CDP browser.
+"""Publish one X post through the connected Postiz API, then exact-read it from X.
 
 A quote tweet is a normal post whose body ends with the quoted post's URL -- X renders the
-embedded card itself. That is deliberately the least selector-dependent path available: no
-retweet dropdown, no menu item, no locale-specific label.
+embedded card itself. Browser access is readback-only: X's automation rules prohibit scripted
+website posting, so the external write must go through the connected API transport.
 
 Exit 0 ONLY after the published post has been read back from the account timeline and its
 permalink captured. A compose box that accepted text is not evidence that anything shipped,
 so every other outcome exits non-zero and the caller must not record a post.
 """
 import argparse
+import html as html_lib
 import json
 import os
+import re
 import sys
 import time
+import urllib.parse
+import urllib.error
+from datetime import datetime, timezone
+from urllib.request import Request, urlopen
 
 from playwright.sync_api import sync_playwright
 
 
+POSTIZ_API = "https://api.postiz.com/public/v1/posts"
+X_SNOWFLAKE_EPOCH_MS = 1288834974657
+
+
+def http_error_summary(error: urllib.error.HTTPError) -> str:
+    try:
+        value = json.loads(error.read(4096).decode("utf-8", errors="replace"))
+        message = value.get("message") if isinstance(value, dict) else None
+        if isinstance(message, list):
+            message = "; ".join(str(item) for item in message)
+        text = message if isinstance(message, str) else error.reason
+    except Exception:
+        text = error.reason
+    text = re.sub(r"https?://\S+", "[url]", str(text))
+    text = re.sub(r"\b[A-Za-z0-9_-]{32,}\b", "[redacted]", text)
+    return " ".join(text.split())[:300]
+
+
+def snowflake_floor(observed_at: datetime) -> int:
+    timestamp_ms = int(observed_at.timestamp() * 1000)
+    return max(0, timestamp_ms - X_SNOWFLAKE_EPOCH_MS) << 22
+
+
+def postiz_publish(text: str, mode: str, source_url: str | None) -> str:
+    """Submit one API post and return its provider submission ID.
+
+    Acceptance is not publication proof. The caller must still exact-read the X permalink.
+    """
+    api_key = os.environ.get("POSTIZ_API_KEY", "").strip()
+    integration_id = os.environ.get("X_REPOST_POSTIZ_INTEGRATION_ID", "").strip()
+    if not api_key or not integration_id:
+        raise ValueError("Postiz transport is not configured")
+    if mode == "reply":
+        raise ValueError("unsolicited automated replies are disabled")
+    content = text
+    if mode == "quote" and source_url and source_url not in content:
+        content = f"{content.rstrip()}\n{source_url}"
+    payload = {
+        "type": "now",
+        "date": datetime.now(timezone.utc).isoformat(),
+        "shortLink": False,
+        "tags": [],
+        "posts": [{
+            "integration": {"id": integration_id},
+            "value": [{"content": content, "image": []}],
+            "settings": {
+                "__type": "x", "who_can_reply_post": "everyone",
+                "made_with_ai": True, "paid_partnership": False,
+            },
+        }],
+    }
+    request = Request(
+        POSTIZ_API,
+        data=json.dumps(payload, ensure_ascii=False).encode(),
+        headers={"Authorization": api_key, "Content-Type": "application/json",
+                 "User-Agent": "life-manager-x-repost/1"},
+        method="POST",
+    )
+    with urlopen(request, timeout=30) as response:
+        result = json.load(response)
+    row = result[0] if isinstance(result, list) and result else result
+    submission_id = row.get("postId") if isinstance(row, dict) else None
+    if not submission_id:
+        raise ValueError("Postiz response omitted postId")
+    return str(submission_id)
+
+
+def submit_effect(transport, text, mode, source_url, postiz_submit, browser_submit):
+    """Select exactly one external effect transport."""
+    if transport == "postiz":
+        submission_id = postiz_submit(text, mode, source_url)
+        return {"provider": "postiz", "provider_submission_id": submission_id}
+    if transport == "browser":
+        result = browser_submit(text, mode, source_url)
+        if not isinstance(result, dict) or result.get("published") is not True:
+            raise ValueError("browser composer did not confirm submission")
+        return {**result, "provider": "x_browser", "provider_submission_id": None}
+    raise ValueError("unsupported X publish transport")
+
+
+def browser_publish(pw, cdp: str, text: str, mode: str, source_url: str | None) -> dict:
+    """Historical leased-browser composer effect restored from 95d4c151e^."""
+    browser = pw.chromium.connect_over_cdp(cdp)
+    ctx = browser.contexts[0] if browser.contexts else browser.new_context()
+    handle = ensure_logged_in(get_page(browser))
+    compose = ctx.new_page()
+    published = False
+    try:
+        if mode == "reply":
+            compose.goto(source_url, wait_until="domcontentloaded", timeout=60000)
+            compose.wait_for_selector('[data-testid="tweetTextarea_0"]', timeout=45000)
+            compose.click('[data-testid="tweetTextarea_0"]')
+            compose.keyboard.type(text, delay=18)
+            compose.wait_for_timeout(2000)
+        elif mode == "quote":
+            compose.goto("https://x.com/compose/post", wait_until="domcontentloaded", timeout=60000)
+            compose.wait_for_selector('[data-testid="tweetTextarea_0"]', timeout=45000)
+            compose.click('[data-testid="tweetTextarea_0"]')
+            compose.keyboard.type(text, delay=18)
+            compose.keyboard.press("Enter")
+            compose.keyboard.type(source_url, delay=12)
+            compose.wait_for_timeout(6000)
+        else:
+            compose.goto("https://x.com/compose/post", wait_until="domcontentloaded", timeout=60000)
+            compose.wait_for_selector('[data-testid="tweetTextarea_0"]', timeout=45000)
+            compose.click('[data-testid="tweetTextarea_0"]')
+            compose.keyboard.type(text, delay=18)
+            compose.wait_for_timeout(2000)
+
+        button = (compose.query_selector('[data-testid="tweetButtonInline"]')
+                  or compose.query_selector('[data-testid="tweetButton"]'))
+        if button and button.is_enabled():
+            button.click()
+        else:
+            compose.keyboard.press("Meta+Enter")
+        try:
+            compose.wait_for_selector(
+                '[data-testid="tweetTextarea_0"]', state="detached", timeout=30000
+            )
+            published = True
+        except Exception:
+            body = compose.query_selector('[data-testid="tweetTextarea_0"]')
+            published = bool(body) and not (body.inner_text() or "").strip()
+    finally:
+        if not published:
+            try:
+                compose.keyboard.press("Escape")
+                compose.wait_for_timeout(1500)
+                confirm = compose.query_selector('[data-testid="confirmationSheetConfirm"]')
+                if confirm:
+                    confirm.click(); compose.wait_for_timeout(1500)
+            except Exception as exc:
+                print(f"x_post: could not discard the draft: {exc}", file=sys.stderr)
+        try:
+            compose.close()
+        except Exception as exc:
+            print(f"x_post: leaving the compose tab open: {exc}", file=sys.stderr)
+    return {"handle": handle, "published": published}
+
+
 def ensure_logged_in(page) -> str:
-    for attempt in (1, 2):
+    for attempt in (1, 2, 3):
         page.goto("https://x.com/home", wait_until="domcontentloaded", timeout=60000)
-        page.wait_for_timeout(6000)
-        link = page.query_selector('[data-testid="AppTabBar_Profile_Link"]')
+        try:
+            link = page.wait_for_selector(
+                '[data-testid="AppTabBar_Profile_Link"]', timeout=15000
+            )
+        except Exception:
+            link = page.query_selector('[data-testid="AppTabBar_Profile_Link"]')
         if link:
             return (link.get_attribute("href") or "").strip("/")
-        if attempt == 2:
+        if attempt == 3:
             break
+        cookies = page.context.cookies("https://x.com")
+        if any(cookie.get("name") == "auth_token" and cookie.get("value") for cookie in cookies):
+            # A persistent auth cookie plus a missing nav element is usually slow/transient UI.
+            # Reload instead of replacing the known session with a possibly stale env fallback.
+            continue
         token = os.environ.get("TWITTER_AUTH_TOKEN", "")
         if not token:
             raise SystemExit("x_post: not logged in and TWITTER_AUTH_TOKEN is unset")
@@ -48,19 +203,101 @@ def get_page(browser):
     return ctx.pages[0] if ctx.pages else ctx.new_page()
 
 
-def scan_timeline(page, handle: str, needle: str):
+def normalized(value: str) -> str:
+    return " ".join(value.split())
+
+
+def scan_timeline(page, handle: str, needle: str, expected_url: str | None = None,
+                  expected_text: str | None = None, minimum_status_id: int | None = None):
+    expected_visible = (expected_url or "").removeprefix("https://")
+    exact_body_without_source = normalized(
+        (expected_text or "").replace(expected_url or "", "").strip()
+    )
+    exact_bodies = {
+        normalized(expected_text or ""),
+        normalized((expected_text or "").replace(expected_url or "", expected_visible)),
+        exact_body_without_source,
+    }
     for art in page.query_selector_all('article[data-testid="tweet"]'):
         text_el = art.query_selector('div[data-testid="tweetText"]')
         body = text_el.inner_text() if text_el else ""
-        if needle and needle in body.replace("\n", ""):
+        body_text = normalized(body)
+        if needle and (body_text in exact_bodies if expected_text else body_text.startswith(needle)):
+            visible_links = []
+            # X removes an x.com source URL from tweetText and renders it as a quote card. The
+            # exact source anchor then lives elsewhere in the same article. Looking only inside
+            # tweetText made accepted source-backed originals permanently "unverified".
+            for anchor in art.query_selector_all("a"):
+                visible_links.extend((anchor.get_attribute("href") or "", anchor.inner_text() or ""))
+            def canonical_link(link):
+                value = normalized(link).removeprefix("https://").removeprefix("www.").rstrip("/")
+                return f"x.com{value}" if value.startswith("/") else value
+            exact_source_link = any(canonical_link(link) == expected_visible.rstrip("/")
+                                    for link in visible_links)
+            if expected_visible and not exact_source_link:
+                # X currently renders quote cards as a clickable DIV, not an anchor. The exact
+                # source status URL is therefore absent from the DOM even though the quoted
+                # account and body are visible. Accept that representation only when this is an
+                # x.com status URL and the card contains the exact source @handle. The generated
+                # body above must still match exactly, so a card alone can never recover a row.
+                parsed = urllib.parse.urlparse(expected_url or "")
+                parts = [part for part in parsed.path.split("/") if part]
+                source_handle = parts[0] if (parsed.netloc.lower() in {"x.com", "www.x.com"}
+                                             and len(parts) >= 3 and parts[1] == "status") else ""
+                quote_cards = art.query_selector_all('div[role="link"]')
+                source_identity = f"@{source_handle}" if source_handle else ""
+                card_matches = bool(source_identity) and any(
+                    source_identity in {
+                        line.strip() for line in (card.inner_text() or "").splitlines()
+                    } for card in quote_cards
+                )
+                if quote_cards and not card_matches:
+                    continue
+                if not quote_cards and body_text != exact_body_without_source:
+                    continue
             link = art.query_selector(f'a[href*="/{handle}/status/"]')
             href = link.get_attribute("href") if link else ""
             if href:
+                status = re.search(r"/status/([0-9]+)", href)
+                if minimum_status_id is not None and (
+                    not status or int(status.group(1)) < minimum_status_id
+                ):
+                    continue
                 return "https://x.com" + href.split("/photo/")[0]
     return None
 
 
-def find_reply_permalink(pw, cdp: str, source_url: str, handle: str, needle: str, attempts: int = 5):
+def find_exact_public_markup(markup: str, expected_text: str, expected_url: str, handle: str,
+                             minimum_status_id: int | None = None):
+    prefix = normalized(expected_text.replace(expected_url, "").strip())
+    escaped_url = html_lib.escape(expected_url, quote=True)
+    for article in re.findall(r"<article\b.*?</article>", markup, flags=re.DOTALL):
+        tweet_id = re.search(r'data-tweet-id="([0-9]+)"', article)
+        if not tweet_id or f'href="{escaped_url}"' not in article:
+            continue
+        if minimum_status_id is not None and int(tweet_id.group(1)) < minimum_status_id:
+            continue
+        visible = normalized(html_lib.unescape(re.sub(r"<[^>]+>", " ", article)))
+        if prefix in visible:
+            return f"https://x.com/{handle}/status/{tweet_id.group(1)}"
+    return None
+
+
+def public_profile_readback(handle: str, expected_text: str, expected_url: str,
+                            minimum_status_id: int | None = None):
+    request = Request(f"https://x.com/{handle}", headers={"User-Agent": "x-repost/1.0"})
+    try:
+        with urlopen(request, timeout=12) as response:
+            markup = response.read().decode("utf-8")
+    except (OSError, UnicodeDecodeError):
+        return None
+    return find_exact_public_markup(
+        markup, expected_text, expected_url, handle, minimum_status_id
+    )
+
+
+def find_reply_permalink(pw, cdp: str, source_url: str, handle: str, needle: str,
+                         minimum_status_id: int | None = None, attempts: int = 5):
     """A reply lives in the conversation, not on the profile timeline, so read it back there.
 
     Scanning the profile would report every reply as unverified: X files replies under a separate
@@ -74,7 +311,9 @@ def find_reply_permalink(pw, cdp: str, source_url: str, handle: str, needle: str
             try:
                 page.goto(source_url, wait_until="domcontentloaded", timeout=60000)
                 page.wait_for_timeout(6000)
-                found = scan_timeline(page, handle, needle)
+                found = scan_timeline(
+                    page, handle, needle, minimum_status_id=minimum_status_id
+                )
                 if found:
                     return found
             finally:
@@ -85,7 +324,9 @@ def find_reply_permalink(pw, cdp: str, source_url: str, handle: str, needle: str
     return None
 
 
-def find_permalink(pw, cdp: str, handle: str, needle: str, attempts: int = 6):
+def find_permalink(pw, cdp: str, handle: str, needle: str, expected_url: str | None = None,
+                   expected_text: str | None = None,
+                   minimum_status_id: int | None = None, attempts: int = 6):
     """Read the account timeline back and return the permalink of the post we just made.
 
     Reconnects on every attempt instead of holding one page handle. The browser can die
@@ -101,145 +342,131 @@ def find_permalink(pw, cdp: str, handle: str, needle: str, attempts: int = 6):
             try:
                 page.goto(f"https://x.com/{handle}", wait_until="domcontentloaded", timeout=60000)
                 page.wait_for_timeout(5000)
-                found = scan_timeline(page, handle, needle)
+                found = scan_timeline(
+                    page, handle, needle, expected_url, expected_text, minimum_status_id
+                )
                 if found:
                     return found
             finally:
                 page.close()
         except Exception as exc:
             print(f"x_post: read-back attempt {attempt + 1} failed: {exc}", file=sys.stderr)
+        if expected_url and expected_text:
+            found = public_profile_readback(
+                handle, expected_text, expected_url, minimum_status_id
+            )
+            if found:
+                return found
         time.sleep(6)
     return None
 
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument(
-        "--cdp",
-        default=os.environ.get("CDP"),
-        help="leased CDP base URL (or CDP from with-browser.sh)",
-    )
+    ap.add_argument("--cdp", required=True, help="leased CDP base URL from browser-guard.sh")
     ap.add_argument("--source-url", help="the post being quoted or replied to")
     ap.add_argument("--text-file", required=True, help="file holding the comment body")
     # A quote is a new post from an account with no followers, which asks the ranker to distribute
     # out-of-network content to nobody. A reply is rendered to the people already reading the
     # original, and "the author engaged your reply" is the single highest-weighted signal X
     # publishes (+75, against 0.5 for a like).
-    ap.add_argument("--mode", choices=["post", "quote", "reply"], default="quote")
+    ap.add_argument("--mode", choices=["quote", "reply", "original", "reconcile"], default="quote")
     args = ap.parse_args()
-    if not args.cdp:
-        ap.error("--cdp or the CDP environment variable is required")
 
     if args.mode in {"quote", "reply"} and not args.source_url:
-        ap.error("--source-url is required for quote and reply modes")
+        raise SystemExit("x_post: --source-url is required for quote or reply")
 
     text = open(args.text_file, encoding="utf-8").read().strip()
     if not text:
         raise SystemExit("x_post: refusing to publish an empty comment")
 
-    needle = "".join(text.split("\n")[0])[:24]
-    with sync_playwright() as pw:
-        browser = pw.chromium.connect_over_cdp(args.cdp)
-        ctx = browser.contexts[0] if browser.contexts else browser.new_context()
-        handle = ensure_logged_in(get_page(browser))
-
-        # NEVER navigate or close a tab that still holds composer text. X guards it with
-        # beforeunload, and the dialog is handled by the driver that OWNS the persistent context,
-        # not by this connection -- its auto-accept raced the dialog closing itself, threw
-        # "No dialog is showing" as an uncaught Node rejection, and killed the whole browser twice
-        # (2026-08-17 10:28 and 10:35). So the composer gets its own tab, and that tab is only ever
-        # closed after it is provably clean.
-        compose = ctx.new_page()
-        published = False
-        try:
-            if args.mode == "reply":
-                # Reply inline on the post's own page: no URL is appended, because the reply is
-                # already attached to the conversation and a link would only spend characters and
-                # trip the link penalty.
-                compose.goto(args.source_url, wait_until="domcontentloaded", timeout=60000)
-                compose.wait_for_selector('[data-testid="tweetTextarea_0"]', timeout=45000)
-                compose.click('[data-testid="tweetTextarea_0"]')
-                compose.keyboard.type(text, delay=18)
-                compose.wait_for_timeout(2000)
-            else:
-                compose.goto("https://x.com/compose/post", wait_until="domcontentloaded", timeout=60000)
-                compose.wait_for_selector('[data-testid="tweetTextarea_0"]', timeout=45000)
-                compose.click('[data-testid="tweetTextarea_0"]')
-                compose.keyboard.type(text, delay=18)
-                if args.mode == "quote":
-                    compose.keyboard.press("Enter")
-                    compose.keyboard.type(args.source_url, delay=12)
-                    compose.wait_for_timeout(6000)  # let X resolve the quoted-post card
-                else:
-                    compose.wait_for_timeout(2000)
-
-            # Scope the button to the composer itself: x.com/home keeps an inline composer mounted
-            # whose button carries a confusingly similar testid, and clicking the wrong one silently
-            # does nothing (measured 10:35 -- "composer did not close within 30s", zero posts).
-            button = (compose.query_selector('[data-testid="tweetButtonInline"]')
-                      or compose.query_selector('[data-testid="tweetButton"]'))
-            if button and button.is_enabled():
-                button.click()
-            else:
-                compose.keyboard.press("Meta+Enter")
-
-            # The composer emptying is X's own acknowledgement that it took the post.
-            try:
-                compose.wait_for_selector('[data-testid="tweetTextarea_0"]',
-                                          state="detached", timeout=30000)
-                published = True
-            except Exception:
-                body = compose.query_selector('[data-testid="tweetTextarea_0"]')
-                published = bool(body) and not (body.inner_text() or "").strip()
-                if not published:
-                    print("x_post: composer still holds text -- publish did not go through",
-                          file=sys.stderr)
-        finally:
-            # Discard through X's own UI rather than navigating away: Escape opens an in-page
-            # confirmation sheet, not a JavaScript dialog, so nothing can crash the owner driver.
-            if not published:
-                try:
-                    compose.keyboard.press("Escape")
-                    compose.wait_for_timeout(1500)
-                    confirm = compose.query_selector('[data-testid="confirmationSheetConfirm"]')
-                    if confirm:
-                        confirm.click()
-                        compose.wait_for_timeout(1500)
-                except Exception as exc:
-                    print(f"x_post: could not discard the draft: {exc}", file=sys.stderr)
-            try:
-                compose.close()
-            except Exception as exc:
-                print(f"x_post: leaving the compose tab open: {exc}", file=sys.stderr)
-
-        if not published:
-            permalink = None
-        elif args.mode == "reply":
-            permalink = find_reply_permalink(pw, args.cdp, args.source_url, handle, needle)
-        else:
-            permalink = find_permalink(pw, args.cdp, handle, needle)
-
-    if not published:
-        # The composer never emptied and the draft was discarded: nothing reached X. The caller
-        # must NOT consume the source, or a post nobody ever saw would be crossed off the list.
-        json.dump({"posted": False, "mode": args.mode, "handle": handle, "source_url": args.source_url,
-                   "reason": "composer never emptied -- the post was not submitted"},
-                  sys.stdout, ensure_ascii=False)
+    urls = re.findall(r"https://[^\s]+", text)
+    expected_url = urls[0].rstrip(".,)") if args.mode in {"original", "reconcile"} and len(urls) == 1 else None
+    if args.mode in {"original", "reconcile"} and not expected_url:
+        raise SystemExit("x_post: original post requires exactly one URL")
+    needle = " ".join(text.split(expected_url, 1)[0].split()) if expected_url else "".join(text.split("\n")[0])[:24]
+    if args.mode == "reconcile":
+        with sync_playwright() as pw:
+            browser = pw.chromium.connect_over_cdp(args.cdp)
+            handle = ensure_logged_in(get_page(browser))
+            permalink = find_permalink(pw, args.cdp, handle, needle, expected_url, text)
+        json.dump({"posted": bool(permalink), "mode": args.mode, "handle": handle,
+                   "post_url": permalink, "source_url": None}, sys.stdout, ensure_ascii=False)
         print()
-        sys.exit(1)
-
-    if not permalink:
-        # "Composer accepted it, timeline could not confirm it" is NOT "did not publish". Say
-        # unverified so the caller consumes the source anyway rather than quoting it twice.
-        json.dump({"posted": "unverified", "mode": args.mode, "handle": handle, "needle": needle,
+        return
+    transport = os.environ.get("X_REPOST_PUBLISH_TRANSPORT", "postiz").strip().lower()
+    if transport not in {"postiz", "browser"}:
+        raise SystemExit("x_post: unsupported publish transport")
+    minimum_status_id = snowflake_floor(datetime.now(timezone.utc))
+    effect = None
+    if transport == "postiz":
+        try:
+            effect = submit_effect(
+                transport, text, args.mode, args.source_url,
+                postiz_publish, lambda *_args: None,
+            )
+        except (ValueError, OSError, urllib.error.HTTPError) as exc:
+            status = exc.code if isinstance(exc, urllib.error.HTTPError) else None
+            receipt = {"posted": False, "mode": args.mode, "source_url": args.source_url,
+                       "provider": "postiz", "provider_status": status,
+                       "reason": type(exc).__name__}
+            if isinstance(exc, urllib.error.HTTPError):
+                receipt["provider_error"] = http_error_summary(exc)
+            json.dump(receipt, sys.stdout, ensure_ascii=False)
+            print(); sys.exit(1)
+    browser_attempted = False
+    try:
+        with sync_playwright() as pw:
+            if transport == "browser":
+                browser_attempted = True
+                effect = submit_effect(
+                    transport, text, args.mode, args.source_url,
+                    postiz_publish,
+                    lambda body, mode, source: browser_publish(
+                        pw, args.cdp, body, mode, source
+                    ),
+                )
+                handle = effect["handle"]
+            else:
+                browser = pw.chromium.connect_over_cdp(args.cdp)
+                handle = ensure_logged_in(get_page(browser))
+            if args.mode == "reply":
+                permalink = find_reply_permalink(
+                    pw, args.cdp, args.source_url, handle, needle, minimum_status_id
+                )
+            else:
+                permalink = find_permalink(
+                    pw, args.cdp, handle, needle, expected_url,
+                    text if expected_url else None, minimum_status_id
+                )
+    except (Exception, SystemExit) as exc:
+        if effect is None and not browser_attempted:
+            json.dump({"posted": False, "mode": args.mode,
+                       "source_url": args.source_url, "provider": transport,
+                       "reason": type(exc).__name__}, sys.stdout, ensure_ascii=False)
+            print(); sys.exit(1)
+        json.dump({"posted": "unverified", "mode": args.mode,
                    "source_url": args.source_url,
-                   "reason": "publish was accepted but no matching post was found on the timeline"},
+                   "provider": (effect or {}).get("provider", "x_browser"),
+                   "provider_submission_id": (effect or {}).get("provider_submission_id"),
+                   "reason": f"readback failed: {type(exc).__name__}"},
                   sys.stdout, ensure_ascii=False)
         print()
         sys.exit(2)
-
-    json.dump({"posted": True, "mode": args.mode, "handle": handle, "post_url": permalink,
-               "source_url": args.source_url}, sys.stdout, ensure_ascii=False)
+    if not permalink:
+        json.dump({"posted": "unverified", "mode": args.mode, "handle": handle,
+                   "needle": needle, "source_url": args.source_url,
+                   "provider": effect["provider"],
+                   "provider_submission_id": effect.get("provider_submission_id"),
+                   "reason": "effect accepted but no matching post was found on the timeline"},
+                  sys.stdout, ensure_ascii=False)
+        print()
+        sys.exit(2)
+    json.dump({"posted": True, "mode": args.mode, "handle": handle,
+               "post_url": permalink, "source_url": args.source_url,
+               "provider": effect["provider"],
+               "provider_submission_id": effect.get("provider_submission_id")},
+              sys.stdout, ensure_ascii=False)
     print()
 
 
