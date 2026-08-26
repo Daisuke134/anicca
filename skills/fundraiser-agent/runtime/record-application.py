@@ -13,6 +13,11 @@ from datetime import datetime, timezone
 
 
 TERMINAL = {"submitted_verified", "submit_unknown"}
+APPLICATION_FIELDS = (
+    "organization", "program", "cohort_window", "account", "official_url",
+    "contact", "question_answers", "attachments", "context_used",
+    "context_version", "context_digest",
+)
 
 
 def fail(message: str) -> None:
@@ -48,24 +53,36 @@ def read_rows(path: pathlib.Path) -> list[dict]:
     return rows
 
 
+def application_digest(data: dict) -> str:
+    payload = {key: data.get(key) for key in APPLICATION_FIELDS}
+    encoded = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def replace_json(path: pathlib.Path, data: dict) -> None:
+    encoded = (json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode()
+    with tempfile.NamedTemporaryFile(dir=path.parent, delete=False) as handle:
+        handle.write(encoded)
+        temporary = pathlib.Path(handle.name)
+    os.chmod(temporary, 0o600)
+    os.replace(temporary, path)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--draft", required=True)
-    parser.add_argument("--ledger", required=True)
-    parser.add_argument("--applications-dir", required=True)
-    parser.add_argument("--run-id", required=True)
+    parser.add_argument("--ledger")
+    parser.add_argument("--applications-dir")
+    parser.add_argument("--run-id")
+    parser.add_argument("--expected-context-version", required=True)
+    parser.add_argument("--expected-context-digest", required=True)
+    parser.add_argument("--prepare", action="store_true")
     args = parser.parse_args()
 
     draft_path = pathlib.Path(args.draft)
     data = json.loads(draft_path.read_text(encoding="utf-8"))
     identity, identity_hash = canonical_identity(data)
     official_url = required_text(data.get("official_url"), "official_url")
-    submitted_at = required_text(data.get("submitted_at"), "submitted_at")
-    try:
-        datetime.fromisoformat(submitted_at.replace("Z", "+00:00"))
-    except ValueError:
-        fail("submitted_at must be ISO-8601")
-
     contact = data.get("contact")
     if not isinstance(contact, dict):
         fail("contact must be an object")
@@ -84,6 +101,38 @@ def main() -> None:
 
     if not isinstance(data.get("context_used"), dict) or not data["context_used"]:
         fail("context_used must record the actual claims/sources used")
+
+    context_version = required_text(data.get("context_version"), "context_version")
+    context_digest = required_text(data.get("context_digest"), "context_digest")
+    if context_version != args.expected_context_version:
+        fail("context_version does not match the current canonical context")
+    if context_digest != args.expected_context_digest:
+        fail("context_digest does not match the current canonical context")
+    digest = application_digest(data)
+
+    if args.prepare:
+        if data.get("submitted_at") is not None or data.get("evidence") is not None:
+            fail("prepare requires a pre-submit draft without submitted_at or evidence")
+        data["application_digest"] = digest
+        data["previewed_at"] = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        replace_json(draft_path, data)
+        print(json.dumps({"prepared": True, "application_digest": digest}))
+        return
+
+    for name in ("ledger", "applications_dir", "run_id"):
+        if not getattr(args, name):
+            fail(f"--{name.replace('_', '-')} is required when recording")
+    if required_text(data.get("application_digest"), "application_digest") != digest:
+        fail("application_digest does not match the prepared application")
+    previewed_at = required_text(data.get("previewed_at"), "previewed_at")
+    submitted_at = required_text(data.get("submitted_at"), "submitted_at")
+    try:
+        previewed_time = datetime.fromisoformat(previewed_at.replace("Z", "+00:00"))
+        submitted_time = datetime.fromisoformat(submitted_at.replace("Z", "+00:00"))
+    except ValueError:
+        fail("previewed_at and submitted_at must be ISO-8601")
+    if submitted_time < previewed_time:
+        fail("submitted_at must not precede previewed_at")
 
     evidence = data.get("evidence")
     if not isinstance(evidence, dict):
@@ -135,6 +184,9 @@ def main() -> None:
         "official_url": official_url,
         "status": "submitted_verified",
         "utc_timestamp": submitted_at,
+        "context_version": context_version,
+        "context_digest": context_digest,
+        "application_digest": digest,
         "provider_readback": evidence["provider_readback"],
         "completion_png": str(png),
         "telegram_photo_message_id": msgid,
