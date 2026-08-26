@@ -234,7 +234,7 @@ function providerProof(provider, row, options = {}, expected = {}) {
   const attested = proofFromVerifierResult(verifier(row, expected));
   if (!attested) throw new AdapterFailure("MISSING_SETTLEMENT_PROOF", "official provider readback did not verify settlement proof");
   const full = { ...attested.result, ...attested.proof };
-  for (const key of ["provider", "source_record_id", "terminal_state", "payer", "recipient", "asset", "contract", "gross", "fee", "refund", "signed_net", "amount_atomic", "chain_id", "tx_hash", "log_index"]) {
+  for (const key of ["provider", "source_record_id", "terminal_state", "payer", "recipient", "asset", "contract", "gross", "fee", "refund", "signed_net", "provider_receipt_id", "amount_atomic", "chain_id", "tx_hash", "log_index"]) {
     if (expected[key] !== undefined && !scalarEqual(full[key], expected[key])) {
       throw new AdapterFailure("PROOF_BINDING_MISMATCH", `official proof does not bind ${key}`);
     }
@@ -267,6 +267,14 @@ function buildReceipt(provider, row, options, config) {
     fee,
     refund,
     signed_net: signedNetText(gross, fee, refund),
+    ...((() => {
+      const receiptId = directOrNested(row, [
+        "provider_receipt_id", "providerReceiptId", "receipt_id", "receiptId", "payout_receipt_id",
+        "payment_receipt_id", "award_receipt_id", "settlement_receipt_id",
+        ...(provider === "stripe" ? ["external_receipt_id", "externalReceiptId"] : []),
+      ]);
+      return receiptId === undefined ? {} : { provider_receipt_id: String(receiptId) };
+    })()),
     ...(atomic !== undefined ? { amount_atomic: String(atomic) } : {}),
     ...(directOrNested(row, ["chain_id", "chainId"]) !== undefined ? { chain_id: directOrNested(row, ["chain_id", "chainId"]) } : {}),
     ...(directOrNested(row, ["tx_hash", "txHash", "transaction_hash", "transactionHash", "transaction"]) !== undefined ? { tx_hash: directOrNested(row, ["tx_hash", "txHash", "transaction_hash", "transactionHash", "transaction"]) } : {}),
