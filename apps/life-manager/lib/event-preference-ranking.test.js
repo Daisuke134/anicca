@@ -125,7 +125,9 @@ test("provider ranking chunks a large inventory and still validates every candid
     },
   });
 
-  assert.deepEqual(chunkSizes, [25, 25, 1]);
+  assert.equal(chunkSizes.length, 17);
+  assert.equal(Math.max(...chunkSizes), 3);
+  assert.equal(chunkSizes.reduce((total, size) => total + size, 0), 51);
   assert.equal(ranking.ranked_events.length, 51);
   assert.equal(new Set(ranking.ranked_events.map((row) => row.event_ref)).size, 51);
 });

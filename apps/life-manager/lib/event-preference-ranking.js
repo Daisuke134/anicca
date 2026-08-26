@@ -11,6 +11,8 @@ const PRIORITY_ORDER = new Map(PRIORITY_CLASSES.map((value, index) => [value, in
 const FIT_ORDER = new Map(FITS.map((value, index) => [value, index]));
 const DATE_KEY = /^\d{4}-\d{2}-\d{2}$/;
 const PROVIDER_RANK_CHUNK_SIZE = 25;
+const PROVIDER_RANK_LARGE_INVENTORY_THRESHOLD = 20;
+const PROVIDER_RANK_LARGE_INVENTORY_CHUNK_SIZE = 3;
 const PROVIDER_RANK_CHUNK_BYTES = 24_000;
 const PROVIDER_RANK_CONCURRENCY = 3;
 const PROVIDER_RANK_BODY_LENGTH = 1_000;
@@ -251,11 +253,13 @@ async function inferProviderRankingChunkResilient(input, options, metrics) {
 
 function providerRankingChunks(candidates) {
   const chunks = [];
+  const chunkSize = candidates.length >= PROVIDER_RANK_LARGE_INVENTORY_THRESHOLD
+    ? PROVIDER_RANK_LARGE_INVENTORY_CHUNK_SIZE : PROVIDER_RANK_CHUNK_SIZE;
   let current = [];
   let currentBytes = 0;
   for (const candidate of candidates) {
     const candidateBytes = Buffer.byteLength(JSON.stringify(candidate), "utf8") + 1;
-    if (current.length > 0 && (current.length >= PROVIDER_RANK_CHUNK_SIZE
+    if (current.length > 0 && (current.length >= chunkSize
       || currentBytes + candidateBytes > PROVIDER_RANK_CHUNK_BYTES)) {
       chunks.push(current);
       current = [];
