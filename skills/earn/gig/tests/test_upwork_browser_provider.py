@@ -188,6 +188,46 @@ def test_read_evidence_allows_only_canonical_message_room_redirect(tmp_path):
         )
 
 
+def test_read_evidence_allows_query_or_fragment_only_for_same_concrete_room(tmp_path):
+    room_url = f"{provider.MESSAGES_URL}/room_8154dc46c1fed6b388c86d4bf15211cb"
+
+    def evidence(name, url):
+        path = tmp_path / name
+        path.write_text(json.dumps({
+            "navigated_ok": True,
+            "url": url,
+            "rendered_text": "Messages",
+            "rendered_links": [],
+        }), encoding="utf-8")
+        return path
+
+    for index, observed_url in enumerate((
+        f"{room_url}?sidebar=true",
+        f"{room_url}#room-detail",
+    )):
+        assert provider._read_evidence(
+            evidence(f"allowed-{index}.json", observed_url), room_url,
+        )[0] == "Messages"
+
+    rejected_redirects = [
+        f"{provider.MESSAGES_URL}/room_different?sidebar=true",
+        f"https://evil.example/ab/messages/rooms/{room_url.rsplit('/', 1)[-1]}?sidebar=true",
+        f"{room_url}/extra?sidebar=true",
+        f"{provider.MESSAGES_URL}/room_?sidebar=true",
+    ]
+    for index, observed_url in enumerate(rejected_redirects):
+        with pytest.raises(ValueError, match="upwork_readback_incomplete"):
+            provider._read_evidence(
+                evidence(f"rejected-concrete-{index}.json", observed_url), room_url,
+            )
+
+    with pytest.raises(ValueError, match="upwork_readback_incomplete"):
+        provider._read_evidence(
+            evidence("rejected-non-messages.json", f"{provider.SEARCH_URL}?sidebar=true"),
+            provider.SEARCH_URL,
+        )
+
+
 def test_parses_zero_connects_without_inventing_a_reward():
     state = parse_connects(
         "Connects History\nMy balance\n0 Connects\nNo Connects transactions.\n"

@@ -713,18 +713,26 @@ def _read_evidence(path: Path, expected_url: str) -> tuple[str, str, list[dict[s
     value = json.loads(path.read_text(encoding="utf-8"))
     observed_url = value.get("url")
     url_matches = observed_url == expected_url
-    if not url_matches and expected_url == MESSAGES_URL and isinstance(observed_url, str):
+    if not url_matches and isinstance(observed_url, str):
         try:
             expected = urlsplit(expected_url)
             observed = urlsplit(observed_url)
         except ValueError:
             observed = None
         if observed is not None:
-            url_matches = (
-                observed.scheme == expected.scheme
-                and observed.netloc == expected.netloc
-                and re.fullmatch(r"/ab/messages/rooms/room_[^/?#]+", observed.path)
-                is not None
+            same_origin = (
+                expected.scheme == observed.scheme == "https"
+                and expected.netloc == observed.netloc == "www.upwork.com"
+            )
+            expected_room = re.fullmatch(
+                r"/ab/messages/rooms/room_[^/?#]+", expected.path,
+            )
+            observed_room = re.fullmatch(
+                r"/ab/messages/rooms/room_[^/?#]+", observed.path,
+            )
+            url_matches = same_origin and observed_room is not None and (
+                expected_url == MESSAGES_URL
+                or expected_room is not None and expected.path == observed.path
             )
     if value.get("navigated_ok") is not True or not url_matches:
         raise ValueError("upwork_readback_incomplete")
