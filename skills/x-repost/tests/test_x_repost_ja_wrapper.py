@@ -17,6 +17,7 @@ class JapaneseDiceLoopContractTests(unittest.TestCase):
             'X_REPOST_EXPECTED_HANDLE="diceai0"',
             'X_REPOST_FORCE_LANGUAGE="ja"',
             'X_REPOST_SOURCE_LANGUAGE_POLICY="any"',
+            'X_REPOST_QUERIES_FILE=',
             'X_REPOST_FORCE_KIND="quote"',
             'X_REPOST_PUBLISH_TRANSPORT="browser"',
         ):
@@ -26,6 +27,7 @@ class JapaneseDiceLoopContractTests(unittest.TestCase):
         text = MAIN.read_text()
         self.assertIn("日本語・英語どちらの候補も選べる", text)
         self.assertIn("英語sourceは自然な日本語の付加価値へ翻訳", text)
+        self.assertIn("アカウント固有設定の関心領域", text)
         self.assertIn('registry_enforce_or_exit "$LOOP_NAME"', text)
 
     def test_launchd_contract_is_half_hourly_and_offset(self):

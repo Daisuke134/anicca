@@ -17,6 +17,7 @@ export X_REPOST_ACCOUNT_DESCRIPTION="Life Managerを作る起業家。AI・プ�
 export X_REPOST_FORCE_KIND="quote"
 export X_REPOST_FORCE_LANGUAGE="ja"
 export X_REPOST_SOURCE_LANGUAGE_POLICY="any"
+export X_REPOST_QUERIES_FILE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/config/queries-ja.txt"
 export X_REPOST_PUBLISH_TRANSPORT="browser"
 export AFFILIATE_REPOST_PROPOSAL_PATH="$STATE/no-affiliate-proposal.json"
 export AFFILIATE_X_DISTRIBUTION_QUEUE="$STATE/no-affiliate-jobs.jsonl"

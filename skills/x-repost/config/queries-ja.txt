@@ -1,0 +1,20 @@
+# Dice AI Zero: Japanese output may add Japanese value to viral Japanese or English sources.
+AI agent min_faves:300 -filter:replies
+LLM min_faves:500 -filter:replies
+AI tools min_faves:400 -filter:replies
+open source AI min_faves:300 -filter:replies
+crypto OR onchain min_faves:400 -filter:replies
+x402 OR agent payments min_faves:150 -filter:replies
+product launch OR product management min_faves:200 -filter:replies
+building in public min_faves:150 -filter:replies
+indie hacker OR solopreneur min_faves:150 -filter:replies
+automation workflow min_faves:200 -filter:replies
+saas revenue OR bootstrapped min_faves:200 -filter:replies
+deep tech OR robotics min_faves:200 -filter:replies
+finance OR fintech min_faves:400 -filter:replies
+developer tools OR software engineering min_faves:250 -filter:replies
+comedy OR comedian min_faves:500 -filter:replies
+AI エージェント min_faves:100 -filter:replies
+AI 自動化 min_faves:150 -filter:replies
+個人開発 OR プロダクト開発 min_faves:100 -filter:replies
+お笑い OR コメディ min_faves:200 -filter:replies

@@ -31,8 +31,9 @@ CODEX_AUTH_FILE="${X_REPOST_CODEX_AUTH_FILE:-$HOME/.codex-acct2/auth.json}"
 CODEX_AUTOMATION_HOME="${X_REPOST_CODEX_HOME:-$HOME/.local/state/life-manager/x-repost-codex}"
 IDENTITY="${X_REPOST_BROWSER_IDENTITY:-x:anicca}"
 ACCOUNT_HANDLE="${X_REPOST_ACCOUNT_HANDLE:-@selawmqt}"
-ACCOUNT_DESCRIPTION="${X_REPOST_ACCOUNT_DESCRIPTION:-AI/creator tools の実務情報を、検証可能なsourceに基づいて届ける}"
+ACCOUNT_DESCRIPTION="${X_REPOST_ACCOUNT_DESCRIPTION:-AI・プロダクト・深層技術・crypto・finance・build in public・お笑いを、検証可能なsourceと実体験で届ける}"
 SOURCE_LANGUAGE_POLICY="${X_REPOST_SOURCE_LANGUAGE_POLICY:-target_only}"
+QUERIES_FILE="${X_REPOST_QUERIES_FILE:-$SKILL/config/queries.txt}"
 # x-repost is Codex-only: Claude's subscription ceiling must not be able to stall this loop.
 MODEL="${X_REPOST_MODEL:-gpt-5.6-luna}"
 REASONING_EFFORT="${X_REPOST_REASONING_EFFORT:-max}"
@@ -1155,14 +1156,14 @@ fi
 
 # ---------------------------------------------------------------- 1. recon
 if ! run_x_script x_collect.py --cdp "$CDP" --mode recon \
-      --queries "$SKILL/config/queries.txt" --posted "$POSTED" >"$EV/candidates.json" 2>>"$EV/collect.err"; then
+      --queries "$QUERIES_FILE" --posted "$POSTED" >"$EV/candidates.json" 2>>"$EV/collect.err"; then
   report "❌ recon failed — $(tail -1 "$EV/collect.err" 2>/dev/null)"
   finish 1 "recon failed"
 fi
 CAND_COUNT="$("$PY" -c 'import json,sys; print(json.load(open(sys.argv[1]))["candidate_count"])' "$EV/candidates.json" 2>/dev/null || echo 0)"
 log "collected $CAND_COUNT candidates"
 if [ "${CAND_COUNT:-0}" -eq 0 ]; then
-  report "⚠️ 候補 0 件（検索 $(wc -l <"$SKILL/config/queries.txt") クエリを実走したが該当なし）。DOM セレクタ変更を疑う。"
+  report "⚠️ 候補 0 件（検索 $(wc -l <"$QUERIES_FILE") クエリを実走したが該当なし）。DOM セレクタ変更を疑う。"
   lesson "候補0件" "検索が0件を返し続けるなら話題不足でなく data-testid 変更を先に疑う"
   finish 0 "no candidates"
 fi
@@ -1281,7 +1282,7 @@ log "target language: $TARGET_LANGUAGE (rolling EN 7 / JA 3)"
 
 ## 選定基準
 - 伸びていて、かつ議論を呼んでいる（数字は candidates[].metrics を見る。regex ではなくお前の判断で選ぶ）。
-- **のっかれる AI / crypto の技術・実務の話題であること。**
+- **アカウント固有設定の関心領域に入り、技術・実務・創作の具体を足せる話題であること。**
 - 次は必ず除外する: 個人攻撃・誹謗中傷・政治対立・事件性の高い炎上・人の不幸・訃報・センシティブな属性の話。
 - 迷ったら選ばない。該当なしなら {"selected": false, "reason": "..."} だけを返す。
 
