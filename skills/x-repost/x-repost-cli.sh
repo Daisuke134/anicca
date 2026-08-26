@@ -613,12 +613,29 @@ EOF
       <<<"$AFFILIATE_JOB_EFFECT")"
     AFFILIATE_RETRY_COUNT="$("$PY" -c 'import json,sys; print(json.load(sys.stdin).get("retry_count",0))' \
       <<<"$AFFILIATE_JOB_EFFECT")"
-    if [ "$AFFILIATE_RETRY_COUNT" -ge 1 ]; then
+    AFFILIATE_RAW_LENGTH="$("$PY" -c 'import json,sys; print(len((json.load(sys.stdin).get("payload") or {}).get("text") or ""))' <<<"$AFFILIATE_JOB_EFFECT")"
+    if [ "$AFFILIATE_RAW_LENGTH" -gt 280 ] || [ "$AFFILIATE_RETRY_COUNT" -ge 1 ]; then
+      AFFILIATE_REVISION_COPY="$EV/affiliate-revision-copy.json"
+      cat >"$EV/prompt-affiliate-revision.txt" <<EOF
+Rewrite this Affiliate X post as natural English while preserving its meaning.
+Return exactly {"text":"...","claims":[]}.
+The text must be at most 280 raw characters, contain the exact disclosure
+"Affiliate disclosure: I may earn a commission through this link." and the exact URL already in
+the input. Keep one useful, specific decision-oriented sentence before the disclosure. No hashtag,
+emoji, invented fact, price, performance claim, urgency, or endorsement. Do not mechanically cut words.
+
+INPUT:
+$("$PY" -c 'import json,sys; print((json.load(sys.stdin).get("payload") or {}).get("text") or "")' <<<"$AFFILIATE_JOB_EFFECT")
+EOF
+      if ! ask_model "$EV/prompt-affiliate-revision.txt" "$EV/affiliate-revision.raw" \
+          >"$AFFILIATE_REVISION_COPY"; then
+        handle_model_failure "Affiliate natural-language length revision" "$EV/affiliate-revision.raw"
+      fi
       if ! AFFILIATE_REVISED_PAYLOAD="$("$PY" "$SKILL/scripts/affiliate_proposal.py" \
         --job-claims "$AFFILIATE_JOB_CLAIMS" --job-payload-dir "$AFFILIATE_JOB_PAYLOADS" \
-        --job-results "$AFFILIATE_JOB_RESULTS" \
+        --job-results "$AFFILIATE_JOB_RESULTS" --revision-copy "$AFFILIATE_REVISION_COPY" \
         --revise-raw-limit 2>>"$EV/affiliate-job.err")"; then
-        report "🛑 Postiz raw-length payload revision failed"
+        report "🛑 Affiliate natural-language payload revision failed"
         finish 1 "affiliate distribution payload revision failed"
       fi
       AFFILIATE_REVISED_TEXT_SHA="$("$PY" -c 'import json,sys; print(json.load(sys.stdin)["text_sha256"])' \

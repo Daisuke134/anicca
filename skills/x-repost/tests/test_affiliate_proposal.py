@@ -349,7 +349,7 @@ class AffiliateProposalTests(unittest.TestCase):
             }))
             MODULE.render_claimed_job(claims, payloads, copy, candidates)
 
-            with self.assertRaisesRegex(ValueError, "confirmed no-effect retry"):
+            with self.assertRaisesRegex(ValueError, "confirmed no-effect"):
                 MODULE.revise_payload_for_raw_limit(claims, payloads, results)
             self.assertFalse((payloads / f"{job['job_id']}-r1.json").exists())
 
@@ -562,7 +562,7 @@ class AffiliateProposalTests(unittest.TestCase):
         self.assertIn("--requeue-no-effect", shell)
         self.assertRegex(
             shell,
-            r'--job-results "\$AFFILIATE_JOB_RESULTS" \\\n+\s+--revise-raw-limit',
+            r'--job-results "\$AFFILIATE_JOB_RESULTS" --revision-copy .* \\\n+\s+--revise-raw-limit',
         )
         self.assertGreater(
             shell.index('run_x_post --cdp "$CDP" --text-file "$AFFILIATE_JOB_TEXT"'),

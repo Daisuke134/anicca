@@ -471,13 +471,14 @@ def distribution_payload(claims_path: Path, payloads_dir: Path) -> dict:
 
 def revise_payload_for_raw_limit(
     claims_path: Path, payloads_dir: Path, results_path: Path,
+    copy_path: Path | None = None,
 ) -> dict:
     current = distribution_payload(claims_path, payloads_dir)
     results = [row for row in distribution_results(results_path)
                if row.get("job_id") == current["job_id"]]
     retry_count = sum(row.get("state") == "RETRY_READY" for row in results)
-    if not results or results[-1].get("state") != "NO_EFFECT" or retry_count < 1:
-        raise ValueError("distribution payload revision requires confirmed no-effect retry")
+    if not results or results[-1].get("state") != "NO_EFFECT":
+        raise ValueError("distribution payload revision requires confirmed no-effect")
     if current.get("revision") == 1:
         return {**current, "changed": False}
     revision_reason = "POSTIZ_RAW_LENGTH" if len(current["text"]) > 280 else "CONFIRMED_NO_EFFECT"
@@ -486,7 +487,13 @@ def revise_payload_for_raw_limit(
         "Compare workflow fit, limits, and total price before subscribing.",
     )
     mode = current.get("distribution_mode")
-    if mode == "QUOTE_CONTROL_POST":
+    if copy_path is not None:
+        copy = read_json(copy_path)
+        candidate = copy.get("text")
+        if set(copy) != {"text", "claims"} or copy.get("claims") != []:
+            raise ValueError("model revision contract invalid")
+        text_candidates = (candidate,)
+    elif mode == "QUOTE_CONTROL_POST":
         text_candidates = subject_candidates
     else:
         text_candidates = tuple(
@@ -503,7 +510,8 @@ def revise_payload_for_raw_limit(
         if text_sha256 == current["text_sha256"]:
             continue
         weighted_length = len(URL.sub("x" * X_TRANSFORMED_URL_LENGTH, text))
-        if len(text) > 280 or URL.findall(text) != expected_urls or weighted_length > 280:
+        if (not isinstance(text, str) or text != text.strip() or len(text) > 280
+                or URL.findall(text) != expected_urls or weighted_length > 280):
             continue
         receipt = {
             **{key: value for key, value in current.items()
@@ -985,6 +993,7 @@ def main() -> int:
     parser.add_argument("--job-id")
     parser.add_argument("--text-sha256")
     parser.add_argument("--revise-raw-limit", action="store_true")
+    parser.add_argument("--revision-copy", type=Path)
     parser.add_argument("--posted", type=Path)
     parser.add_argument("--record", choices=("POSTED", "UNVERIFIED", "NO_EFFECT"))
     parser.add_argument("--claim", action="store_true")
@@ -1032,7 +1041,7 @@ def main() -> int:
         if args.job_claims is None or args.job_payload_dir is None or args.job_results is None:
             parser.error("--revise-raw-limit requires claim, payload, and result paths")
         print(json.dumps(revise_payload_for_raw_limit(
-            args.job_claims, args.job_payload_dir, args.job_results
+            args.job_claims, args.job_payload_dir, args.job_results, args.revision_copy
         ), sort_keys=True))
         return 0
     if args.proposal is None or args.consumed is None:
