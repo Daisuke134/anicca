@@ -113,3 +113,11 @@ Baseline: focused Life Manager suite 175/175 PASS.
 - Task 6 fix round 2: `31898fc55`; report `be4364c77`; six boundary mutations detected.
 - Task 6 re-review R2: APPROVED — rebind gives 401/state0/provider0, concurrent start gives 200+409/state1/link1, exact enabled/renewal/secret/callback regressions verified; 69/69 + 42/42 PASS.
 - Task 6: complete (production migration apply/readback remains Task 9)
+
+## Task 7 review loop
+
+- Task 7A base: `e68dca565`
+- Task 7A implementer: `/root/task7a_onboarding_api`
+- Task 7A implementation: `67d56e9a1` — session-scoped state/transition RPC, phone/call consent and Stripe-only paid boundary; focused API/auth/billing 51/51 PASS.
+- Task 7A review R0: fix-first — High: a new QR actor remained `unknown_actor`; High: onboarding read a stale Calendar marker instead of exact Composio status; High: the scheduler cohort excluded phone-less paid users and the legacy onboarding loop rewrote their stage; High: payment skip made later checkout unreachable. Medium: path-action POST accepted array/primitive JSON.
+- Task 7A Ruling: all five findings are valid acceptance defects. Split the fix to preserve the three-production-file slice rule. R1A owns verified actor provisioning, provider-truth synchronization, malformed-body rejection and unpaid-dashboard checkout reachability. R1B owns phone-less scheduler inclusion and legacy stage non-regression. The existing signed Telegram initData remains the only actor authority; the existing Stripe webhook remains the only paid writer.
