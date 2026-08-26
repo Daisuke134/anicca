@@ -301,6 +301,18 @@ test("changing only ordered media changes effect identity", () => {
   assert.notEqual(reversed.job_id, job().job_id);
 });
 
+test("slot-scoped production gives each daily slot one stable effect without changing legacy identity", () => {
+  const first = enJob({ slot: "2026-08-26T01:00:00.000Z", slotScopedEffect: true });
+  const replay = enJob({ slot: "2026-08-26T01:00:00.000Z", slotScopedEffect: true });
+  const second = enJob({ slot: "2026-08-26T06:00:00.000Z", slotScopedEffect: true });
+  assert.equal(first.effect_key, replay.effect_key);
+  assert.equal(first.job_id, replay.job_id);
+  assert.notEqual(first.effect_key, second.effect_key);
+  assert.notEqual(first.job_id, second.job_id);
+  assert.match(first.effect_key, /^marketing:carousel:anicca-ios:EN-AFFIRMATION-CAROUSEL-da8d8265(?::[0-9a-f]{64}){4}$/);
+  assert.match(enJob().effect_key, /^marketing:carousel:anicca-ios:EN-AFFIRMATION-CAROUSEL-da8d8265(?::[0-9a-f]{64}){3}$/);
+});
+
 test("builder is pinned to the one account, integration, product, format, locale and form", () => {
   for (const [field, value] of [
     ["productId", "honne-ai"],

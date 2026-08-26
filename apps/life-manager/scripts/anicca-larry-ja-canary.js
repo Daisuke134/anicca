@@ -243,6 +243,7 @@ async function runAniccaCarouselCanary(argv = [], deps = {}) {
     captionRef: config.captionRef,
     approvalRef: config.approvalRef,
     postizTokenRef: lane.tokenRef,
+    slotScopedEffect: production,
   });
   const publicationAdapter = createMarketingNativeCarouselPublicationLoopAdapter({
     objectStore,

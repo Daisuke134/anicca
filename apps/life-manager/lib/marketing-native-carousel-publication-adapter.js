@@ -30,7 +30,7 @@ const DIRECT_POSTS = Object.freeze({
 });
 const PROVIDER_ID = /^[A-Za-z0-9._:-]{1,200}$/;
 const BASE_REF_KEYS = ["account_ref", "approval_ref", "caption_ref", "creative_ref", "form_ref", "format_ref", "locale_ref", "media_refs", "pack_ref", "platform_ref", "postiz_token_ref", "product_ref", "slot_ref"];
-const EFFECT = /^marketing:carousel:anicca-ios:([A-Za-z0-9][A-Za-z0-9._-]{0,127}):([0-9a-f]{64}):([0-9a-f]{64}):([0-9a-f]{64})$/;
+const EFFECT = /^marketing:carousel:anicca-ios:([A-Za-z0-9][A-Za-z0-9._-]{0,127}):([0-9a-f]{64}):([0-9a-f]{64}):([0-9a-f]{64})(?::([0-9a-f]{64}))?$/;
 
 const fail = (message) => { throw new Error(message); };
 const text = (value, label) => { const v = String(value == null ? "" : value).trim(); return v || fail(`${label} is required`); };
@@ -199,7 +199,8 @@ function buildMarketingNativeCarouselPublicationJob(input = {}) {
   const packHash = objectHash(packRef, "pack");
   const mediaHashes = media.map((ref) => objectHash(ref, "media"));
   const captionHash = objectHash(captionRef, "caption");
-  const effectKey = `marketing:carousel:${PRODUCT_ID}:${creativeId}:${packHash}:${mediaOrderHash(mediaHashes)}:${captionHash}`;
+  const slotScope = input.slotScopedEffect === true ? `:${crypto.createHash("sha256").update(slot).digest("hex")}` : "";
+  const effectKey = `marketing:carousel:${PRODUCT_ID}:${creativeId}:${packHash}:${mediaOrderHash(mediaHashes)}:${captionHash}${slotScope}`;
   const inputRefs = {
     product_ref: `product://${lane.productId}`,
     format_ref: `format://${lane.formatId}`,
@@ -235,7 +236,8 @@ function normalizeJob(job) {
   const account = platform && new RegExp(`^account://${platform[1]}/(.+)$`).exec(String(refs.account_ref || ""));
   if (!product || !format || !form || !locale || !slot || !creative || !account || creative[1] !== product[1]
     || !platform || integrationKeys[0] !== `${platform[1]}_integration_ref`) fail("marketing native carousel publication job contract is invalid");
-  const input = { tenantId: job.tenant_id, productId: product[1], formatId: format[1], form: form[1], locale: locale[1], slot: slot[1], creativeId: creative[2], accountId: account[1], accountRef: refs.account_ref, integrationRef: refs[integrationKeys[0]], packRef: refs.pack_ref, mediaRefs: refs.media_refs, captionRef: refs.caption_ref, approvalRef: refs.approval_ref, postizTokenRef: refs.postiz_token_ref };
+  const effect = EFFECT.exec(String(job.effect_key || ""));
+  const input = { tenantId: job.tenant_id, productId: product[1], formatId: format[1], form: form[1], locale: locale[1], slot: slot[1], creativeId: creative[2], accountId: account[1], accountRef: refs.account_ref, integrationRef: refs[integrationKeys[0]], packRef: refs.pack_ref, mediaRefs: refs.media_refs, captionRef: refs.caption_ref, approvalRef: refs.approval_ref, postizTokenRef: refs.postiz_token_ref, ...(effect?.[5] ? { slotScopedEffect: true } : {}) };
   const lane = selectMarketingNativeCarouselLane(input);
   let expected;
   try { expected = buildMarketingNativeCarouselPublicationJob(input); } catch { fail("marketing native carousel publication job contract is invalid"); }
