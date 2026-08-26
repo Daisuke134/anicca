@@ -2257,6 +2257,23 @@ malformed JA Card row. Registered due times are 2h `2026-08-26T02:35:50.741Z`,
 changes only this lane to `canary-verified`; it remains default-off, all lanes
 armed 0, and fence closed.
 
+The final decoded-frame guard is committed at `d82107c69`: `ffprobe
+-count_frames` supplies `nb_read_frames` for both inputs, missing or unequal
+decoded counts fail closed, and the existing raw/blur thresholds remain
+unchanged. Parent verification passes the full runner suite `32/32`; the
+native/source pair independently decodes `312/312` frames and compares true;
+fresh adversarial review returns `ship`. Same-slot live replay then returns
+publication `created=false` and Telegram `created=false`, reusing message
+`34651`; jobs/receipts remain `787/255` with exactly one publication receipt
+and one natural message receipt. Commit `e9c460b46` is byte-identical to the
+canonical metrics runtime file and its target filter passes `3/3`; a second
+fresh adversary returns `ship`. The installed LM metrics plist retains
+`StartInterval=1800`, but an immediate non-killing `launchctl kickstart` from
+this isolated GUI control plane returns `141 Reentrancy avoided`. No service,
+legacy job, plist, or scheduler state is changed; the next natural interval is
+the readback point for the deployed filter, while the exact due windows remain
+registered rather than being called measured early.
+
 MKT-09R8-13 implementation preflight is complete without an external effect.
 The live manifest has exactly one matching `@anicca.jp1` target at integration
 `cmn8ycvtn02djqx0ytuisn9mw`, renderer `reelclaw-card`, format
