@@ -12,6 +12,7 @@ RUN_AGENT="$REPO_ROOT/skills/earn/marketing-engine/run_agent.sh"
 PROMPT="$REPO_ROOT/skills/fundraiser-agent/prompts/daily.md"
 SCHEMA="$REPO_ROOT/skills/fundraiser-agent/runtime/pass-result.schema.json"
 SENDER="$REPO_ROOT/skills/_shared/send-telegram.sh"
+PHOTO_SENDER="$REPO_ROOT/skills/_shared/send-telegram-photo.sh"
 
 mkdir -p "$STATE_ROOT/evidence" "$EVIDENCE_DIR"
 chmod 700 "$STATE_ROOT" "$STATE_ROOT/evidence" "$EVIDENCE_DIR"
@@ -31,6 +32,7 @@ export FUNDRAISER_CURSOR="$STATE_ROOT/cursor.json"
 export FUNDRAISER_CDP_ENDPOINT="http://127.0.0.1:9222"
 export FUNDRAISER_X_CDP_ENDPOINT="http://127.0.0.1:9222"
 export FUNDRAISER_TELEGRAM_SENDER="$SENDER"
+export FUNDRAISER_TELEGRAM_PHOTO_SENDER="$PHOTO_SENDER"
 export FUNDRAISER_CAPTCHA_MODE="existing-capsolver-only"
 export AGENT_RUNNER_PROVIDER="codex"
 export AGENT_RUNNER_MODEL="gpt-5.6-luna"
@@ -50,6 +52,7 @@ RUNTIME_PROMPT="$EVIDENCE_DIR/runtime-prompt.md"
 - Append one compact JSON object per terminal candidate to \`$STATE_ROOT/application-receipts.jsonl\`. Include run_id, receipt identity, official URL, status, UTC timestamp, and non-secret readback reference. Never append a submitted status without official completion UI or matching provider mail.
 - Write the durable next discovery cursor atomically to \`$STATE_ROOT/cursor.json\`.
 - Immediately after every candidate terminal, execute \`bash $SENDER "Codex::: Fundraiser: <program, truthful status, non-secret readback, running counts>"\` and require \`TELEGRAM_SENT=true\`.
+- A form application is verified only after its official completion PNG is sent with \`bash $PHOTO_SENDER "<png>" "Codex::: Fundraiser proof: <program>"\` and the output contains \`TELEGRAM_PHOTO_SENT=true MSGID=<id>\`. Save that message ID in its receipt.
 - For a supported CAPTCHA, use only the already-installed CapSolver/tier-a-bypass route found locally. Never weaken, evade, or disable provider security. If unavailable, checkpoint that candidate and continue to the next one.
 - Spend this pass applying, not editing product code. Continue after the first submission. Return status=failure when submitted=0.
 EOF

@@ -206,6 +206,9 @@ test("production contract runs every minute and maximizes real applications", ()
   assert.match(dailyPrompt, /prior `failure` candidates whose recorded local or\s+technical cause has been repaired/);
   assert.match(dailyPrompt, /cdp\.py screenshot/);
   assert.match(dailyPrompt, /completion\.png/);
+  assert.match(dailyPrompt, /TELEGRAM_PHOTO_SENT=true MSGID=<id>/);
+  assert.match(dailyPrompt, /submitted_verified/);
+  assert.match(runtimeScript, /send-telegram-photo\.sh/);
   assert.match(dailyPrompt, /never release an application lease until every fill/);
   assert.match(dailyPrompt, /there is no `upload` command/);
   assert.match(dailyPrompt, /Do not reopen the same video, voice, binding-term/);

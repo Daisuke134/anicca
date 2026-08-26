@@ -65,8 +65,10 @@ reporting path.
 
 ## Evidence and outcome
 
-A successful application requires an immutable ApplicationReceipt backed by fresh
-provider UI or matching official mail. Keep source URLs, official evidence,
-identity, action history, effect result, and readback in the existing runtime
-contract. Zero applications is not a successful no-op; report it as a failed pass
-with checked sources and continue from durable state on the next one-minute wake.
+A verified application requires an immutable ApplicationReceipt backed by a fresh
+official completion screenshot delivered to Telegram with its provider message
+ID. Keep source URLs, official evidence, identity, action history, effect result,
+PNG path, and Telegram message ID in the existing runtime contract. Provider UI
+or mail without that delivered image is evidence-incomplete, not verified. Zero
+verified applications is not a successful no-op; report it as a failed pass with
+checked sources and continue from durable state on the next one-minute wake.

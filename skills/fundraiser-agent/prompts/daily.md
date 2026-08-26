@@ -187,6 +187,13 @@ For every queued candidate until the execution window ends:
    "$FUNDRAISER_EVIDENCE_DIR/<receipt-safe-name>-completion.png"`. Record that
    exact PNG path in the receipt and Telegram report. A DOM readback without an
    attempted PNG capture is incomplete evidence.
+   Then send that PNG with `bash "$FUNDRAISER_TELEGRAM_PHOTO_SENDER"
+   "$PNG_PATH" "Codex::: Fundraiser proof: <program and cohort>"`. Require
+   `TELEGRAM_PHOTO_SENT=true MSGID=<id>` and record the Telegram message ID in
+   the receipt. Only this screenshot-plus-Telegram-message-ID boundary may use
+   `submitted_verified`. A completion DOM, click, local PNG, or email without
+   the delivered Telegram photo remains `evidence_incomplete` and must never be
+   reported as a verified submission.
 7. Send a real-time Telegram report immediately with the program, status,
    receipt/readback reference, and running pass counts. Then continue to the next
    candidate.
