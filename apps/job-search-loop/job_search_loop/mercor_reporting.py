@@ -133,9 +133,11 @@ def build_pass_message(*, run_id: str, result: Mapping[str, Any]) -> str:
     ]
     fields = [f"Codex::: Mercor pass {run_id} status={status}"]
     if inspected:
+        fields.append(f"inspected_count={len(inspected)}")
         fields.append("inspected=" + "; ".join(inspected[:5]))
     if submitted:
-        fields.append("submitted=" + ", ".join(submitted[:3]))
+        fields.append(f"submitted_count={len(submitted)}")
+        fields.append("submitted=" + ", ".join(submitted))
     if needs_human:
         fields.append("needs_human=" + ", ".join(needs_human[:3]))
     if blocked:

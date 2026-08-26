@@ -159,6 +159,26 @@ class MercorReportingTests(unittest.TestCase):
         self.assertIn("submitted=Japanese Evaluator", message)
         self.assertIn("needs_human=interview_required", message)
 
+    def test_message_reports_every_submission_in_bounded_pass(self):
+        titles = [f"Evaluator {index}" for index in range(1, 7)]
+        message = build_pass_message(
+            run_id="mercor-test-multi-submit",
+            result={
+                "status": "submitted",
+                "inspected_listings": [
+                    {"title": title, "decision": "submitted"} for title in titles
+                ],
+                "submitted": [{"title": title} for title in titles],
+                "needs_human": [],
+                "blocked": [],
+            },
+        )
+
+        self.assertIn("inspected_count=6", message)
+        self.assertIn("submitted_count=6", message)
+        for title in titles:
+            self.assertIn(title, message)
+
 
 if __name__ == "__main__":
     unittest.main()
