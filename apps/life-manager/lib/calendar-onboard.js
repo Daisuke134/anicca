@@ -2,7 +2,7 @@
 "use strict";
 
 const crypto = require("node:crypto");
-const { cookieValue, csrfToken, sessionScope, sha256 } = require("./panel-auth.js");
+const { cookieValue, csrfToken, panelScopeCookie, sessionScope, sha256 } = require("./panel-auth.js");
 const { createSupabaseCommandStore, readJson, composioCalendarStatus, composioCalendarStart } = require("./panel-api.js");
 const { startCalendarOAuth } = require("./user-command.js");
 
@@ -32,7 +32,7 @@ async function resolveScope(req, opts, store) {
     const current = typeof store.assertCurrentScope === "function"
       ? await store.assertCurrentScope(scope)
       : typeof store.readUser === "function" && await store.readUser(scope).then((user) => user && String(user.uid) === scope.uid && String(user.telegram_chat_id) === scope.chatId);
-    return current ? { session, scope } : null;
+    return current ? { session, scope, renewed: panelScopeCookie({ ...value, ...scope }) } : null;
   } catch { return null; }
 }
 
@@ -43,6 +43,7 @@ async function handleCalendarOnboardRequest(req, res, opts = {}) {
     const store = opts.commandStore || createSupabaseCommandStore(opts);
     const auth = await resolveScope(req, opts, store);
     if (!auth) return sendJson(res, 401, { error: "unauthorized" });
+    if (auth.renewed && typeof res.setHeader === "function") res.setHeader("Set-Cookie", auth.renewed);
     if (path === STATUS) {
       if (req.method !== "GET") return sendJson(res, 405, { error: "method_not_allowed" }, { Allow: "GET" });
       const status = await (opts.composioCalendarStatusImpl || composioCalendarStatus)(auth.scope, { ...opts, composioKey: opts.composioKey || process.env.COMPOSIO_API_KEY });

@@ -154,6 +154,18 @@ test("start rejects WHATWG-normalized or whitespace-padded panel origins", async
   }
 });
 
+test("rotated panel sessions renew the cookie on calendar responses", async () => {
+  const state = fixture({ active: true });
+  state.opts.sessionScopeImpl = async () => ({ ...SCOPE, replacement: "replacement-cookie", cookieMaxAge: 120 });
+  await withServer(state.opts, async (base) => {
+    const response = await fetch(`${base}/api/panel/onboarding/calendar/status`, {
+      headers: { cookie: `__Host-lm_panel_session=${SESSION}` },
+    });
+    assert.equal(response.status, 200);
+    assert.match(response.headers.get("set-cookie") || "", /replacement-cookie/);
+  });
+});
+
 test("missing Calendar account stores only the hashed scoped state before one OAuth link", async () => {
   const state = fixture();
   state.opts.randomBytes = () => Buffer.alloc(32, 1);
