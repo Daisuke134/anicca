@@ -30,6 +30,7 @@ CAPAFY = ENGINE.parents[1] / "self" / "capafy-loop" / "capafy-loop-daily.sh"
 CONFIG = ENGINE.parents[2] / "runtime" / "agent-runner" / "config.json"
 
 MIN_TIMEOUT_SECONDS = 900
+CAPAFY_EVIDENCE_MIN_FREE_BYTES = 64 * 1024 * 1024
 
 
 def task_class_of(script: Path) -> str:
@@ -40,6 +41,23 @@ def task_class_of(script: Path) -> str:
 
 
 class CapafyLoopWiringTest(unittest.TestCase):
+    def test_capafy_uses_its_measured_evidence_floor_for_every_agent_run(self):
+        text = CAPAFY.read_text(encoding="utf-8")
+        invocations = [
+            line.strip() for line in text.splitlines()
+            if '"$RUN_AGENT"' in line
+        ]
+        self.assertEqual(len(invocations), 2)
+        expected = (
+            f"AGENT_RUNNER_EVIDENCE_MIN_FREE_BYTES="
+            f"{CAPAFY_EVIDENCE_MIN_FREE_BYTES} \"$RUN_AGENT\""
+        )
+        self.assertTrue(
+            all(expected in invocation for invocation in invocations),
+            "both Capafy agent paths must override only the generic 512 MiB "
+            "evidence reserve with the measured Capafy-specific 64 MiB floor",
+        )
+
     def test_capafy_uses_a_task_class_that_can_fit_a_measured_pass(self):
         task_class = task_class_of(CAPAFY)
         config = json.loads(CONFIG.read_text(encoding="utf-8"))

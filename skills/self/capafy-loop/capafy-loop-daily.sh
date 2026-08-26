@@ -72,7 +72,7 @@ if [ "$VERDICT" = "CAP_FULL" ]; then
   READY_BEFORE="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("counts",{}).get("ready",0))' "$BACKLOG")"
   EVIDENCE_DIR="$HOME/.local/state/life-manager/state/agent-runner-evidence/capafy-offline-build/$(date +%s)-$$"
   OFFLINE_PROMPT='Build exactly ONE differentiated, honest Capafy skill candidate OFFLINE inside $LIFE_MANAGER_REPO/skills/capafy/catalog/<new-slug>/. This is a CAP_FULL pass: NEVER call Capafy create/publish/configure/ship/submit APIs or UI, and never modify any remote platform state. Use sales_selector.py plus current inventory and existing catalog to avoid duplicates. Produce SKILL.md, LISTING.md, icon.svg, and evidence/verified-demonstration.md containing a concrete input, actual output, and verification notes. Follow the repository skill-creator quality contract, keep claims within what the skill can actually do, and run the existing listing lint. Return status=success only after all four repo-owned artifacts exist and lint passes; otherwise status=failure. Include the created path and lint evidence.'
-  printf '%s\n' "$OFFLINE_PROMPT" | "$RUN_AGENT" \
+  printf '%s\n' "$OFFLINE_PROMPT" | AGENT_RUNNER_EVIDENCE_MIN_FREE_BYTES=67108864 "$RUN_AGENT" \
     --task-class browser-lane-agent --schema "$PASS_SCHEMA" --evidence-dir "$EVIDENCE_DIR" \
     --task-label capafy-offline-daily --loop capafy >>"$LOG" 2>&1
   RC=$?
@@ -106,7 +106,7 @@ PROMPT="$PROMPT RUNTIME FACT: this unique launchd owner now wakes hourly; do not
 # progress on stdout -- which is why the prompt's "no wall-clock limit" promise
 # was a lie the model kept planning against. Same split, same reason as the gig
 # browser lanes.
-printf '%s\n' "$PROMPT" | "$RUN_AGENT" \
+printf '%s\n' "$PROMPT" | AGENT_RUNNER_EVIDENCE_MIN_FREE_BYTES=67108864 "$RUN_AGENT" \
   --task-class browser-lane-agent \
   --schema "$PASS_SCHEMA" \
   --evidence-dir "$EVIDENCE_DIR" \
