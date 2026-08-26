@@ -252,9 +252,13 @@ fi
 echo
 
 restore_agent_economy_state_ancestors() {
-  local release_real path path_real
+  local release_real home_real path path_real
   release_real="$(cd "$LIFE_MANAGER_RELEASE_ROOT" 2>/dev/null && pwd -P)" \
     || { red "  ✗ namespaced release root cannot be resolved"; return 2; }
+  [ -d "$ANICCA_HOME" ] && [ ! -L "$ANICCA_HOME" ] \
+    || { red "  ✗ agent-economy runtime home must be a real directory: $ANICCA_HOME"; return 2; }
+  home_real="$(cd "$ANICCA_HOME" 2>/dev/null && pwd -P)" \
+    || { red "  ✗ agent-economy runtime home cannot be resolved: $ANICCA_HOME"; return 2; }
   # Existing runtime directories may have been sealed by an earlier installer. Restore only the
   # owner rwx bits needed for mutable state descendants; never chmod the sealed release or any
   # unrelated runtime tree.
@@ -266,15 +270,32 @@ restore_agent_economy_state_ancestors() {
     "$ANICCA_HOME/skills/earn/x402-sell" \
     "$ANICCA_HOME/skills/cook"; do
     [ -e "$path" ] || continue
+    [ ! -L "$path" ] || { red "  ✗ required state ancestor must not be a symlink: $path"; return 2; }
     [ -d "$path" ] || { red "  ✗ required state ancestor is not a directory: $path"; return 2; }
     path_real="$(cd "$path" 2>/dev/null && pwd -P)" \
       || { red "  ✗ required state ancestor cannot be resolved: $path"; return 2; }
+    case "$path_real" in
+      "$home_real"|"$home_real"/*) ;;
+      *)
+        red "  ✗ required state ancestor escapes runtime home: $path"
+        return 2
+        ;;
+    esac
     case "$path_real" in
       "$release_real"|"$release_real"/*)
         red "  ✗ refusing to chmod sealed release through runtime state path: $path"
         return 2
         ;;
     esac
+  done
+  for path in \
+    "$ANICCA_HOME" \
+    "$ANICCA_HOME/skills" \
+    "$ANICCA_HOME/skills/agent-economy" \
+    "$ANICCA_HOME/skills/earn" \
+    "$ANICCA_HOME/skills/earn/x402-sell" \
+    "$ANICCA_HOME/skills/cook"; do
+    [ -e "$path" ] || continue
     chmod u+rwx "$path"
   done
 }

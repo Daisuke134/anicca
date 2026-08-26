@@ -107,6 +107,26 @@ test("agent-economy installer reads the sealed namespaced current release and pr
       assert.notEqual(statSync(path).mode & 0o200, 0, `state ancestor should be owner-writable: ${path}`);
     }
     assert.equal(statSync(release).mode & 0o222, 0, "sealed release must remain read-only");
+
+    const escaped = join(root, "escaped-runtime");
+    mkdirSync(escaped, { recursive: true });
+    chmodSync(escaped, 0o555);
+    rmSync(join(runtime, "skills"), { recursive: true, force: true });
+    symlinkSync(escaped, join(runtime, "skills"));
+    const escapeResult = spawnSync("bash", [join(source, "install.sh"), "agent-economy"], {
+      cwd: source,
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        HOME: join(root, "home"),
+        LIFE_MANAGER_RELEASE_ROOT: releaseRoot,
+        LIFE_MANAGER_HOME: runtime,
+        LIFE_MANAGER_INSTALL_DAEMON: "0",
+        LIFE_MANAGER_INSTALL_DEPS: "0",
+      },
+    });
+    assert.notEqual(escapeResult.status, 0, "symlinked state ancestor must fail closed");
+    assert.equal(statSync(escaped).mode & 0o200, 0, "escaped target mode must remain unchanged");
   } finally {
     spawnSync("chmod", ["-R", "u+w", root], { encoding: "utf8" });
     rmSync(root, { recursive: true, force: true });
