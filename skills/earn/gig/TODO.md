@@ -78,7 +78,9 @@ model narration, and local success without the named readback are not PASS.
   produced zero targeted workers and zero `already_closed` results (before: 409 results in ten
   minutes). Natural Paid receipts aggregate 8–64 sources into 2–3 resource rows and occupy
   954–1,090 bytes each while retaining exact live-talkroom SHA. A failed Paid wake left no new
-  runtime workspace; free space recovered to 5.8 GiB, above the 512 MiB floor. All four owner
+  runtime workspace. Three pre-fix orphan workspaces with no open files and no resume markers
+  reclaimed 262 MiB while the current active workspace was preserved; free space remained above
+  5 GiB, above the 512 MiB floor. All four owner
   labels remain loaded; interval owners may truthfully be not-running between wakes.
 - [x] `R00f` Remove the completed Manledge-only X DM campaign from scheduled execution.
   PASS = `ai.anicca.manledge-x-dm-campaign` is absent from launchd and LaunchAgents, while its logs
