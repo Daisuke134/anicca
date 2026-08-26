@@ -3,6 +3,19 @@ import { readFile } from "node:fs/promises";
 
 const REQUIRED_LINKS = ["product", "repository", "telegram"];
 const OPTIONAL_LINKS = ["dashboard", "demo", "founder_video"];
+const REQUIRED_APPLICATION_ANSWERS = [
+  "one_word",
+  "short_description",
+  "problem",
+  "solution",
+  "why_building",
+  "progress",
+  "market",
+  "business_model",
+  "differentiation",
+  "how_built",
+  "use_of_funds",
+];
 
 function isNonEmptyString(value) {
   return typeof value === "string" && value.trim().length > 0;
@@ -37,8 +50,22 @@ export function validateStartupContext(context) {
     errors.push("product name and company legal name must remain distinct");
   }
   if (!isNonEmptyString(context?.product?.one_liner)) errors.push("product.one_liner is required");
+  if (!isNonEmptyString(context?.product?.mission)) errors.push("product.mission is required");
+  if (!isNonEmptyString(context?.product?.vision)) errors.push("product.vision is required");
   if (!Array.isArray(context?.product?.organs) || context.product.organs.length !== 3) {
     errors.push("product.organs must define exactly three top-level organs");
+  }
+  if (!isNonEmptyString(context?.delivery?.local)) errors.push("delivery.local is required");
+  if (!isNonEmptyString(context?.delivery?.cloud)) errors.push("delivery.cloud is required");
+  const founderRevenue = context?.traction?.founder_attested_revenue;
+  if (!isNonEmptyString(founderRevenue?.display)) errors.push("traction founder revenue display is required");
+  if (founderRevenue?.source !== "founder_attested") errors.push("traction founder revenue source must be founder_attested");
+  if (!isNonEmptyString(founderRevenue?.scope)) errors.push("traction founder revenue scope is required");
+  if (!isNonEmptyString(founderRevenue?.attested_at)) errors.push("traction founder revenue attested_at is required");
+  for (const key of REQUIRED_APPLICATION_ANSWERS) {
+    if (!isNonEmptyString(context?.application_answers?.[key])) {
+      errors.push(`application_answers.${key} is required`);
+    }
   }
 
   for (const key of REQUIRED_LINKS) {
