@@ -250,9 +250,15 @@ For every queued candidate until the execution window ends:
    dispatches `input` and `change`, resolves the rendered `data-callback` name,
    and invokes the exposed widget callback without
    returning the token to the shell. Require exactly `CALLBACKS=1`, wait one second
-   for the application state to settle, then use one trusted rendered GET STARTED
-   interaction. Do not traverse or invoke internal reCAPTCHA callbacks, add shell token parsing, or
-   construct token-bearing JavaScript. Never include the credential or solution token in logs, receipts,
+   for the application state to settle, call `scrollIntoView({block:"center"})` on
+   the rendered GET STARTED button, remeasure its post-scroll center coordinates,
+   require that center to be inside the current viewport, then use one trusted
+   coordinate interaction at those new coordinates. Never reuse a pre-scroll or
+   off-viewport button coordinate. If the robot-confirmation error disappears but
+   the form remains after an off-viewport click, treat it as a local interaction
+   fault and retry the centered click without checkpointing or solving again.
+   Do not traverse or invoke internal reCAPTCHA callbacks, add shell token parsing,
+   or construct token-bearing JavaScript. Never include the credential or solution token in logs, receipts,
    screenshots, Telegram, or model output. Checkpoint only if this helper returns
    a concrete error or the provider rejects the injected response.
    Generate ordinary team, market, and product prose from the startup context;
