@@ -1589,9 +1589,18 @@ Manager must never read the OpenClaw map, credentials, or assets at runtime.
 This is the intended production portfolio for the two current mobile apps. It
 does not arm a lane. The current scheduled cadence is **zero posts per day on
 every row** while the incident gates remain open. After that exact row passes a
-canary, direct-native-URL, replay, and metric-source gate, Life Manager may arm
+canary, exact Postiz/local-lineage proof, replay, and metric-source gate, Life Manager may arm
 only the target cadence shown here. The daily limit is per destination account,
 not a command to fan every creative out to every connected Postiz integration.
+
+Owner-directed API success rule: for these selected Postiz routes, publication
+success is the exact Postiz API row in `PUBLISHED` state plus matching LM
+account, integration, platform, creative, locally stored media bytes/order, and
+caption lineage. A direct native URL is retained when available and useful, but
+TikTok indexing, oEmbed, browser login, or a caption-bearing native page is not
+a publication blocker and is never required before continuing other executable
+work. Postiz profile URLs or numeric suffixes alone still do not prove identity;
+they pass only as fields on the already exact row bound to the LM effect.
 
 | Product / locale | Platform and exact account | Integration | Creative that belongs there | Target cadence after that row is healthy | Current state |
 |---|---|---|---|---:|---|
@@ -2341,6 +2350,13 @@ provider source observation.
    first one live slot, then the second, then the third after each preceding slot proves
    published/missed/duplicate and metric-source health. The terminal cadence is
    exactly 3/day on every selected available destination. Never mass-enable.
+   **Honne EN first live slot done:** the shared ledger now permits an exact
+   production-armed lane through the closed canary fence while open fences still
+   require their exact effect. LM owner published HEN-016 as Postiz row
+   `cmt9peveo00btlf0yb63uguqg`, natural Telegram `35067`, and replay kept
+   jobs/receipts at `841/272` with publication 0/message 0 and exit 0. Manifest
+   `af258cc29fffd0446bae20967de9388ce13d5e388c9d0ff180dce7d7122486fe`
+   arms Honne EN only at target 3/day; every other selected lane remains armed 0.
 9. Keep the daily metrics loop running for every healthy account: social post and
    account metrics, 2h/24h/72h/7d windows, and natural Telegram. Unsupported or
    empty metrics remain source-labelled `unavailable`.
