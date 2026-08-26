@@ -616,7 +616,19 @@ EOF
     AFFILIATE_RAW_LENGTH="$("$PY" -c 'import json,sys; print(len((json.load(sys.stdin).get("payload") or {}).get("text") or ""))' <<<"$AFFILIATE_JOB_EFFECT")"
     if [ "$AFFILIATE_RAW_LENGTH" -gt 280 ] || [ "$AFFILIATE_RETRY_COUNT" -ge 1 ]; then
       AFFILIATE_REVISION_COPY="$EV/affiliate-revision-copy.json"
-      cat >"$EV/prompt-affiliate-revision.txt" <<EOF
+      AFFILIATE_REVISION_MODE="$("$PY" -c 'import json,sys; print((json.load(sys.stdin).get("payload") or {}).get("distribution_mode") or "ORIGINAL")' <<<"$AFFILIATE_JOB_EFFECT")"
+      if [ "$AFFILIATE_REVISION_MODE" = "QUOTE_CONTROL_POST" ]; then
+        cat >"$EV/prompt-affiliate-revision.txt" <<EOF
+Rewrite this X quote-post wrapper as one natural English sentence.
+Return exactly {"text":"...","claims":[]}.
+Keep it 40-220 raw characters. Do not add a URL or Affiliate disclosure because the quoted post
+already contains both. No hashtag, emoji, invented fact, price, performance claim, urgency, or endorsement.
+
+INPUT:
+$("$PY" -c 'import json,sys; print((json.load(sys.stdin).get("payload") or {}).get("text") or "")' <<<"$AFFILIATE_JOB_EFFECT")
+EOF
+      else
+        cat >"$EV/prompt-affiliate-revision.txt" <<EOF
 Rewrite this Affiliate X post as natural English while preserving its meaning.
 Return exactly {"text":"...","claims":[]}.
 The text must be at most 280 raw characters, contain the exact disclosure
@@ -627,6 +639,7 @@ emoji, invented fact, price, performance claim, urgency, or endorsement. Do not 
 INPUT:
 $("$PY" -c 'import json,sys; print((json.load(sys.stdin).get("payload") or {}).get("text") or "")' <<<"$AFFILIATE_JOB_EFFECT")
 EOF
+      fi
       if ! ask_model "$EV/prompt-affiliate-revision.txt" "$EV/affiliate-revision.raw" \
           >"$AFFILIATE_REVISION_COPY"; then
         handle_model_failure "Affiliate natural-language length revision" "$EV/affiliate-revision.raw"

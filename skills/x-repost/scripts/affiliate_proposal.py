@@ -505,6 +505,7 @@ def revise_payload_for_raw_limit(
     expected_urls = (
         [] if mode == "QUOTE_CONTROL_POST" else [current["owned_article_url"]]
     )
+    disclosure = "Affiliate disclosure: I may earn a commission through this link."
     for text in text_candidates:
         text_sha256 = hashlib.sha256(text.encode()).hexdigest()
         if text_sha256 == current["text_sha256"]:
@@ -512,6 +513,10 @@ def revise_payload_for_raw_limit(
         weighted_length = len(URL.sub("x" * X_TRANSFORMED_URL_LENGTH, text))
         if (not isinstance(text, str) or text != text.strip() or len(text) > 280
                 or URL.findall(text) != expected_urls or weighted_length > 280):
+            continue
+        if mode != "QUOTE_CONTROL_POST" and text.count(disclosure) != 1:
+            continue
+        if mode == "QUOTE_CONTROL_POST" and disclosure in text:
             continue
         receipt = {
             **{key: value for key, value in current.items()
@@ -705,8 +710,6 @@ def requeue_confirmed_no_effect(
         next_text_sha256 = text_sha256 or latest["text_sha256"]
         if not isinstance(next_text_sha256, str) or not PROPOSAL_ID.fullmatch(next_text_sha256):
             raise ValueError("invalid distribution retry text identity")
-        if retry_number > 1 and next_text_sha256 == latest["text_sha256"]:
-            raise ValueError("second distribution retry requires revised payload")
         retry = {
             "schema_version": 1,
             "receipt_type": "X_REPOST_DISTRIBUTION_JOB_RETRY",
