@@ -77,6 +77,14 @@ canonical startup contextは`2026-08-27.2`、digest
 mission、revenue、users、applications、AGIはsource/status/as_of/public_useを持つclaim registryへ入り、AGI達成、数値user、
 provider receiptのないapplication outcomeをpublic artifact validatorが拒否する。
 
+`CTX-08`の現行第一候補は、東京都公式が募集開始を告知したASAC第4期プレシード・第23期シードである。公式募集期間は
+2026-08-25〜2026-09-13、応募経路はログイン後のofficial formであり、公開要項に事前動画要件はない。既存Fundraiserの
+`submitted_verified`は12件あるが、すべて上記canonical context確定前である。稼働labelは旧worktreeのcontext
+`2026-08-26.18` / `50d5385f…6225`を読むため再開しない。さらにhost disk governorが11GiB未満で
+`disk-pressure.block`を維持し、Fundraiserはexit 75でfail closedしている。最新contextを読む単一owner、preview digest、
+official completion PNG、Telegram photo message ID、application dossier hashが一つのreceipt chainへ揃うまで`IN_PROGRESS`とする。
+非機密の実測snapshotは`docs/evidence/fundraising/2026-08-27-ctx08-readiness.json`に置く。
+
 #### As-Is / To-Be architecture
 
 | 境界 | As-Is | To-Be |
@@ -162,7 +170,7 @@ error recovery、effect/readbackを実codeで再監査し、noticeを保持す�
 | 11 | CTX-05 root-site relationship | DONE | `anicca-products` PR #396をmain merge `7fe3f5f447…`へ反映。root hero/metadata/JSON-LDを`Anicca=mission/company`、`Life Manager=proactive general-agent product`、`Body/Mind/Money=3 organs`へ統一し、旧self-funding/AGI/UBI product sectionsをroot render pathから除外。contract 2/2、preview run `32989091020`、prod run `32989696892`、Netlify deploy `6a8f17a860…`、built-in money-path smoke/rollback gate PASS。live英日HTTP 200・title/CTA/3 organs・overflow 0 |
 | 12 | CTX-06 generated-context drift gate | DONE | README英日、committed fundraising kit、active formのdigest契約はoffline 28/28 GREEN。公開Web PR #397はmain `b1ee7a1208…`へmergeし、preview `32990937574`、production `32991554504`、money-path smokeがSUCCESS。live product/repo/Telegram auditは3/3 GREEN。Security Scan run `32992553073`の`Startup context drift` job `98253497091`もSUCCESS |
 | 13 | CTX-07 public live readback | DONE | isolated browserとHTTP/APIで`/lm`、英日root、public repo、英日README、Telegramをfresh readback。title、3 organs、Web/Telegram/GitHub CTA、version/digest、founder-attested約$1,000とMRR/ARR否定、banked境界、overflow 0を`docs/evidence/public-context/2026-08-27-public-context-readback.json`へ保存 |
-| 14 | CTX-08 accelerator current-batch gate | TODO | batch名を固定せず公式live formを正本にし、generated contextからpreview→submit→confirmation receiptへ進む |
+| 14 | CTX-08 accelerator current-batch gate | IN_PROGRESS | 東京都公式でASAC第4期プレシード・第23期シード（2026-08-25〜09-13）を現行第一候補に確定。旧Fundraiser context不一致とhost disk-pressure gateを実測したため送信は停止中。canonical digestを読む単一ownerへ収束後、preview→exactly-once submit→official completion PNG＋Telegram photo message ID＋dossier hashを一chainで閉じる |
 | 15 | GA-01 existing-core and OSS code map | TODO | 現行agent-runner/connector/gig/evidence/Agent Economyと上記OSSを固定commitで読み、copy/reuse/rejectとlicenseをcall graph付きで確定 |
 | 16 | GA-02 one Goal / Opportunity Graph | TODO | body/mind/moneyのgoal、opportunity、dependency、deadline、outcomeを同じdurable graphで表現し、一つのmanager cursorが再開可能 |
 | 17 | GA-03 capability registry | TODO | capability、provider、required authorization、cost、human requirement、transport、readbackをdata manifest化し、site名をcoreから除去 |

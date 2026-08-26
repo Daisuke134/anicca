@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "observed_at": "2026-08-27T02:37:45+09:00",
+  "status": "in_progress",
+  "candidate": {
+    "organization": "Tokyo Metropolitan Government",
+    "program": "ASAC 4th Pre-seed / 23rd Seed Program",
+    "official_announcement_url": "https://www.metro.tokyo.lg.jp/information/press/2026/08/2026082511",
+    "official_program_url": "https://www.acceleration-tokyo.metro.tokyo.lg.jp/program.php",
+    "application_window": {
+      "opens": "2026-08-25",
+      "closes": "2026-09-13"
+    },
+    "application_route": "authenticated official form",
+    "public_founder_video_requirement": "not_observed",
+    "terminal_receipt_observed": false
+  },
+  "canonical_context": {
+    "version": "2026-08-27.2",
+    "digest": "9fbe6198c6d61da47d68767eec90a1d95d2e07058f024448d86372b5f3035338"
+  },
+  "installed_fundraiser_owner": {
+    "label": "ai.anicca.fundraiser",
+    "state": "not running",
+    "active_count": 0,
+    "lock": "absent",
+    "run_count": 138,
+    "last_exit": 75,
+    "interval_seconds": 60,
+    "worktree": "/Users/anicca/Projects/life-manager-main/.worktrees/fundraiser-agent-task0-20260826",
+    "commit": "5bcb12803",
+    "context_version": "2026-08-26.18",
+    "context_digest": "50d5385f99324bccb6642dab3d698d3aae967eb093bc68cb7ed4bb52c0246225"
+  },
+  "receipt_inventory": {
+    "rows": 217,
+    "submitted_verified": 12,
+    "submit_unknown": 2,
+    "current_canonical_digest_receipts": 0
+  },
+  "runtime_preflight": {
+    "disk_free_bytes": 3795615744,
+    "disk_pressure_block": "present",
+    "disk_policy_block_below_bytes": 11811160064,
+    "disk_policy_clear_at_or_above_bytes": 21474836480,
+    "cdp_browser": "Chrome/145.0.7632.109"
+  },
+  "required_next_receipt_chain": [
+    "official_live_form_readback",
+    "canonical_context_digest_bound_preview",
+    "single_effect_claim",
+    "official_completion_png",
+    "telegram_photo_message_id",
+    "application_dossier_sha256",
+    "replay_zero"
+  ]
+}
