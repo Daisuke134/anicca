@@ -93,8 +93,11 @@ For every queued candidate until the execution window ends:
    `organization + program + cohort/window + account`. Reject exact replays only
    for prior `submitted` or `submit_unknown` effects; resume checkpoints when the
    blocker has changed or disappeared.
-2. Observe the rendered form and screenshot. Read visible labels, options,
-   requiredness, validation, and existing values.
+2. Observe the rendered form and read visible labels, options, requiredness,
+   validation, and existing values. The repository `cdp.py` supports only
+   `new|nav|eval|clickxy|insert|key|setfile|fillname|selectname|formstate|close`;
+   it has no `screenshot` command. Do not probe unsupported commands. Use the
+   rendered DOM plus `formstate` as the form observation evidence.
 3. Choose one next action from the fresh observation and full context, perform it
    through the existing worker, and observe again.
    For ordinary HTML forms, prefer the existing generic commands
