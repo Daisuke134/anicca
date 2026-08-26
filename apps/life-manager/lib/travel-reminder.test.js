@@ -2,6 +2,7 @@
 
 const test = require("node:test");
 const assert = require("node:assert/strict");
+const { fetchUpcomingEvents } = require("./events.js");
 
 const {
   T5_MS,
@@ -84,7 +85,7 @@ test("next event is the first timed non-helper event and eligibility is independ
   const first = event({ id: "first", startMs: START + 5 * 60 * 1000 });
   const later = event({ id: "later", startMs: START + 20 * 60 * 1000 });
   assert.equal(nextReminderEvent([later, helper, first], NOW).id, "first");
-  assert.equal(nextReminderEvent([event({ startMs: NOW - 1 })], NOW), null);
+  assert.equal(nextReminderEvent([event({ startMs: NOW - 10 * 60 * 1000 - 1 })], NOW), null);
 });
 
 test("origin precedence is fresh live location, previous venue within 90m, then home", () => {
@@ -241,4 +242,67 @@ test("travelReminderOnce does not send before threshold", async () => {
   });
   assert.equal(result.status, "suppressed");
   assert.equal(sends, 0);
+});
+
+test("travelReminderOnce fails closed without Supabase and performs no route, claim, or send", async () => {
+  let routes = 0;
+  let claims = 0;
+  let sends = 0;
+  const online = event({ id: "no-supa", location: "https://meet.example/room", online: true, startMs: NOW + T5_MS });
+  const result = await travelReminderOnce({ uid: "u-no-supa", telegram_chat_id: "chat-no-supa", notifications_enabled: true }, NOW, {
+    events: [online], home: HOME, telegramToken: "token",
+    directionsRoute: async () => { routes += 1; return null; },
+    claimTravel: async () => { claims += 1; return true; },
+    sendMessage: async () => { sends += 1; return { ok: true, result: { message_id: 704 } }; },
+  });
+  assert.equal(result.status, "skipped");
+  assert.equal(routes, 0);
+  assert.equal(claims, 0);
+  assert.equal(sends, 0);
+});
+
+test("online event reminder catches up from start+1m through start+10m, but not later", async () => {
+  const sent = [];
+  const eventAt = (offsetMs, id) => event({ id, location: "https://meet.example/room", online: true, startMs: NOW - offsetMs });
+  const deps = {
+    home: HOME, supaUrl: "supa", supaKey: "key", telegramToken: "token",
+    claimTravel: async () => true,
+    sendMessage: async (_token, _chat, text) => { sent.push(text); return { ok: true, result: { message_id: 705 + sent.length } }; },
+  };
+  const one = await travelReminderOnce({ uid: "u-online-1", telegram_chat_id: "chat", notifications_enabled: true }, NOW, {
+    ...deps, events: [eventAt(60 * 1000, "online-1")],
+  });
+  assert.equal(one.status, "sent");
+  const boundary = await travelReminderOnce({ uid: "u-online-10", telegram_chat_id: "chat", notifications_enabled: true }, NOW, {
+    ...deps, events: [eventAt(10 * 60 * 1000, "online-10")],
+  });
+  assert.equal(boundary.status, "sent");
+  const late = await travelReminderOnce({ uid: "u-online-late", telegram_chat_id: "chat", notifications_enabled: true }, NOW, {
+    ...deps, events: [eventAt(10 * 60 * 1000 + 1, "online-late")],
+  });
+  assert.equal(late.status, "suppressed");
+  assert.equal(sent.length, 2);
+  assert.doesNotMatch(sent[0], /目的地:|経路を取得できませんでした/);
+});
+
+test("Calendar URL online event reaches the reminder at event-start T-5 without routing", async () => {
+  const onlineStart = new Date(NOW - 60 * 1000).toISOString();
+  const calendar = { async listEventsRaw() {
+    return [{ id: "calendar-online", summary: "配信", location: "https://meet.example/room",
+      start: { dateTime: onlineStart }, end: { dateTime: new Date(NOW + 30 * 60 * 1000).toISOString() } }];
+  } };
+  const events = await fetchUpcomingEvents("u-calendar-online", {
+    nowMs: NOW, horizonH: 1, lookbackMs: 10 * 60 * 1000, calendar,
+  });
+  let routes = 0;
+  const sent = [];
+  const result = await travelReminderOnce({ uid: "u-calendar-online", telegram_chat_id: "chat", notifications_enabled: true }, NOW, {
+    events, home: HOME, supaUrl: "supa", supaKey: "key", telegramToken: "token",
+    directionsRoute: async () => { routes += 1; return null; }, claimTravel: async () => true,
+    sendMessage: async (_token, _chat, text) => { sent.push(text); return { ok: true, result: { message_id: 708 } }; },
+  });
+  assert.equal(events[0].online, true);
+  assert.equal(result.status, "sent");
+  assert.equal(routes, 0);
+  assert.match(sent[0], /次は/);
 });

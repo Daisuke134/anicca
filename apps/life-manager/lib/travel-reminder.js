@@ -8,6 +8,7 @@ const { sendMessage } = require("./telegram.js");
 
 const T5_MS = 5 * 60 * 1000;
 const CATCH_UP_MS = 15 * 60 * 1000;
+const REMINDER_LOOKBACK_MS = CATCH_UP_MS - T5_MS;
 const PREVIOUS_EVENT_WINDOW_MS = 90 * 60 * 1000;
 const DEFAULT_TIMEZONE = "Asia/Tokyo";
 
@@ -32,7 +33,7 @@ function nextReminderEvent(events, nowMs = Date.now()) {
   const now = toMs(nowMs);
   if (now === null) return null;
   return (Array.isArray(events) ? events : [])
-    .filter((event) => startMs(event) !== null && startMs(event) >= now && !helper(event))
+    .filter((event) => startMs(event) !== null && startMs(event) >= now - REMINDER_LOOKBACK_MS && !helper(event))
     .sort((a, b) => startMs(a) - startMs(b))[0] || null;
 }
 
@@ -150,7 +151,7 @@ function formatTravelReminder(event, route, { departureMs, timezone: zone = DEFA
   const departure = toMs(departureMs) ?? computeDepartureMs(event, route);
   const lines = [`🚆 次は ${timeText(start, zone)}「${escapeHtml(event.summary || "予定")}」`];
   if (departure !== null) lines.push(`${timeText(departure, zone)} 出発 → ${timeText(start, zone)} 到着予定`);
-  const destination = String(event.location || "").trim();
+  const destination = physical(event) ? String(event.location || "").trim() : "";
   if (destination) lines.push(`目的地: ${escapeHtml(destination)}`);
   const attempted = routeAttempted === undefined ? physical(event) : routeAttempted === true;
   if (!route) return attempted ? lines.concat("", "経路を取得できませんでした。").join("\n") : lines.join("\n");
@@ -181,6 +182,9 @@ async function travelReminderOnce(user, nowMs = Date.now(), deps = {}) {
   if (!user || !user.uid || !chatId || user.notifications_enabled === false || now === null) return { status: "skipped" };
   const token = deps.telegramToken !== undefined ? deps.telegramToken : process.env.LM_TELEGRAM_BOT_TOKEN;
   if (!token) return { status: "skipped", reason: "telegram-unconfigured" };
+  const supaUrl = deps.supaUrl !== undefined ? deps.supaUrl : process.env.SUPABASE_URL;
+  const supaKey = deps.supaKey !== undefined ? deps.supaKey : process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!supaUrl || !supaKey) return { status: "skipped", reason: "travel-ledger-unconfigured" };
   const events = Array.isArray(deps.events) ? deps.events : [];
   const event = nextReminderEvent(events, now);
   if (!event) return { status: "suppressed", reason: "no-event" };
@@ -200,8 +204,6 @@ async function travelReminderOnce(user, nowMs = Date.now(), deps = {}) {
   const dueAt = computeReminderDueAt(event, { departureMs });
   if (!isReminderDue(now, dueAt)) return { status: "suppressed", reason: "not-due", dueAt };
   const key = eventKey(event);
-  const supaUrl = deps.supaUrl !== undefined ? deps.supaUrl : process.env.SUPABASE_URL;
-  const supaKey = deps.supaKey !== undefined ? deps.supaKey : process.env.SUPABASE_SERVICE_ROLE_KEY;
   let claimed = false;
   try { claimed = await (deps.claimTravel || claimTravel)(user.uid, key, "telegram-t5", supaUrl, supaKey); }
   catch { return { status: "suppressed", reason: "claim-failed" }; }

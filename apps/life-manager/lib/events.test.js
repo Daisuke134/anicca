@@ -50,6 +50,18 @@ test("missing endMs → null (not NaN) so departureMs/travel can guard", async (
   assert.equal(evs[0].endMs, null);
 });
 
+test("projects Calendar URL events as online without losing the canonical timed-event shape", async () => {
+  const cal = fakeCalendar([{
+    id: "online-1", summary: "オンライン会議", location: "https://meet.example/room",
+    start: { dateTime: "2026-06-21T00:05:00Z" }, end: { dateTime: "2026-06-21T01:00:00Z" },
+  }]);
+  const [event] = await fetchUpcomingEvents("uid", { nowMs: now, horizonH: 18, calendar: cal });
+  assert.equal(event.online, true);
+  assert.equal(event.id, "online-1");
+  assert.equal(event.startMs, Date.parse("2026-06-21T00:05:00Z"));
+  assert.equal(event.endMs, Date.parse("2026-06-21T01:00:00Z"));
+});
+
 // 12c: between_events is unreachable when the fetch window starts at `now` — an intense block that
 // ended 10 minutes ago is exactly what the trough trigger needs to see, and exactly what a
 // timeMin=now window can never return. lookbackMs widens the window backwards for the MENTAL read
