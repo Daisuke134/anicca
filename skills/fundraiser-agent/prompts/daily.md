@@ -244,7 +244,8 @@ For every queued candidate until the execution window ends:
    `~/.openclaw/.env` without printing it. Capture the site key from the rendered
    reCAPTCHA iframe `k` query parameter and call that exact command once. The helper
    solves and injects the token into every `textarea[name="g-recaptcha-response"]`,
-   dispatches `input` and `change`, and invokes an exposed widget callback without
+   dispatches `input` and `change`, resolves the rendered `data-callback` name,
+   and invokes the exposed widget callback without
    returning the token to the shell. Require `CAPSOLVER_INJECTED=true`, then use one
    trusted rendered GET STARTED interaction. Do not add shell token parsing or
    construct token-bearing JavaScript. Never include the credential or solution token in logs, receipts,

@@ -95,6 +95,15 @@ def inject(target_id: str, token: str) -> dict[str, object]:
         element.dispatchEvent(new Event('change', {{bubbles: true}}));
         textareas += 1;
       }});
+      document.querySelectorAll('[data-sitekey][data-callback]').forEach((element) => {{
+        const name = element.getAttribute('data-callback');
+        if (!name) return;
+        let callback = window;
+        for (const part of name.split('.')) callback = callback && callback[part];
+        if (typeof callback === 'function') {{
+          try {{ callback(token); callbacks += 1; }} catch (_) {{}}
+        }}
+      }});
       const seen = new WeakSet();
       const visit = (value, depth) => {{
         if (!value || typeof value !== 'object' || depth > 7 || seen.has(value)) return;
