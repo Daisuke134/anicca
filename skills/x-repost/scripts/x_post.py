@@ -2,7 +2,7 @@
 # requires-python = ">=3.11"
 # dependencies = ["playwright>=1.40"]
 # ///
-"""Publish half of the x-repost loop: post ONE quote tweet through the leased CDP browser.
+"""Publish one standalone post, quote, or reply through the leased CDP browser.
 
 A quote tweet is a normal post whose body ends with the quoted post's URL -- X renders the
 embedded card itself. That is deliberately the least selector-dependent path available: no
@@ -114,15 +114,24 @@ def find_permalink(pw, cdp: str, handle: str, needle: str, attempts: int = 6):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--cdp", required=True, help="leased CDP base URL from browser-guard.sh")
-    ap.add_argument("--source-url", required=True, help="the post being quoted or replied to")
+    ap.add_argument(
+        "--cdp",
+        default=os.environ.get("CDP"),
+        help="leased CDP base URL (or CDP from with-browser.sh)",
+    )
+    ap.add_argument("--source-url", help="the post being quoted or replied to")
     ap.add_argument("--text-file", required=True, help="file holding the comment body")
     # A quote is a new post from an account with no followers, which asks the ranker to distribute
     # out-of-network content to nobody. A reply is rendered to the people already reading the
     # original, and "the author engaged your reply" is the single highest-weighted signal X
     # publishes (+75, against 0.5 for a like).
-    ap.add_argument("--mode", choices=["quote", "reply"], default="quote")
+    ap.add_argument("--mode", choices=["post", "quote", "reply"], default="quote")
     args = ap.parse_args()
+    if not args.cdp:
+        ap.error("--cdp or the CDP environment variable is required")
+
+    if args.mode in {"quote", "reply"} and not args.source_url:
+        ap.error("--source-url is required for quote and reply modes")
 
     text = open(args.text_file, encoding="utf-8").read().strip()
     if not text:
@@ -157,9 +166,12 @@ def main():
                 compose.wait_for_selector('[data-testid="tweetTextarea_0"]', timeout=45000)
                 compose.click('[data-testid="tweetTextarea_0"]')
                 compose.keyboard.type(text, delay=18)
-                compose.keyboard.press("Enter")
-                compose.keyboard.type(args.source_url, delay=12)
-                compose.wait_for_timeout(6000)  # let X resolve the URL into the quoted-post card
+                if args.mode == "quote":
+                    compose.keyboard.press("Enter")
+                    compose.keyboard.type(args.source_url, delay=12)
+                    compose.wait_for_timeout(6000)  # let X resolve the quoted-post card
+                else:
+                    compose.wait_for_timeout(2000)
 
             # Scope the button to the composer itself: x.com/home keeps an inline composer mounted
             # whose button carries a confusingly similar testid, and clicking the wrong one silently

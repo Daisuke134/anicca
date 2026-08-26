@@ -1,0 +1,29 @@
+{
+  "voice": "en-US-AndrewNeural",
+  "scenes": [
+    {
+      "id": "mess",
+      "start": 0.25,
+      "end": 5.25,
+      "text": "Three interviews. Two conflicting signals. One product decision."
+    },
+    {
+      "id": "evidence",
+      "start": 5.75,
+      "end": 12.75,
+      "text": "Read the actual words. Missing receipts. Unclear urgency. Forgotten until month end."
+    },
+    {
+      "id": "cluster",
+      "start": 13.25,
+      "end": 21.25,
+      "text": "Cluster the evidence. Receipt pain repeats. Approval urgency has a counter-signal: a reminder may solve it."
+    },
+    {
+      "id": "memo",
+      "start": 21.75,
+      "end": 29.75,
+      "text": "The memo keeps the strongest signal, the contradiction, and the next test. A decision you can defend."
+    }
+  ]
+}

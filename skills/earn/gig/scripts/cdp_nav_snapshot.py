@@ -201,12 +201,15 @@ async def _wait_for_load(ws, deadline, start_cid):
     return False, cid
 
 
-async def navigate_and_snapshot(pass_id, seq, label, url, action):
+async def navigate_and_snapshot(
+    pass_id, seq, label, url, action, settle_seconds=0, viewport_width=0,
+):
     outdir = os.path.expanduser(f"~/gig/trajectory/{pass_id}")
     os.makedirs(outdir, exist_ok=True)
     evidence_path = os.path.join(outdir, f"{seq}-{label}.json")
     final_url, title, navigated_ok = "", "", False
     rendered_text = ""
+    rendered_links = []
 
     async with hidden_page_target(url) as ws_url:
         async with websockets.connect(
@@ -217,11 +220,19 @@ async def navigate_and_snapshot(pass_id, seq, label, url, action):
         ) as ws:
             cid = 1
             await _call(ws, "Page.enable", {}, cid); cid += 1
+            if viewport_width:
+                await _call(ws, "Emulation.setDeviceMetricsOverride", {
+                    "width": viewport_width, "height": 900,
+                    "deviceScaleFactor": 1, "mobile": False,
+                }, cid)
+                cid += 1
             await ws.send(json.dumps({"id": cid, "method": "Page.navigate", "params": {"url": url}}))
             cid += 1
 
             deadline = asyncio.get_event_loop().time() + LOAD_TIMEOUT_SECS
             navigated_ok, cid = await _wait_for_load(ws, deadline, cid)
+            if settle_seconds:
+                await asyncio.sleep(settle_seconds)
 
             # page state (url + title) — evidence beyond the pixels, and proof navigation actually landed
             try:
@@ -254,12 +265,28 @@ async def navigate_and_snapshot(pass_id, seq, label, url, action):
                 r.get("result", {}).get("result", {}).get("value", "")
                 or ""
             )
+            cid += 1
+            r = await _call(
+                ws,
+                "Runtime.evaluate",
+                {
+                    "expression": """JSON.stringify(Array.from(document.querySelectorAll('a[href]')).slice(0,2000).map(a=>{const c=a.closest('article,li,tr,[data-test],[data-qa]')||a.parentElement;return {href:a.href,text:(a.innerText||'').trim().slice(0,500),context:((c&&c.innerText)||'').trim().slice(0,2000),aria:a.getAttribute('aria-label')||'',data_qa:a.getAttribute('data-qa')||'',class_name:a.className||''}}))""",
+                    "returnByValue": True,
+                },
+                cid,
+            )
+            raw_links = r.get("result", {}).get("result", {}).get("value", "[]")
+            try:
+                rendered_links = json.loads(raw_links)
+            except (TypeError, json.JSONDecodeError):
+                rendered_links = []
 
     evidence = {
         "url": final_url,
         "requested_url": url,
         "title": title,
         "rendered_text": rendered_text,
+        "rendered_links": rendered_links,
         "navigated_ok": navigated_ok,
     }
     with open(evidence_path, "w", encoding="utf-8") as handle:
@@ -272,7 +299,10 @@ async def navigate_and_snapshot(pass_id, seq, label, url, action):
            "navigated_ok": navigated_ok, "evidence_kind": "rendered_dom_text",
            "artifact": evidence_path}
     with open(os.path.join(outdir, "trajectory.jsonl"), "a") as f:
+        fcntl.flock(f.fileno(), fcntl.LOCK_EX)
         f.write(json.dumps(row, ensure_ascii=False) + "\n")
+        f.flush()
+        os.fsync(f.fileno())
     return evidence_path
 
 

@@ -38,6 +38,9 @@ DEFAULT_CREATE_PROPOSAL_SCHEMA = GIG_DIR / "schemas" / "storefront_create_propos
 DEFAULT_DEMAND_PROPOSAL_SCHEMA = GIG_DIR / "schemas" / "storefront_demand_proposal.schema.json"
 DEFAULT_CATEGORY_PROPOSAL_SCHEMA = GIG_DIR / "schemas" / "storefront_category_proposal.schema.json"
 DEFAULT_CATEGORY_CHILD_SCHEMA = GIG_DIR / "schemas" / "storefront_category_child.schema.json"
+DEFAULT_BOOTSTRAP_SELECTION_SCHEMA = GIG_DIR / "schemas" / "storefront_bootstrap_selection.schema.json"
+DEFAULT_BOOTSTRAP_LISTING_SCHEMA = GIG_DIR / "schemas" / "storefront_bootstrap_listing.schema.json"
+DEFAULT_BOOTSTRAP_IMPORT_SCHEMA = GIG_DIR / "schemas" / "storefront_bootstrap_import.schema.json"
 DEFAULT_STOREFRONT_ROOT = Path(
     os.environ.get("GIG_STOREFRONT_ROOT") or "/nonexistent/storefront-root-required"
 )
@@ -3586,6 +3589,99 @@ def _seal_create_contract(
                            "claims": image_copy.splitlines(), **asset}}
 
 
+def _seal_bootstrap_contract(
+    proposal: dict, *, selection: dict, demand: dict, category_record: dict,
+    official_form: dict, draft_service_id: str, evidence_dir: Path,
+) -> dict:
+    title = str(proposal.get("title_stem") or "").strip()
+    catchphrase = str(proposal.get("catchphrase") or "").strip()
+    head = str(proposal.get("head") or "").strip()
+    body = str(proposal.get("body") or "").strip()
+    image_copy = str(proposal.get("image_copy") or "").strip()
+    if (proposal.get("decision") != "create" or not title
+            or title[-1] not in "いきしちにひみりぎじびぴえけせてねへめれげぜでべぺ"
+            or len([line for line in image_copy.splitlines() if line.strip()]) != 3
+            or "｜" not in image_copy.splitlines()[-1]
+            or _prohibited_copy_terms(title, catchphrase, head, body, image_copy)):
+        raise RuntimeError("storefront_bootstrap_contract_copy_invalid")
+    price = next(
+        (row for row in official_form.get("display_prices", [])
+         if row.get("display_price_jpy") == proposal.get("display_price_jpy")), None,
+    )
+    if not isinstance(price, dict):
+        raise RuntimeError("storefront_bootstrap_contract_price_invalid")
+    asset = _render_generated_image_asset(image_copy, draft_service_id, evidence_dir)
+    option_title = str(proposal.get("paid_option_title") or "").strip()
+    option_price = proposal.get("paid_option_price_jpy")
+    if not option_title or type(option_price) is not int:
+        raise RuntimeError("storefront_bootstrap_contract_option_invalid")
+    unsigned = {
+        "version": 1, "platform": "coconala",
+        "candidate_key": "storefront:create:v1:" + hashlib.sha256(
+            f"{selection['skill_path']}:{demand['evidence_sha256']}".encode()
+        ).hexdigest(),
+        "draft_service_id": draft_service_id,
+        "draft_url": f"https://coconala.com/mypage/services/{draft_service_id}",
+        "expected_public_url": f"https://coconala.com/services/{draft_service_id}",
+        "origin": "storefront-bootstrap",
+        "demand_evidence": {
+            "query": demand["query"], "search_url": demand["search_url"],
+            "evidence_sha256": demand["evidence_sha256"], "score": demand["score"],
+        },
+        "capability_evidence": {
+            "skill_path": selection["skill_path"],
+            "buyer_outcome": selection["buyer_outcome"],
+            "deliverable": selection["deliverable"],
+        },
+        "hero_image_contract": asset["asset_path"],
+        "category": category_record["category"],
+        "public_fields": {
+            "overview_input": title, "expected_title": f"{title}ます",
+            "catchphrase": catchphrase, "head": head, "body": body,
+            "price_option_value": str(price["value"]),
+            "display_price_jpy": int(proposal["display_price_jpy"]),
+            "delivery_days": int(proposal["delivery_days"]), "order_limit": 1,
+            "accept_estimates": True, "estimate_required": False,
+        },
+        "category_specific": {
+            "features": list(proposal.get("features") or []),
+            "industries": list(proposal.get("industries") or []),
+            "languages": list(proposal.get("languages") or []),
+            "provision_format": str(proposal.get("provision_format") or "1"),
+            "fix_limit": str(proposal.get("fix_limit") or "0"),
+            "unit_price_jpy_per_character": str(
+                proposal.get("unit_price_jpy_per_character") or "0"
+            ),
+        },
+        "subscription": {
+            "enabled": True,
+            "discount_ratio": str(proposal.get("subscription_discount_ratio") or "5"),
+        },
+        "paid_options": [{"title": option_title, "price_jpy": option_price, "opened": "1"}],
+        "publication_gate": {
+            "requires_distinct_catalog_outcome": True,
+            "requires_owned_capability": True,
+            "requires_available_capacity": True,
+            "requires_hero_image": True,
+            "requires_no_conflicting_service_experiment": True,
+        },
+        "success_metric": proposal["success_metric"],
+        "observation_window_days": proposal["observation_window_days"],
+        "proposal_evidence": [selection["skill_path"], demand["evidence_sha256"]],
+    }
+    canonical = json.dumps(unsigned, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return {
+        **unsigned,
+        "contract_sha256": hashlib.sha256(canonical.encode("utf-8")).hexdigest(),
+        "hero_image": {
+            "version": 1, "service_id": draft_service_id, "field": "image",
+            "mime_type": "image/png", "width": 1220, "height": 1016,
+            "claims": [line.strip() for line in image_copy.splitlines() if line.strip()],
+            **asset,
+        },
+    }
+
+
 def _seal_generated_proposal(
     proposal: dict, hypothesis: dict, source: dict, seller_snapshot: dict,
     family_name: str, capability_families: dict[str, str], allowed_refs: set[str],
@@ -3998,6 +4094,11 @@ def _render_published_gallery_mutation(state_dir: Path, own_page: dict) -> dict:
         _validate_image_mutation_contract(contract, state_dir=state_dir, require_assets=False)
         try:
             public_before = json.loads(Path(intent["public_before_path"]).read_text(encoding="utf-8"))
+        except FileNotFoundError:
+            public_before = {
+                "url": f"https://coconala.com/services/{GALLERY_SERVICE_ID}",
+                "service_image_ids": contract["rollback_value"]["service_image_ids"],
+            }
         except (OSError, KeyError, json.JSONDecodeError) as error:
             raise RuntimeError("published_gallery_before_evidence_missing") from error
         _validate_public_image_acceptance(
@@ -5006,12 +5107,14 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
         row = _persist_receipt(args, output, row)
         return 0, row
 
-    try:
-        _preflight_storefront_bundle()
-    except RuntimeError as error:
-        row = _receipt(pass_id, status="failed", reason=str(error).strip() or type(error).__name__)
-        row = _persist_receipt(args, output, row)
-        return 1, row
+    public_bootstrap = not os.environ.get("GIG_STOREFRONT_ROOT", "").strip()
+    if not public_bootstrap:
+        try:
+            _preflight_storefront_bundle()
+        except RuntimeError as error:
+            row = _receipt(pass_id, status="failed", reason=str(error).strip() or type(error).__name__)
+            row = _persist_receipt(args, output, row)
+            return 1, row
     if getattr(args, "auto_cadence", False):
         try:
             args.incremental = _auto_cadence_is_incremental(
@@ -5062,6 +5165,9 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     )
                     count = int(read.get("service_count") or 0)
                     sources = read.get("_contract_sources")
+                    if (public_bootstrap and count == 0
+                            and read.get("services") == [] and sources == []):
+                        return read, [], 0
                     if count <= 0 or count != len(read.get("services") or []):
                         failure = "official_inventory_empty_or_invalid"
                     else:
@@ -5079,6 +5185,377 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 raise RuntimeError(failure)
 
             inventory, contract_sources, observed = _read_official_catalog()
+            if public_bootstrap:
+                from storefront_bootstrap import (
+                    compose_listing, import_catalog, inventory as bootstrap_inventory,
+                    select_capability,
+                )
+                capability_inventory = bootstrap_inventory()
+                capability_path = args.state_dir / "storefront-capabilities.json"
+                _atomic_write(capability_path, capability_inventory)
+                public_contract = None
+                public_replay = None
+                public_contract_path = args.state_dir / "storefront-bootstrap-contract.json"
+                if observed > 0 and public_contract_path.exists():
+                    public_contract = json.loads(public_contract_path.read_text(encoding="utf-8"))
+                    created_id = str(public_contract.get("draft_service_id") or "")
+                    source = next(
+                        (row for row in contract_sources
+                         if isinstance(row, dict) and str(row.get("service_id") or "") == created_id),
+                        None,
+                    )
+                    expected = public_contract.get("public_fields") or {}
+                    if (not isinstance(source, dict)
+                            or source.get("public_url") != public_contract.get("expected_public_url")
+                            or source.get("title") != expected.get("expected_title")
+                            or source.get("price_jpy") != expected.get("display_price_jpy")):
+                        raise RuntimeError("storefront_bootstrap_public_replay_mismatch")
+                    public_replay = {
+                        "version": 1,
+                        "candidate_key": public_contract["candidate_key"],
+                        "contract_sha256": public_contract["contract_sha256"],
+                        "draft_service_id": created_id,
+                        "status": "already_public", "effect": 0, "public_effect": 0,
+                        "readback": 1, "duplicate": 0,
+                        "public_url": public_contract["expected_public_url"],
+                    }
+                    from coconala_onboarding import record as record_onboarding
+                    replay_evidence = hashlib.sha256(
+                        json.dumps(public_replay, ensure_ascii=False, sort_keys=True,
+                                   separators=(",", ":")).encode("utf-8")
+                    ).hexdigest()
+                    record_onboarding(Path.home(), "storefront_listing_readback", replay_evidence)
+                import_record = None
+                if observed > 0 and public_contract is None:
+                    import_path = args.state_dir / "storefront-import.json"
+                    catalog_sha = str(inventory.get("content_sha256") or "")
+                    if import_path.exists():
+                        try:
+                            candidate = json.loads(import_path.read_text(encoding="utf-8"))
+                            if (candidate.get("version") == 1
+                                    and candidate.get("inventory_sha256") == capability_inventory["inventory_sha256"]
+                                    and candidate.get("catalog_sha256") == catalog_sha
+                                    and isinstance(candidate.get("mappings"), list)):
+                                import_record = candidate
+                        except (OSError, json.JSONDecodeError):
+                            pass
+                    if import_record is None:
+                        mapped = import_catalog(
+                            sources=contract_sources, capabilities=capability_inventory,
+                            runner=getattr(args, "runner", DEFAULT_RUNNER),
+                            schema=getattr(args, "bootstrap_import_schema", DEFAULT_BOOTSTRAP_IMPORT_SCHEMA),
+                            evidence_dir=inventory_path.parent / "bootstrap-import-agent",
+                            workdir=args.workdir, timeout_seconds=args.timeout_seconds,
+                        )
+                        import_record = {
+                            **mapped,
+                            "inventory_sha256": capability_inventory["inventory_sha256"],
+                            "catalog_sha256": catalog_sha,
+                        }
+                        _atomic_write(import_path, import_record)
+                import_complete = bool(import_record) and all(
+                    row.get("supported") is True for row in import_record.get("mappings", [])
+                )
+                selection_path = args.state_dir / "storefront-bootstrap-selection.json"
+                rejection_path = args.state_dir / "storefront-bootstrap-rejections.jsonl"
+                rejected_rows = _jsonl_rows(rejection_path)[0] if rejection_path.exists() else []
+                rejected_pairs = {
+                    (row.get("skill_path"), row.get("service_query")) for row in rejected_rows
+                    if isinstance(row, dict)
+                }
+                selection_record = None
+                if observed == 0 and selection_path.exists():
+                    try:
+                        candidate = json.loads(selection_path.read_text(encoding="utf-8"))
+                        if (candidate.get("version") == 1
+                                and candidate.get("inventory_sha256") == capability_inventory["inventory_sha256"]
+                                and isinstance(candidate.get("selection"), dict)
+                                and (candidate["selection"].get("skill_path"),
+                                     candidate["selection"].get("service_query")) not in rejected_pairs):
+                            selection_record = candidate
+                    except (OSError, json.JSONDecodeError):
+                        pass
+                if observed == 0 and selection_record is None:
+                    selection = select_capability(
+                        capability_inventory,
+                        runner=getattr(args, "runner", DEFAULT_RUNNER),
+                        schema=getattr(args, "bootstrap_selection_schema", DEFAULT_BOOTSTRAP_SELECTION_SCHEMA),
+                        evidence_dir=inventory_path.parent / "bootstrap-selection-agent",
+                        workdir=args.workdir,
+                        timeout_seconds=args.timeout_seconds,
+                        rejected=rejected_rows,
+                    )
+                    selection_record = {
+                        "version": 1,
+                        "inventory_sha256": capability_inventory["inventory_sha256"],
+                        "selection": selection,
+                    }
+                    _atomic_write(selection_path, selection_record)
+                demand_record = None
+                selection = (selection_record or {}).get("selection") or {}
+                if observed == 0 and selection.get("decision") == "sell":
+                    demand_path = args.state_dir / "storefront-bootstrap-demand.json"
+                    if demand_path.exists():
+                        try:
+                            candidate = json.loads(demand_path.read_text(encoding="utf-8"))
+                            if (candidate.get("version") == 1
+                                    and candidate.get("inventory_sha256") == capability_inventory["inventory_sha256"]
+                                    and candidate.get("skill_path") == selection.get("skill_path")
+                                    and candidate.get("query") == selection.get("service_query")):
+                                demand_record = candidate
+                        except (OSError, json.JSONDecodeError):
+                            pass
+                    if demand_record is None:
+                        cluster = _crawl_demand_cluster(
+                            getattr(args, "default_tab_script", DEFAULT_TAB),
+                            inventory_path.parent / "bootstrap-demand",
+                            str(selection["service_query"]),
+                        )
+                        score = _score_demand_cluster(cluster)
+                        demand_record = {
+                            "version": 1,
+                            "inventory_sha256": capability_inventory["inventory_sha256"],
+                            "skill_path": selection["skill_path"],
+                            "query": selection["service_query"],
+                            "search_url": cluster.get("search_url"),
+                            "evidence_path": str(cluster.get("evidence_path") or ""),
+                            "cluster": cluster,
+                            "evidence_sha256": hashlib.sha256(
+                                json.dumps(cluster, ensure_ascii=False, sort_keys=True,
+                                           separators=(",", ":")).encode("utf-8")
+                            ).hexdigest(),
+                            "score": score,
+                        }
+                        _atomic_write(demand_path, demand_record)
+                    if (demand_record.get("score") or {}).get("status") == "known" and int(
+                            (demand_record.get("score") or {}).get("score") or 0) <= 0:
+                        rejection_key = hashlib.sha256(
+                            f"{selection['skill_path']}:{selection['service_query']}".encode("utf-8")
+                        ).hexdigest()
+                        _append_key_once(rejection_path, "rejection_key", {
+                            "version": 1, "rejection_key": rejection_key,
+                            "skill_path": selection["skill_path"],
+                            "service_query": selection["service_query"],
+                            "demand_evidence_sha256": demand_record["evidence_sha256"],
+                            "reason": "official_demand_score_zero",
+                            "observed_at_epoch": int(time.time()),
+                        })
+                category_record = None
+                demand_score = (demand_record or {}).get("score") or {}
+                if (observed == 0 and args.effect and demand_score.get("status") == "known"
+                        and int(demand_score.get("score") or 0) > 0):
+                    category_path = args.state_dir / "storefront-bootstrap-category.json"
+                    if category_path.exists():
+                        try:
+                            candidate = json.loads(category_path.read_text(encoding="utf-8"))
+                            if (candidate.get("version") == 1
+                                    and candidate.get("demand_evidence_sha256") == demand_record.get("evidence_sha256")
+                                    and str(candidate.get("draft_service_id") or "").isdigit()):
+                                category_record = candidate
+                        except (OSError, json.JSONDecodeError):
+                            pass
+                    if category_record is None:
+                        import storefront_draft
+                        draft = storefront_draft.create_or_claim_blank_draft(
+                            getattr(args, "default_tab_script", DEFAULT_TAB)
+                        )
+                        draft_id = str(draft["draft_service_id"])
+                        seller = _seller_snapshot_from_fresh_tab(
+                            getattr(args, "default_tab_script", DEFAULT_TAB), draft_id,
+                        )
+                        cluster = {**demand_record["cluster"],
+                                   "capability_family": selection.get("skill_path")}
+                        master_options = (seller.get("select_options") or {}).get(
+                            "data[Service][master_category]", [])
+                        choice, master_route = _invoke_category_proposal(
+                            runner=getattr(args, "runner", DEFAULT_RUNNER),
+                            schema=getattr(args, "category_proposal_schema", DEFAULT_CATEGORY_PROPOSAL_SCHEMA),
+                            workdir=args.workdir,
+                            evidence_dir=inventory_path.parent / "bootstrap-category-master",
+                            cluster=cluster, options=master_options,
+                            timeout_seconds=args.timeout_seconds,
+                        )
+                        if choice.get("decision") != "choose":
+                            raise RuntimeError("storefront_bootstrap_category_noop")
+                        master = _validate_category_choice(
+                            choice.get("master_category_value"), master_options, "master")
+                        children = storefront_draft.read_category_children(
+                            getattr(args, "default_tab_script", DEFAULT_TAB), draft_id, master["value"])
+                        picked, child_route = _invoke_category_child_proposal(
+                            runner=getattr(args, "runner", DEFAULT_RUNNER),
+                            schema=getattr(args, "category_child_schema", DEFAULT_CATEGORY_CHILD_SCHEMA),
+                            workdir=args.workdir,
+                            evidence_dir=inventory_path.parent / "bootstrap-category-child",
+                            cluster=cluster, master=master, children=children,
+                            timeout_seconds=args.timeout_seconds,
+                        )
+                        sub = _validate_category_choice(
+                            picked.get("sub_value"),
+                            children.get("data[Service][master_sub_category]") or [], "sub")
+                        typed = storefront_draft.read_category_children(
+                            getattr(args, "default_tab_script", DEFAULT_TAB),
+                            draft_id, master["value"], sub["value"])
+                        type_options = typed.get("data[Service][master_category_type_id]") or []
+                        picked_type, type_route = _invoke_category_child_proposal(
+                            runner=getattr(args, "runner", DEFAULT_RUNNER),
+                            schema=getattr(args, "category_child_schema", DEFAULT_CATEGORY_CHILD_SCHEMA),
+                            workdir=args.workdir,
+                            evidence_dir=inventory_path.parent / "bootstrap-category-type",
+                            cluster=cluster, master=master,
+                            children={**typed, "data[Service][master_sub_category]": [sub]},
+                            timeout_seconds=args.timeout_seconds,
+                        )
+                        category_record = {
+                            "version": 1,
+                            "demand_evidence_sha256": demand_record["evidence_sha256"],
+                            "draft_service_id": draft_id,
+                            "draft_effect": int(draft.get("effect") or 0),
+                            "category": {
+                                "master": master,
+                                "sub": sub,
+                                "type": _validate_category_choice(
+                                    picked_type.get("type_value"), type_options, "type"),
+                            },
+                            "routes": {
+                                "master": master_route.get("model"),
+                                "sub": child_route.get("model"),
+                                "type": type_route.get("model"),
+                            },
+                        }
+                        _atomic_write(category_path, category_record)
+                bootstrap_contract = public_contract
+                bootstrap_result = public_replay
+                if observed == 0 and category_record is not None:
+                    import storefront_draft
+                    contract_path = args.state_dir / "storefront-bootstrap-contract.json"
+                    if contract_path.exists():
+                        try:
+                            candidate = json.loads(contract_path.read_text(encoding="utf-8"))
+                            if (candidate.get("version") == 1
+                                    and candidate.get("draft_service_id") == category_record.get("draft_service_id")
+                                    and (candidate.get("demand_evidence") or {}).get("evidence_sha256")
+                                    == demand_record.get("evidence_sha256")
+                                    and str(candidate.get("contract_sha256") or "")):
+                                bootstrap_contract = candidate
+                        except (OSError, json.JSONDecodeError):
+                            pass
+                    if bootstrap_contract is None:
+                        form_snapshot = storefront_draft.read_category_form(
+                            getattr(args, "default_tab_script", DEFAULT_TAB),
+                            str(category_record["draft_service_id"]), category_record["category"],
+                        )
+                        proposal, official_form = compose_listing(
+                            selection=selection, demand=demand_record,
+                            category=category_record["category"], form_snapshot=form_snapshot,
+                            runner=getattr(args, "runner", DEFAULT_RUNNER),
+                            schema=getattr(args, "bootstrap_listing_schema", DEFAULT_BOOTSTRAP_LISTING_SCHEMA),
+                            evidence_dir=inventory_path.parent / "bootstrap-listing-agent",
+                            workdir=args.workdir, timeout_seconds=args.timeout_seconds,
+                        )
+                        if proposal.get("decision") != "create":
+                            raise RuntimeError("storefront_bootstrap_listing_noop")
+                        bootstrap_contract = _seal_bootstrap_contract(
+                            proposal, selection=selection, demand=demand_record,
+                            category_record=category_record, official_form=official_form,
+                            draft_service_id=str(category_record["draft_service_id"]),
+                            evidence_dir=inventory_path.parent / "bootstrap-contract",
+                        )
+                        _atomic_write(contract_path, bootstrap_contract)
+                    ledger_path = args.state_dir / "new-listing-drafts.jsonl"
+                    prior = next(
+                        (row for row in reversed(_jsonl_rows(ledger_path)[0])
+                         if row.get("candidate_key") == bootstrap_contract["candidate_key"]
+                         and row.get("status") in {"published", "already_public"}),
+                        None,
+                    ) if ledger_path.exists() else None
+                    if prior is not None:
+                        bootstrap_result = storefront_draft.readback_published_draft(
+                            bootstrap_contract,
+                            getattr(args, "default_tab_script", DEFAULT_TAB),
+                            inventory_path.parent / "bootstrap-public-readback",
+                            known_image_identity=prior.get("public_image_identity"),
+                        )
+                    else:
+                        try:
+                            bootstrap_result = storefront_draft.readback_published_draft(
+                                bootstrap_contract,
+                                getattr(args, "default_tab_script", DEFAULT_TAB),
+                                inventory_path.parent / "bootstrap-public-readback",
+                            )
+                        except RuntimeError:
+                            storefront_draft.prepare_draft(
+                                bootstrap_contract,
+                                getattr(args, "default_tab_script", DEFAULT_TAB),
+                                inventory_path.parent / "bootstrap-draft",
+                            )
+                            bootstrap_result = storefront_draft.publish_draft(
+                                bootstrap_contract,
+                                getattr(args, "default_tab_script", DEFAULT_TAB),
+                                inventory_path.parent / "bootstrap-public-readback",
+                            )
+                    _append_key_once(ledger_path, "candidate_key", {
+                        **bootstrap_result,
+                        "capability_family": selection["skill_path"],
+                        "demand_evidence_path": demand_record["evidence_path"],
+                        "contract_path": "storefront-bootstrap-contract.json",
+                    })
+                    if int(bootstrap_result.get("readback") or 0) == 1:
+                        from coconala_onboarding import record as record_onboarding
+                        listing_evidence = hashlib.sha256(
+                            json.dumps(bootstrap_result, ensure_ascii=False, sort_keys=True,
+                                       separators=(",", ":")).encode("utf-8")
+                        ).hexdigest()
+                        record_onboarding(Path.home(), "storefront_listing_readback", listing_evidence)
+                release = _lease(args.lease_script, "release", task, lease)
+                released = release.get("released") == task
+                if not released:
+                    raise RuntimeError("lease_release_unproven")
+                row = _receipt(
+                    pass_id, status="completed",
+                    reason=("storefront_bootstrap_published" if bootstrap_result is not None
+                            and bootstrap_result.get("status") == "published"
+                            else "storefront_bootstrap_readback" if bootstrap_result is not None
+                            else "storefront_imported" if import_complete
+                            else "storefront_import_blocked" if import_record is not None
+                            else "storefront_bootstrap_required" if observed == 0
+                            else "storefront_import_required"),
+                    official_services_read=observed,
+                    actionable=int((bootstrap_result or {}).get("status") == "published"),
+                    effect=int((bootstrap_result or {}).get("public_effect") or 0),
+                    readback=max(int((bootstrap_result or {}).get("readback") or 0), int(import_complete)),
+                    duplicate=0,
+                    pending=(0 if import_complete or (bootstrap_result is not None
+                             and int(bootstrap_result.get("readback") or 0) == 1) else 1),
+                    capability_inventory_count=len(capability_inventory["skills"]),
+                    capability_inventory_sha256=capability_inventory["inventory_sha256"],
+                    capability_inventory_path="storefront-capabilities.json",
+                    bootstrap_selection=(selection_record or {}).get("selection"),
+                    bootstrap_selection_path=("storefront-bootstrap-selection.json"
+                                              if selection_record is not None else None),
+                    bootstrap_demand=({
+                        "query": demand_record.get("query"),
+                        "search_url": demand_record.get("search_url"),
+                        "evidence_sha256": demand_record.get("evidence_sha256"),
+                        "score": demand_record.get("score"),
+                    } if demand_record is not None else None),
+                    bootstrap_demand_path=("storefront-bootstrap-demand.json"
+                                           if demand_record is not None else None),
+                    bootstrap_category=category_record,
+                    bootstrap_category_path=("storefront-bootstrap-category.json"
+                                             if category_record is not None else None),
+                    bootstrap_contract_sha256=(bootstrap_contract or {}).get("contract_sha256"),
+                    bootstrap_contract_path=("storefront-bootstrap-contract.json"
+                                             if bootstrap_contract is not None else None),
+                    new_listing_draft=bootstrap_result,
+                    imported_listings=({
+                        "count": len(import_record.get("mappings", [])),
+                        "supported": sum(row.get("supported") is True
+                                         for row in import_record.get("mappings", [])),
+                        "catalog_sha256": import_record.get("catalog_sha256"),
+                    } if import_record is not None else None),
+                )
+                row = _persist_receipt(args, output, row)
+                return 0, row
             source_dicts = True
             source_ids = [source.get("service_id") for source in contract_sources]
             if source_dicts:
@@ -6430,6 +6907,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--demand-proposal-schema", type=Path, default=DEFAULT_DEMAND_PROPOSAL_SCHEMA)
     parser.add_argument("--category-proposal-schema", type=Path, default=DEFAULT_CATEGORY_PROPOSAL_SCHEMA)
     parser.add_argument("--category-child-schema", type=Path, default=DEFAULT_CATEGORY_CHILD_SCHEMA)
+    parser.add_argument("--bootstrap-selection-schema", type=Path, default=DEFAULT_BOOTSTRAP_SELECTION_SCHEMA)
+    parser.add_argument("--bootstrap-listing-schema", type=Path, default=DEFAULT_BOOTSTRAP_LISTING_SCHEMA)
+    parser.add_argument("--bootstrap-import-schema", type=Path, default=DEFAULT_BOOTSTRAP_IMPORT_SCHEMA)
     parser.add_argument("--scorecard", type=Path, default=storefront["scorecard"])
     parser.add_argument("--image-contract", type=Path, default=storefront["image"])
     parser.add_argument("--gallery-contract", type=Path, default=storefront["gallery"])

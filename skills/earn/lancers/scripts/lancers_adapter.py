@@ -10,7 +10,9 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from datetime import datetime
 from decimal import Decimal, DecimalException
+import hashlib
 import importlib.util
+import json
 from pathlib import Path
 import re
 import sys
@@ -303,4 +305,45 @@ def normalize_projects(
     return normalized, rejected
 
 
-__all__ = ["LancersProjectError", "normalize_project", "normalize_projects"]
+def normalize_contract_receipt(source: Mapping[str, object], *, observed_at: str) -> Dict[str, object]:
+    """Map one officially funded working project to the shared contract receipt."""
+
+    if not isinstance(source, Mapping) or source.get("source_kind") != "project":
+        _fail("contract_source_invalid")
+    if source.get("status") != "進行中" or source.get("funding_status") != "escrow_confirmed":
+        _fail("contract_funding_unverified")
+    project_id = _external_id(source.get("project_id", _MISSING))
+    proposal_id = _external_id(source.get("proposal_id", _MISSING))
+    price = source.get("price_jpy")
+    if isinstance(price, bool) or not isinstance(price, int) or price <= 0 or price > _MAX_SAFE_INTEGER:
+        _fail("contract_terms_invalid")
+    due = source.get("delivery_due_on")
+    try:
+        if not isinstance(due, str) or datetime.strptime(due, "%Y-%m-%d").strftime("%Y-%m-%d") != due:
+            _fail("contract_terms_invalid")
+    except ValueError:
+        _fail("contract_terms_invalid")
+    proposal = _text(source.get("proposal_text", _MISSING), "contract_terms_invalid", max_length=10000)
+    terms = {"price_jpy": price, "delivery_due_on": due, "proposal_text": proposal}
+    receipt: Dict[str, object] = {
+        "schema_version": 1,
+        "record_type": "contract_receipt",
+        "platform": "lancers",
+        "application_external_id": proposal_id,
+        "work_external_id": project_id,
+        "contract_external_id": f"project:{project_id}",
+        "status": "accepted",
+        "terms_sha256": hashlib.sha256(
+            json.dumps(terms, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest(),
+        "observed_at": _observed_at(observed_at),
+    }
+    contracts = _load_contracts()
+    try:
+        contracts.parse_contract(receipt)
+    except contracts.ContractValidationError:
+        _fail("contract_receipt_invalid")
+    return receipt
+
+
+__all__ = ["LancersProjectError", "normalize_contract_receipt", "normalize_project", "normalize_projects"]

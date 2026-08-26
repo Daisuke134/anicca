@@ -121,6 +121,8 @@ class ReleaseTests(unittest.TestCase):
             app = release_root / "apps" / "job-search-loop"
 
             answers = root / "answers.json"
+            resume = root / "resume.pdf"
+            resume.write_bytes(b"%PDF-1.4\nartifact resume\n")
             answers.write_text(
                 json.dumps(
                     {
@@ -128,6 +130,14 @@ class ReleaseTests(unittest.TestCase):
                         "candidate": {
                             "name": "Artifact Candidate",
                             "application_email": "artifact@example.test",
+                            "target_role_families": ["Applied AI"],
+                            "location_preferences": ["Tokyo"],
+                            "compensation_floor_jpy": 12_000_000,
+                            "compensation_target_jpy": 15_000_000,
+                            "employer_exclusions": [],
+                        },
+                        "materials": {
+                            "resumes": {"engineering": str(resume)}
                         },
                         "facts": [
                             {
@@ -153,6 +163,9 @@ class ReleaseTests(unittest.TestCase):
             config = root / "config"
             state = root / "state"
             data = root / "data"
+            codex_home = home / ".codex"
+            codex_home.mkdir(parents=True)
+            (codex_home / "auth.json").write_text("{}\n", encoding="utf-8")
             env = {
                 **os.environ,
                 "HOME": str(home),

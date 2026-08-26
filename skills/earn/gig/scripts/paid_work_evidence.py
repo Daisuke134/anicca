@@ -5,7 +5,9 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import json
+import mimetypes
 import re
+import zipfile
 from pathlib import Path
 from typing import Any, Callable
 
@@ -229,6 +231,76 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _asset_contract_errors(root: Path, payload: dict[str, Any], artifact: Path | None) -> list[str]:
+    root = root.resolve()
+    artifact = artifact.resolve() if artifact is not None else None
+    errors: list[str] = []
+    required = payload.get("required_assets")
+    produced = payload.get("artifact_assets")
+    if not isinstance(required, list) or not isinstance(produced, list):
+        return ["asset_contract_missing"]
+    covered: dict[str, int] = {}
+    has_visual_assets = False
+    for asset in produced:
+        if not isinstance(asset, dict):
+            errors.append("artifact_asset_invalid")
+            continue
+        asset_id = str(asset.get("asset_id") or "").strip()
+        path, reason = _owned_file(asset.get("path"), root)
+        size = asset.get("bytes")
+        digest = str(asset.get("sha256") or "")
+        mime = str(asset.get("mime_type") or "").strip()
+        provenance = str(asset.get("provenance") or "").strip()
+        member = str(asset.get("archive_member") or "").strip()
+        data: bytes | None = None
+        if not asset_id or reason or not isinstance(size, int) or size <= 0 or not provenance:
+            errors.append("artifact_asset_binding_invalid")
+            continue
+        try:
+            if member:
+                if artifact is None or path != artifact or artifact.suffix.casefold() != ".zip":
+                    raise ValueError
+                with zipfile.ZipFile(artifact) as archive:
+                    data = archive.read(member)
+            elif path is not None:
+                data = path.read_bytes()
+        except (OSError, KeyError, ValueError, zipfile.BadZipFile):
+            data = None
+        expected_mime = mimetypes.guess_type(member or (path.name if path else ""))[0]
+        if (data is None or len(data) != size or not data
+                or hashlib.sha256(data).hexdigest() != digest
+                or not re.fullmatch(r"[0-9a-f]{64}", digest)
+                or not mime or (expected_mime and mime != expected_mime)):
+            errors.append("artifact_asset_integrity_mismatch")
+            continue
+        covered[asset_id] = covered.get(asset_id, 0) + 1
+        if mime.startswith("image/"):
+            has_visual_assets = True
+    for item in required:
+        minimum = item.get("minimum_count") if isinstance(item, dict) else None
+        if (not isinstance(item, dict) or not isinstance(minimum, int) or minimum < 1
+                or covered.get(str(item.get("asset_id") or ""), 0) < minimum):
+            errors.append("required_asset_missing")
+    if has_visual_assets:
+        review = root / "evidence" / "controller-artifact-review" / str(payload.get("package_sha256") or "") / "review-manifest.json"
+        try:
+            receipt = json.loads(review.read_text(encoding="utf-8"))
+            pages = receipt.get("pages")
+            if (receipt.get("artifact_sha256") != payload.get("package_sha256")
+                    or not isinstance(pages, list) or not pages):
+                errors.append("required_visual_review_missing")
+            for row in pages or []:
+                page = Path(str(row.get("path") or "")).resolve()
+                page.relative_to(root)
+                if (not page.is_file()
+                        or _sha256(page) != str(row.get("sha256") or "")):
+                    errors.append("required_visual_review_missing")
+                    break
+        except (OSError, AttributeError, ValueError, json.JSONDecodeError):
+            errors.append("required_visual_review_missing")
+    return errors
+
+
 def _version_number(value: str) -> int | None:
     match = re.fullmatch(r"v(\d+)", value.strip(), re.IGNORECASE)
     return int(match.group(1)) if match else None
@@ -382,6 +454,7 @@ def validate_paid_work(
     package_hash = str(payload.get("package_sha256") or "")
     if artifact is None or not re.fullmatch(r"[0-9a-f]{64}", package_hash) or _sha256(artifact) != package_hash:
         errors.append("package_sha256_mismatch")
+    errors.extend(_asset_contract_errors(root, payload, artifact))
     for candidate in (requirements, artifact, acceptance):
         if candidate is not None and "downloads" in str(candidate).casefold():
             errors.append("downloads_path_forbidden")

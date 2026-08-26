@@ -204,3 +204,91 @@ def test_failed_feedback_invocation_is_archived_before_retry(tmp_path, monkeypat
     archived = run / "gates/quality-feedback-invocation-attempt-2-recovery-1.json"
     assert archived.is_file()
     assert json.loads(archived.read_text())["recovery_attempt"] == 1
+
+
+def test_reopen_requires_bound_defect_receipt(tmp_path, monkeypatch):
+    run = _quality_fixture(tmp_path)
+    monkeypatch.setenv("ARTICLE_PUBLICATION_POLICY", "continuous")
+    drafts = _set_quality_gates(run, 1)
+    QUALITY.assess(run, drafts)
+    prompt = run / "gates" / "quality-feedback-recovery" / "prompt.txt"
+    prompt.parent.mkdir(parents=True)
+    prompt.write_text("recover", encoding="utf-8")
+    _write(run / "gates" / RECOVERY.STATE_NAME, {
+        "version": 1,
+        "status": "terminal-blocked",
+        "run_id": run.name,
+        "attempts": 10,
+        "prompt_path": str(prompt),
+        "prompt_sha256": hashlib.sha256(prompt.read_bytes()).hexdigest(),
+    })
+    hashes = {
+        lang: hashlib.sha256(drafts[lang].read_bytes()).hexdigest()
+        for lang in ("ja", "en")
+    }
+    _write(run / "gates" / "quality-feedback-recovery-defect.json", {
+        "version": 2,
+        "status": "blocked",
+        "run_id": run.name,
+        "scope": "bounded-feedback-recovery",
+        "quality_attempt": 1,
+        "draft_sha256": hashes,
+        "observations": [{"return_code": 75}],
+        "preserved_invariants": {
+            "publication_or_staging_performed": False,
+            "feedback_consumption_verification": "PASS",
+            "identity": {"ja": "PASS", "en": "PASS"},
+            "reader": {"ja": "PASS", "en": "PASS"},
+            "cta": {"ja": "PASS", "en": "PASS"},
+        },
+        "required_safe_next_action": "rerun gates",
+    })
+    ledger = run / "ledger.jsonl"
+    ledger.write_text("", encoding="utf-8")
+    ready = RECOVERY.plan(run, ledger)
+    assert ready["reason"] == "reopen-quality-feedback-recovery-after-infrastructure-block"
+    bad = json.loads(
+        (run / "gates" / "quality-feedback-recovery-defect.json").read_text()
+    )
+    bad["run_id"] = "other-run"
+    _write(run / "gates" / "quality-feedback-recovery-defect.json", bad)
+    assert RECOVERY.plan(run, ledger)["status"] == "REFUSED"
+
+
+def test_reopen_rejects_symlinked_draft(tmp_path, monkeypatch):
+    run = _quality_fixture(tmp_path)
+    monkeypatch.setenv("ARTICLE_PUBLICATION_POLICY", "continuous")
+    drafts = _set_quality_gates(run, 1)
+    QUALITY.assess(run, drafts)
+    prompt = run / "gates" / "quality-feedback-recovery" / "prompt.txt"
+    prompt.parent.mkdir(parents=True)
+    prompt.write_text("recover", encoding="utf-8")
+    hashes = {
+        lang: hashlib.sha256(drafts[lang].read_bytes()).hexdigest()
+        for lang in ("ja", "en")
+    }
+    _write(run / "gates" / RECOVERY.STATE_NAME, {
+        "version": 1, "status": "terminal-blocked", "run_id": run.name,
+        "attempts": 10, "prompt_path": str(prompt),
+        "prompt_sha256": hashlib.sha256(prompt.read_bytes()).hexdigest(),
+    })
+    _write(run / "gates" / "quality-feedback-recovery-defect.json", {
+        "version": 2, "status": "blocked", "run_id": run.name,
+        "scope": "bounded-feedback-recovery", "quality_attempt": 1,
+        "draft_sha256": hashes, "observations": [{"return_code": 75}],
+        "preserved_invariants": {
+            "publication_or_staging_performed": False,
+            "feedback_consumption_verification": "PASS",
+            "identity": {"ja": "PASS", "en": "PASS"},
+            "reader": {"ja": "PASS", "en": "PASS"},
+            "cta": {"ja": "PASS", "en": "PASS"},
+        },
+        "required_safe_next_action": "rerun gates",
+    })
+    outside = tmp_path / "outside.md"
+    outside.write_text("outside", encoding="utf-8")
+    drafts["ja"].unlink()
+    drafts["ja"].symlink_to(outside)
+    ledger = run / "ledger.jsonl"
+    ledger.write_text("", encoding="utf-8")
+    assert RECOVERY.plan(run, ledger)["status"] == "REFUSED"

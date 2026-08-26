@@ -136,6 +136,64 @@ def _work_event_messages(event: dict[str, Any]) -> tuple[str, str]:
     attributes = event["attributes"]
     if kind == "application":
         title = _clean(attributes.get("title"), "新しい仕事")
+        state = _clean(event.get("state"))
+        if state in {"selected", "skipped"}:
+            platform = _clean(attributes.get("platform_display_name")) or _clean(
+                attributes.get("platform"), "Gig"
+            ).capitalize()
+            reasons = [
+                _clean(reason) for reason in attributes.get("reason_codes", [])
+                if _clean(reason)
+            ]
+            reason_lines = [f"- {reason}" for reason in reasons] or ["- Lunaの判断理由は記録されていません"]
+            selected = state == "selected"
+            ja = "\n".join((
+                f"[{platform}][応募判断]",
+                "✅ この案件への応募を準備します" if selected else "🚫 この案件には応募しませんでした",
+                "",
+                f"案件: {title}",
+                f"依頼ID: {event['entity_id']}",
+                "理由:",
+                *reason_lines,
+                "",
+                "次に自動で行うこと",
+                str(event["next_action"]),
+                "ユーザーの操作は必要ありません。",
+            ))
+            en = "\n".join((
+                f"[{platform}][Application decision]",
+                "✅ Preparing an application" if selected else "🚫 Skipped this opportunity",
+                "",
+                f"Job: {title}",
+                f"ID: {event['entity_id']}",
+                "Reasons:",
+                *reason_lines,
+                "",
+                "Next automatic action",
+                str(event["next_action"]),
+                "No user action is required.",
+            ))
+            return ja, en
+        if state == "verified" and _clean(attributes.get("platform")) != "coconala":
+            platform = _clean(attributes.get("platform_display_name")) or _clean(
+                attributes.get("platform"), "Gig"
+            ).capitalize()
+            quote = attributes.get("quote") if isinstance(attributes.get("quote"), dict) else {}
+            ja = "\n".join((
+                f"[{platform}][応募完了]",
+                "✅ 実際に応募しました",
+                "",
+                f"案件: {title}",
+                f"依頼ID: {event['entity_id']}",
+                f"Proposal ID: {_clean(attributes.get('proposal_id'), '確認済み')}",
+                f"提案: {_clean(quote.get('currency'))} {_clean(quote.get('amount'))} / {_clean(quote.get('unit'))}",
+                f"Connects: {attributes.get('connects_before')} → {attributes.get('connects_after')} (-{attributes.get('connects_spent')})",
+                "",
+                "次に自動で行うこと",
+                str(event["next_action"]),
+                "ユーザーの操作は必要ありません。",
+            ))
+            return ja, ja
         bucket = "継続" if attributes.get("bucket") == "retainer" else "単発"
         amount = _money(attributes.get("price_jpy"))
         ja = "\n".join((
@@ -428,7 +486,7 @@ def build_work_event_envelope(
     human_ja, human_en = _work_event_messages(event)
     work = {
         "searched": 0,
-        "applied": int(kind == "application"),
+        "applied": int(kind == "application" and event.get("state") not in {"selected", "skipped"}),
         "replied": int(kind == "reply"),
         "contracted": int(kind == "contract"),
         "delivered": int(kind == "delivery"),
@@ -1263,6 +1321,39 @@ def append_agent_feed(path: Path, envelope: dict[str, Any]) -> dict[str, int]:
                 return {"appended": 0, "duplicate": 1}
         handle.seek(0, os.SEEK_END)
         handle.write(render_agent_json(envelope) + "\n")
+        handle.flush()
+        os.fsync(handle.fileno())
+    return {"appended": 1, "duplicate": 0}
+
+
+def append_work_event(path: Path, event: dict[str, Any]) -> dict[str, int]:
+    """Append one provider-neutral WorkEvent once by event_key."""
+    if (
+        not isinstance(event, dict)
+        or event.get("kind") not in WORK_EVENT_KINDS
+        or not _clean(event.get("event_key"))
+        or not _clean(event.get("entity_id"))
+        or not _clean(event.get("occurred_at"))
+        or not isinstance(event.get("attributes"), dict)
+    ):
+        raise ValueError("work event identity is incomplete")
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    event_key = str(event["event_key"])
+    with path.open("a+", encoding="utf-8") as handle:
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+        handle.seek(0)
+        for raw in handle:
+            try:
+                row = json.loads(raw)
+            except json.JSONDecodeError:
+                continue
+            if isinstance(row, dict) and row.get("event_key") == event_key:
+                return {"appended": 0, "duplicate": 1}
+        handle.seek(0, os.SEEK_END)
+        handle.write(json.dumps(
+            event, ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+        ) + "\n")
         handle.flush()
         os.fsync(handle.fileno())
     return {"appended": 1, "duplicate": 0}

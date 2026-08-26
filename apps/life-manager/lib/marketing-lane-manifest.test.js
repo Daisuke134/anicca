@@ -85,6 +85,126 @@ test("creates a frozen secret-free manifest from explicit live routes", () => {
   assert.doesNotMatch(JSON.stringify(manifest), /token|secret|cookie|password|credential|openclaw|\/Users\//i);
 });
 
+test("encodes classified targets separately from unclassified zero-day holds", () => {
+  const target = row({
+    owner: "life-manager",
+    lane_state: "default-off",
+    disposition: "target",
+    renderer: "reelclaw",
+    format: "relationship-confession",
+    approved_pack: "honne-ai-reelclaw-en.pack.json",
+    canary_state: "verified",
+    target_daily_limit: 3,
+  });
+  const manifest = createManifest({
+    tenant_id: "dais-local",
+    integrations: [target],
+    holds: [{
+      integration_id: "live-tt-unclassified",
+      platform: "tiktok",
+      account: "@unclassified",
+      provider: "postiz",
+      provider_disabled: false,
+      owner: "life-manager",
+      disposition: "hold",
+      target_daily_limit: 0,
+      verified: true,
+    }],
+  });
+  assert.equal(manifest.schema_version, 2);
+  assert.equal(manifest.lanes[0].production_armed, false);
+  assert.equal(manifest.lanes[0].target_daily_limit, 3);
+  assert.deepEqual(manifest.holds, [{
+    integration_id: "live-tt-unclassified",
+    platform: "tiktok",
+    account: "@unclassified",
+    provider: "postiz",
+    provider_disabled: false,
+    owner: "life-manager",
+    disposition: "hold",
+    target_daily_limit: 0,
+  }]);
+  assert.equal(isMarketingLaneManifest(manifest), true);
+  assert.throws(
+    () => createManifest({ tenant_id: "dais-local", integrations: [target], holds: [] }),
+    /portfolio incomplete/i,
+  );
+  assert.throws(
+    () => createManifest({
+      tenant_id: "dais-local",
+      integrations: [target],
+      holds: [{ ...manifest.holds[0], target_daily_limit: 1, verified: true }],
+    }),
+    /hold disposition invalid/i,
+  );
+});
+
+test("keeps X as a zero-day hold and permits only the selected Anicca YouTube skip", () => {
+  const target = row({
+    owner: "life-manager",
+    lane_state: "default-off",
+    disposition: "target",
+    renderer: "reelclaw",
+    format: "relationship-confession",
+    approved_pack: "honne-ai-reelclaw-en.pack.json",
+    canary_state: "verified",
+    target_daily_limit: 3,
+  });
+  const manifest = createManifest({
+    tenant_id: "dais-local",
+    integrations: [target],
+    holds: [
+      {
+        integration_id: "live-x-anicca",
+        platform: "x",
+        account: "@aniccaxxx",
+        provider: "postiz",
+        provider_disabled: false,
+        owner: "life-manager",
+        disposition: "hold",
+        target_daily_limit: 0,
+        verified: true,
+      },
+      {
+        integration_id: "live-yt-anicca-skip",
+        platform: "youtube",
+        account: "@anicca-jp",
+        provider: "postiz",
+        provider_disabled: false,
+        owner: "life-manager",
+        disposition: "skip",
+        target_daily_limit: 0,
+        verified: true,
+      },
+    ],
+  });
+  assert.deepEqual(manifest.holds.map(({ platform, account, owner, disposition }) => ({
+    platform, account, owner, disposition,
+  })), [
+    { platform: "x", account: "@aniccaxxx", owner: "life-manager", disposition: "hold" },
+    { platform: "youtube", account: "@anicca-jp", owner: "life-manager", disposition: "skip" },
+  ]);
+  assert.equal(isMarketingLaneManifest(manifest), true);
+  assert.throws(
+    () => createManifest({
+      tenant_id: "dais-local",
+      integrations: [target],
+      holds: [{
+        integration_id: "wrong-skip",
+        platform: "youtube",
+        account: "@another-channel",
+        provider: "postiz",
+        provider_disabled: false,
+        owner: "life-manager",
+        disposition: "skip",
+        target_daily_limit: 0,
+        verified: true,
+      }],
+    }),
+    /hold disposition invalid/i,
+  );
+});
+
 test("normalizes Postiz's instagram-standalone identifier without copying raw payload fields", () => {
   const manifest = createManifest([row({
     identifier: "instagram-standalone",
@@ -312,6 +432,34 @@ test("disabled, default-off, and shadow routes never become production-armed", (
     }),
     /production state|ambiguous/i,
   );
+});
+
+test("a verified portfolio target can become production-armed at its declared limit", () => {
+  const target = row({
+    disposition: "target",
+    renderer: "reelclaw",
+    format: "relationship-confession",
+    approved_pack: "honne-en.pack.json",
+    canary_state: "verified",
+    target_daily_limit: 3,
+    lane_state: "production-armed",
+    production_armed: true,
+  });
+  const manifest = createMarketingLaneManifest(
+    { tenant_id: "tenant-1", integrations: [target], holds: [{
+      integration_id: "held-route",
+      platform: "instagram",
+      account: "@held",
+      provider: "postiz",
+      provider_disabled: false,
+      disposition: "hold",
+      target_daily_limit: 0,
+      verified: true,
+    }] },
+    { tenantId: "tenant-1", assignments: [target] },
+  );
+  assert.equal(manifest.lanes[0].production_armed, true);
+  assert.equal(manifest.lanes[0].target_daily_limit, 3);
 });
 
 test("Postiz registry fetch is GET-only, injectable, and fails with an exact missing-secret blocker", async () => {

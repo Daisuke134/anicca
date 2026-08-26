@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "default_state": "unknown",
+  "providers": {
+    "coconala": {
+      "state": "unknown",
+      "actions": ["discover", "apply", "message", "estimate", "create_listing", "update_listing", "fulfill", "deliver", "read_payments", "read_payouts"]
+    },
+    "upwork": {
+      "state": "unknown",
+      "actions": ["discover", "inspect", "submit_proposal", "message", "accept_offer", "deliver_milestone", "read_payments", "read_payouts"]
+    },
+    "fiverr": {
+      "state": "unknown",
+      "actions": ["read_catalogue", "publish_gig", "update_gig", "message", "custom_offer", "read_order", "deliver", "revise", "read_earnings", "read_payouts"]
+    },
+    "linkedin": {
+      "state": "unknown",
+      "actions": ["discover_lead", "discover_job", "message", "read_thread"]
+    },
+    "mercor": {
+      "state": "unknown",
+      "actions": ["discover_role", "update_profile", "apply", "schedule", "interview", "execute_project", "submit", "read_payments"]
+    },
+    "welocalize": {
+      "state": "unknown",
+      "actions": ["discover_project", "claim_task", "submit", "read_payments"]
+    },
+    "telus": {
+      "state": "unknown",
+      "actions": ["discover_project", "schedule", "submit", "read_payments"]
+    },
+    "utest": {
+      "state": "unknown",
+      "actions": ["discover_cycle", "claim_task", "submit_bug", "submit_test", "read_payments"]
+    },
+    "prolific": {
+      "state": "unknown",
+      "actions": ["discover_study", "start_study", "submit", "read_payments"]
+    },
+    "outlier": {
+      "state": "unknown",
+      "actions": ["discover_project", "claim_task", "submit", "read_payments"]
+    },
+    "babel_audio": {
+      "state": "unknown",
+      "actions": ["discover_project", "schedule_capture", "upload", "submit", "read_payments"]
+    }
+  }
+}

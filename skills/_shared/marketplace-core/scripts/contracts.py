@@ -3,7 +3,7 @@
 The schemas in the sibling ``schemas`` directory are the wire contract.  This
 module deliberately keeps provider/model code out of that contract: callers
 load a schema, route by its record type, validate a copy of the input, and get
-one of the seven immutable record models back.
+one of the immutable record models back.
 """
 
 from __future__ import annotations
@@ -43,6 +43,10 @@ _RECORD_TYPE_TO_SCHEMA = {
     "payment_receipt": "payment.schema.json",
     "application_intent": "event.schema.json",
     "application_receipt": "event.schema.json",
+    "contract_receipt": "event.schema.json",
+    "authorization_receipt": "event.schema.json",
+    "qa_receipt": "event.schema.json",
+    "payout_match_receipt": "event.schema.json",
     "work_event": "event.schema.json",
     "delivery_intent": "event.schema.json",
     "delivery_receipt": "event.schema.json",
@@ -75,7 +79,10 @@ class PaymentReceipt:
     work_external_id: str
     payment_external_id: str
     receipt_id: str
-    amount_minor: int
+    gross_amount_minor: int
+    fee_amount_minor: int
+    cost_amount_minor: int
+    net_amount_minor: int
     currency: str
     status: str
     occurred_at: str
@@ -106,6 +113,58 @@ class ApplicationReceipt:
     status: str
     content_sha256: str
     idempotency_key: str
+    observed_at: str
+
+
+@dataclass(frozen=True)
+class ContractReceipt:
+    schema_version: int
+    record_type: str
+    platform: str
+    application_external_id: str
+    work_external_id: str
+    contract_external_id: str
+    status: str
+    terms_sha256: str
+    observed_at: str
+
+
+@dataclass(frozen=True)
+class AuthorizationReceipt:
+    schema_version: int
+    record_type: str
+    platform: str
+    contract_external_id: str
+    authorization_external_id: str
+    status: str
+    scope_sha256: str
+    observed_at: str
+
+
+@dataclass(frozen=True)
+class QAReceipt:
+    schema_version: int
+    record_type: str
+    platform: str
+    work_external_id: str
+    qa_external_id: str
+    status: str
+    artifact_sha256: str
+    report_sha256: str
+    observed_at: str
+
+
+@dataclass(frozen=True)
+class PayoutMatchReceipt:
+    schema_version: int
+    record_type: str
+    platform: str
+    payment_external_id: str
+    payout_external_id: str
+    bank_transaction_external_id: str
+    status: str
+    amount_minor: int
+    currency: str
     observed_at: str
 
 
@@ -143,6 +202,7 @@ class DeliveryReceipt:
     platform: str
     work_external_id: str
     delivery_external_id: str
+    qa_external_id: str
     status: str
     artifact_sha256: str
     idempotency_key: str
@@ -154,6 +214,10 @@ Contract = Union[
     PaymentReceipt,
     ApplicationIntent,
     ApplicationReceipt,
+    ContractReceipt,
+    AuthorizationReceipt,
+    QAReceipt,
+    PayoutMatchReceipt,
     WorkEvent,
     DeliveryIntent,
     DeliveryReceipt,
@@ -288,6 +352,10 @@ def schema_name_for_record(record: Mapping[str, Any]) -> str:
 _EVENT_DEFINITION_BY_RECORD_TYPE = {
     "application_intent": "ApplicationIntent",
     "application_receipt": "ApplicationReceipt",
+    "contract_receipt": "ContractReceipt",
+    "authorization_receipt": "AuthorizationReceipt",
+    "qa_receipt": "QAReceipt",
+    "payout_match_receipt": "PayoutMatchReceipt",
     "work_event": "WorkEvent",
     "delivery_intent": "DeliveryIntent",
     "delivery_receipt": "DeliveryReceipt",
@@ -408,6 +476,21 @@ def _opportunity_semantic_errors(record: Mapping[str, Any]) -> Tuple[str, ...]:
     return tuple(errors)
 
 
+def _payment_semantic_errors(record: Mapping[str, Any]) -> Tuple[str, ...]:
+    values = [
+        record.get("gross_amount_minor"),
+        record.get("fee_amount_minor"),
+        record.get("cost_amount_minor"),
+        record.get("net_amount_minor"),
+    ]
+    if not all(isinstance(value, int) and not isinstance(value, bool) for value in values):
+        return ()
+    gross, fee, cost, net = values
+    if net != gross - fee - cost:
+        return ("$.net_amount_minor: must_equal_gross_minus_fee_and_cost",)
+    return ()
+
+
 def _raise_validation(errors: Sequence[str]) -> None:
     if errors:
         raise ContractValidationError(errors)
@@ -423,6 +506,8 @@ def validate_contract(value: Mapping[str, object]) -> None:
     errors = list(_schema_errors(copied))
     if copied.get("record_type") == "opportunity":
         errors.extend(_opportunity_semantic_errors(copied))
+    elif copied.get("record_type") == "payment_receipt":
+        errors.extend(_payment_semantic_errors(copied))
     _raise_validation(errors)
 
 
@@ -431,6 +516,10 @@ _MODEL_BY_RECORD_TYPE: Dict[str, Type[Contract]] = {
     "payment_receipt": PaymentReceipt,
     "application_intent": ApplicationIntent,
     "application_receipt": ApplicationReceipt,
+    "contract_receipt": ContractReceipt,
+    "authorization_receipt": AuthorizationReceipt,
+    "qa_receipt": QAReceipt,
+    "payout_match_receipt": PayoutMatchReceipt,
     "work_event": WorkEvent,
     "delivery_intent": DeliveryIntent,
     "delivery_receipt": DeliveryReceipt,
@@ -482,6 +571,80 @@ def parse_application_receipt(record: Mapping[str, Any]) -> ApplicationReceipt:
     return parsed
 
 
+def parse_contract_receipt(record: Mapping[str, Any]) -> ContractReceipt:
+    parsed = parse_contract(record)
+    if not isinstance(parsed, ContractReceipt):
+        raise ContractValidationError(("$.record_type: expected contract_receipt",))
+    return parsed
+
+
+def parse_authorization_receipt(record: Mapping[str, Any]) -> AuthorizationReceipt:
+    parsed = parse_contract(record)
+    if not isinstance(parsed, AuthorizationReceipt):
+        raise ContractValidationError(("$.record_type: expected authorization_receipt",))
+    return parsed
+
+
+def parse_qa_receipt(record: Mapping[str, Any]) -> QAReceipt:
+    parsed = parse_contract(record)
+    if not isinstance(parsed, QAReceipt):
+        raise ContractValidationError(("$.record_type: expected qa_receipt",))
+    return parsed
+
+
+def parse_payout_match_receipt(record: Mapping[str, Any]) -> PayoutMatchReceipt:
+    parsed = parse_contract(record)
+    if not isinstance(parsed, PayoutMatchReceipt):
+        raise ContractValidationError(("$.record_type: expected payout_match_receipt",))
+    return parsed
+
+
+def validate_receipt_chain(values: Sequence[Mapping[str, object]]) -> Tuple[Contract, ...]:
+    """Validate one complete provider-observed application-to-bank chain."""
+
+    records = tuple(parse_contract(value) for value in values)
+    expected = (
+        ApplicationReceipt,
+        ContractReceipt,
+        AuthorizationReceipt,
+        QAReceipt,
+        DeliveryReceipt,
+        PaymentReceipt,
+        PayoutMatchReceipt,
+    )
+    if len(records) != len(expected) or any(
+        not isinstance(record, record_type)
+        for record, record_type in zip(records, expected)
+    ):
+        raise ContractValidationError(("$: incomplete_or_out_of_order_receipt_chain",))
+
+    application, contract, authorization, qa, delivery, payment, payout = records
+    if len({record.platform for record in records}) != 1:
+        raise ContractValidationError(("$: receipt platforms do not match",))
+    if application.status != "verified" or contract.status != "accepted":
+        raise ContractValidationError(("$: application or contract is not accepted",))
+    if authorization.status != "authorized" or qa.status != "passed":
+        raise ContractValidationError(("$: work is not authorized and QA-passed",))
+    if delivery.status != "verified" or payment.status != "settled" or payout.status != "matched":
+        raise ContractValidationError(("$: delivery payment or payout is not final",))
+    if application.application_external_id != contract.application_external_id:
+        raise ContractValidationError(("$: application IDs do not match",))
+    if contract.contract_external_id != authorization.contract_external_id:
+        raise ContractValidationError(("$: contract IDs do not match",))
+    if len({contract.work_external_id, qa.work_external_id, delivery.work_external_id, payment.work_external_id}) != 1:
+        raise ContractValidationError(("$: work IDs do not match",))
+    if qa.qa_external_id != delivery.qa_external_id or qa.artifact_sha256 != delivery.artifact_sha256:
+        raise ContractValidationError(("$: QA and delivery evidence do not match",))
+    if payment.payment_external_id != payout.payment_external_id:
+        raise ContractValidationError(("$: payment IDs do not match",))
+    if payment.net_amount_minor != payout.amount_minor or payment.currency != payout.currency:
+        raise ContractValidationError(("$: payout amount or currency does not match net payment",))
+    observed = [record.observed_at for record in records]
+    if observed != sorted(observed):
+        raise ContractValidationError(("$: receipt observation times are out of order",))
+    return records
+
+
 def parse_work_event(record: Mapping[str, Any]) -> WorkEvent:
     parsed = parse_contract(record)
     if not isinstance(parsed, WorkEvent):
@@ -516,13 +679,17 @@ to_dict = record_to_dict
 __all__ = [
     "ApplicationIntent",
     "ApplicationReceipt",
+    "AuthorizationReceipt",
     "Contract",
     "ContractRecord",
+    "ContractReceipt",
     "ContractValidationError",
     "DeliveryIntent",
     "DeliveryReceipt",
     "Opportunity",
     "PaymentReceipt",
+    "PayoutMatchReceipt",
+    "QAReceipt",
     "SCHEMA_DIR",
     "SCHEMA_FILES",
     "WorkEvent",
@@ -530,11 +697,15 @@ __all__ = [
     "parse",
     "parse_application_intent",
     "parse_application_receipt",
+    "parse_authorization_receipt",
     "parse_delivery_intent",
     "parse_delivery_receipt",
     "parse_opportunity",
     "parse_payment_receipt",
+    "parse_payout_match_receipt",
+    "parse_qa_receipt",
     "parse_contract",
+    "parse_contract_receipt",
     "parse_record",
     "record_to_dict",
     "schema_for_record",
@@ -544,6 +715,7 @@ __all__ = [
     "validate",
     "validate_contract",
     "validate_record",
+    "validate_receipt_chain",
     "validator_for_record",
     "validator_for_schema",
 ]

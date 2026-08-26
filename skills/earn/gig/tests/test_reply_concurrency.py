@@ -381,7 +381,7 @@ def test_semantic_failure_stays_pending_without_send(tmp_path):
     assert outbox.ConnectorOutbox(args.database, args.manifest).pending_actions()
 
 
-def test_targeted_paid_fence_refuses_effect(tmp_path):
+def test_targeted_paid_fence_hands_off_without_effect(tmp_path):
     script, _calls, _send_record = _fake_targeted_scripts(tmp_path, orders_mode="paid")
     args = _targeted_args(tmp_path, script)
     action_id, inbox_event_key = _seed_inbox_action(args)
@@ -400,8 +400,11 @@ def test_targeted_paid_fence_refuses_effect(tmp_path):
         args, action_id=action_id, inbox_event_key=inbox_event_key,
         thread_id="123", evidence=tmp_path / "evidence", run_id="run-paid",
     )
+    assert result["status"] == "paid_handoff"
     assert result["replied"] == 0
-    assert result["blocked"] == 1
+    assert result["blocked"] == 0
+    assert result["closed_without_send"] == 1
+    assert result["pending"] == 0
     assert result["official_readback"] == 0
 
 
@@ -1463,6 +1466,7 @@ def test_direct_thread_only_owns_exact_url_and_emits_one_semantic_inquiry(
     monkeypatch.setattr(snapshot, "DefaultTab", FakeTab)
     monkeypatch.setattr(snapshot, "inspect_message_page", fake_inspect_message_page)
     monkeypatch.setattr(snapshot, "load_connector_manifest", lambda: {})
+    monkeypatch.setattr(snapshot, "enrich_verified_dm_attachments", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(snapshot, "_requested_estimate_module", lambda: FakeSemanticModule)
     monkeypatch.setattr(snapshot, "direct_message_event", lambda dom, url, **kwargs: {
         "last_message_side": "buyer", "reply_required": True, "next_action": "reply",
@@ -1505,10 +1509,13 @@ def test_direct_thread_only_owns_exact_url_and_emits_one_semantic_inquiry(
 
 
 def _supervisor_args(tmp_path):
+    no_contact_registry = tmp_path / "no-contact.json"
+    no_contact_registry.write_text('{"version":1,"entries":[]}\n', encoding="utf-8")
     return argparse.Namespace(
         database=tmp_path / "supervisor.sqlite3",
         manifest=GIG_ROOT / "config" / "connectors" / "coconala.json",
         evidence_dir=tmp_path / "evidence",
+        no_contact_registry=no_contact_registry,
         poll_seconds=0.01,
         workers=2,
         reconcile_seconds=300,
@@ -1573,7 +1580,10 @@ def test_supervise_probe_starts_follow_fixed_monotonic_deadline_and_exact_bounda
     )
 
     async def deterministic_wait_for(awaitable, timeout):
-        if timeout <= args.poll_seconds + 1e-9:
+        if (
+            asyncio.current_task().get_name() == "gig-reply-producer"
+            and timeout <= args.poll_seconds + 1e-9
+        ):
             awaitable.close()
             clock.now += timeout
             raise asyncio.TimeoutError
@@ -1621,7 +1631,7 @@ def test_supervise_slow_workers_overlap_and_claim_second_before_first_finishes(t
         if probe_count == 1:
             return {"inquiries": [_head_row("a" * 64)], "captured_at": "2026-08-19T00:00:00+00:00"}
         if probe_count == 2:
-            return {"inquiries": [_head_row("b" * 64)], "captured_at": "2026-08-19T00:00:01+00:00"}
+            return {"inquiries": [_head_row("b" * 64, thread_id="456")], "captured_at": "2026-08-19T00:00:01+00:00"}
         await stop.wait()
         return {"inquiries": [], "captured_at": "2026-08-19T00:00:02+00:00"}
 
@@ -1690,6 +1700,56 @@ def test_supervise_restart_replays_pending_inbox_once(tmp_path):
     assert dispatched[0]["identity_sha256"] == "a" * 64
 
 
+def test_supervise_does_not_dispatch_dlq_pending_head_on_repeated_probes(tmp_path):
+    """A quarantined pending row is not revived by the same fresh inbox head."""
+    args = _supervisor_args(tmp_path)
+    database = outbox.ConnectorOutbox(args.database, args.manifest)
+    identity = "a" * 64
+    event_key = outbox.coconala_inbox_event_key("123", identity)
+    action = database.enqueue(
+        event_key=event_key, thread_id="123",
+        thread_url="https://coconala.com/mypage/direct_message/123",
+        observed_at=1_755_555_200,
+    )
+    with sqlite3.connect(args.database) as connection:
+        connection.execute(
+            "UPDATE connector_actions SET state='pending',dlq_at=?,updated_at=? WHERE action_id=?",
+            (1_755_555_201, 1_755_555_201, action["action_id"]),
+        )
+
+    stop = asyncio.Event()
+    probes = 0
+    dispatched = []
+    results = []
+
+    async def probe():
+        nonlocal probes
+        probes += 1
+        if probes >= 3:
+            stop.set()
+        return {"inquiries": [_head_row(identity)], "captured_at": "2026-08-19T00:00:00+00:00"}
+
+    async def worker(item):
+        dispatched.append(item)
+        results.append({"status": "unexpected_dispatch", "action_id": item["action_id"]})
+
+    async def reconcile():
+        return None
+
+    asyncio.run(detector.supervise_replies(
+        args, probe=probe, worker=worker, reconcile=reconcile, stop=stop,
+    ))
+
+    assert probes >= 3
+    assert dispatched == []
+    assert results == []
+    lifecycle = database.action_lifecycle_for_event(event_key, "123")
+    assert lifecycle == {
+        "state": "pending", "dlq_at": 1_755_555_201,
+        "closure": None, "reason": None, "rejection_code": None,
+    }
+
+
 def test_supervise_replied_duplicate_head_has_no_second_effect(tmp_path):
     args = _supervisor_args(tmp_path)
     database = outbox.ConnectorOutbox(args.database, args.manifest)
@@ -1747,9 +1807,7 @@ def test_supervise_rebinds_stale_buyer_identity_once_and_replay_is_idempotent(tm
     effect_identities = []
 
     async def probe():
-        # Keep the producer from creating a second observation while the two
-        # exact durable work items (old A, then rebound B) are consumed.
-        await stop.wait()
+        # No fresh observation: consume only durable A, then its rebound B.
         return {"inquiries": [], "captured_at": "2026-08-19T00:00:00+00:00"}
 
     async def worker(item):
@@ -1909,3 +1967,6 @@ def test_supervise_rebind_seller_last_does_not_close_newer_buyer_revision(tmp_pa
             (work["action_id"],),
         ).fetchall()
     assert [row[0] for row in events] == [old_event_key, new_event_key]
+@pytest.fixture(autouse=True)
+def _healthy_disk_for_concurrency_tests(monkeypatch):
+    monkeypatch.setattr(detector, "disk_headroom_ok", lambda: True)

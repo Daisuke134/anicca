@@ -4,7 +4,7 @@
 completed real-world actions. It acts within delegated boundaries, verifies what happened, and reports the
 result in plain language with evidence in Telegram.
 
-| Organ | What Life Manager manages |
+| Group | What Life Manager manages through its loops |
 |---|---|
 | **Daily** | Calendar, event and accelerator applications, job applications, priorities, and follow-through |
 | **Physical / Mental** | Routines, wellbeing, and continuity of care |
@@ -16,6 +16,24 @@ Start locally and keep your data on your machine; move to the web/cloud service 
 manager. Both surfaces use the **same core**, evidence ledger, and human-readable reporting contract. Life
 Manager never guarantees wealth or investment returns, and it never reports an attempted action as completed
 without a receipt.
+
+## The general agent we are building
+
+Life Manager is not a collection of website-specific bots. We are building one durable general agent that can
+discover an opportunity, decide whether it can complete the work profitably, propose and negotiate, produce and
+QA the deliverable, submit it, and follow the same identity through payment and payout. Upwork is the first
+end-to-end proof. Additional marketplaces must reuse the same agent, commerce state, capabilities, and money-effect
+contract; their differences belong in a small provider manifest and official readback adapter.
+
+The implementation reuses [DeepAgentsJS/LangGraph](https://github.com/langchain-ai/deepagentsjs) for the agent
+harness and durable state, [browser-use](https://github.com/browser-use/browser-use) for the website-tool contract,
+[OpenClaw](https://github.com/openclaw/openclaw) for the current local wake and channels, and
+[Steel](https://github.com/steel-dev/steel-browser) for the hosted browser backend. Existing Life Manager
+`EffectIntent` and `ConnectorOutbox` rails remain the only path for irreversible money actions. The completion
+signal is an official `banked` receipt—not an application, click, model claim, contract, or pending balance.
+
+This autonomous commerce loop is still being proven. Until an agent-executable Upwork contract reaches `banked`,
+the README describes the target architecture, not a claim that autonomous income already exists.
 
 **Life Manager is the product. Anicca is the company name only when a form explicitly asks for it.**
 
@@ -36,6 +54,27 @@ without a receipt.
 authenticated `/panel`; you talk to it in Telegram and it reports back there with receipts.
 
 ### Run it yourself — local (your machine holds the data)
+
+To start the Job Hunter loop on an Apple Silicon Mac:
+
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Daisuke134/life-manager/main/scripts/bootstrap-job-hunter.sh)"
+```
+
+The command installs only missing dependencies, asks for the finalized resume and
+job preferences in Terminal, and opens the dedicated CloakBrowser for official
+login. It also installs `gog`, opens Gmail OAuth for the application email, and asks
+for the owner's Telegram bot token privately plus numeric chat ID. Finish the
+official login, then run the exact same command again. Life Manager verifies Gmail
+and a real Telegram message ID before starting the owners. Passwords, OTPs and bot
+tokens are never printed or committed.
+
+Job Hunter is pre-release until Dais's installed 30-minute Workday loop closes the
+current production acceptance: dynamic discovery, fit-qualified application,
+descriptive loop-owned Telegram, official Gmail/Ledger proof and duplicate zero.
+Ashby, Greenhouse, Lever, Mercor and generic ATS lanes are not working products.
+
+### Run the server stack yourself
 
 Requires Docker. The local stack is Postgres + an object store + the API, scheduler, and worker — the same core
 the cloud runs.
@@ -85,7 +124,7 @@ Life Manager is one product in one repository. “Local Life Manager” and the 
              │                                       │
      LOCAL / SELF-HOSTED                      WEB / CLOUD
      deploy/local/compose.yaml                 apps/landing
-          │                                  onboarding UI
+          │                                  web entry
           ▼                                       │
      apps/life-manager                             ▼
      api · scheduler · worker            apps/life-manager
@@ -218,7 +257,7 @@ Current canonical acceptance: PR `#1936` established the production baseline at 
 | **Cloud service** (`apps/life-manager`, `node server.js` on Railway) | **Deployed** — the scheduler and API are the same code the local stack runs. |
 | **Telegram reporting with receipts** | **Live** — every report carries a message id, and a send that fails is not recorded as sent. |
 | **Calendar, connectors, coverage** (`lib/calendar-*`, `lib/connector-*`) | **Implemented, coverage still moving** — per-connector state and gaps are tracked in the execution spec rather than claimed here. |
-| **Financial organ** (net worth, cash flow, payouts, ledgers) | **Partial** — the ledger and payout jobs exist; their current health is tracked in the execution spec. Nothing here is an investment guarantee. |
+| **Financial loops** (net worth, cash flow, payouts, ledgers) | **Partial** — the ledger and payout jobs exist; their current health is tracked in the execution spec. Nothing here is an investment guarantee. |
 | **The self-funded agent economy** | Separate track — status and on-chain evidence in [`docs/agent-economy.md`](docs/agent-economy.md). |
 
 ---

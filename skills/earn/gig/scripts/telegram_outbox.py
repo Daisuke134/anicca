@@ -322,16 +322,24 @@ class TelegramOutbox:
         receipt_dir: Path,
         target: str,
         now: int,
+        kinds: tuple[str, ...] | None = None,
     ) -> dict[str, int]:
         """Confirm provider-ACKed unknown sends from event-bound durable receipts."""
         receipt_dir = Path(receipt_dir)
         target = self._text("target", target, 200)
         now = self._integer("now", now)
+        selected_kinds = tuple(self._text("kind", kind, 80) for kind in (kinds or ()))
         if not receipt_dir.is_dir():
             return {"reconciled": 0, "invalid": 0}
+        kind_clause = ""
+        if selected_kinds:
+            kind_clause = " AND kind IN ({})".format(
+                ",".join("?" for _ in selected_kinds)
+            )
         with closing(self._connect()) as connection:
             rows = connection.execute(
-                "SELECT * FROM telegram_reports WHERE state='delivery_unknown'"
+                "SELECT * FROM telegram_reports WHERE state='delivery_unknown'" + kind_clause,
+                selected_kinds,
             ).fetchall()
         reconciled = 0
         invalid = 0
@@ -380,7 +388,8 @@ class TelegramOutbox:
 
     def redrive_unresolved(
         self, *, now: int, older_than_seconds: int = 600, max_attempts: int = 3,
-        newer_than_seconds: int = 3600,
+        newer_than_seconds: int = 3600, business_newer_than_seconds: int = 86400,
+        kinds: tuple[str, ...] | None = None,
     ) -> int:
         """Give a stale delivery_unknown row one more shot after reconciliation gave up on it.
 
@@ -402,7 +411,24 @@ class TelegramOutbox:
         at a time. A health report is only worth resending while it is still news. Older
         than this window it stays where it is -- unresolved is the honest record of a
         report that never landed, and replaying it tells the operator nothing about now.
+        Verified application and delivery receipts remain useful for one day because
+        they report an irreversible business fact, not transient health.
         """
+        return len(self.redrive_unresolved_report_ids(
+            now=now,
+            older_than_seconds=older_than_seconds,
+            max_attempts=max_attempts,
+            newer_than_seconds=newer_than_seconds,
+            business_newer_than_seconds=business_newer_than_seconds,
+            kinds=kinds,
+        ))
+
+    def redrive_unresolved_report_ids(
+        self, *, now: int, older_than_seconds: int = 600, max_attempts: int = 3,
+        newer_than_seconds: int = 3600, business_newer_than_seconds: int = 86400,
+        kinds: tuple[str, ...] | None = None, limit: int | None = None,
+    ) -> list[int]:
+        """Reopen eligible unknown rows and return exactly the rows changed."""
         now = self._integer("now", now)
         older_than_seconds = self._integer(
             "older_than_seconds", older_than_seconds, positive=True
@@ -410,16 +436,42 @@ class TelegramOutbox:
         newer_than_seconds = self._integer(
             "newer_than_seconds", newer_than_seconds, positive=True
         )
+        business_newer_than_seconds = self._integer(
+            "business_newer_than_seconds", business_newer_than_seconds, positive=True
+        )
         max_attempts = self._integer("max_attempts", max_attempts, positive=True)
-        with self._write() as connection:
-            cursor = connection.execute(
-                """UPDATE telegram_reports
-                   SET state='pending',owner=NULL,lease_until=0,error_class=NULL,updated_at=?
-                   WHERE state='delivery_unknown' AND updated_at<=? AND fencing_token<?
-                     AND CAST(created_at AS INTEGER)>=?""",
-                (now, now - older_than_seconds, max_attempts, now - newer_than_seconds),
+        if limit is not None:
+            limit = self._integer("limit", limit, positive=True)
+        selected_kinds = tuple(self._text("kind", kind, 80) for kind in (kinds or ()))
+        kind_clause = ""
+        if selected_kinds:
+            kind_clause = " AND kind IN ({})".format(
+                ",".join("?" for _ in selected_kinds)
             )
-            return int(cursor.rowcount)
+        limit_clause = " LIMIT ?" if limit is not None else ""
+        with self._write() as connection:
+            rows = connection.execute(
+                f"""WITH eligible AS (
+                       SELECT report_id FROM telegram_reports
+                       WHERE state='delivery_unknown' AND updated_at<=? AND fencing_token<?
+                         AND (CAST(created_at AS INTEGER)>=?
+                              OR (kind IN ('application','delivery')
+                                  AND CAST(created_at AS INTEGER)>=?)){kind_clause}
+                       ORDER BY created_at,report_id{limit_clause}
+                   )
+                   UPDATE telegram_reports
+                   SET state='pending',owner=NULL,lease_until=0,error_class=NULL,updated_at=?
+                   WHERE report_id IN (SELECT report_id FROM eligible)
+                   RETURNING report_id""",
+                (
+                    now - older_than_seconds, max_attempts,
+                    now - newer_than_seconds, now - business_newer_than_seconds,
+                    *selected_kinds,
+                    *(() if limit is None else (limit,)),
+                    now,
+                ),
+            ).fetchall()
+            return [int(row["report_id"]) for row in rows]
 
     def counts(self) -> dict[str, int]:
         with closing(self._connect()) as connection:

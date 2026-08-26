@@ -27,9 +27,11 @@ from pathlib import Path
 ENGINE = Path(__file__).resolve().parent
 RUN_AGENT = ENGINE / "run_agent.sh"
 CAPAFY = ENGINE.parents[1] / "self" / "capafy-loop" / "capafy-loop-daily.sh"
+CAPAFY_MARKETING = ENGINE.parents[1] / "earn" / "capafy-marketing" / "capafy-ig-marketing-daily.sh"
 CONFIG = ENGINE.parents[2] / "runtime" / "agent-runner" / "config.json"
 
 MIN_TIMEOUT_SECONDS = 900
+CAPAFY_EVIDENCE_MIN_FREE_BYTES = 64 * 1024 * 1024
 
 
 def task_class_of(script: Path) -> str:
@@ -40,6 +42,31 @@ def task_class_of(script: Path) -> str:
 
 
 class CapafyLoopWiringTest(unittest.TestCase):
+    def test_capafy_uses_its_measured_evidence_floor_for_every_agent_run(self):
+        text = CAPAFY.read_text(encoding="utf-8")
+        invocations = [
+            line.strip() for line in text.splitlines()
+            if '"$RUN_AGENT"' in line
+        ]
+        self.assertEqual(len(invocations), 2)
+        expected = (
+            f"AGENT_RUNNER_EVIDENCE_MIN_FREE_BYTES="
+            f"{CAPAFY_EVIDENCE_MIN_FREE_BYTES} \"$RUN_AGENT\""
+        )
+        self.assertTrue(
+            all(expected in invocation for invocation in invocations),
+            "both Capafy agent paths must override only the generic 512 MiB "
+            "evidence reserve with the measured Capafy-specific 64 MiB floor",
+        )
+
+    def test_capafy_marketing_uses_the_same_measured_evidence_floor(self):
+        text = CAPAFY_MARKETING.read_text(encoding="utf-8")
+        self.assertIn(
+            f"AGENT_RUNNER_EVIDENCE_MIN_FREE_BYTES="
+            f"{CAPAFY_EVIDENCE_MIN_FREE_BYTES} \"$RUN_AGENT\"",
+            text,
+        )
+
     def test_capafy_uses_a_task_class_that_can_fit_a_measured_pass(self):
         task_class = task_class_of(CAPAFY)
         config = json.loads(CONFIG.read_text(encoding="utf-8"))
@@ -73,6 +100,16 @@ class CapafyLoopWiringTest(unittest.TestCase):
         proc = self._run_agent_with(
             "Run one bounded fixture pass and return the contract JSON only.\n",
             task_class=task_class_of(CAPAFY),
+        )
+        self.assertNotIn("invalid or missing --task-class", proc.stderr)
+
+    def test_run_agent_accepts_the_capafy_drainer_browser_class(self):
+        # capafy-autopublish uses this longer browser class for the actual
+        # CP1/CP2/CP3 drainer.  Keep the wrapper whitelist from silently
+        # rejecting a valid configured class before any live work begins.
+        proc = self._run_agent_with(
+            "Run one bounded Capafy browser publish fixture and return JSON only.\n",
+            task_class="application-lane-agent",
         )
         self.assertNotIn("invalid or missing --task-class", proc.stderr)
 

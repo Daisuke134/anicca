@@ -6,7 +6,7 @@
 # remote-status is status=1 (under review) AND isConfirmedConfigKeys=1.
 #
 # Usage: publish_finish.sh <agent-id> <skill-name> [LISTING.md]
-set -uo pipefail
+set -euo pipefail
 
 ID="${1:?agent-id required}"
 SKILL_NAME="${2:?skill-name required}"
@@ -15,7 +15,26 @@ LISTING="${3:-}"
 AUTO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PUB="$AUTO/vendor/capafy-publisher"
 LIFE_MANAGER_STATE_HOME="${LIFE_MANAGER_STATE_HOME:-$HOME/.local/state/life-manager}"
+CAPAFY_PUBLISH_HOME="${CAPAFY_PUBLISH_HOME:-$LIFE_MANAGER_STATE_HOME/runtime/capafy-publisher-home}"
 VENV="${CAPAFY_BROWSER_PYTHON:-python3}"
+
+# Keep configure/ship bound to the selected agent even when a previous retry
+# left a recoverable manifest behind.  The publisher reads this before parsing
+# its command, so it must be exported before the first Python invocation.
+# The selected remote agent is the isolation boundary.  Do not preserve an
+# inherited work directory: a launcher can carry one over from a different
+# candidate, making configure/ship silently operate on that other manifest.
+export CAPAFY_PUBLISH_WORK_DIR="$PUB/.temp/agents/$ID"
+
+# Direct recovery and launchd must resolve credentials from the same repo-external
+# SSOT. Load them before the key-health gate; values stay process-local.
+for ENV_FILE in "$LIFE_MANAGER_STATE_HOME/.env" "$HOME/.openclaw/.env"; do
+  if [ -f "$ENV_FILE" ]; then
+    set -a; . "$ENV_FILE" 2>/dev/null; set +a
+  fi
+done
+
+export HOME="$CAPAFY_PUBLISH_HOME"
 cd "$PUB" || { echo "❌ cd PUB"; exit 1; }
 
 step(){ echo ""; echo "━━━ $* ━━━"; }
@@ -73,7 +92,7 @@ if [ "$(rstat status)" = "1" ]; then
   echo "status=1 already ✓ — already submitted, skip ship+CP3"
 else
   step "[5] ship"
-  SHIP_OUT="$(python3 packager.py publish-ship --agent-id "$ID" 2>&1)"
+  SHIP_OUT="$(python3 packager.py publish-ship --agent-id "$ID" 2>&1 || true)"
   if echo "$SHIP_OUT" | grep -q '"ok": true\|shipped'; then echo "shipped"; else
     # ONLY the specific "already uploaded for this local publish work-state" error is
     # benign (idempotent re-run of a ship that already matched this agent_id). Any
@@ -94,28 +113,12 @@ else
     [ "$(rstat status)" = "1" ] && break
     echo "CP3 submit attempt $attempt"
     CP3="$(refresh ship)"
-    EDITURL="$CP3" timeout 95 "$VENV" - <<'PY' 2>&1 | grep -vE "Deprecation|warnings.warn" | tail -3
-import time,os,urllib.request
-from playwright.sync_api import sync_playwright
-def _detect_cdp():
-    override=os.environ.get("CP1_CDP_URL")
-    if override: return override
-    for port in (9222,9223):
-        url=f"http://localhost:{port}"
-        try:
-            with urllib.request.urlopen(f"{url}/json/version", timeout=2) as r:
-                if r.status==200: return url
-        except Exception: continue
-    return "http://localhost:9222"
-pw=sync_playwright().start(); br=pw.chromium.connect_over_cdp(_detect_cdp())
-caps=[p for c in br.contexts for p in c.pages if 'capafy.ai' in (p.url or '')]
-pg=caps[-1] if caps else br.contexts[0].new_page()
-pg.bring_to_front(); pg.goto(os.environ["EDITURL"], wait_until="networkidle", timeout=60000); time.sleep(7)
-r=pg.evaluate("""()=>{const c=[...document.querySelectorAll('button')].filter(e=>/審査に提出|提出$/i.test((e.textContent||'').trim())&&(e.textContent||'').length<16&&!e.disabled);if(c.length){const b=c[c.length-1];b.scrollIntoView();const r=b.getBoundingClientRect();return{x:r.x+r.width/2,y:r.y+r.height/2};}return null;}""")
-if r: pg.mouse.click(r['x'],r['y']); print("審査に提出"); time.sleep(3)
-m=pg.evaluate("""()=>{const b=[...document.querySelectorAll('button')].find(e=>/提出を確認|Confirm|確定/.test((e.textContent||'').trim())&&e.offsetParent&&e.getBoundingClientRect().width<340);if(b){b.click();return 'confirmed';}return 'no-modal';}""")
-print("confirm:",m); time.sleep(4)
-PY
+    VERSION_UPDATE_INFO="Updated the Agent package and workflow for this review submission."
+    CP3_OUT="$(timeout 30 "$VENV" "$AUTO/scripts/drive_checkpoint3.py" "$CP3" "$VERSION_UPDATE_INFO" 2>&1)" || {
+      printf '%s\n' "$CP3_OUT" | tail -3
+      die "CP3 raw submit failed"
+    }
+    printf '%s\n' "$CP3_OUT" | tail -3
     poll status 1 6 5 && break
   done
 fi
@@ -131,9 +134,11 @@ sys.exit(0 if (st==1 and cfg==1) else 1)
 " || die "FINAL VERIFY failed (status/cfg not 1) for agent $ID"
 
 step "[8] ledger"
-python3 - "$ID" "$SKILL_NAME" "$LISTING" <<'PY'
+LEDGER="$LIFE_MANAGER_STATE_HOME/state/capafy-autopublish/published.jsonl"
+mkdir -p "$(dirname "$LEDGER")"
+python3 - "$ID" "$SKILL_NAME" "$LISTING" "$LEDGER" <<'PY'
 import json,sys
-aid,sn,listing=sys.argv[1],sys.argv[2],sys.argv[3]
+aid,sn,listing,ledger=sys.argv[1],sys.argv[2],sys.argv[3],sys.argv[4]
 title=sn
 try:
     for ln in open(listing):
@@ -143,7 +148,6 @@ try:
     if '## Title' in lines:
         i=lines.index('## Title'); title=lines[i+1] if i+1<len(lines) else sn
 except Exception: pass
-ledger="../../state/published.jsonl"
 # dedup: resuming an already-ledgered agent must not append a duplicate row
 import os
 if os.path.exists(ledger) and any(('"agent_id":"%s"'%aid) in l or ('"agent_id": "%s"'%aid) in l for l in open(ledger)):
@@ -155,5 +159,6 @@ else:
     },ensure_ascii=False)+"\n")
     print("ledger appended", aid)
 PY
+[ "$?" -eq 0 ] || die "ledger write failed for agent $ID"
 echo ""
 echo "✅ PUBLISHED + VERIFIED: agent_id=$ID ($SKILL_NAME) — status=1 under review."

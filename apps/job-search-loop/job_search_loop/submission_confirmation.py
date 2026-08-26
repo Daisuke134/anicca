@@ -28,12 +28,17 @@ _CONFIRMATION_TERMS = (
     "applicationreceived",
     "thankyouforapplying",
     "thanksforapplying",
+    "thankyouforyourinterest",
     "applicationsubmitted",
     "wehavereceivedyourapplication",
+    "wevereceivedyourapplication",
+    "wevegotyourapplication",
+    "hasbeenreceived",
     "応募が完了",
     "応募を受け付け",
     "応募を受付",
     "ご応募いただ",
+    "ご応募ありがとう",
     "エントリーが完了",
     "応募受付",
 )
@@ -98,6 +103,11 @@ def _message_from_payload(value: dict[str, Any]) -> dict[str, Any] | None:
         "message_id": message_id,
         "thread_id": thread_id,
         "sender": _unwrap(headers.get("from")),
+        "recipient": _unwrap(
+            headers.get("delivered-to")
+            or headers.get("to")
+            or headers.get("x-original-to")
+        ),
         "subject": _unwrap(headers.get("subject")),
         "body": _unwrap(value.get("body")),
         "received_at": received_at,
@@ -105,16 +115,44 @@ def _message_from_payload(value: dict[str, Any]) -> dict[str, Any] | None:
 
 
 def _confirmation_matches(
-    message: dict[str, str], candidate: dict[str, str]
+    message: dict[str, str],
+    candidate: dict[str, str],
+    expected_recipient: str | None = None,
 ) -> bool:
     subject_and_body = _fold(f"{message['subject']}\n{message['body']}")
     company_context = _fold(
         f"{message['sender']}\n{message['subject']}\n{message['body']}"
     )
     return (
-        any(term in subject_and_body for term in _CONFIRMATION_TERMS)
+        (
+            expected_recipient is None
+            or parseaddr(message["recipient"])[1].casefold()
+            == expected_recipient.casefold()
+        )
+        and any(term in subject_and_body for term in _CONFIRMATION_TERMS)
         and _fold(candidate["company"]) in company_context
         and _fold(candidate["title"]) in subject_and_body
+        and _sender_matches(message["sender"], candidate["canonical_url"])
+    )
+
+
+def _confirmation_matches_without_title(
+    message: dict[str, str],
+    candidate: dict[str, str],
+    expected_recipient: str | None = None,
+) -> bool:
+    subject_and_body = _fold(f"{message['subject']}\n{message['body']}")
+    company_context = _fold(
+        f"{message['sender']}\n{message['subject']}\n{message['body']}"
+    )
+    return (
+        (
+            expected_recipient is None
+            or parseaddr(message["recipient"])[1].casefold()
+            == expected_recipient.casefold()
+        )
+        and any(term in subject_and_body for term in _CONFIRMATION_TERMS)
+        and _fold(candidate["company"]) in company_context
         and _sender_matches(message["sender"], candidate["canonical_url"])
     )
 
@@ -171,6 +209,7 @@ def reconcile_confirmation_threads(
     threads: list[dict[str, Any]],
     thread_loader: Callable[[str], dict[str, Any]],
     seen_state: Path,
+    expected_recipient: str | None = None,
 ) -> dict[str, Any]:
     ledger = Ledger(ledger_path)
     reconciled: list[dict[str, str]] = []
@@ -210,11 +249,20 @@ def reconcile_confirmation_threads(
                     received_epoch=received_epoch,
                 ):
                     continue
+                uncertain = _uncertain_candidates(ledger)
                 candidates = [
                     candidate
-                    for candidate in _uncertain_candidates(ledger)
-                    if _confirmation_matches(message, candidate)
+                    for candidate in uncertain
+                    if _confirmation_matches(message, candidate, expected_recipient)
                 ]
+                if not candidates:
+                    candidates = [
+                        candidate
+                        for candidate in uncertain
+                        if _confirmation_matches_without_title(
+                            message, candidate, expected_recipient
+                        )
+                    ]
                 if len(candidates) != 1:
                     reason = (
                         "ambiguous_application_match"
@@ -281,8 +329,12 @@ def _gmail_confirmation_threads(account: str, executable: str) -> list[dict[str,
             "100",
             (
                 'newer_than:30d ("application received" OR '
+                '"received your application" OR '
                 '"thank you for applying" OR "thanks for applying" OR '
-                '"応募が完了" OR "応募を受け付け" OR "ご応募いただ")'
+                '"thank you for your interest" OR "has been received" OR '
+                '"got your application" OR '
+                '"応募が完了" OR "応募を受け付け" OR "ご応募いただ" OR '
+                '"ご応募ありがとう")'
             ),
         ],
         check=True,
@@ -343,6 +395,7 @@ def main() -> None:
             args.account, thread_id, args.gog
         ),
         seen_state=args.seen,
+        expected_recipient=args.account,
     )
     args.output.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     args.output.write_text(

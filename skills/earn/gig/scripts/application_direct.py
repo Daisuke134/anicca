@@ -26,6 +26,7 @@ import evidence_gc
 from telegram_outbox import TelegramOutbox, dispatch_one
 from apply_telegram_report import OpenClawTelegramTransport
 from gig_paths import BROWSER_DIR, RUNNER_DIR
+from gig_release import pin_release_for_process
 
 
 HERE = Path(__file__).resolve().parent
@@ -1154,6 +1155,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--output", type=Path)
     args = parser.parse_args(argv)
     args.planner_runner = args.planner_runner.resolve(strict=True)
+    pin_release_for_process(args.parent)
 
     pass_id = str(args.pass_id)
     run_dir = args.state_dir / pass_id

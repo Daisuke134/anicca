@@ -12,6 +12,7 @@ TASK_CLASSES = {
     "extract": "composition-agent",
     "tailor": "composition-agent",
     "inbox": "composition-agent",
+    "mercor_pass": "browser-lane-agent",
     "submit": "browser-lane-agent",
     "improve": "high-value-agent",
 }
@@ -73,6 +74,10 @@ class AgentRunner:
             "--task-class",
             task_class,
         ]
+        if task_class == "browser-lane-agent":
+            argv.extend(
+                ["--escalation-reason", "mandatory-model-browser-loop"]
+            )
         prompt_input = None
         if task_class in {"composition-agent", "diagnostic-agent"}:
             argv.append("--prompt-stdin")

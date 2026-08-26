@@ -4,12 +4,17 @@
 from __future__ import annotations
 
 import argparse
+import asyncio
+from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
+import hashlib
+import ipaddress
 import json
 import mimetypes
 import os
 from pathlib import Path
 import re
+import socket
 import subprocess
 import time
 import urllib.error
@@ -20,10 +25,56 @@ import uuid
 
 BASE_URL = "https://api.postiz.com/public/v1"
 PUBLIC_POST_DETAILS_URL = "https://api.postiz.com/public/posts"
+POSTIZ_API_HOST = "api.postiz.com"
 
 
 class PostizError(RuntimeError):
     pass
+
+
+def validate_resolve_ip(value: str | None) -> str | None:
+    """Validate the opt-in Postiz IPv4 endpoint override."""
+    if value is None:
+        return None
+    if not isinstance(value, str) or not value or value != value.strip():
+        raise PostizError("LM_POSTIZ_RESOLVE_IP must be a public IPv4 address")
+    try:
+        address = ipaddress.ip_address(value)
+    except ValueError as exc:
+        raise PostizError("LM_POSTIZ_RESOLVE_IP must be a public IPv4 address") from exc
+    if (
+        not isinstance(address, ipaddress.IPv4Address)
+        or not address.is_global
+        or address.is_private
+        or address.is_loopback
+        or address.is_link_local
+        or address.is_multicast
+        or address.is_reserved
+        or address.is_unspecified
+    ):
+        raise PostizError("LM_POSTIZ_RESOLVE_IP must be a public IPv4 address")
+    return str(address)
+
+
+@contextmanager
+def postiz_resolve_override(resolve_ip: str | None):
+    """Temporarily resolve only Postiz's API hostname to one IPv4 literal."""
+    address = validate_resolve_ip(resolve_ip)
+    if address is None:
+        yield
+        return
+    original = socket.getaddrinfo
+
+    def resolve(host, port, family=0, type=0, proto=0, flags=0):
+        if host != POSTIZ_API_HOST or family not in (0, socket.AF_UNSPEC, socket.AF_INET):
+            return original(host, port, family, type, proto, flags)
+        return original(address, port, family, type, proto, flags)
+
+    socket.getaddrinfo = resolve
+    try:
+        yield
+    finally:
+        socket.getaddrinfo = original
 
 
 def build_payload(
@@ -31,11 +82,27 @@ def build_payload(
     integration: str,
     caption: str,
     title: str,
-    upload_id: str,
-    upload_path: str,
-    now_iso: str,
+    upload_id: str | None = None,
+    upload_path: str | None = None,
+    now_iso: str = "",
     platform: str = "tiktok",
+    upload_ids: list[str] | None = None,
+    upload_paths: list[str] | None = None,
 ) -> dict:
+    if (upload_ids is None) != (upload_paths is None):
+        raise PostizError("Postiz upload ids/paths must be supplied together")
+    if upload_ids is not None:
+        if len(upload_ids) != len(upload_paths) or not upload_ids:
+            raise PostizError("Postiz carousel uploads are invalid")
+        uploads = [{"id": item_id, "path": item_path} for item_id, item_path in zip(upload_ids, upload_paths)]
+    else:
+        uploads = [{"id": upload_id, "path": upload_path}]
+    if platform == "instagram" and upload_ids is not None and len(uploads) < 2:
+        raise PostizError("Instagram carousel requires at least two images")
+    if upload_ids is not None and platform not in ("instagram", "tiktok"):
+        raise PostizError("carousel images require Instagram or TikTok")
+    if upload_ids is not None and any(not re.search(r"\.(?:jpe?g)(?:\?.*)?$", str(item), re.I) for item in upload_paths):
+        raise PostizError("carousel media must be JPEG images")
     if platform == "youtube":
         settings = {
             "__type": "youtube",
@@ -76,7 +143,7 @@ def build_payload(
         "posts": [
             {
                 "integration": {"id": integration},
-                "value": [{"content": caption, "image": [{"id": upload_id, "path": upload_path}]}],
+                "value": [{"content": caption, "image": uploads}],
                 "settings": settings,
             }
         ],
@@ -104,6 +171,14 @@ def _valid_public_url(platform: str, value: str | None) -> bool:
     return False
 
 
+def _valid_instagram_carousel_url(value: str | None) -> bool:
+    """A native photo carousel is a direct Instagram post, never a Reel/profile URL."""
+    return bool(re.fullmatch(
+        r"https://www\.instagram\.com/p/(?=[A-Za-z0-9_-]*[A-Za-z_-])[A-Za-z0-9_-]+/?",
+        value or "",
+    ))
+
+
 def find_post(response, post_id: str, platform: str = "tiktok") -> dict:
     posts = response.get("posts", []) if isinstance(response, dict) else response
     if not isinstance(posts, list):
@@ -113,11 +188,13 @@ def find_post(response, post_id: str, platform: str = "tiktok") -> dict:
         return {"state": "UNKNOWN", "post_url": None}
     state = match.get("state") or "UNKNOWN"
     url = match.get("releaseURL") or match.get("releaseUrl")
-    # Postiz's TikTok ``releaseId`` is an internal publication identifier, not
-    # the native TikTok video id.  It can look numeric and still resolve to a
-    # different public video (the provider profile is the authority).  Keep a
-    # profile URL here so the caller must perform a public profile/caption/time
-    # readback before it can record a direct artifact URL.
+    if state == "PUBLISHED" and platform == "tiktok" and re.fullmatch(
+        r"https://www\.tiktok\.com/@[^/]+/?", url or "",
+    ):
+        release_id = str(match.get("releaseId") or "")
+        video = re.fullmatch(r"v_pub_file~v2(?:-1)?\.([0-9]+)", release_id)
+        if video:
+            url = f"{url.rstrip('/')}/video/{video.group(1)}"
     if state == "PUBLISHED" and platform == "youtube" and not _valid_public_url(platform, url):
         # Postiz may expose a channel URL while the provider row carries the
         # authoritative YouTube video id. Construct only from that exact id;
@@ -130,7 +207,14 @@ def find_post(response, post_id: str, platform: str = "tiktok") -> dict:
     return {"state": state, "post_url": url if isinstance(url, str) else None}
 
 
-def find_existing_post(response, *, integration: str, caption: str, platform: str = "tiktok") -> dict | None:
+def find_existing_post(
+    response,
+    *,
+    integration: str,
+    caption: str,
+    video_sha256: str,
+    platform: str = "tiktok",
+) -> dict | None:
     posts = response.get("posts", []) if isinstance(response, dict) else response
     if not isinstance(posts, list):
         raise PostizError("Postiz list response has no posts array")
@@ -141,7 +225,15 @@ def find_existing_post(response, *, integration: str, caption: str, platform: st
         integration_id = (
             row_integration.get("id") if isinstance(row_integration, dict) else row.get("integrationId")
         )
-        if integration_id != integration or _normalized(str(row.get("content") or "")) != _normalized(caption):
+        # Caption equality cannot identify a publication effect: scheduled lanes
+        # legitimately reuse copy for different video bytes. Postiz's normal list
+        # response does not carry this Life Manager digest, so it fails closed and
+        # the exact creative/video/caption local ledger remains the only reuse path.
+        if (
+            integration_id != integration
+            or _normalized(str(row.get("content") or "")) != _normalized(caption)
+            or row.get("lifeManagerVideoSha256") != video_sha256
+        ):
             continue
         post_id = row.get("id")
         if not isinstance(post_id, str) or not post_id:
@@ -178,6 +270,22 @@ def _normalized(value: str) -> str:
     return re.sub(r"\s+", " ", value).strip().casefold()
 
 
+def _matching_profile_url(rows, caption_prefix: str, posted_after: int) -> str | None:
+    candidates = []
+    for row in rows if isinstance(rows, list) else []:
+        url = row.get("href") if isinstance(row, dict) else None
+        alt = row.get("alt") if isinstance(row, dict) else ""
+        match = re.fullmatch(r"https://www\.tiktok\.com/@[^/]+/video/([0-9]+)/?", url or "")
+        if (
+            match
+            and caption_prefix
+            and caption_prefix in _normalized(str(alt))
+            and (int(match.group(1)) >> 32) >= posted_after - 5
+        ):
+            candidates.append((int(match.group(1)), url))
+    return max(candidates)[1] if candidates else None
+
+
 def resolve_profile_release_url(
     profile_url: str,
     caption: str,
@@ -186,6 +294,7 @@ def resolve_profile_release_url(
     runner=subprocess.run,
     browser_resolver=None,
 ) -> str | None:
+    del browser_resolver
     if not re.fullmatch(r"https://www\.tiktok\.com/@[^/]+/?", profile_url):
         return None
     caption_prefix = _normalized(caption)[:24].strip()
@@ -228,8 +337,7 @@ def resolve_profile_release_url(
                 candidates.append((timestamp, url))
         if candidates:
             return max(candidates)[1]
-    resolver = browser_resolver or _resolve_profile_release_url_browser
-    return resolver(profile_url, caption, posted_after=posted_after, caption_prefix=caption_prefix)
+    return None
 
 
 def _resolve_profile_release_url_browser(
@@ -240,44 +348,58 @@ def _resolve_profile_release_url_browser(
     caption_prefix: str | None = None,
 ) -> str | None:
     """Read the newest profile DOM when yt-dlp cannot read TikTok's JS page."""
-    del caption, posted_after  # profile order is newest-first; exact caption is the join key.
+    del caption
     try:
-        from playwright.sync_api import sync_playwright
+        import websockets
     except ImportError:
         return None
     prefix = caption_prefix or ""
-    try:
+
+    async def read_profile():
         host = os.environ.get("CDP_HOST", "127.0.0.1")
         port = os.environ.get("CDP_PORT", "9222")
-        with sync_playwright() as playwright:
-            browser = playwright.chromium.connect_over_cdp(f"http://{host}:{port}")
-            if not browser.contexts:
-                return None
-            page = browser.contexts[0].new_page()
+        version = json.loads(urllib.request.urlopen(
+            f"http://{host}:{port}/json/version", timeout=8,
+        ).read())
+        websocket_url = version["webSocketDebuggerUrl"]
+        async with websockets.connect(
+            websocket_url, open_timeout=10, ping_interval=None, max_size=64 * 1024 * 1024,
+        ) as socket:
+            sequence = 0
+
+            async def call(method, params=None, session_id=None):
+                nonlocal sequence
+                sequence += 1
+                request = {"id": sequence, "method": method, "params": params or {}}
+                if session_id:
+                    request["sessionId"] = session_id
+                await socket.send(json.dumps(request))
+                while True:
+                    response = json.loads(await asyncio.wait_for(socket.recv(), timeout=15))
+                    if response.get("id") == sequence:
+                        if response.get("error"):
+                            raise RuntimeError("TikTok profile CDP read failed")
+                        return response.get("result", {})
+
+            target_id = (await call("Target.createTarget", {"url": profile_url}))["targetId"]
             try:
-                page.goto(profile_url, wait_until="domcontentloaded", timeout=45_000)
-                try:
-                    page.wait_for_load_state("networkidle", timeout=15_000)
-                except Exception:
-                    pass
-                rows = page.locator('a[href*="/video/"]').evaluate_all(
-                    "els => els.map(e => ({href:e.href, alt:e.querySelector('img')?.alt || ''}))",
+                session_id = (await call(
+                    "Target.attachToTarget", {"targetId": target_id, "flatten": True},
+                ))["sessionId"]
+                await asyncio.sleep(8)
+                expression = "JSON.stringify([...document.querySelectorAll('a[href*=\"/video/\"]')].slice(0,20).map(e=>({href:e.href,alt:e.querySelector('img')?.alt||''})))"
+                result = await call(
+                    "Runtime.evaluate", {"expression": expression, "returnByValue": True}, session_id,
                 )
-                for row in rows:
-                    url = row.get("href") if isinstance(row, dict) else None
-                    alt = row.get("alt") if isinstance(row, dict) else ""
-                    if (
-                        isinstance(url, str)
-                        and re.fullmatch(r"https://www\.tiktok\.com/@[^/]+/video/[0-9]+/?", url)
-                        and prefix
-                        and prefix in _normalized(str(alt))
-                    ):
-                        return url
+                value = result.get("result", {}).get("value")
+                return _matching_profile_url(json.loads(value), prefix, posted_after) if isinstance(value, str) else None
             finally:
-                page.close()
+                await call("Target.closeTarget", {"targetId": target_id})
+
+    try:
+        return asyncio.run(read_profile())
     except Exception:
         return None
-    return None
 
 
 def _request_json(request: urllib.request.Request, timeout: int = 90):
@@ -312,18 +434,18 @@ def read_post_error(post_id: str, api_key: str) -> str | None:
     return reason.strip() if isinstance(reason, str) and reason.strip() else None
 
 
-def upload_video(video: Path, api_key: str) -> tuple[str, str]:
+def upload_media(media: Path, api_key: str, *, default_suffix: str, default_mime: str) -> tuple[str, str]:
     boundary = "----life-manager-" + uuid.uuid4().hex
-    filename = video.name.replace('"', "")
+    filename = media.name.replace('"', "")
     if not Path(filename).suffix:
-        filename = f"{filename}.mp4"
-    mime = mimetypes.guess_type(filename)[0] or "video/mp4"
+        filename = f"{filename}{default_suffix}"
+    mime = mimetypes.guess_type(filename)[0] or default_mime
     head = (
         f"--{boundary}\r\n"
         f'Content-Disposition: form-data; name="file"; filename="{filename}"\r\n'
         f"Content-Type: {mime}\r\n\r\n"
     ).encode()
-    body = head + video.read_bytes() + f"\r\n--{boundary}--\r\n".encode()
+    body = head + media.read_bytes() + f"\r\n--{boundary}--\r\n".encode()
     request = urllib.request.Request(
         f"{BASE_URL}/upload",
         data=body,
@@ -339,6 +461,18 @@ def upload_video(video: Path, api_key: str) -> tuple[str, str]:
     if not isinstance(upload_id, str) or not upload_id or not isinstance(upload_path, str) or not upload_path:
         raise PostizError("Postiz upload response is missing id/path")
     return upload_id, upload_path
+
+
+def upload_video(video: Path, api_key: str) -> tuple[str, str]:
+    return upload_media(video, api_key, default_suffix=".mp4", default_mime="video/mp4")
+
+
+def upload_image(image: Path, api_key: str) -> tuple[str, str]:
+    if not image.is_file() or image.stat().st_size == 0:
+        raise PostizError("carousel image is missing or empty")
+    if not image.read_bytes().startswith(b"\xff\xd8\xff"):
+        raise PostizError("carousel image is not JPEG")
+    return upload_media(image, api_key, default_suffix=".jpg", default_mime="image/jpeg")
 
 
 def create_post(payload: dict, api_key: str) -> str:
@@ -396,23 +530,78 @@ def is_reconciled_state(state: dict, platform: str = "tiktok") -> bool:
     )
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--video", type=Path, required=True)
-    parser.add_argument("--caption-file", type=Path, required=True)
-    parser.add_argument("--integration", required=True)
-    parser.add_argument("--title", default="Life Manager")
-    parser.add_argument("--platform", choices=("instagram", "tiktok", "youtube"), default="tiktok")
-    args = parser.parse_args()
+def read_caption(caption_file: Path, *, carousel: bool = False) -> str:
+    raw = caption_file.read_text(encoding="utf-8")
+    if not raw.strip():
+        raise PostizError("caption is empty")
+    return raw if carousel else raw.strip()
 
-    api_key = os.environ.get("POSTIZ_API_KEY", "")
-    if not api_key:
-        raise PostizError("POSTIZ_API_KEY is unavailable")
+
+def _publish(args, api_key: str, caption: str) -> int:
+    if args.image:
+        if args.platform not in ("instagram", "tiktok"):
+            raise PostizError("carousel images require Instagram or TikTok")
+        if len(args.image) < 2:
+            raise PostizError("photo carousel requires at least two images")
+        for image in args.image:
+            if not image.is_file() or image.stat().st_size == 0:
+                raise PostizError("carousel image is missing or empty")
+            if not image.read_bytes().startswith(b"\xff\xd8\xff"):
+                raise PostizError("carousel image is not JPEG")
+
+        upload_ids = []
+        upload_paths = []
+        for image in args.image:
+            upload_id, upload_path = upload_image(image, api_key)
+            upload_ids.append(upload_id)
+            upload_paths.append(upload_path)
+        posted_after = int(time.time())
+        payload = build_payload(
+            integration=args.integration,
+            caption=caption,
+            title=args.title[:100],
+            upload_id="",
+            upload_path="",
+            upload_ids=upload_ids,
+            upload_paths=upload_paths,
+            now_iso=datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z"),
+            platform=args.platform,
+        )
+        post_id = create_post(payload, api_key)
+        state = {"state": "QUEUE", "post_url": None}
+        for _ in range(18):
+            time.sleep(10)
+            state = read_publish_state(post_id, api_key, args.platform)
+            if state["state"] == "PUBLISHED":
+                if args.platform == "instagram" and _valid_instagram_carousel_url(state.get("post_url")):
+                    break
+                if args.platform == "tiktok":
+                    if _valid_public_url("tiktok", state.get("post_url")):
+                        break
+                    resolved = resolve_profile_release_url(state.get("post_url"), caption, posted_after=posted_after)
+                    if resolved:
+                        state["post_url"] = resolved
+                        break
+            if state["state"] == "ERROR":
+                break
+        result = {
+            "post_id": post_id,
+            **state,
+            "reconciled": state.get("state") == "PUBLISHED" and (
+                _valid_instagram_carousel_url(state.get("post_url")) if args.platform == "instagram"
+                else _valid_public_url("tiktok", state.get("post_url"))
+            ),
+        }
+        print(json.dumps(result, ensure_ascii=False, separators=(",", ":")))
+        valid_url = _valid_instagram_carousel_url(state.get("post_url")) if args.platform == "instagram" else _valid_public_url("tiktok", state.get("post_url"))
+        if state["state"] != "PUBLISHED" or not valid_url:
+            reason = state.get("error")
+            suffix = f": {reason}" if isinstance(reason, str) and reason else ""
+            raise PostizError(f"Postiz terminal state is {state['state']}{suffix}")
+        return 0
+
     if not args.video.is_file() or args.video.stat().st_size == 0:
         raise PostizError("video is missing or empty")
-    caption = args.caption_file.read_text(encoding="utf-8").strip()
-    if not caption:
-        raise PostizError("caption is empty")
 
     title = args.title
     if args.platform == "youtube" and title == "Life Manager":
@@ -425,6 +614,7 @@ def main() -> int:
         read_recent_posts(api_key),
         integration=args.integration,
         caption=caption,
+        video_sha256=hashlib.sha256(args.video.read_bytes()).hexdigest(),
         platform=args.platform,
     )
     if existing:
@@ -475,6 +665,31 @@ def main() -> int:
         suffix = f": {reason}" if isinstance(reason, str) and reason else ""
         raise PostizError(f"Postiz terminal state is {state['state']}{suffix}")
     return 0
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--video", type=Path)
+    parser.add_argument("--image", type=Path, action="append", default=[])
+    parser.add_argument("--caption-file", type=Path, required=True)
+    parser.add_argument("--integration", required=True)
+    parser.add_argument("--title", default="Life Manager")
+    parser.add_argument("--platform", choices=("instagram", "tiktok", "youtube"), default="tiktok")
+    args = parser.parse_args()
+
+    api_key = os.environ.get("POSTIZ_API_KEY", "")
+    if not api_key:
+        raise PostizError("POSTIZ_API_KEY is unavailable")
+    caption = read_caption(args.caption_file, carousel=bool(args.image))
+
+    if args.video is None and not args.image:
+        raise PostizError("video or carousel images are required")
+    if args.video is not None and args.image:
+        raise PostizError("video and carousel images are mutually exclusive")
+
+    resolve_ip = validate_resolve_ip(os.environ.get("LM_POSTIZ_RESOLVE_IP"))
+    with postiz_resolve_override(resolve_ip):
+        return _publish(args, api_key, caption)
 
 
 if __name__ == "__main__":

@@ -30,9 +30,17 @@ import hashlib
 import importlib.util
 import json
 import os
+import sys
 import tempfile
 from pathlib import Path
 from typing import Any
+
+SCRIPTS = Path(__file__).resolve().parent
+if str(SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS))
+from private_data_boundary import (
+    attachment_metadata, is_credential_attachment, redact_prompt_text,
+)
 
 
 # ★ Where the durable postings live is A8's decision, not a second one. ★
@@ -69,7 +77,7 @@ except Exception:  # noqa: BLE001 - instrumentation may never break its host
 SOURCE_DIRS = ("source", "requirements", "delivery", "acceptance")
 # Budgets. The combined block is a digest, not a transcript: these are what a builder
 # prompt can afford beside the rest of the paid-work instructions.
-COMBINED_MAX_BYTES = 12000
+COMBINED_MAX_BYTES = 262144
 POSTING_CHARS = 3000
 CURRENT_REQUEST_CHARS = 1500
 ACCUMULATED_ROWS = 16
@@ -125,11 +133,14 @@ def _refs(root: Path) -> list[dict[str, Any]]:
         if not path.is_file():
             continue
         size, sha = _bytes_sha(path)
-        refs.append({
+        reference = {
             "path": str(path.relative_to(root)),
             "bytes": size,
             "sha256": sha,
-        })
+        }
+        if is_credential_attachment(root, path):
+            reference.update(attachment_metadata(root, path))
+        refs.append(reference)
     return refs
 
 
@@ -151,7 +162,7 @@ def _recent_events(path: Path, limit: int = 12) -> list[dict[str, Any]]:
 
 
 def _clip(value: Any, limit: int) -> str:
-    text = str(value or "").strip()
+    text = redact_prompt_text(value).strip()
     if len(text) <= limit:
         return text
     return text[:limit].rstrip() + "…"
@@ -305,7 +316,7 @@ def _dm_section(root: Path) -> dict[str, Any] | None:
         if not isinstance(messages, list) or not messages:
             continue
         rows = []
-        for message in messages[-DM_MESSAGE_ROWS:]:
+        for message in messages:
             if not isinstance(message, dict):
                 continue
             rows.append({
@@ -374,12 +385,70 @@ def _talkroom_section(root: Path) -> dict[str, Any] | None:
     rows = _jsonl_rows(path)
     if not rows:
         return None
+    messages = []
+    for row in rows:
+        evidence = {
+            key: row.get(key) for key in ("side", "sent_at", "message_id", "text", "attachments")
+            if row.get(key) is not None
+        }
+        encoded = json.dumps(evidence, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        messages.append({
+            **evidence,
+            "text": _clip(evidence.get("text"), DM_MESSAGE_CHARS),
+            "source_fact_id": f"talkroom-message:sha256:{hashlib.sha256(encoded.encode()).hexdigest()}",
+        })
     return {
         "path": str(path),
         "message_count": len(rows),
         "buyer_message_count": sum(1 for row in rows if row.get("side") == "buyer"),
         "seller_message_count": sum(1 for row in rows if row.get("side") == "seller"),
-        "note": "full ledger on disk; the buyer's words are collected under requirements",
+        "messages": messages,
+    }
+
+
+def _project_history(root: Path, references: list[dict[str, Any]], state: dict[str, Any]) -> dict[str, Any]:
+    """Hash-bound artifact lineage, external effects and the unresolved delta."""
+    lineage = [
+        reference for reference in references
+        if str(reference.get("path") or "").startswith(("delivery/", "acceptance/"))
+    ]
+    effects = []
+    for row in _jsonl_rows(root / "events.jsonl"):
+        if row.get("event") == "economic_fact" and isinstance(row.get("fact"), dict):
+            fact = row["fact"]
+            capability = fact.get("capability_result") or {}
+            effects.append({
+                "fact_id": fact.get("fact_id"),
+                "effect_key": fact.get("effect_key"),
+                "kind": fact.get("kind"),
+                "status": capability.get("status"),
+                "source_fact_ids": capability.get("source_fact_ids") or [],
+            })
+    latest_acceptance = None
+    acceptance_files = sorted(
+        (path for path in (root / "acceptance").glob("acceptance-*.json") if path.is_file()),
+        key=lambda path: path.stat().st_mtime_ns,
+    )
+    if acceptance_files:
+        path = acceptance_files[-1]
+        value = _json(path)
+        latest_acceptance = {
+            "path": str(path), "sha256": _bytes_sha(path)[1],
+            "status": value.get("status"), "artifact_version": value.get("artifact_version"),
+            "package_sha256": value.get("package_sha256"),
+            "acceptance_delta": value.get("acceptance_delta"),
+        }
+    return {
+        "artifact_lineage": lineage,
+        "latest_acceptance": latest_acceptance,
+        "effects": effects,
+        "current_delta": {
+            key: state.get(key) for key in (
+                "next_action", "work_state", "current_version", "current_package_sha256",
+                "current_acceptance_status", "current_acceptance_delta",
+                "buyer_feedback_sha256", "handled_buyer_feedback_sha256",
+            )
+        },
     }
 
 
@@ -423,11 +492,17 @@ def _buyer_attachments(root: Path, references: list[dict[str, Any]]) -> list[dic
     for reference in references:
         path = str(reference.get("path") or "")
         if path.startswith(("source/buyer-attachments/", "source/dm/attachments/")):
-            rows.append({
+            row = {
                 "path": str(root / path),
                 "bytes": reference.get("bytes"),
                 "sha256": reference.get("sha256"),
-            })
+            }
+            if reference.get("restricted") is True:
+                row = {
+                    key: reference.get(key)
+                    for key in ("bytes", "sha256", "content_type", "purpose", "restricted")
+                }
+            rows.append(row)
     return rows[:ATTACHMENT_ROWS]
 
 
@@ -480,6 +555,10 @@ def _fit(body: dict[str, Any]) -> dict[str, Any]:
         # down. Everything dropped is still one open() away, which is the point of
         # read_these_first.
         current = (body.get("requirements") or {}).get("current_request")
+        restricted = [
+            row for row in body.get("buyer_attachments", [])
+            if isinstance(row, dict) and row.get("restricted") is True
+        ]
         body = {
             "version": body["version"],
             # ★ Survives the collapse. ★ What was ordered is the last thing worth dropping:
@@ -490,6 +569,8 @@ def _fit(body: dict[str, Any]) -> dict[str, Any]:
             "read_these_first": body.get("read_these_first", [])[:24],
             "requirements": {"current_request": _clip(current, CURRENT_REQUEST_CHARS)},
         }
+        if restricted:
+            body["buyer_attachments"] = restricted
         dropped.append("collapsed_to_paths")
     body["bytes"] = _encoded_bytes(body)
     if dropped:
@@ -499,6 +580,7 @@ def _fit(body: dict[str, Any]) -> dict[str, Any]:
 
 def combined_context(
     root: Path, references: list[dict[str, Any]], queue: dict[str, Any] | None = None,
+    state: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """One block holding all four sources, bounded, with the paths to the full bodies.
 
@@ -529,13 +611,21 @@ def combined_context(
     attachments = _buyer_attachments(root, references)
     if attachments:
         body["buyer_attachments"] = attachments
+    body["project_history"] = _project_history(root, references, state or {})
+    body["buyer_trust_context"] = {
+        "instruction": "Interpret buyer emotion and trust only from the cited message source_fact_ids.",
+        "evidence": [
+            {"source_fact_id": row["source_fact_id"], "sent_at": row.get("sent_at"), "text": row.get("text")}
+            for row in (talkroom or {}).get("messages", []) if row.get("side") == "buyer"
+        ],
+    }
     body["read_these_first"] = [
         str(section["path"])
         for section in (posting, proposal, requirements, talkroom)
         if isinstance(section, dict) and section.get("path")
     ] + [
         str(thread["path"]) for thread in (dm_thread or {}).get("threads", [])
-    ] + [row["path"] for row in attachments]
+    ] + [row["path"] for row in attachments if isinstance(row.get("path"), str)]
     body["sources_present"] = sorted(
         key for key in ("posting", "proposal", "dm", "requirements", "talkroom", "our_commitments")
         if key in body
@@ -560,7 +650,7 @@ def compile_context(root: Path, queue: dict[str, Any]) -> dict[str, Any]:
         "current_queue": {key: queue[key] for key in QUEUE_FIELDS if key in queue},
         "recent_events": _recent_events(root / "events.jsonl"),
         "source_refs": references,
-        "combined_context": combined_context(root, references, queue),
+        "combined_context": combined_context(root, references, queue, state),
     }
     encoded = json.dumps(body, ensure_ascii=False, separators=(",", ":"), sort_keys=True).encode("utf-8")
     body["project_context_sha256"] = hashlib.sha256(encoded).hexdigest()
@@ -591,16 +681,60 @@ def append_context_read_receipt(
     if not live_path.is_file():
         raise ValueError("live_talkroom_evidence_missing")
     live_bytes, live_sha = _bytes_sha(live_path)
+    sources = [
+        *compiled["source_refs"],
+        {"path": str(live_path), "bytes": live_bytes, "sha256": live_sha, "source": "live_talkroom_dom"},
+    ]
+    identity = compiled.get("identity") or {}
+    request_id = str(identity.get("request_id") or "")
+    talkroom_id = str(identity.get("talkroom_id") or "")
+    grouped: dict[str, list[dict[str, Any]]] = {}
+    live_proof: dict[str, Any] | None = None
+    for source in sources:
+        if not isinstance(source, dict):
+            continue
+        key = source_resource_key(
+            source.get("path") or "", request_id, talkroom_id, source=source,
+        )
+        if key is None:
+            continue
+        proof = {
+            field: source[field]
+            for field in ("path", "bytes", "sha256", "source")
+            if source.get(field) is not None
+        }
+        grouped.setdefault(key, []).append(proof)
+        if source.get("source") == "live_talkroom_dom":
+            live_proof = proof
+    source_reads = []
+    for key in sorted(grouped):
+        proofs = sorted(
+            grouped[key],
+            key=lambda value: (
+                str(value.get("path") or ""),
+                int(value.get("bytes") or 0),
+                str(value.get("sha256") or ""),
+            ),
+        )
+        encoded = json.dumps(
+            proofs, ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+        ).encode("utf-8")
+        source_reads.append({
+            "resource_key": key,
+            "source_count": len(proofs),
+            "bytes": sum(int(value.get("bytes") or 0) for value in proofs),
+            "sha256": hashlib.sha256(encoded).hexdigest(),
+        })
     body = {
         "version": 1,
         "thread_id": compiled["thread_id"],
         "project_context_sha256": compiled["project_context_sha256"],
         "input_event_id": str(queue.get("buyer_feedback_sha256") or ""),
         "observed_at": str(queue.get("talkroom_observed_at") or ""),
-        "sources_read": [
-            *compiled["source_refs"],
-            {"path": str(live_path), "bytes": live_bytes, "sha256": live_sha, "source": "live_talkroom_dom"},
-        ],
+        "source_count": len(compiled["source_refs"]),
+        "sources_read_count": len(sources),
+        "sources_read": source_reads,
+        "live_talkroom": live_proof,
     }
     encoded = json.dumps(body, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
     receipt = {**body, "receipt_sha256": hashlib.sha256(encoded).hexdigest()}
@@ -619,7 +753,13 @@ def append_context_read_receipt(
     return receipt
 
 
-def source_resource_key(path: str, request_id: str, talkroom_id: str) -> str | None:
+def source_resource_key(
+    path: str,
+    request_id: str,
+    talkroom_id: str,
+    *,
+    source: dict[str, Any] | None = None,
+) -> str | None:
     """Classify one read source into the EV1 resource-key vocabulary (spec §4.1).
 
     ★ Paths arrive in both forms. ★ ``_refs`` records them relative to the project root
@@ -639,19 +779,19 @@ def source_resource_key(path: str, request_id: str, talkroom_id: str) -> str | N
         return f"posting:{request_id}" if request_id else None
     if "/source/dm/" in text:
         return f"dm:{request_id}" if request_id else None
-    if "/source/talkroom/" in text or "talkroom-" in Path(text).name:
+    if (isinstance(source, dict) and source.get("source") == "live_talkroom_dom") \
+            or "/source/talkroom/" in text or "talkroom-" in Path(text).name:
         return f"talkroom:{talkroom_id}" if talkroom_id else None
     return f"project:{request_id}" if request_id else None
 
 
 def record_source_reads(compiled: dict[str, Any], receipt: dict[str, Any]) -> None:
-    """One EV1 `read` line per source this compile actually hashed.
+    """One EV1 `read` line per resource this compile actually hashed.
 
-    ★ Driven by the receipt, not by intent. ★ ``sources_read`` is the list of files whose
-    bytes were hashed, so a line here means the source existed and was read -- which is
-    exactly the fact spec §4.2 ``sources_read_before_work`` needs, and exactly the fact
-    that was missing on 2026-08-07 when two buyers were asked for material they had
-    already sent.
+    ★ Driven by the receipt, not by intent. ★ ``sources_read`` now has one deterministic
+    aggregate per resource whose files were hashed, so a line here means that resource
+    existed and was read -- exactly the fact spec §4.2 ``sources_read_before_work`` needs,
+    without emitting one trajectory event for every historical file.
     """
     identity = compiled.get("identity") or {}
     request_id = str(identity.get("request_id") or "")
@@ -659,7 +799,9 @@ def record_source_reads(compiled: dict[str, Any], receipt: dict[str, Any]) -> No
     for source in receipt.get("sources_read") or []:
         if not isinstance(source, dict):
             continue
-        key = source_resource_key(source.get("path") or "", request_id, talkroom_id)
+        key = str(source.get("resource_key") or "").strip()
+        if not key:
+            key = source_resource_key(source.get("path") or "", request_id, talkroom_id)
         if key is None:
             continue
         digest = str(source.get("sha256") or "").lower()

@@ -9,6 +9,10 @@ const path = require("node:path");
 const test = require("node:test");
 
 const { createMarketingLocalLedger } = require("./marketing-local-ledger.js");
+const {
+  createMarketingLaneManifest,
+  writeMarketingLaneManifest,
+} = require("./marketing-lane-manifest.js");
 
 const PROMOTION_CONFIRMATION = "PROMOTE_HONNE_EN_TIKTOK_CANARY";
 const PUBLIC_URL = "https://www.tiktok.com/@honne_reveal/video/7999999999999999999";
@@ -36,6 +40,44 @@ function tempDataDir() {
   return fs.mkdtempSync(path.join(os.tmpdir(), "lm-marketing-ledger-"));
 }
 
+function writeLanePolicy(dataDir, laneState) {
+  const lane = {
+    id: "live-tt-honne-en",
+    provider: "postiz",
+    platform: "tiktok",
+    profile: "@honne_reveal",
+    account: "@honne_reveal",
+    product_id: "honne-ai",
+    locale: "en",
+    disabled: false,
+    verified: true,
+    owner: "life-manager",
+    lane_state: laneState,
+    disposition: "target",
+    renderer: "reelclaw",
+    format: "relationship-confession",
+    approved_pack: "honne-ai-reelclaw-en.pack.json",
+    canary_state: "verified",
+    target_daily_limit: 3,
+  };
+  const manifest = createMarketingLaneManifest({
+    tenant_id: "dais-local",
+    integrations: [lane],
+    holds: [{
+      integration_id: "live-x-hold",
+      platform: "x",
+      account: "@aniccaxxx",
+      provider: "postiz",
+      provider_disabled: false,
+      owner: "life-manager",
+      disposition: "hold",
+      target_daily_limit: 0,
+      verified: true,
+    }],
+  }, { tenantId: "dais-local", assignments: [lane] });
+  writeMarketingLaneManifest(manifest, { dataDir });
+}
+
 test("local ledger uses the portable runtime data root and rejects legacy roots", () => {
   const home = tempDataDir();
   const ledger = createMarketingLocalLedger({ env: { HOME: home, LM_DATA_DIR: "" } });
@@ -48,6 +90,126 @@ test("local ledger uses the portable runtime data root and rejects legacy roots"
     () => createMarketingLocalLedger({ dataDir: "/srv/anicca/marketing" }),
     /legacy runtime root/i,
   );
+});
+
+test("closed publication effect fence rejects a new provider job and records the refusal", async () => {
+  const dataDir = tempDataDir();
+  const marketingDir = path.join(dataDir, "marketing");
+  fs.mkdirSync(marketingDir, { recursive: true, mode: 0o700 });
+  fs.writeFileSync(path.join(marketingDir, "publication-effect-fence.json"), `${JSON.stringify({
+    schema_version: 1,
+    state: "closed",
+    reason: "MKT-09 incident recovery",
+  })}\n`, { mode: 0o600 });
+  const ledger = createMarketingLocalLedger({ dataDir, now: () => "2026-08-26T01:30:00.000Z" });
+
+  await assert.rejects(
+    ledger.enqueueJob(job({ available_at: "2026-08-26T01:30:00.000Z" })),
+    (error) => error.code === "MARKETING_PUBLICATION_EFFECT_FENCED",
+  );
+
+  assert.equal(await ledger.readJob({ tenantId: "dais-local", jobId: "publication-job" }), null);
+  const [refusal] = fs.readFileSync(path.join(marketingDir, "publication-effect-fence-refusals.jsonl"), "utf8")
+    .trim().split("\n").map((line) => JSON.parse(line));
+  assert.equal(refusal.phase, "enqueue");
+  assert.equal(refusal.effect_key, "tiktok:honne-ai:en:2026-08-21T02:00:00.000Z");
+  assert.equal(refusal.reason, "MKT-09 incident recovery");
+});
+
+test("closed publication effect fence rejects claim of an already queued provider job", async () => {
+  const dataDir = tempDataDir();
+  const ledger = createMarketingLocalLedger({ dataDir, now: () => "2026-08-26T01:31:00.000Z" });
+  await ledger.enqueueJob(job({ available_at: "2026-08-26T01:31:00.000Z" }));
+  const fenceFile = path.join(dataDir, "marketing", "publication-effect-fence.json");
+  fs.writeFileSync(fenceFile, `${JSON.stringify({
+    schema_version: 1,
+    state: "closed",
+    reason: "MKT-09 incident recovery",
+  })}\n`, { mode: 0o600 });
+
+  await assert.rejects(
+    ledger.claimJob({
+      tenantId: "dais-local",
+      jobId: "publication-job",
+      capability: "marketing.video.publish",
+      workerId: "fenced-worker",
+      leaseSeconds: 30,
+    }),
+    (error) => error.code === "MARKETING_PUBLICATION_EFFECT_FENCED",
+  );
+
+  assert.equal((await ledger.readJob({ tenantId: "dais-local", jobId: "publication-job" })).status, "queued");
+});
+
+test("closed canary fence allows an exact production-armed lane", async () => {
+  const dataDir = tempDataDir();
+  const marketingDir = path.join(dataDir, "marketing");
+  fs.mkdirSync(marketingDir, { recursive: true, mode: 0o700 });
+  fs.writeFileSync(path.join(marketingDir, "publication-effect-fence.json"), `${JSON.stringify({
+    schema_version: 1,
+    state: "closed",
+    reason: "canary effects closed; production manifest owns cadence",
+  })}\n`, { mode: 0o600 });
+  writeLanePolicy(dataDir, "production-armed");
+  const value = job({
+    available_at: "2026-08-26T01:31:00.000Z",
+    input_refs: {
+      ...job().input_refs,
+      tiktok_integration_ref: "integration://postiz/tiktok/live-tt-honne-en",
+    },
+  });
+  const ledger = createMarketingLocalLedger({ dataDir, now: () => "2026-08-26T01:31:00.000Z" });
+
+  assert.equal((await ledger.enqueueJob(value)).created, true);
+  assert.equal((await ledger.claimJob({
+    tenantId: "dais-local",
+    jobId: "publication-job",
+    capability: "marketing.video.publish",
+    workerId: "production-worker",
+    leaseSeconds: 30,
+  })).status, "running");
+});
+
+test("open publication fence still requires the exact armed Life Manager lane at enqueue and claim", async () => {
+  const dataDir = tempDataDir();
+  const marketingDir = path.join(dataDir, "marketing");
+  fs.mkdirSync(marketingDir, { recursive: true, mode: 0o700 });
+  fs.writeFileSync(path.join(marketingDir, "publication-effect-fence.json"), `${JSON.stringify({
+    schema_version: 1,
+    state: "open",
+    allowed_effect_key: "tiktok:honne-ai:en:2026-08-21T02:00:00.000Z",
+    reason: "one canary",
+  })}\n`, { mode: 0o600 });
+  const value = job({
+    available_at: "2026-08-26T01:31:00.000Z",
+    input_refs: {
+      ...job().input_refs,
+      tiktok_integration_ref: "integration://postiz/tiktok/live-tt-honne-en",
+    },
+  });
+  const ledger = createMarketingLocalLedger({ dataDir, now: () => "2026-08-26T01:31:00.000Z" });
+
+  writeLanePolicy(dataDir, "default-off");
+  await assert.rejects(
+    ledger.enqueueJob(value),
+    (error) => error.code === "MARKETING_PUBLICATION_LANE_FORBIDDEN",
+  );
+
+  writeLanePolicy(dataDir, "production-armed");
+  assert.equal((await ledger.enqueueJob(value)).created, true);
+
+  writeLanePolicy(dataDir, "default-off");
+  await assert.rejects(
+    ledger.claimJob({
+      tenantId: "dais-local",
+      jobId: "publication-job",
+      capability: "marketing.video.publish",
+      workerId: "policy-worker",
+      leaseSeconds: 30,
+    }),
+    (error) => error.code === "MARKETING_PUBLICATION_LANE_FORBIDDEN",
+  );
+  assert.equal((await ledger.readJob({ tenantId: "dais-local", jobId: "publication-job" })).status, "queued");
 });
 
 test("receipt identity is tenant-scoped even when identifiers contain separators", async () => {
@@ -81,6 +243,82 @@ test("receipt identity is tenant-scoped even when identifiers contain separators
     receipt,
   );
   assert.equal(await ledger.readReceipt({ tenantId: "tenant", jobId: "one:colon-job" }), null);
+});
+
+test("a completed external receipt preserves lineage while correcting only its direct URL", async () => {
+  const dataDir = tempDataDir();
+  const ledger = createMarketingLocalLedger({ dataDir, now: () => "2026-08-22T13:50:00.000Z" });
+  await ledger.enqueueJob(job({ available_at: "2026-08-22T13:49:00.000Z" }));
+  const claim = await ledger.claimJob({ tenantId: "dais-local", jobId: "publication-job", capability: "marketing.video.publish", workerId: "worker", leaseSeconds: 30 });
+  const receipt = { status: "published", provider_post_id: "post-1", caption_sha256: "a".repeat(64), public_url: PUBLIC_URL };
+  await ledger.completeJob({ tenantId: "dais-local", jobId: "publication-job", attempt: claim.attempt, workerId: "worker", receipt });
+  const corrected = { ...receipt, public_url: "https://www.tiktok.com/@honne_reveal/video/7888888888888888888" };
+  await ledger.correctReceiptDirectUrl({ tenantId: "dais-local", jobId: "publication-job", confirmation: "CORRECT_CAPTION_MATCHED_DIRECT_URL", receipt: corrected });
+  assert.deepEqual(await ledger.readReceipt({ tenantId: "dais-local", jobId: "publication-job" }), corrected);
+  await assert.rejects(() => ledger.correctReceiptDirectUrl({ tenantId: "dais-local", jobId: "publication-job", confirmation: "CORRECT_CAPTION_MATCHED_DIRECT_URL", receipt: { ...corrected, provider_post_id: "post-2" } }), /only replace the direct URL/i);
+  assert.equal(fs.readFileSync(path.join(dataDir, "marketing", "receipts.jsonl"), "utf8").trim().split("\n").length, 2);
+});
+
+test("a caption-collision receipt becomes a durable non-retryable conflict without erasing history", async () => {
+  const dataDir = tempDataDir();
+  const ledger = createMarketingLocalLedger({ dataDir, now: () => "2026-08-26T02:00:00.000Z" });
+  const firstReceipt = {
+    status: "published",
+    provider_post_id: "postiz-jp4-1",
+    video_sha256: "a".repeat(64),
+    caption_sha256: "c".repeat(64),
+    public_url: "https://www.tiktok.com/@anicca.jp4/video/7677106804039355656",
+  };
+  const secondReceipt = { ...firstReceipt, video_sha256: "b".repeat(64) };
+
+  for (const [jobId, effectKey, receipt] of [
+    ["jp4-first", "tiktok:jp4:first", firstReceipt],
+    ["jp4-second", "tiktok:jp4:second", secondReceipt],
+  ]) {
+    await ledger.enqueueJob(job({
+      job_id: jobId,
+      effect_key: effectKey,
+      available_at: "2026-08-26T01:59:00.000Z",
+    }));
+    const claim = await ledger.claimJob({
+      tenantId: "dais-local", jobId, capability: "marketing.video.publish",
+      workerId: "worker", leaseSeconds: 30,
+    });
+    await ledger.completeJob({
+      tenantId: "dais-local", jobId, attempt: claim.attempt, workerId: "worker", receipt,
+    });
+  }
+
+  const input = {
+    tenantId: "dais-local",
+    jobId: "jp4-second",
+    confirmation: "QUARANTINE_CONFIRMED_EFFECT_CONFLICT",
+    expectedReceipt: secondReceipt,
+    reason: "caption_only_provider_reuse_conflicts_with_video_lineage",
+    conflictsWithJobId: "jp4-first",
+  };
+  const conflicted = await ledger.quarantineCompletedEffectConflict(input);
+  assert.equal(conflicted.status, "conflict");
+  assert.equal(conflicted.unknown_effect, false);
+  assert.equal(conflicted.conflicts_with_job_id, "jp4-first");
+  assert.deepEqual(await ledger.readReceipt({ tenantId: "dais-local", jobId: "jp4-first" }), firstReceipt);
+  assert.deepEqual(await ledger.readReceipt({ tenantId: "dais-local", jobId: "jp4-second" }), {
+    schema_version: 1,
+    kind: "marketing_effect_conflict",
+    status: "conflict",
+    reason: input.reason,
+    conflicts_with_job_id: "jp4-first",
+    superseded_receipt: secondReceipt,
+    quarantined_at: "2026-08-26T02:00:00.000Z",
+  });
+
+  const replay = await ledger.quarantineCompletedEffectConflict(input);
+  assert.deepEqual(replay, conflicted);
+  const history = fs.readFileSync(path.join(dataDir, "marketing", "receipts.jsonl"), "utf8")
+    .trim().split("\n").map((line) => JSON.parse(line));
+  assert.equal(history.length, 3);
+  assert.deepEqual(history[1].receipt, secondReceipt);
+  assert.equal(history[2].receipt.status, "conflict");
 });
 
 test("JSONL partial tails recover while a complete no-newline record remains appendable", async () => {

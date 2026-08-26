@@ -108,7 +108,7 @@ class BuildLandingTests(unittest.TestCase):
                     build_landing.build(output)
             self.assertFalse(output.exists())
 
-    def test_daily_loop_refreshes_landing_before_cadence_and_uses_it_for_bio(self):
+    def test_daily_loop_refreshes_landing_but_bio_targets_selected_agent(self):
         script = DAILY_SCRIPT.read_text(encoding="utf-8")
 
         self.assertIn(
@@ -120,16 +120,17 @@ class BuildLandingTests(unittest.TestCase):
             script,
         )
         self.assertIn('build_landing.py" >>"$LOG"', script)
-        self.assertIn('netlify deploy --prod --dir', script)
+        self.assertIn('/opt/homebrew/bin/npx --yes netlify-cli@27.1.2 deploy --prod --dir', script)
+        self.assertIn('if [ "$LANDING_BEFORE" = "$LANDING_AFTER" ]; then', script)
+        self.assertIn('landing unchanged; deploy skipped', script)
         self.assertIn('--site "$LANDING_SITE_ID"', script)
         self.assertLess(script.index("build_landing.py"), script.index("# ── CADENCE GATE"))
         self.assertIn(
-            'STEP5 BIO (deterministic — do NOT hand-drive the profile UI): set the profile Website to the all-skills landing URL '\
-            '\'"$LANDING_URL"\' ONLY when commercial_ok=yes AND MODE=--live.',
+            'CAMPAIGN_URL="${LANDING_URL%/}/go/${SELECTED_AGENT_ID}"',
             script,
         )
         self.assertIn(
-            "Never use an individual Capafy listing URL for the Website",
+            "it never shows the generic all-skills page",
             script,
         )
 

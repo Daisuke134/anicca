@@ -7,6 +7,7 @@ const { resolveDataRoot } = require("./runtime-paths.js");
 
 const POSTIZ_INTEGRATIONS_URL = "https://api.postiz.com/public/v1/integrations";
 const PLATFORMS = new Set(["instagram", "tiktok", "youtube"]);
+const HOLD_PLATFORMS = new Set([...PLATFORMS, "x"]);
 const LANE_STATES = new Set(["production-armed", "shadow", "default-off", "disabled"]);
 const ACCOUNT = /^@?[A-Za-z0-9._-]{1,80}$/;
 const IDENTIFIER = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
@@ -104,6 +105,11 @@ function normalizeBoolean(value, label) {
   return value;
 }
 
+function normalizeDailyLimit(value, label = "marketing lane daily limit") {
+  if (!Number.isSafeInteger(value) || value < 0) invalid(`${label} invalid`);
+  return value;
+}
+
 function profileHandle(value) {
   if (value && typeof value === "object" && !Array.isArray(value)) {
     const candidates = ["handle", "username", "profile", "name"]
@@ -175,6 +181,13 @@ function canonicalIdentity(value) {
     lane_state: aliasValue(value, ["lane_state", "state", "mode"], "marketing lane state", normalizeLaneState),
     production_armed: aliasValue(value, ["production_armed"], "marketing lane production_armed", (candidate) => normalizeBoolean(candidate, "marketing lane production_armed")),
     verified: aliasValue(value, ["verified"], "marketing lane verified", (candidate) => normalizeBoolean(candidate, "marketing lane verified")),
+    disposition: aliasValue(value, ["disposition"], "marketing lane disposition", (candidate) => text(candidate, "marketing lane disposition", IDENTIFIER)),
+    owner: aliasValue(value, ["owner"], "marketing lane owner", (candidate) => text(candidate, "marketing lane owner", IDENTIFIER)),
+    renderer: aliasValue(value, ["renderer"], "marketing lane renderer", (candidate) => text(candidate, "marketing lane renderer", IDENTIFIER)),
+    format: aliasValue(value, ["format"], "marketing lane format", (candidate) => text(candidate, "marketing lane format", IDENTIFIER)),
+    approved_pack: aliasValue(value, ["approved_pack"], "marketing lane approved pack", (candidate) => text(candidate, "marketing lane approved pack", IDENTIFIER)),
+    canary_state: aliasValue(value, ["canary_state"], "marketing lane canary state", (candidate) => text(candidate, "marketing lane canary state", IDENTIFIER)),
+    target_daily_limit: aliasValue(value, ["target_daily_limit"], "marketing lane daily limit", normalizeDailyLimit),
   };
   return identity;
 }
@@ -182,6 +195,8 @@ function canonicalIdentity(value) {
 const IDENTITY_FIELDS = [
   "integration_id", "tenant_id", "product_id", "locale", "platform", "account",
   "profile", "provider", "disabled", "lane_state", "production_armed", "verified",
+  "disposition", "renderer", "format", "approved_pack", "canary_state", "target_daily_limit",
+  "owner",
 ];
 
 function compareIdentities(left, right) {
@@ -280,6 +295,15 @@ function normalizeLane(row, options, assignments) {
       invalid("marketing lane production state invalid");
     }
   }
+  const portfolioValues = ["disposition", "renderer", "format", "approved_pack", "canary_state", "target_daily_limit"]
+    .map((field) => rawIdentity[field] ?? assignmentRecord.identity[field]);
+  const hasPortfolioMetadata = portfolioValues.some((value) => value !== undefined);
+  if (hasPortfolioMetadata && portfolioValues.some((value) => value === undefined)) {
+    invalid("marketing target metadata incomplete");
+  }
+  if (hasPortfolioMetadata && (portfolioValues[0] !== "target" || portfolioValues[5] < 1)) {
+    invalid("marketing target disposition invalid");
+  }
   return {
     tenant_id: tenantId,
     product_id: productId,
@@ -292,7 +316,42 @@ function normalizeLane(row, options, assignments) {
     disabled,
     lane_state: laneState,
     production_armed: productionArmed,
+    ...(rawIdentity.owner ?? assignmentRecord.identity.owner ? {
+      owner: rawIdentity.owner ?? assignmentRecord.identity.owner,
+    } : {}),
+    ...(hasPortfolioMetadata ? {
+      disposition: portfolioValues[0],
+      renderer: portfolioValues[1],
+      format: portfolioValues[2],
+      approved_pack: portfolioValues[3],
+      canary_state: portfolioValues[4],
+      target_daily_limit: portfolioValues[5],
+    } : {}),
   };
+}
+
+function normalizeHold(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value) || value.verified !== true) {
+    invalid("marketing hold is not live-verified");
+  }
+  const hold = {
+    integration_id: normalizeIntegration(value.integration_id ?? value.id),
+    platform: platformName(value.platform),
+    account: normalizeAccount(value.account),
+    provider: normalizeProvider(value.provider),
+    provider_disabled: normalizeDisabled(value.provider_disabled),
+    ...(value.owner === undefined ? {} : { owner: text(value.owner, "marketing hold owner", IDENTIFIER) }),
+    disposition: text(value.disposition, "marketing hold disposition", IDENTIFIER),
+    target_daily_limit: normalizeDailyLimit(value.target_daily_limit, "marketing hold daily limit"),
+  };
+  const validSkip = hold.disposition === "skip"
+    && hold.platform === "youtube"
+    && hold.account.toLowerCase() === "@anicca-jp";
+  if (!HOLD_PLATFORMS.has(hold.platform) || hold.provider !== "postiz"
+    || (!validSkip && hold.disposition !== "hold") || hold.target_daily_limit !== 0) {
+    invalid("marketing hold disposition invalid");
+  }
+  return hold;
 }
 
 function createMarketingLaneManifest(input, options = {}) {
@@ -315,6 +374,9 @@ function createMarketingLaneManifest(input, options = {}) {
   if (assignmentInput === undefined) invalid("marketing lane assignments required");
   const assignments = assignmentMap(assignmentInput);
   const lanes = rows.map((row) => normalizeLane(row, { tenantId }, assignments));
+  const holdInput = input && !Array.isArray(input) && input.holds !== undefined ? input.holds : [];
+  if (!Array.isArray(holdInput)) invalid("marketing holds invalid");
+  const holds = holdInput.map(normalizeHold);
   const identities = new Set();
   const integrations = new Set();
   const observedAssignments = new Set();
@@ -328,12 +390,21 @@ function createMarketingLaneManifest(input, options = {}) {
   for (const id of assignments.keys()) {
     if (!observedAssignments.has(id)) invalid("marketing lane assignment missing");
   }
+  const portfolio = holds.length > 0 || lanes.some((lane) => lane.disposition !== undefined);
+  if (portfolio && (holds.length === 0 || lanes.some((lane) => lane.disposition !== "target"))) {
+    invalid("marketing portfolio incomplete");
+  }
+  for (const hold of holds) {
+    if (integrations.has(hold.integration_id)) invalid("marketing portfolio integration ambiguous");
+    integrations.add(hold.integration_id);
+  }
   lanes.sort((left, right) => [
     left.product_id, left.locale, left.platform, left.account, left.integration_id,
   ].join("\n").localeCompare([
     right.product_id, right.locale, right.platform, right.account, right.integration_id,
   ].join("\n")));
-  const core = { schema_version: 1, tenant_id: String(tenantId), lanes };
+  holds.sort((left, right) => [left.platform, left.account, left.integration_id].join("\n").localeCompare([right.platform, right.account, right.integration_id].join("\n")));
+  const core = { schema_version: portfolio ? 2 : 1, tenant_id: String(tenantId), lanes, ...(portfolio ? { holds } : {}) };
   const manifest = {
     ...core,
     manifest_id: `marketing-lane-manifest:${createHash("sha256").update(stableJson(core), "utf8").digest("hex")}`,
@@ -343,10 +414,13 @@ function createMarketingLaneManifest(input, options = {}) {
 
 function isMarketingLaneManifest(value) {
   try {
-    if (!value || value.schema_version !== 1 || !Array.isArray(value.lanes) || !value.manifest_id) return false;
+    if (!value || ![1, 2].includes(value.schema_version) || !Array.isArray(value.lanes) || !value.manifest_id) return false;
     const rows = value.lanes.map((lane) => ({ ...lane, verified: true }));
+    const holds = value.schema_version === 2 && Array.isArray(value.holds)
+      ? value.holds.map((hold) => ({ ...hold, verified: true }))
+      : undefined;
     const rebuilt = createMarketingLaneManifest(
-      { tenant_id: value.tenant_id, integrations: rows },
+      { tenant_id: value.tenant_id, integrations: rows, ...(holds ? { holds } : {}) },
       { tenantId: value.tenant_id, assignments: rows.map((lane) => ({ ...lane })) },
     );
     return rebuilt.manifest_id === value.manifest_id && stableJson(rebuilt.lanes) === stableJson(value.lanes);

@@ -10,6 +10,7 @@
     "latest_message_identity",
     "required_output",
     "required_effect",
+    "required_assets",
     "delivery_stage",
     "formal_approval_evidence",
     "unresolved"
@@ -37,6 +38,29 @@
     },
     "required_output": {"type": "string", "minLength": 1},
     "required_effect": {"type": "string", "minLength": 1},
+    "required_assets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "asset_id",
+          "kind",
+          "minimum_count",
+          "buyer_visible_purpose",
+          "source_authority",
+          "archive_required"
+        ],
+        "properties": {
+          "asset_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$"},
+          "kind": {"type": "string", "enum": ["screenshot", "image", "linked_asset"]},
+          "minimum_count": {"type": "integer", "minimum": 1},
+          "buyer_visible_purpose": {"type": "string", "minLength": 1},
+          "source_authority": {"type": "string", "enum": ["builder", "buyer", "account_owner"]},
+          "archive_required": {"type": "boolean"}
+        }
+      }
+    },
     "delivery_stage": {
       "type": "string",
       "enum": ["formal", "review", "none"]

@@ -68,6 +68,9 @@ function connectCdp(websocketUrl, options = {}) {
   const explicitTargetUrl = options.targetUrl == null
     ? null
     : publicHttpsTargetUrl(options.targetUrl);
+  const explicitTargetId = options.targetId == null ? null : String(options.targetId);
+  if (explicitTargetId && !/^[A-Za-z0-9_-]{8,128}$/.test(explicitTargetId)) throw new Error("explicit CDP target id is invalid");
+  if (explicitTargetUrl && explicitTargetId) throw new Error("explicit CDP target selectors are ambiguous");
   const parsedWebsocketUrl = new URL(websocketUrl);
   // Steel's root websocket is an HTTP proxy to Chrome's localhost CDP socket. Chrome rejects a
   // forwarded `Host: steel-browser.railway.internal` as DNS rebinding (HTTP 500), even though the
@@ -181,7 +184,10 @@ function connectCdp(websocketUrl, options = {}) {
     await ready;
     const { targetInfos } = await send("Target.getTargets");
     let target;
-    if (explicitTargetUrl) {
+    if (explicitTargetId) {
+      target = (targetInfos || []).find((info) => info && info.type === "page" && info.targetId === explicitTargetId);
+      if (!target) throw new Error("explicit CDP target unavailable");
+    } else if (explicitTargetUrl) {
       const matches = (targetInfos || []).filter((info) => {
         if (!info || info.type !== "page") return false;
         try {

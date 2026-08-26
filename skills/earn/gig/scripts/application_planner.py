@@ -32,11 +32,38 @@ HARD_PROHIBITION_CLASSES = {
     "video_or_animation": "video editing/production, live-action filming, AI video, animation, or MV",
     "physical_or_onsite": "on-site work or physical making/assembly/cleaning/repair/cooking/sewing/woodwork/model making/packing/shipping/delivery/receipt",
     "mandatory_human_presence": "explicitly required human face appearance/performance/voice recording/phone work, real-time live call, or video interview; vague meetings, ordinary communication, or possible consultation do not qualify",
+    "outreach_or_account_operations": "the required outcome is recruiting, lead sourcing, individualized bulk outreach, social DM operations, account warming, posting operations, or ongoing third-party account management rather than an asynchronous buyer-visible artifact",
+    "mandatory_desktop_or_browser_operations": "the required work must be performed through a desktop application or repeated logged-in browser operation, rather than delivering software, a landing page, an article, strategy, code, or another asynchronous file/document artifact",
     "explicit_ai_prohibition": "explicit prohibition on AI use",
     "illegal_or_unsafe": "illegal or unsafe work",
     "missing_legal_qualification": "legally required qualification that Kosuke does not hold",
     "mandatory_attribute_fabrication": "mandatory immutable/current personal identity or life-status fact that cannot be answered truthfully; skill, work experience, portfolio, achievements, tool experience, or preferred qualifications never qualify",
 }
+
+
+def common_marketplace_feasibility_policy() -> str:
+    """One semantic admission policy for every gig market; providers add no capability gate."""
+    return """COMMON MARKETPLACE FEASIBILITY POLICY:
+- Apply broadly to every legal opportunity whose required outcome the general agent can truthfully
+  complete using computer, browser, coding, research, writing, design, data and other available tools.
+- Installed Skills are execution recipes after selection, never an application whitelist. Missing an
+  exact Skill, tool history, domain job, testimonial, portfolio item or prior client result is never by
+  itself a reason to skip. Compose or build the execution method after contract while making no false
+  claim about prior experience.
+- Submit is the default for every feasible job, especially high-value work. A proposal is not contract
+  acceptance: missing budget/rate, unverified payment, a new client, low hire history, competition,
+  high application-token cost, long advertised duration or unclear ordinary implementation details
+  are ranking/price/question inputs, never standalone skip reasons. Skip for economics only when the
+  official displayed compensation makes every truthful scoped offer clearly negative after cost.
+- Skip only when the actual required outcome is illegal/scam, requires unavoidable physical/on-site
+  work, mandatory human face/voice/phone/live presence, a legal qualification or immutable identity
+  fact that cannot be supplied truthfully, off-platform payment/contact, explicit AI prohibition, or
+  scope/deadline/economics the general agent truly cannot complete.
+- Preserve scope fidelity: do not make infeasible work appear feasible by silently replacing the
+  buyer's required outcome with a smaller or different deliverable. Ask concise pre-contract questions
+  when ordinary implementation details are missing.
+- Never invent experience or credentials. State verified transferable facts and a concrete plan, but
+  missing experience does not convert feasible work into prohibited work."""
 
 
 def _keys_equal(value: object, expected: frozenset[str], at: str, errors: list[str]) -> bool:
@@ -206,11 +233,13 @@ def planner_prompt(envelope: dict) -> str:
         f"- {reason_code}: {description}"
         for reason_code, description in HARD_PROHIBITION_CLASSES.items()
     )
+    common_policy = common_marketplace_feasibility_policy()
     instructions = (
         # proposal_text is read by a human deciding whether to hire us. Until 2026-08-06
         # this prompt said nothing at all about who is writing, and the model answered as
         # the system it could infer from the schema: a status reporter.
         f"{PERSONA}\n\n"
+        f"{common_policy}\n\n"
         "以下はあなたが書く proposal_text に適用される人格です。判定（submit_required / hard_prohibited）そのものは\n"
         "下記の業務ルールに従ってください。\n\n"
         "You are the application-intent planner. Read the immutable marketplace snapshot below.\n"
@@ -242,7 +271,8 @@ def planner_prompt(envelope: dict) -> str:
         "Never invent or inflate qualifications, personal attributes, employers, career length, numeric achievements,\n"
         "portfolio items, or prior work. After scope feasibility has passed, if no exact-domain result is verified, still submit: use the nearest verified\n"
         "transferable experience and a concrete listing-specific sample/plan, clearly describing unbuilt work as a plan.\n"
-        "Work on an external account whose connected credentials are already available is a supported capability.\n"
+        "A connected external account supports only bounded marketplace application, reply, delivery, and official readback. "
+        "Do not treat credentials as a reason to accept ongoing account operations, bulk outreach, or browser labor.\n"
         "Never volunteer or promise a live call, video meeting, face appearance, or voice recording in proposal_text. If live\n"
         "consultation is optional or only preferred, offer asynchronous requirements gathering through Coconala messages and\n"
         "documents instead; if it is mandatory, use the applicable hard-prohibition class.\n"
@@ -256,9 +286,10 @@ def planner_prompt(envelope: dict) -> str:
         "A requested skill, work history, domain experience, portfolio, numeric achievement, prior client result, or tool experience is never a personal-attribute-fabrication prohibition. Even when the listing says it is required, limited, preferred, experienced-only, or asks the applicant to describe it, choose submit_required and answer honestly with verified transferable capability plus a concrete sample/plan. Do not claim the missing experience.\n"
         "A numbered application question or field label such as `5 年代` is not evidence that the buyer requires fabrication. Answer it from verified facts when available. Use mandatory_attribute_fabrication only when the listing requires a specific immutable/current attribute value that conflicts with verified facts or cannot be answered truthfully; the evidence excerpt must include that required value or condition, not merely the field name.\n"
         "A generic meeting, discussion, interview, consultation, explanation, coordination, or communication requirement is not mandatory_human_presence unless the listing explicitly requires synchronous phone, live voice, live video, face appearance, performance, or human voice recording. Ambiguous modality remains submit_required and the proposal offers asynchronous Coconala messages/documents.\n"
-        "Experience uncertainty, weak portfolio, broad scope, low budget, difficulty, unclear production scope, possible optional consultation, unverified achievements, and unverified Adobe experience are discretionary weaknesses, never refusal reasons; they remain submit_required candidates.\n\n"
-        "狙う仕事の順序: ①定期購入・保守・運用のように毎月続くもの ②システム開発・業務自動化・ソフト構築・Web制作の\n"
-        "ように1件3万円以上になるもの ③その他の非同期で完結する作業。①②はこちらが最も強い領域で、単価も継続性も高い。\n"
+        "Experience uncertainty, weak portfolio, broad scope, low budget, difficulty, unclear production scope, optional consultation, and unverified achievements remain discretionary weaknesses. Missing Adobe experience alone is not a refusal reason, but required desktop-application operation is hard-prohibited.\n\n"
+        "狙う仕事の順序: ①software / landing_page / article / strategyとしてcode・file・documentで非同期完結する仕事 "
+        "②その他の非同期成果物。継続性より、現在のskillで高品質な完成成果を自律納品できることを優先する。\n"
+        "候補探索・採用代行・大量DM・SNS運用・account warming・反復browser入力を主成果とする仕事は選ばない。\n"
         "低単価の単発でも、非同期で確実に完遂できるなら請けてよい。\n"
         "\n"
         "既知の budget_max_jpy がある案件では、price_jpy は budget_max_jpy を超えない。案件規模と競争状況に合う、\n"

@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "candidates": [
+    {
+      "job_id": "~022091106411892491962",
+      "job_url": "https://www.upwork.com/jobs/~022091106411892491962",
+      "queue": "ready",
+      "title": "2 Students needed for short usability test - 20-30 minutes",
+      "proposal_payload_sha256": "a6ffd0ef515370406653bf4d9cb2c4b874df21652ff2764c7228e2dbc443cee7"
+    },
+    {
+      "job_id": "~022091182433542935908",
+      "job_url": "https://www.upwork.com/jobs/~022091182433542935908",
+      "queue": "ready",
+      "title": "Build a Telegram Bot for AI-Powered UPSC Mains Answer Evaluation (Google Sheets + Gemini AI)",
+      "proposal_payload_sha256": "3e959965a64466dbfa4906f34a107a845267957a2ea6617ae07ff118135ad200"
+    },
+    {
+      "job_id": "~022091170260597544595",
+      "job_url": "https://www.upwork.com/jobs/~022091170260597544595",
+      "queue": "ready",
+      "title": "Developer Needed to Fix Authentication & Small Issues in AI Platform",
+      "proposal_payload_sha256": "8d89d09fc159ace30549c804af5121ee7c6d3b04c44843d82ba308e4f1c3c47a"
+    }
+  ]
+}

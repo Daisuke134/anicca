@@ -1,0 +1,11 @@
+{
+  "name": "capafy-o13-review",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "npx --yes hyperframes@0.8.8 preview",
+    "check": "npx --yes hyperframes@0.8.8 check",
+    "render": "npx --yes hyperframes@0.8.8 render",
+    "publish": "npx --yes hyperframes@0.8.8 publish"
+  }
+}

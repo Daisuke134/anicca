@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 import os
 import pytest
+import subprocess
 import sys
 from pathlib import Path
 from types import SimpleNamespace
@@ -12,6 +14,37 @@ from types import SimpleNamespace
 SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 import storefront_direct as direct  # noqa: E402
+
+
+def test_storefront_proposal_runner_class_is_accepted_and_toolless(tmp_path):
+    runner_dir = SCRIPTS.parent / "agent-runner"
+    sys.path.insert(0, str(runner_dir))
+    import agent_runner
+
+    help_result = subprocess.run(
+        [sys.executable, str(runner_dir / "agent_runner.py"), "--help"],
+        text=True, capture_output=True, check=False,
+    )
+    assert help_result.returncode == 0
+    assert "storefront-proposal-agent" in help_result.stdout
+
+    schema = tmp_path / "schema.json"
+    schema.write_text("{}", encoding="utf-8")
+    command = agent_runner.command_for(
+        "codex", "codex", {},
+        {"provider": "codex", "model": "gpt-5.6-terra", "effort": "medium"},
+        argparse.Namespace(
+            task_class="storefront-proposal-agent", schema=schema,
+            workdir=tmp_path, image=[], read_only=False,
+        ),
+        "bounded storefront proposal", {}, tmp_path / "result.json", 60, None,
+        prompt_via_stdin=True,
+    )
+    sandbox = command.index("--sandbox")
+    assert command[sandbox:sandbox + 2] == ["--sandbox", "read-only"]
+    for feature in ("shell_tool", "code_mode_host", "unified_exec"):
+        index = command.index(feature)
+        assert command[index - 1:index + 1] == ["--disable", feature]
 
 
 def test_capability_evidence_default_comes_only_from_operator_env(monkeypatch):
@@ -341,6 +374,9 @@ def test_launchagent_is_immutable_dedicated_and_storefront_braked(monkeypatch):
                     f"{release}/skills/earn/gig/scripts/storefront_direct.py",
                     "--effect", "--auto-cadence", "--full-interval-seconds", "60"]
     assert env["GIG_OPERATOR_BRAKE_FILE"].endswith("/storefront.operator.brake")
+    assert env["GIG_IGNORE_DISK_PRESSURE_BLOCK"] == "1"
+    assert env["GIG_IGNORE_DISK_WRITERS_STOP"] == "1"
+    assert env["GIG_DISK_HEADROOM_KIB"] == "524288"
     assert job["env"]["GIG_STOREFRONT_CAPABILITY_EVIDENCE"] == (
         "{{GIG_STOREFRONT_CAPABILITY_EVIDENCE}}"
     )

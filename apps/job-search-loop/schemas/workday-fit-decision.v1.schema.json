@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "decision",
+    "mandatory_evidence",
+    "unsupported_gaps",
+    "interview_thesis",
+    "location_feasibility",
+    "compensation_thesis",
+    "compensation_uncertain",
+    "resume_variant"
+  ],
+  "properties": {
+    "decision": {"enum": ["qualified", "rejected", "hold"]},
+    "mandatory_evidence": {"type": "array", "items": {"type": "string"}},
+    "unsupported_gaps": {"type": "array", "items": {"type": "string"}},
+    "interview_thesis": {"type": "string", "minLength": 1},
+    "location_feasibility": {"type": "string", "minLength": 1},
+    "compensation_thesis": {"type": "string", "minLength": 1},
+    "compensation_uncertain": {"type": "boolean"},
+    "resume_variant": {"type": "string", "minLength": 1}
+  }
+}

@@ -15,4 +15,17 @@ a "stale→heal+req"  "$(run "$ACC" "$P0" "$T0" 5)"                             
 a "stale→REQyes"    "$(run "$ACC" "$P0" "$T0" 5)"                                                            '^REQ=yes'
 a "never-ran"       "$(run "$ACC" "$P0" "$T0" none)"                                                         'CAPAFY-LOOP-NEVER-RAN'
 a "healthy→no-req"  "$(run "$ACC" "$P0" "$T0" 0)"                                                            '^REQ=no'
+# The publisher's runtime log moved out of the checkout.  Exercise the default
+# rather than CAPAFY_LOGFILE so a future path regression cannot report NEVER-RAN
+# while daily_loop.sh has just completed a healthy pass.
+state_home_case(){
+  local T F S SH R
+  T="$(mktemp -d)"; F="$T/fx"; S="$T/state"; SH="$T/life-manager-state"; R="$T/req.json"
+  mkdir -p "$F" "$S" "$SH/state/capafy-autopublish"
+  printf '%s' "$ACC" >"$F/cap_acct.json"; printf '%s' "$P0" >"$F/cap_payout.json"; printf '%s' "$T0" >"$F/cap_trend.json"
+  touch "$SH/state/capafy-autopublish/daily_loop.log"
+  CAPAFY_TEST=1 CAPAFY_FIXTURE="$F" CAPAFY_DIR="$T" CAPAFY_REQ="$R" LIFE_MANAGER_STATE_HOME="$SH" bash "$LOOP" >/dev/null 2>&1
+  cat "$S/STATE.md"; rm -rf "$T"
+}
+a "state-home-log→healthy" "$(state_home_case)" '^heal_first: all healthy'
 echo "=== capafy-loop: $PASS passed $FAIL failed ==="; [ "$FAIL" = 0 ] && echo GREEN || exit 1

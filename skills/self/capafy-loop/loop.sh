@@ -8,10 +8,25 @@
 # Seams: CAPAFY_TEST=1 + CAPAFY_FIXTURE=<dir>, CAPAFY_LOGFILE, CAPAFY_DIR, CAPAFY_REQ.
 set -uo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-DIR="${CAPAFY_DIR:-$HERE}"; STATE_MD="$DIR/state/STATE.md"; mkdir -p "$DIR/state"
+LIFE_MANAGER_REPO="${LIFE_MANAGER_REPO:-$(git -C "$HERE" rev-parse --show-toplevel 2>/dev/null)}"
+[ -n "$LIFE_MANAGER_REPO" ] || { echo "LIFE_MANAGER_REPO could not be resolved" >&2; exit 2; }
+export LIFE_MANAGER_REPO
+LIFE_MANAGER_STATE_HOME="${LIFE_MANAGER_STATE_HOME:-$HOME/.local/state/life-manager}"
+DIR="${CAPAFY_DIR:-$LIFE_MANAGER_STATE_HOME/state/capafy-loop}"; STATE_MD="$DIR/state/STATE.md"; mkdir -p "$DIR/state"
 set -a; . $HOME/.local/state/life-manager/.env 2>/dev/null; set +a
 REQ="${CAPAFY_REQ:-$HOME/.local/state/life-manager/state/capafy-loop-selfheal-request.json}"
-LP="${CAPAFY_LOGFILE:-$LIFE_MANAGER_REPO/skills/capafy-autopublish/state/daily_loop.log}"
+# daily_loop.sh stores its durable runtime state outside the source checkout.  Keep
+# the legacy checkout-local log as a migration fallback only; preferring it made a
+# healthy real publisher look as though it had never run after the state-home move.
+STATE_HOME_LP="$LIFE_MANAGER_STATE_HOME/state/capafy-autopublish/daily_loop.log"
+LEGACY_LP="${LIFE_MANAGER_REPO:-$HERE}/skills/capafy-autopublish/state/daily_loop.log"
+if [ -n "${CAPAFY_LOGFILE:-}" ]; then
+  LP="$CAPAFY_LOGFILE"
+elif [ -f "$STATE_HOME_LP" ] || [ ! -f "$LEGACY_LP" ]; then
+  LP="$STATE_HOME_LP"
+else
+  LP="$LEGACY_LP"
+fi
 fetch(){ local name="$1" url="$2"; shift 2
   if [ "${CAPAFY_TEST:-}" = "1" ] && [ -n "${CAPAFY_FIXTURE:-}" ]; then cat "$CAPAFY_FIXTURE/$name.json" 2>/dev/null || echo '{}'; return 0; fi
   curl -s --max-time 20 "$@" "$url" 2>/dev/null; }
@@ -19,7 +34,16 @@ HEAL=""; add_heal(){ HEAL="$HEAL$1; "; }
 CAP_TOK="$(python3 -c "import json;print(json.load(open('$LIFE_MANAGER_REPO/skills/capafy-autopublish/vendor/capafy-publisher/config.json'))['access_token'])" 2>/dev/null || echo)"
 
 # auth
-[ "$(printf '%s' "$(fetch cap_acct https://api.capafy.ai/agent/account -H "Authorization: Bearer $CAP_TOK")" | python3 -c "import json,sys;print(json.load(sys.stdin).get('code','x'))" 2>/dev/null||echo x)" = "0" ] || add_heal "CAPAFY-AUTH-DOWN → re-login (login-init→gog OTP→login-verify)"
+if [ "${CAPAFY_TEST:-}" = "1" ]; then
+  AUTH_HTTP="$(printf '%s' "$(fetch cap_acct https://api.capafy.ai/agent/account -H "Authorization: Bearer $CAP_TOK")" | python3 -c "import json,sys;print(200 if json.load(sys.stdin).get('code') == 0 else 0)" 2>/dev/null || echo 0)"
+else
+  AUTH_HTTP="$(curl -sS --max-time 20 -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $CAP_TOK" https://api.capafy.ai/agent/account 2>/dev/null || echo 000)"
+fi
+case "$AUTH_HTTP" in
+  200) ;;
+  401) add_heal "CAPAFY-AUTH-DOWN(HTTP401) → re-login (login-init→gog OTP→login-verify)" ;;
+  *) add_heal "CAPAFY-ACCOUNT-READ-FAILED(HTTP${AUTH_HTTP}) → retry account read; do NOT re-login" ;;
+esac
 # monthly payout = LATEST month (INV-1 error→NA; FIND-015 latest not max)
 CAP_MO="$(printf '%s' "$(fetch cap_payout https://api.capafy.ai/agent/developer/payout-record -H "Authorization: Bearer $CAP_TOK")" | python3 -c "
 import json,sys
@@ -44,7 +68,7 @@ except Exception: print('NA')" 2>/dev/null||echo NA)"
 # A4 sales reconcile: mirror server sales/trend + payout-info into the DEDICATED capafy ledger
 # (bank revenue, NOT on-chain — kept out of the on-chain realized reader) and surface the PENDING
 # seller balance the old report missed (it only read monthly PAID payout = $0, hiding a real sale).
-REC_LEDGER="$DIR/state/capafy-earn-ledger.jsonl"
+REC_LEDGER="$LIFE_MANAGER_STATE_HOME/state/capafy-earn-ledger.jsonl"
 if [ "${CAPAFY_TEST:-}" = "1" ]; then
   REC_JSON="$(python3 "$HERE/capafy_earn_reconcile.py" --ledger "$REC_LEDGER" --sales-json "${CAPAFY_FIXTURE:-/nonexistent}/cap_trend.json" --payout-json "${CAPAFY_FIXTURE:-/nonexistent}/cap_payout.json" 2>/dev/null || echo '{}')"
 else

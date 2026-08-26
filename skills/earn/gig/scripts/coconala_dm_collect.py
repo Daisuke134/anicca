@@ -50,7 +50,7 @@ INBOX_URL = "https://coconala.com/message"
 THREAD_URL = "https://coconala.com/mypage/direct_message/{thread_id}"
 THREAD_ID = re.compile(r"^[0-9]{1,32}$")
 THREAD_FILENAME = re.compile(r"^thread-([0-9]+)-full\.json$")
-MAX_ATTACHMENT_BYTES = 32 * 1024 * 1024
+MAX_ATTACHMENT_BYTES = 100 * 1024 * 1024
 MAX_ATTACHMENTS = 40
 MAX_BODY_CHARS = 20000
 # What ``skills/_shared/buyer-attachments`` leaves behind when it moves a credential out
@@ -348,11 +348,21 @@ def store_attachments(
             "filename": request["filename"],
             "side": request.get("side", "unknown"),
             "status": result.get("status"),
+            "response_bytes": result.get("bytes"),
             "content_type": (str(result.get("content_type"))[:100] if result.get("content_type") else None),
         }
         encoded = result.get("data_base64")
         if result.get("error") or result.get("status") != 200 or not isinstance(encoded, str) or not encoded:
-            row["error"] = str(result.get("error") or f"http_{result.get('status')}")
+            response_bytes = result.get("bytes")
+            if (
+                result.get("status") == 200
+                and not encoded
+                and type(response_bytes) is int
+                and response_bytes > MAX_ATTACHMENT_BYTES
+            ):
+                row["error"] = f"attachment_size_refused:{response_bytes}"
+            else:
+                row["error"] = str(result.get("error") or f"http_{result.get('status')}")
             index.append(row)
             continue
         try:

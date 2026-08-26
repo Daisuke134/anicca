@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>ai.anicca.job-search-mercor-browser</string>
+  <key>ProgramArguments</key><array>
+    <string>__JOB_SEARCH_MERCOR_BROWSER_PROGRAM__</string>
+  </array>
+  <key>EnvironmentVariables</key><dict>
+    <key>JOB_SEARCH_BROWSER_PROFILE</key><string>__JOB_SEARCH_MERCOR_BROWSER_PROFILE__</string>
+    <key>JOB_SEARCH_BROWSER_PORT</key><string>__JOB_SEARCH_MERCOR_BROWSER_PORT__</string>
+    <key>JOB_SEARCH_BROWSER_FINGERPRINT</key><string>__JOB_SEARCH_MERCOR_BROWSER_FINGERPRINT__</string>
+    <key>JOB_SEARCH_BROWSER_STATE_NAME</key><string>__JOB_SEARCH_MERCOR_BROWSER_STATE_NAME__</string>
+  </dict>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>ProcessType</key><string>Interactive</string>
+  <key>ThrottleInterval</key><integer>30</integer>
+  <key>StandardOutPath</key><string>__JOB_SEARCH_MERCOR_BROWSER_STDOUT__</string>
+  <key>StandardErrorPath</key><string>__JOB_SEARCH_MERCOR_BROWSER_STDERR__</string>
+</dict></plist>

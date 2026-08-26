@@ -63,7 +63,10 @@ NA15_CATEGORY_IDS = {
 }
 
 SEMANTIC_RECEIPT_VERSION = 1
-SEMANTIC_PROMPT_VERSION = "reply-negotiate-v21"
+SEMANTIC_PROMPT_VERSION = "reply-negotiate-v27"
+SEMANTIC_COMPATIBLE_PROMPT_VERSIONS = frozenset({
+    "reply-negotiate-v26", SEMANTIC_PROMPT_VERSION,
+})
 SEMANTIC_RUNNER_PROFILE = "reply-semantic-agent"
 SEMANTIC_COMPATIBLE_RUNNER_PROFILES = frozenset({
     "composition-agent", SEMANTIC_RUNNER_PROFILE,
@@ -88,20 +91,23 @@ SELLER_FACT_IDS = frozenset({
 
 
 def semantic_prompt_compatible(value: Any) -> bool:
-    return isinstance(value, dict) and value.get("prompt_version") == SEMANTIC_PROMPT_VERSION
+    return (
+        isinstance(value, dict)
+        and value.get("prompt_version") in SEMANTIC_COMPATIBLE_PROMPT_VERSIONS
+    )
 
 
 class SemanticJudgementError(ValueError):
     """A model result cannot authorize any Coconala effect."""
 
 
-def semantic_conversation(dom: dict[str, Any]) -> list[dict[str, str]]:
+def semantic_conversation(dom: dict[str, Any]) -> list[dict[str, Any]]:
     """Project the complete official thread with stable role and message identity."""
     messages = dom.get("messages") if isinstance(dom.get("messages"), list) else []
     own = str(dom.get("own_user_path") or "").strip()
     if not own:
         raise collector.CollectorUnhealthy("missing_sender_identity")
-    rows: list[dict[str, str]] = []
+    rows: list[dict[str, Any]] = []
     for index, raw in enumerate(messages):
         if not isinstance(raw, dict):
             raise collector.CollectorUnhealthy("invalid_message_row")
@@ -117,12 +123,32 @@ def semantic_conversation(dom: dict[str, Any]) -> list[dict[str, str]]:
                 ensure_ascii=False, sort_keys=True, separators=(",", ":"),
             )
             message_id = "sha256_" + hashlib.sha256(canonical.encode()).hexdigest()
-        rows.append({
+        attachments: list[dict[str, Any]] = []
+        for attachment in raw.get("verified_attachments", []):
+            if not isinstance(attachment, dict):
+                raise collector.CollectorUnhealthy("invalid_verified_attachment")
+            filename = str(attachment.get("filename") or "").strip()
+            content_type = str(attachment.get("content_type") or "").strip()
+            size_bytes, digest = attachment.get("size_bytes"), attachment.get("sha256")
+            if (
+                not filename or not content_type or type(size_bytes) is not int
+                or size_bytes < 1 or type(digest) is not str
+                or not re.fullmatch(r"[0-9a-f]{64}", digest)
+            ):
+                raise collector.CollectorUnhealthy("invalid_verified_attachment")
+            attachments.append({
+                "filename": filename[:255], "content_type": content_type[:100],
+                "size_bytes": size_bytes, "sha256": digest,
+            })
+        row: dict[str, Any] = {
             "message_id": message_id,
             "role": "seller" if author == own else "buyer",
             "sent_at": sent_at,
             "body": body,
-        })
+        }
+        if attachments:
+            row["verified_attachments"] = attachments
+        rows.append(row)
     return rows
 
 
@@ -167,6 +193,7 @@ def semantic_prompt(
 必須規則:
 - next_actionはreply/send_estimate/clarify/wait/stopの1つ。seller-lastは単なる最新roleの別名ではなく、未処理のbuyer actionが残っていない状態だけです。まず全current cycleを読み、未処理の購入・見積送付承認がないか確認します。
 - buyerが購入または見積送付を承認済みなら、その後のsellerの確認・感謝・謝罪は承認を消しません。この場合conversation_state=seller_lastやnext_action=waitにせず、必要条件が揃えばready_to_buy/send_estimateにします。seller-lastで新しいreply/clarifyは作りません。
+- buyerが「すでに購入済み」「既に購入しています」と購入完了を伝え、sellerも購入済みを確認・了承したcycleは購入前の承認ではありません。新しい見積りを送らないでください。未処理のbuyer依頼がなければseller_last/waitとし、購入後の作業は別のPaid laneへ委ねます。
 - sellerが「見積りを送る」「見積ります」「お待ちください」等、公式見積りの後続送信を約束し、buyerが価格・内容を承認済みで、その約束後のstructured official estimate cardがverified_official_contextに存在しない場合、その約束は未履行です。最新roleがsellerでもseller_last/waitにせず、会話全体のbuyer根拠からsend_estimateにします。表層語だけで判断せず、約束済みの価格・内容・数量・納期・購入プランが一意な場合だけ適用します。
 - buyerの「X円でお願いします」「X円でお願いできればと思います」は、その金額で進める明示承認です。sellerが続けて「X円で見積ります」「見積りを送るのでお待ちください」と受諾したcycleでは、buyerが「公式」という単語を使っていなくても公式見積り送付は承認済みです。未承認としてwaitにしません。
 - buyerが他候補の価格や希望上限を示して値下げ余地を尋ねた場合、それは拒否ではなくcurrent cycleの再交渉です。案件scope、数量、納期、現在のseller提案、buyer提示額を全て読み、合法・安全で履行可能かつ公式フォーム下限以上なら、競争力のある合計価格を柔軟に提示します。固定割引率、category相場、別案件の価格を機械適用しません。
@@ -180,9 +207,14 @@ def semantic_prompt(
 - buyerがseller提示の納期rangeを受諾済みなら、短い側を約束せず、最も遅い上限をdelivery_daysにします。「購入当日または翌日」は1日、「2〜3日」は3日です。これは不確実性ではなくsellerに安全な確定値です。
 - selection sample/roughのexplicit buyer deadlineはinterim deadlineとして扱い、later official final delivery dateとは別で、applied scope内ならclarifyせず受諾して進みます。後日のofficial final delivery dateと矛盾しない中間成果物期限として、選定用ラフをその期限までに提出します。
 - reply/clarifyは最新buyerの質問・依頼へ直接答えるsend-readyな日本語本文をreply_bodyへ返します。未依頼の購入催促、同じ案内の反復、根拠のない職歴・実績・本人属性を作りません。
+- buyerが成果物・投稿文・サンプルの全文を「この返信で見せて／提示して」と求めた場合、「後で見せます／お送りします」と将来へ延期して回答済みにしません。作成根拠が会話内に揃うなら、要求された各成果物をラベル付きの実物全文としてreply_bodyへ直接含めます。根拠が足りなければ不足する最小情報だけclarifyします。
+- 上記依頼の後にsellerが実物を含めず「後で見せます／送ります」とだけ返信した場合、その約束は未履行です。最新roleがsellerでもseller_last/waitにせず、会話内の根拠から実物全文をreplyして債務を閉じます。
 - 最新messageがbuyerで、明確なdecline/stop、unknown、必要official context待ちのいずれでもない場合、waitにしません。question/negotiating/ready stateはreply/clarify/send_estimateで前進させ、gratitude/consideringにも同じmessage identityへ一度だけ短いcontextual acknowledgementを返します。購入催促やseller既送文の反復は加えません。
 - buyerが対応可否を尋ね、current conversationまたはverified factsに根拠がある場合、reply_bodyの冒頭で「対応可能です」等の明確な回答を先に述べ、その後に根拠と条件を短く続けます。根拠がない能力をyesにせず、確認できる範囲を正直に区別します。
-- reply/clarifyではreply_auditを本文作成後に自己監査します。answered_buyer_message_idsへ本文が直接回答したcurrent-cycle buyer message IDを入れます。unanswered_questionsとunsupported_claimsは具体的な問題を列挙します。未依頼の購入・見積りCTA、seller既送文の反復、外部連絡先への誘導を各booleanで申告します。問題が1つでもある本文を安全扱いにしません。
+- buyerが「いける／対応できるなら購入する」「yesなら購入処理へ進む」と決定を求めた条件付き購入意思は購入承認ではありません。send_estimateやclarifyへ進まず、verified contextから判断できる安全・合法・応募scope内の依頼なら「はい、いけます。ぜひやりましょう。対応します。」のように判断を本文の先頭で明言してreplyします。内部調査をbuyerへ押し返す「確認します／確認してお伝えします／判断します」で始めず、既に会話・応募・URLにある情報を再送させません。根拠のない売上保証はせず、引き受ける作業scopeを肯定します。
+- conversation内のverified_attachmentsは、同じ認証DMからstatus・bytes・SHA-256までreadback済みのbuyer添付です。存在する添付を「確認できない」と言わず、再送や文字起こしをbuyerへ要求しません。filename・content type・bytesから受領を明言し、内容処理はloop内部で進めます。verified_attachmentsがない添付を見たふりもしません。
+- verified_attachmentsがあるのにsellerが「確認できない／再添付して」と確認不能と誤案内した場合、その案内は未訂正です。最新roleがsellerでもwaitにせず、「確認できました。先ほどの案内は誤りです」と訂正し、受領済みfilenameと再添付不要、内部で進める次作業をreplyします。
+- reply/clarifyではreply_auditを本文作成後に自己監査します。answered_buyer_message_idsへ本文が直接回答したcurrent-cycle buyer message IDを入れます。unanswered_questionsはbuyerが既に尋ねたのに本文が答えていない質問だけです。clarifyでは、こちらが確認する不足情報をuncertaintyにだけ列挙し、unanswered_questionsは空配列にします。unsupported_claimsは本文中の根拠なし主張だけです。未依頼の購入・見積りCTA、seller既送文の反復、外部連絡先への誘導を各booleanで申告します。問題が1つでもある本文を安全扱いにしません。
 - 過去client・history・result・metricのexact claimはcurrent conversationまたはwhitelisted verified_seller_factsにある確認済み事実だけを使い、存在しないcustomer・project・numberを作りません。current capabilityはmatching official applicationのapplied scopeまたはverified transferable factsを先に答え、未確認historyの不在や経験不足を自発的に説明したり、対応不可を先頭に置いたりしません。buyerがexact historyを明示的に聞いた場合だけ確認済み事実を答え、missing historyをcapability refusalへ変換しません。
 - seller本人の年齢、性別、身体、容姿、声、出演・撮影可否、着用できる衣装なども未提供の本人事実です。会話かverified contextに明示がなければ対応可能と断言しません。
 - 翻訳言語、デザイン、撮影、出演、動画編集、開発、運用などのservice capabilityも本人事実です。verified_seller_facts、current cycleのseller既発言、またはmatching verified_official_context.applicationの明示scopeに根拠がある場合だけ「対応可能」「できます」と答えます。buyerの依頼文そのものは能力の根拠ではありません。
@@ -204,7 +236,7 @@ def semantic_prompt(
 - Few-shot Care Earth Mart: Applied Care Earth Mart logo brush-upのbuyerが選定用ラフを求める場合、application contextがmissingならrequired_official_context=applicationで待ち、能力拒否はしません。matching application contextならreply_bodyを「対応可能です」で始め、選定用ラフの制作・提出と次の確認手順を具体化します。
 - Few-shot SaaS/Wix LP: buyerがexperienceとimplementation rangeを尋ねた場合、verified factのapproximately 3% -> 10% visitor-to-service-start conversionだけを使い、scopeはstructure/design refinement、CTAをupper/first-view areaへ移動、copy revisionです。Wixのapplied scopeをofficial applicationで確認し、unrelated CPA claimを混ぜません。
 - required_official_contextがnone以外で、そのcontextなしに正確なreply/estimateを作れない場合はnext_action=wait、uncertaintyへ不足を示し、reply_body=nullにします。
-- unknown/conflict/根拠不足は推測しません。安全な確認質問1件で前進できる時だけclarifyとsend-ready reply_bodyを返し、uncertaintyは空にします。それ以外はwaitとuncertaintyです。
+- unknown/conflict/根拠不足は推測しません。安全な確認質問1件で前進できる時だけclarifyとsend-ready reply_bodyを返し、確認対象をuncertaintyに列挙します。それ以外はwaitとuncertaintyです。
 - current cycleの開始messageをcycle_start_message_id、判断根拠のbuyer messageだけをevidence_message_idsへ返します。
 - cycle_start_message_idを決めた後は、そのmessage以降のbuyer message IDだけを
   evidence_message_idsと全ての*_evidence_message_idsへ使います。cycle開始前のbuyer IDを
@@ -227,6 +259,84 @@ def _semantic_ids(value: Any, *, field: str, allowed: set[str]) -> list[str]:
     return result
 
 
+def _latest_inline_artifact_request(rows: list[dict[str, str]]) -> dict[str, str] | None:
+    for row in reversed(rows):
+        body = row["body"]
+        if (
+            row["role"] == "buyer"
+            and any(word in body for word in ("全文", "完成文", "投稿案", "サンプル"))
+            and any(word in body for word in ("見せて", "提示して", "送って", "ください"))
+        ):
+            return row
+    return None
+
+
+def _inline_artifact_debt(rows: list[dict[str, str]]) -> bool:
+    request = _latest_inline_artifact_request(rows)
+    if request is None or rows[-1]["role"] != "seller":
+        return False
+    request_index = next(
+        index for index in range(len(rows) - 1, -1, -1)
+        if rows[index]["message_id"] == request["message_id"]
+    )
+    if sum(row["role"] == "seller" for row in rows[request_index + 1:]) != 1:
+        return False
+    return any(
+        phrase in rows[-1]["body"]
+        for phrase in ("お見せします", "提示します", "お送りします", "後ほど", "改めて送ります")
+    )
+
+
+def _unanswered_purchase_decision(rows: list[dict[str, str]]) -> dict[str, str] | None:
+    """Return an explicit yes-before-purchase request not yet answered by seller."""
+    for index in range(len(rows) - 1, -1, -1):
+        row = rows[index]
+        body = row["body"]
+        if (
+            row["role"] == "buyer"
+            and "購入" in body
+            and any(word in body for word in ("場合", "なら"))
+            and any(word in body for word in ("いけます", "対応", "できます", "やりましょう"))
+        ):
+            return row if not any(item["role"] == "seller" for item in rows[index + 1:]) else None
+    return None
+
+
+def _acknowledged_existing_purchase(rows: list[dict[str, str]]) -> bool:
+    """Return true only when buyer reports a completed purchase and seller acknowledges it."""
+    for index, row in enumerate(rows):
+        if row["role"] != "buyer":
+            continue
+        body = row["body"]
+        if not any(
+            phrase in body
+            for phrase in ("すでに購入", "既に購入", "購入済み", "購入しています")
+        ):
+            continue
+        return any(
+            later["role"] == "seller"
+            and "購入" in later["body"]
+            and any(word in later["body"] for word in ("確認", "承知", "了承"))
+            for later in rows[index + 1:]
+        )
+    return False
+
+
+def _verified_attachment_denial_debt(rows: list[dict[str, Any]]) -> bool:
+    if rows[-1]["role"] != "seller" or not any(
+        row.get("role") == "buyer" and row.get("verified_attachments") for row in rows
+    ):
+        return False
+    latest = rows[-1]["body"]
+    if any(
+        phrase in latest for phrase in ("確認できました", "受領済み", "再添付は不要")
+    ):
+        return False
+    if not any(phrase in latest for phrase in ("確認できない", "確認できません", "再添付")):
+        return False
+    return True
+
+
 def validate_semantic_judgement(
     payload: Any, rows: list[dict[str, str]],
 ) -> dict[str, Any]:
@@ -246,7 +356,24 @@ def validate_semantic_judgement(
         raise SemanticJudgementError("semantic_enum_invalid")
     if state == "explicit_estimate_request" and action == "reply":
         raise SemanticJudgementError("semantic_estimate_request_reply_conflict")
-    if rows[-1]["role"] == "seller" and action in {"reply", "clarify"}:
+    purchase_decision = _unanswered_purchase_decision(rows)
+    if purchase_decision is not None:
+        body = payload.get("reply_body")
+        proactive = type(body) is str and body.strip().startswith(
+            ("はい、いけます", "はい、ぜひ", "ぜひ対応", "対応可能です", "できます")
+        )
+        if action != "reply" or not proactive:
+            raise SemanticJudgementError(
+                "semantic_purchase_decision_requires_proactive_reply"
+            )
+    if _acknowledged_existing_purchase(rows) and action == "send_estimate":
+        raise SemanticJudgementError("semantic_existing_purchase_estimate_conflict")
+    artifact_debt = _inline_artifact_debt(rows)
+    attachment_denial_debt = _verified_attachment_denial_debt(rows)
+    if (
+        rows[-1]["role"] == "seller" and action in {"reply", "clarify"}
+        and not artifact_debt and not attachment_denial_debt
+    ):
         raise SemanticJudgementError("semantic_seller_last_reply_conflict")
     if official_context not in SEMANTIC_OFFICIAL_CONTEXTS:
         raise SemanticJudgementError("semantic_official_context_invalid")
@@ -302,12 +429,22 @@ def validate_semantic_judgement(
             raise SemanticJudgementError("semantic_reply_audit_invalid")
     terms = payload.get("estimate_terms")
     if action in {"reply", "clarify"}:
-        if rows[-1]["role"] != "buyer" or type(reply_body) is not str or not reply_body.strip():
+        if (
+            rows[-1]["role"] != "buyer" and not artifact_debt and not attachment_denial_debt
+            or type(reply_body) is not str or not reply_body.strip()
+        ):
             raise SemanticJudgementError("semantic_reply_invalid")
         reply_body = reply_body.strip()
-        if len(reply_body) > 1000 or uncertainty or official_context != "none" or terms is not None:
+        if (
+            len(reply_body) > 1000
+            or (action == "reply" and uncertainty)
+            or official_context != "none"
+            or terms is not None
+        ):
             raise SemanticJudgementError("semantic_reply_not_authorized")
-        latest_buyer_id = rows[-1]["message_id"]
+        latest_buyer_id = next(
+            row["message_id"] for row in reversed(rows) if row["role"] == "buyer"
+        )
         if (
             latest_buyer_id not in answered
             or audit["unanswered_questions"]
@@ -317,6 +454,12 @@ def validate_semantic_judgement(
             or audit["off_platform_contact"]
         ):
             raise SemanticJudgementError("semantic_reply_audit_failed")
+        inline_artifact_requested = _latest_inline_artifact_request(rows) is not None
+        if inline_artifact_requested and any(
+            phrase in reply_body
+            for phrase in ("お見せします", "提示します", "お送りします", "後ほど", "改めて送ります")
+        ):
+            raise SemanticJudgementError("semantic_inline_artifact_deferred")
         urls = re.findall(r"https?://[^\s。、！？!，,）)」』】]+", reply_body)
         if any(url != VERIFIED_PROMO_URL for url in urls):
             raise SemanticJudgementError("semantic_reply_external_url")
@@ -541,6 +684,9 @@ class SemanticJudge:
             "の連続は、その金額での公式見積り送付承認です。『公式』の語を追加要求しないでください。"
             "条件が一意ならsend_estimateと構造化estimate_termsを返し、"
             "不足時だけclarifyまたは公式context要求を返してください。"
+            "buyerが成果物・投稿文・サンプルの全文を今ここで求めている場合、"
+            "『後で見せます／送ります』と延期せず、会話内の原文から要求された実物全文を"
+            "ラベル付きでreply_bodyへ含めてください。根拠不足なら最小情報だけclarifyしてください。"
         )):
             run_evidence = evidence if correction is None else evidence / "corrective-1"
             run_evidence.mkdir(parents=True, exist_ok=True, mode=0o700)
@@ -570,6 +716,7 @@ class SemanticJudge:
                 if correction is not None or str(error) not in {
                     "semantic_estimate_request_reply_conflict",
                     "semantic_seller_last_reply_conflict",
+                    "semantic_inline_artifact_deferred",
                 }:
                     raise
             except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
@@ -1817,6 +1964,56 @@ def execute_requested_estimate(
                 context["semantic_estimate_terms"] = item["semantic_estimate_terms"]
             if not _fresh_request_unchanged(item, context):
                 raise ValueError("estimate_request_changed")
+            pre_cards = thread_observation.get("structured_offers") if isinstance(thread_observation, dict) else []
+            semantic_terms = item.get("semantic_estimate_terms")
+            readback_terms = None
+            if (
+                isinstance(semantic_terms, dict)
+                and isinstance(semantic_terms.get("title"), str)
+                and semantic_terms["title"].strip()
+                and isinstance(semantic_terms.get("content"), str)
+                and semantic_terms["content"].strip()
+                and type(semantic_terms.get("price_jpy")) is int
+                and 0 < semantic_terms["price_jpy"] <= 10_000_000
+                and type(semantic_terms.get("delivery_days")) is int
+                and 0 < semantic_terms["delivery_days"] <= MAX_DELIVERY_DAYS
+                and semantic_terms.get("purchase_plan") in {"single", "subscription"}
+            ):
+                readback_terms = materialize_delivery_content(
+                    semantic_terms, _today_for_epoch(observed_at),
+                )
+            before_form = (
+                classify_delivery(
+                    pre_click_cards=pre_cards if isinstance(pre_cards, list) else [],
+                    post_click_cards=[], terms=readback_terms, click_started_at=None,
+                    today=_today_for_epoch(observed_at),
+                    request_sent_at=item.get("estimate_request_sent_at"),
+                    own_user_path=thread_observation.get("own_user_path"),
+                )
+                if readback_terms is not None else {"status": "not_required", "cards": []}
+            )
+            if before_form.get("status") == "already_delivered":
+                card = before_form["cards"][0]
+                card_receipt = {
+                    key: card.get(key) for key in (
+                        "author_path", "completion_date", "content", "offer_url",
+                        "price_jpy", "sent_at", "title",
+                    )
+                }
+                database.close_already_delivered(
+                    int(action["action_id"]), thread_url=thread_url,
+                    outgoing_hash=_body_hash(json.dumps(
+                        card_receipt, ensure_ascii=False, sort_keys=True,
+                        separators=(",", ":"),
+                    )),
+                    observed_at=observed_at,
+                    seller_sent_at=_card_time(card),
+                )
+                return _result(
+                    item, status="already_delivered", event_key=event_key,
+                    action_id=int(action["action_id"]), revision=int(action["revision"]),
+                    official_readback=1,
+                )
             form = browser.open_form()
             if not validate_form_contract(form):
                 raise ValueError("estimate_form_identity_mismatch")
@@ -1849,7 +2046,6 @@ def execute_requested_estimate(
             terms = materialize_delivery_content(terms, _today_for_epoch(observed_at))
             contract = composer.select_related_service(terms) if hasattr(composer, "select_related_service") else None
             related_service = verified_related_service_context(contract, terms) if contract is not None else None
-            pre_cards = thread_observation.get("structured_offers") if isinstance(thread_observation, dict) else []
             before = classify_delivery(
                 pre_click_cards=pre_cards if isinstance(pre_cards, list) else [],
                 post_click_cards=[], terms=terms, click_started_at=None,

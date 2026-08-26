@@ -1,0 +1,109 @@
+#!/bin/zsh
+set -euo pipefail
+
+if ! CANONICAL_HOME="$(/usr/bin/python3 -I - <<'PY'
+import os
+import pwd
+import sys
+
+try:
+    home = pwd.getpwuid(os.getuid()).pw_dir
+except (KeyError, OSError):
+    raise SystemExit(1)
+if not isinstance(home, str) or not os.path.isabs(home) or not os.path.isdir(home):
+    raise SystemExit(1)
+sys.stdout.write(home)
+PY
+)"; then
+  print -u2 "job-search browser: canonical home is unavailable"
+  exit 1
+fi
+export HOME="$CANONICAL_HOME"
+
+SCRIPT_DIR="${0:A:h}"
+DISK_GUARD="${SCRIPT_DIR:h:h:h}/skills/earn/gig/scripts/gig_disk_guard.py"
+if [[ ! -f "$DISK_GUARD" || -L "$DISK_GUARD" || ! -r "$DISK_GUARD" ]]; then
+  print -u2 "job-search browser: disk guard is missing or unsafe"
+  exit 1
+fi
+
+unset GIG_IGNORE_DISK_PRESSURE_BLOCK \
+  GIG_IGNORE_DISK_WRITERS_STOP \
+  DISK_CONTROL_STATE_DIR \
+  OPENCLAW_STATE_DIR \
+  LIFE_MANAGER_HOST_STATE_DIR
+BROWSER_STATE_NAME="${JOB_SEARCH_BROWSER_STATE_NAME:-job-search-browser}"
+if [[ ! "$BROWSER_STATE_NAME" =~ '^[A-Za-z0-9][A-Za-z0-9._-]*$' ]]; then
+  print -u2 "job-search browser: invalid browser state name"
+  exit 2
+fi
+GIG_DISK_HEADROOM_KIB=524288
+GIG_HOST_STATE_DIR="$CANONICAL_HOME/.openclaw/state"
+if [[ "$BROWSER_STATE_NAME" == "job-search-browser" ]]; then
+  GIG_STATE_DIR="$CANONICAL_HOME/.local/state/life-manager/job-search-browser"
+else
+  GIG_STATE_DIR="$CANONICAL_HOME/.local/state/life-manager/$BROWSER_STATE_NAME"
+fi
+export GIG_DISK_HEADROOM_KIB GIG_HOST_STATE_DIR GIG_STATE_DIR
+
+if ! /usr/bin/python3 -I "$DISK_GUARD" /usr/bin/true; then
+  print -u2 "job-search browser: disk guard blocked browser start"
+  exit 1
+fi
+
+BROWSER_PORT="${JOB_SEARCH_BROWSER_PORT:-9222}"
+if [[ ! "$BROWSER_PORT" =~ '^[0-9]+$' ]]; then
+  print -u2 "job-search browser: invalid browser port"
+  exit 2
+fi
+if (( 10#$BROWSER_PORT < 1 || 10#$BROWSER_PORT > 65535 )); then
+  print -u2 "job-search browser: invalid browser port"
+  exit 2
+fi
+BROWSER_FINGERPRINT="${JOB_SEARCH_BROWSER_FINGERPRINT:-80137}"
+if [[ ! "$BROWSER_FINGERPRINT" =~ '^[0-9]+$' ]]; then
+  print -u2 "job-search browser: invalid browser fingerprint"
+  exit 2
+fi
+PROFILE="${JOB_SEARCH_BROWSER_PROFILE:-$HOME/.cloak/profiles/job-search-daily}"
+if [[ "$PROFILE" != /* ]]; then
+  print -u2 "job-search browser: browser profile must be absolute"
+  exit 2
+fi
+if ! /usr/bin/pgrep -f -- "--user-data-dir=$PROFILE" >/dev/null 2>&1; then
+  /bin/rm -f "$PROFILE/SingletonLock" "$PROFILE/SingletonSocket" "$PROFILE/SingletonCookie" 2>/dev/null || true
+fi
+mkdir -p "$PROFILE"
+chmod 700 "$PROFILE"
+
+if [[ "$BROWSER_FINGERPRINT" == "80137" ]]; then
+  FINGERPRINT_ARGUMENT=(--fingerprint=80137)
+else
+  FINGERPRINT_ARGUMENT=(--fingerprint="$BROWSER_FINGERPRINT")
+fi
+if [[ "$BROWSER_PORT" == "9222" ]]; then
+  PORT_ARGUMENT=(--remote-debugging-port=9222)
+else
+  PORT_ARGUMENT=(--remote-debugging-port="$BROWSER_PORT")
+fi
+
+CHROMIUM_BIN=$(ls -d "$HOME"/.cloakbrowser/chromium-*/Chromium.app/Contents/MacOS/Chromium(N) | sort -V | tail -1)
+[[ -x "$CHROMIUM_BIN" ]] || {
+  print -u2 "job-search browser: CloakBrowser Chromium is missing"
+  exit 69
+}
+
+exec "$CHROMIUM_BIN" \
+  --no-first-run \
+  --no-default-browser-check \
+  --password-store=basic \
+  --use-mock-keychain \
+  --disable-sync \
+  --no-sandbox \
+  "${FINGERPRINT_ARGUMENT[@]}" \
+  --fingerprint-platform=macos \
+  --remote-debugging-address=127.0.0.1 \
+  --remote-allow-origins='*' \
+  "${PORT_ARGUMENT[@]}" \
+  --user-data-dir="$PROFILE" \
+  about:blank

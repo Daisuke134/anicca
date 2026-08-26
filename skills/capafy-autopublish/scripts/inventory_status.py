@@ -39,11 +39,115 @@ PUB = os.path.join(AUTO, "vendor", "capafy-publisher")
 ICONS = os.environ.get("CAPAFY_ICONS_DIR") or str(STATE_HOME / "assets/capafy/icons")
 FEATURES = os.environ.get("CAPAFY_FEATURES_DIR") or str(STATE_HOME / "features")
 SKILLS = os.environ.get("CAPAFY_SKILLS_ROOT") or str(REPO_ROOT / "skills")
+CATALOG = os.environ.get("CAPAFY_CATALOG_DIR") or str(REPO_ROOT / "skills/capafy/catalog")
 
 ONLINE = {"online", "approved"}
 UNLISTED = {"draft", "under_review"}   # occupy the 5-slot publish cap
 REJECTED = {"review_rejected", "banned"}
 CAP = 5
+
+
+def normalize_agents(agents):
+    """Return sanitized rows and deterministic five-slot counts from server truth."""
+    normalized = []
+    counts = {"total": len(agents), "listed": 0, "occupied": 0, "free": None,
+              "retry": 0, "blocked": 0, "unknown": 0}
+    structurally_valid = True
+    for agent in agents:
+        if not isinstance(agent, dict):
+            structurally_valid = False
+            counts["unknown"] += 1
+            continue
+        agent_id = str(agent.get("agentId") or "").strip()
+        status = agent.get("agentStatus")
+        if not agent_id or not isinstance(status, str) or not status:
+            structurally_valid = False
+            counts["unknown"] += 1
+            continue
+        if status in ONLINE:
+            lifecycle = "listed"
+            counts["listed"] += 1
+        elif status in UNLISTED:
+            lifecycle = "occupied"
+            counts["occupied"] += 1
+        elif status == "review_rejected":
+            lifecycle = "retry"
+            counts["retry"] += 1
+        elif status == "banned":
+            lifecycle = "blocked"
+            counts["blocked"] += 1
+        else:
+            lifecycle = "unknown"
+            structurally_valid = False
+            counts["unknown"] += 1
+        normalized.append({
+            "agent_id": agent_id,
+            "name": str(agent.get("name") or ""),
+            "latest_version_id": agent.get("latestAgentVersionId"),
+            "latest_version_name": agent.get("latestVersionName"),
+            "remote_status": status,
+            "lifecycle": lifecycle,
+            "agent_type": agent.get("agentType"),
+            "sales": agent.get("sales"),
+            "recent_sales": agent.get("recentSales"),
+        })
+    if structurally_valid:
+        counts["free"] = max(0, CAP - counts["occupied"])
+    else:
+        counts["occupied"] = None
+    return {"readable": structurally_valid, "counts": counts, "agents": normalized}
+
+
+def allocate_action(normalized, retries, publishable, resumable_drafts=None):
+    """Choose at most one stable action without performing any platform write.
+
+    An exact-title repository draft can be resumed in place even when all five
+    submission slots are occupied: finishing that existing Agent does not create
+    a sixth Agent.  The optional argument keeps the pre-resume call contract
+    compatible for callers that only provide retry/fresh candidates.
+    """
+    resumable_drafts = resumable_drafts or []
+    if not normalized.get("readable"):
+        return {"verdict": "SERVER_UNREADABLE"}
+    occupied = (normalized.get("counts") or {}).get("occupied")
+    if not isinstance(occupied, int) or isinstance(occupied, bool) or occupied < 0:
+        return {"verdict": "SERVER_UNREADABLE"}
+    if resumable_drafts:
+        item = min(
+            resumable_drafts,
+            key=lambda row: (str(row.get("agent_id") or ""), str(row.get("title") or "")),
+        )
+        return {
+            "verdict": "PUBLISHABLE",
+            "reason": "resume exact-title repository draft",
+            "action": "resume_draft",
+            "action_key": f"resume:{item['agent_id']}",
+            "item": item,
+        }
+    # Capafy permits at most five simultaneous draft/under-review submissions.
+    # A rejected agent becomes retryable only after that rejection has freed a slot;
+    # retrying an old agent does not create a sixth submission exception.
+    if occupied >= CAP:
+        return {"verdict": "CAP_FULL", "occupied": occupied}
+    if retries:
+        item = min(retries, key=lambda row: (str(row.get("agent_id") or ""), str(row.get("title") or "")))
+        return {
+            "verdict": "PUBLISHABLE",
+            "reason": "review_rejected retry",
+            "action": "retry_existing",
+            "action_key": f"retry:{item['agent_id']}",
+            "item": item,
+        }
+    if publishable:
+        item = min(publishable, key=lambda row: (str(row.get("feature") or ""), str(row.get("title") or "")))
+        identity = item.get("feature") or item.get("title")
+        return {
+            "verdict": "PUBLISHABLE",
+            "action": "create_fresh",
+            "action_key": f"create:{identity}",
+            "item": item,
+        }
+    return {"verdict": "DRAINED"}
 
 
 def server_agents():
@@ -72,34 +176,57 @@ def listing_title(path):
 
 
 def ready_inventory():
-    """Ready items = feature dirs with LISTING.md (## Title) + matching icon + a real skill dir."""
+    """Return complete legacy candidates plus repository-owned canonical catalog items."""
     items = []
-    if not os.path.isdir(FEATURES):
-        return items
-    for name in sorted(os.listdir(FEATURES)):
-        if not name.startswith("capafy-"):
-            continue
-        d = os.path.join(FEATURES, name)
-        listing = os.path.join(d, "LISTING.md")
-        if not os.path.isfile(listing):
-            continue
-        title = listing_title(listing)
-        if not title:
-            continue
-        m = re.match(r"^capafy-([a-z][0-9]+)-", name)
-        if not m:
-            continue
-        icon = os.path.join(ICONS, m.group(1) + ".png")
-        if not os.path.isfile(icon):
-            continue
-        items.append({"feature": name, "title": title, "icon": icon, "listing": listing})
-    return items
+    if os.path.isdir(FEATURES):
+        for name in sorted(os.listdir(FEATURES)):
+            if not name.startswith("capafy-"):
+                continue
+            d = os.path.join(FEATURES, name)
+            listing = os.path.join(d, "LISTING.md")
+            title = listing_title(listing) if os.path.isfile(listing) else None
+            m = re.match(r"^capafy-([a-z][0-9]+)-", name)
+            icon = os.path.join(ICONS, m.group(1) + ".png") if m else ""
+            skill = os.path.join(d, "SKILL.md")
+            if title and os.path.isfile(icon) and os.path.isfile(skill):
+                items.append({"feature": name, "title": title, "icon": icon,
+                              "listing": listing, "skill": skill, "source": "legacy_state"})
+
+    if os.path.isdir(CATALOG):
+        for name in sorted(os.listdir(CATALOG)):
+            d = os.path.join(CATALOG, name)
+            if not os.path.isdir(d):
+                continue
+            listing = os.path.join(d, "LISTING.md")
+            skill = os.path.join(d, "SKILL.md")
+            # SVG is source artwork; CP1 only accepts PNG/JPG/WebP. Prefer a
+            # listing-ready raster asset so a resumed draft can save Basic Info.
+            icon = next((os.path.join(d, candidate) for candidate in ("icon.png", "icon.jpg", "icon.webp", "icon.svg")
+                         if os.path.isfile(os.path.join(d, candidate))), None)
+            title = listing_title(listing) if os.path.isfile(listing) else None
+            if title and icon and os.path.isfile(skill):
+                items.append({"feature": f"catalog:{name}", "title": title, "icon": icon,
+                              "listing": listing, "skill": skill, "source": "repo_catalog"})
+
+    # The repository catalog is authoritative when a legacy candidate has the same title.
+    by_title = {}
+    for item in items:
+        if item["title"] not in by_title or item["source"] == "repo_catalog":
+            by_title[item["title"]] = item
+    return [by_title[title] for title in sorted(by_title)]
 
 
 def main():
     agents = server_agents()
     if agents is None:
         verdict = {"verdict": "SERVER_UNREADABLE"}
+        print("VERDICT=SERVER_UNREADABLE")
+        print(json.dumps(verdict, ensure_ascii=False))
+        return 0
+
+    normalized = normalize_agents(agents)
+    if not normalized["readable"]:
+        verdict = {"verdict": "SERVER_UNREADABLE", **normalized}
         print("VERDICT=SERVER_UNREADABLE")
         print(json.dumps(verdict, ensure_ascii=False))
         return 0
@@ -117,8 +244,10 @@ def main():
     inflight_titles = {(a.get("name") or "").strip() for a in unlisted}
 
     items = ready_inventory()
-    publishable = [it for it in items
-                   if it["title"] not in online_titles and it["title"] not in inflight_titles]
+    rejected_titles = {(a.get("name") or "").strip() for a in rejected}
+    publishable = [it for it in items if it["title"] not in online_titles
+                   and it["title"] not in inflight_titles
+                   and it["title"] not in rejected_titles]
 
     # A rejected agent is only retryable if its title still matches a CURRENT
     # ready_inventory LISTING.md. If the LISTING.md title has since drifted (edited,
@@ -133,15 +262,27 @@ def main():
     ready_titles = {it["title"] for it in items}
     retryable_rejected = [a for a in rejected if (a.get("name") or "").strip() in ready_titles]
 
-    if retryable_rejected:
-        v = {"verdict": "PUBLISHABLE", "reason": "review_rejected retry",
-             "item": {"agent_id": str(retryable_rejected[0].get("agentId")), "title": (retryable_rejected[0].get("name") or "").strip()}}
-    elif len(unlisted) >= CAP:
-        v = {"verdict": "CAP_FULL", "unlisted": len(unlisted)}
-    elif publishable:
-        v = {"verdict": "PUBLISHABLE", "item": {k: publishable[0][k] for k in ("feature", "title", "icon", "listing")}}
-    else:
-        v = {"verdict": "DRAINED"}
+    ready_by_title = {item["title"]: item for item in items}
+    resumable_drafts = []
+    for agent in agents:
+        if agent.get("agentStatus") != "draft":
+            continue
+        title = (agent.get("name") or "").strip()
+        item = ready_by_title.get(title)
+        if not item or item.get("source") != "repo_catalog":
+            continue
+        resumable_drafts.append({"agent_id": str(agent.get("agentId")), **item})
+
+    retry_items = []
+    for agent in retryable_rejected:
+        title = (agent.get("name") or "").strip()
+        retry_items.append({"agent_id": str(agent.get("agentId")), "title": title,
+                            **ready_by_title[title]})
+    fresh_items = [
+        {key: item[key] for key in ("feature", "title", "icon", "listing", "skill", "source")}
+        for item in publishable
+    ]
+    v = allocate_action(normalized, retry_items, fresh_items, resumable_drafts)
 
     v.update({
         "online_count": len(online_titles),
@@ -149,6 +290,7 @@ def main():
         "rejected_count": len(rejected),
         "ready_inventory": len(items),
         "publishable_count": len(publishable),
+        **normalized,
     })
     print("VERDICT=" + v["verdict"])
     print(json.dumps(v, ensure_ascii=False))

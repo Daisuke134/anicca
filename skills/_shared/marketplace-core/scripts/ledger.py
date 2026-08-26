@@ -261,7 +261,7 @@ def _normalize_delivery_receipt(parsed: DeliveryReceipt) -> LedgerEvent:
 
 
 def _normalize_payment_receipt(parsed: PaymentReceipt) -> LedgerEvent:
-    if parsed.status != "received":
+    if parsed.status != "settled":
         raise UnsupportedLedgerEvent(
             "payment receipt status is unsupported: {}".format(parsed.status)
         )
@@ -274,7 +274,7 @@ def _normalize_payment_receipt(parsed: PaymentReceipt) -> LedgerEvent:
         source_idempotency_key=None,
         occurred_at=parsed.occurred_at,
         receipt_id=parsed.receipt_id,
-        amount_minor=parsed.amount_minor,
+        amount_minor=parsed.net_amount_minor,
         currency=parsed.currency,
     )
 

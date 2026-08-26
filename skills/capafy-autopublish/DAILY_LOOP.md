@@ -27,10 +27,13 @@ monitoring/deferred work.
    `scripts/reconcile_ledger.py`): state/published.jsonl now mirrors the SERVER — every
    online agent is recorded, and any `REVIEW_REJECTED` agent is flagged. Never trust the
    local ledger over `publish-list`/`publish-remote-status`; the server is the only truth.
-1. **Work-type-aware slot check**: use the reconciled inventory verdict. A REVIEW_REJECTED retry
-   reuses its existing slot and MUST proceed even when unlisted is 5. Apply the five-slot cap only
-   when creating a fresh agent: if there is no retry and unlisted (status 0-3) ≥ 5, STOP and report
-   "cap full, N listed". Never let the fresh-agent cap suppress an in-place rejected retry.
+1. **Five simultaneous submissions**: use the reconciled inventory verdict. Draft and under-review
+   agents occupy the five slots. A `PUBLISHABLE` `resume_draft` for an exact-title repository
+   `draft` may proceed at occupied=5, preserving that exact `agent_id`; completing it does not
+   create a sixth Agent. `under_review` remains wait-only. If occupied is 5, STOP and report
+   "cap full, N listed" for both fresh and retry work when no resumable draft exists. Once a slot
+   is free, prefer an in-place REVIEW_REJECTED repair over creating a fresh agent. Never create a
+   sixth submission.
 2. **Pick next inventory item** (prefer a REJECTED retry over a fresh publish):
    a. If reconcile flagged a `REVIEW_REJECTED` inventory item (e.g. O9 youtube) whose skill
       dir + icon + LISTING still exist → RE-PUBLISH it. **First check remote-status**
@@ -47,8 +50,9 @@ monitoring/deferred work.
       (審査に提出) in ~10 tool calls (verified live 2026-07-17: agent 4014388606 went
       review_rejected → status=1/auditStatus=1 this way, no browser screenshot loop needed).
       Only fall back to the full a→b→c agentic CP1 flow if `isConfirmedSkills` is NOT `1`.
-   b. Else the next `$LIFE_MANAGER_STATE_HOME/features/capafy-*/LISTING.md` whose agent is NOT yet
-      online and whose skill dir + icon exist.
+   b. Else the next canonical `skills/capafy/catalog/*/{SKILL.md,LISTING.md,icon.svg}` (legacy
+      `$LIFE_MANAGER_STATE_HOME/features/capafy-*` remains readable during migration) whose title
+      is not online, in-flight, or rejected under an existing Agent ID.
    If neither → STOP, report "inventory empty (all items online); bottleneck = need NEW
    inventory — the interactive Opus session must add a fresh proven-niche listing".
 3. **Lint**: `scripts/lint_listing.py <LISTING.md>` → must PASS. If FAIL → STOP, report the failure.

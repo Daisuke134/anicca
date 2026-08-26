@@ -19,17 +19,30 @@ class ProfileSetupTests(unittest.TestCase):
         self.root = Path(self.temporary.name)
         self.answers = self.root / "answers.json"
         self.output = self.root / "private" / "profile.json"
+        self.resume = self.root / "resume.pdf"
+        self.resume.write_bytes(b"%PDF-1.4\nresume\n")
 
     def tearDown(self):
         self.temporary.cleanup()
 
-    @staticmethod
-    def _answers() -> dict:
+    def _answers(self) -> dict:
         return {
             "version": 1,
             "candidate": {
                 "name": "Release Candidate",
                 "application_email": "candidate@example.test",
+                "target_role_families": ["Applied AI", "AI product"],
+                "location_preferences": ["Tokyo", "Remote from Japan"],
+                "compensation_floor_jpy": 12_000_000,
+                "compensation_target_jpy": 15_000_000,
+                "employer_exclusions": ["Excluded Example"],
+            },
+            "materials": {
+                "resumes": {
+                    "engineering": str(self.resume),
+                    "technical_business": str(self.resume),
+                    "japanese": str(self.resume),
+                }
             },
             "facts": [
                 {
@@ -122,6 +135,14 @@ class ProfileSetupTests(unittest.TestCase):
             [
                 "Interactive Candidate",
                 "interactive@example.test",
+                str(self.resume),
+                "",
+                "",
+                "Applied AI, AI product",
+                "Tokyo, Remote from Japan",
+                "12000000",
+                "15000000",
+                "Excluded Example",
                 "Shipped an AI assistant.",
                 "Public product page supplied by user",
                 "",
@@ -136,13 +157,24 @@ class ProfileSetupTests(unittest.TestCase):
         )
         self.assertEqual(value["facts"][0]["id"], "fact-001")
         self.assertEqual(len(value["facts"]), 1)
+        self.assertEqual(
+            value["candidate"]["target_role_families"],
+            ["Applied AI", "AI product"],
+        )
+        self.assertEqual(value["candidate"]["compensation_floor_jpy"], 12_000_000)
+        self.assertEqual(value["candidate"]["employer_exclusions"], ["Excluded Example"])
         encoded = json.dumps(value).lower()
         self.assertNotIn("nationality", encoded)
         self.assertNotIn("visa", encoded)
         self.assertNotIn("work_authorization", encoded)
 
     def test_interactive_collection_needs_at_least_one_verified_fact(self):
-        responses = iter(["Candidate", "candidate@example.test", ""])
+        responses = iter(
+            [
+                "Candidate", "candidate@example.test", str(self.resume), "", "",
+                "Applied AI", "Tokyo", "12000000", "15000000", "", "",
+            ]
+        )
         with patch("builtins.input", side_effect=lambda _prompt: next(responses)):
             with self.assertRaisesRegex(ProfileSetupError, "fact"):
                 collect_interactive()

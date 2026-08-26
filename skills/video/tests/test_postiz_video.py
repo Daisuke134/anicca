@@ -1,9 +1,15 @@
 #!/usr/bin/env python3
 import importlib.util
 import json
+import os
 from pathlib import Path
+import socket
 import subprocess
+import sys
+import tempfile
+from types import SimpleNamespace
 import unittest
+from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -15,6 +21,62 @@ SPEC.loader.exec_module(postiz_video)
 
 
 class PostizVideoTests(unittest.TestCase):
+    def test_resolve_ip_accepts_only_public_ipv4_and_rejects_non_public_values(self):
+        self.assertIsNone(postiz_video.validate_resolve_ip(None))
+        self.assertEqual(postiz_video.validate_resolve_ip("93.184.216.34"), "93.184.216.34")
+        for value in (
+            "",
+            "127.0.0.1",
+            "10.0.0.1",
+            "169.254.1.1",
+            "224.0.0.1",
+            "192.0.2.1",
+            "255.255.255.255",
+            "::1",
+            "93.184.216.34,1.1.1.1",
+            "not-an-ip",
+        ):
+            with self.subTest(value=value):
+                with self.assertRaises(postiz_video.PostizError):
+                    postiz_video.validate_resolve_ip(value)
+
+    def test_resolve_override_is_exact_host_only_and_restores_global_resolver(self):
+        original = socket.getaddrinfo
+        calls = []
+
+        def delegated(host, port, family=0, type=0, proto=0, flags=0):
+            calls.append((host, port, family, type, proto, flags))
+            return [(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP, "", (str(host), port))]
+
+        with patch.object(postiz_video.socket, "getaddrinfo", side_effect=delegated) as delegated_mock:
+            with postiz_video.postiz_resolve_override("93.184.216.34"):
+                resolved = postiz_video.socket.getaddrinfo("api.postiz.com", 443, 0, socket.SOCK_STREAM)
+                self.assertEqual(resolved[0][4][0], "93.184.216.34")
+                postiz_video.socket.getaddrinfo("other.example", 443, 0, socket.SOCK_STREAM)
+            self.assertIs(postiz_video.socket.getaddrinfo, delegated_mock)
+        self.assertIs(postiz_video.socket.getaddrinfo, original)
+        self.assertEqual(calls[0][0], "93.184.216.34")
+        self.assertEqual(calls[1][0], "other.example")
+
+    def test_main_installs_override_before_first_network_call_and_restores_it(self):
+        original = socket.getaddrinfo
+        with tempfile.TemporaryDirectory() as directory:
+            video = Path(directory) / "video.mp4"
+            video.write_bytes(b"video")
+            caption = Path(directory) / "caption.txt"
+            caption.write_text("caption", encoding="utf-8")
+
+            def observe_first_network_call(_api_key):
+                self.assertIsNot(postiz_video.socket.getaddrinfo, original)
+                raise RuntimeError("stop after resolver install")
+
+            with patch.dict(os.environ, {"POSTIZ_API_KEY": "fixture", "LM_POSTIZ_RESOLVE_IP": "93.184.216.34"}, clear=False):
+                with patch.object(sys, "argv", ["postiz_video.py", "--video", str(video), "--caption-file", str(caption), "--integration", "integration-1"]):
+                    with patch.object(postiz_video, "read_recent_posts", side_effect=observe_first_network_call):
+                        with self.assertRaisesRegex(RuntimeError, "stop after resolver install"):
+                            postiz_video.main()
+            self.assertIs(postiz_video.socket.getaddrinfo, original)
+
     def test_payload_is_direct_public_video_with_exact_caption_and_media(self):
         payload = postiz_video.build_payload(
             integration="cmp9txjdp01c8oh0yb6dhlarr",
@@ -31,6 +93,104 @@ class PostizVideoTests(unittest.TestCase):
         self.assertEqual(post["settings"]["content_posting_method"], "DIRECT_POST")
         self.assertEqual(post["settings"]["privacy_level"], "PUBLIC_TO_EVERYONE")
         self.assertTrue(post["settings"]["video_made_with_ai"])
+
+    def test_instagram_carousel_payload_preserves_order_and_native_post_settings(self):
+        payload = postiz_video.build_payload(
+            integration="cmq3sq7mc000eqp0y7azfm8yk",
+            caption="メンタルが勝手に安定する\n口癖５選",
+            title="Life Manager",
+            upload_ids=["upload-1", "upload-2", "upload-3"],
+            upload_paths=["https://uploads.example/1.jpg", "https://uploads.example/2.jpg", "https://uploads.example/3.jpg"],
+            now_iso="2026-08-26T07:30:00.000Z",
+            platform="instagram",
+        )
+        post = payload["posts"][0]
+        self.assertEqual(post["integration"]["id"], "cmq3sq7mc000eqp0y7azfm8yk")
+        self.assertEqual(post["settings"], {
+            "__type": "instagram-standalone",
+            "post_type": "post",
+            "is_trial_reel": False,
+            "collaborators": [],
+        })
+        self.assertEqual([item["id"] for item in post["value"][0]["image"]], ["upload-1", "upload-2", "upload-3"])
+        self.assertEqual([item["path"] for item in post["value"][0]["image"]], [
+            "https://uploads.example/1.jpg", "https://uploads.example/2.jpg", "https://uploads.example/3.jpg",
+        ])
+
+    def test_tiktok_photo_carousel_payload_preserves_order_and_direct_post_settings(self):
+        payload = postiz_video.build_payload(
+            integration="cmnenjkff01j1pa0ysufmzhfr",
+            caption="Exact EN caption",
+            title="Procrastination isn't laziness",
+            upload_ids=[f"upload-{index}" for index in range(1, 7)],
+            upload_paths=[f"https://uploads.example/{index}.jpg" for index in range(1, 7)],
+            now_iso="2026-08-26T06:00:00.000Z",
+            platform="tiktok",
+        )
+        post = payload["posts"][0]
+        self.assertEqual(post["integration"]["id"], "cmnenjkff01j1pa0ysufmzhfr")
+        self.assertEqual([item["path"] for item in post["value"][0]["image"]], [f"https://uploads.example/{index}.jpg" for index in range(1, 7)])
+        self.assertEqual(post["settings"]["__type"], "tiktok")
+        self.assertEqual(post["settings"]["content_posting_method"], "DIRECT_POST")
+        self.assertEqual(post["settings"]["autoAddMusic"], "yes")
+
+    def test_tiktok_photo_carousel_publish_uses_exact_platform_title_and_direct_url(self):
+        with tempfile.TemporaryDirectory() as directory:
+            images = []
+            for index in range(1, 7):
+                image = Path(directory) / f"{index}.jpg"
+                image.write_bytes(b"\xff\xd8\xff" + bytes([index]))
+                images.append(image)
+            args = SimpleNamespace(image=images, platform="tiktok", integration="cmnenjkff01j1pa0ysufmzhfr", title="Exact hook", video=None)
+            payloads = []
+            with patch.object(postiz_video, "upload_image", side_effect=lambda image, _key: (image.stem, f"https://uploads.example/{image.name}")):
+                with patch.object(postiz_video, "create_post", side_effect=lambda payload, _key: payloads.append(payload) or "postiz-1"):
+                    with patch.object(postiz_video, "read_publish_state", return_value={"state": "PUBLISHED", "post_url": "https://www.tiktok.com/@anicca_slideshow/video/7777777777777777777"}):
+                        with patch.object(postiz_video.time, "sleep"):
+                            with patch("builtins.print"):
+                                self.assertEqual(postiz_video._publish(args, "token", "Exact caption"), 0)
+            self.assertEqual(payloads[0]["posts"][0]["settings"]["title"], "Exact hook")
+            self.assertEqual(len(payloads[0]["posts"][0]["value"][0]["image"]), 6)
+
+    def test_carousel_payload_rejects_short_or_video_image_mix(self):
+        with self.assertRaises(postiz_video.PostizError):
+            postiz_video.build_payload(
+                integration="i", caption="caption", title="title",
+                upload_ids=["upload-1"], upload_paths=["https://uploads.example/1.jpg"],
+                now_iso="2026-08-26T07:30:00.000Z", platform="instagram",
+            )
+        with self.assertRaises(postiz_video.PostizError):
+            postiz_video.build_payload(
+                integration="i", caption="caption", title="title",
+                upload_ids=["upload-1", "upload-2"], upload_paths=["1.jpg", "2.mp4"],
+                now_iso="2026-08-26T07:30:00.000Z", platform="tiktok",
+            )
+
+    def test_image_upload_rejects_empty_and_non_jpeg_inputs(self):
+        with tempfile.TemporaryDirectory() as directory:
+            empty = Path(directory) / "empty.jpg"
+            empty.write_bytes(b"")
+            with self.assertRaises(postiz_video.PostizError):
+                postiz_video.upload_image(empty, "token")
+            png = Path(directory) / "image.png"
+            png.write_bytes(b"\x89PNG\r\n")
+            with self.assertRaises(postiz_video.PostizError):
+                postiz_video.upload_image(png, "token")
+
+    def test_carousel_caption_reader_preserves_raw_utf8_while_video_reader_trims(self):
+        with tempfile.TemporaryDirectory() as directory:
+            caption_file = Path(directory) / "caption.txt"
+            raw_caption = " \nExact caption\n  \n"
+            caption_file.write_text(raw_caption, encoding="utf-8")
+            self.assertEqual(postiz_video.read_caption(caption_file, carousel=True), raw_caption)
+            self.assertEqual(postiz_video.read_caption(caption_file, carousel=False), raw_caption.strip())
+
+    def test_direct_carousel_url_only_accepts_instagram_post(self):
+        self.assertTrue(postiz_video._valid_instagram_carousel_url("https://www.instagram.com/p/ABC_123/"))
+        self.assertFalse(postiz_video._valid_instagram_carousel_url("https://www.instagram.com/reel/ABC_123/"))
+        self.assertFalse(postiz_video._valid_instagram_carousel_url("https://www.instagram.com/@ani.cca1234"))
+        self.assertFalse(postiz_video._valid_instagram_carousel_url("https://www.instagram.com/p/12345678901234567890/"))
+        self.assertTrue(postiz_video._valid_public_url("instagram", "https://www.instagram.com/reel/ABC_123/"))
 
     def test_extract_post_id_accepts_the_real_postiz_array_shape_only(self):
         self.assertEqual(postiz_video.extract_post_id([{"postId": "post-1"}]), "post-1")
@@ -64,7 +224,7 @@ class PostizVideoTests(unittest.TestCase):
         with self.assertRaises(postiz_video.PostizError):
             postiz_video.find_post([{"id": "p", "state": "PUBLISHED"}], "p")
 
-    def test_find_post_does_not_derive_tiktok_url_from_internal_release_id(self):
+    def test_find_post_derives_tiktok_candidate_only_from_exact_published_row(self):
         row = {
             "id": "post-1",
             "state": "PUBLISHED",
@@ -73,10 +233,10 @@ class PostizVideoTests(unittest.TestCase):
         }
         self.assertEqual(
             postiz_video.find_post([row], "post-1"),
-            {"state": "PUBLISHED", "post_url": "https://www.tiktok.com/@life.manager"},
+            {"state": "PUBLISHED", "post_url": "https://www.tiktok.com/@life.manager/video/7999999999999999999"},
         )
 
-    def test_exact_recent_provider_effect_reconciles_direct_provider_url_before_upload(self):
+    def test_caption_only_provider_effect_never_reconciles_a_different_video(self):
         rows = {
             "posts": [{
                 "id": "post-1",
@@ -87,18 +247,13 @@ class PostizVideoTests(unittest.TestCase):
                 "releaseId": "internal-provider-id",
             }],
         }
-        self.assertEqual(
+        self.assertIsNone(
             postiz_video.find_existing_post(
                 rows,
                 integration="integration-1",
                 caption="Exact caption\n#line",
+                video_sha256="b" * 64,
             ),
-            {
-                "post_id": "post-1",
-                "state": "PUBLISHED",
-                "post_url": "https://www.tiktok.com/@life/video/222",
-                "reconciled": True,
-            },
         )
 
     def test_profile_release_url_resolves_to_matching_recent_video(self):
@@ -161,7 +316,7 @@ class PostizVideoTests(unittest.TestCase):
             )
         )
 
-    def test_profile_only_post_falls_back_to_browser_caption_join(self):
+    def test_profile_only_post_never_falls_back_to_browser(self):
         calls = []
 
         def browser(profile_url, caption, *, posted_after, caption_prefix):
@@ -175,9 +330,19 @@ class PostizVideoTests(unittest.TestCase):
             runner=lambda *_args, **_kwargs: subprocess.CompletedProcess([], 1, "", ""),
             browser_resolver=browser,
         )
-        self.assertEqual(result, "https://www.tiktok.com/@honne_reveal/video/7676388327427149077")
-        self.assertEqual(calls[0][0], "https://www.tiktok.com/@honne_reveal")
-        self.assertEqual(calls[0][3], "someone tell me this is")
+        self.assertIsNone(result)
+        self.assertEqual(calls, [])
+
+    def test_profile_caption_join_rejects_an_old_duplicate(self):
+        rows = [
+            {"href": "https://www.tiktok.com/@life/video/7676852644698262791", "alt": "Exact caption #tag"},
+            {"href": "https://www.tiktok.com/@life/video/7676422253638176020", "alt": "Exact caption #tag"},
+        ]
+        self.assertEqual(
+            postiz_video._matching_profile_url(rows, "exact caption", 1_787_406_536),
+            "https://www.tiktok.com/@life/video/7676852644698262791",
+        )
+        self.assertIsNone(postiz_video._matching_profile_url(rows[1:], "exact caption", 1_787_406_536))
 
 
 if __name__ == "__main__":

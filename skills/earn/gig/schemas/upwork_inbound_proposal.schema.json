@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Upwork proposal decisions",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["decisions"],
+  "properties": {
+    "decisions": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 40,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["job_id", "decision", "reason_codes", "proposal"],
+        "properties": {
+          "job_id": {"type": "string", "minLength": 2},
+          "decision": {"type": "string", "enum": ["submit", "skip"]},
+          "reason_codes": {"type": "array", "minItems": 1, "maxItems": 3, "items": {"type": "string", "minLength": 1}},
+          "proposal": {
+            "type": ["object", "null"],
+            "additionalProperties": false,
+            "required": ["provider", "job_id", "job_url", "job_source_sha256", "title", "status", "terms", "cover_letter", "screening_answers", "unsupported_claims", "attachments"],
+            "properties": {
+              "provider": {"type": "string", "const": "upwork"},
+              "job_id": {"type": "string", "minLength": 2},
+              "job_url": {"type": "string", "pattern": "^https://www\\.upwork\\.com/"},
+              "job_source_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+              "title": {"type": "string", "minLength": 1, "maxLength": 500},
+              "status": {"type": "string", "enum": ["frozen_waiting_for_invitation", "frozen_waiting_for_connects"]},
+              "terms": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["type", "bid_usd", "delivery_days", "required_connects", "available_connects_before"],
+                "properties": {
+                  "type": {"type": "string", "enum": ["fixed_price", "hourly"]},
+                  "bid_usd": {"type": "number", "exclusiveMinimum": 0},
+                  "delivery_days": {"type": "integer", "minimum": 1, "maximum": 365},
+                  "required_connects": {"type": "integer", "minimum": 0},
+                  "available_connects_before": {"type": "integer", "minimum": 0}
+                }
+              },
+              "cover_letter": {"type": "string", "minLength": 80, "maxLength": 5000},
+              "screening_answers": {
+                "type": "array",
+                "maxItems": 20,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["question", "answer"],
+                  "properties": {
+                    "question": {"type": "string", "minLength": 1, "maxLength": 1000},
+                    "answer": {"type": "string", "minLength": 1, "maxLength": 5000}
+                  }
+                }
+              },
+              "unsupported_claims": {"type": "array", "maxItems": 0, "items": {"type": "string"}},
+              "attachments": {"type": "array", "maxItems": 0, "items": {"type": "object", "additionalProperties": false, "properties": {}, "required": []}}
+            }
+          }
+        }
+      }
+    }
+  }
+}

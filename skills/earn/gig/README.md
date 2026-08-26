@@ -1,5 +1,63 @@
 # The Coconala loop
 
+> **Current onboarding boundary:** the Coconala package is a public beta. The public
+> Terminal command, dependency/Codex preparation, dedicated browser, official account
+> gates, six-job activation, zero-listing Storefront publisher, `gog` email and clean-HOME
+> contract are implemented. Independent clean-Mac full E2E acceptance is still open. The
+> owner completes Coconala's official account/SMS/eKYC/bank ceremony. Sales and bank arrival
+> remain receipt-based outcomes, never guaranteed setup results.
+
+### Product status
+
+This is the only marketplace money loop currently offered as a one-command OSS public beta.
+All four business lanes and their two supporting jobs are public. `gog` email onboarding
+has real send/inbox readback and the clean-HOME Terminal contract is verified. Upwork,
+Mercor, and other marketplace loops are not advertised as installable
+OSS products yet, even where internal components exist.
+
+### Accepted onboarding flow (external acceptance pending)
+
+1. On a clean Mac, run the one-line bootstrap (or run `./install.sh coconala` from an
+   existing checkout):
+
+   ```bash
+   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Daisuke134/life-manager/main/scripts/bootstrap-coconala.sh)"
+   ```
+
+   It installs Homebrew/Git only when missing, creates or fast-forwards
+   `~/life-manager`, and starts the Coconala setup directly in Terminal. It never deletes
+   or replaces a non-Git directory.
+2. The installer runs `codex login` when the CLI is not authenticated. It does not ask
+   for language, timezone, skills, categories, prices, or a notification channel.
+3. It opens Coconala in the dedicated agent browser profile at
+   `~/.cloak/profiles/gig-daily-driver` and shows the whole checklist once.
+4. In that browser, the owner completes account or login, email, SMS, seller
+   information, required consents, smartphone eKYC, and bank registration.
+5. The owner returns to Terminal and runs the same command once. Life Manager attaches
+   to the same browser session, receives no password, and verifies every official state.
+6. Life Manager starts Browser, Apply, Reply, Storefront, Paid, and Release Watcher.
+7. Storefront imports existing listings or creates the first truthful listing when the
+   official count is zero; the other lanes then operate without ordinary approval gates.
+
+From there, launchd keeps the dedicated browser and all four business lanes running while
+the Mac is on. The same browser profile and private session vault survive normal browser
+restarts. If Coconala expires the login, the flow reopens the official login page in that
+same profile, verifies recovery, and resumes; it never creates a replacement account.
+
+That is the complete normal setup. Do not create a listing manually, install Python
+packages, edit JSON, configure launchd, or give Life Manager a Coconala password.
+Terminal is the setup and status surface. Official Coconala email remains active. Life
+Manager reports use the existing `gog` Gmail transport after Google OAuth and a real
+send/inbox readback; SMTP and Telegram are not part of the public default.
+Using that same Gmail address for Coconala signup avoids entering two addresses. If an
+authenticated Gmail account already exists in `gog`, setup asks no email question.
+
+### Deferred external acceptance
+
+After the code-owned OSS UX is complete, independent clean-device owners validate this
+README without private coaching or copied credentials/configuration/browser/state. That
+evidence is not a current coding task and does not guarantee income or time to first sale.
+
 Four background jobs that run a [Coconala](https://coconala.com) seller account
 around the clock: they read the job board and apply, keep the storefront honest,
 answer buyers who ask questions before they buy, and work the orders that get
@@ -14,7 +72,7 @@ replays, `tests/` the tests.
 
 | lane | job label | every | what it does |
 |---|---|---|---|
-| apply | `ai.anicca.hf-gig-apply-direct` | 60s | Reads the public job board, judges which postings this seller can actually do, and submits an application with a proposal. |
+| apply | `ai.anicca.hf-gig-apply-direct` | 60s | Reads the public job board, proves which postings the installed AI/Mac/tool system can deliver, and submits an application with a proposal. |
 | storefront | `ai.anicca.hf-gig-storefront-direct` | 60s | Reads the seller's own listings and their view/inquiry counts, and edits the ones people look at and never contact. |
 | negotiate | `ai.anicca.hf-gig-reply-detector` | continuous, 30s discovery | Watches talkrooms opened *before* purchase and answers the buyer's questions and estimate requests with two independent workers. |
 | paid | `ai.anicca.hf-gig-paid-direct` | 300s | Works orders that have been paid for: reads the requirement, builds or reviews the deliverable, and decides whether it is good enough to hand over. |
@@ -26,6 +84,110 @@ Two more jobs support them:
 | `ai.anicca.hf-gig-browser` | Keeps one Chromium alive on a debugging port. All four lanes share it, because the login lives in its profile. |
 | `ai.anicca.hf-gig-release-watch` | Fast-forwards this checkout to `origin/main` and moves idle lanes onto the new code. |
 
+The AI system is the delivery workforce. The owner's personal free time, manual skill,
+sleep, health, or workload does not cap Coconala throughput. Independent profitable work
+runs concurrently up to measured compute, browser/tool, deadline, platform, cost, and
+quality limits. Job Hunter is different: because the human becomes the employee, that
+loop alone must use the person's real employment facts and availability.
+
+### Autonomous operating contract
+
+Each application, inquiry, and purchased order has an isolated owner and private project
+root. That owner reads the complete relevant DM, talkroom, attachment, listing, and prior
+effect history. Reusable skills, account references, browser sessions, and tools are shared;
+customer context, artifacts, history, and state are not. Secrets remain resolver references
+and are opened only by the adapter that needs them.
+
+Independent project owners work concurrently both inside one lane and across lanes. A shared
+authenticated browser or account is not an account-wide queue: each owner uses its own tab,
+target, client identity, URL, project state, and evidence root, so unrelated sends and
+readbacks may proceed at the same time. Only two attempts for the same exact entity and
+effect identity contend, through effect-key compare-and-swap/fencing rather than a global
+browser lock. Parallel work must never mix two customers' context. The model chooses the
+work plan and tools; deterministic code owns target identity, hashes, receipts, effect
+fencing, and replay detection. This is the `P0-four-lane-parallel` contract.
+
+### Owner lifetime and closure
+
+An owner is durable project state, not a forever-running process. One bounded wake may
+plan, build, send, read back, or observe an external wait and then exit. A later official
+event resumes the same owner from its checkpoint. A revision, provider wait, buyer review,
+or temporary failure never creates a replacement owner and never closes the project.
+
+| state | process behavior | owner behavior |
+|---|---|---|
+| `ACTIVE` | Run the next bounded step, then exit | Retain ownership and checkpoint every verified effect |
+| `WAITING_EXTERNAL` | Exit with no polling process | Resume on a later official event or scheduled observation |
+| `AWAITING_BUYER` | Exit after exact submission readback | Resume on buyer revision, acceptance, or cancellation |
+| `TERMINAL_PENDING_REPLAY` | Run one observe-only wake | Permit no new effect; prove duplicate effect zero |
+| `CLOSED_COMPLETED` | No worker capacity | Official completion and replay-zero are immutable |
+| `CLOSED_CANCELLED` | No worker capacity | Official cancellation and replay-zero are immutable |
+
+`CLOSED_COMPLETED` requires the exact deliverable/provider effect, fresh pre-submit review,
+Coconala seller readback, and buyer acceptance or official transaction completion when the
+contract requires it. `CLOSED_CANCELLED` requires the official Coconala cancellation state,
+not a cancellation request or support conversation. Both require a later observe-only wake
+with effect zero. Closing releases execution capacity and the active browser target; it does
+not delete customer context, artifacts, state, effect keys, or receipts. Those records become
+an immutable tombstone that makes every replay a no-op. A new marketplace order receives a
+new owner identity; a pre-terminal revision resumes the existing owner.
+
+The lifecycle copies three proven OSS patterns without adding their runtimes as dependencies:
+
+| reference | pattern reused | decision |
+|---|---|---|
+| [Temporal Python samples](https://github.com/temporalio/samples-python) `e652a4d0` | Stable child identity, durable signal wait, cleanup on cancel, bounded history continuation | Copy the state-machine pattern; do not add a Temporal server/SDK |
+| [LangGraph](https://github.com/langchain-ai/langgraph) `f09cfe8f` | One `thread_id` per isolated owner, checkpoints and pending writes survive a failed step | Reuse existing project files/ledgers as checkpoints; do not add another state store |
+| [Hatchet](https://github.com/hatchet-dev/hatchet) `89d130f3` | Entity-keyed concurrency, durable events, explicit completed/cancelled terminal states, stale invocation rejection | Key fencing by marketplace entity/effect; do not add Hatchet/Postgres |
+
+### Paid no-human production boundary
+
+The account owner performs only Coconala's mandatory official setup or recovery ceremonies,
+such as account registration, SMS/eKYC, bank registration, and a provider-required login
+challenge that no existing authorized session can satisfy. Those ceremonies are an explicit
+`NEEDS_OWNER_CEREMONY` product state, never hidden Paid work and never a successful delivery.
+After setup, normal Paid operation has no human approval gate and no foreground Codex/customer
+work path.
+
+For every purchased order, the launchd-selected project owner must resolve authorized skills,
+accounts, sessions, and tools; perform the provider work; build the exact deliverable; repair
+every actionable finding from a fresh isolated reviewer; submit once; and obtain official
+provider/Coconala readback. The effect receipt records the durable owner/run identity. A user,
+Codex, ad-hoc script, or uncheckpointed browser action cannot satisfy an acceptance gate.
+
+The owner never buys quality by fabricating identity, attendance, consent, physical presence,
+credentials, or completion. Apply normally rejects such work before purchase. If a legacy paid
+order exposes an unsupported requirement, its project owner autonomously selects a truthful,
+authorized disclosed-agent alternative when one satisfies the same buyer outcome; otherwise it
+negotiates a supported scope or completes official cancellation. It does not wait for a person to
+perform the work and does not submit a low-quality proxy.
+
+Paid no-human acceptance requires varied real production orders to reach
+`CLOSED_COMPLETED` or `CLOSED_CANCELLED` with owner-attributed provider effects, fresh QA,
+exact seller readback, terminal official state, restart/resume evidence, and next-wake effect
+zero. Tests, one successful message, one manually rescued order, and process liveness are not
+that proof.
+
+Apply prioritizes work the installed AI/Mac/tool system can demonstrate it can deliver well,
+especially software, landing pages, writing, research, and strategy. It normally rejects work
+whose success depends on a human meeting, undisclosed personal participation, unsupported
+desktop-only operation, or prolonged browser labor with no reliable adapter. This is a
+model judgement grounded in the complete posting and current capability evidence, never a
+buyer-name, category, or keyword rule.
+
+Before any buyer-visible submission, a fresh isolated reviewer checks the exact current
+requirements against the exact artifact or message. The producing owner repairs actionable
+findings before the fenced adapter sends once. Completion requires the intended provider
+effect, exact Coconala seller readback, buyer acceptance or transaction completion when the
+contract requires it, and a later wake with duplicate effect zero. Model success, process
+liveness, tests, and a local artifact are not completion.
+
+The four lanes form one revenue system: Apply and Storefront acquire demand, Reply
+converts it without exposing internal process details, and Paid fulfills it. Revenue
+targets are measured from official contract, fee, payout, and bank receipts. Application
+volume, listing publication, pending balance, and model estimates never count as the monthly
+cash target and no income amount is guaranteed.
+
 ---
 
 ## What you need before you start
@@ -33,15 +195,14 @@ Two more jobs support them:
 | | why |
 |---|---|
 | A Mac, Apple Silicon, macOS 14 or newer | The jobs are launchd user agents and the browser build is a macOS app bundle. |
-| A **Codex subscription** and the `codex` CLI signed in | This is the default paid route. `codex login`, then check `~/.codex/auth.json` exists. |
-| A **Coconala seller account** with at least one listing | This is the only account you create. You do not need to finish identity verification or add a bank account to start — those matter when you withdraw, not when you sell. |
-| Python 3.13 or newer | `brew install python@3.14`. Then `pip3 install websockets beautifulsoup4 jsonschema`. These are the package's only third-party Python imports. |
-| A CloakBrowser Chromium build under `~/.cloakbrowser/chromium-*/` | An ordinary Chrome will not do: the lanes attach over CDP, and the launcher passes `--fingerprint`, a flag only this build has. See [the browser](#the-browser) below — the version matters. |
+| A **ChatGPT subscription** | The installer installs the Codex CLI when missing, opens `codex login`, and verifies the resulting session. |
+| A Coconala registration email, Japanese mobile phone, accepted identity document, and matching domestic bank account | Enter these only on official Coconala/eKYC pages opened by the installer. Storefront creates the first listing when none exists. |
+| Internet access and macOS administrator access during setup | The installer prepares Homebrew, Git, Python, the private venv, CloakBrowser, and the six jobs only when missing. |
 
-Owner reports default to email. Install a sendmail-compatible client such as
-`msmtp` (`brew install msmtp`), connect it to Gmail in `~/.msmtprc`, then set
-`GIG_NOTIFY_EMAIL` and `GIG_SENDMAIL`. The existing `openclaw` Telegram path is
-only a fallback when no email recipient is configured.
+Owner status and official outcome receipts are available in Terminal with
+`./install.sh coconala outcomes`. Coconala continues sending its own account and buyer
+mail to the registered address. Life Manager email reports require a configured outbound
+`gog` Gmail account; their absence never blocks the four lanes.
 
 The semantic reply lane is tool-less. If the machine has a local CLI proxy, put
 its token in `~/.cli-proxy-api-key` and keep the loopback provider enabled in the
@@ -53,7 +214,11 @@ given browser or send tools by this fallback.
 
 ---
 
-## Install
+## Advanced/manual recovery
+
+The normal one-line Terminal flow above is the public onboarding. The remaining sections are
+for recovery, custom notification adapters, operator overrides, qualification and
+uninstall; a normal owner should not need them.
 
 ### 1. Get the code
 
@@ -72,8 +237,8 @@ mkdir -p ~/.config/anicca/gig
 cat > ~/.config/anicca/gig/install.json <<'JSON'
 {
   "GIG_NOTIFY_EMAIL": "you@example.com",
-  "GIG_NOTIFY_FROM": "you@example.com",
-  "GIG_SENDMAIL": "/opt/homebrew/bin/msmtp",
+  "GIG_GOG_ACCOUNT": "you@example.com",
+  "GIG_GOG_BIN": "/opt/homebrew/bin/gog",
   "GIG_BROWSER_FINGERPRINT": ""
 }
 JSON
@@ -197,6 +362,14 @@ ls -t ~/gig/evidence | head
 A lane that exits 0 and observed nothing is not working. `observed`,
 `official_services_read` and `replied` are the numbers that mean something.
 
+### Latest public-package verification
+
+Clean remote clone `f0984456d9d6e9bab44f876f05f3423d6cd138c5` passes the OSS
+self-contained contract (11/11), the public Apply and Negotiate suites (131/131),
+both production-entrypoint compilation checks, and scoped tree/history secret scans
+with zero findings. This verifies the package already used by an authenticated seller;
+it does not close the separate new-account onboarding boundary stated at the top.
+
 ---
 
 ## Configuration
@@ -216,8 +389,8 @@ no lane reads a credential from its environment.
 | `SESSION_VAULT_DIR` | `~/.cloak/vault/gig-daily-driver` | Cookie snapshots used to restore the session after a restart. |
 | `GIG_BROWSER_FINGERPRINT` | *(empty)* | Fingerprint seed passed to the browser build. |
 | `GIG_NOTIFY_EMAIL` | *(empty)* | Preferred owner-report recipient. When set, all four lanes use email. |
-| `GIG_NOTIFY_FROM` | recipient address | Envelope-visible sender passed to the local sendmail client. |
-| `GIG_SENDMAIL` | `/usr/sbin/sendmail` | A sendmail-compatible executable; use `/opt/homebrew/bin/msmtp` for Gmail. |
+| `GIG_GOG_ACCOUNT` | *(empty)* | Gmail-scoped `gog` OAuth account used to send owner reports. |
+| `GIG_GOG_BIN` | `/opt/homebrew/bin/gog` | `gogcli` executable installed by normal setup when missing. |
 | `GIG_REPORT_CHAT` | *(empty)* | Optional legacy Telegram fallback when email is unset. |
 | `GIG_SANDBOX_DENY` | *(empty)* | Colon-separated absolute paths the sandboxed paid builder must not read — other checkouts, other loops' state. Must be absolute; a relative entry is refused rather than silently ignored. |
 | `GIG_STOREFRONT_ROOT` | *(empty)* | Absolute private seller-bundle root; Storefront refuses to start without it. |
@@ -264,10 +437,26 @@ These are enforced in code, not by convention.
 
 Honest list. These are measured, not suspected.
 
-- **A natural buyer-message latency sample is still pending.** Negotiate now keeps
-  discovery alive every 30 seconds and dispatches exact-thread work to two workers;
-  idle probes and process liveness are verified. The next real unread message is
-  still needed to record end-to-end official-readback latency under five minutes.
+- **The reference Mac has completed Reply production acceptance.** A natural
+  reconciliation read all 140 official inbox cards over five terminally proven
+  pages (`30/30/30/30/20`), freshly read all 140 threads, and reused none. It found
+  no reply to send, two prior estimates to confirm, and 138 no-send conversations
+  (`observe 102`, `stop_contact 15`, `semantic_failed 11`,
+  `officially_unrepliable 10`). Both estimates were read back as already delivered,
+  so the pass made zero reply or estimate effects. Later natural traffic produced
+  five verified replies; each has one verified intent and seller-side readback,
+  `duplicate_effect=0`, and a durable Telegram `reply_verified` receipt (provider
+  message IDs `30152`, `30379`, `30428`, `30583`, and `30625`). Three fresh samples
+  completed in 42, 109, and 8 seconds. This evidence accepts Reply only; it does
+  not accept Paid or Storefront.
+- **The reference Mac has completed Storefront production acceptance.** Release
+  `ead7fd657` recovered a confirmed gallery contract after bounded evidence GC,
+  loaded the Storefront job with a real 512 MiB disk floor, and completed two
+  successive natural listing updates. The first changed only service `4312985` body;
+  the second did not replay it and changed only service `4302213` title. Each wake had
+  one hash-sealed contract, matching official before/after service identity,
+  `effect=1`, `readback=1`, and `duplicate=0`. Durable Telegram receipts are provider
+  message IDs `30741` and `30746`. This evidence does not accept Paid.
 - **The paid lane's feedback digest is not stable.** The window that assembles
   the latest buyer feedback has been observed regressing to older concatenated
   text within the same day, which means the digest a builder would act on cannot

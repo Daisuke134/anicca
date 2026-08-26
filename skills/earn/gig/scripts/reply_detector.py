@@ -27,6 +27,8 @@ if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
 from gig_paths import BROWSER_DIR, RUNNER_DIR  # noqa: E402
 from gig_disk_guard import disk_headroom_ok  # noqa: E402
+from no_contact_policy import load_registry, match_thread  # noqa: E402
+from requested_estimate import SEMANTIC_PROMPT_VERSION  # noqa: E402
 
 try:
     from connector_outbox import ConnectorOutbox, coconala_inbox_event_key
@@ -171,6 +173,109 @@ def _collect_head_snapshot(args: Any, evidence: Path) -> dict[str, Any]:
     return value
 
 
+def _close_no_contact_action(
+    outbox: ConnectorOutbox, action: dict[str, Any], *, policy_id: str, now: int,
+) -> dict[str, Any]:
+    action_id = int(action["action_id"])
+    if action.get("dlq_at") is not None:
+        action = outbox.requeue_closed_action(
+            action_id, now=now, require_no_intent=True,
+        )
+    owner = f"gig-no-contact-{action_id}"
+    claimed = outbox.claim(owner=owner, now=now, lease_seconds=30, action_id=action_id)
+    if claimed is None:
+        return {"status": "ignore_policy", "policy_id": policy_id, "action_id": action_id}
+    outbox.close_nothing_to_say(
+        action_id, owner=owner, fencing_token=int(claimed["fencing_token"]),
+        reason=f"ignore_policy:{policy_id}", now=now,
+    )
+    return {"status": "ignore_policy", "policy_id": policy_id, "action_id": action_id}
+
+
+def partition_no_contact_rows(
+    rows: list[dict[str, Any]], *, registry_path: Path,
+    outbox: ConnectorOutbox, now: int,
+) -> dict[str, Any]:
+    """Create a durable action, then close private threads before semantic work."""
+    registry = load_registry(registry_path)
+    available: list[dict[str, Any]] = []
+    ignored: list[dict[str, Any]] = []
+    for row in rows:
+        thread_id = str(row.get("talkroom_id") or "")
+        thread_path = f"/mypage/direct_message/{thread_id}"
+        policy = match_thread(registry, thread_path=thread_path)
+        if policy is None:
+            available.append(row)
+            continue
+        identity = str(row.get("last_message_identity_sha256") or "")
+        if _TARGETED_THREAD_ID.fullmatch(thread_id) is None or re.fullmatch(r"[0-9a-f]{64}", identity) is None:
+            raise ValueError("no_contact_head_identity_invalid")
+        event_key = coconala_inbox_event_key(thread_id, identity)
+        action = outbox.enqueue(
+            event_key=event_key,
+            thread_id=thread_id, thread_url=f"https://coconala.com{thread_path}",
+            observed_at=now,
+        )
+        lifecycle = outbox.action_lifecycle_for_event(event_key, thread_id)
+        if (
+            lifecycle is not None
+            and lifecycle.get("dlq_at") is not None
+            and lifecycle.get("reason") == f"nothing_to_say:ignore_policy:{policy['policy_id']}"
+        ):
+            ignored.append({
+                "status": "ignore_policy_replay",
+                "policy_id": policy["policy_id"],
+                "action_id": int(action["action_id"]),
+            })
+            continue
+        ignored.append(_close_no_contact_action(
+            outbox, action, policy_id=policy["policy_id"], now=now,
+        ))
+    return {"available": available, "ignored": ignored}
+
+
+def close_no_contact_work(
+    work: dict[str, Any], *, registry_path: Path,
+    outbox: ConnectorOutbox, now: int,
+) -> dict[str, Any] | None:
+    """Independent effect-time fence for stale or manually queued work."""
+    thread_id = str(work.get("thread_id") or "")
+    policy = match_thread(
+        load_registry(registry_path),
+        thread_path=f"/mypage/direct_message/{thread_id}",
+    )
+    if policy is None:
+        return None
+    action = outbox.get_action(int(work["action_id"]))
+    return _close_no_contact_action(
+        outbox, action, policy_id=policy["policy_id"], now=now,
+    )
+
+
+def no_contact_report(ignored: dict[str, Any], *, now: int) -> dict[str, Any]:
+    """Build an owner-visible result without customer identity or message content."""
+    del now
+    action_id = int(ignored["action_id"])
+    return {
+        **ignored, "run_id": f"ignore-policy-{ignored['policy_id']}-{action_id}",
+        "observed": 1, "actionable": 0,
+        "replied": 0, "effect": 0, "official_readback": 0,
+        "estimate_required": 0, "estimate_effect": 0, "estimate_readback": 0,
+        "estimate_failed": 0, "estimate_pending": 0,
+        "closed_without_send": 1, "pending": 0,
+        "blocked": 0, "historical_dlq": 0, "newly_dlq": 0,
+        "failed": 0, "skipped": 0, "deferred": 0,
+        "officially_unrepliable_count": 0, "stop_contact_count": 0,
+        "classification_failed_count": 0,
+        "semantic_judgement_failed_count": 0,
+        "semantic_migration_pending_count": 0,
+        "thread_changed_buyer_count": 0, "thread_readback_count": 1,
+        "thread_revalidated_count": 1 if ignored["status"] == "ignore_policy_replay" else 0,
+        "policy_ignored_count": 1,
+        "events": [], "errors": [],
+    }
+
+
 def _operator_brake_status(
     script: Path | None = None, *, timeout: float = 5.0,
 ) -> str:
@@ -221,15 +326,24 @@ def _telegram_report(args: Any, events: Path, command: str) -> str:
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
-            timeout=90,
+            timeout=240,
             check=False,
         )
     except Exception:
         return "deferred"
-    if report.returncode == 0:
-        return "sent"
     if report.returncode == 2:
         return "delivery_unknown"
+    try:
+        lines = [line for line in report.stdout.splitlines() if line.strip()]
+        dispatch = json.loads(lines[-1])
+    except (IndexError, TypeError, json.JSONDecodeError):
+        return "deferred"
+    if not isinstance(dispatch, dict):
+        return "deferred"
+    if _count(dispatch.get("delivery_unknown")):
+        return "delivery_unknown"
+    if _count(dispatch.get("sent")):
+        return "sent"
     return "deferred"
 
 
@@ -1014,6 +1128,38 @@ def _targeted_close_no_send(
     }
 
 
+def _targeted_close_obsolete_estimate(
+    *, database: Path, manifest: Path, action_id: int, thread_id: str,
+    event_key: str, expected_revision: int, run_id: str,
+) -> dict[str, Any] | None:
+    """Close the exact pending estimate after fresh semantics withdraws the request."""
+    try:
+        _requested_estimate_module().validate_estimate_event_key(event_key, thread_id)
+    except Exception:
+        return None
+    bound = _durable_event_action(database, event_key, thread_id)
+    if (
+        bound is None or int(bound.get("action_id") or 0) != action_id
+        or int(bound.get("revision") or 0) != expected_revision
+        or bound.get("state") != "pending" or bound.get("dlq_at") is not None
+    ):
+        return None
+    now = max(int(time.time()), int(bound.get("updated_at") or 0))
+    owner = f"gig-estimate-obsolete-{run_id}"
+    outbox = ConnectorOutbox(database, manifest)
+    claimed = outbox.claim(owner=owner, now=now, lease_seconds=30, action_id=action_id)
+    if claimed is None or int(claimed.get("revision") or 0) != expected_revision:
+        return None
+    closed = outbox.close_nothing_to_say(
+        action_id, owner=owner, fencing_token=int(claimed["fencing_token"]),
+        reason="estimate_no_longer_required", now=now,
+    )
+    return {
+        "action_id": int(closed["action_id"]),
+        "revision": int(closed["revision"]), "status": "nothing_to_say",
+    }
+
+
 def _collect_targeted_head(
     args: Any, *, evidence: Path, thread_id: str, identity_sha256: str,
 ) -> dict[str, Any]:
@@ -1203,6 +1349,38 @@ def _targeted_effect_result(
     }
 
 
+def _targeted_seller_debt_reply(inquiry: dict[str, Any]) -> bool:
+    receipt = inquiry.get("semantic_receipt")
+    judgement = receipt.get("judgement") if isinstance(receipt, dict) else None
+    return bool(
+        inquiry.get("last_message_side") == "seller"
+        and inquiry.get("reply_required") is True
+        and inquiry.get("next_action") == "reply"
+        and isinstance(receipt, dict)
+        and _requested_estimate_module().semantic_prompt_compatible(receipt)
+        and isinstance(judgement, dict)
+        and judgement.get("next_action") == "reply"
+        and type(inquiry.get("semantic_reply_body")) is str
+        and inquiry["semantic_reply_body"].strip()
+    )
+
+
+def _bind_targeted_seller_debt_queue(
+    queue: dict[str, Any], target: dict[str, Any],
+) -> dict[str, Any]:
+    event_key = str(target.get("inbox_event_key") or "")
+    match = _INBOX_EVENT.fullmatch(event_key)
+    items = queue.get("items") if isinstance(queue.get("items"), list) else []
+    if match is None or match.group("thread") != str(target.get("thread_id") or "") or len(items) != 1:
+        raise ValueError("targeted seller debt queue binding invalid")
+    rebound = dict(queue)
+    item = dict(items[0])
+    item["event_key"] = event_key
+    item["covered_event_keys"] = [event_key]
+    rebound["items"] = [item]
+    return rebound
+
+
 def _run_effect_pipeline(
     args: Any, *, snapshot: dict[str, Any], evidence: Path, run_id: str,
     target: dict[str, Any] | None = None,
@@ -1229,6 +1407,7 @@ def _run_effect_pipeline(
     semantic_ready = False
     estimate_required = False
     no_send = False
+    seller_debt_reply = False
     thread_id = str(target.get("thread_id") or "") if target else ""
     target_expected_revision = (
         _count(target.get("expected_revision")) if target else None
@@ -1259,6 +1438,7 @@ def _run_effect_pipeline(
         next_action = str(inquiry.get("next_action") or "")
         semantic_failure = str(inquiry.get("semantic_failure") or "") or None
         semantic_receipt = inquiry.get("semantic_receipt")
+        seller_debt_reply = _targeted_seller_debt_reply(inquiry)
         estimate_required = bool(
             inquiry.get("estimate_required") is True
             or next_action in _TARGETED_ESTIMATE_ACTIONS
@@ -1269,39 +1449,11 @@ def _run_effect_pipeline(
             and (
                 inquiry.get("last_message_side") == "buyer"
                 or next_action in _TARGETED_ESTIMATE_ACTIONS
+                or seller_debt_reply
             )
             and next_action in (_TARGETED_SEND_ACTIONS | _TARGETED_ESTIMATE_ACTIONS)
         )
         no_send = next_action in _TARGETED_INTENTIONAL_NO_SEND
-        if estimate_required:
-            normal_value = _targeted_presemantic_snapshot(snapshot, inquiry, semantic=False)
-        else:
-            normal_value = _targeted_presemantic_snapshot(
-                snapshot, inquiry, semantic=semantic_ready and next_action in _TARGETED_SEND_ACTIONS,
-            )
-    else:
-        normal_value = dict(snapshot)
-        if isinstance(snapshot.get("inquiries"), list):
-            normal_value["inquiries"] = [
-                item for item in snapshot["inquiries"]
-                if not (isinstance(item, dict) and item.get("estimate_required") is True)
-            ]
-    _atomic_json(normal_path, normal_value)
-    _owner_only(normal_path)
-    _run("queue_build", [
-        sys.executable, str(queue_script), "build",
-        "--snapshot", str(normal_path), "--output", str(queue_path),
-    ])
-    _owner_only(queue_path)
-    _run("outbox_enqueue", [
-        sys.executable, str(queue_script), "enqueue", "--queue", str(queue_path),
-        "--database", str(database), "--manifest", str(manifest),
-    ])
-    queue_value = json.loads(queue_path.read_text(encoding="utf-8"))
-    if not isinstance(queue_value, dict):
-        raise ValueError("reply queue must be an object")
-    if target:
-        items = queue_value.get("items") if isinstance(queue_value.get("items"), list) else []
         if no_send and not semantic_failure:
             closed = _targeted_close_no_send(
                 database=database, manifest=manifest,
@@ -1319,6 +1471,41 @@ def _run_effect_pipeline(
                     "estimate_readback": 0, "estimate_pending": 0,
                     "estimate_failed": 0, "estimate_events": [],
                 }
+        if estimate_required:
+            normal_value = _targeted_presemantic_snapshot(snapshot, inquiry, semantic=False)
+        else:
+            normal_value = _targeted_presemantic_snapshot(
+                snapshot, inquiry, semantic=semantic_ready and next_action in _TARGETED_SEND_ACTIONS,
+            )
+            if seller_debt_reply:
+                normal_value["inquiries"][0]["semantic_seller_debt_reply"] = True
+    else:
+        normal_value = dict(snapshot)
+        if isinstance(snapshot.get("inquiries"), list):
+            normal_value["inquiries"] = [
+                item for item in snapshot["inquiries"]
+                if not (isinstance(item, dict) and item.get("estimate_required") is True)
+            ]
+    _atomic_json(normal_path, normal_value)
+    _owner_only(normal_path)
+    _run("queue_build", [
+        sys.executable, str(queue_script), "build",
+        "--snapshot", str(normal_path), "--output", str(queue_path),
+    ])
+    _owner_only(queue_path)
+    queue_value = json.loads(queue_path.read_text(encoding="utf-8"))
+    if not isinstance(queue_value, dict):
+        raise ValueError("reply queue must be an object")
+    if target and seller_debt_reply:
+        queue_value = _bind_targeted_seller_debt_queue(queue_value, target)
+        _atomic_json(queue_path, queue_value)
+        _owner_only(queue_path)
+    _run("outbox_enqueue", [
+        sys.executable, str(queue_script), "enqueue", "--queue", str(queue_path),
+        "--database", str(database), "--manifest", str(manifest),
+    ])
+    if target:
+        items = queue_value.get("items") if isinstance(queue_value.get("items"), list) else []
         bound = target if estimate_required else None
         if bound is None:
             for item in items:
@@ -1626,7 +1813,28 @@ def run_targeted_estimate(
             snapshot = _targeted_snapshot(snapshot_path)
         else:
             snapshot = retry_snapshot
-        _targeted_inquiry(snapshot, thread_id)
+        inquiry = _targeted_inquiry(snapshot, thread_id)
+        if not (
+            inquiry.get("estimate_required") is True
+            or str(inquiry.get("next_action") or "") in _TARGETED_ESTIMATE_ACTIONS
+        ):
+            closed = _targeted_close_obsolete_estimate(
+                database=Path(args.database), manifest=Path(args.manifest),
+                action_id=action_id, thread_id=thread_id, event_key=event_key,
+                expected_revision=expected_revision, run_id=run_id,
+            )
+            if closed is None:
+                return _targeted_pending(
+                    thread_id, run_id, error="obsolete_estimate_close_raced",
+                )
+            return {
+                "status": "completed", "thread_id": thread_id, "run_id": run_id,
+                "estimate_required": 0, "estimate_effect": 0,
+                "estimate_readback": 0, "estimate_pending": 0,
+                "estimate_failed": 0, "estimate_events": [],
+                "closed_without_send": 1, "pending": 0, "errors": [],
+                "closed_action_ids": [closed["action_id"]],
+            }
         return _run_effect_pipeline(
             args, snapshot=snapshot, evidence=evidence, run_id=run_id,
         )
@@ -1839,6 +2047,7 @@ def _supervisor_rebind_targeted_work(
 
 async def supervise_replies(
     args: Any, *, probe: Any, worker: Any, reconcile: Any, stop: Any,
+    report_root: Path | None = None, report: Any | None = None,
 ) -> None:
     """Supervise one producer, two consumers, and idle reconciliation.
 
@@ -1860,6 +2069,7 @@ async def supervise_replies(
 
     database = Path(getattr(args, "database"))
     manifest = Path(getattr(args, "manifest"))
+    report_root = Path(report_root) if report_root is not None else database.parent
     outbox: ConnectorOutbox | None = None
 
     def get_outbox() -> ConnectorOutbox:
@@ -1877,6 +2087,12 @@ async def supervise_replies(
     dispatch: asyncio.PriorityQueue[tuple[int, int, dict[str, Any]]] = asyncio.PriorityQueue()
     sequence = itertools.count()
     in_flight: set[str] = set()
+
+    async def report_policy(path: Path, result: dict[str, Any]) -> None:
+        if report is None:
+            _atomic_json(path, result)
+            return
+        await report(path, result)
 
     async def enqueue_work(work: dict[str, Any]) -> None:
         event_key = work["event_key"]
@@ -1896,7 +2112,15 @@ async def supervise_replies(
 
     async def enqueue_head_rows(rows: list[dict[str, Any]]) -> None:
         outbox = get_outbox()
-        for row in rows:
+        policy = partition_no_contact_rows(
+            rows, registry_path=Path(args.no_contact_registry),
+            outbox=outbox, now=int(time.time()),
+        )
+        for ignored in policy["ignored"]:
+            result = no_contact_report(ignored, now=int(time.time()))
+            report_dir = report_root / "continuous" / "policy-reports" / result["run_id"]
+            await report_policy(report_dir / "result.json", result)
+        for row in policy["available"]:
             thread_id = str(row.get("talkroom_id") or "")
             identity = str(row.get("last_message_identity_sha256") or "")
             if (
@@ -1913,7 +2137,7 @@ async def supervise_replies(
                 )
             except Exception:
                 continue
-            if action.get("state") != "pending":
+            if action.get("state") != "pending" or action.get("dlq_at") is not None:
                 continue
             await enqueue_work({
                 "action_id": int(action["action_id"]),
@@ -1992,7 +2216,16 @@ async def supervise_replies(
                 continue
             try:
                 if headroom_available():
-                    result = await _supervisor_hook(worker, work)
+                    ignored = close_no_contact_work(
+                        work, registry_path=Path(args.no_contact_registry),
+                        outbox=get_outbox(), now=int(time.time()),
+                    )
+                    if ignored is not None:
+                        result = no_contact_report(ignored, now=int(time.time()))
+                        report_dir = evidence / "continuous" / "policy-reports" / result["run_id"]
+                        await report_policy(report_dir / "result.json", result)
+                    else:
+                        result = await _supervisor_hook(worker, work)
                     if headroom_available():
                         try:
                             rebound = _supervisor_rebind_targeted_work(
@@ -2011,15 +2244,17 @@ async def supervise_replies(
                 dispatch.task_done()
 
     async def reconciler() -> None:
+        delay = min(poll_seconds, reconcile_seconds)
         while not stop.is_set():
             try:
-                await asyncio.wait_for(stop.wait(), timeout=reconcile_seconds)
+                await asyncio.wait_for(stop.wait(), timeout=delay)
             except asyncio.TimeoutError:
                 if headroom_available():
                     try:
                         await _supervisor_hook(reconcile)
+                        delay = reconcile_seconds
                     except Exception:
-                        pass
+                        delay = min(poll_seconds, reconcile_seconds)
 
     producer_task = asyncio.create_task(producer(), name="gig-reply-producer")
     consumer_tasks = [
@@ -2145,6 +2380,7 @@ async def _run_continuous_runtime(args: Any, evidence: Path) -> dict[str, Any]:
     try:
         await supervise_replies(
             args, probe=probe, worker=worker, reconcile=reconcile, stop=stop,
+            report_root=evidence, report=enqueue_report,
         )
     finally:
         for signum in (signal.SIGTERM, signal.SIGINT):
@@ -2203,6 +2439,13 @@ def main() -> int:
     parser.add_argument(
         "--telegram-database", type=Path,
         default=home / "gig/telegram-outbox.sqlite3",
+    )
+    parser.add_argument(
+        "--no-contact-registry", type=Path,
+        default=Path(os.environ.get(
+            "GIG_NO_CONTACT_REGISTRY",
+            home / ".config/anicca/gig/no-contact.json",
+        )),
     )
     parser.add_argument(
         "--runner-config", type=Path,

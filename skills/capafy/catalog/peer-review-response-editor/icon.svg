@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">Peer Review Response Editor icon</title>
+  <desc id="desc">A document with review marks and a reply arrow.</desc>
+  <rect width="256" height="256" rx="48" fill="#172554"/>
+  <path d="M64 42h91l37 37v135H64z" fill="#f8fafc"/>
+  <path d="M155 42v38h37" fill="#bfdbfe"/>
+  <path d="M88 104h80M88 132h56M88 160h42" stroke="#1e3a8a" stroke-width="12" stroke-linecap="round"/>
+  <path d="M165 151c17 0 27 9 27 25 0 17-12 29-32 29h-11" fill="none" stroke="#f97316" stroke-width="12" stroke-linecap="round"/>
+  <path d="m159 187-18 18 18 18" fill="none" stroke="#f97316" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

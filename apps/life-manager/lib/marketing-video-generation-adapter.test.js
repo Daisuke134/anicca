@@ -69,6 +69,7 @@ test("adapter selects the least-recent hook and creates immutable copy plus vide
   const packPath = path.join(root, "pack.json");
   const firstVideo = path.join(root, "v1.mp4");
   const secondVideo = path.join(root, "v2.mp4");
+  const secondVideoRef = `object://sha256/${crypto.createHash("sha256").update("0000ftyp-second-video").digest("hex")}`;
   fs.writeFileSync(packPath, `${JSON.stringify({
     schema_version: 1,
     product_id: "honne-ai",
@@ -89,6 +90,7 @@ test("adapter selects the least-recent hook and creates immutable copy plus vide
         text: "second hook",
         status: "active",
         prior_used_at: null,
+        media_ref: secondVideoRef,
       },
       {
         id: "HJA-003",
@@ -136,7 +138,7 @@ test("adapter selects the least-recent hook and creates immutable copy plus vide
   assert.equal(result.receipt.hook_id, "HJA-002");
   assert.equal(result.receipt.product_id, "honne-ai");
   assert.equal(result.receipt.format_id, "reelclaw");
-  assert.ok(media.some(({ ref }) => ref === result.receipt.video_ref));
+  assert.equal(result.receipt.video_ref, secondVideoRef);
   assert.equal(
     result.receipt.video_sha256,
     result.receipt.video_ref.slice("object://sha256/".length),

@@ -1,74 +1,304 @@
 #!/usr/bin/env python3
-"""Drive Capafy Web Checkpoint 3 (Submit for Review) via camofox REST.
+"""Drive Capafy CP3 (Submit for Review) through a strict raw page-CDP flow."""
 
-Submit-for-Review modal is React-controlled and only mounts when the button
-is .click()'d from inside a JS context, not via Playwright's ref-click.
-So this driver opens the tab and runs a single evaluate that clicks the
-submit button, waits for the modal to mount, then clicks the "Confirm
-Submit" button by exact text match.
-
-usage: drive_checkpoint3.py <review_url>
-"""
+from __future__ import annotations
 
 import json
 import os
+import re
 import sys
+import time
 import urllib.request
+from urllib.parse import parse_qsl, urlsplit
 
-from playwright.sync_api import sync_playwright
+from drive_checkpoint2 import (
+    _RawPage,
+    _bounded_page_call,
+    _bounded_page_evaluate,
+    _detect_cdp,
+    _is_capafy_target_url,
+    _validate_cdp_base,
+    _open_responsive_page,
+    _single_redirect_location,
+    _target_url_key,
+    _validate_ws_url,
+)
 
 
-def _detect_cdp():
-    """Use the live CloakBrowser transport; the old CamoFox daemon is retired."""
-    override = os.environ.get("CP1_CDP_URL")
-    candidates = [override] if override else ["http://localhost:9222", "http://localhost:9223"]
-    for url in candidates:
-        if not url:
+CP3_HOST = "capafy.ai"
+CP3_PATH = "/developer/createAgent"
+CP3_NAV_TIMEOUT_S = 10.0
+CP3_HYDRATE_TIMEOUT_S = 10.0
+CP3_POLL_S = 0.25
+
+
+def _is_review_url(url: str) -> bool:
+    parts = urlsplit(str(url or ""))
+    query = parse_qsl(parts.query, keep_blank_values=True)
+    token_values = [value for key, value in query if key == "token"]
+    return (
+        parts.scheme == "https"
+        and parts.netloc.lower() == CP3_HOST
+        and parts.path == CP3_PATH
+        and not parts.fragment
+        and len(query) == 3
+        and sorted(query) == sorted([("page", "review"), ("source", "temp-link"), ("token", token_values[0] if len(token_values) == 1 else "")])
+        and len(token_values) == 1
+        and re.fullmatch(r"[0-9]+", token_values[0]) is not None
+    )
+
+
+def _validate_review_url(url: str) -> str:
+    if not _is_review_url(url):
+        raise RuntimeError("CP3 URL must be exact HTTPS Capafy createAgent page=review")
+    return str(url)
+
+
+def _resolve_review_url(raw_url: str) -> str:
+    raw_url = str(raw_url or "").strip()
+    if _is_review_url(raw_url):
+        return raw_url
+    parts = urlsplit(raw_url)
+    if (
+        parts.scheme != "https"
+        or parts.netloc.lower() != "api.capafy.ai"
+        or not re.fullmatch(r"/R[0-9]+", parts.path)
+        or parts.query
+        or parts.fragment
+    ):
+        raise RuntimeError("CP3 short URL must be exactly https://api.capafy.ai/R<digits>")
+    locations = _single_redirect_location(raw_url, "HEAD")
+    if not locations:
+        locations = _single_redirect_location(raw_url, "GET")
+    if len(locations) != 1:
+        raise RuntimeError("CP3 short URL must return exactly one redirect Location")
+    return _validate_review_url(locations[0])
+
+
+def _candidate_page_targets(cdp_base: str):
+    cdp_base = _validate_cdp_base(cdp_base)
+    import json
+
+    with urllib.request.urlopen(f"{cdp_base}/json/list", timeout=8) as response:
+        targets = json.loads(response.read())
+    candidates = []
+    for target in reversed(targets if isinstance(targets, list) else []):
+        if not isinstance(target, dict) or target.get("type") != "page":
+            continue
+        if not _is_capafy_target_url(target.get("url")):
             continue
         try:
-            with urllib.request.urlopen(f"{url}/json/version", timeout=2):
-                return url
-        except OSError:
-            pass
-    raise RuntimeError("CloakBrowser CDP unavailable on 9222/9223")
+            _validate_ws_url(target.get("webSocketDebuggerUrl"))
+        except RuntimeError:
+            continue
+        candidates.append(target)
+    if not candidates:
+        raise RuntimeError("no existing Capafy createAgent page target")
+    return candidates
 
 
-SUBMIT_JS = """(async ()=>{
-  let submit=null;
-  for(let i=0;i<24;i++){
-    submit=Array.from(document.querySelectorAll('button'))
-      .find(b=>b.classList && b.classList.contains('finalReviewSubmitButton'));
-    if(submit) break;
-    await new Promise(r=>setTimeout(r,500));
-  }
-  if(!submit) return {stage:'submit', error:'NO_SUBMIT_BTN'};
-  submit.click();
-  await new Promise(r=>setTimeout(r,1800));
-  const all=Array.from(document.querySelectorAll('button'));
-  const confirm=all.find(b=>b.textContent && b.textContent.trim()==='Confirm Submit');
-  if(!confirm) return {stage:'modal', error:'NO_CONFIRM_BTN'};
-  confirm.click();
-  await new Promise(r=>setTimeout(r,3500));
-  return {submitted:true, url:location.href, dialogs:document.querySelectorAll('[role=dialog]').length};
+def _navigate(page: _RawPage, url: str) -> None:
+    _validate_review_url(url)
+    expected = _target_url_key(url)
+    deadline = time.monotonic() + CP3_NAV_TIMEOUT_S
+    result = _bounded_page_call(page, "Page.navigate", {"url": url}, deadline)
+    error_text = str(result.get("errorText") or "").strip()
+    if error_text:
+        raise RuntimeError(f"CP3 Page.navigate failed: {error_text}")
+    while time.monotonic() < deadline:
+        state = _bounded_page_evaluate(page, "({ready:document.readyState,href:location.href})", deadline)
+        if isinstance(state, dict) and state.get("ready") in {"interactive", "complete"}:
+            if _target_url_key(str(state.get("href") or "")) != expected:
+                raise RuntimeError("CP3 navigation reached the wrong exact target")
+            return
+        time.sleep(CP3_POLL_S)
+    raise RuntimeError("CP3 navigation did not become ready before deadline")
+
+
+SUBMIT_STATE_JS = """(() => {
+  const visible = b => !!(b.offsetWidth || b.offsetHeight || b.getClientRects().length);
+  const all = [...document.querySelectorAll('button')].filter(b => visible(b) && b.classList.contains('finalReviewSubmitButton') && ['審査に提出','Submit for Review'].includes((b.textContent || '').trim()));
+  const enabled = all.filter(b => !b.disabled);
+  const confirms = [...document.querySelectorAll('button')].filter(b => visible(b) && ['提出を確認','Confirm Submit'].includes((b.textContent || '').trim()));
+  return {count: all.length, enabled: enabled.length, disabled: all.filter(b => b.disabled).length, confirms: confirms.length};
 })()"""
 
 
-def main(argv):
-    url = argv[1]
-    cdp = _detect_cdp()
-    with sync_playwright() as pw:
-        browser = pw.chromium.connect_over_cdp(cdp)
+SUBMIT_CLICK_JS = """(() => {
+  const visible = b => !!(b.offsetWidth || b.offsetHeight || b.getClientRects().length);
+  const xs = [...document.querySelectorAll('button')].filter(b => visible(b) && b.classList.contains('finalReviewSubmitButton') && ['審査に提出','Submit for Review'].includes((b.textContent || '').trim()));
+  if (xs.length !== 1 || xs[0].disabled) return {ok:false, reason:'submit-not-unique-or-disabled', count:xs.length};
+  xs[0].click();
+  return {ok:true};
+})()"""
+
+
+CONFIRM_CLICK_JS = """(() => {
+  const visible = b => !!(b.offsetWidth || b.offsetHeight || b.getClientRects().length);
+  const xs = [...document.querySelectorAll('button')].filter(b => visible(b) && ['提出を確認','Confirm Submit'].includes((b.textContent || '').trim()));
+  if (xs.length !== 1 || xs[0].disabled) return {ok:false, reason:'confirm-not-unique-or-disabled', count:xs.length};
+  xs[0].click();
+  return {ok:true};
+})()"""
+
+
+def _fill_version_update_if_required(page: _RawPage, update_info: str) -> None:
+    """Populate the one required version-history textarea when the page has it."""
+    deadline = time.monotonic() + CP3_HYDRATE_TIMEOUT_S
+    state = None
+    while time.monotonic() < deadline:
+        state = page.evaluate("""(() => {
+          const visible = e => !!(e.offsetWidth || e.offsetHeight || e.getClientRects().length);
+          const xs = [...document.querySelectorAll('textarea')].filter(e => visible(e) && /変更内容|変更履歴|changes/i.test(`${e.placeholder || ''} ${e.getAttribute('aria-label') || ''}`));
+          const submit = [...document.querySelectorAll('button')].some(b => visible(b) && ['審査に提出','Submit for Review'].includes((b.textContent || '').trim()));
+          if (xs.length === 0) return {ok:true, hydrated:submit, required:false};
+          if (xs.length !== 1) return {ok:false, count:xs.length};
+          const x=xs[0]; x.scrollIntoView({block:'center'}); x.focus(); x.select();
+          return {ok:true, hydrated:true, required:true, empty:!(x.value || '').trim()};
+        })()""")
+        if isinstance(state, dict) and state.get("hydrated"):
+            break
+        time.sleep(CP3_POLL_S)
+    if not isinstance(state, dict) or not state.get("ok"):
+        raise RuntimeError(f"CP3 version-update field is ambiguous: {state}")
+    if not state.get("hydrated"):
+        raise RuntimeError("CP3 version form did not hydrate before deadline")
+    if not state.get("required") or not state.get("empty"):
+        return
+    update_info = str(update_info or "").strip()
+    if not update_info:
+        raise RuntimeError("CP3 version update description is required")
+    inserted = page.evaluate("""(() => {
+      const value=%s;
+      const visible = e => !!(e.offsetWidth || e.offsetHeight || e.getClientRects().length);
+      const xs = [...document.querySelectorAll('textarea')].filter(e => visible(e) && /変更内容|変更履歴|changes/i.test(`${e.placeholder || ''} ${e.getAttribute('aria-label') || ''}`));
+      if (xs.length !== 1) return {ok:false,count:xs.length};
+      const x=xs[0];
+      const setter=Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set;
+      setter.call(x,value);
+      x.dispatchEvent(new InputEvent('input',{bubbles:true,composed:true,inputType:'insertText',data:value}));
+      x.dispatchEvent(new Event('change',{bubbles:true}));
+      return {ok:true,value:x.value};
+    })()""" % json.dumps(update_info))
+    if not isinstance(inserted, dict) or not inserted.get("ok") or inserted.get("value") != update_info:
+        raise RuntimeError(f"CP3 version update description did not persist: {inserted}")
+    time.sleep(0.5)
+
+
+def _wait_and_submit(page: _RawPage, update_info: str = "") -> None:
+    _fill_version_update_if_required(page, update_info)
+    deadline = time.monotonic() + CP3_HYDRATE_TIMEOUT_S
+    while time.monotonic() < deadline:
+        state = _bounded_page_evaluate(page, SUBMIT_STATE_JS, deadline)
+        if not isinstance(state, dict):
+            raise RuntimeError("CP3 submit state unavailable")
+        if state.get("count", 0) > 1 or state.get("enabled", 0) > 1:
+            raise RuntimeError(f"CP3 submit button is ambiguous: {state}")
+        if state.get("count") == 1:
+            if state.get("disabled"):
+                raise RuntimeError("CP3 submit button is disabled")
+            break
+        time.sleep(CP3_POLL_S)
+    else:
+        raise RuntimeError("CP3 submit button did not hydrate before deadline")
+
+    clicked = _bounded_page_evaluate(page, SUBMIT_CLICK_JS, deadline)
+    if not isinstance(clicked, dict) or not clicked.get("ok"):
+        raise RuntimeError(f"CP3 submit click rejected: {clicked}")
+
+    deadline = time.monotonic() + CP3_HYDRATE_TIMEOUT_S
+    confirmed_clicked = False
+    while time.monotonic() < deadline:
+        state = _bounded_page_evaluate(page, SUBMIT_STATE_JS, deadline)
+        if not isinstance(state, dict):
+            raise RuntimeError("CP3 post-submit state unavailable")
+        if state.get("confirms", 0) > 1:
+            raise RuntimeError(f"CP3 confirmation is ambiguous: {state}")
+        if state.get("confirms") == 1 and not confirmed_clicked:
+            confirmed = _bounded_page_evaluate(page, CONFIRM_CLICK_JS, deadline)
+            if not isinstance(confirmed, dict) or not confirmed.get("ok"):
+                raise RuntimeError(f"CP3 confirmation click rejected: {confirmed}")
+            confirmed_clicked = True
+        elif state.get("count") == 1 and state.get("disabled") == 1:
+            return
+        time.sleep(CP3_POLL_S)
+    raise RuntimeError("CP3 submit did not become disabled or show a unique confirmation")
+
+
+def _playwright_submit(url: str, update_info: str) -> None:
+    """Submit from one owned page so stale Capafy tabs cannot be selected."""
+    from playwright.sync_api import sync_playwright
+
+    pw = sync_playwright().start()
+    owned_page = None
+    try:
+        browser = pw.chromium.connect_over_cdp(_detect_cdp(), timeout=15000)
         context = browser.contexts[0] if browser.contexts else browser.new_context()
-        page = context.new_page()
-        page.goto(url, wait_until="domcontentloaded", timeout=120000)
-        data = page.evaluate(SUBMIT_JS)
-        print(f"[cp3] {json.dumps(data, ensure_ascii=False)}", file=sys.stderr)
-        if data.get("error"):
-            raise RuntimeError(f"checkpoint3 stage={data.get('stage')} error={data['error']}")
-        if not data.get("submitted"):
-            raise RuntimeError(f"checkpoint3 did not submit: {data}")
-    return 0
+        owned_page = context.new_page()
+        owned_page.goto(url, wait_until="domcontentloaded", timeout=60000)
+        if not _is_review_url(owned_page.url):
+            raise RuntimeError("CP3 owned page reached the wrong target")
+
+        field = owned_page.locator('textarea[placeholder*="変更内容"], textarea[placeholder*="changes" i]')
+        field.first.wait_for(state="visible", timeout=15000)
+        if field.count() != 1:
+            raise RuntimeError(f"CP3 version-update field is ambiguous ({field.count()})")
+        if not field.first.input_value().strip():
+            if not update_info.strip():
+                raise RuntimeError("CP3 version update description is required")
+            field.first.fill(update_info)
+
+        submit = owned_page.get_by_role("button", name=re.compile(r"^(審査に提出|Submit for Review)$"))
+        submit.first.wait_for(state="visible", timeout=10000)
+        if submit.count() != 1 or submit.first.is_disabled():
+            raise RuntimeError(f"CP3 submit button is not uniquely enabled ({submit.count()})")
+        submit.first.click()
+        owned_page.wait_for_timeout(1500)
+
+        confirm = owned_page.get_by_role("button", name=re.compile(r"^(提出を確認|Confirm Submit)$"))
+        if confirm.count() == 1 and confirm.first.is_visible():
+            if confirm.first.is_disabled():
+                raise RuntimeError("CP3 confirmation button is disabled")
+            confirm.first.click()
+        owned_page.wait_for_timeout(4000)
+        if _is_review_url(owned_page.url) and submit.count() == 1 and not submit.first.is_disabled():
+            raise RuntimeError("CP3 submit did not reach a terminal UI state")
+    finally:
+        if owned_page is not None:
+            try:
+                owned_page.close()
+            except Exception:
+                pass
+        pw.stop()
+
+
+def main(argv: list[str]) -> int:
+    if len(argv) < 2:
+        print("ERR: need CP3 url")
+        return 1
+    resolved = _resolve_review_url(argv[1])
+    update_info = argv[2] if len(argv) > 2 else ""
+    if os.environ.get("CP3_TRANSPORT", "raw").strip().lower() != "raw":
+        _playwright_submit(resolved, update_info)
+        print("RESULT: submitted")
+        return 0
+    cdp = _detect_cdp()
+    targets = _candidate_page_targets(cdp)
+    page = _open_responsive_page(targets)
+    try:
+        page.call("Page.enable")
+        page.call("Page.bringToFront")
+        _navigate(page, resolved)
+        _wait_and_submit(page, update_info)
+        print("RESULT: submitted")
+        return 0
+    finally:
+        page.close()
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv))
+    try:
+        sys.exit(main(sys.argv))
+    except Exception as exc:
+        print(f"ERR: CP3 failed ({type(exc).__name__}: {str(exc)[:160]})")
+        sys.exit(1)

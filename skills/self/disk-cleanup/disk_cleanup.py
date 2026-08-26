@@ -8,11 +8,16 @@ Unknown paths, sessions, state, credentials, source, and probe failures remain.
 from __future__ import annotations
 
 import argparse
+from contextlib import contextmanager, suppress
+import errno
+import fcntl
 import json
+import math
 import os
 import pwd
 import re
 import shutil
+import stat
 import subprocess
 import sys
 import tempfile
@@ -30,6 +35,19 @@ POST_SWEEP_RESERVE_SECONDS = 30
 HEALTH_CHECK_TIMEOUT_SECONDS = 5
 CANONICAL_LABEL = "ai.anicca.life-manager-disk-cleanup"
 THRESHOLDS = ((20 * GiB, "NORMAL"), (11 * GiB, "PREVENTIVE"), (6 * GiB, "PRESSURE"), (3 * GiB, "CRITICAL"))
+RECEIPT_RESERVE_BYTES = 1024 * 1024
+RECEIPT_PAYLOAD_MAX_BYTES = 64 * 1024
+SOURCE_SUFFIXES = {
+    ".c", ".cc", ".cpp", ".go", ".h", ".hpp", ".java", ".js", ".jsx",
+    ".kt", ".kts", ".m", ".md", ".mm", ".py", ".rb", ".rs", ".sh", ".swift",
+    ".ts", ".tsx",
+}
+SECRET_SUFFIXES = {".env", ".key", ".p12", ".pem", ".pfx"}
+
+
+class _ReceiptAtomicFailure(Exception):
+    def __init__(self, error: OSError) -> None:
+        self.error = error
 
 
 def classify_tier(free_bytes: int) -> str:
@@ -37,6 +55,15 @@ def classify_tier(free_bytes: int) -> str:
         if free_bytes >= floor:
             return tier
     return "ULTRA"
+
+
+def _session_recovery_receipt() -> dict[str, object]:
+    return {
+        "authority": "gui-session-owner",
+        "process_kill_authority": False,
+        "required_readback": ["uid", "gui-domain", "canonical-label"],
+        "stale_app_server_action": "observe-only",
+    }
 
 
 def _bytes(
@@ -193,6 +220,7 @@ class HostDiskGovernor:
         self.home = (home or Path.home()).resolve()
         self.state_dir = (state_dir or self.home / ".openclaw/state").resolve()
         self.lock_dir = self.state_dir / ".life-manager-disk-cleanup.lock"
+        self._lock_fd: int | None = None
         self.full_inventory_marker = self.state_dir / "host-inventory-full.at"
         self.lsof = lsof
         self.usage = usage or self._usage
@@ -200,6 +228,16 @@ class HostDiskGovernor:
         self.bootstrap_health = bootstrap_health or (
             lambda: _default_bootstrap_health(self.home, self.state_dir)
         )
+
+    def _checked_bootstrap_health(self) -> dict[str, object]:
+        try:
+            return self.bootstrap_health()
+        except Exception as exc:  # fail closed if the preflight itself is broken
+            return {
+                "status": "failure",
+                "error_code": "health-check-exception",
+                "detail": type(exc).__name__,
+            }
 
     def _full_inventory_due(self) -> bool:
         try:
@@ -218,27 +256,91 @@ class HostDiskGovernor:
         usage = shutil.disk_usage("/System/Volumes/Data" if Path("/System/Volumes/Data").exists() else "/")
         return usage.free, usage.total
 
-    def acquire_lock(self) -> bool:
-        self.state_dir.mkdir(parents=True, exist_ok=True)
+    @staticmethod
+    def _active_lease(item: dict) -> bool:
+        lease = item.get("lease")
+        if lease is None:
+            return False
+        lease_path = lease.get("path") if isinstance(lease, dict) else lease
+        if not isinstance(lease_path, (str, os.PathLike)):
+            return True
         try:
-            self.lock_dir.mkdir()
-        except FileExistsError:
-            pid_file = self.lock_dir / "pid"
+            modified_at = Path(lease_path).expanduser().stat().st_mtime
+        except FileNotFoundError:
+            return False
+        except OSError:
+            return True
+        if not isinstance(lease, dict):
+            return True
+        max_age = lease.get("max_age_seconds")
+        if (
+            isinstance(max_age, bool)
+            or not isinstance(max_age, (int, float))
+            or not math.isfinite(max_age)
+            or max_age <= 0
+        ):
+            return True
+        age = time.time() - modified_at
+        return age < 0 or age <= max_age
+
+    def acquire_lock(self) -> bool:
+        if self._lock_fd is not None:
+            return False
+        try:
+            self.state_dir.mkdir(parents=True, exist_ok=True)
             try:
-                pid = int(pid_file.read_text())
-                os.kill(pid, 0)
+                info = self.lock_dir.lstat()
+            except FileNotFoundError:
+                info = None
+            except OSError:
                 return False
-            except (OSError, ValueError):
-                shutil.rmtree(self.lock_dir, ignore_errors=True)
-                try:
-                    self.lock_dir.mkdir()
-                except FileExistsError:
+            if info is not None:
+                if stat.S_ISLNK(info.st_mode):
                     return False
-        (self.lock_dir / "pid").write_text(str(os.getpid()))
-        return True
+                if stat.S_ISREG(info.st_mode) and stat.S_IMODE(info.st_mode) != 0o600:
+                    return False
+                if stat.S_ISDIR(info.st_mode):
+                    return False
+                elif not stat.S_ISREG(info.st_mode):
+                    return False
+            flags = os.O_RDWR | getattr(os, "O_NOFOLLOW", 0)
+            created = info is None
+            if created:
+                try:
+                    fd = os.open(self.lock_dir, flags | os.O_CREAT | os.O_EXCL, 0o600)
+                except FileExistsError:
+                    created = False
+                    fd = os.open(self.lock_dir, flags)
+            else:
+                fd = os.open(self.lock_dir, flags)
+            opened = True
+            try:
+                if created:
+                    os.fchmod(fd, 0o600)
+                current = os.fstat(fd)
+                if not stat.S_ISREG(current.st_mode) or stat.S_IMODE(current.st_mode) != 0o600:
+                    return False
+                fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                self._lock_fd = fd
+                opened = False
+                return True
+            finally:
+                if opened:
+                    with suppress(OSError):
+                        fcntl.flock(fd, fcntl.LOCK_UN)
+                    with suppress(OSError):
+                        os.close(fd)
+        except (BlockingIOError, OSError):
+            return False
 
     def release_lock(self) -> None:
-        shutil.rmtree(self.lock_dir, ignore_errors=True)
+        fd, self._lock_fd = self._lock_fd, None
+        if fd is None:
+            return
+        with suppress(OSError):
+            fcntl.flock(fd, fcntl.LOCK_UN)
+        with suppress(OSError):
+            os.close(fd)
 
     def _protected(self, path: Path) -> bool:
         try:
@@ -253,11 +355,53 @@ class HostDiskGovernor:
         text = "/".join(parts)
         if any(text == root or text.startswith(root + "/") for root in protected_roots):
             return True
-        if ".git" in parts or path.suffix in {".sqlite", ".db"}:
+        lowered_parts = {part.lower() for part in parts}
+        if lowered_parts.intersection({".claude", ".codex", ".cloak", "anicca-rtdash", "anicca-monk-factory"}):
+            return True
+        protected_pairs = {
+            (".config", "ai"),
+            (".openclaw", "identity"),
+            (".openclaw", "state"),
+            (".openclaw", "workspace"),
+        }
+        if any(tuple(part.lower() for part in parts[index:index + 2]) in protected_pairs for index in range(len(parts) - 1)):
+            return True
+        if ".git" in parts or lowered_parts.intersection({"memory", "source", "src"}):
+            return True
+        if path.suffix.lower() in {".sqlite", ".db"} | SOURCE_SUFFIXES | SECRET_SUFFIXES:
             return True
         if len(parts) >= 2 and parts[-2] == "state" and path.suffix == ".jsonl":
             return True
-        return any(token in path.name.lower() for token in ("cookie", "login data", "auth.json"))
+        if path.name == ".env" or path.name.startswith(".env."):
+            return True
+        return any(
+            token in path.name.lower()
+            for token in (
+                "auth", "cookie", "credential", "ledger", "login data", "payment",
+                "publication", "receipt", "secret", "session", "transcript",
+            )
+        )
+
+    def _protected_descendant(self, path: Path, *, deadline: float | None = None) -> str | None:
+        errors: list[OSError] = []
+        for root, directories, files in os.walk(
+            path,
+            topdown=True,
+            followlinks=False,
+            onerror=errors.append,
+        ):
+            if errors:
+                return "descendant_probe_error"
+            for name in directories + files:
+                if deadline is not None and self.clock() >= deadline:
+                    return "probe-budget-exhausted"
+                descendant = Path(root) / name
+                try:
+                    if descendant.is_symlink() or self._protected(descendant):
+                        return "protected_descendant"
+                except OSError:
+                    return "descendant_probe_error"
+        return "descendant_probe_error" if errors else None
 
     def _allowlisted_candidate(self, path: Path, item: dict) -> bool:
         """Require discovery proof and an exact regenerable path family."""
@@ -282,15 +426,118 @@ class HostDiskGovernor:
                 in {"com.google.Chrome.code_sign_clone", "org.chromium.Chromium.code_sign_clone"}
                 and resolved.name.startswith("code_sign_clone.")
             )
+        if item.get("class") == "regenerable_output" and item.get("owner") == "codex-app-updater":
+            installation = (
+                self.home
+                / "Library/Caches/com.openai.codex/org.sparkle-project.Sparkle/Installation"
+            ).resolve()
+            return (
+                resolved.parent == installation
+                and re.fullmatch(r"[A-Za-z0-9]{6,64}", resolved.name) is not None
+            )
         return False
 
-    def _receipt(self, payload: dict, filename: str = "last-receipt.json") -> None:
+    @staticmethod
+    def _receipt_reserve_valid(path: Path) -> bool:
+        try:
+            info = path.lstat()
+        except OSError:
+            return False
+        return stat.S_ISREG(info.st_mode) and stat.S_IMODE(info.st_mode) == 0o600 and info.st_size == RECEIPT_RESERVE_BYTES and getattr(info, "st_blocks", 0) * 512 >= RECEIPT_RESERVE_BYTES
+
+    @contextmanager
+    def _staged_receipt_file(self, data: bytes, parent: Path, prefix: str, *, retryable: bool = False):
+        fd, temporary_name = tempfile.mkstemp(prefix=prefix, suffix=".tmp", dir=str(parent))
+        temporary = Path(temporary_name)
+        try:
+            os.fchmod(fd, 0o600)
+            with os.fdopen(fd, "wb") as stream:
+                fd = -1
+                try:
+                    written = stream.write(data)
+                    if written != len(data):
+                        raise OSError(errno.EIO, "short receipt write")
+                    stream.flush()
+                    os.fsync(stream.fileno())
+                except OSError as exc:
+                    if retryable:
+                        raise _ReceiptAtomicFailure(exc) from exc
+                    raise
+            yield temporary
+        finally:
+            with suppress(OSError):
+                os.close(fd)
+            temporary.unlink(missing_ok=True)
+
+    def _receipt_reserve(self, *, recreate: bool = False) -> None:
+        reserve = self.state_dir / ".receipt-reserve"
         self.state_dir.mkdir(parents=True, exist_ok=True)
+        if self._receipt_reserve_valid(reserve) and not recreate:
+            return
+        try:
+            info = reserve.lstat()
+        except FileNotFoundError:
+            info = None
+        if info is not None and stat.S_ISDIR(info.st_mode):
+            raise IsADirectoryError(errno.EISDIR, "receipt reserve is a directory", reserve)
+        if info is not None:
+            reserve.unlink()
+        with self._staged_receipt_file(
+            b"\0" * RECEIPT_RESERVE_BYTES, self.state_dir, ".receipt-reserve."
+        ) as temporary:
+            if not self._receipt_reserve_valid(temporary) or len(temporary.read_bytes()) != RECEIPT_RESERVE_BYTES:
+                raise OSError(errno.EIO, "receipt reserve readback failed")
+            os.replace(temporary, reserve)
+        self._fsync_receipt_parent(self.state_dir)
+
+    def _consume_receipt_reserve(self) -> None:
+        reserve = self.state_dir / ".receipt-reserve"
+        if not self._receipt_reserve_valid(reserve):
+            raise OSError(errno.EIO, "receipt reserve validation failed")
+        reserve.unlink()
+
+    @staticmethod
+    def _fsync_receipt_parent(parent: Path) -> None:
+        fd = -1
+        try:
+            flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
+            fd = os.open(str(parent), flags)
+            os.fsync(fd)
+        except OSError:
+            pass
+        with suppress(OSError):
+            os.close(fd)
+
+    def _atomic_receipt_write(self, data: bytes, target: Path) -> None:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        with self._staged_receipt_file(
+            data, target.parent, f".{target.name}.", retryable=True
+        ) as temporary:
+            try:
+                os.replace(temporary, target)
+            except OSError as exc:
+                raise _ReceiptAtomicFailure(exc) from exc
+        self._fsync_receipt_parent(target.parent)
+
+    def _receipt(self, payload: dict, filename: str = "last-receipt.json") -> None:
         payload.setdefault("observed_at", time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()))
+        data = (json.dumps(payload, ensure_ascii=False, sort_keys=True) + "\n").encode("utf-8")
+        if len(data) > RECEIPT_PAYLOAD_MAX_BYTES:
+            raise ValueError("receipt payload exceeds 64 KiB")
+        self._receipt_reserve()
         target = self.state_dir / filename
-        temporary = self.state_dir / f".{filename}.tmp"
-        temporary.write_text(json.dumps(payload, ensure_ascii=False, sort_keys=True) + "\n")
-        os.replace(temporary, target)
+        try:
+            self._atomic_receipt_write(data, target)
+            return
+        except _ReceiptAtomicFailure as failure:
+            if failure.error.errno != errno.ENOSPC:
+                raise failure.error
+        self._consume_receipt_reserve()
+        try:
+            self._atomic_receipt_write(data, target)
+        except _ReceiptAtomicFailure as failure:
+            raise failure.error
+        self._receipt_reserve(recreate=True)
 
     def _canary_receipt(self, payload: dict[str, object]) -> None:
         """Keep the initial effect and the immediate replay in one receipt."""
@@ -356,7 +603,7 @@ class HostDiskGovernor:
             if not self._allowlisted_candidate(path, item):
                 preserve("unknown_artifact")
                 continue
-            if item.get("lease") and Path(item["lease"]).exists():
+            if self._active_lease(item):
                 preserve("active_lease")
                 continue
             if not path.exists() or path.is_symlink():
@@ -373,6 +620,11 @@ class HostDiskGovernor:
                 result["errors"] += state == "probe-error"
                 preserve(state)
                 continue
+            descendant_state = self._protected_descendant(path, deadline=deadline)
+            if descendant_state is not None:
+                result["errors"] += descendant_state == "descendant_probe_error"
+                preserve(descendant_state)
+                continue
             if deadline is not None and self.clock() >= deadline:
                 preserve("probe-budget-exhausted")
                 continue
@@ -385,6 +637,25 @@ class HostDiskGovernor:
                 continue
             if deadline is not None and self.clock() + POST_SWEEP_RESERVE_SECONDS >= deadline:
                 preserve("probe-budget-exhausted")
+                continue
+            descendant_state = self._protected_descendant(path, deadline=deadline)
+            if descendant_state is not None:
+                result["errors"] += descendant_state == "descendant_probe_error"
+                preserve(descendant_state)
+                continue
+            if deadline is not None and self.clock() + LSOF_TIMEOUT_SECONDS + POST_SWEEP_RESERVE_SECONDS >= deadline:
+                preserve("probe-budget-exhausted")
+                continue
+            state = self.lsof(path)
+            if deadline is not None and self.clock() >= deadline:
+                preserve("probe-budget-exhausted")
+                continue
+            if state != "confirmed-closed":
+                result["errors"] += state == "probe-error"
+                preserve(state)
+                continue
+            if self._active_lease(item):
+                preserve("active_lease")
                 continue
             try:
                 if path.is_dir():
@@ -416,6 +687,25 @@ class HostDiskGovernor:
         a deletion candidate merely because it is large.
         """
         candidates: list[dict] = []
+        sparkle_installation = (
+            self.home
+            / "Library/Caches/com.openai.codex/org.sparkle-project.Sparkle/Installation"
+        )
+        if sparkle_installation.is_dir() and not sparkle_installation.is_symlink():
+            for child in sorted(sparkle_installation.iterdir()):
+                if (
+                    child.is_dir()
+                    and not child.is_symlink()
+                    and re.fullmatch(r"[A-Za-z0-9]{6,64}", child.name) is not None
+                ):
+                    candidates.append(
+                        {
+                            "path": child,
+                            "class": "regenerable_output",
+                            "owner": "codex-app-updater",
+                            "discovery": "allowlisted",
+                        }
+                    )
         temporary = Path(tempfile.gettempdir())
         temp_parent = temporary.parent
         clone_root = temp_parent / "X"
@@ -456,10 +746,7 @@ class HostDiskGovernor:
     def run_once(self) -> dict[str, object]:
         deadline = self.clock() + GOVERNOR_BUDGET_SECONDS
         free_before, _ = self.usage()
-        try:
-            health = self.bootstrap_health()
-        except Exception as exc:  # fail closed if the preflight itself is broken
-            health = {"status": "failure", "error_code": "health-check-exception", "detail": type(exc).__name__}
+        health = self._checked_bootstrap_health()
         if health.get("status") not in {"ok", "not-applicable"}:
             result: dict[str, object] = {
                 "tier": classify_tier(free_before),
@@ -470,6 +757,7 @@ class HostDiskGovernor:
                 "protected_deletions": 0,
                 "reason": "gui-bootstrap-health-failure",
                 "health": health,
+                "session_recovery": _session_recovery_receipt(),
                 "free_before": free_before,
                 "free_after": free_before,
                 "preserved_reasons": {"gui-bootstrap-health-failure": 1},
@@ -533,7 +821,7 @@ class HostDiskGovernor:
         deadline = self.clock() + GOVERNOR_BUDGET_SECONDS
         free_before, _ = self.usage()
         canary_path = str(path.expanduser().resolve())
-        health = self.bootstrap_health()
+        health = self._checked_bootstrap_health()
         if health.get("status") not in {"ok", "not-applicable"}:
             result: dict[str, object] = {
                 "tier": classify_tier(free_before),
@@ -544,6 +832,7 @@ class HostDiskGovernor:
                 "protected_deletions": 0,
                 "reason": "gui-bootstrap-health-failure",
                 "health": health,
+                "session_recovery": _session_recovery_receipt(),
                 "canary_path": canary_path,
                 "before_bytes": 0,
                 "after_bytes": 0,

@@ -15,11 +15,17 @@ export LIFE_MANAGER_REPO
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/bin:$PATH"
 set -uo pipefail
 PY=/opt/homebrew/bin/python3
-STATE="$HOME/.local/state/life-manager/state/capafy-goal-monitor.json"
+LIFE_MANAGER_STATE_HOME="${LIFE_MANAGER_STATE_HOME:-$HOME/.local/state/life-manager}"
+for ENV_FILE in "$LIFE_MANAGER_STATE_HOME/.env" "$HOME/.openclaw/.env"; do
+  [ -f "$ENV_FILE" ] || continue
+  set -a; . "$ENV_FILE" 2>/dev/null; set +a
+done
+STATE="$LIFE_MANAGER_STATE_HOME/state/capafy-goal-monitor.json"
 mkdir -p "$(dirname "$STATE")"
 
-DAILY_LOG="$LIFE_MANAGER_REPO/skills/capafy-autopublish/state/daily_loop.log"
-EARN_LEDGER="$LIFE_MANAGER_REPO/skills/self/capafy-loop/state/capafy-earn-ledger.jsonl"
+DAILY_TERMINAL_LEDGER="$LIFE_MANAGER_STATE_HOME/state/capafy-daily-terminals.jsonl"
+DAILY_TERMINAL_TOOL="$LIFE_MANAGER_REPO/skills/self/capafy-loop/capafy_daily_terminal.py"
+EARN_LEDGER="$LIFE_MANAGER_STATE_HOME/state/capafy-hourly-reconcile.json"
 KEY_GATE="$LIFE_MANAGER_REPO/skills/capafy-autopublish/scripts/key_health_gate.sh"
 IG_SCRIPT="$LIFE_MANAGER_REPO/skills/earn/capafy-marketing/capafy-ig-marketing-daily.sh"
 ACCOUNT_STATE_HELPER="${CAPAFY_ACCOUNT_STATE_HELPER:-$LIFE_MANAGER_REPO/skills/earn/capafy-marketing/account_state.sh}"
@@ -34,6 +40,10 @@ ACCOUNT_DAY="$(capafy_ig_warming_day "$IG_STARTED_WARMING")"
 WARMUP="$HOME/.cloak/ig-warmup-${IG_HANDLE:-no-active-account}.json"
 IG_PLIST="$HOME/Library/LaunchAgents/ai.anicca.capafy-ig-marketing-daily.plist"
 IG_LABEL="ai.anicca.capafy-ig-marketing-daily"
+LAUNCHCTL_SAFE="${CAPAFY_LAUNCHCTL_SAFE:-$LIFE_MANAGER_REPO/bin/launchctl-safe}"
+LAUNCHCTL_DOMAIN="${CAPAFY_LAUNCHCTL_DOMAIN:-gui/$(id -u)}"
+IG_UNLOAD_POLL_ATTEMPTS="${CAPAFY_IG_UNLOAD_POLL_ATTEMPTS:-50}"
+IG_UNLOAD_POLL_SLEEP="${CAPAFY_IG_UNLOAD_POLL_SLEEP:-0.2}"
 INSTA_PY="$HOME/.cache/instagrapi-venv/bin/python"
 INSTA_POSTER="$LIFE_MANAGER_REPO/skills/earn/marketing-engine/poster.py"
 COOKED_MARKER="$HOME/.local/state/life-manager/state/.capafy-ig-account-cooked"
@@ -47,7 +57,6 @@ if [ "${CAPAFY_GOAL_MONITOR_PROBE_ONLY:-0}" = "1" ]; then
 fi
 
 # ── goal(c) go-live: create + load the IG launchd ONLY when account day>=3. Idempotent. ──
-ig_loaded() { launchctl list 2>/dev/null | grep -q "$IG_LABEL"; }
 write_ig_plist() {
   cat > "$IG_PLIST" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
@@ -56,7 +65,7 @@ write_ig_plist() {
   <key>Label</key><string>$IG_LABEL</string>
   <key>ProgramArguments</key><array><string>/bin/bash</string><string>$IG_SCRIPT</string></array>
   <key>EnvironmentVariables</key><dict><key>HOME</key><string>$HOME</string><key>PATH</key><string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string></dict>
-  <key>StartCalendarInterval</key><dict><key>Hour</key><integer>16</integer><key>Minute</key><integer>30</integer></dict>
+  <key>StartInterval</key><integer>3600</integer>
   <key>RunAtLoad</key><false/>
   <key>StandardOutPath</key><string>$HOME/.local/state/life-manager/logs/capafy-ig-marketing-daily.out</string>
   <key>StandardErrorPath</key><string>$HOME/.local/state/life-manager/logs/capafy-ig-marketing-daily.err</string>
@@ -64,11 +73,46 @@ write_ig_plist() {
 PLIST
 }
 
-# NO-HUMAN-LOOP (Dais approved 2026-07-18): NO freeze/approval gate. At day>=3 (the clip 3-day
-# floor — loop self-pacing, NOT a human gate) the monitor auto-loads the IG launchd itself, which
-# then posts live daily. Safety pacing that remains is all LOOP-DRIVEN (day1-2 warmup only, day3+
-# NON-COMMERCIAL first posts, reach-gated commercial via .capafy-ig-reach-healthy that the LOOP
-# writes) — zero human approval anywhere. Idempotent: never double-loads.
+converge_ig_launchd() {
+  local service="$LAUNCHCTL_DOMAIN/$IG_LABEL" current="" after=""
+  if current="$($LAUNCHCTL_SAFE print "$service" 2>/dev/null)"; then
+    if printf '%s\n' "$current" | grep -Eq 'run interval = 3600 seconds'; then
+      GO_LIVE_ACTION="already_live_hourly"
+      return 0
+    fi
+    write_ig_plist
+    "$LAUNCHCTL_SAFE" preflight >/dev/null || return $?
+    "$LAUNCHCTL_SAFE" bootout "$service" >/dev/null 2>&1 || return $?
+    local unloaded=0
+    for _ in $(seq 1 "$IG_UNLOAD_POLL_ATTEMPTS"); do
+      if ! "$LAUNCHCTL_SAFE" print "$service" >/dev/null 2>&1; then
+        unloaded=1
+        break
+      fi
+      sleep "$IG_UNLOAD_POLL_SLEEP"
+    done
+    [ "$unloaded" -eq 1 ] || return 1
+    "$LAUNCHCTL_SAFE" bootstrap "$LAUNCHCTL_DOMAIN" "$IG_PLIST" >/dev/null || return $?
+  else
+    write_ig_plist
+    "$LAUNCHCTL_SAFE" preflight >/dev/null || return $?
+    "$LAUNCHCTL_SAFE" bootstrap "$LAUNCHCTL_DOMAIN" "$IG_PLIST" >/dev/null || return $?
+  fi
+  after="$($LAUNCHCTL_SAFE print "$service" 2>/dev/null)" || return 1
+  printf '%s\n' "$after" | grep -Eq 'run interval = 3600 seconds' || return 1
+  GO_LIVE_ACTION="LOADED_NOW"
+  return 0
+}
+
+if [ "${CAPAFY_GOAL_MONITOR_LAUNCHD_TEST:-0}" = "1" ]; then
+  converge_ig_launchd
+  exit $?
+fi
+
+# Distribution remains loop-driven after warmup. A newer explicit creative-review request overrides
+# the old standing no-approval rule for a reviewed artifact: the marketing wrapper fail-closes on its
+# repo-external pending receipt and releases only the exact user-approved SHA-256. This monitor does
+# not create, alter, or bypass that receipt. Idempotent: never double-loads.
 WDAY="$ACCOUNT_DAY"
 
 # Read-only account health probe. Only an aged instagrapi-owned account has a golden session to
@@ -119,19 +163,21 @@ fi
 
 GO_LIVE_ACTION="not_yet"
 if [ "${WDAY:-0}" -ge "$WARMUP_DAYS_REQUIRED" ]; then
-  if ig_loaded; then
-    GO_LIVE_ACTION="already_live"
-  else
-    write_ig_plist
-    launchctl load "$IG_PLIST" 2>/dev/null && GO_LIVE_ACTION="LOADED_NOW" || GO_LIVE_ACTION="load_failed"
+  if [ "${CAPAFY_HEADLESS_BRIDGE:-0}" = "1" ]; then
+    GO_LIVE_ACTION="headless_bridge"
+  elif ! converge_ig_launchd; then
+    GO_LIVE_ACTION="load_failed"
+    echo "IG launchd convergence failed — stopping goal monitor" >&2
+    exit 2
   fi
 fi
 
 # ── the rest (goal a/b/d parsing + state + telegram body) is one python pass (read+append only). ──
-$PY - "$STATE" "$DAILY_LOG" "$EARN_LEDGER" "$WARMUP" "$KEY_GATE" "$IG_PLIST" "$IG_LABEL" "$WDAY" "$WARMUP_DAYS_REQUIRED" "$GO_LIVE_ACTION" "$IG_HANDLE" "$VERIFY_JSON" "$VERIFY_RC" "$COOKED_MARKER" <<'PY' > /tmp/capafy_goal_monitor.json
+DAILY_PROOF_JSON="$($PY "$DAILY_TERMINAL_TOOL" status --ledger "$DAILY_TERMINAL_LEDGER" 2>/dev/null || printf '{}')"
+$PY - "$STATE" "$EARN_LEDGER" "$WARMUP" "$KEY_GATE" "$IG_PLIST" "$IG_LABEL" "$WDAY" "$WARMUP_DAYS_REQUIRED" "$GO_LIVE_ACTION" "$IG_HANDLE" "$VERIFY_JSON" "$VERIFY_RC" "$COOKED_MARKER" "$DAILY_PROOF_JSON" <<'PY' > /tmp/capafy_goal_monitor.json
 import json, os, re, subprocess, sys, datetime
-(state_p, daily_log, earn_ledger, warmup, key_gate, ig_plist, ig_label, wday, wreq,
- golive, ig_handle, verify_raw, verify_rc, cooked_marker) = sys.argv[1:15]
+(state_p, earn_ledger, warmup, key_gate, ig_plist, ig_label, wday, wreq,
+ golive, ig_handle, verify_raw, verify_rc, cooked_marker, daily_proof_raw) = sys.argv[1:15]
 wday = int(wday or 0); wreq = int(wreq); verify_rc = int(verify_rc)
 try:
     verify = json.loads(verify_raw)
@@ -141,41 +187,27 @@ account_cooked = verify.get("poisoned") is True or "ChallengeRequired" in verify
 now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
 today = now.date()
 
-# goal(a): per-day BLOCKED rc=1 from daily_loop.log -> trailing consecutive clean-day streak.
-blocked_by_day = {}
-seen_days = set()
-if os.path.exists(daily_log):
-    for line in open(daily_log, errors="ignore"):
-        m = re.search(r'daily_loop done rc=(\d+).*?===', line)
-        d = re.search(r'(\d{4}-\d{2}-\d{2})', line)
-        if m and d:
-            day = d.group(1); seen_days.add(day)
-            if m.group(1) == "1" and "BLOCKED" in line:
-                blocked_by_day[day] = blocked_by_day.get(day, 0) + 1
-# streak = consecutive days (ending today, walking back) that had a run and ZERO blocked.
-streak = 0
-day = today
-while True:
-    ds = day.isoformat()
-    if ds not in seen_days:
-        break  # no run recorded that day -> streak ends (conservative)
-    if blocked_by_day.get(ds, 0) > 0:
-        break
-    streak += 1
-    day = day - datetime.timedelta(days=1)
-goal_a_pass = streak >= 7
+# goal(a): durable outer launchd-owner terminals. Missing start/terminal or any
+# nonzero execution breaks that day; inner drainer logs are not accepted as proof.
+try:
+    daily_proof = json.loads(daily_proof_raw)
+except Exception:
+    daily_proof = {}
+streak = int(daily_proof.get("consecutive_healthy_days") or 0)
+goal_a_pass = daily_proof.get("pass") is True
 
 # goal(b): latest sales row + reconcile freshness (staleness = divergence risk).
 gross = orders = None; last_sales_date = None; reconcile_age_h = None
 if os.path.exists(earn_ledger):
     reconcile_age_h = round((now.timestamp() - os.path.getmtime(earn_ledger)) / 3600, 1)
-    for line in open(earn_ledger):
-        line = line.strip()
-        if not line: continue
-        try: r = json.loads(line)
-        except: continue
-        if r.get("orders") is not None:
-            orders = r.get("orders"); gross = r.get("gross_usd"); last_sales_date = r.get("date")
+    try:
+        r = json.load(open(earn_ledger))
+    except Exception:
+        r = {}
+    if r.get("orders") is not None:
+        orders = r.get("orders")
+        gross = (r.get("money") or {}).get("gross_usd")
+        last_sales_date = str(r.get("observed_at") or "")[:10] or None
 goal_b_ok = reconcile_age_h is not None and reconcile_age_h < 48  # reconcile ran within 2 days
 
 # goal(d): NON-DESTRUCTIVE health — launchctl loaded? plist exists? key-health gate exit?
@@ -238,6 +270,25 @@ PY
 
 RC=$?
 BODY="$(cat /tmp/capafy_goal_monitor_body.txt 2>/dev/null)"
+REPORT_KIND="${CAPAFY_REPORT_KIND:-morning}"
+
+# Hourly control wakes use the unified state-change receipt. It refreshes money,
+# joins candidate/slot/post/revenue under one run_id, and dedupes through the
+# durable Telegram outbox. Never fall through to the legacy sender on this path.
+if [ "$REPORT_KIND" = "hourly" ]; then
+  "$PY" "$LIFE_MANAGER_REPO/skills/earn/capafy-marketing/scripts/capafy_web_token_refresh.py" \
+    >>"$HOME/.local/state/life-manager/logs/capafy-goal-monitor-hourly.out" 2>>"$HOME/.local/state/life-manager/logs/capafy-goal-monitor-hourly.err" || true
+  "$PY" "$LIFE_MANAGER_REPO/skills/earn/capafy-marketing/scripts/capafy_hourly_reconcile.py" \
+    >>"$HOME/.local/state/life-manager/logs/capafy-goal-monitor-hourly.out" 2>>"$HOME/.local/state/life-manager/logs/capafy-goal-monitor-hourly.err"
+  RECONCILE_RC=$?
+  "$PY" "$LIFE_MANAGER_REPO/skills/earn/capafy-marketing/scripts/capafy_company_receipt.py" deliver \
+    >>"$HOME/.local/state/life-manager/logs/capafy-goal-monitor-hourly.out" 2>>"$HOME/.local/state/life-manager/logs/capafy-goal-monitor-hourly.err"
+  UNIFIED_RC=$?
+  cat /tmp/capafy_goal_monitor.json 2>/dev/null
+  [ "$RECONCILE_RC" -eq 0 ] || exit "$RECONCILE_RC"
+  exit "$UNIFIED_RC"
+fi
+
 # telegram daily report (best-effort; never blocks the monitor)
 if [ -n "$BODY" ]; then
   openclaw message send --channel telegram \

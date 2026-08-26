@@ -40,12 +40,16 @@ export LM_SELFBUILD_ACTIVE=1
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="${LM_SELFBUILD_REPO:-$(cd "$HERE/../.." && pwd)}"
 APP_DIR="$REPO_ROOT/apps/life-manager"
+DISK_GUARD="$REPO_ROOT/skills/earn/gig/scripts/gig_disk_guard.py"
 NODE_BIN="${NODE_BIN:-$(command -v node || echo /opt/homebrew/bin/node)}"
 DAILY_CLI="$APP_DIR/scripts/self-build-daily.js"
 LIFE_MANAGER_STATE_HOME="${LIFE_MANAGER_STATE_HOME:-$HOME/.local/state/life-manager}"
 ENV_FILE="${LIFE_MANAGER_ENV_FILE:-$LIFE_MANAGER_STATE_HOME/.env}"
 LOG="${LM_SELFBUILD_LOG:-$LIFE_MANAGER_STATE_HOME/logs/life-manager-self-build.log}"
 LEDGER="${LM_SELFBUILD_LEDGER:-$LIFE_MANAGER_STATE_HOME/state/self-build-days.jsonl}"
+readonly LM_SELFBUILD_CANONICAL_DISK_GUARD="$DISK_GUARD"
+readonly LM_SELFBUILD_CANONICAL_HOST_STATE="$HOME/.openclaw/state"
+readonly LM_SELFBUILD_CANONICAL_STATE_HOME="$LIFE_MANAGER_STATE_HOME"
 mkdir -p "$(dirname "$LOG")"
 printf '=== life-manager self-build run %s (TZ=%s) ===\n' "$(date '+%F %T %Z')" "$TZ" >>"$LOG"
 
@@ -60,18 +64,47 @@ if [ -f "$ENV_FILE" ]; then
   set -u
 fi
 
+# Restore only the guard's canonical paths from before dotenv loading. Other
+# runtime overrides (including explicit LM_SELFBUILD_LOG/LEDGER) retain their
+# existing semantics.
+DISK_GUARD="$LM_SELFBUILD_CANONICAL_DISK_GUARD"
+
+# Self-build is a write-heavy producer. Pin the repository's canonical floor and
+# host/state roots after dotenv loading so runtime configuration cannot lower or
+# redirect the shared guard boundary.
+GIG_DISK_HEADROOM_KIB=524288
+GIG_HOST_STATE_DIR="$LM_SELFBUILD_CANONICAL_HOST_STATE"
+GIG_STATE_DIR="$LM_SELFBUILD_CANONICAL_STATE_HOME"
+export GIG_DISK_HEADROOM_KIB
+export GIG_HOST_STATE_DIR GIG_STATE_DIR
+
+# The dotenv file is allowed to set runtime values, but it can never bypass the
+# shared producer stop contract.
+unset GIG_IGNORE_DISK_PRESSURE_BLOCK GIG_IGNORE_DISK_WRITERS_STOP
+unset DISK_CONTROL_STATE_DIR OPENCLAW_STATE_DIR LIFE_MANAGER_HOST_STATE_DIR
+
 TG_TARGET="${LM_SELFBUILD_TELEGRAM_TARGET:?LM_SELFBUILD_TELEGRAM_TARGET is required}"
+
+if ! /usr/bin/python3 "$DISK_GUARD" /usr/bin/true >>"$LOG" 2>&1; then
+  printf 'self-build: disk guard blocked before dependency install\n' >>"$LOG"
+  exit 1
+fi
 
 if [ ! -d "$APP_DIR/node_modules/pg" ]; then
   (cd "$APP_DIR" && npm ci --silent) >>"$LOG" 2>&1 || printf 'dependency install failed\n' >>"$LOG"
 fi
 
 # LM_SELFBUILD_DRY_RUN=1 exercises this whole path — env sourcing, the pass, the report render, the
-# Telegram send — with the guard stubbed out, so the entrypoint can be verified without promoting
+# Telegram send — with downstream effects stubbed out, so the entrypoint can be verified without promoting
 # anything. launchd never sets it. This is not a merge switch: the guard, not this flag, decides
 # every gate, and skills/** is on the guard's DENY list so no unattended PR can touch this file.
 DAILY_ARGS=()
 [ "${LM_SELFBUILD_DRY_RUN:-0}" = "1" ] && DAILY_ARGS+=(--dry-run)
+
+if ! /usr/bin/python3 "$DISK_GUARD" /usr/bin/true >>"$LOG" 2>&1; then
+  printf 'self-build: disk guard blocked before daily CLI\n' >>"$LOG"
+  exit 1
+fi
 
 RESULT="$("$NODE_BIN" "$DAILY_CLI" "${DAILY_ARGS[@]+"${DAILY_ARGS[@]}"}" 2>>"$LOG")"
 RC=$?

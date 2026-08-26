@@ -122,24 +122,6 @@ exit {returncode}
             self.assertTrue(result["requires_browser_fallback"])
             self.assertNotEqual(result["status"], "blocked")
 
-    def test_freehire_default_provider_uses_dns_resolved_fallback(self):
-        module = self._module()
-        providers = module._default_providers(
-            "AI agent",
-            app_root=Path("apps/job-search-loop"),
-            framework_root=Path("/tmp/framework"),
-        )
-        freehire = next(provider for provider in providers if provider.name == "freehire")
-        self.assertTrue(
-            any("freehire-resolved-search.sh" in part for part in freehire.command)
-        )
-
-        script = Path("apps/job-search-loop/scripts/freehire-resolved-search.sh").read_text(
-            encoding="utf-8"
-        )
-        self.assertIn('--data-urlencode "countries=JP"', script)
-        self.assertNotIn('--data-urlencode "work_mode=remote"', script)
-
 
 if __name__ == "__main__":
     unittest.main()

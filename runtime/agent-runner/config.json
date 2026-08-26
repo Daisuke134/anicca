@@ -6,18 +6,8 @@
     "codex": {
       "executable": "codex",
       "automation_home": "~/.local/state/life-manager/codex-runner",
-      "auth_file": "~/.codex/auth.json",
+      "auth_file": "~/.codex-acct2/auth.json",
       "ssl_cert_file": "/etc/ssl/cert.pem",
-      "model_provider": "local_proxy",
-      "model_providers": {
-        "local_proxy": {
-          "name": "Life Manager local proxy",
-          "base_url": "http://127.0.0.1:8317/v1",
-          "env_key": "CLIPROXY_API_KEY",
-          "auth_token_file": "~/.cli-proxy-api-key",
-          "wire_api": "responses"
-        }
-      },
       "project_doc_max_bytes": 0,
       "disabled_skills": ["imagegen", "openai-docs", "plugin-creator", "skill-creator", "skill-installer"],
       "disabled_features": ["apps", "auth_elicitation", "goals", "hooks", "image_generation", "multi_agent", "plugins", "remote_plugin", "tool_call_mcp_elicitation", "tool_suggest", "workspace_dependencies"],

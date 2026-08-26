@@ -20,6 +20,27 @@ def _load_paid():
     return module
 
 
+def test_paid_browser_diagnostics_use_private_data_redactor():
+    paid = _load_paid()
+
+    assert paid.redact_prompt_text("password:secret-value") == "password:[REDACTED]"
+
+
+def test_browser_contract_failure_becomes_owner_repair_finding():
+    paid = _load_paid()
+    process = SimpleNamespace(
+        stdout='{"ok":false,"contract_invalid":"buyer_style_violation:evidence"}\n',
+    )
+
+    assert paid._browser_contract_finding(process) == "buyer_style_violation:evidence"
+
+
+def test_non_contract_browser_failure_is_not_owner_repair_finding():
+    paid = _load_paid()
+
+    assert paid._browser_contract_finding(SimpleNamespace(stdout="")) is None
+
+
 def test_inflight_gate_reports_pressure(monkeypatch):
     paid = _load_paid()
     monkeypatch.setattr(paid, "disk_headroom_ok", lambda: False)
@@ -60,15 +81,11 @@ def test_effect_gate_uses_expiring_brake_contract(monkeypatch, tmp_path, brake_s
 
 def test_write_item_gate_returns_no_effect_pending_checkpoint(tmp_path, monkeypatch):
     paid = _load_paid()
-    lock_dir = tmp_path / "cdp-lock"
-    lock_dir.mkdir(parents=True)
-    (lock_dir / "meta").write_text("paid-direct-item-room", encoding="utf-8")
     item_path = tmp_path / "item-room.json"
     item_path.write_text(json.dumps({"talkroom_id": "room", "_paid_mode": "remote"}), encoding="utf-8")
     output = tmp_path / "effect.json"
-    args = SimpleNamespace(cdp_lock_dir=lock_dir)
-    monkeypatch.setenv("CDP_LOCK_DIR", str(lock_dir))
-    monkeypatch.setenv("GIG_CDP_LOCK_HELD", "1")
+    args = SimpleNamespace()
+    monkeypatch.setenv("CLOAK_BROWSER_OWNER", "paid-direct-room")
     monkeypatch.setattr(paid, "disk_headroom_ok", lambda: False)
 
     assert paid._write_one(args, item_path, output) == 0
@@ -106,7 +123,7 @@ def test_paid_item_keeps_atomic_checkpoint_when_effect_child_reports_pressure(tm
     monkeypatch.setattr(paid, "_run_bounded", fake_run)
     monkeypatch.setattr(paid, "_prepare_command", lambda *_args: ["--effect-item"])
     monkeypatch.setattr(paid, "_effect_command", lambda *_args: ["--write-item"])
-    monkeypatch.setattr(paid, "_fresh_child_env", lambda _args: os.environ.copy())
+    monkeypatch.setattr(paid, "_fresh_child_env", lambda _args, owner=None: os.environ.copy())
 
     row, effect, readback, failed, step = paid._run_paid_item(
         SimpleNamespace(), "room", item_file, prepared_file, effect_file,
@@ -170,7 +187,7 @@ def test_effect_failure_with_observed_send_advances_checkpoint_to_unknown(tmp_pa
     monkeypatch.setattr(paid, "_run_bounded", fake_run)
     monkeypatch.setattr(paid, "_prepare_command", lambda *_args: ["--effect-item"])
     monkeypatch.setattr(paid, "_effect_command", lambda *_args: ["--write-item"])
-    monkeypatch.setattr(paid, "_fresh_child_env", lambda _args: os.environ.copy())
+    monkeypatch.setattr(paid, "_fresh_child_env", lambda _args, owner=None: os.environ.copy())
 
     row, effect, readback, failed, step = paid._run_paid_item(
         SimpleNamespace(), "room", item_file, prepared_file, effect_file,

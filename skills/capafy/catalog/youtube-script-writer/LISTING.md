@@ -1,0 +1,56 @@
+Primary Model: Claude Sonnet 4.6 · category: マーケティング · tags: YouTube, script, retention
+
+RENEWAL GATE
+R1 recurring input : Each new video has a new topic, audience, source material, target length, and conversion goal.
+R2 staleness       : A script written for the previous topic cannot be reused as the record-ready script for the next video.
+day-8 answer       : The creator has a new video brief, so the previous script is stale.
+demand evidence    : This is the existing Capafy Agent `7686597754`; this revision recovers its already-configured subscription listing rather than creating another Agent.
+
+| cycle | price | cap | trial |
+|---|---:|---:|---|
+| day | $1.99 | 10 | No Free Trial |
+| week | $4.99 | 25 | No Free Trial |
+| month | $9.99 | 60 | 72h / 10 messages |
+
+## Title
+YouTube Script Writer — Keep Viewers Watching
+
+## shortDescription
+Give a topic, draft, or product and get a ready-to-record YouTube script with hook options, a clear promise, loop-driven sections, B-roll cues, and an honest CTA. It uses only the facts you supply, marks missing facts [ADD: ...], and never promises views or subscribers.
+
+## welcomeMessage
+👋 Give me a topic, draft, or product and I’ll write a ready-to-record YouTube script with hook options, a clear promise, retention-shaped sections, visual cues, and a CTA.
+
+Example: “Write an 8-minute video for self-taught beginners about five mistakes when learning to code. Tone: encouraging but direct.”
+
+## detailedDescription
+✨ **A record-ready script instead of an essay**
+
+Give the Agent a topic, draft, product, or channel idea. It turns that material into a spoken-language script whose opening makes a clear promise and whose sections keep paying off the questions they raise.
+
+⚙️ **How it works**
+
+1. Finds one angle and the explicit promise the opening makes.
+2. Writes three hook options for the first 15 seconds.
+3. Structures the body around open loops, payoffs, and pacing changes.
+4. Adds `[B-ROLL: ...]` and `[ON-SCREEN: ...]` production cues.
+5. Ends with a natural CTA and a next-video transition.
+
+📦 **Every brief returns**
+
+- Three title options and one thumbnail-text idea
+- Three hook options
+- A timestamped, ready-to-record script
+- B-roll and on-screen cues
+- A CTA, end screen, pacing notes, and the first A/B test
+- Missing information clearly marked `[ADD: ...]`
+
+💡 **Why it is recurring**
+
+Each new video has a new topic, audience, source material, length, and goal. The previous script is stale when the next video brief arrives.
+
+**Honesty first:** it uses only buyer-supplied facts and general writing knowledge. It never invents statistics, quotations, or sources, and it never promises views, subscribers, revenue, or ranking.
+
+👤 **Built for**
+
+Creators, educators, marketers, and founders who want a complete script they can record without rewriting it from essay prose.

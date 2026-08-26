@@ -1,9 +1,12 @@
 import hashlib
 import importlib.util
 import json
+import os
 import shutil
+import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -27,6 +30,10 @@ START = load(
     "article_daily_start_control",
     ROOT / "skills/writer-agent/scripts/article_daily_start_control.py",
 )
+GENERATION = load(
+    "article_generation_state",
+    ROOT / "skills/writer-agent/scripts/article_generation_state.py",
+)
 RESUME = load(
     "publication_resume",
     ROOT / "skills/writer-agent/scripts/publication_resume.py",
@@ -42,6 +49,193 @@ QUARANTINE = load(
 
 
 class ArticleStartPolicyTest(unittest.TestCase):
+    def test_capacity_drain_archives_partial_provider_and_keeps_resume_identity(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            state_root = root / "state"
+            run_id = "20260822-capacity-drain"
+            run = state_root / "runs" / run_id
+            run.mkdir(parents=True)
+            prompt = run / "article-daily-prompt.txt"
+            prompt.write_text("immutable prompt\n", encoding="utf-8")
+            ledger = state_root / "articles.jsonl"
+            ledger.write_text("", encoding="utf-8")
+            prepared = GENERATION.initialize(run, run_id, prompt, ledger)
+            GENERATION.begin(run, run_id, prompt, ledger, owner_pid=os.getpid())
+
+            artifact = run / "article-ja.md"
+            provider_pid = root / "provider.pid"
+            child_pid = root / "child.pid"
+            child_ready = root / "child.ready"
+            provider = root / "fake-provider.py"
+            child_script = root / "fake-child.py"
+            child_script.write_text(
+                "import pathlib, signal, sys, time\n"
+                "signal.signal(signal.SIGTERM, signal.SIG_IGN)\n"
+                "pathlib.Path(sys.argv[1]).write_text('ready')\n"
+                "while True: time.sleep(0.05)\n",
+                encoding="utf-8",
+            )
+            provider.write_text(
+                "import pathlib, signal, subprocess, sys, time\n"
+                "artifact, provider_pid, child_pid, child_ready, child_script = map(pathlib.Path, sys.argv[1:])\n"
+                "child = subprocess.Popen([sys.executable, str(child_script), str(child_ready)])\n"
+                "provider_pid.write_text(str(__import__('os').getpid()))\n"
+                "child_pid.write_text(str(child.pid))\n"
+                "artifact.write_text('partial provider artifact\\n')\n"
+                "while True: time.sleep(0.05)\n",
+                encoding="utf-8",
+            )
+            stop_paths = [
+                root / "disk-writers.stop",
+                root / "disk-pressure.block",
+            ]
+            env = os.environ.copy()
+            env["BOUNDED_EXEC_STOP_PATHS"] = os.pathsep.join(
+                str(path) for path in stop_paths
+            )
+            bounded = subprocess.Popen(
+                [
+                    sys.executable,
+                    str(ROOT / "skills/writer-agent/runtime/bounded-exec.py"),
+                    "10",
+                    sys.executable,
+                    str(provider),
+                    str(artifact),
+                    str(provider_pid),
+                    str(child_pid),
+                    str(child_ready),
+                    str(child_script),
+                ],
+                env=env,
+            )
+
+            def wait_for(path: Path) -> None:
+                deadline = time.monotonic() + 5
+                while time.monotonic() < deadline:
+                    if path.is_file():
+                        return
+                    time.sleep(0.02)
+                self.fail(f"provider did not create {path}")
+
+            def pid_gone(path: Path) -> None:
+                wait_for(path)
+                pid = int(path.read_text(encoding="utf-8"))
+                deadline = time.monotonic() + 5
+                while time.monotonic() < deadline:
+                    try:
+                        os.kill(pid, 0)
+                    except ProcessLookupError:
+                        return
+                    time.sleep(0.02)
+                self.fail(f"process {pid} remains alive")
+
+            def kill_if_alive(path: Path) -> None:
+                if not path.is_file():
+                    return
+                try:
+                    os.kill(int(path.read_text(encoding="utf-8")), 9)
+                except ProcessLookupError:
+                    pass
+
+            try:
+                wait_for(artifact)
+                wait_for(provider_pid)
+                wait_for(child_pid)
+                wait_for(child_ready)
+                stop_paths[0].write_text("drain\n", encoding="utf-8")
+                self.assertEqual(bounded.wait(timeout=5), 143)
+                pid_gone(provider_pid)
+                pid_gone(child_pid)
+            finally:
+                if bounded.poll() is None:
+                    bounded.kill()
+                    bounded.wait()
+                kill_if_alive(provider_pid)
+                kill_if_alive(child_pid)
+
+            preexisting_flag = root / "preexisting.stop"
+            preexisting_flag.write_text("drain before spawn\n", encoding="utf-8")
+            marker = root / "provider-started.marker"
+            preexisting_env = os.environ.copy()
+            preexisting_env["BOUNDED_EXEC_STOP_PATHS"] = str(preexisting_flag)
+            preexisting = subprocess.run(
+                [
+                    sys.executable,
+                    str(ROOT / "skills/writer-agent/runtime/bounded-exec.py"),
+                    "10",
+                    sys.executable,
+                    "-c",
+                    "import pathlib, sys; pathlib.Path(sys.argv[1]).write_text('started')",
+                    str(marker),
+                ],
+                env=preexisting_env,
+                check=False,
+            )
+            self.assertEqual(preexisting.returncode, 143)
+            self.assertFalse(marker.exists())
+
+            interrupted = GENERATION.archive_interrupted(
+                run, run_id, prompt, ledger, 143
+            )
+            self.assertEqual(interrupted["status"], "interrupted-safe")
+            self.assertEqual(interrupted["prompt_sha256"], prepared["prompt_sha256"])
+            archive = (
+                state_root
+                / "interrupted-generation"
+                / run_id
+                / "attempt-1"
+            )
+            archived_artifact = archive / "article-ja.md"
+            self.assertTrue(archived_artifact.is_file())
+            manifest = interrupted["attempts"][-1]["archive_manifest"]
+            self.assertEqual(
+                manifest,
+                [{
+                    "path": "article-ja.md",
+                    "sha256": hashlib.sha256(archived_artifact.read_bytes()).hexdigest(),
+                }],
+            )
+            checkpoint = json.loads(
+                (archive / "generation-state.json").read_text(encoding="utf-8")
+            )
+            receipt = json.loads(
+                (archive / "generation-exhaustion-receipt.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            self.assertEqual(checkpoint["status"], "interrupted-safe")
+            self.assertEqual(
+                receipt["state_sha256"],
+                hashlib.sha256(
+                    (archive / "generation-state.json").read_bytes()
+                ).hexdigest(),
+            )
+            self.assertEqual(
+                receipt["archive_manifest_sha256"],
+                GENERATION.manifest_sha256(manifest),
+            )
+            self.assertTrue(receipt["publication_state_absent"])
+            self.assertEqual(receipt["public_ledger_rows"], 0)
+            decision = GENERATION.resume_decision(run, run_id, prompt, ledger)
+            self.assertTrue(decision["resumable"])
+            self.assertEqual(decision["status"], "interrupted-safe")
+            self.assertEqual(prompt.read_text(encoding="utf-8"), "immutable prompt\n")
+            self.assertFalse((run / "gates" / "publication-state.json").exists())
+            self.assertEqual(ledger.read_text(encoding="utf-8"), "")
+
+            wrapper = (
+                ROOT / "skills/writer-agent/article-daily.sh"
+            ).read_text(encoding="utf-8")
+            run_model = wrapper[wrapper.index("run_model_pass()") : wrapper.index(
+                "# AUTH FAILURE SAFETY"
+            )]
+            self.assertEqual(run_model.count("BOUNDED_EXEC_STOP_PATHS="), 1)
+            self.assertIn(
+                'BOUNDED_EXEC_STOP_PATHS="$HOME/.openclaw/state/disk-writers.stop:$HOME/.openclaw/state/disk-pressure.block"',
+                run_model,
+            )
+
     def _duplicate_media_run(self, root: Path, *, live: bool = False, status: str | None = None):
         run = root / "runs" / "daily-2026-08-21"
         gates = run / "gates"

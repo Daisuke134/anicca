@@ -20,6 +20,9 @@ import sys
 from pathlib import Path
 from typing import Iterator
 
+from provider_adapter import EffectIntent
+from provider_authorization import AuthorizationDecision, AuthorizationState
+
 
 VERSION = 2
 LEGACY_VERSION = 1
@@ -42,6 +45,10 @@ _LEASE_FIELDS = frozenset({"task", "token", "generation"})
 _HEX_64 = re.compile(r"^[0-9a-f]{64}$")
 _HEX_32 = re.compile(r"^[0-9a-f]{32}$")
 _DATE = re.compile(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}$")
+_AUTONOMOUS_AUTHORIZATION_STATES = frozenset({
+    AuthorizationState.APPROVED_API,
+    AuthorizationState.APPROVED_BROWSER,
+})
 
 
 class IntentFenceError(ValueError):
@@ -50,6 +57,42 @@ class IntentFenceError(ValueError):
 
 def proposal_sha256(proposal_text: str) -> str:
     return hashlib.sha256(proposal_text.encode("utf-8")).hexdigest()
+
+
+def authorized_provider_intent(
+    *,
+    provider: str,
+    account_key: str,
+    resource_id: str,
+    action: str,
+    payload_hash: str,
+    authorization: AuthorizationDecision,
+) -> EffectIntent:
+    """Build one logical provider effect only from current autonomous approval."""
+    if (
+        not isinstance(authorization, AuthorizationDecision)
+        or authorization.state not in _AUTONOMOUS_AUTHORIZATION_STATES
+        or authorization.receipt_hash is None
+        or not _HEX_64.fullmatch(authorization.receipt_hash)
+    ):
+        raise IntentFenceError("authorization_not_approved")
+    canonical = json.dumps(
+        [provider, account_key, resource_id, action, payload_hash],
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
+    effect_key = "provider-effect:v1:" + hashlib.sha256(
+        canonical.encode("utf-8")
+    ).hexdigest()
+    return EffectIntent(
+        provider=provider,
+        account_key=account_key,
+        resource_id=resource_id,
+        action=action,
+        payload_hash=payload_hash,
+        authorization_hash=authorization.receipt_hash,
+        effect_key=effect_key,
+    )
 
 
 def build_cas(

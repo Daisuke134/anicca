@@ -24,6 +24,22 @@ set -euo pipefail
 trap 'echo "[install] FAILED on line $LINENO. nothing destructive — re-run is safe."' ERR
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ "$#" -gt 0 ]; then
+  case "$1" in
+    coconala)
+      shift
+      exec bash "$REPO_ROOT/skills/earn/gig/install.sh" "$@"
+      ;;
+    job-hunter)
+      shift
+      exec zsh "$REPO_ROOT/apps/job-search-loop/scripts/install-oss.sh" "$@"
+      ;;
+    *)
+      echo "[install] unknown product '$1'; supported: coconala, job-hunter" >&2
+      exit 2
+      ;;
+  esac
+fi
 LIFE_MANAGER_HOME="${LIFE_MANAGER_HOME:-${ANICCA_HOME:-${XDG_STATE_HOME:-$HOME/.local/state}/life-manager}}"
 ANICCA_HOME="$LIFE_MANAGER_HOME"
 export LIFE_MANAGER_HOME ANICCA_HOME

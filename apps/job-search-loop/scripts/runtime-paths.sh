@@ -4,13 +4,17 @@ JOB_SEARCH_PATHS_FILE="${${(%):-%N}:A}"
 typeset -gx JOB_SEARCH_APP_ROOT="${JOB_SEARCH_PATHS_FILE:h:h}"
 typeset -gx JOB_SEARCH_REPO_ROOT="${JOB_SEARCH_APP_ROOT:h:h}"
 typeset -gx JOB_SEARCH_RUNNER="${JOB_SEARCH_REPO_ROOT}/runtime/agent-runner/agent_runner.py"
+typeset -gx AGENT_RUNNER_CONFIG="${JOB_SEARCH_APP_ROOT}/agent-runner/config.json"
 typeset -gx JOB_SEARCH_STATE_ROOT="${JOB_SEARCH_STATE_ROOT:-${XDG_STATE_HOME:-$HOME/.local/state}/anicca/job-search}"
 typeset -gx JOB_SEARCH_PROFILE="${JOB_SEARCH_PROFILE:-${XDG_CONFIG_HOME:-$HOME/.config}/anicca/job-search/profile.json}"
 typeset -gx JOB_SEARCH_INSTALL_CONFIG="${JOB_SEARCH_INSTALL_CONFIG:-${XDG_CONFIG_HOME:-$HOME/.config}/anicca/job-search/install.json}"
 typeset -gx JOB_SEARCH_FRAMEWORK_ROOT="${JOB_SEARCH_FRAMEWORK_ROOT:-${XDG_DATA_HOME:-$HOME/.local/share}/anicca/job-search/framework}"
 typeset -gx JOB_SEARCH_TELEGRAM_MEDIA="${JOB_SEARCH_TELEGRAM_MEDIA:-$HOME/.openclaw/media/job-search-outbound}"
+typeset -gx JOB_SEARCH_CDP_LEASE_SCRIPT="${JOB_SEARCH_CDP_LEASE_SCRIPT:-$JOB_SEARCH_REPO_ROOT/skills/browser/scripts/cdp_context_lease.py}"
+typeset -gx JOB_SEARCH_SESSION_VAULT_SCRIPT="${JOB_SEARCH_SESSION_VAULT_SCRIPT:-$JOB_SEARCH_REPO_ROOT/skills/browser/scripts/session_vault.py}"
+typeset -gx JOB_SEARCH_SESSION_VAULT_DIR="${JOB_SEARCH_SESSION_VAULT_DIR:-$HOME/.cloak/vault/job-search-daily}"
 typeset -gx JOB_SEARCH_LAUNCH_AGENT_DIR="${JOB_SEARCH_LAUNCH_AGENT_DIR:-$HOME/Library/LaunchAgents}"
-typeset -gx JOB_SEARCH_PRIVATE_ENV="${JOB_SEARCH_PRIVATE_ENV:-$HOME/.openclaw/.env}"
+typeset -gx JOB_SEARCH_PRIVATE_ENV="${JOB_SEARCH_PRIVATE_ENV:-${XDG_CONFIG_HOME:-$HOME/.config}/anicca/job-search/private.env}"
 if [[ -x /opt/homebrew/bin/python3 ]]; then
   typeset -gx JOB_SEARCH_PYTHON="${JOB_SEARCH_PYTHON:-/opt/homebrew/bin/python3}"
 else
@@ -20,24 +24,6 @@ typeset -gx JOB_SEARCH_JQ="${JOB_SEARCH_JQ:-/usr/bin/jq}"
 typeset -gx JOB_SEARCH_PLUTIL="${JOB_SEARCH_PLUTIL:-/usr/bin/plutil}"
 typeset -gx JOB_SEARCH_LAUNCHCTL="${JOB_SEARCH_LAUNCHCTL:-/bin/launchctl}"
 typeset -gx JOB_SEARCH_OPENCLAW="${JOB_SEARCH_OPENCLAW:-/opt/homebrew/bin/openclaw}"
-
-job_search_launchd_domain() {
-  local uid_value="${1:-$(id -u)}"
-  local manager_name
-  manager_name="$("$JOB_SEARCH_LAUNCHCTL" managername 2>/dev/null)" || {
-    print -u2 "launchd manager context unavailable"
-    return 75
-  }
-  case "$manager_name" in
-    Aqua) print -r -- "gui/$uid_value" ;;
-    Background) print -r -- "user/$uid_value" ;;
-    *)
-      print -u2 "unsupported launchd manager context: $manager_name"
-      return 75
-      ;;
-  esac
-}
-
 if [[ -z "${AGENT_RUNNER_PROVIDER:-}" && -f "$JOB_SEARCH_INSTALL_CONFIG" ]]; then
   JOB_SEARCH_SELECTED_PROVIDER=$("$JOB_SEARCH_PYTHON" - \
     "$JOB_SEARCH_INSTALL_CONFIG" <<'PY'

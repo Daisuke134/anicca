@@ -89,4 +89,4 @@ capafy-autopublish/
 │            capafy-user/      (capafy_http.py = market search CLI)
 └── state/   published.jsonl (ledger)
 ```
-Canonical copy lives in `~/.claude/skills/capafy-autopublish` (mirror in `$LIFE_MANAGER_REPO/skills`).
+Canonical copy lives in `$LIFE_MANAGER_REPO/skills/capafy-autopublish`; no repo-external skill mirror is an execution source.

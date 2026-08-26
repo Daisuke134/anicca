@@ -287,6 +287,38 @@ CREATE TABLE IF NOT EXISTS connector_intents (
     PRIMARY KEY(action_id, revision)
 );
 
+CREATE TABLE IF NOT EXISTS provider_effect_intents (
+    effect_key TEXT PRIMARY KEY,
+    provider TEXT NOT NULL,
+    account_key TEXT NOT NULL,
+    resource_id TEXT NOT NULL,
+    action TEXT NOT NULL,
+    payload_hash TEXT NOT NULL CHECK (length(payload_hash) = 64),
+    authorization_hash TEXT NOT NULL CHECK (length(authorization_hash) = 64),
+    state TEXT NOT NULL CHECK (state IN ('prepared','reconcile_pending')),
+    reconciliation_state TEXT NOT NULL DEFAULT 'not_started'
+        CHECK (reconciliation_state IN ('not_started','reconcile_unknown','verified')),
+    connects_pre INTEGER,
+    connects_pre_hash TEXT,
+    payload_body TEXT,
+    proposal_id TEXT,
+    connects_post INTEGER,
+    readback_hash TEXT,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    UNIQUE(provider, account_key, resource_id, action, payload_hash)
+);
+
+CREATE TABLE IF NOT EXISTS provider_capacity_reservations (
+    effect_key TEXT PRIMARY KEY REFERENCES provider_effect_intents(effect_key),
+    provider TEXT NOT NULL,
+    account_key TEXT NOT NULL,
+    resource_id TEXT NOT NULL,
+    contract_id TEXT,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS connector_slots (
     platform TEXT PRIMARY KEY,
     action_id INTEGER,
@@ -332,6 +364,7 @@ class ConnectorOutbox:
         self.manifest_path = Path(manifest)
         self.database.parent.mkdir(parents=True, exist_ok=True)
         self._initialize()
+        os.chmod(self.database, 0o600)
 
     def _connect(self) -> sqlite3.Connection:
         connection = sqlite3.connect(self.database, timeout=5, isolation_level=None)
@@ -369,6 +402,23 @@ class ConnectorOutbox:
                         connection.execute(
                             "ALTER TABLE connector_intents ADD COLUMN rejection_code TEXT"
                         )
+                    provider_columns = {
+                        str(row[1])
+                        for row in connection.execute("PRAGMA table_info(provider_effect_intents)")
+                    }
+                    for name, declaration in (
+                        ("reconciliation_state", "TEXT NOT NULL DEFAULT 'not_started'"),
+                        ("connects_pre", "INTEGER"),
+                        ("connects_pre_hash", "TEXT"),
+                        ("payload_body", "TEXT"),
+                        ("proposal_id", "TEXT"),
+                        ("connects_post", "INTEGER"),
+                        ("readback_hash", "TEXT"),
+                    ):
+                        if name not in provider_columns:
+                            connection.execute(
+                                f"ALTER TABLE provider_effect_intents ADD COLUMN {name} {declaration}"
+                            )
                     action_columns = {
                         str(row[1])
                         for row in connection.execute("PRAGMA table_info(connector_actions)")
@@ -437,6 +487,16 @@ class ConnectorOutbox:
                         )
                     connection.execute(
                         "UPDATE connector_dlq SET closure='dlq' WHERE closure IS NULL"
+                    )
+                    connection.execute(
+                        """UPDATE connector_dlq
+                           SET closure='nothing_to_say',
+                               reason='nothing_to_say:officially_unrepliable:'
+                                      || 'submit_rejected_sending_unavailable',
+                               attempts_kind='nothing_to_say'
+                           WHERE closure='dlq'
+                             AND reason='revive_attempts_exhausted:'
+                                        || 'submit_rejected_sending_unavailable'"""
                     )
                     # SINGLE source of truth for the thread-uniqueness invariants.
                     # Deliberately not in SCHEMA: the predicate needs dlq_at, which
@@ -532,7 +592,7 @@ class ConnectorOutbox:
     @staticmethod
     def _require_key(name: str, value: str) -> str:
         text = str(value or "").strip()
-        if not re.fullmatch(r"[A-Za-z0-9._:/-]{1,500}", text):
+        if not re.fullmatch(r"[A-Za-z0-9._:/~-]{1,500}", text):
             raise ValueError(f"invalid {name}")
         return text
 
@@ -809,9 +869,21 @@ class ConnectorOutbox:
             next_revision = int(row["revision"]) + (
                 1 if current_intent_state is not None else 0
             )
-            if now < blocked_at or now < next_attempt_at:
-                # Evaluated FIRST on purpose: a clock that stepped backwards must
-                # produce "not yet", never a permanent dead letter.
+            if now < blocked_at:
+                # A clock that stepped backwards must produce "not yet", never a
+                # permanent dead letter.
+                decision, reason = "wait", "backoff_open"
+            elif attempts >= cap:
+                # The block itself is the durable authoritative-absence receipt for
+                # the final attempt. Waiting through one more backoff cannot create a
+                # new send opportunity; it only leaves terminal work looking active.
+                if rejection_code == "submit_rejected_sending_unavailable":
+                    decision = "nothing_to_say"
+                    reason = f"officially_unrepliable:{rejection_code}"
+                else:
+                    decision = "dlq"
+                    reason = f"revive_attempts_exhausted:{rejection_code or 'unknown'}"
+            elif now < next_attempt_at:
                 decision, reason = "wait", "backoff_open"
             elif int(row["active_siblings"]) > 0:
                 # enqueue() parks a new buyer event on a blocked successor while the
@@ -822,9 +894,6 @@ class ConnectorOutbox:
                 decision, reason = "skipped", "thread_has_active_action"
             elif next_revision > MAX_REVISIONS_PER_ACTION:
                 decision, reason = "dlq", "revision_budget_exhausted"
-            elif attempts >= cap:
-                decision = "dlq"
-                reason = f"revive_attempts_exhausted:{rejection_code or 'unknown'}"
             elif current_intent_state is not None and current_intent_state != "superseded":
                 # The blocked row still owns a live intent: reviving it would
                 # resurrect an un-superseded revision.  Left for the reconcile
@@ -873,6 +942,7 @@ class ConnectorOutbox:
         now = self._require_timestamp("now", now)
         revived: list[dict[str, Any]] = []
         dead_lettered: list[dict[str, Any]] = []
+        closed_without_send: list[dict[str, Any]] = []
         closures: list[dict[str, Any]] = []
         if manifest.get("enabled") is not True or manifest.get("revoked_at") is not None:
             return {
@@ -889,7 +959,7 @@ class ConnectorOutbox:
             due = [
                 candidate
                 for candidate in self._blocked_revive_candidates(reader, now)
-                if candidate["decision"] in ("revive", "dlq")
+                if candidate["decision"] in ("revive", "dlq", "nothing_to_say")
             ]
         if not due:
             return {
@@ -953,7 +1023,23 @@ class ConnectorOutbox:
                         "disposition": "dlq",
                         "blocked_seconds": max(0, now - candidate["blocked_at"]),
                     })
-        if not revived and not dead_lettered:
+                elif decision == "nothing_to_say":
+                    closures.append(self._dead_letter(
+                        connection,
+                        candidate,
+                        reason=f"nothing_to_say:{candidate['reason']}",
+                        attempts=candidate["revive_attempts"],
+                        attempts_kind="nothing_to_say",
+                        now=now,
+                        closure="nothing_to_say",
+                    ))
+                    closed_without_send.append({
+                        **candidate,
+                        "closed_at": now,
+                        "disposition": "nothing_to_say",
+                        "blocked_seconds": max(0, now - candidate["blocked_at"]),
+                    })
+        if not revived and not dead_lettered and not closed_without_send:
             # The advisory read saw work but the locked re-read did not: a
             # concurrent pass or detector took it first. Reporting "applied 0/0"
             # would read as a confident zero, so name what happened.
@@ -982,6 +1068,7 @@ class ConnectorOutbox:
         return {
             "revived": revived,
             "dead_lettered": dead_lettered,
+            "closed_without_send": closed_without_send,
             "status": "applied",
             "audit_error": audit_error,
         }
@@ -1206,10 +1293,14 @@ class ConnectorOutbox:
                       AND a.dlq_at IS NULL
                       AND i.state='superseded'
                       AND i.rejection_code='submit_rejected_sending_unavailable'
-                      AND a.revive_attempts<3
                     ORDER BY a.created_at,a.action_id"""
             ).fetchall()
-        return [dict(row) for row in rows]
+        return [
+            dict(row) for row in rows
+            if int(row["revive_attempts"]) < blocked_revive_attempt_cap(
+                str(row["rejection_code"]),
+            )
+        ]
 
     def revive_sending_available(
         self, action_id: int, *, expected_revision: int, now: int,
@@ -1328,7 +1419,7 @@ class ConnectorOutbox:
                           i.click_started_at,i.executor_quiesced_at,i.rejection_code,
                           e.event_key
                      FROM connector_actions a
-                     JOIN connector_intents i
+                     LEFT JOIN connector_intents i
                        ON i.action_id=a.action_id AND i.revision=a.revision
                      JOIN connector_events e ON e.action_id=a.action_id
                     WHERE a.platform='coconala' AND a.thread_id=?
@@ -1372,13 +1463,16 @@ class ConnectorOutbox:
                           i.origin_at AS intent_origin_at,i.click_started_at,
                           e.event_key
                      FROM connector_actions a
-                     JOIN connector_intents i
+                     LEFT JOIN connector_intents i
                        ON i.action_id=a.action_id AND i.revision=a.revision
                      JOIN connector_events e ON e.action_id=a.action_id
                     WHERE a.platform='coconala' AND a.thread_id=?
                       AND a.state='replied' AND a.dlq_at IS NULL
                       AND a.seller_sent_at>=?
-                      AND i.state='verified' AND i.outgoing_body IS NOT NULL
+                      AND (
+                        (i.state='verified' AND i.outgoing_body IS NOT NULL)
+                        OR (i.action_id IS NULL AND a.verified_outgoing_hash IS NOT NULL)
+                      )
                       AND e.event_key LIKE 'coconala:estimate:v1:%'
                       AND NOT EXISTS (
                         SELECT 1 FROM connector_events newer
@@ -1674,6 +1768,270 @@ class ConnectorOutbox:
             )
             return dict(self._intent(connection, action_id, action["revision"]))
 
+    def _provider_effect_values(
+        self, intent: Any, authorization: Any,
+    ) -> tuple[str, str, str, str, str, str, str]:
+        state = getattr(getattr(authorization, "state", None), "value", None)
+        receipt_hash = getattr(authorization, "receipt_hash", None)
+        if state not in {"approved_api", "approved_browser"}:
+            raise ConnectorDisabled("authorization_not_approved")
+        authorization_hash = str(getattr(intent, "authorization_hash", ""))
+        if (
+            not re.fullmatch(r"[0-9a-f]{64}", str(receipt_hash or ""))
+            or receipt_hash != authorization_hash
+        ):
+            raise ConnectorDisabled("authorization_not_approved")
+        provider = self._require_key("provider", getattr(intent, "provider", ""))
+        account_key = self._require_key("account_key", getattr(intent, "account_key", ""))
+        resource_id = self._require_key("resource_id", getattr(intent, "resource_id", ""))
+        action = self._require_key("action", getattr(intent, "action", ""))
+        effect_key = self._require_key("effect_key", getattr(intent, "effect_key", ""))
+        payload_hash = str(getattr(intent, "payload_hash", ""))
+        if not re.fullmatch(r"[0-9a-f]{64}", payload_hash):
+            raise ValueError("invalid payload_hash")
+        return (
+            effect_key, provider, account_key, resource_id, action, payload_hash,
+            authorization_hash,
+        )
+
+    def prepare_provider_effect(
+        self, intent: Any, *, authorization: Any, now: int,
+        connects_pre: int | None = None,
+        connects_pre_hash: str | None = None,
+        payload_body: str | None = None,
+        capacity_limit: int | None = None,
+        active_resource_ids: list[str] | None = None,
+    ) -> dict[str, Any]:
+        """Persist one authorization-bound non-Coconala effect before execution."""
+        values = self._provider_effect_values(intent, authorization)
+        now = self._require_timestamp("now", now)
+        supplied = (connects_pre, connects_pre_hash, payload_body)
+        if any(value is not None for value in supplied):
+            if (
+                type(connects_pre) is not int or connects_pre < 0
+                or not re.fullmatch(r"[0-9a-f]{64}", str(connects_pre_hash or ""))
+                or not isinstance(payload_body, str) or not payload_body
+            ):
+                raise ValueError("invalid provider pre-effect evidence")
+        if (capacity_limit is None) != (active_resource_ids is None):
+            raise ValueError("invalid provider capacity evidence")
+        if capacity_limit is not None and (
+            type(capacity_limit) is not int or capacity_limit < 1
+            or not isinstance(active_resource_ids, list)
+            or any(not isinstance(item, str) or not item for item in active_resource_ids)
+            or len(set(active_resource_ids)) != len(active_resource_ids)
+        ):
+            raise ValueError("invalid provider capacity evidence")
+        with self._write() as connection:
+            resource = connection.execute(
+                """SELECT * FROM provider_effect_intents
+                   WHERE provider=? AND account_key=? AND resource_id=? AND action=?""",
+                (values[1], values[2], values[3], values[4]),
+            ).fetchone()
+            if resource is not None and resource["payload_hash"] != values[5] and values[4] in {"propose", "deliver_milestone"}:
+                label = "proposal" if values[4] == "propose" else "milestone delivery"
+                raise ImmutableIntent(f"resource already has {label} intent")
+            existing = connection.execute(
+                """SELECT * FROM provider_effect_intents
+                   WHERE provider=? AND account_key=? AND resource_id=?
+                     AND action=? AND payload_hash=?""",
+                (values[1], values[2], values[3], values[4], values[5]),
+            ).fetchone()
+            if existing is not None:
+                if existing["authorization_hash"] != values[6]:
+                    raise ImmutableIntent("authorization hash cannot change")
+                if existing["effect_key"] != values[0]:
+                    raise ImmutableIntent("effect key cannot change")
+                for field, expected in (
+                    ("connects_pre", connects_pre),
+                    ("connects_pre_hash", connects_pre_hash),
+                    ("payload_body", payload_body),
+                ):
+                    if expected is not None and existing[field] != expected:
+                        raise ImmutableIntent(f"provider {field} cannot change")
+                return {**dict(existing), "created": False, "reconcile_only": True}
+            if capacity_limit is not None:
+                for contract_id in active_resource_ids:
+                    connection.execute(
+                        """DELETE FROM provider_capacity_reservations
+                           WHERE provider=? AND account_key=? AND contract_id=?""",
+                        (values[1], values[2], contract_id),
+                    )
+                reserved = connection.execute(
+                    """SELECT count(*) FROM provider_capacity_reservations
+                       WHERE provider=? AND account_key=?""",
+                    (values[1], values[2]),
+                ).fetchone()[0]
+                if len(active_resource_ids) + int(reserved) >= capacity_limit:
+                    raise ConnectorBusy("provider capacity exhausted")
+            connection.execute(
+                """INSERT INTO provider_effect_intents
+                   (effect_key,provider,account_key,resource_id,action,payload_hash,
+                    authorization_hash,state,connects_pre,connects_pre_hash,payload_body,
+                    created_at,updated_at)
+                   VALUES(?,?,?,?,?,?,?,'prepared',?,?,?,?,?)""",
+                (*values, connects_pre, connects_pre_hash, payload_body, now, now),
+            )
+            if capacity_limit is not None:
+                connection.execute(
+                    """INSERT INTO provider_capacity_reservations
+                       (effect_key,provider,account_key,resource_id,created_at,updated_at)
+                       VALUES(?,?,?,?,?,?)""",
+                    (values[0], values[1], values[2], values[3], now, now),
+                )
+            stored = connection.execute(
+                "SELECT * FROM provider_effect_intents WHERE effect_key=?", (values[0],),
+            ).fetchone()
+            return {**dict(stored), "created": True, "reconcile_only": False}
+
+    def mark_provider_effect_started(
+        self, intent: Any, *, authorization: Any, now: int,
+    ) -> dict[str, Any]:
+        """Close retry permission immediately before a provider mutation."""
+        values = self._provider_effect_values(intent, authorization)
+        now = self._require_timestamp("now", now)
+        with self._write() as connection:
+            existing = connection.execute(
+                "SELECT * FROM provider_effect_intents WHERE effect_key=?", (values[0],),
+            ).fetchone()
+            if existing is None:
+                raise InvalidTransition("provider effect intent missing")
+            if tuple(existing[key] for key in (
+                "provider", "account_key", "resource_id", "action", "payload_hash",
+                "authorization_hash",
+            )) != values[1:]:
+                raise ImmutableIntent("provider effect identity changed")
+            if existing["state"] == "reconcile_pending":
+                return {**dict(existing), "started": False, "reconcile_only": True}
+            cursor = connection.execute(
+                """UPDATE provider_effect_intents
+                   SET state='reconcile_pending',reconciliation_state='reconcile_unknown',updated_at=?
+                   WHERE effect_key=? AND state='prepared'""",
+                (now, values[0]),
+            )
+            if cursor.rowcount != 1:
+                raise InvalidTransition("provider effect is not prepared")
+            stored = connection.execute(
+                "SELECT * FROM provider_effect_intents WHERE effect_key=?", (values[0],),
+            ).fetchone()
+            return {**dict(stored), "started": True, "reconcile_only": False}
+
+    def provider_effect(self, intent: Any) -> dict[str, Any] | None:
+        """Read one immutable provider effect without changing retry permission."""
+        effect_key = self._require_key("effect_key", getattr(intent, "effect_key", ""))
+        with closing(self._connect()) as connection:
+            row = connection.execute(
+                "SELECT * FROM provider_effect_intents WHERE effect_key=?", (effect_key,),
+            ).fetchone()
+            return dict(row) if row is not None else None
+
+    def reopen_provider_effect_after_no_effect(
+        self, intent: Any, *, authorization: Any, connects_current: int,
+        connects_evidence_sha256: str, no_effect_readback_hash: str, now: int,
+    ) -> dict[str, Any]:
+        """Reopen after absence and the ledger explain every balance change as another effect."""
+        values = self._provider_effect_values(intent, authorization)
+        now = self._require_timestamp("now", now)
+        if (
+            type(connects_current) is not int or connects_current < 0
+            or not re.fullmatch(r"[0-9a-f]{64}", connects_evidence_sha256)
+            or not re.fullmatch(r"[0-9a-f]{64}", no_effect_readback_hash)
+        ):
+            raise ValueError("invalid provider no-effect evidence")
+        with self._write() as connection:
+            existing = connection.execute(
+                "SELECT * FROM provider_effect_intents WHERE effect_key=?", (values[0],),
+            ).fetchone()
+            intervening_spend = 0 if existing is None else connection.execute(
+                """SELECT COALESCE(SUM(connects_pre-connects_post),0)
+                   FROM provider_effect_intents
+                   WHERE provider=? AND account_key=? AND effect_key<>?
+                     AND reconciliation_state='verified' AND updated_at>?
+                     AND connects_pre IS NOT NULL AND connects_post IS NOT NULL""",
+                (existing["provider"], existing["account_key"], values[0], existing["updated_at"]),
+            ).fetchone()[0]
+            if (
+                existing is None or existing["state"] != "reconcile_pending"
+                or existing["reconciliation_state"] != "reconcile_unknown"
+                or existing["proposal_id"] is not None
+                or existing["connects_post"] is not None
+                or existing["connects_pre"] - intervening_spend != connects_current
+            ):
+                raise InvalidTransition("provider no-effect readback is inconsistent")
+            connection.execute(
+                """UPDATE provider_effect_intents
+                   SET state='prepared',reconciliation_state='not_started',
+                       connects_pre=?,connects_pre_hash=?,readback_hash=?,updated_at=?
+                   WHERE effect_key=?""",
+                (connects_current, connects_evidence_sha256, no_effect_readback_hash, now, values[0]),
+            )
+            return dict(connection.execute(
+                "SELECT * FROM provider_effect_intents WHERE effect_key=?", (values[0],),
+            ).fetchone())
+
+    def verified_provider_resource_ids(self, provider: str, action: str) -> set[str]:
+        """Project completed external effects out of an acquisition-ready queue."""
+        provider = self._require_key("provider", provider)
+        action = self._require_key("action", action)
+        with closing(self._connect()) as connection:
+            return {
+                str(row[0]) for row in connection.execute(
+                    """SELECT resource_id FROM provider_effect_intents
+                       WHERE provider=? AND action=? AND reconciliation_state='verified'""",
+                    (provider, action),
+                )
+            }
+
+    def verify_provider_effect(
+        self, intent: Any, *, proposal_id: str, connects_post: int,
+        readback_hash: str, now: int,
+    ) -> dict[str, Any]:
+        """Record only exact authoritative proposal and Connects readback."""
+        effect_key = self._require_key("effect_key", getattr(intent, "effect_key", ""))
+        proposal_id = self._require_key("proposal_id", proposal_id)
+        if type(connects_post) is not int or connects_post < 0:
+            raise ValueError("invalid connects_post")
+        if not re.fullmatch(r"[0-9a-f]{64}", str(readback_hash or "")):
+            raise ValueError("invalid readback_hash")
+        now = self._require_timestamp("now", now)
+        with self._write() as connection:
+            existing = connection.execute(
+                "SELECT * FROM provider_effect_intents WHERE effect_key=?", (effect_key,),
+            ).fetchone()
+            if existing is None or existing["state"] != "reconcile_pending":
+                raise InvalidTransition("provider effect is not awaiting reconciliation")
+            expected_identity = tuple(existing[key] for key in (
+                "provider", "account_key", "resource_id", "action", "payload_hash",
+                "authorization_hash", "effect_key",
+            ))
+            actual_identity = tuple(getattr(intent, key) for key in (
+                "provider", "account_key", "resource_id", "action", "payload_hash",
+                "authorization_hash", "effect_key",
+            ))
+            if expected_identity != actual_identity:
+                raise ImmutableIntent("provider effect identity changed")
+            connection.execute(
+                """UPDATE provider_capacity_reservations
+                   SET contract_id=?,updated_at=? WHERE effect_key=?""",
+                (proposal_id, now, effect_key),
+            )
+            if existing["connects_pre"] is None or connects_post > existing["connects_pre"]:
+                raise InvalidTransition("provider Connects readback is inconsistent")
+            if existing["reconciliation_state"] == "verified":
+                expected = (existing["proposal_id"], existing["connects_post"], existing["readback_hash"])
+                if expected != (proposal_id, connects_post, readback_hash):
+                    raise ImmutableIntent("provider readback cannot change")
+                return dict(existing)
+            connection.execute(
+                """UPDATE provider_effect_intents
+                   SET reconciliation_state='verified',proposal_id=?,connects_post=?,
+                       readback_hash=?,updated_at=? WHERE effect_key=?""",
+                (proposal_id, connects_post, readback_hash, now, effect_key),
+            )
+            return dict(connection.execute(
+                "SELECT * FROM provider_effect_intents WHERE effect_key=?", (effect_key,),
+            ).fetchone())
+
     def supervisor_recover_stopped_owner(
         self,
         action_id: int,
@@ -1920,6 +2278,36 @@ class ConnectorOutbox:
         action_id = int(action["action_id"])
         successor = None
         if intent["rejection_code"] in SERVER_REJECTION_CODES:
+            attempts = max(0, int(action["revive_attempts"]))
+            attempt_cap = blocked_revive_attempt_cap(str(intent["rejection_code"]))
+            if attempts >= attempt_cap:
+                clean_no_send = (
+                    intent["rejection_code"]
+                    == "submit_rejected_sending_unavailable"
+                )
+                reason = (
+                    f"nothing_to_say:officially_unrepliable:{intent['rejection_code']}"
+                    if clean_no_send
+                    else f"revive_attempts_exhausted:{intent['rejection_code']}"
+                )
+                closure = self._dead_letter(
+                    connection,
+                    action,
+                    reason=reason,
+                    attempts=attempts,
+                    attempts_kind="nothing_to_say" if clean_no_send else "revive",
+                    now=observed_at,
+                    closure="nothing_to_say" if clean_no_send else "dlq",
+                )
+                connection.execute(
+                    """UPDATE connector_actions
+                       SET owner=NULL,lease_until=0,updated_at=? WHERE action_id=?""",
+                    (observed_at, action_id),
+                )
+                self._release_slot(connection, action_id)
+                exhausted = dict(self._action(connection, action_id))
+                exhausted["revive_attempts_exhausted"] = True
+                return exhausted, closure
             successor = connection.execute(
                 """SELECT * FROM connector_actions
                    WHERE platform=? AND thread_id=? AND state='blocked'

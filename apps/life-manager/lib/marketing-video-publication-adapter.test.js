@@ -496,6 +496,7 @@ test("distribution subprocess receives an allowlisted environment, not the full 
   process.env.LM_TELEGRAM_BOT_TOKEN = "telegram-secret";
   process.env.LM_TELEGRAM_ALERT_CHAT_ID = "owner-chat";
   process.env.LM_POSTIZ_API_KEY = "postiz-secret";
+  process.env.LM_POSTIZ_RESOLVE_IP = "69.46.46.109";
   process.env.SECRET_CANARY = "leak-me";
   // Non-LM_ variables the real distribution chain reads: instagram_video.sh honors
   // INSTAGRAPI_PYTHON, and skills/earn/marketing-engine/poster.py reads CDP_HOST/CDP_PORT.
@@ -530,6 +531,7 @@ test("distribution subprocess receives an allowlisted environment, not the full 
     assert.ok(!result.env_keys.includes("LM_TELEGRAM_BOT_TOKEN"));
     assert.ok(!result.env_keys.includes("LM_TELEGRAM_ALERT_CHAT_ID"));
     assert.ok(!result.env_keys.includes("LM_POSTIZ_API_KEY"));
+    assert.ok(result.env_keys.includes("LM_POSTIZ_RESOLVE_IP"));
     assert.ok(result.env_keys.includes("INSTAGRAPI_PYTHON"));
     assert.ok(result.env_keys.includes("CDP_HOST"));
     assert.ok(result.env_keys.includes("CDP_PORT"));
@@ -540,6 +542,7 @@ test("distribution subprocess receives an allowlisted environment, not the full 
     delete process.env.LM_TELEGRAM_BOT_TOKEN;
     delete process.env.LM_TELEGRAM_ALERT_CHAT_ID;
     delete process.env.LM_POSTIZ_API_KEY;
+    delete process.env.LM_POSTIZ_RESOLVE_IP;
     delete process.env.SECRET_CANARY;
     delete process.env.INSTAGRAPI_PYTHON;
     delete process.env.CDP_HOST;

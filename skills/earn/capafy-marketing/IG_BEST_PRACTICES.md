@@ -6,20 +6,20 @@
 
 - Engagement score: `views + likes*3 + comments*5`.
 - One latest metrics snapshot per Reel. Snapshots are not summed.
-- Ledger Reels: 1
-- Reels with metrics: 1
+- Ledger Reels: 2
+- Reels with metrics: 2
 - Reels without metrics: 0
 - Invalid JSONL rows skipped: ledger=0, metrics=0
 
 ## Status
 
-**SAMPLE INSUFFICIENT — baseline only.** 1 measured Reel(s); at least 3 are required before claiming a winning or losing pattern.
+**SAMPLE INSUFFICIENT — baseline only.** 2 measured Reel(s); at least 3 are required before claiming a winning or losing pattern.
 
 ## Top Reels (N=1)
 
 | Rank | Reel | Score | Views | Likes | Comments | Listing |
 |---:|---|---:|---:|---:|---:|---|
-| 1 | [Da7VQY8MIOK](https://www.instagram.com/reel/Da7VQY8MIOK/) | 0 | 0 | 0 | 0 | YouTube Script Writer |
+| 1 | [DcWRx9ys7Cv](https://www.instagram.com/capafy.skills8m4q2z/reel/DcWRx9ys7Cv/) | 8 | 8 | 0 | 0 | Decision Debate — Three Experts Argue It Out |
 
 ## Lower-performing Reels
 
@@ -28,10 +28,9 @@ Not reported until at least 3 Reels have metrics; a baseline cannot form a lower
 ## Observed Tendencies
 
 - No winning pattern claimed from the current sample.
-- Current baseline score: 0.
 - Listing category metadata unavailable; no category trend inferred from listing names.
 - Hook metadata unavailable; no hook-tone trend inferred.
 
 ## Next Test Direction
 
-Collect metrics for 2 more Reel(s). Keep current measured Reel(s) as baseline; do not change copy solely because of this ranking yet.
+Collect metrics for 1 more Reel(s). Keep current measured Reel(s) as baseline; do not change copy solely because of this ranking yet.

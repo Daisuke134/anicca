@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en" data-resolution="portrait">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=1080, height=1920">
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <style>*{box-sizing:border-box}html,body{margin:0;width:1080px;height:1920px;overflow:hidden;background:#f4eddf}#root{position:relative;width:1080px;height:1920px;overflow:hidden}.clip{position:absolute;inset:0}</style>
+</head>
+<body>
+<div id="root" data-composition-id="main" data-start="0" data-duration="30" data-width="1080" data-height="1920">
+  <div id="scene-mess-slot" class="clip" data-composition-id="scene-mess" data-composition-src="compositions/01-mess.html" data-start="0" data-duration="5.5" data-track-index="1" data-width="1080" data-height="1920"></div>
+  <div id="scene-evidence-slot" class="clip" data-composition-id="scene-evidence" data-composition-src="compositions/02-evidence.html" data-start="5.5" data-duration="7.5" data-track-index="1" data-width="1080" data-height="1920"></div>
+  <div id="scene-cluster-slot" class="clip" data-composition-id="scene-cluster" data-composition-src="compositions/03-cluster.html" data-start="13" data-duration="8.5" data-track-index="1" data-width="1080" data-height="1920"></div>
+  <div id="scene-memo-slot" class="clip" data-composition-id="scene-memo" data-composition-src="compositions/04-memo.html" data-start="21.5" data-duration="8.5" data-track-index="1" data-width="1080" data-height="1920"></div>
+  <audio id="narration" class="clip" src="assets/audio/narration-v4-american-synced.m4a" data-start="0" data-duration="30" data-track-index="2"></audio>
+</div>
+<script>window.__timelines=window.__timelines||{};window.__timelines.main=gsap.timeline({paused:true});</script>
+</body></html>

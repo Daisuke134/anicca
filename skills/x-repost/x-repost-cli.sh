@@ -31,7 +31,9 @@ MODEL="${X_REPOST_MODEL:-gpt-5.6-luna}"
 REASONING_EFFORT="${X_REPOST_REASONING_EFFORT:-max}"
 HUMANIZER_SKILL="${X_REPOST_HUMANIZER:-$HOME/.openclaw/skills/jp-humanizer-pro/SKILL.md}"
 GUARD="$HOME/.config/ai/bin/browser-guard.sh"
+WITH_BROWSER="$REPO_ROOT/skills/browser/with-browser.sh"
 ENSURE_BROWSER="$HOME/anicca/skills/browser/ensure_provision_browser.sh"
+LEASE_HELD=0
 
 PASS_ID="$(date +%Y%m%dT%H%M%S)"
 EV="$STATE/evidence/$PASS_ID"
@@ -99,7 +101,10 @@ finish() {
   # Heartbeat marks "a pass ran to a decision", not "a post shipped" -- a legitimately quiet day
   # (no worthwhile candidate) must not read as a dead loop to the healthcheck.
   [ "$rc" -eq 0 ] && touch "$STATE/.last-pass"
-  bash "$GUARD" release "$IDENTITY" >/dev/null 2>&1 || true
+  if [ "$LEASE_HELD" -eq 1 ]; then
+    bash "$GUARD" release "$IDENTITY" >/dev/null 2>&1 || true
+    LEASE_HELD=0
+  fi
   exit "$rc"
 }
 
@@ -193,14 +198,14 @@ if [ -z "${TWITTER_AUTH_TOKEN:-}" ]; then
 fi
 
 # ---------------------------------------------------------------- browser (leased, never :9222)
-CDP="$(bash "$ENSURE_BROWSER" "$IDENTITY" 2>>"$EV/browser.err")"
+CDP="$(AI_BROWSER_HOLDER_PID=$$ bash "$ENSURE_BROWSER" "$IDENTITY" 2>>"$EV/browser.err")"
 case "$CDP" in
-  http*) log "leased $IDENTITY at $CDP" ;;
+  http*) LEASE_HELD=1; log "leased $IDENTITY at $CDP" ;;
   *) log "browser unavailable for $IDENTITY (see $EV/browser.err) -- skipping this pass"
      report "⚠️ ブラウザ($IDENTITY)を確保できずパスを見送り: $(tail -1 "$EV/browser.err" 2>/dev/null)"
      exit 0 ;;
 esac
-trap 'bash "$GUARD" release "$IDENTITY" >/dev/null 2>&1 || true' EXIT
+trap 'if [ "$LEASE_HELD" -eq 1 ]; then bash "$GUARD" release "$IDENTITY" >/dev/null 2>&1 || true; fi' EXIT
 
 # ---------------------------------------------------------------- 1. recon
 if ! "$UV" run --quiet "$SKILL/scripts/x_collect.py" --cdp "$CDP" --mode recon \
@@ -219,6 +224,12 @@ fi
 # ---------------------------------------------------------------- 2. engagement feedback
 "$UV" run --quiet "$SKILL/scripts/x_collect.py" --cdp "$CDP" --mode engagement \
   --posted "$POSTED" >"$EV/engagement.json" 2>>"$EV/collect.err" || log "engagement refresh failed (non-fatal)"
+
+# Recon is complete. Drafting and model selection do not use the browser, so return the shared
+# identity immediately. Publishing acquires it again for exactly the mutation + readback lifetime.
+bash "$GUARD" release "$IDENTITY" >/dev/null 2>&1 || true
+LEASE_HELD=0
+CDP=""
 
 # top performers become the few-shot for this pass (most recent 10 considered, best 5 shown)
 "$PY" - "$POSTED" >"$EV/fewshot.json" <<'PYEOF'
@@ -494,7 +505,8 @@ SRC_TEXT="$("$PY" -c 'import json,sys; print(json.load(open(sys.argv[1]))["text"
 SRC_METRICS="$("$PY" -c 'import json,sys; print(json.load(open(sys.argv[1]))["metrics"])' "$EV/source.json")"
 
 # ---------------------------------------------------------------- 6. publish
-"$UV" run --quiet "$SKILL/scripts/x_post.py" --cdp "$CDP" \
+BROWSER_WAIT_SECONDS="${X_REPOST_PUBLISH_BROWSER_WAIT_SECONDS:-300}" \
+  "$WITH_BROWSER" "$IDENTITY" -- "$UV" run --quiet "$SKILL/scripts/x_post.py" \
   --source-url "$SOURCE_URL" --text-file "$EV/post.txt" --mode "$KIND" >"$EV/post.json" 2>>"$EV/post.err"
 PUBLISH_RC=$?
 if [ "$PUBLISH_RC" -eq 2 ]; then

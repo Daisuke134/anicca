@@ -75,26 +75,38 @@ class OpenClawTelegramTransport:
     def __init__(
         self, *, target: str, executable: Path = Path("/opt/homebrew/bin/openclaw"),
         receipt_dir: Path | None = None, run: Callable[..., Any] = subprocess.run,
+        now_ms: Callable[[], int] | None = None,
     ):
         self.target = str(target)
         self.executable = Path(executable)
         self.receipt_dir = Path(receipt_dir or Path.home() / "gig/telegram-delivery-receipts")
         self.run = run
+        self.now_ms = now_ms or (lambda: int(time.time() * 1000))
 
     def send_report(self, message: str, *, event_key: str) -> str:
         message_id = send_email_if_configured(message, event_key=event_key, run=self.run)
         if message_id is None:
-            completed = self.run(
-                [str(self.executable), "message", "send", "--channel", "telegram",
-                 "--target", self.target, "--message", message, "--json"],
-                stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=180,
-                check=False,
-            )
-            if completed.returncode != 0:
-                raise RuntimeError(f"Telegram transport failed rc={completed.returncode}")
+            command = [
+                str(self.executable), "message", "send", "--channel", "telegram",
+                "--target", self.target, "--message", message, "--json",
+            ]
             try:
-                result = json.loads(completed.stdout)
-            except json.JSONDecodeError as error:
+                completed = self.run(
+                    command, stdin=subprocess.DEVNULL, capture_output=True, text=True,
+                    timeout=180, check=False,
+                )
+                if completed.returncode != 0:
+                    raise RuntimeError(f"Telegram transport failed rc={completed.returncode}")
+                provider_output = completed.stdout
+            except subprocess.TimeoutExpired as error:
+                provider_output = error.stdout
+                if not provider_output:
+                    raise
+            if isinstance(provider_output, bytes):
+                provider_output = provider_output.decode("utf-8", errors="strict")
+            try:
+                result = json.loads(provider_output)
+            except (TypeError, UnicodeDecodeError, json.JSONDecodeError) as error:
                 raise RuntimeError("Telegram transport returned invalid JSON") from error
             payload = result.get("payload") if isinstance(result, dict) else None
             if isinstance(payload, dict) and payload.get("ok") is False:
@@ -111,7 +123,7 @@ class OpenClawTelegramTransport:
             "target": os.environ.get("GIG_NOTIFY_EMAIL", "").strip() or self.target,
             "message_sha256": hashlib.sha256(message.encode()).hexdigest(),
             "message_id": str(message_id),
-            "provider_acked_at_epoch_ms": int(time.time() * 1000),
+            "provider_acked_at_epoch_ms": int(self.now_ms()),
         }
         fd, temporary = tempfile.mkstemp(prefix=f".{digest}.", dir=self.receipt_dir)
         try:
@@ -132,9 +144,19 @@ class OpenClawTelegramTransport:
 
 def publish(gig_dir: Path, outbox: TelegramOutbox, transport: OpenClawTelegramTransport) -> dict:
     now_epoch = int(time.time())
+    outbox.reconcile_receipts(
+        receipt_dir=transport.receipt_dir,
+        target=os.environ.get("GIG_NOTIFY_EMAIL", "").strip() or transport.target,
+        now=now_epoch,
+        kinds=("application",),
+    )
+    redrive_report_ids = outbox.redrive_unresolved_report_ids(
+        now=now_epoch, kinds=("application",), limit=1,
+    )
     seen_path = gig_dir / "instant-work-event-report-state.json"
     seen = _read_seen(seen_path)
-    report_ids: list[int] = []
+    fresh_report_ids: list[int] = []
+    existing_pending_ids: list[int] = []
     enqueued = 0
     for event in _jsonl(gig_dir / "work-events.jsonl"):
         if event.get("kind") != "application" or not event.get("event_key"):
@@ -150,7 +172,8 @@ def publish(gig_dir: Path, outbox: TelegramOutbox, transport: OpenClawTelegramTr
         envelope = report_envelope.build_work_event_envelope(
             work_event=event, observed_at=datetime.now(timezone.utc),
         )
-        if event_key not in seen:
+        is_fresh = event_key not in seen
+        if is_fresh:
             report_envelope.append_agent_feed(gig_dir / "report-envelopes.jsonl", envelope)
             seen.add(event_key)
             enqueued += 1
@@ -160,10 +183,14 @@ def publish(gig_dir: Path, outbox: TelegramOutbox, transport: OpenClawTelegramTr
             suppress_identical_body=False,
         )
         if queued.get("state") == "pending":
-            report_ids.append(int(queued["report_id"]))
+            target = fresh_report_ids if is_fresh else existing_pending_ids
+            target.append(int(queued["report_id"]))
     _write_seen(seen_path, seen)
     sent = unknown = 0
-    for report_id in report_ids:
+    dispatch_ids = list(dict.fromkeys([
+        *fresh_report_ids, *existing_pending_ids, *redrive_report_ids,
+    ]))
+    for report_id in dispatch_ids:
         result = dispatch_one(
             outbox, owner=f"gig-apply-telegram:{uuid.uuid4().hex}",
             now=lambda: int(time.time()), transport=transport, report_id=report_id,
