@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "context_version": "2026-08-26.3",
-  "updated_at": "2026-08-26T16:53:00+09:00",
+  "context_version": "2026-08-26.4",
+  "updated_at": "2026-08-26T18:07:07+09:00",
   "product": {
     "name": "Life Manager",
     "usage": "Use as the product name in every public product and fundraising field.",
@@ -68,7 +68,7 @@
         "program": "DelightX Cohort 3",
         "official_url": "https://delightx.delight-ventures.com/en/",
         "action": "apply_now",
-        "reason": "Delight Ventures, affiliated with DeNA; Tokyo selection followed by an in-person San Francisco Bay Area program. The founder explicitly requested a fresh application attempt on 2026-08-26: reopen the official form and advance through every truthful non-binding field, but stop before committing to six-month relocation, visa/housing/cost obligations, Delaware incorporation, or $60,000 for 5% common stock without explicit authority."
+        "reason": "Delight Ventures, affiliated with DeNA; Tokyo selection followed by an in-person San Francisco Bay Area program. The founder explicitly reaffirmed that he wants this application submitted, wants the in-person San Francisco program for Japanese founders, and authorizes ordinary application privacy/data-processing consent. Answer truthfully that the founder wants the on-site SF program. Application submission does not authorize a later investment agreement, actual Delaware incorporation, share issuance, or transfer of 5% common stock; checkpoint only if the current application itself legally executes one of those later effects or requires a missing human-created founder video."
       },
       {
         "program": "a16z Speedrun",

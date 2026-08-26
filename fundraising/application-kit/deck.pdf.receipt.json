@@ -1,7 +1,7 @@
 {
-  "context_version": "2026-08-26.3",
-  "context_digest": "19101663fd16d33720b4c510eef268a2d2153113d9c4412935f7d9fc36c13a1b",
+  "context_version": "2026-08-26.4",
+  "context_digest": "b15c321db8e14b21213d3f81ed6419dc1e25c1ee723da18fba07fd638e594e58",
   "artifact": "fundraising/application-kit/deck.pdf",
-  "sha256": "086b0fd85104d9cf9e78b6fcf57d5cd59d20a001429bd4e1fc425c2f0c44876a",
-  "bytes": 16240
+  "sha256": "859241bcc9e36504d0169dbf3767692d6681156608c3b5f6dfe02f8a93e683d4",
+  "bytes": 16237
 }

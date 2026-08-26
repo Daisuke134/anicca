@@ -1,6 +1,6 @@
 <!-- generated from .agents/startup-context.json; do not edit -->
-context-version: 2026-08-26.3
-context-digest: 19101663fd16d33720b4c510eef268a2d2153113d9c4412935f7d9fc36c13a1b
+context-version: 2026-08-26.4
+context-digest: b15c321db8e14b21213d3f81ed6419dc1e25c1ee723da18fba07fd638e594e58
 
 # Life Manager — 資金調達応募の正本回答
 
