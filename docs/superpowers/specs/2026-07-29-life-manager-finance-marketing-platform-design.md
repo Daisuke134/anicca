@@ -2282,10 +2282,13 @@ Postiz IPv4 `69.46.46.109`; the shared main pack remains byte-identical. Every
 object resolves with SHA/mode `0600`, manifest `bbc2bb24…ca124` still has
 armed 0 and only the exact lane `pack-ready/default-off`, and the fence remains
 closed. The current local ledgers are `780/253` because unrelated owners
-continued, but the exact creative+caption+approval identity matches zero jobs
-and zero receipts. Immediate official Postiz readback over 111 rows finds five
-rows for the integration and zero for the exact caption. Exactly one effect is
-therefore authorized next; no retry is allowed if its outcome becomes unknown.
+continued, but exact job `marketing-video-publication:f4cb935f…aa31f1` and the
+creative+caption+approval identity match zero jobs and zero receipts. Immediate
+official Postiz readback over 124 August rows finds five rows for the integration
+and zero for the exact caption. Native verification binding is absent, so the
+first run must hold Telegram. Exactly one effect at immutable logical slot
+`2026-08-26T00:33:11.000Z` is authorized next; no other slot or retry is
+allowed if its outcome becomes unknown.
 
 **Completed immediately preceding atomic item:** MKT-09R8-12 / Order 23I
 reconciled the complete existing Postiz history before any new effect. Read-only
