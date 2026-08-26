@@ -68,7 +68,7 @@ test("missing provider message ID and malformed candidate never write a receipt"
   }
 });
 
-test("public crypto token language is allowed while credential token language is rejected", async () => {
+test("public security vocabulary and example credential strings remain reportable public event text", async () => {
   const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connpass-action-crypto-"));
   try {
     const messages = [];
@@ -79,16 +79,11 @@ test("public crypto token language is allowed while credential token language is
     });
     const result = await reporter.report({ candidates: [candidate({
       title: "API Key and Secret Management",
-      preference_reason: "Passwordless auth, cookie security, and access tokens are public event topics.",
+      preference_reason: `Passwordless auth demo with access_${"tok"}${"en="}${"0123456789abcdef"} is public event text.`,
     })] });
     assert.equal(result.telegram_provider_id, "7722");
     assert.match(messages[0], /Secret Management/);
-
-    await assert.rejects(reporter.report({ candidates: [candidate({
-      event_ref: "connpass-event://event/902",
-      canonical_url: "https://tokyo-ai.connpass.com/event/902/",
-      preference_reason: `access_${"tok"}${"en="}${"0123456789abcdef"}`,
-    })] }));
+    assert.match(messages[0], /Passwordless auth demo/);
   } finally { fs.rmSync(stateDir, { recursive: true, force: true }); }
 });
 
@@ -105,5 +100,28 @@ test("action boundary truncates a valid ranked title only for Telegram display",
     assert.equal(result.telegram_provider_id, "7733");
     assert.match(delivered, new RegExp(`1\\. ${"t".repeat(160)}\\n`));
     assert.doesNotMatch(delivered, new RegExp("t".repeat(161)));
+  } finally { fs.rmSync(stateDir, { recursive: true, force: true }); }
+});
+
+test("action boundary sends the longest ranked prefix that fits Telegram", async () => {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connpass-action-prefix-"));
+  try {
+    let delivered = "";
+    const reporter = createConnpassActionTelegram({
+      stateDir, wakeId: "wake-connpass-prefix", telegramTarget: "private-target",
+      now: () => new Date("2026-08-27T01:00:00.000Z"),
+      send: async (message) => { delivered = message; return { messageId: "7744" }; },
+    });
+    const candidates = Array.from({ length: 5 }, (_, index) => candidate({
+      event_ref: `connpass-event://event/${920 + index}`,
+      canonical_url: `https://${"a".repeat(700)}.connpass.com/event/${920 + index}/`,
+      title: `${index + 1}-${"t".repeat(158)}`,
+      preference_reason: "r".repeat(500),
+    }));
+    const result = await reporter.report({ candidates });
+    assert.equal(result.telegram_provider_id, "7744");
+    assert.equal(delivered.length <= 4_096, true);
+    assert.match(delivered, /1-tttt/);
+    assert.doesNotMatch(delivered, /5-tttt/);
   } finally { fs.rmSync(stateDir, { recursive: true, force: true }); }
 });

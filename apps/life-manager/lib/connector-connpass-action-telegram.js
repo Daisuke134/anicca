@@ -19,6 +19,11 @@ function safe(value, max) {
   if (!text || text.length > max || /[\x00-\x1f\x7f]|\{\{|\}\}/.test(text) || CREDENTIAL_VALUE.test(text)) invalid();
   return text;
 }
+function publicText(value, max) {
+  const text = String(value == null ? "" : value).replace(/\s+/g, " ").trim();
+  if (!text || text.length > max || /[\x00-\x1f\x7f]|\{\{|\}\}/.test(text)) invalid();
+  return text;
+}
 function integer(value) { return Number.isSafeInteger(value) && value >= 0 ? value : null; }
 function normalize(candidate) {
   if (!candidate || candidate.provider !== "connpass" || !EVENT_REF.test(String(candidate.event_ref || ""))
@@ -29,7 +34,7 @@ function normalize(candidate) {
   return Object.freeze({
     event_ref: candidate.event_ref,
     canonical_url: candidate.canonical_url,
-    title: safe(candidate.title, 500).slice(0, 160),
+    title: publicText(candidate.title, 500).slice(0, 160),
     participation_slot_status: candidate.participation_slot_status,
     lightning_talk_status: candidate.lightning_talk_status,
     participant_limit: integer(candidate.participant_limit),
@@ -37,7 +42,7 @@ function normalize(candidate) {
     waiting_count: integer(candidate.waiting_count),
     application_deadline_at: deadline,
     priority_class: candidate.priority_class,
-    preference_reason: safe(candidate.preference_reason, 500),
+    preference_reason: publicText(candidate.preference_reason, 500),
   });
 }
 function digest(value) { return createHash("sha256").update(JSON.stringify(value), "utf8").digest("hex"); }
@@ -53,7 +58,26 @@ function createConnpassActionTelegram(options = {}) {
   return Object.freeze({
     async report(input = {}) {
       if (!Array.isArray(input.candidates) || input.candidates.length < 1 || input.candidates.length > 10_000) invalid();
-      const candidates = input.candidates.slice(0, 5).map(normalize);
+      const normalized = input.candidates.slice(0, 5).map(normalize);
+      const lines = ["Connector::: connpass候補（手動action boundary）", "自動申込: 0件", ""];
+      const candidates = [];
+      for (const row of normalized) {
+        const index = candidates.length;
+        const block = [
+          `${index + 1}. ${row.title}`,
+          `優先度: ${row.priority_class}`,
+          `理由: ${row.preference_reason}`,
+          `参加枠: ${row.participation_slot_status} / 参加 ${row.accepted_count ?? "不明"}人 / 定員 ${row.participant_limit ?? "不明"}人`,
+          `LT: ${row.lightning_talk_status} / 補欠: ${row.waiting_count ?? "不明"}人`,
+          `締切: ${row.application_deadline_at ?? "provider未提供"}`,
+          row.canonical_url,
+          "",
+        ];
+        if ([...lines, ...block].join("\n").trim().length > 4_096) break;
+        candidates.push(row);
+        lines.push(...block);
+      }
+      if (candidates.length < 1) invalid();
       const snapshot = digest(candidates);
       if (fs.existsSync(file)) {
         const rows = fs.readFileSync(file, "utf8").split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line));
@@ -62,19 +86,7 @@ function createConnpassActionTelegram(options = {}) {
           return Object.freeze({ telegram_provider_id: existing.telegram_provider_id, completion_disposition: "reused" });
         }
       }
-      const lines = ["Connector::: connpass候補（手動action boundary）", "自動申込: 0件", ""];
-      for (const [index, row] of candidates.entries()) lines.push(
-        `${index + 1}. ${row.title}`,
-        `優先度: ${row.priority_class}`,
-        `理由: ${row.preference_reason}`,
-        `参加枠: ${row.participation_slot_status} / 参加 ${row.accepted_count ?? "不明"}人 / 定員 ${row.participant_limit ?? "不明"}人`,
-        `LT: ${row.lightning_talk_status} / 補欠: ${row.waiting_count ?? "不明"}人`,
-        `締切: ${row.application_deadline_at ?? "provider未提供"}`,
-        row.canonical_url,
-        "",
-      );
       const message = lines.join("\n").trim();
-      if (message.length > 4_096) invalid();
       const response = await send(message, { telegramTarget, idempotencyKey: `connpass-action-boundary:${wakeId}:${snapshot}` });
       const providerId = parseOpenClawMessageId(response);
       const observed = now();
