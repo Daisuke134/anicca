@@ -257,6 +257,28 @@ current absence、global dependency ordering、internal/non-executable symlink �
 全て exit 0。Round5 は npm 全体 suite を再実行していない。live launchctl/install/provider mutation
 は行っていない。
 
+## Rethink Fix Round6 (2026-08-27)
+
+Recovery は stage-aware に整理した。normal current rename failure では unchanged current を先に
+validate し、変更済み previous だけを復元して両方を validate。rollback の second-pointer rename
+failure では unchanged previous を保持し、変更済み current だけを復元して両方を validate。
+post-readback failure では current/previous の復元を独立に両方試行し、片側失敗でももう片側を
+skip しない。validation-only launch preflight (`ANICCA_VALIDATE_RELEASE_ONLY=1`) を追加し、wallet/
+daemon effect 前に source/dependency/seal checks だけを完了できる。
+
+Round6 focused GREEN:
+
+```text
+node --test test/agent-economy-control-plane.test.mjs test/install-release-state.test.mjs
+```
+
+結果: 20 tests / pass 20 / fail 0。復元片側失敗でも他方を試行する fixture、absence、preflight の
+`@scope`/uppercase/underscore/nested dependency order、non-executable symlink、依存改変拒否を実測。
+
+追加確認: `py_compile`、対象 shell `bash -n`、focused test `node --check`、`git diff --check` は
+全て exit 0。npm 全体 suite は Round6 では再実行していない。live launchctl/install/provider mutation
+は行っていない。
+
 ## Rethink commit
 
 この追補を前回 commit の上に新規 commit として記録する（amend/push は行わない）。

@@ -309,6 +309,114 @@ test("strict release validation accepts internal source symlinks and rejects rel
   }
 });
 
+test("rollback restoration attempts the second pointer after the first restoration fails", () => {
+  const root = mkdtempSync(join(tmpdir(), "agent-economy-restore-both-"));
+  const repo = join(root, "repo");
+  const loops = join(root, "home", "loops", "life-manager");
+  mkdirSync(join(repo, "bin"), { recursive: true });
+  cpSync(join(REPO_ROOT, "bin", "cut-loop-release.sh"), join(repo, "bin", "cut-loop-release.sh"));
+  const first = writeSealedAgentEconomyRelease(root, { id: "20260827T000000-a1a1a1a1", sha: "a1".repeat(20) });
+  rmSync(join(loops, "current"), { force: true });
+  const second = writeSealedAgentEconomyRelease(root, { id: "20260827T000001-b2b2b2b2", sha: "b2".repeat(20) });
+  rmSync(join(loops, "current"), { force: true });
+  symlinkSync(first.release, join(loops, "current"));
+  symlinkSync(second.release, join(loops, "previous"));
+  try {
+    const result = spawnSync("bash", [join(repo, "bin", "cut-loop-release.sh"), "--rollback"], {
+      cwd: repo,
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        HOME: join(root, "home"),
+        LOOPS_ROOT: loops,
+        LOOPS_TEST_FAIL_ROLLBACK_READBACK: "1",
+        LOOPS_TEST_FAIL_RESTORE_CURRENT: "1",
+      },
+    });
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /rollback restoration failed/u);
+    assert.equal(readlinkSync(join(loops, "current")), second.release);
+    assert.equal(readlinkSync(join(loops, "previous")), second.release);
+  } finally {
+    spawnSync("chmod", ["-R", "u+w", root], { encoding: "utf8" });
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("launch validation-only preflight verifies byte-sorted dependency entries and rejects mutation", () => {
+  const root = mkdtempSync(join(tmpdir(), "agent-economy-launch-preflight-"));
+  const home = join(root, "home");
+  const { release, releaseRoot } = writeSealedAgentEconomyRelease(root);
+  const launchPath = join(release, "skills", "agent-economy", "launch.sh");
+  try {
+    chmodSync(join(release, "skills", "agent-economy"), 0o755);
+    const launchBody = readFileSync(join(REPO_ROOT, "skills", "agent-economy", "launch.sh"), "utf8");
+    chmodSync(launchPath, 0o644);
+    writeFileSync(launchPath, launchBody);
+    chmodSync(launchPath, 0o555);
+    const sourceManifestPath = join(release, "SOURCE-MANIFEST.json");
+    const sourceManifest = JSON.parse(readFileSync(sourceManifestPath, "utf8"));
+    sourceManifest.entries.find((entry) => entry.path === "skills/agent-economy/launch.sh").sha256 = createHash("sha256").update(launchBody).digest("hex");
+    const sourceManifestBody = `${JSON.stringify(sourceManifest)}\n`;
+    chmodSync(sourceManifestPath, 0o644);
+    writeFileSync(sourceManifestPath, sourceManifestBody);
+
+    const dependencyRoot = join(release, "node_modules");
+    chmodSync(dependencyRoot, 0o755);
+    const files = new Map([
+      ["@Scope/child.js", "scope\n"],
+      ["UPPER", "upper\n"],
+      ["_pkg/child", "underscore\n"],
+      ["a/child", "nested\n"],
+      ["a.js", "dot\n"],
+    ]);
+    const dependencyEntries = [];
+    for (const [relative, body] of files) {
+      const absolute = join(dependencyRoot, relative);
+      mkdirSync(join(absolute, ".."), { recursive: true });
+      writeFileSync(absolute, body);
+      chmodSync(absolute, 0o444);
+      dependencyEntries.push({ kind: "file", path: `node_modules/${relative}`, mode: "444", sha256: createHash("sha256").update(body).digest("hex"), target: "-" });
+    }
+    symlinkSync("UPPER", join(dependencyRoot, "nonexec"));
+    dependencyEntries.push({ kind: "symlink", path: "node_modules/nonexec", mode: "555", sha256: "-", target: "UPPER" });
+    const dependencyBody = `${dependencyEntries
+      .sort((a, b) => Buffer.compare(Buffer.from(a.path), Buffer.from(b.path)))
+      .map((entry) => `${entry.kind}\t${entry.path}\t${entry.mode}\t${entry.sha256}\t${entry.target}`)
+      .join("\n")}\n`;
+    const dependencyManifestPath = join(release, "DEPENDENCY-MANIFEST.tsv");
+    chmodSync(dependencyManifestPath, 0o644);
+    writeFileSync(dependencyManifestPath, dependencyBody);
+    const metadataPath = join(release, "RELEASE.json");
+    const metadata = JSON.parse(readFileSync(metadataPath, "utf8"));
+    metadata.source_manifest_sha256 = createHash("sha256").update(sourceManifestBody).digest("hex");
+    metadata.dependency_tree_manifest_sha256 = createHash("sha256").update(dependencyBody).digest("hex");
+    chmodSync(metadataPath, 0o644);
+    writeFileSync(metadataPath, JSON.stringify(metadata) + "\n");
+    chmodSync(sourceManifestPath, 0o444);
+    chmodSync(dependencyManifestPath, 0o444);
+    chmodSync(metadataPath, 0o444);
+    chmodSync(dependencyRoot, 0o555);
+    chmodSync(join(release, "skills", "agent-economy"), 0o555);
+    spawnSync("chmod", ["-R", "a-w", release], { encoding: "utf8" });
+    const resolvedRelease = realpathSync(release);
+    const env = { ...process.env, ANICCA_HOME: home, ANICCA_CODE_ROOT: resolvedRelease, ANICCA_REPO: resolvedRelease, ANICCA_RELEASE_ROOT: releaseRoot, ANICCA_VALIDATE_RELEASE_ONLY: "1" };
+    const preflight = spawnSync("bash", [launchPath], { cwd: REPO_ROOT, env, encoding: "utf8" });
+    assert.equal(preflight.status, 0, `${preflight.stdout}\n${preflight.stderr}`);
+    assert.match(preflight.stdout, /sealed release validation passed/u);
+    const mutate = join(dependencyRoot, "a.js");
+    chmodSync(mutate, 0o644);
+    writeFileSync(mutate, "tampered\n");
+    chmodSync(mutate, 0o444);
+    const rejected = spawnSync("bash", [launchPath], { cwd: REPO_ROOT, env, encoding: "utf8" });
+    assert.notEqual(rejected.status, 0);
+    assert.match(`${rejected.stdout}\n${rejected.stderr}`, /metadata|dependenc|release/i);
+  } finally {
+    spawnSync("chmod", ["-R", "u+w", root], { encoding: "utf8" });
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("pinned runtime paths are explicit: daemon skips mutable self-update/sync and plist writes atomically", () => {
   const daemon = readFileSync(join(REPO_ROOT, "runtime/anicca-daemon.sh"), "utf8");
   assert.match(daemon, /ANICCA_CODE_ROOT/u);

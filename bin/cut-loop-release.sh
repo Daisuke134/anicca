@@ -145,28 +145,49 @@ replace_link() {
     TEST_FAIL_PREVIOUS_USED=1
     return 1
   fi
+  if [ "${RESTORE_PHASE:-0}" -eq 1 ] && [ "${LOOPS_TEST_FAIL_RESTORE_CURRENT:-0}" = "1" ] \
+    && [ "$link" = "$CURRENT" ] && [ "${TEST_FAIL_RESTORE_CURRENT_USED:-0}" -eq 0 ]; then
+    TEST_FAIL_RESTORE_CURRENT_USED=1
+    return 1
+  fi
+  if [ "${RESTORE_PHASE:-0}" -eq 1 ] && [ "${LOOPS_TEST_FAIL_RESTORE_PREVIOUS:-0}" = "1" ] \
+    && [ "$link" = "$PREVIOUS" ] && [ "${TEST_FAIL_RESTORE_PREVIOUS_USED:-0}" -eq 0 ]; then
+    TEST_FAIL_RESTORE_PREVIOUS_USED=1
+    return 1
+  fi
   rm -f "$temporary"
   ln -s "$target" "$temporary" || return 1
   mv -fh "$temporary" "$link" || { rm -f "$temporary"; return 1; }
+}
+
+validate_pointer_snapshot() {
+  local link="$1" present="$2" target="$3"
+  if [ "$present" -eq 1 ]; then
+    [ -L "$link" ] || return 1
+    [ "$(readlink "$link")" = "$target" ] || return 1
+    validate_release_target "$link" "$LOOPS_ROOT" >/dev/null || return 1
+  else
+    [ ! -e "$link" ] || return 1
+  fi
 }
 
 restore_pointer_snapshot() {
   local link="$1" present="$2" target="$3"
   if [ "$present" -eq 1 ]; then
     replace_link "$link" "$target" || return 1
-    [ -L "$link" ] || return 1
-    [ "$(readlink "$link")" = "$target" ] || return 1
-    validate_release_target "$link" "$LOOPS_ROOT" >/dev/null || return 1
   else
     rm -f "$link" || return 1
-    [ ! -e "$link" ] || return 1
   fi
+  validate_pointer_snapshot "$link" "$present" "$target"
 }
 
 [ -n "$NODE_BIN" ] || die "node executable is unavailable"
 REPLACE_LINK_CALLS=0
 TEST_FAIL_CURRENT_USED=0
 TEST_FAIL_PREVIOUS_USED=0
+TEST_FAIL_RESTORE_CURRENT_USED=0
+TEST_FAIL_RESTORE_PREVIOUS_USED=0
+RESTORE_PHASE=0
 acquire_release_lock
 
 if [ "$ROLLBACK" -eq 1 ]; then
@@ -182,10 +203,13 @@ if [ "$ROLLBACK" -eq 1 ]; then
     || die "current and previous already select the same release"
   replace_link "$CURRENT" "$PREVIOUS_TARGET" || die "could not move current release pointer"
   replace_link "$PREVIOUS" "$CURRENT_TARGET" || {
-    if ! restore_pointer_snapshot "$CURRENT" 1 "$CURRENT_TARGET" \
-      || ! restore_pointer_snapshot "$PREVIOUS" 1 "$PREVIOUS_TARGET"; then
-      die "rollback restoration failed after previous swap error"
-    fi
+    RESTORE_PHASE=1
+    RESTORE_RC=0
+    restore_pointer_snapshot "$CURRENT" 1 "$CURRENT_TARGET" || RESTORE_RC=1
+    RESTORE_PHASE=0
+    validate_pointer_snapshot "$CURRENT" 1 "$CURRENT_TARGET" || RESTORE_RC=1
+    validate_pointer_snapshot "$PREVIOUS" 1 "$PREVIOUS_TARGET" || RESTORE_RC=1
+    [ "$RESTORE_RC" -eq 0 ] || die "rollback restoration failed after previous swap error"
     die "rollback previous pointer swap failed"
   }
   POINTERS_OK=1
@@ -197,10 +221,14 @@ if [ "$ROLLBACK" -eq 1 ]; then
   validate_release_target "$CURRENT" "$LOOPS_ROOT" >/dev/null || POINTERS_OK=0
   validate_release_target "$PREVIOUS" "$LOOPS_ROOT" >/dev/null || POINTERS_OK=0
   if [ "$POINTERS_OK" -ne 1 ]; then
-    if ! restore_pointer_snapshot "$CURRENT" 1 "$CURRENT_TARGET" \
-      || ! restore_pointer_snapshot "$PREVIOUS" 1 "$PREVIOUS_TARGET"; then
-      die "rollback restoration failed"
-    fi
+    RESTORE_PHASE=1
+    RESTORE_RC=0
+    restore_pointer_snapshot "$CURRENT" 1 "$CURRENT_TARGET" || RESTORE_RC=1
+    restore_pointer_snapshot "$PREVIOUS" 1 "$PREVIOUS_TARGET" || RESTORE_RC=1
+    RESTORE_PHASE=0
+    validate_pointer_snapshot "$CURRENT" 1 "$CURRENT_TARGET" || RESTORE_RC=1
+    validate_pointer_snapshot "$PREVIOUS" 1 "$PREVIOUS_TARGET" || RESTORE_RC=1
+    [ "$RESTORE_RC" -eq 0 ] || die "rollback restoration failed"
     die "rollback readback failed"
   fi
   echo "current -> $(readlink "$CURRENT") (rollback)"
@@ -431,10 +459,17 @@ fi
 if ! replace_link "$CURRENT" "$DEST"; then
   OLD_CURRENT_PRESENT=0
   [ -n "${OLD_CURRENT:-}" ] && OLD_CURRENT_PRESENT=1
-  if ! restore_pointer_snapshot "$CURRENT" "$OLD_CURRENT_PRESENT" "${OLD_CURRENT:-}" \
-    || ! restore_pointer_snapshot "$PREVIOUS" "$OLD_PREVIOUS_PRESENT" "$OLD_PREVIOUS"; then
-    die "current swap restoration failed"
-  fi
+  # current rename failed, so current is unchanged; only previous was changed. Validate current,
+  # restore previous first, then validate both snapshots without attempting an unnecessary current
+  # rewrite that could obscure the original failure stage.
+  validate_pointer_snapshot "$CURRENT" "$OLD_CURRENT_PRESENT" "${OLD_CURRENT:-}" || die "current swap restoration failed"
+  RESTORE_PHASE=1
+  restore_pointer_snapshot "$PREVIOUS" "$OLD_PREVIOUS_PRESENT" "$OLD_PREVIOUS" \
+    || { RESTORE_PHASE=0; die "current swap restoration failed"; }
+  RESTORE_PHASE=0
+  validate_pointer_snapshot "$CURRENT" "$OLD_CURRENT_PRESENT" "${OLD_CURRENT:-}" \
+    && validate_pointer_snapshot "$PREVIOUS" "$OLD_PREVIOUS_PRESENT" "$OLD_PREVIOUS" \
+    || die "current swap restoration failed"
   die "current release pointer swap failed"
 fi
 POINTERS_OK=1
@@ -452,10 +487,14 @@ fi
 if [ "$POINTERS_OK" -ne 1 ]; then
   OLD_CURRENT_PRESENT=0
   [ -n "${OLD_CURRENT:-}" ] && OLD_CURRENT_PRESENT=1
-  if ! restore_pointer_snapshot "$CURRENT" "$OLD_CURRENT_PRESENT" "${OLD_CURRENT:-}" \
-    || ! restore_pointer_snapshot "$PREVIOUS" "$OLD_PREVIOUS_PRESENT" "$OLD_PREVIOUS"; then
-    die "release pointer restoration failed"
-  fi
+  RESTORE_PHASE=1
+  RESTORE_RC=0
+  restore_pointer_snapshot "$CURRENT" "$OLD_CURRENT_PRESENT" "${OLD_CURRENT:-}" || RESTORE_RC=1
+  restore_pointer_snapshot "$PREVIOUS" "$OLD_PREVIOUS_PRESENT" "$OLD_PREVIOUS" || RESTORE_RC=1
+  RESTORE_PHASE=0
+  validate_pointer_snapshot "$CURRENT" "$OLD_CURRENT_PRESENT" "${OLD_CURRENT:-}" || RESTORE_RC=1
+  validate_pointer_snapshot "$PREVIOUS" "$OLD_PREVIOUS_PRESENT" "$OLD_PREVIOUS" || RESTORE_RC=1
+  [ "$RESTORE_RC" -eq 0 ] || die "release pointer restoration failed"
   die "release pointer readback failed"
 fi
 
