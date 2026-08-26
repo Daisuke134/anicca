@@ -7,11 +7,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 
 from contracts import (  # noqa: E402
     AuthorizationReceipt,
+    ContractValidationError,
     ContractReceipt,
     DeliveryReceipt,
+    PaymentReceipt,
     QAReceipt,
     parse_contract,
 )
+from ledger import normalize_event  # noqa: E402
 
 
 class ContractReceiptTests(unittest.TestCase):
@@ -85,6 +88,33 @@ class ContractReceiptTests(unittest.TestCase):
 
         self.assertIsInstance(receipt, DeliveryReceipt)
         self.assertEqual(receipt.qa_external_id, "qa-012")
+
+    def test_payment_receipt_records_verified_net(self):
+        value = {
+            "schema_version": 1,
+            "record_type": "payment_receipt",
+            "platform": "mercor",
+            "work_external_id": "work-123",
+            "payment_external_id": "payment-678",
+            "receipt_id": "receipt-901",
+            "gross_amount_minor": 10000,
+            "fee_amount_minor": 1000,
+            "cost_amount_minor": 500,
+            "net_amount_minor": 8500,
+            "currency": "USD",
+            "status": "settled",
+            "occurred_at": "2026-08-26T07:20:00Z",
+            "observed_at": "2026-08-26T07:21:00Z",
+        }
+
+        receipt = parse_contract(value)
+        self.assertIsInstance(receipt, PaymentReceipt)
+        self.assertEqual(receipt.net_amount_minor, 8500)
+        self.assertEqual(normalize_event(value).amount_minor, 8500)
+
+        value["net_amount_minor"] = 9000
+        with self.assertRaisesRegex(ContractValidationError, "net_amount_minor"):
+            parse_contract(value)
 
 
 if __name__ == "__main__":

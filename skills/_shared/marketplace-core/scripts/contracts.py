@@ -78,7 +78,10 @@ class PaymentReceipt:
     work_external_id: str
     payment_external_id: str
     receipt_id: str
-    amount_minor: int
+    gross_amount_minor: int
+    fee_amount_minor: int
+    cost_amount_minor: int
+    net_amount_minor: int
     currency: str
     status: str
     occurred_at: str
@@ -455,6 +458,21 @@ def _opportunity_semantic_errors(record: Mapping[str, Any]) -> Tuple[str, ...]:
     return tuple(errors)
 
 
+def _payment_semantic_errors(record: Mapping[str, Any]) -> Tuple[str, ...]:
+    values = [
+        record.get("gross_amount_minor"),
+        record.get("fee_amount_minor"),
+        record.get("cost_amount_minor"),
+        record.get("net_amount_minor"),
+    ]
+    if not all(isinstance(value, int) and not isinstance(value, bool) for value in values):
+        return ()
+    gross, fee, cost, net = values
+    if net != gross - fee - cost:
+        return ("$.net_amount_minor: must_equal_gross_minus_fee_and_cost",)
+    return ()
+
+
 def _raise_validation(errors: Sequence[str]) -> None:
     if errors:
         raise ContractValidationError(errors)
@@ -470,6 +488,8 @@ def validate_contract(value: Mapping[str, object]) -> None:
     errors = list(_schema_errors(copied))
     if copied.get("record_type") == "opportunity":
         errors.extend(_opportunity_semantic_errors(copied))
+    elif copied.get("record_type") == "payment_receipt":
+        errors.extend(_payment_semantic_errors(copied))
     _raise_validation(errors)
 
 

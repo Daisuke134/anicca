@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://anicca.ai/schemas/marketplace/payment-v1.json",
+  "title": "MarketplacePaymentReceipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "record_type",
+    "platform",
+    "work_external_id",
+    "payment_external_id",
+    "receipt_id",
+    "gross_amount_minor",
+    "fee_amount_minor",
+    "cost_amount_minor",
+    "net_amount_minor",
+    "currency",
+    "status",
+    "occurred_at",
+    "observed_at"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "record_type": { "const": "payment_receipt" },
+    "platform": { "type": "string", "pattern": "^[a-z][a-z0-9_-]{1,31}$(?![\\s\\S])" },
+    "work_external_id": { "type": "string", "minLength": 1, "maxLength": 512 },
+    "payment_external_id": { "type": "string", "minLength": 1, "maxLength": 512 },
+    "receipt_id": { "type": "string", "minLength": 1, "maxLength": 512 },
+    "gross_amount_minor": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+    "fee_amount_minor": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+    "cost_amount_minor": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+    "net_amount_minor": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+    "currency": { "type": "string", "pattern": "^[A-Z]{3}$(?![\\s\\S])" },
+    "status": { "const": "settled" },
+    "occurred_at": { "type": "string", "format": "date-time" },
+    "observed_at": { "type": "string", "format": "date-time" }
+  }
+}
