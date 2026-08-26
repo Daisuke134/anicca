@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -74,18 +75,71 @@ def solve(website_url: str, website_key: str, timeout: int) -> str:
     raise RuntimeError("CAPSOLVER_TIMEOUT")
 
 
+def inject(target_id: str, token: str) -> dict[str, object]:
+    cdp_path = Path.cwd() / "skills" / "browser" / "scripts" / "cdp.py"
+    spec = importlib.util.spec_from_file_location("fundraiser_cdp", cdp_path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError("CDP_HELPER_UNAVAILABLE")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    encoded = json.dumps(token)
+    source = f"""
+    (() => {{
+      const token = {encoded};
+      let textareas = 0;
+      let callbacks = 0;
+      document.querySelectorAll('textarea[name="g-recaptcha-response"]').forEach((element) => {{
+        element.value = token;
+        element.innerHTML = token;
+        element.dispatchEvent(new Event('input', {{bubbles: true}}));
+        element.dispatchEvent(new Event('change', {{bubbles: true}}));
+        textareas += 1;
+      }});
+      const seen = new WeakSet();
+      const visit = (value, depth) => {{
+        if (!value || typeof value !== 'object' || depth > 7 || seen.has(value)) return;
+        seen.add(value);
+        for (const key of Object.keys(value)) {{
+          let child;
+          try {{ child = value[key]; }} catch (_) {{ continue; }}
+          if (typeof child === 'function' && key.toLowerCase() === 'callback') {{
+            try {{ child(token); callbacks += 1; }} catch (_) {{}}
+          }} else if (child && typeof child === 'object') {{
+            visit(child, depth + 1);
+          }}
+        }}
+      }};
+      visit(window.___grecaptcha_cfg, 0);
+      return {{textareas, callbacks}};
+    }})()
+    """
+    result = module.evaluate(target_id, source)
+    if not isinstance(result, dict) or int(result.get("textareas", 0)) < 1:
+        raise RuntimeError("RECAPTCHA_TEXTAREA_UNAVAILABLE")
+    return result
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--website-url", required=True)
     parser.add_argument("--website-key", required=True)
+    parser.add_argument("--target-id")
     parser.add_argument("--timeout", type=int, default=90)
     args = parser.parse_args()
     try:
         token = solve(args.website_url, args.website_key, args.timeout)
+        if args.target_id:
+            result = inject(args.target_id, token)
     except Exception as error:
         print(f"capsolver: {error}", file=sys.stderr)
         return 1
-    print(token)
+    if args.target_id:
+        print(
+            "CAPSOLVER_INJECTED=true "
+            f"TEXTAREAS={result['textareas']} CALLBACKS={result['callbacks']}"
+        )
+    else:
+        print(token)
     return 0
 
 

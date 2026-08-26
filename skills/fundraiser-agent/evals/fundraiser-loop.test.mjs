@@ -238,6 +238,8 @@ test("production contract runs every minute and maximizes real applications", ()
   assert.match(dailyPrompt, /there is no `upload` command/);
   assert.match(dailyPrompt, /Do not reopen the same video, voice, binding-term/);
   assert.match(dailyPrompt, /solve-recaptcha-v2\.py/);
+  assert.match(dailyPrompt, /--target-id "\$TARGET_ID"/);
+  assert.match(dailyPrompt, /Require `CAPSOLVER_INJECTED=true`/);
   assert.match(dailyPrompt, /textarea\[name="g-recaptcha-response"\]/);
   assert.match(dailyPrompt, /Never include the credential or solution token in logs/);
   assert.match(dailyPrompt, /never print, dump, enumerate, pretty-print/);

@@ -240,13 +240,14 @@ For every queued candidate until the execution window ends:
    installed supported route cannot solve is an unsolved CAPTCHA checkpoint. The
    installed CapSolver route is
    `python3 skills/fundraiser-agent/runtime/solve-recaptcha-v2.py --website-url
-   "$CURRENT_URL" --website-key "$SITE_KEY"`; it reads the owner credential from
+   "$CURRENT_URL" --website-key "$SITE_KEY" --target-id "$TARGET_ID"`; it reads the owner credential from
    `~/.openclaw/.env` without printing it. Capture the site key from the rendered
-   reCAPTCHA iframe `k` query parameter, capture the returned token in a shell
-   variable without echoing it, set every `textarea[name="g-recaptcha-response"]`
-   value in the same live page, dispatch `input` and `change`, invoke an exposed
-   widget callback when present, and then use one trusted rendered GET STARTED
-   interaction. Never include the credential or solution token in logs, receipts,
+   reCAPTCHA iframe `k` query parameter and call that exact command once. The helper
+   solves and injects the token into every `textarea[name="g-recaptcha-response"]`,
+   dispatches `input` and `change`, and invokes an exposed widget callback without
+   returning the token to the shell. Require `CAPSOLVER_INJECTED=true`, then use one
+   trusted rendered GET STARTED interaction. Do not add shell token parsing or
+   construct token-bearing JavaScript. Never include the credential or solution token in logs, receipts,
    screenshots, Telegram, or model output. Checkpoint only if this helper returns
    a concrete error or the provider rejects the injected response.
    Generate ordinary team, market, and product prose from the startup context;
