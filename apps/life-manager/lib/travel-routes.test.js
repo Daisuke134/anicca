@@ -95,20 +95,20 @@ test("acceptRouteResults is operational with either provider and exposes degrada
 });
 
 // ── NEVER-LATE ordering (fix 1+2 from the adversarial gate) ──────────────────────────────────────
-test("both modes resolve → directionsMinutes returns the LARGER (never-late, not transit-first)", async () => {
+test("both modes resolve → directionsMinutes adapter uses the structured legacy-transit route", async () => {
   const restore = stubFetch({ transit: transitOK(12), drive: driveOK(45) });
   try {
     const now = Date.parse("2026-06-21T00:00:00Z");
     const future = Date.parse("2026-06-21T09:00:00Z");
-    assert.equal(await directionsMinutes("A", "B", "k", future, now), 45); // 45 (drive), NOT 12 (transit)
+    assert.equal(await directionsMinutes("A", "B", "k", future, now), 12); // one legacy Transit fallback request
   } finally { restore(); }
 });
 
-test("transit returns empty routes[] → null path, drive used (no crash)", async () => {
+test("transit returns empty routes[] → structured Google fallback has no route", async () => {
   const restore = stubFetch({ transit: { status: "OK", routes: [] }, drive: driveOK(30) });
   try {
     const now = Date.parse("2026-06-21T00:00:00Z");
-    assert.equal(await directionsMinutes("A", "B", "k", now + 3600000, now), 30);
+    assert.equal(await directionsMinutes("A", "B", "k", now + 3600000, now), null);
   } finally { restore(); }
 });
 

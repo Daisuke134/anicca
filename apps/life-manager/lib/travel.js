@@ -312,7 +312,7 @@ async function directionsRoute(src, dst, mapsKey, anchorAtMs = null, nowMs = Dat
     try {
       const value = googleRouteFn
         ? await googleRouteFn(src, dst, mapsKey, query.anchorAtMs, call.nowMs, call.departureMode)
-        : options._legacyGoogleCompatibility || options._directionsMinutesGoogle
+        : options._directionsMinutesGoogle
           ? await googleMinutesFn(src, dst, mapsKey, query.anchorAtMs, call.nowMs, call.departureMode)
           : await (call.departureMode
             ? legacyTransitMinutes(src, dst, mapsKey, null, call.nowMs, query.anchorAtMs)
@@ -359,10 +359,7 @@ async function directionsRoute(src, dst, mapsKey, anchorAtMs = null, nowMs = Dat
 // Existing callers consume integer minutes. Keep this as a thin adapter over the structured route so
 // Calendar autofill retains its current contract while newer consumers can use provider facts.
 async function directionsMinutes(src, dst, mapsKey, anchorAtMs = null, nowMs = Date.now(), departureMode = false, opts = {}) {
-  // Existing integer-minute callers retain the legacy max(transit, drive) Google behaviour. The new
-  // structured directionsRoute path intentionally uses one legacy Transit request for its fallback.
-  const adapterOpts = { ...(opts && typeof opts === "object" ? opts : {}), _legacyGoogleCompatibility: true };
-  const route = await directionsRoute(src, dst, mapsKey, anchorAtMs, nowMs, departureMode, adapterOpts);
+  const route = await directionsRoute(src, dst, mapsKey, anchorAtMs, nowMs, departureMode, opts);
   return minutesFromSeconds(routeDurationSeconds(route));
 }
 
