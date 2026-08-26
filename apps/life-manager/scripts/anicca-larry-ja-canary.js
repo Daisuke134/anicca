@@ -37,14 +37,15 @@ const TELEGRAM_TOKEN_REF = "secret://telegram/bot-token";
 const CHAT_REF = "telegram-chat://owner";
 const OBJECT_REF = /^object:\/\/sha256\/[0-9a-f]{64}$/;
 const ACCOUNT_REF = "account://instagram/@ani.cca1234";
+const JA_LARRY_PRODUCTION_SLOTS = Object.freeze(["10:30", "16:30", "22:30"]);
 const EN_AFFIRMATION_PRODUCTION_SLOTS = Object.freeze(["10:00", "15:00", "20:00"]);
 const EN_SLIDESHOW_PRODUCTION_SLOTS = Object.freeze(["09:00", "15:00", "21:00"]);
 
 const JA_RUNNER_LANE = JA_LANE;
 const EN_RUNNER_LANE = EN_AFFIRMATION_LANE;
 const TIKTOK_SLIDESHOW_RUNNER_LANE = EN_SLIDESHOW_TIKTOK_LANE;
-const COMMAND_LANES = Object.freeze({ run: JA_RUNNER_LANE, "run-en-affirmation": EN_RUNNER_LANE, "run-en-affirmation-production": EN_RUNNER_LANE, "run-en-slideshow-tiktok": TIKTOK_SLIDESHOW_RUNNER_LANE, "run-en-slideshow-tiktok-production": TIKTOK_SLIDESHOW_RUNNER_LANE });
-const PRODUCTION_SLOTS = Object.freeze({ "run-en-affirmation-production": EN_AFFIRMATION_PRODUCTION_SLOTS, "run-en-slideshow-tiktok-production": EN_SLIDESHOW_PRODUCTION_SLOTS });
+const COMMAND_LANES = Object.freeze({ run: JA_RUNNER_LANE, "run-ja-larry-production": JA_RUNNER_LANE, "run-en-affirmation": EN_RUNNER_LANE, "run-en-affirmation-production": EN_RUNNER_LANE, "run-en-slideshow-tiktok": TIKTOK_SLIDESHOW_RUNNER_LANE, "run-en-slideshow-tiktok-production": TIKTOK_SLIDESHOW_RUNNER_LANE });
+const PRODUCTION_SLOTS = Object.freeze({ "run-ja-larry-production": JA_LARRY_PRODUCTION_SLOTS, "run-en-affirmation-production": EN_AFFIRMATION_PRODUCTION_SLOTS, "run-en-slideshow-tiktok-production": EN_SLIDESHOW_PRODUCTION_SLOTS });
 
 function required(value, label) {
   const text = String(value == null ? "" : value).trim();
@@ -67,7 +68,7 @@ function parseArgs(argv = []) {
   if (lane) {
     return { command: argv[0], slot: exactInstant(argv[2], `${lane.name || "Larry"} canary slot`) };
   }
-  throw new Error("usage: anicca-larry-ja-canary.js run|run-en-affirmation|run-en-affirmation-production|run-en-slideshow-tiktok|run-en-slideshow-tiktok-production --slot <exact ISO instant>");
+  throw new Error("usage: anicca-larry-ja-canary.js run|run-ja-larry-production|run-en-affirmation|run-en-affirmation-production|run-en-slideshow-tiktok|run-en-slideshow-tiktok-production --slot <exact ISO instant>");
 }
 
 function parseMediaRefs(value, lane = JA_RUNNER_LANE) {
@@ -201,6 +202,10 @@ function publicationLedgerPath(dataDir, tenantId, lane = JA_RUNNER_LANE) {
 
 function enAffirmationProductionSlot(nowMs) {
   return marketingVideoDueSlot(nowMs, "Asia/Tokyo", EN_AFFIRMATION_PRODUCTION_SLOTS);
+}
+
+function jaLarryProductionSlot(nowMs) {
+  return marketingVideoDueSlot(nowMs, "Asia/Tokyo", JA_LARRY_PRODUCTION_SLOTS);
 }
 
 function enSlideshowProductionSlot(nowMs) {
@@ -338,4 +343,4 @@ if (require.main === module) {
   runAniccaCarouselCanary(process.argv.slice(2)).then((result) => process.stdout.write(`${JSON.stringify(result)}\n`)).catch((error) => { process.stderr.write(`${error.message}\n`); process.exitCode = 1; });
 }
 
-module.exports = { ACCOUNT_ID, EN_AFFIRMATION_LANE, EN_AFFIRMATION_PRODUCTION_SLOTS, EN_SLIDESHOW_PRODUCTION_SLOTS, EN_SLIDESHOW_TIKTOK_LANE, INTEGRATION_REF, LANE, enAffirmationProductionSlot, enSlideshowProductionSlot, parseArgs, runAniccaCarouselCanary, runAniccaEnAffirmationInstagramCanary, runAniccaEnSlideshowTikTokCanary, runAniccaLarryJaCanary, verifyNativeObject };
+module.exports = { ACCOUNT_ID, EN_AFFIRMATION_LANE, EN_AFFIRMATION_PRODUCTION_SLOTS, EN_SLIDESHOW_PRODUCTION_SLOTS, EN_SLIDESHOW_TIKTOK_LANE, INTEGRATION_REF, JA_LARRY_PRODUCTION_SLOTS, LANE, enAffirmationProductionSlot, enSlideshowProductionSlot, jaLarryProductionSlot, parseArgs, runAniccaCarouselCanary, runAniccaEnAffirmationInstagramCanary, runAniccaEnSlideshowTikTokCanary, runAniccaLarryJaCanary, verifyNativeObject };

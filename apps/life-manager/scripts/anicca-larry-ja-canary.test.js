@@ -20,6 +20,7 @@ const {
   EN_SLIDESHOW_TIKTOK_LANE: TIKTOK_SLIDESHOW_RUNNER_LANE,
   enAffirmationProductionSlot,
   enSlideshowProductionSlot,
+  jaLarryProductionSlot,
   parseArgs,
   runAniccaCarouselCanary,
   runAniccaEnAffirmationInstagramCanary,
@@ -364,6 +365,31 @@ test("EN slideshow production resolves the three exact JST daily slots", () => {
   assert.equal(enSlideshowProductionSlot(Date.parse("2026-08-26T00:01:00.000Z")), "2026-08-26T00:00:00.000Z");
   assert.equal(enSlideshowProductionSlot(Date.parse("2026-08-26T06:01:00.000Z")), "2026-08-26T06:00:00.000Z");
   assert.equal(enSlideshowProductionSlot(Date.parse("2026-08-26T12:01:00.000Z")), "2026-08-26T12:00:00.000Z");
+});
+
+test("JA Larry production resolves only 10:30, 16:30, and 22:30 JST", () => {
+  assert.deepEqual(parseArgs(["run-ja-larry-production"]), { command: "run-ja-larry-production", slot: null });
+  assert.equal(jaLarryProductionSlot(Date.parse("2026-08-26T01:31:00.000Z")), "2026-08-26T01:30:00.000Z");
+  assert.equal(jaLarryProductionSlot(Date.parse("2026-08-26T07:31:00.000Z")), "2026-08-26T07:30:00.000Z");
+  assert.equal(jaLarryProductionSlot(Date.parse("2026-08-26T13:31:00.000Z")), "2026-08-26T13:30:00.000Z");
+});
+
+test("armed JA Larry production publishes exact carousel without mutating controls", async () => {
+  const value = fixture();
+  const liveMarketingDir = path.join(os.homedir(), ".local", "state", "life-manager", "marketing");
+  const testMarketingDir = path.join(value.dataDir, "marketing"); fs.mkdirSync(testMarketingDir, { recursive: true });
+  for (const name of ["lane-manifest.json", "publication-effect-fence.json"]) fs.copyFileSync(path.join(liveMarketingDir, name), path.join(testMarketingDir, name));
+  const manifestPath = path.join(value.dataDir, "marketing", "lane-manifest.json");
+  const before = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+  const rows = before.lanes.map((row) => ({ ...row, verified: true, ...(row.integration_id === "cmq3sq7mc000eqp0y7azfm8yk" ? { lane_state: "production-armed", production_armed: true, target_daily_limit: 3 } : {}) }));
+  writeMarketingLaneManifest(createMarketingLaneManifest({ tenant_id: before.tenant_id, integrations: rows, holds: before.holds.map((row) => ({ ...row, verified: true })) }, { tenantId: before.tenant_id, assignments: rows }), { dataDir: value.dataDir });
+  const controls = { manifest: fs.readFileSync(manifestPath), fence: fs.readFileSync(path.join(value.dataDir, "marketing", "publication-effect-fence.json")) };
+  const result = await runAniccaCarouselCanary(["run-ja-larry-production"], { env: value.env, objectStore: value.objectStore, runDistribution: providerCalls([]), sendTelegram: async () => ({ ok: true, result: { message_id: 45 } }), now: () => "2026-08-26T08:01:00.000Z" });
+  assert.equal(result.slot, "2026-08-26T07:30:00.000Z");
+  assert.equal(result.publication.created, true);
+  assert.deepEqual(result.telegram, { created: true, held: false, message_id: 45 });
+  assert.deepEqual(fs.readFileSync(manifestPath), controls.manifest);
+  assert.deepEqual(fs.readFileSync(path.join(value.dataDir, "marketing", "publication-effect-fence.json")), controls.fence);
 });
 
 test("armed EN slideshow production sends exact Postiz photo proof and Telegram once", async () => {
