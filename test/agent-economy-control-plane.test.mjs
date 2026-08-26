@@ -692,9 +692,14 @@ test("contract-only: release cutter installs locked dependencies in the release 
   const root = mkdtempSync(join(tmpdir(), "agent-economy-release-deps-"));
   const repo = join(root, "repo");
   const remote = join(root, "remote.git");
-    const loops = join(root, "loops", "life-manager");
+  const loops = join(root, "loops", "life-manager");
+  const collisionLoops = join(root, "collision-loops", "life-manager");
   mkdirSync(join(repo, "bin"), { recursive: true });
-  cpSync(join(REPO_ROOT, "bin", "cut-loop-release.sh"), join(repo, "bin", "cut-loop-release.sh"));
+  const cutter = readFileSync(join(REPO_ROOT, "bin", "cut-loop-release.sh"), "utf8");
+  const frozenTimestamp = "20260827T123456";
+  const fixtureCutter = cutter.replace("$(date +%Y%m%dT%H%M%S)", frozenTimestamp);
+  assert.notEqual(fixtureCutter, cutter, "fixture must force a same-second release collision");
+  writeFileSync(join(repo, "bin", "cut-loop-release.sh"), fixtureCutter);
   writeFileSync(join(repo, "package.json"), JSON.stringify({
     name: "release-fixture", version: "1.0.0", type: "module", dependencies: { viem: "file:viem-1.0.0.tgz" },
   }));
@@ -780,6 +785,26 @@ test("contract-only: release cutter installs locked dependencies in the release 
     assert.match(metadata.runtime_versions.npm, /^\d+(?:\.\d+){2}/u);
     assert.match(metadata.runtime_versions.node, /^v\d+/u);
     assertSealedRelease(releaseRoot);
+    const collisionEnv = { ...process.env, HOME: root, LOOPS_ROOT: collisionLoops, LOOPS_KEEP_RELEASES: "10" };
+    const firstCollision = spawnSync("bash", [join(repo, "bin", "cut-loop-release.sh"), "HEAD"], {
+      cwd: repo, encoding: "utf8", env: collisionEnv,
+    });
+    assert.equal(firstCollision.status, 0, `${firstCollision.stdout}\n${firstCollision.stderr}`);
+    const firstCollisionTarget = readlinkSync(join(collisionLoops, "current"));
+    const secondCollision = spawnSync("bash", [join(repo, "bin", "cut-loop-release.sh"), "HEAD"], {
+      cwd: repo, encoding: "utf8", env: collisionEnv,
+    });
+    assert.equal(secondCollision.status, 0, `${secondCollision.stdout}\n${secondCollision.stderr}`);
+    const secondCollisionTarget = readlinkSync(join(collisionLoops, "current"));
+    assert.match(secondCollisionTarget.split("/").at(-1), new RegExp(`^${frozenTimestamp}-\\d+-[0-9a-f]{8}$`, "u"));
+    const collisionMetadata = JSON.parse(readFileSync(join(secondCollisionTarget, "RELEASE.json"), "utf8"));
+    assert.equal(collisionMetadata.release_id, secondCollisionTarget.split("/").at(-1));
+    const collisionRollback = spawnSync("bash", [join(repo, "bin", "cut-loop-release.sh"), "--rollback"], {
+      cwd: repo, encoding: "utf8", env: collisionEnv,
+    });
+    assert.equal(collisionRollback.status, 0, `${collisionRollback.stdout}\n${collisionRollback.stderr}`);
+    assert.equal(readlinkSync(join(collisionLoops, "current")), firstCollisionTarget);
+    assert.equal(readlinkSync(join(collisionLoops, "previous")), secondCollisionTarget);
     assert.equal(existsSync(join(repo, "node_modules")), false, "fixture source has no dependency install");
     const binLink = join(releaseRoot, "node_modules", ".bin", "viem-cli");
     assert.equal(lstatSync(binLink).isSymbolicLink(), true, "npm must create an internal .bin symlink");

@@ -413,11 +413,13 @@ else
   die "$SHORT exists only locally -- push it before cutting a release"
 fi
 
-DEST="$RELEASES/$(date +%Y%m%dT%H%M%S)-$SHORT"
+RELEASE_TIMESTAMP="$(date +%Y%m%dT%H%M%S)"
+DEST="$RELEASES/$RELEASE_TIMESTAMP-$SHORT"
 # Two safe release cuts can happen in one wall-clock second (for example, a deployment test followed
-# immediately by a rollback fixture). Keep the timestamp-readable id while avoiding a collision.
+# immediately by a rollback fixture). Keep the timestamp-readable id and the short SHA suffix that
+# strict release identity validates, while inserting the PID only between them to avoid a collision.
 if [ -e "$DEST" ]; then
-  DEST="${DEST}-$$"
+  DEST="$RELEASES/$RELEASE_TIMESTAMP-$$-$SHORT"
 fi
 [ -e "$DEST" ] && die "$DEST already exists"
 # Only the release dir: each loop's state dir belongs to that loop's job, and creating a shared
