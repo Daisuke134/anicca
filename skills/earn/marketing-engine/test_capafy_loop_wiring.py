@@ -73,6 +73,13 @@ class CapafyLoopWiringTest(unittest.TestCase):
         self.assertIn("Do not select or substitute another item", text)
         self.assertIn("$(printf '%s' \"$INV\" | tail -1)", text)
 
+    def test_capafy_drainer_uses_a_browser_task_class_that_fits_cp1(self):
+        task_class = task_class_of(CAPAFY_DRAINER)
+        config = json.loads(CONFIG.read_text(encoding="utf-8"))
+        timeout = int(config["task_classes"][task_class].get(
+            "timeout_seconds", config["timeout_seconds"]))
+        self.assertGreaterEqual(timeout, MIN_TIMEOUT_SECONDS)
+
     def test_run_agent_accepts_every_task_class_its_consumers_declare(self):
         # run_agent.sh keeps its own task-class whitelist, so a consumer can be
         # retargeted to a class the runner supports and still die at rc=2 on the
