@@ -711,7 +711,22 @@ async def discover_affordable_proposal(
 
 def _read_evidence(path: Path, expected_url: str) -> tuple[str, str, list[dict[str, Any]]]:
     value = json.loads(path.read_text(encoding="utf-8"))
-    if value.get("navigated_ok") is not True or value.get("url") != expected_url:
+    observed_url = value.get("url")
+    url_matches = observed_url == expected_url
+    if not url_matches and expected_url == MESSAGES_URL and isinstance(observed_url, str):
+        try:
+            expected = urlsplit(expected_url)
+            observed = urlsplit(observed_url)
+        except ValueError:
+            observed = None
+        if observed is not None:
+            url_matches = (
+                observed.scheme == expected.scheme
+                and observed.netloc == expected.netloc
+                and re.fullmatch(r"/ab/messages/rooms/room_[^/?#]+", observed.path)
+                is not None
+            )
+    if value.get("navigated_ok") is not True or not url_matches:
         raise ValueError("upwork_readback_incomplete")
     text = value.get("rendered_text")
     if not isinstance(text, str) or not text.strip():

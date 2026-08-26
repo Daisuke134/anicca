@@ -150,6 +150,44 @@ def test_independent_public_job_details_are_read_concurrently_in_source_order(tm
     assert all(detail is not None for _, detail in results)
 
 
+def test_read_evidence_allows_only_canonical_message_room_redirect(tmp_path):
+    def evidence(name, url):
+        path = tmp_path / name
+        path.write_text(json.dumps({
+            "navigated_ok": True,
+            "url": url,
+            "rendered_text": "Messages",
+            "rendered_links": [],
+        }), encoding="utf-8")
+        return path
+
+    redirected = (
+        "https://www.upwork.com/ab/messages/rooms/room_123"
+        "?companyReference=abc&sidebar=true"
+    )
+    assert provider._read_evidence(
+        evidence("redirect.json", redirected), provider.MESSAGES_URL,
+    )[0] == "Messages"
+
+    rejected_redirects = [
+        "https://evil.example/ab/messages/rooms/room_123?sidebar=true",
+        "https://www.upwork.com/ab/messages/room_123?sidebar=true",
+        "https://www.upwork.com/ab/messages/rooms/room_",
+        "https://www.upwork.com/ab/messages/rooms/room_123/extra",
+    ]
+    for index, url in enumerate(rejected_redirects):
+        with pytest.raises(ValueError, match="upwork_readback_incomplete"):
+            provider._read_evidence(
+                evidence(f"rejected-{index}.json", url), provider.MESSAGES_URL,
+            )
+
+    with pytest.raises(ValueError, match="upwork_readback_incomplete"):
+        provider._read_evidence(
+            evidence("other-expected-url.json", provider.SEARCH_URL + "/room_123"),
+            provider.SEARCH_URL,
+        )
+
+
 def test_parses_zero_connects_without_inventing_a_reward():
     state = parse_connects(
         "Connects History\nMy balance\n0 Connects\nNo Connects transactions.\n"
