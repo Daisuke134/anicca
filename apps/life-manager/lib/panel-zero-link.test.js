@@ -33,11 +33,11 @@ async function withPanelServer(opts, run) {
   }
 }
 
-function signedInitData(botToken, { userId = 123, authDate = 1784678400, queryId = "fixture-query", signature } = {}) {
+function signedInitData(botToken, { userId = 123, authDate = 1784678400, queryId = "fixture-query", signature, firstName = "Fixture", lastName = "" } = {}) {
   const fields = {
     auth_date: String(authDate),
     query_id: queryId,
-    user: JSON.stringify({ id: userId, first_name: "Fixture" }),
+    user: JSON.stringify({ id: userId, first_name: firstName, last_name: lastName }),
   };
   if (signature !== undefined) fields.signature = signature;
   const dataCheckString = Object.keys(fields).sort().map((key) => `${key}=${fields[key]}`).join("\n");
@@ -46,25 +46,36 @@ function signedInitData(botToken, { userId = 123, authDate = 1784678400, queryId
   return new URLSearchParams({ ...fields, hash }).toString();
 }
 
-function telegramFixture() {
-  const state = { replayHashes: new Set(), dbMutations: 0, sessionInserts: 0, providerMutations: 0 };
+function initHashFrom(initData) {
+  const hash = new URLSearchParams(initData).get("hash");
+  return crypto.createHash("sha256").update(`lm-panel-telegram-init:v1:${String(hash).toLowerCase()}`).digest("hex");
+}
+
+function telegramFixture({ expectedInitHash = null, expectedActorId = null, expectedProfileName = "Fixture" } = {}) {
+  const state = { replayHashes: new Set(), tenants: new Map(), sessions: [], dbMutations: 0, sessionInserts: 0, providerMutations: 0 };
   return {
     state,
     fetchImpl: async (input, init = {}) => {
       const url = new URL(String(input));
       const body = JSON.parse(init.body || "{}");
-      if (url.pathname.endsWith("/rpc/claim_lm_panel_telegram_init")) {
-        assert.deepEqual(Object.keys(body).sort(), ["p_actor_id", "p_init_hash"]);
+      if (url.pathname.endsWith("/rpc/claim_lm_panel_telegram_init_v2")) {
+        assert.deepEqual(Object.keys(body).sort(), ["p_actor_id", "p_init_hash", "p_profile_name"]);
         assert.match(body.p_init_hash, /^[a-f0-9]{64}$/);
-        if (body.p_actor_id !== "123") return response(200, [{ status: "unknown_actor" }]);
+        if (expectedInitHash) assert.equal(body.p_init_hash, expectedInitHash);
+        if (expectedActorId !== null) assert.equal(body.p_actor_id, expectedActorId);
+        if (expectedProfileName !== null) assert.equal(body.p_profile_name, expectedProfileName);
         if (state.replayHashes.has(body.p_init_hash)) return response(200, [{ status: "replayed" }]);
         state.replayHashes.add(body.p_init_hash);
+        const actorId = String(body.p_actor_id);
+        const uid = state.tenants.get(actorId) || `lm_tg_${actorId}`;
+        state.tenants.set(actorId, uid);
         state.dbMutations++;
-        return response(200, [{ status: "claimed", uid: "lm_u1", chat_id: "123" }]);
+        return response(200, [{ status: "claimed", uid, chat_id: actorId }]);
       }
       if (url.pathname.endsWith("/rest/v1/lm_panel_sessions")) {
         state.dbMutations++;
         state.sessionInserts++;
+        state.sessions.push({ ...body });
         return response(201);
       }
       throw new Error(`unexpected fixture URL ${url.pathname}`);
@@ -81,7 +92,7 @@ async function postTelegram(base, initData) {
   });
 }
 
-test("PANEL-1: actual Telegram session endpoint rejects missing/forged/stale/wrong-bot/wrong-user without mutation", async (t) => {
+test("PANEL-1: actual Telegram session endpoint rejects missing/forged/stale/wrong-bot without mutation", async (t) => {
   const botToken = "123456:expected-fixture-bot-token";
   const nowMs = 1784678400 * 1000;
   const cases = [
@@ -89,7 +100,6 @@ test("PANEL-1: actual Telegram session endpoint rejects missing/forged/stale/wro
     ["forged", (() => { const p = new URLSearchParams(signedInitData(botToken)); p.set("user", JSON.stringify({ id: 999 })); return p.toString(); })(), 401],
     ["stale", signedInitData(botToken, { authDate: 1784677800 }), 401],
     ["wrong-bot", signedInitData("999999:other-fixture-bot-token"), 401],
-    ["wrong-user", signedInitData(botToken, { userId: 999 }), 403],
   ];
 
   for (const [name, initData, expectedStatus] of cases) {
@@ -113,8 +123,8 @@ test("PANEL-1: actual Telegram session endpoint rejects missing/forged/stale/wro
 
 test("PANEL-1: valid initData binds one Telegram actor, returns canonical /panel, and replay mutates zero", async () => {
   const botToken = "123456:expected-fixture-bot-token";
-  const fixture = telegramFixture();
   const initData = signedInitData(botToken);
+  const fixture = telegramFixture({ expectedInitHash: initHashFrom(initData), expectedActorId: "123", expectedProfileName: "Fixture" });
   await withPanelServer({
     supaUrl: "https://db.example", supaKey: "service-key", token: botToken,
     panelOrigin: "https://life.example", panelBaseUrl: "https://life.example",
@@ -136,10 +146,43 @@ test("PANEL-1: valid initData binds one Telegram actor, returns canonical /panel
   });
 });
 
+test("PANEL-1: each valid Telegram actor provisions/resumes its own deterministic tenant", async () => {
+  const botToken = "123456:expected-fixture-bot-token";
+  const firstInit = signedInitData(botToken, { queryId: "actor-one" });
+  const secondInit = signedInitData(botToken, { userId: 999, queryId: "actor-two", firstName: "Second" });
+  const resumedInit = signedInitData(botToken, { queryId: "actor-one-resumed" });
+  const fixture = telegramFixture({ expectedProfileName: null });
+  let seed = 0x90;
+  await withPanelServer({
+    supaUrl: "https://db.example", supaKey: "service-key", token: botToken,
+    panelOrigin: "https://life.example", panelBaseUrl: "https://life.example",
+    now: () => new Date(1784678400 * 1000), randomBytes: () => Buffer.alloc(32, seed++), fetchImpl: fixture.fetchImpl,
+  }, async (base) => {
+    const first = await postTelegram(base, firstInit);
+    const second = await postTelegram(base, secondInit);
+    const resumed = await postTelegram(base, resumedInit);
+    assert.equal(first.status, 200);
+    assert.equal(second.status, 200);
+    assert.equal(resumed.status, 200);
+    assert.notEqual(first.headers.get("set-cookie"), second.headers.get("set-cookie"), "distinct actors receive distinct sessions");
+    assert.equal(fixture.state.sessions.length, 3);
+    assert.deepEqual(fixture.state.sessions.map(({ uid, chat_id }) => ({ uid, chat_id })), [
+      { uid: "lm_tg_123", chat_id: "123" },
+      { uid: "lm_tg_999", chat_id: "999" },
+      { uid: "lm_tg_123", chat_id: "123" },
+    ]);
+    const beforeReplay = { db: fixture.state.dbMutations, sessions: fixture.state.sessionInserts };
+    const replay = await postTelegram(base, firstInit);
+    assert.equal(replay.status, 409);
+    assert.equal(fixture.state.dbMutations, beforeReplay.db);
+    assert.equal(fixture.state.sessionInserts, beforeReplay.sessions);
+  });
+});
+
 test("PANEL-1: actual Telegram initData signature field remains inside the HMAC data-check-string", async () => {
   const botToken = "123456:expected-fixture-bot-token";
-  const fixture = telegramFixture();
   const initData = signedInitData(botToken, { signature: "fixture-ed25519-signature" });
+  const fixture = telegramFixture({ expectedInitHash: initHashFrom(initData), expectedActorId: "123", expectedProfileName: "Fixture" });
   await withPanelServer({
     supaUrl: "https://db.example", supaKey: "service-key", token: botToken,
     panelOrigin: "https://life.example", panelBaseUrl: "https://life.example",
@@ -152,10 +195,26 @@ test("PANEL-1: actual Telegram initData signature field remains inside the HMAC 
   });
 });
 
+test("PANEL-1: v2 claim carries a bounded signed profile name while actor id remains the key", async () => {
+  const botToken = "123456:expected-fixture-bot-token";
+  const firstName = "A".repeat(100), lastName = "B".repeat(100);
+  const initData = signedInitData(botToken, { firstName, lastName });
+  const fixture = telegramFixture({ expectedInitHash: initHashFrom(initData), expectedActorId: "123", expectedProfileName: `${firstName} ${lastName}`.slice(0, 120) });
+  await withPanelServer({
+    supaUrl: "https://db.example", supaKey: "service-key", token: botToken,
+    panelOrigin: "https://life.example", panelBaseUrl: "https://life.example",
+    now: () => new Date(1784678400 * 1000), randomBytes: () => Buffer.alloc(32, 0x82), fetchImpl: fixture.fetchImpl,
+  }, async (base) => {
+    const accepted = await postTelegram(base, initData);
+    assert.equal(accepted.status, 200);
+    assert.equal(fixture.state.sessionInserts, 1);
+  });
+});
+
 test("PANEL-1: semantically identical reordered initData is the same one-time replay", async () => {
   const botToken = "123456:expected-fixture-bot-token";
-  const fixture = telegramFixture();
   const initData = signedInitData(botToken);
+  const fixture = telegramFixture({ expectedInitHash: initHashFrom(initData), expectedActorId: "123", expectedProfileName: "Fixture" });
   const reorderedInitData = new URLSearchParams([...new URLSearchParams(initData).entries()].reverse()).toString();
   assert.notEqual(reorderedInitData, initData);
 

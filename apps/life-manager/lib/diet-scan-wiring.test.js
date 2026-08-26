@@ -15,7 +15,7 @@ const scheduler = require("../scheduler.js");
 
 const NOW = Date.parse("2026-07-27T03:00:00Z");
 const USER = {
-  uid: "u-diet-wire", telegram_chat_id: "1", phone: "+81", home_address: "東京都新宿区",
+  uid: "u-diet-wire", telegram_chat_id: "1", phone: "+819012345678", home_address: "東京都新宿区",
   wake_policy: "all-events", call_enabled: true, notifications_enabled: true,
 };
 const WAKEABLE = { summary: "stand-up", location: null, startMs: NOW + 10 * 60000, endMs: NOW + 40 * 60000, startIso: "s", endIso: "e" };

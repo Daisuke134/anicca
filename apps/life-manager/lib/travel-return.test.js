@@ -6,7 +6,7 @@
 "use strict";
 const { test } = require("node:test");
 const assert = require("node:assert");
-const { returnDecision, fillTravel } = require("./travel.js");
+const { returnDecision, fillTravel, directionsMinutes } = require("./travel.js");
 
 const HOME = "新宿区南元町15-27";
 const VENUE = "渋谷ヒカリエ8F";
@@ -447,4 +447,46 @@ test("[FIND-005b][PAST-LEAVE] outbound leave-time is in the past but ev.endMs is
   );
   assert.ok(returnBlock,
     `return (head home) block must be created even when outbound leave-time is past; got: ${JSON.stringify(cal._created.map(c => ({ s: c.summary, t: c.start_datetime })))}`);
+});
+
+test("[AC-14][INTEGRATION] fillTravel failed Transit calls exactly one legacy Google request per leg", async () => {
+  const originalFetch = global.fetch;
+  let transitRequests = 0;
+  let googleRequests = 0;
+  let routesRequests = 0;
+  global.fetch = async (url) => {
+    const requestUrl = String(url);
+    if (requestUrl.includes("maps.googleapis.com/maps/api/geocode/json")) {
+      return { ok: true, json: async () => ({ results: [{ geometry: { location: { lat: 35.681, lng: 139.767 } } }] }) };
+    }
+    if (requestUrl.includes("api.transit.ls8h.com")) {
+      transitRequests++;
+      return { ok: true, json: async () => ({ date: "20260620", timezone: "Asia/Tokyo", journeys: [] }) };
+    }
+    if (requestUrl.includes("maps.googleapis.com/maps/api/directions")) {
+      googleRequests++;
+      return { ok: true, json: async () => ({ status: "OK", routes: [{ legs: [{ duration: { value: 1200 } }] }] }) };
+    }
+    if (requestUrl.includes("routes.googleapis.com")) {
+      routesRequests++;
+      return { ok: true, json: async () => ({ routes: [{ duration: "2700s" }] }) };
+    }
+    throw new Error("unexpected URL " + requestUrl);
+  };
+  try {
+    const cal = makeFakeCalendar([
+      rawEv({ summary: "Transit outage event", location: VENUE, startH: 14, endH: 15 }),
+    ]);
+    const result = await fillTravel("uid-ac14-failed", {
+      home: HOME,
+      mapsKey: "fake-key",
+      nowMs: Date.parse("2026-06-19T00:00:00+09:00"),
+      calendar: cal,
+      _directionsMinutes: directionsMinutes,
+    });
+    assert.equal(result.inserted, 2, "one event produces outbound and return travel blocks");
+    assert.equal(transitRequests, 2, "Transit is attempted once for each leg");
+    assert.equal(googleRequests, 2, "each failed Transit leg gets one Google request");
+    assert.equal(routesRequests, 0, "structured fallback does not invoke Routes API");
+  } finally { global.fetch = originalFetch; }
 });

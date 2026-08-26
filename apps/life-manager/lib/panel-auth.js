@@ -2,7 +2,7 @@
 "use strict";
 
 const crypto = require("crypto");
-const { renderPanelPage } = require("./panel-ui.js");
+const { renderPanelPage, renderPanelOnboardingPage } = require("./panel-ui.js");
 
 const PANEL_SESSION_IDLE_MS = 30 * 24 * 60 * 60 * 1000;
 const PANEL_TELEGRAM_INIT_MAX_AGE_MS = 5 * 60 * 1000;
@@ -183,6 +183,14 @@ function readJsonBody(req, maxBytes = 16 * 1024) {
   });
 }
 
+function telegramProfileName(user) {
+  const parts = [user && user.first_name, user && user.last_name]
+    .filter((part) => typeof part === "string")
+    .map((part) => part.trim())
+    .filter(Boolean);
+  return parts.join(" ").slice(0, 120);
+}
+
 function verifyTelegramInitData(rawInitData, opts = {}) {
   const raw = String(rawInitData || "");
   const botToken = String(opts.token || "");
@@ -234,13 +242,14 @@ function verifyTelegramInitData(rawInitData, opts = {}) {
       return { ok: false, reason: "invalid" };
     }
   }
-  return { ok: true, actorId, initHash: sha256(`lm-panel-telegram-init:v1:${receivedHex.toLowerCase()}`) };
+  return { ok: true, actorId, profileName: telegramProfileName(user), initHash: sha256(`lm-panel-telegram-init:v1:${receivedHex.toLowerCase()}`) };
 }
 
 async function claimTelegramInit(verified, opts) {
-  const rows = await panelRpc("claim_lm_panel_telegram_init", {
+  const rows = await panelRpc("claim_lm_panel_telegram_init_v2", {
     p_init_hash: verified.initHash,
     p_actor_id: verified.actorId,
+    p_profile_name: verified.profileName || "",
   }, opts);
   const row = Array.isArray(rows) ? rows[0] : rows;
   return row || { status: "unknown_actor" };
@@ -298,9 +307,14 @@ async function confirmPanelDeviceCode({ uid, chatId, actorId, code }, opts = {})
   return Boolean(row && row.status === "claimed" && String(row.uid) === String(uid) && String(row.chat_id) === String(chatId));
 }
 
-function renderPanelLogin({ code }) {
+function panelReturnPath(value) {
+  return value === "/panel/onboarding" ? "/panel/onboarding" : "/panel";
+}
+
+function renderPanelLogin({ code, returnTo = "/panel" }) {
   const safeCode = DEVICE_CODE_RE.test(String(code || "")) ? code : "--------";
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><meta name="color-scheme" content="light"><title>Life Manager sign in</title><style>:root{color-scheme:light}*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;background:#f3efe5;color:#122238;font-family:Avenir,"Hiragino Sans",sans-serif}.card{width:min(38rem,calc(100% - 32px));border:1px solid #9d9484;background:#fbf8f0;padding:clamp(24px,6vw,44px);box-shadow:0 24px 70px rgba(38,35,30,.12)}h1{margin:0 0 18px;font-family:"Iowan Old Style",serif;font-size:clamp(2rem,8vw,3.5rem);font-weight:500}.method{padding:20px 0;border-top:1px solid #cfc7b8}.code{display:inline-block;margin:8px 0;padding:10px 14px;border:1px solid #122238;background:white;font:700 1.4rem/1.1 ui-monospace,monospace;letter-spacing:.12em}.status{min-height:1.4em;color:#536070}</style><script src="https://telegram.org/js/telegram-web-app.js?59"></script></head><body><main class="card" data-panel-login><p>Life Manager</p><h1>Your panel, at one permanent address.</h1><section class="method"><h2>Open this panel inside Telegram</h2><p>Use the <b>Open dashboard</b> button from your own Life Manager bot chat. Telegram verifies your identity and this page opens your personal panel.</p></section><section class="method"><h2>Or confirm this browser</h2><p>Send <b>/panel ${safeCode}</b> in your own bot chat. Keep this browser tab open.</p><output class="code" data-device-code="${safeCode}">${safeCode}</output><p class="status" data-login-status>Waiting for confirmation…</p></section></main><script>(()=>{const status=document.querySelector("[data-login-status]");const post=async(path,body)=>{const response=await fetch(path,{method:"POST",credentials:"same-origin",headers:body?{"content-type":"application/json"}:undefined,body:body?JSON.stringify(body):undefined});if(response.ok){const data=await response.json();if(data.redirect==="/panel")location.replace("/panel");}return response;};const initData=window.Telegram&&window.Telegram.WebApp&&window.Telegram.WebApp.initData;if(initData){status.textContent="Verifying Telegram…";post("/api/panel/session/telegram",{initData}).catch(()=>{status.textContent="Telegram verification failed. Reopen the bot button.";});}else{const poll=setInterval(()=>{post("/api/panel/session/device").then((response)=>{if(response.status===409||response.status===410){clearInterval(poll);status.textContent="This code is no longer available. Reload for a new code.";}}).catch(()=>{});},1500);}})();</script></body></html>`;
+  const destination = panelReturnPath(returnTo);
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><meta name="color-scheme" content="light"><title>Life Manager sign in</title><style>:root{color-scheme:light}*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;background:#f3efe5;color:#122238;font-family:Avenir,"Hiragino Sans",sans-serif}.card{width:min(38rem,calc(100% - 32px));border:1px solid #9d9484;background:#fbf8f0;padding:clamp(24px,6vw,44px);box-shadow:0 24px 70px rgba(38,35,30,.12)}h1{margin:0 0 18px;font-family:"Iowan Old Style",serif;font-size:clamp(2rem,8vw,3.5rem);font-weight:500}.method{padding:20px 0;border-top:1px solid #cfc7b8}.code{display:inline-block;margin:8px 0;padding:10px 14px;border:1px solid #122238;background:white;font:700 1.4rem/1.1 ui-monospace,monospace;letter-spacing:.12em}.status{min-height:1.4em;color:#536070}</style><script src="https://telegram.org/js/telegram-web-app.js?59"></script></head><body><main class="card" data-panel-login><p>Life Manager</p><h1>Your panel, at one permanent address.</h1><section class="method"><h2>Open this panel inside Telegram</h2><p>Use the <b>Open dashboard</b> button from your own Life Manager bot chat. Telegram verifies your identity and this page opens your personal panel.</p></section><section class="method"><h2>Or confirm this browser</h2><p>Send <b>/panel ${safeCode}</b> in your own bot chat. Keep this browser tab open.</p><output class="code" data-device-code="${safeCode}">${safeCode}</output><p class="status" data-login-status>Waiting for confirmation…</p></section></main><script>(()=>{const status=document.querySelector("[data-login-status]");const post=async(path,body)=>{const response=await fetch(path,{method:"POST",credentials:"same-origin",headers:body?{"content-type":"application/json"}:undefined,body:body?JSON.stringify(body):undefined});if(response.ok){const data=await response.json();if(data.redirect==="${destination}")location.replace(data.redirect);}return response;};const initData=window.Telegram&&window.Telegram.WebApp&&window.Telegram.WebApp.initData;if(initData){status.textContent="Verifying Telegram…";post("/api/panel/session/telegram",{initData,returnTo:"${destination}"}).catch(()=>{status.textContent="Telegram verification failed. Reopen the bot button.";});}else{const poll=setInterval(()=>{post("/api/panel/session/device",{returnTo:"${destination}"}).then((response)=>{if(response.status===409||response.status===410){clearInterval(poll);status.textContent="This code is no longer available. Reload for a new code.";}}).catch(()=>{});},1500);}})();</script></body></html>`;
 }
 
 async function handleTelegramSession(req, res, opts) {
@@ -310,6 +324,7 @@ async function handleTelegramSession(req, res, opts) {
   if (!/^application\/json(?:;|$)/i.test(String(req.headers["content-type"] || ""))) return jsonResponse(res, 415, { error: "json_required" });
   const body = await readJsonBody(req);
   if (!body || typeof body.initData !== "string" || !body.initData) return jsonResponse(res, 400, { error: "init_data_required" });
+  const returnTo = panelReturnPath(body.returnTo);
   const verified = verifyTelegramInitData(body.initData, opts);
   if (!verified.ok) return jsonResponse(res, 401, { error: "telegram_auth_rejected" });
   const claim = await claimTelegramInit(verified, opts);
@@ -324,7 +339,7 @@ async function handleTelegramSession(req, res, opts) {
     if (scope && scope.uid === String(claim.uid) && scope.chatId === String(claim.chat_id)) await revokePanelSession(current, opts);
   }
   const session = await createPanelSession({ uid: String(claim.uid), chatId: String(claim.chat_id) }, opts);
-  return jsonResponse(res, 200, { redirect: "/panel" }, { "Set-Cookie": [panelSessionCookie(session), clearChallengeCookie()] });
+  return jsonResponse(res, 200, { redirect: returnTo }, { "Set-Cookie": [panelSessionCookie(session), clearChallengeCookie()] });
 }
 
 async function handleDeviceSession(req, res, opts) {
@@ -333,6 +348,8 @@ async function handleDeviceSession(req, res, opts) {
   if (!expectedOrigin || String(req.headers.origin || "") !== expectedOrigin) return jsonResponse(res, 403, { error: "origin_rejected" });
   const challenge = cookieValue(req.headers.cookie, PANEL_CHALLENGE_COOKIE);
   if (!OPAQUE_TOKEN_RE.test(challenge)) return jsonResponse(res, 401, { error: "challenge_required" });
+  const body = await readJsonBody(req);
+  const returnTo = panelReturnPath(body && body.returnTo);
   const rows = await panelRpc("exchange_lm_panel_device_challenge", { p_challenge_hash: sha256(challenge) }, opts);
   const claim = (Array.isArray(rows) ? rows[0] : rows) || { status: "not_found" };
   if (claim.status === "pending") return jsonResponse(res, 202, { status: "pending" });
@@ -340,7 +357,7 @@ async function handleDeviceSession(req, res, opts) {
   if (claim.status === "expired") return jsonResponse(res, 410, { error: "challenge_expired" }, { "Set-Cookie": clearChallengeCookie() });
   if (claim.status !== "claimed" || !claim.uid || !claim.chat_id) return jsonResponse(res, 401, { error: "challenge_rejected" });
   const session = await createPanelSession({ uid: String(claim.uid), chatId: String(claim.chat_id) }, opts);
-  return jsonResponse(res, 200, { redirect: "/panel" }, { "Set-Cookie": [panelSessionCookie(session), clearChallengeCookie()] });
+  return jsonResponse(res, 200, { redirect: returnTo }, { "Set-Cookie": [panelSessionCookie(session), clearChallengeCookie()] });
 }
 
 async function handlePanelRequest(req, res, opts = {}) {
@@ -364,7 +381,7 @@ async function handlePanelRequest(req, res, opts = {}) {
     return;
   }
   if (requestUrl.search) {
-    res.writeHead(303, { Location: "/panel", "cache-control": "no-store", "referrer-policy": "no-referrer", "x-content-type-options": "nosniff" });
+    res.writeHead(303, { Location: pathname === "/panel/onboarding" ? "/panel/onboarding" : "/panel", "cache-control": "no-store", "referrer-policy": "no-referrer", "x-content-type-options": "nosniff" });
     res.end();
     return;
   }
@@ -378,7 +395,7 @@ async function handlePanelRequest(req, res, opts = {}) {
       "x-content-type-options": "nosniff",
       ...(panelScopeCookie(scope) ? { "Set-Cookie": panelScopeCookie(scope) } : {}),
     });
-    res.end(renderPanelPage({ csrf: scope.csrf }));
+    res.end(pathname === "/panel/onboarding" ? renderPanelOnboardingPage({ csrf: scope.csrf }) : renderPanelPage({ csrf: scope.csrf }));
     return;
   }
 
@@ -391,7 +408,7 @@ async function handlePanelRequest(req, res, opts = {}) {
     "content-security-policy": "default-src 'none'; script-src 'self' https://telegram.org 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; img-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'self' https://web.telegram.org",
     "Set-Cookie": challengeCookie(device.challenge),
   });
-  res.end(renderPanelLogin({ code: device.code }));
+  res.end(renderPanelLogin({ code: device.code, returnTo: pathname === "/panel/onboarding" ? "/panel/onboarding" : "/panel" }));
 }
 
 function timingEqual(left, right) {

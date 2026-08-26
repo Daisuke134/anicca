@@ -40,7 +40,7 @@ const inngestHandler = inngestServe({ client: inngest, functions: inngestFunctio
 const { placeCall, startRecording } = require("./lib/dial.js");
 const { amdEnabled, shouldMarkAnswered } = require("./lib/answered.js");
 const { decodeCallClientState, encodeTestCallClientState, verifyTelnyxSignature } = require("./lib/telnyx-webhook.js");
-const { parseUpdate, sendMessage, editMessageText, answerCallbackQuery, isPanelCommand, isPanelDeepLink, routeCallbackData } = require("./lib/telegram.js");
+const { parseUpdate, sendMessage, editMessageText, answerCallbackQuery, isPanelCommand, isPanelDeepLink, routeCallbackData, startReply } = require("./lib/telegram.js");
 const { reflectAnswer } = require("./lib/telegram-callback-visibility.js");
 const {
   createSupabaseLateApprovalStore,
@@ -49,6 +49,7 @@ const {
 const { sendPanelLink, handlePanelRequest, panelDeviceCodeFromCommand, confirmPanelDeviceCode } = require("./lib/panel-auth.js");
 const { handlePanelApiRequest, handlePanelOAuthCallback, composioCalendarStart, composioCalendarDisconnect } = require("./lib/panel-api.js");
 const { createSupabaseCommandStore } = require("./lib/panel-api.js");
+const { handleCalendarOnboardRequest } = require("./lib/calendar-onboard.js");
 const { parseUserCommand, dispatchParsedControl, executeUserCommand } = require("./lib/user-command.js");
 const { parseSlashCommand, slashAliasText, handleSlashCommand } = require("./lib/slash-command.js");
 const { handleFeedbackMessage, createPostgresFeedbackStore } = require("./lib/feedback-intake.js");
@@ -56,8 +57,7 @@ const { resolveTelegramReply } = require("./lib/telegram-reply.js");
 const { handleInboundReply, handleAskCallback, parseInboundRecipient } = require("./lib/ask.js");
 const { isReplyToken } = require("./lib/reply-token.js");
 const {
-  sendStage, rowByChatId, setStage, saveField, handleOnboardingText, handleGmailCallback,
-  applyTelegramProfileName, backfillIfCalendarCompleted,
+  rowByChatId, handleOnboardingText, handleGmailCallback,
 } = require("./lib/telegram-onboard.js");
 const { createHostedGmailLink } = require("./lib/gmail-onboard.js");
 const { mailAvailable } = require("./lib/mail-availability.js");
@@ -236,6 +236,21 @@ const server = http.createServer((req, res) => {
     });
     return;
   }
+  if (path === "/api/panel/onboarding/calendar/start" || path === "/api/panel/onboarding/calendar/status") {
+    handleCalendarOnboardRequest(req, res, {
+      supaUrl: SUPA_URL,
+      supaKey: SUPA_KEY,
+      panelOrigin: LM_PANEL_BASE,
+      panelBaseUrl: LM_PANEL_BASE,
+      sessionSecret: process.env.LM_PANEL_SESSION_ROTATION_SECRET || process.env.LM_UID_SECRET,
+      composioKey: COMPOSIO_KEY,
+      composioAuthConfig: process.env.COMPOSIO_GCAL_AUTH_CONFIG,
+    }).catch(() => {
+      if (!res.headersSent) res.writeHead(502, { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" });
+      res.end(JSON.stringify({ error: "calendar_unavailable" }));
+    });
+    return;
+  }
   if (path.startsWith("/api/panel/")) {
     handlePanelApiRequest(req, res, {
       supaUrl: SUPA_URL,
@@ -252,7 +267,7 @@ const server = http.createServer((req, res) => {
     });
     return;
   }
-  if (path === "/panel" || path === "/panel/logout") {
+  if (path === "/panel" || path === "/panel/onboarding" || path === "/panel/logout") {
     handlePanelRequest(req, res, { supaUrl: SUPA_URL, supaKey: SUPA_KEY, token: LM_TG_TOKEN, panelOrigin: LM_PANEL_BASE, panelBaseUrl: LM_PANEL_BASE, botUsername: process.env.LM_TELEGRAM_BOT_USERNAME }).catch((error) => {
       console.error("[panel] request failed", error.message);
       if (!res.headersSent) res.writeHead(500, { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" });
@@ -698,6 +713,14 @@ const server = http.createServer((req, res) => {
               return;
             }
           }
+          // A punctuation-prefixed /start lookalike is not a Telegram deep-link payload. Keep it
+          // out of the free-text onboarding path, which would otherwise emit the legacy ?tg= URL.
+          // The slash router already owns alphanumeric unknown commands such as /startfoo.
+          if (u.kind === "message" && u.text && !u.isStart && /^\/start(?:@[A-Za-z0-9_]+)?(?!\s|$)/i.test(u.text)) {
+            await sendMessage(LM_TG_TOKEN, u.chatId, "Unknown command. Send /help to see what I understand.");
+            res.writeHead(200); res.end("ok");
+            return;
+          }
           if (u.kind === "location") {
             if (row) {
               const saved = await upsertLiveLocation(row.uid, u, { supaUrl: SUPA_URL, supaKey: SUPA_KEY });
@@ -762,13 +785,12 @@ const server = http.createServer((req, res) => {
             }
           }
           if (u.isStart) {
-            // Name comes from the Telegram profile; calendar/pay are taps and phone is the only typed ask.
-            const profile = { first_name: u.firstName, last_name: u.lastName };
-            const effective = applyTelegramProfileName(row, profile);
-            if (row && !row.name && effective.name) await saveField(row.uid, { name: effective.name }, SUPA_URL, SUPA_KEY);
-            await backfillIfCalendarCompleted(row, opts);
-            const announced = await sendStage(LM_TG_TOKEN, u.chatId, effective, PUBLIC_BASE, { profile, gmailConnectUrl });
-            if (row) await setStage(row.uid, announced, SUPA_URL, SUPA_KEY);
+            // Telegram WebApp initData is the sole identity input for panel onboarding. The URL
+            // builder validates LM_PANEL_BASE and intentionally excludes chat IDs/tokens, so the
+            // web page can create its server session through the existing panel-auth boundary.
+            const reply = startReply(u.chatId, LM_PANEL_BASE);
+            const sent = await sendMessage(LM_TG_TOKEN, u.chatId, reply.text, reply.extra);
+            if (!sent || sent.ok !== true) throw new Error("onboarding web app button send failed");
           } else if (u.text) {
             // Native steps (name/phone) capture the typed value; web steps re-nudge; "done" → reply.
             const result = await handleOnboardingText(u.chatId, u.text, row, opts);

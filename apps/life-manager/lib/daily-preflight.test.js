@@ -530,7 +530,7 @@ test("evidence sanitizer redacts query values, phones, email, IDs, provider keys
   ]) assert.equal(serialized.includes(forbidden), false, `leaked ${forbidden}`);
 });
 
-test("calendar: target selection is the scheduler phone+paid+supported-provider cohort", async () => {
+test("calendar: target selection is the scheduler paid+supported-provider cohort (phone optional)", async () => {
   const env = productionLikeEnv();
   const requested = [];
   const report = await runNamed("calendar", {
@@ -543,7 +543,7 @@ test("calendar: target selection is the scheduler phone+paid+supported-provider 
   });
   assert.equal(report.dependencies[0].status, "pass");
   const selectorUrl = new URL(requested.find((url) => url.includes("/rest/v1/lm_users?")));
-  assert.equal(selectorUrl.searchParams.get("phone"), "not.is.null");
+  assert.equal(selectorUrl.searchParams.get("phone"), null);
   assert.equal(selectorUrl.searchParams.get("paid"), "is.true");
   assert.equal(selectorUrl.searchParams.get("calendar_provider"), "in.(composio_gcal,pipedream_gcal)");
 });

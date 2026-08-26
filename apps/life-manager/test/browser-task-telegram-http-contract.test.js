@@ -50,6 +50,7 @@ test("real Telegram webhook classifies and durably queues natural language witho
             requires_login: false,
             principal_kind: "none",
             action_kind: "registration",
+            binding_commitment: false,
             goal: "Find and register the agent-owned email for a free public online AI event",
             locale: "en",
           }) }] },

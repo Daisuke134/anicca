@@ -6,7 +6,7 @@ const http = require("node:http");
 const fs = require("node:fs");
 const path = require("node:path");
 const { parseUserCommand, executeUserCommand, buildControlCenter, claimCalendarOAuthState, validateCommand, disconnectCalendar, startCalendarOAuth } = require("./user-command.js");
-const { handlePanelApiRequest, composioCalendarDisconnect, composioCalendarStart } = require("./panel-api.js");
+const { handlePanelApiRequest, composioCalendarDisconnect, composioCalendarStart, composioCalendarStatus } = require("./panel-api.js");
 
 function fixtureStore() {
   const users = new Map([
@@ -155,6 +155,34 @@ test("PANEL-0 Composio reconnect enables the scoped inactive account and require
   assert.equal(requests[1].init.method, "PATCH");
   assert.deepEqual(JSON.parse(requests[1].init.body), { enabled: true });
   assert.match(requests[2].url, /user_ids=u-a/);
+});
+
+test("PANEL-0 Calendar ACTIVE requires an explicit enabled=true readback", async () => {
+  const response = (items) => ({ ok: true, json: async () => ({ items }) });
+  const base = { id: "ca-user-a", user_id: "u-a", toolkit: { slug: "googlecalendar" }, status: "ACTIVE", is_disabled: false };
+  for (const account of [base, { ...base, enabled: false }]) {
+    assert.equal(await composioCalendarStatus({ uid: "u-a", chatId: "101" }, { composioKey: "test-key", fetchImpl: async () => response([account]) }), "DISABLED");
+  }
+  const calls = [];
+  const sequence = [response([{ ...base, status: "INACTIVE", is_disabled: true, enabled: false }]), { ok: true, json: async () => ({}) }, response([{ ...base }])];
+  await assert.rejects(composioCalendarStart({ uid: "u-a", chatId: "101" }, { composioKey: "test-key", fetchImpl: async (url, init = {}) => { calls.push({ url: String(url), init }); return sequence.shift(); } }), /provider_readback_failed/);
+  assert.equal(calls.filter((call) => call.init.method === "PATCH").length, 1);
+});
+
+test("PANEL-0 concurrent OAuth state claim failure blocks legacy control-center provider link", async () => {
+  let providerLinks = 0;
+  const store = {
+    async readUser() { return { uid: "u-a", telegram_chat_id: "101", calendar_provider: null }; },
+    async readReceipt() { return null; },
+    async claimReceipt() { return true; },
+    async finishReceipt() {},
+    async assertCurrentScope() { return true; },
+    async createOAuthState() { const error = new Error("oauth_state_in_progress"); error.status = 409; throw error; },
+  };
+  await assert.rejects(executeUserCommand({ uid: "u-a", chatId: "101" }, { type: "connection.start", provider: "calendar" }, {
+    store, idempotencyKey: "oauth-race-01", startCalendarOAuth: async () => { providerLinks++; return { redirectUrl: "https://provider.example/consent" }; },
+  }), /oauth_state_in_progress/);
+  assert.equal(providerLinks, 0);
 });
 
 test("PANEL-0 provider disconnect helper contracts are explicit and fail closed", async () => {

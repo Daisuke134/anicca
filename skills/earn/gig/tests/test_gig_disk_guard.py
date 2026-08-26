@@ -372,6 +372,7 @@ def test_self_build_uses_shared_guard_before_dependency_and_node_effects():
 
     assert "GIG_DISK_HEADROOM_KIB=524288" in script
     assert "GIG_HOST_STATE_DIR=" in script
+    assert 'readonly LM_SELFBUILD_CANONICAL_HOST_STATE="$LIFE_MANAGER_STATE_HOME/state"' in script
     assert "GIG_STATE_DIR=" in script
     assert script.count('/usr/bin/python3 "$DISK_GUARD" /usr/bin/true') == 2
     assert "unset GIG_IGNORE_DISK_PRESSURE_BLOCK GIG_IGNORE_DISK_WRITERS_STOP" in script

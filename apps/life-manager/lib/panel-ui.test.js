@@ -7,11 +7,163 @@ const { roundedScoreValue } = require("./panel-score-semantics.js");
 
 let renderPanelPage = null;
 let renderScoreCards = null;
+let renderPanelOnboardingPage = null;
 try {
-  ({ renderPanelPage, renderScoreCards } = require("./panel-ui.js"));
+  ({ renderPanelPage, renderScoreCards, renderPanelOnboardingPage } = require("./panel-ui.js"));
 } catch (error) {
   if (error.code !== "MODULE_NOT_FOUND") throw error;
 }
+
+test("Task 7B: Telegram-native onboarding page is server-state driven and safe at 375px", () => {
+  assert.equal(typeof renderPanelOnboardingPage, "function");
+  const html = renderPanelOnboardingPage({ csrf: 'csrf-<>&"\'' });
+  assert.match(html, /data-panel-onboarding/);
+  assert.match(html, /data-csrf="csrf-&lt;&gt;&amp;&quot;&#39;"/);
+  assert.match(html, /\/api\/panel\/onboarding/);
+  assert.match(html, /\/api\/panel\/onboarding\/calendar\/start/);
+  assert.match(html, /\/api\/panel\/onboarding\/calendar\/status/);
+  assert.match(html, /@media\s*\(max-width:\s*375px\)/);
+  assert.match(html, /replaceChildren\(/);
+  assert.match(html, /\.textContent\s*=/);
+  assert.match(html, /\.value\s*=/);
+  assert.doesNotMatch(html, /\.innerHTML\s*=/);
+  assert.doesNotMatch(html, /localStorage|sessionStorage|Sign in with Google|Supabase auth|\/auth\//i);
+  assert.match(html, /credentials:\s*["']same-origin["']/);
+  assert.match(html, /idempotency-key/);
+  assert.match(html, /x-lm-csrf/);
+  assert.match(html, /paymentLink/);
+  assert.match(html, /buy\.stripe\.com/);
+  assert.match(html, /090-1234-5678/);
+  assert.match(html, /\+81 90-1234-5678/);
+  assert.match(html, /ライブ位置情報/);
+  assert.match(html, /共有が終わった後/);
+  assert.match(html, /自宅住所/);
+  assert.match(html, /直近の予定/);
+  assert.doesNotMatch(html, /現在.*ライブ位置情報/);
+  assert.match(html, /window\.location\.(?:assign|replace)\(/);
+  const order = ["name", "calendar", "home", "notifications", "phone", "call", "payment", "dashboard"];
+  let previous = -1;
+  for (const step of order) {
+    const position = html.indexOf(`case "${step}"`);
+    assert.ok(position > previous, `${step} must be dispatched from server step order`);
+    previous = position;
+  }
+  assert.match(html, /phone\.skip/);
+  assert.match(html, /call\.skip/);
+  assert.match(html, /payment\.skip/);
+  assert.match(html, /primary-action/);
+  assert.match(html, /overflow-wrap:\s*anywhere/);
+});
+
+test("Task 7B: onboarding UI never interpolates server copy into markup and keeps static labels escaped", () => {
+  const html = renderPanelOnboardingPage({ csrf: "safe-token" });
+  assert.doesNotMatch(html, /\.insertAdjacentHTML\(/);
+  assert.match(html, /createElement\(["'](?:input|button|a|label|p|span)["']\)/);
+  assert.match(html, /textContent\s*=/);
+  assert.match(html, /new URL\(value\)/);
+  assert.match(html, /url\.hostname\s*!==\s*["']buy\.stripe\.com["']/);
+});
+
+class OnboardingFakeNode {
+  constructor(tagName, parent = null) {
+    this.tagName = tagName.toUpperCase();
+    this.parentNode = parent;
+    this.children = [];
+    this.dataset = {};
+    this.className = "";
+    this.attributes = {};
+    this.textContent = "";
+    this.value = "";
+  }
+
+  append(...nodes) { for (const node of nodes) { node.parentNode = this; this.children.push(node); } }
+  replaceChildren(...nodes) { this.children = []; this.append(...nodes); }
+  addEventListener() {}
+  setAttribute(name, value) { this.attributes[name] = String(value); }
+  matches(selector) {
+    if (selector === "[data-panel-onboarding]") return this.dataset.panelOnboarding !== undefined;
+    const dataAction = /^\[data-onboarding-action\]$/.test(selector);
+    if (dataAction) return this.dataset.onboardingAction !== undefined;
+    if (selector === "input") return this.tagName === "INPUT";
+    return false;
+  }
+  querySelector(selector) {
+    if (selector === "[data-onboarding-title]" && this.dataset.onboardingTitle !== undefined) return this;
+    if (selector === "[data-onboarding-copy]" && this.dataset.onboardingCopy !== undefined) return this;
+    if (selector === "[data-onboarding-form]" && this.dataset.onboardingForm !== undefined) return this;
+    if (selector === "[data-onboarding-actions]" && this.dataset.onboardingActions !== undefined) return this;
+    if (selector === "[data-onboarding-status]" && this.dataset.onboardingStatus !== undefined) return this;
+    if (this.matches(selector)) return this;
+    for (const child of this.children) { const found = child.querySelector(selector); if (found) return found; }
+    return null;
+  }
+  closest(selector) { let node = this; while (node) { if (node.matches(selector)) return node; node = node.parentNode; } return null; }
+}
+
+function onboardingFakeDocument() {
+  const root = new OnboardingFakeNode("main"); root.dataset.panelOnboarding = ""; root.dataset.csrf = "csrf";
+  const title = new OnboardingFakeNode("h1"); title.dataset.onboardingTitle = "";
+  const copy = new OnboardingFakeNode("p"); copy.dataset.onboardingCopy = "";
+  const form = new OnboardingFakeNode("div"); form.dataset.onboardingForm = "";
+  const actions = new OnboardingFakeNode("div"); actions.dataset.onboardingActions = "";
+  const status = new OnboardingFakeNode("p"); status.dataset.onboardingStatus = "";
+  root.append(title, copy, form, actions, status);
+  return { root, document: { querySelector: (selector) => root.querySelector(selector), createElement: (tag) => new OnboardingFakeNode(tag) } };
+}
+
+async function runOnboardingInline(state) {
+  const html = renderPanelOnboardingPage({ csrf: "csrf" });
+  const script = html.match(/<script>\s*([\s\S]*?)\s*<\/script>/)[1];
+  const fake = onboardingFakeDocument();
+  const response = { status: 200, ok: true, json: async () => state };
+  vm.runInNewContext(script, {
+    document: fake.document,
+    fetch: async () => response,
+    URL,
+    Promise,
+    Date,
+    Math,
+    Object,
+    String,
+    globalThis: {},
+    window: { location: { reload() {}, assign() {} } },
+  });
+  await new Promise((resolve) => setImmediate(resolve));
+  return fake;
+}
+
+test("Task 7B: every server-provided step has exactly one primary action and only phone/call/payment have skips", async () => {
+  const states = [
+    { step: "name", name: "A" },
+    { step: "calendar" },
+    { step: "home", homeAddress: "home" },
+    { step: "notifications" },
+    { step: "phone", phone: "" },
+    { step: "call" },
+    { step: "payment", paymentLink: "https://buy.stripe.com/test_life_manager?client_reference_id=server" },
+    { step: "dashboard", paid: false, paymentLink: "https://buy.stripe.com/test_life_manager?client_reference_id=server" },
+    { step: "dashboard", paid: true },
+  ];
+  for (const state of states) {
+    const fake = await runOnboardingInline(state);
+    const actions = fake.root.querySelector("[data-onboarding-actions]").children;
+    assert.equal(actions.filter((node) => node.className.includes("primary-action")).length, 1, state.step);
+    const secondary = actions.filter((node) => node.className.includes("secondary-action"));
+    assert.equal(secondary.length, ["phone", "call", "payment"].includes(state.step) ? 1 : 0, state.step);
+    if (state.step === "dashboard" && state.paid === true) assert.equal(actions[0].href, "/panel");
+  }
+});
+
+test("Task 7B: inline onboarding renderer ignores forged identity/payment fields and uses server step only", async () => {
+  const fake = await runOnboardingInline({ step: "phone", phone: "", paid: true, uid: "forged", tg: "forged", paymentLink: "https://evil.example/collect" });
+  const actions = fake.root.querySelector("[data-onboarding-actions]").children;
+  assert.equal(actions.filter((node) => node.className.includes("primary-action")).length, 1);
+  assert.equal(actions.some((node) => node.href), false);
+  const visible = [];
+  const walk = (node) => { visible.push(node.textContent, node.value, node.href || "", node.dataset.onboardingAction || ""); for (const child of node.children) walk(child); };
+  walk(fake.root);
+  assert.doesNotMatch(visible.join("\n"), /forged|evil\.example/);
+});
 
 function safeIntegerFinancialOrgans() {
   const ref = "outcome:10000000-0000-4000-8000-000000000001";

@@ -272,3 +272,85 @@ test("CORE 8e preserves accepted travel results and continues reports when one T
     "both accepted outbound blocks remain plus the pre-existing return block");
   assert.equal(attempts.length, 2, "one report failure cannot suppress a later accepted report");
 });
+
+test("CORE fix R1: verified user timezone wins when event timeZone is absent, invalid user timezone falls back to event timezone", async () => {
+  const newYorkEvent = calendarEvent({
+    id: "controlled-new-york-event",
+    summary: "New York meeting",
+    location: "New York venue",
+    startIso: "2026-07-24T14:00:00-04:00",
+    endIso: "2026-07-24T15:00:00-04:00",
+  });
+  delete newYorkEvent.start.timeZone;
+  delete newYorkEvent.end.timeZone;
+  const newYorkCalendar = new JourneyCalendar([newYorkEvent]);
+  newYorkCalendar.acceptCreates = true;
+  const newYorkCalls = [];
+  await travelUserOnce({
+    uid: "controlled-user",
+    home_address: "New York home",
+    call_time_zone: "America/New_York",
+    daily_automation_enabled: true,
+    notifications_enabled: false,
+  }, {
+    nowMs: Date.parse("2026-07-23T12:00:00-04:00"),
+    apiKey: "controlled-composio-key",
+    mapsKey: "controlled-maps-key",
+    calendar: newYorkCalendar,
+    directionsMinutes: async (...args) => { newYorkCalls.push(args); return 20; },
+  });
+  assert.ok(newYorkCalls.length >= 2, "outbound and return route calls should use the production travel path");
+  assert.equal(newYorkCalls[0][6].timezone, "America/New_York");
+  assert.equal(newYorkCalls.at(-1)[6].timezone, "America/New_York");
+
+  const conflictingEvent = calendarEvent({
+    id: "controlled-conflicting-event-timezone",
+    summary: "Tokyo-labelled event for New York user",
+    location: "Conflicting venue",
+    startIso: "2026-07-24T14:00:00+09:00",
+    endIso: "2026-07-24T15:00:00+09:00",
+  });
+  const conflictingCalendar = new JourneyCalendar([conflictingEvent]);
+  conflictingCalendar.acceptCreates = true;
+  const conflictingCalls = [];
+  await travelUserOnce({
+    uid: "controlled-user",
+    home_address: "New York home",
+    call_time_zone: "America/New_York",
+    daily_automation_enabled: true,
+    notifications_enabled: false,
+  }, {
+    nowMs: Date.parse("2026-07-23T12:00:00-04:00"),
+    apiKey: "controlled-composio-key",
+    mapsKey: "controlled-maps-key",
+    calendar: conflictingCalendar,
+    directionsMinutes: async (...args) => { conflictingCalls.push(args); return 20; },
+  });
+  assert.equal(conflictingCalls[0][6].timezone, "America/New_York");
+
+  const eventTimezone = calendarEvent({
+    id: "controlled-event-timezone",
+    summary: "Tokyo meeting",
+    location: "Tokyo venue",
+    startIso: "2026-07-25T14:00:00+09:00",
+    endIso: "2026-07-25T15:00:00+09:00",
+  });
+  const eventTimezoneCalendar = new JourneyCalendar([eventTimezone]);
+  eventTimezoneCalendar.acceptCreates = true;
+  const fallbackCalls = [];
+  await travelUserOnce({
+    uid: "controlled-user",
+    home_address: "Tokyo home",
+    call_time_zone: "Mars/Olympus",
+    daily_automation_enabled: true,
+    notifications_enabled: false,
+  }, {
+    nowMs: Date.parse("2026-07-23T12:00:00+09:00"),
+    apiKey: "controlled-composio-key",
+    mapsKey: "controlled-maps-key",
+    calendar: eventTimezoneCalendar,
+    directionsMinutes: async (...args) => { fallbackCalls.push(args); return 20; },
+  });
+  assert.ok(fallbackCalls.length >= 2);
+  assert.equal(fallbackCalls[0][6].timezone, "Asia/Tokyo");
+});

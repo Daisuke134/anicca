@@ -1,40 +1,17 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { Reveal } from '@/components/site/taste';
 import { useLaunchLocale } from '@/lib/launchLocale';
 import { launchStrings } from '@/lib/launchStrings';
-import LmClient from './LmClient';
 
-// Standalone /lm renders the public general-agent story. The Telegram funnel /lm?tg=<chat_id> still renders
-// the existing LmClient onboarding without changing its auth, Calendar, phone, or payment state machine.
 const TG_DEEPLINK = 'https://t.me/LifeManagerBotbot?start=lp';
 const REPOSITORY_URL = 'https://github.com/Daisuke134/life-manager';
 
+// The public landing page is a single Telegram handoff. Authenticated onboarding and payment
+// continue in the Railway Mini App, so this page never reads query identity or owns user state.
 export default function LmBody() {
   const { locale } = useLaunchLocale();
   const t = launchStrings[locale].lm;
-  // undefined = not yet read; a digit string = Telegram funnel → LmClient; null = public product surface.
-  const [tg, setTg] = useState<string | null | undefined>(undefined);
-  useEffect(() => {
-    const p = new URLSearchParams(window.location.search).get('tg');
-    setTg(p && /^\d{1,20}$/.test(p) ? p : null);
-  }, []);
-
-  // A Telegram visitor (?tg=) must never flash the public surface while the query parameter resolves.
-  if (tg === undefined) {
-    return (
-      <section className="w-full px-4 pt-28 pb-24 text-center">
-        <div
-          className="mx-auto h-6 w-6 animate-spin rounded-full border-2 border-[hsl(var(--gold))] border-t-transparent"
-          role="status"
-          aria-label="Loading"
-        />
-      </section>
-    );
-  }
-  if (tg) return <LmClient />;
-
   return (
     <main className="w-full overflow-hidden px-4 pb-24 pt-12 md:pt-20">
       <div className="mx-auto max-w-6xl">

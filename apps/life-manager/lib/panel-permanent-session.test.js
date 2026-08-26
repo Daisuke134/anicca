@@ -321,6 +321,7 @@ test("B3 command store keeps every read/write/OAuth operation scoped and uses at
     if (value.includes("lm_panel_preferences?") && !init.method) return jsonResponse([{ call_enabled: true }]);
     if (value.includes("lm_user_locations?") && !init.method) return jsonResponse([{ observed_at: "2026-07-22T00:00:00Z" }]);
     if (value.includes("lm_panel_command_receipts?") && !init.method) return jsonResponse([{ request_hash: "h", status: "succeeded", result: { ok: true } }]);
+    if (value.includes("create_lm_panel_oauth_state")) return jsonResponse(true);
     if (value.includes("claim_lm_panel_oauth_state")) return jsonResponse(true);
     return jsonResponse([{ ok: true }], init.method === "POST" ? 201 : 200);
   };
@@ -337,4 +338,15 @@ test("B3 command store keeps every read/write/OAuth operation scoped and uses at
   for (const call of calls.filter((item) => item.init.method && item.init.method !== "GET")) assert.doesNotMatch(call.init.body || "", /raw-secret/);
   assert.ok(calls.some((call) => call.value.endsWith("/rpc/mutate_lm_panel_preferences")));
   assert.ok(calls.some((call) => call.value.endsWith("/rpc/mutate_lm_panel_user")));
+  assert.ok(calls.some((call) => call.value.endsWith("/rpc/create_lm_panel_oauth_state")));
+});
+
+test("B3 command store turns a false atomic OAuth claim into a conflict", async () => {
+  const store = panelApi.createSupabaseCommandStore({
+    supaUrl: "https://db.example", supaKey: "k",
+    fetchImpl: async () => jsonResponse(false),
+  });
+  await assert.rejects(store.createOAuthState({ uid: "u1", chatId: "101" }, {
+    stateHash: "a".repeat(64), provider: "calendar", expiresAt: "2099-01-01T00:00:00Z",
+  }), (error) => error && error.message === "oauth_state_in_progress" && error.status === 409);
 });

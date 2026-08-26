@@ -8,6 +8,8 @@ const { createGogLumaCodeReader } = require("../lib/gog-luma-code-reader.js");
 const { createConnectorEventsPack } = require("../lib/connector-events-pack.js");
 const { buildRollingEventCoverage } = require("../lib/rolling-event-coverage.js");
 
+const HORIZON_DAYS = 28;
+
 function required(value) {
   return String(value == null ? "" : value).trim();
 }
@@ -59,7 +61,7 @@ async function runConnectorEventsPackReadonly({ env = process.env, deps = {} } =
     || inventory.complete !== true
     || !inventory.counts
     || inventory.counts.discovered !== inventory.counts.inspected
-    || inventory.counts.dates_with_candidates + inventory.counts.dates_without_candidates !== 21
+    || inventory.counts.dates_with_candidates + inventory.counts.dates_without_candidates !== HORIZON_DAYS
   ) throw new Error("Connector events pack unavailable");
   return Object.freeze({
     provider: "luma",

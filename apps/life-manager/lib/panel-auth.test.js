@@ -9,10 +9,240 @@ const path = require("path");
 
 const { sendPanelLink, handlePanelRequest } = require("./panel-auth.js");
 const { isPanelCommand } = require("./telegram.js");
+const PANEL_NOW = new Date("2026-08-27T00:00:00.000Z");
+const PANEL_AUTH_DATE = Math.floor(PANEL_NOW.getTime() / 1000);
+
+function telegramInitData({ actorId = 123, authDate = PANEL_AUTH_DATE, token = "telegram-token", chatId = actorId, firstName = "Fixture", lastName = "" } = {}) {
+  const params = new URLSearchParams({
+    auth_date: String(authDate),
+    user: JSON.stringify({ id: actorId, first_name: firstName, last_name: lastName }),
+    chat: JSON.stringify({ id: chatId, type: "private" }),
+  });
+  const secret = crypto.createHmac("sha256", "WebAppData").update(token).digest();
+  const dataCheckString = [...params.entries()]
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([key, value]) => `${key}=${value}`)
+    .join("\n");
+  const hash = crypto.createHmac("sha256", secret).update(dataCheckString).digest("hex");
+  params.set("hash", hash);
+  return params.toString();
+}
+
+function postTelegramInitData(base, initData, returnTo) {
+  return fetch(`${base}/api/panel/session/telegram`, {
+    method: "POST",
+    headers: { Origin: base, "content-type": "application/json" },
+    body: JSON.stringify(returnTo ? { initData, returnTo } : { initData }),
+  });
+}
+
+test("PANEL-2: valid Telegram initData creates a server session through the existing auth boundary", async () => {
+  const calls = [];
+  await withPanelServer({
+    token: "telegram-token",
+    supaUrl: "https://db.example",
+    supaKey: "service-key",
+    now: () => new Date(PANEL_NOW),
+    fetchImpl: async (url, init) => {
+      calls.push({ url: String(url), init });
+      const parsed = new URL(String(url));
+      if (parsed.pathname.endsWith("/rpc/claim_lm_panel_telegram_init_v2")) {
+        assert.equal(JSON.parse(init.body).p_profile_name, "Fixture");
+        return { ok: true, status: 200, json: async () => [{ status: "claimed", uid: "lm_u1", chat_id: "123" }] };
+      }
+      if (parsed.pathname.endsWith("/lm_panel_sessions") && init.method === "POST") {
+        return { ok: true, status: 201, json: async () => [] };
+      }
+      throw new Error(`unexpected panel auth fetch ${init.method || "GET"} ${url}`);
+    },
+  }, async (base) => {
+    const response = await postTelegramInitData(base, telegramInitData());
+    assert.equal(response.status, 200, await response.clone().text());
+    assert.deepEqual(await response.json(), { redirect: "/panel" });
+    assert.match(response.headers.get("set-cookie") || "", /__Host-lm_panel_session=/);
+  });
+  assert.equal(calls.filter(({ url }) => url.endsWith("/rpc/claim_lm_panel_telegram_init_v2")).length, 1);
+  assert.equal(calls.filter(({ url }) => url.endsWith("/lm_panel_sessions")).length, 1);
+});
+
+test("PANEL-2: invalid and stale Telegram initData are rejected before any session write", async () => {
+  const valid = telegramInitData();
+  const tampered = new URLSearchParams(valid);
+  tampered.set("user", JSON.stringify({ id: 999, first_name: "Tampered" }));
+  const cases = [
+    { name: "invalid signature", initData: tampered.toString(), status: 401 },
+    { name: "stale auth_date", initData: telegramInitData({ authDate: PANEL_AUTH_DATE - 301 }), status: 401 },
+  ];
+  for (const current of cases) {
+    const writes = [];
+    await withPanelServer({
+      token: "telegram-token",
+      supaUrl: "https://db.example",
+      supaKey: "service-key",
+      now: () => new Date(PANEL_NOW),
+      fetchImpl: async (url, init) => {
+        writes.push({ url: String(url), init });
+        throw new Error(`${current.name} must not reach Supabase`);
+      },
+    }, async (base) => {
+      const response = await postTelegramInitData(base, current.initData);
+      assert.equal(response.status, current.status, `${current.name}: ${await response.clone().text()}`);
+      assert.deepEqual(await response.json(), { error: "telegram_auth_rejected" }, current.name);
+    });
+    assert.equal(writes.length, 0, `${current.name} must not write a session`);
+  }
+});
+
+test("PANEL-2: replayed and cross-actor Telegram claims remain rejected", async () => {
+  const cases = [
+    { name: "replayed", claim: { status: "replayed" }, status: 409, error: "telegram_auth_replayed" },
+    { name: "cross-actor", claim: { status: "claimed", uid: "lm_u1", chat_id: "999" }, status: 403, error: "telegram_actor_unbound" },
+  ];
+  for (const current of cases) {
+    const writes = [];
+    await withPanelServer({
+      token: "telegram-token",
+      supaUrl: "https://db.example",
+      supaKey: "service-key",
+      now: () => new Date(PANEL_NOW),
+      fetchImpl: async (url, init) => {
+        writes.push({ url: String(url), init });
+        const parsed = new URL(String(url));
+        if (parsed.pathname.endsWith("/rpc/claim_lm_panel_telegram_init_v2")) {
+          return { ok: true, status: 200, json: async () => [current.claim] };
+        }
+        throw new Error(`${current.name} must not create a session`);
+      },
+    }, async (base) => {
+      const response = await postTelegramInitData(base, telegramInitData());
+      assert.equal(response.status, current.status, current.name);
+      assert.deepEqual(await response.json(), { error: current.error }, current.name);
+    });
+    assert.equal(writes.filter(({ url }) => url.endsWith("/lm_panel_sessions")).length, 0, `${current.name} must not write a session`);
+  }
+});
+
+test("R1A2 HMAC verification carries only a bounded Telegram display name", () => {
+  const { verifyTelegramInitData } = require("./panel-auth.js");
+  const verified = verifyTelegramInitData(telegramInitData({ actorId: 123, firstName: "Aiko", lastName: "Tanaka" }), { token: "telegram-token", now: () => PANEL_NOW });
+  assert.equal(verified.ok, true);
+  assert.equal(verified.actorId, "123");
+  assert.equal(verified.profileName, "Aiko Tanaka");
+  const long = verifyTelegramInitData(telegramInitData({ firstName: "A".repeat(100), lastName: "B".repeat(100) }), { token: "telegram-token", now: () => PANEL_NOW });
+  assert.equal(long.profileName.length, 120);
+});
+
+test("Task 7B: /panel/onboarding strips query identity without changing the onboarding pathname", async () => {
+  const calls = [];
+  await withPanelServer({
+    supaUrl: "https://db.example",
+    supaKey: "service-key",
+    fetchImpl: async (...args) => {
+      calls.push(args);
+      throw new Error("query identity must not reach storage");
+    },
+  }, async (base) => {
+    const response = await fetch(`${base}/panel/onboarding?tg=123`, { redirect: "manual" });
+    assert.equal(response.status, 303);
+    assert.equal(response.headers.get("location"), "/panel/onboarding");
+    assert.equal(response.headers.get("set-cookie"), null);
+  });
+  assert.equal(calls.length, 0);
+});
+
+test("Task 7B: an authenticated onboarding visit renders the Telegram-native page, not the dashboard", async () => {
+  const session = Buffer.alloc(32, 0x44).toString("base64url");
+  await withPanelServer({
+    supaUrl: "https://db.example",
+    supaKey: "service-key",
+    randomBytes: () => Buffer.alloc(32, 0x45),
+    fetchImpl: async (url) => {
+      const parsed = new URL(String(url));
+      if (parsed.pathname.endsWith("/rpc/resolve_lm_panel_session")) return { ok: true, status: 200, json: async () => [{ uid: "lm_u1", chat_id: "123", rotated: false }] };
+      throw new Error(`unexpected onboarding fetch ${url}`);
+    },
+  }, async (base) => {
+    const response = await fetch(`${base}/panel/onboarding`, { headers: { Cookie: `__Host-lm_panel_session=${session}` } });
+    assert.equal(response.status, 200);
+    const html = await response.text();
+    assert.match(html, /data-panel-onboarding/);
+    assert.doesNotMatch(html, /data-panel-section="timeline"/);
+    assert.doesNotMatch(html, /\bAnicca\b/i);
+  });
+});
+
+test("Task 7B: unauthenticated Telegram onboarding keeps the return path through the auth boundary", async () => {
+  await withPanelServer({
+    token: "telegram-token",
+    supaUrl: "https://db.example",
+    supaKey: "service-key",
+    randomBytes: () => Buffer.alloc(32, 0x50),
+    now: () => new Date(PANEL_NOW),
+    fetchImpl: async (url, init) => {
+      const parsed = new URL(String(url));
+      if (parsed.pathname.endsWith("/lm_panel_device_challenges")) return { ok: true, status: 201, json: async () => [] };
+      if (parsed.pathname.endsWith("/rpc/claim_lm_panel_telegram_init_v2")) return { ok: true, status: 200, json: async () => [{ status: "claimed", uid: "lm_u1", chat_id: "123" }] };
+      if (parsed.pathname.endsWith("/lm_panel_sessions")) return { ok: true, status: 201, json: async () => [] };
+      throw new Error(`unexpected onboarding auth fetch ${url}`);
+    },
+  }, async (base) => {
+    const login = await fetch(`${base}/panel/onboarding`);
+    assert.equal(login.status, 200);
+    const loginHtml = await login.text();
+    assert.match(loginHtml, /returnTo.*\/panel\/onboarding/);
+    assert.doesNotMatch(loginHtml, /[?&](?:tg|uid)=/i);
+
+    const response = await postTelegramInitData(base, telegramInitData(), "/panel/onboarding");
+    assert.equal(response.status, 200, await response.clone().text());
+    assert.deepEqual(await response.json(), { redirect: "/panel/onboarding" });
+    for (const forged of ["//evil.example", "/panel/onboarding/extra", "https://evil.example/panel/onboarding"]) {
+      const fallback = await postTelegramInitData(base, telegramInitData(), forged);
+      assert.equal(fallback.status, 200, forged);
+      assert.deepEqual(await fallback.json(), { redirect: "/panel" }, forged);
+    }
+  });
+});
+
+test("Task 7B R1: device-code completion preserves onboarding only through the fixed path allowlist", async () => {
+  const exchanges = [];
+  await withPanelServer({
+    supaUrl: "https://db.example",
+    supaKey: "service-key",
+    randomBytes: () => Buffer.alloc(32, 0x51),
+    fetchImpl: async (url, init = {}) => {
+      const parsed = new URL(String(url));
+      if (parsed.pathname.endsWith("/lm_panel_device_challenges")) return { ok: true, status: 201, json: async () => [] };
+      if (parsed.pathname.endsWith("/rpc/exchange_lm_panel_device_challenge")) { exchanges.push(JSON.parse(init.body)); return { ok: true, status: 200, json: async () => [{ status: "claimed", uid: "lm_u1", chat_id: "123" }] }; }
+      if (parsed.pathname.endsWith("/lm_panel_sessions")) return { ok: true, status: 201, json: async () => [] };
+      throw new Error(`unexpected device auth fetch ${url}`);
+    },
+  }, async (base) => {
+    const login = await fetch(`${base}/panel/onboarding`);
+    const challenge = /__Host-lm_panel_challenge=([^;]+)/.exec(login.headers.get("set-cookie") || "")?.[1] || "";
+    assert.match(challenge, /^[A-Za-z0-9_-]{43}$/);
+    const accepted = await fetch(`${base}/api/panel/session/device`, {
+      method: "POST",
+      headers: { Origin: base, Cookie: `__Host-lm_panel_challenge=${challenge}`, "content-type": "application/json" },
+      body: JSON.stringify({ returnTo: "/panel/onboarding" }),
+    });
+    assert.equal(accepted.status, 200, await accepted.clone().text());
+    assert.deepEqual(await accepted.json(), { redirect: "/panel/onboarding" });
+    const fallback = await fetch(`${base}/api/panel/session/device`, {
+      method: "POST",
+      headers: { Origin: base, Cookie: `__Host-lm_panel_challenge=${challenge}`, "content-type": "application/json" },
+      body: JSON.stringify({ returnTo: "//evil.example" }),
+    });
+    assert.equal(fallback.status, 200);
+    assert.deepEqual(await fallback.json(), { redirect: "/panel" });
+    assert.equal(exchanges.length, 2);
+  });
+});
 
 async function withPanelServer(opts, run) {
+  let origin = "";
   const server = http.createServer((req, res) => {
-    Promise.resolve().then(() => handlePanelRequest(req, res, opts)).catch((error) => {
+    const dynamicOrigin = opts.panelOrigin || opts.panelBaseUrl ? {} : { panelOrigin: origin, panelBaseUrl: origin };
+    Promise.resolve().then(() => handlePanelRequest(req, res, { ...opts, ...dynamicOrigin })).catch((error) => {
       res.writeHead(500);
       res.end(error.message);
     });
@@ -20,7 +250,8 @@ async function withPanelServer(opts, run) {
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
   try {
     const { port } = server.address();
-    return await run(`http://127.0.0.1:${port}`);
+    origin = `http://127.0.0.1:${port}`;
+    return await run(origin);
   } finally {
     await new Promise((resolve) => server.close(resolve));
   }
@@ -185,4 +416,27 @@ test("LM-33a: life-call wires GET /panel and Telegram /panel without changing /l
 
   const telegramSource = fs.readFileSync(path.join(__dirname, "telegram.js"), "utf8");
   assert.match(telegramSource, /return `\$\{root\}\/lm\?tg=/, "the /lm?tg onboarding handoff must remain");
+});
+
+test("R1A actor claim provisions one deterministic Telegram tenant under the existing 2-arg RPC", () => {
+  const sql = fs.readFileSync(path.join(__dirname, "../migrations/2026-08-27-lm-panel-onboarding-reachability.sql"), "utf8");
+  assert.match(sql, /CREATE OR REPLACE FUNCTION public\.claim_lm_panel_telegram_init\(p_init_hash text, p_actor_id text\)/i);
+  assert.match(sql, /INSERT INTO public\.lm_panel_telegram_replays/i);
+  assert.match(sql, /INSERT INTO public\.lm_users/i);
+  assert.match(sql, /md5\(p_actor_id\)/i);
+  assert.match(sql, /ON CONFLICT\s*\(uid\)\s+DO NOTHING/i);
+  assert.match(sql, /telegram_chat_id::text\s*=\s*p_actor_id/i);
+  assert.match(sql, /FOR UPDATE/i);
+  assert.match(sql, /RETURN QUERY SELECT 'replayed'/i);
+  assert.match(sql, /RETURN QUERY SELECT 'claimed'/i);
+});
+
+test("R1A2 v2 actor claim stores profile name only for an empty existing name", () => {
+  const sql = fs.readFileSync(path.join(__dirname, "../migrations/2026-08-27-lm-panel-onboarding-reachability.sql"), "utf8");
+  assert.match(sql, /CREATE OR REPLACE FUNCTION public\.claim_lm_panel_telegram_init_v2\(p_init_hash text, p_actor_id text, p_profile_name text\)/i);
+  assert.match(sql, /p_profile_name[\s\S]*char_length[\s\S]*120/i);
+  assert.match(sql, /NULLIF\(trim\((?:p_)?profile_name\), ''\)/i);
+  assert.match(sql, /CASE WHEN name IS NULL OR trim\(name\)\s*=\s*'' THEN NULLIF\(trim\(profile_name\), ''\) ELSE name END/i);
+  assert.match(sql, /claim_lm_panel_telegram_init_v2\(p_init_hash, p_actor_id, NULL\)/i);
+  assert.match(sql, /REVOKE ALL ON FUNCTION public\.claim_lm_panel_telegram_init_v2/i);
 });

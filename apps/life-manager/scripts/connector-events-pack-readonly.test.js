@@ -39,7 +39,7 @@ test("the host read-only entrypoint recovers auth and reads exhaustive inventory
             return {
               complete: true,
               window_start_date: "2026-08-02",
-              window_end_date: "2026-08-22",
+              window_end_date: "2026-08-29",
               source_inventory_rounds: 7,
               counts: {
                 discovered: 3,
@@ -47,7 +47,7 @@ test("the host read-only entrypoint recovers auth and reads exhaustive inventory
                 scheduled_in_person_in_window: 2,
                 excluded: 1,
                 dates_with_candidates: 2,
-                dates_without_candidates: 19,
+                dates_without_candidates: 26,
               },
             };
           },
@@ -63,17 +63,17 @@ test("the host read-only entrypoint recovers auth and reads exhaustive inventory
     recovered: true,
     inventory_complete: true,
     window_start_date: "2026-08-02",
-    window_end_date: "2026-08-22",
+    window_end_date: "2026-08-29",
     inventory_rounds: 7,
     discovered_candidate_count: 3,
     inspected_detail_count: 3,
     scheduled_in_person_in_window_count: 2,
     excluded_detail_count: 1,
     dates_with_candidates: 2,
-    dates_without_candidates: 19,
+    dates_without_candidates: 26,
   });
   assert.deepEqual(calls.map((call) => call[0]), ["create-auth", "create-pack", "auth", "date-inventory"]);
-  assert.equal(calls.at(-1)[1].days.length, 21);
+  assert.equal(calls.at(-1)[1].days.length, 28);
   assert.equal(calls.at(-1)[2].now, "2026-08-02T01:00:00.000Z");
 });
 

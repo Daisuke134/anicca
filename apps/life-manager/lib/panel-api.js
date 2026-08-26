@@ -1,6 +1,7 @@
 // LM-33b: authenticated, read-only JSON model for the Life Manager panel.
 "use strict";
 
+const crypto = require("node:crypto");
 const { cookieValue, csrfToken, panelScopeCookie, sessionScope, sessionUid } = require("./panel-auth.js");
 const { buildControlCenter, claimCalendarOAuthState, executeUserCommand, validateCommand } = require("./user-command.js");
 const { interpretCalendarEvent } = require("./calendar-interpreter.js");
@@ -9,8 +10,10 @@ const { lockedDiscoveryGates } = require("./feature-discovery.js");
 const { DISCOVERY_STRINGS } = require("./i18n.js");
 const { buildScorePeriods, computePanelScores } = require("./panel-score-semantics.js");
 const { presentPanelSection } = require("./panel-presentation.js");
+const { normalizePhone } = require("./telegram-onboard.js");
 
 const ENDPOINTS = new Set(["timeline", "scores", "ledger", "gates", "settings"]);
+const ONBOARDING_ACTIONS = new Set(["name.save", "home.save", "notifications.enable", "phone.save", "phone.skip", "call.enable", "call.skip", "payment.skip"]);
 const CALL_MINUTES_BEFORE = Object.freeze([10, 5]);
 const SCORE_ORGANS = Object.freeze(["daily", "physical", "mental", "financial"]);
 const SORTED_SCORE_ORGANS = Object.freeze([...SCORE_ORGANS].sort());
@@ -320,6 +323,133 @@ function sendPanelSection(res, section, candidate, opts) {
   }
 }
 
+function paymentLink(opts = {}, scope = {}) {
+  const value = String(opts.stripePaymentLink || opts.paymentLink || process.env.LM_STRIPE_PAYMENT_LINK || process.env.STRIPE_PAYMENT_LINK || "").trim();
+  try {
+    const url = new URL(value);
+    if (url.protocol !== "https:" || url.hostname !== "buy.stripe.com" || !scope.uid || url.username || url.password || url.pathname.length <= 1) return "";
+    url.searchParams.set("client_reference_id", String(scope.uid));
+    return url.toString();
+  } catch { return ""; }
+}
+
+function onboardingError(message, status) { const error = new Error(message); error.status = status; return error; }
+function normalizedOnboardingPhone(value) {
+  const raw = String(value || "").trim();
+  return /^[+\d()\s.-]+$/.test(raw) ? normalizePhone(raw) : null;
+}
+
+async function onboardingRpc(name, body, opts = {}) {
+  if (!opts.supaUrl || !opts.supaKey) throw onboardingError("onboarding_unavailable", 502);
+  const response = await (opts.fetchImpl || fetch)(`${String(opts.supaUrl).replace(/\/$/, "")}/rest/v1/rpc/${name}`, {
+    method: "POST", headers: { ...headers(opts.supaKey), "content-type": "application/json" }, body: JSON.stringify(body),
+  });
+  const value = await jsonOr(response, {});
+  if (!response.ok) {
+    const message = String(value && (value.message || value.error || value.hint) || "");
+    if (message.includes("scope_mismatch")) throw onboardingError("unauthorized", 401);
+    if (message.includes("onboarding_conflict")) throw onboardingError("onboarding_conflict", 409);
+    if (message.includes("invalid_name")) throw onboardingError("invalid_name", 400);
+    if (message.includes("invalid_home_address")) throw onboardingError("invalid_home_address", 400);
+    if (message.includes("invalid_phone")) throw onboardingError("invalid_phone", 400);
+    if (message.includes("invalid_onboarding_action")) throw onboardingError("invalid_action", 400);
+    throw onboardingError("onboarding_unavailable", 502);
+  }
+  return Array.isArray(value) ? value[0] || null : value;
+}
+
+async function readCalendarStatus(scope, opts = {}) {
+  if (!opts.composioKey && !opts.composioCalendarStatusImpl && !process.env.COMPOSIO_API_KEY) throw onboardingError("calendar_unavailable", 502);
+  let status;
+  try {
+    status = await (opts.composioCalendarStatusImpl || composioCalendarStatus)(scope, { ...opts, composioKey: opts.composioKey || process.env.COMPOSIO_API_KEY });
+  } catch (error) {
+    if (error && error.status === 401) throw error;
+    throw onboardingError("calendar_unavailable", 502);
+  }
+  if (!["ACTIVE", "MISSING", "DISABLED", "INACTIVE"].includes(status)) throw onboardingError("calendar_unavailable", 502);
+  return status;
+}
+
+async function refreshCalendar(scope, store, opts = {}) {
+  const status = await readCalendarStatus(scope, opts);
+  try {
+    if (typeof store.syncCalendarStatus === "function") {
+      if (await store.syncCalendarStatus(scope, status) === false) throw new Error("calendar_sync_failed");
+    } else {
+      await onboardingRpc("sync_lm_panel_calendar_status", { p_uid: scope.uid, p_chat_id: scope.chatId, p_status: status }, opts);
+    }
+  } catch (error) {
+    if (error && error.status === 401) throw error;
+    throw onboardingError("calendar_unavailable", 502);
+  }
+  return status;
+}
+
+function onboardingMutation(body, pathAction) {
+  if (!body || typeof body !== "object" || Array.isArray(body)) throw onboardingError("invalid_json", 400);
+  const rawAction = body.action !== undefined ? body.action : body.type !== undefined ? body.type : pathAction;
+  if (typeof rawAction !== "string" || !ONBOARDING_ACTIONS.has(rawAction.trim())) throw onboardingError("invalid_action", 400);
+  const action = rawAction.trim(), hasPayload = Object.hasOwn(body, "payload");
+  if (hasPayload && (!body.payload || typeof body.payload !== "object" || Array.isArray(body.payload))) throw onboardingError("invalid_json", 400);
+  const payload = hasPayload ? { ...body.payload } : { ...body };
+  for (const key of ["action", "type", "payload", "uid", "tg", "telegram_id", "chat_id", "paid", "plan_status", "stripe_customer_id", "stripe_subscription_id", "current_period_end", "stripe_event_at"]) delete payload[key];
+  if (hasPayload && Object.keys(body).some((key) => !["action", "type", "payload", "uid", "tg", "telegram_id", "chat_id", "paid", "plan_status", "stripe_customer_id", "stripe_subscription_id", "current_period_end", "stripe_event_at"].includes(key))) throw onboardingError("invalid_json", 400);
+  const allowed = action === "name.save" ? new Set(["name"]) : action === "home.save" ? new Set(["home_address", "homeAddress"]) : action === "phone.save" ? new Set(["phone"]) : new Set();
+  if (Object.keys(payload).some((key) => !allowed.has(key))) throw onboardingError("invalid_json", 400);
+  if (action === "name.save") { if (typeof payload.name !== "string") throw onboardingError("invalid_name", 400); const name = payload.name.trim(); if (!name || name.length > 120) throw onboardingError("invalid_name", 400); payload.name = name; }
+  if (action === "home.save") { const rawHome = payload.home_address !== undefined ? payload.home_address : payload.homeAddress; if (typeof rawHome !== "string") throw onboardingError("invalid_home_address", 400); const home = rawHome.trim(); if (!home || home.length > 240) throw onboardingError("invalid_home_address", 400); payload.home_address = home; delete payload.homeAddress; }
+  if (action === "phone.save") { if (typeof payload.phone !== "string") throw onboardingError("invalid_phone", 400); const phone = normalizedOnboardingPhone(payload.phone); if (!phone) throw onboardingError("invalid_phone", 400); payload.phone = phone; }
+  return { action, payload };
+}
+
+function onboardingResponse(value, opts = {}, scope = {}) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) throw onboardingError("onboarding_unavailable", 502);
+  const body = {};
+  for (const key of ["step", "stage", "name", "calendarConnected", "homeAddress", "notificationsEnabled", "phone", "callEnabled", "paid"]) {
+    if (Object.hasOwn(value, key)) body[key] = value[key];
+  }
+  const aliases = { pay: "payment", done: "dashboard", gmail: "dashboard" };
+  body.step = aliases[String(body.step || body.stage || "")] || String(body.step || body.stage || "");
+  if (body.step === "payment" || (body.step === "dashboard" && body.paid !== true)) {
+    const link = paymentLink(opts, scope);
+    if (!link) throw onboardingError("payment_unavailable", 503);
+    body.paymentLink = link;
+  } else delete body.paymentLink;
+  return body;
+}
+
+function onboardingRequestHash(parsed) {
+  return crypto.createHash("sha256").update(JSON.stringify({ action: parsed.action, payload: parsed.payload })).digest("hex");
+}
+
+function onboardingReceiptConflict(message) { return onboardingError(message, 409); }
+
+function replayOnboardingReceipt(receipt, requestHash) {
+  if (!receipt) return null;
+  const storedHash = String(receipt.requestHash || receipt.request_hash || "");
+  if (storedHash !== requestHash) throw onboardingReceiptConflict("idempotency_conflict");
+  if (receipt.status === "succeeded" && receipt.result && typeof receipt.result === "object") return receipt.result;
+  if (receipt.status === "pending") throw onboardingReceiptConflict("idempotency_in_progress");
+  throw onboardingReceiptConflict("idempotency_failed");
+}
+
+async function claimOnboardingReceipt(scope, key, parsed, store) {
+  if (!store || typeof store.readReceipt !== "function" || typeof store.claimReceipt !== "function" || typeof store.finishReceipt !== "function") {
+    throw onboardingError("onboarding_unavailable", 502);
+  }
+  const requestHash = onboardingRequestHash(parsed);
+  const existing = await store.readReceipt(scope, key);
+  const replay = replayOnboardingReceipt(existing, requestHash);
+  if (replay) return { requestHash, replay, claimed: false };
+  const claimed = await store.claimReceipt(scope, key, { requestHash, commandType: "onboarding.transition", status: "pending" });
+  if (claimed) return { requestHash, replay: null, claimed: true };
+  const raced = await store.readReceipt(scope, key);
+  const racedReplay = replayOnboardingReceipt(raced, requestHash);
+  if (racedReplay) return { requestHash, replay: racedReplay, claimed: false };
+  throw onboardingReceiptConflict("idempotency_in_progress");
+}
+
 async function readJson(req) {
   return new Promise((resolve, reject) => {
     let raw = "", settled = false;
@@ -363,7 +493,11 @@ function createSupabaseCommandStore(opts = {}) {
     async patchUser(scope, body) { return patch("lm_users", scope, body); },
     async mutatePreferences(scope, body) { const response = await fetchImpl(`${base}/rest/v1/rpc/mutate_lm_panel_preferences`, { method: "POST", headers: { ...headers(opts.supaKey), "content-type": "application/json" }, body: JSON.stringify({ p_uid: scope.uid, p_chat_id: scope.chatId, p_patch: body }) }); if (!response.ok) throw new Error("scope_mismatch"); return jsonOr(response, body); },
     async mutateUser(scope, body) { const response = await fetchImpl(`${base}/rest/v1/rpc/mutate_lm_panel_user`, { method: "POST", headers: { ...headers(opts.supaKey), "content-type": "application/json" }, body: JSON.stringify({ p_uid: scope.uid, p_chat_id: scope.chatId, p_patch: body }) }); if (!response.ok) throw new Error("scope_mismatch"); return jsonOr(response, body); },
-    async createOAuthState(scope, state) { const response = await fetchImpl(`${base}/rest/v1/lm_panel_oauth_states`, { method: "POST", headers: { ...headers(opts.supaKey), "content-type": "application/json", Prefer: "return=minimal" }, body: JSON.stringify({ state_hash: state.stateHash, uid: scope.uid, chat_id: scope.chatId, provider: state.provider, expires_at: state.expiresAt }) }); if (!response.ok) throw new Error("oauth_state_failed"); },
+    async readOnboardingState(scope) { return onboardingRpc("lm_panel_onboarding_state", { p_uid: scope.uid, p_chat_id: scope.chatId }, opts); },
+    async mutateOnboarding(scope, action, payload) { return onboardingRpc("lm_panel_onboarding_transition", { p_uid: scope.uid, p_chat_id: scope.chatId, p_action: action, p_payload: payload || {} }, opts); },
+    async syncCalendarStatus(scope, status) { return onboardingRpc("sync_lm_panel_calendar_status", { p_uid: scope.uid, p_chat_id: scope.chatId, p_status: status }, opts); },
+    async mutateOnboardingWithCalendar(scope, status, action, payload) { return onboardingRpc("lm_panel_onboarding_transition_with_calendar", { p_uid: scope.uid, p_chat_id: scope.chatId, p_status: status, p_action: action, p_payload: payload || {} }, opts); },
+    async createOAuthState(scope, state) { const response = await fetchImpl(`${base}/rest/v1/rpc/create_lm_panel_oauth_state`, { method: "POST", headers: { ...headers(opts.supaKey), "content-type": "application/json" }, body: JSON.stringify({ p_state_hash: state.stateHash, p_uid: scope.uid, p_chat_id: scope.chatId, p_provider: state.provider, p_expires_at: state.expiresAt }) }); if (!response.ok) throw new Error("oauth_state_failed"); const value = await jsonOr(response, false); const claimed = Array.isArray(value) ? value[0] === true : value === true; if (!claimed) { const error = new Error("oauth_state_in_progress"); error.status = 409; throw error; } return true; },
     async claimOAuthState(scope, stateHash) { const response = await fetchImpl(`${base}/rest/v1/rpc/claim_lm_panel_oauth_state`, { method: "POST", headers: { ...headers(opts.supaKey), "content-type": "application/json" }, body: JSON.stringify({ p_state_hash: stateHash, p_uid: scope.uid, p_chat_id: scope.chatId }) }); if (!response.ok) throw new Error("oauth_state_failed"); return jsonOr(response, false); },
   };
 }
@@ -380,8 +514,18 @@ async function handlePanelOAuthCallback(req, res, opts = {}) {
   if (store.assertCurrentScope && !await store.assertCurrentScope(scope)) { res.writeHead(401, { "content-type": "text/plain", "cache-control": "no-store" }); res.end("unauthorized"); return; }
   const claimed = await claimCalendarOAuthState(scope, state, { store });
   let verified = false;
-  if (claimed) { try { verified = await composioCalendarStatus(scope, opts) === "ACTIVE"; } catch { verified = false; } }
-  res.writeHead(verified ? 303 : 403, { ...(verified ? { Location: "/panel" } : {}), "cache-control": "no-store", "referrer-policy": "no-referrer" });
+  let location = "/panel";
+  if (claimed) {
+    try { verified = await (opts.composioCalendarStatusImpl || composioCalendarStatus)(scope, opts) === "ACTIVE"; } catch { verified = false; }
+    if (verified && typeof store.readOnboardingState === "function") {
+      try {
+        const onboarding = await store.readOnboardingState(scope);
+        const step = String(onboarding && (onboarding.step || onboarding.stage) || "");
+        if (step && step !== "dashboard" && step !== "done") location = "/panel/onboarding";
+      } catch { location = "/panel"; }
+    }
+  }
+  res.writeHead(verified ? 303 : 403, { ...(verified ? { Location: location } : {}), "cache-control": "no-store", "referrer-policy": "no-referrer" });
   res.end(verified ? "" : "calendar connection not verified");
 }
 
@@ -400,7 +544,7 @@ function sameDisabledCalendarAccount(item, id) {
 }
 
 async function composioCalendarStatus(scope, opts = {}) {
-  if (!opts.composioKey) return "INACTIVE";
+  if (!opts.composioKey) throw new Error("provider_unavailable");
   const response = await (opts.fetchImpl || fetch)(`https://backend.composio.dev/api/v3/connected_accounts?user_ids=${encodeURIComponent(scope.uid)}&toolkit_slugs=googlecalendar`, { headers: { "x-api-key": opts.composioKey } });
   if (!response.ok) throw new Error("provider_failed");
   const body = await jsonOr(response, {});
@@ -408,7 +552,7 @@ async function composioCalendarStatus(scope, opts = {}) {
   if (items.length > 1) throw new Error("provider_ambiguous");
   if (items.length === 0) return "MISSING";
   if (!exactCalendarAccount(scope, items[0])) throw new Error("provider_ownership");
-  return items[0].status === "ACTIVE" && items[0].is_disabled !== true && items[0].enabled !== false ? "ACTIVE" : "DISABLED";
+  return items[0].status === "ACTIVE" && items[0].is_disabled !== true && items[0].enabled === true ? "ACTIVE" : "DISABLED";
 }
 
 async function composioCalendarAccounts(scope, opts = {}) {
@@ -450,7 +594,7 @@ async function composioCalendarStart(scope, opts = {}) {
   if (accounts.length === 0) return null;
   if (accounts.length !== 1 || !accounts[0].id) throw new Error("provider_ambiguous");
   const account = accounts[0];
-  if (account.status === "ACTIVE" && account.is_disabled !== true && account.enabled !== false) return { provider: "calendar", state: "connected" };
+  if (account.status === "ACTIVE" && account.is_disabled !== true && account.enabled === true) return { provider: "calendar", state: "connected" };
   const response = await (opts.fetchImpl || fetch)(`https://backend.composio.dev/api/v3/connected_accounts/${encodeURIComponent(account.id)}/status`, {
     method: "PATCH",
     headers: { "x-api-key": opts.composioKey, "content-type": "application/json" },
@@ -465,7 +609,8 @@ async function composioCalendarStart(scope, opts = {}) {
 async function handlePanelApiRequest(req, res, opts = {}) {
   const path = new URL(req.url || "/", "http://panel.local").pathname;
   const endpoint = path.startsWith("/api/panel/") ? path.slice("/api/panel/".length) : "";
-  if (!ENDPOINTS.has(endpoint) && endpoint !== "control-center" && endpoint !== "commands") {
+  const onboardingEndpoint = endpoint === "onboarding" || endpoint.startsWith("onboarding/");
+  if (!ENDPOINTS.has(endpoint) && endpoint !== "control-center" && endpoint !== "commands" && !onboardingEndpoint) {
     sendJson(res, 404, { error: "not_found" });
     return;
   }
@@ -490,6 +635,49 @@ async function handlePanelApiRequest(req, res, opts = {}) {
   const commandStore = opts.commandStore || createSupabaseCommandStore(opts);
   if (!opts.sessionScopeImpl && !await commandStore.assertCurrentScope(scope)) {
     sendJson(res, 401, { error: "unauthorized" });
+    return;
+  }
+  if (onboardingEndpoint) {
+    if (commandStore.assertCurrentScope && !await commandStore.assertCurrentScope(scope)) { sendJson(res, 401, { error: "unauthorized" }); return; }
+    if (req.method === "GET") {
+      if (endpoint !== "onboarding") { sendJson(res, 404, { error: "not_found" }); return; }
+      try {
+        await refreshCalendar(scope, commandStore, opts);
+        const state = await (commandStore.readOnboardingState || (() => { throw onboardingError("onboarding_unavailable", 502); }))(scope);
+        sendJson(res, 200, onboardingResponse(state, opts, scope));
+      } catch (error) { sendJson(res, error.status || 502, { error: ["payment_unavailable", "unauthorized", "calendar_unavailable"].includes(error.message) ? error.message : "onboarding_unavailable" }); }
+      return;
+    }
+    if (req.method !== "POST") { sendJson(res, 405, { error: "method_not_allowed" }, { Allow: "GET, POST" }); return; }
+    const expectedOrigin = String(opts.panelOrigin || opts.panelBaseUrl || "").replace(/\/$/, "");
+    if (!expectedOrigin || String(req.headers.origin || "") !== expectedOrigin) { sendJson(res, 403, { error: "origin_rejected" }); return; }
+    if (!/^application\/json(?:;|$)/i.test(String(req.headers["content-type"] || ""))) { sendJson(res, 415, { error: "json_required" }); return; }
+    if (!timingEqual(req.headers["x-lm-csrf"], scope.csrf || csrfToken(session))) { sendJson(res, 403, { error: "csrf_rejected" }); return; }
+    const key = String(req.headers["idempotency-key"] || "");
+    if (!/^[A-Za-z0-9._:-]{8,128}$/.test(key)) { sendJson(res, 400, { error: "idempotency_required" }); return; }
+    let claimedReceipt = false, parsed;
+    try {
+      const pathAction = endpoint.slice("onboarding/".length).replace(/\//g, ".");
+      parsed = onboardingMutation(await readJson(req), pathAction);
+      const receipt = await claimOnboardingReceipt(scope, key, parsed, commandStore);
+      if (receipt.replay) { sendJson(res, 200, receipt.replay); return; }
+      claimedReceipt = receipt.claimed;
+      const providerStatus = await readCalendarStatus(scope, opts);
+      const transition = commandStore.mutateOnboardingWithCalendar;
+      if (typeof transition !== "function") throw onboardingError("onboarding_unavailable", 502);
+      const state = await transition(scope, providerStatus, parsed.action, parsed.payload);
+      const body = onboardingResponse(state, opts, scope);
+      await commandStore.finishReceipt(scope, key, { status: "succeeded", result: body });
+      claimedReceipt = false;
+      sendJson(res, 200, body);
+    } catch (error) {
+      if (claimedReceipt) {
+        try { await commandStore.finishReceipt(scope, key, { status: "failed", result: null }); } catch { /* leave the receipt pending; retries remain blocked */ }
+      }
+      const known = new Set(["unauthorized", "calendar_unavailable", "invalid_json", "body_too_large", "onboarding_conflict", "invalid_name", "invalid_home_address", "invalid_phone", "invalid_action", "payment_unavailable", "idempotency_required", "idempotency_conflict", "idempotency_in_progress", "idempotency_failed"]);
+      const status = error.status || (known.has(error.message) ? (error.message === "unauthorized" ? 401 : error.message === "calendar_unavailable" ? 502 : error.message === "body_too_large" ? 413 : error.message === "onboarding_conflict" || error.message.startsWith("idempotency_") ? 409 : error.message === "payment_unavailable" ? 503 : 400) : 502);
+      sendJson(res, status, { error: known.has(error.message) ? error.message : "onboarding_unavailable" });
+    }
     return;
   }
   if (endpoint === "commands") {

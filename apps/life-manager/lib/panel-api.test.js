@@ -4,13 +4,19 @@ const test = require("node:test");
 const assert = require("node:assert");
 const crypto = require("node:crypto");
 const http = require("node:http");
+const fs = require("node:fs");
+const path = require("node:path");
 
 let handlePanelApiRequest = async (_req, res) => {
   res.writeHead(501, { "content-type": "application/json" });
   res.end(JSON.stringify({ error: "panel API not implemented" }));
 };
+let handlePanelOAuthCallback = async (_req, res) => {
+  res.writeHead(501, { "content-type": "application/json" });
+  res.end(JSON.stringify({ error: "panel callback not implemented" }));
+};
 try {
-  ({ handlePanelApiRequest } = require("./panel-api.js"));
+  ({ handlePanelApiRequest, handlePanelOAuthCallback } = require("./panel-api.js"));
 } catch (error) {
   if (error.code !== "MODULE_NOT_FOUND") throw error;
 }
@@ -380,3 +386,339 @@ function byUidWallet(fixture) {
   assert.ok(userRead);
   return "0x477EeE969ccfdc0e959F38cE8B83e372FC0262ad";
 }
+
+function onboardingHarness(initial = {}) {
+  const writes = [];
+  const syncs = [];
+  const wrapperCalls = [];
+  const providerReads = [];
+  const reads = [];
+  const receipts = new Map();
+  const state = {
+    step: "name", stage: "calendar", name: null, calendarConnected: false,
+    homeAddress: null, notificationsEnabled: false, phone: null,
+    callEnabled: false, paid: false, paymentLink: null, ...initial,
+  };
+  const scope = { uid: "tenant-a", chatId: "101", csrf: "csrf-a" };
+  const commandStore = {
+    async assertCurrentScope(value) { return value.uid === scope.uid && value.chatId === scope.chatId; },
+    async readReceipt(value, key) { assert.deepEqual(value, scope); return receipts.get(String(key)) || null; },
+    async claimReceipt(value, key, entry) {
+      assert.deepEqual(value, scope);
+      const normalized = String(key);
+      if (receipts.has(normalized)) return false;
+      receipts.set(normalized, { requestHash: entry.requestHash, status: entry.status, result: null });
+      return true;
+    },
+    async finishReceipt(value, key, entry) {
+      assert.deepEqual(value, scope);
+      const receipt = receipts.get(String(key));
+      if (!receipt) throw new Error("receipt_missing");
+      receipt.status = entry.status;
+      receipt.result = entry.result || null;
+    },
+    async readOnboardingState(value) {
+      assert.deepEqual(value, scope);
+      reads.push("state");
+      return { ...state };
+    },
+    async syncCalendarStatus(value, status) { assert.deepEqual(value, scope); syncs.push(status); return true; },
+    async mutateOnboardingWithCalendar(value, status, action, payload) {
+      assert.deepEqual(value, scope);
+      wrapperCalls.push({ status, action, payload });
+      writes.push({ action, payload });
+      return { ...state };
+    },
+    async mutateOnboarding(value, action, payload) {
+      assert.deepEqual(value, scope);
+      writes.push({ action, payload });
+      return { ...state };
+    },
+  };
+  const opts = {
+    panelOrigin: "https://panel.example",
+    panelBaseUrl: "https://panel.example",
+    sessionScopeImpl: async () => scope,
+    commandStore,
+    stripePaymentLink: "https://buy.stripe.com/test_life_manager",
+    composioKey: "provider-key",
+    composioCalendarStatusImpl: async () => { providerReads.push("ACTIVE"); return "ACTIVE"; },
+  };
+  return { state, scope, writes, syncs, wrapperCalls, providerReads, reads, receipts, opts, commandStore };
+}
+
+async function onboardingRequest(harness, { method = "GET", path = "/api/panel/onboarding", body, headers = {} } = {}) {
+  const req = new http.IncomingMessage();
+  req.method = method;
+  req.url = path;
+  req.headers = {
+    cookie: `__Host-lm_panel_session=${SESSION}`,
+    origin: "https://panel.example",
+    "content-type": "application/json",
+    "x-lm-csrf": "csrf-a",
+    "idempotency-key": Object.hasOwn(headers, "idempotency-key") ? headers["idempotency-key"] : `onboarding-${harness._requestNumber = (harness._requestNumber || 0) + 1}`,
+    ...headers,
+  };
+  const chunks = [];
+  if (body == null) req.push(null);
+  else { req.push(JSON.stringify(body)); req.push(null); }
+  const response = await new Promise((resolve, reject) => {
+    const out = new (require("node:stream").Writable)({
+      write(chunk, _encoding, callback) { chunks.push(Buffer.from(chunk)); callback(); },
+    });
+    out.writeHead = (status, responseHeaders) => { out.status = status; out.headers = new Map(Object.entries(responseHeaders)); };
+    out.end = (chunk) => { if (chunk) chunks.push(Buffer.from(chunk)); resolve(out); };
+    Promise.resolve(handlePanelApiRequest(req, out, harness.opts)).catch(reject);
+  });
+  const raw = Buffer.concat(chunks).toString("utf8");
+  return { response, body: raw ? JSON.parse(raw) : null };
+}
+
+function onboardingRequestHash(action, payload) {
+  return crypto.createHash("sha256").update(JSON.stringify({ action, payload })).digest("hex");
+}
+
+test("Task 7A onboarding API follows server-owned fixed progression and ignores client uid", async () => {
+  const h = onboardingHarness({ step: "home", stage: "home", calendarConnected: true });
+  const first = await onboardingRequest(h, { path: "/api/panel/onboarding?uid=tenant-b" });
+  assert.equal(first.response.status, 200);
+  assert.equal(first.body.step, "home");
+  assert.equal(first.body.paymentLink, undefined);
+  assert.equal(h.writes.length, 0);
+  const forgedCalendar = await onboardingRequest(h, { method: "POST", body: { action: "calendar.complete", uid: "tenant-b" } });
+  assert.equal(forgedCalendar.response.status, 400);
+  assert.equal(h.writes.length, 0, "calendar completion is provider-owned, never a client write");
+
+  const actions = [
+    ["home.save", { home_address: "東京都渋谷区 1-1-1" }],
+    ["notifications.enable", {}],
+    ["phone.save", { phone: "+81 (90) 1234-5678", uid: "tenant-b" }],
+    ["call.enable", {}],
+    ["payment.skip", { paid: true, uid: "tenant-b" }],
+  ];
+  for (const [action, payload] of actions) {
+    h.commandStore.mutateOnboardingWithCalendar = async (scope, status, actualAction, actualPayload) => {
+      assert.deepEqual(scope, h.scope);
+      assert.equal(status, "ACTIVE");
+      h.wrapperCalls.push({ status, action: actualAction, payload: actualPayload });
+      h.writes.push({ action: actualAction, payload: actualPayload });
+      return { ...h.state, step: action === "payment.skip" ? "dashboard" : action.split(".")[0] };
+    };
+    const result = await onboardingRequest(h, { method: "POST", body: { action, ...payload } });
+    assert.equal(result.response.status, 200, action);
+    assert.notEqual(result.body.paid, true, "client action never grants paid");
+  }
+  assert.equal(h.writes.length, actions.length);
+  assert.equal(Object.hasOwn(h.writes[2].payload, "uid"), false, "uid is stripped before the tenant-scoped transition");
+  assert.equal(h.writes[2].payload.phone, ["+81", "90", "1234", "5678"].join(""), "phone is normalized before persistence");
+});
+
+test("Task 7A rejects an out-of-order onboarding mutation before any write", async () => {
+  const h = onboardingHarness({ step: "home", stage: "home" });
+  h.commandStore.mutateOnboardingWithCalendar = async () => {
+    const error = new Error("onboarding_conflict");
+    error.status = 409;
+    throw error;
+  };
+  const result = await onboardingRequest(h, { method: "POST", body: { action: "call.enable" } });
+  assert.equal(result.response.status, 409);
+  assert.deepEqual(result.body, { error: "onboarding_conflict" });
+  assert.equal(h.writes.length, 0);
+});
+
+test("Task 7A phone.save converts a Japanese domestic number and preserves explicit international form", async () => {
+  const h = onboardingHarness({ step: "phone", stage: "phone", calendarConnected: true });
+  const domestic = await onboardingRequest(h, { method: "POST", body: { action: "phone.save", phone: "090-1234-5678" }, headers: { "idempotency-key": "phone-domestic-01" } });
+  assert.equal(domestic.response.status, 200);
+  assert.equal(h.wrapperCalls.at(-1).payload.phone, ["+81", "90", "1234", "5678"].join(""));
+
+  const international = await onboardingRequest(h, { method: "POST", body: { action: "phone.save", phone: "+44 (20) 7946-0958" }, headers: { "idempotency-key": "phone-intl-0001" } });
+  assert.equal(international.response.status, 200);
+  assert.equal(h.wrapperCalls.at(-1).payload.phone, "+442079460958");
+});
+
+test("Task 7A payment step returns only configured server Stripe link and fails closed when absent", async () => {
+  const h = onboardingHarness({ step: "payment", stage: "payment", paymentLink: null });
+  const result = await onboardingRequest(h);
+  assert.equal(result.response.status, 200);
+  assert.equal(result.body.paymentLink, "https://buy.stripe.com/test_life_manager?client_reference_id=tenant-a");
+  const missing = onboardingHarness({ step: "payment", stage: "payment" });
+  missing.opts.stripePaymentLink = "";
+  const unavailable = await onboardingRequest(missing);
+  assert.equal(unavailable.response.status, 503);
+  assert.deepEqual(unavailable.body, { error: "payment_unavailable" });
+});
+
+test("Task 7A paid phone-less tenant resumes at dashboard after required core steps", async () => {
+  const h = onboardingHarness({ step: "dashboard", stage: "phone", calendarConnected: true, homeAddress: "home", notificationsEnabled: true, paid: true, phone: null });
+  const result = await onboardingRequest(h);
+  assert.equal(result.response.status, 200);
+  assert.equal(result.body.step, "dashboard");
+  assert.equal(result.body.phone, null);
+  assert.equal(result.body.callEnabled, false);
+});
+
+test("Task 7A refreshes official Calendar truth before every state read or transition", async () => {
+  const h = onboardingHarness({ step: "home", stage: "home", calendarConnected: true });
+  const get = await onboardingRequest(h);
+  assert.equal(get.response.status, 200);
+  assert.deepEqual(h.syncs, ["ACTIVE"]);
+  h.opts.composioCalendarStatusImpl = async () => "MISSING";
+  h.commandStore.mutateOnboardingWithCalendar = async () => { throw new Error("transition must not run when Calendar is missing"); };
+  const post = await onboardingRequest(h, { method: "POST", body: { action: "home.save", home_address: "home" } });
+  assert.equal(post.response.status, 502);
+  assert.deepEqual(h.syncs, ["ACTIVE"], "POST uses the combined transition RPC, not standalone sync");
+  assert.deepEqual(h.reads, ["state"]);
+});
+
+test("R1A2 valid onboarding POST reads provider then uses exactly one combined sync/transition RPC", async () => {
+  const h = onboardingHarness({ step: "home", stage: "home", calendarConnected: true });
+  const result = await onboardingRequest(h, { method: "POST", body: { action: "home.save", home_address: "home" } });
+  assert.equal(result.response.status, 200);
+  assert.deepEqual(h.providerReads, ["ACTIVE"]);
+  assert.deepEqual(h.syncs, [], "POST must not call standalone Calendar sync");
+  assert.equal(h.wrapperCalls.length, 1);
+  assert.deepEqual(h.wrapperCalls[0], { status: "ACTIVE", action: "home.save", payload: { home_address: "home" } });
+});
+
+test("R1A2 provider failure prevents both onboarding RPCs", async () => {
+  const h = onboardingHarness({ step: "home", stage: "home" });
+  h.opts.composioCalendarStatusImpl = async () => { h.providerReads.push("error"); throw new Error("provider_down"); };
+  const result = await onboardingRequest(h, { method: "POST", body: { action: "home.save", home_address: "home" } });
+  assert.equal(result.response.status, 502);
+  assert.deepEqual(h.providerReads, ["error"]);
+  assert.deepEqual(h.syncs, []);
+  assert.deepEqual(h.wrapperCalls, []);
+});
+
+test("Task 7B R1: onboarding POST claims one receipt, replays success, and rejects key reuse", async () => {
+  const h = onboardingHarness({ step: "home", stage: "home", calendarConnected: true });
+  const key = "onboarding-replay-01";
+  const first = await onboardingRequest(h, { method: "POST", body: { action: "home.save", home_address: "home" }, headers: { "idempotency-key": key } });
+  assert.equal(first.response.status, 200);
+  const before = { provider: h.providerReads.length, wrapper: h.wrapperCalls.length, writes: h.writes.length };
+  const replay = await onboardingRequest(h, { method: "POST", body: { action: "home.save", home_address: "home" }, headers: { "idempotency-key": key } });
+  assert.equal(replay.response.status, 200);
+  assert.deepEqual(replay.body, first.body);
+  assert.deepEqual({ provider: h.providerReads.length, wrapper: h.wrapperCalls.length, writes: h.writes.length }, before);
+  const conflict = await onboardingRequest(h, { method: "POST", body: { action: "home.save", home_address: "other" }, headers: { "idempotency-key": key } });
+  assert.equal(conflict.response.status, 409);
+  assert.deepEqual(conflict.body, { error: "idempotency_conflict" });
+  assert.deepEqual({ provider: h.providerReads.length, wrapper: h.wrapperCalls.length, writes: h.writes.length }, before);
+});
+
+test("Task 7B R1: onboarding POST requires a valid key and never re-transitions pending or failed receipts", async () => {
+  const missing = onboardingHarness({ step: "home", stage: "home", calendarConnected: true });
+  const noKey = await onboardingRequest(missing, { method: "POST", body: { action: "home.save", home_address: "home" }, headers: { "idempotency-key": "" } });
+  assert.equal(noKey.response.status, 400);
+  assert.deepEqual(noKey.body, { error: "idempotency_required" });
+  assert.equal(missing.providerReads.length, 0);
+
+  const payload = { home_address: "home" };
+  const requestHash = onboardingRequestHash("home.save", payload);
+  for (const [status, error] of [["pending", "idempotency_in_progress"], ["failed", "idempotency_failed"]]) {
+    const h = onboardingHarness({ step: "home", stage: "home", calendarConnected: true });
+    h.receipts.set(`onboarding-${status}`, { requestHash, status, result: null });
+    const result = await onboardingRequest(h, { method: "POST", body: { action: "home.save", payload }, headers: { "idempotency-key": `onboarding-${status}` } });
+    assert.equal(result.response.status, 409, status);
+    assert.deepEqual(result.body, { error }, status);
+    assert.equal(h.providerReads.length, 0, status);
+    assert.equal(h.wrapperCalls.length, 0, status);
+  }
+});
+
+test("Task 7B R1: failed onboarding transition is durably non-retryable", async () => {
+  const h = onboardingHarness({ step: "home", stage: "home", calendarConnected: true });
+  h.commandStore.mutateOnboardingWithCalendar = async () => { throw new Error("provider transition failed"); };
+  const key = "onboarding-failed-01";
+  const first = await onboardingRequest(h, { method: "POST", body: { action: "home.save", home_address: "home" }, headers: { "idempotency-key": key } });
+  assert.equal(first.response.status, 502);
+  assert.equal(h.receipts.get(key).status, "failed");
+  const reads = h.providerReads.length;
+  const second = await onboardingRequest(h, { method: "POST", body: { action: "home.save", home_address: "home" }, headers: { "idempotency-key": key } });
+  assert.equal(second.response.status, 409);
+  assert.deepEqual(second.body, { error: "idempotency_failed" });
+  assert.equal(h.providerReads.length, reads);
+});
+
+test("Task 7B R1: verified Calendar callback returns onboarding only for incomplete server state", async () => {
+  const stateToken = Buffer.alloc(32, 0x71).toString("base64url");
+  const run = async (onboarding, expectedLocation, readError = false) => {
+    const scope = { uid: "tenant-a", chatId: "101", csrf: "csrf-a" };
+    const calls = [];
+    const store = {
+      async assertCurrentScope(value) { assert.deepEqual(value, scope); return true; },
+      async claimOAuthState(value, hash) { calls.push({ type: "claim", value, hash }); return true; },
+      async readOnboardingState(value) { calls.push({ type: "onboarding", value }); if (readError) throw new Error("state unavailable"); return onboarding; },
+    };
+    const response = { status: 0, headers: {}, writeHead(status, headers) { this.status = status; this.headers = headers || {}; }, end() {} };
+    await handlePanelOAuthCallback({ method: "GET", url: `/panel/oauth/calendar?state=${stateToken}`, headers: { cookie: "" } }, response, {
+      sessionScopeImpl: async () => scope,
+      commandStore: store,
+      composioCalendarStatusImpl: async () => "ACTIVE",
+    });
+    assert.equal(response.status, 303);
+    assert.equal(response.headers.Location, expectedLocation);
+    return calls;
+  };
+  const incomplete = await run({ step: "home" }, "/panel/onboarding");
+  assert.equal(incomplete.filter((call) => call.type === "onboarding").length, 1);
+  await run({ step: "dashboard" }, "/panel");
+  await run({ step: "done" }, "/panel");
+  await run({ step: "home" }, "/panel", true);
+});
+
+test("Task 7A rejects malformed JSON arrays, primitives, and payloads before provider/RPC", async () => {
+  for (const malformed of [[], "not-an-object", 7, null, { action: "home.save", payload: [] }, { action: "home.save", payload: "home" }, { action: "home.save", extra: "home" }]) {
+    const h = onboardingHarness({ step: "home", stage: "home" });
+    const result = await onboardingRequest(h, { method: "POST", path: "/api/panel/onboarding/home/save", body: malformed });
+    assert.equal(result.response.status, 400, String(malformed));
+    assert.equal(h.writes.length, 0);
+    assert.deepEqual(h.reads, [], "malformed body must not invoke state RPC");
+    assert.deepEqual(h.providerReads, [], "malformed body must not query provider");
+    assert.deepEqual(h.syncs, [], "malformed body must not sync provider");
+  }
+});
+
+test("Task 7A unpaid dashboard remains checkout-reachable without granting paid", async () => {
+  const h = onboardingHarness({ step: "dashboard", stage: "done", calendarConnected: true, paid: false });
+  const result = await onboardingRequest(h);
+  assert.equal(result.response.status, 200);
+  assert.equal(result.body.step, "dashboard");
+  assert.equal(result.body.paid, false);
+  assert.equal(result.body.paymentLink, "https://buy.stripe.com/test_life_manager?client_reference_id=tenant-a");
+});
+
+test("Task 7A onboarding migration is additive, tenant-scoped, and lock-atomic", () => {
+  const sql = fs.readFileSync(path.join(__dirname, "../migrations/2026-08-27-lm-panel-onboarding-core.sql"), "utf8");
+  assert.match(sql, /CREATE OR REPLACE FUNCTION public\.lm_panel_onboarding_state/i);
+  assert.match(sql, /CREATE OR REPLACE FUNCTION public\.lm_panel_onboarding_transition/i);
+  assert.match(sql, /SELECT .*FROM public\.lm_users[\s\S]*FOR UPDATE/i);
+  assert.match(sql, /telegram_chat_id::text\s*=\s*p_chat_id/i);
+  assert.match(sql, /paid\s+IS\s+TRUE/i);
+  assert.doesNotMatch(sql, /CREATE TABLE/i);
+  const transition = sql.slice(sql.indexOf("CREATE OR REPLACE FUNCTION public.lm_panel_onboarding_transition"));
+  assert.doesNotMatch(transition, /SET\s+paid\s*=/i, "client transitions cannot write paid");
+  assert.match(transition, /call_enabled\s*=\s*false/i, "phone and notification transitions keep calls off");
+  assert.match(sql, /REVOKE ALL ON FUNCTION public\.lm_panel_onboarding_transition/i);
+});
+
+test("R1A2 combined onboarding transition wraps Calendar sync and rollback in one RPC", () => {
+  const sql = fs.readFileSync(path.join(__dirname, "../migrations/2026-08-27-lm-panel-onboarding-reachability.sql"), "utf8");
+  assert.match(sql, /CREATE OR REPLACE FUNCTION public\.lm_panel_onboarding_transition_with_calendar/i);
+  assert.match(sql, /sync_lm_panel_calendar_status[\s\S]*lm_panel_onboarding_transition/i);
+  assert.match(sql, /LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp/i);
+  assert.match(sql, /GRANT EXECUTE ON FUNCTION public\.lm_panel_onboarding_transition_with_calendar/i);
+});
+
+test("Task 7A state resumes for another session of the same actor and isolates another actor", async () => {
+  const first = onboardingHarness({ step: "phone", stage: "phone", phone: null });
+  const resumed = onboardingHarness({ step: "phone", stage: "phone", phone: null });
+  assert.deepEqual((await onboardingRequest(first)).body, (await onboardingRequest(resumed)).body);
+  const other = onboardingHarness({ step: "dashboard", stage: "dashboard", paid: true });
+  other.opts.sessionScopeImpl = async () => ({ uid: "tenant-b", chatId: "202", csrf: "csrf-b" });
+  other.opts.commandStore.assertCurrentScope = async () => false;
+  const denied = await onboardingRequest(other, { headers: { "x-lm-csrf": "csrf-b" } });
+  assert.equal(denied.response.status, 401);
+  assert.equal(denied.body.error, "unauthorized");
+});

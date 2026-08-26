@@ -100,9 +100,9 @@ function parseUpdate(update) {
     userId: m.from ? String(m.from.id) : "",
     ...(m.message_id == null ? {} : { messageId: String(m.message_id) }),
     text: (m.text || "").trim(),
-    // Prefix match, but no longer the sole owner: the slash router (lib/slash-command.js) runs first,
-    // so a /start-PREFIXED non-command like "/startfoo" is answered as unknown and never reaches this.
-    isStart: (m.text || "").trim().toLowerCase().startsWith("/start"),
+    // Exact command boundary: payloads may follow whitespace (or an optional @bot suffix), but
+    // punctuation/prefix lookalikes such as "/start-foo" and "/start?" must never open onboarding.
+    isStart: /^\/start(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test((m.text || "").trim()),
     firstName: m.from ? String(m.from.first_name || "") : "",
     lastName: m.from ? String(m.from.last_name || "") : "",
   };
@@ -132,8 +132,24 @@ function onboardLink(chatId, base) {
   return `${root}/lm?tg=${encodeURIComponent(chatId)}`;
 }
 
-// The /start reply: a button to the web onboarding.
+// The /start reply: a Telegram Web App button to the authenticated panel onboarding page. The
+// chat id remains in the signature for caller compatibility, but is deliberately not placed in the
+// URL: Telegram WebApp initData is the only identity input accepted by the panel session boundary.
 function startReply(chatId, base) {
+  void chatId;
+  let origin;
+  try {
+    const value = String(base || "");
+    if (value.trim() !== value || !/^https:\/\//i.test(value)) throw new Error("invalid panel origin");
+    const parsed = new URL(value);
+    if (parsed.protocol !== "https:" || parsed.username || parsed.password || !parsed.origin || parsed.origin === "null") {
+      throw new Error("invalid panel origin");
+    }
+    origin = parsed.origin;
+  } catch {
+    throw new Error("panel base URL is unavailable");
+  }
+  const onboardingUrl = `${origin}/panel/onboarding`;
   return {
     text:
       "👋 <b>Life Manager</b>\n\n" +
@@ -142,7 +158,7 @@ function startReply(chatId, base) {
       "Tap below to start 👇",
     extra: {
       reply_markup: {
-        inline_keyboard: [[{ text: "🚀 Set up Life Manager", url: onboardLink(chatId, base) }]],
+        inline_keyboard: [[{ text: "🚀 Set up Life Manager", web_app: { url: onboardingUrl } }]],
       },
     },
   };

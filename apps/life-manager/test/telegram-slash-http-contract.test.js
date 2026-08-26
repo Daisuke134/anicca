@@ -24,10 +24,10 @@ test("POST /telegram routes the legacy-parity slash surface without disturbing e
   process.env.SUPABASE_SERVICE_ROLE_KEY = "fixture-service-role";
   process.env.LIFE_RUN_LOOPS = "false";
   process.env.PUBLIC_BASE = "https://lm.test";
+  process.env.LM_PANEL_BASE_URL = "https://panel.test/ignored-path";
   // Browser tasks ON: if slash routing ever fell through to this branch for the paid+done fixture
   // user, the classifier would call Gemini and the fake fetch below would throw.
   process.env.LM_BROWSER_TASKS_ENABLED = "1";
-  delete process.env.LM_PANEL_BASE_URL;
   delete process.env.RAILWAY_PUBLIC_DOMAIN;
 
   const originalCreateServer = http.createServer;
@@ -42,7 +42,8 @@ test("POST /telegram routes the legacy-parity slash surface without disturbing e
   const userRow = {
     uid: "u1", name: "Fixture", telegram_chat_id: "100", tg_onboard_stage: "done",
     calendar_provider: "composio_gcal", gmail_account_id: null, gmail_skipped: true,
-    email: "fixture@example.com", phone: "+819012345678", paid: true, payout_destination: null,
+    email: "fixture@example.com", phone: "+819012345678", home_address: "Tokyo home",
+    notifications_enabled: true, paid: true, payout_destination: null,
   };
   const locationStore = new Map([
     ["u-other", { uid: "u-other", latitude: 1.5, longitude: 2.5, observed_at: "2026-07-30T00:00:00.000Z", expires_at: "2099-01-01T00:00:00.000Z" }],
@@ -50,6 +51,7 @@ test("POST /telegram routes the legacy-parity slash surface without disturbing e
   const sent = [];
   const userPatches = [];
   const feedbackRows = [];
+  let telegramSendOk = true;
 
   global.fetch = async (input, init = {}) => {
     const url = new URL(String(input));
@@ -57,7 +59,9 @@ test("POST /telegram routes the legacy-parity slash surface without disturbing e
     if (url.hostname === "api.telegram.org") {
       if (/sendMessage$/.test(url.pathname)) {
         sent.push(JSON.parse(init.body));
-        return response(200, { ok: true, result: { message_id: 9000 + sent.length } });
+        return response(200, telegramSendOk
+          ? { ok: true, result: { message_id: 9000 + sent.length } }
+          : { ok: false, error_code: 400, description: "token=fixture-token chat_id=200" });
       }
       throw new Error(`unexpected telegram call ${url.pathname}`);
     }
@@ -94,6 +98,9 @@ test("POST /telegram routes the legacy-parity slash surface without disturbing e
       feedbackRows.push(JSON.parse(init.body || "{}"));
       return response(201, [{ id: `feedback-${feedbackRows.length}` }]);
     }
+    if (url.pathname === "/rest/v1/lm_panel_device_challenges" && method === "POST") {
+      return response(201, []);
+    }
     throw new Error(`unexpected fetch ${method} ${url}`);
   };
 
@@ -104,6 +111,18 @@ test("POST /telegram routes the legacy-parity slash surface without disturbing e
     assert.ok(productionServer, "the production HTTP server must be captured");
     await new Promise((resolve) => productionServer.listen(0, "127.0.0.1", resolve));
     const origin = `http://127.0.0.1:${productionServer.address().port}`;
+
+    const onboardingPage = await new Promise((resolve, reject) => {
+      http.get(`${origin}/panel/onboarding`, (res) => {
+        let body = "";
+        res.setEncoding("utf8");
+        res.on("data", (chunk) => { body += chunk; });
+        res.on("end", () => resolve({ status: res.statusCode, headers: res.headers, body }));
+      }).on("error", reject);
+    });
+    assert.equal(onboardingPage.status, 200);
+    assert.match(String(onboardingPage.headers["content-type"] || ""), /text\/html/);
+    assert.match(onboardingPage.body, /data-panel-login/);
 
     let updateId = 9100;
     const post = (payload) => new Promise((resolve, reject) => {
@@ -155,21 +174,38 @@ test("POST /telegram routes the legacy-parity slash surface without disturbing e
     assert.equal(feedbackRows.length, 1);
     assert.match(lastSent().text, /feedback was recorded/i);
 
-    // 5. Ordering vs panel: /panel is still owned by the panel branch (deterministic unavailable
-    //    copy here because LM_PANEL_BASE is unset), never the unknown-command reply.
+    // 5. Ordering vs panel: /panel is still owned by the panel branch and sends its canonical
+    //    authenticated web_app button, never the unknown-command reply.
     assert.equal(await message("100", "/panel"), 200);
-    assert.match(lastSent().text, /panel is temporarily unavailable/i);
+    assert.deepEqual(lastSent().reply_markup.inline_keyboard[0][0].web_app, {
+      url: "https://panel.test/panel",
+    });
 
-    // 6. /start passes through to onboarding (unlinked chat → calendar stage announcement), and so
-    //    does a deep-link payload: core.telegram.org/bots/features → Deep Linking says
-    //    "https://t.me/your_bot?start=airplane" delivers "/start airplane" (groups deliver
-    //    "/start@your_bot spaceship"), i.e. the payload is always space-separated.
+    // 6. /start opens the authenticated panel onboarding web app, and so does a deep-link payload:
+    //    core.telegram.org/bots/features → Deep Linking says "https://t.me/your_bot?start=airplane"
+    //    delivers "/start airplane" (groups deliver "/start@your_bot spaceship"), i.e. the payload
+    //    is always space-separated. The production branch must not fall back to the legacy ?tg= URL.
     assert.equal(await message("200", "/start"), 200);
-    assert.match(lastSent().text, /Welcome to Life Manager/);
+    assert.match(lastSent().text, /Life Manager/);
+    const onboardingButton = lastSent().reply_markup.inline_keyboard[0][0];
+    assert.deepEqual(onboardingButton.web_app, { url: "https://panel.test/panel/onboarding" });
+    assert.equal(Object.hasOwn(onboardingButton, "url"), false);
+    assert.doesNotMatch(JSON.stringify(onboardingButton), /\?tg=|200|token/i);
     assert.equal(await message("200", "/start airplane"), 200);
-    assert.match(lastSent().text, /Welcome to Life Manager/);
-    // 6b. REGRESSION (intentional change): "/startfoo" is NOT a start. It used to reach onboarding
-    //     because isStart is a startsWith check; a real deep link can never produce it, so it is now
+    assert.deepEqual(lastSent().reply_markup.inline_keyboard[0][0].web_app, {
+      url: "https://panel.test/panel/onboarding",
+    });
+    assert.equal(await message("200", "/start@Bot payload"), 200);
+    assert.deepEqual(lastSent().reply_markup.inline_keyboard[0][0].web_app, {
+      url: "https://panel.test/panel/onboarding",
+    });
+    assert.equal(await message("200", "/start-foo"), 200);
+    assert.match(lastSent().text, /Unknown command/);
+    assert.ok(!lastSent().reply_markup, "/start-foo must not open onboarding");
+    assert.equal(await message("200", "/start?"), 200);
+    assert.match(lastSent().text, /Unknown command/);
+    assert.ok(!lastSent().reply_markup, "/start? must not open onboarding");
+    // 6b. REGRESSION: "/startfoo" is NOT a start. A real deep link can never produce it, so it is
     //     answered as the unknown command it is.
     assert.equal(await message("200", "/startfoo"), 200);
     assert.match(lastSent().text, /Unknown command: \/startfoo/);
@@ -249,10 +285,29 @@ test("POST /telegram routes the legacy-parity slash surface without disturbing e
     assert.match(lastSent().text, /Onboarding: done/);
     assert.match(lastSent().text, /Calendar: connected/);
     assert.match(lastSent().text, /Location: not available/);
+
+    // 14. Telegram transport failure is observable but the webhook still acknowledges the update so
+    //    Telegram does not retry it. The server logs only the generic contract error, never the bot
+    //    token, chat id, or provider description returned by Telegram.
+    const sentBeforeFailure = sent.length;
+    const errors = [];
+    const originalConsoleError = console.error;
+    console.error = (...args) => errors.push(args.map(String).join(" "));
+    telegramSendOk = false;
+    try {
+      assert.equal(await message("200", "/start"), 200);
+    } finally {
+      telegramSendOk = true;
+      console.error = originalConsoleError;
+    }
+    assert.equal(sent.length, sentBeforeFailure + 1, "a failed /start delivery is attempted exactly once");
+    assert.ok(errors.some((line) => line.includes("onboarding web app button send failed")));
+    assert.doesNotMatch(errors.join("\n"), /fixture-token|chat_id=200|token=|description/i);
   } finally {
     global.fetch = originalFetch;
     http.createServer = originalCreateServer;
     delete process.env.LM_BROWSER_TASKS_ENABLED;
+    delete process.env.LM_PANEL_BASE_URL;
     if (productionServer) await new Promise((resolve) => productionServer.close(resolve));
   }
 });

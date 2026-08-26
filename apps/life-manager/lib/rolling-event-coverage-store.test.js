@@ -85,18 +85,36 @@ test("store rehydrates one tenant-bound reference into a freshly verified snapsh
   await assert.rejects(store.read("event-coverage://dais-local/not-a-hash"), /rolling coverage snapshot invalid/i);
 });
 
-test("migration constrains 21-day counts, immutable rows, tenant scope, and latest view", () => {
-  const sql = fs.readFileSync(path.join(__dirname, "../migrations/2026-08-02-lm-event-coverage-snapshots.sql"), "utf8");
+test("migration upgrades 28-day counts without rewriting the historical migration", () => {
+  const historical = fs.readFileSync(path.join(__dirname, "../migrations/2026-08-02-lm-event-coverage-snapshots.sql"), "utf8");
+  const sql = fs.readFileSync(path.join(__dirname, "../migrations/2026-08-27-lm-event-coverage-horizon-28.sql"), "utf8");
   for (const required of [
     "lm_event_coverage_snapshots",
-    "lm_event_coverage_current",
-    "horizon_days = 21",
-    "window_start_date \\+ 20",
-    "jsonb_array_length\\(days\\) = 21",
-    "open_count \\+ covered_existing_count \\+ covered_new_count \\+ unavailable_count = 21",
-    "UPDATE OR DELETE",
-    "immutable",
-    "ENABLE ROW LEVEL SECURITY",
+    "pg_constraint",
+    "pg_get_constraintdef",
+    "definition ~ .*>=",
+    "definition ~ .*<=",
+    "DROP CONSTRAINT",
+    "NOT VALID",
+    "CONSTRAINT lm_event_coverage_horizon_days_28_check",
+    "CONSTRAINT lm_event_coverage_days_length_28_check",
+    "CONSTRAINT lm_event_coverage_window_end_28_check",
+    "CONSTRAINT lm_event_coverage_open_count_28_check",
+    "CONSTRAINT lm_event_coverage_covered_existing_count_28_check",
+    "CONSTRAINT lm_event_coverage_covered_new_count_28_check",
+    "CONSTRAINT lm_event_coverage_unavailable_count_28_check",
+    "CONSTRAINT lm_event_coverage_counts_sum_28_check",
+    "horizon_days = 28",
+    "window_start_date \\+ 27",
+    "jsonb_array_length\\(days\\) = 28",
+    "open_count \\+ covered_existing_count \\+ covered_new_count \\+ unavailable_count = 28",
   ]) assert.match(sql, new RegExp(required, "i"));
+  for (const count of ["open_count", "covered_existing_count", "covered_new_count", "unavailable_count"]) {
+    assert.match(sql, new RegExp(`definition ~ '${count}\\.\\*>=\\.\\*0\\.\\*${count}\\.\\*<=\\.\\*21'`, "i"));
+  }
   assert.doesNotMatch(sql, /email|phone|password|cookie|guest_key|event_title|location|attendee/i);
+  assert.match(historical, /horizon_days = 21/i);
+  assert.doesNotMatch(historical, /horizon_days = 28|jsonb_array_length\\(days\\) = 28/i);
+  assert.match(historical, /lm_event_coverage_current|immutable|ENABLE ROW LEVEL SECURITY/i);
+  assert.doesNotMatch(sql, /DROP\s+(?:TABLE|VIEW)|DISABLE\s+ROW LEVEL SECURITY/i);
 });

@@ -9,7 +9,7 @@
 
 const crypto = require("crypto");
 const { fetchUpcomingEvents } = require("./lib/events.js");
-const { schedulerCohortFilter } = require("./lib/user-selector.js");
+const { schedulerCohortFilter, isCallablePhone } = require("./lib/user-selector.js");
 const { DEFAULTS: RUNTIME_DEFAULTS, readRuntimePreferences } = require("./lib/runtime-preferences.js");
 const { shouldWake, resolveDeparture, isHelperBlock } = require("./lib/wake-filter.js");
 const { mentalUserOnce, resolveSleepTarget } = require("./lib/mental-runtime.js");
@@ -40,6 +40,7 @@ const { schedulerPollInterval } = require("./lib/composio-budget.js");
 const {
   processLocationLateNotice, getLiveLocation,
 } = require("./lib/late-notice.js");
+const { travelReminderOnce } = require("./lib/travel-reminder.js");
 const {
   DISCOVERY_WEEK_MS, listDiscoveryUsers, runDiscoveryForUser,
 } = require("./lib/feature-discovery.js");
@@ -53,6 +54,22 @@ function signCtx(parts) {
 }
 
 const TICK_MS = 60 * 1000;
+// Reminder routing/Telegram work is independent of the call and of the other organs. Keep a
+// bounded default for a provider that never settles; tests and operators may inject a smaller
+// value without changing the global organ budget.
+const REMINDER_TIMEOUT_MS = Number(process.env.LIFE_REMINDER_TIMEOUT_MS) || 15000;
+
+function withTimeout(work, timeoutMs, label) {
+  const duration = Number(timeoutMs);
+  const operation = Promise.resolve().then(work);
+  if (!Number.isFinite(duration) || duration <= 0) return operation;
+  let timer;
+  const deadline = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`${label} timeout ${duration}ms`)), duration);
+  });
+  return Promise.race([operation, deadline]).finally(() => clearTimeout(timer));
+}
+
 // Escalating wake calls: ring at T-10 (firm) and T-5 (harsh) before EACH event — TWO calls only
 // (Dais 2026-06-25: "just call me 10 min before and 5 min before, that's it"), so the user actually
 // gets up / leaves. Each (event, level) fires once (deduped).
@@ -423,9 +440,10 @@ async function wakeCallOnce(u, nowMs, deps = {}) {
   const mapsKey = deps.mapsKey || process.env.LIFE_MAPS_KEY || process.env.GOOGLE_API_KEY;
   // spec §5.2.1: `=== true`, not `!== false`. The phone is opt-IN now, and three different shapes all
   // mean "expressed no preference" — no row, a SQL NULL column, and an unmerged undefined. `!== false`
-  // dialled all three. This gate is also the LAST one on the Inngest per-user path, which reaches
-  // wakeCallOnce through wakeUserOnce and never passes wakeTick's filter.
-  if (u.call_enabled === true) {
+  // dialled all three. A malformed/missing phone is an independent hard gate. This is also the LAST
+  // gate on the Inngest per-user path, which reaches wakeCallOnce through wakeUserOnce and never passes
+  // wakeTick's filter.
+  if (u.call_enabled === true && isCallablePhone(u.phone)) {
     for (const ev of futureEvents.filter((e) => shouldWake(e, u.home_address, u.wake_policy))) {
       const depMs = await resolveDeparture(ev, futureEvents, {
         home: u.home_address, mapsKey, nowMs: now, bufferMin: 5,
@@ -457,7 +475,7 @@ async function wakeCallOnce(u, nowMs, deps = {}) {
               reason: WAKE_MISS_REASONS.NO_CALL_BEFORE_DEPARTURE,
               eventSummary: ev.summary,
             }, deps, now);
-            console.error(`[scheduler] wake never rang uid=${u.uid.slice(0, 12)} "${ev.summary}" departure passed`);
+            console.error(`[scheduler] wake never rang uid=${u.uid.slice(0, 12)} departure passed`);
           }
         } catch (e) {
           console.error(`[wake-miss] uid=${String(u.uid).slice(0, 12)} err ${e && e.message}`);
@@ -481,7 +499,7 @@ async function wakeCallOnce(u, nowMs, deps = {}) {
           res = { ok: false, error: String((e && e.message) || e) };
         }
         if (res.ok) {
-          console.log(`[scheduler] WAKE T-${lvl.min} uid=${u.uid.slice(0, 12)} "${ev.summary}" ccid=${res.ccid}`);
+          console.log(`[scheduler] WAKE T-${lvl.min} uid=${u.uid.slice(0, 12)} ccid=${res.ccid}`);
         } else {
           console.error(`[scheduler] dial failed T-${lvl.min} uid=${u.uid.slice(0, 12)}: ${res.error}`);
           // 1b: record BEFORE releasing, because releasing is what erases the evidence. Wrapped so a
@@ -545,6 +563,41 @@ async function organsUserOnce(u, nowMs, deps = {}) {
   // ones that don't, and anything reading the first match gets the stopwatch. `grep '\[organ:'` is
   // now the timing view and `grep '\[precepts\]'` is still the behaviour view.
   if (u.notifications_enabled !== false) {
+    // T-5 reminder is a Telegram organ, not a call precondition. It consumes the RAW lookback
+    // events (the online/in-progress slice is intentionally absent from futureEvents) and reads the
+    // current live-location row with the same Supabase tenant credentials. runOrgan keeps route,
+    // claim, and Telegram failures local to this organ; call_enabled never gates this path.
+    const reminderTimeoutMs = deps.reminderTimeoutMs !== undefined
+      ? deps.reminderTimeoutMs
+      : (deps.travelReminderTimeoutMs !== undefined ? deps.travelReminderTimeoutMs : REMINDER_TIMEOUT_MS);
+    await runOrgan({
+      label: "organ:travel-reminder", uid: u.uid, log,
+      run: () => withTimeout(async () => {
+        const configuredSupa = SUPA();
+        const supaUrl = deps.supaUrl !== undefined ? deps.supaUrl : configuredSupa.url;
+        const supaKey = deps.supaKey !== undefined ? deps.supaKey : configuredSupa.key;
+        const liveLocation = deps.liveLocation !== undefined
+          ? deps.liveLocation
+          : await (deps.getLiveLocation || getLiveLocation)(u.uid, now, {
+            supaUrl, supaKey, nowMs: now, fetchImpl: deps.fetchImpl,
+          });
+        return (deps.travelReminder || travelReminderOnce)(u, now, {
+          events,
+          liveLocation,
+          home: deps.home !== undefined ? deps.home : u.home_address,
+          mapsKey: deps.mapsKey || process.env.LIFE_MAPS_KEY || process.env.GOOGLE_API_KEY,
+          timezone: deps.timezone || u.call_time_zone || u.time_zone,
+          telegramToken: deps.telegramToken !== undefined ? deps.telegramToken : process.env.LM_TELEGRAM_BOT_TOKEN,
+          supaUrl, supaKey,
+          apiKey: deps.apiKey || process.env.COMPOSIO_API_KEY,
+          directionsRoute: deps.directionsRoute,
+          claimTravel: deps.claimTravel,
+          unclaimTravel: deps.unclaimTravel,
+          sendMessage: deps.sendMessage || sendMessage,
+          log,
+        });
+      }, reminderTimeoutMs, "travel reminder"),
+    });
     const late = await runOrgan({
       label: "organ:late", uid: u.uid, log,
       run: () => (deps.lateNotice || lateNoticeUserOnce)(u, now, { events: futureEvents }),
@@ -703,7 +756,16 @@ async function organsUserOnce(u, nowMs, deps = {}) {
 // (inngest/functions.js makeWakeUserHandler) and the 1a/1b test suites call this name, and a
 // per-user Inngest run has no sibling users to protect, so running both halves there is correct.
 async function wakeUserOnce(u, nowMs, deps = {}) {
-  await wakeCallOnce(u, nowMs, deps);
+  const wakeTimeoutMs = deps.wakeTimeoutMs !== undefined
+    ? deps.wakeTimeoutMs
+    : (deps.callTimeoutMs !== undefined ? deps.callTimeoutMs : WAKE_USER_TIMEOUT_MS);
+  try {
+    await withTimeout(() => (deps.wakeCall || wakeCallOnce)(u, nowMs, deps), wakeTimeoutMs, "wake call");
+  } catch (e) {
+    // The call is deadline-critical and remains first, but a failure in its calendar/claim path
+    // must not strand the Telegram and daily organs for this user. Do not print event text here.
+    console.error(`[wake] call organ uid=${String(u && u.uid || "?").slice(0, 12)} err ${e && e.message}`);
+  }
   await organsUserOnce(u, nowMs, deps);
 }
 
@@ -759,10 +821,11 @@ async function wakeTick(deps = {}) {
   const users = await listUsers();
   const now = deps.now !== undefined ? deps.now : Date.now();
   await forEachUserSafe(
-    // `call_enabled === true` (spec §5.2.1): the phone is an extra someone opts into, not the default.
+    // `call_enabled === true` plus strict E.164 phone (spec §5.2.1): the phone is an extra someone opts into,
+    // not the default. Missing/malformed values must never enter the dial path.
     // `daily_automation_enabled !== false` keeps its opt-OUT sense — that switch means "run nothing
     // for me", and it is not the thing §5.2.1 flipped.
-    users.filter(u => u.daily_automation_enabled !== false && u.call_enabled === true),
+    users.filter(u => u.daily_automation_enabled !== false && u.call_enabled === true && isCallablePhone(u.phone)),
     "wake", (u) => wake(u, now), WAKE_USER_TIMEOUT_MS,
   );
 }
@@ -811,6 +874,7 @@ async function travelUserOnce(u, deps = {}) {
   try {
     const r = await (deps.fillTravel || fillTravel)(u.uid, {
       apiKey, mapsKey, geminiKey, home: u.home_address,
+      timezone: u.call_time_zone,
       nowMs: deps.nowMs === undefined ? Date.now() : deps.nowMs,
       calendar: deps.calendar, supaUrl, supaKey,
       _directionsMinutes: deps.directionsMinutes,

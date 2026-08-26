@@ -9,11 +9,18 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 
-const { calendarProviderFilter, schedulerCohortFilter, WAKE_CALENDAR_PROVIDERS } = require("./user-selector.js"); // missing → RED
+const { calendarProviderFilter, schedulerCohortFilter, isCallablePhone, WAKE_CALENDAR_PROVIDERS } = require("./user-selector.js"); // missing → RED
 
 test("providers include composio_gcal AND pipedream_gcal", () => {
   assert.ok(WAKE_CALENDAR_PROVIDERS.includes("composio_gcal"));
   assert.ok(WAKE_CALENDAR_PROVIDERS.includes("pipedream_gcal"));
+});
+
+test("isCallablePhone accepts only stored E.164 strings", () => {
+  for (const value of ["+819012345678", "+14155552671"]) assert.equal(isCallablePhone(value), true, value);
+  for (const value of [null, undefined, "", "  +819012345678", "+81 (90) 1234-5678", "819012345678", 819012345678, "+123"]) {
+    assert.equal(isCallablePhone(value), false, String(value));
+  }
 });
 
 test("calendarProviderFilter: PostgREST in.() over both providers, not eq.composio_gcal", () => {
@@ -22,10 +29,10 @@ test("calendarProviderFilter: PostgREST in.() over both providers, not eq.compos
   assert.equal(f.includes("eq.composio_gcal"), false); // the old exclusive filter is gone
 });
 
-test("schedulerCohortFilter is the phone+paid+supported-provider SSOT", () => {
+test("schedulerCohortFilter is the paid+supported-provider SSOT (phone optional)", () => {
   assert.equal(
     schedulerCohortFilter(),
-    "phone=not.is.null&paid=is.true&calendar_provider=in.(composio_gcal,pipedream_gcal)",
+    "paid=is.true&calendar_provider=in.(composio_gcal,pipedream_gcal)",
   );
 });
 
@@ -35,12 +42,12 @@ test("schedulerCohortFilter is the phone+paid+supported-provider SSOT", () => {
 // the instant it expires the filter is byte-for-byte what it always was.
 const COMP_UNTIL = "2026-07-27T12:00:00.000Z";
 const COMP_UNTIL_MS = Date.parse(COMP_UNTIL);
-const BASELINE = "phone=not.is.null&paid=is.true&calendar_provider=in.(composio_gcal,pipedream_gcal)";
+const BASELINE = "paid=is.true&calendar_provider=in.(composio_gcal,pipedream_gcal)";
 
 test("comp active → the paid predicate is dropped, everything else identical", () => {
   assert.equal(
     schedulerCohortFilter({ LM_COMP_UNTIL: COMP_UNTIL }, COMP_UNTIL_MS - 1),
-    "phone=not.is.null&calendar_provider=in.(composio_gcal,pipedream_gcal)",
+    "calendar_provider=in.(composio_gcal,pipedream_gcal)",
   );
 });
 
@@ -84,12 +91,14 @@ test("scheduler batch and uid selectors execute the same shared cohort contract"
   const urls = [];
   global.fetch = async (url) => {
     urls.push(String(url));
-    return { ok: true, json: async () => [{ uid: "synthetic-user" }] };
+    return { ok: true, json: async () => [{ uid: "synthetic-user", phone: null, paid: true, calendar_provider: "composio_gcal" }] };
   };
   try {
     const { listPaidUsers, getUserByUid } = require("../scheduler.js");
-    await listPaidUsers();
-    await getUserByUid("synthetic-user");
+    const listed = await listPaidUsers();
+    const reloaded = await getUserByUid("synthetic-user");
+    assert.equal(listed[0].phone, null, "cohort includes paid phone-less users for reminder/travel organs");
+    assert.equal(reloaded.phone, null, "uid reload preserves phone-less cohort membership");
   } finally {
     global.fetch = oldFetch;
     if (oldUrl === undefined) delete process.env.SUPABASE_URL; else process.env.SUPABASE_URL = oldUrl;
@@ -100,7 +109,7 @@ test("scheduler batch and uid selectors execute the same shared cohort contract"
   assert.equal(cohortUrls.length, 2);
   for (const value of cohortUrls) {
     const url = new URL(value);
-    assert.equal(url.searchParams.get("phone"), "not.is.null");
+    assert.equal(url.searchParams.get("phone"), null, "phone is optional for reminder/travel cohort");
     assert.equal(url.searchParams.get("paid"), "is.true");
     assert.equal(url.searchParams.get("calendar_provider"), "in.(composio_gcal,pipedream_gcal)");
   }

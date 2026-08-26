@@ -9,6 +9,10 @@ const travel = require("./travel.js");
 const { makeRouteCache } = require("./route-cache.js");
 const freshCache = () => makeRouteCache({ store: new Map(), ttlMs: 600000 });
 
+const NOW = Date.parse("2026-08-26T00:00:00Z");
+const EVENT_START = Date.parse("2026-08-27T18:30:00+09:00");
+const EVENT_END = Date.parse("2026-08-27T20:00:00+09:00");
+
 // A fake geocoder: JP addresses → JP geo; "NYC" → non-JP geo; "" → null.
 const fakeGeocode = async (addr) => {
   if (!addr) return null;
@@ -16,57 +20,200 @@ const fakeGeocode = async (addr) => {
   return { lat: 35.681, lon: 139.767 }; // any JP-ish address
 };
 // A fake transit fetch returning the committed fixture shape (17-min 中央線快速).
-const fakeTransitFetch = async () => ({
-  journeys: [{ departureSecs: 100, arrivalSecs: 1129, durationSecs: 1029, transferCount: 0, legs: [{ mode: "rail", routeName: "中央線快速" }] }],
+const fakeTransitFetch = async (_src, _dst, query = {}) => ({
+  date: query.date || "20260827",
+  timezone: query.timezone || "Asia/Tokyo",
+  journeys: [{
+    departureSecs: (() => {
+      const [h, m] = String(query.time || "18:00").split(":").map(Number);
+      const anchor = (h * 3600) + (m * 60);
+      return query.type === "departure" ? anchor + 60 : anchor - 1029;
+    })(),
+    arrivalSecs: (() => {
+      const [h, m] = String(query.time || "18:00").split(":").map(Number);
+      const anchor = (h * 3600) + (m * 60);
+      return query.type === "departure" ? anchor + 1089 : anchor;
+    })(),
+    durationSecs: 1029, transferCount: 0, legs: [{ mode: "rail", routeName: "中央線快速" }],
+  }],
 });
 
-test("directionsMinutes: JP src+dst → uses transit (17 min), NO Google call", async () => {
+test("directionsRoute: JP query is anchored to event wall time and accepted transit skips Google", async () => {
+  const originalFetch = global.fetch;
+  let transitUrl = "";
   let googleCalled = false;
-  const mins = await travel.directionsMinutes("新宿区A", "渋谷区B", "mapsKey", Date.now() + 3600000, Date.now(), false, {
+  global.fetch = async (url) => {
+    transitUrl = String(url);
+    return { ok: true, json: async () => fakeTransitFetch(null, null, { date: "20260827", time: "18:30", type: "arrival" }) };
+  };
+  try {
+    const route = await travel.directionsRoute("新宿区A", "渋谷区B", "mapsKey", EVENT_START, NOW, false, {
+      timezone: "Asia/Tokyo",
+      _geocode: fakeGeocode,
+      _directionsMinutesGoogle: async () => { googleCalled = true; return 45; },
+      _routeCache: freshCache(),
+    });
+    const query = new URL(transitUrl).searchParams;
+    assert.equal(query.get("date"), "20260827");
+    assert.equal(query.get("time"), "18:30");
+    assert.equal(query.get("type"), "arrival");
+    assert.equal(query.get("numItineraries"), "3");
+    assert.equal(route.provider, "transit");
+    assert.equal(route.durationSeconds, 1029);
+    assert.equal(googleCalled, false);
+  } finally { global.fetch = originalFetch; }
+});
+
+test("directionsRoute: return query uses event end wall time and departure type", async () => {
+  const originalFetch = global.fetch;
+  let transitUrl = "";
+  global.fetch = async (url) => {
+    transitUrl = String(url);
+    return { ok: true, json: async () => fakeTransitFetch(null, null, { date: "20260827", time: "20:00", type: "departure" }) };
+  };
+  try {
+    const route = await travel.directionsRoute("新宿区A", "渋谷区B", "mapsKey", EVENT_END, NOW, true, {
+      timezone: "Asia/Tokyo",
+      _geocode: fakeGeocode,
+      _routeCache: freshCache(),
+    });
+    const query = new URL(transitUrl).searchParams;
+    assert.equal(query.get("date"), "20260827");
+    assert.equal(query.get("time"), "20:00");
+    assert.equal(query.get("type"), "departure");
+    assert.equal(query.get("numItineraries"), "3");
+    assert.equal(route.provider, "transit");
+  } finally { global.fetch = originalFetch; }
+});
+
+test("directionsMinutes: structured transit duration remains a minutes compatibility adapter", async () => {
+  let googleCalled = false;
+  const mins = await travel.directionsMinutes("新宿区A", "渋谷区B", "mapsKey", EVENT_START, NOW, false, {
+    timezone: "Asia/Tokyo",
     _geocode: fakeGeocode,
     _transitFetch: fakeTransitFetch,
     _directionsMinutesGoogle: async () => { googleCalled = true; return 45; },
     _routeCache: freshCache(),
   });
-  assert.equal(mins, 17); // 1029s → 17 min (ceil), from transit
-  assert.equal(googleCalled, false); // free path — Google not called
+  assert.equal(mins, 17);
+  assert.equal(googleCalled, false);
 });
 
-test("directionsMinutes: non-JP dst → falls back to Google", async () => {
+test("directionsRoute: non-JP dst → falls back to Google", async () => {
   let googleCalled = false;
-  const mins = await travel.directionsMinutes("新宿区A", "NYC place", "mapsKey", Date.now() + 3600000, Date.now(), false, {
+  const route = await travel.directionsRoute("新宿区A", "NYC place", "mapsKey", EVENT_START, NOW, false, {
     _geocode: fakeGeocode,
-    _transitFetch: fakeTransitFetch,
+    _transitFetch: async () => { throw new Error("transit must not run outside JP"); },
     _directionsMinutesGoogle: async () => { googleCalled = true; return 45; },
     _routeCache: freshCache(),
   });
   assert.equal(googleCalled, true);
-  assert.equal(mins, 45);
+  assert.equal(route.provider, "google");
+  assert.equal(route.durationSeconds, 45 * 60);
 });
 
-test("directionsMinutes: transit 0 journeys → Google fallback", async () => {
-  let googleCalled = false;
-  const mins = await travel.directionsMinutes("新宿区A", "渋谷区B", "mapsKey", Date.now() + 3600000, Date.now(), false, {
+test("directionsRoute: unusable Transit output makes exactly one sequential Google fallback", async () => {
+  const calls = [];
+  const route = await travel.directionsRoute("新宿区A", "渋谷区B", "mapsKey", EVENT_START, NOW, false, {
+    timezone: "Asia/Tokyo",
     _geocode: fakeGeocode,
-    _transitFetch: async () => ({ journeys: [] }),
-    _directionsMinutesGoogle: async () => { googleCalled = true; return 30; },
+    _transitFetch: async () => { calls.push("transit"); return { date: "20260827", timezone: "Asia/Tokyo", journeys: [] }; },
+    _directionsMinutesGoogle: async () => { calls.push("google"); return 30; },
     _routeCache: freshCache(),
   });
-  assert.equal(googleCalled, true);
-  assert.equal(mins, 30);
+  assert.deepEqual(calls, ["transit", "google"]);
+  assert.equal(route.provider, "google");
+  assert.equal(route.durationSeconds, 30 * 60);
 });
 
 test("directionsMinutes: repeated ticks (same event) call the provider ONCE — FIND-002 cache", async () => {
   let transitCalls = 0;
   const cache = freshCache();
   const opts = {
+    timezone: "Asia/Tokyo",
     _geocode: fakeGeocode,
-    _transitFetch: async () => { transitCalls++; return fakeTransitFetch(); },
+    _transitFetch: async (...args) => { transitCalls++; return fakeTransitFetch(...args); },
     _directionsMinutesGoogle: async () => 45,
     _routeCache: cache,
   };
-  const at = Date.now() + 3600000; // ev.startMs is CONSTANT across the 60s ticks
-  await travel.directionsMinutes("新宿区A", "渋谷区B", "k", at, Date.now(), false, opts);
-  await travel.directionsMinutes("新宿区A", "渋谷区B", "k", at, Date.now() + 60000, false, opts); // next tick, same event
+  const at = EVENT_START; // ev.startMs is CONSTANT across the 60s ticks
+  await travel.directionsMinutes("新宿区A", "渋谷区B", "k", at, NOW, false, opts);
+  await travel.directionsMinutes("新宿区A", "渋谷区B", "k", at, NOW + 60000, false, opts); // next tick, same event
   assert.equal(transitCalls, 1); // second tick is a cache hit
+});
+
+test("directionsRoute: missing anchor uses explicit now wall time", async () => {
+  let querySeen = null;
+  const route = await travel.directionsRoute("新宿区A", "渋谷区B", "k", undefined, NOW, false, {
+    timezone: "Asia/Tokyo",
+    _geocode: fakeGeocode,
+    _transitFetch: async (_src, _dst, query) => {
+      querySeen = query;
+      return fakeTransitFetch(_src, _dst, query);
+    },
+    _routeCache: freshCache(),
+  });
+  assert.equal(querySeen.date, "20260826");
+  assert.equal(querySeen.time, "09:00");
+  assert.equal(querySeen.type, "arrival");
+  assert.equal(route.provider, "transit");
+});
+
+test("directionsRoute: a never-settling Transit injection times out and falls back once", async () => {
+  let googleCalls = 0;
+  const timeoutSentinel = Symbol("transit-timeout");
+  const routePromise = travel.directionsRoute("新宿区A", "渋谷区B", "k", EVENT_START, NOW, false, {
+    timezone: "Asia/Tokyo",
+    _geocode: fakeGeocode,
+    _transitFetch: () => new Promise(() => {}),
+    _transitTimeoutMs: 5,
+    _directionsMinutesGoogle: async () => { googleCalls++; return 30; },
+    _routeCache: freshCache(),
+  });
+  const route = await Promise.race([
+    routePromise,
+    new Promise((resolve) => setTimeout(() => resolve(timeoutSentinel), 50)),
+  ]);
+  assert.notEqual(route, timeoutSentinel, "Transit timeout must settle instead of waiting forever");
+  assert.equal(route.provider, "google");
+  assert.equal(googleCalls, 1);
+});
+
+test("transitFetchPlan: timeout aborts the real fetch and structured fallback makes one Google HTTP request", async () => {
+  const originalFetch = global.fetch;
+  const requests = [];
+  let transitSignal = null;
+  global.fetch = async (url, options = {}) => {
+    const requestUrl = String(url);
+    requests.push(requestUrl);
+    if (requestUrl.includes("api.transit.ls8h.com")) {
+      transitSignal = options.signal;
+      return new Promise(() => {});
+    }
+    if (requestUrl.includes("maps.googleapis.com/maps/api/directions")) {
+      return { ok: true, json: async () => ({ status: "OK", routes: [{ legs: [{ duration: { value: 1200 } }] }] }) };
+    }
+    if (requestUrl.includes("routes.googleapis.com")) {
+      return { ok: true, json: async () => ({ routes: [{ duration: "2700s" }] }) };
+    }
+    throw new Error("unexpected url " + requestUrl);
+  };
+  try {
+    const timeoutSentinel = Symbol("transit-fetch-timeout");
+    const route = await Promise.race([
+      travel.directionsRoute("新宿区A", "渋谷区B", "k", EVENT_START, NOW, false, {
+        timezone: "Asia/Tokyo",
+        _geocode: fakeGeocode,
+        _transitTimeoutMs: 5,
+        _routeCache: freshCache(),
+      }),
+      new Promise((resolve) => setTimeout(() => resolve(timeoutSentinel), 50)),
+    ]);
+    assert.notEqual(route, timeoutSentinel, "real Transit fetch must be bounded");
+    assert.equal(route.provider, "google");
+    assert.equal(route.durationSeconds, 1200);
+    assert.equal(transitSignal && transitSignal.aborted, true);
+    assert.equal(requests.filter((url) => url.includes("maps.googleapis.com/maps/api/directions")).length, 1);
+    assert.equal(requests.filter((url) => url.includes("routes.googleapis.com")).length, 0);
+  } finally { global.fetch = originalFetch; }
 });

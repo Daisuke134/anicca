@@ -60,7 +60,7 @@ function detail(slug, overrides = {}) {
   });
 }
 
-test("projects every verified detail into all 21 dates using the coverage timezone", async () => {
+test("projects every verified detail into all 28 dates using the coverage timezone", async () => {
   const inventory = await verifiedInventory();
   const details = [
     detail("tokyo-one"),
@@ -81,7 +81,7 @@ test("projects every verified detail into all 21 dates using the coverage timezo
   });
 
   assert.equal(snapshot.complete, true);
-  assert.equal(snapshot.days.length, 21);
+  assert.equal(snapshot.days.length, 28);
   assert.deepEqual(snapshot.days.map((day) => day.date), COVERAGE.days.map((day) => day.date));
   assert.equal(snapshot.days[0].events[0].event_ref, "luma-event://event/tokyo-one");
   assert.equal(snapshot.days[0].events[0].description, "Public description for tokyo-one");
@@ -89,14 +89,14 @@ test("projects every verified detail into all 21 dates using the coverage timezo
   assert.equal(snapshot.days[0].events[0].participant_visibility, "unavailable");
   assert.equal(snapshot.days[0].events[0].ticket_price_status, "unknown");
   assert.equal(snapshot.days[0].events[0].ticket_price_minor, null);
-  assert.equal(snapshot.days.at(-1).events[0].event_ref, "luma-event://event/tokyo-two");
+  assert.equal(snapshot.days[20].events[0].event_ref, "luma-event://event/tokyo-two");
   assert.deepEqual(snapshot.counts, {
     discovered: 3,
     inspected: 3,
     scheduled_in_person_in_window: 2,
     excluded: 1,
     dates_with_candidates: 2,
-    dates_without_candidates: 19,
+    dates_without_candidates: 26,
   });
   assert.match(snapshot.inventory_snapshot_id, /^luma-date-inventory:[0-9a-f]{64}$/);
   assert.equal(Object.isFrozen(snapshot), true);

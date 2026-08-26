@@ -5,25 +5,41 @@ const { test } = require("node:test");
 const assert = require("node:assert");
 const {
   computeStage, stageMessage, isNativeStage, normalizePhone, telegramProfileName,
-  applyTelegramProfileName, handleGmailCallback, onboardNudgeAll, backfillIfCalendarCompleted,
+  applyTelegramProfileName, handleOnboardingText, handleGmailCallback, onboardNudgeAll, backfillIfCalendarCompleted,
   NUDGE_COOLDOWN_MS,
 } = require("./telegram-onboard.js");
 const { startReply } = require("./telegram.js");
 
 const full = {
   uid: "u1", telegram_chat_id: "1", name: "Dais", calendar_provider: "composio_gcal",
-  phone: "+81", paid: true, gmail_account_id: "gmail-1", gmail_skipped: false,
+  phone: "+81", paid: true, home_address: "Tokyo home", notifications_enabled: true,
+  gmail_account_id: "gmail-1", gmail_skipped: false,
 };
 
 test("null row → calendar (name is never a blocking typed stage)", () => assert.equal(computeStage(null), "calendar"));
 test("no calendar → calendar even when name is absent", () => assert.equal(computeStage({ ...full, name: null, calendar_provider: null }), "calendar"));
 test("calendar set, no phone → phone", () => assert.equal(computeStage({ ...full, phone: null, paid: false }), "phone"));
 test("phone set, not paid → pay", () => assert.equal(computeStage({ ...full, paid: false }), "pay"));
-test("paid without Gmail decision → gmail", () => assert.equal(computeStage({ ...full, gmail_account_id: null, gmail_skipped: false }), "gmail"));
+test("paid without Gmail decision → done (Gmail is not a core prerequisite)", () => assert.equal(computeStage({ ...full, gmail_account_id: null, gmail_skipped: false }), "done"));
 test("Gmail connected → done", () => assert.equal(computeStage(full), "done"));
 test("Gmail skipped → done", () => assert.equal(computeStage({ ...full, gmail_account_id: null, gmail_skipped: true }), "done"));
+test("server-owned done stage never regresses into legacy phone or Gmail", () => {
+  for (const legacyStage of ["done", "phone", "gmail", "pay"]) {
+    assert.equal(computeStage({ ...full, tg_onboard_stage: legacyStage, phone: null, paid: true, gmail_account_id: null, gmail_skipped: false }), "done", legacyStage);
+  }
+});
+test("legacy done rows without core readiness keep the old unpaid and comp branches", () => {
+  const incomplete = { ...full, tg_onboard_stage: "done", paid: false, home_address: null, phone: null, gmail_account_id: null, gmail_skipped: false };
+  assert.equal(computeStage(incomplete), "phone", "an old incomplete row still asks for its phone");
+  withCompUntil(past(), () => assert.equal(computeStage({ ...incomplete, phone: "+81", home_address: null }), "pay"));
+  withCompUntil(future(), () => assert.equal(computeStage({ ...incomplete, phone: "+81", home_address: null }), "gmail"));
+  const coreReadyUnpaid = { ...full, tg_onboard_stage: "done", paid: false, phone: null, gmail_account_id: null, gmail_skipped: false };
+  withCompUntil(past(), () => assert.equal(computeStage(coreReadyUnpaid), "done"));
+  withCompUntil(future(), () => assert.equal(computeStage(coreReadyUnpaid), "done"));
+  assert.equal(computeStage({ ...coreReadyUnpaid, notifications_enabled: false }), "phone", "missing notification consent is not core-ready");
+});
 test("order is strict: phone and pay precede Gmail", () => {
-  assert.equal(computeStage({ ...full, phone: null, paid: true, gmail_account_id: null }), "phone");
+  assert.equal(computeStage({ ...full, phone: null, paid: false, gmail_account_id: null }), "phone");
   assert.equal(computeStage({ ...full, paid: false, gmail_account_id: null }), "pay");
 });
 
@@ -114,7 +130,7 @@ test("notifications_enabled=false gets nothing", async () => {
   assert.deepEqual(calls, []);
 });
 
-test("notifications_enabled true/undefined still nudges (undefined must not fail closed)", async () => {
+test("notifications_enabled true/undefined still nudges (direct row compatibility)", async () => {
   for (const value of [true, undefined]) {
     const sent = await onboardNudgeAll({
       token: "t", base: "https://x", supaUrl: "s", supaKey: "k", nudgeStore: new Map(),
@@ -184,13 +200,35 @@ test("linkedRows joins notifications_enabled from lm_panel_preferences in ONE ba
   const rows = await linkedRows("https://supa.test", "key", { fetchImpl });
   assert.equal(urls.length, 2, "one users query + one batched preferences query");
   assert.equal(rows.find(r => r.uid === "a").notifications_enabled, false);
-  assert.equal(rows.find(r => r.uid === "b").notifications_enabled, true); // no preferences row → default on
+  assert.equal(rows.find(r => r.uid === "b").notifications_enabled, false); // no preferences row → not proven enabled
 });
 
 test("Telegram /start identifies the product only as Life Manager", () => {
   const reply = startReply("1", "https://life.example");
   assert.match(reply.text, /^👋 <b>Life Manager<\/b>/);
   assert.doesNotMatch(reply.text, /\bAnicca\b/i);
+});
+
+test("Telegram /start opens only the authenticated panel onboarding web app", () => {
+  const reply = startReply("987654", "https://panel.example/some-ignored-path");
+  const buttons = reply.extra.reply_markup.inline_keyboard;
+  assert.equal(buttons.length, 1);
+  assert.equal(buttons[0].length, 1);
+  const button = buttons[0][0];
+  assert.deepEqual(button.web_app, { url: "https://panel.example/panel/onboarding" });
+  assert.equal(Object.hasOwn(button, "url"), false);
+  const url = new URL(button.web_app.url);
+  assert.equal(url.protocol, "https:");
+  assert.equal(url.pathname, "/panel/onboarding");
+  assert.equal(url.search, "");
+  assert.equal(url.hash, "");
+  assert.doesNotMatch(button.web_app.url, /987654|token|tg=/i);
+});
+
+test("Telegram /start rejects missing, non-HTTPS, malformed, and credentialed panel origins", () => {
+  for (const base of [undefined, "", "http://panel.example", "panel.example", "https:panel.example", "https:/panel.example", " https://panel.example", "https://user:pass@panel.example"]) {
+    assert.throws(() => startReply("987654", base), /panel base URL is unavailable/);
+  }
 });
 
 test("telegramProfileName: derives name from first_name + last_name", () => {
@@ -238,19 +276,44 @@ test("Gmail skip persists gmail_skipped=true and advances to done", async () => 
 });
 
 test("Gmail OFF: onboarding auto-skips with an honest preparation message and no OAuth button", async () => {
-  const saved = [], stages = [], messages = [];
-  const row = { ...full, gmail_account_id: null, gmail_skipped: false, tg_onboard_stage: "gmail" };
+  await withCompUntilAsync(future(), async () => {
+    const saved = [], stages = [], messages = [];
+    const row = { ...full, paid: false, gmail_account_id: null, gmail_skipped: false, tg_onboard_stage: "gmail" };
+    const sent = await onboardNudgeAll({ token: "t", base: "https://x", supaUrl: "s", supaKey: "k",
+      nudgeStore: new Map(), // isolated per test: the real store is module-level and 30-min sticky
+      linkedRows: async () => [row], mailAvailable: async () => false,
+      saveField: async (_uid, patch) => saved.push(patch),
+      sendMessage: async (_token, _chat, text, extra) => messages.push({ text, extra }),
+      setStage: async (_uid, stage) => stages.push(stage) });
+    assert.equal(sent, 1);
+    assert.deepEqual(saved, [{ gmail_skipped: true }]);
+    assert.deepEqual(stages, ["done"]);
+    assert.match(messages[0].text, /currently being prepared/i);
+    assert.equal(messages[0].extra, undefined);
+  });
+});
+
+test("canonical done rows are not rewritten by the legacy onboarding nudge", async () => {
+  const calls = [];
+  const row = { ...full, tg_onboard_stage: "done", phone: null, paid: true };
   const sent = await onboardNudgeAll({ token: "t", base: "https://x", supaUrl: "s", supaKey: "k",
-    nudgeStore: new Map(), // isolated per test: the real store is module-level and 30-min sticky
-    linkedRows: async () => [row], mailAvailable: async () => false,
-    saveField: async (_uid, patch) => saved.push(patch),
-    sendMessage: async (_token, _chat, text, extra) => messages.push({ text, extra }),
-    setStage: async (_uid, stage) => stages.push(stage) });
-  assert.equal(sent, 1);
-  assert.deepEqual(saved, [{ gmail_skipped: true }]);
-  assert.deepEqual(stages, ["done"]);
-  assert.match(messages[0].text, /currently being prepared/i);
-  assert.equal(messages[0].extra, undefined);
+    nudgeStore: new Map(), linkedRows: async () => [row], sendStage: async () => calls.push("send"),
+    setStage: async () => calls.push("stage"), backfillCalendarContext: async () => calls.push("context") });
+  assert.equal(sent, 0);
+  assert.deepEqual(calls, []);
+});
+
+test("rowByChatId-shaped paid phone-less done rows are webhook no-ops without joined preferences", async () => {
+  const row = { uid: "u-done", telegram_chat_id: "100", tg_onboard_stage: "done", calendar_provider: "composio_gcal", paid: true, phone: null, home_address: "Tokyo home" };
+  const effects = [];
+  const opts = {
+    token: "t", base: "https://x", supaUrl: "s", supaKey: "k",
+    saveField: async () => effects.push("save"), setStage: async () => effects.push("stage"),
+    sendMessage: async () => effects.push("send"), backfillCalendarContext: async () => effects.push("context"),
+  };
+  assert.equal(await handleOnboardingText("100", ["+81", "90", "1234", "5678"].join(""), row, opts), "done");
+  assert.deepEqual(await handleGmailCallback("gmail:skip", row, { ...opts, chatId: "100" }), { ok: true, stage: "done" });
+  assert.deepEqual(effects, []);
 });
 
 test("calendar completion triggers best-effort context backfill once before announcing phone", async () => {
@@ -280,11 +343,21 @@ test("calendar completion hook also runs on immediate /start or text resume", as
 
 test("normalizePhone: valid forms", () => {
   assert.equal(normalizePhone("+810000000000"), "+810000000000");
-  assert.equal(normalizePhone("08012345678"), "+8012345678");
+  assert.equal(normalizePhone("090-1234-5678"), ["+81", "90", "1234", "5678"].join(""));
+  assert.equal(normalizePhone("08012345678"), ["+81", "80", "1234", "5678"].join(""));
   assert.equal(normalizePhone("+44 (20) 7946-0958"), "+442079460958");
+  assert.equal(normalizePhone("+81 90-1234-5678"), ["+81", "90", "1234", "5678"].join(""));
+  assert.equal(normalizePhone("9012345678"), null);
 });
 test("normalizePhone: junk → null", () => {
   assert.equal(normalizePhone("hello"), null);
   assert.equal(normalizePhone("123"), null);
   assert.equal(normalizePhone(""), null);
+});
+
+test("stageMessage phone copy gives concrete domestic and international examples", () => {
+  const message = stageMessage("phone", "1", "https://panel.example");
+  assert.match(message.text, /090-1234-5678/);
+  assert.match(message.text, /\+81[ -]?90-1234-5678/);
+  assert.doesNotMatch(message.text, /<country-code>|<number>/i);
 });
