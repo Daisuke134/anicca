@@ -28,10 +28,12 @@ Each loops/<name>/loop.toml:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import plistlib
 import re
+import stat
 import sys
 import tomllib
 from pathlib import Path
@@ -96,6 +98,46 @@ def _assert_sealed(release: Path) -> None:
             raise SystemExit(f"agent-economy release is writable: {path}")
 
 
+def _source_manifest_payload(release: Path) -> dict:
+    entries = []
+    for path in sorted(release.rglob("*")):
+        relative = path.relative_to(release).as_posix()
+        if relative in {"RELEASE.json", "SOURCE-MANIFEST.json"} or relative.startswith("node_modules/"):
+            continue
+        item = path.lstat()
+        if stat.S_ISREG(item.st_mode):
+            entries.append({
+                "path": relative,
+                "mode": format(stat.S_IMODE(item.st_mode) & 0o555, "04o"),
+                "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+            })
+        elif stat.S_ISLNK(item.st_mode):
+            target = os.readlink(path)
+            entries.append({
+                "path": relative,
+                "mode": "0000",
+                "sha256": hashlib.sha256(target.encode()).hexdigest(),
+                "target": target,
+            })
+    return {"version": 1, "entries": entries}
+
+
+def _assert_source_manifest(release: Path, metadata: dict) -> None:
+    manifest_path = release / "SOURCE-MANIFEST.json"
+    if not manifest_path.is_file() or manifest_path.is_symlink():
+        raise SystemExit(f"agent-economy source manifest is missing: {manifest_path}")
+    try:
+        raw = manifest_path.read_bytes()
+        manifest = json.loads(raw.decode("utf-8"))
+    except (OSError, UnicodeDecodeError, ValueError) as error:
+        raise SystemExit("agent-economy source manifest is invalid") from error
+    encoded = (json.dumps(_source_manifest_payload(release), sort_keys=True, separators=(",", ":")) + "\n").encode()
+    if raw != encoded or hashlib.sha256(raw).hexdigest() != str(metadata.get("source_manifest_sha256", "")):
+        raise SystemExit("agent-economy source manifest does not match the sealed release")
+    if manifest != json.loads(encoded.decode("utf-8")):
+        raise SystemExit("agent-economy source manifest entries are invalid")
+
+
 def _release_metadata(current: Path, release_root: Path) -> tuple[Path, dict]:
     if not current.is_symlink():
         raise SystemExit(f"agent-economy current must be a symlink: {current}")
@@ -135,6 +177,9 @@ def _release_metadata(current: Path, release_root: Path) -> tuple[Path, dict]:
         raise SystemExit("agent-economy RELEASE.json sha does not match its release directory")
     if namespace != "life-manager":
         raise SystemExit("agent-economy RELEASE.json namespace is not life-manager")
+    if not re.fullmatch(r"[0-9a-f]{64}", str(metadata.get("source_manifest_sha256", ""))):
+        raise SystemExit("agent-economy RELEASE.json source manifest digest is missing")
+    _assert_source_manifest(release, metadata)
     _assert_sealed(release)
     return release, metadata
 

@@ -61,8 +61,10 @@ export function computeGaps(scout, ourCategories, now, opts = {}) {
 
 async function main() {
   const stateDir = process.env.ANICCA_X402_STATE_DIR
-    || (process.env.ANICCA_CODE_ROOT && process.env.ANICCA_HOME
-      ? join(process.env.ANICCA_HOME, 'skills', 'earn', 'x402-sell', 'state')
+    || (process.env.ANICCA_CODE_ROOT
+      ? (process.env.ANICCA_HOME
+        ? join(process.env.ANICCA_HOME, 'skills', 'earn', 'x402-sell', 'state')
+        : (() => { throw new Error('ANICCA_HOME is required for pinned x402 state'); })())
       : join(dirname(fileURLToPath(import.meta.url)), 'state'));
   let scout;
   try {

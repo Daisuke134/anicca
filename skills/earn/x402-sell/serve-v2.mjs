@@ -443,10 +443,15 @@ app.use(paymentMiddleware(routes, resourceServer));
 // attempts-<wallet>.jsonl instead of being silently dropped.
 import { appendFileSync, mkdirSync } from "node:fs";
 import { join, dirname as pdirname } from "node:path";
-const STATE_DIR = process.env.ANICCA_X402_STATE_DIR
-  || (process.env.ANICCA_CODE_ROOT && process.env.ANICCA_HOME
-    ? join(process.env.ANICCA_HOME, "skills", "earn", "x402-sell", "state")
-    : join(pdirname(new URL(import.meta.url).pathname), "state"));
+function resolveStateDir() {
+  if (process.env.ANICCA_X402_STATE_DIR) return process.env.ANICCA_X402_STATE_DIR;
+  if (process.env.ANICCA_CODE_ROOT) {
+    if (!process.env.ANICCA_HOME) throw new Error("ANICCA_HOME is required for pinned x402 state");
+    return join(process.env.ANICCA_HOME, "skills", "earn", "x402-sell", "state");
+  }
+  return join(pdirname(new URL(import.meta.url).pathname), "state");
+}
+const STATE_DIR = resolveStateDir();
 const SALES_LOG = process.env.X402_SALES_LOG || join(STATE_DIR, `sales-${payTo().toLowerCase()}.jsonl`);
 const ATTEMPTS_LOG = process.env.X402_ATTEMPTS_LOG || join(STATE_DIR, `attempts-${payTo().toLowerCase()}.jsonl`);
 try { mkdirSync(STATE_DIR, { recursive: true }); } catch { /* best-effort */ }

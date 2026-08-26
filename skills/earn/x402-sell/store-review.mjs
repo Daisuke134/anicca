@@ -18,6 +18,16 @@ import { aggregateStore } from "./lib/store-metrics.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
+export function resolveInstanceStateDir(env = process.env) {
+  const explicit = env.ANICCA_X402_STATE_DIR || env.X402_STATE_DIR;
+  if (explicit) return explicit;
+  if (env.ANICCA_CODE_ROOT) {
+    if (!env.ANICCA_HOME) throw new Error('ANICCA_HOME is required for pinned x402 state');
+    return join(env.ANICCA_HOME, 'skills', 'earn', 'x402-sell', 'state');
+  }
+  return join(HERE, 'state');
+}
+
 // Mirrors serve-v2.mjs's payTo() (#28: this instance's OWN gated key, never a borrowed one).
 export function resolvePayTo(env = process.env) {
   if (env.X402_PAYTO) return env.X402_PAYTO;
@@ -36,12 +46,14 @@ export function readJsonl(path) {
 
 export function resolveStateDir(payTo, env = process.env) {
   const lower = String(payTo || "").toLowerCase();
+  if (env.ANICCA_CODE_ROOT) return resolveInstanceStateDir(env);
   // The serve daemon writes state/ next to ITS OWN serve-v2.mjs. On colony instances the skill
   // copy under ANICCA_HOME is synced from the repo checkout while the seller runs FROM the repo
   // checkout — so this script's own state/ can be empty while the real logs sit in the checkout
   // (measured 2026-07-18: franklin1 review returned zeros against 5 real settled rows). Resolve:
   // explicit X402_STATE_DIR wins; else prefer whichever candidate actually has this payTo's file.
   const candidates = [
+    env.ANICCA_X402_STATE_DIR,
     env.X402_STATE_DIR,
     join(HERE, "state"),
     env.HOME ? join(env.HOME, "anicca", "skills", "earn", "x402-sell", "state") : null,

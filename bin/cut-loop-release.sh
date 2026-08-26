@@ -206,6 +206,39 @@ dependency_digest() {
   ) | shasum -a 256 | awk '{print $1}'
 }
 
+source_manifest() {
+  local manifest="$DEST/SOURCE-MANIFEST.json"
+  SOURCE_MANIFEST_SHA256="$(python3 - "$DEST" "$manifest" <<'PY'
+import hashlib
+import json
+import os
+import stat
+import sys
+from pathlib import Path
+
+root = Path(sys.argv[1])
+manifest = Path(sys.argv[2])
+entries = []
+for path in sorted(root.rglob("*")):
+    relative = path.relative_to(root).as_posix()
+    if relative == "RELEASE.json" or relative == "SOURCE-MANIFEST.json" or relative.startswith("node_modules/"):
+        continue
+    item = path.lstat()
+    if stat.S_ISREG(item.st_mode):
+        content_hash = hashlib.sha256(path.read_bytes()).hexdigest()
+        entries.append({"path": relative, "mode": format(stat.S_IMODE(item.st_mode) & 0o555, "04o"), "sha256": content_hash})
+    elif stat.S_ISLNK(item.st_mode):
+        target = os.readlink(path)
+        content_hash = hashlib.sha256(target.encode()).hexdigest()
+        entries.append({"path": relative, "mode": "0000", "sha256": content_hash, "target": target})
+payload = {"version": 1, "entries": entries}
+encoded = (json.dumps(payload, sort_keys=True, separators=(",", ":")) + "\n").encode()
+manifest.write_bytes(encoded)
+print(hashlib.sha256(encoded).hexdigest())
+PY
+)" || die "could not create source manifest"
+}
+
 verify_release_seal() {
   verify_release_seal_path "$DEST"
 }
@@ -245,6 +278,10 @@ if ! git -C "$REPO_ROOT" archive --format=tar "$SHA" | tar -x -C "$DEST"; then
   rm -rf "$DEST"
   die "export of $SHORT failed"
 fi
+
+# Record only the committed archive contents. Dependency installation and release metadata are
+# generated afterwards and are intentionally excluded so source integrity remains reproducible.
+source_manifest
 
 # Dependencies are installed in the exported tree, never in the source checkout. `npm ci` is
 # intentionally lockfile-fixed and scripts are disabled so a release cannot execute an unreviewed
@@ -290,6 +327,7 @@ if ! cat >"$DEST/RELEASE.json" <<EOF
   "lockfile_sha256": "$LOCKFILE_SHA256",
   "dependency_manifest_sha256": "$DEPENDENCY_MANIFEST_SHA256",
   "dependency_sha256": "$DEPENDENCY_SHA256",
+  "source_manifest_sha256": "$SOURCE_MANIFEST_SHA256",
   "runtime_versions": {
     "node": "$NODE_VERSION",
     "npm": "$NPM_VERSION"
@@ -309,15 +347,60 @@ verify_release_seal
 # the new link INSIDE the old release instead of replacing it. Preserve the exact old target as
 # `previous` before publishing the new release so rollback never rebuilds or guesses a SHA.
 # Keep the old `ln -sfn` ordering rule in mind: create a sibling temporary link, then rename it.
+OLD_PREVIOUS=""
+OLD_PREVIOUS_PRESENT=0
+if [ -L "$PREVIOUS" ]; then
+  OLD_PREVIOUS="$(readlink "$PREVIOUS")"
+  validate_release_target "$PREVIOUS" "$LOOPS_ROOT" >/dev/null \
+    || die "previous release metadata is invalid"
+  OLD_PREVIOUS_PRESENT=1
+elif [ -e "$PREVIOUS" ]; then
+  die "previous release pointer is not a symlink"
+fi
+EXPECTED_PREVIOUS="$OLD_PREVIOUS"
 if [ -L "$CURRENT" ]; then
   OLD_CURRENT="$(readlink "$CURRENT")"
   validate_release_target "$CURRENT" "$LOOPS_ROOT" >/dev/null \
     || die "current release metadata is invalid"
   replace_link "$PREVIOUS" "$OLD_CURRENT" || die "could not move the previous release pointer"
+  EXPECTED_PREVIOUS="$OLD_CURRENT"
 elif [ -e "$CURRENT" ]; then
   die "current release pointer is not a symlink"
 fi
-replace_link "$CURRENT" "$DEST" || die "could not move the current symlink"
+if [ "${LOOPS_TEST_FAIL_CURRENT_SWAP:-0}" = "1" ]; then
+  if [ "$OLD_PREVIOUS_PRESENT" -eq 1 ]; then
+    replace_link "$PREVIOUS" "$OLD_PREVIOUS" || true
+  else
+    rm -f "$PREVIOUS"
+  fi
+  die "injected current swap failure"
+fi
+if ! replace_link "$CURRENT" "$DEST"; then
+  if [ "$OLD_PREVIOUS_PRESENT" -eq 1 ]; then
+    replace_link "$PREVIOUS" "$OLD_PREVIOUS" || true
+  else
+    rm -f "$PREVIOUS"
+  fi
+  die "could not move the current symlink"
+fi
+POINTERS_OK=1
+[ "$(readlink "$CURRENT")" = "$DEST" ] || POINTERS_OK=0
+validate_release_target "$CURRENT" "$LOOPS_ROOT" >/dev/null || POINTERS_OK=0
+if [ -n "$EXPECTED_PREVIOUS" ]; then
+  [ -L "$PREVIOUS" ] && [ "$(readlink "$PREVIOUS")" = "$EXPECTED_PREVIOUS" ] \
+    && validate_release_target "$PREVIOUS" "$LOOPS_ROOT" >/dev/null || POINTERS_OK=0
+else
+  [ ! -e "$PREVIOUS" ] || POINTERS_OK=0
+fi
+if [ "$POINTERS_OK" -ne 1 ]; then
+  replace_link "$CURRENT" "${OLD_CURRENT:-$DEST}" || true
+  if [ "$OLD_PREVIOUS_PRESENT" -eq 1 ]; then
+    replace_link "$PREVIOUS" "$OLD_PREVIOUS" || true
+  else
+    rm -f "$PREVIOUS"
+  fi
+  die "release pointer readback failed"
+fi
 
 # Keep a few older releases so rollback is a symlink move rather than a rebuild.
 ls -1dt "$RELEASES"/*/ 2>/dev/null | tail -n +$((KEEP + 1)) | while IFS= read -r old; do

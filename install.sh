@@ -74,6 +74,7 @@ validate_agent_economy_release() {
   local release_root="$1"
   python3 - "$release_root" <<'PY'
 import json
+import hashlib
 import os
 import stat
 import sys
@@ -117,6 +118,24 @@ if release_id != release.name or len(sha) != 40 or any(c not in "0123456789abcde
     raise SystemExit("agent-economy release metadata identity is invalid")
 if metadata.get("git_commit") != sha:
     raise SystemExit("agent-economy release metadata commit is invalid")
+manifest_path = release / "SOURCE-MANIFEST.json"
+if manifest_path.is_symlink() or not manifest_path.is_file():
+    raise SystemExit("agent-economy source manifest is missing")
+raw_manifest = manifest_path.read_bytes()
+entries = []
+for path in sorted(release.rglob("*")):
+    relative = path.relative_to(release).as_posix()
+    if relative in {"RELEASE.json", "SOURCE-MANIFEST.json"} or relative.startswith("node_modules/"):
+        continue
+    item = path.lstat()
+    if stat.S_ISREG(item.st_mode):
+        entries.append({"path": relative, "mode": format(stat.S_IMODE(item.st_mode) & 0o555, "04o"), "sha256": hashlib.sha256(path.read_bytes()).hexdigest()})
+    elif stat.S_ISLNK(item.st_mode):
+        target = os.readlink(path)
+        entries.append({"path": relative, "mode": "0000", "sha256": hashlib.sha256(target.encode()).hexdigest(), "target": target})
+expected_manifest = (json.dumps({"version": 1, "entries": entries}, sort_keys=True, separators=(",", ":")) + "\n").encode()
+if raw_manifest != expected_manifest or hashlib.sha256(raw_manifest).hexdigest() != str(metadata.get("source_manifest_sha256", "")):
+    raise SystemExit("agent-economy source manifest does not match release")
 if release.name != sha and not release.name.endswith("-" + sha[:8]):
     raise SystemExit("agent-economy release metadata sha does not match release")
 for path in [release, *release.rglob("*")]:
@@ -179,7 +198,11 @@ fi
 # ─── 2. frozen dependencies ────────────────────────────────────────────
 cyan "[2/6] installing frozen dependencies…"
 if [ "$LIFE_MANAGER_INSTALL_DEPS" = "1" ]; then
-  if [ "$LIFE_MANAGER_AGENT_ECONOMY" != "1" ] && [ -w "$REPO_ROOT" ] && [ -f "$REPO_ROOT/package-lock.json" ]; then
+  if [ "$LIFE_MANAGER_AGENT_ECONOMY" = "1" ]; then
+    # cut-loop-release already installed the lockfile-frozen dependencies inside this sealed release.
+    # Never mutate it or create a shared ~/loops/node_modules link during a pinned install.
+    green "  ✓ sealed release dependencies reused (npm install/link skipped)"
+  elif [ -w "$REPO_ROOT" ] && [ -f "$REPO_ROOT/package-lock.json" ]; then
     (cd "$REPO_ROOT" && npm ci --no-audit --no-fund)
     (cd "$REPO_ROOT/apps/life-manager" && npm ci --no-audit --no-fund)
     mkdir -p "$HOME/loops"
@@ -261,43 +284,45 @@ echo
 cyan "[4.1/6] syncing skills from registry…"
 if [ "$LIFE_MANAGER_AGENT_ECONOMY" = "1" ]; then
   green "  ✓ release-backed agent-economy install does not copy executable skills"
-elif [ ! -f "$REGISTRY" ]; then
-  red "  ✗ registry not found at $REGISTRY — cannot sync slots."
-  exit 3
+else
+  if [ ! -f "$REGISTRY" ]; then
+    red "  ✗ registry not found at $REGISTRY — cannot sync slots."
+    exit 3
+  fi
+  # iterate over every slot key; sync its dir; report status. Foundation pre-declares
+  # all slots, so every builder's capability gets installed the moment its files land.
+  SLOT_KEYS=$(jq -r '.slots | keys[]' "$REGISTRY")
+  SYNCED=0; DECLARED_ONLY=0
+  while IFS= read -r slot; do
+    [ -z "$slot" ] && continue
+    dir=$(jq -r --arg k "$slot" '.slots[$k].dir' "$REGISTRY")
+    status=$(jq -r --arg k "$slot" '.slots[$k].status' "$REGISTRY")
+    entry=$(jq -r --arg k "$slot" '.slots[$k].entrypoint' "$REGISTRY")
+    src="$REPO_ROOT/$dir"
+    dst="$ANICCA_HOME/$dir"
+    if [ ! -d "$src" ]; then
+      yellow "  ⚠ $slot — dir $dir missing in repo, skip"
+      continue
+    fi
+    mkdir -p "$dst"
+    rsync -a --delete --exclude='state/' --exclude='__pycache__/' "$src/" "$dst/"
+    # Immutable releases are intentionally chmod a-w. Runtime state is outside the release but lives
+    # below each synced slot; restore only this destination root's owner write/execute bits before
+    # creating its state directory. Never make the release writable.
+    chmod u+rwx "$dst"
+    mkdir -p "$dst/state"
+    if [ "$status" = "live" ]; then
+      green "  ✓ $slot  [live]  -> $dir/$entry"
+      SYNCED=$((SYNCED+1))
+    else
+      yellow "  • $slot  [$status]  (reserved, entrypoint $entry pending)"
+      DECLARED_ONLY=$((DECLARED_ONLY+1))
+    fi
+  done <<< "$SLOT_KEYS"
+  echo
+  green "  synced $SYNCED live slot(s), $DECLARED_ONLY reserved slot(s)."
+  echo
 fi
-# iterate over every slot key; sync its dir; report status. Foundation pre-declares
-# all slots, so every builder's capability gets installed the moment its files land.
-SLOT_KEYS=$(jq -r '.slots | keys[]' "$REGISTRY")
-SYNCED=0; DECLARED_ONLY=0
-while IFS= read -r slot; do
-  [ -z "$slot" ] && continue
-  dir=$(jq -r --arg k "$slot" '.slots[$k].dir' "$REGISTRY")
-  status=$(jq -r --arg k "$slot" '.slots[$k].status' "$REGISTRY")
-  entry=$(jq -r --arg k "$slot" '.slots[$k].entrypoint' "$REGISTRY")
-  src="$REPO_ROOT/$dir"
-  dst="$ANICCA_HOME/$dir"
-  if [ ! -d "$src" ]; then
-    yellow "  ⚠ $slot — dir $dir missing in repo, skip"
-    continue
-  fi
-  mkdir -p "$dst"
-  rsync -a --delete --exclude='state/' --exclude='__pycache__/' "$src/" "$dst/"
-  # Immutable releases are intentionally chmod a-w. Runtime state is outside the release but lives
-  # below each synced slot; restore only this destination root's owner write/execute bits before
-  # creating its state directory. Never make the release writable.
-  chmod u+rwx "$dst"
-  mkdir -p "$dst/state"
-  if [ "$status" = "live" ]; then
-    green "  ✓ $slot  [live]  -> $dir/$entry"
-    SYNCED=$((SYNCED+1))
-  else
-    yellow "  • $slot  [$status]  (reserved, entrypoint $entry pending)"
-    DECLARED_ONLY=$((DECLARED_ONLY+1))
-  fi
-done <<< "$SLOT_KEYS"
-echo
-green "  synced $SYNCED live slot(s), $DECLARED_ONLY reserved slot(s)."
-echo
 
 # ─── 5. supervised, self-updating daemon (optional host mutation) ──────
 cyan "[5/6] daemon registration…"

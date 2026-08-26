@@ -18,6 +18,10 @@
 #   Swap: EARN_SWAP_ETH (0.0003), EARN_SLIPPAGE_BPS (100), EARN_MIN_ETH_RESERVE (0.0005).
 set -u
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -n "${ANICCA_CODE_ROOT:-}" ] && [ -z "${ANICCA_HOME:-}" ]; then
+  echo "[earn] ANICCA_HOME is required for pinned code state" >&2
+  exit 2
+fi
 # Env discovery: droplet ships /opt/anicca.env; local bodies keep the wallet key in the
 # OpenClaw/clawd env. Source the first that exists so the loop finds the signing key anywhere.
 # Allowlist ONLY the vars the earn path needs — never expose user-PII env (gmail/gcal/composio/
@@ -367,6 +371,9 @@ print(d.get('action') or 'ensure')" 2>/dev/null || echo ensure)
     <key>X402_PORT</key><string>$XPORT</string>
     <key>X402_PUBLIC_URL</key><string>${X402_PUBLIC_URL:-}</string>
     <key>OPENCLAW_ENV_FILE</key><string>${OPENCLAW_ENV_FILE:-}</string>
+    <key>ANICCA_HOME</key><string>${ANICCA_HOME:-}</string>
+    <key>ANICCA_CODE_ROOT</key><string>${ANICCA_CODE_ROOT:-$HERE/../..}</string>
+    <key>ANICCA_X402_STATE_DIR</key><string>${ANICCA_X402_STATE_DIR:-${ANICCA_HOME:-$HOME/.anicca}/skills/earn/x402-sell/state}</string>
     <key>PATH</key><string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
   </dict>
   <key>KeepAlive</key><true/>
@@ -388,7 +395,7 @@ SELLERPLIST
   # FIND BUYERS pt.1: no explicit X402_PUBLIC_URL yet (e.g. no tsnet/funnel for this instance) —
   # fall back to a cloudflared tunnel so the store is still discoverable. URL persists in a state
   # file; we only re-tunnel when it's missing.
-  STATEDIR="${ANICCA_HOME:-$HOME/.anicca}/skills/earn/x402-sell/state"; mkdir -p "$STATEDIR"; URLFILE="$STATEDIR/x402-public-url.txt"
+  STATEDIR="${ANICCA_X402_STATE_DIR:-${ANICCA_HOME:-$HOME/.anicca}/skills/earn/x402-sell/state}"; mkdir -p "$STATEDIR"; URLFILE="$STATEDIR/x402-public-url.txt"
   if [ "$UP" = "up" ] && [ -z "${X402_PUBLIC_URL:-}" ] && command -v cloudflared >/dev/null 2>&1; then
     if ! pgrep -f "cloudflared.*localhost:$XPORT" >/dev/null 2>&1; then
       nohup cloudflared tunnel --no-autoupdate --url "http://localhost:$XPORT" >"$STATEDIR/x402-tunnel.log" 2>&1 &

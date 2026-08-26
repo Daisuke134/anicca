@@ -41,10 +41,15 @@ import {
 } from "./lib/resale-guards.mjs";
 
 const UPSTREAM_URL = "https://api.exa.ai/search";
-const STATE_DIR = process.env.ANICCA_X402_STATE_DIR
-  || (process.env.ANICCA_CODE_ROOT && process.env.ANICCA_HOME
-    ? join(process.env.ANICCA_HOME, "skills", "earn", "x402-sell", "state")
-    : join(pdirname(fileURLToPath(import.meta.url)), "state"));
+function resolveStateDir() {
+  if (process.env.ANICCA_X402_STATE_DIR) return process.env.ANICCA_X402_STATE_DIR;
+  if (process.env.ANICCA_CODE_ROOT) {
+    if (!process.env.ANICCA_HOME) throw new Error("ANICCA_HOME is required for pinned x402 state");
+    return join(process.env.ANICCA_HOME, "skills", "earn", "x402-sell", "state");
+  }
+  return join(pdirname(fileURLToPath(import.meta.url)), "state");
+}
+const STATE_DIR = resolveStateDir();
 const DEFAULT_STATE_PATH = join(STATE_DIR, "resale-spend.json");
 const NETWORK = process.env.BUY_NETWORK || "eip155:8453"; // Base mainnet CAIP-2
 

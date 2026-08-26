@@ -118,6 +118,45 @@ module load failure。live launchctl、daemon 起動、provider/network effect �
 
 追加 `py_compile`、対象 shell `bash -n`、対象 JS `node --check`、`git diff --check` は全て exit 0。
 
+## Rethink Fix Round2 (2026-08-27)
+
+指定された x402 `improve`/`register`/`review` の state writer は、pinned mode で
+`$ANICCA_HOME/skills/earn/x402-sell/state`（または明示 `ANICCA_X402_STATE_DIR`）だけを使い、
+`ANICCA_HOME` が無い場合は release-relative fallback をせず fail-closed にした。seller plist
+生成も `ANICCA_HOME`、`ANICCA_CODE_ROOT`、explicit state dir を渡す。installer の agent-economy
+branch は registry loop 全体、npm install、`$HOME/loops/node_modules` symlink を bypass し、
+既存の state/identity だけを保持する。generic install は従来経路のまま。
+
+cut は archived git tree 直後に deterministic `SOURCE-MANIFEST.json`（relative path、normalized
+mode、content SHA）を生成し、node_modules/RELEASE/manifest 自身を除外して digest を
+`RELEASE.json` に記録する。plist/install/launch は source manifest の canonical bytes、entries、
+digest、実 SHA/`git_commit` を再計算する。current/previous の更新は `.release-lock` 下で旧
+両ポインタを snapshot し、current swap failure の注入時に previous を復元（旧 previous が無ければ
+削除）、成功後は両方の expected target/readback を検証する。rollback も current→previous の順に
+swap し、両ポインタを post-validate する。
+
+Round2 focused GREEN:
+
+```text
+node --test test/agent-economy-control-plane.test.mjs test/install-release-state.test.mjs
+```
+
+結果: 17 tests / pass 17 / fail 0。source manifest 改変拒否、実 cut metadata、atomic pointer
+failure recovery、反復 rollback、installer no-code-sync、x402 state contract を含む。
+
+x402 store focused command:
+
+```text
+node --test skills/earn/x402-sell/__tests__/store-actions.test.mjs skills/earn/x402-sell/__tests__/store-improve.test.mjs skills/earn/x402-sell/__tests__/seller-boot.test.mjs skills/earn/x402-sell/__tests__/register-boot.test.mjs
+```
+
+結果: 8 tests 中 6 PASS、2 test file が worktree の `viem` 未導入で module load failure。
+seller/register boot fixture 自体は 6/6 PASS。
+
+`npm run test:agent-economy` は 83 tests 中 81 PASS。失敗は `viem` 欠如による
+`ensure-wallet` と TaskMarket の既存 module load failure。対象 shell/JS syntax、`py_compile`、
+`git diff --check` は全て exit 0。live launchctl/install/provider mutation は行っていない。
+
 ## Rethink commit
 
 この追補を前回 commit の上に新規 commit として記録する（amend/push は行わない）。

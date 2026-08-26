@@ -13,6 +13,10 @@
 # the model sees them next wake. Never spends money, never bricks.
 set -uo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -n "${ANICCA_CODE_ROOT:-}" ] && [ -z "${ANICCA_HOME:-}" ]; then
+  echo "[cook] ANICCA_HOME is required for pinned code state" >&2
+  exit 2
+fi
 WAKE="${WAKE_ID:-$(date -u +%s)}"
 if [ -n "${ANICCA_CODE_ROOT:-}" ] && [ -n "${ANICCA_HOME:-}" ]; then
   INSTANCE_EARN_STATE="$ANICCA_HOME/skills/earn/state"

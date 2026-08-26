@@ -94,7 +94,12 @@ function writeSealedAgentEconomyRelease(root, {
   const releaseRoot = join(root, "home", "loops", "life-manager");
   const release = join(releaseRoot, "releases", id);
   mkdirSync(join(release, "skills", "agent-economy"), { recursive: true });
-  writeFileSync(join(release, "skills", "agent-economy", "launch.sh"), "#!/bin/bash\n");
+  const launchPath = join(release, "skills", "agent-economy", "launch.sh");
+  const launchBody = "#!/bin/bash\n";
+  writeFileSync(launchPath, launchBody);
+  // Match cutter's sorted-key compact JSON exactly.
+  const sourceManifestBody = `{"entries":[{"mode":"0555","path":"skills/agent-economy/launch.sh","sha256":"${createHash("sha256").update(launchBody).digest("hex")}"}],"version":1}\n`;
+  writeFileSync(join(release, "SOURCE-MANIFEST.json"), sourceManifestBody);
   writeFileSync(join(release, "RELEASE.json"), JSON.stringify({
     sha, git_commit: sha,
     release_id: id,
@@ -102,9 +107,11 @@ function writeSealedAgentEconomyRelease(root, {
     namespace: "life-manager",
     current: join(releaseRoot, "current"),
     previous: join(releaseRoot, "previous"),
+    source_manifest_sha256: createHash("sha256").update(sourceManifestBody).digest("hex"),
   }) + "\n");
   chmodSync(release, 0o555);
   chmodSync(join(release, "RELEASE.json"), 0o444);
+  chmodSync(join(release, "SOURCE-MANIFEST.json"), 0o444);
   chmodSync(join(release, "skills"), 0o555);
   chmodSync(join(release, "skills", "agent-economy"), 0o555);
   chmodSync(join(release, "skills", "agent-economy", "launch.sh"), 0o555);
@@ -216,6 +223,29 @@ test("agent-economy plist pins the resolved release and does not follow a later 
   }
 });
 
+test("agent-economy plist rejects a modified source file despite a sealed mode", () => {
+  const root = mkdtempSync(join(tmpdir(), "agent-economy-manifest-mismatch-"));
+  const home = join(root, "home");
+  const out = join(root, "launchagents");
+  const { release } = writeSealedAgentEconomyRelease(root);
+  try {
+    const launch = join(release, "skills", "agent-economy", "launch.sh");
+    chmodSync(launch, 0o644);
+    writeFileSync(launch, "#!/bin/bash\nchanged\n");
+    chmodSync(launch, 0o555);
+    const generated = spawnSync("python3", [
+      join(REPO_ROOT, "bin", "plistgen.py"), "--loops-dir", join(REPO_ROOT, "loops"),
+      "--out-dir", out, "--home", home, "--only", "agent-economy",
+    ], { cwd: REPO_ROOT, encoding: "utf8" });
+    assert.notEqual(generated.status, 0);
+    assert.match(`${generated.stdout}\n${generated.stderr}`, /manifest/i);
+    assert.equal(existsSync(out), false);
+  } finally {
+    spawnSync("chmod", ["-R", "u+w", root], { encoding: "utf8" });
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("pinned runtime paths are explicit: daemon skips mutable self-update/sync and plist writes atomically", () => {
   const daemon = readFileSync(join(REPO_ROOT, "runtime/anicca-daemon.sh"), "utf8");
   assert.match(daemon, /ANICCA_CODE_ROOT/u);
@@ -268,6 +298,15 @@ test("whole sealed releases have no effective-cron writable carveout", () => {
   assert.doesNotMatch(launch, /state\/effective-cron.*continue/u);
   const registry = readFileSync(join(REPO_ROOT, "lib/registry-enforce.sh"), "utf8");
   assert.match(registry, /CEO_EFFECTIVE_CRON_DIR/u);
+});
+
+test("active x402 improve/register/review writers require explicit instance state in pinned mode", () => {
+  for (const name of ["store-improve.mjs", "store-ensure-register.mjs", "store-review.mjs"]) {
+    const source = readFileSync(join(REPO_ROOT, "skills/earn/x402-sell", name), "utf8");
+    assert.match(source, name === "store-review.mjs" ? /ANICCA_HOME/u : /resolveInstanceStateDir/u);
+    assert.match(source, name === "store-review.mjs" ? /ANICCA_X402_STATE_DIR/u : /stateFilePath|resolveInstanceStateDir/u);
+    assert.doesNotMatch(source, /STATE_DIR\s*=\s*join\(HERE, ['"]state['"]\)/u);
+  }
 });
 
 test("compute proxies require the instance key and pass it to the SDK without env reinjection", () => {
@@ -394,6 +433,10 @@ test("contract-only: release cutter installs locked dependencies in the release 
     assert.equal(metadata.lockfile_sha256, sha256File(join(releaseRoot, "package-lock.json")));
     assert.equal(metadata.dependency_manifest_sha256, sha256File(join(releaseRoot, "package.json")));
     assert.equal(metadata.dependency_sha256, dependencyDigest(releaseRoot));
+    assert.equal(metadata.source_manifest_sha256, sha256File(join(releaseRoot, "SOURCE-MANIFEST.json")));
+    const sourceManifest = JSON.parse(readFileSync(join(releaseRoot, "SOURCE-MANIFEST.json"), "utf8"));
+    assert.equal(sourceManifest.entries.some((entry) => entry.path.startsWith("node_modules/")), false);
+    assert.equal(sourceManifest.entries.some((entry) => entry.path === "RELEASE.json" || entry.path === "SOURCE-MANIFEST.json"), false);
     assert.match(metadata.runtime_versions.npm, /^\d+(?:\.\d+){2}/u);
     assert.match(metadata.runtime_versions.node, /^v\d+/u);
     assertSealedRelease(releaseRoot);
@@ -407,6 +450,21 @@ test("contract-only: release cutter installs locked dependencies in the release 
     });
     assert.equal(probe.status, 0, probe.stderr);
     assert.equal(probe.stdout.trim(), "release-viem");
+
+    const firstCurrent = readlinkSync(join(loops, "current"));
+    const failedCut = spawnSync("bash", [join(repo, "bin", "cut-loop-release.sh"), "HEAD"], {
+      cwd: repo,
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        HOME: root,
+        LOOPS_ROOT: loops,
+        LOOPS_TEST_FAIL_CURRENT_SWAP: "1",
+      },
+    });
+    assert.notEqual(failedCut.status, 0);
+    assert.equal(readlinkSync(join(loops, "current")), firstCurrent);
+    assert.equal(existsSync(join(loops, "previous")), false);
 
     writeFileSync(join(repo, "release-marker.txt"), "second\n");
     assert.equal(git("add", "release-marker.txt").status, 0);

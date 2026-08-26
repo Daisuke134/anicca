@@ -18,9 +18,10 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { privateKeyToAccount } from "viem/accounts";
 import { loadEvmKey } from "../lib/resolve-identity.mjs";
+import { resolveInstanceStateDir } from "./store-review.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-export const STATE_DIR = join(HERE, "state");
+export const STATE_DIR = resolveInstanceStateDir(process.env);
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
 // Mirrors serve-v2.mjs's payTo() (#28: this instance's OWN gated key, never a borrowed one).
@@ -67,11 +68,12 @@ export function runRegister(origin, env = process.env) {
   });
 }
 
-export function stateFilePath(payTo) {
-  return join(STATE_DIR, `x402scan-registered-${payTo.toLowerCase()}.json`);
+export function stateFilePath(payTo, env = process.env) {
+  return join(resolveInstanceStateDir(env), `x402scan-registered-${payTo.toLowerCase()}.json`);
 }
 
 export async function ensureRegistered(env = process.env, now = Date.now()) {
+  const stateDir = resolveInstanceStateDir(env);
   const publicUrl = env.X402_PUBLIC_URL || "";
   if (!publicUrl) return { registered: false, reason: "no public URL" };
 
@@ -85,7 +87,7 @@ export async function ensureRegistered(env = process.env, now = Date.now()) {
     return { registered: false, reason: `manifest unreachable: ${e.message}` };
   }
 
-  const path = stateFilePath(payTo);
+  const path = stateFilePath(payTo, env);
   const state = loadState(path);
   const needsReregister = shouldReregister(state, now, productCount);
 
@@ -96,7 +98,7 @@ export async function ensureRegistered(env = process.env, now = Date.now()) {
   const { ok } = await runRegister(publicUrl, env);
   if (ok) {
     try {
-      mkdirSync(STATE_DIR, { recursive: true });
+      mkdirSync(stateDir, { recursive: true });
       writeFileSync(path, JSON.stringify({ ts: now, productCount, origin: publicUrl }), "utf8");
     } catch { /* best-effort — a write failure must not flip a real registration to failed */ }
     return { registered: true, productCount, reregistered: true };

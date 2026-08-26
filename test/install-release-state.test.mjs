@@ -4,6 +4,7 @@ import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
+import { createHash } from "node:crypto";
 
 const REPO_ROOT = new URL("../", import.meta.url).pathname;
 
@@ -58,12 +59,21 @@ test("agent-economy installer reads the sealed namespaced current release and pr
   writeFileSync(join(release, ".env.example"), "FUEL=fixture\n");
   writeFileSync(join(release, "identity", "genesis.md"), "fixture genesis\n");
   writeFileSync(join(release, "skills", "registry.json"), JSON.stringify({ slots: {} }));
+  const sourceEntries = [
+    [".env.example", "FUEL=fixture\n"],
+    ["identity/genesis.md", "fixture genesis\n"],
+    ["install.sh", readFileSync(join(source, "install.sh"), "utf8")],
+    ["skills/registry.json", JSON.stringify({ slots: {} })],
+  ].map(([path, body]) => ({ mode: "0444", path, sha256: createHash("sha256").update(body).digest("hex") }));
+  const sourceManifestBody = JSON.stringify({ entries: sourceEntries, version: 1 }) + "\n";
+  writeFileSync(join(release, "SOURCE-MANIFEST.json"), sourceManifestBody);
   writeFileSync(join(release, "RELEASE.json"), JSON.stringify({
     sha: "a1".repeat(20), git_commit: "a1".repeat(20), release_id: releaseId, release_root: releaseRoot,
     namespace: "life-manager", current: join(releaseRoot, "current"), previous: join(releaseRoot, "previous"),
+    source_manifest_sha256: createHash("sha256").update(sourceManifestBody).digest("hex"),
   }) + "\n");
   for (const path of [release, join(release, "skills"), join(release, "identity")]) chmodSync(path, 0o555);
-  for (const path of [join(release, "install.sh"), join(release, ".env.example"), join(release, "identity", "genesis.md"), join(release, "skills", "registry.json"), join(release, "RELEASE.json")]) chmodSync(path, 0o444);
+  for (const path of [join(release, "install.sh"), join(release, ".env.example"), join(release, "identity", "genesis.md"), join(release, "skills", "registry.json"), join(release, "SOURCE-MANIFEST.json"), join(release, "RELEASE.json")]) chmodSync(path, 0o444);
   mkdirSync(releaseRoot, { recursive: true });
   symlinkSync(release, join(releaseRoot, "current"));
   try {
@@ -83,6 +93,8 @@ test("agent-economy installer reads the sealed namespaced current release and pr
     assert.match(result.stdout, new RegExp(releaseId));
     assert.equal(existsSync(join(runtime, ".env")), true);
     assert.equal(readFileSync(join(runtime, "identity", "genesis.md"), "utf8"), "fixture genesis\n");
+    assert.equal(existsSync(join(runtime, "skills", "agent-economy", "run.sh")), false);
+    assert.equal(existsSync(join(runtime, "node_modules")), false);
     assert.equal(readlinkSync(join(releaseRoot, "current")), release);
   } finally {
     spawnSync("chmod", ["-R", "u+w", root], { encoding: "utf8" });

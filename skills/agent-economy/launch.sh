@@ -31,6 +31,7 @@ esac
 METADATA_FIELDS="$(node - "$RELEASE/RELEASE.json" "$RELEASE" "$RELEASE_ROOT" <<'NODE'
 const fs = require('node:fs');
 const path = require('node:path');
+const crypto = require('node:crypto');
 const [metadataPath, releasePath, releaseRoot] = process.argv.slice(2);
 let metadata;
 try { metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8')); } catch { process.exit(2); }
@@ -43,6 +44,28 @@ if (!/^[0-9a-f]{40}$/.test(String(metadata.sha || ''))) process.exit(7);
 if (metadata.git_commit !== metadata.sha) process.exit(8);
 if (!(path.basename(releasePath) === metadata.sha || path.basename(releasePath).endsWith(`-${metadata.sha.slice(0, 8)}`))) process.exit(9);
 if (metadata.current && real(String(metadata.current)) !== real(path.join(releaseRoot, 'current'))) process.exit(10);
+if (!/^[0-9a-f]{64}$/.test(String(metadata.source_manifest_sha256 || ''))) process.exit(11);
+const entries = [];
+const walk = (directory, prefix = '') => {
+  for (const name of fs.readdirSync(directory).sort()) {
+    const absolute = path.join(directory, name);
+    const relative = prefix ? `${prefix}/${name}` : name;
+    if (relative === 'RELEASE.json' || relative === 'SOURCE-MANIFEST.json' || relative.startsWith('node_modules/')) continue;
+    const item = fs.lstatSync(absolute);
+    if (item.isDirectory()) walk(absolute, relative);
+    else if (item.isFile()) entries.push({ mode: (item.mode & 0o555).toString(8).padStart(4, '0'), path: relative, sha256: crypto.createHash('sha256').update(fs.readFileSync(absolute)).digest('hex') });
+    else if (item.isSymbolicLink()) {
+      const target = fs.readlinkSync(absolute);
+      entries.push({ mode: '0000', path: relative, sha256: crypto.createHash('sha256').update(target).digest('hex'), target });
+    }
+  }
+};
+walk(releasePath);
+const manifestPath = path.join(releasePath, 'SOURCE-MANIFEST.json');
+let manifestRaw;
+try { manifestRaw = fs.readFileSync(manifestPath); } catch { process.exit(12); }
+const expectedManifest = Buffer.from(JSON.stringify({ entries, version: 1 }) + '\n');
+if (!manifestRaw.equals(expectedManifest) || crypto.createHash('sha256').update(manifestRaw).digest('hex') !== metadata.source_manifest_sha256) process.exit(13);
 process.stdout.write(`${metadata.release_id}\t${metadata.sha}`);
 NODE
 )" || die "sealed release metadata is invalid"
