@@ -17,6 +17,24 @@ manager. Both surfaces use the **same core**, evidence ledger, and human-readabl
 Manager never guarantees wealth or investment returns, and it never reports an attempted action as completed
 without a receipt.
 
+## The general agent we are building
+
+Life Manager is not a collection of website-specific bots. We are building one durable general agent that can
+discover an opportunity, decide whether it can complete the work profitably, propose and negotiate, produce and
+QA the deliverable, submit it, and follow the same identity through payment and payout. Upwork is the first
+end-to-end proof. Additional marketplaces must reuse the same agent, commerce state, capabilities, and money-effect
+contract; their differences belong in a small provider manifest and official readback adapter.
+
+The implementation reuses [DeepAgentsJS/LangGraph](https://github.com/langchain-ai/deepagentsjs) for the agent
+harness and durable state, [browser-use](https://github.com/browser-use/browser-use) for the website-tool contract,
+[OpenClaw](https://github.com/openclaw/openclaw) for the current local wake and channels, and
+[Steel](https://github.com/steel-dev/steel-browser) for the hosted browser backend. Existing Life Manager
+`EffectIntent` and `ConnectorOutbox` rails remain the only path for irreversible money actions. The completion
+signal is an official `banked` receipt—not an application, click, model claim, contract, or pending balance.
+
+This autonomous commerce loop is still being proven. Until an agent-executable Upwork contract reaches `banked`,
+the README describes the target architecture, not a claim that autonomous income already exists.
+
 **Life Manager is the product. Anicca is the company name only when a form explicitly asks for it.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)

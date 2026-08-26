@@ -16,6 +16,23 @@ Telegramへ報告します。
 どちらも**同じcore**、証拠台帳、人間向け報告contractを使います。資産増加や投資収益を保証せず、
 receiptのない試行を「完了」と報告しません。
 
+## 現在構築しているgeneral agent
+
+Life Managerはwebsite固有botの集合ではありません。1つのdurable general agentが機会を発見し、利益を残して
+完遂できるか判断し、提案・交渉・成果物制作・fresh QA・正式納品・支払い・出金を同じidentityで閉じる構造を
+作っています。最初のend-to-end proofはUpworkです。次のmarketplaceでもagent、Commerce state、capability、
+money-effect contractを複製せず、差分は小さいprovider manifestとofficial readback adapterだけにします。
+
+agent harnessとdurable stateには[DeepAgentsJS/LangGraph](https://github.com/langchain-ai/deepagentsjs)、website tool
+contractには[browser-use](https://github.com/browser-use/browser-use)、現在のlocal wake/channelには
+[OpenClaw](https://github.com/openclaw/openclaw)、hosted browser backendには
+[Steel](https://github.com/steel-dev/steel-browser)を再利用します。取り消せないmoney actionは既存Life Managerの
+`EffectIntent`と`ConnectorOutbox`だけを通します。完了条件は応募、click、modelの自己申告、契約、pending balance
+ではなく、公式`banked` receiptです。
+
+この自律Commerce loopは現在実証中です。agentだけで完遂するUpwork契約が`banked`へ到達するまでは、ここに書く
+内容はtarget architectureであり、自律収益が既に存在するというclaimではありません。
+
 **Life Managerが製品名です。Aniccaはformが会社名を明示的に求めた時だけ使います。**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
