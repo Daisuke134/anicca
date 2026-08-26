@@ -537,10 +537,10 @@ def read_caption(caption_file: Path, *, carousel: bool = False) -> str:
 
 def _publish(args, api_key: str, caption: str) -> int:
     if args.image:
-        if args.platform != "instagram":
-            raise PostizError("carousel images are Instagram-only")
+        if args.platform not in ("instagram", "tiktok"):
+            raise PostizError("carousel images require Instagram or TikTok")
         if len(args.image) < 2:
-            raise PostizError("Instagram carousel requires at least two images")
+            raise PostizError("photo carousel requires at least two images")
         for image in args.image:
             if not image.is_file() or image.stat().st_size == 0:
                 raise PostizError("carousel image is missing or empty")
@@ -553,34 +553,46 @@ def _publish(args, api_key: str, caption: str) -> int:
             upload_id, upload_path = upload_image(image, api_key)
             upload_ids.append(upload_id)
             upload_paths.append(upload_path)
+        posted_after = int(time.time())
         payload = build_payload(
             integration=args.integration,
             caption=caption,
-            title="Life Manager",
+            title=args.title[:100],
             upload_id="",
             upload_path="",
             upload_ids=upload_ids,
             upload_paths=upload_paths,
             now_iso=datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z"),
-            platform="instagram",
+            platform=args.platform,
         )
         post_id = create_post(payload, api_key)
         state = {"state": "QUEUE", "post_url": None}
         for _ in range(18):
             time.sleep(10)
-            state = read_publish_state(post_id, api_key, "instagram")
-            if state["state"] == "PUBLISHED" and _valid_instagram_carousel_url(state.get("post_url")):
-                break
+            state = read_publish_state(post_id, api_key, args.platform)
+            if state["state"] == "PUBLISHED":
+                if args.platform == "instagram" and _valid_instagram_carousel_url(state.get("post_url")):
+                    break
+                if args.platform == "tiktok":
+                    if _valid_public_url("tiktok", state.get("post_url")):
+                        break
+                    resolved = resolve_profile_release_url(state.get("post_url"), caption, posted_after=posted_after)
+                    if resolved:
+                        state["post_url"] = resolved
+                        break
             if state["state"] == "ERROR":
                 break
         result = {
             "post_id": post_id,
             **state,
-            "reconciled": state.get("state") == "PUBLISHED"
-            and _valid_instagram_carousel_url(state.get("post_url")),
+            "reconciled": state.get("state") == "PUBLISHED" and (
+                _valid_instagram_carousel_url(state.get("post_url")) if args.platform == "instagram"
+                else _valid_public_url("tiktok", state.get("post_url"))
+            ),
         }
         print(json.dumps(result, ensure_ascii=False, separators=(",", ":")))
-        if state["state"] != "PUBLISHED" or not _valid_instagram_carousel_url(state.get("post_url")):
+        valid_url = _valid_instagram_carousel_url(state.get("post_url")) if args.platform == "instagram" else _valid_public_url("tiktok", state.get("post_url"))
+        if state["state"] != "PUBLISHED" or not valid_url:
             reason = state.get("error")
             suffix = f": {reason}" if isinstance(reason, str) and reason else ""
             raise PostizError(f"Postiz terminal state is {state['state']}{suffix}")

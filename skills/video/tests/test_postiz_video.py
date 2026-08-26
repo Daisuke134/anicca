@@ -7,6 +7,7 @@ import socket
 import subprocess
 import sys
 import tempfile
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
@@ -132,6 +133,24 @@ class PostizVideoTests(unittest.TestCase):
         self.assertEqual(post["settings"]["__type"], "tiktok")
         self.assertEqual(post["settings"]["content_posting_method"], "DIRECT_POST")
         self.assertEqual(post["settings"]["autoAddMusic"], "yes")
+
+    def test_tiktok_photo_carousel_publish_uses_exact_platform_title_and_direct_url(self):
+        with tempfile.TemporaryDirectory() as directory:
+            images = []
+            for index in range(1, 7):
+                image = Path(directory) / f"{index}.jpg"
+                image.write_bytes(b"\xff\xd8\xff" + bytes([index]))
+                images.append(image)
+            args = SimpleNamespace(image=images, platform="tiktok", integration="cmnenjkff01j1pa0ysufmzhfr", title="Exact hook", video=None)
+            payloads = []
+            with patch.object(postiz_video, "upload_image", side_effect=lambda image, _key: (image.stem, f"https://uploads.example/{image.name}")):
+                with patch.object(postiz_video, "create_post", side_effect=lambda payload, _key: payloads.append(payload) or "postiz-1"):
+                    with patch.object(postiz_video, "read_publish_state", return_value={"state": "PUBLISHED", "post_url": "https://www.tiktok.com/@anicca_slideshow/video/7777777777777777777"}):
+                        with patch.object(postiz_video.time, "sleep"):
+                            with patch("builtins.print"):
+                                self.assertEqual(postiz_video._publish(args, "token", "Exact caption"), 0)
+            self.assertEqual(payloads[0]["posts"][0]["settings"]["title"], "Exact hook")
+            self.assertEqual(len(payloads[0]["posts"][0]["value"][0]["image"]), 6)
 
     def test_carousel_payload_rejects_short_or_video_image_mix(self):
         with self.assertRaises(postiz_video.PostizError):
