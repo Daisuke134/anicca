@@ -124,7 +124,7 @@ if manifest_path.is_symlink() or not manifest_path.is_file():
 raw_manifest = manifest_path.read_bytes()
 entries = []
 release_real = Path(os.path.realpath(release))
-for path in sorted(release.rglob("*")):
+for path in sorted(release.rglob("*"), key=lambda item: item.relative_to(release).as_posix().encode("utf-8")):
     relative = path.relative_to(release).as_posix()
     if relative in {"RELEASE.json", "SOURCE-MANIFEST.json", "DEPENDENCY-MANIFEST.tsv"} or relative.startswith("node_modules/"):
         continue
@@ -137,7 +137,7 @@ for path in sorted(release.rglob("*")):
         if target_real != release_real and release_real not in target_real.parents:
             raise SystemExit("agent-economy source symlink escapes release")
         entries.append({"path": relative, "mode": format(stat.S_IMODE(item.st_mode) & 0o555, "04o"), "sha256": hashlib.sha256(target.encode()).hexdigest(), "target": target})
-expected_manifest = (json.dumps({"version": 1, "entries": entries}, sort_keys=True, separators=(",", ":")) + "\n").encode()
+expected_manifest = (json.dumps({"version": 1, "entries": entries}, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n").encode("utf-8")
 if raw_manifest != expected_manifest or hashlib.sha256(raw_manifest).hexdigest() != str(metadata.get("source_manifest_sha256", "")):
     raise SystemExit("agent-economy source manifest does not match release")
 dependency_manifest_path = release / "DEPENDENCY-MANIFEST.tsv"

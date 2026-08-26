@@ -301,7 +301,7 @@ root = Path(sys.argv[1])
 manifest = Path(sys.argv[2])
 root_real = Path(os.path.realpath(root))
 entries = []
-for path in sorted(root.rglob("*")):
+for path in sorted(root.rglob("*"), key=lambda item: item.relative_to(root).as_posix().encode("utf-8")):
     relative = path.relative_to(root).as_posix()
     if relative in {"RELEASE.json", "SOURCE-MANIFEST.json", "DEPENDENCY-MANIFEST.tsv"} or relative.startswith("node_modules/"):
         continue
@@ -317,7 +317,7 @@ for path in sorted(root.rglob("*")):
         content_hash = hashlib.sha256(target.encode()).hexdigest()
         entries.append({"path": relative, "mode": format(stat.S_IMODE(item.st_mode) & 0o555, "04o"), "sha256": content_hash, "target": target})
 payload = {"version": 1, "entries": entries}
-encoded = (json.dumps(payload, sort_keys=True, separators=(",", ":")) + "\n").encode()
+encoded = (json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n").encode("utf-8")
 manifest.write_bytes(encoded)
 print(hashlib.sha256(encoded).hexdigest())
 PY

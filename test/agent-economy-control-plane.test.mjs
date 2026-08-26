@@ -108,7 +108,7 @@ function writeSealedAgentEconomyRelease(root, {
     { mode: "0555", path: "skills/agent-economy/internal-link.sh", sha256: createHash("sha256").update("launch.sh").digest("hex"), target: "launch.sh" },
     { mode: "0555", path: "skills/agent-economy/nonexec-link.sh", sha256: createHash("sha256").update("readme.txt").digest("hex"), target: "readme.txt" },
     { mode: "0444", path: "skills/agent-economy/readme.txt", sha256: createHash("sha256").update(readmeBody).digest("hex") },
-  ].sort((a, b) => a.path.localeCompare(b.path));
+  ].sort((a, b) => Buffer.compare(Buffer.from(a.path, "utf8"), Buffer.from(b.path, "utf8")));
   const sourceManifestBody = `${JSON.stringify({ entries: sourceEntries, version: 1 })}\n`;
   writeFileSync(join(release, "SOURCE-MANIFEST.json"), sourceManifestBody);
   writeFileSync(join(release, "DEPENDENCY-MANIFEST.tsv"), "");
@@ -364,7 +364,7 @@ test("launch validation-only preflight verifies byte-sorted dependency entries a
     const sourceManifest = JSON.parse(readFileSync(sourceManifestPath, "utf8"));
     sourceManifest.entries.find((entry) => entry.path === "skills/agent-economy/launch.sh").sha256 = createHash("sha256").update(launchBody).digest("hex");
     sourceManifest.entries.push({ mode: "0555", path: "runtime/anicca-daemon.sh", sha256: createHash("sha256").update(daemonBody).digest("hex") });
-    sourceManifest.entries.sort((a, b) => Buffer.compare(Buffer.from(a.path), Buffer.from(b.path)));
+    sourceManifest.entries.sort((a, b) => Buffer.compare(Buffer.from(a.path, "utf8"), Buffer.from(b.path, "utf8")));
     const sourceManifestBody = `${JSON.stringify(sourceManifest)}\n`;
     chmodSync(sourceManifestPath, 0o644);
     writeFileSync(sourceManifestPath, sourceManifestBody);
@@ -389,7 +389,7 @@ test("launch validation-only preflight verifies byte-sorted dependency entries a
     symlinkSync("UPPER", join(dependencyRoot, "nonexec"));
     dependencyEntries.push({ kind: "symlink", path: "node_modules/nonexec", mode: "555", sha256: "-", target: "UPPER" });
     const dependencyBody = `${dependencyEntries
-      .sort((a, b) => Buffer.compare(Buffer.from(a.path), Buffer.from(b.path)))
+      .sort((a, b) => Buffer.compare(Buffer.from(a.path, "utf8"), Buffer.from(b.path, "utf8")))
       .map((entry) => `${entry.kind}\t${entry.path}\t${entry.mode}\t${entry.sha256}\t${entry.target}`)
       .join("\n")}\n`;
     const dependencyManifestPath = join(release, "DEPENDENCY-MANIFEST.tsv");
@@ -408,7 +408,7 @@ test("launch validation-only preflight verifies byte-sorted dependency entries a
     chmodSync(join(release, "skills", "agent-economy"), 0o555);
     spawnSync("chmod", ["-R", "a-w", release], { encoding: "utf8" });
     const rewriteSourceManifest = () => {
-      sourceManifest.entries.sort((a, b) => Buffer.compare(Buffer.from(a.path), Buffer.from(b.path)));
+      sourceManifest.entries.sort((a, b) => Buffer.compare(Buffer.from(a.path, "utf8"), Buffer.from(b.path, "utf8")));
       const nextBody = `${JSON.stringify(sourceManifest)}\n`;
       chmodSync(sourceManifestPath, 0o644);
       writeFileSync(sourceManifestPath, nextBody);
@@ -472,7 +472,9 @@ test("launch validation accepts UTF-8 byte-sorted source paths from the release 
     chmodSync(join(agentDir, "launch.sh"), 0o644);
     writeFileSync(join(agentDir, "launch.sh"), launchBody);
     chmodSync(join(agentDir, "launch.sh"), 0o555);
-    const unicodeFiles = [["あ.txt", "jp\n"], ["😀.txt", "emoji\n"]];
+    const collisionFiles = [["test/collision.txt", "test\n"], ["test-support/collision.txt", "support\n"]];
+    for (const [relative] of collisionFiles) mkdirSync(join(agentDir, relative, ".."), { recursive: true });
+    const unicodeFiles = [...collisionFiles, ["あ.txt", "jp\n"], ["😀.txt", "emoji\n"]];
     const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
     for (const [name, body] of unicodeFiles) {
       writeFileSync(join(agentDir, name), body);
@@ -502,6 +504,32 @@ test("launch validation accepts UTF-8 byte-sorted source paths from the release 
     chmodSync(metadataPath, 0o644);
     writeFileSync(metadataPath, `${JSON.stringify(metadata)}\n`);
     spawnSync("chmod", ["-R", "a-w", release], { encoding: "utf8" });
+    const collisionPaths = collisionFiles.map(([relative]) => `skills/agent-economy/${relative}`);
+    const componentWise = [...collisionPaths].sort((left, right) => {
+      const leftParts = left.split("/");
+      const rightParts = right.split("/");
+      for (let index = 0; index < Math.min(leftParts.length, rightParts.length); index += 1) {
+        if (leftParts[index] < rightParts[index]) return -1;
+        if (leftParts[index] > rightParts[index]) return 1;
+      }
+      return leftParts.length - rightParts.length;
+    });
+    const byteWise = [...collisionPaths].sort((left, right) => Buffer.compare(Buffer.from(left, "utf8"), Buffer.from(right, "utf8")));
+    assert.notDeepEqual(componentWise, byteWise, "component-wise Path ordering must differ for prefix collisions");
+    assert.deepEqual(manifest.entries.map((entry) => entry.path).filter((path) => collisionPaths.includes(path)), byteWise);
+    const installed = spawnSync("bash", [join(REPO_ROOT, "install.sh"), "agent-economy"], {
+      cwd: REPO_ROOT,
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        HOME: root,
+        LIFE_MANAGER_HOME: join(root, "installed-home"),
+        LIFE_MANAGER_RELEASE_ROOT: releaseRoot,
+        LIFE_MANAGER_INSTALL_DAEMON: "0",
+        LIFE_MANAGER_INSTALL_DEPS: "0",
+      },
+    });
+    assert.equal(installed.status, 0, `${installed.stdout}\n${installed.stderr}`);
     const result = spawnSync("bash", [join(agentDir, "launch.sh")], {
       cwd: REPO_ROOT,
       encoding: "utf8",
@@ -672,6 +700,11 @@ test("contract-only: release cutter installs locked dependencies in the release 
   assert.equal(lock.status, 0, `${lock.stdout}\n${lock.stderr}`);
   mkdirSync(join(repo, "runtime", "compute-proxy"), { recursive: true });
   writeFileSync(join(repo, "runtime", "compute-proxy", "viem-probe.mjs"), 'import { marker } from "viem";\nconsole.log(marker);\n');
+  for (const [relative, body] of [["test/collision.txt", "test\n"], ["test-support/collision.txt", "support\n"]]) {
+    const absolute = join(repo, relative);
+    mkdirSync(join(absolute, ".."), { recursive: true });
+    writeFileSync(absolute, body);
+  }
   mkdirSync(join(repo, "loops", "agent-economy"), { recursive: true });
   writeFileSync(join(repo, "loops", "agent-economy", "loop.toml"), [
     'name = "agent-economy"',
@@ -724,6 +757,10 @@ test("contract-only: release cutter installs locked dependencies in the release 
     const sourceManifest = JSON.parse(readFileSync(join(releaseRoot, "SOURCE-MANIFEST.json"), "utf8"));
     assert.equal(sourceManifest.entries.some((entry) => entry.path.startsWith("node_modules/")), false);
     assert.equal(sourceManifest.entries.some((entry) => entry.path === "RELEASE.json" || entry.path === "SOURCE-MANIFEST.json"), false);
+    assert.deepEqual(sourceManifest.entries.map((entry) => entry.path).filter((path) => path.endsWith("/collision.txt")), [
+      "test-support/collision.txt",
+      "test/collision.txt",
+    ]);
     assert.equal(metadata.dependency_tree_manifest_sha256, sha256File(join(releaseRoot, "DEPENDENCY-MANIFEST.tsv")));
     assert.match(readFileSync(join(releaseRoot, "DEPENDENCY-MANIFEST.tsv"), "utf8"), /node_modules\/viem/u);
     assert.match(metadata.runtime_versions.npm, /^\d+(?:\.\d+){2}/u);

@@ -101,7 +101,7 @@ def _assert_sealed(release: Path) -> None:
 def _source_manifest_payload(release: Path) -> dict:
     entries = []
     release_real = normalized(release)
-    for path in sorted(release.rglob("*")):
+    for path in sorted(release.rglob("*"), key=lambda item: item.relative_to(release).as_posix().encode("utf-8")):
         relative = path.relative_to(release).as_posix()
         if relative in {"RELEASE.json", "SOURCE-MANIFEST.json", "DEPENDENCY-MANIFEST.tsv"} or relative.startswith("node_modules/"):
             continue
@@ -135,7 +135,7 @@ def _assert_source_manifest(release: Path, metadata: dict) -> None:
         manifest = json.loads(raw.decode("utf-8"))
     except (OSError, UnicodeDecodeError, ValueError) as error:
         raise SystemExit("agent-economy source manifest is invalid") from error
-    encoded = (json.dumps(_source_manifest_payload(release), sort_keys=True, separators=(",", ":")) + "\n").encode()
+    encoded = (json.dumps(_source_manifest_payload(release), ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n").encode("utf-8")
     if raw != encoded or hashlib.sha256(raw).hexdigest() != str(metadata.get("source_manifest_sha256", "")):
         raise SystemExit("agent-economy source manifest does not match the sealed release")
     if manifest != json.loads(encoded.decode("utf-8")):
