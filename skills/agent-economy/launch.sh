@@ -121,12 +121,12 @@ while IFS= read -r -d '' item; do
   [ $((8#$mode & 0222)) -eq 0 ] || die "sealed release remains writable"
 done < <(find "$RELEASE" -mindepth 1 -print0)
 
+[ -x "$REPO/runtime/anicca-daemon.sh" ] || die "missing daemon at $REPO/runtime/anicca-daemon.sh"
+
 if [ "${ANICCA_VALIDATE_RELEASE_ONLY:-0}" = "1" ]; then
   echo "agent-economy: sealed release validation passed ($RELEASE_ID)"
   exit 0
 fi
-
-[ -x "$REPO/runtime/anicca-daemon.sh" ] || die "missing daemon at $REPO/runtime/anicca-daemon.sh"
 
 export ANICCA_REPO="$CODE_ROOT" ANICCA_CODE_ROOT="$CODE_ROOT"
 export ANICCA_RELEASE_ROOT
