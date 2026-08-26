@@ -424,6 +424,18 @@ test("launch validation-only preflight verifies byte-sorted dependency entries a
     const preflight = spawnSync("bash", [launchPath], { cwd: REPO_ROOT, env, encoding: "utf8" });
     assert.equal(preflight.status, 0, `${preflight.stdout}\n${preflight.stderr}`);
     assert.match(preflight.stdout, /sealed release validation passed/u);
+    const expectWritableRejected = (path, writableMode, sealedMode) => {
+      chmodSync(path, writableMode);
+      const rejectedWritable = spawnSync("bash", [launchPath], { cwd: REPO_ROOT, env, encoding: "utf8" });
+      assert.equal(rejectedWritable.status, 2, `${rejectedWritable.stdout}\n${rejectedWritable.stderr}`);
+      assert.match(`${rejectedWritable.stdout}\n${rejectedWritable.stderr}`, /sealed release metadata is invalid/u);
+      chmodSync(path, sealedMode);
+    };
+    expectWritableRejected(release, 0o755, 0o555);
+    expectWritableRejected(launchPath, 0o755, 0o555);
+    expectWritableRejected(join(dependencyRoot, "a.js"), 0o644, 0o444);
+    const resealed = spawnSync("bash", [launchPath], { cwd: REPO_ROOT, env, encoding: "utf8" });
+    assert.equal(resealed.status, 0, `${resealed.stdout}\n${resealed.stderr}`);
     chmodSync(join(release, "runtime"), 0o755);
     rmSync(daemonPath, { force: true });
     sourceManifest.entries = sourceManifest.entries.filter((entry) => entry.path !== "runtime/anicca-daemon.sh");
@@ -595,6 +607,8 @@ test("whole sealed releases have no effective-cron writable carveout", () => {
   assert.doesNotMatch(cutter, /u\+w.*state\/effective-cron/u);
   const launch = readFileSync(join(REPO_ROOT, "skills/agent-economy/launch.sh"), "utf8");
   assert.doesNotMatch(launch, /state\/effective-cron.*continue/u);
+  assert.doesNotMatch(launch, /find "\$RELEASE" -mindepth 1 -print0/u);
+  assert.doesNotMatch(launch, /\bstat -[fc]/u);
   const registry = readFileSync(join(REPO_ROOT, "lib/registry-enforce.sh"), "utf8");
   assert.match(registry, /CEO_EFFECTIVE_CRON_DIR/u);
 });

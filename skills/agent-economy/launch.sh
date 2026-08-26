@@ -47,12 +47,17 @@ if (metadata.current && real(String(metadata.current)) !== real(path.join(releas
 if (!/^[0-9a-f]{64}$/.test(String(metadata.source_manifest_sha256 || ''))) process.exit(11);
 const entries = [];
 const releaseReal = real(releasePath);
+const assertSealed = (item) => {
+  if (!item.isSymbolicLink() && (item.mode & 0o222)) process.exit(24);
+};
+assertSealed(fs.lstatSync(releasePath));
 const walk = (directory, prefix = '') => {
   for (const name of fs.readdirSync(directory).sort()) {
     const absolute = path.join(directory, name);
     const relative = prefix ? `${prefix}/${name}` : name;
-    if (relative === 'RELEASE.json' || relative === 'SOURCE-MANIFEST.json' || relative === 'DEPENDENCY-MANIFEST.tsv' || relative.startsWith('node_modules/')) continue;
     const item = fs.lstatSync(absolute);
+    assertSealed(item);
+    if (relative === 'RELEASE.json' || relative === 'SOURCE-MANIFEST.json' || relative === 'DEPENDENCY-MANIFEST.tsv' || relative.startsWith('node_modules/')) continue;
     if (item.isDirectory()) walk(absolute, relative);
     else if (item.isFile()) entries.push({ mode: (item.mode & 0o555).toString(8).padStart(4, '0'), path: relative, sha256: crypto.createHash('sha256').update(fs.readFileSync(absolute)).digest('hex') });
     else if (item.isSymbolicLink()) {
@@ -81,6 +86,7 @@ const walkDependencies = (directory, prefix = 'node_modules') => {
     const absolute = path.join(directory, name);
     const relative = `${prefix}/${name}`;
     const item = fs.lstatSync(absolute);
+    assertSealed(item);
     if (item.isDirectory()) walkDependencies(absolute, relative);
     else if (item.isFile()) dependencyLines.push(`file\t${relative}\t${(item.mode & 0o555).toString(8)}\t${crypto.createHash('sha256').update(fs.readFileSync(absolute)).digest('hex')}\t-`);
     else if (item.isSymbolicLink()) {
@@ -110,16 +116,6 @@ fi
 if [ -n "${ANICCA_RELEASE_SHA:-}" ] && [ "$ANICCA_RELEASE_SHA" != "$RELEASE_SHA" ]; then
   die "release sha does not match sealed metadata"
 fi
-
-mode="$(stat -f '%Lp' "$RELEASE" 2>/dev/null || stat -c '%a' "$RELEASE" 2>/dev/null)" \
-  || die "could not inspect sealed release permissions"
-[ $((8#$mode & 0222)) -eq 0 ] || die "sealed release remains writable"
-while IFS= read -r -d '' item; do
-  [ -L "$item" ] && continue
-  mode="$(stat -f '%Lp' "$item" 2>/dev/null || stat -c '%a' "$item" 2>/dev/null)" \
-    || die "could not inspect sealed release permissions"
-  [ $((8#$mode & 0222)) -eq 0 ] || die "sealed release remains writable"
-done < <(find "$RELEASE" -mindepth 1 -print0)
 
 [ -x "$REPO/runtime/anicca-daemon.sh" ] || die "missing daemon at $REPO/runtime/anicca-daemon.sh"
 
