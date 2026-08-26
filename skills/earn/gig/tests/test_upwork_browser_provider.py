@@ -125,6 +125,33 @@ def test_active_contract_resumes_existing_general_agent_owner(tmp_path, monkeypa
     assert started == [workspace]
 
 
+def test_broken_contract_owner_does_not_block_other_contracts(tmp_path, monkeypatch):
+    def make(contract_id):
+        return provider.create_offer_workspace({
+            "action": "accept", "reason_codes": [], "decision_sha256": "a" * 64,
+            "offer": {"offer_id": f"offer-{contract_id}", "scope": "Build it.",
+                      "deadline": "2026-09-01"},
+        }, contract_id=contract_id, contract_readback_sha256="b" * 64,
+            projects_root=tmp_path / "projects")
+
+    broken, healthy = make("contract-broken"), make("contract-healthy")
+    state_path = Path(broken["workspace"]) / "state.json"
+    state = json.loads(state_path.read_text())
+    state["request_id"] = "wrong-owner"
+    state_path.write_text(json.dumps(state))
+    started = []
+    monkeypatch.setattr(provider, "start_project_worker", started.append)
+
+    owners = provider.resume_active_contract_workers([
+        {"id": "contract-broken"}, {"id": "contract-healthy"},
+    ], projects_root=tmp_path / "projects")
+
+    assert owners[0] == {"contract_id": "contract-broken", "state": "owner_blocked",
+                         "reason": "shared_client_workspace_rejected"}
+    assert owners[1]["state"] == "worker_resumed"
+    assert started == [healthy]
+
+
 def test_submitted_receipt_uses_new_official_proposal_with_exact_title():
     payload = {"job_id": "~job-1", "title": "High-value job"}
     state = {
