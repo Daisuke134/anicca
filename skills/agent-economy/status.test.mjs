@@ -248,3 +248,17 @@ test("status rejects ANICCA_HOME discovery without owner HOME or explicit cost l
     (error) => error?.code === "STATUS_CONFIG_MISSING",
   );
 });
+
+test("status rejects an explicit earn path without explicit compute and shelter paths when ANICCA_HOME is absent", () => {
+  assert.throws(
+    () => resolveStatusPaths({ args: ["/tmp/earn-ledger.jsonl"], env: { HOME: "/tmp/owner" } }),
+    (error) => error?.code === "STATUS_CONFIG_MISSING",
+  );
+  const paths = resolveStatusPaths({
+    args: ["/tmp/earn-ledger.jsonl"],
+    env: { COMPUTE_COST_LOG: "/tmp/compute.jsonl", SHELTER_COST_LEDGER: "/tmp/shelter.jsonl" },
+  });
+  assert.equal(paths.earnPath, "/tmp/earn-ledger.jsonl");
+  assert.equal(paths.computePath, "/tmp/compute.jsonl");
+  assert.equal(paths.shelterPath, "/tmp/shelter.jsonl");
+});

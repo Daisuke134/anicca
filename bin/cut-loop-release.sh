@@ -16,14 +16,9 @@
 #
 # State is deliberately NOT inside a release: see LOOPS_STATE_ROOT below.
 set -uo pipefail
-# Keep an explicitly supplied PATH first so contract tests can provide an isolated toolchain, then
-# append the fixed macOS lookup locations used by launchd. The cutter has no executable-path env
-# override; npm/node are always resolved through command lookup.
-if [ -n "${PATH:-}" ]; then
-  export PATH="$PATH:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
-else
-  export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
-fi
+# Resolve tools only from fixed trusted directories. The caller's PATH is intentionally ignored so
+# a launchd environment or a poisoned shell cannot shadow npm/node with a bespoke executable.
+export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 LOOPS_ROOT="${LOOPS_ROOT:-$HOME/loops}"
@@ -32,8 +27,21 @@ CURRENT="$LOOPS_ROOT/current"
 # state root is intentionally not resolved here (see RELEASE.json note below)
 KEEP="${LOOPS_KEEP_RELEASES:-5}"
 REF="${1:-HEAD}"
-NPM_BIN="$(command -v npm 2>/dev/null || true)"
-NODE_BIN="$(command -v node 2>/dev/null || true)"
+TRUSTED_BIN_DIRS=(/opt/homebrew/bin /usr/local/bin /usr/bin /bin /usr/sbin /sbin)
+
+resolve_trusted_tool() {
+  local tool="$1" directory
+  for directory in "${TRUSTED_BIN_DIRS[@]}"; do
+    if [ -x "$directory/$tool" ]; then
+      printf '%s\n' "$directory/$tool"
+      return 0
+    fi
+  done
+  return 1
+}
+
+NPM_BIN="$(resolve_trusted_tool npm 2>/dev/null || true)"
+NODE_BIN="$(resolve_trusted_tool node 2>/dev/null || true)"
 
 die() { echo "cut-loop-release: $*" >&2; exit 1; }
 
@@ -44,12 +52,14 @@ validate_release_node_modules() {
   local node_modules="$DEST/node_modules"
   [ -d "$node_modules" ] || die "dependency install produced no node_modules"
   [ ! -L "$node_modules" ] || die "release node_modules must be a directory"
+  local node_modules_real
+  node_modules_real="$(realpath "$node_modules" 2>/dev/null)" || die "release node_modules path cannot be resolved"
   local link resolved
   while IFS= read -r -d '' link; do
     resolved="$(realpath "$link" 2>/dev/null)" \
       || die "dependency symlink cannot be resolved"
     case "$resolved" in
-      "$node_modules"|"$node_modules"/*) ;;
+      "$node_modules_real"|"$node_modules_real"/*) ;;
       *) die "dependency symlink escapes release node_modules" ;;
     esac
   done < <(find "$node_modules" -type l -print0)
@@ -66,6 +76,7 @@ dependency_digest() {
         kind="symlink"
         target="$(readlink "$file")" || exit 1
         content_hash="-"
+        mode="$(printf '%o' $((8#$mode & 0555)))"
       else
         kind="file"
         target="-"
@@ -81,8 +92,11 @@ verify_release_seal() {
   local item mode
   while IFS= read -r -d '' item; do
     case "$item" in
-      "$DEST/state"|"$DEST/state"/*) continue ;;
+      "$DEST/state/effective-cron"|"$DEST/state/effective-cron"/*) continue ;;
     esac
+    # Symlink inode mode is platform-defined and chmod may not alter it. Its resolved target was
+    # already constrained to node_modules; only regular files/directories need a writable-bit gate.
+    [ -L "$item" ] && continue
     mode="$(stat -f '%Lp' "$item" 2>/dev/null || stat -c '%a' "$item" 2>/dev/null)" \
       || die "could not inspect sealed release permissions"
     case "$mode" in
@@ -177,12 +191,12 @@ fi
 # One writable carve-out, created before the export is sealed. The CEO registry gate writes the
 # cadence it just computed to state/effective-cron/<loop>.txt, resolved relative to the repo root --
 # which is this release. A fully read-only export made every pass log a permission error before
-# failing open. That file is derived from the registry on each pass, so it is scratch rather than
-# state worth preserving, and one writable directory costs nothing while the code stays immutable.
-mkdir -p "$DEST/state/effective-cron"
+# failing open. Only this derived scratch directory stays writable; the state root itself remains
+# sealed so an accidental write cannot broaden the mutable surface.
+mkdir -p "$DEST/state/effective-cron" || die "could not create state carveout"
 
 chmod -R a-w "$DEST" || die "could not seal release permissions"
-chmod -R u+w "$DEST/state" || die "could not open intended state carveout"
+chmod -R u+w "$DEST/state/effective-cron" || die "could not open intended state carveout"
 verify_release_seal
 
 # rename(2) over an existing symlink is atomic, so no pass can ever observe a missing `current`.

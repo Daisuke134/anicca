@@ -36,6 +36,7 @@ export function resolveStatusPaths({ args = [], env = process.env } = {}) {
   const explicitComputePath = configuredPath(values[2]) || configuredPath(e.COMPUTE_COST_LOG);
   const explicitShelterPath = configuredPath(values[3]) || configuredPath(e.SHELTER_COST_LEDGER);
   const ownerHome = configuredPath(e.HOME);
+  if (!home && explicit && (!explicitComputePath || !explicitShelterPath)) throw new StatusConfigError();
   if (home && !ownerHome && (!explicitComputePath || !explicitShelterPath)) throw new StatusConfigError();
   const computePath = explicitComputePath
     || (ownerHome && path.join(ownerHome, ".blockrun", "cost_log.jsonl"));

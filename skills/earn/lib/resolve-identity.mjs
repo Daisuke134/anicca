@@ -32,6 +32,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export const AGENT_ECONOMY_IDENTITY_MODE = 'agent-economy';
+export const ANICCA_INSTANCE_WALLET_FILE = 'ANICCA_INSTANCE_WALLET_FILE';
 
 /** Stable, secret-free failure for a forbidden shared/private-key environment override. */
 export class AgentEconomyIdentityError extends Error {
@@ -51,6 +52,14 @@ function hasSecretValue(value) {
   return typeof value === 'string' && value.length > 0;
 }
 
+function safeRealpath(filePath) {
+  try { return fs.realpathSync.native(filePath); } catch { return null; }
+}
+
+function isWithin(root, candidate) {
+  return candidate === root || candidate.startsWith(`${root}${path.sep}`);
+}
+
 function rejectAgentEconomyEvmOverrides(env) {
   const fields = [
     ['ANICCA_EVM_PRIVATE_KEY', env.ANICCA_EVM_PRIVATE_KEY],
@@ -64,6 +73,35 @@ function rejectAgentEconomyEvmOverrides(env) {
   ];
   const forbidden = fields.find(([, value]) => hasSecretValue(value));
   if (forbidden) throw new AgentEconomyIdentityError(forbidden[0]);
+}
+
+function resolveAgentEconomyWalletPath({ home, env }) {
+  const instanceHome = home ?? env.ANICCA_HOME;
+  if (!hasSecretValue(instanceHome)) return null;
+
+  const ownPath = path.resolve(instanceHome, '.automaton', 'wallet.json');
+  const requested = env[ANICCA_INSTANCE_WALLET_FILE];
+  const legacyHome = env.HOME;
+  const isDefaultOwner = hasSecretValue(legacyHome)
+    && path.resolve(instanceHome) === path.resolve(legacyHome, '.anicca');
+  const legacyPath = hasSecretValue(legacyHome)
+    ? path.resolve(legacyHome, '.automaton', 'wallet.json') : null;
+  const candidate = hasSecretValue(requested) ? path.resolve(requested) : ownPath;
+
+  // A dedicated selector is accepted only for the instance path, or for the exact legacy path
+  // still owned by the original default-home instance. Relative/outside selectors are rejected.
+  if (hasSecretValue(requested) && (!path.isAbsolute(requested)
+    || (candidate !== ownPath && !(isDefaultOwner && candidate === legacyPath)))) return null;
+
+  const candidateReal = safeRealpath(candidate);
+  if (!candidateReal) return null;
+  const rootPath = candidate === legacyPath && isDefaultOwner
+    ? path.dirname(legacyPath) : path.dirname(ownPath);
+  const rootReal = safeRealpath(rootPath);
+  const scopeReal = candidate === legacyPath && isDefaultOwner
+    ? safeRealpath(legacyHome) : safeRealpath(instanceHome);
+  if (!rootReal || !scopeReal || !isWithin(scopeReal, rootReal) || !isWithin(rootReal, candidateReal)) return null;
+  return candidate;
 }
 
 // Reads `field` out of a JSON file. Returns null (never throws) on any read/parse/shape issue.
@@ -95,6 +133,11 @@ function normalizeEvmKey(key) {
   return key.startsWith('0x') ? key : `0x${key}`;
 }
 
+function normalizeAgentEconomyKey(key) {
+  const normalized = normalizeEvmKey(key);
+  return normalized && /^0x[0-9a-fA-F]{64}$/u.test(normalized) ? normalized : null;
+}
+
 /**
  * Resolve THIS instance's own EVM signing key (immutable, pure read; legacy mode never throws).
  *
@@ -114,9 +157,8 @@ export function resolveEvmPrivateKey({ home, env, mode } = {}) {
     rejectAgentEconomyEvmOverrides(e);
     // Agent-economy identity is explicit by construction. Never derive a default from HOME and
     // never inspect flat/legacy wallet layouts, both of which can belong to another instance.
-    const instanceHome = home ?? e.ANICCA_HOME;
-    if (!hasSecretValue(instanceHome)) return null;
-    return normalizeEvmKey(readJsonField(path.join(instanceHome, '.automaton', 'wallet.json'), 'privateKey'));
+    const walletPath = resolveAgentEconomyWalletPath({ home, env: e });
+    return walletPath ? normalizeAgentEconomyKey(readJsonField(walletPath, 'privateKey')) : null;
   }
 
   const override = normalizeEvmKey(e.ANICCA_EVM_PRIVATE_KEY);

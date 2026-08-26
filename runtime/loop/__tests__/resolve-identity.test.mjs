@@ -303,3 +303,43 @@ test('agent-economy mode has no flat or legacy wallet fallback', () => {
     HOME: legacy,
   } }), null);
 });
+
+test('agent-economy dedicated wallet selector accepts the default owner legacy path', () => {
+  const legacyHome = tmpDir('eq-agent-economy-dedicated-legacy');
+  const instanceHome = path.join(legacyHome, '.anicca');
+  const legacyPath = path.join(legacyHome, '.automaton', 'wallet.json');
+  writeWalletJson(legacyHome, '0x' + '8'.repeat(64));
+  assert.equal(loadEvmKey({ mode: 'agent-economy', env: {
+    HOME: legacyHome,
+    ANICCA_HOME: instanceHome,
+    ANICCA_INSTANCE_WALLET_FILE: legacyPath,
+  } }), '0x' + '8'.repeat(64));
+});
+
+test('agent-economy dedicated wallet selector rejects a foreign legacy path', () => {
+  const legacyHome = tmpDir('eq-agent-economy-dedicated-foreign-legacy');
+  const foreignHome = tmpDir('eq-agent-economy-dedicated-foreign-home');
+  writeWalletJson(legacyHome, '0x' + 'a'.repeat(64));
+  assert.equal(loadEvmKey({ mode: 'agent-economy', env: {
+    HOME: legacyHome,
+    ANICCA_HOME: foreignHome,
+    ANICCA_INSTANCE_WALLET_FILE: path.join(legacyHome, '.automaton', 'wallet.json'),
+  } }), null);
+});
+
+test('agent-economy dedicated wallet selector rejects outside and symlink-escaping files', () => {
+  const home = tmpDir('eq-agent-economy-dedicated-escape');
+  const outside = tmpDir('eq-agent-economy-dedicated-outside');
+  const outsideWallet = path.join(outside, 'wallet.json');
+  fs.writeFileSync(outsideWallet, JSON.stringify({ privateKey: '0x' + 'b'.repeat(64) }));
+  const escaped = path.join(home, '.automaton', 'wallet.json');
+  fs.mkdirSync(path.dirname(escaped), { recursive: true });
+  fs.symlinkSync(outsideWallet, escaped);
+  assert.equal(loadEvmKey({ mode: 'agent-economy', env: {
+    ANICCA_HOME: home,
+    ANICCA_INSTANCE_WALLET_FILE: outsideWallet,
+  } }), null);
+  assert.equal(loadEvmKey({ mode: 'agent-economy', env: {
+    ANICCA_HOME: home,
+  } }), null);
+});

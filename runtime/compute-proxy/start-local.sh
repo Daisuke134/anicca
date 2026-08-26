@@ -79,7 +79,8 @@ proxy_ready() {
 }
 if ! curl -sS --max-time 2 "http://127.0.0.1:$PORT/v1/models" >/dev/null 2>&1; then
   echo "[local] starting compute-proxy on :$PORT (x402 self-pay from own wallet)..."
-  ( cd "$HERE" && COMPUTE_PROXY_PORT="$PORT" ANICCA_HOME="$ANICCA_HOME" node proxy.mjs ) &
+  ( cd "$HERE" && COMPUTE_PROXY_PORT="$PORT" ANICCA_HOME="$ANICCA_HOME" \
+      ANICCA_INSTANCE_WALLET_FILE="$WALLET" node proxy.mjs ) &
   # wait for the HTTP server to bind (port up). Live inference still needs the
   # network + a free-tier/funded wallet — see step 4 / verify notes.
   for _ in $(seq 1 20); do
