@@ -54,6 +54,10 @@ function input(overrides = {}) {
       browserProfileRef: "browser-profile://cloakbrowser/daily-driver",
       calendarRef: "calendar://google/primary",
       goalDecision: { ranked_events: [{ event_ref: EVENT_REF }] },
+      priorityClass: "open_talk",
+      preferenceReason: "AI founder向けLT枠が公開されているため最優先です",
+      talkState: "provider_verified",
+      applicationDeadlineAt: "2026-08-04T14:59:00.000Z",
     },
     dateInventory,
     currentCoverage: coverage,
@@ -251,6 +255,13 @@ test("verified RSVP evidence gates Calendar sync and then runs the remaining cha
     verified_at: NOW,
   });
   assert.equal(result.calendar_sync.calendar_event_ref, "calendar-evidence://google/event/event-1");
+  assert.deepEqual(result.selection, {
+    priority_class: "open_talk",
+    preference_reason: "AI founder向けLT枠が公開されているため最優先です",
+    talk_state: "provider_verified",
+    application_deadline_at: "2026-08-04T14:59:00.000Z",
+  });
+  assert.deepEqual(calls.find((call) => call[0] === "message")[1].newEvents[0].selection, result.selection);
 });
 
 test("write pipeline reads the verified PNG and binds it to Telegram photo delivery", async () => {

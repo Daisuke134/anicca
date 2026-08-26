@@ -11,15 +11,74 @@ export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PAT
 SKILL="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 STATE="${X_REPOST_STATE_DIR:-$SKILL/state}"
 PY=/opt/homebrew/bin/python3; [ -x "$PY" ] || PY=python3
-TARGET="${TELEGRAM_ALERT_CHAT_ID:-0000000000}"
 WINDOW="${X_REPOST_DIGEST_WINDOW_HOURS:-24}"
+TELEGRAM_SEND_TIMEOUT="${X_REPOST_TELEGRAM_SEND_TIMEOUT:-30}"
+set -a
+. "$HOME/.openclaw/.env" 2>/dev/null
+set +a
+TARGET="${TELEGRAM_ALERT_CHAT_ID:-}"
 
-# Evaluate before reporting, so the digest carries today's verdict instead of yesterday's. The
-# evaluator refuses to move the knob on thin data and records that refusal, which is the difference
-# between a loop that learns and one that just fidgets.
-"$PY" "$SKILL/scripts/x_evaluate.py" --state "$STATE" \
-  --window-hours "${X_REPOST_EXPERIMENT_WINDOW_HOURS:-48}" --apply >/dev/null 2>&1 \
-  || echo "x-repost-digest: evaluation failed, reporting anyway" >&2
+send_digest() {
+  [ -n "$TARGET" ] || return 1
+  local body="$1" idempotency_key response message_id
+  idempotency_key="$(printf '%s' "$body" | shasum -a 256 | awk '{print $1}')"
+  response="$(timeout "$TELEGRAM_SEND_TIMEOUT" openclaw message send \
+    --channel telegram --target "$TARGET" --message "$body" --json \
+    2>>"$STATE/digest.err")" || return 1
+  printf '%s\n' "$response" >>"$STATE/digest.jsonl"
+  message_id="$("$PY" -c 'import json,sys
+def message_id(value):
+    if isinstance(value, dict):
+        for key in ("messageId", "message_id"):
+            if value.get(key) is not None: return str(value[key])
+        for child in value.values():
+            found=message_id(child)
+            if found: return found
+    elif isinstance(value, list):
+        for child in value:
+            found=message_id(child)
+            if found: return found
+    return None
+mid=message_id(json.loads(sys.argv[1])); print(mid or "")
+raise SystemExit(0 if mid else 1)' "$response")" || return 1
+  "$PY" - "$STATE/telegram-sent.jsonl" "$idempotency_key" "$message_id" <<'PYEOF'
+import datetime, json, pathlib, sys
+path, body_sha, message_id = pathlib.Path(sys.argv[1]), sys.argv[2], sys.argv[3]
+if path.exists():
+    for line in path.read_text(encoding="utf-8").splitlines():
+        try:
+            if json.loads(line).get("body_sha256") == body_sha:
+                raise SystemExit(0)
+        except json.JSONDecodeError:
+            pass
+with path.open("a", encoding="utf-8") as stream:
+    stream.write(json.dumps({"ts": datetime.datetime.now().astimezone().isoformat(),
+        "body_sha256": body_sha, "message_id": message_id, "channel": "telegram"}) + "\n")
+PYEOF
+}
+
+ALREADY_EVALUATED="$("$PY" - "$STATE/experiments.jsonl" <<'PYEOF'
+import datetime, json, pathlib, sys
+today = datetime.datetime.now().astimezone().date()
+path = pathlib.Path(sys.argv[1])
+seen = False
+if path.exists():
+    for line in path.read_text(encoding="utf-8").splitlines():
+        try:
+            at = datetime.datetime.fromisoformat(json.loads(line).get("ts", "")).astimezone().date()
+            seen = seen or at == today
+        except (ValueError, TypeError, json.JSONDecodeError):
+            pass
+print(seen)
+PYEOF
+)"
+
+if [ "$ALREADY_EVALUATED" != "True" ]; then
+  # Evaluate before reporting, so the digest carries today's verdict instead of yesterday's. The
+  # evaluator refuses to move the knob on thin data and records that refusal.
+  "$PY" "$SKILL/scripts/x_evaluate.py" --state "$STATE" \
+    --window-hours "${X_REPOST_EXPERIMENT_WINDOW_HOURS:-48}" --apply >/dev/null 2>&1 \
+    || echo "x-repost-digest: evaluation failed, reporting anyway" >&2
 
 # Refill the well once a day. It used to run inside the hourly pass, which added a second long
 # model call to every publish and pushed one pass past 35 minutes on an hourly schedule. The
@@ -67,15 +126,33 @@ if timeout "${X_REPOST_MODEL_TIMEOUT:-600}" env -u ANTHROPIC_API_KEY "$CODEX_BIN
      --add-dir "$SKILL" "$(cat "$STATE/last-harvest-prompt.txt")" \
      >"$STATE/last-harvest.stdout" 2>"$STATE/last-harvest.err"; then
   "$PY" - "$STATE/last-harvest.raw" >"$STATE/last-harvest.json" <<'PYEOF'
-import json, re, sys
+import json, sys
 raw = open(sys.argv[1], encoding="utf-8", errors="replace").read()
-for candidate in reversed(re.findall(r"\{.*\}", raw, re.S)):
-    for start in range(len(candidate)):
-        try:
-            json.dump(json.loads(candidate[start:]), sys.stdout, ensure_ascii=False)
-            raise SystemExit(0)
-        except json.JSONDecodeError:
-            continue
+try:
+    value = json.loads(raw)
+    if isinstance(value, (list, dict)):
+        json.dump(value, sys.stdout, ensure_ascii=False)
+        raise SystemExit(0)
+except json.JSONDecodeError:
+    pass
+decoder = json.JSONDecoder()
+values = []
+for start, char in enumerate(raw):
+    if char not in "[{":
+        continue
+    try:
+        value, _ = decoder.raw_decode(raw[start:])
+        if isinstance(value, (list, dict)):
+            values.append(value)
+    except json.JSONDecodeError:
+        pass
+for value in reversed(values):
+    if isinstance(value, list):
+        json.dump(value, sys.stdout, ensure_ascii=False)
+        raise SystemExit(0)
+if values:
+    json.dump(values[-1], sys.stdout, ensure_ascii=False)
+    raise SystemExit(0)
 raise SystemExit(1)
 PYEOF
   # The well drains far faster than it fills: the pass may publish up to twelve times a day and
@@ -100,23 +177,40 @@ PYINNER
 )
   echo "x-repost-digest: harvested $ADDED seed(s)"
 fi
+else
+  # The first delivery may have timed out after Telegram accepted it. The provider has no
+  # idempotency key, so a same-day replay can create a duplicate even when telegram-sent.jsonl has
+  # no receipt. Treat the daily evaluation itself as the at-most-once attempt fence.
+  echo "x-repost-digest: today's evaluation already exists; no delivery replay"
+  exit 0
+fi
 
 BODY="$("$PY" "$SKILL/scripts/x_digest.py" --posted "$STATE/posted.jsonl" --window-hours "$WINDOW")" || {
   echo "x-repost-digest: could not build the digest" >&2
   exit 1
 }
 MESSAGE="x-repost::: $BODY"
+MESSAGE_SHA="$(printf '%s' "$MESSAGE" | shasum -a 256 | awk '{print $1}')"
+if "$PY" - "$STATE/telegram-sent.jsonl" "$MESSAGE_SHA" <<'PYEOF'
+import json, pathlib, sys
+path, wanted = pathlib.Path(sys.argv[1]), sys.argv[2]
+found = False
+if path.exists():
+    for line in path.read_text(encoding="utf-8").splitlines():
+        try: found = found or json.loads(line).get("body_sha256") == wanted
+        except json.JSONDecodeError: pass
+raise SystemExit(0 if found else 1)
+PYEOF
+then
+  echo "x-repost-digest: delivery already receipted"
+  exit 0
+fi
 
-for attempt in 1 2 3; do
-  if openclaw message send --channel telegram --target "$TARGET" -m "$MESSAGE" --json \
-       >>"$STATE/digest.jsonl" 2>&1; then
-    echo "x-repost-digest: sent"
-    exit 0
-  fi
-  sleep 3
-done
-
-echo "x-repost-digest: send failed 3x, queued to backlog" >&2
-"$PY" -c 'import json,sys; open(sys.argv[1],"a",encoding="utf-8").write(json.dumps({"body": sys.argv[2]}, ensure_ascii=False)+"\n")' \
-  "$STATE/report-backlog.jsonl" "$MESSAGE"
+if send_digest "$MESSAGE"; then
+  echo "x-repost-digest: sent"
+  exit 0
+fi
+echo "x-repost-digest: ambiguous send; no retry or backlog enqueue" >&2
+"$PY" -c 'import datetime,json,sys; open(sys.argv[1],"a",encoding="utf-8").write(json.dumps({"ts":datetime.datetime.now().astimezone().isoformat(),"body_sha256":sys.argv[2],"status":"ambiguous_no_retry"})+"\n")' \
+  "$STATE/telegram-ambiguous.jsonl" "$MESSAGE_SHA"
 exit 1

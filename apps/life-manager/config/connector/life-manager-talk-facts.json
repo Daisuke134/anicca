@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "facts": [
+    {
+      "evidence_ref": "evidence://connector/source/speaker-bio",
+      "fact": "Life ManagerのオープンソースConnectorを開発しています。"
+    },
+    {
+      "evidence_ref": "evidence://connector/source/event-ranking",
+      "fact": "Life Manager Connectorは公開イベントを目的適合度で順位付けし、適格候補だけを申請経路へ渡します。"
+    },
+    {
+      "evidence_ref": "evidence://connector/source/receipt-chain",
+      "fact": "Life Manager Connectorはprovider readback、Calendar、Telegram、durable bundleを同じイベントの証拠として扱います。"
+    }
+  ]
+}

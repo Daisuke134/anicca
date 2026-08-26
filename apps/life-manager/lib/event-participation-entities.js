@@ -11,7 +11,7 @@ const AUDIENCE_STATES = Object.freeze([
   "discovered", "registration_queued", "registered", "waitlist", "cancelled",
 ]);
 const TALK_STATES = Object.freeze([
-  "discovered", "submission_queued", "submitted", "accepted", "rejected", "withdrawn", "presented",
+  "discovered", "application_ready", "submission_queued", "submitted", "provider_verified", "accepted", "rejected", "withdrawn", "presented",
 ]);
 const LUMA_HOSTS = new Set(["lu.ma", "luma.com", "www.luma.com"]);
 const TENANT = /^[a-z0-9][a-z0-9._-]{0,199}$/;

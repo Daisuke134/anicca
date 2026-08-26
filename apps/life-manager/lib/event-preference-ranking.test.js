@@ -8,10 +8,93 @@ const { collectLumaInventory } = require("./luma-discovery.js");
 const { normalizeLumaEventDetail } = require("./luma-event-detail.js");
 const { buildLumaDateInventory } = require("./luma-date-inventory.js");
 const {
+  eligibleRankedCandidates,
+  inferProviderCandidateRanking,
   inferEventPreferenceRanking,
   isVerifiedEventPreferenceRanking,
+  validateProviderCandidateRanking,
   validateEventPreferenceRanking,
 } = require("./event-preference-ranking.js");
+
+const PROVIDER_CANDIDATES = Object.freeze([
+  Object.freeze({ provider: "luma", event_ref: "luma-event://event/yc-ai", canonical_url: "https://luma.com/yc-ai", title: "YC AI Hackathon", body: "Y Combinator hackathon in Tokyo" }),
+  Object.freeze({ provider: "luma", event_ref: "luma-event://event/open-lt", canonical_url: "https://luma.com/open-lt", title: "AI Lightning Talks", body: "Open five-minute LT applications" }),
+  Object.freeze({ provider: "luma", event_ref: "luma-event://event/agents", canonical_url: "https://luma.com/agents", title: "AI Agent Night", body: "LLM agents" }),
+  Object.freeze({ provider: "connpass", event_ref: "connpass-event://event/400001", canonical_url: "https://example.connpass.com/event/400001/", title: "Web3 Builders", body: "Crypto engineering" }),
+  Object.freeze({ provider: "peatix", event_ref: "peatix-event://event/500001", canonical_url: "https://peatix.com/event/500001", title: "Startup Founders", body: "Founder and VC meetup" }),
+  Object.freeze({ provider: "peatix", event_ref: "peatix-event://event/500002", canonical_url: "https://peatix.com/event/500002", title: "Pottery Social", body: "Make a bowl" }),
+  Object.freeze({ provider: "meetup", event_ref: "meetup-event://event/unknown", canonical_url: "https://www.meetup.com/example/events/unknown", title: "Untitled gathering", body: "No useful description" }),
+]);
+
+function providerDecision() {
+  return {
+    ranked_events: [
+      { event_ref: "peatix-event://event/500002", priority_class: "other", preference_fit: "weak", preference_reason: "Topic is unrelated." },
+      { event_ref: "luma-event://event/agents", priority_class: "ai", preference_fit: "strong", preference_reason: "Directly about AI agents." },
+      { event_ref: "meetup-event://event/unknown", priority_class: "other", preference_fit: "unknown", preference_reason: "Description is insufficient." },
+      { event_ref: "peatix-event://event/500001", priority_class: "startup", preference_fit: "moderate", preference_reason: "Founder audience is relevant." },
+      { event_ref: "luma-event://event/open-lt", priority_class: "open_talk", preference_fit: "strong", preference_reason: "Open lightning-talk applications." },
+      { event_ref: "connpass-event://event/400001", priority_class: "crypto", preference_fit: "strong", preference_reason: "Directly about crypto builders." },
+      { event_ref: "luma-event://event/yc-ai", priority_class: "yc_hackathon", preference_fit: "strong", preference_reason: "Official YC-style hackathon opportunity." },
+    ],
+  };
+}
+
+test("provider-neutral ranking orders YC, open talk, AI, crypto, startup, then weak or unknown", () => {
+  const ranking = validateProviderCandidateRanking(providerDecision(), {
+    candidates: PROVIDER_CANDIDATES,
+    preferences: "Tokyo YC LT AI crypto startup events",
+  });
+
+  assert.deepEqual(ranking.ranked_events.map((row) => row.event_ref), [
+    "luma-event://event/yc-ai",
+    "luma-event://event/open-lt",
+    "luma-event://event/agents",
+    "connpass-event://event/400001",
+    "peatix-event://event/500001",
+    "peatix-event://event/500002",
+    "meetup-event://event/unknown",
+  ]);
+});
+
+test("provider-neutral ranking preserves weak and unknown rows but never returns them for auto apply", async () => {
+  const ranking = await inferProviderCandidateRanking({
+    candidates: PROVIDER_CANDIDATES,
+    preferences: "Tokyo YC LT AI crypto startup events",
+  }, { generateDecision: async () => providerDecision() });
+
+  assert.deepEqual(ranking.ranked_events.map((row) => row.auto_apply_eligible), [
+    true, true, true, true, true, false, false,
+  ]);
+  assert.deepEqual(eligibleRankedCandidates(ranking).map((row) => row.event_ref), [
+    "luma-event://event/yc-ai",
+    "luma-event://event/open-lt",
+    "luma-event://event/agents",
+    "connpass-event://event/400001",
+    "peatix-event://event/500001",
+  ]);
+});
+
+test("Gemini provider ranking strips unsupported schema keywords only from the transport payload", async () => {
+  let request;
+  const ranking = await inferProviderCandidateRanking({
+    candidates: PROVIDER_CANDIDATES,
+    preferences: "Tokyo YC LT AI crypto startup events",
+  }, {
+    apiKey: "fixture-key",
+    fetchImpl: async (_url, options) => {
+      request = JSON.parse(options.body);
+      return { ok: true, json: async () => ({
+        candidates: [{ content: { parts: [{ text: JSON.stringify(providerDecision()) }] } }],
+      }) };
+    },
+  });
+
+  const schema = request.generationConfig.responseSchema;
+  assert.equal(Object.hasOwn(schema, "additionalProperties"), false);
+  assert.equal(Object.hasOwn(schema.properties.ranked_events.items, "additionalProperties"), false);
+  assert.equal(eligibleRankedCandidates(ranking).length, 5);
+});
 
 async function fixtureSnapshot(slugs = ["ai-night", "pottery-social", "crypto-builders"]) {
   const coverage = buildRollingEventCoverage({
@@ -151,6 +234,8 @@ test("Gemini receives all candidates as untrusted data and preferences can only 
   assert.match(prompt, /それ以外も除外しない/);
   assert.equal(request.body.generationConfig.responseMimeType, "application/json");
   assert.equal(request.body.generationConfig.temperature, 0);
+  assert.equal(Object.hasOwn(request.body.generationConfig.responseSchema, "additionalProperties"), false);
+  assert.equal(Object.hasOwn(request.body.generationConfig.responseSchema.properties.ranked_events.items, "additionalProperties"), false);
 });
 
 test("model failure and invalid JSON never become a keyword ranking fallback", async () => {

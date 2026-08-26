@@ -14,6 +14,7 @@ PY
 done
 
 rg -q 'CAPAFY_PUBLISH_WORK_DIR=.*agents/\$ID' "$ROOT/scripts/publish_prepare.sh"
+rg -q 'SHIP_OUT="\$(python3 packager.py publish-ship --agent-id "\$ID" 2>&1 || true)"' "$ROOT/scripts/publish_finish.sh"
 rg -q 'CAPAFY_PUBLISH_WORK_DIR=.*agents/\$ID' "$ROOT/scripts/publish_finish.sh"
 if rg -q 'CAPAFY_PUBLISH_WORK_DIR="\$\{CAPAFY_PUBLISH_WORK_DIR:-' \
   "$ROOT/scripts/publish_prepare.sh" "$ROOT/scripts/publish_finish.sh"; then

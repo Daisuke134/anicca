@@ -160,7 +160,7 @@ error recovery、effect/readbackを実codeで再監査し、noticeを保持す�
 | 9 | CTX-03 README convergence | DONE | 英日first abstractをproactive general agent/body-mind-money/real action/free OSS local/paid monthly cloudへ統一。self-fundingをFinancial Organへ統合し、README claim guard PASS |
 | 10 | CTX-04 public `/lm` convergence | DONE | `anicca-products` PR #395をmain merge `b61301c15a9…`へ反映。GitHub Actions major outage中は既存Netlify CLI経路でverified-env preview `6a8f0e982a…`→prod `6a8f0f3723…`を実行し、復旧後canonical GHA run `32988269511`もSUCCESS。money-path smoke PASS、live `https://aniccaai.com/lm`はdesktop JA/mobile ENともHTTP 200・3 organs・Telegram/GitHub CTA・overflow 0、数値`?tg=`はGoogle onboardingへ分岐。Life Manager subsetも同期済み |
 | 11 | CTX-05 root-site relationship | DONE | `anicca-products` PR #396をmain merge `7fe3f5f447…`へ反映。root hero/metadata/JSON-LDを`Anicca=mission/company`、`Life Manager=proactive general-agent product`、`Body/Mind/Money=3 organs`へ統一し、旧self-funding/AGI/UBI product sectionsをroot render pathから除外。contract 2/2、preview run `32989091020`、prod run `32989696892`、Netlify deploy `6a8f17a860…`、built-in money-path smoke/rollback gate PASS。live英日HTTP 200・title/CTA/3 organs・overflow 0 |
-| 12 | CTX-06 generated-context drift gate | IN PROGRESS | README英日、committed fundraising kit、active formのdigest契約はoffline 28/28 GREEN。公開Web PR #397はmain `b1ee7a1208…`へmerge、preview run `32990937574` SUCCESS。live `/lm`は旧digestのため意図どおりaudit REDであり、main production run `32991554504`の完了待ち |
+| 12 | CTX-06 generated-context drift gate | IN PROGRESS | README英日、committed fundraising kit、active formのdigest契約はoffline 28/28 GREEN。公開Web PR #397はmain `b1ee7a1208…`へmergeし、preview `32990937574`、production `32991554504`、money-path smokeがSUCCESS。live product/repo/Telegram auditは3/3 GREEN。Life Manager PR #2885のmerge-result CI待ち |
 | 13 | CTX-07 public live readback | TODO | product/repo/Telegram/README/Webをfresh browser/HTTPで読み、title・copy・CTA・link・claim provenanceをevidence化 |
 | 14 | CTX-08 accelerator current-batch gate | TODO | batch名を固定せず公式live formを正本にし、generated contextからpreview→submit→confirmation receiptへ進む |
 | 15 | GA-01 existing-core and OSS code map | TODO | 現行agent-runner/connector/gig/evidence/Agent Economyと上記OSSを固定commitで読み、copy/reuse/rejectとlicenseをcall graph付きで確定 |
@@ -221,6 +221,170 @@ private receiptを追加し、GA-03のmanifest更新として同じshared kernel
 実browserでhero、CTA、Telegram deep link、cloud/local説明、claim sourceをreadbackする。iOS UIは変更しないためMaestroは不要。
 GA-09〜11は実provider・実receipt・自然owner wake・replay-zeroが必須で、mock/dry-runは補助証拠にしかならない。
 
+### 0.0 Connector growth contract — current SSOT
+
+このsectionだけをConnectorの現在contract、実装順、完了条件の正本にする。後段の14日窓、daily/8-hour schedule、
+AI・cryptoをsoft preferenceとして全分野を残す記述、旧rolling coverage、fallback provider拡張、C-CORE-01〜07は
+完了済みbaselineまたは履歴であり、現在の実装判断を上書きしない。
+
+Connectorの目的は、東京でLife Managerを広められるeventと登壇機会を早く確保することである。
+Calendarを無関係なeventで埋めること自体を成果にしない。
+
+#### 0.0.1 Product contract
+
+1. 一wakeは全Google Calendarのbusyを読み、今日を含む28日を対象にする。
+2. primary sourceはLuma、次にconnpassとする。同一priorityならLumaを先にする。
+3. 自動申込対象は東京または現実的に参加できる近郊の対面event、無料、受付中または補欠受付中、Calendar非衝突、
+   semantic fitが`strong`または`moderate`の候補だけとする。`weak`、`unknown`、topic不一致は自動申込しない。
+4. priorityは`YC/hackathon` → `open LT/CFP/demo/pitch` → `AI/agents/LLM` → `crypto/web3` →
+   `startup/founder/VC/product/engineering`の順とし、登壇締切、定員、開催日の近さをtie-breakにする。
+5. Lumaは既存guest registration pageをscript-firstで操作し、unknown required field、CAPTCHA、支払い、本人確認、
+   effect unknownではfail closedにする。
+6. connpass discoveryは公式API v2だけを使う。API keyがなければconnpass railだけをfail closedにし、Lumaを継続する。
+   connpassの参加申込は公式write APIまたは書面による自動化許可が確認できるまで、正確な参加枠・LT枠・締切・URLを
+   Telegramへ送り、provider上の確定操作を自動実行しない。
+7. Peatix、Meetup、Doorkeeper、Eventbrite、TECH PLAY、KokuchProは実装を保持するが、Lumaとconnpassを尽くした後、
+   同じtopic/quality gateを通る時だけfallbackにする。空き日を埋めるためにthresholdを下げない。
+8. official scheduleはsingle launchd labelのhourly wakeとする。一wakeの新規external Submitはattendanceまたはtalkの
+   どちらかexact 1件までとし、既存lock、10分deadline、effect-unknown stop、checkpoint、dedupeを維持する。
+9. attendance registrationとtalk applicationは別stateで追跡する。LT/CFPの公開根拠、申込URL、締切が本文で検証できる時だけ
+   Life Manager 5分talk packを作り、provider readbackなしに登壇確定と表示しない。
+10. successはprovider official readback → event本体のGoogle Calendar exact 1件 → registration PNG/receipt →
+    Telegram positive message/photo IDs → durable `applied_bundle`のchainが揃った時だけ成立する。
+11. 適格候補がない時は、28日内の空き日、provider別観測件数、`weak/unknown/conflict/closed/paid`の不採用件数、
+    次のhourly wakeをTelegramへ送る。Telegram送信自体はapplication successではない。
+12. 実装は単一OSS Life Manager repositoryの既存Connector skillに置く。新しいcloud、agent、DB、scheduler、browser profile、
+    provider crawlerを作らず、credential、identity、Calendar ID、mutable state、receiptはrepo外へ置く。
+
+#### 0.0.2 Current measured gap
+
+| surface | current measured behavior | required behavior |
+|---|---|---|
+| schedule | installed ownerは01:00 / 09:00 / 17:00 JST、repository templateは09:00 daily | single owner、`StartInterval=3600`、重複label 0 |
+| horizon | Calendar、Luma、connpassのactive pathは14日 | JSTで今日を含む28日 |
+| profile | AI・crypto等はsoft preferenceで、他分野を除外しない | `strong/moderate`だけを自動申込 |
+| live ranking | `event-preference-ranking.js`はactive minimal runnerへ未接続 | provider-neutral候補をrankし、弱い候補をSubmit前に止める |
+| LT | `event-talk-opportunity.js`と`grounded-talk-pack.js`は存在するがlive申込経路へ未接続 | open LTをattendanceと別receiptで追跡 |
+| provider result | native loopは稼働し、primaryに適格候補がないwakeで無関係なPeatix eventまで到達する | fallbackにも同じquality gateを適用 |
+| connpass | official API clientは存在するがactive minimal discoveryはbrowser pageを読む | API v2 discoveryのみ、非API automated access 0 |
+| evidence | provider、Calendar、PNG、Telegram、bundle chainは既存 | ranking理由、topic class、LT状態を同じlineageへ追加 |
+
+#### 0.0.3 Atomic TODO SSOT
+
+以下を上から一件ずつ閉じる。各itemはRED、最小実装、focused GREEN、verification-before-completion、spec state、commit、pushを完了してから
+次へ進む。実装中にofficial wakeを走らせず、schedule mutationは`CG-36`以降だけで行う。
+
+##### A. Contract and semantic selection
+
+- [x] **CG-00** このcurrent contractとatomic cursorを正本specへ固定する。
+- [x] **CG-01** `event-preference-ranking.test.js`へ、YC/LT→AI→crypto→startup→weakのexact順序を要求するREDを追加する。
+- [x] **CG-02** 同testへ、`weak`と`unknown`がverified rankingには残るがauto-apply eligibilityはfalseになるREDを追加する。
+- [x] **CG-03** `event-preference-ranking.js`をprovider-neutral candidate snapshotへ拡張し、`priority_class`、`preference_fit`、
+  `preference_reason`をstrict structured outputとして検証する。keyword fallbackは作らない。
+- [x] **CG-04** `dais-local.json`の公開preferencesをTokyo対面、YC/LT、AI、crypto、startupのhard priorityへ更新し、
+  secretまたは本人情報を追加しない。
+- [x] **CG-05** `connector-minimal-production.js`で既存rankingをcandidate listへ接続し、model unavailable/invalid時は
+  candidate Submit 0でそのproviderをsafe failureにする。
+- [x] **CG-06** `connector-minimal-runner.test.js`へ、無関係candidateが先頭でもSubmit 0、次のstrong candidateだけが
+  external effect exact 1になるRED→GREENを追加する。
+- [x] **CG-07** `node --test apps/life-manager/lib/event-preference-ranking.test.js apps/life-manager/lib/connector-minimal-runner.test.js apps/life-manager/lib/connector-minimal-production.test.js`をPASSさせ、semantic selection sliceをcommit/pushする。
+
+##### B. Twenty-eight-day horizon
+
+- [x] **CG-08** `connector-minimal-production.test.js`へCalendar `timeMax`がJSTの開始日+28日00:00になるREDを追加する。
+- [x] **CG-09** `connector-minimal-production.js`のCalendar FreeBusy horizonを14から28へ変更する。
+- [x] **CG-10** `connector-luma-workflow.test.js`へ今日を含むday 0〜27を受理しday 28を除外するREDを追加する。
+- [x] **CG-11** `connector-luma-workflow.js`のcandidate windowを28日へ変更する。
+- [x] **CG-12** `connector-connpass-workflow.test.js`へ同じday 0〜27/day 28境界REDを追加する。
+- [x] **CG-13** `connector-connpass-workflow.js`のcandidate windowを28日へ変更する。
+- [x] **CG-14** DSTのない`Asia/Tokyo`で28個のlocal dateが重複せず、Calendar/Luma/connpassのend-exclusive境界が一致するregressionを追加する。
+- [x] **CG-15** three focused workflow testsをPASSさせ、28-day sliceをcommit/pushする。
+
+##### C. Primary-first and quality-preserving fallback
+
+- [x] **CG-16** `connector-minimal-runner.test.js`へ、Luma eligible→終了、Luma exhausted→connpass、両primary exhausted→fallbackの順序REDを追加する。
+- [x] **CG-17** fallback candidateにも`strong/moderate` gateを適用し、Peatix等の`weak/unknown`はSubmit 0にする。
+- [x] **CG-18** `connector-coverage-telegram.test.js`へ、適格候補0の時に28日空き日と不採用class別countを出すREDを追加する。
+- [x] **CG-19** `connector-coverage-telegram.js`から旧21日/14日文面と「空き=失敗」の表現を外し、28日・quality-preserving no-effectを報告する。
+- [x] **CG-20** runner、coverage Telegram、ticket Telegramのfocused testsをPASSさせ、fallback/report sliceをcommit/pushする。
+
+##### D. connpass official-source boundary
+
+- [x] **CG-21** private credential SSOTを値を出力せず確認し、connpass API keyがなければ公式individual/community API利用申請を行い、取得後ただちにrepo外SSOTへ0600で保存する。
+- [x] **CG-22** `load-connector-env.test.js`へconnpass API key referenceのaccept/rejectとerror/logへの値非露出REDを追加する。
+- [x] **CG-23** `load-connector-env.js`と`native-pass.js`からAPI keyをverified production dependencyへ一度だけ渡す。
+- [x] **CG-24** `connpass-api-client.test.js`で`X-API-Key`、`prefecture=tokyo`、28日分`ymd`、pagination、429、1req/sec以下を検証する。既存5秒間隔は安全側として保持してよい。
+- [x] **CG-25** `connector-connpass-workflow.js`のdiscoveryを既存`connpass-api-client.js`へ切り替え、active pathからcalendar page scrapingを外す。
+- [x] **CG-26** source scan regressionでactive connpass discoveryが`/api/v2/events/`以外へautomated list/detail accessしないことを検証する。
+- [x] **CG-27** connpass candidateでは参加枠、LT枠、補欠、締切、canonical URLをTelegram action receiptへ正規化し、provider permission未確認時のSubmitを0にする。
+- [ ] **CG-28** providerへ自動参加操作の許可範囲を問い合わせ、official response receiptを保存する。許可されたmethodだけを後続実装し、許可がなければTelegram action boundaryをfinal behaviorとする。問い合わせ送信receiptは `docs/evidence/outbound/2026-08-27-connpass-automation-permission-inquiry.json`、official responseはpending。
+- [x] **CG-29** API keyを使うread-only live canaryでTokyo 28日inventoryを取得し、API audit、secret非露出、Luma continuationをreadbackしてcommit/pushする。
+
+##### E. Lightning Talk application
+
+- [x] **CG-30** `event-talk-opportunity.test.js`へ、公開LT/CFP/demo/pitchだけがopen opportunityとなり、closed/invite-only/本文にないURLはfalseになるregressionを固定する。
+- [x] **CG-31** `connector-minimal-production.js`でverified candidate detailを`inferEventTalkOpportunity`へ渡し、open talkを同topic内の最上位へ上げる。
+- [x] **CG-32** `grounded-talk-pack.test.js`へLife Managerのverified factsだけから5分title/abstract/outline/bioを生成し、未検証claimを拒否するregressionを固定する。
+- [x] **CG-33** 既存talk transition storeへ`discovered → application_ready → submitted → provider_verified → accepted/rejected`を保存し、attendance stateと混ぜない。
+- [x] **CG-34** 一wakeのeffect budgetでtalk Submitを優先する時はattendanceを次wakeへ残し、両方を同時Submitしない。
+- [x] **CG-35** talk URL上のordinary verified fieldsだけを入力し、payment/CAPTCHA/本人確認/unknown required fieldでは`human_action_required`、official readbackなしでは`submitted`より先へ進めない。
+- [x] **CG-36** talk classifier、grounded pack、transition store、minimal productionのfocused testsをPASSさせ、LT sliceをcommit/pushする。
+
+##### F. Hourly owner and evidence UX
+
+- [x] **CG-37** `minimal-production-contract.test.js`を`StartInterval=3600`、`StartCalendarInterval`なし、label exact 1へRED更新する。
+- [x] **CG-38** `ai.anicca.life-manager-connector-native.plist.template`だけをhourlyへ変更し、RunAtLoad、KeepAlive、second labelを追加しない。
+- [x] **CG-39** ranking reason、priority class、LT state/deadlineを`connector-native-write-pipeline`の既存bundle lineageへ追加し、secret/raw prompt/bodyを保存しない。
+- [x] **CG-40** ticket/coverage Telegramへ「なぜ選んだか」「LT open/submitted/verified」「28日空き」を追加し、provider message IDなしをsuccessにしない。
+- [x] **CG-41** Connector full focused suite、shell syntax、plist render/lint、secret/PII scanをPASSさせ、hourly/evidence sliceをcommit/pushする。
+
+##### G. Production acceptance and OSS finish
+
+- [x] **CG-42** `git fetch`後のclean integration commitで全変更をcanonical `main`へnon-force統合し、remote ancestryとimmutable release bytesを確認する。
+- [x] **CG-43** `bin/launchctl-safe`だけでnative plistをrender/install/reloadし、loaded args、`StartInterval=3600`、native owner exact 1、legacy owner 0、process/lock 0をreadbackする。BrowserとConnectorは互いのcleanupでreleaseを失わないper-loop current rootを使う。Release/install receiptは `docs/evidence/outbound/2026-08-27-connector-hourly-release-install.json`。
+- [ ] **CG-44** existing labelをexact 1回kickstartし、本物のLuma `strong/moderate`候補一件でprovider readback→Calendar exact 1→PNG/receipt→Telegram IDs→bundleを完成する。旧release canaryの安全停止は `docs/evidence/outbound/2026-08-27-connector-owned-release-canary.json` に保存し、成功条件には数えない。
+- [ ] **CG-45** 次の自然hourly wakeで同eventのSubmit 0、Calendar 1、bundle reuse、別candidateへのcontinuationを確認する。
+- [ ] **CG-46** connpass API live inventoryとaction boundaryを自然wakeで確認し、provider permissionがある場合だけ許可methodの実申込bundleを追加する。
+- [ ] **CG-47** open LT候補でtalk application receiptを一件完成し、attendance/talkの各state、Calendar、Telegramを独立readbackする。
+- [ ] **CG-48** 24回の連続hourly receiptでduplicate Submit 0、concurrent owner 0、effect unknownの自動再送0、owned page/lock cleanupを確認する。
+- [x] **CG-49** public sample profile、Connector README/SKILL、install/uninstall手順を28日・hourly・Luma/connpass・LT・permission boundaryへ同期する。
+- [x] **CG-50** secretなしの隔離homeでinstall→render→focused no-effect wake→uninstallを再現し、private state/receiptをpackageしないことを確認する。
+- [ ] **CG-51** final spec state、test/effect receipts、known provider limitsを更新し、commit/push、remote readback、Telegram milestoneでConnector growth sliceをDONEにする。
+
+#### 0.0.4 Runtime flow
+
+```mermaid
+flowchart TD
+    H["hourly launchd<br/>single owner"] --> C["Google Calendar FreeBusy<br/>today + 28 days"]
+    C --> L["Luma discovery"]
+    L --> R["semantic rank<br/>YC/LT → AI → crypto → startup"]
+    R --> G{"strong/moderate<br/>free/open/Tokyo/calendar-safe?"}
+    G -->|yes| T{"open talk slot?"}
+    T -->|yes| TA["talk application intent<br/>one effect max"]
+    T -->|no| A["attendance registration<br/>one effect max"]
+    G -->|Luma exhausted| P["connpass API v2 discovery"]
+    P --> Q{"provider automation<br/>permission verified?"}
+    Q -->|yes| A
+    Q -->|no| U["Telegram exact action<br/>external Submit 0"]
+    P -->|primary exhausted| F["quality-gated fallback"]
+    F --> R
+    TA --> O["official provider readback"]
+    A --> O
+    O --> E["Calendar exact 1 + PNG/receipt<br/>Telegram IDs + durable bundle"]
+    E --> Z["next hourly wake<br/>replay-zero"]
+    G -->|no eligible candidate| N["28-day gaps + rejection counts<br/>Telegram no-effect report"]
+```
+
+#### 0.0.5 Official-source constraints
+
+- connpass API v2 — https://connpass.com/about/api/v2/ — 「すべてのAPIエンドポイントでは、APIキーによる認証が必須」「1秒間に1リクエストまで」。
+- connpass API v2 / 利用規約 — https://connpass.com/about/api/v2/ / https://connpass.com/term/ —
+  「提供されているAPI以外の手段…で…クローリング、スクレイピング、その他のアクセス」を禁止する。
+- connpass参加方法 — https://help.connpass.com/participants/event-join — 「1イベントにつき1枠しか参加できません」。
+- Luma registration process — https://help.luma.com/p/event-registration-process — “The name and email are required”で、追加質問、支払い、approvalがあり得る。
+- Google Calendar Freebusy — https://developers.google.com/workspace/calendar/api/v3/reference/freebusy/query —
+  “Returns free/busy information for a set of calendars.”。候補選定前に全対象calendarを読む。
+
 ### 0.1 Life Managerの成果義務
 
 Life Managerは「検索した」「分析した」「失敗した」と報告するsystemではない。userが理想の自分へ
@@ -228,7 +392,7 @@ Life Managerは「検索した」「分析した」「失敗した」と報告�
 
 | organ / loop | 内部作業ではなく要求する現実成果 |
 |---|---|
-| Connector | Luma、次にConnpassをprimary sourceとして14日窓を探索し、無料・受付中・Calendar非衝突の東京eventへ実申込する。残る設定済みproviderはprimaryで候補が足りない時のfallbackにする |
+| Connector | → `0.0 Connector growth contract`。Luma、次にconnpassをprimaryとして28日窓を探索し、Tokyo×YC/LT/AI/crypto/startupの適格eventを確保する |
 | LT | 登壇応募、登壇、Life Manager demo、参加者との接点 |
 | Fundraising | 実提出、返信、面談、採択、資金とpeer group |
 | Job Hunter | 実応募、返信、面接、offer、給与改善 |
@@ -236,11 +400,13 @@ Life Managerは「検索した」「分析した」「失敗した」と報告�
 
 「no action」が安全上正しい場面はある。たとえばrisk条件を満たさないcrypto取引は実行しない。
 その場合も、何もせず閉じるのではなく、停止理由、次の観測、改善案、次回判断時刻という現実の
-次行動を残す。Connectorでは現行14日窓の設定済みproviderを尽くした`completed_no_effect`は、故障ではなく
+次行動を残す。Connectorでは現行28日窓の設定済みproviderをquality gate付きで尽くした`completed_no_effect`は、故障ではなく
 外部write 0の健康なterminal resultとして報告する。実装acceptanceと現在の運用healthは分けて判定し、
 コードが完了していてもschedule owner、browser dependency、legacy owner、live bundleが未検証ならActive TODOへ戻す。
 
-#### 0.1.1 Connector current product contract
+#### 0.1.1 Connector previous product contract（HISTORY → `0.0`）
+
+> このsectionは旧14日・soft preference contractの履歴であり、current実装には使わない。
 
 ConnectorはDaisがevent参加機会を増やすためのlocal event application loopであり、「会うべき人」を予測するsystemではない。
 AI・crypto・startup・engineeringは候補の**soft preference**として順位を上げてよいが、topic不一致を理由に無料・受付中・
@@ -257,10 +423,11 @@ provider優先順位と責任境界は次で固定する。
 
 非目標は、全世界のevent siteを網羅する汎用web crawler、特定人物とのmeeting保証、移動時間の計算・Calendar登録、
 Life Manager Web AppのCalendar enrichment、cloud/multi-user化である。これらはConnector core acceptanceへ混ぜない。
-このsectionと`0.2.1`〜`0.2.3`がcurrent contractであり、後段の履歴にあるgoal/serendipity、travel、rolling-21、
-全provider live proofの記述は現在のscopeや完了条件を上書きしない。
+このsectionと旧`0.2.1`〜`0.2.3`は履歴である。現在のscopeと完了条件は`0.0`だけを使う。
 
-### 0.2 現在地と残りの一本道
+### 0.2 Previous Connector recovery baseline（HISTORY → `0.0`）
+
+> このsectionのcurrent表現、14日窓、schedule、C-CORE順序は当時のbaselineであり、現在の実装には使わない。
 
 Connectorのコード正本はcanonical repositoryの`main`である。2026-08-16のscope再監査では
 Connector SSOT merge `50f4adca8`から監査base `5b617eb54`までConnector production pathの変更は0で、production native plistは
@@ -284,7 +451,7 @@ Connector SSOT merge `50f4adca8`から監査base `5b617eb54`までConnector prod
 | runtime drift | healthcheckとHealerがloadedだが削除済み`connector-native-completion` worktreeを参照しlast exit `EX_CONFIG`。retire済みhost bridgeもloaded/running。Connector用CloakBrowser `:9222`はlistener 0 | native以外の旧ownerをunloadし、`:9222`の正規ownerを復旧するまでscheduled readinessをPASSにしない。Gig `:9223`は別ownerでDO NOT TOUCH |
 | TODO境界 | 実装Items1〜18・20〜23/23Fは完了。Active remainingは下記7件のConnector coreだけ | fallback providerのlive proofと過去のmilestone checkboxは現在の実行順に使わない |
 
-#### 0.2.1 Active remaining TODO SSOT
+#### 0.2.1 Previous Active TODO SSOT（HISTORY → `0.0.3`）
 
 この表だけをConnector coreの現在TODOと順序の正本にする。core completionはLuma/Connpass優先loop、Calendar event本体、
 Telegram evidence、local scheduleの復旧で判定する。fallback providerのfirst-live proofはcore blockerにしない。
@@ -304,7 +471,7 @@ Telegram evidence、local scheduleの復旧で判定する。fallback provider�
 既存fallback railは削除しないが、Meetup・Doorkeeper・Eventbrite・TECH PLAY・KokuchProのfirst-live proofや機能拡張は
 `DEFERRED_NON_BLOCKING`とし、上の7件を閉じる途中へ入れない。Peatixの既存live bundleはfallback chainの証拠として保持する。
 
-#### 0.2.2 Connector ideal loop — start to finish
+#### 0.2.2 Previous Connector ideal loop（HISTORY → `0.0.4`）
 
 理想形は「schedule」「browser dependency」「application workflow」「observer」を分離し、外部write ownerはnative workflow一つだけにする。
 observerはread-onlyで、production stateやbrowserを直接修復しない。修復が必要なら再現証拠とbranchを作り、同じnative ownerで再検証する。
@@ -474,7 +641,7 @@ local版完成gate:
   → その後にだけOW-01〜12を開始し、同じcoreをDais以外のpilotへ展開
 ```
 
-#### 0.2.3 Connectorのユーザー体験contract
+#### 0.2.3 Previous Connector UX contract（HISTORY → `0.0.1` / `0.0.4`）
 
 Connectorを作る目的は、Daisへagentの管理、tool選択、失敗logの読解、再実行をさせないことである。
 通常時にDaisが見るsurfaceはTelegramだけとし、Life ManagerはMac mini上で探索から検証まで継続する。
@@ -537,12 +704,11 @@ Telegram provider message IDが無い送信を成功として表示しない。�
 成功0件を含め必ず報告する。報告は内部stack traceを見せず、成立した現実結果、安全なfailure class、未処理日数、次の自動actionを伝える。
 Connectorは移動時間、前後buffer、経路を計算・作成せず、Calendarにはevent本体だけを書く。旧rolling-21 coverageは履歴および長期目標として保持するが、現行14日runnerのuser-facing acceptanceまたはgateではない。Peatix、Meetup、Doorkeeper、Eventbrite、TECH PLAY、KokuchProはfallback railとして表示し、実bundle未証明providerはその状態も同時に表示する。
 
-#### 0.2.4 Connectorの残TODO参照
+#### 0.2.4 Connector previous TODO reference（HISTORY → `0.0.3`）
 
-実行順の唯一の正本は`0.2.1 Active remaining TODO SSOT`である。過去の進捗番号、milestone checkbox、
-旧rolling-21計画、旧「Item19だけ残る」という記述は履歴であり、現在TODOを上書きしない。
-current coreの残TODOはC-CORE-01〜07だけであり、fallback providerの追加live proofは含めない。
-live acceptanceは対話中のCodexや臨時scriptではなく、official native entrypointの外部receiptでのみ閉じる。
+実行順の唯一の正本は`0.0.3 Atomic TODO SSOT`である。この旧参照とC-CORE-01〜07は履歴であり、
+current TODOを上書きしない。live acceptanceは対話中のCodexや臨時scriptではなく、official native entrypointの
+provider/Calendar/Telegram/durable bundle receiptでのみ閉じる。
 
 #### 0.2.5 Connector code layout SSOT — 一箇所に畳む
 
@@ -578,7 +744,7 @@ skillに依存しない共有基盤だけを残すことである。ただしこ
 `DEFERRED_NON_BLOCKING`とし、coreを閉じる途中でfile移動を混ぜない。移動時はentrypoint path、launchd plist、
 `registry.json`、test pathを同一commitで更新し、`skills/connector/run.sh`というofficial entrypoint pathは変えない。
 
-#### 0.2.6 Telegram delivery contract — 実文面と既知drift
+#### 0.2.6 Previous Telegram delivery contract（HISTORY → `0.0.1` / `0.0.3`）
 
 DaisがConnectorの成果を知る唯一の通常surfaceはTelegramである。Google CalendarやProvider管理画面を
 自分で開かなくても、届いたmessageだけで「何が予約できたか」「次に何が起きるか」が分かる状態をuser-facing acceptanceにする。

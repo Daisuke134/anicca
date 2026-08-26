@@ -22,6 +22,7 @@ import re
 import sys
 import time
 import urllib.parse
+from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -44,6 +45,50 @@ def parse_metrics(aria: str) -> dict:
     return out
 
 
+def article_for_status(page, url: str):
+    status_id = url.rstrip("/").split("/status/")[-1].split("/")[0]
+    for article in page.query_selector_all('article[data-testid="tweet"]'):
+        link = article.query_selector(f'a[href*="/status/{status_id}"]')
+        if link:
+            return article
+    return None
+
+
+def hydrate_missing_metrics(page, rows: list[dict], limit: int = 3) -> None:
+    """Read the canonical permalink when X omits metrics in search-result cards."""
+    hydrated = 0
+    for row in rows:
+        if row.get("metrics"):
+            continue
+        if hydrated >= limit:
+            break
+        hydrated += 1
+        try:
+            page.goto(row["url"], wait_until="domcontentloaded", timeout=15000)
+            status_id = row["url"].rstrip("/").split("/status/")[-1].split("/")[0]
+            page.wait_for_selector(
+                f'article[data-testid="tweet"] a[href*="/status/{status_id}"]',
+                timeout=10000,
+            )
+            article = article_for_status(page, row["url"])
+            group = article.query_selector('[role="group"][aria-label]') if article else None
+            row["metrics"] = parse_metrics(group.get_attribute("aria-label") if group else "")
+        except Exception:
+            row["metrics"] = {}
+
+
+def parse_public_count(value: str):
+    """Parse X public profile counts without turning an absent metric into zero."""
+    match = re.search(r"([\d,.]+)\s*([KMB])?", value or "", re.I)
+    if not match:
+        return None
+    number = float(match.group(1).replace(",", ""))
+    scale = {"K": 1_000, "M": 1_000_000, "B": 1_000_000_000}.get(
+        (match.group(2) or "").upper(), 1
+    )
+    return int(number * scale)
+
+
 def ensure_logged_in(page) -> str:
     """Return the logged-in handle, repairing the session from TWITTER_AUTH_TOKEN if needed.
 
@@ -51,15 +96,22 @@ def ensure_logged_in(page) -> str:
     session actually lapsed. Fails closed: an unauthenticated pass must not silently scrape
     the logged-out landing page and call it a result.
     """
-    for attempt in (1, 2):
+    for attempt in (1, 2, 3):
         page.goto("https://x.com/home", wait_until="domcontentloaded", timeout=60000)
-        page.wait_for_timeout(6000)
-        link = page.query_selector('[data-testid="AppTabBar_Profile_Link"]')
+        try:
+            link = page.wait_for_selector(
+                '[data-testid="AppTabBar_Profile_Link"]', timeout=15000
+            )
+        except Exception:
+            link = page.query_selector('[data-testid="AppTabBar_Profile_Link"]')
         if link:
             href = link.get_attribute("href") or ""
             return href.strip("/")
-        if attempt == 2:
+        if attempt == 3:
             break
+        cookies = page.context.cookies("https://x.com")
+        if any(cookie.get("name") == "auth_token" and cookie.get("value") for cookie in cookies):
+            continue
         token = os.environ.get("TWITTER_AUTH_TOKEN", "")
         if not token:
             raise SystemExit("x_collect: not logged in and TWITTER_AUTH_TOKEN is unset")
@@ -153,6 +205,7 @@ def recon(page, queries, per_query, exclude_urls, own_handle, time_budget_second
             continue
         seen.add(row["url"])
         uniq.append(row)
+    hydrate_missing_metrics(page, uniq)
     return uniq, errors, attempted
 
 
@@ -235,6 +288,69 @@ def read_metrics(page, url: str) -> dict:
     row = {"ok": True, "aria": aria}
     row.update({k: parsed.get(k, 0) for k in MEASURED_ACTIONS})
     return row
+
+
+def read_profile_snapshot(page, handle: str) -> dict:
+    """Read the public account denominator and explicitly mark paid analytics holes."""
+    page.goto(f"https://x.com/{handle}", wait_until="domcontentloaded", timeout=60000)
+    page.wait_for_timeout(5000)
+    following = page.query_selector(f'a[href="/{handle}/following"]')
+    followers = (page.query_selector(f'a[href="/{handle}/verified_followers"]')
+                 or page.query_selector(f'a[href="/{handle}/followers"]'))
+    return {
+        "handle": handle,
+        "followers": parse_public_count(followers.inner_text()) if followers else None,
+        "following": parse_public_count(following.inner_text()) if following else None,
+        # The authenticated /i/account_analytics page was measured to return the Premium gate.
+        # Do not report profile visits as zero: the value is not exposed to this account.
+        "profile_visits": None,
+        "profile_visits_state": "UNAVAILABLE_X_PREMIUM_REQUIRED",
+    }
+
+
+def write_daily_snapshot(posted_path: Path, records: list, profile: dict,
+                         sampled_at: datetime) -> dict:
+    """Overwrite one bounded Socrates-shaped daily snapshot from canonical ledger rows."""
+    cutoff = sampled_at.timestamp() - 30 * 24 * 60 * 60
+    by_kind = defaultdict(lambda: {
+        "post_count": 0, "measured_post_count": 0,
+        "views": 0, "likes": 0, "replies": 0, "reposts": 0, "bookmarks": 0,
+    })
+    published = 0
+    for rec in records:
+        if not rec or not rec.get("post_url"):
+            continue
+        try:
+            at = datetime.fromisoformat(rec["posted_at"]).astimezone(timezone.utc)
+        except (KeyError, ValueError):
+            continue
+        if at.timestamp() < cutoff:
+            continue
+        published += 1
+        bucket = by_kind[rec.get("kind") or "unknown"]
+        bucket["post_count"] += 1
+        engagement = rec.get("engagement")
+        if not isinstance(engagement, dict):
+            continue
+        bucket["measured_post_count"] += 1
+        for key in MEASURED_ACTIONS:
+            value = engagement.get(key)
+            if isinstance(value, int):
+                bucket[key] += value
+    snapshot = {
+        "schema": "life-manager.x-growth-daily.v1",
+        "sampled_at": sampled_at.isoformat(),
+        "window_days": 30,
+        "published_post_count": published,
+        "by_kind": dict(sorted(by_kind.items())),
+        "profile": profile,
+        "money_state": "NON_MONEY_X_OBSERVATIONS",
+    }
+    target_dir = posted_path.with_name("metrics") / "daily"
+    target_dir.mkdir(parents=True, exist_ok=True)
+    target = target_dir / f"{sampled_at.astimezone().date().isoformat()}.json"
+    target.write_text(json.dumps(snapshot, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+    return snapshot
 
 
 def refresh_engagement(page, posted_path: Path) -> list:
@@ -327,8 +443,18 @@ def main():
         page = get_page(browser)
         handle = ensure_logged_in(page)
         if args.mode == "engagement":
-            result = {"handle": handle,
-                      "updated": refresh_engagement(page, posted_path)}
+            updated = refresh_engagement(page, posted_path)
+            records = []
+            for line in posted_path.read_text(encoding="utf-8").splitlines():
+                try:
+                    records.append(json.loads(line))
+                except json.JSONDecodeError:
+                    continue
+            sampled_at = datetime.now(timezone.utc)
+            profile = read_profile_snapshot(page, handle)
+            result = {"handle": handle, "updated": updated,
+                      "daily_snapshot": write_daily_snapshot(
+                          posted_path, records, profile, sampled_at)}
         else:
             queries = [l.strip() for l in Path(args.queries).read_text(encoding="utf-8").splitlines()
                        if l.strip() and not l.strip().startswith("#")]

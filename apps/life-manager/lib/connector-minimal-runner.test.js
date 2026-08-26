@@ -140,6 +140,39 @@ test("one wake reuses one owned session, target, and page across candidates and 
   );
 });
 
+test("connpass candidates produce one action-boundary receipt before any provider action", async () => {
+  let state = fixture({
+    async discoverCandidates(provider) {
+      state.calls.push(["discover", provider]);
+      return provider === "connpass" ? [candidate("connpass", "boundary")] : [];
+    },
+    async reportConnpassActionBoundary({ candidates }) {
+      state.calls.push(["connpass-boundary", candidates.map((row) => row.event_ref)]);
+      return { telegram_provider_id: "7711" };
+    },
+  });
+  await runMinimalConnectorWake({ ownerToken: "owner-token-connpass-boundary", providers: ["connpass"] }, state.dependencies);
+  const boundary = state.calls.findIndex(([name]) => name === "connpass-boundary");
+  const direct = state.calls.findIndex(([name]) => name === "direct");
+  assert.ok(boundary >= 0 && direct > boundary);
+  assert.equal(state.calls.filter(([name]) => name === "connpass-boundary").length, 1);
+});
+
+test("failed connpass action-boundary delivery skips every connpass submit path", async () => {
+  let state = fixture({
+    async discoverCandidates(provider) {
+      state.calls.push(["discover", provider]);
+      return provider === "connpass" ? [candidate("connpass", "boundary-fail")] : [];
+    },
+    async reportConnpassActionBoundary() { throw new Error("delivery unavailable"); },
+  });
+  const result = await runMinimalConnectorWake({ ownerToken: "owner-token-connpass-boundary-fail", providers: ["connpass"] }, state.dependencies);
+  assert.equal(result.safe_reason, "connpass_action_boundary_failed");
+  for (const name of ["cache", "direct", "agent", "readback"]) {
+    assert.equal(state.calls.some(([call]) => call === name), false, name);
+  }
+});
+
 test("a failed provider reset records failure, skips discovery, and closes the owned page", async () => {
   let state = fixture({
     async discoverCandidates(provider) {
@@ -438,6 +471,59 @@ test("a failed direct action invokes at most ten agent steps on the exact same p
   assert.equal(state.calls.filter(([name]) => name === "agent").length, 1);
   assert.equal(state.calls.filter(([name]) => name === "cache-save").length, 1);
   assert.equal(state.calls.filter(([name]) => name === "close").length, 1);
+});
+
+test("runner skips an ineligible leading candidate and submits only the next eligible candidate", async () => {
+  const weak = Object.freeze({ ...candidate("luma", "weak"), auto_apply_eligible: false });
+  const strong = Object.freeze({ ...candidate("luma", "strong"), auto_apply_eligible: true });
+  const state = fixture({
+    async discoverCandidates() { return [weak, strong]; },
+    async runDirectAction({ candidate: selected }) {
+      state.calls.push(["direct", selected.event_ref]);
+      return Object.freeze({ status: "completed" });
+    },
+    async readProviderState({ candidate: selected, phase }) {
+      return phase === "pre_submit"
+        ? Object.freeze({ status: "absent" })
+        : Object.freeze({ status: "registered", provider_receipt_id: `receipt-${selected.event_ref}` });
+    },
+    async completeEvidence({ candidate: selected }) {
+      return Object.freeze({ status: "applied_bundle", bundle_id: `bundle-${selected.event_ref}`, completion_disposition: "created" });
+    },
+  });
+
+  const result = await runMinimalConnectorWake({
+    ownerToken: "owner-token-ranking-gate-123456",
+    providers: ["luma"],
+  }, state.dependencies);
+
+  assert.equal(result.status, "applied_bundle");
+  assert.deepEqual(state.calls.filter(([name]) => name === "navigate").map((row) => row[4]), [strong.canonical_url]);
+  assert.equal(state.calls.some((row) => row.includes(weak.event_ref)), false);
+});
+
+test("open talk consumes the one-effect budget and defers attendance to a later wake", async () => {
+  const selected = Object.freeze({
+    ...candidate("luma", "talk-first"),
+    talk_opportunity: Object.freeze({ application_url: "https://forms.example.com/talk", should_create_talk_application: true }),
+    talk_pack: Object.freeze({ title: "Life Manager talk" }),
+  });
+  let state = fixture({
+    async discoverCandidates() { return [selected]; },
+    async runTalkApplication({ candidate: supplied }) {
+      state.calls.push(["talk-submit", supplied.event_ref]);
+      return { status: "provider_verified", receipt_ref: "provider-receipt://connector/talk/1" };
+    },
+    async completeTalkEvidence({ candidate: supplied }) {
+      state.calls.push(["talk-evidence", supplied.event_ref]);
+      return { status: "applied_bundle", bundle_id: "talk-bundle-1", completion_disposition: "created" };
+    },
+  });
+  const result = await runMinimalConnectorWake({ ownerToken: "owner-token-talk-budget-123456", providers: ["luma"] }, state.dependencies);
+  assert.deepEqual(result, { status: "applied_bundle", bundle_id: "talk-bundle-1", telegram_provider_id: "9001" });
+  assert.deepEqual(state.calls.filter(([name]) => name === "navigate").map((row) => row[4]), ["https://forms.example.com/talk"]);
+  assert.equal(state.calls.some(([name]) => ["cache", "direct", "agent"].includes(name)), false);
+  assert.deepEqual(state.calls.filter(([name]) => name === "talk-submit" || name === "talk-evidence").map(([name]) => name), ["talk-submit", "talk-evidence"]);
 });
 
 test("a verified cached replay skips both direct and agent actions", async () => {

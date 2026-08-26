@@ -472,6 +472,8 @@ Current production truth:
 
 ### Remaining execution order
 
+Capafy supply recoveryは既存draft `2264929931` Dissertation Discussion Humanizerを新規Agentなしで再開する。CP2の実XHRはOpenRouter keyの日次上限`$2`、使用`$1.321791`、残り`$0.678209`に対してCapafyが`65,536` tokensを予約しHTTP `402`になったことを返す。management APIで同一keyをusage一致により一意特定し、無制限化せず日次上限を`$3`へ更新、公式current-key readbackは残り`$1.678209`。同じCP2は`VERIFIED`、serverは`skills=1 / config=1 / run_online`を返す。新規listing `v1.0.0`に存在しないversion-change textareaをPlaywright既定が必須扱いしたCP3は、optional-field対応済みのraw driverを既定へ戻す。ship済み再開で`set -e`がbenign判定前に終了するwrapperもcommand substitution内で捕捉する。focused CP2 `35`件、CP3 `15`件、work-state isolationが通り、同一Agentは公式readback`status=1`（審査中）。販売、契約、売上、settled MRRはまだ観測しない。
+
 1. **P2 NOW:** loop-owned `ChallengeRequired → CloakBrowser` caption-edit fallbackをTDD実装し、installed loopを発火する。同じReel `DcaoB6uMTZm`に`/go/7785270416`が見え、post countとReel URLが不変、replay edit 0をofficial web readbackする。
 2. **P3:** Reel、hash、caption URL、native URL、ledger、rotation、metrics、Telegram `31847`を一つのterminal receiptへjoinし、P3をcompletedにする。再投稿0。
 3. **P4:** native views、`/go/7785270416` click、Capafy product view、official paid subscription/settlementを同じwindowへjoinする。order-level sourceが無ければ`causal=false`。

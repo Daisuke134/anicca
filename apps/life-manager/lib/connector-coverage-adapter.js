@@ -176,7 +176,7 @@ function createConnectorCoverageLoopAdapter(dependencies = {}) {
       if (
         !receipt || receipt.kind !== "connector_coverage_refresh"
         || !["continue", "complete"].includes(receipt.status)
-        || !Number.isInteger(receipt.open_date_count) || receipt.open_date_count < 0 || receipt.open_date_count > 21
+        || !Number.isInteger(receipt.open_date_count) || receipt.open_date_count < 0 || receipt.open_date_count > 28
         || !PLAN_STATUSES.has(receipt.open_date_plan_status)
         || !Number.isInteger(receipt.open_date_candidate_count) || receipt.open_date_candidate_count < 0
         || !Number.isInteger(receipt.open_date_runnable_candidate_count) || receipt.open_date_runnable_candidate_count < 0

@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "provider": "connpass",
+  "application_id": "1647257",
+  "channel": "gmail_reply_to_official_support",
+  "recipient": "connpass-support@beproud.jp",
+  "sent_message_id": "1a03ed4ba35ffa46",
+  "thread_id": "19fd6497ec8cb93d",
+  "question": "Whether the applicant may use browser automation in their own account to submit ordinary event participation forms after discovering candidates with the official v2 API.",
+  "declared_fail_closed_behavior": "Until explicit permission is received, the system sends candidate URLs to the applicant by Telegram and performs zero automated connpass participation submissions.",
+  "official_response_status": "pending"
+}

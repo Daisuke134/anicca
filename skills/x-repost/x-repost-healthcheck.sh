@@ -8,7 +8,8 @@ set -uo pipefail
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
 
 SKILL="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-LABEL="ai.anicca.x-repost-pass"
+LOOP_NAME="${X_LOOP_NAME:-x-repost}"
+LABEL="${X_LOOP_LABEL:-ai.anicca.x-repost-pass}"
 INSTALLED="$HOME/Library/LaunchAgents/$LABEL.plist"
 # The plist is generated from loops/<name>/loop.toml rather than kept as a committed copy, so
 # repairing one means regenerating it. Keeping a checked-in copy alongside the generator would
@@ -16,13 +17,14 @@ INSTALLED="$HOME/Library/LaunchAgents/$LABEL.plist"
 REPO_ROOT="$(cd "$SKILL/../.." && pwd)"
 regenerate_plist() {
   "${PY:-/opt/homebrew/bin/python3}" "$REPO_ROOT/bin/plistgen.py" \
-    --loops-dir "$REPO_ROOT/loops" --out-dir "$HOME/Library/LaunchAgents" --only x-repost \
+    --loops-dir "$REPO_ROOT/loops" --out-dir "$HOME/Library/LaunchAgents" --only "$LOOP_NAME" \
     >/dev/null 2>&1
 }
 HEARTBEAT="${X_REPOST_STATE_DIR:-$SKILL/state}/.last-pass"
 # Hourly cadence, so 3h of silence is already three missed passes -- and the heartbeat is written
 # on every pass that reaches a decision, not only the ones that publish.
 MAX_AGE_SECONDS="${X_REPOST_MAX_PASS_AGE:-10800}"
+INITIAL_GRACE_SECONDS="${X_LOOP_INITIAL_GRACE_SECONDS:-0}"
 
 # shellcheck source=/dev/null
 source "$HOME/.openclaw/skills/_shared/scripts/telegram-notify.sh" 2>/dev/null || \
@@ -44,7 +46,10 @@ fi
 
 # 2. a pass reached a decision recently
 if [ ! -f "$HEARTBEAT" ]; then
-  problems+=("no pass has ever completed (state/.last-pass absent)")
+  installed_age=$(( $(date +%s) - $(stat -f %m "$INSTALLED" 2>/dev/null || echo 0) ))
+  if [ "$INITIAL_GRACE_SECONDS" -le 0 ] || [ "$installed_age" -gt "$INITIAL_GRACE_SECONDS" ]; then
+    problems+=("no pass has ever completed (state/.last-pass absent)")
+  fi
 else
   age=$(( $(date +%s) - $(stat -f %m "$HEARTBEAT") ))
   if [ "$age" -gt "$MAX_AGE_SECONDS" ]; then
@@ -53,10 +58,10 @@ else
 fi
 
 if [ "${#problems[@]}" -eq 0 ]; then
-  echo "x-repost: OK"
+  echo "$LOOP_NAME: OK"
   exit 0
 fi
 
-printf 'x-repost: %s\n' "${problems[@]}" >&2
-telegram_notify "x-repost::: healthcheck — $(printf '%s; ' "${problems[@]}")"
+printf '%s: %s\n' "$LOOP_NAME" "${problems[@]}" >&2
+telegram_notify "$LOOP_NAME::: healthcheck — $(printf '%s; ' "${problems[@]}")"
 exit 1

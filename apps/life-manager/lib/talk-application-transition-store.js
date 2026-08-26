@@ -8,7 +8,7 @@ const TENANT = /^[a-z0-9][a-z0-9._-]{0,199}$/;
 const PARTICIPATION = /^event-participation:[0-9a-f]{64}$/;
 const TRANSITION_ID = /^talk-transition:[0-9a-f]{64}$/;
 const SOURCE_REF = /^(?:evidence|provider-receipt|mail-receipt|object):\/\/[a-z0-9._~:/?#@!$&'()*+,;=%-]{1,950}$/i;
-const STATES = new Set(["discovered", "submission_queued", "submitted", "accepted", "rejected", "withdrawn", "presented"]);
+const STATES = new Set(["discovered", "application_ready", "submission_queued", "submitted", "provider_verified", "accepted", "rejected", "withdrawn", "presented"]);
 const KEYS = Object.freeze([
   "from_state", "observed_at", "participation_id", "reason", "source_refs",
   "tenant_id", "to_state", "transition_id",

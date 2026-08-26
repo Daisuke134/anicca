@@ -128,7 +128,15 @@ async function verifiedNewEventReportInput() {
   });
   return {
     coverage,
-    newEvents: [{ eventRef: detail.event_ref, dateInventory, goalDecision, calendarSync }],
+    newEvents: [{
+      eventRef: detail.event_ref, dateInventory, goalDecision, calendarSync,
+      selection: {
+        priority_class: "open_talk",
+        preference_reason: "AI founder向けLT枠が公開されているため最優先です",
+        talk_state: "provider_verified",
+        application_deadline_at: "2026-08-04T14:59:00.000Z",
+      },
+    }],
     registrationEvidence: {
       event_ref: detail.event_ref,
       canonical_url: detail.canonical_url,
@@ -158,7 +166,7 @@ test("verified all-day busyだけがunavailableを作り、候補なしやplain 
     tenantId: "dais-local", timeZone: "Asia/Tokyo", now: "2026-08-01T16:00:00.000Z",
     registrations: [], unavailableDays: [unavailable],
   });
-  assert.deepEqual(coverage.counts, { open: 20, covered_existing: 0, covered_new: 0, unavailable: 1 });
+  assert.deepEqual(coverage.counts, { open: 27, covered_existing: 0, covered_new: 0, unavailable: 1 });
   assert.equal(coverage.days.find((day) => day.date === "2026-08-07").evidence_refs.length, 1);
   assert.throws(() => rebuildRollingEventCoverage({
     tenantId: "dais-local", timeZone: "Asia/Tokyo", now: "2026-08-01T16:00:00.000Z",
@@ -167,24 +175,27 @@ test("verified all-day busyだけがunavailableを作り、候補なしやplain 
   assert.throws(() => proveAllDayCalendarUnavailable({ busyInventory, date: "2026-08-06" }), /not unavailable/i);
 });
 
-test("未処理日がある報告は失敗終了にせず、21日と継続中の予約作業を人間の言葉で示す", () => {
+test("未処理日がある報告は失敗終了にせず、28日と品質保持no-effectを人間の言葉で示す", () => {
   const message = buildConnectorCoverageTelegramMessage({
     coverage: openCoverage(), newEvents: [],
-    calendarCoverageUrl: "https://calendar.google.com/calendar/u/0/r/customday?start=2026-08-02&end=2026-08-23",
+    rejectionCounts: { weak: 3, unknown: 2, other: 4 },
+    calendarCoverageUrl: "https://calendar.google.com/calendar/u/0/r/customday?start=2026-08-02&end=2026-08-30",
   });
-  assert.match(message, /確認期間: 2026年8月2日〜2026年8月22日/);
+  assert.match(message, /確認期間: 2026年8月2日〜2026年8月29日/);
   assert.match(message, new RegExp(`対象日: ${openCoverage().horizon_days}日`));
   assert.match(message, new RegExp(`🔌 Connector ${openCoverage().horizon_days}日予約状況`));
-  assert.match(message, /未処理の空き: 21日/);
+  assert.match(message, /未処理の空き: 28日/);
   assert.match(message, /予約が成立するまで探索と申込みを続けています/);
   assert.match(message, /空いている日: 8\/2、8\/3/);
-  assert.match(message, /21日のCalendarを開く:\nhttps:\/\/calendar\.google\.com\/calendar\/u\/0\/r\/customday\?start=2026-08-02&end=2026-08-23/);
+  assert.match(message, /品質基準で自動申請しなかった候補: weak 3件 \/ unknown 2件 \/ other 4件/);
+  assert.match(message, /適格候補が0件でも失敗ではありません/);
+  assert.match(message, /28日のCalendarを開く:\nhttps:\/\/calendar\.google\.com\/calendar\/u\/0\/r\/customday\?start=2026-08-02&end=2026-08-30/);
   assert.doesNotMatch(message, /runner|bounded|none:|候補が見つからなかった|失敗\s*[:：]/i);
   assert.doesNotMatch(message, /移動時間/);
 });
 
 test("openが0なら新規0件でも、全日が既存予定か固定予定で解決済みだと説明できる", () => {
-  const resolvedDays = Array.from({ length: 21 }, (_, index) => {
+  const resolvedDays = Array.from({ length: 28 }, (_, index) => {
     const date = new Date(Date.UTC(2026, 7, 2 + index)).toISOString().slice(0, 10);
     return {
       date,
@@ -211,13 +222,17 @@ test("verified新規予約は名前・時刻・場所・選定理由とevent/Cal
   assert.match(message, /Founder Night/);
   assert.match(message, /19:00〜21:00 \/ Shibuya Hall/);
   assert.match(message, /理由: Life Managerをfounderへ見せ/);
+  assert.match(message, /優先度: open_talk/);
+  assert.match(message, /選定理由: AI founder向けLT枠が公開されているため最優先です/);
+  assert.match(message, /LT: provider_verified/);
+  assert.match(message, /LT申請締切: 2026\/8\/4 23:59/);
   assert.match(message, /イベントページ:\n   https:\/\/luma\.com\/founder-night/);
   assert.match(message, /Calendar:\n   https:\/\/www\.google\.com\/calendar\/event\?eid=opaque/);
   assert.match(message, /今回予約し、登録証拠とCalendar登録を照合したevent/);
   assert.doesNotMatch(message, /確認メール/);
-  assert.match(message, /未処理の空き: 20日/);
+  assert.match(message, /未処理の空き: 27日/);
   assert.deepEqual(input.existingCoverage.counts, {
-    open: 20, covered_existing: 0, covered_new: 1, unavailable: 0,
+    open: 27, covered_existing: 0, covered_new: 1, unavailable: 0,
   });
 });
 

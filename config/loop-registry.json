@@ -10,16 +10,37 @@
         "pass_frequency_multiplier": 1.0,
         "capital_cap_usd": null
       },
-      "cadence_contract": "one hourly pass publishes at most one post from @selawmqt, or records why it published none",
+      "cadence_contract": "one half-hour pass publishes at most one quality-gated post from @selawmqt, or records why it published none",
       "evidence_path": "~/loops/x-repost/posted.jsonl",
       "ledger_paths": [
         "~/loops/x-repost/posted.jsonl",
         "~/loops/x-repost/engagement.jsonl"
       ],
-      "base_interval_seconds": 3600,
+      "base_interval_seconds": 1800,
       "base_minute": 0,
       "base_hour": 0,
       "notes": "First loop ported to this repo. Runs from ~/loops/current, state in ~/loops/x-repost."
+    },
+    "x-tweeter": {
+      "loop": "x-tweeter",
+      "skill_dir": "skills/x-tweeter",
+      "status": "live",
+      "last_observed_at": null,
+      "allocation": {
+        "status": "normal",
+        "pass_frequency_multiplier": 1.0,
+        "capital_cap_usd": null
+      },
+      "cadence_contract": "independent :15/:45 opportunities publish at most one source-grounded quality-gated original or record why none was published",
+      "evidence_path": "~/loops/x-tweeter/posted.jsonl",
+      "ledger_paths": [
+        "~/loops/x-tweeter/posted.jsonl",
+        "~/loops/x-tweeter/engagement.jsonl"
+      ],
+      "base_interval_seconds": 1800,
+      "base_minute": 15,
+      "base_hour": 0,
+      "notes": "Independent Original owner; shares proven tools with x-repost but owns separate state and admission."
     }
   }
 }
