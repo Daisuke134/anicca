@@ -4,6 +4,8 @@ const test = require("node:test");
 const assert = require("node:assert");
 const crypto = require("node:crypto");
 const http = require("node:http");
+const fs = require("node:fs");
+const path = require("node:path");
 
 let handlePanelApiRequest = async (_req, res) => {
   res.writeHead(501, { "content-type": "application/json" });
@@ -380,3 +382,152 @@ function byUidWallet(fixture) {
   assert.ok(userRead);
   return "0x477EeE969ccfdc0e959F38cE8B83e372FC0262ad";
 }
+
+function onboardingHarness(initial = {}) {
+  const writes = [];
+  const state = {
+    step: "name", stage: "calendar", name: null, calendarConnected: false,
+    homeAddress: null, notificationsEnabled: false, phone: null,
+    callEnabled: false, paid: false, paymentLink: null, ...initial,
+  };
+  const scope = { uid: "tenant-a", chatId: "101", csrf: "csrf-a" };
+  const commandStore = {
+    async assertCurrentScope(value) { return value.uid === scope.uid && value.chatId === scope.chatId; },
+    async readOnboardingState(value) {
+      assert.deepEqual(value, scope);
+      return { ...state };
+    },
+    async mutateOnboarding(value, action, payload) {
+      assert.deepEqual(value, scope);
+      writes.push({ action, payload });
+      return { ...state };
+    },
+  };
+  const opts = {
+    panelOrigin: "https://panel.example",
+    panelBaseUrl: "https://panel.example",
+    sessionScopeImpl: async () => scope,
+    commandStore,
+    stripePaymentLink: "https://buy.stripe.com/test_life_manager",
+  };
+  return { state, scope, writes, opts, commandStore };
+}
+
+async function onboardingRequest(harness, { method = "GET", path = "/api/panel/onboarding", body, headers = {} } = {}) {
+  const req = new http.IncomingMessage();
+  req.method = method;
+  req.url = path;
+  req.headers = {
+    cookie: `__Host-lm_panel_session=${SESSION}`,
+    origin: "https://panel.example",
+    "content-type": "application/json",
+    "x-lm-csrf": "csrf-a",
+    ...headers,
+  };
+  const chunks = [];
+  if (body == null) req.push(null);
+  else { req.push(JSON.stringify(body)); req.push(null); }
+  const response = await new Promise((resolve, reject) => {
+    const out = new (require("node:stream").Writable)({
+      write(chunk, _encoding, callback) { chunks.push(Buffer.from(chunk)); callback(); },
+    });
+    out.writeHead = (status, responseHeaders) => { out.status = status; out.headers = new Map(Object.entries(responseHeaders)); };
+    out.end = (chunk) => { if (chunk) chunks.push(Buffer.from(chunk)); resolve(out); };
+    Promise.resolve(handlePanelApiRequest(req, out, harness.opts)).catch(reject);
+  });
+  const raw = Buffer.concat(chunks).toString("utf8");
+  return { response, body: raw ? JSON.parse(raw) : null };
+}
+
+test("Task 7A onboarding API follows server-owned fixed progression and ignores client uid", async () => {
+  const h = onboardingHarness({ step: "home", stage: "home", calendarConnected: true });
+  const first = await onboardingRequest(h, { path: "/api/panel/onboarding?uid=tenant-b" });
+  assert.equal(first.response.status, 200);
+  assert.equal(first.body.step, "home");
+  assert.equal(first.body.paymentLink, undefined);
+  assert.equal(h.writes.length, 0);
+  const forgedCalendar = await onboardingRequest(h, { method: "POST", body: { action: "calendar.complete", uid: "tenant-b" } });
+  assert.equal(forgedCalendar.response.status, 400);
+  assert.equal(h.writes.length, 0, "calendar completion is provider-owned, never a client write");
+
+  const actions = [
+    ["home.save", { home_address: "東京都渋谷区 1-1-1" }],
+    ["notifications.enable", {}],
+    ["phone.save", { phone: "+81 (90) 1234-5678", uid: "tenant-b" }],
+    ["call.enable", {}],
+    ["payment.skip", { paid: true, uid: "tenant-b" }],
+  ];
+  for (const [action, payload] of actions) {
+    h.commandStore.mutateOnboarding = async (scope, actualAction, actualPayload) => {
+      assert.deepEqual(scope, h.scope);
+      h.writes.push({ action: actualAction, payload: actualPayload });
+      return { ...h.state, step: action === "payment.skip" ? "dashboard" : action.split(".")[0] };
+    };
+    const result = await onboardingRequest(h, { method: "POST", body: { action, ...payload } });
+    assert.equal(result.response.status, 200, action);
+    assert.notEqual(result.body.paid, true, "client action never grants paid");
+  }
+  assert.equal(h.writes.length, actions.length);
+  assert.equal(Object.hasOwn(h.writes[2].payload, "uid"), false, "uid is stripped before the tenant-scoped transition");
+  assert.equal(h.writes[2].payload.phone, "+819012345678", "phone is normalized before persistence");
+});
+
+test("Task 7A rejects an out-of-order onboarding mutation before any write", async () => {
+  const h = onboardingHarness({ step: "home", stage: "home" });
+  h.commandStore.mutateOnboarding = async () => {
+    const error = new Error("onboarding_conflict");
+    error.status = 409;
+    throw error;
+  };
+  const result = await onboardingRequest(h, { method: "POST", body: { action: "call.enable" } });
+  assert.equal(result.response.status, 409);
+  assert.deepEqual(result.body, { error: "onboarding_conflict" });
+  assert.equal(h.writes.length, 0);
+});
+
+test("Task 7A payment step returns only configured server Stripe link and fails closed when absent", async () => {
+  const h = onboardingHarness({ step: "payment", stage: "payment", paymentLink: null });
+  const result = await onboardingRequest(h);
+  assert.equal(result.response.status, 200);
+  assert.equal(result.body.paymentLink, "https://buy.stripe.com/test_life_manager?client_reference_id=tenant-a");
+  const missing = onboardingHarness({ step: "payment", stage: "payment" });
+  missing.opts.stripePaymentLink = "";
+  const unavailable = await onboardingRequest(missing);
+  assert.equal(unavailable.response.status, 503);
+  assert.deepEqual(unavailable.body, { error: "payment_unavailable" });
+});
+
+test("Task 7A paid phone-less tenant resumes at dashboard after required core steps", async () => {
+  const h = onboardingHarness({ step: "dashboard", stage: "phone", calendarConnected: true, homeAddress: "home", notificationsEnabled: true, paid: true, phone: null });
+  const result = await onboardingRequest(h);
+  assert.equal(result.response.status, 200);
+  assert.equal(result.body.step, "dashboard");
+  assert.equal(result.body.phone, null);
+  assert.equal(result.body.callEnabled, false);
+});
+
+test("Task 7A onboarding migration is additive, tenant-scoped, and lock-atomic", () => {
+  const sql = fs.readFileSync(path.join(__dirname, "../migrations/2026-08-27-lm-panel-onboarding.sql"), "utf8");
+  assert.match(sql, /CREATE OR REPLACE FUNCTION public\.lm_panel_onboarding_state/i);
+  assert.match(sql, /CREATE OR REPLACE FUNCTION public\.lm_panel_onboarding_transition/i);
+  assert.match(sql, /SELECT .*FROM public\.lm_users[\s\S]*FOR UPDATE/i);
+  assert.match(sql, /telegram_chat_id::text\s*=\s*p_chat_id/i);
+  assert.match(sql, /paid\s+IS\s+TRUE/i);
+  assert.doesNotMatch(sql, /CREATE TABLE/i);
+  const transition = sql.slice(sql.indexOf("CREATE OR REPLACE FUNCTION public.lm_panel_onboarding_transition"));
+  assert.doesNotMatch(transition, /SET\s+paid\s*=/i, "client transitions cannot write paid");
+  assert.match(transition, /call_enabled\s*=\s*false/i, "phone and notification transitions keep calls off");
+  assert.match(sql, /REVOKE ALL ON FUNCTION public\.lm_panel_onboarding_transition/i);
+});
+
+test("Task 7A state resumes for another session of the same actor and isolates another actor", async () => {
+  const first = onboardingHarness({ step: "phone", stage: "phone", phone: null });
+  const resumed = onboardingHarness({ step: "phone", stage: "phone", phone: null });
+  assert.deepEqual((await onboardingRequest(first)).body, (await onboardingRequest(resumed)).body);
+  const other = onboardingHarness({ step: "dashboard", stage: "dashboard", paid: true });
+  other.opts.sessionScopeImpl = async () => ({ uid: "tenant-b", chatId: "202", csrf: "csrf-b" });
+  other.opts.commandStore.assertCurrentScope = async () => false;
+  const denied = await onboardingRequest(other, { headers: { "x-lm-csrf": "csrf-b" } });
+  assert.equal(denied.response.status, 401);
+  assert.equal(denied.body.error, "unauthorized");
+});

@@ -9,8 +9,10 @@ const { lockedDiscoveryGates } = require("./feature-discovery.js");
 const { DISCOVERY_STRINGS } = require("./i18n.js");
 const { buildScorePeriods, computePanelScores } = require("./panel-score-semantics.js");
 const { presentPanelSection } = require("./panel-presentation.js");
+const { normalizePhone } = require("./telegram-onboard.js");
 
 const ENDPOINTS = new Set(["timeline", "scores", "ledger", "gates", "settings"]);
+const ONBOARDING_ACTIONS = new Set(["name.save", "home.save", "notifications.enable", "phone.save", "phone.skip", "call.enable", "call.skip", "payment.skip"]);
 const CALL_MINUTES_BEFORE = Object.freeze([10, 5]);
 const SCORE_ORGANS = Object.freeze(["daily", "physical", "mental", "financial"]);
 const SORTED_SCORE_ORGANS = Object.freeze([...SCORE_ORGANS].sort());
@@ -320,6 +322,57 @@ function sendPanelSection(res, section, candidate, opts) {
   }
 }
 
+function paymentLink(opts = {}, scope = {}) {
+  const value = String(opts.stripePaymentLink || opts.paymentLink || process.env.LM_STRIPE_PAYMENT_LINK || process.env.STRIPE_PAYMENT_LINK || "").trim();
+  try {
+    const url = new URL(value);
+    if (url.protocol !== "https:" || url.hostname !== "buy.stripe.com" || !scope.uid || url.username || url.password || url.pathname.length <= 1) return "";
+    url.searchParams.set("client_reference_id", String(scope.uid));
+    return url.toString();
+  } catch { return ""; }
+}
+
+function onboardingError(message, status) { const error = new Error(message); error.status = status; return error; }
+function normalizedOnboardingPhone(value) {
+  const raw = String(value || "").trim();
+  return /^[+\d()\s.-]+$/.test(raw) ? normalizePhone(raw) : null;
+}
+
+async function onboardingRpc(name, body, opts = {}) {
+  if (!opts.supaUrl || !opts.supaKey) throw onboardingError("onboarding_unavailable", 502);
+  const response = await (opts.fetchImpl || fetch)(`${String(opts.supaUrl).replace(/\/$/, "")}/rest/v1/rpc/${name}`, {
+    method: "POST", headers: { ...headers(opts.supaKey), "content-type": "application/json" }, body: JSON.stringify(body),
+  });
+  const value = await jsonOr(response, {});
+  if (!response.ok) {
+    const message = String(value && (value.message || value.error || value.hint) || "");
+    if (message.includes("scope_mismatch")) throw onboardingError("unauthorized", 401);
+    if (message.includes("onboarding_conflict")) throw onboardingError("onboarding_conflict", 409);
+    if (message.includes("invalid_name")) throw onboardingError("invalid_name", 400);
+    if (message.includes("invalid_home_address")) throw onboardingError("invalid_home_address", 400);
+    if (message.includes("invalid_phone")) throw onboardingError("invalid_phone", 400);
+    if (message.includes("invalid_onboarding_action")) throw onboardingError("invalid_action", 400);
+    throw onboardingError("onboarding_unavailable", 502);
+  }
+  return Array.isArray(value) ? value[0] || null : value;
+}
+
+function onboardingResponse(value, opts = {}, scope = {}) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) throw onboardingError("onboarding_unavailable", 502);
+  const body = {};
+  for (const key of ["step", "stage", "name", "calendarConnected", "homeAddress", "notificationsEnabled", "phone", "callEnabled", "paid"]) {
+    if (Object.hasOwn(value, key)) body[key] = value[key];
+  }
+  const aliases = { pay: "payment", done: "dashboard", gmail: "dashboard" };
+  body.step = aliases[String(body.step || body.stage || "")] || String(body.step || body.stage || "");
+  if (body.step === "payment") {
+    const link = paymentLink(opts, scope);
+    if (!link) throw onboardingError("payment_unavailable", 503);
+    body.paymentLink = link;
+  } else delete body.paymentLink;
+  return body;
+}
+
 async function readJson(req) {
   return new Promise((resolve, reject) => {
     let raw = "", settled = false;
@@ -363,6 +416,8 @@ function createSupabaseCommandStore(opts = {}) {
     async patchUser(scope, body) { return patch("lm_users", scope, body); },
     async mutatePreferences(scope, body) { const response = await fetchImpl(`${base}/rest/v1/rpc/mutate_lm_panel_preferences`, { method: "POST", headers: { ...headers(opts.supaKey), "content-type": "application/json" }, body: JSON.stringify({ p_uid: scope.uid, p_chat_id: scope.chatId, p_patch: body }) }); if (!response.ok) throw new Error("scope_mismatch"); return jsonOr(response, body); },
     async mutateUser(scope, body) { const response = await fetchImpl(`${base}/rest/v1/rpc/mutate_lm_panel_user`, { method: "POST", headers: { ...headers(opts.supaKey), "content-type": "application/json" }, body: JSON.stringify({ p_uid: scope.uid, p_chat_id: scope.chatId, p_patch: body }) }); if (!response.ok) throw new Error("scope_mismatch"); return jsonOr(response, body); },
+    async readOnboardingState(scope) { return onboardingRpc("lm_panel_onboarding_state", { p_uid: scope.uid, p_chat_id: scope.chatId }, opts); },
+    async mutateOnboarding(scope, action, payload) { return onboardingRpc("lm_panel_onboarding_transition", { p_uid: scope.uid, p_chat_id: scope.chatId, p_action: action, p_payload: payload || {} }, opts); },
     async createOAuthState(scope, state) { const response = await fetchImpl(`${base}/rest/v1/rpc/create_lm_panel_oauth_state`, { method: "POST", headers: { ...headers(opts.supaKey), "content-type": "application/json" }, body: JSON.stringify({ p_state_hash: state.stateHash, p_uid: scope.uid, p_chat_id: scope.chatId, p_provider: state.provider, p_expires_at: state.expiresAt }) }); if (!response.ok) throw new Error("oauth_state_failed"); const value = await jsonOr(response, false); const claimed = Array.isArray(value) ? value[0] === true : value === true; if (!claimed) { const error = new Error("oauth_state_in_progress"); error.status = 409; throw error; } return true; },
     async claimOAuthState(scope, stateHash) { const response = await fetchImpl(`${base}/rest/v1/rpc/claim_lm_panel_oauth_state`, { method: "POST", headers: { ...headers(opts.supaKey), "content-type": "application/json" }, body: JSON.stringify({ p_state_hash: stateHash, p_uid: scope.uid, p_chat_id: scope.chatId }) }); if (!response.ok) throw new Error("oauth_state_failed"); return jsonOr(response, false); },
   };
@@ -465,7 +520,8 @@ async function composioCalendarStart(scope, opts = {}) {
 async function handlePanelApiRequest(req, res, opts = {}) {
   const path = new URL(req.url || "/", "http://panel.local").pathname;
   const endpoint = path.startsWith("/api/panel/") ? path.slice("/api/panel/".length) : "";
-  if (!ENDPOINTS.has(endpoint) && endpoint !== "control-center" && endpoint !== "commands") {
+  const onboardingEndpoint = endpoint === "onboarding" || endpoint.startsWith("onboarding/");
+  if (!ENDPOINTS.has(endpoint) && endpoint !== "control-center" && endpoint !== "commands" && !onboardingEndpoint) {
     sendJson(res, 404, { error: "not_found" });
     return;
   }
@@ -490,6 +546,39 @@ async function handlePanelApiRequest(req, res, opts = {}) {
   const commandStore = opts.commandStore || createSupabaseCommandStore(opts);
   if (!opts.sessionScopeImpl && !await commandStore.assertCurrentScope(scope)) {
     sendJson(res, 401, { error: "unauthorized" });
+    return;
+  }
+  if (onboardingEndpoint) {
+    if (commandStore.assertCurrentScope && !await commandStore.assertCurrentScope(scope)) { sendJson(res, 401, { error: "unauthorized" }); return; }
+    if (req.method === "GET") {
+      if (endpoint !== "onboarding") { sendJson(res, 404, { error: "not_found" }); return; }
+      try {
+        const state = await (commandStore.readOnboardingState || (() => { throw onboardingError("onboarding_unavailable", 502); }))(scope);
+        sendJson(res, 200, onboardingResponse(state, opts, scope));
+      } catch (error) { sendJson(res, error.status || 502, { error: ["payment_unavailable", "unauthorized"].includes(error.message) ? error.message : "onboarding_unavailable" }); }
+      return;
+    }
+    if (req.method !== "POST") { sendJson(res, 405, { error: "method_not_allowed" }, { Allow: "GET, POST" }); return; }
+    const expectedOrigin = String(opts.panelOrigin || opts.panelBaseUrl || "").replace(/\/$/, "");
+    if (!expectedOrigin || String(req.headers.origin || "") !== expectedOrigin) { sendJson(res, 403, { error: "origin_rejected" }); return; }
+    if (!/^application\/json(?:;|$)/i.test(String(req.headers["content-type"] || ""))) { sendJson(res, 415, { error: "json_required" }); return; }
+    if (!timingEqual(req.headers["x-lm-csrf"], scope.csrf || csrfToken(session))) { sendJson(res, 403, { error: "csrf_rejected" }); return; }
+    try {
+      const body = await readJson(req);
+      const pathAction = endpoint.slice("onboarding/".length).replace(/\//g, ".");
+      const action = String((body && (body.action || body.type)) || pathAction || "");
+      if (!ONBOARDING_ACTIONS.has(action)) throw onboardingError("invalid_action", 400);
+      const payload = body && body.payload && typeof body.payload === "object" && !Array.isArray(body.payload) ? { ...body.payload } : { ...(body || {}) };
+      for (const key of ["action", "type", "payload", "uid", "tg", "telegram_id", "chat_id", "paid", "plan_status", "stripe_customer_id", "stripe_subscription_id", "current_period_end", "stripe_event_at"]) delete payload[key];
+      if (action === "name.save") { const name = String(payload.name || "").trim(); if (!name || name.length > 120) throw onboardingError("invalid_name", 400); payload.name = name; }
+      if (action === "home.save") { const home = String(payload.home_address || payload.homeAddress || "").trim(); if (!home || home.length > 240) throw onboardingError("invalid_home_address", 400); payload.home_address = home; delete payload.homeAddress; }
+      if (action === "phone.save") { const phone = normalizedOnboardingPhone(payload.phone); if (!phone) throw onboardingError("invalid_phone", 400); payload.phone = phone; }
+      const state = await (commandStore.mutateOnboarding || (() => { throw onboardingError("onboarding_unavailable", 502); }))(scope, action, payload);
+      sendJson(res, 200, onboardingResponse(state, opts, scope));
+    } catch (error) {
+      const known = new Set(["unauthorized", "onboarding_conflict", "invalid_name", "invalid_home_address", "invalid_phone", "invalid_action", "payment_unavailable"]);
+      sendJson(res, error.status || (known.has(error.message) ? (error.message === "unauthorized" ? 401 : error.message === "onboarding_conflict" ? 409 : error.message === "payment_unavailable" ? 503 : 400) : 502), { error: known.has(error.message) ? error.message : "onboarding_unavailable" });
+    }
     return;
   }
   if (endpoint === "commands") {
