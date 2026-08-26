@@ -158,8 +158,25 @@ if [ "$ROLLBACK" -eq 1 ]; then
     replace_link "$CURRENT" "$CURRENT_TARGET" || true
     die "could not move previous release pointer"
   }
-  validate_release_target "$CURRENT" "$LOOPS_ROOT" >/dev/null \
-    || { replace_link "$CURRENT" "$CURRENT_TARGET" || true; replace_link "$PREVIOUS" "$PREVIOUS_TARGET" || true; die "rollback readback failed"; }
+  POINTERS_OK=1
+  if [ "${LOOPS_TEST_FAIL_ROLLBACK_READBACK:-0}" = "1" ]; then
+    POINTERS_OK=0
+  fi
+  [ "$(readlink "$CURRENT")" = "$PREVIOUS_TARGET" ] || POINTERS_OK=0
+  [ "$(readlink "$PREVIOUS")" = "$CURRENT_TARGET" ] || POINTERS_OK=0
+  validate_release_target "$CURRENT" "$LOOPS_ROOT" >/dev/null || POINTERS_OK=0
+  validate_release_target "$PREVIOUS" "$LOOPS_ROOT" >/dev/null || POINTERS_OK=0
+  if [ "$POINTERS_OK" -ne 1 ]; then
+    replace_link "$CURRENT" "$CURRENT_TARGET" || true
+    replace_link "$PREVIOUS" "$PREVIOUS_TARGET" || true
+    RESTORED_OK=1
+    [ "$(readlink "$CURRENT")" = "$CURRENT_TARGET" ] || RESTORED_OK=0
+    [ "$(readlink "$PREVIOUS")" = "$PREVIOUS_TARGET" ] || RESTORED_OK=0
+    validate_release_target "$CURRENT" "$LOOPS_ROOT" >/dev/null || RESTORED_OK=0
+    validate_release_target "$PREVIOUS" "$LOOPS_ROOT" >/dev/null || RESTORED_OK=0
+    [ "$RESTORED_OK" -eq 1 ] || die "rollback restoration failed"
+    die "rollback readback failed"
+  fi
   echo "current -> $(readlink "$CURRENT") (rollback)"
   exit 0
 fi
@@ -183,7 +200,7 @@ validate_release_node_modules() {
   done < <(find "$node_modules" -type l -print0)
 }
 
-dependency_digest() {
+dependency_entries() {
   (
     cd "$DEST" || exit 1
     find node_modules \( -type f -o -type l \) -print | LC_ALL=C sort | while IFS= read -r file; do
@@ -203,7 +220,18 @@ dependency_digest() {
       fi
       printf '%s\t%s\t%s\t%s\t%s\n' "$kind" "$file" "$mode" "$content_hash" "$target"
     done
-  ) | shasum -a 256 | awk '{print $1}'
+  )
+}
+
+dependency_digest() {
+  dependency_entries | shasum -a 256 | awk '{print $1}'
+}
+
+dependency_manifest() {
+  local manifest="$DEST/DEPENDENCY-MANIFEST.tsv"
+  dependency_entries > "$manifest" || die "could not create dependency manifest"
+  DEPENDENCY_TREE_MANIFEST_SHA256="$(shasum -a 256 "$manifest" | awk '{print $1}')" \
+    || die "could not digest dependency manifest"
 }
 
 source_manifest() {
@@ -218,10 +246,11 @@ from pathlib import Path
 
 root = Path(sys.argv[1])
 manifest = Path(sys.argv[2])
+root_real = Path(os.path.realpath(root))
 entries = []
 for path in sorted(root.rglob("*")):
     relative = path.relative_to(root).as_posix()
-    if relative == "RELEASE.json" or relative == "SOURCE-MANIFEST.json" or relative.startswith("node_modules/"):
+    if relative in {"RELEASE.json", "SOURCE-MANIFEST.json", "DEPENDENCY-MANIFEST.tsv"} or relative.startswith("node_modules/"):
         continue
     item = path.lstat()
     if stat.S_ISREG(item.st_mode):
@@ -229,6 +258,9 @@ for path in sorted(root.rglob("*")):
         entries.append({"path": relative, "mode": format(stat.S_IMODE(item.st_mode) & 0o555, "04o"), "sha256": content_hash})
     elif stat.S_ISLNK(item.st_mode):
         target = os.readlink(path)
+        target_real = Path(os.path.realpath(path))
+        if target_real != root_real and root_real not in target_real.parents:
+            raise SystemExit(f"source symlink escapes release: {relative}")
         content_hash = hashlib.sha256(target.encode()).hexdigest()
         entries.append({"path": relative, "mode": "0000", "sha256": content_hash, "target": target})
 payload = {"version": 1, "entries": entries}
@@ -301,6 +333,7 @@ if [ -f "$DEST/package.json" ] || [ -f "$DEST/package-lock.json" ]; then
   validate_release_node_modules
   DEPENDENCY_SHA256="$(dependency_digest)" \
     || { rm -rf "$DEST"; die "could not digest installed dependencies"; }
+  dependency_manifest
   NODE_VERSION="$("$NODE_BIN" --version 2>/dev/null)" \
     || { rm -rf "$DEST"; die "could not read node runtime version"; }
   NPM_VERSION="$("$NPM_BIN" --version 2>/dev/null)" \
@@ -327,6 +360,7 @@ if ! cat >"$DEST/RELEASE.json" <<EOF
   "lockfile_sha256": "$LOCKFILE_SHA256",
   "dependency_manifest_sha256": "$DEPENDENCY_MANIFEST_SHA256",
   "dependency_sha256": "$DEPENDENCY_SHA256",
+  "dependency_tree_manifest_sha256": "$DEPENDENCY_TREE_MANIFEST_SHA256",
   "source_manifest_sha256": "$SOURCE_MANIFEST_SHA256",
   "runtime_versions": {
     "node": "$NODE_VERSION",
@@ -384,6 +418,9 @@ if ! replace_link "$CURRENT" "$DEST"; then
   die "could not move the current symlink"
 fi
 POINTERS_OK=1
+if [ "${LOOPS_TEST_FAIL_POST_CURRENT_READBACK:-0}" = "1" ]; then
+  POINTERS_OK=0
+fi
 [ "$(readlink "$CURRENT")" = "$DEST" ] || POINTERS_OK=0
 validate_release_target "$CURRENT" "$LOOPS_ROOT" >/dev/null || POINTERS_OK=0
 if [ -n "$EXPECTED_PREVIOUS" ]; then
@@ -393,12 +430,30 @@ else
   [ ! -e "$PREVIOUS" ] || POINTERS_OK=0
 fi
 if [ "$POINTERS_OK" -ne 1 ]; then
-  replace_link "$CURRENT" "${OLD_CURRENT:-$DEST}" || true
+  if [ -n "${OLD_CURRENT:-}" ]; then
+    replace_link "$CURRENT" "$OLD_CURRENT" || true
+  else
+    rm -f "$CURRENT"
+  fi
   if [ "$OLD_PREVIOUS_PRESENT" -eq 1 ]; then
     replace_link "$PREVIOUS" "$OLD_PREVIOUS" || true
   else
     rm -f "$PREVIOUS"
   fi
+  RESTORED_OK=1
+  if [ -n "${OLD_CURRENT:-}" ]; then
+    [ "$(readlink "$CURRENT")" = "$OLD_CURRENT" ] || RESTORED_OK=0
+    validate_release_target "$CURRENT" "$LOOPS_ROOT" >/dev/null || RESTORED_OK=0
+  else
+    [ ! -e "$CURRENT" ] || RESTORED_OK=0
+  fi
+  if [ "$OLD_PREVIOUS_PRESENT" -eq 1 ]; then
+    [ "$(readlink "$PREVIOUS")" = "$OLD_PREVIOUS" ] || RESTORED_OK=0
+    validate_release_target "$PREVIOUS" "$LOOPS_ROOT" >/dev/null || RESTORED_OK=0
+  else
+    [ ! -e "$PREVIOUS" ] || RESTORED_OK=0
+  fi
+  [ "$RESTORED_OK" -eq 1 ] || die "release pointer restoration failed"
   die "release pointer readback failed"
 fi
 

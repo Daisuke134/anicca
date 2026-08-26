@@ -46,15 +46,19 @@ if (!(path.basename(releasePath) === metadata.sha || path.basename(releasePath).
 if (metadata.current && real(String(metadata.current)) !== real(path.join(releaseRoot, 'current'))) process.exit(10);
 if (!/^[0-9a-f]{64}$/.test(String(metadata.source_manifest_sha256 || ''))) process.exit(11);
 const entries = [];
+const releaseReal = real(releasePath);
 const walk = (directory, prefix = '') => {
   for (const name of fs.readdirSync(directory).sort()) {
     const absolute = path.join(directory, name);
     const relative = prefix ? `${prefix}/${name}` : name;
-    if (relative === 'RELEASE.json' || relative === 'SOURCE-MANIFEST.json' || relative.startsWith('node_modules/')) continue;
+    if (relative === 'RELEASE.json' || relative === 'SOURCE-MANIFEST.json' || relative === 'DEPENDENCY-MANIFEST.tsv' || relative.startsWith('node_modules/')) continue;
     const item = fs.lstatSync(absolute);
     if (item.isDirectory()) walk(absolute, relative);
     else if (item.isFile()) entries.push({ mode: (item.mode & 0o555).toString(8).padStart(4, '0'), path: relative, sha256: crypto.createHash('sha256').update(fs.readFileSync(absolute)).digest('hex') });
     else if (item.isSymbolicLink()) {
+      let targetReal;
+      try { targetReal = real(absolute); } catch { process.exit(14); }
+      if (!(targetReal === releaseReal || targetReal.startsWith(`${releaseReal}${path.sep}`))) process.exit(15);
       const target = fs.readlinkSync(absolute);
       entries.push({ mode: '0000', path: relative, sha256: crypto.createHash('sha256').update(target).digest('hex'), target });
     }
@@ -66,6 +70,31 @@ let manifestRaw;
 try { manifestRaw = fs.readFileSync(manifestPath); } catch { process.exit(12); }
 const expectedManifest = Buffer.from(JSON.stringify({ entries, version: 1 }) + '\n');
 if (!manifestRaw.equals(expectedManifest) || crypto.createHash('sha256').update(manifestRaw).digest('hex') !== metadata.source_manifest_sha256) process.exit(13);
+if (!/^[0-9a-f]{64}$/.test(String(metadata.dependency_tree_manifest_sha256 || ''))) process.exit(16);
+const dependencyRoot = path.join(releasePath, 'node_modules');
+if (!fs.existsSync(dependencyRoot) || fs.lstatSync(dependencyRoot).isSymbolicLink()) process.exit(19);
+const dependencyReal = real(dependencyRoot);
+const dependencyLines = [];
+const walkDependencies = (directory, prefix = 'node_modules') => {
+  for (const name of fs.readdirSync(directory).sort()) {
+    const absolute = path.join(directory, name);
+    const relative = `${prefix}/${name}`;
+    const item = fs.lstatSync(absolute);
+    if (item.isDirectory()) walkDependencies(absolute, relative);
+    else if (item.isFile()) dependencyLines.push(`file\t${relative}\t${(item.mode & 0o555).toString(8)}\t${crypto.createHash('sha256').update(fs.readFileSync(absolute)).digest('hex')}\t-`);
+    else if (item.isSymbolicLink()) {
+      let target;
+      try { target = fs.realpathSync.native(absolute); } catch { process.exit(20); }
+      if (!(target === dependencyReal || target.startsWith(`${dependencyReal}${path.sep}`))) process.exit(21);
+      dependencyLines.push(`symlink\t${relative}\t${(fs.statSync(absolute).mode & 0o555).toString(8)}\t-\t${fs.readlinkSync(absolute)}`);
+    }
+  }
+};
+walkDependencies(dependencyRoot);
+let dependencyManifest;
+try { dependencyManifest = fs.readFileSync(path.join(releasePath, 'DEPENDENCY-MANIFEST.tsv')); } catch { process.exit(22); }
+const expectedDependencies = Buffer.from(dependencyLines.length ? `${dependencyLines.join('\n')}\n` : '');
+if (!dependencyManifest.equals(expectedDependencies) || crypto.createHash('sha256').update(dependencyManifest).digest('hex') !== metadata.dependency_tree_manifest_sha256) process.exit(23);
 process.stdout.write(`${metadata.release_id}\t${metadata.sha}`);
 NODE
 )" || die "sealed release metadata is invalid"

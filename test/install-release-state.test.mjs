@@ -55,6 +55,7 @@ test("agent-economy installer reads the sealed namespaced current release and pr
   cpSync(join(REPO_ROOT, "install.sh"), join(source, "install.sh"));
   mkdirSync(join(release, "skills"), { recursive: true });
   mkdirSync(join(release, "identity"), { recursive: true });
+  mkdirSync(join(release, "node_modules"), { recursive: true });
   cpSync(join(source, "install.sh"), join(release, "install.sh"));
   writeFileSync(join(release, ".env.example"), "FUEL=fixture\n");
   writeFileSync(join(release, "identity", "genesis.md"), "fixture genesis\n");
@@ -67,13 +68,15 @@ test("agent-economy installer reads the sealed namespaced current release and pr
   ].map(([path, body]) => ({ mode: "0444", path, sha256: createHash("sha256").update(body).digest("hex") }));
   const sourceManifestBody = JSON.stringify({ entries: sourceEntries, version: 1 }) + "\n";
   writeFileSync(join(release, "SOURCE-MANIFEST.json"), sourceManifestBody);
+  writeFileSync(join(release, "DEPENDENCY-MANIFEST.tsv"), "");
   writeFileSync(join(release, "RELEASE.json"), JSON.stringify({
     sha: "a1".repeat(20), git_commit: "a1".repeat(20), release_id: releaseId, release_root: releaseRoot,
     namespace: "life-manager", current: join(releaseRoot, "current"), previous: join(releaseRoot, "previous"),
     source_manifest_sha256: createHash("sha256").update(sourceManifestBody).digest("hex"),
+    dependency_tree_manifest_sha256: createHash("sha256").update("").digest("hex"),
   }) + "\n");
-  for (const path of [release, join(release, "skills"), join(release, "identity")]) chmodSync(path, 0o555);
-  for (const path of [join(release, "install.sh"), join(release, ".env.example"), join(release, "identity", "genesis.md"), join(release, "skills", "registry.json"), join(release, "SOURCE-MANIFEST.json"), join(release, "RELEASE.json")]) chmodSync(path, 0o444);
+  for (const path of [release, join(release, "skills"), join(release, "identity"), join(release, "node_modules")]) chmodSync(path, 0o555);
+  for (const path of [join(release, "install.sh"), join(release, ".env.example"), join(release, "identity", "genesis.md"), join(release, "skills", "registry.json"), join(release, "SOURCE-MANIFEST.json"), join(release, "DEPENDENCY-MANIFEST.tsv"), join(release, "RELEASE.json")]) chmodSync(path, 0o444);
   mkdirSync(releaseRoot, { recursive: true });
   symlinkSync(release, join(releaseRoot, "current"));
   try {

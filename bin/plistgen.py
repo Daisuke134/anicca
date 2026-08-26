@@ -100,9 +100,10 @@ def _assert_sealed(release: Path) -> None:
 
 def _source_manifest_payload(release: Path) -> dict:
     entries = []
+    release_real = normalized(release)
     for path in sorted(release.rglob("*")):
         relative = path.relative_to(release).as_posix()
-        if relative in {"RELEASE.json", "SOURCE-MANIFEST.json"} or relative.startswith("node_modules/"):
+        if relative in {"RELEASE.json", "SOURCE-MANIFEST.json", "DEPENDENCY-MANIFEST.tsv"} or relative.startswith("node_modules/"):
             continue
         item = path.lstat()
         if stat.S_ISREG(item.st_mode):
@@ -113,6 +114,9 @@ def _source_manifest_payload(release: Path) -> dict:
             })
         elif stat.S_ISLNK(item.st_mode):
             target = os.readlink(path)
+            target_real = normalized(path)
+            if not _is_descendant(target_real, release_real):
+                raise SystemExit(f"agent-economy source symlink escapes release: {relative}")
             entries.append({
                 "path": relative,
                 "mode": "0000",
@@ -136,6 +140,39 @@ def _assert_source_manifest(release: Path, metadata: dict) -> None:
         raise SystemExit("agent-economy source manifest does not match the sealed release")
     if manifest != json.loads(encoded.decode("utf-8")):
         raise SystemExit("agent-economy source manifest entries are invalid")
+
+
+def _dependency_manifest_bytes(release: Path) -> bytes:
+    node_modules = release / "node_modules"
+    if not node_modules.is_dir() or node_modules.is_symlink():
+        raise SystemExit("agent-economy release node_modules is missing")
+    node_modules_real = normalized(node_modules)
+    lines = []
+    for path in sorted(node_modules.rglob("*"), key=lambda item: item.relative_to(release).as_posix()):
+        relative = path.relative_to(release).as_posix()
+        item = path.lstat()
+        if stat.S_ISLNK(item.st_mode):
+            target_real = normalized(path)
+            if not _is_descendant(target_real, node_modules_real):
+                raise SystemExit("agent-economy dependency symlink escapes node_modules")
+            lines.append(f"symlink\t{relative}\t{format(stat.S_IMODE(path.stat().st_mode) & 0o555, 'o')}\t-\t{os.readlink(path)}")
+        elif stat.S_ISREG(item.st_mode):
+            lines.append(f"file\t{relative}\t{format(stat.S_IMODE(item.st_mode) & 0o555, 'o')}\t{hashlib.sha256(path.read_bytes()).hexdigest()}\t-")
+    return ("\n".join(lines) + ("\n" if lines else "")).encode()
+
+
+def _assert_dependency_manifest(release: Path, metadata: dict) -> None:
+    manifest_path = release / "DEPENDENCY-MANIFEST.tsv"
+    if not manifest_path.is_file() or manifest_path.is_symlink():
+        raise SystemExit(f"agent-economy dependency manifest is missing: {manifest_path}")
+    try:
+        raw = manifest_path.read_bytes()
+    except OSError as error:
+        raise SystemExit("agent-economy dependency manifest cannot be read") from error
+    expected = _dependency_manifest_bytes(release)
+    digest = str(metadata.get("dependency_tree_manifest_sha256", ""))
+    if raw != expected or hashlib.sha256(raw).hexdigest() != digest:
+        raise SystemExit("agent-economy dependency manifest does not match the sealed release")
 
 
 def _release_metadata(current: Path, release_root: Path) -> tuple[Path, dict]:
@@ -179,7 +216,10 @@ def _release_metadata(current: Path, release_root: Path) -> tuple[Path, dict]:
         raise SystemExit("agent-economy RELEASE.json namespace is not life-manager")
     if not re.fullmatch(r"[0-9a-f]{64}", str(metadata.get("source_manifest_sha256", ""))):
         raise SystemExit("agent-economy RELEASE.json source manifest digest is missing")
+    if not re.fullmatch(r"[0-9a-f]{64}", str(metadata.get("dependency_tree_manifest_sha256", ""))):
+        raise SystemExit("agent-economy RELEASE.json dependency manifest digest is missing")
     _assert_source_manifest(release, metadata)
+    _assert_dependency_manifest(release, metadata)
     _assert_sealed(release)
     return release, metadata
 

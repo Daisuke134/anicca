@@ -94,12 +94,19 @@ function writeSealedAgentEconomyRelease(root, {
   const releaseRoot = join(root, "home", "loops", "life-manager");
   const release = join(releaseRoot, "releases", id);
   mkdirSync(join(release, "skills", "agent-economy"), { recursive: true });
+  mkdirSync(join(release, "node_modules"), { recursive: true });
   const launchPath = join(release, "skills", "agent-economy", "launch.sh");
   const launchBody = "#!/bin/bash\n";
   writeFileSync(launchPath, launchBody);
+  symlinkSync("launch.sh", join(release, "skills", "agent-economy", "internal-link.sh"));
   // Match cutter's sorted-key compact JSON exactly.
-  const sourceManifestBody = `{"entries":[{"mode":"0555","path":"skills/agent-economy/launch.sh","sha256":"${createHash("sha256").update(launchBody).digest("hex")}"}],"version":1}\n`;
+  const sourceEntries = [
+    { mode: "0555", path: "skills/agent-economy/launch.sh", sha256: createHash("sha256").update(launchBody).digest("hex") },
+    { mode: "0000", path: "skills/agent-economy/internal-link.sh", sha256: createHash("sha256").update("launch.sh").digest("hex"), target: "launch.sh" },
+  ].sort((a, b) => a.path.localeCompare(b.path));
+  const sourceManifestBody = `${JSON.stringify({ entries: sourceEntries, version: 1 })}\n`;
   writeFileSync(join(release, "SOURCE-MANIFEST.json"), sourceManifestBody);
+  writeFileSync(join(release, "DEPENDENCY-MANIFEST.tsv"), "");
   writeFileSync(join(release, "RELEASE.json"), JSON.stringify({
     sha, git_commit: sha,
     release_id: id,
@@ -108,10 +115,13 @@ function writeSealedAgentEconomyRelease(root, {
     current: join(releaseRoot, "current"),
     previous: join(releaseRoot, "previous"),
     source_manifest_sha256: createHash("sha256").update(sourceManifestBody).digest("hex"),
+    dependency_tree_manifest_sha256: createHash("sha256").update("").digest("hex"),
   }) + "\n");
   chmodSync(release, 0o555);
   chmodSync(join(release, "RELEASE.json"), 0o444);
   chmodSync(join(release, "SOURCE-MANIFEST.json"), 0o444);
+  chmodSync(join(release, "DEPENDENCY-MANIFEST.tsv"), 0o444);
+  chmodSync(join(release, "node_modules"), 0o555);
   chmodSync(join(release, "skills"), 0o555);
   chmodSync(join(release, "skills", "agent-economy"), 0o555);
   chmodSync(join(release, "skills", "agent-economy", "launch.sh"), 0o555);
@@ -240,6 +250,53 @@ test("agent-economy plist rejects a modified source file despite a sealed mode",
     assert.notEqual(generated.status, 0);
     assert.match(`${generated.stdout}\n${generated.stderr}`, /manifest/i);
     assert.equal(existsSync(out), false);
+  } finally {
+    spawnSync("chmod", ["-R", "u+w", root], { encoding: "utf8" });
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("strict release validation accepts internal source symlinks and rejects release escapes", () => {
+  const root = mkdtempSync(join(tmpdir(), "agent-economy-symlink-"));
+  const home = join(root, "home");
+  const out = join(root, "launchagents");
+  const { release, releaseRoot } = writeSealedAgentEconomyRelease(root);
+  try {
+    const internal = join(release, "skills", "agent-economy", "internal-link.sh");
+    assert.equal(lstatSync(internal).isSymbolicLink(), true);
+    const ok = spawnSync("python3", [
+      join(REPO_ROOT, "bin", "plistgen.py"), "--loops-dir", join(REPO_ROOT, "loops"),
+      "--out-dir", out, "--home", home, "--only", "agent-economy",
+    ], { cwd: REPO_ROOT, encoding: "utf8" });
+    assert.equal(ok.status, 0, `${ok.stdout}\n${ok.stderr}`);
+    chmodSync(join(release, "skills", "agent-economy"), 0o755);
+    rmSync(internal, { force: true });
+    symlinkSync("/etc/passwd", internal);
+    const manifestPath = join(release, "SOURCE-MANIFEST.json");
+    const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+    const entry = manifest.entries.find((item) => item.path === "skills/agent-economy/internal-link.sh");
+    entry.target = "/etc/passwd";
+    entry.sha256 = createHash("sha256").update("/etc/passwd").digest("hex");
+    const body = `${JSON.stringify(manifest)}\n`;
+    chmodSync(release, 0o755);
+    chmodSync(manifestPath, 0o644);
+    writeFileSync(manifestPath, body);
+    const metadataPath = join(release, "RELEASE.json");
+    const metadata = JSON.parse(readFileSync(metadataPath, "utf8"));
+    metadata.source_manifest_sha256 = createHash("sha256").update(body).digest("hex");
+    chmodSync(metadataPath, 0o644);
+    writeFileSync(metadataPath, JSON.stringify(metadata) + "\n");
+    chmodSync(manifestPath, 0o444);
+    chmodSync(metadataPath, 0o444);
+    chmodSync(release, 0o555);
+    chmodSync(join(release, "skills", "agent-economy"), 0o555);
+    const bad = spawnSync("python3", [
+      join(REPO_ROOT, "bin", "plistgen.py"), "--loops-dir", join(REPO_ROOT, "loops"),
+      "--out-dir", join(root, "launchagents-bad"), "--home", home, "--only", "agent-economy",
+    ], { cwd: REPO_ROOT, encoding: "utf8" });
+    assert.notEqual(bad.status, 0);
+    assert.match(`${bad.stdout}\n${bad.stderr}`, /symlink|escap/i);
+    assert.equal(readlinkSync(join(releaseRoot, "current")), release);
   } finally {
     spawnSync("chmod", ["-R", "u+w", root], { encoding: "utf8" });
     rmSync(root, { recursive: true, force: true });
@@ -401,6 +458,22 @@ test("contract-only: release cutter installs locked dependencies in the release 
   assert.equal(lock.status, 0, `${lock.stdout}\n${lock.stderr}`);
   mkdirSync(join(repo, "runtime", "compute-proxy"), { recursive: true });
   writeFileSync(join(repo, "runtime", "compute-proxy", "viem-probe.mjs"), 'import { marker } from "viem";\nconsole.log(marker);\n');
+  mkdirSync(join(repo, "loops", "agent-economy"), { recursive: true });
+  writeFileSync(join(repo, "loops", "agent-economy", "loop.toml"), [
+    'name = "agent-economy"',
+    'state_dir = "~/loops/agent-economy"',
+    'release_root = "~/loops/life-manager"',
+    '[env]',
+    'ANICCA_REPO = "~/loops/life-manager/current"',
+    'ANICCA_HOME = "~/loops/agent-economy"',
+    '[jobs.daemon]',
+    'program = "skills/agent-economy/launch.sh"',
+    'label = "ai.anicca.agent-economy-loop"',
+    'keep_alive = true',
+    'run_at_load = true',
+  ].join("\n") + "\n");
+  mkdirSync(join(repo, "skills", "agent-economy"), { recursive: true });
+  writeFileSync(join(repo, "skills", "agent-economy", "launch.sh"), "#!/bin/bash\nexit 0\n");
 
   const git = (...args) => spawnSync("git", ["-C", repo, ...args], { encoding: "utf8" });
   try {
@@ -437,6 +510,8 @@ test("contract-only: release cutter installs locked dependencies in the release 
     const sourceManifest = JSON.parse(readFileSync(join(releaseRoot, "SOURCE-MANIFEST.json"), "utf8"));
     assert.equal(sourceManifest.entries.some((entry) => entry.path.startsWith("node_modules/")), false);
     assert.equal(sourceManifest.entries.some((entry) => entry.path === "RELEASE.json" || entry.path === "SOURCE-MANIFEST.json"), false);
+    assert.equal(metadata.dependency_tree_manifest_sha256, sha256File(join(releaseRoot, "DEPENDENCY-MANIFEST.tsv")));
+    assert.match(readFileSync(join(releaseRoot, "DEPENDENCY-MANIFEST.tsv"), "utf8"), /node_modules\/viem/u);
     assert.match(metadata.runtime_versions.npm, /^\d+(?:\.\d+){2}/u);
     assert.match(metadata.runtime_versions.node, /^v\d+/u);
     assertSealedRelease(releaseRoot);
@@ -451,7 +526,20 @@ test("contract-only: release cutter installs locked dependencies in the release 
     assert.equal(probe.status, 0, probe.stderr);
     assert.equal(probe.stdout.trim(), "release-viem");
 
+    const dependencyFile = join(releaseRoot, "node_modules", "viem", "index.mjs");
+    chmodSync(dependencyFile, 0o644);
+    writeFileSync(dependencyFile, 'export const marker = "tampered";\n');
+    chmodSync(dependencyFile, 0o444);
+    const dependencyCheck = spawnSync("python3", [
+      join(REPO_ROOT, "bin", "plistgen.py"), "--loops-dir", join(releaseRoot, "loops"),
+      "--out-dir", join(root, "plist-dependency-mismatch"), "--home", root,
+      "--only", "agent-economy",
+    ], { cwd: REPO_ROOT, encoding: "utf8" });
+    assert.notEqual(dependencyCheck.status, 0);
+    assert.match(`${dependencyCheck.stdout}\n${dependencyCheck.stderr}`, /dependenc/i);
+
     const firstCurrent = readlinkSync(join(loops, "current"));
+    rmSync(join(loops, "current"), { force: true });
     const failedCut = spawnSync("bash", [join(repo, "bin", "cut-loop-release.sh"), "HEAD"], {
       cwd: repo,
       encoding: "utf8",
@@ -459,12 +547,13 @@ test("contract-only: release cutter installs locked dependencies in the release 
         ...process.env,
         HOME: root,
         LOOPS_ROOT: loops,
-        LOOPS_TEST_FAIL_CURRENT_SWAP: "1",
+        LOOPS_TEST_FAIL_POST_CURRENT_READBACK: "1",
       },
     });
     assert.notEqual(failedCut.status, 0);
-    assert.equal(readlinkSync(join(loops, "current")), firstCurrent);
+    assert.equal(existsSync(join(loops, "current")), false);
     assert.equal(existsSync(join(loops, "previous")), false);
+    symlinkSync(firstCurrent, join(loops, "current"));
 
     writeFileSync(join(repo, "release-marker.txt"), "second\n");
     assert.equal(git("add", "release-marker.txt").status, 0);
@@ -485,6 +574,14 @@ test("contract-only: release cutter installs locked dependencies in the release 
     const previous = readlinkSync(join(loops, "previous"));
     assert.notEqual(secondCurrent, previous);
     assert.equal(previous, releaseRoot);
+    const failedRollback = spawnSync("bash", [join(repo, "bin", "cut-loop-release.sh"), "--rollback"], {
+      cwd: repo,
+      encoding: "utf8",
+      env: { ...process.env, HOME: root, LOOPS_ROOT: loops, LOOPS_TEST_FAIL_ROLLBACK_READBACK: "1" },
+    });
+    assert.notEqual(failedRollback.status, 0);
+    assert.equal(readlinkSync(join(loops, "current")), secondCurrent);
+    assert.equal(readlinkSync(join(loops, "previous")), previous);
     const rollback = spawnSync("bash", [join(repo, "bin", "cut-loop-release.sh"), "--rollback"], {
       cwd: repo,
       encoding: "utf8",

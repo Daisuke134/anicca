@@ -157,6 +157,37 @@ seller/register boot fixture 自体は 6/6 PASS。
 `ensure-wallet` と TaskMarket の既存 module load failure。対象 shell/JS syntax、`py_compile`、
 `git diff --check` は全て exit 0。live launchctl/install/provider mutation は行っていない。
 
+## Rethink Fix Round3 (2026-08-27)
+
+Rollback は current/previous の両方を exact expected target として post-validate し、片方でも
+失敗した場合は元の snapshot を戻して復元自体も validate してから non-zero を返す。通常 cut は
+旧 current/previous の存在を明示的に snapshot し、post-current-swap readback failure 時に旧 current
+が無ければ current を削除し、旧 previous の有無も同じ形で復元する。
+
+依存 integrity は Task 2 の既存 `dependency_digest` と同じ TSV 行形式を
+`DEPENDENCY-MANIFEST.tsv` として保存し、path/mode/content hash/symlink target と node_modules
+containment を strict plist/install/launch で再計算する。source manifest は generated dependency
+manifest を除外し、source symlink は release 内 target のみ許可する（internal symlink は受理、
+absolute/relative escape は拒否）。
+
+Round3 focused GREEN:
+
+```text
+node --test test/agent-economy-control-plane.test.mjs test/install-release-state.test.mjs
+```
+
+結果: 18 tests / pass 18 / fail 0。dependency manifest 改変、internal/escape symlink、旧 current
+なしの post-swap failure 復元、rollback 両ポインタ failure 復元、反復 rollback を実測した。
+
+```text
+npm run test:agent-economy
+```
+
+結果: 84 tests / pass 82 / fail 2。失敗は worktree に `viem` が無いことによる
+`runtime/compute-proxy/__tests__/ensure-wallet.test.mjs` と TaskMarket の module load failure。
+対象 shell/JS syntax、`py_compile`、`git diff --check` は全て exit 0。live launchctl/install/provider
+mutation は行っていない。
+
 ## Rethink commit
 
 この追補を前回 commit の上に新規 commit として記録する（amend/push は行わない）。
