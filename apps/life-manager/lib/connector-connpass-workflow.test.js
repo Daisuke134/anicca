@@ -57,7 +57,7 @@ test("Connpass official API discovery reads 28 Tokyo dates without navigating pr
           id: 901, title: "Tokyo AI Builders", url: "https://tokyo-ai.connpass.com/event/901/",
           started_at: "2026-08-10T19:00:00+09:00", ended_at: "2026-08-10T21:00:00+09:00",
           open_status: "preopen", event_type: "participation", limit: 100, accepted: 20, waiting: 0,
-          description: "AI builders meetup", place: "Shibuya", address: "Tokyo",
+          description: `AI builders meetup ${"x".repeat(9_000)}`, place: "Shibuya", address: "Tokyo",
         }, {
           id: 902, title: "Already Started", url: "https://tokyo-ai.connpass.com/event/902/",
           started_at: "2026-08-10T19:00:00+09:00", ended_at: "2026-08-10T21:00:00+09:00",
@@ -78,6 +78,8 @@ test("Connpass official API discovery reads 28 Tokyo dates without navigating pr
   assert.deepEqual([apiCalls[0].ymd[0], apiCalls[0].ymd.at(-1)], ["20260807", "20260903"]);
   assert.deepEqual(result.map((candidate) => candidate.event_ref), ["connpass-event://event/901"]);
   assert.equal(result[0].discovery_source, "official_api_v2");
+  assert.equal(result[0].description.length, 8_000);
+  assert.match(result[0].description, /^AI builders meetup /);
   assert.deepEqual({
     participation_slot_status: result[0].participation_slot_status,
     lightning_talk_status: result[0].lightning_talk_status,

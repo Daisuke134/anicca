@@ -105,7 +105,8 @@ function createApiDiscovery({ now, apiClient }) {
         event_ref: `connpass-event://event/${id}`,
         canonical_url: String(event && event.url || ""),
         title: String(event && event.title || "").trim(),
-        description: String(event && event.description || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim(),
+        description: String(event && event.description || "").replace(/<[^>]*>/g, " ")
+          .replace(/\s+/g, " ").trim().slice(0, 8_000),
         starts_at: String(event && event.started_at || ""),
         ends_at: String(event && event.ended_at || ""),
         venue_name: String(event && event.place || "").trim(),
