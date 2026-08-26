@@ -243,6 +243,7 @@ test("production contract runs every minute and maximizes real applications", ()
   assert.match(runtimeScript, /record-application\.py/);
   assert.match(runtimeScript, /MIN_FREE_KIB=\$\(\(1536 \* 1024\)\)/);
   assert.match(runtimeScript, /disk-cleanup/);
+  assert.match(runtimeScript, /disk-cleanup[\s\S]*?<\/dev\/null >\/dev\/null 2>&1 &/);
   assert.match(runtimeScript, /exit 75/);
   assert.match(dailyPrompt, /every visible question paired with the final rendered answer/);
   assert.match(dailyPrompt, /Never append `submitted_verified` yourself/);

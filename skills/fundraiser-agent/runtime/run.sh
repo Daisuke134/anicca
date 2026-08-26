@@ -29,7 +29,10 @@ if [ -z "$FREE_KIB" ] || ! [[ "$FREE_KIB" =~ ^[0-9]+$ ]]; then
   exit 2
 fi
 if [ "$FREE_KIB" -lt "$MIN_FREE_KIB" ]; then
-  /bin/launchctl kickstart "gui/$(id -u)/ai.anicca.life-manager-disk-cleanup" >/dev/null 2>&1 || true
+  # kickstart can synchronously wait for launchd's 300-second throttle. Detach it
+  # so this one-minute fundraiser label releases immediately for the next wake.
+  /bin/launchctl kickstart "gui/$(id -u)/ai.anicca.life-manager-disk-cleanup" \
+    </dev/null >/dev/null 2>&1 &
   echo "fundraiser: deferred low disk available_kib=$FREE_KIB required_kib=$MIN_FREE_KIB" >>"$LOG"
   exit 75
 fi
