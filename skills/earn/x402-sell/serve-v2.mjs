@@ -125,8 +125,8 @@ export function decodeSettlementReadback(headerValue) {
   // x402 SettleResponse.amount is an atomic USDC quantity.  Preserve it as amount_atomic and carry
   // decimals; never reinterpret a response like "3000" as 3000 major USDC or use the tx id as a
   // provider-receipt bypass.  The shared adapter still requires a trusted chain verifier result.
-  if (projection.amount_atomic === undefined && projection.amount !== undefined) {
-    projection.amount_atomic = projection.amount;
+  if (projection.amount !== undefined) {
+    if (projection.amount_atomic === undefined) projection.amount_atomic = projection.amount;
     delete projection.amount;
   }
   if (projection.decimals === undefined && String(projection.currency || projection.asset || "").toUpperCase() === "USDC") {
