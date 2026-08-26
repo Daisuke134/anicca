@@ -30,7 +30,7 @@ flowchart LR
 4. Luna reads and answers an unseen rendered form directly from verified Life Manager context.
 5. The Submit effect is claimed exactly once using `organization + program + cohort/window + account`.
 6. A fresh UI or matching provider-mail readback creates the ApplicationReceipt.
-7. The next daily slot cannot reapply to the same receipt identity; `submit_unknown` is never retried automatically.
+7. The next 30-minute slot cannot reapply to the same receipt identity; `submit_unknown` is never retried automatically.
 8. Confirmation, rejection, waitlist, interview, offer, and funded status advance the same receipt lineage.
 9. Interview confirmation creates a Calendar event and interview brief.
 10. CAPTCHA, founder video, interview attendance, KYC, binding terms, banking, and funds movement stop for the human.
@@ -64,7 +64,7 @@ MUST stay in Life Manager's existing worker so the scheduler continues serving o
 | 6 | Ambiguous Submit is not retried | `fundraiser-loop.test.mjs` submit-unknown case | OK |
 | 7 | Mail advances the original receipt | `inbox-loop.test.mjs` | OK |
 | 8 | Human-only actions stop before effect | `fundraiser-loop.test.mjs` human-gate cases | OK |
-| 9 | Natural 24/7 owner and live readback | `fundraiser-live-acceptance.md` | OK |
+| 9 | Natural 24/7 owner and live readback | `fundraiser-live-acceptance.md` | PARTIAL: manual live readback proven; unattended recurrence pending |
 
 | Item | Value |
 |---|---|
@@ -91,9 +91,99 @@ MUST stay in Life Manager's existing worker so the scheduler continues serving o
 ## 7. Implementation State
 
 - Task 0 predecessor audit and architecture selection: complete.
-- Task 1 continuous Luna behavior and canonical fundraising context: complete pending commit/push.
+- Task 1 continuous Luna behavior and canonical fundraising context: complete and pushed.
 - Native 30-minute scheduler claim and durable `fundraiser.acquire` enqueue: implemented and locally verified.
-- Worker/browser execution, application receipts, outcome tracking, and live acceptance: not implemented.
+- A production canary owner is loaded as `ai.anicca.fundraiser` with `StartInterval=1800` and
+  `RunAtLoad=true`. It invokes the provider-agnostic Fundraiser prompt, authenticated Web/X CDP,
+  Gmail, receipt ledger, and Telegram paths. This is an interim owner until the native Life Manager
+  runtime job hands work to the shared browser worker.
+- The live runner is measured as `gpt-5.6-luna` with high reasoning through the existing
+  `application-intent-planner` route. Silent fallback to Terra is a wiring failure.
+- Official live submissions currently proven by exact Gmail Sent readback:
+  - Samsung Catalyst Fund, San Jose pitch-deck intake.
+  - Cana, San Francisco AI-native SaaS investment inquiry.
+- A later live pass discovered and processed Hustle Fund, Forum Ventures, SherVentures, and
+  B Capital without adding provider-specific production code. Their current terminal states are
+  recorded in the runtime receipt ledger.
+- Outcome tracking from provider replies through interview, offer, funded, and Calendar creation is
+  not yet implemented.
+- One manual Luna wake is proven. A full unattended 30-minute recurrence after the last deployment,
+  with replay-zero and a new candidate continuing, remains unproven.
 
-The atomic file-level commands and checkboxes are the implementation SSOT in
-`docs/superpowers/plans/2026-08-26-life-manager-fundraiser-agent.md`.
+## 8. Current Operating Policy
+
+- Geography: Tokyo and the United States only, with San Francisco Bay Area first.
+- Format: prefer in-person programs where the founder can work with other founders. Base Batches is
+  an explicit virtual exception.
+- Priority order: Base Batches, Open Network Lab / Digital Garage, DelightX / Delight Ventures,
+  a16z Speedrun, then other deadline-near eligible Tokyo or United States programs.
+- Y Combinator is `hold_do_not_submit` until the founder explicitly releases it.
+- Kenya, Singapore, and every other geography are rejected even when an old receipt exists.
+- Ordinary missing narrative answers are inferred from canonical context. Missing identity, legal,
+  signature, consent, binding equity, attendance, visa, banking, KYC, or funds-movement authority is
+  never invented; that candidate is checkpointed and the pass continues.
+
+## 9. Current Candidate State and Blockers
+
+| Candidate | Current state | Blocking fact or next action |
+|---|---|---|
+| Samsung Catalyst Fund | submitted | Exact Gmail Sent receipt exists; track reply |
+| Cana | submitted | Exact Gmail Sent receipt exists; track reply |
+| Hustle Fund | retrying | Hidden duplicate Typeform input fault is repaired with generic visible CSS fill; verify live resubmission |
+| Forum Ventures Foundry | checkpoint | Official intake requires North America base; authorized context does not attest it |
+| Forum Ventures Pitch Us | checkpoint | City HQ was absent from scoped founder profile; infer Tokyo when the question is descriptive, but do not invent a legal headquarters |
+| SherVentures | ineligible | Official page states a $500K+ ARR minimum; only approximately $1,000 founder-attested revenue is supported |
+| B Capital | retryable failure | Official email intake exists; local Gmail keyring unwrap failed, so no provider delivery occurred |
+| Base Batches 004 | checkpoint | Required founder video is absent |
+| Open Network Lab | checkpoint | Separate participation, investment-discussion restrictions, and share agreement require founder authority |
+| DelightX | checkpoint | Six months in San Francisco, visa/housing/cost commitment, and $60K for 5% require founder authority |
+| JETRO GSAP StartX | checkpoint | Three-minute English pitch video, full participation, and terms acceptance require founder action |
+| Y Combinator | held | Explicitly do not submit yet |
+
+## 10. Open-source Boundary
+
+The public repository contains the general harness only:
+
+- `skills/fundraiser-agent/SKILL.md`: behavioral contract.
+- `skills/fundraiser-agent/prompts/daily.md`: provider-agnostic search/apply/report loop.
+- `skills/fundraiser-agent/runtime/run.sh`: bounded runtime entrypoint.
+- `skills/browser/scripts/cdp.py`: generic rendered-browser actions.
+- `.agents/startup-context.json` and generated `fundraising/application-kit/`: public startup facts and application assets.
+- Runtime receipts, credentials, private founder fields, authenticated browser state, and Telegram
+  secrets remain outside Git under local private state. The open-source harness reads only scoped
+  values at runtime and never copies them into repository artifacts or public evidence.
+
+```mermaid
+flowchart LR
+    T[30-minute Life Manager claim] --> L[Luna high]
+    C[Canonical startup context] --> L
+    P[Scoped private founder fields] --> L
+    L --> X[Web and authenticated X discovery]
+    X --> O[Official page verification]
+    O --> F[Generic rendered form or Gmail intake]
+    F --> E[Exactly-once application effect]
+    E --> R[Official UI or mail receipt]
+    R --> G[Private receipt ledger]
+    R --> TG[Real-time Telegram]
+    G --> T
+```
+
+## 11. Remaining Acceptance Work
+
+1. Let native `fundraiser.acquire` runtime jobs enqueue the existing shared browser worker using a
+   runtime source reference; remove the interim standalone owner only after equivalent live proof.
+2. Store application effects and reconciliation in the shared immutable runtime receipt contract,
+   including replay-zero for `submit_unknown`.
+3. Prove one unattended 30-minute recurrence after the final deployment: same identities are not
+   resubmitted and at least one new eligible identity continues through the queue.
+4. Complete three unrelated official live applications without a production-code change between
+   them; two are currently proven.
+5. Add Gmail reply reconciliation for confirmation, rejection, waitlist, interview, offer, and
+   funded, plus Calendar event and interview brief creation.
+6. Resolve retryable transport faults such as B Capital Gmail keyring unwrap without exposing
+   credentials, and verify Hustle Fund with the repaired generic visible-field action.
+7. Audit the public tree for secrets and private receipts, then record final live acceptance evidence.
+
+The historical file-level implementation breakdown remains in
+`docs/superpowers/plans/2026-08-26-life-manager-fundraiser-agent.md`; this spec's
+Implementation State and Remaining Acceptance Work are authoritative for current status.
