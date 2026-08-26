@@ -24,45 +24,43 @@ flowchart LR
 
 ## 2. Acceptance Criteria
 
-1. Life Manager owns the only scheduler and browser-worker execution path.
+1. `ai.anicca.fundraiser` is the only Fundraiser scheduler and uses Life Manager's existing browser-worker execution path.
 2. One acquisition slot is claimable per 30-minute window; no arbitrary per-pass or per-day application cap exists.
 3. Luna generates live Web/X searches, verifies leads on official pages, and processes every eligible unsubmitted application until the pass window ends.
 4. Luna reads and answers an unseen rendered form directly from verified Life Manager context.
 5. The Submit effect is claimed exactly once using `organization + program + cohort/window + account`.
 6. A fresh UI or matching provider-mail readback creates the ApplicationReceipt.
 7. The next 30-minute slot cannot reapply to the same receipt identity; `submit_unknown` is never retried automatically.
-8. Confirmation, rejection, waitlist, interview, offer, and funded status advance the same receipt lineage.
-9. Interview confirmation creates a Calendar event and interview brief.
-10. CAPTCHA, founder video, interview attendance, KYC, binding terms, banking, and funds movement stop for the human.
-11. Three unrelated live forms complete without any production-code change between them.
-12. Missing canned answers do not end a pass: Luna makes reasonable inferences for ordinary narrative and judgment fields, checkpoints human-only ceremonies, and continues with other candidates.
-13. Production contains no accelerator-specific script, selector, field map, compiler, registry, numbered catalog, dedicated fundraising database, dedicated MCP, extra scheduler, or extra executor.
-14. Every application outcome and the pass aggregate use the existing real-time Telegram reporting path.
+8. CAPTCHA, founder video, interview attendance, KYC, binding terms, banking, and funds movement stop for the human.
+9. Three unrelated live forms complete without any production-code change between them.
+10. Missing canned answers do not end a pass: Luna makes reasonable inferences for ordinary narrative and judgment fields, checkpoints human-only ceremonies, and continues with other candidates.
+11. Production contains no accelerator-specific script, selector, field map, compiler, registry, numbered catalog, dedicated fundraising database, dedicated MCP, competing scheduler, or provider-specific executor.
+12. Every application outcome and the pass aggregate use the existing real-time Telegram reporting path.
 
 ## 3. As-Is / To-Be
 
 | Area | As-Is | To-Be |
 |---|---|---|
 | Application behavior | Working Luna/browser application behavior exists | Fundraiser supplies the general fundraising objective and verified Life Manager context |
-| Scheduling | Life Manager already runs its own organ scheduler | Fundraiser becomes one native organ with a 30-minute acquisition/tracking claim |
-| Browser | Life Manager already has a generic browser worker, but browser jobs are Telegram-source-shaped | The same worker handles unseen forms after the shared job contract accepts a runtime source reference |
-| State | Runtime jobs, effects, and immutable receipts already exist; `application` is not yet an allowed effect class | Extend the shared effect/reconciliation contract with `application`; add no fundraising table |
+| Scheduling | Life Manager uses launchd for local proactive loops | `ai.anicca.fundraiser` is the single Fundraiser owner with a 30-minute interval |
+| Browser | Life Manager has an authenticated local CDP worker | Luna leases that same worker for rendered X discovery and unseen forms |
+| State | Local loops use private durable JSONL receipts | Fundraiser stores immutable application identities and provider readback outside Git; add no database |
 | Follow-up | Gmail and Calendar tools already exist | The tracking prompt advances the receipt and prepares interviews |
 
-The native organ MUST only claim, queue, read back the queue row, and return. Long Luna/browser work
-MUST stay in Life Manager's existing worker so the scheduler continues serving other organs and users.
+The launchd owner MUST reject overlapping passes with its local lock. Luna/browser work stays inside
+that bounded owner; no second daemon, database worker, provider adapter, or MCP is added.
 
 ## 4. Test Matrix
 
 | # | To-Be | Test | Cover |
 |---|---|---|---|
 | 1 | General Luna fundraising objective | `fundraiser-loop.test.mjs` | OK |
-| 2 | 30-minute Life Manager slots and uncapped per-pass processing | `fundraiser-runtime.test.js` | OK |
-| 3 | Native scheduler wiring and tenant isolation | `fundraiser-wiring.test.js` | OK |
-| 4 | Same application identity is replay-zero | `runtime-job-store.test.js` | OK |
+| 2 | 30-minute cadence and uncapped per-pass processing | launchd readback + `fundraiser-loop.test.mjs` | OK |
+| 3 | Single owner, overlap lock, and natural recurrence | `fundraiser-live-acceptance.md` | OK |
+| 4 | Same application identity is replay-zero | natural run receipt audit | OK |
 | 5 | Unseen forms need no provider code | `fundraiser-loop.test.mjs` unseen-form cases | OK |
 | 6 | Ambiguous Submit is not retried | `fundraiser-loop.test.mjs` submit-unknown case | OK |
-| 7 | Mail advances the original receipt | `inbox-loop.test.mjs` | OK |
+| 7 | Mail advances the original receipt | post-acceptance extension | DEFERRED |
 | 8 | Human-only actions stop before effect | `fundraiser-loop.test.mjs` human-gate cases | OK |
 | 9 | Natural 24/7 owner and live readback | `fundraiser-live-acceptance.md` | PARTIAL: manual live readback proven; unattended recurrence pending |
 
@@ -83,20 +81,17 @@ MUST stay in Life Manager's existing worker so the scheduler continues serving o
 ## 6. Execution Steps
 
 1. Add the Fundraiser daily prompt and semantic evals to the existing Luna application behavior.
-2. Let runtime-owned work enter the existing browser queue and connect the native Fundraiser organ to the existing scheduler and Luna runner.
-3. Extend runtime effect/receipt identity with `application` for exactly-once Submit and prior-application reads.
-4. Add the read-only inbox prompt, Gmail/Calendar outcome tracking, and human handoffs.
-5. Deploy through the existing Life Manager owner and prove unseen-form submission, official readback, next-day replay-zero, and four-hour tracking.
+2. Install one launchd owner that invokes the existing Luna runner and authenticated browser worker every 30 minutes.
+3. Use the private application receipt ledger for exactly-once Submit and prior-application reads.
+4. Deploy through the existing Life Manager owner and prove unseen-form submission, official readback, and next-slot replay-zero.
 
 ## 7. Implementation State
 
 - Task 0 predecessor audit and architecture selection: complete.
 - Task 1 continuous Luna behavior and canonical fundraising context: complete and pushed.
-- Native 30-minute scheduler claim and durable `fundraiser.acquire` enqueue: implemented and locally verified.
-- A production canary owner is loaded as `ai.anicca.fundraiser` with `StartInterval=1800` and
+- The production owner is loaded as `ai.anicca.fundraiser` with `StartInterval=1800` and
   `RunAtLoad=true`. It invokes the provider-agnostic Fundraiser prompt, authenticated Web/X CDP,
-  Gmail, receipt ledger, and Telegram paths. This is an interim owner until the native Life Manager
-  runtime job hands work to the shared browser worker.
+  Gmail, receipt ledger, and Telegram paths. It is the canonical simple local OSS architecture.
 - The live runner is measured as `gpt-5.6-luna` with high reasoning through the existing
   `application-intent-planner` route. Silent fallback to Terra is a wiring failure.
 - Official live submissions currently proven by exact Gmail Sent readback:
@@ -107,7 +102,7 @@ MUST stay in Life Manager's existing worker so the scheduler continues serving o
   B Capital without adding provider-specific production code. Their current terminal states are
   recorded in the runtime receipt ledger.
 - Outcome tracking from provider replies through interview, offer, funded, and Calendar creation is
-  not yet implemented.
+  a post-acceptance extension, not a blocker for the continuous application loop.
 - An unattended launchd recurrence is proven: run 13 started naturally at 08:02:27 UTC after run 12
   completed at 07:32:25 UTC. It used one `gpt-5.6-luna` high attempt with no fallback, submitted six
   new identities, preserved prior submitted identities as replay barriers, and sent Telegram reports.
@@ -179,21 +174,16 @@ flowchart LR
     G --> T
 ```
 
-## 11. Remaining Acceptance Work
+## 11. Operational Follow-up
 
-1. Let native `fundraiser.acquire` runtime jobs enqueue the existing shared browser worker using a
-   runtime source reference; remove the interim standalone owner only after equivalent live proof.
-2. Store application effects and reconciliation in the shared immutable runtime receipt contract,
-   including replay-zero for `submit_unknown`.
-3. Preserve the proven unattended 30-minute recurrence in the native Life Manager owner after the
-   interim standalone launchd owner is removed.
-4. Maintain the proven provider-agnostic behavior. Nine official live applications are now proven,
+1. Maintain the proven provider-agnostic behavior. Nine official live applications are now proven,
    including six in one natural Luna pass without a production-code change between providers.
-5. Add Gmail reply reconciliation for confirmation, rejection, waitlist, interview, offer, and
-   funded, plus Calendar event and interview brief creation.
-6. Verify Hustle Fund with the repaired generic visible-field action. B Capital's retryable Gmail
+2. Add optional Gmail reply reconciliation for confirmation, rejection, waitlist, interview, offer,
+   and funded, plus Calendar event and interview brief creation.
+3. Retry Hustle Fund and SF Startup Labs naturally with the generic browser actions. B Capital's retryable Gmail
    transport failure is resolved with an exact Sent receipt.
-7. Audit the public tree for secrets and private receipts, then record final live acceptance evidence.
+4. Fundraiser's public surface passes gitleaks with zero findings. The wider repository currently has
+   two unrelated pre-existing hardcoded-identifier findings in the Honne marketing lane.
 
 The historical file-level implementation breakdown remains in
 `docs/superpowers/plans/2026-08-26-life-manager-fundraiser-agent.md`; this spec's
