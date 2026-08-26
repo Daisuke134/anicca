@@ -113,7 +113,7 @@ For every queued candidate until the execution window ends:
    blocker has changed or disappeared.
 2. Observe the rendered form and read visible labels, options, requiredness,
    validation, and existing values. The repository `cdp.py` supports only
-   `new|nav|eval|clickxy|insert|key|setfile|fillname|selectname|formstate|close`;
+   `new|nav|eval|clickxy|insert|key|setfile|fillname|fillcss|selectname|formstate|close`;
    it has no `screenshot` command. Do not probe unsupported commands. Use the
    rendered DOM plus `formstate` as the form observation evidence.
 3. Choose one next action from the fresh observation and full context, perform it
@@ -125,6 +125,10 @@ For every queued candidate until the execution window ends:
    They select the visible element
    when responsive pages contain hidden duplicates. Do not hand-build shell-to-JS
    quoting or retry the same failing mutation more than once.
+   For nameless React/Typeform inputs with hidden duplicates, use
+   `python3 skills/browser/scripts/cdp.py fillcss "$TARGET_ID" "$CSS_SELECTOR" "$VALUE"`;
+   it selects the visible matching element and dispatches framework-compatible
+   input/change events. Do not focus a broad `querySelector` and call `insert`.
    Attach files only with
    `python3 skills/browser/scripts/cdp.py setfile "$TARGET_ID" 'input[name="pitch_deck"]' fundraising/application-kit/deck.pdf`;
    there is no `upload` command.

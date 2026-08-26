@@ -206,6 +206,7 @@ test("production contract runs every 30 minutes and maximizes real applications"
   assert.match(dailyPrompt, /Do not reopen the same video, voice, binding-term/);
   assert.match(dailyPrompt, /never print, dump, enumerate, pretty-print/);
   assert.match(dailyPrompt, /assign the selected secret directly to `GOG_KEYRING_PASSWORD` without echoing it/);
+  assert.match(dailyPrompt, /cdp\.py fillcss/);
   assert.doesNotMatch(contract, /at most one/i);
   assert.doesNotMatch(contract, /per user-local day/i);
 });
