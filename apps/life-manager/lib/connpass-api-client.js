@@ -1,7 +1,7 @@
 "use strict";
 
 const API_URL = "https://connpass.com/api/v2/events/";
-const ARRAY_KEYS = new Set(["event_id", "keyword", "keyword_or", "ym", "ymd", "publish_ym", "publish_ymd", "nickname"]);
+const ARRAY_KEYS = new Set(["event_id", "keyword", "keyword_or", "ym", "ymd", "publish_ym", "publish_ymd", "nickname", "prefecture"]);
 const INTEGER_KEYS = new Set(["order", "start", "count"]);
 
 function unavailable() {
@@ -24,6 +24,7 @@ function normalizeQuery(input = {}) {
         if ((key === "ymd" || key === "publish_ymd") && !/^\d{8}$/.test(value)) throw invalidQuery();
         if ((key === "ym" || key === "publish_ym") && !/^\d{6}$/.test(value)) throw invalidQuery();
         if (key === "event_id" && !/^\d+$/.test(value)) throw invalidQuery();
+        if (key === "prefecture" && !/^[a-z]+$/.test(value)) throw invalidQuery();
         params.append(key, value);
       }
       continue;
@@ -104,13 +105,32 @@ function createConnpassApiClient(options = {}) {
     });
   }
 
-  return Object.freeze({
-    searchEvents(query) {
-      const next = queue.then(() => perform(query));
-      queue = next.catch(() => {});
-      return next;
-    },
-  });
+  function searchEvents(query) {
+    const next = queue.then(() => perform(query));
+    queue = next.catch(() => {});
+    return next;
+  }
+
+  async function searchTokyoInventory(input = {}) {
+    if (!input || typeof input !== "object" || Array.isArray(input)
+      || Object.keys(input).join(",") !== "ymd"
+      || !Array.isArray(input.ymd) || input.ymd.length < 1 || input.ymd.length > 28
+      || new Set(input.ymd).size !== input.ymd.length
+      || input.ymd.some((date) => !/^\d{8}$/.test(String(date)))) throw invalidQuery();
+    const events = [];
+    let start = 1;
+    for (let page = 0; page < 100; page += 1) {
+      const result = await searchEvents({ prefecture: ["tokyo"], ymd: input.ymd, start, count: 100, order: 2 });
+      events.push(...result.events);
+      const next = result.results_start + result.results_returned;
+      if (result.results_returned === 0 || next > result.results_available) return Object.freeze(events);
+      if (next <= start) throw unavailable();
+      start = next;
+    }
+    throw unavailable();
+  }
+
+  return Object.freeze({ searchEvents, searchTokyoInventory });
 }
 
 module.exports = {

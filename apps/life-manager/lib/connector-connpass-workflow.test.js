@@ -45,6 +45,33 @@ test("Connpass discovery includes Tokyo day zero through day twenty-seven and ex
   assert.deepEqual(result.map((candidate) => candidate.event_ref), ["connpass-event://event/106", "connpass-event://event/105"]);
 });
 
+test("Connpass official API discovery reads 28 Tokyo dates without navigating provider pages", async () => {
+  const apiCalls = [];
+  const page = { async goto() { assert.fail("official API discovery must not navigate connpass pages"); } };
+  const workflow = createConnpassScriptFirstWorkflow({
+    now: () => new Date("2026-08-07T08:30:00.000Z"),
+    connpassApiClient: {
+      async searchTokyoInventory(input) {
+        apiCalls.push(input);
+        return [{
+          id: 901, title: "Tokyo AI Builders", url: "https://tokyo-ai.connpass.com/event/901/",
+          started_at: "2026-08-10T19:00:00+09:00", ended_at: "2026-08-10T21:00:00+09:00",
+          open_status: "open", limit: 100, accepted: 20, waiting: 0,
+          description: "AI builders meetup", place: "Shibuya", address: "Tokyo",
+        }];
+      },
+    },
+  });
+
+  const result = await workflow.discoverCandidates({ page, calendar: [] });
+  assert.equal(apiCalls.length, 1);
+  assert.equal(apiCalls[0].ymd.length, 28);
+  assert.equal(new Set(apiCalls[0].ymd).size, 28);
+  assert.deepEqual([apiCalls[0].ymd[0], apiCalls[0].ymd.at(-1)], ["20260807", "20260903"]);
+  assert.deepEqual(result.map((candidate) => candidate.event_ref), ["connpass-event://event/901"]);
+  assert.equal(result[0].discovery_source, "official_api_v2");
+});
+
 test("Connpass recovery stably returns registered before available candidates", async () => {
   const registered = event(106, { registration_status: "registered" });
   const availableA = event(107);
@@ -213,6 +240,18 @@ test("Connpass direct action and parent readback use the supplied owned page", a
   });
   assert.deepEqual(await workflow.readProviderState({ page, candidate }), { status: "pending" });
   assert.equal(calls.every((entry) => entry[1] === page), true);
+});
+
+test("Connpass direct action is zero while provider automation permission is unverified", async () => {
+  let submits = 0;
+  const workflow = createConnpassScriptFirstWorkflow({
+    discoverOnPage: async () => [],
+    allowAutomatedSubmit: false,
+    async submitOnPage() { submits += 1; return { status: "registered" }; },
+  });
+  const result = await workflow.runDirectAction({ page: {}, candidate: event(990) });
+  assert.deepEqual(result, { status: "failed", safe_reason: "connpass_action_permission_required" });
+  assert.equal(submits, 0);
 });
 
 // Placeholder name only — never Dais's real name in a test fixture (see

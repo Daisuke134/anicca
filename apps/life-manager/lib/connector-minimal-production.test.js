@@ -158,6 +158,8 @@ test("official production factory threads the Peatix attendee profile's name int
       browserRail: { open() {}, navigate() {}, close() {} },
       calendarReader: { async readCalendarGaps() { return []; } },
       lumaWorkflow: emptyWorkflow,
+      connpassApiClient: { async searchTokyoInventory() { return []; } },
+      connpassAutomatedSubmitAllowed: true,
       actionCache: { async replay() {}, saveVerifiedRepair() {} },
       browserHarness: { async runFallback() {}, async performAction() {} },
       evidenceChain: { async completeEvidence() {} },
@@ -194,17 +196,14 @@ test("official production factory persists the Connpass discovery audit from its
       calendar: { ready() { return true; } },
       calendarReader: { async readCalendarGaps() { return []; } },
       lumaWorkflow: emptyWorkflow,
+      connpassApiClient: { async searchTokyoInventory() { return []; } },
       actionCache: { async replay() {}, saveVerifiedRepair() {} },
       browserHarness: { async runFallback() {}, async performAction() {} },
       evidenceChain: { async completeEvidence() {} },
       operations,
       now: () => new Date("2026-08-10T08:30:00.000Z"),
     });
-    const page = {
-      current: "",
-      async goto(url) { this.current = url; },
-      async evaluate() { return []; },
-    };
+    const page = { async goto() { assert.fail("official API discovery must not navigate"); } };
 
     assert.deepEqual(await dependencies.discoverCandidates("connpass", [], page), []);
     assert.deepEqual(audits, [{
@@ -396,6 +395,27 @@ test("production provider router continues from Luma to Connpass on the same pag
   assert.equal(cached.page, page);
   await cached.performAction({ purpose: "fill", method: "ax_fill", control: "control_1" }); assert.equal(performed.provider, "connpass");
   assert.equal(calls.filter(([name]) => name === "discover")[0][1].page, page);
+});
+
+test("production router blocks every Connpass submit path until provider permission is verified", async () => {
+  let effects = 0;
+  const workflow = {
+    async discoverCandidates() { return []; },
+    async runDirectAction() { effects += 1; return { status: "completed" }; },
+    async readProviderState() { return { status: "absent" }; },
+  };
+  const router = createProductionProviderRouter({
+    lumaWorkflow: workflow, connpassWorkflow: workflow,
+    connpassAutomatedSubmitAllowed: false,
+    actionCache: { async replay() { effects += 1; }, saveVerifiedRepair() {} },
+    browserHarness: { async runFallback() { effects += 1; } },
+    async performAction() { effects += 1; },
+  });
+  const input = { provider: "connpass", candidate: { event_ref: "connpass-event://event/1" }, page: {}, pageWebsocket: "ws://fixture", maxSteps: 1, expectedState: "registered_or_pending" };
+  assert.equal((await router.runCachedAction(input)).safe_reason, "connpass_action_permission_required");
+  assert.equal((await router.runDirectAction(input)).safe_reason, "connpass_action_permission_required");
+  assert.equal((await router.runAgentFallback(input)).safe_reason, "connpass_action_permission_required");
+  assert.equal(effects, 0);
 });
 
 test("production provider router submits only strong or moderate ranked candidates and fails closed when ranking fails", async () => {

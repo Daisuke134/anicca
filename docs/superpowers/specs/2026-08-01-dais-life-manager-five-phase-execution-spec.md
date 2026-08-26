@@ -112,10 +112,10 @@ Calendarを無関係なeventで埋めること自体を成果にしない。
 ##### D. connpass official-source boundary
 
 - [ ] **CG-21** private credential SSOTを値を出力せず確認し、connpass API keyがなければ公式individual/community API利用申請を行い、取得後ただちにrepo外SSOTへ0600で保存する。
-- [ ] **CG-22** `load-connector-env.test.js`へconnpass API key referenceのaccept/rejectとerror/logへの値非露出REDを追加する。
-- [ ] **CG-23** `load-connector-env.js`と`native-pass.js`からAPI keyをverified production dependencyへ一度だけ渡す。
-- [ ] **CG-24** `connpass-api-client.test.js`で`X-API-Key`、`prefecture=tokyo`、28日分`ymd`、pagination、429、1req/sec以下を検証する。既存5秒間隔は安全側として保持してよい。
-- [ ] **CG-25** `connector-connpass-workflow.js`のdiscoveryを既存`connpass-api-client.js`へ切り替え、active pathからcalendar page scrapingを外す。
+- [x] **CG-22** `load-connector-env.test.js`へconnpass API key referenceのaccept/rejectとerror/logへの値非露出REDを追加する。
+- [x] **CG-23** `load-connector-env.js`と`native-pass.js`からAPI keyをverified production dependencyへ一度だけ渡す。
+- [x] **CG-24** `connpass-api-client.test.js`で`X-API-Key`、`prefecture=tokyo`、28日分`ymd`、pagination、429、1req/sec以下を検証する。既存5秒間隔は安全側として保持してよい。
+- [x] **CG-25** `connector-connpass-workflow.js`のdiscoveryを既存`connpass-api-client.js`へ切り替え、active pathからcalendar page scrapingを外す。
 - [ ] **CG-26** source scan regressionでactive connpass discoveryが`/api/v2/events/`以外へautomated list/detail accessしないことを検証する。
 - [ ] **CG-27** connpass candidateでは参加枠、LT枠、補欠、締切、canonical URLをTelegram action receiptへ正規化し、provider permission未確認時のSubmitを0にする。
 - [ ] **CG-28** providerへ自動参加操作の許可範囲を問い合わせ、official response receiptを保存する。許可されたmethodだけを後続実装し、許可がなければTelegram action boundaryをfinal behaviorとする。

@@ -155,6 +155,7 @@ function productionConfig(options, stateDir, ownerToken) {
     tenantId,
     eventPreferences: profile.preferences,
     geminiApiKey: requiredText(env.GEMINI_API_KEY),
+    connpassApiKey: String(env.CONNPASS_API_KEY || "").trim() || undefined,
     calendarId: requiredText(env.LM_CONNECTOR_CALENDAR_ID, "primary"),
     lumaFormProfilePath: path.join(path.dirname(stateDir), "private", "connector-luma-form-profile.json"),
     lunaEvidenceDir: path.join(stateDir, "luna"),

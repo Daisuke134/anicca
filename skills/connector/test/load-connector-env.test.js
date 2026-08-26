@@ -33,6 +33,13 @@ test("loads the ranking key only through the connector allowlist", () => {
   } finally { fs.rmSync(f.dir, { recursive: true, force: true }); }
 });
 
+test("loads the connpass API key without reflecting unknown secrets", () => {
+  const f = fixture("CONNPASS_API_KEY=fixture-connpass-api-key-0000\nUNKNOWN_SECRET=hidden\n");
+  try {
+    assert.deepEqual(loadConnectorEnv(f.file), { CONNPASS_API_KEY: "fixture-connpass-api-key-0000" });
+  } finally { fs.rmSync(f.dir, { recursive: true, force: true }); }
+});
+
 test("fails closed for blank/control values, oversized files, and directories", () => {
   for (const value of ["", " \t", "\0", "\r", "\u000b", "Alpha\u000bBeta", "Alpha\u007fBeta"]) {
     const f = fixture(`DAIS_LEGAL_NAME_ROMAJI=${value}`);

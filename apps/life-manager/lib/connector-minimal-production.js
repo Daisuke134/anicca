@@ -15,6 +15,7 @@ const { createMinimalEvidenceChain } = require("./connector-minimal-evidence.js"
 const { createMinimalProductionOperations } = require("./connector-minimal-operations.js");
 const { createLumaScriptFirstWorkflow } = require("./connector-luma-workflow.js");
 const { createConnpassScriptFirstWorkflow } = require("./connector-connpass-workflow.js");
+const { createConnpassApiClient } = require("./connpass-api-client.js");
 const { createPeatixDiscoveryWorkflow } = require("./connector-peatix-workflow.js");
 const { createMeetupScriptFirstWorkflow } = require("./connector-meetup-workflow.js");
 const { createDoorkeeperScriptFirstWorkflow } = require("./connector-doorkeeper-workflow.js");
@@ -147,6 +148,7 @@ function createProductionProviderRouter(options = {}) {
   const performAction = options.performAction;
   const rankCandidates = options.rankCandidates;
   const eventPreferences = rankCandidates == null ? null : requiredText(options.eventPreferences);
+  const connpassAutomatedSubmitAllowed = options.connpassAutomatedSubmitAllowed !== false;
   const now = options.now || (() => new Date());
   if (
     !lumaWorkflow || typeof lumaWorkflow.discoverCandidates !== "function"
@@ -223,6 +225,9 @@ function createProductionProviderRouter(options = {}) {
 
     runCachedAction(input) {
       const route = selected(input);
+      if (route.input.provider === "connpass" && !connpassAutomatedSubmitAllowed) {
+        return Object.freeze({ status: "failed", safe_reason: "connpass_action_permission_required" });
+      }
       return actionCache.replay({
         provider: route.input.provider,
         workflowVersion: route.workflowVersion,
@@ -239,11 +244,17 @@ function createProductionProviderRouter(options = {}) {
 
     runDirectAction(input) {
       const route = selected(input);
+      if (route.input.provider === "connpass" && !connpassAutomatedSubmitAllowed) {
+        return Object.freeze({ status: "failed", safe_reason: "connpass_action_permission_required" });
+      }
       return route.workflow.runDirectAction({ page: route.input.page, candidate: route.input.candidate });
     },
 
     runAgentFallback(input) {
       const route = selected(input);
+      if (route.input.provider === "connpass" && !connpassAutomatedSubmitAllowed) {
+        return Object.freeze({ status: "failed", safe_reason: "connpass_action_permission_required" });
+      }
       if (!Number.isInteger(route.input.maxSteps) || route.input.maxSteps < 1) invalid();
       const maxSteps = route.input.provider === "techplay"
         ? route.input.maxSteps : Math.min(route.input.maxSteps, 10);
@@ -340,8 +351,13 @@ function createMinimalProductionDependencies(options = {}) {
       provider_status: "registered",
     }),
   });
+  const connpassApiClient = options.connpassApiClient || (options.connpassWorkflow || options.providerRouter ? null : createConnpassApiClient({
+    apiKey: options.connpassApiKey,
+  }));
   const connpassWorkflow = options.connpassWorkflow || createConnpassScriptFirstWorkflow({
     now,
+    connpassApiClient,
+    allowAutomatedSubmit: options.connpassAutomatedSubmitAllowed === true,
     onDiscoveryAudit: operations.recordConnpassDiscoveryAudit || (() => {}),
     hasAppliedBundle: (candidate) => evidenceChain.hasAppliedBundle({
       provider: "connpass",
@@ -428,6 +444,7 @@ function createMinimalProductionDependencies(options = {}) {
     actionCache,
     browserHarness,
     performAction: browserHarness.performAction,
+    connpassAutomatedSubmitAllowed: options.connpassAutomatedSubmitAllowed === true,
     eventPreferences,
     rankCandidates,
     now,
