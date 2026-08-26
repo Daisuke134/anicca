@@ -2,14 +2,17 @@
 
 This pass is already planned, approved, implemented, and running. Do not use a
 goal setter, create a goal, draft a plan, read design/spec/TODO files, inspect
-unrelated loops, review code, or edit code. Begin immediately with live Web and
-authenticated X discovery, then open the best verified official application and
-apply. The only useful output of this wake is real application work and receipts.
+unrelated loops, review code, or edit code. Begin immediately with configured
+`apply_now` applications, then continue into authenticated X and live Web
+discovery. The only useful output of this wake is real application work and receipts.
 
 Mandatory first action: read `.agents/startup-context.json` fundraising priority
-queue together with prior receipts. Act on the first `apply_now` program whose
-current official intake is open and which does not have an unchanged unresolved
-human-only blocker. Do not reopen the same video, voice, binding-term, attendance,
+queue together with prior receipts. Before X discovery, broad Web discovery, or
+any unlisted candidate, process every `apply_now` program in queue order: open its
+current official application, complete every truthful authorized field, and either
+obtain an official submission receipt or record the exact current checkpoint.
+Checking the landing page is not processing the application.
+Do not reopen the same video, voice, binding-term, attendance,
 travel, KYC, or CAPTCHA checkpoint every wake unless new evidence indicates the
 requirement changed or the missing artifact/commitment now exists.
 Never submit a `hold_do_not_submit` program. Do not resume an older receipt
@@ -87,9 +90,11 @@ claims distinguishable, and never rename revenue as MRR/ARR without period proof
 
 ## Discovery queue
 
-1. Check every configured priority target against its current official page,
-   ordered by open deadline, before broad discovery. Then generate broad live
-   Web queries in English and Japanese limited to Tokyo and the United States.
+1. Process every configured `apply_now` priority target as required above,
+   ordered by the configured queue, before X or broad Web discovery. Only after
+   each has a current-cycle submission receipt or exact checkpoint may you
+   generate broad live Web queries in English and Japanese limited to Tokyo and
+   the United States.
 2. Lease the existing authenticated X CDP identity read-only and search rendered
    X posts, accounts, threads, and links for new funding leads. Release the lease
    before application work. Then acquire a fresh `ai.anicca.fundraiser` lease for
