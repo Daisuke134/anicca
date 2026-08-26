@@ -622,7 +622,7 @@ def distribution_effect_state(claims_path: Path, payloads_dir: Path, results_pat
             return {"state": "READY_TO_POST", "job_id": payload["job_id"],
                     "payload": payload, "retry_number": results[-1]["retry_number"],
                     "changed": False}
-        return {**results[-1],
+        return {**results[-1], "payload": payload,
                 "retry_count": sum(row.get("state") == "RETRY_READY" for row in results),
                 "changed": False}
     return {"state": "READY_TO_POST", "job_id": payload["job_id"],
