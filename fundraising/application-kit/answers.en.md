@@ -1,6 +1,6 @@
 <!-- generated from .agents/startup-context.json; do not edit -->
-context-version: 2026-08-26.4
-context-digest: b15c321db8e14b21213d3f81ed6419dc1e25c1ee723da18fba07fd638e594e58
+context-version: 2026-08-26.5
+context-digest: 12150c386b2247b0a7c0e2018966691b99ec0e25b5e10fcf54fb74e4a02f337e
 
 # Life Manager — canonical fundraising answers
 
