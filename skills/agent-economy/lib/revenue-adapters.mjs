@@ -269,7 +269,7 @@ export function adaptCoconala(row, options = {}) {
     statusKeys: ["payout_status", "payoutState", "terminal_state", "settlement_state", "status"],
     proof: {
       providerKeys: ["payout_receipt_id", "payoutReceiptId", "provider_receipt_id", "providerReceiptId", "settlement_receipt_id"],
-      verificationKeys: ["payout_proof_verified", "payoutProofVerified", "settlement_verified", "settlementVerified", "proof_verified"],
+      verificationKeys: ["payout_proof_verified", "payoutProofVerified", "settlement_verified", "settlementVerified", "proof_verified", "verified"],
     },
   });
 }
@@ -286,7 +286,7 @@ export function adaptLancers(row, options = {}) {
     statusKeys: ["payment_status", "payout_status", "terminal_state", "settlement_state", "status"],
     proof: {
       providerKeys: ["payment_receipt_id", "paymentReceiptId", "payout_receipt_id", "payoutReceiptId", "provider_receipt_id", "providerReceiptId", "settlement_receipt_id"],
-      verificationKeys: ["payment_proof_verified", "paymentProofVerified", "payout_proof_verified", "payoutProofVerified", "settlement_verified", "settlementVerified", "proof_verified"],
+      verificationKeys: ["payment_proof_verified", "paymentProofVerified", "payout_proof_verified", "payoutProofVerified", "settlement_verified", "settlementVerified", "proof_verified", "verified"],
     },
   });
 }
@@ -306,7 +306,7 @@ export function adaptTaskMarket(row, options = {}) {
     statusKeys: ["award_status", "awardStatus", "payout_status", "payoutStatus", "terminal_state", "status"],
     proof: {
       providerKeys: ["award_receipt_id", "awardReceiptId", "payout_receipt_id", "payoutReceiptId", "settlement_receipt_id", "settlementReceiptId", "provider_receipt_id", "providerReceiptId"],
-      verificationKeys: ["award_proof_verified", "awardProofVerified", "payout_proof_verified", "payoutProofVerified", "settlement_verified", "settlementVerified", "proof_verified"],
+      verificationKeys: ["award_proof_verified", "awardProofVerified", "payout_proof_verified", "payoutProofVerified", "settlement_verified", "settlementVerified", "proof_verified", "verified"],
     },
   });
 }
