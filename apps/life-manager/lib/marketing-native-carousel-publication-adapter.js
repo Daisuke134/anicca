@@ -124,7 +124,7 @@ const EN_SLIDESHOW_TIKTOK_LANE = Object.freeze({
   manifestAccount: "anicca-ios-en-slideshow-tiktok",
   renderer: "slideshow",
   lane: "anicca-en-slideshow-tiktok",
-  creativeId: "EN-SLIDESHOW-PROCRASTINATION-05090bf2b4ee",
+  creativeId: "EN-SLIDESHOW-PROCRASTINATION-05090bf2b4ee-R2",
   packRef: "object://sha256/3241653ecc9239663de3151426d01a6b1c34cfe7c130288e928fab6686de624c",
   mediaRefs: Object.freeze([
     "object://sha256/05090bf2b4ee4f616762a33d93d446afff8f06ad2675016210d0d8bc90b5b329",
@@ -135,7 +135,7 @@ const EN_SLIDESHOW_TIKTOK_LANE = Object.freeze({
     "object://sha256/6895c10dbe4427259151d778a62cacbaf9d3dce592330a5710338da7f5c3c9f7",
   ]),
   captionRef: "object://sha256/8e6f7cecee64454d906a787bad4b4c57736fff2668c1b9eea6c0d666140f2c6d",
-  approvalRef: "object://sha256/ab96425da6f82672be19a3ac74b3e2ad1c98f632bc39d31dab23720701aed5b5",
+  approvalRef: "object://sha256/6e69c242e75481d2d6a3f51fe2c07e5dc151bb33c9b29f30972e81aa5bf8f668",
   tokenRef: "secret://postiz/api-key",
   telegramTokenRef: "secret://telegram/bot-token",
   chatRef: "telegram-chat://owner",

@@ -2250,6 +2250,16 @@ and require a direct TikTok URL before success. Python regression is 21/21.
 After this fix is pushed, 24F10 permits one new-slot attempt only; it does not
 reuse or reinterpret the absent effect.
 
+The initial new-slot command then failed locally at enqueue with `local ledger
+job id collision`; provider and Telegram effects remain 0. This is the intended
+dedupe response because job/effect identity excludes slot. The approved recovery
+is a new immutable creative revision
+`EN-SLIDESHOW-PROCRASTINATION-05090bf2b4ee-R2` over the same inspected
+pack/media/caption, with approval
+`object://sha256/6e69c242e75481d2d6a3f51fe2c07e5dc151bb33c9b29f30972e81aa5bf8f668`.
+The old absent effect and approval remain retained evidence; no ledger dedupe
+rule is weakened and no media/caption changes are smuggled into the retry.
+
 **Completed immediately preceding code item:** MKT-09R9-14 / Order 24F9 extends
 the shared native-carousel boundary for the single frozen TikTok photo lane and
 adds a thin `anicca-en-slideshow-tiktok-canary.js` wrapper. Postiz transport now
