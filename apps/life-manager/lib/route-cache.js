@@ -32,25 +32,21 @@ function contextValue(context, keys) {
 function normalizeContext(context = {}) {
   const source = context && typeof context === "object" ? context : {};
   return {
-    // Keep both provider and mode: a provider can expose more than one route mode
-    // (for example Google's transit and drive endpoints).
-    provider: contextValue(source, ["provider", "providerMode"]),
-    mode: contextValue(source, ["mode", "routeMode"]),
-    anchorType: contextValue(source, ["anchorType", "type"]),
-    timezone: contextValue(source, ["timezone", "timeZone", "tz"]),
-    serviceDate: contextValue(source, ["serviceDate", "date"]),
+    provider: contextValue(source, ["provider"]),
+    mode: contextValue(source, ["mode"]),
+    anchorType: contextValue(source, ["anchorType"]),
+    timezone: contextValue(source, ["timezone"]),
+    serviceDate: contextValue(source, ["serviceDate"]),
   };
 }
 
 function resolveBucketAndContext(bucket, context) {
-  // Accept an object in the bucket position as a convenient structured call form while
-  // retaining the original positional `(uid, from, to, bucket, provider)` API.
+  // Keep the explicit scope object available for cache-key inspection while retaining the original
+  // positional `(uid, from, to, bucket, provider)` API.
   if (bucket && typeof bucket === "object" && !Array.isArray(bucket)) {
     const merged = { ...bucket, ...(context && typeof context === "object" ? context : {}) };
     const normalized = normalizeContext(merged);
-    const value = merged.timeBucket == null
-      ? (merged.anchorTimeBucket == null ? merged.bucket : merged.anchorTimeBucket)
-      : merged.timeBucket;
+    const value = merged.timeBucket == null ? merged.bucket : merged.timeBucket;
     return { bucket: value == null ? "" : String(value), context: normalized };
   }
   return { bucket: bucket == null ? "" : String(bucket), context: normalizeContext(context) };
@@ -78,12 +74,6 @@ function cacheKey(uid, fromGeo, toGeo, bucket, context = {}) {
 function makeRouteCache({ store = new Map(), ttlMs = BUCKET_MS, now = Date.now } = {}) {
   const inFlight = new Map();
   async function getOrCompute(uid, fromGeo, toGeo, bucket, provider, context = {}) {
-    // Permit the structured `(scope, provider)` and positional `(bucket, provider, context)` forms.
-    if (typeof provider !== "function" && typeof context === "function") {
-      const scope = provider;
-      provider = context;
-      context = scope;
-    }
     const key = cacheKey(uid, fromGeo, toGeo, bucket, context);
     const t = now();
     const hit = store && typeof store.get === "function" ? store.get(key) : null;

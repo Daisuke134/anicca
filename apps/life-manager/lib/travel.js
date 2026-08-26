@@ -200,13 +200,15 @@ async function transitFetchPlan(srcGeo, dstGeo, query = {}) {
       type: String(query.type || "arrival"),
       numItineraries: "3",
     });
-    const response = await fetch(`https://api.transit.ls8h.com/api/v1/plan?${p}`);
+    const request = query.signal ? { signal: query.signal } : undefined;
+    const response = await fetch(`https://api.transit.ls8h.com/api/v1/plan?${p}`, request);
     if (!response || response.ok === false || typeof response.json !== "function") return null;
     return await response.json();
   } catch { return null; }
 }
 
 const DEFAULT_ROUTE_TIMEZONE = "Asia/Tokyo";
+const DEFAULT_TRANSIT_TIMEOUT_MS = 8_000;
 
 function validRouteTimezone(value) {
   const zone = String(value || "").trim();
@@ -231,29 +233,15 @@ function asEpochMs(value) {
 }
 
 function routeCallArgs(anchorAtMs, nowMs, departureMode, opts) {
-  let anchor = anchorAtMs;
-  let clock = nowMs;
-  let departure = departureMode;
-  let options = opts && typeof opts === "object" ? { ...opts } : {};
-  // Also accept a structured anchor/options object. The positional signature remains the public
-  // compatibility form used by fillTravel and older callers.
-  if (anchorAtMs && typeof anchorAtMs === "object" && !(anchorAtMs instanceof Date)) {
-    options = { ...anchorAtMs, ...options };
-    anchor = options.anchorAtMs ?? options.eventAnchorMs ?? options.anchorMs ?? options.anchorAt
-      ?? options.eventStartMs ?? options.eventEndMs;
-    clock = options.nowMs;
-    departure = options.departureMode ?? options.anchorType === "departure";
-  }
-  const event = options.event && typeof options.event === "object" ? options.event : null;
-  if (anchor == null && event) anchor = departure ? event.endMs : event.startMs;
-  const resolvedNow = asEpochMs(clock) ?? Date.now();
-  const resolvedAnchor = asEpochMs(anchor);
-  const timezone = validRouteTimezone(options.timezone || options.timeZone || options.userTimezone)
+  const options = opts && typeof opts === "object" ? { ...opts } : {};
+  const resolvedNow = asEpochMs(nowMs) ?? Date.now();
+  const resolvedAnchor = asEpochMs(anchorAtMs);
+  const timezone = validRouteTimezone(options.timezone)
     || DEFAULT_ROUTE_TIMEZONE;
   return {
     anchorAtMs: resolvedAnchor,
     nowMs: resolvedNow,
-    departureMode: departure === true || options.anchorType === "departure",
+    departureMode: departureMode === true,
     timezone,
     options,
   };
@@ -304,7 +292,7 @@ function routeDurationSeconds(route) {
 // C2/C3 WIRE: return a provider-fact-preserving structured route. Transit is attempted first for
 // Japan endpoints; unusable/error output calls the Google fallback once, sequentially. The cache
 // stores the final route under a tenant + provider/anchor scoped key.
-async function directionsRoute(src, dst, mapsKey, anchorAtMs = Date.now(), nowMs = Date.now(), departureMode = false, opts = {}) {
+async function directionsRoute(src, dst, mapsKey, anchorAtMs = null, nowMs = Date.now(), departureMode = false, opts = {}) {
   const call = routeCallArgs(anchorAtMs, nowMs, departureMode, opts);
   const options = call.options;
   const geocode = options._geocode || geocodeAddress;
@@ -313,6 +301,9 @@ async function directionsRoute(src, dst, mapsKey, anchorAtMs = Date.now(), nowMs
   const googleMinutesFn = options._directionsMinutesGoogle || directionsMinutesGoogle;
   const cache = options._routeCache || _routeCache; // tests inject a fresh cache to avoid cross-test leakage
   const uid = options.uid ?? options.tenantId ?? options.userId ?? "anonymous";
+  const timeoutOption = options._transitTimeoutMs ?? options.transitTimeoutMs;
+  const transitTimeoutMs = Number.isFinite(Number(timeoutOption)) && Number(timeoutOption) >= 0
+    ? Number(timeoutOption) : DEFAULT_TRANSIT_TIMEOUT_MS;
   if (!mapsKey || !src || !dst) return null;
   const [srcGeo, dstGeo] = await Promise.all([geocode(src, mapsKey), geocode(dst, mapsKey)]);
   const routeMode = srcGeo && dstGeo && chooseRouter(srcGeo, dstGeo) === "transit" ? "transit" : "google";
@@ -321,14 +312,32 @@ async function directionsRoute(src, dst, mapsKey, anchorAtMs = Date.now(), nowMs
     try {
       const value = googleRouteFn
         ? await googleRouteFn(src, dst, mapsKey, query.anchorAtMs, call.nowMs, call.departureMode)
-        : await googleMinutesFn(src, dst, mapsKey, query.anchorAtMs, call.nowMs, call.departureMode);
+        : options._legacyGoogleCompatibility || options._directionsMinutesGoogle
+          ? await googleMinutesFn(src, dst, mapsKey, query.anchorAtMs, call.nowMs, call.departureMode)
+          : await (call.departureMode
+            ? legacyTransitMinutes(src, dst, mapsKey, null, call.nowMs, query.anchorAtMs)
+            : legacyTransitMinutes(src, dst, mapsKey, query.anchorAtMs, call.nowMs));
       return googleRoute(value);
     } catch { return null; }
   };
   const compute = async () => {
     if (routeMode === "transit") {
       let plan = null;
-      try { plan = await transitFetch(srcGeo, dstGeo, { ...query, timezone: call.timezone }); } catch { plan = null; }
+      const controller = typeof AbortController === "function" ? new AbortController() : null;
+      let timer;
+      const transitPromise = Promise.resolve()
+        .then(() => transitFetch(srcGeo, dstGeo, {
+          ...query, timezone: call.timezone, signal: controller && controller.signal,
+        }))
+        .catch(() => null);
+      const timeoutPromise = new Promise((resolve) => {
+        timer = setTimeout(() => {
+          if (controller) controller.abort();
+          resolve(null);
+        }, transitTimeoutMs);
+      });
+      try { plan = await Promise.race([transitPromise, timeoutPromise]); }
+      finally { clearTimeout(timer); }
       const parsed = plan && parseTransitPlan(plan, { anchorType: query.type, anchorSecs: query.anchorSecs });
       if (parsed && Number.isFinite(routeDurationSeconds(parsed))) return parsed;
     }
@@ -341,7 +350,6 @@ async function directionsRoute(src, dst, mapsKey, anchorAtMs = Date.now(), nowMs
       timezone: call.timezone,
       serviceDate: query.date,
       anchorType: query.type,
-      eventAnchor: new Date(query.anchorAtMs).toISOString(),
     };
     return cache.getOrCompute(uid, srcGeo, dstGeo, timeBucket(query.anchorAtMs), compute, context);
   }
@@ -350,8 +358,11 @@ async function directionsRoute(src, dst, mapsKey, anchorAtMs = Date.now(), nowMs
 
 // Existing callers consume integer minutes. Keep this as a thin adapter over the structured route so
 // Calendar autofill retains its current contract while newer consumers can use provider facts.
-async function directionsMinutes(src, dst, mapsKey, anchorAtMs = Date.now(), nowMs = Date.now(), departureMode = false, opts = {}) {
-  const route = await directionsRoute(src, dst, mapsKey, anchorAtMs, nowMs, departureMode, opts);
+async function directionsMinutes(src, dst, mapsKey, anchorAtMs = null, nowMs = Date.now(), departureMode = false, opts = {}) {
+  // Existing integer-minute callers retain the legacy max(transit, drive) Google behaviour. The new
+  // structured directionsRoute path intentionally uses one legacy Transit request for its fallback.
+  const adapterOpts = { ...(opts && typeof opts === "object" ? opts : {}), _legacyGoogleCompatibility: true };
+  const route = await directionsRoute(src, dst, mapsKey, anchorAtMs, nowMs, departureMode, adapterOpts);
   return minutesFromSeconds(routeDurationSeconds(route));
 }
 
@@ -394,7 +405,7 @@ async function unclaimTravel(uid, eventKey, leg, supaUrl, supaKey) {
   }).catch(() => {});
 }
 
-async function fillTravel(uid, { apiKey, mapsKey, geminiKey, home, timezone = DEFAULT_ROUTE_TIMEZONE, nowMs = Date.now(), bufferMin = 5, calendar, supaUrl, supaKey, _directionsMinutes, gmailAccountId } = {}) {
+async function fillTravel(uid, { apiKey, mapsKey, geminiKey, home, timezone, nowMs = Date.now(), bufferMin = 5, calendar, supaUrl, supaKey, _directionsMinutes, gmailAccountId } = {}) {
   const directionsFn = _directionsMinutes || directionsMinutes;
   const cal = calendar || getCalendar({ apiKey, gmailAccountId });
   const events = await listEvents7d(uid, apiKey, nowMs, cal, gmailAccountId);
@@ -404,6 +415,10 @@ async function fillTravel(uid, { apiKey, mapsKey, geminiKey, home, timezone = DE
     const ev = events[i];
     if (isTravel(ev.summary) || !ev.location) continue;
     checked++;
+    // A verified user preference is authoritative. If it is malformed, use the event's own IANA
+    // zone when available, then the product's JST default; never let an invalid preference poison the
+    // provider wall-clock query.
+    const routeTimezone = validRouteTimezone(timezone) || validRouteTimezone(ev.timezone) || DEFAULT_ROUTE_TIMEZONE;
     // C-H1: atomic claim key per (event, leg). Prefer the gcal event id (stable + unique). Fallback to
     // startMs:summary (NOT startMs alone — two different same-user events can share a start time, FIND-001).
     const evKey = String(ev.id || `${ev.startMs}:${ev.summary || ""}`);
@@ -427,7 +442,7 @@ async function fillTravel(uid, { apiKey, mapsKey, geminiKey, home, timezone = DE
         // outbound block already exists — fall through to return-leg so it can backfill a missing return block
       } else {
         let dest = ev.location;
-        const routeOpts = { uid, timezone: ev.timezone || timezone };
+        const routeOpts = { uid, timezone: routeTimezone };
         let mins = await directionsFn(origin, dest, mapsKey, ev.startMs, nowMs, false, routeOpts);
         if (mins == null && geminiKey) {
           // The location is a room name / unroutable string (e.g. "情報科学大講義室[L1]（IS）"). Let the
@@ -515,7 +530,7 @@ async function fillTravel(uid, { apiKey, mapsKey, geminiKey, home, timezone = DE
     const venue = resolvedDest;
     if (!home) { skipped++; continue; }
     const retMins = await directionsFn(venue, home, mapsKey, ev.endMs, nowMs, /* departureMode= */ true, {
-      uid, timezone: ev.timezone || timezone,
+      uid, timezone: routeTimezone,
     });
     if (retMins == null) { skipped++; continue; }
     const retLeaveMs = ev.endMs;                           // depart immediately after event ends

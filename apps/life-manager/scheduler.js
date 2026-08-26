@@ -811,6 +811,7 @@ async function travelUserOnce(u, deps = {}) {
   try {
     const r = await (deps.fillTravel || fillTravel)(u.uid, {
       apiKey, mapsKey, geminiKey, home: u.home_address,
+      timezone: u.call_time_zone,
       nowMs: deps.nowMs === undefined ? Date.now() : deps.nowMs,
       calendar: deps.calendar, supaUrl, supaKey,
       _directionsMinutes: deps.directionsMinutes,
