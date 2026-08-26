@@ -33,6 +33,11 @@ test("Task 7B: Telegram-native onboarding page is server-state driven and safe a
   assert.match(html, /x-lm-csrf/);
   assert.match(html, /paymentLink/);
   assert.match(html, /buy\.stripe\.com/);
+  assert.match(html, /ライブ位置情報/);
+  assert.match(html, /共有が終わった後/);
+  assert.match(html, /自宅住所/);
+  assert.match(html, /直近の予定/);
+  assert.doesNotMatch(html, /現在.*ライブ位置情報/);
   assert.match(html, /window\.location\.(?:assign|replace)\(/);
   const order = ["name", "calendar", "home", "notifications", "phone", "call", "payment", "dashboard"];
   let previous = -1;

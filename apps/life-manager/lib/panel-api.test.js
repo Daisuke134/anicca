@@ -11,8 +11,12 @@ let handlePanelApiRequest = async (_req, res) => {
   res.writeHead(501, { "content-type": "application/json" });
   res.end(JSON.stringify({ error: "panel API not implemented" }));
 };
+let handlePanelOAuthCallback = async (_req, res) => {
+  res.writeHead(501, { "content-type": "application/json" });
+  res.end(JSON.stringify({ error: "panel callback not implemented" }));
+};
 try {
-  ({ handlePanelApiRequest } = require("./panel-api.js"));
+  ({ handlePanelApiRequest, handlePanelOAuthCallback } = require("./panel-api.js"));
 } catch (error) {
   if (error.code !== "MODULE_NOT_FOUND") throw error;
 }
@@ -389,6 +393,7 @@ function onboardingHarness(initial = {}) {
   const wrapperCalls = [];
   const providerReads = [];
   const reads = [];
+  const receipts = new Map();
   const state = {
     step: "name", stage: "calendar", name: null, calendarConnected: false,
     homeAddress: null, notificationsEnabled: false, phone: null,
@@ -397,6 +402,21 @@ function onboardingHarness(initial = {}) {
   const scope = { uid: "tenant-a", chatId: "101", csrf: "csrf-a" };
   const commandStore = {
     async assertCurrentScope(value) { return value.uid === scope.uid && value.chatId === scope.chatId; },
+    async readReceipt(value, key) { assert.deepEqual(value, scope); return receipts.get(String(key)) || null; },
+    async claimReceipt(value, key, entry) {
+      assert.deepEqual(value, scope);
+      const normalized = String(key);
+      if (receipts.has(normalized)) return false;
+      receipts.set(normalized, { requestHash: entry.requestHash, status: entry.status, result: null });
+      return true;
+    },
+    async finishReceipt(value, key, entry) {
+      assert.deepEqual(value, scope);
+      const receipt = receipts.get(String(key));
+      if (!receipt) throw new Error("receipt_missing");
+      receipt.status = entry.status;
+      receipt.result = entry.result || null;
+    },
     async readOnboardingState(value) {
       assert.deepEqual(value, scope);
       reads.push("state");
@@ -424,7 +444,7 @@ function onboardingHarness(initial = {}) {
     composioKey: "provider-key",
     composioCalendarStatusImpl: async () => { providerReads.push("ACTIVE"); return "ACTIVE"; },
   };
-  return { state, scope, writes, syncs, wrapperCalls, providerReads, reads, opts, commandStore };
+  return { state, scope, writes, syncs, wrapperCalls, providerReads, reads, receipts, opts, commandStore };
 }
 
 async function onboardingRequest(harness, { method = "GET", path = "/api/panel/onboarding", body, headers = {} } = {}) {
@@ -436,6 +456,7 @@ async function onboardingRequest(harness, { method = "GET", path = "/api/panel/o
     origin: "https://panel.example",
     "content-type": "application/json",
     "x-lm-csrf": "csrf-a",
+    "idempotency-key": Object.hasOwn(headers, "idempotency-key") ? headers["idempotency-key"] : `onboarding-${harness._requestNumber = (harness._requestNumber || 0) + 1}`,
     ...headers,
   };
   const chunks = [];
@@ -451,6 +472,10 @@ async function onboardingRequest(harness, { method = "GET", path = "/api/panel/o
   });
   const raw = Buffer.concat(chunks).toString("utf8");
   return { response, body: raw ? JSON.parse(raw) : null };
+}
+
+function onboardingRequestHash(action, payload) {
+  return crypto.createHash("sha256").update(JSON.stringify({ action, payload })).digest("hex");
 }
 
 test("Task 7A onboarding API follows server-owned fixed progression and ignores client uid", async () => {
@@ -553,6 +578,83 @@ test("R1A2 provider failure prevents both onboarding RPCs", async () => {
   assert.deepEqual(h.providerReads, ["error"]);
   assert.deepEqual(h.syncs, []);
   assert.deepEqual(h.wrapperCalls, []);
+});
+
+test("Task 7B R1: onboarding POST claims one receipt, replays success, and rejects key reuse", async () => {
+  const h = onboardingHarness({ step: "home", stage: "home", calendarConnected: true });
+  const key = "onboarding-replay-01";
+  const first = await onboardingRequest(h, { method: "POST", body: { action: "home.save", home_address: "home" }, headers: { "idempotency-key": key } });
+  assert.equal(first.response.status, 200);
+  const before = { provider: h.providerReads.length, wrapper: h.wrapperCalls.length, writes: h.writes.length };
+  const replay = await onboardingRequest(h, { method: "POST", body: { action: "home.save", home_address: "home" }, headers: { "idempotency-key": key } });
+  assert.equal(replay.response.status, 200);
+  assert.deepEqual(replay.body, first.body);
+  assert.deepEqual({ provider: h.providerReads.length, wrapper: h.wrapperCalls.length, writes: h.writes.length }, before);
+  const conflict = await onboardingRequest(h, { method: "POST", body: { action: "home.save", home_address: "other" }, headers: { "idempotency-key": key } });
+  assert.equal(conflict.response.status, 409);
+  assert.deepEqual(conflict.body, { error: "idempotency_conflict" });
+  assert.deepEqual({ provider: h.providerReads.length, wrapper: h.wrapperCalls.length, writes: h.writes.length }, before);
+});
+
+test("Task 7B R1: onboarding POST requires a valid key and never re-transitions pending or failed receipts", async () => {
+  const missing = onboardingHarness({ step: "home", stage: "home", calendarConnected: true });
+  const noKey = await onboardingRequest(missing, { method: "POST", body: { action: "home.save", home_address: "home" }, headers: { "idempotency-key": "" } });
+  assert.equal(noKey.response.status, 400);
+  assert.deepEqual(noKey.body, { error: "idempotency_required" });
+  assert.equal(missing.providerReads.length, 0);
+
+  const payload = { home_address: "home" };
+  const requestHash = onboardingRequestHash("home.save", payload);
+  for (const [status, error] of [["pending", "idempotency_in_progress"], ["failed", "idempotency_failed"]]) {
+    const h = onboardingHarness({ step: "home", stage: "home", calendarConnected: true });
+    h.receipts.set(`onboarding-${status}`, { requestHash, status, result: null });
+    const result = await onboardingRequest(h, { method: "POST", body: { action: "home.save", payload }, headers: { "idempotency-key": `onboarding-${status}` } });
+    assert.equal(result.response.status, 409, status);
+    assert.deepEqual(result.body, { error }, status);
+    assert.equal(h.providerReads.length, 0, status);
+    assert.equal(h.wrapperCalls.length, 0, status);
+  }
+});
+
+test("Task 7B R1: failed onboarding transition is durably non-retryable", async () => {
+  const h = onboardingHarness({ step: "home", stage: "home", calendarConnected: true });
+  h.commandStore.mutateOnboardingWithCalendar = async () => { throw new Error("provider transition failed"); };
+  const key = "onboarding-failed-01";
+  const first = await onboardingRequest(h, { method: "POST", body: { action: "home.save", home_address: "home" }, headers: { "idempotency-key": key } });
+  assert.equal(first.response.status, 502);
+  assert.equal(h.receipts.get(key).status, "failed");
+  const reads = h.providerReads.length;
+  const second = await onboardingRequest(h, { method: "POST", body: { action: "home.save", home_address: "home" }, headers: { "idempotency-key": key } });
+  assert.equal(second.response.status, 409);
+  assert.deepEqual(second.body, { error: "idempotency_failed" });
+  assert.equal(h.providerReads.length, reads);
+});
+
+test("Task 7B R1: verified Calendar callback returns onboarding only for incomplete server state", async () => {
+  const stateToken = Buffer.alloc(32, 0x71).toString("base64url");
+  const run = async (onboarding, expectedLocation, readError = false) => {
+    const scope = { uid: "tenant-a", chatId: "101", csrf: "csrf-a" };
+    const calls = [];
+    const store = {
+      async assertCurrentScope(value) { assert.deepEqual(value, scope); return true; },
+      async claimOAuthState(value, hash) { calls.push({ type: "claim", value, hash }); return true; },
+      async readOnboardingState(value) { calls.push({ type: "onboarding", value }); if (readError) throw new Error("state unavailable"); return onboarding; },
+    };
+    const response = { status: 0, headers: {}, writeHead(status, headers) { this.status = status; this.headers = headers || {}; }, end() {} };
+    await handlePanelOAuthCallback({ method: "GET", url: `/panel/oauth/calendar?state=${stateToken}`, headers: { cookie: "" } }, response, {
+      sessionScopeImpl: async () => scope,
+      commandStore: store,
+      composioCalendarStatusImpl: async () => "ACTIVE",
+    });
+    assert.equal(response.status, 303);
+    assert.equal(response.headers.Location, expectedLocation);
+    return calls;
+  };
+  const incomplete = await run({ step: "home" }, "/panel/onboarding");
+  assert.equal(incomplete.filter((call) => call.type === "onboarding").length, 1);
+  await run({ step: "dashboard" }, "/panel");
+  await run({ step: "done" }, "/panel");
+  await run({ step: "home" }, "/panel", true);
 });
 
 test("Task 7A rejects malformed JSON arrays, primitives, and payloads before provider/RPC", async () => {

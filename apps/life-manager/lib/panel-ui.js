@@ -115,7 +115,7 @@ function renderPanelOnboardingPage(options = {}) {
     const calendarStart = "/api/panel/onboarding/calendar/start";
     const calendarStatus = "/api/panel/onboarding/calendar/status";
     const titles = Object.freeze({ name:"名前を確認", calendar:"カレンダーをつなぐ", home:"住んでいる場所", notifications:"通知を有効にする", phone:"電話番号", call:"電話での確認", payment:"利用を開始する", dashboard:"準備完了" });
-    const copies = Object.freeze({ name:"呼びかけに使う名前を確認します。", calendar:"予定を読み取り、必要なタイミングで知らせます。", home:"予定の場所に合わせて準備します。", notifications:"通知を受け取れるようにします。", phone:"安全な連絡先を登録します。", call:"電話での確認方法を選びます。", payment:"月額プランを確認して利用を開始します。", dashboard:"現在の準備状態をサーバーから確認しました。" });
+    const copies = Object.freeze({ name:"呼びかけに使う名前を確認します。", calendar:"予定を読み取り、必要なタイミングで知らせます。", home:"Telegramでライブ位置情報を共有している間はそれを使い、共有が終わった後は登録した自宅住所や直近の予定へフォールバックして再開します。", notifications:"通知を受け取れるようにします。", phone:"安全な連絡先を登録します。", call:"電話での確認方法を選びます。", payment:"月額プランを確認して利用を開始します。", dashboard:"現在の準備状態をサーバーから確認しました。" });
     const key = () => globalThis.crypto && typeof globalThis.crypto.randomUUID === "function" ? globalThis.crypto.randomUUID() : String(Date.now()) + "-onboarding" + Math.random().toString(36).slice(2);
     const text = (node, value) => { node.textContent = String(value == null ? "" : value); };
     const button = (label, action, primary) => { const node = document.createElement("button"); node.type = "button"; node.dataset.onboardingAction = action; node.className = primary ? "primary-action" : "secondary-action"; node.textContent = label; return node; };

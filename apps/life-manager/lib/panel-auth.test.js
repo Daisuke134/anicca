@@ -203,6 +203,41 @@ test("Task 7B: unauthenticated Telegram onboarding keeps the return path through
   });
 });
 
+test("Task 7B R1: device-code completion preserves onboarding only through the fixed path allowlist", async () => {
+  const exchanges = [];
+  await withPanelServer({
+    supaUrl: "https://db.example",
+    supaKey: "service-key",
+    randomBytes: () => Buffer.alloc(32, 0x51),
+    fetchImpl: async (url, init = {}) => {
+      const parsed = new URL(String(url));
+      if (parsed.pathname.endsWith("/lm_panel_device_challenges")) return { ok: true, status: 201, json: async () => [] };
+      if (parsed.pathname.endsWith("/rpc/exchange_lm_panel_device_challenge")) { exchanges.push(JSON.parse(init.body)); return { ok: true, status: 200, json: async () => [{ status: "claimed", uid: "lm_u1", chat_id: "123" }] }; }
+      if (parsed.pathname.endsWith("/lm_panel_sessions")) return { ok: true, status: 201, json: async () => [] };
+      throw new Error(`unexpected device auth fetch ${url}`);
+    },
+  }, async (base) => {
+    const login = await fetch(`${base}/panel/onboarding`);
+    const challenge = /__Host-lm_panel_challenge=([^;]+)/.exec(login.headers.get("set-cookie") || "")?.[1] || "";
+    assert.match(challenge, /^[A-Za-z0-9_-]{43}$/);
+    const accepted = await fetch(`${base}/api/panel/session/device`, {
+      method: "POST",
+      headers: { Origin: base, Cookie: `__Host-lm_panel_challenge=${challenge}`, "content-type": "application/json" },
+      body: JSON.stringify({ returnTo: "/panel/onboarding" }),
+    });
+    assert.equal(accepted.status, 200, await accepted.clone().text());
+    assert.deepEqual(await accepted.json(), { redirect: "/panel/onboarding" });
+    const fallback = await fetch(`${base}/api/panel/session/device`, {
+      method: "POST",
+      headers: { Origin: base, Cookie: `__Host-lm_panel_challenge=${challenge}`, "content-type": "application/json" },
+      body: JSON.stringify({ returnTo: "//evil.example" }),
+    });
+    assert.equal(fallback.status, 200);
+    assert.deepEqual(await fallback.json(), { redirect: "/panel" });
+    assert.equal(exchanges.length, 2);
+  });
+});
+
 async function withPanelServer(opts, run) {
   let origin = "";
   const server = http.createServer((req, res) => {
