@@ -426,6 +426,15 @@ class HostDiskGovernor:
                 in {"com.google.Chrome.code_sign_clone", "org.chromium.Chromium.code_sign_clone"}
                 and resolved.name.startswith("code_sign_clone.")
             )
+        if item.get("class") == "regenerable_output" and item.get("owner") == "codex-app-updater":
+            installation = (
+                self.home
+                / "Library/Caches/com.openai.codex/org.sparkle-project.Sparkle/Installation"
+            ).resolve()
+            return (
+                resolved.parent == installation
+                and re.fullmatch(r"[A-Za-z0-9]{6,64}", resolved.name) is not None
+            )
         return False
 
     @staticmethod
@@ -678,6 +687,25 @@ class HostDiskGovernor:
         a deletion candidate merely because it is large.
         """
         candidates: list[dict] = []
+        sparkle_installation = (
+            self.home
+            / "Library/Caches/com.openai.codex/org.sparkle-project.Sparkle/Installation"
+        )
+        if sparkle_installation.is_dir() and not sparkle_installation.is_symlink():
+            for child in sorted(sparkle_installation.iterdir()):
+                if (
+                    child.is_dir()
+                    and not child.is_symlink()
+                    and re.fullmatch(r"[A-Za-z0-9]{6,64}", child.name) is not None
+                ):
+                    candidates.append(
+                        {
+                            "path": child,
+                            "class": "regenerable_output",
+                            "owner": "codex-app-updater",
+                            "discovery": "allowlisted",
+                        }
+                    )
         temporary = Path(tempfile.gettempdir())
         temp_parent = temporary.parent
         clone_root = temp_parent / "X"
