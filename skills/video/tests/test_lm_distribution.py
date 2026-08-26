@@ -343,6 +343,20 @@ class DistributionTests(unittest.TestCase):
         result = lm_distribution.distribute_platform(self.build_config(), "instagram")
         self.assertIs(result["provider_reconciled"], False)
 
+    def test_new_slot_effect_bypasses_existing_distribution_row(self):
+        video_hash = hashlib.sha256(self.video.read_bytes()).hexdigest()
+        caption_hash = hashlib.sha256(self.caption.read_bytes()).hexdigest()
+        self.ledger.write_text(json.dumps({
+            "platform": "instagram", "status": "published", "creative_id": "A03",
+            "video_sha256": video_hash, "caption_sha256": caption_hash,
+            "public_url": "https://www.instagram.com/reel/OLD/",
+        }) + "\n", encoding="utf-8")
+        config = self.build_config()
+        config.new_slot_effect = True
+        result = lm_distribution.distribute_platform(config, "instagram")
+        self.assertNotEqual(result["public_url"], "https://www.instagram.com/reel/OLD/")
+        self.assertTrue(self.calls.exists())
+
     def test_caption_is_deterministically_derived_from_the_selected_bank_row(self):
         bank = self.root / "bank.jsonl"
         bank.write_text(

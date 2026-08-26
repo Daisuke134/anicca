@@ -629,7 +629,7 @@ def _publish(args, api_key: str, caption: str) -> int:
     if len(title) < 2:
         raise PostizError("Postiz title is too short")
 
-    existing = find_existing_post(
+    existing = None if args.new_slot_effect else find_existing_post(
         read_recent_posts(api_key),
         integration=args.integration,
         caption=caption,
@@ -694,6 +694,7 @@ def main() -> int:
     parser.add_argument("--integration", required=True)
     parser.add_argument("--title", default="Life Manager")
     parser.add_argument("--platform", choices=("instagram", "tiktok", "youtube"), default="tiktok")
+    parser.add_argument("--new-slot-effect", action="store_true")
     args = parser.parse_args()
 
     api_key = os.environ.get("POSTIZ_API_KEY", "")

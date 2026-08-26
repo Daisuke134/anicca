@@ -44,6 +44,7 @@ class DistributionConfig:
         postiz_adapter: Path | None = None,
         youtube_adapter: Path | None = None,
         youtube_integration: str = "",
+        new_slot_effect: bool = False,
     ):
         self.creative_id = creative_id
         self.video = Path(video)
@@ -73,6 +74,7 @@ class DistributionConfig:
         self.form = form
         self.locale = locale
         self.slot = slot
+        self.new_slot_effect = new_slot_effect
 
 
 def render_caption(bank: Path, creative_id: str, output: Path) -> Path:
@@ -343,7 +345,9 @@ def distribute_platform(config: DistributionConfig, platform: str) -> dict:
         )
     rows = _read_ledger(config.ledger)
 
-    existing = _existing(rows, platform, config.creative_id, video_hash, caption_hash)
+    existing = None if config.new_slot_effect else _existing(
+        rows, platform, config.creative_id, video_hash, caption_hash
+    )
     if existing:
         return {
             "creative_id": config.creative_id,
@@ -371,6 +375,7 @@ def distribute_platform(config: DistributionConfig, platform: str) -> dict:
                     config.instagram_integration,
                     "--platform",
                     "instagram",
+                    *(["--new-slot-effect"] if config.new_slot_effect else []),
                 ],
                 config.env,
             )
@@ -429,6 +434,7 @@ def distribute_platform(config: DistributionConfig, platform: str) -> dict:
                 str(config.caption),
                 "--integration",
                 config.tiktok_integration,
+                *(["--new-slot-effect"] if config.new_slot_effect else []),
             ],
             config.env,
         )
@@ -456,6 +462,7 @@ def distribute_platform(config: DistributionConfig, platform: str) -> dict:
                 config.youtube_integration,
                 "--platform",
                 "youtube",
+                *(["--new-slot-effect"] if config.new_slot_effect else []),
             ],
             config.env,
         )
@@ -595,6 +602,7 @@ def main() -> int:
     parser.add_argument("--form", default="")
     parser.add_argument("--locale", default="")
     parser.add_argument("--slot", default="")
+    parser.add_argument("--new-slot-effect", action="store_true")
     args = parser.parse_args()
 
     caption = args.caption_file
@@ -623,6 +631,7 @@ def main() -> int:
             slot=args.slot,
             instagram_integration=args.instagram_integration,
             postiz_adapter=args.postiz_adapter,
+            new_slot_effect=args.new_slot_effect,
         )
     result = (
         distribute(config)

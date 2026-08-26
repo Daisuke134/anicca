@@ -412,7 +412,7 @@ function subprocessEnv(postizToken) {
 function runDistributionProcess(input) {
   const repoRoot = path.resolve(__dirname, "../../..");
   const script = path.join(repoRoot, "skills/video/lm-distribution/distribute.py");
-  const result = spawnSync(input.python || "python3", [
+  const args = [
     script,
     "--creative-id", input.creativeId,
     "--platform", input.platform,
@@ -432,7 +432,9 @@ function runDistributionProcess(input) {
     "--instagram-integration", input.instagramIntegration,
     "--tiktok-integration", input.tiktokIntegration,
     "--youtube-integration", input.youtubeIntegration,
-  ], {
+  ];
+  if (input.newSlotEffect === true) args.push("--new-slot-effect");
+  const result = spawnSync(input.python || "python3", args, {
     cwd: repoRoot,
     env: subprocessEnv(input.postizToken),
     encoding: "utf8",
@@ -557,6 +559,7 @@ async function executeMarketingVideoPublicationJob(job, deps = {}) {
       instagramIntegration: platformIntegration,
       tiktokIntegration: platformIntegration,
       youtubeIntegration: platformIntegration,
+      newSlotEffect: contract.slotScopedEffect,
     });
   } catch (error) {
     // Wrap instead of mutating the foreign error object.

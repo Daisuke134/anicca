@@ -499,6 +499,7 @@ test("distribution subprocess receives an allowlisted environment, not the full 
     + "process.stdout.write(JSON.stringify({\n"
     + "  env_keys: Object.keys(process.env),\n"
     + "  postiz: process.env.POSTIZ_API_KEY,\n"
+    + "  args: process.argv.slice(2),\n"
     + "}));\n",
     { mode: 0o755 },
   );
@@ -534,6 +535,7 @@ test("distribution subprocess receives an allowlisted environment, not the full 
       instagramProfileStatePath: "/ps",
       tiktokIntegration: "integration-id",
       postizToken: "provider-token",
+      newSlotEffect: true,
     });
     assert.equal(result.postiz, "provider-token");
     assert.ok(result.env_keys.includes("PATH"));
@@ -547,6 +549,7 @@ test("distribution subprocess receives an allowlisted environment, not the full 
     assert.ok(result.env_keys.includes("CDP_HOST"));
     assert.ok(result.env_keys.includes("CDP_PORT"));
     assert.ok(!result.env_keys.includes("SECRET_CANARY"));
+    assert.ok(result.args.includes("--new-slot-effect"));
   } finally {
     delete process.env.LM_TIKTOK_DIRECT_MIGRATION;
     delete process.env.LM_FAKE_FLAG;

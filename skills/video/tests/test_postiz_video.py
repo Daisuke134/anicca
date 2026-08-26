@@ -77,6 +77,21 @@ class PostizVideoTests(unittest.TestCase):
                             postiz_video.main()
             self.assertIs(postiz_video.socket.getaddrinfo, original)
 
+    def test_new_slot_effect_skips_recent_post_reuse(self):
+        with tempfile.TemporaryDirectory() as directory:
+            video = Path(directory) / "video.mp4"
+            video.write_bytes(b"video")
+            caption = Path(directory) / "caption.txt"
+            caption.write_text("caption", encoding="utf-8")
+            argv = ["postiz_video.py", "--video", str(video), "--caption-file", str(caption),
+                    "--integration", "integration-1", "--platform", "instagram", "--new-slot-effect"]
+            with patch.dict(os.environ, {"POSTIZ_API_KEY": "fixture"}, clear=False), patch.object(sys, "argv", argv), \
+                 patch.object(postiz_video, "read_recent_posts") as recent, \
+                 patch.object(postiz_video, "upload_video", side_effect=RuntimeError("new provider effect")):
+                with self.assertRaisesRegex(RuntimeError, "new provider effect"):
+                    postiz_video.main()
+            recent.assert_not_called()
+
     def test_payload_is_direct_public_video_with_exact_caption_and_media(self):
         payload = postiz_video.build_payload(
             integration="cmp9txjdp01c8oh0yb6dhlarr",

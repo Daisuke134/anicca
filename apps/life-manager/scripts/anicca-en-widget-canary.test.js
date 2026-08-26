@@ -711,6 +711,7 @@ test("armed Obou production uses the latest exact slot and leaves controls uncha
   assert.equal(result.publication.created, true);
   assert.equal(result.telegram.created, true);
   assert.equal(publicationCalls.length, 1);
+  assert.equal(publicationCalls[0].newSlotEffect, true);
   assert.deepEqual(fs.readFileSync(value.manifestPath), controls.manifest);
   assert.deepEqual(fs.readFileSync(value.fencePath), controls.fence);
 });
