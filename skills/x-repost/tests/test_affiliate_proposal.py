@@ -496,6 +496,9 @@ class AffiliateProposalTests(unittest.TestCase):
             MODULE.record_distribution_result(
                 claims, payloads, other, "UNVERIFIED", None, "postiz-unknown",
             )
+            unresolved = MODULE.claim_next_job(queue, claims, other)
+            self.assertFalse(unresolved["changed"])
+            self.assertEqual(unresolved["job_id"], job["job_id"])
             with self.assertRaises(ValueError):
                 MODULE.requeue_confirmed_no_effect(other, job["job_id"])
 
@@ -528,6 +531,14 @@ class AffiliateProposalTests(unittest.TestCase):
                 "READY_TO_POST",
             )
 
+            MODULE.record_distribution_result(
+                claims, payloads, results, "UNVERIFIED", None, "postiz-123",
+            )
+            with self.assertRaises(ValueError):
+                MODULE.record_distribution_result(
+                    claims, payloads, results, "POSTED",
+                    "https://x.com/selawmqt/status/123", "postiz-other",
+                )
             first = MODULE.record_distribution_result(
                 claims, payloads, results, "POSTED",
                 "https://x.com/selawmqt/status/123", "postiz-123",
@@ -545,7 +556,7 @@ class AffiliateProposalTests(unittest.TestCase):
             self.assertEqual(first["text_sha256"], payload["text_sha256"])
             self.assertEqual(first["post_url"], "https://x.com/selawmqt/status/123")
             self.assertEqual(first["provider_submission_id"], "postiz-123")
-            self.assertEqual(len(results.read_text().splitlines()), 1)
+            self.assertEqual(len(results.read_text().splitlines()), 2)
             self.assertEqual(
                 MODULE.distribution_effect_state(claims, payloads, results)["state"],
                 "POSTED",
@@ -562,6 +573,8 @@ class AffiliateProposalTests(unittest.TestCase):
         self.assertIn("X_REPOST_JOB_ID", shell)
         self.assertIn("--record-job-result", shell)
         self.assertIn("--requeue-no-effect", shell)
+        self.assertIn("affiliate distribution job reconciled without duplicate publish", shell)
+        self.assertIn('--mode reconcile', shell)
         self.assertRegex(
             shell,
             r'--job-results "\$AFFILIATE_JOB_RESULTS" --revision-copy .* \\\n+\s+--revise-raw-limit',

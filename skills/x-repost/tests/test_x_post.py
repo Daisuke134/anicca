@@ -65,6 +65,40 @@ class Page:
 
 
 class XPostTests(unittest.TestCase):
+    def test_postiz_reconcile_binds_submission_integration_and_release_url(self) -> None:
+        class Response:
+            def __enter__(self): return self
+            def __exit__(self, *_args): return False
+            def read(self):
+                return json.dumps({"posts": [{
+                    "id": "provider-1", "state": "PUBLISHED",
+                    "releaseURL": "https://twitter.com/selawmqt/status/123",
+                    "integration": {"id": "integration-1"},
+                }]}).encode()
+
+        env = {"POSTIZ_API_KEY": "secret", "X_REPOST_POSTIZ_INTEGRATION_ID": "integration-1"}
+        with patch.dict(os.environ, env, clear=False), patch.object(
+            MODULE, "urlopen", return_value=Response()
+        ):
+            url = MODULE.postiz_published_url(
+                "provider-1", "2026-08-26T16:41:28+00:00"
+            )
+        self.assertEqual(url, "https://x.com/selawmqt/status/123")
+
+    def test_reconcile_no_provider_match_stays_unverified(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            text_file = Path(td) / "post.txt"
+            text_file.write_text("Useful https://aniccaai.com/blog/tool")
+            argv = ["x_post.py", "--cdp", "http://127.0.0.1:1", "--mode", "reconcile",
+                    "--text-file", str(text_file), "--provider-submission-id", "provider-1",
+                    "--effect-observed-at", "2026-08-26T16:41:28+00:00"]
+            output = io.StringIO()
+            with patch.object(MODULE, "postiz_published_url", return_value=None), \
+                    patch.object(MODULE.sys, "argv", argv), redirect_stdout(output):
+                with self.assertRaisesRegex(SystemExit, "2"):
+                    MODULE.main()
+        self.assertEqual(json.loads(output.getvalue())["posted"], "unverified")
+
     def test_browser_quote_uses_historical_single_composer_effect(self) -> None:
         class Keyboard:
             def __init__(self):

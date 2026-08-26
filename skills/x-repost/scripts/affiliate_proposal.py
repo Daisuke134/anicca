@@ -251,7 +251,7 @@ def claim_next_job(
                 and sum(row.get("state") == "RETRY_READY" for row in current_results) >= 2
             )
             terminal = bool(current_results and (
-                current_results[-1].get("state") in {"POSTED", "UNVERIFIED"}
+                current_results[-1].get("state") == "POSTED"
                 or exhausted_no_effect
             ))
             if not terminal:
@@ -668,11 +668,22 @@ def record_distribution_result(
         if existing:
             prior = existing[-1]
             if prior["state"] != "RETRY_READY":
-                comparable = {key: value for key, value in prior.items() if key != "observed_at"}
-                expected = {key: value for key, value in row.items() if key != "observed_at"}
-                if comparable != expected:
-                    raise ValueError("distribution result conflicts with terminal receipt")
-                return {**prior, "changed": False}
+                if (
+                    prior["state"] == "UNVERIFIED"
+                    and state == "POSTED"
+                    and prior.get("provider_submission_id") == provider_submission_id
+                    and all(prior.get(key) == row.get(key) for key in (
+                        "job_id", "effect_identity", "placement_id",
+                        "content_sha256", "text_sha256", "provider",
+                    ))
+                ):
+                    pass
+                else:
+                    comparable = {key: value for key, value in prior.items() if key != "observed_at"}
+                    expected = {key: value for key, value in row.items() if key != "observed_at"}
+                    if comparable != expected:
+                        raise ValueError("distribution result conflicts with terminal receipt")
+                    return {**prior, "changed": False}
         stream.seek(0, os.SEEK_END)
         stream.write(json.dumps(row, sort_keys=True, separators=(",", ":")) + "\n")
         stream.flush()
