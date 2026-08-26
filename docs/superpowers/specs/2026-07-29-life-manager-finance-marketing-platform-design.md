@@ -2293,6 +2293,49 @@ Telegram `created=false` returning the same message ID. The retained publication
 receipt count for Postiz row `cmt9mebpj0341mp0ymi31r582` remains exactly one.
 The only active atomic item is immediate Postiz metric-source status plus durable
 2h/24h/72h/7d ownership for this photo receipt; no new publication starts.
+
+**Remaining atomic TODO SSOT — execute strictly in this order:**
+
+1. `@anicca_slideshow` metrics: add the exact receipt to the LM Postiz-API
+   metrics owner; persist immediate source status and automatic 2h/24h/72h/7d
+   windows; report measured account/post fields naturally to Telegram; preserve
+   empty/missing fields as `unavailable`, never zero.
+2. Close `@anicca_slideshow` as `canary-verified/default-off`, armed 0, with
+   publication present, Telegram `34998`, replay publication 0/message 0, and
+   metric-owner evidence.
+3. Select the next single remaining Postiz integration. Classify exactly one
+   product, locale, account, platform, renderer, content form, and approved asset
+   family. Mixed/wrong/unknown routes become hold at 0/day.
+4. Import and visually approve one correct local pack for that account. Bind
+   object hashes, caption, media order, account, integration, renderer, and form.
+5. Run one API canary for that account only. Confirm Postiz `PUBLISHED` and exact
+   stored assets/caption; send one natural Telegram receipt; prove publication
+   replay 0/message replay 0; register immediate plus 2h/24h/72h/7d metrics.
+6. Repeat steps 3–5 one account at a time for every retained TikTok, Instagram,
+   and YouTube integration. Do not create missing Honne Instagram/YouTube routes
+   and do not relabel Anicca accounts as Honne.
+7. Finish the selected Anicca YouTube canary using API-only evidence; the skipped
+   login-dependent YouTube route remains skipped unless an API route exists.
+8. Enable cadence only for individually healthy verified accounts, starting at
+   1/day and increasing to at most 3/day after published/missed/duplicate and
+   metric-source health remain good. Never mass-enable.
+9. Keep the daily metrics loop running for every healthy account: social post and
+   account metrics, 2h/24h/72h/7d windows, and natural Telegram. Unsupported or
+   empty metrics remain source-labelled `unavailable`.
+10. Join each immutable creative/account/campaign lineage with ASC installs,
+    RevenueCat trials/subscriptions/proceeds, and product activation/retention.
+    Unattributed values remain unattributed; timing alone is not attribution.
+11. Close the bounded self-improvement loop independently for Honne EN, Honne JA,
+    and Anicca: change one hook/title variable, keep stable assignment, compare
+    attributed outcomes, keep/revert, and prove the next creative consumed the
+    decision. Never select winners across products.
+12. Finish daily and weekly natural-language Telegram reports covering posting,
+    misses, duplicates, social metrics, installs, activation, trials, paid,
+    proceeds, attribution coverage, and the next bounded hook change.
+13. Only after all retained routes have durable publication, replay, metrics,
+    reporting, and ownership evidence, retire legacy ownership while retaining
+    disabled artifacts as rollback evidence. Do not enable, kickstart, stop,
+    restart, or delete legacy OpenClaw/launchd jobs during this recovery.
 Controls are restored to fence closed and armed 0. API-only operation is enforced by removing the CDP/
 browser fallback from profile resolution; a profile-only result now fails fast
 after the bounded API/CLI readback instead of holding the effect fence open for
