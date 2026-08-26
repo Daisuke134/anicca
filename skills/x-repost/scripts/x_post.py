@@ -339,6 +339,22 @@ def quote_card_opens_exact_source(page, post_url: str, source_url: str) -> bool:
     return False
 
 
+def exact_quote_source_readback(pw, cdp: str, post_url: str, source_url: str) -> bool:
+    try:
+        browser = pw.chromium.connect_over_cdp(cdp)
+        context = browser.contexts[0] if browser.contexts else browser.new_context()
+        page = context.new_page()
+        try:
+            page.goto(post_url, wait_until="domcontentloaded", timeout=60000)
+            page.wait_for_timeout(5000)
+            return quote_card_opens_exact_source(page, post_url, source_url)
+        finally:
+            page.close()
+    except Exception as exc:
+        print(f"x_post: exact quote-source readback failed: {exc}", file=sys.stderr)
+        return False
+
+
 def find_exact_public_markup(markup: str, expected_text: str, expected_url: str, handle: str,
                              minimum_status_id: int | None = None):
     prefix = normalized(expected_text.replace(expected_url, "").strip())
@@ -554,6 +570,11 @@ def main():
                     pw, args.cdp, handle, needle, expected_url,
                     text if expected_url else None, minimum_status_id
                 )
+                if (args.mode == "quote" and permalink and
+                        not exact_quote_source_readback(
+                            pw, args.cdp, permalink, args.source_url
+                        )):
+                    permalink = None
     except (Exception, SystemExit) as exc:
         if effect is None and not browser_attempted:
             json.dump({"posted": False, "mode": args.mode,
