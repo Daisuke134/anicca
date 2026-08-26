@@ -20,9 +20,11 @@ test("production loop wires verified transfer proof instead of status-only recei
   const source = await readFile(join(dirname(fileURLToPath(import.meta.url)), "..", "index.mjs"), "utf8");
   const block = source.slice(source.indexOf("async function reconcileMoneyTruthIfDue()"), source.indexOf("// ── franklin-alwaysact-skill-router", source.indexOf("async function reconcileMoneyTruthIfDue()")));
   assert.match(block, /verifyEvmReceipt/);
+  assert.match(block, /verifyLedgerRow/);
   assert.doesNotMatch(block, /receiptStatus/);
-  assert.match(block, /expected_chain_id/);
-  assert.match(block, /expected_contract/);
-  assert.match(block, /expected_amount_atomic/);
-  assert.match(block, /expected_log_index/);
+  const moneyTruth = await readFile(join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "skills", "agent-economy", "lib", "money-truth.mjs"), "utf8");
+  assert.match(moneyTruth, /expected_chain_id/);
+  assert.match(moneyTruth, /expected_contract/);
+  assert.match(moneyTruth, /expected_amount_atomic/);
+  assert.match(moneyTruth, /expected_log_index/);
 });

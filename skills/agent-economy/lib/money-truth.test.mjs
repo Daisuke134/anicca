@@ -11,6 +11,10 @@ import { normalizeRevenueReceipt } from "./revenue-receipt.mjs";
 import { mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+
+const execFileAsync = promisify(execFile);
 
 const TX = "0x436143c136183fbf164d884bda7cf9608b0b5ac7b6243f797d4d2e72ccc23d58";
 
@@ -84,11 +88,33 @@ test("reconcileLedger appends a successful correction once and returns the verif
   const first = await reconcileLedger({
     ledgerPath: ledger,
     correctionPath: corrections,
-    verifyReceipt: async () => ({ verified: true, status: "0x1", evidence: { chain_id: 8453, tx_hash: TX, log_index: 0 } }),
+    verifyReceipt: async () => ({
+      verified: true,
+      status: "0x1",
+      chain_id: 8453,
+      tx_hash: TX,
+      transfer: {
+        contract: "0x833589fcd6edb6e08f4c7c32d4f71b54bdA02913",
+        payer: "0x1111111111111111111111111111111111111111",
+        recipient: "0x2222222222222222222222222222222222222222",
+        amount_atomic: "20000",
+        log_index: 0,
+      },
+    }),
     nowTs: 100,
   });
   assert.equal(first.persisted_corrections, 1);
   assert.equal(first.summary.external_net_usdc, 0.02);
+  const correctionRow = JSON.parse((await readFile(corrections, "utf8")).trim());
+  assert.deepEqual(correctionRow.evidence, {
+    chain_id: 8453,
+    tx_hash: TX,
+    contract: "0x833589fcd6edb6e08f4c7c32d4f71b54bdA02913",
+    payer: "0x1111111111111111111111111111111111111111",
+    recipient: "0x2222222222222222222222222222222222222222",
+    amount_atomic: "20000",
+    log_index: 0,
+  });
 
   const second = await reconcileLedger({
     ledgerPath: ledger,
@@ -171,6 +197,16 @@ test("reconcileRevenueReceipts rejects self-payment and unverified receipts with
   assert.equal((await readFile(journalPath, "utf8").catch(() => "")).trim(), "");
 });
 
+test("empty selfPayers does not mask provided selfWallets", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "money-truth-revenue-"));
+  const journalPath = join(dir, "revenue-journal.jsonl");
+  const payer = "0x9999999999999999999999999999999999999999";
+  await assert.rejects(
+    () => reconcileRevenueReceipts({ journalPath, receipts: [revenueReceipt({ payer })], selfWallets: [payer] }),
+    /self|payer/i,
+  );
+});
+
 test("reconcileRevenueReceipts always re-normalizes a forged canonical marker", async () => {
   const dir = await mkdtemp(join(tmpdir(), "money-truth-revenue-"));
   const journalPath = join(dir, "revenue-journal.jsonl");
@@ -192,4 +228,28 @@ test("reconcileRevenueReceipts fails closed on corrupt JSONL and serializes conc
   ]);
   assert.equal(results.reduce((sum, result) => sum + result.accepted, 0), 1);
   assert.equal((await readFile(journalPath, "utf8")).trim().split("\n").length, 1);
+});
+
+test("standalone reconcile CLI uses the strict row verifier, never status-only receiptStatus", async () => {
+  const source = await readFile(new URL("../reconcile-receipts.mjs", import.meta.url), "utf8");
+  assert.match(source, /verifyLedgerRow/);
+  assert.match(source, /verifyEvmReceipt/);
+  assert.doesNotMatch(source, /receiptStatus/);
+});
+
+test("standalone reconcile CLI consumes a canonical receipt journal without external effects", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "money-truth-cli-"));
+  const ledgerPath = join(dir, "earn-ledger.jsonl");
+  const correctionPath = join(dir, "receipt-reconciliations.jsonl");
+  await writeFile(ledgerPath, `${JSON.stringify(revenueReceipt({
+    proof: { provider_receipt_id: "cli-flow-1", verified: true },
+  }))}\n`);
+  const { stdout } = await execFileAsync(process.execPath, ["skills/agent-economy/reconcile-receipts.mjs", ledgerPath, correctionPath], {
+    cwd: process.cwd(),
+    timeout: 5_000,
+    env: { ...process.env },
+  });
+  const result = JSON.parse(stdout.trim());
+  assert.equal(result.persisted_corrections, 0);
+  assert.equal(result.summary.external_net_usdc, 1.9);
 });

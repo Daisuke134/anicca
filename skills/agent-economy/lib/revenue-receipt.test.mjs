@@ -88,6 +88,14 @@ test("canonical key is proof identity only", () => {
   assert.equal(a.idempotency_key, b.idempotency_key);
 });
 
+test("provider proof key is namespaced while same-provider metadata changes dedupe", () => {
+  const stripe = normalizeRevenueReceipt(baseInput({ provider: "stripe", proof: { provider_receipt_id: "same-id", verified: true } }));
+  const stripeChanged = normalizeRevenueReceipt(baseInput({ provider: "stripe", payer: "0x3333333333333333333333333333333333333333", proof: { provider_receipt_id: "same-id", verified: true } }));
+  const paypal = normalizeRevenueReceipt(baseInput({ provider: "paypal", proof: { provider_receipt_id: "same-id", verified: true } }));
+  assert.equal(stripe.idempotency_key, stripeChanged.idempotency_key);
+  assert.notEqual(stripe.idempotency_key, paypal.idempotency_key);
+});
+
 test("rejects malformed signed arithmetic and non-terminal provider state", () => {
   assert.throws(
     () => normalizeRevenueReceipt(baseInput({ signed_net: "0.90" })),

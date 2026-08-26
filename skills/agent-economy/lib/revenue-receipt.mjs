@@ -194,7 +194,10 @@ export function canonicalRevenueReceiptKey(receipt) {
   // Idempotency is the provider/chain proof identity only.  Metadata changes cannot mint a second
   // row, while a genuinely distinct transfer log or provider receipt remains distinct.
   const identity = proof.provider_receipt_id !== undefined
-    ? { provider_receipt_id: proof.provider_receipt_id }
+    ? {
+      provider: nonEmptyText(valueOf(receipt, ["provider"]), "provider").toLowerCase(),
+      provider_receipt_id: proof.provider_receipt_id,
+    }
     : { chain_id: proof.chain_id, tx_hash: proof.tx_hash, log_index: proof.log_index };
   const material = JSON.stringify(canonicalValue(identity));
   return `revenue:v1:${createHash("sha256").update(material, "utf8").digest("hex")}`;
@@ -211,7 +214,7 @@ export function normalizeRevenueReceipt(input, options = {}) {
   if (!input || typeof input !== "object" || Array.isArray(input)) {
     fail("INVALID_RECEIPT", "receipt must be an object");
   }
-  const provider = normalizeIdentity(valueOf(input, ["provider"]), "provider");
+  const provider = normalizeIdentity(valueOf(input, ["provider"]), "provider").toLowerCase();
   const payer = normalizeIdentity(valueOf(input, ["payer", "external_payer", "externalPayer"]), "payer");
   const recipient = normalizeIdentity(valueOf(input, ["recipient"]), "recipient");
   const configuredSelfPayers = options.selfPayers ?? options.selfWallets ?? options.ownWallets;

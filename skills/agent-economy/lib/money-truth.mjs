@@ -149,7 +149,11 @@ async function withJournalLock(file, work) {
 
 function sanitizeEvidence(value) {
   if (!value || typeof value !== "object") return undefined;
-  const source = value.evidence && typeof value.evidence === "object" ? value.evidence : value;
+  const source = value.evidence && typeof value.evidence === "object"
+    ? value.evidence
+    : value.transfer && typeof value.transfer === "object"
+      ? { ...value, ...value.transfer }
+      : value;
   const allowed = ["chain_id", "tx_hash", "contract", "payer", "recipient", "amount_atomic", "log_index", "provider_receipt_id"];
   const evidence = {};
   for (const key of allowed) {
@@ -157,6 +161,34 @@ function sanitizeEvidence(value) {
       && (typeof source[key] === "string" || typeof source[key] === "number")) evidence[key] = source[key];
   }
   return Object.keys(evidence).length > 0 ? evidence : undefined;
+}
+
+/** Build and verify one ledger row's complete EVM transfer tuple through the shared strict verifier. */
+export async function verifyLedgerRow(row, verifyEvmReceipt) {
+  if (!row || typeof row !== "object" || typeof verifyEvmReceipt !== "function") {
+    return { verified: false, reason: "missing_transfer_proof" };
+  }
+  const proof = row.proof || row.chain_provider_proof;
+  const txHash = proof?.tx_hash || proof?.transaction_hash || row.tx;
+  const chainId = proof?.chain_id || row.chain_id;
+  const contract = proof?.contract || row.contract || row.asset_contract;
+  const recipient = row.recipient || row.wallet;
+  const payer = row.payer || row.from;
+  const amountAtomic = row.amount_atomic || row.expected_amount_atomic;
+  const logIndex = proof?.log_index;
+  if (proof?.verified !== true || !txHash || !chainId || !contract || !recipient || !payer
+    || amountAtomic == null || logIndex == null) {
+    return { verified: false, reason: "missing_transfer_proof" };
+  }
+  return verifyEvmReceipt({
+    tx_hash: txHash,
+    expected_chain_id: chainId,
+    expected_contract: contract,
+    expected_recipient: recipient,
+    expected_payer: payer,
+    expected_amount_atomic: amountAtomic,
+    expected_log_index: logIndex,
+  });
 }
 
 /**
@@ -230,8 +262,9 @@ function receiptIsVerifiedExternal(receipt, row = receipt, selfPayers = []) {
 export async function reconcileRevenueReceipts({ journalPath, receipts, nowTs, selfPayers = [], selfWallets } = {}) {
   if (!journalPath) throw new TypeError("journalPath is required");
   if (!Array.isArray(receipts)) throw new TypeError("receipts must be an array");
-  const payers = selfPayers !== undefined && selfPayers !== null && selfPayers !== ""
-    ? selfPayers : (selfWallets ?? []);
+  const payers = Array.isArray(selfPayers) && selfPayers.length === 0 && Array.isArray(selfWallets) && selfWallets.length > 0
+    ? selfWallets
+    : (selfPayers !== undefined && selfPayers !== null && selfPayers !== "" ? selfPayers : (selfWallets ?? []));
   const result = await withJournalLock(journalPath, async () => {
     const existing = await readJsonl(journalPath);
     const known = new Set(existing.map((row) => isNormalizedRevenueReceipt(row) ? row.idempotency_key : null).filter(Boolean));

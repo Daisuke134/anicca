@@ -813,37 +813,14 @@ async function reconcileMoneyTruthIfDue() {
   })) return;
   moneyTruthReconcileAtMs = nowMs;
   try {
-    const { reconcileLedger } = await import('../../skills/agent-economy/lib/money-truth.mjs');
+    const { reconcileLedger, verifyLedgerRow } = await import('../../skills/agent-economy/lib/money-truth.mjs');
     const { verifyEvmReceipt } = await import('../../skills/_shared/lib/verify-tx.mjs');
     const ledgerPath = defaultEarnLedgerPath(config);
     const correctionPath = path.join(path.dirname(ledgerPath), 'receipt-reconciliations.jsonl');
     const result = await reconcileLedger({
       ledgerPath,
       correctionPath,
-      verifyReceipt: (_tx, row) => {
-        const proof = row?.proof || row?.chain_provider_proof;
-        // No transfer tuple means no EVM verification attempt.  A status-only legacy row is kept
-        // visible but remains unverified; this prevents a successful RPC status from becoming money.
-        const txHash = proof?.tx_hash || proof?.transaction_hash || row?.tx;
-        const chainId = proof?.chain_id || row?.chain_id;
-        const contract = proof?.contract || row?.contract || row?.asset_contract;
-        const recipient = row?.recipient || row?.wallet;
-        const payer = row?.payer || row?.from;
-        const amountAtomic = row?.amount_atomic || row?.expected_amount_atomic;
-        const logIndex = proof?.log_index;
-        if (proof?.verified !== true || !txHash || !chainId || !contract || !recipient || !payer || amountAtomic == null || logIndex == null) {
-          return { verified: false, reason: 'missing_transfer_proof' };
-        }
-        return verifyEvmReceipt({
-          tx_hash: txHash,
-          expected_chain_id: chainId,
-          expected_contract: contract,
-          expected_recipient: recipient,
-          expected_payer: payer,
-          expected_amount_atomic: amountAtomic,
-          expected_log_index: logIndex,
-        });
-      },
+      verifyReceipt: (_tx, row) => verifyLedgerRow(row, verifyEvmReceipt),
       nowTs: Math.floor(nowMs / 1000),
     });
     if (result.persisted_corrections > 0) {

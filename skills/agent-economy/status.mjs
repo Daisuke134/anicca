@@ -8,9 +8,11 @@ import { graduationGate } from "./lib/treasury-policy.mjs";
 const WINDOW_MS = 30 * 86400000;
 
 function timestampMs(row) {
-  const value = Number(row?.ts ?? row?.timestamp);
-  if (!Number.isFinite(value)) return null;
-  return value > 1e12 ? value : value * 1000;
+  const raw = row?.ts ?? row?.timestamp ?? row?.occurred_at;
+  const value = Number(raw);
+  if (Number.isFinite(value)) return value > 1e12 ? value : value * 1000;
+  const parsed = Date.parse(String(raw ?? ""));
+  return Number.isFinite(parsed) ? parsed : null;
 }
 
 function recent(rows, startMs, endMs) {
@@ -43,7 +45,9 @@ export function summarizeEconomyStatus({
   const earn30 = recent(earnRows, start, now);
   const compute30 = recent(computeRows, start, now);
   const shelter30 = recent(shelterRows, start, now);
-  const revenue = summarizeRealizedRevenue(earn30, corrections);
+  // Production status requires the same verified proof gate as the reconcile loop.  Legacy rows that
+  // merely claim status=0x1 remain visible as unverified but never become realized revenue.
+  const revenue = summarizeRealizedRevenue(earn30, corrections, { require_verified_proof: true });
   const computeCost = sumField(compute30, ["cost_usd", "costUsd", "est_usd"]);
   const shelterCost = sumField(shelter30, ["settledLeaseCostUsd", "shelter_cost_usd"]);
   const graduation = graduationGate({
@@ -93,4 +97,3 @@ if (isMain) {
       ? undefined : Number(process.env.ANICCA_HUMAN_PAID_INFERENCE_30D),
   }))}\n`);
 }
-
