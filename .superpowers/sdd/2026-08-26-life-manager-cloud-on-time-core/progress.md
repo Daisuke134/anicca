@@ -98,3 +98,18 @@ Baseline: focused Life Manager suite 175/175 PASS.
 - Task 5 fix round 1: `f3cb316d3`; verification report `f08c0a592`; focused 48/48 with three mutations detected.
 - Task 5 re-review R1: APPROVED — real HTTP valid/start-payload/exact-bot, punctuation negative, explicit rejection privacy, existing panel auth 44/44, and no unauthorized session writes verified.
 - Task 5: complete
+
+## Task 6 review loop
+
+- Task 6 base: `03442db73`
+- Task 6 implementer: `/root/calendar_onboarding_consent`
+- Task 6 Ruling: reuse existing panel session, OAuth-state table/claim callback, Composio helpers, and derive the compatible 43-character state as a session-scoped HMAC; no second OAuth/store.
+- Task 6 implementation: `4f0c87d10`; session-renewal fix `a9c385cad`; reports `ffcb9837d` and `29353ecec`; focused 62/62.
+- Task 6 review R0: fix-first — exact provider enabled truth was permissive; repeated/concurrent start created duplicate state/link; missing dedicated HMAC secret fell back to service key; session renewal was initially dropped.
+- Task 6 Ruling: expand to the existing OAuth-state store interface and one additive migration. Enforce one live state per uid/chat/provider atomically, fail closed without an explicit session secret, and require `enabled===true`.
+- Task 6 fix round 1: `9b1f0585e`; report `d716b2d4d`; focused 68/68 and related panel/auth 42/42.
+- Task 6 re-review R1: fix-first — binding could change after initial scope assertion but before provider/state effects because the atomic RPC did not revalidate/lock the current Telegram binding.
+- Task 6 Ruling: provider status is read-only first; then the RPC revalidates exact uid/chat under `FOR SHARE` and claims state; only then may provider mutation/link run.
+- Task 6 fix round 2: `31898fc55`; report `be4364c77`; six boundary mutations detected.
+- Task 6 re-review R2: APPROVED — rebind gives 401/state0/provider0, concurrent start gives 200+409/state1/link1, exact enabled/renewal/secret/callback regressions verified; 69/69 + 42/42 PASS.
+- Task 6: complete (production migration apply/readback remains Task 9)
