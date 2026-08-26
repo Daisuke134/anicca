@@ -68,6 +68,26 @@ test("the complete forward graph permits queueing and withdrawal without state r
   }
 });
 
+test("growth loop persists application-ready, submitted, provider-verified, and final decision separately", () => {
+  const edges = [
+    ["discovered", "application_ready", "応募内容を検証し送信可能です。"],
+    ["application_ready", "submitted", "応募フォームを送信しました。"],
+    ["submitted", "provider_verified", "主催者ページで応募済みを確認しました。"],
+    ["provider_verified", "accepted", "登壇応募を採択しました。"],
+    ["provider_verified", "rejected", "今回は登壇応募を見送りました。"],
+  ];
+  for (const [currentState, toState, excerpt] of edges) {
+    const result = validateTalkApplicationTransition({
+      to_state: toState, evidence_excerpt: excerpt, reason: "公開された公式証拠で状態を確認したため",
+      source_refs: ["provider-receipt://connector/talk/state-1"],
+    }, {
+      currentState, observedAt: "2026-08-02T02:00:00.000Z", now: "2026-08-02T02:01:00.000Z",
+      sourceText: excerpt, sourceRefs: ["provider-receipt://connector/talk/state-1"],
+    });
+    assert.deepEqual([result.from_state, result.to_state], [currentState, toState]);
+  }
+});
+
 test("invalid graph edges, future observations, invented refs, ungrounded excerpts, and secrets fail closed", () => {
   const cases = [
     [decision({ to_state: "accepted" }), { ...BASE, currentState: "discovered" }],

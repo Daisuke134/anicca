@@ -2,12 +2,14 @@
 
 const GEMINI = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 const STATES = Object.freeze([
-  "discovered", "submission_queued", "submitted", "accepted", "rejected", "withdrawn", "presented",
+  "discovered", "application_ready", "submission_queued", "submitted", "provider_verified", "accepted", "rejected", "withdrawn", "presented",
 ]);
 const NEXT = Object.freeze({
-  discovered: Object.freeze(["submission_queued"]),
+  discovered: Object.freeze(["application_ready", "submission_queued"]),
+  application_ready: Object.freeze(["submitted", "withdrawn"]),
   submission_queued: Object.freeze(["submitted", "withdrawn"]),
-  submitted: Object.freeze(["accepted", "rejected", "withdrawn"]),
+  submitted: Object.freeze(["provider_verified", "accepted", "rejected", "withdrawn"]),
+  provider_verified: Object.freeze(["accepted", "rejected", "withdrawn"]),
   accepted: Object.freeze(["presented", "withdrawn"]),
   rejected: Object.freeze([]),
   withdrawn: Object.freeze([]),

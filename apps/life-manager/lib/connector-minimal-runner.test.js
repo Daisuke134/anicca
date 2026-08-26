@@ -469,6 +469,30 @@ test("runner skips an ineligible leading candidate and submits only the next eli
   assert.equal(state.calls.some((row) => row.includes(weak.event_ref)), false);
 });
 
+test("open talk consumes the one-effect budget and defers attendance to a later wake", async () => {
+  const selected = Object.freeze({
+    ...candidate("luma", "talk-first"),
+    talk_opportunity: Object.freeze({ application_url: "https://forms.example.com/talk", should_create_talk_application: true }),
+    talk_pack: Object.freeze({ title: "Life Manager talk" }),
+  });
+  let state = fixture({
+    async discoverCandidates() { return [selected]; },
+    async runTalkApplication({ candidate: supplied }) {
+      state.calls.push(["talk-submit", supplied.event_ref]);
+      return { status: "provider_verified", receipt_ref: "provider-receipt://connector/talk/1" };
+    },
+    async completeTalkEvidence({ candidate: supplied }) {
+      state.calls.push(["talk-evidence", supplied.event_ref]);
+      return { status: "applied_bundle", bundle_id: "talk-bundle-1", completion_disposition: "created" };
+    },
+  });
+  const result = await runMinimalConnectorWake({ ownerToken: "owner-token-talk-budget-123456", providers: ["luma"] }, state.dependencies);
+  assert.deepEqual(result, { status: "applied_bundle", bundle_id: "talk-bundle-1", telegram_provider_id: "9001" });
+  assert.deepEqual(state.calls.filter(([name]) => name === "navigate").map((row) => row[4]), ["https://forms.example.com/talk"]);
+  assert.equal(state.calls.some(([name]) => ["cache", "direct", "agent"].includes(name)), false);
+  assert.deepEqual(state.calls.filter(([name]) => name === "talk-submit" || name === "talk-evidence").map(([name]) => name), ["talk-submit", "talk-evidence"]);
+});
+
 test("a verified cached replay skips both direct and agent actions", async () => {
   const state = fixture({
     async runCachedAction(input) {

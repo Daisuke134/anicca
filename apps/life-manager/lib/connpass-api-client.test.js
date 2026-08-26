@@ -2,6 +2,8 @@
 
 const test = require("node:test");
 const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
 
 const { createConnpassApiClient } = require("./connpass-api-client.js");
 
@@ -144,4 +146,19 @@ test("429 fails closed without retrying or exposing the key", async () => {
     return true;
   });
   assert.equal(fetches, 1);
+});
+
+test("active production Connpass inventory references only the official v2 events endpoint", () => {
+  const clientSource = fs.readFileSync(path.join(__dirname, "connpass-api-client.js"), "utf8");
+  const productionSource = fs.readFileSync(path.join(__dirname, "connector-minimal-production.js"), "utf8");
+  const workflowSource = fs.readFileSync(path.join(__dirname, "connector-connpass-workflow.js"), "utf8");
+  const apiStart = workflowSource.indexOf("function createApiDiscovery");
+  const apiEnd = workflowSource.indexOf("function eventIdOf", apiStart);
+  const activeApiSource = workflowSource.slice(apiStart, apiEnd);
+  assert.match(clientSource, /https:\/\/connpass\.com\/api\/v2\/events\//);
+  assert.doesNotMatch(clientSource, /connpass\.com\/(?:calendar|event\/\$\{|event\/\d)/);
+  assert.match(productionSource, /createConnpassApiClient/);
+  assert.match(productionSource, /connpassApiClient/);
+  assert.doesNotMatch(productionSource, /connpass-browser-discovery/);
+  assert.doesNotMatch(activeApiSource, /page\.goto|readCalendarBindings|readEventDetail|\/calendar\//);
 });

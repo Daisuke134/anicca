@@ -116,17 +116,17 @@ Calendarを無関係なeventで埋めること自体を成果にしない。
 - [x] **CG-23** `load-connector-env.js`と`native-pass.js`からAPI keyをverified production dependencyへ一度だけ渡す。
 - [x] **CG-24** `connpass-api-client.test.js`で`X-API-Key`、`prefecture=tokyo`、28日分`ymd`、pagination、429、1req/sec以下を検証する。既存5秒間隔は安全側として保持してよい。
 - [x] **CG-25** `connector-connpass-workflow.js`のdiscoveryを既存`connpass-api-client.js`へ切り替え、active pathからcalendar page scrapingを外す。
-- [ ] **CG-26** source scan regressionでactive connpass discoveryが`/api/v2/events/`以外へautomated list/detail accessしないことを検証する。
+- [x] **CG-26** source scan regressionでactive connpass discoveryが`/api/v2/events/`以外へautomated list/detail accessしないことを検証する。
 - [ ] **CG-27** connpass candidateでは参加枠、LT枠、補欠、締切、canonical URLをTelegram action receiptへ正規化し、provider permission未確認時のSubmitを0にする。
 - [ ] **CG-28** providerへ自動参加操作の許可範囲を問い合わせ、official response receiptを保存する。許可されたmethodだけを後続実装し、許可がなければTelegram action boundaryをfinal behaviorとする。
 - [ ] **CG-29** API keyを使うread-only live canaryでTokyo 28日inventoryを取得し、API audit、secret非露出、Luma continuationをreadbackしてcommit/pushする。
 
 ##### E. Lightning Talk application
 
-- [ ] **CG-30** `event-talk-opportunity.test.js`へ、公開LT/CFP/demo/pitchだけがopen opportunityとなり、closed/invite-only/本文にないURLはfalseになるregressionを固定する。
-- [ ] **CG-31** `connector-minimal-production.js`でverified candidate detailを`inferEventTalkOpportunity`へ渡し、open talkを同topic内の最上位へ上げる。
-- [ ] **CG-32** `grounded-talk-pack.test.js`へLife Managerのverified factsだけから5分title/abstract/outline/bioを生成し、未検証claimを拒否するregressionを固定する。
-- [ ] **CG-33** 既存talk transition storeへ`discovered → application_ready → submitted → provider_verified → accepted/rejected`を保存し、attendance stateと混ぜない。
+- [x] **CG-30** `event-talk-opportunity.test.js`へ、公開LT/CFP/demo/pitchだけがopen opportunityとなり、closed/invite-only/本文にないURLはfalseになるregressionを固定する。
+- [x] **CG-31** `connector-minimal-production.js`でverified candidate detailを`inferEventTalkOpportunity`へ渡し、open talkを同topic内の最上位へ上げる。
+- [x] **CG-32** `grounded-talk-pack.test.js`へLife Managerのverified factsだけから5分title/abstract/outline/bioを生成し、未検証claimを拒否するregressionを固定する。
+- [x] **CG-33** 既存talk transition storeへ`discovered → application_ready → submitted → provider_verified → accepted/rejected`を保存し、attendance stateと混ぜない。
 - [ ] **CG-34** 一wakeのeffect budgetでtalk Submitを優先する時はattendanceを次wakeへ残し、両方を同時Submitしない。
 - [ ] **CG-35** talk URL上のordinary verified fieldsだけを入力し、payment/CAPTCHA/本人確認/unknown required fieldでは`human_action_required`、official readbackなしでは`submitted`より先へ進めない。
 - [ ] **CG-36** talk classifier、grounded pack、transition store、minimal productionのfocused testsをPASSさせ、LT sliceをcommit/pushする。

@@ -11,6 +11,7 @@ const { createConnectorTabOwner } = require("./connector-tab-owner.js");
 const { createConnectorTargetLease } = require("./connector-target-lease.js");
 const { createConnectorActionCache } = require("./connector-action-cache.js");
 const { eligibleRankedCandidates, inferProviderCandidateRanking } = require("./event-preference-ranking.js");
+const { inferEventTalkOpportunity, isVerifiedEventTalkOpportunity } = require("./event-talk-opportunity.js");
 const { createMinimalEvidenceChain } = require("./connector-minimal-evidence.js");
 const { createMinimalProductionOperations } = require("./connector-minimal-operations.js");
 const { createLumaScriptFirstWorkflow } = require("./connector-luma-workflow.js");
@@ -147,6 +148,7 @@ function createProductionProviderRouter(options = {}) {
   const browserHarness = options.browserHarness;
   const performAction = options.performAction;
   const rankCandidates = options.rankCandidates;
+  const classifyTalkOpportunity = options.classifyTalkOpportunity;
   const eventPreferences = rankCandidates == null ? null : requiredText(options.eventPreferences);
   const connpassAutomatedSubmitAllowed = options.connpassAutomatedSubmitAllowed !== false;
   const now = options.now || (() => new Date());
@@ -180,6 +182,7 @@ function createProductionProviderRouter(options = {}) {
     || !browserHarness || typeof browserHarness.runFallback !== "function"
     || typeof performAction !== "function" || typeof now !== "function"
     || (rankCandidates != null && typeof rankCandidates !== "function")
+    || (classifyTalkOpportunity != null && typeof classifyTalkOpportunity !== "function")
   ) invalid();
 
   function selected(input) {
@@ -219,7 +222,22 @@ function createProductionProviderRouter(options = {}) {
         const pending = candidates.filter((candidate) => !reconcile.includes(candidate));
         if (pending.length === 0) return candidates;
         const ranking = await rankCandidates({ candidates: pending, preferences: eventPreferences });
-        return Object.freeze([...reconcile, ...eligibleRankedCandidates(ranking)]);
+        const eligible = eligibleRankedCandidates(ranking);
+        if (classifyTalkOpportunity == null) return Object.freeze([...reconcile, ...eligible]);
+        const enriched = [];
+        for (const candidate of eligible) {
+          let opportunity = null;
+          try { opportunity = await classifyTalkOpportunity(candidate); } catch { opportunity = null; }
+          const openTalk = isVerifiedEventTalkOpportunity(opportunity)
+            && opportunity.should_create_talk_application === true;
+          enriched.push(Object.freeze(openTalk ? {
+            ...candidate,
+            priority_class: "open_talk",
+            talk_opportunity: opportunity,
+          } : { ...candidate }));
+        }
+        enriched.sort((a, b) => Number(b.priority_class === "open_talk") - Number(a.priority_class === "open_talk"));
+        return Object.freeze([...reconcile, ...enriched]);
       })();
     },
 
@@ -306,6 +324,14 @@ function createMinimalProductionDependencies(options = {}) {
     ? null : requiredText(options.eventPreferences, 2_000);
   const rankCandidates = options.rankCandidates || (eventPreferences == null ? null : (input) => (
     inferProviderCandidateRanking(input, { apiKey: requiredText(options.geminiApiKey, 2_000) })
+  ));
+  const classifyTalkOpportunity = options.classifyTalkOpportunity || (eventPreferences == null ? null : (candidate) => (
+    inferEventTalkOpportunity({
+      canonicalUrl: candidate.canonical_url,
+      title: candidate.title,
+      body: candidate.body || candidate.description,
+      now: nowIso(),
+    }, { apiKey: requiredText(options.geminiApiKey, 2_000) })
   ));
 
   const calendar = options.calendar || makeGogCalendar({
@@ -447,6 +473,7 @@ function createMinimalProductionDependencies(options = {}) {
     connpassAutomatedSubmitAllowed: options.connpassAutomatedSubmitAllowed === true,
     eventPreferences,
     rankCandidates,
+    classifyTalkOpportunity,
     now,
   });
   return Object.freeze({

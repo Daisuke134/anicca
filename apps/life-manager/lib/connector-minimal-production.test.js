@@ -9,6 +9,7 @@ const test = require("node:test");
 const { createBrowserHarnessAdapter } = require("./connector-browser-harness-adapter.js");
 const { createConnectorActionCache } = require("./connector-action-cache.js");
 const { validateProviderCandidateRanking } = require("./event-preference-ranking.js");
+const { validateEventTalkOpportunity } = require("./event-talk-opportunity.js");
 const { runMinimalConnectorWake } = require("./connector-minimal-runner.js");
 const {
   createProductionBrowserRail,
@@ -458,6 +459,42 @@ test("production provider router submits only strong or moderate ranked candidat
   }]);
   fail = true;
   await assert.rejects(router.discoverCandidates("luma", [], {}), /ranking unavailable/);
+});
+
+test("production provider router promotes a verified open talk within equally fitted AI candidates", async () => {
+  const plain = Object.freeze({ provider: "luma", event_ref: "luma-event://event/plain-ai", canonical_url: "https://luma.com/plain-ai", title: "AI Builders", body: "AI meetup for builders." });
+  const talk = Object.freeze({ provider: "luma", event_ref: "luma-event://event/ai-lt", canonical_url: "https://luma.com/ai-lt", title: "AI Builders LT", body: "AI meetup. 5 minute LT applications are open at https://forms.example.com/ai-lt" });
+  const workflow = { async discoverCandidates() { return [plain, talk]; }, async runDirectAction() {}, async readProviderState() { return { status: "absent" }; } };
+  const router = createProductionProviderRouter({
+    lumaWorkflow: workflow, connpassWorkflow: workflow,
+    eventPreferences: "Tokyo AI and open lightning talks",
+    async rankCandidates(input) {
+      return validateProviderCandidateRanking({ ranked_events: [
+        { event_ref: plain.event_ref, priority_class: "ai", preference_fit: "strong", preference_reason: "AI event." },
+        { event_ref: talk.event_ref, priority_class: "ai", preference_fit: "strong", preference_reason: "AI event with talk text." },
+      ] }, input);
+    },
+    async classifyTalkOpportunity(candidate) {
+      const open = candidate.event_ref === talk.event_ref;
+      return validateEventTalkOpportunity(open ? {
+        participation_kind: "both", talk_format: "lightning_talk", application_status: "open",
+        should_create_talk_application: true, application_url: "https://forms.example.com/ai-lt",
+        evidence_excerpt: "5 minute LT applications are open at https://forms.example.com/ai-lt",
+        reason: "A public LT application is open.",
+      } : {
+        participation_kind: "audience_only", talk_format: null, application_status: "not_offered",
+        should_create_talk_application: false, application_url: null,
+        evidence_excerpt: "AI meetup for builders.", reason: "Audience participation only.",
+      }, { canonicalUrl: candidate.canonical_url, title: candidate.title, body: candidate.body, now: "2026-08-07T00:00:00.000Z" });
+    },
+    actionCache: { async replay() {}, saveVerifiedRepair() {} },
+    browserHarness: { async runFallback() {} }, async performAction() {},
+  });
+
+  const result = await router.discoverCandidates("luma", [], {});
+  assert.deepEqual(result.map((candidate) => candidate.event_ref), [talk.event_ref, plain.event_ref]);
+  assert.equal(result[0].priority_class, "open_talk");
+  assert.equal(result[0].talk_opportunity.application_url, "https://forms.example.com/ai-lt");
 });
 
 test("production provider router routes Peatix cache direct and readback on one page", async () => {

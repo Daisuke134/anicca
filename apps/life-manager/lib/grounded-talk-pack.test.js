@@ -16,6 +16,7 @@ const INPUT = Object.freeze({
     { evidence_ref: "evidence://connector/o1b04", fact: "実Lumaイベント1件の参加登録とCalendar登録を照合した。" },
     { evidence_ref: "evidence://connector/o1b07", fact: "同じイベントのQRをTelegramへ送り、positive message IDを確認した。" },
     { evidence_ref: "evidence://connector/o1b12", fact: "一般参加とLT応募を別entityとして実runtime DBへ保存した。" },
+    { evidence_ref: "evidence://connector/speaker-bio", fact: "Life ManagerのイベントConnectorを、実登録と証拠を照合しながら開発しています。" },
   ],
 });
 
@@ -24,6 +25,7 @@ function validPack() {
     title: "Codexで作る、Life Managerの証拠付き自律イベントConnector",
     abstract: "Life Managerが検索だけで終わらず、参加登録、確認、Calendar、QR、Telegramまでを証拠で結ぶ実装を紹介します。",
     application_reason: "Codexの実装事例を共有する5分LTに合い、失敗を成功と表示しない設計を具体的に示せるためです。",
+    bio: "Life ManagerのイベントConnectorを、実登録と証拠を照合しながら開発しています。",
     product_demo_summary: "実Luma登録からCalendarとTelegramのQR通知まで、同一イベントとして照合した流れを見せます。",
     outline: [
       { start_second: 0, end_second: 45, heading: "問題", content: "検索件数ではなく、現実に参加できる状態を作る必要がありました。", evidence_refs: ["evidence://connector/o1b04"] },
@@ -49,6 +51,7 @@ test("rejects gaps, overlaps, unknown evidence, placeholders, secrets, and wealt
     p => { p.outline[0].evidence_refs = ["evidence://connector/invented"]; },
     p => { p.title = "TODO: title"; },
     p => { p.abstract = "contact me at person@example.com"; },
+    p => { p.bio = "世界一のAI研究者として100社を成功させました"; },
     p => { p.product_demo_summary = "誰でも必ず億万長者にします"; },
     p => { p.title = "証拠付き自律イベントConnector"; p.abstract = "登録から通知までを紹介します"; p.product_demo_summary = "実装デモです"; },
   ];
