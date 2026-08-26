@@ -9,7 +9,9 @@ const { createContentObjectStore } = require("../lib/content-object-store.js");
 const { createMarketingLocalLedger } = require("../lib/marketing-local-ledger.js");
 const {
   ACCOUNT_ID,
+  EN_AFFIRMATION_LANE,
   INTEGRATION_REF,
+  JA_LANE,
   buildMarketingNativeCarouselPublicationJob,
   createMarketingNativeCarouselPublicationLoopAdapter,
   verifyMarketingNativeCarouselPublicationReceipt,
@@ -19,6 +21,7 @@ const {
   executeMarketingLivenessJob,
 } = require("../lib/marketing-liveness-adapter.js");
 const { executeCapabilityJob } = require("./runtime-up.js");
+const { armControls, restoreControls } = require("./anicca-en-widget-canary.js");
 
 const TENANT = "dais-local";
 const PRODUCT = "anicca-ios";
@@ -31,6 +34,10 @@ const TELEGRAM_TOKEN_REF = "secret://telegram/bot-token";
 const CHAT_REF = "telegram-chat://owner";
 const OBJECT_REF = /^object:\/\/sha256\/[0-9a-f]{64}$/;
 const ACCOUNT_REF = "account://instagram/@ani.cca1234";
+
+const JA_RUNNER_LANE = JA_LANE;
+const EN_RUNNER_LANE = EN_AFFIRMATION_LANE;
+const COMMAND_LANES = Object.freeze({ run: JA_RUNNER_LANE, "run-en-affirmation": EN_RUNNER_LANE });
 
 function required(value, label) {
   const text = String(value == null ? "" : value).trim();
@@ -48,20 +55,21 @@ function exactInstant(value, label) {
 }
 
 function parseArgs(argv = []) {
-  if (argv.length === 3 && argv[0] === "run" && argv[1] === "--slot") {
-    return { command: "run", slot: exactInstant(argv[2], "Larry JA canary slot") };
+  const lane = argv.length === 3 && argv[1] === "--slot" ? COMMAND_LANES[argv[0]] : null;
+  if (lane) {
+    return { command: argv[0], slot: exactInstant(argv[2], `${lane.name || "Larry"} canary slot`) };
   }
-  throw new Error("usage: anicca-larry-ja-canary.js run --slot <exact ISO instant>");
+  throw new Error("usage: anicca-larry-ja-canary.js run --slot <exact ISO instant> | run-en-affirmation --slot <exact ISO instant>");
 }
 
-function parseMediaRefs(value) {
+function parseMediaRefs(value, lane = JA_RUNNER_LANE) {
   const raw = String(value || "").trim();
   let values;
   if (raw.startsWith("[")) {
-    try { values = JSON.parse(raw); } catch { throw new Error("Larry JA media refs are invalid"); }
+    try { values = JSON.parse(raw); } catch { throw new Error(`${lane.name} media refs are invalid`); }
   } else values = raw.split(",").map((item) => item.trim()).filter(Boolean);
   if (!Array.isArray(values) || values.length !== 6 || values.some((item) => !OBJECT_REF.test(String(item)))) {
-    throw new Error("Larry JA media refs are invalid");
+    throw new Error(`${lane.name} media refs are invalid`);
   }
   return values.map(String);
 }
@@ -73,22 +81,26 @@ function dataDirFrom(env) {
   return dataDir;
 }
 
-function laneConfig(env, parsed, now) {
+function laneConfig(env, parsed, now, lane = JA_RUNNER_LANE) {
   const dataDir = dataDirFrom(env);
   const tenantId = required(env.LM_RUNTIME_TENANT_ID, "LM_RUNTIME_TENANT_ID");
   if (tenantId !== TENANT) throw new Error("Larry JA canary tenant is invalid");
-  const packRef = required(env.LM_ANICCA_LARRY_JA_PACK_REF, "LM_ANICCA_LARRY_JA_PACK_REF");
-  const mediaRefs = parseMediaRefs(env.LM_ANICCA_LARRY_JA_MEDIA_REFS);
-  const captionRef = required(env.LM_ANICCA_LARRY_JA_CAPTION_REF, "LM_ANICCA_LARRY_JA_CAPTION_REF");
-  const approvalRef = required(env.LM_ANICCA_LARRY_JA_APPROVAL_REF, "LM_ANICCA_LARRY_JA_APPROVAL_REF");
+  const packRef = required(env[lane.packEnv], lane.packEnv);
+  const mediaRefs = parseMediaRefs(env[lane.mediaEnv], lane);
+  const captionRef = required(env[lane.captionEnv], lane.captionEnv);
+  const approvalRef = required(env[lane.approvalEnv], lane.approvalEnv);
   for (const [ref, label] of [[packRef, "pack"], [captionRef, "caption"], [approvalRef, "approval"]]) {
-    if (!OBJECT_REF.test(ref)) throw new Error(`Larry JA ${label} ref is invalid`);
+    if (!OBJECT_REF.test(ref)) throw new Error(`${lane.name} ${label} ref is invalid`);
+  }
+  if (lane.packRef && (packRef !== lane.packRef || JSON.stringify(mediaRefs) !== JSON.stringify(lane.mediaRefs)
+    || captionRef !== lane.captionRef || approvalRef !== lane.approvalRef)) {
+    throw new Error(`${lane.name} dedicated object references are not the approved lane`);
   }
   required(env.LM_POSTIZ_API_KEY, "LM_POSTIZ_API_KEY");
   required(env.LM_TELEGRAM_BOT_TOKEN, "LM_TELEGRAM_BOT_TOKEN");
   required(env.LM_TELEGRAM_ALERT_CHAT_ID, "LM_TELEGRAM_ALERT_CHAT_ID");
-  const verificationRef = String(env.LM_ANICCA_LARRY_JA_NATIVE_VERIFICATION_REF || "").trim() || null;
-  if (verificationRef && !OBJECT_REF.test(verificationRef)) throw new Error("Larry JA native verification ref is invalid");
+  const verificationRef = String(env[lane.verificationEnv] || "").trim() || null;
+  if (verificationRef && !OBJECT_REF.test(verificationRef)) throw new Error(`${lane.name} native verification ref is invalid`);
   return {
     dataDir,
     tenantId,
@@ -98,6 +110,7 @@ function laneConfig(env, parsed, now) {
     captionRef,
     approvalRef,
     verificationRef,
+    lane,
   };
 }
 
@@ -105,12 +118,12 @@ function sha256Json(value) {
   return crypto.createHash("sha256").update(JSON.stringify(value)).digest("hex");
 }
 
-function scopedSecretProvider(env, tenantId) {
+function scopedSecretProvider(env, tenantId, lane = JA_RUNNER_LANE) {
   return { async get(requestTenantId, ref) {
-    if (requestTenantId !== tenantId) throw new Error("Larry JA secret tenant scope mismatch");
-    if (ref === TOKEN_REF) return required(env.LM_POSTIZ_API_KEY, "LM_POSTIZ_API_KEY");
-    if (ref === TELEGRAM_TOKEN_REF) return required(env.LM_TELEGRAM_BOT_TOKEN, "LM_TELEGRAM_BOT_TOKEN");
-    throw new Error("Larry JA secret reference is not allowed");
+    if (requestTenantId !== tenantId) throw new Error(`${lane.name} secret tenant scope mismatch`);
+    if (ref === lane.tokenRef) return required(env.LM_POSTIZ_API_KEY, "LM_POSTIZ_API_KEY");
+    if (ref === lane.telegramTokenRef) return required(env.LM_TELEGRAM_BOT_TOKEN, "LM_TELEGRAM_BOT_TOKEN");
+    throw new Error(`${lane.name} secret reference is not allowed`);
   } };
 }
 
@@ -141,7 +154,7 @@ async function executeJob(store, job, workerId, handler, execute = executeCapabi
   return { created: true, receipt };
 }
 
-function verifyNativeObject(ref, objectStore, receipt, trustedNow) {
+function verifyNativeObject(ref, objectStore, receipt, trustedNow, lane = JA_RUNNER_LANE) {
   if (!ref) return false;
   let value;
   try {
@@ -151,16 +164,17 @@ function verifyNativeObject(ref, objectStore, receipt, trustedNow) {
     const evidence = String(value.evidence_ref || "");
     if (!OBJECT_REF.test(evidence)) return false;
     objectStore.resolve(evidence);
-    const verifiedAt = exactInstant(value.verified_at, "Larry JA native verification verified_at");
-    const publishedMs = Date.parse(exactInstant(receipt.published_at, "Larry JA publication published_at"));
+    const verifiedAt = exactInstant(value.verified_at, `${lane.name} native verification verified_at`);
+    const publishedMs = Date.parse(exactInstant(receipt.published_at, `${lane.name} publication published_at`));
     const verifiedMs = Date.parse(verifiedAt);
-    const trustedMs = Date.parse(exactInstant(trustedNow, "Larry JA trusted verification clock"));
+    const trustedMs = Date.parse(exactInstant(trustedNow, `${lane.name} trusted verification clock`));
     return value.schema_version === 1
       && value.kind === "marketing_native_carousel_native_verification"
       && value.status === "verified"
-      && value.product_id === PRODUCT
-      && value.account_id === ACCOUNT_ID
-      && value.integration_ref === INTEGRATION_REF
+      && value.product_id === lane.productId
+      && value.account_id === lane.accountId
+      && (value.native_owner === undefined || value.native_owner === lane.nativeOwner)
+      && value.integration_ref === lane.integrationRef
       && value.public_url === receipt.public_url
       && value.pack_sha256 === receipt.pack_sha256
       && JSON.stringify(value.media_sha256) === JSON.stringify(receipt.media_sha256)
@@ -173,45 +187,77 @@ function verifyNativeObject(ref, objectStore, receipt, trustedNow) {
   }
 }
 
-function publicationLedgerPath(dataDir, tenantId) {
-  return path.join(dataDir, "tenants", encodeURIComponent(tenantId), "marketing", "native-carousel-publication", PRODUCT, "distribution.jsonl");
+function publicationLedgerPath(dataDir, tenantId, lane = JA_RUNNER_LANE) {
+  return path.join(dataDir, "tenants", encodeURIComponent(tenantId), "marketing", "native-carousel-publication", lane.productId, "distribution.jsonl");
 }
 
-async function runAniccaLarryJaCanary(argv = [], deps = {}) {
+async function runAniccaCarouselCanary(argv = [], deps = {}) {
   const parsed = parseArgs(argv);
+  const lane = COMMAND_LANES[parsed.command];
   const env = deps.env || process.env;
   const now = deps.now || (() => new Date().toISOString());
-  const trustedNow = exactInstant(now(), "Larry JA canary clock");
+  const trustedNow = exactInstant(now(), `${lane.name} canary clock`);
   const clock = () => trustedNow;
-  const config = laneConfig(env, parsed, clock);
+  const config = laneConfig(env, parsed, clock, lane);
   const objectStore = deps.objectStore || createContentObjectStore({ objectDir: path.join(config.dataDir, "objects") });
-  const secretProvider = deps.secretProvider || scopedSecretProvider(env, config.tenantId);
+  const secretProvider = deps.secretProvider || scopedSecretProvider(env, config.tenantId, lane);
   const store = deps.store || createMarketingLocalLedger({ dataDir: config.dataDir, env, now: clock });
   const publicationJob = buildMarketingNativeCarouselPublicationJob({
     tenantId: config.tenantId,
-    productId: PRODUCT,
-    formatId: FORMAT,
-    form: FORM,
-    locale: LOCALE,
+    productId: lane.productId,
+    formatId: lane.formatId,
+    form: lane.form,
+    locale: lane.locale,
     slot: config.slot,
-    creativeId: "LARRY-JA-CANARY",
-    accountId: ACCOUNT_ID,
-    instagramIntegrationRef: INTEGRATION_REF,
+    creativeId: lane.creativeId || "LARRY-JA-CANARY",
+    accountId: lane.accountId,
+    instagramIntegrationRef: lane.integrationRef,
     packRef: config.packRef,
     mediaRefs: config.mediaRefs,
     captionRef: config.captionRef,
     approvalRef: config.approvalRef,
-    postizTokenRef: TOKEN_REF,
+    postizTokenRef: lane.tokenRef,
   });
-  const queued = await store.enqueueJob({ ...publicationJob, availableAt: trustedNow });
   const publicationAdapter = createMarketingNativeCarouselPublicationLoopAdapter({
     objectStore,
     secretProvider,
-    ledgerPath: () => publicationLedgerPath(config.dataDir, config.tenantId),
+    ledgerPath: () => publicationLedgerPath(config.dataDir, config.tenantId, lane),
     ...(deps.runDistribution ? { runDistribution: deps.runDistribution } : {}),
     now: clock,
   });
-  const publicationRun = await executeJob(store, publicationJob, "anicca-larry-ja-canary", (job) => publicationAdapter.execute(job), deps.executeCapabilityJob || executeCapabilityJob);
+  const existingPublication = await store.readReceipt({ tenantId: publicationJob.tenant_id, jobId: publicationJob.job_id });
+  const controlLane = {
+    ...lane,
+    tenant: TENANT,
+    product: lane.productId,
+    account: lane.accountId,
+    format: lane.formatId,
+    enforceApprovedPack: true,
+  };
+  const controls = lane === EN_RUNNER_LANE && !existingPublication
+    ? armControls(config, publicationJob, controlLane)
+    : null;
+  let queued;
+  let publicationRun;
+  let publicationError;
+  let restoreError;
+  try {
+    queued = await store.enqueueJob({ ...publicationJob, availableAt: trustedNow });
+    publicationRun = await executeJob(store, publicationJob, lane.workerLabel, (job) => publicationAdapter.execute(job), deps.executeCapabilityJob || executeCapabilityJob);
+  } catch (error) {
+    publicationError = error;
+  } finally {
+    if (controls) {
+      try { restoreControls(controls.paths, controls); } catch (error) { restoreError = error; }
+    }
+  }
+  if (restoreError) {
+    const error = new Error(`${lane.name} publication controls could not be restored`);
+    error.unknownEffect = true;
+    if (publicationError) error.cause = publicationError;
+    throw error;
+  }
+  if (publicationError) throw publicationError;
   const publication = publicationRun.receipt;
   if (!verifyMarketingNativeCarouselPublicationReceipt(publication) || publication.provider_reconciled !== true) {
     const error = new Error("Larry JA publication receipt is not reconciled");
@@ -219,22 +265,32 @@ async function runAniccaLarryJaCanary(argv = [], deps = {}) {
     throw error;
   }
   const publicationResult = { created: queued.created && publicationRun.created, public_url: publication.public_url, provider_post_id: publication.provider_post_id };
-  if (!verifyNativeObject(config.verificationRef, objectStore, publication, trustedNow)) {
+  if (!verifyNativeObject(config.verificationRef, objectStore, publication, trustedNow, lane)) {
     return { slot: config.slot, publication: publicationResult, telegram: { created: false, held: true, message_id: null } };
   }
   const telegramJob = buildMarketingLivenessJob({
     tenantId: config.tenantId,
-    telegramTokenRef: TELEGRAM_TOKEN_REF,
-    telegramChatRef: CHAT_REF,
-    payload: { lane: LANE, product: PRODUCT, locale: LOCALE, platform: "instagram", account: ACCOUNT_ID, slot: config.slot, status: "published", public_url: publication.public_url, retry_state: "not_required" },
+    telegramTokenRef: lane.telegramTokenRef,
+    telegramChatRef: lane.chatRef,
+    payload: { lane: lane.lane, product: lane.productId, locale: lane.locale, platform: lane.platform, account: lane.nativeOwner, slot: config.slot, status: "published", public_url: publication.public_url, retry_state: "not_required" },
   });
   const telegramQueued = await store.enqueueJob({ ...telegramJob, availableAt: trustedNow });
-  const telegramRun = await executeJob(store, telegramJob, "anicca-larry-ja-canary", (job) => executeMarketingLivenessJob(job, { secretProvider, chatProvider: { get: async (tenantId, ref) => { if (tenantId !== config.tenantId || ref !== CHAT_REF) throw new Error("Larry JA Telegram chat scope mismatch"); return required(env.LM_TELEGRAM_ALERT_CHAT_ID, "LM_TELEGRAM_ALERT_CHAT_ID"); } }, sendTelegram: deps.sendTelegram, now: clock }), deps.executeCapabilityJob || executeCapabilityJob);
+  const telegramRun = await executeJob(store, telegramJob, lane.workerLabel, (job) => executeMarketingLivenessJob(job, { secretProvider, chatProvider: { get: async (tenantId, ref) => { if (tenantId !== config.tenantId || ref !== lane.chatRef) throw new Error(`${lane.name} Telegram chat scope mismatch`); return required(env.LM_TELEGRAM_ALERT_CHAT_ID, "LM_TELEGRAM_ALERT_CHAT_ID"); } }, sendTelegram: deps.sendTelegram, now: clock }), deps.executeCapabilityJob || executeCapabilityJob);
   return { slot: config.slot, publication: publicationResult, telegram: { created: telegramQueued.created && telegramRun.created, held: false, message_id: telegramRun.receipt.message_id } };
 }
 
-if (require.main === module) {
-  runAniccaLarryJaCanary(process.argv.slice(2)).then((result) => process.stdout.write(`${JSON.stringify(result)}\n`)).catch((error) => { process.stderr.write(`${error.message}\n`); process.exitCode = 1; });
+function runAniccaLarryJaCanary(argv = [], deps = {}) {
+  if (parseArgs(argv).command !== "run") throw new Error("Larry JA canary accepts only the run command");
+  return runAniccaCarouselCanary(argv, deps);
 }
 
-module.exports = { ACCOUNT_ID, INTEGRATION_REF, LANE, parseArgs, runAniccaLarryJaCanary, verifyNativeObject };
+function runAniccaEnAffirmationInstagramCanary(argv = [], deps = {}) {
+  if (parseArgs(argv).command !== "run-en-affirmation") throw new Error("EN affirmation canary accepts only the run-en-affirmation command");
+  return runAniccaCarouselCanary(argv, deps);
+}
+
+if (require.main === module) {
+  runAniccaCarouselCanary(process.argv.slice(2)).then((result) => process.stdout.write(`${JSON.stringify(result)}\n`)).catch((error) => { process.stderr.write(`${error.message}\n`); process.exitCode = 1; });
+}
+
+module.exports = { ACCOUNT_ID, EN_AFFIRMATION_LANE, INTEGRATION_REF, LANE, parseArgs, runAniccaCarouselCanary, runAniccaEnAffirmationInstagramCanary, runAniccaLarryJaCanary, verifyNativeObject };

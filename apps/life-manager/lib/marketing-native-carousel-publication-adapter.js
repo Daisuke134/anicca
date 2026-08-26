@@ -36,6 +36,97 @@ const objectHash = (value, label) => { const m = OBJ.exec(String(value || "")); 
 const instant = (value, label) => { const v = String(value || ""); const d = new Date(v); return Number.isFinite(d.getTime()) && d.toISOString() === v ? v : fail(`${label} is invalid`); };
 const digestJson = (value) => crypto.createHash("sha256").update(JSON.stringify(value)).digest("hex");
 const mediaOrderHash = (hashes) => digestJson(hashes);
+const sameArray = (left, right) => Array.isArray(left) && Array.isArray(right)
+  && left.length === right.length && left.every((value, index) => value === right[index]);
+
+const JA_LANE = Object.freeze({
+  name: "JA",
+  productId: PRODUCT_ID,
+  formatId: FORMAT_ID,
+  packFormat: PACK_FORMAT_ID,
+  form: FORM_ID,
+  locale: LOCALE_ID,
+  platform: "instagram",
+  accountId: ACCOUNT_ID,
+  nativeOwner: ACCOUNT_ID,
+  accountRef: ACCOUNT_REF,
+  integrationRef: INTEGRATION_REF,
+  integrationId: "cmq3sq7mc000eqp0y7azfm8yk",
+  renderer: "larry",
+  lane: "anicca-larry-ja-instagram",
+  tokenRef: "secret://postiz/api-key",
+  telegramTokenRef: "secret://telegram/bot-token",
+  chatRef: "telegram-chat://owner",
+  packEnv: "LM_ANICCA_LARRY_JA_PACK_REF",
+  mediaEnv: "LM_ANICCA_LARRY_JA_MEDIA_REFS",
+  captionEnv: "LM_ANICCA_LARRY_JA_CAPTION_REF",
+  approvalEnv: "LM_ANICCA_LARRY_JA_APPROVAL_REF",
+  verificationEnv: "LM_ANICCA_LARRY_JA_NATIVE_VERIFICATION_REF",
+  workerLabel: "anicca-larry-ja-canary",
+});
+
+const EN_AFFIRMATION_LANE = Object.freeze({
+  name: "EN_AFFIRMATION",
+  productId: PRODUCT_ID,
+  formatId: FORMAT_ID,
+  packFormat: PACK_FORMAT_ID,
+  form: FORM_ID,
+  locale: "en",
+  platform: "instagram",
+  accountId: "@anicca.affirmation",
+  nativeOwner: "@anicca.ios",
+  accountRef: "account://instagram/@anicca.affirmation",
+  integrationRef: "integration://postiz/instagram/cmp9pedr700ttqh0yj8o57fog",
+  integrationId: "cmp9pedr700ttqh0yj8o57fog",
+  manifestAccount: "anicca-ios-en-affirmation-instagram",
+  renderer: "larry",
+  lane: "anicca-en-affirmation-instagram",
+  creativeId: "EN-AFFIRMATION-CAROUSEL-da8d8265",
+  packRef: "object://sha256/e23cd41257832d2032fd889bd9a16ec95ea8dc213cdd7a2e3f820fbe1578669e",
+  mediaRefs: Object.freeze([
+    "object://sha256/da8d8265a1344b68a877d776b0cec5b599dc7b3bbd6abc833fcef06e7416df1f",
+    "object://sha256/4fe9ab673f095d39368744974c677cbb5f8305dc2a9dcd1ef1b4b87759d8b42a",
+    "object://sha256/1af8a8c790a733ff1cedca85aaf3de010671a03f54223205da0fd9575a242840",
+    "object://sha256/d097d7b7254ee0a35c95844a89e1f8d1d644775dea134f960ac5e8cb80d230f9",
+    "object://sha256/71ded59ff8a1de5251e607a6ba808945c85537bfca3fbd7f20c65f2912f00e34",
+    "object://sha256/418ad1907d64e4835939bda677709aace44092a936e8a18a7cb8aeeca7652f4f",
+  ]),
+  captionRef: "object://sha256/bf90a15a5a615d2bb295c1829f7329f391a870fe4e950c8099972c20bf6e64a0",
+  approvalRef: "object://sha256/7740cd09733d0cb7a5d8f32ff4614c3e07ebae27df0e3eae8bca8df80b968845",
+  tokenRef: "secret://postiz/api-key",
+  telegramTokenRef: "secret://telegram/bot-token",
+  chatRef: "telegram-chat://owner",
+  packEnv: "LM_ANICCA_EN_AFFIRMATION_INSTAGRAM_PACK_REF",
+  mediaEnv: "LM_ANICCA_EN_AFFIRMATION_INSTAGRAM_MEDIA_REFS",
+  captionEnv: "LM_ANICCA_EN_AFFIRMATION_INSTAGRAM_CAPTION_REF",
+  approvalEnv: "LM_ANICCA_EN_AFFIRMATION_INSTAGRAM_APPROVAL_REF",
+  verificationEnv: "LM_ANICCA_EN_AFFIRMATION_INSTAGRAM_NATIVE_VERIFICATION_REF",
+  approvedPackName: "anicca-ios-larry-affirmation-en.pack.json",
+  workerLabel: "anicca-en-affirmation-instagram-canary",
+});
+
+const LANES = Object.freeze([JA_LANE, EN_AFFIRMATION_LANE]);
+
+function selectMarketingNativeCarouselLane(input = {}) {
+  const integrationRef = input.instagramIntegrationRef || input.integrationRef;
+  const matches = LANES.filter((lane) => lane.productId === input.productId
+    && lane.formatId === input.formatId && lane.form === input.form && lane.locale === input.locale
+    && lane.accountId === input.accountId && lane.integrationRef === integrationRef);
+  if (matches.length !== 1) fail("marketing native carousel lane identity is invalid");
+  const lane = matches[0];
+  if (input.lane !== undefined && input.lane !== lane) fail("marketing native carousel lane is not trusted");
+  if (input.accountRef !== undefined && input.accountRef !== lane.accountRef) fail("marketing native carousel account reference is invalid");
+  if (input.nativeOwner !== undefined && input.nativeOwner !== lane.nativeOwner) fail("marketing native carousel native owner is invalid");
+  if (lane.creativeId && input.creativeId !== undefined && input.creativeId !== lane.creativeId) fail("marketing native carousel creative is not approved");
+  if (lane.packRef && ((input.packRef !== undefined && input.packRef !== lane.packRef)
+    || (input.mediaRefs !== undefined && !sameArray(input.mediaRefs, lane.mediaRefs))
+    || (input.captionRef !== undefined && input.captionRef !== lane.captionRef)
+    || (input.approvalRef !== undefined && input.approvalRef !== lane.approvalRef))) {
+    fail("marketing native carousel lane references are not approved");
+  }
+  return lane;
+}
+
 const mediaRefs = (value) => {
   if (!Array.isArray(value) || value.length !== SLIDE_COUNT) fail("marketing native carousel media references are invalid");
   const refs = value.map((v) => objectRef(v, "marketing native carousel media"));
@@ -52,7 +143,7 @@ function buildMarketingNativeCarouselPublicationJob(input = {}) {
   const creativeId = text(input.creativeId, "marketing native carousel creative");
   const accountId = text(input.accountId, "marketing native carousel account");
   const integrationRef = text(input.instagramIntegrationRef || input.integrationRef, "Instagram integration");
-  if (productId !== PRODUCT_ID || formatId !== FORMAT_ID || form !== FORM_ID || locale !== LOCALE_ID || accountId !== ACCOUNT_ID || integrationRef !== INTEGRATION_REF) fail("marketing native carousel lane identity is invalid");
+  const lane = selectMarketingNativeCarouselLane({ ...input, productId, formatId, form, locale, accountId, integrationRef, creativeId });
   if (!ID.test(tenantId) || !ID.test(creativeId)) fail("marketing native carousel identity is invalid");
   const slot = instant(input.slot, "marketing native carousel slot");
   const packRef = objectRef(input.packRef, "marketing native carousel pack");
@@ -66,14 +157,14 @@ function buildMarketingNativeCarouselPublicationJob(input = {}) {
   const captionHash = objectHash(captionRef, "caption");
   const effectKey = `marketing:carousel:${PRODUCT_ID}:${creativeId}:${packHash}:${mediaOrderHash(mediaHashes)}:${captionHash}`;
   const inputRefs = {
-    product_ref: `product://${PRODUCT_ID}`,
-    format_ref: `format://${FORMAT_ID}`,
-    form_ref: `form://${FORM_ID}`,
-    locale_ref: `locale://${LOCALE_ID}`,
+    product_ref: `product://${lane.productId}`,
+    format_ref: `format://${lane.formatId}`,
+    form_ref: `form://${lane.form}`,
+    locale_ref: `locale://${lane.locale}`,
     slot_ref: `schedule-slot://${slot}`,
-    creative_ref: `creative://${PRODUCT_ID}/${creativeId}`,
-    platform_ref: "platform://instagram",
-    account_ref: ACCOUNT_REF,
+    creative_ref: `creative://${lane.productId}/${creativeId}`,
+    platform_ref: `platform://${lane.platform}`,
+    account_ref: lane.accountRef,
     instagram_integration_ref: integrationRef,
     pack_ref: packRef,
     media_refs: media,
@@ -94,12 +185,15 @@ function normalizeJob(job) {
   const locale = /^locale:\/\/(.+)$/.exec(String(refs.locale_ref || ""));
   const slot = /^schedule-slot:\/\/(.+)$/.exec(String(refs.slot_ref || ""));
   const creative = /^creative:\/\/(.+)\/([A-Za-z0-9][A-Za-z0-9._-]{0,127})$/.exec(String(refs.creative_ref || ""));
-  if (!product || !format || !form || !locale || !slot || !creative || product[1] !== PRODUCT_ID || format[1] !== FORMAT_ID || form[1] !== FORM_ID || locale[1] !== LOCALE_ID || creative[1] !== PRODUCT_ID || refs.platform_ref !== "platform://instagram" || refs.account_ref !== ACCOUNT_REF || refs.instagram_integration_ref !== INTEGRATION_REF) fail("marketing native carousel publication job contract is invalid");
-  const input = { tenantId: job.tenant_id, productId: PRODUCT_ID, formatId: FORMAT_ID, form: FORM_ID, locale: LOCALE_ID, slot: slot[1], creativeId: creative[2], accountId: ACCOUNT_ID, instagramIntegrationRef: INTEGRATION_REF, packRef: refs.pack_ref, mediaRefs: refs.media_refs, captionRef: refs.caption_ref, approvalRef: refs.approval_ref, postizTokenRef: refs.postiz_token_ref };
+  const account = /^account:\/\/instagram\/(.+)$/.exec(String(refs.account_ref || ""));
+  if (!product || !format || !form || !locale || !slot || !creative || !account || creative[1] !== product[1]
+    || refs.platform_ref !== "platform://instagram") fail("marketing native carousel publication job contract is invalid");
+  const input = { tenantId: job.tenant_id, productId: product[1], formatId: format[1], form: form[1], locale: locale[1], slot: slot[1], creativeId: creative[2], accountId: account[1], accountRef: refs.account_ref, instagramIntegrationRef: refs.instagram_integration_ref, packRef: refs.pack_ref, mediaRefs: refs.media_refs, captionRef: refs.caption_ref, approvalRef: refs.approval_ref, postizTokenRef: refs.postiz_token_ref };
+  const lane = selectMarketingNativeCarouselLane(input);
   let expected;
   try { expected = buildMarketingNativeCarouselPublicationJob(input); } catch { fail("marketing native carousel publication job contract is invalid"); }
   if (job.loop_id !== LOOP_ID || job.capability !== CAPABILITY || job.effect_class !== "publish" || job.job_id !== expected.job_id || job.effect_key !== expected.effect_key) fail("marketing native carousel publication job contract is invalid");
-  return { ...input, integrationRef: INTEGRATION_REF, packHash: objectHash(input.packRef, "pack"), mediaHashes: input.mediaRefs.map((ref) => objectHash(ref, "media")), captionHash: objectHash(input.captionRef, "caption") };
+  return { ...input, lane, integrationRef: lane.integrationRef, packHash: objectHash(input.packRef, "pack"), mediaHashes: input.mediaRefs.map((ref) => objectHash(ref, "media")), captionHash: objectHash(input.captionRef, "caption") };
 }
 
 function readJson(file, label) {
@@ -109,20 +203,25 @@ function assertIntegrity(file, hash, label) {
   if (!file || !fs.statSync(file, { throwIfNoEntry: false })?.isFile()) fail(`${label} object is unavailable`);
   if (sha256File(file) !== hash) fail(`${label} object integrity verification failed`);
 }
-function assertPack(pack, contract, caption) {
-  if (pack.schema_version !== 1 || pack.kind !== "marketing_native_carousel_pack" || pack.product_id !== PRODUCT_ID || pack.locale !== LOCALE_ID || pack.platform !== "instagram" || pack.account_id !== ACCOUNT_ID || pack.renderer_id !== "larry" || pack.format_id !== PACK_FORMAT_ID || pack.form !== FORM_ID || pack.media_type !== "image/jpeg" || pack.slide_count !== SLIDE_COUNT || pack.caption !== caption || !Array.isArray(pack.slides) || pack.slides.length !== SLIDE_COUNT) fail("marketing native carousel pack identity is invalid");
+function assertPack(pack, contract, caption, lane) {
+  if (pack.schema_version !== 1 || pack.kind !== "marketing_native_carousel_pack" || pack.product_id !== lane.productId || pack.locale !== lane.locale || pack.platform !== lane.platform || pack.account_id !== lane.accountId || pack.renderer_id !== lane.renderer || pack.format_id !== lane.packFormat || pack.form !== lane.form || pack.media_type !== "image/jpeg" || pack.slide_count !== SLIDE_COUNT || pack.caption !== caption || !Array.isArray(pack.slides) || pack.slides.length !== SLIDE_COUNT
+    || (pack.integration_id !== undefined && pack.integration_id !== lane.integrationId)
+    || (pack.native_owner !== undefined && pack.native_owner !== lane.nativeOwner)
+    || (pack.caption_ref !== undefined && pack.caption_ref !== contract.captionRef)) fail("marketing native carousel pack identity is invalid");
   const ordered = pack.slides.map((slide, i) => {
     if (!slide || slide.position !== i + 1 || slide.role !== (i ? "body" : "hook") || typeof slide.text !== "string" || !OBJ.test(String(slide.media_ref || ""))) fail("marketing native carousel pack slide is invalid");
     return slide.media_ref;
   });
   if (JSON.stringify(ordered) !== JSON.stringify(contract.mediaRefs)) fail("marketing native carousel pack media order mismatch");
 }
-function assertApproval(approval, contract) {
+function assertApproval(approval, contract, lane) {
   const packBound = approval.pack_ref === contract.packRef || approval.pack_sha256 === contract.packHash;
   const refsBound = JSON.stringify(approval.media_refs) === JSON.stringify(contract.mediaRefs);
   const hashesBound = JSON.stringify(approval.media_sha256) === JSON.stringify(contract.mediaHashes)
     && approval.media_order_sha256 === mediaOrderHash(contract.mediaHashes);
-  if (approval.schema_version !== 1 || !["marketing_native_carousel_publication_approval", "marketing_native_carousel_approval"].includes(approval.kind) || approval.status !== "approved" || approval.tenant_id !== contract.tenantId || approval.product_id !== PRODUCT_ID || approval.locale !== LOCALE_ID || approval.platform !== "instagram" || approval.account_id !== ACCOUNT_ID || approval.integration_ref !== INTEGRATION_REF || !packBound || (!refsBound && !hashesBound) || approval.caption_sha256 !== contract.captionHash) fail("marketing native carousel approval mismatch");
+  if (approval.schema_version !== 1 || !["marketing_native_carousel_publication_approval", "marketing_native_carousel_approval"].includes(approval.kind) || approval.status !== "approved" || approval.tenant_id !== contract.tenantId || approval.product_id !== lane.productId || approval.locale !== lane.locale || approval.platform !== lane.platform || approval.account_id !== lane.accountId || approval.integration_ref !== lane.integrationRef || !packBound || (!refsBound && !hashesBound) || approval.caption_sha256 !== contract.captionHash
+    || (approval.native_owner !== undefined && approval.native_owner !== lane.nativeOwner)
+    || (approval.creative_id !== undefined && lane.creativeId && approval.creative_id !== lane.creativeId)) fail("marketing native carousel approval mismatch");
 }
 function assertJpeg(file, label) {
   const bytes = fs.readFileSync(file);
@@ -155,28 +254,53 @@ function provider(result) {
   if (!result || state !== "PUBLISHED" || reconciled !== true || !PROVIDER_ID.test(String(postId || "")) || !DIRECT_POST.test(String(url || ""))) { const error = new Error("marketing native carousel provider result contract mismatch"); error.unknownEffect = true; throw error; }
   return { postId: String(postId), url: String(url) };
 }
+function laneForReceipt(receipt) {
+  try {
+    const media = Array.isArray(receipt.media_sha256)
+      ? receipt.media_sha256.map((hash) => `object://sha256/${hash}`)
+      : receipt.media_sha256;
+    return selectMarketingNativeCarouselLane({
+      productId: receipt.product_id,
+      formatId: receipt.format_id,
+      form: receipt.form,
+      locale: receipt.locale,
+      accountId: receipt.account_id,
+      integrationRef: receipt.integration_ref,
+      creativeId: receipt.creative_id,
+      packRef: `object://sha256/${receipt.pack_sha256}`,
+      mediaRefs: media,
+      captionRef: `object://sha256/${receipt.caption_sha256}`,
+    });
+  } catch {
+    return null;
+  }
+}
 function verifyMarketingNativeCarouselPublicationReceipt(receipt) {
-  if (!receipt || typeof receipt !== "object" || Array.isArray(receipt) || receipt.schema_version !== 1 || receipt.kind !== "marketing_native_carousel_distribution" || receipt.status !== "published" || receipt.product_id !== PRODUCT_ID || receipt.format_id !== FORMAT_ID || receipt.form !== FORM_ID || receipt.locale !== LOCALE_ID || receipt.platform !== "instagram" || receipt.account_id !== ACCOUNT_ID || receipt.integration_ref !== INTEGRATION_REF || !ID.test(String(receipt.creative_id || "")) || !HASH.test(String(receipt.pack_sha256 || "")) || !Array.isArray(receipt.media_sha256) || receipt.media_sha256.length !== SLIDE_COUNT || receipt.media_sha256.some((hash) => !HASH.test(String(hash || ""))) || !HASH.test(String(receipt.media_order_sha256 || "")) || receipt.media_order_sha256 !== mediaOrderHash(receipt.media_sha256) || !HASH.test(String(receipt.caption_sha256 || "")) || !PROVIDER_ID.test(String(receipt.provider_post_id || "")) || receipt.provider_reconciled !== true || !DIRECT_POST.test(String(receipt.public_url || ""))) return false;
+  if (!receipt || typeof receipt !== "object" || Array.isArray(receipt) || receipt.schema_version !== 1 || receipt.kind !== "marketing_native_carousel_distribution" || receipt.status !== "published" || receipt.platform !== "instagram" || !ID.test(String(receipt.creative_id || "")) || !HASH.test(String(receipt.pack_sha256 || "")) || !Array.isArray(receipt.media_sha256) || receipt.media_sha256.length !== SLIDE_COUNT || receipt.media_sha256.some((hash) => !HASH.test(String(hash || ""))) || !HASH.test(String(receipt.media_order_sha256 || "")) || receipt.media_order_sha256 !== mediaOrderHash(receipt.media_sha256) || !HASH.test(String(receipt.caption_sha256 || "")) || !PROVIDER_ID.test(String(receipt.provider_post_id || "")) || receipt.provider_reconciled !== true || !DIRECT_POST.test(String(receipt.public_url || ""))) return false;
+  const lane = laneForReceipt(receipt);
+  if (!lane || receipt.product_id !== lane.productId || receipt.format_id !== lane.formatId || receipt.form !== lane.form || receipt.locale !== lane.locale || receipt.account_id !== lane.accountId || receipt.integration_ref !== lane.integrationRef) return false;
   try { instant(receipt.published_at, "marketing native carousel receipt published_at"); return true; } catch { return false; }
 }
 function summary(receipt) {
   if (!verifyMarketingNativeCarouselPublicationReceipt(receipt)) fail("marketing native carousel receipt verification failed");
-  return { status: receipt.status, product_id: receipt.product_id, format_id: receipt.format_id, form: receipt.form, locale: receipt.locale, account_id: receipt.account_id, integration_ref: receipt.integration_ref, creative_id: receipt.creative_id, public_url: receipt.public_url, provider_post_id: receipt.provider_post_id, provider_reconciled: true, pack_sha256: receipt.pack_sha256, media_sha256: [...receipt.media_sha256], caption_sha256: receipt.caption_sha256 };
+  const lane = laneForReceipt(receipt);
+  return { status: receipt.status, product_id: lane.productId, format_id: lane.formatId, form: lane.form, locale: lane.locale, account_id: lane.accountId, integration_ref: lane.integrationRef, creative_id: receipt.creative_id, public_url: receipt.public_url, provider_post_id: receipt.provider_post_id, provider_reconciled: true, pack_sha256: receipt.pack_sha256, media_sha256: [...receipt.media_sha256], caption_sha256: receipt.caption_sha256 };
 }
 
-function defaultLedgerPath(tenantId, paths) {
-  return path.join(paths.dataDir, "tenants", encodeURIComponent(text(tenantId, "tenant")), "marketing", "native-carousel-publication", PRODUCT_ID, "distribution.jsonl");
+function defaultLedgerPath(tenantId, paths, productId = PRODUCT_ID) {
+  return path.join(paths.dataDir, "tenants", encodeURIComponent(text(tenantId, "tenant")), "marketing", "native-carousel-publication", productId, "distribution.jsonl");
 }
-function services(deps = {}) {
+function services(deps = {}, lane = JA_LANE) {
   let paths;
   const runtime = () => paths || (paths = resolveRuntimePaths(process.env));
-  return { objectStore: deps.objectStore || { resolve: (ref) => createContentObjectStore({ objectDir: runtime().objectDir }).resolve(ref) }, secretProvider: deps.secretProvider, ledgerPath: deps.ledgerPath || ((tenantId) => defaultLedgerPath(tenantId, runtime())), runDistribution: deps.runDistribution || runPostizCarouselProcess, now: deps.now || (() => new Date().toISOString()) };
+  return { objectStore: deps.objectStore || { resolve: (ref) => createContentObjectStore({ objectDir: runtime().objectDir }).resolve(ref) }, secretProvider: deps.secretProvider, ledgerPath: deps.ledgerPath || ((tenantId) => defaultLedgerPath(tenantId, runtime(), lane.productId)), runDistribution: deps.runDistribution || runPostizCarouselProcess, now: deps.now || (() => new Date().toISOString()) };
 }
-function ledgerFor(s, tenantId) { if (typeof s.ledgerPath === "function") return s.ledgerPath(tenantId, PRODUCT_ID); if (typeof s.ledgerPath === "string" && s.ledgerPath.trim()) return s.ledgerPath; fail("marketing native carousel distribution ledger path is invalid"); }
+function ledgerFor(s, tenantId, productId = PRODUCT_ID) { if (typeof s.ledgerPath === "function") return s.ledgerPath(tenantId, productId); if (typeof s.ledgerPath === "string" && s.ledgerPath.trim()) return s.ledgerPath; fail("marketing native carousel distribution ledger path is invalid"); }
 function appendRow(file, job, receipt) { fs.mkdirSync(path.dirname(file), { recursive: true, mode: 0o700 }); fs.appendFileSync(file, `${JSON.stringify({ effect_key: job.effect_key, job_id: job.job_id, receipt })}\n`, { encoding: "utf8", mode: 0o600 }); fs.chmodSync(file, 0o600); }
 
 async function executeMarketingNativeCarouselPublicationJob(job, deps = {}) {
   const contract = normalizeJob(job);
+  const lane = contract.lane;
   const s = services(deps);
   if (!s.objectStore || typeof s.objectStore.resolve !== "function") fail("marketing native carousel object store is required");
   if (!s.secretProvider || typeof s.secretProvider.get !== "function") fail("marketing native carousel secret provider is required");
@@ -189,16 +313,16 @@ async function executeMarketingNativeCarouselPublicationJob(job, deps = {}) {
   assertIntegrity(captionPath, contract.captionHash, "marketing native carousel caption");
   assertIntegrity(approvalPath, objectHash(contract.approvalRef, "approval"), "marketing native carousel approval");
   const caption = fs.readFileSync(captionPath, "utf8");
-  assertPack(readJson(packPath, "marketing native carousel pack"), { ...contract, expectedCaption: caption }, caption);
-  assertApproval(readJson(approvalPath, "marketing native carousel approval"), contract);
+  assertPack(readJson(packPath, "marketing native carousel pack"), { ...contract, expectedCaption: caption }, caption, lane);
+  assertApproval(readJson(approvalPath, "marketing native carousel approval"), contract, lane);
   const token = await s.secretProvider.get(job.tenant_id, contract.postizTokenRef);
   if (typeof token !== "string" || !token.trim()) fail("marketing native carousel Postiz token is invalid");
   let result;
-  try { result = await s.runDistribution({ tenantId: job.tenant_id, productId: PRODUCT_ID, formatId: FORMAT_ID, form: FORM_ID, locale: LOCALE_ID, creativeId: contract.creativeId, accountId: ACCOUNT_ID, integrationRef: contract.integrationRef, integrationId: INTEGRATION_REF.split("/").at(-1), packPath, mediaPaths: [...mediaPaths], captionPath, token }); } catch (cause) { const error = new Error(cause && cause.message ? cause.message : String(cause)); error.unknownEffect = true; throw error; }
+  try { result = await s.runDistribution({ tenantId: job.tenant_id, productId: lane.productId, formatId: lane.formatId, form: lane.form, locale: lane.locale, creativeId: contract.creativeId, accountId: lane.accountId, integrationRef: contract.integrationRef, integrationId: lane.integrationId, packPath, mediaPaths: [...mediaPaths], captionPath, token }); } catch (cause) { const error = new Error(cause && cause.message ? cause.message : String(cause)); error.unknownEffect = true; throw error; }
   const published = provider(result);
-  const receipt = { schema_version: 1, kind: "marketing_native_carousel_distribution", status: "published", product_id: PRODUCT_ID, format_id: FORMAT_ID, form: FORM_ID, locale: LOCALE_ID, platform: "instagram", account_id: ACCOUNT_ID, integration_ref: contract.integrationRef, creative_id: contract.creativeId, pack_sha256: contract.packHash, media_sha256: [...contract.mediaHashes], media_order_sha256: mediaOrderHash(contract.mediaHashes), caption_sha256: contract.captionHash, provider_post_id: published.postId, provider_reconciled: true, public_url: published.url, published_at: instant(s.now(), "marketing native carousel publication time") };
+  const receipt = { schema_version: 1, kind: "marketing_native_carousel_distribution", status: "published", product_id: lane.productId, format_id: lane.formatId, form: lane.form, locale: lane.locale, platform: lane.platform, account_id: lane.accountId, integration_ref: contract.integrationRef, creative_id: contract.creativeId, pack_sha256: contract.packHash, media_sha256: [...contract.mediaHashes], media_order_sha256: mediaOrderHash(contract.mediaHashes), caption_sha256: contract.captionHash, provider_post_id: published.postId, provider_reconciled: true, public_url: published.url, published_at: instant(s.now(), "marketing native carousel publication time") };
   if (!verifyMarketingNativeCarouselPublicationReceipt(receipt)) { const error = new Error("marketing native carousel publication receipt verification failed"); error.unknownEffect = true; throw error; }
-  appendRow(ledgerFor(s, job.tenant_id), job, receipt);
+  appendRow(ledgerFor(s, job.tenant_id, lane.productId), job, receipt);
   return { receipt, result };
 }
 
@@ -220,4 +344,4 @@ function createMarketingNativeCarouselPublicationLoopAdapter(deps = {}) {
   return Object.freeze({ plan: async (input) => [buildMarketingNativeCarouselPublicationJob(input)], execute: (job, extra = {}) => executeMarketingNativeCarouselPublicationJob(job, { ...deps, ...extra }), reconcile: async (effect) => reconcile(effect, services(deps)), verify: verifyMarketingNativeCarouselPublicationReceipt, report: summary });
 }
 
-module.exports = { ADAPTER_ID, LOOP_ID, CAPABILITY, PRODUCT_ID, FORMAT_ID, FORM_ID, ACCOUNT_ID, INTEGRATION_REF, buildMarketingNativeCarouselPublicationJob, buildMarketingNativeCarouselJob: buildMarketingNativeCarouselPublicationJob, createMarketingNativeCarouselPublicationLoopAdapter, createMarketingNativeCarouselAdapter: createMarketingNativeCarouselPublicationLoopAdapter, executeMarketingNativeCarouselPublicationJob, executeMarketingNativeCarouselJob: executeMarketingNativeCarouselPublicationJob, runPostizCarouselProcess, safeMarketingNativeCarouselSummary: summary, verifyMarketingNativeCarouselPublicationReceipt, verifyMarketingNativeCarouselReceipt: verifyMarketingNativeCarouselPublicationReceipt };
+module.exports = { ADAPTER_ID, LOOP_ID, CAPABILITY, PRODUCT_ID, FORMAT_ID, FORM_ID, ACCOUNT_ID, ACCOUNT_REF, INTEGRATION_REF, PACK_FORMAT_ID, JA_LANE, EN_AFFIRMATION_LANE, buildMarketingNativeCarouselPublicationJob, buildMarketingNativeCarouselJob: buildMarketingNativeCarouselPublicationJob, createMarketingNativeCarouselPublicationLoopAdapter, createMarketingNativeCarouselAdapter: createMarketingNativeCarouselPublicationLoopAdapter, executeMarketingNativeCarouselPublicationJob, executeMarketingNativeCarouselJob: executeMarketingNativeCarouselPublicationJob, normalizeMarketingNativeCarouselJob: normalizeJob, selectMarketingNativeCarouselLane, runPostizCarouselProcess, safeMarketingNativeCarouselSummary: summary, verifyMarketingNativeCarouselPublicationReceipt, verifyMarketingNativeCarouselReceipt: verifyMarketingNativeCarouselPublicationReceipt };
