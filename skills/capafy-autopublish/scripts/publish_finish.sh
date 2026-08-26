@@ -70,7 +70,11 @@ if [ "$(rstat isConfirmedConfigKeys)" = "1" ]; then
   echo "isConfirmedConfigKeys=1 already ✓ — skip configure+CP2"
 else
   step "[3] configure (deep-scan, empty findings)"
-  chmod -R u+w "$PUB/.temp/staging" 2>/dev/null; rm -rf "$PUB/.temp/staging" 2>/dev/null
+  # A new agent's staging directory lives under its isolated work-state path and
+  # may not exist yet.  Its absence is not a configure failure; the publisher
+  # creates staging during the deep scan below.
+  chmod -R u+w "$PUB/.temp/staging" 2>/dev/null || true
+  rm -rf "$PUB/.temp/staging" 2>/dev/null || true
   python3 packager.py publish-configure --agent-id "$ID" --deep-scan >/dev/null 2>&1
   python3 -c "import json;json.dump({'generic':[],'env_var':[]},open('.temp/dsf.json','w'))"
   python3 packager.py publish-configure --agent-id "$ID" --deep-scan-findings-file "$PUB/.temp/dsf.json" >/dev/null 2>&1

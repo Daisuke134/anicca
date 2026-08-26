@@ -157,6 +157,26 @@ else
 try: print(json.loads(sys.stdin.read()).get('agent_id',''))
 except: print('')")"
   [ -n "$ID" ] || die "publish-init returned no agent_id (dup title? cap full = 5 unlisted max? see publish-list)"
+  # publish-init must create a new remote agent before its ID is available, so its
+  # first manifest is necessarily written at the publisher default (.temp).  Move
+  # that verified manifest to the per-agent work directory immediately afterwards.
+  # publish_finish.sh always uses this same path; without this handoff configure
+  # sees no init state and fails at check_prerequisite_stage.
+  DEFAULT_WORK_STATE="$PUB/.temp/publish-work-state.json"
+  AGENT_WORK_DIR="$PUB/.temp/agents/$ID"
+  [ -f "$DEFAULT_WORK_STATE" ] || die "publish-init did not write $DEFAULT_WORK_STATE"
+  INIT_STATE_ID="$(python3 - "$DEFAULT_WORK_STATE" <<'PY'
+import json,sys
+try: print(str(json.load(open(sys.argv[1])).get('agent_id','')).strip())
+except Exception: print('')
+PY
+)"
+  [ "$INIT_STATE_ID" = "$ID" ] || die "publish-init work-state agent_id=$INIT_STATE_ID (expected $ID)"
+  mkdir -p "$AGENT_WORK_DIR"
+  mv "$DEFAULT_WORK_STATE" "$AGENT_WORK_DIR/publish-work-state.json" \
+    || die "could not hand off init work-state to $AGENT_WORK_DIR"
+  export CAPAFY_PUBLISH_WORK_DIR="$AGENT_WORK_DIR"
+  echo "init work-state handed off and verified for agent_id=$ID"
 fi
 
 RAW="$(python3 packager.py publish-refresh-url --agent-id "$ID" --step init 2>/dev/null)"
