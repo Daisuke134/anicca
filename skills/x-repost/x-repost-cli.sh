@@ -172,7 +172,7 @@ ask_model() {
     --disable tool_call_mcp_elicitation --disable goals --disable image_generation \
     -o "$out_file" --dangerously-bypass-approvals-and-sandbox \
     --skip-git-repo-check -C "$SKILL" --add-dir "$SKILL" \
-    "$(cat "$prompt_file")" >"$EV/model.stdout" 2>"$EV/model.err"
+    "$(cat "$prompt_file")" </dev/null >"$EV/model.stdout" 2>"$EV/model.err"
   rc=$?
   if [ "$rc" -eq 0 ] && "$PY" - "$out_file" <<'PYEOF'
 import json, re, sys

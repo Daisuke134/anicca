@@ -48,6 +48,10 @@ class XRoleSeparationTests(unittest.TestCase):
         self.assertIn('affiliate-job-effect.json', source)
         self.assertIn('recovered prior Affiliate success receipt', source)
 
+    def test_launchd_model_call_cannot_wait_on_inherited_stdin(self) -> None:
+        source = (ROOT / "skills" / "x-repost" / "x-repost-cli.sh").read_text()
+        self.assertIn('"$(cat "$prompt_file")" </dev/null', source)
+
 
 if __name__ == "__main__":
     unittest.main()
