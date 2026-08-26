@@ -92,7 +92,7 @@ const walkDependencies = (directory, prefix = 'node_modules') => {
   }
 };
 walkDependencies(dependencyRoot);
-dependencyLines.sort((a, b) => a.split('\t')[1].localeCompare(b.split('\t')[1]));
+dependencyLines.sort((a, b) => Buffer.compare(Buffer.from(a.split('\t')[1]), Buffer.from(b.split('\t')[1])));
 let dependencyManifest;
 try { dependencyManifest = fs.readFileSync(path.join(releasePath, 'DEPENDENCY-MANIFEST.tsv')); } catch { process.exit(22); }
 const expectedDependencies = Buffer.from(dependencyLines.length ? `${dependencyLines.join('\n')}\n` : '');

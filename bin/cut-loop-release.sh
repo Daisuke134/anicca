@@ -134,12 +134,39 @@ NODE
 replace_link() {
   local link="$1" target="$2"
   local temporary="${link}.swap.$$"
+  REPLACE_LINK_CALLS=$((REPLACE_LINK_CALLS + 1))
+  if [ "${LOOPS_TEST_FAIL_CURRENT_SWAP:-0}" = "1" ] && [ "$link" = "$CURRENT" ] \
+    && [ "${TEST_FAIL_CURRENT_USED:-0}" -eq 0 ]; then
+    TEST_FAIL_CURRENT_USED=1
+    return 1
+  fi
+  if [ "${LOOPS_TEST_FAIL_ROLLBACK_PREVIOUS_SWAP:-0}" = "1" ] && [ "$link" = "$PREVIOUS" ] \
+    && [ "${TEST_FAIL_PREVIOUS_USED:-0}" -eq 0 ]; then
+    TEST_FAIL_PREVIOUS_USED=1
+    return 1
+  fi
   rm -f "$temporary"
   ln -s "$target" "$temporary" || return 1
   mv -fh "$temporary" "$link" || { rm -f "$temporary"; return 1; }
 }
 
+restore_pointer_snapshot() {
+  local link="$1" present="$2" target="$3"
+  if [ "$present" -eq 1 ]; then
+    replace_link "$link" "$target" || return 1
+    [ -L "$link" ] || return 1
+    [ "$(readlink "$link")" = "$target" ] || return 1
+    validate_release_target "$link" "$LOOPS_ROOT" >/dev/null || return 1
+  else
+    rm -f "$link" || return 1
+    [ ! -e "$link" ] || return 1
+  fi
+}
+
 [ -n "$NODE_BIN" ] || die "node executable is unavailable"
+REPLACE_LINK_CALLS=0
+TEST_FAIL_CURRENT_USED=0
+TEST_FAIL_PREVIOUS_USED=0
 acquire_release_lock
 
 if [ "$ROLLBACK" -eq 1 ]; then
@@ -154,19 +181,12 @@ if [ "$ROLLBACK" -eq 1 ]; then
   [ "$(cd "$CURRENT" && pwd -P)" != "$(cd "$PREVIOUS" && pwd -P)" ] \
     || die "current and previous already select the same release"
   replace_link "$CURRENT" "$PREVIOUS_TARGET" || die "could not move current release pointer"
-  if [ "${LOOPS_TEST_FAIL_ROLLBACK_PREVIOUS_SWAP:-0}" = "1" ]; then
-    replace_link "$CURRENT" "$CURRENT_TARGET" || die "rollback restoration failed after previous swap error"
-    RESTORED_OK=1
-    [ "$(readlink "$CURRENT")" = "$CURRENT_TARGET" ] || RESTORED_OK=0
-    [ "$(readlink "$PREVIOUS")" = "$PREVIOUS_TARGET" ] || RESTORED_OK=0
-    validate_release_target "$CURRENT" "$LOOPS_ROOT" >/dev/null || RESTORED_OK=0
-    validate_release_target "$PREVIOUS" "$LOOPS_ROOT" >/dev/null || RESTORED_OK=0
-    [ "$RESTORED_OK" -eq 1 ] || die "rollback restoration failed after previous swap error"
-    die "rollback previous pointer swap failed"
-  fi
   replace_link "$PREVIOUS" "$CURRENT_TARGET" || {
-    replace_link "$CURRENT" "$CURRENT_TARGET" || true
-    die "could not move previous release pointer"
+    if ! restore_pointer_snapshot "$CURRENT" 1 "$CURRENT_TARGET" \
+      || ! restore_pointer_snapshot "$PREVIOUS" 1 "$PREVIOUS_TARGET"; then
+      die "rollback restoration failed after previous swap error"
+    fi
+    die "rollback previous pointer swap failed"
   }
   POINTERS_OK=1
   if [ "${LOOPS_TEST_FAIL_ROLLBACK_READBACK:-0}" = "1" ]; then
@@ -177,14 +197,10 @@ if [ "$ROLLBACK" -eq 1 ]; then
   validate_release_target "$CURRENT" "$LOOPS_ROOT" >/dev/null || POINTERS_OK=0
   validate_release_target "$PREVIOUS" "$LOOPS_ROOT" >/dev/null || POINTERS_OK=0
   if [ "$POINTERS_OK" -ne 1 ]; then
-    replace_link "$CURRENT" "$CURRENT_TARGET" || true
-    replace_link "$PREVIOUS" "$PREVIOUS_TARGET" || true
-    RESTORED_OK=1
-    [ "$(readlink "$CURRENT")" = "$CURRENT_TARGET" ] || RESTORED_OK=0
-    [ "$(readlink "$PREVIOUS")" = "$PREVIOUS_TARGET" ] || RESTORED_OK=0
-    validate_release_target "$CURRENT" "$LOOPS_ROOT" >/dev/null || RESTORED_OK=0
-    validate_release_target "$PREVIOUS" "$LOOPS_ROOT" >/dev/null || RESTORED_OK=0
-    [ "$RESTORED_OK" -eq 1 ] || die "rollback restoration failed"
+    if ! restore_pointer_snapshot "$CURRENT" 1 "$CURRENT_TARGET" \
+      || ! restore_pointer_snapshot "$PREVIOUS" 1 "$PREVIOUS_TARGET"; then
+      die "rollback restoration failed"
+    fi
     die "rollback readback failed"
   fi
   echo "current -> $(readlink "$CURRENT") (rollback)"
@@ -412,35 +428,14 @@ if [ -L "$CURRENT" ]; then
 elif [ -e "$CURRENT" ]; then
   die "current release pointer is not a symlink"
 fi
-if [ "${LOOPS_TEST_FAIL_CURRENT_SWAP:-0}" = "1" ]; then
-  if [ "$OLD_PREVIOUS_PRESENT" -eq 1 ]; then
-    replace_link "$PREVIOUS" "$OLD_PREVIOUS" || true
-  else
-    rm -f "$PREVIOUS"
-  fi
-  RESTORED_OK=1
-  if [ -n "${OLD_CURRENT:-}" ]; then
-    [ "$(readlink "$CURRENT")" = "$OLD_CURRENT" ] || RESTORED_OK=0
-    validate_release_target "$CURRENT" "$LOOPS_ROOT" >/dev/null || RESTORED_OK=0
-  else
-    [ ! -e "$CURRENT" ] || RESTORED_OK=0
-  fi
-  if [ "$OLD_PREVIOUS_PRESENT" -eq 1 ]; then
-    [ "$(readlink "$PREVIOUS")" = "$OLD_PREVIOUS" ] || RESTORED_OK=0
-    validate_release_target "$PREVIOUS" "$LOOPS_ROOT" >/dev/null || RESTORED_OK=0
-  else
-    [ ! -e "$PREVIOUS" ] || RESTORED_OK=0
-  fi
-  [ "$RESTORED_OK" -eq 1 ] || die "current swap restoration failed"
-  die "injected current swap failure"
-fi
 if ! replace_link "$CURRENT" "$DEST"; then
-  if [ "$OLD_PREVIOUS_PRESENT" -eq 1 ]; then
-    replace_link "$PREVIOUS" "$OLD_PREVIOUS" || true
-  else
-    rm -f "$PREVIOUS"
+  OLD_CURRENT_PRESENT=0
+  [ -n "${OLD_CURRENT:-}" ] && OLD_CURRENT_PRESENT=1
+  if ! restore_pointer_snapshot "$CURRENT" "$OLD_CURRENT_PRESENT" "${OLD_CURRENT:-}" \
+    || ! restore_pointer_snapshot "$PREVIOUS" "$OLD_PREVIOUS_PRESENT" "$OLD_PREVIOUS"; then
+    die "current swap restoration failed"
   fi
-  die "could not move the current symlink"
+  die "current release pointer swap failed"
 fi
 POINTERS_OK=1
 if [ "${LOOPS_TEST_FAIL_POST_CURRENT_READBACK:-0}" = "1" ]; then
@@ -455,30 +450,12 @@ else
   [ ! -e "$PREVIOUS" ] || POINTERS_OK=0
 fi
 if [ "$POINTERS_OK" -ne 1 ]; then
-  if [ -n "${OLD_CURRENT:-}" ]; then
-    replace_link "$CURRENT" "$OLD_CURRENT" || true
-  else
-    rm -f "$CURRENT"
+  OLD_CURRENT_PRESENT=0
+  [ -n "${OLD_CURRENT:-}" ] && OLD_CURRENT_PRESENT=1
+  if ! restore_pointer_snapshot "$CURRENT" "$OLD_CURRENT_PRESENT" "${OLD_CURRENT:-}" \
+    || ! restore_pointer_snapshot "$PREVIOUS" "$OLD_PREVIOUS_PRESENT" "$OLD_PREVIOUS"; then
+    die "release pointer restoration failed"
   fi
-  if [ "$OLD_PREVIOUS_PRESENT" -eq 1 ]; then
-    replace_link "$PREVIOUS" "$OLD_PREVIOUS" || true
-  else
-    rm -f "$PREVIOUS"
-  fi
-  RESTORED_OK=1
-  if [ -n "${OLD_CURRENT:-}" ]; then
-    [ "$(readlink "$CURRENT")" = "$OLD_CURRENT" ] || RESTORED_OK=0
-    validate_release_target "$CURRENT" "$LOOPS_ROOT" >/dev/null || RESTORED_OK=0
-  else
-    [ ! -e "$CURRENT" ] || RESTORED_OK=0
-  fi
-  if [ "$OLD_PREVIOUS_PRESENT" -eq 1 ]; then
-    [ "$(readlink "$PREVIOUS")" = "$OLD_PREVIOUS" ] || RESTORED_OK=0
-    validate_release_target "$PREVIOUS" "$LOOPS_ROOT" >/dev/null || RESTORED_OK=0
-  else
-    [ ! -e "$PREVIOUS" ] || RESTORED_OK=0
-  fi
-  [ "$RESTORED_OK" -eq 1 ] || die "release pointer restoration failed"
   die "release pointer readback failed"
 fi
 

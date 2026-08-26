@@ -211,6 +211,52 @@ dependency manifest mutation/order、current/previous swap failure、旧 current
 全て exit 0。Round4 は npm 全体 suite を再実行せず、直前 Round3 の 84 中 82（依存欠如2件）を
 有効な全体証拠として保持した。live launchctl/install/provider mutation は行っていない。
 
+## Rethink Fix Round5 (2026-08-27)
+
+pointer 復元は共通 helper 相当の復元・presence/target/metadata 検証を、rollback の previous
+swap failure と normal cut の current swap failure に適用した。テスト専用 failure flag は
+`replace_link` 後の実際の rename failure handler を通し、通常分岐を事前 short-circuit しない。
+launch の依存 manifest は全件収集後に path の byte 順で global sort し、`@`/大文字/underscore/
+ネスト path の順序と symlink inode mode を固定した。
+
+Round5 focused GREEN:
+
+```text
+node --test test/agent-economy-control-plane.test.mjs test/install-release-state.test.mjs
+```
+
+結果: 18 tests / pass 18 / fail 0。actual pointer-swap failure、exact snapshot restoration、
+absence、manifest global ordering、symlink-to-nonexec mode を実測した。
+
+追加確認: `py_compile`、対象 shell `bash -n`、focused test `node --check`、`git diff --check` は
+全て exit 0。Round5 は npm 全体 suite を再実行せず、直前 Round3 の 84 中 82（依存欠如2件）を
+有効な全体証拠として保持した。live launchctl/install/provider mutation は行っていない。
+
+## Rethink Fix Round5 (2026-08-27)
+
+`restore_pointer_snapshot` を共通 helper として追加し、target/absence の復元後に exact presence・
+readlink target・metadata を検証する。rollback の previous-pointer rename failure と normal cut の
+current-pointer rename failure、および post-readback failure の全経路がこの helper を使い、復元
+失敗は distinct fatal error として返す。test-only failure flags は replace_link 内の one-shot return
+で実際の rename failure handler を通すため、事前 short-circuit ではない。
+
+launch の dependency manifest は全エントリ収集後 `Buffer.compare(Buffer.from(path))` の byte
+順に global sort し、cutter/Python の相対 path order と一致させた。source/dependency symlink は
+lstat inode mode、regular file は stat mode に統一した。
+
+Round5 focused GREEN:
+
+```text
+node --test test/agent-economy-control-plane.test.mjs test/install-release-state.test.mjs
+```
+
+結果: 18 tests / pass 18 / fail 0。実 rename failure、exact current/previous snapshot restoration、
+current absence、global dependency ordering、internal/non-executable symlink を実測した。
+
+追加確認: `py_compile`、対象 shell `bash -n`、focused test `node --check`、`git diff --check` は
+全て exit 0。Round5 は npm 全体 suite を再実行していない。live launchctl/install/provider mutation
+は行っていない。
+
 ## Rethink commit
 
 この追補を前回 commit の上に新規 commit として記録する（amend/push は行わない）。

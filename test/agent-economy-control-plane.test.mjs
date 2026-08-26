@@ -321,7 +321,7 @@ test("pinned runtime paths are explicit: daemon skips mutable self-update/sync a
   assert.match(runSkill, /ANICCA_CODE_ROOT/u);
   assert.match(runSkill, /path\.join\(root, ['"]skills['"]/u);
   const launch = readFileSync(join(REPO_ROOT, "skills/agent-economy/launch.sh"), "utf8");
-  assert.match(launch, /dependencyLines\.sort/u);
+  assert.match(launch, /dependencyLines\.sort.*Buffer\.compare/su);
   const plistgen = readFileSync(join(REPO_ROOT, "bin/plistgen.py"), "utf8");
   assert.match(plistgen, /os\.replace\(/u);
   assert.doesNotMatch(plistgen, /target\.write_bytes\(/u);
