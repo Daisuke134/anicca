@@ -2229,18 +2229,25 @@ order is the §12.3 recovery checklist: `MKT-09R0 → MKT-09R1 → MKT-09R2 →
 MKT-09R3-01..13 → MKT-09R4..R9 → MKT-10 → MKT-11 → MKT-12 → MKT-13`.
 No later row starts early.
 
-Current TODO state: **incident recovery remains open at MKT-09R9-15 / Order
-24F10.** R0 through R9-14 are terminal: capacity is safe, the shared publication
-fence remains closed,
+Current TODO state: **incident recovery remains open at MKT-11 cadence Order 8,
+one destination at a time.** MKT-09R0 through the selected Postiz canary
+portfolio are terminal: capacity is safe, the shared publication fence remains closed,
 the JP4 false completion is quarantined, and the 13-effect set is 12 `present`
 plus one truthful `absent`. The full publication ledger is 43 `completed`,
 one `conflict`, and zero unknown/running/reconciling jobs. This does not prove
 all accounts or schedules healthy: the measured live schedules still produced
 only 32 of 64 expected provider rows, most accounts remain unclassified at
 0/day, and two delayed effects missed their logical slots by hours.
-MKT-12A0 and every cadence expansion remain blocked. Honne still has TikTok
+MKT-12A0 remains blocked until cadence and attribution are healthy. Honne still has TikTok
 destinations only; dedicated Honne Instagram and YouTube integrations do not
 yet exist.
+
+For every selected Postiz video/Reel/carousel lane, publication success now
+requires the exact Postiz API row in `PUBLISHED` state plus the exact LM
+product/account/integration/platform/creative/local-media/caption lineage. A
+profile URL or numeric release suffix without that exact row and lineage is not
+success. A caption-matching native URL and browser/login readback are optional
+diagnostics, not publication gates. No Google login is part of this recovery.
 
 An external observation clock is not an active implementation item. It remains
 `time-gated pending` only when it has an exact due time, a durable LM owner, and
@@ -2357,6 +2364,19 @@ provider source observation.
    jobs/receipts at `841/272` with publication 0/message 0 and exit 0. Manifest
    `af258cc29fffd0446bae20967de9388ce13d5e388c9d0ff180dce7d7122486fe`
    arms Honne EN only at target 3/day; every other selected lane remains armed 0.
+   **Honne JA first live slot done:** exact creative `HJA-022-ced745f2245a`
+   published as Postiz row `cmt9pt0tt00f3lf0y046lm2lo`; the LM receipt binds
+   the JA ReelClaw account/integration, video hash `ced745f2…a9472`, caption hash
+   `9e407699…7510dd6`, and natural Telegram `35080`. Replay kept jobs
+   `847→847`, receipts `274→274`, publication/message `created=false`, and owner
+   exit 0. Manifest `65f910db5d5124b6d50bb5864edc63cb82b34c45388180eb1765d66ff7624245`
+   arms exactly Honne EN and Honne JA at 3/day. Transport commit `574d0662e`
+   derives a TikTok candidate only from an exact `PUBLISHED` Postiz row with an
+   accepted TikTok release-id shape; focused Postiz tests pass 21/21.
+   **Next atomic item:** enable and verify only the first live cadence slot for
+   Anicca main TikTok `@anicca.jp`; all other selected destinations stay at their
+   current state until that exact effect, natural Telegram, replay 0, and metric
+   ownership are terminal.
 9. Keep the daily metrics loop running for every healthy account: social post and
    account metrics, 2h/24h/72h/7d windows, and natural Telegram. Unsupported or
    empty metrics remain source-labelled `unavailable`.
