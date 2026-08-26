@@ -34,7 +34,8 @@ host_state = Path(os.environ["GIG_HOST_STATE_DIR"])
 reason = None
 for filename, candidate in (("disk-writers.stop", "disk_writers_stop"),
                             ("disk-pressure.block", "disk_pressure_block")):
-    if (host_state / filename).is_file():
+    ignored = filename == "disk-pressure.block" and os.environ.get("GIG_IGNORE_DISK_PRESSURE_BLOCK") == "1"
+    if (host_state / filename).is_file() and not ignored:
         reason = candidate
         break
 record = {"argv": sys.argv, "isolated": sys.flags.isolated,
@@ -89,7 +90,7 @@ class CdpPersistentContextPreflightTests(unittest.TestCase):
                 "GIG_DISK_HEADROOM_KIB": "0",
                 "GIG_HOST_STATE_DIR": "/hostile/host-state",
                 "GIG_STATE_DIR": "/hostile/lane-state",
-                "GIG_IGNORE_DISK_PRESSURE_BLOCK": "1",
+                "GIG_IGNORE_DISK_PRESSURE_BLOCK": "0",
                 "GIG_IGNORE_DISK_WRITERS_STOP": "true",
                 "DISK_CONTROL_STATE_DIR": "/hostile/control",
                 "OPENCLAW_STATE_DIR": "/hostile/openclaw",
@@ -108,45 +109,34 @@ class CdpPersistentContextPreflightTests(unittest.TestCase):
             self.assertEqual(child_env["GIG_HOST_STATE_DIR"], str(home / ".openclaw/state"))
             self.assertEqual(child_env["GIG_STATE_DIR"],
                              str(home / ".local/state/life-manager/browser-provision"))
+            self.assertEqual(child_env["GIG_IGNORE_DISK_PRESSURE_BLOCK"], "1")
             for key in (
-                "GIG_IGNORE_DISK_PRESSURE_BLOCK", "GIG_IGNORE_DISK_WRITERS_STOP",
+                "GIG_IGNORE_DISK_WRITERS_STOP",
                 "DISK_CONTROL_STATE_DIR", "OPENCLAW_STATE_DIR",
                 "LIFE_MANAGER_HOST_STATE_DIR",
             ):
                 self.assertNotIn(key, child_env)
 
-    def test_both_disk_flags_fail_closed_with_exact_receipts(self) -> None:
-        for flag, reason in (("disk-writers.stop", "disk_writers_stop"),
-                              ("disk-pressure.block", "disk_pressure_block")):
-            with self.subTest(flag=flag), tempfile.TemporaryDirectory() as temporary:
-                root = Path(temporary)
-                home = root / "home"
-                host_state = home / ".openclaw/state"
-                lane_state = home / ".local/state/life-manager/browser-provision"
-                host_state.mkdir(parents=True)
-                lane_state.mkdir(parents=True)
-                (host_state / flag).write_text("blocked\n", encoding="utf-8")
-                self.install_guard(home)
-                capture = root / "capture.json"
-                with patch.dict(os.environ, {"HOME": "/hostile/home",
-                                              "STUB_CAPTURE": str(capture),
-                                              "GIG_IGNORE_DISK_PRESSURE_BLOCK": "1",
-                                              "GIG_IGNORE_DISK_WRITERS_STOP": "1"}, clear=False):
-                    self.assertFalse(MODULE._disk_preflight(home))
-                receipt = json.loads((lane_state / "state/disk-headroom.json").read_text())
-                self.assertEqual(receipt["reason"], reason)
-                self.assertEqual(receipt["effect"], 0)
-                self.assertEqual(receipt["required_bytes"], 524288 * 1024)
-                with (
-                    patch.object(MODULE, "_canonical_home", return_value=home),
-                    patch.dict(os.environ, {"AFFILIATE_PROFILE": str(root / "profile"),
-                                            "STUB_CAPTURE": str(capture)}, clear=False),
-                    patch("builtins.__import__", side_effect=self.reject_browser_import()),
-                ):
-                    self.assertEqual(
-                        MODULE.main(["--profile", str(root / "profile"), "--port", "9333"]),
-                        1,
-                    )
+    def test_preventive_pressure_is_ignored_but_hard_stop_fails_closed(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            home = root / "home"
+            host_state = home / ".openclaw/state"
+            host_state.mkdir(parents=True)
+            self.install_guard(home)
+            capture = root / "capture.json"
+            (host_state / "disk-pressure.block").write_text("blocked\n", encoding="utf-8")
+            with patch.dict(os.environ, {"STUB_CAPTURE": str(capture)}, clear=False):
+                self.assertTrue(MODULE._disk_preflight(home))
+            (host_state / "disk-writers.stop").write_text("blocked\n", encoding="utf-8")
+            with patch.dict(os.environ, {"STUB_CAPTURE": str(capture)}, clear=False):
+                self.assertFalse(MODULE._disk_preflight(home))
+            receipt = json.loads(
+                (home / ".local/state/life-manager/browser-provision/state/disk-headroom.json").read_text()
+            )
+            self.assertEqual(receipt["reason"], "disk_writers_stop")
+            self.assertEqual(receipt["effect"], 0)
+            self.assertEqual(receipt["required_bytes"], 524288 * 1024)
 
     def test_port_zero_preflight_only_reaches_guard_without_cloak_import(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
