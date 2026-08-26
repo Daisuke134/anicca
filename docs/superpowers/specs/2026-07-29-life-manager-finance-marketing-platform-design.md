@@ -2290,6 +2290,21 @@ first run must hold Telegram. Exactly one effect at immutable logical slot
 `2026-08-26T00:33:11.000Z` is authorized next; no other slot or retry is
 allowed if its outcome becomes unknown.
 
+At effect time a concurrent owner had already opened the exact same effect
+fence. The planned `00:33:11.000Z` invocation therefore failed before provider
+access with `publication controls are not closed` and created no second job or
+effect. The existing exact job
+`marketing-video-publication:f4cb935f…aa31f1` owns actual slot
+`2026-08-26T00:33:55.000Z` and is terminal `completed`,
+`unknown_effect=false`, with exactly one enqueue/claim/complete sequence and
+one receipt. Postiz row `cmt9d2khz00r1p20yb6qbtvyg` has the LF-equivalent
+exact caption and direct candidate
+`https://www.instagram.com/reel/Dce7_IPlUlr/`. Manifest bytes are restored to
+`bbc2bb24…ca124`, target is again `pack-ready/default-off`, all lanes armed 0,
+and fence closed at mode `0600`. Native verification remains absent, so
+Telegram is correctly held at 0. No retry or second publication is allowed;
+only this direct candidate may proceed to native owner/full-video verification.
+
 **Completed immediately preceding atomic item:** MKT-09R8-12 / Order 23I
 reconciled the complete existing Postiz history before any new effect. Read-only
 GETs covered `1970-01-01` through `2026-08-27`: pre-2025 and 2025 returned zero,
