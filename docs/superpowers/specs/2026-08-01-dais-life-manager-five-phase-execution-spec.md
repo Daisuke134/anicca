@@ -83,9 +83,17 @@ provider receiptのないapplication outcomeをpublic artifact validatorが拒�
 稼働pathはcontext `2026-08-27.2` / `9fbe6198…5338`、同digestのapplication kit/deck、送信前
 `application_digest`、送信後dossier/ledger digestを読む。focused testsはstartup-context 20/20、Fundraiser 12/12 GREENである。
 残るblockerはhost disk governorだけである。生成MP4 187本、再生成可能cache/dependency、完全cleanでbranchを保持した旧worktree
-だけを除去し、空きを2,491,772,928 bytesから11,999,936,512 bytesへ回復した。credential、session、ledger/state JSONL、
-顧客素材/納品物、Cloak profile、稼働中dependency、dirty/unmerged sourceは保持した。clear threshold 21,474,836,480 bytesには
-9,474,899,968 bytes不足するため`disk-pressure.block`はpresent、Fundraiserはrun 203 / exit 75でfail closedし、外部送信は0である。
+だけを除去し、一時は空きを2,491,772,928 bytesから11,999,936,512 bytesへ回復した。credential、session、ledger/state JSONL、
+顧客素材/納品物、Cloak profile、稼働中dependency、dirty/unmerged sourceは保持した。追加実測ではAPFS VM volumeが
+22,548,578,304 bytes、macOS管理swapが21,504MiB中20,553.56MiB使用、swapfile 21本で、host disk不足の最大根因は
+削除可能なproject artifactではなくswapである。2026-08-27T03:41:25+09:00時点の空きは10,781,794,304 bytes、
+clear threshold 21,474,836,480 bytesには10,693,042,176 bytes不足する。swapfileを直接削除せず、稼働owner・profile・PIDを
+照合した不要processだけをTERMし、macOSの自然回収をreadbackする。`disk-pressure.block`はpresent、Fundraiserはrun 203 /
+exit 75でfail closedし、外部送信は0である。
+追加のbrowser GCでは、終了済みrunが所有するCoconala page 3枚と、Apply停止・Reply attach保護を確認したlegacy unattached page
+20枚だけを閉じた。しかし常駐ownerがpageを再生成し、2026-08-27T03:51:45+09:00にはswapが22,528MiB中21,114.44MiB、
+swapfile 22本、disk free 9,543,729,152 bytesへ悪化した。project cache追加削除、稼働ownerの無断停止、直接swap削除では閉じない。
+次の不可分actionは、全owner stateを保持したMac再起動の明示承認→起動後swap/disk/launchd readback→Fundraiser natural wakeである。
 最新contextを読む単一owner、preview digest、
 official completion PNG、Telegram photo message ID、application dossier hashが一つのreceipt chainへ揃うまで`IN_PROGRESS`とする。
 非機密の実測snapshotは`docs/evidence/fundraising/2026-08-27-ctx08-readiness.json`に置く。
@@ -175,20 +183,24 @@ error recovery、effect/readbackを実codeで再監査し、noticeを保持す�
 | 11 | CTX-05 root-site relationship | DONE | `anicca-products` PR #396をmain merge `7fe3f5f447…`へ反映。root hero/metadata/JSON-LDを`Anicca=mission/company`、`Life Manager=proactive general-agent product`、`Body/Mind/Money=3 organs`へ統一し、旧self-funding/AGI/UBI product sectionsをroot render pathから除外。contract 2/2、preview run `32989091020`、prod run `32989696892`、Netlify deploy `6a8f17a860…`、built-in money-path smoke/rollback gate PASS。live英日HTTP 200・title/CTA/3 organs・overflow 0 |
 | 12 | CTX-06 generated-context drift gate | DONE | README英日、committed fundraising kit、active formのdigest契約はoffline 28/28 GREEN。公開Web PR #397はmain `b1ee7a1208…`へmergeし、preview `32990937574`、production `32991554504`、money-path smokeがSUCCESS。live product/repo/Telegram auditは3/3 GREEN。Security Scan run `32992553073`の`Startup context drift` job `98253497091`もSUCCESS |
 | 13 | CTX-07 public live readback | DONE | isolated browserとHTTP/APIで`/lm`、英日root、public repo、英日README、Telegramをfresh readback。title、3 organs、Web/Telegram/GitHub CTA、version/digest、founder-attested約$1,000とMRR/ARR否定、banked境界、overflow 0を`docs/evidence/public-context/2026-08-27-public-context-readback.json`へ保存 |
-| 14 | CTX-08 accelerator current-batch gate | IN_PROGRESS | 東京都公式でASAC第4期プレシード・第23期シード（2026-08-25〜09-13）を現行第一候補に確定。PR #2889でcanonical context/kitとpreview・receipt digestを既存ownerへ実装し32/32 GREEN。安全なdisk cleanup後も12.00GBで、20GiB clear thresholdに9.47GB不足するため送信0・exit 75。gate解除後、official form readback→digest-bound preview→exactly-once submit→completion PNG＋Telegram photo message ID＋dossier hash→replay-zeroの順で閉じる |
-| 15 | GA-01 existing-core and OSS code map | TODO | 現行agent-runner/connector/gig/evidence/Agent Economyと上記OSSを固定commitで読み、copy/reuse/rejectとlicenseをcall graph付きで確定 |
-| 16 | GA-02 one Goal / Opportunity Graph | TODO | body/mind/moneyのgoal、opportunity、dependency、deadline、outcomeを同じdurable graphで表現し、一つのmanager cursorが再開可能 |
-| 17 | GA-03 capability registry | TODO | capability、provider、required authorization、cost、human requirement、transport、readbackをdata manifest化し、site名をcoreから除去 |
-| 18 | GA-04 shared effect and receipt kernel | TODO | intent、pre-readback、single execution、unknown-effect reconciliation、post-readback、economic attributionを一つのstate machineへ統合 |
-| 19 | GA-05 bounded specialist runtime | TODO | existing agent-runnerをWorkerRuntimeへ接続し、一仕事・step/time/cost limit・heartbeat/cancel・structured resultを共通化 |
-| 20 | GA-06 allocator across organs | TODO | urgency、expected verified utility、capacity、risk、costでDaily/Care/Financialから次の一件を選び、starvation防止を実証 |
-| 21 | GA-07 local/cloud adapter parity | TODO | same kernelをlocal processとhosted workerで実行し、browser/vault/scheduler adapter差替え以外のbranchを0にする |
-| 22 | GA-08 self-funding economic loop | TODO | provider収益と全costをjobへ帰属し、`banked`残高内だけで`compute_paid`を発行。owner資金と混同しない |
-| 23 | GA-09 migrate working Coconala lane | TODO | 現loopを停止せずshadow receipt→replay-zero→natural wake parity→owner切替の順でshared kernelへ載せる |
-| 24 | GA-10 second-provider generality proof | TODO | provider-specific brainを追加せず第二providerでapplication→contract→delivery→bankedを一件閉じ、同じkernelへ学習を返す |
-| 25 | GA-11 hosted product slice | TODO | phone/Telegram/Webだけでtenant onboarding、vault、scheduler、billing、worker isolation、receiptsを同じkernel上で一人分E2E実証 |
-| 26 | GA-12 OSS clean-install release | TODO | public repoのfresh machine install、sample provider manifest、secret refs、local/cloud docs、license notices、reproducible acceptanceを公開 |
-| 27 | GA-13 dependency retirement | TODO | profitable/open-core/Hermes等のruntime/config/symlink/import参照が0、replacementのnatural E2Eとrollback bundle取得後だけ旧dependencyを退役 |
+| 14 | CTX-08A host gate recovery | BLOCKED_APPROVAL | safe cache/worktree/owned-tab cleanupを実施したがswapは22.5GiBへ増加。次は明示承認後にMac再起動し、free bytes `>=21,474,836,480`、`disk-pressure.block` absent、credential/session/ledger/customer media/profile保持、必須launchd owner復帰をreadback |
+| 15 | CTX-08B official form capability readback | TODO | 既存Fundraiser ownerがASAC official formを一度だけ開き、current batch、締切、required fields、attachment、auth/CAPTCHA境界をreceipt化。送信effect 0 |
+| 16 | CTX-08C digest-bound application preview | TODO | context `2026-08-27.2` / `9fbe6198…5338`、kit/deck、全回答、attachment hashを一つの`application_digest`へ固定し、unsupported claim・空required field 0を確認 |
+| 17 | CTX-08D exactly-once accelerator submit | TODO | durable effect claim取得後、同じownerがofficial submitを一度だけ実行。timeout/unknownは再送せずofficial readbackでreconcile |
+| 18 | CTX-08E terminal receipt and replay-zero | TODO | official completion PNG、Telegram photo message ID、application dossier SHA-256、ledger resultを同じdigest chainへ束ね、再wakeでexternal effect 0をreadbackしてCTX-08 DONE |
+| 19 | GA-01 existing-core and OSS code map | TODO | 現行agent-runner/connector/gig/evidence/Agent Economyと上記OSSを固定commitで読み、copy/reuse/rejectとlicenseをcall graph付きで確定 |
+| 20 | GA-02 one Goal / Opportunity Graph | TODO | body/mind/moneyのgoal、opportunity、dependency、deadline、outcomeを同じdurable graphで表現し、一つのmanager cursorが再開可能 |
+| 21 | GA-03 capability registry | TODO | capability、provider、required authorization、cost、human requirement、transport、readbackをdata manifest化し、site名をcoreから除去 |
+| 22 | GA-04 shared effect and receipt kernel | TODO | intent、pre-readback、single execution、unknown-effect reconciliation、post-readback、economic attributionを一つのstate machineへ統合 |
+| 23 | GA-05 bounded specialist runtime | TODO | existing agent-runnerをWorkerRuntimeへ接続し、一仕事・step/time/cost limit・heartbeat/cancel・structured resultを共通化 |
+| 24 | GA-06 allocator across organs | TODO | urgency、expected verified utility、capacity、risk、costでDaily/Care/Financialから次の一件を選び、starvation防止を実証 |
+| 25 | GA-07 local/cloud adapter parity | TODO | same kernelをlocal processとhosted workerで実行し、browser/vault/scheduler adapter差替え以外のbranchを0にする |
+| 26 | GA-08 self-funding economic loop | TODO | provider収益と全costをjobへ帰属し、`banked`残高内だけで`compute_paid`を発行。owner資金と混同しない |
+| 27 | GA-09 migrate working Coconala lane | TODO | 現loopを停止せずshadow receipt→replay-zero→natural wake parity→owner切替の順でshared kernelへ載せる |
+| 28 | GA-10 second-provider generality proof | TODO | provider-specific brainを追加せず第二providerでapplication→contract→delivery→bankedを一件閉じ、同じkernelへ学習を返す |
+| 29 | GA-11 hosted product slice | TODO | phone/Telegram/Webだけでtenant onboarding、vault、scheduler、billing、worker isolation、receiptsを同じkernel上で一人分E2E実証 |
+| 30 | GA-12 OSS clean-install release | TODO | public repoのfresh machine install、sample provider manifest、secret refs、local/cloud docs、license notices、reproducible acceptanceを公開 |
+| 31 | GA-13 dependency retirement | TODO | profitable/open-core/Hermes等のruntime/config/symlink/import参照が0、replacementのnatural E2Eとrollback bundle取得後だけ旧dependencyを退役 |
 
 Upworkは`API_INELIGIBLE / UI_AUTOMATION_DENIED / SUPPORT_SCOPE_PENDING`でclean terminalへ入った。
 Support返信待ちは#7以降を止めない。後日API approvalまたはaction-level scope変更を受けた時だけ、exact evidence hashとexpiryを持つ
