@@ -218,6 +218,10 @@ For every queued candidate until the execution window ends:
    voice, attendance, physical-presence, KYC, binding-terms, banking, funds
    movement, or unsolved CAPTCHA requirement checkpoints only this candidate; it
    does not terminate discovery or other applications.
+   A visible ordinary reCAPTCHA checkbox is not yet an unsolved CAPTCHA: scroll its
+   rendered iframe into view, click the checkbox center once with a trusted browser
+   interaction, and observe again. Only an ensuing image/audio challenge that the
+   installed supported route cannot solve is an unsolved CAPTCHA checkpoint.
    Generate ordinary team, market, and product prose from the startup context;
    do not checkpoint merely because there is no prewritten answer. Treat the
    rendered form's actual required fields as authoritative and attach the current
