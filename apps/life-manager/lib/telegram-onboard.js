@@ -164,6 +164,7 @@ async function backfillIfCalendarCompleted(row, opts = {}) {
 }
 
 async function handleOnboardingText(chatId, text, row, opts) {
+  if (row && row.tg_onboard_stage === "done") return "done";
   const stage = computeStage(row);
   await backfillIfCalendarCompleted(row, opts);
   if (stage === "phone") {
@@ -188,7 +189,7 @@ async function handleOnboardingText(chatId, text, row, opts) {
 async function handleGmailCallback(data, row, opts = {}) {
   if (data !== "gmail:skip") return { ok: false, ignored: true };
   if (!row || !row.uid) return { ok: false, reason: "unlinked_chat" };
-  if (String(row.tg_onboard_stage || "").toLowerCase() === "done" && coreReady(row)) return { ok: true, stage: "done" };
+  if (row.tg_onboard_stage === "done") return { ok: true, stage: "done" };
   const save = opts.saveField || saveField;
   const persistStage = opts.setStage || setStage;
   const send = opts.sendMessage || sendMessage;

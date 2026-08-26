@@ -5,7 +5,7 @@ const { test } = require("node:test");
 const assert = require("node:assert");
 const {
   computeStage, stageMessage, isNativeStage, normalizePhone, telegramProfileName,
-  applyTelegramProfileName, handleGmailCallback, onboardNudgeAll, backfillIfCalendarCompleted,
+  applyTelegramProfileName, handleOnboardingText, handleGmailCallback, onboardNudgeAll, backfillIfCalendarCompleted,
   NUDGE_COOLDOWN_MS,
 } = require("./telegram-onboard.js");
 const { startReply } = require("./telegram.js");
@@ -301,6 +301,19 @@ test("canonical done rows are not rewritten by the legacy onboarding nudge", asy
     setStage: async () => calls.push("stage"), backfillCalendarContext: async () => calls.push("context") });
   assert.equal(sent, 0);
   assert.deepEqual(calls, []);
+});
+
+test("rowByChatId-shaped paid phone-less done rows are webhook no-ops without joined preferences", async () => {
+  const row = { uid: "u-done", telegram_chat_id: "100", tg_onboard_stage: "done", calendar_provider: "composio_gcal", paid: true, phone: null, home_address: "Tokyo home" };
+  const effects = [];
+  const opts = {
+    token: "t", base: "https://x", supaUrl: "s", supaKey: "k",
+    saveField: async () => effects.push("save"), setStage: async () => effects.push("stage"),
+    sendMessage: async () => effects.push("send"), backfillCalendarContext: async () => effects.push("context"),
+  };
+  assert.equal(await handleOnboardingText("100", "+819012345678", row, opts), "done");
+  assert.deepEqual(await handleGmailCallback("gmail:skip", row, { ...opts, chatId: "100" }), { ok: true, stage: "done" });
+  assert.deepEqual(effects, []);
 });
 
 test("calendar completion triggers best-effort context backfill once before announcing phone", async () => {
