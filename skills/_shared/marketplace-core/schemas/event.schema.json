@@ -19,6 +19,9 @@
       "$ref": "#/$defs/QAReceipt"
     },
     {
+      "$ref": "#/$defs/PayoutMatchReceipt"
+    },
+    {
       "$ref": "#/$defs/WorkEvent"
     },
     {
@@ -245,6 +248,35 @@
         "status": { "enum": ["passed", "failed"] },
         "artifact_sha256": { "$ref": "#/$defs/sha256" },
         "report_sha256": { "$ref": "#/$defs/sha256" },
+        "observed_at": { "$ref": "#/$defs/timestamp" }
+      }
+    },
+    "PayoutMatchReceipt": {
+      "title": "MarketplacePayoutMatchReceipt",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "record_type",
+        "platform",
+        "payment_external_id",
+        "payout_external_id",
+        "bank_transaction_external_id",
+        "status",
+        "amount_minor",
+        "currency",
+        "observed_at"
+      ],
+      "properties": {
+        "schema_version": { "$ref": "#/$defs/schema_version" },
+        "record_type": { "const": "payout_match_receipt" },
+        "platform": { "$ref": "#/$defs/platform" },
+        "payment_external_id": { "$ref": "#/$defs/identifier" },
+        "payout_external_id": { "$ref": "#/$defs/identifier" },
+        "bank_transaction_external_id": { "$ref": "#/$defs/identifier" },
+        "status": { "const": "matched" },
+        "amount_minor": { "$ref": "#/$defs/non_negative_minor" },
+        "currency": { "$ref": "#/$defs/currency" },
         "observed_at": { "$ref": "#/$defs/timestamp" }
       }
     },

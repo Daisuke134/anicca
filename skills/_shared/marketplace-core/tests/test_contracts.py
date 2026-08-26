@@ -11,6 +11,7 @@ from contracts import (  # noqa: E402
     ContractReceipt,
     DeliveryReceipt,
     PaymentReceipt,
+    PayoutMatchReceipt,
     QAReceipt,
     parse_contract,
 )
@@ -115,6 +116,25 @@ class ContractReceiptTests(unittest.TestCase):
         value["net_amount_minor"] = 9000
         with self.assertRaisesRegex(ContractValidationError, "net_amount_minor"):
             parse_contract(value)
+
+    def test_parses_official_payout_bank_match(self):
+        receipt = parse_contract(
+            {
+                "schema_version": 1,
+                "record_type": "payout_match_receipt",
+                "platform": "mercor",
+                "payment_external_id": "payment-678",
+                "payout_external_id": "payout-234",
+                "bank_transaction_external_id": "bank-567",
+                "status": "matched",
+                "amount_minor": 8500,
+                "currency": "USD",
+                "observed_at": "2026-08-26T07:25:00Z",
+            }
+        )
+
+        self.assertIsInstance(receipt, PayoutMatchReceipt)
+        self.assertEqual(receipt.bank_transaction_external_id, "bank-567")
 
 
 if __name__ == "__main__":
