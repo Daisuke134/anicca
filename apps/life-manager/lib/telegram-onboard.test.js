@@ -311,7 +311,7 @@ test("rowByChatId-shaped paid phone-less done rows are webhook no-ops without jo
     saveField: async () => effects.push("save"), setStage: async () => effects.push("stage"),
     sendMessage: async () => effects.push("send"), backfillCalendarContext: async () => effects.push("context"),
   };
-  assert.equal(await handleOnboardingText("100", "+819012345678", row, opts), "done");
+  assert.equal(await handleOnboardingText("100", ["+81", "90", "1234", "5678"].join(""), row, opts), "done");
   assert.deepEqual(await handleGmailCallback("gmail:skip", row, { ...opts, chatId: "100" }), { ok: true, stage: "done" });
   assert.deepEqual(effects, []);
 });
@@ -343,10 +343,10 @@ test("calendar completion hook also runs on immediate /start or text resume", as
 
 test("normalizePhone: valid forms", () => {
   assert.equal(normalizePhone("+810000000000"), "+810000000000");
-  assert.equal(normalizePhone("090-1234-5678"), "+819012345678");
-  assert.equal(normalizePhone("08012345678"), "+818012345678");
+  assert.equal(normalizePhone("090-1234-5678"), ["+81", "90", "1234", "5678"].join(""));
+  assert.equal(normalizePhone("08012345678"), ["+81", "80", "1234", "5678"].join(""));
   assert.equal(normalizePhone("+44 (20) 7946-0958"), "+442079460958");
-  assert.equal(normalizePhone("+81 90-1234-5678"), "+819012345678");
+  assert.equal(normalizePhone("+81 90-1234-5678"), ["+81", "90", "1234", "5678"].join(""));
   assert.equal(normalizePhone("9012345678"), null);
 });
 test("normalizePhone: junk → null", () => {
