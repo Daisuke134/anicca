@@ -48,3 +48,16 @@ test("discovery attributes a reused provider row and native URL only to its firs
 test("HE discovery uses only its exact reconciled durable receipt fallback", () => {
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "lm-anicca-he-due-")); const caption = "今すぐやれ\n\n完璧より完了。"; const sha = crypto.createHash("sha256").update(caption).digest("hex"); const object = path.join(dataDir, "objects/sha256", sha); fs.mkdirSync(path.dirname(object), { recursive: true }); fs.writeFileSync(object, caption); const receipts = path.join(dataDir, "marketing/receipts.jsonl"); fs.mkdirSync(path.dirname(receipts), { recursive: true }); fs.writeFileSync(receipts, `${JSON.stringify({ job_id: "wrong", receipt: { public_url: "https://www.tiktok.com/@anicca.he/video/1" } })}\n${JSON.stringify({ job_id: "marketing-video-publication:7732e4c1e7ff88ccad12a0295e6740125f58da2d6e07558e6f9e432bf85349dd", receipt: { status: "published", product_id: "anicca-ios", format_id: "reelclaw-card", form: "nudge-card", locale: "ja", platform: "tiktok", provider_reconciled: true, public_url: "https://www.tiktok.com/@anicca.he/video/7676500512308481296", provider_post_id: "cmt32u9dj00jxqp0yqdh6yi96", caption_sha256: sha, published_at: "2026-08-21T15:02:41.000Z" } })}\n`); const target = TARGETS.find((row) => row.account_id === "@anicca.he"); const [found] = discoverTarget(dataDir, target); assert.equal(found.account_id, "@anicca.he"); assert.equal(found.provider_post_id, "cmt32u9dj00jxqp0yqdh6yi96"); assert.equal(found.caption, caption);
 });
+
+test("slideshow discovery includes every exact production photo receipt instead of only the canary job", () => {
+  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "lm-slideshow-production-due-"));
+  const caption = "PROCRASTINATION ISN'T LAZINESS.";
+  const sha = crypto.createHash("sha256").update(caption).digest("hex");
+  const object = path.join(dataDir, "objects/sha256", sha);
+  fs.mkdirSync(path.dirname(object), { recursive: true }); fs.writeFileSync(object, caption);
+  const receipts = path.join(dataDir, "marketing/receipts.jsonl"); fs.mkdirSync(path.dirname(receipts), { recursive: true });
+  const receipt = (job_id, provider_post_id, published_at) => ({ job_id, receipt: { status: "published", product_id: "anicca-ios", format_id: "slideshow", form: "mental-health-carousel", locale: "en", platform: "tiktok", account_id: "@anicca_slideshow", integration_ref: "integration://postiz/tiktok/cmnenjkff01j1pa0ysufmzhfr", provider_reconciled: true, public_url: null, provider_state: "PUBLISHED", provider_post_id, caption_sha256: sha, published_at } });
+  fs.writeFileSync(receipts, `${JSON.stringify(receipt("marketing-native-carousel-publication:canary", "cmt-canary", "2026-08-26T01:00:00.000Z"))}\n${JSON.stringify(receipt("marketing-native-carousel-publication:production-slot", "cmt-production", "2026-08-26T06:00:00.000Z"))}\n`);
+  const target = TARGETS.find((row) => row.account_id === "@anicca_slideshow");
+  assert.deepEqual(discoverTarget(dataDir, target).map((row) => row.provider_post_id), ["cmt-canary", "cmt-production"]);
+});

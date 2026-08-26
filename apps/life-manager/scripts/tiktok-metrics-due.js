@@ -26,11 +26,15 @@ function discoverTarget(dataDir, target) {
   if (target.postiz_photo_only) {
     const receipts = path.join(dataDir, "marketing/receipts.jsonl");
     if (!fs.existsSync(receipts)) return [];
-    const row = fs.readFileSync(receipts, "utf8").split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line)).find((candidate) => candidate.job_id === target.receipt_job_id);
-    const receipt = row?.receipt; const captionPath = path.join(dataDir, "objects/sha256", String(receipt?.caption_sha256 || ""));
-    if (!receipt || receipt.status !== "published" || receipt.provider_reconciled !== true || receipt.platform !== "tiktok" || receipt.account_id !== target.account_id || receipt.integration_ref !== `integration://postiz/tiktok/${target.integration_id}` || receipt.format_id !== target.format_id || receipt.form !== target.form || receipt.locale !== target.locale || receipt.public_url !== null || receipt.provider_state !== "PUBLISHED" || !fs.statSync(captionPath, { throwIfNoEntry: false })?.isFile()) throw new Error(`${target.account_id} Postiz photo receipt invalid`);
-    const bytes = fs.readFileSync(captionPath); if (crypto.createHash("sha256").update(bytes).digest("hex") !== receipt.caption_sha256) throw new Error(`${target.account_id} caption object integrity mismatch`);
-    return [Object.freeze({ tenant_id: "dais-local", product_id: target.product_id, locale: target.locale, account_id: target.account_id, native_owner: target.native_owner, integration_id: target.integration_id, provider_post_id: receipt.provider_post_id, shortcode: receipt.provider_post_id, video_id: receipt.provider_post_id, public_url: "unavailable", caption: bytes.toString("utf8"), published_at: receipt.published_at, postiz_photo_only: true })];
+    const rows = fs.readFileSync(receipts, "utf8").split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line)).filter(({ receipt }) => receipt?.account_id === target.account_id && receipt?.integration_ref === `integration://postiz/tiktok/${target.integration_id}` && receipt?.format_id === target.format_id && receipt?.form === target.form && receipt?.locale === target.locale);
+    const seen = new Set();
+    return rows.map(({ receipt }) => {
+      const captionPath = path.join(dataDir, "objects/sha256", String(receipt?.caption_sha256 || ""));
+      if (receipt.status !== "published" || receipt.provider_reconciled !== true || receipt.platform !== "tiktok" || receipt.public_url !== null || receipt.provider_state !== "PUBLISHED" || !fs.statSync(captionPath, { throwIfNoEntry: false })?.isFile()) throw new Error(`${target.account_id} Postiz photo receipt invalid`);
+      const bytes = fs.readFileSync(captionPath); if (crypto.createHash("sha256").update(bytes).digest("hex") !== receipt.caption_sha256) throw new Error(`${target.account_id} caption object integrity mismatch`);
+      if (seen.has(receipt.provider_post_id)) return null; seen.add(receipt.provider_post_id);
+      return Object.freeze({ tenant_id: "dais-local", product_id: target.product_id, locale: target.locale, account_id: target.account_id, native_owner: target.native_owner, integration_id: target.integration_id, provider_post_id: receipt.provider_post_id, shortcode: receipt.provider_post_id, video_id: receipt.provider_post_id, public_url: "unavailable", caption: bytes.toString("utf8"), published_at: receipt.published_at, postiz_photo_only: true });
+    }).filter(Boolean);
   }
   const file = path.join(dataDir, "tenants/dais-local/marketing/video-publication", target.publication_dir, "distribution.jsonl");
   let rows = fs.existsSync(file) ? fs.readFileSync(file, "utf8").split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line)) : [];
