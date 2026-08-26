@@ -27,7 +27,7 @@ if str(SCRIPTS) not in sys.path:
 from cdp_nav_snapshot import navigate_and_snapshot  # noqa: E402
 from connector_outbox import ConnectorBusy, ConnectorOutbox  # noqa: E402
 from market_form_operator import operate as operate_market_form  # noqa: E402
-from project_workspace import create_workspace  # noqa: E402
+from project_workspace import create_workspace, load_workspace  # noqa: E402
 from provider_authorization import DEFAULT_RECEIPT_PATH  # noqa: E402
 import report_envelope  # noqa: E402
 from upwork_inbound_planner import invoke as plan_inbound, invoke_batch as plan_batch, write_sealed_proposal  # noqa: E402
@@ -1075,6 +1075,23 @@ def start_project_worker(workspace: dict[str, str]) -> None:
     ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
 
 
+def resume_active_contract_workers(
+    contracts: list[dict[str, Any]], *, projects_root: Path = DEFAULT_PROJECTS_ROOT,
+) -> list[dict[str, str]]:
+    owners = []
+    for contract in contracts:
+        contract_id = contract["id"]
+        if not (projects_root / "upwork" / contract_id).exists():
+            owners.append({"contract_id": contract_id, "state": "compile_pending"})
+            continue
+        workspace = load_workspace(projects_root, "upwork", contract_id)
+        start_project_worker(workspace)
+        owners.append({"contract_id": contract_id, "state": "worker_resumed",
+                       "workspace": workspace["workspace"],
+                       "revision_sha256": workspace["revision_sha256"]})
+    return owners
+
+
 async def execute_direct_offer(
     decision: dict[str, Any], *, database: Path, manifest: Path, browser_profile: Path,
     active_contract_ids: list[str], concurrent_job_cap: int,
@@ -1251,6 +1268,7 @@ async def observe(
         ],
         "evidence_sha256": artifacts,
     }
+    state["contract_owners"] = resume_active_contract_workers(state["active_contracts"])
     state["negotiation_intents"] = []
     for head in inbox_reconciliation["heads"]:
         if head["kind"] != "message_room" or head["changed"] is not True:

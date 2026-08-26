@@ -97,6 +97,34 @@ def test_verified_offer_creates_replay_safe_general_agent_workspace(tmp_path):
     assert workflow["skill_id"] == "general-agent"
 
 
+def test_active_contract_resumes_existing_general_agent_owner(tmp_path, monkeypatch):
+    decision = {
+        "action": "accept", "reason_codes": [], "decision_sha256": "a" * 64,
+        "offer": {
+            "offer_id": "offer-1", "scope": "Build one tested API integration.",
+            "deadline": "2026-09-01",
+        },
+    }
+    workspace = provider.create_offer_workspace(
+        decision, contract_id="contract-1", contract_readback_sha256="b" * 64,
+        projects_root=tmp_path / "projects",
+    )
+    started = []
+    monkeypatch.setattr(provider, "start_project_worker", started.append)
+
+    owners = provider.resume_active_contract_workers(
+        [{"id": "contract-1", "href": "https://www.upwork.com/ab/workroom/contract-1"}],
+        projects_root=tmp_path / "projects",
+    )
+
+    assert owners == [{
+        "contract_id": "contract-1", "state": "worker_resumed",
+        "workspace": workspace["workspace"],
+        "revision_sha256": workspace["revision_sha256"],
+    }]
+    assert started == [workspace]
+
+
 def test_submitted_receipt_uses_new_official_proposal_with_exact_title():
     payload = {"job_id": "~job-1", "title": "High-value job"}
     state = {

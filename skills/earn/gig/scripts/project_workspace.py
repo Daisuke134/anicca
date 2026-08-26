@@ -151,3 +151,39 @@ def create_workspace(base: str | Path, contract: Any, workflow: Any) -> dict[str
         "requirement": str(requirement), "source_manifest": str(source),
         "artifact_manifest": str(artifacts),
     }
+
+
+def load_workspace(base: str | Path, provider: str, contract_id: str) -> dict[str, str]:
+    """Resume the latest durable revision for one existing marketplace owner."""
+    if not KEY.fullmatch(provider) or not KEY.fullmatch(contract_id):
+        raise WorkspaceError("workspace_identity_invalid")
+    base = Path(base).expanduser()
+    root = base / provider / contract_id
+    try:
+        root.resolve(strict=True).relative_to(base.resolve(strict=True))
+    except (FileNotFoundError, ValueError) as exc:
+        raise WorkspaceError("workspace_not_found") from exc
+    if root.is_symlink() or not root.is_dir():
+        raise WorkspaceError("workspace_symlink_rejected")
+    state = json.loads((root / "state.json").read_text(encoding="utf-8"))
+    if state.get("request_id") != contract_id or state.get("adapter") != provider:
+        raise WorkspaceError("shared_client_workspace_rejected")
+    revision_sha = None
+    for line in (root / "events.jsonl").read_text(encoding="utf-8").splitlines():
+        row = json.loads(line)
+        fact = row.get("fact") if row.get("event") == "economic_fact" else None
+        if isinstance(fact, dict) and fact.get("kind") == "contract_workspace_revision":
+            candidate = (fact.get("payload") or {}).get("revision_sha256")
+            if DIGEST.fullmatch(str(candidate or "")):
+                revision_sha = candidate
+    if revision_sha is None:
+        raise WorkspaceError("workspace_revision_missing")
+    paths = {
+        "requirement": root / "requirements" / "revisions" / f"{revision_sha}.json",
+        "source_manifest": root / "source" / "manifests" / f"{revision_sha}.json",
+        "artifact_manifest": root / "artifacts" / "manifests" / f"{revision_sha}.json",
+    }
+    if any(path.is_symlink() or not path.is_file() for path in paths.values()):
+        raise WorkspaceError("workspace_revision_missing")
+    return {"workspace": str(root), "revision_sha256": revision_sha,
+            **{key: str(path) for key, path in paths.items()}}
