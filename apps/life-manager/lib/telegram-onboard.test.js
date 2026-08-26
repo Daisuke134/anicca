@@ -210,7 +210,7 @@ test("Telegram /start opens only the authenticated panel onboarding web app", ()
 });
 
 test("Telegram /start rejects missing, non-HTTPS, malformed, and credentialed panel origins", () => {
-  for (const base of [undefined, "", "http://panel.example", "panel.example", "https://user:pass@panel.example"]) {
+  for (const base of [undefined, "", "http://panel.example", "panel.example", "https:panel.example", "https:/panel.example", " https://panel.example", "https://user:pass@panel.example"]) {
     assert.throws(() => startReply("987654", base), /panel base URL is unavailable/);
   }
 });

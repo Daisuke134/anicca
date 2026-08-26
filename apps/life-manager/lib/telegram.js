@@ -139,7 +139,9 @@ function startReply(chatId, base) {
   void chatId;
   let origin;
   try {
-    const parsed = new URL(String(base || ""));
+    const value = String(base || "");
+    if (value.trim() !== value || !/^https:\/\//i.test(value)) throw new Error("invalid panel origin");
+    const parsed = new URL(value);
     if (parsed.protocol !== "https:" || parsed.username || parsed.password || !parsed.origin || parsed.origin === "null") {
       throw new Error("invalid panel origin");
     }
