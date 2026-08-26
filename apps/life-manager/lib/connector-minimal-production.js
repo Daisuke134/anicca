@@ -12,6 +12,11 @@ const { createConnectorTargetLease } = require("./connector-target-lease.js");
 const { createConnectorActionCache } = require("./connector-action-cache.js");
 const { eligibleRankedCandidates, inferProviderCandidateRanking } = require("./event-preference-ranking.js");
 const { inferEventTalkOpportunity, isVerifiedEventTalkOpportunity } = require("./event-talk-opportunity.js");
+const { generateGroundedTalkPack } = require("./grounded-talk-pack.js");
+const { readConnectorTalkFacts } = require("./connector-talk-facts.js");
+const { createTalkBrowserProvider } = require("./connector-talk-browser-provider.js");
+const { createTalkApplicationWorkflow } = require("./connector-talk-application-workflow.js");
+const { createTalkEvidenceChain } = require("./connector-talk-evidence.js");
 const { createMinimalEvidenceChain } = require("./connector-minimal-evidence.js");
 const { createMinimalProductionOperations } = require("./connector-minimal-operations.js");
 const { createLumaScriptFirstWorkflow } = require("./connector-luma-workflow.js");
@@ -149,6 +154,7 @@ function createProductionProviderRouter(options = {}) {
   const performAction = options.performAction;
   const rankCandidates = options.rankCandidates;
   const classifyTalkOpportunity = options.classifyTalkOpportunity;
+  const buildTalkPack = options.buildTalkPack;
   const eventPreferences = rankCandidates == null ? null : requiredText(options.eventPreferences);
   const connpassAutomatedSubmitAllowed = options.connpassAutomatedSubmitAllowed !== false;
   const now = options.now || (() => new Date());
@@ -183,6 +189,7 @@ function createProductionProviderRouter(options = {}) {
     || typeof performAction !== "function" || typeof now !== "function"
     || (rankCandidates != null && typeof rankCandidates !== "function")
     || (classifyTalkOpportunity != null && typeof classifyTalkOpportunity !== "function")
+    || (buildTalkPack != null && typeof buildTalkPack !== "function")
   ) invalid();
 
   function selected(input) {
@@ -228,12 +235,18 @@ function createProductionProviderRouter(options = {}) {
         for (const candidate of eligible) {
           let opportunity = null;
           try { opportunity = await classifyTalkOpportunity(candidate); } catch { opportunity = null; }
-          const openTalk = isVerifiedEventTalkOpportunity(opportunity)
+          let talkPack = null;
+          const classifiedOpen = isVerifiedEventTalkOpportunity(opportunity)
             && opportunity.should_create_talk_application === true;
+          if (classifiedOpen && buildTalkPack != null) {
+            try { talkPack = await buildTalkPack(candidate, opportunity); } catch { talkPack = null; }
+          }
+          const openTalk = classifiedOpen && (buildTalkPack == null || talkPack != null);
           enriched.push(Object.freeze(openTalk ? {
             ...candidate,
             priority_class: "open_talk",
             talk_opportunity: opportunity,
+            ...(talkPack == null ? {} : { talk_pack: talkPack }),
           } : { ...candidate }));
         }
         enriched.sort((a, b) => Number(b.priority_class === "open_talk") - Number(a.priority_class === "open_talk"));
@@ -333,6 +346,22 @@ function createMinimalProductionDependencies(options = {}) {
       now: nowIso(),
     }, { apiKey: requiredText(options.geminiApiKey, 2_000) })
   ));
+  const talkFactsPath = path.resolve(options.talkFactsPath || path.join(
+    repoRoot, "apps", "life-manager", "config", "connector", "life-manager-talk-facts.json",
+  ));
+  const buildTalkPack = options.buildTalkPack || ((candidate, opportunity) => generateGroundedTalkPack({
+    event: {
+      canonicalUrl: candidate.canonical_url,
+      title: candidate.title,
+      body: candidate.body || candidate.description,
+      now: nowIso(),
+    },
+    facts: readConnectorTalkFacts(talkFactsPath),
+    opportunity,
+  }, { apiKey: requiredText(options.geminiApiKey, 2_000) }));
+  const talkBrowserProvider = options.talkBrowserProvider || createTalkBrowserProvider();
+  const talkApplicationWorkflow = options.talkApplicationWorkflow || createTalkApplicationWorkflow(talkBrowserProvider);
+  const talkEvidenceChain = options.talkEvidenceChain || createTalkEvidenceChain({ stateDir, now });
 
   const calendar = options.calendar || makeGogCalendar({
     bin: options.gogBin,
@@ -474,6 +503,7 @@ function createMinimalProductionDependencies(options = {}) {
     eventPreferences,
     rankCandidates,
     classifyTalkOpportunity,
+    buildTalkPack,
     now,
   });
   return Object.freeze({
@@ -487,6 +517,8 @@ function createMinimalProductionDependencies(options = {}) {
     readProviderState: providerRouter.readProviderState,
     saveRepairedActions: providerRouter.saveRepairedActions,
     completeEvidence: evidenceChain.completeEvidence,
+    runTalkApplication: talkApplicationWorkflow.run,
+    completeTalkEvidence: talkEvidenceChain.completeTalkEvidence,
     reportWake: operations.reportWake,
     recordAction: operations.recordAction,
   });
