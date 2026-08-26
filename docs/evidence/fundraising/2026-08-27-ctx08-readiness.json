@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "observed_at": "2026-08-27T03:51:45+09:00",
+  "observed_at": "2026-08-27T04:29:02+09:00",
   "status": "in_progress",
   "candidate": {
     "organization": "Tokyo Metropolitan Government",
@@ -24,7 +24,7 @@
     "state": "not running",
     "active_count": 0,
     "lock": "absent",
-    "run_count": 203,
+    "run_count": 265,
     "last_exit": 75,
     "interval_seconds": 60,
     "worktree": "/Users/anicca/Projects/life-manager-main/.worktrees/fundraiser-agent-task0-20260826",
@@ -45,26 +45,47 @@
     "current_canonical_digest_receipts": 0
   },
   "runtime_preflight": {
-    "disk_free_bytes": 9543729152,
+    "disk_free_bytes": 9755820032,
     "disk_pressure_block": "present",
     "disk_policy_block_below_bytes": 11811160064,
     "disk_policy_clear_at_or_above_bytes": 21474836480,
-    "disk_clear_shortfall_bytes": 11931107328,
+    "disk_clear_shortfall_bytes": 11719016448,
     "cdp_browser": "Chrome/145.0.7632.109"
   },
   "host_disk_recovery": {
-    "status": "insufficient_for_clear_threshold",
+    "status": "lease_leak_fixed_but_clear_threshold_unmet",
     "disk_free_before_bytes": 2491772928,
-    "disk_free_after_bytes": 9543729152,
+    "disk_free_after_bytes": 9755820032,
     "dominant_remaining_consumer": {
       "kind": "macos_managed_swap",
       "apfs_vm_volume_used_bytes": 22548578304,
-      "swap_total_mib": 22528.0,
-      "swap_used_mib": 21114.44,
-      "swap_free_mib": 1413.56,
-      "swapfile_count": 22,
+      "swap_total_mib": 20480.0,
+      "swap_used_mib": 19472.31,
+      "swap_free_mib": 1007.69,
+      "swapfile_count": null,
+      "swapfile_count_status": "not_observed_in_final_readback",
       "direct_swapfile_deletion_allowed": false,
       "recovery_contract": "explicitly approved host restart, then read back swap, disk gate, and required launchd owners before fundraiser natural wake"
+    },
+    "cdp_context_recovery": {
+      "pull_request": 2895,
+      "main_commit": "db03dd58a7f6305d25e7f1cf9b80f561e548815c",
+      "immutable_release_commit": "db03dd58a7f6305d25e7f1cf9b80f561e548815c",
+      "focused_lease_tests": "17/17",
+      "cleanup_contract": "while Apply was stopped, exclude the default context and every ledger-owned context, then dispose only untracked isolated contexts under the ledger lock",
+      "untracked_isolated_contexts_before": 2,
+      "untracked_isolated_contexts_after": 0,
+      "default_context_preserved": true,
+      "profile_or_cookie_deleted": false,
+      "orphan_renderer_pids_exited": 2,
+      "gig_browser_rss_kib_after_cleanup": 418368,
+      "natural_replay": {
+        "apply_run": 166,
+        "last_exit": 0,
+        "lease_rows_after": 0,
+        "isolated_contexts_after": 0,
+        "replay_external_effects": 0
+      }
     },
     "browser_tab_recovery_probe": {
       "closed_owned_stale_pages": 3,
@@ -98,8 +119,14 @@
       "open or active dependencies",
       "dirty worktrees and uncommitted source"
     ],
+    "fundraiser_natural_readback": {
+      "run_count": 265,
+      "last_exit": 75,
+      "status": "deferred_disk_pressure_block_present"
+    },
     "external_application_effects": 0
   },
+  "required_next_host_action": "explicitly approved Mac restart, then authoritative swap, disk-pressure.block, required launchd owner, and Fundraiser natural-wake readback",
   "required_next_receipt_chain": [
     "official_live_form_readback",
     "canonical_context_digest_bound_preview",
