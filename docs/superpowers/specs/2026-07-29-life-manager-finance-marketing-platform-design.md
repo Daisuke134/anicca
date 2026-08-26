@@ -2389,8 +2389,20 @@ provider source observation.
    OpenClaw runtime dependency. This exact post is registered as pending at 2h
    `2026-08-26T08:40:11.030Z`, 24h, 72h, 7d, and daily; no pending value is
    reported as zero or success.
+   **Anicca main Instagram first 3/day slot done:** commit `83118d2f8` changes
+   only this LM lane from one 19:10 slot to 08:10/13:10/19:10 JST; focused and
+   shared ledger/manifest tests pass 46/46. The stable-release LM label and
+   manifest `6a0c9fab751a08dc44f0e1aab1db46faa0d5933e69b9ee3636558e4a6f226525`
+   arm exactly Honne EN/JA, Anicca main TikTok, and `@anicca.jp1` at 3/day;
+   17 holds remain 0/day. The 13:10 creative `AJ-CARD-002-5639e14832ad`
+   published as exact Postiz `PUBLISHED` row `cmt9qd07n00knqs0yls15e2xh` and
+   Reel `https://www.instagram.com/reel/DcfmdXACEKz/`, with exact media/caption
+   lineage, natural Telegram `35112`, and owner exit 0. Replay kept jobs
+   `868→868`, receipts `281→281`, distribution `21→21`, publication/message
+   `created=false`. Instagram metrics owner exit 0 and registered 2h
+   `2026-08-26T08:47:02.846Z`, 24h, 72h, 7d, and daily as pending.
    **Next atomic item:** enable and verify only the first live cadence slot for
-   Anicca main Instagram `@anicca.jp1`; all other selected destinations stay at
+   Anicca JP4 TikTok `@anicca.jp4`; all other selected destinations stay at
    their current state until that exact effect, natural Telegram, replay 0, and
    metric ownership are terminal.
 9. Keep the daily metrics loop running for every healthy account: social post and
