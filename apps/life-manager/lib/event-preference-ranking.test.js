@@ -96,6 +96,40 @@ test("Gemini provider ranking strips unsupported schema keywords only from the t
   assert.equal(eligibleRankedCandidates(ranking).length, 5);
 });
 
+test("provider ranking chunks a large inventory and still validates every candidate exactly once", async () => {
+  const candidates = Object.freeze(Array.from({ length: 51 }, (_, index) => Object.freeze({
+    provider: "connpass",
+    event_ref: `connpass-event://event/${700_000 + index}`,
+    canonical_url: `https://tokyo-ai.connpass.com/event/${700_000 + index}/`,
+    title: `AI Builders ${index}`,
+    body: "Tokyo AI engineering event",
+  })));
+  const chunkSizes = [];
+  const ranking = await inferProviderCandidateRanking({
+    candidates,
+    preferences: "Tokyo AI crypto startup events",
+  }, {
+    apiKey: "fixture-key",
+    fetchImpl: async (_url, options) => {
+      const prompt = JSON.parse(options.body).contents[0].parts[0].text;
+      const chunk = JSON.parse(prompt.match(/EVENT_DATA_START\n([\s\S]+)\nEVENT_DATA_END/)[1]);
+      chunkSizes.push(chunk.length);
+      return { ok: true, json: async () => ({ candidates: [{ content: { parts: [{ text: JSON.stringify({
+        ranked_events: chunk.map((candidate) => ({
+          event_ref: candidate.event_ref,
+          priority_class: "ai",
+          preference_fit: "moderate",
+          preference_reason: "Verified AI event.",
+        })),
+      }) }] } }] }) };
+    },
+  });
+
+  assert.deepEqual(chunkSizes, [25, 25, 1]);
+  assert.equal(ranking.ranked_events.length, 51);
+  assert.equal(new Set(ranking.ranked_events.map((row) => row.event_ref)).size, 51);
+});
+
 async function fixtureSnapshot(slugs = ["ai-night", "pottery-social", "crypto-builders"]) {
   const coverage = buildRollingEventCoverage({
     tenantId: "dais-local",
