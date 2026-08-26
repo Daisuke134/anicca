@@ -213,9 +213,9 @@ test("TECH PLAY direct action fails safely and readback remains unavailable", as
 test("TECH PLAY parent readback proves only the exact canonical joined or actionable ticket", async () => {
   const row = binding("999210");
   const candidate = readbackCandidate("999210");
-  const joined = createTechPlayDiscoveryWorkflow({ readEventDetail: async () => detail("999210", { ticket: { is_joined: true } }) });
+  const joined = createTechPlayDiscoveryWorkflow({ now: () => new Date(NOW), readEventDetail: async () => detail("999210", { ticket: { is_joined: true } }) });
   assert.deepEqual(await joined.readProviderState({ page: pageAt(row.canonical_url), candidate }), { status: "registered" });
-  const absent = createTechPlayDiscoveryWorkflow({ readEventDetail: async () => detail("999210") });
+  const absent = createTechPlayDiscoveryWorkflow({ now: () => new Date(NOW), readEventDetail: async () => detail("999210") });
   assert.deepEqual(await absent.readProviderState({ page: pageAt(row.canonical_url), candidate }), { status: "absent" });
 });
 
