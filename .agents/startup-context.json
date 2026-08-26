@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "context_version": "2026-08-26.17",
-  "updated_at": "2026-08-26T23:41:00+09:00",
+  "context_version": "2026-08-26.18",
+  "updated_at": "2026-08-26T23:44:00+09:00",
   "product": {
     "name": "Life Manager",
     "usage": "Use as the product name in every public product and fundraising field.",
@@ -75,6 +75,12 @@
         "official_url": "https://www.jetro.go.jp/en/startup/acceleration/gsap.html",
         "action": "apply_now",
         "reason": "Official current intake closes August 30, 2026 and includes a Tokyo Bootcamp plus San Francisco immersion, exactly matching the founder's Tokyo/SF in-person priority. The founder explicitly authorizes JETRO customer account creation, ordinary application terms/privacy/data processing, email verification, and application submission. First check ~/.local/share/anicca/credentials.json for an existing JETRO credential. If absent, create a strong unique password, save the service URL, candidate.application_email as email/username, password, and updated_at immediately in the credentials array with file mode 600, complete verification through the existing authenticated Gmail browser session, and verify login using the saved credential. Read all identity/contact values from exact private profile paths without printing them. This does not authorize payment, travel purchase, an investment agreement, equity issuance, or a later contractual commitment. Continue through the official application and require completion-screen PNG plus Telegram photo message ID before recording submitted_verified."
+      },
+      {
+        "program": "KDDI & Google AI Futures Fund AI Startup Support Program",
+        "official_url": "https://www.kddi.com/english/open-innovation-program/koif/aistartup/",
+        "action": "repair_and_verify_prior_submission",
+        "reason": "The only durable receipt is status submitted, not submitted_verified, and the previously rendered Sent message visibly contained unresolved founder-name and sender-address placeholders. Do not treat that message as a successful application. Search exact Gmail Sent state for a later clean corrected message first. If none exists, send exactly one concise corrected application to the official program address with From display Daisuke Narita, no placeholders or escaped newline artifacts, truthful startup context, and the verified deck; run validate-outbound-email.py before sending. Then open the exact Gmail Sent message, visually verify its rendered body and attachment, capture a readable PNG, send that same PNG to Telegram, and only record submitted_verified with exact top-level completion_png and telegram_photo_message_id fields."
       },
       {
         "program": "a16z Speedrun",
