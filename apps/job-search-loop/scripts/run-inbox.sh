@@ -14,6 +14,7 @@ PREP_DATABASE="$JOB_SEARCH_STATE_ROOT/interview-prep.sqlite3"
 OUTBOX_DATABASE="$JOB_SEARCH_STATE_ROOT/ledger.sqlite3"
 PREP_STATUS="$EVIDENCE/prep-status.json"
 TELEGRAM_OUTBOX="$JOB_SEARCH_STATE_ROOT/telegram-outbox.sqlite3"
+MERCOR_WORK_STORE="$JOB_SEARCH_STATE_ROOT/mercor/work-events.jsonl"
 TERMINAL_REPORT="$EVIDENCE/inbox-terminal.json"
 FINAL_OUTCOME="failed"
 FINAL_REASON="inbox_wake_failed"
@@ -116,7 +117,7 @@ if [[ "$NEW_COUNT" -gt 0 && "$RESET_COUNT" == "$NEW_COUNT" ]]; then
   "$JOB_SEARCH_JQ" -s \
     --argjson messages "$("$JOB_SEARCH_JQ" '.message_ids' "$CANDIDATES")" \
     --argjson threads "$("$JOB_SEARCH_JQ" '.thread_ids' "$CANDIDATES")" \
-    '{status:"workday_account_mail_processed",processed_threads:($threads|length),processed_thread_ids:$threads,processed_message_ids:$messages,calendar_events:[],replies:[],assessments:[],prep_packs:[],verifications:.,reports:[]}' \
+    '{status:"workday_account_mail_processed",processed_threads:($threads|length),processed_thread_ids:$threads,processed_message_ids:$messages,calendar_events:[],replies:[],assessments:[],prep_packs:[],verifications:.,mercor_work_events:[],reports:[]}' \
     "$RESET_RECEIPTS" >"$RESET_RESULT"
   "$JOB_SEARCH_PYTHON" -m job_search_loop.inbox mark \
     --state "$SEEN_STATE" \
@@ -168,6 +169,11 @@ case "$RESULT_PATH" in
     exit 2
     ;;
 esac
+"$JOB_SEARCH_PYTHON" -m job_search_loop.mercor_work_sync \
+  --result "$RESULT_PATH" \
+  --store "$MERCOR_WORK_STORE" \
+  --outbox "$TELEGRAM_OUTBOX" \
+  --output "$EVIDENCE/mercor-work-sync.json"
 "$JOB_SEARCH_PYTHON" -m job_search_loop.inbox mark \
   --state "$SEEN_STATE" \
   --input "$CANDIDATES" \

@@ -43,6 +43,23 @@ silence before that window remains unresolved. The Ledger owns idempotency,
 immutable evidence binding and projection rebuild; model prose never counts as an
 outcome.
 
+For every authoritative Mercor message, also return a durable transition in
+`mercor_work_events` only when the message maps unambiguously to one existing private
+Mercor application. Use that application's stable listing/application identifier as
+`work_id`, `gmail:<message_id>:<next_state>` as `event_id`, and
+`gmail://<message_id>` as the secret-free `evidence_ref`. A selection is `selected`,
+an explicit rejection is `rejected`, and an executed contract is `contracted`.
+When the next required action is a human interview, live/proctored assessment,
+identity/voice/video/physical task, or work whose AI policy is not explicitly
+allowed, emit `needs_human` with a concise `reason`; do not omit the message merely
+because a human must act. Emit `authorized_work` only when the authoritative Mercor
+message or contract explicitly permits AI/tool execution, with
+`authorization_policy="explicitly_allowed"`. Never infer selection, contract,
+authorization, acceptance, settlement, amount, or identity from marketing language,
+silence, or model judgment. Ambiguous application mapping emits no Mercor transition.
+Always return `mercor_work_events`, using an empty array when no authoritative Mercor
+transition is present.
+
 For a Workday candidate-account verification email, never navigate a raw URL from
 the message. Use the already-appended wrapped candidate subject, sender, and body,
 then call

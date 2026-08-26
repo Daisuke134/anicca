@@ -1,7 +1,7 @@
 {
   "type": "object",
   "additionalProperties": false,
-  "required": ["status", "processed_threads", "processed_thread_ids", "processed_message_ids", "calendar_events", "replies", "assessments", "prep_packs", "verifications", "reports"],
+  "required": ["status", "processed_threads", "processed_thread_ids", "processed_message_ids", "calendar_events", "replies", "assessments", "prep_packs", "verifications", "mercor_work_events", "reports"],
   "properties": {
     "status": {"type": "string"},
     "processed_threads": {"type": "integer"},
@@ -85,6 +85,28 @@
           "status": {
             "enum": ["opened", "navigation_unknown", "blocked", "duplicate"]
           }
+        }
+      }
+    },
+    "mercor_work_events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["work_id", "event_id", "next_state", "evidence_ref"],
+        "properties": {
+          "work_id": {"type": "string", "minLength": 1},
+          "event_id": {"type": "string", "minLength": 1},
+          "next_state": {
+            "enum": ["selected", "rejected", "contracted", "authorized_work", "work_submitted", "accepted", "paid_settled", "needs_human"]
+          },
+          "evidence_ref": {"type": "string", "minLength": 1},
+          "payment_id": {"type": "string", "minLength": 1},
+          "settlement_status": {"type": "string", "minLength": 1},
+          "amount_usd": {"type": ["number", "string"]},
+          "reason": {"type": "string", "minLength": 1},
+          "authorization_policy": {"enum": ["explicitly_allowed"]},
+          "acceptance_status": {"enum": ["accepted"]}
         }
       }
     },

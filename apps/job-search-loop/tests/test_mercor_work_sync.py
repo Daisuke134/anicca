@@ -8,6 +8,24 @@ from job_search_loop.mercor_work_sync import sync_result
 
 
 class MercorWorkSyncTests(unittest.TestCase):
+    def test_inbox_contract_and_driver_wire_mercor_events_before_marking_seen(self):
+        root = Path(__file__).parents[1]
+        schema = json.loads(
+            (root / "schemas" / "inbox-pass-result.v1.schema.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        prompt = (root / "prompts" / "inbox-pass.md").read_text(encoding="utf-8")
+        script = (root / "scripts" / "run-inbox.sh").read_text(encoding="utf-8")
+
+        self.assertIn("mercor_work_events", schema["required"])
+        self.assertIn("mercor_work_events", schema["properties"])
+        self.assertIn("gmail:<message_id>:<next_state>", prompt)
+        self.assertIn("needs_human", prompt)
+        sync_at = script.index("-m job_search_loop.mercor_work_sync")
+        mark_at = script.index("-m job_search_loop.inbox mark", sync_at)
+        self.assertLess(sync_at, mark_at)
+
     def test_unacknowledged_work_report_is_delivery_unknown(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
