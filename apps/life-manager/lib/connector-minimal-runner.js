@@ -105,6 +105,24 @@ function safeDiscoveryReason(error) {
     ? code.toLowerCase() : "provider_discovery_failed";
 }
 
+const CONNPASS_ACTION_BOUNDARY_CODES = new Set([
+  "CONNPASS_ACTION_BOUNDARY_INPUT_FAILED",
+  "CONNPASS_ACTION_BOUNDARY_CANDIDATE_FAILED",
+  "CONNPASS_ACTION_BOUNDARY_SEND_FAILED",
+  "CONNPASS_ACTION_BOUNDARY_PROVIDER_ID_FAILED",
+]);
+
+function connpassActionBoundaryFailureContext(error) {
+  const code = String(error && error.code || "");
+  const errorClass = safeErrorClass(error);
+  return Object.freeze({
+    provider: "connpass",
+    safe_reason: CONNPASS_ACTION_BOUNDARY_CODES.has(code)
+      ? code.toLowerCase() : "connpass_action_boundary_failed",
+    ...(errorClass ? { error_class: errorClass } : {}),
+  });
+}
+
 // Sibling of safeDiscoveryReason for the submit stage: connpass-browser-provider.js's
 // submitConnpassOnPage / readConnpassRegistrationStateOnPage throw these precise codes
 // when a specific submit-stage guard fires (tier selection, questionnaire, confirm
@@ -255,7 +273,13 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
         }
         if (provider === "connpass" && candidates.length > 0 && typeof deps.reportConnpassActionBoundary === "function") {
           try {
-            await action("submit", "connpass_action_boundary", () => deps.reportConnpassActionBoundary({ candidates }));
+            await action(
+              "submit",
+              "connpass_action_boundary",
+              () => deps.reportConnpassActionBoundary({ candidates }),
+              connpassActionBoundaryFailureContext,
+            );
+            continue;
           } catch {
             connpassBoundaryFailed = true;
             lastSafeReason = "connpass_action_boundary_failed";

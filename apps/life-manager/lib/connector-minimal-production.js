@@ -230,30 +230,44 @@ function createProductionProviderRouter(options = {}) {
         const pending = candidates.filter((candidate) => !reconcile.includes(candidate));
         if (pending.length === 0) return candidates;
         const ranking = await rankCandidates({ candidates: pending, preferences: eventPreferences });
-        const eligible = eligibleRankedCandidates(ranking);
+        const sourceByRef = new Map(pending.map((candidate) => [candidate.event_ref, candidate]));
+        const eligible = eligibleRankedCandidates(ranking).map((ranked) => Object.freeze({
+          ...sourceByRef.get(ranked.event_ref),
+          priority_class: ranked.priority_class,
+          preference_fit: ranked.preference_fit,
+          preference_reason: ranked.preference_reason,
+          auto_apply_eligible: ranked.auto_apply_eligible,
+        }));
         if (classifyTalkOpportunity == null) return Object.freeze([...reconcile, ...eligible]);
-        const enriched = [];
-        for (const candidate of eligible) {
-          if (candidate.priority_class !== "open_talk") {
-            enriched.push(candidate);
-            continue;
+        const enriched = new Array(eligible.length);
+        let next = 0;
+        async function classifyWorker() {
+          while (next < eligible.length) {
+            const index = next;
+            next += 1;
+            const candidate = eligible[index];
+            if (candidate.priority_class !== "open_talk") {
+              enriched[index] = candidate;
+              continue;
+            }
+            let opportunity = null;
+            try { opportunity = await classifyTalkOpportunity(candidate); } catch { opportunity = null; }
+            let talkPack = null;
+            const classifiedOpen = isVerifiedEventTalkOpportunity(opportunity)
+              && opportunity.should_create_talk_application === true;
+            if (classifiedOpen && buildTalkPack != null) {
+              try { talkPack = await buildTalkPack(candidate, opportunity); } catch { talkPack = null; }
+            }
+            const openTalk = classifiedOpen && (buildTalkPack == null || talkPack != null);
+            enriched[index] = Object.freeze(openTalk ? {
+              ...candidate,
+              priority_class: "open_talk",
+              talk_opportunity: opportunity,
+              ...(talkPack == null ? {} : { talk_pack: talkPack }),
+            } : { ...candidate });
           }
-          let opportunity = null;
-          try { opportunity = await classifyTalkOpportunity(candidate); } catch { opportunity = null; }
-          let talkPack = null;
-          const classifiedOpen = isVerifiedEventTalkOpportunity(opportunity)
-            && opportunity.should_create_talk_application === true;
-          if (classifiedOpen && buildTalkPack != null) {
-            try { talkPack = await buildTalkPack(candidate, opportunity); } catch { talkPack = null; }
-          }
-          const openTalk = classifiedOpen && (buildTalkPack == null || talkPack != null);
-          enriched.push(Object.freeze(openTalk ? {
-            ...candidate,
-            priority_class: "open_talk",
-            talk_opportunity: opportunity,
-            ...(talkPack == null ? {} : { talk_pack: talkPack }),
-          } : { ...candidate }));
         }
+        await Promise.all(Array.from({ length: Math.min(3, eligible.length) }, () => classifyWorker()));
         enriched.sort((a, b) => Number(b.priority_class === "open_talk") - Number(a.priority_class === "open_talk"));
         return Object.freeze([...reconcile, ...enriched]);
       })();
@@ -341,7 +355,10 @@ function createMinimalProductionDependencies(options = {}) {
   const eventPreferences = options.eventPreferences == null
     ? null : requiredText(options.eventPreferences, 2_000);
   const rankCandidates = options.rankCandidates || (eventPreferences == null ? null : (input) => (
-    inferProviderCandidateRanking(input, { apiKey: requiredText(options.geminiApiKey, 2_000) })
+    inferProviderCandidateRanking(input, {
+      apiKey: requiredText(options.geminiApiKey, 2_000),
+      onAudit: operations.recordRankingAudit,
+    })
   ));
   const classifyTalkOpportunity = options.classifyTalkOpportunity || (eventPreferences == null ? null : (candidate) => (
     inferEventTalkOpportunity({
@@ -527,7 +544,8 @@ function createMinimalProductionDependencies(options = {}) {
     completeEvidence: evidenceChain.completeEvidence,
     runTalkApplication: talkApplicationWorkflow.run,
     completeTalkEvidence: talkEvidenceChain.completeTalkEvidence,
-    reportConnpassActionBoundary: connpassActionTelegram.report,
+    reportConnpassActionBoundary: options.connpassAutomatedSubmitAllowed === true
+      ? undefined : connpassActionTelegram.report,
     reportWake: operations.reportWake,
     recordAction: operations.recordAction,
   });

@@ -88,6 +88,64 @@ test("official production factory installs the Connpass workflow into the defaul
   }
 });
 
+test("official production factory exposes the manual Connpass boundary only while automated submit lacks permission", () => {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-production-connpass-boundary-mode-"));
+  const workflow = { async discoverCandidates() { return []; }, async runDirectAction() {}, async readProviderState() { return { status: "absent" }; } };
+  const common = {
+    repoRoot: "/private/repo", stateDir, wakeId: "wake-connpass-boundary-mode",
+    calendarAccount: "private-account", gogKeyring: "private-keyring", telegramTarget: "private-target",
+    lumaFormProfilePath: "/private/form-profile.json", lunaEvidenceDir: "/private/luna-evidence",
+    browserRail: { open() {}, navigate() {}, close() {} }, calendarReader: { async readCalendarGaps() { return []; } },
+    providerRouter: { discoverCandidates() {}, runCachedAction() {}, runDirectAction() {}, runAgentFallback() {}, readProviderState() {}, saveRepairedActions() {} },
+    lumaWorkflow: workflow, connpassWorkflow: workflow,
+    evidenceChain: { async completeEvidence() {} }, operations: { async reportWake() {}, async recordAction() {} },
+  };
+  try {
+    assert.equal(typeof createMinimalProductionDependencies(common).reportConnpassActionBoundary, "function");
+    assert.equal(createMinimalProductionDependencies({ ...common, connpassAutomatedSubmitAllowed: true }).reportConnpassActionBoundary, undefined);
+  } finally { fs.rmSync(stateDir, { recursive: true, force: true }); }
+});
+
+test("official production factory persists one safe audit for its default Gemini ranking", async () => {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-production-ranking-audit-"));
+  const audits = [];
+  const originalFetch = globalThis.fetch;
+  const ranked = {
+    provider: "luma", event_ref: "luma-event://event/ranking-audit", canonical_url: "https://luma.com/ranking-audit",
+    title: "Tokyo AI Builders", body: "AI engineering event",
+  };
+  const emptyWorkflow = { async discoverCandidates() { return []; }, async runDirectAction() {}, async readProviderState() { return { status: "absent" }; } };
+  try {
+    globalThis.fetch = async (_url, request) => {
+      const prompt = JSON.parse(request.body).contents[0].parts[0].text;
+      const rows = JSON.parse(prompt.match(/EVENT_DATA_START\n([\s\S]+)\nEVENT_DATA_END/)[1]);
+      return { ok: true, async json() { return { candidates: [{ content: { parts: [{ text: JSON.stringify({
+        ranked_events: rows.map((row) => ({ event_ref: row.event_ref, priority_class: "ai", preference_fit: "strong", preference_reason: "Direct AI fit." })),
+      }) }] } }] }; } };
+    };
+    const dependencies = createMinimalProductionDependencies({
+      repoRoot: "/private/repo", stateDir, wakeId: "wake-production-ranking-audit",
+      calendarAccount: "private-account", gogKeyring: "private-keyring", telegramTarget: "private-target",
+      lumaFormProfilePath: "/private/form-profile.json", lunaEvidenceDir: "/private/luna-evidence",
+      eventPreferences: "Tokyo AI events", geminiApiKey: "fixture-key",
+      browserRail: { open() {}, navigate() {}, close() {} }, calendarReader: { async readCalendarGaps() { return []; } },
+      lumaWorkflow: { ...emptyWorkflow, async discoverCandidates() { return [ranked]; } }, connpassWorkflow: emptyWorkflow,
+      actionCache: { async replay() {}, saveVerifiedRepair() {} }, browserHarness: { async runFallback() {}, async performAction() {} },
+      evidenceChain: { async completeEvidence() {} },
+      operations: { async reportWake() {}, async recordAction() {}, async recordRankingAudit(value) { audits.push(value); } },
+    });
+    assert.equal((await dependencies.discoverCandidates("luma", [], {})).length, 1);
+    assert.equal(audits.length, 1);
+    assert.deepEqual(Object.keys(audits[0]), [
+      "schema_version", "request_count", "retry_count", "bisect_count",
+      "total_request_ms", "max_request_ms", "elapsed_ms",
+    ]);
+  } finally {
+    globalThis.fetch = originalFetch;
+    fs.rmSync(stateDir, { recursive: true, force: true });
+  }
+});
+
 // Fake Connpass join page, shaped exactly like joinFlowFixture in
 // connpass-browser-provider.test.js (sole free tier, one required 氏名
 // question) — reused here at the wiring layer instead of stubbing
@@ -422,7 +480,8 @@ test("production router blocks every Connpass submit path until provider permiss
 test("production provider router submits only strong or moderate ranked candidates and fails closed when ranking fails", async () => {
   const strong = Object.freeze({
     provider: "luma", event_ref: "luma-event://event/ai-agents", canonical_url: "https://luma.com/ai-agents",
-    title: "AI Agents Tokyo", body: "LLM agent builders",
+    title: "AI Agents Tokyo", body: "LLM agent builders", participation_slot_status: "available",
+    lightning_talk_status: "unknown", participant_limit: 100, application_deadline_at: null,
   });
   const weak = Object.freeze({
     provider: "luma", event_ref: "luma-event://event/pottery", canonical_url: "https://luma.com/pottery",
@@ -498,6 +557,42 @@ test("production provider router promotes a verified open talk within equally fi
   assert.deepEqual(classified, [talk.event_ref]);
   assert.equal(result[0].priority_class, "open_talk");
   assert.equal(result[0].talk_opportunity.application_url, "https://forms.example.com/ai-lt");
+});
+
+test("production provider router verifies independent open-talk candidates with at most three concurrent classifiers", async () => {
+  const candidates = Array.from({ length: 12 }, (_, index) => Object.freeze({
+    provider: "connpass", event_ref: `connpass-event://event/${610000 + index}`,
+    canonical_url: `https://tokyo-ai.connpass.com/event/${610000 + index}/`,
+    title: `AI LT ${index}`, body: "Public lightning talk applications are open.",
+  }));
+  const workflow = { async discoverCandidates() { return candidates; }, async runDirectAction() {}, async readProviderState() { return { status: "absent" }; } };
+  let active = 0;
+  let maximum = 0;
+  const router = createProductionProviderRouter({
+    lumaWorkflow: workflow, connpassWorkflow: workflow,
+    eventPreferences: "Tokyo AI lightning talks",
+    async rankCandidates(input) {
+      return validateProviderCandidateRanking({ ranked_events: input.candidates.map((candidate) => ({
+        event_ref: candidate.event_ref, priority_class: "open_talk", preference_fit: "strong", preference_reason: "Open AI LT.",
+      })) }, input);
+    },
+    async classifyTalkOpportunity(candidate) {
+      active += 1;
+      maximum = Math.max(maximum, active);
+      await new Promise((resolve) => setImmediate(resolve));
+      active -= 1;
+      return validateEventTalkOpportunity({
+        participation_kind: "both", talk_format: "lightning_talk", application_status: "open",
+        should_create_talk_application: true, application_url: candidate.canonical_url,
+        evidence_excerpt: "Public lightning talk applications are open.", reason: "Public LT application is open.",
+      }, { canonicalUrl: candidate.canonical_url, title: candidate.title, body: candidate.body, now: "2026-08-27T00:00:00.000Z" });
+    },
+    actionCache: { async replay() {}, saveVerifiedRepair() {} }, browserHarness: { async runFallback() {} }, async performAction() {},
+  });
+  const result = await router.discoverCandidates("connpass", [], {});
+  assert.equal(result.length, 12);
+  assert.equal(maximum, 3);
+  assert.deepEqual(result.map((row) => row.event_ref), candidates.map((row) => row.event_ref));
 });
 
 test("production provider router routes Peatix cache direct and readback on one page", async () => {

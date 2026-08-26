@@ -14,6 +14,11 @@ const PRIORITY = new Set(["yc_hackathon", "open_talk", "ai", "crypto", "startup"
 const CREDENTIAL_VALUE = /(?:password|cookie|api[ _-]?key|secret|(?:access|auth|refresh)[ _-]?token)\s*[:=]\s*\S{8,}|\bbearer\s+\S{16,}/i;
 
 function invalid() { throw new Error("Connpass action Telegram invalid"); }
+function stageError(code) {
+  const error = new Error(code);
+  error.code = code;
+  return error;
+}
 function safe(value, max) {
   const text = String(value == null ? "" : value).replace(/\s+/g, " ").trim();
   if (!text || text.length > max || /[\x00-\x1f\x7f]|\{\{|\}\}/.test(text) || CREDENTIAL_VALUE.test(text)) invalid();
@@ -57,8 +62,12 @@ function createConnpassActionTelegram(options = {}) {
   const file = path.join(stateDir, "connpass-action-boundary-deliveries.jsonl");
   return Object.freeze({
     async report(input = {}) {
-      if (!Array.isArray(input.candidates) || input.candidates.length < 1 || input.candidates.length > 10_000) invalid();
-      const normalized = input.candidates.slice(0, 5).map(normalize);
+      if (!Array.isArray(input.candidates) || input.candidates.length < 1 || input.candidates.length > 10_000) {
+        throw stageError("CONNPASS_ACTION_BOUNDARY_INPUT_FAILED");
+      }
+      let normalized;
+      try { normalized = input.candidates.slice(0, 5).map(normalize); }
+      catch { throw stageError("CONNPASS_ACTION_BOUNDARY_CANDIDATE_FAILED"); }
       const lines = ["Connector::: connpass候補（手動action boundary）", "自動申込: 0件", ""];
       const candidates = [];
       for (const row of normalized) {
@@ -87,8 +96,15 @@ function createConnpassActionTelegram(options = {}) {
         }
       }
       const message = lines.join("\n").trim();
-      const response = await send(message, { telegramTarget, idempotencyKey: `connpass-action-boundary:${wakeId}:${snapshot}` });
-      const providerId = parseOpenClawMessageId(response);
+      let response;
+      try {
+        response = await send(message, { telegramTarget, idempotencyKey: `connpass-action-boundary:${wakeId}:${snapshot}` });
+      } catch {
+        throw stageError("CONNPASS_ACTION_BOUNDARY_SEND_FAILED");
+      }
+      let providerId;
+      try { providerId = parseOpenClawMessageId(response); }
+      catch { throw stageError("CONNPASS_ACTION_BOUNDARY_PROVIDER_ID_FAILED"); }
       const observed = now();
       if (!(observed instanceof Date) || !Number.isFinite(observed.getTime())) invalid();
       const receipt = Object.freeze({ schema_version: 1, wake_id: wakeId, candidate_snapshot_sha256: snapshot, telegram_provider_id: providerId, observed_at: observed.toISOString() });

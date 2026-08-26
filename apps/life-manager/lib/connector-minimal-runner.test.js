@@ -140,7 +140,7 @@ test("one wake reuses one owned session, target, and page across candidates and 
   );
 });
 
-test("connpass candidates produce one action-boundary receipt before any provider action", async () => {
+test("connpass candidates produce one action-boundary receipt and skip every provider action", async () => {
   let state = fixture({
     async discoverCandidates(provider) {
       state.calls.push(["discover", provider]);
@@ -154,7 +154,9 @@ test("connpass candidates produce one action-boundary receipt before any provide
   await runMinimalConnectorWake({ ownerToken: "owner-token-connpass-boundary", providers: ["connpass"] }, state.dependencies);
   const boundary = state.calls.findIndex(([name]) => name === "connpass-boundary");
   const direct = state.calls.findIndex(([name]) => name === "direct");
-  assert.ok(boundary >= 0 && direct > boundary);
+  assert.ok(boundary >= 0);
+  assert.equal(direct, -1);
+  for (const name of ["cache", "agent", "readback"]) assert.equal(state.calls.some(([call]) => call === name), false, name);
   assert.equal(state.calls.filter(([name]) => name === "connpass-boundary").length, 1);
 });
 
@@ -164,13 +166,22 @@ test("failed connpass action-boundary delivery skips every connpass submit path"
       state.calls.push(["discover", provider]);
       return provider === "connpass" ? [candidate("connpass", "boundary-fail")] : [];
     },
-    async reportConnpassActionBoundary() { throw new Error("delivery unavailable"); },
+    async reportConnpassActionBoundary() {
+      const error = new Error("delivery unavailable");
+      error.code = "CONNPASS_ACTION_BOUNDARY_SEND_FAILED";
+      throw error;
+    },
   });
   const result = await runMinimalConnectorWake({ ownerToken: "owner-token-connpass-boundary-fail", providers: ["connpass"] }, state.dependencies);
   assert.equal(result.safe_reason, "connpass_action_boundary_failed");
   for (const name of ["cache", "direct", "agent", "readback"]) {
     assert.equal(state.calls.some(([call]) => call === name), false, name);
   }
+  const failed = state.calls.find(([name, action]) => name === "history" && action.method === "connpass_action_boundary")[1];
+  assert.deepEqual(
+    { provider: failed.provider, safe_reason: failed.safe_reason, error_class: failed.error_class },
+    { provider: "connpass", safe_reason: "connpass_action_boundary_send_failed", error_class: "Error" },
+  );
 });
 
 test("a failed provider reset records failure, skips discovery, and closes the owned page", async () => {

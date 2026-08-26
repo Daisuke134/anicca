@@ -151,6 +151,25 @@ function safeDiscoveryAudit(input, wakeId, recordedAt) {
   });
 }
 
+function safeRankingAudit(input, wakeId, recordedAt) {
+  const keys = [
+    "bisect_count", "elapsed_ms", "max_request_ms", "request_count", "retry_count",
+    "schema_version", "total_request_ms",
+  ];
+  const counts = ["request_count", "retry_count", "bisect_count"];
+  const timings = ["total_request_ms", "max_request_ms", "elapsed_ms"];
+  if (
+    !input || typeof input !== "object" || Array.isArray(input)
+    || Object.keys(input).sort().join(",") !== keys.join(",")
+    || input.schema_version !== 1
+    || counts.some((key) => !Number.isInteger(input[key]) || input[key] < 0 || input[key] > 10_000)
+    || timings.some((key) => !Number.isInteger(input[key]) || input[key] < 0 || input[key] > 3_600_000)
+    || input.retry_count > input.request_count || input.bisect_count > input.request_count
+    || input.max_request_ms > input.total_request_ms || input.max_request_ms > input.elapsed_ms
+  ) invalid();
+  return Object.freeze({ ...input, wake_id: wakeId, recorded_at: recordedAt });
+}
+
 function safeDoorkeeperDiscoveryAudit(input, wakeId, recordedAt) {
   const keys = [
     "calendar_free_count", "discovered_count", "eligible_count", "selected_count", "within_window_count",
@@ -198,6 +217,7 @@ function createMinimalProductionOperations(options = {}) {
   const deliveryFile = path.join(stateDir, "wake-report-deliveries.jsonl");
   const discoveryAuditFile = path.join(stateDir, "luma-discovery-audits.jsonl");
   const connpassDiscoveryAuditFile = path.join(stateDir, "connpass-discovery-audits.jsonl");
+  const rankingAuditFile = path.join(stateDir, "ranking-audits.jsonl");
   const peatixDiscoveryAuditFile = path.join(stateDir, "peatix-discovery-audits.jsonl");
   const meetupDiscoveryAuditFile = path.join(stateDir, "meetup-discovery-audits.jsonl");
   const doorkeeperDiscoveryAuditFile = path.join(stateDir, "doorkeeper-discovery-audits.jsonl");
@@ -216,6 +236,10 @@ function createMinimalProductionOperations(options = {}) {
 
   async function recordConnpassDiscoveryAudit(input) {
     append(connpassDiscoveryAuditFile, safeDiscoveryAudit(input, wakeId, exactInstant(now())));
+  }
+
+  async function recordRankingAudit(input) {
+    append(rankingAuditFile, safeRankingAudit(input, wakeId, exactInstant(now())));
   }
 
   async function recordPeatixDiscoveryAudit(input) {
@@ -291,7 +315,7 @@ function createMinimalProductionOperations(options = {}) {
   }
 
   return Object.freeze({
-    recordAction, recordDiscoveryAudit, recordConnpassDiscoveryAudit, recordPeatixDiscoveryAudit,
+    recordAction, recordDiscoveryAudit, recordConnpassDiscoveryAudit, recordRankingAudit, recordPeatixDiscoveryAudit,
     recordMeetupDiscoveryAudit, recordDoorkeeperDiscoveryAudit, recordEventbriteDiscoveryAudit, reportWake,
     recordTechPlayDiscoveryAudit, recordKokuchProDiscoveryAudit,
   });
