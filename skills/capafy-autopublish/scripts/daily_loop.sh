@@ -97,7 +97,9 @@ PRE_ONLINE="$(printf '%s' "$INV" | tail -1 | python3 -c 'import json,sys; print(
 # PUBLISHABLE → the shared agent runner tries the configured tool-agent providers in order and
 # records durable per-attempt evidence. Keep ANTHROPIC_API_KEY unset so a Claude fallback uses the
 # authenticated subscription instead of an exhausted pay-as-you-go key.
-PROMPT="Follow this runbook exactly and do ONE iteration, terse output: $(cat "$AUTO/DAILY_LOOP.md")"
+PROMPT="Follow this runbook exactly and do ONE iteration, terse output: $(cat "$AUTO/DAILY_LOOP.md")
+AUTHORITATIVE INVENTORY ACTION: $(printf '%s' "$INV" | tail -1)
+Execute exactly that action/item. Do not select or substitute another item from stale ledger or rejection history."
 EVIDENCE_DIR="$LIFE_MANAGER_STATE_HOME/state/agent-runner-evidence/capafy-drainer/$(date +%s)-$$"
 printf '%s\n' "$PROMPT" | timeout 1200 env -u ANTHROPIC_API_KEY "$RUN_AGENT" \
   --task-class tool-agent \

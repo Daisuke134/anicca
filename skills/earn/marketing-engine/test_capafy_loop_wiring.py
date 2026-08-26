@@ -28,6 +28,7 @@ ENGINE = Path(__file__).resolve().parent
 RUN_AGENT = ENGINE / "run_agent.sh"
 CAPAFY = ENGINE.parents[1] / "self" / "capafy-loop" / "capafy-loop-daily.sh"
 CAPAFY_MARKETING = ENGINE.parents[1] / "earn" / "capafy-marketing" / "capafy-ig-marketing-daily.sh"
+CAPAFY_DRAINER = ENGINE.parents[1] / "capafy-autopublish" / "scripts" / "daily_loop.sh"
 CONFIG = ENGINE.parents[2] / "runtime" / "agent-runner" / "config.json"
 
 MIN_TIMEOUT_SECONDS = 900
@@ -98,6 +99,12 @@ class CapafyLoopWiringTest(unittest.TestCase):
         self.assertIn("INITIAL WRAPPER INVENTORY VERDICT: $VERDICT", text)
         self.assertIn("Historical log lines before this execution are not current failures", text)
         self.assertIn("DRAINED requires designing and fully submitting one new skill", text)
+
+    def test_capafy_drainer_prompt_binds_authoritative_inventory_action(self):
+        text = CAPAFY_DRAINER.read_text(encoding="utf-8")
+        self.assertIn("AUTHORITATIVE INVENTORY ACTION:", text)
+        self.assertIn("Do not select or substitute another item", text)
+        self.assertIn("$(printf '%s' \"$INV\" | tail -1)", text)
 
     def test_run_agent_accepts_every_task_class_its_consumers_declare(self):
         # run_agent.sh keeps its own task-class whitelist, so a consumer can be
