@@ -160,7 +160,11 @@ function createMarketingLocalLedger(options = {}) {
   function assertPublicationEffectAllowed(job, phase) {
     if (job.capability !== "marketing.video.publish") return;
     const fence = publicationFence();
-    if (fence && !(fence.state === "open" && fence.allowed_effect_key === job.effect_key)) {
+    let closedProductionLane = false;
+    if (fence?.state === "closed") {
+      try { closedProductionLane = Boolean(publicationLane(job, laneManifest(true))); } catch {}
+    }
+    if (fence && !(fence.state === "open" && fence.allowed_effect_key === job.effect_key) && !closedProductionLane) {
       const observedAt = nowInstant(now);
       append(publicationFenceRefusalsFile, {
         schema_version: 1,

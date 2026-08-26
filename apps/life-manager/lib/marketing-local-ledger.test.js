@@ -141,6 +141,35 @@ test("closed publication effect fence rejects claim of an already queued provide
   assert.equal((await ledger.readJob({ tenantId: "dais-local", jobId: "publication-job" })).status, "queued");
 });
 
+test("closed canary fence allows an exact production-armed lane", async () => {
+  const dataDir = tempDataDir();
+  const marketingDir = path.join(dataDir, "marketing");
+  fs.mkdirSync(marketingDir, { recursive: true, mode: 0o700 });
+  fs.writeFileSync(path.join(marketingDir, "publication-effect-fence.json"), `${JSON.stringify({
+    schema_version: 1,
+    state: "closed",
+    reason: "canary effects closed; production manifest owns cadence",
+  })}\n`, { mode: 0o600 });
+  writeLanePolicy(dataDir, "production-armed");
+  const value = job({
+    available_at: "2026-08-26T01:31:00.000Z",
+    input_refs: {
+      ...job().input_refs,
+      tiktok_integration_ref: "integration://postiz/tiktok/live-tt-honne-en",
+    },
+  });
+  const ledger = createMarketingLocalLedger({ dataDir, now: () => "2026-08-26T01:31:00.000Z" });
+
+  assert.equal((await ledger.enqueueJob(value)).created, true);
+  assert.equal((await ledger.claimJob({
+    tenantId: "dais-local",
+    jobId: "publication-job",
+    capability: "marketing.video.publish",
+    workerId: "production-worker",
+    leaseSeconds: 30,
+  })).status, "running");
+});
+
 test("open publication fence still requires the exact armed Life Manager lane at enqueue and claim", async () => {
   const dataDir = tempDataDir();
   const marketingDir = path.join(dataDir, "marketing");
