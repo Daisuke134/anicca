@@ -253,14 +253,47 @@ def type_label(tid: str, label: str, value: str) -> dict:
 
 def select_name(tid: str, name: str, value: str) -> dict:
     expression = _visible_named_expression(name, f"""
+      const expected = {json.dumps(value)};
       Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')
-        .set.call(element, {json.dumps(value)});
+        .set.call(element, expected);
       element.dispatchEvent(new Event('input', {{bubbles: true}}));
       element.dispatchEvent(new Event('change', {{bubbles: true}}));
       return {{name: element.name, value: element.value, valid: element.checkValidity(),
+        expected, option_text: [...element.options].find((option) => option.value === expected)?.text || '',
         visible: element.getBoundingClientRect().width > 0}};
     """)
-    return evaluate(tid, expression)
+    result = evaluate(tid, expression)
+    if result.get("value") == value:
+        return result
+
+    # React-style custom selects keep the real <select> screen-reader-only and own
+    # state through a visible button/listbox. A direct value setter is immediately
+    # reverted there, so drive the rendered control and its matching official option.
+    option_text = result.get("option_text") or value
+    opened = evaluate(tid, _visible_named_expression(name, """
+      const button = element.parentElement?.querySelector('button[aria-haspopup="listbox"]');
+      if (!button) return {opened: false};
+      button.click();
+      return {opened: true};
+    """))
+    if not opened.get("opened"):
+        return result
+    selected = evaluate(tid, f"""(() => {{
+      const option = [...document.querySelectorAll('[role="option"]')].find((candidate) => {{
+        const rect = candidate.getBoundingClientRect();
+        return rect.width > 0 && rect.height > 0 &&
+          candidate.textContent.trim() === {json.dumps(option_text)};
+      }});
+      if (!option) return {{selected: false}};
+      option.click();
+      return {{selected: true}};
+    }})()""")
+    if not selected.get("selected"):
+        return result
+    return evaluate(tid, _visible_named_expression(name, """
+      return {name: element.name, value: element.value, valid: element.checkValidity(),
+        visible: element.getBoundingClientRect().width > 0};
+    """))
 
 
 def form_state(tid: str) -> list[dict]:
