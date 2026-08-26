@@ -93,13 +93,20 @@ exit 75でfail closedし、外部送信は0である。
 追加のbrowser GCでは、終了済みrunが所有するCoconala page 3枚と、Apply停止・Reply attach保護を確認したlegacy unattached page
 20枚だけを閉じた。しかし常駐ownerがpageを再生成し、2026-08-27T03:51:45+09:00にはswapが22,528MiB中21,114.44MiB、
 swapfile 22本、disk free 9,543,729,152 bytesへ悪化した。project cache追加削除、稼働ownerの無断停止、直接swap削除では閉じない。
-追加診断で再起動を唯一解とする結論を訂正した。Applyの`cdp_context_lease.py`はcontext dispose失敗時も`release()`と`gc()`が
+追加診断で再起動を唯一解とする結論を一度訂正した。Applyの`cdp_context_lease.py`はcontext dispose失敗時も`release()`と`gc()`が
 ledger rowを削除するため、browser側にisolated contextだけが残り、後続wakeが新contextを増殖させていた。実機ではApply実行中に
-lease ledger 0行に対してisolated page 13枚（attached 7枚）を観測した。修正はdispose未確認rowを`cleanup_pending`で保持し、
-dispose成功またはofficial context inventoryで既消滅を確認した時だけrowを消す。focused lease testsは17/17 GREENである。
-またspec編集でFundraiser専用worktreeをmainへ切替えたため生じたexit 127は、固定branch `663b40216`へ戻し、natural wake
-run 232 / exit 75へ復旧した。次の不可分actionはlease fix release→Apply停止readback→既存untracked isolated contextの一回dispose→
-swap/disk/launchd readback→Fundraiser natural wakeである。それでも20GiB clear thresholdへ届かない時だけMac再起動承認へ進む。
+lease ledger 0行に対してisolated page 13枚（attached 7枚）を観測した。dispose未確認rowを`cleanup_pending`で保持し、dispose成功または
+official context inventoryで既消滅を確認した時だけrowを消す修正をPR #2895 / main `db03dd58a7f6305d25e7f1cf9b80f561e548815c`
+へmergeし、immutable gig releaseも同commitへ更新した。focused lease testsは17/17 GREENである。Apply停止時にdefault contextとledger ownerを
+除外し、既存untracked isolated context 2件だけを一回disposeしてofficial inventoryを2→0にした。続くnatural Apply run 166はexit 0、
+終了時lease ledger 0行 / isolated context 0件で、同じ漏れのreplayは0である。旧orphan renderer 2 PIDは終了し、gig browser RSSは約2GiB級から
+418,368KiBまで低下した。
+
+spec編集でFundraiser専用worktreeをmainへ切替えたため生じたexit 127は、固定branch `663b40216`へ戻し、`bash -n` PASSのままnatural wakeを
+継続している。上記cleanup後もswapは20,480MiB中19,472.31MiB使用、disk freeは9,755,820,032 bytes、clear thresholdまで
+11,719,016,448 bytes不足し、`disk-pressure.block`はpresentである。Fundraiserはrun 265 / exit 75でfail closedし、外部送信は0である。
+safe artifact cleanupとisolated-context leak修復を実施してもthresholdへ届かないため、次の不可分actionは明示承認されたMac再起動→swap/disk
+readback→required launchd owner readback→Fundraiser natural wakeである。再起動前にCTX-08B以降のbrowser effectへ進まない。
 最新contextを読む単一owner、preview digest、
 official completion PNG、Telegram photo message ID、application dossier hashが一つのreceipt chainへ揃うまで`IN_PROGRESS`とする。
 非機密の実測snapshotは`docs/evidence/fundraising/2026-08-27-ctx08-readiness.json`に置く。
@@ -189,7 +196,7 @@ error recovery、effect/readbackを実codeで再監査し、noticeを保持す�
 | 11 | CTX-05 root-site relationship | DONE | `anicca-products` PR #396をmain merge `7fe3f5f447…`へ反映。root hero/metadata/JSON-LDを`Anicca=mission/company`、`Life Manager=proactive general-agent product`、`Body/Mind/Money=3 organs`へ統一し、旧self-funding/AGI/UBI product sectionsをroot render pathから除外。contract 2/2、preview run `32989091020`、prod run `32989696892`、Netlify deploy `6a8f17a860…`、built-in money-path smoke/rollback gate PASS。live英日HTTP 200・title/CTA/3 organs・overflow 0 |
 | 12 | CTX-06 generated-context drift gate | DONE | README英日、committed fundraising kit、active formのdigest契約はoffline 28/28 GREEN。公開Web PR #397はmain `b1ee7a1208…`へmergeし、preview `32990937574`、production `32991554504`、money-path smokeがSUCCESS。live product/repo/Telegram auditは3/3 GREEN。Security Scan run `32992553073`の`Startup context drift` job `98253497091`もSUCCESS |
 | 13 | CTX-07 public live readback | DONE | isolated browserとHTTP/APIで`/lm`、英日root、public repo、英日README、Telegramをfresh readback。title、3 organs、Web/Telegram/GitHub CTA、version/digest、founder-attested約$1,000とMRR/ARR否定、banked境界、overflow 0を`docs/evidence/public-context/2026-08-27-public-context-readback.json`へ保存 |
-| 14 | CTX-08A host gate recovery | IN_PROGRESS | lease fix 17/17 GREEN。main merge→immutable gig release→natural Apply wakeでcleanup tombstone/replay-zeroを確認し、Apply停止時に既存untracked isolated contextだけを一回dispose。free bytes `>=21,474,836,480`、`disk-pressure.block` absent、credential/session/ledger/customer media/profile保持、Fundraiser exit 75をreadback。未達時だけMac再起動承認へ進む |
+| 14 | CTX-08A host gate recovery | IN_PROGRESS | PR #2895をmain `db03dd58a…`へmergeしimmutable release済み。既存untracked isolated context 2件だけをdisposeして2→0、natural Apply run 166 / exit 0 / ledger 0 / isolated 0でreplay-zero、保護対象保持を確認。free 9,755,820,032 bytes、block present、Fundraiser run 265 / exit 75のため、残る一件は明示承認されたMac再起動→free `>=21,474,836,480`・block absent・required owner・Fundraiser natural wakeのreadback |
 | 15 | CTX-08B official form capability readback | TODO | 既存Fundraiser ownerがASAC official formを一度だけ開き、current batch、締切、required fields、attachment、auth/CAPTCHA境界をreceipt化。送信effect 0 |
 | 16 | CTX-08C digest-bound application preview | TODO | context `2026-08-27.2` / `9fbe6198…5338`、kit/deck、全回答、attachment hashを一つの`application_digest`へ固定し、unsupported claim・空required field 0を確認 |
 | 17 | CTX-08D exactly-once accelerator submit | TODO | durable effect claim取得後、同じownerがofficial submitを一度だけ実行。timeout/unknownは再送せずofficial readbackでreconcile |
