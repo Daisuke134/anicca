@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+from datetime import datetime, timezone
 import json
 import os
 from pathlib import Path
@@ -25,6 +26,64 @@ def _ledger_listing_ids(path: Path) -> list[str]:
         if isinstance(listing_id, str) and listing_id.strip():
             identifiers.append(listing_id.strip())
     return sorted(set(identifiers))
+
+
+def persist_verified_submissions(
+    result: dict[str, Any], ledger_path: Path, *, run_id: str
+) -> int:
+    """Append verified model submissions once after evidence validation."""
+    submitted = result.get("submitted")
+    if not isinstance(submitted, list) or not submitted:
+        return 0
+    existing_ids = set(_ledger_listing_ids(ledger_path))
+    existing_urls: set[str] = set()
+    if ledger_path.is_file():
+        for line in ledger_path.read_text(encoding="utf-8").splitlines():
+            try:
+                value = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if isinstance(value, dict) and isinstance(value.get("application_url"), str):
+                existing_urls.add(value["application_url"].strip())
+
+    rows: list[dict[str, str]] = []
+    for item in submitted:
+        if not isinstance(item, dict):
+            continue
+        listing_id = str(item.get("listing_id", "")).strip()
+        application_url = str(item.get("evidence_url") or item.get("url") or "").strip()
+        if not listing_id or not application_url:
+            continue
+        if listing_id in existing_ids or application_url in existing_urls:
+            continue
+        rows.append(
+            {
+                "observed_at": datetime.now(timezone.utc).isoformat(),
+                "listing_id": listing_id,
+                "title": str(item.get("title", "")).strip(),
+                "application_url": application_url,
+                "status": "submitted_pending_review",
+                "evidence_screenshot": str(item.get("evidence_path", "")).strip(),
+                "run_id": run_id,
+            }
+        )
+        existing_ids.add(listing_id)
+        existing_urls.add(application_url)
+    if not rows:
+        return 0
+
+    ledger_path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    descriptor = os.open(ledger_path, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o600)
+    try:
+        payload = "".join(
+            json.dumps(row, ensure_ascii=False, sort_keys=True) + "\n" for row in rows
+        ).encode("utf-8")
+        os.write(descriptor, payload)
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
+    os.chmod(ledger_path, 0o600)
+    return len(rows)
 
 
 def build_context(
@@ -155,6 +214,9 @@ def main(argv: list[str] | None = None) -> int:
         validate_evidence_paths(result, args.evidence_dir.parent)
     except ValueError as error:
         result = _blocked_for_evidence_violation(result, args.evidence_dir, error)
+    persist_verified_submissions(
+        result, args.state_root / "applications.jsonl", run_id=args.run_id
+    )
     output = args.evidence_dir / "mercor-pass-summary.json"
     output.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     os.chmod(output, 0o600)

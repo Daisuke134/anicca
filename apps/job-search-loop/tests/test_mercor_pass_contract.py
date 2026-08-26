@@ -4,7 +4,11 @@ import tempfile
 import unittest
 
 from job_search_loop.agent_runner import AgentRunner, TASK_CLASSES
-from job_search_loop.mercor_pass import build_context, validate_evidence_paths
+from job_search_loop.mercor_pass import (
+    build_context,
+    persist_verified_submissions,
+    validate_evidence_paths,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -126,6 +130,34 @@ class MercorPassContractTests(unittest.TestCase):
             },
             schema,
         )
+
+    def test_verified_submissions_are_durably_appended_once(self):
+        with tempfile.TemporaryDirectory() as directory:
+            ledger = Path(directory) / "applications.jsonl"
+            result = {
+                "submitted": [
+                    {
+                        "listing_id": "list-new",
+                        "title": "Generalist Expert",
+                        "url": "https://work.mercor.com/jobs/apply/candidate-new",
+                        "status": "submitted_pending_review",
+                        "evidence_url": "https://work.mercor.com/jobs/apply/candidate-new",
+                        "evidence_path": "/private/evidence/readback.png",
+                    }
+                ]
+            }
+
+            self.assertEqual(
+                persist_verified_submissions(result, ledger, run_id="mercor-test"), 1
+            )
+            self.assertEqual(
+                persist_verified_submissions(result, ledger, run_id="mercor-replay"), 0
+            )
+            rows = [json.loads(line) for line in ledger.read_text().splitlines()]
+            self.assertEqual(len(rows), 1)
+            self.assertEqual(rows[0]["listing_id"], "list-new")
+            self.assertEqual(rows[0]["run_id"], "mercor-test")
+            self.assertEqual(ledger.stat().st_mode & 0o777, 0o600)
 
     def test_runner_snapshots_prompt_and_schema_into_private_pass_evidence(self):
         script = (ROOT / "scripts" / "run-mercor.sh").read_text(encoding="utf-8")
