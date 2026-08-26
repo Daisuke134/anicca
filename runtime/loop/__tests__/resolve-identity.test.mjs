@@ -343,3 +343,26 @@ test('agent-economy dedicated wallet selector rejects outside and symlink-escapi
     ANICCA_HOME: home,
   } }), null);
 });
+
+test('agent-economy dedicated wallet selector rejects a candidate symlink even when its target stays inside the instance', () => {
+  const home = tmpDir('eq-agent-economy-dedicated-candidate-link');
+  const walletPath = path.join(home, '.automaton', 'wallet.json');
+  const targetPath = path.join(home, 'wallet-copy.json');
+  fs.mkdirSync(path.dirname(walletPath), { recursive: true });
+  fs.writeFileSync(targetPath, JSON.stringify({ privateKey: '0x' + 'c'.repeat(64) }));
+  fs.symlinkSync(targetPath, walletPath);
+  assert.equal(loadEvmKey({ mode: 'agent-economy', env: {
+    ANICCA_HOME: home,
+    ANICCA_INSTANCE_WALLET_FILE: walletPath,
+  } }), null);
+});
+
+test('agent-economy dedicated wallet selector rejects a symlinked .automaton component', () => {
+  const home = tmpDir('eq-agent-economy-dedicated-component-link');
+  const realAutomaton = path.join(home, 'real-automaton');
+  const automaton = path.join(home, '.automaton');
+  fs.mkdirSync(realAutomaton, { recursive: true });
+  fs.writeFileSync(path.join(realAutomaton, 'wallet.json'), JSON.stringify({ privateKey: '0x' + 'd'.repeat(64) }));
+  fs.symlinkSync(realAutomaton, automaton, 'dir');
+  assert.equal(loadEvmKey({ mode: 'agent-economy', env: { ANICCA_HOME: home } }), null);
+});

@@ -60,6 +60,10 @@ function isWithin(root, candidate) {
   return candidate === root || candidate.startsWith(`${root}${path.sep}`);
 }
 
+function isSymlink(filePath) {
+  try { return fs.lstatSync(filePath).isSymbolicLink(); } catch { return false; }
+}
+
 function rejectAgentEconomyEvmOverrides(env) {
   const fields = [
     ['ANICCA_EVM_PRIVATE_KEY', env.ANICCA_EVM_PRIVATE_KEY],
@@ -97,6 +101,10 @@ function resolveAgentEconomyWalletPath({ home, env }) {
   if (!candidateReal) return null;
   const rootPath = candidate === legacyPath && isDefaultOwner
     ? path.dirname(legacyPath) : path.dirname(ownPath);
+  // `realpath` containment alone is insufficient: a symlink can retarget between validation and
+  // read. Reject both the candidate inode and its `.automaton` component before the no-follow fd
+  // read below, even when their targets happen to remain under the allowed root.
+  if (isSymlink(candidate) || isSymlink(rootPath)) return null;
   const rootReal = safeRealpath(rootPath);
   const scopeReal = candidate === legacyPath && isDefaultOwner
     ? safeRealpath(legacyHome) : safeRealpath(instanceHome);
@@ -112,6 +120,25 @@ function readJsonField(filePath, field) {
     return typeof value === 'string' && value.length > 0 ? value : null;
   } catch {
     return null;
+  }
+}
+
+function readJsonFieldNoFollow(filePath, field) {
+  let fd;
+  try {
+    const noFollow = fs.constants.O_NOFOLLOW || 0;
+    fd = fs.openSync(filePath, fs.constants.O_RDONLY | noFollow);
+    const stat = fs.fstatSync(fd);
+    if (!stat.isFile()) return null;
+    const parsed = JSON.parse(fs.readFileSync(fd, 'utf8'));
+    const value = parsed && parsed[field];
+    return typeof value === 'string' && value.length > 0 ? value : null;
+  } catch {
+    return null;
+  } finally {
+    if (fd !== undefined) {
+      try { fs.closeSync(fd); } catch { /* already closed */ }
+    }
   }
 }
 
@@ -158,7 +185,7 @@ export function resolveEvmPrivateKey({ home, env, mode } = {}) {
     // Agent-economy identity is explicit by construction. Never derive a default from HOME and
     // never inspect flat/legacy wallet layouts, both of which can belong to another instance.
     const walletPath = resolveAgentEconomyWalletPath({ home, env: e });
-    return walletPath ? normalizeAgentEconomyKey(readJsonField(walletPath, 'privateKey')) : null;
+    return walletPath ? normalizeAgentEconomyKey(readJsonFieldNoFollow(walletPath, 'privateKey')) : null;
   }
 
   const override = normalizeEvmKey(e.ANICCA_EVM_PRIVATE_KEY);

@@ -10,6 +10,7 @@ import {
   readlinkSync,
   readFileSync,
   rmSync,
+  statSync,
   writeFileSync,
 } from "node:fs";
 import { createHash } from "node:crypto";
@@ -19,6 +20,17 @@ import { spawnSync } from "node:child_process";
 import test from "node:test";
 
 const REPO_ROOT = new URL("../", import.meta.url).pathname;
+const TRUSTED_BIN_DIRS = ["/opt/homebrew/bin", "/usr/local/bin", "/usr/bin", "/bin", "/usr/sbin", "/sbin"];
+
+function trustedTool(name) {
+  for (const directory of TRUSTED_BIN_DIRS) {
+    const candidate = join(directory, name);
+    try {
+      if (statSync(candidate).isFile() && (statSync(candidate).mode & 0o111) !== 0) return candidate;
+    } catch { /* try next allowlisted directory */ }
+  }
+  return null;
+}
 
 function parsePlist(path) {
   const result = spawnSync("python3", ["-c", [
@@ -176,7 +188,13 @@ test("release sealing is fatal and occurs before the current symlink move", () =
 
 // Contract-only fixture: npm ci runs against a committed local tarball, with no network; this is
 // not the primary live-repository release proof.
-test("contract-only: release cutter installs locked dependencies in the release and records provenance before sealing", () => {
+test("contract-only: release cutter installs locked dependencies in the release and records provenance before sealing", (t) => {
+  const npm = trustedTool("npm");
+  const node = trustedTool("node");
+  if (!npm || !node) {
+    t.skip("trusted npm/node executable is unavailable");
+    return;
+  }
   const root = mkdtempSync(join(tmpdir(), "agent-economy-release-deps-"));
   const repo = join(root, "repo");
   const remote = join(root, "remote.git");
@@ -192,11 +210,11 @@ test("contract-only: release cutter installs locked dependencies in the release 
   }));
   writeFileSync(join(repo, "vendor", "viem", "index.mjs"), 'export const marker = "release-viem";\n');
   writeFileSync(join(repo, "vendor", "viem", "bin", "cli.mjs"), "#!/usr/bin/env node\n");
-  const packed = spawnSync("/opt/homebrew/bin/npm", ["pack", "./vendor/viem", "--pack-destination", repo], {
+  const packed = spawnSync(npm, ["pack", "./vendor/viem", "--pack-destination", repo], {
     cwd: repo, encoding: "utf8",
   });
   assert.equal(packed.status, 0, `${packed.stdout}\n${packed.stderr}`);
-  const lock = spawnSync("/opt/homebrew/bin/npm", ["install", "--package-lock-only", "--ignore-scripts", "--no-audit", "--no-fund", "--offline"], {
+  const lock = spawnSync(npm, ["install", "--package-lock-only", "--ignore-scripts", "--no-audit", "--no-fund", "--offline"], {
     cwd: repo, encoding: "utf8",
   });
   assert.equal(lock.status, 0, `${lock.stdout}\n${lock.stderr}`);
@@ -238,7 +256,7 @@ test("contract-only: release cutter installs locked dependencies in the release 
     const binLink = join(releaseRoot, "node_modules", ".bin", "viem-cli");
     assert.equal(lstatSync(binLink).isSymbolicLink(), true, "npm must create an internal .bin symlink");
     assert.match(readlinkSync(binLink), /\.\.\/viem\//u);
-    const probe = spawnSync(process.execPath, [join(releaseRoot, "runtime", "compute-proxy", "viem-probe.mjs")], {
+    const probe = spawnSync(node, [join(releaseRoot, "runtime", "compute-proxy", "viem-probe.mjs")], {
       encoding: "utf8",
       cwd: repo,
     });
