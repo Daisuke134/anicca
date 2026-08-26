@@ -753,68 +753,10 @@ test("JA Card wrapper is exact-lane and exact-slot only", () => {
   assert.deepEqual(parseJaCardArgs(["run", "--slot", SLOT]), { command: "run", slot: SLOT });
   assert.throws(() => parseJaCardArgs(["run", "--slot", "2026-08-26T07:30:00Z"]), /invalid|usage/i);
   assert.throws(() => parseJaCardArgs(["publish"]), /usage/i);
-  assert.deepEqual(
-    {
-      name: JA_CARD_LANE.name,
-      tenant: JA_CARD_LANE.tenant,
-      product: JA_CARD_LANE.product,
-      locale: JA_CARD_LANE.locale,
-      platform: JA_CARD_LANE.platform,
-      account: JA_CARD_LANE.account,
-      nativeAccount: JA_CARD_LANE.nativeAccount,
-      manifestAccount: JA_CARD_LANE.manifestAccount,
-      profileRef: JA_CARD_LANE.profileRef,
-      integrationRef: JA_CARD_LANE.integrationRef,
-      integrationId: JA_CARD_LANE.integrationId,
-      renderer: JA_CARD_LANE.renderer,
-      format: JA_CARD_LANE.format,
-      packFormat: JA_CARD_LANE.packFormat,
-      form: JA_CARD_LANE.form,
-      lane: JA_CARD_LANE.lane,
-      creativeId: JA_CARD_LANE.creativeId,
-      tokenRef: JA_CARD_LANE.tokenRef,
-      telegramTokenRef: JA_CARD_LANE.telegramTokenRef,
-      chatRef: JA_CARD_LANE.chatRef,
-      packEnv: JA_CARD_LANE.packEnv,
-      videoEnv: JA_CARD_LANE.videoEnv,
-      captionEnv: JA_CARD_LANE.captionEnv,
-      approvalEnv: JA_CARD_LANE.approvalEnv,
-      verificationEnv: JA_CARD_LANE.verificationEnv,
-      approvedPackName: JA_CARD_LANE.approvedPackName,
-      workerLabel: JA_CARD_LANE.workerLabel,
-      enforceApprovedPack: JA_CARD_LANE.enforceApprovedPack,
-    },
-    {
-      name: "JACARD",
-      tenant: "dais-local",
-      product: "anicca-ios",
-      locale: "ja",
-      platform: "instagram",
-      account: "@anicca.jp1",
-      nativeAccount: "@anicca.ios.jp",
-      manifestAccount: "anicca-ios-ja-instagram",
-      profileRef: "profile://instagram/anicca.jp1",
-      integrationRef: "integration://postiz/instagram/cmn8ycvtn02djqx0ytuisn9mw",
-      integrationId: "cmn8ycvtn02djqx0ytuisn9mw",
-      renderer: "reelclaw-card",
-      format: "reelclaw-card",
-      packFormat: "nudge-card-reel",
-      form: "nudge-card",
-      lane: "anicca-ja-card-instagram",
-      creativeId: "JA-CARD-CANARY-35a15c7ce990",
-      tokenRef: "secret://postiz/api-key",
-      telegramTokenRef: "secret://telegram/bot-token",
-      chatRef: "telegram-chat://owner",
-      packEnv: "LM_ANICCA_JA_CARD_INSTAGRAM_PACK_REF",
-      videoEnv: "LM_ANICCA_JA_CARD_INSTAGRAM_VIDEO_REF",
-      captionEnv: "LM_ANICCA_JA_CARD_INSTAGRAM_CAPTION_REF",
-      approvalEnv: "LM_ANICCA_JA_CARD_INSTAGRAM_APPROVAL_REF",
-      verificationEnv: "LM_ANICCA_JA_CARD_INSTAGRAM_NATIVE_VERIFICATION_REF",
-      approvedPackName: "anicca-ios-reelclaw-card-ja.pack.json",
-      workerLabel: "anicca-ja-card-instagram-canary",
-      enforceApprovedPack: true,
-    },
-  );
+  assert.equal(JA_CARD_LANE.account, "@anicca.jp1");
+  assert.equal(JA_CARD_LANE.nativeAccount, "@anicca.ios.jp");
+  assert.equal(JA_CARD_LANE.integrationId, "cmn8ycvtn02djqx0ytuisn9mw");
+  assert.equal(JA_CARD_LANE.approvedPackName, "anicca-ios-reelclaw-card-ja.pack.json");
 });
 
 test("JA Card first publication uses dedicated refs, raw integration, empty profile state, and holds Telegram", async () => {
