@@ -76,23 +76,21 @@ acquire_release_lock() {
 }
 
 verify_release_seal_path() {
-  local target="$1" item mode
-  mode="$(stat -f '%Lp' "$target" 2>/dev/null || stat -c '%a' "$target" 2>/dev/null)" \
-    || die "could not inspect sealed release permissions"
-  if [ $((8#$mode & 0222)) -ne 0 ]; then
-    die "sealed release remains writable"
-  fi
-  while IFS= read -r -d '' item; do
-    [ -L "$item" ] && continue
-    mode="$(stat -f '%Lp' "$item" 2>/dev/null || stat -c '%a' "$item" 2>/dev/null)" \
-      || die "could not inspect sealed release permissions"
-    case "$mode" in
-      ''|*[!0-7]*) die "invalid sealed release permissions" ;;
-    esac
-    if [ $((8#$mode & 0222)) -ne 0 ]; then
-      die "sealed release remains writable"
-    fi
-  done < <(find "$target" -mindepth 1 -print0)
+  local target="$1"
+  python3 - "$target" <<'PY' || die "sealed release remains writable"
+import os
+import stat
+import sys
+from pathlib import Path
+
+root = Path(sys.argv[1])
+for path in [root, *root.rglob("*")]:
+    item = path.lstat()
+    if stat.S_ISLNK(item.st_mode):
+        continue
+    if stat.S_IMODE(item.st_mode) & 0o222:
+        raise SystemExit(1)
+PY
 }
 
 validate_release_target() {
