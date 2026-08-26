@@ -201,6 +201,20 @@ def target_responds(ws_url, timeout=6.0):
         return False
 
 
+def _browser_context_exists(context_id):
+    """Read the browser's authoritative context inventory; None means inconclusive."""
+    if not context_id:
+        return False
+    try:
+        (result,) = asyncio.run(_calls([("Target.getBrowserContexts", {})]))
+    except Exception:
+        return None
+    context_ids = result.get("browserContextIds")
+    if not isinstance(context_ids, list):
+        return None
+    return context_id in context_ids
+
+
 def acquire(task, url="about:blank", no_seed=False):
     with _ledger_lock():
         leases = _leases()
@@ -213,8 +227,15 @@ def acquire(task, url="about:blank", no_seed=False):
                     "Target.disposeBrowserContext",
                     {"browserContextId": held.get("context_id")},
                 )]))
-            except Exception:
-                pass
+            except Exception as error:
+                if _browser_context_exists(held.get("context_id")) is not False:
+                    held["cleanup_pending"] = True
+                    held["cleanup_error_type"] = type(error).__name__
+                    held["ts"] = 0
+                    held["pid"] = None
+                    leases[task] = held
+                    _save(leases)
+                    raise RuntimeError("context_cleanup_pending") from error
             leases.pop(task, None)
             _save(leases)
             held = None
@@ -231,6 +252,8 @@ def acquire(task, url="about:blank", no_seed=False):
             # different (now-dead) process originally created this row -- record its ppid so
             # gc's fast pid-liveness path tracks the real owner, not a crashed predecessor.
             held["pid"] = os.getppid()
+            held.pop("cleanup_pending", None)
+            held.pop("cleanup_error_type", None)
             changed = True
             if changed:
                 leases[task] = held
@@ -319,25 +342,34 @@ def release(task, token=None, generation=None):
         with open(lock_path, "a+", encoding="utf-8") as operation_lock:
             fcntl.flock(operation_lock.fileno(), fcntl.LOCK_EX)
             dispose_note = None
+            disposed = False
             try:
                 asyncio.run(_calls([(
                     "Target.disposeBrowserContext",
                     {"browserContextId": held["context_id"]},
                 )]))
+                disposed = True
             except Exception as e:
-                # A context whose renderer is wedged cannot be disposed right now, and it
-                # is exactly the context the caller most needs to be rid of. Keeping the
-                # row would hand the same corpse to every future acquire; gc reaps the
-                # browser-side remains once it recovers or restarts. The fence was already
-                # checked above -- this never weakens who may release what.
-                dispose_note = f"context_left_for_gc: {e}"
+                disposed = _browser_context_exists(held.get("context_id")) is False
+                if not disposed:
+                    # Keep a durable tombstone. Dropping this row would make the live
+                    # browser context unreachable to gc, so every later wake could leak
+                    # another renderer while this one survived forever.
+                    held["cleanup_pending"] = True
+                    held["cleanup_error_type"] = type(e).__name__
+                    held["ts"] = 0
+                    held["pid"] = None
+                    leases[task] = held
+                    dispose_note = f"context_left_for_gc: {type(e).__name__}"
             finally:
                 fcntl.flock(operation_lock.fileno(), fcntl.LOCK_UN)
-        leases.pop(task, None)
+        if disposed:
+            leases.pop(task, None)
         _save(leases)
         result = {"ok": True, "released": task, "context_id": held["context_id"]}
         if dispose_note:
             result["note"] = dispose_note
+            result["cleanup_pending"] = True
         return result
 
 
@@ -372,16 +404,19 @@ def gc(idle_min=45):
         candidates = {
             task: dict(held)
             for task, held in leases.items()
-            if now - held.get("ts", 0) > idle_min * 60
+            if held.get("cleanup_pending") is True
+            or now - held.get("ts", 0) > idle_min * 60
             or _pid_alive(held.get("pid")) is False
         }
 
     reaped = []
     for task, held in candidates.items():
+        disposed = False
         try:
             asyncio.run(_calls([("Target.disposeBrowserContext", {"browserContextId": held["context_id"]})]))
+            disposed = True
         except Exception:
-            pass
+            disposed = _browser_context_exists(held.get("context_id")) is False
         with _ledger_lock():
             leases = _leases()
             current = leases.get(task)
@@ -391,17 +426,28 @@ def gc(idle_min=45):
                 and current.get("target_id") == held.get("target_id")
             )
             still_stale = same_lease and (
-                now - current.get("ts", 0) > idle_min * 60
+                current.get("cleanup_pending") is True
+                or now - current.get("ts", 0) > idle_min * 60
                 or _pid_alive(current.get("pid")) is False
             )
-            if still_stale:
+            if still_stale and disposed:
                 leases.pop(task, None)
                 _save(leases)
                 reaped.append(task)
 
     with _ledger_lock():
-        still_held = list(_leases())
-    return {"ok": True, "reaped": reaped, "still_held": still_held}
+        final_leases = _leases()
+        still_held = list(final_leases)
+        cleanup_pending = sorted(
+            task for task, held in final_leases.items()
+            if isinstance(held, dict) and held.get("cleanup_pending") is True
+        )
+    return {
+        "ok": True,
+        "reaped": reaped,
+        "still_held": still_held,
+        "cleanup_pending": cleanup_pending,
+    }
 
 
 if __name__ == "__main__":
