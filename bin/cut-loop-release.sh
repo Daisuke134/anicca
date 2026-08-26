@@ -236,24 +236,30 @@ fi
 [ -n "$NPM_BIN" ] || die "npm executable is unavailable"
 
 validate_release_node_modules() {
-  local node_modules="$DEST/node_modules"
-  [ -d "$node_modules" ] || die "dependency install produced no node_modules"
-  [ ! -L "$node_modules" ] || die "release node_modules must be a directory"
+  dependency_node_modules_are_contained "${1:-$DEST}" \
+    || die "release node_modules is missing or has an escaping dependency symlink"
+}
+
+dependency_node_modules_are_contained() {
+  local release="$1" node_modules
+  node_modules="$release/node_modules"
+  [ -d "$node_modules" ] || return 1
+  [ ! -L "$node_modules" ] || return 1
   local node_modules_real
-  node_modules_real="$(realpath "$node_modules" 2>/dev/null)" || die "release node_modules path cannot be resolved"
+  node_modules_real="$(realpath "$node_modules" 2>/dev/null)" || return 1
   local link resolved
   while IFS= read -r -d '' link; do
     resolved="$(realpath "$link" 2>/dev/null)" \
-      || die "dependency symlink cannot be resolved"
+      || return 1
     case "$resolved" in
       "$node_modules_real"|"$node_modules_real"/*) ;;
-      *) die "dependency symlink escapes release node_modules" ;;
+      *) return 1 ;;
     esac
   done < <(find "$node_modules" -type l -print0)
 }
 
-dependency_entries() {
-  python3 - "$DEST" <<'PY'
+dependency_entries_from() {
+  python3 - "$1" <<'PY'
 import hashlib
 import os
 import stat
@@ -275,6 +281,51 @@ for path in sorted(node_modules.rglob("*"), key=lambda item: item.relative_to(re
     elif stat.S_ISLNK(item.st_mode):
         print(f"symlink\t{relative}\t{mode}\t-\t{os.readlink(path)}")
 PY
+}
+
+dependency_entries() {
+  dependency_entries_from "$DEST"
+}
+
+reuse_current_node_modules() {
+  # A copy-on-write clone saves the only large transient allocation in a release cut. It is a
+  # cache, not a trust shortcut: current must still be a sealed, identity-valid release whose
+  # dependency tree exactly matches its own recorded bytes and the new lock/runtime contract.
+  [ "$(uname -s)" = "Darwin" ] || { rm -rf "$DEST/node_modules"; return 1; }
+  [ -L "$CURRENT" ] || { rm -rf "$DEST/node_modules"; return 1; }
+  local current metadata manifest
+  current="$(validate_release_target "$CURRENT" "$LOOPS_ROOT" 2>/dev/null)" \
+    || { rm -rf "$DEST/node_modules"; return 1; }
+  metadata="$current/RELEASE.json"
+  manifest="$current/DEPENDENCY-MANIFEST.tsv"
+  [ -f "$manifest" ] && [ ! -L "$manifest" ] || { rm -rf "$DEST/node_modules"; return 1; }
+  dependency_node_modules_are_contained "$current" || { rm -rf "$DEST/node_modules"; return 1; }
+  "$NODE_BIN" - "$metadata" "$DEST/package-lock.json" "$manifest" "$NODE_VERSION" "$NPM_VERSION" <<'NODE' \
+    || { rm -rf "$DEST/node_modules"; return 1; }
+const crypto = require('node:crypto');
+const fs = require('node:fs');
+const [metadataPath, lockPath, manifestPath, nodeVersion, npmVersion] = process.argv.slice(2);
+let metadata;
+try { metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8')); } catch { process.exit(1); }
+if (!metadata || typeof metadata !== 'object' || !metadata.runtime_versions || typeof metadata.runtime_versions !== 'object') process.exit(1);
+const sha256 = (path) => crypto.createHash('sha256').update(fs.readFileSync(path)).digest('hex');
+if (metadata.lockfile_sha256 !== sha256(lockPath)) process.exit(1);
+if (metadata.runtime_versions.node !== nodeVersion || metadata.runtime_versions.npm !== npmVersion) process.exit(1);
+if (metadata.dependency_tree_manifest_sha256 !== sha256(manifestPath)) process.exit(1);
+NODE
+  dependency_entries_from "$current" | cmp -s - "$manifest" \
+    || { rm -rf "$DEST/node_modules"; return 1; }
+
+  rm -rf "$DEST/node_modules"
+  if ! /bin/cp -cRP "$current/node_modules" "$DEST/node_modules"; then
+    rm -rf "$DEST/node_modules"
+    return 1
+  fi
+  if ! dependency_node_modules_are_contained "$DEST" \
+    || ! dependency_entries_from "$DEST" | cmp -s - "$manifest"; then
+    rm -rf "$DEST/node_modules"
+    return 1
+  fi
 }
 
 dependency_manifest() {
@@ -368,16 +419,22 @@ fi
 # generated afterwards and are intentionally excluded so source integrity remains reproducible.
 source_manifest
 
-# Dependencies are installed in the exported tree, never in the source checkout. `npm ci` is
-# intentionally lockfile-fixed and scripts are disabled so a release cannot execute an unreviewed
-# package hook while it is being assembled. The resulting release-local node_modules is what the
-# resident runtime resolves (including viem); source node_modules is neither read nor copied.
+# Dependencies are installed in the exported tree, never in the source checkout. A sealed current
+# release may supply a Darwin copy-on-write clone only after every dependency entry and the exact
+# lock/runtime metadata are revalidated; otherwise `npm ci` remains the authoritative fallback.
 if [ -f "$DEST/package.json" ] || [ -f "$DEST/package-lock.json" ]; then
   [ -f "$DEST/package.json" ] && [ -f "$DEST/package-lock.json" ] \
     || { rm -rf "$DEST"; die "release dependency manifests are incomplete"; }
-  if ! (cd "$DEST" && "$NPM_BIN" ci --ignore-scripts --no-audit --no-fund); then
-    rm -rf "$DEST"
-    die "lockfile-fixed dependency install failed"
+  NODE_VERSION="$("$NODE_BIN" --version 2>/dev/null)" \
+    || { rm -rf "$DEST"; die "could not read node runtime version"; }
+  NPM_VERSION="$("$NPM_BIN" --version 2>/dev/null)" \
+    || { rm -rf "$DEST"; die "could not read npm runtime version"; }
+  if ! reuse_current_node_modules; then
+    rm -rf "$DEST/node_modules"
+    if ! (cd "$DEST" && "$NPM_BIN" ci --ignore-scripts --no-audit --no-fund); then
+      rm -rf "$DEST"
+      die "lockfile-fixed dependency install failed"
+    fi
   fi
   LOCKFILE_SHA256="$(shasum -a 256 "$DEST/package-lock.json" | awk '{print $1}')" \
     || { rm -rf "$DEST"; die "could not digest package-lock.json"; }
@@ -385,10 +442,6 @@ if [ -f "$DEST/package.json" ] || [ -f "$DEST/package-lock.json" ]; then
     || { rm -rf "$DEST"; die "could not digest package.json"; }
   validate_release_node_modules
   dependency_manifest
-  NODE_VERSION="$("$NODE_BIN" --version 2>/dev/null)" \
-    || { rm -rf "$DEST"; die "could not read node runtime version"; }
-  NPM_VERSION="$("$NPM_BIN" --version 2>/dev/null)" \
-    || { rm -rf "$DEST"; die "could not read npm runtime version"; }
 else
   rm -rf "$DEST"
   die "release dependency manifests are missing"

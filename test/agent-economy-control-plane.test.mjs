@@ -938,3 +938,102 @@ test("contract-only: release cutter rejects a malformed lock before current move
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test("release cutter reuses only a fully verified current dependency tree before falling back to npm ci", (t) => {
+  const npm = trustedTool("npm");
+  const node = trustedTool("node");
+  if (!npm || !node || process.platform !== "darwin") {
+    t.skip("Darwin trusted npm/node executable is unavailable");
+    return;
+  }
+
+  const runCase = (kind) => {
+    const root = mkdtempSync(join(tmpdir(), `agent-economy-reuse-${kind}-`));
+    const repo = join(root, "repo");
+    const remote = join(root, "remote.git");
+    const loops = join(root, "loops", "life-manager");
+    const tools = join(root, "trusted-tools");
+    const marker = join(root, "npm-shim-called");
+    mkdirSync(join(repo, "bin"), { recursive: true });
+    mkdirSync(tools, { recursive: true });
+    symlinkSync(node, join(tools, "node"));
+    symlinkSync(npm, join(tools, "npm"));
+    const cutter = readFileSync(join(REPO_ROOT, "bin", "cut-loop-release.sh"), "utf8");
+    const trusted = "TRUSTED_BIN_DIRS=(/opt/homebrew/bin /usr/local/bin /usr/bin /bin /usr/sbin /sbin)";
+    assert.ok(cutter.includes(trusted), "fixture must retain the production trusted-tool contract");
+    writeFileSync(join(repo, "bin", "cut-loop-release.sh"), cutter.replace(trusted, `TRUSTED_BIN_DIRS=(${tools})`));
+    writeFileSync(join(repo, "package.json"), JSON.stringify({
+      name: `reuse-${kind}`, version: "1.0.0", dependencies: { "reuse-dependency": "file:reuse-dependency-1.0.0.tgz" },
+    }));
+    mkdirSync(join(repo, "vendor", "reuse-dependency"), { recursive: true });
+    writeFileSync(join(repo, "vendor", "reuse-dependency", "package.json"), JSON.stringify({ name: "reuse-dependency", version: "1.0.0" }));
+    writeFileSync(join(repo, "vendor", "reuse-dependency", "index.js"), "module.exports = 'original';\n");
+    const packed = spawnSync(npm, ["pack", "./vendor/reuse-dependency", "--pack-destination", repo], { cwd: repo, encoding: "utf8" });
+    assert.equal(packed.status, 0, `${packed.stdout}\n${packed.stderr}`);
+    const locked = spawnSync(npm, ["install", "--package-lock-only", "--ignore-scripts", "--no-audit", "--no-fund", "--offline"], { cwd: repo, encoding: "utf8" });
+    assert.equal(locked.status, 0, `${locked.stdout}\n${locked.stderr}`);
+    const git = (...args) => spawnSync("git", ["-C", repo, ...args], { encoding: "utf8" });
+    try {
+      assert.equal(spawnSync("git", ["init", "-q", repo], { encoding: "utf8" }).status, 0);
+      assert.equal(git("config", "user.email", "fixture@example.invalid").status, 0);
+      assert.equal(git("config", "user.name", "fixture").status, 0);
+      assert.equal(git("add", ".").status, 0);
+      assert.equal(git("commit", "-qm", "fixture").status, 0);
+      assert.equal(spawnSync("git", ["init", "--bare", "-q", remote], { encoding: "utf8" }).status, 0);
+      assert.equal(git("remote", "add", "origin", remote).status, 0);
+      assert.equal(git("push", "-q", "origin", "HEAD:main").status, 0);
+      const env = { ...process.env, HOME: root, LOOPS_ROOT: loops, LOOPS_KEEP_RELEASES: "10", LOOPS_NPM_SHIM_MARKER: marker };
+      const initial = spawnSync("bash", [join(repo, "bin", "cut-loop-release.sh"), "HEAD"], { cwd: repo, encoding: "utf8", env });
+      assert.equal(initial.status, 0, `${initial.stdout}\n${initial.stderr}`);
+      const current = readlinkSync(join(loops, "current"));
+      writeFileSync(join(repo, "release-marker.txt"), "same dependency lock\n");
+      assert.equal(git("add", "release-marker.txt").status, 0);
+      assert.equal(git("commit", "-qm", "new source with same dependency lock").status, 0);
+      assert.equal(git("push", "-q", "origin", "HEAD:main").status, 0);
+      rmSync(join(tools, "npm"));
+      writeFileSync(join(tools, "npm"), `#!/bin/bash
+if [ "$1" = "--version" ]; then exec "${npm}" "$@"; fi
+printf 'called\\n' > "$LOOPS_NPM_SHIM_MARKER"
+exit 97
+`);
+      chmodSync(join(tools, "npm"), 0o755);
+
+      if (kind === "lock-mismatch") {
+        writeFileSync(join(repo, "package-lock.json"), `${readFileSync(join(repo, "package-lock.json"), "utf8").trimEnd()}\n\n`);
+        assert.equal(git("add", "package-lock.json").status, 0);
+        assert.equal(git("commit", "-qm", "lock differs").status, 0);
+        assert.equal(git("push", "-q", "origin", "HEAD:main").status, 0);
+      } else if (kind === "mutated-dependency") {
+        const dependencyDir = join(current, "node_modules", "reuse-dependency");
+        const dependency = join(dependencyDir, "index.js");
+        chmodSync(dependencyDir, 0o755);
+        chmodSync(dependency, 0o644);
+        writeFileSync(dependency, "module.exports = 'tampered';\n");
+        chmodSync(dependency, 0o444);
+        chmodSync(dependencyDir, 0o555);
+      } else if (kind === "invalid-manifest") {
+        const manifest = join(current, "DEPENDENCY-MANIFEST.tsv");
+        chmodSync(current, 0o755);
+        chmodSync(manifest, 0o644);
+        writeFileSync(manifest, "invalid\n");
+        chmodSync(manifest, 0o444);
+        chmodSync(current, 0o555);
+      }
+
+      const cut = spawnSync("bash", [join(repo, "bin", "cut-loop-release.sh"), "HEAD"], { cwd: repo, encoding: "utf8", env });
+      if (kind === "identical") {
+        assert.equal(cut.status, 0, `${cut.stdout}\n${cut.stderr}`);
+        assert.equal(existsSync(marker), false, "verified clone must avoid the failing npm shim");
+      } else {
+        assert.notEqual(cut.status, 0, `${cut.stdout}\n${cut.stderr}`);
+        assert.equal(existsSync(marker), true, `${kind} must fall back to npm ci`);
+        assert.equal(readlinkSync(join(loops, "current")), current, `${kind} must not move current`);
+      }
+    } finally {
+      spawnSync("chmod", ["-R", "u+w", root], { encoding: "utf8" });
+      rmSync(root, { recursive: true, force: true });
+    }
+  };
+
+  for (const kind of ["identical", "lock-mismatch", "mutated-dependency", "invalid-manifest"]) runCase(kind);
+});
