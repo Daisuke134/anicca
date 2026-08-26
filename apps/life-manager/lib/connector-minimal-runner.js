@@ -251,7 +251,7 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
       const provider = settings.providers[providerIndex];
       if (!["luma", "connpass"].includes(provider)
         && elapsed() > settings.maxWakeMs - FALLBACK_COMPLETION_RESERVE_MS) {
-        return finish("circuit_open", "wake_deadline");
+        return finish("completed_no_effect", "fallback_deferred_for_wake_budget");
       }
       let candidates;
       try {

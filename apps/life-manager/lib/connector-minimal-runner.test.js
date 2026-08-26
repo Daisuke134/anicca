@@ -956,7 +956,8 @@ test("runner does not start a fallback provider without its measured completion 
   const result = await runMinimalConnectorWake({
     ownerToken: "owner-token-fallback-reserve", providers: ["luma", "connpass", "peatix"], maxWakeMs: 600_000,
   }, state.dependencies);
-  assert.equal(result.safe_reason, "wake_deadline");
+  assert.equal(result.status, "completed_no_effect");
+  assert.equal(result.safe_reason, "fallback_deferred_for_wake_budget");
   assert.deepEqual(state.calls.filter(([name]) => name === "discover").map(([, provider]) => provider), ["luma", "connpass"]);
 });
 
