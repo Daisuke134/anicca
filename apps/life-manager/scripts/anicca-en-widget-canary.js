@@ -722,7 +722,7 @@ async function runAniccaWidgetCanary(argv = [], deps = {}, lane = EN_LANE) {
     comparator: deps.videoComparator,
   }, lane))) return { slot: config.slot, publication: publicationResult, telegram: { created: false, held: true, message_id: null } };
 
-  const telegramJob = buildMarketingLivenessJob({ tenantId: config.tenantId, telegramTokenRef: lane.telegramTokenRef, telegramChatRef: lane.chatRef, payload: { lane: lane.lane, product: lane.product, locale: lane.locale, platform: lane.platform, account: lane.account, slot: config.slot, status: "published", public_url: publication.public_url, retry_state: "not_required" } });
+  const telegramJob = buildMarketingLivenessJob({ tenantId: config.tenantId, telegramTokenRef: lane.telegramTokenRef, telegramChatRef: lane.chatRef, payload: { lane: lane.lane, product: lane.product, locale: lane.locale, platform: lane.platform, account: lane.nativeAccount || lane.account, slot: config.slot, status: "published", public_url: publication.public_url, retry_state: "not_required" } });
   const telegramQueued = await store.enqueueJob({ ...telegramJob, availableAt: trustedNow });
   const telegramRun = await executeJob(store, telegramJob, (job) => executeMarketingLivenessJob(job, { secretProvider, chatProvider, sendTelegram: deps.sendTelegram, now: clock }), deps.executeCapabilityJob || executeCapabilityJob, lane);
   return { slot: config.slot, publication: publicationResult, telegram: { created: telegramQueued.created && telegramRun.created, held: false, message_id: telegramRun.receipt.message_id } };

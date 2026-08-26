@@ -171,12 +171,21 @@ function fixture(lane = EN_LANE, laneCaption = CAPTION) {
   let fixtureCaptionRef = captionRef;
   let fixtureApprovalRef = approvalRef;
   if (lane === JA_CARD_LANE) {
+    const pinnedDirectory = path.join(dataDir, "pinned");
+    fs.mkdirSync(pinnedDirectory, { recursive: true, mode: 0o700 });
     const exactPaths = new Map([
-      [lane.packRef, objectStore.resolve(packRef)],
-      [lane.videoRef, objectStore.resolve(videoRef)],
-      [lane.captionRef, objectStore.resolve(captionRef)],
-      [lane.approvalRef, objectStore.resolve(approvalRef)],
+      [lane.packRef, path.join(pinnedDirectory, lane.packRef.slice(-64))],
+      [lane.videoRef, path.join(pinnedDirectory, lane.videoRef.slice(-64))],
+      [lane.captionRef, path.join(pinnedDirectory, lane.captionRef.slice(-64))],
+      [lane.approvalRef, path.join(pinnedDirectory, lane.approvalRef.slice(-64))],
     ]);
+    for (const [ref, file] of exactPaths) {
+      const source = ref === lane.packRef ? "pack.json"
+        : ref === lane.videoRef ? "widget.mp4"
+          : ref === lane.captionRef ? "caption.txt" : "approval.json";
+      fs.copyFileSync(path.join(dataDir, source), file);
+      fs.chmodSync(file, 0o600);
+    }
     fixtureObjectStore = { resolve: (ref) => exactPaths.has(ref) ? exactPaths.get(ref) : objectStore.resolve(ref) };
     fixturePackRef = lane.packRef;
     fixtureVideoRef = lane.videoRef;
@@ -261,8 +270,8 @@ function providerCalls(calls, result = {}, lane = EN_LANE) {
     calls.push(input);
     return {
       creative_id: lane.creativeId,
-      video_sha256: lane.videoRef ? lane.videoRef.slice(-64) : input.videoPath.split("/").at(-1),
-      caption_sha256: lane.captionRef ? lane.captionRef.slice(-64) : input.captionPath.split("/").at(-1),
+      video_sha256: input.videoPath.split("/").at(-1),
+      caption_sha256: input.captionPath.split("/").at(-1),
       platform: "instagram",
       public_url: DIRECT_REEL,
       provider_post_id: "postiz-widget-canary-1",
@@ -811,10 +820,10 @@ test("JA Card first publication uses dedicated refs, raw integration, empty prof
 
 test("JA Card rejects a mutually consistent alternate dedicated pack and approval before secret/provider", async () => {
   const value = fixture(JA_CARD_LANE, JA_CARD_CAPTION);
-  value.env[JA_CARD_LANE.packEnv] = value.alternateRefs.packRef;
-  value.env[JA_CARD_LANE.videoEnv] = value.alternateRefs.videoRef;
-  value.env[JA_CARD_LANE.captionEnv] = value.alternateRefs.captionRef;
-  value.env[JA_CARD_LANE.approvalEnv] = value.alternateRefs.approvalRef;
+  const alternatePackRef = replaceJson(value, "packRef", { alternate_fixture: true });
+  const alternateApprovalRef = replaceJson(value, "approvalRef", { pack_ref: alternatePackRef, alternate_fixture: true });
+  value.env[JA_CARD_LANE.packEnv] = alternatePackRef;
+  value.env[JA_CARD_LANE.approvalEnv] = alternateApprovalRef;
   const publicationCalls = [];
   const secretCalls = [];
   const integrationCalls = [];
@@ -823,7 +832,7 @@ test("JA Card rejects a mutually consistent alternate dedicated pack and approva
       secretProvider: { get: async (...args) => { secretCalls.push(args); return "secret"; } },
       integrationProvider: { get: async (...args) => { integrationCalls.push(args); return JA_CARD_LANE.integrationId; } },
     })),
-    /pack|approval|ref/i,
+    /reference mismatch/i,
   );
   assert.equal(publicationCalls.length, 0);
   assert.equal(secretCalls.length, 0);
@@ -874,6 +883,12 @@ test("JA Card wrong native owner holds, exact native owner sends one Telegram, a
       ? { status: 200, text: async () => `<a class="CaptionUsername" href="https://www.instagram.com/${JA_CARD_LANE.account.slice(1)}/">${JA_CARD_LANE.account}</a><div data-testid="caption">${value.caption}</div><script>{"GraphVideo":{"video_url":"${NATIVE_URL}"}}</script>` }
       : { status: 200, arrayBuffer: async () => NATIVE_BYTES.buffer.slice(NATIVE_BYTES.byteOffset, NATIVE_BYTES.byteOffset + NATIVE_BYTES.byteLength) }),
   });
+  const comparatorFalse = await runAniccaJaCardInstagramCanary(["run", "--slot", SLOT], {
+    ...options,
+    now: () => VERIFIED_NOW,
+    videoComparator: async () => false,
+  });
+  assert.equal(telegramCalls.length, 0);
   const second = await runAniccaJaCardInstagramCanary(["run", "--slot", SLOT], {
     ...options,
     now: () => VERIFIED_NOW,
@@ -884,12 +899,15 @@ test("JA Card wrong native owner holds, exact native owner sends one Telegram, a
   });
   assert.equal(first.telegram.held, true);
   assert.equal(wrongOwner.telegram.held, true);
+  assert.equal(comparatorFalse.telegram.held, true);
   assert.deepEqual(second.telegram, { created: true, held: false, message_id: 42 });
   assert.deepEqual(third.telegram, { created: false, held: false, message_id: 42 });
   assert.equal(second.publication.created, false);
   assert.equal(third.publication.created, false);
   assert.equal(publicationCalls.length, 1);
   assert.equal(telegramCalls.length, 1);
+  assert.match(telegramCalls[0][2], /@anicca\.ios\.jp/);
+  assert.doesNotMatch(telegramCalls[0][2], /@anicca\.jp1/);
 });
 
 test("default native verification uses DNS fallback for embed and media only", async () => {
