@@ -140,6 +140,39 @@ test("one wake reuses one owned session, target, and page across candidates and 
   );
 });
 
+test("connpass candidates produce one action-boundary receipt before any provider action", async () => {
+  let state = fixture({
+    async discoverCandidates(provider) {
+      state.calls.push(["discover", provider]);
+      return provider === "connpass" ? [candidate("connpass", "boundary")] : [];
+    },
+    async reportConnpassActionBoundary({ candidates }) {
+      state.calls.push(["connpass-boundary", candidates.map((row) => row.event_ref)]);
+      return { telegram_provider_id: "7711" };
+    },
+  });
+  await runMinimalConnectorWake({ ownerToken: "owner-token-connpass-boundary", providers: ["connpass"] }, state.dependencies);
+  const boundary = state.calls.findIndex(([name]) => name === "connpass-boundary");
+  const direct = state.calls.findIndex(([name]) => name === "direct");
+  assert.ok(boundary >= 0 && direct > boundary);
+  assert.equal(state.calls.filter(([name]) => name === "connpass-boundary").length, 1);
+});
+
+test("failed connpass action-boundary delivery skips every connpass submit path", async () => {
+  let state = fixture({
+    async discoverCandidates(provider) {
+      state.calls.push(["discover", provider]);
+      return provider === "connpass" ? [candidate("connpass", "boundary-fail")] : [];
+    },
+    async reportConnpassActionBoundary() { throw new Error("delivery unavailable"); },
+  });
+  const result = await runMinimalConnectorWake({ ownerToken: "owner-token-connpass-boundary-fail", providers: ["connpass"] }, state.dependencies);
+  assert.equal(result.safe_reason, "connpass_action_boundary_failed");
+  for (const name of ["cache", "direct", "agent", "readback"]) {
+    assert.equal(state.calls.some(([call]) => call === name), false, name);
+  }
+});
+
 test("a failed provider reset records failure, skips discovery, and closes the owned page", async () => {
   let state = fixture({
     async discoverCandidates(provider) {

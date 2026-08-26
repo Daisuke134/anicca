@@ -17,6 +17,7 @@ const { readConnectorTalkFacts } = require("./connector-talk-facts.js");
 const { createTalkBrowserProvider } = require("./connector-talk-browser-provider.js");
 const { createTalkApplicationWorkflow } = require("./connector-talk-application-workflow.js");
 const { createTalkEvidenceChain } = require("./connector-talk-evidence.js");
+const { createConnpassActionTelegram } = require("./connector-connpass-action-telegram.js");
 const { createMinimalEvidenceChain } = require("./connector-minimal-evidence.js");
 const { createMinimalProductionOperations } = require("./connector-minimal-operations.js");
 const { createLumaScriptFirstWorkflow } = require("./connector-luma-workflow.js");
@@ -362,6 +363,9 @@ function createMinimalProductionDependencies(options = {}) {
   const talkBrowserProvider = options.talkBrowserProvider || createTalkBrowserProvider();
   const talkApplicationWorkflow = options.talkApplicationWorkflow || createTalkApplicationWorkflow(talkBrowserProvider);
   const talkEvidenceChain = options.talkEvidenceChain || createTalkEvidenceChain({ stateDir, now });
+  const connpassActionTelegram = options.connpassActionTelegram || createConnpassActionTelegram({
+    stateDir, wakeId, telegramTarget, now, send: options.sendMessage,
+  });
 
   const calendar = options.calendar || makeGogCalendar({
     bin: options.gogBin,
@@ -519,6 +523,7 @@ function createMinimalProductionDependencies(options = {}) {
     completeEvidence: evidenceChain.completeEvidence,
     runTalkApplication: talkApplicationWorkflow.run,
     completeTalkEvidence: talkEvidenceChain.completeTalkEvidence,
+    reportConnpassActionBoundary: connpassActionTelegram.report,
     reportWake: operations.reportWake,
     recordAction: operations.recordAction,
   });

@@ -34,6 +34,7 @@ function dependencies(input) {
   if ((input.runTalkApplication == null) !== (input.completeTalkEvidence == null)
     || (input.runTalkApplication != null && typeof input.runTalkApplication !== "function")
     || (input.completeTalkEvidence != null && typeof input.completeTalkEvidence !== "function")) invalid();
+  if (input.reportConnpassActionBoundary != null && typeof input.reportConnpassActionBoundary !== "function") invalid();
   if (
     !input.browserRail || typeof input.browserRail !== "object"
     || typeof input.browserRail.open !== "function"
@@ -166,6 +167,7 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
   let owned = null;
   let consecutiveFailures = 0;
   let providerDiscoveryFailed = false;
+  let connpassBoundaryFailed = false;
   let discoveryFailureReason = "provider_discovery_failed";
   let lastSafeReason = "provider_discovery_failed";
   let reusedBundleObserved = false;
@@ -250,6 +252,15 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
           const error = new Error("Provider candidate contract failed");
           error.code = "PROVIDER_CANDIDATE_CONTRACT_FAILED";
           throw error;
+        }
+        if (provider === "connpass" && candidates.length > 0 && typeof deps.reportConnpassActionBoundary === "function") {
+          try {
+            await action("submit", "connpass_action_boundary", () => deps.reportConnpassActionBoundary({ candidates }));
+          } catch {
+            connpassBoundaryFailed = true;
+            lastSafeReason = "connpass_action_boundary_failed";
+            continue;
+          }
         }
         if (deadlineReached()) return finish("circuit_open", "wake_deadline");
       } catch (error) {
@@ -477,7 +488,8 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
       }
     }
     return finish("completed_no_effect", providerDiscoveryFailed
-      ? discoveryFailureReason : reusedBundleObserved ? "existing_bundles_reused" : "providers_exhausted");
+      ? discoveryFailureReason : connpassBoundaryFailed ? "connpass_action_boundary_failed"
+        : reusedBundleObserved ? "existing_bundles_reused" : "providers_exhausted");
   } catch (error) {
     if (deadlineReached()) return finish("circuit_open", "wake_deadline");
     throw error;

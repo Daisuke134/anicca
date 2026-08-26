@@ -117,8 +117,8 @@ Calendarを無関係なeventで埋めること自体を成果にしない。
 - [x] **CG-24** `connpass-api-client.test.js`で`X-API-Key`、`prefecture=tokyo`、28日分`ymd`、pagination、429、1req/sec以下を検証する。既存5秒間隔は安全側として保持してよい。
 - [x] **CG-25** `connector-connpass-workflow.js`のdiscoveryを既存`connpass-api-client.js`へ切り替え、active pathからcalendar page scrapingを外す。
 - [x] **CG-26** source scan regressionでactive connpass discoveryが`/api/v2/events/`以外へautomated list/detail accessしないことを検証する。
-- [ ] **CG-27** connpass candidateでは参加枠、LT枠、補欠、締切、canonical URLをTelegram action receiptへ正規化し、provider permission未確認時のSubmitを0にする。
-- [ ] **CG-28** providerへ自動参加操作の許可範囲を問い合わせ、official response receiptを保存する。許可されたmethodだけを後続実装し、許可がなければTelegram action boundaryをfinal behaviorとする。
+- [x] **CG-27** connpass candidateでは参加枠、LT枠、補欠、締切、canonical URLをTelegram action receiptへ正規化し、provider permission未確認時のSubmitを0にする。
+- [ ] **CG-28** providerへ自動参加操作の許可範囲を問い合わせ、official response receiptを保存する。許可されたmethodだけを後続実装し、許可がなければTelegram action boundaryをfinal behaviorとする。問い合わせ送信receiptは `docs/evidence/outbound/2026-08-27-connpass-automation-permission-inquiry.json`、official responseはpending。
 - [x] **CG-29** API keyを使うread-only live canaryでTokyo 28日inventoryを取得し、API audit、secret非露出、Luma continuationをreadbackしてcommit/pushする。
 
 ##### E. Lightning Talk application
