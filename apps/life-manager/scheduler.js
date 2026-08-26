@@ -54,6 +54,22 @@ function signCtx(parts) {
 }
 
 const TICK_MS = 60 * 1000;
+// Reminder routing/Telegram work is independent of the call and of the other organs. Keep a
+// bounded default for a provider that never settles; tests and operators may inject a smaller
+// value without changing the global organ budget.
+const REMINDER_TIMEOUT_MS = Number(process.env.LIFE_REMINDER_TIMEOUT_MS) || 15000;
+
+function withTimeout(work, timeoutMs, label) {
+  const duration = Number(timeoutMs);
+  const operation = Promise.resolve().then(work);
+  if (!Number.isFinite(duration) || duration <= 0) return operation;
+  let timer;
+  const deadline = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`${label} timeout ${duration}ms`)), duration);
+  });
+  return Promise.race([operation, deadline]).finally(() => clearTimeout(timer));
+}
+
 // Escalating wake calls: ring at T-10 (firm) and T-5 (harsh) before EACH event — TWO calls only
 // (Dais 2026-06-25: "just call me 10 min before and 5 min before, that's it"), so the user actually
 // gets up / leaves. Each (event, level) fires once (deduped).
@@ -458,7 +474,7 @@ async function wakeCallOnce(u, nowMs, deps = {}) {
               reason: WAKE_MISS_REASONS.NO_CALL_BEFORE_DEPARTURE,
               eventSummary: ev.summary,
             }, deps, now);
-            console.error(`[scheduler] wake never rang uid=${u.uid.slice(0, 12)} "${ev.summary}" departure passed`);
+            console.error(`[scheduler] wake never rang uid=${u.uid.slice(0, 12)} departure passed`);
           }
         } catch (e) {
           console.error(`[wake-miss] uid=${String(u.uid).slice(0, 12)} err ${e && e.message}`);
@@ -482,7 +498,7 @@ async function wakeCallOnce(u, nowMs, deps = {}) {
           res = { ok: false, error: String((e && e.message) || e) };
         }
         if (res.ok) {
-          console.log(`[scheduler] WAKE T-${lvl.min} uid=${u.uid.slice(0, 12)} "${ev.summary}" ccid=${res.ccid}`);
+          console.log(`[scheduler] WAKE T-${lvl.min} uid=${u.uid.slice(0, 12)} ccid=${res.ccid}`);
         } else {
           console.error(`[scheduler] dial failed T-${lvl.min} uid=${u.uid.slice(0, 12)}: ${res.error}`);
           // 1b: record BEFORE releasing, because releasing is what erases the evidence. Wrapped so a
@@ -550,9 +566,12 @@ async function organsUserOnce(u, nowMs, deps = {}) {
     // events (the online/in-progress slice is intentionally absent from futureEvents) and reads the
     // current live-location row with the same Supabase tenant credentials. runOrgan keeps route,
     // claim, and Telegram failures local to this organ; call_enabled never gates this path.
-    const reminder = await runOrgan({
+    const reminderTimeoutMs = deps.reminderTimeoutMs !== undefined
+      ? deps.reminderTimeoutMs
+      : (deps.travelReminderTimeoutMs !== undefined ? deps.travelReminderTimeoutMs : REMINDER_TIMEOUT_MS);
+    await runOrgan({
       label: "organ:travel-reminder", uid: u.uid, log,
-      run: async () => {
+      run: () => withTimeout(async () => {
         const configuredSupa = SUPA();
         const supaUrl = deps.supaUrl !== undefined ? deps.supaUrl : configuredSupa.url;
         const supaKey = deps.supaKey !== undefined ? deps.supaKey : configuredSupa.key;
@@ -576,12 +595,8 @@ async function organsUserOnce(u, nowMs, deps = {}) {
           sendMessage: deps.sendMessage || sendMessage,
           log,
         });
-      },
+      }, reminderTimeoutMs, "travel reminder"),
     });
-    if (reminder && reminder.status === "sent") {
-      log(`[travel-reminder] uid=${String(u.uid).slice(0, 12)} status=sent`
-        + `${reminder.telegramMessageId !== undefined ? ` tg_message_id=${reminder.telegramMessageId}` : ""}`);
-    }
     const late = await runOrgan({
       label: "organ:late", uid: u.uid, log,
       run: () => (deps.lateNotice || lateNoticeUserOnce)(u, now, { events: futureEvents }),
@@ -740,8 +755,11 @@ async function organsUserOnce(u, nowMs, deps = {}) {
 // (inngest/functions.js makeWakeUserHandler) and the 1a/1b test suites call this name, and a
 // per-user Inngest run has no sibling users to protect, so running both halves there is correct.
 async function wakeUserOnce(u, nowMs, deps = {}) {
+  const wakeTimeoutMs = deps.wakeTimeoutMs !== undefined
+    ? deps.wakeTimeoutMs
+    : (deps.callTimeoutMs !== undefined ? deps.callTimeoutMs : WAKE_USER_TIMEOUT_MS);
   try {
-    await (deps.wakeCall || wakeCallOnce)(u, nowMs, deps);
+    await withTimeout(() => (deps.wakeCall || wakeCallOnce)(u, nowMs, deps), wakeTimeoutMs, "wake call");
   } catch (e) {
     // The call is deadline-critical and remains first, but a failure in its calendar/claim path
     // must not strand the Telegram and daily organs for this user. Do not print event text here.

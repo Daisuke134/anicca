@@ -310,11 +310,23 @@ test("notifications-disabled users get no reminder send or event-bearing reminde
   h.deps.log = (line) => logs.push(String(line));
   h.deps.travelReminder = async () => { reminders += 1; return { status: "sent" }; };
   h.deps.sendMessage = async () => { sends += 1; return { ok: true, result: { message_id: 702 } }; };
-  await wakeUserOnce(reminderUser({ call_enabled: false, notifications_enabled: false }), DEPARTURE_MS - 5 * MINUTE, h.deps);
+  const consoleLines = [];
+  const originalLog = console.log;
+  const originalError = console.error;
+  console.log = (...args) => consoleLines.push(args.join(" "));
+  console.error = (...args) => consoleLines.push(args.join(" "));
+  try {
+    await wakeUserOnce(reminderUser({ call_enabled: true, notifications_enabled: false }), DEPARTURE_MS - 5 * MINUTE, h.deps);
+  } finally {
+    console.log = originalLog;
+    console.error = originalError;
+  }
   assert.equal(reminders, 0, "the reminder gate is notifications_enabled");
   assert.equal(sends, 0, "notifications-off performs no Telegram send");
   assert.ok(logs.every((line) => !line.includes(EVENT.summary) && !line.includes(EVENT.location)),
     `event text must not leak into disabled-organ logs: ${JSON.stringify(logs)}`);
+  assert.ok(consoleLines.every((line) => !line.includes(EVENT.summary) && !line.includes(EVENT.location)),
+    `event text must not leak into scheduler console logs: ${JSON.stringify(consoleLines)}`);
 });
 
 test("the reminder receives the raw lookback event, including an online event already started", async () => {
@@ -345,6 +357,7 @@ test("the reminder receives the raw lookback event, including an online event al
 test("a reminder hang in one tenant does not stop the next tenant", async () => {
   clearEvents();
   const h = deps();
+  h.deps.reminderTimeoutMs = 30;
   let nextRan = 0;
   const users = [reminderUser({ uid: "iso-stuck" }), reminderUser({ uid: "iso-next" })];
   await forEachUserSafe(users, "organs", (u) => organsUserOnce(u, Date.now(), {
@@ -356,4 +369,67 @@ test("a reminder hang in one tenant does not stop the next tenant", async () => 
     },
   }), 30);
   assert.equal(nextRan, 1, "the next tenant is still served after the first reminder hangs");
+});
+
+test("a never-resolving call is bounded and the reminder still runs", async () => {
+  clearEvents();
+  const h = deps();
+  let callStarted = false;
+  let reminderRan = 0;
+  h.deps.wakeTimeoutMs = 30;
+  h.deps.wakeCall = async () => { callStarted = true; return new Promise(() => {}); };
+  h.deps.travelReminder = async () => { reminderRan += 1; return { status: "suppressed" }; };
+  const sentinel = Symbol("wake-timeout");
+  const result = await Promise.race([
+    wakeUserOnce(reminderUser(), DEPARTURE_MS - 5 * MINUTE, h.deps),
+    new Promise((resolve) => setTimeout(() => resolve(sentinel), 100)),
+  ]);
+  assert.notStrictEqual(result, sentinel, "wakeUserOnce must not await a hung call forever");
+  assert.equal(callStarted, true, "the call path remains first");
+  assert.equal(reminderRan, 1, "the reminder runs after the bounded call attempt");
+});
+
+test("a never-resolving reminder is bounded and the late organ still runs", async () => {
+  clearEvents();
+  const h = deps();
+  let lateRan = 0;
+  h.deps.reminderTimeoutMs = 30;
+  h.deps.travelReminder = async () => new Promise(() => {});
+  h.deps.lateNotice = async () => { lateRan += 1; return null; };
+  const sentinel = Symbol("reminder-timeout");
+  const result = await Promise.race([
+    organsUserOnce(reminderUser(), DEPARTURE_MS - 5 * MINUTE, h.deps),
+    new Promise((resolve) => setTimeout(() => resolve(sentinel), 100)),
+  ]);
+  assert.notStrictEqual(result, sentinel, "a hung reminder must not hold this user's organ tick");
+  assert.equal(lateRan, 1, "the late organ runs after reminder timeout");
+});
+
+test("the scheduler leaves one canonical travel-reminder receipt with hash/provider/message id", async () => {
+  clearEvents();
+  const h = deps();
+  const now = EVENT_START_MS - 5 * MINUTE;
+  const online = {
+    ...EVENT,
+    id: "iso-receipt",
+    location: "https://meet.example/room",
+    online: true,
+    startMs: now + 5 * MINUTE,
+    startIso: new Date(now + 5 * MINUTE).toISOString(),
+  };
+  const lines = [];
+  h.deps.getEvents = () => [online];
+  h.deps.liveLocation = null;
+  h.deps.telegramToken = "token";
+  h.deps.supaUrl = "supa";
+  h.deps.supaKey = "key";
+  h.deps.claimTravel = async () => true;
+  h.deps.sendMessage = async () => ({ ok: true, result: { message_id: 703 } });
+  h.deps.log = (line) => lines.push(String(line));
+  await organsUserOnce(reminderUser(), now, h.deps);
+  const receipts = lines.filter((line) => line.startsWith("[travel-reminder] "));
+  assert.equal(receipts.length, 1, `one canonical receipt expected, got ${JSON.stringify(receipts)}`);
+  assert.match(receipts[0], /event_key_hash=[0-9a-f]{64}/);
+  assert.match(receipts[0], /provider=none/);
+  assert.match(receipts[0], /tg_message_id=703/);
 });
