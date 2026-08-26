@@ -241,6 +241,9 @@ test("production contract runs every minute and maximizes real applications", ()
   assert.match(runtimeScript, /status == "submitted_verified"/);
   assert.match(runtimeScript, /FUNDRAISER_APPLICATIONS_DIR/);
   assert.match(runtimeScript, /record-application\.py/);
+  assert.match(runtimeScript, /MIN_FREE_KIB=\$\(\(1536 \* 1024\)\)/);
+  assert.match(runtimeScript, /disk-cleanup/);
+  assert.match(runtimeScript, /exit 75/);
   assert.match(dailyPrompt, /every visible question paired with the final rendered answer/);
   assert.match(dailyPrompt, /Never append `submitted_verified` yourself/);
   assert.match(dailyPrompt, /never release an application lease until every fill/);
