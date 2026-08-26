@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "context_version": "2026-08-26.1",
-  "updated_at": "2026-08-26T16:00:00+09:00",
+  "context_version": "2026-08-26.2",
+  "updated_at": "2026-08-26T16:53:00+09:00",
   "product": {
     "name": "Life Manager",
     "usage": "Use as the product name in every public product and fundraising field.",
@@ -41,6 +41,61 @@
       "source": "founder_attested",
       "attested_at": "2026-08-26T16:00:00+09:00"
     }
+  },
+  "fundraising": {
+    "geographies": [
+      "Tokyo, Japan",
+      "United States, with San Francisco Bay Area first"
+    ],
+    "format_priority": "Prefer in-person programs where the founder works alongside other founders. Do not apply outside Tokyo or the United States.",
+    "explicit_format_exceptions": [
+      "Base Batches may be virtual because the founder explicitly prioritized it."
+    ],
+    "priority_queue": [
+      {
+        "program": "Base Batches 004",
+        "official_url": "https://www.base.org/batches",
+        "action": "apply_now",
+        "reason": "Applications close September 9, 2026; Life Manager includes agents, crypto, investing, and financial automation relevant to Base."
+      },
+      {
+        "program": "Open Network Lab Seed Accelerator 32nd Batch",
+        "official_url": "https://onlab.jp/en/programs/onlab/",
+        "action": "apply_now",
+        "reason": "Digital Garage program; applications close September 28, 2026 and in-person meetings in Shibuya are preferred."
+      },
+      {
+        "program": "DelightX Cohort 3",
+        "official_url": "https://delightx.delight-ventures.com/en/",
+        "action": "apply_after_live_terms_check",
+        "reason": "Delight Ventures, affiliated with DeNA; Tokyo selection followed by an in-person San Francisco Bay Area program. Reconcile the official cohort/date inconsistency and surface visa, housing, equity, and cost commitments before the final effect."
+      },
+      {
+        "program": "a16z Speedrun",
+        "official_url": "https://a16z.com/speedrun/",
+        "action": "monitor_next_open_intake",
+        "reason": "Strong in-person founder preference and San Francisco location; SR007 is already running July 27 to October 11, 2026, and the current program is games-focused."
+      },
+      {
+        "program": "Y Combinator",
+        "official_url": "https://www.ycombinator.com/apply",
+        "action": "hold_do_not_submit",
+        "reason": "The founder explicitly wants to wait before submitting this high-priority application."
+      }
+    ]
+  },
+  "application_answers": {
+    "one_word": "Agency",
+    "short_description": "Proactive general agent for your whole life",
+    "problem": "A person's health, mental wellbeing, money, schedules, applications, work, crypto, and investing are fragmented across tools. Advice is abundant, but dependable follow-through is scarce.",
+    "solution": "Life Manager coordinates specialist organs, acts within delegated boundaries across those systems, verifies outcomes with receipts, and reports concise evidence in Telegram.",
+    "why_building": "The founder is building the manager he needs personally: one dependable agent that does not stop at advice and can carry real goals through disconnected systems. The long-term mission is to end suffering for humans and ultimately all living beings.",
+    "progress": "The open-source local runtime, hosted components, Telegram entry point, and multiple specialist loops exist. The founder attests that Life Manager has generated approximately $1,000 in revenue for its founder; this is not claimed as MRR or ARR.",
+    "market": "The initial users are founders and professionals whose lives and work span many disconnected systems. The broader market is anyone who needs trusted execution across health, work, and finances; do not invent a numeric TAM without current sourced evidence.",
+    "business_model": "A free open-source self-hosted option drives trust and adoption. An always-on hosted Life Manager is sold as a paid monthly cloud subscription.",
+    "differentiation": "Life Manager is a manager rather than a chat assistant or dashboard: it takes authorized action, coordinates specialized agents, preserves provenance, and distinguishes attempts from provider-verified completion.",
+    "how_built": "One general-agent harness uses models for semantic judgment and unfamiliar interfaces, while deterministic code owns permissions, money arithmetic, state transitions, deduplication, receipts, and scheduling.",
+    "use_of_funds": "Improve reliable agent execution, expand secure integrations, strengthen evidence-backed verification, and deliver the always-on cloud product to early users."
   },
   "links": {
     "product": {
@@ -117,6 +172,7 @@
     "company.legal_name",
     "delivery",
     "traction",
+    "application_answers",
     "links.product",
     "links.repository",
     "links.telegram",

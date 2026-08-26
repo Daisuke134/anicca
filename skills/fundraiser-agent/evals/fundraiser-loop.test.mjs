@@ -4,6 +4,7 @@ import { test } from "node:test";
 
 const dailyPrompt = await readFile(new URL("../prompts/daily.md", import.meta.url), "utf8");
 const skill = await readFile(new URL("../SKILL.md", import.meta.url), "utf8");
+const productionContext = JSON.parse(await readFile(new URL("../../../.agents/startup-context.json", import.meta.url), "utf8"));
 const startupContext = Object.freeze({
   product: Object.freeze({
     name: "Life Manager",
@@ -195,6 +196,23 @@ test("production contract runs every 30 minutes and maximizes real applications"
   assert.match(contract, /reasonable inference/i);
   assert.doesNotMatch(contract, /at most one/i);
   assert.doesNotMatch(contract, /per user-local day/i);
+});
+
+test("production queue enforces founder geography, format, priority, and YC hold", () => {
+  const fundraising = productionContext.fundraising;
+  assert.deepEqual(fundraising.geographies, [
+    "Tokyo, Japan",
+    "United States, with San Francisco Bay Area first",
+  ]);
+  assert.match(fundraising.format_priority, /in-person/i);
+  assert.match(fundraising.explicit_format_exceptions.join("\n"), /Base Batches/i);
+  assert.deepEqual(fundraising.priority_queue.slice(0, 2).map((item) => item.program), [
+    "Base Batches 004",
+    "Open Network Lab Seed Accelerator 32nd Batch",
+  ]);
+  assert.equal(fundraising.priority_queue.find((item) => item.program === "Y Combinator")?.action, "hold_do_not_submit");
+  assert.match(dailyPrompt, /Reject Kenya and every other geography/);
+  assert.match(dailyPrompt, /Never submit a `hold_do_not_submit` program/);
 });
 
 test("unseen rendered fields are filled from startup context and read back after one submit", async () => {
