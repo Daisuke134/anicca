@@ -107,6 +107,11 @@ spec編集でFundraiser専用worktreeをmainへ切替えたため生じたexit 1
 11,719,016,448 bytes不足し、`disk-pressure.block`はpresentである。Fundraiserはrun 265 / exit 75でfail closedし、外部送信は0である。
 safe artifact cleanupとisolated-context leak修復を実施してもthresholdへ届かないため、次の不可分actionは明示承認されたMac再起動→swap/disk
 readback→required launchd owner readback→Fundraiser natural wakeである。再起動前にCTX-08B以降のbrowser effectへ進まない。
+追加の自然回収確認でもlease ledger 0行 / isolated context 0件を維持した一方、swapは21,504MiB中20,191.62MiB使用へ再増加した。
+既存`ai.anicca.life-manager-disk-cleanup`だけをrun 124へkickstartし、exit 0、evaluated 0、reclaimed 0、protected deletions 0を
+readbackした。2026-08-27T04:36:53+09:00のdisk freeは8,613,470,208 bytes、clear thresholdまで12,861,366,272 bytes不足し、
+Fundraiserはrun 273 / exit 75である。したがってcredential、session、ledger、customer media、Cloak profile、稼働ownerを保持したまま
+追加で実行できるcleanup actionはなく、再起動承認境界は未解消である。
 最新contextを読む単一owner、preview digest、
 official completion PNG、Telegram photo message ID、application dossier hashが一つのreceipt chainへ揃うまで`IN_PROGRESS`とする。
 非機密の実測snapshotは`docs/evidence/fundraising/2026-08-27-ctx08-readiness.json`に置く。
@@ -196,7 +201,7 @@ error recovery、effect/readbackを実codeで再監査し、noticeを保持す�
 | 11 | CTX-05 root-site relationship | DONE | `anicca-products` PR #396をmain merge `7fe3f5f447…`へ反映。root hero/metadata/JSON-LDを`Anicca=mission/company`、`Life Manager=proactive general-agent product`、`Body/Mind/Money=3 organs`へ統一し、旧self-funding/AGI/UBI product sectionsをroot render pathから除外。contract 2/2、preview run `32989091020`、prod run `32989696892`、Netlify deploy `6a8f17a860…`、built-in money-path smoke/rollback gate PASS。live英日HTTP 200・title/CTA/3 organs・overflow 0 |
 | 12 | CTX-06 generated-context drift gate | DONE | README英日、committed fundraising kit、active formのdigest契約はoffline 28/28 GREEN。公開Web PR #397はmain `b1ee7a1208…`へmergeし、preview `32990937574`、production `32991554504`、money-path smokeがSUCCESS。live product/repo/Telegram auditは3/3 GREEN。Security Scan run `32992553073`の`Startup context drift` job `98253497091`もSUCCESS |
 | 13 | CTX-07 public live readback | DONE | isolated browserとHTTP/APIで`/lm`、英日root、public repo、英日README、Telegramをfresh readback。title、3 organs、Web/Telegram/GitHub CTA、version/digest、founder-attested約$1,000とMRR/ARR否定、banked境界、overflow 0を`docs/evidence/public-context/2026-08-27-public-context-readback.json`へ保存 |
-| 14 | CTX-08A host gate recovery | IN_PROGRESS | PR #2895をmain `db03dd58a…`へmergeしimmutable release済み。既存untracked isolated context 2件だけをdisposeして2→0、natural Apply run 166 / exit 0 / ledger 0 / isolated 0でreplay-zero、保護対象保持を確認。free 9,755,820,032 bytes、block present、Fundraiser run 265 / exit 75のため、残る一件は明示承認されたMac再起動→free `>=21,474,836,480`・block absent・required owner・Fundraiser natural wakeのreadback |
+| 14 | CTX-08A host gate recovery | IN_PROGRESS | PR #2895をmain `db03dd58a…`へmergeしimmutable release済み。既存untracked isolated context 2件だけをdisposeして2→0、natural Apply run 166 / exit 0 / ledger 0 / isolated 0でreplay-zero、保護対象保持を確認。既存disk-cleanup run 124もevaluated 0 / reclaimed 0。free 8,613,470,208 bytes、block present、Fundraiser run 273 / exit 75のため、残る一件は明示承認されたMac再起動→free `>=21,474,836,480`・block absent・required owner・Fundraiser natural wakeのreadback |
 | 15 | CTX-08B official form capability readback | TODO | 既存Fundraiser ownerがASAC official formを一度だけ開き、current batch、締切、required fields、attachment、auth/CAPTCHA境界をreceipt化。送信effect 0 |
 | 16 | CTX-08C digest-bound application preview | TODO | context `2026-08-27.2` / `9fbe6198…5338`、kit/deck、全回答、attachment hashを一つの`application_digest`へ固定し、unsupported claim・空required field 0を確認 |
 | 17 | CTX-08D exactly-once accelerator submit | TODO | durable effect claim取得後、同じownerがofficial submitを一度だけ実行。timeout/unknownは再送せずofficial readbackでreconcile |
