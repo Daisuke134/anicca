@@ -2212,8 +2212,8 @@ order is the §12.3 recovery checklist: `MKT-09R0 → MKT-09R1 → MKT-09R2 →
 MKT-09R3-01..13 → MKT-09R4..R9 → MKT-10 → MKT-11 → MKT-12 → MKT-13`.
 No later row starts early.
 
-Current TODO state: **incident recovery remains open at MKT-09R9-11 / Order
-24F6.** R0 through R9-10 are terminal: capacity is safe, the shared publication
+Current TODO state: **incident recovery remains open at MKT-09R9-12 / Order
+24F7.** R0 through R9-11 are terminal: capacity is safe, the shared publication
 fence remains closed,
 the JP4 false completion is quarantined, and the 13-effect set is 12 `present`
 plus one truthful `absent`. The full publication ledger is 43 `completed`,
@@ -2230,11 +2230,30 @@ An external observation clock is not an active implementation item. It remains
 terminal acceptance evidence. Exactly one executable atomic item remains active;
 when the clock fires, its readback is reconciled before any dependent account arm.
 
-**Active executable atomic item:** MKT-09R9-11 / Order 24F6 classifies exactly
-one next remaining route, TikTok `@anicca_buddha`; it must bind product, locale,
-account, integration, renderer, publication format, and approved asset source
-from API/native/code evidence before any pack or effect. No other account or
-cadence begins.
+**Active executable atomic item:** MKT-09R9-12 / Order 24F7 classifies exactly
+one next remaining route, TikTok `@anicca_slideshow`; it must bind product,
+locale, account, integration, renderer, publication format, and approved asset
+source from API/native/code evidence before any pack or effect. No other account
+or cadence begins.
+
+**Completed immediately preceding classification:** MKT-09R9-11 / Order 24F6
+keeps TikTok `@anicca_buddha` on terminal hold at 0/day. Postiz API reports an
+enabled integration named `アニッチャ お笑い`, 114 rows: 93 published and 21
+error. The published set is not one coherent lane: 88 are six-image Japanese
+mental-strength slideshows through `2026-07-23`, followed by five separate Life
+Manager MP4 promotions from `2026-07-24` through `2026-07-28`. Exact Postiz
+detail for `cmrwzmwli006gn20y0boak6md` proves six JPEG assets; full contact-sheet
+inspection shows the same personal restaurant photo with Japanese overlay text,
+not Buddhist art or an app renderer. Postiz supplies only the TikTok profile URL
+plus a `p_pub_url` suffix; oEmbed/native direct caption verification is
+unavailable, so no numeric suffix is promoted to success. The old LM daily route
+was already moved from this mixed personal account to `@anicca.comedy`.
+Product, renderer, format, and approved pack therefore remain null instead of
+being guessed. Evidence
+`object://sha256/ca2de82eedb6ee24b5884860b5a03a6612a959d04f5e18629c48fb05545b4480`;
+visual `object://sha256/5fd3fb3d53ed708acc2f58f9fb36fba0018099a8908866d62c5807b90469eb2`.
+Manifest stays `b96ffe9b…661b4`, hold/default-off, armed 0; provider, Telegram,
+and scheduler effects are 0.
 
 **Completed immediately preceding live item:** MKT-09R9-10 / Order 24F5 posts
 one exact Obou canary through Postiz API. Direct native Reel
@@ -3024,7 +3043,7 @@ Their dependent account arm remains blocked until the observation is terminal.
 | 24C | **done — MKT-09R9-03:** import and approve one exact `@anicca.affirmation` pack | Order 24B passes | pack `e23cd412…78669e`, caption `bf90a15a…6e64a0`, approval `7740cd09…968845`, six ordered native JPEGs and order hash `4daa5db7…9837f9` are SHA-exact/mode0600; manifest `b48c8e11…5ce18f` pack-ready/default-off, armed0/fenceclosed; effects0 | import several packs or mix Card/Widget content |
 | 24D | **done — MKT-09R9-04:** TDD-generalize the native carousel runner for exactly the frozen EN lane | Order 24C passes | existing JA command remains green; EN account/integration/pack/ordered media/caption/approval/native owner are immutable; alternate refs fail before provider; direct `/p/`, native verification, Telegram and replay contracts are reused; focused 21/21, syntax and diff checks pass; provider/Telegram writes 0 | copy runner, accept caller-defined lane, or execute hardcoded JA adapter against EN |
 | 24E | **done — MKT-09R9-05:** finish one `@anicca.affirmation` API canary and metric registration | Order 24D passes | direct `DcfQ2-hG3KR`, Postiz `cmt9jm8990291p20y0a2l1xmk`, owner/caption/GraphSidecar/six exact ordered images and visual content verified; Telegram `34799`; replay publication 0/message 0; immediate post metrics measured; fence closed/default-off/armed 0. Existing 30-minute LM owner discovers the immutable effect and owns exact 2h/24h/72h/7d due times; registered status `c08bf9e8…6a97d3`; focused 6/6 | fan out, manually leave controls open, call pending windows measured, or arm cadence before metrics |
-| 24F | **active — MKT-09R9-N:** repeat classify → one pack → one API canary for each remaining existing TikTok/Instagram/YouTube integration | Order 24E terminal | **24F1 done:** `@anicca.bochi` terminal hold/0-day. **24F2 done:** `@obou.anicca` classified. **24F3 done:** complete-caption native `DbUlc_Kk-IX` becomes exact pack. **24F4 done:** immutable watercolor lane/wrapper. **24F5 done:** direct `DcfVvIkkWyz`, exact owner/caption/video, Telegram `34870`, replay0, existing-owner metric windows, status `eeb154df…b51993`, default-off/armed0. **24F6 active:** classify only TikTok `@anicca_buddha` | mass-enable, accept truncated copy, retain OpenClaw runtime dependency, or notify before native verification |
+| 24F | **active — MKT-09R9-N:** repeat classify → one pack → one API canary for each remaining existing TikTok/Instagram/YouTube integration | Order 24E terminal | **24F1 done:** `@anicca.bochi` terminal hold/0-day. **24F2 done:** `@obou.anicca` classified. **24F3 done:** exact Obou pack. **24F4 done:** immutable watercolor runner. **24F5 done:** Obou direct native/Telegram/replay0/metrics. **24F6 done:** mixed personal `@anicca_buddha` stays terminal hold/0-day, evidence `ca2de82e…5b4480`. **24F7 active:** classify only TikTok `@anicca_slideshow` | mass-enable, infer a renderer from a handle, reuse mixed-account content, accept profile/numeric release ID as native proof, or retain OpenClaw runtime dependency |
 | 25 | **MKT-10:** arm only one healthy verified account, ramping from one canary/day to at most three posts/day | exact account has direct-native, Telegram, replay, and usable metric-source evidence | expected/published/missed/duplicate counts remain healthy at each ramp; platform policy permits cadence | jump directly to three/day everywhere |
 | 26 | **MKT-11:** collect 2h/24h/72h/7d social metrics and join ASC, RevenueCat, and product analytics | exact published effect has immutable creative/campaign lineage | views, likes, comments, shares, saves, watch/retention fields when supported, installs, activation, trials, paid, proceeds, and attribution coverage are source-labelled; unavailable stays unavailable | substitute account aggregates for post outcomes or infer installs from timing |
 | 27 | **MKT-12:** close bounded hook learning independently for Honne EN, Honne JA, and Anicca | one product/account has a usable attributed cohort | stable assignment; one hook token per baseline/challenger; immutable outcome; keep/revert CAS decision; next generation proves it consumed the decision | LRU rotation, shared campaign token, cross-product winner, or multi-variable edit |
