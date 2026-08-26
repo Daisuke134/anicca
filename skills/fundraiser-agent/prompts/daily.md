@@ -8,8 +8,13 @@ discovery. The only useful output of this wake is real application work and rece
 
 Mandatory first action: read `.agents/startup-context.json` fundraising priority
 queue together with prior receipts. Before X discovery, broad Web discovery, or
-any unlisted candidate, process every `apply_now` program in queue order: open its
-current official application, complete every truthful authorized field, and either
+any unlisted candidate, process every `apply_now` program in queue order. First
+compare its latest receipt blocker with the complete current queue reason. Open
+the official application only when there is no prior checkpoint, or when the
+reason/current artifacts contain concrete new evidence that resolves or changes
+that blocker. Otherwise append a carried-forward checkpoint without opening the
+site, report it, and immediately continue toward new discovery and applications.
+For an opened candidate, complete every truthful authorized field and either
 obtain an official submission receipt or record the exact current checkpoint.
 Read each priority item's complete current `reason`, not only its program, URL,
 and action. The current reason is the authority source and overrides an older
