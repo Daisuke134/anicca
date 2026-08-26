@@ -108,8 +108,9 @@ MUST stay in Life Manager's existing worker so the scheduler continues serving o
   recorded in the runtime receipt ledger.
 - Outcome tracking from provider replies through interview, offer, funded, and Calendar creation is
   not yet implemented.
-- One manual Luna wake is proven. A full unattended 30-minute recurrence after the last deployment,
-  with replay-zero and a new candidate continuing, remains unproven.
+- An unattended launchd recurrence is proven: run 13 started naturally at 08:02:27 UTC after run 12
+  completed at 07:32:25 UTC. It used one `gpt-5.6-luna` high attempt with no fallback, submitted six
+  new identities, preserved prior submitted identities as replay barriers, and sent Telegram reports.
 
 ## 8. Current Operating Policy
 
@@ -135,6 +136,15 @@ MUST stay in Life Manager's existing worker so the scheduler continues serving o
 | Forum Ventures Pitch Us | checkpoint | City HQ was absent from scoped founder profile; infer Tokyo when the question is descriptive, but do not invent a legal headquarters |
 | SherVentures | ineligible | Official page states a $500K+ ARR minimum; only approximately $1,000 founder-attested revenue is supported |
 | B Capital | submitted | Retry succeeded; exact Gmail Sent receipt exists; track reply |
+| Scion Ventures | submitted | Exact Gmail Sent receipt exists; track reply |
+| Lobby Capital | submitted | Exact Gmail Sent receipt exists; track reply |
+| Llama Ventures | submitted | Exact Gmail Sent receipt exists; track reply |
+| Lightside Venture Capital | submitted | Exact Gmail Sent receipt exists; track reply |
+| Eastlink Capital | submitted | Exact Gmail Sent receipt exists; track reply |
+| TechLink Ventures | submitted | Exact Gmail Sent receipt exists; track reply |
+| SF Startup Labs | retryable failure | Form and deck were completed, but the browser target became unresponsive before Submit |
+| 43 | checkpoint | Complete founding team and SF residence or relocation commitment are not attested |
+| Camford Capital | checkpoint | Privacy-policy and terms consent is required before Submit |
 | Base Batches 004 | checkpoint | Required founder video is absent |
 | Open Network Lab | checkpoint | Separate participation, investment-discussion restrictions, and share agreement require founder authority |
 | DelightX | checkpoint | Six months in San Francisco, visa/housing/cost commitment, and $60K for 5% require founder authority |
@@ -175,10 +185,10 @@ flowchart LR
    runtime source reference; remove the interim standalone owner only after equivalent live proof.
 2. Store application effects and reconciliation in the shared immutable runtime receipt contract,
    including replay-zero for `submit_unknown`.
-3. Prove one unattended 30-minute recurrence after the final deployment: same identities are not
-   resubmitted and at least one new eligible identity continues through the queue.
-4. Complete three unrelated official live applications without a production-code change between
-   them; Samsung Catalyst Fund, Cana, and B Capital are now proven.
+3. Preserve the proven unattended 30-minute recurrence in the native Life Manager owner after the
+   interim standalone launchd owner is removed.
+4. Maintain the proven provider-agnostic behavior. Nine official live applications are now proven,
+   including six in one natural Luna pass without a production-code change between providers.
 5. Add Gmail reply reconciliation for confirmation, rejection, waitlist, interview, offer, and
    funded, plus Calendar event and interview brief creation.
 6. Verify Hustle Fund with the repaired generic visible-field action. B Capital's retryable Gmail
