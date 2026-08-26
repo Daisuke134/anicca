@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 
@@ -6,6 +7,7 @@ const dailyPrompt = await readFile(new URL("../prompts/daily.md", import.meta.ur
 const skill = await readFile(new URL("../SKILL.md", import.meta.url), "utf8");
 const runtimeScript = await readFile(new URL("../runtime/run.sh", import.meta.url), "utf8");
 const productionContext = JSON.parse(await readFile(new URL("../../../.agents/startup-context.json", import.meta.url), "utf8"));
+const emailValidator = new URL("../runtime/validate-outbound-email.py", import.meta.url);
 const startupContext = Object.freeze({
   product: Object.freeze({
     name: "Life Manager",
@@ -211,6 +213,9 @@ test("production contract runs every minute and maximizes real applications", ()
   assert.match(dailyPrompt, /malformed currency such as `,000`/);
   assert.match(dailyPrompt, /Never start an interactive shell/);
   assert.match(dailyPrompt, /empty generic formstate is\s+an observation fallback signal/);
+  assert.match(dailyPrompt, /label-to-control mapping/);
+  assert.match(dailyPrompt, /wait up to 30 seconds/);
+  assert.match(dailyPrompt, /Never abandon the candidate\s+after only that immediate post-upload timeout/);
   assert.match(dailyPrompt, /prior `failure` candidates whose recorded local or\s+technical cause has been repaired/);
   assert.match(dailyPrompt, /complete current `reason`/);
   assert.match(dailyPrompt, /never carry the stale checkpoint forward unchanged/);
@@ -235,6 +240,23 @@ test("production contract runs every minute and maximizes real applications", ()
   assert.match(runtimeScript, /AGENT_RUNNER_MODEL="gpt-5\.6-luna"/);
   assert.doesNotMatch(contract, /at most one/i);
   assert.doesNotMatch(contract, /per user-local day/i);
+});
+
+test("outbound email preflight rejects rendered spam defects", () => {
+  const invalidBodies = [
+    "Hello team,\\n\\nPitch\\n\\nBest,\\nDaisuke Narita",
+    "Hello team,\n\nFounder: [founder name in sender account]\nEmail: [sender address]\n\nBest,\nDaisuke Narita",
+    "Hello team,\n\nRevenue is approximately ,000.\n\nBest,\nDaisuke Narita",
+  ];
+  for (const body of invalidBodies) {
+    const result = spawnSync("python3", [emailValidator.pathname], { input: body, encoding: "utf8" });
+    assert.notEqual(result.status, 0, body);
+  }
+
+  const valid = "Hello team,\n\nI am sharing Life Manager for your current accelerator.\n\nBest,\nDaisuke Narita";
+  const result = spawnSync("python3", [emailValidator.pathname], { input: valid, encoding: "utf8" });
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.stdout, valid);
 });
 
 test("production queue enforces founder geography, format, priority, and YC hold", () => {

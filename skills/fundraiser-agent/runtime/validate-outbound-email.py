@@ -8,7 +8,7 @@ import sys
 body = sys.stdin.read()
 errors = []
 
-if re.search(r"\\\\[nrt]", body):
+if re.search(r"\\[nrt]", body):
     errors.append("literal_escape")
 if re.search(r"\[(?:founder|sender|name|email|company|insert|your)[^\]]*\]", body, re.I):
     errors.append("unresolved_placeholder")

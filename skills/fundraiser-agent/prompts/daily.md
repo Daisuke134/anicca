@@ -146,6 +146,10 @@ For every queued candidate until the execution window ends:
    through `cdp.py eval` against visible `input, textarea, select, button,
    [role=button]` controls and any rendered iframe; an empty generic formstate is
    an observation fallback signal, not a reason to wait or leave the candidate.
+   On dynamic forms, derive the current label-to-control mapping from each
+   control's `aria-labelledby` and the referenced label text; never transcribe or
+   guess generated IDs. After filling, read back `label + value` pairs and verify
+   that each answer semantically belongs to its label before final review.
    Rendered requiredness is authoritative for this application attempt. A blank
    optional video, social profile, incorporation-status, deck, demo, or narrative
    field (`required=false` and valid) is never a human checkpoint. Leave it blank
@@ -172,6 +176,12 @@ For every queued candidate until the execution window ends:
    Attach files only with
    `python3 skills/browser/scripts/cdp.py setfile "$TARGET_ID" 'input[name="pitch_deck"]' fundraising/application-kit/deck.pdf`;
    there is no `upload` command.
+   When a Notion/custom uploader creates `input[type=file]` only after its rendered
+   Upload button is clicked, call `setfile` on that fresh input. A successful
+   `setfile` followed by one WebSocket timeout means upload may still be processing:
+   wait up to 30 seconds, reconnect to the same target, and read the rendered deck
+   filename or file input before classifying failure. Never abandon the candidate
+   after only that immediate post-upload timeout.
    When an official program or investor page explicitly publishes an email
    address as its application or funding-intake route, do not compose through
    the Gmail browser UI. Compose a fresh, target-specific natural-language body;
