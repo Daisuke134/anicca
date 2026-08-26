@@ -101,6 +101,10 @@ const JA_CARD_LANE = Object.freeze({
   tokenRef: "secret://postiz/api-key",
   telegramTokenRef: "secret://telegram/bot-token",
   chatRef: "telegram-chat://owner",
+  packRef: "object://sha256/76937db0d86478ea0a8dc8ca7fa9d38f3283b5cf491a6a334068f23b73fe311c",
+  videoRef: "object://sha256/35a15c7ce990b1f05b1c8fa1b9665ff552db13f30e3c562b19f0724fac4e9a15",
+  captionRef: "object://sha256/311f9c3dbf5ae7e904fa556d3ddf2555ba3445f198d721c442e6a620646ba2eb",
+  approvalRef: "object://sha256/bb3e2ac385d7c7ed9a2387522ba441ece797fd8bcc9827c9386dcf66db764ee2",
   packEnv: "LM_ANICCA_JA_CARD_INSTAGRAM_PACK_REF",
   videoEnv: "LM_ANICCA_JA_CARD_INSTAGRAM_VIDEO_REF",
   captionEnv: "LM_ANICCA_JA_CARD_INSTAGRAM_CAPTION_REF",
@@ -384,6 +388,14 @@ function laneConfig(env, parsed, lane = EN_LANE) {
     verificationRef: String(env[lane.verificationEnv] || "").trim() || null,
     lane,
   };
+  for (const [label, actual, expected] of [
+    ["pack", config.packRef, lane.packRef],
+    ["video", config.videoRef, lane.videoRef],
+    ["caption", config.captionRef, lane.captionRef],
+    ["approval", config.approvalRef, lane.approvalRef],
+  ]) {
+    if (expected !== undefined && actual !== expected) throw new Error(`Anicca ${lane.name} widget ${label} reference mismatch`);
+  }
   if (config.verificationRef) objectRef(config.verificationRef, `Anicca ${lane.name} widget native verification`);
   return config;
 }

@@ -142,9 +142,9 @@ function fixture(lane = EN_LANE, laneCaption = CAPTION) {
     format_id: lane.packFormat,
     form: lane.form,
     caption: laneCaption,
-    caption_ref: captionRef,
+    caption_ref: lane.captionRef || captionRef,
     visual_evidence_ref: visualEvidenceRef,
-    media: [{ position: 1, role: "hook-then-widget-demo", media_type: "video/mp4", video_ref: videoRef }],
+    media: [{ position: 1, role: "hook-then-widget-demo", media_type: "video/mp4", video_ref: lane.videoRef || videoRef }],
   };
   const packRef = importBytes("pack.json", Buffer.from(JSON.stringify(pack)));
   const approval = {
@@ -159,19 +159,37 @@ function fixture(lane = EN_LANE, laneCaption = CAPTION) {
     platform: lane.platform,
     account_id: lane.account,
     integration_ref: lane.integrationRef,
-    pack_ref: packRef,
+    pack_ref: lane.packRef || packRef,
     creative_id: lane.creativeId,
-    video_sha256: videoRef.slice(-64),
-    caption_sha256: captionRef.slice(-64),
+    video_sha256: (lane.videoRef || videoRef).slice(-64),
+    caption_sha256: (lane.captionRef || captionRef).slice(-64),
   };
   const approvalRef = importBytes("approval.json", Buffer.from(JSON.stringify(approval)));
+  let fixtureObjectStore = objectStore;
+  let fixturePackRef = packRef;
+  let fixtureVideoRef = videoRef;
+  let fixtureCaptionRef = captionRef;
+  let fixtureApprovalRef = approvalRef;
+  if (lane === JA_CARD_LANE) {
+    const exactPaths = new Map([
+      [lane.packRef, objectStore.resolve(packRef)],
+      [lane.videoRef, objectStore.resolve(videoRef)],
+      [lane.captionRef, objectStore.resolve(captionRef)],
+      [lane.approvalRef, objectStore.resolve(approvalRef)],
+    ]);
+    fixtureObjectStore = { resolve: (ref) => exactPaths.has(ref) ? exactPaths.get(ref) : objectStore.resolve(ref) };
+    fixturePackRef = lane.packRef;
+    fixtureVideoRef = lane.videoRef;
+    fixtureCaptionRef = lane.captionRef;
+    fixtureApprovalRef = lane.approvalRef;
+  }
   const env = {
     LM_DATA_DIR: dataDir,
     LM_RUNTIME_TENANT_ID: "dais-local",
-    [lane.packEnv]: packRef,
-    [lane.videoEnv]: videoRef,
-    [lane.captionEnv]: captionRef,
-    [lane.approvalEnv]: approvalRef,
+    [lane.packEnv]: fixturePackRef,
+    [lane.videoEnv]: fixtureVideoRef,
+    [lane.captionEnv]: fixtureCaptionRef,
+    [lane.approvalEnv]: fixtureApprovalRef,
     LM_POSTIZ_API_KEY: "postiz-secret-fixture",
     LM_TELEGRAM_BOT_TOKEN: "telegram-secret-fixture",
     LM_TELEGRAM_ALERT_CHAT_ID: "123456789",
@@ -179,12 +197,13 @@ function fixture(lane = EN_LANE, laneCaption = CAPTION) {
   const value = {
     dataDir,
     env,
-    objectStore,
+    objectStore: fixtureObjectStore,
     importBytes,
-    packRef,
-    videoRef,
-    captionRef,
-    approvalRef,
+    packRef: fixturePackRef,
+    videoRef: fixtureVideoRef,
+    captionRef: fixtureCaptionRef,
+    approvalRef: fixtureApprovalRef,
+    alternateRefs: { packRef, videoRef, captionRef, approvalRef },
     visualEvidenceRef,
     lane,
     caption: laneCaption,
@@ -242,8 +261,8 @@ function providerCalls(calls, result = {}, lane = EN_LANE) {
     calls.push(input);
     return {
       creative_id: lane.creativeId,
-      video_sha256: input.videoPath.split("/").at(-1),
-      caption_sha256: input.captionPath.split("/").at(-1),
+      video_sha256: lane.videoRef ? lane.videoRef.slice(-64) : input.videoPath.split("/").at(-1),
+      caption_sha256: lane.captionRef ? lane.captionRef.slice(-64) : input.captionPath.split("/").at(-1),
       platform: "instagram",
       public_url: DIRECT_REEL,
       provider_post_id: "postiz-widget-canary-1",
@@ -304,6 +323,7 @@ function verification(value, receipt, overrides = {}, evidenceOverrides = {}, la
 function genericOptionsFor(value, publicationCalls, telegramCalls = [], lane = EN_LANE, overrides = {}) {
   return {
     env: value.env,
+    objectStore: value.objectStore,
     runDistribution: providerCalls(publicationCalls, {}, lane),
     sendTelegram: async (...args) => {
       telegramCalls.push(args);
@@ -750,6 +770,10 @@ test("JA verified native release sends one Telegram and same-slot replay is zero
 });
 
 test("JA Card wrapper is exact-lane and exact-slot only", () => {
+  const expectedPackRef = "object://sha256/76937db0d86478ea0a8dc8ca7fa9d38f3283b5cf491a6a334068f23b73fe311c";
+  const expectedVideoRef = "object://sha256/35a15c7ce990b1f05b1c8fa1b9665ff552db13f30e3c562b19f0724fac4e9a15";
+  const expectedCaptionRef = "object://sha256/311f9c3dbf5ae7e904fa556d3ddf2555ba3445f198d721c442e6a620646ba2eb";
+  const expectedApprovalRef = "object://sha256/bb3e2ac385d7c7ed9a2387522ba441ece797fd8bcc9827c9386dcf66db764ee2";
   assert.deepEqual(parseJaCardArgs(["run", "--slot", SLOT]), { command: "run", slot: SLOT });
   assert.throws(() => parseJaCardArgs(["run", "--slot", "2026-08-26T07:30:00Z"]), /invalid|usage/i);
   assert.throws(() => parseJaCardArgs(["publish"]), /usage/i);
@@ -757,6 +781,10 @@ test("JA Card wrapper is exact-lane and exact-slot only", () => {
   assert.equal(JA_CARD_LANE.nativeAccount, "@anicca.ios.jp");
   assert.equal(JA_CARD_LANE.integrationId, "cmn8ycvtn02djqx0ytuisn9mw");
   assert.equal(JA_CARD_LANE.approvedPackName, "anicca-ios-reelclaw-card-ja.pack.json");
+  assert.equal(JA_CARD_LANE.packRef, expectedPackRef);
+  assert.equal(JA_CARD_LANE.videoRef, expectedVideoRef);
+  assert.equal(JA_CARD_LANE.captionRef, expectedCaptionRef);
+  assert.equal(JA_CARD_LANE.approvalRef, expectedApprovalRef);
 });
 
 test("JA Card first publication uses dedicated refs, raw integration, empty profile state, and holds Telegram", async () => {
@@ -779,6 +807,27 @@ test("JA Card first publication uses dedicated refs, raw integration, empty prof
   assert.equal(publicationCalls[0].captionPath, value.objectStore.resolve(value.captionRef));
   assert.equal(publicationCalls[0].approvalPath, value.objectStore.resolve(value.approvalRef));
   assert.equal(telegramCalls.length, 0);
+});
+
+test("JA Card rejects a mutually consistent alternate dedicated pack and approval before secret/provider", async () => {
+  const value = fixture(JA_CARD_LANE, JA_CARD_CAPTION);
+  value.env[JA_CARD_LANE.packEnv] = value.alternateRefs.packRef;
+  value.env[JA_CARD_LANE.videoEnv] = value.alternateRefs.videoRef;
+  value.env[JA_CARD_LANE.captionEnv] = value.alternateRefs.captionRef;
+  value.env[JA_CARD_LANE.approvalEnv] = value.alternateRefs.approvalRef;
+  const publicationCalls = [];
+  const secretCalls = [];
+  const integrationCalls = [];
+  await assert.rejects(
+    runAniccaJaCardInstagramCanary(["run", "--slot", SLOT], genericOptionsFor(value, publicationCalls, [], JA_CARD_LANE, {
+      secretProvider: { get: async (...args) => { secretCalls.push(args); return "secret"; } },
+      integrationProvider: { get: async (...args) => { integrationCalls.push(args); return JA_CARD_LANE.integrationId; } },
+    })),
+    /pack|approval|ref/i,
+  );
+  assert.equal(publicationCalls.length, 0);
+  assert.equal(secretCalls.length, 0);
+  assert.equal(integrationCalls.length, 0);
 });
 
 test("JA Card missing or wrong dedicated pack/approval fails before secret and provider", async () => {
