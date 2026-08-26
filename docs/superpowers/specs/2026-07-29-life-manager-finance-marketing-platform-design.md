@@ -2222,6 +2222,25 @@ arm, second account, retry after an unknown effect, or legacy-job action is
 allowed. Until that canary is terminal, actual cadence remains 0/day, the lane
 remains pack-ready/default-off/armed 0, and the shared fence remains closed.
 
+MKT-09R8-13 implementation preflight is complete without an external effect.
+The live manifest has exactly one matching `@anicca.jp1` target at integration
+`cmn8ycvtn02djqx0ytuisn9mw`, renderer `reelclaw-card`, format
+`nudge-card-reel`, state `pack-ready/default-off`; every lane is armed 0 and
+the publication fence is closed. Pack `76937db0…fe311c`, caption
+`311f9c3d…6ba2eb`, and selected video `35a15c7c…e9a15` resolve from the LM
+object store at mode `0600`. All five dedicated Card Instagram env bindings
+are unset, while shared `LM_ANICCA_MAIN_PACK_REF` still points to the rejected
+source pack and must remain byte-unchanged. Existing standing approval
+`3f138ade…831eb7` authorizes the account/form generally but does not bind the
+exact pack, caption, video, integration, and creative required by the canary;
+an exact immutable approval object is therefore required before arming. Postiz
+uses account alias `@anicca.jp1`, but the already established native Instagram
+owner is `anicca.ios.jp`; the reused runner must preserve the alias for
+manifest/approval/publication identity and verify the separate frozen native
+owner at `CaptionUsername`. The minimal implementation is one frozen lane in
+the existing canary engine, one thin CLI wrapper, and focused regression tests;
+it does not add a publisher, scheduler, or alternate receipt path.
+
 **Completed immediately preceding atomic item:** MKT-09R8-12 / Order 23I
 reconciled the complete existing Postiz history before any new effect. Read-only
 GETs covered `1970-01-01` through `2026-08-27`: pre-2025 and 2025 returned zero,
