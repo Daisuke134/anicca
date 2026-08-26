@@ -1,19 +1,23 @@
+<!-- startup-context-version: 2026-08-27.2 -->
+<!-- startup-context-digest: 9fbe6198c6d61da47d68767eec90a1d95d2e07058f024448d86372b5f3035338 -->
 # Life Manager
 
-**Life Manager manages your body, mind, and money.** It is a personal manager that turns goals into
-completed real-world actions. It acts within delegated boundaries, verifies what happened, and reports the
-result in plain language with evidence in Telegram.
+**Life Manager is a proactive general agent that manages your body, mind, and money.** It turns goals into
+completed real-world actions, acts within delegated boundaries, verifies what happened, and reports the result
+in plain language with evidence in Telegram. Its mission is to make dependable care and agency continuously
+available and end suffering for humans and, ultimately, all living beings.
 
 | Group | What Life Manager manages through its loops |
 |---|---|
 | **Daily** | Calendar, event and accelerator applications, job applications, priorities, and follow-through |
 | **Physical / Mental** | Routines, wellbeing, and continuity of care |
-| **Financial** | Net worth, cash flow, spending, income opportunities, and risk-managed investing |
+| **Financial** | Net worth, cash flow, spending, income and business opportunities, crypto, risk-managed investing, and self-funding compute from banked revenue |
 
 [Open Life Manager](https://aniccaai.com/lm) · [Start in Telegram](https://t.me/LifeManagerBotbot?start=lp) · [View the source](https://github.com/Daisuke134/life-manager)
 
-Start locally and keep your data on your machine; move to the web/cloud service when you want an always-on
-manager. Both surfaces use the **same core**, evidence ledger, and human-readable reporting contract. Life
+Run the free, open-source, self-hosted Life Manager locally and keep your data on your machine; use the paid
+monthly cloud service when you want an always-on manager with only a phone. Both surfaces use the **same core**,
+evidence ledger, and human-readable reporting contract. Life
 Manager never guarantees wealth or investment returns, and it never reports an attempted action as completed
 without a receipt.
 
@@ -21,19 +25,23 @@ without a receipt.
 
 Life Manager is not a collection of website-specific bots. We are building one durable general agent that can
 discover an opportunity, decide whether it can complete the work profitably, propose and negotiate, produce and
-QA the deliverable, submit it, and follow the same identity through payment and payout. Upwork is the first
-end-to-end proof. Additional marketplaces must reuse the same agent, commerce state, capabilities, and money-effect
-contract; their differences belong in a small provider manifest and official readback adapter.
+QA the deliverable, submit it, and follow the same identity through payment and payout. Upwork was the first
+marketplace investigation; it is now cleanly contained because the account is not eligible for API access and UI
+automation is denied. That is evidence about a provider boundary, not a completed commerce proof and not a reason
+to stop the general-agent work. Approved providers must reuse the same agent, commerce state, capabilities, and
+money-effect contract; their differences belong in a small provider manifest and official readback adapter.
 
-The implementation reuses [DeepAgentsJS/LangGraph](https://github.com/langchain-ai/deepagentsjs) for the agent
-harness and durable state, [browser-use](https://github.com/browser-use/browser-use) for the website-tool contract,
+The architecture is converging by copying and adapting proven boundaries from
+[DeepAgentsJS/LangGraph](https://github.com/langchain-ai/deepagentsjs) for the specialist harness and durable state,
+[browser-use](https://github.com/browser-use/browser-use) for the website-tool contract,
 [OpenClaw](https://github.com/openclaw/openclaw) for the current local wake and channels, and
 [Steel](https://github.com/steel-dev/steel-browser) for the hosted browser backend. Existing Life Manager
 `EffectIntent` and `ConnectorOutbox` rails remain the only path for irreversible money actions. The completion
 signal is an official `banked` receipt—not an application, click, model claim, contract, or pending balance.
 
-This autonomous commerce loop is still being proven. Until an agent-executable Upwork contract reaches `banked`,
-the README describes the target architecture, not a claim that autonomous income already exists.
+The founder attests that Life Manager has generated approximately $1,000 in revenue. This is not MRR or ARR, and
+it is not proof that a provider-independent autonomous commerce loop is closed. That loop remains proven only by
+official receipts through `banked` and, eventually, `compute_paid`.
 
 **Life Manager is the product. Anicca is the company name only when a form explicitly asks for it.**
 
@@ -104,11 +112,11 @@ keychain or a tenant vault; see [`apps/life-manager/.env.example`](apps/life-man
 (`TELEGRAM_BOT_TOKEN_REF`, `POSTIZ_ACCESS_TOKEN_REF`, `REVENUECAT_API_KEY_REF`, …). Connect your own Telegram bot
 token this way to talk to a local instance.
 
-### Not what you wanted?
+### Self-funding is part of the Financial Organ
 
-If you came here for the **self-funded agent** — the wallet-holding loop that earns its own compute — that is a
-different thing and it lives in [`docs/agent-economy.md`](docs/agent-economy.md). It shares this repository and
-this core, but it is not the product described above.
+The wallet and compute-payment loop in [`docs/agent-economy.md`](docs/agent-economy.md) is not a separate product.
+It is Life Manager's Financial capability: provider revenue must become `banked` before it can fund
+`compute_paid`, and owner funds must remain separate.
 
 ---
 
@@ -144,8 +152,8 @@ Life Manager is one product in one repository. “Local Life Manager” and the 
 | `apps/life-manager/` | The product core: Telegram, scheduling, calls, authenticated `/panel`, billing, and user workflows. Runs both locally (compose) and in the cloud (Railway) | Not the whole repository |
 | `deploy/local/` | The local execution surface — compose stack, ports, local-only credentials | Not a separate “local edition” product |
 | `apps/landing/` | The Life Manager onboarding web subset | Not the old multi-product Anicca website |
-| `runtime/loop/`, `install.sh`, `start-local.sh` | The self-funded agent loop — see [`docs/agent-economy.md`](docs/agent-economy.md) | Not how you start Life Manager |
-| `runtime/compute-proxy/`, `services/` | Self-pay inference and x402 settlement/API infrastructure | Not user-facing apps |
+| `runtime/loop/`, `install.sh`, `start-local.sh` | Economic runtime supporting Life Manager's Financial Organ — see [`docs/agent-economy.md`](docs/agent-economy.md) | Not the whole product or the normal user entry point |
+| `runtime/compute-proxy/`, `services/` | Compute-payment and x402 settlement/API infrastructure for the same Financial capability | Not user-facing apps |
 | `skills/` | Shared capabilities used by local and cloud execution | Not independent products |
 | `apps/job-search-loop/`, `control-room/`, `adapters/` | Supporting operations, fleet documentation, and integrations | Not another Life Manager codebase |
 | `docs/`, `specs/` | Current SSOT, evidence, and retained architecture history | Historical files are not automatically current authority |
@@ -269,7 +277,7 @@ Current canonical acceptance: PR `#1936` established the production baseline at 
 | **Telegram reporting with receipts** | **Live** — every report carries a message id, and a send that fails is not recorded as sent. |
 | **Calendar, connectors, coverage** (`lib/calendar-*`, `lib/connector-*`) | **Implemented, coverage still moving** — per-connector state and gaps are tracked in the execution spec rather than claimed here. |
 | **Financial loops** (net worth, cash flow, payouts, ledgers) | **Partial** — the ledger and payout jobs exist; their current health is tracked in the execution spec. Nothing here is an investment guarantee. |
-| **The self-funded agent economy** | Separate track — status and on-chain evidence in [`docs/agent-economy.md`](docs/agent-economy.md). |
+| **Self-funding economic loop** | **Financial capability in progress** — current state and on-chain evidence live in [`docs/agent-economy.md`](docs/agent-economy.md); do not infer `banked` or `compute_paid` without those receipts. |
 
 ---
 

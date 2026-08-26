@@ -4,8 +4,8 @@ status: ACTIVE
 owner: Dais / Life Manager
 created: 2026-08-01 JST
 updated: 2026-08-26 JST
-scope: 応募基盤、イベント、資金調達、求人、個人CFO、暗号資産、法定通貨投資・NISA
-active_execution_surface: LOCAL_ONLY_UNTIL_ORDER_5_COMPLETE
+scope: Upwork終端処理、公開context収束、汎用Life Manager kernel、既存5段階の各organ
+active_execution_surface: LOCAL_FIRST_SHARED_CORE_CLOUD_DEFERRED_UNTIL_KERNEL_ACCEPTANCE
 
 ## 0. この文書の権限
 
@@ -21,6 +21,205 @@ active_execution_surface: LOCAL_ONLY_UNTIL_ORDER_5_COMPLETE
 2. この専用仕様書
 3. `2026-07-30-outbound-apply-engine-design.md`の各pack内部順序
 4. その他の全体・履歴仕様
+
+### 0.0 2026-08-27 current cursor — Upworkを閉じ、汎用Life Managerへ収束する
+
+この節は、後段の「現在TODO」「次の一件」「local-only」「self-funded agentは別product」という相反する記述を
+上書きする最新の実行順序SSOTである。後段は実装履歴・organ別acceptanceとして保持するが、次作業の選択には使わない。
+Upworkのterminal evidenceとauthorization containmentは完了した。次はstartup contextからpublic claimを収束し、その後にREADME、Web、
+general-agent kernelを順番に進める。
+
+#### Overview / Why
+
+Life Managerは、助言を返すassistantでも、marketplaceごとのbot集合でもない。人の身体・心・お金に関するgoalを継続的に管理し、
+委任範囲内の現実行動を完了まで進め、公式receiptで結果を証明する**proactive general agent**である。長期missionは、
+信頼できるcareとagencyを常時利用可能にし、人間から始めて最終的にすべての生き物の苦しみを終わらせることとする。
+
+Upworkはこの汎用agentの最初のmarketplace proofとして始めたが、未承認UI automationによる一時制限を受けた。現在の公式画面は
+`Full Access / At risk / policy violations 1 / Misuse of Upwork Systems / Appealable / submitted appeals 0`である。
+Terms確認によるself-service復旧は完了したが、API申請もappealも送信していない。したがって「申請済み」「許可済み」と扱わない。
+停止前の最終official inventoryは`submitted proposals 12 / active proposals 1 / active contracts 0 / offers 0 /
+available earnings USD 0`である。proposalは収益ではなく、同accountは新規freelancer、identity `Unverified`、qualifying JSSなしのため、
+公開API要件の`$25,000 lifetime earnings/spend + JSS 90%`を満たさない。
+
+Upwork公式は、botを「人間より速く又は頻繁にrequestするscript/program/browser extension」と定義し、UI interactionを自動化するtoolの
+例外は承認できず、許可済みAPI keyでも承認scope外の操作は禁止としている。API keyの審査条件には、本人確認、verified payment、
+$25,000以上のlifetime earnings/spend、freelancer JSS 90%以上、account good standingが含まれる。よって「頻度を落として検出を避ける」は
+解決ではない。Upworkは公式API・action scope・account permissionのreceiptだけで有効化し、それ以外はOFFのまま終端させる。
+
+公式根拠:
+
+- Upwork, [Use bots and other automation properly](https://support.upwork.com/hc/en-us/articles/43342677368467-Use-bots-and-other-automation-properly): “We are not able to approve or make exceptions for tools that automate interactions with Upwork.”
+- Upwork, [How to request an API key](https://support.upwork.com/hc/en-us/articles/115015857647-How-to-request-an-API-key-from-Upwork): “At least $25,000 in lifetime earnings, spend, or a combination of both.”
+- Upwork, [API scopes and permissions](https://support.upwork.com/hc/en-us/articles/115015857607-API-scopes-and-permissions): application permissionとuser/team permissionの両方が必要。
+
+#### Product contract and claim boundary
+
+| 項目 | 正本contract |
+|---|---|
+| product | **Life Manager**。Aniccaはformが会社名を要求する時だけ使う |
+| one-liner | A proactive general agent that manages your body, mind, and money plus real-world follow-through |
+| organs | Daily、Physical / Mental、Financialは別productではなく、同じmanagerが配分するcapability portfolio |
+| Financial | CFO、支出、収入、gig/business、crypto、investing、Agent Economy、自己compute費を含む |
+| self-funding | 別productではない。`earned → withdrawable → banked → compute_paid`を実receiptで閉じるFinancial capability |
+| local | free、open source、self-hosted。同じkernelをMac/Linux上で動かす |
+| cloud | phoneだけで使えるpaid monthly hosted surface。同じkernelへmulti-tenant scheduler、vault、billingを足す |
+| revenue | founder-attested約$1,000。provider/期間証拠がない限りMRR、ARR、banked、autonomous incomeへ言い換えない |
+| AGI | mission / directionとして説明できるが、現在達成済みの科学的claimにはしない |
+| human boundary | KYC、本人の声・身体・面接・物理作業などproviderが本人を要求する仕事をagentが代行・偽装しない |
+
+`.agents/startup-context.json`をpublic factの唯一の機械正本とする。README、README.ja、`aniccaai.com/lm`、root site、
+fundraising answers/deck/one-pager、active accelerator formsは、この正本から生成またはdrift検証する。
+fundraiser branch `fundraiser-agent-task0-20260826`の固定commit `626d94f36`からproduct/mission/delivery/tractionを、
+`92dd73b07`からcanonical application answersをcopy+tweakした。動的なaccelerator priority queueとbrowser/CAPTCHA runtimeは取り込まない。
+canonical startup contextは`2026-08-27.2`、digest
+`9fbe6198c6d61da47d68767eec90a1d95d2e07058f024448d86372b5f3035338`で、同digestのfundraising kit 6ファイルを再生成済みである。
+mission、revenue、users、applications、AGIはsource/status/as_of/public_useを持つclaim registryへ入り、AGI達成、数値user、
+provider receiptのないapplication outcomeをpublic artifact validatorが拒否する。
+
+#### As-Is / To-Be architecture
+
+| 境界 | As-Is | To-Be |
+|---|---|---|
+| orchestration | organ・providerごとのlaunchd/scriptと独立cursorが並存 | 一つのManager LoopがGoal/Opportunity Graphを読み、次のbounded workを割当 |
+| intelligence | 一部はsite script、一部は巨大prompt、一部はagent-runner | semantic判断と未知UIはshort-lived specialist agent、policy/state/money/receiptは決定論core |
+| marketplace | Coconala/Upwork/Lancers等に重複したbrainとstate | shared commerce state machine + capability manifest + thin provider transport/readback |
+| effects | click、worker success、Telegramを完了扱いし得る | `EffectIntent → execute once → official readback → OutcomeReceipt`以外は完了不可 |
+| learning | provider内の局所ログ・応募数中心 | banked net、acceptance、revision、cost、human minutesをGoal/Skill/Providerへ帰属 |
+| local/cloud | local loopとhosted productの説明・実装が分散 | 同じkernel/contract tests。runtime、browser、vault、schedulerだけadapter差替え |
+| public context | README前半、新fundraiser branch、狭い`/lm`、root manifestoが不一致 | startup-context起点でmission、product、traction、delivery、claim provenanceを同期 |
+| self-funding | READMEでは別物、Agent Economy docsに分離 | Financial Organ内でbanked revenueからcompute/cloud costを支払うclosed loop |
+
+```mermaid
+flowchart TD
+    HUMAN["Owner goals + delegated boundaries"] --> MANAGER["Life Manager Manager Loop"]
+    MANAGER --> GRAPH["Goal / Opportunity Graph"]
+    GRAPH --> ALLOCATOR["Allocator: urgency, utility, capacity, risk"]
+    ALLOCATOR --> DAILY["Daily capabilities"]
+    ALLOCATOR --> CARE["Physical / Mental capabilities"]
+    ALLOCATOR --> MONEY["Financial capabilities"]
+
+    DAILY --> WORK["Bounded WorkItem"]
+    CARE --> WORK
+    MONEY --> WORK
+    WORK --> AGENT["Short-lived specialist agent"]
+    AGENT --> TOOLS["Shared skills + tools"]
+    TOOLS --> ADAPTER["Thin provider adapter"]
+    ADAPTER --> EFFECT["EffectIntent + authorization + dedupe"]
+    EFFECT --> PROVIDER["Official API / approved browser / native tool"]
+    PROVIDER --> READBACK["Official readback"]
+    READBACK --> LEDGER["Outcome + economic receipt ledger"]
+    LEDGER --> GRAPH
+    LEDGER --> REPORT["Telegram / phone / web report"]
+    LEDGER --> COST["banked → compute_paid"]
+    COST --> MANAGER
+
+    LOCAL["Local OSS runtime"] --> MANAGER
+    CLOUD["Hosted multi-tenant runtime"] --> MANAGER
+```
+
+Coreが所有する最小entityは`Goal`、`Opportunity`、`CapabilityManifest`、`AuthorizationReceipt`、`WorkItem`、
+`EffectIntent`、`OutcomeReceipt`、`EconomicReceipt`である。provider固有codeはdiscovery/transport/readback selectorだけを持ち、
+goal選択、price/margin、state transition、retry、dedupe、receipt判定を持たない。
+
+OSSは新しいframeworkを発明せず次の境界をreuse/copy+tweakする。導入前に固定commit、license、entrypoint、call graph、state、
+error recovery、effect/readbackを実codeで再監査し、noticeを保持する。
+
+| 外部実装 | 採用する境界 | 採用しないもの |
+|---|---|---|
+| DeepAgentsJS / LangGraph | specialist harness、checkpoint、bounded subagent pattern | Life Managerのbusiness stateやreceipt正本 |
+| browser-use | modelが未知siteを視覚的に扱うbrowser-tool contract | provider permission、effect success判定 |
+| OpenClaw | current local wake、channel、skill packaging | provider別の新しいdecision brain |
+| OpenHands | `WorkerRuntime`のlocal/container/remote port pattern | framework全体の置換 |
+| Stagehand | local/hostedでbrowser backendを差し替えるcontract | Upwork UI automationの許可根拠 |
+| Steel | hosted browser backend、session isolation、health | local CloakBrowserの即時置換 |
+| Temporal | durable resume/effect semanticsのreference | 計測前のTemporal server導入 |
+
+#### Acceptance Criteria
+
+1. Upworkが公式receipt付きで`API_APPROVED`、`API_INELIGIBLE`、`API_DENIED`、`SCOPE_INSUFFICIENT`の一つへ終端し、UI loopはOFFである。
+2. startup-context、README、README.ja、`/lm`、root site、fundraising kit、active formでproduct/mission/tractionの矛盾が0である。
+3. 一つのshared commerce state machineが、少なくともCoconalaと第二providerで同じreceipt schemaを使い、coreにsite名分岐を増やさない。
+4. 成功funnelは`discovered → eligible → verified_application → buyer_reply → funded_contract → artifact_accepted → formal_delivery_readback → paid/withdrawable → banked → compute_paid`を区別する。
+5. localとcloudが同じkernel contract suiteを通り、差分はruntime/browser/vault/scheduler/billing adapterだけである。
+6. clean machineへ公開repoだけからinstallでき、private checkout、外部symlink、生credential、Dais固有pathが0である。
+7. working Coconala loopは移行中も止めず、shared adapterで同等のofficial receiptとreplay-zeroを得てから旧ownerを退役する。
+
+#### Atomic remaining TODO — この順序だけで進める
+
+| # | ID | 状態 | 原子的完了条件 |
+|---:|---|---|---|
+| 1 | UPW-01 contain unauthorized UI runtime | DONE | Upwork labels/process/port ownerを停止し、外部effect 0をreadback |
+| 2 | UPW-02 restore account access | DONE | 通常email/password login、Terms確認後にAccount Health=`Full Access`を公式画面でreadback |
+| 3 | UPW-03 API eligibility preflight | DONE | official requirementsとaccount receiptを照合。identity unverified、new freelancer account、contract/earnings 0、JSS未観測により`API_INELIGIBLE` |
+| 4 | UPW-04 exact action-scope inquiry | DONE | 既存Support caseへ6 actionを一度だけ質問し、Gmail sent messageを同一threadでreadback。公開evidenceはcase/message/threadをhash化 |
+| 5 | UPW-05 API request or ineligibility receipt | DONE | 条件未達のためAPI formを送信せず、`docs/evidence/upwork/2026-08-26-api-terminal.json`へtruthful `API_INELIGIBLE`を保存 |
+| 6 | UPW-06 terminal capability manifest | DONE | private 8 browser receiptsをwarning-bound `denied`へ置換。official API 8 actionは`unknown`、labels disabled、`:9233` listener 0 |
+| 7 | CTX-01 merge current startup context | DONE | fixed commits `626d94f36` / `92dd73b07`から動的応募stateを除外して統合。version `2026-08-27.2`、digest `9fbe6198…5338`、kit 6 filesをreadback |
+| 8 | CTX-02 claim provenance gate | DONE | mission/revenue/users/applications/AGIにsource/status/as_of/public_useを必須化。3 claim guardと19 testsでunsupported public artifactを拒否 |
+| 9 | CTX-03 README convergence | DONE | 英日first abstractをproactive general agent/body-mind-money/real action/free OSS local/paid monthly cloudへ統一。self-fundingをFinancial Organへ統合し、README claim guard PASS |
+| 10 | CTX-04 public `/lm` convergence | DONE | `anicca-products` PR #395をmain merge `b61301c15a9…`へ反映。GitHub Actions major outage中は既存Netlify CLI経路でverified-env preview `6a8f0e982a…`→prod `6a8f0f3723…`を実行し、復旧後canonical GHA run `32988269511`もSUCCESS。money-path smoke PASS、live `https://aniccaai.com/lm`はdesktop JA/mobile ENともHTTP 200・3 organs・Telegram/GitHub CTA・overflow 0、数値`?tg=`はGoogle onboardingへ分岐。Life Manager subsetも同期済み |
+| 11 | CTX-05 root-site relationship | DONE | `anicca-products` PR #396をmain merge `7fe3f5f447…`へ反映。root hero/metadata/JSON-LDを`Anicca=mission/company`、`Life Manager=proactive general-agent product`、`Body/Mind/Money=3 organs`へ統一し、旧self-funding/AGI/UBI product sectionsをroot render pathから除外。contract 2/2、preview run `32989091020`、prod run `32989696892`、Netlify deploy `6a8f17a860…`、built-in money-path smoke/rollback gate PASS。live英日HTTP 200・title/CTA/3 organs・overflow 0 |
+| 12 | CTX-06 generated-context drift gate | IN PROGRESS | README英日、committed fundraising kit、active formのdigest契約はoffline 28/28 GREEN。公開Web PR #397はmain `b1ee7a1208…`へmergeし、preview `32990937574`、production `32991554504`、money-path smokeがSUCCESS。live product/repo/Telegram auditは3/3 GREEN。Life Manager PR #2885のmerge-result CI待ち |
+| 13 | CTX-07 public live readback | TODO | product/repo/Telegram/README/Webをfresh browser/HTTPで読み、title・copy・CTA・link・claim provenanceをevidence化 |
+| 14 | CTX-08 accelerator current-batch gate | TODO | batch名を固定せず公式live formを正本にし、generated contextからpreview→submit→confirmation receiptへ進む |
+| 15 | GA-01 existing-core and OSS code map | TODO | 現行agent-runner/connector/gig/evidence/Agent Economyと上記OSSを固定commitで読み、copy/reuse/rejectとlicenseをcall graph付きで確定 |
+| 16 | GA-02 one Goal / Opportunity Graph | TODO | body/mind/moneyのgoal、opportunity、dependency、deadline、outcomeを同じdurable graphで表現し、一つのmanager cursorが再開可能 |
+| 17 | GA-03 capability registry | TODO | capability、provider、required authorization、cost、human requirement、transport、readbackをdata manifest化し、site名をcoreから除去 |
+| 18 | GA-04 shared effect and receipt kernel | TODO | intent、pre-readback、single execution、unknown-effect reconciliation、post-readback、economic attributionを一つのstate machineへ統合 |
+| 19 | GA-05 bounded specialist runtime | TODO | existing agent-runnerをWorkerRuntimeへ接続し、一仕事・step/time/cost limit・heartbeat/cancel・structured resultを共通化 |
+| 20 | GA-06 allocator across organs | TODO | urgency、expected verified utility、capacity、risk、costでDaily/Care/Financialから次の一件を選び、starvation防止を実証 |
+| 21 | GA-07 local/cloud adapter parity | TODO | same kernelをlocal processとhosted workerで実行し、browser/vault/scheduler adapter差替え以外のbranchを0にする |
+| 22 | GA-08 self-funding economic loop | TODO | provider収益と全costをjobへ帰属し、`banked`残高内だけで`compute_paid`を発行。owner資金と混同しない |
+| 23 | GA-09 migrate working Coconala lane | TODO | 現loopを停止せずshadow receipt→replay-zero→natural wake parity→owner切替の順でshared kernelへ載せる |
+| 24 | GA-10 second-provider generality proof | TODO | provider-specific brainを追加せず第二providerでapplication→contract→delivery→bankedを一件閉じ、同じkernelへ学習を返す |
+| 25 | GA-11 hosted product slice | TODO | phone/Telegram/Webだけでtenant onboarding、vault、scheduler、billing、worker isolation、receiptsを同じkernel上で一人分E2E実証 |
+| 26 | GA-12 OSS clean-install release | TODO | public repoのfresh machine install、sample provider manifest、secret refs、local/cloud docs、license notices、reproducible acceptanceを公開 |
+| 27 | GA-13 dependency retirement | TODO | profitable/open-core/Hermes等のruntime/config/symlink/import参照が0、replacementのnatural E2Eとrollback bundle取得後だけ旧dependencyを退役 |
+
+Upworkは`API_INELIGIBLE / UI_AUTOMATION_DENIED / SUPPORT_SCOPE_PENDING`でclean terminalへ入った。
+Support返信待ちは#7以降を止めない。後日API approvalまたはaction-level scope変更を受けた時だけ、exact evidence hashとexpiryを持つ
+private receiptを追加し、GA-03のmanifest更新として同じshared kernelへ再参加させる。
+
+#### Test Matrix — all OK required
+
+| Case | 必須結果 |
+|---|---|
+| Upwork eligible / approved | approved scope以外OFF、credential混在0、rate limit内、公式API readbackあり |
+| Upwork ineligible / denied / scope不足 | UI fallback 0、terminal reason/case receipt、汎用trackは継続 |
+| provider effect前crash | retry可能、外部effect 0 |
+| provider effect後ack loss | blind retry 0、reconciliationでofficial readback後だけterminal |
+| duplicate wake / duplicate candidate | intent exact 1、application/delivery/payment duplicate 0 |
+| human-only requirement | candidate reject、応募/契約/外部effect 0 |
+| negative margin / capacity conflict | commitment 0、理由と次回観測を保存 |
+| local / hosted | 同じfixtureとstate transition、adapter名だけが異なる |
+| public context drift | build/CI fail、古いvalueを公開・応募へ出さない |
+| Coconala migration | old loop継続、shadow parity、切替後replay-zero、rollback可能 |
+| money | attempted/contracted/pendingをrevenueへ加算せず、bank/payout receiptだけbanked |
+| compute | banked reserveを超える支出0、owner walletからの暗黙補填0 |
+
+#### Boundaries / Non-goals
+
+- Upworkの未承認UI automation、CloakBrowserを検出回避として使うこと、session cookie/API key混在を実装しない。
+- 一つの巨大promptへ全責任を入れない。決定論coreとbounded specialistを分離する。
+- providerごとの新しいplanner、ledger、scheduler、database、browserを作らない。
+- working loopをbig-bang rewriteで置換・停止しない。shadow parityとrollbackを先に作る。
+- modelの自己申告、local PASS、PID、Telegramだけで外部完了・収益をclaimしない。
+- KYC、税務契約、bank登録、本人の声・身体・出席をagentが偽装しない。
+- private credential、個人情報、provider dataをOSS、README、fundraising artifactへ複製しない。
+- localとcloudでbusiness logicを二重実装しない。cloud固有なのはtenant isolation、vault、billing、scaleだけとする。
+
+#### Execution Steps / slice size
+
+各行を一つのsliceとして、spec/TODO更新→既存code reuse監査→必要最小変更→focused live verification→receipt→commit/pushの順で閉じる。
+通常sliceはproduction 1〜2 files、test 1 file、合計100 LOC以内をsoft targetとし、超える場合は同じID内でeffect境界ごとに分割する。
+正常系1本に加え、重複外部作用、金額誤り、data loss、secret漏洩を防ぐ最小regressionだけを持つ。内部objectの組合せ網羅は作らない。
+
+#### E2E judgment
+
+この設計自体はdocs-onlyでありruntime E2Eを発生させない。CTX-03〜05はpublic UI変更なので、unit snapshotだけで閉じず、desktop/mobileの
+実browserでhero、CTA、Telegram deep link、cloud/local説明、claim sourceをreadbackする。iOS UIは変更しないためMaestroは不要。
+GA-09〜11は実provider・実receipt・自然owner wake・replay-zeroが必須で、mock/dry-runは補助証拠にしかならない。
 
 ### 0.0 Connector growth contract — current SSOT
 

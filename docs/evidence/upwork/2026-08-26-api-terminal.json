@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "record_type": "upwork_api_terminal",
+  "observed_at": "2026-08-26T15:00:12Z",
+  "provider": "upwork",
+  "account": "redacted_owner_account",
+  "official_requirements": {
+    "source_url": "https://support.upwork.com/hc/en-us/articles/115015857647-How-to-request-an-API-key-from-Upwork",
+    "requirements": {
+      "authentic_name": true,
+      "valid_address": true,
+      "valid_profile_picture": true,
+      "active_verified_payment_method": true,
+      "identity_verification_complete": true,
+      "lifetime_earnings_or_spend_usd_min": 25000,
+      "freelancer_job_success_score_pct_min": 90,
+      "account_good_standing_no_active_suspension": true
+    }
+  },
+  "official_automation_policy": {
+    "source_url": "https://support.upwork.com/hc/en-us/articles/43342677368467-Use-bots-and-other-automation-properly",
+    "browser_interaction_automation_exception_available": false,
+    "approved_api_scope_still_required_per_action": true
+  },
+  "account_readback": {
+    "runtime_ref": "gig/state/upwork-free-loop.json",
+    "runtime_sha256": "a4b005ab2a02eed3a3c2432918f327498f19fddd08f7d96c3b9786c88360b078",
+    "runtime_observed_at": "2026-08-26T10:09:04.450656+00:00",
+    "account_health": "Full Access",
+    "account_standing": "At risk",
+    "policy_violation_count": 1,
+    "submitted_appeal_count": 0,
+    "identity_verification": "unverified",
+    "account_origin": "new_freelancer_account",
+    "submitted_proposals": 12,
+    "active_proposals": 1,
+    "active_contracts": 0,
+    "offers": 0,
+    "available_earnings_usd_minor": 0,
+    "job_success_score": "not_observed"
+  },
+  "eligibility_truth_table": {
+    "authentic_name": "observed",
+    "valid_address": "not_reverified",
+    "valid_profile_picture": "observed",
+    "active_verified_payment_method": "not_observed",
+    "identity_verification_complete": "unmet",
+    "lifetime_earnings_or_spend_usd_min": "unmet",
+    "freelancer_job_success_score_pct_min": "unmet",
+    "account_good_standing_no_active_suspension": "not_proven"
+  },
+  "support_scope_inquiry": {
+    "case_reference_sha256": "3d767600ebeb78770c156e527203b71792efc61a560cdddfcbaa1c9eb7c318a6",
+    "provider_thread_id_sha256": "661ffef1f1569229b0a67e1e7621cd98998187cc29ccaca3b341acc55b583187",
+    "provider_warning_sha256": "f73608997d460cb102b24109c9cddbba08f68d52f5666394052319546a3acaef",
+    "sent_message_id_sha256": "ce2ae1fa93c6161cc52f5c2d340dc2f6ac88ec75d4911875d0d3bdc0eac09ed7",
+    "sent_message_sha256": "9c8669315e0aff2e7ef85573ffb48177e92414775387c41d7b6bc85686e8b6f0",
+    "recipient": "support@upwork.com",
+    "sent_readback": true,
+    "requested_actions": [
+      "discover_jobs",
+      "submit_proposals",
+      "read_send_messages",
+      "read_accept_offers_contracts",
+      "submit_work_request_payment",
+      "read_earnings_payments_withdrawals"
+    ],
+    "provider_reply": "pending_external"
+  },
+  "authorization_readback": {
+    "private_store_mode": "0600",
+    "private_backup_mode": "0600",
+    "cloak_browser": {
+      "state": "denied",
+      "action_count": 8,
+      "matching_receipt_count": 8
+    },
+    "official_api": {
+      "state": "unknown",
+      "action_count": 8,
+      "matching_receipt_count": 0
+    },
+    "upwork_browser_launchd_disabled": true,
+    "upwork_free_loop_launchd_disabled": true,
+    "cdp_9233_listener_count": 0
+  },
+  "decision": {
+    "state": "API_INELIGIBLE",
+    "reason": "Published API requirements are not met: identity is unverified, the new freelancer account has no contracts or available earnings toward the USD 25,000 threshold, and no qualifying Job Success Score is observed.",
+    "ui_automation_enabled": false,
+    "api_automation_enabled": false,
+    "next_transition": "Only an exact written provider permission or approved API scope may replace the denied or unknown action receipts. A support reply is monitored as a future capability change, not as an active execution blocker."
+  }
+}
