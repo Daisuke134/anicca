@@ -44,6 +44,20 @@ test("verified talk readback creates one reference-only durable bundle and exact
     assert.equal(stored.preference_reason, "Open LT first.");
     assert.match(stored.talk_pack_sha256, /^[0-9a-f]{64}$/);
     assert.doesNotMatch(JSON.stringify(stored), /abstract|outline|bio|Life Manager LT/);
+
+    const transitionFile = path.join(stateDir, "talk-application-transitions.jsonl");
+    assert.equal(fs.statSync(transitionFile).mode & 0o777, 0o600);
+    const transitions = fs.readFileSync(transitionFile, "utf8").trim().split("\n").map(JSON.parse);
+    assert.deepEqual(transitions.map((row) => [row.from_state, row.to_state]), [
+      ["discovered", "application_ready"],
+      ["application_ready", "submitted"],
+      ["submitted", "provider_verified"],
+    ]);
+    assert.equal(new Set(transitions.map((row) => row.transition_id)).size, 3);
+    assert.equal(transitions.every((row) => /^talk-transition:[0-9a-f]{64}$/.test(row.transition_id)), true);
+    assert.equal(transitions.every((row) => row.event_ref === input.candidate.event_ref), true);
+    assert.equal(transitions.every((row) => row.provider_receipt_ref === input.providerState.receipt_ref), true);
+    assert.doesNotMatch(JSON.stringify(transitions), /abstract|outline|bio|Life Manager LT/);
   } finally { fs.rmSync(stateDir, { recursive: true, force: true }); }
 });
 
