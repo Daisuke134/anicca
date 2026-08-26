@@ -197,9 +197,10 @@ For every queued candidate until the execution window ends:
    one distinct trusted interaction; this is not a duplicate external effect.
    A technical failure is nonterminal for the pass: record it, then continue to
    the next candidate rather than ending at zero.
-   Before navigating away from a successful completion UI, save the official
-   screen with `python3 skills/browser/scripts/cdp.py screenshot "$TARGET_ID"
-   "$FUNDRAISER_EVIDENCE_DIR/<receipt-safe-name>-completion.png"`. Record that
+   Before navigating away from a successful completion UI, scroll the visible
+   provider completion message into the center of the viewport and save that readable
+   official screen with `python3 skills/browser/scripts/cdp.py screenshot "$TARGET_ID"
+   "$FUNDRAISER_EVIDENCE_DIR/<receipt-safe-name>-completion.png" viewport`. Record that
    exact PNG path in the receipt and Telegram report. A DOM readback without an
    attempted PNG capture is incomplete evidence.
    Then send that PNG with `bash "$FUNDRAISER_TELEGRAM_PHOTO_SENDER"

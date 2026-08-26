@@ -209,6 +209,7 @@ test("production contract runs every minute and maximizes real applications", ()
   assert.match(dailyPrompt, /bracketed placeholders/);
   assert.match(dailyPrompt, /prior `failure` candidates whose recorded local or\s+technical cause has been repaired/);
   assert.match(dailyPrompt, /cdp\.py screenshot/);
+  assert.match(dailyPrompt, /completion\.png" viewport/);
   assert.match(dailyPrompt, /completion\.png/);
   assert.match(dailyPrompt, /TELEGRAM_PHOTO_SENT=true MSGID=<id>/);
   assert.match(dailyPrompt, /submitted_verified/);

@@ -72,19 +72,19 @@ def navigate(tid: str, url: str) -> None:
         ws.close()
 
 
-def screenshot(tid: str, path: str) -> dict:
+def screenshot(tid: str, path: str, viewport_only: bool = False) -> dict:
     destination = Path(path).expanduser().resolve()
     destination.parent.mkdir(parents=True, exist_ok=True)
     ws = _page(tid)
     try:
         _rpc(ws, 1, "Page.enable")
         result = _rpc(ws, 2, "Page.captureScreenshot", {
-            "format": "png", "captureBeyondViewport": True, "fromSurface": True,
+            "format": "png", "captureBeyondViewport": not viewport_only, "fromSurface": True,
         })
         payload = base64.b64decode(result["data"])
         destination.write_bytes(payload)
         os.chmod(destination, 0o600)
-        return {"path": str(destination), "bytes": len(payload)}
+        return {"path": str(destination), "bytes": len(payload), "viewport_only": viewport_only}
     finally:
         ws.close()
 
@@ -223,7 +223,7 @@ def main(argv: list[str]) -> int:
         source = sys.stdin.read() if args[1] == "-" else open(args[1], encoding="utf-8").read()
         print(json.dumps(evaluate(args[0], source), ensure_ascii=False))
     elif command == "screenshot":
-        print(json.dumps(screenshot(args[0], args[1]), ensure_ascii=False))
+        print(json.dumps(screenshot(args[0], args[1], len(args) > 2 and args[2] == "viewport"), ensure_ascii=False))
     elif command == "clickxy":
         print(json.dumps(click(args[0], int(args[1]), int(args[2]))))
     elif command == "insert":
