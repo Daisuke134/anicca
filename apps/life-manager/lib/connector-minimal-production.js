@@ -234,6 +234,10 @@ function createProductionProviderRouter(options = {}) {
         if (classifyTalkOpportunity == null) return Object.freeze([...reconcile, ...eligible]);
         const enriched = [];
         for (const candidate of eligible) {
+          if (candidate.priority_class !== "open_talk") {
+            enriched.push(candidate);
+            continue;
+          }
           let opportunity = null;
           try { opportunity = await classifyTalkOpportunity(candidate); } catch { opportunity = null; }
           let talkPack = null;

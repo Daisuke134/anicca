@@ -465,16 +465,18 @@ test("production provider router promotes a verified open talk within equally fi
   const plain = Object.freeze({ provider: "luma", event_ref: "luma-event://event/plain-ai", canonical_url: "https://luma.com/plain-ai", title: "AI Builders", body: "AI meetup for builders." });
   const talk = Object.freeze({ provider: "luma", event_ref: "luma-event://event/ai-lt", canonical_url: "https://luma.com/ai-lt", title: "AI Builders LT", body: "AI meetup. 5 minute LT applications are open at https://forms.example.com/ai-lt" });
   const workflow = { async discoverCandidates() { return [plain, talk]; }, async runDirectAction() {}, async readProviderState() { return { status: "absent" }; } };
+  const classified = [];
   const router = createProductionProviderRouter({
     lumaWorkflow: workflow, connpassWorkflow: workflow,
     eventPreferences: "Tokyo AI and open lightning talks",
     async rankCandidates(input) {
       return validateProviderCandidateRanking({ ranked_events: [
         { event_ref: plain.event_ref, priority_class: "ai", preference_fit: "strong", preference_reason: "AI event." },
-        { event_ref: talk.event_ref, priority_class: "ai", preference_fit: "strong", preference_reason: "AI event with talk text." },
+        { event_ref: talk.event_ref, priority_class: "open_talk", preference_fit: "strong", preference_reason: "AI event with an open LT." },
       ] }, input);
     },
     async classifyTalkOpportunity(candidate) {
+      classified.push(candidate.event_ref);
       const open = candidate.event_ref === talk.event_ref;
       return validateEventTalkOpportunity(open ? {
         participation_kind: "both", talk_format: "lightning_talk", application_status: "open",
@@ -493,6 +495,7 @@ test("production provider router promotes a verified open talk within equally fi
 
   const result = await router.discoverCandidates("luma", [], {});
   assert.deepEqual(result.map((candidate) => candidate.event_ref), [talk.event_ref, plain.event_ref]);
+  assert.deepEqual(classified, [talk.event_ref]);
   assert.equal(result[0].priority_class, "open_talk");
   assert.equal(result[0].talk_opportunity.application_url, "https://forms.example.com/ai-lt");
 });
