@@ -376,7 +376,7 @@ test("default native comparator accepts same/transcoded video but rejects visibl
   execFileSync("ffmpeg", ["-loglevel", "error", "-y", "-i", splitA, "-c:v", "libx264", "-crf", "23", "-pix_fmt", "yuv420p", splitATranscoded]);
   execFileSync("ffmpeg", ["-loglevel", "error", "-y", "-f", "lavfi", "-i", "testsrc2=s=64x64:d=15:r=10", "-pix_fmt", "yuv420p", pattern]);
   execFileSync("ffmpeg", ["-loglevel", "error", "-y", "-i", pattern, "-vf", "eq=brightness=0.04:contrast=1.03:saturation=1.05", "-c:v", "libx264", "-crf", "28", "-pix_fmt", "yuv420p", patternInstagramLike]);
-  execFileSync("ffmpeg", ["-loglevel", "error", "-y", "-i", pattern, "-vf", "scale=48:48,scale=64:64", "-c:v", "libx264", "-crf", "32", "-pix_fmt", "yuv420p", patternDownscaled]);
+  execFileSync("ffmpeg", ["-loglevel", "error", "-y", "-i", pattern, "-vf", "scale=60:60,scale=64:64", "-c:v", "libx264", "-crf", "20", "-pix_fmt", "yuv420p", patternDownscaled]);
   execFileSync("ffmpeg", ["-loglevel", "error", "-y", "-i", pattern, "-vf", "drawbox=x=0:y=0:w=iw:h=ih:color=green@1:t=fill:enable='eq(n\\,8)'", "-c:v", "libx264", "-crf", "0", "-preset", "ultrafast", "-pix_fmt", "yuv420p", patternSingleFrameChanged]);
   for (const [file, phase] of [[checkerA, 0], [checkerB, 1]]) {
     execFileSync("ffmpeg", ["-loglevel", "error", "-y", "-f", "lavfi", "-i", `nullsrc=s=64x64:d=1:r=10,geq=lum='128+30*if(mod(X+Y+${phase},2),1,-1)':cb=128:cr=128`, "-pix_fmt", "yuv420p", file]);
@@ -402,6 +402,15 @@ test("native comparator honors ffprobe timeout", () => {
   const startedAt = Date.now();
   assert.equal(compareNativeVideo(red, red, { ffprobeBin: slowFfprobe, timeoutMs: 100 }), false);
   assert.ok(Date.now() - startedAt < 1000);
+});
+
+test("native comparator requires decoded frame count", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "lm-native-video-frame-count-"));
+  const red = path.join(dir, "red.mp4");
+  execFileSync("ffmpeg", ["-loglevel", "error", "-y", "-f", "lavfi", "-i", "color=c=red:s=64x64:d=1:r=10", "-pix_fmt", "yuv420p", red]);
+  const fakeFfprobe = path.join(dir, "fake-ffprobe.js");
+  fs.writeFileSync(fakeFfprobe, "#!/usr/bin/env node\nprocess.stdout.write(JSON.stringify({streams:[{codec_type:'video',duration:'1',width:64,height:64,nb_frames:'10'}],format:{duration:'1'}}));\n", { mode: 0o755 });
+  assert.equal(compareNativeVideo(red, red, { ffprobeBin: fakeFfprobe }), false);
 });
 
 test("CLI accepts only run with a mandatory exact ISO slot", () => {

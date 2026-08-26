@@ -327,7 +327,7 @@ async function defaultLiveFetch(url, init, options = {}) {
 }
 
 function probeVideo(file, ffprobeBin = "ffprobe", timeoutMs = 60_000) {
-  const result = spawnSync(ffprobeBin, ["-v", "error", "-print_format", "json", "-show_streams", "-show_format", file], {
+  const result = spawnSync(ffprobeBin, ["-v", "error", "-count_frames", "-print_format", "json", "-show_streams", "-show_format", file], {
     encoding: "utf8", maxBuffer: 2 * 1024 * 1024, timeout: timeoutMs,
   });
   if (!result || result.status !== 0) return null;
@@ -337,7 +337,7 @@ function probeVideo(file, ffprobeBin = "ffprobe", timeoutMs = 60_000) {
     const duration = Number(stream && (stream.duration || parsed.format && parsed.format.duration));
     const width = Number(stream && stream.width);
     const height = Number(stream && stream.height);
-    const frames = Number(stream && stream.nb_frames);
+    const frames = Number(stream && stream.nb_read_frames);
     if (!stream || !Number.isFinite(duration) || duration <= 0 || !Number.isSafeInteger(width) || width < 2 || !Number.isSafeInteger(height) || height < 2 || !Number.isSafeInteger(frames) || frames < 1) return null;
     return { duration, aspect: width / height, width, height, frames };
   } catch { return null; }
