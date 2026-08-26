@@ -19,6 +19,7 @@ const {
   EN_AFFIRMATION_LANE: EN_RUNNER_LANE,
   EN_SLIDESHOW_TIKTOK_LANE: TIKTOK_SLIDESHOW_RUNNER_LANE,
   enAffirmationProductionSlot,
+  enSlideshowProductionSlot,
   parseArgs,
   runAniccaCarouselCanary,
   runAniccaEnAffirmationInstagramCanary,
@@ -109,11 +110,11 @@ function fixture() {
   return { dataDir, env, objectStore, importBytes, packRef, mediaRefs, captionRef, approvalRef };
 }
 
-function enFixture() {
+function enFixture(lane = EN_RUNNER_LANE) {
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "lm-anicca-en-affirmation-canary-"));
   const objectDir = path.join(dataDir, "objects");
   const objectStore = createContentObjectStore({ objectDir });
-  const refs = [EN_PACK_REF, ...EN_MEDIA_REFS, EN_CAPTION_REF, EN_APPROVAL_REF];
+  const refs = [lane.packRef, ...lane.mediaRefs, lane.captionRef, lane.approvalRef];
   for (const ref of refs) {
     const source = path.join(EN_OBJECT_SOURCE, ref.slice(-64));
     assert.equal(fs.statSync(source, { throwIfNoEntry: false })?.isFile(), true, `missing EN object ${ref}`);
@@ -149,10 +150,10 @@ function enFixture() {
     env: {
       LM_DATA_DIR: dataDir,
       LM_RUNTIME_TENANT_ID: "dais-local",
-      [EN_RUNNER_LANE.packEnv]: EN_PACK_REF,
-      [EN_RUNNER_LANE.mediaEnv]: EN_MEDIA_REFS.join(","),
-      [EN_RUNNER_LANE.captionEnv]: EN_CAPTION_REF,
-      [EN_RUNNER_LANE.approvalEnv]: EN_APPROVAL_REF,
+      [lane.packEnv]: lane.packRef,
+      [lane.mediaEnv]: lane.mediaRefs.join(","),
+      [lane.captionEnv]: lane.captionRef,
+      [lane.approvalEnv]: lane.approvalRef,
       LM_POSTIZ_API_KEY: "postiz-secret-fixture",
       LM_TELEGRAM_BOT_TOKEN: "telegram-secret-fixture",
       LM_TELEGRAM_ALERT_CHAT_ID: "123456789",
@@ -352,10 +353,39 @@ test("EN affirmation production resolves the three exact JST daily slots", () =>
 
 test("EN slideshow TikTok command selects only its immutable lane", () => {
   assert.deepEqual(parseArgs(["run-en-slideshow-tiktok", "--slot", SLOT]), { command: "run-en-slideshow-tiktok", slot: SLOT });
+  assert.deepEqual(parseArgs(["run-en-slideshow-tiktok-production"]), { command: "run-en-slideshow-tiktok-production", slot: null });
   assert.equal(TIKTOK_SLIDESHOW_RUNNER_LANE, EN_SLIDESHOW_TIKTOK_LANE);
   assert.equal(TIKTOK_SLIDESHOW_RUNNER_LANE.accountId, "@anicca_slideshow");
   assert.equal(TIKTOK_SLIDESHOW_RUNNER_LANE.integrationId, "cmnenjkff01j1pa0ysufmzhfr");
   assert.throws(() => runAniccaEnSlideshowTikTokCanary(["run-en-affirmation", "--slot", SLOT], {}), /accepts only/i);
+});
+
+test("EN slideshow production resolves the three exact JST daily slots", () => {
+  assert.equal(enSlideshowProductionSlot(Date.parse("2026-08-26T00:01:00.000Z")), "2026-08-26T00:00:00.000Z");
+  assert.equal(enSlideshowProductionSlot(Date.parse("2026-08-26T06:01:00.000Z")), "2026-08-26T06:00:00.000Z");
+  assert.equal(enSlideshowProductionSlot(Date.parse("2026-08-26T12:01:00.000Z")), "2026-08-26T12:00:00.000Z");
+});
+
+test("armed EN slideshow production sends exact Postiz photo proof and Telegram once", async () => {
+  const lane = TIKTOK_SLIDESHOW_RUNNER_LANE;
+  const value = enFixture(lane);
+  const manifestPath = path.join(value.dataDir, "marketing", "lane-manifest.json");
+  const before = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+  const rows = before.lanes.map((row) => ({ ...row, verified: true, ...(row.integration_id === lane.integrationId ? { lane_state: "production-armed", production_armed: true, target_daily_limit: 3 } : {}) }));
+  writeMarketingLaneManifest(createMarketingLaneManifest({ tenant_id: before.tenant_id, integrations: rows, holds: before.holds.map((row) => ({ ...row, verified: true })) }, { tenantId: before.tenant_id, assignments: rows.map((row) => ({ ...row })) }), { dataDir: value.dataDir });
+  const controls = { manifest: fs.readFileSync(manifestPath), fence: fs.readFileSync(path.join(value.dataDir, "marketing", "publication-effect-fence.json")) };
+  const telegramCalls = [];
+  const result = await runAniccaCarouselCanary(["run-en-slideshow-tiktok-production"], {
+    env: value.env, objectStore: value.objectStore, now: () => "2026-08-26T08:01:00.000Z",
+    runDistribution: async () => ({ state: "PUBLISHED", reconciled: true, post_id: "postiz-slideshow-production-1", post_url: null, release_id: "p_pub_url~v2.7678198747632977937", integration_id: lane.integrationId, content_sha256: lane.captionRef.slice(-64), title: lane.title, posting_method: "DIRECT_POST" }),
+    sendTelegram: async (...args) => { telegramCalls.push(args); return { ok: true, result: { message_id: 44 } }; },
+  });
+  assert.equal(result.slot, "2026-08-26T06:00:00.000Z");
+  assert.equal(result.publication.created, true);
+  assert.deepEqual(result.telegram, { created: true, held: false, message_id: 44 });
+  assert.equal(telegramCalls.length, 1);
+  assert.deepEqual(fs.readFileSync(manifestPath), controls.manifest);
+  assert.deepEqual(fs.readFileSync(path.join(value.dataDir, "marketing", "publication-effect-fence.json")), controls.fence);
 });
 
 test("EN affirmation alternate self-consistent pack and approval stop before secret/provider", async () => {

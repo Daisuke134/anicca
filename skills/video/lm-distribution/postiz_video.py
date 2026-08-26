@@ -202,6 +202,10 @@ def find_post(response, post_id: str, platform: str = "tiktok") -> dict:
         release_id = str(match.get("releaseId") or "")
         if re.fullmatch(r"[A-Za-z0-9_-]{11}", release_id):
             url = f"https://www.youtube.com/watch?v={release_id}"
+    release_id = str(match.get("releaseId") or "")
+    integration = match.get("integration") if isinstance(match.get("integration"), dict) else {}
+    if state == "PUBLISHED" and platform == "tiktok" and not url and re.fullmatch(r"p_pub_url~[A-Za-z0-9._~-]+", release_id):
+        return {"state": state, "post_url": None, "release_id": release_id, "integration_id": integration.get("id"), "content": match.get("content")}
     if state == "PUBLISHED" and (not isinstance(url, str) or not url.startswith("https://")):
         raise PostizError("Postiz marked PUBLISHED without a public release URL")
     return {"state": state, "post_url": url if isinstance(url, str) else None}
@@ -530,6 +534,17 @@ def is_reconciled_state(state: dict, platform: str = "tiktok") -> bool:
     )
 
 
+def is_tiktok_photo_proof(state: dict, integration: str, caption: str) -> bool:
+    return (
+        isinstance(state, dict)
+        and state.get("state") == "PUBLISHED"
+        and state.get("post_url") is None
+        and re.fullmatch(r"p_pub_url~[A-Za-z0-9._~-]+", str(state.get("release_id") or "")) is not None
+        and state.get("integration_id") == integration
+        and state.get("content") == caption
+    )
+
+
 def read_caption(caption_file: Path, *, carousel: bool = False) -> str:
     raw = caption_file.read_text(encoding="utf-8")
     if not raw.strip():
@@ -576,25 +591,29 @@ def _publish(args, api_key: str, caption: str) -> int:
                 if args.platform == "instagram" and _valid_instagram_carousel_url(state.get("post_url")):
                     break
                 if args.platform == "tiktok":
+                    if is_tiktok_photo_proof(state, args.integration, caption):
+                        break
                     if _valid_public_url("tiktok", state.get("post_url")):
                         break
-                    resolved = resolve_profile_release_url(state.get("post_url"), caption, posted_after=posted_after)
+                    resolved = resolve_profile_release_url(state.get("post_url"), caption, posted_after=posted_after) if state.get("post_url") else None
                     if resolved:
                         state["post_url"] = resolved
                         break
             if state["state"] == "ERROR":
                 break
+        photo_proof = args.platform == "tiktok" and is_tiktok_photo_proof(state, args.integration, caption)
         result = {
             "post_id": post_id,
             **state,
             "reconciled": state.get("state") == "PUBLISHED" and (
                 _valid_instagram_carousel_url(state.get("post_url")) if args.platform == "instagram"
-                else _valid_public_url("tiktok", state.get("post_url"))
+                else _valid_public_url("tiktok", state.get("post_url")) or photo_proof
             ),
+            **({"content_sha256": hashlib.sha256(caption.encode("utf-8")).hexdigest(), "title": args.title[:100], "posting_method": "DIRECT_POST"} if photo_proof else {}),
         }
         print(json.dumps(result, ensure_ascii=False, separators=(",", ":")))
         valid_url = _valid_instagram_carousel_url(state.get("post_url")) if args.platform == "instagram" else _valid_public_url("tiktok", state.get("post_url"))
-        if state["state"] != "PUBLISHED" or not valid_url:
+        if state["state"] != "PUBLISHED" or (not valid_url and not photo_proof):
             reason = state.get("error")
             suffix = f": {reason}" if isinstance(reason, str) and reason else ""
             raise PostizError(f"Postiz terminal state is {state['state']}{suffix}")

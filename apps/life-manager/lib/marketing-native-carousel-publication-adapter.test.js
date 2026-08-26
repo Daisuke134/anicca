@@ -56,7 +56,7 @@ test("EN slideshow TikTok lane accepts exact Postiz API photo proof without inve
   assert.equal(verifyMarketingNativeCarouselPublicationReceipt({ ...apiReceipt, provider_content_sha256: "f".repeat(64) }), false);
 });
 
-test("EN slideshow TikTok exact pack executes through six ordered JPEGs only", async () => {
+test("EN slideshow TikTok exact pack executes through six ordered JPEGs and exact Postiz API photo proof", async () => {
   const lane = EN_SLIDESHOW_TIKTOK_LANE;
   const value = buildMarketingNativeCarouselPublicationJob({
     tenantId: "dais-local", productId: lane.productId, formatId: lane.formatId, form: lane.form,
@@ -71,7 +71,7 @@ test("EN slideshow TikTok exact pack executes through six ordered JPEGs only", a
   const result = await executeMarketingNativeCarouselPublicationJob(value, {
     objectStore: { resolve: (ref) => path.join(objectRoot, ref.slice(-64)) },
     secretProvider: { get: async () => "postiz-secret" }, ledgerPath: ledger,
-    runDistribution: async (input) => { calls.push(input); return { state: "PUBLISHED", reconciled: true, post_id: "postiz-tiktok-carousel-1", post_url: "https://www.tiktok.com/@anicca_slideshow/video/7777777777777777777" }; },
+    runDistribution: async (input) => { calls.push(input); return { state: "PUBLISHED", reconciled: true, post_id: "postiz-tiktok-carousel-1", post_url: null, release_id: "p_pub_url~v2.7678198747632977937", integration_id: lane.integrationId, content_sha256: lane.captionRef.slice(-64), title: lane.title, posting_method: "DIRECT_POST" }; },
     now: () => "2026-08-26T06:01:00.000Z",
   });
   assert.equal(calls.length, 1);
@@ -80,6 +80,9 @@ test("EN slideshow TikTok exact pack executes through six ordered JPEGs only", a
   assert.equal(calls[0].integrationId, lane.integrationId);
   assert.equal(calls[0].mediaPaths.length, 6);
   assert.deepEqual(result.receipt.media_sha256, lane.mediaRefs.map((ref) => ref.slice(-64)));
+  assert.equal(result.receipt.public_url, null);
+  assert.equal(result.receipt.provider_state, "PUBLISHED");
+  assert.equal(result.receipt.provider_release_id, "p_pub_url~v2.7678198747632977937");
   assert.equal(verifyMarketingNativeCarouselPublicationReceipt(result.receipt), true);
 });
 

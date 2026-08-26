@@ -152,6 +152,32 @@ class PostizVideoTests(unittest.TestCase):
             self.assertEqual(payloads[0]["posts"][0]["settings"]["title"], "Exact hook")
             self.assertEqual(len(payloads[0]["posts"][0]["value"][0]["image"]), 6)
 
+    def test_tiktok_photo_carousel_publish_accepts_exact_postiz_api_proof_without_url(self):
+        with tempfile.TemporaryDirectory() as directory:
+            images = []
+            for index in range(1, 7):
+                image = Path(directory) / f"{index}.jpg"
+                image.write_bytes(b"\xff\xd8\xff" + bytes([index]))
+                images.append(image)
+            args = SimpleNamespace(image=images, platform="tiktok", integration="cmnenjkff01j1pa0ysufmzhfr", title="Exact hook", video=None)
+            proof = {"state": "PUBLISHED", "post_url": None, "release_id": "p_pub_url~v2.7678198747632977937", "integration_id": args.integration, "content": "Exact caption"}
+            with patch.object(postiz_video, "upload_image", side_effect=lambda image, _key: (image.stem, f"https://uploads.example/{image.name}")):
+                with patch.object(postiz_video, "create_post", return_value="postiz-photo-1"):
+                    with patch.object(postiz_video, "read_publish_state", return_value=proof):
+                        with patch.object(postiz_video.time, "sleep"):
+                            with patch("builtins.print") as output:
+                                self.assertEqual(postiz_video._publish(args, "token", "Exact caption"), 0)
+            result = json.loads(output.call_args.args[0])
+            self.assertTrue(result["reconciled"])
+            self.assertIsNone(result["post_url"])
+            self.assertEqual(result["release_id"], proof["release_id"])
+
+    def test_find_post_preserves_exact_tiktok_photo_api_proof(self):
+        row = {"id": "photo-1", "state": "PUBLISHED", "releaseURL": None, "releaseId": "p_pub_url~v2.7678198747632977937", "content": "Exact caption", "integration": {"id": "integration-1"}}
+        self.assertEqual(postiz_video.find_post([row], "photo-1", "tiktok"), {
+            "state": "PUBLISHED", "post_url": None, "release_id": row["releaseId"], "integration_id": "integration-1", "content": "Exact caption",
+        })
+
     def test_carousel_payload_rejects_short_or_video_image_mix(self):
         with self.assertRaises(postiz_video.PostizError):
             postiz_video.build_payload(
