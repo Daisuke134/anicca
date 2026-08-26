@@ -22,6 +22,7 @@ const {
   resolvePublicIPv4,
 } = require("./anicca-en-widget-canary.js");
 const { parseArgs: parseJaArgs, runAniccaJaWidgetCanary } = require("./anicca-ja-widget-canary.js");
+const { JA_CARD_LANE, parseArgs: parseJaCardArgs, runAniccaJaCardInstagramCanary } = require("./anicca-ja-card-instagram-canary.js");
 
 const SLOT = "2026-08-26T07:30:00.000Z";
 const FIRST_NOW = "2026-08-26T07:31:00.000Z";
@@ -268,7 +269,7 @@ function verification(value, receipt, overrides = {}, evidenceOverrides = {}, la
     status: "verified",
     platform: lane.platform,
     public_url: receipt.public_url,
-    account_id: lane.account,
+    account_id: lane.nativeAccount || lane.account,
     integration_ref: lane.integrationRef,
     caption: value.caption,
     caption_sha256: value.captionRef.slice(-64),
@@ -309,7 +310,7 @@ function genericOptionsFor(value, publicationCalls, telegramCalls = [], lane = E
       return { ok: true, result: { message_id: 42 } };
     },
     fetchImpl: async (url) => (String(url).endsWith("embed/captioned/")
-      ? { status: 200, text: async () => `<a class="CaptionUsername" href="https://www.instagram.com/${lane.account.slice(1)}/">${lane.account}</a><div data-testid="caption">${value.caption}</div><script>{"GraphVideo":{"video_url":"${NATIVE_URL}"}}</script>` }
+      ? { status: 200, text: async () => `<a class="CaptionUsername" href="https://www.instagram.com/${(lane.nativeAccount || lane.account).slice(1)}/">${lane.nativeAccount || lane.account}</a><div data-testid="caption">${value.caption}</div><script>{"GraphVideo":{"video_url":"${NATIVE_URL}"}}</script>` }
       : { status: 200, arrayBuffer: async () => NATIVE_BYTES.buffer.slice(NATIVE_BYTES.byteOffset, NATIVE_BYTES.byteOffset + NATIVE_BYTES.byteLength) }),
     videoComparator: async () => true,
     now: () => FIRST_NOW,
@@ -595,6 +596,7 @@ test("/p/, profile, and numeric Reel URLs become unknown and never notify", asyn
 });
 
 const JA_CAPTION = "ロック画面にアファメーション\n置けるの知らなかった\n\n#ロック画面 #アファメーション #ウィジェット #メンタルヘルス #アニッチャ\n";
+const JA_CARD_CAPTION = "怠けてるんじゃない。\n脳が限界なだけ。\n\n#anicca #セルフケア #習慣 #AI\n";
 
 test("JA widget wrapper is exact-lane and exact-slot only", () => {
   assert.deepEqual(parseJaArgs(["run", "--slot", SLOT]), { command: "run", slot: SLOT });
@@ -739,6 +741,158 @@ test("JA verified native release sends one Telegram and same-slot replay is zero
   const second = await runAniccaJaWidgetCanary(["run", "--slot", SLOT], { ...options, now: () => VERIFIED_NOW });
   const third = await runAniccaJaWidgetCanary(["run", "--slot", SLOT], { ...options, now: () => VERIFIED_NOW });
   assert.equal(first.telegram.held, true);
+  assert.deepEqual(second.telegram, { created: true, held: false, message_id: 42 });
+  assert.deepEqual(third.telegram, { created: false, held: false, message_id: 42 });
+  assert.equal(second.publication.created, false);
+  assert.equal(third.publication.created, false);
+  assert.equal(publicationCalls.length, 1);
+  assert.equal(telegramCalls.length, 1);
+});
+
+test("JA Card wrapper is exact-lane and exact-slot only", () => {
+  assert.deepEqual(parseJaCardArgs(["run", "--slot", SLOT]), { command: "run", slot: SLOT });
+  assert.throws(() => parseJaCardArgs(["run", "--slot", "2026-08-26T07:30:00Z"]), /invalid|usage/i);
+  assert.throws(() => parseJaCardArgs(["publish"]), /usage/i);
+  assert.deepEqual(
+    {
+      name: JA_CARD_LANE.name,
+      tenant: JA_CARD_LANE.tenant,
+      product: JA_CARD_LANE.product,
+      locale: JA_CARD_LANE.locale,
+      platform: JA_CARD_LANE.platform,
+      account: JA_CARD_LANE.account,
+      nativeAccount: JA_CARD_LANE.nativeAccount,
+      manifestAccount: JA_CARD_LANE.manifestAccount,
+      profileRef: JA_CARD_LANE.profileRef,
+      integrationRef: JA_CARD_LANE.integrationRef,
+      integrationId: JA_CARD_LANE.integrationId,
+      renderer: JA_CARD_LANE.renderer,
+      format: JA_CARD_LANE.format,
+      packFormat: JA_CARD_LANE.packFormat,
+      form: JA_CARD_LANE.form,
+      lane: JA_CARD_LANE.lane,
+      creativeId: JA_CARD_LANE.creativeId,
+      tokenRef: JA_CARD_LANE.tokenRef,
+      telegramTokenRef: JA_CARD_LANE.telegramTokenRef,
+      chatRef: JA_CARD_LANE.chatRef,
+      packEnv: JA_CARD_LANE.packEnv,
+      videoEnv: JA_CARD_LANE.videoEnv,
+      captionEnv: JA_CARD_LANE.captionEnv,
+      approvalEnv: JA_CARD_LANE.approvalEnv,
+      verificationEnv: JA_CARD_LANE.verificationEnv,
+      approvedPackName: JA_CARD_LANE.approvedPackName,
+      workerLabel: JA_CARD_LANE.workerLabel,
+      enforceApprovedPack: JA_CARD_LANE.enforceApprovedPack,
+    },
+    {
+      name: "JACARD",
+      tenant: "dais-local",
+      product: "anicca-ios",
+      locale: "ja",
+      platform: "instagram",
+      account: "@anicca.jp1",
+      nativeAccount: "@anicca.ios.jp",
+      manifestAccount: "anicca-ios-ja-instagram",
+      profileRef: "profile://instagram/anicca.jp1",
+      integrationRef: "integration://postiz/instagram/cmn8ycvtn02djqx0ytuisn9mw",
+      integrationId: "cmn8ycvtn02djqx0ytuisn9mw",
+      renderer: "reelclaw-card",
+      format: "reelclaw-card",
+      packFormat: "nudge-card-reel",
+      form: "nudge-card",
+      lane: "anicca-ja-card-instagram",
+      creativeId: "JA-CARD-CANARY-35a15c7ce990",
+      tokenRef: "secret://postiz/api-key",
+      telegramTokenRef: "secret://telegram/bot-token",
+      chatRef: "telegram-chat://owner",
+      packEnv: "LM_ANICCA_JA_CARD_INSTAGRAM_PACK_REF",
+      videoEnv: "LM_ANICCA_JA_CARD_INSTAGRAM_VIDEO_REF",
+      captionEnv: "LM_ANICCA_JA_CARD_INSTAGRAM_CAPTION_REF",
+      approvalEnv: "LM_ANICCA_JA_CARD_INSTAGRAM_APPROVAL_REF",
+      verificationEnv: "LM_ANICCA_JA_CARD_INSTAGRAM_NATIVE_VERIFICATION_REF",
+      approvedPackName: "anicca-ios-reelclaw-card-ja.pack.json",
+      workerLabel: "anicca-ja-card-instagram-canary",
+      enforceApprovedPack: true,
+    },
+  );
+});
+
+test("JA Card first publication uses dedicated refs, raw integration, empty profile state, and holds Telegram", async () => {
+  const value = fixture(JA_CARD_LANE, JA_CARD_CAPTION);
+  value.env.LM_ANICCA_MAIN_PACK_REF = "object://sha256/" + "f".repeat(64);
+  value.env.LM_ANICCA_MAIN_MEDIA_REFS = JSON.stringify(["object://sha256/" + "e".repeat(64)]);
+  value.env.LM_ANICCA_MAIN_INSTAGRAM_APPROVAL_REF = "object://sha256/" + "d".repeat(64);
+  const publicationCalls = [];
+  const telegramCalls = [];
+  const result = await runAniccaJaCardInstagramCanary(
+    ["run", "--slot", SLOT],
+    genericOptionsFor(value, publicationCalls, telegramCalls, JA_CARD_LANE),
+  );
+  assert.equal(result.publication.created, true);
+  assert.deepEqual(result.telegram, { created: false, held: true, message_id: null });
+  assert.equal(publicationCalls.length, 1);
+  assert.equal(publicationCalls[0].instagramIntegration, JA_CARD_LANE.integrationId);
+  assert.equal(publicationCalls[0].instagramProfileStatePath, "");
+  assert.equal(publicationCalls[0].videoPath, value.objectStore.resolve(value.videoRef));
+  assert.equal(publicationCalls[0].captionPath, value.objectStore.resolve(value.captionRef));
+  assert.equal(publicationCalls[0].approvalPath, value.objectStore.resolve(value.approvalRef));
+  assert.equal(telegramCalls.length, 0);
+});
+
+test("JA Card missing or wrong dedicated pack/approval fails before secret and provider", async () => {
+  for (const scenario of [
+    { envKey: JA_CARD_LANE.packEnv, target: "packRef", patch: { account_id: "@wrong.card" } },
+    { envKey: JA_CARD_LANE.approvalEnv, target: "approvalRef", patch: { integration_ref: "integration://postiz/instagram/wrong" } },
+    { envKey: JA_CARD_LANE.packEnv, target: null, patch: null },
+    { envKey: JA_CARD_LANE.approvalEnv, target: null, patch: null },
+  ]) {
+    const value = fixture(JA_CARD_LANE, JA_CARD_CAPTION);
+    value.env.LM_ANICCA_MAIN_PACK_REF = "object://sha256/" + "f".repeat(64);
+    value.env.LM_ANICCA_MAIN_MEDIA_REFS = JSON.stringify(["object://sha256/" + "e".repeat(64)]);
+    value.env.LM_ANICCA_MAIN_INSTAGRAM_APPROVAL_REF = "object://sha256/" + "d".repeat(64);
+    if (scenario.target) value.env[scenario.envKey] = replaceJson(value, scenario.target, scenario.patch);
+    else delete value.env[scenario.envKey];
+    const publicationCalls = [];
+    const secretCalls = [];
+    const integrationCalls = [];
+    await assert.rejects(
+      runAniccaJaCardInstagramCanary(["run", "--slot", SLOT], genericOptionsFor(value, publicationCalls, [], JA_CARD_LANE, {
+        secretProvider: { get: async (...args) => { secretCalls.push(args); return "secret"; } },
+        integrationProvider: { get: async (...args) => { integrationCalls.push(args); return JA_CARD_LANE.integrationId; } },
+      })),
+      /pack|approval/i,
+    );
+    assert.equal(publicationCalls.length, 0);
+    assert.equal(secretCalls.length, 0);
+    assert.equal(integrationCalls.length, 0);
+  }
+});
+
+test("JA Card wrong native owner holds, exact native owner sends one Telegram, and same-slot replay is zero", async () => {
+  const value = fixture(JA_CARD_LANE, JA_CARD_CAPTION);
+  const publicationCalls = [];
+  const telegramCalls = [];
+  const options = genericOptionsFor(value, publicationCalls, telegramCalls, JA_CARD_LANE);
+  const first = await runAniccaJaCardInstagramCanary(["run", "--slot", SLOT], options);
+  const receipt = JSON.parse(fs.readFileSync(path.join(value.dataDir, "marketing", "receipts.jsonl"), "utf8")).receipt;
+  value.env[JA_CARD_LANE.verificationEnv] = verification(value, receipt, {}, {}, JA_CARD_LANE);
+  const wrongOwner = await runAniccaJaCardInstagramCanary(["run", "--slot", SLOT], {
+    ...options,
+    now: () => VERIFIED_NOW,
+    fetchImpl: async (url) => (String(url).endsWith("embed/captioned/")
+      ? { status: 200, text: async () => `<a class="CaptionUsername" href="https://www.instagram.com/${JA_CARD_LANE.account.slice(1)}/">${JA_CARD_LANE.account}</a><div data-testid="caption">${value.caption}</div><script>{"GraphVideo":{"video_url":"${NATIVE_URL}"}}</script>` }
+      : { status: 200, arrayBuffer: async () => NATIVE_BYTES.buffer.slice(NATIVE_BYTES.byteOffset, NATIVE_BYTES.byteOffset + NATIVE_BYTES.byteLength) }),
+  });
+  const second = await runAniccaJaCardInstagramCanary(["run", "--slot", SLOT], {
+    ...options,
+    now: () => VERIFIED_NOW,
+  });
+  const third = await runAniccaJaCardInstagramCanary(["run", "--slot", SLOT], {
+    ...options,
+    now: () => VERIFIED_NOW,
+  });
+  assert.equal(first.telegram.held, true);
+  assert.equal(wrongOwner.telegram.held, true);
   assert.deepEqual(second.telegram, { created: true, held: false, message_id: 42 });
   assert.deepEqual(third.telegram, { created: false, held: false, message_id: 42 });
   assert.equal(second.publication.created, false);

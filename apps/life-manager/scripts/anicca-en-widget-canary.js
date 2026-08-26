@@ -25,6 +25,7 @@ const EN_LANE = Object.freeze({
   locale: "en",
   platform: "instagram",
   account: "@anicca.en",
+  nativeAccount: "@anicca.en",
   manifestAccount: "anicca-ios-en-widget-instagram",
   profileRef: "profile://instagram/anicca.en",
   integrationRef: "integration://postiz/instagram/cmn8y95rg02d2qx0y09bbk5pb",
@@ -55,6 +56,7 @@ const JA_LANE = Object.freeze({
   locale: "ja",
   platform: "instagram",
   account: "@anicca.jp.videos",
+  nativeAccount: "@anicca.jp.videos",
   manifestAccount: "anicca-ios-ja-widget-instagram",
   profileRef: "profile://instagram/anicca.jp.videos",
   integrationRef: "integration://postiz/instagram/cmmzzg2es0539p30ycb94ayx0",
@@ -78,8 +80,39 @@ const JA_LANE = Object.freeze({
   enforceApprovedPack: true,
 });
 
+const JA_CARD_LANE = Object.freeze({
+  name: "JACARD",
+  tenant: "dais-local",
+  product: "anicca-ios",
+  locale: "ja",
+  platform: "instagram",
+  account: "@anicca.jp1",
+  nativeAccount: "@anicca.ios.jp",
+  manifestAccount: "anicca-ios-ja-instagram",
+  profileRef: "profile://instagram/anicca.jp1",
+  integrationRef: "integration://postiz/instagram/cmn8ycvtn02djqx0ytuisn9mw",
+  integrationId: "cmn8ycvtn02djqx0ytuisn9mw",
+  renderer: "reelclaw-card",
+  format: "reelclaw-card",
+  packFormat: "nudge-card-reel",
+  form: "nudge-card",
+  lane: "anicca-ja-card-instagram",
+  creativeId: "JA-CARD-CANARY-35a15c7ce990",
+  tokenRef: "secret://postiz/api-key",
+  telegramTokenRef: "secret://telegram/bot-token",
+  chatRef: "telegram-chat://owner",
+  packEnv: "LM_ANICCA_JA_CARD_INSTAGRAM_PACK_REF",
+  videoEnv: "LM_ANICCA_JA_CARD_INSTAGRAM_VIDEO_REF",
+  captionEnv: "LM_ANICCA_JA_CARD_INSTAGRAM_CAPTION_REF",
+  approvalEnv: "LM_ANICCA_JA_CARD_INSTAGRAM_APPROVAL_REF",
+  verificationEnv: "LM_ANICCA_JA_CARD_INSTAGRAM_NATIVE_VERIFICATION_REF",
+  approvedPackName: "anicca-ios-reelclaw-card-ja.pack.json",
+  workerLabel: "anicca-ja-card-instagram-canary",
+  enforceApprovedPack: true,
+});
+
 function assertTrustedLane(lane) {
-  if (lane !== EN_LANE && lane !== JA_LANE) throw new Error("Anicca widget lane identity is not trusted");
+  if (lane !== EN_LANE && lane !== JA_LANE && lane !== JA_CARD_LANE) throw new Error("Anicca widget lane identity is not trusted");
   return lane;
 }
 
@@ -451,7 +484,7 @@ async function verifyNativeObject(ref, store, config, receipt, trustedNow, optio
       && evidence && typeof evidence === "object" && !Array.isArray(evidence)
       && evidence.schema_version === 1 && evidence.kind === "marketing_video_native_evidence"
       && evidence.status === "verified" && evidence.platform === lane.platform
-      && evidence.public_url === receipt.public_url && evidence.account_id === lane.account
+      && evidence.public_url === receipt.public_url && evidence.account_id === (lane.nativeAccount || lane.account)
       && evidence.integration_ref === lane.integrationRef && evidence.caption === config.packCaption
       && evidence.caption_sha256 === hashRef(config.captionRef) && evidence.video_sha256 === hashRef(config.videoRef)
       && evidence.observation_method === "instagram-captioned-embed+native-video-frame-comparison"
@@ -464,7 +497,7 @@ async function verifyNativeObject(ref, store, config, receipt, trustedNow, optio
     if (!embedResponse || Number(embedResponse.status) !== 200 || typeof embedResponse.text !== "function") return false;
     if (embedResponse.url && embedResponse.url !== embedUrl) return false;
     const html = await embedResponse.text();
-    const ownerPath = lane.account.slice(1);
+    const ownerPath = (lane.nativeAccount || lane.account).slice(1);
     const ownerLink = [...String(html).matchAll(/<a\b[^>]*>[\s\S]*?<\/a>/gi)].some(([anchor]) => {
       const classMatch = /class=["']([^"']*)["']/i.exec(anchor);
       const hrefMatch = /href=["']([^"']+)["']/i.exec(anchor);
@@ -695,6 +728,7 @@ module.exports = {
   INTEGRATION_ID,
   INTEGRATION_REF,
   JA_LANE,
+  JA_CARD_LANE,
   LANE,
   PROFILE_REF,
   compareNativeVideo,
