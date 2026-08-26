@@ -63,3 +63,33 @@ test("cacheKey: coords within ~11m (4dp) COLLIDE; coords across the rounding bou
   assert.equal(a, near);
   assert.notEqual(a, far);
 });
+
+test("cacheKey: provider, endpoints, mode, anchor type, timezone/service date, and time bucket are scoped", () => {
+  const base = {
+    timezone: "Asia/Tokyo",
+    serviceDate: "20260827",
+    anchorType: "arrival",
+    provider: "transit",
+    mode: "transit",
+  };
+  const key = cacheKey("tenant-a", G(35.68, 139.76), G(35.69, 139.70), 42, base);
+  assert.notEqual(key, cacheKey("tenant-b", G(35.68, 139.76), G(35.69, 139.70), 42, base));
+  assert.notEqual(key, cacheKey("tenant-a", G(35.6801, 139.76), G(35.69, 139.70), 42, base));
+  assert.notEqual(key, cacheKey("tenant-a", G(35.68, 139.76), G(35.6901, 139.70), 42, base));
+  assert.notEqual(key, cacheKey("tenant-a", G(35.68, 139.76), G(35.69, 139.70), 42, { ...base, provider: "google" }));
+  assert.notEqual(key, cacheKey("tenant-a", G(35.68, 139.76), G(35.69, 139.70), 42, { ...base, mode: "drive" }));
+  assert.notEqual(key, cacheKey("tenant-a", G(35.68, 139.76), G(35.69, 139.70), 42, { ...base, anchorType: "departure" }));
+  assert.notEqual(key, cacheKey("tenant-a", G(35.68, 139.76), G(35.69, 139.70), 42, { ...base, timezone: "America/New_York" }));
+  assert.notEqual(key, cacheKey("tenant-a", G(35.68, 139.76), G(35.69, 139.70), 42, { ...base, serviceDate: "20260828" }));
+  assert.notEqual(key, cacheKey("tenant-a", G(35.68, 139.76), G(35.69, 139.70), 43, base));
+});
+
+test("getOrCompute: provider-scoped contexts do not share a cached route", async () => {
+  let calls = 0;
+  const provider = async () => { calls++; return { durationSeconds: 600 }; };
+  const cache = makeRouteCache({ store: new Map(), ttlMs: 10 * 60_000, now: () => 1000 });
+  const args = ["tenant-a", G(35.68, 139.76), G(35.69, 139.70), 42];
+  await cache.getOrCompute(...args, provider, { provider: "transit", mode: "transit", timezone: "Asia/Tokyo", serviceDate: "20260827", anchorType: "arrival" });
+  await cache.getOrCompute(...args, provider, { provider: "google", mode: "drive", timezone: "Asia/Tokyo", serviceDate: "20260827", anchorType: "arrival" });
+  assert.equal(calls, 2);
+});
