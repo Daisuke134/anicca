@@ -133,11 +133,11 @@ Calendarを無関係なeventで埋めること自体を成果にしない。
 
 ##### F. Hourly owner and evidence UX
 
-- [ ] **CG-37** `minimal-production-contract.test.js`を`StartInterval=3600`、`StartCalendarInterval`なし、label exact 1へRED更新する。
-- [ ] **CG-38** `ai.anicca.life-manager-connector-native.plist.template`だけをhourlyへ変更し、RunAtLoad、KeepAlive、second labelを追加しない。
-- [ ] **CG-39** ranking reason、priority class、LT state/deadlineを`connector-native-write-pipeline`の既存bundle lineageへ追加し、secret/raw prompt/bodyを保存しない。
-- [ ] **CG-40** ticket/coverage Telegramへ「なぜ選んだか」「LT open/submitted/verified」「28日空き」を追加し、provider message IDなしをsuccessにしない。
-- [ ] **CG-41** Connector full focused suite、shell syntax、plist render/lint、secret/PII scanをPASSさせ、hourly/evidence sliceをcommit/pushする。
+- [x] **CG-37** `minimal-production-contract.test.js`を`StartInterval=3600`、`StartCalendarInterval`なし、label exact 1へRED更新する。
+- [x] **CG-38** `ai.anicca.life-manager-connector-native.plist.template`だけをhourlyへ変更し、RunAtLoad、KeepAlive、second labelを追加しない。
+- [x] **CG-39** ranking reason、priority class、LT state/deadlineを`connector-native-write-pipeline`の既存bundle lineageへ追加し、secret/raw prompt/bodyを保存しない。
+- [x] **CG-40** ticket/coverage Telegramへ「なぜ選んだか」「LT open/submitted/verified」「28日空き」を追加し、provider message IDなしをsuccessにしない。
+- [x] **CG-41** Connector full focused suite、shell syntax、plist render/lint、secret/PII scanをPASSさせ、hourly/evidence sliceをcommit/pushする。
 
 ##### G. Production acceptance and OSS finish
 

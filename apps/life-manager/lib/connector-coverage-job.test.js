@@ -76,7 +76,7 @@ test("complete, cloned, mismatched, or secret-bearing inputs cannot enqueue", as
   }), /Connector coverage job invalid/i);
   const completeCoverage = buildRollingEventCoverage({
     tenantId: "dais-local", timeZone: "Asia/Tokyo", now: "2026-08-01T16:00:00.000Z",
-    resolvedDays: Array.from({ length: 21 }, (_, index) => ({
+    resolvedDays: Array.from({ length: 28 }, (_, index) => ({
       date: new Date(Date.UTC(2026, 7, 2 + index)).toISOString().slice(0, 10),
       status: "unavailable",
       evidence_refs: [`calendar-evidence://google/event/${String(index).padStart(64, "a")}`],

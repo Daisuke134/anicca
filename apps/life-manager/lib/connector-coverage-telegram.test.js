@@ -128,7 +128,15 @@ async function verifiedNewEventReportInput() {
   });
   return {
     coverage,
-    newEvents: [{ eventRef: detail.event_ref, dateInventory, goalDecision, calendarSync }],
+    newEvents: [{
+      eventRef: detail.event_ref, dateInventory, goalDecision, calendarSync,
+      selection: {
+        priority_class: "open_talk",
+        preference_reason: "AI founder向けLT枠が公開されているため最優先です",
+        talk_state: "provider_verified",
+        application_deadline_at: "2026-08-04T14:59:00.000Z",
+      },
+    }],
     registrationEvidence: {
       event_ref: detail.event_ref,
       canonical_url: detail.canonical_url,
@@ -214,6 +222,10 @@ test("verified新規予約は名前・時刻・場所・選定理由とevent/Cal
   assert.match(message, /Founder Night/);
   assert.match(message, /19:00〜21:00 \/ Shibuya Hall/);
   assert.match(message, /理由: Life Managerをfounderへ見せ/);
+  assert.match(message, /優先度: open_talk/);
+  assert.match(message, /選定理由: AI founder向けLT枠が公開されているため最優先です/);
+  assert.match(message, /LT: provider_verified/);
+  assert.match(message, /LT申請締切: 2026\/8\/4 23:59/);
   assert.match(message, /イベントページ:\n   https:\/\/luma\.com\/founder-night/);
   assert.match(message, /Calendar:\n   https:\/\/www\.google\.com\/calendar\/event\?eid=opaque/);
   assert.match(message, /今回予約し、登録証拠とCalendar登録を照合したevent/);
