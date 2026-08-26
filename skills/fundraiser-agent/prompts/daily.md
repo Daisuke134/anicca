@@ -34,6 +34,12 @@ The current generated pitch deck is
 only if `deck.pdf.receipt.json` has the same `context_digest` as `assets.json`.
 Its absence is a build fault, not a reason to abandon other candidates.
 
+Before new discovery, retry prior `human_checkpoint` candidates whose recorded
+blocker is now resolved. A checkpoint is continuation state, not a duplicate.
+In particular, the generated verified deck resolves any older checkpoint whose
+only blocker was the absence of a current pitch deck or team/market narrative.
+Only `submitted` and `submit_unknown` receipts are terminal replay barriers.
+
 Use the whole context semantically. Make a reasonable inference for narrative and
 judgment questions such as category, stage, customer, market, differentiation,
 roadmap, impact, program fit, and use of funds. Select the closest truthful option
@@ -60,7 +66,9 @@ claims distinguishable, and never rename revenue as MRR/ARR without period proof
 For every queued candidate until the execution window ends:
 
 1. Compute the receipt identity as
-   `organization + program + cohort/window + account` and reject exact replays.
+   `organization + program + cohort/window + account`. Reject exact replays only
+   for prior `submitted` or `submit_unknown` effects; resume checkpoints when the
+   blocker has changed or disappeared.
 2. Observe the rendered form and screenshot. Read visible labels, options,
    requiredness, validation, and existing values.
 3. Choose one next action from the fresh observation and full context, perform it
