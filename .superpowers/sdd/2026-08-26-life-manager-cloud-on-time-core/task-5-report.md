@@ -46,12 +46,15 @@ all exited 0
 - Removed `/panel/onboarding` from the production route: the real HTTP contract failed with `404 != 200`; restored.
 - Rewired production `/start` to `PUBLIC_BASE`: the real HTTP contract failed because the button origin was
   `https://lm.test` instead of the configured panel origin; restored.
+- Mutated a malformed `https:panel.example` origin: the fail-closed origin test failed before the strict
+  scheme check was restored.
 - Mutated signed `initData` user content: the existing verifier returned `401 telegram_auth_rejected` and
   made zero Supabase/session writes; the signature-verification boundary stayed fail closed.
 
 ## Commit
 
 - `511b0e5b8` — `feat(life-manager): open authenticated telegram onboarding`
+- `fb71c3e5e` — `fix(life-manager): reject malformed telegram panel origin`
 - Pushed to `origin/codex/lm-cloud-core-spec`.
 
 ## Concerns
