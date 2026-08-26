@@ -168,8 +168,12 @@ For every queued candidate until the execution window ends:
    `python3 skills/browser/scripts/cdp.py fillcss "$TARGET_ID" "$CSS_SELECTOR" "$VALUE"`;
    it selects the visible matching element and dispatches framework-compatible
    input/change events. Do not focus a broad `querySelector` and call `insert`.
-   When a visible control has `aria-labelledby`, prefer
-   `python3 skills/browser/scripts/cdp.py filllabel "$TARGET_ID" "$EXACT_VISIBLE_LABEL" "$VALUE"`.
+   When a visible control has `aria-labelledby`, use
+   `python3 skills/browser/scripts/cdp.py filllabel "$TARGET_ID" "$EXACT_VISIBLE_LABEL" "$VALUE"`
+   on ordinary forms. On React/Notion forms, use
+   `python3 skills/browser/scripts/cdp.py typelabel "$TARGET_ID" "$EXACT_VISIBLE_LABEL" "$VALUE"`
+   from the first mutation so framework state receives trusted text before any
+   Submit attempt.
    This resolves the current generated ID inside the page and refuses zero or
    multiple matches; never copy a generated ID into a later mutation command.
    If a rendered React/Notion validation message still says a populated field is
@@ -234,6 +238,11 @@ For every queued candidate until the execution window ends:
    one distinct trusted interaction; this is not a duplicate external effect.
    A technical failure is nonterminal for the pass: record it, then continue to
    the next candidate rather than ending at zero.
+   Never infer completion from generic copy such as `Thank you for your interest`
+   that was already present on the application form. Success requires a fresh
+   post-submit official completion surface and the application form/final Submit
+   control to be absent. If the form or Submit control remains, the application
+   is not verified as submitted.
    Before navigating away from a successful completion UI, scroll the visible
    provider completion message into the center of the viewport and save that readable
    official screen with `python3 skills/browser/scripts/cdp.py screenshot "$TARGET_ID"
