@@ -242,6 +242,7 @@ test("production contract runs every minute and maximizes real applications", ()
   assert.match(runtimeScript, /FUNDRAISER_APPLICATIONS_DIR/);
   assert.match(runtimeScript, /record-application\.py/);
   assert.match(runtimeScript, /MIN_FREE_KIB=\$\(\(1536 \* 1024\)\)/);
+  assert.match(runtimeScript, /disk-pressure\.block/);
   assert.match(runtimeScript, /disk-cleanup/);
   assert.match(runtimeScript, /disk-cleanup[\s\S]*?<\/dev\/null >\/dev\/null 2>&1 &/);
   assert.match(runtimeScript, /exit 75/);

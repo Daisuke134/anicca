@@ -14,6 +14,7 @@ SCHEMA="$REPO_ROOT/skills/fundraiser-agent/runtime/pass-result.schema.json"
 SENDER="$REPO_ROOT/skills/_shared/send-telegram.sh"
 PHOTO_SENDER="$REPO_ROOT/skills/_shared/send-telegram-photo.sh"
 MIN_FREE_KIB=$((1536 * 1024))
+DISK_PRESSURE_FLAG="$HOME/.openclaw/state/disk-pressure.block"
 
 available_kib() {
   df -Pk "$STATE_ROOT" 2>/dev/null | awk 'NR==2 {print $4}'
@@ -32,12 +33,12 @@ if [ -z "$FREE_KIB" ] || ! [[ "$FREE_KIB" =~ ^[0-9]+$ ]]; then
   echo "fundraiser: disk preflight unavailable" >&2
   exit 2
 fi
-if [ "$FREE_KIB" -lt "$MIN_FREE_KIB" ]; then
+if [ -f "$DISK_PRESSURE_FLAG" ] || [ "$FREE_KIB" -lt "$MIN_FREE_KIB" ]; then
   # kickstart can synchronously wait for launchd's 300-second throttle. Detach it
   # so this one-minute fundraiser label releases immediately for the next wake.
   /bin/launchctl kickstart "gui/$(id -u)/ai.anicca.life-manager-disk-cleanup" \
     </dev/null >/dev/null 2>&1 &
-  echo "fundraiser: deferred low disk available_kib=$FREE_KIB required_kib=$MIN_FREE_KIB" >>"$LOG"
+  echo "fundraiser: deferred disk policy available_kib=$FREE_KIB required_kib=$MIN_FREE_KIB pressure_block=$([ -f "$DISK_PRESSURE_FLAG" ] && echo present || echo absent)" >>"$LOG"
   exit 75
 fi
 
