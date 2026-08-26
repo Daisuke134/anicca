@@ -35,6 +35,8 @@ const { deliverConnectorTicket } = require("./connector-ticket-telegram.js");
 const EVENT_REF = /^(?:luma-event:\/\/event\/[A-Za-z0-9_-]+|connpass-event:\/\/event\/[1-9][0-9]*)$/;
 const TENANT = /^[a-z0-9][a-z0-9._-]{0,199}$/;
 const POSITIVE_REF = /^[^\x00-\x1f\x7f]{1,1024}$/;
+const PRIORITY_CLASSES = Object.freeze(["yc_hackathon", "open_talk", "ai", "crypto", "startup", "other"]);
+const TALK_STATES = Object.freeze(["not_open", "application_ready", "submitted", "provider_verified", "accepted", "rejected", "human_action_required"]);
 
 function invalid(message = "Connector native write pipeline invalid") {
   throw new Error(message);
@@ -225,6 +227,18 @@ function selectedContext(input) {
     "registration identity",
     100,
   );
+  const ranked = goalDecision && Array.isArray(goalDecision.ranked_events)
+    ? goalDecision.ranked_events.find((candidate) => candidate.event_ref === eventRef) : null;
+  const priorityClass = String(application.priorityClass || application.priority_class || "other");
+  const talkState = String(application.talkState || application.talk_state || "not_open");
+  if (!PRIORITY_CLASSES.includes(priorityClass) || !TALK_STATES.includes(talkState)) invalid("selection metadata invalid");
+  const deadlineValue = application.applicationDeadlineAt || application.application_deadline_at || null;
+  const applicationDeadlineAt = deadlineValue == null ? null : exactInstant(deadlineValue, "application deadline");
+  const preferenceReason = text(
+    application.preferenceReason || application.preference_reason || ranked?.goal_reason || "Calendarの空き枠に適合した登録",
+    "preference reason",
+    500,
+  );
   return {
     tenantId,
     eventUrl,
@@ -243,6 +257,12 @@ function selectedContext(input) {
     telegramTarget: telegramTarget == null ? "" : String(telegramTarget).trim(),
     calendarCoverageUrl: calendarCoverageUrl == null ? "" : String(calendarCoverageUrl).trim(),
     registrationIdentity,
+    selection: Object.freeze({
+      priority_class: priorityClass,
+      preference_reason: preferenceReason,
+      talk_state: talkState,
+      application_deadline_at: applicationDeadlineAt,
+    }),
     unavailableDays: Array.isArray(input.unavailableDays) ? input.unavailableDays : [],
     registrations: Array.isArray(input.registrations) ? input.registrations : [],
   };
@@ -445,7 +465,10 @@ async function runNativeConnectorWrite(input = {}, deps = {}) {
         registrationIdentity: context.registrationIdentity,
         selectionReason: context.goalDecision?.ranked_events.find(
           (candidate) => candidate.event_ref === context.eventRef,
-        )?.goal_reason || "Calendarの空き枠に適合した登録",
+        )?.goal_reason || context.selection.preference_reason,
+        priorityClass: context.selection.priority_class,
+        talkState: context.selection.talk_state,
+        applicationDeadlineAt: context.selection.application_deadline_at,
         startsAt: event.starts_at,
         endsAt: event.ends_at,
         eventUrl: event.canonical_url,
@@ -488,6 +511,7 @@ async function runNativeConnectorWrite(input = {}, deps = {}) {
     dateInventory: context.dateInventory,
     goalDecision: context.goalDecision,
     calendarSync,
+    selection: context.selection,
   }];
   const telegramInput = {
     tenantId: context.tenantId,
@@ -561,6 +585,7 @@ async function runNativeConnectorWrite(input = {}, deps = {}) {
       calendar_event_url: calendarSync.calendar_event_url,
     }),
     coverage: coverageProjection(coverage),
+    selection: context.selection,
     telegram: Object.freeze({
       provider_id: verifiedDelivery.providerId,
       photo_provider_id: verifiedDelivery.photoProviderId,

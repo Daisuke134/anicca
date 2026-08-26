@@ -2,7 +2,7 @@
 
 const { createHash } = require("node:crypto");
 
-const HORIZON_DAYS = 21;
+const HORIZON_DAYS = 28;
 const TENANT = /^[a-z0-9][a-z0-9._-]{0,199}$/;
 const DATE_KEY = /^\d{4}-\d{2}-\d{2}$/;
 const RESOLVED = new Set(["covered_existing", "covered_new", "unavailable"]);

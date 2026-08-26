@@ -11,7 +11,7 @@ const { nativeExitCode, runNativePass } = require("../native-pass.js");
 const REPO_ROOT = path.resolve(__dirname, "../../..");
 const VALID_KANA = Object.freeze({ family: "サクラ", given: "テスト" });
 const VALID_NAME_JA = "桜 太郎";
-const BASE_ENV = Object.freeze({ GOG_ACCOUNT: "private@example.com", DAIS_LEGAL_NAME_ROMAJI: "Dais Example", GOG_KEYRING_PASSWORD: "private-keyring", LM_CONNECTOR_TELEGRAM_TARGET: "private-target" });
+const BASE_ENV = Object.freeze({ CONNPASS_API_KEY: "fixture-connpass-api-key-0000", GOG_ACCOUNT: "private@example.com", DAIS_LEGAL_NAME_ROMAJI: "Dais Example", GEMINI_API_KEY: "fixture-ranking-key", GOG_KEYRING_PASSWORD: "private-keyring", LM_CONNECTOR_TELEGRAM_TARGET: "private-target" });
 
 function writeKanaProfile(home, value = VALID_KANA, mode = 0o600, nameJa, identity = { name: BASE_ENV.DAIS_LEGAL_NAME_ROMAJI, preferred_name: "Dais" }) {
   const file = path.join(home, ".config", "anicca", "job-search", "profile.json");
@@ -55,7 +55,7 @@ test("official native pass forwards only the bounded minimal wake contract", asy
 
     assert.deepEqual(result, { status: "circuit_open", safe_reason: "fixture" });
     assert.equal(observed.length, 1);
-    assert.deepEqual(observed[0].input.providers, ["luma", "connpass", "peatix", "meetup", "doorkeeper", "eventbrite", "techplay", "kokuchpro"]);
+    assert.deepEqual(observed[0].input.providers, ["luma", "connpass", "peatix"]);
     assert.equal(observed[0].input.maxConsecutiveFailures, 3);
     assert.equal(observed[0].input.maxWakeMs, 600_000);
     assert.equal(observed[0].input.maxAgentSteps, 15);
@@ -77,8 +77,10 @@ test("official native pass builds the production dependency boundary from allowl
       ownerToken: "native-pass-minimal-owner-123456",
       env: {
         HOME: directory,
+        CONNPASS_API_KEY: "fixture-connpass-api-key-0000",
         GOG_ACCOUNT: "private@example.com",
         DAIS_LEGAL_NAME_ROMAJI: "Dais Example",
+        GEMINI_API_KEY: "fixture-ranking-key",
         GOG_KEYRING_PASSWORD: "private-keyring",
         LM_CONNECTOR_TELEGRAM_TARGET: "private-target",
         LM_CONNECTOR_TENANT_ID: "dais-local",
@@ -98,9 +100,13 @@ test("official native pass builds the production dependency boundary from allowl
     assert.equal(observed[0][1].calendarAccount, "private@example.com");
     assert.equal(observed[0][1].gogKeyring, "private-keyring");
     assert.equal(observed[0][1].telegramTarget, "private-target");
+    assert.match(observed[0][1].eventPreferences, /YC.*Lightning Talk.*AI.*crypto.*startup/i);
+    assert.equal(observed[0][1].geminiApiKey, "fixture-ranking-key");
+    assert.equal(observed[0][1].connpassApiKey, "fixture-connpass-api-key-0000");
     assert.match(observed[0][1].wakeId, /^wake-[0-9a-f]{24}$/);
     assert.equal(observed[0][1].wakeId.includes("native-pass-minimal-owner"), false);
-    assert.deepEqual(observed[1][1].providers, ["luma", "connpass", "peatix", "meetup", "doorkeeper", "eventbrite", "techplay", "kokuchpro"]);
+    assert.deepEqual(observed[1][1].providers, ["luma", "connpass", "peatix"]);
+    assert.equal("geminiApiKey" in observed[1][1], false);
     assert.deepEqual(observed[1][2], { boundary: "production" });
   } finally {
     fs.rmSync(directory, { recursive: true, force: true });
@@ -118,7 +124,7 @@ test("native Peatix profile is frozen at the factory boundary and invalid identi
     assert.deepEqual(factoryInput.peatixAttendeeProfile, { name: "Dais Example", email: "private@example.com", given_name: "Dais", family_name: "Example", family_name_kana: VALID_KANA.family, given_name_kana: VALID_KANA.given, name_kanji: VALID_NAME_JA, name_hiragana: "さくら てすと", accept_organizer_privacy: true });
     assert.equal(Object.isFrozen(factoryInput), true);
     assert.equal(Object.isFrozen(factoryInput.peatixAttendeeProfile), true);
-    assert.deepEqual(wakeInputs[0].providers, ["luma", "connpass", "peatix", "meetup", "doorkeeper", "eventbrite", "techplay", "kokuchpro"]);
+    assert.deepEqual(wakeInputs[0].providers, ["luma", "connpass", "peatix"]);
     assert.equal("peatixAttendeeProfile" in wakeInputs[0], false);
     assert.doesNotMatch(JSON.stringify(wakeInputs[0]), /Dais Example|private@example\.com|family_name_kana|given_name_kana|name_kanji|name_hiragana|桜 太郎|さくら てすと|サクラ|テスト/);
     for (const override of [{ DAIS_LEGAL_NAME_ROMAJI: "" }, { DAIS_LEGAL_NAME_ROMAJI: "x".repeat(201) }, { GOG_ACCOUNT: "not-an-email" }]) {
@@ -178,6 +184,7 @@ test("native config resolves the existing Telegram owner without an inline shell
         HOME: directory,
         GOG_ACCOUNT: "private@example.com",
         DAIS_LEGAL_NAME_ROMAJI: "Dais Example",
+        GEMINI_API_KEY: "fixture-ranking-key",
         GOG_KEYRING_PASSWORD: "private-keyring",
       },
       createDependencies(input) {

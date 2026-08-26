@@ -33,7 +33,7 @@ function claimedJob(coverage) {
 }
 
 function allUnavailable() {
-  return Array.from({ length: 21 }, (_, index) => ({
+  return Array.from({ length: 28 }, (_, index) => ({
     date: new Date(Date.UTC(2026, 7, 2 + index)).toISOString().slice(0, 10),
     status: "unavailable",
     evidence_refs: [`calendar-evidence://google/event/${String(index).padStart(64, "a")}`],
@@ -80,7 +80,7 @@ test("refresh worker reads, saves, and schedules the next durable coverage job w
   const job = claimedJob(current);
   const execution = await adapter.execute(job);
   assert.equal(execution.receipt.status, "continue");
-  assert.equal(execution.receipt.open_date_count, 20);
+  assert.equal(execution.receipt.open_date_count, 27);
   assert.equal(execution.receipt.open_date_plan_status, "enqueued");
   assert.equal(adapter.verify(execution.receipt, job), true);
   assert.deepEqual(calls.map(([name]) => name), ["read", "refresh", "save", "enqueue"]);
@@ -144,13 +144,13 @@ test("adapter exposes plan, execute, reconcile, verify, and report", async () =>
   assert.equal(planned.length, 1);
   assert.equal((await adapter.reconcile({})).state, "absent");
   assert.deepEqual(adapter.report({
-    kind: "connector_coverage_refresh", status: "continue", open_date_count: 21,
+    kind: "connector_coverage_refresh", status: "continue", open_date_count: 28,
     open_date_plan_status: "waiting",
     open_date_candidate_count: 1,
     open_date_runnable_candidate_count: 1,
     open_date_skip_reason_counts: [],
   }), {
-    status: "continue", open_date_count: 21, open_date_plan_status: "waiting",
+    status: "continue", open_date_count: 28, open_date_plan_status: "waiting",
     open_date_candidate_count: 1,
     open_date_runnable_candidate_count: 1,
     open_date_skip_reason_counts: [],

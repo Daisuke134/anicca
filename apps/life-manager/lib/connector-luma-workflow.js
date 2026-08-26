@@ -46,7 +46,7 @@ function candidateWindow(now) {
   }).formatToParts(observed).filter((part) => part.type !== "literal")
     .map((part) => [part.type, Number(part.value)]));
   if (![parts.year, parts.month, parts.day].every(Number.isInteger)) invalid();
-  const end = new Date(Date.UTC(parts.year, parts.month - 1, parts.day + 14));
+  const end = new Date(Date.UTC(parts.year, parts.month - 1, parts.day + 28));
   return Object.freeze({
     start: Date.parse(zonedSlotInstant(parts, "00:00", PRODUCTION_TIME_ZONE)),
     end: Date.parse(zonedSlotInstant({

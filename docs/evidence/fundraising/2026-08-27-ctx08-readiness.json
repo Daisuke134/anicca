@@ -1,0 +1,149 @@
+{
+  "schema_version": 1,
+  "observed_at": "2026-08-27T04:36:53+09:00",
+  "status": "in_progress",
+  "candidate": {
+    "organization": "Tokyo Metropolitan Government",
+    "program": "ASAC 4th Pre-seed / 23rd Seed Program",
+    "official_announcement_url": "https://www.metro.tokyo.lg.jp/information/press/2026/08/2026082511",
+    "official_program_url": "https://www.acceleration-tokyo.metro.tokyo.lg.jp/program.php",
+    "application_window": {
+      "opens": "2026-08-25",
+      "closes": "2026-09-13"
+    },
+    "application_route": "authenticated official form",
+    "public_founder_video_requirement": "not_observed",
+    "terminal_receipt_observed": false
+  },
+  "canonical_context": {
+    "version": "2026-08-27.2",
+    "digest": "9fbe6198c6d61da47d68767eec90a1d95d2e07058f024448d86372b5f3035338"
+  },
+  "installed_fundraiser_owner": {
+    "label": "ai.anicca.fundraiser",
+    "state": "not running",
+    "active_count": 0,
+    "lock": "absent",
+    "run_count": 273,
+    "last_exit": 75,
+    "interval_seconds": 60,
+    "worktree": "/Users/anicca/Projects/life-manager-main/.worktrees/fundraiser-agent-task0-20260826",
+    "commit": "663b40216fe61c04a958fbfbd38b93d91dd0a1c0",
+    "context_version": "2026-08-27.2",
+    "context_digest": "9fbe6198c6d61da47d68767eec90a1d95d2e07058f024448d86372b5f3035338",
+    "context_alignment": "matched",
+    "merge_pr": 2889,
+    "focused_tests": {
+      "startup_context": "20/20",
+      "fundraiser": "12/12"
+    }
+  },
+  "receipt_inventory": {
+    "rows": 217,
+    "submitted_verified": 12,
+    "submit_unknown": 2,
+    "current_canonical_digest_receipts": 0
+  },
+  "runtime_preflight": {
+    "disk_free_bytes": 8613470208,
+    "disk_pressure_block": "present",
+    "disk_policy_block_below_bytes": 11811160064,
+    "disk_policy_clear_at_or_above_bytes": 21474836480,
+    "disk_clear_shortfall_bytes": 12861366272,
+    "cdp_browser": "Chrome/145.0.7632.109"
+  },
+  "host_disk_recovery": {
+    "status": "lease_leak_fixed_but_clear_threshold_unmet",
+    "disk_free_before_bytes": 2491772928,
+    "disk_free_after_bytes": 8613470208,
+    "dominant_remaining_consumer": {
+      "kind": "macos_managed_swap",
+      "apfs_vm_volume_used_bytes": 22548578304,
+      "swap_total_mib": 21504.0,
+      "swap_used_mib": 20191.62,
+      "swap_free_mib": 1312.38,
+      "swapfile_count": null,
+      "swapfile_count_status": "not_observed_in_final_readback",
+      "direct_swapfile_deletion_allowed": false,
+      "recovery_contract": "explicitly approved host restart, then read back swap, disk gate, and required launchd owners before fundraiser natural wake"
+    },
+    "cdp_context_recovery": {
+      "pull_request": 2895,
+      "main_commit": "db03dd58a7f6305d25e7f1cf9b80f561e548815c",
+      "immutable_release_commit": "db03dd58a7f6305d25e7f1cf9b80f561e548815c",
+      "focused_lease_tests": "17/17",
+      "cleanup_contract": "while Apply was stopped, exclude the default context and every ledger-owned context, then dispose only untracked isolated contexts under the ledger lock",
+      "untracked_isolated_contexts_before": 2,
+      "untracked_isolated_contexts_after": 0,
+      "default_context_preserved": true,
+      "profile_or_cookie_deleted": false,
+      "orphan_renderer_pids_exited": 2,
+      "gig_browser_rss_kib_after_cleanup": 418368,
+      "natural_replay": {
+        "apply_run": 166,
+        "last_exit": 0,
+        "lease_rows_after": 0,
+        "isolated_contexts_after": 0,
+        "replay_external_effects": 0
+      }
+    },
+    "disk_cleanup_owner_probe": {
+      "label": "ai.anicca.life-manager-disk-cleanup",
+      "run_count": 124,
+      "last_exit": 0,
+      "evaluated": 0,
+      "reclaimed": 0,
+      "protected_deletions": 0,
+      "inventory_mode": "fast",
+      "result": "no additional safe cleanup candidates"
+    },
+    "browser_tab_recovery_probe": {
+      "closed_owned_stale_pages": 3,
+      "closed_legacy_unattached_coconala_pages": 20,
+      "protected_attached_pages": true,
+      "profile_or_cookie_deleted": false,
+      "result": "insufficient; resident browser pages were recreated and macOS allocated one additional 1 GiB swapfile",
+      "gig_browser_tree_rss_kib": 1632112
+    },
+    "generated_mp4_removed": {
+      "count": 187,
+      "bytes": 2950620127,
+      "remaining_in_exact_roots": 0
+    },
+    "clean_git_worktrees_removed": 44,
+    "removed_categories": [
+      "generated video queue outputs",
+      "unused node_modules and Python virtual environments",
+      "Go module and browser caches",
+      "application caches without cookies or local storage",
+      "orphan pipx environment",
+      "obsolete Codex standalone release",
+      "clean inactive Git worktrees with branches retained"
+    ],
+    "preserved": [
+      "credentials and private identity stores",
+      "Codex and Claude sessions",
+      "ledger, state JSONL, receipts, and fundraiser dossiers",
+      "customer source media, deliverables, and b-roll",
+      "CloakBrowser profile",
+      "open or active dependencies",
+      "dirty worktrees and uncommitted source"
+    ],
+    "fundraiser_natural_readback": {
+      "run_count": 273,
+      "last_exit": 75,
+      "status": "deferred_disk_pressure_block_present"
+    },
+    "external_application_effects": 0
+  },
+  "required_next_host_action": "explicitly approved Mac restart, then authoritative swap, disk-pressure.block, required launchd owner, and Fundraiser natural-wake readback",
+  "required_next_receipt_chain": [
+    "official_live_form_readback",
+    "canonical_context_digest_bound_preview",
+    "single_effect_claim",
+    "official_completion_png",
+    "telegram_photo_message_id",
+    "application_dossier_sha256",
+    "replay_zero"
+  ]
+}

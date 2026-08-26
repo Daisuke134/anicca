@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-08-27T00:58:00+09:00",
+  "track": "connector_growth",
+  "provider": "connpass",
+  "credential_receipt": {
+    "approval_message_id": "19fd6497ec8cb93d",
+    "private_ssot_record": "connpass API v2",
+    "private_ssot_mode": "0600",
+    "key_value_persisted_in_repository": false
+  },
+  "live_canary": {
+    "method": "GET",
+    "endpoint": "https://connpass.com/api/v2/events/",
+    "prefecture": "tokyo",
+    "window_first_ymd": "20260827",
+    "window_last_ymd": "20260923",
+    "window_days": 28,
+    "events_returned": 283,
+    "request_count": 3,
+    "all_event_urls_use_connpass_hosts": true,
+    "secret_exposed": false
+  },
+  "action_boundary": {
+    "official_api_is_read_only_discovery": true,
+    "automated_browser_application_allowed": false,
+    "fallback_behavior": "telegram_action_boundary",
+    "automated_submit_count": 0
+  }
+}

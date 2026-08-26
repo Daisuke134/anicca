@@ -2,7 +2,7 @@
   "schema_version": 1,
   "tenant_id": "dais-local",
   "timezone": "Asia/Tokyo",
-  "preferences": "東京の対面イベントで毎日人に会うことを最優先にする。AI、crypto、startup、founder、VC、product、finance、英語は順位を上げる例だが、他分野を除外しない。予想外の人や分野とのserendipityを残す。",
+  "preferences": "東京の対面イベントだけを対象にし、公開情報に基づいて YC hackathon、参加可能な Lightning Talk、AI、crypto、startup の順に優先する。strong または moderate の候補だけを自動申請し、weak または unknown は申請しない。Luma を先に探索し、適格候補がなければ connpass を探索する。",
   "goals": "家に留まらず毎日人と会い、経験と接点を増やす。Life Managerの利用者、協力者、採用候補、投資家、登壇、事業機会につながる可能性を、公開された根拠だけで評価する。成果や富を保証しない。",
   "spend_policy": {
     "limits": []

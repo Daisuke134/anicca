@@ -1,37 +1,40 @@
+<!-- startup-context-version: 2026-08-27.2 -->
+<!-- startup-context-digest: 9fbe6198c6d61da47d68767eec90a1d95d2e07058f024448d86372b5f3035338 -->
 # Life Manager
 
-**Life Managerは、あなたの身体・心・お金を管理するpersonal managerです。** 目標を提案で終わらせず、
-委任された範囲で現実の行動を実行し、結果を検証して、証拠と一緒に人間が理解できる言葉で
-Telegramへ報告します。
+**Life Managerは、あなたの身体・心・お金を管理するproactive general agentです。** 目標を提案で終わらせず、
+委任された範囲で現実の行動を実行し、結果を検証して、証拠と一緒に人間が理解できる言葉でTelegramへ報告します。
+信頼できるcareとagencyを常時利用可能にし、人間から始めて最終的にすべての生き物の苦しみを終わらせることがmissionです。
 
 | organ | Life Managerが管理するもの |
 |---|---|
 | **Daily** | Calendar、イベント・accelerator・求人への応募、優先順位、実行状況 |
 | **Physical / Mental** | 生活習慣、身体と心の状態、careの継続 |
-| **Financial** | 総資産、収支、支出、収入機会、riskを制御した資産運用 |
+| **Financial** | 総資産、収支、支出、収入・business機会、crypto、riskを制御した資産運用、banked revenueによるcomputeの自己負担 |
 
 [Life Managerを開く](https://aniccaai.com/lm) · [Telegramで始める](https://t.me/LifeManagerBotbot?start=lp) · [sourceを見る](https://github.com/Daisuke134/life-manager)
 
-最初はローカルで動かしてdataを自分の端末に置き、常時稼働が必要になったらWeb / cloudへ移行します。
-どちらも**同じcore**、証拠台帳、人間向け報告contractを使います。資産増加や投資収益を保証せず、
+free・open source・self-hosted版をローカルで動かしてdataを自分の端末に置き、phoneだけで常時稼働させたい時は
+paid monthly cloudを使います。どちらも**同じcore**、証拠台帳、人間向け報告contractを使います。資産増加や投資収益を保証せず、
 receiptのない試行を「完了」と報告しません。
 
 ## 現在構築しているgeneral agent
 
 Life Managerはwebsite固有botの集合ではありません。1つのdurable general agentが機会を発見し、利益を残して
 完遂できるか判断し、提案・交渉・成果物制作・fresh QA・正式納品・支払い・出金を同じidentityで閉じる構造を
-作っています。最初のend-to-end proofはUpworkです。次のmarketplaceでもagent、Commerce state、capability、
-money-effect contractを複製せず、差分は小さいprovider manifestとofficial readback adapterだけにします。
+作っています。Upworkは最初に調べたmarketplaceですが、accountがAPI条件を満たさずUI automationも拒否されるためcleanに停止しました。
+これはprovider境界の証拠であり、commerce proofの完了でもgeneral-agent開発の停止理由でもありません。承認経路のあるproviderでもagent、
+Commerce state、capability、money-effect contractを複製せず、差分は小さいprovider manifestとofficial readback adapterだけにします。
 
-agent harnessとdurable stateには[DeepAgentsJS/LangGraph](https://github.com/langchain-ai/deepagentsjs)、website tool
-contractには[browser-use](https://github.com/browser-use/browser-use)、現在のlocal wake/channelには
+architectureは、specialist harnessとdurable stateに[DeepAgentsJS/LangGraph](https://github.com/langchain-ai/deepagentsjs)、website tool
+contractに[browser-use](https://github.com/browser-use/browser-use)、現在のlocal wake/channelに
 [OpenClaw](https://github.com/openclaw/openclaw)、hosted browser backendには
-[Steel](https://github.com/steel-dev/steel-browser)を再利用します。取り消せないmoney actionは既存Life Managerの
+[Steel](https://github.com/steel-dev/steel-browser)の実証済み境界をcopy+tweakして収束させます。取り消せないmoney actionは既存Life Managerの
 `EffectIntent`と`ConnectorOutbox`だけを通します。完了条件は応募、click、modelの自己申告、契約、pending balance
 ではなく、公式`banked` receiptです。
 
-この自律Commerce loopは現在実証中です。agentだけで完遂するUpwork契約が`banked`へ到達するまでは、ここに書く
-内容はtarget architectureであり、自律収益が既に存在するというclaimではありません。
+founder証言ではLife Managerはapproximately $1,000の収益を生み出しています。これはMRRでもARRでもなく、provider非依存の
+自律Commerce loopが閉じた証明でもありません。その完了は公式receiptで`banked`、最終的に`compute_paid`まで到達した時だけです。
 
 **Life Managerが製品名です。Aniccaはformが会社名を明示的に求めた時だけ使います。**
 
@@ -70,9 +73,10 @@ API は `http://localhost:18788`、worker の health は `:18790`（どちらも
 
 **secret は参照であって直書きではありません。** job は `secret://…` の参照だけを持ち、実体はローカルの keychain か tenant vault から解決します。形式は [`apps/life-manager/.env.example`](apps/life-manager/.env.example) を参照（`TELEGRAM_BOT_TOKEN_REF` / `POSTIZ_ACCESS_TOKEN_REF` / `REVENUECAT_API_KEY_REF` など）。ローカル個体と話すには、自分の Telegram bot token をこの形で繋ぎます。
 
-### 探していたものが違う場合
+### 自己資金化はFinancial Organの一部
 
-**自己資金エージェント**（自分の wallet を持ち、自分の推論代を稼ぐループ）を探して来た場合、それは別物で [`docs/agent-economy.ja.md`](docs/agent-economy.ja.md) にあります。同じリポジトリと同じ core を共有しますが、**上で説明した製品ではありません**。
+[`docs/agent-economy.ja.md`](docs/agent-economy.ja.md) のwallet・compute支払いloopは同じLife Manager製品内にあります。
+provider revenueを`banked`へ到達させてから`compute_paid`へ使い、owner資金と分離するLife ManagerのFinancial capabilityです。
 
 ---
 
@@ -108,8 +112,8 @@ Life Manager は1つの製品であり、正本リポジトリもここ1つで�
 | `apps/life-manager/` | 製品の core: Telegram、schedule、通話、認証付き `/panel`、課金、ユーザーworkflow。ローカル（compose）でもクラウド（Railway）でも同じコードが動く | これ単体がリポジトリ全体ではない |
 | `deploy/local/` | ローカル実行面 — compose スタック、port、ローカル専用の認証情報 | 別の「ローカル版」製品ではない |
 | `apps/landing/` | Life Manager用オンボーディング Web UI の必要部分 | 旧Anicca複数製品サイト全体ではない |
-| `runtime/loop/`, `install.sh`, `start-local.sh` | 自己資金エージェントのループ → [`docs/agent-economy.ja.md`](docs/agent-economy.ja.md) | Life Manager の起動方法ではない |
-| `runtime/compute-proxy/`, `services/` | 自己決済推論、x402 settlement、paid API 基盤 | ユーザー向けアプリではない |
+| `runtime/loop/`, `install.sh`, `start-local.sh` | Life ManagerのFinancial Organを支えるeconomic runtime → [`docs/agent-economy.ja.md`](docs/agent-economy.ja.md) | 製品全体でも通常のuser入口でもない |
+| `runtime/compute-proxy/`, `services/` | 同じFinancial capabilityのcompute支払い、x402 settlement、paid API 基盤 | ユーザー向けアプリではない |
 | `skills/` | ローカルとクラウドが共有する能力 | 独立製品群ではない |
 | `apps/job-search-loop/`, `control-room/`, `adapters/` | 補助運用、fleet資料、外部integration | 別のLife Manager codebaseではない |
 | `docs/`, `specs/` | 現在のSSOT、証跡、保存された設計履歴 | 古い文書が自動的に現行正本になるわけではない |
@@ -127,7 +131,7 @@ Life Manager は1つの製品であり、正本リポジトリもここ1つで�
 | **証拠つき Telegram 報告** | **稼働中** — 全報告が message id を伴い、送信に失敗したものを「送信済み」として記録しない |
 | **Calendar・connector・カバレッジ**（`lib/calendar-*`, `lib/connector-*`） | **実装済、カバレッジは移動中** — connector ごとの状態と欠落はここで主張せず実行 spec で追跡 |
 | **Financial organ**（総資産・収支・payout・台帳） | **部分的** — 台帳と payout の job は存在する。現在の健康状態は実行 spec で追跡。ここに書かれた内容は投資の保証ではない |
-| **自己資金エージェント経済** | 別トラック — 状態とオンチェーン証拠は [`docs/agent-economy.ja.md`](docs/agent-economy.ja.md) |
+| **自己資金化economic loop** | **Financial capabilityとして進行中** — 現在stateとon-chain evidenceは [`docs/agent-economy.ja.md`](docs/agent-economy.ja.md)。receiptなしに`banked`や`compute_paid`をclaimしない |
 
 ---
 

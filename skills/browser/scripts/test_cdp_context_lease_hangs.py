@@ -6,11 +6,11 @@ recovery called `cdp_context_lease.py release`, the browser's renderer was wedge
 the lease script hung until the caller's 35-second subprocess limit killed it -- the
 recovery designed to survive a dead target died at its first step, inside the lease.
 
-Two properties pin that shut:
+Three properties pin that shut:
   1. `_calls` finishes or raises within its deadline, never hangs.
-  2. `release` on a context that cannot be disposed still drops the lease row (ok:true with
-     a note) -- the gc reaps the corpse later; keeping the row would hand the same dead
-     context to every future acquire.
+  2. `release` on a context that cannot be disposed keeps a cleanup tombstone so gc can
+     still identify the browser-side context.
+  3. acquire never creates a replacement while that old context remains undisposable.
 """
 from __future__ import annotations
 
@@ -60,7 +60,7 @@ def test_calls_raises_within_its_deadline_instead_of_hanging(monkeypatch):
     assert time.monotonic() - started < 10
 
 
-def test_release_of_an_undisposable_context_still_drops_the_row(monkeypatch, tmp_path):
+def test_release_of_an_undisposable_context_keeps_cleanup_tombstone(monkeypatch, tmp_path):
     module = load_module()
     leases_file = tmp_path / "leases.json"
     monkeypatch.setenv("CLOAK_CONTEXT_LEASES_FILE", str(leases_file))
@@ -83,7 +83,59 @@ def test_release_of_an_undisposable_context_still_drops_the_row(monkeypatch, tmp
 
     assert result["ok"] is True
     assert "gc" in str(result.get("note") or "")
-    assert json.loads(leases_file.read_text(encoding="utf-8")) == {}
+    assert result["cleanup_pending"] is True
+    saved = json.loads(leases_file.read_text(encoding="utf-8"))
+    assert saved["gig-task"]["cleanup_pending"] is True
+
+
+def test_acquire_does_not_orphan_an_undisposable_dead_context(monkeypatch, tmp_path):
+    module = load_module()
+    leases_file = tmp_path / "leases.json"
+    monkeypatch.setenv("CLOAK_CONTEXT_LEASES_FILE", str(leases_file))
+    leases_file.write_text(json.dumps({
+        "gig-task": {
+            "context_id": "dead-context", "target_id": "dead-target",
+            "ws": "ws://127.0.0.1:9222/devtools/page/dead-target",
+            "ts": 0, "token": "a" * 32, "generation": 1,
+        }
+    }), encoding="utf-8")
+    monkeypatch.setattr(module, "target_responds", lambda *_args, **_kwargs: False)
+
+    async def dispose_fails(pairs, timeout=None):
+        raise TimeoutError("dispose did not answer")
+
+    monkeypatch.setattr(module, "_calls", dispose_fails)
+    try:
+        module.acquire("gig-task")
+        raise AssertionError("acquire must fail closed while cleanup is unconfirmed")
+    except RuntimeError as error:
+        assert str(error) == "context_cleanup_pending"
+    saved = json.loads(leases_file.read_text(encoding="utf-8"))
+    assert saved["gig-task"]["cleanup_pending"] is True
+
+
+def test_gc_keeps_cleanup_tombstone_until_dispose_succeeds(monkeypatch, tmp_path):
+    module = load_module()
+    leases_file = tmp_path / "leases.json"
+    monkeypatch.setenv("CLOAK_CONTEXT_LEASES_FILE", str(leases_file))
+    leases_file.write_text(json.dumps({
+        "gig-task": {
+            "context_id": "dead-context", "target_id": "dead-target",
+            "ws": "ws://127.0.0.1:9222/devtools/page/dead-target",
+            "ts": 0, "token": "a" * 32, "generation": 1,
+            "cleanup_pending": True,
+        }
+    }), encoding="utf-8")
+
+    async def dispose_fails(pairs, timeout=None):
+        raise TimeoutError("dispose did not answer")
+
+    monkeypatch.setattr(module, "_calls", dispose_fails)
+    result = module.gc(idle_min=45)
+
+    assert result["reaped"] == []
+    assert result["cleanup_pending"] == ["gig-task"]
+    assert "gig-task" in json.loads(leases_file.read_text(encoding="utf-8"))
 
 
 def test_release_with_a_wrong_fence_still_refuses(monkeypatch, tmp_path):

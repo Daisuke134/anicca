@@ -10,7 +10,7 @@ const test = require("node:test");
 const REPO_ROOT = path.resolve(__dirname, "../../..");
 const RENDERER = path.join(REPO_ROOT, "skills/connector/render-launchd.sh");
 
-test("production renderer emits one daily Connector owner and no retry sidecars", () => {
+test("production renderer emits one hourly Connector owner and no retry sidecars", () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "connector-minimal-launchd-"));
   try {
     const outputDir = path.join(directory, "rendered");
@@ -41,8 +41,9 @@ test("production renderer emits one daily Connector owner and no retry sidecars"
     const plist = fs.readFileSync(path.join(
       outputDir, "ai.anicca.life-manager-connector-native.plist",
     ), "utf8");
-    assert.match(plist, /<key>StartCalendarInterval<\/key>/);
-    assert.doesNotMatch(plist, /<key>StartInterval<\/key>/);
+    assert.match(plist, /<key>StartInterval<\/key>\s*<integer>3600<\/integer>/);
+    assert.doesNotMatch(plist, /<key>StartCalendarInterval<\/key>/);
+    assert.equal((plist.match(/<key>Label<\/key>/g) || []).length, 1);
     assert.match(plist, /<key>EnvironmentVariables<\/key>/);
     assert.match(plist, /<key>LM_CONNECTOR_SHARED_ENV_FILE<\/key>/);
     assert.match(plist, /<key>LIFE_MANAGER_STATE_HOME<\/key>/);

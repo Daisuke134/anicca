@@ -191,7 +191,7 @@ test("verified RSVP becomes a Calendar event and coverage while a real all-day b
   assert.equal(created[0].canonicalUrl, "https://luma.com/founder-night");
   assert.equal(result.coverage.counts.covered_new, 1);
   assert.equal(result.coverage.counts.unavailable, 1);
-  assert.equal(result.coverage.counts.open, 19);
+  assert.equal(result.coverage.counts.open, 26);
   assert.deepEqual(result.observedOutcomes, [{ date: "2026-08-05", observed_status: "booked" }]);
 });
 
@@ -218,7 +218,7 @@ test("a retried Connector registration remains covered_new when its exact Calend
   assert.equal(result.coverage.counts.covered_existing, 0);
   assert.equal(result.coverage.counts.covered_new, 1);
   assert.equal(result.coverage.counts.unavailable, 1);
-  assert.equal(result.coverage.counts.open, 19);
+  assert.equal(result.coverage.counts.open, 26);
   assert.equal(creates, 0);
 });
 

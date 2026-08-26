@@ -4,8 +4,8 @@ status: ACTIVE
 owner: Dais / Life Manager
 created: 2026-08-01 JST
 updated: 2026-08-26 JST
-scope: 応募基盤、イベント、資金調達、求人、個人CFO、暗号資産、法定通貨投資・NISA
-active_execution_surface: LOCAL_ONLY_UNTIL_ORDER_5_COMPLETE
+scope: Upwork終端処理、公開context収束、汎用Life Manager kernel、既存5段階の各organ
+active_execution_surface: LOCAL_FIRST_SHARED_CORE_CLOUD_DEFERRED_UNTIL_KERNEL_ACCEPTANCE
 
 ## 0. この文書の権限
 
@@ -21,6 +21,248 @@ active_execution_surface: LOCAL_ONLY_UNTIL_ORDER_5_COMPLETE
 2. この専用仕様書
 3. `2026-07-30-outbound-apply-engine-design.md`の各pack内部順序
 4. その他の全体・履歴仕様
+
+### 0.0 2026-08-27 current cursor — Upworkを閉じ、汎用Life Managerへ収束する
+
+この節は、後段の「現在TODO」「次の一件」「local-only」「self-funded agentは別product」という相反する記述を
+上書きする最新の実行順序SSOTである。後段は実装履歴・organ別acceptanceとして保持するが、次作業の選択には使わない。
+Upworkのterminal evidenceとauthorization containmentは完了した。次はstartup contextからpublic claimを収束し、その後にREADME、Web、
+general-agent kernelを順番に進める。
+
+#### Overview / Why
+
+Life Managerは、助言を返すassistantでも、marketplaceごとのbot集合でもない。人の身体・心・お金に関するgoalを継続的に管理し、
+委任範囲内の現実行動を完了まで進め、公式receiptで結果を証明する**proactive general agent**である。長期missionは、
+信頼できるcareとagencyを常時利用可能にし、人間から始めて最終的にすべての生き物の苦しみを終わらせることとする。
+
+Upworkはこの汎用agentの最初のmarketplace proofとして始めたが、未承認UI automationによる一時制限を受けた。現在の公式画面は
+`Full Access / At risk / policy violations 1 / Misuse of Upwork Systems / Appealable / submitted appeals 0`である。
+Terms確認によるself-service復旧は完了したが、API申請もappealも送信していない。したがって「申請済み」「許可済み」と扱わない。
+停止前の最終official inventoryは`submitted proposals 12 / active proposals 1 / active contracts 0 / offers 0 /
+available earnings USD 0`である。proposalは収益ではなく、同accountは新規freelancer、identity `Unverified`、qualifying JSSなしのため、
+公開API要件の`$25,000 lifetime earnings/spend + JSS 90%`を満たさない。
+
+Upwork公式は、botを「人間より速く又は頻繁にrequestするscript/program/browser extension」と定義し、UI interactionを自動化するtoolの
+例外は承認できず、許可済みAPI keyでも承認scope外の操作は禁止としている。API keyの審査条件には、本人確認、verified payment、
+$25,000以上のlifetime earnings/spend、freelancer JSS 90%以上、account good standingが含まれる。よって「頻度を落として検出を避ける」は
+解決ではない。Upworkは公式API・action scope・account permissionのreceiptだけで有効化し、それ以外はOFFのまま終端させる。
+
+公式根拠:
+
+- Upwork, [Use bots and other automation properly](https://support.upwork.com/hc/en-us/articles/43342677368467-Use-bots-and-other-automation-properly): “We are not able to approve or make exceptions for tools that automate interactions with Upwork.”
+- Upwork, [How to request an API key](https://support.upwork.com/hc/en-us/articles/115015857647-How-to-request-an-API-key-from-Upwork): “At least $25,000 in lifetime earnings, spend, or a combination of both.”
+- Upwork, [API scopes and permissions](https://support.upwork.com/hc/en-us/articles/115015857607-API-scopes-and-permissions): application permissionとuser/team permissionの両方が必要。
+
+#### Product contract and claim boundary
+
+| 項目 | 正本contract |
+|---|---|
+| product | **Life Manager**。Aniccaはformが会社名を要求する時だけ使う |
+| one-liner | A proactive general agent that manages your body, mind, and money plus real-world follow-through |
+| organs | Daily、Physical / Mental、Financialは別productではなく、同じmanagerが配分するcapability portfolio |
+| Financial | CFO、支出、収入、gig/business、crypto、investing、Agent Economy、自己compute費を含む |
+| self-funding | 別productではない。`earned → withdrawable → banked → compute_paid`を実receiptで閉じるFinancial capability |
+| local | free、open source、self-hosted。同じkernelをMac/Linux上で動かす |
+| cloud | phoneだけで使えるpaid monthly hosted surface。同じkernelへmulti-tenant scheduler、vault、billingを足す |
+| revenue | founder-attested約$1,000。provider/期間証拠がない限りMRR、ARR、banked、autonomous incomeへ言い換えない |
+| AGI | mission / directionとして説明できるが、現在達成済みの科学的claimにはしない |
+| human boundary | KYC、本人の声・身体・面接・物理作業などproviderが本人を要求する仕事をagentが代行・偽装しない |
+
+`.agents/startup-context.json`をpublic factの唯一の機械正本とする。README、README.ja、`aniccaai.com/lm`、root site、
+fundraising answers/deck/one-pager、active accelerator formsは、この正本から生成またはdrift検証する。
+fundraiser branch `fundraiser-agent-task0-20260826`の固定commit `626d94f36`からproduct/mission/delivery/tractionを、
+`92dd73b07`からcanonical application answersをcopy+tweakした。動的なaccelerator priority queueとbrowser/CAPTCHA runtimeは取り込まない。
+canonical startup contextは`2026-08-27.2`、digest
+`9fbe6198c6d61da47d68767eec90a1d95d2e07058f024448d86372b5f3035338`で、同digestのfundraising kit 6ファイルを再生成済みである。
+mission、revenue、users、applications、AGIはsource/status/as_of/public_useを持つclaim registryへ入り、AGI達成、数値user、
+provider receiptのないapplication outcomeをpublic artifact validatorが拒否する。
+
+`CTX-08`の現行第一候補は、東京都公式が募集開始を告知したASAC第4期プレシード・第23期シードである。公式募集期間は
+2026-08-25〜2026-09-13、応募経路はログイン後のofficial formであり、公開要項に事前動画要件はない。既存Fundraiserの
+`submitted_verified`は12件あるが、すべて上記canonical context確定前である。PR #2889を既存owner branchへmergeし、
+稼働pathはcontext `2026-08-27.2` / `9fbe6198…5338`、同digestのapplication kit/deck、送信前
+`application_digest`、送信後dossier/ledger digestを読む。focused testsはstartup-context 20/20、Fundraiser 12/12 GREENである。
+残るblockerはhost disk governorだけである。生成MP4 187本、再生成可能cache/dependency、完全cleanでbranchを保持した旧worktree
+だけを除去し、一時は空きを2,491,772,928 bytesから11,999,936,512 bytesへ回復した。credential、session、ledger/state JSONL、
+顧客素材/納品物、Cloak profile、稼働中dependency、dirty/unmerged sourceは保持した。追加実測ではAPFS VM volumeが
+22,548,578,304 bytes、macOS管理swapが21,504MiB中20,553.56MiB使用、swapfile 21本で、host disk不足の最大根因は
+削除可能なproject artifactではなくswapである。2026-08-27T03:41:25+09:00時点の空きは10,781,794,304 bytes、
+clear threshold 21,474,836,480 bytesには10,693,042,176 bytes不足する。swapfileを直接削除せず、稼働owner・profile・PIDを
+照合した不要processだけをTERMし、macOSの自然回収をreadbackする。`disk-pressure.block`はpresent、Fundraiserはrun 203 /
+exit 75でfail closedし、外部送信は0である。
+追加のbrowser GCでは、終了済みrunが所有するCoconala page 3枚と、Apply停止・Reply attach保護を確認したlegacy unattached page
+20枚だけを閉じた。しかし常駐ownerがpageを再生成し、2026-08-27T03:51:45+09:00にはswapが22,528MiB中21,114.44MiB、
+swapfile 22本、disk free 9,543,729,152 bytesへ悪化した。project cache追加削除、稼働ownerの無断停止、直接swap削除では閉じない。
+追加診断で再起動を唯一解とする結論を一度訂正した。Applyの`cdp_context_lease.py`はcontext dispose失敗時も`release()`と`gc()`が
+ledger rowを削除するため、browser側にisolated contextだけが残り、後続wakeが新contextを増殖させていた。実機ではApply実行中に
+lease ledger 0行に対してisolated page 13枚（attached 7枚）を観測した。dispose未確認rowを`cleanup_pending`で保持し、dispose成功または
+official context inventoryで既消滅を確認した時だけrowを消す修正をPR #2895 / main `db03dd58a7f6305d25e7f1cf9b80f561e548815c`
+へmergeし、immutable gig releaseも同commitへ更新した。focused lease testsは17/17 GREENである。Apply停止時にdefault contextとledger ownerを
+除外し、既存untracked isolated context 2件だけを一回disposeしてofficial inventoryを2→0にした。続くnatural Apply run 166はexit 0、
+終了時lease ledger 0行 / isolated context 0件で、同じ漏れのreplayは0である。旧orphan renderer 2 PIDは終了し、gig browser RSSは約2GiB級から
+418,368KiBまで低下した。
+
+spec編集でFundraiser専用worktreeをmainへ切替えたため生じたexit 127は、固定branch `663b40216`へ戻し、`bash -n` PASSのままnatural wakeを
+継続している。上記cleanup後もswapは20,480MiB中19,472.31MiB使用、disk freeは9,755,820,032 bytes、clear thresholdまで
+11,719,016,448 bytes不足し、`disk-pressure.block`はpresentである。Fundraiserはrun 265 / exit 75でfail closedし、外部送信は0である。
+safe artifact cleanupとisolated-context leak修復を実施してもthresholdへ届かないため、次の不可分actionは明示承認されたMac再起動→swap/disk
+readback→required launchd owner readback→Fundraiser natural wakeである。再起動前にCTX-08B以降のbrowser effectへ進まない。
+追加の自然回収確認でもlease ledger 0行 / isolated context 0件を維持した一方、swapは21,504MiB中20,191.62MiB使用へ再増加した。
+既存`ai.anicca.life-manager-disk-cleanup`だけをrun 124へkickstartし、exit 0、evaluated 0、reclaimed 0、protected deletions 0を
+readbackした。2026-08-27T04:36:53+09:00のdisk freeは8,613,470,208 bytes、clear thresholdまで12,861,366,272 bytes不足し、
+Fundraiserはrun 273 / exit 75である。したがってcredential、session、ledger、customer media、Cloak profile、稼働ownerを保持したまま
+追加で実行できるcleanup actionはなく、再起動承認境界は未解消である。
+最新contextを読む単一owner、preview digest、
+official completion PNG、Telegram photo message ID、application dossier hashが一つのreceipt chainへ揃うまで`IN_PROGRESS`とする。
+非機密の実測snapshotは`docs/evidence/fundraising/2026-08-27-ctx08-readiness.json`に置く。
+
+#### As-Is / To-Be architecture
+
+| 境界 | As-Is | To-Be |
+|---|---|---|
+| orchestration | organ・providerごとのlaunchd/scriptと独立cursorが並存 | 一つのManager LoopがGoal/Opportunity Graphを読み、次のbounded workを割当 |
+| intelligence | 一部はsite script、一部は巨大prompt、一部はagent-runner | semantic判断と未知UIはshort-lived specialist agent、policy/state/money/receiptは決定論core |
+| marketplace | Coconala/Upwork/Lancers等に重複したbrainとstate | shared commerce state machine + capability manifest + thin provider transport/readback |
+| effects | click、worker success、Telegramを完了扱いし得る | `EffectIntent → execute once → official readback → OutcomeReceipt`以外は完了不可 |
+| learning | provider内の局所ログ・応募数中心 | banked net、acceptance、revision、cost、human minutesをGoal/Skill/Providerへ帰属 |
+| local/cloud | local loopとhosted productの説明・実装が分散 | 同じkernel/contract tests。runtime、browser、vault、schedulerだけadapter差替え |
+| public context | README前半、新fundraiser branch、狭い`/lm`、root manifestoが不一致 | startup-context起点でmission、product、traction、delivery、claim provenanceを同期 |
+| self-funding | READMEでは別物、Agent Economy docsに分離 | Financial Organ内でbanked revenueからcompute/cloud costを支払うclosed loop |
+
+```mermaid
+flowchart TD
+    HUMAN["Owner goals + delegated boundaries"] --> MANAGER["Life Manager Manager Loop"]
+    MANAGER --> GRAPH["Goal / Opportunity Graph"]
+    GRAPH --> ALLOCATOR["Allocator: urgency, utility, capacity, risk"]
+    ALLOCATOR --> DAILY["Daily capabilities"]
+    ALLOCATOR --> CARE["Physical / Mental capabilities"]
+    ALLOCATOR --> MONEY["Financial capabilities"]
+
+    DAILY --> WORK["Bounded WorkItem"]
+    CARE --> WORK
+    MONEY --> WORK
+    WORK --> AGENT["Short-lived specialist agent"]
+    AGENT --> TOOLS["Shared skills + tools"]
+    TOOLS --> ADAPTER["Thin provider adapter"]
+    ADAPTER --> EFFECT["EffectIntent + authorization + dedupe"]
+    EFFECT --> PROVIDER["Official API / approved browser / native tool"]
+    PROVIDER --> READBACK["Official readback"]
+    READBACK --> LEDGER["Outcome + economic receipt ledger"]
+    LEDGER --> GRAPH
+    LEDGER --> REPORT["Telegram / phone / web report"]
+    LEDGER --> COST["banked → compute_paid"]
+    COST --> MANAGER
+
+    LOCAL["Local OSS runtime"] --> MANAGER
+    CLOUD["Hosted multi-tenant runtime"] --> MANAGER
+```
+
+Coreが所有する最小entityは`Goal`、`Opportunity`、`CapabilityManifest`、`AuthorizationReceipt`、`WorkItem`、
+`EffectIntent`、`OutcomeReceipt`、`EconomicReceipt`である。provider固有codeはdiscovery/transport/readback selectorだけを持ち、
+goal選択、price/margin、state transition、retry、dedupe、receipt判定を持たない。
+
+OSSは新しいframeworkを発明せず次の境界をreuse/copy+tweakする。導入前に固定commit、license、entrypoint、call graph、state、
+error recovery、effect/readbackを実codeで再監査し、noticeを保持する。
+
+| 外部実装 | 採用する境界 | 採用しないもの |
+|---|---|---|
+| DeepAgentsJS / LangGraph | specialist harness、checkpoint、bounded subagent pattern | Life Managerのbusiness stateやreceipt正本 |
+| browser-use | modelが未知siteを視覚的に扱うbrowser-tool contract | provider permission、effect success判定 |
+| OpenClaw | current local wake、channel、skill packaging | provider別の新しいdecision brain |
+| OpenHands | `WorkerRuntime`のlocal/container/remote port pattern | framework全体の置換 |
+| Stagehand | local/hostedでbrowser backendを差し替えるcontract | Upwork UI automationの許可根拠 |
+| Steel | hosted browser backend、session isolation、health | local CloakBrowserの即時置換 |
+| Temporal | durable resume/effect semanticsのreference | 計測前のTemporal server導入 |
+
+#### Acceptance Criteria
+
+1. Upworkが公式receipt付きで`API_APPROVED`、`API_INELIGIBLE`、`API_DENIED`、`SCOPE_INSUFFICIENT`の一つへ終端し、UI loopはOFFである。
+2. startup-context、README、README.ja、`/lm`、root site、fundraising kit、active formでproduct/mission/tractionの矛盾が0である。
+3. 一つのshared commerce state machineが、少なくともCoconalaと第二providerで同じreceipt schemaを使い、coreにsite名分岐を増やさない。
+4. 成功funnelは`discovered → eligible → verified_application → buyer_reply → funded_contract → artifact_accepted → formal_delivery_readback → paid/withdrawable → banked → compute_paid`を区別する。
+5. localとcloudが同じkernel contract suiteを通り、差分はruntime/browser/vault/scheduler/billing adapterだけである。
+6. clean machineへ公開repoだけからinstallでき、private checkout、外部symlink、生credential、Dais固有pathが0である。
+7. working Coconala loopは移行中も止めず、shared adapterで同等のofficial receiptとreplay-zeroを得てから旧ownerを退役する。
+
+#### Atomic remaining TODO — この順序だけで進める
+
+| # | ID | 状態 | 原子的完了条件 |
+|---:|---|---|---|
+| 1 | UPW-01 contain unauthorized UI runtime | DONE | Upwork labels/process/port ownerを停止し、外部effect 0をreadback |
+| 2 | UPW-02 restore account access | DONE | 通常email/password login、Terms確認後にAccount Health=`Full Access`を公式画面でreadback |
+| 3 | UPW-03 API eligibility preflight | DONE | official requirementsとaccount receiptを照合。identity unverified、new freelancer account、contract/earnings 0、JSS未観測により`API_INELIGIBLE` |
+| 4 | UPW-04 exact action-scope inquiry | DONE | 既存Support caseへ6 actionを一度だけ質問し、Gmail sent messageを同一threadでreadback。公開evidenceはcase/message/threadをhash化 |
+| 5 | UPW-05 API request or ineligibility receipt | DONE | 条件未達のためAPI formを送信せず、`docs/evidence/upwork/2026-08-26-api-terminal.json`へtruthful `API_INELIGIBLE`を保存 |
+| 6 | UPW-06 terminal capability manifest | DONE | private 8 browser receiptsをwarning-bound `denied`へ置換。official API 8 actionは`unknown`、labels disabled、`:9233` listener 0 |
+| 7 | CTX-01 merge current startup context | DONE | fixed commits `626d94f36` / `92dd73b07`から動的応募stateを除外して統合。version `2026-08-27.2`、digest `9fbe6198…5338`、kit 6 filesをreadback |
+| 8 | CTX-02 claim provenance gate | DONE | mission/revenue/users/applications/AGIにsource/status/as_of/public_useを必須化。3 claim guardと19 testsでunsupported public artifactを拒否 |
+| 9 | CTX-03 README convergence | DONE | 英日first abstractをproactive general agent/body-mind-money/real action/free OSS local/paid monthly cloudへ統一。self-fundingをFinancial Organへ統合し、README claim guard PASS |
+| 10 | CTX-04 public `/lm` convergence | DONE | `anicca-products` PR #395をmain merge `b61301c15a9…`へ反映。GitHub Actions major outage中は既存Netlify CLI経路でverified-env preview `6a8f0e982a…`→prod `6a8f0f3723…`を実行し、復旧後canonical GHA run `32988269511`もSUCCESS。money-path smoke PASS、live `https://aniccaai.com/lm`はdesktop JA/mobile ENともHTTP 200・3 organs・Telegram/GitHub CTA・overflow 0、数値`?tg=`はGoogle onboardingへ分岐。Life Manager subsetも同期済み |
+| 11 | CTX-05 root-site relationship | DONE | `anicca-products` PR #396をmain merge `7fe3f5f447…`へ反映。root hero/metadata/JSON-LDを`Anicca=mission/company`、`Life Manager=proactive general-agent product`、`Body/Mind/Money=3 organs`へ統一し、旧self-funding/AGI/UBI product sectionsをroot render pathから除外。contract 2/2、preview run `32989091020`、prod run `32989696892`、Netlify deploy `6a8f17a860…`、built-in money-path smoke/rollback gate PASS。live英日HTTP 200・title/CTA/3 organs・overflow 0 |
+| 12 | CTX-06 generated-context drift gate | DONE | README英日、committed fundraising kit、active formのdigest契約はoffline 28/28 GREEN。公開Web PR #397はmain `b1ee7a1208…`へmergeし、preview `32990937574`、production `32991554504`、money-path smokeがSUCCESS。live product/repo/Telegram auditは3/3 GREEN。Security Scan run `32992553073`の`Startup context drift` job `98253497091`もSUCCESS |
+| 13 | CTX-07 public live readback | DONE | isolated browserとHTTP/APIで`/lm`、英日root、public repo、英日README、Telegramをfresh readback。title、3 organs、Web/Telegram/GitHub CTA、version/digest、founder-attested約$1,000とMRR/ARR否定、banked境界、overflow 0を`docs/evidence/public-context/2026-08-27-public-context-readback.json`へ保存 |
+| 14 | CTX-08A host gate recovery | IN_PROGRESS | PR #2895をmain `db03dd58a…`へmergeしimmutable release済み。既存untracked isolated context 2件だけをdisposeして2→0、natural Apply run 166 / exit 0 / ledger 0 / isolated 0でreplay-zero、保護対象保持を確認。既存disk-cleanup run 124もevaluated 0 / reclaimed 0。free 8,613,470,208 bytes、block present、Fundraiser run 273 / exit 75のため、残る一件は明示承認されたMac再起動→free `>=21,474,836,480`・block absent・required owner・Fundraiser natural wakeのreadback |
+| 15 | CTX-08B official form capability readback | TODO | 既存Fundraiser ownerがASAC official formを一度だけ開き、current batch、締切、required fields、attachment、auth/CAPTCHA境界をreceipt化。送信effect 0 |
+| 16 | CTX-08C digest-bound application preview | TODO | context `2026-08-27.2` / `9fbe6198…5338`、kit/deck、全回答、attachment hashを一つの`application_digest`へ固定し、unsupported claim・空required field 0を確認 |
+| 17 | CTX-08D exactly-once accelerator submit | TODO | durable effect claim取得後、同じownerがofficial submitを一度だけ実行。timeout/unknownは再送せずofficial readbackでreconcile |
+| 18 | CTX-08E terminal receipt and replay-zero | TODO | official completion PNG、Telegram photo message ID、application dossier SHA-256、ledger resultを同じdigest chainへ束ね、再wakeでexternal effect 0をreadbackしてCTX-08 DONE |
+| 19 | GA-01 existing-core and OSS code map | TODO | 現行agent-runner/connector/gig/evidence/Agent Economyと上記OSSを固定commitで読み、copy/reuse/rejectとlicenseをcall graph付きで確定 |
+| 20 | GA-02 one Goal / Opportunity Graph | TODO | body/mind/moneyのgoal、opportunity、dependency、deadline、outcomeを同じdurable graphで表現し、一つのmanager cursorが再開可能 |
+| 21 | GA-03 capability registry | TODO | capability、provider、required authorization、cost、human requirement、transport、readbackをdata manifest化し、site名をcoreから除去 |
+| 22 | GA-04 shared effect and receipt kernel | TODO | intent、pre-readback、single execution、unknown-effect reconciliation、post-readback、economic attributionを一つのstate machineへ統合 |
+| 23 | GA-05 bounded specialist runtime | TODO | existing agent-runnerをWorkerRuntimeへ接続し、一仕事・step/time/cost limit・heartbeat/cancel・structured resultを共通化 |
+| 24 | GA-06 allocator across organs | TODO | urgency、expected verified utility、capacity、risk、costでDaily/Care/Financialから次の一件を選び、starvation防止を実証 |
+| 25 | GA-07 local/cloud adapter parity | TODO | same kernelをlocal processとhosted workerで実行し、browser/vault/scheduler adapter差替え以外のbranchを0にする |
+| 26 | GA-08 self-funding economic loop | TODO | provider収益と全costをjobへ帰属し、`banked`残高内だけで`compute_paid`を発行。owner資金と混同しない |
+| 27 | GA-09 migrate working Coconala lane | TODO | 現loopを停止せずshadow receipt→replay-zero→natural wake parity→owner切替の順でshared kernelへ載せる |
+| 28 | GA-10 second-provider generality proof | TODO | provider-specific brainを追加せず第二providerでapplication→contract→delivery→bankedを一件閉じ、同じkernelへ学習を返す |
+| 29 | GA-11 hosted product slice | TODO | phone/Telegram/Webだけでtenant onboarding、vault、scheduler、billing、worker isolation、receiptsを同じkernel上で一人分E2E実証 |
+| 30 | GA-12 OSS clean-install release | TODO | public repoのfresh machine install、sample provider manifest、secret refs、local/cloud docs、license notices、reproducible acceptanceを公開 |
+| 31 | GA-13 dependency retirement | TODO | profitable/open-core/Hermes等のruntime/config/symlink/import参照が0、replacementのnatural E2Eとrollback bundle取得後だけ旧dependencyを退役 |
+
+Upworkは`API_INELIGIBLE / UI_AUTOMATION_DENIED / SUPPORT_SCOPE_PENDING`でclean terminalへ入った。
+Support返信待ちは#7以降を止めない。後日API approvalまたはaction-level scope変更を受けた時だけ、exact evidence hashとexpiryを持つ
+private receiptを追加し、GA-03のmanifest更新として同じshared kernelへ再参加させる。
+
+#### Test Matrix — all OK required
+
+| Case | 必須結果 |
+|---|---|
+| Upwork eligible / approved | approved scope以外OFF、credential混在0、rate limit内、公式API readbackあり |
+| Upwork ineligible / denied / scope不足 | UI fallback 0、terminal reason/case receipt、汎用trackは継続 |
+| provider effect前crash | retry可能、外部effect 0 |
+| provider effect後ack loss | blind retry 0、reconciliationでofficial readback後だけterminal |
+| duplicate wake / duplicate candidate | intent exact 1、application/delivery/payment duplicate 0 |
+| human-only requirement | candidate reject、応募/契約/外部effect 0 |
+| negative margin / capacity conflict | commitment 0、理由と次回観測を保存 |
+| local / hosted | 同じfixtureとstate transition、adapter名だけが異なる |
+| public context drift | build/CI fail、古いvalueを公開・応募へ出さない |
+| Coconala migration | old loop継続、shadow parity、切替後replay-zero、rollback可能 |
+| money | attempted/contracted/pendingをrevenueへ加算せず、bank/payout receiptだけbanked |
+| compute | banked reserveを超える支出0、owner walletからの暗黙補填0 |
+
+#### Boundaries / Non-goals
+
+- Upworkの未承認UI automation、CloakBrowserを検出回避として使うこと、session cookie/API key混在を実装しない。
+- 一つの巨大promptへ全責任を入れない。決定論coreとbounded specialistを分離する。
+- providerごとの新しいplanner、ledger、scheduler、database、browserを作らない。
+- working loopをbig-bang rewriteで置換・停止しない。shadow parityとrollbackを先に作る。
+- modelの自己申告、local PASS、PID、Telegramだけで外部完了・収益をclaimしない。
+- KYC、税務契約、bank登録、本人の声・身体・出席をagentが偽装しない。
+- private credential、個人情報、provider dataをOSS、README、fundraising artifactへ複製しない。
+- localとcloudでbusiness logicを二重実装しない。cloud固有なのはtenant isolation、vault、billing、scaleだけとする。
+
+#### Execution Steps / slice size
+
+各行を一つのsliceとして、spec/TODO更新→既存code reuse監査→必要最小変更→focused live verification→receipt→commit/pushの順で閉じる。
+通常sliceはproduction 1〜2 files、test 1 file、合計100 LOC以内をsoft targetとし、超える場合は同じID内でeffect境界ごとに分割する。
+正常系1本に加え、重複外部作用、金額誤り、data loss、secret漏洩を防ぐ最小regressionだけを持つ。内部objectの組合せ網羅は作らない。
+
+#### E2E judgment
+
+この設計自体はdocs-onlyでありruntime E2Eを発生させない。CTX-03〜05はpublic UI変更なので、unit snapshotだけで閉じず、desktop/mobileの
+実browserでhero、CTA、Telegram deep link、cloud/local説明、claim sourceをreadbackする。iOS UIは変更しないためMaestroは不要。
+GA-09〜11は実provider・実receipt・自然owner wake・replay-zeroが必須で、mock/dry-runは補助証拠にしかならない。
 
 ### 0.0 Connector growth contract — current SSOT
 
@@ -78,78 +320,78 @@ Calendarを無関係なeventで埋めること自体を成果にしない。
 ##### A. Contract and semantic selection
 
 - [x] **CG-00** このcurrent contractとatomic cursorを正本specへ固定する。
-- [ ] **CG-01** `event-preference-ranking.test.js`へ、YC/LT→AI→crypto→startup→weakのexact順序を要求するREDを追加する。
-- [ ] **CG-02** 同testへ、`weak`と`unknown`がverified rankingには残るがauto-apply eligibilityはfalseになるREDを追加する。
-- [ ] **CG-03** `event-preference-ranking.js`をprovider-neutral candidate snapshotへ拡張し、`priority_class`、`preference_fit`、
+- [x] **CG-01** `event-preference-ranking.test.js`へ、YC/LT→AI→crypto→startup→weakのexact順序を要求するREDを追加する。
+- [x] **CG-02** 同testへ、`weak`と`unknown`がverified rankingには残るがauto-apply eligibilityはfalseになるREDを追加する。
+- [x] **CG-03** `event-preference-ranking.js`をprovider-neutral candidate snapshotへ拡張し、`priority_class`、`preference_fit`、
   `preference_reason`をstrict structured outputとして検証する。keyword fallbackは作らない。
-- [ ] **CG-04** `dais-local.json`の公開preferencesをTokyo対面、YC/LT、AI、crypto、startupのhard priorityへ更新し、
+- [x] **CG-04** `dais-local.json`の公開preferencesをTokyo対面、YC/LT、AI、crypto、startupのhard priorityへ更新し、
   secretまたは本人情報を追加しない。
-- [ ] **CG-05** `connector-minimal-production.js`で既存rankingをcandidate listへ接続し、model unavailable/invalid時は
+- [x] **CG-05** `connector-minimal-production.js`で既存rankingをcandidate listへ接続し、model unavailable/invalid時は
   candidate Submit 0でそのproviderをsafe failureにする。
-- [ ] **CG-06** `connector-minimal-runner.test.js`へ、無関係candidateが先頭でもSubmit 0、次のstrong candidateだけが
+- [x] **CG-06** `connector-minimal-runner.test.js`へ、無関係candidateが先頭でもSubmit 0、次のstrong candidateだけが
   external effect exact 1になるRED→GREENを追加する。
-- [ ] **CG-07** `node --test apps/life-manager/lib/event-preference-ranking.test.js apps/life-manager/lib/connector-minimal-runner.test.js apps/life-manager/lib/connector-minimal-production.test.js`をPASSさせ、semantic selection sliceをcommit/pushする。
+- [x] **CG-07** `node --test apps/life-manager/lib/event-preference-ranking.test.js apps/life-manager/lib/connector-minimal-runner.test.js apps/life-manager/lib/connector-minimal-production.test.js`をPASSさせ、semantic selection sliceをcommit/pushする。
 
 ##### B. Twenty-eight-day horizon
 
-- [ ] **CG-08** `connector-minimal-production.test.js`へCalendar `timeMax`がJSTの開始日+28日00:00になるREDを追加する。
-- [ ] **CG-09** `connector-minimal-production.js`のCalendar FreeBusy horizonを14から28へ変更する。
-- [ ] **CG-10** `connector-luma-workflow.test.js`へ今日を含むday 0〜27を受理しday 28を除外するREDを追加する。
-- [ ] **CG-11** `connector-luma-workflow.js`のcandidate windowを28日へ変更する。
-- [ ] **CG-12** `connector-connpass-workflow.test.js`へ同じday 0〜27/day 28境界REDを追加する。
-- [ ] **CG-13** `connector-connpass-workflow.js`のcandidate windowを28日へ変更する。
-- [ ] **CG-14** DSTのない`Asia/Tokyo`で28個のlocal dateが重複せず、Calendar/Luma/connpassのend-exclusive境界が一致するregressionを追加する。
-- [ ] **CG-15** three focused workflow testsをPASSさせ、28-day sliceをcommit/pushする。
+- [x] **CG-08** `connector-minimal-production.test.js`へCalendar `timeMax`がJSTの開始日+28日00:00になるREDを追加する。
+- [x] **CG-09** `connector-minimal-production.js`のCalendar FreeBusy horizonを14から28へ変更する。
+- [x] **CG-10** `connector-luma-workflow.test.js`へ今日を含むday 0〜27を受理しday 28を除外するREDを追加する。
+- [x] **CG-11** `connector-luma-workflow.js`のcandidate windowを28日へ変更する。
+- [x] **CG-12** `connector-connpass-workflow.test.js`へ同じday 0〜27/day 28境界REDを追加する。
+- [x] **CG-13** `connector-connpass-workflow.js`のcandidate windowを28日へ変更する。
+- [x] **CG-14** DSTのない`Asia/Tokyo`で28個のlocal dateが重複せず、Calendar/Luma/connpassのend-exclusive境界が一致するregressionを追加する。
+- [x] **CG-15** three focused workflow testsをPASSさせ、28-day sliceをcommit/pushする。
 
 ##### C. Primary-first and quality-preserving fallback
 
-- [ ] **CG-16** `connector-minimal-runner.test.js`へ、Luma eligible→終了、Luma exhausted→connpass、両primary exhausted→fallbackの順序REDを追加する。
-- [ ] **CG-17** fallback candidateにも`strong/moderate` gateを適用し、Peatix等の`weak/unknown`はSubmit 0にする。
-- [ ] **CG-18** `connector-coverage-telegram.test.js`へ、適格候補0の時に28日空き日と不採用class別countを出すREDを追加する。
-- [ ] **CG-19** `connector-coverage-telegram.js`から旧21日/14日文面と「空き=失敗」の表現を外し、28日・quality-preserving no-effectを報告する。
-- [ ] **CG-20** runner、coverage Telegram、ticket Telegramのfocused testsをPASSさせ、fallback/report sliceをcommit/pushする。
+- [x] **CG-16** `connector-minimal-runner.test.js`へ、Luma eligible→終了、Luma exhausted→connpass、両primary exhausted→fallbackの順序REDを追加する。
+- [x] **CG-17** fallback candidateにも`strong/moderate` gateを適用し、Peatix等の`weak/unknown`はSubmit 0にする。
+- [x] **CG-18** `connector-coverage-telegram.test.js`へ、適格候補0の時に28日空き日と不採用class別countを出すREDを追加する。
+- [x] **CG-19** `connector-coverage-telegram.js`から旧21日/14日文面と「空き=失敗」の表現を外し、28日・quality-preserving no-effectを報告する。
+- [x] **CG-20** runner、coverage Telegram、ticket Telegramのfocused testsをPASSさせ、fallback/report sliceをcommit/pushする。
 
 ##### D. connpass official-source boundary
 
-- [ ] **CG-21** private credential SSOTを値を出力せず確認し、connpass API keyがなければ公式individual/community API利用申請を行い、取得後ただちにrepo外SSOTへ0600で保存する。
-- [ ] **CG-22** `load-connector-env.test.js`へconnpass API key referenceのaccept/rejectとerror/logへの値非露出REDを追加する。
-- [ ] **CG-23** `load-connector-env.js`と`native-pass.js`からAPI keyをverified production dependencyへ一度だけ渡す。
-- [ ] **CG-24** `connpass-api-client.test.js`で`X-API-Key`、`prefecture=tokyo`、28日分`ymd`、pagination、429、1req/sec以下を検証する。既存5秒間隔は安全側として保持してよい。
-- [ ] **CG-25** `connector-connpass-workflow.js`のdiscoveryを既存`connpass-api-client.js`へ切り替え、active pathからcalendar page scrapingを外す。
-- [ ] **CG-26** source scan regressionでactive connpass discoveryが`/api/v2/events/`以外へautomated list/detail accessしないことを検証する。
-- [ ] **CG-27** connpass candidateでは参加枠、LT枠、補欠、締切、canonical URLをTelegram action receiptへ正規化し、provider permission未確認時のSubmitを0にする。
-- [ ] **CG-28** providerへ自動参加操作の許可範囲を問い合わせ、official response receiptを保存する。許可されたmethodだけを後続実装し、許可がなければTelegram action boundaryをfinal behaviorとする。
-- [ ] **CG-29** API keyを使うread-only live canaryでTokyo 28日inventoryを取得し、API audit、secret非露出、Luma continuationをreadbackしてcommit/pushする。
+- [x] **CG-21** private credential SSOTを値を出力せず確認し、connpass API keyがなければ公式individual/community API利用申請を行い、取得後ただちにrepo外SSOTへ0600で保存する。
+- [x] **CG-22** `load-connector-env.test.js`へconnpass API key referenceのaccept/rejectとerror/logへの値非露出REDを追加する。
+- [x] **CG-23** `load-connector-env.js`と`native-pass.js`からAPI keyをverified production dependencyへ一度だけ渡す。
+- [x] **CG-24** `connpass-api-client.test.js`で`X-API-Key`、`prefecture=tokyo`、28日分`ymd`、pagination、429、1req/sec以下を検証する。既存5秒間隔は安全側として保持してよい。
+- [x] **CG-25** `connector-connpass-workflow.js`のdiscoveryを既存`connpass-api-client.js`へ切り替え、active pathからcalendar page scrapingを外す。
+- [x] **CG-26** source scan regressionでactive connpass discoveryが`/api/v2/events/`以外へautomated list/detail accessしないことを検証する。
+- [x] **CG-27** connpass candidateでは参加枠、LT枠、補欠、締切、canonical URLをTelegram action receiptへ正規化し、provider permission未確認時のSubmitを0にする。
+- [ ] **CG-28** providerへ自動参加操作の許可範囲を問い合わせ、official response receiptを保存する。許可されたmethodだけを後続実装し、許可がなければTelegram action boundaryをfinal behaviorとする。問い合わせ送信receiptは `docs/evidence/outbound/2026-08-27-connpass-automation-permission-inquiry.json`、official responseはpending。
+- [x] **CG-29** API keyを使うread-only live canaryでTokyo 28日inventoryを取得し、API audit、secret非露出、Luma continuationをreadbackしてcommit/pushする。
 
 ##### E. Lightning Talk application
 
-- [ ] **CG-30** `event-talk-opportunity.test.js`へ、公開LT/CFP/demo/pitchだけがopen opportunityとなり、closed/invite-only/本文にないURLはfalseになるregressionを固定する。
-- [ ] **CG-31** `connector-minimal-production.js`でverified candidate detailを`inferEventTalkOpportunity`へ渡し、open talkを同topic内の最上位へ上げる。
-- [ ] **CG-32** `grounded-talk-pack.test.js`へLife Managerのverified factsだけから5分title/abstract/outline/bioを生成し、未検証claimを拒否するregressionを固定する。
-- [ ] **CG-33** 既存talk transition storeへ`discovered → application_ready → submitted → provider_verified → accepted/rejected`を保存し、attendance stateと混ぜない。
-- [ ] **CG-34** 一wakeのeffect budgetでtalk Submitを優先する時はattendanceを次wakeへ残し、両方を同時Submitしない。
-- [ ] **CG-35** talk URL上のordinary verified fieldsだけを入力し、payment/CAPTCHA/本人確認/unknown required fieldでは`human_action_required`、official readbackなしでは`submitted`より先へ進めない。
-- [ ] **CG-36** talk classifier、grounded pack、transition store、minimal productionのfocused testsをPASSさせ、LT sliceをcommit/pushする。
+- [x] **CG-30** `event-talk-opportunity.test.js`へ、公開LT/CFP/demo/pitchだけがopen opportunityとなり、closed/invite-only/本文にないURLはfalseになるregressionを固定する。
+- [x] **CG-31** `connector-minimal-production.js`でverified candidate detailを`inferEventTalkOpportunity`へ渡し、open talkを同topic内の最上位へ上げる。
+- [x] **CG-32** `grounded-talk-pack.test.js`へLife Managerのverified factsだけから5分title/abstract/outline/bioを生成し、未検証claimを拒否するregressionを固定する。
+- [x] **CG-33** 既存talk transition storeへ`discovered → application_ready → submitted → provider_verified → accepted/rejected`を保存し、attendance stateと混ぜない。
+- [x] **CG-34** 一wakeのeffect budgetでtalk Submitを優先する時はattendanceを次wakeへ残し、両方を同時Submitしない。
+- [x] **CG-35** talk URL上のordinary verified fieldsだけを入力し、payment/CAPTCHA/本人確認/unknown required fieldでは`human_action_required`、official readbackなしでは`submitted`より先へ進めない。
+- [x] **CG-36** talk classifier、grounded pack、transition store、minimal productionのfocused testsをPASSさせ、LT sliceをcommit/pushする。
 
 ##### F. Hourly owner and evidence UX
 
-- [ ] **CG-37** `minimal-production-contract.test.js`を`StartInterval=3600`、`StartCalendarInterval`なし、label exact 1へRED更新する。
-- [ ] **CG-38** `ai.anicca.life-manager-connector-native.plist.template`だけをhourlyへ変更し、RunAtLoad、KeepAlive、second labelを追加しない。
-- [ ] **CG-39** ranking reason、priority class、LT state/deadlineを`connector-native-write-pipeline`の既存bundle lineageへ追加し、secret/raw prompt/bodyを保存しない。
-- [ ] **CG-40** ticket/coverage Telegramへ「なぜ選んだか」「LT open/submitted/verified」「28日空き」を追加し、provider message IDなしをsuccessにしない。
-- [ ] **CG-41** Connector full focused suite、shell syntax、plist render/lint、secret/PII scanをPASSさせ、hourly/evidence sliceをcommit/pushする。
+- [x] **CG-37** `minimal-production-contract.test.js`を`StartInterval=3600`、`StartCalendarInterval`なし、label exact 1へRED更新する。
+- [x] **CG-38** `ai.anicca.life-manager-connector-native.plist.template`だけをhourlyへ変更し、RunAtLoad、KeepAlive、second labelを追加しない。
+- [x] **CG-39** ranking reason、priority class、LT state/deadlineを`connector-native-write-pipeline`の既存bundle lineageへ追加し、secret/raw prompt/bodyを保存しない。
+- [x] **CG-40** ticket/coverage Telegramへ「なぜ選んだか」「LT open/submitted/verified」「28日空き」を追加し、provider message IDなしをsuccessにしない。
+- [x] **CG-41** Connector full focused suite、shell syntax、plist render/lint、secret/PII scanをPASSさせ、hourly/evidence sliceをcommit/pushする。
 
 ##### G. Production acceptance and OSS finish
 
-- [ ] **CG-42** `git fetch`後のclean integration commitで全変更をcanonical `main`へnon-force統合し、remote ancestryとimmutable release bytesを確認する。
-- [ ] **CG-43** `bin/launchctl-safe`だけでnative plistをrender/install/reloadし、loaded args、`StartInterval=3600`、native owner exact 1、legacy owner 0、process/lock 0をreadbackする。
-- [ ] **CG-44** existing labelをexact 1回kickstartし、本物のLuma `strong/moderate`候補一件でprovider readback→Calendar exact 1→PNG/receipt→Telegram IDs→bundleを完成する。
+- [x] **CG-42** `git fetch`後のclean integration commitで全変更をcanonical `main`へnon-force統合し、remote ancestryとimmutable release bytesを確認する。
+- [x] **CG-43** `bin/launchctl-safe`だけでnative plistをrender/install/reloadし、loaded args、`StartInterval=3600`、native owner exact 1、legacy owner 0、process/lock 0をreadbackする。BrowserとConnectorは互いのcleanupでreleaseを失わないper-loop current rootを使う。Release/install receiptは `docs/evidence/outbound/2026-08-27-connector-hourly-release-install.json`。
+- [ ] **CG-44** existing labelをexact 1回kickstartし、本物のLuma `strong/moderate`候補一件でprovider readback→Calendar exact 1→PNG/receipt→Telegram IDs→bundleを完成する。旧releaseの安全停止とGemini schema修復後のLuma/connpass成功・適格候補0 canaryは `docs/evidence/outbound/2026-08-27-connector-owned-release-canary.json` と `docs/evidence/outbound/2026-08-27-connector-ranking-recovery-canary.json` に保存し、外部作用acceptanceには数えない。
 - [ ] **CG-45** 次の自然hourly wakeで同eventのSubmit 0、Calendar 1、bundle reuse、別candidateへのcontinuationを確認する。
-- [ ] **CG-46** connpass API live inventoryとaction boundaryを自然wakeで確認し、provider permissionがある場合だけ許可methodの実申込bundleを追加する。
+- [x] **CG-46** connpass API live inventoryとaction boundaryをnatural owner wakeで確認する。wake `wake-a27f9e8bba85c87d84dda625`はranking 589,180ms後にboundaryを22,561msで成功し、candidate snapshot `433b9497...`、Telegram provider ID `36655`をmode-0600 immutable receiptへexact 1件保存した。Connpass Submitはpermission未確認のため0。wake reportはdeadlineを正しく`circuit_open / wake_deadline`、positive Telegram ID `36656`として報告した。provider permissionが得られた場合だけ許可methodの実申込bundleを別TODOとして追加する。
 - [ ] **CG-47** open LT候補でtalk application receiptを一件完成し、attendance/talkの各state、Calendar、Telegramを独立readbackする。
 - [ ] **CG-48** 24回の連続hourly receiptでduplicate Submit 0、concurrent owner 0、effect unknownの自動再送0、owned page/lock cleanupを確認する。
-- [ ] **CG-49** public sample profile、Connector README/SKILL、install/uninstall手順を28日・hourly・Luma/connpass・LT・permission boundaryへ同期する。
-- [ ] **CG-50** secretなしの隔離homeでinstall→render→focused no-effect wake→uninstallを再現し、private state/receiptをpackageしないことを確認する。
+- [x] **CG-49** public sample profile、Connector README/SKILL、install/uninstall手順を28日・hourly・Luma/connpass・LT・permission boundaryへ同期する。
+- [x] **CG-50** secretなしの隔離homeでinstall→render→focused no-effect wake→uninstallを再現し、private state/receiptをpackageしないことを確認する。
 - [ ] **CG-51** final spec state、test/effect receipts、known provider limitsを更新し、commit/push、remote readback、Telegram milestoneでConnector growth sliceをDONEにする。
 
 #### 0.0.4 Runtime flow
@@ -8574,3 +8816,40 @@ provider auditはLuma `35/35/29/17/1`、Connpass `5/5/5/3/0`、Peatix `100/100/8
 Daisの明示指示により、Connector current contractを「Luma、次にConnpassをprimaryとして無料・受付中・東京・14日内・Calendar非衝突eventを探索し、実申込、official readback、event本体のGoogle Calendar登録、Telegram evidence、durable receiptまで行うlocal loop」へ再確定した。AI・crypto・startup・engineeringはsoft preferenceであり、異分野eventを除外するhard filterではない。Connectorは会うべき人物を予測せず、移動時間・前後buffer・経路・Life Manager Web AppのCalendar enrichment・cloud化を実装しない。
 
 実装照合では`skills/connector/native-pass.js`のprovider順序がLuma→Connpass→残り6 rails、`event-goal-serendipity.js`が全eventをexact 1回返してomit禁止、write pipelineがofficial receipt後にevent本体をCalendarへexact 1件作成しTelegram message/photoを送ることを確認した。Lumaはofficial ticket/QRを取得できる時だけ追加送信し、QR unavailableでもverified registration page evidence・Calendar・Telegram core chainは継続する。一方、native runtimeのcandidate gateには旧`createConnectorRouteMinutes`/`homeLocation`/`routeMinutes`依存が残るため、C-CORE-03で削除する。既存fallback実装は削除せず、追加first-live proofを`DEFERRED_NON_BLOCKING`へ移した。進捗514のC-OPS/C-LIVE順序は履歴とし、current Active TODOを`0.2.1`のC-CORE-01〜07へ置換した。
+
+### O1B-25進捗516（Connector Growth official wake / Connpass live inventory境界）
+
+immutable release `9623dff4cf47cd461d2bc4f40971c0a258253dab`、per-loop current root、hourly native label exact 1のproduction ownerをexact 1回kickstartした。wake `wake-db8dc90f4305a8bddf7cb9c5`はLuma discoveryを成功し、Connpass APIでTokyo 28日inventoryを`observed/normalized/free-open/Calendar-free = 283/283/264/125`まで取得した。Connpass lifecycleは開催前`preopen`かつ参加型`participation`だけを受付中として扱い、公開descriptionを8,000文字、ranking chunkを25件かつ24,000 UTF-8 bytes以下、transient chunk retryをexact 1へ制限したreleaseで実行した。
+
+Connpass semantic rankingは67,106ms後にsafe failureとなり、Peatix discovery `100/100/56/11`へ継続した。terminalは`completed_no_effect / provider_discovery_failed / consecutive_failure_count 1`、process exit 0、wake report `203→204`、action history `2960→2966`、positive Telegram provider ID `36465`。applied bundle `32→32`、Connpass action-boundary receipt `0→0`、provider Submit、Calendar create、evidence bundleの新規external effectは0。したがってCG-46はinventory readbackだけ成立し、action boundaryは未完。次のatomic cursorはランキング失敗classをsecret非露出のstable stage receiptへ分離し、同じ125件でboundary receiptまで到達すること。
+
+### O1B-25進捗517（Connector Growth Connpass action boundary accepted）
+
+公式wake群でConnpass 125候補のsemantic rankingを再現し、model chunk omissionをbounded retry後のrecursive bisectでexact-once回収、3 worker固定並列、公開body 1,000文字transport、45秒timeoutへ修復した。LT詳細classifierはrankingが`open_talk`とした候補だけへ限定した。ranking成功後もTelegram境界が即時失敗したため、秘密を保存しないstable stage codeをaction historyへ追加して実測した結果、ranking validatorがprovider候補を`provider/event_ref/url/title/body`へ縮退させ、参加枠・LT状態・人数・締切を落としていたことを確定した。production routerで元のverified provider factsへAIの`priority_class / preference_fit / preference_reason / auto_apply_eligible`だけをmergeするRED→GREENを入れた。
+
+immutable release `cf6843d4c8ba7ced84c420afcb035844433682fc`は隔離106/106 testをPASSし、native owner exact 1、`StartInterval=3600`へloadした。official wake `wake-a27f9e8bba85c87d84dda625`はCalendar 3,508ms、Luma 47,558ms、Connpass 589,180ms、Connpass action boundary 22,561msでsuccess。`connpass-action-boundary-deliveries.jsonl`は0→1、candidate snapshot SHA-256 `433b9497834cfba6d2c0d708ed78c114ba4b55d7a492eace264a817345ad4e04`、Telegram provider ID `36655`、wake delivery ID `36656`を保存した。Connpass Submit、Calendar create、applied bundleは0。ownerはprocess/lockを残さず終了したが、合計が10分を越えたためterminalは意図どおり`circuit_open / wake_deadline`、launchd last exit 1。CG-46をacceptし、次のatomic cursorはrankingをwake budget内へ収める性能修復である。
+
+残るatomic orderは次だけを正本とする。
+
+1. **CG-PERF-01** Connpass rankingの全model request数・bisect数・最大/合計時間を候補本文やpromptなしで計測する。
+2. **CG-PERF-02** 125候補を10分wake内に収める最小変更をTDDし、Luma→Connpass→boundary→terminal reportを600,000ms未満で実測する。
+3. **CG-28** connpass providerのofficial responseをreadbackし、許可なし/未回答ならTelegram action boundaryをfinal behaviorとして固定する。
+4. **CG-44** 本物のLuma strong/moderate一件をofficial readback、Calendar exact 1、PNG/receipt、Telegram IDs、bundleまで完成する。
+5. **CG-45** 次の自然hourly wakeで同event Submit 0、Calendar exact 1、bundle reuse、次candidate continuationを証明する。
+6. **CG-47** open LT一件をtalk application receiptまで進め、attendance stateと独立readbackする。
+7. **CG-48** 24回の自然hourly receiptでduplicate effect 0、concurrent owner 0、page/lock cleanupを証明する。
+8. **CG-51** final test/effect/provider-limit stateを更新し、main integration、immutable release、remote readback、Telegram milestoneでDONEにする。
+
+### O1B-25進捗518（Connector Growth ranking/LT performance accepted）
+
+CG-PERF-01としてranking coreへ候補・prompt・URL・error文字列を一切保存しない7数値のaudit contractを追加し、mode-0600 `ranking-audits.jsonl`へwake-bound appendした。official wake `wake-518eec6c6fdf825d5d15a23d`でlarge-inventory 3件chunkを実測し、Connpass rankingは`request/retry/bisect = 53/5/3`、request合計575,621ms、最大23,715ms、並列wall 195,767msまで短縮した。一方、Connpass provider discovery全体は569,798msであり、ranking後のopen-talk詳細classifier直列実行が約374秒を占める支配要因と確定した。
+
+CG-PERF-02としてopen-talk候補だけを検証する既存gateを維持したまま、独立classifierを固定並列3、入力順保持、各候補fail-closedへ変更した。immutable release `453d403a4312d9b75431794a26f4fe48da4bbced`のofficial wake `wake-26e8fb9e312c47aee0eea983`はCalendar 7,989ms、Luma 61,530ms、Connpass discovery 366,778ms、action boundary 14,923ms、terminal Telegramまで約473秒で終了した。ranking auditは`62/8/6`、request合計654,765ms、最大25,015ms、並列wall 229,990ms。Connpass boundary provider ID `36719`、wake provider ID `36720`、Submit external effect 0、process/lock残留0。これでLuma→Connpass→boundary→terminal reportの600,000ms未満をacceptする。
+
+同wakeはmanual boundary成功後にもpermission未確認候補をrouterへ3件流し、external Submit 0ながら`connpass_action_permission_required` circuitを作った。後続RED→GREENではmanual boundary callbackがある時はreceipt成功後にConnpass candidate actionを全skipし、permission verified時だけfactoryがcallbackを外して許可済みaction pathへ進む。focused 98/98、gitleaks PASS、pushed commit `0ad36c5c74d210a828fa221f7f64996ad0514f87`。次のatomic cursorはCG-28 official response readbackである。
+
+### O1B-25進捗519（manual Connpass final behavior / fallback continuation accepted）
+
+immutable release `a4de36d94781ad548c068fbea56c3e2966893fbb`は隔離143/143 testをPASSし、hourly native owner exact 1へloadした。official wake `wake-23ea2ae091732a256c6c4955`はCalendar 3,453ms、Luma 50,231ms、Connpass 351,453ms、manual action boundary 11,271ms、Peatix 93,165msを経て約528秒で`completed_no_effect / providers_exhausted / consecutive_failure_count 0`、exit 0。Connpass candidate Telegram provider ID `36746`、wake provider ID `36748`、bundle `32→32`。boundary後のConnpass provider cache/direct/Harness/readbackは全0で、未許可external Submit 0のままfallbackへ継続した。process/lock残留0。
+
+CG-28のofficial Gmail threadをread-only再取得し、message countは2。provider起点messageと問い合わせ送信message `1a03ed4ba35ffa46`だけで、その後のofficial responseは0。permissionは未確認のためmanual Telegram boundaryをcurrent final behaviorとして維持する。CG-44は同wakeのLuma Calendar-free候補がsemantic strong/moderate gateを通らず実bundle 0であり、既存過去Luma bundleをcurrent acceptanceへ代用しない。次のnatural hourly inventoryで継続する。

@@ -25,8 +25,19 @@ CURRENT="$LOOPS_ROOT/current"
 # state root is intentionally not resolved here (see RELEASE.json note below)
 KEEP="${LOOPS_KEEP_RELEASES:-5}"
 REF="${1:-HEAD}"
+RELEASE_PATHS="${LOOPS_RELEASE_PATHS:-}"
 
 die() { echo "cut-loop-release: $*" >&2; exit 1; }
+
+prune_releases_after() {
+  local keep="$1"
+  ls -1dt "$RELEASES"/*/ 2>/dev/null | tail -n +$((keep + 1)) | while IFS= read -r old; do
+    [ "$(readlink "$CURRENT")" = "${old%/}" ] && continue
+    chmod -R u+w "$old" 2>/dev/null || true
+    rm -rf "$old"
+    echo "cut-loop-release: pruned $(basename "${old%/}")"
+  done
+}
 
 SHA="$(git -C "$REPO_ROOT" rev-parse "$REF" 2>/dev/null)" || die "cannot resolve ref '$REF'"
 SHORT="${SHA:0:8}"
@@ -48,13 +59,36 @@ fi
 
 DEST="$RELEASES/$(date +%Y%m%dT%H%M%S)-$SHORT"
 [ -e "$DEST" ] && die "$DEST already exists"
+# Prune before export as well as after it. Waiting until after extraction requires enough free
+# space for KEEP+1 complete trees and made an otherwise recoverable release install fail ENOSPC.
+# Keep current plus rollback capacity; the new export becomes the next retained generation.
+PRE_KEEP=$((KEEP > 1 ? KEEP - 1 : 1))
+prune_releases_after "$PRE_KEEP"
 # Only the release dir: each loop's state dir belongs to that loop's job, and creating a shared
 # empty one here would advertise a location nothing actually writes to.
 mkdir -p "$DEST" || die "cannot create $DEST"
 
-# git archive exports the committed tree only: no .git, no untracked scratch, no local edits. That
-# is the difference between "a copy of the commit" and "a copy of someone's desk".
-if ! git -C "$REPO_ROOT" archive --format=tar "$SHA" | tar -x -C "$DEST"; then
+# git archive exports the committed tree only: no .git, no untracked scratch, no local edits. A
+# loop-specific owner may request a whitespace-separated path allowlist; the default remains the
+# complete repository for callers that need it. This keeps a 300 KiB X runtime from requiring a
+# 57 MiB export on a disk-constrained host.
+ARCHIVE_PATHS=()
+if [ -n "$RELEASE_PATHS" ]; then
+  read -r -a ARCHIVE_PATHS <<<"$RELEASE_PATHS"
+  # launchctl-safe is not standalone: every mutating command executes the shared Aqua/user
+  # bootstrap preflight first. A sparse release that includes the wrapper but omits this module
+  # cannot safely kick an owner, so close that dependency automatically instead of relying on
+  # every caller to remember a second path.
+  case " $RELEASE_PATHS " in
+    *" bin "*)
+      case " $RELEASE_PATHS " in
+        *" skills/_shared "*) ;;
+        *) ARCHIVE_PATHS+=("skills/_shared") ;;
+      esac
+      ;;
+  esac
+fi
+if ! git -C "$REPO_ROOT" archive --format=tar "$SHA" -- "${ARCHIVE_PATHS[@]}" | tar -x -C "$DEST"; then
   rm -rf "$DEST"
   die "export of $SHORT failed"
 fi
@@ -66,7 +100,8 @@ cat >"$DEST/RELEASE.json" <<EOF
   "provenance": "$PROVENANCE",
   "cut_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
   "repo": "$(git -C "$REPO_ROOT" remote get-url origin 2>/dev/null)",
-  "state_root": "${LOOPS_STATE_ROOT:-set per loop by its launchd job, not by this release}"
+  "state_root": "${LOOPS_STATE_ROOT:-set per loop by its launchd job, not by this release}",
+  "release_paths": "${ARCHIVE_PATHS[*]:-ALL}"
 }
 EOF
 
@@ -86,11 +121,6 @@ chmod -R u+w "$DEST/state" 2>/dev/null || true
 ln -sfn "$DEST" "$CURRENT.swap" && mv -fh "$CURRENT.swap" "$CURRENT" || die "could not move the current symlink"
 
 # Keep a few older releases so rollback is a symlink move rather than a rebuild.
-ls -1dt "$RELEASES"/*/ 2>/dev/null | tail -n +$((KEEP + 1)) | while IFS= read -r old; do
-  [ "$(readlink "$CURRENT")" = "${old%/}" ] && continue
-  chmod -R u+w "$old" 2>/dev/null || true
-  rm -rf "$old"
-  echo "cut-loop-release: pruned $(basename "${old%/}")"
-done
+prune_releases_after "$KEEP"
 
 echo "current -> $(readlink "$CURRENT")  ($PROVENANCE)"

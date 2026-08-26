@@ -10,12 +10,15 @@ state_dir = "~/loops/x-repost"
 X_REPOST_BROWSER_IDENTITY = "x:anicca"
 X_REPOST_MODEL = "gpt-5.6-luna"
 X_REPOST_REASONING_EFFORT = "max"
+X_REPOST_PUBLISH_TRANSPORT = "postiz"
+X_REPOST_POSTIZ_INTEGRATION_ID = "cmt4l2jld031tqp0y8qtyo983"
+X_REPOST_FORCE_KIND = "quote"
 
-# One pass an hour. The pass itself refuses to publish twice in an hour and stops at a daily
-# ceiling, so the schedule is a floor on attempts, not a promise of output.
+# One pass per half-hour. The pass refuses duplicate effects in the same slot; the quality gate
+# may still produce no output, so the schedule is a floor on attempts, not a promise of posts.
 [jobs.pass]
 program          = "skills/x-repost/x-repost-cli.sh"
-interval_seconds = 3600
+calendars         = [{ minute = 0 }, { minute = 30 }]
 
 # The schedule and the session are what can die silently here, so this checks both.
 [jobs.healthcheck]

@@ -23,6 +23,9 @@ function input(overrides = {}) {
     venue: "Bar Layover（東京・新宿）",
     registrationIdentity: "Dais",
     selectionReason: "東京でエンジニアと直接会え、既存予定と移動時間が重ならないためです。",
+    priorityClass: "open_talk",
+    talkState: "provider_verified",
+    applicationDeadlineAt: "2026-08-14T14:59:00.000Z",
     eventUrl: "https://luma.com/a879ax7k",
     calendarUrl: "https://www.google.com/calendar/event?eid=fixture",
     confirmationReceiptRef: `gmail-message://dais-local/${"b".repeat(64)}`,
@@ -42,6 +45,9 @@ test("非技術者が理解でき、eventとCalendarへ直接tapできる日本�
   assert.match(caption, /イベント: Engineer BAR/);
   assert.match(caption, /日時: 2026年8月15日（土）18:00〜23:00/);
   assert.match(caption, /場所: Bar Layover（東京・新宿）/);
+  assert.match(caption, /優先度: open_talk/);
+  assert.match(caption, /LT: provider_verified/);
+  assert.match(caption, /LT申請締切: 2026年8月14日 23:59/);
   assert.match(caption, /Lumaの確認メールを受信済み/);
   assert.match(caption, /当日の公式QRを添付しました/);
   assert.match(caption, /https:\/\/luma\.com\/a879ax7k/);

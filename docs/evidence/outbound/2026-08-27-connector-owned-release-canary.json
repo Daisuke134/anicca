@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "release_sha": "8dbb7e5ddb1270e9d0477629200bf17bbdf7074b",
+  "launchd_label": "ai.anicca.life-manager-connector-native",
+  "kickstart_count": 1,
+  "launchd_run_count": 1,
+  "launchd_exit_code": 1,
+  "wake_report_delta": 1,
+  "action_history_delta": 8,
+  "connpass_discovery_audit_delta": 1,
+  "connpass_action_boundary_delta": 0,
+  "applied_bundle_delta": 0,
+  "wake_status": "circuit_open",
+  "safe_reason": "provider_discovery_failed",
+  "calendar_observation": "success",
+  "provider_observations": {
+    "luma": "failed",
+    "connpass": "success",
+    "peatix": "failed",
+    "meetup": "failed"
+  },
+  "connpass_observed_count": 283,
+  "connpass_normalized_count": 283,
+  "connpass_free_open_count": 0,
+  "external_effect_count": 0,
+  "disposition": "safe_failure_not_acceptance"
+}

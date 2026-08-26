@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Academic limitations editor icon">
+  <rect width="512" height="512" rx="104" fill="#14213d"/>
+  <path d="M148 112h170l64 64v224H148z" fill="#f8f5ed"/>
+  <path d="M318 112v68h64" fill="#d9a441"/>
+  <path d="M196 234h136M196 286h104M196 338h78" stroke="#14213d" stroke-width="22" stroke-linecap="round"/>
+  <circle cx="360" cy="348" r="56" fill="#d9a441"/>
+  <path d="M336 348l16 16 32-38" fill="none" stroke="#14213d" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
