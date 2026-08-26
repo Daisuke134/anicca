@@ -29,6 +29,11 @@ Read only the required scoped values from the existing private founder profile.
 Read prior ApplicationReceipts before opening forms. Never expose private values
 in public evidence or Telegram.
 
+The current generated pitch deck is
+`fundraising/application-kit/deck.pdf`. Use it when a form accepts a pitch deck
+only if `deck.pdf.receipt.json` has the same `context_digest` as `assets.json`.
+Its absence is a build fault, not a reason to abandon other candidates.
+
 Use the whole context semantically. Make a reasonable inference for narrative and
 judgment questions such as category, stage, customer, market, differentiation,
 roadmap, impact, program fit, and use of funds. Select the closest truthful option
@@ -69,6 +74,10 @@ For every queued candidate until the execution window ends:
    voice, attendance, physical-presence, KYC, binding-terms, banking, funds
    movement, or unsolved CAPTCHA requirement checkpoints only this candidate; it
    does not terminate discovery or other applications.
+   Generate ordinary team, market, and product prose from the startup context;
+   do not checkpoint merely because there is no prewritten answer. Treat the
+   rendered form's actual required fields as authoritative and attach the current
+   verified deck when requested.
 5. At the final review surface, verify the program, cohort/window, account,
    required answers, and challenge state. Claim the shared `application` effect
    immediately before the final Submit action.
