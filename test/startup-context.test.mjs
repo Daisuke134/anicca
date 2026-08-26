@@ -159,7 +159,10 @@ test("audit reads back every verified canonical link", async () => {
   const requested = [];
   const fetchImpl = async (url) => {
     requested.push(url);
-    return new Response("Life Manager", { status: 200 });
+    return new Response(
+      `Life Manager ${context.context_version} ${contextDigest(context)}`,
+      { status: 200 },
+    );
   };
 
   const result = await auditStartupContext(context, {
@@ -175,6 +178,17 @@ test("audit reads back every verified canonical link", async () => {
       .sort(),
   );
   assert.equal(result.link_checks.every((check) => check.ok), true);
+});
+
+test("audit rejects a public product page bound to an old startup context", async () => {
+  const context = clone(await loadStartupContext(contextPath));
+  const result = await auditStartupContext(context, {
+    now: new Date("2026-08-02T13:00:00+09:00"),
+    fetchImpl: async () => new Response("Life Manager 2026-08-01.1 stale-digest", { status: 200 }),
+  });
+
+  assert.equal(result.ok, false);
+  assert.match(result.errors.join("\n"), /product.*context digest/i);
 });
 
 test("audit rejects a 200 page that does not contain the expected product identity", async () => {
@@ -210,6 +224,15 @@ test("Japanese README first view explains the Life Manager product experience", 
   assert.match(readme, /同じcore/);
   assert.match(readme, /https:\/\/aniccaai\.com\/lm/);
   assert.doesNotMatch(readme, /Live Dashboard/);
+});
+
+test("both public READMEs are bound to the canonical startup context", async () => {
+  const context = await loadStartupContext(contextPath);
+
+  for (const file of ["README.md", "README.ja.md"]) {
+    const content = await readFile(new URL(`../${file}`, import.meta.url), "utf8");
+    assert.deepEqual(validatePublicArtifact(content, context), [], file);
+  }
 });
 
 test("application kit is deterministic and bound to the canonical context digest", async () => {
@@ -259,6 +282,15 @@ test("generated application kit describes Life Manager without unverified media"
     assert.equal(assets.assets.some((asset) => asset.status === "verified" && asset.type === "video"), false);
   } finally {
     await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("the committed fundraising kit matches the canonical startup context", async () => {
+  const context = await loadStartupContext(contextPath);
+
+  for (const file of ["README.md", "answers.en.md", "answers.ja.md", "assets.json", "deck.md", "one-pager.md"]) {
+    const content = await readFile(new URL(`../fundraising/application-kit/${file}`, import.meta.url), "utf8");
+    assert.deepEqual(validatePublicArtifact(content, context), [], file);
   }
 });
 

@@ -1,3 +1,5 @@
+<!-- startup-context-version: 2026-08-27.2 -->
+<!-- startup-context-digest: 9fbe6198c6d61da47d68767eec90a1d95d2e07058f024448d86372b5f3035338 -->
 # Life Manager
 
 **Life Manager is a proactive general agent that manages your body, mind, and money.** It turns goals into

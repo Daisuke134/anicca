@@ -217,6 +217,7 @@ export async function auditStartupContext(
   const errors = validateStartupContext(context);
   const warnings = [];
   const linkChecks = [];
+  const digest = contextDigest(context);
 
   if (ageInDays(context?.updated_at, now) > maxAgeDays) {
     errors.push(`startup context is stale: updated_at exceeds ${maxAgeDays} days`);
@@ -267,18 +268,25 @@ export async function auditStartupContext(
           const body = await response.text();
           const expectedText = context.links[key].expected_text;
           const identityMatches = body.toLocaleLowerCase().includes(expectedText.toLocaleLowerCase());
+          const contextMatches =
+            key !== "product" ||
+            (body.includes(context.context_version) && body.includes(digest));
           const check = {
             key,
             url,
-            ok: response.ok && identityMatches,
+            ok: response.ok && identityMatches && contextMatches,
             status: response.status,
             final_url: response.url || url,
             identity_matches: identityMatches,
+            context_matches: contextMatches,
           };
           linkChecks.push(check);
           if (!response.ok) errors.push(`links.${key} readback returned HTTP ${response.status}`);
           if (response.ok && !identityMatches) {
             errors.push(`links.${key} did not contain expected text: ${expectedText}`);
+          }
+          if (response.ok && key === "product" && !contextMatches) {
+            errors.push("links.product did not contain the current context digest");
           }
         } catch (error) {
           linkChecks.push({ key, url, ok: false, error: error.message });
@@ -291,7 +299,7 @@ export async function auditStartupContext(
   return {
     ok: errors.length === 0,
     context_version: context?.context_version ?? null,
-    context_digest: contextDigest(context),
+    context_digest: digest,
     audited_at: now.toISOString(),
     errors,
     warnings,
