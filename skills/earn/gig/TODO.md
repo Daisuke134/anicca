@@ -70,10 +70,20 @@ model narration, and local success without the named readback are not PASS.
 - [x] `R00d` Use Reply as the current lane name in onboarding and operator-facing lane inventories.
   PASS = README, earning-loop inventory, SLOT inventory and this executable cursor say Reply;
   historical evidence remains historical and the installed compatibility label stays unchanged.
-- [ ] `R00e` Publish the repair and prove it through the installed owners.
+- [x] `R00e` Publish the repair and prove it through the installed owners.
   PASS = a new immutable main release is current; three Reply probes produce no repeated DLQ worker
   results; a natural Paid compile appends a bounded aggregate receipt; free bytes remain above the
   configured floor; Apply, Reply, Storefront and Paid remain loaded under their own owners.
+  Closed on main ancestor `10ae7f97a` and current release `2b044e0c4`: four consecutive Reply probes
+  produced zero targeted workers and zero `already_closed` results (before: 409 results in ten
+  minutes). Natural Paid receipts aggregate 8–64 sources into 2–3 resource rows and occupy
+  954–1,090 bytes each while retaining exact live-talkroom SHA. A failed Paid wake left no new
+  runtime workspace; free space recovered to 5.8 GiB, above the 512 MiB floor. All four owner
+  labels remain loaded; interval owners may truthfully be not-running between wakes.
+- [x] `R00f` Remove the completed Manledge-only X DM campaign from scheduled execution.
+  PASS = `ai.anicca.manledge-x-dm-campaign` is absent from launchd and LaunchAgents, while its logs
+  and delivery evidence remain intact. The obsolete 1,200-second owner had run 40 times and last
+  exited 1 after the customer case was already closed; its plist is recoverably retained in Trash.
 - [ ] `R01` Read back production `current` and prove commit `8eb732958` is an ancestor.
   PASS = immutable release SHA plus successful `merge-base --is-ancestor`.
 - [ ] `R02` Start one stopped disposable registered browser through `with-browser.sh`.
