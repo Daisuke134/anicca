@@ -42,11 +42,17 @@ function nullableString(value) {
 }
 function dateKey(value) {
   const raw = String(value || "").trim().replace(/-/gu, "");
-  return /^\d{8}$/u.test(raw) ? raw : null;
+  if (!/^\d{8}$/u.test(raw)) return null;
+  const year = Number(raw.slice(0, 4));
+  const month = Number(raw.slice(4, 6));
+  const day = Number(raw.slice(6, 8));
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day ? raw : null;
 }
 function validTimezone(value) {
-  const zone = nullableString(value) || "UTC";
-  try { new Intl.DateTimeFormat("en", { timeZone: zone }).format(0); return zone; } catch { return "UTC"; }
+  const zone = nullableString(value);
+  if (!zone) return null;
+  try { new Intl.DateTimeFormat("en", { timeZone: zone }).format(0); return zone; } catch { return null; }
 }
 
 // Transit API times are wall-clock seconds from service-date midnight, not Unix seconds.
@@ -54,9 +60,9 @@ function validTimezone(value) {
 function zonedWallInstant(date, seconds, timezone) {
   const key = dateKey(date);
   const total = nullableNumber(seconds);
-  if (!key || total == null) return null;
-  const wallMs = Date.UTC(Number(key.slice(0, 4)), Number(key.slice(4, 6)) - 1, Number(key.slice(6, 8))) + total * 1000;
   const zone = validTimezone(timezone);
+  if (!key || total == null || !zone) return null;
+  const wallMs = Date.UTC(Number(key.slice(0, 4)), Number(key.slice(4, 6)) - 1, Number(key.slice(6, 8))) + total * 1000;
   const formatter = new Intl.DateTimeFormat("en-CA", {
     timeZone: zone,
     year: "numeric",
@@ -136,6 +142,9 @@ function parseTransitPlan(plan, anchor = {}) {
   const timezone = validTimezone(source.timezone);
   const requestedAnchorType = options.anchorType === "arrival" || options.anchorType === "departure" ? options.anchorType : null;
   const routeAnchorType = requestedAnchorType || (source.type === "arrival" || source.type === "departure" ? source.type : null);
+  const anchorSecs = nullableNumber(options.anchorSecs);
+  const anchored = routeAnchorType != null && anchorSecs != null;
+  if (anchored && (!date || !timezone)) return null;
   const best = pickJourney(journeys, routeAnchorType, options.anchorSecs);
   if (!best) return null;
 
@@ -161,7 +170,7 @@ function parseTransitPlan(plan, anchor = {}) {
     serviceDate: date,
     timezone,
     anchorType: routeAnchorType,
-    anchorAt: zonedWallInstant(date, options.anchorSecs, timezone),
+    anchorAt: zonedWallInstant(date, anchorSecs, timezone),
     departureAt: zonedWallInstant(date, departureSecs, timezone),
     arrivalAt: zonedWallInstant(date, arrivalSecs, timezone),
     durationSeconds,

@@ -204,3 +204,48 @@ test("parseTransitPlan: absent fare/platform/exit facts stay nullable and ungene
   assert.equal(Object.prototype.hasOwnProperty.call(r.steps[0], "bestCar"), false);
   assert.equal(Object.prototype.hasOwnProperty.call(r.steps[0], "crowding"), false);
 });
+
+test("parseTransitPlan: missing or invalid timezone fails closed for anchored routes but keeps legacy duration", () => {
+  const base = {
+    date: "20260810",
+    journeys: [{ departureSecs: 100, arrivalSecs: 300, durationSecs: 200, legs: [{ mode: "rail" }] }],
+  };
+
+  assert.equal(parseTransitPlan(base, { anchorType: "departure", anchorSecs: 100 }), null);
+  assert.equal(parseTransitPlan({ ...base, timezone: "Not/AZone" }, { anchorType: "departure", anchorSecs: 100 }), null);
+  const missingTimezoneLegacy = parseTransitPlan(base);
+  const invalidTimezoneLegacy = parseTransitPlan({ ...base, timezone: "Not/AZone" });
+  assert.equal(missingTimezoneLegacy.durationSecs, 200);
+  assert.equal(invalidTimezoneLegacy.durationSecs, 200);
+  assert.equal(missingTimezoneLegacy.timezone, null);
+  assert.equal(invalidTimezoneLegacy.timezone, null);
+  assert.equal(missingTimezoneLegacy.departureAt, null);
+  assert.equal(invalidTimezoneLegacy.arrivalAt, null);
+});
+
+test("parseTransitPlan: invalid Gregorian service dates fail closed only when timestamps are required", () => {
+  const base = {
+    timezone: "UTC",
+    journeys: [{ departureSecs: 100, arrivalSecs: 300, durationSecs: 200, legs: [{ mode: "rail" }] }],
+  };
+
+  for (const date of ["20260230", "20261301"]) {
+    assert.equal(parseTransitPlan({ ...base, date }, { anchorType: "arrival", anchorSecs: 300 }), null);
+    const legacy = parseTransitPlan({ ...base, date });
+    assert.equal(legacy.durationSecs, 200);
+    assert.equal(legacy.serviceDate, null);
+    assert.equal(legacy.departureAt, null);
+  }
+});
+
+test("parseTransitPlan: zero viable journeys for an anchor returns null", () => {
+  const plan = {
+    date: "20260810", timezone: "UTC",
+    journeys: [
+      { departureSecs: 100, arrivalSecs: 200, durationSecs: 100, legs: [{ mode: "rail" }] },
+    ],
+  };
+
+  assert.equal(parseTransitPlan(plan, { anchorType: "arrival", anchorSecs: 150 }), null);
+  assert.equal(parseTransitPlan(plan, { anchorType: "departure", anchorSecs: 250 }), null);
+});
