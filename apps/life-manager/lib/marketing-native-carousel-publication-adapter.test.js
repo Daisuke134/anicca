@@ -16,7 +16,7 @@ const {
   verifyMarketingNativeCarouselPublicationReceipt,
 } = require("./marketing-native-carousel-publication-adapter.js");
 
-test("EN slideshow TikTok lane binds exact six-photo identity and direct native URL", () => {
+test("EN slideshow TikTok lane accepts exact Postiz API photo proof without inventing a URL", () => {
   const lane = EN_SLIDESHOW_TIKTOK_LANE;
   const value = buildMarketingNativeCarouselPublicationJob({
     tenantId: "dais-local", productId: lane.productId, formatId: lane.formatId, form: lane.form,
@@ -41,6 +41,19 @@ test("EN slideshow TikTok lane binds exact six-photo identity and direct native 
   };
   assert.equal(verifyMarketingNativeCarouselPublicationReceipt(receipt), true);
   assert.equal(verifyMarketingNativeCarouselPublicationReceipt({ ...receipt, public_url: "https://www.tiktok.com/@wrong/video/7777777777777777777" }), false);
+  const apiReceipt = {
+    ...receipt,
+    public_url: null,
+    provider_state: "PUBLISHED",
+    provider_integration_id: lane.integrationId,
+    provider_content_sha256: receipt.caption_sha256,
+    provider_title: lane.title,
+    provider_posting_method: "DIRECT_POST",
+    provider_release_id: "p_pub_url~v2.7678198747632977937",
+  };
+  assert.equal(verifyMarketingNativeCarouselPublicationReceipt(apiReceipt), true);
+  assert.equal(verifyMarketingNativeCarouselPublicationReceipt({ ...apiReceipt, provider_state: "QUEUE" }), false);
+  assert.equal(verifyMarketingNativeCarouselPublicationReceipt({ ...apiReceipt, provider_content_sha256: "f".repeat(64) }), false);
 });
 
 test("EN slideshow TikTok exact pack executes through six ordered JPEGs only", async () => {

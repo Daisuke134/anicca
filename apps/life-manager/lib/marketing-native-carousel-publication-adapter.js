@@ -125,6 +125,7 @@ const EN_SLIDESHOW_TIKTOK_LANE = Object.freeze({
   renderer: "slideshow",
   lane: "anicca-en-slideshow-tiktok",
   creativeId: "EN-SLIDESHOW-PROCRASTINATION-05090bf2b4ee-R2",
+  title: "PROCRASTINATION ISN'T LAZINESS.",
   packRef: "object://sha256/3241653ecc9239663de3151426d01a6b1c34cfe7c130288e928fab6686de624c",
   mediaRefs: Object.freeze([
     "object://sha256/05090bf2b4ee4f616762a33d93d446afff8f06ad2675016210d0d8bc90b5b329",
@@ -323,9 +324,19 @@ function laneForReceipt(receipt) {
   }
 }
 function verifyMarketingNativeCarouselPublicationReceipt(receipt) {
-  if (!receipt || typeof receipt !== "object" || Array.isArray(receipt) || receipt.schema_version !== 1 || receipt.kind !== "marketing_native_carousel_distribution" || receipt.status !== "published" || !DIRECT_POSTS[receipt.platform]?.test(String(receipt.public_url || "")) || !ID.test(String(receipt.creative_id || "")) || !HASH.test(String(receipt.pack_sha256 || "")) || !Array.isArray(receipt.media_sha256) || receipt.media_sha256.length !== SLIDE_COUNT || receipt.media_sha256.some((hash) => !HASH.test(String(hash || ""))) || !HASH.test(String(receipt.media_order_sha256 || "")) || receipt.media_order_sha256 !== mediaOrderHash(receipt.media_sha256) || !HASH.test(String(receipt.caption_sha256 || "")) || !PROVIDER_ID.test(String(receipt.provider_post_id || "")) || receipt.provider_reconciled !== true) return false;
+  if (!receipt || typeof receipt !== "object" || Array.isArray(receipt) || receipt.schema_version !== 1 || receipt.kind !== "marketing_native_carousel_distribution" || receipt.status !== "published" || !ID.test(String(receipt.creative_id || "")) || !HASH.test(String(receipt.pack_sha256 || "")) || !Array.isArray(receipt.media_sha256) || receipt.media_sha256.length !== SLIDE_COUNT || receipt.media_sha256.some((hash) => !HASH.test(String(hash || ""))) || !HASH.test(String(receipt.media_order_sha256 || "")) || receipt.media_order_sha256 !== mediaOrderHash(receipt.media_sha256) || !HASH.test(String(receipt.caption_sha256 || "")) || !PROVIDER_ID.test(String(receipt.provider_post_id || "")) || receipt.provider_reconciled !== true) return false;
   const lane = laneForReceipt(receipt);
   if (!lane || receipt.product_id !== lane.productId || receipt.format_id !== lane.formatId || receipt.form !== lane.form || receipt.locale !== lane.locale || receipt.account_id !== lane.accountId || receipt.integration_ref !== lane.integrationRef) return false;
+  const direct = DIRECT_POSTS[receipt.platform]?.test(String(receipt.public_url || ""));
+  const photoApiProof = lane === EN_SLIDESHOW_TIKTOK_LANE
+    && receipt.public_url == null
+    && receipt.provider_state === "PUBLISHED"
+    && receipt.provider_integration_id === lane.integrationId
+    && receipt.provider_content_sha256 === receipt.caption_sha256
+    && receipt.provider_title === lane.title
+    && receipt.provider_posting_method === "DIRECT_POST"
+    && /^p_pub_url~[A-Za-z0-9._~-]+$/.test(String(receipt.provider_release_id || ""));
+  if (!direct && !photoApiProof) return false;
   try { instant(receipt.published_at, "marketing native carousel receipt published_at"); return true; } catch { return false; }
 }
 function summary(receipt) {
