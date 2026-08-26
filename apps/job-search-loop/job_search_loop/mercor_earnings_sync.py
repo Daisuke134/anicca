@@ -40,12 +40,6 @@ def sync_earnings_snapshot(
             settlement_status=row["status"],
             amount_usd=str(row["earned_usd"]),
         )
-        revenue = store.transition(
-            work_id=work_id,
-            event_id=f"revenue:{payment_id}",
-            next_state="revenue_recorded",
-            evidence_ref=evidence_ref,
-        )
         message = f"Codex::: Mercor settled payout work_id={work_id} payment_id={payment_id} amount_usd={row['earned_usd']}"
         try:
             delivery = sender(
@@ -56,7 +50,7 @@ def sync_earnings_snapshot(
             receipt = {**delivery, "delivery": delivery_state(delivery)}
         except Exception as error:
             receipt = {"delivery": "delivery_unknown", "reason": type(error).__name__}
-        receipts.append({"payment_id": payment_id, "state": revenue["state"], **receipt})
+        receipts.append({"payment_id": payment_id, "state": paid["state"], **receipt})
     return {"status": "settled", "synced_count": len(receipts), "events": receipts}
 
 

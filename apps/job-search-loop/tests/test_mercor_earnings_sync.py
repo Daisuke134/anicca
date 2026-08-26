@@ -52,7 +52,7 @@ class MercorEarningsSyncTests(unittest.TestCase):
             )
         return store
 
-    def test_settled_row_advances_work_and_revenue(self):
+    def test_settled_row_waits_for_bank_match_before_revenue(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             store = self._store_accepted(root / "work-events.jsonl")
@@ -87,7 +87,8 @@ class MercorEarningsSyncTests(unittest.TestCase):
             )
             self.assertEqual(result["status"], "settled")
             self.assertEqual(result["synced_count"], 1)
-            self.assertEqual(WorkStateStore(root / "work-events.jsonl").current_state("application-1"), "revenue_recorded")
+            self.assertEqual(result["events"][0]["state"], "paid_settled")
+            self.assertEqual(WorkStateStore(root / "work-events.jsonl").current_state("application-1"), "paid_settled")
 
     def test_no_payment_history_does_not_change_work_state(self):
         with tempfile.TemporaryDirectory() as directory:
