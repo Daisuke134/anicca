@@ -375,6 +375,32 @@ def test_code_sign_clone_global_lsof_failure_fails_closed(monkeypatch, tmp_path:
     disk_cleanup._open_code_sign_clones.cache_clear()
 
 
+def test_closed_allowlisted_code_sign_clone_ignores_app_resource_names(
+    monkeypatch, tmp_path: Path
+) -> None:
+    temporary = tmp_path / "T"
+    clone = (
+        tmp_path / "X/org.chromium.Chromium.code_sign_clone/code_sign_clone.closed"
+    )
+    (clone / "Chromium.app.bundle/Contents/Resources").mkdir(parents=True)
+    (clone / "Chromium.app.bundle/Contents/Resources/login data.db").write_bytes(b"clone")
+    monkeypatch.setattr(disk_cleanup.tempfile, "gettempdir", lambda: str(temporary))
+    governor = HostDiskGovernor(
+        home=tmp_path / "home",
+        state_dir=tmp_path / "state",
+        lsof=lambda _path: "confirmed-closed",
+        usage=lambda: (0, 1),
+    )
+    result = governor.sweep([{
+        "path": clone,
+        "class": "regenerable_output",
+        "owner": "browser",
+        "discovery": "allowlisted",
+    }])
+    assert result["reclaimed"] == 5
+    assert not clone.exists()
+
+
 def test_lsof_failure_fails_closed(tmp_path: Path, monkeypatch) -> None:
     temporary = tmp_path / "tmp"
     candidate = temporary / "cfo-lsof-error"
