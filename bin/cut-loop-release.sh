@@ -24,8 +24,16 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 LOOPS_ROOT="${LOOPS_ROOT:-$HOME/loops}"
 RELEASES="$LOOPS_ROOT/releases"
 CURRENT="$LOOPS_ROOT/current"
+PREVIOUS="$LOOPS_ROOT/previous"
+STRICT_NAMESPACE=0
+[ "$(basename "$LOOPS_ROOT")" = "life-manager" ] && STRICT_NAMESPACE=1
 # state root is intentionally not resolved here (see RELEASE.json note below)
 KEEP="${LOOPS_KEEP_RELEASES:-5}"
+ROLLBACK=0
+if [ "${1:-}" = "--rollback" ]; then
+  [ "$#" -eq 1 ] || { echo "cut-loop-release: --rollback takes no ref" >&2; exit 2; }
+  ROLLBACK=1
+fi
 REF="${1:-HEAD}"
 TRUSTED_BIN_DIRS=(/opt/homebrew/bin /usr/local/bin /usr/bin /bin /usr/sbin /sbin)
 
@@ -45,8 +53,91 @@ NODE_BIN="$(resolve_trusted_tool node 2>/dev/null || true)"
 
 die() { echo "cut-loop-release: $*" >&2; exit 1; }
 
-[ -n "$NPM_BIN" ] || die "npm executable is unavailable"
+verify_release_seal_path() {
+  local target="$1" item mode
+  mode="$(stat -f '%Lp' "$target" 2>/dev/null || stat -c '%a' "$target" 2>/dev/null)" \
+    || die "could not inspect sealed release permissions"
+  if [ $((8#$mode & 0222)) -ne 0 ]; then
+    die "sealed release remains writable"
+  fi
+  while IFS= read -r -d '' item; do
+    case "$item" in
+      "$target/state/effective-cron"|"$target/state/effective-cron"/*) continue ;;
+    esac
+    [ -L "$item" ] && continue
+    mode="$(stat -f '%Lp' "$item" 2>/dev/null || stat -c '%a' "$item" 2>/dev/null)" \
+      || die "could not inspect sealed release permissions"
+    case "$mode" in
+      ''|*[!0-7]*) die "invalid sealed release permissions" ;;
+    esac
+    if [ $((8#$mode & 0222)) -ne 0 ]; then
+      die "sealed release remains writable"
+    fi
+  done < <(find "$target" -mindepth 1 -print0)
+}
+
+validate_release_target() {
+  local target="$1" root="$2" resolved releases_real metadata_path
+  [ -d "$target" ] || die "release target is missing: $target"
+  resolved="$(cd "$target" && pwd -P)" || die "release target cannot be resolved: $target"
+  releases_real="$(cd "$root/releases" 2>/dev/null && pwd -P)" \
+    || die "namespaced releases root is missing: $root/releases"
+  case "$resolved" in
+    "$releases_real"/*) ;;
+    *) die "release target escapes namespaced releases root: $target" ;;
+  esac
+  metadata_path="$resolved/RELEASE.json"
+  [ -f "$metadata_path" ] && [ ! -L "$metadata_path" ] \
+    || die "release metadata is missing: $metadata_path"
+  if [ "$STRICT_NAMESPACE" -eq 1 ]; then
+    "$NODE_BIN" - "$metadata_path" "$resolved" "$root" <<'NODE'
+const fs = require('node:fs');
+const path = require('node:path');
+const [metadataPath, releasePath, releaseRoot] = process.argv.slice(2);
+let metadata;
+try { metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8')); } catch { process.exit(2); }
+if (!metadata || typeof metadata !== 'object') process.exit(3);
+const real = (value) => fs.realpathSync.native(value);
+if (real(String(metadata.release_root || '')) !== real(releaseRoot)) process.exit(4);
+if (metadata.namespace !== 'life-manager') process.exit(5);
+if (metadata.release_id !== path.basename(releasePath)) process.exit(6);
+if (!/^[0-9a-f]{40}$/.test(String(metadata.sha || ''))) process.exit(7);
+if (!(path.basename(releasePath) === metadata.sha || path.basename(releasePath).endsWith(`-${metadata.sha.slice(0, 8)}`))) process.exit(8);
+NODE
+    [ "$?" -eq 0 ] || die "release metadata identity is invalid: $metadata_path"
+    verify_release_seal_path "$resolved"
+  fi
+  printf '%s\n' "$resolved"
+}
+
+replace_link() {
+  local link="$1" target="$2"
+  local temporary="${link}.swap.$$"
+  rm -f "$temporary"
+  ln -s "$target" "$temporary" || return 1
+  mv -fh "$temporary" "$link" || { rm -f "$temporary"; return 1; }
+}
+
 [ -n "$NODE_BIN" ] || die "node executable is unavailable"
+
+if [ "$ROLLBACK" -eq 1 ]; then
+  [ -L "$CURRENT" ] || die "current release pointer is missing"
+  [ -L "$PREVIOUS" ] || die "previous release pointer is missing"
+  CURRENT_TARGET="$(readlink "$CURRENT")"
+  PREVIOUS_TARGET="$(readlink "$PREVIOUS")"
+  validate_release_target "$CURRENT" "$LOOPS_ROOT" >/dev/null \
+    || die "current release metadata is invalid"
+  validate_release_target "$PREVIOUS" "$LOOPS_ROOT" >/dev/null \
+    || die "previous release metadata is invalid"
+  [ "$(cd "$CURRENT" && pwd -P)" != "$(cd "$PREVIOUS" && pwd -P)" ] \
+    || die "current and previous already select the same release"
+  replace_link "$PREVIOUS" "$CURRENT_TARGET" || die "could not move previous release pointer"
+  replace_link "$CURRENT" "$PREVIOUS_TARGET" || die "could not move current release pointer"
+  echo "current -> $(readlink "$CURRENT") (rollback)"
+  exit 0
+fi
+
+[ -n "$NPM_BIN" ] || die "npm executable is unavailable"
 
 validate_release_node_modules() {
   local node_modules="$DEST/node_modules"
@@ -89,23 +180,7 @@ dependency_digest() {
 }
 
 verify_release_seal() {
-  local item mode
-  while IFS= read -r -d '' item; do
-    case "$item" in
-      "$DEST/state/effective-cron"|"$DEST/state/effective-cron"/*) continue ;;
-    esac
-    # Symlink inode mode is platform-defined and chmod may not alter it. Its resolved target was
-    # already constrained to node_modules; only regular files/directories need a writable-bit gate.
-    [ -L "$item" ] && continue
-    mode="$(stat -f '%Lp' "$item" 2>/dev/null || stat -c '%a' "$item" 2>/dev/null)" \
-      || die "could not inspect sealed release permissions"
-    case "$mode" in
-      ''|*[!0-7]*) die "invalid sealed release permissions" ;;
-    esac
-    if [ $((8#$mode & 0222)) -ne 0 ]; then
-      die "sealed release remains writable"
-    fi
-  done < <(find "$DEST" -mindepth 1 -print0)
+  verify_release_seal_path "$DEST"
 }
 
 SHA="$(git -C "$REPO_ROOT" rev-parse "$REF" 2>/dev/null)" || die "cannot resolve ref '$REF'"
@@ -127,6 +202,11 @@ else
 fi
 
 DEST="$RELEASES/$(date +%Y%m%dT%H%M%S)-$SHORT"
+# Two safe release cuts can happen in one wall-clock second (for example, a deployment test followed
+# immediately by a rollback fixture). Keep the timestamp-readable id while avoiding a collision.
+if [ -e "$DEST" ]; then
+  DEST="${DEST}-$$"
+fi
 [ -e "$DEST" ] && die "$DEST already exists"
 # Only the release dir: each loop's state dir belongs to that loop's job, and creating a shared
 # empty one here would advertise a location nothing actually writes to.
@@ -169,6 +249,11 @@ fi
 if ! cat >"$DEST/RELEASE.json" <<EOF
 {
   "sha": "$SHA",
+  "release_id": "$(basename "$DEST")",
+  "release_root": "$LOOPS_ROOT",
+  "namespace": "$(basename "$LOOPS_ROOT")",
+  "current": "$CURRENT",
+  "previous": "$PREVIOUS",
   "ref": "$REF",
   "provenance": "$PROVENANCE",
   "cut_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
@@ -201,12 +286,23 @@ verify_release_seal
 
 # rename(2) over an existing symlink is atomic, so no pass can ever observe a missing `current`.
 # -h is load-bearing: without it mv follows `current` into the directory it points at and creates
-# the new link INSIDE the old release instead of replacing it.
-ln -sfn "$DEST" "$CURRENT.swap" && mv -fh "$CURRENT.swap" "$CURRENT" || die "could not move the current symlink"
+# the new link INSIDE the old release instead of replacing it. Preserve the exact old target as
+# `previous` before publishing the new release so rollback never rebuilds or guesses a SHA.
+# Keep the old `ln -sfn` ordering rule in mind: create a sibling temporary link, then rename it.
+if [ -L "$CURRENT" ]; then
+  OLD_CURRENT="$(readlink "$CURRENT")"
+  validate_release_target "$CURRENT" "$LOOPS_ROOT" >/dev/null \
+    || die "current release metadata is invalid"
+  replace_link "$PREVIOUS" "$OLD_CURRENT" || die "could not move the previous release pointer"
+elif [ -e "$CURRENT" ]; then
+  die "current release pointer is not a symlink"
+fi
+replace_link "$CURRENT" "$DEST" || die "could not move the current symlink"
 
 # Keep a few older releases so rollback is a symlink move rather than a rebuild.
 ls -1dt "$RELEASES"/*/ 2>/dev/null | tail -n +$((KEEP + 1)) | while IFS= read -r old; do
   [ "$(readlink "$CURRENT")" = "${old%/}" ] && continue
+  [ -L "$PREVIOUS" ] && [ "$(readlink "$PREVIOUS")" = "${old%/}" ] && continue
   chmod -R u+w "$old" 2>/dev/null || true
   rm -rf "$old"
   echo "cut-loop-release: pruned $(basename "${old%/}")"

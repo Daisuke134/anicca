@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { chmodSync, mkdirSync, mkdtempSync, readFileSync, statSync, writeFileSync, cpSync } from "node:fs";
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, statSync, writeFileSync, cpSync, symlinkSync, readlinkSync, existsSync, rmSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -43,3 +43,49 @@ test("installer restores a writable runtime slot root when the source is an immu
   assert.equal(readFileSync(join(runtime, "skills", "agent-economy", "run.sh"), "utf8"), "#!/bin/sh\n");
 });
 
+test("agent-economy installer reads the sealed namespaced current release and preserves instance state", () => {
+  const root = mkdtempSync(join(tmpdir(), "life-manager-agent-install-"));
+  const source = join(root, "source");
+  const releaseRoot = join(root, "home", "loops", "life-manager");
+  const releaseId = "20260827T000000-a1a1a1a1";
+  const release = join(releaseRoot, "releases", releaseId);
+  const runtime = join(root, "runtime");
+  mkdirSync(join(source, "bin"), { recursive: true });
+  cpSync(join(REPO_ROOT, "install.sh"), join(source, "install.sh"));
+  mkdirSync(join(release, "skills"), { recursive: true });
+  mkdirSync(join(release, "identity"), { recursive: true });
+  cpSync(join(source, "install.sh"), join(release, "install.sh"));
+  writeFileSync(join(release, ".env.example"), "FUEL=fixture\n");
+  writeFileSync(join(release, "identity", "genesis.md"), "fixture genesis\n");
+  writeFileSync(join(release, "skills", "registry.json"), JSON.stringify({ slots: {} }));
+  writeFileSync(join(release, "RELEASE.json"), JSON.stringify({
+    sha: "a1".repeat(20), release_id: releaseId, release_root: releaseRoot,
+    namespace: "life-manager", current: join(releaseRoot, "current"), previous: join(releaseRoot, "previous"),
+  }) + "\n");
+  for (const path of [release, join(release, "skills"), join(release, "identity")]) chmodSync(path, 0o555);
+  for (const path of [join(release, "install.sh"), join(release, ".env.example"), join(release, "identity", "genesis.md"), join(release, "skills", "registry.json"), join(release, "RELEASE.json")]) chmodSync(path, 0o444);
+  mkdirSync(releaseRoot, { recursive: true });
+  symlinkSync(release, join(releaseRoot, "current"));
+  try {
+    const result = spawnSync("bash", [join(source, "install.sh"), "agent-economy"], {
+      cwd: source,
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        HOME: join(root, "home"),
+        LIFE_MANAGER_RELEASE_ROOT: releaseRoot,
+        LIFE_MANAGER_HOME: runtime,
+        LIFE_MANAGER_INSTALL_DAEMON: "0",
+        LIFE_MANAGER_INSTALL_DEPS: "0",
+      },
+    });
+    assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+    assert.match(result.stdout, new RegExp(releaseId));
+    assert.equal(existsSync(join(runtime, ".env")), true);
+    assert.equal(readFileSync(join(runtime, "identity", "genesis.md"), "utf8"), "fixture genesis\n");
+    assert.equal(readlinkSync(join(releaseRoot, "current")), release);
+  } finally {
+    spawnSync("chmod", ["-R", "u+w", root], { encoding: "utf8" });
+    rmSync(root, { recursive: true, force: true });
+  }
+});

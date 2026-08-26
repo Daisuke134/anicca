@@ -28,8 +28,10 @@ Each loops/<name>/loop.toml:
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import plistlib
+import re
 import sys
 import tomllib
 from pathlib import Path
@@ -46,7 +48,113 @@ def expand(value: str, home: Path) -> str:
     return str(Path(os.path.expandvars(value.replace("~", str(home)))))
 
 
-def build(loop: dict, job_name: str, job: dict, home: Path, current: Path, logs: Path) -> dict:
+def normalized(path: Path) -> Path:
+    """Resolve lexical and existing symlink components without requiring a target."""
+    return Path(os.path.realpath(path))
+
+
+def _is_descendant(path: Path, parent: Path) -> bool:
+    try:
+        path.relative_to(parent)
+        return True
+    except ValueError:
+        return False
+
+
+def _has_worktree(path: Path) -> bool:
+    return ".worktrees" in path.parts
+
+
+def _source_checkout(loops_dir: Path) -> Path | None:
+    loops = normalized(loops_dir)
+    if loops.name == "loops" and (loops.parent / ".git").exists():
+        return loops.parent
+    if (loops / ".git").exists():
+        return loops
+    return None
+
+
+def _reject_unsafe_path(path: Path, source_checkout: Path, description: str) -> None:
+    lexical = Path(os.path.abspath(path))
+    actual = normalized(path)
+    if _has_worktree(lexical) or _has_worktree(actual):
+        raise SystemExit(f"{description} resolves through a .worktrees path: {path}")
+    source = normalized(source_checkout) if source_checkout is not None else None
+    if source is not None and _is_descendant(actual, source):
+        raise SystemExit(f"{description} resolves into the source checkout: {path}")
+
+
+def _assert_sealed(release: Path) -> None:
+    for path in [release, *release.rglob("*")]:
+        relative = path.relative_to(release)
+        relative_text = str(relative)
+        if relative_text == "state/effective-cron" or relative_text.startswith("state/effective-cron/"):
+            continue
+        if path.is_symlink():
+            continue
+        try:
+            mode = path.stat().st_mode
+        except OSError as error:
+            raise SystemExit(f"agent-economy release cannot be inspected: {path}") from error
+        if mode & 0o222:
+            raise SystemExit(f"agent-economy release is writable: {path}")
+
+
+def _release_metadata(current: Path, release_root: Path) -> dict:
+    if not current.is_symlink():
+        raise SystemExit(f"agent-economy current must be a symlink: {current}")
+    try:
+        release = current.resolve(strict=True)
+    except OSError as error:
+        raise SystemExit(f"agent-economy current target is unavailable: {current}") from error
+    root = normalized(release_root)
+    releases = normalized(root / "releases")
+    if release.parent != releases:
+        raise SystemExit(f"agent-economy current escapes the namespaced releases root: {current}")
+    metadata_path = release / "RELEASE.json"
+    if not metadata_path.is_file() or metadata_path.is_symlink():
+        raise SystemExit(f"agent-economy release metadata is missing: {metadata_path}")
+    try:
+        metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as error:
+        raise SystemExit(f"agent-economy release metadata is invalid: {metadata_path}") from error
+    if not isinstance(metadata, dict):
+        raise SystemExit(f"agent-economy release metadata must be an object: {metadata_path}")
+    try:
+        metadata_root = normalized(Path(str(metadata["release_root"])))
+        release_id = str(metadata["release_id"])
+        sha = str(metadata["sha"])
+        namespace = str(metadata["namespace"])
+    except (KeyError, TypeError, ValueError) as error:
+        raise SystemExit("agent-economy RELEASE.json is missing identity metadata") from error
+    if metadata_root != root:
+        raise SystemExit("agent-economy RELEASE.json release_root does not match the selected namespace")
+    if release_id != release.name or not re.fullmatch(r"[0-9a-f]{40}", sha):
+        raise SystemExit("agent-economy RELEASE.json identity does not match its release directory")
+    if not (release.name == sha or release.name.endswith(f"-{sha[:8]}")):
+        raise SystemExit("agent-economy RELEASE.json sha does not match its release directory")
+    if namespace != "life-manager":
+        raise SystemExit("agent-economy RELEASE.json namespace is not life-manager")
+    _assert_sealed(release)
+    return metadata
+
+
+def _current_for_loop(loop: dict, home: Path, explicit: Path | None) -> tuple[Path, Path | None]:
+    release_root_value = loop.get("release_root")
+    if explicit is not None:
+        current = explicit
+    elif release_root_value:
+        current = Path(expand(str(release_root_value), home)) / "current"
+    else:
+        current = home / "loops" / "current"
+    release_root = Path(expand(str(release_root_value), home)) if release_root_value else None
+    if release_root is None and current.parent.name == "life-manager":
+        release_root = current.parent
+    return current, release_root
+
+
+def build(loop: dict, job_name: str, job: dict, home: Path, current: Path, logs: Path,
+          metadata: dict | None = None) -> dict:
     name = loop["name"]
     # A migration must not rename. Labels on this machine follow no single convention
     # (ai.anicca.hf-gig-apply-direct, ai.anicca.bounty-core-healthcheck, ai.anicca.hf-bounty-daily),
@@ -65,6 +173,10 @@ def build(loop: dict, job_name: str, job: dict, home: Path, current: Path, logs:
             expand(loop["state_dir"], home)
     env.update({k: expand(str(v), home) for k, v in (loop.get("env") or {}).items()})
     env.update({k: expand(str(v), home) for k, v in (job.get("env") or {}).items()})
+    if metadata is not None:
+        env["ANICCA_RELEASE_ROOT"] = str(current.parent)
+        env["ANICCA_RELEASE_ID"] = str(metadata["release_id"])
+        env["ANICCA_RELEASE_SHA"] = str(metadata["sha"])
 
     plist = {
         "Label": label,
@@ -102,37 +214,55 @@ def main():
     ap.add_argument("--out-dir", required=True)
     ap.add_argument("--home", default=str(Path.home()))
     ap.add_argument("--current", default=None,
-                    help="release root the jobs resolve through (default ~/loops/current)")
+                    help="current release symlink (default from loop declaration, or ~/loops/current)")
     ap.add_argument("--logs", default=None)
     ap.add_argument("--only", help="generate a single loop by name")
     ap.add_argument("--diff", action="store_true", help="print what would change, write nothing")
     args = ap.parse_args()
 
     home = Path(args.home)
-    current = Path(args.current) if args.current else home / "loops" / "current"
+    explicit_current = Path(expand(args.current, home)) if args.current else None
     logs = Path(args.logs) if args.logs else home / ".openclaw" / "logs"
     out_dir = Path(expand(args.out_dir, home))
+    source_checkout = _source_checkout(Path(args.loops_dir))
 
-    written = []
+    # Build and validate every plist before writing any one of them. A malformed release target in
+    # a later loop must not leave a partially regenerated LaunchAgents directory behind.
+    plans = []
     for toml_path in sorted(Path(args.loops_dir).glob("*/loop.toml")):
         loop = tomllib.loads(toml_path.read_text(encoding="utf-8"))
         if args.only and loop.get("name") != args.only:
             continue
+        current, release_root = _current_for_loop(loop, home, explicit_current)
         for job_name, job in (loop.get("jobs") or {}).items():
-            plist = build(loop, job_name, job, home, current, logs)
+            program = Path(expand(str(job["program"]), home))
+            if not program.is_absolute():
+                program = current / program
+            _reject_unsafe_path(current, source_checkout, f"{loop.get('name', 'loop')} current")
+            _reject_unsafe_path(program, source_checkout, f"{loop.get('name', 'loop')} program")
+            metadata = None
+            if loop.get("name") == "agent-economy":
+                if release_root is None:
+                    release_root = current.parent
+                metadata = _release_metadata(current, release_root)
+            plist = build(loop, job_name, job, home, current, logs, metadata)
             target = out_dir / f"{plist['Label']}.plist"
             body = plistlib.dumps(plist, sort_keys=True)
-            existing = target.read_bytes() if target.exists() else None
-            if args.diff:
-                state = "unchanged" if existing == body else ("new" if existing is None else "CHANGED")
-                print(f"{state:>9}  {target}")
-                continue
-            if existing == body:
-                written.append((plist["Label"], "unchanged"))
-                continue
-            out_dir.mkdir(parents=True, exist_ok=True)
-            target.write_bytes(body)
-            written.append((plist["Label"], "written"))
+            plans.append((target, body, plist["Label"]))
+
+    written = []
+    for target, body, label in plans:
+        existing = target.read_bytes() if target.exists() else None
+        if args.diff:
+            state = "unchanged" if existing == body else ("new" if existing is None else "CHANGED")
+            print(f"{state:>9}  {target}")
+            continue
+        if existing == body:
+            written.append((label, "unchanged"))
+            continue
+        out_dir.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(body)
+        written.append((label, "written"))
 
     for label, state in written:
         print(f"{state:>9}  {label}")

@@ -34,19 +34,99 @@ if [ "$#" -gt 0 ]; then
       shift
       exec zsh "$REPO_ROOT/apps/job-search-loop/scripts/install-oss.sh" "$@"
       ;;
+    agent-economy)
+      shift
+      LIFE_MANAGER_AGENT_ECONOMY=1
+      export LIFE_MANAGER_AGENT_ECONOMY
+      exec bash "$REPO_ROOT/install.sh" "$@"
+      ;;
     *)
-      echo "[install] unknown product '$1'; supported: coconala, job-hunter" >&2
+      echo "[install] unknown product '$1'; supported: coconala, job-hunter, agent-economy" >&2
       exit 2
       ;;
   esac
 fi
-LIFE_MANAGER_HOME="${LIFE_MANAGER_HOME:-${ANICCA_HOME:-${XDG_STATE_HOME:-$HOME/.local/state}/life-manager}}"
+LIFE_MANAGER_AGENT_ECONOMY="${LIFE_MANAGER_AGENT_ECONOMY:-0}"
+if [ "${ANICCA_INSTANCE:-}" = "agent-economy" ]; then
+  LIFE_MANAGER_AGENT_ECONOMY=1
+fi
+if [ "${LIFE_MANAGER_RELEASE_ROOT+x}" = "x" ] && [ "$(basename "$LIFE_MANAGER_RELEASE_ROOT")" = "life-manager" ]; then
+  LIFE_MANAGER_AGENT_ECONOMY=1
+fi
+case "$LIFE_MANAGER_AGENT_ECONOMY" in 0|1) ;; *)
+  echo "[install] LIFE_MANAGER_AGENT_ECONOMY must be 0 or 1" >&2
+  exit 2
+esac
+LIFE_MANAGER_RELEASE_ROOT="${LIFE_MANAGER_RELEASE_ROOT:-$HOME/loops/life-manager}"
+if [ "$LIFE_MANAGER_AGENT_ECONOMY" = "1" ]; then
+  LIFE_MANAGER_HOME="${LIFE_MANAGER_HOME:-${ANICCA_HOME:-$HOME/loops/agent-economy}}"
+else
+  LIFE_MANAGER_HOME="${LIFE_MANAGER_HOME:-${ANICCA_HOME:-${XDG_STATE_HOME:-$HOME/.local/state}/life-manager}}"
+fi
 ANICCA_HOME="$LIFE_MANAGER_HOME"
 export LIFE_MANAGER_HOME ANICCA_HOME
 LIFE_MANAGER_INSTALL_DAEMON="${LIFE_MANAGER_INSTALL_DAEMON:-1}"
 LIFE_MANAGER_INSTALL_DEPS="${LIFE_MANAGER_INSTALL_DEPS:-1}"
 LIFE_MANAGER_DEPS_ROOT="${LIFE_MANAGER_DEPS_ROOT:-$HOME/loops/.life-manager-deps}"
 REGISTRY="$REPO_ROOT/skills/registry.json"
+
+validate_agent_economy_release() {
+  local release_root="$1"
+  python3 - "$release_root" <<'PY'
+import json
+import os
+import stat
+import sys
+from pathlib import Path
+
+root = Path(sys.argv[1]).expanduser()
+if root.name != "life-manager":
+    raise SystemExit("agent-economy release root must be namespaced as life-manager")
+root = Path(os.path.realpath(root))
+current = root / "current"
+if not current.is_symlink():
+    raise SystemExit(f"agent-economy current pointer is missing: {current}")
+try:
+    release = Path(os.path.realpath(current))
+except OSError as error:
+    raise SystemExit("agent-economy current target cannot be resolved") from error
+releases = root / "releases"
+if not releases.is_dir():
+    raise SystemExit(f"agent-economy releases root is missing: {releases}")
+releases = Path(os.path.realpath(releases))
+if release.parent != releases:
+    raise SystemExit("agent-economy current escapes the namespaced releases root")
+metadata_path = release / "RELEASE.json"
+if metadata_path.is_symlink() or not metadata_path.is_file():
+    raise SystemExit(f"agent-economy release metadata is missing: {metadata_path}")
+try:
+    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+except (OSError, ValueError) as error:
+    raise SystemExit("agent-economy release metadata is invalid") from error
+if not isinstance(metadata, dict):
+    raise SystemExit("agent-economy release metadata must be an object")
+if metadata.get("namespace") != "life-manager":
+    raise SystemExit("agent-economy release metadata namespace is invalid")
+if Path(os.path.realpath(str(metadata.get("release_root", "")))) != root:
+    raise SystemExit("agent-economy release metadata root does not match current")
+release_id = str(metadata.get("release_id", ""))
+sha = str(metadata.get("sha", ""))
+if release_id != release.name or len(sha) != 40 or any(c not in "0123456789abcdef" for c in sha):
+    raise SystemExit("agent-economy release metadata identity is invalid")
+if release.name != sha and not release.name.endswith("-" + sha[:8]):
+    raise SystemExit("agent-economy release metadata sha does not match release")
+for path in [release, *release.rglob("*")]:
+    relative = path.relative_to(release)
+    text = str(relative)
+    if text == "state/effective-cron" or text.startswith("state/effective-cron/"):
+        continue
+    if path.is_symlink():
+        continue
+    if path.stat().st_mode & (stat.S_IWUSR | stat.S_IWGRP | stat.S_IWOTH):
+        raise SystemExit(f"agent-economy release is writable: {path}")
+print(f"{release}\t{release_id}\t{sha}")
+PY
+}
 
 case "$LIFE_MANAGER_INSTALL_DAEMON" in 0|1) ;; *)
   echo "[install] LIFE_MANAGER_INSTALL_DAEMON must be 0 or 1" >&2
@@ -81,10 +161,25 @@ for bin in git jq node npm python3 rsync; do
 done
 echo
 
+if [ "$LIFE_MANAGER_AGENT_ECONOMY" = "1" ]; then
+  RELEASE_READBACK="$(validate_agent_economy_release "$LIFE_MANAGER_RELEASE_ROOT")" \
+    || { red "  ✗ agent-economy current is not a sealed namespaced release"; exit 2; }
+  IFS=$'\t' read -r RELEASE_SOURCE RELEASE_ID RELEASE_SHA <<EOF
+$RELEASE_READBACK
+EOF
+  # All code and manifests for this installation are read from the immutable release. The source
+  # checkout remains authoring-only and is never copied into the agent-economy runtime owner.
+  REPO_ROOT="$RELEASE_SOURCE"
+  REGISTRY="$REPO_ROOT/skills/registry.json"
+  export REPO_ROOT LIFE_MANAGER_RELEASE_ROOT ANICCA_REPO="$LIFE_MANAGER_RELEASE_ROOT/current" \
+    ANICCA_RELEASE_ID="$RELEASE_ID" ANICCA_RELEASE_SHA="$RELEASE_SHA"
+  green "  ✓ sealed release $RELEASE_ID  ($RELEASE_SOURCE)"
+fi
+
 # ─── 2. frozen dependencies ────────────────────────────────────────────
 cyan "[2/6] installing frozen dependencies…"
 if [ "$LIFE_MANAGER_INSTALL_DEPS" = "1" ]; then
-  if [ -w "$REPO_ROOT" ] && [ -f "$REPO_ROOT/package-lock.json" ]; then
+  if [ "$LIFE_MANAGER_AGENT_ECONOMY" != "1" ] && [ -w "$REPO_ROOT" ] && [ -f "$REPO_ROOT/package-lock.json" ]; then
     (cd "$REPO_ROOT" && npm ci --no-audit --no-fund)
     (cd "$REPO_ROOT/apps/life-manager" && npm ci --no-audit --no-fund)
     mkdir -p "$HOME/loops"

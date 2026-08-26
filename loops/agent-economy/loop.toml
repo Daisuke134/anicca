@@ -1,10 +1,13 @@
-# Agent economy resident loop. Absolute paths are generated from ~/loops/current by plistgen.
+# Agent economy resident loop. Code is selected only through the namespaced immutable release;
+# mutable instance state remains under ~/loops/agent-economy.
 name      = "agent-economy"
 state_dir = "~/loops/agent-economy"
 state_env = "ANICCA_HOME"
+release_root = "~/loops/life-manager"
 
 [env]
-ANICCA_REPO     = "~/loops/current"
+ANICCA_REPO     = "~/loops/life-manager/current"
+ANICCA_RELEASE_ROOT = "~/loops/life-manager"
 ANICCA_HOME     = "~/loops/agent-economy"
 ANICCA_INSTANCE = "agent-economy"
 ANICCA_SLOT_ALLOWLIST = "earn/taskmarket,x402_sell,report,cook"

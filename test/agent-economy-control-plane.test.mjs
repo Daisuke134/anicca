@@ -11,6 +11,7 @@ import {
   readFileSync,
   rmSync,
   statSync,
+  symlinkSync,
   writeFileSync,
 } from "node:fs";
 import { createHash } from "node:crypto";
@@ -86,12 +87,39 @@ function assertSealedRelease(root) {
   walk(root);
 }
 
+function writeSealedAgentEconomyRelease(root, {
+  id = "20260827T000000-a1a1a1a1",
+  sha = "a1".repeat(20),
+} = {}) {
+  const releaseRoot = join(root, "home", "loops", "life-manager");
+  const release = join(releaseRoot, "releases", id);
+  mkdirSync(join(release, "skills", "agent-economy"), { recursive: true });
+  writeFileSync(join(release, "skills", "agent-economy", "launch.sh"), "#!/bin/bash\n");
+  writeFileSync(join(release, "RELEASE.json"), JSON.stringify({
+    sha,
+    release_id: id,
+    release_root: releaseRoot,
+    namespace: "life-manager",
+    current: join(releaseRoot, "current"),
+    previous: join(releaseRoot, "previous"),
+  }) + "\n");
+  chmodSync(release, 0o555);
+  chmodSync(join(release, "RELEASE.json"), 0o444);
+  chmodSync(join(release, "skills"), 0o555);
+  chmodSync(join(release, "skills", "agent-economy"), 0o555);
+  chmodSync(join(release, "skills", "agent-economy", "launch.sh"), 0o555);
+  mkdirSync(releaseRoot, { recursive: true });
+  symlinkSync(release, join(releaseRoot, "current"));
+  return { releaseRoot, release };
+}
+
 test("agent-economy launchd declaration uses the immutable release and continuous contract", () => {
   const root = mkdtempSync(join(tmpdir(), "agent-economy-plist-"));
   const home = join(root, "home");
   const out = join(root, "launchagents");
-  const current = join(home, "loops", "current");
+  const current = join(home, "loops", "life-manager", "current");
   const logs = join(home, "loops", "logs");
+  writeSealedAgentEconomyRelease(root);
 
   try {
     const generated = spawnSync("python3", [
@@ -116,12 +144,38 @@ test("agent-economy launchd declaration uses the immutable release and continuou
     assert.equal(plist.StartCalendarInterval, undefined);
     assert.equal(plist.EnvironmentVariables.ANICCA_REPO, current);
     assert.equal(plist.EnvironmentVariables.ANICCA_HOME, join(home, "loops", "agent-economy"));
+    assert.equal(plist.EnvironmentVariables.ANICCA_RELEASE_ROOT, join(home, "loops", "life-manager"));
+    assert.equal(plist.EnvironmentVariables.ANICCA_RELEASE_ID, "20260827T000000-a1a1a1a1");
+    assert.equal(plist.EnvironmentVariables.ANICCA_RELEASE_SHA, "a1".repeat(20));
     assert.deepEqual(plist.EnvironmentVariables.ANICCA_SLOT_ALLOWLIST.split(","), [
       "earn/taskmarket", "x402_sell", "report", "cook",
     ]);
     assert.equal(plist.EnvironmentVariables.ANICCA_ECONOMY_RECONCILE, "1");
     assert.equal(plist.EnvironmentVariables.ANICCA_ECONOMY_CREATE_EVM_WALLET, "1");
     assert.equal(plist.ProgramArguments.join(" ").includes(".worktrees"), false);
+  } finally {
+    spawnSync("chmod", ["-R", "u+w", root], { encoding: "utf8" });
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("agent-economy plist generation rejects a worktree current before writing any plist", () => {
+  const root = mkdtempSync(join(tmpdir(), "agent-economy-plist-worktree-"));
+  const home = join(root, "home");
+  const out = join(root, "launchagents");
+  const current = join(root, ".worktrees", "feature", "current");
+  try {
+    const generated = spawnSync("python3", [
+      join(REPO_ROOT, "bin", "plistgen.py"),
+      "--loops-dir", join(REPO_ROOT, "loops"),
+      "--out-dir", out,
+      "--home", home,
+      "--current", current,
+      "--only", "agent-economy",
+    ], { cwd: REPO_ROOT, encoding: "utf8" });
+    assert.notEqual(generated.status, 0, `${generated.stdout}\n${generated.stderr}`);
+    assert.match(`${generated.stdout}\n${generated.stderr}`, /worktree/i);
+    assert.equal(existsSync(out), false);
   } finally {
     spawnSync("chmod", ["-R", "u+w", root], { encoding: "utf8" });
     rmSync(root, { recursive: true, force: true });
@@ -198,7 +252,7 @@ test("contract-only: release cutter installs locked dependencies in the release 
   const root = mkdtempSync(join(tmpdir(), "agent-economy-release-deps-"));
   const repo = join(root, "repo");
   const remote = join(root, "remote.git");
-  const loops = join(root, "loops");
+    const loops = join(root, "loops", "life-manager");
   mkdirSync(join(repo, "bin"), { recursive: true });
   cpSync(join(REPO_ROOT, "bin", "cut-loop-release.sh"), join(repo, "bin", "cut-loop-release.sh"));
   writeFileSync(join(repo, "package.json"), JSON.stringify({
@@ -246,6 +300,9 @@ test("contract-only: release cutter installs locked dependencies in the release 
     const release = readFileSync(join(loops, "current", "RELEASE.json"), "utf8");
     const metadata = JSON.parse(release);
     const releaseRoot = readlinkSync(join(loops, "current"));
+    assert.equal(metadata.release_root, loops);
+    assert.equal(metadata.release_id, releaseRoot.split("/").at(-1));
+    assert.equal(readlinkSync(join(loops, "current")), releaseRoot);
     assert.equal(metadata.lockfile_sha256, sha256File(join(releaseRoot, "package-lock.json")));
     assert.equal(metadata.dependency_manifest_sha256, sha256File(join(releaseRoot, "package.json")));
     assert.equal(metadata.dependency_sha256, dependencyDigest(releaseRoot));
@@ -262,6 +319,65 @@ test("contract-only: release cutter installs locked dependencies in the release 
     });
     assert.equal(probe.status, 0, probe.stderr);
     assert.equal(probe.stdout.trim(), "release-viem");
+
+    writeFileSync(join(repo, "release-marker.txt"), "second\n");
+    assert.equal(git("add", "release-marker.txt").status, 0);
+    assert.equal(git("commit", "-qm", "second fixture").status, 0);
+    assert.equal(git("push", "-q", "origin", "HEAD:main").status, 0);
+    const cutSecond = spawnSync("bash", [join(repo, "bin", "cut-loop-release.sh"), "HEAD"], {
+      cwd: repo,
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        HOME: root,
+        LOOPS_ROOT: loops,
+        LOOPS_KEEP_RELEASES: "1",
+      },
+    });
+    assert.equal(cutSecond.status, 0, `${cutSecond.stdout}\n${cutSecond.stderr}`);
+    const secondCurrent = readlinkSync(join(loops, "current"));
+    const previous = readlinkSync(join(loops, "previous"));
+    assert.notEqual(secondCurrent, previous);
+    assert.equal(previous, releaseRoot);
+    const rollback = spawnSync("bash", [join(repo, "bin", "cut-loop-release.sh"), "--rollback"], {
+      cwd: repo,
+      encoding: "utf8",
+      env: { ...process.env, HOME: root, LOOPS_ROOT: loops },
+    });
+    assert.equal(rollback.status, 0, `${rollback.stdout}\n${rollback.stderr}`);
+    assert.equal(readlinkSync(join(loops, "current")), releaseRoot);
+    assert.equal(readlinkSync(join(loops, "previous")), secondCurrent);
+  } finally {
+    spawnSync("chmod", ["-R", "u+w", root], { encoding: "utf8" });
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("release rollback rejects an invalid previous target without moving current", () => {
+  const root = mkdtempSync(join(tmpdir(), "agent-economy-release-invalid-previous-"));
+  const repo = join(root, "repo");
+  const loops = join(root, "loops", "life-manager");
+  mkdirSync(join(repo, "bin"), { recursive: true });
+  cpSync(join(REPO_ROOT, "bin", "cut-loop-release.sh"), join(repo, "bin", "cut-loop-release.sh"));
+  try {
+    mkdirSync(join(loops, "releases", "20260827T000000-a1a1a1a1"), { recursive: true });
+    const release = join(loops, "releases", "20260827T000000-a1a1a1a1");
+    writeFileSync(join(release, "RELEASE.json"), JSON.stringify({
+      sha: "a1".repeat(20), release_id: "20260827T000000-a1a1a1a1",
+      release_root: loops, namespace: "life-manager",
+    }) + "\n");
+    chmodSync(release, 0o555);
+    chmodSync(join(release, "RELEASE.json"), 0o444);
+    symlinkSync(release, join(loops, "current"));
+    symlinkSync(join(root, "outside"), join(loops, "previous"));
+    const rollback = spawnSync("bash", [join(repo, "bin", "cut-loop-release.sh"), "--rollback"], {
+      cwd: repo,
+      encoding: "utf8",
+      env: { ...process.env, HOME: root, LOOPS_ROOT: loops },
+    });
+    assert.notEqual(rollback.status, 0);
+    assert.equal(readlinkSync(join(loops, "current")), release);
+    assert.equal(readlinkSync(join(loops, "previous")), join(root, "outside"));
   } finally {
     spawnSync("chmod", ["-R", "u+w", root], { encoding: "utf8" });
     rmSync(root, { recursive: true, force: true });
