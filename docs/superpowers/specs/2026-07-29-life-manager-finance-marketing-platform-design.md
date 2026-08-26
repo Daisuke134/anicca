@@ -2242,20 +2242,24 @@ registry has 30 integrations and eight enabled Instagram profiles:
 `obou.anicca`, `anicca.affirmation`, `anicca.encards`, `anicca.jp.videos`,
 `anicca.jp1`, `anicca.bochi`, `ani.cca1234`, and `anicca.en`. Their 2,076
 historical rows belong to Anicca/Buddhist/affirmation/Card/Widget/Larry content;
-none is a dedicated Honne EN product account. Corrected evidence is
-`object://sha256/f89d0be144fad875795841352ba0135b5ab19653fe836e2649a7d19fcb8554a1`;
+none is a dedicated Honne EN product account. Current evidence is
+`object://sha256/0023c799443305f76a60beb1dc167e2f466bd02227d2527f394f1b5d08d0e28f`;
 it preserves global `6,825`, selected `2,076`, every integration/profile/count,
 zero literal Honne-brand rows, and cadence initial `1/day` / healthy maximum
-`3/day`. Earlier `e07dbe0a…c93906` is retained but superseded because it stored
-only the global history count and an ambiguous cadence field.
+`3/day`. Earlier `e07dbe0a…c93906` and `f89d0be1…554a1` are retained but
+superseded; the latter lacked the second fresh-OTP attempt.
 Provisioning candidate `@honne_reveal` is username-available and reached the
 ordinary email OTP screen. Instagram rejected the Gmail plus-address, then the
 owner Gmail OTP was rejected as expired/incorrect; one official resend produced
-no new code. No account was created, and no phone, CAPTCHA, recovery, Postiz
-write, publication, Telegram, or legacy-job operation occurred. The isolated
-browser/context was closed. Order 24A remains active until a fresh ordinary OTP
-completes this exact account or an independently owned dedicated Honne EN
-account is connected; an Anicca route is never a fallback.
+no new code. A later clean signup session again proved the handle and DOB,
+received a new owner-Gmail OTP, and read that latest message body directly;
+Instagram still rejected the fresh code as invalid/expired. No account was
+created, and no phone, CAPTCHA, recovery, Postiz write, publication, Telegram,
+or legacy-job operation occurred. Both isolated browser contexts were closed.
+Order 24A remains active until Instagram accepts an ordinary fresh OTP for this
+exact account or an independently owned dedicated Honne EN account is
+connected; an Anicca route or another product's email/account is never a
+fallback.
 
 **Completed immediately preceding atomic item:** MKT-09R8-13 / Order 23J is
 terminal. Exact Anicca JA Card publication is Postiz row
@@ -2846,7 +2850,7 @@ Their dependent account arm remains blocked until the observation is terminal.
 | 23H | **done — MKT-09R8-11:** revalidate and re-adopt exactly one existing JA Card pack | Order 23G terminal | full-timeline audit rejects source pack `694e3ab6…7d480` as runnable because none of its metadata hooks match baked media hooks; media 1/2 are wrong-form generic quote sequences, media 3 is a held valid Card alternative, and media 4 `35a15c7ce990…e9a15` is selected with complete Japanese Nudge Card/My Path. Exact LF-terminated caption `311f9c3d…6ba2eb`, account-bound pack `76937db0…fe311c`, visual `6ddf6284…9149dc`, and four-candidate evidence `e0a7b1ab…eeb06f` are SHA-exact/mode `0600`. Historical `DcTFx_UjSio` uses this media but the wrong `強い人の口癖…` caption, so it is not an exact-content success. Manifest `bbc2bb24…ca124` truthfully moves only this lane to pack-ready; actual 0/day/default-off/armed 0 and fence closed. The pack operation itself changes no jobs/receipts at `771/250`; a later unrelated Honne effect-class-none generation moves the global count to `774/251` without provider/message effect. Fresh adversary returned `SHIP` | reuse mismatched metadata/caption, accept media 1/2, call the prior canary exact-content success, duplicate video bytes, or change the shared TikTok/Instagram pack env |
 | 23I | **done — MKT-09R8-12:** reconcile exact existing Postiz/native history before any new effect | Order 23H terminal | corrected evidence `96a0d769…61ce47` proves 6,822 segmented IDs exactly equal the broad history with zero duplicates/misses; exact integration has 60 rows and LF-equivalent caption candidates are 0, so native candidates are 0 and status is truthfully `absent`. Caption/pack ledger refs are each 0; the reusable selected-video ref appears in jobs/receipts `125/11`, but the joint integration+caption+pack+video identity is 0. Superseded `79dd1fc4…a0b32b8` is retained after adversarial review caught its manually transcribed non-pack video hash. Global jobs/receipts remain `774/251`; manifest remains pack-ready/default-off/armed 0 and fence closed; provider/Telegram/scheduler/legacy writes are 0 | post again before proving absence, accept caption-only/profile/provider state, or reuse the mismatched `DcTFx_UjSio` receipt |
 | 23J | **done — MKT-09R8-13:** finish one dedicated JA Card Instagram canary | Order 23I terminal absent | direct Reel `Dce7_IPlUlr`, Postiz `cmt9d2khz00r1p20yb6qbtvyg`, native owner/caption/content, natural Telegram `34651`, replay 0, immediate metric status `ea1f93eb…9a9e8f3`, automatic 2h/24h/72h/7d discovery, and target-only manifest `canary-verified/default-off` are terminal | post again, treat unrelated valid EN/Widget rows as corruption, retry the reconciled message, or arm cadence before metric registration |
-| 24A | **active — MKT-09R9-01:** classify or provision one dedicated Honne EN Instagram route | Order 23J terminal | corrected classification `f89d0be1…554a1` proves all eight existing Instagram routes and their 2,076 rows are non-Honne, with initial 1/day and healthy max 3/day explicit. `@honne_reveal` is available but ordinary signup is blocked at rejected OTP/no new resend; account/Postiz/publication effects are 0. Complete only with a live owned account plus enabled integration and Honne EN renderer | relabel an Anicca/mixed account, use recovery/phone without a provider requirement, classify JA in parallel, or post before pack approval |
+| 24A | **active — MKT-09R9-01:** classify or provision one dedicated Honne EN Instagram route | Order 23J terminal | classification `0023c799…d0e28f` proves all eight existing Instagram routes and their 2,076 rows are non-Honne, with initial 1/day and healthy max 3/day explicit. `@honne_reveal` is available, but two ordinary sessions each received an owner-Gmail OTP that Instagram rejected; account/Postiz/publication effects are 0. Complete only with a live owned account plus enabled integration and Honne EN renderer | relabel an Anicca/mixed account, use recovery/phone without a provider requirement, classify JA in parallel, or post before pack approval |
 | 24B | **MKT-09R9-02:** import and approve one Honne EN Instagram pack | Order 24A passes | one exact caption/video pack and account-bound approval in LM object storage; runtime has no OpenClaw dependency | import several packs or reuse Anicca creative |
 | 24C | **MKT-09R9-03:** run one Honne EN Instagram canary and register metrics | Order 24B passes | direct native Reel, natural Telegram, replay 0, immediate status, 2h/24h/72h/7d and daily owner; default-off after canary | fan out or arm before metrics |
 | 24D | **MKT-09R9-04..06:** repeat classification → one pack → one canary for Honne JA Instagram | Order 24C terminal | dedicated JA account receives only Japanese Honne ReelClaw content and passes the same URL/Telegram/replay/metrics gates | copy EN caption/account or run stages together |
