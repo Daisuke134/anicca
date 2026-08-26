@@ -2401,10 +2401,28 @@ provider source observation.
    `868→868`, receipts `281→281`, distribution `21→21`, publication/message
    `created=false`. Instagram metrics owner exit 0 and registered 2h
    `2026-08-26T08:47:02.846Z`, 24h, 72h, 7d, and daily as pending.
+   **Anicca JP4 TikTok first live slot done:** the stable-release LM label and
+   manifest `e27bd324732525b81ea82185e5b9ab59c2a6f57443e6f279d20076719da8e53b`
+   arm exactly five selected routes at 3/day; 17 holds remain 0/day. The first
+   15:15 run correctly rejected shared creative identity already published by
+   `@anicca.jp`. A JP4-only immutable pack `dd0dc38d…14e7ed3f` preserves the
+   approved hook text/title/hashtags/media/caption but namespaces hook IDs as
+   `AJ-JP4-CARD-*`; no dedupe rule is weakened. Creative
+   `AJ-JP4-CARD-001-35a15c7ce990` published as exact Postiz `PUBLISHED` row
+   `cmt9qojfp00o5qs0ykckq379i` at
+   `https://www.tiktok.com/@anicca.jp4/video/7678229828386834453`, with natural
+   Telegram `35127` and owner exit 0. Replay kept jobs `877→877`, receipts
+   `284→284`, distribution `22→22`, publication/message `created=false`.
+   TikTok metrics registered 2h `2026-08-26T08:55:39.858Z`, 24h, 72h, 7d,
+   and daily as pending. During registration, URL-free Postiz photo metrics
+   incorrectly classified `public_url=unavailable` as Instagram; commit
+   `e68a08ade` uses the immutable `tiktok_*` snapshot kind, passes 17/17, and
+   real owner exit 0 sent the slideshow 2h natural Telegram `35136` without
+   blocking JP4 discovery.
    **Next atomic item:** enable and verify only the first live cadence slot for
-   Anicca JP4 TikTok `@anicca.jp4`; all other selected destinations stay at
-   their current state until that exact effect, natural Telegram, replay 0, and
-   metric ownership are terminal.
+   Anicca HE TikTok `@anicca.he`; all other selected destinations stay at their
+   current state until that exact effect, natural Telegram, replay 0, and metric
+   ownership are terminal.
 9. Keep the daily metrics loop running for every healthy account: social post and
    account metrics, 2h/24h/72h/7d windows, and natural Telegram. Unsupported or
    empty metrics remain source-labelled `unavailable`.
