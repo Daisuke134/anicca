@@ -764,6 +764,7 @@ module.exports = {
   JA_CARD_LANE,
   LANE,
   PROFILE_REF,
+  armControls,
   compareNativeVideo,
   curlResponse,
   decodeJsonUnicodeEscapes,
@@ -775,5 +776,6 @@ module.exports = {
   resolvePublicIPv4,
   runAniccaEnWidgetCanary,
   runAniccaWidgetCanary,
+  restoreControls,
   verifyNativeObject,
 };

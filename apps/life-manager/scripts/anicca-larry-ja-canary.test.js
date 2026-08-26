@@ -115,9 +115,20 @@ function enFixture() {
     fs.mkdirSync(path.dirname(destination), { recursive: true, mode: 0o700 });
     fs.copyFileSync(source, destination);
   }
+  const liveMarketingDir = path.join(os.homedir(), ".local", "state", "life-manager", "marketing");
+  const testMarketingDir = path.join(dataDir, "marketing");
+  fs.mkdirSync(testMarketingDir, { recursive: true, mode: 0o700 });
+  for (const name of ["lane-manifest.json", "publication-effect-fence.json"]) {
+    fs.copyFileSync(path.join(liveMarketingDir, name), path.join(testMarketingDir, name));
+    fs.chmodSync(path.join(testMarketingDir, name), 0o600);
+  }
   return {
     dataDir,
     objectStore,
+    controlBytes: {
+      manifest: fs.readFileSync(path.join(dataDir, "marketing", "lane-manifest.json")),
+      fence: fs.readFileSync(path.join(dataDir, "marketing", "publication-effect-fence.json")),
+    },
     env: {
       LM_DATA_DIR: dataDir,
       LM_RUNTIME_TENANT_ID: "dais-local",
@@ -353,6 +364,8 @@ test("EN affirmation publishes a direct /p/ once, holds then releases native-own
     now: () => "2026-08-26T07:31:00.000Z",
   };
   const first = await runAniccaEnAffirmationInstagramCanary(["run-en-affirmation", "--slot", SLOT], options);
+  assert.deepEqual(fs.readFileSync(path.join(value.dataDir, "marketing", "lane-manifest.json")), value.controlBytes.manifest);
+  assert.deepEqual(fs.readFileSync(path.join(value.dataDir, "marketing", "publication-effect-fence.json")), value.controlBytes.fence);
   const publicationReceipt = JSON.parse(fs.readFileSync(path.join(value.dataDir, "marketing", "receipts.jsonl"), "utf8")).receipt;
   value.env[EN_RUNNER_LANE.verificationEnv] = enVerification(value, publicationReceipt);
   const replayOptions = { ...options, now: () => "2026-08-26T08:01:00.000Z" };
@@ -366,4 +379,16 @@ test("EN affirmation publishes a direct /p/ once, holds then releases native-own
   assert.equal(telegramCalls.length, 1);
   assert.match(telegramCalls[0][2], /@anicca\.ios/);
   assert.doesNotMatch(telegramCalls[0][2], /@anicca\.affirmation/);
+});
+
+test("EN affirmation restores the exact closed controls when the provider effect is unknown", async () => {
+  const value = enFixture();
+  await assert.rejects(runAniccaEnAffirmationInstagramCanary(["run-en-affirmation", "--slot", SLOT], {
+    env: value.env,
+    objectStore: value.objectStore,
+    runDistribution: async () => { throw new Error("response lost"); },
+    now: () => "2026-08-26T07:31:00.000Z",
+  }), /receipt is unavailable|response lost|unknown|provider/i);
+  assert.deepEqual(fs.readFileSync(path.join(value.dataDir, "marketing", "lane-manifest.json")), value.controlBytes.manifest);
+  assert.deepEqual(fs.readFileSync(path.join(value.dataDir, "marketing", "publication-effect-fence.json")), value.controlBytes.fence);
 });

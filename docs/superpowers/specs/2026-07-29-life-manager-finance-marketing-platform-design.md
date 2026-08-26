@@ -2239,6 +2239,13 @@ verification before natural Telegram, followed by replay 0 and source-labelled
 metrics. The controls return to fence closed, lane default-off, armed 0 after
 the attempt; no other account starts.
 
+The runner now performs this control transition itself: it validates the
+closed mode-0600 controls and exact pack-ready lane, saves their exact bytes,
+arms only the calculated effect/lane, and restores both files in `finally` on
+success or provider failure. Focused control coverage is 22/22 GREEN, including
+byte-exact restoration after an unknown provider effect; syntax and diff checks
+pass. No live provider or Telegram effect occurred during this repair.
+
 **Completed immediately preceding atomic item:** MKT-09R9-04 / Order 24D
 generalizes the existing native-carousel adapter and runner for exactly one
 additional immutable EN lane while preserving the JA command. EN identity,
@@ -2908,7 +2915,7 @@ Their dependent account arm remains blocked until the observation is terminal.
 | 24B | **done — MKT-09R9-02:** classify Instagram `@anicca.affirmation` / `cmp9pedr700ttqh0yj8o57fog` | Order 24A terminal unavailable | evidence `d4b23768…86c65b` binds Anicca iOS/EN/Larry/native-photo-carousel, Postiz alias `anicca.affirmation`, native owner `anicca.ios`, 144 rows, six-slide native `Dbcvm5Mm8gM`, target 1/day; manifest `88975d67…755d33` changes only this row to classified/default-off, armed 0; writes 0 | classify multiple accounts, infer only from handle, or adopt broken legacy `--tt` mapping |
 | 24C | **done — MKT-09R9-03:** import and approve one exact `@anicca.affirmation` pack | Order 24B passes | pack `e23cd412…78669e`, caption `bf90a15a…6e64a0`, approval `7740cd09…968845`, six ordered native JPEGs and order hash `4daa5db7…9837f9` are SHA-exact/mode0600; manifest `b48c8e11…5ce18f` pack-ready/default-off, armed0/fenceclosed; effects0 | import several packs or mix Card/Widget content |
 | 24D | **done — MKT-09R9-04:** TDD-generalize the native carousel runner for exactly the frozen EN lane | Order 24C passes | existing JA command remains green; EN account/integration/pack/ordered media/caption/approval/native owner are immutable; alternate refs fail before provider; direct `/p/`, native verification, Telegram and replay contracts are reused; focused 21/21, syntax and diff checks pass; provider/Telegram writes 0 | copy runner, accept caller-defined lane, or execute hardcoded JA adapter against EN |
-| 24E | **active — MKT-09R9-05:** run one `@anicca.affirmation` API canary and register metrics | Order 24D passes | exact effect-only fence and exact lane-only manifest arm at enqueue and claim; direct caption-matching native post/carousel URL; six ordered slides; natural Telegram; replay 0; immediate and 2h/24h/72h/7d metrics; fence closed and default-off/armed 0 after attempt | fan out or arm before metrics |
+| 24E | **active — MKT-09R9-05:** run one `@anicca.affirmation` API canary and register metrics | Order 24D passes; automatic target-only arm/restore is 22/22 GREEN, including provider-failure restoration | exact effect-only fence and exact lane-only manifest arm at enqueue and claim; direct caption-matching native post/carousel URL; six ordered slides; natural Telegram; replay 0; immediate and 2h/24h/72h/7d metrics; fence closed and default-off/armed 0 after attempt | fan out, manually leave controls open, or arm before metrics |
 | 24F | **MKT-09R9-N:** repeat classify → one pack → one API canary for each remaining existing TikTok/Instagram/YouTube integration | Order 24E terminal | every existing row is product/locale/renderer/pack-bound and canary-verified or an explicit justified 0/day hold/owner skip | mass-enable, guess from handle, or post mixed-product content |
 | 25 | **MKT-10:** arm only one healthy verified account, ramping from one canary/day to at most three posts/day | exact account has direct-native, Telegram, replay, and usable metric-source evidence | expected/published/missed/duplicate counts remain healthy at each ramp; platform policy permits cadence | jump directly to three/day everywhere |
 | 26 | **MKT-11:** collect 2h/24h/72h/7d social metrics and join ASC, RevenueCat, and product analytics | exact published effect has immutable creative/campaign lineage | views, likes, comments, shares, saves, watch/retention fields when supported, installs, activation, trials, paid, proceeds, and attribution coverage are source-labelled; unavailable stays unavailable | substitute account aggregates for post outcomes or infer installs from timing |

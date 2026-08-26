@@ -21,6 +21,7 @@ const {
   executeMarketingLivenessJob,
 } = require("../lib/marketing-liveness-adapter.js");
 const { executeCapabilityJob } = require("./runtime-up.js");
+const { armControls, restoreControls } = require("./anicca-en-widget-canary.js");
 
 const TENANT = "dais-local";
 const PRODUCT = "anicca-ios";
@@ -217,7 +218,6 @@ async function runAniccaCarouselCanary(argv = [], deps = {}) {
     approvalRef: config.approvalRef,
     postizTokenRef: lane.tokenRef,
   });
-  const queued = await store.enqueueJob({ ...publicationJob, availableAt: trustedNow });
   const publicationAdapter = createMarketingNativeCarouselPublicationLoopAdapter({
     objectStore,
     secretProvider,
@@ -225,7 +225,39 @@ async function runAniccaCarouselCanary(argv = [], deps = {}) {
     ...(deps.runDistribution ? { runDistribution: deps.runDistribution } : {}),
     now: clock,
   });
-  const publicationRun = await executeJob(store, publicationJob, lane.workerLabel, (job) => publicationAdapter.execute(job), deps.executeCapabilityJob || executeCapabilityJob);
+  const existingPublication = await store.readReceipt({ tenantId: publicationJob.tenant_id, jobId: publicationJob.job_id });
+  const controlLane = {
+    ...lane,
+    tenant: TENANT,
+    product: lane.productId,
+    account: lane.accountId,
+    format: lane.formatId,
+    enforceApprovedPack: true,
+  };
+  const controls = lane === EN_RUNNER_LANE && !existingPublication
+    ? armControls(config, publicationJob, controlLane)
+    : null;
+  let queued;
+  let publicationRun;
+  let publicationError;
+  let restoreError;
+  try {
+    queued = await store.enqueueJob({ ...publicationJob, availableAt: trustedNow });
+    publicationRun = await executeJob(store, publicationJob, lane.workerLabel, (job) => publicationAdapter.execute(job), deps.executeCapabilityJob || executeCapabilityJob);
+  } catch (error) {
+    publicationError = error;
+  } finally {
+    if (controls) {
+      try { restoreControls(controls.paths, controls); } catch (error) { restoreError = error; }
+    }
+  }
+  if (restoreError) {
+    const error = new Error(`${lane.name} publication controls could not be restored`);
+    error.unknownEffect = true;
+    if (publicationError) error.cause = publicationError;
+    throw error;
+  }
+  if (publicationError) throw publicationError;
   const publication = publicationRun.receipt;
   if (!verifyMarketingNativeCarouselPublicationReceipt(publication) || publication.provider_reconciled !== true) {
     const error = new Error("Larry JA publication receipt is not reconciled");
