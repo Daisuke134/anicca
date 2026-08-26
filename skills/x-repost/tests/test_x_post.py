@@ -95,17 +95,34 @@ class XPostTests(unittest.TestCase):
             )
 
     def test_quote_card_same_handle_wrong_status_is_not_exact(self) -> None:
+        class Link:
+            def __init__(self, href): self.href = href
+            def get_attribute(self, _name): return self.href
         class Card:
+            def __init__(self, target): self.target = target
             def inner_text(self): return "Source\n@source"
-            def click(self): page.url = "https://x.com/source/status/999"
+            def click(self): page.url = self.target
+        class ScopedArticle:
+            def __init__(self, post, card): self.post, self.card = post, card
+            def query_selector_all(self, selector):
+                return [Link(self.post)] if selector == "a" else [self.card]
         class QuotePage:
             url = "https://x.com/selawmqt/status/123"
-            def query_selector_all(self, _selector): return [Card()]
+            articles = [
+                ScopedArticle("/selawmqt/status/123", Card("https://x.com/source/status/999")),
+                ScopedArticle("/other/status/456", Card("https://x.com/source/status/456")),
+            ]
+            def query_selector_all(self, _selector): return self.articles
             def wait_for_url(self, expected, timeout):
                 if self.url != expected: raise TimeoutError(timeout)
         page = QuotePage()
         self.assertFalse(MODULE.quote_card_opens_exact_source(
-            page, "https://x.com/source/status/456"
+            page, "https://x.com/selawmqt/status/123", "https://x.com/source/status/456"
+        ))
+        page.url = "https://x.com/selawmqt/status/123"
+        page.articles[0].card = Card("https://x.com/source/status/456")
+        self.assertTrue(MODULE.quote_card_opens_exact_source(
+            page, "https://x.com/selawmqt/status/123", "https://x.com/source/status/456"
         ))
 
     def test_reconcile_no_provider_match_stays_unverified(self) -> None:
