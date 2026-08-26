@@ -138,3 +138,12 @@ Baseline: focused Life Manager suite 175/175 PASS.
 - Task 7B fix R1: `270f6d519` — server-state callback continuation, fixed device allowlist, AC-31 copy, and receipt claim/replay/conflict/pending/failed handling; focused 101/101 PASS.
 - Task 7B final review: APPROVED — callback failure/dashboard behavior, malicious device return values, current-location non-claim, and zero-repeat idempotency effects verified. Expanded six-file suite 135/135 PASS; syntax and diff checks PASS.
 - Task 7B: complete (production deployment and clean-actor E2E remain Task 9)
+
+## Task 8 review loop
+
+- Task 8 base: `9cb4221ec`
+- Task 8 implementer: `/root/task7a_onboarding_api`
+- Task 8 implementation: `5cafd6936` — all five legacy `lm-onboard` actions return effect-free JSON 410; `/lm` is a fixed Telegram handoff; the 595-line shadow client is deleted.
+- Task 8 execution correction: the implementer initially wrote four owned paths in the dirty main checkout. Work stopped; those exact four paths were transferred with patches to the canonical worktree and restored to main HEAD with `git diff --exit-code` proof. No other main changes were touched.
+- Task 8 review R0: APPROVED — 210 method/payload probes return 410/fetch0, active `/lm` authority scan is empty, deleted client import0, and Railway Calendar/Stripe webhook production files are unchanged. Focused 130/130 parent suite and 115/115 reviewer suite PASS; syntax, diff, dependency and secret checks PASS.
+- Task 8: complete (production Netlify/Railway readback remains Task 9)

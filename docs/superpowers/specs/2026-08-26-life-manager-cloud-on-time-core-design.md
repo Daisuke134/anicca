@@ -315,9 +315,9 @@ Telegram本文の固定形:
 
 ### Slice 3E — Retire legacy Google-login binding
 
-- [ ] `onboarding-resume-contract.test.js`へSupabase Google exchange不使用と`telegram-link` 410のREDを追加する。
-- [ ] `apps/landing/netlify/functions/lm-onboard.js`の`exchange`と`telegram-link`を410へ固定する。
-- [ ] `apps/landing/app/lm/LmClient.tsx`をTelegram botへのhandoffだけにし、`signInWithGoogle`、uid/sig localStorage、raw `tg` bindingを削除する。
+- [x] `onboarding-resume-contract.test.js`へSupabase Google exchange不使用と`telegram-link` 410のREDを追加する。
+- [x] `apps/landing/netlify/functions/lm-onboard.js`の`exchange`と`telegram-link`を410へ固定する。
+- [x] shadow `LmClient.tsx`を削除し、`LmBody.tsx`をTelegram botへの固定handoffだけにして、`signInWithGoogle`、uid/sig localStorage、raw `tg` bindingを削除する。
 - [ ] production Netlify functionがlegacy actionへ410を返すことをreadbackする。
 
 ### Slice 3F — Payment authority and onboarding E2E
