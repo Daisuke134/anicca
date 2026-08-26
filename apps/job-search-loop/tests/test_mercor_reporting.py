@@ -4,6 +4,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+from job_search_loop.mercor_human_gate import HumanGateStore
 from job_search_loop.mercor_reporting import build_pass_message, report_pass, terminal_result
 
 
@@ -80,6 +81,45 @@ class MercorReportingTests(unittest.TestCase):
                 )
 
         self.assertEqual(len(receipt["human_gate_ids"]), 1)
+
+    def test_grounded_pass_resolves_stale_auth_and_resume_gates(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            gates = root / "human-gates.jsonl"
+            store = HumanGateStore(gates)
+            store.record(
+                run_id="old",
+                reason="Mercor authentication is required; all pages showed Sign in.",
+                evidence_ref="run:old",
+            )
+            store.record(
+                run_id="old",
+                reason="The supplied resume artifact was not present at the parent-provided path.",
+                evidence_ref="run:old",
+            )
+            result = root / "result.json"
+            result.write_text(
+                json.dumps(
+                    {
+                        "status": "observed_no_action",
+                        "inspected_listings": [{"listing_id": "list_1", "title": "Role"}],
+                        "submitted": [],
+                        "needs_human": [],
+                        "blocked": [],
+                        "evidence": {},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            with patch("job_search_loop.mercor_reporting.send_once", return_value={"status": "sent", "message_id": "1"}):
+                report_pass(
+                    run_id="current",
+                    result_path=result,
+                    outbox=root / "outbox.sqlite3",
+                    gate_store=gates,
+                )
+            self.assertEqual(store.pending(), [])
+            self.assertEqual(len(gates.read_text(encoding="utf-8").splitlines()), 4)
 
     def test_message_is_compact_grounded_and_redacts_private_details(self):
         message = build_pass_message(

@@ -155,6 +155,17 @@ def report_pass(*, run_id: str, result_path: Path, outbox: Path, gate_store: Pat
         evidence = result.get("evidence") if isinstance(result.get("evidence"), Mapping) else {}
         evidence_ref = str(evidence.get("page_url") or f"run:{run_id}")
         store = HumanGateStore(gate_store)
+        if (
+            result.get("status") not in {"blocked", "failed"}
+            and isinstance(result.get("inspected_listings"), list)
+            and result["inspected_listings"]
+        ):
+            for identity_key in ("mercor_authentication", "resume_artifact"):
+                store.resolve(
+                    identity_key=identity_key,
+                    run_id=run_id,
+                    evidence_ref=f"run:{run_id}",
+                )
         for reason in result.get("needs_human", []):
             if isinstance(reason, str) and reason.strip():
                 gate_id = store.record(
