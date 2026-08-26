@@ -236,6 +236,7 @@ test("production contract runs every minute and maximizes real applications", ()
   assert.match(dailyPrompt, /assign the selected secret directly to `GOG_KEYRING_PASSWORD` without echoing it/);
   assert.match(dailyPrompt, /cdp\.py fillcss/);
   assert.match(dailyPrompt, /cdp\.py filllabel/);
+  assert.match(dailyPrompt, /cdp\.py typelabel/);
   assert.match(dailyPrompt, /absolute path/);
   assert.match(runtimeScript, /--task-class application-intent-planner/);
   assert.match(runtimeScript, /--escalation-reason/);

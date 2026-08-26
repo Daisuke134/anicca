@@ -215,6 +215,42 @@ def fill_label(tid: str, label: str, value: str) -> dict:
     return evaluate(tid, expression)
 
 
+def type_label(tid: str, label: str, value: str) -> dict:
+    expression = f"""(() => {{
+      const normalize = (text) => (text || '').replace(/\\s+/g, ' ').trim();
+      const wanted = normalize({json.dumps(label)});
+      const candidates = [...document.querySelectorAll('input,textarea')].filter((element) => {{
+        const ids = (element.getAttribute('aria-labelledby') || '').split(/\\s+/).filter(Boolean);
+        const renderedLabel = normalize(ids.map((id) => document.getElementById(id)?.innerText || '').join(' '));
+        const rect = element.getBoundingClientRect();
+        return renderedLabel === wanted && rect.width > 0 && rect.height > 0;
+      }});
+      if (candidates.length !== 1) throw new Error(`expected one visible field for label, found ${{candidates.length}}`);
+      const element = candidates[0];
+      element.scrollIntoView({{block: 'center'}});
+      element.focus();
+      element.select();
+      return {{label: wanted}};
+    }})()"""
+    ws = _page(tid)
+    try:
+        focused = _rpc(ws, 1, "Runtime.evaluate", {
+            "expression": expression, "returnByValue": True, "awaitPromise": True, "userGesture": True,
+        })
+        if focused.get("exceptionDetails"):
+            return {"__error__": str(focused["exceptionDetails"].get("text") or focused["exceptionDetails"])}
+        _rpc(ws, 2, "Input.insertText", {"text": value})
+        readback = _rpc(ws, 3, "Runtime.evaluate", {
+            "expression": "({tag:document.activeElement?.tagName,value_length:(document.activeElement?.value||'').length,valid:document.activeElement?.checkValidity?.()??true})",
+            "returnByValue": True, "awaitPromise": True,
+        })
+        result = readback.get("result", {}).get("value", {})
+        result["label"] = label
+        return result
+    finally:
+        ws.close()
+
+
 def select_name(tid: str, name: str, value: str) -> dict:
     expression = _visible_named_expression(name, f"""
       Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')
@@ -239,7 +275,7 @@ def form_state(tid: str) -> list[dict]:
 
 def main(argv: list[str]) -> int:
     if not argv:
-        raise SystemExit("usage: cdp.py new|nav|eval|screenshot|clickxy|insert|key|setfile|fillname|fillcss|filllabel|selectname|formstate|close ...")
+        raise SystemExit("usage: cdp.py new|nav|eval|screenshot|clickxy|insert|key|setfile|fillname|fillcss|filllabel|typelabel|selectname|formstate|close ...")
     command, *args = argv
     if command == "new":
         print(_browser_call("Target.createTarget", {"url": args[0] if args else "about:blank"})["targetId"])
@@ -264,6 +300,8 @@ def main(argv: list[str]) -> int:
         print(json.dumps(fill_css(args[0], args[1], args[2]), ensure_ascii=False))
     elif command == "filllabel":
         print(json.dumps(fill_label(args[0], args[1], args[2]), ensure_ascii=False))
+    elif command == "typelabel":
+        print(json.dumps(type_label(args[0], args[1], args[2]), ensure_ascii=False))
     elif command == "selectname":
         print(json.dumps(select_name(args[0], args[1], args[2]), ensure_ascii=False))
     elif command == "formstate":

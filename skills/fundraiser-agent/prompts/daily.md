@@ -139,7 +139,7 @@ For every queued candidate until the execution window ends:
    blocker has changed or disappeared.
 2. Observe the rendered form and read visible labels, options, requiredness,
    validation, and existing values. The repository `cdp.py` supports
-   `new|nav|eval|screenshot|clickxy|insert|key|setfile|fillname|fillcss|filllabel|selectname|formstate|close`.
+   `new|nav|eval|screenshot|clickxy|insert|key|setfile|fillname|fillcss|filllabel|typelabel|selectname|formstate|close`.
    Use the rendered DOM plus `formstate` as the form observation evidence.
    Never start an interactive shell (`zsh -i`, `bash -i`, or equivalent). If
    `formstate` returns an empty array on a rendered React/Notion form, continue
@@ -172,6 +172,11 @@ For every queued candidate until the execution window ends:
    `python3 skills/browser/scripts/cdp.py filllabel "$TARGET_ID" "$EXACT_VISIBLE_LABEL" "$VALUE"`.
    This resolves the current generated ID inside the page and refuses zero or
    multiple matches; never copy a generated ID into a later mutation command.
+   If a rendered React/Notion validation message still says a populated field is
+   required, its DOM value was not accepted by framework state. Re-enter it with
+   `python3 skills/browser/scripts/cdp.py typelabel "$TARGET_ID" "$EXACT_VISIBLE_LABEL" "$VALUE"`;
+   this focuses, selects, and inserts trusted text. Use `typelabel` for every field
+   showing that contradiction before retrying Submit.
    Never place a dollar-prefixed amount such as `$1,000` directly in a shell
    argument; shell positional expansion corrupts it. Write `USD 1,000` in form
    answers, or pass text through a safely quoted variable. Before final Submit,
