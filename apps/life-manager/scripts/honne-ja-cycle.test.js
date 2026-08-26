@@ -2,7 +2,7 @@
 
 const assert = require("node:assert/strict");
 const test = require("node:test");
-const { ANICCA_EN_CARD_INSTAGRAM_SLOTS, ANICCA_EN_WIDGET_INSTAGRAM_SLOTS, ANICCA_HE_SLOTS, ANICCA_JP4_SLOTS, ANICCA_MAIN_INSTAGRAM_SLOTS, ANICCA_MAIN_SLOTS, PRODUCTION_SLOTS, parseArgs, runSlot, telegramNativeUrlVerified } = require("./honne-ja-cycle.js");
+const { ANICCA_EN_CARD_INSTAGRAM_SLOTS, ANICCA_EN_WIDGET_INSTAGRAM_SLOTS, ANICCA_HE_SLOTS, ANICCA_JA_WIDGET_INSTAGRAM_SLOTS, ANICCA_JP4_SLOTS, ANICCA_MAIN_INSTAGRAM_SLOTS, ANICCA_MAIN_SLOTS, PRODUCTION_SLOTS, parseArgs, runSlot, telegramNativeUrlVerified } = require("./honne-ja-cycle.js");
 
 test("Honne JA production cadence has three exact idempotent slots", () => {
   assert.deepEqual([...PRODUCTION_SLOTS], ["08:30", "12:30", "21:30"]);
@@ -40,6 +40,19 @@ test("Anicca EN Widget Instagram publishes only the exact account at three daily
   assert.equal(lane.instagramProfileRef, "profile://instagram/anicca.en");
   assert.equal(lane.packKey, "LM_ANICCA_EN_WIDGET_PRODUCTION_PACK_REF");
   assert.equal(lane.mediaKey, "LM_ANICCA_EN_WIDGET_PRODUCTION_MEDIA_REFS");
+});
+
+test("Anicca JA Widget Instagram publishes only the exact account at three daily slots", () => {
+  assert.deepEqual([...ANICCA_JA_WIDGET_INSTAGRAM_SLOTS], ["08:05", "13:05", "18:20"]);
+  const lane = parseArgs(["run-anicca-ja-widget-instagram"]).lane;
+  assert.equal(lane.format, "reelclaw-widget");
+  assert.equal(lane.platform, "instagram");
+  assert.equal(lane.account, "@anicca.jp.videos");
+  assert.equal(lane.integrationId, "cmmzzg2es0539p30ycb94ayx0");
+  assert.equal(lane.instagramProfileRef, "profile://instagram/anicca.jp.videos");
+  assert.equal(lane.packKey, "LM_ANICCA_JA_WIDGET_PRODUCTION_PACK_REF");
+  assert.equal(lane.mediaKey, "LM_ANICCA_JA_WIDGET_PRODUCTION_MEDIA_REFS");
+  assert.equal(lane.approvalKey, "LM_ANICCA_JA_WIDGET_PRODUCTION_APPROVAL_REF");
 });
 
 test("Honne JA production CLI accepts only an optional exact slot", () => {

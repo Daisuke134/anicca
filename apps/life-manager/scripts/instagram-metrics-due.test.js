@@ -99,6 +99,24 @@ test("verified EN Widget Reel is discovered for the exact anicca.en metric lane"
   }]);
 });
 
+test("verified JA Widget Reel is discovered for the exact anicca.jp.videos metric lane", () => {
+  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "lm-instagram-ja-widget-discovery-"));
+  const caption = "アファメーションを\nロック画面に置いてみた\n\n#ロック画面 #アファメーション #ウィジェット #メンタルヘルス #アニッチャ\n";
+  const captionPath = path.join(dataDir, "caption.txt"); fs.writeFileSync(captionPath, caption);
+  const captionHash = require("node:crypto").createHash("sha256").update(fs.readFileSync(captionPath)).digest("hex");
+  const directory = path.join(dataDir, "tenants/dais-local/marketing/video-publication/anicca-ios"); fs.mkdirSync(directory, { recursive: true });
+  const row = { ts: "2026-08-26T10:00:00.000Z", platform: "instagram", status: "published", provider_reconciled: true,
+    format_id: "reelclaw-widget", form: "lockscreen-affirmation-widget", locale: "ja", creative_id: "JA-WIDGET-AFFIRMATION-1315a945e39a",
+    provider_id: "cmtjawidgetexact123", public_url: "https://www.instagram.com/reel/ExactJaWidget1/",
+    caption_path: captionPath, caption_sha256: captionHash, video_sha256: "1315a945e39aaef07aeccbc8afa7ef8f1fccb28718615cf15b07e2e03434f123" };
+  fs.writeFileSync(path.join(directory, "distribution.jsonl"), `${JSON.stringify(row)}\n`);
+  assert.deepEqual(discoverExpected(dataDir), [{
+    tenant_id: "dais-local", product_id: "anicca-ios", locale: "ja", account_id: "@anicca.jp.videos", native_owner: "anicca.jp.videos",
+    integration_id: "cmmzzg2es0539p30ycb94ayx0", provider_post_id: row.provider_id, shortcode: "ExactJaWidget1",
+    public_url: row.public_url, caption, published_at: row.ts,
+  }]);
+});
+
 test("verified EN affirmation native-carousel receipt is discovered as an immutable metric effect", () => {
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "lm-instagram-carousel-discovery-"));
   const caption = "5 affirmations to tell\nyourself every morning... | #anicca #affirmation";

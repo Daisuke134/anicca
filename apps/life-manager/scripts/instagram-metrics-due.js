@@ -17,6 +17,7 @@ const VIDEO_LANES = Object.freeze([
   Object.freeze({ format_id: "reelclaw-card", form: "nudge-card", locale: "ja", account_id: "@anicca.jp1", native_owner: "anicca.ios.jp", integration_id: "cmn8ycvtn02djqx0ytuisn9mw" }),
   Object.freeze({ format_id: "reelclaw-card", form: "nudge-card", locale: "en", account_id: "@anicca.encards", native_owner: "anicca.encards", integration_id: "cmpc3gx4001nklg0y27a8o66q" }),
   Object.freeze({ format_id: "reelclaw-widget", form: "lockscreen-affirmation-widget", locale: "en", account_id: "@anicca.en", native_owner: "anicca.en", integration_id: "cmn8y95rg02d2qx0y09bbk5pb" }),
+  Object.freeze({ format_id: "reelclaw-widget", form: "lockscreen-affirmation-widget", locale: "ja", account_id: "@anicca.jp.videos", native_owner: "anicca.jp.videos", integration_id: "cmmzzg2es0539p30ycb94ayx0" }),
   Object.freeze({ format_id: "watercolor", form: "buddhist-self-care-reel", locale: "ja", creative_id: "JA-WATERCOLOR-OBOU-b2772de4303a", video_sha256: "b2772de4303acc901f42b43a0b3f4af166ae3daeb5ee7fd24e090e5b62f2b0e8", account_id: "@obou.anicca", native_owner: "obou.anicca", integration_id: "cmooplxmu04tpmd0y4h3cpk33" }),
 ]);
 
