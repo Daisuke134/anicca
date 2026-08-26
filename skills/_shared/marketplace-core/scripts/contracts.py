@@ -44,6 +44,7 @@ _RECORD_TYPE_TO_SCHEMA = {
     "application_intent": "event.schema.json",
     "application_receipt": "event.schema.json",
     "contract_receipt": "event.schema.json",
+    "authorization_receipt": "event.schema.json",
     "work_event": "event.schema.json",
     "delivery_intent": "event.schema.json",
     "delivery_receipt": "event.schema.json",
@@ -123,6 +124,18 @@ class ContractReceipt:
 
 
 @dataclass(frozen=True)
+class AuthorizationReceipt:
+    schema_version: int
+    record_type: str
+    platform: str
+    contract_external_id: str
+    authorization_external_id: str
+    status: str
+    scope_sha256: str
+    observed_at: str
+
+
+@dataclass(frozen=True)
 class WorkEvent:
     schema_version: int
     record_type: str
@@ -168,6 +181,7 @@ Contract = Union[
     ApplicationIntent,
     ApplicationReceipt,
     ContractReceipt,
+    AuthorizationReceipt,
     WorkEvent,
     DeliveryIntent,
     DeliveryReceipt,
@@ -303,6 +317,7 @@ _EVENT_DEFINITION_BY_RECORD_TYPE = {
     "application_intent": "ApplicationIntent",
     "application_receipt": "ApplicationReceipt",
     "contract_receipt": "ContractReceipt",
+    "authorization_receipt": "AuthorizationReceipt",
     "work_event": "WorkEvent",
     "delivery_intent": "DeliveryIntent",
     "delivery_receipt": "DeliveryReceipt",
@@ -447,6 +462,7 @@ _MODEL_BY_RECORD_TYPE: Dict[str, Type[Contract]] = {
     "application_intent": ApplicationIntent,
     "application_receipt": ApplicationReceipt,
     "contract_receipt": ContractReceipt,
+    "authorization_receipt": AuthorizationReceipt,
     "work_event": WorkEvent,
     "delivery_intent": DeliveryIntent,
     "delivery_receipt": DeliveryReceipt,
@@ -505,6 +521,13 @@ def parse_contract_receipt(record: Mapping[str, Any]) -> ContractReceipt:
     return parsed
 
 
+def parse_authorization_receipt(record: Mapping[str, Any]) -> AuthorizationReceipt:
+    parsed = parse_contract(record)
+    if not isinstance(parsed, AuthorizationReceipt):
+        raise ContractValidationError(("$.record_type: expected authorization_receipt",))
+    return parsed
+
+
 def parse_work_event(record: Mapping[str, Any]) -> WorkEvent:
     parsed = parse_contract(record)
     if not isinstance(parsed, WorkEvent):
@@ -539,6 +562,7 @@ to_dict = record_to_dict
 __all__ = [
     "ApplicationIntent",
     "ApplicationReceipt",
+    "AuthorizationReceipt",
     "Contract",
     "ContractRecord",
     "ContractReceipt",
@@ -554,6 +578,7 @@ __all__ = [
     "parse",
     "parse_application_intent",
     "parse_application_receipt",
+    "parse_authorization_receipt",
     "parse_delivery_intent",
     "parse_delivery_receipt",
     "parse_opportunity",

@@ -13,6 +13,9 @@
       "$ref": "#/$defs/ContractReceipt"
     },
     {
+      "$ref": "#/$defs/AuthorizationReceipt"
+    },
+    {
       "$ref": "#/$defs/WorkEvent"
     },
     {
@@ -187,6 +190,31 @@
         "contract_external_id": { "$ref": "#/$defs/identifier" },
         "status": { "enum": ["offered", "accepted", "terminated"] },
         "terms_sha256": { "$ref": "#/$defs/sha256" },
+        "observed_at": { "$ref": "#/$defs/timestamp" }
+      }
+    },
+    "AuthorizationReceipt": {
+      "title": "MarketplaceAuthorizationReceipt",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "record_type",
+        "platform",
+        "contract_external_id",
+        "authorization_external_id",
+        "status",
+        "scope_sha256",
+        "observed_at"
+      ],
+      "properties": {
+        "schema_version": { "$ref": "#/$defs/schema_version" },
+        "record_type": { "const": "authorization_receipt" },
+        "platform": { "$ref": "#/$defs/platform" },
+        "contract_external_id": { "$ref": "#/$defs/identifier" },
+        "authorization_external_id": { "$ref": "#/$defs/identifier" },
+        "status": { "enum": ["authorized", "revoked"] },
+        "scope_sha256": { "$ref": "#/$defs/sha256" },
         "observed_at": { "$ref": "#/$defs/timestamp" }
       }
     },
