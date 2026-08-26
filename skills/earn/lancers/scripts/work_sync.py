@@ -44,6 +44,55 @@ TICK_TIMEOUT_SECONDS = 120
 class SourceFailure(RuntimeError): pass
 
 
+def build_revenue_candidate(row: Mapping[str, Any], *, recipient: str | None = None) -> dict[str, Any]:
+    """Project one official Lancers finance row without counting a contract as paid revenue.
+
+    The browser observer currently exposes contract candidates and a finance summary, not payment
+    history.  This pure projection is intentionally strict so a later finance-detail readback can
+    feed the shared RevenueReceipt adapter while today's incomplete snapshot remains a durable
+    rejection.
+    """
+    if not isinstance(row, Mapping):
+        return {"kind": "revenue_rejection", "provider": "lancers", "reason": "source_row_invalid"}
+    source_id = str(row.get("payment_id") or row.get("paymentId") or row.get("payout_id") or row.get("provider_id") or row.get("id") or "").strip()
+    status = str(row.get("payment_status") or row.get("payout_status") or row.get("status") or "").strip().lower()
+    proof = row.get("proof") if isinstance(row.get("proof"), Mapping) else None
+    receipt_id = (proof or {}).get("provider_receipt_id") or row.get("payment_receipt_id") or row.get("payout_receipt_id")
+    verified = (proof or {}).get("verified") is True or row.get("payment_proof_verified") is True or row.get("payout_proof_verified") is True
+    payer = row.get("payer") or row.get("client_id") or row.get("clientId") or row.get("buyer_id")
+    destination = row.get("recipient") or row.get("recipient_id") or recipient
+    gross = row.get("gross_jpy", row.get("gross_amount_jpy", row.get("gross_amount")))
+    fee = row.get("fee_jpy", row.get("fee_amount_jpy", row.get("fee_amount")))
+    missing: list[str] = []
+    if status not in {"settled", "paid", "received", "completed", "支払", "支払完了"}: missing.append("terminal_state")
+    if gross is None: missing.append("gross")
+    if fee is None: missing.append("fee")
+    if not isinstance(payer, str) or not payer.strip(): missing.append("payer")
+    if not isinstance(destination, str) or not destination.strip(): missing.append("recipient")
+    if not receipt_id or not verified: missing.append("verified_payment_proof")
+    if status in {"pending", "requested", "working", "in_progress"}: missing.append("terminal_payout")
+    if missing:
+        return {
+            "kind": "revenue_rejection", "provider": "lancers", "source_record_id": source_id,
+            "reason": "missing_or_unverified_settlement:" + ",".join(dict.fromkeys(missing)),
+        }
+    return {
+        "provider": "lancers", "source_record_id": source_id, "payer": str(payer).strip(),
+        "recipient": str(destination).strip(), "gross_jpy": gross, "fee_jpy": fee,
+        "refund_jpy": row.get("refund_jpy", 0), "payout_jpy": row.get("payout_jpy"),
+        "asset": "JPY", "status": status, "occurred_at": row.get("occurred_at", row.get("ts")),
+        "proof": {"provider_receipt_id": str(receipt_id).strip(), "verified": True},
+    }
+
+
+def revenue_candidates(rows: Sequence[Mapping[str, Any]], *, recipient: str | None = None) -> list[dict[str, Any]]:
+    """Project an official finance-detail readback into accepted/rejected candidates."""
+    return [build_revenue_candidate(row, recipient=recipient) for row in (rows if isinstance(rows, Sequence) else [])]
+
+
+revenue_candidate = build_revenue_candidate
+
+
 def _id(value: Any) -> str:
     if isinstance(value, bool) or not isinstance(value, (str, int)) or not str(value).strip():
         raise SourceFailure("provider_response_invalid")

@@ -45,6 +45,70 @@ class StripeReceiptInvariant(ValueError):
     pass
 
 
+def build_revenue_candidates(
+    rows: list[dict[str, Any]], *, payer: str | None = None, recipient: str | None = None,
+) -> list[dict[str, Any]]:
+    """Emit the explicit Stripe proof projection consumed by the shared RevenueReceipt adapter.
+
+    ``normalize_objects`` keeps the writer outbox PII-free and intentionally stores money and fee
+    rows separately.  This helper only adds provider proof markers to copies of those rows; it does
+    not mutate the outbox or count checkout observations, test mode, pending payouts, or an
+    unjoined fee as revenue.  The JS adapter performs the final join and signed-net validation.
+    """
+    if not isinstance(rows, list):
+        return [{"kind": "revenue_rejection", "provider": "stripe", "reason": "source_rows_invalid"}]
+    output: list[dict[str, Any]] = []
+    money_ids = {
+        str(row.get("external_receipt_id")): row
+        for row in rows
+        if isinstance(row, dict) and row.get("receipt_type") == "money" and row.get("external_receipt_id")
+    }
+    fee_ids = {
+        str(row.get("money_external_receipt_id")): row
+        for row in rows
+        if isinstance(row, dict) and row.get("receipt_type") == "fee" and row.get("money_external_receipt_id")
+    }
+    for row in rows:
+        if not isinstance(row, dict) or row.get("receipt_type") not in {"money", "fee", "refund"}:
+            continue
+        copied = dict(row)
+        if row.get("receipt_type") == "money":
+            identity = row.get("external_receipt_id")
+            if row.get("test") is True or row.get("status") != "verified_received":
+                output.append({"kind": "revenue_rejection", "provider": "stripe", "source_record_id": str(identity or ""), "reason": "test_or_pending_money"})
+                continue
+            if str(identity or "") not in fee_ids:
+                output.append({"kind": "revenue_rejection", "provider": "stripe", "source_record_id": str(identity or ""), "reason": "fee_readback_unjoined"})
+                continue
+            copied["provider_receipt_id"] = str(identity)
+            copied["proof_verified"] = True
+            if payer is not None: copied["payer"] = payer
+            if recipient is not None: copied["recipient"] = recipient
+        elif row.get("receipt_type") == "fee":
+            identity = row.get("external_receipt_id")
+            if row.get("test") is True or row.get("status") != "verified" or str(row.get("money_external_receipt_id") or "") not in money_ids:
+                output.append({"kind": "revenue_rejection", "provider": "stripe", "source_record_id": str(identity or ""), "reason": "fee_readback_unjoined"})
+                continue
+            copied["provider_receipt_id"] = str(identity)
+            copied["proof_verified"] = True
+        else:
+            identity = row.get("external_receipt_id")
+            if row.get("test") is True or row.get("status") != "refunded":
+                output.append({"kind": "revenue_rejection", "provider": "stripe", "source_record_id": str(identity or ""), "reason": "test_or_pending_refund"})
+                continue
+            copied["provider_receipt_id"] = str(identity)
+            copied["proof_verified"] = True
+            if payer is not None: copied["payer"] = payer
+            if recipient is not None: copied["recipient"] = recipient
+        output.append(copied)
+    return output
+
+
+# Keep a descriptive alias for callers that treat all lane projections uniformly.
+revenue_candidates = build_revenue_candidates
+revenue_candidate = build_revenue_candidates
+
+
 def _canonical(value: Any) -> str:
     return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
 

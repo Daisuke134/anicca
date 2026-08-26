@@ -9,6 +9,7 @@ import { loadEvmKey } from '../lib/resolve-identity.mjs';
 import { evmErc20Balance, EVM_TOKENS, RPC } from '../lib/net-worth.mjs';
 import { generateImage as generateX402Image } from './x402-image-client.mjs';
 import { authorizeSpend } from '../../agent-economy/lib/treasury-policy.mjs';
+import { adaptTaskMarket } from '../../agent-economy/lib/revenue-adapters.mjs';
 
 const USDC_DECIMALS = 1_000_000;
 const TASKMARKET_CLI = '/opt/homebrew/bin/taskmarket';
@@ -196,6 +197,21 @@ function submissionId(row) {
     || row?.submitTxHash
     || row?.submit_tx_hash
     || null;
+}
+
+/** Pure readback seam: a submission id/submit tx is not an award or a payment receipt. */
+export function buildTaskMarketRevenueCandidate(readback, options = {}) {
+  return adaptTaskMarket(readback, options);
+}
+
+function hasTaskMarketSettlementProof(row) {
+  if (!row || typeof row !== 'object') return false;
+  const proof = row.proof || row.settlement || row.award || row.payout;
+  return Boolean(
+    row.award_receipt_id || row.awardReceiptId || row.payout_receipt_id || row.payoutReceiptId
+      || row.settlement_receipt_id || row.settlementReceiptId || row.provider_receipt_id
+      || (proof && typeof proof === 'object' && (proof.provider_receipt_id || proof.tx_hash || proof.txHash)),
+  );
 }
 
 function taskIdOf(row) {
@@ -466,6 +482,16 @@ export async function runTaskMarketPass(options = {}, deps = {}) {
   await appendEarnAttempt(earnLedgerPath, ledgerRow);
   if (!id) throw new Error('submission_readback_missing');
 
+  // A normal submission readback carries only task ownership.  Preserve the existing return shape
+  // unless the provider has also returned an explicit award/payout proof, in which case expose the
+  // candidate for the shared RevenueReceipt projector without executing another lane action.
+  const revenueCandidate = hasTaskMarketSettlementProof(recorded)
+    ? buildTaskMarketRevenueCandidate(recorded, {
+      payer: recorded.payer || recorded.external_payer,
+      recipient: recorded.recipient || recorded.payTo || recorded.pay_to,
+    })
+    : null;
+
   return {
     ok: true,
     action: 'submitted',
@@ -473,6 +499,7 @@ export async function runTaskMarketPass(options = {}, deps = {}) {
     submissionId: id,
     model: generated.model,
     costUsd: generated.costUsd,
+    ...(revenueCandidate ? { revenue_candidate: revenueCandidate } : {}),
   };
 }
 

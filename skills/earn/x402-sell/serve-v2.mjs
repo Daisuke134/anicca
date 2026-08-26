@@ -87,6 +87,47 @@ const { declareDiscoveryExtension } = await import("@x402/extensions/bazaar");
 // v1 legacy network id is a plain string ("base"/"base-sepolia"), unlike v2's CAIP-2 NETWORK above.
 const NETWORK_V1 = process.env.X402_NETWORK || "base";
 import { isSettled, decodePayer } from "./lib/settle-gate.mjs";
+
+/**
+ * Decode the facilitator's terminal readback into the small, secret-free projection consumed by
+ * the shared x402 revenue adapter.  PAYMENT-RESPONSE is evidence only when success:true; headers
+ * from verify failures and malformed base64 deliberately return a non-settled projection.
+ */
+export function decodeSettlementReadback(headerValue) {
+  if (!headerValue) return null;
+  const encoded = Array.isArray(headerValue) ? headerValue[0] : headerValue;
+  let value;
+  try {
+    value = JSON.parse(Buffer.from(String(encoded), "base64").toString("utf8"));
+  } catch {
+    try { value = JSON.parse(Buffer.from(String(encoded).replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf8")); }
+    catch { return null; }
+  }
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const projection = { success: value.success === true };
+  const fields = {
+    payer: ["payer"],
+    transaction: ["transaction", "tx_hash", "txHash", "transaction_hash", "transactionHash"],
+    provider_receipt_id: ["provider_receipt_id", "providerReceiptId", "receipt_id", "receiptId"],
+    amount: ["amount", "settled_amount", "settledAmount"],
+    amount_atomic: ["amount_atomic", "amountAtomic", "settled_amount_atomic", "settledAmountAtomic"],
+    currency: ["currency", "asset", "token"],
+    network: ["network", "chain_id", "chainId"],
+    chain_id: ["chain_id", "chainId"],
+    log_index: ["log_index", "logIndex"],
+  };
+  for (const [output, keys] of Object.entries(fields)) {
+    const found = keys.find((key) => typeof value[key] === "string" || (typeof value[key] === "number" && Number.isFinite(value[key])));
+    if (found) projection[output] = value[found];
+  }
+  // A facilitator transaction id is an explicit provider receipt identity.  Mark it verified only
+  // on a successful terminal response; failed settlement headers remain attempts, never revenue.
+  if (projection.provider_receipt_id === undefined && typeof projection.transaction === "string" && projection.transaction.trim()) {
+    projection.provider_receipt_id = projection.transaction.trim();
+  }
+  projection.proof_verified = projection.success;
+  return projection;
+}
 // CDP facilitator (when CDP keys present) → settles on Base mainnet AND lists the endpoint in the x402
 // Bazaar discovery layer (how buyer agents FIND us). Falls back to the x402.org testnet facilitator when
 // no CDP keys (generic install / dev). payTo stays our wallet — CDP only facilitates + catalogs, never custodies.
@@ -467,7 +508,12 @@ app.use((req, res, next) => {
     const hdr = res.getHeader("PAYMENT-RESPONSE");
     const settled = isSettled(hdr);
     const settledPayer = payer || decodePayer(hdr);
-    const line = JSON.stringify({ ts: new Date().toISOString(), route: req.path, price: product.price, payer: settledPayer, settled }) + "\n";
+    const settlement = decodeSettlementReadback(hdr);
+    const line = JSON.stringify({
+      ts: new Date().toISOString(), route: req.path, price: product.price, payer: settledPayer,
+      recipient: payTo(), settled,
+      ...(settlement ? { settlement } : {}),
+    }) + "\n";
     try { appendFileSync(settled ? SALES_LOG : ATTEMPTS_LOG, line); } catch { /* logging must never break serving */ }
   });
   next();
