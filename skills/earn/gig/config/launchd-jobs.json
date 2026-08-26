@@ -13,7 +13,7 @@
   "defaults": {
     "PYTHON": "/opt/homebrew/bin/python3",
     "HOME": "{{HOME}}",
-    "PATH": "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin",
+    "PATH": "{{HOME}}/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin",
     "GIG_STATE_DIR": "{{HOME}}/gig",
     "GIG_LOG_DIR": "{{GIG_STATE_DIR}}/logs",
     "GIG_BRAKE_DIR": "{{GIG_STATE_DIR}}/state",

@@ -23,6 +23,19 @@ def test_writer_notification_identity_has_no_personal_public_default(monkeypatch
     assert table["WRITER_TELEGRAM_TARGET"] == ""
 
 
+def test_shared_launchd_path_resolves_user_installed_agent_tools(monkeypatch):
+    monkeypatch.setattr(gig_release, "OVERRIDES", Path("/nonexistent/install.json"))
+    manifest, table = gig_release.settings(Path("/release"))
+    job = next(
+        row for row in manifest["jobs"]
+        if row["label"] == "ai.anicca.life-manager-upwork-free-loop"
+    )
+
+    environment = gig_release.plist_for(job, table)["EnvironmentVariables"]
+
+    assert environment["PATH"].split(":")[0] == f'{table["HOME"]}/.local/bin'
+
+
 def test_gc_preserves_release_referenced_by_loaded_launchd_job(tmp_path, monkeypatch):
     current_sha = "a" * 40
     loaded_sha = "b" * 40
