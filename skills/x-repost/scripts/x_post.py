@@ -307,13 +307,20 @@ def scan_timeline(page, handle: str, needle: str, expected_url: str | None = Non
     return None
 
 
-def quote_card_opens_exact_source(page, source_url: str) -> bool:
+def quote_card_opens_exact_source(page, post_url: str, source_url: str) -> bool:
     parsed = urllib.parse.urlparse(source_url)
     parts = [part for part in parsed.path.split("/") if part]
     if parsed.hostname not in {"x.com", "www.x.com"} or len(parts) < 3:
         return False
     identity = f"@{parts[0]}"
-    for card in page.query_selector_all('div[role="link"]'):
+    post_path = urllib.parse.urlparse(post_url).path.rstrip("/")
+    article = next((candidate for candidate in page.query_selector_all(
+        'article[data-testid="tweet"]'
+    ) if any((link.get_attribute("href") or "").split("?")[0].rstrip("/") == post_path
+             for link in candidate.query_selector_all("a"))), None)
+    if article is None:
+        return False
+    for card in article.query_selector_all('div[role="link"]'):
         if identity not in {line.strip() for line in (card.inner_text() or "").splitlines()}:
             continue
         card.click()
@@ -479,7 +486,7 @@ def main():
                 )
                 exact_quote_source = (
                     not args.source_url
-                    or quote_card_opens_exact_source(page, args.source_url)
+                    or quote_card_opens_exact_source(page, provider_url, args.source_url)
                 )
             finally:
                 page.close()
