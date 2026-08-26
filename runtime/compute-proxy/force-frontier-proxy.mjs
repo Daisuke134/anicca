@@ -1,8 +1,12 @@
 import http from "http";
-import fs from "fs";
 import { BlockrunClient } from "@blockrun/llm";
-const pk = JSON.parse(fs.readFileSync(process.env.WALLET_FILE)).privateKey;
-process.env.BASE_CHAIN_WALLET_KEY = pk.startsWith("0x") ? pk : "0x"+pk;
+import { loadEvmKey } from "../../skills/earn/lib/resolve-identity.mjs";
+
+// The forced frontier lane is part of agent-economy execution and therefore must derive its key
+// from the explicit instance wallet, never from WALLET_FILE or another generic environment key.
+const pk = loadEvmKey({ mode: "agent-economy" });
+if (!pk) throw new Error("agent-economy identity wallet is unavailable");
+process.env.BASE_CHAIN_WALLET_KEY = pk;
 const br = new BlockrunClient();
 const MODEL = process.env.FORCE_MODEL || "anthropic/claude-sonnet-4-6";
 const PORT = process.env.PORT || 8410;

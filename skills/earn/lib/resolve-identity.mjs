@@ -21,13 +21,52 @@
 //           ④ $HOME/.blockrun/.solana-session (back-compat, Franklin's legacy path)  ⑤ null
 //
 // Fail-closed (R5, money-safety): any missing file/field or parse error returns null — this
-// module NEVER throws. Callers (run.sh wrappers) must treat null as "skip this engine, warn".
-// This module never logs/echoes the key material it reads or returns — that discipline stays
-// with the caller (see env-filter.mjs's scrubPrivateKeys / redactPrivateKeyPatterns).
+// module never throws in the legacy/default mode. The explicit agent-economy mode additionally
+// throws only AgentEconomyIdentityError for a forbidden generic key override, before any wallet
+// read; callers must treat null as "skip this engine, warn". This module never logs/echoes key
+// material — that discipline stays with the caller (see env-filter.mjs's scrubPrivateKeys /
+// redactPrivateKeyPatterns).
 
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+export const AGENT_ECONOMY_IDENTITY_MODE = 'agent-economy';
+
+/** Stable, secret-free failure for a forbidden shared/private-key environment override. */
+export class AgentEconomyIdentityError extends Error {
+  constructor(field = 'generic private-key environment') {
+    super(`agent-economy identity forbids ${field} override`);
+    this.name = 'AgentEconomyIdentityError';
+    this.code = 'AGENT_ECONOMY_KEY_OVERRIDE_FORBIDDEN';
+  }
+}
+
+function isAgentEconomyMode(mode, env) {
+  return mode === AGENT_ECONOMY_IDENTITY_MODE
+    || (mode === undefined && env?.ANICCA_IDENTITY_MODE === AGENT_ECONOMY_IDENTITY_MODE);
+}
+
+function hasSecretValue(value) {
+  return typeof value === 'string' && value.length > 0;
+}
+
+function rejectAgentEconomyEvmOverrides(env) {
+  const fields = [
+    ['ANICCA_EVM_PRIVATE_KEY', env.ANICCA_EVM_PRIVATE_KEY],
+    ['PKVAR', env.PKVAR && env[env.PKVAR]],
+    ['BLOCKRUN_WALLET_KEY', env.BLOCKRUN_WALLET_KEY],
+    ['BASE_CHAIN_WALLET_KEY', env.BASE_CHAIN_WALLET_KEY],
+  ];
+  const forbidden = fields.find(([, value]) => hasSecretValue(value));
+  if (forbidden) throw new AgentEconomyIdentityError(forbidden[0]);
+}
+
+function rejectAgentEconomySolanaOverrides(env) {
+  if (hasSecretValue(env.ANICCA_SOLANA_PRIVATE_KEY)) {
+    throw new AgentEconomyIdentityError('ANICCA_SOLANA_PRIVATE_KEY');
+  }
+}
 
 // Reads `field` out of a JSON file. Returns null (never throws) on any read/parse/shape issue.
 function readJsonField(filePath, field) {
@@ -59,15 +98,28 @@ function normalizeEvmKey(key) {
 }
 
 /**
- * Resolve THIS instance's own EVM signing key (immutable, pure read — no mutation, no throw).
+ * Resolve THIS instance's own EVM signing key (immutable, pure read; legacy mode never throws).
  *
- * @param {{home?: string, env?: Record<string, string>}} [opts]
+ * @param {{home?: string, env?: Record<string, string>, mode?: string}} [opts]
  *   home: explicit ANICCA_HOME override (mainly for tests); defaults to opts.env.ANICCA_HOME.
  *   env:  environment map to read overrides/back-compat HOME from; defaults to process.env.
+ *   mode: `agent-economy` rejects generic key environment overrides and reads only the explicit
+ *          instance wallet under ANICCA_HOME. The mode may also be selected by env.ANICCA_IDENTITY_MODE
+ *          for CLI callers; callers that need the boundary should pass mode explicitly.
  * @returns {string|null} `0x`-prefixed private key, or null if unresolvable (fail-closed).
+ * @throws {AgentEconomyIdentityError} in agent-economy mode when a generic key override is present.
  */
-export function resolveEvmPrivateKey({ home, env } = {}) {
+export function resolveEvmPrivateKey({ home, env, mode } = {}) {
   const e = env || process.env;
+
+  if (isAgentEconomyMode(mode, e)) {
+    rejectAgentEconomyEvmOverrides(e);
+    // Agent-economy identity is explicit by construction. Never derive a default from HOME and
+    // never inspect flat/legacy wallet layouts, both of which can belong to another instance.
+    const instanceHome = home ?? e.ANICCA_HOME;
+    if (!hasSecretValue(instanceHome)) return null;
+    return normalizeEvmKey(readJsonField(path.join(instanceHome, '.automaton', 'wallet.json'), 'privateKey'));
+  }
 
   const override = normalizeEvmKey(e.ANICCA_EVM_PRIVATE_KEY);
   if (override) return override;
@@ -107,26 +159,37 @@ export function resolveEvmPrivateKey({ home, env } = {}) {
  * as fail-closed (abort/skip) — NEVER read $HOME/.automaton/wallet.json directly, which let a foreign
  * spawn sign with another instance's money key.
  *
- * @param {{env?: Record<string, string>}} [opts]
+ * @param {{home?: string, env?: Record<string, string>, mode?: string}} [opts]
  * @returns {string|null}
  */
-export function loadEvmKey({ env } = {}) {
+export function loadEvmKey({ home, env, mode } = {}) {
   const e = env || process.env;
+  if (isAgentEconomyMode(mode, e)) return resolveEvmPrivateKey({ env: e, mode, home });
   const named = (e.PKVAR && e[e.PKVAR]) || e.BLOCKRUN_WALLET_KEY;
   if (named) return normalizeEvmKey(named);
-  return resolveEvmPrivateKey({ env: e });
+  return resolveEvmPrivateKey({ env: e, mode });
 }
 
 /**
  * Resolve THIS instance's own Solana signing secret (base58, immutable, pure read — no throw).
  *
- * @param {{home?: string, env?: Record<string, string>}} [opts]
+ * @param {{home?: string, env?: Record<string, string>, mode?: string}} [opts]
  *   home: explicit ANICCA_HOME override (mainly for tests); defaults to opts.env.ANICCA_HOME.
  *   env:  environment map to read overrides/back-compat HOME from; defaults to process.env.
+ *   mode: `agent-economy` rejects generic private-key environment overrides and reads only the
+ *          explicit instance wallet under ANICCA_HOME.
  * @returns {string|null} base58 secret key, or null if unresolvable (fail-closed).
+ * @throws {AgentEconomyIdentityError} in agent-economy mode when a generic key override is present.
  */
-export function resolveSolanaSecret({ home, env } = {}) {
+export function resolveSolanaSecret({ home, env, mode } = {}) {
   const e = env || process.env;
+
+  if (isAgentEconomyMode(mode, e)) {
+    rejectAgentEconomySolanaOverrides(e);
+    const instanceHome = home ?? e.ANICCA_HOME;
+    if (!hasSecretValue(instanceHome)) return null;
+    return readJsonField(path.join(instanceHome, '.automaton', 'solana.json'), 'secretKey');
+  }
 
   if (typeof e.ANICCA_SOLANA_PRIVATE_KEY === 'string' && e.ANICCA_SOLANA_PRIVATE_KEY.length > 0) {
     return e.ANICCA_SOLANA_PRIVATE_KEY;

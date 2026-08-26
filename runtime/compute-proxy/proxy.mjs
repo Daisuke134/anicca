@@ -4,11 +4,12 @@
 // id (e.g. anthropic/claude-sonnet-4-6 for frontier). ClawRouter profile auto-routing (premium/auto)
 // needs the full routing config and is wired separately; for now the loop pins a model id.
 import http from "http";
-import fs from "fs";
 import { BlockrunClient } from "@blockrun/llm";
 import { loadEvmKey } from "../../skills/earn/lib/resolve-identity.mjs";
-// #28: compute-pay with THIS instance's own gated per-instance key — never a borrowed legacy key.
-const pk = loadEvmKey();
+// Agent-economy compute-pay always uses THIS instance's wallet. Explicit mode prevents a shared
+// process environment (ANICCA_EVM_PRIVATE_KEY, PKVAR, BLOCKRUN_WALLET_KEY, or BASE_CHAIN_WALLET_KEY)
+// from selecting another instance's signing identity.
+const pk = loadEvmKey({ mode: "agent-economy" });
 if (pk) process.env.BASE_CHAIN_WALLET_KEY = pk;
 const br = new BlockrunClient();
 const PORT = process.env.COMPUTE_PROXY_PORT || 8402;

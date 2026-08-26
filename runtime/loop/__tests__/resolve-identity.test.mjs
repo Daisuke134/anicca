@@ -10,6 +10,7 @@ import {
   resolveEvmPrivateKey,
   resolveSolanaSecret,
   loadEvmKey,
+  AgentEconomyIdentityError,
 } from '../../../skills/earn/lib/resolve-identity.mjs';
 
 function tmpDir(prefix) {
@@ -238,4 +239,51 @@ test('loadEvmKey gated (#28): foreign spawn, no env key, legacy present -> null 
   const foreignHome = tmpDir('eq-load-foreign-spawn');
   writeWalletJson(legacyHome, '0x' + 'f'.repeat(64));
   assert.equal(loadEvmKey({ env: { ANICCA_HOME: foreignHome, HOME: legacyHome } }), null);
+});
+
+// ---------------------------------------------------------------------------
+// Agent-economy identity mode: only the explicit instance wallet is admissible.
+// Generic environment keys are shared process configuration and must fail closed
+// instead of silently selecting a different funded identity.
+// ---------------------------------------------------------------------------
+test('agent-economy mode rejects every generic EVM key override without exposing its value', () => {
+  const home = tmpDir('eq-agent-economy-poisoned');
+  const own = '0x' + '1'.repeat(64);
+  const poisoned = '0x' + '9'.repeat(64);
+  writeWalletJson(home, own);
+
+  for (const env of [
+    { ANICCA_EVM_PRIVATE_KEY: poisoned },
+    { PKVAR: 'SHARED_PRIVATE_KEY', SHARED_PRIVATE_KEY: poisoned },
+    { BLOCKRUN_WALLET_KEY: poisoned },
+    { BASE_CHAIN_WALLET_KEY: poisoned },
+  ]) {
+    assert.throws(
+      () => loadEvmKey({ mode: 'agent-economy', env: { ...env, ANICCA_HOME: home } }),
+      (error) => error instanceof AgentEconomyIdentityError
+        && error.code === 'AGENT_ECONOMY_KEY_OVERRIDE_FORBIDDEN'
+        && !String(error.message).includes(poisoned),
+    );
+  }
+});
+
+test('agent-economy mode resolves only the explicit instance wallet and keeps its address stable', () => {
+  const home = tmpDir('eq-agent-economy-clean');
+  const own = '0x' + '2'.repeat(64);
+  writeWalletJson(home, own);
+  const env = { ANICCA_HOME: home, ANICCA_IDENTITY_MODE: 'agent-economy' };
+
+  assert.equal(loadEvmKey({ mode: 'agent-economy', env }), own);
+  assert.equal(resolveEvmPrivateKey({ mode: 'agent-economy', env }), own);
+});
+
+test('agent-economy mode has no flat or legacy wallet fallback', () => {
+  const home = tmpDir('eq-agent-economy-no-fallback');
+  const legacy = tmpDir('eq-agent-economy-legacy');
+  fs.writeFileSync(path.join(home, 'wallet.json'), JSON.stringify({ privateKey: '0x' + '3'.repeat(64) }));
+  writeWalletJson(legacy, '0x' + '4'.repeat(64));
+  assert.equal(loadEvmKey({ mode: 'agent-economy', env: {
+    ANICCA_HOME: home,
+    HOME: legacy,
+  } }), null);
 });

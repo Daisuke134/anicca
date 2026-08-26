@@ -187,3 +187,33 @@ test("reconcile CLI errors contain only a stable class, never candidate values",
     (error) => error && error.code !== 0 && !String(error.stderr || "").includes(sentinel) && /validation|reconcile|invalid/i.test(String(error.stderr || "")),
   );
 });
+
+test("status discovers its ledger from ANICCA_HOME when no paths are supplied", async () => {
+  const home = await mkdtemp(join(tmpdir(), "agent-economy-status-home-"));
+  const state = join(home, "skills", "earn", "state");
+  await mkdir(state, { recursive: true });
+  await writeFile(join(state, "earn-ledger.jsonl"), `${JSON.stringify(VERIFIED)}\n`);
+  await writeFile(join(state, "revenue-receipts.jsonl"), "");
+
+  const result = JSON.parse((await execFileAsync(process.execPath, ["skills/agent-economy/status.mjs"], {
+    cwd: process.cwd(),
+    timeout: 5_000,
+    env: { ...process.env, ANICCA_HOME: home },
+  })).stdout.trim());
+  assert.equal(result.external_realized_net_30d, 15);
+});
+
+test("status with neither explicit paths nor ANICCA_HOME exits 2 with a stable secret-free config diagnostic", async () => {
+  const env = { ...process.env };
+  delete env.ANICCA_HOME;
+  await assert.rejects(
+    () => execFileAsync(process.execPath, ["skills/agent-economy/status.mjs"], {
+      cwd: process.cwd(),
+      timeout: 5_000,
+      env,
+    }),
+    (error) => error && error.code === 2
+      && String(error.stderr || "").trim() === "status: STATUS_CONFIG_MISSING"
+      && !String(error.stderr || "").includes("undefined"),
+  );
+});

@@ -7,6 +7,41 @@ import { graduationGate } from "./lib/treasury-policy.mjs";
 
 const WINDOW_MS = 30 * 86400000;
 
+export class StatusConfigError extends Error {
+  constructor() {
+    super("status configuration is missing");
+    this.name = "StatusConfigError";
+    this.code = "STATUS_CONFIG_MISSING";
+  }
+}
+
+function configuredPath(value) {
+  return typeof value === "string" && value.trim().length > 0 ? value : undefined;
+}
+
+/**
+ * Resolve CLI paths without manufacturing an undefined path. Explicit positional paths win;
+ * ANICCA_HOME supplies the instance-scoped defaults used by the resident economy loop.
+ */
+export function resolveStatusPaths({ args = [], env = process.env } = {}) {
+  const values = Array.isArray(args) ? args : [];
+  const e = env || {};
+  const home = configuredPath(e.ANICCA_HOME);
+  const explicit = values.some((value) => configuredPath(value));
+  if ((!explicit && !home) || (!home && !configuredPath(values[0]))) throw new StatusConfigError();
+
+  const state = home ? path.join(home, "skills", "earn", "state") : undefined;
+  const earnPath = configuredPath(values[0]) || (state && path.join(state, "earn-ledger.jsonl"));
+  const correctionPath = configuredPath(values[1]) || (state && path.join(state, "receipt-reconciliations.jsonl"));
+  const computePath = configuredPath(values[2]) || configuredPath(e.COMPUTE_COST_LOG)
+    || (home && path.join(home, "compute.jsonl"));
+  const shelterPath = configuredPath(values[3]) || configuredPath(e.SHELTER_COST_LEDGER)
+    || (home && path.join(home, "shelter.jsonl"));
+  const journalPath = configuredPath(values[4]) || configuredPath(e.REVENUE_RECEIPT_JOURNAL)
+    || (earnPath && path.join(path.dirname(earnPath), "revenue-receipts.jsonl"));
+  return { earnPath, correctionPath, computePath, shelterPath, journalPath };
+}
+
 function timestampMs(row) {
   const raw = row?.ts ?? row?.timestamp ?? row?.occurred_at;
   const value = Number(raw);
@@ -93,10 +128,15 @@ async function readJsonl(file) {
 const isMain = process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
 if (isMain) {
   try {
-    const [earnPath, correctionPath, computePath, shelterPath, journalPath] = process.argv.slice(2);
-    const effectiveLedgerPath = earnPath || (process.env.ANICCA_HOME
-      ? path.join(process.env.ANICCA_HOME, "skills", "earn", "state", "earn-ledger.jsonl") : undefined);
-    const defaultJournalPath = effectiveLedgerPath ? path.join(path.dirname(effectiveLedgerPath), "revenue-receipts.jsonl") : undefined;
+    const {
+      earnPath,
+      correctionPath,
+      computePath,
+      shelterPath,
+      journalPath,
+    } = resolveStatusPaths({ args: process.argv.slice(2), env: process.env });
+    const effectiveLedgerPath = earnPath;
+    const defaultJournalPath = journalPath;
     const [earnRows, corrections, computeRows, shelterRows, journalRows] = await Promise.all([
       readJsonl(effectiveLedgerPath), readJsonl(correctionPath), readJsonl(computePath), readJsonl(shelterPath),
       readJsonl(journalPath || defaultJournalPath),
@@ -122,6 +162,6 @@ if (isMain) {
   } catch (error) {
     const code = /^[A-Z][A-Z0-9_]*$/.test(String(error?.code || "")) ? error.code : "STATUS_FAILED";
     process.stderr.write(`status: ${code}\n`);
-    process.exitCode = 1;
+    process.exitCode = error?.code === "STATUS_CONFIG_MISSING" ? 2 : 1;
   }
 }

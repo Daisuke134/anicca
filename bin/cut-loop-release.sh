@@ -25,6 +25,8 @@ CURRENT="$LOOPS_ROOT/current"
 # state root is intentionally not resolved here (see RELEASE.json note below)
 KEEP="${LOOPS_KEEP_RELEASES:-5}"
 REF="${1:-HEAD}"
+NPM_BIN="${LOOPS_NPM_BIN:-npm}"
+NODE_BIN="${LOOPS_NODE_BIN:-node}"
 
 die() { echo "cut-loop-release: $*" >&2; exit 1; }
 
@@ -59,16 +61,63 @@ if ! git -C "$REPO_ROOT" archive --format=tar "$SHA" | tar -x -C "$DEST"; then
   die "export of $SHORT failed"
 fi
 
-cat >"$DEST/RELEASE.json" <<EOF
+# Dependencies are installed in the exported tree, never in the source checkout. `npm ci` is
+# intentionally lockfile-fixed and scripts are disabled so a release cannot execute an unreviewed
+# package hook while it is being assembled. The resulting release-local node_modules is what the
+# resident runtime resolves (including viem); source node_modules is neither read nor copied.
+if [ -f "$DEST/package.json" ] || [ -f "$DEST/package-lock.json" ]; then
+  [ -f "$DEST/package.json" ] && [ -f "$DEST/package-lock.json" ] \
+    || { rm -rf "$DEST"; die "release dependency manifests are incomplete"; }
+  if ! (cd "$DEST" && "$NPM_BIN" ci --ignore-scripts --no-audit --no-fund); then
+    rm -rf "$DEST"
+    die "lockfile-fixed dependency install failed"
+  fi
+  LOCKFILE_SHA256="$(shasum -a 256 "$DEST/package-lock.json" | awk '{print $1}')" \
+    || { rm -rf "$DEST"; die "could not digest package-lock.json"; }
+  DEPENDENCY_MANIFEST_SHA256="$(shasum -a 256 "$DEST/package.json" | awk '{print $1}')" \
+    || { rm -rf "$DEST"; die "could not digest package.json"; }
+  if [ ! -d "$DEST/node_modules" ]; then
+    rm -rf "$DEST"
+    die "dependency install produced no node_modules"
+  fi
+  DEPENDENCY_SHA256="$({
+    cd "$DEST" || exit 1
+    find node_modules -type f -print | LC_ALL=C sort | while IFS= read -r file; do
+      printf '%s\n' "$file"
+      shasum -a 256 "$file"
+    done
+  } | shasum -a 256 | awk '{print $1}')" \
+    || { rm -rf "$DEST"; die "could not digest installed dependencies"; }
+  NODE_VERSION="$("$NODE_BIN" --version 2>/dev/null)" \
+    || { rm -rf "$DEST"; die "could not read node runtime version"; }
+  NPM_VERSION="$("$NPM_BIN" --version 2>/dev/null)" \
+    || { rm -rf "$DEST"; die "could not read npm runtime version"; }
+else
+  rm -rf "$DEST"
+  die "release dependency manifests are missing"
+fi
+
+if ! cat >"$DEST/RELEASE.json" <<EOF
 {
   "sha": "$SHA",
   "ref": "$REF",
   "provenance": "$PROVENANCE",
   "cut_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
   "repo": "$(git -C "$REPO_ROOT" remote get-url origin 2>/dev/null)",
-  "state_root": "${LOOPS_STATE_ROOT:-set per loop by its launchd job, not by this release}"
+  "state_root": "${LOOPS_STATE_ROOT:-set per loop by its launchd job, not by this release}",
+  "lockfile_sha256": "$LOCKFILE_SHA256",
+  "dependency_manifest_sha256": "$DEPENDENCY_MANIFEST_SHA256",
+  "dependency_sha256": "$DEPENDENCY_SHA256",
+  "runtime_versions": {
+    "node": "$NODE_VERSION",
+    "npm": "$NPM_VERSION"
+  }
 }
 EOF
+then
+  rm -rf "$DEST"
+  die "could not write RELEASE.json"
+fi
 
 # One writable carve-out, created before the export is sealed. The CEO registry gate writes the
 # cadence it just computed to state/effective-cron/<loop>.txt, resolved relative to the repo root --
