@@ -2260,6 +2260,22 @@ pack/media/caption, with approval
 The old absent effect and approval remain retained evidence; no ledger dedupe
 rule is weakened and no media/caption changes are smuggled into the retry.
 
+The R2 provider effect now exists but remains **non-terminal locally** and must
+not be retried: Postiz row `cmt9mebpj0341mp0ymi31r582` is `PUBLISHED` with the
+exact caption/title/integration and numeric release suffix
+`7678198747632977937`, while its release URL is still only the profile URL.
+TikTok oEmbed, direct yt-dlp, player SSR, item-detail endpoints, and Postiz post
+analytics do not yet return caption-matching native content; therefore the
+candidate direct URL is not accepted, Telegram remains held, metrics are not
+registered, and local job `marketing-native-carousel-publication:0cd8be1c…c788f`
+truthfully remains failed with `unknown_effect=true`. Controls are restored to
+fence closed and armed 0. API-only operation is enforced by removing the CDP/
+browser fallback from profile resolution; a profile-only result now fails fast
+after the bounded API/CLI readback instead of holding the effect fence open for
+repeated browser attempts. The only next action is reconciliation of this exact
+existing effect to caption-matching native evidence; no new publication effect
+is allowed.
+
 **Completed immediately preceding code item:** MKT-09R9-14 / Order 24F9 extends
 the shared native-carousel boundary for the single frozen TikTok photo lane and
 adds a thin `anicca-en-slideshow-tiktok-canary.js` wrapper. Postiz transport now

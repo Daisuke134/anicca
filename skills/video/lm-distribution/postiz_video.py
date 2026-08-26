@@ -292,6 +292,7 @@ def resolve_profile_release_url(
     runner=subprocess.run,
     browser_resolver=None,
 ) -> str | None:
+    del browser_resolver
     if not re.fullmatch(r"https://www\.tiktok\.com/@[^/]+/?", profile_url):
         return None
     caption_prefix = _normalized(caption)[:24].strip()
@@ -334,8 +335,7 @@ def resolve_profile_release_url(
                 candidates.append((timestamp, url))
         if candidates:
             return max(candidates)[1]
-    resolver = browser_resolver or _resolve_profile_release_url_browser
-    return resolver(profile_url, caption, posted_after=posted_after, caption_prefix=caption_prefix)
+    return None
 
 
 def _resolve_profile_release_url_browser(
