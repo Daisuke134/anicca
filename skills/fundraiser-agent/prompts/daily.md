@@ -154,10 +154,17 @@ For every queued candidate until the execution window ends:
    there is no `upload` command.
    When an official program or investor page explicitly publishes an email
    address as its application or funding-intake route, do not compose through
-   the Gmail browser UI. Read the Gmail account from the private founder profile,
+   the Gmail browser UI. Compose a fresh, target-specific natural-language body;
+   never reuse a hardcoded application template. Create multiline text with a
+   single-quoted heredoc so real line breaks are preserved and `$` currency is
+   never interpreted by the shell. End every message with `Daisuke Narita`, not
+   `Life Manager founder`. Read the Gmail account from the private founder profile,
    load the existing `GOG_KEYRING_PASSWORD` without printing it, and reuse the
-   repository's proven Gmail transport exactly:
-   `printf '%s' "$BODY" | /opt/homebrew/bin/gog gmail send --account "$GMAIL_ACCOUNT" --to "$TO" --subject "$SUBJECT" --body-file - --attach fundraising/application-kit/deck.pdf --json --no-input`.
+   repository's proven Gmail transport. Before any external send, pipe the body
+   through `python3 skills/fundraiser-agent/runtime/validate-outbound-email.py`.
+   Send only when that preflight exits zero, and explicitly select the verified
+   primary identity with `--from "$GMAIL_ACCOUNT"`:
+   `printf '%s' "$BODY" | python3 skills/fundraiser-agent/runtime/validate-outbound-email.py | /opt/homebrew/bin/gog gmail send --account "$GMAIL_ACCOUNT" --from "$GMAIL_ACCOUNT" --to "$TO" --subject "$SUBJECT" --body-file - --attach fundraising/application-kit/deck.pdf --json --no-input`.
    Require the returned Gmail message ID and an exact `in:sent to:<recipient>
    subject:<subject>` readback. Then open that exact message in the authenticated
    Gmail Sent UI and preserve its rendered provider screen as the completion PNG.
@@ -172,7 +179,9 @@ For every queued candidate until the execution window ends:
    verified deck when requested.
 5. At the final review surface, verify the program, cohort/window, account,
    required answers, every rendered file input, challenge state, and that the
-   submit control is actually unobstructed. Claim the shared `application`
+   submit control is actually unobstructed. Reject any visible answer containing
+   bracketed placeholders such as `[founder name]` or `[sender address]`; resolve
+   it from authorized context or checkpoint without submitting. Claim the shared `application`
    effect immediately before the final Submit action.
 6. Perform one trusted final Submit action, then capture fresh completion UI and
    matching official mail when available. If a network request may have reached
