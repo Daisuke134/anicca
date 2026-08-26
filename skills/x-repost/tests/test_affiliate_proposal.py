@@ -453,10 +453,12 @@ class AffiliateProposalTests(unittest.TestCase):
             }
             queue.write_text(json.dumps(job) + "\n")
             MODULE.claim_next_job(queue, claims)
-            MODULE.render_claimed_job(claims, payloads)
+            payload = MODULE.render_claimed_job(claims, payloads)
             MODULE.record_distribution_result(
                 claims, payloads, results, "NO_EFFECT", None, "",
             )
+            failed_effect = MODULE.distribution_effect_state(claims, payloads, results)
+            self.assertEqual(failed_effect["payload"]["text"], payload["text"])
 
             first = MODULE.requeue_confirmed_no_effect(results, job["job_id"])
             second = MODULE.requeue_confirmed_no_effect(results, job["job_id"])
