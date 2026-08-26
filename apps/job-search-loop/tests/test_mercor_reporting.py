@@ -51,6 +51,36 @@ class MercorReportingTests(unittest.TestCase):
         self.assertEqual(receipt["status"], "failed")
         self.assertIn("earnings_capture_failed", receipt["blocked"])
 
+    def test_receipt_lists_one_id_for_one_reusable_human_ceremony(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            result = root / "result.json"
+            result.write_text(
+                json.dumps(
+                    {
+                        "status": "needs_human",
+                        "needs_human": [
+                            "Corporate Development: Finance Interview not done.",
+                            "Corporate Treasury: Finance Interview not done.",
+                        ],
+                        "evidence": {"page_url": "https://work.mercor.com/explore"},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            with patch(
+                "job_search_loop.mercor_reporting.send_once",
+                return_value={"status": "sent", "message_id": "telegram-1"},
+            ):
+                receipt = report_pass(
+                    run_id="mercor-test-reusable-gate",
+                    result_path=result,
+                    outbox=root / "outbox.sqlite3",
+                    gate_store=root / "human-gates.jsonl",
+                )
+
+        self.assertEqual(len(receipt["human_gate_ids"]), 1)
+
     def test_message_is_compact_grounded_and_redacts_private_details(self):
         message = build_pass_message(
             run_id="mercor-test-1",

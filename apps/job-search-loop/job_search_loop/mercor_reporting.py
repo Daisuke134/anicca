@@ -157,7 +157,13 @@ def report_pass(*, run_id: str, result_path: Path, outbox: Path, gate_store: Pat
         store = HumanGateStore(gate_store)
         for reason in result.get("needs_human", []):
             if isinstance(reason, str) and reason.strip():
-                gate_ids.append(store.record(run_id=run_id, reason=reason, evidence_ref=evidence_ref)["gate_id"])
+                gate_id = store.record(
+                    run_id=run_id,
+                    reason=reason,
+                    evidence_ref=evidence_ref,
+                )["gate_id"]
+                if gate_id not in gate_ids:
+                    gate_ids.append(gate_id)
     event_key = f"mercor-pass:{run_id}"
     try:
         delivery = send_once(database=outbox, event_key=event_key, message=message)
