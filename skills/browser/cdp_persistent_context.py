@@ -43,11 +43,14 @@ def _disk_preflight(home: Path | None = None) -> bool:
             or not guard.stat().st_mode & _READABLE
         ):
             return False
+        required_kib = int(os.environ.get("BROWSER_DISK_HEADROOM_KIB", "524288"))
+        if not 262_144 <= required_kib <= 4_194_304:
+            return False
         child_env = os.environ.copy()
         child_env.update(
             {
                 "HOME": str(home),
-                "GIG_DISK_HEADROOM_KIB": "524288",
+                "GIG_DISK_HEADROOM_KIB": str(required_kib),
                 "GIG_IGNORE_DISK_PRESSURE_BLOCK": "1",
                 "GIG_HOST_STATE_DIR": str(home / ".openclaw/state"),
                 "GIG_STATE_DIR": str(home / ".local/state/life-manager/browser-provision"),
@@ -89,6 +92,9 @@ def main(argv: list[str] | None = None) -> int:
             f"--remote-debugging-port={port}",
             "--remote-debugging-address=127.0.0.1",
             "--remote-allow-origins=*",
+            "--disk-cache-size=67108864",
+            "--media-cache-size=33554432",
+            f"--disk-cache-dir={_canonical_home() / '.cache' / 'life-manager-daily-driver'}",
         ],
     )
     stopping = False

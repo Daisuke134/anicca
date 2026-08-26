@@ -11,6 +11,7 @@
   <key>WorkingDirectory</key><string>__REPO_ROOT__</string>
   <key>EnvironmentVariables</key><dict>
     <key>HOME</key><string>__HOME__</string>
+    <key>BROWSER_DISK_HEADROOM_KIB</key><string>262144</string>
     <key>PATH</key><string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
   </dict>
   <key>KeepAlive</key><true/>
