@@ -2212,8 +2212,8 @@ order is the §12.3 recovery checklist: `MKT-09R0 → MKT-09R1 → MKT-09R2 →
 MKT-09R3-01..13 → MKT-09R4..R9 → MKT-10 → MKT-11 → MKT-12 → MKT-13`.
 No later row starts early.
 
-Current TODO state: **incident recovery remains open at MKT-09R9-04 / Order
-24D.** R0 through R9-03 are terminal: capacity is safe, the shared publication
+Current TODO state: **incident recovery remains open at MKT-09R9-05 / Order
+24E.** R0 through R9-04 are terminal: capacity is safe, the shared publication
 fence remains closed,
 the JP4 false completion is quarantined, and the 13-effect set is 12 `present`
 plus one truthful `absent`. The full publication ledger is 43 `completed`,
@@ -2230,15 +2230,27 @@ An external observation clock is not an active implementation item. It remains
 terminal acceptance evidence. Exactly one executable atomic item remains active;
 when the clock fires, its readback is reconciled before any dependent account arm.
 
-**Active executable atomic item:** MKT-09R9-04 / Order 24D uses TDD to make the
-existing native-carousel runner accept exactly one additional frozen EN lane.
-The current adapter is hardcoded to JA `@ani.cca1234` and integration
-`cmq3sq7mc000eqp0y7azfm8yk`; running it unchanged is forbidden. The minimal
-change reuses its pack/media/caption/approval, Postiz, direct `/p/`, native
-ordered-slide, Telegram, replay, fence, and ledger contracts while pinning EN
-`@anicca.affirmation` / native `@anicca.ios` / integration
-`cmp9pedr700ttqh0yj8o57fog`. Provider effect remains 0 until RED→GREEN and
-fresh review are terminal.
+**Active executable atomic item:** MKT-09R9-05 / Order 24E runs exactly one API
+canary for the frozen EN affirmation lane. Before enqueue, the shared
+publication fence must allow only the exact effect key and the lane manifest
+must arm only `@anicca.affirmation`; the same checks repeat at claim. Success
+requires the caption-matching direct native `/p/` URL and ordered six-slide
+verification before natural Telegram, followed by replay 0 and source-labelled
+metrics. The controls return to fence closed, lane default-off, armed 0 after
+the attempt; no other account starts.
+
+**Completed immediately preceding atomic item:** MKT-09R9-04 / Order 24D
+generalizes the existing native-carousel adapter and runner for exactly one
+additional immutable EN lane while preserving the JA command. EN identity,
+Postiz integration `cmp9pedr700ttqh0yj8o57fog`, six ordered object refs,
+caption, approval, and native owner `@anicca.ios` are pinned; alternate
+self-consistent refs fail before secret/provider access. Direct `/p/`, native
+verification, natural Telegram, and replay contracts are shared rather than
+copied. Focused tests are 21/21 GREEN; both production files pass `node
+--check`, `git diff --check` passes, and provider/Telegram effects during the
+code stage are 0. The existing shared ledger already enforces exact open-fence
+effect key plus exact production-armed manifest lane at enqueue and claim, so
+no second control implementation is added.
 
 **Completed immediately preceding atomic item:** MKT-09R9-03 / Order 24C
 imports exact pack `object://sha256/e23cd41257832d2032fd889bd9a16ec95ea8dc213cdd7a2e3f820fbe1578669e`,
@@ -2895,8 +2907,8 @@ Their dependent account arm remains blocked until the observation is terminal.
 | 24A | **done-unavailable — MKT-09R9-01:** resolve Honne EN Instagram route | Order 23J terminal | API disposition `2750a67c…69ac8e` proves the 30-row registry has Honne TikTok EN/JA but Honne Instagram/YouTube 0. Owner requires API-only/no login/no signup; missing routes are unavailable, not blockers. No account/Postiz/publication effect | relabel an Anicca account or claim API can publish without an integration |
 | 24B | **done — MKT-09R9-02:** classify Instagram `@anicca.affirmation` / `cmp9pedr700ttqh0yj8o57fog` | Order 24A terminal unavailable | evidence `d4b23768…86c65b` binds Anicca iOS/EN/Larry/native-photo-carousel, Postiz alias `anicca.affirmation`, native owner `anicca.ios`, 144 rows, six-slide native `Dbcvm5Mm8gM`, target 1/day; manifest `88975d67…755d33` changes only this row to classified/default-off, armed 0; writes 0 | classify multiple accounts, infer only from handle, or adopt broken legacy `--tt` mapping |
 | 24C | **done — MKT-09R9-03:** import and approve one exact `@anicca.affirmation` pack | Order 24B passes | pack `e23cd412…78669e`, caption `bf90a15a…6e64a0`, approval `7740cd09…968845`, six ordered native JPEGs and order hash `4daa5db7…9837f9` are SHA-exact/mode0600; manifest `b48c8e11…5ce18f` pack-ready/default-off, armed0/fenceclosed; effects0 | import several packs or mix Card/Widget content |
-| 24D | **active — MKT-09R9-04:** TDD-generalize the native carousel runner for exactly the frozen EN lane | Order 24C passes | existing JA behavior unchanged; EN account/integration/pack refs pinned; target-only controls restore; direct `/p/` and ordered native slides gate Telegram; replay0; provider writes0 during code stage | copy runner, accept caller-defined lane, or execute hardcoded JA adapter against EN |
-| 24E | **MKT-09R9-05:** run one `@anicca.affirmation` API canary and register metrics | Order 24D review passes | direct native post/carousel URL, natural Telegram, replay 0, immediate and 2h/24h/72h/7d metrics; default-off after canary | fan out or arm before metrics |
+| 24D | **done — MKT-09R9-04:** TDD-generalize the native carousel runner for exactly the frozen EN lane | Order 24C passes | existing JA command remains green; EN account/integration/pack/ordered media/caption/approval/native owner are immutable; alternate refs fail before provider; direct `/p/`, native verification, Telegram and replay contracts are reused; focused 21/21, syntax and diff checks pass; provider/Telegram writes 0 | copy runner, accept caller-defined lane, or execute hardcoded JA adapter against EN |
+| 24E | **active — MKT-09R9-05:** run one `@anicca.affirmation` API canary and register metrics | Order 24D passes | exact effect-only fence and exact lane-only manifest arm at enqueue and claim; direct caption-matching native post/carousel URL; six ordered slides; natural Telegram; replay 0; immediate and 2h/24h/72h/7d metrics; fence closed and default-off/armed 0 after attempt | fan out or arm before metrics |
 | 24F | **MKT-09R9-N:** repeat classify → one pack → one API canary for each remaining existing TikTok/Instagram/YouTube integration | Order 24E terminal | every existing row is product/locale/renderer/pack-bound and canary-verified or an explicit justified 0/day hold/owner skip | mass-enable, guess from handle, or post mixed-product content |
 | 25 | **MKT-10:** arm only one healthy verified account, ramping from one canary/day to at most three posts/day | exact account has direct-native, Telegram, replay, and usable metric-source evidence | expected/published/missed/duplicate counts remain healthy at each ramp; platform policy permits cadence | jump directly to three/day everywhere |
 | 26 | **MKT-11:** collect 2h/24h/72h/7d social metrics and join ASC, RevenueCat, and product analytics | exact published effect has immutable creative/campaign lineage | views, likes, comments, shares, saves, watch/retention fields when supported, installs, activation, trials, paid, proceeds, and attribution coverage are source-labelled; unavailable stays unavailable | substitute account aggregates for post outcomes or infer installs from timing |

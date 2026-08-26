@@ -8,11 +8,46 @@ const path = require("node:path");
 const test = require("node:test");
 
 const {
+  EN_AFFIRMATION_LANE,
   buildMarketingNativeCarouselPublicationJob,
   createMarketingNativeCarouselPublicationLoopAdapter,
   executeMarketingNativeCarouselPublicationJob,
   verifyMarketingNativeCarouselPublicationReceipt,
 } = require("./marketing-native-carousel-publication-adapter.js");
+
+const EN_ACCOUNT = "@anicca.affirmation";
+const EN_INTEGRATION_REF = "integration://postiz/instagram/cmp9pedr700ttqh0yj8o57fog";
+const EN_PACK_REF = "object://sha256/e23cd41257832d2032fd889bd9a16ec95ea8dc213cdd7a2e3f820fbe1578669e";
+const EN_MEDIA_REFS = [
+  "object://sha256/da8d8265a1344b68a877d776b0cec5b599dc7b3bbd6abc833fcef06e7416df1f",
+  "object://sha256/4fe9ab673f095d39368744974c677cbb5f8305dc2a9dcd1ef1b4b87759d8b42a",
+  "object://sha256/1af8a8c790a733ff1cedca85aaf3de010671a03f54223205da0fd9575a242840",
+  "object://sha256/d097d7b7254ee0a35c95844a89e1f8d1d644775dea134f960ac5e8cb80d230f9",
+  "object://sha256/71ded59ff8a1de5251e607a6ba808945c85537bfca3fbd7f20c65f2912f00e34",
+  "object://sha256/418ad1907d64e4835939bda677709aace44092a936e8a18a7cb8aeeca7652f4f",
+];
+const EN_CAPTION_REF = "object://sha256/bf90a15a5a615d2bb295c1829f7329f391a870fe4e950c8099972c20bf6e64a0";
+const EN_APPROVAL_REF = "object://sha256/7740cd09733d0cb7a5d8f32ff4614c3e07ebae27df0e3eae8bca8df80b968845";
+
+function enJob(overrides = {}) {
+  return buildMarketingNativeCarouselPublicationJob({
+    tenantId: "tenant-a",
+    productId: "anicca-ios",
+    formatId: "larry",
+    form: "affirmation-carousel",
+    locale: "en",
+    slot: "2026-08-26T07:30:00.000Z",
+    creativeId: "EN-AFFIRMATION-CAROUSEL-da8d8265",
+    accountId: EN_ACCOUNT,
+    instagramIntegrationRef: EN_INTEGRATION_REF,
+    packRef: EN_PACK_REF,
+    mediaRefs: EN_MEDIA_REFS,
+    captionRef: EN_CAPTION_REF,
+    approvalRef: EN_APPROVAL_REF,
+    postizTokenRef: "secret://postiz/api-key",
+    ...overrides,
+  });
+}
 
 function sha256Bytes(value) {
   return crypto.createHash("sha256").update(value).digest("hex");
@@ -167,6 +202,29 @@ test("job binds exact Larry native-carousel refs and deterministic ordered-media
     postiz_token_ref: "secret://postiz/api-key",
   });
   assert.doesNotMatch(JSON.stringify(value), /\/Users\/|openclaw|provider-token/);
+});
+
+test("EN affirmation lane binds exact identity and six media in order", () => {
+  assert.ok(EN_AFFIRMATION_LANE);
+  assert.equal(EN_AFFIRMATION_LANE.accountId, EN_ACCOUNT);
+  const value = enJob();
+  assert.deepEqual(value.input_refs.media_refs, EN_MEDIA_REFS);
+  assert.equal(value.input_refs.product_ref, "product://anicca-ios");
+  assert.equal(value.input_refs.locale_ref, "locale://en");
+  assert.equal(value.input_refs.account_ref, "account://instagram/@anicca.affirmation");
+  assert.equal(value.input_refs.instagram_integration_ref, EN_INTEGRATION_REF);
+  assert.equal(value.input_refs.pack_ref, EN_PACK_REF);
+  assert.equal(value.input_refs.caption_ref, EN_CAPTION_REF);
+  assert.equal(value.input_refs.approval_ref, EN_APPROVAL_REF);
+});
+
+test("EN lane rejects alternate self-consistent references before provider", () => {
+  assert.throws(() => enJob({
+    packRef: `object://sha256/${"f".repeat(64)}`,
+    mediaRefs: EN_MEDIA_REFS.map((_, index) => `object://sha256/${String(index + 1).repeat(64)}`),
+    captionRef: `object://sha256/${"e".repeat(64)}`,
+    approvalRef: `object://sha256/${"d".repeat(64)}`,
+  }), /lane|reference|identity/i);
 });
 
 test("changing only ordered media changes effect identity", () => {
