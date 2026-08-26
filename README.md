@@ -156,16 +156,16 @@ Some internal package names, environment variables, service labels, and older do
 
 ## Connector agent — how event applications work
 
-Connector is the local Life Manager agent that searches eight Tokyo event rails—Luma, Connpass, Peatix, Meetup, Doorkeeper, Eventbrite, TECH PLAY, and KokuchPro—removes unsafe or conflicting candidates, applies through one owned browser page, verifies the provider result, and reports an evidence-backed outcome in Telegram. It is not a blind form-filler: a click is never treated as success by itself.
+Connector is the local Life Manager agent that fills a rolling 28-day Tokyo event horizon. It ranks YC hackathons, open lightning talks, AI, crypto, and startup events first; applies only to strong or moderate matches; uses Luma as the primary actionable source and the official connpass v2 API as the primary read-only fallback; then uses the remaining rails only after both primary sources are exhausted. It verifies provider results and reports evidence-backed outcomes in Telegram. It is not a blind form-filler: a click is never treated as success by itself.
 
 ```mermaid
 flowchart LR
-    TRIGGER["Daily launchd trigger<br/>or supervised launchd kickstart"] --> ENTRY["run.sh<br/>single lock + heartbeat"]
-    ENTRY --> CAL["Google Calendar<br/>14-day busy inventory"]
+    TRIGGER["Hourly launchd trigger<br/>or supervised launchd kickstart"] --> ENTRY["run.sh<br/>single lock + heartbeat"]
+    ENTRY --> CAL["Google Calendar<br/>28-day busy inventory"]
     CAL --> RAIL["One CloakBrowser target<br/>one owned page"]
 
     subgraph LOOP["Forward-only provider loop"]
-        PROVIDERS["Luma → Connpass → Peatix → Meetup<br/>→ Doorkeeper → Eventbrite → TECH PLAY → KokuchPro"]
+        PROVIDERS["Luma action → connpass API advisory<br/>→ remaining fallback rails"]
         DISCOVER["Provider discovery<br/>privacy-safe count audit"]
         GATE{"Free · open · Tokyo · in window<br/>and Calendar-safe?"}
         NEXT["Next candidate<br/>or next provider"]
@@ -235,15 +235,26 @@ stateDiagram-v2
 | Provider | Production rail | Acceptance status |
 |---|---|---|
 | Luma | Discovery, action, readback, evidence | Live bundle proven |
-| Connpass | Discovery, action, readback, evidence | Live bundle proven |
+| Connpass | Official v2 API discovery only; Telegram action boundary | API application submitted; key and explicit automated-action permission remain external gates |
 | Peatix | Discovery, action, readback, evidence | Live bundle proven |
 | Meetup | Discovery, action, readback, evidence | Connected; current strict candidates conflict with Calendar |
 | Doorkeeper | Discovery, action, readback, evidence | Connected; all four current eligible candidates conflict with Calendar, so live bundle remains pending |
 | Eventbrite | Three-page discovery, ticket/attendee/final action, child-frame readback, evidence | Connected; current production inventory has no eligible candidate, so external write is correctly zero |
 | TECH PLAY | RSS/detail discovery, input/review/final action, registered readback, evidence | Connected; all three current eligible candidates conflict with Calendar, so live bundle remains pending |
-| KokuchPro | Official listing/detail discovery, strict free/Tokyo/open gate, entry/login readback, bounded Harness | Connected; current official first page has no event inside the 14-day window. Login is classified as `auth_required` and safely hands off without private-value or retry effects |
+| KokuchPro | Official listing/detail discovery, strict free/Tokyo/open gate, entry/login readback, bounded Harness | Connected; current official first page has no event inside the 28-day window. Login is classified as `auth_required` and safely hands off without private-value or retry effects |
 
-Safety invariants: one schedule owner, one browser target per wake, final mutation at most once, `effect_unknown` means no retry, private form values never enter action history, and only an `applied_bundle` proves a new completed application. `completed_no_effect` is a healthy process result with zero new external writes. Current evidence and remaining gates live in the [Connector execution SSOT](docs/superpowers/specs/2026-08-01-dais-life-manager-five-phase-execution-spec.md).
+Safety invariants: one hourly schedule owner, one browser target per wake, one external mutation at most per wake, `effect_unknown` means no retry, private form values never enter action history, and only an `applied_bundle` proves a new completed application. A verified open lightning-talk application consumes that wake's effect budget before attendance; payment, CAPTCHA, identity verification, and unknown required fields always stop for human action. `completed_no_effect` is a healthy process result with zero new external writes. Current evidence and remaining gates live in the [Connector execution SSOT](docs/superpowers/specs/2026-08-01-dais-life-manager-five-phase-execution-spec.md).
+
+### Connector local install and uninstall
+
+Keep private identity, Calendar, Telegram, Gemini, and connpass values in a mode-0600 file outside the repository. The connpass key is optional while its official application is pending; without it, connpass discovery fails closed and no browser fallback is attempted.
+
+1. Run `skills/connector/render-launchd.sh` into a private temporary directory, passing the canonical repository root, a private Life Manager state directory, and the external connector env file.
+2. Validate the rendered plist with `plutil -lint`. Install only `ai.anicca.life-manager-connector-native.plist` in the user's `Library/LaunchAgents`, mode 0600.
+3. Run `bin/launchctl-safe preflight`, then bootstrap only `ai.anicca.life-manager-connector-native`. Read it back with `bin/launchctl-safe print gui/$UID/ai.anicca.life-manager-connector-native`; it must show `StartInterval = 3600`, one label, and no `StartCalendarInterval`, `RunAtLoad`, or `KeepAlive`.
+4. To uninstall, boot out that exact label through `bin/launchctl-safe`, remove only its exact installed plist, and preserve the external env file, state, receipts, Calendar entries, and unrelated browser tabs.
+
+The renderer deliberately refuses to write directly into `Library/LaunchAgents`. This keeps rendering and live launchd mutation as separate, auditable steps.
 
 Current canonical acceptance: PR `#1936` established the production baseline at `4f1960592`, and follow-up PR `#1947` merged the final documentation plus provider-specific fallback budget fix at `f1a13b2e7`. The post-baseline production wake traversed all seven configured providers and KokuchPro on one owned page, reused existing bundles without a duplicate external effect, delivered a positive Telegram receipt, restored the exact unrelated browser pages, released the lock, and exited zero. Generic providers now fail closed above the Browser Harness 10-step limit while TECH PLAY retains its reviewed 15-step flow. The only remaining event-rail work is conditional: Meetup, Doorkeeper, Eventbrite, and TECH PLAY need a future Calendar-safe live candidate before their first real `applied_bundle` can be proven.
 

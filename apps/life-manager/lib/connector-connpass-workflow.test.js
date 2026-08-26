@@ -70,6 +70,19 @@ test("Connpass official API discovery reads 28 Tokyo dates without navigating pr
   assert.deepEqual([apiCalls[0].ymd[0], apiCalls[0].ymd.at(-1)], ["20260807", "20260903"]);
   assert.deepEqual(result.map((candidate) => candidate.event_ref), ["connpass-event://event/901"]);
   assert.equal(result[0].discovery_source, "official_api_v2");
+  assert.deepEqual({
+    participation_slot_status: result[0].participation_slot_status,
+    lightning_talk_status: result[0].lightning_talk_status,
+    waiting_count: result[0].waiting_count,
+    application_deadline_at: result[0].application_deadline_at,
+    canonical_url: result[0].canonical_url,
+  }, {
+    participation_slot_status: "available",
+    lightning_talk_status: "unknown",
+    waiting_count: 0,
+    application_deadline_at: null,
+    canonical_url: "https://tokyo-ai.connpass.com/event/901/",
+  });
 });
 
 test("Connpass recovery stably returns registered before available candidates", async () => {

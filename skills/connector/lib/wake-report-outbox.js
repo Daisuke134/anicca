@@ -43,7 +43,7 @@ function validateReport(row) {
     || !["applied", "continuing", "recovering"].includes(row.report_kind)
     || !SAFE_REASON.test(String(row.safe_reason || ""))
     || !SAFE_ID.test(String(row.cursor || ""))
-    || !Number.isSafeInteger(row.open_count) || row.open_count < 0 || row.open_count > 21
+    || !Number.isSafeInteger(row.open_count) || row.open_count < 0 || row.open_count > 28
     || !Number.isSafeInteger(row.attempt_count) || row.attempt_count < 0 || row.attempt_count > 10_000
     || !validIso(row.created_at)
   ) invalid();

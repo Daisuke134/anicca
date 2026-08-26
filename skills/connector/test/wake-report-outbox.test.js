@@ -41,3 +41,17 @@ test("wake report outbox keys Gateway delivery by the exact wake ID", async () =
     fs.rmSync(stateDir, { recursive: true, force: true });
   }
 });
+
+test("wake report outbox accepts the full 28-day horizon and rejects larger counts", () => {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-wake-horizon-"));
+  const row = {
+    wake_id: "wake-test-horizon", report_kind: "continuing", safe_reason: "providers_exhausted",
+    cursor: "provider:luma", open_count: 28, attempt_count: 0, created_at: "2026-08-10T08:30:00.000Z",
+  };
+  try {
+    enqueueWakeReport(stateDir, row);
+    assert.throws(() => enqueueWakeReport(stateDir, { ...row, wake_id: "wake-test-too-large", open_count: 29 }));
+  } finally {
+    fs.rmSync(stateDir, { recursive: true, force: true });
+  }
+});

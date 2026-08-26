@@ -97,6 +97,8 @@ function createApiDiscovery({ now, apiClient }) {
       const accepted = Number(event && event.accepted);
       const limit = event && event.limit == null ? null : Number(event.limit);
       const capacityAvailable = limit == null || limit === 0 || (Number.isFinite(accepted) && accepted < limit);
+      const open = event && event.open_status === "open";
+      const participationSlotStatus = !open ? "closed" : capacityAvailable ? "available" : "waitlist";
       return Object.freeze({
         provider: "connpass",
         event_ref: `connpass-event://event/${id}`,
@@ -107,7 +109,10 @@ function createApiDiscovery({ now, apiClient }) {
         ends_at: String(event && event.ended_at || ""),
         venue_name: String(event && event.place || "").trim(),
         venue_address: String(event && event.address || "").trim(),
-        registration_status: event && event.open_status === "open" && capacityAvailable ? "available" : "closed",
+        registration_status: open && capacityAvailable ? "available" : "closed",
+        participation_slot_status: participationSlotStatus,
+        lightning_talk_status: "unknown",
+        application_deadline_at: null,
         ticket_price_status: "free",
         ticket_price_minor: 0,
         participant_limit: Number.isSafeInteger(limit) ? limit : null,
@@ -134,7 +139,7 @@ function byStartsAtThenEventId(a, b) {
 }
 
 // A busy window's earliest date alone can hold more than the budget (measured
-// ~767 Tokyo events/14-day window), so taking the earliest N bindings only
+// hundreds of Tokyo events in one bounded inventory), so taking the earliest N bindings only
 // ever walks today/tomorrow and never learns whether later dates have any
 // free+open seats. Round-robin across calendar dates (ascending) instead:
 // one binding per date per round, so every date already-observed gets a
@@ -203,7 +208,7 @@ function createDefaultDiscovery({ now, readBindings, readDetail }) {
       }
       // Bound accumulation per month, spread across the month's calendar
       // dates, BEFORE it ever reaches the 500-binding hard guard below — a
-      // legitimate busy month (measured ~748 Tokyo events/14-day window)
+      // legitimate busy month with hundreds of Tokyo events
       // must never trip it, and a busy single date must never crowd out
       // every other date in the month's own budget share.
       monthBindings.sort(byCalendarDateThenEventId);
