@@ -21,9 +21,10 @@ function discoverExpected(dataDir) {
   const found = [];
   for (const row of rows) {
     if (row.platform !== "instagram" || row.status !== "published" || row.provider_reconciled !== true) continue;
+    if (row.format_id !== "reelclaw-card" || row.form !== "nudge-card" || row.locale !== "ja") continue;
     const match = /^https:\/\/www\.instagram\.com\/reel\/([A-Za-z0-9_-]+)\/$/.exec(String(row.public_url || ""));
     const captionPath = path.resolve(String(row.caption_path || ""));
-    if (!match || row.format_id !== "reelclaw-card" || row.form !== "nudge-card" || row.locale !== "ja" || !/^c[a-z0-9]+$/.test(String(row.provider_id || "")) || !fs.statSync(captionPath, { throwIfNoEntry: false })?.isFile() || !Number.isFinite(Date.parse(row.ts))) throw new Error("Instagram verified distribution row invalid");
+    if (!match || !/^c[a-z0-9]+$/.test(String(row.provider_id || "")) || !fs.statSync(captionPath, { throwIfNoEntry: false })?.isFile() || !Number.isFinite(Date.parse(row.ts))) throw new Error("Instagram verified distribution row invalid");
     const caption = fs.readFileSync(captionPath, "utf8");
     if (crypto.createHash("sha256").update(fs.readFileSync(captionPath)).digest("hex") !== row.caption_sha256) throw new Error("Instagram caption object integrity mismatch");
     found.push(Object.freeze({ tenant_id: "dais-local", product_id: "anicca-ios", locale: "ja", account_id: "@anicca.jp1", native_owner: "anicca.ios.jp",

@@ -28,6 +28,19 @@ test("future verified Instagram rows are discovered from the LM distribution led
   const caption = path.join(dataDir, "caption.txt"); fs.writeFileSync(caption, EXPECTED.caption);
   const digest = require("node:crypto").createHash("sha256").update(fs.readFileSync(caption)).digest("hex");
   const directory = path.join(dataDir, "tenants/dais-local/marketing/video-publication/anicca-ios"); fs.mkdirSync(directory, { recursive: true });
-  fs.writeFileSync(path.join(directory, "distribution.jsonl"), `${JSON.stringify({ ts: EXPECTED.published_at, platform: "instagram", status: "published", provider_reconciled: true, format_id: "reelclaw-card", form: "nudge-card", locale: "ja", provider_id: EXPECTED.provider_post_id, public_url: EXPECTED.public_url, caption_path: caption, caption_sha256: digest })}\n`);
+  const valid = { ts: EXPECTED.published_at, platform: "instagram", status: "published", provider_reconciled: true, format_id: "reelclaw-card", form: "nudge-card", locale: "ja", provider_id: EXPECTED.provider_post_id, public_url: EXPECTED.public_url, caption_path: caption, caption_sha256: digest };
+  const unrelated = [
+    { ...valid, locale: "en", provider_id: "cmtunrelatedencard", public_url: "https://www.instagram.com/reel/EnCard123/" },
+    { ...valid, format_id: "reelclaw-widget", form: "widget-demo-reel", provider_id: "cmtunrelatedjawidget", public_url: "https://www.instagram.com/reel/JaWidget123/" },
+    { ...valid, format_id: "reelclaw-widget", form: "widget-demo-reel", locale: "en", provider_id: "cmtunrelatedenwidget", public_url: "https://www.instagram.com/reel/EnWidget123/" },
+  ];
+  fs.writeFileSync(path.join(directory, "distribution.jsonl"), `${unrelated.concat(valid).map(JSON.stringify).join("\n")}\n`);
   assert.deepEqual(discoverExpected(dataDir), [EXPECTED]);
+});
+
+test("malformed JA Card rows remain fail-closed after unrelated rows are filtered", () => {
+  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "lm-instagram-malformed-discovery-"));
+  const directory = path.join(dataDir, "tenants/dais-local/marketing/video-publication/anicca-ios"); fs.mkdirSync(directory, { recursive: true });
+  fs.writeFileSync(path.join(directory, "distribution.jsonl"), `${JSON.stringify({ platform: "instagram", status: "published", provider_reconciled: true, format_id: "reelclaw-card", form: "nudge-card", locale: "ja", provider_id: "bad-provider", public_url: "https://www.instagram.com/reel/not-a-target/" })}\n`);
+  assert.throws(() => discoverExpected(dataDir), /Instagram verified distribution row invalid/);
 });
