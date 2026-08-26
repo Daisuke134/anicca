@@ -187,6 +187,33 @@ test("EVM discovery rejects ambiguous matching transfer logs", async () => {
   assert.equal(verified.reason, "transfer_not_unique");
 });
 
+test("EVM discovery validates the same receipt snapshot exactly once", async () => {
+  let receiptCalls = 0;
+  const fetchImpl = async (_url, init) => {
+    const body = JSON.parse(init.body);
+    if (body.method === "eth_chainId") return { ok: true, json: async () => ({ result: "0x2105" }) };
+    if (body.method === "eth_getTransactionReceipt") {
+      receiptCalls += 1;
+      // A second fetch would observe a changed/reverted receipt; discovery must not do it.
+      return { ok: true, json: async () => ({ result: receiptCalls === 1 ? successfulReceipt({ logIndex: "0x3" }) : { status: "0x1", transactionHash: TX, logs: [] } }) };
+    }
+    throw new Error(`unexpected method ${body.method}`);
+  };
+  const verified = await discoverAndVerifyEvmReceipt({
+    tx_hash: TX,
+    expected_chain_id: 8453,
+    expected_contract: CONTRACT,
+    expected_payer: PAYER,
+    expected_recipient: RECIPIENT,
+    expected_amount_atomic: "1000000",
+    rpc: "https://rpc.invalid",
+    fetchImpl,
+  });
+  assert.equal(verified.verified, true);
+  assert.equal(verified.transfer.log_index, 3);
+  assert.equal(receiptCalls, 1);
+});
+
 test("EVM verifier rejects wrong recipient, wrong asset, missing transfer, and self payment", async () => {
   const verify = (receipt, expected = {}) => verifyEvmReceipt({
     tx_hash: TX,

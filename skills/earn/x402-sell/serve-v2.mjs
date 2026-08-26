@@ -94,7 +94,15 @@ import { isSettled, decodePayer } from "./lib/settle-gate.mjs";
  * the shared x402 revenue adapter.  PAYMENT-RESPONSE is evidence only when success:true; headers
  * from verify failures and malformed base64 deliberately return a non-settled projection.
  */
-export function decodeSettlementReadback(headerValue) {
+function priceToAtomicUsdc(value) {
+  const text = String(value ?? "").trim().replace(/^\$/, "");
+  if (!/^\d+(?:\.\d+)?$/.test(text)) return null;
+  const [whole, fraction = ""] = text.split(".");
+  if (fraction.length > 6) return null;
+  return `${whole}${fraction.padEnd(6, "0")}`.replace(/^0+(?=\d)/, "") || "0";
+}
+
+export function decodeSettlementReadback(headerValue, { price, network } = {}) {
   if (!headerValue) return null;
   const encoded = Array.isArray(headerValue) ? headerValue[0] : headerValue;
   let value;
@@ -129,6 +137,13 @@ export function decodeSettlementReadback(headerValue) {
     if (projection.amount_atomic === undefined) projection.amount_atomic = projection.amount;
     delete projection.amount;
   }
+  if (projection.amount_atomic === undefined && price !== undefined) {
+    const atomic = priceToAtomicUsdc(price);
+    if (atomic !== null) projection.amount_atomic = atomic;
+  }
+  if (projection.currency === undefined && price !== undefined) projection.currency = "USDC";
+  if (projection.decimals === undefined && price !== undefined) projection.decimals = 6;
+  if (projection.network === undefined && network !== undefined) projection.network = network;
   if (projection.decimals === undefined && String(projection.currency || projection.asset || "").toUpperCase() === "USDC") {
     projection.decimals = 6;
   }
@@ -520,7 +535,7 @@ app.use((req, res, next) => {
     const hdr = res.getHeader("PAYMENT-RESPONSE");
     const settled = isSettled(hdr);
     const settledPayer = payer || decodePayer(hdr);
-    const settlement = decodeSettlementReadback(hdr);
+    const settlement = decodeSettlementReadback(hdr, { price: product.price, network: NETWORK });
     const occurredAt = new Date().toISOString();
     const line = JSON.stringify({
       ts: occurredAt, route: req.path, price: product.price, payer: settledPayer,
@@ -544,7 +559,7 @@ app.use((req, res, next) => {
         route: req.path,
         occurred_at: occurredAt,
       }],
-      options: { rpc: process.env.BASE_RPC_URL },
+      options: { rpc: process.env.BASE_RPC_URL, configuredPrice: product.price, configuredNetwork: NETWORK },
     }).catch(() => {});
   });
   next();

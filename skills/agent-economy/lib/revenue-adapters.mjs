@@ -38,6 +38,7 @@ const NESTED_KEYS = ["settlement", "settlement_readback", "provider_readback", "
 const asObject = (value) => value && typeof value === "object" && !Array.isArray(value) ? value : null;
 const asText = (value) => (typeof value === "string" || typeof value === "number") && String(value).trim() ? String(value).trim() : null;
 const BASE_USDC_CONTRACT = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+const BASE_USDC_DECIMALS = 6;
 
 function directOrNested(input, keys) {
   const object = asObject(input);
@@ -154,6 +155,20 @@ function atomicToDecimal(value, field, decimals = 6) {
   return `${digits.slice(0, split)}.${digits.slice(split)}`.replace(/\.0+$/, "").replace(/(\.\d*?)0+$/, "$1");
 }
 
+function configuredAtomicPrice(value) {
+  const text = decimalText(value, "configured route price");
+  const [whole, fraction = ""] = text.split(".");
+  if (fraction.length > BASE_USDC_DECIMALS) throw new AdapterFailure("MALFORMED_PRICE", "configured route price has more than six decimals");
+  return `${whole}${fraction.padEnd(BASE_USDC_DECIMALS, "0")}`;
+}
+
+function networkChainId(value) {
+  const text = asText(value);
+  if (!text) return undefined;
+  const match = text.match(/^(?:eip155:)?([0-9]+)$/i);
+  return match ? Number(match[1]) : undefined;
+}
+
 function moneyValue(row, keys, atomicKeys = [], options = {}) {
   const atomic = directOrNested(row, atomicKeys);
   if (atomic !== undefined) return atomicToDecimal(atomic, keys[0], options.decimals ?? directOrNested(row, ["decimals", "asset_decimals", "assetDecimals"]) ?? 6);
@@ -253,19 +268,26 @@ export async function adaptX402WithEvmVerifier(row, options = {}) {
   const input = nested ? { ...row, ...nested } : row;
   try {
     if (input?.settled !== true && input?.success !== true) throw new AdapterFailure("PENDING_SETTLEMENT", "x402 payment is not terminal");
-    const atomic = directOrNested(input, ["settled_amount_atomic", "settledAmountAtomic", "amount_atomic", "amountAtomic", "amount"]);
-    const decimals = directOrNested(input, ["decimals", "asset_decimals", "assetDecimals"]);
-    if (atomic === undefined || decimals === undefined) throw new AdapterFailure("MISSING_AMOUNT_ATOMIC", "x402 requires amount_atomic and decimals");
+    const suppliedDecimals = directOrNested(input, ["decimals", "asset_decimals", "assetDecimals"]);
+    if (suppliedDecimals !== undefined && Number(suppliedDecimals) !== BASE_USDC_DECIMALS) {
+      throw new AdapterFailure("DECIMALS_MISMATCH", "Base USDC decimals are fixed at six");
+    }
+    let atomic = directOrNested(input, ["settled_amount_atomic", "settledAmountAtomic", "amount_atomic", "amountAtomic", "amount"]);
+    const decimals = BASE_USDC_DECIMALS;
+    if (atomic === undefined) {
+      if (options.configuredPrice === undefined) throw new AdapterFailure("MISSING_AMOUNT_ATOMIC", "x402 requires amount_atomic or a configured route price");
+      atomic = configuredAtomicPrice(options.configuredPrice);
+    }
     const asset = assetFor(input, "x402", options);
     const { payer, recipient } = identity(input, options);
-    const gross = moneyValue(input, [], ["settled_amount_atomic", "settledAmountAtomic", "amount_atomic", "amountAtomic", "amount"], { decimals });
+    const gross = atomicToDecimal(atomic, "amount_atomic", decimals);
     const fee = optionalMoney(input, ["fee", "fee_amount"]);
     const refund = optionalMoney(input, ["refund", "refund_amount"]);
     const terminal_state = terminalState(input, ["terminal_state", "settlement_state", "status", "settled", "success"]);
     const occurred_at = directOrNested(input, ["occurred_at", "occurredAt", "timestamp", "ts"]);
     if (occurred_at === undefined || occurred_at === null) throw new AdapterFailure("MISSING_TIMESTAMP", "x402 settlement timestamp is missing");
     const txHash = directOrNested(input, ["tx_hash", "txHash", "transaction_hash", "transaction"]);
-    const chainId = directOrNested(input, ["chain_id", "chainId"]);
+    const chainId = directOrNested(input, ["chain_id", "chainId"]) ?? networkChainId(options.configuredNetwork ?? directOrNested(input, ["network"]));
     if (!txHash || chainId === undefined) throw new AdapterFailure("CHAIN_PROOF_REQUIRED", "x402 requires tx and chain expectations");
     const verified = await discoverAndVerifyEvmReceipt({
       tx_hash: txHash,
@@ -283,7 +305,7 @@ export async function adaptX402WithEvmVerifier(row, options = {}) {
     if (transfer.payer?.toLowerCase() !== payer.toLowerCase()
       || transfer.recipient?.toLowerCase() !== recipient.toLowerCase()
       || transfer.contract?.toLowerCase() !== BASE_USDC_CONTRACT.toLowerCase()
-      || String(transfer.amount_atomic) !== String(atomic)
+      || BigInt(String(transfer.amount_atomic)) !== BigInt(String(atomic))
       || transfer.log_index === undefined || transfer.log_index === null) {
       throw new AdapterFailure("PROOF_BINDING_MISMATCH", "strict EVM transfer does not bind x402 tuple");
     }

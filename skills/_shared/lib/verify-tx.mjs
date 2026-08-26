@@ -242,18 +242,27 @@ export async function discoverAndVerifyEvmReceipt({
     if (matches.length !== 1) {
       return { verified: false, status: receipt.status, chain_id: chainId, reason: "transfer_not_unique" };
     }
-    const discovered = hexInteger(matches[0].logIndex);
-    return verifyEvmReceipt({
+    const transfer = matches[0];
+    const transferPayer = `0x${String(transfer.topics[1]).slice(-40).toLowerCase()}`;
+    const transferRecipient = `0x${String(transfer.topics[2]).slice(-40).toLowerCase()}`;
+    if (transferPayer === transferRecipient) {
+      return { verified: false, status: receipt.status, chain_id: chainId, reason: "self_payment" };
+    }
+    const actualIndex = hexInteger(transfer.logIndex);
+    const actualAmount = hexInteger(transfer.data);
+    return {
+      verified: true,
+      status: receipt.status,
+      chain_id: chainId,
       tx_hash: txHash,
-      expected_chain_id: expectedChain,
-      expected_contract: contract,
-      expected_recipient: recipient,
-      expected_payer: payer,
-      expected_amount_atomic: amountAtomic.toString(),
-      expected_log_index: Number(discovered),
-      rpc,
-      fetchImpl,
-    });
+      transfer: {
+        contract: String(transfer.address).toLowerCase(),
+        payer: transferPayer,
+        recipient: transferRecipient,
+        amount_atomic: actualAmount === null ? null : actualAmount.toString(),
+        log_index: actualIndex === null ? null : Number(actualIndex),
+      },
+    };
   } catch {
     return { verified: false, status: null, chain_id: chainId, reason: "rpc_failure" };
   }

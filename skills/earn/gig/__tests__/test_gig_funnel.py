@@ -5,6 +5,7 @@ Runs the real script against an isolated temp HOME with synthetic jsonl inputs a
 asserts the overall + by_category counts and the append/robustness behaviour.
 """
 import json
+import importlib.util
 import os
 import subprocess
 import sys
@@ -100,6 +101,25 @@ def test_corrupt_lines_skipped():
         row = run(home)
         assert row["applied"] == 2, row
         print("test_corrupt_lines_skipped OK")
+
+
+def test_legacy_revenue_sync_appends_and_replays_zero(tmp_path):
+    """The historical unit-economics sync still appends one eligible JPY row exactly once."""
+    script = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts", "sync_gig_revenue_events.py")
+    spec = importlib.util.spec_from_file_location("sync_gig_revenue_events", script)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    earnings = tmp_path / "earnings.jsonl"
+    ledger = tmp_path / "unit-economics-events.jsonl"
+    earnings.write_text(json.dumps({
+        "requestId": "historical-eligible", "status": "検収完了", "evidence": "official-readback",
+        "jpy": 5000, "ts": "2026/08/27 00:00",
+    }, ensure_ascii=False) + "\n", encoding="utf-8")
+    first = module.sync_gig_revenue(earnings, ledger)
+    second = module.sync_gig_revenue(earnings, ledger)
+    assert first["appended"] == 1, first
+    assert second["duplicates"] == 1, second
+    assert len(ledger.read_text(encoding="utf-8").strip().splitlines()) == 1
 
 
 if __name__ == "__main__":

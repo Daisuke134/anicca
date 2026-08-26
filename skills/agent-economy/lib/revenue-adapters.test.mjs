@@ -270,6 +270,30 @@ test("x402 production adapter calls strict EVM verifier with exact transfer tupl
   assert.equal(result.receipt.proof.log_index, 4);
   assert.ok(calls.some((call) => call.method === "eth_getTransactionReceipt" && call.params[0] === tx));
   assert.ok(calls.some((call) => call.method === "eth_chainId"));
+  assert.equal(calls.filter((call) => call.method === "eth_getTransactionReceipt").length, 1);
+});
+
+test("x402 hardcodes Base USDC decimals to six and rejects conflicting decimals", async () => {
+  const tx = "0x" + "f".repeat(64);
+  const row = { source_record_id: "x402-decimals", settled: true, success: true, amount_atomic: "3000", decimals: 3, currency: "USDC", payer: EVM_PAYER, recipient: EVM_RECIPIENT, transaction: tx, chain_id: 8453, ts: NOW };
+  const result = await adaptX402WithEvmVerifier(row, { rpc: "https://rpc.invalid", fetchImpl: fakeRpc({ tx, receipt: successfulEvmReceipt({ tx }) }) });
+  assert.equal(result.ok, false);
+  const correct = await adaptX402WithEvmVerifier({ ...row, decimals: 6 }, { rpc: "https://rpc.invalid", fetchImpl: fakeRpc({ tx, receipt: successfulEvmReceipt({ tx }) }) });
+  assert.equal(correct.ok, true);
+  assert.equal(correct.receipt.gross, 0.003);
+});
+
+test("standard x402 response without amount/currency/decimals/log uses the configured route price", async () => {
+  const tx = "0x" + "c".repeat(64);
+  const result = await adaptX402WithEvmVerifier({
+    source_record_id: "x402-standard", settled: true, success: true,
+    payer: EVM_PAYER, recipient: EVM_RECIPIENT, transaction: tx, network: "eip155:8453", ts: NOW,
+  }, {
+    configuredPrice: "$0.003", configuredNetwork: "eip155:8453",
+    rpc: "https://rpc.invalid", fetchImpl: fakeRpc({ tx, receipt: successfulEvmReceipt({ tx }) }),
+  });
+  assert.equal(result.ok, true);
+  assert.equal(result.receipt.gross, 0.003);
 });
 
 test("strict x402 transport rejects amount, payer, recipient, contract, chain, and ambiguous log mismatches", async () => {
