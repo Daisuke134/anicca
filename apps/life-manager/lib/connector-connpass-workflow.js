@@ -60,7 +60,7 @@ function candidateWindow(now) {
     timeZone: TIME_ZONE, year: "numeric", month: "2-digit", day: "2-digit",
   }).formatToParts(observed).filter((part) => part.type !== "literal")
     .map((part) => [part.type, Number(part.value)]));
-  const end = new Date(Date.UTC(parts.year, parts.month - 1, parts.day + 14));
+  const end = new Date(Date.UTC(parts.year, parts.month - 1, parts.day + 28));
   return Object.freeze({
     start: Date.parse(zonedSlotInstant(parts, "00:00", TIME_ZONE)),
     end: Date.parse(zonedSlotInstant({
@@ -77,7 +77,7 @@ function discoveryDates(now) {
   }).formatToParts(observed).filter((part) => part.type !== "literal")
     .map((part) => [part.type, Number(part.value)]));
   const dates = [];
-  for (let offset = 0; offset < 14; offset += 1) {
+  for (let offset = 0; offset < 28; offset += 1) {
     const date = new Date(Date.UTC(parts.year, parts.month - 1, parts.day + offset));
     dates.push(date.toISOString().slice(0, 10));
   }

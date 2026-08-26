@@ -20,14 +20,15 @@ function event(id, overrides = {}) {
   });
 }
 
-test("Connpass discovery keeps provider order and only returns eligible fourteen-day candidates", async () => {
+test("Connpass discovery includes Tokyo day zero through day twenty-seven and excludes day twenty-eight", async () => {
   const page = Object.freeze({ page_id: "same-owned-page" });
   const workflow = createConnpassScriptFirstWorkflow({
     now: () => new Date("2026-08-07T08:30:00.000Z"),
     async discoverOnPage(input) {
       assert.equal(input.page, page);
       return [
-        event(101, { starts_at: "2026-08-21T10:00:00.000Z", ends_at: "2026-08-21T11:00:00.000Z" }),
+        event(101, { starts_at: "2026-09-04T10:00:00.000Z", ends_at: "2026-09-04T11:00:00.000Z" }),
+        event(106, { starts_at: "2026-09-03T14:59:59.000Z", ends_at: "2026-09-03T15:30:00.000Z" }),
         event(102, { ticket_price_status: "paid", ticket_price_minor: 1000 }),
         event(103, { registration_status: "closed" }),
         event(104),
@@ -41,7 +42,7 @@ test("Connpass discovery keeps provider order and only returns eligible fourteen
 
   const result = await workflow.discoverCandidates({ page, calendar: [] });
 
-  assert.deepEqual(result.map((candidate) => candidate.event_ref), ["connpass-event://event/105"]);
+  assert.deepEqual(result.map((candidate) => candidate.event_ref), ["connpass-event://event/106", "connpass-event://event/105"]);
 });
 
 test("Connpass recovery stably returns registered before available candidates", async () => {
@@ -80,7 +81,7 @@ test("Connpass recovery audit counts registered separately from free-open candid
   const registered = event(111, { registration_status: "registered" });
   const available = event(112);
   const paid = event(113, { registration_status: "unknown", ticket_price_status: "paid", ticket_price_minor: 1000 });
-  const outsideRegistered = event(115, { registration_status: "registered", starts_at: "2026-08-22T10:00:00.000Z", ends_at: "2026-08-22T11:00:00.000Z" });
+  const outsideRegistered = event(115, { registration_status: "registered", starts_at: "2026-09-05T10:00:00.000Z", ends_at: "2026-09-05T11:00:00.000Z" });
   const workflow = createConnpassScriptFirstWorkflow({
     now: () => new Date("2026-08-07T08:30:00.000Z"),
     async discoverOnPage() { return [registered, available, paid, outsideRegistered]; },
@@ -169,7 +170,7 @@ test("Connpass discovery reports the ordered eligibility gate counts", async () 
     now: () => new Date("2026-08-07T08:30:00.000Z"),
     async discoverOnPage() {
       return [
-        event(201, { starts_at: "2026-08-21T16:00:00.000Z", ends_at: "2026-08-21T17:00:00.000Z" }),
+        event(201, { starts_at: "2026-09-04T16:00:00.000Z", ends_at: "2026-09-04T17:00:00.000Z" }),
         event(202, { ticket_price_status: "paid", ticket_price_minor: 1000 }),
         event(203, { registration_status: "closed" }),
         event(204),

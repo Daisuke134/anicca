@@ -74,15 +74,15 @@ test("Luma default conflict filter consumes the minimal runner busy interval arr
   assert.deepEqual(result.map((candidate) => candidate.event_ref), [free.event_ref]);
 });
 
-test("Luma candidates are limited to today and the next thirteen Tokyo days", async () => {
+test("Luma candidates include Tokyo day zero through day twenty-seven and exclude day twenty-eight", async () => {
   const workflow = createLumaScriptFirstWorkflow({
     now: () => new Date("2026-08-07T08:30:00.000Z"),
     async discoverOnPage() {
       return [
         event("before-window", { starts_at: "2026-08-06T14:59:59.000Z", ends_at: "2026-08-06T15:30:00.000Z" }),
         event("today", { starts_at: "2026-08-06T15:00:00.000Z", ends_at: "2026-08-06T16:00:00.000Z" }),
-        event("last-day", { starts_at: "2026-08-20T14:59:59.000Z", ends_at: "2026-08-20T15:30:00.000Z" }),
-        event("after-window", { starts_at: "2026-08-20T15:00:00.000Z", ends_at: "2026-08-20T16:00:00.000Z" }),
+        event("last-day", { starts_at: "2026-09-03T14:59:59.000Z", ends_at: "2026-09-03T15:30:00.000Z" }),
+        event("after-window", { starts_at: "2026-09-03T15:00:00.000Z", ends_at: "2026-09-03T16:00:00.000Z" }),
       ];
     },
     async submitOnPage() { return { status: "registered" }; },
@@ -102,7 +102,7 @@ test("Luma discovery reports only safe aggregate eligibility counts", async () =
     now: () => new Date("2026-08-07T08:30:00.000Z"),
     async discoverOnPage() {
       return [
-        event("outside", { starts_at: "2026-08-21T10:00:00.000Z", ends_at: "2026-08-21T11:00:00.000Z" }),
+        event("outside", { starts_at: "2026-09-04T10:00:00.000Z", ends_at: "2026-09-04T11:00:00.000Z" }),
         event("paid", { ticket_price_status: "paid", ticket_price_minor: 1000 }),
         event("conflict"),
         event("eligible"),

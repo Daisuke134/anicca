@@ -841,7 +841,7 @@ test("official production factory default Harness reaches injected Doorkeeper pa
   } finally { fs.rmSync(stateDir, { recursive: true, force: true }); }
 });
 
-test("production calendar reader uses gog for exactly fourteen Tokyo calendar days", async () => {
+test("production calendar reader uses gog for exactly twenty-eight Tokyo calendar days", async () => {
   const calls = [];
   const calendar = Object.freeze({ kind: "gog", ready: () => true });
   const verifiedInventory = Object.freeze({
@@ -883,8 +883,19 @@ test("production calendar reader uses gog for exactly fourteen Tokyo calendar da
   assert.equal(calls[1][1].calendar, calendar);
   assert.equal(calls[1][1].timeZone, "Asia/Tokyo");
   assert.equal(calls[1][1].timeMin, "2026-08-06T15:00:00.000Z");
-  assert.equal(calls[1][1].timeMax, "2026-08-20T15:00:00.000Z");
+  assert.equal(calls[1][1].timeMax, "2026-09-03T15:00:00.000Z");
   assert.equal(calls[1][1].now, "2026-08-07T08:30:00.000Z");
+});
+
+test("Tokyo twenty-eight-day horizon has unique local dates and one shared end-exclusive boundary", () => {
+  const dates = Array.from({ length: 28 }, (_, offset) => (
+    new Date(Date.UTC(2026, 7, 7 + offset)).toISOString().slice(0, 10)
+  ));
+  assert.equal(new Set(dates).size, 28);
+  assert.equal(dates[0], "2026-08-07");
+  assert.equal(dates.at(-1), "2026-09-03");
+  assert.equal(new Date(Date.UTC(2026, 7, 7 + dates.length)).toISOString().slice(0, 10), "2026-09-04");
+  assert.equal(Date.parse("2026-09-03T15:00:00.000Z"), Date.parse("2026-09-04T00:00:00+09:00"));
 });
 
 test("production browser rail owns exactly one :9222 target without closing the browser", async () => {

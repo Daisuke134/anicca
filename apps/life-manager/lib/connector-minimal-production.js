@@ -123,7 +123,7 @@ function createProductionCalendarReader(options = {}) {
       const inventory = await inspectBusyInventory({
         calendar,
         timeMin: zonedSlotInstant(firstDay, "00:00", timeZone),
-        timeMax: zonedSlotInstant(addCalendarDays(firstDay, 14), "00:00", timeZone),
+        timeMax: zonedSlotInstant(addCalendarDays(firstDay, 28), "00:00", timeZone),
         now: observed.toISOString(),
         timeZone,
       });

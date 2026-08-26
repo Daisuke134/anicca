@@ -92,14 +92,14 @@ Calendarを無関係なeventで埋めること自体を成果にしない。
 
 ##### B. Twenty-eight-day horizon
 
-- [ ] **CG-08** `connector-minimal-production.test.js`へCalendar `timeMax`がJSTの開始日+28日00:00になるREDを追加する。
-- [ ] **CG-09** `connector-minimal-production.js`のCalendar FreeBusy horizonを14から28へ変更する。
-- [ ] **CG-10** `connector-luma-workflow.test.js`へ今日を含むday 0〜27を受理しday 28を除外するREDを追加する。
-- [ ] **CG-11** `connector-luma-workflow.js`のcandidate windowを28日へ変更する。
-- [ ] **CG-12** `connector-connpass-workflow.test.js`へ同じday 0〜27/day 28境界REDを追加する。
-- [ ] **CG-13** `connector-connpass-workflow.js`のcandidate windowを28日へ変更する。
-- [ ] **CG-14** DSTのない`Asia/Tokyo`で28個のlocal dateが重複せず、Calendar/Luma/connpassのend-exclusive境界が一致するregressionを追加する。
-- [ ] **CG-15** three focused workflow testsをPASSさせ、28-day sliceをcommit/pushする。
+- [x] **CG-08** `connector-minimal-production.test.js`へCalendar `timeMax`がJSTの開始日+28日00:00になるREDを追加する。
+- [x] **CG-09** `connector-minimal-production.js`のCalendar FreeBusy horizonを14から28へ変更する。
+- [x] **CG-10** `connector-luma-workflow.test.js`へ今日を含むday 0〜27を受理しday 28を除外するREDを追加する。
+- [x] **CG-11** `connector-luma-workflow.js`のcandidate windowを28日へ変更する。
+- [x] **CG-12** `connector-connpass-workflow.test.js`へ同じday 0〜27/day 28境界REDを追加する。
+- [x] **CG-13** `connector-connpass-workflow.js`のcandidate windowを28日へ変更する。
+- [x] **CG-14** DSTのない`Asia/Tokyo`で28個のlocal dateが重複せず、Calendar/Luma/connpassのend-exclusive境界が一致するregressionを追加する。
+- [x] **CG-15** three focused workflow testsをPASSさせ、28-day sliceをcommit/pushする。
 
 ##### C. Primary-first and quality-preserving fallback
 
