@@ -41,6 +41,27 @@
       "base_minute": 15,
       "base_hour": 0,
       "notes": "Independent Original owner; shares proven tools with x-repost but owns separate state and admission."
+    },
+    "x-repost-ja": {
+      "loop": "x-repost-ja",
+      "skill_dir": "skills/x-repost",
+      "status": "live",
+      "last_observed_at": null,
+      "allocation": {
+        "status": "normal",
+        "pass_frequency_multiplier": 1.0,
+        "capital_cap_usd": null
+      },
+      "cadence_contract": "Dice AI Zero runs at :05/:35 and publishes at most one Japanese five-point quote from a viral Japanese or English source, or records why none was published",
+      "evidence_path": "~/loops/x-repost-ja/posted.jsonl",
+      "ledger_paths": [
+        "~/loops/x-repost-ja/posted.jsonl",
+        "~/loops/x-repost-ja/engagement.jsonl"
+      ],
+      "base_interval_seconds": 1800,
+      "base_minute": 5,
+      "base_hour": 0,
+      "notes": "Dedicated @diceai0 Japanese persona loop using the isolated x:diceai0 browser identity."
     }
   }
 }
