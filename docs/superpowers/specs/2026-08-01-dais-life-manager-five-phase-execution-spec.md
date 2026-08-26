@@ -37,6 +37,9 @@ Life Managerは、助言を返すassistantでも、marketplaceごとのbot集合
 Upworkはこの汎用agentの最初のmarketplace proofとして始めたが、未承認UI automationによる一時制限を受けた。現在の公式画面は
 `Full Access / At risk / policy violations 1 / Misuse of Upwork Systems / Appealable / submitted appeals 0`である。
 Terms確認によるself-service復旧は完了したが、API申請もappealも送信していない。したがって「申請済み」「許可済み」と扱わない。
+停止前の最終official inventoryは`submitted proposals 12 / active proposals 1 / active contracts 0 / offers 0 /
+available earnings USD 0`である。proposalは収益ではなく、同accountは新規freelancer、identity `Unverified`、qualifying JSSなしのため、
+公開API要件の`$25,000 lifetime earnings/spend + JSS 90%`を満たさない。
 
 Upwork公式は、botを「人間より速く又は頻繁にrequestするscript/program/browser extension」と定義し、UI interactionを自動化するtoolの
 例外は承認できず、許可済みAPI keyでも承認scope外の操作は禁止としている。API keyの審査条件には、本人確認、verified payment、
@@ -143,10 +146,10 @@ error recovery、effect/readbackを実codeで再監査し、noticeを保持す�
 |---:|---|---|---|
 | 1 | UPW-01 contain unauthorized UI runtime | DONE | Upwork labels/process/port ownerを停止し、外部effect 0をreadback |
 | 2 | UPW-02 restore account access | DONE | 通常email/password login、Terms確認後にAccount Health=`Full Access`を公式画面でreadback |
-| 3 | UPW-03 API eligibility preflight | TODO | 現accountのidentity/payment/lifetime/JSS/good-standingを公式画面で読み、全要件とのtruth tableをreceipt化 |
-| 4 | UPW-04 exact action-scope inquiry | TODO | discovery、proposal submit、messages、contract、delivery、payment readback各actionの可否をSupportへ一度だけ質問しcase IDを保存 |
-| 5 | UPW-05 API request or ineligibility receipt | TODO | 条件を満たしformが受理する場合だけtruthful API申請を一度送信。満たさない場合は`API_INELIGIBLE`を保存し送信を偽装しない |
-| 6 | UPW-06 terminal capability manifest | TODO | decision/case mailをreadbackし、許可scopeだけON。未許可UIはOFFのままUpworkをterminal waitへ移す |
+| 3 | UPW-03 API eligibility preflight | DONE | official requirementsとaccount receiptを照合。identity unverified、new freelancer account、contract/earnings 0、JSS未観測により`API_INELIGIBLE` |
+| 4 | UPW-04 exact action-scope inquiry | DONE | 既存Support caseへ6 actionを一度だけ質問し、Gmail sent messageを同一threadでreadback。公開evidenceはcase/message/threadをhash化 |
+| 5 | UPW-05 API request or ineligibility receipt | DONE | 条件未達のためAPI formを送信せず、`docs/evidence/upwork/2026-08-26-api-terminal.json`へtruthful `API_INELIGIBLE`を保存 |
+| 6 | UPW-06 terminal capability manifest | DONE | private 8 browser receiptsをwarning-bound `denied`へ置換。official API 8 actionは`unknown`、labels disabled、`:9233` listener 0 |
 | 7 | CTX-01 merge current startup context | TODO | fundraiser ownerのbranchをreview済みcommitとしてcanonical mainへmergeし、version/digest/testをreadback |
 | 8 | CTX-02 claim provenance gate | TODO | traction、revenue、user数、application、mission、AGI表現の各claimにsource/status/as-ofを持たせ、unsupported claimを生成不能にする |
 | 9 | CTX-03 README convergence | TODO | first abstractをgeneral/proactive/manager/body-mind-money/real action/local+cloudで統一し、self-fundedを別物とする矛盾を削除 |
@@ -169,8 +172,9 @@ error recovery、effect/readbackを実codeで再監査し、noticeを保持す�
 | 26 | GA-12 OSS clean-install release | TODO | public repoのfresh machine install、sample provider manifest、secret refs、local/cloud docs、license notices、reproducible acceptanceを公開 |
 | 27 | GA-13 dependency retirement | TODO | profitable/open-core/Hermes等のruntime/config/symlink/import参照が0、replacementのnatural E2Eとrollback bundle取得後だけ旧dependencyを退役 |
 
-Upworkの返信待ちは#7以降を止めない。#6は申請送信そのものではなく、現時点の公式decisionをterminal stateへ保存した時点で閉じる。
-後日API approval/scope変更を受けたら、GA-03のmanifest更新として同じshared kernelへ再参加させる。
+Upworkは`API_INELIGIBLE / UI_AUTOMATION_DENIED / SUPPORT_SCOPE_PENDING`でclean terminalへ入った。
+Support返信待ちは#7以降を止めない。後日API approvalまたはaction-level scope変更を受けた時だけ、exact evidence hashとexpiryを持つ
+private receiptを追加し、GA-03のmanifest更新として同じshared kernelへ再参加させる。
 
 #### Test Matrix — all OK required
 
