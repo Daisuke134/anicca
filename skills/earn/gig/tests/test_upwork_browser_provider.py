@@ -194,6 +194,13 @@ def test_parses_singular_submitted_proposal_count():
     assert state["submitted_proposals"] == 1
 
 
+def test_parses_singular_active_proposal_count():
+    state = parse_inventory(
+        "Offers (0)\nInvites from clients (0)\nActive proposal (1)\nSubmitted proposal (1)\n"
+    )
+    assert state["active_proposals"] == 1
+
+
 def test_parses_visible_catalog_inventory_without_inventing_an_order():
     state = parse_catalog(
         "Approved (1)\nUnder Review (0)\nDrafts (0)\n"
@@ -251,6 +258,36 @@ def test_extracts_stable_official_ids_instead_of_titles():
     assert state["proposal_offer_entities"][0]["id"] == "offer-77"
     assert state["active_proposal_entities"][0]["id"] == "active-88"
     assert state["submitted_proposal_entities"][0]["id"] == "submitted-99"
+
+
+def test_classifies_numeric_received_proposal_and_interview_as_invitation():
+    state = parse_stable_entities(
+        invite_links=[],
+        proposal_links=[
+            {
+                "href": "https://www.upwork.com/nx/proposals/2091851780096692225",
+                "text": "Python API", "context": "Received",
+            },
+            {
+                "href": "https://www.upwork.com/nx/proposals/interview/uid/2092250550587497010",
+                "text": "Interview", "context": "Received",
+            },
+        ],
+    )
+    assert [item["id"] for item in state["active_proposal_entities"]] == [
+        "2091851780096692225"
+    ]
+    assert state["invitation_entities"] == [{
+        "id": "2092250550587497010",
+        "href": "https://www.upwork.com/nx/proposals/interview/uid/2092250550587497010",
+        "title": "Interview",
+    }]
+    assert state["unclassified_proposal_entities"] == []
+    assert provider.plan_zero_connect_inbound(state) == {
+        "state": "invitation_detected",
+        "resource_id": "2092250550587497010",
+        "resource_url": "https://www.upwork.com/nx/proposals/interview/uid/2092250550587497010",
+    }
 
 
 def test_zero_connect_inbound_precedes_public_job_capacity():

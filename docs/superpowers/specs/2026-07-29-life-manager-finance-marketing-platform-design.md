@@ -2212,8 +2212,8 @@ order is the §12.3 recovery checklist: `MKT-09R0 → MKT-09R1 → MKT-09R2 →
 MKT-09R3-01..13 → MKT-09R4..R9 → MKT-10 → MKT-11 → MKT-12 → MKT-13`.
 No later row starts early.
 
-Current TODO state: **incident recovery remains open at MKT-09R9-05 / Order
-24E.** R0 through R9-04 are terminal: capacity is safe, the shared publication
+Current TODO state: **incident recovery remains open at MKT-09R9-09 / Order
+24F4.** R0 through R9-08 are terminal: capacity is safe, the shared publication
 fence remains closed,
 the JP4 false completion is quarantined, and the 13-effect set is 12 `present`
 plus one truthful `absent`. The full publication ledger is 43 `completed`,
@@ -2230,13 +2230,58 @@ An external observation clock is not an active implementation item. It remains
 terminal acceptance evidence. Exactly one executable atomic item remains active;
 when the clock fires, its readback is reconciled before any dependent account arm.
 
-**Active executable atomic item:** MKT-09R9-05B / Order 24E generalizes the
-existing delayed Instagram metric collector for exactly the verified EN
-affirmation effect. The current collector is hardcoded to the old JA Reel and
-therefore does not own this post's 2h/24h/72h/7d clocks. The fix must accept an
-immutable approved effect descriptor, preserve API-only identity verification,
-persist source-labelled unavailable values, send natural Telegram once per
-window, and register durable due times without creating another scheduler.
+**Active executable atomic item:** MKT-09R9-09 / Order 24F4 uses TDD to add one
+immutable `@obou.anicca` watercolor Reel canary route by reusing the existing
+video publication adapter, target-only arm/restore controls, direct Reel/native
+verification, natural Telegram, replay, and metric registration contracts. It
+must pin the exact integration, pack/video/caption/approval refs below and fail
+before provider access on any alternate self-consistent input. Provider and
+Telegram effects remain 0 during code stage.
+
+**Completed immediately preceding pack item:** MKT-09R9-08 / Order 24F3 imports
+one exact valid pack after rejecting latest `DbeS8W_kmWC` because its caption
+ends mid-sentence at `苦しいの`. Selected direct `DbUlc_Kk-IX` has native
+owner/caption match, a complete 900-byte no-LF caption, and a fully inspected
+48.13356-second 720x1280 H.264/AAC watercolor Buddhist self-care Reel. Video
+`object://sha256/b2772de4303acc901f42b43a0b3f4af166ae3daeb5ee7fd24e090e5b62f2b0e8`,
+caption `object://sha256/40293be368c6c33b04bb6fa6be8ff4bc879ca8c6d18c2944d7275c488088ac0a`,
+visual `object://sha256/7d809896bb6103a4dac6c09ffebb9203a72da26caf855bac0692b58d5bc4ae07`,
+pack `object://sha256/2a24da50040c9a2705c2e8975d76152b6add447504ac21493cdfca999f598145`,
+and approval `object://sha256/cca891d177c007400751ded172d2de96ea6ffab07602594e5a5df2709a96c4d0`
+are SHA-exact/mode0600. Manifest
+`marketing-lane-manifest:3ffb30c49af2ed74528950b408f29db7d08f2f83476f93181f098367ec5dae1d`
+changes only this lane to pack-ready/default-off; armed 0, fence closed,
+provider/Telegram/scheduler writes 0, and the pack has no OpenClaw runtime path.
+
+**Completed immediately preceding classification:** MKT-09R9-07 / Order 24F2
+classifies Instagram `@obou.anicca` as Anicca iOS / JA / `watercolor` /
+`watercolor-reel` / `buddhist-self-care-reel`, with healthy target 2/day at
+07:00 and 20:00 JST but actual 0/day. The enabled Postiz integration has 210
+rows, 209 published/direct Reels and one error; no carousel/photo effects.
+Instagram API binds latest direct `DbeS8W_kmWC` to native owner
+`obou.anicca`, exact long-form Buddhist caption, and 91.160-second 720x1280
+GraphVideo. Full-timeline inspection shows only illustrated JA Buddhist
+self-care narrative. Archived Content Factory independently identifies the
+same route as `watercolor` at 07:00/20:00; it is evidence only and creates no
+runtime dependency. Evidence
+`object://sha256/1aa931970691d9d9262acd2684bb191e3887aab5eddd9937a31d8bbef3d13157`;
+manifest `marketing-lane-manifest:ebc9ca2ff1ddad8c0f74280d93ee02df02460a608c2a65af5d28d07f36f69136`
+changes only this integration hold→classified, 12 targets/18 holds, default-off,
+armed 0, fence closed, provider/Telegram effects 0.
+
+**Completed immediately preceding classification:** MKT-09R9-06 / Order 24F1
+keeps Instagram `@anicca.bochi` at a justified terminal 0/day hold. The enabled
+Postiz integration has 233 rows: 106 published/direct, 125 error; published
+content classifies as 51 Anicca-app, 40 generic mental-health, 14 separate AI
+memorial/tomb product, and one other, across 67 carousel/photo and 39 Reel
+effects. Instagram API binds both representative direct GraphSidecars to native
+owner `@anicca.bochi`: mental-health `DZSSHHtGjii` and AI memorial
+`DZPVAMGFL21`. Full six-slide visual inspection confirms materially different
+products/forms, so allowed renderer and approved pack remain null rather than
+guessing. Evidence
+`object://sha256/92521be6bec0011c04d03f1bdcb9a04cfebf43b65ae363a67625a79185a59525`
+is mode 0600; manifest remains hold/0-day, fence closed, armed 0, provider and
+Telegram effects 0.
 
 The runner now performs this control transition itself: it validates the
 closed mode-0600 controls and exact pack-ready lane, saves their exact bytes,
@@ -2273,8 +2318,25 @@ Shares/Saves 0; unsupported/funnel fields remain unavailable, not zero, in
 `object://sha256/d7dc6400a204fd442ba06e54fe3df51827b6f5349e399798814831490fa62d60`.
 Manifest `marketing-lane-manifest:5f9d4f61e7b6ebfdd59162c663226e877728303b501a38ff9f3ab0d6d2afc4a4`
 marks only this route canary-verified while remaining default-off, armed 0;
-the fence is closed. Future metric windows remain truthfully
-`pending_unregistered` until MKT-09R9-05B closes.
+the fence is closed. The earlier metric status recorded future windows as
+`pending_unregistered` and is superseded without deletion by the registration
+evidence below.
+
+**Completed metric-registration sub-item:** MKT-09R9-05B reuses the existing
+LM-owned Instagram due planner and 30-minute launchd owner; it adds no scheduler.
+Discovery accepts the EN carousel only after the exact carousel receipt
+verifier, integration, direct `/p/`, provider ID, publication time, and
+mode-0600 caption object SHA all pass. Focused due/read coverage is 6/6 GREEN
+in canonical runtime. Live discovery finds exactly Postiz
+`cmt9jm8990291p20y0a2l1xmk` and registers 2h
+`2026-08-26T05:37:17.624Z`, 24h `2026-08-27T03:37:17.624Z`, 72h
+`2026-08-29T03:37:17.624Z`, and 7d `2026-09-02T03:37:17.624Z` as pending.
+Durable owner `ai.anicca.life-manager-instagram-metrics` points at the canonical
+boot script, interval 1,800 seconds, runs 12, last exit 0; it was not restarted
+or kickstarted. Registered status
+`object://sha256/c08bf9e85a92dc5e72a1d975dcb2e84e7ea4ea079a5a001f5efbbb61f56a97d3`
+supersedes `d7dc6400…62d60`; commit `a34cec9f3` is present in canonical runtime
+and main.
 
 **Completed immediately preceding atomic item:** MKT-09R9-03 / Order 24C
 imports exact pack `object://sha256/e23cd41257832d2032fd889bd9a16ec95ea8dc213cdd7a2e3f820fbe1578669e`,
@@ -2932,8 +2994,8 @@ Their dependent account arm remains blocked until the observation is terminal.
 | 24B | **done — MKT-09R9-02:** classify Instagram `@anicca.affirmation` / `cmp9pedr700ttqh0yj8o57fog` | Order 24A terminal unavailable | evidence `d4b23768…86c65b` binds Anicca iOS/EN/Larry/native-photo-carousel, Postiz alias `anicca.affirmation`, native owner `anicca.ios`, 144 rows, six-slide native `Dbcvm5Mm8gM`, target 1/day; manifest `88975d67…755d33` changes only this row to classified/default-off, armed 0; writes 0 | classify multiple accounts, infer only from handle, or adopt broken legacy `--tt` mapping |
 | 24C | **done — MKT-09R9-03:** import and approve one exact `@anicca.affirmation` pack | Order 24B passes | pack `e23cd412…78669e`, caption `bf90a15a…6e64a0`, approval `7740cd09…968845`, six ordered native JPEGs and order hash `4daa5db7…9837f9` are SHA-exact/mode0600; manifest `b48c8e11…5ce18f` pack-ready/default-off, armed0/fenceclosed; effects0 | import several packs or mix Card/Widget content |
 | 24D | **done — MKT-09R9-04:** TDD-generalize the native carousel runner for exactly the frozen EN lane | Order 24C passes | existing JA command remains green; EN account/integration/pack/ordered media/caption/approval/native owner are immutable; alternate refs fail before provider; direct `/p/`, native verification, Telegram and replay contracts are reused; focused 21/21, syntax and diff checks pass; provider/Telegram writes 0 | copy runner, accept caller-defined lane, or execute hardcoded JA adapter against EN |
-| 24E | **active — MKT-09R9-05:** finish one `@anicca.affirmation` API canary and metric registration | Order 24D passes | **05A done:** direct `DcfQ2-hG3KR`, Postiz `cmt9jm8990291p20y0a2l1xmk`, owner/caption/GraphSidecar/six exact ordered images and visual content verified; Telegram `34799`; replay publication 0/message 0; immediate post metrics measured; fence closed/default-off/armed 0. **05B active:** make the delayed collector own immutable 2h/24h/72h/7d windows and natural metric Telegram for this effect | fan out, manually leave controls open, call pending windows registered, or arm cadence before metrics |
-| 24F | **MKT-09R9-N:** repeat classify → one pack → one API canary for each remaining existing TikTok/Instagram/YouTube integration | Order 24E terminal | every existing row is product/locale/renderer/pack-bound and canary-verified or an explicit justified 0/day hold/owner skip | mass-enable, guess from handle, or post mixed-product content |
+| 24E | **done — MKT-09R9-05:** finish one `@anicca.affirmation` API canary and metric registration | Order 24D passes | direct `DcfQ2-hG3KR`, Postiz `cmt9jm8990291p20y0a2l1xmk`, owner/caption/GraphSidecar/six exact ordered images and visual content verified; Telegram `34799`; replay publication 0/message 0; immediate post metrics measured; fence closed/default-off/armed 0. Existing 30-minute LM owner discovers the immutable effect and owns exact 2h/24h/72h/7d due times; registered status `c08bf9e8…6a97d3`; focused 6/6 | fan out, manually leave controls open, call pending windows measured, or arm cadence before metrics |
+| 24F | **active — MKT-09R9-N:** repeat classify → one pack → one API canary for each remaining existing TikTok/Instagram/YouTube integration | Order 24E terminal | **24F1 done:** `@anicca.bochi` terminal hold/0-day. **24F2 done:** `@obou.anicca` classified Anicca iOS/JA/watercolor Reel. **24F3 done:** complete-caption native `DbUlc_Kk-IX` becomes exact video/caption/visual/pack/approval refs; latest truncated-caption row rejected; manifest `3ffb30c4…dae1d`, pack-ready/default-off/armed0/effects0. **24F4 active:** TDD-add one immutable canary runner for only this pack/account | mass-enable, accept truncated copy, retain OpenClaw runtime dependency, or post before target-only controls |
 | 25 | **MKT-10:** arm only one healthy verified account, ramping from one canary/day to at most three posts/day | exact account has direct-native, Telegram, replay, and usable metric-source evidence | expected/published/missed/duplicate counts remain healthy at each ramp; platform policy permits cadence | jump directly to three/day everywhere |
 | 26 | **MKT-11:** collect 2h/24h/72h/7d social metrics and join ASC, RevenueCat, and product analytics | exact published effect has immutable creative/campaign lineage | views, likes, comments, shares, saves, watch/retention fields when supported, installs, activation, trials, paid, proceeds, and attribution coverage are source-labelled; unavailable stays unavailable | substitute account aggregates for post outcomes or infer installs from timing |
 | 27 | **MKT-12:** close bounded hook learning independently for Honne EN, Honne JA, and Anicca | one product/account has a usable attributed cohort | stable assignment; one hook token per baseline/challenger; immutable outcome; keep/revert CAS decision; next generation proves it consumed the decision | LRU rotation, shared campaign token, cross-product winner, or multi-variable edit |
