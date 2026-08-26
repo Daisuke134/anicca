@@ -158,7 +158,7 @@ error recovery、effect/readbackを実codeで再監査し、noticeを保持す�
 | 7 | CTX-01 merge current startup context | DONE | fixed commits `626d94f36` / `92dd73b07`から動的応募stateを除外して統合。version `2026-08-27.2`、digest `9fbe6198…5338`、kit 6 filesをreadback |
 | 8 | CTX-02 claim provenance gate | DONE | mission/revenue/users/applications/AGIにsource/status/as_of/public_useを必須化。3 claim guardと19 testsでunsupported public artifactを拒否 |
 | 9 | CTX-03 README convergence | DONE | 英日first abstractをproactive general agent/body-mind-money/real action/free OSS local/paid monthly cloudへ統一。self-fundingをFinancial Organへ統合し、README claim guard PASS |
-| 10 | CTX-04 public `/lm` convergence | TODO | 遅刻防止を最初のworking wedgeとして残しつつ、hero・organs・OSS/cloud・evidence・CTAをgeneral Life Managerへ更新 |
+| 10 | CTX-04 public `/lm` convergence | IN_PROGRESS | `anicca-products` branch `2ff10c70d`でhero/organs/OSS-cloud/evidence/CTAを更新し、`?tg=` onboardingは不変。localized shape・esbuild syntax PASS、Life Manager subset同期済み。preview run `32985134639`はGitHub Actions major outageでqueued、prod未反映 |
 | 11 | CTX-05 root-site relationship | TODO | `aniccaai.com`のmission/Anicca entityとLife Manager productの関係を明示し、重複・相反するAGI/self-funding claimを整理 |
 | 12 | CTX-06 generated-context drift gate | TODO | README/Web/fundraising kit/active formにstartup-context digestまたは検証testを接続し、旧product valueをCIで拒否 |
 | 13 | CTX-07 public live readback | TODO | product/repo/Telegram/README/Webをfresh browser/HTTPで読み、title・copy・CTA・link・claim provenanceをevidence化 |

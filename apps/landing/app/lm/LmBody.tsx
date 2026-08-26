@@ -6,27 +6,22 @@ import { useLaunchLocale } from '@/lib/launchLocale';
 import { launchStrings } from '@/lib/launchStrings';
 import LmClient from './LmClient';
 
-// /lm — v1 GATE (Dais 2026-06-25/26): standalone web onboarding stays "coming soon" (we ship on Telegram
-// first), BUT the Telegram funnel /lm?tg=<chat_id> MUST render the real onboarding (LmClient) — name + phone
-// are collected in the bot, but the Google Calendar OAuth (Composio) and Stripe payment can only happen on the
-// web, and the Telegram "Connect Calendar"/"Subscribe" buttons open exactly this page with ?tg=. Without this,
-// a Telegram user taps Connect Calendar and lands on the coming-soon gate = onboarding dead at the calendar step.
-// Standalone visitors (no ?tg=) keep the coming-soon gate. At v1.5 (S6) the gate is removed entirely.
+// Standalone /lm renders the public general-agent story. The Telegram funnel /lm?tg=<chat_id> still renders
+// the existing LmClient onboarding without changing its auth, Calendar, phone, or payment state machine.
 const TG_DEEPLINK = 'https://t.me/LifeManagerBotbot?start=lp';
+const REPOSITORY_URL = 'https://github.com/Daisuke134/life-manager';
 
 export default function LmBody() {
   const { locale } = useLaunchLocale();
   const t = launchStrings[locale].lm;
-  // undefined = not yet read (pre-mount/SSR) → show the gate; a digit string = Telegram funnel → LmClient;
-  // null = standalone web → gate.
+  // undefined = not yet read; a digit string = Telegram funnel → LmClient; null = public product surface.
   const [tg, setTg] = useState<string | null | undefined>(undefined);
   useEffect(() => {
     const p = new URLSearchParams(window.location.search).get('tg');
     setTg(p && /^\d{1,20}$/.test(p) ? p : null);
   }, []);
 
-  // Pre-mount (SSR + first client paint, before the effect reads the URL): show a neutral loader, NOT the
-  // gate — a Telegram visitor (?tg=) must never flash "coming soon" while we resolve the param.
+  // A Telegram visitor (?tg=) must never flash the public surface while the query parameter resolves.
   if (tg === undefined) {
     return (
       <section className="w-full px-4 pt-28 pb-24 text-center">
@@ -41,24 +36,100 @@ export default function LmBody() {
   if (tg) return <LmClient />;
 
   return (
-    <section className="w-full px-4 pt-16 pb-20 md:pt-24">
-      <div className="mx-auto max-w-md text-center">
+    <main className="w-full overflow-hidden px-4 pb-24 pt-12 md:pt-20">
+      <div className="mx-auto max-w-6xl">
         <Reveal>
-          <p className="text-xs uppercase tracking-[0.18em] text-[hsl(var(--gold))]">{t.eyebrow}</p>
-          <h1 className="mt-3 font-display text-2xl md:text-3xl font-bold text-[hsl(var(--text-primary))]">
-            {t.soonTitle}
-          </h1>
-          <p className="mt-4 text-sm leading-relaxed text-[hsl(var(--text-secondary))]">{t.soonBody}</p>
-          <a
-            href={TG_DEEPLINK}
-            target="_blank"
-            rel="noreferrer"
-            className="mt-7 inline-flex items-center justify-center rounded-pill bg-[hsl(var(--gold))] px-7 py-3 text-sm font-semibold text-black transition-all hover:brightness-95 active:scale-[0.98]"
-          >
-            {t.soonCta}
-          </a>
+          <section className="relative border-y border-[hsl(var(--border))] py-10 md:py-16">
+            <div className="pointer-events-none absolute -right-24 top-4 h-72 w-72 rounded-full bg-[hsl(var(--gold)/0.08)] blur-3xl" />
+            <div className="relative grid gap-12 lg:grid-cols-[1.35fr_0.65fr] lg:items-end">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[hsl(var(--gold))]">
+                  {t.publicEyebrow}
+                </p>
+                <h1 className="mt-5 max-w-4xl font-display text-4xl font-semibold leading-[0.98] tracking-[-0.04em] text-[hsl(var(--text-primary))] md:text-7xl">
+                  {t.publicTitle}
+                </h1>
+                <p className="mt-7 max-w-2xl text-base leading-8 text-[hsl(var(--text-secondary))] md:text-lg">
+                  {t.publicBody}
+                </p>
+                <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                  <a
+                    href={TG_DEEPLINK}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center justify-center rounded-pill bg-[hsl(var(--gold))] px-7 py-3 text-sm font-semibold text-black transition-all hover:-translate-y-0.5 hover:brightness-95 active:translate-y-0"
+                  >
+                    {t.soonCta}
+                  </a>
+                  <a
+                    href={REPOSITORY_URL}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center justify-center rounded-pill border border-[hsl(var(--border))] px-7 py-3 text-sm font-semibold text-[hsl(var(--text-primary))] transition-all hover:border-[hsl(var(--gold))]"
+                  >
+                    {t.sourceCta}
+                  </a>
+                </div>
+              </div>
+
+              <aside className="border-l border-[hsl(var(--border))] pl-6 md:pl-8">
+                <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-[hsl(var(--text-secondary))]">
+                  {t.surfacesLabel}
+                </p>
+                <div className="mt-5 space-y-4">
+                  <p className="border-t border-[hsl(var(--border))] pt-4 font-display text-xl text-[hsl(var(--text-primary))]">
+                    {t.localSurface}
+                  </p>
+                  <p className="border-t border-[hsl(var(--border))] pt-4 font-display text-xl text-[hsl(var(--text-primary))]">
+                    {t.cloudSurface}
+                  </p>
+                </div>
+              </aside>
+            </div>
+          </section>
         </Reveal>
+
+        <Reveal>
+          <section className="py-16 md:py-24">
+            <h2 className="max-w-3xl font-display text-3xl tracking-[-0.03em] text-[hsl(var(--text-primary))] md:text-5xl">
+              {t.organsTitle}
+            </h2>
+            <div className="mt-10 grid border-y border-[hsl(var(--border))] md:grid-cols-3">
+              {t.organs.map((organ) => (
+                <article key={organ.index} className="border-b border-[hsl(var(--border))] py-7 md:border-b-0 md:border-r md:px-7 md:first:pl-0 md:last:border-r-0 md:last:pr-0">
+                  <p className="font-mono text-xs text-[hsl(var(--gold))]">{organ.index}</p>
+                  <h3 className="mt-8 font-display text-2xl text-[hsl(var(--text-primary))]">{organ.title}</h3>
+                  <p className="mt-4 text-sm leading-7 text-[hsl(var(--text-secondary))]">{organ.body}</p>
+                </article>
+              ))}
+            </div>
+          </section>
+        </Reveal>
+
+        <div className="grid gap-6 lg:grid-cols-2">
+          <Reveal>
+            <section className="h-full rounded-card border border-[hsl(var(--border))] bg-[hsl(var(--surface))] p-7 md:p-10">
+              <p className="font-mono text-xs uppercase tracking-[0.2em] text-[hsl(var(--gold))]">{t.wedgeEyebrow}</p>
+              <h2 className="mt-5 font-display text-3xl tracking-[-0.02em] text-[hsl(var(--text-primary))]">
+                {t.wedgeTitle}
+              </h2>
+              <p className="mt-5 text-sm leading-7 text-[hsl(var(--text-secondary))]">{t.wedgeBody}</p>
+            </section>
+          </Reveal>
+          <Reveal>
+            <section className="h-full rounded-card border border-[hsl(var(--gold)/0.5)] bg-[hsl(var(--gold)/0.06)] p-7 md:p-10">
+              <p className="font-mono text-xs uppercase tracking-[0.2em] text-[hsl(var(--gold))]">{t.proofLabel}</p>
+              <h2 className="mt-5 font-display text-3xl tracking-[-0.02em] text-[hsl(var(--text-primary))]">
+                {t.evidenceTitle}
+              </h2>
+              <p className="mt-5 text-sm leading-7 text-[hsl(var(--text-secondary))]">{t.evidenceBody}</p>
+              <p className="mt-4 border-t border-[hsl(var(--border))] pt-4 font-mono text-xs leading-6 text-[hsl(var(--text-secondary))]">
+                {t.evidenceBoundary}
+              </p>
+            </section>
+          </Reveal>
+        </div>
       </div>
-    </section>
+    </main>
   );
 }
