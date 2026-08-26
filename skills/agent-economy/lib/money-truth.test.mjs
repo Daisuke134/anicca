@@ -94,6 +94,33 @@ test("canonical v2 proof suppresses the matching legacy tx row without suppressi
   assert.equal(result.verified_external_rows, 2);
 });
 
+test("cross-dedupe uses normalized chain+tx: same chain suppresses", () => {
+  const canonical = revenueReceipt({ gross: "1.000000", fee: "0", proof: { chain_id: 8453, tx_hash: REVENUE_TX, log_index: 0, verified: true } });
+  const legacy = { tx: REVENUE_TX, chain_id: 8453, source: "gig", net_usdc: 1, external: true, status: "0x1" };
+  const correction = { tx: REVENUE_TX, status: "0x1", verified: true, evidence: { chain_id: 8453, tx_hash: REVENUE_TX, log_index: 0 } };
+  const result = summarizeRealizedRevenue([legacy, canonical], [correction]);
+  assert.equal(result.external_net_usdc, 1);
+  assert.equal(result.verified_external_rows, 1);
+});
+
+test("cross-dedupe uses normalized chain+tx: unknown legacy chain suppresses fail-closed", () => {
+  const canonical = revenueReceipt({ gross: "1.000000", fee: "0", proof: { chain_id: 8453, tx_hash: REVENUE_TX, log_index: 0, verified: true } });
+  const legacy = { tx: REVENUE_TX, source: "gig", net_usdc: 1, external: true, status: "0x1" };
+  const correction = { tx: REVENUE_TX, status: "0x1", verified: true, evidence: { chain_id: 8453, tx_hash: REVENUE_TX, log_index: 0 } };
+  const result = summarizeRealizedRevenue([legacy, canonical], [correction]);
+  assert.equal(result.external_net_usdc, 1);
+  assert.equal(result.verified_external_rows, 1);
+});
+
+test("cross-dedupe uses normalized chain+tx: known different chain preserves legacy row", () => {
+  const canonical = revenueReceipt({ gross: "1.000000", fee: "0", proof: { chain_id: 8453, tx_hash: REVENUE_TX, log_index: 0, verified: true } });
+  const legacy = { tx: REVENUE_TX, chain_id: 1, source: "gig", net_usdc: 1, external: true, status: "0x1" };
+  const correction = { tx: REVENUE_TX, status: "0x1", verified: true, evidence: { chain_id: 1, tx_hash: REVENUE_TX, log_index: 0 } };
+  const result = summarizeRealizedRevenue([legacy, canonical], [correction]);
+  assert.equal(result.external_net_usdc, 2);
+  assert.equal(result.verified_external_rows, 2);
+});
+
 test("reconcileLedger appends a successful correction once and returns the verified summary", async () => {
   const dir = await mkdtemp(join(tmpdir(), "money-truth-"));
   const ledger = join(dir, "earn-ledger.jsonl");

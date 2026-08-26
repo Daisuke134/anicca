@@ -25,6 +25,19 @@ const VERIFIED_TERMINAL_STATES = new Set([
   "settled", "paid", "received", "completed", "refunded", "charged_back", "chargeback", "reversed",
 ]);
 
+function normalizeChainIdForDedupe(value) {
+  if (value === undefined || value === null || value === "") return null;
+  const text = String(value).trim().toLowerCase();
+  if (text === "base" || text === "base-mainnet" || text === "base_mainnet" || text === "eip155:8453") return "8453";
+  if (text === "base-sepolia" || text === "base_sepolia" || text === "eip155:84532") return "84532";
+  try {
+    const parsed = /^0x/i.test(text) ? BigInt(text) : BigInt(text);
+    return parsed > 0n ? parsed.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Return the stable proof identity for a ledger row, or null for narrations. */
 export function receiptKey(row) {
   if (!row || typeof row !== "object") return null;
@@ -362,7 +375,12 @@ export function summarizeRealizedRevenue(rows, corrections = [], options = {}) {
     .filter((correction) => isNormalizedRevenueReceipt(correction))
     .filter((correction) => !inputRows.some((row) => receiptInRow(row)?.idempotency_key === correction.idempotency_key));
   const allRows = [...inputRows, ...normalizedCorrectionRows];
-  const canonicalTxs = new Set(allRows.map((row) => receiptInRow(row)?.proof?.tx_hash?.toLowerCase()).filter(Boolean));
+  const canonicalProofs = allRows.map((row) => receiptInRow(row)?.proof).filter((proof) => proof?.tx_hash);
+  const canonicalPairs = new Set(canonicalProofs.map((proof) => {
+    const chain = normalizeChainIdForDedupe(proof.chain_id);
+    return chain ? `${chain}:${proof.tx_hash.toLowerCase()}` : null;
+  }).filter(Boolean));
+  const canonicalTxs = new Set(canonicalProofs.map((proof) => proof.tx_hash.toLowerCase()));
   for (const row of allRows) {
     const normalized = receiptInRow(row);
     if (normalized) {
@@ -375,7 +393,11 @@ export function summarizeRealizedRevenue(rows, corrections = [], options = {}) {
       } else {
         unverifiedExternalRows += 1;
       }
-    } else if (row?.tx && canonicalTxs.has(String(row.tx).toLowerCase())) {
+    } else if (row?.tx && (() => {
+      const tx = String(row.tx).toLowerCase();
+      const chain = normalizeChainIdForDedupe(row.chain_id ?? row.chain);
+      return chain ? canonicalPairs.has(`${chain}:${tx}`) : canonicalTxs.has(tx);
+    })()) {
       // A legacy row without its log tuple is ambiguous once the canonical v2 receipt covers the
       // same transaction.  Exclude it rather than risking a second contribution.
       excludedRows += 1;
