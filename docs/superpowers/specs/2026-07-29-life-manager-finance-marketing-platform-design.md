@@ -2305,6 +2305,21 @@ and fence closed at mode `0600`. Native verification remains absent, so
 Telegram is correctly held at 0. No retry or second publication is allowed;
 only this direct candidate may proceed to native owner/full-video verification.
 
+Direct native verification is now partially measured but not terminal. The
+captioned embed returns HTTP 200 without redirect, exact
+`CaptionUsername=anicca.ios.jp`, and the exact normalized caption. Native MP4
+`ae07770e…fb5640` is 720x1280, H.264/AAC, 10.494 seconds; source is 1080x1920,
+10.400 seconds. Parent visual inspection of both full-timeline contact sheets
+confirms the same woman/hook, the same `今すぐやれ` / `完璧より完了` Card flow,
+and the same My Path ending. However the strict full-video comparator returns
+false: Instagram transcode SSIM is `0.921209..0.985319`, with all moving-hook
+frames below the current `0.945` floor while static Card frames are above it.
+This is not success and Telegram remains held. A focused TDD regression now
+reproduces the false negative with a downscale/re-encode and is RED. The fix
+must retain wrong-color, wrong-tail, truncation, owner, and caption rejection;
+only after GREEN plus fresh adversarial review may native evidence release the
+held natural Telegram receipt. No retry/new post is allowed.
+
 **Completed immediately preceding atomic item:** MKT-09R8-12 / Order 23I
 reconciled the complete existing Postiz history before any new effect. Read-only
 GETs covered `1970-01-01` through `2026-08-27`: pre-2025 and 2025 returned zero,
