@@ -18,10 +18,9 @@ class MercorPassContractTests(unittest.TestCase):
         prompt = (ROOT / "prompts" / "mercor-pass.md").read_text(encoding="utf-8")
         for required in (
             "model-led",
-            "3 of 3 steps completed",
+            "all required steps completed",
             "Submit application",
             "continue to the next distinct listing",
-            "not a terminal pass result",
             "never retry",
             "needs_human",
             "browser Google 2FA button named `はい`",
@@ -37,6 +36,17 @@ class MercorPassContractTests(unittest.TestCase):
             "Never stop after the first Explore page",
         ):
             self.assertIn(required, prompt)
+
+    def test_prompt_submits_every_truthful_ready_listing_without_experience_gate(self):
+        prompt = (ROOT / "prompts" / "mercor-pass.md").read_text(encoding="utf-8")
+        normalized = " ".join(prompt.split())
+
+        self.assertNotIn("Choose at most one new listing", prompt)
+        self.assertIn("Submit every distinct ready listing", normalized)
+        self.assertIn("Preferred experience or fluency gaps", normalized)
+        self.assertIn("must not alone prevent submission", normalized)
+        self.assertIn("legal, location, identity", normalized)
+        self.assertIn("all required steps completed", normalized)
 
     def test_success_result_contract_validates(self):
         schema = json.loads(

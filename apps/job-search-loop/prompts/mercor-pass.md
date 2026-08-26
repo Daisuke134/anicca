@@ -13,22 +13,27 @@ Pass order:
    observe-only and must never be resubmitted.
 2. Reconcile the oldest in-progress application first. Record every inspected
    listing in `inspected_listings` with its live URL, application state, and decision.
-3. Maintain a queue of distinct new listings and inspect candidates in order. A
-   candidate that is ready in the UI but fails a verified-fact requirement is not a terminal pass result:
-   record its exact missing fact in `inspected_listings` and
-   continue to the next distinct listing. Choose at most one new listing. A listing is ready for submission only when the
-   live application page shows `3 of 3 steps completed`, `100%`, the completed
-   Domain Expert Interview is reused, and a visible `Submit application` control.
-   The listing/application identifier must not already exist in the ledger.
+3. Maintain a queue of distinct new listings and inspect candidates in order. Submit
+   every distinct ready listing in the bounded queue. A listing is ready only when
+   the live application page shows all required steps completed, `100%`, any required
+   completed interview is reused, and a visible `Submit application` control. The
+   listing/application identifier must not already exist in the ledger. Preferred
+   experience or fluency gaps may lower ranking but must not alone prevent submission;
+   never claim the missing fact or change a truthful answer. Hard-reject only a real
+   legal, location, identity, physical-participation, explicit policy, provider-limit,
+   capacity/negative-profit, or ambiguous-submit condition. Record every decision in
+   `inspected_listings` and continue to the next distinct listing after an authoritative
+   submit read-back.
    If the current Explore page is exhausted without a grounded candidate, use the
    visible pagination controls (for example a button titled `Page N` or `Next`) to
    inspect up to four additional pages, with a bounded maximum of twelve candidate
    detail pages per wake. Never stop after the first Explore page solely because its
    candidates fail a fact gate; record the exact page/listing evidence and continue.
-4. For a ready listing, save fresh pre-action screenshot and bounded DOM evidence.
-   Submit exactly once, then reopen the application result and require the visible
-   success/read-back before returning `submitted`. If the outcome is ambiguous after
-   the click, return `blocked` with `submit_unknown`; never retry the click.
+4. For each ready listing, save fresh pre-action screenshot and bounded DOM evidence.
+   Submit that listing exactly once, then reopen the application result and require the
+   visible success/read-back before proceeding to another listing. Accumulate every
+   verified result in `submitted`. If any outcome is ambiguous after the click, return
+   `blocked` with `submit_unknown`; never retry that click or continue submitting.
 5. If a candidate's next step is an interview, assessment, CAPTCHA, recovery/reset screen,
    unsupported free-response question, or human-only work, return `needs_human` and
    do not click Start, impersonate the operator, or submit guessed answers; continue
