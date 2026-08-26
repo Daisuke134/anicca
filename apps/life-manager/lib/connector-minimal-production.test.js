@@ -88,6 +88,46 @@ test("official production factory installs the Connpass workflow into the defaul
   }
 });
 
+test("official production factory persists one safe audit for its default Gemini ranking", async () => {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-production-ranking-audit-"));
+  const audits = [];
+  const originalFetch = globalThis.fetch;
+  const ranked = {
+    provider: "luma", event_ref: "luma-event://event/ranking-audit", canonical_url: "https://luma.com/ranking-audit",
+    title: "Tokyo AI Builders", body: "AI engineering event",
+  };
+  const emptyWorkflow = { async discoverCandidates() { return []; }, async runDirectAction() {}, async readProviderState() { return { status: "absent" }; } };
+  try {
+    globalThis.fetch = async (_url, request) => {
+      const prompt = JSON.parse(request.body).contents[0].parts[0].text;
+      const rows = JSON.parse(prompt.match(/EVENT_DATA_START\n([\s\S]+)\nEVENT_DATA_END/)[1]);
+      return { ok: true, async json() { return { candidates: [{ content: { parts: [{ text: JSON.stringify({
+        ranked_events: rows.map((row) => ({ event_ref: row.event_ref, priority_class: "ai", preference_fit: "strong", preference_reason: "Direct AI fit." })),
+      }) }] } }] }; } };
+    };
+    const dependencies = createMinimalProductionDependencies({
+      repoRoot: "/private/repo", stateDir, wakeId: "wake-production-ranking-audit",
+      calendarAccount: "private-account", gogKeyring: "private-keyring", telegramTarget: "private-target",
+      lumaFormProfilePath: "/private/form-profile.json", lunaEvidenceDir: "/private/luna-evidence",
+      eventPreferences: "Tokyo AI events", geminiApiKey: "fixture-key",
+      browserRail: { open() {}, navigate() {}, close() {} }, calendarReader: { async readCalendarGaps() { return []; } },
+      lumaWorkflow: { ...emptyWorkflow, async discoverCandidates() { return [ranked]; } }, connpassWorkflow: emptyWorkflow,
+      actionCache: { async replay() {}, saveVerifiedRepair() {} }, browserHarness: { async runFallback() {}, async performAction() {} },
+      evidenceChain: { async completeEvidence() {} },
+      operations: { async reportWake() {}, async recordAction() {}, async recordRankingAudit(value) { audits.push(value); } },
+    });
+    assert.equal((await dependencies.discoverCandidates("luma", [], {})).length, 1);
+    assert.equal(audits.length, 1);
+    assert.deepEqual(Object.keys(audits[0]), [
+      "schema_version", "request_count", "retry_count", "bisect_count",
+      "total_request_ms", "max_request_ms", "elapsed_ms",
+    ]);
+  } finally {
+    globalThis.fetch = originalFetch;
+    fs.rmSync(stateDir, { recursive: true, force: true });
+  }
+});
+
 // Fake Connpass join page, shaped exactly like joinFlowFixture in
 // connpass-browser-provider.test.js (sole free tier, one required 氏名
 // question) — reused here at the wiring layer instead of stubbing

@@ -348,7 +348,10 @@ function createMinimalProductionDependencies(options = {}) {
   const eventPreferences = options.eventPreferences == null
     ? null : requiredText(options.eventPreferences, 2_000);
   const rankCandidates = options.rankCandidates || (eventPreferences == null ? null : (input) => (
-    inferProviderCandidateRanking(input, { apiKey: requiredText(options.geminiApiKey, 2_000) })
+    inferProviderCandidateRanking(input, {
+      apiKey: requiredText(options.geminiApiKey, 2_000),
+      onAudit: operations.recordRankingAudit,
+    })
   ));
   const classifyTalkOpportunity = options.classifyTalkOpportunity || (eventPreferences == null ? null : (candidate) => (
     inferEventTalkOpportunity({
