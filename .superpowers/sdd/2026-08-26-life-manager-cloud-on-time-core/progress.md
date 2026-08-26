@@ -162,3 +162,11 @@ Baseline: focused Life Manager suite 175/175 PASS.
 - Dais tenant production repair: exact Telegram-bound tenant count was one; the existing E.164 phone, paid, Calendar, home, notifications, automation, timezone, language, and completed onboarding read back valid. A single transaction changed only `wake_policy` to `all-events` and `call_enabled` to true; post-write readback returned both true.
 - Operational status: Telnyx authentication is at the Authenticator-code screen. No top-up or call was attempted without the current six-digit code and exact portal minimum readback.
 - Remaining acceptance: real Transit provider route; clean Telegram actor onboarding and cross-actor isolation; Telnyx minimum top-up with exact approval; controlled Calendar event with travel block, T-10/T-5 calls, T-5 Telegram route; replay-zero provider readback.
+
+## Task 10 Telegram T-5 deadline isolation
+
+- Production reproduction: a private no-location Calendar event was created for 07:43 JST and read back from Google with the same event ID. Dedicated wake produced durable T-10 at 07:33:14 and T-5 at 07:38:21; both Telnyx callbacks reached `amd_result=machine`, proving the balance gate and provider call path were live.
+- Failure evidence: `lm_travel_log` had zero `telegram-t5` claims through event start, while the monthly Composio ledger read 27,254 calls and selected the 300-second degraded organ interval. There are seven tenants and the organ path processes them serially with a 90-second per-user ceiling.
+- Root cause: AC-19 requires a 60-second reminder tick, but Task 4 placed reminder execution inside the degradable, multi-organ, sequential `organsUserOnce` loop. Call timing stayed correct only because wake already has its own fixed 60-second loop.
+- Ruling: reuse the existing wake-loop isolation pattern for a dedicated fixed-60-second reminder loop, remove reminder execution from the degradable organ loop, and retain the existing `lm_travel_log/telegram-t5` atomic claim as the single dedupe writer. Cost if wrong: one extra Calendar fetch path per enabled tenant per minute; correctness and user-visible deadline outrank the current Composio degradation policy for this deadline-critical channel.
+- Task 10 status: in progress; RED test, minimal implementation, production deploy, Telegram provider receipt, and replay-zero remain.

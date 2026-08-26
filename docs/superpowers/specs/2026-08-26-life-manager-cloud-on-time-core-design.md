@@ -138,7 +138,7 @@ Transit APIの公式契約は次を使う。
 | AC-22 | route取得失敗時も、次予定、開始時刻、目的地、基準出発時刻を送る。経路取得失敗を明記し、通知全体を失敗にしない。 |
 | AC-23 | HTML escapingを全Calendar由来textへ適用する。Telegram本文にuid、email、phone、raw provider payload、credentialを含めない。 |
 | AC-24 | 送信前に既存`lm_travel_log`へ`leg=telegram-t5`をatomic claimする。Telegram非2xxまたはmessage ID欠落時は同claimをreleaseし、次tickでretryする。新DB tableを作らない。 |
-| AC-25 | reminderは`organsUserOnce`内の独立organとして走る。route timeoutやTelegram失敗が`wakeCallOnce`、他tenant、他organを止めない。 |
+| AC-25 | reminderはComposio予算で5分へ劣化する`organsUserOnce`から分離した固定60秒tickで走る。各tenantを独立timeoutで処理し、route timeoutやTelegram失敗が`wakeCallOnce`、他tenant、他organを止めない。通常organ側からは二重実行しない。 |
 | AC-26 | success logはuidの先頭12文字、event key hash、provider、Telegram message IDを含む。event title、location、phoneをlogへ出さない。 |
 
 Telegram本文の固定形:
@@ -284,6 +284,8 @@ Telegram本文の固定形:
 - [x] `wake-loop-isolation.test.js`へreminder timeout、call-first、cross-tenant継続のREDを追加する。
 - [x] `scheduler.js`の`organsUserOnce`へ独立`organ:travel-reminder`を配線する。
 - [x] `wake-loop-isolation.test.js`でroute timeout中もcallが先に完了し、他tenantが進むことをGREENにする。
+- [ ] production E2Eで再現した5分Composio劣化・7 tenant直列遅延をREDにし、reminderを既存wake分離パターンと同じ固定60秒loopへ移す。
+- [ ] `maybeStartLoops`から専用reminder loopを1 writerだけ起動し、旧organ側の二重実行を削除する。
 - [ ] Telegram test chatへ1件送り、message ID、本文、再実行0件をreadbackする。
 
 ### Slice 3A — Telegram actor as onboarding identity
