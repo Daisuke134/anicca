@@ -208,7 +208,9 @@ test("production contract runs every minute and maximizes real applications", ()
   assert.match(dailyPrompt, /completion\.png/);
   assert.match(dailyPrompt, /TELEGRAM_PHOTO_SENT=true MSGID=<id>/);
   assert.match(dailyPrompt, /submitted_verified/);
+  assert.match(dailyPrompt, /applies equally to Web forms and email pitch\/application/);
   assert.match(runtimeScript, /send-telegram-photo\.sh/);
+  assert.match(runtimeScript, /status == "submitted_verified"/);
   assert.match(dailyPrompt, /never release an application lease until every fill/);
   assert.match(dailyPrompt, /there is no `upload` command/);
   assert.match(dailyPrompt, /Do not reopen the same video, voice, binding-term/);

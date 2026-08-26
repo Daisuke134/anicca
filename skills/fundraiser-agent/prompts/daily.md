@@ -159,8 +159,9 @@ For every queued candidate until the execution window ends:
    repository's proven Gmail transport exactly:
    `printf '%s' "$BODY" | /opt/homebrew/bin/gog gmail send --account "$GMAIL_ACCOUNT" --to "$TO" --subject "$SUBJECT" --body-file - --attach fundraising/application-kit/deck.pdf --json --no-input`.
    Require the returned Gmail message ID and an exact `in:sent to:<recipient>
-   subject:<subject>` readback before recording `submitted`. A draft, compose UI,
-   or successful click is not a receipt.
+   subject:<subject>` readback. Then open that exact message in the authenticated
+   Gmail Sent UI and preserve its rendered provider screen as the completion PNG.
+   A draft, compose UI, API result, or text-only Sent search is not verified evidence.
 4. Resolve ordinary missing answers by reasonable inference. A human-only video,
    voice, attendance, physical-presence, KYC, binding-terms, banking, funds
    movement, or unsolved CAPTCHA requirement checkpoints only this candidate; it
@@ -190,8 +191,9 @@ For every queued candidate until the execution window ends:
    Then send that PNG with `bash "$FUNDRAISER_TELEGRAM_PHOTO_SENDER"
    "$PNG_PATH" "Codex::: Fundraiser proof: <program and cohort>"`. Require
    `TELEGRAM_PHOTO_SENT=true MSGID=<id>` and record the Telegram message ID in
-   the receipt. Only this screenshot-plus-Telegram-message-ID boundary may use
-   `submitted_verified`. A completion DOM, click, local PNG, or email without
+   the receipt. This boundary applies equally to Web forms and email pitch/application
+   routes. Only this screenshot-plus-Telegram-message-ID boundary may use
+   `submitted_verified`. A completion DOM, click, local PNG, API response, or email without
    the delivered Telegram photo remains `evidence_incomplete` and must never be
    reported as a verified submission.
 7. Send a real-time Telegram report immediately with the program, status,

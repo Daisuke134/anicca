@@ -49,10 +49,10 @@ RUNTIME_PROMPT="$EVIDENCE_DIR/runtime-prompt.md"
 - Search both the live Web and rendered authenticated X UI. X is discovery only; verify on the official program website before applying.
 - Use existing browser helpers under \`skills/browser/\`; do not launch or kill a browser.
 - Read private founder values only from \`~/.config/anicca/job-search/profile.json\` and \`~/.local/share/anicca/credentials.json\`; never print or report their values.
-- Append one compact JSON object per terminal candidate to \`$STATE_ROOT/application-receipts.jsonl\`. Include run_id, receipt identity, official URL, status, UTC timestamp, and non-secret readback reference. Never append a submitted status without official completion UI or matching provider mail.
+- Append one compact JSON object per terminal candidate to \`$STATE_ROOT/application-receipts.jsonl\`. Include run_id, receipt identity, official URL, status, UTC timestamp, and non-secret readback reference. For every route, including email, only screenshot-plus-Telegram-photo evidence may use status \`submitted_verified\`; otherwise use \`evidence_incomplete\` or \`submit_unknown\`.
 - Write the durable next discovery cursor atomically to \`$STATE_ROOT/cursor.json\`.
 - Immediately after every candidate terminal, execute \`bash $SENDER "Codex::: Fundraiser: <program, truthful status, non-secret readback, running counts>"\` and require \`TELEGRAM_SENT=true\`.
-- A form application is verified only after its official completion PNG is sent with \`bash $PHOTO_SENDER "<png>" "Codex::: Fundraiser proof: <program>"\` and the output contains \`TELEGRAM_PHOTO_SENT=true MSGID=<id>\`. Save that message ID in its receipt.
+- An application is verified only after its official form completion page or exact Gmail Sent message is captured as a PNG, visually readable, sent with \`bash $PHOTO_SENDER "<png>" "Codex::: Fundraiser proof: <program>"\`, and the output contains \`TELEGRAM_PHOTO_SENT=true MSGID=<id>\`. Save the PNG path and message ID in its receipt.
 - For a supported CAPTCHA, use only the already-installed CapSolver/tier-a-bypass route found locally. Never weaken, evade, or disable provider security. If unavailable, checkpoint that candidate and continue to the next one.
 - Spend this pass applying, not editing product code. Continue after the first submission. Return status=failure when submitted=0.
 EOF
@@ -100,7 +100,7 @@ for line in pathlib.Path(sys.argv[1]).read_text(encoding="utf-8").splitlines():
     if receipt.get("run_id") != sys.argv[2]:
         continue
     status = receipt.get("status")
-    submitted += status == "submitted"
+    submitted += status == "submitted_verified"
     unknown += status == "submit_unknown"
     checkpoints += status == "human_checkpoint"
 print(f"submitted={submitted} unknown={unknown} checkpoints={checkpoints}")
