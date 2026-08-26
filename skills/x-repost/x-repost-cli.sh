@@ -398,6 +398,7 @@ with open(posted, "a+", encoding="utf-8") as stream:
         stream.seek(0, 2); stream.write(json.dumps(receipt, ensure_ascii=False) + "\n")
         stream.flush(); os.fsync(stream.fileno())
 PYEOF
+  [ "$?" -eq 0 ] || finish 1 "recovered Affiliate cadence receipt append failed"
   log "recovered prior Affiliate success receipt and cadence ledger without reposting"
 fi
 

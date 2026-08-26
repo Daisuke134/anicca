@@ -45,15 +45,32 @@ def parse_metrics(aria: str) -> dict:
     return out
 
 
-def hydrate_missing_metrics(page, rows: list[dict]) -> None:
+def article_for_status(page, url: str):
+    status_id = url.rstrip("/").split("/status/")[-1].split("/")[0]
+    for article in page.query_selector_all('article[data-testid="tweet"]'):
+        link = article.query_selector(f'a[href*="/status/{status_id}"]')
+        if link:
+            return article
+    return None
+
+
+def hydrate_missing_metrics(page, rows: list[dict], limit: int = 3) -> None:
     """Read the canonical permalink when X omits metrics in search-result cards."""
+    hydrated = 0
     for row in rows:
         if row.get("metrics"):
             continue
+        if hydrated >= limit:
+            break
+        hydrated += 1
         try:
-            page.goto(row["url"], wait_until="domcontentloaded", timeout=60000)
-            page.wait_for_timeout(2500)
-            article = page.query_selector('article[data-testid="tweet"]')
+            page.goto(row["url"], wait_until="domcontentloaded", timeout=15000)
+            status_id = row["url"].rstrip("/").split("/status/")[-1].split("/")[0]
+            page.wait_for_selector(
+                f'article[data-testid="tweet"] a[href*="/status/{status_id}"]',
+                timeout=10000,
+            )
+            article = article_for_status(page, row["url"])
             group = article.query_selector('[role="group"][aria-label]') if article else None
             row["metrics"] = parse_metrics(group.get_attribute("aria-label") if group else "")
         except Exception:

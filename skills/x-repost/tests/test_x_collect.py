@@ -27,15 +27,19 @@ class XCollectTests(unittest.TestCase):
             def get_attribute(self, _name):
                 return "3 replies, 8 reposts, 144 likes, 9,001 views"
         class Article:
+            def __init__(self, matches=True):
+                self.matches = matches
             def query_selector(self, _selector):
-                return Group()
+                return Group() if self.matches else None
         class Page:
             def goto(self, *_args, **_kwargs):
                 return None
             def wait_for_timeout(self, _timeout):
                 return None
-            def query_selector(self, _selector):
-                return Article()
+            def wait_for_selector(self, _selector, timeout=None):
+                return None
+            def query_selector_all(self, _selector):
+                return [Article(False), Article(True)]
         rows = [{"url": "https://x.com/example/status/1", "metrics": {}}]
         MODULE.hydrate_missing_metrics(Page(), rows)
         self.assertEqual(rows[0]["metrics"]["views"], 9001)

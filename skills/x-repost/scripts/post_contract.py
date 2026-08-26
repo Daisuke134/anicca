@@ -10,13 +10,16 @@ from pathlib import Path
 
 
 JAPANESE = re.compile(r"[\u3040-\u30ff\u3400-\u9fff]")
+KANA = re.compile(r"[\u3040-\u30ff]")
 LATIN = re.compile(r"[A-Za-z]")
 
 
 def language_matches(language: str, text: str) -> bool:
-    has_japanese = bool(JAPANESE.search(text))
-    return has_japanese if language == "ja" else (
-        language == "en" and not has_japanese and bool(LATIN.search(text))
+    japanese_count = len(JAPANESE.findall(text))
+    latin_count = len(LATIN.findall(text))
+    japanese_dominant = bool(KANA.search(text)) and japanese_count >= max(2, latin_count // 2)
+    return japanese_dominant if language == "ja" else (
+        language == "en" and japanese_count == 0 and latin_count > 0
     )
 
 
