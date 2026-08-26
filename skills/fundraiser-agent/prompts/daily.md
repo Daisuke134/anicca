@@ -44,7 +44,10 @@ only if `deck.pdf.receipt.json` has the same `context_digest` as `assets.json`.
 Its absence is a build fault, not a reason to abandon other candidates.
 
 Before new discovery, retry prior `human_checkpoint` candidates whose recorded
-blocker is now resolved. A checkpoint is continuation state, not a duplicate.
+blocker is now resolved and prior `failure` candidates whose recorded local or
+technical cause has been repaired. A checkpoint or failure is continuation
+state, not a duplicate. Do not leave a repaired failure behind merely because a
+later discovery cursor exists.
 In particular, the generated verified deck resolves any older checkpoint whose
 only blocker was the absence of a current pitch deck or team/market narrative.
 Only `submitted` and `submit_unknown` receipts are terminal replay barriers.

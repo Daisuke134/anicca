@@ -199,6 +199,7 @@ test("production contract runs every 30 minutes and maximizes real applications"
   assert.match(dailyPrompt, /cdp\.py eval "\$TARGET_ID" -/);
   assert.match(dailyPrompt, /gog gmail send[^\n]*--attach fundraising\/application-kit\/deck\.pdf/);
   assert.match(dailyPrompt, /in:sent to:<recipient>/);
+  assert.match(dailyPrompt, /prior `failure` candidates whose recorded local or\s+technical cause has been repaired/);
   assert.doesNotMatch(contract, /at most one/i);
   assert.doesNotMatch(contract, /per user-local day/i);
 });
