@@ -298,6 +298,25 @@ node --test test/agent-economy-control-plane.test.mjs test/install-release-state
 全て exit 0。npm 全体 suite は再実行していない。live launchctl/install/provider mutation は
 行っていない。
 
+## Rethink Fix Round8 (2026-08-27)
+
+validation-only fixture の missing/non-executable daemon 状態ごとに source manifest entry/mode、
+digest、RELEASE metadata を再生成して再sealした。これにより source/dependency/seal checks を
+通過した後の daemon path check が stable `exit 2` / `missing daemon at` で観測できる。valid daemon
+だけが `ANICCA_VALIDATE_RELEASE_ONLY=1` の成功 exit に到達し、validation-only を daemon check より
+前へ移動した実装ではこの behavioral assertion が失敗する構成を固定した。
+
+Round8 focused GREEN:
+
+```text
+node --test test/agent-economy-control-plane.test.mjs test/install-release-state.test.mjs
+```
+
+結果: 20 tests / pass 20 / fail 0。
+
+追加確認: `py_compile`、対象 shell `bash -n`、focused test `node --check`、`git diff --check` は
+全て exit 0。Round8 は test-only 変更で、live launchctl/install/provider mutation は行っていない。
+
 ## Rethink commit
 
 この追補を前回 commit の上に新規 commit として記録する（amend/push は行わない）。
