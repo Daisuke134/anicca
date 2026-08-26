@@ -101,6 +101,15 @@ For every queued candidate until the execution window ends:
    They select the visible element
    when responsive pages contain hidden duplicates. Do not hand-build shell-to-JS
    quoting or retry the same failing mutation more than once.
+   When an official program or investor page explicitly publishes an email
+   address as its application or funding-intake route, do not compose through
+   the Gmail browser UI. Read the Gmail account from the private founder profile,
+   load the existing `GOG_KEYRING_PASSWORD` without printing it, and reuse the
+   repository's proven Gmail transport exactly:
+   `printf '%s' "$BODY" | /opt/homebrew/bin/gog gmail send --account "$GMAIL_ACCOUNT" --to "$TO" --subject "$SUBJECT" --body-file - --attach fundraising/application-kit/deck.pdf --json --no-input`.
+   Require the returned Gmail message ID and an exact `in:sent to:<recipient>
+   subject:<subject>` readback before recording `submitted`. A draft, compose UI,
+   or successful click is not a receipt.
 4. Resolve ordinary missing answers by reasonable inference. A human-only video,
    voice, attendance, physical-presence, KYC, binding-terms, banking, funds
    movement, or unsolved CAPTCHA requirement checkpoints only this candidate; it
