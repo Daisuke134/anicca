@@ -58,6 +58,101 @@ function renderScoreCards(data) {
   return '<div class="score-grid">' + rows + '</div>';
 }
 
+function renderPanelOnboardingPage(options = {}) {
+  const csrf = scoreEscapeHtml(options.csrf || "");
+  return `<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <title>Life Manager</title>
+  <style>
+    :root { --paper:#f3efe5; --paper-bright:#fbf8f0; --ink:#122238; --ink-soft:#536070; --line:#cfc7b8; --line-dark:#9d9484; --accent:#c94a32; --success:#26735b; }
+    * { box-sizing:border-box; }
+    html { background:var(--paper); }
+    body { margin:0; min-width:0; min-height:100vh; overflow-x:hidden; color:var(--ink); background:radial-gradient(circle at 8% 4%,rgba(201,74,50,.1),transparent 26rem),var(--paper); font-family:"Avenir Next",Avenir,"Hiragino Sans","Yu Gothic",sans-serif; -webkit-font-smoothing:antialiased; }
+    a { color:inherit; }
+    .onboarding-shell { width:min(640px,calc(100% - 32px)); margin:0 auto; padding:clamp(28px,9vw,80px) 0 64px; }
+    .onboarding-wordmark { margin:0 0 32px; font-size:.72rem; font-weight:700; letter-spacing:.19em; text-transform:uppercase; }
+    .onboarding-card { padding:clamp(24px,7vw,48px); border:1px solid var(--line-dark); background:rgba(251,248,240,.9); box-shadow:0 24px 70px rgba(38,35,30,.12); }
+    h1 { margin:0; font-family:"Iowan Old Style","YuMincho","Hiragino Mincho ProN",serif; font-size:clamp(2.1rem,9vw,4.5rem); font-weight:500; line-height:1; letter-spacing:-.04em; overflow-wrap:anywhere; }
+    .onboarding-copy { margin:20px 0 0; color:var(--ink-soft); line-height:1.7; overflow-wrap:anywhere; }
+    .onboarding-form { display:grid; gap:14px; margin-top:32px; }
+    .onboarding-form label { display:grid; gap:8px; font-size:.78rem; font-weight:700; }
+    .onboarding-form input { width:100%; min-height:48px; padding:10px 12px; border:1px solid var(--line-dark); border-radius:0; background:white; color:var(--ink); font:inherit; }
+    .onboarding-actions { display:grid; gap:10px; margin-top:30px; }
+    .onboarding-actions button, .onboarding-actions a { display:inline-flex; min-height:48px; align-items:center; justify-content:center; padding:12px 18px; border:1px solid var(--ink); border-radius:0; background:transparent; color:var(--ink); font:700 .82rem/1.2 inherit; text-align:center; text-decoration:none; cursor:pointer; overflow-wrap:anywhere; }
+    .onboarding-actions .primary-action { border-color:var(--accent); background:var(--accent); color:white; }
+    .onboarding-actions .secondary-action { border-color:var(--line-dark); color:var(--ink-soft); }
+    .onboarding-status { min-height:1.5em; margin:22px 0 0; color:var(--ink-soft); font-size:.8rem; line-height:1.6; }
+    @media (max-width:375px) { .onboarding-shell { width:calc(100% - 24px); padding-top:24px; } .onboarding-card { padding:22px 18px; } .onboarding-actions button, .onboarding-actions a { width:100%; } }
+  </style>
+</head>
+<body>
+  <main class="onboarding-shell" data-panel-onboarding data-csrf="${csrf}">
+    <p class="onboarding-wordmark">Life Manager / life operations</p>
+    <section class="onboarding-card" aria-live="polite">
+      <h1 data-onboarding-title>Life Manager</h1>
+      <p class="onboarding-copy" data-onboarding-copy>現在の準備状態を確認しています。</p>
+      <div class="onboarding-form" data-onboarding-form></div>
+      <div class="onboarding-actions" data-onboarding-actions></div>
+      <p class="onboarding-status" data-onboarding-status role="status"></p>
+    </section>
+  </main>
+  <script>
+  (() => {
+    const root = document.querySelector("[data-panel-onboarding]");
+    if (!root) return;
+    const title = root.querySelector("[data-onboarding-title]");
+    const copy = root.querySelector("[data-onboarding-copy]");
+    const form = root.querySelector("[data-onboarding-form]");
+    const actions = root.querySelector("[data-onboarding-actions]");
+    const status = root.querySelector("[data-onboarding-status]");
+    const csrf = root.dataset.csrf || "";
+    const endpoint = "/api/panel/onboarding";
+    const calendarStart = "/api/panel/onboarding/calendar/start";
+    const calendarStatus = "/api/panel/onboarding/calendar/status";
+    const titles = Object.freeze({ name:"名前を確認", calendar:"カレンダーをつなぐ", home:"住んでいる場所", notifications:"通知を有効にする", phone:"電話番号", call:"電話での確認", payment:"利用を開始する", dashboard:"準備完了" });
+    const copies = Object.freeze({ name:"呼びかけに使う名前を確認します。", calendar:"予定を読み取り、必要なタイミングで知らせます。", home:"予定の場所に合わせて準備します。", notifications:"通知を受け取れるようにします。", phone:"安全な連絡先を登録します。", call:"電話での確認方法を選びます。", payment:"月額プランを確認して利用を開始します。", dashboard:"現在の準備状態をサーバーから確認しました。" });
+    const key = () => globalThis.crypto && typeof globalThis.crypto.randomUUID === "function" ? globalThis.crypto.randomUUID() : String(Date.now()) + "-onboarding" + Math.random().toString(36).slice(2);
+    const text = (node, value) => { node.textContent = String(value == null ? "" : value); };
+    const button = (label, action, primary) => { const node = document.createElement("button"); node.type = "button"; node.dataset.onboardingAction = action; node.className = primary ? "primary-action" : "secondary-action"; node.textContent = label; return node; };
+    const input = (label, type, value) => { const wrapper = document.createElement("label"); const caption = document.createElement("span"); caption.textContent = label; const field = document.createElement("input"); field.type = type; field.value = String(value || ""); field.autocomplete = type === "tel" ? "tel" : "off"; wrapper.append(caption, field); return wrapper; };
+    const safePaymentLink = (value) => { try { const url = new URL(value); if (url.protocol !== "https:" || url.hostname !== "buy.stripe.com" || url.username || url.password || !url.searchParams.get("client_reference_id")) return ""; return url.toString(); } catch { return ""; } };
+    const safeRedirect = (value) => { try { const url = new URL(value); if (url.protocol !== "https:" || url.username || url.password || /[\\r\\n]/.test(String(value))) return ""; return url.toString(); } catch { return ""; } };
+    const request = async (path, init = {}) => { const { mutating, ...requestInit } = init; const headers = { Accept: "application/json", ...(mutating ? { "content-type":"application/json", "x-lm-csrf":csrf, "idempotency-key":key() } : {}) }; const response = await fetch(path, { ...requestInit, credentials:"same-origin", headers }); if (response.status === 401) { window.location.reload(); throw new Error("session expired"); } const data = await response.json().catch(() => ({})); if (!response.ok) { const error = new Error(String(data.error || "request failed")); error.status = response.status; throw error; } return data; };
+    const addPaymentLink = (value, label) => { const href = safePaymentLink(value); if (!href) return false; const link = document.createElement("a"); link.href = href; link.rel = "noreferrer"; link.className = "primary-action"; link.dataset.onboardingAction = "payment.open"; link.textContent = label; actions.append(link); return true; };
+    const retryButton = () => button("再読み込み", "retry", true);
+    const render = (state) => {
+      const step = String(state && state.step || "");
+      title.textContent = titles[step] || "Life Manager";
+      copy.textContent = copies[step] || "現在の準備状態を確認しています。";
+      form.replaceChildren(); actions.replaceChildren(); status.textContent = "";
+      switch (step) {
+        case "name": form.append(input("名前", "text", state.name)); actions.append(button("次へ", "name.save", true)); break;
+        case "calendar": actions.append(button("カレンダーをつなぐ", "calendar.start", true)); break;
+        case "home": form.append(input("住んでいる場所", "text", state.homeAddress)); actions.append(button("次へ", "home.save", true)); break;
+        case "notifications": actions.append(button("通知を有効にする", "notifications.enable", true)); break;
+        case "phone": form.append(input("電話番号", "tel", state.phone)); actions.append(button("次へ", "phone.save", true), button("電話番号を登録せず続ける", "phone.skip", false)); break;
+        case "call": actions.append(button("電話で確認する", "call.enable", true), button("電話での確認をスキップ", "call.skip", false)); break;
+        case "payment": if (!addPaymentLink(state.paymentLink, "月額プランを確認する")) { text(status, "支払いリンクを確認できません。しばらくしてから再読み込みしてください。"); actions.append(retryButton()); } actions.append(button("後で決める", "payment.skip", false)); break;
+        case "dashboard": if (state.paid === true) { const link = document.createElement("a"); link.href = "/panel"; link.className = "primary-action"; link.textContent = "ダッシュボードを開く"; actions.append(link); } else if (!addPaymentLink(state.paymentLink, "月額プランを確認する")) { text(status, "支払いリンクを確認できません。しばらくしてから再読み込みしてください。"); actions.append(retryButton()); } break;
+        default: text(status, "現在の準備状態を確認できません。"); actions.append(retryButton());
+      }
+    };
+    const load = async () => { try { render(await request(endpoint)); } catch { text(status, "現在の準備状態を取得できません。再読み込みしてください。"); form.replaceChildren(); actions.replaceChildren(retryButton()); } };
+    const mutate = async (action, payload = {}) => { try { await request(endpoint, { method:"POST", mutating:true, body:JSON.stringify({ action, payload }) }); await load(); } catch (error) { if (error.status === 409) await load(); else text(status, "更新できませんでした。現在の状態は変更されていません。"); } };
+    const startCalendar = async () => { try { const current = await request(calendarStatus); if (current.connected === true || current.state === "connected") return load(); const result = await request(calendarStart, { method:"POST", mutating:true, body:"{}" }); if (result.connected === true || result.state === "connected") return load(); const target = safeRedirect(result.redirectUrl); if (!target) throw new Error("calendar redirect unavailable"); window.location.assign(target); } catch (error) { if (error.status === 409) await load(); else text(status, "カレンダーをつなげませんでした。もう一度お試しください。"); } };
+    root.addEventListener("click", (event) => { const target = event.target.closest("[data-onboarding-action]"); if (!target) return; const action = target.dataset.onboardingAction; if (action === "calendar.start") return startCalendar(); if (action === "payment.open") return; if (action === "retry") return window.location.reload(); const field = form.querySelector("input"); const payload = action === "name.save" ? { name: field ? field.value : "" } : action === "home.save" ? { home_address: field ? field.value : "" } : action === "phone.save" ? { phone: field ? field.value : "" } : {}; mutate(action, payload); });
+    load();
+  })();
+  </script>
+</body>
+</html>`;
+}
+
 function renderPanelPage(options = {}) {
   return `<!doctype html>
 <html lang="ja">
@@ -1037,4 +1132,4 @@ function renderPanelPage(options = {}) {
 </html>`;
 }
 
-module.exports = { renderPanelPage, renderScoreCards };
+module.exports = { renderPanelPage, renderPanelOnboardingPage, renderScoreCards };

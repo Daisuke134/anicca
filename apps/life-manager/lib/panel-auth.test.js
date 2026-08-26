@@ -28,11 +28,11 @@ function telegramInitData({ actorId = 123, authDate = PANEL_AUTH_DATE, token = "
   return params.toString();
 }
 
-function postTelegramInitData(base, initData) {
+function postTelegramInitData(base, initData, returnTo) {
   return fetch(`${base}/api/panel/session/telegram`, {
     method: "POST",
     headers: { Origin: base, "content-type": "application/json" },
-    body: JSON.stringify({ initData }),
+    body: JSON.stringify(returnTo ? { initData, returnTo } : { initData }),
   });
 }
 
@@ -132,7 +132,7 @@ test("R1A2 HMAC verification carries only a bounded Telegram display name", () =
   assert.equal(long.profileName.length, 120);
 });
 
-test("PANEL-2: /panel/onboarding has no query identity fallback", async () => {
+test("Task 7B: /panel/onboarding strips query identity without changing the onboarding pathname", async () => {
   const calls = [];
   await withPanelServer({
     supaUrl: "https://db.example",
@@ -144,10 +144,63 @@ test("PANEL-2: /panel/onboarding has no query identity fallback", async () => {
   }, async (base) => {
     const response = await fetch(`${base}/panel/onboarding?tg=123`, { redirect: "manual" });
     assert.equal(response.status, 303);
-    assert.equal(response.headers.get("location"), "/panel");
+    assert.equal(response.headers.get("location"), "/panel/onboarding");
     assert.equal(response.headers.get("set-cookie"), null);
   });
   assert.equal(calls.length, 0);
+});
+
+test("Task 7B: an authenticated onboarding visit renders the Telegram-native page, not the dashboard", async () => {
+  const session = Buffer.alloc(32, 0x44).toString("base64url");
+  await withPanelServer({
+    supaUrl: "https://db.example",
+    supaKey: "service-key",
+    randomBytes: () => Buffer.alloc(32, 0x45),
+    fetchImpl: async (url) => {
+      const parsed = new URL(String(url));
+      if (parsed.pathname.endsWith("/rpc/resolve_lm_panel_session")) return { ok: true, status: 200, json: async () => [{ uid: "lm_u1", chat_id: "123", rotated: false }] };
+      throw new Error(`unexpected onboarding fetch ${url}`);
+    },
+  }, async (base) => {
+    const response = await fetch(`${base}/panel/onboarding`, { headers: { Cookie: `__Host-lm_panel_session=${session}` } });
+    assert.equal(response.status, 200);
+    const html = await response.text();
+    assert.match(html, /data-panel-onboarding/);
+    assert.doesNotMatch(html, /data-panel-section="timeline"/);
+    assert.doesNotMatch(html, /\bAnicca\b/i);
+  });
+});
+
+test("Task 7B: unauthenticated Telegram onboarding keeps the return path through the auth boundary", async () => {
+  await withPanelServer({
+    token: "telegram-token",
+    supaUrl: "https://db.example",
+    supaKey: "service-key",
+    randomBytes: () => Buffer.alloc(32, 0x50),
+    now: () => new Date(PANEL_NOW),
+    fetchImpl: async (url, init) => {
+      const parsed = new URL(String(url));
+      if (parsed.pathname.endsWith("/lm_panel_device_challenges")) return { ok: true, status: 201, json: async () => [] };
+      if (parsed.pathname.endsWith("/rpc/claim_lm_panel_telegram_init_v2")) return { ok: true, status: 200, json: async () => [{ status: "claimed", uid: "lm_u1", chat_id: "123" }] };
+      if (parsed.pathname.endsWith("/lm_panel_sessions")) return { ok: true, status: 201, json: async () => [] };
+      throw new Error(`unexpected onboarding auth fetch ${url}`);
+    },
+  }, async (base) => {
+    const login = await fetch(`${base}/panel/onboarding`);
+    assert.equal(login.status, 200);
+    const loginHtml = await login.text();
+    assert.match(loginHtml, /returnTo.*\/panel\/onboarding/);
+    assert.doesNotMatch(loginHtml, /[?&](?:tg|uid)=/i);
+
+    const response = await postTelegramInitData(base, telegramInitData(), "/panel/onboarding");
+    assert.equal(response.status, 200, await response.clone().text());
+    assert.deepEqual(await response.json(), { redirect: "/panel/onboarding" });
+    for (const forged of ["//evil.example", "/panel/onboarding/extra", "https://evil.example/panel/onboarding"]) {
+      const fallback = await postTelegramInitData(base, telegramInitData(), forged);
+      assert.equal(fallback.status, 200, forged);
+      assert.deepEqual(await fallback.json(), { redirect: "/panel" }, forged);
+    }
+  });
 });
 
 async function withPanelServer(opts, run) {
