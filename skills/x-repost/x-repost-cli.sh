@@ -670,6 +670,59 @@ EOF
     finish 0 "affiliate distribution job requeued"
   fi
   if [ "$AFFILIATE_EFFECT_STATE" = "UNVERIFIED" ]; then
+    CDP="$(bash "$ENSURE_BROWSER" "$IDENTITY" 2>>"$EV/browser.err")"
+    case "$CDP" in
+      http*) log "leased $IDENTITY at $CDP for Affiliate reconciliation" ;;
+      *) finish 0 "affiliate distribution job awaits reconciliation" ;;
+    esac
+    BROWSER_LEASED=1
+    trap '[ "$BROWSER_LEASED" -eq 1 ] && bash "$GUARD" release "$IDENTITY" >/dev/null 2>&1 || true' EXIT
+    AFFILIATE_RECONCILE_TEXT="$EV/affiliate-job-reconcile.txt"
+    "$PY" - "$AFFILIATE_JOB_EFFECT" "$AFFILIATE_RECONCILE_TEXT" <<'PYEOF'
+import json, os, sys
+value, target = json.loads(sys.argv[1]), sys.argv[2]
+text = (value.get("payload") or {}).get("text")
+if not isinstance(text, str) or not text.strip(): raise SystemExit(1)
+with open(target, "x", encoding="utf-8") as stream:
+    stream.write(text); stream.flush(); os.fsync(stream.fileno())
+PYEOF
+    run_x_post --cdp "$CDP" --text-file "$AFFILIATE_RECONCILE_TEXT" --mode reconcile \
+      >"$EV/affiliate-job-reconcile.json" 2>>"$EV/affiliate-job-reconcile.err"
+    AFFILIATE_RECONCILE_RC=$?
+    if [ "$AFFILIATE_RECONCILE_RC" -eq 0 ]; then
+      AFFILIATE_POST_URL="$("$PY" -c 'import json,sys; print(json.load(open(sys.argv[1]))["post_url"])' \
+        "$EV/affiliate-job-reconcile.json")"
+      AFFILIATE_PROVIDER_ID="$("$PY" -c 'import json,sys; print(json.load(sys.stdin).get("provider_submission_id") or "")' \
+        <<<"$AFFILIATE_JOB_EFFECT")"
+      "$PY" "$SKILL/scripts/affiliate_proposal.py" --job-claims "$AFFILIATE_JOB_CLAIMS" \
+        --job-payload-dir "$AFFILIATE_JOB_PAYLOADS" --job-results "$AFFILIATE_JOB_RESULTS" \
+        --record-job-result POSTED --post-url "$AFFILIATE_POST_URL" \
+        --provider-submission-id "$AFFILIATE_PROVIDER_ID" >/dev/null || \
+        finish 1 "affiliate distribution reconciliation receipt failed"
+      X_REPOST_PROVIDER_ID="$AFFILIATE_PROVIDER_ID" "$PY" - \
+        "$POSTED" "$AFFILIATE_JOB_EFFECT" "$AFFILIATE_POST_URL" <<'PYEOF'
+import datetime, fcntl, json, os, sys
+posted, effect_json, post_url = sys.argv[1:4]
+payload = json.loads(effect_json)["payload"]
+with open(posted, "a+", encoding="utf-8") as stream:
+    fcntl.flock(stream, fcntl.LOCK_EX); stream.seek(0)
+    if any(json.loads(line).get("affiliate_job_id") == payload["job_id"]
+           for line in stream if line.strip()): raise SystemExit(0)
+    row = {"posted_at": datetime.datetime.now().astimezone().isoformat(),
+           "kind": "affiliate_distribution", "source_url": payload["owned_article_url"],
+           "affiliate_job_id": payload["job_id"],
+           "affiliate_effect_identity": payload["effect_identity"],
+           "affiliate_placement_id": payload["placement_id"],
+           "affiliate_owned_article_url": payload["owned_article_url"],
+           "content_sha256": payload["content_sha256"], "text_sha256": payload["text_sha256"],
+           "provider_submission_id": os.environ["X_REPOST_PROVIDER_ID"],
+           "tone": "affiliate_disclosed", "text": payload["text"], "post_url": post_url}
+    stream.seek(0, 2); stream.write(json.dumps(row, ensure_ascii=False) + "\n")
+    stream.flush(); os.fsync(stream.fileno())
+PYEOF
+      report "✅ Affiliate distribution job reconciled without reposting\npost: $AFFILIATE_POST_URL"
+      finish 0 "affiliate distribution job reconciled without duplicate publish"
+    fi
     log "affiliate distribution job awaits D06 reconciliation ($AFFILIATE_EFFECT_STATE)"
     finish 0 "affiliate distribution job awaits reconciliation"
   fi
