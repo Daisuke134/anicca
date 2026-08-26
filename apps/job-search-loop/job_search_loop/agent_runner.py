@@ -12,6 +12,7 @@ TASK_CLASSES = {
     "extract": "composition-agent",
     "tailor": "composition-agent",
     "inbox": "composition-agent",
+    "mercor_pass": "browser-lane-agent",
     "submit": "browser-lane-agent",
     "improve": "high-value-agent",
 }

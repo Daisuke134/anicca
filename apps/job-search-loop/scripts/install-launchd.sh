@@ -18,11 +18,14 @@ case "$MODE" in
   --browser-only)
     NAMES=(ai.anicca.job-search-browser)
     ;;
+  --mercor-only)
+    NAMES=(ai.anicca.job-search-mercor)
+    ;;
   --mercor-browser-only)
     NAMES=(ai.anicca.job-search-mercor-browser)
     ;;
   *)
-    print -u2 "install-launchd: usage: $0 [--browser-only|--mercor-browser-only]"
+    print -u2 "install-launchd: usage: $0 [--browser-only|--mercor-only|--mercor-browser-only]"
     exit 2
     ;;
 esac

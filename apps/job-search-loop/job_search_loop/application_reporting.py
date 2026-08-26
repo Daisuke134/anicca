@@ -355,9 +355,49 @@ def deliver_submitted_resumes(
     return deliveries
 
 
+def deliver_terminal_report(
+    *,
+    outbox_path: Path,
+    run_id: str,
+    outcome: str,
+    reason: str,
+    output_path: Path,
+    sender: Callable[..., dict[str, str | None]] = send_once,
+) -> dict[str, Any]:
+    message = (
+        "Codex::: [Job Hunter][Inbox]\n"
+        f"run={run_id}\n"
+        f"outcome={outcome}\n"
+        f"reason={reason}"
+    )
+    try:
+        delivery = sender(
+            database=outbox_path,
+            event_key=f"job-search-inbox:{run_id}",
+            message=message,
+        )
+        receipt: dict[str, Any] = {
+            "delivery": "ack" if delivery.get("message_id") else "delivery_unknown",
+            "event_key": f"job-search-inbox:{run_id}",
+            "message_id": delivery.get("message_id"),
+            "outcome": outcome,
+            "reason": reason,
+        }
+    except Exception as error:
+        receipt = {
+            "delivery": "delivery_unknown",
+            "event_key": f"job-search-inbox:{run_id}",
+            "outcome": outcome,
+            "reason": reason,
+            "delivery_error": type(error).__name__,
+        }
+    _write_private_json(output_path, receipt)
+    return receipt
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("command", choices=("deliver", "wake", "progress"))
+    parser.add_argument("command", choices=("deliver", "wake", "progress", "terminal"))
     parser.add_argument("--ledger", type=Path, required=True)
     parser.add_argument("--outbox", type=Path, required=True)
     parser.add_argument("--media-root", type=Path)
@@ -367,7 +407,22 @@ def main() -> int:
     parser.add_argument("--runner-summary", type=Path)
     parser.add_argument("--discovery", type=Path)
     parser.add_argument("--application-id")
+    parser.add_argument("--outcome")
+    parser.add_argument("--reason")
     args = parser.parse_args()
+
+    if args.command == "terminal":
+        if not all((args.run_id, args.outcome, args.reason)):
+            parser.error("terminal requires --run-id, --outcome and --reason")
+        receipt = deliver_terminal_report(
+            outbox_path=args.outbox,
+            run_id=args.run_id,
+            outcome=args.outcome,
+            reason=args.reason,
+            output_path=args.output,
+        )
+        print(json.dumps(receipt, ensure_ascii=False, sort_keys=True))
+        return 0
 
     if args.command == "progress":
         if not args.application_id or not args.run_id:

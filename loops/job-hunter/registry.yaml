@@ -36,3 +36,11 @@ loops:
     task_schema: apps/job-search-loop/schemas/learning-decision.v1.schema.json
     evidence_root: ~/.local/state/anicca/job-search/evidence
     side_effect_owner: apps/job-search-loop
+  - id: mercor
+    schedule:
+      interval_seconds: 3600
+      launchd_label: ai.anicca.job-search-mercor
+    cli: skills/job-hunter/job-hunter-cli.sh mercor
+    task_schema: apps/job-search-loop/schemas/mercor-pass-result.v1.schema.json
+    evidence_root: ~/.local/state/anicca/job-search/evidence
+    side_effect_owner: apps/job-search-loop

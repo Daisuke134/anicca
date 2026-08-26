@@ -11,6 +11,55 @@ from job_search_loop.outbox import Outbox
 
 
 class ApplicationReportingTests(unittest.TestCase):
+    def test_terminal_report_is_run_scoped_idempotent_and_records_unknown_delivery(self):
+        reporting = importlib.import_module("job_search_loop.application_reporting")
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            requests = []
+
+            def requester(**request):
+                requests.append(request)
+                return {"ok": True, "result": {"message_id": 701}}
+
+            def sender(**kwargs):
+                return __import__("job_search_loop.telegram", fromlist=["send_once"]).send_once(
+                    **kwargs,
+                    target="test-chat",
+                    token="test-token",
+                    requester=requester,
+                )
+
+            first = reporting.deliver_terminal_report(
+                outbox_path=root / "outbox.sqlite3",
+                run_id="inbox-test-1",
+                outcome="no_work",
+                reason="no_new_messages_or_preparation",
+                output_path=root / "terminal.json",
+                sender=sender,
+            )
+            replay = reporting.deliver_terminal_report(
+                outbox_path=root / "outbox.sqlite3",
+                run_id="inbox-test-1",
+                outcome="no_work",
+                reason="no_new_messages_or_preparation",
+                output_path=root / "terminal.json",
+                sender=sender,
+            )
+            unknown = reporting.deliver_terminal_report(
+                outbox_path=root / "unknown.sqlite3",
+                run_id="inbox-test-2",
+                outcome="failed",
+                reason="runner_failed",
+                output_path=root / "unknown.json",
+                sender=lambda **_: (_ for _ in ()).throw(RuntimeError("offline")),
+            )
+
+            self.assertEqual(first["delivery"], "ack")
+            self.assertEqual(replay["event_key"], "job-search-inbox:inbox-test-1")
+            self.assertEqual(len(requests), 1)
+            self.assertEqual(unknown["delivery"], "delivery_unknown")
+            self.assertEqual(oct((root / "terminal.json").stat().st_mode & 0o777), "0o600")
+
     def test_application_progress_reuses_fit_reason_and_is_run_scoped(self):
         reporting = importlib.import_module("job_search_loop.application_reporting")
         with tempfile.TemporaryDirectory() as directory:

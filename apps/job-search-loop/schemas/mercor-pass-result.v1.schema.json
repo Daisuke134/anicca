@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "mercor-pass-result.v1.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["status", "inspected_listings", "submitted", "needs_human", "blocked", "evidence"],
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": ["submitted", "observed_no_action", "needs_human", "blocked"]
+    },
+    "inspected_listings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["listing_id", "url", "title", "application_state", "submit_visible", "decision"],
+        "properties": {
+          "listing_id": {"type": "string"},
+          "url": {"type": "string"},
+          "title": {"type": "string"},
+          "application_state": {"type": "string"},
+          "submit_visible": {"type": "boolean"},
+          "decision": {"type": "string"}
+        }
+      }
+    },
+    "submitted": {
+      "type": "array",
+      "maxItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["listing_id", "title", "url", "status", "evidence_url", "evidence_path"],
+        "properties": {
+          "listing_id": {"type": "string"},
+          "title": {"type": "string"},
+          "url": {"type": "string"},
+          "status": {"type": "string"},
+          "evidence_url": {"type": "string"},
+          "evidence_path": {"type": "string"}
+        }
+      }
+    },
+    "needs_human": {"type": "array", "items": {"type": "string"}},
+    "blocked": {"type": "array", "items": {"type": "string"}},
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["page_url", "screenshot_path", "dom_path"],
+      "properties": {
+        "page_url": {"type": "string"},
+        "screenshot_path": {"type": "string"},
+        "dom_path": {"type": "string"}
+      }
+    }
+  }
+}

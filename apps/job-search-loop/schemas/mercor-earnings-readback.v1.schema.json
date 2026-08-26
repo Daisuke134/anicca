@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://anicca.ai/schemas/mercor-earnings-readback.v1.schema.json",
+  "title": "Mercor earnings read-back",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "provider",
+    "page_url",
+    "observed_at",
+    "status",
+    "settled_rows",
+    "settled_total_usd",
+    "verified_monthly_run_rate_usd",
+    "revenue_credited"
+  ],
+  "properties": {
+    "provider": { "const": "mercor" },
+    "page_url": { "const": "https://work.mercor.com/earnings" },
+    "observed_at": { "type": "string", "format": "date-time" },
+    "status": { "enum": ["settled", "not_observed"] },
+    "settled_rows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["payment_id", "status", "earned_usd", "payout_date"],
+        "properties": {
+          "payment_id": { "type": "string", "minLength": 1 },
+          "status": { "enum": ["paid", "settled", "completed"] },
+          "earned_usd": { "type": "string", "pattern": "^(0|[1-9][0-9]*)(\\.[0-9]{2})$" },
+          "payout_date": { "type": "string", "format": "date" }
+        }
+      }
+    },
+    "settled_total_usd": { "type": "string", "pattern": "^(0|[1-9][0-9]*)(\\.[0-9]{2})$" },
+    "verified_monthly_run_rate_usd": {
+      "anyOf": [
+        { "type": "string", "pattern": "^(0|[1-9][0-9]*)(\\.[0-9]{2})$" },
+        { "type": "null" }
+      ]
+    },
+    "revenue_credited": { "type": "boolean" }
+  }
+}
