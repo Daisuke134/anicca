@@ -147,4 +147,3 @@ This runs alongside code tasks but closes before production call acceptance:
 2. Read the official portal balance and minimum permitted top-up. Do not infer balance from a low-credit error.
 3. Before the irreversible charge, show the exact amount/currency/payment source and obtain the required approval if not already explicit for that exact charge.
 4. Add only the minimum amount, save the official receipt privately, read back the new balance, and place one controlled call through the real runtime.
-
