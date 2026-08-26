@@ -220,6 +220,8 @@ test("production contract runs every minute and maximizes real applications", ()
   assert.match(dailyPrompt, /complete current `reason`/);
   assert.match(dailyPrompt, /compare its latest receipt blocker with the complete current queue reason/);
   assert.match(dailyPrompt, /carried-forward checkpoint without opening the\s+site/);
+  assert.match(dailyPrompt, /single row with the greatest\s+`utc_timestamp`/);
+  assert.match(dailyPrompt, /changed queue reason is not new evidence when its authorization\s+was already exercised/);
   assert.match(dailyPrompt, /never carry the stale checkpoint forward unchanged/);
   assert.match(dailyPrompt, /cdp\.py screenshot/);
   assert.match(dailyPrompt, /completion\.png" viewport/);

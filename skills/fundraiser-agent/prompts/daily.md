@@ -14,6 +14,12 @@ the official application only when there is no prior checkpoint, or when the
 reason/current artifacts contain concrete new evidence that resolves or changes
 that blocker. Otherwise append a carried-forward checkpoint without opening the
 site, report it, and immediately continue toward new discovery and applications.
+For each receipt identity, `latest` means the single row with the greatest
+`utc_timestamp`; it supersedes every older row for blocker comparison. Never
+reopen from an older terms/consent checkpoint when the latest row already proves
+that acknowledgement was authorized and reached a later video, artifact, or
+CAPTCHA blocker. A changed queue reason is not new evidence when its authorization
+was already exercised and reflected by that latest receipt.
 For an opened candidate, complete every truthful authorized field and either
 obtain an official submission receipt or record the exact current checkpoint.
 Read each priority item's complete current `reason`, not only its program, URL,
