@@ -24,6 +24,13 @@ test("due planner records missed 2h as unavailable and leaves later windows pend
   } finally { global.fetch = originalFetch; }
 });
 
+test("daily report stays pending when a fresh post has no metric window yet", async () => {
+  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "lm-instagram-fresh-daily-"));
+  const expected = { ...EXPECTED, shortcode: "DcfzPeRGyUn", published_at: "2026-08-26T08:33:00.000Z" };
+  const result = await runDue(Date.parse("2026-08-26T08:45:00.000Z"), { LM_DATA_DIR: dataDir }, [expected]);
+  assert.equal(result.find((row) => row.window === "daily").state, "pending");
+});
+
 test("future verified Instagram rows are discovered from the LM distribution ledger", () => {
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "lm-instagram-discovery-"));
   const caption = path.join(dataDir, "caption.txt"); fs.writeFileSync(caption, EXPECTED.caption);

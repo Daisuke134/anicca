@@ -92,6 +92,10 @@ async function runDue(nowMs = Date.now(), env = process.env, provided = null) {
     const parts = Object.fromEntries(new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Tokyo", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(new Date(nowMs)).map(({ type, value }) => [type, value]));
     const reportDay = `${parts.year}-${parts.month}-${parts.day}`;
     if (Number(parts.hour) > 17 || (Number(parts.hour) === 17 && Number(parts.minute) >= 30)) {
+      if (!Object.keys(WINDOWS).some((window) => fs.existsSync(snapshotFile(dataDir, window, expected)))) {
+        results.push({ shortcode: expected.shortcode, window: "daily", state: "pending", due_at: new Date(publishedMs + WINDOWS["2h"]).toISOString() });
+        continue;
+      }
       const digest = persistDailyDigest({ dataDir, reportDay, observedAt: new Date(nowMs).toISOString(), expected });
       const telegram = await sendMetricSnapshot(digest, env, dataDir);
       results.push({ shortcode: expected.shortcode, window: "daily", state: digest.created ? "reported" : "complete", telegram });
