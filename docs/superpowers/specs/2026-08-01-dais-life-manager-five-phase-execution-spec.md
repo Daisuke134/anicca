@@ -8827,3 +8827,11 @@ immutable release `cf6843d4c8ba7ced84c420afcb035844433682fc`は隔離106/106 tes
 6. **CG-47** open LT一件をtalk application receiptまで進め、attendance stateと独立readbackする。
 7. **CG-48** 24回の自然hourly receiptでduplicate effect 0、concurrent owner 0、page/lock cleanupを証明する。
 8. **CG-51** final test/effect/provider-limit stateを更新し、main integration、immutable release、remote readback、Telegram milestoneでDONEにする。
+
+### O1B-25進捗518（Connector Growth ranking/LT performance accepted）
+
+CG-PERF-01としてranking coreへ候補・prompt・URL・error文字列を一切保存しない7数値のaudit contractを追加し、mode-0600 `ranking-audits.jsonl`へwake-bound appendした。official wake `wake-518eec6c6fdf825d5d15a23d`でlarge-inventory 3件chunkを実測し、Connpass rankingは`request/retry/bisect = 53/5/3`、request合計575,621ms、最大23,715ms、並列wall 195,767msまで短縮した。一方、Connpass provider discovery全体は569,798msであり、ranking後のopen-talk詳細classifier直列実行が約374秒を占める支配要因と確定した。
+
+CG-PERF-02としてopen-talk候補だけを検証する既存gateを維持したまま、独立classifierを固定並列3、入力順保持、各候補fail-closedへ変更した。immutable release `453d403a4312d9b75431794a26f4fe48da4bbced`のofficial wake `wake-26e8fb9e312c47aee0eea983`はCalendar 7,989ms、Luma 61,530ms、Connpass discovery 366,778ms、action boundary 14,923ms、terminal Telegramまで約473秒で終了した。ranking auditは`62/8/6`、request合計654,765ms、最大25,015ms、並列wall 229,990ms。Connpass boundary provider ID `36719`、wake provider ID `36720`、Submit external effect 0、process/lock残留0。これでLuma→Connpass→boundary→terminal reportの600,000ms未満をacceptする。
+
+同wakeはmanual boundary成功後にもpermission未確認候補をrouterへ3件流し、external Submit 0ながら`connpass_action_permission_required` circuitを作った。後続RED→GREENではmanual boundary callbackがある時はreceipt成功後にConnpass candidate actionを全skipし、permission verified時だけfactoryがcallbackを外して許可済みaction pathへ進む。focused 98/98、gitleaks PASS、pushed commit `0ad36c5c74d210a828fa221f7f64996ad0514f87`。次のatomic cursorはCG-28 official response readbackである。
