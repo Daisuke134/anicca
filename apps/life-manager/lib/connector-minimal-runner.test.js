@@ -941,6 +941,25 @@ test("the ten-minute wake deadline stops browser churn and still reports the wak
   ]);
 });
 
+test("runner does not start a fallback provider without its measured completion reserve", async () => {
+  let state = fixture({
+    async discoverCandidates(provider) {
+      state.calls.push(["discover", provider]);
+      return provider === "connpass" ? [candidate("connpass", "manual-boundary")] : [];
+    },
+    async reportConnpassActionBoundary() {
+      state.calls.push(["connpass-boundary"]);
+      state.advance(445_000);
+      return { telegram_provider_id: "7711" };
+    },
+  });
+  const result = await runMinimalConnectorWake({
+    ownerToken: "owner-token-fallback-reserve", providers: ["luma", "connpass", "peatix"], maxWakeMs: 600_000,
+  }, state.dependencies);
+  assert.equal(result.safe_reason, "wake_deadline");
+  assert.deepEqual(state.calls.filter(([name]) => name === "discover").map(([, provider]) => provider), ["luma", "connpass"]);
+});
+
 test("calendar observation crossing the deadline does not create a browser target", async () => {
   let state;
   state = fixture({ async readCalendarGaps() { state.calls.push(["calendar"]); state.advance(600_001); return []; } });
