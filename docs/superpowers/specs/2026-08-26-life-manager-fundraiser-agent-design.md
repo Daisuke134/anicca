@@ -42,8 +42,8 @@ flowchart LR
 |---|---|---|
 | Application behavior | Working Luna/browser application behavior exists | Fundraiser supplies the general fundraising objective and verified Life Manager context |
 | Scheduling | Life Manager already runs its own organ scheduler | Fundraiser becomes one native organ with daily acquisition and four-hour tracking claims |
-| Browser | Life Manager already has a generic browser worker | The same worker handles unseen accelerator forms from rendered feedback |
-| State | Runtime jobs, effects, and immutable receipts already exist | ApplicationReceipt identity reuses those contracts; no new target database exists |
+| Browser | Life Manager already has a generic browser worker, but browser jobs are Telegram-source-shaped | The same worker handles unseen forms after the shared job contract accepts a runtime source reference |
+| State | Runtime jobs, effects, and immutable receipts already exist; `application` is not yet an allowed effect class | Extend the shared effect/reconciliation contract with `application`; add no fundraising table |
 | Follow-up | Gmail and Calendar tools already exist | The tracking prompt advances the receipt and prepares interviews |
 
 The native organ MUST only claim, queue, read back the queue row, and return. Long Luna/browser work
@@ -79,11 +79,17 @@ MUST stay in Life Manager's existing worker so the scheduler continues serving o
 
 ## 6. Execution Steps
 
-1. Add the Fundraiser daily/inbox prompts and semantic evals to the existing Luna application behavior.
-2. Add the native Fundraiser organ to Life Manager's existing scheduler and browser-job worker.
-3. Reuse runtime effect/receipt identity for exactly-once Submit and prior-application reads.
-4. Add Gmail/Calendar outcome tracking and human handoffs.
+1. Add the Fundraiser daily prompt and semantic evals to the existing Luna application behavior.
+2. Let runtime-owned work enter the existing browser queue and connect the native Fundraiser organ to the existing scheduler and Luna runner.
+3. Extend runtime effect/receipt identity with `application` for exactly-once Submit and prior-application reads.
+4. Add the read-only inbox prompt, Gmail/Calendar outcome tracking, and human handoffs.
 5. Deploy through the existing Life Manager owner and prove unseen-form submission, official readback, next-day replay-zero, and four-hour tracking.
+
+## 7. Implementation State
+
+- Task 0 predecessor audit and architecture selection: complete.
+- Task 1 daily Luna behavior: in progress.
+- Scheduler wiring, application receipts, outcome tracking, and live acceptance: not implemented.
 
 The atomic file-level commands and checkboxes are the implementation SSOT in
 `docs/superpowers/plans/2026-08-26-life-manager-fundraiser-agent.md`.

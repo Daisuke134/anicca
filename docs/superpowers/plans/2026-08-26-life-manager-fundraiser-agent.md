@@ -17,24 +17,29 @@ submits, and tracks one new eligible accelerator application per day without pro
 **Files:**
 - Create: `skills/fundraiser-agent/SKILL.md`
 - Create: `skills/fundraiser-agent/prompts/daily.md`
-- Create: `skills/fundraiser-agent/prompts/inbox.md`
 - Create: `skills/fundraiser-agent/evals/fundraiser-loop.test.mjs`
 
 - [ ] Write RED evals for an unseen form, an already-applied cohort, a new cohort, an unsupported claim, a human-only field, and ambiguous Submit.
 - [ ] Write one provider-agnostic daily prompt that makes Luna discover, qualify, fill, submit once, and capture readback using the existing browser loop.
-- [ ] Write one read-only inbox prompt that tracks replies and cannot start a new application.
-- [ ] Add a static assertion that production Fundraiser files contain no provider name, selector, fixed query, compiler, registry, or application script.
+- [ ] Prove through behavioral eval cases that the daily behavior handles unfamiliar forms without provider-specific assumptions or invented facts.
 - [ ] Run `node --test skills/fundraiser-agent/evals/fundraiser-loop.test.mjs` and reach GREEN.
 - [ ] Commit and push `feat(fundraising): add fundraiser objective to Luna application loop`.
 
 ### Task 2: Connect Fundraiser to the existing Life Manager loop
 
 **Files:**
+- Create: `apps/life-manager/migrations/2026-08-26-lm-browser-jobs-system-source.sql`
+- Modify: `apps/life-manager/lib/browser-job-store.js`
+- Modify: `apps/life-manager/lib/browser-job-store.test.js`
 - Create: `apps/life-manager/lib/fundraiser-runtime.js`
 - Create: `apps/life-manager/lib/fundraiser-runtime.test.js`
+- Modify: `apps/life-manager/lib/connector-luna-judgment.js`
+- Modify: `apps/life-manager/lib/connector-luna-judgment.test.js`
 - Modify: `apps/life-manager/scheduler.js`
 - Create: `apps/life-manager/lib/fundraiser-wiring.test.js`
 
+- [ ] Let a Life Manager runtime job enqueue a browser job with `source_kind=runtime` and `source_ref=<runtime job id>` instead of fake Telegram IDs.
+- [ ] Allow the existing local agent runner to invoke `application-intent-planner` and require its selected model to be Luna.
 - [ ] Write RED tests for one acquisition slot per user-local day and one read-only tracking slot every four hours.
 - [ ] Implement `fundraiserUserOnce` using the existing Life Manager job claim and browser worker; do not add a daemon, CLI, shell/Python runner, scheduler, or browser implementation.
 - [ ] Wire `fundraiserUserOnce` into `organsUserOnce` behind the existing `daily_automation_enabled` gate.
@@ -46,13 +51,15 @@ submits, and tracks one new eligible accelerator application per day without pro
 ### Task 3: Reuse existing receipts for exactly-once application
 
 **Files:**
+- Create: `apps/life-manager/migrations/2026-08-26-lm-runtime-application-effect.sql`
 - Modify: `apps/life-manager/lib/runtime-job-store.js`
 - Modify: `apps/life-manager/lib/runtime-job-store.test.js`
 - Modify: `skills/fundraiser-agent/prompts/daily.md`
 
 - [ ] Write RED tests for duplicate URLs resolving to the same `organization + program + cohort/window + account` effect identity.
 - [ ] Add the smallest generic receipt read needed to give Luna prior application identities; add no fundraising table.
-- [ ] Claim the existing effect immediately before Submit and store the UI/mail readback in the immutable receipt.
+- [ ] Extend the shared runtime contract with the `application` effect class, including reconciliation SQL; add no fundraising table.
+- [ ] Claim the application effect immediately before Submit and store the UI/mail readback in the immutable receipt.
 - [ ] Make `submit_unknown` replay-zero: the loop tracks it but never clicks Submit again automatically.
 - [ ] Prove the same cohort is blocked and a genuinely new cohort remains eligible.
 - [ ] Run `node --test apps/life-manager/lib/runtime-job-store.test.js skills/fundraiser-agent/evals/fundraiser-loop.test.mjs` and reach GREEN.
@@ -61,7 +68,7 @@ submits, and tracks one new eligible accelerator application per day without pro
 ### Task 4: Track applications through interview and funding
 
 **Files:**
-- Modify: `skills/fundraiser-agent/prompts/inbox.md`
+- Create: `skills/fundraiser-agent/prompts/inbox.md`
 - Create: `skills/fundraiser-agent/evals/inbox-loop.test.mjs`
 
 - [ ] Write RED evals for confirmation, rejection, waitlist, interview, offer, funding, duplicate mail, and unrelated mail.
