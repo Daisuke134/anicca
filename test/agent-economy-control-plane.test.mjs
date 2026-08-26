@@ -1003,6 +1003,11 @@ exit 97
         assert.equal(git("add", "package-lock.json").status, 0);
         assert.equal(git("commit", "-qm", "lock differs").status, 0);
         assert.equal(git("push", "-q", "origin", "HEAD:main").status, 0);
+      } else if (kind === "package-manifest-mismatch") {
+        writeFileSync(join(repo, "package.json"), `${readFileSync(join(repo, "package.json"), "utf8").trimEnd()}\n\n`);
+        assert.equal(git("add", "package.json").status, 0);
+        assert.equal(git("commit", "-qm", "package manifest differs").status, 0);
+        assert.equal(git("push", "-q", "origin", "HEAD:main").status, 0);
       } else if (kind === "mutated-dependency") {
         const dependencyDir = join(current, "node_modules", "reuse-dependency");
         const dependency = join(dependencyDir, "index.js");
@@ -1035,5 +1040,5 @@ exit 97
     }
   };
 
-  for (const kind of ["identical", "lock-mismatch", "mutated-dependency", "invalid-manifest"]) runCase(kind);
+  for (const kind of ["identical", "lock-mismatch", "package-manifest-mismatch", "mutated-dependency", "invalid-manifest"]) runCase(kind);
 });

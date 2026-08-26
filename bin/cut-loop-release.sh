@@ -287,45 +287,61 @@ dependency_entries() {
   dependency_entries_from "$DEST"
 }
 
+cleanup_dependency_reuse_attempt() {
+  local snapshot="$1"
+  rm -rf "$DEST/node_modules"
+  rm -f "$snapshot" || die "could not remove dependency reuse snapshot"
+}
+
 reuse_current_node_modules() {
   # A copy-on-write clone saves the only large transient allocation in a release cut. It is a
   # cache, not a trust shortcut: current must still be a sealed, identity-valid release whose
   # dependency tree exactly matches its own recorded bytes and the new lock/runtime contract.
-  [ "$(uname -s)" = "Darwin" ] || { rm -rf "$DEST/node_modules"; return 1; }
-  [ -L "$CURRENT" ] || { rm -rf "$DEST/node_modules"; return 1; }
-  local current metadata manifest
+  local current metadata manifest snapshot manifest_sha256
+  snapshot="$DEST/.dependency-manifest-reuse.$$"
+  [ "$(uname -s)" = "Darwin" ] || { cleanup_dependency_reuse_attempt "$snapshot"; return 1; }
+  [ -L "$CURRENT" ] || { cleanup_dependency_reuse_attempt "$snapshot"; return 1; }
   current="$(validate_release_target "$CURRENT" "$LOOPS_ROOT" 2>/dev/null)" \
-    || { rm -rf "$DEST/node_modules"; return 1; }
+    || { cleanup_dependency_reuse_attempt "$snapshot"; return 1; }
   metadata="$current/RELEASE.json"
   manifest="$current/DEPENDENCY-MANIFEST.tsv"
-  [ -f "$manifest" ] && [ ! -L "$manifest" ] || { rm -rf "$DEST/node_modules"; return 1; }
-  dependency_node_modules_are_contained "$current" || { rm -rf "$DEST/node_modules"; return 1; }
-  "$NODE_BIN" - "$metadata" "$DEST/package-lock.json" "$manifest" "$NODE_VERSION" "$NPM_VERSION" <<'NODE' \
-    || { rm -rf "$DEST/node_modules"; return 1; }
+  [ -f "$manifest" ] && [ ! -L "$manifest" ] || { cleanup_dependency_reuse_attempt "$snapshot"; return 1; }
+  dependency_node_modules_are_contained "$current" || { cleanup_dependency_reuse_attempt "$snapshot"; return 1; }
+  manifest_sha256="$("$NODE_BIN" - "$metadata" "$DEST/package-lock.json" "$DEST/package.json" "$manifest" "$NODE_VERSION" "$NPM_VERSION" <<'NODE'
 const crypto = require('node:crypto');
 const fs = require('node:fs');
-const [metadataPath, lockPath, manifestPath, nodeVersion, npmVersion] = process.argv.slice(2);
+const [metadataPath, lockPath, packagePath, manifestPath, nodeVersion, npmVersion] = process.argv.slice(2);
 let metadata;
 try { metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8')); } catch { process.exit(1); }
 if (!metadata || typeof metadata !== 'object' || !metadata.runtime_versions || typeof metadata.runtime_versions !== 'object') process.exit(1);
 const sha256 = (path) => crypto.createHash('sha256').update(fs.readFileSync(path)).digest('hex');
 if (metadata.lockfile_sha256 !== sha256(lockPath)) process.exit(1);
+if (metadata.dependency_manifest_sha256 !== sha256(packagePath)) process.exit(1);
 if (metadata.runtime_versions.node !== nodeVersion || metadata.runtime_versions.npm !== npmVersion) process.exit(1);
 if (metadata.dependency_tree_manifest_sha256 !== sha256(manifestPath)) process.exit(1);
+process.stdout.write(metadata.dependency_tree_manifest_sha256);
 NODE
-  dependency_entries_from "$current" | cmp -s - "$manifest" \
-    || { rm -rf "$DEST/node_modules"; return 1; }
+  )" || { cleanup_dependency_reuse_attempt "$snapshot"; return 1; }
+  if ! /bin/cp -p "$manifest" "$snapshot" \
+    || [ -L "$snapshot" ] \
+    || [ "$(shasum -a 256 "$snapshot" | awk '{print $1}')" != "$manifest_sha256" ]; then
+    cleanup_dependency_reuse_attempt "$snapshot"
+    return 1
+  fi
+  dependency_entries_from "$current" | cmp -s - "$snapshot" \
+    || { cleanup_dependency_reuse_attempt "$snapshot"; return 1; }
 
   rm -rf "$DEST/node_modules"
   if ! /bin/cp -cRP "$current/node_modules" "$DEST/node_modules"; then
-    rm -rf "$DEST/node_modules"
+    cleanup_dependency_reuse_attempt "$snapshot"
     return 1
   fi
   if ! dependency_node_modules_are_contained "$DEST" \
-    || ! dependency_entries_from "$DEST" | cmp -s - "$manifest"; then
-    rm -rf "$DEST/node_modules"
+    || ! dependency_entries_from "$DEST" | cmp -s - "$snapshot"; then
+    cleanup_dependency_reuse_attempt "$snapshot"
     return 1
   fi
+  rm -f "$snapshot" || die "could not remove dependency reuse snapshot"
 }
 
 dependency_manifest() {
