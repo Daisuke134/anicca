@@ -326,9 +326,9 @@ async function defaultLiveFetch(url, init, options = {}) {
   }
 }
 
-function probeVideo(file, ffprobeBin = "ffprobe") {
+function probeVideo(file, ffprobeBin = "ffprobe", timeoutMs = 60_000) {
   const result = spawnSync(ffprobeBin, ["-v", "error", "-print_format", "json", "-show_streams", "-show_format", file], {
-    encoding: "utf8", maxBuffer: 2 * 1024 * 1024,
+    encoding: "utf8", maxBuffer: 2 * 1024 * 1024, timeout: timeoutMs,
   });
   if (!result || result.status !== 0) return null;
   try {
@@ -337,40 +337,51 @@ function probeVideo(file, ffprobeBin = "ffprobe") {
     const duration = Number(stream && (stream.duration || parsed.format && parsed.format.duration));
     const width = Number(stream && stream.width);
     const height = Number(stream && stream.height);
-    if (!stream || !Number.isFinite(duration) || duration <= 0 || !Number.isSafeInteger(width) || width < 2 || !Number.isSafeInteger(height) || height < 2) return null;
-    return { duration, aspect: width / height, width, height };
+    const frames = Number(stream && stream.nb_frames);
+    if (!stream || !Number.isFinite(duration) || duration <= 0 || !Number.isSafeInteger(width) || width < 2 || !Number.isSafeInteger(height) || height < 2 || !Number.isSafeInteger(frames) || frames < 1) return null;
+    return { duration, aspect: width / height, width, height, frames };
   } catch { return null; }
 }
 
 function compareNativeVideo(nativePath, approvedPath, options = {}) {
-  const native = probeVideo(nativePath, options.ffprobeBin || "ffprobe");
-  const approved = probeVideo(approvedPath, options.ffprobeBin || "ffprobe");
+  const requestedTimeout = Number(options.timeoutMs);
+  const timeoutMs = Number.isFinite(requestedTimeout) && requestedTimeout > 0
+    ? Math.max(1, Math.min(60_000, Math.floor(requestedTimeout)))
+    : 60_000;
+  const native = probeVideo(nativePath, options.ffprobeBin || "ffprobe", timeoutMs);
+  const approved = probeVideo(approvedPath, options.ffprobeBin || "ffprobe", timeoutMs);
   if (!native || !approved) return false;
   const durationDelta = Math.abs(native.duration - approved.duration);
   if (durationDelta > 0.25) return false;
   if (Math.abs(native.aspect - approved.aspect) > 0.03) return false;
+  if (native.frames !== approved.frames) return false;
   const width = approved.width;
   const height = approved.height;
-  const expectedFrames = Math.max(1, Math.ceil(Math.max(native.duration, approved.duration) * 2));
-  const pad = (label) => `[${label}:v]fps=2,setpts=PTS-STARTPTS,scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2:color=black,format=yuv420p`;
+  const expectedFrames = native.frames;
+  const pad = (label) => `[${label}:v]setpts=PTS-STARTPTS,scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2:color=black,format=yuv420p`;
   const compare = (filter) => {
     const result = spawnSync(options.ffmpegBin || "ffmpeg", ["-loglevel", "error", "-i", nativePath, "-i", approvedPath, "-filter_complex", filter, "-frames:v", String(expectedFrames), "-f", "null", "-"], {
-      encoding: "utf8", maxBuffer: 2 * 1024 * 1024,
+      encoding: "utf8", maxBuffer: 2 * 1024 * 1024, timeout: timeoutMs,
     });
     const output = `${result && result.stdout || ""}\n${result && result.stderr || ""}`;
-    const scores = [...output.matchAll(/All:([0-9.]+)/g)].map((match) => Number(match[1]));
+    const scores = [...output.matchAll(/All:(-?[0-9.]+)/g)].map((match) => Number(match[1]));
     const comparedFrames = (output.match(/\bn:\d+/g) || []).length;
+    const full = Boolean(result && result.status === 0 && comparedFrames === expectedFrames && scores.length === expectedFrames);
     return {
-      ok: Boolean(result && result.status === 0 && comparedFrames >= expectedFrames - 1 && scores.length >= expectedFrames - 1 && scores.every((score) => score >= 0.945)),
+      ok: full && scores.every((score) => score >= 0.945),
+      full,
       comparedFrames,
       scores,
     };
   };
   const strict = compare(`${pad("0")} [native];${pad("1")} [approved];[native][approved]ssim=stats_file=-`);
   if (strict.ok) return true;
-  const blurPad = (label) => `[${label}:v]fps=2,setpts=PTS-STARTPTS,scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2:color=black,gblur=sigma=2,format=yuv420p`;
+  if (!strict.full) return false;
+  const rawMean = strict.scores.reduce((sum, score) => sum + score, 0) / strict.scores.length;
+  if (Math.min(...strict.scores) < 0.90 || rawMean < 0.945) return false;
+  const blurPad = (label) => `[${label}:v]setpts=PTS-STARTPTS,scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2:color=black,gblur=sigma=2,format=yuv420p`;
   const blurred = compare(`${blurPad("0")} [native];${blurPad("1")} [approved];[native][approved]ssim=stats_file=-`);
-  return Boolean(blurred.comparedFrames === strict.comparedFrames && blurred.ok);
+  return Boolean(blurred.full && blurred.comparedFrames === expectedFrames && blurred.ok);
 }
 
 function parseArgs(argv = [], lane = EN_LANE) {

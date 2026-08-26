@@ -362,6 +362,9 @@ test("default native comparator accepts same/transcoded video but rejects visibl
   const pattern = path.join(dir, "pattern.mp4");
   const patternInstagramLike = path.join(dir, "pattern-instagram-like.mp4");
   const patternDownscaled = path.join(dir, "pattern-downscaled.mp4");
+  const patternSingleFrameChanged = path.join(dir, "pattern-single-frame-changed.mp4");
+  const checkerA = path.join(dir, "checker-a.mp4");
+  const checkerB = path.join(dir, "checker-b.mp4");
   const splitATruncated = path.join(dir, "split-a-truncated.mp4");
   for (const [file, color] of [[red, "red"], [green, "green"]]) {
     execFileSync("ffmpeg", ["-loglevel", "error", "-y", "-f", "lavfi", "-i", `color=c=${color}:s=64x64:d=1:r=10`, "-pix_fmt", "yuv420p", file]);
@@ -374,14 +377,31 @@ test("default native comparator accepts same/transcoded video but rejects visibl
   execFileSync("ffmpeg", ["-loglevel", "error", "-y", "-f", "lavfi", "-i", "testsrc2=s=64x64:d=15:r=10", "-pix_fmt", "yuv420p", pattern]);
   execFileSync("ffmpeg", ["-loglevel", "error", "-y", "-i", pattern, "-vf", "eq=brightness=0.04:contrast=1.03:saturation=1.05", "-c:v", "libx264", "-crf", "28", "-pix_fmt", "yuv420p", patternInstagramLike]);
   execFileSync("ffmpeg", ["-loglevel", "error", "-y", "-i", pattern, "-vf", "scale=48:48,scale=64:64", "-c:v", "libx264", "-crf", "32", "-pix_fmt", "yuv420p", patternDownscaled]);
+  execFileSync("ffmpeg", ["-loglevel", "error", "-y", "-i", pattern, "-vf", "drawbox=x=0:y=0:w=iw:h=ih:color=green@1:t=fill:enable='eq(n\\,8)'", "-c:v", "libx264", "-crf", "0", "-preset", "ultrafast", "-pix_fmt", "yuv420p", patternSingleFrameChanged]);
+  for (const [file, phase] of [[checkerA, 0], [checkerB, 1]]) {
+    execFileSync("ffmpeg", ["-loglevel", "error", "-y", "-f", "lavfi", "-i", `nullsrc=s=64x64:d=1:r=10,geq=lum='128+30*if(mod(X+Y+${phase},2),1,-1)':cb=128:cr=128`, "-pix_fmt", "yuv420p", file]);
+  }
   execFileSync("ffmpeg", ["-loglevel", "error", "-y", "-i", splitA, "-t", "13.5", "-c:v", "libx264", "-crf", "23", "-pix_fmt", "yuv420p", splitATruncated]);
   assert.equal(compareNativeVideo(red, transcoded), true);
   assert.equal(compareNativeVideo(red, green), false);
   assert.equal(compareNativeVideo(splitA, splitATranscoded), true);
   assert.equal(compareNativeVideo(patternInstagramLike, pattern), true);
   assert.equal(compareNativeVideo(patternDownscaled, pattern), true);
+  assert.equal(compareNativeVideo(patternSingleFrameChanged, pattern), false);
+  assert.equal(compareNativeVideo(checkerA, checkerB), false);
   assert.equal(compareNativeVideo(splitA, splitB), false);
   assert.equal(compareNativeVideo(splitATruncated, splitA), false);
+});
+
+test("native comparator honors ffprobe timeout", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "lm-native-video-timeout-"));
+  const red = path.join(dir, "red.mp4");
+  execFileSync("ffmpeg", ["-loglevel", "error", "-y", "-f", "lavfi", "-i", "color=c=red:s=64x64:d=1:r=10", "-pix_fmt", "yuv420p", red]);
+  const slowFfprobe = path.join(dir, "slow-ffprobe.js");
+  fs.writeFileSync(slowFfprobe, "#!/usr/bin/env node\nsetTimeout(() => {}, 2000);\n", { mode: 0o755 });
+  const startedAt = Date.now();
+  assert.equal(compareNativeVideo(red, red, { ffprobeBin: slowFfprobe, timeoutMs: 100 }), false);
+  assert.ok(Date.now() - startedAt < 1000);
 });
 
 test("CLI accepts only run with a mandatory exact ISO slot", () => {
