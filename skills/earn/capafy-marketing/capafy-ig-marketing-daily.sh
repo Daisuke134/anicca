@@ -122,7 +122,29 @@ fi
 
 # ── All-skills bio landing refreshes on EVERY pass, including cadence no-op days. ──
 # netlify-cli writes ./.netlify relative to cwd; launchd starts at / (no WorkingDirectory) -> mkdir '//.netlify' ENOENT. cd keeps it inside the skill dir.
-/opt/homebrew/bin/python3 "$LIFE_MANAGER_REPO/skills/earn/capafy-marketing/scripts/build_landing.py" >>"$LOG" 2>&1 && ( cd "$LIFE_MANAGER_REPO/skills/earn/capafy-marketing" && /opt/homebrew/bin/npx --yes netlify-cli@27.1.2 deploy --prod --dir "$LIFE_MANAGER_REPO/skills/earn/capafy-marketing/site" --site "$LANDING_SITE_ID" ) >>"$LOG" 2>&1 || echo "landing regenerate/deploy failed (non-fatal)" >>"$LOG"
+LANDING_SITE="$LIFE_MANAGER_REPO/skills/earn/capafy-marketing/site"
+landing_fingerprint() {
+  /opt/homebrew/bin/python3 - "$LANDING_SITE" <<'PY'
+import hashlib, pathlib, sys
+root = pathlib.Path(sys.argv[1])
+digest = hashlib.sha256()
+for path in sorted(item for item in root.rglob("*") if item.is_file()):
+    digest.update(str(path.relative_to(root)).encode())
+    digest.update(path.read_bytes())
+print(digest.hexdigest())
+PY
+}
+LANDING_BEFORE="$(landing_fingerprint)"
+if /opt/homebrew/bin/python3 "$LIFE_MANAGER_REPO/skills/earn/capafy-marketing/scripts/build_landing.py" >>"$LOG" 2>&1; then
+  LANDING_AFTER="$(landing_fingerprint)"
+  if [ "$LANDING_BEFORE" = "$LANDING_AFTER" ]; then
+    echo "landing unchanged; deploy skipped" >>"$LOG"
+  elif ! ( cd "$LIFE_MANAGER_REPO/skills/earn/capafy-marketing" && /opt/homebrew/bin/npx --yes netlify-cli@27.1.2 deploy --prod --dir "$LANDING_SITE" --site "$LANDING_SITE_ID" ) >>"$LOG" 2>&1; then
+    echo "landing deploy failed (non-fatal)" >>"$LOG"
+  fi
+else
+  echo "landing regenerate failed (non-fatal)" >>"$LOG"
+fi
 
 # ── WARMUP GATE: decide DRY vs LIVE. Creation date is day1; day1-2 DRY; LIVE from day3. ──
 WARM_DAY="$(capafy_ig_warming_day "$IG_STARTED_WARMING")"
@@ -270,7 +292,7 @@ STEP7 REPORT — MANDATORY every pass. Send to the Telegram target in CAPAFY_TEL
 Do not write '"$LAST_PASS_MARKER"'; the deterministic wrapper owns that heartbeat and writes it only after this runner exits 0. A DRY pass or a deferred cadence pass is a clean finish.'
 
 EVIDENCE_DIR="$HOME/.local/state/life-manager/state/agent-runner-evidence/${INSTANCE}-ig-marketing/$(date +%s)-$$"
-printf '%s\n' "$PROMPT" | "$RUN_AGENT" \
+printf '%s\n' "$PROMPT" | AGENT_RUNNER_EVIDENCE_MIN_FREE_BYTES=67108864 "$RUN_AGENT" \
   --task-class marketing-agent \
   --evidence-dir "$EVIDENCE_DIR" \
   --task-label "${INSTANCE}-ig-marketing-daily" \
