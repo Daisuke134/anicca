@@ -53,6 +53,8 @@ def test_common_operator_passes_sealed_intent_to_terra_without_provider_selector
     assert "must not submit" in normalized
     assert "account balances are live observations" in normalized
     assert "required charge exceeds the live balance" in normalized
+    assert "post-submit remaining balance is not the current balance" in normalized
+    assert "current balance = required charge + post-submit remaining balance" in normalized
     assert "explicit None, Never, or No option" in normalized
     assert captured["env"]["BU_CDP_URL"] == "http://127.0.0.1:9233"
     assert captured["env"]["BU_NAME"] == "market-form-anymarket"
