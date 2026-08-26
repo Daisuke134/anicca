@@ -2241,6 +2241,19 @@ owner at `CaptionUsername`. The minimal implementation is one frozen lane in
 the existing canary engine, one thin CLI wrapper, and focused regression tests;
 it does not add a publisher, scheduler, or alternate receipt path.
 
+The implementation is now `GREEN` at commits `c8a4b3ebe` and `e105d7cf1`:
+the shared canary engine accepts one additional frozen Card lane, keeps
+provider alias `@anicca.jp1` separate from native owner `@anicca.ios.jp`, and a
+thin dedicated CLI selects only that lane. Focused tests pass `29/29`, including
+dedicated-ref isolation, exact raw integration, fail-before-secret/provider,
+wrong-owner hold, one natural Telegram release only after native verification,
+and same-slot publication/message replay 0. Official Postiz public-API readback
+finds the exact integration among 30 rows as `instagram-standalone`, profile
+`anicca.jp1`, `disabled=false`. Runtime env, manifest, fence, provider rows,
+Telegram publication receipts, scheduler, and legacy state remain unchanged;
+fresh adversarial review and the exact runtime approval/preflight are still
+required before the one allowed effect.
+
 **Completed immediately preceding atomic item:** MKT-09R8-12 / Order 23I
 reconciled the complete existing Postiz history before any new effect. Read-only
 GETs covered `1970-01-01` through `2026-08-27`: pre-2025 and 2025 returned zero,
