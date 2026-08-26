@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "context_version": "2026-08-26.13",
-  "updated_at": "2026-08-26T22:57:13+09:00",
+  "context_version": "2026-08-26.14",
+  "updated_at": "2026-08-26T23:04:35+09:00",
   "product": {
     "name": "Life Manager",
     "usage": "Use as the product name in every public product and fundraising field.",
@@ -73,8 +73,8 @@
       {
         "program": "a16z Speedrun",
         "official_url": "https://speedrun.a16z.com/apply",
-        "action": "apply_now_profile_evidence_fix",
-        "reason": "The current official application page exposes SR008 year-round intake with a priority window of October 12 through November 1, 2026. The founder explicitly requested that Life Manager apply to a16z Speedrun and authorizes the ordinary application-stage acknowledgement of the Speedrun Terms of Use and Privacy Policy required to open and submit the application. The latest checkpoint is concretely changed: the supported CapSolver callback and centered GET STARTED interaction already advanced to the full official application form. Do not claim that the required founder identity fields are absent. Read first/last name, citizenship, date of birth for derived current age, Tokyo/Japan address, LinkedIn URL, and GitHub URL from ~/.config/anicca/job-search/profile.json. Read verified education and professional/technical experience from that profile's candidate.evidence claims, including Keio University, Nara Institute of Science and Technology, AI-agent engineering, research, and product-building experience; never print private values. Answer team and FTE questions truthfully from the rendered wording and authorized context, without inventing employees or co-founders. Generate the startup/team narratives from application_answers and the verified evidence claims. This authorization does not extend to an investment agreement, equity issuance, payment, public broadcast, or any later legal commitment. Apply now and require official completion-screen PNG plus Telegram photo message ID before recording submitted_verified."
+        "action": "apply_now_exact_profile_paths_fix",
+        "reason": "The current official application page exposes SR008 year-round intake with a priority window of October 12 through November 1, 2026. The founder explicitly requested that Life Manager apply to a16z Speedrun and authorizes the ordinary application-stage acknowledgement of the Speedrun Terms of Use and Privacy Policy required to open and submit the application. The latest checkpoint is concretely changed: the supported CapSolver callback and centered GET STARTED interaction already advanced to the full official application form. Do not probe guessed profile keys or claim the required founder identity fields are absent. In ~/.config/anicca/job-search/profile.json, read the exact paths candidate.name_romaji_parts.given, candidate.name_romaji_parts.family, candidate.citizenships[0], candidate.date_of_birth for derived current age, candidate.mailing_address.city, candidate.mailing_address.country, candidate.linkedin_url, and candidate.github_url. Read verified education and professional/technical experience from facts[].claim, including Keio University, Nara Institute of Science and Technology, AI-agent engineering, research, and product-building experience; never print private values. Answer team and FTE questions truthfully from the rendered wording and authorized context, without inventing employees or co-founders. Generate the startup/team narratives from application_answers and the verified evidence claims. This authorization does not extend to an investment agreement, equity issuance, payment, public broadcast, or any later legal commitment. Apply now and require official completion-screen PNG plus Telegram photo message ID before recording submitted_verified."
       },
       {
         "program": "Y Combinator",
