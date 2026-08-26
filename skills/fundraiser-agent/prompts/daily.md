@@ -141,6 +141,11 @@ For every queued candidate until the execution window ends:
    validation, and existing values. The repository `cdp.py` supports
    `new|nav|eval|screenshot|clickxy|insert|key|setfile|fillname|fillcss|selectname|formstate|close`.
    Use the rendered DOM plus `formstate` as the form observation evidence.
+   Never start an interactive shell (`zsh -i`, `bash -i`, or equivalent). If
+   `formstate` returns an empty array on a rendered React/Notion form, continue
+   through `cdp.py eval` against visible `input, textarea, select, button,
+   [role=button]` controls and any rendered iframe; an empty generic formstate is
+   an observation fallback signal, not a reason to wait or leave the candidate.
    Rendered requiredness is authoritative for this application attempt. A blank
    optional video, social profile, incorporation-status, deck, demo, or narrative
    field (`required=false` and valid) is never a human checkpoint. Leave it blank
