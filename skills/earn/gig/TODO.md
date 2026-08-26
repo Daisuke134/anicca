@@ -520,6 +520,53 @@ repository-wide migration is not part of this Coconala session.
    and replay-deduplicated verified deliveries count. Focused onboarding/release/outcome checks
    pass 27/27; a new clean-Mac live activation/readback still remains.
 
+#### Friend-device recovery and acceptance contract
+
+**1. Overview.** A third-party first run on the old release falsely treated the unloaded dedicated
+browser as busy, timed out waiting for CDP 9223, selected unrelated shared-manifest jobs, and could
+report a verified initial Paid delivery as zero. Main `12e506ce8` fixes those three code defects.
+Re-running the idempotent public bootstrap MUST fast-forward the existing `~/life-manager` checkout
+and resume the same private browser/profile/state; it MUST NOT require deletion or a fresh account.
+
+**2. Acceptance criteria.** The friend's checkout resolves to `12e506ce8` or a descendant; preflight
+reports `ready`; the dedicated browser answers on CDP 9223; exactly the six Coconala owners are
+loaded; Apply, Reply, Storefront and Paid each follow their declared launchd recurrence; no Upwork,
+Writer or article owner is activated by Coconala setup; an initial verified Paid delivery and a
+deduplicated replay both remain countable; and a second bootstrap resumes without duplicate effects.
+
+**3. As-Is / To-Be.** As-Is was `unloaded browser -> busy -> no browser -> timeout`, plus
+`shared manifest -> all jobs`. To-Be is `unloaded browser -> process fallback -> browser activation`,
+plus `Coconala bootstrap/watch -> four business lanes`, with Browser and Release Watcher activated
+explicitly. On the owner Mac, the code/release is current but the live outcome is presently blocked:
+Apply and Paid logs contain `ENOSPC`/disk-headroom failures and only about 4.6 GB is free. Process
+presence is therefore not a healthy-lane claim.
+
+**4. Test matrix.** `test_coconala_browser_running_fence_uses_process_fallback` covers first start;
+`test_default_release_scope_is_only_the_four_coconala_business_lanes` covers activation/watch scope;
+`test_initial_verified_delivery_counts_without_deduplication` and
+`test_verified_replay_deduplication_still_counts` cover Paid outcome receipts. Focused onboarding,
+release and outcome tests pass 27/27. Friend-device live readback and owner-Mac disk recovery remain NG.
+
+**5. Boundaries.** The recovery MUST preserve credentials, Coconala login, browser profile and private
+state. It MUST NOT delete Codex/Claude sessions, create another marketplace account, activate other
+products, claim revenue from process liveness, or treat Release Watcher being idle after exit 0 as a
+failure. CloakBrowser major upgrade and removal of `--no-sandbox` remain separate compatibility work.
+
+**6. Execution steps.** The friend first runs the public one-line bootstrap again. If that command
+cannot fast-forward, they run the explicit fetch/merge commands and send only secret-free command
+output. After setup, `./install.sh coconala preflight`, `status`, and `outcomes` provide the readbacks.
+UI change: none. Maestro: not required because this is a Terminal/launchd/browser-control contract.
+
+Atomic remaining work for this incident:
+
+- [ ] Recover at least 10 GiB owner-Mac disk headroom without deleting Codex/Claude sessions.
+- [ ] Observe one natural Apply wake after disk recovery with no `ENOSPC` and a durable result row.
+- [ ] Observe one natural Paid wake after disk recovery with no disk gate and a durable result row.
+- [ ] Ask the friend to rerun the public bootstrap and capture the resolved commit SHA.
+- [ ] Capture the friend's secret-free `preflight`, `status`, and `outcomes` output.
+- [ ] Confirm the friend has exactly six loaded Coconala labels and zero Coconala-triggered unrelated labels.
+- [ ] Rerun the friend bootstrap once and prove state reuse plus zero duplicate effect.
+
 ### Completed and not TODO
 
 - [x] Apply production acceptance: 24/7 launchd owner, official application readback,
