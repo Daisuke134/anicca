@@ -4,8 +4,10 @@ import {
   receiptKey,
   reconcilePendingReceipts,
   reconcileLedger,
+  reconcileRevenueReceipts,
   summarizeRealizedRevenue,
 } from "./money-truth.mjs";
+import { normalizeRevenueReceipt } from "./revenue-receipt.mjs";
 import { mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
@@ -95,4 +97,65 @@ test("reconcileLedger does not persist a null receipt, so the next wake can retr
   const result = await reconcileLedger({ ledgerPath: ledger, correctionPath: corrections, fetchReceipt: async () => null });
   assert.equal(result.persisted_corrections, 0);
   assert.equal(result.summary.unverified_external_rows, 1);
+});
+
+const REVENUE_TX = `0x${"22".repeat(32)}`;
+const EXTERNAL_PAYER = "0x1111111111111111111111111111111111111111";
+const INSTANCE_RECIPIENT = "0x2222222222222222222222222222222222222222";
+const revenueReceipt = (overrides = {}) => normalizeRevenueReceipt({
+  provider: "x402",
+  payer: EXTERNAL_PAYER,
+  recipient: INSTANCE_RECIPIENT,
+  gross: "2.000000",
+  fee: "0.100000",
+  refund: "0",
+  asset: "USDC",
+  proof: { chain_id: 8453, tx_hash: REVENUE_TX, log_index: 0 },
+  terminal_state: "settled",
+  occurred_at: "2026-08-27T00:00:00.000Z",
+  ...overrides,
+});
+
+test("reconcileRevenueReceipts appends one canonical positive row and replay is zero", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "money-truth-revenue-"));
+  const journalPath = join(dir, "revenue-journal.jsonl");
+  const receipt = revenueReceipt();
+  const first = await reconcileRevenueReceipts({ journalPath, receipts: [receipt], nowTs: 100 });
+  assert.equal(first.accepted, 1);
+  assert.equal(first.duplicates, 0);
+  assert.equal(first.summary.external_net_usdc, 1.9);
+  const second = await reconcileRevenueReceipts({ journalPath, receipts: [receipt], nowTs: 101 });
+  assert.equal(second.accepted, 0);
+  assert.equal(second.duplicates, 1);
+  assert.equal((await readFile(journalPath, "utf8")).trim().split("\n").length, 1);
+});
+
+test("reconcileRevenueReceipts includes a signed negative refund correction", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "money-truth-revenue-"));
+  const journalPath = join(dir, "revenue-journal.jsonl");
+  await reconcileRevenueReceipts({ journalPath, receipts: [revenueReceipt()], nowTs: 100 });
+  const correction = revenueReceipt({
+    gross: "0",
+    fee: "0",
+    refund: "0.500000",
+    terminal_state: "refunded",
+    proof: { chain_id: 8453, tx_hash: `0x${"33".repeat(32)}`, log_index: 0 },
+  });
+  const result = await reconcileRevenueReceipts({ journalPath, receipts: [correction], nowTs: 101 });
+  assert.equal(result.accepted, 1);
+  assert.equal(result.summary.external_net_usdc, 1.4);
+});
+
+test("reconcileRevenueReceipts rejects self-payment and unverified receipts without appending", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "money-truth-revenue-"));
+  const journalPath = join(dir, "revenue-journal.jsonl");
+  await assert.rejects(
+    () => reconcileRevenueReceipts({ journalPath, receipts: [revenueReceipt({ payer: INSTANCE_RECIPIENT })] }),
+    /self|payer/i,
+  );
+  await assert.rejects(
+    () => reconcileRevenueReceipts({ journalPath, receipts: [{ provider: "x402", terminal_state: "settled" }] }),
+    /receipt|provider|proof/i,
+  );
+  assert.equal((await readFile(journalPath, "utf8").catch(() => "")).trim(), "");
 });

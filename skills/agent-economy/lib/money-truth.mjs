@@ -6,11 +6,22 @@
 
 import { promises as fs } from "node:fs";
 import path from "node:path";
+import {
+  RevenueReceiptValidationError,
+  canonicalRevenueReceiptKey,
+  isNormalizedRevenueReceipt,
+  normalizeRevenueReceipt,
+} from "./revenue-receipt.mjs";
 
 const SWAP_SOURCES = new Set(["swap", "swap-eth-usdc", "swap-usdc-eth"]);
 const INTERNAL_SOURCES = new Set(["reconcile", "receipt-reconcile"]);
 
 const finitePositive = (value) => Number.isFinite(Number(value)) && Number(value) > 0;
+const finiteNumber = (value) => Number.isFinite(Number(value));
+const NORMALIZED_ASSETS = new Set(["USDC", "USD"]);
+const VERIFIED_TERMINAL_STATES = new Set([
+  "settled", "paid", "received", "completed", "refunded", "charged_back", "chargeback", "reversed",
+]);
 
 /** Return the stable proof identity for a ledger row, or null for narrations. */
 export function receiptKey(row) {
@@ -99,11 +110,94 @@ export async function reconcileLedger({ ledgerPath, correctionPath, fetchReceipt
   };
 }
 
+function receiptInRow(row) {
+  if (isNormalizedRevenueReceipt(row)) return row;
+  if (row && typeof row === "object" && isNormalizedRevenueReceipt(row.receipt)) return row.receipt;
+  return null;
+}
+
+function receiptIsVerifiedExternal(receipt, row = receipt, selfPayers = []) {
+  if (!receipt || !isNormalizedRevenueReceipt(receipt)) return false;
+  if (!VERIFIED_TERMINAL_STATES.has(String(receipt.terminal_state).toLowerCase())) return false;
+  if (!NORMALIZED_ASSETS.has(String(receipt.asset).toUpperCase())) return false;
+  const payer = String(receipt.payer || "").toLowerCase();
+  const recipient = String(receipt.recipient || "").toLowerCase();
+  if (!payer || !recipient || payer === recipient) return false;
+  const selfSet = new Set((Array.isArray(selfPayers) ? selfPayers : [selfPayers])
+    .filter((value) => value !== undefined && value !== null)
+    .map((value) => String(value).trim().toLowerCase()));
+  if (selfSet.has(payer)) return false;
+  if (row && row.external === false) return false;
+  return finiteNumber(receipt.signed_net);
+}
+
+/**
+ * Append normalized RevenueReceipt rows to a canonical JSONL journal.  Input is normalized as a
+ * complete batch before any write, so one malformed receipt cannot leave a partial contribution.
+ * Existing rows and duplicate items are keyed only by the canonical receipt id; a replay therefore
+ * reports duplicates and appends no additional value.
+ */
+export async function reconcileRevenueReceipts({ journalPath, receipts, nowTs, selfPayers = [], selfWallets } = {}) {
+  if (!journalPath) throw new TypeError("journalPath is required");
+  if (!Array.isArray(receipts)) throw new TypeError("receipts must be an array");
+  const existing = await readJsonl(journalPath);
+  const known = new Set(existing.map((row) => {
+    try {
+      return isNormalizedRevenueReceipt(row) ? row.idempotency_key : row?.idempotency_key;
+    } catch { return null; }
+  }).filter(Boolean));
+  const seen = new Set();
+  const normalized = [];
+  let duplicates = 0;
+  const payers = selfPayers.length || Array.isArray(selfWallets) ? (selfPayers.length ? selfPayers : selfWallets) : selfPayers;
+  for (const candidate of receipts) {
+    const receipt = isNormalizedRevenueReceipt(candidate) ? candidate : normalizeRevenueReceipt(candidate);
+    if (String(receipt.payer).toLowerCase() === String(receipt.recipient).toLowerCase()
+      || (Array.isArray(payers) && payers.some((value) => String(value).toLowerCase() === String(receipt.payer).toLowerCase()))) {
+      throw new RevenueReceiptValidationError("SELF_PAYMENT", "payer is an instance-controlled wallet", "payer");
+    }
+    const key = canonicalRevenueReceiptKey(receipt);
+    if (known.has(key) || seen.has(key)) {
+      duplicates += 1;
+      continue;
+    }
+    seen.add(key);
+    normalized.push(receipt);
+  }
+  if (normalized.length > 0) {
+    await fs.mkdir(path.dirname(journalPath), { recursive: true });
+    await fs.appendFile(
+      journalPath,
+      normalized.map((receipt) => JSON.stringify(receipt)).join("\n") + "\n",
+      "utf8",
+    );
+  }
+  const allRows = [...existing, ...normalized];
+  return {
+    accepted: normalized.length,
+    duplicates,
+    rejected: 0,
+    rows: normalized,
+    summary: summarizeRealizedRevenue(allRows, [], { selfPayers: payers }),
+    ...(nowTs == null ? {} : { ts: nowTs }),
+  };
+}
+
+// Naming aliases kept intentionally small: adapters can use either the noun from the design or the
+// verb used by the existing reconciliation command, while all paths share this one implementation.
+export const reconcileReceipts = reconcileRevenueReceipts;
+export const appendRevenueReceipts = reconcileRevenueReceipts;
+
 function correctionStatus(row, correctionsByKey) {
   const key = receiptKey(row);
   if (!key) return null;
   const correction = correctionsByKey.get(key);
   return correction ? correction.status : row.status;
+}
+
+function correctionForRow(row, correctionsByKey) {
+  const key = receiptKey(row);
+  return key ? correctionsByKey.get(key) : null;
 }
 
 function isExplicitlyExcluded(row) {
@@ -119,7 +213,7 @@ function isVerifiedExternal(row, correctionsByKey) {
 }
 
 /** Summarize only externally verified realized net; unverified claims remain visible but zeroed. */
-export function summarizeRealizedRevenue(rows, corrections = []) {
+export function summarizeRealizedRevenue(rows, corrections = [], options = {}) {
   const correctionsByKey = new Map(
     (Array.isArray(corrections) ? corrections : [])
       .filter((c) => c && typeof c.tx === "string" && c.tx.length > 0)
@@ -129,11 +223,30 @@ export function summarizeRealizedRevenue(rows, corrections = []) {
   let verifiedExternalRows = 0;
   let unverifiedExternalRows = 0;
   let excludedRows = 0;
-  for (const row of Array.isArray(rows) ? rows : []) {
-    if (isExplicitlyExcluded(row) || row?.external !== true || !finitePositive(row?.net_usdc)) {
+  const inputRows = Array.isArray(rows) ? rows : [];
+  const normalizedCorrectionRows = (Array.isArray(corrections) ? corrections : [])
+    .filter((correction) => isNormalizedRevenueReceipt(correction))
+    .filter((correction) => !inputRows.some((row) => receiptInRow(row)?.idempotency_key === correction.idempotency_key));
+  for (const row of [...inputRows, ...normalizedCorrectionRows]) {
+    const normalized = receiptInRow(row);
+    if (normalized) {
+      if (receiptIsVerifiedExternal(normalized, row, options.selfPayers ?? options.selfWallets ?? [])) {
+        externalNet += Number(normalized.signed_net);
+        verifiedExternalRows += 1;
+      } else if (String(normalized.payer || "").toLowerCase() === String(normalized.recipient || "").toLowerCase()
+        || !VERIFIED_TERMINAL_STATES.has(String(normalized.terminal_state).toLowerCase())) {
+        excludedRows += 1;
+      } else {
+        unverifiedExternalRows += 1;
+      }
+    } else if (isExplicitlyExcluded(row) || row?.external !== true || !finitePositive(row?.net_usdc)) {
       excludedRows += 1;
     } else if (isVerifiedExternal(row, correctionsByKey)) {
-      externalNet += Number(row.net_usdc);
+      const correction = correctionForRow(row, correctionsByKey);
+      const correctedValue = correction && (correction.signed_net ?? correction.signedNet ?? correction.net_usdc ?? correction.net);
+      const correctedNet = correctedValue === undefined || correctedValue === null
+        ? Number(row.net_usdc) : Number(correctedValue);
+      if (Number.isFinite(correctedNet)) externalNet += correctedNet;
       verifiedExternalRows += 1;
     } else {
       unverifiedExternalRows += 1;
