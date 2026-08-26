@@ -23,7 +23,7 @@ function jsonResponse(body, status = 200) {
   return { ok: status >= 200 && status < 300, status, json: async () => body };
 }
 
-function fixture({ active = false, status = "MISSING", redirect = "https://provider.example/consent" } = {}) {
+function fixture({ active = false, status = active ? "ACTIVE" : "MISSING", redirect = "https://provider.example/consent" } = {}) {
   const calls = { assert: [], start: [], status: [], oauth: [], states: [] };
   const store = {
     async assertCurrentScope(scope) {
@@ -92,7 +92,8 @@ test("start derives the actor only from the verified session and ignores body/qu
     assert.equal(response.status, 200);
     assert.deepEqual(await response.json(), { connected: true, state: "connected" });
   });
-  assert.deepEqual(fixtureState.calls.start.map(({ uid, chatId }) => ({ uid, chatId })), [{ uid: SCOPE.uid, chatId: SCOPE.chatId }]);
+  assert.deepEqual(fixtureState.calls.status.map(({ uid, chatId }) => ({ uid, chatId })), [{ uid: SCOPE.uid, chatId: SCOPE.chatId }]);
+  assert.deepEqual(fixtureState.calls.start, []);
   assert.deepEqual(fixtureState.calls.states, []);
   assert.deepEqual(fixtureState.calls.oauth, []);
 });
@@ -285,6 +286,23 @@ test("concurrent/repeated starts claim one live state and one provider link unti
   assert.equal(links, 2, "a blocked repeat cannot mint another provider link");
 });
 
+test("rebind between provider status read and atomic state claim blocks all start/provider effects", async () => {
+  const state = fixture();
+  let binding = SCOPE.chatId, stateClaimed = false;
+  state.opts.commandStore.assertCurrentScope = async (scope) => scope.chatId === binding;
+  state.opts.composioCalendarStatusImpl = async () => { binding = "rebound-chat"; return "MISSING"; };
+  state.opts.commandStore.createOAuthState = async (scope) => { stateClaimed = true; return scope.chatId === binding; };
+  await withServer(state.opts, async (base) => {
+    const response = await fetch(`${base}/api/panel/onboarding/calendar/start`, {
+      method: "POST", headers: cookieHeaders({ origin: ORIGIN, "content-type": "application/json", "x-lm-csrf": SCOPE.csrf }), body: "{}",
+    });
+    assert.equal(response.status, 401);
+  });
+  assert.equal(stateClaimed, true);
+  assert.equal(state.calls.start.length, 0);
+  assert.equal(state.calls.oauth.length, 0);
+});
+
 test("existing OAuth callback remains atomic and accepts only ACTIVE readback", async () => {
   const { handlePanelOAuthCallback } = require("./panel-api.js");
   const stateToken = "a".repeat(43);
@@ -364,6 +382,7 @@ test("atomic OAuth migration is additive, hash-only, and service-role RPC guarde
   assert.match(migration, /WHERE used_at IS NULL/i);
   assert.match(migration, /CREATE OR REPLACE FUNCTION public\.create_lm_panel_oauth_state/i);
   assert.match(migration, /DELETE FROM public\.lm_panel_oauth_states/i);
+  assert.match(migration, /FROM public\.lm_users[\s\S]*uid = p_uid[\s\S]*telegram_chat_id::text = p_chat_id[\s\S]*FOR SHARE/i);
   assert.match(migration, /REVOKE ALL ON FUNCTION public\.create_lm_panel_oauth_state[\s\S]*FROM PUBLIC, anon, authenticated/i);
   assert.match(migration, /GRANT EXECUTE ON FUNCTION public\.create_lm_panel_oauth_state[\s\S]*TO service_role/i);
   assert.doesNotMatch(migration, /CREATE TABLE/i);

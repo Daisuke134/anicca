@@ -28,12 +28,20 @@ CREATE OR REPLACE FUNCTION public.create_lm_panel_oauth_state(
   p_expires_at timestamptz
 ) RETURNS boolean
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
+DECLARE binding_uid text;
 BEGIN
   IF p_state_hash IS NULL OR p_state_hash !~ '^[a-f0-9]{64}$'
      OR p_uid IS NULL OR p_uid = ''
      OR p_chat_id IS NULL OR p_chat_id = ''
      OR p_provider IS DISTINCT FROM 'calendar'
      OR p_expires_at IS NULL OR p_expires_at <= now() THEN
+    RETURN false;
+  END IF;
+
+  SELECT uid INTO binding_uid FROM public.lm_users
+   WHERE uid = p_uid AND telegram_chat_id::text = p_chat_id
+   FOR SHARE;
+  IF binding_uid IS NULL THEN
     RETURN false;
   END IF;
 
