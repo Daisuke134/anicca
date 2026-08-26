@@ -21,7 +21,7 @@
 - Live provider credentials remain in the private credential SSOT. Fixtures use synthetic addresses and identifiers.
 - Public claims remain build-log language until all AC-1 through AC-9 evidence joins pass. “World's first” is never emitted by code without separately verified comparative evidence.
 
-## Task 1: P0 Verified Revenue Receipt and Signed-Net Journal
+## Task 1: P0 Verified Revenue Receipt and Signed-Net Journal — complete
 
 **Files:**
 - Create: `skills/agent-economy/lib/revenue-receipt.mjs`
@@ -44,7 +44,7 @@ Define a versioned `RevenueReceipt` normalizer with provider, payer, recipient, 
 
 **Acceptance:** Duplicate replay adds no row; a correction can lower net; an EVM `status=success` without the expected transfer is rejected; no secret enters output.
 
-## Task 2: P0 Identity Isolation, Status Configuration, and Release Dependency Provenance
+## Task 2: P0 Identity Isolation, Status Configuration, and Release Dependency Provenance — complete
 
 **Files:**
 - Modify: `skills/earn/lib/resolve-identity.mjs`
@@ -66,7 +66,7 @@ Add an agent-economy identity mode that rejects generic private-key environment 
 
 **Acceptance:** A poisoned environment cannot change the public address; a sealed release imports viem without source `node_modules`; missing configuration fails before reading an undefined path.
 
-## Task 3: P1 Namespaced Immutable Control Plane
+## Task 3: P1 Namespaced Immutable Control Plane — complete
 
 **Files:**
 - Modify: `bin/plistgen.py`
@@ -86,7 +86,7 @@ Move the code release root to `~/loops/life-manager`, keep mutable agent-economy
 
 **Acceptance:** Generated launchd arguments contain only the namespaced immutable release; an explicit `.worktrees` input exits nonzero and writes no plist; rollback restores the exact previous release; natural launchd readback matches the installed release.
 
-## Task 4: P2 Revenue Lane Adapters and Replay-Zero Projection
+## Task 4: P2 Revenue Lane Adapters and Replay-Zero Projection — complete
 
 **Files:**
 - Create: `skills/agent-economy/lib/revenue-adapters.mjs`
@@ -104,6 +104,13 @@ Add thin source-to-`RevenueReceipt` adapters for Coconala, Lancers, TaskMarket, 
 **TDD:** Provider fixtures cover settled revenue, pending state, fee, refund, self-payment, duplicate, malformed currency, and missing proof. Run focused lane tests plus `node --test skills/agent-economy/lib/revenue-adapters.test.mjs`.
 
 **Acceptance:** One verified external receipt from the target instance is reproducible from official readback; a second sync is replay-zero; all five lanes fail closed when their required proof is absent.
+
+**Live evidence:** Base USDC transaction `0x36deb1f3921a399d2b2b1d8db90821ac5d6d785a74689b056f6d12d5ec06135c`,
+chain `8453`, transfer log `503`, outside payer, recipient-bound amount `3000` atomic units. First
+projection accepts one row; second projection accepts zero and reports one duplicate.
+The resident resolver now returns the same recipient. Of the wallet's `1.7` USDC balance, only this
+`0.003` USDC receipt is accepted revenue; the other `1.697` USDC is non-revenue seed/top-up and is
+ineligible to satisfy the P3 funding-provenance gate.
 
 ## Task 5: P3 Self-Funded BlockRun Compute Receipt
 

@@ -1,8 +1,9 @@
 # Life Manager Agent Economy
 
-**Status: partial.** The implementation branch contains the first control-plane contracts, but the
-live loop is not running the Life Manager release and no financially independent Life Manager
-instance has been proven. “The world's first financially independent AI” is neither a current
+**Status: P0-P2 complete; P3-P6 open.** The natural `ai.anicca.agent-economy-loop` owner runs from
+the sealed, namespaced Life Manager release and the canonical journal contains one chain-verified
+outside x402 receipt with replay-zero. No self-funded compute, shelter, 30-day graduation, or
+financially independent Life Manager instance has been proven. “The world's first financially independent AI” is neither a current
 claim nor an unqualified graduation claim: Spore.fun is a material prior example of agent-funded
 compute and replication. Life Manager must describe the narrower receipt-backed result it proves.
 
@@ -67,9 +68,9 @@ No individual row, including AC-2, is sufficient to claim financial independence
 | Concern | As-is | To-be |
 |---|---|---|
 | Repository | feature code is isolated from a heavily advanced `origin/main` | one reviewed Life Manager `main`; no profitable-cloud or Agora runtime repository |
-| Release | global `~/loops/current` can be replaced by another repository | atomic `~/loops/life-manager/current` points to an immutable Life Manager release |
-| Process | launchd is scheduled but exits before the skill starts | one natural launchd owner wakes the canonical engine continuously |
-| Revenue | one historical outside x402 sale paid a separate seller wallet; the target Life Manager instance has attributable verified external net = 0 | one repeatable lane pays the target instance and produces official award/sale, payout, and replay-zero receipt |
+| Release | `~/loops/life-manager/current` is a sealed release and `previous` is a validated rollback target | preserve atomic cuts, bounded retention, and clean-clone reproduction |
+| Process | `ai.anicca.agent-economy-loop` naturally runs the pinned Life Manager `runtime/loop/index.mjs` | keep one owner healthy and retire remaining legacy earning owners only through explicit cutover |
+| Revenue | one outside x402 transfer is chain-verified and contributes 0.003 USDC once; replay contributes zero | reproduce additional outside sales through the resident lane and keep unverified providers at zero |
 | Compute | prior runtime could inherit a shared router/key | per-instance wallet and proxy port; BlockRun receipt joins the cost ledger |
 | Shelter | historical Nosana evidence exists, but no graduated current lease | a capped Conway VM/domain or Nodexo compute canary proves pay → provision → use → terminate |
 | Control plane | local Mac and mixed provider scripts | Life Manager remains SSOT; Cloudflare is an optional hosted edge, not the money SSOT |
@@ -443,46 +444,62 @@ provider E2E rows above.
 
 ## Execution steps and remaining TODO
 
-### P0 — restore a safe base before live effects
+### P0 — complete: safe accounting and identity base
 
-1. Free sufficient disk headroom without deleting protected session/state stores; record the
+1. [x] Free sufficient disk headroom without deleting protected session/state stores; record the
    preflight before dependency or release work.
-2. Integrate current `origin/main` into the feature branch without force-push, resolve by keeping
+2. [x] Integrate current `origin/main` into the feature branch without force-push, resolve by keeping
    one canonical runtime/spec, and rerun the focused, install, and OSS suites.
-3. Extend receipt verification to chain/provider, payer, asset/contract, recipient, signed net,
+3. [x] Extend receipt verification to chain/provider, payer, asset/contract, recipient, signed net,
    fee, amount, transfer log, and terminal status.
-4. Add duplicate, positive-plus-negative, unrelated transfer, self-payment, and missing-proof
+4. [x] Add duplicate, positive-plus-negative, unrelated transfer, self-payment, and missing-proof
    regression tests.
-5. Remove inherited `PKVAR`, `BLOCKRUN_WALLET_KEY`, and `BASE_CHAIN_WALLET_KEY` overrides before
+5. [x] Remove inherited `PKVAR`, `BLOCKRUN_WALLET_KEY`, and `BASE_CHAIN_WALLET_KEY` overrides before
    key resolution; prove only the public address.
-6. Reject worktree paths in `plistgen.py` at generation time.
+6. [x] Reject worktree paths in `plistgen.py` at generation time.
 
 **Exit:** all money-safety tests pass after main integration; no live spend is enabled.
 
-### P1 — make Life Manager the only live owner
+### P1 — complete: immutable Life Manager control plane
 
-1. Change release tooling and the loop declaration to `LOOPS_ROOT=~/loops/life-manager`.
-2. Cut an immutable Life Manager release with durable dependencies, regenerate/install only
+1. [x] Change release tooling and the loop declaration to `LOOPS_ROOT=~/loops/life-manager`.
+2. [x] Cut an immutable Life Manager release with durable dependencies, regenerate/install only
    `ai.anicca.agent-economy-loop`, and retire the legacy declaration explicitly.
-3. Read back namespaced symlink, manifest repository/commit, `launch.sh`, loaded arguments,
+3. [x] Read back namespaced symlink, manifest repository/commit, `launch.sh`, loaded arguments,
    process identity, module resolution, and absence of legacy labels.
-4. Fix the status command to require/discover its ledger path and return an actionable error when
+4. [x] Fix the status command to require/discover its ledger path and return an actionable error when
    configuration is absent.
 
 **Exit:** the natural launchd owner completes repeated wakes from the Life Manager release and a
 replay wake has zero duplicate effects.
 
-### P2 — unify external revenue truth
+Evidence: `current` resolves to sealed release `20260827T073931-940b36d6`, `previous` resolves to
+sealed release `20260827T072453-3094bf64`, and loaded launchd arguments plus `ANICCA_REPO`,
+`ANICCA_CODE_ROOT`, release id, and release SHA all pin the current release. The natural owner execs
+that release's `runtime/loop/index.mjs`; no `.worktrees` or mutable global-current path is loaded.
 
-1. Implement one provider-neutral `RevenueReceipt`: provider, external payer, gross, fees, signed
+### P2 — complete: one verified external x402 receipt and replay-zero
+
+1. [x] Implement one provider-neutral `RevenueReceipt`: provider, external payer, gross, fees, signed
    net, currency/asset, chain/provider proof, settlement state, and idempotency key.
-2. Bridge Coconala/gig, Lancers, TaskMarket, x402, and writer/publisher payments into the existing
+2. [x] Bridge Coconala/gig, Lancers, TaskMarket, x402, and writer/publisher payments into the existing
    append-only ledger without moving their executors.
-3. Select one permitted paid-work lane from observed demand, complete one outside award and
+3. [x] Select one permitted paid-work lane from observed demand, complete one outside award and
    payout, and demonstrate second reconcile adds zero.
 
 **Exit:** exactly one positive outside receipt is accepted for the target instance and replay-zero;
 drafts, views, self-payments, and unverified claims remain zero.
+
+Evidence: the x402 adapter verifies Base chain `8453`, the canonical Base USDC contract, outside
+payer, seller recipient, atomic amount `3000`, successful transaction, and transfer log index `503`.
+The resident identity resolver returns that same seller recipient after the empty bootstrap wallet
+was retired; the prior seller key remains private and is never copied into a release or receipt.
+The canonical 30-day status is external realized net `0.003` USDC, verified rows `1`, unverified
+rows `0`. Replaying the same chain proof reports accepted `0`, duplicate `1`, and appends no row.
+The wallet's remaining `1.697` USDC is seed/top-up funding and MUST remain a non-revenue liability;
+P3 authorization can consume only the unencumbered portion of the accepted `0.003` USDC receipt.
+Coconala, Lancers, TaskMarket, and Writer remain durable rejection-only lanes until each has an
+independent official settlement verifier; their absence cannot manufacture revenue.
 
 ### P3 — prove self-funded food/compute
 
@@ -544,7 +561,8 @@ replay-zero. Scaling beyond one child is a later evidence-gated decision.
 
 ## Explicit non-claims
 
-The project does not currently claim financial independence, profit, shelter payment, a successful
-external sale, a self-paid Cloudflare account, event registration, or an autonomous child. No
+The project does not currently claim financial independence, profit, self-funded compute, shelter
+payment, a self-paid Cloudflare account, event registration, or an autonomous child. It claims one
+successful outside x402 sale only to the extent of the chain-bound 0.003 USDC receipt above. No
 wallet funding, provider purchase, public post, application, event RSVP, or on-chain broadcast is
 authorized by this specification update.
