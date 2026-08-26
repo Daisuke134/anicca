@@ -262,7 +262,8 @@ function receiptIsVerifiedExternal(receipt, row = receipt, selfPayers = []) {
 export async function reconcileRevenueReceipts({ journalPath, receipts, nowTs, selfPayers = [], selfWallets } = {}) {
   if (!journalPath) throw new TypeError("journalPath is required");
   if (!Array.isArray(receipts)) throw new TypeError("receipts must be an array");
-  const payers = Array.isArray(selfPayers) && selfPayers.length === 0 && Array.isArray(selfWallets) && selfWallets.length > 0
+  const walletsProvided = Array.isArray(selfWallets) ? selfWallets.length > 0 : selfWallets !== undefined && selfWallets !== null && selfWallets !== "";
+  const payers = Array.isArray(selfPayers) && selfPayers.length === 0 && walletsProvided
     ? selfWallets
     : (selfPayers !== undefined && selfPayers !== null && selfPayers !== "" ? selfPayers : (selfWallets ?? []));
   const result = await withJournalLock(journalPath, async () => {
@@ -307,11 +308,6 @@ export async function reconcileRevenueReceipts({ journalPath, receipts, nowTs, s
   if (result?.locked) return { accepted: 0, duplicates: 0, rejected: 0, rows: [], locked: true };
   return result;
 }
-
-// Naming aliases kept intentionally small: adapters can use either the noun from the design or the
-// verb used by the existing reconciliation command, while all paths share this one implementation.
-export const reconcileReceipts = reconcileRevenueReceipts;
-export const appendRevenueReceipts = reconcileRevenueReceipts;
 
 function correctionStatus(row, correctionsByKey) {
   const key = receiptKey(row);
