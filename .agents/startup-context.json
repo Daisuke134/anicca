@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "context_version": "2026-08-26.6",
-  "updated_at": "2026-08-26T18:14:07+09:00",
+  "context_version": "2026-08-26.7",
+  "updated_at": "2026-08-26T21:43:00+09:00",
   "product": {
     "name": "Life Manager",
     "usage": "Use as the product name in every public product and fundraising field.",
@@ -72,9 +72,9 @@
       },
       {
         "program": "a16z Speedrun",
-        "official_url": "https://a16z.com/speedrun/",
-        "action": "monitor_next_open_intake",
-        "reason": "Strong in-person founder preference and San Francisco location. The founder explicitly requested application on 2026-08-26, but the official page currently shows SR007 already running July 27 to October 11, 2026 and exposes no open application route. Monitor official pages and apply immediately when the next eligible intake opens."
+        "official_url": "https://speedrun.a16z.com/apply",
+        "action": "apply_now",
+        "reason": "The current official application page exposes SR008 year-round intake with a priority window of October 12 through November 1, 2026. The founder explicitly requested that Life Manager apply to a16z Speedrun and authorizes the ordinary application-stage acknowledgement of the Speedrun Terms of Use and Privacy Policy required to open and submit the application. This authorization does not extend to an investment agreement, equity issuance, payment, public broadcast, or any later legal commitment. Apply now and require official completion-screen PNG plus Telegram photo message ID before recording submitted_verified."
       },
       {
         "program": "Y Combinator",
