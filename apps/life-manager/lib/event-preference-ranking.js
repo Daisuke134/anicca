@@ -179,40 +179,37 @@ async function inferProviderRankingChunk(input, options) {
     `PREFERENCES_START\n${source.preferences}\nPREFERENCES_END`,
     `EVENT_DATA_START\n${JSON.stringify(source.candidates)}\nEVENT_DATA_END`,
   ].join("\n");
-  let parsed;
-  if (typeof options.generateDecision === "function") {
-    try { parsed = await options.generateDecision(Object.freeze({ prompt, schema: PROVIDER_RESPONSE_SCHEMA, timeoutMs: 20_000 })); }
-    catch { throw new Error("event preference ranking unavailable"); }
-  } else {
-    const apiKey = String(options.apiKey || process.env.GEMINI_API_KEY || "").trim();
-    const fetchImpl = options.fetchImpl || globalThis.fetch;
-    if (!apiKey || typeof fetchImpl !== "function") throw new Error("event preference ranking unavailable");
-    let response;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
-      response = await fetchImpl(GEMINI, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
-        body: JSON.stringify({
-          contents: [{ role: "user", parts: [{ text: prompt }] }],
-          generationConfig: { responseMimeType: "application/json", responseSchema: geminiResponseSchema(PROVIDER_RESPONSE_SCHEMA), temperature: 0 },
-        }),
-        signal: AbortSignal.timeout(20_000),
-      });
-    } catch { throw new Error("event preference ranking unavailable"); }
-    if (!response || response.ok !== true) throw new Error("event preference ranking unavailable");
-    try {
-      const body = await response.json();
-      parsed = JSON.parse(body?.candidates?.[0]?.content?.parts?.[0]?.text || "");
-    } catch { throw new Error("event preference ranking unavailable"); }
+      let parsed;
+      if (typeof options.generateDecision === "function") {
+        parsed = await options.generateDecision(Object.freeze({ prompt, schema: PROVIDER_RESPONSE_SCHEMA, timeoutMs: 20_000 }));
+      } else {
+        const apiKey = String(options.apiKey || process.env.GEMINI_API_KEY || "").trim();
+        const fetchImpl = options.fetchImpl || globalThis.fetch;
+        if (!apiKey || typeof fetchImpl !== "function") throw new Error("ranking transport unavailable");
+        const response = await fetchImpl(GEMINI, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+          body: JSON.stringify({
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+            generationConfig: { responseMimeType: "application/json", responseSchema: geminiResponseSchema(PROVIDER_RESPONSE_SCHEMA), temperature: 0 },
+          }),
+          signal: AbortSignal.timeout(20_000),
+        });
+        if (!response || response.ok !== true) throw new Error("ranking response unavailable");
+        const body = await response.json();
+        parsed = JSON.parse(body?.candidates?.[0]?.content?.parts?.[0]?.text || "");
+      }
+      return validateProviderCandidateRanking(parsed, source).ranked_events.map((row) => Object.freeze({
+        event_ref: row.event_ref,
+        priority_class: row.priority_class,
+        preference_fit: row.preference_fit,
+        preference_reason: row.preference_reason,
+      }));
+    } catch { /* exact same read-only chunk gets one bounded retry */ }
   }
-  try {
-    return validateProviderCandidateRanking(parsed, source).ranked_events.map((row) => Object.freeze({
-      event_ref: row.event_ref,
-      priority_class: row.priority_class,
-      preference_fit: row.preference_fit,
-      preference_reason: row.preference_reason,
-    }));
-  } catch { throw new Error("event preference ranking unavailable"); }
+  throw new Error("event preference ranking unavailable");
 }
 
 function providerRankingChunks(candidates) {

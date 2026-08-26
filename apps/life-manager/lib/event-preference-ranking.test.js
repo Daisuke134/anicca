@@ -156,6 +156,30 @@ test("provider ranking also bounds each chunk by UTF-8 payload bytes", async () 
   assert.equal(ranking.ranked_events.length, 7);
 });
 
+test("provider ranking retries one transient chunk failure without dropping candidates", async () => {
+  let attempts = 0;
+  const ranking = await inferProviderCandidateRanking({
+    candidates: PROVIDER_CANDIDATES,
+    preferences: "Tokyo YC LT AI crypto startup events",
+  }, {
+    apiKey: "fixture-key",
+    fetchImpl: async () => {
+      attempts += 1;
+      if (attempts === 1) {
+        const error = new Error("transient timeout");
+        error.name = "TimeoutError";
+        throw error;
+      }
+      return { ok: true, json: async () => ({
+        candidates: [{ content: { parts: [{ text: JSON.stringify(providerDecision()) }] } }],
+      }) };
+    },
+  });
+
+  assert.equal(attempts, 2);
+  assert.equal(ranking.ranked_events.length, PROVIDER_CANDIDATES.length);
+});
+
 async function fixtureSnapshot(slugs = ["ai-night", "pottery-social", "crypto-builders"]) {
   const coverage = buildRollingEventCoverage({
     tenantId: "dais-local",
