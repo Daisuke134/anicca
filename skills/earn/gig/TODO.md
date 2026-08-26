@@ -16,6 +16,116 @@ offers from measured conversion, and Paid completes accepted work through offici
 readback and replay-zero. A marketplace-specific customer case is evidence for this kernel, not a
 separate architecture or the definition of completion.
 
+## Active atomic cursor — execute exactly top to bottom
+
+This is the only executable cursor. One checkbox is one bounded change or one bounded
+readback; a phase name is never a checkbox. Do not start a later item until every earlier item
+is checked. Check an item only with the evidence named after `PASS =`. Chat, process liveness,
+model narration, and local success without the named readback are not PASS.
+
+### Live four-lane repair
+
+- [ ] `R01` Read back production `current` and prove commit `8eb732958` is an ancestor.
+  PASS = immutable release SHA plus successful `merge-base --is-ancestor`.
+- [ ] `R02` Start one stopped disposable registered browser through `with-browser.sh`.
+  PASS = guard reports the same identity reachable and the wrapped command receives its CDP URL.
+- [ ] `R03` Run the focused browser startup regression.
+  PASS = all tests in `skills/browser/tests/test_cdp_persistent_context.py` pass.
+- [ ] `R04` Kickstart the installed Paid owner once after `R01`–`R03`.
+  PASS = launchd run count increases once and the owner pins the new immutable release.
+- [ ] `R05` Read back project `18128025`'s unpublished BUYMA draft.
+  PASS = official account, draft identity, saved fields, and current reload receipt agree.
+- [ ] `R06` Measure Paid capacity for that run.
+  PASS = before/after free bytes and Paid evidence-byte delta are recorded in one receipt.
+- [ ] `R07` Verify runner retention after the Paid run.
+  PASS = every `evidence/agent-*/history/` contains at most three generations.
+- [ ] `R08` Verify host cleanup recurrence.
+  PASS = cleanup launchd run count advances and last exit is zero without protected deletion.
+- [ ] `R09` Observe three consecutive Reply probes.
+  PASS = three official inbox snapshots have increasing capture times no more than 30 seconds apart.
+- [ ] `R10` Read back the Reply durable queue.
+  PASS = every live pending buyer event has either an active owner or a terminal receipt.
+- [ ] `R11` Read back the latest Apply cycle.
+  PASS = official opportunity/application receipt is fresh, or a bounded official no-action receipt exists.
+- [ ] `R12` Read back the latest Storefront cycle.
+  PASS = official listing receipt is fresh, or a bounded official no-change receipt exists.
+- [ ] `R13` Read back the latest Paid cycle.
+  PASS = every observed project is terminal, externally waiting with a durable owner, or failed with one exact retry owner.
+- [ ] `R14` Replay the completed Paid effects once.
+  PASS = effect count zero and duplicate-effect count zero with official readback unchanged.
+- [ ] `R15` Write one four-lane runtime manifest.
+  PASS = it binds each lane label, immutable release SHA, latest receipt, recurrence, and owner state.
+
+### Shared job kernel
+
+- [ ] `K01` Define one website-neutral `JobContract` JSON Schema.
+  PASS = one Coconala fixture validates and one malformed fixture is rejected.
+- [ ] `K02` Define the six owner lifecycle states in one schema.
+  PASS = only `ACTIVE`, `WAITING_EXTERNAL`, `AWAITING_BUYER`, `TERMINAL_PENDING_REPLAY`,
+  `CLOSED_COMPLETED`, and `CLOSED_CANCELLED` validate.
+- [ ] `K03` Define the allowed lifecycle transitions in one transition table.
+  PASS = every allowed edge passes and every other edge fails.
+- [ ] `K04` Define one durable effect-checkpoint schema.
+  PASS = website, account, entity, effect key, payload hash, owner, run, and official readback are required.
+- [ ] `K05` Fence identical effect keys.
+  PASS = a same-key concurrent regression produces exactly one effect.
+- [ ] `K06` Preserve different-key parallelism.
+  PASS = a different-key regression starts both owners without a shared global lock.
+- [ ] `K07` Resume one owner after process exit.
+  PASS = retained checkpoints resume the next unfinished effect and repeat no completed effect.
+- [ ] `K08` Reject a stale invocation.
+  PASS = an old owner revision cannot mutate current state or perform an external effect.
+- [ ] `K09` Retain closed tombstones.
+  PASS = restart and replay of a closed job are effect-zero.
+
+### Thin adapter boundary
+
+- [ ] `A01` Define one adapter protocol for auth, discover, observe, apply, reply, deliver, and readback.
+  PASS = protocol contains no customer, category, or marketplace-specific judgment.
+- [ ] `A02` Move Coconala observation behind that protocol.
+  PASS = the existing read-only live probe passes only through the adapter.
+- [ ] `A03` Move Coconala Apply behind that protocol.
+  PASS = one fenced application fixture produces an exact application readback.
+- [ ] `A04` Move Coconala Reply behind that protocol.
+  PASS = one fenced reply fixture produces an exact message readback and replay-zero.
+- [ ] `A05` Move Coconala Paid delivery behind that protocol.
+  PASS = one fenced delivery fixture produces exact artifact/message readback and replay-zero.
+- [ ] `A06` Add adapter auth-expiry conformance.
+  PASS = expired auth performs zero external effect and returns one typed recovery state.
+- [ ] `A07` Add adapter pagination conformance.
+  PASS = all fixture pages are covered once with no skipped or duplicated entity.
+- [ ] `A08` Add adapter attachment conformance.
+  PASS = download and upload hashes bind to the same job and cross-job reuse is rejected.
+- [ ] `A09` Add adapter terminal-state conformance.
+  PASS = completion and cancellation each require official terminal readback before closure.
+
+### Public OSS proof
+
+- [ ] `O01` Run a repository secret and customer-data scan.
+  PASS = tracked public files contain no credential value, private context, customer artifact, or raw receipt.
+- [ ] `O02` Fix one public bootstrap command.
+  PASS = the documented command pins a release and requires no repository-local secret.
+- [ ] `O03` Install from that command in a clean temporary home.
+  PASS = four owner labels and their immutable arguments are present after installation.
+- [ ] `O04` Restart the clean installation once.
+  PASS = all four owners recover without manual state repair or duplicate external effect.
+- [ ] `O05` Complete one real Coconala job through the shared kernel.
+  PASS = discovery through official terminal readback and replay-zero are bound in one receipt chain.
+- [ ] `O06` Add a second website using only its adapter and configuration.
+  PASS = no kernel, lifecycle, planner, checkpoint, or receipt code is forked.
+- [ ] `O07` Complete one real job on that second website.
+  PASS = discovery through official terminal readback and replay-zero are bound in one receipt chain.
+- [ ] `O08` Publish the OSS release.
+  PASS = public tag, bootstrap, architecture, safety boundaries, conformance results, and clean-install proof are readable without private files.
+
+### E2E judgment
+
+| Item | Value |
+|------|-------|
+| UI change | No |
+| Maestro | Not required; this scope is launchd, browser adapter, durable state, and official provider readback |
+| Required E2E | Clean-install four-owner recovery plus two real website terminal receipt chains |
+
 The shared model runner now retains only the newest three rotated generations inside each
 project-owned `evidence/agent-*/history/` directory. Production cleanup removed 1,115 old
 runner generations (356,708,106 bytes) without touching current results, customer artifacts,
@@ -26,12 +136,12 @@ about 2 GiB and was removed after an open-file readback returned empty. Paid rep
 all 43 observed agent histories at three generations or fewer while free space recovered to
 2.8 GiB.
 
-## Current four-lane revenue cursor — execute in this order
+## Historical Coconala case cursor — evidence only
 
-This is the only active order. Finish stages from top to bottom; items inside the same stage run
-concurrently. Older unchecked sections are evidence only and never override this cursor. The
-target is verified monthly net cash of at least USD 10,000, not a promise. Only official
-contract, fee, payout, and bank receipts advance it.
+This section preserves customer-case evidence and liabilities. Its unchecked items feed the
+active atomic cursor only when the shared owner naturally observes them; they do not override or
+reorder `R01`–`O08`. The target remains verified monthly net cash of at least USD 10,000. Only
+official contract, fee, payout, and bank receipts advance it.
 
 ### Stage 1 — unblock Paid, then start every current owner
 
