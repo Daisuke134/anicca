@@ -6,6 +6,19 @@ evidence does not belong on this list.
 The four lanes run from `~/gig/releases/life-manager/<sha>/`, cut from `main` by
 `gig_release.py`. See `README.md` for how the whole thing is installed.
 
+Current lane names are **Apply, Reply, Storefront, Paid**. `Reply` owns buyer-message
+observation, replies, and estimates; do not present it as a separate Negotiate lane.
+
+The shared model runner now retains only the newest three rotated generations inside each
+project-owned `evidence/agent-*/history/` directory. Production cleanup removed 1,115 old
+runner generations (356,708,106 bytes) without touching current results, customer artifacts,
+delivery/source, state, JSONL ledgers, or Codex/Claude sessions. The host-wide fail-closed
+`ai.anicca.life-manager-disk-cleanup` owner is enabled again at its 300-second interval; its
+48 protection tests pass. A closed Sparkle installation cache, not a Paid video build, held
+about 2 GiB and was removed after an open-file readback returned empty. Paid replay then kept
+all 43 observed agent histories at three generations or fewer while free space recovered to
+2.8 GiB.
+
 ## Current four-lane revenue cursor — execute in this order
 
 This is the only active order. Finish stages from top to bottom; items inside the same stage run
