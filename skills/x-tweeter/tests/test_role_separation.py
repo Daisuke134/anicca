@@ -30,14 +30,23 @@ class XRoleSeparationTests(unittest.TestCase):
     def test_repost_enforces_persona_points_and_rolling_70_30_language_mix(self) -> None:
         source = (ROOT / "skills" / "x-repost" / "x-repost-cli.sh").read_text()
         for key in (
-            "does_not_disparage", "includes_positive_note", "adds_own_experience",
+            "does_not_disparage", "includes_positive_note", "adds_unique_firsthand_detail",
             "avoids_excessive_self_focus", "leads_to_action",
         ):
             self.assertIn(key, source)
         self.assertIn('all(d.get("five_points", {}).get(key) is True', source)
         self.assertIn('${X_REPOST_FORCE_LANGUAGE:-}', source)
-        self.assertIn('ja_count < 3', source)
+        self.assertIn('len(rows) % 10 < 7', source)
         self.assertIn('rolling EN 7 / JA 3', source)
+        self.assertIn('post_contract.py" --language "$TARGET_LANGUAGE"', source)
+
+    def test_affiliate_success_recovery_precedes_new_claim(self) -> None:
+        source = (ROOT / "skills" / "x-repost" / "x-repost-cli.sh").read_text()
+        recovery = source.index("affiliate-success-recovery.json")
+        claim = source.index("--claim-next-job")
+        self.assertLess(recovery, claim)
+        self.assertIn('affiliate-job-effect.json', source)
+        self.assertIn('recovered prior Affiliate success receipt', source)
 
 
 if __name__ == "__main__":

@@ -317,6 +317,90 @@ if [ "$($PY -c 'import json,sys; print(json.load(open(sys.argv[1])).get("recover
   log "recovered prior Postiz-accepted/readback-failed effect as terminal unverified"
 fi
 
+# Recover a prior exact Affiliate success before claim/effect logic. The Postiz submission and X
+# permalink are durable external proof; replaying because the local terminal append lost disk is
+# never safe.
+AFFILIATE_SUCCESS_RECOVERY="$EV/affiliate-success-recovery.json"
+"$PY" - "$STATE/evidence" "$EV" "$AFFILIATE_JOB_CLAIMS" "$AFFILIATE_JOB_RESULTS" \
+  "$AFFILIATE_SUCCESS_RECOVERY" <<'PYEOF'
+import json, pathlib, sys
+evidence, current, claims_path, results_path, target = map(pathlib.Path, sys.argv[1:6])
+pending = None
+try:
+    claims = [json.loads(line) for line in claims_path.read_text().splitlines() if line.strip()]
+    job_id = claims[-1]["job_id"] if claims else None
+except (OSError, ValueError, KeyError):
+    job_id = None
+try:
+    results = [json.loads(line) for line in results_path.read_text().splitlines() if line.strip()]
+except (OSError, ValueError):
+    results = []
+terminal = next((row for row in reversed(results) if row.get("job_id") == job_id
+                 and row.get("state") in {"POSTED", "UNVERIFIED"}), None)
+if job_id and terminal is None:
+    try:
+        directories = sorted((p for p in evidence.iterdir() if p.is_dir() and p != current),
+                             reverse=True)
+    except OSError:
+        directories = []
+    for directory in directories:
+        try:
+            effect = json.loads((directory / "affiliate-job-effect.json").read_text())
+            post = json.loads((directory / "affiliate-job-post.json").read_text())
+        except (OSError, ValueError):
+            continue
+        status = "POSTED" if post.get("posted") is True else (
+            "UNVERIFIED" if post.get("posted") == "unverified" else None)
+        if (effect.get("job_id") == job_id and status
+                and post.get("provider_submission_id")
+                and (status == "UNVERIFIED" or post.get("post_url"))):
+            pending = {"state": status, "post_url": post.get("post_url"),
+                       "provider_submission_id": post["provider_submission_id"],
+                       "effect": effect}
+            break
+target.write_text(json.dumps({"pending": bool(pending), "row": pending}) + "\n")
+PYEOF
+if [ "$($PY -c 'import json,sys; print(json.load(open(sys.argv[1])).get("pending") is True)' "$AFFILIATE_SUCCESS_RECOVERY")" = "True" ]; then
+  RECOVERED_STATE="$($PY -c 'import json,sys; print(json.load(open(sys.argv[1]))["row"]["state"])' "$AFFILIATE_SUCCESS_RECOVERY")"
+  RECOVERED_POST_URL="$($PY -c 'import json,sys; print(json.load(open(sys.argv[1]))["row"]["post_url"])' "$AFFILIATE_SUCCESS_RECOVERY")"
+  RECOVERED_PROVIDER_ID="$($PY -c 'import json,sys; print(json.load(open(sys.argv[1]))["row"]["provider_submission_id"])' "$AFFILIATE_SUCCESS_RECOVERY")"
+  if [ "$RECOVERED_STATE" = "POSTED" ]; then
+    "$PY" "$SKILL/scripts/affiliate_proposal.py" --job-claims "$AFFILIATE_JOB_CLAIMS" \
+      --job-payload-dir "$AFFILIATE_JOB_PAYLOADS" --job-results "$AFFILIATE_JOB_RESULTS" \
+      --record-job-result POSTED --post-url "$RECOVERED_POST_URL" \
+      --provider-submission-id "$RECOVERED_PROVIDER_ID" >/dev/null || \
+      finish 1 "prior Affiliate success receipt recovery failed before any new effect"
+  else
+    "$PY" "$SKILL/scripts/affiliate_proposal.py" --job-claims "$AFFILIATE_JOB_CLAIMS" \
+      --job-payload-dir "$AFFILIATE_JOB_PAYLOADS" --job-results "$AFFILIATE_JOB_RESULTS" \
+      --record-job-result UNVERIFIED --provider-submission-id "$RECOVERED_PROVIDER_ID" \
+      >/dev/null || finish 1 "prior Affiliate unresolved receipt recovery failed"
+  fi
+  if [ "$RECOVERED_STATE" = "UNVERIFIED" ]; then
+    finish 0 "recovered prior Affiliate accepted effect as UNVERIFIED without reposting"
+  fi
+  "$PY" - "$POSTED" "$AFFILIATE_SUCCESS_RECOVERY" <<'PYEOF'
+import datetime, fcntl, json, os, sys
+posted, recovery = sys.argv[1:3]
+row = json.load(open(recovery, encoding="utf-8"))["row"]
+effect, post_url = row["effect"], row["post_url"]
+payload = effect["payload"]
+with open(posted, "a+", encoding="utf-8") as stream:
+    fcntl.flock(stream, fcntl.LOCK_EX); stream.seek(0)
+    existing = [json.loads(line) for line in stream if line.strip()]
+    if not any(item.get("affiliate_job_id") == effect["job_id"] for item in existing):
+        receipt = {"posted_at": datetime.datetime.now().astimezone().isoformat(),
+                   "kind": "affiliate_distribution_recovered",
+                   "source_url": payload.get("source_url") or payload["owned_article_url"],
+                   "affiliate_job_id": effect["job_id"], "text": payload["text"],
+                   "provider_submission_id": row["provider_submission_id"],
+                   "tone": "affiliate_disclosed", "post_url": post_url}
+        stream.seek(0, 2); stream.write(json.dumps(receipt, ensure_ascii=False) + "\n")
+        stream.flush(); os.fsync(stream.fileno())
+PYEOF
+  log "recovered prior Affiliate success receipt and cadence ledger without reposting"
+fi
+
 # ---------------------------------------------------------- gate: at most one post per half-hour
 # Cadence and duplicate protection use local half-hour slots. The owner instruction disables the daily action
 # cap; setting X_REPOST_DAILY_MAX to a positive integer is an explicit emergency override only.
@@ -577,6 +661,15 @@ with open(target, "x", encoding="utf-8") as stream:
     stream.write(text)
     stream.flush(); os.fsync(stream.fileno())
 PYEOF
+    "$PY" - "$EV/affiliate-job-effect.json" "$AFFILIATE_JOB_EFFECT" <<'PYEOF'
+import json, os, sys
+target, value = sys.argv[1], json.loads(sys.argv[2])
+with open(target, "x", encoding="utf-8") as stream:
+    json.dump(value, stream, ensure_ascii=False, sort_keys=True)
+    stream.write("\n")
+    stream.flush(); os.fsync(stream.fileno())
+PYEOF
+    [ -s "$EV/affiliate-job-effect.json" ] || finish 1 "affiliate effect snapshot failed before posting"
     AFFILIATE_POST_MODE="$("$PY" -c 'import json,sys; p=json.load(sys.stdin).get("payload") or {}; print("quote" if p.get("distribution_mode") in {"QUOTE_CONTROL_POST","QUOTE_RELEVANT_EXTERNAL"} else "original")' <<<"$AFFILIATE_JOB_EFFECT")"
     AFFILIATE_SOURCE_URL="$("$PY" -c 'import json,sys; print((json.load(sys.stdin).get("payload") or {}).get("source_url") or "")' <<<"$AFFILIATE_JOB_EFFECT")"
     if [ "$AFFILIATE_POST_MODE" = "quote" ]; then
@@ -1064,11 +1157,8 @@ elif not has_original_today or random.random() < max(0.0, min(1.0, original_rati
 else:
     kind = "reply" if random.random() < max(0.0, min(1.0, reply_ratio)) else "quote"
 forced_language = sys.argv[5]
-recent = rows[-10:]
-ja_count = sum(bool(re.search(r"[\u3040-\u30ff\u4e00-\u9fff]", row.get("text", "")))
-               for row in recent)
 language = forced_language if forced_language in {"en", "ja"} else (
-    "ja" if ja_count < 3 else "en"
+    "en" if len(rows) % 10 < 7 else "ja"
 )
 print(kind, language)
 PYEOF
@@ -1097,7 +1187,7 @@ log "target language: $TARGET_LANGUAGE (rolling EN 7 / JA 3)"
 ## 3案が必ず守ること
 1. 相手をディスらない（否定・反論・訂正から入らない）
 2. ポジティブな話を入れる
-3. 自分にしかできない話をする（一次情報の種が自然に合う時だけ。無いことは書かない）
+3. 自分にしかできない話をする（一次情報の種にある自分の実測だけ。合う種が無ければ selected=false）
 4. 自分の話をしすぎない（相手と読者が主役。自分への言及は1回まで）
 5. アクションにつなげる（読んだ人が次に何を試すか）
 6. source本文または一次情報の種に無い数値・期間・回数を新しく作らない
@@ -1108,10 +1198,7 @@ log "target language: $TARGET_LANGUAGE (rolling EN 7 / JA 3)"
 足す場合だけ自分の経験を1文まで使う。ハッシュタグと絵文字は使わない。
 
 ## 言語（最重要）
-**引用元と同じ言語で書く。** 英語の投稿には英語、日本語の投稿には日本語。
-引用ツイートを読むのは元投稿の読者なので、言語が違えば誰にも届かない。
-判別できない・混在している場合は **英語**。このアカウントは bio も既存投稿も英語で、
-売る相手（affiliate / アプリ / creator 向け）も英語話者が中心。日本語ソースを選んだ時だけ日本語で書く。
+この後に指定されるslot言語だけで書く。言語を混ぜない。候補にその言語の投稿が無ければ selected=false。
 
 ## ここで失敗している（直近5本すべてに出た欠陥。同じ書き方をするな）
 
@@ -1176,10 +1263,8 @@ EOF
 EOF
   fi
   echo; echo "## 一次情報の種（この一覧の事実だけ使う。使ったら seed_id を返す）"
-  echo "直近14日に使った種は除外済み。合う種が無ければ ③ を捨てて ①②④⑤ だけで書き、seed_id は null にする。
-**その場合、一般論に逃げるな。** 「設計思想は筋が通っている」「今後が楽しみ」の類は何も言っていない。
-種が無い時は **引用元の中身に踏み込む**: 相手が挙げた具体（数字・固有名・手順）を1つ拾い、
-それがなぜ効くのか / どこで効かないのかを1文で言う。相手の投稿の要約は書かない。"
+  echo "直近14日に使った種は除外済み。引用元に自然に接続できる一次情報の種が無ければ selected=false。
+5点はすべて必須で、③を一般論・創作・相手の投稿の言い換えで代用しない。"
   cat "$EV/seeds-available.json"
   echo; echo "## 過去に伸びた自分の投稿（文体の参考。内容の再利用はしない）"; cat "$EV/fewshot.json"
   echo; echo "## 候補一覧"; cat "$EV/candidates.json"
@@ -1193,6 +1278,19 @@ if [ "$SELECTED" != "True" ]; then
   REASON="$("$PY" -c 'import json,sys; print(json.load(open(sys.argv[1])).get("reason",""))' "$EV/select.json")"
   report "⚠️ 今回は該当なしで見送り: $REASON"
   finish 0 "model selected nothing"
+fi
+if ! "$PY" - "$EV/select.json" "$EV/seeds-available.json" >"$EV/chosen-seed.json" <<'PYEOF'
+import json, sys
+selected = json.load(open(sys.argv[1], encoding="utf-8"))
+seeds = json.load(open(sys.argv[2], encoding="utf-8"))
+seed_id = selected.get("seed_id")
+seed = next((row for row in seeds if row.get("id") == seed_id), None)
+json.dump({"ok": bool(seed), "seed": seed}, sys.stdout, ensure_ascii=False)
+raise SystemExit(0 if seed else 1)
+PYEOF
+then
+  report "⚠️ 5点目標の③を裏付ける一次情報の種が無いため投稿を見送り"
+  finish 0 "unique firsthand seed contract failed"
 fi
 if ! "$PY" - "$EV/select.json" "$EV/candidates.json" >"$EV/grounding.json" <<'PYEOF'
 import json, sys
@@ -1334,6 +1432,11 @@ if [ ! -s "$EV/post.txt" ] || [ -z "$SOURCE_URL" ]; then
   report "❌ 投稿本文または引用元 URL が空"
   finish 1 "empty text or source url"
 fi
+if ! "$PY" "$SKILL/scripts/post_contract.py" --language "$TARGET_LANGUAGE" \
+    --text-file "$EV/post.txt" >"$EV/language.json"; then
+  report "⚠️ 指定言語と本文が一致しないため投稿を見送り"
+  finish 0 "language contract rejected draft"
+fi
 if [ "$KIND" = "original" ]; then
   printf '\n%s\n' "$SOURCE_URL" >>"$EV/post.txt"
 fi
@@ -1364,21 +1467,22 @@ SRC_METRICS="$("$PY" -c 'import json,sys; print(json.load(open(sys.argv[1]))["me
   echo "さらに、sourceの要約や『幅が広がる』『試したい』だけなら useful=false。"
   echo "読者が実行できる手順、判断基準、失敗条件、比較方法のうち異なる2種類を具体的に足した時だけ useful=true。"
   echo "source固有の仕組み・数字・制約を少なくとも1つ使わない一般論は useful=false。"
-  echo "five_points は画像の5点を最終本文そのものについて個別判定し、1つでも欠ければ false にする。"
+  echo "five_points は画像の5点を最終本文そのものについて個別判定し、1つでも欠ければ false にする。adds_unique_firsthand_detail は一次情報の種に根拠がある固有の実測だけ true。"
   echo "URL、文体、viralらしさではなく事実支持と読者効用を別々に判定する。"
   if [ "$KIND" = "original" ]; then
     echo "Originalについてはrecent postsとの主張・角度・表現のnear-duplicateも判定し、novel、spam_risk、near_duplicate_post_idsを返す。"
     echo; echo "## recent originals / posts"; cat "$EV/fewshot.json"
   fi
   echo; echo "## source"; cat "$EV/source.json"
+  echo; echo "## 選択済み一次情報の種"; cat "$EV/chosen-seed.json"
   echo; echo "## sourceから解決したexact evidence"; "$PY" -c 'import json,sys; print(json.load(open(sys.argv[1])).get("canonical_evidence","")); d=json.load(open(sys.argv[2])); print(d.get("reader_value",""))' "$EV/grounding.json" "$EV/select.json"
   echo; echo "## final post"; cat "$EV/post.txt"
-  echo; echo '## 出力（最後にJSONだけ）'; echo '{"supported":true,"useful":true,"source_specific":true,"five_points":{"does_not_disparage":true,"includes_positive_note":true,"adds_own_experience":true,"avoids_excessive_self_focus":true,"leads_to_action":true},"novel":true,"spam_risk":"low","unsupported_claims":[],"near_duplicate_post_ids":[],"value_types":["procedure","failure_condition"],"reason":"1文"}'
+  echo; echo '## 出力（最後にJSONだけ）'; echo '{"supported":true,"useful":true,"source_specific":true,"five_points":{"does_not_disparage":true,"includes_positive_note":true,"adds_unique_firsthand_detail":true,"avoids_excessive_self_focus":true,"leads_to_action":true},"novel":true,"spam_risk":"low","unsupported_claims":[],"near_duplicate_post_ids":[],"value_types":["procedure","failure_condition"],"reason":"1文"}'
 } >"$EV/prompt-verify.txt"
 if ! ask_model "$EV/prompt-verify.txt" "$EV/verify.raw" >"$EV/verify.json"; then
   handle_model_failure "source-grounding critic" "$EV/verify.raw"
 fi
-if [ "$("$PY" -c 'import json,sys; d=json.load(open(sys.argv[1])); allowed={"procedure","decision_criterion","failure_condition","comparison_method"}; values=d.get("value_types") or []; points=("does_not_disparage","includes_positive_note","adds_own_experience","avoids_excessive_self_focus","leads_to_action"); print(d.get("supported") is True and d.get("useful") is True and d.get("source_specific") is True and all(d.get("five_points", {}).get(key) is True for key in points) and len(set(values) & allowed) >= 2)' "$EV/verify.json" 2>/dev/null)" != "True" ]; then
+if [ "$("$PY" -c 'import json,sys; d=json.load(open(sys.argv[1])); allowed={"procedure","decision_criterion","failure_condition","comparison_method"}; values=d.get("value_types") or []; points=("does_not_disparage","includes_positive_note","adds_unique_firsthand_detail","avoids_excessive_self_focus","leads_to_action"); print(d.get("supported") is True and d.get("useful") is True and d.get("source_specific") is True and all(d.get("five_points", {}).get(key) is True for key in points) and len(set(values) & allowed) >= 2)' "$EV/verify.json" 2>/dev/null)" != "True" ]; then
   report "⚠️ 最終本文がsource支持または具体的な読者効用gateを満たさないため投稿を見送り"
   finish 0 "source grounding or utility critic rejected draft"
 fi

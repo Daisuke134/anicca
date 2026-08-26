@@ -16,6 +16,31 @@ SPEC.loader.exec_module(MODULE)
 
 
 class XCollectTests(unittest.TestCase):
+    def test_parse_metrics_from_canonical_action_bar(self) -> None:
+        self.assertEqual(
+            MODULE.parse_metrics("15 replies, 72 reposts, 454 likes, 605 bookmarks, 44,084 views"),
+            {"replies": 15, "reposts": 72, "likes": 454, "bookmarks": 605, "views": 44084},
+        )
+
+    def test_hydrates_missing_search_metrics_from_permalink(self) -> None:
+        class Group:
+            def get_attribute(self, _name):
+                return "3 replies, 8 reposts, 144 likes, 9,001 views"
+        class Article:
+            def query_selector(self, _selector):
+                return Group()
+        class Page:
+            def goto(self, *_args, **_kwargs):
+                return None
+            def wait_for_timeout(self, _timeout):
+                return None
+            def query_selector(self, _selector):
+                return Article()
+        rows = [{"url": "https://x.com/example/status/1", "metrics": {}}]
+        MODULE.hydrate_missing_metrics(Page(), rows)
+        self.assertEqual(rows[0]["metrics"]["views"], 9001)
+        self.assertEqual(rows[0]["metrics"]["likes"], 144)
+
     def test_public_count_keeps_unknown_distinct_from_zero(self) -> None:
         self.assertEqual(MODULE.parse_public_count("1 Follower"), 1)
         self.assertEqual(MODULE.parse_public_count("2.5K Followers"), 2500)

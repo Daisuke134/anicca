@@ -45,6 +45,21 @@ def parse_metrics(aria: str) -> dict:
     return out
 
 
+def hydrate_missing_metrics(page, rows: list[dict]) -> None:
+    """Read the canonical permalink when X omits metrics in search-result cards."""
+    for row in rows:
+        if row.get("metrics"):
+            continue
+        try:
+            page.goto(row["url"], wait_until="domcontentloaded", timeout=60000)
+            page.wait_for_timeout(2500)
+            article = page.query_selector('article[data-testid="tweet"]')
+            group = article.query_selector('[role="group"][aria-label]') if article else None
+            row["metrics"] = parse_metrics(group.get_attribute("aria-label") if group else "")
+        except Exception:
+            row["metrics"] = {}
+
+
 def parse_public_count(value: str):
     """Parse X public profile counts without turning an absent metric into zero."""
     match = re.search(r"([\d,.]+)\s*([KMB])?", value or "", re.I)
@@ -173,6 +188,7 @@ def recon(page, queries, per_query, exclude_urls, own_handle, time_budget_second
             continue
         seen.add(row["url"])
         uniq.append(row)
+    hydrate_missing_metrics(page, uniq)
     return uniq, errors, attempted
 
 
