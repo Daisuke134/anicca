@@ -267,6 +267,22 @@ test('agent-economy mode rejects every generic EVM key override without exposing
   }
 });
 
+test('agent-economy mode rejects wallet/session path selectors without exposing their values', () => {
+  const home = tmpDir('eq-agent-economy-path-selector');
+  writeWalletJson(home, '0x' + '6'.repeat(64));
+  for (const field of ['BLOCKRUN_HOME', 'BLOCKRUN_WALLET_PATH', 'BLOCKRUN_SESSION_FILE', 'WALLET_FILE']) {
+    assert.throws(
+      () => loadEvmKey({ mode: 'agent-economy', env: {
+        ANICCA_HOME: home,
+        [field]: '/private/path/selector',
+      } }),
+      (error) => error instanceof AgentEconomyIdentityError
+        && error.code === 'AGENT_ECONOMY_KEY_OVERRIDE_FORBIDDEN'
+        && !String(error.message).includes('/private/path/selector'),
+    );
+  }
+});
+
 test('agent-economy mode resolves only the explicit instance wallet and keeps its address stable', () => {
   const home = tmpDir('eq-agent-economy-clean');
   const own = '0x' + '2'.repeat(64);

@@ -33,10 +33,14 @@ export function resolveStatusPaths({ args = [], env = process.env } = {}) {
   const state = home ? path.join(home, "skills", "earn", "state") : undefined;
   const earnPath = configuredPath(values[0]) || (state && path.join(state, "earn-ledger.jsonl"));
   const correctionPath = configuredPath(values[1]) || (state && path.join(state, "receipt-reconciliations.jsonl"));
-  const computePath = configuredPath(values[2]) || configuredPath(e.COMPUTE_COST_LOG)
-    || (home && path.join(home, "compute.jsonl"));
-  const shelterPath = configuredPath(values[3]) || configuredPath(e.SHELTER_COST_LEDGER)
-    || (home && path.join(home, "shelter.jsonl"));
+  const explicitComputePath = configuredPath(values[2]) || configuredPath(e.COMPUTE_COST_LOG);
+  const explicitShelterPath = configuredPath(values[3]) || configuredPath(e.SHELTER_COST_LEDGER);
+  const ownerHome = configuredPath(e.HOME);
+  if (home && !ownerHome && (!explicitComputePath || !explicitShelterPath)) throw new StatusConfigError();
+  const computePath = explicitComputePath
+    || (ownerHome && path.join(ownerHome, ".blockrun", "cost_log.jsonl"));
+  const shelterPath = explicitShelterPath
+    || (ownerHome && path.join(ownerHome, ".hermes", "state", "shelter-cost.jsonl"));
   const journalPath = configuredPath(values[4]) || configuredPath(e.REVENUE_RECEIPT_JOURNAL)
     || (earnPath && path.join(path.dirname(earnPath), "revenue-receipts.jsonl"));
   return { earnPath, correctionPath, computePath, shelterPath, journalPath };

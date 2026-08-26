@@ -16,7 +16,14 @@
 #
 # State is deliberately NOT inside a release: see LOOPS_STATE_ROOT below.
 set -uo pipefail
-export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
+# Keep an explicitly supplied PATH first so contract tests can provide an isolated toolchain, then
+# append the fixed macOS lookup locations used by launchd. The cutter has no executable-path env
+# override; npm/node are always resolved through command lookup.
+if [ -n "${PATH:-}" ]; then
+  export PATH="$PATH:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+else
+  export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+fi
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 LOOPS_ROOT="${LOOPS_ROOT:-$HOME/loops}"
@@ -25,10 +32,67 @@ CURRENT="$LOOPS_ROOT/current"
 # state root is intentionally not resolved here (see RELEASE.json note below)
 KEEP="${LOOPS_KEEP_RELEASES:-5}"
 REF="${1:-HEAD}"
-NPM_BIN="${LOOPS_NPM_BIN:-npm}"
-NODE_BIN="${LOOPS_NODE_BIN:-node}"
+NPM_BIN="$(command -v npm 2>/dev/null || true)"
+NODE_BIN="$(command -v node 2>/dev/null || true)"
 
 die() { echo "cut-loop-release: $*" >&2; exit 1; }
+
+[ -n "$NPM_BIN" ] || die "npm executable is unavailable"
+[ -n "$NODE_BIN" ] || die "node executable is unavailable"
+
+validate_release_node_modules() {
+  local node_modules="$DEST/node_modules"
+  [ -d "$node_modules" ] || die "dependency install produced no node_modules"
+  [ ! -L "$node_modules" ] || die "release node_modules must be a directory"
+  local link resolved
+  while IFS= read -r -d '' link; do
+    resolved="$(realpath "$link" 2>/dev/null)" \
+      || die "dependency symlink cannot be resolved"
+    case "$resolved" in
+      "$node_modules"|"$node_modules"/*) ;;
+      *) die "dependency symlink escapes release node_modules" ;;
+    esac
+  done < <(find "$node_modules" -type l -print0)
+}
+
+dependency_digest() {
+  (
+    cd "$DEST" || exit 1
+    find node_modules \( -type f -o -type l \) -print | LC_ALL=C sort | while IFS= read -r file; do
+      local mode kind target content_hash
+      mode="$(stat -f '%Lp' "$file" 2>/dev/null || stat -c '%a' "$file" 2>/dev/null)" \
+        || exit 1
+      if [ -L "$file" ]; then
+        kind="symlink"
+        target="$(readlink "$file")" || exit 1
+        content_hash="-"
+      else
+        kind="file"
+        target="-"
+        content_hash="$(shasum -a 256 "$file" | awk '{print $1}')" || exit 1
+        mode="$(printf '%o' $((8#$mode & 0555)))"
+      fi
+      printf '%s\t%s\t%s\t%s\t%s\n' "$kind" "$file" "$mode" "$content_hash" "$target"
+    done
+  ) | shasum -a 256 | awk '{print $1}'
+}
+
+verify_release_seal() {
+  local item mode
+  while IFS= read -r -d '' item; do
+    case "$item" in
+      "$DEST/state"|"$DEST/state"/*) continue ;;
+    esac
+    mode="$(stat -f '%Lp' "$item" 2>/dev/null || stat -c '%a' "$item" 2>/dev/null)" \
+      || die "could not inspect sealed release permissions"
+    case "$mode" in
+      ''|*[!0-7]*) die "invalid sealed release permissions" ;;
+    esac
+    if [ $((8#$mode & 0222)) -ne 0 ]; then
+      die "sealed release remains writable"
+    fi
+  done < <(find "$DEST" -mindepth 1 -print0)
+}
 
 SHA="$(git -C "$REPO_ROOT" rev-parse "$REF" 2>/dev/null)" || die "cannot resolve ref '$REF'"
 SHORT="${SHA:0:8}"
@@ -76,17 +140,8 @@ if [ -f "$DEST/package.json" ] || [ -f "$DEST/package-lock.json" ]; then
     || { rm -rf "$DEST"; die "could not digest package-lock.json"; }
   DEPENDENCY_MANIFEST_SHA256="$(shasum -a 256 "$DEST/package.json" | awk '{print $1}')" \
     || { rm -rf "$DEST"; die "could not digest package.json"; }
-  if [ ! -d "$DEST/node_modules" ]; then
-    rm -rf "$DEST"
-    die "dependency install produced no node_modules"
-  fi
-  DEPENDENCY_SHA256="$({
-    cd "$DEST" || exit 1
-    find node_modules -type f -print | LC_ALL=C sort | while IFS= read -r file; do
-      printf '%s\n' "$file"
-      shasum -a 256 "$file"
-    done
-  } | shasum -a 256 | awk '{print $1}')" \
+  validate_release_node_modules
+  DEPENDENCY_SHA256="$(dependency_digest)" \
     || { rm -rf "$DEST"; die "could not digest installed dependencies"; }
   NODE_VERSION="$("$NODE_BIN" --version 2>/dev/null)" \
     || { rm -rf "$DEST"; die "could not read node runtime version"; }
@@ -126,8 +181,9 @@ fi
 # state worth preserving, and one writable directory costs nothing while the code stays immutable.
 mkdir -p "$DEST/state/effective-cron"
 
-chmod -R a-w "$DEST" 2>/dev/null || true
-chmod -R u+w "$DEST/state" 2>/dev/null || true
+chmod -R a-w "$DEST" || die "could not seal release permissions"
+chmod -R u+w "$DEST/state" || die "could not open intended state carveout"
+verify_release_seal
 
 # rename(2) over an existing symlink is atomic, so no pass can ever observe a missing `current`.
 # -h is load-bearing: without it mv follows `current` into the directory it points at and creates

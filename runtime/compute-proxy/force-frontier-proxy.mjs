@@ -5,9 +5,12 @@ import { loadEvmKey } from "../../skills/earn/lib/resolve-identity.mjs";
 // The forced frontier lane is part of agent-economy execution and therefore must derive its key
 // from the explicit instance wallet, never from WALLET_FILE or another generic environment key.
 const pk = loadEvmKey({ mode: "agent-economy" });
-if (!pk) throw new Error("agent-economy identity wallet is unavailable");
-process.env.BASE_CHAIN_WALLET_KEY = pk;
-const br = new BlockrunClient();
+if (!pk) {
+  const error = new Error("AGENT_ECONOMY_INSTANCE_KEY_MISSING: instance wallet key is unavailable");
+  error.code = "AGENT_ECONOMY_INSTANCE_KEY_MISSING";
+  throw error;
+}
+const br = new BlockrunClient({ privateKey: pk });
 const MODEL = process.env.FORCE_MODEL || "anthropic/claude-sonnet-4-6";
 const PORT = process.env.PORT || 8410;
 http.createServer((req,res)=>{

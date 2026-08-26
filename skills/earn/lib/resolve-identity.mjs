@@ -57,15 +57,13 @@ function rejectAgentEconomyEvmOverrides(env) {
     ['PKVAR', env.PKVAR && env[env.PKVAR]],
     ['BLOCKRUN_WALLET_KEY', env.BLOCKRUN_WALLET_KEY],
     ['BASE_CHAIN_WALLET_KEY', env.BASE_CHAIN_WALLET_KEY],
+    ['BLOCKRUN_HOME', env.BLOCKRUN_HOME],
+    ['BLOCKRUN_WALLET_PATH', env.BLOCKRUN_WALLET_PATH],
+    ['BLOCKRUN_SESSION_FILE', env.BLOCKRUN_SESSION_FILE],
+    ['WALLET_FILE', env.WALLET_FILE],
   ];
   const forbidden = fields.find(([, value]) => hasSecretValue(value));
   if (forbidden) throw new AgentEconomyIdentityError(forbidden[0]);
-}
-
-function rejectAgentEconomySolanaOverrides(env) {
-  if (hasSecretValue(env.ANICCA_SOLANA_PRIVATE_KEY)) {
-    throw new AgentEconomyIdentityError('ANICCA_SOLANA_PRIVATE_KEY');
-  }
 }
 
 // Reads `field` out of a JSON file. Returns null (never throws) on any read/parse/shape issue.
@@ -173,23 +171,13 @@ export function loadEvmKey({ home, env, mode } = {}) {
 /**
  * Resolve THIS instance's own Solana signing secret (base58, immutable, pure read — no throw).
  *
- * @param {{home?: string, env?: Record<string, string>, mode?: string}} [opts]
+ * @param {{home?: string, env?: Record<string, string>}} [opts]
  *   home: explicit ANICCA_HOME override (mainly for tests); defaults to opts.env.ANICCA_HOME.
  *   env:  environment map to read overrides/back-compat HOME from; defaults to process.env.
- *   mode: `agent-economy` rejects generic private-key environment overrides and reads only the
- *          explicit instance wallet under ANICCA_HOME.
  * @returns {string|null} base58 secret key, or null if unresolvable (fail-closed).
- * @throws {AgentEconomyIdentityError} in agent-economy mode when a generic key override is present.
  */
-export function resolveSolanaSecret({ home, env, mode } = {}) {
+export function resolveSolanaSecret({ home, env } = {}) {
   const e = env || process.env;
-
-  if (isAgentEconomyMode(mode, e)) {
-    rejectAgentEconomySolanaOverrides(e);
-    const instanceHome = home ?? e.ANICCA_HOME;
-    if (!hasSecretValue(instanceHome)) return null;
-    return readJsonField(path.join(instanceHome, '.automaton', 'solana.json'), 'secretKey');
-  }
 
   if (typeof e.ANICCA_SOLANA_PRIVATE_KEY === 'string' && e.ANICCA_SOLANA_PRIVATE_KEY.length > 0) {
     return e.ANICCA_SOLANA_PRIVATE_KEY;

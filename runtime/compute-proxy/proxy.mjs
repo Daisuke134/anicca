@@ -10,8 +10,12 @@ import { loadEvmKey } from "../../skills/earn/lib/resolve-identity.mjs";
 // process environment (ANICCA_EVM_PRIVATE_KEY, PKVAR, BLOCKRUN_WALLET_KEY, or BASE_CHAIN_WALLET_KEY)
 // from selecting another instance's signing identity.
 const pk = loadEvmKey({ mode: "agent-economy" });
-if (pk) process.env.BASE_CHAIN_WALLET_KEY = pk;
-const br = new BlockrunClient();
+if (!pk) {
+  const error = new Error("AGENT_ECONOMY_INSTANCE_KEY_MISSING: instance wallet key is unavailable");
+  error.code = "AGENT_ECONOMY_INSTANCE_KEY_MISSING";
+  throw error;
+}
+const br = new BlockrunClient({ privateKey: pk });
 const PORT = process.env.COMPUTE_PROXY_PORT || 8402;
 // Strip any ClawRouter profile prefix/word the caller might send; map to a concrete frontier id.
 const FRONTIER = process.env.ANICCA_FRONTIER_MODEL || "anthropic/claude-sonnet-4-6";

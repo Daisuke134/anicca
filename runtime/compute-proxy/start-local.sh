@@ -23,6 +23,9 @@ set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PORT="${COMPUTE_PROXY_PORT:-8402}"
+# Resolve the instance home before creating the wallet or starting the proxy. The proxy receives
+# this exported value and therefore cannot fall back to another process's default HOME identity.
+export ANICCA_HOME="${ANICCA_HOME:-$HOME/.anicca}"
 # per-instance EVM identity (#26 EQUALIZE, R4): the wallet path is resolved by a single sourced
 # helper (unit-tested) so every instance gets its OWN isolated wallet under its OWN $ANICCA_HOME,
 # while ONLY the original default-home instance keeps the legacy shared $HOME wallet. A spawn with
@@ -76,7 +79,7 @@ proxy_ready() {
 }
 if ! curl -sS --max-time 2 "http://127.0.0.1:$PORT/v1/models" >/dev/null 2>&1; then
   echo "[local] starting compute-proxy on :$PORT (x402 self-pay from own wallet)..."
-  ( cd "$HERE" && COMPUTE_PROXY_PORT="$PORT" node proxy.mjs ) &
+  ( cd "$HERE" && COMPUTE_PROXY_PORT="$PORT" ANICCA_HOME="$ANICCA_HOME" node proxy.mjs ) &
   # wait for the HTTP server to bind (port up). Live inference still needs the
   # network + a free-tier/funded wallet — see step 4 / verify notes.
   for _ in $(seq 1 20); do
@@ -92,8 +95,6 @@ export OPENAI_BASE_URL="http://127.0.0.1:$PORT/v1"
 export OPENAI_API_KEY="${OPENAI_API_KEY:-x402-local-nokey}"   # placeholder; proxy pays in USDC, not this
 # Use ClawRouter's `auto` router by default (no hardcoded model); ANICCA_MODEL can pin one.
 export ANICCA_MODEL="${ANICCA_MODEL:-auto}"
-# The loop requires ANICCA_HOME (no default) — derive it the same way install.sh does.
-export ANICCA_HOME="${ANICCA_HOME:-$HOME/.anicca}"
 # Expose the self-owned wallet address so the loop can read its balance (tier selection).
 # Derive from the private key when the wallet file has no `address` field (older format).
 export ANICCA_WALLET_ADDRESS="${ANICCA_WALLET_ADDRESS:-$(WALLET_PATH="$WALLET" node -e '

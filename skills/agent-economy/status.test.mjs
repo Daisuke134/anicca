@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { summarizeEconomyStatus } from "./status.mjs";
+import { resolveStatusPaths, summarizeEconomyStatus } from "./status.mjs";
 import { normalizeRevenueReceipt } from "./lib/revenue-receipt.mjs";
 import { reconcileRevenueReceipts } from "./lib/money-truth.mjs";
 import { mkdtemp, mkdir, readFile, writeFile } from "node:fs/promises";
@@ -203,6 +203,30 @@ test("status discovers its ledger from ANICCA_HOME when no paths are supplied", 
   assert.equal(result.external_realized_net_30d, 15);
 });
 
+test("status discovers compute and shelter ledgers from the run.sh owner defaults", async () => {
+  const root = await mkdtemp(join(tmpdir(), "agent-economy-status-owner-"));
+  const home = join(root, "instance-home");
+  const state = join(home, "skills", "earn", "state");
+  const ownerCompute = join(root, ".blockrun", "cost_log.jsonl");
+  const ownerShelter = join(root, ".hermes", "state", "shelter-cost.jsonl");
+  await mkdir(state, { recursive: true });
+  await mkdir(join(root, ".blockrun"), { recursive: true });
+  await mkdir(join(root, ".hermes", "state"), { recursive: true });
+  await Promise.all([
+    writeFile(join(state, "earn-ledger.jsonl"), ""),
+    writeFile(join(state, "revenue-receipts.jsonl"), ""),
+    writeFile(ownerCompute, `${JSON.stringify({ ts: NOW / 1000, cost_usd: 6 })}\n`),
+    writeFile(ownerShelter, `${JSON.stringify({ ts: NOW, settledLeaseCostUsd: 4 })}\n`),
+  ]);
+  const result = JSON.parse((await execFileAsync(process.execPath, ["skills/agent-economy/status.mjs"], {
+    cwd: process.cwd(),
+    timeout: 5_000,
+    env: { ...process.env, HOME: root, ANICCA_HOME: home },
+  })).stdout.trim());
+  assert.equal(result.compute_cost_30d, 6);
+  assert.equal(result.shelter_cost_30d, 4);
+});
+
 test("status with neither explicit paths nor ANICCA_HOME exits 2 with a stable secret-free config diagnostic", async () => {
   const env = { ...process.env };
   delete env.ANICCA_HOME;
@@ -215,5 +239,12 @@ test("status with neither explicit paths nor ANICCA_HOME exits 2 with a stable s
     (error) => error && error.code === 2
       && String(error.stderr || "").trim() === "status: STATUS_CONFIG_MISSING"
       && !String(error.stderr || "").includes("undefined"),
+  );
+});
+
+test("status rejects ANICCA_HOME discovery without owner HOME or explicit cost ledgers", () => {
+  assert.throws(
+    () => resolveStatusPaths({ env: { ANICCA_HOME: "/tmp/instance-only" } }),
+    (error) => error?.code === "STATUS_CONFIG_MISSING",
   );
 });
