@@ -1,5 +1,6 @@
 "use strict";
 const assert = require("node:assert/strict");
+const crypto = require("node:crypto");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
@@ -144,4 +145,15 @@ test("verified EN affirmation native-carousel receipt is discovered as an immuta
     shortcode: "DcfQ2-hG3KR", public_url: "https://www.instagram.com/p/DcfQ2-hG3KR/", caption,
     published_at: "2026-08-26T03:37:17.624Z",
   }]);
+});
+
+test("verified JA Larry production carousel is discovered for automatic metrics", () => {
+  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "lm-instagram-larry-ja-discovery-"));
+  const caption = "メンタルが勝手に安定する\n口癖５選\n\n#anicca #affirmation";
+  const captionHash = crypto.createHash("sha256").update(caption).digest("hex");
+  const objectDir = path.join(dataDir, "objects", "sha256"); fs.mkdirSync(objectDir, { recursive: true }); fs.writeFileSync(path.join(objectDir, captionHash), caption, { mode: 0o600 });
+  const media = ["d4f0030358eab3c89e36ea938ccfe1a3e33eadcc42d55f269a456fd72de08a3d", "ac47a0fbc783a5bde9160b85da29b513a7e36daa131c252384510753cb210a8f", "bbd5baa7f4463ac7c2d2e814705e702514e28db5f4760023d4fecdf924f0acd5", "366527448cc3b70dbc15cb42b0fc196f572c65b51730efbd6ea1d0c69ec91dae", "7d1ca4ebf4d2ede902ecb3251eefd8ab36fad8e4408133b9463f4edc56e8fc5f", "0525669aca914138a707ae782bb759b74c833eae90ff9cfefb2635a64e6b5a68"];
+  const receipt = { schema_version: 1, kind: "marketing_native_carousel_distribution", status: "published", product_id: "anicca-ios", format_id: "larry", form: "affirmation-carousel", locale: "ja", platform: "instagram", account_id: "@ani.cca1234", integration_ref: "integration://postiz/instagram/cmq3sq7mc000eqp0y7azfm8yk", creative_id: "LARRY-JA-CANARY", pack_sha256: "3d6acc97e59f270a403b39a27e070265fc79d0c5d842ede19c64a5be8a9db79e", media_sha256: media, media_order_sha256: crypto.createHash("sha256").update(JSON.stringify(media)).digest("hex"), caption_sha256: captionHash, provider_post_id: "cmt9uc44101hulf0ygsfdkkfv", provider_reconciled: true, public_url: "https://www.instagram.com/p/DcfzPeRGyUn/", published_at: "2026-08-26T08:33:00.000Z" };
+  const directory = path.join(dataDir, "tenants/dais-local/marketing/native-carousel-publication/anicca-ios"); fs.mkdirSync(directory, { recursive: true }); fs.writeFileSync(path.join(directory, "distribution.jsonl"), `${JSON.stringify({ effect_key: "exact", receipt })}\n`);
+  assert.equal(discoverExpected(dataDir).some((row) => row.shortcode === "DcfzPeRGyUn" && row.native_owner === "ani.cca1234"), true);
 });

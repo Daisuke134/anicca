@@ -7,12 +7,14 @@ const path = require("node:path");
 const { resolveDataRoot } = require("../lib/runtime-paths.js");
 const {
   EN_AFFIRMATION_LANE,
+  JA_LANE,
   verifyMarketingNativeCarouselPublicationReceipt,
 } = require("../lib/marketing-native-carousel-publication-adapter.js");
 const { EXPECTED, collectWindow, persistDailyDigest, persistDelayedSnapshot, sendMetricSnapshot } = require("./instagram-metrics-read.js");
 
 const WINDOWS = Object.freeze({ "2h": 2 * 3600_000, "24h": 24 * 3600_000, "72h": 72 * 3600_000, "7d": 7 * 86400_000 });
 const GRACE_MS = 90 * 60_000;
+const CAROUSEL_LANES = Object.freeze([EN_AFFIRMATION_LANE, JA_LANE]);
 const VIDEO_LANES = Object.freeze([
   Object.freeze({ format_id: "reelclaw-card", form: "nudge-card", locale: "ja", account_id: "@anicca.jp1", native_owner: "anicca.ios.jp", integration_id: "cmn8ycvtn02djqx0ytuisn9mw" }),
   Object.freeze({ format_id: "reelclaw-card", form: "nudge-card", locale: "en", account_id: "@anicca.encards", native_owner: "anicca.encards", integration_id: "cmpc3gx4001nklg0y27a8o66q" }),
@@ -47,7 +49,8 @@ function discoverExpected(dataDir) {
   const carouselRows = fs.existsSync(carouselFile) ? fs.readFileSync(carouselFile, "utf8").split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line)) : [];
   for (const row of carouselRows) {
     const receipt = row && row.receipt;
-    if (!receipt || receipt.integration_ref !== EN_AFFIRMATION_LANE.integrationRef) continue;
+    const lane = CAROUSEL_LANES.find((candidate) => candidate.integrationRef === receipt?.integration_ref);
+    if (!lane) continue;
     if (!verifyMarketingNativeCarouselPublicationReceipt(receipt)) throw new Error("Instagram native carousel receipt invalid");
     const match = /^https:\/\/www\.instagram\.com\/p\/([A-Za-z0-9_-]+)\/$/.exec(String(receipt.public_url || ""));
     const integration = /^integration:\/\/postiz\/instagram\/([A-Za-z0-9._:-]+)$/.exec(String(receipt.integration_ref || ""));
@@ -60,7 +63,7 @@ function discoverExpected(dataDir) {
     const captionBytes = fs.readFileSync(captionPath);
     if (crypto.createHash("sha256").update(captionBytes).digest("hex") !== receipt.caption_sha256) throw new Error("Instagram caption object integrity mismatch");
     found.push(Object.freeze({ tenant_id: "dais-local", product_id: receipt.product_id, locale: receipt.locale, account_id: receipt.account_id,
-      native_owner: EN_AFFIRMATION_LANE.nativeOwner.replace(/^@/, ""), integration_id: integration[1], provider_post_id: receipt.provider_post_id,
+      native_owner: lane.nativeOwner.replace(/^@/, ""), integration_id: integration[1], provider_post_id: receipt.provider_post_id,
       shortcode: match[1], public_url: receipt.public_url, caption: captionBytes.toString("utf8"), published_at: receipt.published_at }));
   }
   const identities = new Set(found.map((row) => `${row.shortcode}\n${row.provider_post_id}`));
