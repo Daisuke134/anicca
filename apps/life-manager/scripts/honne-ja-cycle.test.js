@@ -11,8 +11,8 @@ test("Honne JA production cadence has three exact idempotent slots", () => {
   assert.throws(() => runSlot(null, Date.parse("2026-08-21T23:29:00.000Z")), /no due slot/i);
 });
 
-test("Anicca main Instagram has one exact daily Reel slot", () => {
-  assert.deepEqual([...ANICCA_MAIN_INSTAGRAM_SLOTS], ["19:10"]);
+test("Anicca main Instagram has three exact daily Reel slots", () => {
+  assert.deepEqual([...ANICCA_MAIN_INSTAGRAM_SLOTS], ["08:10", "13:10", "19:10"]);
   const lane = parseArgs(["run-anicca-main-instagram"]).lane;
   assert.equal(lane.platform, "instagram"); assert.equal(lane.account, "@anicca.jp1");
 });
