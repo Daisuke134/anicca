@@ -9,6 +9,13 @@ The four lanes run from `~/gig/releases/life-manager/<sha>/`, cut from `main` by
 Current lane names are **Apply, Reply, Storefront, Paid**. `Reply` owns buyer-message
 observation, replies, and estimates; do not present it as a separate Negotiate lane.
 
+The Manledge delivery is no longer the active program cursor. The active product objective is a
+public, website-neutral, no-human revenue agent whose four installed owners run continuously:
+Apply acquires suitable work, Reply handles every buyer event and estimate, Storefront improves
+offers from measured conversion, and Paid completes accepted work through official terminal
+readback and replay-zero. A marketplace-specific customer case is evidence for this kernel, not a
+separate architecture or the definition of completion.
+
 The shared model runner now retains only the newest three rotated generations inside each
 project-owned `evidence/agent-*/history/` directory. Production cleanup removed 1,115 old
 runner generations (356,708,106 bytes) without touching current results, customer artifacts,
@@ -211,7 +218,7 @@ contract, fee, payout, and bank receipts advance it.
     official application identity, and tracks opportunity → application → reply → contract → accepted
     delivery → net payout conversion rather than raw volume. Optimize verified net cash per constrained
     owner-hour, not application count or model-reported success.
-18. [ ] Reply/Negotiate consumes each buyer event once with complete cross-surface context,
+18. [ ] Reply consumes each buyer event once with complete cross-surface context,
     answers concisely without apologies/internal detail/unnecessary disclosure, and reads back the
     exact seller message or estimate.
 19. [ ] Storefront keeps offers aligned with demonstrated capabilities, correlates inquiry/order

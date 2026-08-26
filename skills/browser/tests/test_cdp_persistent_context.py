@@ -3,6 +3,7 @@ import importlib.util
 import json
 import os
 import stat
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -137,6 +138,44 @@ class CdpPersistentContextPreflightTests(unittest.TestCase):
             self.assertEqual(receipt["reason"], "disk_writers_stop")
             self.assertEqual(receipt["effect"], 0)
             self.assertEqual(receipt["required_bytes"], 524288 * 1024)
+
+    def test_with_browser_starts_unreachable_identity_and_owns_one_lease(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            guard = root / "guard.sh"
+            ensure = root / "ensure.sh"
+            calls = root / "calls"
+            guard.write_text(
+                "#!/bin/sh\n"
+                f"printf '%s\\n' \"guard:$1:$2:${{AI_BROWSER_HOLDER_PID:-}}\" >> {calls!s}\n"
+                "case \"$1\" in\n"
+                "  acquire) exit 10 ;;\n"
+                "  release) exit 0 ;;\n"
+                "esac\n",
+                encoding="utf-8",
+            )
+            ensure.write_text(
+                "#!/bin/sh\n"
+                f"printf '%s\\n' \"ensure:$1:${{AI_BROWSER_HOLDER_PID:-}}\" >> {calls!s}\n"
+                "printf '%s\\n' http://127.0.0.1:54321\n",
+                encoding="utf-8",
+            )
+            guard.chmod(0o755)
+            ensure.chmod(0o755)
+            completed = subprocess.run(
+                ["bash", str(ENSURE.with_name("with-browser.sh")), "buyma:test", "--",
+                 "sh", "-c", 'test "$CDP" = http://127.0.0.1:54321'],
+                env={**os.environ, "AI_BROWSER_GUARD": str(guard),
+                     "AI_ENSURE_PROVISION_BROWSER": str(ensure),
+                     "BROWSER_WAIT_SECONDS": "1"},
+                capture_output=True, text=True, check=False, timeout=15,
+            )
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            records = calls.read_text(encoding="utf-8").splitlines()
+            self.assertRegex(records[0], r"^guard:acquire:buyma:test:\d+$")
+            holder = records[0].rsplit(":", 1)[1]
+            self.assertEqual(records[1], f"ensure:buyma:test:{holder}")
+            self.assertEqual(records[2], "guard:release:buyma:test:")
 
     def test_port_zero_preflight_only_reaches_guard_without_cloak_import(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
