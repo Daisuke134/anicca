@@ -2279,6 +2279,12 @@ terminal `completed`, `reconciliation_decision=present`, and
 `3241653e…de624c`, six ordered media hashes, order hash `97cb56b3…1c3855`, and
 caption hash `8e6f7cec…f2c6d`; `public_url=null` is explicit and no URL is invented.
 Telegram/replay/metrics are the next atomic steps.
+The shared natural-language renderer now accepts this exact photo proof as
+`postiz_published_exact_assets`, says Postiz API `PUBLISHED` and exact approved
+local assets/caption matched, and omits a nonexistent public URL. Video/Reel
+messages retain their direct-URL validation. Focused liveness/runner tests are
+21/21; the next action is replaying the existing slot to create exactly one
+Telegram message, followed by a second replay proving message 0/publication 0.
 Controls are restored to fence closed and armed 0. API-only operation is enforced by removing the CDP/
 browser fallback from profile resolution; a profile-only result now fails fast
 after the bounded API/CLI readback instead of holding the effect fence open for

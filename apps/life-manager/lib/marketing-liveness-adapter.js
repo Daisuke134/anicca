@@ -168,6 +168,10 @@ function parsePayloadRef(ref) {
   }
   for (const key of ["slot", "retry_state"]) if (!Object.hasOwn(payload, key)) throw new Error("marketing liveness ref is invalid");
   exactInstant(payload.slot, "marketing liveness slot");
+  const postizPhotoProof = payload.platform === "tiktok"
+    && payload.status === "published"
+    && payload.public_url === "unavailable"
+    && payload.publication_evidence === "postiz_published_exact_assets";
   if (
     !IDENTIFIER.test(payload.lane)
     || !IDENTIFIER.test(payload.product)
@@ -175,7 +179,7 @@ function parsePayloadRef(ref) {
     || !["instagram", "tiktok", "youtube"].includes(payload.platform)
     || (payload.account !== undefined && !ACCOUNT.test(String(payload.account)))
     || !["published", "missed"].includes(payload.status)
-    || (payload.status === "published" && !(
+    || (payload.status === "published" && !postizPhotoProof && !(
       payload.platform === "tiktok"
         ? /^https:\/\/www\.tiktok\.com\/@[^/]+\/video\/[0-9]+\/?$/.test(payload.public_url)
         : payload.platform === "instagram"
@@ -260,6 +264,9 @@ function renderMessage(payload) {
   const platform = { tiktok: "TikTok", instagram: "Instagram", youtube: "YouTube" }[payload.platform]
     || payload.platform;
   if (payload.status === "published") {
+    if (payload.publication_evidence === "postiz_published_exact_assets") {
+      return `Life Manager::: ${product}'s ${locale} photo carousel was published on ${platform} for ${account} in the ${payload.slot} slot. Postiz API status: PUBLISHED. The exact locally stored approved assets and caption matched. Retry: ${payload.retry_state}.`;
+    }
     return `Life Manager::: ${product}'s ${locale} post was published on ${platform} for ${account} in the ${payload.slot} slot. Status: published. Public URL: ${payload.public_url}. Retry: ${payload.retry_state}.`;
   }
   return `Life Manager::: ${product}'s ${locale} post was not published on ${platform} for ${account} in the ${payload.slot} slot. Status: missed. Public URL: unavailable. Retry: unavailable.`;

@@ -91,6 +91,18 @@ test("miss alert identity is stable so rerun enqueues and sends only once", asyn
   assert.equal(sends, 1);
 });
 
+test("published TikTok photo carousel reports exact Postiz and local-asset proof without a URL", async () => {
+  const payload = { lane: "anicca-en-slideshow-tiktok", product: "anicca-ios", locale: "en", platform: "tiktok", account: "@anicca_slideshow", slot: "2026-08-26T04:54:59.000Z", status: "published", public_url: "unavailable", retry_state: "not_required", publication_evidence: "postiz_published_exact_assets" };
+  const job = buildMarketingLivenessJob({ tenantId: "dais-local", telegramTokenRef: "secret://telegram/bot-token", telegramChatRef: "telegram-chat://owner", payload });
+  const sent = [];
+  const result = await executeMarketingLivenessJob(job, { secretProvider: { get: async () => "token" }, chatProvider: { get: async () => "123" }, sendTelegram: async (_token, _chat, text) => { sent.push(text); return { ok: true, result: { message_id: 77 } }; }, now: () => "2026-08-26T05:35:00.000Z" });
+  assert.equal(result.receipt.message_id, 77);
+  assert.match(sent[0], /photo carousel was published/);
+  assert.match(sent[0], /Postiz API status: PUBLISHED/);
+  assert.doesNotMatch(sent[0], /Public URL/);
+  assert.throws(() => buildMarketingLivenessJob({ tenantId: "dais-local", telegramTokenRef: "secret://telegram/bot-token", telegramChatRef: "telegram-chat://owner", payload: { ...payload, publication_evidence: "wrong" } }), /invalid/i);
+});
+
 test("disabled, default-off, and shadow lanes never produce miss alerts", () => {
   const lanes = ["disabled", "default-off", "shadow"].map((state, index) => ({
     ...LANE, lane_id: `honne-${index}`, state,

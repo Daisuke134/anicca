@@ -267,14 +267,19 @@ async function runAniccaCarouselCanary(argv = [], deps = {}) {
     throw error;
   }
   const publicationResult = { created: queued.created && publicationRun.created, public_url: publication.public_url, provider_post_id: publication.provider_post_id };
-  if (!verifyNativeObject(config.verificationRef, objectStore, publication, trustedNow, lane)) {
+  const postizPhotoVerified = lane === TIKTOK_SLIDESHOW_RUNNER_LANE
+    && publication.public_url == null
+    && publication.provider_state === "PUBLISHED"
+    && publication.provider_posting_method === "DIRECT_POST"
+    && publication.provider_content_sha256 === publication.caption_sha256;
+  if (!postizPhotoVerified && !verifyNativeObject(config.verificationRef, objectStore, publication, trustedNow, lane)) {
     return { slot: config.slot, publication: publicationResult, telegram: { created: false, held: true, message_id: null } };
   }
   const telegramJob = buildMarketingLivenessJob({
     tenantId: config.tenantId,
     telegramTokenRef: lane.telegramTokenRef,
     telegramChatRef: lane.chatRef,
-    payload: { lane: lane.lane, product: lane.productId, locale: lane.locale, platform: lane.platform, account: lane.nativeOwner, slot: config.slot, status: "published", public_url: publication.public_url, retry_state: "not_required" },
+    payload: { lane: lane.lane, product: lane.productId, locale: lane.locale, platform: lane.platform, account: lane.nativeOwner, slot: config.slot, status: "published", public_url: postizPhotoVerified ? "unavailable" : publication.public_url, retry_state: "not_required", ...(postizPhotoVerified ? { publication_evidence: "postiz_published_exact_assets" } : {}) },
   });
   const telegramQueued = await store.enqueueJob({ ...telegramJob, availableAt: trustedNow });
   const telegramRun = await executeJob(store, telegramJob, lane.workerLabel, (job) => executeMarketingLivenessJob(job, { secretProvider, chatProvider: { get: async (tenantId, ref) => { if (tenantId !== config.tenantId || ref !== lane.chatRef) throw new Error(`${lane.name} Telegram chat scope mismatch`); return required(env.LM_TELEGRAM_ALERT_CHAT_ID, "LM_TELEGRAM_ALERT_CHAT_ID"); } }, sendTelegram: deps.sendTelegram, now: clock }), deps.executeCapabilityJob || executeCapabilityJob);
