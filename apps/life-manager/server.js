@@ -697,6 +697,14 @@ const server = http.createServer((req, res) => {
               return;
             }
           }
+          // A punctuation-prefixed /start lookalike is not a Telegram deep-link payload. Keep it
+          // out of the free-text onboarding path, which would otherwise emit the legacy ?tg= URL.
+          // The slash router already owns alphanumeric unknown commands such as /startfoo.
+          if (u.kind === "message" && u.text && !u.isStart && /^\/start(?:@[A-Za-z0-9_]+)?(?!\s|$)/i.test(u.text)) {
+            await sendMessage(LM_TG_TOKEN, u.chatId, "Unknown command. Send /help to see what I understand.");
+            res.writeHead(200); res.end("ok");
+            return;
+          }
           if (u.kind === "location") {
             if (row) {
               const saved = await upsertLiveLocation(row.uid, u, { supaUrl: SUPA_URL, supaKey: SUPA_KEY });
@@ -765,7 +773,8 @@ const server = http.createServer((req, res) => {
             // builder validates LM_PANEL_BASE and intentionally excludes chat IDs/tokens, so the
             // web page can create its server session through the existing panel-auth boundary.
             const reply = startReply(u.chatId, LM_PANEL_BASE);
-            await sendMessage(LM_TG_TOKEN, u.chatId, reply.text, reply.extra);
+            const sent = await sendMessage(LM_TG_TOKEN, u.chatId, reply.text, reply.extra);
+            if (!sent || sent.ok !== true) throw new Error("onboarding web app button send failed");
           } else if (u.text) {
             // Native steps (name/phone) capture the typed value; web steps re-nudge; "done" → reply.
             const result = await handleOnboardingText(u.chatId, u.text, row, opts);

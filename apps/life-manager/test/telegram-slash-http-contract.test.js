@@ -50,6 +50,7 @@ test("POST /telegram routes the legacy-parity slash surface without disturbing e
   const sent = [];
   const userPatches = [];
   const feedbackRows = [];
+  let telegramSendOk = true;
 
   global.fetch = async (input, init = {}) => {
     const url = new URL(String(input));
@@ -57,7 +58,9 @@ test("POST /telegram routes the legacy-parity slash surface without disturbing e
     if (url.hostname === "api.telegram.org") {
       if (/sendMessage$/.test(url.pathname)) {
         sent.push(JSON.parse(init.body));
-        return response(200, { ok: true, result: { message_id: 9000 + sent.length } });
+        return response(200, telegramSendOk
+          ? { ok: true, result: { message_id: 9000 + sent.length } }
+          : { ok: false, error_code: 400, description: "token=fixture-token chat_id=200" });
       }
       throw new Error(`unexpected telegram call ${url.pathname}`);
     }
@@ -191,8 +194,17 @@ test("POST /telegram routes the legacy-parity slash surface without disturbing e
     assert.deepEqual(lastSent().reply_markup.inline_keyboard[0][0].web_app, {
       url: "https://panel.test/panel/onboarding",
     });
-    // 6b. REGRESSION (intentional change): "/startfoo" is NOT a start. It used to reach onboarding
-    //     because isStart is a startsWith check; a real deep link can never produce it, so it is now
+    assert.equal(await message("200", "/start@Bot payload"), 200);
+    assert.deepEqual(lastSent().reply_markup.inline_keyboard[0][0].web_app, {
+      url: "https://panel.test/panel/onboarding",
+    });
+    assert.equal(await message("200", "/start-foo"), 200);
+    assert.match(lastSent().text, /Unknown command/);
+    assert.ok(!lastSent().reply_markup, "/start-foo must not open onboarding");
+    assert.equal(await message("200", "/start?"), 200);
+    assert.match(lastSent().text, /Unknown command/);
+    assert.ok(!lastSent().reply_markup, "/start? must not open onboarding");
+    // 6b. REGRESSION: "/startfoo" is NOT a start. A real deep link can never produce it, so it is
     //     answered as the unknown command it is.
     assert.equal(await message("200", "/startfoo"), 200);
     assert.match(lastSent().text, /Unknown command: \/startfoo/);
@@ -272,6 +284,24 @@ test("POST /telegram routes the legacy-parity slash surface without disturbing e
     assert.match(lastSent().text, /Onboarding: done/);
     assert.match(lastSent().text, /Calendar: connected/);
     assert.match(lastSent().text, /Location: not available/);
+
+    // 14. Telegram transport failure is observable but the webhook still acknowledges the update so
+    //    Telegram does not retry it. The server logs only the generic contract error, never the bot
+    //    token, chat id, or provider description returned by Telegram.
+    const sentBeforeFailure = sent.length;
+    const errors = [];
+    const originalConsoleError = console.error;
+    console.error = (...args) => errors.push(args.map(String).join(" "));
+    telegramSendOk = false;
+    try {
+      assert.equal(await message("200", "/start"), 200);
+    } finally {
+      telegramSendOk = true;
+      console.error = originalConsoleError;
+    }
+    assert.equal(sent.length, sentBeforeFailure + 1, "a failed /start delivery is attempted exactly once");
+    assert.ok(errors.some((line) => line.includes("onboarding web app button send failed")));
+    assert.doesNotMatch(errors.join("\n"), /fixture-token|chat_id=200|token=|description/i);
   } finally {
     global.fetch = originalFetch;
     http.createServer = originalCreateServer;
