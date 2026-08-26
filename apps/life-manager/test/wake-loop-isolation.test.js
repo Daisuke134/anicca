@@ -14,7 +14,8 @@ process.env.LM_CALL_SECRET = "unit_secret";
 process.env.PUBLIC_WSS = "wss://life-call.invalid";
 
 const {
-  wakeCallOnce, wakeUserOnce, reminderUserOnce, organsUserOnce, reminderTick, WAKE_USER_TIMEOUT_MS, forEachUserSafe,
+  wakeCallOnce, wakeUserOnce, reminderUserOnce, organsUserOnce, reminderTick, startReminderLoop,
+  WAKE_USER_TIMEOUT_MS, forEachUserSafe,
 } = require("../scheduler.js");
 const { clearEvents, getEvents } = require("../lib/event-cache.js");
 
@@ -502,4 +503,46 @@ test("the degradable organ tick no longer owns the travel reminder", async () =>
   h.deps.relations = async () => null;
   await organsUserOnce(reminderUser(), Date.now(), h.deps);
   assert.equal(reminders, 0, "the reminder has one fixed-tick owner, not the degradable organ tick");
+});
+
+test("the reminder loop reserves the next 60s start before a slow tick and close prevents future work", async () => {
+  const previousSupaUrl = process.env.SUPABASE_URL;
+  const previousSupaKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  process.env.SUPABASE_URL = "";
+  process.env.SUPABASE_SERVICE_ROLE_KEY = "";
+  const scheduled = [];
+  const cleared = [];
+  let starts = 0;
+  let resolveCurrent;
+  let loop;
+  try {
+    loop = startReminderLoop({
+      reminderTick: async () => {
+        starts += 1;
+        await new Promise((resolve) => { resolveCurrent = resolve; });
+      },
+      setTimeout: (fn, ms) => {
+        const handle = { fn, ms };
+        scheduled.push(handle);
+        return handle;
+      },
+      clearTimeout: (handle) => cleared.push(handle),
+    });
+    assert.equal(starts, 1, "the current tick starts immediately");
+    assert.equal(scheduled.length, 1, "the next start is reserved while the current tick is unresolved");
+    assert.equal(scheduled[0].ms, 60_000, "the reserved boundary is fixed at 60 seconds");
+
+    loop.close();
+    assert.deepEqual(cleared, [scheduled[0]], "close clears the reserved future timer");
+    scheduled[0].fn();
+    await Promise.resolve();
+    assert.equal(starts, 1, "a callback racing with close cannot start future work");
+  } finally {
+    if (loop) loop.close();
+    if (resolveCurrent) resolveCurrent();
+    if (previousSupaUrl === undefined) delete process.env.SUPABASE_URL;
+    else process.env.SUPABASE_URL = previousSupaUrl;
+    if (previousSupaKey === undefined) delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+    else process.env.SUPABASE_SERVICE_ROLE_KEY = previousSupaKey;
+  }
 });

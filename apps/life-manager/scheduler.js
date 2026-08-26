@@ -888,21 +888,26 @@ function startWakeLoop() {
 }
 
 // Fixed 60s, deliberately independent from schedulerPollInterval(): Composio budget degradation must
-// never turn the deadline-critical Telegram reminder into a 5-minute organ.
-function startReminderLoop() {
+// never turn the deadline-critical Telegram reminder into a 5-minute organ. Reserve the next start
+// before awaiting this tick so slow provider work cannot move the wall-clock boundary.
+function startReminderLoop(options = {}) {
   console.log(`[reminder] started — dedicated tick every ${TICK_MS / 1000}s, ${REMINDER_TIMEOUT_MS / 1000}s per tenant`);
+  const opts = options || {};
+  const runReminderTick = opts.reminderTick || opts.tick || reminderTick;
+  const schedule = opts.setTimeout || setTimeout;
+  const cancel = opts.clearTimeout || clearTimeout;
   let timer;
   let closed = false;
   const run = async () => {
-    try { await reminderTick(); } catch (e) { console.error("[reminder] tick err", e.message); }
     if (closed) return;
-    timer = setTimeout(run, TICK_MS);
+    timer = schedule(run, TICK_MS);
+    try { await runReminderTick(); } catch (e) { console.error("[reminder] tick err", e.message); }
   };
   run();
   return {
     close: () => {
       closed = true;
-      if (timer !== undefined) clearTimeout(timer);
+      if (timer !== undefined) cancel(timer);
     },
   };
 }
