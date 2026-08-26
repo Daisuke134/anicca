@@ -20,6 +20,11 @@ import { runTaskMarketPass } from "../../earn/taskmarket/taskmarket-work.mjs";
 
 const RECIPIENT = "acct_life_manager_instance_01";
 const PAYER = "customer_external_01";
+const EVM_PAYER = "0x1111111111111111111111111111111111111111";
+const EVM_RECIPIENT = "0x2222222222222222222222222222222222222222";
+const BASE_USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+const TRANSFER_TOPIC = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
+const topicAddress = (address) => `0x${address.slice(2).padStart(64, "0")}`;
 const NOW = "2026-08-27T00:00:00.000Z";
 const execFileAsync = promisify(execFile);
 
@@ -35,14 +40,24 @@ function squarePng() {
   return png;
 }
 
-function providerProof(id) {
-  return { provider_receipt_id: id, verified: true };
+function successfulEvmReceipt({ tx, payer = EVM_PAYER, recipient = EVM_RECIPIENT, contract = BASE_USDC, amount = "3000", logIndex = "0x0", extraLogs = [] } = {}) {
+  return {
+    status: "0x1", transactionHash: tx,
+    logs: [{
+      address: contract, transactionHash: tx, logIndex,
+      topics: [TRANSFER_TOPIC, topicAddress(payer), topicAddress(recipient)],
+      data: `0x${BigInt(amount).toString(16).padStart(64, "0")}`,
+    }, ...extraLogs],
+  };
 }
 
-function trustedProofs(entries) {
-  return (row, expected) => {
-    const proof = entries[String(row.source_record_id || row.requestId || row.proposal_id || row.taskId || row.external_receipt_id || row.provider_receipt_id || row.transaction || row.id || "")];
-    return proof ? { verified: true, ...expected, proof } : null;
+function fakeRpc({ tx, receipt, chainId = "0x2105", calls = [] }) {
+  return async (_url, init) => {
+    const body = JSON.parse(init.body);
+    calls.push(body);
+    if (body.method === "eth_chainId") return { ok: true, json: async () => ({ result: chainId }) };
+    if (body.method === "eth_getTransactionReceipt") return { ok: true, json: async () => ({ result: receipt || successfulEvmReceipt({ tx }) }) };
+    throw new Error(`unexpected RPC method ${body.method}`);
   };
 }
 
@@ -60,8 +75,8 @@ function rejected(result, reason) {
   return result.rejection;
 }
 
-test("Coconala accepts only a settled provider payout proof and preserves fee/net", () => {
-  const receipt = accepted(adaptCoconala({
+test("Coconala mapping remains rejection-only until an official provider verifier exists", () => {
+  const result = adaptCoconala({
     source_record_id: "coconala-payout-1",
     requestId: "90000001",
     status: "検収完了",
@@ -74,13 +89,9 @@ test("Coconala accepts only a settled provider payout proof and preserves fee/ne
     payout_receipt_id: "coconala-payout-1",
     payout_proof_verified: true,
     ts: NOW,
-  }, { readbackVerifier: trustedProofs({ "coconala-payout-1": providerProof("coconala-payout-1") }) }));
-  assert.equal(receipt.provider, "coconala");
-  assert.equal(receipt.gross, 10000);
-  assert.equal(receipt.fee, 2200);
-  assert.equal(receipt.signed_net, 7800);
-  assert.equal(receipt.asset, "JPY");
-  assert.deepEqual(receipt.proof, providerProof("coconala-payout-1"));
+  });
+  assert.equal(result.ok, false);
+  assert.match(result.rejection.code + result.rejection.reason, /VERIFIER|rejection|non-revenue/i);
 });
 
 test("Coconala net-only sales and payout-requested UI are durable rejections", () => {
@@ -91,8 +102,8 @@ test("Coconala net-only sales and payout-requested UI are durable rejections", (
   }), "settlement|gross|payout");
 });
 
-test("Lancers accepts a paid finance readback and rejects a contract or pending balance", () => {
-  const receipt = accepted(adaptLancers({
+test("Lancers mapping remains rejection-only until an official provider verifier exists", () => {
+  const result = adaptLancers({
     source_record_id: "lancers-payment-1",
     proposal_id: "lancers-project-1",
     status: "paid",
@@ -103,13 +114,13 @@ test("Lancers accepts a paid finance readback and rejects a contract or pending 
     payment_receipt_id: "lancers-payment-1",
     payment_proof_verified: true,
     occurred_at: NOW,
-  }, { readbackVerifier: trustedProofs({ "lancers-payment-1": providerProof("lancers-payment-1") }) }));
-  assert.equal(receipt.provider, "lancers");
-  assert.equal(receipt.signed_net, 18000);
+  });
+  assert.equal(result.ok, false);
+  assert.match(result.rejection.code + result.rejection.reason, /VERIFIER|rejection|non-revenue/i);
   rejected(adaptLancers({
     provider_id: "lancers-project-2", status: "working", gross_jpy: 20000,
     fee_jpy: 2000, payer: "lancers-client-2", recipient: RECIPIENT, occurred_at: NOW,
-  }), "settlement|proof|trusted");
+  }), "settlement|proof|trusted|unavailable");
 });
 
 test("TaskMarket never treats submitTxHash or an unverified award id as payment proof", () => {
@@ -130,33 +141,31 @@ test("TaskMarket never treats submitTxHash or an unverified award id as payment 
   assert.match(award.rejection.code + award.rejection.reason, /VERIFIER|non-revenue/i);
 });
 
-test("x402 requires a successful settlement readback, valid currency, and external payer", () => {
-  const receipt = accepted(adaptX402({
+test("x402 synchronous mapping never accepts a facilitator header without strict verifier", () => {
+  const result = adaptX402({
     source_record_id: "x402-tx-1",
     route: "/research", settled: true, success: true,
     amount: "$0.003", currency: "USDC", payer: PAYER, recipient: RECIPIENT,
     transaction: "0x" + "4".repeat(64), chain_id: 8453, log_index: 0,
     settlement_verified: true, ts: NOW,
     amount_atomic: "3000", decimals: 6,
-  }, { readbackVerifier: trustedProofs({ "x402-tx-1": { chain_id: 8453, tx_hash: "0x" + "4".repeat(64), log_index: 0, verified: true } }) }));
-  assert.equal(receipt.provider, "x402");
-  assert.equal(receipt.gross, 0.003);
-  assert.equal(receipt.asset, "USDC");
-  assert.deepEqual(receipt.proof, { chain_id: 8453, tx_hash: "0x" + "4".repeat(64), log_index: 0, verified: true });
+  });
+  assert.equal(result.ok, false);
+  assert.match(result.rejection.code + result.rejection.reason, /strict|verifier|rejection/i);
   rejected(adaptX402({
     route: "/research", settled: true, success: true, amount: "$0.003", currency: "USDC",
     payer: PAYER, recipient: RECIPIENT, ts: NOW,
-  }), "proof|decimals");
+  }), "proof|decimals|strict|unavailable");
   rejected(adaptX402({
     route: "/research", settled: true, success: true, amount: "$0.003", currency: "USD!",
     payer: PAYER, recipient: RECIPIENT, transaction: "0x" + "5".repeat(64), chain_id: 8453,
     log_index: 0, settlement_verified: true, ts: NOW,
-  }), "currency");
+  }), "currency|strict|unavailable");
   rejected(adaptX402({
     route: "/research", settled: true, success: true, amount: "$0.003", currency: "USDC",
     payer: RECIPIENT, recipient: RECIPIENT, transaction: "0x" + "6".repeat(64), chain_id: 8453,
     log_index: 0, settlement_verified: true, ts: NOW,
-  }), "self");
+  }), "self|strict|unavailable");
 });
 
 test("Writer/Stripe joins settled money with its fee, emits refund correction, and rejects tests/pending/unjoined rows", () => {
@@ -168,17 +177,10 @@ test("Writer/Stripe joins settled money with its fee, emits refund correction, a
   const result = adaptWriterStripe(rows, {
     payer: PAYER,
     recipient: RECIPIENT,
-    readbackVerifier: trustedProofs({
-      pi_1: providerProof("pi_1"),
-      re_1: providerProof("re_1"),
-      txn_1: providerProof("txn_1"),
-    }),
   });
-  assert.equal(result.accepted.length, 2);
-  assert.equal(result.rejected.length, 0);
-  assert.equal(result.accepted[0].receipt.signed_net, 9.7);
-  assert.equal(result.accepted[1].receipt.signed_net, -2);
-  assert.equal(result.accepted[1].receipt.terminal_state, "refunded");
+  assert.equal(result.accepted.length, 0);
+  assert.equal(result.rejected.length, 2);
+  assert.ok(result.rejected.every((row) => /VERIFIER|rejection|non-revenue/i.test(row.code + row.reason)));
 
   const pending = adaptWriterStripe([
     { receipt_type: "money", kind: "sale", amount: 10, currency: "USD", status: "observed", test: false, external_receipt_id: "pi_pending", occurred_at: NOW },
@@ -194,31 +196,29 @@ test("Writer/Stripe joins settled money with its fee, emits refund correction, a
   ], {
     payer: PAYER,
     recipient: RECIPIENT,
-    readbackVerifier: trustedProofs({ pi_exact: providerProof("pi_exact"), txn_exact: providerProof("txn_exact"), re_wrong: providerProof("re_wrong") }),
   });
-  assert.equal(wrongLineage.accepted.length, 1);
-  assert.match(wrongLineage.rejected[0].code + wrongLineage.rejected[0].reason, /UNJOINED|lineage/i);
+  assert.equal(wrongLineage.accepted.length, 0);
+  assert.ok(wrongLineage.rejected.length >= 1);
 });
 
 test("projectRevenueReceipts appends accepted rows once and persists rejection rows", async () => {
   const root = await mkdtemp(join(tmpdir(), "revenue-adapters-"));
   const journalPath = join(root, "revenue-receipts.jsonl");
   const rejectionPath = join(root, "revenue-rejections.jsonl");
+  const tx = "0x" + "7".repeat(64);
   const rows = [{
     provider: "x402", route: "/research", settled: true, success: true,
-    amount_atomic: "3000", decimals: 6, currency: "USDC", payer: PAYER, recipient: RECIPIENT,
-    transaction: "0x" + "7".repeat(64), chain_id: 8453, log_index: 0,
-    settlement_verified: true, ts: NOW,
+    amount_atomic: "3000", decimals: 6, currency: "USDC", payer: EVM_PAYER, recipient: EVM_RECIPIENT,
+    transaction: tx, chain_id: 8453, ts: NOW,
   }, {
     provider: "x402", route: "/research", settled: false, success: false,
-    amount: "$0.003", currency: "USDC", payer: PAYER, recipient: RECIPIENT, ts: NOW,
+    amount_atomic: "3000", decimals: 6, currency: "USDC", payer: EVM_PAYER, recipient: EVM_RECIPIENT, ts: NOW,
   }];
-  const verifier = trustedProofs({ ["0x" + "7".repeat(64)]: { chain_id: 8453, tx_hash: "0x" + "7".repeat(64), log_index: 0, verified: true } });
-  const first = await projectRevenueReceipts({ journalPath, rejectionPath, provider: "x402", rows, options: { readbackVerifier: verifier } });
+  const first = await projectRevenueReceipts({ journalPath, rejectionPath, provider: "x402", rows, options: { rpc: "https://rpc.invalid", fetchImpl: fakeRpc({ tx, receipt: successfulEvmReceipt({ tx }) }) } });
   assert.equal(first.accepted, 1);
   assert.equal(first.rejected, 1);
   assert.equal(first.duplicates, 0);
-  const second = await projectRevenueReceipts({ journalPath, rejectionPath, provider: "x402", rows, options: { readbackVerifier: verifier } });
+  const second = await projectRevenueReceipts({ journalPath, rejectionPath, provider: "x402", rows, options: { rpc: "https://rpc.invalid", fetchImpl: fakeRpc({ tx, receipt: successfulEvmReceipt({ tx }) }) } });
   assert.equal(second.accepted, 0);
   assert.equal(second.duplicates, 1);
   assert.equal(second.rejected, 1);
@@ -231,9 +231,9 @@ test("raw proof ids and verification booleans cannot bypass the trusted readback
     source_record_id: "forged-1", route: "/research", settled: true, success: true,
     amount_atomic: "3000", decimals: 6, currency: "USDC", payer: PAYER, recipient: RECIPIENT,
     transaction: "0x" + "8".repeat(64), chain_id: 8453, log_index: 0,
-    proof: providerProof("fake-provider-receipt"), settlement_verified: true, ts: NOW,
+    proof: { provider_receipt_id: "fake-provider-receipt", verified: true }, settlement_verified: true, ts: NOW,
   });
-  rejected(forged, "trusted|proof");
+  rejected(forged, "trusted|proof|strict|unavailable");
 });
 
 test("a Stripe dashboard URL and external id are not trusted proof", () => {
@@ -243,7 +243,7 @@ test("a Stripe dashboard URL and external id are not trusted proof", () => {
   ], { payer: PAYER, recipient: RECIPIENT });
   assert.equal(result.accepted.length, 0);
   assert.equal(result.rejected.length, 1);
-  assert.match(result.rejected[0].reason + result.rejected[0].code, /trusted|proof/i);
+  assert.match(result.rejected[0].reason + result.rejected[0].code, /trusted|proof|unavailable/i);
 });
 
 test("x402 atomic amount 3000 at six decimals is 0.003 and needs chain proof", () => {
@@ -251,57 +251,40 @@ test("x402 atomic amount 3000 at six decimals is 0.003 and needs chain proof", (
     source_record_id: "x402-atomic", route: "/research", settled: true, success: true,
     amount_atomic: "3000", decimals: 6, currency: "USDC", payer: PAYER, recipient: RECIPIENT,
     transaction: "0x" + "9".repeat(64), chain_id: 8453, log_index: 0, ts: NOW,
-  }, { readbackVerifier: trustedProofs({ "x402-atomic": { chain_id: 8453, tx_hash: "0x" + "9".repeat(64), log_index: 0, verified: true } }) });
-  const receipt = accepted(result);
-  assert.equal(receipt.gross, 0.003);
-  assert.equal(receipt.proof.provider_receipt_id, undefined);
-  assert.deepEqual(receipt.proof, { chain_id: 8453, tx_hash: "0x" + "9".repeat(64), log_index: 0, verified: true });
-});
-
-test("provider verifier must echo the full expected tuple", () => {
-  const base = {
-    source_record_id: "tuple-1", requestId: "tuple-1", status: "paid", gross: "10", fee: "1", refund: "0",
-    asset: "USD", payer: PAYER, recipient: RECIPIENT, occurred_at: NOW,
-  };
-  for (const field of ["gross", "fee", "refund", "payer", "recipient", "asset", "terminal_state"]) {
-    const result = adaptCoconala(base, {
-      readbackVerifier: (_row, expected) => ({
-        verified: true,
-        ...expected,
-        [field]: field === "terminal_state" ? "pending" : field === "asset" ? "EUR" : field === "payer" ? "other" : field === "recipient" ? "other" : "999",
-        proof: providerProof("tuple-1"),
-      }),
-    });
-    assert.equal(result.ok, false, field);
-    assert.match(result.rejection.code, /PROOF_BINDING_MISMATCH|MALFORMED_CURRENCY|NON_TERMINAL/);
-  }
+  });
+  assert.equal(result.ok, false);
 });
 
 test("x402 production adapter calls strict EVM verifier with exact transfer tuple", async () => {
-  const payer = "0x1111111111111111111111111111111111111111";
-  const recipient = "0x2222222222222222222222222222222222222222";
+  const payer = EVM_PAYER;
+  const recipient = EVM_RECIPIENT;
   const tx = "0x" + "d".repeat(64);
-  let captured;
+  const receipt = successfulEvmReceipt({ tx, payer, recipient, logIndex: "0x4" });
+  const calls = [];
   const result = await adaptX402WithEvmVerifier({
     source_record_id: "x402-strict", settled: true, success: true, amount_atomic: "3000", decimals: 6,
-    currency: "USDC", payer, recipient, transaction: tx, chain_id: 8453, log_index: 4, ts: NOW,
-  }, {
-    evmVerifier: async (expected) => {
-      captured = expected;
-      return {
-        verified: true, chain_id: 8453, tx_hash: tx,
-        transfer: { contract: "0x833589fcd6edb6e08f4c7c32d4f71b54bdA02913".toLowerCase(), payer, recipient, amount_atomic: "3000", log_index: 4 },
-      };
-    },
-  });
+    currency: "USDC", payer, recipient, transaction: tx, chain_id: 8453, ts: NOW,
+  }, { rpc: "https://rpc.invalid", fetchImpl: fakeRpc({ tx, receipt, calls }) });
   assert.equal(result.ok, true);
   assert.equal(result.receipt.gross, 0.003);
   assert.equal(result.receipt.proof.log_index, 4);
-  assert.equal(captured.expected_contract.toLowerCase(), "0x833589fcd6edb6e08f4c7c32d4f71b54bdA02913".toLowerCase());
-  assert.equal(captured.expected_amount_atomic, "3000");
-  assert.equal(captured.expected_payer, payer);
-  assert.equal(captured.expected_recipient, recipient);
-  assert.equal(captured.expected_log_index, 4);
+  assert.ok(calls.some((call) => call.method === "eth_getTransactionReceipt" && call.params[0] === tx));
+  assert.ok(calls.some((call) => call.method === "eth_chainId"));
+});
+
+test("strict x402 transport rejects amount, payer, recipient, contract, chain, and ambiguous log mismatches", async () => {
+  const tx = "0x" + "e".repeat(64);
+  const base = { source_record_id: "x402-mismatch", settled: true, success: true, amount_atomic: "3000", decimals: 6, currency: "USDC", payer: EVM_PAYER, recipient: EVM_RECIPIENT, transaction: tx, chain_id: 8453, ts: NOW };
+  const run = (row, receipt, chainId = "0x2105") => adaptX402WithEvmVerifier(row, { rpc: "https://rpc.invalid", fetchImpl: fakeRpc({ tx, receipt, chainId }) });
+  assert.equal((await run({ ...base, amount_atomic: "3001" }, successfulEvmReceipt({ tx }))).ok, false);
+  assert.equal((await run({ ...base, payer: "0x3333333333333333333333333333333333333333" }, successfulEvmReceipt({ tx }))).ok, false);
+  assert.equal((await run({ ...base, recipient: "0x4444444444444444444444444444444444444444" }, successfulEvmReceipt({ tx }))).ok, false);
+  assert.equal((await run({ ...base, currency: "DAI" }, successfulEvmReceipt({ tx }))).ok, false);
+  assert.equal((await run({ ...base, settled: false, success: false }, successfulEvmReceipt({ tx }))).ok, false);
+  assert.equal((await run(base, successfulEvmReceipt({ tx, contract: "0x5555555555555555555555555555555555555555" }))).ok, false);
+  assert.equal((await run(base, successfulEvmReceipt({ tx }), "0x1")).ok, false);
+  const duplicate = successfulEvmReceipt({ tx, extraLogs: [successfulEvmReceipt({ tx, logIndex: "0x1" }).logs[0]] });
+  assert.equal((await run(base, duplicate)).ok, false);
 });
 
 test("twenty concurrent projections append one receipt and one rejection", async () => {
@@ -309,9 +292,9 @@ test("twenty concurrent projections append one receipt and one rejection", async
   const journalPath = join(root, "journal.jsonl");
   const rejectionPath = join(root, "rejections.jsonl");
   const tx = "0x" + "a".repeat(64);
-  const rows = [{ source_record_id: "concurrent-1", provider: "x402", settled: true, success: true, amount_atomic: "3000", decimals: 6, currency: "USDC", payer: PAYER, recipient: RECIPIENT, transaction: tx, chain_id: 8453, log_index: 0, ts: NOW }, { source_record_id: "concurrent-bad", provider: "x402", settled: false, success: false, amount_atomic: "3000", decimals: 6, currency: "USDC", payer: PAYER, recipient: RECIPIENT, ts: NOW }];
-  const verifier = trustedProofs({ "concurrent-1": { chain_id: 8453, tx_hash: tx, log_index: 0, verified: true } });
-  await Promise.all(Array.from({ length: 20 }, () => projectRevenueReceipts({ journalPath, rejectionPath, provider: "x402", rows, options: { readbackVerifier: verifier } })));
+  const rows = [{ source_record_id: "concurrent-1", provider: "x402", settled: true, success: true, amount_atomic: "3000", decimals: 6, currency: "USDC", payer: EVM_PAYER, recipient: EVM_RECIPIENT, transaction: tx, chain_id: 8453, ts: NOW }, { source_record_id: "concurrent-bad", provider: "x402", settled: false, success: false, amount_atomic: "3000", decimals: 6, currency: "USDC", payer: EVM_PAYER, recipient: EVM_RECIPIENT, ts: NOW }];
+  const receipt = successfulEvmReceipt({ tx });
+  await Promise.all(Array.from({ length: 20 }, () => projectRevenueReceipts({ journalPath, rejectionPath, provider: "x402", rows, options: { rpc: "https://rpc.invalid", fetchImpl: fakeRpc({ tx, receipt }) } })));
   assert.equal((await readFile(journalPath, "utf8")).trim().split("\n").length, 1);
   assert.equal((await readFile(rejectionPath, "utf8")).trim().split("\n").length, 1);
 });
@@ -325,7 +308,7 @@ test("deterministic CLI projection of a raw lane outbox records rejection withou
     source_record_id: "cli-raw", settled: true, success: true, amount_atomic: "3000", decimals: 6,
     currency: "USDC", payer: PAYER, recipient: RECIPIENT,
     transaction: "0x" + "b".repeat(64), chain_id: 8453, log_index: 0,
-    proof: providerProof("forged-by-outbox"), proof_verified: true, ts: NOW,
+    proof: { provider_receipt_id: "forged-by-outbox", verified: true }, proof_verified: true, ts: NOW,
   })}\n`);
   const { stdout } = await execFileAsync(process.execPath, [
     "skills/agent-economy/lib/revenue-adapters.mjs", "--provider", "x402", "--rows", source,

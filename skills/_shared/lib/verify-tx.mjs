@@ -175,3 +175,86 @@ export async function verifyEvmReceipt({
     return { verified: false, status: null, chain_id: chainId, reason: "rpc_failure" };
   }
 }
+
+/**
+ * Discover the unique ERC-20 Transfer log when a provider settlement response omits log_index,
+ * then reuse the strict verifier for the final binding.  Discovery is fail-closed: zero or more
+ * than one matching logs are not a receipt proof, and the raw RPC receipt never leaves this module.
+ */
+export async function discoverAndVerifyEvmReceipt({
+  tx_hash,
+  expected_chain_id,
+  expected_contract,
+  expected_recipient,
+  expected_payer,
+  expected_amount_atomic,
+  expected_log_index,
+  rpc = BASE_RPC,
+  fetchImpl = globalThis.fetch,
+} = {}) {
+  const txHash = normalizeHash(tx_hash);
+  const contract = normalizeAddress(expected_contract);
+  const payer = normalizeAddress(expected_payer);
+  const recipient = normalizeAddress(expected_recipient);
+  const amountAtomic = hexInteger(expected_amount_atomic);
+  const expectedChain = chainIdNumber(expected_chain_id);
+  if (!txHash || !contract || !payer || !recipient || payer === recipient || amountAtomic === null
+    || expectedChain === null || typeof fetchImpl !== "function") {
+    return { verified: false, status: null, reason: "missing_or_invalid_expectation" };
+  }
+  if (expected_log_index !== undefined && expected_log_index !== null) {
+    return verifyEvmReceipt({
+      tx_hash: txHash,
+      expected_chain_id: expectedChain,
+      expected_contract: contract,
+      expected_recipient: recipient,
+      expected_payer: payer,
+      expected_amount_atomic: amountAtomic.toString(),
+      expected_log_index,
+      rpc,
+      fetchImpl,
+    });
+  }
+  let chainId = null;
+  try {
+    chainId = chainIdNumber(await rpcCall(rpc, fetchImpl, "eth_chainId", []));
+    if (chainId === null || chainId !== expectedChain) {
+      return { verified: false, status: null, chain_id: chainId, reason: "wrong_chain" };
+    }
+    const receipt = await rpcCall(rpc, fetchImpl, "eth_getTransactionReceipt", [txHash]);
+    if (!receipt || receipt.status !== "0x1") {
+      return { verified: false, status: receipt?.status ?? null, chain_id: chainId, reason: "not_successful" };
+    }
+    if (normalizeHash(receipt.transactionHash) !== txHash) {
+      return { verified: false, status: receipt.status, chain_id: chainId, reason: "wrong_transaction" };
+    }
+    const logs = Array.isArray(receipt.logs) ? receipt.logs : [];
+    const matches = logs.filter((log) => {
+      if (!log || normalizeAddress(log.address) !== contract) return false;
+      if (normalizeHash(log.transactionHash) !== txHash) return false;
+      if (!Array.isArray(log.topics) || log.topics.length < 3 || String(log.topics[0]).toLowerCase() !== TRANSFER_TOPIC) return false;
+      if (!/^0x[0-9a-f]{64}$/i.test(String(log.topics[1])) || !/^0x[0-9a-f]{64}$/i.test(String(log.topics[2]))) return false;
+      if (String(log.topics[1]).toLowerCase() !== topicAddress(payer)) return false;
+      if (String(log.topics[2]).toLowerCase() !== topicAddress(recipient)) return false;
+      const actual = hexInteger(log.data);
+      return actual !== null && actual === amountAtomic && hexInteger(log.logIndex) !== null;
+    });
+    if (matches.length !== 1) {
+      return { verified: false, status: receipt.status, chain_id: chainId, reason: "transfer_not_unique" };
+    }
+    const discovered = hexInteger(matches[0].logIndex);
+    return verifyEvmReceipt({
+      tx_hash: txHash,
+      expected_chain_id: expectedChain,
+      expected_contract: contract,
+      expected_recipient: recipient,
+      expected_payer: payer,
+      expected_amount_atomic: amountAtomic.toString(),
+      expected_log_index: Number(discovered),
+      rpc,
+      fetchImpl,
+    });
+  } catch {
+    return { verified: false, status: null, chain_id: chainId, reason: "rpc_failure" };
+  }
+}

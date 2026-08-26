@@ -5,7 +5,7 @@ import {
   canonicalRevenueReceiptKey,
   normalizeRevenueReceipt,
 } from "./revenue-receipt.mjs";
-import { verifyEvmReceipt } from "../../_shared/lib/verify-tx.mjs";
+import { discoverAndVerifyEvmReceipt, verifyEvmReceipt } from "../../_shared/lib/verify-tx.mjs";
 
 const TX = `0x${"11".repeat(32)}`;
 const PAYER = "0x1111111111111111111111111111111111111111";
@@ -153,6 +153,38 @@ test("EVM verifier binds chain, contract, payer, recipient, amount, and log inde
   assert.equal(verified.verified, true);
   assert.equal(verified.status, "0x1");
   assert.equal(verified.transfer.log_index, 0);
+});
+
+test("EVM discovery derives a missing log index and then reuses strict validation", async () => {
+  const verified = await discoverAndVerifyEvmReceipt({
+    tx_hash: TX,
+    expected_chain_id: 8453,
+    expected_contract: CONTRACT,
+    expected_payer: PAYER,
+    expected_recipient: RECIPIENT,
+    expected_amount_atomic: "1000000",
+    rpc: "https://rpc.invalid",
+    fetchImpl: fakeRpc({ eth_chainId: "0x2105", eth_getTransactionReceipt: successfulReceipt({ logIndex: "0x7" }) }),
+  });
+  assert.equal(verified.verified, true);
+  assert.equal(verified.transfer.log_index, 7);
+});
+
+test("EVM discovery rejects ambiguous matching transfer logs", async () => {
+  const first = successfulReceipt({ logIndex: "0x0" }).logs[0];
+  const second = successfulReceipt({ logIndex: "0x1" }).logs[0];
+  const verified = await discoverAndVerifyEvmReceipt({
+    tx_hash: TX,
+    expected_chain_id: 8453,
+    expected_contract: CONTRACT,
+    expected_payer: PAYER,
+    expected_recipient: RECIPIENT,
+    expected_amount_atomic: "1000000",
+    rpc: "https://rpc.invalid",
+    fetchImpl: fakeRpc({ eth_chainId: "0x2105", eth_getTransactionReceipt: { status: "0x1", transactionHash: TX, logs: [first, second] } }),
+  });
+  assert.equal(verified.verified, false);
+  assert.equal(verified.reason, "transfer_not_unique");
 });
 
 test("EVM verifier rejects wrong recipient, wrong asset, missing transfer, and self payment", async () => {

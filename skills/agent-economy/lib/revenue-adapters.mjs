@@ -14,10 +14,9 @@ import { fileURLToPath } from "node:url";
 
 import {
   normalizeRevenueReceipt,
-  RevenueReceiptValidationError,
 } from "./revenue-receipt.mjs";
 import { reconcileRevenueReceipts } from "./money-truth.mjs";
-import { verifyEvmReceipt } from "../../_shared/lib/verify-tx.mjs";
+import { discoverAndVerifyEvmReceipt } from "../../_shared/lib/verify-tx.mjs";
 
 export const REVENUE_REJECTION_SCHEMA_VERSION = 1;
 export const REVENUE_REJECTION_KIND = "revenue_rejection";
@@ -209,109 +208,11 @@ function signedNetText(gross, fee, refund) {
   return `${negative ? "-" : ""}${digits.slice(0, -scale)}.${digits.slice(-scale)}`.replace(/\.0+$/, "").replace(/(\.\d*?)0+$/, "$1");
 }
 
-function proofFromVerifierResult(value) {
-  const result = asObject(value);
-  if (!result || result.verified !== true) return null;
-  const candidate = asObject(result.proof) || result;
-  const providerId = asText(candidate.provider_receipt_id ?? candidate.providerReceiptId ?? candidate.receipt_id ?? candidate.receiptId);
-  if (providerId) return { proof: { provider_receipt_id: providerId, verified: true }, result };
-  const txHash = asText(candidate.tx_hash ?? candidate.txHash ?? candidate.transaction_hash ?? candidate.transactionHash);
-  const chainId = candidate.chain_id ?? candidate.chainId;
-  const logIndex = candidate.log_index ?? candidate.logIndex;
-  if (!txHash || chainId === undefined || logIndex === undefined) return null;
-  return { proof: { chain_id: chainId, tx_hash: txHash, log_index: logIndex, verified: true }, result };
-}
-
-function scalarEqual(left, right) {
-  if (left === right) return true;
-  if (left === undefined || left === null || right === undefined || right === null) return false;
-  return String(left).trim().toLowerCase() === String(right).trim().toLowerCase();
-}
-
-function providerProof(provider, row, options = {}, expected = {}) {
-  const verifier = options.readbackVerifier;
-  if (typeof verifier !== "function") throw new AdapterFailure("TRUSTED_READBACK_REQUIRED", "official provider readback verifier is required");
-  const attested = proofFromVerifierResult(verifier(row, expected));
-  if (!attested) throw new AdapterFailure("MISSING_SETTLEMENT_PROOF", "official provider readback did not verify settlement proof");
-  const full = { ...attested.result, ...attested.proof };
-  for (const key of ["provider", "source_record_id", "terminal_state", "payer", "recipient", "asset", "contract", "gross", "fee", "refund", "signed_net", "provider_receipt_id", "amount_atomic", "chain_id", "tx_hash", "log_index"]) {
-    if (expected[key] !== undefined && !scalarEqual(full[key], expected[key])) {
-      throw new AdapterFailure("PROOF_BINDING_MISMATCH", `official proof does not bind ${key}`);
-    }
-  }
-  return attested.proof;
-}
-
-function buildReceipt(provider, row, options, config) {
-  const asset = assetFor(row, provider, options);
-  const { payer, recipient } = identity(row, options);
-  if (config.requireAtomicDecimals && directOrNested(row, ["decimals", "asset_decimals", "assetDecimals"]) === undefined) {
-    throw new AdapterFailure("MISSING_AMOUNT_DECIMALS", "atomic settlement amount requires explicit asset decimals");
-  }
-  const gross = moneyValue(row, config.grossKeys, config.grossAtomicKeys, { decimals: config.decimals ?? options.decimals });
-  const fee = config.feeKeys ? optionalMoney(row, config.feeKeys, config.feeAtomicKeys || [], { decimals: config.decimals ?? options.decimals }) : "0";
-  const refund = config.refundKeys ? optionalMoney(row, config.refundKeys, config.refundAtomicKeys || [], { decimals: config.decimals ?? options.decimals }) : "0";
-  const terminal_state = terminalState(row, config.statusKeys);
-  const occurred_at = directOrNested(row, ["occurred_at", "occurredAt", "timestamp", "ts", "created_at", "createdAt"]);
-  if (occurred_at === undefined || occurred_at === null) throw new AdapterFailure("MISSING_TIMESTAMP", "settlement timestamp is missing");
-  const atomic = config.grossAtomicKeys?.length ? directOrNested(row, config.grossAtomicKeys) : undefined;
-  const expected = {
-    provider,
-    source_record_id: sourceId(provider, row),
-    terminal_state,
-    payer,
-    recipient,
-    asset,
-    ...(config.contract ? { contract: config.contract } : {}),
-    gross,
-    fee,
-    refund,
-    signed_net: signedNetText(gross, fee, refund),
-    ...((() => {
-      const receiptId = directOrNested(row, [
-        "provider_receipt_id", "providerReceiptId", "receipt_id", "receiptId", "payout_receipt_id",
-        "payment_receipt_id", "award_receipt_id", "settlement_receipt_id",
-        ...(provider === "stripe" ? ["external_receipt_id", "externalReceiptId"] : []),
-      ]);
-      return receiptId === undefined ? {} : { provider_receipt_id: String(receiptId) };
-    })()),
-    ...(atomic !== undefined ? { amount_atomic: String(atomic) } : {}),
-    ...(directOrNested(row, ["chain_id", "chainId"]) !== undefined ? { chain_id: directOrNested(row, ["chain_id", "chainId"]) } : {}),
-    ...(directOrNested(row, ["tx_hash", "txHash", "transaction_hash", "transactionHash", "transaction"]) !== undefined ? { tx_hash: directOrNested(row, ["tx_hash", "txHash", "transaction_hash", "transactionHash", "transaction"]) } : {}),
-    ...(directOrNested(row, ["log_index", "logIndex"]) !== undefined ? { log_index: directOrNested(row, ["log_index", "logIndex"]) } : {}),
-  };
-  const proof = providerProof(provider, row, options, expected);
-  if (config.requireChainProof && (proof.provider_receipt_id || proof.chain_id === undefined || proof.tx_hash === undefined || proof.log_index === undefined)) {
-    throw new AdapterFailure("CHAIN_PROOF_REQUIRED", "x402 settlement requires verified chain_id, tx_hash, and log_index");
-  }
-  const receipt = normalizeRevenueReceipt({
-    provider, payer, recipient, gross, fee, refund, asset, proof, terminal_state, occurred_at,
-  }, { selfPayers: options.selfPayers ?? options.selfWallets });
-  const expectedPayout = directOrNested(row, config.netKeys || []);
-  if (expectedPayout !== undefined && expectedPayout !== null) {
-    const payout = decimalText(expectedPayout, "payout/net");
-    if (Number(payout) !== Number(receipt.signed_net)) throw new AdapterFailure("ARITHMETIC_MISMATCH", "provider payout does not equal signed net");
-  }
-  return receipt;
-}
-
 class AdapterFailure extends Error {
   constructor(code, message) {
     super(message);
     this.name = "AdapterFailure";
     this.code = code;
-  }
-}
-
-function adaptOne(providerInput, row, options, config) {
-  const provider = normalizedProvider(providerInput);
-  try {
-    if (!asObject(row)) throw new AdapterFailure("MALFORMED_SOURCE", "provider row must be an object");
-    return { ok: true, receipt: buildReceipt(provider, row, options, config) };
-  } catch (error) {
-    const code = error instanceof RevenueReceiptValidationError ? error.code : error?.code || "REJECTED";
-    const reason = error instanceof RevenueReceiptValidationError ? error.message.replace(/^revenue-receipt\s+[^:]+:\s*/, "") : String(error?.message || error);
-    return { ok: false, rejection: rejection(provider, row, reason, code, options) };
   }
 }
 
@@ -325,34 +226,14 @@ export function adaptCoconala(row, options = {}) {
   if (row?.net_of_fee === true && directOrNested(row, ["gross_jpy", "gross_amount_jpy", "gross_amount", "gross"]) === undefined) {
     return { ok: false, rejection: rejection("coconala", row, "Coconala source exposes net-only sale without gross/fee settlement", "NET_ONLY_SOURCE", options) };
   }
-  return adaptOne("coconala", input, options, {
-    grossKeys: ["gross_jpy", "gross_amount_jpy", "gross_amount", "gross", "amount_jpy", "amount"],
-    feeKeys: ["fee_jpy", "fee_amount_jpy", "fee_amount", "fee", "platform_fee_jpy"],
-    refundKeys: ["refund_jpy", "refund_amount_jpy", "refund_amount", "refund"],
-    netKeys: ["payout_jpy", "payout_amount_jpy", "payout_amount", "net_jpy", "net_amount"],
-    statusKeys: ["payout_status", "payoutState", "terminal_state", "settlement_state", "status"],
-    proof: {
-      providerKeys: ["payout_receipt_id", "payoutReceiptId", "provider_receipt_id", "providerReceiptId", "settlement_receipt_id"],
-      verificationKeys: ["payout_proof_verified", "payoutProofVerified", "settlement_verified", "settlementVerified", "proof_verified", "verified"],
-    },
-  });
+  return { ok: false, rejection: rejection("coconala", input, "Coconala provider verifier is unavailable; source remains non-revenue", "PROVIDER_VERIFIER_UNAVAILABLE", options) };
 }
 
 export function adaptLancers(row, options = {}) {
   if (row?.source_complete === false || row?.finance?.source_complete === false) {
     return { ok: false, rejection: rejection("lancers", row, "Lancers finance readback is incomplete", "FINANCE_READBACK_INCOMPLETE", options) };
   }
-  return adaptOne("lancers", row, options, {
-    grossKeys: ["gross_jpy", "gross_amount_jpy", "gross_amount", "gross", "amount_jpy", "amount"],
-    feeKeys: ["fee_jpy", "fee_amount_jpy", "fee_amount", "fee", "platform_fee_jpy"],
-    refundKeys: ["refund_jpy", "refund_amount_jpy", "refund_amount", "refund"],
-    netKeys: ["payout_jpy", "payout_amount_jpy", "payout_amount", "net_jpy", "net_amount"],
-    statusKeys: ["payment_status", "payout_status", "terminal_state", "settlement_state", "status"],
-    proof: {
-      providerKeys: ["payment_receipt_id", "paymentReceiptId", "payout_receipt_id", "payoutReceiptId", "provider_receipt_id", "providerReceiptId", "settlement_receipt_id"],
-      verificationKeys: ["payment_proof_verified", "paymentProofVerified", "payout_proof_verified", "payoutProofVerified", "settlement_verified", "settlementVerified", "proof_verified", "verified"],
-    },
-  });
+  return { ok: false, rejection: rejection("lancers", row, "Lancers provider verifier is unavailable; finance source remains non-revenue", "PROVIDER_VERIFIER_UNAVAILABLE", options) };
 }
 
 export function adaptTaskMarket(row, options = {}) {
@@ -362,31 +243,7 @@ export function adaptTaskMarket(row, options = {}) {
 }
 
 export function adaptX402(row, options = {}) {
-  const nested = asObject(row?.payment_response) || asObject(row?.paymentResponse);
-  const input = nested ? { ...row, ...nested } : row;
-  if (input?.settled !== true && input?.success !== true) {
-    return { ok: false, rejection: rejection("x402", row, "x402 payment did not have success:true terminal readback", "PENDING_SETTLEMENT", options) };
-  }
-  if (directOrNested(input, ["settled_amount_atomic", "settledAmountAtomic", "amount_atomic", "amountAtomic", "amount"]) === undefined) {
-    return { ok: false, rejection: rejection("x402", row, "x402 settlement amount_atomic is missing", "MISSING_AMOUNT_ATOMIC", options) };
-  }
-  return adaptOne("x402", input, options, {
-    grossKeys: [],
-    grossAtomicKeys: ["settled_amount_atomic", "settledAmountAtomic", "amount_atomic", "amountAtomic", "amount"],
-    feeKeys: ["fee", "fee_amount"],
-    refundKeys: ["refund", "refund_amount"],
-    statusKeys: ["terminal_state", "settlement_state", "status", "settled", "success"],
-    proof: {
-      providerKeys: ["provider_receipt_id", "providerReceiptId", "settlement_receipt_id", "settlementReceiptId"],
-      txKeys: ["tx_hash", "txHash", "transaction_hash", "transactionHash", "transaction"],
-      chainKeys: ["chain_id", "chainId", "network"],
-      logKeys: ["log_index", "logIndex"],
-      verificationKeys: ["settlement_verified", "settlementVerified", "proof_verified", "proofVerified", "verified"],
-    },
-    requireAtomicDecimals: true,
-    requireChainProof: true,
-    contract: BASE_USDC_CONTRACT,
-  });
+  return { ok: false, rejection: rejection("x402", row, "x402 requires the asynchronous strict EVM verifier", "STRICT_EVM_VERIFIER_REQUIRED", options) };
 }
 
 /** Async x402 path used by the seller owner: verify the facilitator tx against the strict RPC
@@ -409,41 +266,42 @@ export async function adaptX402WithEvmVerifier(row, options = {}) {
     if (occurred_at === undefined || occurred_at === null) throw new AdapterFailure("MISSING_TIMESTAMP", "x402 settlement timestamp is missing");
     const txHash = directOrNested(input, ["tx_hash", "txHash", "transaction_hash", "transaction"]);
     const chainId = directOrNested(input, ["chain_id", "chainId"]);
-    const logIndex = directOrNested(input, ["log_index", "logIndex"]);
-    if (!txHash || chainId === undefined || logIndex === undefined) throw new AdapterFailure("CHAIN_PROOF_REQUIRED", "x402 requires tx, chain, and log index expectations");
-    const expected = {
-      provider: "x402", source_record_id: sourceId("x402", input), terminal_state, payer, recipient,
-      asset, contract: BASE_USDC_CONTRACT, gross, fee, refund,
-      signed_net: signedNetText(gross, fee, refund), amount_atomic: String(atomic),
-      chain_id: chainId, tx_hash: txHash, log_index: logIndex,
-    };
-    const verifier = options.evmVerifier || verifyEvmReceipt;
-    const verified = await verifier({
+    if (!txHash || chainId === undefined) throw new AdapterFailure("CHAIN_PROOF_REQUIRED", "x402 requires tx and chain expectations");
+    const verified = await discoverAndVerifyEvmReceipt({
       tx_hash: txHash,
       expected_chain_id: chainId,
       expected_contract: BASE_USDC_CONTRACT,
       expected_recipient: recipient,
       expected_payer: payer,
       expected_amount_atomic: atomic,
-      expected_log_index: logIndex,
+      expected_log_index: directOrNested(input, ["log_index", "logIndex"]),
       rpc: options.rpc,
       fetchImpl: options.fetchImpl,
     });
     if (!verified?.verified || !verified.transfer) throw new AdapterFailure("EVM_UNVERIFIED", "strict EVM transfer verifier rejected x402 settlement");
     const transfer = verified.transfer;
-    const echo = {
-      verified: true,
-      ...expected,
-      chain_id: verified.chain_id ?? chainId,
-      tx_hash: verified.tx_hash ?? txHash,
-      log_index: transfer.log_index,
-      payer: transfer.payer,
-      recipient: transfer.recipient,
-      contract: transfer.contract,
-      amount_atomic: transfer.amount_atomic,
-      proof: { chain_id: verified.chain_id ?? chainId, tx_hash: verified.tx_hash ?? txHash, log_index: transfer.log_index, verified: true },
+    if (transfer.payer?.toLowerCase() !== payer.toLowerCase()
+      || transfer.recipient?.toLowerCase() !== recipient.toLowerCase()
+      || transfer.contract?.toLowerCase() !== BASE_USDC_CONTRACT.toLowerCase()
+      || String(transfer.amount_atomic) !== String(atomic)
+      || transfer.log_index === undefined || transfer.log_index === null) {
+      throw new AdapterFailure("PROOF_BINDING_MISMATCH", "strict EVM transfer does not bind x402 tuple");
+    }
+    return {
+      ok: true,
+      receipt: normalizeRevenueReceipt({
+        provider: "x402",
+        payer,
+        recipient,
+        gross,
+        fee,
+        refund,
+        asset,
+        proof: { chain_id: verified.chain_id ?? chainId, tx_hash: verified.tx_hash ?? txHash, log_index: transfer.log_index, verified: true },
+        terminal_state,
+        occurred_at,
+      }, { selfPayers: options.selfPayers ?? options.selfWallets }),
     };
-    return adaptX402(input, { ...options, readbackVerifier: () => echo });
   } catch (error) {
     const code = error?.code || "EVM_UNVERIFIED";
     return { ok: false, rejection: rejection("x402", row, String(error?.message || error), code, options) };
@@ -459,15 +317,8 @@ function writerRows(value) {
   return [];
 }
 
-function writerProof(row, options) {
-  // Stripe object ids and dashboard URLs are identifiers, not verification.  The official Stripe
-  // client/readback boundary must return the opaque trusted result for both money and fee rows.
-  return providerProof("stripe", row, options);
-}
-
 export function adaptWriterStripe(value, options = {}) {
   const rows = writerRows(value);
-  const accepted = [];
   const rejected = [];
   const moneyRows = rows.filter((row) => row?.receipt_type === "money" || row?.type === "money");
   const feeRows = rows.filter((row) => row?.receipt_type === "fee" || row?.type === "fee");
@@ -493,33 +344,7 @@ export function adaptWriterStripe(value, options = {}) {
       rejectRow("Stripe money is not joined to a verified balance-transaction fee readback", "FEE_READBACK_UNJOINED");
       continue;
     }
-    try {
-      const asset = assetFor(money, "stripe", { ...options, asset: money.currency });
-      if (fee.currency !== undefined && String(fee.currency).toUpperCase() !== asset) {
-        throw new AdapterFailure("MALFORMED_CURRENCY", "Stripe fee currency does not match money currency");
-      }
-      const { payer, recipient } = identity(money, options);
-      const gross = moneyValue(money, ["amount", "gross", "gross_amount"]);
-      const feeAmount = moneyValue(fee, ["amount", "fee", "fee_amount"]);
-      const proof = writerProof(money, options);
-      // The fee row is part of the signed-net proof; a fee amount without its own official
-      // balance-transaction identity is not enough to authorize the net contribution.
-      writerProof(fee, options);
-      const occurred_at = directOrNested(money, ["occurred_at", "occurredAt", "ts", "timestamp"]);
-      const state = terminalState(money, ["terminal_state", "terminalState", "status"]);
-      if (occurred_at === undefined || occurred_at === null) throw new AdapterFailure("MISSING_TIMESTAMP", "Stripe money timestamp is missing");
-      const receipt = normalizeRevenueReceipt({ provider: "stripe", payer, recipient, gross, fee: feeAmount, refund: "0", asset, proof, terminal_state: state, occurred_at }, { selfPayers: options.selfPayers ?? options.selfWallets });
-      const reportedNet = directOrNested(money, ["signed_net", "signedNet", "net", "net_amount", "netAmount"]);
-      if (reportedNet !== undefined && reportedNet !== null
-        && Number(decimalText(reportedNet, "net", { allowNegative: true })) !== Number(receipt.signed_net)) {
-        throw new AdapterFailure("ARITHMETIC_MISMATCH", "Stripe net does not equal money minus fee");
-      }
-      accepted.push({ receipt, source_row: money });
-    } catch (error) {
-      const code = error instanceof RevenueReceiptValidationError ? error.code : error?.code || "REJECTED";
-      const reason = error instanceof RevenueReceiptValidationError ? error.message.replace(/^revenue-receipt\s+[^:]+:\s*/, "") : String(error?.message || error);
-      rejectRow(reason, code);
-    }
+    rejectRow("Stripe provider verifier is unavailable; money and fee remain non-revenue", "PROVIDER_VERIFIER_UNAVAILABLE");
   }
 
   for (const refund of refundRows) {
@@ -533,24 +358,9 @@ export function adaptWriterStripe(value, options = {}) {
       rejectRow("Stripe refund is not joined to a known money receipt", "REFUND_READBACK_UNJOINED");
       continue;
     }
-    try {
-      const asset = assetFor(refund, "stripe", { ...options, asset: refund.currency || money.currency });
-      if (money.currency !== undefined && String(money.currency).toUpperCase() !== asset) {
-        throw new AdapterFailure("MALFORMED_CURRENCY", "Stripe refund currency does not match money currency");
-      }
-      const { payer, recipient } = identity(money, options);
-      const proof = writerProof(refund, options);
-      const occurred_at = directOrNested(refund, ["occurred_at", "occurredAt", "ts", "timestamp"]);
-      if (occurred_at === undefined || occurred_at === null) throw new AdapterFailure("MISSING_TIMESTAMP", "Stripe refund timestamp is missing");
-      const receipt = normalizeRevenueReceipt({ provider: "stripe", payer, recipient, gross: "0", fee: "0", refund: moneyValue(refund, ["amount", "refund", "refund_amount"]), asset, proof, terminal_state: "refunded", occurred_at }, { selfPayers: options.selfPayers ?? options.selfWallets });
-      accepted.push({ receipt, source_row: refund });
-    } catch (error) {
-      const code = error instanceof RevenueReceiptValidationError ? error.code : error?.code || "REJECTED";
-      const reason = error instanceof RevenueReceiptValidationError ? error.message.replace(/^revenue-receipt\s+[^:]+:\s*/, "") : String(error?.message || error);
-      rejectRow(reason, code);
-    }
+    rejectRow("Stripe provider verifier is unavailable; refund remains non-revenue", "PROVIDER_VERIFIER_UNAVAILABLE");
   }
-  return { accepted, rejected };
+  return { accepted: [], rejected };
 }
 
 export function adaptRevenueRow(provider, row, options = {}) {
@@ -657,7 +467,7 @@ export async function projectRevenueReceipts({ journalPath, rejectionPath, provi
   let batch;
   if (normalized === "stripe") {
     batch = adaptWriterStripe(rows, adapterOptions);
-  } else if (normalized === "x402" && adapterOptions.evmVerifier) {
+  } else if (normalized === "x402") {
     batch = (await Promise.all(rows.map((row) => adaptX402WithEvmVerifier(row, adapterOptions))))
       .reduce((result, outcome, index) => {
         if (outcome.ok) result.accepted.push({ receipt: outcome.receipt, source_row: rows[index] });

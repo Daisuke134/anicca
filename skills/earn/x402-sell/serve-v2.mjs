@@ -37,7 +37,6 @@ import { getFundingRatesCached, buildFundingRatesResponse, annualizedBps } from 
 import { buildFundingRateArbResponse } from "./funding-rate-arb.mjs";
 import { RESALE_PRODUCTS, resaleHandler } from "./resale.mjs";
 import { projectRevenueReceipts } from "../../agent-economy/lib/revenue-adapters.mjs";
-import { verifyEvmReceipt } from "../../_shared/lib/verify-tx.mjs";
 
 function payTo() {
   if (process.env.X402_PAYTO) return process.env.X402_PAYTO;
@@ -530,8 +529,8 @@ app.use((req, res, next) => {
     }) + "\n";
     try { appendFileSync(settled ? SALES_LOG : ATTEMPTS_LOG, line); } catch { /* logging must never break serving */ }
     // Natural seller owner: project this provider readback one-way into the shared journal.  The
-    // verifier result is created from the server's facilitator response, never from row booleans or
-    // a client-supplied receipt id.  Missing chain tuple remains a durable rejection.
+    // shared projector re-fetches the receipt through strict RPC validation; facilitator success,
+    // row booleans, and client-supplied ids cannot bypass the Transfer-log check.
     void projectRevenueReceipts({
       journalPath: REVENUE_JOURNAL,
       rejectionPath: REVENUE_REJECTIONS,
@@ -545,7 +544,7 @@ app.use((req, res, next) => {
         route: req.path,
         occurred_at: occurredAt,
       }],
-      options: { evmVerifier: verifyEvmReceipt, rpc: process.env.BASE_RPC_URL },
+      options: { rpc: process.env.BASE_RPC_URL },
     }).catch(() => {});
   });
   next();
