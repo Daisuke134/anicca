@@ -496,6 +496,9 @@ class AffiliateProposalTests(unittest.TestCase):
             MODULE.record_distribution_result(
                 claims, payloads, other, "UNVERIFIED", None, "postiz-unknown",
             )
+            unresolved = MODULE.claim_next_job(queue, claims, other)
+            self.assertFalse(unresolved["changed"])
+            self.assertEqual(unresolved["job_id"], job["job_id"])
             with self.assertRaises(ValueError):
                 MODULE.requeue_confirmed_no_effect(other, job["job_id"])
 

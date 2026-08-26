@@ -251,7 +251,7 @@ def claim_next_job(
                 and sum(row.get("state") == "RETRY_READY" for row in current_results) >= 2
             )
             terminal = bool(current_results and (
-                current_results[-1].get("state") in {"POSTED", "UNVERIFIED"}
+                current_results[-1].get("state") == "POSTED"
                 or exhausted_no_effect
             ))
             if not terminal:

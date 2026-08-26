@@ -21,7 +21,7 @@ import sys
 import time
 import urllib.parse
 import urllib.error
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from urllib.request import Request, urlopen
 
 from playwright.sync_api import sync_playwright
@@ -92,6 +92,40 @@ def postiz_publish(text: str, mode: str, source_url: str | None) -> str:
     if not submission_id:
         raise ValueError("Postiz response omitted postId")
     return str(submission_id)
+
+
+def postiz_published_url(submission_id: str, observed_at: str) -> str | None:
+    """Resolve one accepted Postiz effect to its exact published X permalink."""
+    api_key = os.environ.get("POSTIZ_API_KEY", "").strip()
+    integration_id = os.environ.get("X_REPOST_POSTIZ_INTEGRATION_ID", "").strip()
+    if not api_key or not integration_id or not re.fullmatch(r"[A-Za-z0-9_-]{1,128}", submission_id):
+        raise ValueError("Postiz reconciliation is not configured")
+    observed = datetime.fromisoformat(observed_at.replace("Z", "+00:00"))
+    if observed.tzinfo is None:
+        raise ValueError("Postiz reconciliation time must be timezone-aware")
+    query = urllib.parse.urlencode({
+        "startDate": (observed - timedelta(hours=1)).astimezone(timezone.utc).isoformat(),
+        "endDate": (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat(),
+    })
+    request = Request(
+        f"{POSTIZ_API}?{query}",
+        headers={"Authorization": api_key, "User-Agent": "life-manager-x-repost/1"},
+    )
+    with urlopen(request, timeout=30) as response:
+        value = json.load(response)
+    for post in value.get("posts", []) if isinstance(value, dict) else []:
+        if post.get("id") != submission_id or post.get("state") != "PUBLISHED":
+            continue
+        if (post.get("integration") or {}).get("id") != integration_id:
+            raise ValueError("Postiz reconciliation integration mismatch")
+        release_url = str(post.get("releaseURL") or "")
+        match = re.fullmatch(
+            r"https://(?:x|twitter)\.com/([A-Za-z0-9_]+)/status/([0-9]+)", release_url
+        )
+        if not match:
+            raise ValueError("Postiz reconciliation release URL invalid")
+        return f"https://x.com/{match.group(1)}/status/{match.group(2)}"
+    return None
 
 
 def submit_effect(transport, text, mode, source_url, postiz_submit, browser_submit):
@@ -366,6 +400,8 @@ def main():
     ap.add_argument("--cdp", required=True, help="leased CDP base URL from browser-guard.sh")
     ap.add_argument("--source-url", help="the post being quoted or replied to")
     ap.add_argument("--text-file", required=True, help="file holding the comment body")
+    ap.add_argument("--provider-submission-id")
+    ap.add_argument("--effect-observed-at")
     # A quote is a new post from an account with no followers, which asks the ranker to distribute
     # out-of-network content to nobody. A reply is rendered to the people already reading the
     # original, and "the author engaged your reply" is the single highest-weighted signal X
@@ -382,18 +418,54 @@ def main():
 
     urls = re.findall(r"https://[^\s]+", text)
     expected_url = urls[0].rstrip(".,)") if args.mode in {"original", "reconcile"} and len(urls) == 1 else None
+    if args.mode == "reconcile" and args.source_url:
+        expected_url = args.source_url
     if args.mode in {"original", "reconcile"} and not expected_url:
         raise SystemExit("x_post: original post requires exactly one URL")
     needle = " ".join(text.split(expected_url, 1)[0].split()) if expected_url else "".join(text.split("\n")[0])[:24]
     if args.mode == "reconcile":
+        if not args.provider_submission_id or not args.effect_observed_at:
+            raise SystemExit("x_post: reconcile requires provider effect identity and time")
+        try:
+            provider_url = postiz_published_url(
+                args.provider_submission_id, args.effect_observed_at
+            )
+        except (ValueError, OSError, urllib.error.HTTPError):
+            provider_url = None
+        if not provider_url:
+            json.dump({"posted": "unverified", "mode": args.mode,
+                       "provider_submission_id": args.provider_submission_id,
+                       "reason": "Postiz effect is not published with an exact X URL"},
+                      sys.stdout, ensure_ascii=False)
+            print(); sys.exit(2)
         with sync_playwright() as pw:
             browser = pw.chromium.connect_over_cdp(args.cdp)
             handle = ensure_logged_in(get_page(browser))
-            permalink = find_permalink(pw, args.cdp, handle, needle, expected_url, text)
-        json.dump({"posted": bool(permalink), "mode": args.mode, "handle": handle,
-                   "post_url": permalink, "source_url": None}, sys.stdout, ensure_ascii=False)
-        print()
-        return
+            expected_handle = urllib.parse.urlparse(provider_url).path.split("/")[1]
+            if handle.lower() != expected_handle.lower():
+                raise SystemExit("x_post: Postiz release URL account mismatch")
+            page = browser.contexts[0].new_page()
+            try:
+                page.goto(provider_url, wait_until="domcontentloaded", timeout=60000)
+                page.wait_for_timeout(5000)
+                permalink = scan_timeline(
+                    page, handle, needle, args.source_url or expected_url,
+                    text, minimum_status_id=int(provider_url.rsplit("/", 1)[1]),
+                )
+            finally:
+                page.close()
+        if permalink != provider_url:
+            json.dump({"posted": "unverified", "mode": args.mode,
+                       "provider_submission_id": args.provider_submission_id,
+                       "reason": "exact Postiz permalink did not match X content"},
+                      sys.stdout, ensure_ascii=False)
+            print(); sys.exit(2)
+        json.dump({"posted": True, "mode": args.mode, "handle": handle,
+                   "post_url": permalink, "source_url": args.source_url,
+                   "provider": "postiz",
+                   "provider_submission_id": args.provider_submission_id},
+                  sys.stdout, ensure_ascii=False)
+        print(); return
     transport = os.environ.get("X_REPOST_PUBLISH_TRANSPORT", "postiz").strip().lower()
     if transport not in {"postiz", "browser"}:
         raise SystemExit("x_post: unsupported publish transport")
