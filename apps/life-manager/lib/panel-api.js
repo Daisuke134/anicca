@@ -357,6 +357,29 @@ async function onboardingRpc(name, body, opts = {}) {
   return Array.isArray(value) ? value[0] || null : value;
 }
 
+async function refreshCalendar(scope, store, opts = {}) {
+  if (!opts.composioKey && !opts.composioCalendarStatusImpl && !process.env.COMPOSIO_API_KEY) throw onboardingError("calendar_unavailable", 502);
+  let status;
+  try {
+    status = await (opts.composioCalendarStatusImpl || composioCalendarStatus)(scope, { ...opts, composioKey: opts.composioKey || process.env.COMPOSIO_API_KEY });
+  } catch (error) {
+    if (error && error.status === 401) throw error;
+    throw onboardingError("calendar_unavailable", 502);
+  }
+  if (!["ACTIVE", "MISSING", "DISABLED", "INACTIVE"].includes(status)) throw onboardingError("calendar_unavailable", 502);
+  try {
+    if (typeof store.syncCalendarStatus === "function") {
+      if (await store.syncCalendarStatus(scope, status) === false) throw new Error("calendar_sync_failed");
+    } else {
+      await onboardingRpc("sync_lm_panel_calendar_status", { p_uid: scope.uid, p_chat_id: scope.chatId, p_status: status }, opts);
+    }
+  } catch (error) {
+    if (error && error.status === 401) throw error;
+    throw onboardingError("calendar_unavailable", 502);
+  }
+  return status;
+}
+
 function onboardingResponse(value, opts = {}, scope = {}) {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw onboardingError("onboarding_unavailable", 502);
   const body = {};
@@ -365,7 +388,7 @@ function onboardingResponse(value, opts = {}, scope = {}) {
   }
   const aliases = { pay: "payment", done: "dashboard", gmail: "dashboard" };
   body.step = aliases[String(body.step || body.stage || "")] || String(body.step || body.stage || "");
-  if (body.step === "payment") {
+  if (body.step === "payment" || (body.step === "dashboard" && body.paid !== true)) {
     const link = paymentLink(opts, scope);
     if (!link) throw onboardingError("payment_unavailable", 503);
     body.paymentLink = link;
@@ -418,6 +441,7 @@ function createSupabaseCommandStore(opts = {}) {
     async mutateUser(scope, body) { const response = await fetchImpl(`${base}/rest/v1/rpc/mutate_lm_panel_user`, { method: "POST", headers: { ...headers(opts.supaKey), "content-type": "application/json" }, body: JSON.stringify({ p_uid: scope.uid, p_chat_id: scope.chatId, p_patch: body }) }); if (!response.ok) throw new Error("scope_mismatch"); return jsonOr(response, body); },
     async readOnboardingState(scope) { return onboardingRpc("lm_panel_onboarding_state", { p_uid: scope.uid, p_chat_id: scope.chatId }, opts); },
     async mutateOnboarding(scope, action, payload) { return onboardingRpc("lm_panel_onboarding_transition", { p_uid: scope.uid, p_chat_id: scope.chatId, p_action: action, p_payload: payload || {} }, opts); },
+    async syncCalendarStatus(scope, status) { return onboardingRpc("sync_lm_panel_calendar_status", { p_uid: scope.uid, p_chat_id: scope.chatId, p_status: status }, opts); },
     async createOAuthState(scope, state) { const response = await fetchImpl(`${base}/rest/v1/rpc/create_lm_panel_oauth_state`, { method: "POST", headers: { ...headers(opts.supaKey), "content-type": "application/json" }, body: JSON.stringify({ p_state_hash: state.stateHash, p_uid: scope.uid, p_chat_id: scope.chatId, p_provider: state.provider, p_expires_at: state.expiresAt }) }); if (!response.ok) throw new Error("oauth_state_failed"); const value = await jsonOr(response, false); const claimed = Array.isArray(value) ? value[0] === true : value === true; if (!claimed) { const error = new Error("oauth_state_in_progress"); error.status = 409; throw error; } return true; },
     async claimOAuthState(scope, stateHash) { const response = await fetchImpl(`${base}/rest/v1/rpc/claim_lm_panel_oauth_state`, { method: "POST", headers: { ...headers(opts.supaKey), "content-type": "application/json" }, body: JSON.stringify({ p_state_hash: stateHash, p_uid: scope.uid, p_chat_id: scope.chatId }) }); if (!response.ok) throw new Error("oauth_state_failed"); return jsonOr(response, false); },
   };
@@ -455,7 +479,7 @@ function sameDisabledCalendarAccount(item, id) {
 }
 
 async function composioCalendarStatus(scope, opts = {}) {
-  if (!opts.composioKey) return "INACTIVE";
+  if (!opts.composioKey) throw new Error("provider_unavailable");
   const response = await (opts.fetchImpl || fetch)(`https://backend.composio.dev/api/v3/connected_accounts?user_ids=${encodeURIComponent(scope.uid)}&toolkit_slugs=googlecalendar`, { headers: { "x-api-key": opts.composioKey } });
   if (!response.ok) throw new Error("provider_failed");
   const body = await jsonOr(response, {});
@@ -553,9 +577,10 @@ async function handlePanelApiRequest(req, res, opts = {}) {
     if (req.method === "GET") {
       if (endpoint !== "onboarding") { sendJson(res, 404, { error: "not_found" }); return; }
       try {
+        await refreshCalendar(scope, commandStore, opts);
         const state = await (commandStore.readOnboardingState || (() => { throw onboardingError("onboarding_unavailable", 502); }))(scope);
         sendJson(res, 200, onboardingResponse(state, opts, scope));
-      } catch (error) { sendJson(res, error.status || 502, { error: ["payment_unavailable", "unauthorized"].includes(error.message) ? error.message : "onboarding_unavailable" }); }
+      } catch (error) { sendJson(res, error.status || 502, { error: ["payment_unavailable", "unauthorized", "calendar_unavailable"].includes(error.message) ? error.message : "onboarding_unavailable" }); }
       return;
     }
     if (req.method !== "POST") { sendJson(res, 405, { error: "method_not_allowed" }, { Allow: "GET, POST" }); return; }
@@ -565,6 +590,8 @@ async function handlePanelApiRequest(req, res, opts = {}) {
     if (!timingEqual(req.headers["x-lm-csrf"], scope.csrf || csrfToken(session))) { sendJson(res, 403, { error: "csrf_rejected" }); return; }
     try {
       const body = await readJson(req);
+      if (!body || typeof body !== "object" || Array.isArray(body)) throw onboardingError("invalid_json", 400);
+      await refreshCalendar(scope, commandStore, opts);
       const pathAction = endpoint.slice("onboarding/".length).replace(/\//g, ".");
       const action = String((body && (body.action || body.type)) || pathAction || "");
       if (!ONBOARDING_ACTIONS.has(action)) throw onboardingError("invalid_action", 400);
@@ -576,8 +603,8 @@ async function handlePanelApiRequest(req, res, opts = {}) {
       const state = await (commandStore.mutateOnboarding || (() => { throw onboardingError("onboarding_unavailable", 502); }))(scope, action, payload);
       sendJson(res, 200, onboardingResponse(state, opts, scope));
     } catch (error) {
-      const known = new Set(["unauthorized", "onboarding_conflict", "invalid_name", "invalid_home_address", "invalid_phone", "invalid_action", "payment_unavailable"]);
-      sendJson(res, error.status || (known.has(error.message) ? (error.message === "unauthorized" ? 401 : error.message === "onboarding_conflict" ? 409 : error.message === "payment_unavailable" ? 503 : 400) : 502), { error: known.has(error.message) ? error.message : "onboarding_unavailable" });
+      const known = new Set(["unauthorized", "calendar_unavailable", "invalid_json", "body_too_large", "onboarding_conflict", "invalid_name", "invalid_home_address", "invalid_phone", "invalid_action", "payment_unavailable"]);
+      sendJson(res, error.status || (known.has(error.message) ? (error.message === "unauthorized" ? 401 : error.message === "calendar_unavailable" ? 502 : error.message === "body_too_large" ? 413 : error.message === "onboarding_conflict" ? 409 : error.message === "payment_unavailable" ? 503 : 400) : 502), { error: known.has(error.message) ? error.message : "onboarding_unavailable" });
     }
     return;
   }

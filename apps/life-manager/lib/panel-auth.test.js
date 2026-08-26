@@ -318,3 +318,16 @@ test("LM-33a: life-call wires GET /panel and Telegram /panel without changing /l
   const telegramSource = fs.readFileSync(path.join(__dirname, "telegram.js"), "utf8");
   assert.match(telegramSource, /return `\$\{root\}\/lm\?tg=/, "the /lm?tg onboarding handoff must remain");
 });
+
+test("R1A actor claim provisions one deterministic Telegram tenant under the existing 2-arg RPC", () => {
+  const sql = fs.readFileSync(path.join(__dirname, "../migrations/2026-08-27-lm-panel-onboarding-reachability.sql"), "utf8");
+  assert.match(sql, /CREATE OR REPLACE FUNCTION public\.claim_lm_panel_telegram_init\(p_init_hash text, p_actor_id text\)/i);
+  assert.match(sql, /INSERT INTO public\.lm_panel_telegram_replays/i);
+  assert.match(sql, /INSERT INTO public\.lm_users/i);
+  assert.match(sql, /md5\(p_actor_id\)/i);
+  assert.match(sql, /ON CONFLICT\s*\(uid\)\s+DO NOTHING/i);
+  assert.match(sql, /telegram_chat_id::text\s*=\s*p_actor_id/i);
+  assert.match(sql, /FOR UPDATE/i);
+  assert.match(sql, /RETURN QUERY SELECT 'replayed'/i);
+  assert.match(sql, /RETURN QUERY SELECT 'claimed'/i);
+});

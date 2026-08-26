@@ -24,11 +24,15 @@ function jsonResponse(body, status = 200) {
 }
 
 function fixture({ active = false, status = active ? "ACTIVE" : "MISSING", redirect = "https://provider.example/consent" } = {}) {
-  const calls = { assert: [], start: [], status: [], oauth: [], states: [] };
+  const calls = { assert: [], start: [], status: [], sync: [], oauth: [], states: [] };
   const store = {
     async assertCurrentScope(scope) {
       calls.assert.push({ ...scope });
       return scope.uid === SCOPE.uid && scope.chatId === SCOPE.chatId;
+    },
+    async syncCalendarStatus(scope, status) {
+      calls.sync.push({ scope: { ...scope }, status });
+      return true;
     },
     async createOAuthState(scope, state) {
       calls.states.push({ scope: { ...scope }, state: { ...state } });
@@ -93,9 +97,22 @@ test("start derives the actor only from the verified session and ignores body/qu
     assert.deepEqual(await response.json(), { connected: true, state: "connected" });
   });
   assert.deepEqual(fixtureState.calls.status.map(({ uid, chatId }) => ({ uid, chatId })), [{ uid: SCOPE.uid, chatId: SCOPE.chatId }]);
+  assert.deepEqual(fixtureState.calls.sync.map(({ scope, status }) => ({ uid: scope.uid, chatId: scope.chatId, status })), [{ uid: SCOPE.uid, chatId: SCOPE.chatId, status: "ACTIVE" }]);
   assert.deepEqual(fixtureState.calls.start, []);
   assert.deepEqual(fixtureState.calls.states, []);
   assert.deepEqual(fixtureState.calls.oauth, []);
+});
+
+test("R1A a connected start re-syncs ACTIVE after an inactive marker is refreshed", async () => {
+  const state = fixture({ active: true, status: "MISSING" });
+  await withServer(state.opts, async (base) => {
+    const response = await fetch(`${base}/api/panel/onboarding/calendar/start`, {
+      method: "POST", headers: cookieHeaders({ origin: ORIGIN, "content-type": "application/json", "x-lm-csrf": SCOPE.csrf }), body: "{}",
+    });
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { connected: true, state: "connected" });
+  });
+  assert.deepEqual(state.calls.sync.map(({ status }) => status), ["MISSING", "ACTIVE"]);
 });
 
 test("unauthenticated and rebound sessions return 401 before store/provider effects", async () => {
@@ -237,6 +254,7 @@ test("status is read-only, ACTIVE-only, and sanitizes provider failures", async 
     assert.deepEqual(state.calls.states, []);
     assert.deepEqual(state.calls.oauth, []);
     assert.deepEqual(state.calls.status.map(({ uid, chatId }) => ({ uid, chatId })), [{ uid: SCOPE.uid, chatId: SCOPE.chatId }]);
+    assert.deepEqual(state.calls.sync.map(({ status }) => status), [providerStatus]);
   }
 
   const failed = fixture();
@@ -386,4 +404,14 @@ test("atomic OAuth migration is additive, hash-only, and service-role RPC guarde
   assert.match(migration, /REVOKE ALL ON FUNCTION public\.create_lm_panel_oauth_state[\s\S]*FROM PUBLIC, anon, authenticated/i);
   assert.match(migration, /GRANT EXECUTE ON FUNCTION public\.create_lm_panel_oauth_state[\s\S]*TO service_role/i);
   assert.doesNotMatch(migration, /CREATE TABLE/i);
+});
+
+test("R1A calendar reachability migration syncs ACTIVE truth and clears stale markers atomically", () => {
+  const migration = fs.readFileSync(path.join(__dirname, "../migrations/2026-08-27-lm-panel-onboarding-reachability.sql"), "utf8");
+  assert.match(migration, /CREATE OR REPLACE FUNCTION public\.sync_lm_panel_calendar_status\(p_uid text, p_chat_id text, p_status text\)/i);
+  assert.match(migration, /calendar_provider\s*=\s*'composio_gcal'/i);
+  assert.match(migration, /calendar_provider\s*=\s*NULL/i);
+  assert.match(migration, /MISSING.*DISABLED.*INACTIVE/is);
+  assert.match(migration, /telegram_chat_id::text\s*=\s*p_chat_id[\s\S]*FOR UPDATE/i);
+  assert.match(migration, /REVOKE ALL ON FUNCTION public\.sync_lm_panel_calendar_status/i);
 });

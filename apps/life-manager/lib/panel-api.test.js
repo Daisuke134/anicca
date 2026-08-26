@@ -385,6 +385,8 @@ function byUidWallet(fixture) {
 
 function onboardingHarness(initial = {}) {
   const writes = [];
+  const syncs = [];
+  const reads = [];
   const state = {
     step: "name", stage: "calendar", name: null, calendarConnected: false,
     homeAddress: null, notificationsEnabled: false, phone: null,
@@ -395,8 +397,10 @@ function onboardingHarness(initial = {}) {
     async assertCurrentScope(value) { return value.uid === scope.uid && value.chatId === scope.chatId; },
     async readOnboardingState(value) {
       assert.deepEqual(value, scope);
+      reads.push("state");
       return { ...state };
     },
+    async syncCalendarStatus(value, status) { assert.deepEqual(value, scope); syncs.push(status); return true; },
     async mutateOnboarding(value, action, payload) {
       assert.deepEqual(value, scope);
       writes.push({ action, payload });
@@ -409,8 +413,10 @@ function onboardingHarness(initial = {}) {
     sessionScopeImpl: async () => scope,
     commandStore,
     stripePaymentLink: "https://buy.stripe.com/test_life_manager",
+    composioKey: "provider-key",
+    composioCalendarStatusImpl: async () => "ACTIVE",
   };
-  return { state, scope, writes, opts, commandStore };
+  return { state, scope, writes, syncs, reads, opts, commandStore };
 }
 
 async function onboardingRequest(harness, { method = "GET", path = "/api/panel/onboarding", body, headers = {} } = {}) {
@@ -504,6 +510,38 @@ test("Task 7A paid phone-less tenant resumes at dashboard after required core st
   assert.equal(result.body.step, "dashboard");
   assert.equal(result.body.phone, null);
   assert.equal(result.body.callEnabled, false);
+});
+
+test("Task 7A refreshes official Calendar truth before every state read or transition", async () => {
+  const h = onboardingHarness({ step: "home", stage: "home", calendarConnected: true });
+  const get = await onboardingRequest(h);
+  assert.equal(get.response.status, 200);
+  assert.deepEqual(h.syncs, ["ACTIVE"]);
+  h.opts.composioCalendarStatusImpl = async () => "MISSING";
+  h.commandStore.mutateOnboarding = async () => { throw new Error("transition must not run when Calendar is missing"); };
+  const post = await onboardingRequest(h, { method: "POST", body: { action: "home.save", home_address: "home" } });
+  assert.equal(post.response.status, 502);
+  assert.deepEqual(h.syncs, ["ACTIVE", "MISSING"]);
+  assert.deepEqual(h.reads, ["state"]);
+});
+
+test("Task 7A rejects malformed JSON arrays and primitives before any RPC", async () => {
+  for (const malformed of [[], "not-an-object", 7, null]) {
+    const h = onboardingHarness({ step: "home", stage: "home" });
+    const result = await onboardingRequest(h, { method: "POST", path: "/api/panel/onboarding/home/save", body: malformed });
+    assert.equal(result.response.status, 400, String(malformed));
+    assert.equal(h.writes.length, 0);
+    assert.deepEqual(h.reads, [], "malformed body must not invoke state RPC");
+  }
+});
+
+test("Task 7A unpaid dashboard remains checkout-reachable without granting paid", async () => {
+  const h = onboardingHarness({ step: "dashboard", stage: "done", calendarConnected: true, paid: false });
+  const result = await onboardingRequest(h);
+  assert.equal(result.response.status, 200);
+  assert.equal(result.body.step, "dashboard");
+  assert.equal(result.body.paid, false);
+  assert.equal(result.body.paymentLink, "https://buy.stripe.com/test_life_manager?client_reference_id=tenant-a");
 });
 
 test("Task 7A onboarding migration is additive, tenant-scoped, and lock-atomic", () => {

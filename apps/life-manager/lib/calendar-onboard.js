@@ -36,6 +36,12 @@ async function resolveScope(req, opts, store) {
   } catch { return null; }
 }
 
+async function syncCalendarStatus(store, scope, status) {
+  if (typeof store.syncCalendarStatus !== "function") throw new Error("calendar_sync_unavailable");
+  const synced = await store.syncCalendarStatus(scope, status);
+  if (synced === false) throw new Error("calendar_sync_failed");
+}
+
 async function handleCalendarOnboardRequest(req, res, opts = {}) {
   const path = new URL(req.url || "/", "http://panel.local").pathname;
   if (path !== START && path !== STATUS) return sendJson(res, 404, { error: "not_found" });
@@ -47,6 +53,8 @@ async function handleCalendarOnboardRequest(req, res, opts = {}) {
     if (path === STATUS) {
       if (req.method !== "GET") return sendJson(res, 405, { error: "method_not_allowed" }, { Allow: "GET" });
       const status = await (opts.composioCalendarStatusImpl || composioCalendarStatus)(auth.scope, { ...opts, composioKey: opts.composioKey || process.env.COMPOSIO_API_KEY });
+      if (!["ACTIVE", "MISSING", "DISABLED", "INACTIVE"].includes(status)) throw new Error("calendar_status_unavailable");
+      await syncCalendarStatus(store, auth.scope, status);
       if (status === "ACTIVE") return sendJson(res, 200, { connected: true, state: "connected" });
       if (["MISSING", "DISABLED", "INACTIVE"].includes(status)) return sendJson(res, 200, { connected: false, state: "action_required" });
       throw new Error("calendar_status_unavailable");
@@ -66,6 +74,8 @@ async function handleCalendarOnboardRequest(req, res, opts = {}) {
     if (!secret) return sendJson(res, 502, { error: "calendar_unavailable" });
     const provider = { ...opts, panelBaseUrl: opts.panelBaseUrl || origin, composioKey: opts.composioKey || process.env.COMPOSIO_API_KEY, composioAuthConfig: opts.composioAuthConfig || process.env.COMPOSIO_GCAL_AUTH_CONFIG };
     const status = await (opts.composioCalendarStatusImpl || composioCalendarStatus)(auth.scope, provider);
+    if (!["ACTIVE", "MISSING", "DISABLED", "INACTIVE"].includes(status)) throw new Error("calendar_status_unavailable");
+    await syncCalendarStatus(store, auth.scope, status);
     if (status === "ACTIVE") return sendJson(res, 200, { connected: true, state: "connected" });
     if (!["MISSING", "DISABLED", "INACTIVE"].includes(status)) throw new Error("calendar_status_unavailable");
     const conflict = async () => {
@@ -85,7 +95,10 @@ async function handleCalendarOnboardRequest(req, res, opts = {}) {
     }
     if (claimed === false) return conflict();
     const resumed = await (opts.composioCalendarStartImpl || composioCalendarStart)(auth.scope, provider);
-    if (resumed && (resumed.state === "connected" || resumed.connected === true || resumed.state?.state === "connected")) return sendJson(res, 200, { connected: true, state: "connected" });
+    if (resumed && (resumed.state === "connected" || resumed.connected === true || resumed.state?.state === "connected")) {
+      await syncCalendarStatus(store, auth.scope, "ACTIVE");
+      return sendJson(res, 200, { connected: true, state: "connected" });
+    }
     const oauth = await (opts.startCalendarOAuthImpl || startCalendarOAuth)(auth.scope, state, provider);
     const redirect = oauth && oauth.redirectUrl;
     let redirectUrl;
