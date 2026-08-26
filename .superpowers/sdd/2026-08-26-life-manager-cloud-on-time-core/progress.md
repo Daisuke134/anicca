@@ -86,3 +86,15 @@ Baseline: focused Life Manager suite 175/175 PASS.
 - Task 4 fix round 1: `22386d785` — focused 50/50, related 87/87, network-blocked 69/69, and four mutations detected; verification report `15170a560`.
 - Task 4 re-review R1: APPROVED — Inngest call hang, same-user reminder hang, notification-off privacy, and single canonical receipt verified.
 - Task 4: complete
+
+## Task 5 review loop
+
+- Task 5 base: `bbb0571bb`
+- Task 5 implementer: `/root/telegram_onboarding_entry`
+- Task 5 Ruling: `startReply` was dead production code; add `server.js` so the real exact `/start` webhook and GET `/panel/onboarding` use the existing panel-auth boundary. Preserve legacy `onboardLink` until Task 8.
+- Task 5 implementation: `511b0e5b8`; strict malformed-origin fix `fb71c3e5e`; verification reports `459fbf456` and `880e8bb18`; focused 48/48.
+- Task 5 review R0: fix-first — Medium: explicit Telegram `{ok:false}` was unobserved while webhook acknowledged. Low: `/start-foo` and `/start?` opened onboarding.
+- Task 5 Ruling: preserve webhook HTTP 200 to avoid Telegram update replay, but require `sent.ok===true` and surface only a generic failure. Enforce the exact Telegram `/start` command boundary and block punctuation lookalikes from legacy free-text onboarding.
+- Task 5 fix round 1: `f3cb316d3`; verification report `f08c0a592`; focused 48/48 with three mutations detected.
+- Task 5 re-review R1: APPROVED — real HTTP valid/start-payload/exact-bot, punctuation negative, explicit rejection privacy, existing panel auth 44/44, and no unauthorized session writes verified.
+- Task 5: complete
