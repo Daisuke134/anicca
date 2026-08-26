@@ -57,7 +57,8 @@ chmod 600 "$RUNTIME_PROMPT"
 echo "=== fundraiser $RUN_ID start ===" >>"$LOG"
 set +e
 cat "$RUNTIME_PROMPT" | "$RUN_AGENT" \
-  --task-class browser-lane-agent \
+  --task-class application-intent-planner \
+  --escalation-reason "Fundraiser skill requires the existing Luna application-intent route for autonomous application judgment" \
   --schema "$SCHEMA" \
   --evidence-dir "$EVIDENCE_DIR" \
   --task-label fundraiser-continuous \

@@ -4,6 +4,7 @@ import { test } from "node:test";
 
 const dailyPrompt = await readFile(new URL("../prompts/daily.md", import.meta.url), "utf8");
 const skill = await readFile(new URL("../SKILL.md", import.meta.url), "utf8");
+const runtimeScript = await readFile(new URL("../runtime/run.sh", import.meta.url), "utf8");
 const productionContext = JSON.parse(await readFile(new URL("../../../.agents/startup-context.json", import.meta.url), "utf8"));
 const startupContext = Object.freeze({
   product: Object.freeze({
@@ -207,6 +208,8 @@ test("production contract runs every 30 minutes and maximizes real applications"
   assert.match(dailyPrompt, /never print, dump, enumerate, pretty-print/);
   assert.match(dailyPrompt, /assign the selected secret directly to `GOG_KEYRING_PASSWORD` without echoing it/);
   assert.match(dailyPrompt, /cdp\.py fillcss/);
+  assert.match(runtimeScript, /--task-class application-intent-planner/);
+  assert.match(runtimeScript, /--escalation-reason/);
   assert.doesNotMatch(contract, /at most one/i);
   assert.doesNotMatch(contract, /per user-local day/i);
 });

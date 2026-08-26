@@ -10,6 +10,7 @@ TASK_LABEL=""
 LOOP=""
 SCHEMA=""
 WORKDIR="${AGENT_RUNNER_WORKDIR:-$HOME}"
+ESCALATION_REASON=""
 PRINT_RESULT=0
 
 while [ "$#" -gt 0 ]; do
@@ -20,6 +21,7 @@ while [ "$#" -gt 0 ]; do
     --loop) LOOP="${2:-}"; shift 2 ;;
     --schema) SCHEMA="${2:-}"; shift 2 ;;
     --workdir) WORKDIR="${2:-}"; shift 2 ;;
+    --escalation-reason) ESCALATION_REASON="${2:-}"; shift 2 ;;
     --print-result) PRINT_RESULT=1; shift ;;
     *) echo "run_agent.sh: unknown argument: $1" >&2; exit 2 ;;
   esac
@@ -29,7 +31,7 @@ case "$TASK_CLASS" in
   # Keep this in sync with runtime/agent-runner/config.json.  Capafy's CP1/CP2/CP3
   # browser flow deliberately uses application-lane-agent (3600s); rejecting it
   # here made the bounded drainer fail before the provider could start.
-  repeatable-agent|tool-agent|browser-lane-agent|application-lane-agent|marketing-agent|high-value-agent) ;;
+  repeatable-agent|tool-agent|browser-lane-agent|application-lane-agent|application-intent-planner|marketing-agent|high-value-agent) ;;
   *) echo "run_agent.sh: invalid or missing --task-class" >&2; exit 2 ;;
 esac
 [ -n "$EVIDENCE_DIR" ] || { echo "run_agent.sh: missing --evidence-dir" >&2; exit 2; }
@@ -68,14 +70,19 @@ EOF
 
 RUNNER_STDOUT="$EVIDENCE_DIR/runner.stdout.log"
 set +e
-/usr/bin/python3 "$RUNNER" \
+RUNNER_ARGS=(
   --task-class "$TASK_CLASS" \
   --prompt-file "$PROMPT_FILE" \
   --schema "$SCHEMA" \
   --evidence-dir "$EVIDENCE_DIR" \
   --task-label "$TASK_LABEL" \
   --loop "$LOOP" \
-  --workdir "$WORKDIR" >"$RUNNER_STDOUT"
+  --workdir "$WORKDIR"
+)
+if [ -n "$ESCALATION_REASON" ]; then
+  RUNNER_ARGS+=(--escalation-reason "$ESCALATION_REASON")
+fi
+/usr/bin/python3 "$RUNNER" "${RUNNER_ARGS[@]}" >"$RUNNER_STDOUT"
 RC=$?
 set -e
 
