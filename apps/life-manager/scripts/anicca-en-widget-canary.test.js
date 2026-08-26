@@ -16,6 +16,7 @@ const {
   embedVideoUrl,
   EN_LANE,
   JA_LANE,
+  OBOU_LANE,
   parseArgs,
   runAniccaEnWidgetCanary,
   runAniccaWidgetCanary,
@@ -23,6 +24,7 @@ const {
 } = require("./anicca-en-widget-canary.js");
 const { parseArgs: parseJaArgs, runAniccaJaWidgetCanary } = require("./anicca-ja-widget-canary.js");
 const { JA_CARD_LANE, parseArgs: parseJaCardArgs, runAniccaJaCardInstagramCanary } = require("./anicca-ja-card-instagram-canary.js");
+const { parseArgs: parseObouArgs, runAniccaObouInstagramCanary } = require("./anicca-obou-instagram-canary.js");
 
 const SLOT = "2026-08-26T07:30:00.000Z";
 const FIRST_NOW = "2026-08-26T07:31:00.000Z";
@@ -170,7 +172,7 @@ function fixture(lane = EN_LANE, laneCaption = CAPTION) {
   let fixtureVideoRef = videoRef;
   let fixtureCaptionRef = captionRef;
   let fixtureApprovalRef = approvalRef;
-  if (lane === JA_CARD_LANE) {
+  if (lane.packRef && lane.videoRef && lane.captionRef && lane.approvalRef) {
     const pinnedDirectory = path.join(dataDir, "pinned");
     fs.mkdirSync(pinnedDirectory, { recursive: true, mode: 0o700 });
     const exactPaths = new Map([
@@ -658,6 +660,93 @@ test("/p/, profile, and numeric Reel URLs become unknown and never notify", asyn
 
 const JA_CAPTION = "ロック画面にアファメーション\n置けるの知らなかった\n\n#ロック画面 #アファメーション #ウィジェット #メンタルヘルス #アニッチャ\n";
 const JA_CARD_CAPTION = "怠けてるんじゃない。\n脳が限界なだけ。\n\n#anicca #セルフケア #習慣 #AI\n";
+const OBOU_CAPTION = "相手の感情は相手のもの。自分の心を守るあなたを、ここで応援しています。";
+
+test("Obou watercolor lane is one immutable account, integration, renderer, and approved pack", () => {
+  assert.deepEqual({
+    account: OBOU_LANE.account,
+    nativeAccount: OBOU_LANE.nativeAccount,
+    integrationId: OBOU_LANE.integrationId,
+    renderer: OBOU_LANE.renderer,
+    format: OBOU_LANE.format,
+    packFormat: OBOU_LANE.packFormat,
+    form: OBOU_LANE.form,
+    packRef: OBOU_LANE.packRef,
+    videoRef: OBOU_LANE.videoRef,
+    captionRef: OBOU_LANE.captionRef,
+    approvalRef: OBOU_LANE.approvalRef,
+  }, {
+    account: "@obou.anicca",
+    nativeAccount: "@obou.anicca",
+    integrationId: "cmooplxmu04tpmd0y4h3cpk33",
+    renderer: "watercolor",
+    format: "watercolor",
+    packFormat: "watercolor-reel",
+    form: "buddhist-self-care-reel",
+    packRef: "object://sha256/2a24da50040c9a2705c2e8975d76152b6add447504ac21493cdfca999f598145",
+    videoRef: "object://sha256/b2772de4303acc901f42b43a0b3f4af166ae3daeb5ee7fd24e090e5b62f2b0e8",
+    captionRef: "object://sha256/40293be368c6c33b04bb6fa6be8ff4bc879ca8c6d18c2944d7275c488088ac0a",
+    approvalRef: "object://sha256/2fb66c87729a915545ca94d0029562240e543bad3f2bb9080ffc3fa821a538d7",
+  });
+});
+
+test("Obou wrapper accepts only one exact run slot", () => {
+  assert.deepEqual(parseObouArgs(["run", "--slot", SLOT]), { command: "run", slot: SLOT });
+  assert.throws(() => parseObouArgs(["publish"]), /usage/i);
+  assert.equal(typeof runAniccaObouInstagramCanary, "function");
+});
+
+test("Obou first publication uses only pinned watercolor refs and restores closed controls", async () => {
+  const value = fixture(OBOU_LANE, OBOU_CAPTION);
+  const publicationCalls = [];
+  const result = await runAniccaObouInstagramCanary(
+    ["run", "--slot", SLOT],
+    genericOptionsFor(value, publicationCalls, [], OBOU_LANE),
+  );
+  assert.equal(result.publication.created, true);
+  assert.equal(result.telegram.held, true);
+  assert.equal(publicationCalls.length, 1);
+  assert.equal(publicationCalls[0].instagramIntegration, OBOU_LANE.integrationId);
+  assert.equal(publicationCalls[0].videoPath, value.objectStore.resolve(OBOU_LANE.videoRef));
+  assert.equal(publicationCalls[0].captionPath, value.objectStore.resolve(OBOU_LANE.captionRef));
+  assert.equal(publicationCalls[0].approvalPath, value.objectStore.resolve(OBOU_LANE.approvalRef));
+  assert.deepEqual(fs.readFileSync(value.manifestPath), value.originalManifest);
+  assert.deepEqual(fs.readFileSync(value.fencePath), value.originalFence);
+});
+
+test("Obou rejects alternate self-consistent refs before secret or provider", async () => {
+  const value = fixture(OBOU_LANE, OBOU_CAPTION);
+  value.env[OBOU_LANE.packEnv] = replaceJson(value, "packRef", { alternate: true });
+  value.env[OBOU_LANE.approvalEnv] = replaceJson(value, "approvalRef", { alternate: true });
+  let secrets = 0;
+  let providers = 0;
+  await assert.rejects(runAniccaObouInstagramCanary(["run", "--slot", SLOT], {
+    ...genericOptionsFor(value, [], [], OBOU_LANE),
+    secretProvider: { get: async () => { secrets += 1; return "secret"; } },
+    runDistribution: async () => { providers += 1; return {}; },
+  }), /reference mismatch/i);
+  assert.equal(secrets, 0);
+  assert.equal(providers, 0);
+});
+
+test("Obou exact native verification sends one owner Telegram and same-slot replay is zero", async () => {
+  const value = fixture(OBOU_LANE, OBOU_CAPTION);
+  const publicationCalls = [];
+  const telegramCalls = [];
+  const options = genericOptionsFor(value, publicationCalls, telegramCalls, OBOU_LANE);
+  const first = await runAniccaObouInstagramCanary(["run", "--slot", SLOT], options);
+  const receipt = JSON.parse(fs.readFileSync(path.join(value.dataDir, "marketing", "receipts.jsonl"), "utf8")).receipt;
+  value.env[OBOU_LANE.verificationEnv] = verification(value, receipt, {}, {}, OBOU_LANE);
+  const replayOptions = { ...options, now: () => VERIFIED_NOW };
+  const second = await runAniccaObouInstagramCanary(["run", "--slot", SLOT], replayOptions);
+  const third = await runAniccaObouInstagramCanary(["run", "--slot", SLOT], replayOptions);
+  assert.equal(first.telegram.held, true);
+  assert.deepEqual(second.telegram, { created: true, held: false, message_id: 42 });
+  assert.deepEqual(third.telegram, { created: false, held: false, message_id: 42 });
+  assert.equal(publicationCalls.length, 1);
+  assert.equal(telegramCalls.length, 1);
+  assert.match(telegramCalls[0][2], /@obou\.anicca/);
+});
 
 test("JA widget wrapper is exact-lane and exact-slot only", () => {
   assert.deepEqual(parseJaArgs(["run", "--slot", SLOT]), { command: "run", slot: SLOT });

@@ -115,8 +115,43 @@ const JA_CARD_LANE = Object.freeze({
   enforceApprovedPack: true,
 });
 
+const OBOU_LANE = Object.freeze({
+  name: "OBOU",
+  tenant: "dais-local",
+  product: "anicca-ios",
+  locale: "ja",
+  platform: "instagram",
+  account: "@obou.anicca",
+  nativeAccount: "@obou.anicca",
+  manifestAccount: "anicca-ios-ja-obou-instagram",
+  profileRef: "profile://instagram/obou.anicca",
+  integrationRef: "integration://postiz/instagram/cmooplxmu04tpmd0y4h3cpk33",
+  integrationId: "cmooplxmu04tpmd0y4h3cpk33",
+  renderer: "watercolor",
+  format: "watercolor",
+  packFormat: "watercolor-reel",
+  form: "buddhist-self-care-reel",
+  lane: "anicca-ja-obou-instagram",
+  creativeId: "JA-WATERCOLOR-OBOU-b2772de4303a",
+  tokenRef: "secret://postiz/api-key",
+  telegramTokenRef: "secret://telegram/bot-token",
+  chatRef: "telegram-chat://owner",
+  packRef: "object://sha256/2a24da50040c9a2705c2e8975d76152b6add447504ac21493cdfca999f598145",
+  videoRef: "object://sha256/b2772de4303acc901f42b43a0b3f4af166ae3daeb5ee7fd24e090e5b62f2b0e8",
+  captionRef: "object://sha256/40293be368c6c33b04bb6fa6be8ff4bc879ca8c6d18c2944d7275c488088ac0a",
+  approvalRef: "object://sha256/2fb66c87729a915545ca94d0029562240e543bad3f2bb9080ffc3fa821a538d7",
+  packEnv: "LM_ANICCA_OBOU_INSTAGRAM_PACK_REF",
+  videoEnv: "LM_ANICCA_OBOU_INSTAGRAM_VIDEO_REF",
+  captionEnv: "LM_ANICCA_OBOU_INSTAGRAM_CAPTION_REF",
+  approvalEnv: "LM_ANICCA_OBOU_INSTAGRAM_APPROVAL_REF",
+  verificationEnv: "LM_ANICCA_OBOU_INSTAGRAM_NATIVE_VERIFICATION_REF",
+  approvedPackName: "anicca-ios-watercolor-buddhist-ja.pack.json",
+  workerLabel: "anicca-obou-instagram-canary",
+  enforceApprovedPack: true,
+});
+
 function assertTrustedLane(lane) {
-  if (lane !== EN_LANE && lane !== JA_LANE && lane !== JA_CARD_LANE) throw new Error("Anicca widget lane identity is not trusted");
+  if (lane !== EN_LANE && lane !== JA_LANE && lane !== JA_CARD_LANE && lane !== OBOU_LANE) throw new Error("Anicca widget lane identity is not trusted");
   return lane;
 }
 
@@ -762,6 +797,7 @@ module.exports = {
   INTEGRATION_REF,
   JA_LANE,
   JA_CARD_LANE,
+  OBOU_LANE,
   LANE,
   PROFILE_REF,
   armControls,
