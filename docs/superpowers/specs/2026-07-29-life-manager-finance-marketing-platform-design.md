@@ -1605,7 +1605,7 @@ not a command to fan every creative out to every connected Postiz integration.
 | Anicca iOS JA Widget | Instagram `@anicca.jp.videos` | `cmmzzg2es0539p30ycb94ayx0` | Japanese `reelclaw-widget` / `widget-demo-reel`: a Japanese hook followed by the iPhone lock-screen Widget installation flow and visible Anicca widget; never the separate affirmation/Card sequence historically mixed into this account | 2/day at 08:05 and 18:20 JST | direct native canary `DcetvubDA4Z`, natural Telegram, replay, and immediate metric source verified; scheduled 0/day/default-off |
 | Anicca iOS EN Card | Instagram `@anicca.encards` | `cmpc3gx4001nklg0y27a8o66q` | English `reelclaw-card` / `nudge-card` 9:16 MP4 Reel from LM pack `anicca-ios-reelclaw-card-en.pack.json`; never JA or Larry copy | 2/day at 12:45 and 21:30 JST | direct native canary, natural Telegram, replay, and metric source verified; scheduled 0/day, default-off |
 | Anicca iOS EN Widget | Instagram `@anicca.en` | `cmn8y95rg02d2qx0y09bbk5pb` | English `reelclaw-widget` / `widget-demo-reel`: English hook followed by the lock-screen Widget installation flow; never Card EN or JA copy | 2/day at 09:30 and 19:00 JST | direct native canary `DcekGtmjmOf`, natural Telegram, replay, and metric source verified; scheduled 0/day/default-off |
-| Anicca iOS EN Affirmation | Instagram Postiz alias `@anicca.affirmation`, native owner `@anicca.ios` | `cmp9pedr700ttqh0yj8o57fog` | Larry-style six-image native English affirmation carousel: one hook plus five mental-health affirmation slides; never Card/Widget video | 1/day at 10:00 JST | classified from 144 API rows and native six-slide artifact; pack import next; scheduled 0/day/default-off |
+| Anicca iOS EN Affirmation | Instagram Postiz alias `@anicca.affirmation`, native owner `@anicca.ios` | `cmp9pedr700ttqh0yj8o57fog` | Larry-style six-image native English affirmation carousel: one hook plus five mental-health affirmation slides; never Card/Widget video | 1/day at 10:00 JST | exact six-slide pack/approval ready; scheduled 0/day/default-off; dedicated runner TDD next |
 | Anicca iOS JA main | YouTube Shorts `@anicca-jp` | `cmn1oukj9012nnq0yqhouc3ib` | one selected Anicca JA nudge-card MP4 per day, with a Shorts title/description and the same immutable creative/campaign lineage | 0/day | **skipped by owner instruction** after the exact canary effect ended absent and channel ownership could not be refreshed; LM-disabled |
 
 #### 8.8.2 End-state operating contract
@@ -2212,8 +2212,8 @@ order is the §12.3 recovery checklist: `MKT-09R0 → MKT-09R1 → MKT-09R2 →
 MKT-09R3-01..13 → MKT-09R4..R9 → MKT-10 → MKT-11 → MKT-12 → MKT-13`.
 No later row starts early.
 
-Current TODO state: **incident recovery remains open at MKT-09R9-03 / Order
-24C.** R0 through R9-02 are terminal: capacity is safe, the shared publication
+Current TODO state: **incident recovery remains open at MKT-09R9-04 / Order
+24D.** R0 through R9-03 are terminal: capacity is safe, the shared publication
 fence remains closed,
 the JP4 false completion is quarantined, and the 13-effect set is 12 `present`
 plus one truthful `absent`. The full publication ledger is 43 `completed`,
@@ -2230,11 +2230,29 @@ An external observation clock is not an active implementation item. It remains
 terminal acceptance evidence. Exactly one executable atomic item remains active;
 when the clock fires, its readback is reconciled before any dependent account arm.
 
-**Active executable atomic item:** MKT-09R9-03 / Order 24C imports and approves
-exactly one account-bound pack for Instagram `@anicca.affirmation`, integration
-`cmp9pedr700ttqh0yj8o57fog`. It may reuse only the six ordered native slide
-objects and exact caption already classified; it creates no post, schedule, or
-legacy dependency. Only the following atomic item may execute one API canary.
+**Active executable atomic item:** MKT-09R9-04 / Order 24D uses TDD to make the
+existing native-carousel runner accept exactly one additional frozen EN lane.
+The current adapter is hardcoded to JA `@ani.cca1234` and integration
+`cmq3sq7mc000eqp0y7azfm8yk`; running it unchanged is forbidden. The minimal
+change reuses its pack/media/caption/approval, Postiz, direct `/p/`, native
+ordered-slide, Telegram, replay, fence, and ledger contracts while pinning EN
+`@anicca.affirmation` / native `@anicca.ios` / integration
+`cmp9pedr700ttqh0yj8o57fog`. Provider effect remains 0 until RED→GREEN and
+fresh review are terminal.
+
+**Completed immediately preceding atomic item:** MKT-09R9-03 / Order 24C
+imports exact pack `object://sha256/e23cd41257832d2032fd889bd9a16ec95ea8dc213cdd7a2e3f820fbe1578669e`,
+caption `object://sha256/bf90a15a5a615d2bb295c1829f7329f391a870fe4e950c8099972c20bf6e64a0`,
+and account-bound approval
+`object://sha256/7740cd09733d0cb7a5d8f32ff4614c3e07ebae27df0e3eae8bca8df80b968845`.
+The six ordered JPEG refs reuse the visually inspected native carousel and
+produce media-order hash `4daa5db7…9837f9`; caption bytes equal Postiz row
+`cms8movjd0ewykz0yr2en9ux5` exactly with no terminal LF. Every object and env
+binding is SHA-exact/mode `0600`; exact pack/caption/approval matches in local
+jobs/receipts are 0. Manifest
+`marketing-lane-manifest:b48c8e11a7e1b46999bbe7d3eda5cbb6a756ece2d45ca51fe2480b8fab5ce18f`
+changes only this lane from `classified` to `pack-ready`, default-off, all armed
+0, fence closed. Provider/Telegram/scheduler/legacy writes are 0.
 
 **Completed immediately preceding atomic item:** MKT-09R9-02 / Order 24B
 classifies this lane as Anicca iOS / EN / Instagram / renderer `larry` / format
@@ -2876,9 +2894,10 @@ Their dependent account arm remains blocked until the observation is terminal.
 | 23J | **done — MKT-09R8-13:** finish one dedicated JA Card Instagram canary | Order 23I terminal absent | direct Reel `Dce7_IPlUlr`, Postiz `cmt9d2khz00r1p20yb6qbtvyg`, native owner/caption/content, natural Telegram `34651`, replay 0, immediate metric status `ea1f93eb…9a9e8f3`, automatic 2h/24h/72h/7d discovery, and target-only manifest `canary-verified/default-off` are terminal | post again, treat unrelated valid EN/Widget rows as corruption, retry the reconciled message, or arm cadence before metric registration |
 | 24A | **done-unavailable — MKT-09R9-01:** resolve Honne EN Instagram route | Order 23J terminal | API disposition `2750a67c…69ac8e` proves the 30-row registry has Honne TikTok EN/JA but Honne Instagram/YouTube 0. Owner requires API-only/no login/no signup; missing routes are unavailable, not blockers. No account/Postiz/publication effect | relabel an Anicca account or claim API can publish without an integration |
 | 24B | **done — MKT-09R9-02:** classify Instagram `@anicca.affirmation` / `cmp9pedr700ttqh0yj8o57fog` | Order 24A terminal unavailable | evidence `d4b23768…86c65b` binds Anicca iOS/EN/Larry/native-photo-carousel, Postiz alias `anicca.affirmation`, native owner `anicca.ios`, 144 rows, six-slide native `Dbcvm5Mm8gM`, target 1/day; manifest `88975d67…755d33` changes only this row to classified/default-off, armed 0; writes 0 | classify multiple accounts, infer only from handle, or adopt broken legacy `--tt` mapping |
-| 24C | **active — MKT-09R9-03:** import and approve one exact `@anicca.affirmation` pack | Order 24B passes | one caption plus ordered six-slide media and account-bound approval in LM object storage | import several packs or mix Card/Widget content |
-| 24D | **MKT-09R9-04:** run one `@anicca.affirmation` API canary and register metrics | Order 24C passes | direct native post/carousel URL, natural Telegram, replay 0, immediate and 2h/24h/72h/7d metrics; default-off after canary | fan out or arm before metrics |
-| 24E | **MKT-09R9-N:** repeat classify → one pack → one API canary for each remaining existing TikTok/Instagram/YouTube integration | Order 24D terminal | every existing row is product/locale/renderer/pack-bound and canary-verified or an explicit justified 0/day hold/owner skip | mass-enable, guess from handle, or post mixed-product content |
+| 24C | **done — MKT-09R9-03:** import and approve one exact `@anicca.affirmation` pack | Order 24B passes | pack `e23cd412…78669e`, caption `bf90a15a…6e64a0`, approval `7740cd09…968845`, six ordered native JPEGs and order hash `4daa5db7…9837f9` are SHA-exact/mode0600; manifest `b48c8e11…5ce18f` pack-ready/default-off, armed0/fenceclosed; effects0 | import several packs or mix Card/Widget content |
+| 24D | **active — MKT-09R9-04:** TDD-generalize the native carousel runner for exactly the frozen EN lane | Order 24C passes | existing JA behavior unchanged; EN account/integration/pack refs pinned; target-only controls restore; direct `/p/` and ordered native slides gate Telegram; replay0; provider writes0 during code stage | copy runner, accept caller-defined lane, or execute hardcoded JA adapter against EN |
+| 24E | **MKT-09R9-05:** run one `@anicca.affirmation` API canary and register metrics | Order 24D review passes | direct native post/carousel URL, natural Telegram, replay 0, immediate and 2h/24h/72h/7d metrics; default-off after canary | fan out or arm before metrics |
+| 24F | **MKT-09R9-N:** repeat classify → one pack → one API canary for each remaining existing TikTok/Instagram/YouTube integration | Order 24E terminal | every existing row is product/locale/renderer/pack-bound and canary-verified or an explicit justified 0/day hold/owner skip | mass-enable, guess from handle, or post mixed-product content |
 | 25 | **MKT-10:** arm only one healthy verified account, ramping from one canary/day to at most three posts/day | exact account has direct-native, Telegram, replay, and usable metric-source evidence | expected/published/missed/duplicate counts remain healthy at each ramp; platform policy permits cadence | jump directly to three/day everywhere |
 | 26 | **MKT-11:** collect 2h/24h/72h/7d social metrics and join ASC, RevenueCat, and product analytics | exact published effect has immutable creative/campaign lineage | views, likes, comments, shares, saves, watch/retention fields when supported, installs, activation, trials, paid, proceeds, and attribution coverage are source-labelled; unavailable stays unavailable | substitute account aggregates for post outcomes or infer installs from timing |
 | 27 | **MKT-12:** close bounded hook learning independently for Honne EN, Honne JA, and Anicca | one product/account has a usable attributed cohort | stable assignment; one hook token per baseline/challenger; immutable outcome; keep/revert CAS decision; next generation proves it consumed the decision | LRU rotation, shared campaign token, cross-product winner, or multi-variable edit |
