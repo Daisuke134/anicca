@@ -55,7 +55,9 @@ function buildBrowserJob(input) {
   const uid = nonEmpty(input && input.uid, "browser job uid", 200);
   const sourceKind = String(input && input.sourceKind || "telegram").trim();
   if (!["telegram", "runtime"].includes(sourceKind)) throw new Error("browser job source kind invalid");
-  const chatId = sourceKind === "telegram" ? nonEmpty(input && input.chatId, "browser job chat id", 100) : null;
+  const chatId = sourceKind === "telegram"
+    ? nonEmpty(input && input.chatId, "browser job chat id", 100)
+    : input && input.chatId != null ? nonEmpty(input.chatId, "browser job chat id", 100) : null;
   const messageId = sourceKind === "telegram" ? nonEmpty(input && input.messageId, "browser job message id", 100) : null;
   const updateId = sourceKind === "telegram" ? nonEmpty(input && input.updateId, "browser job update id", 100) : null;
   const sourceRef = sourceKind === "telegram"

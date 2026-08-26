@@ -91,6 +91,6 @@ test("system source migration accepts runtime jobs without fake Telegram ids", (
   assert.match(SYSTEM_SOURCE_SQL, /ADD COLUMN IF NOT EXISTS source_kind text/i);
   assert.match(SYSTEM_SOURCE_SQL, /ADD COLUMN IF NOT EXISTS source_ref text/i);
   assert.match(SYSTEM_SOURCE_SQL, /source_kind IN \('telegram', 'runtime'\)/i);
-  assert.match(SYSTEM_SOURCE_SQL, /source_kind = 'runtime'[\s\S]*telegram_chat_id IS NULL[\s\S]*telegram_message_id IS NULL/i);
+  assert.match(SYSTEM_SOURCE_SQL, /source_kind = 'runtime'[\s\S]*telegram_message_id IS NULL[\s\S]*telegram_update_id IS NULL/i);
   assert.match(SYSTEM_SOURCE_SQL, /UNIQUE INDEX[\s\S]*\(uid, source_kind, source_ref\)/i);
 });

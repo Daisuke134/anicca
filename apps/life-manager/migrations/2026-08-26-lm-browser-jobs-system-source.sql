@@ -23,7 +23,7 @@ ALTER TABLE public.lm_browser_jobs
   ADD CONSTRAINT lm_browser_jobs_source_shape_check CHECK (
     (source_kind = 'telegram' AND telegram_chat_id IS NOT NULL AND telegram_message_id IS NOT NULL AND telegram_update_id IS NOT NULL)
     OR
-    (source_kind = 'runtime' AND telegram_chat_id IS NULL AND telegram_message_id IS NULL AND telegram_update_id IS NULL)
+    (source_kind = 'runtime' AND telegram_message_id IS NULL AND telegram_update_id IS NULL)
   );
 
 CREATE UNIQUE INDEX IF NOT EXISTS lm_browser_jobs_source_unique_idx

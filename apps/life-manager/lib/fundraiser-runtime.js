@@ -2,6 +2,7 @@
 
 const { createHash } = require("node:crypto");
 const { buildRuntimeJob, enqueueJob } = require("./runtime-job-store.js");
+const { enqueueBrowserJob } = require("./browser-job-store.js");
 
 const CAPABILITY = "fundraiser.acquire";
 const LOOP_ID = "life-manager.fundraiser";
@@ -40,14 +41,32 @@ function buildFundraiserJob(input = {}) {
 
 async function fundraiserUserOnce(user, nowMs = Date.now(), deps = {}) {
   const job = buildFundraiserJob({ tenantId: user && user.uid, nowMs });
+  const telegramChatId = String(user && user.telegram_chat_id || "").trim();
+  if (!telegramChatId) throw new Error("fundraiser Telegram chat unavailable");
   const enqueue = deps.enqueueJob || enqueueJob;
   const result = await enqueue(job, deps.storeOptions || {});
+  const enqueueBrowser = deps.enqueueBrowserJob || enqueueBrowserJob;
+  const browser = await enqueueBrowser({
+    uid: job.tenant_id,
+    sourceKind: "runtime",
+    sourceRef: `runtime-job://${job.job_id}`,
+    chatId: telegramChatId,
+    rawPrompt: job.input_refs.prompt_ref,
+    classification: {
+      locale: "en",
+      goal: "Execute the continuous Life Manager Fundraiser prompt using its canonical context and report every terminal outcome.",
+      actionKind: CAPABILITY,
+      requiresLogin: true,
+      principalKind: "agent_owned",
+    },
+  }, deps.browserStoreOptions || {});
   return {
     status: result.created ? "queued" : "already_queued",
     jobId: result.job.job_id,
     slotRef: job.input_refs.slot_ref,
+    browserStatus: browser.created ? "queued" : "already_queued",
+    browserJobId: browser.job.id,
   };
 }
 
 module.exports = { CAPABILITY, LOOP_ID, SLOT_MS, slotStart, buildFundraiserJob, fundraiserUserOnce };
-
