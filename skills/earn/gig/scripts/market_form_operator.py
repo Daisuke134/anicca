@@ -41,6 +41,9 @@ UI feedback, review the final values, and submit exactly once. Do not use hardco
 do not edit code, do not invent facts, do not change price/scope/content, and do not buy, boost,
 subscribe, alter account settings, or open another opportunity. Ordinary navigation and non-financial
 acknowledgements are allowed. CAPTCHA, identity, tax and personal legal declarations are blocked.
+If a controlled input appends instead of replacing, stop retrying keystrokes: use its native prototype value setter,
+dispatch input and change events, blur, then read the live value back. If any live term differs from SEALED_INTENT,
+you must not submit.
 Return ok only after the provider visibly leaves the editable form or shows provider-authored success;
 the parent will independently verify the official ID and balance, so never claim those from inference."""
     prompt += """

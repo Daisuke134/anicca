@@ -48,5 +48,7 @@ def test_common_operator_passes_sealed_intent_to_terra_without_provider_selector
     assert "EXACT_CDP_ENDPOINT=http://127.0.0.1:9233" in normalized
     assert "any other CDP endpoint or port" in normalized
     assert "Do not search for browser libraries or build a raw CDP client" in normalized
+    assert "native prototype value setter" in normalized
+    assert "must not submit" in normalized
     assert captured["env"]["BU_CDP_URL"] == "http://127.0.0.1:9233"
     assert captured["env"]["BU_NAME"] == "market-form-anymarket"
