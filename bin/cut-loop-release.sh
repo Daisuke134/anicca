@@ -255,27 +255,28 @@ validate_release_node_modules() {
 }
 
 dependency_entries() {
-  (
-    cd "$DEST" || exit 1
-    find node_modules \( -type f -o -type l \) -print | LC_ALL=C sort | while IFS= read -r file; do
-      local mode kind target content_hash
-      mode="$(stat -f '%Lp' "$file" 2>/dev/null || stat -c '%a' "$file" 2>/dev/null)" \
-        || exit 1
-      if [ -L "$file" ]; then
-        kind="symlink"
-        mode="$(python3 -c 'import os,sys; print(oct(os.lstat(sys.argv[1]).st_mode & 0o555)[2:])' "$file")" || exit 1
-        target="$(readlink "$file")" || exit 1
-        content_hash="-"
-        mode="$(printf '%o' $((8#$mode & 0555)))"
-      else
-        kind="file"
-        target="-"
-        content_hash="$(shasum -a 256 "$file" | awk '{print $1}')" || exit 1
-        mode="$(printf '%o' $((8#$mode & 0555)))"
-      fi
-      printf '%s\t%s\t%s\t%s\t%s\n' "$kind" "$file" "$mode" "$content_hash" "$target"
-    done
-  )
+  python3 - "$DEST" <<'PY'
+import hashlib
+import os
+import stat
+import sys
+from pathlib import Path
+
+release = Path(sys.argv[1])
+node_modules = release / "node_modules"
+for path in sorted(node_modules.rglob("*"), key=lambda item: item.relative_to(release).as_posix()):
+    relative = path.relative_to(release).as_posix()
+    item = path.lstat()
+    mode = format(stat.S_IMODE(item.st_mode) & 0o555, "o")
+    if stat.S_ISREG(item.st_mode):
+        digest = hashlib.sha256()
+        with path.open("rb") as source:
+            for chunk in iter(lambda: source.read(1024 * 1024), b""):
+                digest.update(chunk)
+        print(f"file\t{relative}\t{mode}\t{digest.hexdigest()}\t-")
+    elif stat.S_ISLNK(item.st_mode):
+        print(f"symlink\t{relative}\t{mode}\t-\t{os.readlink(path)}")
+PY
 }
 
 dependency_manifest() {
