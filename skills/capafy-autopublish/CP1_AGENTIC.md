@@ -35,7 +35,7 @@ A green price tab alone is NOT done — you must still 提出を確認 and confi
 ## The card has THREE tabs (top): verify each is green ✓
 | tab | usually | what to do |
 |---|---|---|
-| 基本情報 | auto-filled ✓ green (title/desc/category/icon from init) | glance; fix only if red |
+| 基本情報 | may still be red after init | fill every value from `.temp/cfg_one.json`: title, short/detailed descriptions, tags, category, icon, privacy URL, support email |
 | Skill / プラグイン | auto-confirmed ✓ green (your skill shows 確認済み) | glance; leave |
 | 価格設定 | often **red ✗** — the real work | fix the plan cards until GREEN |
 
@@ -55,12 +55,18 @@ A green price tab alone is NOT done — you must still 提出を確認 and confi
 5. Each plan needs a trial choice (required). **"No Free Trial" is the safe, proven
    default** (Enable Free Trial reveals extra required fields). Only set trials if the
    target explicitly asks and the tab stays green after.
-6. Re-read `state`: the `priceSvg` must contain **`61, 220, 132`** (green). If it's
+6. Continue below the plan cards and fill the remaining required card fields from
+   `.temp/cfg_one.json`: model, estimated runtime, **test input**, **welcomeMessage**,
+   and AI provider. Leave **other third-party** data sharing unchecked unless the
+   listing truly uses an additional service; when checked, its service name and purpose
+   become required. Check the final **DPA** agreement checkbox.
+7. Re-read all three tabs: every tab must be green. The `priceSvg` must contain
+   **`61, 220, 132`** (green). If it's
    `229, 83, 75` (red), something is still empty/invalid — screenshot, find the red
    field, fix it. Do not proceed while red.
-7. Click **下書きを保存** (save draft) → then **提出を確認** (confirm). Read the shot:
+8. Click **下書きを保存** (save draft) → then **提出を確認** (confirm). Read the shot:
    you want the 「カードを保存しました」 card-done page.
-8. Verify server-side: `packager.py publish-remote-status --agent-id <ID>` →
+9. Verify server-side: `packager.py publish-remote-status --agent-id <ID>` →
    `isConfirmedSkills == 1`. Only then is CP1 done; hand off to `publish_finish.sh`.
 
 ## Guardrails
