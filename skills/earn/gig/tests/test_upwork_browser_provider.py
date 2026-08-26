@@ -30,7 +30,7 @@ from upwork_browser_provider import (  # noqa: E402
 )
 
 
-def test_application_decision_uses_shared_work_event_and_reporter_once(tmp_path, monkeypatch):
+def test_application_decision_persists_without_blocking_on_reporter(tmp_path, monkeypatch):
     calls = []
     monkeypatch.setattr(provider, "DEFAULT_GIG_DIR", tmp_path)
     monkeypatch.setattr(provider.subprocess, "run", lambda command, **kwargs: calls.append(command))
@@ -45,9 +45,7 @@ def test_application_decision_uses_shared_work_event_and_reporter_once(tmp_path,
     provider.publish_application_decisions([event])
     provider.publish_application_decisions([event])
 
-    assert len(calls) == 1
-    assert str(provider.DEFAULT_TELEGRAM_REPORT) in calls[0]
-    assert "instant-work-events" not in calls[0]
+    assert calls == []
     rows = [json.loads(line) for line in (tmp_path / "work-events.jsonl").read_text().splitlines()]
     assert rows == [event]
 

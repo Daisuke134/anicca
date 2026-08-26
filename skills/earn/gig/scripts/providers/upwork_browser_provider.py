@@ -72,7 +72,6 @@ DEFAULT_GIG_DIR = Path.home() / "gig"
 DEFAULT_PROJECTS_ROOT = DEFAULT_GIG_DIR / "projects"
 DEFAULT_PROJECT_WORKER = SCRIPTS / "project_worker.py"
 DEFAULT_AGENT_RUNNER = SCRIPTS.parent / "agent-runner/agent_runner.py"
-DEFAULT_TELEGRAM_REPORT = SCRIPTS / "apply_telegram_report.py"
 TERMINAL_JOB_STATUSES = {"closed", "removed"}
 _COUNT_LABELS = {
     "offers": r"Offers\s*\((\d+)\)",
@@ -88,21 +87,9 @@ _CONNECTS_REQUIRED = re.compile(
 
 
 def publish_application_decisions(events: list[dict[str, Any]]) -> None:
-    """Use the provider-neutral WorkEvent and Telegram rails; notification never owns the sale."""
-    appended = sum(
-        report_envelope.append_work_event(DEFAULT_GIG_DIR / "work-events.jsonl", event)["appended"]
-        for event in events
-    )
-    if appended == 0:
-        return
-    try:
-        subprocess.run([
-            sys.executable, str(DEFAULT_TELEGRAM_REPORT),
-            "--gig-dir", str(DEFAULT_GIG_DIR),
-            "--telegram-database", str(DEFAULT_GIG_DIR / "telegram-outbox.sqlite3"),
-        ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=210, check=False)
-    except (OSError, subprocess.TimeoutExpired):
-        pass
+    """Persist provider-neutral WorkEvents; observers own optional notifications."""
+    for event in events:
+        report_envelope.append_work_event(DEFAULT_GIG_DIR / "work-events.jsonl", event)
 
 
 def load_terminal_upwork_application_ids(path: Path) -> set[str]:
