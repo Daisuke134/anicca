@@ -212,6 +212,8 @@ test("production contract runs every minute and maximizes real applications", ()
   assert.match(dailyPrompt, /completion\.png/);
   assert.match(dailyPrompt, /TELEGRAM_PHOTO_SENT=true MSGID=<id>/);
   assert.match(dailyPrompt, /submitted_verified/);
+  assert.match(dailyPrompt, /Legacy `submitted` rows[\s\S]*?evidence-incomplete/);
+  assert.match(dailyPrompt, /must be reprocessed for verifiable evidence/);
   assert.match(dailyPrompt, /applies equally to Web forms and email pitch\/application/);
   assert.match(runtimeScript, /send-telegram-photo\.sh/);
   assert.match(runtimeScript, /status == "submitted_verified"/);

@@ -78,7 +78,10 @@ state, not a duplicate. Do not leave a repaired failure behind merely because a
 later discovery cursor exists.
 In particular, the generated verified deck resolves any older checkpoint whose
 only blocker was the absence of a current pitch deck or team/market narrative.
-Only `submitted` and `submit_unknown` receipts are terminal replay barriers.
+Only `submitted_verified` and `submit_unknown` receipts are terminal replay
+barriers. Legacy `submitted` rows without both a completion PNG and Telegram
+photo message ID are evidence-incomplete, not success. Reopen those candidates
+for one evidence-producing application attempt; never count the legacy row.
 
 Use the whole context semantically. Make a reasonable inference for narrative and
 judgment questions such as category, stage, customer, market, differentiation,
@@ -125,7 +128,9 @@ For every queued candidate until the execution window ends:
 
 1. Compute the receipt identity as
    `organization + program + cohort/window + account`. Reject exact replays only
-   for prior `submitted` or `submit_unknown` effects; resume checkpoints when the
+   for prior `submitted_verified` or `submit_unknown` effects. A legacy
+   `submitted` receipt without the required PNG and Telegram photo message ID
+   must be reprocessed for verifiable evidence. Resume checkpoints when the
    blocker has changed or disappeared.
 2. Observe the rendered form and read visible labels, options, requiredness,
    validation, and existing values. The repository `cdp.py` supports
