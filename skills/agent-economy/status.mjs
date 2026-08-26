@@ -72,9 +72,18 @@ async function readJsonl(file) {
   if (!file) return [];
   try {
     const raw = await fs.readFile(file, "utf8");
-    return raw.split("\n").filter(Boolean).map((line) => {
-      try { return JSON.parse(line); } catch { return null; }
-    }).filter(Boolean);
+    const rows = [];
+    for (const [index, line] of raw.split("\n").entries()) {
+      if (!line.trim()) continue;
+      try { rows.push(JSON.parse(line)); }
+      catch {
+        const error = new Error("status JSONL invalid");
+        error.code = "STATUS_JSONL_INVALID";
+        error.line = index + 1;
+        throw error;
+      }
+    }
+    return rows;
   } catch (error) {
     if (error?.code === "ENOENT") return [];
     throw error;
@@ -83,29 +92,36 @@ async function readJsonl(file) {
 
 const isMain = process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
 if (isMain) {
-  const [earnPath, correctionPath, computePath, shelterPath, journalPath] = process.argv.slice(2);
-  const defaultJournalPath = process.env.ANICCA_HOME
-    ? path.join(process.env.ANICCA_HOME, "skills", "earn", "state", "revenue-receipts.jsonl") : undefined;
-  const [earnRows, corrections, computeRows, shelterRows, journalRows] = await Promise.all([
-    readJsonl(earnPath), readJsonl(correctionPath), readJsonl(computePath), readJsonl(shelterPath),
-    readJsonl(journalPath || defaultJournalPath),
-  ]);
-  const receiptKeys = new Set();
-  const combinedEarnRows = [...earnRows, ...journalRows].filter((row) => {
-    const key = row?.kind === "revenue_receipt" && typeof row.idempotency_key === "string" ? row.idempotency_key : null;
-    if (!key) return true;
-    if (receiptKeys.has(key)) return false;
-    receiptKeys.add(key);
-    return true;
-  });
-  process.stdout.write(`${JSON.stringify(summarizeEconomyStatus({
-    earnRows: combinedEarnRows,
-    corrections,
-    computeRows,
-    shelterRows,
-    liquidRunwayDays: process.env.ANICCA_LIQUID_RUNWAY_DAYS === undefined
-      ? undefined : Number(process.env.ANICCA_LIQUID_RUNWAY_DAYS),
-    humanPaidInference30d: process.env.ANICCA_HUMAN_PAID_INFERENCE_30D === undefined
-      ? undefined : Number(process.env.ANICCA_HUMAN_PAID_INFERENCE_30D),
-  }))}\n`);
+  try {
+    const [earnPath, correctionPath, computePath, shelterPath, journalPath] = process.argv.slice(2);
+    const effectiveLedgerPath = earnPath || (process.env.ANICCA_HOME
+      ? path.join(process.env.ANICCA_HOME, "skills", "earn", "state", "earn-ledger.jsonl") : undefined);
+    const defaultJournalPath = effectiveLedgerPath ? path.join(path.dirname(effectiveLedgerPath), "revenue-receipts.jsonl") : undefined;
+    const [earnRows, corrections, computeRows, shelterRows, journalRows] = await Promise.all([
+      readJsonl(effectiveLedgerPath), readJsonl(correctionPath), readJsonl(computePath), readJsonl(shelterPath),
+      readJsonl(journalPath || defaultJournalPath),
+    ]);
+    const receiptKeys = new Set();
+    const combinedEarnRows = [...earnRows, ...journalRows].filter((row) => {
+      const key = row?.kind === "revenue_receipt" && typeof row.idempotency_key === "string" ? row.idempotency_key : null;
+      if (!key) return true;
+      if (receiptKeys.has(key)) return false;
+      receiptKeys.add(key);
+      return true;
+    });
+    process.stdout.write(`${JSON.stringify(summarizeEconomyStatus({
+      earnRows: combinedEarnRows,
+      corrections,
+      computeRows,
+      shelterRows,
+      liquidRunwayDays: process.env.ANICCA_LIQUID_RUNWAY_DAYS === undefined
+        ? undefined : Number(process.env.ANICCA_LIQUID_RUNWAY_DAYS),
+      humanPaidInference30d: process.env.ANICCA_HUMAN_PAID_INFERENCE_30D === undefined
+        ? undefined : Number(process.env.ANICCA_HUMAN_PAID_INFERENCE_30D),
+    }))}\n`);
+  } catch (error) {
+    const code = /^[A-Z][A-Z0-9_]*$/.test(String(error?.code || "")) ? error.code : "STATUS_FAILED";
+    process.stderr.write(`status: ${code}\n`);
+    process.exitCode = 1;
+  }
 }

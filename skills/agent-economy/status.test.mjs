@@ -125,3 +125,65 @@ test("inbox -> reconcile CLI -> journal -> status CLI is replay-zero", async () 
   assert.equal(run.external_realized_net_30d, 2);
   assert.equal((await readFile(journalPath, "utf8")).trim().split("\n").length, 1);
 });
+
+test("status rejects malformed nonblank JSONL and does not echo its sentinel", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "agent-economy-status-corrupt-"));
+  const ledgerPath = join(dir, "earn.jsonl");
+  const correctionPath = join(dir, "corrections.jsonl");
+  const computePath = join(dir, "compute.jsonl");
+  const shelterPath = join(dir, "shelter.jsonl");
+  const journalPath = join(dir, "journal.jsonl");
+  const sentinel = "STATUS_SECRET_SENTINEL";
+  await writeFile(ledgerPath, `${JSON.stringify({ status: "0x1" })}\n${sentinel}\n`);
+  await Promise.all([writeFile(correctionPath, ""), writeFile(computePath, ""), writeFile(shelterPath, ""), writeFile(journalPath, "")]);
+  await assert.rejects(
+    () => execFileAsync(process.execPath, ["skills/agent-economy/status.mjs", ledgerPath, correctionPath, computePath, shelterPath, journalPath], { cwd: process.cwd(), timeout: 5_000, env: { ...process.env } }),
+    (error) => error && error.code !== 0 && !String(error.stderr || "").includes(sentinel),
+  );
+});
+
+test("status default journal follows a custom earn ledger directory, while explicit journal wins", async () => {
+  const home = await mkdtemp(join(tmpdir(), "agent-economy-status-path-"));
+  const customDir = join(home, "custom-state");
+  await mkdir(customDir, { recursive: true });
+  const ledgerPath = join(customDir, "earn.jsonl");
+  const correctionPath = join(customDir, "corrections.jsonl");
+  const computePath = join(home, "compute.jsonl");
+  const shelterPath = join(home, "shelter.jsonl");
+  const defaultJournal = join(customDir, "revenue-receipts.jsonl");
+  const explicitJournal = join(home, "explicit-journal.jsonl");
+  await Promise.all([writeFile(ledgerPath, ""), writeFile(correctionPath, ""), writeFile(computePath, ""), writeFile(shelterPath, "")]);
+  const receipt = normalizeRevenueReceipt({
+    provider: "status-path",
+    payer: "0x1111111111111111111111111111111111111111",
+    recipient: "0x2222222222222222222222222222222222222222",
+    gross: "3.000000", fee: "0", refund: "0", asset: "USDC",
+    proof: { provider_receipt_id: "status-path-1", verified: true },
+    terminal_state: "settled", occurred_at: "2026-08-20T00:00:00.000Z",
+  });
+  await writeFile(defaultJournal, `${JSON.stringify(receipt)}\n`);
+  const baseArgs = ["skills/agent-economy/status.mjs", ledgerPath, correctionPath, computePath, shelterPath];
+  const defaultResult = JSON.parse((await execFileAsync(process.execPath, baseArgs, { cwd: process.cwd(), timeout: 5_000, env: { ...process.env, ANICCA_HOME: join(home, "different-home") } })).stdout.trim());
+  assert.equal(defaultResult.external_realized_net_30d, 3);
+  await writeFile(explicitJournal, `${JSON.stringify(normalizeRevenueReceipt({ ...receipt, proof: { provider_receipt_id: "status-path-2", verified: true }, idempotency_key: undefined }))}\n`);
+  const explicitResult = JSON.parse((await execFileAsync(process.execPath, [...baseArgs, explicitJournal], { cwd: process.cwd(), timeout: 5_000, env: { ...process.env, ANICCA_HOME: join(home, "different-home") } })).stdout.trim());
+  assert.equal(explicitResult.external_realized_net_30d, 3);
+});
+
+test("reconcile CLI errors contain only a stable class, never candidate values", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "agent-economy-cli-sanitize-"));
+  const ledgerPath = join(dir, "earn.jsonl");
+  const correctionPath = join(dir, "corrections.jsonl");
+  const inboxPath = join(dir, "inbox.jsonl");
+  const journalPath = join(dir, "journal.jsonl");
+  const sentinel = "CLI_SECRET_SENTINEL";
+  await Promise.all([writeFile(ledgerPath, ""), writeFile(correctionPath, ""), writeFile(journalPath, ""), writeFile(inboxPath, `${JSON.stringify({
+    provider: "cli", payer: "0x1111111111111111111111111111111111111111", recipient: "0x2222222222222222222222222222222222222222",
+    gross: "1", fee: "0", refund: "0", asset: "USDC", proof: { provider_receipt_id: "cli-invalid", verified: true },
+    terminal_state: sentinel, occurred_at: "2026-08-20T00:00:00.000Z",
+  })}\n`)]);
+  await assert.rejects(
+    () => execFileAsync(process.execPath, ["skills/agent-economy/reconcile-receipts.mjs", ledgerPath, correctionPath, inboxPath, journalPath], { cwd: process.cwd(), timeout: 5_000, env: { ...process.env } }),
+    (error) => error && error.code !== 0 && !String(error.stderr || "").includes(sentinel) && /validation|reconcile|invalid/i.test(String(error.stderr || "")),
+  );
+});

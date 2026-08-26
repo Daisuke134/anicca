@@ -361,7 +361,9 @@ export function summarizeRealizedRevenue(rows, corrections = [], options = {}) {
   const normalizedCorrectionRows = (Array.isArray(corrections) ? corrections : [])
     .filter((correction) => isNormalizedRevenueReceipt(correction))
     .filter((correction) => !inputRows.some((row) => receiptInRow(row)?.idempotency_key === correction.idempotency_key));
-  for (const row of [...inputRows, ...normalizedCorrectionRows]) {
+  const allRows = [...inputRows, ...normalizedCorrectionRows];
+  const canonicalTxs = new Set(allRows.map((row) => receiptInRow(row)?.proof?.tx_hash?.toLowerCase()).filter(Boolean));
+  for (const row of allRows) {
     const normalized = receiptInRow(row);
     if (normalized) {
       if (receiptIsVerifiedExternal(normalized, row, options.selfPayers ?? options.selfWallets ?? [])) {
@@ -373,6 +375,10 @@ export function summarizeRealizedRevenue(rows, corrections = [], options = {}) {
       } else {
         unverifiedExternalRows += 1;
       }
+    } else if (row?.tx && canonicalTxs.has(String(row.tx).toLowerCase())) {
+      // A legacy row without its log tuple is ambiguous once the canonical v2 receipt covers the
+      // same transaction.  Exclude it rather than risking a second contribution.
+      excludedRows += 1;
     } else if (isExplicitlyExcluded(row) || row?.external !== true || !finitePositive(row?.net_usdc)) {
       excludedRows += 1;
     } else if (isVerifiedExternal(row, correctionsByKey)) {

@@ -48,6 +48,7 @@ try {
     ...ledgerResult,
   })}\n`);
 } catch (error) {
-  process.stderr.write(`reconcile-receipts: ${error?.message || error}\n`);
+  const code = /^[A-Z][A-Z0-9_]*$/.test(String(error?.code || "")) ? error.code : "RECONCILE_FAILED";
+  process.stderr.write(`reconcile-receipts: ${code}\n`);
   process.exitCode = 1;
 }
