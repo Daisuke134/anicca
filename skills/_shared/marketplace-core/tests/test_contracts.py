@@ -5,7 +5,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 
-from contracts import AuthorizationReceipt, ContractReceipt, parse_contract  # noqa: E402
+from contracts import (  # noqa: E402
+    AuthorizationReceipt,
+    ContractReceipt,
+    QAReceipt,
+    parse_contract,
+)
 
 
 class ContractReceiptTests(unittest.TestCase):
@@ -42,6 +47,24 @@ class ContractReceiptTests(unittest.TestCase):
 
         self.assertIsInstance(receipt, AuthorizationReceipt)
         self.assertEqual(receipt.status, "authorized")
+
+    def test_parses_artifact_bound_qa_receipt(self):
+        receipt = parse_contract(
+            {
+                "schema_version": 1,
+                "record_type": "qa_receipt",
+                "platform": "mercor",
+                "work_external_id": "work-123",
+                "qa_external_id": "qa-012",
+                "status": "passed",
+                "artifact_sha256": "c" * 64,
+                "report_sha256": "d" * 64,
+                "observed_at": "2026-08-26T07:10:00Z",
+            }
+        )
+
+        self.assertIsInstance(receipt, QAReceipt)
+        self.assertEqual(receipt.status, "passed")
 
 
 if __name__ == "__main__":
