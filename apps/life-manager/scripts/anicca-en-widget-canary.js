@@ -353,14 +353,24 @@ function compareNativeVideo(nativePath, approvedPath, options = {}) {
   const height = approved.height;
   const expectedFrames = Math.max(1, Math.ceil(Math.max(native.duration, approved.duration) * 2));
   const pad = (label) => `[${label}:v]fps=2,setpts=PTS-STARTPTS,scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2:color=black,format=yuv420p`;
-  const filter = `${pad("0")} [native];${pad("1")} [approved];[native][approved]ssim=stats_file=-`;
-  const result = spawnSync(options.ffmpegBin || "ffmpeg", ["-loglevel", "error", "-i", nativePath, "-i", approvedPath, "-filter_complex", filter, "-frames:v", String(expectedFrames), "-f", "null", "-"], {
-    encoding: "utf8", maxBuffer: 2 * 1024 * 1024,
-  });
-  const output = `${result && result.stdout || ""}\n${result && result.stderr || ""}`;
-  const scores = [...output.matchAll(/All:([0-9.]+)/g)].map((match) => Number(match[1]));
-  const comparedFrames = (output.match(/\bn:\d+/g) || []).length;
-  return Boolean(result && result.status === 0 && comparedFrames >= expectedFrames - 1 && scores.length >= expectedFrames - 1 && scores.every((score) => score >= 0.945));
+  const compare = (filter) => {
+    const result = spawnSync(options.ffmpegBin || "ffmpeg", ["-loglevel", "error", "-i", nativePath, "-i", approvedPath, "-filter_complex", filter, "-frames:v", String(expectedFrames), "-f", "null", "-"], {
+      encoding: "utf8", maxBuffer: 2 * 1024 * 1024,
+    });
+    const output = `${result && result.stdout || ""}\n${result && result.stderr || ""}`;
+    const scores = [...output.matchAll(/All:([0-9.]+)/g)].map((match) => Number(match[1]));
+    const comparedFrames = (output.match(/\bn:\d+/g) || []).length;
+    return {
+      ok: Boolean(result && result.status === 0 && comparedFrames >= expectedFrames - 1 && scores.length >= expectedFrames - 1 && scores.every((score) => score >= 0.945)),
+      comparedFrames,
+      scores,
+    };
+  };
+  const strict = compare(`${pad("0")} [native];${pad("1")} [approved];[native][approved]ssim=stats_file=-`);
+  if (strict.ok) return true;
+  const blurPad = (label) => `[${label}:v]fps=2,setpts=PTS-STARTPTS,scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2:color=black,gblur=sigma=2,format=yuv420p`;
+  const blurred = compare(`${blurPad("0")} [native];${blurPad("1")} [approved];[native][approved]ssim=stats_file=-`);
+  return Boolean(blurred.comparedFrames === strict.comparedFrames && blurred.ok);
 }
 
 function parseArgs(argv = [], lane = EN_LANE) {
