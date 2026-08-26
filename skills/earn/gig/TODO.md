@@ -36,13 +36,17 @@ model narration, and local success without the named readback are not PASS.
   Measured 100 rows, 100 files, 100 unique handles, zero missing, and zero extra. The resulting
   private buyer map is `delivery/manledge-recipient-screenshot-map-100.csv`, SHA256
   `212f5542fd0801ad10bd8e01c885a2c1407868e090da0ed0b4ffa176c9b01061`.
-- [ ] `M03` Submit the 100-row recipient mapping through the installed Paid owner, referencing
-  the four already-visible 25-image archives without resending them or using formal delivery.
-  PASS = the seller message states that each filename suffix is the recipient X handle and the
-  mapping CSV is visible in the exact Coconala talkroom.
-- [ ] `M04` Read back that supplemental submission once.
-  PASS = exact seller message and mapping filename are present in official Coconala DOM, all four
-  prior archive filenames remain visible, no archive was resent, and formal delivery remains off.
+- [ ] `M03` Resolve the official X profile display for all 44 screenshots previously headed
+  `Member`, then capture each resolved profile together with its existing DM thread without
+  sending a new message.
+  PASS = 44 unique recipient handles have a current official profile readback and a buyer-visible
+  screenshot pairing that profile identity with the matching existing thread; failed sends remain
+  classified as failed and are never counted as successful DMs.
+- [ ] `M04` Submit the 44 corrected identity screenshots and updated cross-reference through the
+  installed Paid owner, then read the exact Coconala talkroom back once.
+  PASS = the exact seller message and corrected archive filename are present in official Coconala
+  DOM, the archive contains all 44 identity-resolved pairs, no X message was newly sent, no prior
+  archive was resent, and formal delivery remains off.
 
 ### Live four-lane repair
 
