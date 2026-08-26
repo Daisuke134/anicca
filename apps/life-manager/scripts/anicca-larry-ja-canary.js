@@ -10,6 +10,7 @@ const { createMarketingLocalLedger } = require("../lib/marketing-local-ledger.js
 const {
   ACCOUNT_ID,
   EN_AFFIRMATION_LANE,
+  EN_SLIDESHOW_TIKTOK_LANE,
   INTEGRATION_REF,
   JA_LANE,
   buildMarketingNativeCarouselPublicationJob,
@@ -37,7 +38,8 @@ const ACCOUNT_REF = "account://instagram/@ani.cca1234";
 
 const JA_RUNNER_LANE = JA_LANE;
 const EN_RUNNER_LANE = EN_AFFIRMATION_LANE;
-const COMMAND_LANES = Object.freeze({ run: JA_RUNNER_LANE, "run-en-affirmation": EN_RUNNER_LANE });
+const TIKTOK_SLIDESHOW_RUNNER_LANE = EN_SLIDESHOW_TIKTOK_LANE;
+const COMMAND_LANES = Object.freeze({ run: JA_RUNNER_LANE, "run-en-affirmation": EN_RUNNER_LANE, "run-en-slideshow-tiktok": TIKTOK_SLIDESHOW_RUNNER_LANE });
 
 function required(value, label) {
   const text = String(value == null ? "" : value).trim();
@@ -59,7 +61,7 @@ function parseArgs(argv = []) {
   if (lane) {
     return { command: argv[0], slot: exactInstant(argv[2], `${lane.name || "Larry"} canary slot`) };
   }
-  throw new Error("usage: anicca-larry-ja-canary.js run --slot <exact ISO instant> | run-en-affirmation --slot <exact ISO instant>");
+  throw new Error("usage: anicca-larry-ja-canary.js run|run-en-affirmation|run-en-slideshow-tiktok --slot <exact ISO instant>");
 }
 
 function parseMediaRefs(value, lane = JA_RUNNER_LANE) {
@@ -211,7 +213,7 @@ async function runAniccaCarouselCanary(argv = [], deps = {}) {
     slot: config.slot,
     creativeId: lane.creativeId || "LARRY-JA-CANARY",
     accountId: lane.accountId,
-    instagramIntegrationRef: lane.integrationRef,
+    integrationRef: lane.integrationRef,
     packRef: config.packRef,
     mediaRefs: config.mediaRefs,
     captionRef: config.captionRef,
@@ -234,7 +236,7 @@ async function runAniccaCarouselCanary(argv = [], deps = {}) {
     format: lane.formatId,
     enforceApprovedPack: true,
   };
-  const controls = lane === EN_RUNNER_LANE && !existingPublication
+  const controls = lane.manifestAccount && !existingPublication
     ? armControls(config, publicationJob, controlLane)
     : null;
   let queued;
@@ -289,8 +291,13 @@ function runAniccaEnAffirmationInstagramCanary(argv = [], deps = {}) {
   return runAniccaCarouselCanary(argv, deps);
 }
 
+function runAniccaEnSlideshowTikTokCanary(argv = [], deps = {}) {
+  if (parseArgs(argv).command !== "run-en-slideshow-tiktok") throw new Error("EN slideshow TikTok canary accepts only the run-en-slideshow-tiktok command");
+  return runAniccaCarouselCanary(argv, deps);
+}
+
 if (require.main === module) {
   runAniccaCarouselCanary(process.argv.slice(2)).then((result) => process.stdout.write(`${JSON.stringify(result)}\n`)).catch((error) => { process.stderr.write(`${error.message}\n`); process.exitCode = 1; });
 }
 
-module.exports = { ACCOUNT_ID, EN_AFFIRMATION_LANE, INTEGRATION_REF, LANE, parseArgs, runAniccaCarouselCanary, runAniccaEnAffirmationInstagramCanary, runAniccaLarryJaCanary, verifyNativeObject };
+module.exports = { ACCOUNT_ID, EN_AFFIRMATION_LANE, EN_SLIDESHOW_TIKTOK_LANE, INTEGRATION_REF, LANE, parseArgs, runAniccaCarouselCanary, runAniccaEnAffirmationInstagramCanary, runAniccaEnSlideshowTikTokCanary, runAniccaLarryJaCanary, verifyNativeObject };

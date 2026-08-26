@@ -653,7 +653,7 @@ function armControls(config, job, lane = config.lane || EN_LANE) {
     target.provider !== "postiz" || target.disabled !== false || target.lane_state !== "default-off"
     || target.account !== lane.manifestAccount || target.profile !== lane.account
     || target.disposition !== "target" || target.production_armed !== false || target.owner !== "life-manager"
-    || target.renderer !== lane.renderer || target.format !== lane.packFormat || target.canary_state !== "pack-ready"
+    || target.renderer !== lane.renderer || target.format !== lane.packFormat || !["pack-ready", "canary-verified"].includes(target.canary_state)
     || (lane.enforceApprovedPack && target.approved_pack !== lane.approvedPackName)
     || !Number.isSafeInteger(target.target_daily_limit) || target.target_daily_limit < 1
   ) throw new Error(`Anicca ${lane.name} widget target lane identity is invalid`);

@@ -5,8 +5,8 @@
 // artifact and must never silently become a mobile product creative.
 const MOBILE_PACK_FORMATS = Object.freeze({
   "honne-ai": new Set(["reelclaw"]),
-  anicca: new Set(["larry", "reelclaw", "reelclaw-card", "reelclaw-widget", "watercolor"]),
-  "anicca-ios": new Set(["larry", "reelclaw", "reelclaw-card", "reelclaw-widget", "watercolor"]),
+  anicca: new Set(["larry", "reelclaw", "reelclaw-card", "reelclaw-widget", "slideshow", "watercolor"]),
+  "anicca-ios": new Set(["larry", "reelclaw", "reelclaw-card", "reelclaw-widget", "slideshow", "watercolor"]),
 });
 
 function assertMarketingProductFormat(productId, formatId) {

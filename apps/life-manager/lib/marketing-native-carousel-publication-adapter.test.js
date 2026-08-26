@@ -9,11 +9,66 @@ const test = require("node:test");
 
 const {
   EN_AFFIRMATION_LANE,
+  EN_SLIDESHOW_TIKTOK_LANE,
   buildMarketingNativeCarouselPublicationJob,
   createMarketingNativeCarouselPublicationLoopAdapter,
   executeMarketingNativeCarouselPublicationJob,
   verifyMarketingNativeCarouselPublicationReceipt,
 } = require("./marketing-native-carousel-publication-adapter.js");
+
+test("EN slideshow TikTok lane binds exact six-photo identity and direct native URL", () => {
+  const lane = EN_SLIDESHOW_TIKTOK_LANE;
+  const value = buildMarketingNativeCarouselPublicationJob({
+    tenantId: "dais-local", productId: lane.productId, formatId: lane.formatId, form: lane.form,
+    locale: lane.locale, slot: "2026-08-26T06:00:00.000Z", creativeId: lane.creativeId,
+    accountId: lane.accountId, integrationRef: lane.integrationRef, packRef: lane.packRef,
+    mediaRefs: lane.mediaRefs, captionRef: lane.captionRef, approvalRef: lane.approvalRef,
+    postizTokenRef: lane.tokenRef,
+  });
+  assert.equal(value.input_refs.platform_ref, "platform://tiktok");
+  assert.equal(value.input_refs.tiktok_integration_ref, lane.integrationRef);
+  assert.equal(value.input_refs.instagram_integration_ref, undefined);
+  const receipt = {
+    schema_version: 1, kind: "marketing_native_carousel_distribution", status: "published",
+    product_id: lane.productId, format_id: lane.formatId, form: lane.form, locale: lane.locale,
+    platform: lane.platform, account_id: lane.accountId, integration_ref: lane.integrationRef,
+    creative_id: lane.creativeId, pack_sha256: lane.packRef.slice(-64),
+    media_sha256: lane.mediaRefs.map((ref) => ref.slice(-64)),
+    media_order_sha256: crypto.createHash("sha256").update(JSON.stringify(lane.mediaRefs.map((ref) => ref.slice(-64)))).digest("hex"),
+    caption_sha256: lane.captionRef.slice(-64), provider_post_id: "postiz-tiktok-carousel-1",
+    provider_reconciled: true, public_url: "https://www.tiktok.com/@anicca_slideshow/video/7777777777777777777",
+    published_at: "2026-08-26T06:01:00.000Z",
+  };
+  assert.equal(verifyMarketingNativeCarouselPublicationReceipt(receipt), true);
+  assert.equal(verifyMarketingNativeCarouselPublicationReceipt({ ...receipt, public_url: "https://www.tiktok.com/@wrong/video/7777777777777777777" }), false);
+});
+
+test("EN slideshow TikTok exact pack executes through six ordered JPEGs only", async () => {
+  const lane = EN_SLIDESHOW_TIKTOK_LANE;
+  const value = buildMarketingNativeCarouselPublicationJob({
+    tenantId: "dais-local", productId: lane.productId, formatId: lane.formatId, form: lane.form,
+    locale: lane.locale, slot: "2026-08-26T06:00:00.000Z", creativeId: lane.creativeId,
+    accountId: lane.accountId, integrationRef: lane.integrationRef, packRef: lane.packRef,
+    mediaRefs: lane.mediaRefs, captionRef: lane.captionRef, approvalRef: lane.approvalRef,
+    postizTokenRef: lane.tokenRef,
+  });
+  const objectRoot = path.join(os.homedir(), ".local/state/life-manager/objects/sha256");
+  const ledger = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "lm-tiktok-carousel-")), "distribution.jsonl");
+  const calls = [];
+  const result = await executeMarketingNativeCarouselPublicationJob(value, {
+    objectStore: { resolve: (ref) => path.join(objectRoot, ref.slice(-64)) },
+    secretProvider: { get: async () => "postiz-secret" }, ledgerPath: ledger,
+    runDistribution: async (input) => { calls.push(input); return { state: "PUBLISHED", reconciled: true, post_id: "postiz-tiktok-carousel-1", post_url: "https://www.tiktok.com/@anicca_slideshow/video/7777777777777777777" }; },
+    now: () => "2026-08-26T06:01:00.000Z",
+  });
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].platform, "tiktok");
+  assert.equal(calls[0].title, "PROCRASTINATION ISN'T LAZINESS.");
+  assert.equal(calls[0].integrationId, lane.integrationId);
+  assert.equal(calls[0].mediaPaths.length, 6);
+  assert.deepEqual(result.receipt.media_sha256, lane.mediaRefs.map((ref) => ref.slice(-64)));
+  assert.equal(verifyMarketingNativeCarouselPublicationReceipt(result.receipt), true);
+});
 
 const EN_ACCOUNT = "@anicca.affirmation";
 const EN_INTEGRATION_REF = "integration://postiz/instagram/cmp9pedr700ttqh0yj8o57fog";

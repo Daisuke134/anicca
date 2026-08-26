@@ -99,8 +99,10 @@ def build_payload(
         uploads = [{"id": upload_id, "path": upload_path}]
     if platform == "instagram" and upload_ids is not None and len(uploads) < 2:
         raise PostizError("Instagram carousel requires at least two images")
-    if platform != "instagram" and upload_ids is not None:
-        raise PostizError("carousel images are Instagram-only")
+    if upload_ids is not None and platform not in ("instagram", "tiktok"):
+        raise PostizError("carousel images require Instagram or TikTok")
+    if upload_ids is not None and any(not re.search(r"\.(?:jpe?g)(?:\?.*)?$", str(item), re.I) for item in upload_paths):
+        raise PostizError("carousel media must be JPEG images")
     if platform == "youtube":
         settings = {
             "__type": "youtube",

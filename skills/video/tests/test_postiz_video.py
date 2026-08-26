@@ -116,6 +116,23 @@ class PostizVideoTests(unittest.TestCase):
             "https://uploads.example/1.jpg", "https://uploads.example/2.jpg", "https://uploads.example/3.jpg",
         ])
 
+    def test_tiktok_photo_carousel_payload_preserves_order_and_direct_post_settings(self):
+        payload = postiz_video.build_payload(
+            integration="cmnenjkff01j1pa0ysufmzhfr",
+            caption="Exact EN caption",
+            title="Procrastination isn't laziness",
+            upload_ids=[f"upload-{index}" for index in range(1, 7)],
+            upload_paths=[f"https://uploads.example/{index}.jpg" for index in range(1, 7)],
+            now_iso="2026-08-26T06:00:00.000Z",
+            platform="tiktok",
+        )
+        post = payload["posts"][0]
+        self.assertEqual(post["integration"]["id"], "cmnenjkff01j1pa0ysufmzhfr")
+        self.assertEqual([item["path"] for item in post["value"][0]["image"]], [f"https://uploads.example/{index}.jpg" for index in range(1, 7)])
+        self.assertEqual(post["settings"]["__type"], "tiktok")
+        self.assertEqual(post["settings"]["content_posting_method"], "DIRECT_POST")
+        self.assertEqual(post["settings"]["autoAddMusic"], "yes")
+
     def test_carousel_payload_rejects_short_or_video_image_mix(self):
         with self.assertRaises(postiz_video.PostizError):
             postiz_video.build_payload(
@@ -126,7 +143,7 @@ class PostizVideoTests(unittest.TestCase):
         with self.assertRaises(postiz_video.PostizError):
             postiz_video.build_payload(
                 integration="i", caption="caption", title="title",
-                upload_ids=["upload-1", "upload-2"], upload_paths=["1.jpg", "2.jpg"],
+                upload_ids=["upload-1", "upload-2"], upload_paths=["1.jpg", "2.mp4"],
                 now_iso="2026-08-26T07:30:00.000Z", platform="tiktok",
             )
 

@@ -24,9 +24,12 @@ const SLIDE_COUNT = 6;
 const ID = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
 const HASH = /^[0-9a-f]{64}$/;
 const OBJ = /^object:\/\/sha256\/([0-9a-f]{64})$/;
-const DIRECT_POST = /^https:\/\/www\.instagram\.com\/p\/(?=[A-Za-z0-9_-]*[A-Za-z_-])[A-Za-z0-9_-]+\/?$/;
+const DIRECT_POSTS = Object.freeze({
+  instagram: /^https:\/\/www\.instagram\.com\/p\/(?=[A-Za-z0-9_-]*[A-Za-z_-])[A-Za-z0-9_-]+\/?$/,
+  tiktok: /^https:\/\/www\.tiktok\.com\/@anicca_slideshow\/video\/[0-9]+\/?$/,
+});
 const PROVIDER_ID = /^[A-Za-z0-9._:-]{1,200}$/;
-const REF_KEYS = ["account_ref", "approval_ref", "caption_ref", "creative_ref", "form_ref", "format_ref", "instagram_integration_ref", "locale_ref", "media_refs", "pack_ref", "platform_ref", "postiz_token_ref", "product_ref", "slot_ref"];
+const BASE_REF_KEYS = ["account_ref", "approval_ref", "caption_ref", "creative_ref", "form_ref", "format_ref", "locale_ref", "media_refs", "pack_ref", "platform_ref", "postiz_token_ref", "product_ref", "slot_ref"];
 const EFFECT = /^marketing:carousel:anicca-ios:([A-Za-z0-9][A-Za-z0-9._-]{0,127}):([0-9a-f]{64}):([0-9a-f]{64}):([0-9a-f]{64})$/;
 
 const fail = (message) => { throw new Error(message); };
@@ -105,7 +108,47 @@ const EN_AFFIRMATION_LANE = Object.freeze({
   workerLabel: "anicca-en-affirmation-instagram-canary",
 });
 
-const LANES = Object.freeze([JA_LANE, EN_AFFIRMATION_LANE]);
+const EN_SLIDESHOW_TIKTOK_LANE = Object.freeze({
+  name: "EN_SLIDESHOW_TIKTOK",
+  productId: PRODUCT_ID,
+  formatId: "slideshow",
+  packFormat: PACK_FORMAT_ID,
+  form: "mental-health-carousel",
+  locale: "en",
+  platform: "tiktok",
+  accountId: "@anicca_slideshow",
+  nativeOwner: "@anicca_slideshow",
+  accountRef: "account://tiktok/@anicca_slideshow",
+  integrationRef: "integration://postiz/tiktok/cmnenjkff01j1pa0ysufmzhfr",
+  integrationId: "cmnenjkff01j1pa0ysufmzhfr",
+  manifestAccount: "anicca-ios-en-slideshow-tiktok",
+  renderer: "slideshow",
+  lane: "anicca-en-slideshow-tiktok",
+  creativeId: "EN-SLIDESHOW-PROCRASTINATION-05090bf2b4ee",
+  packRef: "object://sha256/3241653ecc9239663de3151426d01a6b1c34cfe7c130288e928fab6686de624c",
+  mediaRefs: Object.freeze([
+    "object://sha256/05090bf2b4ee4f616762a33d93d446afff8f06ad2675016210d0d8bc90b5b329",
+    "object://sha256/cefca419882ce631dd02518f403137603475c8afb22f48d2b2dee9a3b282d338",
+    "object://sha256/ebf0389d8b9a708bf719a540857a9d0192105a65b931ba086bbe6be7c6f2072d",
+    "object://sha256/e35d34a79e35a924ec921c14bf419f4216dac1ad7ceeab21acb8d0e0bb79a05f",
+    "object://sha256/2d95726f2dd1dfd625c75497aa0e935d84aa4f1fb2122c2cc4ae6a423b243b52",
+    "object://sha256/6895c10dbe4427259151d778a62cacbaf9d3dce592330a5710338da7f5c3c9f7",
+  ]),
+  captionRef: "object://sha256/8e6f7cecee64454d906a787bad4b4c57736fff2668c1b9eea6c0d666140f2c6d",
+  approvalRef: "object://sha256/ab96425da6f82672be19a3ac74b3e2ad1c98f632bc39d31dab23720701aed5b5",
+  tokenRef: "secret://postiz/api-key",
+  telegramTokenRef: "secret://telegram/bot-token",
+  chatRef: "telegram-chat://owner",
+  packEnv: "LM_ANICCA_EN_SLIDESHOW_TIKTOK_PACK_REF",
+  mediaEnv: "LM_ANICCA_EN_SLIDESHOW_TIKTOK_MEDIA_REFS",
+  captionEnv: "LM_ANICCA_EN_SLIDESHOW_TIKTOK_CAPTION_REF",
+  approvalEnv: "LM_ANICCA_EN_SLIDESHOW_TIKTOK_APPROVAL_REF",
+  verificationEnv: "LM_ANICCA_EN_SLIDESHOW_TIKTOK_NATIVE_VERIFICATION_REF",
+  approvedPackName: "anicca-ios-slideshow-en.pack.json",
+  workerLabel: "anicca-en-slideshow-tiktok-canary",
+});
+
+const LANES = Object.freeze([JA_LANE, EN_AFFIRMATION_LANE, EN_SLIDESHOW_TIKTOK_LANE]);
 
 function selectMarketingNativeCarouselLane(input = {}) {
   const integrationRef = input.instagramIntegrationRef || input.integrationRef;
@@ -142,7 +185,7 @@ function buildMarketingNativeCarouselPublicationJob(input = {}) {
   const locale = text(input.locale, "marketing native carousel locale");
   const creativeId = text(input.creativeId, "marketing native carousel creative");
   const accountId = text(input.accountId, "marketing native carousel account");
-  const integrationRef = text(input.instagramIntegrationRef || input.integrationRef, "Instagram integration");
+  const integrationRef = text(input.instagramIntegrationRef || input.tiktokIntegrationRef || input.integrationRef, "platform integration");
   const lane = selectMarketingNativeCarouselLane({ ...input, productId, formatId, form, locale, accountId, integrationRef, creativeId });
   if (!ID.test(tenantId) || !ID.test(creativeId)) fail("marketing native carousel identity is invalid");
   const slot = instant(input.slot, "marketing native carousel slot");
@@ -165,7 +208,7 @@ function buildMarketingNativeCarouselPublicationJob(input = {}) {
     creative_ref: `creative://${lane.productId}/${creativeId}`,
     platform_ref: `platform://${lane.platform}`,
     account_ref: lane.accountRef,
-    instagram_integration_ref: integrationRef,
+    ...(lane.platform === "tiktok" ? { tiktok_integration_ref: integrationRef } : { instagram_integration_ref: integrationRef }),
     pack_ref: packRef,
     media_refs: media,
     caption_ref: captionRef,
@@ -178,17 +221,20 @@ function buildMarketingNativeCarouselPublicationJob(input = {}) {
 
 function normalizeJob(job) {
   const refs = job && job.input_refs;
-  if (!refs || typeof refs !== "object" || Array.isArray(refs) || JSON.stringify(Object.keys(refs).sort()) !== JSON.stringify([...REF_KEYS].sort())) fail("marketing native carousel publication job contract is invalid");
+  const integrationKeys = refs && ["instagram_integration_ref", "tiktok_integration_ref"].filter((key) => Object.hasOwn(refs, key));
+  if (!refs || typeof refs !== "object" || Array.isArray(refs) || integrationKeys.length !== 1
+    || JSON.stringify(Object.keys(refs).sort()) !== JSON.stringify([...BASE_REF_KEYS, integrationKeys[0]].sort())) fail("marketing native carousel publication job contract is invalid");
   const product = /^product:\/\/(.+)$/.exec(String(refs.product_ref || ""));
   const format = /^format:\/\/(.+)$/.exec(String(refs.format_ref || ""));
   const form = /^form:\/\/(.+)$/.exec(String(refs.form_ref || ""));
   const locale = /^locale:\/\/(.+)$/.exec(String(refs.locale_ref || ""));
   const slot = /^schedule-slot:\/\/(.+)$/.exec(String(refs.slot_ref || ""));
   const creative = /^creative:\/\/(.+)\/([A-Za-z0-9][A-Za-z0-9._-]{0,127})$/.exec(String(refs.creative_ref || ""));
-  const account = /^account:\/\/instagram\/(.+)$/.exec(String(refs.account_ref || ""));
+  const platform = /^platform:\/\/(instagram|tiktok)$/.exec(String(refs.platform_ref || ""));
+  const account = platform && new RegExp(`^account://${platform[1]}/(.+)$`).exec(String(refs.account_ref || ""));
   if (!product || !format || !form || !locale || !slot || !creative || !account || creative[1] !== product[1]
-    || refs.platform_ref !== "platform://instagram") fail("marketing native carousel publication job contract is invalid");
-  const input = { tenantId: job.tenant_id, productId: product[1], formatId: format[1], form: form[1], locale: locale[1], slot: slot[1], creativeId: creative[2], accountId: account[1], accountRef: refs.account_ref, instagramIntegrationRef: refs.instagram_integration_ref, packRef: refs.pack_ref, mediaRefs: refs.media_refs, captionRef: refs.caption_ref, approvalRef: refs.approval_ref, postizTokenRef: refs.postiz_token_ref };
+    || !platform || integrationKeys[0] !== `${platform[1]}_integration_ref`) fail("marketing native carousel publication job contract is invalid");
+  const input = { tenantId: job.tenant_id, productId: product[1], formatId: format[1], form: form[1], locale: locale[1], slot: slot[1], creativeId: creative[2], accountId: account[1], accountRef: refs.account_ref, integrationRef: refs[integrationKeys[0]], packRef: refs.pack_ref, mediaRefs: refs.media_refs, captionRef: refs.caption_ref, approvalRef: refs.approval_ref, postizTokenRef: refs.postiz_token_ref };
   const lane = selectMarketingNativeCarouselLane(input);
   let expected;
   try { expected = buildMarketingNativeCarouselPublicationJob(input); } catch { fail("marketing native carousel publication job contract is invalid"); }
@@ -209,7 +255,8 @@ function assertPack(pack, contract, caption, lane) {
     || (pack.native_owner !== undefined && pack.native_owner !== lane.nativeOwner)
     || (pack.caption_ref !== undefined && pack.caption_ref !== contract.captionRef)) fail("marketing native carousel pack identity is invalid");
   const ordered = pack.slides.map((slide, i) => {
-    if (!slide || slide.position !== i + 1 || slide.role !== (i ? "body" : "hook") || typeof slide.text !== "string" || !OBJ.test(String(slide.media_ref || ""))) fail("marketing native carousel pack slide is invalid");
+    const expectedRole = i === 0 ? "hook" : (lane.platform === "tiktok" && i === SLIDE_COUNT - 1 ? "cta" : "body");
+    if (!slide || slide.position !== i + 1 || slide.role !== expectedRole || typeof slide.text !== "string" || !OBJ.test(String(slide.media_ref || ""))) fail("marketing native carousel pack slide is invalid");
     return slide.media_ref;
   });
   if (JSON.stringify(ordered) !== JSON.stringify(contract.mediaRefs)) fail("marketing native carousel pack media order mismatch");
@@ -238,7 +285,7 @@ function runPostizCarouselProcess(input) {
   const root = path.resolve(__dirname, "../../..");
   const args = [path.join(root, "skills/video/lm-distribution/postiz_video.py")];
   for (const file of input.mediaPaths) args.push("--image", file);
-  args.push("--caption-file", input.captionPath, "--integration", input.integrationId, "--platform", "instagram");
+  args.push("--caption-file", input.captionPath, "--integration", input.integrationId, "--platform", input.platform, "--title", input.title);
   const result = spawnSync(input.python || "python3", args, { cwd: root, env: postizEnv(input.token), encoding: "utf8", timeout: 20 * 60 * 1000, maxBuffer: 4 * 1024 * 1024 });
   if (result.status !== 0) { const error = new Error(`marketing native carousel Postiz failed with exit ${result.status}`); error.unknownEffect = true; throw error; }
   const lines = String(result.stdout || "").split(/\r?\n/).filter(Boolean);
@@ -246,12 +293,12 @@ function runPostizCarouselProcess(input) {
   try { return JSON.parse(lines[0]); } catch { const error = new Error("marketing native carousel Postiz returned invalid JSON"); error.unknownEffect = true; throw error; }
 }
 
-function provider(result) {
+function provider(result, lane) {
   const state = result && (result.state || result.status);
   const postId = result && (result.provider_post_id || result.post_id);
   const url = result && (result.public_url || result.post_url);
   const reconciled = result && (result.reconciled === true || result.provider_reconciled === true);
-  if (!result || state !== "PUBLISHED" || reconciled !== true || !PROVIDER_ID.test(String(postId || "")) || !DIRECT_POST.test(String(url || ""))) { const error = new Error("marketing native carousel provider result contract mismatch"); error.unknownEffect = true; throw error; }
+  if (!result || state !== "PUBLISHED" || reconciled !== true || !PROVIDER_ID.test(String(postId || "")) || !DIRECT_POSTS[lane.platform]?.test(String(url || ""))) { const error = new Error("marketing native carousel provider result contract mismatch"); error.unknownEffect = true; throw error; }
   return { postId: String(postId), url: String(url) };
 }
 function laneForReceipt(receipt) {
@@ -276,7 +323,7 @@ function laneForReceipt(receipt) {
   }
 }
 function verifyMarketingNativeCarouselPublicationReceipt(receipt) {
-  if (!receipt || typeof receipt !== "object" || Array.isArray(receipt) || receipt.schema_version !== 1 || receipt.kind !== "marketing_native_carousel_distribution" || receipt.status !== "published" || receipt.platform !== "instagram" || !ID.test(String(receipt.creative_id || "")) || !HASH.test(String(receipt.pack_sha256 || "")) || !Array.isArray(receipt.media_sha256) || receipt.media_sha256.length !== SLIDE_COUNT || receipt.media_sha256.some((hash) => !HASH.test(String(hash || ""))) || !HASH.test(String(receipt.media_order_sha256 || "")) || receipt.media_order_sha256 !== mediaOrderHash(receipt.media_sha256) || !HASH.test(String(receipt.caption_sha256 || "")) || !PROVIDER_ID.test(String(receipt.provider_post_id || "")) || receipt.provider_reconciled !== true || !DIRECT_POST.test(String(receipt.public_url || ""))) return false;
+  if (!receipt || typeof receipt !== "object" || Array.isArray(receipt) || receipt.schema_version !== 1 || receipt.kind !== "marketing_native_carousel_distribution" || receipt.status !== "published" || !DIRECT_POSTS[receipt.platform]?.test(String(receipt.public_url || "")) || !ID.test(String(receipt.creative_id || "")) || !HASH.test(String(receipt.pack_sha256 || "")) || !Array.isArray(receipt.media_sha256) || receipt.media_sha256.length !== SLIDE_COUNT || receipt.media_sha256.some((hash) => !HASH.test(String(hash || ""))) || !HASH.test(String(receipt.media_order_sha256 || "")) || receipt.media_order_sha256 !== mediaOrderHash(receipt.media_sha256) || !HASH.test(String(receipt.caption_sha256 || "")) || !PROVIDER_ID.test(String(receipt.provider_post_id || "")) || receipt.provider_reconciled !== true) return false;
   const lane = laneForReceipt(receipt);
   if (!lane || receipt.product_id !== lane.productId || receipt.format_id !== lane.formatId || receipt.form !== lane.form || receipt.locale !== lane.locale || receipt.account_id !== lane.accountId || receipt.integration_ref !== lane.integrationRef) return false;
   try { instant(receipt.published_at, "marketing native carousel receipt published_at"); return true; } catch { return false; }
@@ -313,13 +360,14 @@ async function executeMarketingNativeCarouselPublicationJob(job, deps = {}) {
   assertIntegrity(captionPath, contract.captionHash, "marketing native carousel caption");
   assertIntegrity(approvalPath, objectHash(contract.approvalRef, "approval"), "marketing native carousel approval");
   const caption = fs.readFileSync(captionPath, "utf8");
-  assertPack(readJson(packPath, "marketing native carousel pack"), { ...contract, expectedCaption: caption }, caption, lane);
+  const pack = readJson(packPath, "marketing native carousel pack");
+  assertPack(pack, { ...contract, expectedCaption: caption }, caption, lane);
   assertApproval(readJson(approvalPath, "marketing native carousel approval"), contract, lane);
   const token = await s.secretProvider.get(job.tenant_id, contract.postizTokenRef);
   if (typeof token !== "string" || !token.trim()) fail("marketing native carousel Postiz token is invalid");
   let result;
-  try { result = await s.runDistribution({ tenantId: job.tenant_id, productId: lane.productId, formatId: lane.formatId, form: lane.form, locale: lane.locale, creativeId: contract.creativeId, accountId: lane.accountId, integrationRef: contract.integrationRef, integrationId: lane.integrationId, packPath, mediaPaths: [...mediaPaths], captionPath, token }); } catch (cause) { const error = new Error(cause && cause.message ? cause.message : String(cause)); error.unknownEffect = true; throw error; }
-  const published = provider(result);
+  try { result = await s.runDistribution({ tenantId: job.tenant_id, productId: lane.productId, formatId: lane.formatId, form: lane.form, locale: lane.locale, platform: lane.platform, title: pack.slides[0].text, creativeId: contract.creativeId, accountId: lane.accountId, integrationRef: contract.integrationRef, integrationId: lane.integrationId, packPath, mediaPaths: [...mediaPaths], captionPath, token }); } catch (cause) { const error = new Error(cause && cause.message ? cause.message : String(cause)); error.unknownEffect = true; throw error; }
+  const published = provider(result, lane);
   const receipt = { schema_version: 1, kind: "marketing_native_carousel_distribution", status: "published", product_id: lane.productId, format_id: lane.formatId, form: lane.form, locale: lane.locale, platform: lane.platform, account_id: lane.accountId, integration_ref: contract.integrationRef, creative_id: contract.creativeId, pack_sha256: contract.packHash, media_sha256: [...contract.mediaHashes], media_order_sha256: mediaOrderHash(contract.mediaHashes), caption_sha256: contract.captionHash, provider_post_id: published.postId, provider_reconciled: true, public_url: published.url, published_at: instant(s.now(), "marketing native carousel publication time") };
   if (!verifyMarketingNativeCarouselPublicationReceipt(receipt)) { const error = new Error("marketing native carousel publication receipt verification failed"); error.unknownEffect = true; throw error; }
   appendRow(ledgerFor(s, job.tenant_id, lane.productId), job, receipt);
@@ -344,4 +392,4 @@ function createMarketingNativeCarouselPublicationLoopAdapter(deps = {}) {
   return Object.freeze({ plan: async (input) => [buildMarketingNativeCarouselPublicationJob(input)], execute: (job, extra = {}) => executeMarketingNativeCarouselPublicationJob(job, { ...deps, ...extra }), reconcile: async (effect) => reconcile(effect, services(deps)), verify: verifyMarketingNativeCarouselPublicationReceipt, report: summary });
 }
 
-module.exports = { ADAPTER_ID, LOOP_ID, CAPABILITY, PRODUCT_ID, FORMAT_ID, FORM_ID, ACCOUNT_ID, ACCOUNT_REF, INTEGRATION_REF, PACK_FORMAT_ID, JA_LANE, EN_AFFIRMATION_LANE, buildMarketingNativeCarouselPublicationJob, buildMarketingNativeCarouselJob: buildMarketingNativeCarouselPublicationJob, createMarketingNativeCarouselPublicationLoopAdapter, createMarketingNativeCarouselAdapter: createMarketingNativeCarouselPublicationLoopAdapter, executeMarketingNativeCarouselPublicationJob, executeMarketingNativeCarouselJob: executeMarketingNativeCarouselPublicationJob, normalizeMarketingNativeCarouselJob: normalizeJob, selectMarketingNativeCarouselLane, runPostizCarouselProcess, safeMarketingNativeCarouselSummary: summary, verifyMarketingNativeCarouselPublicationReceipt, verifyMarketingNativeCarouselReceipt: verifyMarketingNativeCarouselPublicationReceipt };
+module.exports = { ADAPTER_ID, LOOP_ID, CAPABILITY, PRODUCT_ID, FORMAT_ID, FORM_ID, ACCOUNT_ID, ACCOUNT_REF, INTEGRATION_REF, PACK_FORMAT_ID, JA_LANE, EN_AFFIRMATION_LANE, EN_SLIDESHOW_TIKTOK_LANE, buildMarketingNativeCarouselPublicationJob, buildMarketingNativeCarouselJob: buildMarketingNativeCarouselPublicationJob, createMarketingNativeCarouselPublicationLoopAdapter, createMarketingNativeCarouselAdapter: createMarketingNativeCarouselPublicationLoopAdapter, executeMarketingNativeCarouselPublicationJob, executeMarketingNativeCarouselJob: executeMarketingNativeCarouselPublicationJob, normalizeMarketingNativeCarouselJob: normalizeJob, selectMarketingNativeCarouselLane, runPostizCarouselProcess, safeMarketingNativeCarouselSummary: summary, verifyMarketingNativeCarouselPublicationReceipt, verifyMarketingNativeCarouselReceipt: verifyMarketingNativeCarouselPublicationReceipt };

@@ -11,12 +11,15 @@ const { createContentObjectStore, importContentObject } = require("../lib/conten
 const {
   ACCOUNT_ID,
   EN_AFFIRMATION_LANE,
+  EN_SLIDESHOW_TIKTOK_LANE,
   INTEGRATION_REF,
 } = require("../lib/marketing-native-carousel-publication-adapter.js");
 const {
   EN_AFFIRMATION_LANE: EN_RUNNER_LANE,
+  EN_SLIDESHOW_TIKTOK_LANE: TIKTOK_SLIDESHOW_RUNNER_LANE,
   parseArgs,
   runAniccaEnAffirmationInstagramCanary,
+  runAniccaEnSlideshowTikTokCanary,
   runAniccaLarryJaCanary,
 } = require("./anicca-larry-ja-canary.js");
 
@@ -323,6 +326,14 @@ test("EN affirmation CLI selects its frozen lane while JA run remains unchanged"
   assert.deepEqual(parseArgs(["run-en-affirmation", "--slot", SLOT]), { command: "run-en-affirmation", slot: SLOT });
   assert.equal(EN_RUNNER_LANE.accountId, "@anicca.affirmation");
   assert.equal(EN_RUNNER_LANE.nativeOwner, "@anicca.ios");
+});
+
+test("EN slideshow TikTok command selects only its immutable lane", () => {
+  assert.deepEqual(parseArgs(["run-en-slideshow-tiktok", "--slot", SLOT]), { command: "run-en-slideshow-tiktok", slot: SLOT });
+  assert.equal(TIKTOK_SLIDESHOW_RUNNER_LANE, EN_SLIDESHOW_TIKTOK_LANE);
+  assert.equal(TIKTOK_SLIDESHOW_RUNNER_LANE.accountId, "@anicca_slideshow");
+  assert.equal(TIKTOK_SLIDESHOW_RUNNER_LANE.integrationId, "cmnenjkff01j1pa0ysufmzhfr");
+  assert.throws(() => runAniccaEnSlideshowTikTokCanary(["run-en-affirmation", "--slot", SLOT], {}), /accepts only/i);
 });
 
 test("EN affirmation alternate self-consistent pack and approval stop before secret/provider", async () => {
