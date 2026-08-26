@@ -641,9 +641,14 @@ async def discover_affordable_proposal(
             pass_id, f"{base:02d}-1", "public-search", search_url,
             "read_only", 2, 1440,
         ))
-        _, search_hash, search_links = _read_evidence(artifact, search_url)
+        search_text, search_hash, search_links = _read_evidence(artifact, search_url)
         state["evidence_sha256"][f"public-search-{page}"] = search_hash
         state["proposal_discovery"]["pages"] += 1
+        if "abnormally high volume of traffic" in search_text.casefold():
+            state["proposal_discovery"].update({
+                "provider_state": "unavailable", "retry_page": page,
+            })
+            return None
         jobs = [row for row in _dedupe_links(search_links)
                 if "/jobs/" in row["href"] and row["id"] not in known]
         packet_paths: list[Path] = []

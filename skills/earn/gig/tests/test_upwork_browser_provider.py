@@ -186,6 +186,35 @@ def test_discovery_inspects_every_unique_job_on_provider_page(tmp_path, monkeypa
     assert "sort=recency&page=2" in search_urls[1]
 
 
+def test_search_provider_unavailable_keeps_cursor_for_retry(tmp_path, monkeypatch):
+    cursor = tmp_path / "cursor.json"
+    cursor.write_text(json.dumps({"version": 1, "next_page": 18}))
+
+    async def navigate(pass_id, seq, label, url, action, settle_seconds, viewport_width):
+        path = tmp_path / f"{seq}.json"
+        path.write_text(json.dumps({
+            "navigated_ok": True, "url": url,
+            "rendered_text": "We can’t complete your request now\n"
+                             "We’re currently experiencing an abnormally high volume of traffic.",
+            "rendered_links": [],
+        }))
+        return str(path)
+
+    monkeypatch.setattr(provider, "navigate_and_snapshot", navigate)
+    state = {
+        "candidate_jobs": [], "balance": 0, "observed_at": "now",
+        "evidence_sha256": {},
+    }
+    assert asyncio.run(provider.discover_affordable_proposal(
+        state, pass_id="pass", sequence=30, proposals_dir=tmp_path / "proposals",
+        inbound_dir=tmp_path / "inbound", inbound_evidence=tmp_path / "evidence",
+        cursor_path=cursor,
+    )) is None
+
+    assert json.loads(cursor.read_text())["next_page"] == 18
+    assert state["proposal_discovery"]["provider_state"] == "unavailable"
+
+
 def test_read_evidence_allows_only_canonical_message_room_redirect(tmp_path):
     def evidence(name, url):
         path = tmp_path / name
