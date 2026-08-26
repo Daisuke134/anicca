@@ -3,8 +3,9 @@
 ## 0. Decision
 
 Life Manager ultimately contains one revenue system, not one harness per marketplace. Coconala is the
-proven reference implementation, Upwork remains an active acquisition lane, and **Lancers is the next
-atomic provider-neutral proof**. No market must wait for another market's revenue gate when its account,
+only marketplace lane with observed completed-work earnings, Mercor is the current user-directed
+recovery slice, Upwork remains an acquisition lane, and Lancers is the next provider-neutral proof
+after Mercor. No market must wait for another market's revenue gate when its account,
 resource lease, delivery capacity and effect fence are independent. The resident agent may run
 authorized read-only inventory and zero-spend canaries across markets concurrently; an `unknown`
 authorization permits only public-policy research, offline fixtures, or explicit manual observation.
@@ -37,6 +38,23 @@ contract has Application/Delivery/Payment-shaped records but no mandatory Contra
 Authorization, or QA receipt, and its payment record does not prove actual costs or a bank/payout
 match. No provider may claim closed-loop net revenue until that shared gap and its provider adapter
 migration pass G5A below.
+
+### 0.1 Verified revenue baseline
+
+The local marketplace earnings ledger contains eight Coconala rows with official `検収完了` state
+and `net_of_fee=true`, totaling JPY 126,438. Six August rows total JPY 62,478 through the latest
+ledger event on August 12. A separate August 15 Coconala revenue-page read-back reported cumulative
+JPY 129,636 and a JPY 5,460 payout request; the JPY 3,198 difference is unresolved, and neither
+source proves arrival in the bank. Coconala is therefore the only marketplace with observed
+completed-work earnings, but `$1K this month`, bank-received cash, and MRR remain unverified.
+
+The inspected Life Manager marketplace revenue evidence exposes completed-work rows only for
+Coconala; no settled receipt was observed for Mercor, Upwork, Lancers, or CrowdWorks. Mobile-app
+subscription/proceeds permanently remain in a separate portfolio/business ledger and MUST NOT be
+added to marketplace revenue or marketplace MRR. Official App Store/RevenueCat receipts may enter
+only that separate ledger, joined by source and occurrence month. Views, proposals, applications,
+offers, pending balances, forecasts, and operator estimates
+remain outside `verified_net_received`.
 
 The Upwork account bootstrap uses the owner's normal email/password flow. It MUST NOT choose Google,
 Apple or another social-login button. It creates an account only when the owner email has no Upwork
@@ -158,11 +176,42 @@ demand → qualified offer → sale → verified fulfillment → received money
        → attributed economics → one bounded improvement → repeat
 ```
 
-The first active outcome gate is one Lancers review-bearing contract through independently verified
-delivery and official payout `received`. The portfolio-generalization gate is the same complete path on
-Upwork or another second market. USD 10,000 verified net received in one complete calendar month and the
+The active engineering gate is Mercor resident continuity: portable browser ownership, two scheduled
+Mercor wakes, one Inbox wake, and terminal Telegram receipts. The first Mercor money gate is one
+selected application through contract, authorized work, independent QA, delivery, and official payout
+`received`. Lancers remains the next provider-neutral acquisition proof after Mercor. USD 10,000
+verified net received in one complete calendar month and the
 long-range JPY 10,000,000 verified net monthly revenue gate remain scale outcomes, not serialization
 gates or income promises.
+
+### 1.1A Coconala-to-Mercor scale thesis
+
+Coconala proves that the Life Manager acquisition → negotiation → fulfillment → completed-work
+earnings loop can produce real marketplace value. Mercor adds global English-language discovery,
+role reuse across applications, Japan-supported payouts, and higher displayed hourly planning bands.
+Those properties justify prioritizing Mercor, but they do not make USD 10,000 easy or guaranteed.
+
+The scale hypothesis is tested, not asserted:
+
+```text
+Coconala proof
+→ one Mercor selected contract
+→ one accepted delivery and settled payout
+→ repeat the same profitable work unit
+→ add a second independent provider
+→ USD 10,000 complete-month verified_net_received
+```
+
+`$1K → $10K` is a tenfold verified-net target. Applications and displayed hourly rates affect the
+forecast only. Promotion requires observed selection rate, paid utilization, delivery time, revision
+load, fees, tool/model cost, refunds, human minutes, and bank/payout reconciliation.
+
+Official evidence: Mercor says completed assessments “automatically populate when reused in subsequent
+applications” ([Apply for a Job](https://talent.docs.mercor.com/how-to/apply)), lists Japan under
+Stripe-supported countries ([Supported Countries](https://talent.docs.mercor.com/policies/supported-countries)),
+and says hourly contractors are paid every Wednesday
+([Payments](https://talent.docs.mercor.com/how-to/payments)). These facts support reach and payout
+feasibility, not conversion or income.
 
 ### 1.2 Objective function
 
@@ -939,6 +988,12 @@ OSS stable additionally requires the same conformance suite on a second market t
 clean-device receipt, no original operator paths/data and provider-only additions within the thin-glue
 budget. Tests or fixtures never substitute for the required real provider receipts.
 
+Mercor OSS alpha additionally requires its tracked portable browser owner, one clean non-Dais HOME,
+isolated private state, terminal Telegram receipts, and a redacted application replay. Mercor OSS
+stable requires one real selected contract through authorized work, QA, delivery, acceptance, settled
+payout, and bank/payout match. It reuses the existing Agent Skills `SKILL.md` format and shared
+marketplace receipts; it does not create a Mercor framework or second executor.
+
 ## 5. Market execution state
 
 Every authorized market may progress concurrently from current evidence. The table records the current
@@ -947,7 +1002,7 @@ long-run utility, authorization, delivery capacity and human-minute evidence.
 
 | Role | Market | Intended lane | Unique lesson / Skill |
 |---|---|---|---|
-| Reference | Coconala | Existing full sales/fulfillment/payment loop | Reference effect fence, inbox, paid project, receipt and learning |
+| Revenue reference | Coconala | Active acquisition/storefront/paid owners with JPY 126,438 observed net-of-fee completed-work earnings; bank join remains open | Reference effect fence, inbox, paid project, receipt and learning |
 | Running | Upwork | Continue acquisition and event-driven downstream lanes | Outbound proposals, Connects economics, contract/milestone lifecycle |
 | Next provider proof | Lancers | First-trust profile → application canary → review-bearing payout | Unknown-site ACI, external proof, Japanese contracts and payout |
 | Next evidence | Freelancer | Existing account, projects and bids | Bid economics and milestone/payment mapping |
