@@ -83,6 +83,28 @@ PY
   COUNTS="$(printf '%s\n' "$READBACK" | sed -n '2p')"
 fi
 
+if [ -f "$FUNDRAISER_RECEIPTS" ]; then
+  LEDGER_COUNTS="$(python3 - "$FUNDRAISER_RECEIPTS" "$RUN_ID" <<'PY'
+import json, pathlib, sys
+
+submitted = unknown = checkpoints = 0
+for line in pathlib.Path(sys.argv[1]).read_text(encoding="utf-8").splitlines():
+    try:
+        receipt = json.loads(line)
+    except json.JSONDecodeError:
+        continue
+    if receipt.get("run_id") != sys.argv[2]:
+        continue
+    status = receipt.get("status")
+    submitted += status == "submitted"
+    unknown += status == "submit_unknown"
+    checkpoints += status == "human_checkpoint"
+print(f"submitted={submitted} unknown={unknown} checkpoints={checkpoints}")
+PY
+)" || true
+  [ -n "$LEDGER_COUNTS" ] && COUNTS="$LEDGER_COUNTS"
+fi
+
 REPORT="Codex::: Fundraiser wake $RUN_ID finished: status=$SUMMARY_STATUS, $COUNTS. Evidence: $EVIDENCE_DIR"
 "$SENDER" "$REPORT" >>"$LOG" 2>&1 || RC=1
 echo "=== fundraiser $RUN_ID end rc=$RC status=$SUMMARY_STATUS $COUNTS ===" >>"$LOG"
