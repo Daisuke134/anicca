@@ -289,29 +289,29 @@ Telegram本文の固定形:
 ### Slice 3A — Telegram actor as onboarding identity
 
 - [ ] QRが`https://t.me/LifeManagerBotbot?start=lp`だけをdecodeすることをreadbackする。
-- [ ] `telegram-onboard.test.js`と`panel-auth.test.js`へMini App、cross-actor、stale、replayのREDを追加する。
-- [ ] `telegram.js`の`/start` buttonをRailway `/panel/onboarding`の`web_app`へ変更する。
-- [ ] 既存`panel-auth.js`のTelegram initData/sessionをonboarding tenant authorityとして再利用する。
+- [x] `telegram-onboard.test.js`と`panel-auth.test.js`へMini App、cross-actor、stale、replayのREDを追加する。
+- [x] `telegram.js`の`/start` buttonをRailway `/panel/onboarding`の`web_app`へ変更する。
+- [x] 既存`panel-auth.js`のTelegram initData/sessionをonboarding tenant authorityとして再利用する。
 
 ### Slice 3B — Railway Calendar consent
 
-- [ ] `calendar-onboard.test.js`へsession scope、single-use OAuth nonce、cross-tenant denial、ACTIVE-only completionのREDを追加する。
-- [ ] `calendar-onboard.js`へ既存Composio Calendar接続契約を移し、uidをvalidated panel sessionからだけ受け取る。
-- [ ] `server.js`へ`/panel/onboarding/calendar/start`と`/panel/onboarding/calendar/status`を配線する。
-- [ ] Google consent後に同じtenantの`calendar_provider=composio_gcal`だけが更新されることをGREENにする。
+- [x] `calendar-onboard.test.js`へsession scope、single-use OAuth nonce、cross-tenant denial、ACTIVE-only completionのREDを追加する。
+- [x] `calendar-onboard.js`へ既存Composio Calendar接続契約を移し、uidをvalidated panel sessionからだけ受け取る。
+- [x] `server.js`へ`/panel/onboarding/calendar/start`と`/panel/onboarding/calendar/status`を配線する。
+- [x] Google consent後に同じtenantの`calendar_provider=composio_gcal`だけが更新されることをGREENにする。
 
 ### Slice 3C — Server-owned onboarding state
 
-- [ ] `panel-api.test.js`へname、Calendar、home、notifications、phone/call、paidの固定stage REDを追加する。
-- [ ] `panel-api.js`で`lm_users`と`lm_panel_preferences`からstageを計算し、scope-bound patchだけを受ける。
-- [ ] phoneなしは`call_enabled=false`、phoneありでも明示tap前は`call_enabled=false`をGREENにする。
-- [ ] 同actor再開とcross-actor denialをGREENにする。
+- [x] `panel-api.test.js`へname、Calendar、home、notifications、phone/call、paidの固定stage REDを追加する。
+- [x] `panel-api.js`で`lm_users`と`lm_panel_preferences`からstageを計算し、scope-bound patchだけを受ける。
+- [x] phoneなしは`call_enabled=false`、phoneありでも明示tap前は`call_enabled=false`をGREENにする。
+- [x] 同actor再開とcross-actor denialをGREENにする。
 
 ### Slice 3D — Onboarding UI
 
-- [ ] `panel-ui.test.js`へ固定step順、phoneなし分岐、call consent、server-truth resumeのREDを追加する。
-- [ ] `panel-ui.js`へCalendar → home → notifications → phone/call → pay → dashboardの画面を実装する。
-- [ ] localStorageを削除しても同じserver stageへ復元することをGREENにする。
+- [x] `panel-ui.test.js`へ固定step順、phoneなし分岐、call consent、server-truth resumeのREDを追加する。
+- [x] `panel-ui.js`へCalendar → home → notifications → phone/call → pay → dashboardの画面を実装する。
+- [x] localStorageを削除しても同じserver stageへ復元することをGREENにする。
 
 ### Slice 3E — Retire legacy Google-login binding
 
