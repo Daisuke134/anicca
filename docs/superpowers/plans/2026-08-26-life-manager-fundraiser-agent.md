@@ -44,7 +44,7 @@
 - [x] **Step 5: Record pinned commits, licenses, adopted contracts, and rejected architectures.**
 - [x] **Step 6: Make DelightX a live-search example, not a provider implementation.**
 - [x] **Step 7: Remove compiler, registry, dedicated store, and dedicated MCP plans.**
-- [ ] **Step 8: Re-run document, test, diff, and remote verification; commit and push the correction.**
+- [x] **Step 8: Re-run document, test, diff, and remote verification; commit and push the correction.**
 
 ### Task 1: Give the existing general agent the Fundraiser objective
 
