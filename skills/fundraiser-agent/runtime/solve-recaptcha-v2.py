@@ -104,27 +104,14 @@ def inject(target_id: str, token: str) -> dict[str, object]:
           try {{ callback(token); callbacks += 1; }} catch (_) {{}}
         }}
       }});
-      const seen = new WeakSet();
-      const visit = (value, depth) => {{
-        if (!value || typeof value !== 'object' || depth > 7 || seen.has(value)) return;
-        seen.add(value);
-        for (const key of Object.keys(value)) {{
-          let child;
-          try {{ child = value[key]; }} catch (_) {{ continue; }}
-          if (typeof child === 'function' && key.toLowerCase() === 'callback') {{
-            try {{ child(token); callbacks += 1; }} catch (_) {{}}
-          }} else if (child && typeof child === 'object') {{
-            visit(child, depth + 1);
-          }}
-        }}
-      }};
-      visit(window.___grecaptcha_cfg, 0);
       return {{textareas, callbacks}};
     }})()
     """
     result = module.evaluate(target_id, source)
     if not isinstance(result, dict) or int(result.get("textareas", 0)) < 1:
         raise RuntimeError("RECAPTCHA_TEXTAREA_UNAVAILABLE")
+    if int(result.get("callbacks", 0)) != 1:
+        raise RuntimeError("RECAPTCHA_NAMED_CALLBACK_UNAVAILABLE")
     return result
 
 

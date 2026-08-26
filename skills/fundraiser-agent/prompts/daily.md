@@ -249,8 +249,9 @@ For every queued candidate until the execution window ends:
    solves and injects the token into every `textarea[name="g-recaptcha-response"]`,
    dispatches `input` and `change`, resolves the rendered `data-callback` name,
    and invokes the exposed widget callback without
-   returning the token to the shell. Require `CAPSOLVER_INJECTED=true`, then use one
-   trusted rendered GET STARTED interaction. Do not add shell token parsing or
+   returning the token to the shell. Require exactly `CALLBACKS=1`, wait one second
+   for the application state to settle, then use one trusted rendered GET STARTED
+   interaction. Do not traverse or invoke internal reCAPTCHA callbacks, add shell token parsing, or
    construct token-bearing JavaScript. Never include the credential or solution token in logs, receipts,
    screenshots, Telegram, or model output. Checkpoint only if this helper returns
    a concrete error or the provider rejects the injected response.
