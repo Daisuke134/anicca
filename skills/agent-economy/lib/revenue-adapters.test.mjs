@@ -296,6 +296,26 @@ test("standard x402 response without amount/currency/decimals/log uses the confi
   assert.equal(result.receipt.gross, 0.003);
 });
 
+test("configured x402 price binds any supplied atomic amount and transfer", async () => {
+  const tx = "0x" + "1".repeat(64);
+  const mismatch = await adaptX402WithEvmVerifier({
+    source_record_id: "x402-price-mismatch", settled: true, success: true, amount_atomic: "3000", decimals: 6,
+    currency: "USDC", payer: EVM_PAYER, recipient: EVM_RECIPIENT, transaction: tx, network: "eip155:8453", ts: NOW,
+  }, {
+    configuredPrice: "$0.004", configuredNetwork: "eip155:8453", rpc: "https://rpc.invalid",
+    fetchImpl: fakeRpc({ tx, receipt: successfulEvmReceipt({ tx, amount: "3000" }) }),
+  });
+  assert.equal(mismatch.ok, false);
+  const correct = await adaptX402WithEvmVerifier({
+    source_record_id: "x402-price-match", settled: true, success: true, amount_atomic: "3000", decimals: 6,
+    currency: "USDC", payer: EVM_PAYER, recipient: EVM_RECIPIENT, transaction: tx, network: "eip155:8453", ts: NOW,
+  }, {
+    configuredPrice: "$0.003", configuredNetwork: "eip155:8453", rpc: "https://rpc.invalid",
+    fetchImpl: fakeRpc({ tx, receipt: successfulEvmReceipt({ tx, amount: "3000" }) }),
+  });
+  assert.equal(correct.ok, true);
+});
+
 test("strict x402 transport rejects amount, payer, recipient, contract, chain, and ambiguous log mismatches", async () => {
   const tx = "0x" + "e".repeat(64);
   const base = { source_record_id: "x402-mismatch", settled: true, success: true, amount_atomic: "3000", decimals: 6, currency: "USDC", payer: EVM_PAYER, recipient: EVM_RECIPIENT, transaction: tx, chain_id: 8453, ts: NOW };

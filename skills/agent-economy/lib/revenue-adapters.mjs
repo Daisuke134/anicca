@@ -273,10 +273,13 @@ export async function adaptX402WithEvmVerifier(row, options = {}) {
       throw new AdapterFailure("DECIMALS_MISMATCH", "Base USDC decimals are fixed at six");
     }
     let atomic = directOrNested(input, ["settled_amount_atomic", "settledAmountAtomic", "amount_atomic", "amountAtomic", "amount"]);
+    const configuredAtomic = options.configuredPrice === undefined ? undefined : configuredAtomicPrice(options.configuredPrice);
     const decimals = BASE_USDC_DECIMALS;
     if (atomic === undefined) {
-      if (options.configuredPrice === undefined) throw new AdapterFailure("MISSING_AMOUNT_ATOMIC", "x402 requires amount_atomic or a configured route price");
-      atomic = configuredAtomicPrice(options.configuredPrice);
+      if (configuredAtomic === undefined) throw new AdapterFailure("MISSING_AMOUNT_ATOMIC", "x402 requires amount_atomic or a configured route price");
+      atomic = configuredAtomic;
+    } else if (configuredAtomic !== undefined && BigInt(String(atomic)) !== BigInt(String(configuredAtomic))) {
+      throw new AdapterFailure("AMOUNT_MISMATCH", "x402 amount_atomic does not equal the configured route price");
     }
     const asset = assetFor(input, "x402", options);
     const { payer, recipient } = identity(input, options);
