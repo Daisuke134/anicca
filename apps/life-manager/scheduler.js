@@ -394,8 +394,9 @@ function mentalDeps(u, events, deps = {}) {
 // unbounds the 3/day cap. That is a fix, not a refactor, and it applies to MENTAL too.
 
 // wakeCallOnce — the DEADLINE-CRITICAL half. It owns the calendar fetch (and publishes it for the
-// organ tick), then does nothing but decide and place the call. Everything that can be late lives in
-// organsUserOnce, on its own timer, so no organ can spend this user's budget before the dial
+// organ/reminder ticks), then does nothing but decide and place the call. Everything that can be late
+// lives in organsUserOnce or reminderUserOnce on its own timer, so no organ can spend this user's budget
+// before the dial
 // (spec §3.1: late+mental sat in front of the dial inside one shared 90s budget).
 async function wakeCallOnce(u, nowMs, deps = {}) {
   if (u && u.daily_automation_enabled === false) return;
@@ -527,10 +528,65 @@ async function wakeCallOnce(u, nowMs, deps = {}) {
   }
 }
 
-// organsUserOnce — everything that is NOT the wake call. Runs on its own timer with the original 90s
-// per-user budget, so a slow care/diet/mental/late organ delays only its siblings. Each organ is
-// wrapped in runOrgan, which both preserves the old swallow-and-continue contract and records the
-// elapsed ms that used to be missing when `tenant timeout` fired (spec §3 row 1c done receipt).
+// The deadline-critical Telegram reminder has its own fixed tick. It reads the same raw lookback
+// calendar shape as the old organ path, but its route/live-location/claim/send body remains one
+// invocation path so a slow/degraded organ tick cannot suppress the reminder or duplicate it.
+async function reminderUserOnce(u, nowMs, deps = {}) {
+  if (!u || u.daily_automation_enabled === false || u.notifications_enabled === false) return;
+  const now = nowMs !== undefined ? nowMs : Date.now();
+  const log = deps.log || console.log;
+  let events = Array.isArray(deps.events) ? deps.events : (deps.getEvents || getEvents)(u.uid, now);
+  if (events == null) {
+    try {
+      events = await (deps.fetchUpcomingEvents || fetchUpcomingEvents)(u.uid, {
+        nowMs: now, horizonH: 6, lookbackMs: MENTAL_LOOKBACK_MS,
+        apiKey: deps.apiKey || process.env.COMPOSIO_API_KEY,
+        calendar: deps.calendar, gmailAccountId: u.gmail_account_id,
+      });
+      (deps.putEvents || putEvents)(u.uid, events, now);
+    } catch (e) {
+      console.error(`[scheduler] reminder calendar fetch uid=${String(u.uid).slice(0, 12)} err ${e && e.message}`);
+      return;
+    }
+  }
+  const reminderTimeoutMs = deps.reminderTimeoutMs !== undefined
+    ? deps.reminderTimeoutMs
+    : (deps.travelReminderTimeoutMs !== undefined ? deps.travelReminderTimeoutMs : REMINDER_TIMEOUT_MS);
+  return runOrgan({
+    label: "organ:travel-reminder", uid: u.uid, log,
+    run: () => withTimeout(async () => {
+      const configuredSupa = SUPA();
+      const supaUrl = deps.supaUrl !== undefined ? deps.supaUrl : configuredSupa.url;
+      const supaKey = deps.supaKey !== undefined ? deps.supaKey : configuredSupa.key;
+      const liveLocation = deps.liveLocation !== undefined
+        ? deps.liveLocation
+        : await (deps.getLiveLocation || getLiveLocation)(u.uid, now, {
+          supaUrl, supaKey, nowMs: now, fetchImpl: deps.fetchImpl,
+        });
+      return (deps.travelReminder || travelReminderOnce)(u, now, {
+        events,
+        liveLocation,
+        home: deps.home !== undefined ? deps.home : u.home_address,
+        mapsKey: deps.mapsKey || process.env.LIFE_MAPS_KEY || process.env.GOOGLE_API_KEY,
+        timezone: deps.timezone || u.call_time_zone || u.time_zone,
+        telegramToken: deps.telegramToken !== undefined ? deps.telegramToken : process.env.LM_TELEGRAM_BOT_TOKEN,
+        supaUrl, supaKey,
+        apiKey: deps.apiKey || process.env.COMPOSIO_API_KEY,
+        directionsRoute: deps.directionsRoute,
+        claimTravel: deps.claimTravel,
+        unclaimTravel: deps.unclaimTravel,
+        sendMessage: deps.sendMessage || sendMessage,
+        log,
+      });
+    }, reminderTimeoutMs, "travel reminder"),
+  });
+}
+
+// organsUserOnce — everything that is NOT the wake call or deadline-critical Telegram reminder.
+// Runs on its own timer with the original 90s per-user budget, so a slow care/diet/mental/late organ
+// delays only its siblings. Each organ is wrapped in runOrgan, which both preserves the old
+// swallow-and-continue contract and records the elapsed ms that used to be missing when
+// `tenant timeout` fired (spec §3 row 1c done receipt).
 async function organsUserOnce(u, nowMs, deps = {}) {
   if (u && u.daily_automation_enabled === false) return;
   const now = nowMs !== undefined ? nowMs : Date.now();
@@ -563,41 +619,6 @@ async function organsUserOnce(u, nowMs, deps = {}) {
   // ones that don't, and anything reading the first match gets the stopwatch. `grep '\[organ:'` is
   // now the timing view and `grep '\[precepts\]'` is still the behaviour view.
   if (u.notifications_enabled !== false) {
-    // T-5 reminder is a Telegram organ, not a call precondition. It consumes the RAW lookback
-    // events (the online/in-progress slice is intentionally absent from futureEvents) and reads the
-    // current live-location row with the same Supabase tenant credentials. runOrgan keeps route,
-    // claim, and Telegram failures local to this organ; call_enabled never gates this path.
-    const reminderTimeoutMs = deps.reminderTimeoutMs !== undefined
-      ? deps.reminderTimeoutMs
-      : (deps.travelReminderTimeoutMs !== undefined ? deps.travelReminderTimeoutMs : REMINDER_TIMEOUT_MS);
-    await runOrgan({
-      label: "organ:travel-reminder", uid: u.uid, log,
-      run: () => withTimeout(async () => {
-        const configuredSupa = SUPA();
-        const supaUrl = deps.supaUrl !== undefined ? deps.supaUrl : configuredSupa.url;
-        const supaKey = deps.supaKey !== undefined ? deps.supaKey : configuredSupa.key;
-        const liveLocation = deps.liveLocation !== undefined
-          ? deps.liveLocation
-          : await (deps.getLiveLocation || getLiveLocation)(u.uid, now, {
-            supaUrl, supaKey, nowMs: now, fetchImpl: deps.fetchImpl,
-          });
-        return (deps.travelReminder || travelReminderOnce)(u, now, {
-          events,
-          liveLocation,
-          home: deps.home !== undefined ? deps.home : u.home_address,
-          mapsKey: deps.mapsKey || process.env.LIFE_MAPS_KEY || process.env.GOOGLE_API_KEY,
-          timezone: deps.timezone || u.call_time_zone || u.time_zone,
-          telegramToken: deps.telegramToken !== undefined ? deps.telegramToken : process.env.LM_TELEGRAM_BOT_TOKEN,
-          supaUrl, supaKey,
-          apiKey: deps.apiKey || process.env.COMPOSIO_API_KEY,
-          directionsRoute: deps.directionsRoute,
-          claimTravel: deps.claimTravel,
-          unclaimTravel: deps.unclaimTravel,
-          sendMessage: deps.sendMessage || sendMessage,
-          log,
-        });
-      }, reminderTimeoutMs, "travel reminder"),
-    });
     const late = await runOrgan({
       label: "organ:late", uid: u.uid, log,
       run: () => (deps.lateNotice || lateNoticeUserOnce)(u, now, { events: futureEvents }),
@@ -830,6 +851,28 @@ async function wakeTick(deps = {}) {
   );
 }
 
+// The T-5 Telegram reminder is deadline-critical but does not require a phone or call opt-in. Keep
+// it off the degradable organ tick: each enabled tenant starts together, and one route/Telegram
+// stall is abandoned independently without delaying another tenant's deadline.
+async function reminderTick(deps = {}) {
+  const listUsers = deps.listUsers || supaUsers;
+  const reminder = deps.reminder || reminderUserOnce;
+  const users = await listUsers();
+  const now = deps.now !== undefined ? deps.now : Date.now();
+  const timeoutMs = deps.reminderTimeoutMs !== undefined
+    ? deps.reminderTimeoutMs
+    : (deps.travelReminderTimeoutMs !== undefined ? deps.travelReminderTimeoutMs : REMINDER_TIMEOUT_MS);
+  const eligible = (Array.isArray(users) ? users : [])
+    .filter(u => u && u.daily_automation_enabled !== false && u.notifications_enabled !== false);
+  await Promise.all(eligible.map(async (u) => {
+    try {
+      await withTimeout(() => reminder(u, now, deps), timeoutMs, "reminder");
+    } catch (e) {
+      console.error(`[reminder] uid=${String(u.uid).slice(0, 12)} err ${e && e.message}`);
+    }
+  }));
+}
+
 // Fixed 60s, deliberately NOT schedulerPollInterval(): the Composio budget degradation that slows the
 // organ tick to 5 minutes must not slow the dial (that defect is spec row #1d, tracked separately).
 // The wake tick owns the calendar fetch, so this loop's call volume equals the old combined tick's.
@@ -842,6 +885,31 @@ function startWakeLoop() {
   };
   run();
   return { close: () => clearTimeout(timer) };
+}
+
+// Fixed 60s, deliberately independent from schedulerPollInterval(): Composio budget degradation must
+// never turn the deadline-critical Telegram reminder into a 5-minute organ. Reserve the next start
+// before awaiting this tick so slow provider work cannot move the wall-clock boundary.
+function startReminderLoop(options = {}) {
+  console.log(`[reminder] started — dedicated tick every ${TICK_MS / 1000}s, ${REMINDER_TIMEOUT_MS / 1000}s per tenant`);
+  const opts = options || {};
+  const runReminderTick = opts.reminderTick || opts.tick || reminderTick;
+  const schedule = opts.setTimeout || setTimeout;
+  const cancel = opts.clearTimeout || clearTimeout;
+  let timer;
+  let closed = false;
+  const run = async () => {
+    if (closed) return;
+    timer = schedule(run, TICK_MS);
+    try { await runReminderTick(); } catch (e) { console.error("[reminder] tick err", e.message); }
+  };
+  run();
+  return {
+    close: () => {
+      closed = true;
+      if (timer !== undefined) cancel(timer);
+    },
+  };
 }
 
 function startScheduler() {
@@ -1034,14 +1102,15 @@ async function getUserByUid(uid) {
 }
 
 module.exports = {
-  startScheduler, startWakeLoop, startTravelLoop, startAskLoop, startOnboardLoop, startDiscoveryLoop,
-  tick, wakeTick, travelTick, askTickAll, onboardTick, discoveryTick,
+  startScheduler, startWakeLoop, startReminderLoop, startTravelLoop, startAskLoop, startOnboardLoop, startDiscoveryLoop,
+  tick, wakeTick, reminderTick, travelTick, askTickAll, onboardTick, discoveryTick,
   // the wake loop's own per-user budget — exported so a revert to the shared 90s is test-caught
   WAKE_USER_TIMEOUT_MS,
   // per-user single-invocation functions (for Inngest fan-out + testing)
-  wakeUserOnce, travelUserOnce, askUserOnce,
+  wakeUserOnce, reminderUserOnce, travelUserOnce, askUserOnce,
   // the two halves of the old wakeUserOnce — separate timers drive them (spec §3.1 method A)
   wakeCallOnce, organsUserOnce,
+  REMINDER_TIMEOUT_MS,
   lateNoticeUserOnce,
   // per-tenant isolation wrapper (HARD-4): one tenant's failure can't break the others' tick
   forEachUserSafe,

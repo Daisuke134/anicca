@@ -14,7 +14,8 @@ process.env.LM_CALL_SECRET = "unit_secret";
 process.env.PUBLIC_WSS = "wss://life-call.invalid";
 
 const {
-  wakeCallOnce, wakeUserOnce, organsUserOnce, WAKE_USER_TIMEOUT_MS, forEachUserSafe,
+  wakeCallOnce, wakeUserOnce, reminderUserOnce, organsUserOnce, reminderTick, startReminderLoop,
+  WAKE_USER_TIMEOUT_MS, forEachUserSafe,
 } = require("../scheduler.js");
 const { clearEvents, getEvents } = require("../lib/event-cache.js");
 
@@ -279,7 +280,8 @@ test("a due call and the reminder both run from one raw calendar fetch", async (
     seen.push({ uid: u.uid, nowMs, events: options.events });
     return { status: "sent", telegramMessageId: 701 };
   };
-  await wakeUserOnce(reminderUser(), DEPARTURE_MS - 5 * MINUTE, h.deps);
+  await wakeCallOnce(reminderUser(), DEPARTURE_MS - 5 * MINUTE, h.deps);
+  await reminderUserOnce(reminderUser(), DEPARTURE_MS - 5 * MINUTE, h.deps);
   assert.equal(h.dialed.length, 1, "the due T-5 call is placed");
   assert.equal(seen.length, 1, "the reminder organ runs once");
   assert.equal(seen[0].events[0].id, EVENT.id, "the reminder receives the fetched event");
@@ -294,29 +296,30 @@ test("a reminder throw or delay cannot suppress the call that ran first", async 
     await new Promise((resolve) => setTimeout(resolve, 40));
     throw new Error("reminder route failed");
   };
-  await wakeUserOnce(reminderUser(), DEPARTURE_MS - 5 * MINUTE, h.deps);
+  await wakeCallOnce(reminderUser(), DEPARTURE_MS - 5 * MINUTE, h.deps);
+  await reminderUserOnce(reminderUser(), DEPARTURE_MS - 5 * MINUTE, h.deps);
   assert.equal(h.dialed.length, 1, "the call survives the reminder failure");
   assert.ok(callAt, "the call completed before the reminder settled");
 });
 
-test("a call failure still runs the reminder organ", async () => {
+test("a call failure does not own the reminder; the fixed reminder path still runs", async () => {
   clearEvents();
   const h = deps();
   let reminders = 0;
   h.deps.wakeCall = async () => { throw new Error("call path exploded"); };
   h.deps.travelReminder = async () => { reminders += 1; return { status: "suppressed" }; };
   await wakeUserOnce(reminderUser(), DEPARTURE_MS - 5 * MINUTE, h.deps);
-  assert.equal(reminders, 1, "the reminder survives a call-path throw");
+  assert.equal(reminders, 0, "the call path no longer owns the reminder");
+  await reminderUserOnce(reminderUser(), DEPARTURE_MS - 5 * MINUTE, h.deps);
+  assert.equal(reminders, 1, "the fixed reminder path still runs after a call failure");
 });
 
-test("call-disabled users still receive the reminder organ", async () => {
+test("call-disabled users still receive the fixed reminder", async () => {
   clearEvents();
   const h = deps();
   let reminders = 0;
   h.deps.travelReminder = async () => { reminders += 1; return { status: "suppressed" }; };
-  h.deps.claimWake = async () => { throw new Error("call must be gated off"); };
-  await wakeUserOnce(reminderUser({ call_enabled: false }), DEPARTURE_MS - 5 * MINUTE, h.deps);
-  assert.equal(h.dialed.length, 0, "call opt-in remains independent");
+  await reminderUserOnce(reminderUser({ call_enabled: false }), DEPARTURE_MS - 5 * MINUTE, h.deps);
   assert.equal(reminders, 1, "call-disabled users still get Telegram organs");
 });
 
@@ -335,7 +338,7 @@ test("notifications-disabled users get no reminder send or event-bearing reminde
   console.log = (...args) => consoleLines.push(args.join(" "));
   console.error = (...args) => consoleLines.push(args.join(" "));
   try {
-    await wakeUserOnce(reminderUser({ call_enabled: true, notifications_enabled: false }), DEPARTURE_MS - 5 * MINUTE, h.deps);
+    await reminderUserOnce(reminderUser({ call_enabled: true, notifications_enabled: false }), DEPARTURE_MS - 5 * MINUTE, h.deps);
   } finally {
     console.log = originalLog;
     console.error = originalError;
@@ -367,7 +370,7 @@ test("the reminder receives the raw lookback event, including an online event al
     received = options.events;
     return { status: "suppressed" };
   };
-  await wakeUserOnce(reminderUser({ call_enabled: false }), now, h.deps);
+  await reminderUserOnce(reminderUser({ call_enabled: false }), now, h.deps);
   assert.equal(received.length, 1, "the raw event list reaches the reminder");
   assert.equal(received[0].online, true);
   assert.ok(received[0].startMs < now, "lookback event is not replaced by futureEvents");
@@ -379,14 +382,19 @@ test("a reminder hang in one tenant does not stop the next tenant", async () => 
   h.deps.reminderTimeoutMs = 30;
   let nextRan = 0;
   const users = [reminderUser({ uid: "iso-stuck" }), reminderUser({ uid: "iso-next" })];
-  await forEachUserSafe(users, "organs", (u) => organsUserOnce(u, Date.now(), {
-    ...h.deps,
-    travelReminder: async () => {
-      if (u.uid === "iso-stuck") return new Promise(() => {});
-      nextRan += 1;
-      return { status: "suppressed" };
-    },
-  }), 30);
+  await reminderTick({
+    listUsers: async () => users,
+    now: Date.now(),
+    reminder: (u, now, tickDeps) => reminderUserOnce(u, now, {
+      ...tickDeps,
+      travelReminder: async () => {
+        if (u.uid === "iso-stuck") return new Promise(() => {});
+        nextRan += 1;
+        return { status: "suppressed" };
+      },
+    }),
+    reminderTimeoutMs: 30,
+  });
   assert.equal(nextRan, 1, "the next tenant is still served after the first reminder hangs");
 });
 
@@ -405,7 +413,9 @@ test("a never-resolving call is bounded and the reminder still runs", async () =
   ]);
   assert.notStrictEqual(result, sentinel, "wakeUserOnce must not await a hung call forever");
   assert.equal(callStarted, true, "the call path remains first");
-  assert.equal(reminderRan, 1, "the reminder runs after the bounded call attempt");
+  assert.equal(reminderRan, 0, "wakeUserOnce no longer owns the reminder");
+  await reminderUserOnce(reminderUser(), DEPARTURE_MS - 5 * MINUTE, h.deps);
+  assert.equal(reminderRan, 1, "the reminder runs from its fixed path");
 });
 
 test("a never-resolving reminder is bounded and the late organ still runs", async () => {
@@ -417,11 +427,12 @@ test("a never-resolving reminder is bounded and the late organ still runs", asyn
   h.deps.lateNotice = async () => { lateRan += 1; return null; };
   const sentinel = Symbol("reminder-timeout");
   const result = await Promise.race([
-    organsUserOnce(reminderUser(), DEPARTURE_MS - 5 * MINUTE, h.deps),
+    reminderUserOnce(reminderUser(), DEPARTURE_MS - 5 * MINUTE, h.deps),
     new Promise((resolve) => setTimeout(() => resolve(sentinel), 100)),
   ]);
   assert.notStrictEqual(result, sentinel, "a hung reminder must not hold this user's organ tick");
-  assert.equal(lateRan, 1, "the late organ runs after reminder timeout");
+  await organsUserOnce(reminderUser(), DEPARTURE_MS - 5 * MINUTE, h.deps);
+  assert.equal(lateRan, 1, "the late organ runs independently after reminder timeout");
 });
 
 test("the scheduler leaves one canonical travel-reminder receipt with hash/provider/message id", async () => {
@@ -445,10 +456,93 @@ test("the scheduler leaves one canonical travel-reminder receipt with hash/provi
   h.deps.claimTravel = async () => true;
   h.deps.sendMessage = async () => ({ ok: true, result: { message_id: 703 } });
   h.deps.log = (line) => lines.push(String(line));
-  await organsUserOnce(reminderUser(), now, h.deps);
+  await reminderUserOnce(reminderUser(), now, h.deps);
   const receipts = lines.filter((line) => line.startsWith("[travel-reminder] "));
   assert.equal(receipts.length, 1, `one canonical receipt expected, got ${JSON.stringify(receipts)}`);
   assert.match(receipts[0], /event_key_hash=[0-9a-f]{64}/);
   assert.match(receipts[0], /provider=none/);
   assert.match(receipts[0], /tg_message_id=703/);
+});
+
+test("the fixed reminder tick serves notification tenants concurrently and ignores phone opt-in", async () => {
+  const started = [];
+  const released = [];
+  const users = [
+    reminderUser({ uid: "iso-reminder-slow", call_enabled: false, daily_automation_enabled: true }),
+    reminderUser({ uid: "iso-reminder-fast", call_enabled: false, daily_automation_enabled: true }),
+    reminderUser({ uid: "iso-reminder-off", call_enabled: true, daily_automation_enabled: false }),
+    reminderUser({ uid: "iso-reminder-muted", call_enabled: true, notifications_enabled: false }),
+  ];
+  const result = reminderTick({
+    listUsers: async () => users,
+    now: 0,
+    reminder: async (u) => {
+      started.push(u.uid);
+      if (u.uid.endsWith("slow")) await new Promise((resolve) => setTimeout(resolve, 30));
+      released.push(u.uid);
+    },
+    reminderTimeoutMs: 100,
+  });
+  await result;
+  assert.deepEqual(started.sort(), ["iso-reminder-fast", "iso-reminder-slow"]);
+  assert.ok(released.includes("iso-reminder-fast"), "a fast tenant is not held behind a slow tenant");
+});
+
+test("the degradable organ tick no longer owns the travel reminder", async () => {
+  clearEvents();
+  const h = deps();
+  let reminders = 0;
+  h.deps.getEvents = () => [];
+  h.deps.travelReminder = async () => { reminders += 1; return { status: "sent" }; };
+  h.deps.mental = async () => null;
+  h.deps.care = async () => null;
+  h.deps.diet = async () => null;
+  h.deps.dietNudge = async () => null;
+  h.deps.preceptsMirror = async () => null;
+  h.deps.precepts = async () => null;
+  h.deps.relations = async () => null;
+  await organsUserOnce(reminderUser(), Date.now(), h.deps);
+  assert.equal(reminders, 0, "the reminder has one fixed-tick owner, not the degradable organ tick");
+});
+
+test("the reminder loop reserves the next 60s start before a slow tick and close prevents future work", async () => {
+  const previousSupaUrl = process.env.SUPABASE_URL;
+  const previousSupaKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  process.env.SUPABASE_URL = "";
+  process.env.SUPABASE_SERVICE_ROLE_KEY = "";
+  const scheduled = [];
+  const cleared = [];
+  let starts = 0;
+  let resolveCurrent;
+  let loop;
+  try {
+    loop = startReminderLoop({
+      reminderTick: async () => {
+        starts += 1;
+        await new Promise((resolve) => { resolveCurrent = resolve; });
+      },
+      setTimeout: (fn, ms) => {
+        const handle = { fn, ms };
+        scheduled.push(handle);
+        return handle;
+      },
+      clearTimeout: (handle) => cleared.push(handle),
+    });
+    assert.equal(starts, 1, "the current tick starts immediately");
+    assert.equal(scheduled.length, 1, "the next start is reserved while the current tick is unresolved");
+    assert.equal(scheduled[0].ms, 60_000, "the reserved boundary is fixed at 60 seconds");
+
+    loop.close();
+    assert.deepEqual(cleared, [scheduled[0]], "close clears the reserved future timer");
+    scheduled[0].fn();
+    await Promise.resolve();
+    assert.equal(starts, 1, "a callback racing with close cannot start future work");
+  } finally {
+    if (loop) loop.close();
+    if (resolveCurrent) resolveCurrent();
+    if (previousSupaUrl === undefined) delete process.env.SUPABASE_URL;
+    else process.env.SUPABASE_URL = previousSupaUrl;
+    if (previousSupaKey === undefined) delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+    else process.env.SUPABASE_SERVICE_ROLE_KEY = previousSupaKey;
+  }
 });
