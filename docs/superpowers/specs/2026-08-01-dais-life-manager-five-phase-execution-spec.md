@@ -291,14 +291,14 @@ Calendarを無関係なeventで埋めること自体を成果にしない。
 
 | surface | current measured behavior | required behavior |
 |---|---|---|
-| schedule | installed ownerは01:00 / 09:00 / 17:00 JST、repository templateは09:00 daily | single owner、`StartInterval=3600`、重複label 0 |
-| horizon | Calendar、Luma、connpassのactive pathは14日 | JSTで今日を含む28日 |
-| profile | AI・crypto等はsoft preferenceで、他分野を除外しない | `strong/moderate`だけを自動申込 |
-| live ranking | `event-preference-ranking.js`はactive minimal runnerへ未接続 | provider-neutral候補をrankし、弱い候補をSubmit前に止める |
-| LT | `event-talk-opportunity.js`と`grounded-talk-pack.js`は存在するがlive申込経路へ未接続 | open LTをattendanceと別receiptで追跡 |
-| provider result | native loopは稼働し、primaryに適格候補がないwakeで無関係なPeatix eventまで到達する | fallbackにも同じquality gateを適用 |
-| connpass | official API clientは存在するがactive minimal discoveryはbrowser pageを読む | API v2 discoveryのみ、非API automated access 0 |
-| evidence | provider、Calendar、PNG、Telegram、bundle chainは既存 | ranking理由、topic class、LT状態を同じlineageへ追加 |
+| schedule | immutable release `2cd76436...`のnative owner exact 1、`StartInterval=3600`、canary exit 0 | 24回の自然hourly receiptで継続証明 |
+| horizon | Calendar、Luma、connpassのactive primary pathはJST day 0〜27の28日 | 28日境界を維持 |
+| profile | YC hackathon→open LT→AI→crypto→startup、`strong/moderate`だけがauto-apply eligible | live候補で品質gateを維持 |
+| live ranking | provider-neutral rankingがactive minimal runnerに接続済み、large inventoryは3件chunk/並列3 | 10分wake内のterminalを維持 |
+| LT | classifier、talk pack、独立transition store、one-effect budgetはactive pathに接続済み | 実open LTのtalk application receiptを1件完成 |
+| provider result | Luma→connpassを尽くし、fallbackにも同じquality gateと160秒completion reserveを適用 | 実Luma bundleと次の自然wakeのreplay-zero |
+| connpass | official API v2 discoveryのみ。自動申込許可は未回答のためTelegram manual boundary、provider Submit 0 | official responseを監視し、明示許可までSubmit 0 |
+| evidence | ranking理由、topic class、LT状態、provider/Calendar/PNG/Telegram/bundle lineageは接続済み | live bundle・LT・24-hour soak receiptを追加 |
 
 #### 0.0.3 Atomic TODO SSOT
 
@@ -8801,7 +8801,7 @@ provider auditはLuma `35/35/29/17/1`、Connpass `5/5/5/3/0`、Peatix `100/100/8
 
 ### O1B-25進捗515（Connector core scope再確定）
 
-Daisの明示指示により、Connector current contractを「Luma、次にConnpassをprimaryとして無料・受付中・東京・14日内・Calendar非衝突eventを探索し、実申込、official readback、event本体のGoogle Calendar登録、Telegram evidence、durable receiptまで行うlocal loop」へ再確定した。AI・crypto・startup・engineeringはsoft preferenceであり、異分野eventを除外するhard filterではない。Connectorは会うべき人物を予測せず、移動時間・前後buffer・経路・Life Manager Web AppのCalendar enrichment・cloud化を実装しない。
+Daisの明示指示により、Connector current contractを「Luma、次にConnpassをprimaryとして無料・受付中・東京・28日内・Calendar非衝突eventを探索し、実申込、official readback、event本体のGoogle Calendar登録、Telegram evidence、durable receiptまで行うlocal loop」へ再確定した。priorityはYC hackathon→open LT→AI→crypto→startupで、公開情報が`strong/moderate`を支える候補だけをauto-apply eligibleとし、`other/weak/unknown`はSubmitしない。Connectorは会うべき人物を予測せず、移動時間・前後buffer・経路・Life Manager Web AppのCalendar enrichment・cloud化を実装しない。
 
 実装照合では`skills/connector/native-pass.js`のprovider順序がLuma→Connpass→残り6 rails、`event-goal-serendipity.js`が全eventをexact 1回返してomit禁止、write pipelineがofficial receipt後にevent本体をCalendarへexact 1件作成しTelegram message/photoを送ることを確認した。Lumaはofficial ticket/QRを取得できる時だけ追加送信し、QR unavailableでもverified registration page evidence・Calendar・Telegram core chainは継続する。一方、native runtimeのcandidate gateには旧`createConnectorRouteMinutes`/`homeLocation`/`routeMinutes`依存が残るため、C-CORE-03で削除する。既存fallback実装は削除せず、追加first-live proofを`DEFERRED_NON_BLOCKING`へ移した。進捗514のC-OPS/C-LIVE順序は履歴とし、current Active TODOを`0.2.1`のC-CORE-01〜07へ置換した。
 
