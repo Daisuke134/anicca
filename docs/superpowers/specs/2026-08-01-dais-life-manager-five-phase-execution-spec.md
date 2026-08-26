@@ -72,8 +72,10 @@ $25,000以上のlifetime earnings/spend、freelancer JSS 90%以上、account goo
 fundraising answers/deck/one-pager、active accelerator formsは、この正本から生成またはdrift検証する。
 fundraiser branch `fundraiser-agent-task0-20260826`の固定commit `626d94f36`からproduct/mission/delivery/tractionを、
 `92dd73b07`からcanonical application answersをcopy+tweakした。動的なaccelerator priority queueとbrowser/CAPTCHA runtimeは取り込まない。
-canonical startup contextは`2026-08-27.1`、digest
-`ed5ba97556808019aaa581075d8f3988c86f38535f9215ea52541651fa48d712`で、同digestのfundraising kit 6ファイルを再生成済みである。
+canonical startup contextは`2026-08-27.2`、digest
+`9fbe6198c6d61da47d68767eec90a1d95d2e07058f024448d86372b5f3035338`で、同digestのfundraising kit 6ファイルを再生成済みである。
+mission、revenue、users、applications、AGIはsource/status/as_of/public_useを持つclaim registryへ入り、AGI達成、数値user、
+provider receiptのないapplication outcomeをpublic artifact validatorが拒否する。
 
 #### As-Is / To-Be architecture
 
@@ -153,8 +155,8 @@ error recovery、effect/readbackを実codeで再監査し、noticeを保持す�
 | 4 | UPW-04 exact action-scope inquiry | DONE | 既存Support caseへ6 actionを一度だけ質問し、Gmail sent messageを同一threadでreadback。公開evidenceはcase/message/threadをhash化 |
 | 5 | UPW-05 API request or ineligibility receipt | DONE | 条件未達のためAPI formを送信せず、`docs/evidence/upwork/2026-08-26-api-terminal.json`へtruthful `API_INELIGIBLE`を保存 |
 | 6 | UPW-06 terminal capability manifest | DONE | private 8 browser receiptsをwarning-bound `denied`へ置換。official API 8 actionは`unknown`、labels disabled、`:9233` listener 0 |
-| 7 | CTX-01 merge current startup context | DONE | fixed commits `626d94f36` / `92dd73b07`から動的応募stateを除外して統合。version `2026-08-27.1`、digest `ed5ba975…d712`、16 tests PASS、kit 6 filesをreadback |
-| 8 | CTX-02 claim provenance gate | TODO | traction、revenue、user数、application、mission、AGI表現の各claimにsource/status/as-ofを持たせ、unsupported claimを生成不能にする |
+| 7 | CTX-01 merge current startup context | DONE | fixed commits `626d94f36` / `92dd73b07`から動的応募stateを除外して統合。version `2026-08-27.2`、digest `9fbe6198…5338`、kit 6 filesをreadback |
+| 8 | CTX-02 claim provenance gate | DONE | mission/revenue/users/applications/AGIにsource/status/as_of/public_useを必須化。3 claim guardと19 testsでunsupported public artifactを拒否 |
 | 9 | CTX-03 README convergence | TODO | first abstractをgeneral/proactive/manager/body-mind-money/real action/local+cloudで統一し、self-fundedを別物とする矛盾を削除 |
 | 10 | CTX-04 public `/lm` convergence | TODO | 遅刻防止を最初のworking wedgeとして残しつつ、hero・organs・OSS/cloud・evidence・CTAをgeneral Life Managerへ更新 |
 | 11 | CTX-05 root-site relationship | TODO | `aniccaai.com`のmission/Anicca entityとLife Manager productの関係を明示し、重複・相反するAGI/self-funding claimを整理 |

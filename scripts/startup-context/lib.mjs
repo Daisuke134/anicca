@@ -16,6 +16,16 @@ const REQUIRED_APPLICATION_ANSWERS = [
   "how_built",
   "use_of_funds",
 ];
+const REQUIRED_CLAIM_TOPICS = ["mission", "revenue", "users", "applications", "agi"];
+const CLAIM_STATUSES = new Set([
+  "verified",
+  "aspirational",
+  "founder_attested",
+  "unsupported",
+  "unverified_dynamic",
+  "aspirational_not_achieved",
+]);
+const PUBLIC_USE_STATUSES = new Set(["allowed", "allowed_with_status", "prohibited"]);
 
 function isNonEmptyString(value) {
   return typeof value === "string" && value.trim().length > 0;
@@ -86,10 +96,44 @@ export function validateStartupContext(context) {
   } else {
     for (const claim of context.claims) {
       const label = isNonEmptyString(claim?.id) ? claim.id : "unnamed claim";
+      if (!isNonEmptyString(claim?.topic)) errors.push(`${label}: topic is required`);
       if (!isNonEmptyString(claim?.statement)) errors.push(`${label}: statement is required`);
-      if (!isNonEmptyString(claim?.verified_at)) errors.push(`${label}: verified_at is required`);
+      if (!isNonEmptyString(claim?.source)) errors.push(`${label}: source is required`);
+      if (!CLAIM_STATUSES.has(claim?.status)) errors.push(`${label}: status is invalid`);
+      if (!isNonEmptyString(claim?.as_of)) errors.push(`${label}: as_of is required`);
+      if (!PUBLIC_USE_STATUSES.has(claim?.public_use)) errors.push(`${label}: public_use is invalid`);
       if (!Array.isArray(claim?.evidence) || claim.evidence.length === 0) {
         errors.push(`${label}: evidence is required`);
+      }
+    }
+    for (const topic of REQUIRED_CLAIM_TOPICS) {
+      if (!context.claims.some((claim) => claim.topic === topic)) {
+        errors.push(`claims topic ${topic} is required`);
+      }
+    }
+    const missionClaim = context.claims.find((claim) => claim.topic === "mission");
+    if (missionClaim?.statement !== context?.product?.mission) {
+      errors.push("mission claim must match product.mission");
+    }
+    const revenueClaim = context.claims.find((claim) => claim.topic === "revenue");
+    if (revenueClaim?.source !== founderRevenue?.source || !revenueClaim?.statement?.includes(founderRevenue?.display)) {
+      errors.push("revenue claim must match founder-attested traction");
+    }
+  }
+
+  if (!Array.isArray(context?.claim_guards) || context.claim_guards.length === 0) {
+    errors.push("claim_guards must be a non-empty array");
+  } else {
+    for (const guard of context.claim_guards) {
+      const label = isNonEmptyString(guard?.id) ? guard.id : "unnamed claim guard";
+      if (!isNonEmptyString(guard?.pattern)) {
+        errors.push(`${label}: pattern is required`);
+        continue;
+      }
+      try {
+        new RegExp(guard.pattern, "i");
+      } catch {
+        errors.push(`${label}: pattern is invalid`);
       }
     }
   }
@@ -144,6 +188,12 @@ export function validatePublicArtifact(content, context) {
   }
   if (/(?:\+81[- ]?|0\d{1,4}[- ])\d{1,4}[- ]\d{3,4}/.test(text)) {
     errors.push("artifact contains a phone number");
+  }
+
+  for (const guard of context?.claim_guards ?? []) {
+    if (new RegExp(guard.pattern, "i").test(text)) {
+      errors.push(`artifact violates claim guard: ${guard.id}`);
+    }
   }
 
   return errors;

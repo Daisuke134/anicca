@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "context_version": "2026-08-27.1",
-  "updated_at": "2026-08-27T00:07:18+09:00",
+  "context_version": "2026-08-27.2",
+  "updated_at": "2026-08-27T00:20:00+09:00",
   "product": {
     "name": "Life Manager",
     "usage": "Use as the product name in every public product and fundraising field.",
@@ -99,19 +99,101 @@
   "claims": [
     {
       "id": "public-repository",
+      "topic": "public_presence",
       "statement": "Life Manager is developed in a public repository.",
-      "verified_at": "2026-08-02T12:00:00+09:00",
+      "source": "provider_readback",
+      "status": "verified",
+      "as_of": "2026-08-02T12:00:00+09:00",
+      "public_use": "allowed",
       "evidence": [
         "https://github.com/Daisuke134/life-manager"
       ]
     },
     {
       "id": "telegram-entry",
+      "topic": "public_presence",
       "statement": "Life Manager has a public Telegram entry point.",
-      "verified_at": "2026-08-02T12:00:00+09:00",
+      "source": "provider_readback",
+      "status": "verified",
+      "as_of": "2026-08-02T12:00:00+09:00",
+      "public_use": "allowed",
       "evidence": [
         "https://t.me/LifeManagerBotbot?start=lp"
       ]
+    },
+    {
+      "id": "mission-direction",
+      "topic": "mission",
+      "statement": "End suffering for humans and, ultimately, all living beings by making dependable care and agency continuously available.",
+      "source": "founder_direction",
+      "status": "aspirational",
+      "as_of": "2026-08-27T00:07:18+09:00",
+      "public_use": "allowed_with_status",
+      "evidence": [
+        "Canonical product mission; this is a direction, not an achieved outcome."
+      ]
+    },
+    {
+      "id": "founder-revenue",
+      "topic": "revenue",
+      "statement": "Life Manager has generated approximately $1,000 in revenue for its founder; this is not claimed as MRR or ARR.",
+      "source": "founder_attested",
+      "status": "founder_attested",
+      "as_of": "2026-08-26T16:00:00+09:00",
+      "public_use": "allowed_with_status",
+      "evidence": [
+        "Founder attestation recorded in traction.founder_attested_revenue."
+      ]
+    },
+    {
+      "id": "user-count",
+      "topic": "users",
+      "statement": "No verified public user-count claim is available.",
+      "source": "none",
+      "status": "unsupported",
+      "as_of": "2026-08-27T00:07:18+09:00",
+      "public_use": "prohibited",
+      "evidence": [
+        "No current provider or analytics receipt is present in the canonical startup context."
+      ]
+    },
+    {
+      "id": "application-outcomes",
+      "topic": "applications",
+      "statement": "Application submissions, acceptances, and admissions require a current program-provider receipt.",
+      "source": "provider_receipt_required",
+      "status": "unverified_dynamic",
+      "as_of": "2026-08-27T00:07:18+09:00",
+      "public_use": "prohibited",
+      "evidence": [
+        "Dynamic fundraiser execution state is intentionally excluded from this canonical public context."
+      ]
+    },
+    {
+      "id": "agi-achievement",
+      "topic": "agi",
+      "statement": "Life Manager is being built toward general agency; AGI is not claimed as an achieved scientific result.",
+      "source": "product_direction",
+      "status": "aspirational_not_achieved",
+      "as_of": "2026-08-27T00:07:18+09:00",
+      "public_use": "allowed_with_status",
+      "evidence": [
+        "Canonical product contract distinguishes mission and direction from achieved capability."
+      ]
+    }
+  ],
+  "claim_guards": [
+    {
+      "id": "achieved-agi",
+      "pattern": "\\b(?:(?:is|became|becomes|achieved|has achieved)\\s+(?:an?\\s+)?AGI|(?:world(?:'s|’s) first|the first)\\s+AGI)\\b"
+    },
+    {
+      "id": "numeric-users",
+      "pattern": "\\b\\d[\\d,]*(?:\\.\\d+)?\\s+(?:users?|customers?)\\b"
+    },
+    {
+      "id": "unverified-application-outcome",
+      "pattern": "\\b(?:accepted|admitted|selected|submitted)\\s+(?:to|into|by|for)\\b"
     }
   ],
   "forbidden_exact_values": {
