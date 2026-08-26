@@ -10,6 +10,7 @@ const path = require("node:path");
 const {
   handleCalendarOnboardRequest,
   deriveCalendarState,
+  CALENDAR_STATE_TTL_MS,
   CALENDAR_STATE_RE,
 } = require("./calendar-onboard.js");
 
@@ -31,6 +32,7 @@ function fixture({ active = false, status = "MISSING", redirect = "https://provi
     },
     async createOAuthState(scope, state) {
       calls.states.push({ scope: { ...scope }, state: { ...state } });
+      return true;
     },
   };
   const opts = {
@@ -154,6 +156,21 @@ test("start rejects WHATWG-normalized or whitespace-padded panel origins", async
   }
 });
 
+test("start fails closed without an explicit state secret before provider/store effects", async () => {
+  const state = fixture();
+  delete state.opts.sessionSecret;
+  await withServer(state.opts, async (base) => {
+    const response = await fetch(`${base}/api/panel/onboarding/calendar/start`, {
+      method: "POST", headers: cookieHeaders({ origin: ORIGIN, "content-type": "application/json", "x-lm-csrf": SCOPE.csrf }), body: "{}",
+    });
+    assert.equal(response.status, 502);
+    assert.deepEqual(await response.json(), { error: "calendar_unavailable" });
+  });
+  assert.equal(state.calls.start.length, 0);
+  assert.equal(state.calls.states.length, 0);
+  assert.equal(state.calls.oauth.length, 0);
+});
+
 test("rotated panel sessions renew the cookie on calendar responses", async () => {
   const state = fixture({ active: true });
   state.opts.sessionScopeImpl = async () => ({ ...SCOPE, replacement: "replacement-cookie", cookieMaxAge: 120 });
@@ -243,6 +260,31 @@ test("invalid provider redirect is rejected without leaking provider payload", a
   assert.equal(state.calls.oauth.length, 1);
 });
 
+test("concurrent/repeated starts claim one live state and one provider link until expiry", async () => {
+  const state = fixture();
+  let nowMs = 0, attempts = 0, rows = 0, links = 0, expiresAt = 0;
+  state.opts.nowMs = nowMs;
+  state.opts.commandStore.createOAuthState = async (_scope, value) => {
+    attempts++;
+    if (expiresAt > nowMs) return false;
+    rows++; expiresAt = Date.parse(value.expiresAt); return true;
+  };
+  state.opts.startCalendarOAuthImpl = async () => { links++; throw new Error("provider failed"); };
+  const request = (base) => fetch(`${base}/api/panel/onboarding/calendar/start`, {
+    method: "POST", headers: cookieHeaders({ origin: ORIGIN, "content-type": "application/json", "x-lm-csrf": SCOPE.csrf }), body: "{}",
+  });
+  await withServer(state.opts, async (base) => {
+    assert.equal((await request(base)).status, 502);
+    assert.equal((await request(base)).status, 409);
+    nowMs = CALENDAR_STATE_TTL_MS + 1;
+    state.opts.nowMs = nowMs;
+    assert.equal((await request(base)).status, 502);
+  });
+  assert.equal(attempts, 3);
+  assert.equal(rows, 2, "expiry permits a fresh durable state");
+  assert.equal(links, 2, "a blocked repeat cannot mint another provider link");
+});
+
 test("existing OAuth callback remains atomic and accepts only ACTIVE readback", async () => {
   const { handlePanelOAuthCallback } = require("./panel-api.js");
   const stateToken = "a".repeat(43);
@@ -314,4 +356,15 @@ test("production server wires only the two session calendar onboarding paths", (
   assert.match(source, /\/api\/panel\/onboarding\/calendar\/start/);
   assert.match(source, /\/api\/panel\/onboarding\/calendar\/status/);
   assert.match(source, /LM_PANEL_SESSION_ROTATION_SECRET/);
+});
+
+test("atomic OAuth migration is additive, hash-only, and service-role RPC guarded", () => {
+  const migration = fs.readFileSync(path.join(__dirname, "../migrations/2026-08-27-lm-panel-oauth-atomic.sql"), "utf8");
+  assert.match(migration, /CREATE UNIQUE INDEX IF NOT EXISTS lm_panel_oauth_states_live_scope_idx/i);
+  assert.match(migration, /WHERE used_at IS NULL/i);
+  assert.match(migration, /CREATE OR REPLACE FUNCTION public\.create_lm_panel_oauth_state/i);
+  assert.match(migration, /DELETE FROM public\.lm_panel_oauth_states/i);
+  assert.match(migration, /REVOKE ALL ON FUNCTION public\.create_lm_panel_oauth_state[\s\S]*FROM PUBLIC, anon, authenticated/i);
+  assert.match(migration, /GRANT EXECUTE ON FUNCTION public\.create_lm_panel_oauth_state[\s\S]*TO service_role/i);
+  assert.doesNotMatch(migration, /CREATE TABLE/i);
 });

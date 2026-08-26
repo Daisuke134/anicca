@@ -363,7 +363,7 @@ function createSupabaseCommandStore(opts = {}) {
     async patchUser(scope, body) { return patch("lm_users", scope, body); },
     async mutatePreferences(scope, body) { const response = await fetchImpl(`${base}/rest/v1/rpc/mutate_lm_panel_preferences`, { method: "POST", headers: { ...headers(opts.supaKey), "content-type": "application/json" }, body: JSON.stringify({ p_uid: scope.uid, p_chat_id: scope.chatId, p_patch: body }) }); if (!response.ok) throw new Error("scope_mismatch"); return jsonOr(response, body); },
     async mutateUser(scope, body) { const response = await fetchImpl(`${base}/rest/v1/rpc/mutate_lm_panel_user`, { method: "POST", headers: { ...headers(opts.supaKey), "content-type": "application/json" }, body: JSON.stringify({ p_uid: scope.uid, p_chat_id: scope.chatId, p_patch: body }) }); if (!response.ok) throw new Error("scope_mismatch"); return jsonOr(response, body); },
-    async createOAuthState(scope, state) { const response = await fetchImpl(`${base}/rest/v1/lm_panel_oauth_states`, { method: "POST", headers: { ...headers(opts.supaKey), "content-type": "application/json", Prefer: "return=minimal" }, body: JSON.stringify({ state_hash: state.stateHash, uid: scope.uid, chat_id: scope.chatId, provider: state.provider, expires_at: state.expiresAt }) }); if (!response.ok) throw new Error("oauth_state_failed"); },
+    async createOAuthState(scope, state) { const response = await fetchImpl(`${base}/rest/v1/rpc/create_lm_panel_oauth_state`, { method: "POST", headers: { ...headers(opts.supaKey), "content-type": "application/json" }, body: JSON.stringify({ p_state_hash: state.stateHash, p_uid: scope.uid, p_chat_id: scope.chatId, p_provider: state.provider, p_expires_at: state.expiresAt }) }); if (!response.ok) throw new Error("oauth_state_failed"); const value = await jsonOr(response, false); const claimed = Array.isArray(value) ? value[0] === true : value === true; if (!claimed) { const error = new Error("oauth_state_in_progress"); error.status = 409; throw error; } return true; },
     async claimOAuthState(scope, stateHash) { const response = await fetchImpl(`${base}/rest/v1/rpc/claim_lm_panel_oauth_state`, { method: "POST", headers: { ...headers(opts.supaKey), "content-type": "application/json" }, body: JSON.stringify({ p_state_hash: stateHash, p_uid: scope.uid, p_chat_id: scope.chatId }) }); if (!response.ok) throw new Error("oauth_state_failed"); return jsonOr(response, false); },
   };
 }
@@ -408,7 +408,7 @@ async function composioCalendarStatus(scope, opts = {}) {
   if (items.length > 1) throw new Error("provider_ambiguous");
   if (items.length === 0) return "MISSING";
   if (!exactCalendarAccount(scope, items[0])) throw new Error("provider_ownership");
-  return items[0].status === "ACTIVE" && items[0].is_disabled !== true && items[0].enabled !== false ? "ACTIVE" : "DISABLED";
+  return items[0].status === "ACTIVE" && items[0].is_disabled !== true && items[0].enabled === true ? "ACTIVE" : "DISABLED";
 }
 
 async function composioCalendarAccounts(scope, opts = {}) {
@@ -450,7 +450,7 @@ async function composioCalendarStart(scope, opts = {}) {
   if (accounts.length === 0) return null;
   if (accounts.length !== 1 || !accounts[0].id) throw new Error("provider_ambiguous");
   const account = accounts[0];
-  if (account.status === "ACTIVE" && account.is_disabled !== true && account.enabled !== false) return { provider: "calendar", state: "connected" };
+  if (account.status === "ACTIVE" && account.is_disabled !== true && account.enabled === true) return { provider: "calendar", state: "connected" };
   const response = await (opts.fetchImpl || fetch)(`https://backend.composio.dev/api/v3/connected_accounts/${encodeURIComponent(account.id)}/status`, {
     method: "PATCH",
     headers: { "x-api-key": opts.composioKey, "content-type": "application/json" },

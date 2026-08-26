@@ -62,13 +62,22 @@ async function handleCalendarOnboardRequest(req, res, opts = {}) {
     let body;
     try { body = await readJson(req); } catch { return sendJson(res, 400, { error: "invalid_json" }); }
     if (!body || typeof body !== "object" || Array.isArray(body)) return sendJson(res, 400, { error: "invalid_json" });
+    const secret = opts.sessionSecret || process.env.LM_PANEL_SESSION_ROTATION_SECRET || process.env.LM_UID_SECRET;
+    if (!secret) return sendJson(res, 502, { error: "calendar_unavailable" });
     const provider = { ...opts, panelBaseUrl: opts.panelBaseUrl || origin, composioKey: opts.composioKey || process.env.COMPOSIO_API_KEY, composioAuthConfig: opts.composioAuthConfig || process.env.COMPOSIO_GCAL_AUTH_CONFIG };
     const resumed = await (opts.composioCalendarStartImpl || composioCalendarStart)(auth.scope, provider);
     if (resumed && (resumed.state === "connected" || resumed.connected === true || resumed.state?.state === "connected")) return sendJson(res, 200, { connected: true, state: "connected" });
     const nonce = (opts.randomBytes || crypto.randomBytes)(32).toString("base64url");
-    const state = deriveCalendarState(nonce, auth.scope, opts.sessionSecret || process.env.LM_PANEL_SESSION_ROTATION_SECRET || opts.supaKey);
+    const state = deriveCalendarState(nonce, auth.scope, secret);
     if (!CALENDAR_STATE_RE.test(state)) throw new Error("invalid_state");
-    await store.createOAuthState(auth.scope, { stateHash: sha256(state), provider: "calendar", expiresAt: new Date((Number.isFinite(opts.nowMs) ? opts.nowMs : Date.now()) + CALENDAR_STATE_TTL_MS).toISOString() });
+    let claimed;
+    try {
+      claimed = await store.createOAuthState(auth.scope, { stateHash: sha256(state), provider: "calendar", expiresAt: new Date((Number.isFinite(opts.nowMs) ? opts.nowMs : Date.now()) + CALENDAR_STATE_TTL_MS).toISOString() });
+    } catch (error) {
+      if (error && (error.code === "oauth_state_in_progress" || error.message === "oauth_state_in_progress" || error.status === 409)) return sendJson(res, 409, { error: "calendar_in_progress" });
+      throw error;
+    }
+    if (claimed === false) return sendJson(res, 409, { error: "calendar_in_progress" });
     const oauth = await (opts.startCalendarOAuthImpl || startCalendarOAuth)(auth.scope, state, provider);
     const redirect = oauth && oauth.redirectUrl;
     let redirectUrl;
