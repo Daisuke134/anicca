@@ -53,7 +53,7 @@ CATALOG_URL = "https://www.upwork.com/nx/project-dashboard/?step=approved"
 CONTRACTS_URL = "https://www.upwork.com/nx/wm/freelancer/home"
 MESSAGES_URL = "https://www.upwork.com/ab/messages/rooms"
 WORKING_STYLE_URL = "https://www.upwork.com/nx/skills-assesment/assessment-results"
-SEARCH_URL = "https://www.upwork.com/nx/find-work/best-matches"
+SEARCH_URL = "https://www.upwork.com/nx/search/jobs/?q=AI%20automation&sort=recency"
 DEFAULT_CANDIDATES = SCRIPTS.parent / "config" / "upwork-candidates.public.json"
 DEFAULT_TRANSITIONS = Path.home() / "gig/state/upwork-free-transitions.jsonl"
 DEFAULT_PROPOSALS = Path.home() / ".config/anicca/gig/upwork-proposals"
@@ -635,7 +635,7 @@ async def discover_affordable_proposal(
     state["proposal_discovery"] = {"pages": 0, "inspected": 0, "affordable": 0}
     pages = (1, next_page, next_page + 1)
     for page in pages:
-        search_url = SEARCH_URL if page == 1 else f"{SEARCH_URL}?page={page}"
+        search_url = SEARCH_URL if page == 1 else f"{SEARCH_URL}&page={page}"
         base = sequence + (page - 1) * 11
         artifact = Path(await navigate_and_snapshot(
             pass_id, f"{base:02d}-1", "public-search", search_url,

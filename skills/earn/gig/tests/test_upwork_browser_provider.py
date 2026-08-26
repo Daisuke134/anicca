@@ -150,8 +150,10 @@ def test_independent_public_job_details_are_read_concurrently_in_source_order(tm
 
 def test_discovery_inspects_every_unique_job_on_provider_page(tmp_path, monkeypatch):
     inspected = []
+    search_urls = []
 
     async def navigate(pass_id, seq, label, url, action, settle_seconds, viewport_width):
+        search_urls.append(url)
         path = tmp_path / f"{seq}.json"
         path.write_text(json.dumps({
             "navigated_ok": True, "url": url, "rendered_text": "Search jobs",
@@ -180,6 +182,8 @@ def test_discovery_inspects_every_unique_job_on_provider_page(tmp_path, monkeypa
     ))
 
     assert len(inspected[0]) == 11
+    assert search_urls[0].startswith("https://www.upwork.com/nx/search/jobs/?q=")
+    assert "sort=recency&page=2" in search_urls[1]
 
 
 def test_read_evidence_allows_only_canonical_message_room_redirect(tmp_path):
