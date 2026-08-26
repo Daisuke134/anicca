@@ -19,6 +19,7 @@ const { dietNudgeOnce } = require("./lib/diet-nudge.js");
 const { preceptsUserOnce } = require("./lib/precepts-runtime.js");
 const { preceptsMirrorOnce } = require("./lib/precepts-mirror.js");
 const { relationsUserOnce } = require("./lib/relations-runtime.js");
+const { fundraiserUserOnce } = require("./lib/fundraiser-runtime.js");
 const { readMentalSendState, recordMentalSend } = require("./lib/mental-send-log.js");
 
 // 12c: TROUGH_AFTER_MS (30 min) plus margin — how far back the tick looks for ended events.
@@ -518,6 +519,18 @@ async function organsUserOnce(u, nowMs, deps = {}) {
   const now = nowMs !== undefined ? nowMs : Date.now();
   const log = deps.log || console.log;
 
+  // Fundraiser is an independent 30-minute organ. Queue it before Calendar I/O so a calendar
+  // outage cannot suppress fundraising. The durable job ID is uid + 30-minute slot, therefore the
+  // 60-second organ tick cheaply replays the same enqueue while exactly one runtime job survives.
+  const fundraiser = await runOrgan({
+    label: "organ:fundraiser", uid: u.uid, log,
+    run: () => (deps.fundraiser || fundraiserUserOnce)(u, now, deps.fundraiserDeps || {}),
+  });
+  if (fundraiser && fundraiser.status) {
+    log(`[fundraiser] uid=${String(u.uid).slice(0, 12)} status=${fundraiser.status}`
+      + `${fundraiser.jobId ? ` job=${fundraiser.jobId}` : ""}`);
+  }
+
   // Read what the wake tick already fetched. A miss (first tick after a restart, or a wake tick that
   // failed) falls back to a real fetch: the organs still run, and the cost is bounded to that case.
   let events = (deps.getEvents || getEvents)(u.uid, now);
@@ -978,6 +991,7 @@ module.exports = {
   wakeUserOnce, travelUserOnce, askUserOnce,
   // the two halves of the old wakeUserOnce — separate timers drive them (spec §3.1 method A)
   wakeCallOnce, organsUserOnce,
+  fundraiserUserOnce,
   lateNoticeUserOnce,
   // per-tenant isolation wrapper (HARD-4): one tenant's failure can't break the others' tick
   forEachUserSafe,

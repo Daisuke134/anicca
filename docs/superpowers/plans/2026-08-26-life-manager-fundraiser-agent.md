@@ -33,21 +33,23 @@ provider-specific code or an arbitrary application cap.
 ### Task 2: Connect Fundraiser to the existing Life Manager loop
 
 **Files:**
+- Create: `apps/life-manager/lib/fundraiser-runtime.js`
 - Create: `apps/life-manager/migrations/2026-08-26-lm-browser-jobs-system-source.sql`
 - Modify: `apps/life-manager/lib/browser-job-store.js`
 - Modify: `apps/life-manager/lib/browser-job-store.test.js`
-- Create: `apps/life-manager/lib/fundraiser-runtime.js`
 - Create: `apps/life-manager/lib/fundraiser-runtime.test.js`
 - Modify: `apps/life-manager/lib/connector-luna-judgment.js`
 - Modify: `apps/life-manager/lib/connector-luna-judgment.test.js`
 - Modify: `apps/life-manager/scheduler.js`
 - Create: `apps/life-manager/lib/fundraiser-wiring.test.js`
 
+- [x] Add a native `fundraiser.acquire` runtime job whose stable identity is tenant plus 30-minute slot, and enqueue it before Calendar I/O from the existing organ scheduler.
+- [x] Prove same-slot 60-second scheduler replays produce one job while the next 30-minute slot produces a new job; run existing scheduler regression GREEN without adding a second scheduler.
 - [ ] Let a Life Manager runtime job enqueue a browser job with `source_kind=runtime` and `source_ref=<runtime job id>` instead of fake Telegram IDs.
 - [ ] Allow the existing local agent runner to invoke `application-intent-planner` and require its selected model to be Luna.
 - [ ] Write RED tests for one acquisition claim per 30-minute window, maximum candidate throughput within the pass, and continuous reply tracking.
-- [ ] Implement `fundraiserUserOnce` using the existing Life Manager job claim and browser worker; do not add a daemon, CLI, shell/Python runner, scheduler, or browser implementation.
-- [ ] Wire `fundraiserUserOnce` into `organsUserOnce` behind the existing `daily_automation_enabled` gate.
+- [x] Implement `fundraiserUserOnce` using the existing Life Manager runtime job claim; do not add a daemon, CLI, shell/Python runner, scheduler, or browser implementation.
+- [x] Wire `fundraiserUserOnce` into `organsUserOnce` behind the existing `daily_automation_enabled` gate.
 - [ ] Keep long Luna/browser work off the scheduler tick: claim, queue, read back the queue row, and return.
 - [ ] Prove a Fundraiser failure does not stop another Life Manager organ or tenant.
 - [ ] Run `node --test apps/life-manager/lib/fundraiser-runtime.test.js apps/life-manager/lib/fundraiser-wiring.test.js apps/life-manager/lib/maybe-start-loops.test.js` and reach GREEN.

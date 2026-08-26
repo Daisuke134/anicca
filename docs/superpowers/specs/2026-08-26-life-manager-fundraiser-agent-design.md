@@ -92,7 +92,8 @@ MUST stay in Life Manager's existing worker so the scheduler continues serving o
 
 - Task 0 predecessor audit and architecture selection: complete.
 - Task 1 continuous Luna behavior and canonical fundraising context: complete pending commit/push.
-- Scheduler wiring, application receipts, outcome tracking, and live acceptance: not implemented.
+- Native 30-minute scheduler claim and durable `fundraiser.acquire` enqueue: implemented and locally verified.
+- Worker/browser execution, application receipts, outcome tracking, and live acceptance: not implemented.
 
 The atomic file-level commands and checkboxes are the implementation SSOT in
 `docs/superpowers/plans/2026-08-26-life-manager-fundraiser-agent.md`.
