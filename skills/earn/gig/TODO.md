@@ -537,15 +537,19 @@ deduplicated replay both remain countable; and a second bootstrap resumes withou
 **3. As-Is / To-Be.** As-Is was `unloaded browser -> busy -> no browser -> timeout`, plus
 `shared manifest -> all jobs`. To-Be is `unloaded browser -> process fallback -> browser activation`,
 plus `Coconala bootstrap/watch -> four business lanes`, with Browser and Release Watcher activated
-explicitly. On the owner Mac, the code/release is current but the live outcome is presently blocked:
-Apply and Paid logs contain `ENOSPC`/disk-headroom failures and only about 4.6 GB is free. Process
-presence is therefore not a healthy-lane claim.
+explicitly. The earlier 10 GiB figure came from a historical receipt with
+`required_bytes=10737418240`; it is not the current package requirement. Current manifest/readback
+sets Browser and Storefront to 524,288 KiB (512 MiB), Apply and Reply to zero fixed floor, and Paid
+to the guard default of zero. Historical `ENOSPC` log text is not a current failure by itself. A
+fresh Apply wake ended with exit 0 at 21:36; the Paid wake that started afterward still needs its
+terminal receipt. Process presence alone remains insufficient for a healthy-lane claim.
 
 **4. Test matrix.** `test_coconala_browser_running_fence_uses_process_fallback` covers first start;
 `test_default_release_scope_is_only_the_four_coconala_business_lanes` covers activation/watch scope;
 `test_initial_verified_delivery_counts_without_deduplication` and
 `test_verified_replay_deduplication_still_counts` cover Paid outcome receipts. Focused onboarding,
-release and outcome tests pass 27/27. Friend-device live readback and owner-Mac disk recovery remain NG.
+release and outcome tests pass 27/27. Friend-device live readback and the current Paid terminal
+receipt remain NG.
 
 **5. Boundaries.** The recovery MUST preserve credentials, Coconala login, browser profile and private
 state. It MUST NOT delete Codex/Claude sessions, create another marketplace account, activate other
@@ -559,9 +563,12 @@ UI change: none. Maestro: not required because this is a Terminal/launchd/browse
 
 Atomic remaining work for this incident:
 
-- [ ] Recover at least 10 GiB owner-Mac disk headroom without deleting Codex/Claude sessions.
-- [ ] Observe one natural Apply wake after disk recovery with no `ENOSPC` and a durable result row.
-- [ ] Observe one natural Paid wake after disk recovery with no disk gate and a durable result row.
+- [x] Remove the unsupported 10 GiB requirement and bind the spec to current manifest/loaded values:
+  Browser and Storefront 512 MiB; Apply, Reply and Paid no fixed byte floor.
+- [x] Observe a fresh natural Apply wake after the historical `ENOSPC`; it exits 0 and writes current
+  output at 21:36 without another disk error.
+- [ ] Observe the currently running natural Paid wake to terminal state and inspect its new durable
+  receipt; diagnose only the fresh terminal failure if it exits nonzero.
 - [ ] Ask the friend to rerun the public bootstrap and capture the resolved commit SHA.
 - [ ] Capture the friend's secret-free `preflight`, `status`, and `outcomes` output.
 - [ ] Confirm the friend has exactly six loaded Coconala labels and zero Coconala-triggered unrelated labels.
