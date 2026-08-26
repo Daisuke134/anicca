@@ -557,6 +557,133 @@ raise SystemExit(0)
                 ["ai.anicca.job-search-browser.plist"],
             )
 
+    def test_mercor_browser_only_installer_renders_operator_browser_owner(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            bin_dir = root / "bin"
+            bin_dir.mkdir()
+            agents = root / "LaunchAgents"
+            calls = root / "launchctl-calls.jsonl"
+            launchctl = bin_dir / "launchctl"
+            launchctl.write_text(
+                "#!/bin/sh\n"
+                f"printf '%s\\n' \"$*\" >> {calls}\n",
+                encoding="utf-8",
+            )
+            launchctl.chmod(0o700)
+            plutil = bin_dir / "plutil"
+            plutil.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+            plutil.chmod(0o700)
+            env = {
+                **os.environ,
+                "HOME": str(root / "operator-home"),
+                "XDG_STATE_HOME": str(root / "state"),
+                "PATH": f"{bin_dir}:/usr/bin:/bin",
+                "JOB_SEARCH_LAUNCHCTL": str(launchctl),
+                "JOB_SEARCH_PLUTIL": str(plutil),
+                "JOB_SEARCH_LAUNCH_AGENT_DIR": str(agents),
+            }
+            env.pop("JOB_SEARCH_MERCOR_BROWSER_PORT", None)
+            env.pop("JOB_SEARCH_MERCOR_BROWSER_FINGERPRINT", None)
+            env.pop("JOB_SEARCH_MERCOR_BROWSER_PROFILE", None)
+
+            daily_profile = (
+                root
+                / "operator-home"
+                / ".cloak"
+                / "profiles"
+                / "job-search-daily"
+            )
+            installer = [
+                "/bin/zsh",
+                str(APP_ROOT / "scripts" / "install-launchd.sh"),
+                "--mercor-browser-only",
+            ]
+
+            def invoke(agent_dir, **overrides):
+                return subprocess.run(
+                    installer,
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                    env={
+                        **env,
+                        "JOB_SEARCH_LAUNCH_AGENT_DIR": str(agent_dir),
+                        **overrides,
+                    },
+                )
+
+            for agent_dir, overrides in (
+                (
+                    root / "InvalidPortLaunchAgents",
+                    {"JOB_SEARCH_MERCOR_BROWSER_PORT": "9222"},
+                ),
+                (
+                    root / "DailyProfileLaunchAgents",
+                    {"JOB_SEARCH_MERCOR_BROWSER_PROFILE": str(daily_profile)},
+                ),
+            ):
+                result = invoke(agent_dir, **overrides)
+                self.assertEqual(result.returncode, 2, result.stderr)
+                self.assertFalse(agent_dir.exists())
+
+            result = invoke(agents)
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(
+                sorted(path.name for path in agents.iterdir()),
+                ["ai.anicca.job-search-mercor-browser.plist"],
+            )
+            mercor = plistlib.loads(
+                (agents / "ai.anicca.job-search-mercor-browser.plist").read_bytes()
+            )
+            self.assertEqual(
+                mercor["ProgramArguments"],
+                [str(APP_ROOT / "scripts" / "run-browser.sh")],
+            )
+            self.assertTrue(mercor["KeepAlive"])
+            self.assertTrue(mercor["RunAtLoad"])
+            environment = mercor["EnvironmentVariables"]
+            self.assertEqual(
+                environment["JOB_SEARCH_BROWSER_PROFILE"],
+                str(
+                    root
+                    / "operator-home"
+                    / ".cloak"
+                    / "profiles"
+                    / "job-search-mercor"
+                ),
+            )
+            self.assertEqual(environment["JOB_SEARCH_BROWSER_PORT"], "9334")
+            self.assertEqual(environment["JOB_SEARCH_BROWSER_FINGERPRINT"], "81234")
+            self.assertEqual(environment["JOB_SEARCH_BROWSER_STATE_NAME"], "mercor-browser")
+            self.assertTrue(mercor["StandardOutPath"].endswith("mercor-browser.out.log"))
+            self.assertTrue(mercor["StandardErrorPath"].endswith("mercor-browser.err.log"))
+            browser_text = (APP_ROOT / "scripts" / "run-browser.sh").read_text(
+                encoding="utf-8"
+            )
+            self.assertIn('pgrep -f -- "--user-data-dir=$PROFILE"', browser_text)
+            self.assertIn(
+                'rm -f "$PROFILE/SingletonLock" "$PROFILE/SingletonSocket" "$PROFILE/SingletonCookie"',
+                browser_text,
+            )
+            rendered = json.dumps(
+                {
+                    key: value
+                    for key, value in mercor.items()
+                    if key not in {"ProgramArguments", "StandardOutPath", "StandardErrorPath"}
+                }
+            )
+            self.assertNotIn("/Users/anicca", rendered)
+            self.assertNotIn("Dais", rendered)
+            self.assertNotIn("credential", rendered.lower())
+
+            recorded = calls.read_text(encoding="utf-8").splitlines()
+            bootstrap = [line for line in recorded if line.startswith("bootstrap ")]
+            self.assertEqual(len(bootstrap), 1)
+            self.assertIn("ai.anicca.job-search-mercor-browser", bootstrap[0])
+            self.assertNotIn("ai.anicca.job-search-browser", bootstrap[0])
+
     def test_oss_setup_owns_gmail_and_telegram_private_onboarding(self):
         installer = (APP_ROOT / "scripts" / "install-oss.sh").read_text(
             encoding="utf-8"
