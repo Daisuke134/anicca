@@ -180,6 +180,15 @@ test("the organ tick serves a user who gave no phone number", async () => {
     "organs are not a phone feature — spec §5.3 promises this user the same product over Telegram");
 });
 
+test("a paid phone-less tenant reaches non-call organs while the call effect stays at zero", async () => {
+  const served = [], dialled = [];
+  const user = { uid: "paid-no-phone", paid: true, calendar_provider: "composio_gcal", phone: null, daily_automation_enabled: true, call_enabled: false };
+  await tick({ listUsers: async () => [user], organs: async (u) => served.push(u.uid), now: 0 });
+  await wakeTick({ listUsers: async () => [user], wake: async () => dialled.push(user.uid), now: 0 });
+  assert.deepEqual(served, ["paid-no-phone"]);
+  assert.deepEqual(dialled, [], "missing phone/call consent cannot create a call effect");
+});
+
 test("the organ tick still respects the one switch that means 'run nothing for me'", async () => {
   const served = [];
   await tick({

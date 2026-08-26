@@ -19,11 +19,16 @@ test("null row → calendar (name is never a blocking typed stage)", () => asser
 test("no calendar → calendar even when name is absent", () => assert.equal(computeStage({ ...full, name: null, calendar_provider: null }), "calendar"));
 test("calendar set, no phone → phone", () => assert.equal(computeStage({ ...full, phone: null, paid: false }), "phone"));
 test("phone set, not paid → pay", () => assert.equal(computeStage({ ...full, paid: false }), "pay"));
-test("paid without Gmail decision → gmail", () => assert.equal(computeStage({ ...full, gmail_account_id: null, gmail_skipped: false }), "gmail"));
+test("paid without Gmail decision → done (Gmail is not a core prerequisite)", () => assert.equal(computeStage({ ...full, gmail_account_id: null, gmail_skipped: false }), "done"));
 test("Gmail connected → done", () => assert.equal(computeStage(full), "done"));
 test("Gmail skipped → done", () => assert.equal(computeStage({ ...full, gmail_account_id: null, gmail_skipped: true }), "done"));
+test("server-owned done stage never regresses into legacy phone or Gmail", () => {
+  for (const legacyStage of ["done", "phone", "gmail", "pay"]) {
+    assert.equal(computeStage({ ...full, tg_onboard_stage: legacyStage, phone: null, paid: true, gmail_account_id: null, gmail_skipped: false }), "done", legacyStage);
+  }
+});
 test("order is strict: phone and pay precede Gmail", () => {
-  assert.equal(computeStage({ ...full, phone: null, paid: true, gmail_account_id: null }), "phone");
+  assert.equal(computeStage({ ...full, phone: null, paid: false, gmail_account_id: null }), "phone");
   assert.equal(computeStage({ ...full, paid: false, gmail_account_id: null }), "pay");
 });
 
@@ -260,19 +265,31 @@ test("Gmail skip persists gmail_skipped=true and advances to done", async () => 
 });
 
 test("Gmail OFF: onboarding auto-skips with an honest preparation message and no OAuth button", async () => {
-  const saved = [], stages = [], messages = [];
-  const row = { ...full, gmail_account_id: null, gmail_skipped: false, tg_onboard_stage: "gmail" };
+  await withCompUntilAsync(future(), async () => {
+    const saved = [], stages = [], messages = [];
+    const row = { ...full, paid: false, gmail_account_id: null, gmail_skipped: false, tg_onboard_stage: "gmail" };
+    const sent = await onboardNudgeAll({ token: "t", base: "https://x", supaUrl: "s", supaKey: "k",
+      nudgeStore: new Map(), // isolated per test: the real store is module-level and 30-min sticky
+      linkedRows: async () => [row], mailAvailable: async () => false,
+      saveField: async (_uid, patch) => saved.push(patch),
+      sendMessage: async (_token, _chat, text, extra) => messages.push({ text, extra }),
+      setStage: async (_uid, stage) => stages.push(stage) });
+    assert.equal(sent, 1);
+    assert.deepEqual(saved, [{ gmail_skipped: true }]);
+    assert.deepEqual(stages, ["done"]);
+    assert.match(messages[0].text, /currently being prepared/i);
+    assert.equal(messages[0].extra, undefined);
+  });
+});
+
+test("canonical done rows are not rewritten by the legacy onboarding nudge", async () => {
+  const calls = [];
+  const row = { ...full, tg_onboard_stage: "done", phone: null, paid: true };
   const sent = await onboardNudgeAll({ token: "t", base: "https://x", supaUrl: "s", supaKey: "k",
-    nudgeStore: new Map(), // isolated per test: the real store is module-level and 30-min sticky
-    linkedRows: async () => [row], mailAvailable: async () => false,
-    saveField: async (_uid, patch) => saved.push(patch),
-    sendMessage: async (_token, _chat, text, extra) => messages.push({ text, extra }),
-    setStage: async (_uid, stage) => stages.push(stage) });
-  assert.equal(sent, 1);
-  assert.deepEqual(saved, [{ gmail_skipped: true }]);
-  assert.deepEqual(stages, ["done"]);
-  assert.match(messages[0].text, /currently being prepared/i);
-  assert.equal(messages[0].extra, undefined);
+    nudgeStore: new Map(), linkedRows: async () => [row], sendStage: async () => calls.push("send"),
+    setStage: async () => calls.push("stage"), backfillCalendarContext: async () => calls.push("context") });
+  assert.equal(sent, 0);
+  assert.deepEqual(calls, []);
 });
 
 test("calendar completion triggers best-effort context backfill once before announcing phone", async () => {

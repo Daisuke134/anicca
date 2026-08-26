@@ -13,7 +13,12 @@ const { compActive } = require("./comp-window.js");
 // Stripe webhook (lib/billing.js) remains its single writer and the comp expires by itself.
 // `opts` ({env, now}) exists so tests can pin the clock; production calls computeStage(row).
 function computeStage(row, opts = {}) {
+  if (row && String(row.tg_onboard_stage || "").toLowerCase() === "done") return "done";
   if (!row || row.calendar_provider !== "composio_gcal") return "calendar";
+  // The panel state machine owns the canonical paid/core-ready terminal state. The legacy loop must
+  // not reopen phone or Gmail for a paid user who intentionally skipped a phone, nor can it rewrite
+  // a server-owned `done` marker after a browser resume.
+  if (row.paid === true) return "done";
   if (!row.phone) return "phone";
   if (row.paid !== true && !compActive(opts.env || process.env, opts.now)) return "pay";
   if (!row.gmail_account_id && row.gmail_skipped !== true) return "gmail";
@@ -178,6 +183,7 @@ async function handleOnboardingText(chatId, text, row, opts) {
 async function handleGmailCallback(data, row, opts = {}) {
   if (data !== "gmail:skip") return { ok: false, ignored: true };
   if (!row || !row.uid) return { ok: false, reason: "unlinked_chat" };
+  if (String(row.tg_onboard_stage || "").toLowerCase() === "done") return { ok: true, stage: "done" };
   const save = opts.saveField || saveField;
   const persistStage = opts.setStage || setStage;
   const send = opts.sendMessage || sendMessage;
