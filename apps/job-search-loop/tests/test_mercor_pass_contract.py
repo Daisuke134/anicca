@@ -50,6 +50,17 @@ class MercorPassContractTests(unittest.TestCase):
         self.assertIn("legal, location, identity", normalized)
         self.assertIn("all required steps completed", normalized)
 
+    def test_mercor_skill_exhausts_bounded_ready_queue_without_one_listing_cap(self):
+        skill = (ROOT.parents[1] / "skills" / "mercor" / "SKILL.md").read_text(
+            encoding="utf-8"
+        )
+        normalized = " ".join(skill.split())
+
+        self.assertNotIn("exactly one new listing", normalized)
+        self.assertNotIn("bounded per-wake quota", normalized)
+        self.assertIn("every distinct ready listing", normalized)
+        self.assertIn("exhaust the bounded eligible queue", normalized)
+
     def test_success_result_contract_validates(self):
         schema = json.loads(
             (ROOT / "schemas" / "mercor-pass-result.v1.schema.json").read_text(encoding="utf-8")

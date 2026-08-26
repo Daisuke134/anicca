@@ -33,7 +33,7 @@ Mercor is a global provider lane of Life Manager's existing Job Hunter system. I
 
 ## Ready-to-submit automation
 
-When a new listing page shows `3 of 3 steps completed`, `100%`, completed Domain Expert Interview reuse, and a visible `Submit application`, the existing hourly Job Hunter loop may submit exactly one new listing in that wake. It must deduplicate against the private ledger, read back the submitted state, and never resubmit an existing pending application.
+When a new listing page shows all required steps completed, `100%`, completed reusable steps, and a visible `Submit application`, the existing hourly Job Hunter loop submits every distinct ready listing in its bounded visible queue. It must deduplicate each listing against the private ledger, read back every submitted state before continuing, and never resubmit an existing pending application. A preference or experience mismatch may lower priority but does not stop submission unless completing the application would require a false factual answer; real legal, location, identity, physical, human-ceremony, provider-limit, capacity/negative-profit, and ambiguous-submit conditions remain hard stops.
 
 ## Reusable open-source macro loop
 
@@ -51,4 +51,4 @@ The execution style is model-led: observe the live page, reason about the next a
 
 ## Loop contract
 
-The existing hourly `job-hunter` acquisition loop is the only loop. Do not create a second Mercor executor. The provider adapter must acquire the existing pass lease, deduplicate listings, submit at most the bounded per-wake quota, record evidence, and release the lease in a finally path.
+The existing hourly `job-hunter` acquisition loop is the only loop. Do not create a second Mercor executor. The provider adapter must acquire the existing pass lease, deduplicate listings, exhaust the bounded eligible queue for that wake, record evidence for every attempted external effect, and release the lease in a finally path.
