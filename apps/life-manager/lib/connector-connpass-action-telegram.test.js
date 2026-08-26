@@ -68,6 +68,28 @@ test("missing provider message ID and malformed candidate never write a receipt"
   }
 });
 
+test("action boundary exposes only stable stage codes for send and provider receipt failures", async () => {
+  const cases = [
+    { send: async () => { throw new Error("private transport detail"); }, code: "CONNPASS_ACTION_BOUNDARY_SEND_FAILED" },
+    { send: async () => ({}), code: "CONNPASS_ACTION_BOUNDARY_PROVIDER_ID_FAILED" },
+  ];
+  for (const row of cases) {
+    const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connpass-action-stage-"));
+    try {
+      const reporter = createConnpassActionTelegram({
+        stateDir, wakeId: "wake-connpass-stage", telegramTarget: "private-target",
+        now: () => new Date("2026-08-27T01:00:00.000Z"), send: row.send,
+      });
+      await assert.rejects(reporter.report({ candidates: [candidate()] }), (error) => {
+        assert.equal(error.code, row.code);
+        assert.equal(error.message, row.code);
+        return true;
+      });
+      assert.equal(fs.existsSync(path.join(stateDir, "connpass-action-boundary-deliveries.jsonl")), false);
+    } finally { fs.rmSync(stateDir, { recursive: true, force: true }); }
+  }
+});
+
 test("public security vocabulary and example credential strings remain reportable public event text", async () => {
   const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connpass-action-crypto-"));
   try {
