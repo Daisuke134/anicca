@@ -221,6 +221,77 @@ EOF
   green "  ✓ sealed release $RELEASE_ID  ($RELEASE_SOURCE)"
 fi
 
+agent_economy_state_preflight() {
+  python3 - "$ANICCA_HOME" "$LIFE_MANAGER_RELEASE_ROOT" <<'PY'
+import os
+from pathlib import Path
+import stat
+import sys
+
+
+home = os.path.abspath(os.path.expanduser(sys.argv[1]))
+release = os.path.realpath(os.path.abspath(os.path.expanduser(sys.argv[2])))
+if home == os.path.sep:
+    raise SystemExit("agent-economy runtime home must not be filesystem root")
+if os.path.lexists(home) and os.path.islink(home):
+    raise SystemExit("agent-economy runtime home must not be a symlink")
+
+def walk(path, create=False):
+    fd = os.open(os.path.sep, os.O_RDONLY | os.O_DIRECTORY)
+    try:
+        for part in Path(path).parts[1:]:
+            try:
+                child = os.open(part, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=fd)
+            except FileNotFoundError:
+                if not create:
+                    os.close(fd); return None
+                os.mkdir(part, 0o700, dir_fd=fd)
+                child = os.open(part, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=fd)
+            os.close(fd); fd = child
+        return fd
+    except Exception:
+        os.close(fd); raise
+
+home_real = os.path.realpath(home)
+if home_real != home and not (
+    (home.startswith("/var/") and home_real.startswith("/private/var/"))
+    or (home.startswith("/tmp/") and home_real.startswith("/private/tmp/"))
+):
+    raise SystemExit("agent-economy runtime home has an unsafe symlink component")
+home_fd = walk(home_real, create=True)
+approved = [home_fd]
+try:
+    if home_real == release or home_real.startswith(release + os.sep):
+        raise SystemExit("agent-economy runtime home is inside the sealed release")
+    for relative in ("skills", "skills/agent-economy", "skills/earn", "skills/earn/x402-sell", "skills/cook"):
+        absolute = os.path.join(home_real, relative)
+        fd = walk(absolute)
+        if fd is None:
+            continue
+        path_real = os.path.realpath(absolute)
+        if not (path_real == home_real or path_real.startswith(home_real + os.sep)):
+            os.close(fd)
+            raise SystemExit(f"agent-economy state ancestor escapes runtime home: {relative}")
+        if path_real == release or path_real.startswith(release + os.sep):
+            os.close(fd)
+            raise SystemExit(f"agent-economy state ancestor is inside sealed release: {relative}")
+        approved.append(fd)
+    for fd in approved:
+        os.fchmod(fd, stat.S_IMODE(os.fstat(fd).st_mode) | 0o700)
+finally:
+    for fd in approved:
+        try:
+            os.close(fd)
+        except OSError:
+            pass
+PY
+}
+
+if [ "$LIFE_MANAGER_AGENT_ECONOMY" = "1" ]; then
+  # This descriptor-safe preflight must precede every runtime mkdir/.env/genesis write.
+  agent_economy_state_preflight
+fi
+
 # ─── 2. frozen dependencies ────────────────────────────────────────────
 cyan "[2/6] installing frozen dependencies…"
 if [ "$LIFE_MANAGER_INSTALL_DEPS" = "1" ]; then
@@ -250,55 +321,6 @@ else
   yellow "  • dependency install disabled by LIFE_MANAGER_INSTALL_DEPS=0"
 fi
 echo
-
-restore_agent_economy_state_ancestors() {
-  local release_real home_real path path_real
-  release_real="$(cd "$LIFE_MANAGER_RELEASE_ROOT" 2>/dev/null && pwd -P)" \
-    || { red "  ✗ namespaced release root cannot be resolved"; return 2; }
-  [ -d "$ANICCA_HOME" ] && [ ! -L "$ANICCA_HOME" ] \
-    || { red "  ✗ agent-economy runtime home must be a real directory: $ANICCA_HOME"; return 2; }
-  home_real="$(cd "$ANICCA_HOME" 2>/dev/null && pwd -P)" \
-    || { red "  ✗ agent-economy runtime home cannot be resolved: $ANICCA_HOME"; return 2; }
-  # Existing runtime directories may have been sealed by an earlier installer. Restore only the
-  # owner rwx bits needed for mutable state descendants; never chmod the sealed release or any
-  # unrelated runtime tree.
-  for path in \
-    "$ANICCA_HOME" \
-    "$ANICCA_HOME/skills" \
-    "$ANICCA_HOME/skills/agent-economy" \
-    "$ANICCA_HOME/skills/earn" \
-    "$ANICCA_HOME/skills/earn/x402-sell" \
-    "$ANICCA_HOME/skills/cook"; do
-    [ -e "$path" ] || continue
-    [ ! -L "$path" ] || { red "  ✗ required state ancestor must not be a symlink: $path"; return 2; }
-    [ -d "$path" ] || { red "  ✗ required state ancestor is not a directory: $path"; return 2; }
-    path_real="$(cd "$path" 2>/dev/null && pwd -P)" \
-      || { red "  ✗ required state ancestor cannot be resolved: $path"; return 2; }
-    case "$path_real" in
-      "$home_real"|"$home_real"/*) ;;
-      *)
-        red "  ✗ required state ancestor escapes runtime home: $path"
-        return 2
-        ;;
-    esac
-    case "$path_real" in
-      "$release_real"|"$release_real"/*)
-        red "  ✗ refusing to chmod sealed release through runtime state path: $path"
-        return 2
-        ;;
-    esac
-  done
-  for path in \
-    "$ANICCA_HOME" \
-    "$ANICCA_HOME/skills" \
-    "$ANICCA_HOME/skills/agent-economy" \
-    "$ANICCA_HOME/skills/earn" \
-    "$ANICCA_HOME/skills/earn/x402-sell" \
-    "$ANICCA_HOME/skills/cook"; do
-    [ -e "$path" ] || continue
-    chmod u+rwx "$path"
-  done
-}
 
 # ─── 3. runtime root + env ─────────────────────────────────────────────
 cyan "[3/6] preparing runtime root…"
@@ -340,7 +362,6 @@ echo
 # ─── 4. shared lib ─────────────────────────────────────────────────────
 cyan "[4/6] syncing _shared lib…"
 if [ "$LIFE_MANAGER_AGENT_ECONOMY" = "1" ]; then
-  restore_agent_economy_state_ancestors
   # Agent-economy code stays in the sealed release. Create only the mutable state namespace; do not
   # copy executable skills into it, because launchd and run-skill resolve code from ANICCA_CODE_ROOT.
   mkdir -p "$ANICCA_HOME/skills/agent-economy/state" "$ANICCA_HOME/skills/earn/state" \

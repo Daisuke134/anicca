@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { chmodSync, mkdirSync, mkdtempSync, readFileSync, statSync, writeFileSync, cpSync, symlinkSync, readlinkSync, existsSync, rmSync } from "node:fs";
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, statSync, writeFileSync, cpSync, symlinkSync, readlinkSync, existsSync, rmSync, readdirSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -127,6 +127,27 @@ test("agent-economy installer reads the sealed namespaced current release and pr
     });
     assert.notEqual(escapeResult.status, 0, "symlinked state ancestor must fail closed");
     assert.equal(statSync(escaped).mode & 0o200, 0, "escaped target mode must remain unchanged");
+
+    rmSync(runtime, { recursive: true, force: true });
+    const escapedHome = join(root, "escaped-home");
+    mkdirSync(escapedHome, { recursive: true });
+    chmodSync(escapedHome, 0o555);
+    symlinkSync(escapedHome, runtime);
+    const homeEscapeResult = spawnSync("bash", [join(source, "install.sh"), "agent-economy"], {
+      cwd: source,
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        HOME: join(root, "home"),
+        LIFE_MANAGER_RELEASE_ROOT: releaseRoot,
+        LIFE_MANAGER_HOME: runtime,
+        LIFE_MANAGER_INSTALL_DAEMON: "0",
+        LIFE_MANAGER_INSTALL_DEPS: "0",
+      },
+    });
+    assert.notEqual(homeEscapeResult.status, 0, "symlinked ANICCA_HOME must fail closed");
+    assert.deepEqual(readdirSync(escapedHome), [], "external ANICCA_HOME target must remain empty");
+    assert.equal(statSync(escapedHome).mode & 0o200, 0, "external ANICCA_HOME target mode must remain unchanged");
   } finally {
     spawnSync("chmod", ["-R", "u+w", root], { encoding: "utf8" });
     rmSync(root, { recursive: true, force: true });
