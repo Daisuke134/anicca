@@ -57,6 +57,15 @@ raise SystemExit(0)
                 encoding="utf-8",
             )
             fake_python.chmod(0o700)
+            resume = root / "materials" / "resume.pdf"
+            resume.parent.mkdir()
+            resume.write_bytes(b"%PDF-1.4\n")
+            resume_state = root / "state" / "mercor" / "resume-state.json"
+            resume_state.parent.mkdir(parents=True)
+            resume_state.write_text(
+                json.dumps({"resume_file": str(resume)}) + "\n",
+                encoding="utf-8",
+            )
             env = {
                 **os.environ,
                 "HOME": str(root / "home"),
@@ -65,7 +74,6 @@ raise SystemExit(0)
                 "JOB_SEARCH_STATE_ROOT": str(root / "state"),
                 "JOB_SEARCH_PYTHON": str(fake_python),
                 "MERCOR_TEST_CALLS": str(calls),
-                "MERCOR_RESUME": str(root / "resume.pdf"),
             }
             result = subprocess.run(
                 ["/bin/zsh", str(APP_ROOT / "scripts" / "run-mercor.sh")],
@@ -90,6 +98,12 @@ raise SystemExit(0)
                 if json.loads(line)[:2] == ["-m", "job_search_loop.mercor_reporting"]
             ]
             self.assertEqual(len(reporting_calls), 1)
+            pass_call = next(
+                json.loads(line)
+                for line in calls.read_text().splitlines()
+                if json.loads(line)[:2] == ["-m", "job_search_loop.mercor_pass"]
+            )
+            self.assertEqual(pass_call[pass_call.index("--resume") + 1], str(resume))
 
     def test_reporting_module_failure_still_writes_private_terminal_receipt(self):
         with tempfile.TemporaryDirectory() as directory:

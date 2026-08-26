@@ -10,6 +10,12 @@ EVIDENCE="$JOB_SEARCH_STATE_ROOT/evidence/$RUN_ID"
 LOCK="$MERCOR_STATE_ROOT/.pass.lock"
 CDP_URL="${MERCOR_CDP_BASE_URL:-http://127.0.0.1:9334}"
 MERCOR_PROFILE="${MERCOR_PROFILE:-$JOB_SEARCH_PROFILE}"
+if [[ -z "${MERCOR_RESUME:-}" && -f "$MERCOR_STATE_ROOT/resume-state.json" ]]; then
+  MERCOR_RESUME=$(
+    "$JOB_SEARCH_JQ" -er '.resume_file | select(type == "string" and length > 0)' \
+      "$MERCOR_STATE_ROOT/resume-state.json"
+  )
+fi
 MERCOR_RESUME="${MERCOR_RESUME:-${XDG_DATA_HOME:-$HOME/.local/share}/anicca/job-search/mercor-resume.pdf}"
 RESULT="$EVIDENCE/agent/mercor-pass-summary.json"
 TERMINAL="$EVIDENCE/mercor-pass-terminal.json"
