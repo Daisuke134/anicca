@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "observed_at": "2026-08-27T02:37:45+09:00",
+  "observed_at": "2026-08-27T02:52:34+09:00",
   "status": "in_progress",
   "candidate": {
     "organization": "Tokyo Metropolitan Government",
@@ -24,13 +24,19 @@
     "state": "not running",
     "active_count": 0,
     "lock": "absent",
-    "run_count": 138,
+    "run_count": 169,
     "last_exit": 75,
     "interval_seconds": 60,
     "worktree": "/Users/anicca/Projects/life-manager-main/.worktrees/fundraiser-agent-task0-20260826",
-    "commit": "5bcb12803",
-    "context_version": "2026-08-26.18",
-    "context_digest": "50d5385f99324bccb6642dab3d698d3aae967eb093bc68cb7ed4bb52c0246225"
+    "commit": "663b40216fe61c04a958fbfbd38b93d91dd0a1c0",
+    "context_version": "2026-08-27.2",
+    "context_digest": "9fbe6198c6d61da47d68767eec90a1d95d2e07058f024448d86372b5f3035338",
+    "context_alignment": "matched",
+    "merge_pr": 2889,
+    "focused_tests": {
+      "startup_context": "20/20",
+      "fundraiser": "12/12"
+    }
   },
   "receipt_inventory": {
     "rows": 217,
@@ -39,7 +45,7 @@
     "current_canonical_digest_receipts": 0
   },
   "runtime_preflight": {
-    "disk_free_bytes": 3795615744,
+    "disk_free_bytes": 2491772928,
     "disk_pressure_block": "present",
     "disk_policy_block_below_bytes": 11811160064,
     "disk_policy_clear_at_or_above_bytes": 21474836480,
