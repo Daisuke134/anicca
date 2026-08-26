@@ -124,6 +124,12 @@ function buildConnectorCoverageTelegramMessage(input = {}) {
   const horizonDays = coverage.horizon_days;
   const calendar = googleCalendarUrl(input.calendarCoverageUrl);
   const newEvents = normalizeNewEvents(coverage, input.newEvents);
+  const rejectionCounts = input.rejectionCounts == null ? null : input.rejectionCounts;
+  if (rejectionCounts != null && (
+    !rejectionCounts || typeof rejectionCounts !== "object" || Array.isArray(rejectionCounts)
+    || Object.keys(rejectionCounts).sort().join(",") !== "other,unknown,weak"
+    || Object.values(rejectionCounts).some((value) => !Number.isInteger(value) || value < 0 || value > 100_000)
+  )) invalid();
   const lines = [
     coverage.counts.open === 0
       ? `✅ 今後${horizonDays}日のevent予定を確認しました。`
@@ -156,6 +162,10 @@ function buildConnectorCoverageTelegramMessage(input = {}) {
       "",
       `空いている日: ${dates.join("、")}`,
       "この日々は終了扱いにしていません。予約が成立するまで探索と申込みを続けています。",
+    );
+    if (rejectionCounts) lines.push(
+      `品質基準で自動申請しなかった候補: weak ${rejectionCounts.weak}件 / unknown ${rejectionCounts.unknown}件 / other ${rejectionCounts.other}件`,
+      "適格候補が0件でも失敗ではありません。品質を落とさず次の探索を続けます。",
     );
   } else if (coverage.counts.covered_new === 0) {
     lines.push("", "予約できる空き枠が残っていないため、二重予約を作りませんでした。");

@@ -103,11 +103,11 @@ Calendarを無関係なeventで埋めること自体を成果にしない。
 
 ##### C. Primary-first and quality-preserving fallback
 
-- [ ] **CG-16** `connector-minimal-runner.test.js`へ、Luma eligible→終了、Luma exhausted→connpass、両primary exhausted→fallbackの順序REDを追加する。
-- [ ] **CG-17** fallback candidateにも`strong/moderate` gateを適用し、Peatix等の`weak/unknown`はSubmit 0にする。
-- [ ] **CG-18** `connector-coverage-telegram.test.js`へ、適格候補0の時に28日空き日と不採用class別countを出すREDを追加する。
-- [ ] **CG-19** `connector-coverage-telegram.js`から旧21日/14日文面と「空き=失敗」の表現を外し、28日・quality-preserving no-effectを報告する。
-- [ ] **CG-20** runner、coverage Telegram、ticket Telegramのfocused testsをPASSさせ、fallback/report sliceをcommit/pushする。
+- [x] **CG-16** `connector-minimal-runner.test.js`へ、Luma eligible→終了、Luma exhausted→connpass、両primary exhausted→fallbackの順序REDを追加する。
+- [x] **CG-17** fallback candidateにも`strong/moderate` gateを適用し、Peatix等の`weak/unknown`はSubmit 0にする。
+- [x] **CG-18** `connector-coverage-telegram.test.js`へ、適格候補0の時に28日空き日と不採用class別countを出すREDを追加する。
+- [x] **CG-19** `connector-coverage-telegram.js`から旧21日/14日文面と「空き=失敗」の表現を外し、28日・quality-preserving no-effectを報告する。
+- [x] **CG-20** runner、coverage Telegram、ticket Telegramのfocused testsをPASSさせ、fallback/report sliceをcommit/pushする。
 
 ##### D. connpass official-source boundary
 
