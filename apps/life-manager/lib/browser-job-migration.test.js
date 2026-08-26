@@ -17,6 +17,10 @@ const AUTH_TRACE_SQL = fs.readFileSync(path.join(
   __dirname,
   "../migrations/2026-07-29-lm-browser-job-auth-trace.sql",
 ), "utf8");
+const SYSTEM_SOURCE_SQL = fs.readFileSync(path.join(
+  __dirname,
+  "../migrations/2026-08-26-lm-browser-jobs-system-source.sql",
+), "utf8");
 
 test("BROWSER-GEN-1 queue is tenant-bound, idempotent, and stores no raw prompt or credential", () => {
   assert.match(SQL, /CREATE TABLE IF NOT EXISTS public\.lm_browser_jobs/i);
@@ -81,4 +85,12 @@ test("auth trace forward migration upgrades the production trace allowlist", () 
   ]);
   assert.match(AUTH_TRACE_SQL, /octet_length\(COALESCE\(p_meta, '\{\}'::jsonb\)::text\) > 8192/i);
   assert.match(AUTH_TRACE_SQL, /jsonb_array_length\(trace\) < 100/i);
+});
+
+test("system source migration accepts runtime jobs without fake Telegram ids", () => {
+  assert.match(SYSTEM_SOURCE_SQL, /ADD COLUMN IF NOT EXISTS source_kind text/i);
+  assert.match(SYSTEM_SOURCE_SQL, /ADD COLUMN IF NOT EXISTS source_ref text/i);
+  assert.match(SYSTEM_SOURCE_SQL, /source_kind IN \('telegram', 'runtime'\)/i);
+  assert.match(SYSTEM_SOURCE_SQL, /source_kind = 'runtime'[\s\S]*telegram_chat_id IS NULL[\s\S]*telegram_message_id IS NULL/i);
+  assert.match(SYSTEM_SOURCE_SQL, /UNIQUE INDEX[\s\S]*\(uid, source_kind, source_ref\)/i);
 });
