@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "context_version": "2026-08-26.15",
-  "updated_at": "2026-08-26T23:31:00+09:00",
+  "context_version": "2026-08-26.16",
+  "updated_at": "2026-08-26T23:38:00+09:00",
   "product": {
     "name": "Life Manager",
     "usage": "Use as the product name in every public product and fundraising field.",
@@ -80,7 +80,7 @@
         "program": "ASAC Acceleration Program",
         "official_url": "https://www.acceleration-tokyo.metro.tokyo.lg.jp/program.php",
         "action": "apply_now",
-        "reason": "Tokyo Metropolitan Government accelerator discovered by the live fundraiser loop and aligned with the founder's Tokyo in-person priority. The founder's standing instruction is to apply to eligible Tokyo and United States programs, and authorizes ordinary application-stage privacy/data-processing consent and account registration needed to submit. This does not authorize an investment agreement, equity issuance, payment, public broadcast, or later legal commitment. Reopen the official current application, use verified founder and startup context, and require an official completion-screen PNG plus Telegram photo message ID before recording submitted_verified."
+        "reason": "Tokyo Metropolitan Government accelerator discovered by the live fundraiser loop and aligned with the founder's Tokyo in-person priority. The founder's standing instruction is to apply to eligible Tokyo and United States programs, and explicitly authorizes the new ASAC account registration plus ordinary application-stage privacy/data-processing consent needed to submit. Do not claim the registration identity fields are missing: read exact private paths candidate.name_ja, candidate.name_kana, candidate.phone, candidate.application_email, and candidate.phone_status from ~/.config/anicca/job-search/profile.json without printing their values; use company.legal_name for the company field, select entrepreneur, and select not to receive the newsletter. No ASAC credential currently exists. Generate a strong unique password, save the service URL, email/username, password, and updated_at immediately to the credentials array in ~/.local/share/anicca/credentials.json with file mode 600 before leaving the registration page, then verify login with that saved credential. This does not authorize an investment agreement, equity issuance, payment, public broadcast, or later legal commitment. Continue into the official current application, use verified founder and startup context, and require an official completion-screen PNG plus Telegram photo message ID before recording submitted_verified."
       },
       {
         "program": "Y Combinator",
