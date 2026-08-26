@@ -56,8 +56,16 @@ test("Connpass official API discovery reads 28 Tokyo dates without navigating pr
         return [{
           id: 901, title: "Tokyo AI Builders", url: "https://tokyo-ai.connpass.com/event/901/",
           started_at: "2026-08-10T19:00:00+09:00", ended_at: "2026-08-10T21:00:00+09:00",
-          open_status: "open", limit: 100, accepted: 20, waiting: 0,
+          open_status: "preopen", event_type: "participation", limit: 100, accepted: 20, waiting: 0,
           description: "AI builders meetup", place: "Shibuya", address: "Tokyo",
+        }, {
+          id: 902, title: "Already Started", url: "https://tokyo-ai.connpass.com/event/902/",
+          started_at: "2026-08-10T19:00:00+09:00", ended_at: "2026-08-10T21:00:00+09:00",
+          open_status: "open", event_type: "participation", limit: 100, accepted: 20, waiting: 0,
+        }, {
+          id: 903, title: "External Advertisement", url: "https://tokyo-ai.connpass.com/event/903/",
+          started_at: "2026-08-10T19:00:00+09:00", ended_at: "2026-08-10T21:00:00+09:00",
+          open_status: "preopen", event_type: "advertisement", limit: 100, accepted: 20, waiting: 0,
         }];
       },
     },

@@ -97,8 +97,9 @@ function createApiDiscovery({ now, apiClient }) {
       const accepted = Number(event && event.accepted);
       const limit = event && event.limit == null ? null : Number(event.limit);
       const capacityAvailable = limit == null || limit === 0 || (Number.isFinite(accepted) && accepted < limit);
-      const open = event && event.open_status === "open";
-      const participationSlotStatus = !open ? "closed" : capacityAvailable ? "available" : "waitlist";
+      const registrationOpen = event && event.open_status === "preopen"
+        && event.event_type === "participation";
+      const participationSlotStatus = !registrationOpen ? "closed" : capacityAvailable ? "available" : "waitlist";
       return Object.freeze({
         provider: "connpass",
         event_ref: `connpass-event://event/${id}`,
@@ -109,7 +110,7 @@ function createApiDiscovery({ now, apiClient }) {
         ends_at: String(event && event.ended_at || ""),
         venue_name: String(event && event.place || "").trim(),
         venue_address: String(event && event.address || "").trim(),
-        registration_status: open && capacityAvailable ? "available" : "closed",
+        registration_status: registrationOpen && capacityAvailable ? "available" : "closed",
         participation_slot_status: participationSlotStatus,
         lightning_talk_status: "unknown",
         application_deadline_at: null,
