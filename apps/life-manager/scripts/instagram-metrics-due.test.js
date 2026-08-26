@@ -45,6 +45,24 @@ test("malformed JA Card rows remain fail-closed after unrelated rows are filtere
   assert.throws(() => discoverExpected(dataDir), /Instagram verified distribution row invalid/);
 });
 
+test("verified Obou watercolor Reel is discovered as its exact metric effect", () => {
+  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "lm-instagram-obou-discovery-"));
+  const caption = "相手の感情は相手のもの。";
+  const captionPath = path.join(dataDir, "caption.txt"); fs.writeFileSync(captionPath, caption);
+  const captionHash = require("node:crypto").createHash("sha256").update(fs.readFileSync(captionPath)).digest("hex");
+  const directory = path.join(dataDir, "tenants/dais-local/marketing/video-publication/anicca-ios"); fs.mkdirSync(directory, { recursive: true });
+  const row = { ts: "2026-08-26T04:21:05.630917Z", platform: "instagram", status: "published", provider_reconciled: true,
+    format_id: "watercolor", form: "buddhist-self-care-reel", locale: "ja", creative_id: "JA-WATERCOLOR-OBOU-b2772de4303a",
+    provider_id: "cmt9l523g02mbp20ybq3lefov", public_url: "https://www.instagram.com/reel/DcfVvIkkWyz/",
+    caption_path: captionPath, caption_sha256: captionHash, video_sha256: "b2772de4303acc901f42b43a0b3f4af166ae3daeb5ee7fd24e090e5b62f2b0e8" };
+  fs.writeFileSync(path.join(directory, "distribution.jsonl"), `${JSON.stringify(row)}\n`);
+  assert.deepEqual(discoverExpected(dataDir), [{
+    tenant_id: "dais-local", product_id: "anicca-ios", locale: "ja", account_id: "@obou.anicca", native_owner: "obou.anicca",
+    integration_id: "cmooplxmu04tpmd0y4h3cpk33", provider_post_id: row.provider_id, shortcode: "DcfVvIkkWyz",
+    public_url: row.public_url, caption, published_at: row.ts,
+  }]);
+});
+
 test("verified EN affirmation native-carousel receipt is discovered as an immutable metric effect", () => {
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "lm-instagram-carousel-discovery-"));
   const caption = "5 affirmations to tell\nyourself every morning... | #anicca #affirmation";
