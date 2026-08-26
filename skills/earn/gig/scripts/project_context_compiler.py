@@ -788,11 +788,10 @@ def source_resource_key(
 def record_source_reads(compiled: dict[str, Any], receipt: dict[str, Any]) -> None:
     """One EV1 `read` line per resource this compile actually hashed.
 
-    ★ Driven by the receipt, not by intent. ★ ``sources_read`` is the list of files whose
-    bytes were hashed, so a line here means the source existed and was read -- which is
-    exactly the fact spec §4.2 ``sources_read_before_work`` needs, and exactly the fact
-    that was missing on 2026-08-07 when two buyers were asked for material they had
-    already sent.
+    ★ Driven by the receipt, not by intent. ★ ``sources_read`` now has one deterministic
+    aggregate per resource whose files were hashed, so a line here means that resource
+    existed and was read -- exactly the fact spec §4.2 ``sources_read_before_work`` needs,
+    without emitting one trajectory event for every historical file.
     """
     identity = compiled.get("identity") or {}
     request_id = str(identity.get("request_id") or "")
