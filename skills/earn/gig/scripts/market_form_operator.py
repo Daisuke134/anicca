@@ -21,19 +21,23 @@ DEFAULT_EVIDENCE = Path.home() / "gig/evidence/market-form-operator"
 
 def operate(
     *, provider: str, resource_id: str, form_url: str, sealed_intent: dict[str, Any],
-    cdp_base: str,
+    live_effect_context: dict[str, Any], cdp_base: str,
     runner: Path = DEFAULT_RUNNER, schema: Path = DEFAULT_SCHEMA,
     evidence_root: Path = DEFAULT_EVIDENCE,
 ) -> dict[str, Any]:
     evidence = evidence_root / f"{time.time_ns()}-{provider}-{resource_id.lstrip('~')}"
     evidence.mkdir(parents=True, exist_ok=False, mode=0o700)
     intent = json.dumps(sealed_intent, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    live_context = json.dumps(
+        live_effect_context, ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+    )
     cdp_base = cdp_base.rstrip("/")
     if not cdp_base.startswith(("http://127.0.0.1:", "http://localhost:")):
         raise ValueError("market_form_operator_requires_local_cdp")
     prompt = f"""Execute one already-authorized marketplace form intent using the current authenticated
 browser at EXACT_CDP_ENDPOINT={cdp_base}. Provider={provider}; resource={resource_id}; target={form_url}.
 SEALED_INTENT={intent}
+LIVE_EFFECT_CONTEXT={live_context}
 
 Inspect the live page yourself. Open or locate the exact target, understand its current form, fill every
 required field from SEALED_INTENT, answer screening questions exactly, handle ordinary validation and
@@ -45,6 +49,8 @@ If a controlled input appends instead of replacing, stop retrying keystrokes: us
 dispatch input and change events, blur, then read the live value back. If any live term differs from SEALED_INTENT,
 you must not submit. Provider account balances are live observations, not immutable terms: use the current value and
 block only when the required charge exceeds the live balance or the provider increased that charge.
+LIVE_EFFECT_CONTEXT is the authoritative parent pre-effect readback. Use its current_balance and required_charge
+instead of inferring either value from a post-submit summary.
 A post-submit remaining balance is not the current balance. When the provider shows both numbers, reconcile
 current balance = required charge + post-submit remaining balance; do not block merely because the remaining-after
 value is lower than the required charge.

@@ -32,6 +32,9 @@ def test_common_operator_passes_sealed_intent_to_terra_without_provider_selector
     result = operator.operate(
         provider="anymarket", resource_id="job-1", form_url="https://example.com/apply",
         sealed_intent={"price": 40, "proposal": "truthful"},
+        live_effect_context={
+            "current_balance": 26, "required_charge": 18, "balance_unit": "connects",
+        },
         cdp_base="http://127.0.0.1:9233",
         runner=tmp_path / "runner.py", schema=tmp_path / "schema.json",
         evidence_root=tmp_path / "evidence",
@@ -40,6 +43,8 @@ def test_common_operator_passes_sealed_intent_to_terra_without_provider_selector
     assert result["status"] == "ok"
     assert "browser-lane-agent" in captured["command"]
     assert "SEALED_INTENT=" in captured["prompt"]
+    assert 'LIVE_EFFECT_CONTEXT={"balance_unit":"connects","current_balance":26,"required_charge":18}' in captured["prompt"]
+    assert "authoritative parent pre-effect readback" in captured["prompt"]
     assert "#step-rate" not in captured["prompt"]
     assert "hardcoded provider selectors" in captured["prompt"]
     normalized = " ".join(captured["prompt"].split())

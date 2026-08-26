@@ -943,6 +943,11 @@ async def execute_sealed_proposal(
     await asyncio.to_thread(
         operate_market_form, provider="upwork", resource_id=payload["job_id"],
         form_url=form_url, sealed_intent=payload,
+        live_effect_context={
+            "current_balance": connects_pre,
+            "required_charge": payload["terms"]["required_connects"],
+            "balance_unit": "connects",
+        },
         cdp_base=os.environ["CLOAK_CDP_BASE_URL"],
     )
     proposal_artifact = Path(await navigate_and_snapshot(
