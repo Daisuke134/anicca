@@ -2271,9 +2271,14 @@ it must not be retried. Postiz row `cmt9mebpj0341mp0ymi31r582` is `PUBLISHED` wi
 exact caption/title/integration and numeric release suffix
 `7678198747632977937`, while its release URL is still only the profile URL.
 The numeric suffix remains provider metadata and is not converted into a URL.
-Local job `marketing-native-carousel-publication:0cd8be1c…c788f` is queued for
-durable `present` reconciliation using the exact Postiz row and local object
-hashes; Telegram/replay/metrics follow only after that state transition.
+Local job `marketing-native-carousel-publication:0cd8be1c…c788f` is now
+terminal `completed`, `reconciliation_decision=present`, and
+`unknown_effect=false`. Its verified receipt binds Postiz row
+`cmt9mebpj0341mp0ymi31r582`, provider state `PUBLISHED`, integration
+`cmnenjkff01j1pa0ysufmzhfr`, exact caption/title/DIRECT_POST metadata, pack
+`3241653e…de624c`, six ordered media hashes, order hash `97cb56b3…1c3855`, and
+caption hash `8e6f7cec…f2c6d`; `public_url=null` is explicit and no URL is invented.
+Telegram/replay/metrics are the next atomic steps.
 Controls are restored to fence closed and armed 0. API-only operation is enforced by removing the CDP/
 browser fallback from profile resolution; a profile-only result now fails fast
 after the bounded API/CLI readback instead of holding the effect fence open for
