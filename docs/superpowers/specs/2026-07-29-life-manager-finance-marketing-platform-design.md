@@ -2270,6 +2270,23 @@ other than pack `76937db0…fe311c`, video `35a15c7c…e9a15`, caption
 `311f9c3d…6ba2eb`, and approval `bb3e2ac3…764ee2`, and the focused DNS
 allowlist regression must be GREEN. Effect count remains zero.
 
+Those pre-effect blockers are now closed at commits `891d671ab` and
+`6f56fe538`. The lane freezes all four exact refs and rejects a mutually
+consistent alternate before object reads, secrets, provider access, or state;
+the subprocess passes only the existing validated Postiz DNS override key; and
+the natural receipt names native owner `@anicca.ios.jp`, never provider alias
+`@anicca.jp1`. Parent verification passes widget `30/30` and publication
+adapter `16/16`; the final targeted adversary returns `SHIP`. The private
+runtime env is mode `0600` and now binds the four exact refs plus validated
+Postiz IPv4 `69.46.46.109`; the shared main pack remains byte-identical. Every
+object resolves with SHA/mode `0600`, manifest `bbc2bb24…ca124` still has
+armed 0 and only the exact lane `pack-ready/default-off`, and the fence remains
+closed. The current local ledgers are `780/253` because unrelated owners
+continued, but the exact creative+caption+approval identity matches zero jobs
+and zero receipts. Immediate official Postiz readback over 111 rows finds five
+rows for the integration and zero for the exact caption. Exactly one effect is
+therefore authorized next; no retry is allowed if its outcome becomes unknown.
+
 Those pre-effect blockers are closed at commits `891d671ab` and `6f56fe538`.
 The frozen Card lane now rejects every pack/video/caption/approval ref except
 the four exact refs before object-store, secret, ledger, or provider access;
