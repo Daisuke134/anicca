@@ -1,6 +1,6 @@
 # Mercor → Life Manager 統合仕様
 
-**Status:** runtime-regression / resident continuity unproven / launchctl GUI state unknown / 3 applications pending / no payment
+**Status:** portable owner packaged / runtime-regression / resident continuity unproven / launchctl GUI state unknown / 3 applications pending / no payment
 **Canonical repository:** `https://github.com/Daisuke134/life-manager`
 **Canonical checkout:** `/Users/anicca/Projects/life-manager-main`
 
@@ -243,13 +243,13 @@ Mercor interview messages enter the existing Job Hunter inbox lane. Reuse `apps/
 - The live read-only Earnings page at `https://work.mercor.com/earnings` was opened in the dedicated Mercor profile. It read `Your total earnings to date are $0.00`, `No payment history yet`, and `Once you receive your first payout, it will appear here`. The private read-back is `status=not_observed`, `revenue_credited=false`, and `verified_monthly_run_rate_usd=null`; no application, offer, rate estimate, or `$0.00` placeholder is counted as earnings.
 - Failure fixtures now cover page drift, stale/non-Mercor tabs, transient CDP failure, ambiguous submit read-back, recovery/reset/Google `はい` screens, and authoritative successful read-back. The guard fails closed and never retries an ambiguous submit or clicks recovery UI.
 - A redacted two-operator fixture now proves separate operator IDs, state roots, application ledgers, evidence files, resume paths, and CDP endpoints; no cross-operator listing or evidence is visible.
-- The reproducible application-runtime release artifact passed extraction and clean-home install tests with a non-Dais redacted profile; the archive excludes private state, and the tracked public tree has no private-key/token credential matches. A fresh production-scope scan finds no tracked plist/template/installer for the dedicated `ai.anicca.job-search-mercor-browser` transport even though `run-mercor.sh` consumes CDP `9334`; the installed launcher points to a private-state script. Portable browser-owner packaging is therefore still open.
+- The portable browser owner is now tracked without a second launcher: `ai.anicca.job-search-mercor-browser.plist` reuses `run-browser.sh`, and `install-launchd.sh --mercor-browser-only` renders operator profile, isolated CDP `9334`, fingerprint `81234`, `mercor-browser` logs/state, KeepAlive, and RunAtLoad. A 189-item release archive contained the template and launcher; extraction plus clean non-Dais HOME install/read-back passed with no credentials or Dais path in the portable environment. Port `9222`, the daily-driver profile, invalid port/fingerprint/profile, and unsafe state names fail before write/load. Scoped Singleton cleanup preserves crash recovery. Real Chromium/CDP read-back remains Atomic 20 because the current process context cannot resolve `getpwuid(501)`.
 - A production-scope reference scan found zero `profitable-claude` or legacy absolute-path dependencies in `apps/job-search-loop`, `loops/job-hunter`, `skills/mercor`, or the Mercor provider reference; canonical runtime/launchd/job-hunter contract tests pass 17/17.
 - Deletion-gate read-back found `/Users/anicca/profitable-claude` is a separate 2.0G Git repository with uncommitted changes. The redacted read-only inventory at `~/.local/state/anicca/job-search/mercor/evidence/legacy-consumer-inventory-20260822.json` contains 463 jobs total and 15 enabled `profitable_claude` jobs (5 currently loaded); a broader plist path scan finds 38 files including disabled/legacy entries. No deletion, move, unload, or process termination was performed; removing it now would break unrelated active loops. The final destructive step remains pending migration or an explicit stop plan for those consumers.
 - Mercor Summary currently resets after reload and is tracked as `summary_unpersisted`.
 - Current runtime read-back at `2026-08-26 10:30 JST` finds the five installed plists for `ai.anicca.job-search-daily`, `ai.anicca.job-search-inbox`, `ai.anicca.job-search-learning`, `ai.anicca.job-search-mercor`, and `ai.anicca.job-search-mercor-browser`. The current process context cannot prove loaded/absent state because `id -un` returns `501` and `launchctl print gui/501/<label>` returns `141 Reentrancy avoided`; a GUI-capable owner must read it back. No process owns CDP `9334`. The application ledger still contains exactly three `submitted_pending_review` rows. The last successful pass at `16:21 JST` returned `needs_human`, submitted nothing, and sent Telegram message `33116`; the next Mercor pass at `17:32` failed without a result or Telegram report, and the latest Inbox pass at `17:54` also failed without a result. Continuous application and real-time reporting are not producing current evidence.
 - The human-gate file contains 16 pending rows with 16 generated gate IDs. It includes semantic duplicates for Project Thor, Finance Interview, and Professional Work Survey; canonicalization must key the stable provider assessment/listing identity rather than free-text reason.
-- The filesystem currently has `9.3 GiB` available, so the `512 MiB` write floor now passes. Disk pressure is no longer the active runtime blocker. LaunchAgent state is an evidence gap because GUI read-back is unavailable; the missing portable browser-owner package, absent CDP owner, and silent terminal failures are the proven blockers.
+- The filesystem currently has `9.3 GiB` available, so the `512 MiB` write floor now passes. Disk pressure is no longer the active runtime blocker. LaunchAgent state is an evidence gap because GUI read-back is unavailable; absent live CDP owner and silent terminal failures remain the proven runtime blockers.
 
 ## 9. Migration acceptance gate
 
@@ -270,7 +270,7 @@ Do not delete or archive the migration source until all are true:
 
 | To-Be | Verification | Cover |
 |---|---|---|
-| Portable browser owner | Clean non-Dais HOME installs the tracked template, owns the configured CDP, and exposes no credential/profile data | Required |
+| Portable browser owner | Clean non-Dais HOME installs and reads back the tracked template with isolated configured CDP and no credential/profile data; live CDP readiness remains Resident cadence | Passed |
 | Terminal real-time reporting | Success, no-action, human-gate, runner failure, CDP failure, and malformed Earnings fixtures each produce exactly one terminal receipt and one deduplicated Telegram outbox event; a live connector records ACK or `delivery_unknown` without blocking provider work | Required |
 | Resident cadence | Two scheduled hourly Mercor wakes plus one 15-minute Inbox wake use canonical release paths and create zero duplicate applications | Required |
 | Human-gate identity | Sixteen raw rows replay into stable provider assessment/listing identities without deleting append-only history | Required |
@@ -285,7 +285,7 @@ Do not delete or archive the migration source until all are true:
 
 ## 10. Atomic completion sequence (one active item at a time)
 
-Only the first remaining item is active. Checkmarks after a reopened item record capabilities completed before the current regression; they are historical evidence, not permission to skip the reopened gap. The strict remaining order is `14 → 16 → 20 → 21 → 22 → 23 → 24 → 25`. Finish each item's evidence and read-back before starting the next. A `needs_human` result is a durable state, not permission to skip the next independent item.
+Only the first remaining item is active. Checkmarks after a reopened item record capabilities completed before the current regression; they are historical evidence, not permission to skip the reopened gap. The strict remaining order is `16 → 20 → 21 → 22 → 23 → 24 → 25`. Finish each item's evidence and read-back before starting the next. A `needs_human` result is a durable state, not permission to skip the next independent item.
 
 1. [x] **Canonical source:** keep skill, spec, provider reference, and runtime state under the Life Manager boundary; no private secrets in Git.
 2. [x] **Canary evidence:** complete and submit Japanese Evaluator plus Software/AI/IT/data Evaluator; store fresh submitted read-back and evidence.
@@ -300,7 +300,7 @@ Only the first remaining item is active. Checkmarks after a reopened item record
 11. [x] **Earnings gate:** implement the settled-only parser/schema and perform a live Earnings read-back. The current account has no payment history, so the durable result is `not_observed` with no revenue credited; the first real settled payout remains an external runtime condition for a future `$10K verified` claim.
 12. [x] **Failure fixtures:** test page drift, stale tab, transient failure, ambiguous submit, recovery/reset screen, and successful read-back.
 13. [x] **Multi-operator test:** run a second redacted operator fixture with separate state, browser, ledger, and evidence; confirm no cross-operator data.
-14. [ ] **Portable Mercor browser owner:** add a redacted repo-owned browser transport template and installer for an operator-specific profile/CDP endpoint, include it in the release, and prove clean-home install plus browser-owner readback without credentials or Dais paths. The previous release proof covered the application runtime but omitted this transport.
+14. [x] **Portable Mercor browser owner:** the tracked Mercor template reuses the shared browser launcher, isolates profile/CDP/log/state, preserves fingerprint and crash cleanup, ships in the reproducible release, and passes clean non-Dais HOME install/configuration read-back with no credentials or Dais paths. Live Chromium/CDP and natural schedule read-back remain item 20.
 15. [x] **Reference cleanup:** remove all production references to `profitable-claude` and confirm the canonical Life Manager runtime still passes.
 16. [ ] **Terminal and real-time reporting:** the successful path has Telegram receipts, but the latest Mercor and Inbox failures were silent. Every wake MUST write one terminal receipt and enqueue one deduplicated Telegram event for `submitted`, `observed_no_action`, `needs_human`, `blocked`, or `failed`; persist provider ACK or `delivery_unknown` without blocking provider work. Selection, rejection, contract, interview, delivery, acceptance, and payout events enqueue immediately.
 17. [x] **Work-harness contract/store:** enforce submitted → selected → contracted → authorized_work → accepted → paid_settled → revenue_recorded transitions, with fail-closed settlement evidence, `needs_human` routing, private append-only events, and idempotent event IDs.
@@ -317,24 +317,23 @@ Only the first remaining item is active. Checkmarks after a reopened item record
 
 These are runtime milestones, not additional submit clicks:
 
-1. **Open-source the browser owner:** move the redacted transport contract into Life Manager, parameterize operator profile/CDP/state, include it in clean-home release/install tests, and keep credentials/session data private.
-2. **Close silent reporting:** make every success, no-action, human-gate, and failure wake terminal and Telegram-ACKed; emit selection, contract, delivery, acceptance, and payout events immediately.
-3. **Restore the resident owner:** keep the now-passing disk preflight, obtain GUI-capable launchd read-back, bootstrap only proven-absent daily/inbox/learning/Mercor/Mercor-browser labels from the current release, and prove two consecutive scheduled Mercor wakes plus one Inbox wake.
-4. **Canonicalize human gates:** collapse the 16 raw pending rows by provider assessment/listing identity while retaining append-only history and preserving genuinely distinct interviews, assessments, and recordings.
-5. **Resume truthful acquisition:** on each hourly wake, model-rank every visible executable role, exclude only unsupported legal/location/physical/policy/capacity requirements, submit at most one deduplicated application, and report the complete inspected set.
-6. **Implement the shared money receipts:** require Contract, Authorization, QA, Delivery, net Payment, and bank/payout-match evidence before revenue or allocation across every provider.
-7. **Selection/inbox reconciliation:** let the 15-minute inbox lane classify Mercor selection, rejection, and contract messages; persist each transition and evidence.
-8. **Contract/calendar handoff:** for an explicit interview offer, use FreeBusy and the existing idempotent Calendar/prep flow; the user attends any human-bound interview, assessment, or physical recording.
-9. **Authorized work and QA:** only after a contract explicitly permits the tool/model, track artifacts, independent QA, delivery, and acceptance; otherwise route the task to `needs_human`.
-10. **Settled payout:** read back the first real paid/settled Mercor row, join actual fees/costs and official Stripe/bank evidence, and calculate the trailing-30-day verified net amount; do not count pending or estimated balances.
-11. **OSS replay and scale proof:** prove the same isolated path on a clean operator HOME, report one `$10K verified net month` only from one complete qualifying month, and require three consecutive qualifying cycles before reporting `$10K stable monthly` or MRR.
-12. **Legacy cleanup:** separately migrate/stop the old-repo consumers before deleting `profitable-claude`; this is not a reason to disable the Mercor loop.
+1. **Close silent reporting:** make every success, no-action, human-gate, and failure wake terminal and Telegram-ACKed; emit selection, contract, delivery, acceptance, and payout events immediately.
+2. **Restore the resident owner:** keep the now-passing disk preflight, obtain GUI-capable launchd read-back, bootstrap only proven-absent daily/inbox/learning/Mercor/Mercor-browser labels from the current release, and prove two consecutive scheduled Mercor wakes plus one Inbox wake.
+3. **Canonicalize human gates:** collapse the 16 raw pending rows by provider assessment/listing identity while retaining append-only history and preserving genuinely distinct interviews, assessments, and recordings.
+4. **Resume truthful acquisition:** on each hourly wake, model-rank every visible executable role, exclude only unsupported legal/location/physical/policy/capacity requirements, submit at most one deduplicated application, and report the complete inspected set.
+5. **Implement the shared money receipts:** require Contract, Authorization, QA, Delivery, net Payment, and bank/payout-match evidence before revenue or allocation across every provider.
+6. **Selection/inbox reconciliation:** let the 15-minute inbox lane classify Mercor selection, rejection, and contract messages; persist each transition and evidence.
+7. **Contract/calendar handoff:** for an explicit interview offer, use FreeBusy and the existing idempotent Calendar/prep flow; the user attends any human-bound interview, assessment, or physical recording.
+8. **Authorized work and QA:** only after a contract explicitly permits the tool/model, track artifacts, independent QA, delivery, and acceptance; otherwise route the task to `needs_human`.
+9. **Settled payout:** read back the first real paid/settled Mercor row, join actual fees/costs and official Stripe/bank evidence, and calculate the trailing-30-day verified net amount; do not count pending or estimated balances.
+10. **OSS replay and scale proof:** prove the same isolated path on a clean operator HOME, report one `$10K verified net month` only from one complete qualifying month, and require three consecutive qualifying cycles before reporting `$10K stable monthly` or MRR.
+11. **Legacy cleanup:** separately migrate/stop the old-repo consumers before deleting `profitable-claude`; this is not a reason to disable the Mercor loop.
 
 ### 10.2 Actionable now versus external state
 
 There is actionable engineering work now; the system is not reduced to passive waiting:
 
-- **Actionable now:** open-source the missing Mercor browser owner, make all runner/CDP/Earnings failures terminal and Telegram-observable, reconcile the canonical LaunchAgents from a valid GUI context, and prove scheduled Mercor and Inbox wakes before resuming application-volume optimization. Disk headroom currently passes.
+- **Actionable now:** make all runner/CDP/Earnings failures terminal and Telegram-observable, then reconcile the canonical LaunchAgents from a valid GUI context and prove scheduled Mercor and Inbox wakes before resuming application-volume optimization. Portable packaging and disk headroom now pass.
 - **External state:** Mercor must independently select an application, issue a contract, authorize the actual work, accept delivery, and settle a payout. The loop cannot force those provider decisions or fabricate the missing evidence.
 - **Current diagnosis:** three applications are pending review; current LaunchAgent loaded state is unverified because launchctl returns `141`; no CDP `9334` owner exists; the last Mercor and Inbox passes failed without terminal results; the failed Mercor pass produced no Telegram report; and Earnings has no payment history. The private Mercor revenue state remains `not_observed`, not a guessed zero or a claimed income.
 - **Capacity economics:** `apps/job-search-loop/job_search_loop/mercor_economics.py` computes a capacity-capped projection only. At the current 40 hours/week and displayed $80–$120/hour, three accepted applications still project $13,866.67–$20,800 gross/month total; the naive three-full-time calculation ($41,600.00–$62,400.00) is shown separately and is not feasible under the 40-hour capacity or revenue evidence contract.
