@@ -13,7 +13,7 @@ JAPANESE = re.compile(r"[\u3040-\u30ff\u3400-\u9fff]")
 KANA = re.compile(r"[\u3040-\u30ff]")
 LATIN = re.compile(r"[A-Za-z]")
 ENGLISH_PHRASE = re.compile(
-    r"\b[A-Za-z][A-Za-z0-9+#./-]*(?:\s+[A-Za-z][A-Za-z0-9+#./-]*){2,}\b"
+    r"\b[A-Za-z][A-Za-z0-9+#./-]*(?:[\s,:;!?—–-]+[A-Za-z][A-Za-z0-9+#./-]*){2,}\b"
 )
 
 

@@ -23,6 +23,12 @@ class PostContractTests(unittest.TestCase):
         self.assertFalse(MODULE.language_matches(
             "ja", "比較条件を一つに固定して、結果を記録すると判断しやすくなります。Use this workflow now."
         ))
+        self.assertFalse(MODULE.language_matches(
+            "ja", "比較条件を固定して記録すると判断しやすくなります。Use this, workflow now."
+        ))
+        self.assertFalse(MODULE.language_matches(
+            "ja", "比較条件を固定して記録すると判断しやすくなります。Use this: workflow now."
+        ))
         self.assertTrue(MODULE.language_matches("ja", "AIツールは、まず小さく比較してから選ぶ。"))
         self.assertTrue(MODULE.language_matches("ja", "Y Combinatorの話も、まず一次情報を確認する。"))
         self.assertFalse(MODULE.language_matches("ja", "人工智能产品增长"))
