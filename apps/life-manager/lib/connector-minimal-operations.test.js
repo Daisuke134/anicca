@@ -396,6 +396,35 @@ test("operations persist only safe Connpass discovery aggregate counts", async (
   }
 });
 
+test("operations persist only bounded ranking timing aggregates", async () => {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-ranking-audit-"));
+  try {
+    const operations = createMinimalProductionOperations({
+      stateDir, wakeId: "wake-ranking-audit", telegramTarget: "private-target",
+      now: () => new Date("2026-08-27T05:00:00.000Z"),
+      async sendMessage() { return { messageId: 7001 }; },
+    });
+    const input = {
+      schema_version: 1, request_count: 31, retry_count: 8, bisect_count: 4,
+      total_request_ms: 571_020, max_request_ms: 45_000, elapsed_ms: 589_180,
+    };
+    await operations.recordRankingAudit(input);
+    const file = path.join(stateDir, "ranking-audits.jsonl");
+    const row = JSON.parse(fs.readFileSync(file, "utf8").trim());
+    assert.deepEqual(row, {
+      schema_version: 1, wake_id: "wake-ranking-audit", ...input,
+      recorded_at: "2026-08-27T05:00:00.000Z",
+    });
+    assert.equal(fs.statSync(file).mode & 0o777, 0o600);
+    for (const malformed of [
+      { ...input, prompt: "private" },
+      { ...input, request_count: -1 },
+      { ...input, retry_count: 32 },
+      { ...input, max_request_ms: input.total_request_ms + 1 },
+    ]) await assert.rejects(() => operations.recordRankingAudit(malformed));
+  } finally { fs.rmSync(stateDir, { recursive: true, force: true }); }
+});
+
 test("Connpass discovery audit accepts a busy Tokyo listing and still bounds the count", async () => {
   const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-minimal-connpass-busy-"));
   try {
