@@ -52,8 +52,8 @@ exact endpoint above. Do not inspect, guess, or use any other CDP endpoint or po
 that default context when needed. Never create an
 isolated/incognito context, never launch another browser/profile, and never perform session restoration
 or login; a login redirect means blocked. The installed common Browser ACI is already configured through
-BU_CDP_URL and BU_NAME. Use `browser-harness` with Python on stdin as documented by its installed
-SKILL.md. Do not search for browser libraries or build a raw CDP client."""
+BU_CDP_URL and BU_NAME. Run `browser-harness skill` once, then use `browser-harness` with Python on stdin.
+Do not search the filesystem for its SKILL.md, search for browser libraries, or build a raw CDP client."""
     environment = os.environ.copy()
     environment.update({"BU_CDP_URL": cdp_base, "BU_NAME": f"market-form-{provider}"})
     completed = subprocess.run([
