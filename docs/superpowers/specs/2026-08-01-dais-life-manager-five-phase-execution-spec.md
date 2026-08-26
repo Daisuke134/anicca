@@ -141,8 +141,8 @@ Calendarを無関係なeventで埋めること自体を成果にしない。
 
 ##### G. Production acceptance and OSS finish
 
-- [ ] **CG-42** `git fetch`後のclean integration commitで全変更をcanonical `main`へnon-force統合し、remote ancestryとimmutable release bytesを確認する。
-- [ ] **CG-43** `bin/launchctl-safe`だけでnative plistをrender/install/reloadし、loaded args、`StartInterval=3600`、native owner exact 1、legacy owner 0、process/lock 0をreadbackする。
+- [x] **CG-42** `git fetch`後のclean integration commitで全変更をcanonical `main`へnon-force統合し、remote ancestryとimmutable release bytesを確認する。
+- [x] **CG-43** `bin/launchctl-safe`だけでnative plistをrender/install/reloadし、loaded args、`StartInterval=3600`、native owner exact 1、legacy owner 0、process/lock 0をreadbackする。Release/install receiptは `docs/evidence/outbound/2026-08-27-connector-hourly-release-install.json`。
 - [ ] **CG-44** existing labelをexact 1回kickstartし、本物のLuma `strong/moderate`候補一件でprovider readback→Calendar exact 1→PNG/receipt→Telegram IDs→bundleを完成する。
 - [ ] **CG-45** 次の自然hourly wakeで同eventのSubmit 0、Calendar 1、bundle reuse、別candidateへのcontinuationを確認する。
 - [ ] **CG-46** connpass API live inventoryとaction boundaryを自然wakeで確認し、provider permissionがある場合だけ許可methodの実申込bundleを追加する。

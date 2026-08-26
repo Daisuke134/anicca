@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "release_sha": "d88e61aa14cb1edc7c8745e8a605a01702b9c0b4",
+  "remote_main_sha": "d88e61aa14cb1edc7c8745e8a605a01702b9c0b4",
+  "release_provenance": "ancestor-of-origin-main",
+  "release_source_bytes": "exact_git_archive_match",
+  "dependency_lock_sha256": "f7d8851805f9cc7b121da692ba4518ca163dadc704442bf58ac8b402f6ec88bc",
+  "connector_test_result": {
+    "passed": 656,
+    "failed": 0
+  },
+  "launchd_label": "ai.anicca.life-manager-connector-native",
+  "start_interval_seconds": 3600,
+  "loaded_native_owner_count": 1,
+  "loaded_legacy_owner_count": 0,
+  "connector_process_count_after_reload": 0,
+  "connector_owner_lock_count_after_reload": 0,
+  "legacy_labels_disabled": [
+    "ai.anicca.connector-fill-gaps",
+    "ai.anicca.connector-daily-report",
+    "ai.anicca.life-manager-connector-healer-shadow",
+    "ai.anicca.life-manager-connector-host-bridge",
+    "ai.anicca.life-manager-connector-native-healthcheck"
+  ]
+}
