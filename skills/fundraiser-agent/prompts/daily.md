@@ -11,8 +11,8 @@ queue together with prior receipts. Act on the first `apply_now` program whose
 current official intake is open and which does not have an unchanged unresolved
 human-only blocker. Do not reopen the same video, voice, binding-term, attendance,
 travel, KYC, or CAPTCHA checkpoint every wake unless new evidence indicates the
-requirement changed or the missing artifact/commitment now exists. Never submit a
-`hold_do_not_submit` program. Do not resume an older receipt
+requirement changed or the missing artifact/commitment now exists.
+Never submit a `hold_do_not_submit` program. Do not resume an older receipt
 outside the configured Tokyo or United States geographies. Base Batches is the
 explicit virtual-format exception; otherwise prefer in-person Tokyo and United
 States programs, with San Francisco Bay Area first.
