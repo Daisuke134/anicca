@@ -66,6 +66,14 @@ claims distinguishable, and never rename revenue as MRR/ARR without period proof
 2. Lease the existing authenticated X CDP identity read-only and search rendered
    X posts, accounts, threads, and links for new funding leads. Release the lease
    before application work.
+   Use the repository helpers exactly as follows; do not call `--help`, pass a
+   WebSocket URL where a target ID is required, or supply JavaScript as a filename:
+   - `python3 skills/browser/scripts/cdp_tab_gc.py --owner ai.anicca.fundraiser`
+   - `python3 skills/browser/scripts/cdp_context_lease.py acquire ai.anicca.fundraiser`
+   - Parse the returned `target_id`; use that value for every CDP command.
+   - `python3 skills/browser/scripts/cdp.py nav "$TARGET_ID" "$URL"`
+   - `printf '%s\n' "$JS" | python3 skills/browser/scripts/cdp.py eval "$TARGET_ID" -`
+   - `python3 skills/browser/scripts/cdp_context_lease.py release ai.anicca.fundraiser`
 3. Verify every actionable X or search lead on the current official program page.
 4. Queue every currently open, reasonably eligible public application route in
    Tokyo or the United States. Reject Kenya and every other geography. Prefer
@@ -87,8 +95,10 @@ For every queued candidate until the execution window ends:
 3. Choose one next action from the fresh observation and full context, perform it
    through the existing worker, and observe again.
    For ordinary HTML forms, prefer the existing generic commands
-   `cdp.py formstate <target>`, `cdp.py fillname <target> <name> <value>`, and
-   `cdp.py selectname <target> <name> <value>`. They select the visible element
+   `python3 skills/browser/scripts/cdp.py formstate "$TARGET_ID"`,
+   `python3 skills/browser/scripts/cdp.py fillname "$TARGET_ID" "$NAME" "$VALUE"`,
+   and `python3 skills/browser/scripts/cdp.py selectname "$TARGET_ID" "$NAME" "$VALUE"`.
+   They select the visible element
    when responsive pages contain hidden duplicates. Do not hand-build shell-to-JS
    quoting or retry the same failing mutation more than once.
 4. Resolve ordinary missing answers by reasonable inference. A human-only video,

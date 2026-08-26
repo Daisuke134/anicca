@@ -194,6 +194,9 @@ test("production contract runs every 30 minutes and maximizes real applications"
   assert.match(contract, /authenticated[^\n]*X[^\n]*CDP/i);
   assert.match(contract, /Telegram[^\n]*(?:immediately|real.?time)/i);
   assert.match(contract, /reasonable inference/i);
+  assert.match(dailyPrompt, /cdp_tab_gc\.py --owner ai\.anicca\.fundraiser/);
+  assert.match(dailyPrompt, /cdp_context_lease\.py acquire ai\.anicca\.fundraiser/);
+  assert.match(dailyPrompt, /cdp\.py eval "\$TARGET_ID" -/);
   assert.doesNotMatch(contract, /at most one/i);
   assert.doesNotMatch(contract, /per user-local day/i);
 });
