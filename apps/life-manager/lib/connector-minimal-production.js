@@ -230,7 +230,14 @@ function createProductionProviderRouter(options = {}) {
         const pending = candidates.filter((candidate) => !reconcile.includes(candidate));
         if (pending.length === 0) return candidates;
         const ranking = await rankCandidates({ candidates: pending, preferences: eventPreferences });
-        const eligible = eligibleRankedCandidates(ranking);
+        const sourceByRef = new Map(pending.map((candidate) => [candidate.event_ref, candidate]));
+        const eligible = eligibleRankedCandidates(ranking).map((ranked) => Object.freeze({
+          ...sourceByRef.get(ranked.event_ref),
+          priority_class: ranked.priority_class,
+          preference_fit: ranked.preference_fit,
+          preference_reason: ranked.preference_reason,
+          auto_apply_eligible: ranked.auto_apply_eligible,
+        }));
         if (classifyTalkOpportunity == null) return Object.freeze([...reconcile, ...eligible]);
         const enriched = [];
         for (const candidate of eligible) {

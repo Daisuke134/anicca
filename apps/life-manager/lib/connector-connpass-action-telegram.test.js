@@ -90,6 +90,21 @@ test("action boundary exposes only stable stage codes for send and provider rece
   }
 });
 
+test("action boundary identifies malformed ranked candidates before transport", async () => {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connpass-action-candidate-stage-"));
+  try {
+    const reporter = createConnpassActionTelegram({
+      stateDir, wakeId: "wake-connpass-candidate-stage", telegramTarget: "private-target",
+      now: () => new Date("2026-08-27T01:00:00.000Z"),
+      send: async () => { throw new Error("transport must not run"); },
+    });
+    await assert.rejects(
+      reporter.report({ candidates: [candidate({ lightning_talk_status: undefined })] }),
+      (error) => error.code === "CONNPASS_ACTION_BOUNDARY_CANDIDATE_FAILED",
+    );
+  } finally { fs.rmSync(stateDir, { recursive: true, force: true }); }
+});
+
 test("public security vocabulary and example credential strings remain reportable public event text", async () => {
   const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connpass-action-crypto-"));
   try {

@@ -62,8 +62,12 @@ function createConnpassActionTelegram(options = {}) {
   const file = path.join(stateDir, "connpass-action-boundary-deliveries.jsonl");
   return Object.freeze({
     async report(input = {}) {
-      if (!Array.isArray(input.candidates) || input.candidates.length < 1 || input.candidates.length > 10_000) invalid();
-      const normalized = input.candidates.slice(0, 5).map(normalize);
+      if (!Array.isArray(input.candidates) || input.candidates.length < 1 || input.candidates.length > 10_000) {
+        throw stageError("CONNPASS_ACTION_BOUNDARY_INPUT_FAILED");
+      }
+      let normalized;
+      try { normalized = input.candidates.slice(0, 5).map(normalize); }
+      catch { throw stageError("CONNPASS_ACTION_BOUNDARY_CANDIDATE_FAILED"); }
       const lines = ["Connector::: connpass候補（手動action boundary）", "自動申込: 0件", ""];
       const candidates = [];
       for (const row of normalized) {

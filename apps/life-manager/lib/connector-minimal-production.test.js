@@ -422,7 +422,8 @@ test("production router blocks every Connpass submit path until provider permiss
 test("production provider router submits only strong or moderate ranked candidates and fails closed when ranking fails", async () => {
   const strong = Object.freeze({
     provider: "luma", event_ref: "luma-event://event/ai-agents", canonical_url: "https://luma.com/ai-agents",
-    title: "AI Agents Tokyo", body: "LLM agent builders",
+    title: "AI Agents Tokyo", body: "LLM agent builders", participation_slot_status: "available",
+    lightning_talk_status: "unknown", participant_limit: 100, application_deadline_at: null,
   });
   const weak = Object.freeze({
     provider: "luma", event_ref: "luma-event://event/pottery", canonical_url: "https://luma.com/pottery",
