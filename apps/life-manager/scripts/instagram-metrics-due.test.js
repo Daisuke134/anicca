@@ -44,3 +44,32 @@ test("malformed JA Card rows remain fail-closed after unrelated rows are filtere
   fs.writeFileSync(path.join(directory, "distribution.jsonl"), `${JSON.stringify({ platform: "instagram", status: "published", provider_reconciled: true, format_id: "reelclaw-card", form: "nudge-card", locale: "ja", provider_id: "bad-provider", public_url: "https://www.instagram.com/reel/not-a-target/" })}\n`);
   assert.throws(() => discoverExpected(dataDir), /Instagram verified distribution row invalid/);
 });
+
+test("verified EN affirmation native-carousel receipt is discovered as an immutable metric effect", () => {
+  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "lm-instagram-carousel-discovery-"));
+  const caption = "5 affirmations to tell\nyourself every morning... | #anicca #affirmation";
+  const captionHash = require("node:crypto").createHash("sha256").update(caption).digest("hex");
+  const objectDir = path.join(dataDir, "objects", "sha256"); fs.mkdirSync(objectDir, { recursive: true });
+  fs.writeFileSync(path.join(objectDir, captionHash), caption);
+  fs.chmodSync(path.join(objectDir, captionHash), 0o600);
+  const directory = path.join(dataDir, "tenants/dais-local/marketing/native-carousel-publication/anicca-ios"); fs.mkdirSync(directory, { recursive: true });
+  const receipt = {
+    schema_version: 1, kind: "marketing_native_carousel_distribution", status: "published",
+    product_id: "anicca-ios", format_id: "larry", form: "affirmation-carousel", locale: "en",
+    platform: "instagram", account_id: "@anicca.affirmation",
+    integration_ref: "integration://postiz/instagram/cmp9pedr700ttqh0yj8o57fog",
+    creative_id: "EN-AFFIRMATION-CAROUSEL-da8d8265",
+    pack_sha256: "e23cd41257832d2032fd889bd9a16ec95ea8dc213cdd7a2e3f820fbe1578669e",
+    media_sha256: ["da8d8265a1344b68a877d776b0cec5b599dc7b3bbd6abc833fcef06e7416df1f", "4fe9ab673f095d39368744974c677cbb5f8305dc2a9dcd1ef1b4b87759d8b42a", "1af8a8c790a733ff1cedca85aaf3de010671a03f54223205da0fd9575a242840", "d097d7b7254ee0a35c95844a89e1f8d1d644775dea134f960ac5e8cb80d230f9", "71ded59ff8a1de5251e607a6ba808945c85537bfca3fbd7f20c65f2912f00e34", "418ad1907d64e4835939bda677709aace44092a936e8a18a7cb8aeeca7652f4f"],
+    media_order_sha256: "4daa5db7eb36b424e46057dbf404c390bf1c5c86d44ef99686c48f84429837f9",
+    caption_sha256: captionHash, provider_post_id: "cmt9jm8990291p20y0a2l1xmk", provider_reconciled: true,
+    public_url: "https://www.instagram.com/p/DcfQ2-hG3KR/", published_at: "2026-08-26T03:37:17.624Z",
+  };
+  fs.writeFileSync(path.join(directory, "distribution.jsonl"), `${JSON.stringify({ effect_key: "exact", job_id: "job", receipt })}\n`);
+  assert.deepEqual(discoverExpected(dataDir), [{
+    tenant_id: "dais-local", product_id: "anicca-ios", locale: "en", account_id: "@anicca.affirmation",
+    native_owner: "anicca.ios", integration_id: "cmp9pedr700ttqh0yj8o57fog", provider_post_id: "cmt9jm8990291p20y0a2l1xmk",
+    shortcode: "DcfQ2-hG3KR", public_url: "https://www.instagram.com/p/DcfQ2-hG3KR/", caption,
+    published_at: "2026-08-26T03:37:17.624Z",
+  }]);
+});
