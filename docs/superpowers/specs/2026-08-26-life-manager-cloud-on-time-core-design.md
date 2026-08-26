@@ -284,8 +284,8 @@ Telegram本文の固定形:
 - [x] `wake-loop-isolation.test.js`へreminder timeout、call-first、cross-tenant継続のREDを追加する。
 - [x] `scheduler.js`の`organsUserOnce`へ独立`organ:travel-reminder`を配線する。
 - [x] `wake-loop-isolation.test.js`でroute timeout中もcallが先に完了し、他tenantが進むことをGREENにする。
-- [ ] production E2Eで再現した5分Composio劣化・7 tenant直列遅延をREDにし、reminderを既存wake分離パターンと同じ固定60秒loopへ移す。
-- [ ] `maybeStartLoops`から専用reminder loopを1 writerだけ起動し、旧organ側の二重実行を削除する。
+- [x] production E2Eで再現した5分Composio劣化・7 tenant直列遅延をREDにし、reminderを既存wake分離パターンと同じ固定60秒loopへ移す。
+- [x] `maybeStartLoops`から専用reminder loopを1 writerだけ起動し、旧organ側の二重実行を削除する。
 - [ ] Telegram test chatへ1件送り、message ID、本文、再実行0件をreadbackする。
 
 ### Slice 3A — Telegram actor as onboarding identity
