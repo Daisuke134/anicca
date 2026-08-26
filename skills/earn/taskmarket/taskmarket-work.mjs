@@ -344,7 +344,6 @@ export async function runTaskMarketPass(options = {}, deps = {}) {
       || join(aniccaHome || '.', 'skills', 'earn', 'state', 'revenue-receipts.jsonl'),
     revenueRejectionPath = process.env.REVENUE_RECEIPT_REJECTIONS
       || join(aniccaHome || '.', 'skills', 'earn', 'state', 'revenue-rejections.jsonl'),
-    revenueReadbackVerifier = null,
   } = options;
   if (!aniccaHome) throw new Error('ANICCA_HOME is required');
 
@@ -494,7 +493,6 @@ export async function runTaskMarketPass(options = {}, deps = {}) {
     ? buildTaskMarketRevenueCandidate(recorded, {
       payer: recorded.payer || recorded.external_payer,
       recipient: recorded.recipient || recorded.payTo || recorded.pay_to,
-      readbackVerifier: revenueReadbackVerifier || deps.revenueReadbackVerifier,
     })
     : null;
   // Every official submission readback reaches the one-way projector.  A normal submit-only row
@@ -504,11 +502,10 @@ export async function runTaskMarketPass(options = {}, deps = {}) {
     rejectionPath: revenueRejectionPath,
     provider: 'taskmarket',
     rows: [recorded],
-    options: {
-      payer: recorded.payer || recorded.external_payer,
-      recipient: recorded.recipient || recorded.payTo || recorded.pay_to,
-      readbackVerifier: revenueReadbackVerifier || deps.revenueReadbackVerifier,
-    },
+      options: {
+        payer: recorded.payer || recorded.external_payer,
+        recipient: recorded.recipient || recorded.payTo || recorded.pay_to,
+      },
   });
 
   return {

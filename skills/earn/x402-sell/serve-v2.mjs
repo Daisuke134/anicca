@@ -36,7 +36,8 @@ import {
 import { getFundingRatesCached, buildFundingRatesResponse, annualizedBps } from "./funding-rates.mjs";
 import { buildFundingRateArbResponse } from "./funding-rate-arb.mjs";
 import { RESALE_PRODUCTS, resaleHandler } from "./resale.mjs";
-import { createTrustedReadbackVerifier, projectRevenueReceipts } from "../../agent-economy/lib/revenue-adapters.mjs";
+import { projectRevenueReceipts } from "../../agent-economy/lib/revenue-adapters.mjs";
+import { verifyEvmReceipt } from "../../_shared/lib/verify-tx.mjs";
 
 function payTo() {
   if (process.env.X402_PAYTO) return process.env.X402_PAYTO;
@@ -531,15 +532,6 @@ app.use((req, res, next) => {
     // Natural seller owner: project this provider readback one-way into the shared journal.  The
     // verifier result is created from the server's facilitator response, never from row booleans or
     // a client-supplied receipt id.  Missing chain tuple remains a durable rejection.
-    const readbackVerifier = createTrustedReadbackVerifier(() => {
-      if (!settlement?.success || !settlement.transaction || settlement.chain_id === undefined || settlement.log_index === undefined) return null;
-      return {
-        verified: true,
-        tx_hash: settlement.transaction,
-        chain_id: settlement.chain_id,
-        log_index: settlement.log_index,
-      };
-    });
     void projectRevenueReceipts({
       journalPath: REVENUE_JOURNAL,
       rejectionPath: REVENUE_REJECTIONS,
@@ -553,7 +545,7 @@ app.use((req, res, next) => {
         route: req.path,
         occurred_at: occurredAt,
       }],
-      options: { readbackVerifier },
+      options: { evmVerifier: verifyEvmReceipt, rpc: process.env.BASE_RPC_URL },
     }).catch(() => {});
   });
   next();

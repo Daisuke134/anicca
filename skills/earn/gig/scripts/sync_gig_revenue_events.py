@@ -19,7 +19,33 @@ sys.path.insert(0, str(ROOT / "lib"))
 try:  # The shared event helper is optional in a source-only checkout; candidate projection stays usable.
     from unit_economics_events import append_event, make_event  # noqa: E402
 except ModuleNotFoundError:  # pragma: no cover - exercised only by incomplete source installs
-    append_event = make_event = None  # type: ignore[assignment]
+    def make_event(**kwargs: Any) -> dict[str, Any]:
+        """Compatibility implementation for the historical helper missing from this checkout."""
+        required = ("kind", "loop", "source", "source_record_id", "occurred_at", "amount_minor", "currency", "evidence")
+        if any(key not in kwargs for key in required):
+            raise ValueError("unit economics event fields are incomplete")
+        if isinstance(kwargs["amount_minor"], bool) or not isinstance(kwargs["amount_minor"], int) or kwargs["amount_minor"] <= 0:
+            raise ValueError("amount_minor must be a positive integer")
+        return dict(kwargs)
+
+    def append_event(path: str | Path, event: dict[str, Any]) -> bool:
+        """Append once by source_record_id, matching the real helper's replay-zero contract."""
+        target = Path(path).expanduser().resolve()
+        target.parent.mkdir(parents=True, exist_ok=True)
+        seen: set[str] = set()
+        if target.exists():
+            for line in target.read_text(encoding="utf-8").splitlines():
+                try:
+                    stored = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if isinstance(stored, dict) and stored.get("source_record_id"):
+                    seen.add(str(stored["source_record_id"]))
+        if str(event["source_record_id"]) in seen:
+            return False
+        with target.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(event, ensure_ascii=False, sort_keys=True) + "\n")
+        return True
 
 
 SETTLED = {"SETTLED", "settled", "検収", "検収完了", "支払", "支払完了"}

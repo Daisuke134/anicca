@@ -11,16 +11,21 @@ import {
   adaptLancers,
   adaptTaskMarket,
   adaptX402,
+  adaptX402WithEvmVerifier,
   adaptWriterStripe,
-  createTrustedReadbackVerifier,
   projectRevenueReceipts,
 } from "./revenue-adapters.mjs";
+import * as AdapterModule from "./revenue-adapters.mjs";
 import { runTaskMarketPass } from "../../earn/taskmarket/taskmarket-work.mjs";
 
 const RECIPIENT = "acct_life_manager_instance_01";
 const PAYER = "customer_external_01";
 const NOW = "2026-08-27T00:00:00.000Z";
 const execFileAsync = promisify(execFile);
+
+test("adapter does not export a forgeable trusted-proof wrapper", () => {
+  assert.equal("createTrustedReadbackVerifier" in AdapterModule, false);
+});
 
 function squarePng() {
   const png = Buffer.alloc(33);
@@ -35,7 +40,10 @@ function providerProof(id) {
 }
 
 function trustedProofs(entries) {
-  return createTrustedReadbackVerifier((row) => entries[String(row.source_record_id || row.requestId || row.proposal_id || row.taskId || row.external_receipt_id || row.provider_receipt_id || row.transaction || row.id || "")] || null);
+  return (row, expected) => {
+    const proof = entries[String(row.source_record_id || row.requestId || row.proposal_id || row.taskId || row.external_receipt_id || row.provider_receipt_id || row.transaction || row.id || "")];
+    return proof ? { verified: true, ...expected, proof } : null;
+  };
 }
 
 function accepted(result) {
@@ -104,24 +112,22 @@ test("Lancers accepts a paid finance readback and rejects a contract or pending 
   }), "settlement|proof|trusted");
 });
 
-test("TaskMarket never treats submitTxHash as payment proof", () => {
+test("TaskMarket never treats submitTxHash or an unverified award id as payment proof", () => {
   rejected(adaptTaskMarket({
     taskId: "0x" + "1".repeat(64), submissionId: "submission-1",
     submitTxHash: "0x" + "2".repeat(64), status: "submitted",
     netReward: "5000000", payer: PAYER, recipient: RECIPIENT, occurred_at: NOW,
   }), "award|settlement|proof");
 
-  const receipt = accepted(adaptTaskMarket({
+  const award = adaptTaskMarket({
     source_record_id: "taskmarket-award-1",
     taskId: "0x" + "3".repeat(64), submissionId: "submission-2", status: "awarded",
     gross_atomic: "5000000", fee_atomic: "250000", asset: "USDC", decimals: 6,
     payer: PAYER, recipient: RECIPIENT, award_receipt_id: "taskmarket-award-1",
     award_proof_verified: true, occurred_at: NOW,
-  }, { readbackVerifier: trustedProofs({ "taskmarket-award-1": providerProof("taskmarket-award-1") }) }));
-  assert.equal(receipt.provider, "taskmarket");
-  assert.equal(receipt.gross, 5);
-  assert.equal(receipt.fee, 0.25);
-  assert.equal(receipt.signed_net, 4.75);
+  });
+  assert.equal(award.ok, false);
+  assert.match(award.rejection.code + award.rejection.reason, /VERIFIER|non-revenue/i);
 });
 
 test("x402 requires a successful settlement readback, valid currency, and external payer", () => {
@@ -252,6 +258,52 @@ test("x402 atomic amount 3000 at six decimals is 0.003 and needs chain proof", (
   assert.deepEqual(receipt.proof, { chain_id: 8453, tx_hash: "0x" + "9".repeat(64), log_index: 0, verified: true });
 });
 
+test("provider verifier must echo the full expected tuple", () => {
+  const base = {
+    source_record_id: "tuple-1", requestId: "tuple-1", status: "paid", gross: "10", fee: "1", refund: "0",
+    asset: "USD", payer: PAYER, recipient: RECIPIENT, occurred_at: NOW,
+  };
+  for (const field of ["gross", "fee", "refund", "payer", "recipient", "asset", "terminal_state"]) {
+    const result = adaptCoconala(base, {
+      readbackVerifier: (_row, expected) => ({
+        verified: true,
+        ...expected,
+        [field]: field === "terminal_state" ? "pending" : field === "asset" ? "EUR" : field === "payer" ? "other" : field === "recipient" ? "other" : "999",
+        proof: providerProof("tuple-1"),
+      }),
+    });
+    assert.equal(result.ok, false, field);
+    assert.match(result.rejection.code, /PROOF_BINDING_MISMATCH|MALFORMED_CURRENCY|NON_TERMINAL/);
+  }
+});
+
+test("x402 production adapter calls strict EVM verifier with exact transfer tuple", async () => {
+  const payer = "0x1111111111111111111111111111111111111111";
+  const recipient = "0x2222222222222222222222222222222222222222";
+  const tx = "0x" + "d".repeat(64);
+  let captured;
+  const result = await adaptX402WithEvmVerifier({
+    source_record_id: "x402-strict", settled: true, success: true, amount_atomic: "3000", decimals: 6,
+    currency: "USDC", payer, recipient, transaction: tx, chain_id: 8453, log_index: 4, ts: NOW,
+  }, {
+    evmVerifier: async (expected) => {
+      captured = expected;
+      return {
+        verified: true, chain_id: 8453, tx_hash: tx,
+        transfer: { contract: "0x833589fcd6edb6e08f4c7c32d4f71b54bdA02913".toLowerCase(), payer, recipient, amount_atomic: "3000", log_index: 4 },
+      };
+    },
+  });
+  assert.equal(result.ok, true);
+  assert.equal(result.receipt.gross, 0.003);
+  assert.equal(result.receipt.proof.log_index, 4);
+  assert.equal(captured.expected_contract.toLowerCase(), "0x833589fcd6edb6e08f4c7c32d4f71b54bdA02913".toLowerCase());
+  assert.equal(captured.expected_amount_atomic, "3000");
+  assert.equal(captured.expected_payer, payer);
+  assert.equal(captured.expected_recipient, recipient);
+  assert.equal(captured.expected_log_index, 4);
+});
+
 test("twenty concurrent projections append one receipt and one rejection", async () => {
   const root = await mkdtemp(join(tmpdir(), "revenue-adapters-concurrent-"));
   const journalPath = join(root, "journal.jsonl");
@@ -286,7 +338,7 @@ test("deterministic CLI projection of a raw lane outbox records rejection withou
   assert.equal((await readFile(rejectionPath, "utf8")).trim().split("\n").length, 1);
 });
 
-test("TaskMarket natural owner projects an official award exactly once", async () => {
+test("TaskMarket natural owner projects an official award as rejection until an official verifier exists", async () => {
   const root = await mkdtemp(join(tmpdir(), "revenue-adapters-taskmarket-owner-"));
   const taskId = "0x" + "c".repeat(64);
   const awardId = "taskmarket-award-owner";
@@ -301,12 +353,10 @@ test("TaskMarket natural owner projects an official award exactly once", async (
     asset: "USDC", decimals: 6, payer: PAYER, recipient: RECIPIENT,
     award_receipt_id: awardId, occurred_at: NOW,
   };
-  const verifier = createTrustedReadbackVerifier(() => providerProof(awardId));
   let submissionReads = 0;
   const result = await runTaskMarketPass({
     action: "execute", aniccaHome: root, earnLedgerPath: join(root, "earn.jsonl"), now: Date.parse(NOW),
     revenueJournalPath: join(root, "revenue.jsonl"), revenueRejectionPath: join(root, "rejections.jsonl"),
-    revenueReadbackVerifier: verifier,
   }, {
     listTasks: async () => [selected],
     listSubmissions: async () => { submissionReads += 1; return submissionReads < 2 ? [] : [recorded]; },
@@ -315,7 +365,8 @@ test("TaskMarket natural owner projects an official award exactly once", async (
     downloadImage: async () => squarePng(),
     submitTask: async () => ({ ok: true }),
   });
-  assert.equal(result.revenue_candidate.ok, true);
-  assert.equal(result.revenue_projection.accepted, 1);
-  assert.equal((await readFile(join(root, "revenue.jsonl"), "utf8")).trim().split("\n").length, 1);
+  assert.equal(result.revenue_candidate.ok, false);
+  assert.equal(result.revenue_projection.accepted, 0);
+  await assert.rejects(() => readFile(join(root, "revenue.jsonl"), "utf8"), { code: "ENOENT" });
+  assert.equal((await readFile(join(root, "rejections.jsonl"), "utf8")).trim().split("\n").length, 1);
 });
