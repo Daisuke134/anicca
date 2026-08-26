@@ -6,6 +6,7 @@ const SAFE_REASON = /^[a-z0-9][a-z0-9_:-]{1,99}$/;
 // Bounded, non-sensitive: a JS class/constructor name only, never a message,
 // stack, URL, or env value.
 const ERROR_CLASS = /^[A-Za-z][A-Za-z0-9]{0,63}$/;
+const FALLBACK_COMPLETION_RESERVE_MS = 160_000;
 
 function invalid() {
   throw new Error("Connector minimal runner invalid");
@@ -248,6 +249,10 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
 
     for (let providerIndex = 0; providerIndex < settings.providers.length; providerIndex += 1) {
       const provider = settings.providers[providerIndex];
+      if (!["luma", "connpass"].includes(provider)
+        && elapsed() > settings.maxWakeMs - FALLBACK_COMPLETION_RESERVE_MS) {
+        return finish("circuit_open", "wake_deadline");
+      }
       let candidates;
       try {
         if (providerIndex > 0) {
