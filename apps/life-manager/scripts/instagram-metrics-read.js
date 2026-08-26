@@ -19,6 +19,13 @@ const EXPECTED = Object.freeze({
   caption: "強い人の口癖、5つだけ\n\n#anicca #セルフケア #習慣 #AI",
   published_at: "2026-08-21T10:10:15.268Z",
 });
+
+function metricPlatform(snapshot) {
+  return String(snapshot.kind || "").startsWith("tiktok_")
+    || /^https:\/\/www\.tiktok\.com\//.test(String(snapshot.public_url || ""))
+    ? "tiktok"
+    : "instagram";
+}
 const POST_LABELS = Object.freeze({ Views: "views", Reach: "reach", Saves: "saves", Likes: "likes", Comments: "comments", Shares: "shares" });
 
 function decodeHtml(value) {
@@ -124,7 +131,7 @@ function persistDailyDigest({ dataDir, reportDay, observedAt, expected = EXPECTE
 async function sendMetricSnapshot(result, env, dataDir) {
   if (!result.created) return { created: false, reason: "snapshot_replay" };
   const expected = result.snapshot;
-  const platform = /^https:\/\/www\.tiktok\.com\//.test(expected.public_url) ? "tiktok" : "instagram";
+  const platform = metricPlatform(expected);
   const lane = platform === "tiktok" ? `tiktok-metrics-${String(expected.account_id).replace(/^@/, "").replace(/[^A-Za-z0-9._-]/g, "-")}` : "anicca-main-ja-instagram";
   const objectStore = createContentObjectStore({ objectDir: path.join(dataDir, "objects") });
   const snapshotRef = objectStore.import(result.file).ref;
@@ -166,4 +173,4 @@ async function collectWindow(window, env = process.env, observedAt = new Date().
 }
 
 if (require.main === module) collectWindow(process.argv[2] || "24h").then((result) => process.stdout.write(`${JSON.stringify(result)}\n`)).catch((error) => { process.stderr.write(`${error.message}\n`); process.exitCode = 1; });
-module.exports = { EXPECTED, collectWindow, persistDailyDigest, persistDelayedSnapshot, persistSnapshot, postMetrics, sendMetricSnapshot, verifyNativeHtml };
+module.exports = { EXPECTED, collectWindow, metricPlatform, persistDailyDigest, persistDelayedSnapshot, persistSnapshot, postMetrics, sendMetricSnapshot, verifyNativeHtml };
