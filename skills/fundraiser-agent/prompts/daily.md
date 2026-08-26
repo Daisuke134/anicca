@@ -131,6 +131,11 @@ For every queued candidate until the execution window ends:
    `new|nav|eval|clickxy|insert|key|setfile|fillname|fillcss|selectname|formstate|close`;
    it has no `screenshot` command. Do not probe unsupported commands. Use the
    rendered DOM plus `formstate` as the form observation evidence.
+   Rendered requiredness is authoritative for this application attempt. A blank
+   optional video, social profile, incorporation-status, deck, demo, or narrative
+   field (`required=false` and valid) is never a human checkpoint. Leave it blank
+   and continue to final Submit. Program-page eligibility or future investment
+   terms do not turn an optional application field into a required one.
 3. Choose one next action from the fresh observation and full context, perform it
    through the existing worker, and observe again.
    For ordinary HTML forms, prefer the existing generic commands
