@@ -139,6 +139,20 @@ class CdpPersistentContextPreflightTests(unittest.TestCase):
             self.assertEqual(receipt["effect"], 0)
             self.assertEqual(receipt["required_bytes"], 524288 * 1024)
 
+    def test_daily_driver_may_use_the_bounded_256_mib_floor(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            home = root / "home"
+            home.mkdir()
+            self.install_guard(home)
+            capture = root / "capture.json"
+            with patch.dict(os.environ, {
+                "BROWSER_DISK_HEADROOM_KIB": "262144", "STUB_CAPTURE": str(capture)
+            }, clear=False):
+                self.assertTrue(MODULE._disk_preflight(home))
+            record = json.loads(capture.read_text(encoding="utf-8"))
+            self.assertEqual(record["env"]["GIG_DISK_HEADROOM_KIB"], "262144")
+
     def test_with_browser_starts_unreachable_identity_and_owns_one_lease(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

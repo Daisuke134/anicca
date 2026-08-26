@@ -27,6 +27,7 @@ class DailyDriverLaunchdTests(unittest.TestCase):
             plist = plistlib.loads((output / "ai.anicca.life-manager-daily-driver.plist").read_bytes())
             self.assertEqual(plist["Label"], "ai.anicca.life-manager-daily-driver")
             self.assertTrue(plist["KeepAlive"])
+            self.assertEqual(plist["EnvironmentVariables"]["BROWSER_DISK_HEADROOM_KIB"], "262144")
             self.assertEqual(plist["ProgramArguments"], [str(python), str(ROOT / "skills/browser/cdp_persistent_context.py"), "--profile", str(profile), "--port", "9222"])
             self.assertNotIn("StartInterval", plist)
             self.assertNotIn("StartCalendarInterval", plist)
