@@ -1,6 +1,6 @@
 # Life Manager Cloud: On-Time Core Product Contract
 
-状態: REVIEW REQUIRED — 本specの承認後にatomic implementation planへ移る
+状態: APPROVED — atomic implementation planに従って実装中
 
 正本範囲: cloud Life Managerの通話、移動時間、Telegram乗換通知、QRオンボーディング
 
