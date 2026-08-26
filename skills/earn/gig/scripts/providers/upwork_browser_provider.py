@@ -867,6 +867,34 @@ def reconcile_terminal_transitions(
                 appended.append(event)
                 existing_ids.add(event_id)
                 existing_terminal.add((job_id, to_status))
+            for intent in state.get("negotiation_intents", []):
+                if not isinstance(intent, dict) or intent.get("decision") != "no_reply":
+                    continue
+                source_event_id = str(intent.get("event_id") or "")
+                room_id = str(intent.get("room_id") or "")
+                if not source_event_id or not room_id:
+                    continue
+                event_id = hashlib.sha256(
+                    f"buyer_head|{source_event_id}|terminal".encode("utf-8")
+                ).hexdigest()
+                if event_id in existing_ids:
+                    continue
+                event = {
+                    "event_id": event_id,
+                    "resource_kind": "buyer_head",
+                    "resource_id": room_id,
+                    "source_event_id": source_event_id,
+                    "from_status": "buyer_head",
+                    "to_status": "terminal",
+                    "official_reason": ",".join(intent.get("reason_codes") or ["no_reply"]),
+                    "observed_at": str(state.get("observed_at") or ""),
+                    "receipt_hash": str(intent.get("head_sha256") or ""),
+                }
+                handle.write(json.dumps(
+                    event, ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+                ) + "\n")
+                appended.append(event)
+                existing_ids.add(event_id)
             handle.flush()
             os.fsync(handle.fileno())
             state = dict(state)

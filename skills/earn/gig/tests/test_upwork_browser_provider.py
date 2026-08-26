@@ -662,6 +662,31 @@ def test_reopen_then_remove_creates_a_distinct_terminal_transition(tmp_path):
     assert (row["from_status"], row["to_status"]) == ("open", "removed")
 
 
+def test_no_reply_buyer_head_is_fsynced_once_as_terminal(tmp_path):
+    output, ledger = tmp_path / "state.json", tmp_path / "transitions.jsonl"
+    current = {
+        "observed_at": "2026-08-26T08:58:07+00:00",
+        "negotiation_intents": [{
+            "event_id": "buyer-event-1",
+            "room_id": "room_1",
+            "head_sha256": "a" * 64,
+            "decision": "no_reply",
+            "reason_codes": ["client_filled_position", "no_response_owed"],
+        }],
+    }
+
+    first = reconcile_terminal_transitions(output, ledger, current)
+    row = json.loads(ledger.read_text().splitlines()[-1])
+    assert first["terminal_transitions_appended"] == 1
+    assert row["resource_kind"] == "buyer_head"
+    assert row["resource_id"] == "room_1"
+    assert row["to_status"] == "terminal"
+
+    replay = reconcile_terminal_transitions(output, ledger, current)
+    assert replay["terminal_transitions_appended"] == 0
+    assert len(ledger.read_text().splitlines()) == 1
+
+
 @pytest.mark.parametrize("parser,text", [
     (parse_connects, "Connects History unavailable"),
     (parse_inventory, "Proposals and Offers loading"),
