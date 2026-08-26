@@ -176,9 +176,9 @@ demand → qualified offer → sale → verified fulfillment → received money
        → attributed economics → one bounded improvement → repeat
 ```
 
-The portable Mercor browser owner is packaged and clean-HOME verified. The active engineering gate
-is terminal Telegram reporting, followed by GUI-capable resident continuity with two scheduled
-Mercor wakes and one Inbox wake. The first Mercor money gate is one
+The portable Mercor browser owner and terminal Mercor/Inbox reporting are packaged and clean-HOME
+verified. The active engineering gate is GUI-capable resident continuity with two scheduled Mercor
+wakes and one Inbox wake, including a live Telegram ACK or durable `delivery_unknown`. The first Mercor money gate is one
 selected application through contract, authorized work, independent QA, delivery, and official payout
 `received`. Lancers remains the next provider-neutral acquisition proof after Mercor. USD 10,000
 verified net received in one complete calendar month and the
@@ -989,8 +989,9 @@ OSS stable additionally requires the same conformance suite on a second market t
 clean-device receipt, no original operator paths/data and provider-only additions within the thin-glue
 budget. Tests or fixtures never substitute for the required real provider receipts.
 
-Mercor's tracked portable browser owner and clean non-Dais HOME configuration read-back are proven.
-Mercor OSS alpha still requires isolated private state, terminal Telegram receipts, and a redacted
+Mercor's tracked portable browser owner, restored provider lane, and terminal Mercor/Inbox receipt
+paths pass clean non-Dais HOME release replay. Mercor OSS alpha still requires isolated live private
+state, a real Telegram delivery read-back, and a redacted
 application replay. Mercor OSS
 stable requires one real selected contract through authorized work, QA, delivery, acceptance, settled
 payout, and bank/payout match. It reuses the existing Agent Skills `SKILL.md` format and shared
@@ -1011,7 +1012,7 @@ long-run utility, authorization, delivery capacity and human-minute evidence.
 | Next evidence | CrowdWorks | Existing Japanese account | Project/task contracts and escrow mapping |
 | Authorized read-only | uGig | Existing account and invoice flow | Fast conformance using already-configured state |
 | Authorized read-only | Fiverr | Inbound catalogue plus custom offers | Gig experiments, inquiry and order/revision lifecycle |
-| **Current recovery** | **Mercor** | Terminal reporting → resident wakes → shared money receipts → selection/contract/work/payout | Matching, interviews, authorized task work and identity ceremony |
+| **Current recovery** | **Mercor** | Resident wakes → human-gate identity → shared money receipts → selection/contract/work/payout | Matching, interviews, authorized task work and identity ceremony |
 | Discovered | Authorized bounty and new markets | One bounded zero-spend canary at a time | Founder discovery and shrinking adapter cost |
 
 Each later market may finish as `active`, `assisted`, `denied` or `unprofitable`. Upwork denial or
