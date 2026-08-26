@@ -2230,12 +2230,18 @@ An external observation clock is not an active implementation item. It remains
 terminal acceptance evidence. Exactly one executable atomic item remains active;
 when the clock fires, its readback is reconciled before any dependent account arm.
 
-**Active executable atomic item:** MKT-09R9-15 / Order 24F10 runs exactly one
-`@anicca_slideshow` API canary. It must temporarily arm only the exact calculated
-effect/lane, restore controls, require a caption-matching direct TikTok URL and
-native six-image visual verification before natural Telegram, prove same-slot
-replay 0, record immediate metrics, and register 2h/24h/72h/7d under the durable
-LM owner. No other account or cadence begins.
+**Active executable atomic item:** MKT-09R9-15 / Order 24F10 reconciles the
+existing `@anicca_slideshow` API canary; it creates no new publication. For this
+TikTok **native photo carousel** lane only, publication acceptance is the exact
+Postiz API/DB row in `PUBLISHED` state with matching integration, caption, title,
+slot, and DIRECT_POST settings plus the LM-local SHA-verified pack, six ordered
+JPEGs, caption, approval, and media-order hash. A direct native photo URL is not
+required because Postiz does not expose one for this photo form. This exception
+does not weaken video/Reel lanes: those still require their direct native URL.
+After durable reconciliation, send one natural Telegram receipt describing the
+account/content/Postiz state without inventing a URL, prove same-effect replay 0,
+record immediate source status, and register 2h/24h/72h/7d under the durable LM
+owner. No other account or cadence begins.
 
 The first 24F10 slot `2026-08-26T04:46:42.000Z` is terminal `absent`, not a
 publication success and not retryable as the same job. Exact job
@@ -2260,21 +2266,20 @@ pack/media/caption, with approval
 The old absent effect and approval remain retained evidence; no ledger dedupe
 rule is weakened and no media/caption changes are smuggled into the retry.
 
-The R2 provider effect now exists but remains **non-terminal locally** and must
-not be retried: Postiz row `cmt9mebpj0341mp0ymi31r582` is `PUBLISHED` with the
+The R2 provider effect exists and is accepted under the photo-carousel rule;
+it must not be retried. Postiz row `cmt9mebpj0341mp0ymi31r582` is `PUBLISHED` with the
 exact caption/title/integration and numeric release suffix
 `7678198747632977937`, while its release URL is still only the profile URL.
-TikTok oEmbed, direct yt-dlp, player SSR, item-detail endpoints, and Postiz post
-analytics do not yet return caption-matching native content; therefore the
-candidate direct URL is not accepted, Telegram remains held, metrics are not
-registered, and local job `marketing-native-carousel-publication:0cd8be1c…c788f`
-truthfully remains failed with `unknown_effect=true`. Controls are restored to
-fence closed and armed 0. API-only operation is enforced by removing the CDP/
+The numeric suffix remains provider metadata and is not converted into a URL.
+Local job `marketing-native-carousel-publication:0cd8be1c…c788f` is queued for
+durable `present` reconciliation using the exact Postiz row and local object
+hashes; Telegram/replay/metrics follow only after that state transition.
+Controls are restored to fence closed and armed 0. API-only operation is enforced by removing the CDP/
 browser fallback from profile resolution; a profile-only result now fails fast
 after the bounded API/CLI readback instead of holding the effect fence open for
 repeated browser attempts. The only next action is reconciliation of this exact
-existing effect to caption-matching native evidence; no new publication effect
-is allowed.
+existing effect under the photo-carousel acceptance rule; no new publication
+effect is allowed.
 
 Postiz implementation evidence removes the remaining ambiguity about that
 numeric suffix. The cloned upstream `gitroomhq/postiz-app` at commit
@@ -3153,7 +3158,7 @@ Their dependent account arm remains blocked until the observation is terminal.
 | 24C | **done — MKT-09R9-03:** import and approve one exact `@anicca.affirmation` pack | Order 24B passes | pack `e23cd412…78669e`, caption `bf90a15a…6e64a0`, approval `7740cd09…968845`, six ordered native JPEGs and order hash `4daa5db7…9837f9` are SHA-exact/mode0600; manifest `b48c8e11…5ce18f` pack-ready/default-off, armed0/fenceclosed; effects0 | import several packs or mix Card/Widget content |
 | 24D | **done — MKT-09R9-04:** TDD-generalize the native carousel runner for exactly the frozen EN lane | Order 24C passes | existing JA command remains green; EN account/integration/pack/ordered media/caption/approval/native owner are immutable; alternate refs fail before provider; direct `/p/`, native verification, Telegram and replay contracts are reused; focused 21/21, syntax and diff checks pass; provider/Telegram writes 0 | copy runner, accept caller-defined lane, or execute hardcoded JA adapter against EN |
 | 24E | **done — MKT-09R9-05:** finish one `@anicca.affirmation` API canary and metric registration | Order 24D passes | direct `DcfQ2-hG3KR`, Postiz `cmt9jm8990291p20y0a2l1xmk`, owner/caption/GraphSidecar/six exact ordered images and visual content verified; Telegram `34799`; replay publication 0/message 0; immediate post metrics measured; fence closed/default-off/armed 0. Existing 30-minute LM owner discovers the immutable effect and owns exact 2h/24h/72h/7d due times; registered status `c08bf9e8…6a97d3`; focused 6/6 | fan out, manually leave controls open, call pending windows measured, or arm cadence before metrics |
-| 24F | **active — MKT-09R9-N:** repeat classify → one pack → one API canary for each remaining existing TikTok/Instagram/YouTube integration | Order 24E terminal | **24F1 done:** `@anicca.bochi` terminal hold/0-day. **24F2–5 done:** Obou classify/pack/runner/direct native/Telegram/replay0/metrics. **24F6 done:** mixed personal `@anicca_buddha` terminal hold/0-day. **24F7 done:** `@anicca_slideshow` classified. **24F8 done:** corrected six-slide pack `3241653e…de624c`. **24F9 done:** immutable TikTok JPEG-carousel transport/runner, JS 25/25, Python 20/20, effects0. **24F10 active:** first slot is durably reconciled absent before provider (`unknown_effect=false`, Postiz rows 0); shared second Instagram-only guard is fixed with Python 21/21; next is exactly one new-slot API canary → direct native six-image/caption verify → Telegram → replay0 → metrics | retry the absent job, mass-enable, accept clipped/wrong images, infer success from profile/numeric release ID, notify before native verification, or retain external runtime assets |
+| 24F | **active — MKT-09R9-N:** repeat classify → one pack → one API canary for each remaining existing TikTok/Instagram/YouTube integration | Order 24E terminal | **24F1 done:** `@anicca.bochi` terminal hold/0-day. **24F2–5 done:** Obou classify/pack/runner/direct native/Telegram/replay0/metrics. **24F6 done:** mixed personal `@anicca_buddha` terminal hold/0-day. **24F7 done:** `@anicca_slideshow` classified. **24F8 done:** corrected six-slide pack `3241653e…de624c`. **24F9 done:** immutable TikTok JPEG-carousel transport/runner, JS 25/25, Python 21/21, effects0. **24F10 active:** R2 exact Postiz row is `PUBLISHED` with matching integration/caption/title/DIRECT_POST and LM has the exact SHA-verified six-image ordered pack. Remaining atomic order: (1) durable `present` reconciliation without inventing a photo URL, (2) one natural Telegram receipt, (3) replay publication 0/message 0, (4) immediate metric-source status plus automatic 2h/24h/72h/7d ownership, then (5) classify the next single account | retry either effect, require an unavailable photo URL, turn numeric release metadata into a URL, mass-enable, accept clipped/wrong images, or notify before exact API/local-object verification |
 | 25 | **MKT-10:** arm only one healthy verified account, ramping from one canary/day to at most three posts/day | exact account has direct-native, Telegram, replay, and usable metric-source evidence | expected/published/missed/duplicate counts remain healthy at each ramp; platform policy permits cadence | jump directly to three/day everywhere |
 | 26 | **MKT-11:** collect 2h/24h/72h/7d social metrics and join ASC, RevenueCat, and product analytics | exact published effect has immutable creative/campaign lineage | views, likes, comments, shares, saves, watch/retention fields when supported, installs, activation, trials, paid, proceeds, and attribution coverage are source-labelled; unavailable stays unavailable | substitute account aggregates for post outcomes or infer installs from timing |
 | 27 | **MKT-12:** close bounded hook learning independently for Honne EN, Honne JA, and Anicca | one product/account has a usable attributed cohort | stable assignment; one hook token per baseline/challenger; immutable outcome; keep/revert CAS decision; next generation proves it consumed the decision | LRU rotation, shared campaign token, cross-product winner, or multi-variable edit |
