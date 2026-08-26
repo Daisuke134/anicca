@@ -28,6 +28,10 @@ BEGIN
        OR definition ~ 'jsonb_array_length[[:space:]]*\([[:space:]]*days[[:space:]]*\)[[:space:]]*=[[:space:]]*21'
        OR definition ~ 'window_end_date[[:space:]]*=[[:space:]]*\(?[[:space:]]*window_start_date[[:space:]]*\+[[:space:]]*20[[:space:]]*\)?'
        OR definition ~ '(open_count|covered_existing_count|covered_new_count|unavailable_count)[[:space:]]+between[[:space:]]+0[[:space:]]+and[[:space:]]+21'
+       OR definition ~ 'open_count.*>=.*0.*open_count.*<=.*21'
+       OR definition ~ 'covered_existing_count.*>=.*0.*covered_existing_count.*<=.*21'
+       OR definition ~ 'covered_new_count.*>=.*0.*covered_new_count.*<=.*21'
+       OR definition ~ 'unavailable_count.*>=.*0.*unavailable_count.*<=.*21'
        OR definition ~ 'open_count.*covered_existing_count.*covered_new_count.*unavailable_count.*=[[:space:]]*21'
     THEN
       EXECUTE format(

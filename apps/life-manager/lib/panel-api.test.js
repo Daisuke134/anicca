@@ -526,6 +526,17 @@ test("Task 7A rejects an out-of-order onboarding mutation before any write", asy
   assert.equal(h.writes.length, 0);
 });
 
+test("Task 7A phone.save converts a Japanese domestic number and preserves explicit international form", async () => {
+  const h = onboardingHarness({ step: "phone", stage: "phone", calendarConnected: true });
+  const domestic = await onboardingRequest(h, { method: "POST", body: { action: "phone.save", phone: "090-1234-5678" }, headers: { "idempotency-key": "phone-domestic-01" } });
+  assert.equal(domestic.response.status, 200);
+  assert.equal(h.wrapperCalls.at(-1).payload.phone, "+819012345678");
+
+  const international = await onboardingRequest(h, { method: "POST", body: { action: "phone.save", phone: "+44 (20) 7946-0958" }, headers: { "idempotency-key": "phone-intl-0001" } });
+  assert.equal(international.response.status, 200);
+  assert.equal(h.wrapperCalls.at(-1).payload.phone, "+442079460958");
+});
+
 test("Task 7A payment step returns only configured server Stripe link and fails closed when absent", async () => {
   const h = onboardingHarness({ step: "payment", stage: "payment", paymentLink: null });
   const result = await onboardingRequest(h);

@@ -92,6 +92,8 @@ test("migration upgrades 28-day counts without rewriting the historical migratio
     "lm_event_coverage_snapshots",
     "pg_constraint",
     "pg_get_constraintdef",
+    "definition ~ .*>=",
+    "definition ~ .*<=",
     "DROP CONSTRAINT",
     "NOT VALID",
     "CONSTRAINT lm_event_coverage_horizon_days_28_check",
@@ -107,6 +109,9 @@ test("migration upgrades 28-day counts without rewriting the historical migratio
     "jsonb_array_length\\(days\\) = 28",
     "open_count \\+ covered_existing_count \\+ covered_new_count \\+ unavailable_count = 28",
   ]) assert.match(sql, new RegExp(required, "i"));
+  for (const count of ["open_count", "covered_existing_count", "covered_new_count", "unavailable_count"]) {
+    assert.match(sql, new RegExp(`definition ~ '${count}\\.\\*>=\\.\\*0\\.\\*${count}\\.\\*<=\\.\\*21'`, "i"));
+  }
   assert.doesNotMatch(sql, /email|phone|password|cookie|guest_key|event_title|location|attendee/i);
   assert.match(historical, /horizon_days = 21/i);
   assert.doesNotMatch(historical, /horizon_days = 28|jsonb_array_length\\(days\\) = 28/i);

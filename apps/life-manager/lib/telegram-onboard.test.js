@@ -343,11 +343,21 @@ test("calendar completion hook also runs on immediate /start or text resume", as
 
 test("normalizePhone: valid forms", () => {
   assert.equal(normalizePhone("+810000000000"), "+810000000000");
-  assert.equal(normalizePhone("08012345678"), "+8012345678");
+  assert.equal(normalizePhone("090-1234-5678"), "+819012345678");
+  assert.equal(normalizePhone("08012345678"), "+818012345678");
   assert.equal(normalizePhone("+44 (20) 7946-0958"), "+442079460958");
+  assert.equal(normalizePhone("+81 90-1234-5678"), "+819012345678");
+  assert.equal(normalizePhone("9012345678"), null);
 });
 test("normalizePhone: junk → null", () => {
   assert.equal(normalizePhone("hello"), null);
   assert.equal(normalizePhone("123"), null);
   assert.equal(normalizePhone(""), null);
+});
+
+test("stageMessage phone copy gives concrete domestic and international examples", () => {
+  const message = stageMessage("phone", "1", "https://panel.example");
+  assert.match(message.text, /090-1234-5678/);
+  assert.match(message.text, /\+81[ -]?90-1234-5678/);
+  assert.doesNotMatch(message.text, /<country-code>|<number>/i);
 });

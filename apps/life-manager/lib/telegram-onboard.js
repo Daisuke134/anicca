@@ -49,8 +49,12 @@ const NATIVE_STAGES = new Set(["phone"]);
 const isNativeStage = (stage) => NATIVE_STAGES.has(stage);
 
 function normalizePhone(text) {
-  let value = String(text || "").replace(/[^\d+]/g, "");
-  if (!value.startsWith("+")) value = "+" + value.replace(/^0+/, "");
+  const raw = String(text || "").trim();
+  if (!raw) return null;
+  const international = raw.startsWith("+");
+  const digits = (international ? raw.slice(1) : raw).replace(/[()\s.-]/g, "");
+  if (!/^\d+$/.test(digits)) return null;
+  const value = international ? `+${digits}` : digits.startsWith("0") ? `+81${digits.slice(1)}` : "";
   return /^\+[1-9]\d{7,14}$/.test(value) ? value : null;
 }
 
@@ -62,7 +66,7 @@ function stageMessage(stage, chatId, base, gmailConnectUrl, profileName) {
     case "calendar":
       return { text: "👋 <b>Welcome to Life Manager!</b>\n\nConnect your Google Calendar (10 sec). Tap below, sign in, then come back here.", extra: urlButton("📅 Connect Calendar") };
     case "phone":
-      return { text: "✅ <b>Calendar connected!</b>\n\nWhat's your phone number? Type it with the country code, e.g. <code><country-code><number></code> — I'll call you before events.", extra: undefined };
+      return { text: "✅ <b>Calendar connected!</b>\n\nWhat's your phone number? Japanese numbers can be <code>090-1234-5678</code> or international <code>+81 90-1234-5678</code> — I'll call you before events.", extra: undefined };
     case "pay":
       return { text: "✅ <b>Phone saved!</b>\n\nSubscribe ($20/mo) and I'll take it from here.", extra: urlButton("⭐ Subscribe") };
     case "gmail": {
@@ -170,7 +174,7 @@ async function handleOnboardingText(chatId, text, row, opts) {
   if (stage === "phone") {
     const phone = normalizePhone(text);
     if (!phone) {
-      await sendMessage(opts.token, chatId, "That doesn't look like a phone number. Please type it with the country code, e.g. <code><country-code><number></code>.");
+      await sendMessage(opts.token, chatId, "That doesn't look like a phone number. Try <code>090-1234-5678</code> or international <code>+81 90-1234-5678</code>.");
       return "bad-phone";
     }
     await saveField(row.uid, { phone }, opts.supaUrl, opts.supaKey);
