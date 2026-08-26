@@ -204,7 +204,7 @@ def find_post(response, post_id: str, platform: str = "tiktok") -> dict:
             url = f"https://www.youtube.com/watch?v={release_id}"
     release_id = str(match.get("releaseId") or "")
     integration = match.get("integration") if isinstance(match.get("integration"), dict) else {}
-    if state == "PUBLISHED" and platform == "tiktok" and not url and re.fullmatch(r"p_pub_url~[A-Za-z0-9._~-]+", release_id):
+    if state == "PUBLISHED" and platform == "tiktok" and (not url or re.fullmatch(r"https://www\.tiktok\.com/@[^/]+/?", url)) and re.fullmatch(r"p_pub_url~[A-Za-z0-9._~-]+", release_id):
         return {"state": state, "post_url": None, "release_id": release_id, "integration_id": integration.get("id"), "content": match.get("content")}
     if state == "PUBLISHED" and (not isinstance(url, str) or not url.startswith("https://")):
         raise PostizError("Postiz marked PUBLISHED without a public release URL")

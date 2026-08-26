@@ -178,6 +178,12 @@ class PostizVideoTests(unittest.TestCase):
             "state": "PUBLISHED", "post_url": None, "release_id": row["releaseId"], "integration_id": "integration-1", "content": "Exact caption",
         })
 
+    def test_find_post_treats_profile_release_url_as_photo_proof_when_release_id_is_photo(self):
+        row = {"id": "photo-2", "state": "PUBLISHED", "releaseURL": "https://www.tiktok.com/@anicca_slideshow", "releaseId": "p_pub_url~v2.7678251654965282824", "content": "Exact caption", "integration": {"id": "integration-1"}}
+        self.assertEqual(postiz_video.find_post([row], "photo-2", "tiktok"), {
+            "state": "PUBLISHED", "post_url": None, "release_id": row["releaseId"], "integration_id": "integration-1", "content": "Exact caption",
+        })
+
     def test_carousel_payload_rejects_short_or_video_image_mix(self):
         with self.assertRaises(postiz_video.PostizError):
             postiz_video.build_payload(
