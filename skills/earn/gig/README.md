@@ -35,7 +35,7 @@ OSS products yet, even where internal components exist.
    information, required consents, smartphone eKYC, and bank registration.
 5. The owner returns to Terminal and runs the same command once. Life Manager attaches
    to the same browser session, receives no password, and verifies every official state.
-6. Life Manager starts Browser, Apply, Negotiate, Storefront, Paid, and Release Watcher.
+6. Life Manager starts Browser, Apply, Reply, Storefront, Paid, and Release Watcher.
 7. Storefront imports existing listings or creates the first truthful listing when the
    official count is zero; the other lanes then operate without ordinary approval gates.
 
@@ -182,8 +182,8 @@ effect, exact Coconala seller readback, buyer acceptance or transaction completi
 contract requires it, and a later wake with duplicate effect zero. Model success, process
 liveness, tests, and a local artifact are not completion.
 
-The four lanes form one revenue system: Apply and Storefront acquire demand, Negotiate
-(Reply) converts it without exposing internal process details, and Paid fulfills it. Revenue
+The four lanes form one revenue system: Apply and Storefront acquire demand, Reply
+converts it without exposing internal process details, and Paid fulfills it. Revenue
 targets are measured from official contract, fee, payout, and bank receipts. Application
 volume, listing publication, pending balance, and model estimates never count as the monthly
 cash target and no income amount is guaranteed.
@@ -437,7 +437,7 @@ These are enforced in code, not by convention.
 
 Honest list. These are measured, not suspected.
 
-- **The reference Mac has completed Negotiate production acceptance.** A natural
+- **The reference Mac has completed Reply production acceptance.** A natural
   reconciliation read all 140 official inbox cards over five terminally proven
   pages (`30/30/30/30/20`), freshly read all 140 threads, and reused none. It found
   no reply to send, two prior estimates to confirm, and 138 no-send conversations
@@ -447,7 +447,7 @@ Honest list. These are measured, not suspected.
   five verified replies; each has one verified intent and seller-side readback,
   `duplicate_effect=0`, and a durable Telegram `reply_verified` receipt (provider
   message IDs `30152`, `30379`, `30428`, `30583`, and `30625`). Three fresh samples
-  completed in 42, 109, and 8 seconds. This evidence accepts Negotiate only; it does
+  completed in 42, 109, and 8 seconds. This evidence accepts Reply only; it does
   not accept Paid or Storefront.
 - **The reference Mac has completed Storefront production acceptance.** Release
   `ead7fd657` recovered a confirmed gallery contract after bounded evidence GC,

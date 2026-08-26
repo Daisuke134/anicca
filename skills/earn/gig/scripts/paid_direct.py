@@ -128,6 +128,24 @@ def _write(path: Path, value: Any) -> None:
     os.replace(temporary, path)
 
 
+def _has_resumption_marker(workspace: Path) -> bool:
+    """Keep a failed owner workspace only when its continuation marker is valid."""
+    markers = (
+        (workspace / "delivery" / "paid-tool-requests.json", "requests"),
+        (workspace / "context" / "paid-tool-results.json", "results"),
+    )
+    for path, field in markers:
+        if path.is_symlink() or not path.is_file():
+            continue
+        try:
+            value = _load(path)
+        except (OSError, TypeError, ValueError, json.JSONDecodeError):
+            continue
+        if isinstance(value, dict) and value.get("version") == 1 and isinstance(value.get(field), list):
+            return True
+    return False
+
+
 @contextmanager
 def _project_workspace(root: Path, prefix: str, *, resume: bool = False) -> Iterator[str]:
     """Keep active Paid work outside shared temp and resume it after abrupt worker death."""
@@ -145,7 +163,7 @@ def _project_workspace(root: Path, prefix: str, *, resume: bool = False) -> Iter
         yield str(workspace)
         completed = True
     finally:
-        if completed:
+        if completed or not _has_resumption_marker(workspace):
             shutil.rmtree(workspace, ignore_errors=True)
 
 def _text(value: Any) -> str: return str(value or "").strip()

@@ -56,6 +56,24 @@ model narration, and local success without the named readback are not PASS.
 
 ### Live four-lane repair
 
+- [x] `R00a` Reproduce the Reply and Paid retention faults from current production state.
+  PASS = a repeated official-head probe dispatches the same DLQ action, and a failed Paid owner
+  without a resumable tool marker leaves its workspace behind. Production Reply produced 409
+  result files in ten minutes, dominated by `already_closed`; the focused regressions failed first.
+- [x] `R00b` Bound Paid context-read history and failed workspace retention at their shared owners.
+  PASS = each compile records one aggregate per resource key with source count and digest, exact
+  live-talkroom proof remains present, and failed workspaces survive only with a valid tool-resume
+  marker. The focused Paid/context suites pass 41 tests.
+- [x] `R00c` Stop Reply from dispatching an action whose durable `dlq_at` is non-null.
+  PASS = three repeated probes dispatch zero workers for the DLQ row while an ordinary pending row
+  still dispatches once. The full Reply concurrency suite passes 54 tests.
+- [x] `R00d` Use Reply as the current lane name in onboarding and operator-facing lane inventories.
+  PASS = README, earning-loop inventory, SLOT inventory and this executable cursor say Reply;
+  historical evidence remains historical and the installed compatibility label stays unchanged.
+- [ ] `R00e` Publish the repair and prove it through the installed owners.
+  PASS = a new immutable main release is current; three Reply probes produce no repeated DLQ worker
+  results; a natural Paid compile appends a bounded aggregate receipt; free bytes remain above the
+  configured floor; Apply, Reply, Storefront and Paid remain loaded under their own owners.
 - [ ] `R01` Read back production `current` and prove commit `8eb732958` is an ancestor.
   PASS = immutable release SHA plus successful `merge-base --is-ancestor`.
 - [ ] `R02` Start one stopped disposable registered browser through `with-browser.sh`.

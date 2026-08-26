@@ -2137,7 +2137,7 @@ async def supervise_replies(
                 )
             except Exception:
                 continue
-            if action.get("state") != "pending":
+            if action.get("state") != "pending" or action.get("dlq_at") is not None:
                 continue
             await enqueue_work({
                 "action_id": int(action["action_id"]),

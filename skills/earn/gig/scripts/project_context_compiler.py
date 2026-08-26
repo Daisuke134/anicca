@@ -681,16 +681,60 @@ def append_context_read_receipt(
     if not live_path.is_file():
         raise ValueError("live_talkroom_evidence_missing")
     live_bytes, live_sha = _bytes_sha(live_path)
+    sources = [
+        *compiled["source_refs"],
+        {"path": str(live_path), "bytes": live_bytes, "sha256": live_sha, "source": "live_talkroom_dom"},
+    ]
+    identity = compiled.get("identity") or {}
+    request_id = str(identity.get("request_id") or "")
+    talkroom_id = str(identity.get("talkroom_id") or "")
+    grouped: dict[str, list[dict[str, Any]]] = {}
+    live_proof: dict[str, Any] | None = None
+    for source in sources:
+        if not isinstance(source, dict):
+            continue
+        key = source_resource_key(
+            source.get("path") or "", request_id, talkroom_id, source=source,
+        )
+        if key is None:
+            continue
+        proof = {
+            field: source[field]
+            for field in ("path", "bytes", "sha256", "source")
+            if source.get(field) is not None
+        }
+        grouped.setdefault(key, []).append(proof)
+        if source.get("source") == "live_talkroom_dom":
+            live_proof = proof
+    source_reads = []
+    for key in sorted(grouped):
+        proofs = sorted(
+            grouped[key],
+            key=lambda value: (
+                str(value.get("path") or ""),
+                int(value.get("bytes") or 0),
+                str(value.get("sha256") or ""),
+            ),
+        )
+        encoded = json.dumps(
+            proofs, ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+        ).encode("utf-8")
+        source_reads.append({
+            "resource_key": key,
+            "source_count": len(proofs),
+            "bytes": sum(int(value.get("bytes") or 0) for value in proofs),
+            "sha256": hashlib.sha256(encoded).hexdigest(),
+        })
     body = {
         "version": 1,
         "thread_id": compiled["thread_id"],
         "project_context_sha256": compiled["project_context_sha256"],
         "input_event_id": str(queue.get("buyer_feedback_sha256") or ""),
         "observed_at": str(queue.get("talkroom_observed_at") or ""),
-        "sources_read": [
-            *compiled["source_refs"],
-            {"path": str(live_path), "bytes": live_bytes, "sha256": live_sha, "source": "live_talkroom_dom"},
-        ],
+        "source_count": len(compiled["source_refs"]),
+        "sources_read_count": len(sources),
+        "sources_read": source_reads,
+        "live_talkroom": live_proof,
     }
     encoded = json.dumps(body, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
     receipt = {**body, "receipt_sha256": hashlib.sha256(encoded).hexdigest()}
@@ -709,7 +753,13 @@ def append_context_read_receipt(
     return receipt
 
 
-def source_resource_key(path: str, request_id: str, talkroom_id: str) -> str | None:
+def source_resource_key(
+    path: str,
+    request_id: str,
+    talkroom_id: str,
+    *,
+    source: dict[str, Any] | None = None,
+) -> str | None:
     """Classify one read source into the EV1 resource-key vocabulary (spec §4.1).
 
     ★ Paths arrive in both forms. ★ ``_refs`` records them relative to the project root
@@ -729,13 +779,14 @@ def source_resource_key(path: str, request_id: str, talkroom_id: str) -> str | N
         return f"posting:{request_id}" if request_id else None
     if "/source/dm/" in text:
         return f"dm:{request_id}" if request_id else None
-    if "/source/talkroom/" in text or "talkroom-" in Path(text).name:
+    if (isinstance(source, dict) and source.get("source") == "live_talkroom_dom") \
+            or "/source/talkroom/" in text or "talkroom-" in Path(text).name:
         return f"talkroom:{talkroom_id}" if talkroom_id else None
     return f"project:{request_id}" if request_id else None
 
 
 def record_source_reads(compiled: dict[str, Any], receipt: dict[str, Any]) -> None:
-    """One EV1 `read` line per source this compile actually hashed.
+    """One EV1 `read` line per resource this compile actually hashed.
 
     ★ Driven by the receipt, not by intent. ★ ``sources_read`` is the list of files whose
     bytes were hashed, so a line here means the source existed and was read -- which is
@@ -749,7 +800,9 @@ def record_source_reads(compiled: dict[str, Any], receipt: dict[str, Any]) -> No
     for source in receipt.get("sources_read") or []:
         if not isinstance(source, dict):
             continue
-        key = source_resource_key(source.get("path") or "", request_id, talkroom_id)
+        key = str(source.get("resource_key") or "").strip()
+        if not key:
+            key = source_resource_key(source.get("path") or "", request_id, talkroom_id)
         if key is None:
             continue
         digest = str(source.get("sha256") or "").lower()

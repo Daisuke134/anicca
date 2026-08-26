@@ -45,7 +45,7 @@ cronが後続passを駆動 → tmuxセッションは stay idle。
 | **bounty** | `anicca-bounty-core` | `bounty/bounty-cli.sh` | `bounty-healthcheck.sh` | なし | `bounty/run.sh` | 毎日09:29 JST | USD(Algora GitHub bounty、マージ+実支払のみ計上) |
 | **gig** | 4 direct launchd owners | なし | shared registry `launchd-ledger` probe | 各owner自身 | `gig/run.sh`(read-only集約) | owner別60–300秒 | ¥(ココナラ→Daisの三菱UFJ銀行、human-funded) |
 
-**gigはshared tmux coreを使用しない。** Apply / Negotiate / Paid / Storefrontの4つのdirect ownerを
+**gigはshared tmux coreを使用しない。** Apply / Reply / Paid / Storefrontの4つのdirect ownerを
 shared earning-health registryがlaunchd labelとdurable Storefront wake ledgerからread-only監視する。
 
 **launchd plist配置**: 各methodの`launchd/`ディレクトリにrepo管理されているが、**videoだけrepo内に

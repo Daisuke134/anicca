@@ -1700,6 +1700,56 @@ def test_supervise_restart_replays_pending_inbox_once(tmp_path):
     assert dispatched[0]["identity_sha256"] == "a" * 64
 
 
+def test_supervise_does_not_dispatch_dlq_pending_head_on_repeated_probes(tmp_path):
+    """A quarantined pending row is not revived by the same fresh inbox head."""
+    args = _supervisor_args(tmp_path)
+    database = outbox.ConnectorOutbox(args.database, args.manifest)
+    identity = "a" * 64
+    event_key = outbox.coconala_inbox_event_key("123", identity)
+    action = database.enqueue(
+        event_key=event_key, thread_id="123",
+        thread_url="https://coconala.com/mypage/direct_message/123",
+        observed_at=1_755_555_200,
+    )
+    with sqlite3.connect(args.database) as connection:
+        connection.execute(
+            "UPDATE connector_actions SET state='pending',dlq_at=?,updated_at=? WHERE action_id=?",
+            (1_755_555_201, 1_755_555_201, action["action_id"]),
+        )
+
+    stop = asyncio.Event()
+    probes = 0
+    dispatched = []
+    results = []
+
+    async def probe():
+        nonlocal probes
+        probes += 1
+        if probes >= 3:
+            stop.set()
+        return {"inquiries": [_head_row(identity)], "captured_at": "2026-08-19T00:00:00+00:00"}
+
+    async def worker(item):
+        dispatched.append(item)
+        results.append({"status": "unexpected_dispatch", "action_id": item["action_id"]})
+
+    async def reconcile():
+        return None
+
+    asyncio.run(detector.supervise_replies(
+        args, probe=probe, worker=worker, reconcile=reconcile, stop=stop,
+    ))
+
+    assert probes >= 3
+    assert dispatched == []
+    assert results == []
+    lifecycle = database.action_lifecycle_for_event(event_key, "123")
+    assert lifecycle == {
+        "state": "pending", "dlq_at": 1_755_555_201,
+        "closure": None, "reason": None, "rejection_code": None,
+    }
+
+
 def test_supervise_replied_duplicate_head_has_no_second_effect(tmp_path):
     args = _supervisor_args(tmp_path)
     database = outbox.ConnectorOutbox(args.database, args.manifest)
