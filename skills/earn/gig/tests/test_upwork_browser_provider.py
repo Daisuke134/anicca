@@ -339,6 +339,55 @@ def test_zero_connect_inbound_precedes_public_job_capacity():
     assert planner(base) is None
 
 
+def test_terminal_upwork_skip_excludes_only_that_inbound_entity(tmp_path, monkeypatch):
+    monkeypatch.setattr(provider, "DEFAULT_GIG_DIR", tmp_path)
+    events = tmp_path / "work-events.jsonl"
+    events.write_text(
+        "not-json\n"
+        + json.dumps({
+            "kind": "application", "state": "skipped", "entity_id": "terminal-1",
+            "attributes": {"platform": "upwork", "terminal": True},
+        })
+        + "\n"
+        + json.dumps({
+            "kind": "application", "state": "skipped", "entity_id": "retry-1",
+            "attributes": {"platform": "upwork"},
+        })
+        + "\n",
+        encoding="utf-8",
+    )
+    state = {
+        "proposal_offer_entities": [],
+        "invitation_entities": [
+            {"id": "terminal-1", "href": "https://www.upwork.com/jobs/terminal-1"},
+            {"id": "retry-1", "href": "https://www.upwork.com/jobs/retry-1"},
+        ],
+        "catalog_projects": [],
+    }
+
+    excluded = provider.load_terminal_upwork_application_ids(events)
+
+    assert provider.plan_zero_connect_inbound(state, excluded_entity_ids=excluded) == {
+        "state": "invitation_detected", "resource_id": "retry-1",
+        "resource_url": "https://www.upwork.com/jobs/retry-1",
+    }
+    assert provider.plan_zero_connect_inbound(
+        {**state, "invitation_entities": [state["invitation_entities"][1]]},
+        excluded_entity_ids=excluded,
+    ) == {
+        "state": "invitation_detected", "resource_id": "retry-1",
+        "resource_url": "https://www.upwork.com/jobs/retry-1",
+    }
+    assert provider.plan_zero_connect_inbound(
+        {
+            **state,
+            "invitation_entities": [state["invitation_entities"][0]],
+            "catalog_projects": [{"title": "API script", "orders": 1}],
+        },
+        excluded_entity_ids=excluded,
+    ) == {"state": "catalog_order_identity_pending", "order_count": 1}
+
+
 def test_inbound_detail_is_actionable_only_from_official_controls():
     parser = getattr(provider, "parse_zero_connect_detail", None)
     assert callable(parser)

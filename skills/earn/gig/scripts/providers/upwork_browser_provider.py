@@ -43,6 +43,7 @@ from upwork_sealed_effect import (  # noqa: E402
 )
 from upwork_transport import UpworkTransport  # noqa: E402
 from workflow_executor import general_agent_workflow  # noqa: E402
+from work_event_projector import _read_jsonl  # noqa: E402
 
 
 CONNECTS_URL = "https://www.upwork.com/nx/plans/connects/history"
@@ -102,6 +103,22 @@ def publish_application_decisions(events: list[dict[str, Any]]) -> None:
         ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=210, check=False)
     except (OSError, subprocess.TimeoutExpired):
         pass
+
+
+def load_terminal_upwork_application_ids(path: Path) -> set[str]:
+    return {
+        event["entity_id"]
+        for event in _read_jsonl(path)
+        if (
+            event.get("kind") == "application"
+            and event.get("state") == "skipped"
+            and isinstance(event.get("attributes"), dict)
+            and event["attributes"].get("platform") == "upwork"
+            and event["attributes"].get("terminal") is True
+            and isinstance(event.get("entity_id"), str)
+            and event["entity_id"]
+        )
+    }
 
 
 def proposal_submitted_event(
@@ -480,8 +497,11 @@ def plan_free_proposal(
     return None
 
 
-def plan_zero_connect_inbound(state: dict[str, Any]) -> dict[str, Any] | None:
+def plan_zero_connect_inbound(
+    state: dict[str, Any], excluded_entity_ids: set[str] | None = None,
+) -> dict[str, Any] | None:
     """Prioritize one stable-ID inbound acquisition that needs no Connects."""
+    excluded_entity_ids = excluded_entity_ids or set()
     for field, kind in (
         ("proposal_offer_entities", "direct_offer_detected"),
         ("invitation_entities", "invitation_detected"),
@@ -489,8 +509,7 @@ def plan_zero_connect_inbound(state: dict[str, Any]) -> dict[str, Any] | None:
         entities = state.get(field)
         if not isinstance(entities, list):
             raise ValueError("upwork_free_action_state_invalid")
-        if entities:
-            entity = entities[0]
+        for entity in entities:
             resource_url = urlsplit(str(entity.get("href") or "")) if isinstance(entity, dict) else None
             if (
                 not isinstance(entity, dict) or not isinstance(entity.get("id"), str)
@@ -500,6 +519,8 @@ def plan_zero_connect_inbound(state: dict[str, Any]) -> dict[str, Any] | None:
                 or entity["id"] not in entity["href"]
             ):
                 raise ValueError("upwork_free_action_state_invalid")
+            if entity["id"] in excluded_entity_ids:
+                continue
             return {
                 "state": kind, "resource_id": entity["id"],
                 "resource_url": entity["href"],
@@ -1187,7 +1208,12 @@ async def observe(
                 browser_profile=browser_profile,
             ))
         state["negotiation_intents"].append(public_intent)
-    inbound = plan_zero_connect_inbound(state)
+    inbound = plan_zero_connect_inbound(
+        state,
+        excluded_entity_ids=load_terminal_upwork_application_ids(
+            DEFAULT_GIG_DIR / "work-events.jsonl"
+        ),
+    )
     if inbound is not None:
         state["can_submit_public_job"] = False
         if inbound["state"] in {"invitation_detected", "direct_offer_detected"}:
