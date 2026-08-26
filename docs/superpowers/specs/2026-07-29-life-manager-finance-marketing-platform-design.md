@@ -2373,10 +2373,26 @@ provider source observation.
    arms exactly Honne EN and Honne JA at 3/day. Transport commit `574d0662e`
    derives a TikTok candidate only from an exact `PUBLISHED` Postiz row with an
    accepted TikTok release-id shape; focused Postiz tests pass 21/21.
+   **Anicca main TikTok first live slot done:** LM label
+   `ai.anicca.life-manager-anicca-main-tiktok` now runs from the fixed stable
+   release instead of the dirty canonical checkout. Manifest
+   `6f84fc3e8272357815f6792f6ae74a8c8bfadfa9d9df22abcb17a823372d9ae6`
+   arms exactly Honne EN, Honne JA, and `@anicca.jp` at 3/day; 17 holds remain
+   0/day. Exact creative `AJ-CARD-002-abbbbdea9052` published as Postiz row
+   `cmt9q4n3t00gllf0yvd22ea95`, with video hash `abbbbdea‧66782a`, caption hash
+   `04757a25…8d920`, natural Telegram `35095`, and owner exit 0. Replay created
+   no publication, distribution row, receipt, or Telegram message; the one
+   concurrent job observed during replay was an unrelated `@obou.anicca` 2h
+   metrics event. The shared TikTok metrics owner initially failed because the
+   stable release lacked `ws`; importing the 196 KiB version 8.21.0 dependency
+   from another immutable LM release restored exit 0 without a canonical or
+   OpenClaw runtime dependency. This exact post is registered as pending at 2h
+   `2026-08-26T08:40:11.030Z`, 24h, 72h, 7d, and daily; no pending value is
+   reported as zero or success.
    **Next atomic item:** enable and verify only the first live cadence slot for
-   Anicca main TikTok `@anicca.jp`; all other selected destinations stay at their
-   current state until that exact effect, natural Telegram, replay 0, and metric
-   ownership are terminal.
+   Anicca main Instagram `@anicca.jp1`; all other selected destinations stay at
+   their current state until that exact effect, natural Telegram, replay 0, and
+   metric ownership are terminal.
 9. Keep the daily metrics loop running for every healthy account: social post and
    account metrics, 2h/24h/72h/7d windows, and natural Telegram. Unsupported or
    empty metrics remain source-labelled `unavailable`.
