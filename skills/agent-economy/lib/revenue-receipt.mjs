@@ -8,12 +8,10 @@
 import { createHash } from "node:crypto";
 
 export const REVENUE_RECEIPT_SCHEMA_VERSION = 1;
-export const REVENUE_RECEIPT_VERSION = REVENUE_RECEIPT_SCHEMA_VERSION;
 export const REVENUE_RECEIPT_KIND = "revenue_receipt";
 
 const ADDRESS_RE = /^0x[0-9a-fA-F]{40}$/;
 const TX_RE = /^0x[0-9a-fA-F]{64}$/;
-const SECRET_KEY_RE = /(private.?key|mnemonic|seed|password|token|secret|api.?key|credential|authorization)/i;
 const MAX_DECIMAL_PLACES = 18;
 const MAX_SAFE_UNITS = BigInt(Number.MAX_SAFE_INTEGER) * (10n ** BigInt(MAX_DECIMAL_PLACES));
 
@@ -34,18 +32,6 @@ export class RevenueReceiptValidationError extends TypeError {
 
 function fail(code, message, field) {
   throw new RevenueReceiptValidationError(code, message, field);
-}
-
-function assertNoSecret(value, depth = 0) {
-  if (depth > 10 || value == null || typeof value !== "object") return;
-  if (Array.isArray(value)) {
-    for (const item of value) assertNoSecret(item, depth + 1);
-    return;
-  }
-  for (const [key, nested] of Object.entries(value)) {
-    if (SECRET_KEY_RE.test(key)) fail("SECRET_FIELD", "secret-bearing fields are not accepted", key);
-    assertNoSecret(nested, depth + 1);
-  }
 }
 
 function valueOf(input, keys, fallback = undefined) {
@@ -129,11 +115,11 @@ function normalizeProof(input) {
       : typeof candidate === "string" ? candidate : undefined);
 
   if (providerReceiptId !== undefined && providerReceiptId !== null) {
-    if ((candidate && candidate.verified === false) || input?.proof_verified === false || input?.proofVerified === false) {
-      fail("UNVERIFIED_PROOF", "provider receipt proof is explicitly unverified", "proof");
+    if (!candidate || typeof candidate !== "object" || Array.isArray(candidate) || candidate.verified !== true) {
+      fail("UNVERIFIED_PROOF", "provider receipt proof requires explicit verified:true", "proof.verified");
     }
     const id = nonEmptyText(providerReceiptId, "proof.provider_receipt_id", 512);
-    return { provider_receipt_id: id };
+    return { provider_receipt_id: id, verified: true };
   }
 
   if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) {
@@ -145,9 +131,7 @@ function normalizeProof(input) {
   if (chainId === undefined || txHash === undefined || logIndex === undefined) {
     fail("MISSING_PROOF", "chain proof requires chain_id, tx_hash, and log_index", "proof");
   }
-  if (candidate.verified === false || input?.proof_verified === false || input?.proofVerified === false) {
-    fail("UNVERIFIED_PROOF", "chain proof is explicitly unverified", "proof");
-  }
+  if (candidate.verified !== true) fail("UNVERIFIED_PROOF", "chain proof requires explicit verified:true", "proof.verified");
   const normalizedHash = nonEmptyText(txHash, "proof.tx_hash", 128).toLowerCase();
   if (!TX_RE.test(normalizedHash)) fail("INVALID_PROOF", "tx_hash must be a 32-byte EVM hash", "proof.tx_hash");
   let normalizedIndex;
@@ -159,7 +143,7 @@ function normalizeProof(input) {
   if (!Number.isSafeInteger(normalizedIndex) || normalizedIndex < 0) {
     fail("INVALID_PROOF", "log_index must be a non-negative integer", "proof.log_index");
   }
-  return { chain_id: normalizeChainId(chainId), tx_hash: normalizedHash, log_index: normalizedIndex };
+  return { chain_id: normalizeChainId(chainId), tx_hash: normalizedHash, log_index: normalizedIndex, verified: true };
 }
 
 function normalizeAsset(value) {
@@ -206,12 +190,13 @@ function canonicalValue(value) {
  */
 export function canonicalRevenueReceiptKey(receipt) {
   if (!receipt || typeof receipt !== "object") fail("INVALID_RECEIPT", "receipt must be an object");
-  const provider = normalizeIdentity(valueOf(receipt, ["provider"]), "provider");
-  const payer = normalizeIdentity(valueOf(receipt, ["payer", "external_payer", "externalPayer"]), "payer");
-  const recipient = normalizeIdentity(valueOf(receipt, ["recipient"]), "recipient");
-  const asset = normalizeAsset(valueOf(receipt, ["asset"]));
   const proof = normalizeProof(receipt);
-  const material = JSON.stringify(canonicalValue({ provider, payer, recipient, asset, proof }));
+  // Idempotency is the provider/chain proof identity only.  Metadata changes cannot mint a second
+  // row, while a genuinely distinct transfer log or provider receipt remains distinct.
+  const identity = proof.provider_receipt_id !== undefined
+    ? { provider_receipt_id: proof.provider_receipt_id }
+    : { chain_id: proof.chain_id, tx_hash: proof.tx_hash, log_index: proof.log_index };
+  const material = JSON.stringify(canonicalValue(identity));
   return `revenue:v1:${createHash("sha256").update(material, "utf8").digest("hex")}`;
 }
 
@@ -226,7 +211,6 @@ export function normalizeRevenueReceipt(input, options = {}) {
   if (!input || typeof input !== "object" || Array.isArray(input)) {
     fail("INVALID_RECEIPT", "receipt must be an object");
   }
-  assertNoSecret(input);
   const provider = normalizeIdentity(valueOf(input, ["provider"]), "provider");
   const payer = normalizeIdentity(valueOf(input, ["payer", "external_payer", "externalPayer"]), "payer");
   const recipient = normalizeIdentity(valueOf(input, ["recipient"]), "recipient");
@@ -280,18 +264,6 @@ export function normalizeRevenueReceipt(input, options = {}) {
     fail("INVALID_IDEMPOTENCY_KEY", "idempotency_key does not match the canonical receipt identity", "idempotency_key");
   }
 
-  // Direct-property aliases aid callers migrating from camelCase/version terminology without adding
-  // duplicate JSON fields to the canonical journal row.
-  Object.defineProperties(receipt, {
-    version: { value: REVENUE_RECEIPT_VERSION, enumerable: false },
-    net: { get: () => receipt.signed_net, enumerable: false },
-    signedNet: { get: () => receipt.signed_net, enumerable: false },
-    terminalState: { get: () => receipt.terminal_state, enumerable: false },
-    occurredAt: { get: () => receipt.occurred_at, enumerable: false },
-    idempotencyKey: { get: () => receipt.idempotency_key, enumerable: false },
-    chainProviderProof: { get: () => receipt.proof, enumerable: false },
-    chain_provider_proof: { get: () => receipt.proof, enumerable: false },
-  });
   if (options && options.freeze === false) return receipt;
   return deepFreeze(receipt);
 }
@@ -303,14 +275,11 @@ export function isTerminalRevenueState(value) {
 export function isNormalizedRevenueReceipt(value) {
   if (!value || typeof value !== "object" || value.schema_version !== REVENUE_RECEIPT_SCHEMA_VERSION || value.kind !== REVENUE_RECEIPT_KIND) return false;
   try {
-    return value.idempotency_key === canonicalRevenueReceiptKey(value)
-      && isTerminalRevenueState(value.terminal_state)
-      && Number.isFinite(Number(value.signed_net));
+    const normalized = normalizeRevenueReceipt(value);
+    return value.idempotency_key === normalized.idempotency_key
+      && value.signed_net === normalized.signed_net
+      && isTerminalRevenueState(value.terminal_state);
   } catch {
     return false;
   }
 }
-
-// Compatibility aliases for adapters that used the shorter spelling during the design phase.
-export const normalizeReceipt = normalizeRevenueReceipt;
-export const canonicalReceiptKey = canonicalRevenueReceiptKey;

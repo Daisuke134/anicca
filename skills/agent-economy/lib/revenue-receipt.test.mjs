@@ -47,7 +47,7 @@ const baseInput = (overrides = {}) => ({
   fee: "0.050000",
   refund: "0",
   asset: "USDC",
-  proof: { chain_id: 8453, tx_hash: TX, log_index: 0 },
+  proof: { chain_id: 8453, tx_hash: TX, log_index: 0, verified: true },
   terminal_state: "settled",
   occurred_at: "2026-08-27T00:00:00.000Z",
   ...overrides,
@@ -73,7 +73,18 @@ test("normalizes a versioned external RevenueReceipt with signed net and canonic
 
 test("canonical key is stable when object field order changes", () => {
   const a = normalizeRevenueReceipt(baseInput());
-  const b = normalizeRevenueReceipt(baseInput({ proof: { log_index: 0, tx_hash: TX, chain_id: "0x2105" } }));
+  const b = normalizeRevenueReceipt(baseInput({ proof: { log_index: 0, tx_hash: TX, chain_id: "0x2105", verified: true } }));
+  assert.equal(a.idempotency_key, b.idempotency_key);
+});
+
+test("canonical key is proof identity only", () => {
+  const a = normalizeRevenueReceipt(baseInput());
+  const b = normalizeRevenueReceipt(baseInput({
+    provider: "other-provider",
+    payer: "0x3333333333333333333333333333333333333333",
+    recipient: "0x4444444444444444444444444444444444444444",
+    asset: "DAI",
+  }));
   assert.equal(a.idempotency_key, b.idempotency_key);
 });
 
@@ -99,8 +110,12 @@ test("rejects an unverified provider receipt", () => {
     () => normalizeRevenueReceipt(baseInput({ proof: { provider_receipt_id: "provider-1", verified: false } })),
     (error) => error instanceof RevenueReceiptValidationError && error.code === "UNVERIFIED_PROOF",
   );
-  const providerReceipt = normalizeRevenueReceipt(baseInput({ proof: { provider_receipt_id: "provider-1" } }));
-  assert.deepEqual(providerReceipt.proof, { provider_receipt_id: "provider-1" });
+  assert.throws(
+    () => normalizeRevenueReceipt(baseInput({ proof: { provider_receipt_id: "provider-1" } })),
+    (error) => error instanceof RevenueReceiptValidationError && error.code === "UNVERIFIED_PROOF",
+  );
+  const providerReceipt = normalizeRevenueReceipt(baseInput({ proof: { provider_receipt_id: "provider-1", verified: true } }));
+  assert.deepEqual(providerReceipt.proof, { provider_receipt_id: "provider-1", verified: true });
 });
 
 test("EVM verifier binds chain, contract, payer, recipient, amount, and log index", async () => {
@@ -138,4 +153,29 @@ test("EVM verifier rejects wrong recipient, wrong asset, missing transfer, and s
   assert.equal((await verify({ status: "0x1", transactionHash: TX, logs: [] })).verified, false);
   assert.equal((await verify(successfulReceipt({ payer: RECIPIENT }))).verified, false);
   assert.equal((await verify(successfulReceipt(), { expected_amount_atomic: "1000001" })).verified, false);
+  assert.equal((await verify(successfulReceipt(), { expected_payer: undefined })).verified, false);
+});
+
+test("EVM verifier never returns raw RPC receipt and tx-hash-only requests fail closed", async () => {
+  const raw = { status: "0x1", transactionHash: TX, secret: "must-not-escape", logs: [] };
+  const noExpectations = await verifyEvmReceipt({
+    tx_hash: TX,
+    rpc: "https://rpc.invalid",
+    fetchImpl: fakeRpc({ eth_getTransactionReceipt: successfulReceipt() }),
+  });
+  assert.equal(noExpectations.verified, false);
+  const result = await verifyEvmReceipt({
+    tx_hash: TX,
+    expected_chain_id: 8453,
+    expected_contract: CONTRACT,
+    expected_payer: PAYER,
+    expected_recipient: RECIPIENT,
+    expected_amount_atomic: "1000000",
+    expected_log_index: 0,
+    rpc: "https://rpc.invalid",
+    fetchImpl: fakeRpc({ eth_chainId: "0x2105", eth_getTransactionReceipt: { ...raw, logs: successfulReceipt().logs } }),
+  });
+  assert.equal(result.verified, true);
+  assert.equal("receipt" in result, false);
+  assert.doesNotMatch(JSON.stringify(result), /must-not-escape/);
 });

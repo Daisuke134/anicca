@@ -6,6 +6,7 @@
 
 import { promises as fs } from "node:fs";
 import path from "node:path";
+import { randomUUID } from "node:crypto";
 import {
   RevenueReceiptValidationError,
   canonicalRevenueReceiptKey,
@@ -38,8 +39,7 @@ function isReceiptRetryCandidate(row) {
     row.external === true &&
     finitePositive(row.net_usdc) &&
     typeof row.tx === "string" &&
-    row.tx.length > 0 &&
-    row.status !== "0x1"
+    row.tx.length > 0
   );
 }
 
@@ -47,19 +47,26 @@ function isReceiptRetryCandidate(row) {
  * Retry only delayed EVM receipts. Failures are represented as status:null and remain retryable.
  * Duplicate transaction hashes are fetched once and returned once, preserving first-seen order.
  */
-export async function reconcilePendingReceipts(rows, fetchReceipt) {
-  if (typeof fetchReceipt !== "function") throw new TypeError("fetchReceipt must be a function");
+export async function reconcilePendingReceipts(rows, verifyReceipt) {
+  if (typeof verifyReceipt !== "function") throw new TypeError("verifyReceipt must be a function");
   const seen = new Set();
   const corrections = [];
   for (const row of Array.isArray(rows) ? rows : []) {
     if (!isReceiptRetryCandidate(row)) continue;
-    const tx = row.tx;
+    const tx = String(row.tx).toLowerCase();
     if (seen.has(tx)) continue;
     seen.add(tx);
     let status = null;
     try {
-      const result = await fetchReceipt(tx);
-      status = result === "0x1" || result === "0x0" ? result : null;
+      const result = await verifyReceipt(tx, row);
+      const evidence = sanitizeEvidence(result);
+      status = result?.verified === true && evidence
+        && (result.status === "0x1" || result.status === "0x0") ? result.status : null;
+      if (result?.verified === true && evidence && status !== null) {
+        const correction = { tx, status, verified: true, evidence };
+        corrections.push(correction);
+        continue;
+      }
     } catch {
       status = null;
     }
@@ -71,48 +78,131 @@ export async function reconcilePendingReceipts(rows, fetchReceipt) {
 async function readJsonl(file) {
   try {
     const raw = await fs.readFile(file, "utf8");
-    return raw.split("\n").filter(Boolean).map((line) => {
-      try { return JSON.parse(line); } catch { return null; }
-    }).filter(Boolean);
+    const rows = [];
+    for (const [index, line] of raw.split("\n").entries()) {
+      if (!line.trim()) continue;
+      try {
+        rows.push(JSON.parse(line));
+      } catch {
+        throw new Error(`money-truth: corrupt JSONL at line ${index + 1}`);
+      }
+    }
+    return rows;
   } catch (error) {
     if (error?.code === "ENOENT") return [];
     throw error;
   }
 }
 
+function journalLockPath(file) {
+  return `${file}.lock`;
+}
+
+function processAlive(pid) {
+  try { process.kill(pid, 0); return true; } catch { return false; }
+}
+
+async function acquireJournalLock(file) {
+  const lockPath = journalLockPath(file);
+  const owner = `${process.pid}:${randomUUID()}`;
+  try {
+    await fs.mkdir(lockPath);
+  } catch (error) {
+    if (error?.code !== "EEXIST") throw error;
+    let stale = false;
+    try {
+      const value = JSON.parse(await fs.readFile(path.join(lockPath, "owner"), "utf8"));
+      stale = !Number.isInteger(value?.pid) || !processAlive(value.pid);
+    } catch {
+      // A just-created lock may not have its owner file visible yet.  Treat an unreadable owner as
+      // held (fail closed) rather than deleting a concurrent writer's lock and racing the append.
+      stale = false;
+    }
+    if (!stale) return null;
+    await fs.rm(lockPath, { recursive: true, force: true });
+    try { await fs.mkdir(lockPath); } catch (retryError) {
+      if (retryError?.code === "EEXIST") return null;
+      throw retryError;
+    }
+  }
+  await fs.writeFile(path.join(lockPath, "owner"), JSON.stringify({ pid: process.pid, owner }), "utf8");
+  return { lockPath, owner };
+}
+
+async function releaseJournalLock(lock) {
+  if (!lock) return;
+  try {
+    const value = JSON.parse(await fs.readFile(path.join(lock.lockPath, "owner"), "utf8"));
+    if (value?.owner !== lock.owner) return;
+  } catch {
+    return;
+  }
+  await fs.rm(lock.lockPath, { recursive: true, force: true }).catch(() => {});
+}
+
+async function withJournalLock(file, work) {
+  await fs.mkdir(path.dirname(file), { recursive: true });
+  const lock = await acquireJournalLock(file);
+  if (!lock) return { locked: true };
+  try { return await work(); } finally { await releaseJournalLock(lock); }
+}
+
+function sanitizeEvidence(value) {
+  if (!value || typeof value !== "object") return undefined;
+  const source = value.evidence && typeof value.evidence === "object" ? value.evidence : value;
+  const allowed = ["chain_id", "tx_hash", "contract", "payer", "recipient", "amount_atomic", "log_index", "provider_receipt_id"];
+  const evidence = {};
+  for (const key of allowed) {
+    if (source[key] !== undefined && source[key] !== null
+      && (typeof source[key] === "string" || typeof source[key] === "number")) evidence[key] = source[key];
+  }
+  return Object.keys(evidence).length > 0 ? evidence : undefined;
+}
+
 /**
  * Reconcile a real ledger against an append-only receipt sidecar. Null/error results are not
  * persisted, which keeps them retryable on the next wake; terminal 0x1/0x0 results are idempotent.
  */
-export async function reconcileLedger({ ledgerPath, correctionPath, fetchReceipt, nowTs } = {}) {
+export async function reconcileLedger({ ledgerPath, correctionPath, fetchReceipt, verifyReceipt, nowTs } = {}) {
   if (!ledgerPath || !correctionPath) throw new TypeError("ledgerPath and correctionPath are required");
-  const [rows, stored] = await Promise.all([readJsonl(ledgerPath), readJsonl(correctionPath)]);
-  const known = new Map(
-    stored.filter((c) => c && typeof c.tx === "string" && (c.status === "0x1" || c.status === "0x0"))
-      .map((c) => [c.tx, c])
-  );
-  const pendingRows = rows.filter((row) => row?.tx && !known.has(row.tx));
-  const attempted = await reconcilePendingReceipts(pendingRows, fetchReceipt);
-  const durable = attempted.filter((correction) => correction.status !== null && !known.has(correction.tx));
-  if (durable.length > 0) {
-    await fs.mkdir(path.dirname(correctionPath), { recursive: true });
-    await fs.appendFile(
-      correctionPath,
-      durable.map((correction) => JSON.stringify({ ts: nowTs ?? Math.floor(Date.now() / 1000), ...correction })).join("\n") + "\n",
-      "utf8"
+  const verifier = verifyReceipt || fetchReceipt;
+  if (typeof verifier !== "function") throw new TypeError("verifyReceipt must be a function");
+  const result = await withJournalLock(correctionPath, async () => {
+    const [rows, stored] = await Promise.all([readJsonl(ledgerPath), readJsonl(correctionPath)]);
+    const known = new Map(
+      stored.filter((c) => c && c.verified === true && typeof c.tx === "string" && (c.status === "0x1" || c.status === "0x0"))
+        .map((c) => [c.tx.toLowerCase(), c])
     );
-  }
-  const corrections = [...stored, ...durable];
-  return {
-    attempted_receipts: attempted.length,
-    persisted_corrections: durable.length,
-    summary: summarizeRealizedRevenue(rows, corrections),
-  };
+    const pendingRows = rows.filter((row) => row?.tx && !known.has(String(row.tx).toLowerCase()));
+    const attempted = await reconcilePendingReceipts(pendingRows, verifier);
+    const durable = attempted.filter((correction) => correction.verified === true
+      && correction.status !== null && !known.has(String(correction.tx).toLowerCase()));
+    if (durable.length > 0) {
+      await fs.mkdir(path.dirname(correctionPath), { recursive: true });
+      await fs.appendFile(
+        correctionPath,
+        durable.map((correction) => JSON.stringify({ ts: nowTs ?? Math.floor(Date.now() / 1000), ...correction })).join("\n") + "\n",
+        "utf8",
+      );
+    }
+    const corrections = [...stored, ...durable];
+    return {
+      attempted_receipts: attempted.length,
+      persisted_corrections: durable.length,
+      summary: summarizeRealizedRevenue(rows, corrections, { require_verified_proof: true }),
+    };
+  });
+  if (result?.locked) return { attempted_receipts: 0, persisted_corrections: 0, locked: true };
+  return result;
 }
 
 function receiptInRow(row) {
-  if (isNormalizedRevenueReceipt(row)) return row;
-  if (row && typeof row === "object" && isNormalizedRevenueReceipt(row.receipt)) return row.receipt;
+  const candidate = row && typeof row === "object" && row.schema_version === 1 && row.kind === "revenue_receipt"
+    ? row : row && typeof row === "object" && row.receipt && row.receipt.schema_version === 1
+      && row.receipt.kind === "revenue_receipt" ? row.receipt : null;
+  if (candidate) {
+    try { return normalizeRevenueReceipt(candidate); } catch { return null; }
+  }
   return null;
 }
 
@@ -140,47 +230,49 @@ function receiptIsVerifiedExternal(receipt, row = receipt, selfPayers = []) {
 export async function reconcileRevenueReceipts({ journalPath, receipts, nowTs, selfPayers = [], selfWallets } = {}) {
   if (!journalPath) throw new TypeError("journalPath is required");
   if (!Array.isArray(receipts)) throw new TypeError("receipts must be an array");
-  const existing = await readJsonl(journalPath);
-  const known = new Set(existing.map((row) => {
-    try {
-      return isNormalizedRevenueReceipt(row) ? row.idempotency_key : row?.idempotency_key;
-    } catch { return null; }
-  }).filter(Boolean));
-  const seen = new Set();
-  const normalized = [];
-  let duplicates = 0;
-  const payers = selfPayers.length || Array.isArray(selfWallets) ? (selfPayers.length ? selfPayers : selfWallets) : selfPayers;
-  for (const candidate of receipts) {
-    const receipt = isNormalizedRevenueReceipt(candidate) ? candidate : normalizeRevenueReceipt(candidate);
-    if (String(receipt.payer).toLowerCase() === String(receipt.recipient).toLowerCase()
-      || (Array.isArray(payers) && payers.some((value) => String(value).toLowerCase() === String(receipt.payer).toLowerCase()))) {
-      throw new RevenueReceiptValidationError("SELF_PAYMENT", "payer is an instance-controlled wallet", "payer");
+  const payers = selfPayers !== undefined && selfPayers !== null && selfPayers !== ""
+    ? selfPayers : (selfWallets ?? []);
+  const result = await withJournalLock(journalPath, async () => {
+    const existing = await readJsonl(journalPath);
+    const known = new Set(existing.map((row) => isNormalizedRevenueReceipt(row) ? row.idempotency_key : null).filter(Boolean));
+    const seen = new Set();
+    const normalized = [];
+    let duplicates = 0;
+    for (const candidate of receipts) {
+      // Always run the normalizer, even for an object carrying schema_version/kind.  A caller cannot
+      // smuggle a modified signed_net or idempotency marker past the arithmetic/proof checks.
+      const receipt = normalizeRevenueReceipt(candidate, { selfPayers: payers });
+      if (String(receipt.payer).toLowerCase() === String(receipt.recipient).toLowerCase()) {
+        throw new RevenueReceiptValidationError("SELF_PAYMENT", "payer is an instance-controlled wallet", "payer");
+      }
+      const key = canonicalRevenueReceiptKey(receipt);
+      if (known.has(key) || seen.has(key)) {
+        duplicates += 1;
+        continue;
+      }
+      seen.add(key);
+      normalized.push(receipt);
     }
-    const key = canonicalRevenueReceiptKey(receipt);
-    if (known.has(key) || seen.has(key)) {
-      duplicates += 1;
-      continue;
+    if (normalized.length > 0) {
+      await fs.mkdir(path.dirname(journalPath), { recursive: true });
+      await fs.appendFile(
+        journalPath,
+        normalized.map((receipt) => JSON.stringify(receipt)).join("\n") + "\n",
+        "utf8",
+      );
     }
-    seen.add(key);
-    normalized.push(receipt);
-  }
-  if (normalized.length > 0) {
-    await fs.mkdir(path.dirname(journalPath), { recursive: true });
-    await fs.appendFile(
-      journalPath,
-      normalized.map((receipt) => JSON.stringify(receipt)).join("\n") + "\n",
-      "utf8",
-    );
-  }
-  const allRows = [...existing, ...normalized];
-  return {
-    accepted: normalized.length,
-    duplicates,
-    rejected: 0,
-    rows: normalized,
-    summary: summarizeRealizedRevenue(allRows, [], { selfPayers: payers }),
-    ...(nowTs == null ? {} : { ts: nowTs }),
-  };
+    const allRows = [...existing, ...normalized];
+    return {
+      accepted: normalized.length,
+      duplicates,
+      rejected: 0,
+      rows: normalized,
+      summary: summarizeRealizedRevenue(allRows, [], { selfPayers: payers }),
+      ...(nowTs == null ? {} : { ts: nowTs }),
+    };
+  });
+  if (result?.locked) return { accepted: 0, duplicates: 0, rejected: 0, rows: [], locked: true };
+  return result;
 }
 
 // Naming aliases kept intentionally small: adapters can use either the noun from the design or the
@@ -205,9 +297,13 @@ function isExplicitlyExcluded(row) {
   return row?.test === true || SWAP_SOURCES.has(source) || INTERNAL_SOURCES.has(source);
 }
 
-function isVerifiedExternal(row, correctionsByKey) {
+function isVerifiedExternal(row, correctionsByKey, options = {}) {
   if (isExplicitlyExcluded(row) || row?.external !== true || !finitePositive(row?.net_usdc)) return false;
-  if (row.tx) return correctionStatus(row, correctionsByKey) === "0x1";
+  if (row.tx) {
+    const correction = correctionForRow(row, correctionsByKey);
+    if (options.require_verified_proof === true) return correction?.verified === true && correction.status === "0x1";
+    return correctionStatus(row, correctionsByKey) === "0x1";
+  }
   if (row.sig) return row.confirmed === true;
   return row.chain === "hyperliquid" && row.fill_tid != null && row.confirmed === true;
 }
@@ -241,7 +337,7 @@ export function summarizeRealizedRevenue(rows, corrections = [], options = {}) {
       }
     } else if (isExplicitlyExcluded(row) || row?.external !== true || !finitePositive(row?.net_usdc)) {
       excludedRows += 1;
-    } else if (isVerifiedExternal(row, correctionsByKey)) {
+    } else if (isVerifiedExternal(row, correctionsByKey, options)) {
       const correction = correctionForRow(row, correctionsByKey);
       const correctedValue = correction && (correction.signed_net ?? correction.signedNet ?? correction.net_usdc ?? correction.net);
       const correctedNet = correctedValue === undefined || correctedValue === null

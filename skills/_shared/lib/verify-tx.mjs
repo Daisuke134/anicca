@@ -90,51 +90,39 @@ export async function receiptStatus(txHash, opts = {}) {
 }
 
 /**
- * Verify one successful EVM receipt and its exact ERC-20 Transfer log.  This is intentionally a
- * read-only transport boundary: callers provide an injected fetch in tests and no private data is
- * ever included in errors or the returned evidence.
- *
- * Accepted call forms are verifyEvmReceipt({tx_hash, expected_*..., fetchImpl, rpc}) and the
- * compatibility form verifyEvmReceipt(txHash, expected, opts).  `verified:false` is returned for
- * malformed/mismatched provider data; transport/RPC failures also fail closed as false rather than
- * turning a successful status into a revenue claim.
+ * Verify one successful EVM receipt and its exact ERC-20 Transfer log.  The expected tuple is
+ * mandatory: a transaction hash or a successful status alone is never a revenue proof.  The only
+ * supported signature is `verifyEvmReceipt({ tx_hash, expected_chain_id, expected_contract,
+ * expected_recipient, expected_payer, expected_amount_atomic, expected_log_index, rpc, fetchImpl })`.
+ * Returned evidence is an allowlist projection; the raw RPC receipt never crosses this boundary.
  */
-export async function verifyEvmReceipt(input, expected = {}, options = {}) {
-  const objectForm = input && typeof input === "object" && !Array.isArray(input);
-  const request = objectForm
-    ? { ...input, ...(input.expected && typeof input.expected === "object" ? input.expected : {}), ...(input.opts && typeof input.opts === "object" ? input.opts : {}) }
-    : { ...expected, tx_hash: input, ...options };
-  const txHash = normalizeHash(request.tx_hash ?? request.txHash ?? request.transaction_hash ?? request.transactionHash);
-  const fetchImpl = request.fetchImpl || request.fetch || globalThis.fetch;
-  const rpc = request.rpc || request.rpcUrl || BASE_RPC;
-  const expectedChain = request.expected_chain_id ?? request.expectedChainId ?? request.expected_chain ?? request.expectedChain
-    ?? request.chain_id ?? request.chainId;
-  const expectedContract = request.expected_contract ?? request.expectedContract ?? request.contract
-    ?? request.asset_contract ?? request.assetContract ?? request.expected_asset_contract ?? request.expectedAssetContract
-    ?? request.asset_address ?? request.assetAddress;
-  const expectedPayer = request.expected_payer ?? request.expectedPayer ?? request.payer ?? request.from;
-  const expectedRecipient = request.expected_recipient ?? request.expectedRecipient ?? request.recipient ?? request.to;
-  const expectedLogIndex = request.expected_log_index ?? request.expectedLogIndex ?? request.expected_logIndex
-    ?? request.log_index ?? request.logIndex;
-  const amountAtomic = expectedValueAtomic(request);
-  if (!txHash || typeof fetchImpl !== "function") return { verified: false, status: null, reason: "invalid_request" };
-  const contract = expectedContract == null ? null : normalizeAddress(expectedContract);
-  const payer = expectedPayer == null ? null : normalizeAddress(expectedPayer);
-  const recipient = expectedRecipient == null ? null : normalizeAddress(expectedRecipient);
-  if ((expectedContract != null && !contract) || (expectedPayer != null && !payer) || (expectedRecipient != null && !recipient)) {
-    return { verified: false, status: null, reason: "invalid_expected_address" };
-  }
-  if (request.expected_amount_atomic !== undefined || request.expectedAmountAtomic !== undefined
-    || request.amount_atomic !== undefined || request.amountAtomic !== undefined
-    || request.expected_amount !== undefined || request.expectedAmount !== undefined) {
-    if (amountAtomic === null) return { verified: false, status: null, reason: "invalid_expected_amount" };
+export async function verifyEvmReceipt({
+  tx_hash,
+  expected_chain_id,
+  expected_contract,
+  expected_recipient,
+  expected_payer,
+  expected_amount_atomic,
+  expected_log_index,
+  rpc = BASE_RPC,
+  fetchImpl = globalThis.fetch,
+} = {}) {
+  const txHash = normalizeHash(tx_hash);
+  const contract = normalizeAddress(expected_contract);
+  const payer = normalizeAddress(expected_payer);
+  const recipient = normalizeAddress(expected_recipient);
+  const amountAtomic = hexInteger(expected_amount_atomic);
+  const wantedIndex = hexInteger(expected_log_index);
+  const expectedChain = chainIdNumber(expected_chain_id);
+  if (!txHash || !contract || !payer || !recipient || payer === recipient || amountAtomic === null
+    || wantedIndex === null || expectedChain === null || typeof fetchImpl !== "function") {
+    return { verified: false, status: null, reason: "missing_or_invalid_expectation" };
   }
   let chainId = null;
   try {
     if (expectedChain !== undefined && expectedChain !== null) {
       chainId = chainIdNumber(await rpcCall(rpc, fetchImpl, "eth_chainId", []));
-      const expectedNumber = chainIdNumber(expectedChain);
-      if (chainId === null || expectedNumber === null || chainId !== expectedNumber) {
+      if (chainId === null || chainId !== expectedChain) {
         return { verified: false, status: null, chain_id: chainId, reason: "wrong_chain" };
       }
     }
@@ -142,27 +130,21 @@ export async function verifyEvmReceipt(input, expected = {}, options = {}) {
     if (!receipt || receipt.status !== "0x1") {
       return { verified: false, status: receipt?.status ?? null, chain_id: chainId, reason: "not_successful" };
     }
-    if (receipt.transactionHash != null && normalizeHash(receipt.transactionHash) !== txHash) {
+    if (normalizeHash(receipt.transactionHash) !== txHash) {
       return { verified: false, status: receipt.status, chain_id: chainId, reason: "wrong_transaction" };
-    }
-    const wantedIndex = expectedLogIndex === undefined || expectedLogIndex === null ? null : hexInteger(expectedLogIndex);
-    if (expectedLogIndex !== undefined && expectedLogIndex !== null && wantedIndex === null) {
-      return { verified: false, status: receipt.status, chain_id: chainId, reason: "invalid_log_index" };
     }
     const logs = Array.isArray(receipt.logs) ? receipt.logs : [];
     const matches = logs.filter((log) => {
       if (!log || !normalizeAddress(log.address)) return false;
       if (contract && String(log.address).toLowerCase() !== contract) return false;
-      if (log.transactionHash != null && normalizeHash(log.transactionHash) !== txHash) return false;
+      if (normalizeHash(log.transactionHash) !== txHash) return false;
       if (!Array.isArray(log.topics) || log.topics.length < 3 || String(log.topics[0]).toLowerCase() !== TRANSFER_TOPIC) return false;
       if (!/^0x[0-9a-f]{64}$/i.test(String(log.topics[1])) || !/^0x[0-9a-f]{64}$/i.test(String(log.topics[2]))) return false;
-      if (payer && String(log.topics[1]).toLowerCase() !== topicAddress(payer)) return false;
-      if (recipient && String(log.topics[2]).toLowerCase() !== topicAddress(recipient)) return false;
-      if (wantedIndex !== null && hexInteger(log.logIndex) !== wantedIndex) return false;
-      if (amountAtomic !== null) {
-        const actual = hexInteger(log.data);
-        if (actual === null || actual !== amountAtomic) return false;
-      }
+      if (String(log.topics[1]).toLowerCase() !== topicAddress(payer)) return false;
+      if (String(log.topics[2]).toLowerCase() !== topicAddress(recipient)) return false;
+      if (hexInteger(log.logIndex) !== wantedIndex) return false;
+      const actual = hexInteger(log.data);
+      if (actual === null || actual !== amountAtomic) return false;
       return true;
     });
     if (matches.length !== 1) {
@@ -188,14 +170,8 @@ export async function verifyEvmReceipt(input, expected = {}, options = {}) {
         amount_atomic: actualAmount === null ? null : actualAmount.toString(),
         log_index: actualIndex === null ? null : Number(actualIndex),
       },
-      receipt,
     };
   } catch {
     return { verified: false, status: null, chain_id: chainId, reason: "rpc_failure" };
   }
 }
-
-export const verifyEvmTransfer = verifyEvmReceipt;
-export const verifyTransactionReceipt = verifyEvmReceipt;
-export const verifyTxReceipt = verifyEvmReceipt;
-export const verifyReceipt = verifyEvmReceipt;

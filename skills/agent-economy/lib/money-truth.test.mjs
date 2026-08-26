@@ -25,8 +25,12 @@ test("reconciles a delayed 0x1 receipt and counts the real external net", async 
     status: "null",
     external: true,
   }];
-  const corrections = await reconcilePendingReceipts(rows, async () => "0x1");
-  assert.deepEqual(corrections, [{ tx: TX, status: "0x1" }]);
+  const corrections = await reconcilePendingReceipts(rows, async () => ({
+    verified: true,
+    status: "0x1",
+    evidence: { chain_id: 8453, tx_hash: TX, log_index: 0 },
+  }));
+  assert.deepEqual(corrections, [{ tx: TX, status: "0x1", verified: true, evidence: { chain_id: 8453, tx_hash: TX, log_index: 0 } }]);
   assert.deepEqual(summarizeRealizedRevenue(rows, corrections), {
     external_net_usdc: 0.02,
     verified_external_rows: 1,
@@ -40,6 +44,13 @@ test("receipt timeout stays unverified and contributes no revenue", async () => 
   const corrections = await reconcilePendingReceipts([row], async () => null);
   assert.deepEqual(corrections, [{ tx: TX, status: null }]);
   assert.equal(summarizeRealizedRevenue([row], corrections).external_net_usdc, 0);
+});
+
+test("plain status=0x1 callback is not accepted without verified transfer proof", async () => {
+  const row = { source: "gig", net_usdc: 0.02, earn_usdc: 0.02, tx: TX, status: "null", external: true };
+  const corrections = await reconcilePendingReceipts([row], async () => "0x1");
+  assert.deepEqual(corrections, [{ tx: TX, status: null }]);
+  assert.equal(summarizeRealizedRevenue([row], corrections, { require_verified_proof: true }).external_net_usdc, 0);
 });
 
 test("self, test, and non-external rows never become external revenue", async () => {
@@ -73,7 +84,7 @@ test("reconcileLedger appends a successful correction once and returns the verif
   const first = await reconcileLedger({
     ledgerPath: ledger,
     correctionPath: corrections,
-    fetchReceipt: async () => "0x1",
+    verifyReceipt: async () => ({ verified: true, status: "0x1", evidence: { chain_id: 8453, tx_hash: TX, log_index: 0 } }),
     nowTs: 100,
   });
   assert.equal(first.persisted_corrections, 1);
@@ -82,7 +93,7 @@ test("reconcileLedger appends a successful correction once and returns the verif
   const second = await reconcileLedger({
     ledgerPath: ledger,
     correctionPath: corrections,
-    fetchReceipt: async () => { throw new Error("must not refetch a terminal correction"); },
+    verifyReceipt: async () => { throw new Error("must not refetch a terminal correction"); },
     nowTs: 101,
   });
   assert.equal(second.persisted_corrections, 0);
@@ -94,7 +105,7 @@ test("reconcileLedger does not persist a null receipt, so the next wake can retr
   const ledger = join(dir, "earn-ledger.jsonl");
   const corrections = join(dir, "receipt-reconciliations.jsonl");
   await writeFile(ledger, `${JSON.stringify({ tx: TX, source: "gig", net_usdc: 0.02, external: true, status: "null" })}\n`);
-  const result = await reconcileLedger({ ledgerPath: ledger, correctionPath: corrections, fetchReceipt: async () => null });
+  const result = await reconcileLedger({ ledgerPath: ledger, correctionPath: corrections, verifyReceipt: async () => null });
   assert.equal(result.persisted_corrections, 0);
   assert.equal(result.summary.unverified_external_rows, 1);
 });
@@ -110,7 +121,7 @@ const revenueReceipt = (overrides = {}) => normalizeRevenueReceipt({
   fee: "0.100000",
   refund: "0",
   asset: "USDC",
-  proof: { chain_id: 8453, tx_hash: REVENUE_TX, log_index: 0 },
+  proof: { chain_id: 8453, tx_hash: REVENUE_TX, log_index: 0, verified: true },
   terminal_state: "settled",
   occurred_at: "2026-08-27T00:00:00.000Z",
   ...overrides,
@@ -139,7 +150,7 @@ test("reconcileRevenueReceipts includes a signed negative refund correction", as
     fee: "0",
     refund: "0.500000",
     terminal_state: "refunded",
-    proof: { chain_id: 8453, tx_hash: `0x${"33".repeat(32)}`, log_index: 0 },
+    proof: { chain_id: 8453, tx_hash: `0x${"33".repeat(32)}`, log_index: 0, verified: true },
   });
   const result = await reconcileRevenueReceipts({ journalPath, receipts: [correction], nowTs: 101 });
   assert.equal(result.accepted, 1);
@@ -158,4 +169,27 @@ test("reconcileRevenueReceipts rejects self-payment and unverified receipts with
     /receipt|provider|proof/i,
   );
   assert.equal((await readFile(journalPath, "utf8").catch(() => "")).trim(), "");
+});
+
+test("reconcileRevenueReceipts always re-normalizes a forged canonical marker", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "money-truth-revenue-"));
+  const journalPath = join(dir, "revenue-journal.jsonl");
+  const forged = { ...revenueReceipt(), signed_net: 999, idempotency_key: revenueReceipt().idempotency_key };
+  await assert.rejects(() => reconcileRevenueReceipts({ journalPath, receipts: [forged] }), /ARITHMETIC_MISMATCH|canonical|idempotency/i);
+});
+
+test("reconcileRevenueReceipts fails closed on corrupt JSONL and serializes concurrent appends", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "money-truth-revenue-"));
+  const corruptPath = join(dir, "corrupt.jsonl");
+  await writeFile(corruptPath, "{not-json}\n");
+  await assert.rejects(() => reconcileRevenueReceipts({ journalPath: corruptPath, receipts: [revenueReceipt()] }), /corrupt|json/i);
+
+  const journalPath = join(dir, "concurrent.jsonl");
+  const receipt = revenueReceipt({ proof: { chain_id: 8453, tx_hash: `0x${"44".repeat(32)}`, log_index: 0, verified: true } });
+  const results = await Promise.all([
+    reconcileRevenueReceipts({ journalPath, receipts: [receipt] }),
+    reconcileRevenueReceipts({ journalPath, receipts: [receipt] }),
+  ]);
+  assert.equal(results.reduce((sum, result) => sum + result.accepted, 0), 1);
+  assert.equal((await readFile(journalPath, "utf8")).trim().split("\n").length, 1);
 });
