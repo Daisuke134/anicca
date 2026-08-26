@@ -13,6 +13,10 @@ const { EXPECTED, collectWindow, persistDailyDigest, persistDelayedSnapshot, sen
 
 const WINDOWS = Object.freeze({ "2h": 2 * 3600_000, "24h": 24 * 3600_000, "72h": 72 * 3600_000, "7d": 7 * 86400_000 });
 const GRACE_MS = 90 * 60_000;
+const VIDEO_LANES = Object.freeze([
+  Object.freeze({ format_id: "reelclaw-card", form: "nudge-card", locale: "ja", account_id: "@anicca.jp1", native_owner: "anicca.ios.jp", integration_id: "cmn8ycvtn02djqx0ytuisn9mw" }),
+  Object.freeze({ format_id: "watercolor", form: "buddhist-self-care-reel", locale: "ja", creative_id: "JA-WATERCOLOR-OBOU-b2772de4303a", video_sha256: "b2772de4303acc901f42b43a0b3f4af166ae3daeb5ee7fd24e090e5b62f2b0e8", account_id: "@obou.anicca", native_owner: "obou.anicca", integration_id: "cmooplxmu04tpmd0y4h3cpk33" }),
+]);
 
 function snapshotFile(dataDir, window, expected = EXPECTED) {
   return path.join(dataDir, "tenants", expected.tenant_id, "marketing", "metrics", expected.native_owner, expected.shortcode, `${window}.combined.json`);
@@ -24,14 +28,17 @@ function discoverExpected(dataDir) {
   const found = [];
   for (const row of rows) {
     if (row.platform !== "instagram" || row.status !== "published" || row.provider_reconciled !== true) continue;
-    if (row.format_id !== "reelclaw-card" || row.form !== "nudge-card" || row.locale !== "ja") continue;
+    const lane = VIDEO_LANES.find((candidate) => candidate.format_id === row.format_id && candidate.form === row.form && candidate.locale === row.locale
+      && (candidate.creative_id === undefined || candidate.creative_id === row.creative_id)
+      && (candidate.video_sha256 === undefined || candidate.video_sha256 === row.video_sha256));
+    if (!lane) continue;
     const match = /^https:\/\/www\.instagram\.com\/reel\/([A-Za-z0-9_-]+)\/$/.exec(String(row.public_url || ""));
     const captionPath = path.resolve(String(row.caption_path || ""));
     if (!match || !/^c[a-z0-9]+$/.test(String(row.provider_id || "")) || !fs.statSync(captionPath, { throwIfNoEntry: false })?.isFile() || !Number.isFinite(Date.parse(row.ts))) throw new Error("Instagram verified distribution row invalid");
     const caption = fs.readFileSync(captionPath, "utf8");
     if (crypto.createHash("sha256").update(fs.readFileSync(captionPath)).digest("hex") !== row.caption_sha256) throw new Error("Instagram caption object integrity mismatch");
-    found.push(Object.freeze({ tenant_id: "dais-local", product_id: "anicca-ios", locale: "ja", account_id: "@anicca.jp1", native_owner: "anicca.ios.jp",
-      integration_id: "cmn8ycvtn02djqx0ytuisn9mw", provider_post_id: row.provider_id, shortcode: match[1], public_url: row.public_url, caption, published_at: row.ts }));
+    found.push(Object.freeze({ tenant_id: "dais-local", product_id: "anicca-ios", locale: lane.locale, account_id: lane.account_id, native_owner: lane.native_owner,
+      integration_id: lane.integration_id, provider_post_id: row.provider_id, shortcode: match[1], public_url: row.public_url, caption, published_at: row.ts }));
   }
   const carouselFile = path.join(dataDir, "tenants", "dais-local", "marketing", "native-carousel-publication", "anicca-ios", "distribution.jsonl");
   const carouselRows = fs.existsSync(carouselFile) ? fs.readFileSync(carouselFile, "utf8").split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line)) : [];
