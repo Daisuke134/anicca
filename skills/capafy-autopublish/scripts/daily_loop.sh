@@ -102,7 +102,7 @@ AUTHORITATIVE INVENTORY ACTION: $(printf '%s' "$INV" | tail -1)
 Execute exactly that action/item. Do not select or substitute another item from stale ledger or rejection history."
 EVIDENCE_DIR="$LIFE_MANAGER_STATE_HOME/state/agent-runner-evidence/capafy-drainer/$(date +%s)-$$"
 printf '%s\n' "$PROMPT" | timeout 1200 env -u ANTHROPIC_API_KEY "$RUN_AGENT" \
-  --task-class tool-agent \
+  --task-class application-lane-agent \
   --evidence-dir "$EVIDENCE_DIR" \
   --task-label capafy-drainer \
   --loop capafy \
