@@ -53,14 +53,9 @@ function database(opts = {}) {
 
 function buildBrowserJob(input) {
   const uid = nonEmpty(input && input.uid, "browser job uid", 200);
-  const sourceKind = String(input && input.sourceKind || "telegram").trim();
-  if (!["telegram", "runtime"].includes(sourceKind)) throw new Error("browser job source kind invalid");
-  const chatId = sourceKind === "telegram" ? nonEmpty(input && input.chatId, "browser job chat id", 100) : null;
-  const messageId = sourceKind === "telegram" ? nonEmpty(input && input.messageId, "browser job message id", 100) : null;
-  const updateId = sourceKind === "telegram" ? nonEmpty(input && input.updateId, "browser job update id", 100) : null;
-  const sourceRef = sourceKind === "telegram"
-    ? `telegram://${encodeURIComponent(chatId)}/${encodeURIComponent(messageId)}`
-    : nonEmpty(input && input.sourceRef, "browser job source ref", 1000);
+  const chatId = nonEmpty(input && input.chatId, "browser job chat id", 100);
+  const messageId = nonEmpty(input && input.messageId, "browser job message id", 100);
+  const updateId = nonEmpty(input && input.updateId, "browser job update id", 100);
   const rawPrompt = nonEmpty(input && input.rawPrompt, "browser raw prompt", 10_000);
   const classification = input && input.classification;
   if (!classification || typeof classification !== "object") throw new Error("browser classification invalid");
@@ -75,8 +70,6 @@ function buildBrowserJob(input) {
   }
   return Object.freeze({
     uid,
-    source_kind: sourceKind,
-    source_ref: sourceRef,
     telegram_chat_id: chatId,
     telegram_message_id: messageId,
     telegram_update_id: updateId,
@@ -97,15 +90,13 @@ async function enqueueBrowserJob(input, opts = {}) {
   const { query } = database(opts);
   const inserted = (await query(`
     INSERT INTO public.lm_browser_jobs (
-      uid, source_kind, source_ref, telegram_chat_id, telegram_message_id, telegram_update_id,
+      uid, telegram_chat_id, telegram_message_id, telegram_update_id,
       prompt_hash, goal, locale, action_kind, requires_login, principal_kind, auth_marker_hash, status
-    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
-    ON CONFLICT (uid, source_kind, source_ref) DO NOTHING
+    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+    ON CONFLICT (uid, telegram_chat_id, telegram_message_id) DO NOTHING
     RETURNING *
   `, [
     job.uid,
-    job.source_kind,
-    job.source_ref,
     job.telegram_chat_id,
     job.telegram_message_id,
     job.telegram_update_id,
@@ -123,9 +114,9 @@ async function enqueueBrowserJob(input, opts = {}) {
 
   const existing = (await query(`
     SELECT * FROM public.lm_browser_jobs
-    WHERE uid = $1 AND source_kind = $2 AND source_ref = $3
+    WHERE uid = $1 AND telegram_chat_id = $2 AND telegram_message_id = $3
     LIMIT 1
-  `, [job.uid, job.source_kind, job.source_ref])).rows;
+  `, [job.uid, job.telegram_chat_id, job.telegram_message_id])).rows;
   if (existing.length !== 1) throw new Error("browser job duplicate was not readable");
   return { created: false, job: existing[0] };
 }

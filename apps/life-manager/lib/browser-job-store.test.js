@@ -30,8 +30,6 @@ test("a queued job is tenant-bound and hashes the raw prompt without persisting 
   assert.equal(job.uid, "u-1");
   assert.equal(job.telegram_chat_id, "42");
   assert.equal(job.telegram_message_id, "91");
-  assert.equal(job.source_kind, "telegram");
-  assert.equal(job.source_ref, "telegram://42/91");
   assert.match(job.prompt_hash, /^[a-f0-9]{64}$/);
   assert.doesNotMatch(JSON.stringify(job), /super-secret-token/);
   assert.equal(job.status, "queued");
@@ -69,31 +67,10 @@ test("enqueue is idempotent on tenant and Telegram message and returns the exist
 
   assert.deepEqual(result, { created: false, job: existing });
   assert.equal(calls.length, 2);
-  assert.match(calls[0].sql, /ON CONFLICT \(uid, source_kind, source_ref\) DO NOTHING/i);
+  assert.match(calls[0].sql, /ON CONFLICT \(uid, telegram_chat_id, telegram_message_id\) DO NOTHING/i);
   assert.match(calls[0].sql, /principal_kind/i);
   assert.equal(calls[0].params[0], "u-1");
-  assert.match(calls[1].sql, /WHERE uid = \$1 AND source_kind = \$2 AND source_ref = \$3/i);
-});
-
-test("runtime browser jobs use a durable source reference without fake Telegram ids", () => {
-  const job = buildBrowserJob({
-    uid: "tenant-1",
-    sourceKind: "runtime",
-    sourceRef: "runtime-job://fundraiser:abc",
-    rawPrompt: "Run the continuous fundraiser pass",
-    classification: {
-      locale: "en",
-      goal: "Apply to eligible funding programs",
-      actionKind: "fundraiser.acquire",
-      requiresLogin: true,
-      principalKind: "agent_owned",
-    },
-  });
-  assert.equal(job.source_kind, "runtime");
-  assert.equal(job.source_ref, "runtime-job://fundraiser:abc");
-  assert.equal(job.telegram_chat_id, null);
-  assert.equal(job.telegram_message_id, null);
-  assert.equal(job.telegram_update_id, null);
+  assert.match(calls[1].sql, /WHERE uid = \$1 AND telegram_chat_id = \$2 AND telegram_message_id = \$3/i);
 });
 
 test("claim uses the concurrency-safe RPC with a lease long enough for cloud discovery plus CUA", async () => {
