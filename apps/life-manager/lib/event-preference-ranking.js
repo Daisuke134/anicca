@@ -172,7 +172,7 @@ function eligibleRankedCandidates(ranking) {
   return Object.freeze(ranking.ranked_events.filter((row) => row.auto_apply_eligible));
 }
 
-async function inferProviderRankingChunk(input, options) {
+async function inferProviderRankingChunk(input, options, metrics) {
   const source = normalizeProviderInput(input);
   const prompt = [
     "Rank in-person Tokyo event candidates for automatic application.",
@@ -183,6 +183,9 @@ async function inferProviderRankingChunk(input, options) {
     `EVENT_DATA_START\n${JSON.stringify(source.candidates)}\nEVENT_DATA_END`,
   ].join("\n");
   for (let attempt = 0; attempt < 2; attempt += 1) {
+    if (attempt > 0) metrics.retry_count += 1;
+    const requestStartedAt = metrics.nowMs();
+    metrics.request_count += 1;
     try {
       let parsed;
       if (typeof options.generateDecision === "function") {
@@ -208,30 +211,40 @@ async function inferProviderRankingChunk(input, options) {
         const body = await response.json();
         parsed = JSON.parse(body?.candidates?.[0]?.content?.parts?.[0]?.text || "");
       }
-      return validateProviderCandidateRanking(parsed, source).ranked_events.map((row) => Object.freeze({
+      const result = validateProviderCandidateRanking(parsed, source).ranked_events.map((row) => Object.freeze({
         event_ref: row.event_ref,
         priority_class: row.priority_class,
         preference_fit: row.preference_fit,
         preference_reason: row.preference_reason,
       }));
-    } catch { /* exact same read-only chunk gets one bounded retry */ }
+      const duration = Math.max(0, metrics.nowMs() - requestStartedAt);
+      metrics.total_request_ms += duration;
+      metrics.max_request_ms = Math.max(metrics.max_request_ms, duration);
+      return result;
+    } catch {
+      const duration = Math.max(0, metrics.nowMs() - requestStartedAt);
+      metrics.total_request_ms += duration;
+      metrics.max_request_ms = Math.max(metrics.max_request_ms, duration);
+      /* exact same read-only chunk gets one bounded retry */
+    }
   }
   throw new Error("event preference ranking unavailable");
 }
 
-async function inferProviderRankingChunkResilient(input, options) {
-  try { return await inferProviderRankingChunk(input, options); }
+async function inferProviderRankingChunkResilient(input, options, metrics) {
+  try { return await inferProviderRankingChunk(input, options, metrics); }
   catch {
     if (input.candidates.length < 2) throw new Error("event preference ranking unavailable");
+    metrics.bisect_count += 1;
     const middle = Math.ceil(input.candidates.length / 2);
     const left = await inferProviderRankingChunkResilient({
       ...input,
       candidates: input.candidates.slice(0, middle),
-    }, options);
+    }, options, metrics);
     const right = await inferProviderRankingChunkResilient({
       ...input,
       candidates: input.candidates.slice(middle),
-    }, options);
+    }, options, metrics);
     return [...left, ...right];
   }
 }
@@ -258,6 +271,10 @@ function providerRankingChunks(candidates) {
 async function inferProviderCandidateRanking(input, options = {}) {
   const source = normalizeProviderInput(input);
   if (source.candidates.length === 0) return validateProviderCandidateRanking({ ranked_events: [] }, source);
+  const nowMs = options.nowMs || Date.now;
+  if (typeof nowMs !== "function" || (options.onAudit != null && typeof options.onAudit !== "function")) invalid();
+  const startedAt = nowMs();
+  const metrics = { nowMs, request_count: 0, retry_count: 0, bisect_count: 0, total_request_ms: 0, max_request_ms: 0 };
   const transportCandidates = source.candidates.map((candidate) => Object.freeze({
     ...candidate,
     body: candidate.body.slice(0, PROVIDER_RANK_BODY_LENGTH),
@@ -272,7 +289,7 @@ async function inferProviderCandidateRanking(input, options = {}) {
       results[index] = await inferProviderRankingChunkResilient({
         candidates: chunks[index],
         preferences: source.preferences,
-      }, options);
+      }, options, metrics);
     }
   }
   await Promise.all(Array.from(
@@ -280,7 +297,19 @@ async function inferProviderCandidateRanking(input, options = {}) {
     () => worker(),
   ));
   const rankedEvents = results.flat();
-  try { return validateProviderCandidateRanking({ ranked_events: rankedEvents }, source); }
+  try {
+    const ranking = validateProviderCandidateRanking({ ranked_events: rankedEvents }, source);
+    if (options.onAudit) await options.onAudit(Object.freeze({
+      schema_version: 1,
+      request_count: metrics.request_count,
+      retry_count: metrics.retry_count,
+      bisect_count: metrics.bisect_count,
+      total_request_ms: metrics.total_request_ms,
+      max_request_ms: metrics.max_request_ms,
+      elapsed_ms: Math.max(0, nowMs() - startedAt),
+    }));
+    return ranking;
+  }
   catch { throw new Error("event preference ranking unavailable"); }
 }
 

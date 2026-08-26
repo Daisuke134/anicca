@@ -285,6 +285,46 @@ test("provider ranking gives each bounded model request a forty-five second dead
   assert.equal(timeoutMs, 45_000);
 });
 
+test("provider ranking reports bounded aggregate request retry and bisect timing without event data", async () => {
+  const candidates = PROVIDER_CANDIDATES.slice(0, 4);
+  let clock = 1_000;
+  let firstLargeAttempts = 0;
+  let audit;
+  const ranking = await inferProviderCandidateRanking({ candidates, preferences: "Tokyo AI events" }, {
+    nowMs: () => clock,
+    onAudit: async (value) => { audit = value; },
+    generateDecision: async ({ prompt }) => {
+      const chunk = JSON.parse(prompt.match(/EVENT_DATA_START\n([\s\S]+)\nEVENT_DATA_END/)[1]);
+      clock += 25;
+      if (chunk.length === 4) {
+        firstLargeAttempts += 1;
+        throw new Error("omitted rows");
+      }
+      return { ranked_events: chunk.map((candidate) => ({
+        event_ref: candidate.event_ref,
+        priority_class: "ai",
+        preference_fit: "moderate",
+        preference_reason: "Verified AI event.",
+      })) };
+    },
+  });
+  assert.equal(ranking.ranked_events.length, 4);
+  assert.equal(firstLargeAttempts, 2);
+  assert.deepEqual(audit, {
+    schema_version: 1,
+    request_count: 4,
+    retry_count: 1,
+    bisect_count: 1,
+    total_request_ms: 100,
+    max_request_ms: 25,
+    elapsed_ms: 100,
+  });
+  assert.deepEqual(Object.keys(audit), [
+    "schema_version", "request_count", "retry_count", "bisect_count",
+    "total_request_ms", "max_request_ms", "elapsed_ms",
+  ]);
+});
+
 async function fixtureSnapshot(slugs = ["ai-night", "pottery-social", "crypto-builders"]) {
   const coverage = buildRollingEventCoverage({
     tenantId: "dais-local",
