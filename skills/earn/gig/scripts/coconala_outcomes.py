@@ -89,7 +89,8 @@ def outcomes(root: Path = ROOT) -> dict[str, Any]:
 
     paid = _json(root / "evidence" / "paid-direct-live" / "latest.json")
     completed_items = sum(
-        row.get("status") == "completed" and row.get("deduplicated") is True
+        row.get("status") == "completed"
+        and (row.get("send_performed") is True or row.get("deduplicated") is True)
         for row in paid.get("items", []) if isinstance(row, dict)
     )
     paid_count = min(completed_items, int(paid.get("readback") or 0))

@@ -164,3 +164,34 @@ def test_upwork_browser_running_fence_uses_process_fallback(monkeypatch):
     assert gig_release.is_running(label) is False
     ps_output[0] = "/Applications/Chromium --remote-debugging-port=9233\n"
     assert gig_release.is_running(label) is True
+
+
+def test_coconala_browser_running_fence_uses_process_fallback(monkeypatch):
+    label = "ai.anicca.hf-gig-browser"
+    ps_output = [""]
+
+    def run(command, **_kwargs):
+        if command[:2] == ["launchctl", "print"]:
+            return SimpleNamespace(returncode=1, stdout="")
+        if command == ["ps", "-axo", "command="]:
+            return SimpleNamespace(returncode=0, stdout=ps_output[0])
+        raise AssertionError(command)
+
+    monkeypatch.setattr(gig_release.subprocess, "run", run)
+
+    assert gig_release.is_running(label) is False
+    ps_output[0] = "/Applications/Chromium --remote-debugging-port=9223\n"
+    assert gig_release.is_running(label) is True
+
+
+def test_default_release_scope_is_only_the_four_coconala_business_lanes():
+    assert gig_release.activation_labels(None) == {
+        "ai.anicca.hf-gig-apply-direct",
+        "ai.anicca.hf-gig-storefront-direct",
+        "ai.anicca.hf-gig-reply-detector",
+        "ai.anicca.hf-gig-paid-direct",
+    }
+
+
+def test_explicit_release_scope_is_preserved():
+    assert gig_release.activation_labels({"example.job"}) == {"example.job"}

@@ -54,8 +54,17 @@ PIN_PATTERN = re.compile(r"(?P<pid>[1-9][0-9]*)-(?P<sha>[0-9a-f]{40})")
 PUBLISH_LOCK = RELEASE_ROOT / ".publish.lock"
 LAUNCHD_PREFLIGHT = REPO_ROOT / "skills" / "_shared" / "lib" / "launchd_preflight.py"
 LAUNCHD_PREFLIGHT_RECEIPT = Path.home() / ".local/state/life-manager/launchd-control-plane-preflight.json"
-# The browser owns the one authenticated session the lanes share. Reloading it
-# throws that session away, so it is never in the default set.
+# The Coconala bootstrap owns exactly these four business lanes. Browser and
+# release-watcher activation are explicit; unrelated product jobs must never be
+# pulled in merely because they share the repository manifest.
+COCONALA_BUSINESS_LANES = {
+    "ai.anicca.hf-gig-apply-direct",
+    "ai.anicca.hf-gig-storefront-direct",
+    "ai.anicca.hf-gig-reply-detector",
+    "ai.anicca.hf-gig-paid-direct",
+}
+# These long-lived owners are excluded from release garbage collection unless
+# their loaded argv is inspected explicitly.
 DEFAULT_EXCLUDED = {"ai.anicca.hf-gig-browser", "ai.anicca.hf-gig-release-watch"}
 # Negotiate is a durable supervisor rather than a periodic one-shot pass.  Waiting for
 # ``is_running`` would therefore postpone every source release forever; its outbox is the
@@ -64,6 +73,7 @@ CONTINUOUS_RELOADABLE = {"ai.anicca.hf-gig-reply-detector"}
 PLACEHOLDER = re.compile(r"\{\{([A-Z0-9_]+)\}\}")
 JOB_PROCESS_MARKERS = {
     "ai.anicca.life-manager-upwork-browser": "--remote-debugging-port=9233",
+    "ai.anicca.hf-gig-browser": "--remote-debugging-port=9223",
     "ai.anicca.hf-gig-apply-direct": "application_direct.py",
     "ai.anicca.hf-gig-storefront-direct": "storefront_direct.py",
     "ai.anicca.hf-gig-paid-direct": "paid_direct.py",
@@ -83,6 +93,10 @@ JOB_PROCESS_MARKERS = {
     "ai.anicca.article-audit-7day": "audit-7day.sh",
     "ai.anicca.article-learn-whitelist": "learn-whitelist.sh",
 }
+
+
+def activation_labels(requested_jobs: set[str] | None) -> set[str]:
+    return set(requested_jobs) if requested_jobs is not None else set(COCONALA_BUSINESS_LANES)
 
 
 def git(*args: str, cwd: Path = REPO_ROOT) -> str:
@@ -531,7 +545,7 @@ def main() -> int:
         # divergence must not stop release publication after fetch succeeds.
         git("fetch", "--quiet", "origin", "main")
         sha = git("rev-parse", "origin/main")
-        wanted = {job["label"] for job in manifest["jobs"]} - DEFAULT_EXCLUDED
+        wanted = activation_labels(None)
         _, stable_table = settings(CURRENT_RELEASE)
         behind = [
             job for job in manifest["jobs"] if job["label"] in wanted
@@ -584,8 +598,7 @@ def main() -> int:
     requested_jobs = (
         {label.strip() for label in args.jobs.split(",")} if args.jobs else None
     )
-    wanted = (requested_jobs if requested_jobs is not None
-              else {job["label"] for job in manifest["jobs"]} - DEFAULT_EXCLUDED)
+    wanted = activation_labels(requested_jobs)
     _, table = settings(CURRENT_RELEASE)
     if not args.dry_run and not require_control_plane():
         return 75

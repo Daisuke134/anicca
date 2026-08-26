@@ -512,7 +512,13 @@ repository-wide migration is not part of this Coconala session.
    gitleaks zero. Profile export now writes a timestamped mode-0600 file without echoing
    values. Manifest uninstall requires explicit UI confirmation; Coconala stops/removes
    exactly its six plist definitions and preserves profile/browser/state. Restart, update,
-   full uninstall simulation and managed-owner coverage remain.
+   full uninstall simulation and managed-owner coverage remain. A clean third-party first-run
+   exposed three release regressions: an unloaded Coconala browser was falsely treated as busy,
+   default activation/watch selected every job in the shared manifest, and an initial verified
+   Paid delivery was omitted from the outcome count. The browser now has a process fallback,
+   default activation/watch selects only Apply, Reply, Storefront and Paid, and both initial-send
+   and replay-deduplicated verified deliveries count. Focused onboarding/release/outcome checks
+   pass 27/27; a new clean-Mac live activation/readback still remains.
 
 ### Completed and not TODO
 
