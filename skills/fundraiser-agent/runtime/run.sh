@@ -28,6 +28,8 @@ export FUNDRAISER_RUN_ID="$RUN_ID"
 export FUNDRAISER_STATE_ROOT="$STATE_ROOT"
 export FUNDRAISER_EVIDENCE_DIR="$EVIDENCE_DIR"
 export FUNDRAISER_RECEIPTS="$STATE_ROOT/application-receipts.jsonl"
+export FUNDRAISER_APPLICATIONS_DIR="$STATE_ROOT/applications"
+export FUNDRAISER_RECORD_APPLICATION="$REPO_ROOT/skills/fundraiser-agent/runtime/record-application.py"
 export FUNDRAISER_CURSOR="$STATE_ROOT/cursor.json"
 export FUNDRAISER_CDP_ENDPOINT="http://127.0.0.1:9222"
 export FUNDRAISER_X_CDP_ENDPOINT="http://127.0.0.1:9222"
@@ -49,7 +51,7 @@ RUNTIME_PROMPT="$EVIDENCE_DIR/runtime-prompt.md"
 - Search both the live Web and rendered authenticated X UI. X is discovery only; verify on the official program website before applying.
 - Use existing browser helpers under \`skills/browser/\`; do not launch or kill a browser.
 - Read private founder values only from \`~/.config/anicca/job-search/profile.json\` and \`~/.local/share/anicca/credentials.json\`; never print or report their values.
-- Append one compact JSON object per terminal candidate to \`$STATE_ROOT/application-receipts.jsonl\`. Include run_id, receipt identity, official URL, status, UTC timestamp, and non-secret readback reference. For every route, including email, only screenshot-plus-Telegram-photo evidence may use status \`submitted_verified\`; otherwise use \`evidence_incomplete\` or \`submit_unknown\`.
+- Never append a \`submitted_verified\` row directly. Before Submit, create a mode-600 draft JSON containing organization, program, cohort_window, account, official_url, contact {method,destination}, every rendered question and actual answer in question_answers, and the exact non-secret claims/source paths used in context_used. After official screenshot and Telegram photo delivery, add submitted_at and evidence {completion_png,telegram_photo_message_id,provider_readback}; then run \`python3 "$REPO_ROOT/skills/fundraiser-agent/runtime/record-application.py" --draft <draft> --ledger "$STATE_ROOT/application-receipts.jsonl" --applications-dir "$STATE_ROOT/applications" --run-id "$RUN_ID"\`. Only its successful output establishes \`submitted_verified\`. Use direct compact rows only for non-success terminal states.
 - Write the durable next discovery cursor atomically to \`$STATE_ROOT/cursor.json\`.
 - Immediately after every candidate terminal, execute \`bash $SENDER "Codex::: Fundraiser: <program, truthful status, non-secret readback, running counts>"\` and require \`TELEGRAM_SENT=true\`.
 - An application is verified only after its official form completion page or exact Gmail Sent message is captured as a PNG, visually readable, sent with \`bash $PHOTO_SENDER "<png>" "Codex::: Fundraiser proof: <program>"\`, and the output contains \`TELEGRAM_PHOTO_SENT=true MSGID=<id>\`. Save them as exact top-level receipt keys \`"completion_png":"<absolute path>"\` and \`"telegram_photo_message_id":<integer>\`; mentioning them only inside \`readback_reference\` is invalid.

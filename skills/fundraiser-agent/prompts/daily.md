@@ -156,6 +156,10 @@ For every queued candidate until the execution window ends:
    must be reprocessed read-only for verifiable evidence, without any new Send,
    Submit, follow-up, or application effect. Resume checkpoints when the blocker
    has changed or disappeared.
+   Search both the compact ledger and `$FUNDRAISER_APPLICATIONS_DIR` before
+   opening the application. Normalize the four identity components case-insensitively;
+   a matching terminal identity is an exact duplicate even when its discovery URL
+   or display spelling changed. A new named cohort/window remains a new identity.
 2. Observe the rendered form and read visible labels, options, requiredness,
    validation, and existing values. The repository `cdp.py` supports
    `new|nav|eval|screenshot|clickxy|insert|key|setfile|fillname|fillcss|filllabel|typelabel|selectname|formstate|close`.
@@ -272,6 +276,13 @@ For every queued candidate until the execution window ends:
    `\\n`, or malformed currency such as `,000`; resolve
    it from authorized context or checkpoint without submitting. Claim the shared `application`
    effect immediately before the final Submit action.
+   Before that claim, save a mode-600 application draft under the current evidence
+   directory. It must contain the official URL, actual contact destination/method,
+   every visible question paired with the final rendered answer (including blank
+   optional answers), attachment names, and the exact context claims/source paths
+   used to derive answers. For email, record the recipient and pair the complete
+   rendered subject/body with synthetic questions `Email subject` and `Email body`.
+   Never put passwords, cookies, CAPTCHA values, or authentication tokens in it.
 6. Perform one trusted final Submit action, then capture fresh completion UI and
    matching official mail when available. If a network request may have reached
    the provider but the outcome is ambiguous, record terminal `submit_unknown`
@@ -300,6 +311,13 @@ For every queued candidate until the execution window ends:
    `submitted_verified`. A completion DOM, click, local PNG, API response, or email without
    the delivered Telegram photo remains `evidence_incomplete` and must never be
    reported as a verified submission.
+   Add the official submitted_at time and evidence fields to the draft, then invoke
+   `$FUNDRAISER_RECORD_APPLICATION` with the draft, ledger, applications directory,
+   and run ID. Never append `submitted_verified` yourself. The recorder atomically
+   writes the full dossier, hashes it, rejects a prior terminal identity, and appends
+   the compact index row. If it fails, report `evidence_incomplete`; do not recreate
+   the external effect. The dossier path and SHA-256 in the index are the durable
+   audit link for later readback and deduplication.
 7. Send a real-time Telegram report immediately with the program, status,
    receipt/readback reference, and running pass counts. Then continue to the next
    candidate.

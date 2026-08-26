@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { readFile } from "node:fs/promises";
+import { mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { test } from "node:test";
 
 const dailyPrompt = await readFile(new URL("../prompts/daily.md", import.meta.url), "utf8");
@@ -8,6 +10,7 @@ const skill = await readFile(new URL("../SKILL.md", import.meta.url), "utf8");
 const runtimeScript = await readFile(new URL("../runtime/run.sh", import.meta.url), "utf8");
 const productionContext = JSON.parse(await readFile(new URL("../../../.agents/startup-context.json", import.meta.url), "utf8"));
 const emailValidator = new URL("../runtime/validate-outbound-email.py", import.meta.url);
+const applicationRecorder = new URL("../runtime/record-application.py", import.meta.url);
 const startupContext = Object.freeze({
   product: Object.freeze({
     name: "Life Manager",
@@ -236,6 +239,10 @@ test("production contract runs every minute and maximizes real applications", ()
   assert.match(dailyPrompt, /applies equally to Web forms and email pitch\/application/);
   assert.match(runtimeScript, /send-telegram-photo\.sh/);
   assert.match(runtimeScript, /status == "submitted_verified"/);
+  assert.match(runtimeScript, /FUNDRAISER_APPLICATIONS_DIR/);
+  assert.match(runtimeScript, /record-application\.py/);
+  assert.match(dailyPrompt, /every visible question paired with the final rendered answer/);
+  assert.match(dailyPrompt, /Never append `submitted_verified` yourself/);
   assert.match(dailyPrompt, /never release an application lease until every fill/);
   assert.match(dailyPrompt, /there is no `upload` command/);
   assert.match(dailyPrompt, /Do not reopen the same video, voice, binding-term/);
@@ -259,6 +266,37 @@ test("production contract runs every minute and maximizes real applications", ()
   assert.match(runtimeScript, /AGENT_RUNNER_MODEL="gpt-5\.6-luna"/);
   assert.doesNotMatch(contract, /at most one/i);
   assert.doesNotMatch(contract, /per user-local day/i);
+});
+
+test("verified application recorder writes a full dossier and rejects exact replay", async () => {
+  const root = await mkdtemp(join(tmpdir(), "fundraiser-recorder-"));
+  const png = join(root, "completion.png");
+  const draft = join(root, "draft.json");
+  const ledger = join(root, "receipts.jsonl");
+  const applications = join(root, "applications");
+  await writeFile(png, "official completion image");
+  await writeFile(draft, JSON.stringify({
+    organization: "Example VC", program: "Accelerator", cohort_window: "Cohort 1",
+    account: "account:test", official_url: "https://example.test/apply",
+    submitted_at: "2026-08-26T15:00:00Z",
+    contact: { method: "web_form", destination: "https://example.test/apply" },
+    question_answers: [{ question: "What are you building?", answer: "Life Manager" }],
+    context_used: { "product.name": ".agents/startup-context.json" },
+    evidence: { completion_png: png, telegram_photo_message_id: 123,
+      provider_readback: "Thank you for applying" },
+  }));
+  const args = [applicationRecorder.pathname, "--draft", draft, "--ledger", ledger,
+    "--applications-dir", applications, "--run-id", "test-run"];
+  const first = spawnSync("python3", args, { encoding: "utf8" });
+  assert.equal(first.status, 0, first.stderr);
+  const row = JSON.parse((await readFile(ledger, "utf8")).trim());
+  assert.equal(row.status, "submitted_verified");
+  assert.match(row.application_record_sha256, /^[a-f0-9]{64}$/);
+  const dossier = JSON.parse(await readFile(row.application_record_path, "utf8"));
+  assert.equal(dossier.question_answers[0].answer, "Life Manager");
+  const replay = spawnSync("python3", args, { encoding: "utf8" });
+  assert.notEqual(replay.status, 0);
+  assert.match(replay.stderr, /duplicate terminal application/);
 });
 
 test("outbound email preflight rejects rendered spam defects", () => {
