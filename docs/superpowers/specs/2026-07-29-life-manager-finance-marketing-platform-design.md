@@ -2212,8 +2212,8 @@ order is the §12.3 recovery checklist: `MKT-09R0 → MKT-09R1 → MKT-09R2 →
 MKT-09R3-01..13 → MKT-09R4..R9 → MKT-10 → MKT-11 → MKT-12 → MKT-13`.
 No later row starts early.
 
-Current TODO state: **incident recovery remains open at MKT-09R9-05 / Order
-24E.** R0 through R9-04 are terminal: capacity is safe, the shared publication
+Current TODO state: **incident recovery remains open at MKT-09R9-06 / Order
+24F1.** R0 through R9-05 are terminal: capacity is safe, the shared publication
 fence remains closed,
 the JP4 false completion is quarantined, and the 13-effect set is 12 `present`
 plus one truthful `absent`. The full publication ledger is 43 `completed`,
@@ -2230,13 +2230,13 @@ An external observation clock is not an active implementation item. It remains
 terminal acceptance evidence. Exactly one executable atomic item remains active;
 when the clock fires, its readback is reconciled before any dependent account arm.
 
-**Active executable atomic item:** MKT-09R9-05B / Order 24E generalizes the
-existing delayed Instagram metric collector for exactly the verified EN
-affirmation effect. The current collector is hardcoded to the old JA Reel and
-therefore does not own this post's 2h/24h/72h/7d clocks. The fix must accept an
-immutable approved effect descriptor, preserve API-only identity verification,
-persist source-labelled unavailable values, send natural Telegram once per
-window, and register durable due times without creating another scheduler.
+**Active executable atomic item:** MKT-09R9-06 / Order 24F1 classifies exactly
+one remaining existing integration: Instagram `@anicca.bochi` /
+`cmmzujxpa04ujp30yxqpg1vci`. Read-only Postiz/API evidence must determine its
+product, locale, native owner, renderer, format/form, and whether one coherent
+approved asset pack exists. Its current 0/day hold remains unchanged unless the
+classification is unambiguous; no pack import, provider effect, Telegram, or
+other account begins in this item.
 
 The runner now performs this control transition itself: it validates the
 closed mode-0600 controls and exact pack-ready lane, saves their exact bytes,
@@ -2273,8 +2273,25 @@ Shares/Saves 0; unsupported/funnel fields remain unavailable, not zero, in
 `object://sha256/d7dc6400a204fd442ba06e54fe3df51827b6f5349e399798814831490fa62d60`.
 Manifest `marketing-lane-manifest:5f9d4f61e7b6ebfdd59162c663226e877728303b501a38ff9f3ab0d6d2afc4a4`
 marks only this route canary-verified while remaining default-off, armed 0;
-the fence is closed. Future metric windows remain truthfully
-`pending_unregistered` until MKT-09R9-05B closes.
+the fence is closed. The earlier metric status recorded future windows as
+`pending_unregistered` and is superseded without deletion by the registration
+evidence below.
+
+**Completed metric-registration sub-item:** MKT-09R9-05B reuses the existing
+LM-owned Instagram due planner and 30-minute launchd owner; it adds no scheduler.
+Discovery accepts the EN carousel only after the exact carousel receipt
+verifier, integration, direct `/p/`, provider ID, publication time, and
+mode-0600 caption object SHA all pass. Focused due/read coverage is 6/6 GREEN
+in canonical runtime. Live discovery finds exactly Postiz
+`cmt9jm8990291p20y0a2l1xmk` and registers 2h
+`2026-08-26T05:37:17.624Z`, 24h `2026-08-27T03:37:17.624Z`, 72h
+`2026-08-29T03:37:17.624Z`, and 7d `2026-09-02T03:37:17.624Z` as pending.
+Durable owner `ai.anicca.life-manager-instagram-metrics` points at the canonical
+boot script, interval 1,800 seconds, runs 12, last exit 0; it was not restarted
+or kickstarted. Registered status
+`object://sha256/c08bf9e85a92dc5e72a1d975dcb2e84e7ea4ea079a5a001f5efbbb61f56a97d3`
+supersedes `d7dc6400…62d60`; commit `a34cec9f3` is present in canonical runtime
+and main.
 
 **Completed immediately preceding atomic item:** MKT-09R9-03 / Order 24C
 imports exact pack `object://sha256/e23cd41257832d2032fd889bd9a16ec95ea8dc213cdd7a2e3f820fbe1578669e`,
@@ -2932,8 +2949,8 @@ Their dependent account arm remains blocked until the observation is terminal.
 | 24B | **done — MKT-09R9-02:** classify Instagram `@anicca.affirmation` / `cmp9pedr700ttqh0yj8o57fog` | Order 24A terminal unavailable | evidence `d4b23768…86c65b` binds Anicca iOS/EN/Larry/native-photo-carousel, Postiz alias `anicca.affirmation`, native owner `anicca.ios`, 144 rows, six-slide native `Dbcvm5Mm8gM`, target 1/day; manifest `88975d67…755d33` changes only this row to classified/default-off, armed 0; writes 0 | classify multiple accounts, infer only from handle, or adopt broken legacy `--tt` mapping |
 | 24C | **done — MKT-09R9-03:** import and approve one exact `@anicca.affirmation` pack | Order 24B passes | pack `e23cd412…78669e`, caption `bf90a15a…6e64a0`, approval `7740cd09…968845`, six ordered native JPEGs and order hash `4daa5db7…9837f9` are SHA-exact/mode0600; manifest `b48c8e11…5ce18f` pack-ready/default-off, armed0/fenceclosed; effects0 | import several packs or mix Card/Widget content |
 | 24D | **done — MKT-09R9-04:** TDD-generalize the native carousel runner for exactly the frozen EN lane | Order 24C passes | existing JA command remains green; EN account/integration/pack/ordered media/caption/approval/native owner are immutable; alternate refs fail before provider; direct `/p/`, native verification, Telegram and replay contracts are reused; focused 21/21, syntax and diff checks pass; provider/Telegram writes 0 | copy runner, accept caller-defined lane, or execute hardcoded JA adapter against EN |
-| 24E | **active — MKT-09R9-05:** finish one `@anicca.affirmation` API canary and metric registration | Order 24D passes | **05A done:** direct `DcfQ2-hG3KR`, Postiz `cmt9jm8990291p20y0a2l1xmk`, owner/caption/GraphSidecar/six exact ordered images and visual content verified; Telegram `34799`; replay publication 0/message 0; immediate post metrics measured; fence closed/default-off/armed 0. **05B active:** make the delayed collector own immutable 2h/24h/72h/7d windows and natural metric Telegram for this effect | fan out, manually leave controls open, call pending windows registered, or arm cadence before metrics |
-| 24F | **MKT-09R9-N:** repeat classify → one pack → one API canary for each remaining existing TikTok/Instagram/YouTube integration | Order 24E terminal | every existing row is product/locale/renderer/pack-bound and canary-verified or an explicit justified 0/day hold/owner skip | mass-enable, guess from handle, or post mixed-product content |
+| 24E | **done — MKT-09R9-05:** finish one `@anicca.affirmation` API canary and metric registration | Order 24D passes | direct `DcfQ2-hG3KR`, Postiz `cmt9jm8990291p20y0a2l1xmk`, owner/caption/GraphSidecar/six exact ordered images and visual content verified; Telegram `34799`; replay publication 0/message 0; immediate post metrics measured; fence closed/default-off/armed 0. Existing 30-minute LM owner discovers the immutable effect and owns exact 2h/24h/72h/7d due times; registered status `c08bf9e8…6a97d3`; focused 6/6 | fan out, manually leave controls open, call pending windows measured, or arm cadence before metrics |
+| 24F | **active — MKT-09R9-N:** repeat classify → one pack → one API canary for each remaining existing TikTok/Instagram/YouTube integration | Order 24E terminal | **24F1 active:** classify only Instagram `@anicca.bochi` / `cmmzujxpa04ujp30yxqpg1vci`; every existing row ultimately becomes product/locale/renderer/pack-bound and canary-verified or an explicit justified 0/day hold/owner skip | mass-enable, guess from handle, or post mixed-product content |
 | 25 | **MKT-10:** arm only one healthy verified account, ramping from one canary/day to at most three posts/day | exact account has direct-native, Telegram, replay, and usable metric-source evidence | expected/published/missed/duplicate counts remain healthy at each ramp; platform policy permits cadence | jump directly to three/day everywhere |
 | 26 | **MKT-11:** collect 2h/24h/72h/7d social metrics and join ASC, RevenueCat, and product analytics | exact published effect has immutable creative/campaign lineage | views, likes, comments, shares, saves, watch/retention fields when supported, installs, activation, trials, paid, proceeds, and attribution coverage are source-labelled; unavailable stays unavailable | substitute account aggregates for post outcomes or infer installs from timing |
 | 27 | **MKT-12:** close bounded hook learning independently for Honne EN, Honne JA, and Anicca | one product/account has a usable attributed cohort | stable assignment; one hook token per baseline/challenger; immutable outcome; keep/revert CAS decision; next generation proves it consumed the decision | LRU rotation, shared campaign token, cross-product winner, or multi-variable edit |
