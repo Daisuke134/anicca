@@ -88,6 +88,24 @@ test("official production factory installs the Connpass workflow into the defaul
   }
 });
 
+test("official production factory exposes the manual Connpass boundary only while automated submit lacks permission", () => {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-production-connpass-boundary-mode-"));
+  const workflow = { async discoverCandidates() { return []; }, async runDirectAction() {}, async readProviderState() { return { status: "absent" }; } };
+  const common = {
+    repoRoot: "/private/repo", stateDir, wakeId: "wake-connpass-boundary-mode",
+    calendarAccount: "private-account", gogKeyring: "private-keyring", telegramTarget: "private-target",
+    lumaFormProfilePath: "/private/form-profile.json", lunaEvidenceDir: "/private/luna-evidence",
+    browserRail: { open() {}, navigate() {}, close() {} }, calendarReader: { async readCalendarGaps() { return []; } },
+    providerRouter: { discoverCandidates() {}, runCachedAction() {}, runDirectAction() {}, runAgentFallback() {}, readProviderState() {}, saveRepairedActions() {} },
+    lumaWorkflow: workflow, connpassWorkflow: workflow,
+    evidenceChain: { async completeEvidence() {} }, operations: { async reportWake() {}, async recordAction() {} },
+  };
+  try {
+    assert.equal(typeof createMinimalProductionDependencies(common).reportConnpassActionBoundary, "function");
+    assert.equal(createMinimalProductionDependencies({ ...common, connpassAutomatedSubmitAllowed: true }).reportConnpassActionBoundary, undefined);
+  } finally { fs.rmSync(stateDir, { recursive: true, force: true }); }
+});
+
 test("official production factory persists one safe audit for its default Gemini ranking", async () => {
   const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-production-ranking-audit-"));
   const audits = [];

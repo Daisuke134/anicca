@@ -140,7 +140,7 @@ test("one wake reuses one owned session, target, and page across candidates and 
   );
 });
 
-test("connpass candidates produce one action-boundary receipt before any provider action", async () => {
+test("connpass candidates produce one action-boundary receipt and skip every provider action", async () => {
   let state = fixture({
     async discoverCandidates(provider) {
       state.calls.push(["discover", provider]);
@@ -154,7 +154,9 @@ test("connpass candidates produce one action-boundary receipt before any provide
   await runMinimalConnectorWake({ ownerToken: "owner-token-connpass-boundary", providers: ["connpass"] }, state.dependencies);
   const boundary = state.calls.findIndex(([name]) => name === "connpass-boundary");
   const direct = state.calls.findIndex(([name]) => name === "direct");
-  assert.ok(boundary >= 0 && direct > boundary);
+  assert.ok(boundary >= 0);
+  assert.equal(direct, -1);
+  for (const name of ["cache", "agent", "readback"]) assert.equal(state.calls.some(([call]) => call === name), false, name);
   assert.equal(state.calls.filter(([name]) => name === "connpass-boundary").length, 1);
 });
 

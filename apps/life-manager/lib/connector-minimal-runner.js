@@ -279,6 +279,7 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
               () => deps.reportConnpassActionBoundary({ candidates }),
               connpassActionBoundaryFailureContext,
             );
+            continue;
           } catch {
             connpassBoundaryFailed = true;
             lastSafeReason = "connpass_action_boundary_failed";

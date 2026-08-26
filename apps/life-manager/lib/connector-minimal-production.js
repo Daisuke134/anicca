@@ -544,7 +544,8 @@ function createMinimalProductionDependencies(options = {}) {
     completeEvidence: evidenceChain.completeEvidence,
     runTalkApplication: talkApplicationWorkflow.run,
     completeTalkEvidence: talkEvidenceChain.completeTalkEvidence,
-    reportConnpassActionBoundary: connpassActionTelegram.report,
+    reportConnpassActionBoundary: options.connpassAutomatedSubmitAllowed === true
+      ? undefined : connpassActionTelegram.report,
     reportWake: operations.reportWake,
     recordAction: operations.recordAction,
   });
