@@ -2276,6 +2276,19 @@ repeated browser attempts. The only next action is reconciliation of this exact
 existing effect to caption-matching native evidence; no new publication effect
 is allowed.
 
+Postiz implementation evidence removes the remaining ambiguity about that
+numeric suffix. The cloned upstream `gitroomhq/postiz-app` at commit
+`81af6c9761f2c50e4741438a9e31bda222b32d2c` shows TikTok Business photo/video
+rows can retain `p_pub_url~...` / `v_pub_url~...` as the **share/publish ID**;
+`postAnalytics` must call TikTok's private provider-token publish-status API to
+resolve it to `post_ids[0]` before querying the native item. Therefore
+`7678198747632977937` must not be interpolated into `/video/<id>` and is not a
+native direct URL. The public Postiz post-analytics route currently returns an
+empty array and does not expose the resolved item ID. The exact blocker is now
+provider readback capability, not publication uncertainty: without a public
+Postiz response containing the resolved TikTok item ID or a caption-matching
+native API artifact, R2 cannot truthfully transition from unknown to present.
+
 **Completed immediately preceding code item:** MKT-09R9-14 / Order 24F9 extends
 the shared native-carousel boundary for the single frozen TikTok photo lane and
 adds a thin `anicca-en-slideshow-tiktok-canary.js` wrapper. Postiz transport now
