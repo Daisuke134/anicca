@@ -210,7 +210,10 @@ export async function fetchResources({
 async function main() {
   const resources = await fetchResources();
   const report = aggregateMarket(resources, Math.floor(Date.now() / 1000));
-  const stateDir = join(dirname(fileURLToPath(import.meta.url)), 'state');
+  const stateDir = process.env.ANICCA_X402_STATE_DIR
+    || (process.env.ANICCA_CODE_ROOT && process.env.ANICCA_HOME
+      ? join(process.env.ANICCA_HOME, 'skills', 'earn', 'x402-sell', 'state')
+      : join(dirname(fileURLToPath(import.meta.url)), 'state'));
   await mkdir(stateDir, { recursive: true });
   const output = JSON.stringify(report);
   await writeFile(join(stateDir, 'market-scout.json'), output + '\n', 'utf8');

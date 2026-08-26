@@ -9,6 +9,7 @@ import {
   readdirSync,
   readlinkSync,
   readFileSync,
+  realpathSync,
   rmSync,
   statSync,
   symlinkSync,
@@ -78,7 +79,6 @@ function assertSealedRelease(root) {
       const absolute = join(directory, name);
       const relative = absolute.slice(root.length + 1);
       const stat = lstatSync(absolute);
-      if (relative === "state/effective-cron" || relative.startsWith("state/effective-cron/")) continue;
       if (stat.isSymbolicLink()) continue;
       assert.equal(stat.mode & 0o222, 0, `release entry remains writable: ${relative}`);
       if (stat.isDirectory()) walk(absolute);
@@ -96,7 +96,7 @@ function writeSealedAgentEconomyRelease(root, {
   mkdirSync(join(release, "skills", "agent-economy"), { recursive: true });
   writeFileSync(join(release, "skills", "agent-economy", "launch.sh"), "#!/bin/bash\n");
   writeFileSync(join(release, "RELEASE.json"), JSON.stringify({
-    sha,
+    sha, git_commit: sha,
     release_id: id,
     release_root: releaseRoot,
     namespace: "life-manager",
@@ -134,15 +134,17 @@ test("agent-economy launchd declaration uses the immutable release and continuou
     assert.equal(generated.status, 0, `${generated.stdout}\n${generated.stderr}`);
 
     const plist = parsePlist(join(out, "ai.anicca.agent-economy-loop.plist"));
+    const release = realpathSync(current);
     assert.deepEqual(plist.ProgramArguments, [
       "/bin/bash",
-      join(current, "skills", "agent-economy", "launch.sh"),
+      join(release, "skills", "agent-economy", "launch.sh"),
     ]);
     assert.equal(plist.KeepAlive, true);
     assert.equal(plist.RunAtLoad, true);
     assert.equal(plist.StartInterval, undefined);
     assert.equal(plist.StartCalendarInterval, undefined);
-    assert.equal(plist.EnvironmentVariables.ANICCA_REPO, current);
+    assert.equal(plist.EnvironmentVariables.ANICCA_REPO, release);
+    assert.equal(plist.EnvironmentVariables.ANICCA_CODE_ROOT, release);
     assert.equal(plist.EnvironmentVariables.ANICCA_HOME, join(home, "loops", "agent-economy"));
     assert.equal(plist.EnvironmentVariables.ANICCA_RELEASE_ROOT, join(home, "loops", "life-manager"));
     assert.equal(plist.EnvironmentVariables.ANICCA_RELEASE_ID, "20260827T000000-a1a1a1a1");
@@ -180,6 +182,92 @@ test("agent-economy plist generation rejects a worktree current before writing a
     spawnSync("chmod", ["-R", "u+w", root], { encoding: "utf8" });
     rmSync(root, { recursive: true, force: true });
   }
+});
+
+test("agent-economy plist pins the resolved release and does not follow a later current move", () => {
+  const root = mkdtempSync(join(tmpdir(), "agent-economy-plist-pinned-"));
+  const home = join(root, "home");
+  const out = join(root, "launchagents");
+  const first = writeSealedAgentEconomyRelease(root);
+  const secondId = "20260827T000001-b2b2b2b2";
+  rmSync(join(first.releaseRoot, "current"), { force: true });
+  const second = writeSealedAgentEconomyRelease(root, { id: secondId, sha: "b2".repeat(20) });
+  rmSync(join(first.releaseRoot, "current"), { force: true });
+  symlinkSync(first.release, join(first.releaseRoot, "current"));
+  try {
+    const generated = spawnSync("python3", [
+      join(REPO_ROOT, "bin", "plistgen.py"), "--loops-dir", join(REPO_ROOT, "loops"),
+      "--out-dir", out, "--home", home, "--only", "agent-economy",
+    ], { cwd: REPO_ROOT, encoding: "utf8" });
+    assert.equal(generated.status, 0, `${generated.stdout}\n${generated.stderr}`);
+    const plistPath = join(out, "ai.anicca.agent-economy-loop.plist");
+    const before = parsePlist(plistPath);
+    const firstResolved = realpathSync(first.release);
+    assert.equal(before.ProgramArguments[1], join(firstResolved, "skills", "agent-economy", "launch.sh"));
+    assert.equal(before.EnvironmentVariables.ANICCA_CODE_ROOT, firstResolved);
+    rmSync(join(first.releaseRoot, "current"), { force: true });
+    symlinkSync(second.release, join(first.releaseRoot, "current"));
+    const after = parsePlist(plistPath);
+    assert.deepEqual(after.ProgramArguments, before.ProgramArguments);
+    assert.equal(after.EnvironmentVariables.ANICCA_CODE_ROOT, firstResolved);
+  } finally {
+    spawnSync("chmod", ["-R", "u+w", root], { encoding: "utf8" });
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("pinned runtime paths are explicit: daemon skips mutable self-update/sync and plist writes atomically", () => {
+  const daemon = readFileSync(join(REPO_ROOT, "runtime/anicca-daemon.sh"), "utf8");
+  assert.match(daemon, /ANICCA_CODE_ROOT/u);
+  assert.match(daemon, /BASH_SOURCE/u);
+  assert.match(daemon, /PINNED_RELEASE/u);
+  assert.match(daemon, /rsync/u);
+  assert.match(daemon, /node_modules/u);
+  assert.match(daemon, /PINNED_RELEASE/u);
+  const runSkill = readFileSync(join(REPO_ROOT, "runtime/loop/run-skill.mjs"), "utf8");
+  assert.match(runSkill, /ANICCA_CODE_ROOT/u);
+  assert.match(runSkill, /path\.join\(root, ['"]skills['"]/u);
+  const plistgen = readFileSync(join(REPO_ROOT, "bin/plistgen.py"), "utf8");
+  assert.match(plistgen, /os\.replace\(/u);
+  assert.doesNotMatch(plistgen, /target\.write_bytes\(/u);
+});
+
+test("run-skill executes code from CODE_ROOT while the skill writes state under ANICCA_HOME", () => {
+  const root = mkdtempSync(join(tmpdir(), "agent-economy-code-state-"));
+  const codeRoot = join(root, "release");
+  const home = join(root, "home");
+  const skill = join(codeRoot, "skills", "probe", "run.sh");
+  mkdirSync(join(codeRoot, "skills", "probe"), { recursive: true });
+  writeFileSync(skill, "#!/bin/bash\nmkdir -p \"$ANICCA_HOME/skills/probe/state\"\nprintf '%s\\n' \"$ANICCA_CODE_ROOT\" > \"$ANICCA_HOME/skills/probe/state/result\"\n");
+  chmodSync(skill, 0o755);
+  try {
+    const script = [
+      "import { runSkill } from './runtime/loop/run-skill.mjs';",
+      "const result = await runSkill('probe', {}, 'wake', { ANICCA_HOME: process.env.ANICCA_HOME, SKILL_TIMEOUT_S: 5 });",
+      "console.log(JSON.stringify(result));",
+    ].join("\n");
+    const result = spawnSync(process.execPath, ["--input-type=module", "-e", script], {
+      cwd: REPO_ROOT,
+      encoding: "utf8",
+      env: { ...process.env, ANICCA_CODE_ROOT: codeRoot, ANICCA_HOME: home },
+    });
+    assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+    assert.equal(JSON.parse(result.stdout).exitCode, 0);
+    assert.equal(readFileSync(join(home, "skills", "probe", "state", "result"), "utf8").trim(), codeRoot);
+    assert.equal(existsSync(join(codeRoot, "skills", "probe", "state")), false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("whole sealed releases have no effective-cron writable carveout", () => {
+  const cutter = readFileSync(join(REPO_ROOT, "bin/cut-loop-release.sh"), "utf8");
+  assert.doesNotMatch(cutter, /state\/effective-cron.*continue/u);
+  assert.doesNotMatch(cutter, /u\+w.*state\/effective-cron/u);
+  const launch = readFileSync(join(REPO_ROOT, "skills/agent-economy/launch.sh"), "utf8");
+  assert.doesNotMatch(launch, /state\/effective-cron.*continue/u);
+  const registry = readFileSync(join(REPO_ROOT, "lib/registry-enforce.sh"), "utf8");
+  assert.match(registry, /CEO_EFFECTIVE_CRON_DIR/u);
 });
 
 test("compute proxies require the instance key and pass it to the SDK without env reinjection", () => {
@@ -347,6 +435,14 @@ test("contract-only: release cutter installs locked dependencies in the release 
     assert.equal(rollback.status, 0, `${rollback.stdout}\n${rollback.stderr}`);
     assert.equal(readlinkSync(join(loops, "current")), releaseRoot);
     assert.equal(readlinkSync(join(loops, "previous")), secondCurrent);
+    const rollbackAgain = spawnSync("bash", [join(repo, "bin", "cut-loop-release.sh"), "--rollback"], {
+      cwd: repo,
+      encoding: "utf8",
+      env: { ...process.env, HOME: root, LOOPS_ROOT: loops },
+    });
+    assert.equal(rollbackAgain.status, 0, `${rollbackAgain.stdout}\n${rollbackAgain.stderr}`);
+    assert.equal(readlinkSync(join(loops, "current")), secondCurrent);
+    assert.equal(readlinkSync(join(loops, "previous")), releaseRoot);
   } finally {
     spawnSync("chmod", ["-R", "u+w", root], { encoding: "utf8" });
     rmSync(root, { recursive: true, force: true });
@@ -363,7 +459,7 @@ test("release rollback rejects an invalid previous target without moving current
     mkdirSync(join(loops, "releases", "20260827T000000-a1a1a1a1"), { recursive: true });
     const release = join(loops, "releases", "20260827T000000-a1a1a1a1");
     writeFileSync(join(release, "RELEASE.json"), JSON.stringify({
-      sha: "a1".repeat(20), release_id: "20260827T000000-a1a1a1a1",
+      sha: "a1".repeat(20), git_commit: "a1".repeat(20), release_id: "20260827T000000-a1a1a1a1",
       release_root: loops, namespace: "life-manager",
     }) + "\n");
     chmodSync(release, 0o555);

@@ -109,17 +109,17 @@ if metadata.get("namespace") != "life-manager":
     raise SystemExit("agent-economy release metadata namespace is invalid")
 if Path(os.path.realpath(str(metadata.get("release_root", "")))) != root:
     raise SystemExit("agent-economy release metadata root does not match current")
+if metadata.get("current") and Path(os.path.realpath(str(metadata["current"]))) != Path(os.path.realpath(str(current))):
+    raise SystemExit("agent-economy release metadata current does not match current")
 release_id = str(metadata.get("release_id", ""))
 sha = str(metadata.get("sha", ""))
 if release_id != release.name or len(sha) != 40 or any(c not in "0123456789abcdef" for c in sha):
     raise SystemExit("agent-economy release metadata identity is invalid")
+if metadata.get("git_commit") != sha:
+    raise SystemExit("agent-economy release metadata commit is invalid")
 if release.name != sha and not release.name.endswith("-" + sha[:8]):
     raise SystemExit("agent-economy release metadata sha does not match release")
 for path in [release, *release.rglob("*")]:
-    relative = path.relative_to(release)
-    text = str(relative)
-    if text == "state/effective-cron" or text.startswith("state/effective-cron/"):
-        continue
     if path.is_symlink():
         continue
     if path.stat().st_mode & (stat.S_IWUSR | stat.S_IWGRP | stat.S_IWOTH):
@@ -171,7 +171,7 @@ EOF
   # checkout remains authoring-only and is never copied into the agent-economy runtime owner.
   REPO_ROOT="$RELEASE_SOURCE"
   REGISTRY="$REPO_ROOT/skills/registry.json"
-  export REPO_ROOT LIFE_MANAGER_RELEASE_ROOT ANICCA_REPO="$LIFE_MANAGER_RELEASE_ROOT/current" \
+  export REPO_ROOT LIFE_MANAGER_RELEASE_ROOT ANICCA_REPO="$RELEASE_SOURCE" ANICCA_CODE_ROOT="$RELEASE_SOURCE" \
     ANICCA_RELEASE_ID="$RELEASE_ID" ANICCA_RELEASE_SHA="$RELEASE_SHA"
   green "  ✓ sealed release $RELEASE_ID  ($RELEASE_SOURCE)"
 fi
@@ -241,7 +241,13 @@ echo
 
 # ─── 4. shared lib ─────────────────────────────────────────────────────
 cyan "[4/6] syncing _shared lib…"
-if [ -d "$REPO_ROOT/skills/_shared" ]; then
+if [ "$LIFE_MANAGER_AGENT_ECONOMY" = "1" ]; then
+  # Agent-economy code stays in the sealed release. Create only the mutable state namespace; do not
+  # copy executable skills into it, because launchd and run-skill resolve code from ANICCA_CODE_ROOT.
+  mkdir -p "$ANICCA_HOME/skills/agent-economy/state" "$ANICCA_HOME/skills/earn/state" \
+    "$ANICCA_HOME/skills/cook/state" "$ANICCA_HOME/skills/earn/x402-sell/state"
+  green "  ✓ release-backed agent-economy state roots prepared (code sync skipped)"
+elif [ -d "$REPO_ROOT/skills/_shared" ]; then
   mkdir -p "$ANICCA_HOME/skills/_shared"
   rsync -a --delete --exclude='state/' --exclude='__pycache__/' \
     "$REPO_ROOT/skills/_shared/" "$ANICCA_HOME/skills/_shared/"
@@ -253,7 +259,9 @@ echo
 
 # ─── 4.1. registry-driven slot sync ────────────────────────────────────
 cyan "[4.1/6] syncing skills from registry…"
-if [ ! -f "$REGISTRY" ]; then
+if [ "$LIFE_MANAGER_AGENT_ECONOMY" = "1" ]; then
+  green "  ✓ release-backed agent-economy install does not copy executable skills"
+elif [ ! -f "$REGISTRY" ]; then
   red "  ✗ registry not found at $REGISTRY — cannot sync slots."
   exit 3
 fi

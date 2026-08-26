@@ -1,22 +1,25 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-RELEASE_ROOT="${ANICCA_RELEASE_ROOT:-$HOME/loops/life-manager}"
-REPO="${ANICCA_REPO:-${LIFE_MANAGER_REPO:-$RELEASE_ROOT/current}}"
-case "$REPO" in
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd -P)"
+CODE_ROOT="$(cd "$SCRIPT_DIR/../.." 2>/dev/null && pwd -P)" || {
+  echo "agent-economy: immutable release could not be resolved" >&2
+  exit 2
+}
+RELEASE_ROOT="${ANICCA_RELEASE_ROOT:-$(cd "$CODE_ROOT/../.." 2>/dev/null && pwd -P)}"
+REPO="${ANICCA_REPO:-$CODE_ROOT}"
+case "$CODE_ROOT" in
   */.worktrees/*)
-    echo "agent-economy: refusing worktree runtime path: $REPO" >&2
+    echo "agent-economy: refusing worktree runtime path: $CODE_ROOT" >&2
     exit 2
     ;;
 esac
 
 die() { echo "agent-economy: $*" >&2; exit 2; }
 
-CURRENT_LINK="$RELEASE_ROOT/current"
-[ "$REPO" = "$CURRENT_LINK" ] || die "runtime must resolve through $CURRENT_LINK"
-[ -L "$CURRENT_LINK" ] || die "namespaced current pointer is missing: $CURRENT_LINK"
 [ -d "$RELEASE_ROOT/releases" ] || die "namespaced releases root is missing: $RELEASE_ROOT/releases"
-RELEASE="$(cd "$REPO" 2>/dev/null && pwd -P)" || die "current release target cannot be resolved"
+RELEASE="$CODE_ROOT"
+[ "$REPO" = "$CODE_ROOT" ] || die "runtime repository must be the executing release"
 RELEASES="$(cd "$RELEASE_ROOT/releases" 2>/dev/null && pwd -P)" || die "namespaced releases root cannot be resolved"
 case "$RELEASE" in
   "$RELEASES"/*) ;;
@@ -37,8 +40,9 @@ if (metadata.namespace !== 'life-manager') process.exit(4);
 if (real(String(metadata.release_root || '')) !== real(releaseRoot)) process.exit(5);
 if (metadata.release_id !== path.basename(releasePath)) process.exit(6);
 if (!/^[0-9a-f]{40}$/.test(String(metadata.sha || ''))) process.exit(7);
-if (!(path.basename(releasePath) === metadata.sha || path.basename(releasePath).endsWith(`-${metadata.sha.slice(0, 8)}`))) process.exit(8);
-if (metadata.current && real(String(metadata.current)) !== real(path.join(releaseRoot, 'current'))) process.exit(9);
+if (metadata.git_commit !== metadata.sha) process.exit(8);
+if (!(path.basename(releasePath) === metadata.sha || path.basename(releasePath).endsWith(`-${metadata.sha.slice(0, 8)}`))) process.exit(9);
+if (metadata.current && real(String(metadata.current)) !== real(path.join(releaseRoot, 'current'))) process.exit(10);
 process.stdout.write(`${metadata.release_id}\t${metadata.sha}`);
 NODE
 )" || die "sealed release metadata is invalid"
@@ -57,9 +61,6 @@ mode="$(stat -f '%Lp' "$RELEASE" 2>/dev/null || stat -c '%a' "$RELEASE" 2>/dev/n
   || die "could not inspect sealed release permissions"
 [ $((8#$mode & 0222)) -eq 0 ] || die "sealed release remains writable"
 while IFS= read -r -d '' item; do
-  case "$item" in
-    "$RELEASE/state/effective-cron"|"$RELEASE/state/effective-cron"/*) continue ;;
-  esac
   [ -L "$item" ] && continue
   mode="$(stat -f '%Lp' "$item" 2>/dev/null || stat -c '%a' "$item" 2>/dev/null)" \
     || die "could not inspect sealed release permissions"
@@ -68,7 +69,7 @@ done < <(find "$RELEASE" -mindepth 1 -print0)
 
 [ -x "$REPO/runtime/anicca-daemon.sh" ] || die "missing daemon at $REPO/runtime/anicca-daemon.sh"
 
-export ANICCA_REPO="$REPO"
+export ANICCA_REPO="$CODE_ROOT" ANICCA_CODE_ROOT="$CODE_ROOT"
 export ANICCA_RELEASE_ROOT
 export ANICCA_RELEASE_ID="$RELEASE_ID" ANICCA_RELEASE_SHA="$RELEASE_SHA"
 if [ "${ANICCA_ECONOMY_CREATE_EVM_WALLET:-0}" = "1" ]; then

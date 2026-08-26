@@ -60,7 +60,10 @@ export function computeGaps(scout, ourCategories, now, opts = {}) {
 }
 
 async function main() {
-  const stateDir = join(dirname(fileURLToPath(import.meta.url)), 'state');
+  const stateDir = process.env.ANICCA_X402_STATE_DIR
+    || (process.env.ANICCA_CODE_ROOT && process.env.ANICCA_HOME
+      ? join(process.env.ANICCA_HOME, 'skills', 'earn', 'x402-sell', 'state')
+      : join(dirname(fileURLToPath(import.meta.url)), 'state'));
   let scout;
   try {
     scout = JSON.parse(await readFile(join(stateDir, 'market-scout.json'), 'utf8'));

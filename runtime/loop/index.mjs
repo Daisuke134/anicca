@@ -17,6 +17,7 @@
  */
 
 import { promises as fs } from 'node:fs';
+import { realpathSync } from 'node:fs';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { execFile } from 'node:child_process';
@@ -64,6 +65,22 @@ import { publishLedgerCycle } from './ledger-publish.mjs';
 
 const execFileAsync = promisify(execFile);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const configuredCodeRoot = process.env.ANICCA_CODE_ROOT;
+const CODE_ROOT = realpathSync(path.resolve(__dirname, '..', '..'));
+const PINNED_RELEASE = configuredCodeRoot != null && configuredCodeRoot !== '';
+if (PINNED_RELEASE) {
+  let configuredResolved;
+  try {
+    configuredResolved = realpathSync(configuredCodeRoot);
+  } catch {
+    process.stderr.write('[loop] FATAL: ANICCA_CODE_ROOT cannot be resolved.\n');
+    process.exit(1);
+  }
+  if (configuredResolved !== CODE_ROOT) {
+    process.stderr.write('[loop] FATAL: ANICCA_CODE_ROOT does not match the executing release.\n');
+    process.exit(1);
+  }
+}
 
 // Inline ULID generator (no npm dependency — uses crypto.randomUUID as entropy source)
 function ulid() {
@@ -98,7 +115,7 @@ const LEDGER_PUBLISH_MARKER_PATH = path.join(ANICCA_HOME, 'state', '.ledger-publ
 // repo root. ledger-publish.mjs reads ONLY `git remote get-url origin` from it (never writes to
 // it, never checks out/commits/pushes against it — FIND-001/002's fix) to resolve where its own
 // DEDICATED clone should point.
-const LOOP_REPO_ROOT = path.resolve(__dirname, '..', '..');
+const LOOP_REPO_ROOT = CODE_ROOT;
 
 // Read genesis prompt (missing = warn + empty string)
 let genesisPrompt = '';
@@ -118,17 +135,22 @@ let isProfitable;
   // does not exist there → ERR_MODULE_NOT_FOUND → isProfitable=()=>false on EVERY boot, so no wake could
   // ever be classified profitable. Resolve from ANICCA_HOME first (where the file + viem actually are),
   // fall back to the code repo for dev.
-  const repoRoot = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..', '..');
+  const repoRoot = CODE_ROOT;
   // FIND-IMPL-006 FIX: the real export lives in skills/_shared/lib/ledger.mjs (record.mjs imports it from
   // ../../_shared/lib/ledger.mjs); the old skills/earn/lib/ledger.mjs path does NOT exist → isProfitable
   // silently fell back to ()=>false on every boot, so NO wake was ever classified profitable. Try the
   // real _shared path first (ANICCA_HOME then repo), keep the legacy paths as last-resort fallbacks.
-  const candidates = [
-    path.join(ANICCA_HOME, 'skills', '_shared', 'lib', 'ledger.mjs'),
-    path.join(repoRoot, 'skills', '_shared', 'lib', 'ledger.mjs'),
-    path.join(ANICCA_HOME, 'skills', 'earn', 'lib', 'ledger.mjs'),
-    path.join(repoRoot, 'skills', 'earn', 'lib', 'ledger.mjs'),
-  ];
+  const candidates = PINNED_RELEASE
+    ? [
+      path.join(repoRoot, 'skills', '_shared', 'lib', 'ledger.mjs'),
+      path.join(repoRoot, 'skills', 'earn', 'lib', 'ledger.mjs'),
+    ]
+    : [
+      path.join(ANICCA_HOME, 'skills', '_shared', 'lib', 'ledger.mjs'),
+      path.join(repoRoot, 'skills', '_shared', 'lib', 'ledger.mjs'),
+      path.join(ANICCA_HOME, 'skills', 'earn', 'lib', 'ledger.mjs'),
+      path.join(repoRoot, 'skills', 'earn', 'lib', 'ledger.mjs'),
+    ];
   for (const p of candidates) {
     try { const m = await import(p); if (typeof m.isProfitable === 'function') { isProfitable = m.isProfitable; break; } } catch { /* try next */ }
   }
@@ -155,7 +177,7 @@ let alwaysAvailableBySlot = {};
 // activeSkillSlots/riskTagBySlot maps above), needed as-is by assembleAlwaysActMenu each wake.
 let registryForAlwaysAct = null;
 {
-  const repoRoot = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..', '..');
+  const repoRoot = CODE_ROOT;
   // Test-only env var (same idiom as ANICCA_BALANCE_OVERRIDE/CLAUDE_BIN elsewhere in this codebase):
   // lets REQ-502's empty-menu edge case be driven through a REAL spawned wake against a REAL (if
   // fixture) registry.json, rather than only through the pure assembleAlwaysActMenu unit test.
@@ -210,9 +232,11 @@ function alwaysAvailableOf(slotName) {
  * the wake loop or silently hiding `hl_trade` from an instance that might need it to close a position.
  */
 async function queryHlTradeOpenPositions() {
-  const hlDir = path.join(ANICCA_HOME, 'skills', 'earn', 'hl-trade');
+  const hlDir = path.join(PINNED_RELEASE ? CODE_ROOT : ANICCA_HOME, 'skills', 'earn', 'hl-trade');
+  const hlStateDir = path.join(ANICCA_HOME, 'skills', 'earn', 'hl-trade');
   const hlScript = path.join(hlDir, 'hl.py');
-  const venvPython = path.join(hlDir, '.venv', 'bin', 'python');
+  const venvRoot = PINNED_RELEASE ? hlStateDir : hlDir;
+  const venvPython = path.join(venvRoot, '.venv', 'bin', 'python');
   let pythonBin = 'python3';
   try { await fs.access(venvPython); pythonBin = venvPython; } catch { /* fall back to system python3 */ }
   const { stdout } = await execFileAsync(pythonBin, [hlScript, 'account'], { timeout: 15000 });
@@ -227,10 +251,7 @@ async function queryHlTradeOpenPositions() {
 // identity-match guard entirely). Read-only address derivation only — never signs, never spends,
 // never logs the underlying secret (runtime/wallet-address-solana.mjs's own REQ-006 contract).
 
-const WALLET_ADDRESS_SOLANA_PATH = path.join(
-  path.resolve(path.dirname(new URL(import.meta.url).pathname), '..', '..'),
-  'runtime', 'wallet-address-solana.mjs',
-);
+const WALLET_ADDRESS_SOLANA_PATH = path.join(CODE_ROOT, 'runtime', 'wallet-address-solana.mjs');
 
 function envWithoutSolanaKey(overrides = {}) {
   const env = { ...process.env, ...overrides };
@@ -376,14 +397,14 @@ process.on('SIGTERM', async () => {
 // interval OUTSIDE the wake path caps fix-propagation at ~10min with zero wake latency — two
 // in-wake placements (awaited and fire-and-forget) both measurably flaked the timing-sensitive
 // integration tests, so the sync must never touch runOneWake. unref(): never holds the process open.
-setInterval(() => {
-  try {
-    const repoRoot = process.env.ANICCA_REPO ||
-      path.resolve(path.dirname(new URL(import.meta.url).pathname), '..', '..');
-    execFile('/bin/bash', [path.join(repoRoot, 'runtime', 'self-update-skills.sh')],
-      { timeout: 60_000 }, () => { /* best-effort */ });
-  } catch { /* missing script — keep current skills */ }
-}, 10 * 60 * 1000).unref();
+if (!PINNED_RELEASE) {
+  setInterval(() => {
+    try {
+      execFile('/bin/bash', [path.join(CODE_ROOT, 'runtime', 'self-update-skills.sh')],
+        { timeout: 60_000 }, () => { /* best-effort */ });
+    } catch { /* missing script — keep current skills */ }
+  }, 10 * 60 * 1000).unref();
+}
 
 process.stderr.write(`[loop] Starting Anicca loop. ANICCA_HOME=${ANICCA_HOME}\n`);
 
@@ -1122,10 +1143,11 @@ async function runSkillWithKillRef(slot, args, wakeId, config, killRef) {
   // skills/earn/run.sh; earn/<sub> + non-earn → skills/<slot>/run.sh. ANICCA_EARN_SKILL still overrides
   // the fat earn skill (tests). rel.split('/') keeps it cross-platform via path.join.
   const rel = earnSkillRelPath(slot);
-  if (rel === 'earn/run.sh' && config.ANICCA_EARN_SKILL) {
+  if (!PINNED_RELEASE && rel === 'earn/run.sh' && config.ANICCA_EARN_SKILL) {
     skillPath = config.ANICCA_EARN_SKILL;
   } else {
-    skillPath = path.join(ANICCA_HOME, 'skills', ...rel.split('/'));
+    const skillCodeRoot = PINNED_RELEASE ? CODE_ROOT : ANICCA_HOME;
+    skillPath = path.join(skillCodeRoot, 'skills', ...rel.split('/'));
   }
 
   try { await access(skillPath); }
@@ -1178,6 +1200,7 @@ async function runSkillWithKillRef(slot, args, wakeId, config, killRef) {
 
 function buildSkillEnv(slot, wakeId, config, scrub, scrubPII, args) {
   const base = scrubPII(scrub(process.env));
+  const codeRoot = PINNED_RELEASE ? CODE_ROOT : process.env.ANICCA_CODE_ROOT;
   // O4: pass the model's decision to EVERY skill as $ANICCA_ARGS (JSON). HARD RULE #0 = the skill is
   // the tool, the MODEL decides the strategy/params; the skill reads its decision here. Optional —
   // skills keep a safe default when args is absent.
@@ -1192,6 +1215,7 @@ function buildSkillEnv(slot, wakeId, config, scrub, scrubPII, args) {
   if (isEarnSlot(slot)) {
     return {
       ...base,
+      ...(codeRoot ? { ANICCA_CODE_ROOT: codeRoot } : {}),
       ANICCA_ARGS,
       EARN_MODE:     process.env.EARN_MODE     || 'execute',
       EARN_STRATEGY: process.env.EARN_STRATEGY || earnStrategyFor(slot) || (typeof a.strategy === 'string' && a.strategy.trim() ? a.strategy.trim() : 'yield'),
@@ -1199,7 +1223,7 @@ function buildSkillEnv(slot, wakeId, config, scrub, scrubPII, args) {
       ...(config.EARN_LEDGER ? { EARN_LEDGER: config.EARN_LEDGER } : {}),
     };
   }
-  return { ...base, ANICCA_ARGS, WAKE_ID: wakeId };
+  return { ...base, ...(codeRoot ? { ANICCA_CODE_ROOT: codeRoot } : {}), ANICCA_ARGS, WAKE_ID: wakeId };
 }
 
 /**

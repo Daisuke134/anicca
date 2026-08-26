@@ -5,7 +5,18 @@
 # only on crash. Calling this each wake caps the fix-propagation delay at one wake interval.
 # Same commands, same excludes as anicca-daemon.sh step 1/1b; safe no-op when REPO==ANICCA_HOME.
 set -u
-REPO="${ANICCA_REPO:-${LIFE_MANAGER_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd -P)"
+CODE_ROOT="$(cd "$SCRIPT_DIR/.." 2>/dev/null && pwd -P)"
+if [ -n "${ANICCA_CODE_ROOT:-}" ] || [ "$(basename "$(dirname "$CODE_ROOT")")" = "releases" ]; then
+  # A pinned immutable release must never fetch, rsync, or create a dependency link. Its skill code
+  # is already selected by the exact release path and its mutable state belongs to ANICCA_HOME.
+  if [ -n "${ANICCA_CODE_ROOT:-}" ]; then
+    CONFIGURED_CODE_ROOT="$(cd "$ANICCA_CODE_ROOT" 2>/dev/null && pwd -P)" || exit 2
+    [ "$CONFIGURED_CODE_ROOT" = "$CODE_ROOT" ] || exit 2
+  fi
+  exit 0
+fi
+REPO="${ANICCA_REPO:-${LIFE_MANAGER_REPO:-$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel 2>/dev/null)}}"
 [ -n "$REPO" ] || { echo "Life Manager repository could not be resolved" >&2; exit 2; }
 ANICCA_HOME="${ANICCA_HOME:-$HOME/.anicca}"
 # rsync ONLY — no git fetch here. The observed staleness was local repo→body divergence; pulling

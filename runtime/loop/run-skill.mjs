@@ -78,10 +78,12 @@ export async function runSkill(slot, args, wakeId, config) {
  */
 function buildSkillEnv(slot, wakeId, config) {
   const scrubbed = scrubPrivateKeys(process.env);
+  const codeRoot = config.ANICCA_CODE_ROOT || process.env.ANICCA_CODE_ROOT;
 
   if (slot === 'earn') {
     return {
       ...scrubbed,
+      ...(codeRoot ? { ANICCA_CODE_ROOT: codeRoot } : {}),
       // DEFAULT = actually EARN, not narrate. The old defaults (discover + 0xwork) meant every earn
       // wake just wrote a "discover" narrate line and waited for an external poster task that never
       // came — so anicca NEVER earned (ledger = endless earn_usdc:0). Fixed 2026-06-21:
@@ -98,7 +100,7 @@ function buildSkillEnv(slot, wakeId, config) {
     };
   }
 
-  return { ...scrubbed, WAKE_ID: wakeId };
+  return { ...scrubbed, ...(codeRoot ? { ANICCA_CODE_ROOT: codeRoot } : {}), WAKE_ID: wakeId };
 }
 
 /**
@@ -107,9 +109,10 @@ function buildSkillEnv(slot, wakeId, config) {
  * - Default: $ANICCA_HOME/skills/<slot>/run.sh
  */
 function resolveSkillPath(slot, config) {
-  if (slot === 'earn' && config.ANICCA_EARN_SKILL) {
+  const codeRoot = config.ANICCA_CODE_ROOT || process.env.ANICCA_CODE_ROOT;
+  if (slot === 'earn' && config.ANICCA_EARN_SKILL && !codeRoot) {
     return config.ANICCA_EARN_SKILL;
   }
-  const home = config.ANICCA_HOME || process.cwd();
-  return path.join(home, 'skills', slot.replace('/', path.sep), 'run.sh');
+  const root = codeRoot || config.ANICCA_HOME || process.cwd();
+  return path.join(root, 'skills', slot.replace('/', path.sep), 'run.sh');
 }

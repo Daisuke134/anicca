@@ -138,7 +138,7 @@ registry_enforce_or_exit() {
       export EFFECTIVE_INTERVAL_SECONDS="$eis"
       cron="$(compute_effective_cron_from_interval_seconds "$eis" "${BASE_MINUTE:-0}" "${BASE_HOUR:-0}" 2>/dev/null)"
       export EFFECTIVE_CRON="$cron"
-      cron_dir="$base/state/effective-cron"
+      cron_dir="${CEO_EFFECTIVE_CRON_DIR:-$base/state/effective-cron}"
       mkdir -p "$cron_dir"
       printf '%s\n' "$cron" > "$cron_dir/$loop.txt"
     else

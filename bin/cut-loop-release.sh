@@ -27,6 +27,7 @@ CURRENT="$LOOPS_ROOT/current"
 PREVIOUS="$LOOPS_ROOT/previous"
 STRICT_NAMESPACE=0
 [ "$(basename "$LOOPS_ROOT")" = "life-manager" ] && STRICT_NAMESPACE=1
+RELEASE_LOCK="$LOOPS_ROOT/.release-lock"
 # state root is intentionally not resolved here (see RELEASE.json note below)
 KEEP="${LOOPS_KEEP_RELEASES:-5}"
 ROLLBACK=0
@@ -53,6 +54,27 @@ NODE_BIN="$(resolve_trusted_tool node 2>/dev/null || true)"
 
 die() { echo "cut-loop-release: $*" >&2; exit 1; }
 
+acquire_release_lock() {
+  mkdir -p "$LOOPS_ROOT" || die "cannot create release root"
+  while ! mkdir "$RELEASE_LOCK" 2>/dev/null; do
+    local owner reclaim
+    owner="$(cat "$RELEASE_LOCK/pid" 2>/dev/null || true)"
+    case "$owner" in
+      ''|*[!0-9]*) reclaim=1 ;;
+      *) kill -0 "$owner" 2>/dev/null && die "release lock is held by pid $owner"; reclaim=1 ;;
+    esac
+    if [ "$reclaim" -eq 1 ]; then
+      local stale="$RELEASE_LOCK.reclaim.$$"
+      rm -rf "$stale" 2>/dev/null || true
+      if mv "$RELEASE_LOCK" "$stale" 2>/dev/null; then
+        rm -rf "$stale"
+      fi
+    fi
+  done
+  printf '%s\n' "$$" > "$RELEASE_LOCK/pid" || die "cannot record release lock owner"
+  trap 'rm -f "$RELEASE_LOCK/pid" 2>/dev/null || true; rmdir "$RELEASE_LOCK" 2>/dev/null || true' EXIT
+}
+
 verify_release_seal_path() {
   local target="$1" item mode
   mode="$(stat -f '%Lp' "$target" 2>/dev/null || stat -c '%a' "$target" 2>/dev/null)" \
@@ -61,9 +83,6 @@ verify_release_seal_path() {
     die "sealed release remains writable"
   fi
   while IFS= read -r -d '' item; do
-    case "$item" in
-      "$target/state/effective-cron"|"$target/state/effective-cron"/*) continue ;;
-    esac
     [ -L "$item" ] && continue
     mode="$(stat -f '%Lp' "$item" 2>/dev/null || stat -c '%a' "$item" 2>/dev/null)" \
       || die "could not inspect sealed release permissions"
@@ -102,7 +121,9 @@ if (real(String(metadata.release_root || '')) !== real(releaseRoot)) process.exi
 if (metadata.namespace !== 'life-manager') process.exit(5);
 if (metadata.release_id !== path.basename(releasePath)) process.exit(6);
 if (!/^[0-9a-f]{40}$/.test(String(metadata.sha || ''))) process.exit(7);
-if (!(path.basename(releasePath) === metadata.sha || path.basename(releasePath).endsWith(`-${metadata.sha.slice(0, 8)}`))) process.exit(8);
+if (metadata.git_commit !== metadata.sha) process.exit(8);
+if (!(path.basename(releasePath) === metadata.sha || path.basename(releasePath).endsWith(`-${metadata.sha.slice(0, 8)}`))) process.exit(9);
+if (metadata.current && real(String(metadata.current)) !== real(path.join(releaseRoot, 'current'))) process.exit(10);
 NODE
     [ "$?" -eq 0 ] || die "release metadata identity is invalid: $metadata_path"
     verify_release_seal_path "$resolved"
@@ -119,6 +140,7 @@ replace_link() {
 }
 
 [ -n "$NODE_BIN" ] || die "node executable is unavailable"
+acquire_release_lock
 
 if [ "$ROLLBACK" -eq 1 ]; then
   [ -L "$CURRENT" ] || die "current release pointer is missing"
@@ -131,8 +153,13 @@ if [ "$ROLLBACK" -eq 1 ]; then
     || die "previous release metadata is invalid"
   [ "$(cd "$CURRENT" && pwd -P)" != "$(cd "$PREVIOUS" && pwd -P)" ] \
     || die "current and previous already select the same release"
-  replace_link "$PREVIOUS" "$CURRENT_TARGET" || die "could not move previous release pointer"
   replace_link "$CURRENT" "$PREVIOUS_TARGET" || die "could not move current release pointer"
+  replace_link "$PREVIOUS" "$CURRENT_TARGET" || {
+    replace_link "$CURRENT" "$CURRENT_TARGET" || true
+    die "could not move previous release pointer"
+  }
+  validate_release_target "$CURRENT" "$LOOPS_ROOT" >/dev/null \
+    || { replace_link "$CURRENT" "$CURRENT_TARGET" || true; replace_link "$PREVIOUS" "$PREVIOUS_TARGET" || true; die "rollback readback failed"; }
   echo "current -> $(readlink "$CURRENT") (rollback)"
   exit 0
 fi
@@ -249,6 +276,7 @@ fi
 if ! cat >"$DEST/RELEASE.json" <<EOF
 {
   "sha": "$SHA",
+  "git_commit": "$SHA",
   "release_id": "$(basename "$DEST")",
   "release_root": "$LOOPS_ROOT",
   "namespace": "$(basename "$LOOPS_ROOT")",
@@ -273,15 +301,7 @@ then
   die "could not write RELEASE.json"
 fi
 
-# One writable carve-out, created before the export is sealed. The CEO registry gate writes the
-# cadence it just computed to state/effective-cron/<loop>.txt, resolved relative to the repo root --
-# which is this release. A fully read-only export made every pass log a permission error before
-# failing open. Only this derived scratch directory stays writable; the state root itself remains
-# sealed so an accidental write cannot broaden the mutable surface.
-mkdir -p "$DEST/state/effective-cron" || die "could not create state carveout"
-
 chmod -R a-w "$DEST" || die "could not seal release permissions"
-chmod -R u+w "$DEST/state/effective-cron" || die "could not open intended state carveout"
 verify_release_seal
 
 # rename(2) over an existing symlink is atomic, so no pass can ever observe a missing `current`.

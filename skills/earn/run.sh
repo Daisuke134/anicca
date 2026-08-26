@@ -38,7 +38,12 @@ for piivar in $(env | cut -d= -f1 | grep -iE 'GOOGLE_LOGIN|COMPOSIO|GCAL|GOOGLE_
   unset "$piivar" 2>/dev/null || true
 done
 PKVAR="${PKVAR:-BLOCKRUN_WALLET_KEY}"
-LEDGER="${EARN_LEDGER:-$HERE/state/earn-ledger.jsonl}"
+if [ -n "${ANICCA_CODE_ROOT:-}" ] && [ -n "${ANICCA_HOME:-}" ]; then
+  INSTANCE_EARN_STATE="$ANICCA_HOME/skills/earn/state"
+else
+  INSTANCE_EARN_STATE="$HERE/state"
+fi
+LEDGER="${EARN_LEDGER:-$INSTANCE_EARN_STATE/earn-ledger.jsonl}"
 WAKE="${WAKE_ID:-$(date -u +%s)}"
 MODE="${EARN_MODE:-discover}"
 
@@ -174,13 +179,16 @@ fi
 # returns an error/usage which we record as a NARRATE line (never bricks the wake).
 if [ "$STRATEGY" = "hl" ] && [ -z "${EARN_TX:-}" ]; then
   HLDIR="$HERE/hl-trade"
+  HLSTATE="${ANICCA_HOME:+$ANICCA_HOME/skills/earn/hl-trade}"
+  HLSTATE="${HLSTATE:-$HLDIR}"
+  mkdir -p "$HLSTATE" 2>/dev/null || true
   # Ensure an isolated venv with the HL deps EXISTS wherever this runs (local body, mother, or cloud).
   # venvs aren't relocatable, so build it in-place on first use rather than rely on a synced one.
-  if [ ! -x "$HLDIR/.venv/bin/python" ]; then
-    python3 -m venv "$HLDIR/.venv" >/dev/null 2>&1 \
-      && "$HLDIR/.venv/bin/pip" install -q hyperliquid-python-sdk eth_account >/dev/null 2>&1 || true
+  if [ ! -x "$HLSTATE/.venv/bin/python" ]; then
+    python3 -m venv "$HLSTATE/.venv" >/dev/null 2>&1 \
+      && "$HLSTATE/.venv/bin/pip" install -q hyperliquid-python-sdk eth_account >/dev/null 2>&1 || true
   fi
-  HLPY="$HLDIR/.venv/bin/python"; [ -x "$HLPY" ] || HLPY="python3"
+  HLPY="$HLSTATE/.venv/bin/python"; [ -x "$HLPY" ] || HLPY="python3"
 
   # REQ-E3: reconcile fill-based realized P&L on EVERY wake that reaches this branch, BEFORE the
   # anti-churn cooldown gate and BEFORE branching on ACTION=close/new-position open — this is
@@ -207,7 +215,7 @@ except Exception: print('')" 2>/dev/null)
   # ate the edge and net ~flat. Rate-limit BRAIN-driven open/close to >= HL_COOLDOWN_MIN apart so a thesis
   # can develop and fees don't churn the account. The exchange-side stop/take (set on open) still
   # auto-closes regardless — this only blocks whim re-trades, never a real SL/TP exit.
-  HL_LAST="$HLDIR/.last-trade-ts"; HL_COOLDOWN_MIN="${HL_COOLDOWN_MIN:-60}"
+  HL_LAST="$HLSTATE/.last-trade-ts"; HL_COOLDOWN_MIN="${HL_COOLDOWN_MIN:-60}"
   _hl_now=$(date +%s); _hl_last=$(cat "$HL_LAST" 2>/dev/null || echo 0)
   # #16 robustness (adversary a604b23): a corrupt/partial .last-trade-ts or a non-numeric HL_COOLDOWN_MIN
   # must NEVER brick the wake. Under `set -u` a non-numeric value in $(( )) is a FATAL "unbound variable"
@@ -380,7 +388,7 @@ SELLERPLIST
   # FIND BUYERS pt.1: no explicit X402_PUBLIC_URL yet (e.g. no tsnet/funnel for this instance) —
   # fall back to a cloudflared tunnel so the store is still discoverable. URL persists in a state
   # file; we only re-tunnel when it's missing.
-  STATEDIR="$HOME/.anicca/skills/earn/state"; mkdir -p "$STATEDIR"; URLFILE="$STATEDIR/x402-public-url.txt"
+  STATEDIR="${ANICCA_HOME:-$HOME/.anicca}/skills/earn/x402-sell/state"; mkdir -p "$STATEDIR"; URLFILE="$STATEDIR/x402-public-url.txt"
   if [ "$UP" = "up" ] && [ -z "${X402_PUBLIC_URL:-}" ] && command -v cloudflared >/dev/null 2>&1; then
     if ! pgrep -f "cloudflared.*localhost:$XPORT" >/dev/null 2>&1; then
       nohup cloudflared tunnel --no-autoupdate --url "http://localhost:$XPORT" >"$STATEDIR/x402-tunnel.log" 2>&1 &

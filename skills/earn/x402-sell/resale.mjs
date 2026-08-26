@@ -41,7 +41,10 @@ import {
 } from "./lib/resale-guards.mjs";
 
 const UPSTREAM_URL = "https://api.exa.ai/search";
-const STATE_DIR = join(pdirname(fileURLToPath(import.meta.url)), "state");
+const STATE_DIR = process.env.ANICCA_X402_STATE_DIR
+  || (process.env.ANICCA_CODE_ROOT && process.env.ANICCA_HOME
+    ? join(process.env.ANICCA_HOME, "skills", "earn", "x402-sell", "state")
+    : join(pdirname(fileURLToPath(import.meta.url)), "state"));
 const DEFAULT_STATE_PATH = join(STATE_DIR, "resale-spend.json");
 const NETWORK = process.env.BUY_NETWORK || "eip155:8453"; // Base mainnet CAIP-2
 

@@ -59,7 +59,7 @@ test("agent-economy installer reads the sealed namespaced current release and pr
   writeFileSync(join(release, "identity", "genesis.md"), "fixture genesis\n");
   writeFileSync(join(release, "skills", "registry.json"), JSON.stringify({ slots: {} }));
   writeFileSync(join(release, "RELEASE.json"), JSON.stringify({
-    sha: "a1".repeat(20), release_id: releaseId, release_root: releaseRoot,
+    sha: "a1".repeat(20), git_commit: "a1".repeat(20), release_id: releaseId, release_root: releaseRoot,
     namespace: "life-manager", current: join(releaseRoot, "current"), previous: join(releaseRoot, "previous"),
   }) + "\n");
   for (const path of [release, join(release, "skills"), join(release, "identity")]) chmodSync(path, 0o555);

@@ -86,10 +86,6 @@ def _reject_unsafe_path(path: Path, source_checkout: Path, description: str) -> 
 
 def _assert_sealed(release: Path) -> None:
     for path in [release, *release.rglob("*")]:
-        relative = path.relative_to(release)
-        relative_text = str(relative)
-        if relative_text == "state/effective-cron" or relative_text.startswith("state/effective-cron/"):
-            continue
         if path.is_symlink():
             continue
         try:
@@ -100,7 +96,7 @@ def _assert_sealed(release: Path) -> None:
             raise SystemExit(f"agent-economy release is writable: {path}")
 
 
-def _release_metadata(current: Path, release_root: Path) -> dict:
+def _release_metadata(current: Path, release_root: Path) -> tuple[Path, dict]:
     if not current.is_symlink():
         raise SystemExit(f"agent-economy current must be a symlink: {current}")
     try:
@@ -129,14 +125,18 @@ def _release_metadata(current: Path, release_root: Path) -> dict:
         raise SystemExit("agent-economy RELEASE.json is missing identity metadata") from error
     if metadata_root != root:
         raise SystemExit("agent-economy RELEASE.json release_root does not match the selected namespace")
+    if metadata.get("current") and normalized(Path(str(metadata["current"]))) != normalized(current):
+        raise SystemExit("agent-economy RELEASE.json current pointer does not match the selected current")
     if release_id != release.name or not re.fullmatch(r"[0-9a-f]{40}", sha):
         raise SystemExit("agent-economy RELEASE.json identity does not match its release directory")
+    if metadata.get("git_commit") != sha:
+        raise SystemExit("agent-economy RELEASE.json git_commit does not match its sha")
     if not (release.name == sha or release.name.endswith(f"-{sha[:8]}")):
         raise SystemExit("agent-economy RELEASE.json sha does not match its release directory")
     if namespace != "life-manager":
         raise SystemExit("agent-economy RELEASE.json namespace is not life-manager")
     _assert_sealed(release)
-    return metadata
+    return release, metadata
 
 
 def _current_for_loop(loop: dict, home: Path, explicit: Path | None) -> tuple[Path, Path | None]:
@@ -154,7 +154,7 @@ def _current_for_loop(loop: dict, home: Path, explicit: Path | None) -> tuple[Pa
 
 
 def build(loop: dict, job_name: str, job: dict, home: Path, current: Path, logs: Path,
-          metadata: dict | None = None) -> dict:
+          code_root: Path | None = None, metadata: dict | None = None) -> dict:
     name = loop["name"]
     # A migration must not rename. Labels on this machine follow no single convention
     # (ai.anicca.hf-gig-apply-direct, ai.anicca.bounty-core-healthcheck, ai.anicca.hf-bounty-daily),
@@ -174,13 +174,15 @@ def build(loop: dict, job_name: str, job: dict, home: Path, current: Path, logs:
     env.update({k: expand(str(v), home) for k, v in (loop.get("env") or {}).items()})
     env.update({k: expand(str(v), home) for k, v in (job.get("env") or {}).items()})
     if metadata is not None:
+        env["ANICCA_REPO"] = str(code_root or current)
+        env["ANICCA_CODE_ROOT"] = str(code_root or current)
         env["ANICCA_RELEASE_ROOT"] = str(current.parent)
         env["ANICCA_RELEASE_ID"] = str(metadata["release_id"])
         env["ANICCA_RELEASE_SHA"] = str(metadata["sha"])
 
     plist = {
         "Label": label,
-        "ProgramArguments": ["/bin/bash", str(current / job["program"])],
+        "ProgramArguments": ["/bin/bash", str((code_root or current) / job["program"])],
         "ProcessType": job.get("process_type", "Background"),
         "ThrottleInterval": int(job.get("throttle_seconds", 60)),
         "WorkingDirectory": str(home),
@@ -244,8 +246,10 @@ def main():
             if loop.get("name") == "agent-economy":
                 if release_root is None:
                     release_root = current.parent
-                metadata = _release_metadata(current, release_root)
-            plist = build(loop, job_name, job, home, current, logs, metadata)
+                code_root, metadata = _release_metadata(current, release_root)
+            else:
+                code_root = current
+            plist = build(loop, job_name, job, home, current, logs, code_root, metadata)
             target = out_dir / f"{plist['Label']}.plist"
             body = plistlib.dumps(plist, sort_keys=True)
             plans.append((target, body, plist["Label"]))
@@ -261,7 +265,15 @@ def main():
             written.append((label, "unchanged"))
             continue
         out_dir.mkdir(parents=True, exist_ok=True)
-        target.write_bytes(body)
+        temporary = target.with_name(f".{target.name}.{os.getpid()}.tmp")
+        try:
+            temporary.write_bytes(body)
+            os.replace(temporary, target)
+        finally:
+            try:
+                temporary.unlink()
+            except FileNotFoundError:
+                pass
         written.append((label, "written"))
 
     for label, state in written:

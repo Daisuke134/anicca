@@ -23,8 +23,32 @@
 # OS-level persistence (survives reboots/logout) and keeps every Anicca in sync with the mother.
 set -uo pipefail
 
-REPO="${ANICCA_REPO:-${LIFE_MANAGER_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}}"
-[ -n "$REPO" ] || { echo "Life Manager repository could not be resolved" >&2; exit 2; }
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd -P)"
+DERIVED_CODE_ROOT="$(cd "$SCRIPT_DIR/.." 2>/dev/null && pwd -P)"
+PINNED_RELEASE=0
+if [ -n "${ANICCA_CODE_ROOT:-}" ] || [ "$(basename "$(dirname "$DERIVED_CODE_ROOT")")" = "releases" ] \
+  || [ "${ANICCA_INSTANCE:-}" = "agent-economy" ]; then
+  PINNED_RELEASE=1
+  [ -n "$DERIVED_CODE_ROOT" ] || { echo "Life Manager immutable release could not be resolved" >&2; exit 2; }
+  case "$DERIVED_CODE_ROOT" in
+    */.worktrees/*) echo "Life Manager immutable release cannot be a worktree" >&2; exit 2 ;;
+  esac
+  if [ -n "${ANICCA_CODE_ROOT:-}" ]; then
+    CONFIGURED_CODE_ROOT="$(cd "$ANICCA_CODE_ROOT" 2>/dev/null && pwd -P)" || {
+      echo "ANICCA_CODE_ROOT could not be resolved" >&2; exit 2;
+    }
+    [ "$CONFIGURED_CODE_ROOT" = "$DERIVED_CODE_ROOT" ] || {
+      echo "ANICCA_CODE_ROOT does not match the executing release" >&2; exit 2;
+    }
+  fi
+  CODE_ROOT="$DERIVED_CODE_ROOT"
+  REPO="$CODE_ROOT"
+  export ANICCA_CODE_ROOT="$CODE_ROOT" ANICCA_REPO="$CODE_ROOT"
+else
+  REPO="${ANICCA_REPO:-${LIFE_MANAGER_REPO:-$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel 2>/dev/null)}}"
+  [ -n "$REPO" ] || { echo "Life Manager repository could not be resolved" >&2; exit 2; }
+  CODE_ROOT="$REPO"
+fi
 export ANICCA_HOME="${ANICCA_HOME:-$HOME/.anicca}"
 INSTANCE="${ANICCA_INSTANCE:-clawrouter}"
 # franklin-loop-revival REQ-004(a)/(c): PORT resolves to ClawRouter's 8402 for EVERY instance,
@@ -55,7 +79,7 @@ is_franklin_instance() {
 }
 
 # 1. self-update from the mother (fast-forward only; never clobber local state) ------------------
-if [ -d "$REPO/.git" ]; then
+if [ "$PINNED_RELEASE" -eq 0 ] && [ -d "$REPO/.git" ]; then
   git -C "$REPO" fetch --quiet origin main 2>/dev/null \
     && git -C "$REPO" merge --ff-only origin/main 2>/dev/null \
     && log "self-updated to $(git -C "$REPO" rev-parse --short HEAD)" \
@@ -65,7 +89,7 @@ fi
 #     node deps. The loop spawns skills from $ANICCA_HOME/skills, but git deps (viem etc.) live in
 #     $REPO/node_modules. Without this, execute-yield.mjs etc. crash with ERR_MODULE_NOT_FOUND and
 #     anicca silently never earns. On cloud REPO==ANICCA_HOME so these are no-ops. (motherboard fix 2026-06-21)
-if [ -d "$REPO/skills" ] && [ "$REPO" != "$ANICCA_HOME" ]; then
+if [ "$PINNED_RELEASE" -eq 0 ] && [ -d "$REPO/skills" ] && [ "$REPO" != "$ANICCA_HOME" ]; then
   command -v rsync >/dev/null 2>&1 \
     && rsync -a --exclude='state/' --exclude='__pycache__' --exclude='node_modules' "$REPO/skills/" "$ANICCA_HOME/skills/" 2>/dev/null \
     && log "synced skills $REPO/skills -> $ANICCA_HOME/skills"
@@ -168,6 +192,6 @@ else
   export ANICCA_WALLET_ADDRESS="${ANICCA_WALLET_ADDRESS:-$(cd "$REPO/runtime/compute-proxy" && node "$REPO/runtime/wallet-address.mjs" 2>/dev/null)}"
 fi
 
-log "exec loop (model tiers from config; funded=$(node -e 'import("'"$REPO"'/runtime/loop/config.mjs").then(m=>console.log(m.loadConfig(process.env,"").ANICCA_FUNDED_MODEL)).catch(()=>console.log("?"))' 2>/dev/null))"
+log "exec loop (model tiers from config; funded=$(node -e 'import("'"$CODE_ROOT"'/runtime/loop/config.mjs").then(m=>console.log(m.loadConfig(process.env,"").ANICCA_FUNDED_MODEL)).catch(()=>console.log("?"))' 2>/dev/null))"
 # 5. run the loop in the foreground — its exit (crash/shutdown) ends this script; supervisor restarts.
-exec node "$REPO/runtime/loop/index.mjs"
+exec node "$CODE_ROOT/runtime/loop/index.mjs"
