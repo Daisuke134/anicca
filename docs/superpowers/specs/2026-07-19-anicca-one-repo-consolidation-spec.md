@@ -1,7 +1,10 @@
 # LIFE MANAGER ONE-REPO 統合 spec — 1つの mission、1つの repo、1つの product
 
-Fable 起案（Dais 相談への単一推奨）。本書は **Agent Economyのmission、wallet、収益帰属、financial UX、
-Agent Economy TODO** のlive SSOTであり、実測のたびに現状態へ上書きする。program全体のrelease、portable runtime、
+> **Agent Economy の現行 mission・wallet/収益帰属・provider・graduation・TODO は
+> [`2026-08-21-agent-economy-design.md`](./2026-08-21-agent-economy-design.md) を正本とする。**
+> 本書の金額と状態は historical snapshot であり、現行値として再利用しない。
+
+Fable 起案（Dais 相談への単一推奨）。本書はone-repo統合判断のhistorical recordである。program全体のrelease、portable runtime、
 canonical layout、OpenClaw/legacy移行順は
 [`2026-07-29-life-manager-finance-marketing-platform-design.md`](./2026-07-29-life-manager-finance-marketing-platform-design.md)
 を正本とし、本書へ複製しない。
@@ -159,20 +162,20 @@ Workstream 2の `CAPITAL` はWorkstream 1の外部収益とsurvival reserveが�
 
 | Topic | 正本 | 他文書の扱い |
 |---|---|---|
-| Agent Economy mission / 4 workstream | 本spec §0.1-0.2 | 他文書は一行参照し、経済的自立の定義を複製しない |
-| agent economy のlive残高・external収益・P&L・目標算式 | 本spec §0.4 | 他文書へ金額・X4状態・予測を複製せず、§0.4へ一行参照する |
+| Agent Economy mission / workstream | `2026-08-21-agent-economy-design.md` | 本spec §0.1-0.2はhistorical decision record |
+| agent economy のlive残高・external収益・P&L・目標算式 | `2026-08-21-agent-economy-design.md` | 本spec §0.4の金額・状態は2026-07-29 snapshot |
 | MonetizedMCP配布 | `2026-07-19-dist-1-monetizedmcp-fluora.md` | 本specはWorkstream 1から参照 |
 | bounty/work loop | `2026-07-18-bounty-loop-onchain-spec.md` | 本specはWorkstream 2から参照 |
 | program release / portable runtime / canonical layout / OpenClaw・legacy移行 | `2026-07-29-life-manager-finance-marketing-platform-design.md` | 本specはprogram cursorやfull treeを複製せず、Agent Economy ownership overlayだけを定義 |
-| Agent Economy runtime / payment provider | 本spec §0.4a | BlockRun・Franklin・x402・signerの役割を他節へ複製しない |
+| Agent Economy runtime / payment provider | `2026-08-21-agent-economy-design.md` | 本spec §0.4aはhistorical provider decision |
 | Agent Economy folder ownership overlay | 本spec §2 | full canonical layoutはPortable Runtime仕様§6.1を参照し、競合時は同仕様が正本 |
 | Agent Economy product build | 本spec §9/§10 | portable runtime migrationと経済成果gateを混ぜない |
 
-### 0.4 Agent Economy Earnings SSOT
+### 0.4 Agent Economy earnings historical snapshot（2026-07-29）
 
-本節が、Claude / Codex / Franklin / Life Manager の「いくら稼いでいるか」「何を利益と数えるか」
-「$1k / $10k / $20k へ何が要るか」の**唯一の live 正本**である。残高を収益、回収元本を利益、
-subscription 売上を agent 自身の稼ぎとして扱わない。
+本節は、Claude / Codex / Franklin / Life Manager の当時の残高・収益帰属・目標算式を保存する
+historical snapshotである。現行の数値・利益定義・TODOには使わず、
+`2026-08-21-agent-economy-design.md`を参照する。
 
 ### 0.4a Runtime / payment provider decision — x402をcore、BlockRunを交換可能adapterにする
 
@@ -1001,7 +1004,7 @@ repo境界の現行正本は本節だけとする。`life-manager` = 唯一のLi
 repo rename `8c.R`とproduct migration `8i`は完了済み。`8c.R`の双方unarchivedはrename中のhistory保全証拠であり、
 現在の`life-manager-v0`運用判断ではない。`8i`時点のarchiveはhistorical evidenceであり、
 後続の裁定18で`anicca-products`をunarchiveした。しかし完全self-contained OSSと全deployment source一本化の判定は未完である。
-現在の残作業と順序は§0.4.6を正本とする。
+本書作成時点の残作業と順序は§0.4.6に保存する。現行Agent Economy TODOの正本ではない。
 
 #### 2.1.1 `life-manager-v0` retirement（作業と検証を分離）
 
@@ -1594,7 +1597,7 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
 16. **E2E 検証は Dais の手を借りず agent が browser（daily-driver CDP）で Dais の Telegram を実操作してよい
     （2026-07-26 Dais 裁定）**。ただし Dais の私的情報を要する回答（例: 予定がオンラインか対面か）は推測して
     tap しない — spec から導出可能な選択（例: §9.8 由来の wallet rail）のみ agent が選ぶ。
-17. **FINANCIAL の on-chain 実行系はportfolio順で進める**。旧裁定では別 repo のcrypto trackとの合流まで
+17. **HISTORICAL — FINANCIAL の on-chain 実行系をportfolio順で進めた当時の裁定**。旧裁定では別 repo のcrypto trackとの合流まで
     13c/13d-bを保留したが、Life Manager側のledger・送金先配管が着地し、agent economyの残作業を§0.4へ統合したため
     保留条件は解消する。S21-MAC-OFFはFranklin1 main loopを実際にunloadして完了し、Franklin2は維持する。EARN-HC-1も完了する。
     外部SELL/WORK着金・実redeem・REPORT-1の別日receipt蓄積はevent/時間依存の**自動成果ゲート**であり、
@@ -1604,7 +1607,8 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
     `REPO-V0-RETIRE-1`はproduction readbackまでdone。
     AE-SLIDES-JP-1、AE-ARTICLE-JP-1のartifactは存在するが、AE-PUBLICATION-AUDIT-1はlive snapshot更新のためreopenする。
     Life Manager program trackのcursorはPortable Runtime仕様だけを参照する。
-    13d-aのtyped入力経路はdone。実装詳細は各execution spec、portfolio順と金額の真実は§0.4.6を正本とする。
+    13d-aのtyped入力経路はdone。この項目と§0.4.6は当時の実装詳細・portfolio順・金額を保存するだけで、
+    現行Agent Economyの順序とmoney truthは`2026-08-21-agent-economy-design.md`を正本とする。
 18. **完全mergeはLife Managerのdependency closureを対象にする**。landing・mobile app・他製品そのものは
     `anicca-products`に残してよい。ただしLife Managerが使う共有code/config/testがそこにあればcanonicalへ吸収し、
     old `apps/life-call`・active Life Manager branch・deploy responsibilityを残さない。
@@ -1614,7 +1618,7 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
 
 **未完atomicの実行process（過去記録より優先）**: 新規の未完atomicは `using-git-worktrees` → `writing-plans` → `subagent-driven-development` → `test-driven-development` → `requesting-code-review` → `verification-before-completion` → `finishing-a-development-branch` のSuperpowers workflowで進める。既存のVCSDD参照・state・verdict・artifactは当時の真実を示すimmutable historical evidenceであり、現在のworkflowではない。新しいVCSDD artifact/commandは作らない。
 
-**★Agent Economyの現在の実行順の正本 = §0.4.6。★**
+**Agent Economyの当時の実行順 = §0.4.6。現行順序の正本ではない。**
 旧organ ship順（MARKETING → PHYSICAL → MENTAL → FINANCIAL → DEV）は各organを作る順として有効だが、
 Agent Economyは収益・日数・自然検知を待って止まらず、zero-start tenant wallet、tenant x402 routing、
 cloud custody、provider adapter、publication refreshを番号順に閉じ、Franklin continuityはnonblocking referenceとして追う。汎用cloud browser以降は
@@ -1807,7 +1811,8 @@ REPORT-1（daily 1/7、weekly 1/1、TG + authenticated panel差0）は自動蓄�
 **done 済みで表から外した row**: `13a`・`9f`・`9c`・`12c`・`13b`・`CB-1`・`13d-a`・`PHY-runtime`（#1147+#1149、care scan 毎日稼働）・`CADENCE-1`（#1151）。詳細 = 各 §10 行 + docs/evidence/。
 
 以下の表は時点ごとの実行履歴である。各行に残る「次は…」は当時のcursorであり、現在のTODOを定義しない。
-現在の全体順序は§0.4.6、repo境界とv0 retirementは§2.1だけを正本とする。
+当時の全体順序は§0.4.6に保存する。現行Agent Economy順序は
+`2026-08-21-agent-economy-design.md`、repo境界とv0 retirementは§2.1を参照する。
 
 | 順 | ID | 内容 | done 条件 | 状態 |
 |---|---|---|---|---|
@@ -1870,7 +1875,8 @@ REPORT-1（daily 1/7、weekly 1/1、TG + authenticated panel差0）は自動蓄�
 ### 10.0 出荷ラン実況（historical append-only log。現在状態ではない）
 
 以下の「現在」「次」は各記録時点の逐次logであり、後続行によりsupersedeされる。現在のcursor・残TODO・順序には使わない。
-現在状態の唯一の正本は§0.4.6、repo/runtime境界の正本は§2.1-2.2である。
+このhistorical logの当時状態は§0.4.6、repo/runtime境界の記録は§2.1-2.2を参照する。
+現行Agent Economy状態には`2026-08-21-agent-economy-design.md`を使う。
 
 - **HISTORICAL PRE-8i — superseded by §10 row 8i and current §2.1**: この時点ではCORE 8e/8fがresume条件待ち、PANEL 8g/8hがdoneで、次を8i REPO-CONSOLIDATEとしていた。8iは後に完了しており、これは現在のnext TODOではない。
 - **PANEL 8gはproduction L3までdone**: 後続release `8159dbbe2`でRailway build/image/instance停止条件が解消済みであることを再測定し、追加deployなしでexact deployed sourceを使用。migrationをtransactional適用後、security/readback、Dais本人authenticated `/panel`、API=DB=独立oracle、desktop/mobile、eval 100%、fresh reviewを全てPASS。
@@ -1892,7 +1898,7 @@ REPORT-1（daily 1/7、weekly 1/1、TG + authenticated panel差0）は自動蓄�
 - **CORE 8d method 2はcode GREEN / VCSDD review FAIL**: reviewerはfocused 51/51、full 371/371、eval 33/33、boundary 10/10を再現したが、featureのstate/spec/verdictと追跡RED→GREEN evidenceが無くcontrolled runを不許可。PR head=`58846034b`はorchestratorが独立確認。現在はPhase 1 artifactsを正規toolingで復旧中で、本番side effectは行わない。
 - **PANEL 8d.1 fresh reviewはFAIL / blocker 10**: PR #331 commit=`84e1cebae`のlocal tests/smokeは通るが、実runtimeへ効かないtoggleとprovider/tenant/idempotency/OAuth/body-limit/Connect表示の欠陥、strict VCSDD gate不整合をfresh reviewerが再現。merge/deploy/L3は禁止し、同じblockerをRED化してcorrective buildへ戻す。
 - historical build: DAILY core、location late notice、discovery、panel auth/API/UI、M-1 demo videoは一度L3を通っている。この履歴は残すが、現在の出荷判定には8d-hのfresh証拠が必要。
-- **historical panel再open判定は8d.1/8d.2/8g/8hで解消済み**: 当時Daisの実使用で判明したaccess・二入口・personalization・connection/toggle・score semantics・timeline privacyの欠陥は、各正本行のproduction L3で閉じた。当時のnextは8iだったが8iは完了済み。現在の順序は§0.4.6、repo境界は§2.1を参照する。
+- **historical panel再open判定は8d.1/8d.2/8g/8hで解消済み**: 当時Daisの実使用で判明したaccess・二入口・personalization・connection/toggle・score semantics・timeline privacyの欠陥は、各正本行のproduction L3で閉じた。当時のnextは8iだったが8iは完了済み。当時の順序は§0.4.6、repo境界の記録は§2.1を参照する。
 - **CORE 8d controlled runはpending**: local closed-collector reviewはPASS/blocker 0。production binding preflightでTelnyx webhookを既定URLへ復元後、非送信依存は7/7 PASS。唯一のcontrolled invocationはTG 1通・email 1通・phone 0で両receiptをreadbackしたが、gogの分精度dateを厳密な送信ミリ秒と比較したため`email_receipt_stale`となりreport生成前exit 1。再送・artifact手編集は行わず、false hypothesisをrow 8dへ記録。次は分精度境界をTDDで是正する独立手法2。review log=`.claude/sol-orders/logs/core-8d-closed-final-review.log`、run log=`.claude/sol-orders/logs/core-8d-production-9of9.log`。
 - **CORE 8e method 1はexternal-attendee gateでfail closedしexact cleanup済み**: production codeはPR #335/#337/#336、main/deployment exact SHA=`85a68abaa`で出荷済み。実nonce eventのplus aliasをGoogleが本人organizerへ正規化したためexternal attendee 0で停止。event作成1件以外のside effectは0。managerはT-10まで約6分を検知して旧Solを停止し、fresh emergency Solがexact-id+nonce-description guardでT-10窓231秒前に削除。provider/DB readbackはnonce event/Travel/wake/late/email/TG/call=`0/0/0/0/0/0/0`、unrelated calendar/tenant不変。false hypothesis=`plus aliasはCalendar external attendeeになる`。method 2はaccepted verified forwarding recipientの所有/distinctnessをcreate前に閉じる。cleanup evidence hash=`ea5f87244cb35b8cb85e44db36ac3c85eda9d420f1f41e43df4aeb6c547c1fa1`。
 - **CORE 8e method 2はprovider mutation前に安全停止**: production SHA/deploy/loop時刻とrequired envだけをread-only確認し、calendar/email/TG/call/location mutationは0。material blockerは①通常CLIのrecipient/attendeeがargv/logへPII露出し得る ②late selectorが6時間窓の先頭located non-helperを選ぶためnonceへの自動束縛を仮定できない ③forwarding destination宛メールをprimary inboxで実読取できる保証がない ④travel loopはreturn helperも生成し得て1件cleanup前提が残骸を作る、の4点。method 2bは単一0600 process、exact late-target preflight、実target-inbox Message-ID、nonce由来helper全件exact cleanupへ是正してfresh再発注する。
