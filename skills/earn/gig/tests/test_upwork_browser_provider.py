@@ -221,6 +221,26 @@ def test_parses_visible_catalog_inventory_without_inventing_an_order():
     }
 
 
+def test_parses_current_catalog_marker_only_project_with_unknown_metrics():
+    state = parse_catalog(
+        "Create and manage your services\nProjects\nApproved (1)\n"
+        "Under Review (0)\nDrafts (0)\n"
+        "You will get a Python script integrating one documented REST API endpoint\n"
+        "More Project Options\nCreate a project...\n"
+    )
+    assert state == {
+        "catalog_approved": 1,
+        "catalog_under_review": 0,
+        "catalog_drafts": 0,
+        "catalog_projects": [{
+            "title": "You will get a Python script integrating one documented REST API endpoint",
+            "visible": True,
+            "views_30d": None,
+            "orders": None,
+        }],
+    }
+
+
 def test_parses_zero_contract_and_message_effects_from_official_empty_states():
     assert parse_contracts(
         "Earnings available now: $0.00\nActive contracts\n"
@@ -315,6 +335,7 @@ def test_zero_connect_inbound_precedes_public_job_capacity():
     assert planner({**base, "catalog_projects": [{"title": "API script", "orders": 1}]}) == {
         "state": "catalog_order_identity_pending", "order_count": 1,
     }
+    assert planner({**base, "catalog_projects": [{"title": "API script", "orders": None}]}) is None
     assert planner(base) is None
 
 

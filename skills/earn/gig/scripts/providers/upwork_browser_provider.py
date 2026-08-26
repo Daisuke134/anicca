@@ -191,6 +191,19 @@ def parse_catalog(text: str) -> dict[str, Any]:
             "views_30d": int(match.group(2)),
             "orders": int(match.group(3)),
         })
+    if not projects:
+        for match in re.finditer(
+            r"(?m)^(?P<title>[^\n]+?)\s*\n\s*More Project Options\b",
+            text or "", re.IGNORECASE,
+        ):
+            title = match.group("title").strip()
+            if title:
+                projects.append({
+                    "title": title,
+                    "visible": True,
+                    "views_30d": None,
+                    "orders": None,
+                })
     if result["catalog_approved"] and not projects:
         raise ValueError("upwork_readback_incomplete")
     result["catalog_projects"] = projects
@@ -494,7 +507,15 @@ def plan_zero_connect_inbound(state: dict[str, Any]) -> dict[str, Any] | None:
     projects = state.get("catalog_projects")
     if not isinstance(projects, list):
         raise ValueError("upwork_free_action_state_invalid")
-    ordered = next((item for item in projects if isinstance(item, dict) and item.get("orders", 0) > 0), None)
+    ordered = next(
+        (
+            item for item in projects
+            if isinstance(item, dict)
+            and type(item.get("orders")) is int
+            and item["orders"] > 0
+        ),
+        None,
+    )
     if ordered is not None:
         return {"state": "catalog_order_identity_pending", "order_count": ordered["orders"]}
     return None
