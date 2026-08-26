@@ -68,3 +68,139 @@ test("parseTransitPlan: picks EARLIEST ARRIVAL, not journeys[0] — FIND-006", (
   const r = parseTransitPlan(plan);
   assert.equal(r.durationSecs, 500); // the 2nd journey, proving it's not journeys[0]
 });
+
+test("parseTransitPlan: arrival anchor selects latest viable departure and normalizes overnight times", () => {
+  const r = parseTransitPlan({
+    date: "20260809",
+    type: "arrival",
+    timezone: "Asia/Tokyo",
+    journeys: [
+      {
+        departureSecs: 23 * 3600 + 20 * 60,
+        arrivalSecs: 24 * 3600 + 30 * 60,
+        durationSecs: 4200,
+        accessWalkSecs: 300,
+        egressWalkSecs: 120,
+        transferCount: 1,
+        fare: { currency: "JPY", ticket: 220, ic: 216 },
+        legs: [{
+          kind: "transit", mode: "rail", routeName: "中央線", trainType: "快速", headsign: "高尾",
+          from: { name: "東京", platformCode: "1番線" },
+          to: { name: "新宿", platformCode: "3番線" },
+          departureSecs: 23 * 3600 + 20 * 60,
+          arrivalSecs: 24 * 3600 + 15 * 60,
+        }],
+      },
+      {
+        departureSecs: 22 * 3600 + 30 * 60,
+        arrivalSecs: 23 * 3600 + 50 * 60,
+        durationSecs: 4800,
+        legs: [{ kind: "transit", mode: "rail", routeName: "遅い線" }],
+      },
+      {
+        departureSecs: 24 * 3600 + 10 * 60,
+        arrivalSecs: 25 * 3600 + 30 * 60,
+        durationSecs: 4800,
+        legs: [{ kind: "transit", mode: "rail", routeName: "遅すぎる線" }],
+      },
+    ],
+  }, { anchorType: "arrival", anchorSecs: 25 * 3600 });
+
+  assert.equal(r.anchorType, "arrival");
+  assert.equal(r.serviceDate, "20260809");
+  assert.equal(r.anchorAt, "2026-08-09T16:00:00.000Z"); // 25:00 JST, next UTC day
+  assert.equal(r.departureAt, "2026-08-09T14:20:00.000Z");
+  assert.equal(r.arrivalAt, "2026-08-09T15:30:00.000Z"); // 24:30 JST, next UTC day
+  assert.equal(r.durationSeconds, 4500); // journey duration + access walk; egress is in arrivalSecs
+  assert.equal(r.accessWalkSeconds, 300);
+  assert.equal(r.egressWalkSeconds, 120);
+  assert.deepEqual(r.fare, { currency: "JPY", ticket: 220, ic: 216 });
+  assert.equal(r.steps[0].service, "中央線");
+  assert.equal(r.steps[0].trainType, "快速");
+  assert.equal(r.steps[0].from.platform, "1番線");
+  assert.equal(r.steps[0].to.platform, "3番線");
+});
+
+test("parseTransitPlan: departure anchor selects earliest viable arrival", () => {
+  const r = parseTransitPlan({
+    date: "20260810",
+    timezone: "UTC",
+    journeys: [
+      { departureSecs: 7 * 3600 + 50 * 60, arrivalSecs: 8 * 3600 + 20 * 60, durationSecs: 1800, legs: [{ mode: "rail" }] },
+      { departureSecs: 8 * 3600 + 5 * 60, arrivalSecs: 9 * 3600, durationSecs: 3300, legs: [{ mode: "rail", routeName: "遅い便" }] },
+      { departureSecs: 8 * 3600 + 10 * 60, arrivalSecs: 8 * 3600 + 40 * 60, durationSecs: 1800, legs: [{ mode: "rail", routeName: "早い便" }] },
+    ],
+  }, { anchorType: "departure", anchorSecs: 8 * 3600 });
+
+  assert.equal(r.anchorType, "departure");
+  assert.equal(r.anchorAt, "2026-08-10T08:00:00.000Z");
+  assert.equal(r.departureAt, "2026-08-10T08:10:00.000Z");
+  assert.equal(r.arrivalAt, "2026-08-10T08:40:00.000Z");
+  assert.equal(r.steps[0].service, "早い便");
+});
+
+test("parseTransitPlan: preserves rail, bus, and walking leg facts", () => {
+  const r = parseTransitPlan({
+    date: "20260810",
+    timezone: "UTC",
+    journeys: [{
+      departureSecs: 8 * 3600,
+      arrivalSecs: 9 * 3600,
+      durationSecs: 3600,
+      transferCount: 1,
+      legs: [
+        {
+          kind: "walk", mode: "walk", from: { name: "自宅" }, to: { name: "東京駅" },
+          departureSecs: 8 * 3600, arrivalSecs: 8 * 3600 + 10 * 60,
+        },
+        {
+          kind: "transit", mode: "rail", routeName: "山手線", trainType: "普通", headsign: "渋谷",
+          from: { name: "東京", platformCode: "2番線" }, to: { name: "品川", platformCode: "1番線" },
+          departureSecs: 8 * 3600 + 12 * 60, arrivalSecs: 8 * 3600 + 30 * 60,
+        },
+        {
+          kind: "transit", mode: "bus", routeName: "都営バス", headsign: "港南口",
+          from: { name: "品川駅" }, to: { name: "港南口" },
+          departureSecs: 8 * 3600 + 35 * 60, arrivalSecs: 9 * 3600,
+        },
+      ],
+    }],
+  });
+
+  assert.equal(r.steps.length, 3);
+  assert.equal(r.steps[0].kind, "walk");
+  assert.equal(r.steps[0].mode, "walk");
+  assert.equal(r.steps[0].from.name, "自宅");
+  assert.equal(r.steps[0].to.name, "東京駅");
+  assert.equal(r.steps[1].mode, "rail");
+  assert.equal(r.steps[1].service, "山手線");
+  assert.equal(r.steps[1].trainType, "普通");
+  assert.equal(r.steps[1].headsign, "渋谷");
+  assert.equal(r.steps[1].departAt, "2026-08-10T08:12:00.000Z");
+  assert.equal(r.steps[1].arriveAt, "2026-08-10T08:30:00.000Z");
+  assert.equal(r.steps[2].mode, "bus");
+  assert.equal(r.steps[2].service, "都営バス");
+  assert.equal(r.steps[2].from.platform, null);
+  assert.equal(r.steps[2].to.platform, null);
+  assert.equal(r.availability.platform, true);
+  assert.equal(r.availability.stationExit, false);
+});
+
+test("parseTransitPlan: absent fare/platform/exit facts stay nullable and ungenerated", () => {
+  const r = parseTransitPlan({
+    date: "20260810",
+    timezone: "UTC",
+    journeys: [{
+      departureSecs: 10, arrivalSecs: 20, durationSecs: 10,
+      legs: [{ kind: "transit", mode: "rail", from: { name: "A" }, to: { name: "B" } }],
+    }],
+  });
+
+  assert.equal(r.fare, null);
+  assert.equal(r.steps[0].from.platform, null);
+  assert.equal(r.steps[0].to.platform, null);
+  assert.deepEqual(r.availability, { platform: false, fare: false, stationExit: false });
+  assert.equal(Object.prototype.hasOwnProperty.call(r.steps[0], "stationExit"), false);
+  assert.equal(Object.prototype.hasOwnProperty.call(r.steps[0], "bestCar"), false);
+  assert.equal(Object.prototype.hasOwnProperty.call(r.steps[0], "crowding"), false);
+});
