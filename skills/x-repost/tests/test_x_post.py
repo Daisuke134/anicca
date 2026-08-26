@@ -67,11 +67,13 @@ class Page:
 class XPostTests(unittest.TestCase):
     def test_postiz_reconcile_binds_submission_integration_and_release_url(self) -> None:
         class Response:
+            content = "Useful post"
             def __enter__(self): return self
             def __exit__(self, *_args): return False
             def read(self):
                 return json.dumps({"posts": [{
                     "id": "provider-1", "state": "PUBLISHED",
+                    "content": self.content,
                     "releaseURL": "https://twitter.com/selawmqt/status/123",
                     "integration": {"id": "integration-1"},
                 }]}).encode()
@@ -81,9 +83,30 @@ class XPostTests(unittest.TestCase):
             MODULE, "urlopen", return_value=Response()
         ):
             url = MODULE.postiz_published_url(
-                "provider-1", "2026-08-26T16:41:28+00:00"
+                "provider-1", "2026-08-26T16:41:28+00:00", "Useful post"
             )
         self.assertEqual(url, "https://x.com/selawmqt/status/123")
+        Response.content = "Different post"
+        with patch.dict(os.environ, env, clear=False), patch.object(
+            MODULE, "urlopen", return_value=Response()
+        ), self.assertRaisesRegex(ValueError, "content mismatch"):
+            MODULE.postiz_published_url(
+                "provider-1", "2026-08-26T16:41:28+00:00", "Useful post"
+            )
+
+    def test_quote_card_same_handle_wrong_status_is_not_exact(self) -> None:
+        class Card:
+            def inner_text(self): return "Source\n@source"
+            def click(self): page.url = "https://x.com/source/status/999"
+        class QuotePage:
+            url = "https://x.com/selawmqt/status/123"
+            def query_selector_all(self, _selector): return [Card()]
+            def wait_for_url(self, expected, timeout):
+                if self.url != expected: raise TimeoutError(timeout)
+        page = QuotePage()
+        self.assertFalse(MODULE.quote_card_opens_exact_source(
+            page, "https://x.com/source/status/456"
+        ))
 
     def test_reconcile_no_provider_match_stays_unverified(self) -> None:
         with tempfile.TemporaryDirectory() as td:

@@ -575,6 +575,10 @@ class AffiliateProposalTests(unittest.TestCase):
         self.assertIn("--requeue-no-effect", shell)
         self.assertIn("affiliate distribution job reconciled without duplicate publish", shell)
         self.assertIn('--mode reconcile', shell)
+        self.assertLess(
+            shell.index("affiliate reconciliation cadence receipt failed"),
+            shell.index("affiliate distribution reconciliation receipt failed"),
+        )
         self.assertRegex(
             shell,
             r'--job-results "\$AFFILIATE_JOB_RESULTS" --revision-copy .* \\\n+\s+--revise-raw-limit',

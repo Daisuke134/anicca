@@ -705,11 +705,6 @@ except Exception: print(False)' "$EV/affiliate-job-reconcile.json")"
     if [ "$AFFILIATE_RECONCILE_RC" -eq 0 ] && [ "$AFFILIATE_RECONCILED" = "True" ]; then
       AFFILIATE_POST_URL="$("$PY" -c 'import json,sys; print(json.load(open(sys.argv[1]))["post_url"])' \
         "$EV/affiliate-job-reconcile.json")"
-      "$PY" "$SKILL/scripts/affiliate_proposal.py" --job-claims "$AFFILIATE_JOB_CLAIMS" \
-        --job-payload-dir "$AFFILIATE_JOB_PAYLOADS" --job-results "$AFFILIATE_JOB_RESULTS" \
-        --record-job-result POSTED --post-url "$AFFILIATE_POST_URL" \
-        --provider-submission-id "$AFFILIATE_PROVIDER_ID" >/dev/null || \
-        finish 1 "affiliate distribution reconciliation receipt failed"
       X_REPOST_PROVIDER_ID="$AFFILIATE_PROVIDER_ID" "$PY" - \
         "$POSTED" "$AFFILIATE_JOB_EFFECT" "$AFFILIATE_POST_URL" <<'PYEOF'
 import datetime, fcntl, json, os, sys
@@ -734,6 +729,11 @@ with open(posted, "a+", encoding="utf-8") as stream:
     stream.flush(); os.fsync(stream.fileno())
 PYEOF
       [ "$?" -eq 0 ] || finish 1 "affiliate reconciliation cadence receipt failed"
+      "$PY" "$SKILL/scripts/affiliate_proposal.py" --job-claims "$AFFILIATE_JOB_CLAIMS" \
+        --job-payload-dir "$AFFILIATE_JOB_PAYLOADS" --job-results "$AFFILIATE_JOB_RESULTS" \
+        --record-job-result POSTED --post-url "$AFFILIATE_POST_URL" \
+        --provider-submission-id "$AFFILIATE_PROVIDER_ID" >/dev/null || \
+        finish 1 "affiliate distribution reconciliation receipt failed"
       report "✅ Affiliate distribution job reconciled without reposting\npost: $AFFILIATE_POST_URL"
       finish 0 "affiliate distribution job reconciled without duplicate publish"
     fi
