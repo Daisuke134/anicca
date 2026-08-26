@@ -36,17 +36,23 @@ model narration, and local success without the named readback are not PASS.
   Measured 100 rows, 100 files, 100 unique handles, zero missing, and zero extra. The resulting
   private buyer map is `delivery/manledge-recipient-screenshot-map-100.csv`, SHA256
   `212f5542fd0801ad10bd8e01c885a2c1407868e090da0ed0b4ffa176c9b01061`.
-- [ ] `M03` Resolve the official X profile display for all 60 screenshots previously headed
+- [x] `M03` Resolve the official X profile display for all 54 successful-DM screenshots previously headed
   `Member`, then capture each resolved profile together with its existing DM thread without
   sending a new message.
-  PASS = 60 unique recipient handles have a current official profile readback and a buyer-visible
+  PASS = 54 unique recipient handles have a current official profile readback and a buyer-visible
   screenshot pairing that profile identity with the matching existing thread; failed sends remain
   classified as failed and are never counted as successful DMs.
-- [ ] `M04` Submit the 60 corrected identity screenshots and updated cross-reference through the
+  Closed with 54/54 official X `new-dm-user-suggestion-<account_id>` to existing conversation
+  participant-ID matches in `x-chat-account-mapping-v39.json`; the correction sent zero new X DMs.
+- [x] `M04` Submit the 54 corrected identity screenshots and updated cross-reference through the
   installed Paid owner, then read the exact Coconala talkroom back once.
   PASS = the exact seller message and corrected archive filename are present in official Coconala
-  DOM, the archive contains all 60 identity-resolved pairs, no X message was newly sent, no prior
+  DOM, the archive contains all 54 identity-resolved successful-DM pairs, no X message was newly sent, no prior
   archive was resent, and formal delivery remains off.
+  Closed by the normal Coconala reply at 19:32 with `manledge-dm-cross-reference-v39.zip`
+  (SHA256 `86ef9d22b351d1008d3848d23c84737e6b380c6062e586644e1a27f13d63407b`).
+  Official talkroom readback shows the exact message and 32.5 MB attachment; the formal-delivery
+  checkbox remained off. Screenshot receipt: `evidence/coconala-manledge-v39-readback.png`.
 
 ### Live four-lane repair
 
