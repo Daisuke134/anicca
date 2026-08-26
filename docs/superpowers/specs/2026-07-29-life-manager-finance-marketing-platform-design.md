@@ -2344,6 +2344,15 @@ counts, reject a single-frame mutation, and fail closed on bounded probe or
 comparison timeout while preserving the verified Instagram transcode pass.
 Telegram remains held and no provider retry/new effect is permitted.
 
+The all-frame revision at `a6fee3cf6` still fails one adversarial count gate:
+it trusts container `nb_frames` and caps comparison to that claim, so a stream
+that reports 312 but decodes 313 frames can hide a mutated final frame. The
+observed Reel/source pair independently reports and decodes exactly 312 frames
+and passes 312 SSIM rows (blurred minimum `0.947161`), but terminal verification
+must use `ffprobe -count_frames` / `nb_read_frames` for both inputs and reject
+missing or unequal decoded counts. A container-count-only regression is RED;
+Telegram remains held and no provider retry/new effect is permitted.
+
 **Completed immediately preceding atomic item:** MKT-09R8-12 / Order 23I
 reconciled the complete existing Postiz history before any new effect. Read-only
 GETs covered `1970-01-01` through `2026-08-27`: pre-2025 and 2025 returned zero,
