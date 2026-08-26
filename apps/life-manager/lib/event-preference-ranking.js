@@ -12,6 +12,9 @@ const FIT_ORDER = new Map(FITS.map((value, index) => [value, index]));
 const DATE_KEY = /^\d{4}-\d{2}-\d{2}$/;
 const PROVIDER_RANK_CHUNK_SIZE = 25;
 const PROVIDER_RANK_CHUNK_BYTES = 24_000;
+const PROVIDER_RANK_CONCURRENCY = 3;
+const PROVIDER_RANK_BODY_LENGTH = 1_000;
+const PROVIDER_RANK_TIMEOUT_MS = 45_000;
 const EVENT_KEYS = Object.freeze(["event_ref", "preference_fit", "preference_reason"]);
 const PROVIDER_EVENT_KEYS = Object.freeze(["event_ref", "preference_fit", "preference_reason", "priority_class"]);
 const DECISION_KEYS = Object.freeze(["ranked_events"]);
@@ -183,7 +186,11 @@ async function inferProviderRankingChunk(input, options) {
     try {
       let parsed;
       if (typeof options.generateDecision === "function") {
-        parsed = await options.generateDecision(Object.freeze({ prompt, schema: PROVIDER_RESPONSE_SCHEMA, timeoutMs: 20_000 }));
+        parsed = await options.generateDecision(Object.freeze({
+          prompt,
+          schema: PROVIDER_RESPONSE_SCHEMA,
+          timeoutMs: PROVIDER_RANK_TIMEOUT_MS,
+        }));
       } else {
         const apiKey = String(options.apiKey || process.env.GEMINI_API_KEY || "").trim();
         const fetchImpl = options.fetchImpl || globalThis.fetch;
@@ -195,7 +202,7 @@ async function inferProviderRankingChunk(input, options) {
             contents: [{ role: "user", parts: [{ text: prompt }] }],
             generationConfig: { responseMimeType: "application/json", responseSchema: geminiResponseSchema(PROVIDER_RESPONSE_SCHEMA), temperature: 0 },
           }),
-          signal: AbortSignal.timeout(20_000),
+          signal: AbortSignal.timeout(PROVIDER_RANK_TIMEOUT_MS),
         });
         if (!response || response.ok !== true) throw new Error("ranking response unavailable");
         const body = await response.json();
@@ -210,6 +217,23 @@ async function inferProviderRankingChunk(input, options) {
     } catch { /* exact same read-only chunk gets one bounded retry */ }
   }
   throw new Error("event preference ranking unavailable");
+}
+
+async function inferProviderRankingChunkResilient(input, options) {
+  try { return await inferProviderRankingChunk(input, options); }
+  catch {
+    if (input.candidates.length < 2) throw new Error("event preference ranking unavailable");
+    const middle = Math.ceil(input.candidates.length / 2);
+    const left = await inferProviderRankingChunkResilient({
+      ...input,
+      candidates: input.candidates.slice(0, middle),
+    }, options);
+    const right = await inferProviderRankingChunkResilient({
+      ...input,
+      candidates: input.candidates.slice(middle),
+    }, options);
+    return [...left, ...right];
+  }
 }
 
 function providerRankingChunks(candidates) {
@@ -234,13 +258,28 @@ function providerRankingChunks(candidates) {
 async function inferProviderCandidateRanking(input, options = {}) {
   const source = normalizeProviderInput(input);
   if (source.candidates.length === 0) return validateProviderCandidateRanking({ ranked_events: [] }, source);
-  const rankedEvents = [];
-  for (const candidates of providerRankingChunks(source.candidates)) {
-    rankedEvents.push(...await inferProviderRankingChunk({
-      candidates,
-      preferences: source.preferences,
-    }, options));
+  const transportCandidates = source.candidates.map((candidate) => Object.freeze({
+    ...candidate,
+    body: candidate.body.slice(0, PROVIDER_RANK_BODY_LENGTH),
+  }));
+  const chunks = providerRankingChunks(transportCandidates);
+  const results = new Array(chunks.length);
+  let next = 0;
+  async function worker() {
+    while (next < chunks.length) {
+      const index = next;
+      next += 1;
+      results[index] = await inferProviderRankingChunkResilient({
+        candidates: chunks[index],
+        preferences: source.preferences,
+      }, options);
+    }
   }
+  await Promise.all(Array.from(
+    { length: Math.min(PROVIDER_RANK_CONCURRENCY, chunks.length) },
+    () => worker(),
+  ));
+  const rankedEvents = results.flat();
   try { return validateProviderCandidateRanking({ ranked_events: rankedEvents }, source); }
   catch { throw new Error("event preference ranking unavailable"); }
 }

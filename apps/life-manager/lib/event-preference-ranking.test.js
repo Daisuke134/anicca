@@ -131,7 +131,7 @@ test("provider ranking chunks a large inventory and still validates every candid
 });
 
 test("provider ranking also bounds each chunk by UTF-8 payload bytes", async () => {
-  const candidates = Object.freeze(Array.from({ length: 7 }, (_, index) => Object.freeze({
+  const candidates = Object.freeze(Array.from({ length: 40 }, (_, index) => Object.freeze({
     provider: "connpass",
     event_ref: `connpass-event://event/${800_000 + index}`,
     canonical_url: `https://tokyo-ai.connpass.com/event/${800_000 + index}/`,
@@ -139,10 +139,12 @@ test("provider ranking also bounds each chunk by UTF-8 payload bytes", async () 
     body: "x".repeat(8_000),
   })));
   const chunkSizes = [];
+  const chunkBytes = [];
   const ranking = await inferProviderCandidateRanking({ candidates, preferences: "Tokyo AI events" }, {
     generateDecision: async ({ prompt }) => {
       const chunk = JSON.parse(prompt.match(/EVENT_DATA_START\n([\s\S]+)\nEVENT_DATA_END/)[1]);
       chunkSizes.push(chunk.length);
+      chunkBytes.push(Buffer.byteLength(JSON.stringify(chunk), "utf8"));
       return { ranked_events: chunk.map((candidate) => ({
         event_ref: candidate.event_ref,
         priority_class: "ai",
@@ -152,8 +154,10 @@ test("provider ranking also bounds each chunk by UTF-8 payload bytes", async () 
     },
   });
 
-  assert.deepEqual(chunkSizes, [2, 2, 2, 1]);
-  assert.equal(ranking.ranked_events.length, 7);
+  assert.equal(chunkSizes.length > 1, true);
+  assert.equal(chunkSizes.reduce((total, size) => total + size, 0), 40);
+  assert.equal(Math.max(...chunkBytes) <= 24_000, true);
+  assert.equal(ranking.ranked_events.length, 40);
 });
 
 test("provider ranking retries one transient chunk failure without dropping candidates", async () => {
@@ -178,6 +182,107 @@ test("provider ranking retries one transient chunk failure without dropping cand
 
   assert.equal(attempts, 2);
   assert.equal(ranking.ranked_events.length, PROVIDER_CANDIDATES.length);
+});
+
+test("provider ranking bisects a persistently unavailable multi-event chunk without dropping candidates", async () => {
+  const candidates = Object.freeze(Array.from({ length: 4 }, (_, index) => Object.freeze({
+    provider: "connpass",
+    event_ref: `connpass-event://event/${900_000 + index}`,
+    canonical_url: `https://tokyo-ai.connpass.com/event/${900_000 + index}/`,
+    title: `Tokyo Builders ${index}`,
+    body: "Public engineering event description.",
+  })));
+  const chunkSizes = [];
+  const ranking = await inferProviderCandidateRanking({ candidates, preferences: "Tokyo AI events" }, {
+    generateDecision: async ({ prompt }) => {
+      const chunk = JSON.parse(prompt.match(/EVENT_DATA_START\n([\s\S]+)\nEVENT_DATA_END/)[1]);
+      chunkSizes.push(chunk.length);
+      if (chunk.length > 2) throw new DOMException("bounded timeout", "TimeoutError");
+      return { ranked_events: chunk.map((candidate) => ({
+        event_ref: candidate.event_ref,
+        priority_class: "ai",
+        preference_fit: "moderate",
+        preference_reason: "Verified AI event.",
+      })) };
+    },
+  });
+
+  assert.deepEqual(chunkSizes, [4, 4, 2, 2]);
+  assert.equal(ranking.ranked_events.length, 4);
+  assert.equal(new Set(ranking.ranked_events.map((row) => row.event_ref)).size, 4);
+});
+
+test("provider ranking processes independent chunks with at most three concurrent requests", async () => {
+  const candidates = Object.freeze(Array.from({ length: 60 }, (_, index) => Object.freeze({
+    provider: "connpass",
+    event_ref: `connpass-event://event/${910_000 + index}`,
+    canonical_url: `https://tokyo-ai.connpass.com/event/${910_000 + index}/`,
+    title: `Tokyo AI ${index}`,
+    body: "x".repeat(8_000),
+  })));
+  let active = 0;
+  let maximumActive = 0;
+  const ranking = await inferProviderCandidateRanking({ candidates, preferences: "Tokyo AI events" }, {
+    generateDecision: async ({ prompt }) => {
+      const chunk = JSON.parse(prompt.match(/EVENT_DATA_START\n([\s\S]+)\nEVENT_DATA_END/)[1]);
+      active += 1;
+      maximumActive = Math.max(maximumActive, active);
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      active -= 1;
+      return { ranked_events: chunk.map((candidate) => ({
+        event_ref: candidate.event_ref,
+        priority_class: "ai",
+        preference_fit: "moderate",
+        preference_reason: "Verified AI event.",
+      })) };
+    },
+  });
+
+  assert.equal(maximumActive, 3);
+  assert.equal(ranking.ranked_events.length, 60);
+  assert.equal(new Set(ranking.ranked_events.map((row) => row.event_ref)).size, 60);
+});
+
+test("provider ranking sends a compact public body to the model but preserves the full candidate body", async () => {
+  const fullBody = "x".repeat(8_000);
+  const candidate = Object.freeze({
+    provider: "connpass",
+    event_ref: "connpass-event://event/920000",
+    canonical_url: "https://tokyo-ai.connpass.com/event/920000/",
+    title: "Tokyo AI Builders",
+    body: fullBody,
+  });
+  let transportedBody = "";
+  const ranking = await inferProviderCandidateRanking({ candidates: [candidate], preferences: "Tokyo AI events" }, {
+    generateDecision: async ({ prompt }) => {
+      const transported = JSON.parse(prompt.match(/EVENT_DATA_START\n([\s\S]+)\nEVENT_DATA_END/)[1]);
+      transportedBody = transported[0].body;
+      return { ranked_events: [{
+        event_ref: candidate.event_ref,
+        priority_class: "ai",
+        preference_fit: "strong",
+        preference_reason: "Verified AI event.",
+      }] };
+    },
+  });
+
+  assert.equal(transportedBody.length, 1_000);
+  assert.equal(ranking.ranked_events[0].body, fullBody);
+});
+
+test("provider ranking gives each bounded model request a forty-five second deadline", async () => {
+  let timeoutMs = null;
+  await inferProviderCandidateRanking({
+    candidates: PROVIDER_CANDIDATES,
+    preferences: "Tokyo AI crypto startup events",
+  }, {
+    generateDecision: async (request) => {
+      timeoutMs = request.timeoutMs;
+      return providerDecision();
+    },
+  });
+
+  assert.equal(timeoutMs, 45_000);
 });
 
 async function fixtureSnapshot(slugs = ["ai-night", "pottery-social", "crypto-builders"]) {
