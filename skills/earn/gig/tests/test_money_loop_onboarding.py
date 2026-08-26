@@ -40,7 +40,6 @@ def _args() -> list[str]:
         "--providers", "upwork,fiverr",
         "--minimum-margin-bps", "2500",
         "--spend-cap-minor", "5000",
-        "--connects-cap", "40",
         "--concurrent-job-cap", "3",
         "--human-minute-value-minor", "75",
     ]
@@ -101,7 +100,7 @@ def test_isolated_install_is_private_read_only_and_never_writes_checkout(tmp_pat
 def test_selection_is_explicit_and_every_action_defaults_unknown(tmp_path: Path):
     receipt = onboarding.onboard(
         owner_id="owner-2", providers=["upwork"], minimum_margin_bps=2000,
-        spend_cap_minor=0, connects_cap=0, concurrent_job_cap=1,
+        spend_cap_minor=0, concurrent_job_cap=1,
         human_minute_value_minor=0, home=tmp_path, repo_root=REPO_ROOT,
         observed_at="2026-08-22T10:00:00+00:00",
     )
@@ -121,6 +120,20 @@ def test_selection_is_explicit_and_every_action_defaults_unknown(tmp_path: Path)
     assert inventory["skills"]
 
 
+def test_onboarding_omits_legacy_connects_cap_from_owner_profile(tmp_path: Path):
+    onboarding.onboard(
+        owner_id="owner-no-connects-cap", providers=["upwork"],
+        minimum_margin_bps=2000, spend_cap_minor=0, concurrent_job_cap=1,
+        human_minute_value_minor=0, home=tmp_path, repo_root=REPO_ROOT,
+        observed_at="2026-08-22T10:00:00+00:00",
+    )
+
+    profile = json.loads(
+        (tmp_path / ".config/anicca/gig/owner-profile.json").read_text()
+    )
+    assert "connects_cap" not in profile["bounds"]
+
+
 def test_existing_private_authorization_receipts_are_preserved(tmp_path: Path):
     config = tmp_path / ".config/anicca/gig"
     config.mkdir(parents=True)
@@ -137,7 +150,7 @@ def test_existing_private_authorization_receipts_are_preserved(tmp_path: Path):
 
     onboarding.onboard(
         owner_id="owner-5", providers=["upwork"], minimum_margin_bps=2000,
-        spend_cap_minor=0, connects_cap=0, concurrent_job_cap=1,
+        spend_cap_minor=0, concurrent_job_cap=1,
         human_minute_value_minor=0, home=tmp_path, repo_root=REPO_ROOT,
         observed_at="2026-08-22T10:00:00+00:00",
     )
@@ -155,7 +168,7 @@ def test_malformed_existing_authorization_store_fails_before_onboarding(tmp_path
     with pytest.raises(ValueError, match="unsupported_store_version"):
         onboarding.onboard(
             owner_id="owner-6", providers=["upwork"], minimum_margin_bps=2000,
-            spend_cap_minor=0, connects_cap=0, concurrent_job_cap=1,
+            spend_cap_minor=0, concurrent_job_cap=1,
             human_minute_value_minor=0, home=tmp_path, repo_root=REPO_ROOT,
             observed_at="2026-08-22T10:00:00+00:00",
         )
@@ -168,7 +181,6 @@ def test_malformed_existing_authorization_store_fails_before_onboarding(tmp_path
         ("minimum_margin_bps", -1),
         ("minimum_margin_bps", "twenty"),
         ("spend_cap_minor", -1),
-        ("connects_cap", "many"),
         ("concurrent_job_cap", -2),
         ("human_minute_value_minor", "free"),
     ],
@@ -179,7 +191,6 @@ def test_negative_or_non_numeric_bounds_are_rejected(
     values: dict[str, object] = {
         "minimum_margin_bps": 2000,
         "spend_cap_minor": 5000,
-        "connects_cap": 40,
         "concurrent_job_cap": 3,
         "human_minute_value_minor": 75,
     }
@@ -199,7 +210,7 @@ def test_missing_unknown_or_duplicate_provider_selection_is_rejected(
     with pytest.raises(ValueError, match="providers"):
         onboarding.onboard(
             owner_id="owner-4", providers=providers, minimum_margin_bps=2000,
-            spend_cap_minor=0, connects_cap=0, concurrent_job_cap=1,
+            spend_cap_minor=0, concurrent_job_cap=1,
             human_minute_value_minor=0, home=tmp_path, repo_root=REPO_ROOT,
             observed_at="2026-08-22T10:00:00+00:00",
         )

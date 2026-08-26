@@ -49,7 +49,6 @@ def _facts(tmp_path: Path, *, cap: int = 3, skills: tuple[str, ...] = ("builder"
         "version": 1,
         "bounds": {
             "minimum_margin_bps": 2500,
-            "connects_cap": 40,
             "concurrent_job_cap": cap,
             "human_minute_value_minor": 75,
         },
@@ -124,6 +123,21 @@ def test_eligible_fixed_job_has_conservative_net_and_evidence(tmp_path):
         NOW + timedelta(hours=4)
     ).isoformat()
     assert dict(result.evidence)["concurrent_job_cap"] == 3
+
+
+def test_profile_without_connects_cap_can_qualify_positive_job(tmp_path):
+    inventory, owner, projects = _facts(tmp_path)
+
+    result = qualifier.qualify(
+        _opportunity(), _workflow(), inventory_path=inventory,
+        owner_profile_path=owner, projects_root=projects, now=NOW,
+        deadline_at=NOW + timedelta(hours=4), fee_bps=1000,
+        connects_unit_cost_minor=15, tool_cost_minor=1000, risk_reserve_minor=5000,
+    )
+
+    assert result.eligible is True
+    assert result.expected_net > 0
+    assert "connects_cap_exceeded" not in result.risks
 
 
 def test_missing_installed_skill_is_ineligible(tmp_path):

@@ -1326,16 +1326,6 @@ async def observe(
         else:
             state["free_acquisition"] = inbound
         return state
-    owner = json.loads(DEFAULT_OWNER_PROFILE.read_text(encoding="utf-8"))
-    connects_cap = owner.get("bounds", {}).get("connects_cap")
-    if type(connects_cap) is not int or connects_cap < 0:
-        raise ValueError("upwork_connects_cap_invalid")
-    if connects_cap == 0:
-        state["can_submit_public_job"] = False
-        state["free_acquisition"] = {
-            "state": "connects_spend_paused", "balance": state["balance"],
-        }
-        return state
     completed_jobs = ConnectorOutbox(
         database.expanduser(), manifest.expanduser(),
     ).verified_provider_resource_ids("upwork", "propose")

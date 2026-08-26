@@ -153,7 +153,6 @@ def qualify(
     minimum_margin_bps = _integer(
         "minimum_margin_bps", bounds.get("minimum_margin_bps"), maximum=10_000,
     )
-    connects_cap = _integer("connects_cap", bounds.get("connects_cap"))
     capacity_cap = _integer("concurrent_job_cap", bounds.get("concurrent_job_cap"))
     human_minute_value = _integer(
         "human_minute_value_minor", bounds.get("human_minute_value_minor"),
@@ -200,8 +199,6 @@ def qualify(
         risks.append("negative_expected_net")
     elif gross == 0 or expected_net * 10_000 < gross * minimum_margin_bps:
         risks.append("below_minimum_margin")
-    if connects > connects_cap:
-        risks.append("connects_cap_exceeded")
     verifier = installed.get(workflow.verifier_skill)
     verifier_hash = verifier[0] if verifier else None
     if (
