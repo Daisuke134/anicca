@@ -49,6 +49,7 @@ const {
 const { sendPanelLink, handlePanelRequest, panelDeviceCodeFromCommand, confirmPanelDeviceCode } = require("./lib/panel-auth.js");
 const { handlePanelApiRequest, handlePanelOAuthCallback, composioCalendarStart, composioCalendarDisconnect } = require("./lib/panel-api.js");
 const { createSupabaseCommandStore } = require("./lib/panel-api.js");
+const { handleCalendarOnboardRequest } = require("./lib/calendar-onboard.js");
 const { parseUserCommand, dispatchParsedControl, executeUserCommand } = require("./lib/user-command.js");
 const { parseSlashCommand, slashAliasText, handleSlashCommand } = require("./lib/slash-command.js");
 const { handleFeedbackMessage, createPostgresFeedbackStore } = require("./lib/feedback-intake.js");
@@ -232,6 +233,21 @@ const server = http.createServer((req, res) => {
       console.error("[panel-auth] request failed", error.message);
       if (!res.headersSent) res.writeHead(500, { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" });
       res.end(JSON.stringify({ error: "panel_auth_unavailable" }));
+    });
+    return;
+  }
+  if (path === "/api/panel/onboarding/calendar/start" || path === "/api/panel/onboarding/calendar/status") {
+    handleCalendarOnboardRequest(req, res, {
+      supaUrl: SUPA_URL,
+      supaKey: SUPA_KEY,
+      panelOrigin: LM_PANEL_BASE,
+      panelBaseUrl: LM_PANEL_BASE,
+      sessionSecret: process.env.LM_PANEL_SESSION_ROTATION_SECRET || process.env.LM_UID_SECRET,
+      composioKey: COMPOSIO_KEY,
+      composioAuthConfig: process.env.COMPOSIO_GCAL_AUTH_CONFIG,
+    }).catch(() => {
+      if (!res.headersSent) res.writeHead(502, { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" });
+      res.end(JSON.stringify({ error: "calendar_unavailable" }));
     });
     return;
   }
