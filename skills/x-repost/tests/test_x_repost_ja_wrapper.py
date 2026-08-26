@@ -14,6 +14,7 @@ class JapaneseDiceLoopContractTests(unittest.TestCase):
         for contract in (
             'X_REPOST_BROWSER_IDENTITY="x:diceai0"',
             'X_REPOST_ACCOUNT_HANDLE="@diceai0"',
+            'X_REPOST_EXPECTED_HANDLE="diceai0"',
             'X_REPOST_FORCE_LANGUAGE="ja"',
             'X_REPOST_SOURCE_LANGUAGE_POLICY="any"',
             'X_REPOST_FORCE_KIND="quote"',

@@ -65,6 +65,12 @@ class Page:
 
 
 class XPostTests(unittest.TestCase):
+    def test_expected_browser_handle_fails_before_composer_effect(self) -> None:
+        with patch.dict(os.environ, {"X_REPOST_EXPECTED_HANDLE": "diceai0"}, clear=False):
+            MODULE.require_expected_handle("diceai0")
+            with self.assertRaisesRegex(ValueError, "does not match"):
+                MODULE.require_expected_handle("selawmqt")
+
     def test_postiz_reconcile_binds_submission_integration_and_release_url(self) -> None:
         class Response:
             content = "Useful post"
