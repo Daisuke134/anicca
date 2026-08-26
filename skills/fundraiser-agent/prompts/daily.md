@@ -42,6 +42,17 @@ Read only the required scoped values from the existing private founder profile.
 Read prior ApplicationReceipts before opening forms. Never expose private values
 in public evidence or Telegram.
 
+Private-file output boundary: never print, dump, enumerate, pretty-print, or
+return the contents, entries, keys-plus-values, or arrays from
+`~/.local/share/anicca/credentials.json` or the private founder profile. Do not
+run broad `jq`, Python `print`, `cat`, `sed`, or equivalent diagnostics on either
+file. Extract only the exact needed field directly into a shell variable, with
+no stdout, for example `FOUNDER_EMAIL=$(jq -r '.candidate.application_email'
+~/.config/anicca/job-search/profile.json)`. When Gmail needs the keyring secret,
+assign the selected secret directly to `GOG_KEYRING_PASSWORD` without echoing it.
+Logs, evidence, Telegram, receipts, and model messages may contain only non-secret
+field names and one-way account hashes, never credential values.
+
 The current generated pitch deck is
 `fundraising/application-kit/deck.pdf`. Use it when a form accepts a pitch deck
 only if `deck.pdf.receipt.json` has the same `context_digest` as `assets.json`.
