@@ -51,5 +51,7 @@ def test_common_operator_passes_sealed_intent_to_terra_without_provider_selector
     assert "Do not search the filesystem for its SKILL.md" in normalized
     assert "native prototype value setter" in normalized
     assert "must not submit" in normalized
+    assert "account balances are live observations" in normalized
+    assert "required charge exceeds the live balance" in normalized
     assert captured["env"]["BU_CDP_URL"] == "http://127.0.0.1:9233"
     assert captured["env"]["BU_NAME"] == "market-form-anymarket"
