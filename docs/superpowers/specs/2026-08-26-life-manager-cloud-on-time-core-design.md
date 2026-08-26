@@ -257,38 +257,38 @@ Telegram本文の固定形:
 
 - [ ] focused baselineを実行して件数と既存failureを記録する。
 - [ ] `transit.test.js`へAC-12、AC-13、AC-17のREDを追加する。
-- [ ] `transit.js`でprovider factsをstructured routeへ変換する。
-- [ ] `transit.test.js`をGREENにし、既存fixtureと実Transit responseの両方をparseする。
+- [x] `transit.js`でprovider factsをstructured routeへ変換する。
+- [x] `transit.test.js`をGREENにし、既存fixtureと実Transit responseの両方をparseする。
 
 ### Slice 1B — Event-anchored query and minutes adapter
 
-- [ ] `travel-transit-wire.test.js`へAC-11、AC-14、AC-16のREDを追加する。
-- [ ] `travel.js`でevent `date/time/type`をTransit queryへ渡し、structured routeとminutes adapterを公開する。
-- [ ] accepted Transit routeでGoogle call 0、Transit failureでGoogle call 1をGREENにする。
+- [x] `travel-transit-wire.test.js`へAC-11、AC-14、AC-16のREDを追加する。
+- [x] `travel.js`でevent `date/time/type`をTransit queryへ渡し、structured routeとminutes adapterを公開する。
+- [x] accepted Transit routeでGoogle call 0、Transit failureでGoogle call 1をGREENにする。
 - [ ] 実Transit API 1件でevent anchorとroute factsをreadbackする。
 
 ### Slice 1C — Tenant-scoped route cache
 
-- [ ] `route-cache.test.js`へtenant/timezone/anchor/provider keyのREDを追加し、`_shared`を廃止する。
-- [ ] `route-cache.js`でAC-15のkeyを固定する。
-- [ ] 同tenant・同anchorはprovider call 1、別tenant・別anchorは別cache entryになることをGREENにする。
+- [x] `route-cache.test.js`へtenant/timezone/anchor/provider keyのREDを追加し、`_shared`を廃止する。
+- [x] `route-cache.js`でAC-15のkeyを固定する。
+- [x] 同tenant・同anchorはprovider call 1、別tenant・別anchorは別cache entryになることをGREENにする。
 
 ### Slice 2A — T-5 reminder decision, formatting, and delivery
 
-- [ ] `travel-reminder.test.js`へAC-18–26のREDを追加する。
-- [ ] `travel-reminder.js`にeligibility、origin precedence、formatter、claim/send/release outcomeを実装する。
-- [ ] `travel.js`の既存`claimTravel`/`unclaimTravel`をreminderから再利用できる形でexportする。
+- [x] `travel-reminder.test.js`へAC-18–26のREDを追加する。
+- [x] `travel-reminder.js`にeligibility、origin precedence、formatter、claim/send/release outcomeを実装する。
+- [x] `travel.js`の既存`claimTravel`/`unclaimTravel`をreminderから再利用できる形でexportする。
 
 ### Slice 2B — Scheduler isolation and production Telegram receipt
 
-- [ ] `wake-loop-isolation.test.js`へreminder timeout、call-first、cross-tenant継続のREDを追加する。
-- [ ] `scheduler.js`の`organsUserOnce`へ独立`organ:travel-reminder`を配線する。
-- [ ] `wake-loop-isolation.test.js`でroute timeout中もcallが先に完了し、他tenantが進むことをGREENにする。
+- [x] `wake-loop-isolation.test.js`へreminder timeout、call-first、cross-tenant継続のREDを追加する。
+- [x] `scheduler.js`の`organsUserOnce`へ独立`organ:travel-reminder`を配線する。
+- [x] `wake-loop-isolation.test.js`でroute timeout中もcallが先に完了し、他tenantが進むことをGREENにする。
 - [ ] Telegram test chatへ1件送り、message ID、本文、再実行0件をreadbackする。
 
 ### Slice 3A — Telegram actor as onboarding identity
 
-- [ ] QRが`https://t.me/LifeManagerBotbot?start=lp`だけをdecodeすることをreadbackする。
+- [x] QRが`https://t.me/LifeManagerBotbot?start=lp`だけをdecodeすることをreadbackする。
 - [x] `telegram-onboard.test.js`と`panel-auth.test.js`へMini App、cross-actor、stale、replayのREDを追加する。
 - [x] `telegram.js`の`/start` buttonをRailway `/panel/onboarding`の`web_app`へ変更する。
 - [x] 既存`panel-auth.js`のTelegram initData/sessionをonboarding tenant authorityとして再利用する。
@@ -318,19 +318,19 @@ Telegram本文の固定形:
 - [x] `onboarding-resume-contract.test.js`へSupabase Google exchange不使用と`telegram-link` 410のREDを追加する。
 - [x] `apps/landing/netlify/functions/lm-onboard.js`の`exchange`と`telegram-link`を410へ固定する。
 - [x] shadow `LmClient.tsx`を削除し、`LmBody.tsx`をTelegram botへの固定handoffだけにして、`signInWithGoogle`、uid/sig localStorage、raw `tg` bindingを削除する。
-- [ ] production Netlify functionがlegacy actionへ410を返すことをreadbackする。
+- [x] production Netlify functionがlegacy actionへ410を返すことをreadbackする。
 
 ### Slice 3F — Payment authority and onboarding E2E
 
-- [ ] `billing.test.js`へonboarding scopeから`paid`を書けないREDを追加する。
-- [ ] Stripe webhook以外が`paid`を書けないことと、unpaid scheduler effect 0を検証する。
+- [x] `billing.test.js`へonboarding scopeから`paid`を書けないREDを追加する。
+- [x] Stripe webhook以外が`paid`を書けないことと、unpaid scheduler effect 0を検証する。
 - [ ] clean browserと別Telegram actorでtenant isolationをE2E検証する。
 
 ### Slice 4 — Deploy and production acceptance
 
-- [ ] focused route/reminder/onboarding tests、full `npm test`、scoped landing contract tests、`git diff --check`をPASSさせる。
-- [ ] fresh adversarial verifierがCritical/Important 0、secret leak 0、duplicate external effect 0を確認する。
-- [ ] mainへ統合・pushし、Railway/Netlifyのdeploy commit SHAをreadbackする。
+- [x] focused route/reminder/onboarding tests、full `npm test`、scoped landing contract tests、`git diff --check`をPASSさせる。
+- [x] fresh adversarial verifierがCritical/Important 0、secret leak 0、duplicate external effect 0を確認する。
+- [x] mainへ統合・pushし、Railway/Netlifyのdeploy commit SHAをreadbackする。
 - [ ] QRをclean deviceでscanし、Telegram tenant作成、Calendar consent、home、notifications、phoneなし/あり分岐、Stripe test-free live checkout boundaryを確認する。
 - [ ] controlled Calendar eventでtravel block、T-10 call、T-5 call、T-5 Telegram routeをprovider ID付きで確認する。
 - [ ] 同eventをschedulerで再評価し、追加call 0、追加Telegram 0、追加travel block 0を確認する。

@@ -147,3 +147,17 @@ Baseline: focused Life Manager suite 175/175 PASS.
 - Task 8 execution correction: the implementer initially wrote four owned paths in the dirty main checkout. Work stopped; those exact four paths were transferred with patches to the canonical worktree and restored to main HEAD with `git diff --exit-code` proof. No other main changes were touched.
 - Task 8 review R0: APPROVED — 210 method/payload probes return 410/fetch0, active `/lm` authority scan is empty, deleted client import0, and Railway Calendar/Stripe webhook production files are unchanged. Focused 130/130 parent suite and 115/115 reviewer suite PASS; syntax, diff, dependency and secret checks PASS.
 - Task 8: complete (production Netlify/Railway readback remains Task 9)
+
+## Task 9 integration, migration, and production release
+
+- Integration fixes: `b18baeeb5` corrected Japanese domestic phone normalization and PostgreSQL-deparsed 21-day constraint detection; `b649071fe` removed phone-shaped static fixtures without changing runtime values.
+- Migration release fix: `6d169fd3e` renamed onboarding core so lexical order is OAuth → core → reachability and made the 28-day coverage migration a complete no-op when its optional table is absent.
+- Database validation: production Supabase accepted all four migrations inside `BEGIN … ROLLBACK`; the optional-table-present path also created the historical table, upgraded to eight 28-day constraints, asserted them, and rolled back.
+- Database apply: the four migrations committed in one production transaction. Management API readback confirmed seven functions, service-role execution, anon denial, the live OAuth-scope unique index, and unchanged absence of the optional coverage table.
+- Final verification: focused phone/migration suite 93/93 PASS; migration suite 70/70 PASS; full `npm test` PASS; 60-commit gitleaks scan found zero leaks; added PII findings are zero; `git diff --check` PASS.
+- Fresh adversarial review: final production code and migration R2 both `ship`, Critical/Important/Minor findings zero.
+- Canonical release: PR `Daisuke134/life-manager#2899` merged as `d9b5274150ce957804b1c63c2a0540b77fcf8495`. GitHub Deployments reports Railway `Anicca / production` success for that exact SHA; public `/health` is HTTP 200 JSON.
+- Landing release: the live Netlify owner was still `Daisuke134/anicca-products`, so only the canonical three-file subset was synced in PR `#398`, merged as `ccd062ac0dbff85f3afda4ffbd797615b288d72f`. Immutable Netlify deploy `6a8f657d48fd9afdfb22dcb8` was restored to production. All five legacy actions return JSON 410; the public page has three fixed Telegram deep links and zero query/browser-storage authority markers.
+- QR readback: the live `/life-manager` page preserves the 116×116 QR and exact adjacent deep link `https://t.me/LifeManagerBotbot?start=lp`; prior clean decode evidence remains valid and the deployed payload source is unchanged.
+- Operational status: Telnyx authentication is at the Authenticator-code screen. No top-up or call was attempted without the current six-digit code and exact portal minimum readback.
+- Remaining acceptance: real Transit provider route; clean Telegram actor onboarding and cross-actor isolation; Telnyx minimum top-up with exact approval; controlled Calendar event with travel block, T-10/T-5 calls, T-5 Telegram route; replay-zero provider readback.
