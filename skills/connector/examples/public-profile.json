@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "tenant_id": "public-sample",
+  "timezone": "Asia/Tokyo",
+  "preferences": "Prioritize YC hackathons, open lightning-talk opportunities, AI, crypto, and startup events in Tokyo. Apply only to strong or moderate matches. Search Luma first and use the official connpass API as a read-only fallback.",
+  "goals": "Attend relevant events, meet collaborators, and share an open-source project through verified lightning-talk opportunities without promising outcomes.",
+  "spend_policy": {
+    "limits": []
+  },
+  "identity_ref": "identity://public-sample/local",
+  "browser_profile_ref": "browser-profile://cloakbrowser/daily-driver",
+  "calendar_ref": "calendar://google/primary"
+}

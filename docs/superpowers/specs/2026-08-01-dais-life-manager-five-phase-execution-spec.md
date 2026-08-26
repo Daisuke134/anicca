@@ -148,8 +148,8 @@ Calendarを無関係なeventで埋めること自体を成果にしない。
 - [ ] **CG-46** connpass API live inventoryとaction boundaryを自然wakeで確認し、provider permissionがある場合だけ許可methodの実申込bundleを追加する。
 - [ ] **CG-47** open LT候補でtalk application receiptを一件完成し、attendance/talkの各state、Calendar、Telegramを独立readbackする。
 - [ ] **CG-48** 24回の連続hourly receiptでduplicate Submit 0、concurrent owner 0、effect unknownの自動再送0、owned page/lock cleanupを確認する。
-- [ ] **CG-49** public sample profile、Connector README/SKILL、install/uninstall手順を28日・hourly・Luma/connpass・LT・permission boundaryへ同期する。
-- [ ] **CG-50** secretなしの隔離homeでinstall→render→focused no-effect wake→uninstallを再現し、private state/receiptをpackageしないことを確認する。
+- [x] **CG-49** public sample profile、Connector README/SKILL、install/uninstall手順を28日・hourly・Luma/connpass・LT・permission boundaryへ同期する。
+- [x] **CG-50** secretなしの隔離homeでinstall→render→focused no-effect wake→uninstallを再現し、private state/receiptをpackageしないことを確認する。
 - [ ] **CG-51** final spec state、test/effect receipts、known provider limitsを更新し、commit/push、remote readback、Telegram milestoneでConnector growth sliceをDONEにする。
 
 #### 0.0.4 Runtime flow
