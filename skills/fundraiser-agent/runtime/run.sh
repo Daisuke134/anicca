@@ -19,6 +19,10 @@ available_kib() {
   df -Pk "$STATE_ROOT" 2>/dev/null | awk 'NR==2 {print $4}'
 }
 
+cdp_healthy() {
+  curl -fsS --max-time 2 http://127.0.0.1:9222/json/version >/dev/null 2>&1
+}
+
 # A Luna browser pass temporarily needs close to 1 GiB. Starting below this floor
 # repeatedly ended with ENOSPC before the runner could persist its summary or proof.
 # Keep launchd enabled, ask the existing disk owner to reclaim only classified
@@ -35,6 +39,23 @@ if [ "$FREE_KIB" -lt "$MIN_FREE_KIB" ]; then
     </dev/null >/dev/null 2>&1 &
   echo "fundraiser: deferred low disk available_kib=$FREE_KIB required_kib=$MIN_FREE_KIB" >>"$LOG"
   exit 75
+fi
+
+if ! cdp_healthy; then
+  /bin/launchctl kickstart -k "gui/$(id -u)/ai.anicca.cdp-daily-driver-owner" \
+    >/dev/null 2>&1 || true
+  CDP_READY=false
+  for _ in 1 2 3 4 5 6 7 8 9 10; do
+    if cdp_healthy; then
+      CDP_READY=true
+      break
+    fi
+    sleep 2
+  done
+  if [ "$CDP_READY" != true ]; then
+    echo "fundraiser: deferred cdp endpoint unavailable after owner recovery" >>"$LOG"
+    exit 75
+  fi
 fi
 
 mkdir -p "$STATE_ROOT/evidence" "$EVIDENCE_DIR"
@@ -73,6 +94,7 @@ RUNTIME_PROMPT="$EVIDENCE_DIR/runtime-prompt.md"
 - Work in \`$REPO_ROOT\`; use the existing authenticated Chrome CDP endpoint \`http://127.0.0.1:9222\`.
 - Search both the live Web and rendered authenticated X UI. X is discovery only; verify on the official program website before applying.
 - Use existing browser helpers under \`skills/browser/\`; do not launch or kill a browser.
+- If \`127.0.0.1:9222\` becomes connection-refused during this pass, do not record a candidate failure yet. Execute \`launchctl kickstart -k gui/$(id -u)/ai.anicca.cdp-daily-driver-owner\`, wait up to 20 seconds for \`curl -fsS --max-time 2 http://127.0.0.1:9222/json/version\` to succeed, reacquire a fresh fundraiser lease, and retry the same candidate observation once. Only checkpoint the transport if that exact managed recovery fails. Never launch or kill Chromium directly.
 - Read private founder values only from \`~/.config/anicca/job-search/profile.json\` and \`~/.local/share/anicca/credentials.json\`; never print or report their values.
 - Never append a \`submitted_verified\` row directly. Before Submit, create a mode-600 draft JSON containing organization, program, cohort_window, account, official_url, contact {method,destination}, every rendered question and actual answer in question_answers, and the exact non-secret claims/source paths used in context_used. After official screenshot and Telegram photo delivery, add submitted_at and evidence {completion_png,telegram_photo_message_id,provider_readback}; then run \`python3 "$REPO_ROOT/skills/fundraiser-agent/runtime/record-application.py" --draft <draft> --ledger "$STATE_ROOT/application-receipts.jsonl" --applications-dir "$STATE_ROOT/applications" --run-id "$RUN_ID"\`. Only its successful output establishes \`submitted_verified\`. Use direct compact rows only for non-success terminal states.
 - Write the durable next discovery cursor atomically to \`$STATE_ROOT/cursor.json\`.
