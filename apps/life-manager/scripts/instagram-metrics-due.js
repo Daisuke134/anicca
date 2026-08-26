@@ -66,9 +66,16 @@ function discoverExpected(dataDir) {
       native_owner: lane.nativeOwner.replace(/^@/, ""), integration_id: integration[1], provider_post_id: receipt.provider_post_id,
       shortcode: match[1], public_url: receipt.public_url, caption: captionBytes.toString("utf8"), published_at: receipt.published_at }));
   }
-  const identities = new Set(found.map((row) => `${row.shortcode}\n${row.provider_post_id}`));
-  if (identities.size !== found.length) throw new Error("Instagram verified distribution rows ambiguous");
-  return found.sort((left, right) => left.published_at.localeCompare(right.published_at));
+  const identities = new Set(); const shortcodeOwners = new Map(); const providerOwners = new Map(); const unique = [];
+  for (const row of found.sort((left, right) => left.published_at.localeCompare(right.published_at))) {
+    const identity = `${row.shortcode}\n${row.provider_post_id}`;
+    const shortcodeOwner = shortcodeOwners.get(row.shortcode); const providerOwner = providerOwners.get(row.provider_post_id);
+    if ((shortcodeOwner && shortcodeOwner !== row.provider_post_id) || (providerOwner && providerOwner !== row.shortcode)) throw new Error("Instagram verified distribution rows ambiguous");
+    shortcodeOwners.set(row.shortcode, row.provider_post_id); providerOwners.set(row.provider_post_id, row.shortcode);
+    if (identities.has(identity)) continue;
+    identities.add(identity); unique.push(row);
+  }
+  return unique;
 }
 
 async function runDue(nowMs = Date.now(), env = process.env, provided = null) {

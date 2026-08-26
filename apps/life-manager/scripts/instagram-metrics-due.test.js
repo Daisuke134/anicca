@@ -71,6 +71,21 @@ test("verified Obou watercolor Reel is discovered as its exact metric effect", (
   }]);
 });
 
+test("Obou duplicate local receipts for one provider effect count only the first lineage", () => {
+  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "lm-instagram-obou-dedupe-"));
+  const caption = "相手の感情は相手のもの。";
+  const captionPath = path.join(dataDir, "caption.txt"); fs.writeFileSync(captionPath, caption);
+  const captionHash = crypto.createHash("sha256").update(fs.readFileSync(captionPath)).digest("hex");
+  const directory = path.join(dataDir, "tenants/dais-local/marketing/video-publication/anicca-ios"); fs.mkdirSync(directory, { recursive: true });
+  const base = { platform: "instagram", status: "published", provider_reconciled: true, format_id: "watercolor", form: "buddhist-self-care-reel", locale: "ja",
+    creative_id: "JA-WATERCOLOR-OBOU-b2772de4303a", provider_id: "cmt9l523g02mbp20ybq3lefov", public_url: "https://www.instagram.com/reel/DcfVvIkkWyz/",
+    caption_path: captionPath, caption_sha256: captionHash, video_sha256: "b2772de4303acc901f42b43a0b3f4af166ae3daeb5ee7fd24e090e5b62f2b0e8" };
+  fs.writeFileSync(path.join(directory, "distribution.jsonl"), `${JSON.stringify({ ...base, ts: "2026-08-26T04:21:05.630Z" })}\n${JSON.stringify({ ...base, ts: "2026-08-26T08:51:07.627Z" })}\n`);
+  const found = discoverExpected(dataDir);
+  assert.equal(found.length, 1);
+  assert.equal(found[0].published_at, "2026-08-26T04:21:05.630Z");
+});
+
 test("verified EN Card Reel is discovered for the exact encards metric lane", () => {
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "lm-instagram-encards-discovery-"));
   const caption = "You know that feeling when\n\n#affirmations #mentalhealth #selfcare #mindfulness #anicca\n";
