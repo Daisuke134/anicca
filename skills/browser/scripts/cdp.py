@@ -117,9 +117,57 @@ def set_file(tid: str, selector: str, path: str, index: int = 0) -> dict:
         ws.close()
 
 
+def _visible_named_expression(name: str, body: str) -> str:
+    return f"""(() => {{
+      const candidates = [...document.getElementsByName({json.dumps(name)})];
+      const element = candidates.find((candidate) => {{
+        const rect = candidate.getBoundingClientRect();
+        const style = getComputedStyle(candidate);
+        return rect.width > 0 && rect.height > 0 && style.visibility !== 'hidden' && style.display !== 'none';
+      }}) || candidates.at(-1);
+      if (!element) throw new Error('named field not found');
+      {body}
+    }})()"""
+
+
+def fill_name(tid: str, name: str, value: str) -> dict:
+    expression = _visible_named_expression(name, f"""
+      const prototype = element.tagName === 'TEXTAREA'
+        ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+      Object.getOwnPropertyDescriptor(prototype, 'value').set.call(element, {json.dumps(value)});
+      element.dispatchEvent(new Event('input', {{bubbles: true}}));
+      element.dispatchEvent(new Event('change', {{bubbles: true}}));
+      return {{name: element.name, tag: element.tagName, value_length: element.value.length,
+        valid: element.checkValidity(), visible: element.getBoundingClientRect().width > 0}};
+    """)
+    return evaluate(tid, expression)
+
+
+def select_name(tid: str, name: str, value: str) -> dict:
+    expression = _visible_named_expression(name, f"""
+      Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')
+        .set.call(element, {json.dumps(value)});
+      element.dispatchEvent(new Event('input', {{bubbles: true}}));
+      element.dispatchEvent(new Event('change', {{bubbles: true}}));
+      return {{name: element.name, value: element.value, valid: element.checkValidity(),
+        visible: element.getBoundingClientRect().width > 0}};
+    """)
+    return evaluate(tid, expression)
+
+
+def form_state(tid: str) -> list[dict]:
+    expression = """[...document.querySelectorAll('input,textarea,select,button')]
+      .filter((element) => { const rect = element.getBoundingClientRect(); return rect.width > 0 && rect.height > 0; })
+      .map((element) => ({tag: element.tagName, type: element.type || '', name: element.name || '',
+        required: Boolean(element.required), filled: Boolean(element.value), value_length: (element.value || '').length,
+        valid: typeof element.checkValidity === 'function' ? element.checkValidity() : true,
+        text: (element.innerText || element.textContent || '').trim().slice(0, 120)}))"""
+    return evaluate(tid, expression)
+
+
 def main(argv: list[str]) -> int:
     if not argv:
-        raise SystemExit("usage: cdp.py new|nav|eval|clickxy|insert|key|setfile|close ...")
+        raise SystemExit("usage: cdp.py new|nav|eval|clickxy|insert|key|setfile|fillname|selectname|formstate|close ...")
     command, *args = argv
     if command == "new":
         print(_browser_call("Target.createTarget", {"url": args[0] if args else "about:blank"})["targetId"])
@@ -136,6 +184,12 @@ def main(argv: list[str]) -> int:
         print(json.dumps(key(args[0], args[1])))
     elif command == "setfile":
         print(json.dumps(set_file(args[0], args[1], args[2], int(args[3]) if len(args) > 3 else 0)))
+    elif command == "fillname":
+        print(json.dumps(fill_name(args[0], args[1], args[2]), ensure_ascii=False))
+    elif command == "selectname":
+        print(json.dumps(select_name(args[0], args[1], args[2]), ensure_ascii=False))
+    elif command == "formstate":
+        print(json.dumps(form_state(args[0]), ensure_ascii=False))
     elif command == "close":
         _browser_call("Target.closeTarget", {"targetId": args[0]}); print("CLOSED")
     else:

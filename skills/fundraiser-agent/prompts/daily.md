@@ -60,6 +60,11 @@ For every queued candidate until the execution window ends:
    requiredness, validation, and existing values.
 3. Choose one next action from the fresh observation and full context, perform it
    through the existing worker, and observe again.
+   For ordinary HTML forms, prefer the existing generic commands
+   `cdp.py formstate <target>`, `cdp.py fillname <target> <name> <value>`, and
+   `cdp.py selectname <target> <name> <value>`. They select the visible element
+   when responsive pages contain hidden duplicates. Do not hand-build shell-to-JS
+   quoting or retry the same failing mutation more than once.
 4. Resolve ordinary missing answers by reasonable inference. A human-only video,
    voice, attendance, physical-presence, KYC, binding-terms, banking, funds
    movement, or unsolved CAPTCHA requirement checkpoints only this candidate; it
