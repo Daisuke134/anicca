@@ -541,6 +541,42 @@ test("production provider router promotes a verified open talk within equally fi
   assert.equal(result[0].talk_opportunity.application_url, "https://forms.example.com/ai-lt");
 });
 
+test("production provider router verifies independent open-talk candidates with at most three concurrent classifiers", async () => {
+  const candidates = Array.from({ length: 12 }, (_, index) => Object.freeze({
+    provider: "connpass", event_ref: `connpass-event://event/${610000 + index}`,
+    canonical_url: `https://tokyo-ai.connpass.com/event/${610000 + index}/`,
+    title: `AI LT ${index}`, body: "Public lightning talk applications are open.",
+  }));
+  const workflow = { async discoverCandidates() { return candidates; }, async runDirectAction() {}, async readProviderState() { return { status: "absent" }; } };
+  let active = 0;
+  let maximum = 0;
+  const router = createProductionProviderRouter({
+    lumaWorkflow: workflow, connpassWorkflow: workflow,
+    eventPreferences: "Tokyo AI lightning talks",
+    async rankCandidates(input) {
+      return validateProviderCandidateRanking({ ranked_events: input.candidates.map((candidate) => ({
+        event_ref: candidate.event_ref, priority_class: "open_talk", preference_fit: "strong", preference_reason: "Open AI LT.",
+      })) }, input);
+    },
+    async classifyTalkOpportunity(candidate) {
+      active += 1;
+      maximum = Math.max(maximum, active);
+      await new Promise((resolve) => setImmediate(resolve));
+      active -= 1;
+      return validateEventTalkOpportunity({
+        participation_kind: "both", talk_format: "lightning_talk", application_status: "open",
+        should_create_talk_application: true, application_url: candidate.canonical_url,
+        evidence_excerpt: "Public lightning talk applications are open.", reason: "Public LT application is open.",
+      }, { canonicalUrl: candidate.canonical_url, title: candidate.title, body: candidate.body, now: "2026-08-27T00:00:00.000Z" });
+    },
+    actionCache: { async replay() {}, saveVerifiedRepair() {} }, browserHarness: { async runFallback() {} }, async performAction() {},
+  });
+  const result = await router.discoverCandidates("connpass", [], {});
+  assert.equal(result.length, 12);
+  assert.equal(maximum, 3);
+  assert.deepEqual(result.map((row) => row.event_ref), candidates.map((row) => row.event_ref));
+});
+
 test("production provider router routes Peatix cache direct and readback on one page", async () => {
   const calls = [];
   const page = Object.freeze({ page_id: "owned-page-peatix" });
