@@ -2419,10 +2419,22 @@ provider source observation.
    `e68a08ade` uses the immutable `tiktok_*` snapshot kind, passes 17/17, and
    real owner exit 0 sent the slideshow 2h natural Telegram `35136` without
    blocking JP4 discovery.
+   **Anicca HE TikTok first live slot done:** the stable-release LM label and
+   manifest `048847214e3676e1b4252bb4fdd639f67484c37643ab5795a717f48aa4fd39b6`
+   arm exactly six selected routes at 3/day; 17 holds remain 0/day. HE-only pack
+   `35a31331…8bdf96f` preserves the approved content/media/caption and namespaces
+   hook IDs as `AJ-HE-CARD-*`, preventing cross-account TikTok effect collisions
+   without weakening dedupe. Creative `AJ-HE-CARD-001-35a15c7ce990` published
+   as exact Postiz `PUBLISHED` row `cmt9qwix400n0lf0y0gv7t2ek` at
+   `https://www.tiktok.com/@anicca.he/video/7678231818881206290`, with natural
+   Telegram `35148` and owner exit 0. Replay kept jobs `892→892`, receipts
+   `289→289`, distribution `23→23`, publication/message `created=false`.
+   TikTok metrics owner exit 0 registered 2h `2026-08-26T09:01:52.438Z`, 24h,
+   72h, 7d, and daily as pending.
    **Next atomic item:** enable and verify only the first live cadence slot for
-   Anicca HE TikTok `@anicca.he`; all other selected destinations stay at their
-   current state until that exact effect, natural Telegram, replay 0, and metric
-   ownership are terminal.
+   Anicca EN Card Instagram `@anicca.encards`; all other selected destinations
+   stay at their current state until that exact effect, natural Telegram,
+   replay 0, and metric ownership are terminal.
 9. Keep the daily metrics loop running for every healthy account: social post and
    account metrics, 2h/24h/72h/7d windows, and natural Telegram. Unsupported or
    empty metrics remain source-labelled `unavailable`.
