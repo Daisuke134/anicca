@@ -164,6 +164,11 @@ For every queued candidate until the execution window ends:
    `python3 skills/browser/scripts/cdp.py fillcss "$TARGET_ID" "$CSS_SELECTOR" "$VALUE"`;
    it selects the visible matching element and dispatches framework-compatible
    input/change events. Do not focus a broad `querySelector` and call `insert`.
+   Never place a dollar-prefixed amount such as `$1,000` directly in a shell
+   argument; shell positional expansion corrupts it. Write `USD 1,000` in form
+   answers, or pass text through a safely quoted variable. Before final Submit,
+   read back every non-secret text value and reject unresolved placeholders,
+   literal backslash escapes, and malformed currency such as `,000`.
    Attach files only with
    `python3 skills/browser/scripts/cdp.py setfile "$TARGET_ID" 'input[name="pitch_deck"]' fundraising/application-kit/deck.pdf`;
    there is no `upload` command.
@@ -195,7 +200,8 @@ For every queued candidate until the execution window ends:
 5. At the final review surface, verify the program, cohort/window, account,
    required answers, every rendered file input, challenge state, and that the
    submit control is actually unobstructed. Reject any visible answer containing
-   bracketed placeholders such as `[founder name]` or `[sender address]`; resolve
+   bracketed placeholders such as `[founder name]` or `[sender address]`, literal
+   `\\n`, or malformed currency such as `,000`; resolve
    it from authorized context or checkpoint without submitting. Claim the shared `application`
    effect immediately before the final Submit action.
 6. Perform one trusted final Submit action, then capture fresh completion UI and

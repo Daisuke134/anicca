@@ -207,6 +207,8 @@ test("production contract runs every minute and maximizes real applications", ()
   assert.match(dailyPrompt, /--from "\$GMAIL_ACCOUNT"/);
   assert.match(dailyPrompt, /Daisuke Narita/);
   assert.match(dailyPrompt, /bracketed placeholders/);
+  assert.match(dailyPrompt, /USD 1,000/);
+  assert.match(dailyPrompt, /malformed currency such as `,000`/);
   assert.match(dailyPrompt, /Never start an interactive shell/);
   assert.match(dailyPrompt, /empty generic formstate is\s+an observation fallback signal/);
   assert.match(dailyPrompt, /prior `failure` candidates whose recorded local or\s+technical cause has been repaired/);
