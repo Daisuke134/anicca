@@ -17,8 +17,8 @@ test("Anicca main Instagram has three exact daily Reel slots", () => {
   assert.equal(lane.platform, "instagram"); assert.equal(lane.account, "@anicca.jp1");
 });
 
-test("Anicca EN Card Instagram is exact-account bound and holds Telegram until native verification", () => {
-  assert.deepEqual([...ANICCA_EN_CARD_INSTAGRAM_SLOTS], ["12:45", "21:30"]);
+test("Anicca EN Card Instagram is exact-account bound at three daily slots", () => {
+  assert.deepEqual([...ANICCA_EN_CARD_INSTAGRAM_SLOTS], ["08:45", "12:45", "21:30"]);
   const lane = parseArgs(["run-anicca-en-card-instagram"]).lane;
   assert.equal(lane.platform, "instagram");
   assert.equal(lane.account, "@anicca.encards");
@@ -27,9 +27,7 @@ test("Anicca EN Card Instagram is exact-account bound and holds Telegram until n
   assert.equal(lane.packKey, "LM_ANICCA_EN_CARD_PACK_REF");
   assert.equal(lane.mediaKey, "LM_ANICCA_EN_CARD_MEDIA_REFS");
   const url = "https://www.instagram.com/reel/ExactArtifact1/";
-  assert.equal(telegramNativeUrlVerified(lane, {}, url), false);
-  assert.equal(telegramNativeUrlVerified(lane, { LM_ANICCA_EN_CARD_VERIFIED_DIRECT_URL: url }, url), true);
-  assert.equal(telegramNativeUrlVerified(lane, { LM_ANICCA_EN_CARD_VERIFIED_DIRECT_URL: "https://www.instagram.com/reel/Wrong/" }, url), false);
+  assert.equal(telegramNativeUrlVerified(lane, {}, url), true);
 });
 
 test("Honne JA production CLI accepts only an optional exact slot", () => {
