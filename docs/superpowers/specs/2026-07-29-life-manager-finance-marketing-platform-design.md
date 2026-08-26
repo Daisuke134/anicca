@@ -2305,6 +2305,21 @@ and fence closed at mode `0600`. Native verification remains absent, so
 Telegram is correctly held at 0. No retry or second publication is allowed;
 only this direct candidate may proceed to native owner/full-video verification.
 
+Native readback binds exact `CaptionUsername=anicca.ios.jp`, the normalized
+approved caption, and CDN host `scontent-nrt1-2.cdninstagram.com`. Candidate
+bytes are `object://sha256/ae07770e…b5640`, the same Instagram transcode bytes
+already observed for this selected source media: H.264/AAC 720x1280, video
+10.400 seconds, container 10.494 seconds. The approved object is HLG/BT.2020
+10-bit 1080x1920 while Instagram emits BT.709 8-bit. All 21 paired 2-fps frames
+visibly contain the same woman, exact hook, Japanese Anicca Card, and complete
+My Path sequence, but the raw-color comparator correctly remains false: SSIM
+minimum `0.921209`, mean `0.956471`, with ten early HLG-to-SDR frames below the
+generic `0.945` floor. Telegram remains held. A plain threshold reduction is
+forbidden. The active pre-release blocker is a minimal TDD color-transfer
+fallback that requires both a high raw whole-video mean/floor and a normalized
+per-frame mean/floor while preserving wrong-content, changed-tail, and
+truncation failures; only then may immutable native evidence be imported.
+
 Direct native verification is now partially measured but not terminal. The
 captioned embed returns HTTP 200 without redirect, exact
 `CaptionUsername=anicca.ios.jp`, and the exact normalized caption. Native MP4
@@ -2319,6 +2334,15 @@ reproduces the false negative with a downscale/re-encode and is RED. The fix
 must retain wrong-color, wrong-tail, truncation, owner, and caption rejection;
 only after GREEN plus fresh adversarial review may native evidence release the
 held natural Telegram receipt. No retry/new post is allowed.
+
+The first transcode fallback at `1dd5631b1` is also not terminal. Fresh
+adversarial review proves its `fps=2` sampling compares only 21 of 312 decoded
+frames: changing source frame 8 to full green still yields sampled SSIM 1.0 and
+would pass. It also finds no finite timeout on `ffprobe`/`ffmpeg`. The next TDD
+gate must compare every decoded frame, require exact expected/output frame
+counts, reject a single-frame mutation, and fail closed on bounded probe or
+comparison timeout while preserving the verified Instagram transcode pass.
+Telegram remains held and no provider retry/new effect is permitted.
 
 **Completed immediately preceding atomic item:** MKT-09R8-12 / Order 23I
 reconciled the complete existing Postiz history before any new effect. Read-only
