@@ -84,6 +84,23 @@ export FUNDRAISER_CAPTCHA_MODE="existing-capsolver-only"
 export AGENT_RUNNER_PROVIDER="codex"
 export AGENT_RUNNER_MODEL="gpt-5.6-luna"
 
+CONTEXT_META="$(node --input-type=module - "$REPO_ROOT" <<'NODE'
+import { readFile } from "node:fs/promises";
+import { pathToFileURL } from "node:url";
+
+const root = process.argv[2];
+const context = JSON.parse(await readFile(`${root}/.agents/startup-context.json`, "utf8"));
+const { contextDigest } = await import(pathToFileURL(`${root}/scripts/startup-context/lib.mjs`));
+process.stdout.write(`${context.context_version}\n${contextDigest(context)}\n`);
+NODE
+)" || { echo "fundraiser: canonical context preflight failed" >>"$LOG"; exit 2; }
+export FUNDRAISER_CONTEXT_VERSION="$(printf '%s\n' "$CONTEXT_META" | sed -n '1p')"
+export FUNDRAISER_CONTEXT_DIGEST="$(printf '%s\n' "$CONTEXT_META" | sed -n '2p')"
+[ -n "$FUNDRAISER_CONTEXT_VERSION" ] && [ -n "$FUNDRAISER_CONTEXT_DIGEST" ] || {
+  echo "fundraiser: canonical context metadata unavailable" >>"$LOG"
+  exit 2
+}
+
 RUNTIME_PROMPT="$EVIDENCE_DIR/runtime-prompt.md"
 {
   cat "$PROMPT"
@@ -97,7 +114,7 @@ RUNTIME_PROMPT="$EVIDENCE_DIR/runtime-prompt.md"
 - Use existing browser helpers under \`skills/browser/\`; do not launch or kill a browser.
 - If \`127.0.0.1:9222\` becomes connection-refused during this pass, do not record a candidate failure yet. Execute \`launchctl kickstart -k gui/$(id -u)/ai.anicca.cdp-daily-driver-owner\`, wait up to 20 seconds for \`curl -fsS --max-time 2 http://127.0.0.1:9222/json/version\` to succeed, reacquire a fresh fundraiser lease, and retry the same candidate observation once. Only checkpoint the transport if that exact managed recovery fails. Never launch or kill Chromium directly.
 - Read private founder values only from \`~/.config/anicca/job-search/profile.json\` and \`~/.local/share/anicca/credentials.json\`; never print or report their values.
-- Never append a \`submitted_verified\` row directly. Before Submit, create a mode-600 draft JSON containing organization, program, cohort_window, account, official_url, contact {method,destination}, every rendered question and actual answer in question_answers, and the exact non-secret claims/source paths used in context_used. After official screenshot and Telegram photo delivery, add submitted_at and evidence {completion_png,telegram_photo_message_id,provider_readback}; then run \`python3 "$REPO_ROOT/skills/fundraiser-agent/runtime/record-application.py" --draft <draft> --ledger "$STATE_ROOT/application-receipts.jsonl" --applications-dir "$STATE_ROOT/applications" --run-id "$RUN_ID"\`. Only its successful output establishes \`submitted_verified\`. Use direct compact rows only for non-success terminal states.
+- Never append a \`submitted_verified\` row directly. Before Submit, create a mode-600 draft JSON containing organization, program, cohort_window, account, official_url, contact {method,destination}, every rendered question and actual answer in question_answers, attachment names, the exact non-secret claims/source paths used in context_used, context_version \`$FUNDRAISER_CONTEXT_VERSION\`, and context_digest \`$FUNDRAISER_CONTEXT_DIGEST\`. Run \`python3 "$REPO_ROOT/skills/fundraiser-agent/runtime/record-application.py" --prepare --draft <draft> --expected-context-version "$FUNDRAISER_CONTEXT_VERSION" --expected-context-digest "$FUNDRAISER_CONTEXT_DIGEST"\` and require its prepared application_digest before claiming the final effect. After official screenshot and Telegram photo delivery, add submitted_at and evidence {completion_png,telegram_photo_message_id,provider_readback} without changing the prepared fields; then run \`python3 "$REPO_ROOT/skills/fundraiser-agent/runtime/record-application.py" --draft <draft> --ledger "$STATE_ROOT/application-receipts.jsonl" --applications-dir "$STATE_ROOT/applications" --run-id "$RUN_ID" --expected-context-version "$FUNDRAISER_CONTEXT_VERSION" --expected-context-digest "$FUNDRAISER_CONTEXT_DIGEST"\`. Only its successful output establishes \`submitted_verified\`. Use direct compact rows only for non-success terminal states.
 - Write the durable next discovery cursor atomically to \`$STATE_ROOT/cursor.json\`.
 - Immediately after every candidate terminal, execute \`bash $SENDER "Codex::: Fundraiser: <program, truthful status, non-secret readback, running counts>"\` and require \`TELEGRAM_SENT=true\`.
 - An application is verified only after its official form completion page or exact Gmail Sent message is captured as a PNG, visually readable, sent with \`bash $PHOTO_SENDER "<png>" "Codex::: Fundraiser proof: <program>"\`, and the output contains \`TELEGRAM_PHOTO_SENT=true MSGID=<id>\`. Save them as exact top-level receipt keys \`"completion_png":"<absolute path>"\` and \`"telegram_photo_message_id":<integer>\`; mentioning them only inside \`readback_reference\` is invalid.

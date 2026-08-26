@@ -7,8 +7,9 @@ actions beginning with `apply_now`, including one-shot repair actions such as
 `apply_now_callback_fix`, then continue into authenticated X and live Web
 discovery. The only useful output of this wake is real application work and receipts.
 
-Mandatory first action: read `.agents/startup-context.json` fundraising priority
-queue together with prior receipts. Before X discovery, broad Web discovery, or
+Mandatory first action: read `.agents/startup-context.json` for canonical public facts,
+then read `.agents/fundraising-opportunities.json` for the current priority queue
+together with prior receipts. Before X discovery, broad Web discovery, or
 any unlisted candidate, process every program whose action begins with `apply_now`
 in queue order. A more specific one-shot action suffix is itself concrete new
 evidence and requires one reopen during that wake. First
@@ -140,7 +141,7 @@ claims distinguishable, and never rename revenue as MRR/ARR without period proof
 3. Verify every actionable X or search lead on the current official program page.
 4. Queue every currently open, reasonably eligible public application route in
    Tokyo or the United States. Reject Kenya and every other geography. Prefer
-   in-person cohorts; allow remote only when explicitly listed in context.
+   in-person cohorts; allow remote only when explicitly listed in the current opportunity file.
 5. Skip only exact receipt duplicates, actually closed programs, or demonstrably
    ineligible programs. A blocked candidate moves to a durable checkpoint while
    the pass continues with the next candidate.
@@ -280,7 +281,13 @@ For every queued candidate until the execution window ends:
    directory. It must contain the official URL, actual contact destination/method,
    every visible question paired with the final rendered answer (including blank
    optional answers), attachment names, and the exact context claims/source paths
-   used to derive answers. For email, record the recipient and pair the complete
+   used to derive answers. It must also contain `context_version` equal to
+   `$FUNDRAISER_CONTEXT_VERSION` and `context_digest` equal to
+   `$FUNDRAISER_CONTEXT_DIGEST`. Run `$FUNDRAISER_RECORD_APPLICATION --prepare`
+   with both expected-context arguments and require its returned
+   `application_digest` before claiming the final effect. Do not change any
+   prepared answer, attachment, identity, or context field after that preview.
+   For email, record the recipient and pair the complete
    rendered subject/body with synthetic questions `Email subject` and `Email body`.
    Never put passwords, cookies, CAPTCHA values, or authentication tokens in it.
 6. Perform one trusted final Submit action, then capture fresh completion UI and
@@ -311,9 +318,10 @@ For every queued candidate until the execution window ends:
    `submitted_verified`. A completion DOM, click, local PNG, API response, or email without
    the delivered Telegram photo remains `evidence_incomplete` and must never be
    reported as a verified submission.
-   Add the official submitted_at time and evidence fields to the draft, then invoke
-   `$FUNDRAISER_RECORD_APPLICATION` with the draft, ledger, applications directory,
-   and run ID. Never append `submitted_verified` yourself. The recorder atomically
+   Add only the official submitted_at time and evidence fields to the prepared draft,
+   then invoke `$FUNDRAISER_RECORD_APPLICATION` with the draft, ledger, applications
+   directory, run ID, and the same expected context version/digest. Never append `submitted_verified` yourself.
+   The recorder atomically
    writes the full dossier, hashes it, rejects a prior terminal identity, and appends
    the compact index row. If it fails, report `evidence_incomplete`; do not recreate
    the external effect. The dossier path and SHA-256 in the index are the durable

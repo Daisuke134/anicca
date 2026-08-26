@@ -9,6 +9,7 @@ const dailyPrompt = await readFile(new URL("../prompts/daily.md", import.meta.ur
 const skill = await readFile(new URL("../SKILL.md", import.meta.url), "utf8");
 const runtimeScript = await readFile(new URL("../runtime/run.sh", import.meta.url), "utf8");
 const productionContext = JSON.parse(await readFile(new URL("../../../.agents/startup-context.json", import.meta.url), "utf8"));
+const productionOpportunities = JSON.parse(await readFile(new URL("../../../.agents/fundraising-opportunities.json", import.meta.url), "utf8"));
 const emailValidator = new URL("../runtime/validate-outbound-email.py", import.meta.url);
 const applicationRecorder = new URL("../runtime/record-application.py", import.meta.url);
 const startupContext = Object.freeze({
@@ -241,6 +242,9 @@ test("production contract runs every minute and maximizes real applications", ()
   assert.match(runtimeScript, /status == "submitted_verified"/);
   assert.match(runtimeScript, /FUNDRAISER_APPLICATIONS_DIR/);
   assert.match(runtimeScript, /record-application\.py/);
+  assert.doesNotMatch(runtimeScript, /delete context\./);
+  assert.match(runtimeScript, /--prepare/);
+  assert.match(dailyPrompt, /application_digest/);
   assert.match(runtimeScript, /MIN_FREE_KIB=\$\(\(1536 \* 1024\)\)/);
   assert.match(runtimeScript, /disk-pressure\.block/);
   assert.match(runtimeScript, /disk-cleanup/);
@@ -283,23 +287,45 @@ test("verified application recorder writes a full dossier and rejects exact repl
   const draft = join(root, "draft.json");
   const ledger = join(root, "receipts.jsonl");
   const applications = join(root, "applications");
+  const contextVersion = "2026-08-27.2";
+  const contextDigest = "9fbe6198c6d61da47d68767eec90a1d95d2e07058f024448d86372b5f3035338";
   await writeFile(png, "official completion image");
   await writeFile(draft, JSON.stringify({
     organization: "Example VC", program: "Accelerator", cohort_window: "Cohort 1",
     account: "account:test", official_url: "https://example.test/apply",
-    submitted_at: "2026-08-26T15:00:00Z",
     contact: { method: "web_form", destination: "https://example.test/apply" },
     question_answers: [{ question: "What are you building?", answer: "Life Manager" }],
+    attachments: [],
     context_used: { "product.name": ".agents/startup-context.json" },
-    evidence: { completion_png: png, telegram_photo_message_id: 123,
-      provider_readback: "Thank you for applying" },
+    context_version: contextVersion,
+    context_digest: contextDigest,
   }));
+  const expectedContextArgs = ["--expected-context-version", contextVersion,
+    "--expected-context-digest", contextDigest];
+  const prepare = spawnSync("python3", [applicationRecorder.pathname, "--prepare", "--draft", draft,
+    ...expectedContextArgs], { encoding: "utf8" });
+  assert.equal(prepare.status, 0, prepare.stderr);
+  const prepared = JSON.parse(await readFile(draft, "utf8"));
+  assert.match(prepared.application_digest, /^[a-f0-9]{64}$/);
+  prepared.submitted_at = prepared.previewed_at;
+  prepared.evidence = { completion_png: png, telegram_photo_message_id: 123,
+    provider_readback: "Thank you for applying" };
   const args = [applicationRecorder.pathname, "--draft", draft, "--ledger", ledger,
-    "--applications-dir", applications, "--run-id", "test-run"];
+    "--applications-dir", applications, "--run-id", "test-run", ...expectedContextArgs];
+  prepared.question_answers[0].answer = "Tampered after preview";
+  await writeFile(draft, JSON.stringify(prepared));
+  const tampered = spawnSync("python3", args, { encoding: "utf8" });
+  assert.notEqual(tampered.status, 0);
+  assert.match(tampered.stderr, /application_digest does not match/);
+  prepared.question_answers[0].answer = "Life Manager";
+  await writeFile(draft, JSON.stringify(prepared));
   const first = spawnSync("python3", args, { encoding: "utf8" });
   assert.equal(first.status, 0, first.stderr);
   const row = JSON.parse((await readFile(ledger, "utf8")).trim());
   assert.equal(row.status, "submitted_verified");
+  assert.equal(row.context_version, contextVersion);
+  assert.equal(row.context_digest, contextDigest);
+  assert.equal(row.application_digest, prepared.application_digest);
   assert.match(row.application_record_sha256, /^[a-f0-9]{64}$/);
   const dossier = JSON.parse(await readFile(row.application_record_path, "utf8"));
   assert.equal(dossier.question_answers[0].answer, "Life Manager");
@@ -326,16 +352,16 @@ test("outbound email preflight rejects rendered spam defects", () => {
 });
 
 test("production queue enforces founder geography, format, priority, and YC hold", () => {
-  const fundraising = productionContext.fundraising;
+  const fundraising = productionOpportunities;
   assert.deepEqual(fundraising.geographies, [
     "Tokyo, Japan",
     "United States, with San Francisco Bay Area first",
   ]);
   assert.match(fundraising.format_priority, /in-person/i);
-  assert.match(fundraising.explicit_format_exceptions.join("\n"), /Base Batches/i);
+  assert.deepEqual(fundraising.explicit_format_exceptions, []);
   assert.deepEqual(fundraising.priority_queue.slice(0, 2).map((item) => item.program), [
-    "DelightX Cohort 3",
-    "Base Batches 004",
+    "ASAC 4th Pre-seed / 23rd Seed Program",
+    "Y Combinator",
   ]);
   assert.equal(fundraising.priority_queue.find((item) => item.program === "Y Combinator")?.action, "hold_do_not_submit");
   assert.match(dailyPrompt, /Reject Kenya and every other geography/);

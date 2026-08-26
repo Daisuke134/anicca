@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "updated_at": "2026-08-27T02:50:00+09:00",
+  "geographies": [
+    "Tokyo, Japan",
+    "United States, with San Francisco Bay Area first"
+  ],
+  "format_priority": "Prefer in-person programs where the founder works alongside other founders. Do not apply outside Tokyo or the United States.",
+  "explicit_format_exceptions": [],
+  "priority_queue": [
+    {
+      "program": "ASAC 4th Pre-seed / 23rd Seed Program",
+      "official_url": "https://www.acceleration-tokyo.metro.tokyo.lg.jp/program.php",
+      "action": "apply_now_current_official_batch",
+      "reason": "Tokyo Metropolitan Government officially opened applications on August 25, 2026 for the ASAC 4th Pre-seed and 23rd Seed programs, with a September 13, 2026 deadline. The official program page requires login before the application form and does not publicly list a founder-video requirement. Reconcile the prior nonterminal registration attempt before any new registration effect; if no terminal registration receipt exists, complete the ordinary account/application flow, then require an official completion PNG plus Telegram photo message ID. Later interview or attendance is a human checkpoint and is not authorized for agent impersonation.",
+      "organization": "Tokyo Metropolitan Government",
+      "cohort_window": "2026-08-25 through 2026-09-13"
+    },
+    {
+      "program": "Y Combinator",
+      "official_url": "https://www.ycombinator.com/apply",
+      "action": "hold_do_not_submit",
+      "reason": "The founder explicitly wants to wait before submitting this high-priority application."
+    }
+  ]
+}
