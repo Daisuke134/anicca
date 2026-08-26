@@ -7,7 +7,7 @@
 
 import { createHash } from "node:crypto";
 
-export const REVENUE_RECEIPT_SCHEMA_VERSION = 1;
+export const REVENUE_RECEIPT_SCHEMA_VERSION = 2;
 export const REVENUE_RECEIPT_KIND = "revenue_receipt";
 
 const ADDRESS_RE = /^0x[0-9a-fA-F]{40}$/;
@@ -190,6 +190,9 @@ function canonicalValue(value) {
  */
 export function canonicalRevenueReceiptKey(receipt) {
   if (!receipt || typeof receipt !== "object") fail("INVALID_RECEIPT", "receipt must be an object");
+  if (receipt.schema_version !== undefined && Number(receipt.schema_version) !== REVENUE_RECEIPT_SCHEMA_VERSION) {
+    fail("UNSUPPORTED_VERSION", `schema_version ${JSON.stringify(receipt.schema_version)} is not supported`, "schema_version");
+  }
   const proof = normalizeProof(receipt);
   // Idempotency is the provider/chain proof identity only.  Metadata changes cannot mint a second
   // row, while a genuinely distinct transfer log or provider receipt remains distinct.
@@ -200,7 +203,7 @@ export function canonicalRevenueReceiptKey(receipt) {
     }
     : { chain_id: proof.chain_id, tx_hash: proof.tx_hash, log_index: proof.log_index };
   const material = JSON.stringify(canonicalValue(identity));
-  return `revenue:v1:${createHash("sha256").update(material, "utf8").digest("hex")}`;
+  return `revenue:v2:${createHash("sha256").update(material, "utf8").digest("hex")}`;
 }
 
 function deepFreeze(value) {
@@ -213,6 +216,9 @@ function deepFreeze(value) {
 export function normalizeRevenueReceipt(input, options = {}) {
   if (!input || typeof input !== "object" || Array.isArray(input)) {
     fail("INVALID_RECEIPT", "receipt must be an object");
+  }
+  if (input.schema_version !== undefined && Number(input.schema_version) !== REVENUE_RECEIPT_SCHEMA_VERSION) {
+    fail("UNSUPPORTED_VERSION", `schema_version ${JSON.stringify(input.schema_version)} is not supported`, "schema_version");
   }
   const provider = normalizeIdentity(valueOf(input, ["provider"]), "provider").toLowerCase();
   const payer = normalizeIdentity(valueOf(input, ["payer", "external_payer", "externalPayer"]), "payer");

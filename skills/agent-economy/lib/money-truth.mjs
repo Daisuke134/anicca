@@ -12,6 +12,7 @@ import {
   canonicalRevenueReceiptKey,
   isNormalizedRevenueReceipt,
   normalizeRevenueReceipt,
+  REVENUE_RECEIPT_SCHEMA_VERSION,
 } from "./revenue-receipt.mjs";
 
 const SWAP_SOURCES = new Set(["swap", "swap-eth-usdc", "swap-usdc-eth"]);
@@ -221,7 +222,7 @@ export async function reconcileLedger({ ledgerPath, correctionPath, fetchReceipt
     return {
       attempted_receipts: attempted.length,
       persisted_corrections: durable.length,
-      summary: summarizeRealizedRevenue(rows, corrections, { require_verified_proof: true }),
+      summary: summarizeRealizedRevenue(rows, corrections),
     };
   });
   if (result?.locked) return { attempted_receipts: 0, persisted_corrections: 0, locked: true };
@@ -229,8 +230,8 @@ export async function reconcileLedger({ ledgerPath, correctionPath, fetchReceipt
 }
 
 function receiptInRow(row) {
-  const candidate = row && typeof row === "object" && row.schema_version === 1 && row.kind === "revenue_receipt"
-    ? row : row && typeof row === "object" && row.receipt && row.receipt.schema_version === 1
+  const candidate = row && typeof row === "object" && row.schema_version === REVENUE_RECEIPT_SCHEMA_VERSION && row.kind === "revenue_receipt"
+    ? row : row && typeof row === "object" && row.receipt && row.receipt.schema_version === REVENUE_RECEIPT_SCHEMA_VERSION
       && row.receipt.kind === "revenue_receipt" ? row.receipt : null;
   if (candidate) {
     try { return normalizeRevenueReceipt(candidate); } catch { return null; }
@@ -268,6 +269,15 @@ export async function reconcileRevenueReceipts({ journalPath, receipts, nowTs, s
     : (selfPayers !== undefined && selfPayers !== null && selfPayers !== "" ? selfPayers : (selfWallets ?? []));
   const result = await withJournalLock(journalPath, async () => {
     const existing = await readJsonl(journalPath);
+    for (const row of existing) {
+      if (row?.kind !== "revenue_receipt") continue;
+      if (row.schema_version !== REVENUE_RECEIPT_SCHEMA_VERSION) {
+        throw new RevenueReceiptValidationError("UNSUPPORTED_VERSION", "journal contains an unsupported receipt version", "schema_version");
+      }
+      // Validate all stored canonical rows before deciding whether a new candidate is a duplicate.
+      // A malformed/forged old row must never be silently bypassed by writing a v2 copy.
+      normalizeRevenueReceipt(row);
+    }
     const known = new Set(existing.map((row) => isNormalizedRevenueReceipt(row) ? row.idempotency_key : null).filter(Boolean));
     const seen = new Set();
     const normalized = [];
@@ -326,12 +336,11 @@ function isExplicitlyExcluded(row) {
   return row?.test === true || SWAP_SOURCES.has(source) || INTERNAL_SOURCES.has(source);
 }
 
-function isVerifiedExternal(row, correctionsByKey, options = {}) {
+function isVerifiedExternal(row, correctionsByKey) {
   if (isExplicitlyExcluded(row) || row?.external !== true || !finitePositive(row?.net_usdc)) return false;
   if (row.tx) {
     const correction = correctionForRow(row, correctionsByKey);
-    if (options.require_verified_proof === true) return correction?.verified === true && correction.status === "0x1";
-    return correctionStatus(row, correctionsByKey) === "0x1";
+    return correction?.verified === true && correction.status === "0x1";
   }
   if (row.sig) return row.confirmed === true;
   return row.chain === "hyperliquid" && row.fill_tid != null && row.confirmed === true;
@@ -366,7 +375,7 @@ export function summarizeRealizedRevenue(rows, corrections = [], options = {}) {
       }
     } else if (isExplicitlyExcluded(row) || row?.external !== true || !finitePositive(row?.net_usdc)) {
       excludedRows += 1;
-    } else if (isVerifiedExternal(row, correctionsByKey, options)) {
+    } else if (isVerifiedExternal(row, correctionsByKey)) {
       const correction = correctionForRow(row, correctionsByKey);
       const correctedValue = correction && (correction.signed_net ?? correction.signedNet ?? correction.net_usdc ?? correction.net);
       const correctedNet = correctedValue === undefined || correctedValue === null

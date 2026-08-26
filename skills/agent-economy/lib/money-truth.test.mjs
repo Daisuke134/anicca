@@ -47,14 +47,14 @@ test("receipt timeout stays unverified and contributes no revenue", async () => 
   const row = { source: "gig", net_usdc: 0.02, earn_usdc: 0.02, tx: TX, status: "null", external: true };
   const corrections = await reconcilePendingReceipts([row], async () => null);
   assert.deepEqual(corrections, [{ tx: TX, status: null }]);
-  assert.equal(summarizeRealizedRevenue([row], corrections).external_net_usdc, 0);
+  assert.equal(summarizeRealizedRevenue([row], []).external_net_usdc, 0);
 });
 
 test("plain status=0x1 callback is not accepted without verified transfer proof", async () => {
-  const row = { source: "gig", net_usdc: 0.02, earn_usdc: 0.02, tx: TX, status: "null", external: true };
+  const row = { source: "gig", net_usdc: 0.02, earn_usdc: 0.02, tx: TX, status: "0x1", external: true };
   const corrections = await reconcilePendingReceipts([row], async () => "0x1");
   assert.deepEqual(corrections, [{ tx: TX, status: null }]);
-  assert.equal(summarizeRealizedRevenue([row], corrections, { require_verified_proof: true }).external_net_usdc, 0);
+  assert.equal(summarizeRealizedRevenue([row], []).external_net_usdc, 0);
 });
 
 test("self, test, and non-external rows never become external revenue", async () => {
@@ -212,6 +212,15 @@ test("reconcileRevenueReceipts always re-normalizes a forged canonical marker", 
   const journalPath = join(dir, "revenue-journal.jsonl");
   const forged = { ...revenueReceipt(), signed_net: 999, idempotency_key: revenueReceipt().idempotency_key };
   await assert.rejects(() => reconcileRevenueReceipts({ journalPath, receipts: [forged] }), /ARITHMETIC_MISMATCH|canonical|idempotency/i);
+});
+
+test("reconcileRevenueReceipts refuses a stored v1 row instead of re-appending it as v2", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "money-truth-revenue-"));
+  const journalPath = join(dir, "revenue-journal.jsonl");
+  const old = { ...revenueReceipt(), schema_version: 1, idempotency_key: `revenue:v1:${"a".repeat(64)}` };
+  await writeFile(journalPath, `${JSON.stringify(old)}\n`);
+  await assert.rejects(() => reconcileRevenueReceipts({ journalPath, receipts: [revenueReceipt()] }), /unsupported|version/i);
+  assert.equal((await readFile(journalPath, "utf8")).trim().split("\n").length, 1);
 });
 
 test("reconcileRevenueReceipts fails closed on corrupt JSONL and serializes concurrent appends", async () => {

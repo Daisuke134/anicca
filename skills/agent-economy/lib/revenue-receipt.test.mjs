@@ -55,7 +55,7 @@ const baseInput = (overrides = {}) => ({
 
 test("normalizes a versioned external RevenueReceipt with signed net and canonical key", () => {
   const receipt = normalizeRevenueReceipt(baseInput());
-  assert.equal(receipt.schema_version, 1);
+  assert.equal(receipt.schema_version, 2);
   assert.equal(receipt.provider, "x402");
   assert.equal(receipt.payer, PAYER.toLowerCase());
   assert.equal(receipt.recipient, RECIPIENT.toLowerCase());
@@ -66,7 +66,7 @@ test("normalizes a versioned external RevenueReceipt with signed net and canonic
   assert.equal(receipt.asset, "USDC");
   assert.equal(receipt.terminal_state, "settled");
   assert.equal(receipt.occurred_at, "2026-08-27T00:00:00.000Z");
-  assert.match(receipt.idempotency_key, /^revenue:v1:[0-9a-f]{64}$/);
+  assert.match(receipt.idempotency_key, /^revenue:v2:[0-9a-f]{64}$/);
   assert.equal(receipt.idempotency_key, canonicalRevenueReceiptKey(receipt));
   assert.ok(Object.isFrozen(receipt));
 });
@@ -94,6 +94,18 @@ test("provider proof key is namespaced while same-provider metadata changes dedu
   const paypal = normalizeRevenueReceipt(baseInput({ provider: "paypal", proof: { provider_receipt_id: "same-id", verified: true } }));
   assert.equal(stripe.idempotency_key, stripeChanged.idempotency_key);
   assert.notEqual(stripe.idempotency_key, paypal.idempotency_key);
+});
+
+test("v1 receipts are rejected rather than silently re-appended as v2", () => {
+  const v2 = normalizeRevenueReceipt(baseInput());
+  assert.throws(
+    () => normalizeRevenueReceipt({ ...v2, schema_version: 1 }),
+    (error) => error instanceof RevenueReceiptValidationError && error.code === "UNSUPPORTED_VERSION",
+  );
+  assert.throws(
+    () => canonicalRevenueReceiptKey({ ...v2, schema_version: 1 }),
+    (error) => error instanceof RevenueReceiptValidationError && error.code === "UNSUPPORTED_VERSION",
+  );
 });
 
 test("rejects malformed signed arithmetic and non-terminal provider state", () => {

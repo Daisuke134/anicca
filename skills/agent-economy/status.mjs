@@ -47,7 +47,7 @@ export function summarizeEconomyStatus({
   const shelter30 = recent(shelterRows, start, now);
   // Production status requires the same verified proof gate as the reconcile loop.  Legacy rows that
   // merely claim status=0x1 remain visible as unverified but never become realized revenue.
-  const revenue = summarizeRealizedRevenue(earn30, corrections, { require_verified_proof: true });
+  const revenue = summarizeRealizedRevenue(earn30, corrections);
   const computeCost = sumField(compute30, ["cost_usd", "costUsd", "est_usd"]);
   const shelterCost = sumField(shelter30, ["settledLeaseCostUsd", "shelter_cost_usd"]);
   const graduation = graduationGate({
@@ -69,6 +69,7 @@ export function summarizeEconomyStatus({
 }
 
 async function readJsonl(file) {
+  if (!file) return [];
   try {
     const raw = await fs.readFile(file, "utf8");
     return raw.split("\n").filter(Boolean).map((line) => {
@@ -82,12 +83,23 @@ async function readJsonl(file) {
 
 const isMain = process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
 if (isMain) {
-  const [earnPath, correctionPath, computePath, shelterPath] = process.argv.slice(2);
-  const [earnRows, corrections, computeRows, shelterRows] = await Promise.all([
+  const [earnPath, correctionPath, computePath, shelterPath, journalPath] = process.argv.slice(2);
+  const defaultJournalPath = process.env.ANICCA_HOME
+    ? path.join(process.env.ANICCA_HOME, "skills", "earn", "state", "revenue-receipts.jsonl") : undefined;
+  const [earnRows, corrections, computeRows, shelterRows, journalRows] = await Promise.all([
     readJsonl(earnPath), readJsonl(correctionPath), readJsonl(computePath), readJsonl(shelterPath),
+    readJsonl(journalPath || defaultJournalPath),
   ]);
+  const receiptKeys = new Set();
+  const combinedEarnRows = [...earnRows, ...journalRows].filter((row) => {
+    const key = row?.kind === "revenue_receipt" && typeof row.idempotency_key === "string" ? row.idempotency_key : null;
+    if (!key) return true;
+    if (receiptKeys.has(key)) return false;
+    receiptKeys.add(key);
+    return true;
+  });
   process.stdout.write(`${JSON.stringify(summarizeEconomyStatus({
-    earnRows,
+    earnRows: combinedEarnRows,
     corrections,
     computeRows,
     shelterRows,
