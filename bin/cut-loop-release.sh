@@ -278,15 +278,14 @@ dependency_entries() {
   )
 }
 
-dependency_digest() {
-  dependency_entries | shasum -a 256 | awk '{print $1}'
-}
-
 dependency_manifest() {
   local manifest="$DEST/DEPENDENCY-MANIFEST.tsv"
   dependency_entries > "$manifest" || die "could not create dependency manifest"
   DEPENDENCY_TREE_MANIFEST_SHA256="$(shasum -a 256 "$manifest" | awk '{print $1}')" \
     || die "could not digest dependency manifest"
+  # The manifest bytes are exactly the dependency_entries stream. Reuse their digest instead of
+  # traversing and hashing every installed dependency a second time (nearly 100k files here).
+  DEPENDENCY_SHA256="$DEPENDENCY_TREE_MANIFEST_SHA256"
 }
 
 source_manifest() {
@@ -386,8 +385,6 @@ if [ -f "$DEST/package.json" ] || [ -f "$DEST/package-lock.json" ]; then
   DEPENDENCY_MANIFEST_SHA256="$(shasum -a 256 "$DEST/package.json" | awk '{print $1}')" \
     || { rm -rf "$DEST"; die "could not digest package.json"; }
   validate_release_node_modules
-  DEPENDENCY_SHA256="$(dependency_digest)" \
-    || { rm -rf "$DEST"; die "could not digest installed dependencies"; }
   dependency_manifest
   NODE_VERSION="$("$NODE_BIN" --version 2>/dev/null)" \
     || { rm -rf "$DEST"; die "could not read node runtime version"; }
