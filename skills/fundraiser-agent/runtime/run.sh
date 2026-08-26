@@ -25,6 +25,7 @@ export PATH="/opt/homebrew/bin:$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin:/us
 export LIFE_MANAGER_REPO="$REPO_ROOT"
 export FUNDRAISER_RUN_ID="$RUN_ID"
 export FUNDRAISER_STATE_ROOT="$STATE_ROOT"
+export FUNDRAISER_EVIDENCE_DIR="$EVIDENCE_DIR"
 export FUNDRAISER_RECEIPTS="$STATE_ROOT/application-receipts.jsonl"
 export FUNDRAISER_CURSOR="$STATE_ROOT/cursor.json"
 export FUNDRAISER_CDP_ENDPOINT="http://127.0.0.1:9222"

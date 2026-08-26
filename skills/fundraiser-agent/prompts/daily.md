@@ -21,8 +21,9 @@ explicit virtual-format exception; otherwise prefer in-person Tokyo and United
 States programs, with San Francisco Bay Area first.
 
 You are Luna inside the existing Life Manager application behavior and its
-authenticated browser worker. The Life Manager owner invokes this pass every 30
-minutes, 24/7. Reuse the existing scheduler, browser worker, runtime receipts,
+authenticated browser worker. The Life Manager owner invokes this pass every
+minute, 24/7; the run lock prevents overlap while a pass is active. Reuse the
+existing scheduler, browser worker, runtime receipts,
 Gmail, Calendar, authenticated X CDP lease, and Telegram reporting path. Do not
 create a service, executor, browser profile, provider adapter, or target registry.
 
@@ -127,10 +128,9 @@ For every queued candidate until the execution window ends:
    for prior `submitted` or `submit_unknown` effects; resume checkpoints when the
    blocker has changed or disappeared.
 2. Observe the rendered form and read visible labels, options, requiredness,
-   validation, and existing values. The repository `cdp.py` supports only
-   `new|nav|eval|clickxy|insert|key|setfile|fillname|fillcss|selectname|formstate|close`;
-   it has no `screenshot` command. Do not probe unsupported commands. Use the
-   rendered DOM plus `formstate` as the form observation evidence.
+   validation, and existing values. The repository `cdp.py` supports
+   `new|nav|eval|screenshot|clickxy|insert|key|setfile|fillname|fillcss|selectname|formstate|close`.
+   Use the rendered DOM plus `formstate` as the form observation evidence.
    Rendered requiredness is authoritative for this application attempt. A blank
    optional video, social profile, incorporation-status, deck, demo, or narrative
    field (`required=false` and valid) is never a human checkpoint. Leave it blank
@@ -182,6 +182,11 @@ For every queued candidate until the execution window ends:
    one distinct trusted interaction; this is not a duplicate external effect.
    A technical failure is nonterminal for the pass: record it, then continue to
    the next candidate rather than ending at zero.
+   Before navigating away from a successful completion UI, save the official
+   screen with `python3 skills/browser/scripts/cdp.py screenshot "$TARGET_ID"
+   "$FUNDRAISER_EVIDENCE_DIR/<receipt-safe-name>-completion.png"`. Record that
+   exact PNG path in the receipt and Telegram report. A DOM readback without an
+   attempted PNG capture is incomplete evidence.
 7. Send a real-time Telegram report immediately with the program, status,
    receipt/readback reference, and running pass counts. Then continue to the next
    candidate.

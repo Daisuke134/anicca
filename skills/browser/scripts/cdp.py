@@ -3,11 +3,13 @@
 
 from __future__ import annotations
 
+import base64
 import json
 import os
 import sys
 import time
 import urllib.request
+from pathlib import Path
 
 from websocket import create_connection
 
@@ -66,6 +68,23 @@ def navigate(tid: str, url: str) -> None:
         _rpc(ws, 1, "Page.enable")
         _rpc(ws, 2, "Page.navigate", {"url": url})
         time.sleep(0.5)
+    finally:
+        ws.close()
+
+
+def screenshot(tid: str, path: str) -> dict:
+    destination = Path(path).expanduser().resolve()
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    ws = _page(tid)
+    try:
+        _rpc(ws, 1, "Page.enable")
+        result = _rpc(ws, 2, "Page.captureScreenshot", {
+            "format": "png", "captureBeyondViewport": True, "fromSurface": True,
+        })
+        payload = base64.b64decode(result["data"])
+        destination.write_bytes(payload)
+        os.chmod(destination, 0o600)
+        return {"path": str(destination), "bytes": len(payload)}
     finally:
         ws.close()
 
@@ -194,7 +213,7 @@ def form_state(tid: str) -> list[dict]:
 
 def main(argv: list[str]) -> int:
     if not argv:
-        raise SystemExit("usage: cdp.py new|nav|eval|clickxy|insert|key|setfile|fillname|fillcss|selectname|formstate|close ...")
+        raise SystemExit("usage: cdp.py new|nav|eval|screenshot|clickxy|insert|key|setfile|fillname|fillcss|selectname|formstate|close ...")
     command, *args = argv
     if command == "new":
         print(_browser_call("Target.createTarget", {"url": args[0] if args else "about:blank"})["targetId"])
@@ -203,6 +222,8 @@ def main(argv: list[str]) -> int:
     elif command == "eval":
         source = sys.stdin.read() if args[1] == "-" else open(args[1], encoding="utf-8").read()
         print(json.dumps(evaluate(args[0], source), ensure_ascii=False))
+    elif command == "screenshot":
+        print(json.dumps(screenshot(args[0], args[1]), ensure_ascii=False))
     elif command == "clickxy":
         print(json.dumps(click(args[0], int(args[1]), int(args[2]))))
     elif command == "insert":

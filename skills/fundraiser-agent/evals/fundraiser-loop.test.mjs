@@ -187,9 +187,9 @@ function contextPlanner() {
   };
 }
 
-test("production contract runs every 30 minutes and maximizes real applications", () => {
+test("production contract runs every minute and maximizes real applications", () => {
   const contract = `${skill}\n${dailyPrompt}`;
-  assert.match(contract, /every 30 minutes/i);
+  assert.match(contract, /every minute/i);
   assert.match(contract, /as many[^\n]*applications[^\n]*as possible/i);
   assert.match(contract, /continue[^\n]*after[^\n]*(?:first|one)[^\n]*(?:submit|application)/i);
   assert.match(contract, /authenticated[^\n]*X[^\n]*CDP/i);
@@ -204,7 +204,8 @@ test("production contract runs every 30 minutes and maximizes real applications"
   assert.match(dailyPrompt, /gog gmail send[^\n]*--attach fundraising\/application-kit\/deck\.pdf/);
   assert.match(dailyPrompt, /in:sent to:<recipient>/);
   assert.match(dailyPrompt, /prior `failure` candidates whose recorded local or\s+technical cause has been repaired/);
-  assert.match(dailyPrompt, /it has no `screenshot` command/);
+  assert.match(dailyPrompt, /cdp\.py screenshot/);
+  assert.match(dailyPrompt, /completion\.png/);
   assert.match(dailyPrompt, /never release an application lease until every fill/);
   assert.match(dailyPrompt, /there is no `upload` command/);
   assert.match(dailyPrompt, /Do not reopen the same video, voice, binding-term/);
@@ -227,8 +228,8 @@ test("production queue enforces founder geography, format, priority, and YC hold
   assert.match(fundraising.format_priority, /in-person/i);
   assert.match(fundraising.explicit_format_exceptions.join("\n"), /Base Batches/i);
   assert.deepEqual(fundraising.priority_queue.slice(0, 2).map((item) => item.program), [
+    "DelightX Cohort 3",
     "Base Batches 004",
-    "Open Network Lab Seed Accelerator 32nd Batch",
   ]);
   assert.equal(fundraising.priority_queue.find((item) => item.program === "Y Combinator")?.action, "hold_do_not_submit");
   assert.match(dailyPrompt, /Reject Kenya and every other geography/);
