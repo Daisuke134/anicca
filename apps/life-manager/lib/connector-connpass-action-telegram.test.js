@@ -91,3 +91,19 @@ test("public crypto token language is allowed while credential token language is
     })] }));
   } finally { fs.rmSync(stateDir, { recursive: true, force: true }); }
 });
+
+test("action boundary truncates a valid ranked title only for Telegram display", async () => {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connpass-action-title-"));
+  try {
+    let delivered = "";
+    const reporter = createConnpassActionTelegram({
+      stateDir, wakeId: "wake-connpass-title", telegramTarget: "private-target",
+      now: () => new Date("2026-08-27T01:00:00.000Z"),
+      send: async (message) => { delivered = message; return { messageId: "7733" }; },
+    });
+    const result = await reporter.report({ candidates: [candidate({ title: "t".repeat(200) })] });
+    assert.equal(result.telegram_provider_id, "7733");
+    assert.match(delivered, new RegExp(`1\\. ${"t".repeat(160)}\\n`));
+    assert.doesNotMatch(delivered, new RegExp("t".repeat(161)));
+  } finally { fs.rmSync(stateDir, { recursive: true, force: true }); }
+});

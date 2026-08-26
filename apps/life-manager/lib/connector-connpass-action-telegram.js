@@ -29,7 +29,7 @@ function normalize(candidate) {
   return Object.freeze({
     event_ref: candidate.event_ref,
     canonical_url: candidate.canonical_url,
-    title: safe(candidate.title, 160),
+    title: safe(candidate.title, 500).slice(0, 160),
     participation_slot_status: candidate.participation_slot_status,
     lightning_talk_status: candidate.lightning_talk_status,
     participant_limit: integer(candidate.participant_limit),
