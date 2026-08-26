@@ -12,6 +12,9 @@ from pathlib import Path
 JAPANESE = re.compile(r"[\u3040-\u30ff\u3400-\u9fff]")
 KANA = re.compile(r"[\u3040-\u30ff]")
 LATIN = re.compile(r"[A-Za-z]")
+ENGLISH_PHRASE = re.compile(
+    r"\b[A-Za-z][A-Za-z0-9+#./-]*(?:\s+[A-Za-z][A-Za-z0-9+#./-]*){2,}\b"
+)
 
 
 def language_matches(language: str, text: str) -> bool:
@@ -20,7 +23,12 @@ def language_matches(language: str, text: str) -> bool:
     # Product names such as AI, X, and SaaS are fine inside Japanese prose. A complete English
     # sentence is not: requiring at least as many Japanese as Latin letters keeps those terms
     # usable while failing closed on the mixed-language model failure seen in production review.
-    japanese_dominant = bool(KANA.search(text)) and japanese_count >= max(2, latin_count)
+    without_urls = re.sub(r"https?://\S+", "", text)
+    japanese_dominant = (
+        bool(KANA.search(text))
+        and japanese_count >= max(2, latin_count)
+        and not ENGLISH_PHRASE.search(without_urls)
+    )
     return japanese_dominant if language == "ja" else (
         language == "en" and japanese_count == 0 and latin_count > 0
     )
