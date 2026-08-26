@@ -122,6 +122,7 @@ def key(tid: str, value: str) -> dict:
 
 
 def set_file(tid: str, selector: str, path: str, index: int = 0) -> dict:
+    resolved_path = Path(path).expanduser().resolve(strict=True)
     ws = _page(tid)
     try:
         _rpc(ws, 1, "DOM.enable")
@@ -130,8 +131,8 @@ def set_file(tid: str, selector: str, path: str, index: int = 0) -> dict:
         if not nodes:
             return {"__error__": f"no file input for {selector}"}
         node = nodes[min(index, len(nodes) - 1)]
-        _rpc(ws, 4, "DOM.setFileInputFiles", {"nodeId": node, "files": [path]})
-        return {"set": path, "node": node, "of": len(nodes)}
+        _rpc(ws, 4, "DOM.setFileInputFiles", {"nodeId": node, "files": [str(resolved_path)]})
+        return {"set": str(resolved_path), "node": node, "of": len(nodes)}
     finally:
         ws.close()
 
@@ -189,6 +190,31 @@ def fill_css(tid: str, selector: str, value: str) -> dict:
     return evaluate(tid, expression)
 
 
+def fill_label(tid: str, label: str, value: str) -> dict:
+    expression = f"""(() => {{
+      const normalize = (text) => (text || '').replace(/\\s+/g, ' ').trim();
+      const wanted = normalize({json.dumps(label)});
+      const candidates = [...document.querySelectorAll('input,textarea')].filter((element) => {{
+        const ids = (element.getAttribute('aria-labelledby') || '').split(/\\s+/).filter(Boolean);
+        const renderedLabel = normalize(ids.map((id) => document.getElementById(id)?.innerText || '').join(' '));
+        const rect = element.getBoundingClientRect();
+        const style = getComputedStyle(element);
+        return renderedLabel === wanted && rect.width > 0 && rect.height > 0
+          && style.visibility !== 'hidden' && style.display !== 'none';
+      }});
+      if (candidates.length !== 1) throw new Error(`expected one visible field for label, found ${{candidates.length}}`);
+      const element = candidates[0];
+      const prototype = element.tagName === 'TEXTAREA'
+        ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+      Object.getOwnPropertyDescriptor(prototype, 'value').set.call(element, {json.dumps(value)});
+      element.dispatchEvent(new Event('input', {{bubbles: true}}));
+      element.dispatchEvent(new Event('change', {{bubbles: true}}));
+      return {{label: wanted, tag: element.tagName, value_length: element.value.length,
+        valid: element.checkValidity(), visible: true}};
+    }})()"""
+    return evaluate(tid, expression)
+
+
 def select_name(tid: str, name: str, value: str) -> dict:
     expression = _visible_named_expression(name, f"""
       Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')
@@ -213,7 +239,7 @@ def form_state(tid: str) -> list[dict]:
 
 def main(argv: list[str]) -> int:
     if not argv:
-        raise SystemExit("usage: cdp.py new|nav|eval|screenshot|clickxy|insert|key|setfile|fillname|fillcss|selectname|formstate|close ...")
+        raise SystemExit("usage: cdp.py new|nav|eval|screenshot|clickxy|insert|key|setfile|fillname|fillcss|filllabel|selectname|formstate|close ...")
     command, *args = argv
     if command == "new":
         print(_browser_call("Target.createTarget", {"url": args[0] if args else "about:blank"})["targetId"])
@@ -236,6 +262,8 @@ def main(argv: list[str]) -> int:
         print(json.dumps(fill_name(args[0], args[1], args[2]), ensure_ascii=False))
     elif command == "fillcss":
         print(json.dumps(fill_css(args[0], args[1], args[2]), ensure_ascii=False))
+    elif command == "filllabel":
+        print(json.dumps(fill_label(args[0], args[1], args[2]), ensure_ascii=False))
     elif command == "selectname":
         print(json.dumps(select_name(args[0], args[1], args[2]), ensure_ascii=False))
     elif command == "formstate":

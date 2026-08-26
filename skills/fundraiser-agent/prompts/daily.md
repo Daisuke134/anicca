@@ -139,7 +139,7 @@ For every queued candidate until the execution window ends:
    blocker has changed or disappeared.
 2. Observe the rendered form and read visible labels, options, requiredness,
    validation, and existing values. The repository `cdp.py` supports
-   `new|nav|eval|screenshot|clickxy|insert|key|setfile|fillname|fillcss|selectname|formstate|close`.
+   `new|nav|eval|screenshot|clickxy|insert|key|setfile|fillname|fillcss|filllabel|selectname|formstate|close`.
    Use the rendered DOM plus `formstate` as the form observation evidence.
    Never start an interactive shell (`zsh -i`, `bash -i`, or equivalent). If
    `formstate` returns an empty array on a rendered React/Notion form, continue
@@ -168,6 +168,10 @@ For every queued candidate until the execution window ends:
    `python3 skills/browser/scripts/cdp.py fillcss "$TARGET_ID" "$CSS_SELECTOR" "$VALUE"`;
    it selects the visible matching element and dispatches framework-compatible
    input/change events. Do not focus a broad `querySelector` and call `insert`.
+   When a visible control has `aria-labelledby`, prefer
+   `python3 skills/browser/scripts/cdp.py filllabel "$TARGET_ID" "$EXACT_VISIBLE_LABEL" "$VALUE"`.
+   This resolves the current generated ID inside the page and refuses zero or
+   multiple matches; never copy a generated ID into a later mutation command.
    Never place a dollar-prefixed amount such as `$1,000` directly in a shell
    argument; shell positional expansion corrupts it. Write `USD 1,000` in form
    answers, or pass text through a safely quoted variable. Before final Submit,
@@ -176,6 +180,8 @@ For every queued candidate until the execution window ends:
    Attach files only with
    `python3 skills/browser/scripts/cdp.py setfile "$TARGET_ID" 'input[name="pitch_deck"]' fundraising/application-kit/deck.pdf`;
    there is no `upload` command.
+   `setfile` resolves and validates the local file to an absolute path before
+   passing it to Chrome; never pass a relative file path directly to CDP.
    When a Notion/custom uploader creates `input[type=file]` only after its rendered
    Upload button is clicked, call `setfile` on that fresh input. A successful
    `setfile` followed by one WebSocket timeout means upload may still be processing:
