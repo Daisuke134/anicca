@@ -174,6 +174,17 @@ def parse_inventory(text: str, working_style_text: str = "") -> dict[str, Any]:
 
 
 def parse_catalog(text: str) -> dict[str, Any]:
+    normalized = (text or "").casefold()
+    if all(marker in normalized for marker in (
+        "upwork", "sorry, we can't let you in", "error 403",
+    )):
+        return {
+            "catalog_readback_state": "forbidden",
+            "catalog_approved": None,
+            "catalog_under_review": None,
+            "catalog_drafts": None,
+            "catalog_projects": [],
+        }
     result: dict[str, Any] = {}
     for field, label in (
         ("catalog_approved", "Approved"),

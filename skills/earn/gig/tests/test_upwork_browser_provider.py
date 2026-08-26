@@ -317,6 +317,19 @@ def test_parses_current_catalog_marker_only_project_with_unknown_metrics():
     }
 
 
+def test_catalog_forbidden_is_unknown_without_blocking_other_surfaces():
+    assert parse_catalog(
+        "Upwork\nSorry, we can't let you in\n"
+        "Make sure you're logged in with the right account\nError 403 (N)"
+    ) == {
+        "catalog_readback_state": "forbidden",
+        "catalog_approved": None,
+        "catalog_under_review": None,
+        "catalog_drafts": None,
+        "catalog_projects": [],
+    }
+
+
 def test_parses_zero_contract_and_message_effects_from_official_empty_states():
     assert parse_contracts(
         "Earnings available now: $0.00\nActive contracts\n"
