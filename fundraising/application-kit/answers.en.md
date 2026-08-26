@@ -1,32 +1,64 @@
 <!-- generated from .agents/startup-context.json; do not edit -->
-context-version: 2026-08-02.1
-context-digest: acfe35f5209b76f419f510bc66597c405f7a208d2d1aacd23eb09729bbac647b
+context-version: 2026-08-27.2
+context-digest: 9fbe6198c6d61da47d68767eec90a1d95d2e07058f024448d86372b5f3035338
 
 # Life Manager — canonical fundraising answers
 
+## One word
+
+Agency
+
+## Describe the company in 50 characters or less
+
+Proactive general agent for your whole life
+
 ## What is the product?
 
-A personal manager that manages your body, mind, and money, acts within delegated boundaries, and reports evidence in Telegram.
+A proactive general agent that manages your body, mind, and money plus real-world follow-through, acts within delegated boundaries, and reports evidence in Telegram.
 
-## What does it do?
+## What problem are you solving?
 
-Life Manager is a manager, not another chat assistant. Its Daily Organ coordinates schedules and applications. Its Physical / Mental Organ supports routines and wellbeing. Its Financial Organ builds a complete view of assets, cash flow, spending, income opportunities, and risk-managed investing. It acts within delegated boundaries, preserves receipts, and explains the result in Telegram.
+A person's health, mental wellbeing, money, schedules, applications, work, crypto, and investing are fragmented across tools. Advice is abundant, but dependable follow-through is scarce.
 
-## Why now?
+## How do you solve it?
 
-Models can reason and use tools, but a person's goals still break across calendars, forms, financial accounts, and dashboards. Life Manager connects those surfaces through one evidence ledger and one manager experience.
+Life Manager coordinates specialist organs, acts within delegated boundaries across those systems, verifies outcomes with receipts, and reports concise evidence in Telegram.
+
+## Why are you building this?
+
+The founder is building the manager he needs personally: one dependable agent that does not stop at advice and can carry real goals through disconnected systems. The long-term mission is to end suffering for humans and ultimately all living beings.
+
+## How far along are you?
+
+The open-source local runtime, hosted components, Telegram entry point, and multiple specialist loops exist. The founder attests that Life Manager has generated approximately $1,000 in revenue for its founder; this is not claimed as MRR or ARR.
+
+## Who is the market?
+
+The initial users are founders and professionals whose lives and work span many disconnected systems. The broader market is anyone who needs trusted execution across health, work, and finances; do not invent a numeric TAM without current sourced evidence.
+
+## How do you make money?
+
+A free open-source self-hosted option drives trust and adoption. An always-on hosted Life Manager is sold as a paid monthly cloud subscription.
 
 ## What is different?
 
-Most alternatives stop at advice or one dashboard. Life Manager executes authorized actions, independently verifies completion, and never reports an attempt as success without evidence. The local and cloud surfaces use the same core.
+Life Manager is a manager rather than a chat assistant or dashboard: it takes authorized action, coordinates specialized agents, preserves provenance, and distinguishes attempts from provider-verified completion.
 
-## How far along is it?
+## How are you building it?
 
-The repository and Telegram entry point are public. Local and cloud components and specialist loops exist in the repository. User count, revenue, retention, complete bank coverage, investing performance, demo media, and founder video must not be asserted until their current evidence is verified.
+One general-agent harness uses models for semantic judgment and unfamiliar interfaces, while deterministic code owns permissions, money arithmetic, state transitions, deduplication, receipts, and scheduling.
 
-## Business model
+## How will you use the funds?
 
-The intended model is free local self-hosting plus a paid always-on cloud service. Any future performance-linked financial fee requires separate legal, risk, and user-consent review; it is not a current claim.
+Improve reliable agent execution, expand secure integrations, strengthen evidence-backed verification, and deliver the always-on cloud product to early users.
+
+## Mission and long-term vision
+
+End suffering for humans and, ultimately, all living beings by making dependable care and agency continuously available. Life Manager grows from managing one human life across physical health, mental wellbeing, finances, work, schedules, income, crypto, and investing into a general manager for every living being.
+
+## Verified delivery and traction boundary
+
+Free, open-source, self-hosted Life Manager. Paid monthly subscription for an always-on hosted Life Manager. Founder-attested revenue is approximately $1,000; never relabel it as MRR or ARR without period evidence.
 
 ## Links
 
