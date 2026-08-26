@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import errno
 import fcntl
 import hashlib
 import json
@@ -38,6 +39,12 @@ CODEX_UNSUPPORTED_SCHEMA_KEYWORDS = frozenset(("uniqueItems", "allOf", "if", "th
 # rule. Callers that legitimately want a stricter floor set
 # AGENT_RUNNER_MIN_PROMPT_CHARS (run_agent.sh does, for loop prompts).
 MIN_PROMPT_CHARS = 16
+# Evidence is useful only while it is recent and inspectable.  Letting each
+# provider stream indefinitely into a permanent per-run directory eventually
+# turns a recoverable disk-pressure incident into a failed paid invocation.
+# Keep a bounded history, and preferentially evict only completed runs.
+DEFAULT_EVIDENCE_MIN_FREE_BYTES = 512 * 1024 * 1024
+DEFAULT_EVIDENCE_MAX_BYTES = 256 * 1024 * 1024
 
 # OpenAI Standard tier, short context, USD per 1M tokens: (input, cached_input, output).
 # Source: https://developers.openai.com/api/docs/pricing (fetched 2026-07-25).
@@ -66,6 +73,108 @@ def atomic_json(path: Path, value: Any) -> None:
         except OSError:
             pass
         raise
+
+
+def evidence_root_for(evidence_dir: Path) -> Path | None:
+    """Return the managed evidence root for a task/run evidence directory.
+
+    The runner is also used by callers that supply arbitrary paths.  Retention
+    must never recursively delete outside the explicitly named
+    ``agent-runner-evidence/<task>/<run>`` layout.
+    """
+    resolved = evidence_dir.resolve()
+    parts = resolved.parts
+    try:
+        marker = parts.index("agent-runner-evidence")
+    except ValueError:
+        return None
+    if len(parts) < marker + 3:
+        return None
+    return Path(*parts[:marker + 1])
+
+
+def tree_size(path: Path) -> int:
+    """Return file bytes below path without following symlinks."""
+    total = 0
+    for root, dirs, files in os.walk(path, followlinks=False):
+        dirs[:] = [item for item in dirs if not (Path(root) / item).is_symlink()]
+        for name in files:
+            item = Path(root) / name
+            try:
+                if not item.is_symlink():
+                    total += item.stat().st_size
+            except OSError:
+                continue
+    return total
+
+
+def reclaim_completed_evidence(
+    evidence_dir: Path,
+    *,
+    min_free_bytes: int = DEFAULT_EVIDENCE_MIN_FREE_BYTES,
+    max_evidence_bytes: int = DEFAULT_EVIDENCE_MAX_BYTES,
+) -> dict[str, int]:
+    """Reclaim oldest completed managed evidence before starting a provider.
+
+    Never remove the current invocation, a task directory, symlinks, or an
+    invocation lacking ``summary.json`` (it may still be running).  A caller
+    can set either threshold to zero for installations with their own disk
+    governor.
+    """
+    root = evidence_root_for(evidence_dir)
+    if root is None or not root.is_dir():
+        return {"reclaimed_bytes": 0, "reclaimed_runs": 0}
+    current = evidence_dir.resolve()
+    candidates: list[tuple[float, Path, int]] = []
+    total = 0
+    for task_dir in root.iterdir():
+        if not task_dir.is_dir() or task_dir.is_symlink():
+            continue
+        for run_dir in task_dir.iterdir():
+            if not run_dir.is_dir() or run_dir.is_symlink():
+                continue
+            size = tree_size(run_dir)
+            total += size
+            if run_dir.resolve() == current or not (run_dir / "summary.json").is_file():
+                continue
+            try:
+                candidates.append((run_dir.stat().st_mtime, run_dir, size))
+            except OSError:
+                continue
+    reclaimed_bytes = 0
+    reclaimed_runs = 0
+    free = shutil.disk_usage(root).free
+    for _, run_dir, size in sorted(candidates, key=lambda item: item[0]):
+        if total <= max_evidence_bytes and free >= min_free_bytes:
+            break
+        try:
+            shutil.rmtree(run_dir)
+        except OSError:
+            continue
+        total -= size
+        reclaimed_bytes += size
+        reclaimed_runs += 1
+        free = shutil.disk_usage(root).free
+    return {"reclaimed_bytes": reclaimed_bytes, "reclaimed_runs": reclaimed_runs}
+
+
+def ensure_evidence_capacity(evidence_dir: Path) -> dict[str, int]:
+    """Apply managed evidence retention and fail before a paid provider on ENOSPC."""
+    min_free = int(os.environ.get("AGENT_RUNNER_EVIDENCE_MIN_FREE_BYTES", DEFAULT_EVIDENCE_MIN_FREE_BYTES))
+    max_bytes = int(os.environ.get("AGENT_RUNNER_EVIDENCE_MAX_BYTES", DEFAULT_EVIDENCE_MAX_BYTES))
+    if min_free < 0 or max_bytes < 0:
+        raise ValueError("agent-runner evidence thresholds must be non-negative")
+    result = reclaim_completed_evidence(
+        evidence_dir, min_free_bytes=min_free, max_evidence_bytes=max_bytes,
+    )
+    root = evidence_root_for(evidence_dir)
+    if root is not None and root.exists() and shutil.disk_usage(root).free < min_free:
+        raise OSError(
+            errno.ENOSPC,
+            "insufficient free space after completed agent evidence reclamation",
+            str(root),
+        )
+    return result
 
 
 def sha256_file(path: Path) -> str:
@@ -1029,6 +1138,15 @@ def run() -> int:
         return 2
 
     evidence_dir = parsed.evidence_dir.resolve()
+    # Do this before creating/writing attempt files or launching a billable
+    # provider.  A full volume used to make Codex panic while writing its own
+    # evidence, leaving Capafy drafts stranded despite an otherwise healthy
+    # publish session.
+    try:
+        retention = ensure_evidence_capacity(evidence_dir)
+    except (OSError, ValueError) as error:
+        print(f"agent-runner: evidence preflight failed: {error}", file=sys.stderr)
+        return 2
     evidence_dir.mkdir(parents=True, exist_ok=True)
     attempts_path = evidence_dir / "attempts.jsonl"
     summary_path = evidence_dir / "summary.json"
@@ -1266,6 +1384,7 @@ def run() -> int:
         "attempt_count": len(attempts),
         "attempts_path": str(attempts_path),
         "result_path": selected["result_path"] if selected else None,
+        "evidence_reclamation": retention,
     }
     atomic_json(summary_path, summary)
     print(json.dumps(summary, ensure_ascii=False, separators=(",", ":")))
