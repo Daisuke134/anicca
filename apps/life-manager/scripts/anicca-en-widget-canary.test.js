@@ -17,6 +17,7 @@ const {
   EN_LANE,
   JA_LANE,
   OBOU_LANE,
+  OBOU_PRODUCTION_SLOTS,
   parseArgs,
   runAniccaEnWidgetCanary,
   runAniccaWidgetCanary,
@@ -692,8 +693,26 @@ test("Obou watercolor lane is one immutable account, integration, renderer, and 
 
 test("Obou wrapper accepts only one exact run slot", () => {
   assert.deepEqual(parseObouArgs(["run", "--slot", SLOT]), { command: "run", slot: SLOT });
+  assert.deepEqual(parseObouArgs(["run-production"]), { command: "run-production", slot: null });
+  assert.deepEqual([...OBOU_PRODUCTION_SLOTS], ["07:00", "14:00", "20:00"]);
   assert.throws(() => parseObouArgs(["publish"]), /usage/i);
   assert.equal(typeof runAniccaObouInstagramCanary, "function");
+});
+
+test("armed Obou production uses the latest exact slot and leaves controls unchanged", async () => {
+  const value = fixture(OBOU_LANE, OBOU_CAPTION);
+  const before = JSON.parse(fs.readFileSync(value.manifestPath, "utf8"));
+  const rows = before.lanes.map((row) => ({ ...row, verified: true, ...(row.integration_id === OBOU_LANE.integrationId ? { lane_state: "production-armed", production_armed: true, target_daily_limit: 3 } : {}) }));
+  writeMarketingLaneManifest(createMarketingLaneManifest({ tenant_id: before.tenant_id, integrations: rows, holds: before.holds.map((row) => ({ ...row, verified: true })) }, { tenantId: before.tenant_id, assignments: rows }), { dataDir: value.dataDir });
+  const controls = { manifest: fs.readFileSync(value.manifestPath), fence: fs.readFileSync(value.fencePath) };
+  const publicationCalls = [];
+  const result = await runAniccaObouInstagramCanary(["run-production"], genericOptionsFor(value, publicationCalls, [], OBOU_LANE, { now: () => "2026-08-26T08:01:00.000Z" }));
+  assert.equal(result.slot, "2026-08-26T05:00:00.000Z");
+  assert.equal(result.publication.created, true);
+  assert.equal(result.telegram.created, true);
+  assert.equal(publicationCalls.length, 1);
+  assert.deepEqual(fs.readFileSync(value.manifestPath), controls.manifest);
+  assert.deepEqual(fs.readFileSync(value.fencePath), controls.fence);
 });
 
 test("Obou first publication uses only pinned watercolor refs and restores closed controls", async () => {

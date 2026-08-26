@@ -17,6 +17,7 @@ const {
 } = require("../lib/marketing-video-publication-adapter.js");
 const { buildMarketingLivenessJob, executeMarketingLivenessJob } = require("../lib/marketing-liveness-adapter.js");
 const { executeCapabilityJob } = require("./runtime-up.js");
+const { marketingVideoDueSlot } = require("../lib/honne-ja-shadow-schedule.js");
 
 const EN_LANE = Object.freeze({
   name: "EN",
@@ -149,6 +150,7 @@ const OBOU_LANE = Object.freeze({
   workerLabel: "anicca-obou-instagram-canary",
   enforceApprovedPack: true,
 });
+const OBOU_PRODUCTION_SLOTS = Object.freeze(["07:00", "14:00", "20:00"]);
 
 function assertTrustedLane(lane) {
   if (lane !== EN_LANE && lane !== JA_LANE && lane !== JA_CARD_LANE && lane !== OBOU_LANE) throw new Error("Anicca widget lane identity is not trusted");
@@ -421,6 +423,7 @@ function compareNativeVideo(nativePath, approvedPath, options = {}) {
 
 function parseArgs(argv = [], lane = EN_LANE) {
   lane = assertTrustedLane(lane);
+  if (lane === OBOU_LANE && argv.length === 1 && argv[0] === "run-production") return { command: "run-production", slot: null };
   if (argv.length === 3 && argv[0] === "run" && argv[1] === "--slot") {
     return { command: "run", slot: exactInstant(argv[2], `Anicca ${lane.name} widget canary slot`) };
   }
@@ -680,9 +683,12 @@ function armControls(config, job, lane = config.lane || EN_LANE) {
 
 async function runAniccaWidgetCanary(argv = [], deps = {}, lane = EN_LANE) {
   lane = assertTrustedLane(lane);
-  const parsed = parseArgs(argv, lane);
+  let parsed = parseArgs(argv, lane);
   const env = deps.env || process.env;
   const trustedNow = exactInstant((deps.now || (() => new Date().toISOString()))(), `Anicca ${lane.name} widget canary clock`);
+  const production = parsed.command === "run-production";
+  if (production) parsed = { ...parsed, slot: marketingVideoDueSlot(Date.parse(trustedNow), "Asia/Tokyo", OBOU_PRODUCTION_SLOTS) };
+  if (!parsed.slot) throw new Error(`Anicca ${lane.name} production has no due slot yet`);
   const clock = () => trustedNow;
   const config = laneConfig(env, parsed, lane);
   const storeObject = deps.objectStore || createContentObjectStore({ objectDir: path.join(config.dataDir, "objects") });
@@ -726,7 +732,7 @@ async function runAniccaWidgetCanary(argv = [], deps = {}, lane = EN_LANE) {
     return value;
   } };
   const store = deps.store || createMarketingLocalLedger({ dataDir: config.dataDir, env, now: clock });
-  const publicationJob = buildMarketingVideoPublicationJob({ tenantId: config.tenantId, productId: lane.product, formatId: lane.format, form: lane.form, locale: lane.locale, slot: config.slot, creativeId: lane.creativeId, platform: lane.platform, videoRef: config.videoRef, captionRef: config.captionRef, approvalRef: config.approvalRef, instagramProfileRef: lane.profileRef, instagramIntegrationRef: lane.integrationRef, postizTokenRef: lane.tokenRef });
+  const publicationJob = buildMarketingVideoPublicationJob({ tenantId: config.tenantId, productId: lane.product, formatId: lane.format, form: lane.form, locale: lane.locale, slot: config.slot, creativeId: lane.creativeId, platform: lane.platform, videoRef: config.videoRef, captionRef: config.captionRef, approvalRef: config.approvalRef, instagramProfileRef: lane.profileRef, instagramIntegrationRef: lane.integrationRef, postizTokenRef: lane.tokenRef, slotScopedEffect: production });
   const runDistribution = deps.runDistribution || runDistributionProcess;
   const publicationAdapter = createMarketingVideoPublicationLoopAdapter({
     objectStore: storeObject,
@@ -745,7 +751,13 @@ async function runAniccaWidgetCanary(argv = [], deps = {}, lane = EN_LANE) {
     now: clock,
   });
   const existingPublication = await store.readReceipt({ tenantId: publicationJob.tenant_id, jobId: publicationJob.job_id });
-  const controls = existingPublication ? null : armControls(config, publicationJob, lane);
+  if (production) {
+    const manifest = JSON.parse(fs.readFileSync(path.join(config.dataDir, "marketing", "lane-manifest.json"), "utf8"));
+    const fence = JSON.parse(fs.readFileSync(path.join(config.dataDir, "marketing", "publication-effect-fence.json"), "utf8"));
+    const target = manifest.lanes.filter((row) => row.integration_id === lane.integrationId && row.profile === lane.account);
+    if (!isMarketingLaneManifest(manifest) || fence.state !== "closed" || target.length !== 1 || target[0].production_armed !== true || target[0].lane_state !== "production-armed" || target[0].target_daily_limit !== 3) throw new Error(`Anicca ${lane.name} production controls are invalid`);
+  }
+  const controls = production || existingPublication ? null : armControls(config, publicationJob, lane);
   let publicationQueued;
   let publicationRun;
   let publicationError;
@@ -770,7 +782,7 @@ async function runAniccaWidgetCanary(argv = [], deps = {}, lane = EN_LANE) {
   const publication = publicationRun.receipt;
   if (!verifyMarketingVideoPublicationReceipt(publication) || publication.provider_reconciled !== true || publication.platform !== lane.platform || !directReel(publication.public_url)) { const error = new Error(`Anicca ${lane.name} widget publication receipt is not reconciled`); error.unknownEffect = true; throw error; }
   const publicationResult = { created: publicationQueued.created && publicationRun.created, public_url: publication.public_url, provider_post_id: publication.provider_post_id };
-  if (!(await verifyNativeObject(config.verificationRef, storeObject, config, publication, trustedNow, {
+  if (!production && !(await verifyNativeObject(config.verificationRef, storeObject, config, publication, trustedNow, {
     fetchImpl: deps.fetchImpl,
     defaultFetch: deps.defaultFetch,
     digRunner: deps.digRunner,
@@ -798,6 +810,7 @@ module.exports = {
   JA_LANE,
   JA_CARD_LANE,
   OBOU_LANE,
+  OBOU_PRODUCTION_SLOTS,
   LANE,
   PROFILE_REF,
   armControls,

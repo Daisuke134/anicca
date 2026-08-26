@@ -20,6 +20,17 @@ const TT_URL = "https://www.tiktok.com/@honne_ai/video/7999999999999999999";
 const YT_SHORTS_URL = "https://www.youtube.com/shorts/AbCd_123";
 const YT_WATCH_URL = "https://www.youtube.com/watch?v=AbCd_123&t=2";
 
+test("slot-scoped production keeps legacy identity unchanged and separates daily slots", () => {
+  const legacy = job("instagram", { instagramIntegrationRef: "integration://postiz/instagram/obou", tiktokIntegrationRef: undefined });
+  const first = job("instagram", { instagramIntegrationRef: "integration://postiz/instagram/obou", tiktokIntegrationRef: undefined, slotScopedEffect: true });
+  const second = buildMarketingVideoPublicationJob({ ...{
+    tenantId: "tenant-a", productId: "honne-ai", formatId: "reelclaw", form: "relationship-confession", locale: "ja", slot: "2026-07-30T18:30:00.000Z", creativeId: "HJA-007-aaaaaaaaaaaa", platform: "instagram", videoRef: `object://sha256/${VIDEO_HASH}`, captionRef: `object://sha256/${CAPTION_HASH}`, approvalRef: `object://sha256/${APPROVAL_HASH}`, instagramProfileRef: "profile://instagram/honne-ai-ja", postizTokenRef: "secret://postiz/api-key", instagramIntegrationRef: "integration://postiz/instagram/obou", slotScopedEffect: true,
+  } });
+  assert.equal(legacy.effect_key.split(":").length, 7);
+  assert.notEqual(first.effect_key, legacy.effect_key);
+  assert.notEqual(first.effect_key, second.effect_key);
+});
+
 function job(platform = "tiktok", overrides = {}) {
   return buildMarketingVideoPublicationJob({
     tenantId: "tenant-a",

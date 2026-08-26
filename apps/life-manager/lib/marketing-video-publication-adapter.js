@@ -30,7 +30,7 @@ const SECRET_REF = /^secret:\/\/[a-z0-9][a-z0-9._-]*(?:\/[a-z0-9][a-z0-9._-]*)*$
 const INSTAGRAM_INTEGRATION_REF = /^integration:\/\/postiz\/instagram\/[a-z0-9._-]+$/i;
 const TIKTOK_INTEGRATION_REF = /^integration:\/\/postiz\/tiktok\/[a-z0-9._-]+$/i;
 const YOUTUBE_INTEGRATION_REF = /^integration:\/\/postiz\/youtube\/[a-z0-9._-]+$/i;
-const EFFECT_KEY = /^marketing:video:([A-Za-z0-9][A-Za-z0-9._-]{0,127}):(instagram|tiktok|youtube):([A-Za-z0-9][A-Za-z0-9._-]{0,127}):([0-9a-f]{64}):([0-9a-f]{64})$/;
+const EFFECT_KEY = /^marketing:video:([A-Za-z0-9][A-Za-z0-9._-]{0,127}):(instagram|tiktok|youtube):([A-Za-z0-9][A-Za-z0-9._-]{0,127}):([0-9a-f]{64}):([0-9a-f]{64})(?::([0-9a-f]{64}))?$/;
 const INSTAGRAM_URL = /^https:\/\/www\.instagram\.com\/(?:reel|p)\/[A-Za-z0-9_-]+\/?$/;
 const TIKTOK_URL = /^https:\/\/www\.tiktok\.com\/@[^/]+\/video\/[0-9]+\/?$/;
 const YOUTUBE_URL = /^https:\/\/www\.youtube\.com\/(?:shorts\/[A-Za-z0-9_-]+|watch\?v=[A-Za-z0-9_-]+(?:&[^#]+)?)\/?$/;
@@ -107,6 +107,7 @@ function effectContract(effectKey) {
     creativeId: match[3],
     videoSha256: match[4],
     captionSha256: match[5],
+    slotSha256: match[6] || null,
   };
 }
 
@@ -182,7 +183,8 @@ function buildMarketingVideoPublicationJob(input = {}) {
   // while enqueue only dedupes on job_id, so the same effect identity (same bytes + caption
   // + platform = one effect forever) must always derive the same job_id. Slot is lineage
   // carried in input_refs, never identity.
-  const effectKey = `marketing:video:${productId}:${platform}:${creativeId}:${videoHash}:${captionHash}`;
+  const slotScope = input.slotScopedEffect === true ? `:${crypto.createHash("sha256").update(slot).digest("hex")}` : "";
+  const effectKey = `marketing:video:${productId}:${platform}:${creativeId}:${videoHash}:${captionHash}${slotScope}`;
   const digest = crypto.createHash("sha256")
     .update(JSON.stringify({ tenant_id: tenantId, effect_key: effectKey }))
     .digest("hex");
@@ -252,6 +254,7 @@ function normalizeJob(job) {
       : platform === "instagram" && refs.instagram_integration_ref
         ? refs.instagram_integration_ref
         : refs.tiktok_integration_ref,
+    slotScopedEffect: effectContract(job.effect_key).slotSha256 === crypto.createHash("sha256").update(slotMatch[1]).digest("hex"),
     ...(platform === "youtube"
       ? { youtubeIntegrationRef: refs.youtube_integration_ref }
       : platform === "instagram" && refs.instagram_integration_ref
