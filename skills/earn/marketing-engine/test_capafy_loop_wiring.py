@@ -93,6 +93,12 @@ class CapafyLoopWiringTest(unittest.TestCase):
                 "runner will SIGKILL it -- the model cannot plan against that",
             )
 
+    def test_capafy_drained_prompt_rejects_stale_log_misattribution(self):
+        text = CAPAFY.read_text(encoding="utf-8")
+        self.assertIn("INITIAL WRAPPER INVENTORY VERDICT: $VERDICT", text)
+        self.assertIn("Historical log lines before this execution are not current failures", text)
+        self.assertIn("DRAINED requires designing and fully submitting one new skill", text)
+
     def test_run_agent_accepts_every_task_class_its_consumers_declare(self):
         # run_agent.sh keeps its own task-class whitelist, so a consumer can be
         # retargeted to a class the runner supports and still die at rc=2 on the
