@@ -203,6 +203,7 @@ test("production contract runs every 30 minutes and maximizes real applications"
   assert.match(dailyPrompt, /it has no `screenshot` command/);
   assert.match(dailyPrompt, /never release an application lease until every fill/);
   assert.match(dailyPrompt, /there is no `upload` command/);
+  assert.match(dailyPrompt, /Do not reopen the same video, voice, binding-term/);
   assert.doesNotMatch(contract, /at most one/i);
   assert.doesNotMatch(contract, /per user-local day/i);
 });
