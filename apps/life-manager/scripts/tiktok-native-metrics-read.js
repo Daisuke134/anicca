@@ -7,6 +7,7 @@ const { resolveDataRoot } = require("../lib/runtime-paths.js");
 const {
   extractTikTokNativeMetrics,
   persistTikTokCombinedSnapshot,
+  persistPostizPhotoSnapshot,
   persistTikTokNativeSnapshot,
 } = require("../lib/tiktok-native-metric-source.js");
 
@@ -56,8 +57,15 @@ async function collectTikTokWindow(input, env = process.env, observedAt = new Da
   }
 }
 
+async function collectPostizPhotoWindow(input, env = process.env, observedAt = new Date().toISOString()) {
+  const provider = await postizAnalytics(input, env);
+  if (!provider) throw new Error("Postiz photo metrics are unavailable");
+  const result = persistPostizPhotoSnapshot({ ...input, dataDir: resolveDataRoot(env), observedAt, postizAccountAnalytics: provider.account, postizPostAnalytics: provider.post });
+  return { created: result.created, file: result.file, snapshot: result.snapshot, post: result.snapshot.post, account: result.snapshot.account_metrics };
+}
+
 if (require.main === module) collectTikTokWindow(JSON.parse(fs.readFileSync(process.argv[2], "utf8"))).then((result) => process.stdout.write(`${JSON.stringify({ created: result.created, file: result.file, post: result.post, account: result.account })}\n`)).catch((error) => {
   process.stderr.write(`${error.message}\n`);
   process.exitCode = 1;
 });
-module.exports = { collectTikTokWindow, postizAnalytics };
+module.exports = { collectPostizPhotoWindow, collectTikTokWindow, postizAnalytics };

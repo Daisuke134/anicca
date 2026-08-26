@@ -6,7 +6,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { resolveDataRoot } = require("../lib/runtime-paths.js");
 const { persistDailyDigest, sendMetricSnapshot } = require("./instagram-metrics-read.js");
-const { collectTikTokWindow } = require("./tiktok-native-metrics-read.js");
+const { collectPostizPhotoWindow, collectTikTokWindow } = require("./tiktok-native-metrics-read.js");
 const { persistAniccaDaily, persistAttributionCoverage, persistHonneDaily, persistWeeklyReview, sendSummary } = require("./marketing-product-summary.js");
 const { persistAscAcquisition } = require("./marketing-asc-acquisition.js");
 const { persistRevenueCatSubscriptions } = require("./marketing-revenuecat-subscriptions.js");
@@ -17,11 +17,21 @@ const TARGETS = Object.freeze([
   Object.freeze({ publication_dir: "anicca-ios", product_id: "anicca-ios", locale: "ja", account_id: "@anicca.jp4", native_owner: "anicca.jp4", integration_id: "cmn8x8hdv028uqx0y4gdfse5t", format_id: "reelclaw-card", form: "nudge-card" }),
   Object.freeze({ publication_dir: "anicca-ios", product_id: "anicca-ios", locale: "ja", account_id: "@anicca.jp", native_owner: "anicca.jp", integration_id: "cmp9sdev5012voh0y58qs45xc", format_id: "reelclaw-card", form: "nudge-card" }),
   Object.freeze({ publication_dir: "anicca-ios", product_id: "anicca-ios", locale: "ja", account_id: "@anicca.he", native_owner: "anicca.he", integration_id: "cmq2aoena08bhqp0yx1epjcik", format_id: "reelclaw-card", form: "nudge-card", receipt_job_id: "marketing-video-publication:7732e4c1e7ff88ccad12a0295e6740125f58da2d6e07558e6f9e432bf85349dd" }),
+  Object.freeze({ publication_dir: "anicca-ios", product_id: "anicca-ios", locale: "en", account_id: "@anicca_slideshow", native_owner: "anicca_slideshow", integration_id: "cmnenjkff01j1pa0ysufmzhfr", format_id: "slideshow", form: "mental-health-carousel", receipt_job_id: "marketing-native-carousel-publication:0cd8be1c72b8c6fd058741a287995caa20f23363f71ee908d6139127782c788f", postiz_photo_only: true }),
   Object.freeze({ publication_dir: "honne-ai", product_id: "honne-ai", locale: "en", account_id: "@honne_reveal", native_owner: "honne_reveal", integration_id: "cmoig11ew001zlv0yk6vqo1us", format_id: "reelclaw", form: "relationship-confession" }),
   Object.freeze({ publication_dir: "honne-ai", product_id: "honne-ai", locale: "ja", account_id: "@honnevideo", native_owner: "honnevideo", integration_id: "cmnit95mg015rrm0ye5vm8dhl", format_id: "reelclaw", form: "relationship-confession" }),
 ]);
 
 function discoverTarget(dataDir, target) {
+  if (target.postiz_photo_only) {
+    const receipts = path.join(dataDir, "marketing/receipts.jsonl");
+    if (!fs.existsSync(receipts)) return [];
+    const row = fs.readFileSync(receipts, "utf8").split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line)).find((candidate) => candidate.job_id === target.receipt_job_id);
+    const receipt = row?.receipt; const captionPath = path.join(dataDir, "objects/sha256", String(receipt?.caption_sha256 || ""));
+    if (!receipt || receipt.status !== "published" || receipt.provider_reconciled !== true || receipt.platform !== "tiktok" || receipt.account_id !== target.account_id || receipt.integration_ref !== `integration://postiz/tiktok/${target.integration_id}` || receipt.format_id !== target.format_id || receipt.form !== target.form || receipt.locale !== target.locale || receipt.public_url !== null || receipt.provider_state !== "PUBLISHED" || !fs.statSync(captionPath, { throwIfNoEntry: false })?.isFile()) throw new Error(`${target.account_id} Postiz photo receipt invalid`);
+    const bytes = fs.readFileSync(captionPath); if (crypto.createHash("sha256").update(bytes).digest("hex") !== receipt.caption_sha256) throw new Error(`${target.account_id} caption object integrity mismatch`);
+    return [Object.freeze({ tenant_id: "dais-local", product_id: target.product_id, locale: target.locale, account_id: target.account_id, native_owner: target.native_owner, integration_id: target.integration_id, provider_post_id: receipt.provider_post_id, shortcode: receipt.provider_post_id, video_id: receipt.provider_post_id, public_url: "unavailable", caption: bytes.toString("utf8"), published_at: receipt.published_at, postiz_photo_only: true })];
+  }
   const file = path.join(dataDir, "tenants/dais-local/marketing/video-publication", target.publication_dir, "distribution.jsonl");
   let rows = fs.existsSync(file) ? fs.readFileSync(file, "utf8").split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line)) : [];
   if (target.receipt_job_id && !rows.some((row) => row.public_url?.includes(target.native_owner))) { const receipts = path.join(dataDir, "marketing/receipts.jsonl"); const matched = fs.existsSync(receipts) ? fs.readFileSync(receipts, "utf8").split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line)).find((row) => row.job_id === target.receipt_job_id)?.receipt : null; if (matched) rows = rows.concat({ ...matched, ts: matched.published_at, provider_id: matched.provider_post_id, caption_path: path.join(dataDir, "objects/sha256", matched.caption_sha256) }); }
@@ -70,7 +80,7 @@ async function runDue(nowMs = Date.now(), env = process.env, provided = null) {
       if (nowMs < dueMs) { results.push({ video_id: expected.video_id, window, state: "pending", due_at: new Date(dueMs).toISOString() }); continue; }
       if (nowMs > dueMs + GRACE_MS) { const snapshot = delayed(dataDir, expected, window, new Date(nowMs).toISOString()); results.push({ video_id: expected.video_id, window, state: "source_delayed", telegram: await sendMetricSnapshot(snapshot, env, dataDir) }); continue; }
       const input = { tenantId: expected.tenant_id, productId: expected.product_id, locale: expected.locale, account: expected.account_id, integrationId: expected.integration_id, providerPostId: expected.provider_post_id, videoId: expected.video_id, publicUrl: expected.public_url, caption: expected.caption, window, publishedAt: expected.published_at };
-      const observation = await collectTikTokWindow(input, env, new Date(nowMs).toISOString()); results.push({ video_id: expected.video_id, window, state: "measured", telegram: await sendMetricSnapshot(observation, env, dataDir) });
+      const observation = await (expected.postiz_photo_only ? collectPostizPhotoWindow : collectTikTokWindow)(input, env, new Date(nowMs).toISOString()); results.push({ video_id: expected.video_id, window, state: "measured", telegram: await sendMetricSnapshot(observation, env, dataDir) });
     }
     const parts = Object.fromEntries(new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Tokyo", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(new Date(nowMs)).map(({ type, value }) => [type, value])); const reportDay = `${parts.year}-${parts.month}-${parts.day}`;
     if (Number(parts.hour) > 17 || (Number(parts.hour) === 17 && Number(parts.minute) >= 30)) { const digest = persistDailyDigest({ dataDir, reportDay, observedAt: new Date(nowMs).toISOString(), expected }); results.push({ video_id: expected.video_id, window: "daily", state: digest.created ? "reported" : "complete", telegram: await sendMetricSnapshot(digest, env, dataDir) }); }

@@ -2294,6 +2294,17 @@ receipt count for Postiz row `cmt9mebpj0341mp0ymi31r582` remains exactly one.
 The only active atomic item is immediate Postiz metric-source status plus durable
 2h/24h/72h/7d ownership for this photo receipt; no new publication starts.
 
+Metrics code now discovers this exact reconciled photo receipt by job/account/
+integration/format/form/locale/caption-object identity and routes it through
+Postiz API only. It persists post fields from post analytics, current account
+plus latest-20 aggregates from account analytics, and marks every empty or
+unsupported field `unavailable` rather than zero. URL-free photo snapshots and
+their natural Telegram wording use the same
+`postiz_published_exact_assets` evidence. Existing direct-video metrics remain
+unchanged. Focused metrics/liveness tests pass 18/18. Next: push, trigger the
+existing LM metrics owner, and read back pending/due status plus any immediate
+provider source observation.
+
 **Remaining atomic TODO SSOT — execute strictly in this order:**
 
 1. `@anicca_slideshow` metrics: add the exact receipt to the LM Postiz-API
