@@ -85,8 +85,12 @@ In particular, the generated verified deck resolves any older checkpoint whose
 only blocker was the absence of a current pitch deck or team/market narrative.
 Only `submitted_verified` and `submit_unknown` receipts are terminal replay
 barriers. Legacy `submitted` rows without both a completion PNG and Telegram
-photo message ID are evidence-incomplete, not success. Reopen those candidates
-for one evidence-producing application attempt; never count the legacy row.
+photo message ID are evidence-incomplete, not success. Recover evidence
+read-only from the existing provider completion page, exact Gmail Sent message,
+or confirmation mail. Never send, submit, follow up, or otherwise recreate the
+external effect merely to obtain missing evidence. If the original effect cannot
+be read back, append `evidence_incomplete` and continue; never count the legacy
+row as verified success.
 
 Use the whole context semantically. Make a reasonable inference for narrative and
 judgment questions such as category, stage, customer, market, differentiation,
@@ -135,8 +139,9 @@ For every queued candidate until the execution window ends:
    `organization + program + cohort/window + account`. Reject exact replays only
    for prior `submitted_verified` or `submit_unknown` effects. A legacy
    `submitted` receipt without the required PNG and Telegram photo message ID
-   must be reprocessed for verifiable evidence. Resume checkpoints when the
-   blocker has changed or disappeared.
+   must be reprocessed read-only for verifiable evidence, without any new Send,
+   Submit, follow-up, or application effect. Resume checkpoints when the blocker
+   has changed or disappeared.
 2. Observe the rendered form and read visible labels, options, requiredness,
    validation, and existing values. The repository `cdp.py` supports
    `new|nav|eval|screenshot|clickxy|insert|key|setfile|fillname|fillcss|filllabel|typelabel|selectname|formstate|close`.
