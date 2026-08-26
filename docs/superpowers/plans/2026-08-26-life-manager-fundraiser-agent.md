@@ -2,29 +2,31 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Run one daily Life Manager Fundraiser Agent that discovers and applies to a new eligible funding opportunity from live web and X sources without program-specific code, then tracks it without duplicate applications.
+**Goal:** Life Manager searches the live web and X every day, finds one new eligible funding application, reads and fills its unfamiliar browser form directly, submits once, and tracks the official result without applying twice.
 
-**Architecture:** A scheduled general agent owns discovery, qualification, and unfamiliar browser interaction. Typed MCP tools expose a deterministic Node SQLite ledger for source provenance, opportunity identity, daily/effect claims, readbacks, and state transitions. Program pages and layouts are runtime observations, not checked-in adapters or registry prerequisites.
+**Architecture:** One general agent uses existing web, browser, mail, Calendar, agent-runner, and runtime effect/receipt capabilities. It reads current Life Manager context and visible form questions directly; there is no compiler, funder/source registry, numbered program list, provider adapter, selector map, or program script. Only submitted/human-blocked ApplicationReceipts persist for dedupe and tracking; rejected discovery candidates remain in per-run evidence.
 
-**Tech Stack:** Existing agent runner, existing browser tools and registry, Node.js `node:sqlite`, MCP SDK, Zod, launchd generated from `loop.toml`, Gmail and Calendar readback.
+**Tech Stack:** Existing Life Manager/OpenClaw agent runtime and cron, existing browser lease/tools, existing runtime job/effect/receipt store, Gmail, and Calendar.
 
 **Spec:** `docs/superpowers/specs/2026-08-26-life-manager-fundraiser-agent-design.md`
 
-## Global Constraints
+## Global constraints
 
-- No funder-specific Python, JavaScript, shell, selector, field map, or browser adapter.
-- `fundraising/funders/<id>.json` is not required before discovery or application.
-- Fit, source choice, priority, and form interpretation stay model judgments.
-- Use existing registered browser owners and leases; never start a new Chrome owner.
-- Run one acquisition pass per day. Inbox reconciliation cannot claim an acquisition effect.
-- Submit at most one new identity per pass and never automatically retry `submit_unknown`.
-- Do not assert revenue, users, media, submission, offer, or funding without current evidence.
-- CAPTCHA, founder video, interview, KYC, visa declarations, binding terms, and funds movement are human ceremonies.
-- Every implementation task ends in focused verification, commit, and push.
+- No compiler of questions, answers, targets, sources, or applications.
+- No funder registry, source registry, numbered accelerator catalog, or capability allowlist.
+- No funder-specific Python, JavaScript, shell, selector, field map, or adapter.
+- The model generates searches, judges fit, reads visible questions, and chooses browser actions.
+- Existing deterministic code stores effects/receipts and prevents duplicates; it does not judge programs.
+- Acquisition runs once daily and targets one new eligible application.
+- Existing receipts prevent reapplication to the same organization/program/cohort/account.
+- X provides leads; the official page provides deadline, eligibility, terms, and application truth.
+- No unverified revenue, user, media, legal, visa, or funding claim enters a form.
+- CAPTCHA, founder video, interview, KYC, binding terms, and funds movement remain human ceremonies.
+- Each task ends with focused verification, commit, and push.
 
 ---
 
-### Task 0: Pin predecessor code and freeze the design
+### Task 0: Pin predecessor code and correct the architecture
 
 **Files:**
 - Create: `docs/evidence/fundraising/2026-08-26-fundraiser-predecessor-code-audit.md`
@@ -32,195 +34,157 @@
 - Create: `docs/superpowers/plans/2026-08-26-life-manager-fundraiser-agent.md`
 
 **Interfaces:**
-- Consumes: current fundraising code, browser/X loops, and four cloned OSS repositories.
-- Produces: pinned evidence, accepted architecture, and ordered implementation contract.
+- Consumes: four pinned OSS repositories and current Life Manager browser/fundraising code.
+- Produces: source audit, no-compiler/no-registry specification, and ordered implementation plan.
 
-- [x] **Step 1: Create an isolated worktree from `origin/main`.**
+- [x] **Step 1: Create the isolated `fundraiser-agent-task0-20260826` worktree.**
+- [x] **Step 2: Run the existing fundraising tests and observe 21/21 PASS.**
+- [x] **Step 3: Clone Outreachr, Venture-Ops, fundraising-skills, and open-org.**
+- [x] **Step 4: Read actual entrypoint, state, effect, readback, and recovery code.**
+- [x] **Step 5: Record pinned commits, licenses, adopted contracts, and rejected architectures.**
+- [x] **Step 6: Make DelightX a live-search example, not a provider implementation.**
+- [x] **Step 7: Remove compiler, registry, dedicated store, and dedicated MCP plans.**
+- [ ] **Step 8: Re-run document, test, diff, and remote verification; commit and push the correction.**
 
-Worktree: `.worktrees/fundraiser-agent-task0-20260826`
-
-- [x] **Step 2: Run the current fundraising baseline.**
-
-Run: `node --test test/startup-context.test.mjs skills/apply-to-funder/__tests__/context.test.mjs`
-
-Observed: 21 tests passed, 0 failed.
-
-- [x] **Step 3: Clone and pin four predecessor repositories.**
-
-The evidence file contains exact commits, licenses, entrypoints, state, effect, readback, recovery,
-and adoption/rejection decisions.
-
-- [x] **Step 4: Add DelightX and live X discovery to the source design.**
-
-DelightX is a source seed, not a provider implementation. X discovery uses the registered leased
-browser and verifies every actionable claim on an official page.
-
-- [x] **Step 5: Prohibit thin adapters and funder-specific scripts.**
-
-The design assigns judgment to the model and mechanical state to typed tools only.
-
-- [x] **Step 6: Validate Task 0 documents.**
-
-Run the placeholder scan, baseline tests, `git diff --check`, and `git status --short`. Expected:
-no placeholder, 21 passing tests, clean diff check, and exactly three new documents.
-
-- [x] **Step 7: Commit Task 0.**
-
-Commit message: `docs(fundraising): design daily general fundraiser agent`
-
-### Task 1: Schedule prompt-backed agents without a per-loop CLI
-
-**Files:**
-- Modify: `bin/plistgen.py`
-- Create: `test/plistgen-agent-job.test.mjs`
-- Create: `loops/fundraiser/loop.toml`
-
-**Interfaces:**
-- Consumes: `runtime/agent-runner/agent_runner.py --prompt-file` and `browser-lane-agent`.
-- Produces: declarative `agent` jobs generated directly into launchd arguments.
-
-- [ ] **Step 1: Write a failing plist test for an `agent` job.**
-
-Fixture:
-
-```toml
-[jobs.acquire]
-agent = { prompt = "skills/fundraiser-agent/prompts/daily.md", schema = "skills/fundraiser-agent/schemas/pass.v1.json", task_class = "browser-lane-agent" }
-calendar = { hour = 6, minute = 30 }
-```
-
-Assert `ProgramArguments` invokes the existing runner with prompt, schema, task class, loop name,
-workdir, and evidence directory. Assert there is no new fundraiser launcher.
-
-- [ ] **Step 2: Run `node --test test/plistgen-agent-job.test.mjs` and confirm RED.**
-- [ ] **Step 3: Add the mutually exclusive `program` or `agent` branch to `plistgen.py`.**
-- [ ] **Step 4: Reject missing/escaping prompt and schema paths.**
-- [ ] **Step 5: Declare acquisition at 06:30 and read-mostly inbox reconciliation every four hours.**
-- [ ] **Step 6: Run the focused test, existing job-hunter dispatch test, and plist diff.**
-- [ ] **Step 7: Commit `feat(loops): schedule prompt-backed agent jobs` and push.**
-
-### Task 2: Add the deterministic fundraising store
-
-**Files:**
-- Create: `apps/life-manager/lib/fundraiser-store.js`
-- Create: `apps/life-manager/lib/fundraiser-store.test.js`
-
-**Interfaces:**
-- Consumes: private SQLite path and ISO timestamps.
-- Produces: `FundraiserStore.recordSource`, `recordOpportunity`, `listUnapplied`,
-  `claimDailyApplication`, `claimSubmit`, `recordEffect`, `recordReadback`, `recordMessage`, and
-  `listDueActions`.
-
-- [ ] **Step 1: Write a failing identity test.**
-
-Two URLs for one organization/program/cohort/account resolve to one opportunity. A new cohort resolves
-to another opportunity.
-
-- [ ] **Step 2: Run the focused test and confirm RED.**
-- [ ] **Step 3: Implement `node:sqlite` tables for sources, opportunities, applications, effects, readbacks, messages, transitions, and daily claims.**
-- [ ] **Step 4: Add unique constraints for opportunity identity, provider message ID, effect digest, and local-date acquisition claim.**
-- [ ] **Step 5: Implement the exact state transitions from the spec.**
-- [ ] **Step 6: Prove `0600`, replay returns the original receipt, and a second daily/Submit claim fails before I/O.**
-- [ ] **Step 7: Run the focused test, commit `feat(fundraising): add durable opportunity and effect store`, and push.**
-
-### Task 3: Expose bookkeeping as typed MCP tools
-
-**Files:**
-- Create: `skills/fundraiser-agent/mcp.mjs`
-- Create: `skills/fundraiser-agent/mcp.test.mjs`
-- Create: `skills/fundraiser-agent/schemas/pass.v1.json`
-
-**Interfaces:**
-- Consumes: `FundraiserStore` and `FUNDRAISER_STATE_DIR`.
-- Produces: tools `record_source`, `record_opportunity`, `list_unapplied`,
-  `claim_daily_application`, `claim_submit`, `record_effect`, `record_readback`, `record_message`, and
-  `list_due_actions`.
-
-- [ ] **Step 1: Write failing tests for malformed evidence, invalid transitions, duplicate daily claims, and a second Submit claim.**
-- [ ] **Step 2: Run the tests and confirm RED.**
-- [ ] **Step 3: Implement Zod handlers that call one store method each.**
-- [ ] **Step 4: Assert the MCP exposes no email, browser, shell, payment, or Submit transport.**
-- [ ] **Step 5: Run MCP and store tests.**
-- [ ] **Step 6: Commit `feat(fundraising): expose typed fundraiser ledger tools` and push.**
-
-### Task 4: Define the general agent prompts and canonical evals
+### Task 1: Give the existing general agent the Fundraiser objective
 
 **Files:**
 - Create: `skills/fundraiser-agent/SKILL.md`
 - Create: `skills/fundraiser-agent/prompts/daily.md`
 - Create: `skills/fundraiser-agent/prompts/inbox.md`
+- Create: `skills/fundraiser-agent/schemas/pass.v1.json`
 - Create: `skills/fundraiser-agent/evals/cases.jsonl`
 
 **Interfaces:**
-- Consumes: startup context, application kit, typed MCP, and existing web/browser/mail/calendar tools.
-- Produces: one bounded acquisition decision and read-mostly inbox decisions.
+- Consumes: current startup context, past ApplicationReceipts, and existing web/browser/mail/Calendar tools.
+- Produces: one daily acquisition result and read-mostly tracking results.
 
-- [ ] **Step 1: Add eval cases before prompts.**
+- [ ] **Step 1: Write semantic eval cases before the prompt.**
 
-Cover an unseen multi-page form, submitted rolling program, new cohort, X rumor without official page,
-DelightX date contradiction, missing founder video, ambiguous Submit, and confirmation message.
+Include an unseen multi-page form, a program absent from all repository files, an already-submitted
+cohort, a genuinely new cohort, an X rumor without an official page, contradictory official dates,
+missing founder video, and ambiguous Submit.
 
-- [ ] **Step 2: Write the right-altitude daily prompt with objective, evidence contract, tools, states, daily limit, and human ceremonies.**
-- [ ] **Step 3: Write the inbox prompt without `claim_daily_application` or `claim_submit`.**
-- [ ] **Step 4: Add an anti-hardcoding test for selector syntax, provider switches, fixed queries, and fixed fit scores.**
-- [ ] **Step 5: Run at least eight semantic eval cases.**
-- [ ] **Step 6: Commit `feat(fundraising): define general daily fundraiser agent` and push.**
+- [ ] **Step 2: Run the existing skill eval harness and confirm the missing prompt fails.**
+- [ ] **Step 3: Write a right-altitude daily prompt.**
 
-### Task 5: Wire dynamic web and X discovery
+It says: search broadly, follow live evidence, find one new eligible application, read the official
+page, read the form, answer visible questions from current context, submit once, capture readback, and
+continue tracking. It does not list form fields, providers, search queries, program numbers, scores, or
+decision branches.
+
+- [ ] **Step 4: Write the inbox prompt without acquisition or Submit authority.**
+- [ ] **Step 5: Add a static test rejecting compiler language, registry files, selector syntax, provider switches, fixed queries, and fixed fit scores.**
+- [ ] **Step 6: Run all semantic/static evals.**
+- [ ] **Step 7: Commit `feat(fundraising): define the daily general fundraiser agent` and push.**
+
+### Task 2: Register the prompts in the existing agent scheduler
+
+**Files:**
+- Modify: `skills/fundraiser-agent/SKILL.md`
+- Create: `skills/fundraiser-agent/evals/schedule-cases.jsonl`
+- Create: `docs/evidence/fundraising/fundraiser-cron-installation.md`
+
+**Interfaces:**
+- Consumes: the existing OpenClaw cron scheduler and the Task 1 prompts.
+- Produces: exactly one isolated acquisition owner at 06:30 JST and one isolated read-mostly inbox owner every four hours, with no new executable, wrapper, plist generator, or loop-specific runtime.
+
+- [ ] **Step 1: Record a read-only baseline with `openclaw cron list --json` and dedupe by stable job name.**
+- [ ] **Step 2: Add schedule evals proving acquisition runs at most once per local day and inbox tracking has no Submit authority.**
+- [ ] **Step 3: Register the daily prompt with the existing scheduler.**
+
+Use `openclaw cron add --name life-manager-fundraiser-daily --cron '30 6 * * *' --tz Asia/Tokyo
+--session isolated --message 'Use $fundraiser-agent to run one daily acquisition pass.' --no-deliver
+--json`. Do not add a shell script, Python file, JavaScript entrypoint, plist, or `loop.toml`.
+
+- [ ] **Step 4: Register the read-mostly inbox prompt with the same existing scheduler.**
+
+Use `openclaw cron add --name life-manager-fundraiser-inbox --cron '17 */4 * * *' --tz Asia/Tokyo
+--session isolated --message 'Use $fundraiser-agent to run one inbox and application-status pass.'
+--no-deliver --json`.
+
+- [ ] **Step 5: Read both jobs back with `openclaw cron get`, verify exact prompt/cadence/session, and store only public-safe redacted evidence.**
+- [ ] **Step 6: Run each natural owner once with `openclaw cron run`; verify its run history belongs to that cron job rather than a Codex-spawned executor.**
+- [ ] **Step 7: Commit only the public skill instructions, schedule evals, and redacted installation evidence; push.**
+
+### Task 3: Reuse the existing runtime receipts for dedupe
+
+**Files:**
+- Modify: `apps/life-manager/lib/runtime-job-store.js`
+- Modify: `apps/life-manager/lib/runtime-job-store.test.js`
+- Modify: `skills/fundraiser-agent/prompts/daily.md`
+
+**Interfaces:**
+- Consumes: existing `lm_runtime_jobs`, effect uniqueness, immutable receipts, and reconciliation.
+- Produces: generic read methods for completed effects by capability/date and prior ApplicationReceipts.
+
+- [ ] **Step 1: Write a failing test that queries existing `fundraiser_application` effects without adding a fundraising table.**
+- [ ] **Step 2: Write a failing test proving two URLs for the same receipt identity cannot create a second effect.**
+- [ ] **Step 3: Run the tests and confirm RED.**
+- [ ] **Step 4: Add the smallest generic runtime-store read methods needed by any loop to list its prior effects and receipts.**
+- [ ] **Step 5: Use the existing effect key for `organization + program + cohort/window + account`; do not store candidates.**
+- [ ] **Step 6: Make the daily prompt stop acquisition when today's receipt already shows an application effect.**
+- [ ] **Step 7: Prove a new cohort has a new identity while the same cohort remains replay-zero.**
+- [ ] **Step 8: Run runtime-store tests, commit `feat(runtime): expose prior effect receipts to agents`, and push.**
+
+### Task 4: Search the live web and X every day
 
 **Files:**
 - Modify: `skills/fundraiser-agent/prompts/daily.md`
 - Create: `skills/fundraiser-agent/evals/discovery-cases.jsonl`
 
 **Interfaces:**
-- Consumes: official web crawl, registered `x:anicca` lease, and prior source yield.
-- Produces: source/opportunity records with official evidence chains.
+- Consumes: current Life Manager context, public web crawl, authenticated `x:anicca` browser lease, and run evidence.
+- Produces: one chosen official application URL or an evidence-backed exhausted result.
 
-- [ ] **Step 1: Add failing evals requiring new English and Japanese searches each pass.**
-- [ ] **Step 2: Require X to produce leads only; official pages establish program truth.**
-- [ ] **Step 3: Acquire `x:anicca` read-only through the guard and release it before application work.**
-- [ ] **Step 4: Forbid reads/writes to x-repost state and publishing tools.**
-- [ ] **Step 5: Continue to adjacent sources after one source has no results.**
-- [ ] **Step 6: Prove DelightX and an unknown source use the same prompt/tool path.**
-- [ ] **Step 7: Run evals, commit `feat(fundraising): add dynamic web and X discovery`, and push.**
+- [ ] **Step 1: Add evals requiring the model to generate its own English and Japanese searches.**
+- [ ] **Step 2: Require source expansion after a site returns no applicable result.**
+- [ ] **Step 3: Require X leads to be verified on an official page before use.**
+- [ ] **Step 4: Lease `x:anicca` read-only through the existing guard, then release it before application work.**
+- [ ] **Step 5: Forbid access to x-repost publishing tools, query files, and state.**
+- [ ] **Step 6: Prove DelightX and a completely unknown program follow the identical tool path.**
+- [ ] **Step 7: Prove rejected candidates exist only in run evidence, not a registry/database.**
+- [ ] **Step 8: Run evals, commit `feat(fundraising): discover live applications from web and X`, and push.**
 
-### Task 6: Operate unfamiliar forms with the general browser
+### Task 5: Apply through the unfamiliar browser form
 
 **Files:**
 - Modify: `skills/fundraiser-agent/prompts/daily.md`
 - Create: `skills/fundraiser-agent/evals/browser-cases.jsonl`
 
 **Interfaces:**
-- Consumes: rendered observations and canonical fundraising facts.
-- Produces: browser receipts, one-shot effect receipt, and fresh completion observation.
+- Consumes: rendered browser observations, startup context, and prior receipts.
+- Produces: one ApplicationReceipt or a human/ambiguity checkpoint.
 
-- [ ] **Step 1: Add three unrelated form fixtures with different controls and page layouts.**
-- [ ] **Step 2: Require exactly one model-chosen action per fresh observation.**
-- [ ] **Step 3: Bind every nontrivial answer claim to current evidence.**
-- [ ] **Step 4: Keep unknown revenue, users, legal/visa status, and media blocked.**
-- [ ] **Step 5: Re-read the review page, claim Submit, click once, and capture a new observation.**
-- [ ] **Step 6: Convert timeout/navigation loss to `submit_unknown` with no retry.**
-- [ ] **Step 7: Scan the implementation for funder names outside eval fixtures; expect no execution branch.**
-- [ ] **Step 8: Commit `feat(fundraising): operate unseen forms through browser feedback` and push.**
+- [ ] **Step 1: Add three unrelated form fixtures with different labels, layouts, page counts, uploads, and review screens.**
+- [ ] **Step 2: Require one model-chosen action followed by a fresh observation.**
+- [ ] **Step 3: Require the model to answer each visible question directly from context; no intermediate question or answer artifact.**
+- [ ] **Step 4: Block unverified revenue, users, legal status, visa status, and media.**
+- [ ] **Step 5: Re-read the final review page, claim the existing runtime effect, and click Submit once.**
+- [ ] **Step 6: Capture fresh UI evidence and confirmation mail when available.**
+- [ ] **Step 7: Record timeout/navigation loss as `submit_unknown` and never retry automatically.**
+- [ ] **Step 8: Scan production changes for funder names/selectors and require zero provider-specific execution code.**
+- [ ] **Step 9: Run evals, commit `feat(fundraising): apply through live browser feedback`, and push.**
 
-### Task 7: Track confirmation through funded readback
+### Task 6: Track replies, interviews, decisions, and money
 
 **Files:**
 - Modify: `skills/fundraiser-agent/prompts/inbox.md`
 - Create: `skills/fundraiser-agent/evals/inbox-cases.jsonl`
 
 **Interfaces:**
-- Consumes: Gmail provider IDs/thread IDs, Calendar, and application ledger.
-- Produces: confirmed transitions, due actions, interview packs, and human ceremonies.
+- Consumes: Gmail provider IDs/thread IDs, Calendar, and ApplicationReceipts.
+- Produces: appended tracking receipts and human ceremony handoffs.
 
-- [ ] **Step 1: Add confirmation, rejection, interview, waitlist, unrelated mail, duplicate ID, and funding-paperwork fixtures.**
-- [ ] **Step 2: Match with provider identity, account, program/application evidence, and time window; never subject keywords alone.**
-- [ ] **Step 3: Automate Calendar and interview preparation, not attendance.**
-- [ ] **Step 4: Keep KYC, binding terms, and money movement as human ceremonies.**
-- [ ] **Step 5: Require executed terms plus provider/bank receipt before `funded`.**
-- [ ] **Step 6: Run evals, commit `feat(fundraising): track applications through funded readback`, and push.**
+- [ ] **Step 1: Add confirmation, rejection, interview, waitlist, unrelated-mail, duplicate-message, offer, and funding fixtures.**
+- [ ] **Step 2: Match mail using provider identity, account, application evidence, and time window, never subject keywords alone.**
+- [ ] **Step 3: Update the existing receipt lineage rather than create a target registry.**
+- [ ] **Step 4: Create Calendar events and interview briefs automatically.**
+- [ ] **Step 5: Keep attendance, KYC, binding documents, and money movement as human ceremonies.**
+- [ ] **Step 6: Require executed terms plus provider/bank readback before `funded`.**
+- [ ] **Step 7: Run evals, commit `feat(fundraising): track applications to funded readback`, and push.**
 
-### Task 8: Prove live generalization and deploy the natural owner
+### Task 7: Prove open-source live operation
 
 **Files:**
 - Modify: `docs/superpowers/specs/2026-08-26-life-manager-fundraiser-agent-design.md`
@@ -228,22 +192,26 @@ DelightX date contradiction, missing founder video, ambiguous Submit, and confir
 - Create: `docs/evidence/fundraising/2026-08-26-fundraiser-live-acceptance.md`
 
 **Interfaces:**
-- Consumes: Tasks 1-7 and the installed release.
-- Produces: unseen-form receipts, installed owner, replay-zero, and updated SSOT.
+- Consumes: Tasks 1-6 and the installed release.
+- Produces: natural-owner receipts, replay-zero, public-safe source, and updated SSOT.
 
-- [ ] **Step 1: Publish and install without a second browser or executor.**
-- [ ] **Step 2: Kickstart the existing natural acquisition owner once.**
-- [ ] **Step 3: Observe one opportunity absent from the release-time source set.**
-- [ ] **Step 4: Complete three unrelated live forms over natural daily passes without provider code changes.**
-- [ ] **Step 5: Verify the next pass produces zero duplicate effect for prior applications.**
-- [ ] **Step 6: Verify Fundraiser and x-repost lease the browser sequentially without state/session corruption.**
-- [ ] **Step 7: Verify installed provenance, UI/mail receipts, ledger, replay-zero, and Telegram message IDs.**
-- [ ] **Step 8: Update both specs, commit, and push.**
+- [ ] **Step 1: Publish/install without starting another browser or redundant executor.**
+- [ ] **Step 2: Kickstart the natural acquisition owner once.**
+- [ ] **Step 3: Observe a program absent from every checked-in source/program file.**
+- [ ] **Step 4: Complete three unrelated live forms over natural daily passes without code changes between them.**
+- [ ] **Step 5: Verify the next pass does not reapply to any prior receipt identity.**
+- [ ] **Step 6: Verify Fundraiser and x-repost lease X sequentially without state/session corruption.**
+- [ ] **Step 7: Verify UI/mail receipts, runtime effect history, Calendar, Telegram message IDs, and replay-zero.**
+- [ ] **Step 8: Audit the public repository for secrets, personal data, private receipts, compiler/registry files, and provider-specific application code.**
+- [ ] **Step 9: Publish only generic prompts, schemas, eval fixtures, scheduler installation instructions, and shared runtime changes.**
+- [ ] **Step 10: Update both specs, commit, and push.**
 
 ## Self-review
 
-- Daily discovery, X, unseen forms, one-per-day, dedupe, tracking, human gates, readback, and replay-zero map to Tasks 1-8.
-- No new Python or provider-specific application script is planned.
-- No funder registry entry is a capability prerequisite.
-- Deterministic code stores and fences; model judgment remains in prompts.
-- Every implementation task has an independent test/eval and commit boundary.
+- The plan contains no compiler, funder/source registry, numbered catalog, dedicated fundraising database, or dedicated MCP server.
+- The model owns all search, fit, priority, answer, and browser judgment.
+- Persistent data starts at ApplicationReceipt/human checkpoint, solely for dedupe and tracking.
+- Existing shared runtime machinery owns claims, immutable receipts, ambiguity, and replay-zero.
+- New programs require no repository changes.
+- Scheduling reuses OpenClaw cron directly; no Fundraiser executable, wrapper, plist, or scheduler adapter exists.
+- Every implementation task has a failing test/eval, minimal change, verification, commit, and push.

@@ -80,7 +80,10 @@ scoring, and placeholder-heavy output.
 - `skills/apply-to-funder/lib/context.mjs` binds context and application digests and blocks stale or
   unverified assets.
 - Current limitation: it requires a pre-created `fundraising/funders/<id>.json` and is preview-only.
-  That registry cannot remain the admission gate for daily discovery.
+  Fundraiser Agent removes that registry from its runtime path entirely. Historical funder files may
+  remain as evidence, but the daily agent neither enumerates nor compiles them.
+- `fundraising/application-kit/` is optional background context, not a compiled payload or runtime
+  prerequisite. The agent answers the visible form directly from current startup context.
 
 ### Existing browser and X loops
 
@@ -117,9 +120,9 @@ Build one Life Manager Fundraiser Agent, not a set of accelerator automations.
 The model owns daily query generation, source expansion, fit and priority judgment, unfamiliar UI
 reading, browser actions, answer adaptation, and evidence-sufficiency judgment.
 
-Deterministic tools own canonical identities, evidence hashes, freshness, the daily application claim,
-submitted/cohort/account deduplication, one-shot effect fencing, provider readback identity, state
-transitions, suppressions, and replay-zero.
+Existing shared runtime bookkeeping owns only ApplicationReceipt identity, evidence hashes,
+submitted/cohort/account deduplication, one-shot effect fencing, provider readback identity, and
+replay-zero. It does not add a source table, candidate table, funder store, or Fundraiser MCP server.
 
 The daily target is one newly verified application. If no eligible new program exists, the agent
 records the sources checked and continues tracking existing applications; it never reapplies,

@@ -7,11 +7,13 @@ startup program, or public investor intake per daily acquisition pass, then trac
 through confirmation, reply, interview, decision, and funded readback.
 
 The system operates on programs whose pages and forms it has never seen. Adding a program must not
-require a script, provider adapter, selector, field map, or checked-in program config.
+require a compiler, registry entry, script, provider adapter, selector, field map, or checked-in
+program config.
 
 ## 2. Non-goals
 
 - No funder-specific Python, JavaScript, shell, selector, or browser adapter.
+- No answer compiler, target compiler, source registry, funder registry, or numbered program catalog.
 - No fixed accelerator inventory as a capability whitelist.
 - No hardcoded keyword, regex, or numeric scoring for fit judgment.
 - No hourly reapplication attempt.
@@ -26,9 +28,9 @@ require a script, provider adapter, selector, field map, or checked-in program c
 flowchart LR
     W[Daily owner wakes] --> C[Crawl official web]
     W --> X[Read live X in leased browser]
-    C --> A[Agent expands sources]
+    C --> A[Agent follows live evidence]
     X --> A
-    A --> D[Deterministic candidate dedupe]
+    A --> D[Check prior ApplicationReceipts]
     D --> J[Agent chooses one new eligible target]
     J --> B[Agent operates unfamiliar browser form]
     B --> F[One-shot effect fence]
@@ -45,8 +47,8 @@ cannot claim a new application effect.
 
 ### Model judgment
 
-The model receives current startup facts, past outcomes, source evidence, visible browser state, and
-typed bookkeeping tools. It decides:
+The model receives current startup facts, past ApplicationReceipts, live source evidence, and visible
+browser state. It decides:
 
 - which searches to run today;
 - which links and X posts point to real funding opportunities;
@@ -60,58 +62,62 @@ typed bookkeeping tools. It decides:
 These decisions use natural-language guidance and canonical examples. They are not implemented as
 keyword lists, regexes, fixed weights, or provider branches.
 
-### Deterministic bookkeeping
+### Existing deterministic bookkeeping
 
-Typed tools validate and persist only mechanical facts:
+The existing shared runtime job/effect/receipt machinery persists only mechanical facts:
 
 - canonical URL and normalized organization/program/cohort identity;
-- official-source URL, captured text digest, observation time, and freshness;
+- official-source URL, captured evidence digest, observation time, and freshness inside the run receipt;
 - application account and previous application identity;
 - context, application, and effect digests;
-- daily acquisition claim and one-shot Submit claim;
+- today's existing ApplicationReceipt check and one-shot Submit claim;
 - UI receipt, confirmation message/thread IDs, and timestamps;
 - state transition validity, duplicate, suppression, stop, and ambiguity status.
 
-## 5. Dynamic source discovery
+It does not persist a candidate database, source registry, ranking table, program number, generated
+question schema, or compiled answer set. Discovery candidates that do not produce an application stay
+inside that day's run evidence.
 
-The source ledger begins with official pages for YC, Solo Founders, Base, Antler, a16z, DelightX,
-Techstars, relevant Japanese programs, and sources found by prior runs. These are seeds, not a closed
-registry.
+## 5. Dynamic source discovery without a registry
+
+There is no source ledger or funder catalog. Each pass searches the live world again. Known official
+pages such as YC, Solo Founders, Base, Antler, a16z, DelightX, Techstars, and Japanese programs are
+examples the agent may revisit, not rows that admit or exclude capability.
 
 Each daily pass:
 
 1. Reads current product, geography, solo-founder status, AI/consumer/crypto positioning, and verified
    traction.
-2. Reads prior source yield and previously applied identities.
+2. Reads prior ApplicationReceipts so it does not submit the same program/cohort/account again.
 3. Generates new English and Japanese web searches.
 4. Crawls official program, fund, ecosystem, university, government, and accelerator pages.
 5. Leases the authenticated X browser read-only and generates live X searches.
 6. Follows promising links to official sources.
-7. Records every checked official URL and the source chain that led to it.
-8. Adds sources and opportunities without a repository change.
+7. Records checked official URLs and the source chain in that run's evidence.
+8. Keeps searching until it finds one new eligible application or exhausts reasonable live sources.
 
 An X post is discovery evidence, not program truth. Deadline, eligibility, terms, location, and the
 application route must come from the official page before qualification or submission.
 
-## 6. Opportunity and application identity
+## 6. ApplicationReceipt identity and dedupe
 
 The deterministic identity tuple is:
 
 `organization + program + cohort_or_rolling_window + application_account`
 
-Canonical URLs and provider application IDs are aliases. A changed marketing URL does not create a new
-opportunity. A genuinely new cohort may be eligible when a prior cohort was submitted.
+The tuple is written only when an application is claimed/submitted or a human ceremony blocks the
+current form. It is not a pre-application registry. Canonical URLs and provider application IDs are
+receipt aliases. A changed marketing URL does not create a new application. A genuinely new cohort may
+be eligible when a prior cohort was submitted.
 
 For rolling programs, a second application is blocked unless the provider explicitly invites
 reapplication or publishes a materially new window. The source and reason must be recorded first.
 
-## 7. State contract
+## 7. Minimal receipt lifecycle
 
 ```text
-source_seen
-  -> opportunity_verified | source_rejected
-  -> eligible | ineligible | evidence_blocked
-  -> preparing
+discovered_in_current_run
+  -> skipped_in_run | preparing
   -> ready_to_submit | human_required
   -> submit_claimed
   -> submitted_ui | submit_unknown | not_submitted
@@ -128,12 +134,14 @@ Rules:
 - confirmation requires a provider UI receipt or matching provider message;
 - `funded` requires executed terms plus provider/bank readback;
 - every active state has a durable next action and next check time;
-- already-applied identities stay visible but cannot receive another claim.
+- already-applied identities are read from ApplicationReceipts and cannot receive another claim.
 
 ## 8. Browser execution
 
 Fundraiser uses the existing Life Manager browser and its general navigation, observation, click, type,
-select, upload, screenshot, and readback tools.
+select, upload, screenshot, and readback tools. The model reads the visible question and answers it
+directly from current Life Manager context. There is no intermediate question compiler, answer
+compiler, generated field schema, or program template.
 
 The agent works from rendered feedback:
 
@@ -156,9 +164,9 @@ pass. If a general browser capability is missing, improve the shared browser too
 - Source revisit: chosen dynamically from freshness, deadline proximity, yield, and contradictions.
 - One new application is the target, not a false success quota.
 
-When no eligible new opportunity exists, the pass records official sources checked, X searches,
-rejection reasons, contradictions, missing evidence, and the next check. It does not reapply, submit
-an obvious mismatch, or invent an accelerator.
+When no eligible new application exists, the pass records official sources checked, X searches,
+rejection reasons, contradictions, and missing evidence in run evidence. It does not create candidate
+rows, reapply, submit an obvious mismatch, or invent an accelerator.
 
 ## 10. Human boundaries
 
@@ -180,7 +188,7 @@ compresses these into "applied successfully" without the corresponding receipt.
 ## 12. Acceptance
 
 1. Three unrelated live forms complete without program-specific code.
-2. The owner discovers an opportunity absent from the release-time source set.
+2. The owner discovers an application absent from all checked-in files at release time.
 3. An already-submitted application stays excluded across the next daily pass.
 4. A new cohort of the same program remains distinguishable.
 5. Ambiguous Submit produces no second provider effect.
