@@ -81,6 +81,7 @@ git -C "$REPO_ROOT" archive --format=tar "$RELEASE_SHA" \
   skills/_shared/marketplace-core/scripts/ledger.py \
   skills/_shared/marketplace-core/schemas/event.schema.json \
   skills/_shared/marketplace-core/schemas/opportunity.schema.json \
+  skills/_shared/marketplace-core/schemas/payment.schema.json \
   skills/gig-work/schemas/application_decisions.schema.json \
   skills/gig-work/schemas/reply_composition.schema.json \
   runtime/agent-runner/agent_runner.py \
