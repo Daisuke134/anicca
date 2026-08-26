@@ -8,6 +8,7 @@ const path = require("node:path");
 const test = require("node:test");
 
 const { createContentObjectStore, importContentObject } = require("../lib/content-object-store.js");
+const { createMarketingLaneManifest, writeMarketingLaneManifest } = require("../lib/marketing-lane-manifest.js");
 const {
   ACCOUNT_ID,
   EN_AFFIRMATION_LANE,
@@ -17,7 +18,9 @@ const {
 const {
   EN_AFFIRMATION_LANE: EN_RUNNER_LANE,
   EN_SLIDESHOW_TIKTOK_LANE: TIKTOK_SLIDESHOW_RUNNER_LANE,
+  enAffirmationProductionSlot,
   parseArgs,
+  runAniccaCarouselCanary,
   runAniccaEnAffirmationInstagramCanary,
   runAniccaEnSlideshowTikTokCanary,
   runAniccaLarryJaCanary,
@@ -125,6 +128,17 @@ function enFixture() {
     fs.copyFileSync(path.join(liveMarketingDir, name), path.join(testMarketingDir, name));
     fs.chmodSync(path.join(testMarketingDir, name), 0o600);
   }
+  const liveManifest = JSON.parse(fs.readFileSync(path.join(testMarketingDir, "lane-manifest.json"), "utf8"));
+  const defaultOffRows = liveManifest.lanes.map((row) => ({
+    ...row,
+    verified: true,
+    ...(row.production_armed === true ? { lane_state: "default-off", production_armed: false } : {}),
+  }));
+  writeMarketingLaneManifest(createMarketingLaneManifest({
+    tenant_id: liveManifest.tenant_id,
+    integrations: defaultOffRows,
+    holds: liveManifest.holds.map((row) => ({ ...row, verified: true })),
+  }, { tenantId: liveManifest.tenant_id, assignments: defaultOffRows.map((row) => ({ ...row })) }), { dataDir });
   return {
     dataDir,
     objectStore,
@@ -324,8 +338,16 @@ test("a provider result without a direct /p receipt never sends Telegram", async
 test("EN affirmation CLI selects its frozen lane while JA run remains unchanged", () => {
   assert.deepEqual(parseArgs(["run", "--slot", SLOT]), { command: "run", slot: SLOT });
   assert.deepEqual(parseArgs(["run-en-affirmation", "--slot", SLOT]), { command: "run-en-affirmation", slot: SLOT });
+  assert.deepEqual(parseArgs(["run-en-affirmation-production", "--slot", SLOT]), { command: "run-en-affirmation-production", slot: SLOT });
+  assert.deepEqual(parseArgs(["run-en-affirmation-production"]), { command: "run-en-affirmation-production", slot: null });
   assert.equal(EN_RUNNER_LANE.accountId, "@anicca.affirmation");
   assert.equal(EN_RUNNER_LANE.nativeOwner, "@anicca.ios");
+});
+
+test("EN affirmation production resolves the three exact JST daily slots", () => {
+  assert.equal(enAffirmationProductionSlot(Date.parse("2026-08-26T01:01:00.000Z")), "2026-08-26T01:00:00.000Z");
+  assert.equal(enAffirmationProductionSlot(Date.parse("2026-08-26T06:01:00.000Z")), "2026-08-26T06:00:00.000Z");
+  assert.equal(enAffirmationProductionSlot(Date.parse("2026-08-26T11:01:00.000Z")), "2026-08-26T11:00:00.000Z");
 });
 
 test("EN slideshow TikTok command selects only its immutable lane", () => {
@@ -390,6 +412,42 @@ test("EN affirmation publishes a direct /p/ once, holds then releases native-own
   assert.equal(telegramCalls.length, 1);
   assert.match(telegramCalls[0][2], /@anicca\.ios/);
   assert.doesNotMatch(telegramCalls[0][2], /@anicca\.affirmation/);
+});
+
+test("armed EN affirmation production publishes exact assets without mutating controls and sends Telegram once", async () => {
+  const value = enFixture();
+  const manifestPath = path.join(value.dataDir, "marketing", "lane-manifest.json");
+  const before = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+  const rows = before.lanes.map((row) => ({
+    ...row,
+    verified: true,
+    ...(row.integration_id === EN_RUNNER_LANE.integrationId
+      ? { lane_state: "production-armed", production_armed: true, target_daily_limit: 3 }
+      : {}),
+  }));
+  const armed = createMarketingLaneManifest({ tenant_id: before.tenant_id, integrations: rows, holds: before.holds.map((row) => ({ ...row, verified: true })) },
+    { tenantId: before.tenant_id, assignments: rows.map((row) => ({ ...row })) });
+  writeMarketingLaneManifest(armed, { dataDir: value.dataDir });
+  const controlBytes = {
+    manifest: fs.readFileSync(manifestPath),
+    fence: fs.readFileSync(path.join(value.dataDir, "marketing", "publication-effect-fence.json")),
+  };
+  const publicationCalls = [];
+  const telegramCalls = [];
+  const result = await runAniccaCarouselCanary(["run-en-affirmation-production"], {
+    env: value.env,
+    objectStore: value.objectStore,
+    runDistribution: providerCalls(publicationCalls),
+    sendTelegram: async (...args) => { telegramCalls.push(args); return { ok: true, result: { message_id: 43 } }; },
+    now: () => "2026-08-26T07:31:00.000Z",
+  });
+  assert.equal(result.slot, "2026-08-26T06:00:00.000Z");
+  assert.equal(result.publication.created, true);
+  assert.deepEqual(result.telegram, { created: true, held: false, message_id: 43 });
+  assert.equal(publicationCalls.length, 1);
+  assert.equal(telegramCalls.length, 1);
+  assert.deepEqual(fs.readFileSync(manifestPath), controlBytes.manifest);
+  assert.deepEqual(fs.readFileSync(path.join(value.dataDir, "marketing", "publication-effect-fence.json")), controlBytes.fence);
 });
 
 test("EN affirmation restores the exact closed controls when the provider effect is unknown", async () => {
