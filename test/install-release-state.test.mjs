@@ -148,6 +148,45 @@ test("agent-economy installer reads the sealed namespaced current release and pr
     assert.notEqual(homeEscapeResult.status, 0, "symlinked ANICCA_HOME must fail closed");
     assert.deepEqual(readdirSync(escapedHome), [], "external ANICCA_HOME target must remain empty");
     assert.equal(statSync(escapedHome).mode & 0o200, 0, "external ANICCA_HOME target mode must remain unchanged");
+
+    const aliasRoot = join(root, "alias-root");
+    const aliasTarget = join(root, "alias-target");
+    mkdirSync(aliasRoot, { recursive: true });
+    mkdirSync(aliasTarget, { recursive: true });
+    chmodSync(aliasTarget, 0o555);
+    symlinkSync(aliasTarget, join(aliasRoot, "linked-parent"));
+    const aliasHome = join(aliasRoot, "linked-parent", "runtime");
+    const aliasResult = spawnSync("bash", [join(source, "install.sh"), "agent-economy"], {
+      cwd: source,
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        HOME: join(root, "home"),
+        LIFE_MANAGER_RELEASE_ROOT: releaseRoot,
+        LIFE_MANAGER_HOME: aliasHome,
+        LIFE_MANAGER_INSTALL_DAEMON: "0",
+        LIFE_MANAGER_INSTALL_DEPS: "0",
+      },
+    });
+    assert.notEqual(aliasResult.status, 0, "interior linked parent must fail closed");
+    assert.deepEqual(readdirSync(aliasTarget), [], "interior link target must remain empty");
+    assert.equal(statSync(aliasTarget).mode & 0o200, 0, "interior link target mode must remain unchanged");
+
+    const releaseProbe = join(release, "runtime-probe");
+    const releaseResult = spawnSync("bash", [join(source, "install.sh"), "agent-economy"], {
+      cwd: source,
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        HOME: join(root, "home"),
+        LIFE_MANAGER_RELEASE_ROOT: releaseRoot,
+        LIFE_MANAGER_HOME: releaseProbe,
+        LIFE_MANAGER_INSTALL_DAEMON: "0",
+        LIFE_MANAGER_INSTALL_DEPS: "0",
+      },
+    });
+    assert.notEqual(releaseResult.status, 0, "runtime path inside release must fail before creation");
+    assert.equal(existsSync(releaseProbe), false, "release runtime probe must not be created");
   } finally {
     spawnSync("chmod", ["-R", "u+w", root], { encoding: "utf8" });
     rmSync(root, { recursive: true, force: true });

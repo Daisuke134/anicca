@@ -253,16 +253,22 @@ def walk(path, create=False):
         os.close(fd); raise
 
 home_real = os.path.realpath(home)
+
+def exact_alias(raw, canonical, alias):
+    prefix = alias + os.sep
+    target = canonical + os.sep
+    return raw.startswith(prefix) and home_real.startswith(target) and raw[len(prefix):] == home_real[len(target):]
+
 if home_real != home and not (
-    (home.startswith("/var/") and home_real.startswith("/private/var/"))
-    or (home.startswith("/tmp/") and home_real.startswith("/private/tmp/"))
+    exact_alias(home, "/private/var", "/var")
+    or exact_alias(home, "/private/tmp", "/tmp")
 ):
     raise SystemExit("agent-economy runtime home has an unsafe symlink component")
+if home_real == release or home_real.startswith(release + os.sep):
+    raise SystemExit("agent-economy runtime home is inside the sealed release")
 home_fd = walk(home_real, create=True)
 approved = [home_fd]
 try:
-    if home_real == release or home_real.startswith(release + os.sep):
-        raise SystemExit("agent-economy runtime home is inside the sealed release")
     for relative in ("skills", "skills/agent-economy", "skills/earn", "skills/earn/x402-sell", "skills/cook"):
         absolute = os.path.join(home_real, relative)
         fd = walk(absolute)
