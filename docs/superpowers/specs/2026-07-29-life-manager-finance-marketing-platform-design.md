@@ -2289,6 +2289,19 @@ provider readback capability, not publication uncertainty: without a public
 Postiz response containing the resolved TikTok item ID or a caption-matching
 native API artifact, R2 cannot truthfully transition from unknown to present.
 
+The exact upstream defect is narrower still: the normal `tiktok.provider.ts`
+`postAnalytics` path resolves only release IDs containing `v_pub_url`; it does
+not resolve the photo form's `p_pub_url`. It therefore sends the share/publish
+ID to TikTok `video/query`, which returns no row and surfaces as public Postiz
+analytics `[]`. The public integration response contains only id/name/identifier/
+picture/disabled/profile and no provider token or resolved item ID. Postiz's
+`/posts/:id/missing` path is also inapplicable because repository mutation and
+lookup are deliberately restricted to rows whose stored release ID already
+equals `missing`; this row retains `p_pub_url~v2…`. Exact-caption web search is
+also empty. Thus no safe public Postiz API call can currently perform the
+private provider-token status resolution. Do not overwrite the release ID,
+invent a `/video/` URL, expose an integration token, or create another effect.
+
 **Completed immediately preceding code item:** MKT-09R9-14 / Order 24F9 extends
 the shared native-carousel boundary for the single frozen TikTok photo lane and
 adds a thin `anicca-en-slideshow-tiktok-canary.js` wrapper. Postiz transport now
