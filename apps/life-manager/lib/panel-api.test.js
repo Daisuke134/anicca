@@ -386,6 +386,8 @@ function byUidWallet(fixture) {
 function onboardingHarness(initial = {}) {
   const writes = [];
   const syncs = [];
+  const wrapperCalls = [];
+  const providerReads = [];
   const reads = [];
   const state = {
     step: "name", stage: "calendar", name: null, calendarConnected: false,
@@ -401,6 +403,12 @@ function onboardingHarness(initial = {}) {
       return { ...state };
     },
     async syncCalendarStatus(value, status) { assert.deepEqual(value, scope); syncs.push(status); return true; },
+    async mutateOnboardingWithCalendar(value, status, action, payload) {
+      assert.deepEqual(value, scope);
+      wrapperCalls.push({ status, action, payload });
+      writes.push({ action, payload });
+      return { ...state };
+    },
     async mutateOnboarding(value, action, payload) {
       assert.deepEqual(value, scope);
       writes.push({ action, payload });
@@ -414,9 +422,9 @@ function onboardingHarness(initial = {}) {
     commandStore,
     stripePaymentLink: "https://buy.stripe.com/test_life_manager",
     composioKey: "provider-key",
-    composioCalendarStatusImpl: async () => "ACTIVE",
+    composioCalendarStatusImpl: async () => { providerReads.push("ACTIVE"); return "ACTIVE"; },
   };
-  return { state, scope, writes, syncs, reads, opts, commandStore };
+  return { state, scope, writes, syncs, wrapperCalls, providerReads, reads, opts, commandStore };
 }
 
 async function onboardingRequest(harness, { method = "GET", path = "/api/panel/onboarding", body, headers = {} } = {}) {
@@ -464,8 +472,10 @@ test("Task 7A onboarding API follows server-owned fixed progression and ignores 
     ["payment.skip", { paid: true, uid: "tenant-b" }],
   ];
   for (const [action, payload] of actions) {
-    h.commandStore.mutateOnboarding = async (scope, actualAction, actualPayload) => {
+    h.commandStore.mutateOnboardingWithCalendar = async (scope, status, actualAction, actualPayload) => {
       assert.deepEqual(scope, h.scope);
+      assert.equal(status, "ACTIVE");
+      h.wrapperCalls.push({ status, action: actualAction, payload: actualPayload });
       h.writes.push({ action: actualAction, payload: actualPayload });
       return { ...h.state, step: action === "payment.skip" ? "dashboard" : action.split(".")[0] };
     };
@@ -480,7 +490,7 @@ test("Task 7A onboarding API follows server-owned fixed progression and ignores 
 
 test("Task 7A rejects an out-of-order onboarding mutation before any write", async () => {
   const h = onboardingHarness({ step: "home", stage: "home" });
-  h.commandStore.mutateOnboarding = async () => {
+  h.commandStore.mutateOnboardingWithCalendar = async () => {
     const error = new Error("onboarding_conflict");
     error.status = 409;
     throw error;
@@ -518,20 +528,42 @@ test("Task 7A refreshes official Calendar truth before every state read or trans
   assert.equal(get.response.status, 200);
   assert.deepEqual(h.syncs, ["ACTIVE"]);
   h.opts.composioCalendarStatusImpl = async () => "MISSING";
-  h.commandStore.mutateOnboarding = async () => { throw new Error("transition must not run when Calendar is missing"); };
+  h.commandStore.mutateOnboardingWithCalendar = async () => { throw new Error("transition must not run when Calendar is missing"); };
   const post = await onboardingRequest(h, { method: "POST", body: { action: "home.save", home_address: "home" } });
   assert.equal(post.response.status, 502);
-  assert.deepEqual(h.syncs, ["ACTIVE", "MISSING"]);
+  assert.deepEqual(h.syncs, ["ACTIVE"], "POST uses the combined transition RPC, not standalone sync");
   assert.deepEqual(h.reads, ["state"]);
 });
 
-test("Task 7A rejects malformed JSON arrays and primitives before any RPC", async () => {
-  for (const malformed of [[], "not-an-object", 7, null]) {
+test("R1A2 valid onboarding POST reads provider then uses exactly one combined sync/transition RPC", async () => {
+  const h = onboardingHarness({ step: "home", stage: "home", calendarConnected: true });
+  const result = await onboardingRequest(h, { method: "POST", body: { action: "home.save", home_address: "home" } });
+  assert.equal(result.response.status, 200);
+  assert.deepEqual(h.providerReads, ["ACTIVE"]);
+  assert.deepEqual(h.syncs, [], "POST must not call standalone Calendar sync");
+  assert.equal(h.wrapperCalls.length, 1);
+  assert.deepEqual(h.wrapperCalls[0], { status: "ACTIVE", action: "home.save", payload: { home_address: "home" } });
+});
+
+test("R1A2 provider failure prevents both onboarding RPCs", async () => {
+  const h = onboardingHarness({ step: "home", stage: "home" });
+  h.opts.composioCalendarStatusImpl = async () => { h.providerReads.push("error"); throw new Error("provider_down"); };
+  const result = await onboardingRequest(h, { method: "POST", body: { action: "home.save", home_address: "home" } });
+  assert.equal(result.response.status, 502);
+  assert.deepEqual(h.providerReads, ["error"]);
+  assert.deepEqual(h.syncs, []);
+  assert.deepEqual(h.wrapperCalls, []);
+});
+
+test("Task 7A rejects malformed JSON arrays, primitives, and payloads before provider/RPC", async () => {
+  for (const malformed of [[], "not-an-object", 7, null, { action: "home.save", payload: [] }, { action: "home.save", payload: "home" }, { action: "home.save", extra: "home" }]) {
     const h = onboardingHarness({ step: "home", stage: "home" });
     const result = await onboardingRequest(h, { method: "POST", path: "/api/panel/onboarding/home/save", body: malformed });
     assert.equal(result.response.status, 400, String(malformed));
     assert.equal(h.writes.length, 0);
     assert.deepEqual(h.reads, [], "malformed body must not invoke state RPC");
+    assert.deepEqual(h.providerReads, [], "malformed body must not query provider");
+    assert.deepEqual(h.syncs, [], "malformed body must not sync provider");
   }
 });
 
@@ -556,6 +588,14 @@ test("Task 7A onboarding migration is additive, tenant-scoped, and lock-atomic",
   assert.doesNotMatch(transition, /SET\s+paid\s*=/i, "client transitions cannot write paid");
   assert.match(transition, /call_enabled\s*=\s*false/i, "phone and notification transitions keep calls off");
   assert.match(sql, /REVOKE ALL ON FUNCTION public\.lm_panel_onboarding_transition/i);
+});
+
+test("R1A2 combined onboarding transition wraps Calendar sync and rollback in one RPC", () => {
+  const sql = fs.readFileSync(path.join(__dirname, "../migrations/2026-08-27-lm-panel-onboarding-reachability.sql"), "utf8");
+  assert.match(sql, /CREATE OR REPLACE FUNCTION public\.lm_panel_onboarding_transition_with_calendar/i);
+  assert.match(sql, /sync_lm_panel_calendar_status[\s\S]*lm_panel_onboarding_transition/i);
+  assert.match(sql, /LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp/i);
+  assert.match(sql, /GRANT EXECUTE ON FUNCTION public\.lm_panel_onboarding_transition_with_calendar/i);
 });
 
 test("Task 7A state resumes for another session of the same actor and isolates another actor", async () => {

@@ -12,10 +12,10 @@ const { isPanelCommand } = require("./telegram.js");
 const PANEL_NOW = new Date("2026-08-27T00:00:00.000Z");
 const PANEL_AUTH_DATE = Math.floor(PANEL_NOW.getTime() / 1000);
 
-function telegramInitData({ actorId = 123, authDate = PANEL_AUTH_DATE, token = "telegram-token", chatId = actorId } = {}) {
+function telegramInitData({ actorId = 123, authDate = PANEL_AUTH_DATE, token = "telegram-token", chatId = actorId, firstName = "Fixture", lastName = "" } = {}) {
   const params = new URLSearchParams({
     auth_date: String(authDate),
-    user: JSON.stringify({ id: actorId, first_name: "Fixture" }),
+    user: JSON.stringify({ id: actorId, first_name: firstName, last_name: lastName }),
     chat: JSON.stringify({ id: chatId, type: "private" }),
   });
   const secret = crypto.createHmac("sha256", "WebAppData").update(token).digest();
@@ -46,7 +46,8 @@ test("PANEL-2: valid Telegram initData creates a server session through the exis
     fetchImpl: async (url, init) => {
       calls.push({ url: String(url), init });
       const parsed = new URL(String(url));
-      if (parsed.pathname.endsWith("/rpc/claim_lm_panel_telegram_init")) {
+      if (parsed.pathname.endsWith("/rpc/claim_lm_panel_telegram_init_v2")) {
+        assert.equal(JSON.parse(init.body).p_profile_name, "Fixture");
         return { ok: true, status: 200, json: async () => [{ status: "claimed", uid: "lm_u1", chat_id: "123" }] };
       }
       if (parsed.pathname.endsWith("/lm_panel_sessions") && init.method === "POST") {
@@ -60,7 +61,7 @@ test("PANEL-2: valid Telegram initData creates a server session through the exis
     assert.deepEqual(await response.json(), { redirect: "/panel" });
     assert.match(response.headers.get("set-cookie") || "", /__Host-lm_panel_session=/);
   });
-  assert.equal(calls.filter(({ url }) => url.includes("claim_lm_panel_telegram_init")).length, 1);
+  assert.equal(calls.filter(({ url }) => url.endsWith("/rpc/claim_lm_panel_telegram_init_v2")).length, 1);
   assert.equal(calls.filter(({ url }) => url.endsWith("/lm_panel_sessions")).length, 1);
 });
 
@@ -107,7 +108,7 @@ test("PANEL-2: replayed and cross-actor Telegram claims remain rejected", async 
       fetchImpl: async (url, init) => {
         writes.push({ url: String(url), init });
         const parsed = new URL(String(url));
-        if (parsed.pathname.endsWith("/rpc/claim_lm_panel_telegram_init")) {
+        if (parsed.pathname.endsWith("/rpc/claim_lm_panel_telegram_init_v2")) {
           return { ok: true, status: 200, json: async () => [current.claim] };
         }
         throw new Error(`${current.name} must not create a session`);
@@ -119,6 +120,16 @@ test("PANEL-2: replayed and cross-actor Telegram claims remain rejected", async 
     });
     assert.equal(writes.filter(({ url }) => url.endsWith("/lm_panel_sessions")).length, 0, `${current.name} must not write a session`);
   }
+});
+
+test("R1A2 HMAC verification carries only a bounded Telegram display name", () => {
+  const { verifyTelegramInitData } = require("./panel-auth.js");
+  const verified = verifyTelegramInitData(telegramInitData({ actorId: 123, firstName: "Aiko", lastName: "Tanaka" }), { token: "telegram-token", now: () => PANEL_NOW });
+  assert.equal(verified.ok, true);
+  assert.equal(verified.actorId, "123");
+  assert.equal(verified.profileName, "Aiko Tanaka");
+  const long = verifyTelegramInitData(telegramInitData({ firstName: "A".repeat(100), lastName: "B".repeat(100) }), { token: "telegram-token", now: () => PANEL_NOW });
+  assert.equal(long.profileName.length, 120);
 });
 
 test("PANEL-2: /panel/onboarding has no query identity fallback", async () => {
@@ -330,4 +341,14 @@ test("R1A actor claim provisions one deterministic Telegram tenant under the exi
   assert.match(sql, /FOR UPDATE/i);
   assert.match(sql, /RETURN QUERY SELECT 'replayed'/i);
   assert.match(sql, /RETURN QUERY SELECT 'claimed'/i);
+});
+
+test("R1A2 v2 actor claim stores profile name only for an empty existing name", () => {
+  const sql = fs.readFileSync(path.join(__dirname, "../migrations/2026-08-27-lm-panel-onboarding-reachability.sql"), "utf8");
+  assert.match(sql, /CREATE OR REPLACE FUNCTION public\.claim_lm_panel_telegram_init_v2\(p_init_hash text, p_actor_id text, p_profile_name text\)/i);
+  assert.match(sql, /p_profile_name[\s\S]*char_length[\s\S]*120/i);
+  assert.match(sql, /NULLIF\(trim\((?:p_)?profile_name\), ''\)/i);
+  assert.match(sql, /CASE WHEN name IS NULL OR trim\(name\)\s*=\s*'' THEN NULLIF\(trim\(profile_name\), ''\) ELSE name END/i);
+  assert.match(sql, /claim_lm_panel_telegram_init_v2\(p_init_hash, p_actor_id, NULL\)/i);
+  assert.match(sql, /REVOKE ALL ON FUNCTION public\.claim_lm_panel_telegram_init_v2/i);
 });

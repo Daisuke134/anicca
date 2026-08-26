@@ -183,6 +183,14 @@ function readJsonBody(req, maxBytes = 16 * 1024) {
   });
 }
 
+function telegramProfileName(user) {
+  const parts = [user && user.first_name, user && user.last_name]
+    .filter((part) => typeof part === "string")
+    .map((part) => part.trim())
+    .filter(Boolean);
+  return parts.join(" ").slice(0, 120);
+}
+
 function verifyTelegramInitData(rawInitData, opts = {}) {
   const raw = String(rawInitData || "");
   const botToken = String(opts.token || "");
@@ -234,13 +242,14 @@ function verifyTelegramInitData(rawInitData, opts = {}) {
       return { ok: false, reason: "invalid" };
     }
   }
-  return { ok: true, actorId, initHash: sha256(`lm-panel-telegram-init:v1:${receivedHex.toLowerCase()}`) };
+  return { ok: true, actorId, profileName: telegramProfileName(user), initHash: sha256(`lm-panel-telegram-init:v1:${receivedHex.toLowerCase()}`) };
 }
 
 async function claimTelegramInit(verified, opts) {
-  const rows = await panelRpc("claim_lm_panel_telegram_init", {
+  const rows = await panelRpc("claim_lm_panel_telegram_init_v2", {
     p_init_hash: verified.initHash,
     p_actor_id: verified.actorId,
+    p_profile_name: verified.profileName || "",
   }, opts);
   const row = Array.isArray(rows) ? rows[0] : rows;
   return row || { status: "unknown_actor" };

@@ -357,7 +357,7 @@ async function onboardingRpc(name, body, opts = {}) {
   return Array.isArray(value) ? value[0] || null : value;
 }
 
-async function refreshCalendar(scope, store, opts = {}) {
+async function readCalendarStatus(scope, opts = {}) {
   if (!opts.composioKey && !opts.composioCalendarStatusImpl && !process.env.COMPOSIO_API_KEY) throw onboardingError("calendar_unavailable", 502);
   let status;
   try {
@@ -367,6 +367,11 @@ async function refreshCalendar(scope, store, opts = {}) {
     throw onboardingError("calendar_unavailable", 502);
   }
   if (!["ACTIVE", "MISSING", "DISABLED", "INACTIVE"].includes(status)) throw onboardingError("calendar_unavailable", 502);
+  return status;
+}
+
+async function refreshCalendar(scope, store, opts = {}) {
+  const status = await readCalendarStatus(scope, opts);
   try {
     if (typeof store.syncCalendarStatus === "function") {
       if (await store.syncCalendarStatus(scope, status) === false) throw new Error("calendar_sync_failed");
@@ -378,6 +383,23 @@ async function refreshCalendar(scope, store, opts = {}) {
     throw onboardingError("calendar_unavailable", 502);
   }
   return status;
+}
+
+function onboardingMutation(body, pathAction) {
+  if (!body || typeof body !== "object" || Array.isArray(body)) throw onboardingError("invalid_json", 400);
+  const rawAction = body.action !== undefined ? body.action : body.type !== undefined ? body.type : pathAction;
+  if (typeof rawAction !== "string" || !ONBOARDING_ACTIONS.has(rawAction.trim())) throw onboardingError("invalid_action", 400);
+  const action = rawAction.trim(), hasPayload = Object.hasOwn(body, "payload");
+  if (hasPayload && (!body.payload || typeof body.payload !== "object" || Array.isArray(body.payload))) throw onboardingError("invalid_json", 400);
+  const payload = hasPayload ? { ...body.payload } : { ...body };
+  for (const key of ["action", "type", "payload", "uid", "tg", "telegram_id", "chat_id", "paid", "plan_status", "stripe_customer_id", "stripe_subscription_id", "current_period_end", "stripe_event_at"]) delete payload[key];
+  if (hasPayload && Object.keys(body).some((key) => !["action", "type", "payload", "uid", "tg", "telegram_id", "chat_id", "paid", "plan_status", "stripe_customer_id", "stripe_subscription_id", "current_period_end", "stripe_event_at"].includes(key))) throw onboardingError("invalid_json", 400);
+  const allowed = action === "name.save" ? new Set(["name"]) : action === "home.save" ? new Set(["home_address", "homeAddress"]) : action === "phone.save" ? new Set(["phone"]) : new Set();
+  if (Object.keys(payload).some((key) => !allowed.has(key))) throw onboardingError("invalid_json", 400);
+  if (action === "name.save") { if (typeof payload.name !== "string") throw onboardingError("invalid_name", 400); const name = payload.name.trim(); if (!name || name.length > 120) throw onboardingError("invalid_name", 400); payload.name = name; }
+  if (action === "home.save") { const rawHome = payload.home_address !== undefined ? payload.home_address : payload.homeAddress; if (typeof rawHome !== "string") throw onboardingError("invalid_home_address", 400); const home = rawHome.trim(); if (!home || home.length > 240) throw onboardingError("invalid_home_address", 400); payload.home_address = home; delete payload.homeAddress; }
+  if (action === "phone.save") { if (typeof payload.phone !== "string") throw onboardingError("invalid_phone", 400); const phone = normalizedOnboardingPhone(payload.phone); if (!phone) throw onboardingError("invalid_phone", 400); payload.phone = phone; }
+  return { action, payload };
 }
 
 function onboardingResponse(value, opts = {}, scope = {}) {
@@ -442,6 +464,7 @@ function createSupabaseCommandStore(opts = {}) {
     async readOnboardingState(scope) { return onboardingRpc("lm_panel_onboarding_state", { p_uid: scope.uid, p_chat_id: scope.chatId }, opts); },
     async mutateOnboarding(scope, action, payload) { return onboardingRpc("lm_panel_onboarding_transition", { p_uid: scope.uid, p_chat_id: scope.chatId, p_action: action, p_payload: payload || {} }, opts); },
     async syncCalendarStatus(scope, status) { return onboardingRpc("sync_lm_panel_calendar_status", { p_uid: scope.uid, p_chat_id: scope.chatId, p_status: status }, opts); },
+    async mutateOnboardingWithCalendar(scope, status, action, payload) { return onboardingRpc("lm_panel_onboarding_transition_with_calendar", { p_uid: scope.uid, p_chat_id: scope.chatId, p_status: status, p_action: action, p_payload: payload || {} }, opts); },
     async createOAuthState(scope, state) { const response = await fetchImpl(`${base}/rest/v1/rpc/create_lm_panel_oauth_state`, { method: "POST", headers: { ...headers(opts.supaKey), "content-type": "application/json" }, body: JSON.stringify({ p_state_hash: state.stateHash, p_uid: scope.uid, p_chat_id: scope.chatId, p_provider: state.provider, p_expires_at: state.expiresAt }) }); if (!response.ok) throw new Error("oauth_state_failed"); const value = await jsonOr(response, false); const claimed = Array.isArray(value) ? value[0] === true : value === true; if (!claimed) { const error = new Error("oauth_state_in_progress"); error.status = 409; throw error; } return true; },
     async claimOAuthState(scope, stateHash) { const response = await fetchImpl(`${base}/rest/v1/rpc/claim_lm_panel_oauth_state`, { method: "POST", headers: { ...headers(opts.supaKey), "content-type": "application/json" }, body: JSON.stringify({ p_state_hash: stateHash, p_uid: scope.uid, p_chat_id: scope.chatId }) }); if (!response.ok) throw new Error("oauth_state_failed"); return jsonOr(response, false); },
   };
@@ -589,18 +612,12 @@ async function handlePanelApiRequest(req, res, opts = {}) {
     if (!/^application\/json(?:;|$)/i.test(String(req.headers["content-type"] || ""))) { sendJson(res, 415, { error: "json_required" }); return; }
     if (!timingEqual(req.headers["x-lm-csrf"], scope.csrf || csrfToken(session))) { sendJson(res, 403, { error: "csrf_rejected" }); return; }
     try {
-      const body = await readJson(req);
-      if (!body || typeof body !== "object" || Array.isArray(body)) throw onboardingError("invalid_json", 400);
-      await refreshCalendar(scope, commandStore, opts);
       const pathAction = endpoint.slice("onboarding/".length).replace(/\//g, ".");
-      const action = String((body && (body.action || body.type)) || pathAction || "");
-      if (!ONBOARDING_ACTIONS.has(action)) throw onboardingError("invalid_action", 400);
-      const payload = body && body.payload && typeof body.payload === "object" && !Array.isArray(body.payload) ? { ...body.payload } : { ...(body || {}) };
-      for (const key of ["action", "type", "payload", "uid", "tg", "telegram_id", "chat_id", "paid", "plan_status", "stripe_customer_id", "stripe_subscription_id", "current_period_end", "stripe_event_at"]) delete payload[key];
-      if (action === "name.save") { const name = String(payload.name || "").trim(); if (!name || name.length > 120) throw onboardingError("invalid_name", 400); payload.name = name; }
-      if (action === "home.save") { const home = String(payload.home_address || payload.homeAddress || "").trim(); if (!home || home.length > 240) throw onboardingError("invalid_home_address", 400); payload.home_address = home; delete payload.homeAddress; }
-      if (action === "phone.save") { const phone = normalizedOnboardingPhone(payload.phone); if (!phone) throw onboardingError("invalid_phone", 400); payload.phone = phone; }
-      const state = await (commandStore.mutateOnboarding || (() => { throw onboardingError("onboarding_unavailable", 502); }))(scope, action, payload);
+      const parsed = onboardingMutation(await readJson(req), pathAction);
+      const providerStatus = await readCalendarStatus(scope, opts);
+      const transition = commandStore.mutateOnboardingWithCalendar;
+      if (typeof transition !== "function") throw onboardingError("onboarding_unavailable", 502);
+      const state = await transition(scope, providerStatus, parsed.action, parsed.payload);
       sendJson(res, 200, onboardingResponse(state, opts, scope));
     } catch (error) {
       const known = new Set(["unauthorized", "calendar_unavailable", "invalid_json", "body_too_large", "onboarding_conflict", "invalid_name", "invalid_home_address", "invalid_phone", "invalid_action", "payment_unavailable"]);
