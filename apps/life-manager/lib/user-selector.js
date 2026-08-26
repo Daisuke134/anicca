@@ -7,6 +7,13 @@
 const { compActive } = require("./comp-window.js");
 
 const WAKE_CALENDAR_PROVIDERS = ["composio_gcal", "pipedream_gcal"];
+const CALLABLE_PHONE_RE = /^\+[1-9]\d{7,14}$/;
+
+// Stored phone values must already be normalized E.164. Formatting/normalization belongs to
+// onboarding; the scheduler only answers whether a value is safe to hand to the dial provider.
+function isCallablePhone(value) {
+  return typeof value === "string" && CALLABLE_PHONE_RE.test(value);
+}
 
 // PostgREST filter fragment selecting any supported calendar provider.
 function calendarProviderFilter() {
@@ -26,4 +33,4 @@ function schedulerCohortFilter(env, nowMs) {
   return `${paidPredicate}${calendarProviderFilter()}`;
 }
 
-module.exports = { WAKE_CALENDAR_PROVIDERS, calendarProviderFilter, schedulerCohortFilter };
+module.exports = { WAKE_CALENDAR_PROVIDERS, CALLABLE_PHONE_RE, isCallablePhone, calendarProviderFilter, schedulerCohortFilter };

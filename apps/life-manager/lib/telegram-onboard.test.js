@@ -12,7 +12,8 @@ const { startReply } = require("./telegram.js");
 
 const full = {
   uid: "u1", telegram_chat_id: "1", name: "Dais", calendar_provider: "composio_gcal",
-  phone: "+81", paid: true, gmail_account_id: "gmail-1", gmail_skipped: false,
+  phone: "+81", paid: true, home_address: "Tokyo home", notifications_enabled: true,
+  gmail_account_id: "gmail-1", gmail_skipped: false,
 };
 
 test("null row → calendar (name is never a blocking typed stage)", () => assert.equal(computeStage(null), "calendar"));
@@ -26,6 +27,16 @@ test("server-owned done stage never regresses into legacy phone or Gmail", () =>
   for (const legacyStage of ["done", "phone", "gmail", "pay"]) {
     assert.equal(computeStage({ ...full, tg_onboard_stage: legacyStage, phone: null, paid: true, gmail_account_id: null, gmail_skipped: false }), "done", legacyStage);
   }
+});
+test("legacy done rows without core readiness keep the old unpaid and comp branches", () => {
+  const incomplete = { ...full, tg_onboard_stage: "done", paid: false, home_address: null, phone: null, gmail_account_id: null, gmail_skipped: false };
+  assert.equal(computeStage(incomplete), "phone", "an old incomplete row still asks for its phone");
+  withCompUntil(past(), () => assert.equal(computeStage({ ...incomplete, phone: "+81", home_address: null }), "pay"));
+  withCompUntil(future(), () => assert.equal(computeStage({ ...incomplete, phone: "+81", home_address: null }), "gmail"));
+  const coreReadyUnpaid = { ...full, tg_onboard_stage: "done", paid: false, phone: null, gmail_account_id: null, gmail_skipped: false };
+  withCompUntil(past(), () => assert.equal(computeStage(coreReadyUnpaid), "done"));
+  withCompUntil(future(), () => assert.equal(computeStage(coreReadyUnpaid), "done"));
+  assert.equal(computeStage({ ...coreReadyUnpaid, notifications_enabled: false }), "phone", "missing notification consent is not core-ready");
 });
 test("order is strict: phone and pay precede Gmail", () => {
   assert.equal(computeStage({ ...full, phone: null, paid: false, gmail_account_id: null }), "phone");
@@ -119,7 +130,7 @@ test("notifications_enabled=false gets nothing", async () => {
   assert.deepEqual(calls, []);
 });
 
-test("notifications_enabled true/undefined still nudges (undefined must not fail closed)", async () => {
+test("notifications_enabled true/undefined still nudges (direct row compatibility)", async () => {
   for (const value of [true, undefined]) {
     const sent = await onboardNudgeAll({
       token: "t", base: "https://x", supaUrl: "s", supaKey: "k", nudgeStore: new Map(),
@@ -189,7 +200,7 @@ test("linkedRows joins notifications_enabled from lm_panel_preferences in ONE ba
   const rows = await linkedRows("https://supa.test", "key", { fetchImpl });
   assert.equal(urls.length, 2, "one users query + one batched preferences query");
   assert.equal(rows.find(r => r.uid === "a").notifications_enabled, false);
-  assert.equal(rows.find(r => r.uid === "b").notifications_enabled, true); // no preferences row → default on
+  assert.equal(rows.find(r => r.uid === "b").notifications_enabled, false); // no preferences row → not proven enabled
 });
 
 test("Telegram /start identifies the product only as Life Manager", () => {

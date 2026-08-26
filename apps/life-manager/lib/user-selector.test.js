@@ -9,11 +9,18 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 
-const { calendarProviderFilter, schedulerCohortFilter, WAKE_CALENDAR_PROVIDERS } = require("./user-selector.js"); // missing → RED
+const { calendarProviderFilter, schedulerCohortFilter, isCallablePhone, WAKE_CALENDAR_PROVIDERS } = require("./user-selector.js"); // missing → RED
 
 test("providers include composio_gcal AND pipedream_gcal", () => {
   assert.ok(WAKE_CALENDAR_PROVIDERS.includes("composio_gcal"));
   assert.ok(WAKE_CALENDAR_PROVIDERS.includes("pipedream_gcal"));
+});
+
+test("isCallablePhone accepts only stored E.164 strings", () => {
+  for (const value of ["+819012345678", "+14155552671"]) assert.equal(isCallablePhone(value), true, value);
+  for (const value of [null, undefined, "", "  +819012345678", "+81 (90) 1234-5678", "819012345678", 819012345678, "+123"]) {
+    assert.equal(isCallablePhone(value), false, String(value));
+  }
 });
 
 test("calendarProviderFilter: PostgREST in.() over both providers, not eq.composio_gcal", () => {

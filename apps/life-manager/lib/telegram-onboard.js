@@ -12,13 +12,19 @@ const { compActive } = require("./comp-window.js");
 // the next stage. This is a READ-TIME override only — the paid column is never written here, so the
 // Stripe webhook (lib/billing.js) remains its single writer and the comp expires by itself.
 // `opts` ({env, now}) exists so tests can pin the clock; production calls computeStage(row).
+function coreReady(row) {
+  return Boolean(row && row.calendar_provider === "composio_gcal"
+    && typeof row.home_address === "string" && row.home_address.trim()
+    && row.notifications_enabled === true);
+}
+
 function computeStage(row, opts = {}) {
-  if (row && String(row.tg_onboard_stage || "").toLowerCase() === "done") return "done";
+  if (row && String(row.tg_onboard_stage || "").toLowerCase() === "done" && coreReady(row)) return "done";
   if (!row || row.calendar_provider !== "composio_gcal") return "calendar";
   // The panel state machine owns the canonical paid/core-ready terminal state. The legacy loop must
   // not reopen phone or Gmail for a paid user who intentionally skipped a phone, nor can it rewrite
   // a server-owned `done` marker after a browser resume.
-  if (row.paid === true) return "done";
+  if (row.paid === true && coreReady(row)) return "done";
   if (!row.phone) return "phone";
   if (row.paid !== true && !compActive(opts.env || process.env, opts.now)) return "pay";
   if (!row.gmail_account_id && row.gmail_skipped !== true) return "gmail";
@@ -94,7 +100,7 @@ async function sendStage(token, chatId, row, base, opts = {}) {
 
 // payout_destination rides along so the webhook can see a pending wallet-address intake (13d-a)
 // without a second round trip on every typed message.
-const SEL = "uid,name,telegram_chat_id,tg_onboard_stage,calendar_provider,gmail_account_id,gmail_skipped,email,phone,paid,payout_destination";
+const SEL = "uid,name,telegram_chat_id,tg_onboard_stage,calendar_provider,gmail_account_id,gmail_skipped,email,phone,paid,home_address,payout_destination";
 async function saveField(uid, patch, supaUrl, supaKey) {
   await fetch(`${supaUrl}/rest/v1/lm_users?uid=eq.${encodeURIComponent(uid)}`, {
     method: "PATCH",
@@ -120,9 +126,8 @@ async function rowByChatId(chatId, supaUrl, supaKey) {
 }
 // notifications_enabled lives in lm_panel_preferences, not lm_users, so it is joined here the same way
 // scheduler.supaUsers does it: ONE batched `uid=in.(...)` query, because this feeds a 2-minute loop and
-// a per-user round trip would multiply the cost by the size of the fleet. A missing preferences row
-// means the user never touched the toggle → default ON. A failed preferences read fails CLOSED, which
-// matches the ask and discovery loops: silence is recoverable, unwanted messages are not.
+// a per-user round trip would multiply the cost by the size of the fleet. A missing preferences row or
+// failed preferences read is not proof of explicit ON, so this path fails CLOSED (no unsolicited nudge).
 async function linkedRows(supaUrl, supaKey, opts = {}) {
   const f = opts.fetchImpl || fetch;
   const headers = { apikey: supaKey, Authorization: `Bearer ${supaKey}` };
@@ -138,7 +143,7 @@ async function linkedRows(supaUrl, supaKey, opts = {}) {
   const prefRows = await prefsResponse.json().catch(() => null);
   if (!Array.isArray(prefRows)) return rows.map(row => ({ ...row, notifications_enabled: false }));
   const byUid = new Map(prefRows.map(row => [row.uid, row]));
-  return rows.map(row => ({ notifications_enabled: true, ...row, ...(byUid.get(row.uid) || {}) }));
+  return rows.map(row => ({ notifications_enabled: false, ...row, ...(byUid.get(row.uid) || {}) }));
 }
 async function setStage(uid, stage, supaUrl, supaKey) {
   await fetch(`${supaUrl}/rest/v1/lm_users?uid=eq.${encodeURIComponent(uid)}`, {
@@ -183,7 +188,7 @@ async function handleOnboardingText(chatId, text, row, opts) {
 async function handleGmailCallback(data, row, opts = {}) {
   if (data !== "gmail:skip") return { ok: false, ignored: true };
   if (!row || !row.uid) return { ok: false, reason: "unlinked_chat" };
-  if (String(row.tg_onboard_stage || "").toLowerCase() === "done") return { ok: true, stage: "done" };
+  if (String(row.tg_onboard_stage || "").toLowerCase() === "done" && coreReady(row)) return { ok: true, stage: "done" };
   const save = opts.saveField || saveField;
   const persistStage = opts.setStage || setStage;
   const send = opts.sendMessage || sendMessage;

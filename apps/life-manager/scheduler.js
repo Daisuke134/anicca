@@ -9,7 +9,7 @@
 
 const crypto = require("crypto");
 const { fetchUpcomingEvents } = require("./lib/events.js");
-const { schedulerCohortFilter } = require("./lib/user-selector.js");
+const { schedulerCohortFilter, isCallablePhone } = require("./lib/user-selector.js");
 const { DEFAULTS: RUNTIME_DEFAULTS, readRuntimePreferences } = require("./lib/runtime-preferences.js");
 const { shouldWake, resolveDeparture, isHelperBlock } = require("./lib/wake-filter.js");
 const { mentalUserOnce, resolveSleepTarget } = require("./lib/mental-runtime.js");
@@ -440,9 +440,10 @@ async function wakeCallOnce(u, nowMs, deps = {}) {
   const mapsKey = deps.mapsKey || process.env.LIFE_MAPS_KEY || process.env.GOOGLE_API_KEY;
   // spec §5.2.1: `=== true`, not `!== false`. The phone is opt-IN now, and three different shapes all
   // mean "expressed no preference" — no row, a SQL NULL column, and an unmerged undefined. `!== false`
-  // dialled all three. This gate is also the LAST one on the Inngest per-user path, which reaches
-  // wakeCallOnce through wakeUserOnce and never passes wakeTick's filter.
-  if (u.call_enabled === true) {
+  // dialled all three. A malformed/missing phone is an independent hard gate. This is also the LAST
+  // gate on the Inngest per-user path, which reaches wakeCallOnce through wakeUserOnce and never passes
+  // wakeTick's filter.
+  if (u.call_enabled === true && isCallablePhone(u.phone)) {
     for (const ev of futureEvents.filter((e) => shouldWake(e, u.home_address, u.wake_policy))) {
       const depMs = await resolveDeparture(ev, futureEvents, {
         home: u.home_address, mapsKey, nowMs: now, bufferMin: 5,
@@ -820,10 +821,11 @@ async function wakeTick(deps = {}) {
   const users = await listUsers();
   const now = deps.now !== undefined ? deps.now : Date.now();
   await forEachUserSafe(
-    // `call_enabled === true` (spec §5.2.1): the phone is an extra someone opts into, not the default.
+    // `call_enabled === true` plus strict E.164 phone (spec §5.2.1): the phone is an extra someone opts into,
+    // not the default. Missing/malformed values must never enter the dial path.
     // `daily_automation_enabled !== false` keeps its opt-OUT sense — that switch means "run nothing
     // for me", and it is not the thing §5.2.1 flipped.
-    users.filter(u => u.daily_automation_enabled !== false && u.call_enabled === true),
+    users.filter(u => u.daily_automation_enabled !== false && u.call_enabled === true && isCallablePhone(u.phone)),
     "wake", (u) => wake(u, now), WAKE_USER_TIMEOUT_MS,
   );
 }

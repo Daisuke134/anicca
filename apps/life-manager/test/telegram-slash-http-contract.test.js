@@ -42,7 +42,8 @@ test("POST /telegram routes the legacy-parity slash surface without disturbing e
   const userRow = {
     uid: "u1", name: "Fixture", telegram_chat_id: "100", tg_onboard_stage: "done",
     calendar_provider: "composio_gcal", gmail_account_id: null, gmail_skipped: true,
-    email: "fixture@example.com", phone: "+819012345678", paid: true, payout_destination: null,
+    email: "fixture@example.com", phone: "+819012345678", home_address: "Tokyo home",
+    notifications_enabled: true, paid: true, payout_destination: null,
   };
   const locationStore = new Map([
     ["u-other", { uid: "u-other", latitude: 1.5, longitude: 2.5, observed_at: "2026-07-30T00:00:00.000Z", expires_at: "2099-01-01T00:00:00.000Z" }],

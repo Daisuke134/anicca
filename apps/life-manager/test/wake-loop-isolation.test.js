@@ -170,7 +170,7 @@ test("the organ tick serves a user who gave no phone number", async () => {
   const served = [];
   await tick({
     listUsers: async () => [
-      { uid: "has-phone", daily_automation_enabled: true, call_enabled: true },
+      { uid: "has-phone", phone: TEST_PHONE, daily_automation_enabled: true, call_enabled: true },
       { uid: "no-phone", daily_automation_enabled: true, call_enabled: false },
     ],
     organs: async (u) => { served.push(u.uid); },
@@ -203,13 +203,23 @@ test("the wake tick keeps its own call_enabled filter — dialing a user with no
   const dialled = [];
   await wakeTick({
     listUsers: async () => [
-      { uid: "has-phone", daily_automation_enabled: true, call_enabled: true },
+      { uid: "has-phone", phone: TEST_PHONE, daily_automation_enabled: true, call_enabled: true },
       { uid: "no-phone", daily_automation_enabled: true, call_enabled: false },
+      { uid: "malformed-phone", phone: "090-1234-5678", daily_automation_enabled: true, call_enabled: true },
     ],
     wake: async (u) => { dialled.push(u.uid); },
     now: 0,
   });
   assert.deepEqual(dialled, ["has-phone"], "the filter belongs to the dial, and stays there");
+});
+
+test("the direct/Inngest call organ rejects malformed or missing phone independently of consent", async () => {
+  for (const phone of [null, undefined, "090-1234-5678", " +819012345678", 819012345678]) {
+    clearEvents();
+    const h = deps();
+    await wakeCallOnce({ ...USER, phone, call_enabled: true }, DEPARTURE_MS - 5 * MINUTE, h.deps);
+    assert.equal(h.dialed.length, 0, `phone=${String(phone)} must not claim/place a call`);
+  }
 });
 
 // spec §5.2.1 / §5.3 — the phone is opt-IN now, not opt-out.
@@ -223,7 +233,7 @@ test("a user who never asked for calls is not dialled; an explicit opt-in still 
   const dialled = [];
   await wakeTick({
     listUsers: async () => [
-      { uid: "opted-in", daily_automation_enabled: true, call_enabled: true },
+      { uid: "opted-in", phone: TEST_PHONE, daily_automation_enabled: true, call_enabled: true },
       { uid: "no-preference-row", daily_automation_enabled: true },
       { uid: "null-column", daily_automation_enabled: true, call_enabled: null },
       { uid: "opted-out", daily_automation_enabled: true, call_enabled: false },
