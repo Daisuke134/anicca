@@ -2230,14 +2230,13 @@ An external observation clock is not an active implementation item. It remains
 terminal acceptance evidence. Exactly one executable atomic item remains active;
 when the clock fires, its readback is reconciled before any dependent account arm.
 
-**Active executable atomic item:** MKT-09R9-05 / Order 24E runs exactly one API
-canary for the frozen EN affirmation lane. Before enqueue, the shared
-publication fence must allow only the exact effect key and the lane manifest
-must arm only `@anicca.affirmation`; the same checks repeat at claim. Success
-requires the caption-matching direct native `/p/` URL and ordered six-slide
-verification before natural Telegram, followed by replay 0 and source-labelled
-metrics. The controls return to fence closed, lane default-off, armed 0 after
-the attempt; no other account starts.
+**Active executable atomic item:** MKT-09R9-05B / Order 24E generalizes the
+existing delayed Instagram metric collector for exactly the verified EN
+affirmation effect. The current collector is hardcoded to the old JA Reel and
+therefore does not own this post's 2h/24h/72h/7d clocks. The fix must accept an
+immutable approved effect descriptor, preserve API-only identity verification,
+persist source-labelled unavailable values, send natural Telegram once per
+window, and register durable due times without creating another scheduler.
 
 The runner now performs this control transition itself: it validates the
 closed mode-0600 controls and exact pack-ready lane, saves their exact bytes,
@@ -2258,6 +2257,24 @@ copied. Focused tests are 21/21 GREEN; both production files pass `node
 code stage are 0. The existing shared ledger already enforces exact open-fence
 effect key plus exact production-armed manifest lane at enqueue and claim, so
 no second control implementation is added.
+
+**Completed canary sub-item:** MKT-09R9-05A publishes exactly one EN
+affirmation carousel as Postiz `cmt9jm8990291p20y0a2l1xmk` at direct native
+`https://www.instagram.com/p/DcfQ2-hG3KR/`. Instagram's embed API returns
+native owner `anicca.ios`, the exact approved caption, `GraphSidecar`, and six
+ordered CDN images whose bytes equal all six approved SHA-256 values. Direct
+visual inspection confirms the intended hook plus five EN mental-health
+affirmations and no Honne/Widget/Card/wrong-locale content. API evidence is
+`object://sha256/d404b93a5d4393dda4f1e9e5cadddae33777b2b3155fef175e9c6f9da2945549`,
+native verification is `object://sha256/6162ef537ffeef74bf599e480deeeb2d0d94f56862749ab2faf8a4f21a9733ca`,
+natural Telegram is `34799`, and the next same-slot run creates publication 0
+and message 0. Immediate post metrics are measured Views/Reach/Likes/Comments/
+Shares/Saves 0; unsupported/funnel fields remain unavailable, not zero, in
+`object://sha256/d7dc6400a204fd442ba06e54fe3df51827b6f5349e399798814831490fa62d60`.
+Manifest `marketing-lane-manifest:5f9d4f61e7b6ebfdd59162c663226e877728303b501a38ff9f3ab0d6d2afc4a4`
+marks only this route canary-verified while remaining default-off, armed 0;
+the fence is closed. Future metric windows remain truthfully
+`pending_unregistered` until MKT-09R9-05B closes.
 
 **Completed immediately preceding atomic item:** MKT-09R9-03 / Order 24C
 imports exact pack `object://sha256/e23cd41257832d2032fd889bd9a16ec95ea8dc213cdd7a2e3f820fbe1578669e`,
@@ -2915,7 +2932,7 @@ Their dependent account arm remains blocked until the observation is terminal.
 | 24B | **done — MKT-09R9-02:** classify Instagram `@anicca.affirmation` / `cmp9pedr700ttqh0yj8o57fog` | Order 24A terminal unavailable | evidence `d4b23768…86c65b` binds Anicca iOS/EN/Larry/native-photo-carousel, Postiz alias `anicca.affirmation`, native owner `anicca.ios`, 144 rows, six-slide native `Dbcvm5Mm8gM`, target 1/day; manifest `88975d67…755d33` changes only this row to classified/default-off, armed 0; writes 0 | classify multiple accounts, infer only from handle, or adopt broken legacy `--tt` mapping |
 | 24C | **done — MKT-09R9-03:** import and approve one exact `@anicca.affirmation` pack | Order 24B passes | pack `e23cd412…78669e`, caption `bf90a15a…6e64a0`, approval `7740cd09…968845`, six ordered native JPEGs and order hash `4daa5db7…9837f9` are SHA-exact/mode0600; manifest `b48c8e11…5ce18f` pack-ready/default-off, armed0/fenceclosed; effects0 | import several packs or mix Card/Widget content |
 | 24D | **done — MKT-09R9-04:** TDD-generalize the native carousel runner for exactly the frozen EN lane | Order 24C passes | existing JA command remains green; EN account/integration/pack/ordered media/caption/approval/native owner are immutable; alternate refs fail before provider; direct `/p/`, native verification, Telegram and replay contracts are reused; focused 21/21, syntax and diff checks pass; provider/Telegram writes 0 | copy runner, accept caller-defined lane, or execute hardcoded JA adapter against EN |
-| 24E | **active — MKT-09R9-05:** run one `@anicca.affirmation` API canary and register metrics | Order 24D passes; automatic target-only arm/restore is 22/22 GREEN, including provider-failure restoration | exact effect-only fence and exact lane-only manifest arm at enqueue and claim; direct caption-matching native post/carousel URL; six ordered slides; natural Telegram; replay 0; immediate and 2h/24h/72h/7d metrics; fence closed and default-off/armed 0 after attempt | fan out, manually leave controls open, or arm before metrics |
+| 24E | **active — MKT-09R9-05:** finish one `@anicca.affirmation` API canary and metric registration | Order 24D passes | **05A done:** direct `DcfQ2-hG3KR`, Postiz `cmt9jm8990291p20y0a2l1xmk`, owner/caption/GraphSidecar/six exact ordered images and visual content verified; Telegram `34799`; replay publication 0/message 0; immediate post metrics measured; fence closed/default-off/armed 0. **05B active:** make the delayed collector own immutable 2h/24h/72h/7d windows and natural metric Telegram for this effect | fan out, manually leave controls open, call pending windows registered, or arm cadence before metrics |
 | 24F | **MKT-09R9-N:** repeat classify → one pack → one API canary for each remaining existing TikTok/Instagram/YouTube integration | Order 24E terminal | every existing row is product/locale/renderer/pack-bound and canary-verified or an explicit justified 0/day hold/owner skip | mass-enable, guess from handle, or post mixed-product content |
 | 25 | **MKT-10:** arm only one healthy verified account, ramping from one canary/day to at most three posts/day | exact account has direct-native, Telegram, replay, and usable metric-source evidence | expected/published/missed/duplicate counts remain healthy at each ramp; platform policy permits cadence | jump directly to three/day everywhere |
 | 26 | **MKT-11:** collect 2h/24h/72h/7d social metrics and join ASC, RevenueCat, and product analytics | exact published effect has immutable creative/campaign lineage | views, likes, comments, shares, saves, watch/retention fields when supported, installs, activation, trials, paid, proceeds, and attribution coverage are source-labelled; unavailable stays unavailable | substitute account aggregates for post outcomes or infer installs from timing |
