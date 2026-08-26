@@ -457,6 +457,64 @@ test("launch validation-only preflight verifies byte-sorted dependency entries a
   }
 });
 
+test("launch validation accepts UTF-8 byte-sorted source paths from the release cutter", () => {
+  const root = mkdtempSync(join(tmpdir(), "agent-economy-launch-unicode-"));
+  const home = join(root, "home");
+  const { release, releaseRoot } = writeSealedAgentEconomyRelease(root);
+  const agentDir = join(release, "skills", "agent-economy");
+  const manifestPath = join(release, "SOURCE-MANIFEST.json");
+  const metadataPath = join(release, "RELEASE.json");
+  try {
+    chmodSync(release, 0o755);
+    chmodSync(join(release, "skills"), 0o755);
+    chmodSync(agentDir, 0o755);
+    const launchBody = readFileSync(join(REPO_ROOT, "skills", "agent-economy", "launch.sh"), "utf8");
+    chmodSync(join(agentDir, "launch.sh"), 0o644);
+    writeFileSync(join(agentDir, "launch.sh"), launchBody);
+    chmodSync(join(agentDir, "launch.sh"), 0o555);
+    const unicodeFiles = [["あ.txt", "jp\n"], ["😀.txt", "emoji\n"]];
+    const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+    for (const [name, body] of unicodeFiles) {
+      writeFileSync(join(agentDir, name), body);
+      chmodSync(join(agentDir, name), 0o444);
+      manifest.entries.push({ mode: "0444", path: `skills/agent-economy/${name}`, sha256: createHash("sha256").update(body).digest("hex") });
+    }
+    manifest.entries.find((entry) => entry.path === "skills/agent-economy/launch.sh").sha256 = createHash("sha256").update(launchBody).digest("hex");
+    manifest.entries.sort((a, b) => Buffer.compare(Buffer.from(a.path, "utf8"), Buffer.from(b.path, "utf8")));
+    const manifestBody = `${JSON.stringify(manifest)}\n`;
+    chmodSync(manifestPath, 0o644);
+    writeFileSync(manifestPath, manifestBody);
+    const metadata = JSON.parse(readFileSync(metadataPath, "utf8"));
+    metadata.source_manifest_sha256 = createHash("sha256").update(manifestBody).digest("hex");
+    chmodSync(metadataPath, 0o644);
+    writeFileSync(metadataPath, `${JSON.stringify(metadata)}\n`);
+    const daemonPath = join(release, "runtime", "anicca-daemon.sh");
+    mkdirSync(join(release, "runtime"), { recursive: true });
+    const daemonBody = "#!/bin/sh\nexit 0\n";
+    writeFileSync(daemonPath, daemonBody);
+    chmodSync(daemonPath, 0o555);
+    manifest.entries.push({ mode: "0555", path: "runtime/anicca-daemon.sh", sha256: createHash("sha256").update(daemonBody).digest("hex") });
+    manifest.entries.sort((a, b) => Buffer.compare(Buffer.from(a.path, "utf8"), Buffer.from(b.path, "utf8")));
+    const finalManifestBody = `${JSON.stringify(manifest)}\n`;
+    chmodSync(manifestPath, 0o644);
+    writeFileSync(manifestPath, finalManifestBody);
+    metadata.source_manifest_sha256 = createHash("sha256").update(finalManifestBody).digest("hex");
+    chmodSync(metadataPath, 0o644);
+    writeFileSync(metadataPath, `${JSON.stringify(metadata)}\n`);
+    spawnSync("chmod", ["-R", "a-w", release], { encoding: "utf8" });
+    const result = spawnSync("bash", [join(agentDir, "launch.sh")], {
+      cwd: REPO_ROOT,
+      encoding: "utf8",
+      env: { ...process.env, ANICCA_HOME: home, ANICCA_CODE_ROOT: realpathSync(release), ANICCA_REPO: realpathSync(release), ANICCA_RELEASE_ROOT: releaseRoot, ANICCA_VALIDATE_RELEASE_ONLY: "1" },
+    });
+    assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+    assert.match(result.stdout, /sealed release validation passed/u);
+  } finally {
+    spawnSync("chmod", ["-R", "u+w", root], { encoding: "utf8" });
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("pinned runtime paths are explicit: daemon skips mutable self-update/sync and plist writes atomically", () => {
   const daemon = readFileSync(join(REPO_ROOT, "runtime/anicca-daemon.sh"), "utf8");
   assert.match(daemon, /ANICCA_CODE_ROOT/u);

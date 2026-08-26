@@ -51,6 +51,10 @@ test("agent-economy installer reads the sealed namespaced current release and pr
   const releaseId = "20260827T000000-a1a1a1a1";
   const release = join(releaseRoot, "releases", releaseId);
   const runtime = join(root, "runtime");
+  mkdirSync(join(runtime, "skills", "earn", "x402-sell"), { recursive: true });
+  for (const path of [join(runtime, "skills"), join(runtime, "skills", "earn"), join(runtime, "skills", "earn", "x402-sell")]) {
+    chmodSync(path, 0o555);
+  }
   mkdirSync(join(source, "bin"), { recursive: true });
   cpSync(join(REPO_ROOT, "install.sh"), join(source, "install.sh"));
   mkdirSync(join(release, "skills"), { recursive: true });
@@ -99,6 +103,10 @@ test("agent-economy installer reads the sealed namespaced current release and pr
     assert.equal(existsSync(join(runtime, "skills", "agent-economy", "run.sh")), false);
     assert.equal(existsSync(join(runtime, "node_modules")), false);
     assert.equal(readlinkSync(join(releaseRoot, "current")), release);
+    for (const path of [join(runtime, "skills"), join(runtime, "skills", "earn"), join(runtime, "skills", "earn", "x402-sell")]) {
+      assert.notEqual(statSync(path).mode & 0o200, 0, `state ancestor should be owner-writable: ${path}`);
+    }
+    assert.equal(statSync(release).mode & 0o222, 0, "sealed release must remain read-only");
   } finally {
     spawnSync("chmod", ["-R", "u+w", root], { encoding: "utf8" });
     rmSync(root, { recursive: true, force: true });

@@ -251,6 +251,34 @@ else
 fi
 echo
 
+restore_agent_economy_state_ancestors() {
+  local release_real path path_real
+  release_real="$(cd "$LIFE_MANAGER_RELEASE_ROOT" 2>/dev/null && pwd -P)" \
+    || { red "  ✗ namespaced release root cannot be resolved"; return 2; }
+  # Existing runtime directories may have been sealed by an earlier installer. Restore only the
+  # owner rwx bits needed for mutable state descendants; never chmod the sealed release or any
+  # unrelated runtime tree.
+  for path in \
+    "$ANICCA_HOME" \
+    "$ANICCA_HOME/skills" \
+    "$ANICCA_HOME/skills/agent-economy" \
+    "$ANICCA_HOME/skills/earn" \
+    "$ANICCA_HOME/skills/earn/x402-sell" \
+    "$ANICCA_HOME/skills/cook"; do
+    [ -e "$path" ] || continue
+    [ -d "$path" ] || { red "  ✗ required state ancestor is not a directory: $path"; return 2; }
+    path_real="$(cd "$path" 2>/dev/null && pwd -P)" \
+      || { red "  ✗ required state ancestor cannot be resolved: $path"; return 2; }
+    case "$path_real" in
+      "$release_real"|"$release_real"/*)
+        red "  ✗ refusing to chmod sealed release through runtime state path: $path"
+        return 2
+        ;;
+    esac
+    chmod u+rwx "$path"
+  done
+}
+
 # ─── 3. runtime root + env ─────────────────────────────────────────────
 cyan "[3/6] preparing runtime root…"
 mkdir -p "$ANICCA_HOME"/{skills,state,identity,logs}
@@ -291,6 +319,7 @@ echo
 # ─── 4. shared lib ─────────────────────────────────────────────────────
 cyan "[4/6] syncing _shared lib…"
 if [ "$LIFE_MANAGER_AGENT_ECONOMY" = "1" ]; then
+  restore_agent_economy_state_ancestors
   # Agent-economy code stays in the sealed release. Create only the mutable state namespace; do not
   # copy executable skills into it, because launchd and run-skill resolve code from ANICCA_CODE_ROOT.
   mkdir -p "$ANICCA_HOME/skills/agent-economy/state" "$ANICCA_HOME/skills/earn/state" \

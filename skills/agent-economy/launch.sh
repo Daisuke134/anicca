@@ -65,7 +65,7 @@ const walk = (directory, prefix = '') => {
   }
 };
 walk(releasePath);
-entries.sort((a, b) => a.path.localeCompare(b.path));
+entries.sort((a, b) => Buffer.compare(Buffer.from(a.path, 'utf8'), Buffer.from(b.path, 'utf8')));
 const manifestPath = path.join(releasePath, 'SOURCE-MANIFEST.json');
 let manifestRaw;
 try { manifestRaw = fs.readFileSync(manifestPath); } catch { process.exit(12); }
