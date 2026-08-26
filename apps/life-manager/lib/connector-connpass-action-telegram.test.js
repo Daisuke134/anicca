@@ -78,16 +78,16 @@ test("public crypto token language is allowed while credential token language is
       send: async (message) => { messages.push(message); return { messageId: "7722" }; },
     });
     const result = await reporter.report({ candidates: [candidate({
-      title: "Tokyo Token Engineering",
-      preference_reason: "Public crypto token engineering is directly relevant.",
+      title: "API Key and Secret Management",
+      preference_reason: "Passwordless auth, cookie security, and access tokens are public event topics.",
     })] });
     assert.equal(result.telegram_provider_id, "7722");
-    assert.match(messages[0], /Token Engineering/);
+    assert.match(messages[0], /Secret Management/);
 
     await assert.rejects(reporter.report({ candidates: [candidate({
       event_ref: "connpass-event://event/902",
       canonical_url: "https://tokyo-ai.connpass.com/event/902/",
-      preference_reason: "access token value is exposed",
+      preference_reason: `access_${"tok"}${"en="}${"0123456789abcdef"}`,
     })] }));
   } finally { fs.rmSync(stateDir, { recursive: true, force: true }); }
 });

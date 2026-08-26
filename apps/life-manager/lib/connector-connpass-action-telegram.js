@@ -11,11 +11,12 @@ const URL = /^https:\/\/(?:[a-z0-9-]+\.)?connpass\.com\/event\/[1-9][0-9]*\/$/i;
 const SLOT = new Set(["available", "waitlist", "closed"]);
 const TALK = new Set(["unknown", "not_offered", "open", "submitted", "provider_verified", "closed"]);
 const PRIORITY = new Set(["yc_hackathon", "open_talk", "ai", "crypto", "startup", "other"]);
+const CREDENTIAL_VALUE = /(?:password|cookie|api[ _-]?key|secret|(?:access|auth|refresh)[ _-]?token)\s*[:=]\s*\S{8,}|\bbearer\s+\S{16,}/i;
 
 function invalid() { throw new Error("Connpass action Telegram invalid"); }
 function safe(value, max) {
   const text = String(value == null ? "" : value).replace(/\s+/g, " ").trim();
-  if (!text || text.length > max || /[\x00-\x1f\x7f]|\{\{|\}\}|password|cookie|api.?key|secret|(?:access|auth|bearer|refresh)[_ -]?token/i.test(text)) invalid();
+  if (!text || text.length > max || /[\x00-\x1f\x7f]|\{\{|\}\}/.test(text) || CREDENTIAL_VALUE.test(text)) invalid();
   return text;
 }
 function integer(value) { return Number.isSafeInteger(value) && value >= 0 ? value : null; }
