@@ -77,6 +77,14 @@ function stableJson(value) {
   return JSON.stringify(value);
 }
 
+function geminiResponseSchema(value) {
+  if (Array.isArray(value)) return value.map(geminiResponseSchema);
+  if (!value || typeof value !== "object") return value;
+  return Object.fromEntries(Object.entries(value)
+    .filter(([key]) => key !== "additionalProperties")
+    .map(([key, child]) => [key, geminiResponseSchema(child)]));
+}
+
 function normalizeInput(input = {}) {
   const dateInventory = input.dateInventory;
   const date = String(input.date == null ? "" : input.date).trim();
@@ -185,7 +193,7 @@ async function inferProviderCandidateRanking(input, options = {}) {
         headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
         body: JSON.stringify({
           contents: [{ role: "user", parts: [{ text: prompt }] }],
-          generationConfig: { responseMimeType: "application/json", responseSchema: PROVIDER_RESPONSE_SCHEMA, temperature: 0 },
+          generationConfig: { responseMimeType: "application/json", responseSchema: geminiResponseSchema(PROVIDER_RESPONSE_SCHEMA), temperature: 0 },
         }),
         signal: AbortSignal.timeout(20_000),
       });
@@ -276,7 +284,7 @@ async function inferEventPreferenceRanking(input, options = {}) {
         body: JSON.stringify({
           contents: [{ role: "user", parts: [{ text: prompt }] }],
           generationConfig: {
-            responseMimeType: "application/json", responseSchema: RESPONSE_SCHEMA, temperature: 0,
+            responseMimeType: "application/json", responseSchema: geminiResponseSchema(RESPONSE_SCHEMA), temperature: 0,
           },
         }),
         signal: AbortSignal.timeout(20_000),

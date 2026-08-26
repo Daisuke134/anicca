@@ -75,6 +75,27 @@ test("provider-neutral ranking preserves weak and unknown rows but never returns
   ]);
 });
 
+test("Gemini provider ranking strips unsupported schema keywords only from the transport payload", async () => {
+  let request;
+  const ranking = await inferProviderCandidateRanking({
+    candidates: PROVIDER_CANDIDATES,
+    preferences: "Tokyo YC LT AI crypto startup events",
+  }, {
+    apiKey: "fixture-key",
+    fetchImpl: async (_url, options) => {
+      request = JSON.parse(options.body);
+      return { ok: true, json: async () => ({
+        candidates: [{ content: { parts: [{ text: JSON.stringify(providerDecision()) }] } }],
+      }) };
+    },
+  });
+
+  const schema = request.generationConfig.responseSchema;
+  assert.equal(Object.hasOwn(schema, "additionalProperties"), false);
+  assert.equal(Object.hasOwn(schema.properties.ranked_events.items, "additionalProperties"), false);
+  assert.equal(eligibleRankedCandidates(ranking).length, 5);
+});
+
 async function fixtureSnapshot(slugs = ["ai-night", "pottery-social", "crypto-builders"]) {
   const coverage = buildRollingEventCoverage({
     tenantId: "dais-local",
@@ -213,6 +234,8 @@ test("Gemini receives all candidates as untrusted data and preferences can only 
   assert.match(prompt, /それ以外も除外しない/);
   assert.equal(request.body.generationConfig.responseMimeType, "application/json");
   assert.equal(request.body.generationConfig.temperature, 0);
+  assert.equal(Object.hasOwn(request.body.generationConfig.responseSchema, "additionalProperties"), false);
+  assert.equal(Object.hasOwn(request.body.generationConfig.responseSchema.properties.ranked_events.items, "additionalProperties"), false);
 });
 
 test("model failure and invalid JSON never become a keyword ranking fallback", async () => {
