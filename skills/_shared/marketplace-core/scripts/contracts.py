@@ -3,7 +3,7 @@
 The schemas in the sibling ``schemas`` directory are the wire contract.  This
 module deliberately keeps provider/model code out of that contract: callers
 load a schema, route by its record type, validate a copy of the input, and get
-one of the seven immutable record models back.
+one of the immutable record models back.
 """
 
 from __future__ import annotations
@@ -43,6 +43,7 @@ _RECORD_TYPE_TO_SCHEMA = {
     "payment_receipt": "payment.schema.json",
     "application_intent": "event.schema.json",
     "application_receipt": "event.schema.json",
+    "contract_receipt": "event.schema.json",
     "work_event": "event.schema.json",
     "delivery_intent": "event.schema.json",
     "delivery_receipt": "event.schema.json",
@@ -110,6 +111,18 @@ class ApplicationReceipt:
 
 
 @dataclass(frozen=True)
+class ContractReceipt:
+    schema_version: int
+    record_type: str
+    platform: str
+    work_external_id: str
+    contract_external_id: str
+    status: str
+    terms_sha256: str
+    observed_at: str
+
+
+@dataclass(frozen=True)
 class WorkEvent:
     schema_version: int
     record_type: str
@@ -154,6 +167,7 @@ Contract = Union[
     PaymentReceipt,
     ApplicationIntent,
     ApplicationReceipt,
+    ContractReceipt,
     WorkEvent,
     DeliveryIntent,
     DeliveryReceipt,
@@ -288,6 +302,7 @@ def schema_name_for_record(record: Mapping[str, Any]) -> str:
 _EVENT_DEFINITION_BY_RECORD_TYPE = {
     "application_intent": "ApplicationIntent",
     "application_receipt": "ApplicationReceipt",
+    "contract_receipt": "ContractReceipt",
     "work_event": "WorkEvent",
     "delivery_intent": "DeliveryIntent",
     "delivery_receipt": "DeliveryReceipt",
@@ -431,6 +446,7 @@ _MODEL_BY_RECORD_TYPE: Dict[str, Type[Contract]] = {
     "payment_receipt": PaymentReceipt,
     "application_intent": ApplicationIntent,
     "application_receipt": ApplicationReceipt,
+    "contract_receipt": ContractReceipt,
     "work_event": WorkEvent,
     "delivery_intent": DeliveryIntent,
     "delivery_receipt": DeliveryReceipt,
@@ -482,6 +498,13 @@ def parse_application_receipt(record: Mapping[str, Any]) -> ApplicationReceipt:
     return parsed
 
 
+def parse_contract_receipt(record: Mapping[str, Any]) -> ContractReceipt:
+    parsed = parse_contract(record)
+    if not isinstance(parsed, ContractReceipt):
+        raise ContractValidationError(("$.record_type: expected contract_receipt",))
+    return parsed
+
+
 def parse_work_event(record: Mapping[str, Any]) -> WorkEvent:
     parsed = parse_contract(record)
     if not isinstance(parsed, WorkEvent):
@@ -518,6 +541,7 @@ __all__ = [
     "ApplicationReceipt",
     "Contract",
     "ContractRecord",
+    "ContractReceipt",
     "ContractValidationError",
     "DeliveryIntent",
     "DeliveryReceipt",
@@ -535,6 +559,7 @@ __all__ = [
     "parse_opportunity",
     "parse_payment_receipt",
     "parse_contract",
+    "parse_contract_receipt",
     "parse_record",
     "record_to_dict",
     "schema_for_record",

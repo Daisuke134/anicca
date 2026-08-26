@@ -10,6 +10,9 @@
       "$ref": "#/$defs/ApplicationReceipt"
     },
     {
+      "$ref": "#/$defs/ContractReceipt"
+    },
+    {
       "$ref": "#/$defs/WorkEvent"
     },
     {
@@ -160,6 +163,31 @@
         "observed_at": {
           "$ref": "#/$defs/timestamp"
         }
+      }
+    },
+    "ContractReceipt": {
+      "title": "MarketplaceContractReceipt",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "record_type",
+        "platform",
+        "work_external_id",
+        "contract_external_id",
+        "status",
+        "terms_sha256",
+        "observed_at"
+      ],
+      "properties": {
+        "schema_version": { "$ref": "#/$defs/schema_version" },
+        "record_type": { "const": "contract_receipt" },
+        "platform": { "$ref": "#/$defs/platform" },
+        "work_external_id": { "$ref": "#/$defs/identifier" },
+        "contract_external_id": { "$ref": "#/$defs/identifier" },
+        "status": { "enum": ["offered", "accepted", "terminated"] },
+        "terms_sha256": { "$ref": "#/$defs/sha256" },
+        "observed_at": { "$ref": "#/$defs/timestamp" }
       }
     },
     "WorkEvent": {
