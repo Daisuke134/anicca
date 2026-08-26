@@ -9,7 +9,7 @@ import { loadEvmKey } from '../lib/resolve-identity.mjs';
 import { evmErc20Balance, EVM_TOKENS, RPC } from '../lib/net-worth.mjs';
 import { generateImage as generateX402Image } from './x402-image-client.mjs';
 import { authorizeSpend } from '../../agent-economy/lib/treasury-policy.mjs';
-import { adaptTaskMarket } from '../../agent-economy/lib/revenue-adapters.mjs';
+import { adaptTaskMarket, projectRevenueReceipts } from '../../agent-economy/lib/revenue-adapters.mjs';
 
 const USDC_DECIMALS = 1_000_000;
 const TASKMARKET_CLI = '/opt/homebrew/bin/taskmarket';
@@ -340,6 +340,11 @@ export async function runTaskMarketPass(options = {}, deps = {}) {
     maxImageCostUsd = MAX_IMAGE_COST_USD,
     submissionReadbackAttempts = 5,
     submissionReadbackDelayMs = 1000,
+    revenueJournalPath = process.env.REVENUE_RECEIPT_JOURNAL
+      || join(aniccaHome || '.', 'skills', 'earn', 'state', 'revenue-receipts.jsonl'),
+    revenueRejectionPath = process.env.REVENUE_RECEIPT_REJECTIONS
+      || join(aniccaHome || '.', 'skills', 'earn', 'state', 'revenue-rejections.jsonl'),
+    revenueReadbackVerifier = null,
   } = options;
   if (!aniccaHome) throw new Error('ANICCA_HOME is required');
 
@@ -489,8 +494,22 @@ export async function runTaskMarketPass(options = {}, deps = {}) {
     ? buildTaskMarketRevenueCandidate(recorded, {
       payer: recorded.payer || recorded.external_payer,
       recipient: recorded.recipient || recorded.payTo || recorded.pay_to,
+      readbackVerifier: revenueReadbackVerifier || deps.revenueReadbackVerifier,
     })
     : null;
+  // Every official submission readback reaches the one-way projector.  A normal submit-only row
+  // produces a durable rejection; only an award/payout row with a trusted verifier can contribute.
+  const revenueProjection = await projectRevenueReceipts({
+    journalPath: revenueJournalPath,
+    rejectionPath: revenueRejectionPath,
+    provider: 'taskmarket',
+    rows: [recorded],
+    options: {
+      payer: recorded.payer || recorded.external_payer,
+      recipient: recorded.recipient || recorded.payTo || recorded.pay_to,
+      readbackVerifier: revenueReadbackVerifier || deps.revenueReadbackVerifier,
+    },
+  });
 
   return {
     ok: true,
@@ -500,6 +519,7 @@ export async function runTaskMarketPass(options = {}, deps = {}) {
     model: generated.model,
     costUsd: generated.costUsd,
     ...(revenueCandidate ? { revenue_candidate: revenueCandidate } : {}),
+    ...(revenueCandidate ? { revenue_projection: revenueProjection } : {}),
   };
 }
 

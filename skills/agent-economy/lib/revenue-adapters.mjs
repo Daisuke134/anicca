@@ -7,9 +7,10 @@
 // not execute a provider action and do not infer a payout from an offer, view, draft, submission,
 // or payout request.
 
-import { createHash } from "node:crypto";
-import { appendFile, mkdir, readFile } from "node:fs/promises";
-import { dirname } from "node:path";
+import { createHash, randomUUID } from "node:crypto";
+import { appendFile, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import {
   normalizeRevenueReceipt,
@@ -34,8 +35,46 @@ const EXPECTED_ASSET = new Map([
 ]);
 const NESTED_KEYS = ["settlement", "settlement_readback", "provider_readback", "payout", "payment", "award", "finance"];
 
+// These symbols intentionally stay module-private.  A lane's official readback verifier is
+// wrapped once at its boundary; a raw source row can never manufacture either marker by setting a
+// `verified`/`*_proof_verified` field or by copying a provider id into the row.
+const TRUSTED_VERIFIER = Symbol("trusted revenue readback verifier");
+const TRUSTED_PROOF = Symbol("trusted revenue proof");
+
 const asObject = (value) => value && typeof value === "object" && !Array.isArray(value) ? value : null;
 const asText = (value) => (typeof value === "string" || typeof value === "number") && String(value).trim() ? String(value).trim() : null;
+
+function trustedProofFromResult(value) {
+  const result = asObject(value);
+  if (!result || result.verified !== true && result.proof?.verified !== true) return null;
+  const candidate = asObject(result.proof) || result;
+  const providerId = asText(candidate.provider_receipt_id ?? candidate.providerReceiptId ?? candidate.receipt_id ?? candidate.receiptId);
+  if (providerId) {
+    return Object.freeze({ [TRUSTED_PROOF]: true, proof: Object.freeze({ provider_receipt_id: providerId, verified: true }) });
+  }
+  const txHash = asText(candidate.tx_hash ?? candidate.txHash ?? candidate.transaction_hash ?? candidate.transactionHash);
+  const chainId = candidate.chain_id ?? candidate.chainId ?? candidate.network;
+  const logIndex = candidate.log_index ?? candidate.logIndex;
+  if (!txHash || chainId === undefined || logIndex === undefined) return null;
+  return Object.freeze({ [TRUSTED_PROOF]: true, proof: Object.freeze({ chain_id: chainId, tx_hash: txHash, log_index: logIndex, verified: true }) });
+}
+
+/**
+ * Wrap the provider's official readback verifier at the lane boundary.  Adapters accept only the
+ * opaque result from this wrapper; raw fixture fields cannot set its private proof marker.
+ * The callback may be synchronous (fixtures/local provider clients) or return a pre-resolved result;
+ * asynchronous verifiers belong in the lane's readback phase before invoking the adapter.
+ */
+export function createTrustedReadbackVerifier(verify) {
+  if (typeof verify !== "function") throw new TypeError("verify must be a function");
+  const boundary = {
+    [TRUSTED_VERIFIER]: true,
+    verify(sourceRow, expected) {
+      return trustedProofFromResult(verify(sourceRow, expected));
+    },
+  };
+  return Object.freeze(boundary);
+}
 
 function directOrNested(input, keys) {
   const object = asObject(input);
@@ -184,39 +223,34 @@ function identity(row, options = {}) {
   return { payer, recipient };
 }
 
-function providerProof(row, labels = {}) {
-  const raw = directOrNested(row, ["proof", "chain_provider_proof", "chainProviderProof", "provider_proof", "providerProof", "settlement_proof", "settlementProof"]);
-  const object = asObject(raw);
-  const verified = object?.verified === true
-    || directOrNested(row, labels.verificationKeys || ["verified", "proof_verified", "proofVerified", "settlement_verified", "settlementVerified", "provider_proof_verified", "providerProofVerified"]) === true;
-  const providerId = asText(object && directOrNested(object, ["provider_receipt_id", "providerReceiptId", "receipt_id", "receiptId"]))
-    ?? asText(directOrNested(row, labels.providerKeys || ["provider_receipt_id", "providerReceiptId", "receipt_id", "receiptId", "payout_receipt_id", "payment_receipt_id", "award_receipt_id", "settlement_receipt_id"]));
-  if (providerId) {
-    if (!verified) throw new AdapterFailure("UNVERIFIED_SETTLEMENT_PROOF", "provider receipt id is not explicitly verified");
-    return { provider_receipt_id: providerId, verified: true };
+function providerProof(provider, row, options = {}) {
+  const verifier = options.readbackVerifier;
+  if (!verifier || verifier[TRUSTED_VERIFIER] !== true || typeof verifier.verify !== "function") {
+    throw new AdapterFailure("TRUSTED_READBACK_REQUIRED", "official provider readback verifier is required");
   }
-  const txHash = asText(object ? directOrNested(object, ["tx_hash", "txHash", "transaction_hash", "transactionHash"]) : undefined)
-    ?? asText(directOrNested(row, labels.txKeys || ["tx_hash", "txHash", "transaction_hash", "transactionHash", "transaction"]));
-  const chainId = (object ? directOrNested(object, ["chain_id", "chainId", "network"]) : undefined)
-    ?? directOrNested(row, labels.chainKeys || ["chain_id", "chainId", "network"]);
-  const logIndex = (object ? directOrNested(object, ["log_index", "logIndex"]) : undefined)
-    ?? directOrNested(row, labels.logKeys || ["log_index", "logIndex"]);
-  if (txHash || chainId !== undefined || logIndex !== undefined) {
-    if (!verified || !txHash || chainId === undefined || logIndex === undefined) {
-      throw new AdapterFailure("MISSING_SETTLEMENT_PROOF", "chain settlement proof requires verified tx, chain, and log index");
-    }
-    return { chain_id: chainId, tx_hash: txHash, log_index: logIndex, verified: true };
+  const result = verifier.verify(row, {
+    provider,
+    source_record_id: sourceId(provider, row),
+  });
+  if (!result || result[TRUSTED_PROOF] !== true || !result.proof) {
+    throw new AdapterFailure("MISSING_SETTLEMENT_PROOF", "official provider readback did not verify settlement proof");
   }
-  throw new AdapterFailure("MISSING_SETTLEMENT_PROOF", "provider/chain settlement proof is absent");
+  return result.proof;
 }
 
 function buildReceipt(provider, row, options, config) {
   const asset = assetFor(row, provider, options);
   const { payer, recipient } = identity(row, options);
+  if (config.requireAtomicDecimals && directOrNested(row, ["decimals", "asset_decimals", "assetDecimals"]) === undefined) {
+    throw new AdapterFailure("MISSING_AMOUNT_DECIMALS", "atomic settlement amount requires explicit asset decimals");
+  }
   const gross = moneyValue(row, config.grossKeys, config.grossAtomicKeys, { decimals: config.decimals ?? options.decimals });
   const fee = config.feeKeys ? optionalMoney(row, config.feeKeys, config.feeAtomicKeys || [], { decimals: config.decimals ?? options.decimals }) : "0";
   const refund = config.refundKeys ? optionalMoney(row, config.refundKeys, config.refundAtomicKeys || [], { decimals: config.decimals ?? options.decimals }) : "0";
-  const proof = providerProof(row, config.proof || {});
+  const proof = providerProof(provider, row, options);
+  if (config.requireChainProof && (proof.provider_receipt_id || proof.chain_id === undefined || proof.tx_hash === undefined || proof.log_index === undefined)) {
+    throw new AdapterFailure("CHAIN_PROOF_REQUIRED", "x402 settlement requires verified chain_id, tx_hash, and log_index");
+  }
   const terminal_state = terminalState(row, config.statusKeys);
   const occurred_at = directOrNested(row, ["occurred_at", "occurredAt", "timestamp", "ts", "created_at", "createdAt"]);
   if (occurred_at === undefined || occurred_at === null) throw new AdapterFailure("MISSING_TIMESTAMP", "settlement timestamp is missing");
@@ -317,9 +351,12 @@ export function adaptX402(row, options = {}) {
   if (input?.settled !== true && input?.success !== true) {
     return { ok: false, rejection: rejection("x402", row, "x402 payment did not have success:true terminal readback", "PENDING_SETTLEMENT", options) };
   }
+  if (directOrNested(input, ["settled_amount_atomic", "settledAmountAtomic", "amount_atomic", "amountAtomic", "amount"]) === undefined) {
+    return { ok: false, rejection: rejection("x402", row, "x402 settlement amount_atomic is missing", "MISSING_AMOUNT_ATOMIC", options) };
+  }
   return adaptOne("x402", input, options, {
-    grossKeys: ["settled_amount", "settledAmount", "amount", "gross", "payment_amount"],
-    grossAtomicKeys: ["settled_amount_atomic", "settledAmountAtomic", "amount_atomic", "amountAtomic"],
+    grossKeys: [],
+    grossAtomicKeys: ["settled_amount_atomic", "settledAmountAtomic", "amount_atomic", "amountAtomic", "amount"],
     feeKeys: ["fee", "fee_amount"],
     refundKeys: ["refund", "refund_amount"],
     statusKeys: ["terminal_state", "settlement_state", "status", "settled", "success"],
@@ -330,6 +367,8 @@ export function adaptX402(row, options = {}) {
       logKeys: ["log_index", "logIndex"],
       verificationKeys: ["settlement_verified", "settlementVerified", "proof_verified", "proofVerified", "verified"],
     },
+    requireAtomicDecimals: true,
+    requireChainProof: true,
   });
 }
 
@@ -342,22 +381,10 @@ function writerRows(value) {
   return [];
 }
 
-function writerProof(row, keys) {
-  const candidate = asText(directOrNested(row, ["provider_receipt_id", "providerReceiptId"]));
-  if (candidate) return providerProof({ ...row, provider_receipt_id: candidate }, {
-    providerKeys: ["provider_receipt_id"], verificationKeys: keys,
-  });
-  // The shipped Stripe observer names the immutable object id and dashboard URL but predates the
-  // explicit proof_verified marker.  Those two fields are an official readback boundary; enrich a
-  // copy only (never the outbox) so current rows remain consumable without trusting free-form IDs.
-  const externalId = asText(directOrNested(row, ["external_receipt_id", "externalReceiptId"]));
-  const sourceUrl = asText(directOrNested(row, ["source_url", "sourceUrl"]));
-  if (externalId && row?.test === false && /^https:\/\/dashboard\.stripe\.com\//.test(sourceUrl || "")) {
-    return providerProof({ ...row, provider_receipt_id: externalId, proof_verified: true }, {
-      providerKeys: ["provider_receipt_id"], verificationKeys: ["proof_verified", ...keys],
-    });
-  }
-  return providerProof(row, { providerKeys: ["external_receipt_id", "externalReceiptId"], verificationKeys: keys });
+function writerProof(row, options) {
+  // Stripe object ids and dashboard URLs are identifiers, not verification.  The official Stripe
+  // client/readback boundary must return the opaque trusted result for both money and fee rows.
+  return providerProof("stripe", row, options);
 }
 
 export function adaptWriterStripe(value, options = {}) {
@@ -368,8 +395,9 @@ export function adaptWriterStripe(value, options = {}) {
   const feeRows = rows.filter((row) => row?.receipt_type === "fee" || row?.type === "fee");
   const refundRows = rows.filter((row) => row?.receipt_type === "refund" || row?.type === "refund");
   const feeFor = (money) => feeRows.find((fee) => String(fee?.money_external_receipt_id || fee?.moneyExternalReceiptId || "") === String(money?.external_receipt_id || money?.externalReceiptId || ""));
-  const lineageMatches = (a, b) => String(a?.money_external_receipt_id || a?.moneyExternalReceiptId || a?.external_receipt_id || a?.externalReceiptId || "") === String(b?.external_receipt_id || b?.externalReceiptId || "")
-    || (a?.artifact_id && b?.artifact_id && a.artifact_id === b.artifact_id && a?.run_id === b?.run_id);
+  // Refunds must carry Stripe's exact payment-intent lineage.  Matching an article/run alone could
+  // attach a refund from a different charge to this receipt and silently lower the wrong balance.
+  const lineageMatches = (a, b) => String(a?.money_external_receipt_id || a?.moneyExternalReceiptId || "") === String(b?.external_receipt_id || b?.externalReceiptId || "");
 
   for (const money of moneyRows) {
     const rejectRow = (reason, code) => rejected.push(rejection("stripe", money, reason, code, options));
@@ -395,10 +423,10 @@ export function adaptWriterStripe(value, options = {}) {
       const { payer, recipient } = identity(money, options);
       const gross = moneyValue(money, ["amount", "gross", "gross_amount"]);
       const feeAmount = moneyValue(fee, ["amount", "fee", "fee_amount"]);
-      const proof = writerProof(money, ["proof_verified", "proofVerified", "provider_proof_verified", "providerProofVerified"]);
+      const proof = writerProof(money, options);
       // The fee row is part of the signed-net proof; a fee amount without its own official
       // balance-transaction identity is not enough to authorize the net contribution.
-      writerProof(fee, ["proof_verified", "proofVerified", "provider_proof_verified", "providerProofVerified"]);
+      writerProof(fee, options);
       const occurred_at = directOrNested(money, ["occurred_at", "occurredAt", "ts", "timestamp"]);
       const state = terminalState(money, ["terminal_state", "terminalState", "status"]);
       if (occurred_at === undefined || occurred_at === null) throw new AdapterFailure("MISSING_TIMESTAMP", "Stripe money timestamp is missing");
@@ -433,7 +461,7 @@ export function adaptWriterStripe(value, options = {}) {
         throw new AdapterFailure("MALFORMED_CURRENCY", "Stripe refund currency does not match money currency");
       }
       const { payer, recipient } = identity(money, options);
-      const proof = writerProof(refund, ["proof_verified", "proofVerified", "provider_proof_verified", "providerProofVerified"]);
+      const proof = writerProof(refund, options);
       const occurred_at = directOrNested(refund, ["occurred_at", "occurredAt", "ts", "timestamp"]);
       if (occurred_at === undefined || occurred_at === null) throw new AdapterFailure("MISSING_TIMESTAMP", "Stripe refund timestamp is missing");
       const receipt = normalizeRevenueReceipt({ provider: "stripe", payer, recipient, gross: "0", fee: "0", refund: moneyValue(refund, ["amount", "refund", "refund_amount"]), asset, proof, terminal_state: "refunded", occurred_at }, { selfPayers: options.selfPayers ?? options.selfWallets });
@@ -480,20 +508,64 @@ async function readJsonl(file) {
 
 async function persistRejections(file, rows) {
   if (!file || rows.length === 0) return { persisted: 0, duplicates: 0 };
-  const existing = await readJsonl(file);
-  const seen = new Set(existing.map((row) => row?.rejection_key).filter(Boolean));
-  const fresh = [];
-  let duplicates = 0;
-  for (const row of rows) {
-    if (seen.has(row.rejection_key)) { duplicates += 1; continue; }
-    seen.add(row.rejection_key);
-    fresh.push(row);
+  return withRejectionJournalLock(file, async () => {
+    const existing = await readJsonl(file);
+    const seen = new Set(existing.map((row) => row?.rejection_key).filter(Boolean));
+    const fresh = [];
+    let duplicates = 0;
+    for (const row of rows) {
+      if (seen.has(row.rejection_key)) { duplicates += 1; continue; }
+      seen.add(row.rejection_key);
+      fresh.push(row);
+    }
+    if (fresh.length) {
+      await mkdir(dirname(file), { recursive: true, mode: 0o700 });
+      await appendFile(file, fresh.map((row) => JSON.stringify(row)).join("\n") + "\n", { mode: 0o600 });
+    }
+    return { persisted: fresh.length, duplicates };
+  });
+}
+
+function processAlive(pid) {
+  try { process.kill(pid, 0); return true; } catch { return false; }
+}
+
+async function withRejectionJournalLock(file, work) {
+  const lockPath = `${file}.lock`;
+  await mkdir(dirname(file), { recursive: true, mode: 0o700 });
+  let owner = null;
+  for (let attempt = 0; attempt < 200; attempt += 1) {
+    try {
+      await mkdir(lockPath);
+      owner = `${process.pid}:${randomUUID()}`;
+      await writeFile(join(lockPath, "owner"), JSON.stringify({ pid: process.pid, owner }), { mode: 0o600 });
+      break;
+    } catch (error) {
+      if (error?.code !== "EEXIST") throw error;
+      let stale = false;
+      try {
+        const value = JSON.parse(await readFile(join(lockPath, "owner"), "utf8"));
+        stale = !Number.isInteger(value?.pid) || !processAlive(value.pid);
+      } catch {
+        // A just-created lock with no owner file is held; never remove it on an ambiguous read.
+        stale = false;
+      }
+      if (stale) {
+        await rm(lockPath, { recursive: true, force: true });
+        continue;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 2));
+    }
   }
-  if (fresh.length) {
-    await mkdir(dirname(file), { recursive: true, mode: 0o700 });
-    await appendFile(file, fresh.map((row) => JSON.stringify(row)).join("\n") + "\n", { mode: 0o600 });
+  if (!owner) throw new Error("revenue-adapters: rejection journal lock unavailable");
+  try {
+    return await work();
+  } finally {
+    try {
+      const value = JSON.parse(await readFile(join(lockPath, "owner"), "utf8"));
+      if (value?.owner === owner) await rm(lockPath, { recursive: true, force: true });
+    } catch { /* preserve the journal if lock ownership cannot be read back */ }
   }
-  return { persisted: fresh.length, duplicates };
 }
 
 /** Adapt source rows and project only accepted receipts into the shared append-only journal. */
@@ -532,3 +604,58 @@ export async function projectRevenueReceipts({ journalPath, rejectionPath, provi
 }
 
 export const projectRevenue = projectRevenueReceipts;
+
+async function readSourceRows(file) {
+  const raw = await readFile(file, "utf8");
+  const nonblank = raw.split("\n").map((line) => line.trim()).filter(Boolean);
+  if (!nonblank.length) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) return parsed;
+    if (asObject(parsed) && Array.isArray(parsed.rows)) return parsed.rows;
+    if (asObject(parsed)) return [parsed];
+  } catch {
+    // JSONL fallback below.
+  }
+  return nonblank.map((line, index) => {
+    try { return JSON.parse(line); }
+    catch { throw new Error(`revenue-adapters: corrupt source JSONL at line ${index + 1}`); }
+  });
+}
+
+function cliArgs(argv) {
+  const result = {};
+  for (let index = 0; index < argv.length; index += 1) {
+    const arg = argv[index];
+    if (!arg.startsWith("--")) throw new Error("unknown argument");
+    const key = arg.slice(2).replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
+    const value = argv[index + 1];
+    if (!value || value.startsWith("--")) throw new Error(`missing value for ${arg}`);
+    result[key] = value;
+    index += 1;
+  }
+  return result;
+}
+
+// Natural Python observers invoke this deterministic local projector after persisting their raw
+// outbox/readback.  No verifier is manufactured here: without a configured official verifier all
+// rows become durable rejection records, and a configured verifier may be supplied by a trusted
+// embedding caller through projectRevenueReceipts instead of this CLI.
+const isEntry = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1]);
+if (isEntry) {
+  try {
+    const args = cliArgs(process.argv.slice(2));
+    if (!args.provider || !args.rows || !args.journal) throw new Error("--provider, --rows, and --journal are required");
+    const sourceRows = await readSourceRows(args.rows);
+    const result = await projectRevenueReceipts({
+      provider: args.provider,
+      rows: sourceRows,
+      journalPath: args.journal,
+      rejectionPath: args.rejections,
+    });
+    process.stdout.write(`${JSON.stringify({ provider: args.provider, source_rows: sourceRows.length, ...result })}\n`);
+  } catch (error) {
+    process.stderr.write(`revenue-adapters: ${String(error?.message || error).slice(0, 300)}\n`);
+    process.exitCode = 1;
+  }
+}

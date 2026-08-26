@@ -36,6 +36,7 @@ import {
 import { getFundingRatesCached, buildFundingRatesResponse, annualizedBps } from "./funding-rates.mjs";
 import { buildFundingRateArbResponse } from "./funding-rate-arb.mjs";
 import { RESALE_PRODUCTS, resaleHandler } from "./resale.mjs";
+import { createTrustedReadbackVerifier, projectRevenueReceipts } from "../../agent-economy/lib/revenue-adapters.mjs";
 
 function payTo() {
   if (process.env.X402_PAYTO) return process.env.X402_PAYTO;
@@ -115,17 +116,26 @@ export function decodeSettlementReadback(headerValue) {
     network: ["network", "chain_id", "chainId"],
     chain_id: ["chain_id", "chainId"],
     log_index: ["log_index", "logIndex"],
+    decimals: ["decimals", "asset_decimals", "assetDecimals"],
   };
   for (const [output, keys] of Object.entries(fields)) {
     const found = keys.find((key) => typeof value[key] === "string" || (typeof value[key] === "number" && Number.isFinite(value[key])));
     if (found) projection[output] = value[found];
   }
-  // A facilitator transaction id is an explicit provider receipt identity.  Mark it verified only
-  // on a successful terminal response; failed settlement headers remain attempts, never revenue.
-  if (projection.provider_receipt_id === undefined && typeof projection.transaction === "string" && projection.transaction.trim()) {
-    projection.provider_receipt_id = projection.transaction.trim();
+  // x402 SettleResponse.amount is an atomic USDC quantity.  Preserve it as amount_atomic and carry
+  // decimals; never reinterpret a response like "3000" as 3000 major USDC or use the tx id as a
+  // provider-receipt bypass.  The shared adapter still requires a trusted chain verifier result.
+  if (projection.amount_atomic === undefined && projection.amount !== undefined) {
+    projection.amount_atomic = projection.amount;
+    delete projection.amount;
   }
-  projection.proof_verified = projection.success;
+  if (projection.decimals === undefined && String(projection.currency || projection.asset || "").toUpperCase() === "USDC") {
+    projection.decimals = 6;
+  }
+  if (projection.chain_id === undefined && typeof projection.network === "string") {
+    const match = projection.network.match(/^(?:eip155:)?([0-9]+)$/i);
+    if (match) projection.chain_id = Number(match[1]);
+  }
   return projection;
 }
 // CDP facilitator (when CDP keys present) → settles on Base mainnet AND lists the endpoint in the x402
@@ -495,6 +505,8 @@ function resolveStateDir() {
 const STATE_DIR = resolveStateDir();
 const SALES_LOG = process.env.X402_SALES_LOG || join(STATE_DIR, `sales-${payTo().toLowerCase()}.jsonl`);
 const ATTEMPTS_LOG = process.env.X402_ATTEMPTS_LOG || join(STATE_DIR, `attempts-${payTo().toLowerCase()}.jsonl`);
+const REVENUE_JOURNAL = process.env.REVENUE_RECEIPT_JOURNAL || join(STATE_DIR, "revenue-receipts.jsonl");
+const REVENUE_REJECTIONS = process.env.REVENUE_RECEIPT_REJECTIONS || join(STATE_DIR, "revenue-rejections.jsonl");
 try { mkdirSync(STATE_DIR, { recursive: true }); } catch { /* best-effort */ }
 app.use((req, res, next) => {
   const product = PRODUCTS.find((p) => p.path === req.path);
@@ -509,12 +521,40 @@ app.use((req, res, next) => {
     const settled = isSettled(hdr);
     const settledPayer = payer || decodePayer(hdr);
     const settlement = decodeSettlementReadback(hdr);
+    const occurredAt = new Date().toISOString();
     const line = JSON.stringify({
-      ts: new Date().toISOString(), route: req.path, price: product.price, payer: settledPayer,
+      ts: occurredAt, route: req.path, price: product.price, payer: settledPayer,
       recipient: payTo(), settled,
       ...(settlement ? { settlement } : {}),
     }) + "\n";
     try { appendFileSync(settled ? SALES_LOG : ATTEMPTS_LOG, line); } catch { /* logging must never break serving */ }
+    // Natural seller owner: project this provider readback one-way into the shared journal.  The
+    // verifier result is created from the server's facilitator response, never from row booleans or
+    // a client-supplied receipt id.  Missing chain tuple remains a durable rejection.
+    const readbackVerifier = createTrustedReadbackVerifier(() => {
+      if (!settlement?.success || !settlement.transaction || settlement.chain_id === undefined || settlement.log_index === undefined) return null;
+      return {
+        verified: true,
+        tx_hash: settlement.transaction,
+        chain_id: settlement.chain_id,
+        log_index: settlement.log_index,
+      };
+    });
+    void projectRevenueReceipts({
+      journalPath: REVENUE_JOURNAL,
+      rejectionPath: REVENUE_REJECTIONS,
+      provider: "x402",
+      rows: [{
+        ...((settlement && typeof settlement === "object") ? settlement : {}),
+        settled,
+        success: settlement?.success === true,
+        payer: settledPayer,
+        recipient: payTo(),
+        route: req.path,
+        occurred_at: occurredAt,
+      }],
+      options: { readbackVerifier },
+    }).catch(() => {});
   });
   next();
 });

@@ -39,6 +39,7 @@ ENDPOINTS = {
     "payouts": ("/v1/payouts", ["data.balance_transaction"]),
 }
 SHA256 = re.compile(r"[0-9a-f]{64}")
+REVENUE_PROJECTOR = Path(__file__).resolve().parents[3] / "skills" / "agent-economy" / "lib" / "revenue-adapters.mjs"
 
 
 class StripeReceiptInvariant(ValueError):
@@ -81,7 +82,6 @@ def build_revenue_candidates(
                 output.append({"kind": "revenue_rejection", "provider": "stripe", "source_record_id": str(identity or ""), "reason": "fee_readback_unjoined"})
                 continue
             copied["provider_receipt_id"] = str(identity)
-            copied["proof_verified"] = True
             if payer is not None: copied["payer"] = payer
             if recipient is not None: copied["recipient"] = recipient
         elif row.get("receipt_type") == "fee":
@@ -90,14 +90,12 @@ def build_revenue_candidates(
                 output.append({"kind": "revenue_rejection", "provider": "stripe", "source_record_id": str(identity or ""), "reason": "fee_readback_unjoined"})
                 continue
             copied["provider_receipt_id"] = str(identity)
-            copied["proof_verified"] = True
         else:
             identity = row.get("external_receipt_id")
             if row.get("test") is True or row.get("status") != "refunded":
                 output.append({"kind": "revenue_rejection", "provider": "stripe", "source_record_id": str(identity or ""), "reason": "test_or_pending_refund"})
                 continue
             copied["provider_receipt_id"] = str(identity)
-            copied["proof_verified"] = True
             if payer is not None: copied["payer"] = payer
             if recipient is not None: copied["recipient"] = recipient
         output.append(copied)
@@ -107,6 +105,31 @@ def build_revenue_candidates(
 # Keep a descriptive alias for callers that treat all lane projections uniformly.
 revenue_candidates = build_revenue_candidates
 revenue_candidate = build_revenue_candidates
+
+
+def invoke_revenue_projector(
+    source_path: str | Path, *, provider: str = "stripe", journal_path: str | Path | None = None,
+    rejection_path: str | Path | None = None,
+) -> dict[str, Any]:
+    """Run the shared projector after the append-only Stripe outbox is durably updated.
+
+    Python intentionally does not self-certify provider ids.  Without a trusted verifier context,
+    the JS CLI records rejection evidence only; a configured official verifier can project a live
+    readback through ``projectRevenueReceipts`` in the owning runtime.
+    """
+    source = Path(source_path).expanduser().resolve()
+    journal = Path(journal_path or source.with_name("revenue-receipts.jsonl")).expanduser().resolve()
+    rejection = Path(rejection_path or source.with_name("revenue-rejections.jsonl")).expanduser().resolve()
+    completed = subprocess.run(
+        [os.environ.get("NODE", "node"), str(REVENUE_PROJECTOR), "--provider", provider,
+         "--rows", str(source), "--journal", str(journal), "--rejections", str(rejection)],
+        text=True, capture_output=True, timeout=30, check=False,
+    )
+    if completed.returncode != 0:
+        return {"ok": False, "error": "revenue_projector_failed"}
+    try: value = json.loads(completed.stdout)
+    except (TypeError, ValueError): return {"ok": False, "error": "revenue_projector_invalid_output"}
+    return value if isinstance(value, dict) else {"ok": False, "error": "revenue_projector_invalid_output"}
 
 
 def _canonical(value: Any) -> str:
@@ -416,6 +439,7 @@ def normalize_objects(objects: dict[str, Any], *, observed_at: str) -> list[dict
             "run_id": lineage["run_id"], "lang": lineage["lang"],
             "slug": lineage["slug"], "stream": "self_owned_article",
             "revenue_class": "direct_writing", "kind": "refund",
+            "money_external_receipt_id": str(payment_intent_id),
             "amount": _major(item.get("amount")),
             "currency": str(item.get("currency")).upper(),
             "status": "test" if test else "refunded", "test": test,
@@ -495,6 +519,17 @@ def _collect_once_unlocked(
         seen.update(row["receipt_sha256"] for row in pending)
     next_cursor = {"schema_version": 1, "seen": sorted(seen)}
     _atomic(cursor_path, next_cursor)
+    try:
+        invoke_revenue_projector(
+            outbox_path,
+            provider="stripe",
+            journal_path=os.environ.get("REVENUE_RECEIPT_JOURNAL", str(state_dir / "revenue-receipts.jsonl")),
+            rejection_path=os.environ.get("REVENUE_RECEIPT_REJECTIONS", str(state_dir / "revenue-rejections.jsonl")),
+        )
+    except (OSError, subprocess.SubprocessError):
+        # Receipt sync remains read-only and durable even if the optional shared projector is
+        # unavailable; no local PASS is promoted to revenue.
+        pass
     return {
         "status": "ok", "observed": len(rows), "appended": len(pending),
         "cursor_sha256": _hash(next_cursor), "outbox": str(outbox_path),

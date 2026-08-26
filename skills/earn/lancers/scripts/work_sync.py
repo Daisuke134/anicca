@@ -23,6 +23,7 @@ SKILLS_ROOT = HERE.parents[2]
 AGENT_RUNNER = SKILLS_ROOT / "agent-runner" / "agent_runner.py"
 REPLY_SCHEMA = SKILLS_ROOT / "gig-work" / "schemas" / "reply_composition.schema.json"
 PRODUCT_PATH = HERE.parent / "products" / "monthly-sns-content-ops-v1.json"
+REVENUE_PROJECTOR = HERE.parents[2] / "agent-economy" / "lib" / "revenue-adapters.mjs"
 
 
 def _load(name: str, path: Path) -> Any:
@@ -58,7 +59,6 @@ def build_revenue_candidate(row: Mapping[str, Any], *, recipient: str | None = N
     status = str(row.get("payment_status") or row.get("payout_status") or row.get("status") or "").strip().lower()
     proof = row.get("proof") if isinstance(row.get("proof"), Mapping) else None
     receipt_id = (proof or {}).get("provider_receipt_id") or row.get("payment_receipt_id") or row.get("payout_receipt_id")
-    verified = (proof or {}).get("verified") is True or row.get("payment_proof_verified") is True or row.get("payout_proof_verified") is True
     payer = row.get("payer") or row.get("client_id") or row.get("clientId") or row.get("buyer_id")
     destination = row.get("recipient") or row.get("recipient_id") or recipient
     gross = row.get("gross_jpy", row.get("gross_amount_jpy", row.get("gross_amount")))
@@ -69,7 +69,7 @@ def build_revenue_candidate(row: Mapping[str, Any], *, recipient: str | None = N
     if fee is None: missing.append("fee")
     if not isinstance(payer, str) or not payer.strip(): missing.append("payer")
     if not isinstance(destination, str) or not destination.strip(): missing.append("recipient")
-    if not receipt_id or not verified: missing.append("verified_payment_proof")
+    if not receipt_id: missing.append("payment_proof_id")
     if status in {"pending", "requested", "working", "in_progress"}: missing.append("terminal_payout")
     if missing:
         return {
@@ -81,7 +81,8 @@ def build_revenue_candidate(row: Mapping[str, Any], *, recipient: str | None = N
         "recipient": str(destination).strip(), "gross_jpy": gross, "fee_jpy": fee,
         "refund_jpy": row.get("refund_jpy", 0), "payout_jpy": row.get("payout_jpy"),
         "asset": "JPY", "status": status, "occurred_at": row.get("occurred_at", row.get("ts")),
-        "proof": {"provider_receipt_id": str(receipt_id).strip(), "verified": True},
+        # Deliberately unverified: an independent provider verifier must attest this id in JS.
+        "proof": {"provider_receipt_id": str(receipt_id).strip()},
     }
 
 
@@ -91,6 +92,30 @@ def revenue_candidates(rows: Sequence[Mapping[str, Any]], *, recipient: str | No
 
 
 revenue_candidate = build_revenue_candidate
+
+
+def invoke_revenue_projector(
+    source_path: str | Path, *, provider: str = "lancers", journal_path: str | Path | None = None,
+    rejection_path: str | Path | None = None,
+) -> dict[str, Any]:
+    """Run the shared projector after the browser's durable contracts/finance readback is saved.
+
+    No verifier is manufactured in Python.  The CLI therefore records only durable rejection
+    evidence until a trusted provider verifier is supplied to the JavaScript projector.
+    """
+    source = Path(source_path).expanduser().resolve()
+    journal = Path(journal_path or source.with_name("revenue-receipts.jsonl")).expanduser().resolve()
+    rejection = Path(rejection_path or source.with_name("revenue-rejections.jsonl")).expanduser().resolve()
+    completed = subprocess.run(
+        [os.environ.get("NODE", "node"), str(REVENUE_PROJECTOR), "--provider", provider,
+         "--rows", str(source), "--journal", str(journal), "--rejections", str(rejection)],
+        text=True, capture_output=True, timeout=30, check=False,
+    )
+    if completed.returncode != 0:
+        return {"ok": False, "error": "revenue_projector_failed"}
+    try: value = json.loads(completed.stdout)
+    except (TypeError, ValueError): return {"ok": False, "error": "revenue_projector_invalid_output"}
+    return value if isinstance(value, dict) else {"ok": False, "error": "revenue_projector_invalid_output"}
 
 
 def _id(value: Any) -> str:
@@ -478,6 +503,18 @@ def run_tick(*, state_path: Path = DEFAULT_STATE_PATH, browser_factory: Optional
                 "contract_candidate_count": result["contract_candidate_count"],
                 "contract_candidates": result["contract_candidates"],
             })
+            try:
+                invoke_revenue_projector(
+                    Path(state_path).with_name("contracts.json"),
+                    provider="lancers",
+                    journal_path=os.environ.get("REVENUE_RECEIPT_JOURNAL"),
+                    rejection_path=os.environ.get("REVENUE_RECEIPT_REJECTIONS"),
+                )
+            except (OSError, subprocess.SubprocessError):
+                # Provider observation remains successful even if the optional projection process
+                # is unavailable; it must not turn an authenticated browser readback into an
+                # inferred revenue claim.
+                pass
     except SourceFailure as error:
         result = _failed(str(error), logged_in)
     except Exception as error:

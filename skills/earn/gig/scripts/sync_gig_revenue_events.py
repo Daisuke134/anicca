@@ -6,6 +6,8 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any
@@ -21,6 +23,7 @@ except ModuleNotFoundError:  # pragma: no cover - exercised only by incomplete s
 
 
 SETTLED = {"SETTLED", "settled", "検収", "検収完了", "支払", "支払完了"}
+REVENUE_PROJECTOR = Path(__file__).resolve().parents[4] / "skills" / "agent-economy" / "lib" / "revenue-adapters.mjs"
 
 
 def build_revenue_candidate(row: dict[str, Any], *, recipient: str | None = None) -> dict[str, Any]:
@@ -36,7 +39,6 @@ def build_revenue_candidate(row: dict[str, Any], *, recipient: str | None = None
     source_id = str(row.get("requestId") or row.get("request_id") or "").strip()
     proof = row.get("proof") if isinstance(row.get("proof"), dict) else None
     payout_id = (proof or {}).get("provider_receipt_id") or row.get("payout_receipt_id") or row.get("payoutReceiptId")
-    verified = (proof or {}).get("verified") is True or row.get("payout_proof_verified") is True
     payout_status = str(row.get("payout_status") or row.get("payoutState") or "").strip().lower()
     gross = row.get("gross_jpy", row.get("gross_amount_jpy", row.get("gross_amount")))
     fee = row.get("fee_jpy", row.get("fee_amount_jpy", row.get("fee_amount")))
@@ -49,7 +51,7 @@ def build_revenue_candidate(row: dict[str, Any], *, recipient: str | None = None
     if fee is None: missing.append("fee")
     if not isinstance(payer, str) or not payer.strip(): missing.append("payer")
     if not isinstance(destination, str) or not destination.strip(): missing.append("recipient")
-    if not payout_id or not verified: missing.append("verified_payout_proof")
+    if not payout_id: missing.append("payout_proof_id")
     if payout_status in {"pending", "requested", "申請済み", "in_transit"}: missing.append("terminal_payout")
     if missing:
         return {
@@ -61,7 +63,8 @@ def build_revenue_candidate(row: dict[str, Any], *, recipient: str | None = None
         "recipient": str(destination).strip(), "gross_jpy": gross, "fee_jpy": fee,
         "refund_jpy": row.get("refund_jpy", 0), "payout_jpy": row.get("payout_jpy"),
         "asset": "JPY", "status": row["status"], "occurred_at": row.get("occurred_at", row.get("ts")),
-        "proof": {"provider_receipt_id": str(payout_id).strip(), "verified": True},
+        # Deliberately unverified: only the JavaScript official-verifier boundary can attest this id.
+        "proof": {"provider_receipt_id": str(payout_id).strip()},
     }
 
 
@@ -71,6 +74,33 @@ def revenue_candidates(rows: list[dict[str, Any]], *, recipient: str | None = No
 
 
 revenue_candidate = build_revenue_candidate
+
+
+def invoke_revenue_projector(
+    source_path: str | Path, *, provider: str = "coconala", journal_path: str | Path | None = None,
+    rejection_path: str | Path | None = None,
+) -> dict[str, Any]:
+    """Run the deterministic shared projector after the durable provider source is read.
+
+    The CLI has no trusted verifier context, so it can persist rejection evidence but cannot turn a
+    raw payout id into revenue.  A trusted embedding caller supplies an official verifier directly
+    to ``projectRevenueReceipts`` for a future live canary.
+    """
+    source = Path(source_path).expanduser().resolve()
+    journal = Path(journal_path or source.with_name("revenue-receipts.jsonl")).expanduser().resolve()
+    rejection = Path(rejection_path or source.with_name("revenue-rejections.jsonl")).expanduser().resolve()
+    completed = subprocess.run(
+        [os.environ.get("NODE", "node"), str(REVENUE_PROJECTOR), "--provider", provider,
+         "--rows", str(source), "--journal", str(journal), "--rejections", str(rejection)],
+        text=True, capture_output=True, timeout=30, check=False,
+    )
+    if completed.returncode != 0:
+        return {"ok": False, "error": "revenue_projector_failed"}
+    try:
+        value = json.loads(completed.stdout)
+    except (TypeError, ValueError):
+        return {"ok": False, "error": "revenue_projector_invalid_output"}
+    return value if isinstance(value, dict) else {"ok": False, "error": "revenue_projector_invalid_output"}
 
 
 def _source_record_id(row: dict[str, Any]) -> str:
@@ -102,28 +132,32 @@ def sync_gig_revenue(earnings_path: str | Path, ledger_path: str | Path) -> dict
             if not isinstance(row, dict):
                 result["rejected"] += 1
                 continue
-            candidate = build_revenue_candidate(row)
-            if candidate.get("kind") == "revenue_rejection":
+            if (
+                row.get("status") not in SETTLED
+                or not isinstance(row.get("requestId"), str)
+                or not row["requestId"].strip()
+                or not isinstance(row.get("jpy"), int)
+                or isinstance(row.get("jpy"), bool)
+                or row["jpy"] <= 0
+                or not isinstance(row.get("evidence"), str)
+                or not row["evidence"].strip()
+                or row.get("ts") is None
+            ):
                 result["rejected"] += 1
                 continue
             result["eligible"] += 1
             try:
                 if append_event is None or make_event is None:
                     raise ValueError("unit economics event helper is unavailable")
-                amount = candidate.get("payout_jpy")
-                if amount is None:
-                    amount = int(candidate["gross_jpy"]) - int(candidate["fee_jpy"])
-                if isinstance(amount, bool) or not isinstance(amount, int) or amount <= 0:
-                    raise ValueError("signed net is not a positive JPY integer")
                 event = make_event(
                     kind="revenue",
                     loop="gig",
                     source="anicca://gig/coconala",
-                    source_record_id=_source_record_id(candidate),
-                    occurred_at=candidate["occurred_at"],
-                    amount_minor=amount,
+                    source_record_id=_source_record_id(row),
+                    occurred_at=row["ts"],
+                    amount_minor=row["jpy"],
                     currency="JPY",
-                    evidence=row.get("evidence") or json.dumps(candidate["proof"], sort_keys=True),
+                    evidence=row["evidence"],
                 )
                 if append_event(ledger_path, event):
                     result["appended"] += 1
@@ -131,6 +165,17 @@ def sync_gig_revenue(earnings_path: str | Path, ledger_path: str | Path) -> dict
                     result["duplicates"] += 1
             except (OSError, ValueError):
                 result["rejected"] += 1
+    # The legacy unit-economics event remains historically unchanged; the shared adapter projection
+    # runs separately and fail-closed after the same durable source has been observed.
+    try:
+        invoke_revenue_projector(
+            source,
+            provider="coconala",
+            journal_path=os.environ.get("REVENUE_RECEIPT_JOURNAL"),
+            rejection_path=os.environ.get("REVENUE_RECEIPT_REJECTIONS"),
+        )
+    except (OSError, subprocess.SubprocessError):
+        pass
     return result
 
 
