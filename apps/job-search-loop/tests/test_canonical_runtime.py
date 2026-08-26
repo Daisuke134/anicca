@@ -490,6 +490,9 @@ raise SystemExit(0)
                 "JOB_SEARCH_PLUTIL": str(plutil),
                 "JOB_SEARCH_LAUNCH_AGENT_DIR": str(root / "LaunchAgents"),
             }
+            codex_home = root / "home" / ".codex"
+            codex_home.mkdir(parents=True)
+            (codex_home / "auth.json").write_text("{}\n", encoding="utf-8")
 
             result = subprocess.run(
                 [

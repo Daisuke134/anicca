@@ -163,6 +163,9 @@ class ReleaseTests(unittest.TestCase):
             config = root / "config"
             state = root / "state"
             data = root / "data"
+            codex_home = home / ".codex"
+            codex_home.mkdir(parents=True)
+            (codex_home / "auth.json").write_text("{}\n", encoding="utf-8")
             env = {
                 **os.environ,
                 "HOME": str(home),
