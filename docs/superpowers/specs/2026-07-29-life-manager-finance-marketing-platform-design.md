@@ -2287,23 +2287,6 @@ and zero receipts. Immediate official Postiz readback over 111 rows finds five
 rows for the integration and zero for the exact caption. Exactly one effect is
 therefore authorized next; no retry is allowed if its outcome becomes unknown.
 
-Those pre-effect blockers are closed at commits `891d671ab` and `6f56fe538`.
-The frozen Card lane now rejects every pack/video/caption/approval ref except
-the four exact refs before object-store, secret, ledger, or provider access;
-a mutually consistent alternate pack plus approval fails at that boundary.
-The distribution subprocess allowlist passes only the validated
-`LM_POSTIZ_RESOLVE_IP` transport override and still excludes the Postiz token,
-Telegram secrets, and arbitrary parent env. Native owner `@anicca.ios.jp` is
-separate from provider alias `@anicca.jp1`: wrong owner or a false full-video
-comparison holds Telegram, and the natural receipt names the verified native
-owner. Parent verification passes focused Node `46/46`, combined Node `94/94`,
-and Postiz Python `19/19`; fresh read-only adversarial re-review returns
-`SHIP`. Exact approval `bb3e2ac3…764ee2` and its pack/video/caption refs are
-SHA-exact at mode `0600`. Dedicated runtime env bindings remain unset and no
-provider/message effect exists. The next allowed state is to bind only those
-exact refs, repeat the closed-control/zero-effect preflight, and then execute at
-most one immutable logical slot.
-
 **Completed immediately preceding atomic item:** MKT-09R8-12 / Order 23I
 reconciled the complete existing Postiz history before any new effect. Read-only
 GETs covered `1970-01-01` through `2026-08-27`: pre-2025 and 2025 returned zero,
