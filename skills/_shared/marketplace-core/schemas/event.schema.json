@@ -370,6 +370,7 @@
         "platform",
         "work_external_id",
         "delivery_external_id",
+        "qa_external_id",
         "status",
         "artifact_sha256",
         "idempotency_key",
@@ -389,6 +390,9 @@
           "$ref": "#/$defs/identifier"
         },
         "delivery_external_id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "qa_external_id": {
           "$ref": "#/$defs/identifier"
         },
         "status": {

@@ -8,6 +8,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 from contracts import (  # noqa: E402
     AuthorizationReceipt,
     ContractReceipt,
+    DeliveryReceipt,
     QAReceipt,
     parse_contract,
 )
@@ -65,6 +66,25 @@ class ContractReceiptTests(unittest.TestCase):
 
         self.assertIsInstance(receipt, QAReceipt)
         self.assertEqual(receipt.status, "passed")
+
+    def test_delivery_receipt_is_bound_to_qa(self):
+        receipt = parse_contract(
+            {
+                "schema_version": 1,
+                "record_type": "delivery_receipt",
+                "platform": "mercor",
+                "work_external_id": "work-123",
+                "delivery_external_id": "delivery-345",
+                "qa_external_id": "qa-012",
+                "status": "verified",
+                "artifact_sha256": "c" * 64,
+                "idempotency_key": "mercor:delivery-345",
+                "observed_at": "2026-08-26T07:15:00Z",
+            }
+        )
+
+        self.assertIsInstance(receipt, DeliveryReceipt)
+        self.assertEqual(receipt.qa_external_id, "qa-012")
 
 
 if __name__ == "__main__":

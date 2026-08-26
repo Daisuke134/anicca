@@ -183,6 +183,7 @@ class DeliveryReceipt:
     platform: str
     work_external_id: str
     delivery_external_id: str
+    qa_external_id: str
     status: str
     artifact_sha256: str
     idempotency_key: str
