@@ -261,6 +261,7 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
         continue;
       }
       for (const selected of candidates) {
+        if (selected.auto_apply_eligible === false) continue;
         if (deadlineReached()) return finish("circuit_open", "wake_deadline");
         let navigationTaskThrew = false;
         let navigationTaskError;

@@ -8,6 +8,7 @@ const test = require("node:test");
 
 const { createBrowserHarnessAdapter } = require("./connector-browser-harness-adapter.js");
 const { createConnectorActionCache } = require("./connector-action-cache.js");
+const { validateProviderCandidateRanking } = require("./event-preference-ranking.js");
 const { runMinimalConnectorWake } = require("./connector-minimal-runner.js");
 const {
   createProductionBrowserRail,
@@ -395,6 +396,48 @@ test("production provider router continues from Luma to Connpass on the same pag
   assert.equal(cached.page, page);
   await cached.performAction({ purpose: "fill", method: "ax_fill", control: "control_1" }); assert.equal(performed.provider, "connpass");
   assert.equal(calls.filter(([name]) => name === "discover")[0][1].page, page);
+});
+
+test("production provider router submits only strong or moderate ranked candidates and fails closed when ranking fails", async () => {
+  const strong = Object.freeze({
+    provider: "luma", event_ref: "luma-event://event/ai-agents", canonical_url: "https://luma.com/ai-agents",
+    title: "AI Agents Tokyo", body: "LLM agent builders",
+  });
+  const weak = Object.freeze({
+    provider: "luma", event_ref: "luma-event://event/pottery", canonical_url: "https://luma.com/pottery",
+    title: "Pottery Social", body: "Make a bowl",
+  });
+  const workflow = {
+    async discoverCandidates() { return [weak, strong]; },
+    async runDirectAction() { return { status: "failed" }; },
+    async readProviderState() { return { status: "absent" }; },
+  };
+  let fail = false;
+  const router = createProductionProviderRouter({
+    lumaWorkflow: workflow,
+    connpassWorkflow: { ...workflow, async discoverCandidates() { return []; } },
+    actionCache: { async replay() {}, async saveVerifiedRepair() {} },
+    browserHarness: { async runFallback() {} },
+    async performAction() {},
+    async rankCandidates(input) {
+      if (fail) throw new Error("ranking unavailable");
+      return validateProviderCandidateRanking({ ranked_events: [
+        { event_ref: weak.event_ref, priority_class: "other", preference_fit: "weak", preference_reason: "Unrelated topic." },
+        { event_ref: strong.event_ref, priority_class: "ai", preference_fit: "strong", preference_reason: "Direct AI fit." },
+      ] }, input);
+    },
+    eventPreferences: "Tokyo AI crypto startup events",
+  });
+
+  assert.deepEqual(await router.discoverCandidates("luma", [], {}), [{
+    ...strong,
+    priority_class: "ai",
+    preference_fit: "strong",
+    preference_reason: "Direct AI fit.",
+    auto_apply_eligible: true,
+  }]);
+  fail = true;
+  await assert.rejects(router.discoverCandidates("luma", [], {}), /ranking unavailable/);
 });
 
 test("production provider router routes Peatix cache direct and readback on one page", async () => {

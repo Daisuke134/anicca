@@ -13,6 +13,7 @@ const { runMinimalConnectorWake } = require(
   "../../apps/life-manager/lib/connector-minimal-runner.js",
 );
 const { loadConnectorEnv } = require("./lib/load-connector-env.js");
+const { readConnectorProfile } = require("../../apps/life-manager/lib/connector-profile.js");
 
 const DEFAULT_PROVIDERS = Object.freeze(["luma", "connpass", "peatix", "meetup", "doorkeeper", "eventbrite", "techplay", "kokuchpro"]);
 
@@ -140,13 +141,20 @@ function productionConfig(options, stateDir, ownerToken) {
   const kanaIdentity = readKanaIdentity(env);
   if (attendeeName.length > 200) unavailable();
   const peatixAttendeeProfile = Object.freeze({ name: attendeeName, email: attendeeEmail, given_name: kanaIdentity.given_name, family_name: kanaIdentity.family_name, family_name_kana: kanaIdentity.family, given_name_kana: kanaIdentity.given, name_kanji: kanaIdentity.name_kanji, name_hiragana: kanaIdentity.name_hiragana, accept_organizer_privacy: true });
+  const tenantId = requiredText(env.LM_CONNECTOR_TENANT_ID, "dais-local");
+  const profile = readConnectorProfile({
+    tenantId,
+    path: path.join(report.repoRoot, "apps", "life-manager", "config", "connector", `${tenantId}.json`),
+  });
   return Object.freeze({
     ...report,
     calendarAccount,
     peatixAttendeeProfile,
     gogKeyring: requiredText(env.GOG_KEYRING_PASSWORD),
     gogBin: String(env.GOG_BIN || "").trim() || undefined,
-    tenantId: requiredText(env.LM_CONNECTOR_TENANT_ID, "dais-local"),
+    tenantId,
+    eventPreferences: profile.preferences,
+    geminiApiKey: requiredText(env.GEMINI_API_KEY),
     calendarId: requiredText(env.LM_CONNECTOR_CALENDAR_ID, "primary"),
     lumaFormProfilePath: path.join(path.dirname(stateDir), "private", "connector-luma-form-profile.json"),
     lunaEvidenceDir: path.join(stateDir, "luna"),

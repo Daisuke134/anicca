@@ -10,6 +10,7 @@ const {
 const { createConnectorTabOwner } = require("./connector-tab-owner.js");
 const { createConnectorTargetLease } = require("./connector-target-lease.js");
 const { createConnectorActionCache } = require("./connector-action-cache.js");
+const { eligibleRankedCandidates, inferProviderCandidateRanking } = require("./event-preference-ranking.js");
 const { createMinimalEvidenceChain } = require("./connector-minimal-evidence.js");
 const { createMinimalProductionOperations } = require("./connector-minimal-operations.js");
 const { createLumaScriptFirstWorkflow } = require("./connector-luma-workflow.js");
@@ -144,6 +145,8 @@ function createProductionProviderRouter(options = {}) {
   const actionCache = options.actionCache;
   const browserHarness = options.browserHarness;
   const performAction = options.performAction;
+  const rankCandidates = options.rankCandidates;
+  const eventPreferences = rankCandidates == null ? null : requiredText(options.eventPreferences);
   const now = options.now || (() => new Date());
   if (
     !lumaWorkflow || typeof lumaWorkflow.discoverCandidates !== "function"
@@ -174,6 +177,7 @@ function createProductionProviderRouter(options = {}) {
     || typeof actionCache.saveVerifiedRepair !== "function"
     || !browserHarness || typeof browserHarness.runFallback !== "function"
     || typeof performAction !== "function" || typeof now !== "function"
+    || (rankCandidates != null && typeof rankCandidates !== "function")
   ) invalid();
 
   function selected(input) {
@@ -202,7 +206,19 @@ function createProductionProviderRouter(options = {}) {
   return Object.freeze({
     discoverCandidates(provider, calendar, page) {
       const route = selected({ provider });
-      return route.workflow.discoverCandidates({ page, calendar });
+      const discovered = route.workflow.discoverCandidates({ page, calendar });
+      if (rankCandidates == null) return discovered;
+      return (async () => {
+        const candidates = await discovered;
+        if (candidates.length === 0) return candidates;
+        const reconcile = candidates.filter((candidate) => (
+          candidate.rsvp_status === "registered" || candidate.registration_status === "registered"
+        ));
+        const pending = candidates.filter((candidate) => !reconcile.includes(candidate));
+        if (pending.length === 0) return candidates;
+        const ranking = await rankCandidates({ candidates: pending, preferences: eventPreferences });
+        return Object.freeze([...reconcile, ...eligibleRankedCandidates(ranking)]);
+      })();
     },
 
     runCachedAction(input) {
@@ -275,6 +291,11 @@ function createMinimalProductionDependencies(options = {}) {
   const now = options.now || (() => new Date());
   if (typeof now !== "function") invalid();
   const nowIso = () => exactNow(now()).toISOString();
+  const eventPreferences = options.eventPreferences == null
+    ? null : requiredText(options.eventPreferences, 2_000);
+  const rankCandidates = options.rankCandidates || (eventPreferences == null ? null : (input) => (
+    inferProviderCandidateRanking(input, { apiKey: requiredText(options.geminiApiKey, 2_000) })
+  ));
 
   const calendar = options.calendar || makeGogCalendar({
     bin: options.gogBin,
@@ -407,6 +428,8 @@ function createMinimalProductionDependencies(options = {}) {
     actionCache,
     browserHarness,
     performAction: browserHarness.performAction,
+    eventPreferences,
+    rankCandidates,
     now,
   });
   return Object.freeze({

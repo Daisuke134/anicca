@@ -440,6 +440,35 @@ test("a failed direct action invokes at most ten agent steps on the exact same p
   assert.equal(state.calls.filter(([name]) => name === "close").length, 1);
 });
 
+test("runner skips an ineligible leading candidate and submits only the next eligible candidate", async () => {
+  const weak = Object.freeze({ ...candidate("luma", "weak"), auto_apply_eligible: false });
+  const strong = Object.freeze({ ...candidate("luma", "strong"), auto_apply_eligible: true });
+  const state = fixture({
+    async discoverCandidates() { return [weak, strong]; },
+    async runDirectAction({ candidate: selected }) {
+      state.calls.push(["direct", selected.event_ref]);
+      return Object.freeze({ status: "completed" });
+    },
+    async readProviderState({ candidate: selected, phase }) {
+      return phase === "pre_submit"
+        ? Object.freeze({ status: "absent" })
+        : Object.freeze({ status: "registered", provider_receipt_id: `receipt-${selected.event_ref}` });
+    },
+    async completeEvidence({ candidate: selected }) {
+      return Object.freeze({ status: "applied_bundle", bundle_id: `bundle-${selected.event_ref}`, completion_disposition: "created" });
+    },
+  });
+
+  const result = await runMinimalConnectorWake({
+    ownerToken: "owner-token-ranking-gate-123456",
+    providers: ["luma"],
+  }, state.dependencies);
+
+  assert.equal(result.status, "applied_bundle");
+  assert.deepEqual(state.calls.filter(([name]) => name === "navigate").map((row) => row[4]), [strong.canonical_url]);
+  assert.equal(state.calls.some((row) => row.includes(weak.event_ref)), false);
+});
+
 test("a verified cached replay skips both direct and agent actions", async () => {
   const state = fixture({
     async runCachedAction(input) {

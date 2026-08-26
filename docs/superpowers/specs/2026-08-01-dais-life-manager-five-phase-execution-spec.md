@@ -78,17 +78,17 @@ Calendarを無関係なeventで埋めること自体を成果にしない。
 ##### A. Contract and semantic selection
 
 - [x] **CG-00** このcurrent contractとatomic cursorを正本specへ固定する。
-- [ ] **CG-01** `event-preference-ranking.test.js`へ、YC/LT→AI→crypto→startup→weakのexact順序を要求するREDを追加する。
-- [ ] **CG-02** 同testへ、`weak`と`unknown`がverified rankingには残るがauto-apply eligibilityはfalseになるREDを追加する。
-- [ ] **CG-03** `event-preference-ranking.js`をprovider-neutral candidate snapshotへ拡張し、`priority_class`、`preference_fit`、
+- [x] **CG-01** `event-preference-ranking.test.js`へ、YC/LT→AI→crypto→startup→weakのexact順序を要求するREDを追加する。
+- [x] **CG-02** 同testへ、`weak`と`unknown`がverified rankingには残るがauto-apply eligibilityはfalseになるREDを追加する。
+- [x] **CG-03** `event-preference-ranking.js`をprovider-neutral candidate snapshotへ拡張し、`priority_class`、`preference_fit`、
   `preference_reason`をstrict structured outputとして検証する。keyword fallbackは作らない。
-- [ ] **CG-04** `dais-local.json`の公開preferencesをTokyo対面、YC/LT、AI、crypto、startupのhard priorityへ更新し、
+- [x] **CG-04** `dais-local.json`の公開preferencesをTokyo対面、YC/LT、AI、crypto、startupのhard priorityへ更新し、
   secretまたは本人情報を追加しない。
-- [ ] **CG-05** `connector-minimal-production.js`で既存rankingをcandidate listへ接続し、model unavailable/invalid時は
+- [x] **CG-05** `connector-minimal-production.js`で既存rankingをcandidate listへ接続し、model unavailable/invalid時は
   candidate Submit 0でそのproviderをsafe failureにする。
-- [ ] **CG-06** `connector-minimal-runner.test.js`へ、無関係candidateが先頭でもSubmit 0、次のstrong candidateだけが
+- [x] **CG-06** `connector-minimal-runner.test.js`へ、無関係candidateが先頭でもSubmit 0、次のstrong candidateだけが
   external effect exact 1になるRED→GREENを追加する。
-- [ ] **CG-07** `node --test apps/life-manager/lib/event-preference-ranking.test.js apps/life-manager/lib/connector-minimal-runner.test.js apps/life-manager/lib/connector-minimal-production.test.js`をPASSさせ、semantic selection sliceをcommit/pushする。
+- [x] **CG-07** `node --test apps/life-manager/lib/event-preference-ranking.test.js apps/life-manager/lib/connector-minimal-runner.test.js apps/life-manager/lib/connector-minimal-production.test.js`をPASSさせ、semantic selection sliceをcommit/pushする。
 
 ##### B. Twenty-eight-day horizon
 

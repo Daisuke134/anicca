@@ -26,6 +26,13 @@ test("loads the private attendee name with existing Calendar config only", () =>
   } finally { fs.rmSync(f.dir, { recursive: true, force: true }); }
 });
 
+test("loads the ranking key only through the connector allowlist", () => {
+  const f = fixture("GEMINI_API_KEY=fixture-ranking-key\nUNKNOWN_SECRET=hidden\n");
+  try {
+    assert.deepEqual(loadConnectorEnv(f.file), { GEMINI_API_KEY: "fixture-ranking-key" });
+  } finally { fs.rmSync(f.dir, { recursive: true, force: true }); }
+});
+
 test("fails closed for blank/control values, oversized files, and directories", () => {
   for (const value of ["", " \t", "\0", "\r", "\u000b", "Alpha\u000bBeta", "Alpha\u007fBeta"]) {
     const f = fixture(`DAIS_LEGAL_NAME_ROMAJI=${value}`);
