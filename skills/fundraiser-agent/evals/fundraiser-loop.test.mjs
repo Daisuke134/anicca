@@ -210,6 +210,7 @@ test("production contract runs every 30 minutes and maximizes real applications"
   assert.match(dailyPrompt, /cdp\.py fillcss/);
   assert.match(runtimeScript, /--task-class application-intent-planner/);
   assert.match(runtimeScript, /--escalation-reason/);
+  assert.match(runtimeScript, /AGENT_RUNNER_MODEL="gpt-5\.6-luna"/);
   assert.doesNotMatch(contract, /at most one/i);
   assert.doesNotMatch(contract, /per user-local day/i);
 });

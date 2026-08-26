@@ -32,6 +32,7 @@ export FUNDRAISER_X_CDP_ENDPOINT="http://127.0.0.1:9222"
 export FUNDRAISER_TELEGRAM_SENDER="$SENDER"
 export FUNDRAISER_CAPTCHA_MODE="existing-capsolver-only"
 export AGENT_RUNNER_PROVIDER="codex"
+export AGENT_RUNNER_MODEL="gpt-5.6-luna"
 
 RUNTIME_PROMPT="$EVIDENCE_DIR/runtime-prompt.md"
 {

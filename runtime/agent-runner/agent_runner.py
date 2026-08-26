@@ -981,6 +981,14 @@ def run() -> int:
             ]
             if not candidates:
                 raise ValueError("selected provider is not a candidate for task class")
+        selected_model = os.environ.get("AGENT_RUNNER_MODEL", "").strip()
+        if selected_model:
+            candidates = [
+                candidate for candidate in candidates
+                if candidate.get("model") == selected_model
+            ]
+            if not candidates:
+                raise ValueError("selected model is not a candidate for task class")
         configured_timeout_seconds = int(
             task_config.get("timeout_seconds", config["timeout_seconds"])
         )

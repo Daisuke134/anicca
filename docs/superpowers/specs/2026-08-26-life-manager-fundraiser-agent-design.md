@@ -102,6 +102,7 @@ MUST stay in Life Manager's existing worker so the scheduler continues serving o
 - Official live submissions currently proven by exact Gmail Sent readback:
   - Samsung Catalyst Fund, San Jose pitch-deck intake.
   - Cana, San Francisco AI-native SaaS investment inquiry.
+  - B Capital, official funding intake.
 - A later live pass discovered and processed Hustle Fund, Forum Ventures, SherVentures, and
   B Capital without adding provider-specific production code. Their current terminal states are
   recorded in the runtime receipt ledger.
@@ -133,7 +134,7 @@ MUST stay in Life Manager's existing worker so the scheduler continues serving o
 | Forum Ventures Foundry | checkpoint | Official intake requires North America base; authorized context does not attest it |
 | Forum Ventures Pitch Us | checkpoint | City HQ was absent from scoped founder profile; infer Tokyo when the question is descriptive, but do not invent a legal headquarters |
 | SherVentures | ineligible | Official page states a $500K+ ARR minimum; only approximately $1,000 founder-attested revenue is supported |
-| B Capital | retryable failure | Official email intake exists; local Gmail keyring unwrap failed, so no provider delivery occurred |
+| B Capital | submitted | Retry succeeded; exact Gmail Sent receipt exists; track reply |
 | Base Batches 004 | checkpoint | Required founder video is absent |
 | Open Network Lab | checkpoint | Separate participation, investment-discussion restrictions, and share agreement require founder authority |
 | DelightX | checkpoint | Six months in San Francisco, visa/housing/cost commitment, and $60K for 5% require founder authority |
@@ -177,11 +178,11 @@ flowchart LR
 3. Prove one unattended 30-minute recurrence after the final deployment: same identities are not
    resubmitted and at least one new eligible identity continues through the queue.
 4. Complete three unrelated official live applications without a production-code change between
-   them; two are currently proven.
+   them; Samsung Catalyst Fund, Cana, and B Capital are now proven.
 5. Add Gmail reply reconciliation for confirmation, rejection, waitlist, interview, offer, and
    funded, plus Calendar event and interview brief creation.
-6. Resolve retryable transport faults such as B Capital Gmail keyring unwrap without exposing
-   credentials, and verify Hustle Fund with the repaired generic visible-field action.
+6. Verify Hustle Fund with the repaired generic visible-field action. B Capital's retryable Gmail
+   transport failure is resolved with an exact Sent receipt.
 7. Audit the public tree for secrets and private receipts, then record final live acceptance evidence.
 
 The historical file-level implementation breakdown remains in
