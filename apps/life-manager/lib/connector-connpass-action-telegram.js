@@ -15,7 +15,7 @@ const PRIORITY = new Set(["yc_hackathon", "open_talk", "ai", "crypto", "startup"
 function invalid() { throw new Error("Connpass action Telegram invalid"); }
 function safe(value, max) {
   const text = String(value == null ? "" : value).replace(/\s+/g, " ").trim();
-  if (!text || text.length > max || /[\x00-\x1f\x7f]|\{\{|\}\}|password|cookie|api.?key|secret|token/i.test(text)) invalid();
+  if (!text || text.length > max || /[\x00-\x1f\x7f]|\{\{|\}\}|password|cookie|api.?key|secret|(?:access|auth|bearer|refresh)[_ -]?token/i.test(text)) invalid();
   return text;
 }
 function integer(value) { return Number.isSafeInteger(value) && value >= 0 ? value : null; }

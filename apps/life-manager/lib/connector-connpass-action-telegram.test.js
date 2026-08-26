@@ -67,3 +67,27 @@ test("missing provider message ID and malformed candidate never write a receipt"
     } finally { fs.rmSync(stateDir, { recursive: true, force: true }); }
   }
 });
+
+test("public crypto token language is allowed while credential token language is rejected", async () => {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connpass-action-crypto-"));
+  try {
+    const messages = [];
+    const reporter = createConnpassActionTelegram({
+      stateDir, wakeId: "wake-connpass-crypto", telegramTarget: "private-target",
+      now: () => new Date("2026-08-27T01:00:00.000Z"),
+      send: async (message) => { messages.push(message); return { messageId: "7722" }; },
+    });
+    const result = await reporter.report({ candidates: [candidate({
+      title: "Tokyo Token Engineering",
+      preference_reason: "Public crypto token engineering is directly relevant.",
+    })] });
+    assert.equal(result.telegram_provider_id, "7722");
+    assert.match(messages[0], /Token Engineering/);
+
+    await assert.rejects(reporter.report({ candidates: [candidate({
+      event_ref: "connpass-event://event/902",
+      canonical_url: "https://tokyo-ai.connpass.com/event/902/",
+      preference_reason: "access token value is exposed",
+    })] }));
+  } finally { fs.rmSync(stateDir, { recursive: true, force: true }); }
+});
