@@ -11,6 +11,7 @@ import argparse
 from contextlib import contextmanager, suppress
 import errno
 import fcntl
+from functools import lru_cache
 import json
 import math
 import os
@@ -92,7 +93,52 @@ def _bytes(
     return total
 
 
+def _is_code_sign_clone(path: Path) -> bool:
+    return (
+        path.name.startswith("code_sign_clone.")
+        and path.parent.name in {
+            "com.google.Chrome.code_sign_clone",
+            "org.chromium.Chromium.code_sign_clone",
+        }
+    )
+
+
+@lru_cache(maxsize=1)
+def _open_code_sign_clones() -> frozenset[Path] | None:
+    """Return real open clone roots; APFS clone inodes make `lsof +D` lie.
+
+    `lsof +D` reports every copy-on-write sibling as open because the signed
+    executable inode is shared. Global field output retains the process's real
+    path, so only those exact clone roots are active.
+    """
+    try:
+        result = subprocess.run(
+            ["/usr/sbin/lsof", "-nP", "-Fn"],
+            capture_output=True,
+            text=True,
+            timeout=15,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if result.returncode != 0 or result.stderr.strip():
+        return None
+    roots: set[Path] = set()
+    for line in result.stdout.splitlines():
+        if not line.startswith("n") or "code_sign_clone." not in line:
+            continue
+        match = re.match(r"^n(.*/code_sign_clone\.[^/]+)(?:/|$)", line)
+        if match:
+            roots.add(Path(match.group(1)).resolve())
+    return frozenset(roots)
+
+
 def _default_lsof(path: Path) -> str:
+    if _is_code_sign_clone(path):
+        open_clones = _open_code_sign_clones()
+        if open_clones is None:
+            return "probe-error"
+        return "open" if path.resolve() in open_clones else "confirmed-closed"
     try:
         result = subprocess.run(
             ["/usr/sbin/lsof", "-nP", "+D", str(path)],

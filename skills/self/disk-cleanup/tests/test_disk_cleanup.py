@@ -342,6 +342,39 @@ def test_lsof_stderr_is_probe_error(monkeypatch) -> None:
     assert disk_cleanup._default_lsof(Path("/tmp/unknown")) == "probe-error"
 
 
+def test_code_sign_clone_lsof_uses_real_global_paths(monkeypatch, tmp_path: Path) -> None:
+    active = tmp_path / "org.chromium.Chromium.code_sign_clone/code_sign_clone.active"
+    closed = tmp_path / "org.chromium.Chromium.code_sign_clone/code_sign_clone.closed"
+    active.mkdir(parents=True)
+    closed.mkdir(parents=True)
+
+    class Result:
+        returncode = 0
+        stdout = f"p123\nfcwd\nn{active}/Chromium.app.bundle/Contents/MacOS/Chromium\n"
+        stderr = ""
+
+    disk_cleanup._open_code_sign_clones.cache_clear()
+    monkeypatch.setattr(disk_cleanup.subprocess, "run", lambda *args, **kwargs: Result())
+    assert disk_cleanup._default_lsof(active) == "open"
+    assert disk_cleanup._default_lsof(closed) == "confirmed-closed"
+    disk_cleanup._open_code_sign_clones.cache_clear()
+
+
+def test_code_sign_clone_global_lsof_failure_fails_closed(monkeypatch, tmp_path: Path) -> None:
+    clone = tmp_path / "org.chromium.Chromium.code_sign_clone/code_sign_clone.closed"
+    clone.mkdir(parents=True)
+
+    class Result:
+        returncode = 1
+        stdout = ""
+        stderr = "permission denied"
+
+    disk_cleanup._open_code_sign_clones.cache_clear()
+    monkeypatch.setattr(disk_cleanup.subprocess, "run", lambda *args, **kwargs: Result())
+    assert disk_cleanup._default_lsof(clone) == "probe-error"
+    disk_cleanup._open_code_sign_clones.cache_clear()
+
+
 def test_lsof_failure_fails_closed(tmp_path: Path, monkeypatch) -> None:
     temporary = tmp_path / "tmp"
     candidate = temporary / "cfo-lsof-error"
