@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Research statement editor icon">
+  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#172554"/><stop offset="1" stop-color="#0f766e"/></linearGradient></defs>
+  <rect width="512" height="512" rx="92" fill="url(#g)"/>
+  <path d="M142 112h174l54 54v234H142z" fill="#f8fafc" opacity=".96"/>
+  <path d="M316 112v54h54" fill="#cbd5e1"/>
+  <path d="M188 226h136M188 274h136M188 322h88" stroke="#0f766e" stroke-width="18" stroke-linecap="round"/>
+  <circle cx="350" cy="350" r="62" fill="#f59e0b"/><path d="m322 351 19 19 39-46" fill="none" stroke="#172554" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
