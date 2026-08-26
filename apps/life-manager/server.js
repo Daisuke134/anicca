@@ -40,7 +40,7 @@ const inngestHandler = inngestServe({ client: inngest, functions: inngestFunctio
 const { placeCall, startRecording } = require("./lib/dial.js");
 const { amdEnabled, shouldMarkAnswered } = require("./lib/answered.js");
 const { decodeCallClientState, encodeTestCallClientState, verifyTelnyxSignature } = require("./lib/telnyx-webhook.js");
-const { parseUpdate, sendMessage, editMessageText, answerCallbackQuery, isPanelCommand, isPanelDeepLink, routeCallbackData } = require("./lib/telegram.js");
+const { parseUpdate, sendMessage, editMessageText, answerCallbackQuery, isPanelCommand, isPanelDeepLink, routeCallbackData, startReply } = require("./lib/telegram.js");
 const { reflectAnswer } = require("./lib/telegram-callback-visibility.js");
 const {
   createSupabaseLateApprovalStore,
@@ -56,8 +56,7 @@ const { resolveTelegramReply } = require("./lib/telegram-reply.js");
 const { handleInboundReply, handleAskCallback, parseInboundRecipient } = require("./lib/ask.js");
 const { isReplyToken } = require("./lib/reply-token.js");
 const {
-  sendStage, rowByChatId, setStage, saveField, handleOnboardingText, handleGmailCallback,
-  applyTelegramProfileName, backfillIfCalendarCompleted,
+  rowByChatId, handleOnboardingText, handleGmailCallback,
 } = require("./lib/telegram-onboard.js");
 const { createHostedGmailLink } = require("./lib/gmail-onboard.js");
 const { mailAvailable } = require("./lib/mail-availability.js");
@@ -252,7 +251,7 @@ const server = http.createServer((req, res) => {
     });
     return;
   }
-  if (path === "/panel" || path === "/panel/logout") {
+  if (path === "/panel" || path === "/panel/onboarding" || path === "/panel/logout") {
     handlePanelRequest(req, res, { supaUrl: SUPA_URL, supaKey: SUPA_KEY, token: LM_TG_TOKEN, panelOrigin: LM_PANEL_BASE, panelBaseUrl: LM_PANEL_BASE, botUsername: process.env.LM_TELEGRAM_BOT_USERNAME }).catch((error) => {
       console.error("[panel] request failed", error.message);
       if (!res.headersSent) res.writeHead(500, { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" });
@@ -762,13 +761,11 @@ const server = http.createServer((req, res) => {
             }
           }
           if (u.isStart) {
-            // Name comes from the Telegram profile; calendar/pay are taps and phone is the only typed ask.
-            const profile = { first_name: u.firstName, last_name: u.lastName };
-            const effective = applyTelegramProfileName(row, profile);
-            if (row && !row.name && effective.name) await saveField(row.uid, { name: effective.name }, SUPA_URL, SUPA_KEY);
-            await backfillIfCalendarCompleted(row, opts);
-            const announced = await sendStage(LM_TG_TOKEN, u.chatId, effective, PUBLIC_BASE, { profile, gmailConnectUrl });
-            if (row) await setStage(row.uid, announced, SUPA_URL, SUPA_KEY);
+            // Telegram WebApp initData is the sole identity input for panel onboarding. The URL
+            // builder validates LM_PANEL_BASE and intentionally excludes chat IDs/tokens, so the
+            // web page can create its server session through the existing panel-auth boundary.
+            const reply = startReply(u.chatId, LM_PANEL_BASE);
+            await sendMessage(LM_TG_TOKEN, u.chatId, reply.text, reply.extra);
           } else if (u.text) {
             // Native steps (name/phone) capture the typed value; web steps re-nudge; "done" → reply.
             const result = await handleOnboardingText(u.chatId, u.text, row, opts);

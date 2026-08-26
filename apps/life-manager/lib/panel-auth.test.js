@@ -9,10 +9,141 @@ const path = require("path");
 
 const { sendPanelLink, handlePanelRequest } = require("./panel-auth.js");
 const { isPanelCommand } = require("./telegram.js");
+const PANEL_NOW = new Date("2026-08-27T00:00:00.000Z");
+const PANEL_AUTH_DATE = Math.floor(PANEL_NOW.getTime() / 1000);
+
+function telegramInitData({ actorId = 123, authDate = PANEL_AUTH_DATE, token = "telegram-token", chatId = actorId } = {}) {
+  const params = new URLSearchParams({
+    auth_date: String(authDate),
+    user: JSON.stringify({ id: actorId, first_name: "Fixture" }),
+    chat: JSON.stringify({ id: chatId, type: "private" }),
+  });
+  const secret = crypto.createHmac("sha256", "WebAppData").update(token).digest();
+  const dataCheckString = [...params.entries()]
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([key, value]) => `${key}=${value}`)
+    .join("\n");
+  const hash = crypto.createHmac("sha256", secret).update(dataCheckString).digest("hex");
+  params.set("hash", hash);
+  return params.toString();
+}
+
+function postTelegramInitData(base, initData) {
+  return fetch(`${base}/api/panel/session/telegram`, {
+    method: "POST",
+    headers: { Origin: base, "content-type": "application/json" },
+    body: JSON.stringify({ initData }),
+  });
+}
+
+test("PANEL-2: valid Telegram initData creates a server session through the existing auth boundary", async () => {
+  const calls = [];
+  await withPanelServer({
+    token: "telegram-token",
+    supaUrl: "https://db.example",
+    supaKey: "service-key",
+    now: () => new Date(PANEL_NOW),
+    fetchImpl: async (url, init) => {
+      calls.push({ url: String(url), init });
+      const parsed = new URL(String(url));
+      if (parsed.pathname.endsWith("/rpc/claim_lm_panel_telegram_init")) {
+        return { ok: true, status: 200, json: async () => [{ status: "claimed", uid: "lm_u1", chat_id: "123" }] };
+      }
+      if (parsed.pathname.endsWith("/lm_panel_sessions") && init.method === "POST") {
+        return { ok: true, status: 201, json: async () => [] };
+      }
+      throw new Error(`unexpected panel auth fetch ${init.method || "GET"} ${url}`);
+    },
+  }, async (base) => {
+    const response = await postTelegramInitData(base, telegramInitData());
+    assert.equal(response.status, 200, await response.clone().text());
+    assert.deepEqual(await response.json(), { redirect: "/panel" });
+    assert.match(response.headers.get("set-cookie") || "", /__Host-lm_panel_session=/);
+  });
+  assert.equal(calls.filter(({ url }) => url.includes("claim_lm_panel_telegram_init")).length, 1);
+  assert.equal(calls.filter(({ url }) => url.endsWith("/lm_panel_sessions")).length, 1);
+});
+
+test("PANEL-2: invalid and stale Telegram initData are rejected before any session write", async () => {
+  const valid = telegramInitData();
+  const tampered = new URLSearchParams(valid);
+  tampered.set("user", JSON.stringify({ id: 999, first_name: "Tampered" }));
+  const cases = [
+    { name: "invalid signature", initData: tampered.toString(), status: 401 },
+    { name: "stale auth_date", initData: telegramInitData({ authDate: PANEL_AUTH_DATE - 301 }), status: 401 },
+  ];
+  for (const current of cases) {
+    const writes = [];
+    await withPanelServer({
+      token: "telegram-token",
+      supaUrl: "https://db.example",
+      supaKey: "service-key",
+      now: () => new Date(PANEL_NOW),
+      fetchImpl: async (url, init) => {
+        writes.push({ url: String(url), init });
+        throw new Error(`${current.name} must not reach Supabase`);
+      },
+    }, async (base) => {
+      const response = await postTelegramInitData(base, current.initData);
+      assert.equal(response.status, current.status, `${current.name}: ${await response.clone().text()}`);
+      assert.deepEqual(await response.json(), { error: "telegram_auth_rejected" }, current.name);
+    });
+    assert.equal(writes.length, 0, `${current.name} must not write a session`);
+  }
+});
+
+test("PANEL-2: replayed and cross-actor Telegram claims remain rejected", async () => {
+  const cases = [
+    { name: "replayed", claim: { status: "replayed" }, status: 409, error: "telegram_auth_replayed" },
+    { name: "cross-actor", claim: { status: "claimed", uid: "lm_u1", chat_id: "999" }, status: 403, error: "telegram_actor_unbound" },
+  ];
+  for (const current of cases) {
+    const writes = [];
+    await withPanelServer({
+      token: "telegram-token",
+      supaUrl: "https://db.example",
+      supaKey: "service-key",
+      now: () => new Date(PANEL_NOW),
+      fetchImpl: async (url, init) => {
+        writes.push({ url: String(url), init });
+        const parsed = new URL(String(url));
+        if (parsed.pathname.endsWith("/rpc/claim_lm_panel_telegram_init")) {
+          return { ok: true, status: 200, json: async () => [current.claim] };
+        }
+        throw new Error(`${current.name} must not create a session`);
+      },
+    }, async (base) => {
+      const response = await postTelegramInitData(base, telegramInitData());
+      assert.equal(response.status, current.status, current.name);
+      assert.deepEqual(await response.json(), { error: current.error }, current.name);
+    });
+    assert.equal(writes.filter(({ url }) => url.endsWith("/lm_panel_sessions")).length, 0, `${current.name} must not write a session`);
+  }
+});
+
+test("PANEL-2: /panel/onboarding has no query identity fallback", async () => {
+  const calls = [];
+  await withPanelServer({
+    supaUrl: "https://db.example",
+    supaKey: "service-key",
+    fetchImpl: async (...args) => {
+      calls.push(args);
+      throw new Error("query identity must not reach storage");
+    },
+  }, async (base) => {
+    const response = await fetch(`${base}/panel/onboarding?tg=123`, { redirect: "manual" });
+    assert.equal(response.status, 303);
+    assert.equal(response.headers.get("location"), "/panel");
+    assert.equal(response.headers.get("set-cookie"), null);
+  });
+  assert.equal(calls.length, 0);
+});
 
 async function withPanelServer(opts, run) {
+  let origin = "";
   const server = http.createServer((req, res) => {
-    Promise.resolve().then(() => handlePanelRequest(req, res, opts)).catch((error) => {
+    const dynamicOrigin = opts.panelOrigin || opts.panelBaseUrl ? {} : { panelOrigin: origin, panelBaseUrl: origin };
+    Promise.resolve().then(() => handlePanelRequest(req, res, { ...opts, ...dynamicOrigin })).catch((error) => {
       res.writeHead(500);
       res.end(error.message);
     });
@@ -20,7 +151,8 @@ async function withPanelServer(opts, run) {
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
   try {
     const { port } = server.address();
-    return await run(`http://127.0.0.1:${port}`);
+    origin = `http://127.0.0.1:${port}`;
+    return await run(origin);
   } finally {
     await new Promise((resolve) => server.close(resolve));
   }

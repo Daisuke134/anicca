@@ -193,6 +193,28 @@ test("Telegram /start identifies the product only as Life Manager", () => {
   assert.doesNotMatch(reply.text, /\bAnicca\b/i);
 });
 
+test("Telegram /start opens only the authenticated panel onboarding web app", () => {
+  const reply = startReply("987654", "https://panel.example/some-ignored-path");
+  const buttons = reply.extra.reply_markup.inline_keyboard;
+  assert.equal(buttons.length, 1);
+  assert.equal(buttons[0].length, 1);
+  const button = buttons[0][0];
+  assert.deepEqual(button.web_app, { url: "https://panel.example/panel/onboarding" });
+  assert.equal(Object.hasOwn(button, "url"), false);
+  const url = new URL(button.web_app.url);
+  assert.equal(url.protocol, "https:");
+  assert.equal(url.pathname, "/panel/onboarding");
+  assert.equal(url.search, "");
+  assert.equal(url.hash, "");
+  assert.doesNotMatch(button.web_app.url, /987654|token|tg=/i);
+});
+
+test("Telegram /start rejects missing, non-HTTPS, malformed, and credentialed panel origins", () => {
+  for (const base of [undefined, "", "http://panel.example", "panel.example", "https://user:pass@panel.example"]) {
+    assert.throws(() => startReply("987654", base), /panel base URL is unavailable/);
+  }
+});
+
 test("telegramProfileName: derives name from first_name + last_name", () => {
   assert.equal(telegramProfileName({ first_name: " Dais ", last_name: " Tanaka " }), "Dais Tanaka");
   assert.equal(telegramProfileName({ first_name: "Dais" }), "Dais");
