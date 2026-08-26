@@ -68,7 +68,10 @@ claims distinguishable, and never rename revenue as MRR/ARR without period proof
    Web queries in English and Japanese limited to Tokyo and the United States.
 2. Lease the existing authenticated X CDP identity read-only and search rendered
    X posts, accounts, threads, and links for new funding leads. Release the lease
-   before application work.
+   before application work. Then acquire a fresh `ai.anicca.fundraiser` lease for
+   application work and parse its new `target_id`. A release closes that lease's
+   target: never release an application lease until every fill, `setfile`, final
+   submit, and completion readback for that candidate has finished.
    Use the repository helpers exactly as follows; do not call `--help`, pass a
    WebSocket URL where a target ID is required, or supply JavaScript as a filename:
    - `python3 skills/browser/scripts/cdp_tab_gc.py --owner ai.anicca.fundraiser`
@@ -107,6 +110,9 @@ For every queued candidate until the execution window ends:
    They select the visible element
    when responsive pages contain hidden duplicates. Do not hand-build shell-to-JS
    quoting or retry the same failing mutation more than once.
+   Attach files only with
+   `python3 skills/browser/scripts/cdp.py setfile "$TARGET_ID" 'input[name="pitch_deck"]' fundraising/application-kit/deck.pdf`;
+   there is no `upload` command.
    When an official program or investor page explicitly publishes an email
    address as its application or funding-intake route, do not compose through
    the Gmail browser UI. Read the Gmail account from the private founder profile,
