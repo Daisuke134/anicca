@@ -27,6 +27,7 @@ from pathlib import Path
 ENGINE = Path(__file__).resolve().parent
 RUN_AGENT = ENGINE / "run_agent.sh"
 CAPAFY = ENGINE.parents[1] / "self" / "capafy-loop" / "capafy-loop-daily.sh"
+CAPAFY_MARKETING = ENGINE.parents[1] / "earn" / "capafy-marketing" / "capafy-ig-marketing-daily.sh"
 CONFIG = ENGINE.parents[2] / "runtime" / "agent-runner" / "config.json"
 
 MIN_TIMEOUT_SECONDS = 900
@@ -56,6 +57,14 @@ class CapafyLoopWiringTest(unittest.TestCase):
             all(expected in invocation for invocation in invocations),
             "both Capafy agent paths must override only the generic 512 MiB "
             "evidence reserve with the measured Capafy-specific 64 MiB floor",
+        )
+
+    def test_capafy_marketing_uses_the_same_measured_evidence_floor(self):
+        text = CAPAFY_MARKETING.read_text(encoding="utf-8")
+        self.assertIn(
+            f"AGENT_RUNNER_EVIDENCE_MIN_FREE_BYTES="
+            f"{CAPAFY_EVIDENCE_MIN_FREE_BYTES} \"$RUN_AGENT\"",
+            text,
         )
 
     def test_capafy_uses_a_task_class_that_can_fit_a_measured_pass(self):

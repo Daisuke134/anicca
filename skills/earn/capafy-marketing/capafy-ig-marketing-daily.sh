@@ -270,7 +270,7 @@ STEP7 REPORT — MANDATORY every pass. Send to the Telegram target in CAPAFY_TEL
 Do not write '"$LAST_PASS_MARKER"'; the deterministic wrapper owns that heartbeat and writes it only after this runner exits 0. A DRY pass or a deferred cadence pass is a clean finish.'
 
 EVIDENCE_DIR="$HOME/.local/state/life-manager/state/agent-runner-evidence/${INSTANCE}-ig-marketing/$(date +%s)-$$"
-printf '%s\n' "$PROMPT" | "$RUN_AGENT" \
+printf '%s\n' "$PROMPT" | AGENT_RUNNER_EVIDENCE_MIN_FREE_BYTES=67108864 "$RUN_AGENT" \
   --task-class marketing-agent \
   --evidence-dir "$EVIDENCE_DIR" \
   --task-label "${INSTANCE}-ig-marketing-daily" \
