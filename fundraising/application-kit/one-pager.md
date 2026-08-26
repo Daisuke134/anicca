@@ -1,10 +1,10 @@
 <!-- generated from .agents/startup-context.json; do not edit -->
-context-version: 2026-08-02.1
-context-digest: acfe35f5209b76f419f510bc66597c405f7a208d2d1aacd23eb09729bbac647b
+context-version: 2026-08-26.1
+context-digest: 5b0e8f33e7f197a190d43d594aa7e1ac21c1695534c9fe3321cf8f8fc83fccbf
 
 # Life Manager
 
-A personal manager that manages your body, mind, and money, acts within delegated boundaries, and reports evidence in Telegram.
+A proactive general agent that manages your body, mind, and money plus real-world follow-through, acts within delegated boundaries, and reports evidence in Telegram.
 
 ## The problem
 
@@ -14,13 +14,17 @@ A person's life is split across calendars, applications, health routines, bank a
 
 Life Manager coordinates a Daily Organ, a Physical / Mental Organ, and a Financial Organ. It uses specialist agents for semantic work and deterministic code for arithmetic, state, permissions, and receipts. The user gets concise Telegram reports with tappable evidence links.
 
+## Mission
+
+End suffering for humans and, ultimately, all living beings by making dependable care and agency continuously available. Life Manager grows from managing one human life across physical health, mental wellbeing, finances, work, schedules, income, crypto, and investing into a general manager for every living being.
+
 ## The wedge
 
-Begin with one founder's local runtime and measurable real-world outcomes: events registered and added to Calendar, applications submitted and confirmed, expenses classified, net worth reconciled, and risk limits enforced. Move the same core to the cloud after local proof.
+Begin with one founder's local runtime and measurable real-world outcomes. The founder attests that Life Manager has already generated approximately $1,000 in revenue. Offer the same core as free, open-source, self-hosted life manager. and a paid monthly subscription for an always-on hosted life manager.
 
 ## Trust
 
-Least privilege, owner-separated accounts, no invented success, no guaranteed financial returns, and no external claim without fresh evidence.
+Least privilege, owner-separated accounts, no invented success, no guaranteed financial returns, and explicit provenance for founder-attested versus provider-verified claims.
 
 ## Links
 

@@ -3,10 +3,15 @@ import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 
 const dailyPrompt = await readFile(new URL("../prompts/daily.md", import.meta.url), "utf8");
+const skill = await readFile(new URL("../SKILL.md", import.meta.url), "utf8");
 const startupContext = Object.freeze({
   product: Object.freeze({
     name: "Life Manager",
     one_liner: "A personal manager that acts within delegated boundaries and reports evidence.",
+    mission: "End suffering for humans and all living beings.",
+  }),
+  traction: Object.freeze({
+    founder_attested_revenue: Object.freeze({ display: "approximately $1,000", source: "founder_attested" }),
   }),
   links: Object.freeze({
     product: Object.freeze({ url: "https://aniccaai.com/lm", status: "verified" }),
@@ -21,6 +26,8 @@ function factIndex(context) {
   return new Map([
     ["product.name", context.product.name],
     ["product.one_liner", context.product.one_liner],
+    ["product.mission", context.product.mission],
+    ["traction.founder_attested_revenue.display", context.traction.founder_attested_revenue.display],
     ["links.product.url", context.links.product.url],
     ["links.repository.url", context.links.repository.url],
     ...context.claims.map((claim) => [`claim:${claim.id}`, claim.statement]),
@@ -121,7 +128,8 @@ async function runDailyPass({ discover, receipts, browserFor, context = startupC
       continue;
     }
     if (field.guard === "human_required") return { status: "human_required", reason: "human_only_field", identity };
-    if (!facts.has(action.factId) || facts.get(action.factId) !== action.value) {
+    const inferredJudgment = field.answerClass === "judgment" && action.provenance === "reasonable_inference";
+    if (!inferredJudgment && (!facts.has(action.factId) || facts.get(action.factId) !== action.value)) {
       return { status: "not_submitted", reason: "unsupported_claim", field: field.label, identity };
     }
     observation = await browser.fill(field, action.value);
@@ -176,6 +184,18 @@ function contextPlanner() {
     return { kind: "submit" };
   };
 }
+
+test("production contract runs every 30 minutes and maximizes real applications", () => {
+  const contract = `${skill}\n${dailyPrompt}`;
+  assert.match(contract, /every 30 minutes/i);
+  assert.match(contract, /as many[^\n]*applications[^\n]*as possible/i);
+  assert.match(contract, /continue[^\n]*after[^\n]*(?:first|one)[^\n]*(?:submit|application)/i);
+  assert.match(contract, /authenticated[^\n]*X[^\n]*CDP/i);
+  assert.match(contract, /Telegram[^\n]*(?:immediately|real.?time)/i);
+  assert.match(contract, /reasonable inference/i);
+  assert.doesNotMatch(contract, /at most one/i);
+  assert.doesNotMatch(contract, /per user-local day/i);
+});
 
 test("unseen rendered fields are filled from startup context and read back after one submit", async () => {
   assert.ok(dailyPrompt.trim().length > 200);
@@ -236,10 +256,50 @@ test("a genuinely new cohort remains eligible after an earlier cohort receipt", 
   assert.equal(receipts.rows.filter((row) => row.status === "submitted").length, 2);
 });
 
-test("a required unsupported claim blocks before any external effect", async () => {
+test("two eligible candidates are both submitted in one continuous pass", async () => {
+  const candidates = [
+    candidate({ organization: "Alpha Fund", program: "Alpha Accelerator", applicationUrl: "https://alpha.example/apply" }),
+    candidate({ organization: "Beta Fund", program: "Beta Fellowship", applicationUrl: "https://beta.example/apply" }),
+  ];
+  const receipts = makeReceipts();
+  const results = [];
+  for (const current of candidates) {
+    const browser = makeBrowser({ applicationUrl: current.applicationUrl, fields: [], readback: { official: true, ref: current.organization } });
+    results.push(await runDailyPass({
+      discover: async () => [current], receipts, browserFor: () => browser, account: "runtime-account",
+      decide: async (input) => input.stage === "qualify" ? input.candidates[0] : { kind: "submit" },
+    }));
+  }
+  assert.deepEqual(results.map((result) => result.status), ["submitted", "submitted"]);
+  assert.equal(receipts.rows.filter((row) => row.status === "submitted").length, 2);
+});
+
+test("an unfamiliar required judgment uses reasonable inference and still submits", async () => {
   const form = {
     applicationUrl: "https://program.example/apply/fall-2026",
-    fields: [{ id: "revenue", label: "Current annual revenue", required: true }],
+    fields: [{ id: "impact", label: "Long-term impact", required: true, answerClass: "judgment" }],
+    readback: { official: true },
+  };
+  const browser = makeBrowser(form);
+  const receipts = makeReceipts();
+  const result = await runDailyPass({
+    discover: async () => [candidate()], receipts, browserFor: () => browser, account: "runtime-account",
+    decide: async (input) => {
+      if (input.stage === "qualify") return input.candidates[0];
+      if (input.stage === "fill") return {
+        kind: "fill", fieldId: input.field.id, value: "End suffering by making dependable agency available.", provenance: "reasonable_inference",
+      };
+      return { kind: "submit" };
+    },
+  });
+  assert.equal(result.status, "submitted");
+  assert.equal(browser.state.submitCount, 1);
+});
+
+test("an invented legal registration still blocks before any external effect", async () => {
+  const form = {
+    applicationUrl: "https://program.example/apply/fall-2026",
+    fields: [{ id: "registration", label: "Legal registration number", required: true, answerClass: "exact_fact" }],
     readback: { official: true },
   };
   const browser = makeBrowser(form);
@@ -251,7 +311,7 @@ test("a required unsupported claim blocks before any external effect", async () 
     account: "runtime-account",
     decide: async (input) => {
       if (input.stage === "qualify") return input.candidates[0];
-      if (input.stage === "fill") return { kind: "fill", fieldId: input.field.id, factId: "invented.revenue", value: "$1M" };
+      if (input.stage === "fill") return { kind: "fill", fieldId: input.field.id, factId: "invented.registration", value: "FAKE-123" };
       return { kind: "submit" };
     },
   });

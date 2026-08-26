@@ -1,7 +1,8 @@
 # Life Manager Fundraiser Loop Implementation Plan
 
-**Goal:** Reuse the working Luna application behavior and Life Manager runtime so Life Manager finds,
-submits, and tracks one new eligible accelerator application per day without provider-specific code.
+**Goal:** Reuse the working Luna application behavior and Life Manager runtime so Life Manager wakes
+every 30 minutes, finds, submits, and tracks as many eligible funding applications as possible without
+provider-specific code or an arbitrary application cap.
 
 **Spec:** `docs/superpowers/specs/2026-08-26-life-manager-fundraiser-agent-design.md`
 
@@ -15,15 +16,19 @@ submits, and tracks one new eligible accelerator application per day without pro
 ### Task 1: Add the Fundraiser objective to the existing Luna application behavior
 
 **Files:**
+- Modify: `.agents/startup-context.json`
+- Modify: `scripts/startup-context/{lib,build-kit}.mjs`
+- Regenerate: `fundraising/application-kit/*`
 - Create: `skills/fundraiser-agent/SKILL.md`
 - Create: `skills/fundraiser-agent/prompts/daily.md`
 - Create: `skills/fundraiser-agent/evals/fundraiser-loop.test.mjs`
 
-- [ ] Write RED evals for an unseen form, an already-applied cohort, a new cohort, an unsupported claim, a human-only field, and ambiguous Submit.
-- [ ] Write one provider-agnostic daily prompt that makes Luna discover, qualify, fill, submit once, and capture readback using the existing browser loop.
-- [ ] Prove through behavioral eval cases that the daily behavior handles unfamiliar forms without provider-specific assumptions or invented facts.
-- [ ] Run `node --test skills/fundraiser-agent/evals/fundraiser-loop.test.mjs` and reach GREEN.
-- [ ] Commit and push `feat(fundraising): add fundraiser objective to Luna application loop`.
+- [x] Write RED evals for unseen forms, duplicate/new cohorts, multiple same-pass submissions, reasonable inference, protected exact facts, human-only fields, and ambiguous Submit.
+- [x] Extend the canonical context and generated kit with the mission, all-living-beings vision, OSS/cloud delivery, and founder-attested approximately $1,000 revenue provenance.
+- [x] Write one provider-agnostic continuous prompt that makes Luna search Web/X, qualify, infer ordinary missing answers, submit each identity once, capture readback, report to Telegram, and continue after the first application.
+- [x] Prove through behavioral eval cases that the continuous behavior handles unfamiliar forms and two same-pass applications without provider-specific assumptions.
+- [x] Run `node --test test/startup-context.test.mjs test/startup-context-export.test.mjs skills/fundraiser-agent/evals/fundraiser-loop.test.mjs` and reach GREEN.
+- [ ] Commit and push `feat(fundraising): maximize continuous Luna fundraiser throughput`.
 
 ### Task 2: Connect Fundraiser to the existing Life Manager loop
 
@@ -40,7 +45,7 @@ submits, and tracks one new eligible accelerator application per day without pro
 
 - [ ] Let a Life Manager runtime job enqueue a browser job with `source_kind=runtime` and `source_ref=<runtime job id>` instead of fake Telegram IDs.
 - [ ] Allow the existing local agent runner to invoke `application-intent-planner` and require its selected model to be Luna.
-- [ ] Write RED tests for one acquisition slot per user-local day and one read-only tracking slot every four hours.
+- [ ] Write RED tests for one acquisition claim per 30-minute window, maximum candidate throughput within the pass, and continuous reply tracking.
 - [ ] Implement `fundraiserUserOnce` using the existing Life Manager job claim and browser worker; do not add a daemon, CLI, shell/Python runner, scheduler, or browser implementation.
 - [ ] Wire `fundraiserUserOnce` into `organsUserOnce` behind the existing `daily_automation_enabled` gate.
 - [ ] Keep long Luna/browser work off the scheduler tick: claim, queue, read back the queue row, and return.
@@ -88,7 +93,7 @@ submits, and tracks one new eligible accelerator application per day without pro
 - [ ] Deploy through the existing Life Manager scheduler and browser worker; start no second owner.
 - [ ] Run one natural acquisition slot and verify scheduler claim, Luna/browser trace, Submit effect, and provider readback.
 - [ ] Complete three unrelated live forms without changing production code between forms.
-- [ ] Run the next daily slot and verify zero duplicate application effects.
+- [ ] Run the next 30-minute slot and verify zero duplicate application effects while new identities continue.
 - [ ] Verify the four-hour tracking slot updates the original receipt and creates interview Calendar data when applicable.
 - [ ] Audit the public repository for credentials, private receipts, provider-specific code, compiler, and registry artifacts.
 - [ ] Commit and push the live evidence and final spec state.

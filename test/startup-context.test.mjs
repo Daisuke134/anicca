@@ -30,6 +30,14 @@ test("canonical startup context is valid and names Life Manager as the product",
   assert.equal(context.product.name, "Life Manager");
   assert.equal(context.company.legal_name, "Anicca");
   assert.notEqual(context.product.name, context.company.legal_name);
+  assert.match(context.product.mission, /end suffering/i);
+  assert.match(context.product.mission, /all living beings/i);
+  assert.deepEqual(context.delivery, {
+    local: "Free, open-source, self-hosted Life Manager.",
+    cloud: "Paid monthly subscription for an always-on hosted Life Manager.",
+  });
+  assert.equal(context.traction.founder_attested_revenue.display, "approximately $1,000");
+  assert.equal(context.traction.founder_attested_revenue.source, "founder_attested");
   assert.deepEqual(validateStartupContext(context), []);
 });
 
@@ -216,6 +224,10 @@ test("generated application kit describes Life Manager without unverified media"
 
     assert.match(answers, /body, mind, and money/i);
     assert.match(answers, /Telegram/);
+    assert.match(answers, /all living beings/i);
+    assert.match(answers, /approximately \$1,000/i);
+    assert.match(answers, /open-source/i);
+    assert.match(answers, /paid monthly subscription/i);
     assert.match(deck, /Daily Organ/);
     assert.match(deck, /Financial Organ/);
     assert.equal(assets.assets.some((asset) => asset.status === "verified" && asset.type === "video"), false);
