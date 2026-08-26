@@ -2315,28 +2315,30 @@ provider source observation.
 
 **Remaining atomic TODO SSOT — execute strictly in this order:**
 
-1. `@anicca_slideshow` metrics: add the exact receipt to the LM Postiz-API
+1. **Done:** `@anicca_slideshow` metrics: add the exact receipt to the LM Postiz-API
    metrics owner; persist immediate source status and automatic 2h/24h/72h/7d
    windows; report measured account/post fields naturally to Telegram; preserve
    empty/missing fields as `unavailable`, never zero.
-2. Close `@anicca_slideshow` as `canary-verified/default-off`, armed 0, with
+2. **Done:** close `@anicca_slideshow` as `canary-verified/default-off`, armed 0, with
    publication present, Telegram `34998`, replay publication 0/message 0, and
    metric-owner evidence.
-3. Select the next single remaining Postiz integration. Classify exactly one
+3. **Done for the selected portfolio:** classify each exact Postiz integration by
    product, locale, account, platform, renderer, content form, and approved asset
    family. Mixed/wrong/unknown routes become hold at 0/day.
-4. Import and visually approve one correct local pack for that account. Bind
-   object hashes, caption, media order, account, integration, renderer, and form.
-5. Run one API canary for that account only. Confirm Postiz `PUBLISHED` and exact
+4. **Done for the selected portfolio:** import and visually approve one correct
+   local pack per account. Bind object hashes, caption, media order, account,
+   integration, renderer, and form.
+5. **Done for the selected portfolio:** run one API canary for each account only.
+   Confirm Postiz `PUBLISHED` and exact
    stored assets/caption; send one natural Telegram receipt; prove publication
    replay 0/message replay 0; register immediate plus 2h/24h/72h/7d metrics.
-6. Repeat steps 3–5 one account at a time for every retained TikTok, Instagram,
-   and YouTube integration. Do not create missing Honne Instagram/YouTube routes
-   and do not relabel Anicca accounts as Honne.
-7. Finish the selected Anicca YouTube canary using API-only evidence; the skipped
-   login-dependent YouTube route remains skipped unless an API route exists.
-8. Enable cadence only for individually healthy verified accounts, first one
-   live slot, then the second, then the third after each preceding slot proves
+6. **Done for the selected portfolio:** repeat steps 3–5 one account at a time for
+   every retained TikTok and Instagram integration. Do not create missing Honne
+   Instagram/YouTube routes and do not relabel Anicca accounts as Honne.
+7. **Done-skipped:** the login-dependent Anicca YouTube route remains skipped at
+   0/day because no usable API-only route exists.
+8. **Active:** enable cadence only for individually healthy verified accounts,
+   first one live slot, then the second, then the third after each preceding slot proves
    published/missed/duplicate and metric-source health. The terminal cadence is
    exactly 3/day on every selected available destination. Never mass-enable.
 9. Keep the daily metrics loop running for every healthy account: social post and
@@ -3245,7 +3247,7 @@ Their dependent account arm remains blocked until the observation is terminal.
 | 24C | **done — MKT-09R9-03:** import and approve one exact `@anicca.affirmation` pack | Order 24B passes | pack `e23cd412…78669e`, caption `bf90a15a…6e64a0`, approval `7740cd09…968845`, six ordered native JPEGs and order hash `4daa5db7…9837f9` are SHA-exact/mode0600; manifest `b48c8e11…5ce18f` pack-ready/default-off, armed0/fenceclosed; effects0 | import several packs or mix Card/Widget content |
 | 24D | **done — MKT-09R9-04:** TDD-generalize the native carousel runner for exactly the frozen EN lane | Order 24C passes | existing JA command remains green; EN account/integration/pack/ordered media/caption/approval/native owner are immutable; alternate refs fail before provider; direct `/p/`, native verification, Telegram and replay contracts are reused; focused 21/21, syntax and diff checks pass; provider/Telegram writes 0 | copy runner, accept caller-defined lane, or execute hardcoded JA adapter against EN |
 | 24E | **done — MKT-09R9-05:** finish one `@anicca.affirmation` API canary and metric registration | Order 24D passes | direct `DcfQ2-hG3KR`, Postiz `cmt9jm8990291p20y0a2l1xmk`, owner/caption/GraphSidecar/six exact ordered images and visual content verified; Telegram `34799`; replay publication 0/message 0; immediate post metrics measured; fence closed/default-off/armed 0. Existing 30-minute LM owner discovers the immutable effect and owns exact 2h/24h/72h/7d due times; registered status `c08bf9e8…6a97d3`; focused 6/6 | fan out, manually leave controls open, call pending windows measured, or arm cadence before metrics |
-| 24F | **active — MKT-09R9-N:** repeat classify → one pack → one API canary for each remaining existing TikTok/Instagram/YouTube integration | Order 24E terminal | **24F1 done:** `@anicca.bochi` terminal hold/0-day. **24F2–5 done:** Obou classify/pack/runner/direct native/Telegram/replay0/metrics. **24F6 done:** mixed personal `@anicca_buddha` terminal hold/0-day. **24F7 done:** `@anicca_slideshow` classified. **24F8 done:** corrected six-slide pack `3241653e…de624c`. **24F9 done:** immutable TikTok JPEG-carousel transport/runner, JS 25/25, Python 21/21, effects0. **24F10 publication done / metrics active:** R2 exact Postiz row is `PUBLISHED` and LM exact-assets receipt is terminal present; natural Telegram `34998`; publication replay 0/message replay 0. The production metrics command at commit `d64f023fb` discovered provider row `cmt9mebpj0341mp0ymi31r582` without a photo URL and registered `2h`, `24h`, `72h`, `7d`, and `daily` windows. The existing 30-minute LM owner now resolves fixed release `7eb86d63b1040b0abb3e0041460211d4fd29a5f1`, not the dirty canonical checkout. After target-only rebootstrap and kickstart, launchd readback shows the exact release boot script, working directory, interval `1800`, runs `1`, state `not running`, and exit `0`; the output discovers all five exact windows. At `2026-08-26T06:09:56Z` the first `2h` read remains truthfully pending until `2026-08-26T06:55:00Z`, so no early value is invented. The preserved canonical user edit and all legacy labels remain untouched. Remaining atomic order: (1) observe the due 2h Postiz read and natural Telegram receipt/replay 0, then close this lane, then (2) classify the next single account | retry either effect, require an unavailable photo URL, turn numeric release metadata into a URL, claim a pending window measured, mass-enable, accept clipped/wrong images, or notify before exact API/local-object verification |
+| 24F | **done — MKT-09R9-N:** close the selected Honne/Anicca iOS Postiz canary portfolio one account at a time | Order 24E terminal | `@anicca_slideshow` is the terminal retained canary: exact Postiz `PUBLISHED` row plus ordered LM assets/caption, natural Telegram `34998`, publication/message replay 0, and automatic Postiz-only 2h/24h/72h/7d/daily ownership. Existing LM metrics label resolves fixed release `7eb86d63b…f29a5f1`, interval `1800`, kickstart exit `0`. Final manifest `b7c82a116e99359a3b59131608bb1d6f3f9afd48b37f252524b0463165648122` records slideshow `canary-verified`, target 3/day, default-off, armed 0; every selected lane has an approved pack and terminal canary state, all 13 lanes remain armed 0, 17 non-selected rows remain hold/skip at 0/day, and fence is closed. The 2h observation remains asynchronously due and does not block the next cadence item. Dirty canonical user edits and every legacy label remain untouched | wait idly for a metric window, classify non-selected accounts, retry either effect, mass-enable, or claim armed 0 is daily posting |
 | 25 | **MKT-10:** arm only one healthy verified account at a time, ramping its first, second, then third daily slot | exact account has correct-content publication, Telegram, replay, and usable metric-source evidence | every selected available destination reaches exactly 3/day with healthy expected/published/missed/duplicate counts; skipped/missing routes remain 0/day | jump directly to three/day everywhere or leave a healthy selected destination below three/day |
 | 26 | **MKT-11:** collect 2h/24h/72h/7d social metrics and join ASC, RevenueCat, and product analytics | exact published effect has immutable creative/campaign lineage | views, likes, comments, shares, saves, watch/retention fields when supported, installs, activation, trials, paid, proceeds, and attribution coverage are source-labelled; unavailable stays unavailable | substitute account aggregates for post outcomes or infer installs from timing |
 | 27 | **MKT-12:** close bounded hook learning independently for Honne EN, Honne JA, and Anicca | one product/account has a usable attributed cohort | stable assignment; one hook token per baseline/challenger; immutable outcome; keep/revert CAS decision; next generation proves it consumed the decision | LRU rotation, shared campaign token, cross-product winner, or multi-variable edit |
