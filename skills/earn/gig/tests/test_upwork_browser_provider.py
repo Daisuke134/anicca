@@ -464,6 +464,31 @@ def test_parses_zero_contract_and_message_effects_from_official_empty_states():
     ) == {"message_rooms": [], "unread_message_room_ids": []}
 
 
+def test_payment_observer_prioritizes_exception_without_recognizing_revenue():
+    clear = provider.parse_payment_observer(
+        "Transactions\nAvailable balance\n$0.00\nPending earnings\n$0.00\n"
+        "No pending transactions\nNo more transactions.",
+        "Withdrawals\nComplete your tax profile to access funds in your account\n"
+        "Available balance\n$0.00\n+$0.00 pending\n"
+        "You haven’t set up any withdrawal methods yet.",
+    )
+    exception = provider.parse_payment_observer(
+        "Transactions\nAvailable balance\n$0.00\nPending earnings\n$25.00\n"
+        "Aug 26, 2026\nRefund\n-$10.00",
+        "Withdrawals\nAvailable balance\n$0.00\n+$25.00 pending",
+    )
+
+    assert clear == {
+        "state": "clear", "priority": 2, "owner": "upwork-payment-observer",
+        "next_check": "next_wake", "available_usd_minor": 0,
+        "pending_usd_minor": 0, "tax_profile_complete": False,
+        "withdrawal_method_configured": False, "recognized_revenue_usd_minor": None,
+    }
+    assert exception["state"] == "exception"
+    assert exception["pending_usd_minor"] == 2500
+    assert exception["recognized_revenue_usd_minor"] is None
+
+
 def test_message_observation_prioritizes_unread_without_dropping_rooms():
     rooms = [
         {"id": f"room_{index}", "href": f"https://www.upwork.com/ab/messages/rooms/room_{index}"}

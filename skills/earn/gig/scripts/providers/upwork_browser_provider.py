@@ -52,6 +52,8 @@ PROPOSALS_URL = "https://www.upwork.com/nx/proposals/"
 CATALOG_URL = "https://www.upwork.com/nx/project-dashboard/?step=approved"
 CONTRACTS_URL = "https://www.upwork.com/nx/wm/freelancer/home"
 MESSAGES_URL = "https://www.upwork.com/ab/messages/rooms"
+TRANSACTIONS_URL = "https://www.upwork.com/nx/payments/reports/transaction-history"
+WITHDRAWALS_URL = "https://www.upwork.com/nx/payments/disbursement-methods"
 WORKING_STYLE_URL = "https://www.upwork.com/nx/skills-assesment/assessment-results"
 SEARCH_URL = "https://www.upwork.com/nx/search/jobs/?q=AI%20automation&sort=recency"
 DEFAULT_CANDIDATES = SCRIPTS.parent / "config" / "upwork-candidates.public.json"
@@ -325,6 +327,32 @@ def parse_contracts(text: str, links: list[dict[str, Any]]) -> dict[str, Any]:
             Decimal(match.group(1).replace(",", "")) * 100
         ),
         "active_contracts": contracts,
+    }
+
+
+def parse_payment_observer(transactions: str, withdrawals: str) -> dict[str, Any]:
+    def amount_after(label: str, text: str) -> int:
+        match = re.search(rf"{label}\s*\n[+]?\$([\d,]+\.\d{{2}})", text, re.IGNORECASE)
+        if match is None:
+            raise ValueError("upwork_readback_incomplete")
+        return int(Decimal(match.group(1).replace(",", "")) * 100)
+
+    available = amount_after("Available balance", transactions)
+    pending = amount_after("Pending earnings", transactions)
+    exception = re.search(r"(?:^|\n)(?:Refund|Chargeback|Reversed)(?:\n|$)", transactions, re.I)
+    state = "exception" if exception else "pending" if pending else "payout_available" if available else "clear"
+    tax_complete = False if re.search(
+        r"Complete your tax profile|update your tax information", withdrawals, re.I,
+    ) else None
+    method_configured = False if re.search(
+        r"haven.t set up any withdrawal methods", withdrawals, re.I,
+    ) else None
+    return {
+        "state": state, "priority": 2, "owner": "upwork-payment-observer",
+        "next_check": "next_wake", "available_usd_minor": available,
+        "pending_usd_minor": pending, "tax_profile_complete": tax_complete,
+        "withdrawal_method_configured": method_configured,
+        "recognized_revenue_usd_minor": None,
     }
 
 
@@ -741,6 +769,10 @@ def _read_evidence(path: Path, expected_url: str) -> tuple[str, str, list[dict[s
             url_matches = same_origin and observed_room is not None and (
                 expected_url == MESSAGES_URL
                 or expected_room is not None and expected.path == observed.path
+            )
+            url_matches = url_matches or (
+                same_origin and expected_url == TRANSACTIONS_URL
+                and re.fullmatch(r"/nx/payments/reports/transactions/\d+", observed.path) is not None
             )
     if value.get("navigated_ok") is not True or not url_matches:
         raise ValueError("upwork_readback_incomplete")
@@ -1203,7 +1235,8 @@ async def observe(
     targets = [
         ("connects", CONNECTS_URL), ("invites", INVITES_URL),
         ("proposals", PROPOSALS_URL), ("catalog", CATALOG_URL),
-        ("contracts", CONTRACTS_URL), ("messages", MESSAGES_URL),
+        ("contracts", CONTRACTS_URL), ("transactions", TRANSACTIONS_URL),
+        ("withdrawals", WITHDRAWALS_URL), ("messages", MESSAGES_URL),
         ("working-style", WORKING_STYLE_URL),
     ] + [
         (f"candidate-{item['job_id'].lstrip('~')}", item["job_url"])
@@ -1261,6 +1294,9 @@ async def observe(
         ),
         **parse_catalog(pages["catalog"]),
         **contract_inventory,
+        "payment_observer": parse_payment_observer(
+            pages["transactions"], pages["withdrawals"],
+        ),
         **message_inventory,
         "inbox_reconciliation": inbox_reconciliation,
         "candidate_jobs": [
