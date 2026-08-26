@@ -96,7 +96,7 @@ if [ "$(rstat status)" = "1" ]; then
   echo "status=1 already ✓ — already submitted, skip ship+CP3"
 else
   step "[5] ship"
-  SHIP_OUT="$(python3 packager.py publish-ship --agent-id "$ID" 2>&1)"
+  SHIP_OUT="$(python3 packager.py publish-ship --agent-id "$ID" 2>&1 || true)"
   if echo "$SHIP_OUT" | grep -q '"ok": true\|shipped'; then echo "shipped"; else
     # ONLY the specific "already uploaded for this local publish work-state" error is
     # benign (idempotent re-run of a ship that already matched this agent_id). Any
