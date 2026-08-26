@@ -25,22 +25,24 @@ model narration, and local success without the named readback are not PASS.
 
 ### Manledge closure — account-owner priority override
 
-- [ ] `M01` Refresh Coconala talkroom `18169985` and bind the buyer's latest request for
+- [x] `M01` Refresh Coconala talkroom `18169985` and bind the buyer's latest request for
   recipient-identifiable evidence.
   PASS = official buyer message identity and exact text are present in the project context.
+  Official selected-talkroom readback observed message `js-talkroomMessage-220315622`, buyer
+  feedback SHA256 `d858e5e933fec231d23d7d2b53ffe8d116dd6ab3a751cee435a8a37cf75281a0`.
 - [x] `M02` Verify the 100 screenshot filenames against the 100-row roster.
   PASS = `FINAL-NNN-handle.png` maps one-to-one to row `FINAL-NNN`, with 100 unique handles,
   zero missing files, zero extra files, and zero hash mismatches.
   Measured 100 rows, 100 files, 100 unique handles, zero missing, and zero extra. The resulting
   private buyer map is `delivery/manledge-recipient-screenshot-map-100.csv`, SHA256
   `212f5542fd0801ad10bd8e01c885a2c1407868e090da0ed0b4ffa176c9b01061`.
-- [ ] `M03` Submit the 100-row recipient mapping and the four existing 25-image archives through
-  the installed Paid owner without using the formal-delivery control.
+- [ ] `M03` Submit the 100-row recipient mapping through the installed Paid owner, referencing
+  the four already-visible 25-image archives without resending them or using formal delivery.
   PASS = the seller message states that each filename suffix is the recipient X handle and the
-  five attachments are visible in the exact Coconala talkroom.
+  mapping CSV is visible in the exact Coconala talkroom.
 - [ ] `M04` Read back that supplemental submission once.
-  PASS = exact seller message and all five attachment filenames are present in official Coconala
-  DOM, with no duplicate send and the formal-delivery control still off.
+  PASS = exact seller message and mapping filename are present in official Coconala DOM, all four
+  prior archive filenames remain visible, no archive was resent, and formal delivery remains off.
 
 ### Live four-lane repair
 
