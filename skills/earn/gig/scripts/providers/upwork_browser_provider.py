@@ -76,7 +76,7 @@ TERMINAL_JOB_STATUSES = {"closed", "removed"}
 _COUNT_LABELS = {
     "offers": r"Offers\s*\((\d+)\)",
     "invites": r"Invites from clients\s*\((\d+)\)",
-    "active_proposals": r"Active proposals\s*\((\d+)\)",
+    "active_proposals": r"Active proposals?\s*\((\d+)\)",
     "submitted_proposals": r"Submitted proposals?\s*\((\d+)\)",
 }
 _CONNECTS_REQUIRED = re.compile(
@@ -246,6 +246,8 @@ def parse_stable_entities(
             target = offers
         elif "submitted" in context or "initiated" in context:
             target = submitted
+        elif entity["id"].isdigit() and "received" in context:
+            target = active
         elif "active" in context:
             target = active
         else:
