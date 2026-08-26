@@ -32,6 +32,19 @@ This task is executed as two reviewed atomic slices. Task 7A must be approved be
 5. Run focused UI/auth/API tests and a real HTTP flow.
 6. Commit: `feat(life-manager): add telegram native onboarding ui`.
 
+### Task 7B R1: Review corrections
+
+**Production files:** `lib/panel-api.js`, `lib/panel-auth.js`, `lib/panel-ui.js` only.
+
+**Test files:** the corresponding focused panel/calendar tests only.
+
+1. After verified Calendar consent, derive the fixed redirect from the authenticated tenant's server-owned onboarding state: incomplete state returns to `/panel/onboarding`; dashboard state and state-read failure retain `/panel`. Never accept a client return URL.
+2. Preserve `/panel/onboarding` through both Telegram-init and device-code session completion using the same exact two-path allowlist.
+3. Explain at the home step that a live Telegram location is used while active and that home/previous-event fallback resumes after sharing ends; do not claim live location is currently known.
+4. Enforce the existing idempotency-key contract on onboarding POST: validate, claim by tenant+key+request hash, replay a succeeded result, and reject conflicting/in-progress/failed reuse without repeating the transition.
+5. Add direct callback, device-code, executable UI, and idempotent replay/conflict regression tests. Keep `/panel` behavior unchanged.
+6. Run the Task 7B focused suite and commit `fix(life-manager): preserve onboarding continuation`.
+
 ### Original combined acceptance checklist
 
 **Files:** Modify `lib/panel-api.js`, `lib/panel-api.test.js`, panel UI assets, `lib/panel-ui.test.js`.
