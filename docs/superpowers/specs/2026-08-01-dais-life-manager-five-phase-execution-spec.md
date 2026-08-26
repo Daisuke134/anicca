@@ -90,6 +90,10 @@ provider receiptのないapplication outcomeをpublic artifact validatorが拒�
 clear threshold 21,474,836,480 bytesには10,693,042,176 bytes不足する。swapfileを直接削除せず、稼働owner・profile・PIDを
 照合した不要processだけをTERMし、macOSの自然回収をreadbackする。`disk-pressure.block`はpresent、Fundraiserはrun 203 /
 exit 75でfail closedし、外部送信は0である。
+追加のbrowser GCでは、終了済みrunが所有するCoconala page 3枚と、Apply停止・Reply attach保護を確認したlegacy unattached page
+20枚だけを閉じた。しかし常駐ownerがpageを再生成し、2026-08-27T03:51:45+09:00にはswapが22,528MiB中21,114.44MiB、
+swapfile 22本、disk free 9,543,729,152 bytesへ悪化した。project cache追加削除、稼働ownerの無断停止、直接swap削除では閉じない。
+次の不可分actionは、全owner stateを保持したMac再起動の明示承認→起動後swap/disk/launchd readback→Fundraiser natural wakeである。
 最新contextを読む単一owner、preview digest、
 official completion PNG、Telegram photo message ID、application dossier hashが一つのreceipt chainへ揃うまで`IN_PROGRESS`とする。
 非機密の実測snapshotは`docs/evidence/fundraising/2026-08-27-ctx08-readiness.json`に置く。
@@ -179,7 +183,7 @@ error recovery、effect/readbackを実codeで再監査し、noticeを保持す�
 | 11 | CTX-05 root-site relationship | DONE | `anicca-products` PR #396をmain merge `7fe3f5f447…`へ反映。root hero/metadata/JSON-LDを`Anicca=mission/company`、`Life Manager=proactive general-agent product`、`Body/Mind/Money=3 organs`へ統一し、旧self-funding/AGI/UBI product sectionsをroot render pathから除外。contract 2/2、preview run `32989091020`、prod run `32989696892`、Netlify deploy `6a8f17a860…`、built-in money-path smoke/rollback gate PASS。live英日HTTP 200・title/CTA/3 organs・overflow 0 |
 | 12 | CTX-06 generated-context drift gate | DONE | README英日、committed fundraising kit、active formのdigest契約はoffline 28/28 GREEN。公開Web PR #397はmain `b1ee7a1208…`へmergeし、preview `32990937574`、production `32991554504`、money-path smokeがSUCCESS。live product/repo/Telegram auditは3/3 GREEN。Security Scan run `32992553073`の`Startup context drift` job `98253497091`もSUCCESS |
 | 13 | CTX-07 public live readback | DONE | isolated browserとHTTP/APIで`/lm`、英日root、public repo、英日README、Telegramをfresh readback。title、3 organs、Web/Telegram/GitHub CTA、version/digest、founder-attested約$1,000とMRR/ARR否定、banked境界、overflow 0を`docs/evidence/public-context/2026-08-27-public-context-readback.json`へ保存 |
-| 14 | CTX-08A host gate recovery | IN_PROGRESS | project artifactの追加削除ではなく、稼働owner・Cloak profile・PIDを照合して不要processだけをTERM。macOS swapの自然回収後にfree bytes `>=21,474,836,480`、`disk-pressure.block` absent、credential/session/ledger/customer media/profile保持をreadback |
+| 14 | CTX-08A host gate recovery | BLOCKED_APPROVAL | safe cache/worktree/owned-tab cleanupを実施したがswapは22.5GiBへ増加。次は明示承認後にMac再起動し、free bytes `>=21,474,836,480`、`disk-pressure.block` absent、credential/session/ledger/customer media/profile保持、必須launchd owner復帰をreadback |
 | 15 | CTX-08B official form capability readback | TODO | 既存Fundraiser ownerがASAC official formを一度だけ開き、current batch、締切、required fields、attachment、auth/CAPTCHA境界をreceipt化。送信effect 0 |
 | 16 | CTX-08C digest-bound application preview | TODO | context `2026-08-27.2` / `9fbe6198…5338`、kit/deck、全回答、attachment hashを一つの`application_digest`へ固定し、unsupported claim・空required field 0を確認 |
 | 17 | CTX-08D exactly-once accelerator submit | TODO | durable effect claim取得後、同じownerがofficial submitを一度だけ実行。timeout/unknownは再送せずofficial readbackでreconcile |
