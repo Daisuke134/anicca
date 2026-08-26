@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "context_version": "2026-08-26.5",
+  "context_version": "2026-08-26.6",
   "updated_at": "2026-08-26T18:14:07+09:00",
   "product": {
     "name": "Life Manager",
@@ -68,7 +68,7 @@
         "program": "Open Network Lab Seed Accelerator 32nd Batch",
         "official_url": "https://onlab.jp/en/programs/onlab/",
         "action": "apply_now",
-        "reason": "Digital Garage program; applications close September 28, 2026 and in-person meetings in Shibuya are preferred. The founder explicitly requested a fresh application attempt on 2026-08-26: reopen the official form and advance through every truthful non-binding field, but stop before accepting separate program terms, investment restrictions, or a share agreement without explicit authority."
+        "reason": "Digital Garage program; applications close September 28, 2026 and in-person meetings in Shibuya are preferred. The founder explicitly requested submission and authorizes the application-stage eligibility/participation acknowledgements plus ordinary privacy/data processing needed to submit. Derive representative age from the authorized date of birth and use the verified deck through the rendered uploader. This application authorization does not authorize a later investment agreement, investment restriction, share issuance, or share agreement; stop only if the current form itself executes one of those later effects."
       },
       {
         "program": "a16z Speedrun",
