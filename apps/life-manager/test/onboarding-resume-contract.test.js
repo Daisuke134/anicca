@@ -70,8 +70,8 @@ test("Task 8: /lm is one localized Telegram handoff and ignores query authority"
   assert.match(source, /href=\{TG_DEEPLINK\}/);
   assert.match(source, /useLaunchLocale/);
   assert.match(source, /launchStrings/);
-  assert.match(source, /t\.soonTitle/);
-  assert.match(source, /t\.soonBody/);
+  assert.match(source, /t\.publicTitle/);
+  assert.match(source, /t\.publicBody/);
   assert.match(source, /t\.soonCta/);
   for (const forbidden of [
     /LmClient/, /useEffect/, /useState/, /window\.location/, /URLSearchParams/, /searchParams\.get\(['"]tg['"]\)/,
