@@ -74,6 +74,10 @@ class ReleaseTests(unittest.TestCase):
                 self.assertIn(
                     f"{PREFIX}/runtime/agent-runner/agent_runner.py", names
                 )
+                self.assertIn(f"{PREFIX}/skills/mercor/SKILL.md", names)
+                self.assertIn(
+                    f"{PREFIX}/skills/job-hunter/references/mercor.md", names
+                )
                 self.assertFalse(
                     any(name.startswith(f"{PREFIX}/docs/") for name in names)
                 )

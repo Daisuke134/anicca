@@ -18,6 +18,8 @@ from typing import Iterable
 INCLUDED_ROOTS = (
     "apps/job-search-loop",
     "runtime/agent-runner",
+    "skills/mercor",
+    "skills/job-hunter/references/mercor.md",
     "skills/browser/scripts/cdp_context_lease.py",
     "skills/earn/gig/scripts/gig_disk_guard.py",
 )

@@ -18,6 +18,8 @@ class MercorPassContractTests(unittest.TestCase):
         prompt = (ROOT / "prompts" / "mercor-pass.md").read_text(encoding="utf-8")
         for required in (
             "model-led",
+            "`skills/mercor/SKILL.md`",
+            "`skills/job-hunter/references/mercor.md`",
             "all required steps completed",
             "Submit application",
             "continue to the next distinct listing",
@@ -79,6 +81,40 @@ class MercorPassContractTests(unittest.TestCase):
             },
         }
         AgentRunner.validate(result, schema)
+
+    def test_result_contract_accepts_multiple_verified_submissions_per_wake(self):
+        schema = json.loads(
+            (ROOT / "schemas" / "mercor-pass-result.v1.schema.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertNotIn("maxItems", schema["properties"]["submitted"])
+        submitted = [
+            {
+                "listing_id": f"list-{index}",
+                "title": f"Role {index}",
+                "url": f"https://work.mercor.com/jobs/{index}",
+                "status": "submitted_pending_review",
+                "evidence_url": f"https://work.mercor.com/jobs/apply/{index}",
+                "evidence_path": f"/tmp/evidence-{index}.json",
+            }
+            for index in (1, 2)
+        ]
+        AgentRunner.validate(
+            {
+                "status": "submitted",
+                "inspected_listings": [],
+                "submitted": submitted,
+                "needs_human": [],
+                "blocked": [],
+                "evidence": {
+                    "page_url": submitted[-1]["evidence_url"],
+                    "screenshot_path": "/tmp/screenshot.png",
+                    "dom_path": submitted[-1]["evidence_path"],
+                },
+            },
+            schema,
+        )
 
     def test_runner_snapshots_prompt_and_schema_into_private_pass_evidence(self):
         script = (ROOT / "scripts" / "run-mercor.sh").read_text(encoding="utf-8")
