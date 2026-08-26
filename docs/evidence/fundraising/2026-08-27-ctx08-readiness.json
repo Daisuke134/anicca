@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "observed_at": "2026-08-27T03:30:44+09:00",
+  "observed_at": "2026-08-27T03:41:25+09:00",
   "status": "in_progress",
   "candidate": {
     "organization": "Tokyo Metropolitan Government",
@@ -45,17 +45,27 @@
     "current_canonical_digest_receipts": 0
   },
   "runtime_preflight": {
-    "disk_free_bytes": 11999936512,
+    "disk_free_bytes": 10781794304,
     "disk_pressure_block": "present",
     "disk_policy_block_below_bytes": 11811160064,
     "disk_policy_clear_at_or_above_bytes": 21474836480,
-    "disk_clear_shortfall_bytes": 9474899968,
+    "disk_clear_shortfall_bytes": 10693042176,
     "cdp_browser": "Chrome/145.0.7632.109"
   },
   "host_disk_recovery": {
     "status": "insufficient_for_clear_threshold",
     "disk_free_before_bytes": 2491772928,
-    "disk_free_after_bytes": 11999936512,
+    "disk_free_after_bytes": 10781794304,
+    "dominant_remaining_consumer": {
+      "kind": "macos_managed_swap",
+      "apfs_vm_volume_used_bytes": 22548578304,
+      "swap_total_mib": 21504.0,
+      "swap_used_mib": 20553.56,
+      "swap_free_mib": 950.44,
+      "swapfile_count": 21,
+      "direct_swapfile_deletion_allowed": false,
+      "recovery_contract": "terminate only exact proven unused process owners, then read back natural macOS swap reclamation"
+    },
     "generated_mp4_removed": {
       "count": 187,
       "bytes": 2950620127,
