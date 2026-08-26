@@ -8,7 +8,7 @@ This task is executed as two reviewed atomic slices. Task 7A must be approved be
 
 **Test files:** Modify `lib/panel-api.test.js`; add a focused migration contract test only if needed.
 
-1. Add failing API tests for the fixed progression: Calendar → home → Telegram notifications → phone → explicit call consent → payment → dashboard.
+1. Add failing API tests for the fixed progression: Calendar → home → Telegram notifications → phone → explicit call consent → payment → dashboard. Use the Telegram profile name; only when the stored name is empty, prepend a required `name` step whose bounded non-empty save returns to Calendar.
 2. Derive every response from the authenticated Telegram panel session plus server rows. Reject or ignore any body/query `uid`; it is never an authority.
 3. Enforce prerequisites on every mutation. An out-of-order action returns a conflict and performs zero writes.
 4. `home.save` writes a non-empty bounded home address. `notifications.enable` writes `notifications_enabled=true` and explicitly preserves `call_enabled=false`.
