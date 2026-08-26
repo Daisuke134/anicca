@@ -16,6 +16,8 @@ STATUS: READY FOR REVIEW (acceptance remains with the parent/reviewer)
   return the generic `calendar_unavailable` response and no raw provider data is logged or serialized.
 - Wired only the two onboarding paths in `apps/life-manager/server.js`, passing Supabase, panel origin,
   panel session secret, and existing Composio config. The legacy panel API and OAuth callback are unchanged.
+- Preserved `panelScopeCookie` renewal on both onboarding responses so a rotating 12-hour panel session
+  remains usable through a delayed OAuth callback.
 
 ## RED
 
@@ -29,7 +31,7 @@ cd apps/life-manager
 node --test lib/calendar-onboard.test.js lib/panel-control-center.test.js \
   lib/panel-permanent-session.test.js test/calendar-connect-signature-contract.test.js \
   test/onboarding-resume-contract.test.js
-61 tests, 61 pass, 0 fail
+62 tests, 62 pass, 0 fail
 
 node --check lib/calendar-onboard.js
 node --check lib/calendar-onboard.test.js
@@ -50,11 +52,13 @@ validation, and the existing callback's atomic replay/expiry/cross-scope/ACTIVE 
 - Treating `DISABLED` as connected made the ACTIVE-only status test fail.
 - Persisting the raw state instead of its SHA-256 made the hash-only persistence test fail.
 - Removing strict raw `https://`/trim validation made the malformed-origin test return 200 instead of 403.
+- Removing panel session-cookie renewal made the rotation response lose its replacement cookie.
 All mutations were restored before commit.
 
 ## Commit
 
 - `4f0c87d10` — `feat(life-manager): add session scoped calendar consent`
+- `a9c385cad` — `fix(life-manager): renew calendar panel sessions`
 - Pushed to `origin/codex/lm-cloud-core-spec`.
 
 ## Concerns
