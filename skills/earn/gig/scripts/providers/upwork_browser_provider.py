@@ -349,6 +349,11 @@ def parse_messages(text: str, links: list[dict[str, Any]]) -> dict[str, Any]:
     return {"message_rooms": rooms, "unread_message_room_ids": sorted(set(unread))}
 
 
+def prioritize_message_rooms(inventory: dict[str, Any]) -> list[dict[str, Any]]:
+    unread = set(inventory["unread_message_room_ids"])
+    return sorted(inventory["message_rooms"], key=lambda room: room["id"] not in unread)
+
+
 def load_candidates(path: Path) -> list[dict[str, str]]:
     value = json.loads(path.read_text(encoding="utf-8"))
     candidates = value.get("candidates") if isinstance(value, dict) else None
@@ -1197,7 +1202,7 @@ async def observe(
                 await asyncio.sleep(attempt)
     message_inventory = parse_messages(pages["messages"], links["messages"])
     inbox_observations: list[dict[str, Any]] = []
-    for offset, room in enumerate(message_inventory["message_rooms"][:20], start=1):
+    for offset, room in enumerate(prioritize_message_rooms(message_inventory), start=1):
         label = f"room-{hashlib.sha256(room['id'].encode()).hexdigest()[:16]}"
         artifact = Path(await navigate_and_snapshot(
             pass_id, f"{len(targets) + offset:02d}-1", label, room["href"],

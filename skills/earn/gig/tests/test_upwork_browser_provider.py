@@ -409,6 +409,21 @@ def test_parses_zero_contract_and_message_effects_from_official_empty_states():
     ) == {"message_rooms": [], "unread_message_room_ids": []}
 
 
+def test_message_observation_prioritizes_unread_without_dropping_rooms():
+    rooms = [
+        {"id": f"room_{index}", "href": f"https://www.upwork.com/ab/messages/rooms/room_{index}"}
+        for index in range(21)
+    ]
+
+    ordered = provider.prioritize_message_rooms({
+        "message_rooms": rooms,
+        "unread_message_room_ids": ["room_20"],
+    })
+
+    assert ordered[0]["id"] == "room_20"
+    assert {room["id"] for room in ordered} == {room["id"] for room in rooms}
+
+
 def test_extracts_stable_official_ids_instead_of_titles():
     state = parse_stable_entities(
         invite_links=[{
