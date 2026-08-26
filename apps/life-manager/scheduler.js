@@ -40,6 +40,7 @@ const { schedulerPollInterval } = require("./lib/composio-budget.js");
 const {
   processLocationLateNotice, getLiveLocation,
 } = require("./lib/late-notice.js");
+const { travelReminderOnce } = require("./lib/travel-reminder.js");
 const {
   DISCOVERY_WEEK_MS, listDiscoveryUsers, runDiscoveryForUser,
 } = require("./lib/feature-discovery.js");
@@ -545,6 +546,42 @@ async function organsUserOnce(u, nowMs, deps = {}) {
   // ones that don't, and anything reading the first match gets the stopwatch. `grep '\[organ:'` is
   // now the timing view and `grep '\[precepts\]'` is still the behaviour view.
   if (u.notifications_enabled !== false) {
+    // T-5 reminder is a Telegram organ, not a call precondition. It consumes the RAW lookback
+    // events (the online/in-progress slice is intentionally absent from futureEvents) and reads the
+    // current live-location row with the same Supabase tenant credentials. runOrgan keeps route,
+    // claim, and Telegram failures local to this organ; call_enabled never gates this path.
+    const reminder = await runOrgan({
+      label: "organ:travel-reminder", uid: u.uid, log,
+      run: async () => {
+        const configuredSupa = SUPA();
+        const supaUrl = deps.supaUrl !== undefined ? deps.supaUrl : configuredSupa.url;
+        const supaKey = deps.supaKey !== undefined ? deps.supaKey : configuredSupa.key;
+        const liveLocation = deps.liveLocation !== undefined
+          ? deps.liveLocation
+          : await (deps.getLiveLocation || getLiveLocation)(u.uid, now, {
+            supaUrl, supaKey, nowMs: now, fetchImpl: deps.fetchImpl,
+          });
+        return (deps.travelReminder || travelReminderOnce)(u, now, {
+          events,
+          liveLocation,
+          home: deps.home !== undefined ? deps.home : u.home_address,
+          mapsKey: deps.mapsKey || process.env.LIFE_MAPS_KEY || process.env.GOOGLE_API_KEY,
+          timezone: deps.timezone || u.call_time_zone || u.time_zone,
+          telegramToken: deps.telegramToken !== undefined ? deps.telegramToken : process.env.LM_TELEGRAM_BOT_TOKEN,
+          supaUrl, supaKey,
+          apiKey: deps.apiKey || process.env.COMPOSIO_API_KEY,
+          directionsRoute: deps.directionsRoute,
+          claimTravel: deps.claimTravel,
+          unclaimTravel: deps.unclaimTravel,
+          sendMessage: deps.sendMessage || sendMessage,
+          log,
+        });
+      },
+    });
+    if (reminder && reminder.status === "sent") {
+      log(`[travel-reminder] uid=${String(u.uid).slice(0, 12)} status=sent`
+        + `${reminder.telegramMessageId !== undefined ? ` tg_message_id=${reminder.telegramMessageId}` : ""}`);
+    }
     const late = await runOrgan({
       label: "organ:late", uid: u.uid, log,
       run: () => (deps.lateNotice || lateNoticeUserOnce)(u, now, { events: futureEvents }),
@@ -703,7 +740,13 @@ async function organsUserOnce(u, nowMs, deps = {}) {
 // (inngest/functions.js makeWakeUserHandler) and the 1a/1b test suites call this name, and a
 // per-user Inngest run has no sibling users to protect, so running both halves there is correct.
 async function wakeUserOnce(u, nowMs, deps = {}) {
-  await wakeCallOnce(u, nowMs, deps);
+  try {
+    await (deps.wakeCall || wakeCallOnce)(u, nowMs, deps);
+  } catch (e) {
+    // The call is deadline-critical and remains first, but a failure in its calendar/claim path
+    // must not strand the Telegram and daily organs for this user. Do not print event text here.
+    console.error(`[wake] call organ uid=${String(u && u.uid || "?").slice(0, 12)} err ${e && e.message}`);
+  }
   await organsUserOnce(u, nowMs, deps);
 }
 

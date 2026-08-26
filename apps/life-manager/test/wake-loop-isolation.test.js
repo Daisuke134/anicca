@@ -14,7 +14,7 @@ process.env.LM_CALL_SECRET = "unit_secret";
 process.env.PUBLIC_WSS = "wss://life-call.invalid";
 
 const {
-  wakeCallOnce, organsUserOnce, WAKE_USER_TIMEOUT_MS, forEachUserSafe,
+  wakeCallOnce, wakeUserOnce, organsUserOnce, WAKE_USER_TIMEOUT_MS, forEachUserSafe,
 } = require("../scheduler.js");
 const { clearEvents, getEvents } = require("../lib/event-cache.js");
 
@@ -237,4 +237,123 @@ test("the dial half itself refuses a user who never asked for calls", async () =
   const optedIn = deps();
   await wakeCallOnce({ ...USER, call_enabled: true }, DEPARTURE_MS - 5 * MINUTE, optedIn.deps);
   assert.equal(optedIn.dialed.length, 1, "and the person who switched calls on is still called");
+});
+
+// Task 4: the T-5 Telegram reminder is an organ, not part of the deadline-critical dial. Keep the
+// fixtures injected so these tests exercise scheduler composition without touching Telegram,
+// Supabase, or a real route provider.
+function reminderUser(overrides = {}) {
+  return {
+    ...USER,
+    uid: "iso-reminder",
+    telegram_chat_id: "chat-iso",
+    notifications_enabled: true,
+    ...overrides,
+  };
+}
+
+test("a due call and the reminder both run from one raw calendar fetch", async () => {
+  clearEvents();
+  const h = deps();
+  const seen = [];
+  h.deps.travelReminder = async (u, nowMs, options) => {
+    seen.push({ uid: u.uid, nowMs, events: options.events });
+    return { status: "sent", telegramMessageId: 701 };
+  };
+  await wakeUserOnce(reminderUser(), DEPARTURE_MS - 5 * MINUTE, h.deps);
+  assert.equal(h.dialed.length, 1, "the due T-5 call is placed");
+  assert.equal(seen.length, 1, "the reminder organ runs once");
+  assert.equal(seen[0].events[0].id, EVENT.id, "the reminder receives the fetched event");
+});
+
+test("a reminder throw or delay cannot suppress the call that ran first", async () => {
+  clearEvents();
+  const h = deps();
+  let callAt = null;
+  h.deps.placeCall = async () => { callAt = Date.now(); h.dialed.push(callAt); return { ok: true, ccid: "iso-call-first" }; };
+  h.deps.travelReminder = async () => {
+    await new Promise((resolve) => setTimeout(resolve, 40));
+    throw new Error("reminder route failed");
+  };
+  await wakeUserOnce(reminderUser(), DEPARTURE_MS - 5 * MINUTE, h.deps);
+  assert.equal(h.dialed.length, 1, "the call survives the reminder failure");
+  assert.ok(callAt, "the call completed before the reminder settled");
+});
+
+test("a call failure still runs the reminder organ", async () => {
+  clearEvents();
+  const h = deps();
+  let reminders = 0;
+  h.deps.wakeCall = async () => { throw new Error("call path exploded"); };
+  h.deps.travelReminder = async () => { reminders += 1; return { status: "suppressed" }; };
+  await wakeUserOnce(reminderUser(), DEPARTURE_MS - 5 * MINUTE, h.deps);
+  assert.equal(reminders, 1, "the reminder survives a call-path throw");
+});
+
+test("call-disabled users still receive the reminder organ", async () => {
+  clearEvents();
+  const h = deps();
+  let reminders = 0;
+  h.deps.travelReminder = async () => { reminders += 1; return { status: "suppressed" }; };
+  h.deps.claimWake = async () => { throw new Error("call must be gated off"); };
+  await wakeUserOnce(reminderUser({ call_enabled: false }), DEPARTURE_MS - 5 * MINUTE, h.deps);
+  assert.equal(h.dialed.length, 0, "call opt-in remains independent");
+  assert.equal(reminders, 1, "call-disabled users still get Telegram organs");
+});
+
+test("notifications-disabled users get no reminder send or event-bearing reminder log", async () => {
+  clearEvents();
+  const h = deps();
+  const logs = [];
+  let reminders = 0;
+  let sends = 0;
+  h.deps.log = (line) => logs.push(String(line));
+  h.deps.travelReminder = async () => { reminders += 1; return { status: "sent" }; };
+  h.deps.sendMessage = async () => { sends += 1; return { ok: true, result: { message_id: 702 } }; };
+  await wakeUserOnce(reminderUser({ call_enabled: false, notifications_enabled: false }), DEPARTURE_MS - 5 * MINUTE, h.deps);
+  assert.equal(reminders, 0, "the reminder gate is notifications_enabled");
+  assert.equal(sends, 0, "notifications-off performs no Telegram send");
+  assert.ok(logs.every((line) => !line.includes(EVENT.summary) && !line.includes(EVENT.location)),
+    `event text must not leak into disabled-organ logs: ${JSON.stringify(logs)}`);
+});
+
+test("the reminder receives the raw lookback event, including an online event already started", async () => {
+  clearEvents();
+  const h = deps();
+  const now = EVENT_START_MS + 60 * 1000;
+  const online = {
+    ...EVENT,
+    id: "iso-online-past",
+    summary: "online private event",
+    location: "https://meet.example/room",
+    online: true,
+    startMs: now - 60 * 1000,
+    startIso: new Date(now - 60 * 1000).toISOString(),
+  };
+  h.deps.fetchUpcomingEvents = async () => [online];
+  let received = null;
+  h.deps.travelReminder = async (_u, _nowMs, options) => {
+    received = options.events;
+    return { status: "suppressed" };
+  };
+  await wakeUserOnce(reminderUser({ call_enabled: false }), now, h.deps);
+  assert.equal(received.length, 1, "the raw event list reaches the reminder");
+  assert.equal(received[0].online, true);
+  assert.ok(received[0].startMs < now, "lookback event is not replaced by futureEvents");
+});
+
+test("a reminder hang in one tenant does not stop the next tenant", async () => {
+  clearEvents();
+  const h = deps();
+  let nextRan = 0;
+  const users = [reminderUser({ uid: "iso-stuck" }), reminderUser({ uid: "iso-next" })];
+  await forEachUserSafe(users, "organs", (u) => organsUserOnce(u, Date.now(), {
+    ...h.deps,
+    travelReminder: async () => {
+      if (u.uid === "iso-stuck") return new Promise(() => {});
+      nextRan += 1;
+      return { status: "suppressed" };
+    },
+  }), 30);
+  assert.equal(nextRan, 1, "the next tenant is still served after the first reminder hangs");
 });
