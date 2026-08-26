@@ -1,4 +1,4 @@
--- Task 7A: server-owned Telegram onboarding state.
+-- Task 7A: server-owned Telegram onboarding state. The core filename sorts before reachability.
 -- Existing lm_users / lm_panel_preferences are the only state tables.  The user row lock is the
 -- transition fence: no client-provided uid or stage can make an out-of-order write land.
 

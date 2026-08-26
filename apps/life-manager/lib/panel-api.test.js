@@ -690,7 +690,7 @@ test("Task 7A unpaid dashboard remains checkout-reachable without granting paid"
 });
 
 test("Task 7A onboarding migration is additive, tenant-scoped, and lock-atomic", () => {
-  const sql = fs.readFileSync(path.join(__dirname, "../migrations/2026-08-27-lm-panel-onboarding.sql"), "utf8");
+  const sql = fs.readFileSync(path.join(__dirname, "../migrations/2026-08-27-lm-panel-onboarding-core.sql"), "utf8");
   assert.match(sql, /CREATE OR REPLACE FUNCTION public\.lm_panel_onboarding_state/i);
   assert.match(sql, /CREATE OR REPLACE FUNCTION public\.lm_panel_onboarding_transition/i);
   assert.match(sql, /SELECT .*FROM public\.lm_users[\s\S]*FOR UPDATE/i);

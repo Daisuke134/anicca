@@ -39,36 +39,37 @@ BEGIN
         old_constraint.conname
       );
     END IF;
-  END LOOP;
+END LOOP;
+
+  -- Keep the whole migration a no-op when the optional coverage table has not
+  -- been installed. Static ALTER statements after this DO block would still
+  -- execute and fail even though the guard above returned.
+  ALTER TABLE public.lm_event_coverage_snapshots
+    DROP CONSTRAINT IF EXISTS lm_event_coverage_horizon_days_28_check,
+    DROP CONSTRAINT IF EXISTS lm_event_coverage_days_length_28_check,
+    DROP CONSTRAINT IF EXISTS lm_event_coverage_window_end_28_check,
+    DROP CONSTRAINT IF EXISTS lm_event_coverage_open_count_28_check,
+    DROP CONSTRAINT IF EXISTS lm_event_coverage_covered_existing_count_28_check,
+    DROP CONSTRAINT IF EXISTS lm_event_coverage_covered_new_count_28_check,
+    DROP CONSTRAINT IF EXISTS lm_event_coverage_unavailable_count_28_check,
+    DROP CONSTRAINT IF EXISTS lm_event_coverage_counts_sum_28_check;
+
+  ALTER TABLE public.lm_event_coverage_snapshots
+    ADD CONSTRAINT lm_event_coverage_horizon_days_28_check
+      CHECK (horizon_days = 28) NOT VALID,
+    ADD CONSTRAINT lm_event_coverage_days_length_28_check
+      CHECK (jsonb_typeof(days) = 'array' AND jsonb_array_length(days) = 28) NOT VALID,
+    ADD CONSTRAINT lm_event_coverage_window_end_28_check
+      CHECK (window_end_date = window_start_date + 27) NOT VALID,
+    ADD CONSTRAINT lm_event_coverage_open_count_28_check
+      CHECK (open_count BETWEEN 0 AND 28) NOT VALID,
+    ADD CONSTRAINT lm_event_coverage_covered_existing_count_28_check
+      CHECK (covered_existing_count BETWEEN 0 AND 28) NOT VALID,
+    ADD CONSTRAINT lm_event_coverage_covered_new_count_28_check
+      CHECK (covered_new_count BETWEEN 0 AND 28) NOT VALID,
+    ADD CONSTRAINT lm_event_coverage_unavailable_count_28_check
+      CHECK (unavailable_count BETWEEN 0 AND 28) NOT VALID,
+    ADD CONSTRAINT lm_event_coverage_counts_sum_28_check
+      CHECK (open_count + covered_existing_count + covered_new_count + unavailable_count = 28) NOT VALID;
 END;
 $$;
-
--- Drop/re-add the named 28-day constraints so this migration is safe to rerun
--- after a partial deployment. Existing immutable rows are left in place.
-ALTER TABLE public.lm_event_coverage_snapshots
-  DROP CONSTRAINT IF EXISTS lm_event_coverage_horizon_days_28_check,
-  DROP CONSTRAINT IF EXISTS lm_event_coverage_days_length_28_check,
-  DROP CONSTRAINT IF EXISTS lm_event_coverage_window_end_28_check,
-  DROP CONSTRAINT IF EXISTS lm_event_coverage_open_count_28_check,
-  DROP CONSTRAINT IF EXISTS lm_event_coverage_covered_existing_count_28_check,
-  DROP CONSTRAINT IF EXISTS lm_event_coverage_covered_new_count_28_check,
-  DROP CONSTRAINT IF EXISTS lm_event_coverage_unavailable_count_28_check,
-  DROP CONSTRAINT IF EXISTS lm_event_coverage_counts_sum_28_check;
-
-ALTER TABLE public.lm_event_coverage_snapshots
-  ADD CONSTRAINT lm_event_coverage_horizon_days_28_check
-    CHECK (horizon_days = 28) NOT VALID,
-  ADD CONSTRAINT lm_event_coverage_days_length_28_check
-    CHECK (jsonb_typeof(days) = 'array' AND jsonb_array_length(days) = 28) NOT VALID,
-  ADD CONSTRAINT lm_event_coverage_window_end_28_check
-    CHECK (window_end_date = window_start_date + 27) NOT VALID,
-  ADD CONSTRAINT lm_event_coverage_open_count_28_check
-    CHECK (open_count BETWEEN 0 AND 28) NOT VALID,
-  ADD CONSTRAINT lm_event_coverage_covered_existing_count_28_check
-    CHECK (covered_existing_count BETWEEN 0 AND 28) NOT VALID,
-  ADD CONSTRAINT lm_event_coverage_covered_new_count_28_check
-    CHECK (covered_new_count BETWEEN 0 AND 28) NOT VALID,
-  ADD CONSTRAINT lm_event_coverage_unavailable_count_28_check
-    CHECK (unavailable_count BETWEEN 0 AND 28) NOT VALID,
-  ADD CONSTRAINT lm_event_coverage_counts_sum_28_check
-    CHECK (open_count + covered_existing_count + covered_new_count + unavailable_count = 28) NOT VALID;
