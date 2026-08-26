@@ -98,11 +98,16 @@ function writeSealedAgentEconomyRelease(root, {
   const launchPath = join(release, "skills", "agent-economy", "launch.sh");
   const launchBody = "#!/bin/bash\n";
   writeFileSync(launchPath, launchBody);
+  const readmeBody = "readme\n";
+  writeFileSync(join(release, "skills", "agent-economy", "readme.txt"), readmeBody);
   symlinkSync("launch.sh", join(release, "skills", "agent-economy", "internal-link.sh"));
+  symlinkSync("readme.txt", join(release, "skills", "agent-economy", "nonexec-link.sh"));
   // Match cutter's sorted-key compact JSON exactly.
   const sourceEntries = [
     { mode: "0555", path: "skills/agent-economy/launch.sh", sha256: createHash("sha256").update(launchBody).digest("hex") },
-    { mode: "0000", path: "skills/agent-economy/internal-link.sh", sha256: createHash("sha256").update("launch.sh").digest("hex"), target: "launch.sh" },
+    { mode: "0555", path: "skills/agent-economy/internal-link.sh", sha256: createHash("sha256").update("launch.sh").digest("hex"), target: "launch.sh" },
+    { mode: "0555", path: "skills/agent-economy/nonexec-link.sh", sha256: createHash("sha256").update("readme.txt").digest("hex"), target: "readme.txt" },
+    { mode: "0444", path: "skills/agent-economy/readme.txt", sha256: createHash("sha256").update(readmeBody).digest("hex") },
   ].sort((a, b) => a.path.localeCompare(b.path));
   const sourceManifestBody = `${JSON.stringify({ entries: sourceEntries, version: 1 })}\n`;
   writeFileSync(join(release, "SOURCE-MANIFEST.json"), sourceManifestBody);
@@ -125,6 +130,7 @@ function writeSealedAgentEconomyRelease(root, {
   chmodSync(join(release, "skills"), 0o555);
   chmodSync(join(release, "skills", "agent-economy"), 0o555);
   chmodSync(join(release, "skills", "agent-economy", "launch.sh"), 0o555);
+  chmodSync(join(release, "skills", "agent-economy", "readme.txt"), 0o444);
   mkdirSync(releaseRoot, { recursive: true });
   symlinkSync(release, join(releaseRoot, "current"));
   return { releaseRoot, release };
@@ -314,6 +320,8 @@ test("pinned runtime paths are explicit: daemon skips mutable self-update/sync a
   const runSkill = readFileSync(join(REPO_ROOT, "runtime/loop/run-skill.mjs"), "utf8");
   assert.match(runSkill, /ANICCA_CODE_ROOT/u);
   assert.match(runSkill, /path\.join\(root, ['"]skills['"]/u);
+  const launch = readFileSync(join(REPO_ROOT, "skills/agent-economy/launch.sh"), "utf8");
+  assert.match(launch, /dependencyLines\.sort/u);
   const plistgen = readFileSync(join(REPO_ROOT, "bin/plistgen.py"), "utf8");
   assert.match(plistgen, /os\.replace\(/u);
   assert.doesNotMatch(plistgen, /target\.write_bytes\(/u);
@@ -574,6 +582,22 @@ test("contract-only: release cutter installs locked dependencies in the release 
     const previous = readlinkSync(join(loops, "previous"));
     assert.notEqual(secondCurrent, previous);
     assert.equal(previous, releaseRoot);
+    const failedCurrentSwap = spawnSync("bash", [join(repo, "bin", "cut-loop-release.sh"), "HEAD"], {
+      cwd: repo,
+      encoding: "utf8",
+      env: { ...process.env, HOME: root, LOOPS_ROOT: loops, LOOPS_TEST_FAIL_CURRENT_SWAP: "1" },
+    });
+    assert.notEqual(failedCurrentSwap.status, 0);
+    assert.equal(readlinkSync(join(loops, "current")), secondCurrent);
+    assert.equal(readlinkSync(join(loops, "previous")), previous);
+    const failedPreviousSwap = spawnSync("bash", [join(repo, "bin", "cut-loop-release.sh"), "--rollback"], {
+      cwd: repo,
+      encoding: "utf8",
+      env: { ...process.env, HOME: root, LOOPS_ROOT: loops, LOOPS_TEST_FAIL_ROLLBACK_PREVIOUS_SWAP: "1" },
+    });
+    assert.notEqual(failedPreviousSwap.status, 0);
+    assert.equal(readlinkSync(join(loops, "current")), secondCurrent);
+    assert.equal(readlinkSync(join(loops, "previous")), previous);
     const failedRollback = spawnSync("bash", [join(repo, "bin", "cut-loop-release.sh"), "--rollback"], {
       cwd: repo,
       encoding: "utf8",

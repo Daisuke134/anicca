@@ -60,11 +60,12 @@ const walk = (directory, prefix = '') => {
       try { targetReal = real(absolute); } catch { process.exit(14); }
       if (!(targetReal === releaseReal || targetReal.startsWith(`${releaseReal}${path.sep}`))) process.exit(15);
       const target = fs.readlinkSync(absolute);
-      entries.push({ mode: '0000', path: relative, sha256: crypto.createHash('sha256').update(target).digest('hex'), target });
+      entries.push({ mode: (item.mode & 0o555).toString(8).padStart(4, '0'), path: relative, sha256: crypto.createHash('sha256').update(target).digest('hex'), target });
     }
   }
 };
 walk(releasePath);
+entries.sort((a, b) => a.path.localeCompare(b.path));
 const manifestPath = path.join(releasePath, 'SOURCE-MANIFEST.json');
 let manifestRaw;
 try { manifestRaw = fs.readFileSync(manifestPath); } catch { process.exit(12); }
@@ -86,11 +87,12 @@ const walkDependencies = (directory, prefix = 'node_modules') => {
       let target;
       try { target = fs.realpathSync.native(absolute); } catch { process.exit(20); }
       if (!(target === dependencyReal || target.startsWith(`${dependencyReal}${path.sep}`))) process.exit(21);
-      dependencyLines.push(`symlink\t${relative}\t${(fs.statSync(absolute).mode & 0o555).toString(8)}\t-\t${fs.readlinkSync(absolute)}`);
+      dependencyLines.push(`symlink\t${relative}\t${(item.mode & 0o555).toString(8)}\t-\t${fs.readlinkSync(absolute)}`);
     }
   }
 };
 walkDependencies(dependencyRoot);
+dependencyLines.sort((a, b) => a.split('\t')[1].localeCompare(b.split('\t')[1]));
 let dependencyManifest;
 try { dependencyManifest = fs.readFileSync(path.join(releasePath, 'DEPENDENCY-MANIFEST.tsv')); } catch { process.exit(22); }
 const expectedDependencies = Buffer.from(dependencyLines.length ? `${dependencyLines.join('\n')}\n` : '');

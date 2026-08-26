@@ -119,7 +119,7 @@ def _source_manifest_payload(release: Path) -> dict:
                 raise SystemExit(f"agent-economy source symlink escapes release: {relative}")
             entries.append({
                 "path": relative,
-                "mode": "0000",
+                "mode": format(stat.S_IMODE(item.st_mode) & 0o555, "04o"),
                 "sha256": hashlib.sha256(target.encode()).hexdigest(),
                 "target": target,
             })
@@ -155,7 +155,7 @@ def _dependency_manifest_bytes(release: Path) -> bytes:
             target_real = normalized(path)
             if not _is_descendant(target_real, node_modules_real):
                 raise SystemExit("agent-economy dependency symlink escapes node_modules")
-            lines.append(f"symlink\t{relative}\t{format(stat.S_IMODE(path.stat().st_mode) & 0o555, 'o')}\t-\t{os.readlink(path)}")
+            lines.append(f"symlink\t{relative}\t{format(stat.S_IMODE(item.st_mode) & 0o555, 'o')}\t-\t{os.readlink(path)}")
         elif stat.S_ISREG(item.st_mode):
             lines.append(f"file\t{relative}\t{format(stat.S_IMODE(item.st_mode) & 0o555, 'o')}\t{hashlib.sha256(path.read_bytes()).hexdigest()}\t-")
     return ("\n".join(lines) + ("\n" if lines else "")).encode()

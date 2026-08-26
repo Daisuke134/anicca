@@ -136,7 +136,7 @@ for path in sorted(release.rglob("*")):
         target_real = Path(os.path.realpath(path))
         if target_real != release_real and release_real not in target_real.parents:
             raise SystemExit("agent-economy source symlink escapes release")
-        entries.append({"path": relative, "mode": "0000", "sha256": hashlib.sha256(target.encode()).hexdigest(), "target": target})
+        entries.append({"path": relative, "mode": format(stat.S_IMODE(item.st_mode) & 0o555, "04o"), "sha256": hashlib.sha256(target.encode()).hexdigest(), "target": target})
 expected_manifest = (json.dumps({"version": 1, "entries": entries}, sort_keys=True, separators=(",", ":")) + "\n").encode()
 if raw_manifest != expected_manifest or hashlib.sha256(raw_manifest).hexdigest() != str(metadata.get("source_manifest_sha256", "")):
     raise SystemExit("agent-economy source manifest does not match release")
@@ -157,7 +157,7 @@ for path in sorted(node_modules.rglob("*"), key=lambda item: item.relative_to(re
         target = Path(os.path.realpath(path))
         if target != node_modules_real and node_modules_real not in target.parents:
             raise SystemExit("agent-economy dependency symlink escapes node_modules")
-        dependency_lines.append(f"symlink\t{relative}\t{format(stat.S_IMODE(path.stat().st_mode) & 0o555, 'o')}\t-\t{os.readlink(path)}")
+        dependency_lines.append(f"symlink\t{relative}\t{format(stat.S_IMODE(item.st_mode) & 0o555, 'o')}\t-\t{os.readlink(path)}")
 expected_dependencies = ("\n".join(dependency_lines) + ("\n" if dependency_lines else "")).encode()
 raw_dependencies = dependency_manifest_path.read_bytes()
 if raw_dependencies != expected_dependencies or hashlib.sha256(raw_dependencies).hexdigest() != str(metadata.get("dependency_tree_manifest_sha256", "")):

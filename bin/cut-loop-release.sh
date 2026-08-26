@@ -154,6 +154,16 @@ if [ "$ROLLBACK" -eq 1 ]; then
   [ "$(cd "$CURRENT" && pwd -P)" != "$(cd "$PREVIOUS" && pwd -P)" ] \
     || die "current and previous already select the same release"
   replace_link "$CURRENT" "$PREVIOUS_TARGET" || die "could not move current release pointer"
+  if [ "${LOOPS_TEST_FAIL_ROLLBACK_PREVIOUS_SWAP:-0}" = "1" ]; then
+    replace_link "$CURRENT" "$CURRENT_TARGET" || die "rollback restoration failed after previous swap error"
+    RESTORED_OK=1
+    [ "$(readlink "$CURRENT")" = "$CURRENT_TARGET" ] || RESTORED_OK=0
+    [ "$(readlink "$PREVIOUS")" = "$PREVIOUS_TARGET" ] || RESTORED_OK=0
+    validate_release_target "$CURRENT" "$LOOPS_ROOT" >/dev/null || RESTORED_OK=0
+    validate_release_target "$PREVIOUS" "$LOOPS_ROOT" >/dev/null || RESTORED_OK=0
+    [ "$RESTORED_OK" -eq 1 ] || die "rollback restoration failed after previous swap error"
+    die "rollback previous pointer swap failed"
+  fi
   replace_link "$PREVIOUS" "$CURRENT_TARGET" || {
     replace_link "$CURRENT" "$CURRENT_TARGET" || true
     die "could not move previous release pointer"
@@ -209,6 +219,7 @@ dependency_entries() {
         || exit 1
       if [ -L "$file" ]; then
         kind="symlink"
+        mode="$(python3 -c 'import os,sys; print(oct(os.lstat(sys.argv[1]).st_mode & 0o555)[2:])' "$file")" || exit 1
         target="$(readlink "$file")" || exit 1
         content_hash="-"
         mode="$(printf '%o' $((8#$mode & 0555)))"
@@ -262,7 +273,7 @@ for path in sorted(root.rglob("*")):
         if target_real != root_real and root_real not in target_real.parents:
             raise SystemExit(f"source symlink escapes release: {relative}")
         content_hash = hashlib.sha256(target.encode()).hexdigest()
-        entries.append({"path": relative, "mode": "0000", "sha256": content_hash, "target": target})
+        entries.append({"path": relative, "mode": format(stat.S_IMODE(item.st_mode) & 0o555, "04o"), "sha256": content_hash, "target": target})
 payload = {"version": 1, "entries": entries}
 encoded = (json.dumps(payload, sort_keys=True, separators=(",", ":")) + "\n").encode()
 manifest.write_bytes(encoded)
@@ -407,6 +418,20 @@ if [ "${LOOPS_TEST_FAIL_CURRENT_SWAP:-0}" = "1" ]; then
   else
     rm -f "$PREVIOUS"
   fi
+  RESTORED_OK=1
+  if [ -n "${OLD_CURRENT:-}" ]; then
+    [ "$(readlink "$CURRENT")" = "$OLD_CURRENT" ] || RESTORED_OK=0
+    validate_release_target "$CURRENT" "$LOOPS_ROOT" >/dev/null || RESTORED_OK=0
+  else
+    [ ! -e "$CURRENT" ] || RESTORED_OK=0
+  fi
+  if [ "$OLD_PREVIOUS_PRESENT" -eq 1 ]; then
+    [ "$(readlink "$PREVIOUS")" = "$OLD_PREVIOUS" ] || RESTORED_OK=0
+    validate_release_target "$PREVIOUS" "$LOOPS_ROOT" >/dev/null || RESTORED_OK=0
+  else
+    [ ! -e "$PREVIOUS" ] || RESTORED_OK=0
+  fi
+  [ "$RESTORED_OK" -eq 1 ] || die "current swap restoration failed"
   die "injected current swap failure"
 fi
 if ! replace_link "$CURRENT" "$DEST"; then

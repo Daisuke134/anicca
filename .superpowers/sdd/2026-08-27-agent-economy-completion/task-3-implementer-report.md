@@ -188,6 +188,29 @@ npm run test:agent-economy
 対象 shell/JS syntax、`py_compile`、`git diff --check` は全て exit 0。live launchctl/install/provider
 mutation は行っていない。
 
+## Rethink Fix Round4 (2026-08-27)
+
+Rollback の second-pointer swap failure は、current を元 target に戻した後、current/previous の
+exact target と metadata を検証してから distinct safe error を返す。normal cut の current swap
+failure も旧 previous の presence/target と旧 current（または current absence）を検証してから
+non-zero を返す。依存 manifest builder は全 entry を相対 path の global lexical order で並べ、
+symlink は lstat inode mode、regular file は stat mode に統一した。source manifest も同じ mode
+規則を使い、内部 symlink を受理し release 外 target を拒否する。
+
+Round4 focused GREEN:
+
+```text
+node --test test/agent-economy-control-plane.test.mjs test/install-release-state.test.mjs
+```
+
+結果: 18 tests / pass 18 / fail 0。tricky source symlink（internal/non-executable target）、
+dependency manifest mutation/order、current/previous swap failure、旧 current 欠如の exact absence
+復元、反復 rollback を実測した。
+
+追加確認: `py_compile`、対象 shell `bash -n`、focused test `node --check`、`git diff --check` は
+全て exit 0。Round4 は npm 全体 suite を再実行せず、直前 Round3 の 84 中 82（依存欠如2件）を
+有効な全体証拠として保持した。live launchctl/install/provider mutation は行っていない。
+
 ## Rethink commit
 
 この追補を前回 commit の上に新規 commit として記録する（amend/push は行わない）。
