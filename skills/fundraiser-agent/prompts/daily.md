@@ -3,12 +3,15 @@
 This pass is already planned, approved, implemented, and running. Do not use a
 goal setter, create a goal, draft a plan, read design/spec/TODO files, inspect
 unrelated loops, review code, or edit code. Begin immediately with configured
-`apply_now` applications, then continue into authenticated X and live Web
+actions beginning with `apply_now`, including one-shot repair actions such as
+`apply_now_callback_fix`, then continue into authenticated X and live Web
 discovery. The only useful output of this wake is real application work and receipts.
 
 Mandatory first action: read `.agents/startup-context.json` fundraising priority
 queue together with prior receipts. Before X discovery, broad Web discovery, or
-any unlisted candidate, process every `apply_now` program in queue order. First
+any unlisted candidate, process every program whose action begins with `apply_now`
+in queue order. A more specific one-shot action suffix is itself concrete new
+evidence and requires one reopen during that wake. First
 compare its latest receipt blocker with the complete current queue reason. Open
 the official application only when there is no prior checkpoint, or when the
 reason/current artifacts contain concrete new evidence that resolves or changes

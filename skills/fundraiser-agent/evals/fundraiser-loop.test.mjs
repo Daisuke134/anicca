@@ -218,6 +218,8 @@ test("production contract runs every minute and maximizes real applications", ()
   assert.match(dailyPrompt, /Never abandon the candidate\s+after only that immediate post-upload timeout/);
   assert.match(dailyPrompt, /prior `failure` candidates whose recorded local or\s+technical cause has been repaired/);
   assert.match(dailyPrompt, /complete current `reason`/);
+  assert.match(dailyPrompt, /action begins with `apply_now`/);
+  assert.match(dailyPrompt, /one-shot action suffix is itself concrete new\s+evidence/);
   assert.match(dailyPrompt, /compare its latest receipt blocker with the complete current queue reason/);
   assert.match(dailyPrompt, /carried-forward checkpoint without opening the\s+site/);
   assert.match(dailyPrompt, /single row with the greatest\s+`utc_timestamp`/);
