@@ -303,7 +303,7 @@ Calendarを無関係なeventで埋めること自体を成果にしない。
 
 | surface | current measured behavior | required behavior |
 |---|---|---|
-| schedule | immutable release `2cd76436...`のnative owner exact 1、`StartInterval=3600`、canary exit 0 | 24回の自然hourly receiptで継続証明 |
+| schedule | immutable release `b67966ec...`のnative owner exact 1、`StartInterval=3600`、canary exit 0 | 24回の自然hourly receiptで継続証明 |
 | horizon | Calendar、Luma、connpassのactive primary pathはJST day 0〜27の28日 | 28日境界を維持 |
 | profile | YC hackathon→open LT→AI→crypto→startup、`strong/moderate`だけがauto-apply eligible | live候補で品質gateを維持 |
 | live ranking | provider-neutral rankingがactive minimal runnerに接続済み、large inventoryは3件chunk/並列3 | 10分wake内のterminalを維持 |
@@ -8859,3 +8859,11 @@ origin/main祖先のread-only immutable release `/Users/anicca/loops/connector/r
 4. **CG-47 LT receipt** open LT候補を自然inventoryで検出し、attendance registrationとは独立したtalk application receipt、official readback、Telegram IDを保存する。LT枠不在を申込成功へ昇格しない。
 5. **CG-48 24-hour soak** このfinal releaseの自然hourly receiptを24回連続で収集し、各wakeのexit 0または明示的healthy no-effect、duplicate external effect 0、concurrent owner 0、page/owner-lock cleanup、positive Telegram deliveryを集計する。manual kickstartは24回へ数えない。
 6. **CG-51 final closure** CG-28/44/45/47/48のterminal evidence後にfinal test/effect/provider-limit stateを更新し、remote main ancestry、loaded immutable SHA、launchd cadence、official receipts、replay-zeroを再読backする。差分があればmainへcommit/pushしreleaseを再検証、差分がなければ現releaseを維持し、Telegram milestoneを送ってDONEにする。
+
+### O1B-25進捗521（LT transition live-path repair / final soak baseline）
+
+完了監査で、`talk-application-transition-store.js`はDB contractとunit testだけで、local Connector production pathから呼ばれていないことを確定した。active runnerはverified open-talk候補のordinary formを1回Submitし、official `provider_verified` readback後にreference-only `talk-applied-bundles`を作るため、そのfinal evidence chainに既存state contract `discovered → application_ready → submitted → provider_verified`をlocal mode-0600 JSONLとして接続した。provider receiptのない入力はtransition/bundleとも0、exact retryは同じ3 transitionを再利用して追加0、talk pack本文・bio・abstract・outlineは保存0。REDはtransition file不在で1/2 failure、GREEN 2/2、runner/production/talk adjacent 100/100、syntax、diff check、変更2ファイルsecret scanがPASS。feature commit `c8d1cacd4`、remote main merge `b67966ecb5e1456b2e709fbd8d09562fa30fe6f3`。
+
+origin/main祖先のread-only immutable release `/Users/anicca/loops/connector/releases/20260827T064926-b67966ec`は隔離97/97後、single hourly ownerへloadした。manual canary `wake-bbb7c33df6cd4ed64bd6a32e`はLuma 37,085ms、Connpass 342,431ms、manual boundary 37,516ms、Peatix 89,747msを経て約570秒で`completed_no_effect / providers_exhausted / consecutive_failure_count 0`、Telegram candidate `36875`、wake `36877`、launchd exit 0。Luma inventory `35/35/32/11/2`、Connpass `283/283/264/125`、attendance bundle 32、talk bundle/transition 0、未許可Connpass Submit 0、process/owner lock 0。実open LT候補はなく、成功を代用しない。
+
+CG-48のsoak baselineはJST 06:59、loaded launchd `runs=1`はこのmanual canaryのみ。durable countはwake report 217、delivery 229、action 3,055、Connpass boundary 8、attendance bundle 32、talk bundle 0。以後manual kickstartを行わず、同じloaded releaseの`runs=2〜25`だけを24回の自然hourly receiptとして数える。
