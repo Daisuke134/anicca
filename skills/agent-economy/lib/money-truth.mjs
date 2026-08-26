@@ -335,13 +335,13 @@ export async function reconcileRevenueReceipts({ journalPath, receipts, nowTs, s
 function correctionStatus(row, correctionsByKey) {
   const key = receiptKey(row);
   if (!key) return null;
-  const correction = correctionsByKey.get(key);
+  const correction = correctionsByKey.get(key.toLowerCase());
   return correction ? correction.status : row.status;
 }
 
 function correctionForRow(row, correctionsByKey) {
   const key = receiptKey(row);
-  return key ? correctionsByKey.get(key) : null;
+  return key ? correctionsByKey.get(key.toLowerCase()) : null;
 }
 
 function isExplicitlyExcluded(row) {
@@ -364,7 +364,7 @@ export function summarizeRealizedRevenue(rows, corrections = [], options = {}) {
   const correctionsByKey = new Map(
     (Array.isArray(corrections) ? corrections : [])
       .filter((c) => c && typeof c.tx === "string" && c.tx.length > 0)
-      .map((c) => [c.tx, c])
+      .map((c) => [c.tx.toLowerCase(), c])
   );
   let externalNet = 0;
   let verifiedExternalRows = 0;
@@ -395,7 +395,11 @@ export function summarizeRealizedRevenue(rows, corrections = [], options = {}) {
       }
     } else if (row?.tx && (() => {
       const tx = String(row.tx).toLowerCase();
-      const chain = normalizeChainIdForDedupe(row.chain_id ?? row.chain);
+      const rowChain = normalizeChainIdForDedupe(row.chain_id ?? row.chain);
+      const correction = correctionForRow(row, correctionsByKey);
+      const evidenceChain = correction?.verified === true
+        ? normalizeChainIdForDedupe(correction.evidence?.chain_id) : null;
+      const chain = rowChain ?? evidenceChain;
       return chain ? canonicalPairs.has(`${chain}:${tx}`) : canonicalTxs.has(tx);
     })()) {
       // A legacy row without its log tuple is ambiguous once the canonical v2 receipt covers the
