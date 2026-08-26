@@ -2254,6 +2254,22 @@ Telegram publication receipts, scheduler, and legacy state remain unchanged;
 fresh adversarial review and the exact runtime approval/preflight are still
 required before the one allowed effect.
 
+Fresh adversarial pre-effect review rejects that first GREEN as not yet safe to
+run: dedicated env names alone still accepted any mutually consistent
+replacement pack and approval instead of the exact selected refs. The same
+live preflight also finds host DNS unavailable for `api.postiz.com`; the Python
+transport already implements an exact-host/public-IPv4-validated
+`LM_POSTIZ_RESOLVE_IP`, but the Node subprocess allowlist omitted that key.
+Both are implementation blockers, not reasons to post through a second path.
+Exact canary approval
+`object://sha256/bb3e2ac385d7c7ed9a2387522ba441ece797fd8bcc9827c9386dcf66db764ee2`
+now binds account, integration, pack, creative, video, and caption at mode
+`0600`, rooted in standing approval `3f138ade…831eb7`; it creates no external
+effect. Before runtime env may be set, the frozen lane must reject every ref
+other than pack `76937db0…fe311c`, video `35a15c7c…e9a15`, caption
+`311f9c3d…6ba2eb`, and approval `bb3e2ac3…764ee2`, and the focused DNS
+allowlist regression must be GREEN. Effect count remains zero.
+
 **Completed immediately preceding atomic item:** MKT-09R8-12 / Order 23I
 reconciled the complete existing Postiz history before any new effect. Read-only
 GETs covered `1970-01-01` through `2026-08-27`: pre-2025 and 2025 returned zero,
