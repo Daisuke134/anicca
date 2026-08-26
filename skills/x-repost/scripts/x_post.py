@@ -94,7 +94,9 @@ def postiz_publish(text: str, mode: str, source_url: str | None) -> str:
     return str(submission_id)
 
 
-def postiz_published_url(submission_id: str, observed_at: str) -> str | None:
+def postiz_published_url(
+    submission_id: str, observed_at: str, expected_text: str
+) -> str | None:
     """Resolve one accepted Postiz effect to its exact published X permalink."""
     api_key = os.environ.get("POSTIZ_API_KEY", "").strip()
     integration_id = os.environ.get("X_REPOST_POSTIZ_INTEGRATION_ID", "").strip()
@@ -118,6 +120,9 @@ def postiz_published_url(submission_id: str, observed_at: str) -> str | None:
             continue
         if (post.get("integration") or {}).get("id") != integration_id:
             raise ValueError("Postiz reconciliation integration mismatch")
+        without_urls = lambda body: normalized(re.sub(r"https://[^\s]+", "", body or ""))
+        if without_urls(post.get("content")) != without_urls(expected_text):
+            raise ValueError("Postiz reconciliation content mismatch")
         release_url = str(post.get("releaseURL") or "")
         match = re.fullmatch(
             r"https://(?:x|twitter)\.com/([A-Za-z0-9_]+)/status/([0-9]+)", release_url
@@ -250,6 +255,7 @@ def scan_timeline(page, handle: str, needle: str, expected_url: str | None = Non
     exact_bodies = {
         normalized(expected_text or ""),
         normalized((expected_text or "").replace(expected_url or "", expected_visible)),
+        normalized(re.sub(r"https://(?:www\.)?", "", expected_text or "")),
         exact_body_without_source,
     }
     for art in page.query_selector_all('article[data-testid="tweet"]'):
@@ -299,6 +305,24 @@ def scan_timeline(page, handle: str, needle: str, expected_url: str | None = Non
                     continue
                 return "https://x.com" + href.split("/photo/")[0]
     return None
+
+
+def quote_card_opens_exact_source(page, source_url: str) -> bool:
+    parsed = urllib.parse.urlparse(source_url)
+    parts = [part for part in parsed.path.split("/") if part]
+    if parsed.hostname not in {"x.com", "www.x.com"} or len(parts) < 3:
+        return False
+    identity = f"@{parts[0]}"
+    for card in page.query_selector_all('div[role="link"]'):
+        if identity not in {line.strip() for line in (card.inner_text() or "").splitlines()}:
+            continue
+        card.click()
+        try:
+            page.wait_for_url(source_url, timeout=15000)
+        except Exception:
+            return False
+        return page.url.rstrip("/") == source_url.rstrip("/")
+    return False
 
 
 def find_exact_public_markup(markup: str, expected_text: str, expected_url: str, handle: str,
@@ -412,7 +436,8 @@ def main():
     if args.mode in {"quote", "reply"} and not args.source_url:
         raise SystemExit("x_post: --source-url is required for quote or reply")
 
-    text = open(args.text_file, encoding="utf-8").read().strip()
+    with open(args.text_file, encoding="utf-8") as stream:
+        text = stream.read().strip()
     if not text:
         raise SystemExit("x_post: refusing to publish an empty comment")
 
@@ -428,7 +453,7 @@ def main():
             raise SystemExit("x_post: reconcile requires provider effect identity and time")
         try:
             provider_url = postiz_published_url(
-                args.provider_submission_id, args.effect_observed_at
+                args.provider_submission_id, args.effect_observed_at, text
             )
         except (ValueError, OSError, urllib.error.HTTPError):
             provider_url = None
@@ -452,9 +477,13 @@ def main():
                     page, handle, needle, args.source_url or expected_url,
                     text, minimum_status_id=int(provider_url.rsplit("/", 1)[1]),
                 )
+                exact_quote_source = (
+                    not args.source_url
+                    or quote_card_opens_exact_source(page, args.source_url)
+                )
             finally:
                 page.close()
-        if permalink != provider_url:
+        if permalink != provider_url or not exact_quote_source:
             json.dump({"posted": "unverified", "mode": args.mode,
                        "provider_submission_id": args.provider_submission_id,
                        "reason": "exact Postiz permalink did not match X content"},
