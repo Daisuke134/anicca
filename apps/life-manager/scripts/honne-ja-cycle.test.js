@@ -2,7 +2,7 @@
 
 const assert = require("node:assert/strict");
 const test = require("node:test");
-const { ANICCA_HE_SLOTS, ANICCA_JP4_SLOTS, ANICCA_MAIN_INSTAGRAM_SLOTS, ANICCA_MAIN_SLOTS, PRODUCTION_SLOTS, parseArgs, runSlot } = require("./honne-ja-cycle.js");
+const { ANICCA_EN_CARD_INSTAGRAM_SLOTS, ANICCA_EN_WIDGET_INSTAGRAM_SLOTS, ANICCA_HE_SLOTS, ANICCA_JP4_SLOTS, ANICCA_MAIN_INSTAGRAM_SLOTS, ANICCA_MAIN_SLOTS, PRODUCTION_SLOTS, parseArgs, runSlot, telegramNativeUrlVerified } = require("./honne-ja-cycle.js");
 
 test("Honne JA production cadence has three exact idempotent slots", () => {
   assert.deepEqual([...PRODUCTION_SLOTS], ["08:30", "12:30", "21:30"]);
@@ -11,10 +11,35 @@ test("Honne JA production cadence has three exact idempotent slots", () => {
   assert.throws(() => runSlot(null, Date.parse("2026-08-21T23:29:00.000Z")), /no due slot/i);
 });
 
-test("Anicca main Instagram has one exact daily Reel slot", () => {
-  assert.deepEqual([...ANICCA_MAIN_INSTAGRAM_SLOTS], ["19:10"]);
+test("Anicca main Instagram has three exact daily Reel slots", () => {
+  assert.deepEqual([...ANICCA_MAIN_INSTAGRAM_SLOTS], ["08:10", "13:10", "19:10"]);
   const lane = parseArgs(["run-anicca-main-instagram"]).lane;
   assert.equal(lane.platform, "instagram"); assert.equal(lane.account, "@anicca.jp1");
+});
+
+test("Anicca EN Card Instagram is exact-account bound at three daily slots", () => {
+  assert.deepEqual([...ANICCA_EN_CARD_INSTAGRAM_SLOTS], ["08:45", "12:45", "21:30"]);
+  const lane = parseArgs(["run-anicca-en-card-instagram"]).lane;
+  assert.equal(lane.platform, "instagram");
+  assert.equal(lane.account, "@anicca.encards");
+  assert.equal(lane.integrationId, "cmpc3gx4001nklg0y27a8o66q");
+  assert.equal(lane.instagramProfileRef, "profile://instagram/anicca.encards");
+  assert.equal(lane.packKey, "LM_ANICCA_EN_CARD_PACK_REF");
+  assert.equal(lane.mediaKey, "LM_ANICCA_EN_CARD_MEDIA_REFS");
+  const url = "https://www.instagram.com/reel/ExactArtifact1/";
+  assert.equal(telegramNativeUrlVerified(lane, {}, url), true);
+});
+
+test("Anicca EN Widget Instagram publishes only the exact account at three daily slots", () => {
+  assert.deepEqual([...ANICCA_EN_WIDGET_INSTAGRAM_SLOTS], ["07:30", "09:30", "19:00"]);
+  const lane = parseArgs(["run-anicca-en-widget-instagram"]).lane;
+  assert.equal(lane.format, "reelclaw-widget");
+  assert.equal(lane.platform, "instagram");
+  assert.equal(lane.account, "@anicca.en");
+  assert.equal(lane.integrationId, "cmn8y95rg02d2qx0y09bbk5pb");
+  assert.equal(lane.instagramProfileRef, "profile://instagram/anicca.en");
+  assert.equal(lane.packKey, "LM_ANICCA_EN_WIDGET_PRODUCTION_PACK_REF");
+  assert.equal(lane.mediaKey, "LM_ANICCA_EN_WIDGET_PRODUCTION_MEDIA_REFS");
 });
 
 test("Honne JA production CLI accepts only an optional exact slot", () => {

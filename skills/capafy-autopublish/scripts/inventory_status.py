@@ -199,7 +199,9 @@ def ready_inventory():
                 continue
             listing = os.path.join(d, "LISTING.md")
             skill = os.path.join(d, "SKILL.md")
-            icon = next((os.path.join(d, candidate) for candidate in ("icon.svg", "icon.png")
+            # SVG is source artwork; CP1 only accepts PNG/JPG/WebP. Prefer a
+            # listing-ready raster asset so a resumed draft can save Basic Info.
+            icon = next((os.path.join(d, candidate) for candidate in ("icon.png", "icon.jpg", "icon.webp", "icon.svg")
                          if os.path.isfile(os.path.join(d, candidate))), None)
             title = listing_title(listing) if os.path.isfile(listing) else None
             if title and icon and os.path.isfile(skill):

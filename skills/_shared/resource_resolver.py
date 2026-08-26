@@ -127,7 +127,7 @@ def credential_refs(service: str) -> list[dict[str, Any]]:
             "username": row.get("username"),
             "url": row.get("url"),
             "account_status": row.get("account_status"),
-            "secret_fields": sorted(key for key in ("password", "token", "api_key") if row.get(key)),
+            "secret_fields": sorted(key for key in ("password", "passcode", "token", "api_key") if row.get(key)),
         })
     return result
 

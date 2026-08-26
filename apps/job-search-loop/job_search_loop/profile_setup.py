@@ -52,12 +52,85 @@ def prepare_profile(value: Any) -> dict[str, Any]:
         raise ProfileSetupError(
             "profile.candidate.application_email must be a valid email"
         )
+    materials = profile.get("materials")
+    resumes = materials.get("resumes") if isinstance(materials, dict) else None
+    if not isinstance(resumes, dict):
+        raise ProfileSetupError("profile.materials.resumes is required")
+    engineering = resumes.get("engineering")
+    if not isinstance(engineering, str) or not Path(engineering).is_absolute():
+        raise ProfileSetupError("engineering resume path must be absolute")
+    for variant in ("engineering", "technical_business", "japanese"):
+        source = resumes.get(variant) or engineering
+        path = Path(source)
+        if not path.is_absolute() or not path.is_file():
+            raise ProfileSetupError(f"{variant} resume file is unavailable")
+        resumes[variant] = str(path)
+    for field in ("target_role_families", "location_preferences"):
+        items = candidate.get(field)
+        if (
+            not isinstance(items, list)
+            or not items
+            or any(not isinstance(item, str) or not item.strip() for item in items)
+        ):
+            raise ProfileSetupError(f"profile.candidate.{field} must be a non-empty string array")
+        candidate[field] = [item.strip() for item in items]
+    exclusions = candidate.get("employer_exclusions", [])
+    if not isinstance(exclusions, list) or any(
+        not isinstance(item, str) or not item.strip() for item in exclusions
+    ):
+        raise ProfileSetupError(
+            "profile.candidate.employer_exclusions must be a string array"
+        )
+    candidate["employer_exclusions"] = [item.strip() for item in exclusions]
+    floor = candidate.get("compensation_floor_jpy")
+    target = candidate.get("compensation_target_jpy")
+    if not isinstance(floor, int) or isinstance(floor, bool) or floor <= 0:
+        raise ProfileSetupError(
+            "profile.candidate.compensation_floor_jpy must be a positive integer"
+        )
+    if (
+        not isinstance(target, int)
+        or isinstance(target, bool)
+        or target < floor
+    ):
+        raise ProfileSetupError(
+            "profile.candidate.compensation_target_jpy must be an integer at or above the floor"
+        )
     return profile
 
 
 def collect_interactive() -> dict[str, Any]:
     name = input("Full name: ").strip()
     email = input("Application email: ").strip()
+    engineering_resume = input("Engineering/default resume PDF (absolute path): ").strip()
+    business_resume = input(
+        "Technical-business resume PDF (blank to reuse default): "
+    ).strip()
+    japanese_resume = input("Japanese resume PDF (blank to reuse default): ").strip()
+    target_roles = [
+        item.strip()
+        for item in input("Target role families (comma-separated): ").split(",")
+        if item.strip()
+    ]
+    locations = [
+        item.strip()
+        for item in input("Acceptable work locations (comma-separated): ").split(",")
+        if item.strip()
+    ]
+    try:
+        compensation_floor = int(
+            input("Minimum acceptable annual base salary in JPY: ").strip()
+        )
+        compensation_target = int(
+            input("Target annual base salary in JPY: ").strip()
+        )
+    except ValueError as error:
+        raise ProfileSetupError("compensation values must be integers") from error
+    exclusions = [
+        item.strip()
+        for item in input("Employers to exclude (comma-separated, blank for none): ").split(",")
+        if item.strip()
+    ]
     facts: list[dict[str, str]] = []
     while True:
         claim = input("Verified fact claim (blank when finished): ").strip()
@@ -81,6 +154,18 @@ def collect_interactive() -> dict[str, Any]:
             "candidate": {
                 "name": name,
                 "application_email": email,
+                "target_role_families": target_roles,
+                "location_preferences": locations,
+                "compensation_floor_jpy": compensation_floor,
+                "compensation_target_jpy": compensation_target,
+                "employer_exclusions": exclusions,
+            },
+            "materials": {
+                "resumes": {
+                    "engineering": engineering_resume,
+                    "technical_business": business_resume or engineering_resume,
+                    "japanese": japanese_resume or engineering_resume,
+                }
             },
             "facts": facts,
         }

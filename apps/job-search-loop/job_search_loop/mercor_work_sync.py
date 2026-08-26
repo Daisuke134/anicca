@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 from typing import Any, Callable, Mapping
 
-from .mercor_reporting import send_once
+from .mercor_reporting import delivery_state, send_once
 from .mercor_work_store import WorkStateStore, WorkStoreError
 
 
@@ -55,7 +55,7 @@ def sync_result(
                 event_key=f"mercor-work:{event['event_id']}",
                 message=message,
             )
-            receipt = {**delivery, "delivery": "sent"}
+            receipt = {**delivery, "delivery": delivery_state(delivery)}
         except Exception as error:  # transition remains durable if reporting fails
             receipt = {"delivery": "delivery_unknown", "reason": type(error).__name__}
         receipts.append({"event_id": event["event_id"], "state": event["state"], **receipt})

@@ -10,29 +10,77 @@ EVIDENCE="$JOB_SEARCH_STATE_ROOT/evidence/$RUN_ID"
 LOCK="$MERCOR_STATE_ROOT/.pass.lock"
 CDP_URL="${MERCOR_CDP_BASE_URL:-http://127.0.0.1:9334}"
 MERCOR_PROFILE="${MERCOR_PROFILE:-$JOB_SEARCH_PROFILE}"
-MERCOR_RESUME="${MERCOR_RESUME:-${XDG_DATA_HOME:-$HOME/.local/share}/anicca/job-search/materials/business/Daisuke_Narita_AI_Business_Resume.pdf}"
+if [[ -z "${MERCOR_RESUME:-}" && -f "$MERCOR_STATE_ROOT/resume-state.json" ]]; then
+  MERCOR_RESUME=$(
+    "$JOB_SEARCH_JQ" -er '.resume_file | select(type == "string" and length > 0)' \
+      "$MERCOR_STATE_ROOT/resume-state.json"
+  )
+fi
+MERCOR_RESUME="${MERCOR_RESUME:-${XDG_DATA_HOME:-$HOME/.local/share}/anicca/job-search/mercor-resume.pdf}"
+RESULT="$EVIDENCE/agent/mercor-pass-summary.json"
+TERMINAL="$EVIDENCE/mercor-pass-terminal.json"
+REPORT="$EVIDENCE/telegram-report.json"
+FINAL_REASON="mercor_result_missing"
+LOCK_HELD=0
 
 mkdir -p "$MERCOR_STATE_ROOT" "$JOB_SEARCH_STATE_ROOT/evidence" "$JOB_SEARCH_STATE_ROOT/logs" "$EVIDENCE"
-chmod 700 "$JOB_SEARCH_STATE_ROOT" "$MERCOR_STATE_ROOT" "$JOB_SEARCH_STATE_ROOT/evidence" "$JOB_SEARCH_STATE_ROOT/logs"
-chmod 700 "$EVIDENCE"
+chmod 700 "$JOB_SEARCH_STATE_ROOT" "$MERCOR_STATE_ROOT" "$JOB_SEARCH_STATE_ROOT/evidence" "$JOB_SEARCH_STATE_ROOT/logs" "$EVIDENCE"
+export PYTHONPATH="$JOB_SEARCH_APP_ROOT"
+
+finalize() {
+  local original_rc="$1"
+  trap - EXIT
+  set +e
+  "$JOB_SEARCH_PYTHON" -m job_search_loop.mercor_reporting \
+    --terminal-report \
+    --run-id "$RUN_ID" \
+    --result "$RESULT" \
+    --reason "$FINAL_REASON" \
+    --outbox "$JOB_SEARCH_STATE_ROOT/telegram-outbox.sqlite3" \
+    --gate-store "$MERCOR_STATE_ROOT/human-gates.jsonl" \
+    --terminal "$TERMINAL" \
+    --output "$REPORT"
+  if [[ ! -f "$TERMINAL" ]]; then
+    printf '{"status":"failed","inspected_listings":[],"submitted":[],"needs_human":[],"blocked":["mercor_reporting_failed"],"evidence":{"page_url":"","screenshot_path":"","dom_path":""}}\n' >"$TERMINAL"
+    chmod 600 "$TERMINAL"
+  fi
+  if [[ ! -f "$REPORT" ]]; then
+    printf '{"delivery":"delivery_unknown","event_key":"mercor-pass:%s","reason":"mercor_reporting_failed"}\n' "$RUN_ID" >"$REPORT"
+    chmod 600 "$REPORT"
+  fi
+  find "$EVIDENCE" -type d -exec chmod 700 {} +
+  find "$EVIDENCE" -type f -exec chmod 600 {} +
+  if [[ "$LOCK_HELD" == "1" ]]; then
+    rmdir "$LOCK" 2>/dev/null || true
+  fi
+  exit "$original_rc"
+}
+trap 'finalize $?' EXIT
+
 if ! mkdir "$LOCK" 2>/dev/null; then
-  printf '%s\n' '{"status":"blocked","reason":"mercor_pass_already_running"}'
+  FINAL_REASON="mercor_pass_already_running"
   exit 0
 fi
-trap 'rmdir "$LOCK" 2>/dev/null || true' EXIT
+LOCK_HELD=1
 
-export PYTHONPATH="$JOB_SEARCH_APP_ROOT"
-chmod 644 "$JOB_SEARCH_APP_ROOT/prompts/mercor-pass.md" \
-  "$JOB_SEARCH_APP_ROOT/schemas/mercor-pass-result.v1.schema.json"
 PASS_PROMPT="$EVIDENCE/mercor-pass.md"
 PASS_SCHEMA="$EVIDENCE/mercor-pass-result.v1.schema.json"
 cp "$JOB_SEARCH_APP_ROOT/prompts/mercor-pass.md" "$PASS_PROMPT"
 cp "$JOB_SEARCH_APP_ROOT/schemas/mercor-pass-result.v1.schema.json" "$PASS_SCHEMA"
 chmod 600 "$PASS_PROMPT" "$PASS_SCHEMA"
+
+set +e
 "$JOB_SEARCH_PYTHON" -m job_search_loop.browser_owner \
   --endpoint "$CDP_URL" \
   --output "$EVIDENCE/browser-owner.json"
+BROWSER_RC=$?
+set -e
+if [[ "$BROWSER_RC" -ne 0 ]]; then
+  FINAL_REASON="browser_owner_failed"
+  exit "$BROWSER_RC"
+fi
 
+set +e
 "$JOB_SEARCH_PYTHON" -m job_search_loop.mercor_pass \
   --state-root "$MERCOR_STATE_ROOT" \
   --profile "$MERCOR_PROFILE" \
@@ -43,13 +91,22 @@ chmod 600 "$PASS_PROMPT" "$PASS_SCHEMA"
   --evidence-dir "$EVIDENCE/agent" \
   --workdir "$JOB_SEARCH_REPO_ROOT" \
   --run-id "$RUN_ID"
+PASS_RC=$?
+set -e
+if [[ "$PASS_RC" -ne 0 ]]; then
+  FINAL_REASON="mercor_runner_failed"
+  exit "$PASS_RC"
+fi
 
-# Model-created artifacts are private even when the model omitted chmod.
-find "$EVIDENCE" -type d -exec chmod 700 {} +
-find "$EVIDENCE" -type f -exec chmod 600 {} +
+set +e
+"$JOB_SEARCH_PYTHON" -c 'import json, sys; value=json.load(open(sys.argv[1])); raise SystemExit(0 if isinstance(value, dict) and isinstance(value.get("status"), str) else 2)' "$RESULT"
+RESULT_RC=$?
+set -e
+if [[ "$RESULT_RC" -ne 0 ]]; then
+  FINAL_REASON="mercor_result_invalid"
+  exit "$RESULT_RC"
+fi
 
-# Read-only Earnings capture is part of every Mercor wake. It never clicks a
-# payment control and fail-closes if the page exposes rows we cannot structure.
 EARNINGS_EVIDENCE="$EVIDENCE/earnings"
 EARNINGS_SNAPSHOT="$MERCOR_STATE_ROOT/earnings-readback.json"
 mkdir -p "$EARNINGS_EVIDENCE"
@@ -60,25 +117,24 @@ set +e
   --evidence-dir "$EARNINGS_EVIDENCE" \
   --output "$EARNINGS_SNAPSHOT"
 CAPTURE_RC=$?
-if [[ "$CAPTURE_RC" -eq 0 ]]; then
-  "$JOB_SEARCH_PYTHON" -m job_search_loop.mercor_earnings_sync \
-    --snapshot "$EARNINGS_SNAPSHOT" \
-    --store "$MERCOR_STATE_ROOT/work-events.jsonl" \
-    --outbox "$JOB_SEARCH_STATE_ROOT/telegram-outbox.sqlite3" \
-    --output "$EVIDENCE/mercor-earnings-sync.json"
-else
-  printf '%s\n' '{"status":"blocked","synced_count":0,"events":[],"reason":"earnings_capture_failed"}' \
-    >"$EVIDENCE/mercor-earnings-sync.json"
-  chmod 600 "$EVIDENCE/mercor-earnings-sync.json"
-fi
 set -e
+if [[ "$CAPTURE_RC" -ne 0 ]]; then
+  FINAL_REASON="earnings_capture_failed"
+  exit "$CAPTURE_RC"
+fi
 
-# Report every pass through the existing idempotent Telegram outbox. A missing
-# Telegram credential must not erase or retry the browser pass; the report
-# evidence records delivery_unknown and the next wake can reconcile it.
-"$JOB_SEARCH_PYTHON" -m job_search_loop.mercor_reporting \
-  --run-id "$RUN_ID" \
-  --result "$EVIDENCE/agent/mercor-pass-summary.json" \
+set +e
+"$JOB_SEARCH_PYTHON" -m job_search_loop.mercor_earnings_sync \
+  --snapshot "$EARNINGS_SNAPSHOT" \
+  --store "$MERCOR_STATE_ROOT/work-events.jsonl" \
   --outbox "$JOB_SEARCH_STATE_ROOT/telegram-outbox.sqlite3" \
-  --gate-store "$MERCOR_STATE_ROOT/human-gates.jsonl" \
-  --output "$EVIDENCE/telegram-report.json"
+  --output "$EVIDENCE/mercor-earnings-sync.json"
+SYNC_RC=$?
+set -e
+if [[ "$SYNC_RC" -ne 0 ]]; then
+  FINAL_REASON="earnings_sync_failed"
+  exit "$SYNC_RC"
+fi
+
+FINAL_REASON="success"
+exit 0

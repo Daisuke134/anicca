@@ -11,7 +11,7 @@ state:
 loops:
   - id: acquisition
     schedule:
-      interval_seconds: 3600
+      interval_seconds: 1800
       launchd_label: ai.anicca.job-search-daily
     cli: skills/job-hunter/job-hunter-cli.sh daily
     task_schema: apps/job-search-loop/schemas/pass-result.v1.schema.json

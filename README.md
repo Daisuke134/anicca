@@ -4,7 +4,7 @@
 completed real-world actions. It acts within delegated boundaries, verifies what happened, and reports the
 result in plain language with evidence in Telegram.
 
-| Organ | What Life Manager manages |
+| Group | What Life Manager manages through its loops |
 |---|---|
 | **Daily** | Calendar, event and accelerator applications, job applications, priorities, and follow-through |
 | **Physical / Mental** | Routines, wellbeing, and continuity of care |
@@ -16,6 +16,24 @@ Start locally and keep your data on your machine; move to the web/cloud service 
 manager. Both surfaces use the **same core**, evidence ledger, and human-readable reporting contract. Life
 Manager never guarantees wealth or investment returns, and it never reports an attempted action as completed
 without a receipt.
+
+## The general agent we are building
+
+Life Manager is not a collection of website-specific bots. We are building one durable general agent that can
+discover an opportunity, decide whether it can complete the work profitably, propose and negotiate, produce and
+QA the deliverable, submit it, and follow the same identity through payment and payout. Upwork is the first
+end-to-end proof. Additional marketplaces must reuse the same agent, commerce state, capabilities, and money-effect
+contract; their differences belong in a small provider manifest and official readback adapter.
+
+The implementation reuses [DeepAgentsJS/LangGraph](https://github.com/langchain-ai/deepagentsjs) for the agent
+harness and durable state, [browser-use](https://github.com/browser-use/browser-use) for the website-tool contract,
+[OpenClaw](https://github.com/openclaw/openclaw) for the current local wake and channels, and
+[Steel](https://github.com/steel-dev/steel-browser) for the hosted browser backend. Existing Life Manager
+`EffectIntent` and `ConnectorOutbox` rails remain the only path for irreversible money actions. The completion
+signal is an official `banked` receipt—not an application, click, model claim, contract, or pending balance.
+
+This autonomous commerce loop is still being proven. Until an agent-executable Upwork contract reaches `banked`,
+the README describes the target architecture, not a claim that autonomous income already exists.
 
 **Life Manager is the product. Anicca is the company name only when a form explicitly asks for it.**
 
@@ -36,6 +54,27 @@ without a receipt.
 authenticated `/panel`; you talk to it in Telegram and it reports back there with receipts.
 
 ### Run it yourself — local (your machine holds the data)
+
+To start the Job Hunter loop on an Apple Silicon Mac:
+
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Daisuke134/life-manager/main/scripts/bootstrap-job-hunter.sh)"
+```
+
+The command installs only missing dependencies, asks for the finalized resume and
+job preferences in Terminal, and opens the dedicated CloakBrowser for official
+login. It also installs `gog`, opens Gmail OAuth for the application email, and asks
+for the owner's Telegram bot token privately plus numeric chat ID. Finish the
+official login, then run the exact same command again. Life Manager verifies Gmail
+and a real Telegram message ID before starting the owners. Passwords, OTPs and bot
+tokens are never printed or committed.
+
+Job Hunter is pre-release until Dais's installed 30-minute Workday loop closes the
+current production acceptance: dynamic discovery, fit-qualified application,
+descriptive loop-owned Telegram, official Gmail/Ledger proof and duplicate zero.
+Ashby, Greenhouse, Lever, Mercor and generic ATS lanes are not working products.
+
+### Run the server stack yourself
 
 Requires Docker. The local stack is Postgres + an object store + the API, scheduler, and worker — the same core
 the cloud runs.
@@ -85,7 +124,7 @@ Life Manager is one product in one repository. “Local Life Manager” and the 
              │                                       │
      LOCAL / SELF-HOSTED                      WEB / CLOUD
      deploy/local/compose.yaml                 apps/landing
-          │                                  onboarding UI
+          │                                  web entry
           ▼                                       │
      apps/life-manager                             ▼
      api · scheduler · worker            apps/life-manager
@@ -117,16 +156,16 @@ Some internal package names, environment variables, service labels, and older do
 
 ## Connector agent — how event applications work
 
-Connector is the local Life Manager agent that searches eight Tokyo event rails—Luma, Connpass, Peatix, Meetup, Doorkeeper, Eventbrite, TECH PLAY, and KokuchPro—removes unsafe or conflicting candidates, applies through one owned browser page, verifies the provider result, and reports an evidence-backed outcome in Telegram. It is not a blind form-filler: a click is never treated as success by itself.
+Connector is the local Life Manager agent that fills a rolling 28-day Tokyo event horizon. It ranks YC hackathons, open lightning talks, AI, crypto, and startup events first; applies only to strong or moderate matches; uses Luma as the primary actionable source and the official connpass v2 API as the primary read-only fallback; then uses the remaining rails only after both primary sources are exhausted. It verifies provider results and reports evidence-backed outcomes in Telegram. It is not a blind form-filler: a click is never treated as success by itself.
 
 ```mermaid
 flowchart LR
-    TRIGGER["Daily launchd trigger<br/>or supervised launchd kickstart"] --> ENTRY["run.sh<br/>single lock + heartbeat"]
-    ENTRY --> CAL["Google Calendar<br/>14-day busy inventory"]
+    TRIGGER["Hourly launchd trigger<br/>or supervised launchd kickstart"] --> ENTRY["run.sh<br/>single lock + heartbeat"]
+    ENTRY --> CAL["Google Calendar<br/>28-day busy inventory"]
     CAL --> RAIL["One CloakBrowser target<br/>one owned page"]
 
     subgraph LOOP["Forward-only provider loop"]
-        PROVIDERS["Luma → Connpass → Peatix → Meetup<br/>→ Doorkeeper → Eventbrite → TECH PLAY → KokuchPro"]
+        PROVIDERS["Luma action → connpass API advisory<br/>→ remaining fallback rails"]
         DISCOVER["Provider discovery<br/>privacy-safe count audit"]
         GATE{"Free · open · Tokyo · in window<br/>and Calendar-safe?"}
         NEXT["Next candidate<br/>or next provider"]
@@ -196,15 +235,26 @@ stateDiagram-v2
 | Provider | Production rail | Acceptance status |
 |---|---|---|
 | Luma | Discovery, action, readback, evidence | Live bundle proven |
-| Connpass | Discovery, action, readback, evidence | Live bundle proven |
+| Connpass | Official v2 API discovery only; Telegram action boundary | API application submitted; key and explicit automated-action permission remain external gates |
 | Peatix | Discovery, action, readback, evidence | Live bundle proven |
 | Meetup | Discovery, action, readback, evidence | Connected; current strict candidates conflict with Calendar |
 | Doorkeeper | Discovery, action, readback, evidence | Connected; all four current eligible candidates conflict with Calendar, so live bundle remains pending |
 | Eventbrite | Three-page discovery, ticket/attendee/final action, child-frame readback, evidence | Connected; current production inventory has no eligible candidate, so external write is correctly zero |
 | TECH PLAY | RSS/detail discovery, input/review/final action, registered readback, evidence | Connected; all three current eligible candidates conflict with Calendar, so live bundle remains pending |
-| KokuchPro | Official listing/detail discovery, strict free/Tokyo/open gate, entry/login readback, bounded Harness | Connected; current official first page has no event inside the 14-day window. Login is classified as `auth_required` and safely hands off without private-value or retry effects |
+| KokuchPro | Official listing/detail discovery, strict free/Tokyo/open gate, entry/login readback, bounded Harness | Connected; current official first page has no event inside the 28-day window. Login is classified as `auth_required` and safely hands off without private-value or retry effects |
 
-Safety invariants: one schedule owner, one browser target per wake, final mutation at most once, `effect_unknown` means no retry, private form values never enter action history, and only an `applied_bundle` proves a new completed application. `completed_no_effect` is a healthy process result with zero new external writes. Current evidence and remaining gates live in the [Connector execution SSOT](docs/superpowers/specs/2026-08-01-dais-life-manager-five-phase-execution-spec.md).
+Safety invariants: one hourly schedule owner, one browser target per wake, one external mutation at most per wake, `effect_unknown` means no retry, private form values never enter action history, and only an `applied_bundle` proves a new completed application. A verified open lightning-talk application consumes that wake's effect budget before attendance; payment, CAPTCHA, identity verification, and unknown required fields always stop for human action. `completed_no_effect` is a healthy process result with zero new external writes. Current evidence and remaining gates live in the [Connector execution SSOT](docs/superpowers/specs/2026-08-01-dais-life-manager-five-phase-execution-spec.md).
+
+### Connector local install and uninstall
+
+Keep private identity, Calendar, Telegram, Gemini, and connpass values in a mode-0600 file outside the repository. The connpass key is optional while its official application is pending; without it, connpass discovery fails closed and no browser fallback is attempted.
+
+1. Run `skills/connector/render-launchd.sh` into a private temporary directory, passing the canonical repository root, a private Life Manager state directory, and the external connector env file.
+2. Validate the rendered plist with `plutil -lint`. Install only `ai.anicca.life-manager-connector-native.plist` in the user's `Library/LaunchAgents`, mode 0600.
+3. Run `bin/launchctl-safe preflight`, then bootstrap only `ai.anicca.life-manager-connector-native`. Read it back with `bin/launchctl-safe print gui/$UID/ai.anicca.life-manager-connector-native`; it must show `StartInterval = 3600`, one label, and no `StartCalendarInterval`, `RunAtLoad`, or `KeepAlive`.
+4. To uninstall, boot out that exact label through `bin/launchctl-safe`, remove only its exact installed plist, and preserve the external env file, state, receipts, Calendar entries, and unrelated browser tabs.
+
+The renderer deliberately refuses to write directly into `Library/LaunchAgents`. This keeps rendering and live launchd mutation as separate, auditable steps.
 
 Current canonical acceptance: PR `#1936` established the production baseline at `4f1960592`, and follow-up PR `#1947` merged the final documentation plus provider-specific fallback budget fix at `f1a13b2e7`. The post-baseline production wake traversed all seven configured providers and KokuchPro on one owned page, reused existing bundles without a duplicate external effect, delivered a positive Telegram receipt, restored the exact unrelated browser pages, released the lock, and exited zero. Generic providers now fail closed above the Browser Harness 10-step limit while TECH PLAY retains its reviewed 15-step flow. The only remaining event-rail work is conditional: Meetup, Doorkeeper, Eventbrite, and TECH PLAY need a future Calendar-safe live candidate before their first real `applied_bundle` can be proven.
 
@@ -218,7 +268,7 @@ Current canonical acceptance: PR `#1936` established the production baseline at 
 | **Cloud service** (`apps/life-manager`, `node server.js` on Railway) | **Deployed** — the scheduler and API are the same code the local stack runs. |
 | **Telegram reporting with receipts** | **Live** — every report carries a message id, and a send that fails is not recorded as sent. |
 | **Calendar, connectors, coverage** (`lib/calendar-*`, `lib/connector-*`) | **Implemented, coverage still moving** — per-connector state and gaps are tracked in the execution spec rather than claimed here. |
-| **Financial organ** (net worth, cash flow, payouts, ledgers) | **Partial** — the ledger and payout jobs exist; their current health is tracked in the execution spec. Nothing here is an investment guarantee. |
+| **Financial loops** (net worth, cash flow, payouts, ledgers) | **Partial** — the ledger and payout jobs exist; their current health is tracked in the execution spec. Nothing here is an investment guarantee. |
 | **The self-funded agent economy** | Separate track — status and on-chain evidence in [`docs/agent-economy.md`](docs/agent-economy.md). |
 
 ---

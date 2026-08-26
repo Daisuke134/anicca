@@ -14,7 +14,9 @@ const {
 const { hashChatId } = require("./telegram.js");
 
 const TENANT = /^[a-z0-9][a-z0-9._-]{0,199}$/;
-const NEW_EVENT_KEYS = Object.freeze(["calendarSync", "dateInventory", "eventRef", "goalDecision"]);
+const NEW_EVENT_KEYS = Object.freeze(["calendarSync", "dateInventory", "eventRef", "goalDecision", "selection"]);
+const PRIORITY_CLASSES = Object.freeze(["yc_hackathon", "open_talk", "ai", "crypto", "startup", "other"]);
+const TALK_STATES = Object.freeze(["not_open", "application_ready", "submitted", "provider_verified", "accepted", "rejected", "human_action_required"]);
 const UNSAFE = /\{\{|\}\}|\b(?:TODO|TBD|password|cookie|guest[_ -]?key|api[_ -]?key|access[_ -]?token)\b/i;
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 
@@ -67,6 +69,15 @@ function jaTimeRange(startAt, endAt, timeZone) {
   return `${format(startAt)}〜${format(endAt)}`;
 }
 
+function jaInstant(value, timeZone) {
+  const instant = String(value == null ? "" : value).trim();
+  if (!Number.isFinite(Date.parse(instant)) || !/[zZ]|[+-]\d\d:\d\d$/.test(instant)) invalid();
+  const parts = Object.fromEntries(new Intl.DateTimeFormat("ja-JP", {
+    timeZone, year: "numeric", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hourCycle: "h23",
+  }).formatToParts(new Date(instant)).filter((part) => part.type !== "literal").map((part) => [part.type, part.value]));
+  return `${parts.year}/${parts.month}/${parts.day} ${parts.hour}:${parts.minute}`;
+}
+
 function normalizeNewEvents(coverage, rows) {
   if (!Array.isArray(rows)) invalid();
   const coveredDates = new Set(coverage.days.filter((day) => day.status === "covered_new").map((day) => day.date));
@@ -81,6 +92,12 @@ function normalizeNewEvents(coverage, rows) {
       || (isVerifiedLumaDateInventory(row.dateInventory) && !isVerifiedEventGoalSerendipity(row.goalDecision))
     ) invalid();
     const eventRef = String(row.eventRef == null ? "" : row.eventRef).trim();
+    const selection = row.selection;
+    if (!selection || typeof selection !== "object" || Array.isArray(selection)
+      || Object.keys(selection).sort().join(",") !== "application_deadline_at,preference_reason,priority_class,talk_state"
+      || !PRIORITY_CLASSES.includes(selection.priority_class)
+      || !TALK_STATES.includes(selection.talk_state)
+      || (selection.application_deadline_at != null && !Number.isFinite(Date.parse(selection.application_deadline_at)))) invalid();
     if (
       !eventRef || seenRefs.has(eventRef)
       || row.calendarSync.event_ref !== eventRef
@@ -107,6 +124,10 @@ function normalizeNewEvents(coverage, rows) {
       starts_at: event.starts_at,
       ends_at: event.ends_at,
       reason: safeText(goal ? goal.goal_reason : "Calendarの空き枠に適合した登録", 240),
+      priority_class: selection.priority_class,
+      preference_reason: safeText(selection.preference_reason, 500),
+      talk_state: selection.talk_state,
+      application_deadline_at: selection.application_deadline_at,
       event_url: event.canonical_url,
       calendar_url: googleCalendarUrl(row.calendarSync.calendar_event_url),
     });
@@ -124,6 +145,12 @@ function buildConnectorCoverageTelegramMessage(input = {}) {
   const horizonDays = coverage.horizon_days;
   const calendar = googleCalendarUrl(input.calendarCoverageUrl);
   const newEvents = normalizeNewEvents(coverage, input.newEvents);
+  const rejectionCounts = input.rejectionCounts == null ? null : input.rejectionCounts;
+  if (rejectionCounts != null && (
+    !rejectionCounts || typeof rejectionCounts !== "object" || Array.isArray(rejectionCounts)
+    || Object.keys(rejectionCounts).sort().join(",") !== "other,unknown,weak"
+    || Object.values(rejectionCounts).some((value) => !Number.isInteger(value) || value < 0 || value > 100_000)
+  )) invalid();
   const lines = [
     coverage.counts.open === 0
       ? `✅ 今後${horizonDays}日のevent予定を確認しました。`
@@ -143,6 +170,10 @@ function buildConnectorCoverageTelegramMessage(input = {}) {
         `${index + 1}. ${shortDate(event.date)} ${displayText(event.title)}`,
         `   ${jaTimeRange(event.starts_at, event.ends_at, coverage.timezone)} / ${displayText(event.venue)}`,
         `   理由: ${displayText(event.reason)}`,
+        `   優先度: ${event.priority_class}`,
+        `   選定理由: ${displayText(event.preference_reason)}`,
+        `   LT: ${event.talk_state}`,
+        ...(event.application_deadline_at == null ? [] : [`   LT申請締切: ${jaInstant(event.application_deadline_at, coverage.timezone)}`]),
         "   イベントページ:",
         `   ${event.event_url}`,
         "   Calendar:",
@@ -156,6 +187,10 @@ function buildConnectorCoverageTelegramMessage(input = {}) {
       "",
       `空いている日: ${dates.join("、")}`,
       "この日々は終了扱いにしていません。予約が成立するまで探索と申込みを続けています。",
+    );
+    if (rejectionCounts) lines.push(
+      `品質基準で自動申請しなかった候補: weak ${rejectionCounts.weak}件 / unknown ${rejectionCounts.unknown}件 / other ${rejectionCounts.other}件`,
+      "適格候補が0件でも失敗ではありません。品質を落とさず次の探索を続けます。",
     );
   } else if (coverage.counts.covered_new === 0) {
     lines.push("", "予約できる空き枠が残っていないため、二重予約を作りませんでした。");

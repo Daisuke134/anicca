@@ -177,16 +177,7 @@ def validate_queue_contract(
     if not read_only and (queue.get("delivery_action") != "formal" or queue.get("formal_delivery_checkbox") is not True):
         raise ValueError("queue_not_formal")
     if not read_only:
-        approval = queue.get("formal_approval_evidence")
-        latest_identity = queue.get("latest_message_identity")
-        if not (
-            isinstance(approval, dict)
-            and isinstance(latest_identity, dict)
-            and approval == latest_identity
-            and approval.get("side") == "buyer"
-            and str(approval.get("message_id") or "").strip()
-            and re.fullmatch(r"[0-9a-f]{64}", str(approval.get("content_sha256") or ""))
-        ):
+        if not _formal_approval_ready(queue):
             raise ValueError("formal_buyer_approval_evidence_required")
     # B4 (spec section CC'): a subscription room (room_contract_kind, A5) has no 正式な納品
     # checkbox and no 納品確認待ち step to submit through. delivery_cadence.delivery_decision
@@ -273,7 +264,12 @@ def validate_queue_contract(
         isinstance(google_doc_link, str) and google_doc_link.startswith("https://docs.google.com/")
     ):
         raise ValueError("google_doc_link_invalid")
-    message = delivery_message(artifact.name, delta, google_doc_link)
+    linked_asset_delivery = _linked_asset_delivery(evidence)
+    message = str(manifest.get("customer_message") or "").strip() if linked_asset_delivery else delivery_message(
+        artifact.name, delta, google_doc_link,
+    )
+    if not message:
+        raise ValueError("message_invalid")
     violations = check_style(message)
     if violations:
         raise ValueError(f"buyer_style_violation:{violations[0]}")
@@ -290,7 +286,41 @@ def validate_queue_contract(
         "message": message,
         "event_key": f"coconala:formal:{project_id}:{digest}",
         "revision_after_formal": revision_after_formal,
+        "linked_asset_delivery": linked_asset_delivery,
     }
+
+
+def _formal_approval_ready(queue: dict[str, Any]) -> bool:
+    approval = queue.get("formal_approval_evidence")
+    latest_identity = queue.get("latest_buyer_message_identity") or queue.get("latest_message_identity")
+    return bool(
+        isinstance(approval, dict)
+        and isinstance(latest_identity, dict)
+        and approval == latest_identity
+        and approval.get("side") == "buyer"
+        and str(approval.get("message_id") or "").strip()
+        and re.fullmatch(r"[0-9a-f]{64}", str(approval.get("content_sha256") or ""))
+    )
+
+
+def _linked_asset_delivery(evidence: dict[str, Any]) -> bool:
+    required = evidence.get("required_assets")
+    produced = evidence.get("artifact_assets")
+    if not isinstance(required, list) or not required or not isinstance(produced, list):
+        return False
+    counts: dict[str, int] = {}
+    for row in produced:
+        if isinstance(row, dict) and row.get("type") == "linked_asset":
+            asset_id = str(row.get("asset_id") or "")
+            counts[asset_id] = counts.get(asset_id, 0) + 1
+    return all(
+        isinstance(row, dict)
+        and row.get("kind") == "linked_asset"
+        and isinstance(row.get("minimum_count"), int)
+        and row["minimum_count"] > 0
+        and counts.get(str(row.get("asset_id") or ""), 0) >= row["minimum_count"]
+        for row in required
+    )
 
 
 def state_expression(artifact_name: str) -> str:
@@ -351,7 +381,8 @@ def matching_delivery(state: dict[str, Any], contract: dict[str, Any]) -> dict[s
         return None
     for row in reversed(state.get("seller_messages") or []):
         if (
-            contract["artifact"].name in (row.get("attachments") or [])
+            (contract.get("linked_asset_delivery") is True
+             or contract["artifact"].name in (row.get("attachments") or []))
             and normalize_for_match(row.get("text")).startswith(expected)
         ):
             return row
@@ -694,15 +725,17 @@ async def execute(ws_url: str, contract: dict[str, Any], args: argparse.Namespac
                 mode, initial, revision_after_formal=contract.get("revision_after_formal") is True
             ):
                 raise RuntimeError("awaiting_buyer_confirmation")
-            await progress._upload(session, contract["artifact"])
-            await progress._wait_for_state(session, expression, lambda s: s.get("form_has_artifact") is True and s.get("formal_delivery_control_checked") is False, args.upload_timeout, "formal_upload_not_ready")
+            linked = contract.get("linked_asset_delivery") is True
+            if not linked:
+                await progress._upload(session, contract["artifact"])
+                await progress._wait_for_state(session, expression, lambda s: s.get("form_has_artifact") is True and s.get("formal_delivery_control_checked") is False, args.upload_timeout, "formal_upload_not_ready")
             await progress._fill_message(session, contract["message"])
-            await progress._wait_for_state(session, expression, lambda s: s.get("form_has_artifact") is True and s.get("textarea_value") == contract["message"] and s.get("send_button_disabled") is False, args.send_timeout, "formal_message_not_ready")
+            await progress._wait_for_state(session, expression, lambda s: (linked or s.get("form_has_artifact") is True) and s.get("textarea_value") == contract["message"] and s.get("send_button_disabled") is False, args.send_timeout, "formal_message_not_ready")
             if mode == "formal_checkbox":
                 await trusted_click(session, '.d-messageFormButtonArea_item-deliveryCheck input[type="checkbox"]')
-                await progress._wait_for_state(session, expression, lambda s: s.get("formal_delivery_control_checked") is True and s.get("form_has_artifact") is True and s.get("textarea_value") == contract["message"], args.send_timeout, "formal_checkbox_readback_failed")
+                await progress._wait_for_state(session, expression, lambda s: s.get("formal_delivery_control_checked") is True and (linked or s.get("form_has_artifact") is True) and s.get("textarea_value") == contract["message"], args.send_timeout, "formal_checkbox_readback_failed")
                 await close_formal_explanation(session)
-                await progress._wait_for_state(session, expression, lambda s: s.get("formal_delivery_control_checked") is True and s.get("form_has_artifact") is True and s.get("textarea_value") == contract["message"] and s.get("send_button_disabled") is False, args.send_timeout, "formal_after_explanation_not_ready")
+                await progress._wait_for_state(session, expression, lambda s: s.get("formal_delivery_control_checked") is True and (linked or s.get("form_has_artifact") is True) and s.get("textarea_value") == contract["message"] and s.get("send_button_disabled") is False, args.send_timeout, "formal_after_explanation_not_ready")
             await trusted_click_send(session)
             modal = await confirm_formal_modal_if_present(session) if mode == "formal_checkbox" else {}
             sent = True
@@ -754,7 +787,8 @@ def persist(contract: dict[str, Any], verified: dict[str, Any], screenshot: byte
         "send_performed": sent, "deduplicated": not sent, "transaction_state": verified["transaction_state"],
         "delivery_mode": mode,
         "formal_delivery_control_checked_before_send": mode == "formal_checkbox",
-        "seller_attachment_readback": contract["artifact"].name,
+        "seller_attachment_readback": None if contract.get("linked_asset_delivery") is True else contract["artifact"].name,
+        "linked_asset_delivery": contract.get("linked_asset_delivery") is True,
         "seller_message_readback": str(matched.get("text") or ""),
         "screenshot_path": str(screenshot_path), "dom_path": str(dom_path)
     }
@@ -777,11 +811,13 @@ def persist(contract: dict[str, Any], verified: dict[str, Any], screenshot: byte
         # True was hardcoded here while a 定期購入 room has no checkbox at all -- the
         # evidence gate downstream trusts this field, so it must state the room's truth.
         "formal_delivery_control_checked_before_send": mode == "formal_checkbox",
-        "latest_seller_attachment": {
+        "latest_seller_attachment": None if contract.get("linked_asset_delivery") is True else {
             "filename": contract["artifact"].name,
             "size_bytes": contract["artifact"].stat().st_size,
             "message": str(matched.get("text") or ""),
         },
+        "latest_seller_message": str(matched.get("text") or ""),
+        "linked_asset_delivery": contract.get("linked_asset_delivery") is True,
         "formal_effect_key": contract["event_key"],
     }
     queue_outer = {
@@ -799,6 +835,7 @@ def persist(contract: dict[str, Any], verified: dict[str, Any], screenshot: byte
         "screenshot_path": str(queue_screenshot_path),
         "live_dom_path": str(queue_dom_path),
         "formal_effect_key": contract["event_key"],
+        "linked_asset_delivery": contract.get("linked_asset_delivery") is True,
     }
     collector.atomic_json(queue_dom_path, queue_live)
     collector.atomic_json(queue_manifest_path, queue_outer)

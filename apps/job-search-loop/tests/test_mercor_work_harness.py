@@ -9,7 +9,7 @@ from job_search_loop.mercor_work_harness import (
 
 
 class MercorWorkHarnessTests(unittest.TestCase):
-    def test_authorized_work_to_settled_payout_to_revenue(self):
+    def test_authorized_work_to_bank_matched_revenue(self):
         state = "submitted_pending_review"
         for next_state in ("selected", "contracted", "authorized_work", "work_submitted", "accepted"):
             kwargs = {}
@@ -32,7 +32,28 @@ class MercorWorkHarnessTests(unittest.TestCase):
             amount_usd="125.00",
         )
         self.assertEqual(state, "paid_settled")
-        self.assertEqual(revenue_record(event), {"payment_id": "pay-1", "amount_usd": Decimal("125.00")})
+        with self.assertRaises(WorkHarnessError):
+            revenue_record(event)
+        state, bank = advance_state(
+            state,
+            "bank_matched",
+            evidence_ref="bank://transaction-1",
+            payment_id="pay-1",
+            payout_id="payout-1",
+            bank_transaction_id="transaction-1",
+            match_status="matched",
+            amount_usd="125.00",
+        )
+        self.assertEqual(state, "bank_matched")
+        self.assertEqual(
+            revenue_record(bank),
+            {
+                "payment_id": "pay-1",
+                "payout_id": "payout-1",
+                "bank_transaction_id": "transaction-1",
+                "amount_usd": Decimal("125.00"),
+            },
+        )
 
     def test_revenue_requires_settled_payment_evidence(self):
         with self.assertRaises(WorkHarnessError):
@@ -47,7 +68,7 @@ class MercorWorkHarnessTests(unittest.TestCase):
         with self.assertRaises(WorkHarnessError):
             revenue_record(
                 {
-                    "state": "accepted",
+                    "state": "paid_settled",
                     "payment_id": "offer-1",
                     "amount_usd": "125.00",
                 }

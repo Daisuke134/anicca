@@ -8,6 +8,33 @@ from job_search_loop.mercor_work_store import WorkStateStore
 
 
 class MercorEarningsSyncTests(unittest.TestCase):
+    def test_unacknowledged_payout_report_is_delivery_unknown(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self._store_accepted(root / "work-events.jsonl")
+            snapshot = root / "earnings.json"
+            snapshot.write_text(
+                json.dumps(
+                    {
+                        "provider": "mercor",
+                        "page_url": "https://work.mercor.com/earnings",
+                        "observed_at": "2026-08-22T12:00:00+00:00",
+                        "total_earnings_usd": "125.00",
+                        "payment_history_status": "has_rows",
+                        "rows": [{"payment_id": "pay-unacknowledged", "status": "Paid", "earned_usd": "125.00", "payout_date": "2026-08-22", "work_id": "application-1"}],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            result = sync_earnings_snapshot(
+                snapshot_path=snapshot,
+                store_path=root / "work-events.jsonl",
+                outbox_path=root / "telegram.sqlite3",
+                sender=lambda **_: {"status": "send_started", "message_id": None},
+            )
+
+        self.assertEqual(result["events"][0]["delivery"], "delivery_unknown")
+
     def _store_accepted(self, path: Path) -> WorkStateStore:
         store = WorkStateStore(path)
         for state in ("selected", "contracted", "authorized_work", "work_submitted", "accepted"):
@@ -25,7 +52,7 @@ class MercorEarningsSyncTests(unittest.TestCase):
             )
         return store
 
-    def test_settled_row_advances_work_and_revenue(self):
+    def test_settled_row_waits_for_bank_match_before_revenue(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             store = self._store_accepted(root / "work-events.jsonl")
@@ -60,7 +87,8 @@ class MercorEarningsSyncTests(unittest.TestCase):
             )
             self.assertEqual(result["status"], "settled")
             self.assertEqual(result["synced_count"], 1)
-            self.assertEqual(WorkStateStore(root / "work-events.jsonl").current_state("application-1"), "revenue_recorded")
+            self.assertEqual(result["events"][0]["state"], "paid_settled")
+            self.assertEqual(WorkStateStore(root / "work-events.jsonl").current_state("application-1"), "paid_settled")
 
     def test_no_payment_history_does_not_change_work_state(self):
         with tempfile.TemporaryDirectory() as directory:

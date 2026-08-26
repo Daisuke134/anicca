@@ -1,0 +1,392 @@
+import unittest
+import inspect
+import tempfile
+import fcntl
+import os
+import threading
+import time
+from pathlib import Path
+from unittest.mock import AsyncMock, patch
+
+from job_search_loop.browser_agent.direct_cdp import DirectCDPPage
+from job_search_loop.browser_agent.observation import ObservationBuilder
+from job_search_loop.browser_agent.actions import ActionExecutor
+from job_search_loop.browser_agent.contracts import ActionTargetV1, VisibleActionV1
+from job_search_loop.browser_agent.runtime import main as browser_runtime_main
+from job_search_loop.browser_agent.runtime import auth, type_candidate, type_text
+from job_search_loop.runtime import main as compatibility_runtime_main
+
+
+class DirectCDPTypeTests(unittest.IsolatedAsyncioTestCase):
+    def test_command_lock_waits_for_the_active_runtime_command(self):
+        from job_search_loop.browser_agent import runtime
+
+        with tempfile.TemporaryDirectory() as directory, patch.object(
+            runtime, "_path_env", return_value=Path(directory)
+        ):
+            path = Path(directory) / "command.lock"
+            descriptor = os.open(path, os.O_RDWR | os.O_CREAT, 0o600)
+            lock = os.fdopen(descriptor, "r+")
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            released = threading.Event()
+
+            def release():
+                time.sleep(0.05)
+                lock.close()
+                released.set()
+
+            thread = threading.Thread(target=release)
+            thread.start()
+            with runtime._exclusive_command():
+                self.assertTrue(released.is_set())
+            thread.join()
+
+    async def test_auth_rejects_html_input_type_as_a_role_before_secret_action(self):
+        from job_search_loop.browser_agent import runtime
+
+        observation = {"status": "observed", "observation": {"controls": []}}
+        with patch.object(
+            runtime, "observe", new=AsyncMock(return_value=observation)
+        ) as observe, patch.object(
+            runtime, "_context", new=AsyncMock()
+        ) as context:
+            result = await auth(
+                mode="sign_in",
+                field="password",
+                label="Password*",
+                role="password",
+                stable_id="id:input-5",
+            )
+
+        self.assertEqual(result["status"], "action_rejected")
+        self.assertEqual(result["reason"], "auth_requires_textbox_role")
+        observe.assert_awaited_once()
+        context.assert_not_awaited()
+
+    def test_observation_ignores_only_the_passive_recaptcha_badge(self):
+        source = inspect.getsource(ObservationBuilder.build)
+
+        self.assertIn("!el.closest('.grecaptcha-badge')", source)
+        self.assertIn("iframe,[data-sitekey]", source)
+
+    async def test_literal_type_rejects_an_expired_target_with_fresh_observation(self):
+        from job_search_loop.browser_agent import runtime
+
+        observation = {"status": "observed", "observation": {"controls": []}}
+        with tempfile.TemporaryDirectory() as directory, patch.object(
+            runtime,
+            "_act_locked",
+            new=AsyncMock(
+                side_effect=RuntimeError(
+                    "action target must resolve to exactly one visible enabled control (count=0)"
+                )
+            ),
+        ), patch.object(
+            runtime, "observe", new=AsyncMock(return_value=observation)
+        ) as observe, patch.object(
+            runtime, "_path_env", return_value=Path(directory)
+        ):
+            result = await type_text(
+                label="Year", role="spinbutton", stable_id="id:expired", text="2020"
+            )
+
+        self.assertEqual(result["status"], "action_rejected")
+        self.assertEqual(result["reason"], "observed_text_target_no_longer_visible")
+        observe.assert_awaited_once()
+
+    async def test_literal_type_rejects_focus_lost_during_controlled_rerender(self):
+        from job_search_loop.browser_agent import runtime
+
+        observation = {"status": "observed", "observation": {"controls": []}}
+        with tempfile.TemporaryDirectory() as directory, patch.object(
+            runtime,
+            "_act_locked",
+            new=AsyncMock(
+                side_effect=RuntimeError(
+                    "visible text target did not accept whole-value selection"
+                )
+            ),
+        ), patch.object(
+            runtime, "observe", new=AsyncMock(return_value=observation)
+        ) as observe, patch.object(
+            runtime, "_path_env", return_value=Path(directory)
+        ):
+            result = await type_text(
+                label="Country*", role="combobox", stable_id="id:country", text="Japan"
+            )
+
+        self.assertEqual(result["status"], "action_rejected")
+        self.assertEqual(result["reason"], "observed_text_target_lost_focus")
+        observe.assert_awaited_once()
+
+    async def test_type_rejects_non_text_control_without_browser_action(self):
+        observation = {"status": "observed", "observation": {"controls": []}}
+        with patch(
+            "job_search_loop.browser_agent.runtime.observe",
+            new=AsyncMock(return_value=observation),
+        ) as observe, patch(
+            "job_search_loop.browser_agent.runtime.act",
+            new=AsyncMock(),
+        ) as act:
+            result = await type_candidate(
+                label="Please Select One",
+                role="button",
+                stable_id="id:gender",
+                candidate_concept="policy.prefer_not_to_say",
+            )
+
+        self.assertEqual(result["status"], "action_rejected")
+        self.assertEqual(result["reason"], "type_requires_text_control")
+        observe.assert_awaited_once()
+        act.assert_not_awaited()
+
+    async def test_candidate_type_rejects_focus_lost_during_controlled_rerender(self):
+        from job_search_loop.browser_agent import runtime
+
+        observation = {"status": "observed", "observation": {"controls": []}}
+        with tempfile.TemporaryDirectory() as directory, patch.object(
+            runtime,
+            "act",
+            new=AsyncMock(
+                side_effect=RuntimeError(
+                    "visible text target did not accept whole-value selection"
+                )
+            ),
+        ), patch.object(
+            runtime, "observe", new=AsyncMock(return_value=observation)
+        ) as observe, patch.object(
+            runtime, "_path_env", return_value=Path(directory)
+        ):
+            result = await type_candidate(
+                label="First Name",
+                role="textbox",
+                stable_id="id:first_name",
+                candidate_concept="candidate.name_romaji_parts.given",
+            )
+
+        self.assertEqual(result["status"], "action_rejected")
+        self.assertEqual(result["reason"], "observed_text_target_lost_focus")
+        observe.assert_awaited_once()
+
+    async def test_candidate_type_rejects_a_non_scalar_concept_before_action(self):
+        from job_search_loop.browser_agent import runtime
+
+        observation = {"status": "observed", "observation": {"controls": []}}
+        with tempfile.TemporaryDirectory() as directory, patch.object(
+            runtime,
+            "act",
+            new=AsyncMock(
+                side_effect=ValueError("candidate concept is not a scalar browser value")
+            ),
+        ), patch.object(
+            runtime, "observe", new=AsyncMock(return_value=observation)
+        ) as observe, patch.object(
+            runtime, "_path_env", return_value=Path(directory)
+        ):
+            result = await type_candidate(
+                label="Location (City)*",
+                role="combobox",
+                stable_id="id:candidate-location",
+                candidate_concept="candidate.location_preferences",
+            )
+
+        self.assertEqual(result["status"], "action_rejected")
+        self.assertEqual(result["reason"], "candidate_concept_requires_scalar_value")
+        observe.assert_awaited_once()
+
+    async def test_premature_finalize_returns_fresh_action_rejection_before_fence(self):
+        from job_search_loop.browser_agent import runtime
+
+        observation = unittest.mock.Mock(
+            controls=(),
+            url="https://jobs.ashbyhq.com/example/role/application",
+            title="Role @ Example",
+            visible_text="Editable application form",
+            content_sha256="a" * 64,
+            validation_text=(),
+            visible_challenges=(),
+        )
+        cursor = unittest.mock.Mock(checkpoint=None)
+        cursor.handle.row_run_id = "row-run"
+        builder = unittest.mock.Mock()
+        builder.build = AsyncMock(return_value=observation)
+        context = (
+            {
+                "application_id": "application",
+                "company": "Example",
+                "title": "Role",
+                "canonical_url": "https://jobs.ashbyhq.com/example/role",
+            },
+            unittest.mock.Mock(),
+            unittest.mock.Mock(),
+            unittest.mock.Mock(),
+            cursor,
+            builder,
+        )
+        verifier = unittest.mock.Mock()
+        verifier.verify = AsyncMock(return_value=unittest.mock.Mock())
+        with patch.object(
+            runtime, "_context", new=AsyncMock(return_value=context)
+        ), patch.object(
+            runtime,
+            "_routed_resume",
+            return_value={"resume_path": "/tmp/resume.pdf", "resume_sha256": "b" * 64},
+        ), patch.object(
+            runtime, "ResumeVerifier", return_value=verifier
+        ), patch.object(
+            runtime,
+            "verify_final_review",
+            side_effect=RuntimeError("company or role is absent from final review"),
+        ), patch.object(runtime, "_wake_budget", return_value=9), patch.object(
+            runtime, "Ledger"
+        ) as ledger:
+            result = await runtime.finalize()
+
+        self.assertEqual(result["status"], "action_rejected")
+        self.assertEqual(result["reason"], "final_review_not_ready")
+        self.assertEqual(result["observation"]["url"], observation.url)
+        ledger.assert_not_called()
+
+    async def test_upload_rejects_file_textbox_before_file_chooser(self):
+        from job_search_loop.browser_agent import runtime
+
+        observation = {"status": "observed", "observation": {"controls": []}}
+        with patch.object(
+            runtime,
+            "observe",
+            new=AsyncMock(return_value=observation),
+        ) as observe, patch.object(
+            runtime,
+            "_context",
+            new=AsyncMock(),
+        ) as context:
+            result = await runtime.upload_resume(
+                label="Resume",
+                role="textbox",
+                stable_id="id:_systemfield_resume",
+            )
+
+        self.assertEqual(result["status"], "action_rejected")
+        self.assertEqual(result["reason"], "upload_requires_button_control")
+        observe.assert_awaited_once()
+        context.assert_not_awaited()
+
+    async def test_upload_rejects_a_button_that_opens_no_file_chooser(self):
+        from job_search_loop.browser_agent import runtime
+
+        row = {"title": "Role"}
+        cursor = unittest.mock.Mock()
+        builder = unittest.mock.Mock()
+        builder.build = AsyncMock(return_value=unittest.mock.Mock(visible_text="Form"))
+        context = (row, None, None, None, cursor, builder)
+        observation = {"status": "observed", "observation": {"controls": []}}
+        with tempfile.TemporaryDirectory() as directory, patch.object(
+            runtime, "_context", new=AsyncMock(return_value=context)
+        ), patch.object(
+            runtime,
+            "_routed_resume",
+            return_value={"resume_path": "/tmp/resume.pdf"},
+        ), patch.object(
+            runtime, "act", new=AsyncMock(side_effect=TimeoutError())
+        ), patch.object(
+            runtime, "observe", new=AsyncMock(return_value=observation)
+        ) as observe, patch.object(
+            runtime, "_path_env", return_value=Path(directory)
+        ):
+            result = await runtime.upload_resume(
+                label="Attach", role="button", stable_id="ref:e23"
+            )
+
+        self.assertEqual(result["status"], "action_rejected")
+        self.assertEqual(result["reason"], "upload_control_did_not_open_file_chooser")
+        observe.assert_awaited_once()
+
+    async def test_screenshot_does_not_reflow_virtualized_provider_lists(self):
+        page = DirectCDPPage("ws://example", "target")
+        page._ensure_viewport = AsyncMock()
+        page.call = AsyncMock(return_value={"data": "eA=="})
+
+        await page.screenshot(full_page=True)
+
+        self.assertFalse(page.call.await_args.args[1]["captureBeyondViewport"])
+
+    def test_short_runtime_entrypoint_is_the_same_bounded_runtime(self):
+        self.assertIs(compatibility_runtime_main, browser_runtime_main)
+
+    async def test_choose_reopens_an_expired_overlay_and_clicks_the_option_atomically(self):
+        page = DirectCDPPage("ws://example", "target")
+        page.click_target = AsyncMock(side_effect=[RuntimeError("expired id"), None])
+        session = unittest.mock.Mock()
+        session.page.return_value = page
+        action = VisibleActionV1(
+            "choose",
+            target=ActionTargetV1("option", "Website", stable_id="id:menuItem"),
+            opener=ActionTargetV1("button", "Source options", stable_id="automation:promptSearchButton"),
+        )
+
+        await ActionExecutor(session)._execute_direct(page, action)
+
+        self.assertEqual(page.click_target.await_count, 2)
+
+    def test_target_resolution_includes_pointer_operated_provider_controls(self):
+        script = DirectCDPPage._target_script(
+            {"label": "Search options", "role": "button", "stable_id": "automation:picker"}
+        )
+        self.assertIn("[data-automation-id]", script)
+        self.assertIn("cursor==='pointer'?'button'", script)
+        self.assertIn("relatedInput", script)
+        self.assertIn("if (resolvedByStableId) return true", script)
+        self.assertIn("closest('[role=\"option\"]')", inspect.getsource(ObservationBuilder.build))
+
+    def test_anonymous_fieldset_textarea_uses_question_label_for_observe_and_resolve(self):
+        observation_source = inspect.getsource(ObservationBuilder.build)
+        target_source = DirectCDPPage._target_script(
+            {"label": "Notice Period", "role": "textbox", "stable_id": "ref:e1"}
+        )
+
+        for source in (observation_source, target_source):
+            self.assertIn("const fieldsetLabel", source)
+            self.assertIn("fieldsetControls.length", source)
+            self.assertIn("input,select,textarea,button", source)
+            self.assertIn("closest('fieldset')", source)
+            self.assertIn("querySelector(':scope > legend')", source)
+        self.assertIn("!/^error\\\\b/i.test", observation_source)
+        self.assertIn("!/^error\\b/i.test", target_source)
+        self.assertIn("fieldsetLabel", observation_source)
+        self.assertIn("fieldsetLabel", target_source)
+        self.assertLess(
+            observation_source.index("|| fieldsetLabel ||"),
+            observation_source.index("el.getAttribute('placeholder')"),
+        )
+        self.assertLess(
+            target_source.index("||fieldsetLabel||"),
+            target_source.index("el.getAttribute('placeholder')"),
+        )
+
+    async def test_type_selects_the_existing_whole_value_before_inserting(self):
+        page = DirectCDPPage("ws://example", "target")
+        page.click_target = AsyncMock(side_effect=AssertionError("typing must focus before transition wait"))
+        page.resolve_target = AsyncMock(return_value={"x": 10.0, "y": 20.0})
+        page.evaluate = AsyncMock(return_value=True)
+        page.call = AsyncMock(return_value={})
+
+        await page.type_target(
+            {"label": "First name", "role": "textbox", "stable_id": "ref:e1"},
+            "Daisuke",
+        )
+
+        page.evaluate.assert_awaited_once()
+        page.click_target.assert_not_awaited()
+        page.resolve_target.assert_awaited_once()
+        self.assertEqual(page.call.await_args_list[0].args[0], "Input.dispatchMouseEvent")
+        self.assertIn("el.select()", page.evaluate.await_args.args[0])
+        self.assertIn("el.value.length === 0", page.evaluate.await_args.args[0])
+        self.assertIn("document.activeElement === el", page.evaluate.await_args.args[0])
+        self.assertEqual(
+            [call.args for call in page.call.await_args_list if call.args[0] == "Input.insertText"],
+            [("Input.insertText", {"text": "Daisuke"})],
+        )
+
+
+if __name__ == "__main__":
+    unittest.main()

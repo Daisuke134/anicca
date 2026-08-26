@@ -8,6 +8,7 @@ const DIRECT = /^https:\/\/www\.tiktok\.com\/@([A-Za-z0-9._-]+)\/video\/(\d+)$/;
 const WINDOWS = new Set(["2h", "24h", "72h", "7d"]);
 const IDENTIFIER = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
 const LOCALE = /^[a-z]{2}(?:-[A-Z]{2})?$/;
+const ACCOUNT = /^@[A-Za-z0-9._-]{1,127}$/;
 const ACCOUNT_LABELS = Object.freeze({
   Followers: "followers",
   Following: "following",
@@ -166,6 +167,22 @@ function persistTikTokCombinedSnapshot(input) {
   return Object.freeze({ created: true, file, snapshot });
 }
 
+function persistPostizPhotoSnapshot(input) {
+  if (!WINDOWS.has(input.window) || !IDENTIFIER.test(String(input.tenantId || "")) || !IDENTIFIER.test(String(input.productId || "")) || !IDENTIFIER.test(String(input.integrationId || "")) || !IDENTIFIER.test(String(input.providerPostId || "")) || !LOCALE.test(String(input.locale || "")) || !ACCOUNT.test(String(input.account || "")) || input.publicUrl !== "unavailable" || !Number.isFinite(Date.parse(input.publishedAt)) || !Number.isFinite(Date.parse(input.observedAt))) throw new Error("Postiz photo metric snapshot identity invalid");
+  const source = postizPostSource(input.postizPostAnalytics);
+  const unavailable = { status: "unavailable", value: null, reason: "postiz_post_metric_unavailable" };
+  const post = Object.fromEntries(["views", "likes", "comments", "shares"].map((key) => [key, source.status === "measured" && source.metrics[key] ? source.metrics[key] : { ...unavailable }]));
+  for (const key of ["saves", "reach", "watch_time", "completion", "engagement"]) post[key] = { status: "unavailable", value: null, reason: "metric_not_supported" };
+  const directory = path.resolve(input.dataDir, "tenants", input.tenantId, "marketing", "metrics", input.account.slice(1), input.providerPostId);
+  const file = path.join(directory, `${input.window}.combined.json`);
+  const captionSha256 = crypto.createHash("sha256").update(Buffer.from(input.caption)).digest("hex");
+  fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
+  if (fs.existsSync(file)) return Object.freeze({ created: false, file, snapshot: JSON.parse(fs.readFileSync(file, "utf8")) });
+  const snapshot = { schema_version: 1, kind: "tiktok_postiz_photo_metric_snapshot", tenant_id: input.tenantId, product_id: input.productId, locale: input.locale, account_id: input.account, integration_id: input.integrationId, provider_post_id: input.providerPostId, video_id: input.providerPostId, public_url: "unavailable", window: input.window, published_at: input.publishedAt, observed_at: input.observedAt, caption_sha256: captionSha256, sources: { tiktok_native: { status: "unavailable", reason: "photo_url_not_required" }, postiz_post: source, postiz_account: { status: "measured", scope: "current account plus aggregate of latest 20 videos" } }, post, account_metrics: extractPostizAccountMetrics(input.postizAccountAnalytics) };
+  const temporary = `${file}.tmp-${process.pid}-${crypto.randomUUID()}`; fs.writeFileSync(temporary, `${JSON.stringify(snapshot, null, 2)}\n`, { mode: 0o600, flag: "wx" }); fs.renameSync(temporary, file); fs.chmodSync(file, 0o600);
+  return Object.freeze({ created: true, file, snapshot });
+}
+
 function persistTikTokNativeSnapshot(input) {
   const direct = DIRECT.exec(String(input.publicUrl || ""));
   if (
@@ -225,6 +242,7 @@ module.exports = {
   extractPostizAccountMetrics,
   extractTikTokNativeMetrics,
   persistTikTokCombinedSnapshot,
+  persistPostizPhotoSnapshot,
   persistTikTokNativeSnapshot,
   postizPostSource,
 };

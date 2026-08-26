@@ -15,8 +15,9 @@ import tempfile
 import shutil
 from pathlib import Path
 
-ENTRYPOINT = "skills/gig-work/scripts/paid_direct.py"
+ENTRYPOINT = "skills/earn/gig/scripts/paid_direct.py"
 MANIFEST = "RELEASE-MANIFEST.json"
+DEFAULT_REPO = Path(__file__).resolve().parents[4]
 
 
 class ReleaseError(RuntimeError):
@@ -80,6 +81,20 @@ def _archive(repo: Path, commit: str) -> bytes:
     return bytes(_git(repo, "archive", "--format=tar", commit, binary=True))
 
 
+def _release_filter(member: tarfile.TarInfo, destination: str) -> tarfile.TarInfo:
+    """Apply the stdlib data policy while allowing symlinks that stay inside the release."""
+    if not member.issym():
+        return tarfile.data_filter(member, destination)
+    filtered = tarfile.tar_filter(member, destination)
+    root = Path(destination).resolve()
+    target = (root / Path(filtered.name).parent / filtered.linkname).resolve()
+    try:
+        target.relative_to(root)
+    except ValueError as error:
+        raise ReleaseError(f"release symlink escapes root: {filtered.name}") from error
+    return filtered
+
+
 def verify(repo: Path, release: Path) -> dict:
     release = release.resolve()
     manifest = _manifest(release / MANIFEST)
@@ -124,7 +139,7 @@ def build(repo: Path, release_root: Path, revision: str) -> dict:
     stage = Path(tempfile.mkdtemp(prefix=f".{commit}.build-", dir=release_root))
     try:
         with tarfile.open(fileobj=io.BytesIO(archive), mode="r:") as source:
-            source.extractall(stage, filter="data")
+            source.extractall(stage, filter=_release_filter)
         entrypoint = stage / ENTRYPOINT
         if not entrypoint.is_file() or entrypoint.is_symlink():
             raise ReleaseError("Paid entrypoint is missing from archive")
@@ -218,7 +233,7 @@ def gc(repo: Path, release_root: Path) -> dict:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--repo", type=Path, default=Path(__file__).resolve().parents[3])
+    parser.add_argument("--repo", type=Path, default=DEFAULT_REPO)
     parser.add_argument("--release-root", type=Path, default=Path.home() / "gig/releases/paid")
     sub = parser.add_subparsers(dest="command", required=True)
     build_parser = sub.add_parser("build"); build_parser.add_argument("revision")

@@ -8,6 +8,25 @@ from job_search_loop.mercor_work_sync import sync_result
 
 
 class MercorWorkSyncTests(unittest.TestCase):
+    def test_unacknowledged_work_report_is_delivery_unknown(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            result_path = root / "result.json"
+            result_path.write_text(
+                json.dumps(
+                    {"mercor_work_events": [{"work_id": "application-1", "event_id": "selected-unacknowledged", "next_state": "selected", "evidence_ref": "gmail://message-1"}]}
+                ),
+                encoding="utf-8",
+            )
+            result = sync_result(
+                result_path=result_path,
+                store_path=root / "work-events.jsonl",
+                outbox_path=root / "telegram.sqlite3",
+                sender=lambda **_: {"status": "send_started", "message_id": None},
+            )
+
+        self.assertEqual(result["events"][0]["delivery"], "delivery_unknown")
+
     def test_syncs_optional_events_and_is_idempotent(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

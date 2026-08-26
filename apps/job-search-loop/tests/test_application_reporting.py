@@ -4,14 +4,346 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
 
 from job_search_loop import telegram
 from job_search_loop.ledger import Ledger
-from job_search_loop.outbox import DeliveryUncertain
+from job_search_loop.outbox import Outbox
 
 
 class ApplicationReportingTests(unittest.TestCase):
+    def test_terminal_report_is_run_scoped_idempotent_and_records_unknown_delivery(self):
+        reporting = importlib.import_module("job_search_loop.application_reporting")
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            requests = []
+
+            def requester(**request):
+                requests.append(request)
+                return {"ok": True, "result": {"message_id": 701}}
+
+            def sender(**kwargs):
+                return __import__("job_search_loop.telegram", fromlist=["send_once"]).send_once(
+                    **kwargs,
+                    target="test-chat",
+                    token="test-token",
+                    requester=requester,
+                )
+
+            first = reporting.deliver_terminal_report(
+                outbox_path=root / "outbox.sqlite3",
+                run_id="inbox-test-1",
+                outcome="no_work",
+                reason="no_new_messages_or_preparation",
+                output_path=root / "terminal.json",
+                sender=sender,
+            )
+            replay = reporting.deliver_terminal_report(
+                outbox_path=root / "outbox.sqlite3",
+                run_id="inbox-test-1",
+                outcome="no_work",
+                reason="no_new_messages_or_preparation",
+                output_path=root / "terminal.json",
+                sender=sender,
+            )
+            unknown = reporting.deliver_terminal_report(
+                outbox_path=root / "unknown.sqlite3",
+                run_id="inbox-test-2",
+                outcome="failed",
+                reason="runner_failed",
+                output_path=root / "unknown.json",
+                sender=lambda **_: (_ for _ in ()).throw(RuntimeError("offline")),
+            )
+
+            self.assertEqual(first["delivery"], "ack")
+            self.assertEqual(replay["event_key"], "job-search-inbox:inbox-test-1")
+            self.assertEqual(len(requests), 1)
+            self.assertEqual(unknown["delivery"], "delivery_unknown")
+            self.assertEqual(oct((root / "terminal.json").stat().st_mode & 0o777), "0o600")
+
+    def test_application_progress_reuses_fit_reason_and_is_run_scoped(self):
+        reporting = importlib.import_module("job_search_loop.application_reporting")
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            ledger_path = root / "ledger.sqlite3"
+            outbox_path = root / "telegram.sqlite3"
+            ledger = Ledger(ledger_path)
+            application_id = ledger.add_application(
+                "Dream AI",
+                "Product Manager",
+                "https://dream.wd1.myworkdayjobs.com/job/1",
+            )
+            ledger.transition(application_id, "qualified")
+            ledger.transition(application_id, "materials_ready")
+            evidence = "a" * 64
+            ledger.record_workday_fit_decision(
+                application_id,
+                decision="qualified",
+                evidence_sha256=evidence,
+                policy_version="test-v1",
+            )
+            ledger.close()
+            outbox = Outbox(outbox_path)
+            fit_key = f"workday-fit:{application_id}:{evidence}"
+            fit_message = (
+                "Codex::: [Job Hunter][応募判断]\n"
+                "理由: Resume evidence matches the complete JD.\n"
+                "給与: Published salary meets the floor."
+            )
+            outbox.enqueue(fit_key, fit_message)
+            fence = outbox.claim(fit_key)
+            outbox.mark_send_started(fit_key, fence)
+            outbox.mark_sent(fit_key, fence, "fit-100")
+            outbox.close()
+            calls = []
+
+            def sender(**kwargs):
+                calls.append(kwargs)
+                return {"status": "sent", "message_id": "progress-101"}
+
+            receipt = reporting.deliver_application_progress(
+                ledger_path=ledger_path,
+                outbox_path=outbox_path,
+                application_id=application_id,
+                run_id="daily-1",
+                sender=sender,
+            )
+            self.assertEqual(receipt["message_id"], "progress-101")
+            self.assertIn("Dream AI", calls[0]["message"])
+            self.assertIn("Product Manager", calls[0]["message"])
+            self.assertIn("Resume evidence matches", calls[0]["message"])
+            self.assertIn("Published salary meets", calls[0]["message"])
+            self.assertEqual(
+                calls[0]["event_key"],
+                f"workday-application-progress:{application_id}:daily-1",
+            )
+
+    def test_wake_report_prefers_semantic_failure_over_runner_success(self):
+        reporting = importlib.import_module("job_search_loop.application_reporting")
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            ledger_path = root / "ledger.sqlite3"
+            ledger = Ledger(ledger_path)
+            application_id = ledger.add_application(
+                "NVIDIA",
+                "AI Role",
+                "https://nvidia.wd5.myworkdayjobs.com/job/JR-semantic",
+            )
+            ledger.close()
+            discovery = root / "workday-discovery.json"
+            discovery.write_text(
+                json.dumps(
+                    {
+                        "status": "queue_present",
+                        "queued_application_ids": [application_id],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            result = root / "result.json"
+            result.write_text(
+                json.dumps(
+                    {
+                        "status": "transport_failed",
+                        "submitted": [],
+                        "submit_unknown": [],
+                        "blocked": ["NVIDIA — AI Role"],
+                        "report_message_id": None,
+                    }
+                ),
+                encoding="utf-8",
+            )
+            summary = root / "summary.json"
+            summary.write_text(
+                json.dumps({"status": "success", "result_path": str(result)}),
+                encoding="utf-8",
+            )
+            (root / "semantic-validation.json").write_text(
+                json.dumps(
+                    {"status": "failed", "reason": "transport_failed_without_command_failure"}
+                ),
+                encoding="utf-8",
+            )
+            calls = []
+
+            def sender(**kwargs):
+                calls.append(kwargs)
+                return {"status": "sent", "message_id": "902", "event_key": "key"}
+
+            receipt = reporting.deliver_wake_report(
+                ledger_path=ledger_path,
+                outbox_path=root / "outbox.sqlite3",
+                run_id="daily-semantic",
+                japan_day="2026-08-24",
+                runner_summary_path=summary,
+                discovery_path=discovery,
+                output_path=root / "wake-report.json",
+                sender=sender,
+            )
+
+            self.assertEqual(receipt["outcome"], "failed")
+            self.assertEqual(
+                receipt["reason"],
+                "transport_failed_without_command_failure",
+            )
+            self.assertIn("Workday処理を完了できませんでした", calls[0]["message"])
+            self.assertIn("transport_failed_without_command_failure", calls[0]["message"])
+    def test_quota_failed_wake_reports_queued_company_role_and_next_action(self):
+        reporting = importlib.import_module("job_search_loop.application_reporting")
+        deliver = getattr(reporting, "deliver_wake_report", None)
+        self.assertIsNotNone(deliver)
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            ledger_path = root / "ledger.sqlite3"
+            ledger = Ledger(ledger_path)
+            application_id = ledger.add_application(
+                "NVIDIA",
+                "Senior AI Partner Manager",
+                "https://nvidia.wd5.myworkdayjobs.com/job/JR-test",
+            )
+            ledger.transition(application_id, "qualified")
+            ledger.transition(application_id, "materials_ready")
+            ledger.close()
+            discovery = root / "workday-discovery.json"
+            discovery.write_text(
+                json.dumps(
+                    {
+                        "status": "queue_present",
+                        "queued_application_ids": [application_id],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            attempts = root / "attempts.jsonl"
+            attempts.write_text(
+                json.dumps(
+                    {"error_class": "transient_quota", "adapter_error": None}
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            summary = root / "summary.json"
+            summary.write_text(
+                json.dumps(
+                    {
+                        "status": "failed",
+                        "attempts_path": str(attempts),
+                    }
+                ),
+                encoding="utf-8",
+            )
+            calls = []
+
+            def sender(**kwargs):
+                calls.append(kwargs)
+                return {
+                    "status": "sent",
+                    "message_id": "wake-901",
+                    "event_key": "job-search-daily:test",
+                }
+
+            output = root / "wake-report.json"
+            receipt = deliver(
+                ledger_path=ledger_path,
+                outbox_path=root / "telegram.sqlite3",
+                run_id="daily-test",
+                japan_day="2026-08-24",
+                runner_summary_path=summary,
+                discovery_path=discovery,
+                output_path=output,
+                sender=sender,
+            )
+
+            message = calls[0]["message"]
+            self.assertIn("Codex:::", message)
+            self.assertIn("会社: NVIDIA", message)
+            self.assertIn("求人: Senior AI Partner Manager", message)
+            self.assertIn("Workday処理を完了できませんでした", message)
+            self.assertIn("transient_quota", message)
+            self.assertIn("利用可能なモデル容量", message)
+            self.assertIn("ユーザーの操作は必要ありません", message)
+            self.assertEqual(receipt["message_id"], "wake-901")
+            self.assertEqual(receipt, json.loads(output.read_text(encoding="utf-8")))
+            self.assertEqual(output.stat().st_mode & 0o777, 0o600)
+
+    def test_reconciled_receipt_sends_authoritative_submitted_correction_once(self):
+        reporting = importlib.import_module("job_search_loop.application_reporting")
+        deliver = reporting.deliver_reconciled_outcomes
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            ledger = Ledger(root / "ledger.sqlite3")
+            application_id = ledger.add_application(
+                "Dream AI", "Agent Engineer", "https://dream.wd1.myworkdayjobs.com/job/1"
+            )
+            ledger.transition(application_id, "qualified")
+            ledger.transition(application_id, "materials_ready")
+            resume = root / "resume.pdf"
+            resume.write_bytes(b"%PDF-1.4\nresume\n")
+            snapshot = root / "ats.json"
+            snapshot.write_text(
+                json.dumps(
+                    {
+                        "version": 1,
+                        "url": "https://dream.wd1.myworkdayjobs.com/job/1",
+                        "navigation_committed": True,
+                        "frames": [
+                            {
+                                "url": "https://dream.wd1.myworkdayjobs.com/job/1",
+                                "controls": [
+                                    {"tag": "input", "type": "email"},
+                                    {"tag": "input", "type": "file"},
+                                    {"tag": "button", "type": "submit", "text": "Submit"},
+                                ],
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            intent = ledger.claim_submission(
+                application_id,
+                "2026-08-23",
+                "payload",
+                resume_path=resume,
+                resume_sha256=hashlib.sha256(resume.read_bytes()).hexdigest(),
+                ats_snapshot_path=snapshot,
+                ats_snapshot_sha256=hashlib.sha256(snapshot.read_bytes()).hexdigest(),
+            )
+            ledger.complete_submission_verified(
+                intent.intent_id,
+                intent.fence,
+                outcome="submit_unknown",
+                evidence_sha256="f" * 64,
+                evidence_class="no_authoritative_completion_ui",
+            )
+            ledger.reconcile_submission_confirmation(
+                intent_id=intent.intent_id,
+                message_id="gmail-1",
+                thread_id="thread-1",
+                evidence_sha256="e" * 64,
+                received_at="2099-01-01T00:00:00+00:00",
+            )
+            ledger.close()
+            calls = []
+
+            def fake_sender(**kwargs):
+                calls.append(kwargs)
+                return {"status": "sent", "message_id": "903"}
+
+            result = deliver(
+                ledger_path=root / "ledger.sqlite3",
+                outbox_path=root / "telegram.sqlite3",
+                sender=fake_sender,
+            )
+
+            self.assertEqual(result[0]["message_id"], "903")
+            self.assertEqual(
+                calls[0]["event_key"],
+                f"application-submitted:{application_id}:gmail-1",
+            )
+            self.assertIn("会社: Dream AI", calls[0]["message"])
+            self.assertIn("求人: Agent Engineer", calls[0]["message"])
+            self.assertIn("確認: authoritative_receipt_email", calls[0]["message"])
+
     def test_document_delivery_is_private_and_at_most_once(self):
         sender = getattr(telegram, "send_document_once", None)
         self.assertIsNotNone(sender)
@@ -21,25 +353,12 @@ class ApplicationReportingTests(unittest.TestCase):
             source = root / "resume.pdf"
             source.write_bytes(b"%PDF-1.4\nresume\n")
             media_root = root / "allowed-media"
-            executable = root / "fake-openclaw"
-            executable.write_text(
-                """#!/usr/bin/env python3
-import json
-import pathlib
-import sys
-
-counter = pathlib.Path(__file__).with_suffix(".count")
-count = int(counter.read_text() or "0") if counter.exists() else 0
-counter.write_text(str(count + 1))
-media = pathlib.Path(sys.argv[sys.argv.index("--media") + 1])
-assert media.is_file()
-assert "--force-document" in sys.argv
-print(json.dumps({"messageId": "901"}))
-""",
-                encoding="utf-8",
-            )
-            executable.chmod(0o700)
             database = root / "outbox.sqlite3"
+            requests = []
+
+            def requester(**kwargs):
+                requests.append(kwargs)
+                return {"ok": True, "result": {"message_id": 901}}
 
             first = sender(
                 database=database,
@@ -47,7 +366,7 @@ print(json.dumps({"messageId": "901"}))
                 message="Resume used for Example — AI Engineer",
                 document=source,
                 media_root=media_root,
-                executable=str(executable),
+                requester=requester,
             )
             second = sender(
                 database=database,
@@ -55,16 +374,14 @@ print(json.dumps({"messageId": "901"}))
                 message="Resume used for Example — AI Engineer",
                 document=source,
                 media_root=media_root,
-                executable=str(executable),
+                requester=requester,
             )
 
             self.assertEqual(first, {"status": "sent", "message_id": "901"})
             self.assertEqual(second, first)
-            self.assertEqual(executable.with_suffix(".count").read_text(), "1")
-            staged = list(media_root.iterdir())
-            self.assertEqual(len(staged), 1)
-            self.assertEqual(staged[0].read_bytes(), source.read_bytes())
-            self.assertEqual(staged[0].stat().st_mode & 0o777, 0o600)
+            self.assertEqual(len(requests), 1)
+            self.assertEqual(requests[0]["method"], "sendDocument")
+            self.assertEqual(requests[0]["document"], source.resolve())
 
     def test_submitted_resume_report_uses_ledger_company_role_and_url(self):
         try:
@@ -123,7 +440,13 @@ print(json.dumps({"messageId": "901"}))
                 ats_snapshot_path=ats_snapshot,
                 ats_snapshot_sha256=ats_snapshot_sha256,
             )
-            ledger.complete_submission(intent.intent_id, intent.fence, "submitted")
+            ledger.complete_submission_verified(
+                intent.intent_id,
+                intent.fence,
+                outcome="submitted",
+                evidence_sha256="e" * 64,
+                evidence_class="exact_completion_ui",
+            )
             ledger.close()
             calls = []
 
@@ -148,40 +471,6 @@ print(json.dumps({"messageId": "901"}))
             self.assertIn("Agent Product Engineer", calls[0]["message"])
             self.assertIn("https://jobs.example/dream", calls[0]["message"])
             self.assertEqual(result[0]["message_id"], "902")
-
-    def test_delivery_uncertain_is_reported_without_crashing_inbox(self):
-        reporting = importlib.import_module("job_search_loop.application_reporting")
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            row = {
-                "application_id": "application-1",
-                "company": "Dream AI",
-                "title": "Agent Product Engineer",
-                "canonical_url": "https://jobs.example/dream",
-                "resume_path": str(root / "resume.pdf"),
-                "resume_sha256": "a" * 64,
-            }
-            with patch.object(
-                reporting.Ledger,
-                "submitted_resume_reports",
-                return_value=[row],
-            ):
-                result = reporting.deliver_submitted_resumes(
-                    ledger_path=root / "ledger.sqlite3",
-                    outbox_path=root / "outbox.sqlite3",
-                    media_root=root / "media",
-                    sender=lambda **_: (_ for _ in ()).throw(
-                        DeliveryUncertain("delivery outcome is unknown")
-                    ),
-                )
-            self.assertEqual(
-                result,
-                [{
-                    "application_id": "application-1",
-                    "status": "delivery_unknown",
-                    "message_id": None,
-                }],
-            )
 
 
 if __name__ == "__main__":

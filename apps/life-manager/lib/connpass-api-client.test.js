@@ -2,6 +2,8 @@
 
 const test = require("node:test");
 const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
 
 const { createConnpassApiClient } = require("./connpass-api-client.js");
 
@@ -99,4 +101,64 @@ test("HTTP errors and malformed payloads fail without reflecting the API key", a
       return true;
     });
   }
+});
+
+test("Tokyo inventory uses 28 ymd values and paginates official v2 results", async () => {
+  const calls = [];
+  const dates = Array.from({ length: 28 }, (_, offset) => (
+    new Date(Date.UTC(2026, 7, 7 + offset)).toISOString().slice(0, 10).replaceAll("-", "")
+  ));
+  const client = createConnpassApiClient({
+    apiKey: FIXTURE_CONNPASS_API_KEY,
+    now: () => 10_000 + calls.length * 5_000,
+    sleep: async () => {},
+    async fetchImpl(url) {
+      calls.push(new URL(url));
+      const start = Number(calls.at(-1).searchParams.get("start"));
+      const returned = start === 1 ? 100 : 20;
+      return {
+        ok: true, status: 200,
+        async json() {
+          return { results_returned: returned, results_available: 120, results_start: start,
+            events: Array.from({ length: returned }, (_, index) => ({ id: start + index })) };
+        },
+      };
+    },
+  });
+
+  const events = await client.searchTokyoInventory({ ymd: dates });
+  assert.equal(events.length, 120);
+  assert.deepEqual(calls.map((url) => url.searchParams.get("prefecture")), ["tokyo", "tokyo"]);
+  assert.deepEqual(calls[0].searchParams.getAll("ymd"), dates);
+  assert.deepEqual(calls.map((url) => url.searchParams.get("start")), ["1", "101"]);
+  assert.deepEqual(calls.map((url) => url.searchParams.get("count")), ["100", "100"]);
+});
+
+test("429 fails closed without retrying or exposing the key", async () => {
+  let fetches = 0;
+  const client = createConnpassApiClient({
+    apiKey: FIXTURE_CONNPASS_API_KEY,
+    async fetchImpl() { fetches += 1; return { ok: false, status: 429 }; },
+  });
+  await assert.rejects(client.searchTokyoInventory({ ymd: ["20260807"] }), (error) => {
+    assert.equal(error.message, "connpass API unavailable");
+    assert.equal(error.message.includes(FIXTURE_CONNPASS_API_KEY), false);
+    return true;
+  });
+  assert.equal(fetches, 1);
+});
+
+test("active production Connpass inventory references only the official v2 events endpoint", () => {
+  const clientSource = fs.readFileSync(path.join(__dirname, "connpass-api-client.js"), "utf8");
+  const productionSource = fs.readFileSync(path.join(__dirname, "connector-minimal-production.js"), "utf8");
+  const workflowSource = fs.readFileSync(path.join(__dirname, "connector-connpass-workflow.js"), "utf8");
+  const apiStart = workflowSource.indexOf("function createApiDiscovery");
+  const apiEnd = workflowSource.indexOf("function eventIdOf", apiStart);
+  const activeApiSource = workflowSource.slice(apiStart, apiEnd);
+  assert.match(clientSource, /https:\/\/connpass\.com\/api\/v2\/events\//);
+  assert.doesNotMatch(clientSource, /connpass\.com\/(?:calendar|event\/\$\{|event\/\d)/);
+  assert.match(productionSource, /createConnpassApiClient/);
+  assert.match(productionSource, /connpassApiClient/);
+  assert.doesNotMatch(productionSource, /connpass-browser-discovery/);
+  assert.doesNotMatch(activeApiSource, /page\.goto|readCalendarBindings|readEventDetail|\/calendar\//);
 });

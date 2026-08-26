@@ -26,13 +26,18 @@ PROHIBITED_OWNERSHIP = (
     "revenue owner",
 )
 
+MOTIVATION_FACT_IDS = (
+    "muit_agent_crm",
+    "muit_rm_summary",
+)
+
 
 class MessageError(ValueError):
     pass
 
 
 def _clean(value: str, *, name: str, maximum: int) -> str:
-    cleaned = re.sub(r"\s+", " ", str(value)).strip()
+    cleaned = re.sub(r"\s+", " ", str(value or "")).strip()
     if not cleaned:
         raise MessageError(f"{name} is required")
     if len(cleaned) > maximum:
@@ -144,3 +149,114 @@ def validate_application_message(
     lowered = body.casefold()
     if any(phrase in lowered for phrase in PROHIBITED_OWNERSHIP):
         raise MessageError("message contains unsupported ownership language")
+
+
+def application_question_kind(question_source_span: str) -> str | None:
+    """Classify only the free-text questions we can answer from the profile.
+
+    This is intentionally narrow.  A mandatory question outside these two
+    classes remains a durable pre-submit blocker instead of receiving an
+    inferred candidate claim.
+    """
+
+    question = str(question_source_span or "").casefold()
+    if any(
+        token in question
+        for token in (
+            "salary",
+            "compensation",
+            "pay range",
+            "desired pay",
+            "desired salary",
+        )
+    ):
+        return "desired_compensation"
+    if any(
+        token in question
+        for token in (
+            "what excites",
+            "why are you interested",
+            "why do you want",
+            "why this company",
+            "why this role",
+            "motivation",
+        )
+    ):
+        return "motivation"
+    return None
+
+
+def build_application_question_answer(
+    profile: dict[str, Any],
+    *,
+    question_source_span: str,
+    company: str,
+    role: str,
+    job_source_span: str | None = None,
+) -> dict[str, Any]:
+    """Build a bounded answer for an Ashby free-text application question.
+
+    The output contains a fact-id audit trail, but never stores the answer in
+    browser evidence.  Only approved profile fields/claims are used.
+    """
+
+    question = _clean(
+        question_source_span,
+        name="question source span",
+        maximum=1_000,
+    )
+    company = _clean(company, name="company", maximum=160)
+    role = _clean(role, name="role", maximum=200)
+    kind = application_question_kind(question)
+    if kind is None:
+        raise MessageError("unsupported application question")
+
+    if kind == "desired_compensation":
+        compensation = _clean(
+            profile.get("candidate", {}).get("desired_compensation_jpy"),
+            name="desired compensation",
+            maximum=160,
+        )
+        return {
+            "question_kind": kind,
+            "answer": compensation,
+            "fact_ids": ["candidate.desired_compensation_jpy"],
+            "question_source_span": question,
+        }
+
+    source_span = _clean(
+        job_source_span,
+        name="job source span",
+        maximum=500,
+    )
+    approved = {
+        str(fact["id"]): str(fact["claim"])
+        for fact in profile.get("facts", [])
+        if fact.get("id") and fact.get("claim")
+    }
+    missing = [fact_id for fact_id in MOTIVATION_FACT_IDS if fact_id not in approved]
+    if missing:
+        raise MessageError(f"missing approved fact IDs: {', '.join(missing)}")
+    claims = [approved[fact_id] for fact_id in MOTIVATION_FACT_IDS]
+    answer = " ".join(
+        (
+            f"I am excited about this {role} opportunity at {company} because the "
+            f"job page says: “{source_span}”",
+            claims[0],
+            claims[1],
+            "This combination of applied AI delivery and observable workflows is "
+            "the kind of user-focused technical work I want to continue.",
+        )
+    )
+    if any(phrase in answer.casefold() for phrase in PROHIBITED_OWNERSHIP):
+        raise MessageError("application answer contains unsupported ownership language")
+    for fact_id in MOTIVATION_FACT_IDS:
+        if approved[fact_id] not in answer:
+            raise MessageError(f"approved claim missing from answer: {fact_id}")
+    return {
+        "question_kind": kind,
+        "answer": answer,
+        "fact_ids": list(MOTIVATION_FACT_IDS),
+        "question_source_span": question,
+        "job_source_span": source_span,
+    }

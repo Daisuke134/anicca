@@ -18,7 +18,7 @@ _GUARD_RELATIVE = Path(
 )
 _READABLE = stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH
 _REMOVED_ENV = (
-    "GIG_IGNORE_DISK_PRESSURE_BLOCK", "GIG_IGNORE_DISK_WRITERS_STOP",
+    "GIG_IGNORE_DISK_WRITERS_STOP",
     "DISK_CONTROL_STATE_DIR", "OPENCLAW_STATE_DIR", "LIFE_MANAGER_HOST_STATE_DIR",
 )
 
@@ -47,7 +47,8 @@ def _disk_preflight(home: Path | None = None) -> bool:
         child_env.update(
             {
                 "HOME": str(home),
-                "GIG_DISK_HEADROOM_KIB": "0",
+                "GIG_DISK_HEADROOM_KIB": "524288",
+                "GIG_IGNORE_DISK_PRESSURE_BLOCK": "1",
                 "GIG_HOST_STATE_DIR": str(home / ".openclaw/state"),
                 "GIG_STATE_DIR": str(home / ".local/state/life-manager/browser-provision"),
             }

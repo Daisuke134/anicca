@@ -4,6 +4,7 @@ import re
 from dataclasses import dataclass
 
 from .jobs import Job
+from .state import is_excluded_employer
 
 
 COMPENSATION_FLOOR_JPY = 5_500_000
@@ -52,6 +53,8 @@ def _has_ai_evidence(title: str, skills: set[str]) -> bool:
 
 def evaluate(job: Job) -> Evaluation:
     reasons: list[str] = []
+    if is_excluded_employer(job.company):
+        reasons.append("employer_excluded")
     if not job.japan_eligible:
         reasons.append("not_available_from_japan")
     if job.clearance_required:

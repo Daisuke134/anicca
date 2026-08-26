@@ -40,6 +40,7 @@ CLAUDE_PROVIDERS = {"claude", "claude-direct"}
 # rule. Callers that legitimately want a stricter floor set
 # AGENT_RUNNER_MIN_PROMPT_CHARS (run_agent.sh does, for loop prompts).
 MIN_PROMPT_CHARS = 16
+DEFAULT_HISTORY_GENERATIONS = 3
 
 # OpenAI Standard tier, short context, USD per 1M tokens: (input, cached_input, output).
 # Source: https://developers.openai.com/api/docs/pricing (fetched 2026-07-25).
@@ -91,6 +92,46 @@ def sha256_file(path: Path) -> str:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def _tree_bytes(path: Path) -> int:
+    total = 0
+    for current, directories, files in os.walk(path, followlinks=False):
+        directories[:] = [
+            name for name in directories
+            if not (Path(current) / name).is_symlink()
+        ]
+        for name in files:
+            try:
+                total += (Path(current) / name).lstat().st_size
+            except OSError:
+                continue
+    return total
+
+
+def prune_history_generations(history: Path, *, keep: int = DEFAULT_HISTORY_GENERATIONS) -> dict[str, int]:
+    """Bound rotated runner output without touching ledgers or the active run."""
+    result = {"removed": 0, "bytes_reclaimed": 0, "errors": 0}
+    try:
+        generations = sorted(
+            path for path in history.iterdir()
+            if path.is_dir() and not path.is_symlink() and ".gc-trash." not in path.name
+        )
+    except OSError:
+        result["errors"] += 1
+        return result
+    for generation in generations[:-max(0, keep)] if keep > 0 else generations:
+        reclaimed = _tree_bytes(generation)
+        trash = generation.with_name(f"{generation.name}.gc-trash.{os.getpid()}")
+        try:
+            os.replace(generation, trash)
+            shutil.rmtree(trash)
+        except OSError:
+            result["errors"] += 1
+            continue
+        result["removed"] += 1
+        result["bytes_reclaimed"] += reclaimed
+    return result
 
 
 def _token(value: Any) -> int | None:
@@ -668,7 +709,7 @@ def validate_schema(value: Any, schema: dict[str, Any], at: str = "$") -> list[s
 # and these classes are intentionally tool-less by contract.
 TOOLLESS_TASK_CLASSES = (
     "composition-agent", "diagnostic-agent", "application-intent-planner",
-    "reply-semantic-agent",
+    "reply-semantic-agent", "storefront-proposal-agent",
 )
 TOOLLESS_CODEX_DISABLED_FEATURES = (
     "shell_tool", "code_mode_host", "unified_exec",
@@ -1157,7 +1198,7 @@ def classify_provider_error(rc: int, timed_out: bool, stdout: str, stderr: str, 
 def run() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--task-class", required=True,
-                        choices=("deterministic", "composition-agent", "reply-semantic-agent", "application-intent-planner", "repeatable-agent", "tool-agent", "browser-lane-agent", "application-lane-agent", "diagnostic-agent", "marketing-agent", "high-value-agent", "escalation-agent", "self-fix"))
+                        choices=("deterministic", "composition-agent", "reply-semantic-agent", "storefront-proposal-agent", "application-intent-planner", "repeatable-agent", "tool-agent", "browser-lane-agent", "application-lane-agent", "diagnostic-agent", "marketing-agent", "high-value-agent", "escalation-agent", "self-fix"))
     prompt_source = parser.add_mutually_exclusive_group(required=True)
     prompt_source.add_argument("--prompt-file", type=Path)
     prompt_source.add_argument("--prompt-stdin", action="store_true")
@@ -1174,7 +1215,7 @@ def run() -> int:
     parser.add_argument("--read-only", action="store_true")
     parsed = parser.parse_args()
 
-    if parsed.task_class in ("composition-agent", "reply-semantic-agent", "application-intent-planner") and not parsed.prompt_stdin:
+    if parsed.task_class in ("composition-agent", "reply-semantic-agent", "storefront-proposal-agent", "application-intent-planner") and not parsed.prompt_stdin:
         parser.error(f"{parsed.task_class} requires --prompt-stdin")
 
     config_path = Path(os.environ.get("AGENT_RUNNER_CONFIG", HERE / "config.json"))
@@ -1375,6 +1416,11 @@ def run() -> int:
         history.mkdir(parents=True, exist_ok=False)
         for path in previous:
             os.replace(path, history / path.name)
+        try:
+            keep_history = int(os.environ.get("AGENT_RUNNER_HISTORY_GENERATIONS", DEFAULT_HISTORY_GENERATIONS))
+        except ValueError:
+            keep_history = DEFAULT_HISTORY_GENERATIONS
+        prune_history_generations(history.parent, keep=max(1, keep_history))
     # A prior result still cannot satisfy the current run because its stable latest
     # paths have moved out of the active directory before provider launch.
     attempts_path.unlink(missing_ok=True)

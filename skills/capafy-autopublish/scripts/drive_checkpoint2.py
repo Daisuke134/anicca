@@ -25,7 +25,7 @@ MODEL    = "anthropic/claude-sonnet-4.6"
 CDP_ATTACH_TIMEOUT_MS = int(os.environ.get("CP2_CDP_ATTACH_TIMEOUT_MS", "15000"))
 RAW_NAV_TIMEOUT_S = float(os.environ.get("CP2_RAW_NAV_TIMEOUT_S", "30"))
 RAW_CALL_TIMEOUT_S = float(os.environ.get("CP2_RAW_CALL_TIMEOUT_S", "20"))
-RAW_SECTION_TIMEOUT_S = float(os.environ.get("CP2_SECTION_TIMEOUT_S", "5"))
+RAW_SECTION_TIMEOUT_S = float(os.environ.get("CP2_SECTION_TIMEOUT_S", "15"))
 RAW_SECTION_POLL_S = float(os.environ.get("CP2_SECTION_POLL_S", "0.25"))
 CP2_HOST = "capafy.ai"
 CP2_PATH = "/developer/createAgent"
@@ -395,6 +395,66 @@ def _detected_keys_button_expression():
     )
 
 
+def _configured_proxy_form_expression():
+    """Recognize the editable proxy card emitted by publish-configure.
+
+    Capafy currently expands a freshly configured OpenRouter pair as a generic
+    ``proxy_env`` card.  It has no provider-path text yet, so treating the
+    absence of ``models.providers.openrouter.apiKey`` as a failed expansion
+    makes a valid card unreachable.  The four fields below are Capafy's form
+    contract (field name, secret name, URL, secret), not a visual coordinate
+    heuristic; all four must be uniquely present before we write anything.
+    """
+    return (
+        "(() => {"
+        "const visible=e=>!!(e.offsetWidth||e.offsetHeight||e.getClientRects().length);"
+        "const by=(predicate)=>[...document.querySelectorAll('input')].filter(x=>visible(x)&&predicate(x));"
+        "const urlName=by(x=>(x.placeholder||'').trim()==='urlName');"
+        "const secretName=by(x=>(x.placeholder||'').includes('Anthropic API'));"
+        "const url=by(x=>(x.placeholder||'').trim()==='https://api.example.com');"
+        "const key=by(x=>x.type==='password'&&(x.placeholder||'').includes('貼り付け'));"
+        "if(urlName.length!==1||secretName.length!==1||url.length!==1||key.length!==1)"
+        "return {ok:false,reason:'configured-proxy-field-count',counts:[urlName.length,secretName.length,url.length,key.length]};"
+        "return {ok:true};"
+        "})()"
+    )
+
+
+def _configured_proxy_focus_expression(role):
+    selectors = {
+        "url_name": "(x.placeholder||'').trim()==='urlName'",
+        "secret_name": "(x.placeholder||'').includes('Anthropic API')",
+        "url": "(x.placeholder||'').trim()==='https://api.example.com'",
+        "key": "x.type==='password'&&(x.placeholder||'').includes('貼り付け')",
+    }
+    if role not in selectors:
+        raise ValueError(role)
+    return (
+        "(() => {"
+        "const visible=e=>!!(e.offsetWidth||e.offsetHeight||e.getClientRects().length);"
+        f"const xs=[...document.querySelectorAll('input')].filter(x=>visible(x)&&({selectors[role]}));"
+        "if(xs.length!==1)return {ok:false,reason:'configured-proxy-focus-count',count:xs.length};"
+        "const x=xs[0];x.scrollIntoView({block:'center'});x.focus();x.select();return {ok:true};"
+        "})()"
+    )
+
+
+def _raw_configure_proxy_form(page, key):
+    state = page.evaluate(_configured_proxy_form_expression())
+    if not isinstance(state, dict) or not state.get("ok"):
+        raise RuntimeError(f"ambiguous configured OpenRouter proxy form ({state})")
+    for role, value in (
+        ("url_name", OPENROUTER_BASE_URL_PATH),
+        ("secret_name", OPENROUTER_API_KEY_PATH),
+        ("url", BASE_URL),
+        ("key", key),
+    ):
+        focused = page.evaluate(_configured_proxy_focus_expression(role))
+        if not isinstance(focused, dict) or not focused.get("ok"):
+            raise RuntimeError(f"configured OpenRouter proxy {role} focus failed ({focused})")
+        page.call("Input.insertText", {"text": value})
+
+
 def _bounded_page_call(page, method, params, deadline):
     remaining = deadline - time.monotonic()
     if remaining <= 0:
@@ -440,7 +500,10 @@ def _ensure_raw_provider_section(page):
     while time.monotonic() < deadline:
         state = provider_state()
         if require_count_one(state, "initial hydration"):
-            return
+            return "provider"
+        proxy_form = _bounded_page_evaluate(page, _configured_proxy_form_expression(), deadline)
+        if isinstance(proxy_form, dict) and proxy_form.get("ok"):
+            return "configured_proxy"
         button = _bounded_page_evaluate(page, _detected_keys_button_expression(), deadline)
         if isinstance(button, dict) and button.get("ok"):
             x, y = button.get("x"), button.get("y")
@@ -460,7 +523,10 @@ def _ensure_raw_provider_section(page):
     while time.monotonic() < deadline:
         state = provider_state()
         if require_count_one(state, "post-expansion hydration"):
-            return
+            return "provider"
+        proxy_form = _bounded_page_evaluate(page, _configured_proxy_form_expression(), deadline)
+        if isinstance(proxy_form, dict) and proxy_form.get("ok"):
+            return "configured_proxy"
         time.sleep(RAW_SECTION_POLL_S)
     raise RuntimeError("OpenRouter provider path did not appear after expansion before deadline")
 
@@ -522,22 +588,28 @@ def _raw_cp2(cp2, key, cdp_base):
         page.call("Page.enable")
         page.call("Page.bringToFront")
         _wait_raw_navigation(page, cp2)
-        _ensure_raw_provider_section(page)
+        section_mode = _ensure_raw_provider_section(page)
 
-        has_input = page.evaluate(
-            "[...document.querySelectorAll('input')].some(i=>{const v=i.value||'';return v.includes('api.')||v.includes('openrouter')})"
-        )
-        if not has_input:
-            page.strict_click(OPENROUTER_API_KEY_PATH, "edit")
-            time.sleep(2)
+        if section_mode == "configured_proxy":
+            # The form itself supplies the provider metadata after the field
+            # paths are saved; it intentionally has no separate model input.
+            _raw_configure_proxy_form(page, key)
+            print("configured proxy fields: True")
+        else:
+            has_input = page.evaluate(
+                "[...document.querySelectorAll('input')].some(i=>{const v=i.value||'';return v.includes('api.')||v.includes('openrouter')})"
+            )
+            if not has_input:
+                page.strict_click(OPENROUTER_API_KEY_PATH, "edit")
+                time.sleep(2)
 
-        page.strict_focus_and_insert(OPENROUTER_BASE_URL_PATH, "base", BASE_URL)
-        print("baseurl: True")
-        page.strict_focus_and_insert(OPENROUTER_API_KEY_PATH, "model", MODEL)
-        page.press_enter()
-        print("model: True")
-        page.strict_focus_and_insert(OPENROUTER_API_KEY_PATH, "key", key)
-        print("key pasted len", len(key))
+            page.strict_focus_and_insert(OPENROUTER_BASE_URL_PATH, "base", BASE_URL)
+            print("baseurl: True")
+            page.strict_focus_and_insert(OPENROUTER_API_KEY_PATH, "model", MODEL)
+            page.press_enter()
+            print("model: True")
+            page.strict_focus_and_insert(OPENROUTER_API_KEY_PATH, "key", key)
+            print("key pasted len", len(key))
 
         def card_save():
             return page.strict_click(OPENROUTER_API_KEY_PATH, "save")

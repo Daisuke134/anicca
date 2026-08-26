@@ -96,6 +96,22 @@ def test_executes_once_promotes_hashes_cost_and_replays(tmp_path, monkeypatch):
         assert stat.S_IMODE(path.stat().st_mode) == (0o700 if path.is_dir() else 0o600)
 
 
+def test_general_agent_executes_without_an_installed_named_skill(tmp_path, monkeypatch):
+    workflow = executor.general_agent_workflow()
+    made = create_workspace(tmp_path / "projects", _contract(), workflow)
+    runner, counter = _runner(tmp_path / "fake_runner.py"), tmp_path / "count"
+    empty_skills = tmp_path / "skills"
+    empty_skills.mkdir()
+    monkeypatch.setenv("FAKE_RUNNER_COUNTER", str(counter))
+
+    receipt = executor.execute_workflow(
+        workspace=made["workspace"], revision_sha256=made["revision_sha256"],
+        skills_root=empty_skills, agent_runner=runner, timeout_seconds=60, now=NOW,
+    )
+
+    assert receipt["skill_id"] == "general-agent" and counter.read_text() == "1"
+
+
 @pytest.mark.parametrize("fault", ["uninstalled", "changed_contract", "expired"])
 def test_contract_skill_and_deadline_fail_before_runner(tmp_path, monkeypatch, fault):
     root, revision, skills = _workspace(tmp_path)

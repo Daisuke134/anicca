@@ -155,7 +155,8 @@ def publish(gig_dir: Path, outbox: TelegramOutbox, transport: OpenClawTelegramTr
     )
     seen_path = gig_dir / "instant-work-event-report-state.json"
     seen = _read_seen(seen_path)
-    report_ids: list[int] = []
+    fresh_report_ids: list[int] = []
+    existing_pending_ids: list[int] = []
     enqueued = 0
     for event in _jsonl(gig_dir / "work-events.jsonl"):
         if event.get("kind") != "application" or not event.get("event_key"):
@@ -171,7 +172,8 @@ def publish(gig_dir: Path, outbox: TelegramOutbox, transport: OpenClawTelegramTr
         envelope = report_envelope.build_work_event_envelope(
             work_event=event, observed_at=datetime.now(timezone.utc),
         )
-        if event_key not in seen:
+        is_fresh = event_key not in seen
+        if is_fresh:
             report_envelope.append_agent_feed(gig_dir / "report-envelopes.jsonl", envelope)
             seen.add(event_key)
             enqueued += 1
@@ -181,10 +183,13 @@ def publish(gig_dir: Path, outbox: TelegramOutbox, transport: OpenClawTelegramTr
             suppress_identical_body=False,
         )
         if queued.get("state") == "pending":
-            report_ids.append(int(queued["report_id"]))
+            target = fresh_report_ids if is_fresh else existing_pending_ids
+            target.append(int(queued["report_id"]))
     _write_seen(seen_path, seen)
     sent = unknown = 0
-    dispatch_ids = list(dict.fromkeys([*redrive_report_ids, *report_ids]))
+    dispatch_ids = list(dict.fromkeys([
+        *fresh_report_ids, *existing_pending_ids, *redrive_report_ids,
+    ]))
     for report_id in dispatch_ids:
         result = dispatch_one(
             outbox, owner=f"gig-apply-telegram:{uuid.uuid4().hex}",

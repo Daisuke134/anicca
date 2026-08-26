@@ -1614,6 +1614,88 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
     old `apps/life-call`・active Life Manager branch・deploy responsibilityを残さない。
     `anicca-products`の存続とLife Managerのself-contained性は両立する。
 
+### 10.0.1 CODEX-ACCOUNT-FAILOVER-1 — account 1 primary / account 2 fallback
+
+**状態: spec approved / implementation pending。**
+
+Life Managerの共有Codex execution boundaryは、account 1をprimary、account 2をfallbackとする。
+各accountは独立した`CODEX_HOME`、auth、session、quota stateを持つ。account 1のquotaが回復した後に人が
+「戻して」と指示する運用にはせず、新しい実行は常にaccount 1から開始する。account 1が利用可能ならaccount 2を
+消費しない。account 3は現在存在しないため、このsliceへ架空のthird accountを追加しない。
+
+```mermaid
+flowchart LR
+    Start[新しいCodex実行] --> A1[Account 1]
+    A1 -->|成功| Done[完了]
+    A1 -->|quota / auth失敗\n外部作用なし| A2[Account 2]
+    A1 -->|外部作用あり / task失敗| Stop[fail closed\n自動再実行しない]
+    A2 -->|成功| Done
+    A2 -->|quota / auth失敗\n外部作用なし| Existing[既存Claude / Hermes候補]
+    A2 -->|外部作用あり / task失敗| Stop
+```
+
+#### 現状の実測
+
+- canonical runnerの`runtime/agent-runner/config.json`と
+  `skills/earn/gig/agent-runner/config.json`は一つの`auth_file`だけを持ち、現在はaccount 2を固定参照する。
+  これは緊急切替であり、account 1→2 failoverではない。
+- runnerにはquota/auth/timeout/unavailableをtransient failureとして次candidateへ移す既存契約があるが、
+  同じCodex provider内の複数ChatGPT accountはcandidateとして表現されていない。
+
+#### Routing contract
+
+1. account routingは各loopへ個別実装せず、canonical Life Managerの共有Codex execution boundaryに一度だけ置く。
+2. account 1とaccount 2は同じmodel/task contractを持つ別candidateであり、auth fileのsymlink上書きや
+   global `launchctl setenv`でaccount identityを切り替えない。
+3. fallback対象はmachine-readableなquotaまたはauth failureだけである。timeout/unavailableのprovider fallbackは
+   既存contractを維持するが、task rejection、invalid output、test failure、browser failureをaccount failureとみなさない。
+4. deterministic parserはCodex JSON eventの固定schema、exit status、effect ledgerだけを読む。自由文keywordで
+   taskの意味を判断しない。
+5. first candidateがtool call、投稿、応募、送信、購入、write等の外部作用を開始した場合、別accountで同じtaskを
+   自動再実行しない。effect不明もfail closedとする。
+6. quota failureを検出したaccountはreset時刻またはbounded cooldownまで一時skipできる。ただしdurable stateに
+   account ID、token、auth本文を保存せず、account alias・failure class・observed/reset timestampだけを記録する。
+7. account 2も利用不能なら、そのtask classに既に定義されたClaude/Hermes candidateだけへ進む。Codex-only taskは
+   正直にterminal failureとなり、未定義providerやaccount 3を暗黙追加しない。
+8. runner、config、test、release artifactはcanonical sourceから生成する。mutable releaseや
+   `~/Library/LaunchAgents`だけを手編集してdoneにしない。
+
+#### Plan size / implementation slices
+
+- Slice A（shared account candidates）: runner/config production 2–4 files、test 1–2 files、約80–140 LOC。
+  account alias別env/auth isolation、quota/auth fallback、effect開始後fail-closed、既存provider fallback順を実装する。
+- Slice B（release wiring）: Life Manager共有runnerのconfig/release wiringだけを更新する。個別loopや
+  別repo sourceの修理はこのsliceに含めない。
+- 100 LOCまたは3 production filesを超えるsliceは分割する。新daemon、DB、account broker serviceは作らない。
+
+#### Acceptance criteria
+
+1. account 1が利用可能なfixtureではaccount 1だけを1回実行し、account 2 callは0。
+2. account 1がeffect前のmachine-readable quota/auth failureを返すfixtureではaccount 2をexactly 1回実行し、成功する。
+3. account 1がinvalid output、task failure、browser failureを返すfixtureではaccount 2 callは0。
+4. account 1がeffectを開始してから失敗するfixtureではaccount 2 callは0、terminalはfail closed。
+5. account 1/2両方quota fixtureでは、task classに定義済みの次providerだけへ進む。Codex-only classは明示failure。
+6. account別automation homeのauth targetは正しいsourceだけを指し、token、account ID、auth本文はlog/evidence/specへ0件。
+7. account 1 quota fixture→account 2 real responseのcontrolled generation E2Eを行い、account alias、exit、
+   duplicate external effect 0をreadbackする。
+8. exact main commitをrelease deployし、共有runnerを使う対象jobの次回実行でaccount routingをreadbackする。
+   isolated app-serverの`launchctl 141`をsuccess扱いしない。
+
+#### Remaining TODO
+
+| Order | TODO | Done evidence |
+|---:|---|---|
+| 1 | account alias別に独立`CODEX_HOME`と`auth_file`を解決するfailing testを1件追加する | named REDがauth混線を再現 |
+| 2 | account alias別env/auth解決だけを実装する | TODO 1 GREEN、既存provider tests PASS |
+| 3 | account 1のeffect前quota failureからaccount 2へ進むfailing testを1件追加する | named REDがfallback欠落を再現 |
+| 4 | effect前のmachine-readable quota/auth failureだけを次accountへ渡す | TODO 3 GREEN、invalid task fallback 0 |
+| 5 | effect開始後のfailureでaccount 2を呼ばないfailing testを1件追加する | named REDがduplicate riskを再現 |
+| 6 | 既存effect evidenceをaccount retry gateへ接続する | TODO 5 GREEN、account 2 call 0 |
+| 7 | canonical configへaccount 1→account 2のcandidate orderを追加する | config parse PASS、order readback |
+| 8 | account 2 failure後だけ既存Claude/Hermes candidateへ進む回帰を追加する | provider order focused test PASS |
+| 9 | exact main commitをLife Manager releaseへdeployする | deployed SHA readback |
+| 10 | account 1 quota→account 2 real responseのcontrolled E2Eを1回実行する | account alias/exit readback、duplicate effect 0 |
+
 
 
 **未完atomicの実行process（過去記録より優先）**: 新規の未完atomicは `using-git-worktrees` → `writing-plans` → `subagent-driven-development` → `test-driven-development` → `requesting-code-review` → `verification-before-completion` → `finishing-a-development-branch` のSuperpowers workflowで進める。既存のVCSDD参照・state・verdict・artifactは当時の真実を示すimmutable historical evidenceであり、現在のworkflowではない。新しいVCSDD artifact/commandは作らない。

@@ -147,3 +147,57 @@ def test_lost_ack_stays_reconcile_only_and_never_prepares_second_effect(tmp_path
     assert repeated_start["reconcile_only"] is True
     assert replay["state"] == "reconcile_pending"
     assert replay["created"] is False and replay["reconcile_only"] is True
+
+
+def test_official_no_effect_and_unchanged_balance_reopen_exact_intent(tmp_path: Path):
+    database = _database(tmp_path)
+    authorization = _authorization()
+    intent = _intent(authorization)
+    database.prepare_provider_effect(
+        intent, authorization=authorization, now=100, connects_pre=10,
+        connects_pre_hash="a" * 64, payload_body='{"sealed":true}',
+    )
+    database.mark_provider_effect_started(intent, authorization=authorization, now=101)
+
+    reopened = database.reopen_provider_effect_after_no_effect(
+        intent, authorization=authorization, connects_current=10,
+        connects_evidence_sha256="b" * 64, no_effect_readback_hash="c" * 64, now=102,
+    )
+    restarted = database.mark_provider_effect_started(
+        intent, authorization=authorization, now=103,
+    )
+
+    assert (reopened["state"], reopened["reconciliation_state"]) == ("prepared", "not_started")
+    assert reopened["connects_pre_hash"] == "b" * 64
+    assert restarted["started"] is True
+
+
+def test_official_no_effect_reopens_after_verified_intervening_spend(tmp_path: Path):
+    database = _database(tmp_path)
+    authorization = _authorization()
+    stale = _intent(authorization)
+    database.prepare_provider_effect(
+        stale, authorization=authorization, now=100, connects_pre=67,
+        connects_pre_hash="a" * 64, payload_body='{"sealed":true}',
+    )
+    database.mark_provider_effect_started(stale, authorization=authorization, now=101)
+    later = fence.authorized_provider_intent(
+        provider="upwork", account_key="account-hash", resource_id="job-2",
+        action="submit_proposal", payload_hash="d" * 64, authorization=authorization,
+    )
+    database.prepare_provider_effect(
+        later, authorization=authorization, now=102, connects_pre=67,
+        connects_pre_hash="e" * 64, payload_body='{"sealed":true}',
+    )
+    database.mark_provider_effect_started(later, authorization=authorization, now=103)
+    database.verify_provider_effect(
+        later, proposal_id="proposal-2", connects_post=46,
+        readback_hash="f" * 64, now=104,
+    )
+
+    reopened = database.reopen_provider_effect_after_no_effect(
+        stale, authorization=authorization, connects_current=46,
+        connects_evidence_sha256="1" * 64, no_effect_readback_hash="2" * 64, now=105,
+    )
+
+    assert (reopened["state"], reopened["connects_pre"]) == ("prepared", 46)

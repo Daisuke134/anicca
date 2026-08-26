@@ -139,3 +139,11 @@ test("migration enforces the graph, atomic projection, tenant boundary, and immu
   ]) assert.match(sql, new RegExp(required, "i"));
   assert.doesNotMatch(sql, /email|phone|password|cookie|guest_key|mail_body/i);
 });
+
+test("growth migration adds application-ready and provider-verified without removing legacy receipts", () => {
+  const sql = fs.readFileSync(path.join(__dirname, "../migrations/2026-08-27-lm-talk-growth-state-graph.sql"), "utf8");
+  for (const required of ["application_ready", "provider_verified", "submission_queued", "FOREIGN KEY|lm_event_participations", "talk_application"]) {
+    assert.match(sql, new RegExp(required, "i"));
+  }
+  assert.doesNotMatch(sql, /email|phone|password|cookie|guest_key|mail_body/i);
+});

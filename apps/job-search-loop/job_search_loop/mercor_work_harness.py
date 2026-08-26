@@ -16,7 +16,8 @@ TRANSITIONS = {
     "authorized_work": {"work_submitted", "needs_human"},
     "work_submitted": {"accepted", "needs_human"},
     "accepted": {"paid_settled"},
-    "paid_settled": {"revenue_recorded"},
+    "paid_settled": {"bank_matched"},
+    "bank_matched": {"revenue_recorded"},
     "needs_human": {"selected", "contracted", "authorized_work"},
 }
 SETTLED_STATUSES = frozenset({"paid", "settled", "completed"})
@@ -40,6 +41,9 @@ def advance_state(
     payment_id: str | None = None,
     settlement_status: str | None = None,
     amount_usd: Any = None,
+    payout_id: str | None = None,
+    bank_transaction_id: str | None = None,
+    match_status: str | None = None,
     reason: str | None = None,
     authorization_policy: str | None = None,
     acceptance_status: str | None = None,
@@ -66,8 +70,15 @@ def advance_state(
         if settlement_status not in SETTLED_STATUSES:
             raise WorkHarnessError("paid_settled requires settled payment status")
         normalized_amount = _amount(amount_usd)
+    elif next_state == "bank_matched":
+        identities = (payment_id, payout_id, bank_transaction_id)
+        if not all(isinstance(value, str) and value.strip() for value in identities):
+            raise WorkHarnessError("bank_matched requires payment, payout, and bank transaction IDs")
+        if match_status != "matched":
+            raise WorkHarnessError("bank_matched requires matched status")
+        normalized_amount = _amount(amount_usd)
     else:
-        if amount_usd is not None or payment_id is not None or settlement_status is not None:
+        if any(value is not None for value in (amount_usd, payment_id, settlement_status, payout_id, bank_transaction_id, match_status)):
             raise WorkHarnessError("payment fields are allowed only for paid_settled")
         normalized_amount = None
     event: dict[str, Any] = {
@@ -90,15 +101,29 @@ def advance_state(
                 "amount_usd": normalized_amount,
             }
         )
+    elif next_state == "bank_matched":
+        event.update(
+            {
+                "payment_id": payment_id.strip(),
+                "payout_id": payout_id.strip(),
+                "bank_transaction_id": bank_transaction_id.strip(),
+                "match_status": match_status,
+                "amount_usd": normalized_amount,
+            }
+        )
     return next_state, event
 
 
 def revenue_record(event: Mapping[str, Any]) -> dict[str, Any]:
-    if event.get("state") != "paid_settled":
-        raise WorkHarnessError("only paid_settled events can enter revenue")
-    if event.get("settlement_status") not in SETTLED_STATUSES:
-        raise WorkHarnessError("revenue requires settled payment status")
-    payment_id = event.get("payment_id")
-    if not isinstance(payment_id, str) or not payment_id.strip():
-        raise WorkHarnessError("revenue requires payment_id")
-    return {"payment_id": payment_id.strip(), "amount_usd": _amount(event.get("amount_usd"))}
+    if event.get("state") != "bank_matched" or event.get("match_status") != "matched":
+        raise WorkHarnessError("revenue requires matched bank evidence")
+    identities = {
+        key: event.get(key)
+        for key in ("payment_id", "payout_id", "bank_transaction_id")
+    }
+    if not all(isinstance(value, str) and value.strip() for value in identities.values()):
+        raise WorkHarnessError("revenue requires payment, payout, and bank transaction IDs")
+    return {
+        **{key: value.strip() for key, value in identities.items()},
+        "amount_usd": _amount(event.get("amount_usd")),
+    }

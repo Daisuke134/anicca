@@ -1,10 +1,12 @@
 import hashlib
+import http.server
 import json
 import os
 import sqlite3
 import subprocess
 import sys
 import tempfile
+import threading
 import unittest
 from pathlib import Path
 
@@ -366,63 +368,64 @@ class LearningPassTests(unittest.TestCase):
             _, ledger, driver = self._new_driver(root)
             report = driver.run()
             ledger.close()
-            executable = root / "fake-openclaw"
-            executable.write_text(
-                """#!/usr/bin/env python3
-import json
-import pathlib
+            requests = []
 
-counter = pathlib.Path(__file__).with_suffix(".count")
-count = int(counter.read_text()) if counter.exists() else 0
-counter.write_text(str(count + 1))
-print(json.dumps({"messageId": "learning-901"}))
-""",
-                encoding="utf-8",
-            )
-            executable.chmod(0o700)
+            def requester(**kwargs):
+                requests.append(kwargs)
+                return {"ok": True, "result": {"message_id": "learning-901"}}
 
             first = learning.deliver_learning_report(
                 report,
                 database=root / "telegram.sqlite3",
-                executable=str(executable),
+                requester=requester,
             )
             second = learning.deliver_learning_report(
                 report,
                 database=root / "telegram.sqlite3",
-                executable=str(executable),
+                requester=requester,
             )
 
             self.assertEqual(first["status"], "sent")
             self.assertEqual(first["message_id"], "learning-901")
             self.assertEqual(second, first)
-            self.assertEqual(executable.with_suffix(".count").read_text(), "1")
+            self.assertEqual(len(requests), 1)
             self.assertNotIn("Held-out Employer", json.dumps(report))
 
     def test_resident_script_writes_private_receipt_and_reuses_telegram_ack(self):
         app_root = Path(__file__).resolve().parents[1]
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            executable = root / "fake-openclaw"
-            executable.write_text(
-                """#!/usr/bin/env python3
-import json
-import pathlib
+            class Handler(http.server.BaseHTTPRequestHandler):
+                calls = 0
 
-counter = pathlib.Path(__file__).with_suffix(".count")
-count = int(counter.read_text()) if counter.exists() else 0
-counter.write_text(str(count + 1))
-print(json.dumps({"messageId": "learning-script-902"}))
-""",
-                encoding="utf-8",
-            )
-            executable.chmod(0o700)
+                def do_POST(self):
+                    type(self).calls += 1
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/json")
+                    self.end_headers()
+                    self.wfile.write(
+                        b'{"ok":true,"result":{"message_id":"learning-script-902"}}'
+                    )
+
+                def log_message(self, format, *args):
+                    pass
+
+            server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+            thread = threading.Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+            self.addCleanup(server.server_close)
+            self.addCleanup(server.shutdown)
             env = {
                 **os.environ,
                 "HOME": str(root / "home"),
                 "XDG_STATE_HOME": str(root / "state"),
                 "JOB_SEARCH_STATE_ROOT": str(root / "job-state"),
                 "JOB_SEARCH_PYTHON": sys.executable,
-                "JOB_SEARCH_OPENCLAW": str(executable),
+                "TELEGRAM_BOT_API_BASE_URL": (
+                    f"http://127.0.0.1:{server.server_port}/bot"
+                ),
+                "TELEGRAM_BOT_TOKEN": "test-token",
+                "JOB_SEARCH_TELEGRAM_CHAT_ID": "test-chat",
             }
 
             first = subprocess.run(
@@ -466,7 +469,7 @@ print(json.dumps({"messageId": "learning-script-902"}))
                     for path in summaries
                 )
             )
-            self.assertEqual(executable.with_suffix(".count").read_text(), "1")
+            self.assertEqual(Handler.calls, 1)
 
 
 if __name__ == "__main__":

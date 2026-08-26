@@ -6,7 +6,7 @@
 # remote-status is status=1 (under review) AND isConfirmedConfigKeys=1.
 #
 # Usage: publish_finish.sh <agent-id> <skill-name> [LISTING.md]
-set -uo pipefail
+set -euo pipefail
 
 ID="${1:?agent-id required}"
 SKILL_NAME="${2:?skill-name required}"
@@ -17,6 +17,14 @@ PUB="$AUTO/vendor/capafy-publisher"
 LIFE_MANAGER_STATE_HOME="${LIFE_MANAGER_STATE_HOME:-$HOME/.local/state/life-manager}"
 CAPAFY_PUBLISH_HOME="${CAPAFY_PUBLISH_HOME:-$LIFE_MANAGER_STATE_HOME/runtime/capafy-publisher-home}"
 VENV="${CAPAFY_BROWSER_PYTHON:-python3}"
+
+# Keep configure/ship bound to the selected agent even when a previous retry
+# left a recoverable manifest behind.  The publisher reads this before parsing
+# its command, so it must be exported before the first Python invocation.
+# The selected remote agent is the isolation boundary.  Do not preserve an
+# inherited work directory: a launcher can carry one over from a different
+# candidate, making configure/ship silently operate on that other manifest.
+export CAPAFY_PUBLISH_WORK_DIR="$PUB/.temp/agents/$ID"
 
 # Direct recovery and launchd must resolve credentials from the same repo-external
 # SSOT. Load them before the key-health gate; values stay process-local.
@@ -84,7 +92,7 @@ if [ "$(rstat status)" = "1" ]; then
   echo "status=1 already ✓ — already submitted, skip ship+CP3"
 else
   step "[5] ship"
-  SHIP_OUT="$(python3 packager.py publish-ship --agent-id "$ID" 2>&1)"
+  SHIP_OUT="$(python3 packager.py publish-ship --agent-id "$ID" 2>&1 || true)"
   if echo "$SHIP_OUT" | grep -q '"ok": true\|shipped'; then echo "shipped"; else
     # ONLY the specific "already uploaded for this local publish work-state" error is
     # benign (idempotent re-run of a ship that already matched this agent_id). Any

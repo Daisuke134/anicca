@@ -13,13 +13,42 @@ class HumanGateError(ValueError):
     pass
 
 
+_KNOWN_IDENTITIES = (
+    ("project thor assessment", "project_thor_assessment"),
+    ("finance interview", "finance_interview"),
+    ("pharmacology lab review", "pharmacology_lab_review"),
+    ("professional work survey", "professional_work_survey"),
+    ("household video contributor intake form", "household_video_intake"),
+)
+
+_KNOWN_LISTING_IDENTITIES = (
+    ("list_aaabn5veycy9jpdvdtdm1y-0", "project_thor_assessment"),
+    ("list_aaabnmyh74ctdwnp6bjof5vx", "pharmacology_lab_review"),
+    ("list_aaabn3frsqjqpfplfuheeyix", "professional_work_survey"),
+    ("list_aaabnvqibotac6n9df5jsbmj", "household_video_intake"),
+)
+
+
 def _identity(reason: str, evidence_ref: str) -> str:
     """Return a stable logical identity despite model wording drift."""
     normalized = " ".join(reason.casefold().split())
-    if "project thor assessment" in normalized:
+    for marker, identity in _KNOWN_IDENTITIES:
+        if marker in normalized:
+            return identity
+    combined = f"{normalized}\n{evidence_ref.casefold()}"
+    for marker, identity in _KNOWN_LISTING_IDENTITIES:
+        if marker in combined:
+            return identity
+    if "generalist (macbook user)" in normalized and (
+        "assessment" in normalized or "interview" in normalized
+    ):
         return "project_thor_assessment"
-    if "finance interview" in normalized:
-        return "finance_interview"
+    if "mercor authentication" in normalized:
+        return "mercor_authentication"
+    if "resume artifact" in normalized and (
+        "not present" in normalized or "missing" in normalized
+    ):
+        return "resume_artifact"
     normalized = re.sub(r"[^a-z0-9]+", " ", normalized).strip()
     return f"{normalized}\n{evidence_ref.strip()}"
 
@@ -49,18 +78,13 @@ class HumanGateStore:
         identity = _identity(reason.strip(), evidence_ref.strip())
         gate_id = hashlib.sha256(identity.encode()).hexdigest()[:24]
         rows = self._rows()
-        existing = next(
-            (
-                row
-                for row in rows
-                if _identity(str(row.get("reason", "")), str(row.get("evidence_ref", ""))) == identity
-            ),
-            None,
-        )
-        if existing is not None:
-            return existing
+        latest = self._latest_by_identity(rows).get(identity)
+        if latest is not None and latest.get("status") == "pending":
+            return latest
         row = {
             "gate_id": gate_id,
+            "identity_key": identity,
+            "event": "record",
             "run_id": run_id.strip(),
             "reason": reason.strip(),
             "evidence_ref": evidence_ref.strip(),
@@ -74,15 +98,50 @@ class HumanGateStore:
         os.chmod(self.path, 0o600)
         return row
 
+    @staticmethod
+    def _row_identity(row: dict[str, Any]) -> str:
+        value = row.get("identity_key")
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+        return _identity(str(row.get("reason", "")), str(row.get("evidence_ref", "")))
+
+    @classmethod
+    def _latest_by_identity(cls, rows: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+        latest: dict[str, dict[str, Any]] = {}
+        for row in rows:
+            latest[cls._row_identity(row)] = row
+        return latest
+
+    def resolve(self, *, identity_key: str, run_id: str, evidence_ref: str) -> dict[str, Any] | None:
+        if not all(
+            isinstance(value, str) and value.strip()
+            for value in (identity_key, run_id, evidence_ref)
+        ):
+            raise HumanGateError("identity_key, run_id, and evidence_ref are required")
+        identity_key = identity_key.strip()
+        latest = self._latest_by_identity(self._rows()).get(identity_key)
+        if latest is None or latest.get("status") != "pending":
+            return None
+        row = {
+            "gate_id": latest["gate_id"],
+            "identity_key": identity_key,
+            "event": "resolve",
+            "run_id": run_id.strip(),
+            "reason": str(latest.get("reason", "")),
+            "evidence_ref": evidence_ref.strip(),
+            "status": "resolved",
+            "observed_at": datetime.now(timezone.utc).isoformat(),
+        }
+        with self.path.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(row, ensure_ascii=False) + "\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.chmod(self.path, 0o600)
+        return row
+
     def pending(self) -> list[dict[str, Any]]:
-        pending: list[dict[str, Any]] = []
-        seen: set[str] = set()
-        for row in self._rows():
-            if row.get("status") != "pending":
-                continue
-            identity = _identity(str(row.get("reason", "")), str(row.get("evidence_ref", "")))
-            if identity in seen:
-                continue
-            seen.add(identity)
-            pending.append(row)
-        return pending
+        return [
+            row
+            for row in self._latest_by_identity(self._rows()).values()
+            if row.get("status") == "pending"
+        ]

@@ -32,6 +32,12 @@ class WorkflowExecutionError(ValueError):
 
 DIGEST = re.compile(r"[0-9a-f]{64}")
 SAFE_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9._/-]{0,255}")
+GENERAL_AGENT_ID = "general-agent"
+GENERAL_AGENT_VERSION = "1.0.0"
+GENERAL_AGENT_CONTRACT = (
+    "Use the general model and available local tools to produce the immutable contract scope. "
+    "Choose the implementation method from the evidence; named Skills are optional cached playbooks."
+)
 SECRET_NAME = re.compile(r"(?:^|[._-])(secret|token|password|passwd|credential|private[-_]?key)(?:[._-]|$)", re.I)
 SECRET_BODY = re.compile(
     rb"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|"
@@ -46,6 +52,13 @@ def _canonical(value: Any) -> bytes:
 
 def _sha_value(value: Any) -> str:
     return hashlib.sha256(_canonical(value)).hexdigest()
+
+
+def general_agent_workflow() -> dict[str, str]:
+    return {
+        "skill_id": GENERAL_AGENT_ID, "version": GENERAL_AGENT_VERSION,
+        "bundle_sha256": hashlib.sha256(GENERAL_AGENT_CONTRACT.encode()).hexdigest(),
+    }
 
 
 def _sha_file(path: Path) -> str:
@@ -122,7 +135,7 @@ def _skill_version(skill_file: Path) -> str:
 
 
 def _validate_inputs(root: Path, revision: str, skills_root: Path, timeout_seconds: int,
-                     now: datetime) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], Path, str, str]:
+                     now: datetime) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], Path | None, str, str]:
     if not DIGEST.fullmatch(revision):
         raise WorkflowExecutionError("revision_invalid")
     _secure_tree(root)
@@ -148,18 +161,23 @@ def _validate_inputs(root: Path, revision: str, skills_root: Path, timeout_secon
     skill_id = workflow.get("skill_id")
     if not isinstance(skill_id, str) or not SAFE_ID.fullmatch(skill_id) or ".." in Path(skill_id).parts or Path(skill_id).is_absolute():
         raise WorkflowExecutionError("skill_id_invalid")
-    skill_dir = skills_root / skill_id
-    try:
-        skill_dir.resolve(strict=True).relative_to(skills_root.resolve(strict=True))
-    except (OSError, ValueError) as exc:
-        raise WorkflowExecutionError("skill_uninstalled") from exc
-    bundle_sha, source_sha, bundle_paths = _skill_bundle(skill_dir)
-    frozen = workflow.get("bundle_sha256")
-    compatible = frozen == bundle_sha or (bundle_paths == ["SKILL.md"] and frozen == source_sha)
-    if not compatible:
-        raise WorkflowExecutionError("skill_bundle_changed")
-    if _skill_version(skill_dir / "SKILL.md") != workflow.get("version"):
-        raise WorkflowExecutionError("skill_version_changed")
+    skill_dir = None
+    if skill_id == GENERAL_AGENT_ID:
+        if workflow != general_agent_workflow():
+            raise WorkflowExecutionError("general_agent_workflow_changed")
+    else:
+        skill_dir = skills_root / skill_id
+        try:
+            skill_dir.resolve(strict=True).relative_to(skills_root.resolve(strict=True))
+        except (OSError, ValueError) as exc:
+            raise WorkflowExecutionError("skill_uninstalled") from exc
+        bundle_sha, source_sha, bundle_paths = _skill_bundle(skill_dir)
+        frozen = workflow.get("bundle_sha256")
+        compatible = frozen == bundle_sha or (bundle_paths == ["SKILL.md"] and frozen == source_sha)
+        if not compatible:
+            raise WorkflowExecutionError("skill_bundle_changed")
+        if _skill_version(skill_dir / "SKILL.md") != workflow.get("version"):
+            raise WorkflowExecutionError("skill_version_changed")
     if now.tzinfo is None or now.utcoffset() is None or timeout_seconds < 1:
         raise WorkflowExecutionError("deadline_budget_invalid")
     try:
@@ -286,8 +304,10 @@ def execute_workflow(*, workspace: str | Path, revision_sha256: str, skills_root
                 "status": {"enum": ["ok", "blocked"]}, "reason": {"type": "string", "minLength": 1},
                 "artifacts": {"type": "array", "items": {"type": "string", "minLength": 1}}}})
         prompt = execution_root / "prompt.txt"
+        execution_contract = (GENERAL_AGENT_CONTRACT if skill_dir is None else
+                              "Execute exactly the frozen Skill at " + str(skill_dir / "SKILL.md") + ". Read it fully.")
         prompt.write_text(
-            "Execute exactly the frozen Skill at " + str(skill_dir / "SKILL.md") + ". Read it fully. "
+            execution_contract + " "
             "The immutable contract scope is: " + str(contract["scope"]) + "\n"
             "Work only inside this WORKDIR. Create buyer-facing artifacts under artifacts/. "
             "Do not browse, use a marketplace, send messages, submit/deliver work, make payments, or cause any network/external effect. "

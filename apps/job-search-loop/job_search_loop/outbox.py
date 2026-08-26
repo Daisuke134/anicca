@@ -45,12 +45,11 @@ class Outbox:
             raise KeyError(event_key)
         if row[0] == "send_started":
             raise DeliveryUncertain("delivery outcome is unknown; blind retry forbidden")
-        if row[0] not in {"pending", "failed"}:
+        if row[0] != "pending":
             raise DeliveryUncertain(f"outbox is not claimable: {row[0]}")
         fence = uuid.uuid4().hex
         self.connection.execute(
-            "UPDATE outbox SET status='claimed',fence=? "
-            "WHERE event_key=? AND status IN ('pending','failed')",
+            "UPDATE outbox SET status='claimed',fence=? WHERE event_key=? AND status='pending'",
             (fence, event_key),
         )
         return fence
@@ -60,18 +59,6 @@ class Outbox:
             """
             UPDATE outbox SET status='send_started'
             WHERE event_key=? AND fence=? AND status='claimed'
-            """,
-            (event_key, fence),
-        ).rowcount
-        if changed != 1:
-            raise DeliveryUncertain("outbox fence mismatch")
-
-    def mark_failed(self, event_key: str, fence: str) -> None:
-        """Record a definitive provider rejection, which is safe to retry."""
-        changed = self.connection.execute(
-            """
-            UPDATE outbox SET status='failed',fence=NULL
-            WHERE event_key=? AND fence=? AND status='send_started'
             """,
             (event_key, fence),
         ).rowcount

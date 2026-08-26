@@ -6,7 +6,7 @@
     <string>__JOB_SEARCH_DAILY_PROGRAM__</string>
   </array>
   <key>RunAtLoad</key><true/>
-  <key>StartInterval</key><integer>3600</integer>
+  <key>StartInterval</key><integer>1800</integer>
   <key>ProcessType</key><string>Background</string>
   <key>StandardOutPath</key><string>__JOB_SEARCH_DAILY_STDOUT__</string>
   <key>StandardErrorPath</key><string>__JOB_SEARCH_DAILY_STDERR__</string>

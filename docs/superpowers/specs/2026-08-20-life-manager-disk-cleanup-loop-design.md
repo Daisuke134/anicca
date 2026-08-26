@@ -991,6 +991,16 @@ artifactを削除できるのは、次の条件がすべて真の場合だけで
 protected pathは容量不足時も削除しない。protected dataだけでreserveを回復できない場合、
 cleanupは成功を偽装せずcapacity incidentを発行し、write-heavy producerを停止する。
 
+この保護は永久かつ上書き不能である。cleanup tier、容量緊急事態、LLM判断、学習済みpolicy、
+operator overrideのいずれも、`~/.claude/**`、`~/.codex/**`、またはClaude/Codexの
+session・transcript・memoryへ削除、移動、truncate、圧縮のauthorityを与えない。
+容量増加への対応はowner側のlossless checkpoint/rotation/handoffだけとし、cleanupのeffectは常に0にする。
+
+2026-08-26の実機再検証では、Data volumeの空きは1,005,801,472 bytes（約0.94 GiB）、
+canonical receiptは2026-08-24T11:02:32Zから更新されず、`protected_deletions=0`、
+canonical launchd labelは`gui/501`に未loadだった。launchd control-plane preflight自体はPASSした。
+したがって保護違反の証拠はないが、cleanup継続稼働と11 GiB floorは未達であり、完了を宣言しない。
+
 ### 2.5 Producer lifecycle contract
 
 Life Manager、OpenClaw、Claude、Codex、browser automation、Xcode、Docker、media renderer、

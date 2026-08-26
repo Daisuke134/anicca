@@ -8,7 +8,7 @@ import re
 import tempfile
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Mapping, Sequence
+from typing import Any, Callable, Mapping, Sequence
 
 from .experiments import ExperimentResult, evaluate_candidate
 from .ledger import FUNNEL_STAGES, Ledger
@@ -582,7 +582,7 @@ def deliver_learning_report(
     report: Mapping[str, Any],
     *,
     database: Path,
-    executable: str | None = None,
+    requester: Callable[..., dict[str, Any]] | None = None,
 ) -> dict[str, str | None]:
     message = (
         "🧠 Job-search learning pass\n"
@@ -592,12 +592,14 @@ def deliver_learning_report(
         f"candidate {report['candidate']['resolved']}\n"
         f"Receipt: {report['receipt_sha256'][:16]}"
     )
-    return send_once(
-        database=database,
-        event_key=f"job-search-learning:{report['decision_id']}",
-        message=message,
-        executable=executable,
-    )
+    arguments: dict[str, Any] = {
+        "database": database,
+        "event_key": f"job-search-learning:{report['decision_id']}",
+        "message": message,
+    }
+    if requester is not None:
+        arguments["requester"] = requester
+    return send_once(**arguments)
 
 
 def _read_object(path: Path) -> dict[str, Any]:
@@ -652,7 +654,6 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--occurred-at")
     parser.add_argument("--report", type=Path)
     parser.add_argument("--outbox", type=Path)
-    parser.add_argument("--telegram-executable")
     parsed = parser.parse_args(argv)
 
     ledger = Ledger(parsed.ledger)
@@ -670,7 +671,6 @@ def main(argv: list[str] | None = None) -> int:
             delivery = deliver_learning_report(
                 result,
                 database=parsed.outbox,
-                executable=parsed.telegram_executable,
             )
             output = {
                 "status": "success",

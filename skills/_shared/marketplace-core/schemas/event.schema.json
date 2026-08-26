@@ -10,6 +10,18 @@
       "$ref": "#/$defs/ApplicationReceipt"
     },
     {
+      "$ref": "#/$defs/ContractReceipt"
+    },
+    {
+      "$ref": "#/$defs/AuthorizationReceipt"
+    },
+    {
+      "$ref": "#/$defs/QAReceipt"
+    },
+    {
+      "$ref": "#/$defs/PayoutMatchReceipt"
+    },
+    {
       "$ref": "#/$defs/WorkEvent"
     },
     {
@@ -162,6 +174,114 @@
         }
       }
     },
+    "ContractReceipt": {
+      "title": "MarketplaceContractReceipt",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "record_type",
+        "platform",
+        "application_external_id",
+        "work_external_id",
+        "contract_external_id",
+        "status",
+        "terms_sha256",
+        "observed_at"
+      ],
+      "properties": {
+        "schema_version": { "$ref": "#/$defs/schema_version" },
+        "record_type": { "const": "contract_receipt" },
+        "platform": { "$ref": "#/$defs/platform" },
+        "application_external_id": { "$ref": "#/$defs/identifier" },
+        "work_external_id": { "$ref": "#/$defs/identifier" },
+        "contract_external_id": { "$ref": "#/$defs/identifier" },
+        "status": { "enum": ["offered", "accepted", "terminated"] },
+        "terms_sha256": { "$ref": "#/$defs/sha256" },
+        "observed_at": { "$ref": "#/$defs/timestamp" }
+      }
+    },
+    "AuthorizationReceipt": {
+      "title": "MarketplaceAuthorizationReceipt",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "record_type",
+        "platform",
+        "contract_external_id",
+        "authorization_external_id",
+        "status",
+        "scope_sha256",
+        "observed_at"
+      ],
+      "properties": {
+        "schema_version": { "$ref": "#/$defs/schema_version" },
+        "record_type": { "const": "authorization_receipt" },
+        "platform": { "$ref": "#/$defs/platform" },
+        "contract_external_id": { "$ref": "#/$defs/identifier" },
+        "authorization_external_id": { "$ref": "#/$defs/identifier" },
+        "status": { "enum": ["authorized", "revoked"] },
+        "scope_sha256": { "$ref": "#/$defs/sha256" },
+        "observed_at": { "$ref": "#/$defs/timestamp" }
+      }
+    },
+    "QAReceipt": {
+      "title": "MarketplaceQAReceipt",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "record_type",
+        "platform",
+        "work_external_id",
+        "qa_external_id",
+        "status",
+        "artifact_sha256",
+        "report_sha256",
+        "observed_at"
+      ],
+      "properties": {
+        "schema_version": { "$ref": "#/$defs/schema_version" },
+        "record_type": { "const": "qa_receipt" },
+        "platform": { "$ref": "#/$defs/platform" },
+        "work_external_id": { "$ref": "#/$defs/identifier" },
+        "qa_external_id": { "$ref": "#/$defs/identifier" },
+        "status": { "enum": ["passed", "failed"] },
+        "artifact_sha256": { "$ref": "#/$defs/sha256" },
+        "report_sha256": { "$ref": "#/$defs/sha256" },
+        "observed_at": { "$ref": "#/$defs/timestamp" }
+      }
+    },
+    "PayoutMatchReceipt": {
+      "title": "MarketplacePayoutMatchReceipt",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "record_type",
+        "platform",
+        "payment_external_id",
+        "payout_external_id",
+        "bank_transaction_external_id",
+        "status",
+        "amount_minor",
+        "currency",
+        "observed_at"
+      ],
+      "properties": {
+        "schema_version": { "$ref": "#/$defs/schema_version" },
+        "record_type": { "const": "payout_match_receipt" },
+        "platform": { "$ref": "#/$defs/platform" },
+        "payment_external_id": { "$ref": "#/$defs/identifier" },
+        "payout_external_id": { "$ref": "#/$defs/identifier" },
+        "bank_transaction_external_id": { "$ref": "#/$defs/identifier" },
+        "status": { "const": "matched" },
+        "amount_minor": { "$ref": "#/$defs/non_negative_minor" },
+        "currency": { "$ref": "#/$defs/currency" },
+        "observed_at": { "$ref": "#/$defs/timestamp" }
+      }
+    },
     "WorkEvent": {
       "title": "MarketplaceWorkEvent",
       "type": "object",
@@ -284,6 +404,7 @@
         "platform",
         "work_external_id",
         "delivery_external_id",
+        "qa_external_id",
         "status",
         "artifact_sha256",
         "idempotency_key",
@@ -303,6 +424,9 @@
           "$ref": "#/$defs/identifier"
         },
         "delivery_external_id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "qa_external_id": {
           "$ref": "#/$defs/identifier"
         },
         "status": {

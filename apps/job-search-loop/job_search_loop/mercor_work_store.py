@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any
 
@@ -57,6 +58,19 @@ class WorkStateStore:
                 raise WorkStoreError("event_id already exists with different transition")
             return existing
         current = self.current_state(work_id)
+        if next_state == "bank_matched":
+            settled = next(
+                (row for row in reversed(rows) if row.get("work_id") == work_id and row.get("state") == "paid_settled"),
+                None,
+            )
+            if settled is None or settled.get("payment_id") != payment.get("payment_id"):
+                raise WorkStoreError("bank match payment_id does not match settled payment")
+            try:
+                amounts_match = Decimal(str(settled.get("amount_usd"))) == Decimal(str(payment.get("amount_usd")))
+            except (InvalidOperation, TypeError, ValueError):
+                amounts_match = False
+            if not amounts_match:
+                raise WorkStoreError("bank match amount does not match settled payment")
         try:
             _, event = advance_state(
                 current,

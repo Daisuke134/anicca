@@ -36,6 +36,62 @@ def test_parent_outlives_the_telegram_transport(tmp_path, monkeypatch):
     assert reporter[1]["timeout"] > 180
 
 
+def test_provider_neutral_application_decision_renders_and_appends_once(tmp_path):
+    event = {
+        "kind": "application", "event_key": "gig:decision:any-market:job-1",
+        "entity_id": "job-1", "occurred_at": datetime.now(timezone.utc).isoformat(),
+        "state": "skipped", "action": "応募見送り",
+        "result": "Lunaが応募しないと判断しました",
+        "next_action": "次の案件の確認を続けます。",
+        "evidence": ["official_job", "model_decision"],
+        "attributes": {
+            "platform": "anymarket", "title": "Physical filming",
+            "reason_codes": ["現地での撮影が必須で、コンピューター上では完遂できません。"],
+        },
+    }
+
+    assert report_envelope.append_work_event(tmp_path / "work-events.jsonl", event) == {
+        "appended": 1, "duplicate": 0,
+    }
+    assert report_envelope.append_work_event(tmp_path / "work-events.jsonl", event) == {
+        "appended": 0, "duplicate": 1,
+    }
+    envelope = report_envelope.build_work_event_envelope(
+        work_event=event, observed_at=datetime.now(timezone.utc),
+    )
+    message = report_envelope.render_human_ja(envelope)
+    assert "[Anymarket][応募判断]" in message
+    assert "🚫 この案件には応募しませんでした" in message
+    assert event["attributes"]["reason_codes"][0] in message
+    assert envelope["data"]["work"]["applied"] == 0
+    outbox = TelegramOutbox(tmp_path / "telegram-outbox.sqlite3")
+    transport = _Transport("decision-test-chat", tmp_path / "receipts")
+    result = apply_telegram_report.publish(tmp_path, outbox, transport)
+    assert result == {"enqueued": 1, "sent": 1, "delivery_unknown": 0}
+    assert transport.calls[0][1] == message
+
+
+def test_verified_provider_application_renders_actual_submission_receipt():
+    event = {
+        "kind": "application", "event_key": "gig:application:upwork:proposal-1",
+        "entity_id": "~job-1", "occurred_at": datetime.now(timezone.utc).isoformat(),
+        "state": "verified", "action": "応募送信", "result": "公式確認",
+        "next_action": "返信、Offer、契約を自動で監視します", "evidence": ["proposal_id"],
+        "attributes": {
+            "platform": "upwork", "title": "High-value job", "proposal_id": "proposal-1",
+            "connects_before": 92, "connects_after": 81, "connects_spent": 11,
+            "quote": {"currency": "USD", "amount": 40, "unit": "hourly"},
+        },
+    }
+    message = report_envelope.render_human_ja(report_envelope.build_work_event_envelope(
+        work_event=event, observed_at=datetime.now(timezone.utc),
+    ))
+    assert "[Upwork][応募完了]" in message
+    assert "✅ 実際に応募しました" in message
+    assert "Proposal ID: proposal-1" in message
+    assert "Connects: 92 → 81 (-11)" in message
+
+
 def _application_event(event_key: str, occurred_at: int) -> dict:
     return {
         "kind": "application", "event_key": event_key, "entity_id": event_key,
@@ -153,3 +209,44 @@ def test_apply_redrive_reopens_one_row_per_wake(tmp_path):
     )
     assert failed["delivery_unknown"] == 1
     assert outbox.counts().get("pending", 0) == 0
+
+
+def test_fresh_business_event_dispatches_before_old_unknown(tmp_path):
+    old = int(time.time()) - 1200
+    outbox = TelegramOutbox(tmp_path / "telegram-outbox.sqlite3")
+    _delivery_unknown(outbox, event_key="old-unknown", kind="application",
+                      message="old unknown", created_at=old)
+    fresh = _application_event("fresh", int(time.time()))
+    (tmp_path / "work-events.jsonl").write_text(json.dumps(fresh) + "\n", encoding="utf-8")
+    transport = _Transport("apply-test-chat", tmp_path / "receipts")
+
+    result = apply_telegram_report.publish(tmp_path, outbox, transport)
+
+    assert result["sent"] == 2
+    assert transport.calls[0][0].endswith(":fresh")
+    assert transport.calls[1][0] == "old-unknown"
+
+
+def test_fresh_event_precedes_reopened_event_already_in_work_log(tmp_path):
+    now = int(time.time())
+    old_event = _application_event("old", now - 1200)
+    fresh_event = _application_event("fresh", now)
+    outbox = TelegramOutbox(tmp_path / "telegram-outbox.sqlite3")
+    old_key = "gig:telegram:instant-work-event:v1:old"
+    old_message = report_envelope.render_human_ja(report_envelope.build_work_event_envelope(
+        work_event=old_event, observed_at=datetime.now(timezone.utc),
+    ))
+    _delivery_unknown(outbox, event_key=old_key, kind="application",
+                      message=old_message, created_at=now - 1200)
+    (tmp_path / "instant-work-event-report-state.json").write_text(
+        json.dumps({"version": 1, "seen_event_keys": ["old"]}) + "\n", encoding="utf-8",
+    )
+    (tmp_path / "work-events.jsonl").write_text(
+        json.dumps(old_event) + "\n" + json.dumps(fresh_event) + "\n", encoding="utf-8",
+    )
+    transport = _Transport("apply-test-chat", tmp_path / "receipts")
+
+    apply_telegram_report.publish(tmp_path, outbox, transport)
+
+    assert transport.calls[0][0].endswith(":fresh")
+    assert transport.calls[1][0] == old_key

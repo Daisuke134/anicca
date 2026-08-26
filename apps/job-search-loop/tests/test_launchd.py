@@ -4,21 +4,22 @@ from pathlib import Path
 
 
 class LaunchdTests(unittest.TestCase):
-    def test_plists_have_separate_bounded_schedules(self):
+    def test_plists_have_separate_recurring_schedules(self):
         root = Path(__file__).parents[1] / "launchd"
+        browser = plistlib.loads(
+            (root / "ai.anicca.job-search-browser.plist").read_bytes()
+        )
         daily = plistlib.loads((root / "ai.anicca.job-search-daily.plist").read_bytes())
         inbox = plistlib.loads((root / "ai.anicca.job-search-inbox.plist").read_bytes())
         learning = plistlib.loads(
             (root / "ai.anicca.job-search-learning.plist").read_bytes()
         )
-        mercor = plistlib.loads(
-            (root / "ai.anicca.job-search-mercor.plist").read_bytes()
-        )
         self.assertTrue(daily["RunAtLoad"])
-        self.assertEqual(daily["StartInterval"], 3600)
+        self.assertTrue(browser["RunAtLoad"])
+        self.assertTrue(browser["KeepAlive"])
+        self.assertEqual(browser["Label"], "ai.anicca.job-search-browser")
+        self.assertEqual(daily["StartInterval"], 1800)
         self.assertEqual(inbox["StartInterval"], 900)
-        self.assertEqual(mercor["StartInterval"], 3600)
-        self.assertFalse(mercor["RunAtLoad"])
         self.assertTrue(learning["RunAtLoad"])
         self.assertEqual(
             learning["StartCalendarInterval"],
@@ -29,7 +30,6 @@ class LaunchdTests(unittest.TestCase):
         self.assertNotEqual(
             learning["ProgramArguments"][0], daily["ProgramArguments"][0]
         )
-        self.assertNotEqual(mercor["Label"], daily["Label"])
 
     def test_inbox_shell_uses_deterministic_prefilter_before_model(self):
         root = Path(__file__).parents[1]
@@ -58,13 +58,11 @@ class LaunchdTests(unittest.TestCase):
             script.index('if [[ "$NEW_COUNT"'),
         )
 
-    def test_daily_shell_skips_model_when_submission_quota_is_full(self):
+    def test_daily_shell_has_no_product_daily_quota_gate(self):
         root = Path(__file__).parents[1]
         script = (root / "scripts" / "run-daily.sh").read_text(encoding="utf-8")
-        self.assertIn("daily_slot_count", script)
-        self.assertIn('if [[ "$SLOT_COUNT" -ge "$DAILY_TARGET" ]]', script)
-        self.assertIn("daily_target", script)
-        self.assertIn("daily_quota_reached", script)
+        self.assertNotIn("daily_slot_count", script)
+        self.assertNotIn("daily_quota_reached", script)
 
     def test_healthcheck_covers_scheduler_ledger_and_private_state(self):
         root = Path(__file__).parents[1]
@@ -78,7 +76,19 @@ class LaunchdTests(unittest.TestCase):
         self.assertIn("ai.anicca.job-search-inbox", script)
         self.assertIn("ai.anicca.job-search-learning", script)
         self.assertIn('"learning-": 8 * 24 * 3600', script)
-        self.assertNotIn("cat /Users/operator/.openclaw/.env", script)
+        self.assertIn('candidate / "workday-fast-path.json"', script)
+        self.assertIn('candidate / "wake-report.json"', script)
+        self.assertIn('"$STATUS" == *"state=running"*', script)
+        self.assertNotIn("ashby-fast-path-combined.json", script)
+        self.assertNotIn("cat /Users/anicca/.openclaw/.env", script)
+
+    def test_health_alert_uses_direct_fenced_telegram(self):
+        root = Path(__file__).parents[1]
+        script = (root / "scripts" / "run-health.sh").read_text(encoding="utf-8")
+        self.assertIn("job_search_loop.telegram import send_once", script)
+        self.assertIn("job-search-health:", script)
+        self.assertNotIn("openclaw message send", script)
+        self.assertNotIn("Ashby healthcheck", script)
 
 
 if __name__ == "__main__":

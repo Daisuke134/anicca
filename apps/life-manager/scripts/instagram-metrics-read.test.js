@@ -4,10 +4,15 @@ const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
 const test = require("node:test");
-const { EXPECTED, persistDailyDigest, persistSnapshot } = require("./instagram-metrics-read.js");
+const { EXPECTED, metricPlatform, persistDailyDigest, persistSnapshot } = require("./instagram-metrics-read.js");
 
 const html = `<link rel="canonical" href="${EXPECTED.public_url}" /><meta property="og:description" content="0 likes - ${EXPECTED.native_owner}: &quot;強い人の口癖、5つだけ #anicca #セルフケア #習慣 #AI&quot;" />`;
 const postRows = [["Views", 32], ["Reach", 31], ["Saves", 0], ["Likes", 0], ["Comments", 0], ["Shares", 0]].map(([label, total]) => ({ label, data: [{ total: String(total) }] }));
+
+test("URL-free Postiz photo snapshots remain TikTok metrics", () => {
+  assert.equal(metricPlatform({ kind: "tiktok_postiz_photo_metric_snapshot", public_url: "unavailable" }), "tiktok");
+  assert.equal(metricPlatform({ kind: "instagram_combined_metric_snapshot", public_url: "https://www.instagram.com/reel/ABC/" }), "instagram");
+});
 
 test("Instagram snapshot binds native content, preserves unavailable, and replays", () => {
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "lm-instagram-metrics-"));

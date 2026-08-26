@@ -132,9 +132,23 @@ def _default_providers(
         Provider(
             "freehire",
             (
-                "/bin/zsh",
-                str(app_root / "scripts" / "freehire-resolved-search.sh"),
+                bun,
+                "run",
+                str(
+                    framework_root
+                    / ".agents/skills/freehire-search/cli/src/cli.ts"
+                ),
+                "search",
+                "--query",
                 query,
+                "--remote",
+                "remote",
+                "--jobage",
+                "30",
+                "--limit",
+                "10",
+                "--format",
+                "json",
             ),
         ),
         Provider(

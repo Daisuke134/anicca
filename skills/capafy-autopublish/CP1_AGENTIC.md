@@ -13,12 +13,14 @@ positional price/cap script scrambles values → price tab red → card never sa
 `isConfirmedSkills=0` → the daily loop STOPs). This procedure is robust to UI drift
 because a human-like agent verifies each step by looking.
 
-## The tool (run with the cloak venv)
+## The tool (run with the resolved browser Python)
 ```
-VENV=$LIFE_MANAGER_REPO/skills/_shared/venv-cloak/bin/python
 SHOT=<scratchpad>/cp1.png
-CP1_SHOT=$SHOT $VENV scripts/cp1_agent.py <cmd> ...
+CP1_SHOT=$SHOT scripts/cp1_python.sh scripts/cp1_agent.py <cmd> ...
 ```
+`cp1_python.sh` selects a locally installed Python with both `playwright` and
+`websocket` (normally `/opt/homebrew/bin/python3`) and fails clearly if none is
+available. Override it only when necessary with `CP1_PYTHON=/path/to/python`.
 Commands: `open <url>` · `shot` · `state` · `click <x> <y>` · `clicktext "<text>" [nth]`
 · `fill <idx> "<v>"` · `typeinto <idx> "<v>"` · `press <key>` · `upload <idx> <path>`
 · `scroll <dy>` (mouse-wheel; page uses an INNER scroll container, window.scrollTo is
@@ -33,7 +35,7 @@ A green price tab alone is NOT done — you must still 提出を確認 and confi
 ## The card has THREE tabs (top): verify each is green ✓
 | tab | usually | what to do |
 |---|---|---|
-| 基本情報 | auto-filled ✓ green (title/desc/category/icon from init) | glance; fix only if red |
+| 基本情報 | may still be red after init | fill every value from `.temp/cfg_one.json`: title, short/detailed descriptions, tags, category, icon, privacy URL, support email |
 | Skill / プラグイン | auto-confirmed ✓ green (your skill shows 確認済み) | glance; leave |
 | 価格設定 | often **red ✗** — the real work | fix the plan cards until GREEN |
 
@@ -53,12 +55,18 @@ A green price tab alone is NOT done — you must still 提出を確認 and confi
 5. Each plan needs a trial choice (required). **"No Free Trial" is the safe, proven
    default** (Enable Free Trial reveals extra required fields). Only set trials if the
    target explicitly asks and the tab stays green after.
-6. Re-read `state`: the `priceSvg` must contain **`61, 220, 132`** (green). If it's
+6. Continue below the plan cards and fill the remaining required card fields from
+   `.temp/cfg_one.json`: model, estimated runtime, **test input**, **welcomeMessage**,
+   and AI provider. Leave **other third-party** data sharing unchecked unless the
+   listing truly uses an additional service; when checked, its service name and purpose
+   become required. Check the final **DPA** agreement checkbox.
+7. Re-read all three tabs: every tab must be green. The `priceSvg` must contain
+   **`61, 220, 132`** (green). If it's
    `229, 83, 75` (red), something is still empty/invalid — screenshot, find the red
    field, fix it. Do not proceed while red.
-7. Click **下書きを保存** (save draft) → then **提出を確認** (confirm). Read the shot:
+8. Click **下書きを保存** (save draft) → then **提出を確認** (confirm). Read the shot:
    you want the 「カードを保存しました」 card-done page.
-8. Verify server-side: `packager.py publish-remote-status --agent-id <ID>` →
+9. Verify server-side: `packager.py publish-remote-status --agent-id <ID>` →
    `isConfirmedSkills == 1`. Only then is CP1 done; hand off to `publish_finish.sh`.
 
 ## Guardrails

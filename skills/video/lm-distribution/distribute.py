@@ -211,16 +211,27 @@ def _approved(path: Path, creative_id: str, video_hash: str, caption_hash: str) 
 
 
 def _existing(rows: list[dict], platform: str, creative_id: str, video_hash: str, caption_hash: str):
-    matches = [
-        row
-        for row in rows
-        if row.get("platform") == platform
-        and row.get("creative_id") == creative_id
-        and row.get("video_sha256") == video_hash
-        and row.get("caption_sha256") == caption_hash
-        and _valid_public_url(platform, row.get("public_url"))
-        and row.get("status") == "published"
-    ]
+    url_owners: dict[str, tuple] = {}
+    provider_owners: dict[str, tuple] = {}
+    matches = []
+    expected = (creative_id, video_hash, caption_hash)
+    for row in rows:
+        if (
+            row.get("platform") != platform
+            or row.get("status") != "published"
+            or not _valid_public_url(platform, row.get("public_url"))
+        ):
+            continue
+        lineage = (row.get("creative_id"), row.get("video_sha256"), row.get("caption_sha256"))
+        public_url = row["public_url"]
+        provider_id = row.get("provider_id")
+        url_owners.setdefault(public_url, lineage)
+        if isinstance(provider_id, str) and provider_id:
+            provider_owners.setdefault(provider_id, lineage)
+        owns_url = url_owners[public_url] == lineage
+        owns_provider = not provider_id or provider_owners[provider_id] == lineage
+        if lineage == expected and owns_url and owns_provider:
+            matches.append(row)
     return matches[-1] if matches else None
 
 

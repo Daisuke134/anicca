@@ -54,6 +54,7 @@ class MercorCalendarFixtureTests(unittest.TestCase):
                     thread_id=payload["thread_id"],
                     company=payload["company"],
                     role=payload["role"],
+                    candidate_name="Mercor Candidate",
                     raw_slots=payload["slots"],
                     now=now,
                 )

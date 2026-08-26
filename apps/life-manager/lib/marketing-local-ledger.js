@@ -5,6 +5,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { isDeepStrictEqual } = require("node:util");
 const { resolveDataRoot } = require("./runtime-paths.js");
+const { isMarketingLaneManifest } = require("./marketing-lane-manifest.js");
 
 const SHADOW_HOLD_AVAILABLE_AT = "9999-12-31T23:59:59.000Z";
 const EFFECT_CLASSES = new Set(["none", "publish", "message", "money"]);
@@ -121,6 +122,10 @@ function createMarketingLocalLedger(options = {}) {
   const receiptsFile = path.join(directory, "receipts.jsonl");
   const lockFile = path.join(directory, ".ledger.lock");
   const reclaimLockFile = path.join(directory, ".ledger.reclaim");
+  const publicationFenceFile = path.join(directory, "publication-effect-fence.json");
+  const publicationFenceRefusalsFile = path.join(directory, "publication-effect-fence-refusals.jsonl");
+  const laneManifestFile = path.join(directory, "lane-manifest.json");
+  const lanePolicyRefusalsFile = path.join(directory, "lane-policy-refusals.jsonl");
   const claimsDirectory = path.join(directory, "claims");
   const receiptsDirectory = path.join(directory, "receipts");
   const now = options.now || (() => new Date().toISOString());
@@ -130,6 +135,114 @@ function createMarketingLocalLedger(options = {}) {
     fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
     fs.mkdirSync(claimsDirectory, { recursive: true, mode: 0o700 });
     fs.mkdirSync(receiptsDirectory, { recursive: true, mode: 0o700 });
+  }
+
+  function publicationFence() {
+    let stat;
+    let value;
+    try {
+      stat = fs.statSync(publicationFenceFile);
+      value = JSON.parse(fs.readFileSync(publicationFenceFile, "utf8"));
+    } catch (error) {
+      if (error.code === "ENOENT") return null;
+      throw new Error("local marketing publication effect fence invalid");
+    }
+    if ((stat.mode & 0o077) !== 0 || !value || value.schema_version !== 1
+      || !["closed", "open"].includes(value.state)) {
+      throw new Error("local marketing publication effect fence invalid");
+    }
+    if (value.state === "open" && (typeof value.allowed_effect_key !== "string" || !value.allowed_effect_key.trim())) {
+      throw new Error("local marketing publication effect fence invalid");
+    }
+    return value;
+  }
+
+  function assertPublicationEffectAllowed(job, phase) {
+    if (job.capability !== "marketing.video.publish") return;
+    const fence = publicationFence();
+    let closedProductionLane = false;
+    if (fence?.state === "closed") {
+      try { closedProductionLane = Boolean(publicationLane(job, laneManifest(true))); } catch {}
+    }
+    if (fence && !(fence.state === "open" && fence.allowed_effect_key === job.effect_key) && !closedProductionLane) {
+      const observedAt = nowInstant(now);
+      append(publicationFenceRefusalsFile, {
+        schema_version: 1,
+        kind: "marketing_publication_effect_refusal",
+        tenant_id: job.tenant_id,
+        job_id: job.job_id,
+        effect_key: job.effect_key,
+        phase,
+        fence_state: fence.state,
+        reason: required(fence.reason || "publication effect is not explicitly allowed", "publication effect fence reason", 500),
+        recorded_at: observedAt,
+      });
+      const error = new Error("marketing publication effect fenced");
+      error.code = "MARKETING_PUBLICATION_EFFECT_FENCED";
+      throw error;
+    }
+    assertPublicationLaneAllowed(job, phase, fence !== null);
+  }
+
+  function laneManifest(requiredByFence) {
+    let stat;
+    let value;
+    try {
+      stat = fs.statSync(laneManifestFile);
+      value = JSON.parse(fs.readFileSync(laneManifestFile, "utf8"));
+    } catch (error) {
+      if (error.code === "ENOENT" && !requiredByFence) return null;
+      throw new Error("local marketing lane manifest invalid");
+    }
+    if ((stat.mode & 0o077) !== 0 || !isMarketingLaneManifest(value)) {
+      throw new Error("local marketing lane manifest invalid");
+    }
+    return value;
+  }
+
+  function publicationLane(job, manifest) {
+    const refs = job.input_refs || {};
+    const productMatch = /^product:\/\/([A-Za-z0-9._-]+)$/.exec(String(refs.product_ref || ""));
+    const localeMatch = /^locale:\/\/([a-z]{2}(?:-[A-Z]{2})?)$/.exec(String(refs.locale_ref || ""));
+    const platformMatch = /^platform:\/\/(instagram|tiktok|youtube)$/.exec(String(refs.platform_ref || ""));
+    if (!productMatch || !localeMatch || !platformMatch) return null;
+    const platform = platformMatch[1];
+    const integrationMatch = new RegExp(`^integration://postiz/${platform}/([A-Za-z0-9._:-]+)$`)
+      .exec(String(refs[`${platform}_integration_ref`] || ""));
+    if (!integrationMatch) return null;
+    const product = productMatch[1] === "anicca-ios" ? "anicca" : productMatch[1];
+    return manifest.lanes.find((lane) => (
+      lane.tenant_id === job.tenant_id
+      && lane.product_id === product
+      && lane.locale === localeMatch[1]
+      && lane.platform === platform
+      && lane.integration_id === integrationMatch[1]
+      && lane.owner === "life-manager"
+      && lane.disposition === "target"
+      && lane.disabled === false
+      && lane.lane_state === "production-armed"
+      && lane.production_armed === true
+      && lane.target_daily_limit >= 1
+    )) || null;
+  }
+
+  function assertPublicationLaneAllowed(job, phase, requiredByFence) {
+    const manifest = laneManifest(requiredByFence);
+    if (!manifest || publicationLane(job, manifest)) return;
+    append(lanePolicyRefusalsFile, {
+      schema_version: 1,
+      kind: "marketing_publication_lane_refusal",
+      tenant_id: job.tenant_id,
+      job_id: job.job_id,
+      effect_key: job.effect_key,
+      phase,
+      manifest_id: manifest.manifest_id,
+      reason: "exact Life Manager production lane is not armed",
+      recorded_at: nowInstant(now),
+    });
+    const error = new Error("marketing publication lane forbidden");
+    error.code = "MARKETING_PUBLICATION_LANE_FORBIDDEN";
+    throw error;
   }
 
   function readLockRecord(file = lockFile) {
@@ -501,6 +614,7 @@ function createMarketingLocalLedger(options = {}) {
         if (!sameImmutableJob(existing, normalized)) throw new Error("local ledger job id collision");
         return { created: false, job: clone(existing) };
       }
+      assertPublicationEffectAllowed(normalized, "enqueue");
       if (normalized.effect_key && [...state.jobs.values()].some((job) => (
         job.tenant_id === normalized.tenant_id
         && job.effect_key === normalized.effect_key
@@ -587,6 +701,7 @@ function createMarketingLocalLedger(options = {}) {
         return null;
       }
       if (Date.parse(job.available_at) > Date.parse(observedAt) || job.attempt >= job.max_attempts) return null;
+      assertPublicationEffectAllowed(job, "claim");
       const claimed = {
         ...job,
         status: "running",
@@ -827,6 +942,82 @@ function createMarketingLocalLedger(options = {}) {
     });
   }
 
+  function quarantineCompletedEffectConflict(input = {}) {
+    const tenantId = identifier(input.tenantId ?? input.tenant_id, "local ledger tenant id");
+    const jobId = identifier(input.jobId ?? input.job_id, "local ledger job id");
+    const conflictsWithJobId = identifier(
+      input.conflictsWithJobId ?? input.conflicts_with_job_id,
+      "local ledger conflicting job id",
+    );
+    if (jobId === conflictsWithJobId) throw new Error("local ledger conflict must reference another job");
+    if (input.confirmation !== "QUARANTINE_CONFIRMED_EFFECT_CONFLICT") {
+      throw new Error("local ledger effect conflict confirmation is invalid");
+    }
+    const reason = identifier(input.reason, "local ledger effect conflict reason");
+    const expectedReceipt = input.expectedReceipt ?? input.expected_receipt;
+    if (!expectedReceipt || typeof expectedReceipt !== "object" || Array.isArray(expectedReceipt)) {
+      throw new Error("local ledger expected conflict receipt is invalid");
+    }
+    if (Buffer.byteLength(JSON.stringify(expectedReceipt)) > 16_384) {
+      throw new Error("local ledger expected conflict receipt is too large");
+    }
+    return withLock(() => {
+      const state = snapshot();
+      const job = jobFor(state, tenantId, jobId);
+      const retained = receiptFor(state, tenantId, jobId);
+      const conflictingJob = jobFor(state, tenantId, conflictsWithJobId);
+      const conflictingReceipt = receiptFor(state, tenantId, conflictsWithJobId);
+      if (
+        job?.status === "conflict"
+        && retained?.kind === "marketing_effect_conflict"
+        && retained.reason === reason
+        && retained.conflicts_with_job_id === conflictsWithJobId
+        && isDeepStrictEqual(retained.superseded_receipt, expectedReceipt)
+      ) return clone(job);
+      if (
+        !job || job.status !== "completed" || job.effect_class === "none" || !retained
+        || !conflictingJob || conflictingJob.status !== "completed" || !conflictingReceipt
+      ) {
+        throw new Error("local ledger completed effect is not conflict-quarantinable");
+      }
+      if (!isDeepStrictEqual(retained, expectedReceipt)) {
+        throw new Error("local ledger effect conflict receipt changed");
+      }
+      const observedAt = nowInstant(now);
+      const conflictReceipt = {
+        schema_version: 1,
+        kind: "marketing_effect_conflict",
+        status: "conflict",
+        reason,
+        conflicts_with_job_id: conflictsWithJobId,
+        superseded_receipt: clone(retained),
+        quarantined_at: observedAt,
+      };
+      if (Buffer.byteLength(JSON.stringify(conflictReceipt)) > 16_384) {
+        throw new Error("local ledger effect conflict receipt is too large");
+      }
+      append(receiptsFile, {
+        schema_version: 1, kind: "receipt", tenant_id: tenantId, job_id: jobId,
+        attempt: job.attempt, receipt: clone(conflictReceipt), correction: "confirmed_effect_conflict",
+        corrected_at: observedAt,
+      });
+      atomicJson(path.join(receiptsDirectory, `${keyFor(tenantId, jobId)}.json`), {
+        schema_version: 1, tenant_id: tenantId, job_id: jobId, receipt: conflictReceipt,
+      });
+      const conflicted = {
+        ...job,
+        status: "conflict",
+        unknown_effect: false,
+        conflict_reason: reason,
+        conflicts_with_job_id: conflictsWithJobId,
+        conflicted_at: observedAt,
+        updated_at: observedAt,
+      };
+      append(jobsFile, { schema_version: 1, kind: "job", event: "conflict_quarantine", job: conflicted });
+      return clone(conflicted);
+    });
+  }
+
   function readJob(input = {}) {
     const tenantId = identifier(input.tenantId ?? input.tenant_id, "local ledger tenant id");
     const jobId = identifier(input.jobId ?? input.job_id, "local ledger job id");
@@ -851,6 +1042,7 @@ function createMarketingLocalLedger(options = {}) {
     retryJob: async (input) => retryJob(input),
     resolveReconciliation: async (input) => resolveReconciliation(input),
     correctReceiptDirectUrl: async (input) => correctReceiptDirectUrl(input),
+    quarantineCompletedEffectConflict: async (input) => quarantineCompletedEffectConflict(input),
     readJob: async (input) => readJob(input),
     readReceipt: async (input) => readReceipt(input),
   });

@@ -122,7 +122,29 @@ fi
 
 # ── All-skills bio landing refreshes on EVERY pass, including cadence no-op days. ──
 # netlify-cli writes ./.netlify relative to cwd; launchd starts at / (no WorkingDirectory) -> mkdir '//.netlify' ENOENT. cd keeps it inside the skill dir.
-/opt/homebrew/bin/python3 "$LIFE_MANAGER_REPO/skills/earn/capafy-marketing/scripts/build_landing.py" >>"$LOG" 2>&1 && ( cd "$LIFE_MANAGER_REPO/skills/earn/capafy-marketing" && /opt/homebrew/bin/npx --yes netlify-cli@27.1.2 deploy --prod --dir "$LIFE_MANAGER_REPO/skills/earn/capafy-marketing/site" --site "$LANDING_SITE_ID" ) >>"$LOG" 2>&1 || echo "landing regenerate/deploy failed (non-fatal)" >>"$LOG"
+LANDING_SITE="$LIFE_MANAGER_REPO/skills/earn/capafy-marketing/site"
+landing_fingerprint() {
+  /opt/homebrew/bin/python3 - "$LANDING_SITE" <<'PY'
+import hashlib, pathlib, sys
+root = pathlib.Path(sys.argv[1])
+digest = hashlib.sha256()
+for path in sorted(item for item in root.rglob("*") if item.is_file()):
+    digest.update(str(path.relative_to(root)).encode())
+    digest.update(path.read_bytes())
+print(digest.hexdigest())
+PY
+}
+LANDING_BEFORE="$(landing_fingerprint)"
+if /opt/homebrew/bin/python3 "$LIFE_MANAGER_REPO/skills/earn/capafy-marketing/scripts/build_landing.py" >>"$LOG" 2>&1; then
+  LANDING_AFTER="$(landing_fingerprint)"
+  if [ "$LANDING_BEFORE" = "$LANDING_AFTER" ]; then
+    echo "landing unchanged; deploy skipped" >>"$LOG"
+  elif ! ( cd "$LIFE_MANAGER_REPO/skills/earn/capafy-marketing" && /opt/homebrew/bin/npx --yes netlify-cli@27.1.2 deploy --prod --dir "$LANDING_SITE" --site "$LANDING_SITE_ID" ) >>"$LOG" 2>&1; then
+    echo "landing deploy failed (non-fatal)" >>"$LOG"
+  fi
+else
+  echo "landing regenerate failed (non-fatal)" >>"$LOG"
+fi
 
 # ── WARMUP GATE: decide DRY vs LIVE. Creation date is day1; day1-2 DRY; LIVE from day3. ──
 WARM_DAY="$(capafy_ig_warming_day "$IG_STARTED_WARMING")"
@@ -187,6 +209,7 @@ fi
 # Reel row for this exact Agent is verified below.
 SELECTED_JSON='{}'
 SELECTED_AGENT_ID=''
+CAMPAIGN_URL=''
 PRE_IG_ROWS=0
 CREATIVE_APPROVAL_STATUS='none'
 APPROVED_ARTIFACT_PATH=''
@@ -199,6 +222,7 @@ if [ "$PROVISION_NEEDED" = "no" ]; then
   }
   SELECTED_AGENT_ID="$(printf '%s' "$SELECTED_JSON" | /opt/homebrew/bin/python3 -c 'import json,sys; print(json.load(sys.stdin).get("agent_id") or "")')"
   [ -n "$SELECTED_AGENT_ID" ] || exit 1
+  CAMPAIGN_URL="${LANDING_URL%/}/go/${SELECTED_AGENT_ID}"
   [ -f "$IG_LEDGER" ] && PRE_IG_ROWS="$(wc -l < "$IG_LEDGER" | tr -d ' ')"
   APPROVAL_JSON="$(/opt/homebrew/bin/python3 "$SCRIPT_DIR/scripts/creative_approval.py" \
     --state "$CREATIVE_APPROVAL_FILE" \
@@ -249,13 +273,13 @@ CREATIVE APPROVAL: status='"$CREATIVE_APPROVAL_STATUS"', approved_artifact='"$AP
 
 COMMERCIAL GATE: commercial_ok='"$COMMERCIAL_OK"'. While commercial_ok=no, EVERY post is NON-COMMERCIAL: pure-info caption ("here is a Claude skill that does X" — NO "buy/subscribe/link in bio" push), and DO NOT add any Capafy link to the bio yet. This avoids the day-0 commercial-link suspension trigger while we measure reach. Only when commercial_ok=yes do you add the bio link + a soft CTA.
 
-STEP2 COPY (YOUR judgment, no template): from name+desc write (a) a Reel caption (hook + what the skill does; if commercial_ok=yes add a soft "link in bio" CTA, else pure info, NO push, NO link in caption/comment — IG comment links are unclickable) and (b) a one-line on-screen hook for the video. Before writing, if $LIFE_MANAGER_REPO/skills/earn/capafy-marketing/IG_BEST_PRACTICES.md exists, read it and follow its measured winning patterns; if absent, use your normal judgment.
+STEP2 COPY (YOUR judgment, no template): from name+desc write (a) a Reel caption (hook + what the skill does; if commercial_ok=yes include the exact campaign URL '"$CAMPAIGN_URL"' as its own final line plus a soft CTA, even though Instagram may render caption URLs as non-clickable text; else pure info, NO push and NO URL) and (b) a one-line on-screen hook for the video. The campaign URL must match the selected Agent and makes every video description self-identifying; never substitute the generic all-skills homepage. Before writing, if $LIFE_MANAGER_REPO/skills/earn/capafy-marketing/IG_BEST_PRACTICES.md exists, read it and follow its measured winning patterns; if absent, use your normal judgment.
 
 STEP3 VIDEO (B3, APPROVED HyperFrames V4 contract): when CREATIVE APPROVAL status is approved, use the exact approved artifact above and do not render. Otherwise create one unique run directory below $HOME/.local/state/life-manager/artifacts/capafy/ig/. Find a repo-owned test fixture or immutable live output receipt for THIS selected listing; do not invent a result from its description. If no source exists, fail before rendering/posting. Use `$LIFE_MANAGER_REPO/skills/video/hyperframes/capafy-o13-review/` only as the approved visual/technical reference; copy its HyperFrames 0.8.8 project shape into the run directory and author four listing-specific 1080x1920 scenes that visibly match the narration: pain/raw input -> source evidence -> transformation -> verified output/CTA. Do not reuse O13 text for another listing. Generate four separate scene narration clips with free `edge-tts --voice en-US-AndrewNeural`, constrain each clip to its matching visual scene window, join them with zero scene-boundary crossings, and normalize the final mix near -16 LUFS. The rejected Samantha and Indian-accent Mona voices are forbidden. Render through pinned `npx --yes hyperframes@0.8.8 render` in the foreground; never background the render or inspect while final mux is running. Continue only after the render process exits 0 and the MP4 size and SHA-256 are identical across two probes at least 2 seconds apart. The old canonical-renderer and generic text-card fallback are forbidden. Gate before POST: HyperFrames check/lint passes; final MP4 is 1080x1920, about 30 seconds, H.264/AAC; four scene files are present; the source path/hash, selected Agent ID, scene timings, voice, output hash and inspection frames are saved in a manifest; inspect full-resolution frames from all four scenes and reject blank rectangles, tiny text, mismatched narration/content, generic b-roll, or reused O13 copy. A render, inspection, evidence, or audio-sync failure is terminal; never post a fallback.
 
 STEP4 POST (B4, shared instagrapi poster): CDP_PORT='"$IG_PORT"' /opt/homebrew/bin/python3 $LIFE_MANAGER_REPO/skills/earn/marketing-engine/poster.py --video <mp4> --caption-file <caption> --handle '"$IG_HANDLE"' --port '"$IG_PORT"' --accounts-path '"$ACCOUNTS_FILE"' --live . The poster must try ~/.cloak/instagrapi-'"$IG_HANDLE"'.json as tier1 and verify the authenticated handle. Do not reject a valid tier1 session merely because the account lifecycle SSOT remains session_owner=browser; that state permits the existing tier2 browser-session fallback only after tier1 is unavailable. Only run when MODE=--live; if MODE=DRY do not post. If it returns ChallengeRequired, stop and report; never retry-login. Capture post_url.
 
-STEP5 BIO (deterministic — do NOT hand-drive the profile UI): set the profile Website to the all-skills landing URL '"$LANDING_URL"' ONLY when commercial_ok=yes AND MODE=--live. Use the repo-owned persistence-verifying script: open the account edit page in THIS pass isolated lease context and run  python3 $LIFE_MANAGER_REPO/skills/earn/capafy-marketing/scripts/setup_profile.py --tid <the lease tab TID for '"$IG_HANDLE"'> --website '"$LANDING_URL"' --username '"$IG_HANDLE"'  . It returns website_set=true only if IG kept the FULL link; if website_set=false, IG stripped it — report that and do NOT claim the bio link is installed. Never use an individual Capafy listing URL for the Website. While commercial_ok=no, DO NOT touch the bio. Never in DRY.
+STEP5 BIO (deterministic — do NOT hand-drive the profile UI): set the profile Website to the selected Agent campaign URL '"$CAMPAIGN_URL"' ONLY when commercial_ok=yes AND MODE=--live. This URL records the click and immediately redirects to the selected Agent listing on Capafy; it never shows the generic all-skills page. Use the repo-owned persistence-verifying script: open the account edit page in THIS pass isolated lease context and run  python3 $LIFE_MANAGER_REPO/skills/earn/capafy-marketing/scripts/setup_profile.py --tid <the lease tab TID for '"$IG_HANDLE"'> --website '"$CAMPAIGN_URL"' --username '"$IG_HANDLE"'  . It returns website_set=true only if IG kept the FULL link; if website_set=false, IG stripped it — report that and do NOT claim the bio link is installed. While commercial_ok=no, DO NOT touch the bio. Never in DRY.
 
 STEP6 VERIFY + LEDGER + REACH: on --live, confirm the Reel is publicly visible and append exactly one row to '"$IG_LEDGER"' containing platform=ig, reel_url, agent_id, listing_name, handle, artifact_sha256, plus the exact nonempty `caption` and nonempty on-screen `hook` used in this post. These copy fields are mandatory experiment evidence, not optional prose. Record post time in the rotation ledger (platform=ig). Then MEASURE REACH (the real shadowban test): run  python3 $LIFE_MANAGER_REPO/skills/earn/capafy-marketing/scripts/ig_metrics.py  to snapshot views/likes/comments, and (a few hours after a post, or on the NEXT day pass) judge: is reach healthy for a fresh account (getting non-zero views/plays, appearing when you search its own hashtags)? If reach looks HEALTHY on the accumulated snapshots, write the marker  touch '"$COMMERCIAL_MARKER"'  (this flips commercial_ok=yes → next posts add the bio link + soft CTA). If reach looks SHADOWBANNED (near-zero views across multiple posts, not in hashtag/explore), do NOT write the marker — instead report it so a human/next pass decides account-rebuild vs warmup-extend. Never fabricate reach numbers. On DRY, just record the flow reached share cleanly.
 After REACH, run python3 $LIFE_MANAGER_REPO/skills/earn/capafy-marketing/scripts/ig_reflect.py exactly once to refresh IG_BEST_PRACTICES.md from real ledger + metrics data for the next pass.
@@ -268,7 +292,7 @@ STEP7 REPORT — MANDATORY every pass. Send to the Telegram target in CAPAFY_TEL
 Do not write '"$LAST_PASS_MARKER"'; the deterministic wrapper owns that heartbeat and writes it only after this runner exits 0. A DRY pass or a deferred cadence pass is a clean finish.'
 
 EVIDENCE_DIR="$HOME/.local/state/life-manager/state/agent-runner-evidence/${INSTANCE}-ig-marketing/$(date +%s)-$$"
-printf '%s\n' "$PROMPT" | "$RUN_AGENT" \
+printf '%s\n' "$PROMPT" | AGENT_RUNNER_EVIDENCE_MIN_FREE_BYTES=67108864 "$RUN_AGENT" \
   --task-class marketing-agent \
   --evidence-dir "$EVIDENCE_DIR" \
   --task-label "${INSTANCE}-ig-marketing-daily" \

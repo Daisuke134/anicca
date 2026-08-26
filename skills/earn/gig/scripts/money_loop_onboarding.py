@@ -95,7 +95,6 @@ def onboard(
     providers: list[str],
     minimum_margin_bps: Any,
     spend_cap_minor: Any,
-    connects_cap: Any,
     concurrent_job_cap: Any,
     human_minute_value_minor: Any,
     home: Path | None = None,
@@ -110,7 +109,6 @@ def onboard(
     bounds = {
         "minimum_margin_bps": _bound("minimum_margin_bps", minimum_margin_bps, maximum=10_000),
         "spend_cap_minor": _bound("spend_cap_minor", spend_cap_minor),
-        "connects_cap": _bound("connects_cap", connects_cap),
         "concurrent_job_cap": _bound("concurrent_job_cap", concurrent_job_cap),
         "human_minute_value_minor": _bound("human_minute_value_minor", human_minute_value_minor),
     }
@@ -198,7 +196,6 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--providers", required=True)
     parser.add_argument("--minimum-margin-bps", required=True)
     parser.add_argument("--spend-cap-minor", required=True)
-    parser.add_argument("--connects-cap", required=True)
     parser.add_argument("--concurrent-job-cap", required=True)
     parser.add_argument("--human-minute-value-minor", required=True)
     args = parser.parse_args(argv)
@@ -207,7 +204,6 @@ def main(argv: list[str] | None = None) -> int:
         providers=[provider.strip() for provider in args.providers.split(",") if provider.strip()],
         minimum_margin_bps=args.minimum_margin_bps,
         spend_cap_minor=args.spend_cap_minor,
-        connects_cap=args.connects_cap,
         concurrent_job_cap=args.concurrent_job_cap,
         human_minute_value_minor=args.human_minute_value_minor,
     )

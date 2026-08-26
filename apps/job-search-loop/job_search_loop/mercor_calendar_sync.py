@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any, Callable, Mapping
 
 from .mercor_work_store import WorkStateStore
+from .mercor_reporting import delivery_state
 from .telegram import send_once
 
 
@@ -40,7 +41,7 @@ def sync_calendar_events(
                 event_key=f"mercor-calendar:{artifact['event_id']}",
                 message=message,
             )
-            receipt = {**delivery, "delivery": "sent"}
+            receipt = {**delivery, "delivery": delivery_state(delivery)}
         except Exception as error:
             receipt = {"delivery": "delivery_unknown", "reason": type(error).__name__}
         receipts.append({"event_id": artifact["event_id"], **receipt})

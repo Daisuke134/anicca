@@ -1,15 +1,14 @@
 ---
 name: job-hunter
 description: >-
-  End-to-end job-hunting skill with a resume-first onboarding contract. Use whenever
-  a user provides a resume, asks to improve/refine/tailor a resume, supplies career
-  facts, gives a job description, or asks to automate applications. It builds a
-  private evidence-backed fact bank, produces ATS-safe role-specific materials,
-  requires one explicit baseline approval, then lets the resident job loop continue
-  without repeatedly asking the user. Never invents experience, metrics, dates,
-  employers, titles, or skills.
+  End-to-end Life Manager Job Hunter loop with a resume-first onboarding contract.
+  Use when a user supplies a finalized resume, career facts, job preferences, a job
+  description, or asks to automate job hunting. It builds private candidate context,
+  discovers and judges jobs, applies through the resident loop, and follows Gmail,
+  interviews, assessments and offers without repeatedly asking the user. Never
+  invents experience, metrics, dates, employers, titles, skills or legal facts.
 metadata:
-  status: resume-refinement-first
+  status: workday-local-production-before-oss
   provider_contract: codex-first-claude-generic
   private_data: true
 ---
@@ -21,7 +20,7 @@ starts with a short human onboarding pass, turns the candidate's documents and
 answers into a private evidence ledger, and then lets the resident loop operate on
 approved material without asking the same questions again.
 
-This skill owns intake, fact normalization, resume refinement, variant routing,
+This skill owns intake, fact normalization, finalized-resume import, variant routing,
 ATS/PDF verification, approval state, and natural-language progress reports. The
 versioned `apps/job-search-loop/` owns browser and application side effects. Do not
 create a second executor in this skill.
@@ -30,20 +29,18 @@ create a second executor in this skill.
 
 `skills/job-hunter/job-hunter-cli.sh` is the user-facing dispatcher and
 `loops/job-hunter/registry.yaml` plus `loops/job-hunter/loop.toml` are the scheduler
-declarations. Acquisition runs once per hour and processes at most one candidate per
-wake; the recruiter inbox and interview-prep lane runs every 15 minutes. Both
+declarations. Workday-only acquisition runs every 30 minutes and continues through the
+bounded candidate budget until it finds a fit-qualified job or exhausts that wake; the
+recruiter inbox and interview-prep lane runs every 15 minutes. Both
 declarations delegate to the existing `apps/job-search-loop/scripts/` drivers, which
 remain the sole owner of browser, application, ledger, evidence, and Telegram-outbox
 side effects. The CLI and registry add no parallel executor and must never be used to
 submit an application independently.
 
-Mercor is an additional provider lane in this same Job Hunter loop. Its provider policy
-lives in `skills/mercor/SKILL.md` and `references/mercor.md`; its browser/application
-side effects must be implemented in `apps/job-search-loop/`, not in a second skill
-executor or a separate repository. The Mercor lane reconciles in-progress applications
-first, uses a dedicated owned browser profile, forbids browser-side Google `はい`, and
-routes interviews, assessments, CAPTCHA, and unsupported free-response questions to
-`needs_human`.
+Ashby, Greenhouse, Lever, Mercor, and generic providers are not active OSS lanes. They
+remain broken or unverified until each independently proves a fresh fit-qualified job,
+authoritative completion, Ledger reconciliation, Telegram receipt, and next-wake
+duplicate effect zero through this same side-effect owner.
 
 ## Canonical state
 
@@ -54,7 +51,7 @@ Read private state before asking the user for anything:
 | Candidate truth ledger | `~/.config/anicca/job-search/profile.json` | mode `0600`; only source for claims |
 | Durable loop state | `~/.local/state/anicca/job-search/` | ledger, evidence, locks, outbox |
 | Generated materials | `~/.local/share/anicca/job-search/materials/` | mode `0700` directory, `0600` files |
-| Versioned renderer | `apps/job-search-loop/job_search_loop/materials.py` | deterministic PDF/HTML output |
+| Material manifest | `~/.local/share/anicca/job-search/materials/manifest.v1.json` | private mapping from generic variants to finalized resume files |
 | Resume routing | `apps/job-search-loop/job_search_loop/resume_routing.py` | one permitted variant per job |
 
 Never commit private profiles, resumes, addresses, phone numbers, tokens, raw JDs,
@@ -82,7 +79,7 @@ it never silently promotes a draft.
 
 Run these phases once per candidate. Reuse durable state on every later invocation.
 
-1. **Collect the minimum inputs.** Accept a resume PDF/DOCX/Markdown, the candidate
+1. **Collect the minimum inputs.** Accept a finalized resume PDF, the candidate
    email, and supplemental career information. Also collect target locale, role
    families, work location, start date, and any hard constraints when absent from
    the private profile. If an existing profile already has a value, show it as the
@@ -140,55 +137,12 @@ description or a user-approved variant policy justifies it.
    changes, evidence IDs, unresolved gaps, and the next safe action. Never emit
    raw JSON as the user-facing report.
 
-### Current English business baseline
+## Candidate-specific material rules
 
-The current Mitsubishi UFJ Information Technology business variant uses this order:
-
-1. Mitsubishi UFJ Information Technology — Applied AI / AI Agent Engineering
-   (Apr 2025–Present)
-2. Earlier Growth Experience
-3. Research Experience
-4. Education
-5. Skills
-6. Consumer AI Product (last)
-
-Within the current-role section, render exactly two accomplishment blocks:
-`Salesforce Agentforce deployment` contains three nested bullets (CRM deployment,
-Databricks workflow analysis, and relationship-manager context engineering), and
-`ICLR 2026 conference representation` contains one nested bullet. Do not turn the
-three deployment details into three separate accomplishment names or place ICLR
-inside that block. Use the full employer name `Mitsubishi UFJ Information Technology`
-in the resume instead of the `MUIT` abbreviation. Keep one consistent banking
-customer term throughout the variant. Do not include Life Manager or Portfolio links
-in this application variant unless a target explicitly requests them.
-
-## Education, research, and institution-name rules
-
-Read `references/resume-best-practices.md` before changing any resume material.
-The external resume-builder reference uses explicit education fields, domain-aware
-bullets, XYZ/STAR-style evidence, standard headings, and extracted-PDF checks.
-
-Keep these records separate in every English and Japanese variant:
-
-1. **Education:** institution, faculty/department, degree or study status, and
-   dates. For the English technical-business variant, show the date range when it
-   clarifies concurrent affiliations; do not pretend that a degree was conferred if
-   the fact bank only proves study.
-2. **Research experience:** each university or research institute is its own entry.
-   State the full institution name, research topic, method, and evidence. Do not
-   collapse NAIST and ATR into one vague school bullet.
-3. **Institution names:** spell out `Keio University, Faculty of Law, Department of
-   Political Science`, `Nara Institute of Science and Technology`, and `Advanced
-   Telecommunications Research Institute International` in visible resume text.
-   Acronyms are optional parenthetical aliases only after the full name; never use an
-   acronym-only heading.
-
-The Japanese 履歴書 uses full attendance periods and separate 学歴/職歴 sections;
-the Japanese 職務経歴書 uses concrete, concise research/work descriptions. The
-English resume follows the target market: completion/expected dates are the normal
-US default, while this candidate's overlapping NAIST/ATR work is shown with ranges
-for chronology. Do not apply the Japanese date convention blindly to every English
-resume or the US convention blindly to a Japanese form.
+Candidate-specific employers, schools, achievements, dates and resume ordering belong
+only in the mode-0600 private profile and finalized resume files. They never belong in
+this public skill. A public rule may describe how to preserve evidence or formatting;
+it may not name one person's institution, employer, metric or preferred bullet order.
 
 ## Autonomous loop after approval
 

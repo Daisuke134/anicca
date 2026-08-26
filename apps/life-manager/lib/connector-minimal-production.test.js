@@ -8,6 +8,8 @@ const test = require("node:test");
 
 const { createBrowserHarnessAdapter } = require("./connector-browser-harness-adapter.js");
 const { createConnectorActionCache } = require("./connector-action-cache.js");
+const { validateProviderCandidateRanking } = require("./event-preference-ranking.js");
+const { validateEventTalkOpportunity } = require("./event-talk-opportunity.js");
 const { runMinimalConnectorWake } = require("./connector-minimal-runner.js");
 const {
   createProductionBrowserRail,
@@ -48,9 +50,9 @@ test("official production factory exposes the complete minimal wake dependency c
 
     assert.equal(dependencies.browserRail, browserRail);
     assert.deepEqual(Object.keys(dependencies).sort(), [
-      "browserRail", "completeEvidence", "discoverCandidates", "now", "readCalendarGaps",
-      "readProviderState", "recordAction", "reportWake", "runAgentFallback", "runCachedAction",
-      "runDirectAction", "saveRepairedActions",
+      "browserRail", "completeEvidence", "completeTalkEvidence", "discoverCandidates", "now", "readCalendarGaps",
+      "readProviderState", "recordAction", "reportConnpassActionBoundary", "reportWake", "runAgentFallback", "runCachedAction",
+      "runDirectAction", "runTalkApplication", "saveRepairedActions",
     ]);
     assert.deepEqual(await dependencies.readCalendarGaps(), await calendarReader.readCalendarGaps());
     assert.equal(dependencies.discoverCandidates, providerRouter.discoverCandidates);
@@ -157,6 +159,8 @@ test("official production factory threads the Peatix attendee profile's name int
       browserRail: { open() {}, navigate() {}, close() {} },
       calendarReader: { async readCalendarGaps() { return []; } },
       lumaWorkflow: emptyWorkflow,
+      connpassApiClient: { async searchTokyoInventory() { return []; } },
+      connpassAutomatedSubmitAllowed: true,
       actionCache: { async replay() {}, saveVerifiedRepair() {} },
       browserHarness: { async runFallback() {}, async performAction() {} },
       evidenceChain: { async completeEvidence() {} },
@@ -193,17 +197,14 @@ test("official production factory persists the Connpass discovery audit from its
       calendar: { ready() { return true; } },
       calendarReader: { async readCalendarGaps() { return []; } },
       lumaWorkflow: emptyWorkflow,
+      connpassApiClient: { async searchTokyoInventory() { return []; } },
       actionCache: { async replay() {}, saveVerifiedRepair() {} },
       browserHarness: { async runFallback() {}, async performAction() {} },
       evidenceChain: { async completeEvidence() {} },
       operations,
       now: () => new Date("2026-08-10T08:30:00.000Z"),
     });
-    const page = {
-      current: "",
-      async goto(url) { this.current = url; },
-      async evaluate() { return []; },
-    };
+    const page = { async goto() { assert.fail("official API discovery must not navigate"); } };
 
     assert.deepEqual(await dependencies.discoverCandidates("connpass", [], page), []);
     assert.deepEqual(audits, [{
@@ -395,6 +396,105 @@ test("production provider router continues from Luma to Connpass on the same pag
   assert.equal(cached.page, page);
   await cached.performAction({ purpose: "fill", method: "ax_fill", control: "control_1" }); assert.equal(performed.provider, "connpass");
   assert.equal(calls.filter(([name]) => name === "discover")[0][1].page, page);
+});
+
+test("production router blocks every Connpass submit path until provider permission is verified", async () => {
+  let effects = 0;
+  const workflow = {
+    async discoverCandidates() { return []; },
+    async runDirectAction() { effects += 1; return { status: "completed" }; },
+    async readProviderState() { return { status: "absent" }; },
+  };
+  const router = createProductionProviderRouter({
+    lumaWorkflow: workflow, connpassWorkflow: workflow,
+    connpassAutomatedSubmitAllowed: false,
+    actionCache: { async replay() { effects += 1; }, saveVerifiedRepair() {} },
+    browserHarness: { async runFallback() { effects += 1; } },
+    async performAction() { effects += 1; },
+  });
+  const input = { provider: "connpass", candidate: { event_ref: "connpass-event://event/1" }, page: {}, pageWebsocket: "ws://fixture", maxSteps: 1, expectedState: "registered_or_pending" };
+  assert.equal((await router.runCachedAction(input)).safe_reason, "connpass_action_permission_required");
+  assert.equal((await router.runDirectAction(input)).safe_reason, "connpass_action_permission_required");
+  assert.equal((await router.runAgentFallback(input)).safe_reason, "connpass_action_permission_required");
+  assert.equal(effects, 0);
+});
+
+test("production provider router submits only strong or moderate ranked candidates and fails closed when ranking fails", async () => {
+  const strong = Object.freeze({
+    provider: "luma", event_ref: "luma-event://event/ai-agents", canonical_url: "https://luma.com/ai-agents",
+    title: "AI Agents Tokyo", body: "LLM agent builders",
+  });
+  const weak = Object.freeze({
+    provider: "luma", event_ref: "luma-event://event/pottery", canonical_url: "https://luma.com/pottery",
+    title: "Pottery Social", body: "Make a bowl",
+  });
+  const workflow = {
+    async discoverCandidates() { return [weak, strong]; },
+    async runDirectAction() { return { status: "failed" }; },
+    async readProviderState() { return { status: "absent" }; },
+  };
+  let fail = false;
+  const router = createProductionProviderRouter({
+    lumaWorkflow: workflow,
+    connpassWorkflow: { ...workflow, async discoverCandidates() { return []; } },
+    actionCache: { async replay() {}, async saveVerifiedRepair() {} },
+    browserHarness: { async runFallback() {} },
+    async performAction() {},
+    async rankCandidates(input) {
+      if (fail) throw new Error("ranking unavailable");
+      return validateProviderCandidateRanking({ ranked_events: [
+        { event_ref: weak.event_ref, priority_class: "other", preference_fit: "weak", preference_reason: "Unrelated topic." },
+        { event_ref: strong.event_ref, priority_class: "ai", preference_fit: "strong", preference_reason: "Direct AI fit." },
+      ] }, input);
+    },
+    eventPreferences: "Tokyo AI crypto startup events",
+  });
+
+  assert.deepEqual(await router.discoverCandidates("luma", [], {}), [{
+    ...strong,
+    priority_class: "ai",
+    preference_fit: "strong",
+    preference_reason: "Direct AI fit.",
+    auto_apply_eligible: true,
+  }]);
+  fail = true;
+  await assert.rejects(router.discoverCandidates("luma", [], {}), /ranking unavailable/);
+});
+
+test("production provider router promotes a verified open talk within equally fitted AI candidates", async () => {
+  const plain = Object.freeze({ provider: "luma", event_ref: "luma-event://event/plain-ai", canonical_url: "https://luma.com/plain-ai", title: "AI Builders", body: "AI meetup for builders." });
+  const talk = Object.freeze({ provider: "luma", event_ref: "luma-event://event/ai-lt", canonical_url: "https://luma.com/ai-lt", title: "AI Builders LT", body: "AI meetup. 5 minute LT applications are open at https://forms.example.com/ai-lt" });
+  const workflow = { async discoverCandidates() { return [plain, talk]; }, async runDirectAction() {}, async readProviderState() { return { status: "absent" }; } };
+  const router = createProductionProviderRouter({
+    lumaWorkflow: workflow, connpassWorkflow: workflow,
+    eventPreferences: "Tokyo AI and open lightning talks",
+    async rankCandidates(input) {
+      return validateProviderCandidateRanking({ ranked_events: [
+        { event_ref: plain.event_ref, priority_class: "ai", preference_fit: "strong", preference_reason: "AI event." },
+        { event_ref: talk.event_ref, priority_class: "ai", preference_fit: "strong", preference_reason: "AI event with talk text." },
+      ] }, input);
+    },
+    async classifyTalkOpportunity(candidate) {
+      const open = candidate.event_ref === talk.event_ref;
+      return validateEventTalkOpportunity(open ? {
+        participation_kind: "both", talk_format: "lightning_talk", application_status: "open",
+        should_create_talk_application: true, application_url: "https://forms.example.com/ai-lt",
+        evidence_excerpt: "5 minute LT applications are open at https://forms.example.com/ai-lt",
+        reason: "A public LT application is open.",
+      } : {
+        participation_kind: "audience_only", talk_format: null, application_status: "not_offered",
+        should_create_talk_application: false, application_url: null,
+        evidence_excerpt: "AI meetup for builders.", reason: "Audience participation only.",
+      }, { canonicalUrl: candidate.canonical_url, title: candidate.title, body: candidate.body, now: "2026-08-07T00:00:00.000Z" });
+    },
+    actionCache: { async replay() {}, saveVerifiedRepair() {} },
+    browserHarness: { async runFallback() {} }, async performAction() {},
+  });
+
+  const result = await router.discoverCandidates("luma", [], {});
+  assert.deepEqual(result.map((candidate) => candidate.event_ref), [talk.event_ref, plain.event_ref]);
+  assert.equal(result[0].priority_class, "open_talk");
+  assert.equal(result[0].talk_opportunity.application_url, "https://forms.example.com/ai-lt");
 });
 
 test("production provider router routes Peatix cache direct and readback on one page", async () => {
@@ -798,7 +898,7 @@ test("official production factory default Harness reaches injected Doorkeeper pa
   } finally { fs.rmSync(stateDir, { recursive: true, force: true }); }
 });
 
-test("production calendar reader uses gog for exactly fourteen Tokyo calendar days", async () => {
+test("production calendar reader uses gog for exactly twenty-eight Tokyo calendar days", async () => {
   const calls = [];
   const calendar = Object.freeze({ kind: "gog", ready: () => true });
   const verifiedInventory = Object.freeze({
@@ -840,8 +940,19 @@ test("production calendar reader uses gog for exactly fourteen Tokyo calendar da
   assert.equal(calls[1][1].calendar, calendar);
   assert.equal(calls[1][1].timeZone, "Asia/Tokyo");
   assert.equal(calls[1][1].timeMin, "2026-08-06T15:00:00.000Z");
-  assert.equal(calls[1][1].timeMax, "2026-08-20T15:00:00.000Z");
+  assert.equal(calls[1][1].timeMax, "2026-09-03T15:00:00.000Z");
   assert.equal(calls[1][1].now, "2026-08-07T08:30:00.000Z");
+});
+
+test("Tokyo twenty-eight-day horizon has unique local dates and one shared end-exclusive boundary", () => {
+  const dates = Array.from({ length: 28 }, (_, offset) => (
+    new Date(Date.UTC(2026, 7, 7 + offset)).toISOString().slice(0, 10)
+  ));
+  assert.equal(new Set(dates).size, 28);
+  assert.equal(dates[0], "2026-08-07");
+  assert.equal(dates.at(-1), "2026-09-03");
+  assert.equal(new Date(Date.UTC(2026, 7, 7 + dates.length)).toISOString().slice(0, 10), "2026-09-04");
+  assert.equal(Date.parse("2026-09-03T15:00:00.000Z"), Date.parse("2026-09-04T00:00:00+09:00"));
 });
 
 test("production browser rail owns exactly one :9222 target without closing the browser", async () => {

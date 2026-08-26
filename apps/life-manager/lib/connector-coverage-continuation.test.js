@@ -26,7 +26,7 @@ test("search exhaustion, one operation failure, and one source failure all sched
       now: "2026-08-02T01:00:00.000Z",
     });
     assert.equal(result.status, "continue");
-    assert.equal(result.open_date_count, 21);
+    assert.equal(result.open_date_count, 28);
     assert.equal(result.next_action, "refresh_inventory");
     assert.equal(result.next_run_at, "2026-08-02T01:05:00.000Z");
     assert.equal(isVerifiedConnectorCoverageContinuation(result), true);
@@ -67,7 +67,7 @@ test("a newly proven unavailable day advances to the next open day immediately",
 
 test("only zero open dates completes the rolling loop", () => {
   const statuses = ["covered_existing", "covered_new", "unavailable"];
-  const resolved = Array.from({ length: 21 }, (_, index) => ({
+  const resolved = Array.from({ length: 28 }, (_, index) => ({
     date: new Date(Date.UTC(2026, 7, 2 + index)).toISOString().slice(0, 10),
     status: statuses[index % statuses.length],
     evidence_refs: [`evidence://coverage/${index}/${"a".repeat(64)}`],

@@ -278,7 +278,7 @@ def main(argv: list[str]) -> int:
         return 1
     resolved = _resolve_review_url(argv[1])
     update_info = argv[2] if len(argv) > 2 else ""
-    if os.environ.get("CP3_TRANSPORT", "playwright").strip().lower() != "raw":
+    if os.environ.get("CP3_TRANSPORT", "raw").strip().lower() != "raw":
         _playwright_submit(resolved, update_info)
         print("RESULT: submitted")
         return 0

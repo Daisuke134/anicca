@@ -438,6 +438,7 @@ def run_isolated(
         f'(deny file-read* (subpath "{_sandbox_string(real_home)}"))\n'
         f'(allow file-read* (subpath "{_sandbox_string(workspace)}"))\n'
         "(deny file-write*)\n"
+        '(allow file-write* (literal "/dev/null"))\n'
         f'(allow file-write* (subpath "{_sandbox_string(workspace)}"))\n'
     )
     profile_path.write_text(profile, encoding="utf-8")

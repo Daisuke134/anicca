@@ -394,7 +394,7 @@ def delivery_gate(
     version = str(evidence.get("artifact_version") or "")
     if not artifact or not artifact.is_file() or not version or version not in artifact.name:
         blockers.append("missing_versioned_artifact")
-    elif artifact.stat().st_size > MARKETPLACE_ARTIFACT_MAX_BYTES:
+    elif artifact.stat().st_size > MARKETPLACE_ARTIFACT_MAX_BYTES and not _linked_asset_ready(evidence, artifact):
         blockers.append("artifact_exceeds_marketplace_limit")
     acceptance_value = evidence.get("acceptance_evidence_path")
     acceptance = Path(os.path.expanduser(str(acceptance_value))) if acceptance_value else None
@@ -419,6 +419,32 @@ def delivery_gate(
     if not live_formal and not ledger_confirms_delivery(item, package_hash, projects_root):
         blockers.append("formal_delivery_not_confirmed")
     return {"path": str(path), "present": path.is_file(), **evidence}, blockers
+
+
+def _linked_asset_ready(evidence: dict[str, Any], artifact: Path) -> bool:
+    required = evidence.get("required_assets")
+    produced = evidence.get("artifact_assets")
+    if not isinstance(required, list) or not required or not isinstance(produced, list):
+        return False
+    counts: dict[str, int] = {}
+    for row in produced:
+        if not isinstance(row, dict) or row.get("type") != "linked_asset":
+            continue
+        try:
+            if Path(str(row.get("path") or "")).resolve() != artifact.resolve():
+                continue
+        except OSError:
+            continue
+        asset_id = str(row.get("asset_id") or "")
+        counts[asset_id] = counts.get(asset_id, 0) + 1
+    return all(
+        isinstance(row, dict)
+        and row.get("kind") == "linked_asset"
+        and isinstance(row.get("minimum_count"), int)
+        and row["minimum_count"] > 0
+        and counts.get(str(row.get("asset_id") or ""), 0) >= row["minimum_count"]
+        for row in required
+    )
 
 
 def build(snapshot: dict[str, Any], evidence_root: Path, today: date) -> dict[str, Any]:

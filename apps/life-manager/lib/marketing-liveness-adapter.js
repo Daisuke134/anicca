@@ -154,13 +154,14 @@ function parsePayloadRef(ref) {
   }
   if (!Object.hasOwn(payload, "public_url")) throw new Error("marketing liveness ref is invalid");
   if (payload.status === "observed") {
+    const postizPhotoMetric = payload.platform === "tiktok" && payload.public_url === "unavailable" && payload.publication_evidence === "postiz_published_exact_assets";
     if (
       !IDENTIFIER.test(payload.lane) || !IDENTIFIER.test(payload.product) || !LOCALE.test(payload.locale)
       || !["instagram", "tiktok"].includes(payload.platform) || !ACCOUNT.test(String(payload.account || ""))
       || (payload.correction !== undefined && payload.correction !== true)
       || !METRIC_WINDOWS.has(payload.window) || !SNAPSHOT_REF.test(String(payload.snapshot_ref || ""))
       || !Number.isFinite(Date.parse(payload.observed_at))
-      || !(payload.platform === "instagram" ? /^https:\/\/www\.instagram\.com\/(?:reel|p)\/[A-Za-z0-9_-]+\/?$/.test(payload.public_url) : /^https:\/\/www\.tiktok\.com\/@[^/]+\/video\/[0-9]+\/?$/.test(payload.public_url))
+      || (!postizPhotoMetric && !(payload.platform === "instagram" ? /^https:\/\/www\.instagram\.com\/(?:reel|p)\/[A-Za-z0-9_-]+\/?$/.test(payload.public_url) : /^https:\/\/www\.tiktok\.com\/@[^/]+\/video\/[0-9]+\/?$/.test(payload.public_url)))
       || (payload.metrics !== undefined && (!payload.metrics || typeof payload.metrics !== "object" || Array.isArray(payload.metrics)
         || Object.values(payload.metrics).some((metric) => !metric || !["measured", "derived", "unavailable"].includes(metric.status))))
     ) throw new Error("marketing metric ref is invalid");
@@ -168,6 +169,10 @@ function parsePayloadRef(ref) {
   }
   for (const key of ["slot", "retry_state"]) if (!Object.hasOwn(payload, key)) throw new Error("marketing liveness ref is invalid");
   exactInstant(payload.slot, "marketing liveness slot");
+  const postizPhotoProof = payload.platform === "tiktok"
+    && payload.status === "published"
+    && payload.public_url === "unavailable"
+    && payload.publication_evidence === "postiz_published_exact_assets";
   if (
     !IDENTIFIER.test(payload.lane)
     || !IDENTIFIER.test(payload.product)
@@ -175,7 +180,7 @@ function parsePayloadRef(ref) {
     || !["instagram", "tiktok", "youtube"].includes(payload.platform)
     || (payload.account !== undefined && !ACCOUNT.test(String(payload.account)))
     || !["published", "missed"].includes(payload.status)
-    || (payload.status === "published" && !(
+    || (payload.status === "published" && !postizPhotoProof && !(
       payload.platform === "tiktok"
         ? /^https:\/\/www\.tiktok\.com\/@[^/]+\/video\/[0-9]+\/?$/.test(payload.public_url)
         : payload.platform === "instagram"
@@ -243,7 +248,8 @@ function renderMessage(payload) {
       else measured.push(`${label(key)} ${metric.percent != null ? `${metric.percent}%` : metric.value}`);
     }
     const windows = Array.isArray(payload.window_summary) ? ` Window status: ${payload.window_summary.join("、")}。` : "";
-    return `Life Manager::: ${payload.product}の${payload.platform} ${payload.account}、${payload.window}${payload.correction ? "訂正版" : ""}メトリクスです。${measured.join("、")}。取得不可: ${unavailable.length ? unavailable.join("、") : "なし"}。${windows}直接URL: ${payload.public_url}。Snapshot: ${payload.snapshot_ref}。`;
+    const identity = payload.publication_evidence === "postiz_published_exact_assets" ? "Postiz PUBLISHED photo receipt" : `直接URL: ${payload.public_url}`;
+    return `Life Manager::: ${payload.product}の${payload.platform} ${payload.account}、${payload.window}${payload.correction ? "訂正版" : ""}メトリクスです。${measured.join("、")}。取得不可: ${unavailable.length ? unavailable.join("、") : "なし"}。${windows}${identity}。Snapshot: ${payload.snapshot_ref}。`;
   }
   const accountPattern = payload.platform === "tiktok"
     ? /^https:\/\/www\.tiktok\.com\/@([^/]+)\/video\//
@@ -260,6 +266,9 @@ function renderMessage(payload) {
   const platform = { tiktok: "TikTok", instagram: "Instagram", youtube: "YouTube" }[payload.platform]
     || payload.platform;
   if (payload.status === "published") {
+    if (payload.publication_evidence === "postiz_published_exact_assets") {
+      return `Life Manager::: ${product}'s ${locale} photo carousel was published on ${platform} for ${account} in the ${payload.slot} slot. Postiz API status: PUBLISHED. The exact locally stored approved assets and caption matched. Retry: ${payload.retry_state}.`;
+    }
     return `Life Manager::: ${product}'s ${locale} post was published on ${platform} for ${account} in the ${payload.slot} slot. Status: published. Public URL: ${payload.public_url}. Retry: ${payload.retry_state}.`;
   }
   return `Life Manager::: ${product}'s ${locale} post was not published on ${platform} for ${account} in the ${payload.slot} slot. Status: missed. Public URL: unavailable. Retry: unavailable.`;

@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "evidence_class": "live_cdp_sanitized_projection",
+  "source_sha256": "da490f28003624620d7c3f7ea9d06a00dd84ecf7964f7282dbb49193c01c3f51",
+  "provider": "workday",
+  "surface": "workday_application_step",
+  "source_control_count": 42,
+  "canonical_url": "https://tenant.wd1.myworkdayjobs.com/en-US/careers/job/role/apply/applyManually",
+  "visible_control_shapes": [
+    {"tag": "input", "type": "text", "label": "How Did You Hear About Us?*"},
+    {"tag": "input", "type": "radio", "label": "Yes"},
+    {"tag": "input", "type": "radio", "label": "No"},
+    {"tag": "button", "type": "button", "label": "Country Required"},
+    {"tag": "input", "type": "text", "label": "Family Name - Western Script*"},
+    {"tag": "input", "type": "text", "label": "Given Name - Western Script*"},
+    {"tag": "input", "type": "text", "label": "Postal Code"},
+    {"tag": "button", "type": "button", "label": "Prefecture Select One"},
+    {"tag": "input", "type": "text", "label": "Phone Number*"},
+    {"tag": "input", "type": "file", "label": "Resume/CV"},
+    {"tag": "button", "type": "button", "label": "Save and Continue"}
+  ],
+  "redaction": {
+    "values_removed": true,
+    "candidate_identity_removed": true,
+    "tenant_and_job_identity_replaced": true
+  }
+}

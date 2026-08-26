@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import sys
 from pathlib import Path
 
@@ -44,6 +45,31 @@ def test_changed_head_creates_next_revision_but_old_duplicate_does_not(tmp_path)
     assert append_changed_heads(path, [new])["heads"][0]["revision"] == 2
     assert append_changed_heads(path, [old])["appended"] == 0
     assert len(path.read_text().splitlines()) == 2
+
+
+def test_room_local_clock_does_not_create_a_new_head():
+    first = _observation("Client message 2:45 PM local time Final answer")
+    later = _observation("Client message 2:49 PM local time Final answer")
+    assert first["head_sha256"] == later["head_sha256"]
+    assert first["rendered_text"] != later["rendered_text"]
+
+
+def test_legacy_clock_hash_replays_zero_under_canonical_identity(tmp_path):
+    path = tmp_path / "inbox.jsonl"
+    legacy = _observation("Client message 2:45 PM local time Final answer")
+    legacy["head_sha256"] = hashlib.sha256(legacy["rendered_text"].encode()).hexdigest()
+    legacy["event_id"] = hashlib.sha256(
+        f"upwork:inbox:v1:message_room:room-1:{legacy['head_sha256']}".encode()
+    ).hexdigest()
+    legacy["revision"] = 7
+    path.write_text(json.dumps(legacy) + "\n")
+
+    replay = append_changed_heads(
+        path, [_observation("Client message 2:49 PM local time Final answer")],
+    )
+    assert replay["appended"] == 0
+    assert replay["heads"][0]["revision"] == 7
+    assert len(path.read_text().splitlines()) == 1
 
 
 def test_offer_terms_normalize_money_fee_milestone_deadline_and_state():

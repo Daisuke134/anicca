@@ -7,7 +7,9 @@ import asyncio
 import hashlib
 import json
 import re
+import subprocess
 import sys
+import time
 from pathlib import Path
 from collections.abc import Callable
 from typing import Any
@@ -31,6 +33,10 @@ _SNAPSHOT_KEYS = {
     "submit_label", "validation_errors",
 }
 _SUBMIT_KEYS = {"form_url", "job_id", "proposal_id", "state"}
+GIG_ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_RUNNER = GIG_ROOT / "agent-runner/agent_runner.py"
+DEFAULT_STEP_SCHEMA = GIG_ROOT / "schemas/gig_step_result.schema.json"
+DEFAULT_OPERATOR_EVIDENCE = Path.home() / "gig/evidence/upwork-browser-operator"
 
 
 def _duration_label(days: Any) -> str:
@@ -57,18 +63,19 @@ def fill_preflight_expression(payload: dict[str, Any]) -> str:
 const p={sealed},duration={duration_json},wait=ms=>new Promise(r=>setTimeout(r,ms));
 const norm=x=>(x||'').replace(/\\s+/g,' ').trim();
 const setValue=(x,v)=>{{if(!x)throw Error('upwork_form_control_missing');const proto=x.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:HTMLInputElement.prototype;Object.getOwnPropertyDescriptor(proto,'value').set.call(x,String(v));x.dispatchEvent(new Event('input',{{bubbles:true}}));x.dispatchEvent(new Event('change',{{bubbles:true}}));}};
-const cover=document.querySelector('.cover-letter-area textarea,textarea[data-test*="cover" i],textarea[aria-label*="cover" i]');
-const bid=document.querySelector('input[data-test*="bid" i],input[name*="bid" i],.fe-proposal-job-rate input');
+const cover=document.querySelector('.cover-letter-area textarea,textarea[data-test*="cover" i],textarea[aria-label*="cover" i],textarea[aria-labelledby="cover_letter_label"],textarea.inner-textarea');
+const hourly=p.terms.type==='hourly',bid=document.querySelector(hourly?'#step-rate':'#charged-amount-id,input[data-test*="bid" i],input[name*="bid" i],.fe-proposal-job-rate input,input[data-test="currency-input"]:not([disabled])');
 setValue(cover,p.cover_letter);setValue(bid,p.terms.bid_usd);
-const durationRoot=document.querySelector('.fe-proposal-job-estimated-duration,[data-test*="duration" i]');
-const combo=durationRoot?.querySelector('[role="combobox"],button');if(!combo)throw Error('upwork_duration_missing');combo.click();await wait(0);
-const option=[...(durationRoot.querySelectorAll('li,[role="option"]'))].find(x=>norm(x.innerText)===duration);if(!option)throw Error('upwork_duration_option_missing');option.click();await wait(0);
+let durationLabel=null;if(!hourly){{const durationRoot=document.querySelector('.fe-proposal-job-estimated-duration,[data-test*="duration" i]');
+const combo=document.querySelector('[role="combobox"][aria-labelledby="duration-label"]')||durationRoot?.querySelector('[role="combobox"],button');if(!combo)throw Error('upwork_duration_missing');combo.click();await wait(100);
+const option=[...document.querySelectorAll('[role="option"]')].find(x=>norm(x.innerText)===duration)||[...(durationRoot?.querySelectorAll('li,[role="option"]')||[])].find(x=>norm(x.innerText)===duration);if(!option)throw Error('upwork_duration_option_missing');option.click();await wait(100);durationLabel=norm(combo.innerText);}}
+if(hourly){{const sri=document.querySelector('[data-test="sri-input"]'),frequency=[...(sri?.querySelectorAll('[role="combobox"]')||[])][0];if(!frequency)throw Error('upwork_rate_increase_frequency_missing');frequency.click();await wait(100);const never=[...document.querySelectorAll('[role="option"]')].find(x=>norm(x.innerText)==='Never');if(!never)throw Error('upwork_rate_increase_never_missing');never.click();await wait(100);}}
 const areas=[...document.querySelectorAll('.fe-proposal-job-questions textarea')];if(areas.length!==p.screening_answers.length)throw Error('upwork_question_count_mismatch');
 const answers=p.screening_answers.map(item=>{{const area=areas.find(x=>norm((x.closest('label,.up-form-group,.air3-form-group,[data-test]')||x.parentElement).innerText).includes(norm(item.question)));if(!area)throw Error('upwork_question_mismatch');setValue(area,item.answer);return{{question:item.question,answer:area.value}};}});
-const submit=document.querySelector('footer .air3-btn-primary,footer button[type="submit"],button[data-test*="submit" i]');if(!submit)throw Error('upwork_submit_control_missing');
-const body=norm(document.body.innerText),required=p.terms.required_connects,isInvite=p.status==='frozen_waiting_for_invitation',costs=[...body.matchAll(/(\\d+)\\s+Connects/gi)].map(x=>Number(x[1])),connects=isInvite?(costs.some(x=>x>0)?null:0):(body.includes(String(required)+' Connects')?required:null),availableMatch=body.match(/Available Connects:?\\s*(\\d+)/i),available=isInvite?0:(availableMatch?Number(availableMatch[1]):null);
-const errors=[...document.querySelectorAll('.form-error,.air3-form-error,.up-alert-danger,[role="alert"]')].map(x=>norm(x.innerText)).filter(Boolean);
-return{{job_id:p.job_id,form_url:location.href,required_connects:connects,available_connects:available,bid_usd:Number(bid.value),duration_label:norm(combo.innerText),cover_letter:cover.value,screening_answers:answers,attachments:[],submit_label:norm(submit.innerText),submit_enabled:!submit.disabled,validation_errors:errors}};
+const submit=[...document.querySelectorAll('button')].find(x=>['submit proposal','send proposal'].includes(norm(x.innerText).toLowerCase()))||document.querySelector('footer .air3-btn-primary,footer button[type="submit"],button[data-test*="submit" i]');if(!submit)throw Error('upwork_submit_control_missing');
+const body=norm(document.body.innerText),required=p.terms.required_connects,isInvite=p.status==='frozen_waiting_for_invitation',costs=[...body.matchAll(/(\\d+)\\s+Connects/gi)].map(x=>Number(x[1])),connects=isInvite?(costs.some(x=>x>0)?null:0):(body.includes(String(required)+' Connects')?required:null),availableMatch=body.match(/Available Connects:?\\s*(\\d+)/i),remainingMatch=body.match(/you(?:'|’)ll have\\s+(\\d+)\\s+Connects remaining/i),available=isInvite?0:(availableMatch?Number(availableMatch[1]):remainingMatch?Number(remainingMatch[1])+required:null);
+const errors=[...document.querySelectorAll('.form-error,.air3-form-error,.up-alert-danger,[role="alert"]')].filter(x=>x.offsetParent).map(x=>norm(x.innerText)).filter(Boolean);
+return{{job_id:p.job_id,form_url:location.href,required_connects:connects,available_connects:available,bid_usd:Number(String(bid.value).replace(/[^0-9.-]/g,'')),duration_label:durationLabel,cover_letter:cover.value,screening_answers:answers,attachments:[],submit_label:norm(submit.innerText),submit_enabled:!submit.disabled,validation_errors:errors}};
 }})()'''
 
 
@@ -78,16 +85,6 @@ def invitation_accept_expression() -> str:
 const controls=[...document.querySelectorAll('button,a')];
 const accept=controls.find(x=>['accept and send a proposal','submit a proposal','accept interview'].includes(norm(x.innerText)));
 if(!accept||accept.disabled)throw Error('upwork_invitation_accept_missing');accept.click();return true;})()'''
-
-
-def submit_click_expression(job_id: str) -> str:
-    """Build the only proposal-submit mutation; callers must cross the fence first."""
-    sealed_job = json.dumps(job_id)
-    return f'''(()=>{{
-const job={sealed_job},submit=document.querySelector('footer .air3-btn-primary,footer button[type="submit"],button[data-test*="submit" i]');
-if(!location.pathname.includes('/ab/proposals/job/'+job+'/apply')||!submit||submit.disabled)throw Error('upwork_submit_control_missing');
-submit.click();return true;
-}})()'''
 
 
 def submit_readback_expression(job_id: str) -> str:
@@ -100,6 +97,34 @@ const match=hrefs.map(x=>x.match(new RegExp('/proposals/(?!job(?:/|$))([^/?#]+)'
 const submitted=/proposal (?:was )?submitted|proposal submitted|view proposal/i.test(body);
 return{{job_id:job,form_url:url,proposal_id:match?match[1]:null,state:submitted&&match?'submitted':'unknown'}};
 }})()'''
+
+
+def _run_browser_operator(job_id: str, form_url: str) -> None:
+    evidence = DEFAULT_OPERATOR_EVIDENCE / f"{time.time_ns()}-{job_id.lstrip('~')}"
+    prompt = f"""Operate the current authenticated Upwork proposal page as a browser agent.
+The exact immutable proposal for job {job_id} is already filled and its exactly-once effect fence is
+already closed. Inspect the live browser at http://127.0.0.1:9233 and find the existing page whose URL
+is {form_url}. Use current page feedback to handle ordinary non-financial UI and submit that already
+filled proposal exactly once. Do not edit proposal fields, buy anything, boost, subscribe, open another
+job, change account settings, edit code, or claim success from a click. Stop after the page visibly
+leaves the editable proposal state or shows a provider-authored result. Return status ok if you acted,
+blocked if a human-only ceremony appears, or error if the live result remains unknown. You may accept
+ordinary educational or marketplace-safety acknowledgements needed to continue this already-authorized
+submission when they do not change price, proposal content, contract terms, identity, tax or payment
+facts. CAPTCHA, identity proof and personal legal/tax declarations remain human-only. Evidence must name
+only safe page state or local evidence paths; never include proposal text or credentials."""
+    evidence.mkdir(parents=True, exist_ok=False, mode=0o700)
+    completed = subprocess.run([
+        sys.executable, str(DEFAULT_RUNNER), "--task-class", "browser-lane-agent",
+        "--prompt-stdin",
+        "--schema", str(DEFAULT_STEP_SCHEMA), "--evidence-dir", str(evidence),
+        "--task-label", "upwork-proposal-submit", "--loop", "gig-upwork",
+        "--workdir", str(Path.home()), "--timeout-seconds", "900",
+    ], input=prompt, text=True, capture_output=True, timeout=930, check=False)
+    if completed.returncode != 0:
+        (evidence / "operator-return-code.txt").write_text(
+            f"{completed.returncode}\n", encoding="utf-8",
+        )
 
 
 def validate_submit_readback(snapshot: dict[str, Any], payload: dict[str, Any]) -> dict[str, str]:
@@ -135,7 +160,7 @@ async def fill_proposal_preflight(payload: dict[str, Any]) -> dict[str, Any]:
     job_id = payload.get("job_id") if isinstance(payload, dict) else None
     if not isinstance(job_id, str) or not job_id:
         raise ValueError("upwork_proposal_preflight_mismatch")
-    apply_url = f"https://www.upwork.com/ab/proposals/job/{job_id}/apply/#/"
+    apply_url = f"https://www.upwork.com/nx/proposals/job/{job_id}/apply/#/"
     async with hidden_page_target(apply_url) as ws_url:
         async with websockets.connect(
             ws_url, ping_interval=None, open_timeout=10, max_size=40 * 1024 * 1024,
@@ -145,6 +170,7 @@ async def fill_proposal_preflight(payload: dict[str, Any]) -> dict[str, Any]:
             _, cid = await _wait_for_load(
                 ws, asyncio.get_event_loop().time() + LOAD_TIMEOUT_SECS, 3,
             )
+            await asyncio.sleep(2)
             result = await _call(ws, "Runtime.evaluate", {
                 "expression": fill_preflight_expression(payload),
                 "awaitPromise": True, "returnByValue": True,
@@ -162,7 +188,7 @@ async def submit_proposal_after_fence(
     job_id = payload.get("job_id") if isinstance(payload, dict) else None
     if not isinstance(job_id, str) or not job_id or not callable(start_effect):
         raise ValueError("upwork_proposal_preflight_mismatch")
-    apply_url = f"https://www.upwork.com/ab/proposals/job/{job_id}/apply/#/"
+    apply_url = f"https://www.upwork.com/nx/proposals/job/{job_id}/apply/#/"
     is_invitation = payload.get("status") == "frozen_waiting_for_invitation"
     entry_url = str(payload.get("job_url") or "") if is_invitation else apply_url
     async with hidden_page_target(entry_url) as ws_url:
@@ -174,6 +200,7 @@ async def submit_proposal_after_fence(
             _, cid = await _wait_for_load(
                 ws, asyncio.get_event_loop().time() + LOAD_TIMEOUT_SECS, 3,
             )
+            await asyncio.sleep(2)
             if is_invitation:
                 await _call(ws, "Runtime.evaluate", {
                     "expression": invitation_accept_expression(), "returnByValue": True,
@@ -186,13 +213,21 @@ async def submit_proposal_after_fence(
             snapshot = filled.get("result", {}).get("result", {}).get("value")
             preflight = validate_preflight(snapshot, payload)
             require_effect_start(preflight, start_effect)
-            await _call(ws, "Runtime.evaluate", {
-                "expression": submit_click_expression(job_id), "returnByValue": True,
-            }, cid + 1)
-            await asyncio.sleep(2)
+            await asyncio.to_thread(_run_browser_operator, job_id, str(snapshot["form_url"]))
+            await asyncio.sleep(5)
             readback = await _call(ws, "Runtime.evaluate", {
                 "expression": submit_readback_expression(job_id), "returnByValue": True,
-            }, cid + 2)
+            }, cid + 1)
+            value = readback.get("result", {}).get("result", {}).get("value")
+            if isinstance(value, dict) and value.get("state") == "unknown":
+                diagnostic = await _call(ws, "Runtime.evaluate", {
+                    "expression": """(()=>{const n=x=>(x||'').replace(/\\s+/g,' ').trim();return{url:location.href,buttons:[...document.querySelectorAll('button')].filter(x=>x.offsetParent).map(x=>n(x.innerText)).filter(Boolean).slice(-12),dialogs:[...document.querySelectorAll('[role=dialog]')].filter(x=>x.offsetParent).map(x=>n(x.innerText).slice(0,300)),alerts:[...document.querySelectorAll('[role=alert],.air3-alert')].filter(x=>x.offsetParent).map(x=>n(x.innerText).slice(0,300))}})()""",
+                    "returnByValue": True,
+                }, cid + 2)
+                detail = diagnostic.get("result", {}).get("result", {}).get("value")
+                raise ValueError("upwork_proposal_submit_unconfirmed:" + json.dumps(
+                    detail, ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+                ))
     value = readback.get("result", {}).get("result", {}).get("value")
     return validate_submit_readback(value, payload)
 
@@ -211,7 +246,7 @@ def validate_preflight(snapshot: dict[str, Any], payload: dict[str, Any]) -> dic
         "job_id": job_id,
         "required_connects": required,
         "bid_usd": terms.get("bid_usd"),
-        "duration_label": _duration_label(terms.get("delivery_days")),
+        "duration_label": None if terms.get("type") == "hourly" else _duration_label(terms.get("delivery_days")),
         "cover_letter": payload.get("cover_letter"),
         "screening_answers": payload.get("screening_answers"),
         "attachments": payload.get("attachments"),
@@ -219,7 +254,7 @@ def validate_preflight(snapshot: dict[str, Any], payload: dict[str, Any]) -> dic
     if (
         not isinstance(job_id, str) or not job_id
         or url.scheme != "https" or url.netloc != "www.upwork.com"
-        or f"/ab/proposals/job/{job_id}/apply" not in url.path
+        or not any(f"/{prefix}/proposals/job/{job_id}/apply" in url.path for prefix in ("ab", "nx"))
         or any(snapshot.get(key) != value for key, value in expected.items())
         or type(snapshot.get("available_connects")) is not int
         or snapshot["available_connects"] < required
@@ -232,7 +267,7 @@ def validate_preflight(snapshot: dict[str, Any], payload: dict[str, Any]) -> dic
         )
         or (
             payload.get("status") != "frozen_waiting_for_invitation"
-            and not re.search(rf"\b{required}\s+Connects\b", snapshot["submit_label"], re.IGNORECASE)
+            and not re.search(r"submit|send", snapshot["submit_label"], re.IGNORECASE)
         )
     ):
         raise ValueError("upwork_proposal_preflight_mismatch")

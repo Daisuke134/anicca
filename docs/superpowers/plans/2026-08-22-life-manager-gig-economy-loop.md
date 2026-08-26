@@ -5,14 +5,15 @@
 > checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Close one real Upwork email-signup/login → job → proposal → negotiation → contract →
-delivery → received-payment loop first, then generalize the proven receipts into the local-first
-open-source portfolio agent and add remaining markets one at a time.
+delivery → received-payment loop, repeat it across three independent paid jobs, then operate the
+proven local loop until one complete calendar month reaches USD 10,000 verified net received before
+adding another market.
 
 **Architecture:** The active slice is Upwork only. It uses the dedicated CloakBrowser profile,
 normal owner email/password authentication, Upwork-scoped state and the smallest existing durable
 effect primitives needed for the first live path. Coconala continues independently and contributes
 neither runtime state nor capacity to Upwork. Cross-market Portfolio CEO and Skill Factory work
-resumes only after Upwork receives one real payment.
+resumes only after the Upwork USD 10,000 received-cash gate closes.
 
 **Tech Stack:** Python 3.13+, standard-library SQLite/JSON, existing CloakBrowser CDP helpers,
 approved provider APIs, existing launchd release system, pytest with plugin autoload disabled.
@@ -22,7 +23,8 @@ approved provider APIs, existing launchd release system, pytest with plugin auto
 ## Global constraints
 
 - Execute exactly one task at a time and commit/push after its verification passes.
-- Until the first Upwork payment, mutate and measure Upwork only; do not operate on Coconala.
+- Until the Upwork USD 10,000 received-cash gate, mutate and measure Upwork only; do not operate on
+  Coconala from this plan.
 - Use normal owner email/password signup/login for Upwork. DO NOT use Google, Apple or social login.
 - Create an Upwork account only if the owner email has no existing account; never create a duplicate.
 - Upwork capacity counts active Upwork contracts only. Never read Coconala projects as Upwork capacity.
@@ -258,18 +260,66 @@ No later task may jump ahead of the first incomplete row:
 | U10 | Discover and qualify a first-job candidate | **DONE:** usability-test job `~022091106411892491962`; $15, 10–15 proposals, zero interviews, payment/phone verified, and all student/age/English/recording gates match owner evidence |
 | U11 | Resolve application capacity for that candidate | **DONE:** official proposal surface requires 7 Connects; balance/history, offers, invites and proposals are 0, no reward banner is exposed, and the only buy offer is 100 for $15 plus tax |
 | U12 | Freeze one tailored first-job proposal | **DONE:** immutable payload `c37eed9c…c68e926` contains the $15 terms, cover letter, five factual screening answers, no attachments, and zero unsupported claims |
-| U13 | Activate every zero-spend acquisition path | **IN PROGRESS:** the bounded Project Catalog service is approved, visible and monitored; inspect remaining factual free-reward tasks, monitor invitations/direct offers, retain three sealed public-job candidates and reconcile all official states into one inventory |
-| U14 | Close the first zero-spend acquisition effect | Accept one qualified invitation/direct offer or Project Catalog order, or submit the best sealed public-job proposal when granted/returned Connects cover its exact cost; never purchase capacity; verify official IDs and balance readback |
-| U15 | Replay immediately | Same proposal ID; zero new proposal and zero additional Connects |
-| U16 | Poll and answer the resulting thread | Official story/message IDs and no duplicate reply |
-| U17 | Negotiate and accept profitable terms | Offer ID, exact terms hash and active contract ID |
-| U18 | Fulfill and independently verify the work | Artifact hash and independent verifier PASS |
+| U13 | Make acquisition fully loop-owned | **DONE:** five-minute main loop uses native Best Matches, ten-job Luna batches, prompt-bound cache, durable sealed queue, Terra browser operation, exact Connects/effect readback and one-candidate failure isolation. |
+| U14 | Close the first acquisition effect | **DONE:** owner-authorized seed produced 150 Connects; proposal `2091740505918763009`, exact `150 -> 141`, no subscription/boost/badge/auto-top-up. |
+| U15 | Replay immediately | **DONE:** the first three proposals return the same IDs on exact replay with additional Connects 0. A fourth loop-owned proposal `2091811328085401601` for `~022091778584504223418` is also officially listed, with `118 -> 92`; its post-effect count refresh and replay remain the next readback slice. |
+| U16 | Poll and answer the resulting thread | **IN PROGRESS:** official Submitted proposals is 4; canonical Messages works, rooms/unread/offers/contracts 0. Next real buyer event must produce official story/message ID and duplicate reply 0. |
+| U17 | Negotiate and accept profitable terms | Offer ID, exact rate, weekly limit, 0–15% contract fee, terms hash and active contract ID |
+| U18 | Fulfill and independently verify the work | Immutable scoped task, Upwork Desktop App tracker start/stop, protected diary screenshot/memo/activity evidence, artifact hash and independent verifier PASS |
 | U19 | Deliver once | Official submission ID/state and replay with zero duplicate delivery |
-| U20 | Reconcile money and review | Received transaction, fee, costs, payout and honest review evidence |
+| U20 | Reconcile money and review | Hour diary → Monday invoice → client review → Wednesday availability → official payout `received`, transaction, fee, actual costs and honest review evidence; Pending/Available excluded |
 | U21 | Repeat on three independent paid jobs | Three contract/payment/review IDs and complete per-job economics |
+| U22 | Operate the proven Upwork loop to USD 10k/month | One complete calendar-month window totals at least USD 10,000 verified net received; cross-month payouts and later chargebacks are attributed once to their actual months |
+| U23 | Compress the next-market path | **IN PROGRESS:** general Luna/Terra market operation, shared effects/projects/accounting and Skill inventory are proven; next existing market adds only manifest plus fixed-format readback glue. |
+| U24 | Let the agent onboard an unknown market | Founder scout discovers demand, observes rules/UI/payout, performs ordinary signup/login, runs one zero-spend canary and joins the same lifecycle; only typed ceremonies pause that market. |
 
 Later implementation tasks are renumbered only when their first incomplete outcome becomes active.
-All cross-market tasks remain frozen until the first received Upwork payment closes.
+Marketplace mutations remain frozen only until U14 closes one official Upwork proposal receipt.
+Read-only research and adapter generation may proceed earlier. After U14, additional zero-spend
+canaries may run while Upwork continues through U15–U22; paid work and unknown-effect reconciliation
+always preempt expansion.
+
+Current official truth is proposals 4, Connects 92, replies/offers/contracts 0 and payout `received`
+USD 0. Production `fac29d37e0` runs every five minutes through
+the dedicated authenticated 9233 browser. Finance proof remains `12d92846e`/`c0c66c32f` with 40/40;
+the latest natural wake exits 0 and official/runtime proposal counts both equal 4.
+
+Remaining order to finish the local Upwork skill and business loop:
+
+| Order | Required closure |
+|---:|---|
+| 1 | **DONE:** account/profile/portfolio, dedicated browser, parallel discovery, one-call per-candidate Luna decisions, four official proposals, natural Telegram and official/runtime count 4 |
+| 2 | Replay proposal 4 with the same ID and Connects `92 → 92`; remove notification transport from acquisition critical path |
+| 3 | Execute all positive-EV sealed proposals with job leases and atomic Connects reservations; partial failure cannot stop sibling jobs |
+| 4 | U16–U17 close the first real client reply, profitable terms and active contract with official IDs and replay 0 |
+| 5 | Close protected hourly Time Tracker and diary evidence before billable work |
+| 6 | U18–U19 close immutable project, Skill execution, independent PASS, one delivery/work receipt and duplicate 0 |
+| 7 | U20 joins diary/milestone, gross, fee, Connects/model/tool cost, invoice/review, refund/chargeback and payout `received` |
+| 8 | Publish OSS alpha after the first complete discovery-to-received path, redacted fixtures, secret scan and isolated installer pass |
+| 9 | U21 closes three independent paid-review paths; retain the winning Skill/problem/proof/price and prioritize repeat clients |
+| 10 | Run zero-spend canaries on uGig, Freelancer, Lancers, CrowdWorks, Fiverr and Mercor concurrently through the same common rails |
+| 11 | Enable Founder discovery, close second-market `received`, clean-device OSS stable, then repeat measured winners toward the revenue gates |
+
+The remaining work belongs to the resident Upwork loop, not to Codex as a marketplace operator.
+Codex's atomic engineering TODO is ordered as follows; it only edits, activates and verifies the loop:
+
+1. Wire authenticated search/detail receipts from port 9233 into `upwork-acquire`.
+2. Give the model owner facts, installed Skill manifests, full job/client evidence, capacity and
+   economics; require schema-bound `select` or `skip` with cited evidence and no keyword routing.
+3. Atomically write the selected candidate cache and owner-only sealed proposal, bound to job ID,
+   official URL, evidence hash, terms, exact Connects and factual claims.
+4. Run the existing `ai.anicca.life-manager-upwork-free-loop`; verify it replenishes the ready queue
+   itself, then replay with no duplicate candidate/proposal/effect.
+5. Complete the already-planned loop-owned paths for reply, negotiation, contract, Skill fulfillment,
+   independent QA, revision, delivery, payout/review and three-job replay.
+6. Keep the loop resident and let `upwork-learn` change one acquisition/package/price variable at a
+   time until a complete calendar month reaches USD 10,000 verified net received.
+
+Login/signup/KYC recovery is deliberately deferred until the authenticated profile actually fails;
+it is not on the current money path.
+
+Engineering completion is Task 22's repeatability gate. Business completion is U22. Neither a test
+pass nor a deployed release satisfies a live receipt checkbox.
 
 U3 closure evidence: factual profile `~01f5fe272d6df34084` is published with the authentic owner
 photo, Status Online and More than 30 hrs/week. The official completion meter is 40%, identity is
@@ -404,12 +454,10 @@ U13 atomic order:
     regenerable `~/.npm/_npx` cache plus two unpinned immutable releases while preserving current,
     live and rollback releases. Free space recovered from roughly 320 MiB to 20.08 GiB; the owning
     disk sentinel then cleared both `disk-writers.stop` and `disk-pressure.block` through their
-    normal >=11 GiB recovery condition. The remaining fault is the orphaned Codex GUI context:
-    `launchctl print gui/501/...` returns 141, the previous Chromium reports WindowServer port death,
-    and the canonical browser entrypoint cannot persist the macOS Chromium policy or start ports
-    9223/9233 from this context. No alternate profile, fake browser receipt, proposal or payment was
-    created. The next native Aqua wake must restart `ai.anicca.hf-gig-browser`, then the existing
-    five-minute provider must refresh all official rows before U14 may act.
+    normal >=11 GiB recovery condition. A fresh recheck finds the shared Gig browser healthy on 9223,
+    but the Upwork provider still targets 9233 and no process owns that port. The authenticated
+    `gig-upwork` profile remains separate from `gig-daily-driver`; moving the provider to 9223 would
+    lose its session and is rejected. No alternate profile, fake receipt, proposal or payment exists.
 13. **CANDIDATE COST EVIDENCE REPAIRED:** fresh host readback still shows no CDP listener on
     9223/9233 and the isolated Codex context still returns launchctl 141/manager 153. The correct
     `gig-upwork` profile is intact with 103 Upwork cookies and 114 Upwork history rows; an isolated
@@ -427,6 +475,511 @@ U13 atomic order:
     `20fd33e07aec70063b48fd2e20539a13ca55d07727da46693580b956aefc1a72`. The same 20 focused
     tests pass from the read-only release and syntax compilation passes with a redirected bytecode
     cache. This proves deployment, not a fresh Upwork wake or application.
+14. **DEDICATED BROWSER OWNER CODE COMPLETE / PRODUCTION PENDING:** root-cause comparison proves the
+    original 9233 choice is intentional: `gig-upwork` has 103 Upwork cookies while the shared 9223
+    profile has zero. The missing component is its durable browser owner. The manifest now reuses
+    `launch_gig_browser.sh` as `ai.anicca.life-manager-upwork-browser` with port 9233, profile
+    `gig-upwork`, historical fingerprint `80138`, KeepAlive and a distinct log; the provider names
+    that label. Fingerprint provenance is the prior live main Chromium argv at
+    `/Users/anicca/.codex/sessions/2026/08/22/rollout-2026-08-22T12-44-48-01a02792-348c-7ad3-b606-eaf93a8eb3c0.jsonl:11941`,
+    which binds `80138`, `9233` and `gig-upwork` in one process. Focused provider tests pass 20/20.
+    Disk cleanup preserves client projects, ledgers,
+    archives and proof while recovering regenerable caches and compressing 1376 trashed Codex
+    sessions into an integrity-checked archive. Headroom is still 7.6 GiB because macOS holds 15 GiB
+    of swap, so build/publish/Aqua activation and fresh provider readback remain pending.
+15. **PRODUCTION LABEL ACCEPTED / DISK-BLOCKED:** native release watcher published descendant release
+    `5351f1f58483bac6eec9c1610e4224022bde9d03` and loaded both new definitions. The dedicated browser
+    plist readback is label `ai.anicca.life-manager-upwork-browser`, stable-current
+    `launch_gig_browser.sh`, port `9233`, profile `gig-upwork`, fingerprint `80138`, KeepAlive true,
+    CDP URL `9233` and dedicated owner label. The browser preflight then returned
+    `reason=disk_writers_stop`, `available_bytes=7347806208`, `required_bytes=536870912`, `effect=0`,
+    `readback=0`; 9233 stayed absent. The provider wake failed on connection refused and left the
+    official state timestamp at `2026-08-22T18:46:29.413515+00:00`. Shared 9223 remained healthy.
+    Current free space later read 6.8 GiB and macOS swap remained 15 GiB. U13 therefore waits on the
+    host disk policy, not missing code, launchd definition, browser profile or provider routing.
+16. **MEMORY/DISK SAFE RECLAIM EXHAUSTED:** browser restart had invalidated the old target-ownership
+    IDs, so the normal tab GC saw zero owned pages while 45 Coconala pages remained. A direct CDP
+    audit closed only exact duplicate or `/mypage/direct_message/` pages whose textarea and
+    contenteditable controls were empty; no draft or evaluation-error page was closed. The shared
+    browser moved from 45 pages to 5, preserving storefront, offer edit, one message, active talkroom
+    and blank. Swap total fell from 15 GiB to 14 GiB and free disk rose from 6.8 GiB to 8.5 GiB.
+    Standard `purge` was denied by macOS, and no live loop, app, customer project, ledger, archive or
+    proof was removed. The 20 GiB host policy therefore remains active; a native reboot or equivalent
+    authorized host-level swap recovery is still required before 9233 can start.
+17. **EXPLICIT CLEANUP COMPLETED / SWAP CONFIRMED AS ROOT BLOCKER:** after operator cleanup approval,
+    Trash `2.34 GiB` was emptied and a `1.64 GiB` pre-OSS Git bundle was removed only after all
+    `566/566` bundle head commits were proven present in the current repository. Project janitor
+    scanned 25 projects and deleted zero because every project remained nonterminal or guarded;
+    customer work was preserved. Trash is now empty. Despite roughly 4 GiB of file cleanup, free
+    space is only 8.0 GiB because macOS swap grew to 16 GiB with 15.66 GiB used. Deleting enough
+    additional space would require active project/runtime or Codex history loss. The smallest safe
+    unblock remains a native reboot that releases swap, followed by the existing 20 GiB policy
+    readback and automatic 9233 restart.
+18. **20 GiB PREVENTIVE CAP REMOVED FOR UPWORK:** operator explicitly rejected the 20 GiB startup
+    requirement. The host-wide policy remains unchanged for other producers. Only the dedicated
+    Upwork browser now ignores `disk-pressure.block` and the stale `disk-writers.stop`, while
+    `GIG_DISK_HEADROOM_KIB=524288` still requires 512 MiB free before Chromium starts. The shared
+    9223 browser and all other lanes retain their existing policy. Next acceptance is 9233 argv/profile
+    readback followed by two fresh provider wakes and exact funnel counts.
+19. **141 CONTROL PLANE RECOVERED:** the command parent was stale app-server PID `2128`, started before
+    the current ChatGPT GUI and detached at PPID 1. Targeted TERM plus the official acct2 daemon stop
+    reconnected this thread to new PID `26982`. The same preflight changed from numeric username,
+    manager 153 and gui 141 to `id-un=anicca`, `managername=Aqua`, UID 501, manager PID 1,
+    `gui/501` rc 0, `status=pass`, `mutation_allowed=true`. No OS service or browser was restarted.
+20. **9233 AND FRESH FUNNEL ACCEPTED:** release `3e41b0ce0c3a` scoped the preventive flag override to
+    the Upwork browser and retained the 512 MiB hard floor. Production readback is PID `68012`,
+    fingerprint `80138`, profile `gig-upwork`, port 9233 and launchd running. Two provider wakes exited
+    0. The second observed balance 0, submitted proposals 0, replies/messages 0, invitations 0,
+    offers 0, active contracts 0, payout USD 0, provider effects 0 and transition delta 0. Catalog is
+    visible with one 30-day view and zero orders. Of three sealed candidates, the $15 usability job
+    is officially closed; the two open jobs require 14 and 9 Connects. U13 next replaces the closed
+    candidate before U14.
+21. **STATIC-CANDIDATE DEFECT IDENTIFIED / AUTONOMOUS REPLENISHMENT NEXT:** the deployed provider can
+    reconcile and execute sealed proposals, but its public candidate JSON is still a manually
+    maintained input. That is not an end-to-end Upwork loop. U13 now closes only when the existing
+    launchd loop searches authenticated current jobs, supplies full evidence plus owner/Skill facts
+    to model judgment, selects or skips, and atomically seals enough truthful proposals to restore
+    three ready candidates without Codex choosing or editing marketplace work. This is the first
+    unfinished engineering item; reply, contract, fulfillment, delivery, money and learning remain
+    subsequent loop-owned closures.
+22. **AUTONOMOUS REPLENISHMENT CODE COMPLETE / PRODUCTION PENDING:** the provider now reads the
+    release candidate JSON only as an initial seed. With fewer than three officially open ready jobs,
+    the same resident wake opens authenticated recency search and up to four current job details,
+    supplies each exact evidence receipt, owner profile and installed Upwork delivery Skill contract
+    to the existing isolated model runner, and accepts only a schema-valid `submit` or evidenced
+    `skip`. Deterministic code binds job ID/URL/title/evidence hash/Connects, requires empty unsupported
+    claims and attachments, writes mode-600 sealed proposals and atomically replaces the runtime
+    cache. Existing replies/inbound and already-ready covered proposals preempt discovery; discovery
+    failure is fail-visible without killing those lanes. All current Upwork tests pass 154/154. The
+    next closure is immutable release activation followed by one live replenishment and replay.
+23. **FIRST LIVE REPLENISHMENT REACHED MODEL GATE / SCHEMA FIX ACTIVE:** release `e0c2ae15034e`
+    completed authenticated account, candidate, inbox, contract, finance, recency-search and current
+    job-detail reads. The loop created a private evidence packet itself, then the existing model runner
+    rejected the new response schema because `provider` and `status` used `const` without explicit
+    string `type`. The provider surfaced `candidate_replenishment=failed`, exited 0, preserved the two
+    open candidates and produced zero proposals/effects. Add the required types, release, and replay;
+    no selection or marketplace action is inferred from this failed call.
+24. **SECOND LIVE REPLENISHMENT REACHED STRICT ARRAY GATE:** release `6b2a00bdf000` accepted the
+    explicit scalar types and again reached the model provider with a fresh official job packet. The
+    response-format validator then required `items` even for arrays constrained to `maxItems: 0`.
+    Add inert item schemas for `unsupported_claims` and `attachments`; the wake remained exit 0,
+    `candidate_replenishment=failed`, proposals/effects 0 and the existing two ready jobs intact.
+25. **MODEL-OWNED SEARCH/SKIP PROVED / READY REPLENISHMENT CONTINUES:** release `1cb151a2e430`
+    completed a production wake with exit 0, searched four current public jobs and passed four full
+    official detail receipts through schema-valid model judgment. All four were skipped for observed
+    capability/location/client/terms risks; no proposal or marketplace effect occurred. The run also
+    exposed that the prompt incorrectly allowed zero current Connects to count against qualification,
+    and that skipped IDs were not durable. Clarify that Connects gate execution rather than sealing,
+    persist rejected IDs in the runtime cache, and continue deeper into current results next wake.
+26. **REJECT MEMORY PROVED / MODEL SEARCH STRATEGY NEXT:** release `bca5e36ff0b4` completed two
+    production wakes. Each inspected four fresh jobs, persisted eight unique model-skipped IDs, and
+    the second wake did not reconsider the first four. Zero Connects no longer appeared as a sole
+    rejection reason. The broad unqueried recency feed was dominated by unrelated design, CAD and
+    location-bound work, exposing search strategy as the next bottleneck. The next slice asks the
+    model for three narrow queries from the installed Upwork Skill and owner evidence, persists a
+    rotation index, and uses no hardcoded semantic keywords.
+27. **MODEL SEARCH QUERY PROVED / URL CANONICALIZATION FIX ACTIVE:** release `33f8ae5d9755` asked the
+    model once and received three Skill-bound queries covering FastAPI text AI, multimodal similarity
+    ranking and bounded AI integration. The first authenticated search rendered real results, but
+    Upwork canonicalized query spaces from `+` to `%20`, so the strict requested/final URL receipt
+    rejected it before candidate judgment. Generate `%20` directly and replay the same cached model
+    strategy. No proposal, Connects or marketplace effect occurred.
+28. **MODEL QUERY EXECUTION PROVED / VERIFIER CAPABILITY GAP NEXT:** release `7a3559b85d84` reused the
+    cached model strategy, executed the canonical authenticated query and inspected four API/AI jobs.
+    It rejected all four with direct scope, margin, client and proof reasons; one repeated reason was
+    that `upwork-ai-api-delivery` explicitly requires a different verifier Skill but none was installed.
+    Add the narrow independent `upwork-ai-api-verifier` contract so qualification can truthfully bind
+    build and QA before selecting work. Search query index advanced, rejected IDs remained durable,
+    and proposals/effects stayed 0.
+29. **PONYTAIL SCOPE CUT / APPLICATION IS THE ONLY NEXT EFFECT:** release `883a329efc7e` includes the
+    independent verifier and completed another production model-search wake with exit 0. The loop has
+    inspected twelve model-query jobs plus earlier broad-feed jobs, retains one officially open sealed
+    proposal requiring 9 Connects, and has submitted 0 because the official balance is 0. Stop adding
+    acquisition abstractions or requiring three ready jobs before action. Reuse the existing proposal
+    effect path and submit the best sealed job as soon as wallet-authorized Connects are officially
+    available. A Connects purchase is the only next action requiring owner approval.
+30. **ZERO-CONNECT PUBLIC JOB BUG REMOVED:** operator confirmed no Connects purchase and directed the
+    loop to pursue work requiring no prior network or paid capacity. Official Upwork documentation
+    distinguishes human connections from Connects and confirms invitations cost zero; public job cost
+    is provider-assigned and read per job. The existing planner incorrectly returned immediately for
+    balance 0 before checking a candidate whose official `connects_required` could itself be 0. Remove
+    that guard and rely only on `required_connects <= balance`, preserving the existing sealed proposal
+    and exactly-once submission path. Search/selection remains model-owned; regex is limited to fixed
+    provider identifiers and numeric readback, never suitability judgment.
+31. **COCONALA SELLER POLICY RESTORED:** live zero-spend search exposed that the Upwork candidate
+    planner was reading the employee job-search profile, so its annual salary floor incorrectly
+    rejected bounded $400 freelance work. Coconala application planning does not use employee salary
+    policy. Point Upwork acquisition to the existing gig owner profile and installed Skill contracts;
+    do not add a new scoring rule, keyword list or marketplace-specific salary abstraction.
+32. **CUSTOM ACQUISITION STACK DELETED / COMMON LOOP RESTORED:** remove 521 lines of dedicated query
+    planner, candidate planner, response schemas and verifier Skill. Keep the existing Upwork browser,
+    proposal model, effect fence and official readback. The single provider now follows the proven
+    Coconala shape: read current listings, let the model decide from full detail, submit through the
+    provider adapter, then require the official proposal ID. Code parses only fixed Upwork URLs, IDs
+    and Connects amounts; it contains no keyword or regex suitability judgment.
+33. **COMMON LOOP LIVE / ZERO-CONNECT SCAN EXPANDED:** release `a76fb2e9c611` completed the first
+    production wake through the simplified path: ten current jobs inspected, zero official
+    zero-Connect jobs, proposals 0 and external effects 0. Reuse the marketplace's ordinary page
+    order and follow three bounded result pages per wake, exactly like the existing Coconala scanner;
+    no semantic query, score, category allowlist or custom judgment layer is added.
+34. **ADAPTER COMPRESSION IS THE EXPANSION CONTRACT:** current Upwork support spans eighteen provider
+    files and roughly 4,200 lines, so copying it would make later markets slower rather than faster.
+    Preserve the running Upwork canary, then after its first proposal receipt extract only behavior
+    already proven by Coconala plus Upwork. The next gig or bounty market must fit in at most three
+    provider files/about 300 production lines with zero kernel changes; later markets shrink toward
+    one manifest plus transport glue. Unknown-site signup and adapter generation belong to the resident
+    agent, not manual Skill authoring, except for typed human-only identity/tax/payout ceremonies.
+35. **UPWORK APPLY LOOP LIVE / NO CURRENT ACTIONABLE JOB:** release `5a0ff9e4f93c` completed a
+    production wake with exit 0, traversed three official result pages and inspected 28 unique current
+    job details. None showed an official zero-Connect proposal entry. Balance, submitted/active
+    proposals, invitations, Direct Offers and Catalog orders all remain 0; marketplace effects remain
+    0. U13 is therefore engineering-complete: the five-minute loop applies through the existing fence
+    as soon as a zero-cost job, invitation, offer, order or free Connects becomes official. U14 remains
+    a live business outcome, not another code task.
+36. **REOPENED UNTIL ACTUAL APPLICATION / DURABLE SEARCH CURSOR:** application count 0 means U13 is
+    not complete. The three-page wake repeated the same leading pages and could never cover deeper
+    current inventory. Reuse the Coconala search-objective pattern: every wake refreshes page 1, then
+    reads two pages from a mode-600 durable cursor and checkpoints the next page. No query, category,
+    keyword, score or suitability rule is added. U13 closes only after consecutive production wakes
+    prove cursor advancement; U14 still requires an official proposal ID and replay effect 0.
+37. **DURABLE CURSOR LIVE / ACQUISITION PIVOT REQUIRED:** consecutive production wakes advanced the
+    official search cursor `4 → 6 → 8 → 10` while refreshing page 1 each time. The latest wake still
+    reports balance 0, eligible zero-Connect jobs 0, submitted proposals 0, invitations 0, offers 0
+    and Catalog orders 0. Search continuity is fixed, but U13 remains open until a real proposal ID.
+    The same resident agent must continue search while shifting spare acquisition effort to the
+    already-approved Catalog and profile/invitation surfaces; it must not wait for another manual
+    session or create another scheduler/decision engine.
+38. **SEARCH CONTINUES / CATALOG PRICE CANARY PENDING PUBLIC READBACK:** later wakes advanced the
+    cursor `10 → 12 → 14`; zero-Connect eligibility and submitted proposals remain 0. Direct browser
+    inspection found the approved Catalog service visible with one view, zero orders and a $75 public
+    price despite a zero-review profile. The existing editor accepted and persisted a $10 draft and
+    returned `Project has been saved successfully`, but the public service still reads $75. Treat the
+    price experiment as pending, not live, until the public URL itself reads $10; continue job, invite,
+    offer, order and free-Connect monitoring meanwhile.
+39. **ZERO-CONNECT HACK HYPOTHESIS REJECTED / APPLY PATH REQUIRES CAPACITY:** Upwork's current help
+    says Connects are the tokens used for job proposals and that most jobs require them; free awards
+    are account-specific and not guaranteed. Current official help says invitations cost zero, while
+    Direct Offers and Catalog bypass public applications. User reports largely say balance 0 prevents
+    applications; isolated zero-cost public-job reports describe experiments or bugs, not a searchable
+    category. Production cursor reached page 14 with no zero-cost public proposal. Stop treating a
+    rare exception as the primary strategy. Continue free inbound monitoring, but require an explicit
+    owner decision before the reproducible one-time $15/100-Connect public-application canary. Reject
+    fake-client, self-interview, multi-account or other manipulation as fraud, not growth tactics.
+40. **2026 FIRST-JOB/SCALE RESEARCH INCORPORATED:** current Upwork guidance emphasizes complete
+    profiles, portfolios, early job alerts, concise personalized first lines, job-specific proof,
+    proposal statistics and repeat client relationships. Current official fee is 0%-15% and fixed per
+    contract; Rising Talent can award 30 Connects but requires additional eligibility and its identity
+    badge costs 35 Connects. User reports converge on applying early, targeting fewer than 15 competing
+    proposals and showing relevant proof, while showing wide variance in proposals-to-first-job and no
+    reliable free-public-application route. Adopt one explicitly approved $15 seed for proposal spend
+    only, then self-fund up to 10% of verified net received capped at $15/month until three reviews.
+    Add funnel stop/repair gates at ten no-view proposals and five viewed/no-interview proposals, then
+    climb from one bounded review to repeat work, $100-$500 packages and $500-$2,000 milestones.
+41. **ONE-TIME SEED PREFLIGHT COMPLETE / NO CHARGE:** the authenticated Buy Connects page reads
+    balance 0, `100 for $15.00`, charge `$15.00 + Tax`, post-state 100 and expiration August 24,
+    2027; unused Connects roll over monthly. The ordinary `Buy Connects` control is enabled. No click,
+    billing charge, subscription, Plus upgrade, boost or badge effect occurred. After an explicit
+    owner capital receipt, the existing loop can purchase once and proceed directly to focused
+    proposals without another setup/research step.
+42. **SEED PURCHASED / COST-DRIFT BLOCKER FOUND:** explicit owner approval funded one $15 bundle;
+    checkout ID `2091725750142893820` completed and official Connects History reads +100 purchased,
+    +50 new-member credit and balance 150. The first application wake then failed before effect because
+    one sealed candidate's official cost changed from 11 to 14 Connects, and the planner raised instead
+    of reaching the next valid 9-Connect candidate. Preserve invalid-payload fail-closed behavior, but
+    treat an official cost change as stale qualification and continue to the next sealed candidate.
+    No proposal or Connects spend occurred in the failed wake.
+43. **CURRENT PROPOSAL UI PREFLIGHT PASS:** Upwork moved public proposal entry from `/ab/proposals/`
+    to `/nx/proposals/` and replaced the old cover, bid, duration, balance and submit controls. Update
+    only those provider selectors/readbacks and wait two seconds for the SPA form after page load. A
+    fresh click-free production-profile preflight now returns `ready=true`, exact job
+    `~022091170260597544595`, required Connects 9, available Connects 150 and evidence hash
+    `77cf032a…1f84e`. No submit click or Connects deduction occurred during preflight.
+44. **UNTRUSTED CLICK PRODUCED OFFICIAL ABSENCE / TRUSTED INPUT NEXT:** the first current-UI wake
+    crossed the durable fence but its JavaScript `button.click()` produced no Upwork mutation.
+    Authoritative Proposals remained submitted/active 0 and Connects History remained 150, while the
+    exact intent entered `reconcile_unknown`. Current Upwork controls require trusted input, as the
+    Connects checkout did. Change only the post-fence action to focus the verified Submit proposal
+    control and dispatch a CDP Enter key sequence, wait five seconds, then require the official
+    proposal ID. Reset only this exact intent after binding the official absence evidence; no blind
+    retry is allowed.
+45. **TRUSTED ENTER RECONCILED ABSENT / ROOT CAUSE FIXED:** fresh official readback proves proposals
+    `0`, active `0`, and Connects `150`, so neither prior attempt created an external effect. Live DOM
+    inspection proves the current `Submit proposal` control is `type=button` and has no form; Enter
+    therefore cannot submit it. The executor now scrolls that exact verified control into view and
+    dispatches one trusted CDP mouse press/release at its measured center after the durable fence.
+    Upwork regression is `154 passed`; next release, reset only this absence-proven effect to prepared,
+    trigger the existing launchd loop once, then reconcile proposal ID and Connects delta before any
+    further acquisition.
+46. **FIRST-USE CONNECTS EXPLAINER FOUND:** the trusted Submit click is working, but Upwork intercepts
+    the account's first proposal with an official `Use Connects to submit proposals` education dialog
+    whose only action is `Close`. Post-attempt official evidence again proves proposals `0` and balance
+    `150`. Keep the same sealed proposal and effect identity; within the same fenced attempt, close only
+    that exact platform explainer with trusted input, then click the already verified Submit control
+    once and require proposal ID plus the exact `150 -> 141` Connects readback. No generic modal
+    dismissal, JavaScript click, duplicate retry or new qualification logic is introduced.
+47. **EXPLAINER CLOSE COORDINATE REJECTED:** the exact dialog remained visible after a trusted click
+    on its rendered Close center; official evidence still proves proposals `0` and balance `150`.
+    Replace only that no-effect dismissal with the platform-standard trusted Escape key, require that
+    no visible dialog remains, then issue the single trusted Submit click. Failure to close aborts
+    before Submit and remains reconcile-only.
+48. **EXPLAINER REJECTS ESCAPE:** trusted Escape also leaves the education dialog visible, and the
+    executor aborts before Submit; official evidence remains proposals `0`, balance `150`. Because
+    closing this exact first-use explanation has no marketplace effect, invoke only its exact `Close`
+    DOM control, verify the dialog disappeared, then retain trusted mouse input for the actual Submit.
+    No proposal mutation may use a JavaScript click.
+49. **ARCHITECTURE CORRECTION — UI JUDGMENT RETURNS TO THE AGENT:** the growing Upwork-specific
+    submit sequence is the wrong abstraction. The production proposal model is Luna-first, but the
+    submit transport is fixed Python and cannot reason over first-use UI; Coconala already routes
+    open-ended browser work through the shared Terra-first `browser-lane-agent` with Sonnet/Gemini
+    fallback. Reuse that operator for Upwork and every later market. Deterministic code retains only
+    immutable proposal intent, spend/capacity checks, exactly-once fence and official proposal/
+    Connects readback. Remove provider-coded dialog/button workflows; give the operator the current
+    page, natural-language objective, bounded browser tools and those effect contracts. One loop can
+    then adapt to changed or unknown marketplace UI without adding another site script.
+50. **SHARED BROWSER OPERATOR WIRED:** after exact form fill and durable effect start, the Upwork
+    proposal path now invokes the existing `browser-lane-agent` with its configured Terra model on the
+    live authenticated 9233 page. The prompt supplies the immutable job identity and objective but no
+    dialog sequence or selector decisions. Provider-specific first-use modal handling and submit-click
+    code are removed. The parent keeps the target alive, independently requires official proposal ID,
+    then verifies the exact Connects delta before marking the effect verified. The model cannot turn its
+    own success claim into a receipt. Upwork regression remains `154 passed`; next evidence is one
+    loop-owned live submit and official replay.
+51. **AGENT OBSERVED THE NEXT STATE / CEREMONY BOUNDARY CORRECTED:** the first Terra production run
+    dynamically passed the Connects explainer, then stopped at a safety-policy acknowledgement because
+    the initial prompt classified every acknowledgement as human-only. Official readback proves
+    proposals `0` and balance `150`. Ordinary educational and marketplace-safety acknowledgements that
+    do not change proposal, price, contract, identity, tax or payment facts are part of the authorized
+    browser task; CAPTCHA, identity proof and personal legal/tax declarations remain typed human
+    ceremonies. This is one general prompt rule, not an Upwork dialog string or scripted path.
+52. **FIRST LOOP-OWNED PROPOSAL VERIFIED:** the second Terra run handled the live safety acknowledgement
+    and submitted the immutable proposal exactly once. Official receipt is proposal
+    `2091740505918763009`; Connects History names the target job and proves `150 -> 141` (`-9`), while
+    a fresh Proposals page proves submitted count `1`. The next wake found no duplicate effect but
+    failed read-only inventory because Upwork renders the one-item label as singular `Submitted
+    proposal (1)`. Accept singular/plural for this fixed official count field, then prove replay leaves
+    proposal count `1` and Connects `141`.
+53. **G3 PROPOSAL GATE COMPLETE / REPLAY ZERO:** release `05a6797d2` parses Upwork's singular official
+    count and a fresh launchd wake exits `0` with `submitted_proposals=1`, balance `141`, no model call
+    and no second effect. A separate post-replay browser read proves the same official count and
+    balance. G3 evidence is therefore proposal `2091740505918763009`, exact Connects `150 -> 141`, and
+    replay delta `0`. The next active acquisition item is replacing the exhausted static candidate
+    cache with loop-owned current-job discovery and Luna proposal sealing whenever no eligible sealed
+    proposal remains and the official balance can fund another application.
+54. **CURRENT-JOB REPLENISHMENT GENERALIZED:** when no existing sealed proposal is eligible, the same
+    authenticated search cursor now scans current jobs regardless of whether balance is zero, opens
+    official details and passes every affordable job to the existing Luna-first proposal planner.
+    Luna alone decides submit or skip from full job evidence and owner capabilities; deterministic code
+    only requires official `required_connects <= balance`, binds those exact values into the immutable
+    payload and persists a ready proposal. The former zero-Connect-only discovery name/state and fake
+    invitation packet are removed. Upwork regression remains `155 passed`; next proof is a launchd wake
+    discovering, sealing and submitting a new current job without editing the static candidate list.
+55. **DELIVERY SKILLS BOUND INTO LUNA QUALIFICATION:** the first generalized wake correctly skipped
+    physical/location-bound jobs but also rejected feasible work merely because an identical prior job
+    or portfolio claim was absent. The existing capability inventory already parses every repository
+    `SKILL.md`; pass that signed name/description/path inventory to the Luna planner. Installed Skills
+    prove executable and independently verifiable capability, never prior client experience. Luna must
+    not fabricate experience, but exact prior work, testimonial or portfolio absence alone is no longer
+    a skip reason when a Skill can complete the work; missing implementation details become concise
+    pre-contract questions. Regression remains `155 passed`.
+56. **FIRST SKILL-AWARE DYNAMIC SELECTION REACHED PREFLIGHT:** production Luna selected and privately
+    sealed current job `~022091742848386274963`, `Research and Compile a List of Companies from
+    Specific Industries With Issues and Concerns`, at an official cost of 8 Connects and balance 141.
+    No provider effect row was created because click-free form validation failed before the durable
+    fence. Current money truth remains one submitted proposal, zero replies/offers/contracts and
+    Connects 141. Inspect that exact live form, correct only the generic form-control contract, then
+    resume the same sealed intent; never regenerate or blind-submit it.
+57. **RUNNING COCONALA LANES INSPECTED / REINVENTION CUT:** production is already four Life Manager
+    entrypoints from one immutable release: Apply (`application_direct → application_parent`), Reply
+    (`reply_detector → ConnectorOutbox`), Paid (`paid_direct → project/workflow/QA ledgers`) and
+    Storefront (`storefront_direct → capability/funnel allocator`). The application parent already
+    performs parallel discovery, ten-candidate Luna batches, planner/ineligible caches, cursor resume,
+    immutable intent fencing, delayed uncertain-effect reconciliation and exact-ID readback. Therefore
+    the Upwork per-job Luna loop is not promoted. Next implementation adds Upwork provider effects to
+    these existing parents, keeps its observer read-only, then deletes duplicated orchestration.
+58. **SCALABILITY CORRECTION — COPY CONTRACTS, NOT CONTROLLERS:** the Coconala inspection proves
+    useful lane priority, parallel read-only work, batching/cache/cursor, durable effects, project/QA
+    and official receipts. Its large site-specific parent scripts are not the cross-market API.
+    Luna/Terra remains the general looping market agent and owns navigation, form interpretation,
+    qualification, proposals, replies and ordinary UI across websites. Shared deterministic services
+    expose authorization, money/capacity, leases, effects, projects and readback. New markets add a
+    manifest plus unavoidable fixed-format transport/readback only; no site gets four copied controllers.
+    Item 58 supersedes item 57's instruction to bind new markets directly to Coconala parents.
+59. **DYNAMIC JOB PREFLIGHT ROOT CAUSE CLOSED:** the sealed research job's cover, bid `$10`, duration,
+    zero screening answers, Connects cost `8`, available balance `141` and enabled Submit control all
+    matched. The mismatch came solely from collecting a hidden ARIA live-region message as a validation
+    error; the page had zero visible/native invalid controls. Restrict existing error collection to
+    visible elements. Fresh click-free production-profile preflight now returns `ready=true`, exact job,
+    cost 8, balance 141 and evidence `1009e093…b24a`; Upwork regression is `155 passed`. Next release
+    must run the same immutable payload through the existing launchd loop and require proposal ID,
+    `141 -> 133` Connects and replay zero.
+60. **SEALED PROPOSALS BECOME THE DURABLE READY QUEUE:** the next natural wake returned to discovery
+    because it rebuilt candidates only from the repository bootstrap JSON; the dynamic research
+    proposal existed privately but was not reloaded. This is restart bookkeeping, not market judgment.
+    On every wake, merge valid mode-600 immutable `frozen_waiting_for_connects` payloads from the
+    owner-only proposal store into the ready queue, deduped by job ID. No proposal content, score or
+    category is inferred. Regression remains `155 passed`; next release must resume the existing
+    research payload before spending another Luna call on unchanged discovery.
+61. **SECOND LOOP-OWNED DYNAMIC PROPOSAL VERIFIED:** release `f733d9022` reloaded the private sealed
+    queue before discovery, passed the corrected click-free preflight and invoked the shared Terra
+    browser operator. Official proposal `2091760957211561985` is verified with exact Connects
+    `141 -> 133`; a separate fresh Proposals page reads submitted `2`, and Connects History names the
+    exact research job with `-8`. No purchase, boost, identity, tax or payment action occurred. The
+    next wake must preserve both proposal IDs and spend zero additional Connects on either while any
+    newly qualified proposal remains a distinct effect.
+62. **SECOND PROPOSAL REPLAY ZERO:** replaying the exact sealed payload returns the same official
+    proposal `2091760957211561985` from the verified effect row before any browser mutation. A fresh
+    independent Upwork read remains submitted proposals `2` and balance `133`; duplicate proposal and
+    additional Connects delta are both zero. The next atomic item is replacing one-job Luna discovery
+    with one bounded candidate-set market-agent turn while the reply/offer monitor continues.
+63. **ONE LUNA DECISION PER CANDIDATE SET:** public discovery now collects up to ten affordable
+    official job packets, passes the full set plus owner facts and installed Skills to one Luna call,
+    and asks for the single best positive-utility proposal or one skip for the set. The existing strict
+    single-proposal schema is reused; chosen job ID, URL, source hash, Connects cost and balance are
+    validated against that packet before sealing. The batch evidence key is the ordered packet-hash
+    set, so unchanged candidates reuse the decision rather than repay the model. No regex/keyword job
+    judgment or new agent/schema is added. Upwork regression is `156 passed`; next production wake must
+    show at most one Luna call per ten inspected candidates and preserve both verified proposals.
+64. **VERIFIED EFFECTS NO LONGER BLOCK ACQUISITION:** the first batch release wake spent zero model
+    calls and zero Connects, but returned early on the already-verified second proposal instead of
+    reaching discovery. Add one generic `ConnectorOutbox` projection of verified resource IDs and
+    exclude only those IDs from the acquisition-ready queue; their proposal/history monitoring remains
+    intact. Unknown or unverified effects still preempt and reconcile. Regression remains `156 passed`;
+    next production wake must reach batched discovery without resubmitting either verified job.
+65. **BATCH LUNA PRODUCTION PASS / CACHE IDENTITY FIX:** one natural wake inspected 30 affordable
+    jobs in three pages and used exactly three Luna calls, one per ten-job set; all three sets were
+    skipped for missing Skill/verification/positive-value evidence. The old path would have used 30
+    calls. Existing proposals remained 2, balance 133 and duplicate effects 0. The first batch key still
+    inherited packet observation time, so an unchanged next wake would miss cache. Key batches only by
+    ordered job ID, official detail hash, Connects cost and current balance; timestamps remain evidence,
+    never decision identity. Regression remains `156 passed`; next wake must reuse unchanged page-one
+    batch evidence without a new Luna call and evaluate only changed/new sets.
+66. **STABLE-KEY CANARY PRESERVED MONEY / RELEASE CONFLICT:** release `0dbeb8784` reached two new
+    stable-key candidate sets and used one Luna call for each; both returned skip, while official
+    proposals remained 2, balance 133 and duplicate effects 0. The final detail snapshot was
+    inconclusive and the wake exited 1 without mutation. Before an immediate same-page cache replay,
+    another active Life Manager task switched `current` to Paid release `e3d93c806`, which does not
+    contain the Upwork batching/durable-queue changes. The Upwork branch remains pushed and verified;
+    do not overwrite the shared production symlink until that concurrent release owner is clear, then
+    activate the integrated commit and prove unchanged batch model-call delta 0.
+67. **INTEGRATED PARALLEL RELEASE / EXACT CACHE REPLAY PASS:** integrated release `a6412f144`
+    contains the active Paid fix and all Upwork batching changes. Coconala Paid and Upwork ran
+    concurrently under separate pinned immutable SHAs; neither was stopped. The Upwork wake exited 0,
+    retained official proposals 2 and balance 133, and evaluated only changed/new candidate sets.
+    Replaying the exact saved ten-job packet set `1c776b…` against its stable evidence directory
+    returned the same skip with `summary.json` and `attempts.jsonl` mtime/size byte-for-byte unchanged,
+    proving new Luna calls 0. This closes candidate batching/cache hardening. The next atomic item is
+    continuous proposal-state/view/reply reconciliation while acquisition keeps running.
+68. **SALES RECONCILIATION ROUTES GROUNDED:** fresh official Upwork reads show submitted proposals 2,
+    messages 0, offers 0 and contracts 0. Proposal links now carry provider context `Initiated`, not
+    `Submitted`; classify that fixed official state as submitted. The sidebar's trailing-slash message
+    URL returns 404 in hidden navigation, while canonical `/ab/messages/rooms` renders the Messages app
+    and official empty state `Welcome to Messages / Once you connect with a client`. Use that canonical
+    URL and accept those provider-authored empty markers. No reply or contract is fabricated. Upwork
+    regression remains `156 passed`; next production wake must normalize both proposal IDs as submitted,
+    read the real empty inbox and exit 0 while acquisition remains enabled.
+69. **CONTINUOUS SALES ZERO-EVENT BASELINE PASS:** integrated release `9adf4fe15` exits 0 with both
+    official proposal IDs normalized as submitted, unclassified 0, canonical Messages readback,
+    rooms/unread 0, offers/invites/contracts 0 and inbox events appended 0. Proposal count remains 2,
+    balance 133 and both effect rows verified. The same wake continues batched acquisition, proving
+    Sales monitoring does not serialize or disable Apply. The next external reply/offer must preempt
+    acquisition and flow through Luna composition, immutable outbox effect and official message/
+    contract readback; until one exists, no synthetic effect can close that live gate.
+70. **UPWORK LOOP MERGED TO MAIN / SURVIVES SHARED RELEASES:** the focused Upwork production delta
+    was rebuilt from clean remote main, passed 156 tests and compile/diff checks, and fast-forwarded to
+    main at `1820eb65a` without unrelated Paid/Storefront changes. Later main Paid release
+    `c9a0d00ea` still contains `invoke_batch`, durable verified-effect projection and canonical Messages
+    route, proving shared-release updates no longer remove the Upwork loop. Its natural wake exits 0
+    with proposal IDs 2, balance 133, rooms/offers/contracts 0, duplicate 0 and 27 affordable jobs
+    inspected while other lanes remain independently scheduled. Apply is now a persistent 24/7 main
+    capability; the next live gate is an external client reply or offer.
+71. **NATIVE BEST-MATCHES FEED REPLACES BLOCKED GLOBAL SEARCH:** authenticated comparison proves
+    `/nx/find-work/best-matches` and `/nx/find-work/most-recent` render current personalized job cards,
+    including an iOS/webapp opportunity aligned with installed Skills, while the prior global
+    `/nx/search/jobs/?sort=recency` now returns a Cloudflare challenge and zero jobs. Use Upwork's native
+    Best Matches ranking as the primary discovery surface and retain Luna as the final fit/value judge;
+    provider pagination is bookkeeping only. This removes a brittle blocked transport and improves
+    candidate relevance without hardcoded categories or a new search agent. Regression remains
+    `156 passed`; next main wake must inspect the native feed, preserve existing proposal effects and
+    submit only if Luna finds positive verified value.
+72. **PUBLISHED PROOF ENTERS QUALIFICATION / CACHE BINDS ALL MODEL INPUT:** native Best Matches exposes
+    plausible iOS, AI-integration, invoice-agent and Claude-marketing work, but Luna skipped them because
+    it received Skills and the general owner profile without the already-published Upwork portfolio.
+    Load the existing private `upwork-profile-state.json` alongside owner facts so exact provider-owned
+    project IDs/titles can support truthful examples; never infer more than that evidence states.
+    Bind cache reuse to the SHA of the complete prompt, including job evidence, owner/market facts,
+    Skill inventory and policy. A changed proof or Skill therefore triggers one fresh Luna decision,
+    while identical inputs remain zero-call. Regression remains `156 passed`; next native-feed wake
+    must reconsider the same opportunities with official proof and apply only on positive verified value.
+73. **EXISTING QA BECOMES A DISCOVERABLE VERIFIER SKILL:** even with published portfolio evidence,
+    Luna still returned `no_verified_skill_fit` because delivery Skills require an independent verifier
+    but the production artifact/test/visual QA machinery had no discoverable Skill contract. Add one
+    instruction-only `gig-delivery-verifier` that routes code/API, research/data, writing/documents,
+    presentations and mobile/web builds to existing executable or visual evidence. It never builds,
+    submits or approves money; missing modality/evidence is `UNDETERMINABLE`. Skill validation and
+    capability-inventory readback pass. A changed Skill inventory changes the prompt SHA, so native
+    Best Matches receives one fresh Luna decision rather than reusing the prior skip.
+74. **PUBLISHED IOS CAPABILITY BECOMES A BOUNDED DELIVERY SKILL:** native Best Matches repeatedly
+    surfaces iOS/webapp and AI-mobile work, and the provider profile already publishes two iOS proofs,
+    but inventory had no mobile delivery Skill. Add an instruction-only `mobile-app-delivery` covering
+    Swift/SwiftUI, existing-repo repair, REST/documented AI integration, simulator/build/archive and
+    store preparation. Explicitly exclude unsupported Android-native, named specialized SDK experience,
+    unbounded rebuilds and unauthorized publication. It composes the independent verifier and changes
+    prompt SHA, allowing one fresh truthful Luna comparison without inventing prior client work.
+75. **DRIFTING PROFILE STATE REMOVED FROM MODEL FACTS:** the first mobile-Skill wake still skipped with
+    `official_connects_balance_zero` because the historical bootstrap profile file contained stale
+    balance 0 alongside each current job packet's authoritative balance 133. Project only immutable
+    provider proof into the planner: provider/profile ID and officially read-back portfolio project
+    IDs, titles and public URLs. Exclude Connects, capacity, next action and other time-varying account
+    fields; those come from the current wake. Regression remains `156 passed`, and prompt SHA changes so
+    Luna re-evaluates rather than caching the contradictory skip.
+76. **SELLER-OWNED TERMS NO LONGER REQUIRE CLIENT VALUES:** after current balance and proof were clean,
+    Luna still skipped hourly work because the client supplied a rate range rather than one exact bid
+    and did not prescribe delivery days. These are proposal decisions, not client facts. Permit Luna to
+    choose bid and delivery estimate within the official displayed budget/rate and verified Skill
+    capacity, requiring positive expected value and explicit assumptions. Scope, experience, identity,
+    credentials and client facts remain non-inventable. Prompt SHA changes; regression stays `156 passed`.
+77. **ONE BAD DETAIL CANNOT KILL THE MONEY WAKE:** the pre-terms wake preserved both verified effects
+    but exited 1 when one read-only job snapshot redirected or returned incomplete evidence. Retry that
+    detail read at most three times with bounded backoff; if all fail, increment `proposal_discovery.incomplete`
+    and continue to the remaining candidates. Do not weaken or retry any external proposal effect.
+    Regression remains `156 passed`; next wake must exit 0 unless a required account-level surface,
+    rather than one optional acquisition candidate, is unavailable.
+78. **MISSING CLIENT RATE IS NOT A SELLER-PRICE BLOCKER:** the corrected native-feed wake still
+    skipped its best fit because the job detail omitted an hourly range. Upwork asks the freelancer to
+    propose the rate; this is a seller decision, not an invented client fact. When a client range is
+    shown, Luna stays within it. When absent, Luna chooses a reasonable rate from scope, verified Skill
+    capacity, delivery effort and positive expected value and states the assumption. Experience,
+    credentials, scope and client facts remain immutable. Prompt SHA changes; regression is `156 passed`.
+79. **THIRD HIGH-VALUE PROPOSAL SELECTED / HOURLY PREFLIGHT READY:** with current balance 133,
+    provider-published iOS proof, `mobile-app-delivery`, independent verifier and seller-owned pricing,
+    Luna selected `~022091764251902772206` (`Transform a webapp to IOS appstore!`) at `$40/hour`,
+    14-day estimate and 15 Connects. No effect started because the proposal code required a fixed-price
+    duration control that hourly forms do not have. Bind hourly rate to official `#step-rate`, leave
+    optional rate increase/boost untouched, and represent duration readback as null for hourly while
+    retaining the sealed estimate. Fresh click-free production preflight returns `ready=true`, exact
+    job, available 133, required 15 and evidence `5c9e52cc…544cd`; regression remains `156 passed`.
+    Next release must produce proposal ID, exact `133 -> 118` and replay 0.
+80. **BROWSER MODEL CAPACITY FALLS BACK WITHOUT DUPLICATE EFFECT:** the first hourly submit crossed the
+    durable fence but forced Terra returned `Selected model is at capacity` before acting. Fresh
+    official evidence proves submitted proposals still 2 and balance 133, so the effect is absent.
+    Remove the forced candidate model and use the existing `browser-lane-agent` route: Terra first,
+    then configured Sonnet/Gemini fallback. UI judgment and effect/readback contracts stay identical.
+    Regression remains `156 passed`; bind the absence evidence to this exact effect, reset it once and
+    require proposal ID plus `133 -> 118` before any later retry.
+81. **ABSENT RATE-INCREASE TERM MAPS TO OFFICIAL NEVER:** a later Terra attempt reached Submit but
+    Upwork rejected the hourly form because its visually optional rate-increase component requires an
+    explicit frequency selection. Official absence remains proposals 2 and balance 133. The provider
+    options are `Never`, 3, 6 or 12 months. The sealed proposal contains no rate-increase term, so map
+    that absence to official `Never`; do not select a percent or boost. This is deterministic form
+    projection, not a pricing judgment. Fresh click-free preflight remains ready for exact job/rate/
+    Connects, and regression is `156 passed`. Reset only the absence-proven effect once after release.
+82. **THIRD PROPOSAL CLOSES HIGH-VALUE HOURLY PATH:** release `0859676d0` resumed the exact sealed
+    iOS proposal, explicitly selected no rate increase, used the configured browser-model route and
+    submitted exactly once. Official proposal `2091789044149923841` is verified at `$40/hour` with
+    exact Connects `133 -> 118` and boost 0. A fresh Proposals page reads submitted 3, Connects History
+    names the exact job with `-15`, and exact payload replay returns the same proposal ID with no new
+    spend. The application portfolio now contains bounded fixed-price review work, research work and a
+    higher-value hourly iOS opportunity. Acquisition remains active while Sales monitors all three.
 
 U14 atomic order:
 
@@ -1106,7 +1659,42 @@ fresh official transaction window is not.
 - [ ] Advance only when all three paths pass; otherwise persist the exact failed entity/stage.
 - [ ] Run gate tests and commit/push.
 
-## Phase C — Fiverr second complete adapter
+### Task 22A: Operate Upwork to the USD 10k received-cash gate
+
+**Files:** Modify `skills/earn/gig/scripts/providers/upwork_finance.py` and
+`skills/earn/gig/tests/test_upwork_finance.py` only.
+
+**Interfaces:** Add `cash_accounting_period` to normalized cash-relevant rows, then
+`summarize_verified_month(rows, accounting_period, source_window) -> int | None`. Require `complete`
+and exact first/last calendar-day bounds. For the requested period, sum `verified_net_usd_minor`
+where `cash_accounting_period` matches regardless of payment state; return `None` if any such row
+lacks join/cost evidence, and reject duplicate transaction IDs.
+
+- [ ] Test partial-month rejection, cross-month payout, an `available` payment with a later negative
+  chargeback, pre-payout adjustment, unknown evidence and USD 9999.99/USD 10000.00 boundaries.
+- [ ] Repeat the winning Skill and change one strategy variable at a time until a complete month
+  returns at least `1_000_000`; then close G11. Other market canaries do not wait for this gate.
+
+## Phase C — Second-market canary through the common browser ACI
+
+Phase C runs concurrently with Upwork. G11 remains Upwork's primary outcome gate, not authority to
+block independent read-only discovery, zero-spend canaries or positive-EV work on another market.
+
+**Current execution rule:** Tasks 23–28 below are historical decomposition, not permission to build
+six Fiverr-specific controllers. They are superseded by the common `observe/extract/act/readback` ACI
+and remain only as acceptance scenarios. Implement one thin manifest plus exceptional authentication,
+fee/currency or official-readback glue; reuse the common effect, inbox, project, QA, delivery, money,
+Telegram and learning paths. If the canary needs more than three provider files or about 300 LOC,
+stop and extract the missing common primitive first.
+
+### Task 22B: Prove the common browser ACI on one second-market canary
+
+- [ ] Reuse the current model-driven browser operator to observe and schema-extract the authenticated
+  market without provider-specific semantic routing.
+- [ ] Bind one frozen effect to provider/account/source/payload/observation identity before acting.
+- [ ] Execute one authorized zero-spend canary and require official provider readback.
+- [ ] Project its lifecycle through the existing work-events, Telegram, funnel and money ledgers.
+- [ ] Replay with zero duplicate effects and record actual provider-only LOC/files.
 
 ### Task 23: Record Fiverr authorization and authenticated transport
 
@@ -1625,6 +2213,158 @@ provider/payment/payout evidence.
   funnels separately.
 - [ ] Close USD 10,000 and JPY 10,000,000 gates only from complete source evidence.
 - [ ] Record clean-device replication evidence; run tests and commit/push.
+
+### Task 58: Project Upwork decisions and funnel receipts to Telegram
+
+**Ponytail constraint:** Reuse the existing Coconala `work-events`, `telegram_report.py` and durable
+Telegram outbox. Add no scheduler, notifier, database or provider-specific semantic rules.
+
+- [x] Project each new Upwork apply/skip decision once with a provider-scoped event key and
+  model-authored natural-language reason. Reply/offer/contract/delivery/money projections remain.
+- [x] Provide one provider-neutral `append_work_event → report envelope → Telegram outbox` path for
+  natural-language selected/skipped decisions; focused fake-transport proof reaches `sent` and replay
+  appends zero duplicate WorkEvents.
+- [ ] Project each new Upwork reply/offer/contract/delivery/money transition once with a
+  provider-scoped event key and model-authored reason.
+- [x] Wire the production Upwork planner output into the shared path for selected and honest aggregate
+  batch-skip decisions; focused production-helper proof appends once and invokes the existing
+  `instant-work-events` reporter once.
+- [x] Release it, observe one real natural-Japanese planner decision, confirm Telegram message ID
+  `31872` through its provider receipt, and prove replay keeps WorkEvent `1 → 1`, outbox row `1 → 1`
+  and duplicate send 0.
+- [ ] Emit one compact periodic funnel/KPI report and a stalled-stage alert; unchanged polls stay
+  silent.
+- [ ] Bind each one-variable Luna experiment to its strategy version and later keep/revert evidence.
+- [x] Verify one real Upwork decision notification, Telegram message ID and duplicate send 0.
+
+### Task 59: Let Upwork lifecycle lanes progress independently
+
+**Ponytail constraint:** Reuse the existing wake, durable queues and effect fence. Add no provider
+scheduler. Fence the narrowest resource and serialize only genuinely shared account state.
+
+- [ ] Split the current wake's durable work into acquire, sell, fulfill, money and learn queue items.
+- [x] Run independent hidden-CDP job detail reads concurrently with a locked shared trajectory append;
+  production ten-job search-to-all-details improved `49s → 11s` and completion span `44s → 5s`.
+- [x] Make one Luna batch return exactly one ordered decision per candidate rather than one winner;
+  production release `a81ec3b630` returned 10/10 decisions from one call.
+- [ ] Promote main `e846b873e4` or later and prove all decisions append in one WorkEvent handoff with
+  every submit proposal sealed before Telegram transport begins.
+- [ ] Replace one-proposal-per-wake and the fixed three-contract cap with dynamic workers and measured
+  backpressure; ten proposals remain a learning checkpoint, never a stop.
+- [ ] Key leases by job, message head, offer and contract/milestone so distinct effects run in
+  parallel; use a short global reservation only for Connects/account/KYC/billing/payout state.
+- [ ] Prove two different proposals, rooms and contracts progress concurrently while replay of the
+  same resource produces zero duplicate effects.
+- [ ] Prove queue depth increases workers and provider errors/throttling/deadline risk reduce them
+  without hardcoded marketplace-specific counts.
+- [ ] Prove paid deadline/revision and unread buyer receive priority without stopping unrelated
+  acquisition or fulfillment.
+- [ ] Expose per-lane last progress, queue depth, blocker and next action in the existing Telegram
+  funnel heartbeat.
+
+### Task 60: Close fourth-proposal readback and protected hourly work
+
+- [ ] After every proposal effect, refresh the official Proposals page and persist the post-effect
+  submitted count/entities; proposal 4 must change runtime state `3 → 4`.
+- [ ] Replay proposal `2091811328085401601`; require same ID and Connects `92 → 92`.
+- [ ] Remove Telegram transport from the acquisition critical path; a notification timeout leaves the
+  durable event pending but cannot stop search, proposal sealing or submission.
+- [ ] Promote the latest main release and prove one natural wake exits 0 without disk or reporter
+  timeout.
+- [ ] On an hourly offer, read exact rate, weekly limit, contract fee and verified billing before
+  accept/counter/decline.
+- [ ] Drive Upwork Desktop App Time Tracker around the exact project task, including meaningful memo,
+  related screenshots, adequate activity and limit enforcement; manual time is not protected.
+- [ ] Join diary segments, weekly invoice/review, availability, payout and occurrence-month
+  adjustments to the contract; only payout `received` enters verified cash.
+
+### Task 61: Freeze the OSS boundary without scaffolding a second framework
+
+- [ ] Move a primitive into `skills/_shared/marketplace-core` only after Upwork plus one second market
+  prove identical behavior; do not create empty interfaces for future markets.
+- [ ] Add one declarative market manifest per provider containing only official URLs, stable entity/
+  state names, currency/fee/payout mapping and supported effects; no judgment or credentials.
+- [ ] Run one provider conformance suite over redacted Upwork and second-market fixtures, including
+  success, skip, timeout, unknown effect, receipt, refund and chargeback paths.
+- [ ] Prove isolated install has zero credentials, identities, customer content, runtime ledgers and
+  original absolute paths; defaults perform zero external effects and zero spend.
+- [ ] Close OSS alpha only with Upwork real-receipt replay and close OSS stable only after a second
+  market reaches official `received` plus clean-device receipt.
+
+### Task 62: Close one real Upwork proposal-to-money path
+
+Only the first unchecked row is active; a missing buyer event blocks that resource, not sibling lanes.
+
+- [ ] Reconcile proposal 4 and replay the same payload; require proposal ID
+  `2091811328085401601`, official Submitted proposals 4 and Connects `92 → 92`.
+- [ ] Make Telegram delivery a durable independent queue effect; acquisition never waits for OpenClaw
+  send/ACK or fails because a notification times out.
+- [x] Code the separation: decision events launch the existing reporter asynchronously, while a new
+  verified application event is created only from official Proposal ID plus Connects before/after and
+  renders `[Upwork][応募完了]`. Production receipt remains.
+- [ ] Replace one-proposal-per-wake with job-scoped proposal workers plus an atomic shared Connects
+  reservation; prove two sibling jobs can progress and same-job replay effect 0.
+- [ ] On the first official buyer message, append its exact room/head before Luna, send one truthful
+  reply, read the official story ID and replay the same head with reply 0.
+- [ ] On the first offer, read exact scope, rate/bid, weekly limit/milestones, fee, billing and deadline;
+  persist Luna accept/counter/decline and require official offer/contract state plus replay 0.
+- [ ] Compile active contract into one private project, reserve measured capacity and select an
+  installed Skill without copying customer content to logs, fixtures or Telegram.
+- [ ] For hourly work, prove Desktop App tracker start/stop, related screenshots, meaningful memo,
+  adequate activity and weekly-limit compliance before counting protected time.
+- [ ] Produce immutable artifacts, run independent verifier PASS, and freeze the exact accepted
+  artifact hash before any delivery or client-visible work-complete message.
+- [ ] Deliver once according to contract type and require official submission/story/diary receipt;
+  exact replay produces delivery 0. Revisions require a new official buyer head.
+- [ ] Reconcile work diary/milestone, invoice, review, gross, actual fee, Connects/model/tool cost,
+  refund/dispute/chargeback, availability and payout; only payout `received` enters cash.
+- [ ] Request only an honest review, capture repeat-work identity, attribute the complete funnel and
+  emit one evidence-backed keep/revert/pause decision.
+
+### Task 63: Remove the harmful installed-Skill application gate everywhere
+
+- [x] Establish one shared Coconala-derived feasibility policy: apply to every legal job the general
+  agent can truthfully complete with model/tools; skip only actual policy, embodied, legal, identity,
+  scope, deadline or negative-economics impossibility.
+- [x] Remove `INSTALLED_SKILLS` and capability inventory from the Upwork application prompt. Missing
+  Skill, exact tool history, domain job, testimonial, portfolio or prior result has zero skip authority.
+- [x] Define Skills as optional caches for repeated profitable methods, never application or execution
+  prerequisites; the agent may perform work directly without creating a Skill.
+- [x] Run prompt regressions proving Coconala and Upwork both include the common policy and Upwork
+  contains none of `INSTALLED_SKILLS`, `installed Skills can complete`, or Skill-based skip language.
+- [x] Replay the previously skipped Mobile App and Website Developer evidence through the repaired
+  planner: the same job `~022091720689866384000` now returns `submit`, USD 35/hour and a phased
+  iOS/Android/Web plan with external effects 0 and no missing-Skill reason.
+- [x] Release the repaired prompt: production `71d41b8e35` returned 2 submit / 8 skip from ten current
+  candidates with zero missing-Skill reason. A delayed Skill-based Telegram message was traced to a
+  pre-repair event and remaining stale unknown reports were fenced from redrive without deleting history.
+- [x] Prove feasible high-value jobs are submit-by-default with a same-ten-candidate read-only replay:
+  8 submit / 2 skip; both skips require phone/live handling, while Skill/payment/history/duration/
+  Connects-only skips are 0. Production promotion remains.
+- [ ] Apply the same invariant to Fiverr, Lancers, CrowdWorks, Freelancer, Mercor, uGig and unknown
+  markets through provider conformance; no provider-specific capability matrix or brain is allowed.
+
+### Task 64: Retire provider-specific application form scripts
+
+- [x] Add one provider-neutral `market_form_operator.py` that passes provider, resource URL and sealed
+  intent to the existing Terra `browser-lane-agent`; it contains no site selectors or form policy.
+- [x] Bypass Upwork deterministic form filling in the acquisition path. Fence from the already-read
+  official Connects receipt, let Terra operate the whole form, then independently read Proposals and
+  Connects pages for Proposal ID and exact delta.
+- [x] Repair the first common-operator canary: require the authenticated persistent default context,
+  never isolated/incognito; add generic no-effect reconciliation from official resource absence plus
+  unchanged balance so the same fenced intent can safely retry.
+- [ ] Replace Upwork deterministic form filling/preflight selectors with one Terra common-Browser-ACI
+  task: inspect current form, fill the sealed intent, resolve ordinary validation feedback and submit.
+- [ ] Keep deterministic code only for immutable intent hash, resource lease, Connects reservation,
+  at-most-once effect fence and official Proposal ID/Connects readback.
+- [ ] Reduce `upwork_proposal_browser.py` to an optional token-saving fast path with zero judgment.
+  Any mismatch before effect must immediately hand the same sealed intent to Terra in the same wake;
+  it may never skip, abort acquisition or be the only route.
+- [ ] Prove the same Terra form task works on two differently shaped Upwork jobs without code changes;
+  each returns official Proposal ID, exact Connects delta and replay effect 0.
+- [ ] Use the same ACI task unchanged for the first Fiverr/Lancers/CrowdWorks/Freelancer/Mercor/uGig
+  canary; add no site-specific form script.
 
 ## Final verification
 

@@ -60,8 +60,8 @@ async def capture(*, cdp_url: str, evidence_dir: Path, output: Path) -> dict[str
         await _call(ws, counter, "Page.enable")
         await _call(ws, counter, "Page.navigate", {"url": "https://work.mercor.com/earnings"})
         for _ in range(80):
-            state = await _call(ws, counter, "Runtime.evaluate", {"expression": "document.readyState", "returnByValue": True})
-            if state.get("result", {}).get("value") == "complete":
+            state = await _call(ws, counter, "Runtime.evaluate", {"expression": "location.pathname === '/earnings' && document.readyState === 'complete'", "returnByValue": True})
+            if state.get("result", {}).get("value") is True:
                 break
             await asyncio.sleep(0.25)
         observed_at = datetime.now(timezone.utc).isoformat()

@@ -60,7 +60,7 @@ function candidateWindow(now) {
     timeZone: TIME_ZONE, year: "numeric", month: "2-digit", day: "2-digit",
   }).formatToParts(observed).filter((part) => part.type !== "literal")
     .map((part) => [part.type, Number(part.value)]));
-  const end = new Date(Date.UTC(parts.year, parts.month - 1, parts.day + 14));
+  const end = new Date(Date.UTC(parts.year, parts.month - 1, parts.day + 28));
   return Object.freeze({
     start: Date.parse(zonedSlotInstant(parts, "00:00", TIME_ZONE)),
     end: Date.parse(zonedSlotInstant({
@@ -77,11 +77,51 @@ function discoveryDates(now) {
   }).formatToParts(observed).filter((part) => part.type !== "literal")
     .map((part) => [part.type, Number(part.value)]));
   const dates = [];
-  for (let offset = 0; offset < 14; offset += 1) {
+  for (let offset = 0; offset < 28; offset += 1) {
     const date = new Date(Date.UTC(parts.year, parts.month - 1, parts.day + offset));
     dates.push(date.toISOString().slice(0, 10));
   }
   return Object.freeze(dates);
+}
+
+function createApiDiscovery({ now, apiClient }) {
+  if (!apiClient || typeof apiClient.searchTokyoInventory !== "function") invalid();
+  return async function discoverViaOfficialApi() {
+    const ymd = discoveryDates(now).map((date) => date.replaceAll("-", ""));
+    let events;
+    try { events = await apiClient.searchTokyoInventory({ ymd }); }
+    catch { throw stageError("CONNPASS_API_INVENTORY_FAILED"); }
+    if (!Array.isArray(events) || events.length > 10_000) throw stageError("CONNPASS_API_RESULT_CONTRACT_FAILED");
+    return Object.freeze(events.map((event) => {
+      const id = Number(event && event.id);
+      const accepted = Number(event && event.accepted);
+      const limit = event && event.limit == null ? null : Number(event.limit);
+      const capacityAvailable = limit == null || limit === 0 || (Number.isFinite(accepted) && accepted < limit);
+      const open = event && event.open_status === "open";
+      const participationSlotStatus = !open ? "closed" : capacityAvailable ? "available" : "waitlist";
+      return Object.freeze({
+        provider: "connpass",
+        event_ref: `connpass-event://event/${id}`,
+        canonical_url: String(event && event.url || ""),
+        title: String(event && event.title || "").trim(),
+        description: String(event && event.description || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim(),
+        starts_at: String(event && event.started_at || ""),
+        ends_at: String(event && event.ended_at || ""),
+        venue_name: String(event && event.place || "").trim(),
+        venue_address: String(event && event.address || "").trim(),
+        registration_status: open && capacityAvailable ? "available" : "closed",
+        participation_slot_status: participationSlotStatus,
+        lightning_talk_status: "unknown",
+        application_deadline_at: null,
+        ticket_price_status: "free",
+        ticket_price_minor: 0,
+        participant_limit: Number.isSafeInteger(limit) ? limit : null,
+        accepted_count: Number.isSafeInteger(accepted) ? accepted : null,
+        waiting_count: Number.isSafeInteger(Number(event && event.waiting)) ? Number(event.waiting) : null,
+        discovery_source: "official_api_v2",
+      });
+    }));
+  };
 }
 
 function eventIdOf(eventRef) {
@@ -99,7 +139,7 @@ function byStartsAtThenEventId(a, b) {
 }
 
 // A busy window's earliest date alone can hold more than the budget (measured
-// ~767 Tokyo events/14-day window), so taking the earliest N bindings only
+// hundreds of Tokyo events in one bounded inventory), so taking the earliest N bindings only
 // ever walks today/tomorrow and never learns whether later dates have any
 // free+open seats. Round-robin across calendar dates (ascending) instead:
 // one binding per date per round, so every date already-observed gets a
@@ -168,7 +208,7 @@ function createDefaultDiscovery({ now, readBindings, readDetail }) {
       }
       // Bound accumulation per month, spread across the month's calendar
       // dates, BEFORE it ever reaches the 500-binding hard guard below — a
-      // legitimate busy month (measured ~748 Tokyo events/14-day window)
+      // legitimate busy month with hundreds of Tokyo events
       // must never trip it, and a busy single date must never crowd out
       // every other date in the month's own budget share.
       monthBindings.sort(byCalendarDateThenEventId);
@@ -233,7 +273,9 @@ function createConnpassScriptFirstWorkflow(options = {}) {
   const now = options.now || (() => new Date());
   const readBindings = options.readCalendarBindings || readCalendarBindings;
   const readDetail = options.readEventDetail || readEventDetail;
-  const discoverOnPage = options.discoverOnPage || createDefaultDiscovery({ now, readBindings, readDetail });
+  const discoverOnPage = options.discoverOnPage || (options.connpassApiClient
+    ? createApiDiscovery({ now, apiClient: options.connpassApiClient })
+    : createDefaultDiscovery({ now, readBindings, readDetail }));
   const isCalendarFree = options.isCalendarFree || defaultCalendarFree;
   const submitOnPage = options.submitOnPage || submitConnpassOnPage;
   const readStateOnPage = options.readStateOnPage || readConnpassRegistrationStateOnPage;
@@ -249,6 +291,7 @@ function createConnpassScriptFirstWorkflow(options = {}) {
   // (undefined) is valid — the provider then fails closed on any required
   // name-shaped questionnaire field instead of guessing.
   const readAttendeeName = options.readAttendeeName;
+  const allowAutomatedSubmit = options.allowAutomatedSubmit !== false;
   if ([now, readBindings, readDetail, discoverOnPage, isCalendarFree, submitOnPage, readStateOnPage,
     onDiscoveryAudit, hasAppliedBundle]
     .some((value) => typeof value !== "function")
@@ -312,6 +355,9 @@ function createConnpassScriptFirstWorkflow(options = {}) {
     },
     async runDirectAction({ page, candidate }) {
       const selected = exactCandidate(candidate);
+      if (!allowAutomatedSubmit) {
+        return Object.freeze({ status: "failed", safe_reason: "connpass_action_permission_required" });
+      }
       const attendeeName = typeof readAttendeeName === "function" ? await readAttendeeName() : undefined;
       let outcome;
       try {

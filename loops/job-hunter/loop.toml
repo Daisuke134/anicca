@@ -5,7 +5,7 @@ state_dir = "~/.local/state/anicca/job-search"
 
 [jobs.acquisition]
 program          = "skills/job-hunter/job-hunter-cli.sh"
-interval_seconds = 3600
+interval_seconds = 1800
 label            = "ai.anicca.job-search-daily"
 
 [jobs.inbox]

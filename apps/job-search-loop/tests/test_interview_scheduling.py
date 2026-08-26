@@ -221,7 +221,7 @@ class InterviewSchedulingTests(unittest.TestCase):
 
     def test_confirmation_reply_contains_only_selected_explicit_time(self):
         slot = normalize_candidate_slots(self.raw_slots, now=self.now)[0]
-        reply = build_confirmation_reply(slot)
+        reply = build_confirmation_reply(slot, candidate_name="Portable Candidate")
         self.assertEqual(reply["action"], "auto_reply")
         self.assertIn("August 3", reply["body"])
         self.assertIn("10:00", reply["body"])
@@ -265,6 +265,7 @@ class InterviewSchedulingTests(unittest.TestCase):
                 thread_id="thread-1",
                 company="Example AI",
                 role="AI Product Manager",
+                candidate_name="Portable Candidate",
                 raw_slots=self.raw_slots,
                 now=self.now,
             )
@@ -305,6 +306,7 @@ class InterviewSchedulingTests(unittest.TestCase):
                 thread_id="thread-1",
                 company="Example AI",
                 role="AI Product Manager",
+                candidate_name="Portable Candidate",
                 raw_slots=self.raw_slots,
                 now=self.now,
             )
@@ -347,6 +349,7 @@ class InterviewSchedulingTests(unittest.TestCase):
                 thread_id="thread-1",
                 company="Example AI",
                 role="AI Product Manager",
+                candidate_name="Portable Candidate",
                 raw_slots=self.raw_slots,
                 now=self.now,
             )

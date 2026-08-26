@@ -13,6 +13,8 @@ const ARTIFACT_REF = /^object:\/\/sha256\/[0-9a-f]{64}$/;
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 const PLACEHOLDER = /\{\{|\}\}|<placeholder>|TODO|TBD/i;
 const CONFIRMATION_RECEIPT_REF = /^gmail-message:\/\/[a-z0-9._-]+\/[0-9a-f]{64}$/i;
+const PRIORITY_CLASSES = Object.freeze(["yc_hackathon", "open_talk", "ai", "crypto", "startup", "other"]);
+const TALK_STATES = Object.freeze(["not_open", "application_ready", "submitted", "provider_verified", "accepted", "rejected", "human_action_required"]);
 
 function text(value, label, max = 500) {
   const result = String(value == null ? "" : value).replace(/\s+/g, " ").trim();
@@ -96,6 +98,12 @@ function buildConnectorTicketCaption(input = {}) {
   const venue = text(input.venue, "venue", 500);
   const identity = text(input.registrationIdentity, "registration identity", 100);
   const reason = text(input.selectionReason, "selection reason", 500);
+  const priorityClass = text(input.priorityClass, "priority class", 40);
+  const talkState = text(input.talkState, "talk state", 40);
+  if (!PRIORITY_CLASSES.includes(priorityClass) || !TALK_STATES.includes(talkState)) {
+    throw new Error("Connector Telegram selection metadata invalid");
+  }
+  const deadlineMs = input.applicationDeadlineAt == null ? null : instant(input.applicationDeadlineAt, "application deadline");
   const startMs = instant(input.startsAt, "start");
   const endMs = instant(input.endsAt, "end");
   if (endMs <= startMs) throw new Error("Connector Telegram event time invalid");
@@ -117,6 +125,12 @@ function buildConnectorTicketCaption(input = {}) {
     "",
     "このイベントを選んだ理由:",
     reason,
+    `優先度: ${priorityClass}`,
+    `LT: ${talkState}`,
+    ...(deadlineMs == null ? [] : [(() => {
+      const deadline = parts(deadlineMs);
+      return `LT申請締切: ${deadline.year}年${Number(deadline.month)}月${Number(deadline.day)}日 ${deadline.hour}:${deadline.minute}`;
+    })()]),
     "",
     `✅ ${provider}の確認メールを受信済み`,
     "✅ Google Calendarへ登録済み",

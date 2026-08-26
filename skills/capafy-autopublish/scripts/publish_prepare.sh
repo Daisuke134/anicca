@@ -13,7 +13,7 @@
 #
 # Usage: publish_prepare.sh <skill-dir> <LISTING.md> <icon.png> [draft-agent-id]
 # Prints (machine-greppable):  AGENT_ID=<id>  EDIT_URL=<url>  then the target pricing.
-set -uo pipefail
+set -euo pipefail
 
 SKILL_DIR="${1:?skill-dir required}"
 LISTING="${2:?LISTING.md required}"
@@ -108,7 +108,10 @@ try: lst=json.loads(sys.stdin.read(),strict=False)['agents']['list']
 except Exception: sys.exit(0)
 if reuse:
   rows=[a for a in lst if str(a.get('agentId') or '')==reuse]
-  if len(rows)!=1 or rows[0].get('agentStatus')!='draft': sys.exit(2)
+  # A rejected version must be retried in place: publish-init creates its next
+  # version and writes a work-state bound to this same agent.  Do not fall back to
+  # creating an unrelated agent merely because the prior version was rejected.
+  if len(rows)!=1 or rows[0].get('agentStatus') not in {'draft','review_rejected'}: sys.exit(2)
   print(reuse); sys.exit(0)
 rank={'online':3,'approved':3,'under_review':2,'draft':1}; best=None
 for a in lst:
@@ -122,22 +125,33 @@ if [ -n "$REUSE_AGENT_ID" ] && [ "$ID" != "$REUSE_AGENT_ID" ]; then
 fi
 if [ -n "$ID" ]; then
   if [ -n "$REUSE_AGENT_ID" ]; then
-    echo "REUSE explicit draft agent_id=$ID — not creating a new draft"
+    echo "REUSE explicit retry agent_id=$ID — not creating a different agent"
   else
     echo "RESUME existing agent_id=$ID (title match) — not creating a new draft"
   fi
+  # The publisher resolves this once at Python process startup.  Bind before
+  # publish-init so this retry cannot reset or ship a previous agent's state.
+  # A scheduler/agent-runner may inherit this from an unrelated prior attempt.
+  # Never let that ambient value redirect a resume into another agent's manifest.
+  export CAPAFY_PUBLISH_WORK_DIR="$PUB/.temp/agents/$ID"
   # BUG FIX 2026-07-17: this branch used to skip publish-init entirely, leaving the
   # LOCAL publish work-state (.temp/publish-work-state.json) pointed at whatever
   # agent_id a PRIOR run last touched. publish-ship then failed closed with
   # "agent_id does not match local publish work-state" — but publish_finish.sh's ship
   # fallback (now also fixed) treated that failure as benign and resubmitted STALE
   # content unchanged. Rebind local state to THIS agent_id now. If the agent is
-  # currently under_review (not editable), this call fails — that's fine, it means
-  # there is no fixed content to ship yet; ship will correctly refuse later instead
-  # of silently no-op'ing.
-  python3 packager.py publish-init --env openclaw --runtime-dir "$WS" --skill-dir "$WS/skills/$SKILL_NAME" --agent-id "$ID" --selections-file "$SEL_FILE" >/dev/null 2>&1 \
-    && echo "local publish work-state rebound to agent_id=$ID" \
-    || echo "WARN: could not rebind local publish work-state to $ID (agent likely under_review, not editable) — publish_finish.sh ship step will fail closed rather than resubmit stale content"
+  # A previous agent's manifest is deliberately discarded here: publish-init is the
+  # boundary that creates this retry's new version and its matching local manifest.
+  # Never suppress an init failure.  Doing so used to let publish_finish reach ship
+  # with a different agent's work-state and fail only after CP1/CP2 work had run.
+  REBIND_OUT="$(python3 packager.py publish-init --reset-local-state --env openclaw --runtime-dir "$WS" --skill-dir "$WS/skills/$SKILL_NAME" --agent-id "$ID" --selections-file "$SEL_FILE" 2>&1)" \
+    || die "could not rebind local publish work-state to selected agent_id=$ID: $REBIND_OUT"
+  REBOUND_ID="$(printf '%s' "$REBIND_OUT" | python3 -c "import json,sys
+try: print(str(json.loads(sys.stdin.read(),strict=False).get('agent_id','')).strip())
+except Exception: print('')")"
+  [ "$REBOUND_ID" = "$ID" ] \
+    || die "publish-init rebound unexpected agent_id=$REBOUND_ID (selected $ID): $REBIND_OUT"
+  echo "local publish work-state rebound and verified for agent_id=$ID"
 else
   ID="$(python3 packager.py publish-init --env openclaw --runtime-dir "$WS" --skill-dir "$WS/skills/$SKILL_NAME" --selections-file "$SEL_FILE" 2>&1 | python3 -c "import json,sys
 try: print(json.loads(sys.stdin.read()).get('agent_id',''))

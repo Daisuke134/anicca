@@ -1454,6 +1454,23 @@ def _run_effect_pipeline(
             and next_action in (_TARGETED_SEND_ACTIONS | _TARGETED_ESTIMATE_ACTIONS)
         )
         no_send = next_action in _TARGETED_INTENTIONAL_NO_SEND
+        if no_send and not semantic_failure:
+            closed = _targeted_close_no_send(
+                database=database, manifest=manifest,
+                action_id=int(target["action_id"]), thread_id=thread_id,
+                inbox_event_key=str(target["inbox_event_key"]),
+                expected_revision=target_expected_revision,
+                reason=next_action or "intentional_no_send", run_id=run_id,
+            )
+            if closed is not None and int(closed.get("revision") or 0) == target_expected_revision:
+                return {
+                    "status": "completed", "thread_id": thread_id, "run_id": run_id,
+                    "replied": 0, "official_readback": 0, "duplicate_effect": 0,
+                    "closed_without_send": 1, "pending": 0, "events": [], "errors": [],
+                    "estimate_required": 0, "estimate_effect": 0,
+                    "estimate_readback": 0, "estimate_pending": 0,
+                    "estimate_failed": 0, "estimate_events": [],
+                }
         if estimate_required:
             normal_value = _targeted_presemantic_snapshot(snapshot, inquiry, semantic=False)
         else:
@@ -1489,23 +1506,6 @@ def _run_effect_pipeline(
     ])
     if target:
         items = queue_value.get("items") if isinstance(queue_value.get("items"), list) else []
-        if no_send and not semantic_failure:
-            closed = _targeted_close_no_send(
-                database=database, manifest=manifest,
-                action_id=int(target["action_id"]), thread_id=thread_id,
-                inbox_event_key=str(target["inbox_event_key"]),
-                expected_revision=target_expected_revision,
-                reason=next_action or "intentional_no_send", run_id=run_id,
-            )
-            if closed is not None and int(closed.get("revision") or 0) == target_expected_revision:
-                return {
-                    "status": "completed", "thread_id": thread_id, "run_id": run_id,
-                    "replied": 0, "official_readback": 0, "duplicate_effect": 0,
-                    "closed_without_send": 1, "pending": 0, "events": [], "errors": [],
-                    "estimate_required": 0, "estimate_effect": 0,
-                    "estimate_readback": 0, "estimate_pending": 0,
-                    "estimate_failed": 0, "estimate_events": [],
-                }
         bound = target if estimate_required else None
         if bound is None:
             for item in items:
@@ -2137,7 +2137,7 @@ async def supervise_replies(
                 )
             except Exception:
                 continue
-            if action.get("state") != "pending":
+            if action.get("state") != "pending" or action.get("dlq_at") is not None:
                 continue
             await enqueue_work({
                 "action_id": int(action["action_id"]),

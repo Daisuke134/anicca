@@ -1,7 +1,0 @@
-[Unit]
-Description=Anicca Mercor model-led pass
-
-[Service]
-Type=oneshot
-WorkingDirectory="__JOB_SEARCH_REPO_ROOT__"
-ExecStart="__JOB_SEARCH_PROGRAM__"

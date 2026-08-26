@@ -31,6 +31,10 @@ function dependencies(input) {
     "saveRepairedActions", "reportWake", "recordAction",
   ];
   for (const name of required) if (typeof input[name] !== "function") invalid();
+  if ((input.runTalkApplication == null) !== (input.completeTalkEvidence == null)
+    || (input.runTalkApplication != null && typeof input.runTalkApplication !== "function")
+    || (input.completeTalkEvidence != null && typeof input.completeTalkEvidence !== "function")) invalid();
+  if (input.reportConnpassActionBoundary != null && typeof input.reportConnpassActionBoundary !== "function") invalid();
   if (
     !input.browserRail || typeof input.browserRail !== "object"
     || typeof input.browserRail.open !== "function"
@@ -163,6 +167,7 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
   let owned = null;
   let consecutiveFailures = 0;
   let providerDiscoveryFailed = false;
+  let connpassBoundaryFailed = false;
   let discoveryFailureReason = "provider_discovery_failed";
   let lastSafeReason = "provider_discovery_failed";
   let reusedBundleObserved = false;
@@ -248,6 +253,15 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
           error.code = "PROVIDER_CANDIDATE_CONTRACT_FAILED";
           throw error;
         }
+        if (provider === "connpass" && candidates.length > 0 && typeof deps.reportConnpassActionBoundary === "function") {
+          try {
+            await action("submit", "connpass_action_boundary", () => deps.reportConnpassActionBoundary({ candidates }));
+          } catch {
+            connpassBoundaryFailed = true;
+            lastSafeReason = "connpass_action_boundary_failed";
+            continue;
+          }
+        }
         if (deadlineReached()) return finish("circuit_open", "wake_deadline");
       } catch (error) {
         if (deadlineReached()) return finish("circuit_open", "wake_deadline");
@@ -261,13 +275,18 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
         continue;
       }
       for (const selected of candidates) {
+        if (selected.auto_apply_eligible === false) continue;
+        const hasTalk = typeof deps.runTalkApplication === "function"
+          && selected.talk_opportunity && selected.talk_opportunity.should_create_talk_application === true
+          && selected.talk_pack && typeof selected.talk_pack === "object";
         if (deadlineReached()) return finish("circuit_open", "wake_deadline");
         let navigationTaskThrew = false;
         let navigationTaskError;
         try {
           await action("navigate", "browser_rail", async () => {
             try {
-              return await deps.browserRail.navigate(owned, selected.canonical_url);
+              return await deps.browserRail.navigate(owned, hasTalk
+                ? selected.talk_opportunity.application_url : selected.canonical_url);
             } catch (error) {
               navigationTaskThrew = true;
               navigationTaskError = error;
@@ -283,6 +302,35 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
           continue;
         }
         if (deadlineReached()) return finish("circuit_open", "wake_deadline");
+
+        if (hasTalk) {
+          let talkResult;
+          try {
+            talkResult = await action("submit", "talk_application", () => deps.runTalkApplication({
+              provider, candidate: selected, page: owned.page,
+            }));
+          } catch {
+            talkResult = Object.freeze({ status: "failed", safe_reason: "talk_application_failed" });
+          }
+          if (talkResult && talkResult.status === "submitted") return finish("circuit_open", "effect_unknown");
+          if (talkResult && talkResult.status === "provider_verified") {
+            let talkBundle;
+            try {
+              talkBundle = await action("submit", "talk_evidence", () => deps.completeTalkEvidence({
+                provider, candidate: selected, page: owned.page, providerState: talkResult,
+              }));
+            } catch { return finish("circuit_open", "evidence_completion_failed"); }
+            if (!talkBundle || talkBundle.status !== "applied_bundle" || !String(talkBundle.bundle_id || "")
+              || !["created", "reused"].includes(talkBundle.completion_disposition)) {
+              return finish("circuit_open", "evidence_result_invalid");
+            }
+            if (talkBundle.completion_disposition === "created") {
+              return finish("applied_bundle", "applied_bundle", talkBundle);
+            }
+          }
+          await action("navigate", "browser_rail", () => deps.browserRail.navigate(owned, selected.canonical_url));
+          if (deadlineReached()) return finish("circuit_open", "wake_deadline");
+        }
 
         let operation;
         let providerState = await action("readback", "provider_state", () => deps.readProviderState({
@@ -440,7 +488,8 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
       }
     }
     return finish("completed_no_effect", providerDiscoveryFailed
-      ? discoveryFailureReason : reusedBundleObserved ? "existing_bundles_reused" : "providers_exhausted");
+      ? discoveryFailureReason : connpassBoundaryFailed ? "connpass_action_boundary_failed"
+        : reusedBundleObserved ? "existing_bundles_reused" : "providers_exhausted");
   } catch (error) {
     if (deadlineReached()) return finish("circuit_open", "wake_deadline");
     throw error;

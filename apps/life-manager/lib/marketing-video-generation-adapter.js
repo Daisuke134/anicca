@@ -34,6 +34,7 @@ const HOOK_KEYS = new Set([
   "status",
   "prior_used_at",
 ]);
+const BOUND_HOOK_KEYS = new Set([...HOOK_KEYS, "media_ref"]);
 const RECEIPT_KEYS = new Set([
   "schema_version",
   "kind",
@@ -219,7 +220,7 @@ function normalizeMarketingVideoPack(value, expected) {
     throw new Error("marketing video pack hooks are invalid");
   }
   const hooks = value.hooks.map((hook) => {
-    if (!exactKeys(hook, HOOK_KEYS)) {
+    if (!exactKeys(hook, hook.media_ref === undefined ? HOOK_KEYS : BOUND_HOOK_KEYS)) {
       throw new Error("marketing video pack hook is invalid");
     }
     const prior = hook.prior_used_at == null
@@ -233,6 +234,7 @@ function normalizeMarketingVideoPack(value, expected) {
       text: boundedText(hook.text, "marketing video hook text", 500),
       status: hook.status,
       prior_used_at: prior,
+      ...(hook.media_ref === undefined ? {} : { media_ref: objectRef(hook.media_ref, "marketing video hook media") }),
     };
   });
   if (new Set(hooks.map(({ id }) => id)).size !== hooks.length) {
@@ -393,6 +395,9 @@ function createMarketingVideoGenerationLoopAdapter(deps = {}) {
         locale: contract.locale,
       });
       const hook = selectHook(pack, history);
+      if (hook.media_ref && !contract.mediaRefs.includes(hook.media_ref)) {
+        throw new Error("marketing video hook media is not approved");
+      }
       const mediaIndex = Number.parseInt(
         crypto.createHash("sha256")
           .update(`${contract.slot}:${contract.packRef}`)
@@ -400,7 +405,7 @@ function createMarketingVideoGenerationLoopAdapter(deps = {}) {
           .slice(0, 12),
         16,
       ) % contract.mediaRefs.length;
-      const videoRef = contract.mediaRefs[mediaIndex];
+      const videoRef = hook.media_ref || contract.mediaRefs[mediaIndex];
       const videoSha256 = OBJECT_REF.exec(videoRef)[1];
       const workspace = path.join(
         dataDir,

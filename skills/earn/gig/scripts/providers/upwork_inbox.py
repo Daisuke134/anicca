@@ -20,6 +20,15 @@ def _norm(text: Any) -> str:
     return re.sub(r"\s+", " ", str(text or "")).strip()
 
 
+def _head_sha(kind: str, text: str) -> str:
+    identity_text = text
+    if kind == "message_room":
+        identity_text = _norm(re.sub(
+            r"\b\d{1,2}:\d{2}\s+[AP]M\s+local time\b", "", text, flags=re.IGNORECASE,
+        ))
+    return hashlib.sha256(identity_text.encode()).hexdigest()
+
+
 def _money_minor(value: str) -> int:
     return int(round(float(value.replace(",", "")) * 100))
 
@@ -85,7 +94,7 @@ def normalize_observation(
             related["proposal_ids"].add(proposal.group(1))
         if contract:
             related["contract_ids"].add(contract.group(1))
-    head_sha = hashlib.sha256(text.encode()).hexdigest()
+    head_sha = _head_sha(kind, text)
     return {
         "version": 1, "provider": "upwork", "kind": kind,
         "resource_id": resource_id, "resource_url": resource_url,
@@ -120,6 +129,15 @@ def append_changed_heads(path: Path, observations: list[dict[str, Any]]) -> dict
             rows.append(row)
         seen = {str(row["event_id"]) for row in rows}
         event_revisions = {str(row["event_id"]): int(row.get("revision", 0)) for row in rows}
+        for row in rows:
+            if row.get("kind") != "message_room" or not row.get("rendered_text"):
+                continue
+            canonical_event_id = hashlib.sha256(
+                f"upwork:inbox:v1:message_room:{row.get('resource_id')}:"
+                f"{_head_sha('message_room', _norm(row['rendered_text']))}".encode()
+            ).hexdigest()
+            seen.add(canonical_event_id)
+            event_revisions[canonical_event_id] = int(row.get("revision", 0))
         revisions: dict[tuple[str, str], int] = {}
         for row in rows:
             key = (str(row.get("kind")), str(row.get("resource_id")))

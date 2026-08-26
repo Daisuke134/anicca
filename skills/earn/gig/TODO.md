@@ -6,9 +6,809 @@ evidence does not belong on this list.
 The four lanes run from `~/gig/releases/life-manager/<sha>/`, cut from `main` by
 `gig_release.py`. See `README.md` for how the whole thing is installed.
 
+Current lane names are **Apply, Reply, Storefront, Paid**. `Reply` owns buyer-message
+observation, replies, and estimates; do not present it as a separate Negotiate lane.
+
+The Manledge delivery is no longer the active program cursor. The active product objective is a
+public, website-neutral, no-human revenue agent whose four installed owners run continuously:
+Apply acquires suitable work, Reply handles every buyer event and estimate, Storefront improves
+offers from measured conversion, and Paid completes accepted work through official terminal
+readback and replay-zero. A marketplace-specific customer case is evidence for this kernel, not a
+separate architecture or the definition of completion.
+
+## Active atomic cursor — execute exactly top to bottom
+
+This is the only executable cursor. One checkbox is one bounded change or one bounded
+readback; a phase name is never a checkbox. Do not start a later item until every earlier item
+is checked. Check an item only with the evidence named after `PASS =`. Chat, process liveness,
+model narration, and local success without the named readback are not PASS.
+
+### Manledge closure — account-owner priority override
+
+- [x] `M01` Refresh Coconala talkroom `18169985` and bind the buyer's latest request for
+  recipient-identifiable evidence.
+  PASS = official buyer message identity and exact text are present in the project context.
+  Official selected-talkroom readback observed message `js-talkroomMessage-220315622`, buyer
+  feedback SHA256 `d858e5e933fec231d23d7d2b53ffe8d116dd6ab3a751cee435a8a37cf75281a0`.
+- [x] `M02` Verify the 100 screenshot filenames against the 100-row roster.
+  PASS = `FINAL-NNN-handle.png` maps one-to-one to row `FINAL-NNN`, with 100 unique handles,
+  zero missing files, zero extra files, and zero hash mismatches.
+  Measured 100 rows, 100 files, 100 unique handles, zero missing, and zero extra. The resulting
+  private buyer map is `delivery/manledge-recipient-screenshot-map-100.csv`, SHA256
+  `212f5542fd0801ad10bd8e01c885a2c1407868e090da0ed0b4ffa176c9b01061`.
+- [x] `M03` Resolve the official X profile display for all 54 successful-DM screenshots previously headed
+  `Member`, then capture each resolved profile together with its existing DM thread without
+  sending a new message.
+  PASS = 54 unique recipient handles have a current official profile readback and a buyer-visible
+  screenshot pairing that profile identity with the matching existing thread; failed sends remain
+  classified as failed and are never counted as successful DMs.
+  Closed with 54/54 official X `new-dm-user-suggestion-<account_id>` to existing conversation
+  participant-ID matches in `x-chat-account-mapping-v39.json`; the correction sent zero new X DMs.
+- [x] `M04` Submit the 54 corrected identity screenshots and updated cross-reference through the
+  installed Paid owner, then read the exact Coconala talkroom back once.
+  PASS = the exact seller message and corrected archive filename are present in official Coconala
+  DOM, the archive contains all 54 identity-resolved successful-DM pairs, no X message was newly sent, no prior
+  archive was resent, and formal delivery remains off.
+  Closed by the normal Coconala reply at 19:32 with `manledge-dm-cross-reference-v39.zip`
+  (SHA256 `86ef9d22b351d1008d3848d23c84737e6b380c6062e586644e1a27f13d63407b`).
+  Official talkroom readback shows the exact message and 32.5 MB attachment; the formal-delivery
+  checkbox remained off. Screenshot receipt: `evidence/coconala-manledge-v39-readback.png`.
+
+### Live four-lane repair
+
+- [x] `R00a` Reproduce the Reply and Paid retention faults from current production state.
+  PASS = a repeated official-head probe dispatches the same DLQ action, and a failed Paid owner
+  without a resumable tool marker leaves its workspace behind. Production Reply produced 409
+  result files in ten minutes, dominated by `already_closed`; the focused regressions failed first.
+- [x] `R00b` Bound Paid context-read history and failed workspace retention at their shared owners.
+  PASS = each compile records one aggregate per resource key with source count and digest, exact
+  live-talkroom proof remains present, and failed workspaces survive only with a valid tool-resume
+  marker. The focused Paid/context suites pass 41 tests.
+- [x] `R00c` Stop Reply from dispatching an action whose durable `dlq_at` is non-null.
+  PASS = three repeated probes dispatch zero workers for the DLQ row while an ordinary pending row
+  still dispatches once. The full Reply concurrency suite passes 54 tests.
+- [x] `R00d` Use Reply as the current lane name in onboarding and operator-facing lane inventories.
+  PASS = README, earning-loop inventory, SLOT inventory and this executable cursor say Reply;
+  historical evidence remains historical and the installed compatibility label stays unchanged.
+- [x] `R00e` Publish the repair and prove it through the installed owners.
+  PASS = a new immutable main release is current; three Reply probes produce no repeated DLQ worker
+  results; a natural Paid compile appends a bounded aggregate receipt; free bytes remain above the
+  configured floor; Apply, Reply, Storefront and Paid remain loaded under their own owners.
+  Closed on main ancestor `10ae7f97a` and current release `2b044e0c4`: four consecutive Reply probes
+  produced zero targeted workers and zero `already_closed` results (before: 409 results in ten
+  minutes). Natural Paid receipts aggregate 8–64 sources into 2–3 resource rows and occupy
+  954–1,090 bytes each while retaining exact live-talkroom SHA. A failed Paid wake left no new
+  runtime workspace. Three pre-fix orphan workspaces with no open files and no resume markers
+  reclaimed 262 MiB while the current active workspace was preserved; free space remained above
+  5 GiB, above the 512 MiB floor. All four owner
+  labels remain loaded; interval owners may truthfully be not-running between wakes.
+- [x] `R00f` Remove the completed Manledge-only X DM campaign from scheduled execution.
+  PASS = `ai.anicca.manledge-x-dm-campaign` is absent from launchd and LaunchAgents, while its logs
+  and delivery evidence remain intact. The obsolete 1,200-second owner had run 40 times and last
+  exited 1 after the customer case was already closed; its plist is recoverably retained in Trash.
+- [ ] `R01` Read back production `current` and prove commit `8eb732958` is an ancestor.
+  PASS = immutable release SHA plus successful `merge-base --is-ancestor`.
+- [ ] `R02` Start one stopped disposable registered browser through `with-browser.sh`.
+  PASS = guard reports the same identity reachable and the wrapped command receives its CDP URL.
+- [ ] `R03` Run the focused browser startup regression.
+  PASS = all tests in `skills/browser/tests/test_cdp_persistent_context.py` pass.
+- [ ] `R04` Kickstart the installed Paid owner once after `R01`–`R03`.
+  PASS = launchd run count increases once and the owner pins the new immutable release.
+- [ ] `R05` Read back project `18128025`'s unpublished BUYMA draft.
+  PASS = official account, draft identity, saved fields, and current reload receipt agree.
+- [ ] `R06` Measure Paid capacity for that run.
+  PASS = before/after free bytes and Paid evidence-byte delta are recorded in one receipt.
+- [ ] `R07` Verify runner retention after the Paid run.
+  PASS = every `evidence/agent-*/history/` contains at most three generations.
+- [ ] `R08` Verify host cleanup recurrence.
+  PASS = cleanup launchd run count advances and last exit is zero without protected deletion.
+- [ ] `R09` Observe three consecutive Reply probes.
+  PASS = three official inbox snapshots have increasing capture times no more than 30 seconds apart.
+- [ ] `R10` Read back the Reply durable queue.
+  PASS = every live pending buyer event has either an active owner or a terminal receipt.
+- [ ] `R11` Read back the latest Apply cycle.
+  PASS = official opportunity/application receipt is fresh, or a bounded official no-action receipt exists.
+- [ ] `R12` Read back the latest Storefront cycle.
+  PASS = official listing receipt is fresh, or a bounded official no-change receipt exists.
+- [ ] `R13` Read back the latest Paid cycle.
+  PASS = every observed project is terminal, externally waiting with a durable owner, or failed with one exact retry owner.
+- [ ] `R14` Replay the completed Paid effects once.
+  PASS = effect count zero and duplicate-effect count zero with official readback unchanged.
+- [ ] `R15` Write one four-lane runtime manifest.
+  PASS = it binds each lane label, immutable release SHA, latest receipt, recurrence, and owner state.
+
+### Shared job kernel
+
+- [ ] `K01` Define one website-neutral `JobContract` JSON Schema.
+  PASS = one Coconala fixture validates and one malformed fixture is rejected.
+- [ ] `K02` Define the six owner lifecycle states in one schema.
+  PASS = only `ACTIVE`, `WAITING_EXTERNAL`, `AWAITING_BUYER`, `TERMINAL_PENDING_REPLAY`,
+  `CLOSED_COMPLETED`, and `CLOSED_CANCELLED` validate.
+- [ ] `K03` Define the allowed lifecycle transitions in one transition table.
+  PASS = every allowed edge passes and every other edge fails.
+- [ ] `K04` Define one durable effect-checkpoint schema.
+  PASS = website, account, entity, effect key, payload hash, owner, run, and official readback are required.
+- [ ] `K05` Fence identical effect keys.
+  PASS = a same-key concurrent regression produces exactly one effect.
+- [ ] `K06` Preserve different-key parallelism.
+  PASS = a different-key regression starts both owners without a shared global lock.
+- [ ] `K07` Resume one owner after process exit.
+  PASS = retained checkpoints resume the next unfinished effect and repeat no completed effect.
+- [ ] `K08` Reject a stale invocation.
+  PASS = an old owner revision cannot mutate current state or perform an external effect.
+- [ ] `K09` Retain closed tombstones.
+  PASS = restart and replay of a closed job are effect-zero.
+
+### Thin adapter boundary
+
+- [ ] `A01` Define one adapter protocol for auth, discover, observe, apply, reply, deliver, and readback.
+  PASS = protocol contains no customer, category, or marketplace-specific judgment.
+- [ ] `A02` Move Coconala observation behind that protocol.
+  PASS = the existing read-only live probe passes only through the adapter.
+- [ ] `A03` Move Coconala Apply behind that protocol.
+  PASS = one fenced application fixture produces an exact application readback.
+- [ ] `A04` Move Coconala Reply behind that protocol.
+  PASS = one fenced reply fixture produces an exact message readback and replay-zero.
+- [ ] `A05` Move Coconala Paid delivery behind that protocol.
+  PASS = one fenced delivery fixture produces exact artifact/message readback and replay-zero.
+- [ ] `A06` Add adapter auth-expiry conformance.
+  PASS = expired auth performs zero external effect and returns one typed recovery state.
+- [ ] `A07` Add adapter pagination conformance.
+  PASS = all fixture pages are covered once with no skipped or duplicated entity.
+- [ ] `A08` Add adapter attachment conformance.
+  PASS = download and upload hashes bind to the same job and cross-job reuse is rejected.
+- [ ] `A09` Add adapter terminal-state conformance.
+  PASS = completion and cancellation each require official terminal readback before closure.
+
+### Public OSS proof
+
+- [ ] `O01` Run a repository secret and customer-data scan.
+  PASS = tracked public files contain no credential value, private context, customer artifact, or raw receipt.
+- [ ] `O02` Fix one public bootstrap command.
+  PASS = the documented command pins a release and requires no repository-local secret.
+- [ ] `O03` Install from that command in a clean temporary home.
+  PASS = four owner labels and their immutable arguments are present after installation.
+- [ ] `O04` Restart the clean installation once.
+  PASS = all four owners recover without manual state repair or duplicate external effect.
+- [ ] `O05` Complete one real Coconala job through the shared kernel.
+  PASS = discovery through official terminal readback and replay-zero are bound in one receipt chain.
+- [ ] `O06` Add a second website using only its adapter and configuration.
+  PASS = no kernel, lifecycle, planner, checkpoint, or receipt code is forked.
+- [ ] `O07` Complete one real job on that second website.
+  PASS = discovery through official terminal readback and replay-zero are bound in one receipt chain.
+- [ ] `O08` Publish the OSS release.
+  PASS = public tag, bootstrap, architecture, safety boundaries, conformance results, and clean-install proof are readable without private files.
+
+### E2E judgment
+
+| Item | Value |
+|------|-------|
+| UI change | No |
+| Maestro | Not required; this scope is launchd, browser adapter, durable state, and official provider readback |
+| Required E2E | Clean-install four-owner recovery plus two real website terminal receipt chains |
+
+The shared model runner now retains only the newest three rotated generations inside each
+project-owned `evidence/agent-*/history/` directory. Production cleanup removed 1,115 old
+runner generations (356,708,106 bytes) without touching current results, customer artifacts,
+delivery/source, state, JSONL ledgers, or Codex/Claude sessions. The host-wide fail-closed
+`ai.anicca.life-manager-disk-cleanup` owner is enabled again at its 300-second interval; its
+48 protection tests pass. A closed Sparkle installation cache, not a Paid video build, held
+about 2 GiB and was removed after an open-file readback returned empty. Paid replay then kept
+all 43 observed agent histories at three generations or fewer while free space recovered to
+2.8 GiB.
+
+## Historical Coconala case cursor — evidence only
+
+This section preserves customer-case evidence and liabilities. Its unchecked items feed the
+active atomic cursor only when the shared owner naturally observes them; they do not override or
+reorder `R01`–`O08`. The target remains verified monthly net cash of at least USD 10,000. Only
+official contract, fee, payout, and bank receipts advance it.
+
+### Stage 1 — unblock Paid, then start every current owner
+
+1. [x] Remove Paid's remaining `max_workers=1` and global CDP-lock path. Dispatch one isolated
+   owner per paid marketplace entity with distinct tab/target, client identity, URL, state, and
+   evidence root. Different clients prepare, build, review, send, and read back concurrently;
+   only the same entity/effect key is compare-and-swap fenced. Current-main descendants pass the
+   full Paid regression 37/37. A stable production parent and all six project children used the
+   same immutable release `a81ec3b630f6d33b3f0ed39706c338169fbe2dc3`; Manledge sent and exactly
+   read back one Coconala acknowledgement with `effect=1/readback=1/failed=0`, while every other
+   room retained its own project root, target, artifact and receipt. The preceding parallel wake's
+   BUYMA Gmail effect and official acknowledgement remained in its separate project ledger; no
+   context, attachment, target, receipt, or effect-key crossover was observed.
+2. [x] Before dispatch, refresh every current room and compile all relevant DM, talkroom,
+   attachments, listing, latest buyer message identity, and effect history into that project's
+   private context. Share skills, account references, sessions, and tools only; never customer
+   context, artifact, history, or state. Resolve secrets only inside the selected adapter.
+
+### Stage 2 — close the current Paid liabilities concurrently
+
+3. [ ] byusco `18171890`: invalidate the stale note-only decision, consume the latest request,
+   publish the reviewed article to the agreed anicca AI blog through the installed owner, read
+   back the public URL, report and formally deliver it, obtain buyer completion, and replay with
+   zero effects. The earlier note handoff is not completion. The preserved v8 article contract is
+   SHA256 `1b0e4818894b4c223421a2142f723d35b4f7751bddd054d2bf0632b33ddab37d`
+   with three immutable screenshot assets. Use the account-owned site's existing
+   `skills/affiliate/scripts/owned_publish.py` from one clean isolated site worktree: commit only
+   the three image paths, then let that adapter stage/commit/push the article JSON and obtain
+   `https://aniccaai.com/blog/casican-review` readback. Do not clone Life Manager, install web
+   dependencies, run a site build, or create another publisher.
+   Production owner has now published the three immutable images and article to
+   `https://aniccaai.com/blog/casican-review`: image commit `1e3c638e21828f74b949fd3433faed38d36e0ad8`,
+   article commit `a98e7b32e2a65967023018b1e1c8d301b6cbe90a`, HTTP 200, exact structural
+   body/title/tracking-link/image readback, rendered SHA256
+   `073bdaa6796d9f3e886436937442f5cdbdf6b3dd3cda80a9e8d639540c30776d`.
+   The installed Paid owner then sent the concise anicca AI URL handoff in the exact Coconala
+   room with `effect=1/readback=1/failed=0`, message SHA256
+   `1e785b86e51d8969762d63dfd87bbbf77fad429e6cd3cd7a141c26080b62439d`, and formal
+   delivery off. Remaining closure is the buyer's response, formal delivery, transaction
+   completion, and replay-zero; do not republish or resend the handoff while waiting.
+4. [ ] LBJ `18130722`: use only the latest explicit buyer approval and latest v98 project-manager
+   package. Codex may inspect v98 and repair the generic approval/reviewer code, but must not send
+   customer work. A seller acknowledgement must not erase buyer approval. The installed Paid
+   owner fresh-reviews v98, formally submits it, reads it back, closes, and proves replay-zero.
+   Production release `f315f0b6a9e4b429910d5153c72e34d696ae83a5` generated a fresh v16
+   decision with `mode=file`, `delivery_stage=formal`, latest seller identity
+   `js-talkroomMessage-220162081`, and the preceding explicit buyer approval identity
+   `js-talkroomMessage-220162036`. It performed no effect because this legacy project lacked its
+   project-owned `delivery/` workspace. Main and current release
+   `608b4b348243cdb62ceead9e54b2126fb629b724` now initialize that workspace idempotently before
+   every file prepare; the complete Paid regression passes 39/39. The next installed-owner wake
+   must resume the existing approved package, formally deliver it once, obtain official readback,
+   and replay with zero duplicate effect.
+   The account owner then clarified the required order: the buyer's latest Project Manager share
+   request occurred after the earlier URL message, so the package had to be shared again before a
+   new approval. The installed owner re-shared the still-live GigaFile URL as a normal message with
+   no attachment and the formal checkbox off, naming `LBJ_Proposal12_v98.prproj` and the included
+   confirmation MP4. Production result: `effect=1/readback=1/failed=0`; the official Coconala DOM
+   contains the re-share message. Current action is now only to await a genuinely newer buyer reply.
+   Do not perform another formal delivery unless that newer buyer reply explicitly approves the
+   re-shared package; the earlier premature formal event remains historical evidence and must not be
+   repeated or represented as this new approval. No newer buyer reply is currently present.
+5. [ ] `18183618`: continue the JAIC path without impersonation; use a truthful disclosed-agent
+   equivalent, negotiate supported scope, or complete official cancellation when the exact
+   provider requirement cannot be performed autonomously. Otherwise obtain completion evidence,
+   the four-part report, fresh review, formal delivery, buyer completion, and replay-zero.
+   Current durable v4 is buyer-visible and the latest buyer message is an acknowledgement; do not
+   send another progress message while awaiting the buyer's substantive feedback.
+6. [ ] `18184558`: make no guessed seller-side delivery/cancellation action. Observe official
+   Coconala cancellation, enter terminal pending replay, prove all effects zero, and close as
+   cancelled. The latest buyer message says they contacted Coconala support and asks us to wait for
+   cancellation completion; remain observe-only.
+7. [ ] `18180857`: use the buyer-authorized TikTok account and stored credential. The historical
+   code is no longer reusable. At the first official observation outside Chii's unavailable
+   19:00–22:00 JST window, ask once only whether TikTok authentication can be handled now; do not
+   ask for a code in that message. After a newer availability confirmation, start login immediately
+   and request a six-digit code only if official TikTok issues a new OTP in that same continuation;
+   enter it immediately and never ask again pre-emptively. Then perform the exact campaign scope,
+   checkpoint every verified DM/sheet effect, verify the live result, deliver, obtain buyer
+   completion, and prove replay-zero.
+   At the account owner's direction, one stored-credential login submit was performed at
+   `2026-08-24T12:24:33Z`. The official TikTok DOM remained on the email/password route and read
+   `試行回数が上限に達しました。後ほどお試しください。`; authentication and OTP challenge were
+   both false. Durable evidence is
+   `evidence/tiktok-login-preflight-20260824T122433Z.json`. Do not submit login again or contact the
+   buyer while that provider state remains. The next TikTok action is read-only provider-state
+   observation; only after the limit clears may the owner make one new login attempt and follow the
+   OTP continuation above. The installed owner subsequently asked for a safe authentication window
+   and obtained exact buyer readback `22時にお願いいたします🙇‍♀️`. At 22:00 JST, make exactly one
+   stored-credential login submit. If TikTok still shows the attempt limit, stop without another
+   buyer message. If it issues a fresh OTP, ask for that code and enter it immediately in the same
+   continuation.
+   The account owner has now transferred Chii to a separate agent. The installed Paid owner is
+   observe-only for this exact cycle and must produce zero login/OTP/message/DM/sheet/delivery/
+   cancellation effects. Preserve existing context/evidence and resume only after a genuinely newer
+   official buyer/provider event or a verified handback receipt; do not duplicate the other agent.
+8. [ ] `18169985`: the buyer has now explicitly approved the unchanged @diceai0 account, the
+   shown DM format with a recipient-specific introduction, a total of 100 DMs, and formal
+   delivery with evidence. The buyer then replaced the common body with an explicitly estimated
+   monthly compensation-uplift version. Have the installed owner acknowledge that change once
+   without asking for approval again. Send unique DMs whose opening is personalized from fresh recipient evidence and whose
+   common body exactly preserves the buyer's non-guaranteed estimate plus clickable LOXAD LINE
+   URL. The buyer's explicit `csvは問題ありません` makes the approved 100-row CSV the candidate-
+   selection authority; do not require every eligibility attribute to be independently visible on X.
+   Freshly verify handle/DM reachability/opt-out state and source only the personalized public claim.
+   The historical @5555daisuke5555 qualification sample used superseded copy, does not count toward
+   the revised-copy total, and must not be resent. Send the revised copy to 100 other unique approved
+   CSV candidates. After each effect retain official X Chat readback and a privacy-minimized screenshot.
+   Fresh-review one ZIP containing the 100-row ledger, 100 bound screenshots and hash manifest;
+   formally deliver it, obtain buyer completion, and replay every effect class at zero.
+   Superseding platform constraint: X's official Platform Manipulation and Spam Policy prohibits
+   bulk/high-volume unsolicited direct messages. Production correctly verified @diceai0 and
+   produced zero new outreach effects. The account owner now sets a maximum of one confirmed DM per
+   rolling hour, but pacing is not a policy bypass: send only when a current official candidate
+   profile/post explicitly invites relevant work/business/recruitment DMs. Check the approved CSV in
+   order, bind the opt-in URL and personalized claim, send/read back/checkpoint at most one, then set
+   `retry_not_before` one hour after that receipt. If no candidate has explicit opt-in, stop with a
+   machine-readable exhaustion receipt and zero effect; do not send a scope-change message yet.
+
+### Stage 3 — generalize the measured Paid owner into a job-doing agent
+
+9. [ ] Make Paid's project owner the website-neutral execution kernel. Give every discovered paid
+   job one stable global owner ID plus website/account/job identities and lifecycle:
+   `ACTIVE`, `WAITING_EXTERNAL`, `AWAITING_BUYER`, `TERMINAL_PENDING_REPLAY`,
+   `CLOSED_COMPLETED`, or `CLOSED_CANCELLED`. Worker processes are bounded; owner state survives
+   waits, failures, revisions, restarts, model failover, marketplace migration, and adapter updates.
+   The same owner contract must run Coconala, Upwork and a previously unseen website without
+   forking its context compiler, planner, skill composition, producer, reviewer, ledger, or lifecycle.
+10. [ ] Keep every verified effect as a checkpoint so a resumed owner never repeats successful
+    work. Close only after official acceptance/transaction completion or cancellation plus an
+    observe-only replay with every effect zero. Release capacity but retain immutable context,
+    artifact, state, receipt, and effect-key tombstones.
+11. [ ] Let the model judge the complete job and choose skills/accounts/sessions/tools. Normalize
+    every site into one `JobContract`: authoritative brief/conversation/attachments, required
+    outcome, deadline, money/fees, permissions, delivery/acceptance rules and official identities.
+    Prefer demonstrated software, landing-page, writing, research, and strategy capability. Do not use
+    buyer-name, category, or keyword routing. Deterministic code owns only identity, arithmetic,
+    checkpoints, fencing, receipts, and exact readback. A model may compose or improve skills, but
+    it may not invent a platform effect or bypass a missing official adapter capability.
+12. [ ] Require a fresh isolated reviewer to compare exact current requirements with the exact
+    artifact/message. Return every actionable finding to the same owner; never submit a known
+    low-quality proxy. Only the installed project owner may send once and read back the result.
+13. [ ] Reduce each website integration to the smallest mechanical adapter: authenticate/recover,
+    discover jobs and events, observe one authoritative entity, apply/reply/deliver through typed
+    effects, and exact official readback. Selectors, URLs, upload limits and receipt parsing stay in
+    the adapter; job judgment, artifact production, quality review, retries, waits and revenue logic
+    stay in the shared kernel. Ship one adapter-conformance harness with recorded DOM/API fixtures,
+    a read-only live probe, one fenced live effect, exact readback, and replay-zero so a new website
+    is integrated in hours or minutes rather than by copying a lane for days. Bind every effect to
+    launchd owner ID, run ID, website/account/entity, effect key, exact payload/artifact hash, and
+    official readback. Manual user, foreground Codex,
+    ad-hoc script, and uncheckpointed browser effects never satisfy acceptance.
+14. [ ] Remove ordinary human approval/customer-work fallbacks after setup. When a requirement
+    truthfully needs identity, attendance, consent, physical presence, or unsupported tooling,
+    select a disclosed-agent equivalent that satisfies the outcome, negotiate supported scope,
+    or complete official cancellation. Never impersonate or fabricate. Close the autonomous growth
+    loop: measure net cash and failure classes, discover higher-value opportunities, prefer proven
+    capabilities, add or repair the smallest reusable skill/adapter, validate it against the same
+    conformance gates, activate a bounded owner, and keep improvements only when official conversion,
+    accepted delivery, payout, quality, latency or cost improves without regressions. The model may
+    propose and implement its own bounded loops; immutable safety/effect/readback gates remain code-owned.
+
+### Stage 4 — prove no-human Paid before claiming completion
+
+15. [ ] Add regressions patterned on Temporal `e652a4d0`, LangGraph `f09cfe8f`, and Hatchet
+    `89d130f3`: process-exit resume, retained sibling checkpoints, stale invocation rejection,
+    same-key dedupe, different-key full parallelism, terminal-before-replay rejection, and closed
+    tombstone no-op. Add adapter conformance for auth expiry, pagination, attachment/download/upload,
+    buyer-event refresh, platform limits, apply/reply/delivery, terminal state, exact readback and
+    replay-zero. No adapter may contain job-category or customer-specific judgment.
+16. [ ] From the public one-line bootstrap on independent clean Apple Silicon Macs, prove three
+    varied real Paid cycles across at least two websites: artifact delivery, external-provider work,
+    and revision/cancellation. Then onboard one previously unsupported site by adding only its thin
+    adapter and configuration; measure time-to-first-read-only-observation and time-to-first verified
+    effect, with a target of hours and a stretch target of minutes.
+    Each starts from natural discovery, survives restart/update, carries installed-owner
+    provenance, reaches official terminal state, and replays every effect class at zero without
+    account-owner or foreground-Codex customer work.
+
+### Stage 5 — improve acquisition and verified net cash
+
+17. [ ] Opportunity/Apply discovers work across registered websites, reads the complete posting and
+    attachments, proves current capability, submits only high-fit profitable work, reads back the
+    official application identity, and tracks opportunity → application → reply → contract → accepted
+    delivery → net payout conversion rather than raw volume. Optimize verified net cash per constrained
+    owner-hour, not application count or model-reported success.
+18. [ ] Reply consumes each buyer event once with complete cross-surface context,
+    answers concisely without apologies/internal detail/unnecessary disclosure, and reads back the
+    exact seller message or estimate.
+19. [ ] Storefront keeps offers aligned with demonstrated capabilities, correlates inquiry/order
+    to listing identity, measures impression → view → inquiry → order, and changes one measured
+    buyer-visible variable at a time.
+20. [ ] Attribute every contract/payment to Apply or Storefront, subtract marketplace fees and
+    attributable delivery cost, and optimize verified net cash toward USD 10,000/month. Pending
+    and available balances remain pipeline, not cash.
+
+## Historical onboarding checklist — supporting evidence
+
+The current cursor is the four-lane revenue section above. This older checklist preserves
+implementation and acceptance evidence; its unchecked external trials remain inputs to
+Stage 4 item 16 above and do not redefine the current order.
+Every older buyer-specific action, stop, transfer, artifact version, priority, and completion
+claim is historical; Stage 2's latest-message-bound instruction supersedes it.
+
+### Current Coconala-only code TODO — external trials excluded
+
+This session implements only Coconala. Future integration manifests remain possible but
+are not active work.
+
+1. [x] One-line clean-Mac bootstrap enters Coconala setup directly in Terminal; no local
+   web UI, integration picker, language, timezone or notification-channel question.
+2. [x] Installer prepares Codex/CloakBrowser/private Python and keeps secrets on official surfaces.
+3. [x] Official account/email/SMS/seller/eKYC/bank gates are evidence-bound and missing gates reopen.
+4. [x] Browser, Apply, Negotiate, Storefront, Paid and Release Watcher share one activation/readback contract.
+5. [x] Storefront imports existing listings or selects demand and publishes the first listing at count zero.
+6. [x] Terminal `outcomes` shows customer-safe Application/Negotiation/Listing/Delivery/Bank receipts.
+7. [x] Re-render all six public launchd definitions and compile all four business lane
+   entrypoints from current main. Result: six exact labels, four compiled business
+   entrypoints, private defaults zero, and tracked public `paid_direct.py` confirmed.
+8. [x] Re-run clean-HOME pre-auth/effect-zero simulation and scoped secret/PII scans on
+   current main. Coconala/browser-not-ready returns blocked with HOME writes and marketplace
+   effects zero; integrations/UI/Gig gitleaks and scoped owner PII scans are zero.
+9. [x] Finish the friend-facing README so normal setup requires no manual listing, JSON,
+   plist, Python package or notification adapter work. The one-line bootstrap, five
+   official owner ceremonies, same-browser handoff, six jobs, first-listing behavior and
+   Terminal receipts are above the advanced recovery section.
+9a. [x] Make the post-setup ownership explicit: launchd keeps the browser and four business
+    lanes alive, browser restarts reuse the dedicated profile/session vault, and an expired
+    Coconala login reopens the official recovery surface in that same profile instead of
+    creating another account.
+10. [x] Reuse the existing `gog` Gmail transport for reports: install `gogcli` only when
+    missing, reuse a Gmail-scoped OAuth account or ask once and run one `gog auth add`,
+    store only that account as sender/recipient in mode-0600 private config, and prove one
+    nonce-bound setup message by same-inbox readback. Recommend the same Gmail for Coconala
+    signup so no address is repeated. Remove SMTP/Telegram from the public
+    default. Email failure does not block the six jobs; Terminal receipts stay authoritative.
+    Verification: private config mode `0600`, focused contracts 24/24, real Gmail send
+    acknowledged and nonce found in the same inbox on the first readback attempt.
+11. [x] Re-run the clean-HOME bootstrap contract after the terminal-only change: assert no
+    onboarding web server/browser UI starts, the official Coconala browser opens, rerun
+    resumes `finished`, all six launchd definitions render, and pre-auth marketplace effects
+    remain zero. Result: pre-auth `blocked`, HOME writes zero, local onboarding UI refs
+    zero, official signup route present, rerun selects `finished`, six unique labels
+    rendered, four business entrypoints compiled, OSS 11/11, ShellCheck GREEN, and scoped
+    Gig gitleaks zero.
+12. [x] Make productization status explicit in both READMEs: Coconala is the only
+    one-command marketplace OSS product; Upwork, Mercor and other money loops are
+    roadmap/non-productized. Keep
+    time-dependent eKYC, buyer traffic, sales and bank arrival outside the coding TODO.
+13. [x] Add the canonical friend DM to the onboarding spec with the one-line command,
+    official-only secret entry, same-command resume, four lanes, and no income promise.
+
+**The original onboarding coding slice has no remaining implementation item. Full four-lane
+revenue and independent public-beta acceptance remain open in the current cursor above.**
+
+### Future shared OSS UX — not current session
+
+The manifest/UI foundation intentionally permits future money loops. The remaining
+repository-wide migration is not part of this Coconala session.
+
+1. [ ] Define and validate one public integration onboarding manifest schema used by every
+   persistent Money/Body/Mind loop. The schema and first Coconala manifest are complete
+   (outcome, prerequisites, ceremonies, browser, commands, six owners, five receipts,
+   authority); repository-wide owner coverage remains to migrate.
+2. [x] Discover all manifests and render one side-effect-free readiness graph; duplicate
+   integration ids/owners/receipts and conflicting ask-once field definitions fail closed.
+   Current graph validates one Coconala integration with six owners, nine provider gates,
+   five official receipts and state `unknown`, without running readiness or effects.
+3. [x] Add one ask-once private profile with semantic field ids, source, scope, freshness,
+   consent, and secret-reference separation. Values enter by stdin, directory/file modes
+   are `0700/0600`, status never echoes values, and reuse requires matching privacy,
+   purpose, consent, scope and freshness. Provider-only fields hold evidence hashes and
+   credentials remain refs. Coconala correctly requires zero duplicate profile facts.
+   The future shared UI auto-suggests language/timezone and asks notification channel once, and
+   stores all three via CSRF-bound loopback POST; temp API verification proves no value in
+   responses and `0700/0600` modes.
+4. [x] Add one future shared onboarding web UI. It is not opened by the Coconala bootstrap.
+   The loopback-only stdlib server renders a private control surface, uses
+   a per-process CSRF token and never serves logs. The generic Life Manager bootstrap may
+   use it; Coconala does not. Real HTTP checks pass for HTML, graph API and forbidden
+   tokenless mutation.
+5. [x] Render integration cards with prerequisites, owner time, official ceremonies,
+   readiness, one Connect/Resume action, and no internal labels or log jargon. The first
+   Coconala card shows 15 owner minutes, five reasons, six declared owners and `Needs you`;
+   the same action smart-resumes `finished` when receipt plus browser session exist.
+6. [ ] Start every ready loop from the graph, leave blocked loops independent, and read back
+   exactly one persistent owner per declared label. The CSRF-bound `Enable all` action now
+   starts every manifested non-ready integration independently and never restarts a ready
+   one; one child in Waiting does not block other cards. Generic launchd owner readback and
+   the remaining 74 owner-to-manifest migrations are still open.
+7. [ ] Add one Money/Body/Mind home showing only Running, Needs you, Waiting for external
+   result, or Issue detected, backed by official outcome receipts. The home and four-state
+   vocabulary are implemented. Coconala now reports five customer-safe outcome rows from
+   provider evidence: current readback proves Application 703, Negotiation 307,
+   Storefront 26 and individual Paid delivery receipts 3, while Bank remains Waiting and
+   payout-request state is never mislabeled as arrival. Body/Mind manifests and receipts
+   remain open; individual Paid receipts do not declare the Paid lane globally complete.
+8. [x] Migrate Coconala's installer/gates/six jobs/receipts into the shared manifest without
+   weakening its current one-command and zero-listing behavior. The generic bootstrap may
+   open the common UI; the Coconala bootstrap invokes the evidence-gated Terminal flow
+   directly. The manifest retains all nine gates, six owners and five official receipts.
+9. [ ] Run a clean local simulation covering install, ask-once reuse, blocked/ready isolation,
+   restart resume, update and uninstall/export with secret/log/prompt/report scans. Current
+   simulation covers manifest validation/coverage, loopback HTML+graph, CSRF rejection,
+   ask-once API with no values in responses and `0700/0600`, four UI states, Enable all
+   isolation, Coconala receipts, clean-clone OSS 11/11, compile/ShellCheck, and scoped
+   gitleaks zero. Profile export now writes a timestamped mode-0600 file without echoing
+   values. Manifest uninstall requires explicit UI confirmation; Coconala stops/removes
+   exactly its six plist definitions and preserves profile/browser/state. Restart, update,
+   full uninstall simulation and managed-owner coverage remain. A clean third-party first-run
+   exposed three release regressions: an unloaded Coconala browser was falsely treated as busy,
+   default activation/watch selected every job in the shared manifest, and an initial verified
+   Paid delivery was omitted from the outcome count. The browser now has a process fallback,
+   default activation/watch selects only Apply, Reply, Storefront and Paid, and both initial-send
+   and replay-deduplicated verified deliveries count. Focused onboarding/release/outcome checks
+   pass 27/27; a new clean-Mac live activation/readback still remains.
+
+#### Friend-device recovery and acceptance contract
+
+**1. Overview.** A third-party first run on the old release falsely treated the unloaded dedicated
+browser as busy, timed out waiting for CDP 9223, selected unrelated shared-manifest jobs, and could
+report a verified initial Paid delivery as zero. Main `12e506ce8` fixes those three code defects.
+Re-running the idempotent public bootstrap MUST fast-forward the existing `~/life-manager` checkout
+and resume the same private browser/profile/state; it MUST NOT require deletion or a fresh account.
+
+**2. Acceptance criteria.** The friend's checkout resolves to `12e506ce8` or a descendant; preflight
+reports `ready`; the dedicated browser answers on CDP 9223; exactly the six Coconala owners are
+loaded; Apply, Reply, Storefront and Paid each follow their declared launchd recurrence; no Upwork,
+Writer or article owner is activated by Coconala setup; an initial verified Paid delivery and a
+deduplicated replay both remain countable; and a second bootstrap resumes without duplicate effects.
+
+**3. As-Is / To-Be.** As-Is was `unloaded browser -> busy -> no browser -> timeout`, plus
+`shared manifest -> all jobs`. To-Be is `unloaded browser -> process fallback -> browser activation`,
+plus `Coconala bootstrap/watch -> four business lanes`, with Browser and Release Watcher activated
+explicitly. The earlier 10 GiB figure came from a historical receipt with
+`required_bytes=10737418240`; it is not the current package requirement. Current manifest/readback
+sets Browser and Storefront to 524,288 KiB (512 MiB), Apply and Reply to zero fixed floor, and Paid
+to the guard default of zero. Historical `ENOSPC` log text is not a current failure by itself. A
+fresh Apply wake ended with exit 0 at 21:36; the Paid wake that started afterward still needs its
+terminal receipt. Process presence alone remains insufficient for a healthy-lane claim.
+
+**4. Test matrix.** `test_coconala_browser_running_fence_uses_process_fallback` covers first start;
+`test_default_release_scope_is_only_the_four_coconala_business_lanes` covers activation/watch scope;
+`test_initial_verified_delivery_counts_without_deduplication` and
+`test_verified_replay_deduplication_still_counts` cover Paid outcome receipts. Focused onboarding,
+release and outcome tests pass 27/27. Friend-device live readback and the current Paid terminal
+receipt remain NG.
+
+**5. Boundaries.** The recovery MUST preserve credentials, Coconala login, browser profile and private
+state. It MUST NOT delete Codex/Claude sessions, create another marketplace account, activate other
+products, claim revenue from process liveness, or treat Release Watcher being idle after exit 0 as a
+failure. CloakBrowser major upgrade and removal of `--no-sandbox` remain separate compatibility work.
+
+**6. Execution steps.** The friend first runs the public one-line bootstrap again. If that command
+cannot fast-forward, they run the explicit fetch/merge commands and send only secret-free command
+output. After setup, `./install.sh coconala preflight`, `status`, and `outcomes` provide the readbacks.
+UI change: none. Maestro: not required because this is a Terminal/launchd/browser-control contract.
+
+Atomic remaining work for this incident:
+
+- [x] Remove the unsupported 10 GiB requirement and bind the spec to current manifest/loaded values:
+  Browser and Storefront 512 MiB; Apply, Reply and Paid no fixed byte floor.
+- [x] Observe a fresh natural Apply wake after the historical `ENOSPC`; it exits 0 and writes current
+  output at 21:36 without another disk error.
+- [ ] Observe the currently running natural Paid wake to terminal state and inspect its new durable
+  receipt; diagnose only the fresh terminal failure if it exits nonzero.
+- [ ] Ask the friend to rerun the public bootstrap and capture the resolved commit SHA.
+- [ ] Capture the friend's secret-free `preflight`, `status`, and `outcomes` output.
+- [ ] Confirm the friend has exactly six loaded Coconala labels and zero Coconala-triggered unrelated labels.
+- [ ] Rerun the friend bootstrap once and prove state reuse plus zero duplicate effect.
+
+### Completed and not TODO
+
+- [x] Apply production acceptance: 24/7 launchd owner, official application readback,
+  Telegram receipts and replay-zero. Current zero-effect wakes mean no fresh eligible
+  request; they do not reopen Apply.
+- [x] Storefront production acceptance: official mutations/readbacks, next-wake
+  replay-zero and Telegram receipts.
+- [x] Negotiate live restart: stale PID replaced by launchd PID `70493` with the current
+  disk policy and immutable release.
+- [x] Negotiate action 434: one send, official `replied`, verified outgoing hash and
+  timestamp, duplicate zero. Its Telegram delivery remains unknown and is never blindly
+  retried.
+- [x] Negotiate action 436: distinct buyer question, one send, official `replied`,
+  verified outgoing hash and timestamp, duplicate zero, Telegram `sent` message
+  `31282`. This closes the current owner-report receipt gate.
+- [x] Post-send attachment readback defect fixed and deployed at `23b0115ee`; related
+  tests are GREEN.
+
+### Negotiate completion — closed
+
+1. [x] Retain the prior completed 140-thread full reconciliation as the coverage
+   receipt. The later full reconciliation remains ordinary background operation, not
+   an OSS gate.
+2. [x] Prior official receipt has `coverage_complete=true`, five terminal pages
+   `30/30/30/30/20`, `cards_count=140` and 140 fresh thread readbacks.
+3. [x] Reduce every buyer-authored message to exactly one disposition: official
+   `replied`, official estimate, bounded intentional no-send, or durable pending with
+   an observable retry owner.
+4. [x] Current same-thread residual actions 435/437/438 are durable blocked/pending
+   rows owned by the continuous launchd supervisor; missing/unowned disposition is zero.
+5. [x] Duplicate reply zero and duplicate estimate zero. Post-fix actions 434 and 436
+   each have one distinct verified intent/hash and one official seller timestamp.
+6. [x] Final accepted evidence: prior 140-thread pass = reply effect 0, two existing
+   estimate readbacks, 138 bounded no-send; post-fix live traffic = two distinct
+   official replies, duplicate zero, acknowledged Telegram message `31282`.
+
+### Apply + Negotiate OSS acceptance — immediately after item 6
+
+7. [x] Freeze exact pushed `origin/main` SHA
+   `f0984456d9d6e9bab44f876f05f3423d6cd138c5` in a fresh remote `--depth 1`
+   clone; clean-clone HEAD equals `origin/main` and the worktree is clean.
+8. [x] Scan the public tree and history for credentials, customer payloads, private
+   account IDs and operator-only absolute paths; findings must be zero or removed.
+   Current clean-clone audit: package `test:oss` passes 11/11 and the correctly scoped
+   Gig gitleaks scan has zero findings. PII scan found one personal Writer notification
+   default in the shared launchd manifest; its email and Telegram defaults are now
+   empty machine-local overrides, with 7 release tests and the PII scan GREEN. The
+   repository-wide `verify:oss` still reports unrelated manifest/path/asset violations
+   outside this package and is not relabelled as a Gig failure. Fresh exact-SHA tree
+   scan: 8.13 MB, zero gitleaks findings; full scoped history scan: 1,517 commits / 25.08
+   MB, zero findings. Placeholder emails and historical/test path fixtures are not
+   runtime defaults; `npm run test:oss` passes 11/11 and enforces that boundary.
+9. [x] Run the public Apply and Negotiate test suites from the exact clean clone with a
+   clean temporary HOME; 131 tests pass (`Apply 23 + Negotiate 55 + concurrency 53`),
+   and both `application_direct.py` / `reply_detector.py` compile.
+10. [ ] Run `./install.sh coconala` through the pre-auth boundary in that clean HOME and
+    prove external marketplace effect zero before authentication. The former root-dispatch
+    and capability-receipt blockers are removed: the public one-line clean-Mac bootstrap,
+    package installer, shared browser, evidence-bound account gates, six-job activation,
+    and zero-listing publisher are now implemented. This item remains open for actual
+    signed-out clean-Mac and pre-auth effect-zero receipts; no signup-to-bank-income claim
+    is permitted before deferred external acceptance and bank arrival.
+    Latest implementation checkpoint: fresh remote shallow clone
+    `a3cd1835b5c76c7fcef9013243e3b5fc4ee3b335` matches the public raw bootstrap,
+    passes OSS self-contained 11/11, validates the Coconala manifest, compiles all four
+    business lanes including tracked public Paid, passes installer ShellCheck, and has
+    zero scoped gitleaks findings. This is package evidence,
+    not a substitute for the three live pilots below.
+    A clean-Mac one-line bootstrap now uses macOS curl, installs Homebrew/Git only
+    when missing, clones or fast-forwards `~/life-manager`, and enters the same Coconala
+    installer. It refuses an existing non-Git target without deleting or replacing it;
+    shell syntax, ShellCheck and the refusal path pass.
+    Atomic implementation order (design SSOT:
+    `docs/superpowers/specs/2026-08-24-coconala-one-session-onboarding-design.md`):
+    1. [x] Dispatch root `./install.sh coconala` to the package controller; reject unknown
+       product arguments without running the generic self-funded installer. Root dispatch
+       is GREEN at remote publication checkpoint: focused dispatch + legacy isolation =
+       3/3 tests; Coconala/unknown paths create no generic runtime root. Fresh read-only
+       adversarial verification also passes argv forwarding, pre-dispatch effect zero,
+       no-argument compatibility, `bash -n` and `git diff --check` with no findings.
+    2. [ ] Preflight and prepare the machine:
+       - [x] 2a. Side-effect-free detection for Darwin arm64, Python 3.13+, Codex CLI
+         and auth status, CloakBrowser binary, and 512 MiB disk headroom. Active plan:
+         `docs/superpowers/plans/2026-08-24-coconala-preflight-detection.md`. Focused plus
+         compatibility tests pass 5/5, shell syntax passes, missing browser fails closed
+         with HOME write zero, and the current Mac returns all seven checks true.
+       - [ ] 2b. Install only missing public dependencies, then rerun the same detector.
+         Direct implementation now installs Homebrew/Python only when required, creates
+         `~/.local/share/anicca/gig/venv`, installs the five public Python dependencies
+         (`websockets`, Beautiful Soup, JSON Schema, CloakBrowser and Pillow),
+         installs the official Codex standalone CLI only when absent, and downloads the
+         CloakBrowser binary only when absent. This Mac proved fresh venv installation,
+         imports, all-ready readback and an idempotent second run; missing Homebrew/Codex/
+         browser downloads remain clean-pilot evidence before this box closes.
+         Prepare now also merges the stable venv `bin/python` into private `install.json`
+         without replacing existing machine overrides; temp HOME proves mode `0600` and
+         that rendered launchd ProgramArguments use that exact dependency-bearing Python.
+       - [ ] 2c. When Codex is unauthenticated, run `codex login` and require
+         `codex login status` readback. Official OpenAI documentation defines this as
+         the default ChatGPT browser login and status command. The authenticated no-op
+         path is verified here; a genuinely signed-out pilot remains required.
+    3. [x] Create the private resumable onboarding receipt with no raw identity, OTP,
+       document, password, bank or session value in Git/logs/model/report output.
+       `coconala_onboarding.py` v2 writes only platform/version and nine named gates;
+       every completed gate requires a lowercase SHA-256 evidence binding, while pending
+       gates carry no evidence. Fresh temp HOME proves directory `0700`, file `0600`,
+       compile success, exact record/status readback and byte-identical repeated record.
+    4. [ ] Show one prerequisite screen, then launch the dedicated CloakBrowser profile
+       `~/.cloak/profiles/gig-daily-driver` on the official Coconala setup surface. Do not
+       collect duplicate identity/bank facts in Life Manager. `start` is implemented using
+       the existing browser launchd job, CDP readiness readback and official signup tab;
+       shell syntax and immutable browser plist dry-render pass. Live execution is deferred
+       to the first clean pilot because this Mac already has a production owner on that
+       exact profile and must not be disrupted. The public no-argument package installer
+       now enters this `start` flow directly. Public `--help` now documents only the new
+       preflight/prepare/start/finished/status UX; `status` is read-only and returns
+       `uninitialized` without creating HOME state.
+    5. [ ] Let the owner complete account/email/SMS/seller/consent/eKYC/bank setup in that
+       exact browser profile, then report completion once. Never request the password.
+       The public `finished` command now exists and refuses to run without the prepared
+       venv and live dedicated CDP browser; the owner-side ceremony remains pilot work.
+    6. [ ] Attach over CDP to the same browser/session and read back authenticated, email,
+       SMS, seller, eKYC and bank states; show only the
+       exact missing official gate and reopen its official page when incomplete. The
+       `finished` observer now opens five background tabs in the persistent default
+       context, closes its owned targets, stores only URL/form structure/filled booleans/
+       DOM hashes in a mode-0600 private file, and can evidence-bind `authenticated`.
+       Compile, shell syntax and a secret-injection sanitization check pass. SMS/seller/
+       eKYC/bank completion decisions await pilot DOM evidence; production readback was
+       intentionally not run while the separate Paid owner uses this profile.
+       Structural completion now evidence-binds authenticated/email activation from an
+       official `/mypage` session and seller/bank only when at least one enabled required
+       official control exists and every such control is filled/checked. Empty or partial
+       forms stay pending. SMS completes only on an explicit official `SMS/電話番号認証済み`
+       token. eKYC completes only on the official `本人確認✓/✔/済み/承認済み` token and
+       explicitly rejects `申請中` and `非承認`. Raw page text is discarded rather than
+       persisted or sent to a model. Status parser self-checks pass; live tokens remain
+       pilot readback. When ready remains blocked, `finished` now opens only the first
+       missing gate's official Coconala page in the same browser; a missing preflight
+       returns to the installer instead of opening an unrelated page.
+    7. [ ] Activate the browser, Apply, Negotiate, Storefront, Paid and release watcher
+       only after all official account gates are accepted. A listing is not this gate.
+       Direct implementation now records preflight evidence, requires all seven account
+       gates through `coconala_onboarding.py ready`, returns exact missing state names with
+       exit 2, and calls only the existing four-lane/release-watch activator after ready.
+       A temp HOME proves 7 missing blocks and 7 evidence-bound completions pass; launchd
+       readback is hash-bound. Live activation remains first-pilot evidence.
+    8. [ ] Make Storefront import existing listings; when listing count is zero, it probes
+       capabilities and owns initial service/category/scope/price/copy/assets creation.
+       The public-root path now skips the private bundle preflight, accepts an authoritative
+       zero-service catalogue, releases its browser lease and returns durable
+       `storefront_bootstrap_required`; a nonzero public catalogue returns
+       a hash-bound model import. Direct function verification proves the zero-catalog
+       receipt and one lease release. Existing listings are covered exactly once by
+       official service ID and mapped to installed AI skills with outcome, inclusions,
+       deliverables, required inputs and inquiry patterns. Real Codex imported two
+       synthetic official listings with 2/2 exact coverage; all-supported returns
+       `storefront_imported/readback=1/pending=0`, while unsupported rows remain explicit.
+       Storefront now also derives a non-secret public inventory from every installed
+       `SKILL.md`: current readback is 52 hash-bound skills / 7 live adapters, relative
+       paths only, with one inventory SHA-256 recorded in the bootstrap receipt. The
+       model—not a keyword filter—selects a buyer-deliverable capability once per
+       inventory hash and persists the result. A real tool-disabled Codex selection chose
+       `sales-objection-reply-builder` with Japanese demand query, buyer outcome,
+       deliverable and three required buyer inputs; external marketplace effect remains
+       zero. Storefront now reuses that selection until the public skill inventory changes,
+       crawls its official Coconala search query, scores only sold/reviewed comparables,
+       and hash-binds the demand receipt. Score logic and compile pass; live official
+       search evidence begins on the clean pilot browser, not this busy production profile.
+       An official known score of zero now appends a demand-hash rejection and invalidates
+       that exact skill/query for the next wake. A real Codex reselection skipped the
+       rejected objection-reply candidate and chose `user-interview-synthesizer` with a
+       different Japanese demand query; unknown/transient demand is not falsely rejected.
+       When that official score is positive and Storefront owns effect authority, the
+       bootstrap now reuses the existing recoverable blank-draft creator, reads the live
+       seller form, and binds model choices to official master/sub/type category options.
+       Draft/category state is demand-hash idempotent; compile passes and the first live
+       draft remains pilot evidence.
+       The blank-draft detector now treats `document.readyState=complete` plus the official
+       `/services/add` control as authoritative zero inventory, so a truly empty new account
+       no longer waits forever for a card that cannot exist yet.
+       Category-bound form observation now reads official price/facet/radio/select/paid-
+       option choices without saving. A bounded model retry corrects schema-valid but
+       unofficial/null choices. Real Codex against a synthetic official option surface
+       produced an accepted Japanese listing at 5,000 JPY, 3 days, 1,000 JPY option,
+       5% subscription and official facet ids. Contract sealing generated the exact
+       `…ます` title, 1220x1016 hero PNG and hash-bound contract.
+    9. [ ] Require one official initial-listing readback and rerun duplicate zero from
+       Storefront. Apply may run before it; Negotiate/Paid wait for buyer activity.
+       The zero-listing branch is now connected to existing `prepare_draft`,
+       `publish_draft` and exact public readback. Before any publish it first attempts
+       official recovery of an already-public candidate, so a crash after acceptance but
+       before ledger append cannot cause a second publish. Live effect/readback/replay-zero
+       remain pilot evidence. A successful public readback now completes the shared
+       `storefront_listing_readback` onboarding gate with that exact result hash. The outer
+       Storefront wake now promotes the verified draft's `public_effect` and `readback`
+       instead of incorrectly reporting the bootstrap publication as effect/readback zero.
+       On the next catalogue wake, the saved service ID, public URL, exact title and price
+       must all match the official source; direct verification then returns
+       `actionable/effect/readback/duplicate/pending = 0/0/1/0/0`. A mismatch fails closed
+       instead of being called replay-zero. Live two-wake evidence remains pilot work.
+    10. [ ] From a clean HOME prove zero marketplace effects before authentication, exact
+       resume after interruption, one owner per launchd label and zero secrets in output.
+11. [x] Render the Apply, Negotiate, browser and release-watcher launchd definitions
+    from public configuration in a clean temporary HOME. No plaintext secret,
+    notification destination or private seller default is present. Apply uses the
+    immutable `current` entrypoint at 60 seconds; Negotiate uses `current`, continuous
+    30-second polling and two workers; browser uses `current` with `KeepAlive`; watcher
+    uses the clean source checkout to fetch/publish at 300 seconds, by design.
+12. [x] Join the clean-package evidence to this Mac's already-proved authorized
+    production receipts: Apply official application + replay-zero and Negotiate
+    official replies/estimate + replay-zero. Do not create a second seller account.
+    Package SHA/evidence above is independent of the existing Apply official
+    application/replay-zero and Negotiate actions 434/436/estimate/replay-zero receipts.
+13. [x] Record the clean-clone commands, exact SHA, test counts, scans and receipt IDs in
+    README/TODO; commit and push main, followed by remote-main readback.
+14. [ ] Declare Coconala onboarding OSS acceptance complete only after the code-owned
+    shared UX/Coconala gates and deferred external acceptance pass. Paid remains separate
+    until its owner supplies production delivery/replay-zero evidence.
+
+### Scope fence until Coconala OSS acceptance
+
+This cursor implements no Upwork, Mercor or generic multi-market onboarding. Reusable
+contracts may be documented, but implementation stays on the first unchecked Coconala
+and shared OSS UX item above until the code-owned gates pass.
+
+### Deferred external acceptance — not current coding TODO
+
+Independent clean-device owners later validate README-only provider ceremonies,
+restart/resume, listing readback, duplicate zero, natural business outcomes and bank
+arrival. No named family member or friend is an implementation task.
+
 ## Current execution cursor override
 
-The active development cursor is **Storefront only**. Apply is accepted and remains
+The Storefront development cursor is **complete**. Apply is accepted and remains
 untouched. Negotiate production acceptance is recorded in `README.md` at commit
 `49e6b4d84`: a fresh official 140-thread reconciliation, two already-delivered
 estimate readbacks, five later verified replies, zero duplicate reply/estimate
@@ -16,7 +816,12 @@ effects and five durable Telegram receipts. Paid is owned by another session and
 outside this cursor. Older ordering text below remains historical context and does
 not authorize changing Apply, Negotiate or Paid in this slice.
 
-Current Storefront production truth is receipt
+There is no remaining Storefront product TODO in this cursor. Its official mutation,
+readback, next-wake replay fence and owner-report receipts are recorded below. Paid
+completion, final four-lane control-plane evidence and third-device acceptance remain
+separate milestones; this cursor does not manufacture or pre-empt their evidence.
+
+The pre-fix Storefront production failure was receipt
 `storefront-direct-1787477480777530000-18612`: `status=failed`, `actionable=0`,
 `effect=0`, `readback=0`, `duplicate=0`, Telegram message `30158`, reason
 `published_gallery_before_evidence_missing`. The gallery effect itself is already a
@@ -28,16 +833,88 @@ the confirmed contract.
 Storefront acceptance for this cursor is: recover that confirmed gallery contract
 without a second customer effect; complete one natural official listing create/update
 readback through the existing owner; then observe the next natural wake with
-`effect=0`, `duplicate=0`, no wrong-service mutation and a durable owner-report
-receipt. No new scheduler, database, browser owner or reporting transport is allowed.
+zero replay of the first experiment, `duplicate=0`, no wrong-service mutation and a
+durable owner-report receipt. The next wake may execute a different independently
+sealed experiment; total `effect=0` is not required. No new scheduler, database,
+browser owner or reporting transport is allowed.
 
 The recovery fix is GREEN on branch `fix/gig-storefront-acceptance`. Regression
 `test_confirmed_gallery_survives_gc_of_transient_before_evidence` first failed with
 the production error, then passed after missing transient evidence was reconstructed
 only from the confirmed contract's hash-validated rollback image identity. Invalid
 JSON, permission errors and unconfirmed intents still fail closed. Storefront-focused
-verification is 45 passed plus `py_compile`; the remaining evidence is the two natural
-production wakes above.
+verification is 45 passed plus `py_compile`. At that checkpoint, the remaining
+evidence was the two natural production wakes recorded below.
+
+The loaded Storefront plist was also stale: unlike the current manifest, it did not
+ignore the shared preventive stop flags, so the wrapper exits on
+`disk-writers.stop` even with several GiB free. The Storefront job now follows the
+existing lane contract by ignoring those two shared flags while retaining an explicit
+512 MiB `GIG_DISK_HEADROOM_KIB` last-resort floor. The rendered-plist regression was
+RED for all three missing values and is GREEN; no global flag or Paid configuration
+was changed.
+
+Natural wake `storefront-direct-1787504054089137000-67566` proved both recovery
+changes in production: it ran from release `49e888ce1`, crossed the stale shared
+stop flags, read 13 official services, and rendered the confirmed gallery as
+`published=true`. It then failed before effect because the Storefront caller and
+`agent-runner/config.json` named `storefront-proposal-agent` while the runner CLI
+choices and tool-less class set omitted it. The class is now registered at that
+single runner boundary, requires prompt stdin, and receives no shell/code-mode
+tools. CLI/tool-starvation RED is GREEN; Storefront and runner verification is 79
+passed. The failed wake had `effect=0`, `readback=0`, `duplicate=0`; Telegram delivery
+was unknown. At that checkpoint, the next natural wake still had to prove the
+proposal/effect/readback path; the two following paragraphs close that evidence.
+
+Storefront production acceptance is complete on release `ead7fd657`. Natural wake
+`storefront-direct-1787504743306208000-54125` updated only service `4312985` body,
+then read the changed official public hash back: `effect=1`, `readback=1`,
+`duplicate=0`; provider receipt file confirms Telegram message `30741`. The next
+natural wake `storefront-direct-1787505080566670000-95440` did not replay that
+experiment. It independently updated only service `4302213` title with matching
+contract/before/after/receipt service identity: `effect=1`, `readback=1`,
+`duplicate=0`, Telegram message `30746`. Both confirmed intents were appended once;
+there was no wrong-service or duplicate mutation. Apply, Negotiate and Paid were not
+changed by either wake.
+
+## Current Negotiate live correction
+
+Negotiate is the active cursor until the fresh full-inbox reconciliation closes. The
+loaded launchd definition had the correct disk exemptions, but its old
+long-lived PID predated that definition and still stopped before every official
+probe. A control-plane-safe restart replaced PID `97563` with PID `52469`; the new
+owner immediately read the official inbox head, found buyer thread `10115148`, read
+the original application scope, composed one bounded reply and clicked send once.
+The intent is revision 3 with one `click_started_at` and remains
+`reconcile_pending`; duplicate effect is zero.
+
+Post-send official readback exposed `dm_attachment_message_identity_changed`.
+The verified attachment manifest describes the pre-send buyer messages, while the
+current official DOM correctly contains one additional seller reply. The binder
+already has stable message IDs but rejected the harmless total-row-count difference
+before using them. Regression
+`test_merge_verified_dm_attachments_accepts_new_seller_reply_after_send` is RED on
+that production error and GREEN after binding attachment-bearing buyer rows by stable
+message ID. ID-less legacy rows still require exact position plus body, and missing
+or unverified attachment evidence still fails closed. Completion still requires the
+new release to reconcile action 434 to `replied`, a seller-side official hash and
+timestamp, duplicate zero and a durable Telegram receipt.
+
+Release `23b0115ee` is now live. A second safe Negotiate restart loaded it and
+reconciled action 434 to `replied` revision 3 with official outgoing hash
+`7118ed3d...`, seller timestamp `09:23:24`, one click intent and duplicate zero. The
+buyer then sent a distinct question about travel costs; action 436 independently
+replied once and reached official `replied` revision 3 with hash `6141c936...`, seller
+timestamp `09:33:22` and duplicate zero. This proves live reply execution and the
+post-send attachment readback fix.
+
+The Negotiate OSS gate is closed. Telegram row
+`gig:telegram:reply:v2:434:3` ended `delivery_unknown` after transport timeout and has
+no provider receipt file, so it is not blindly resent. The distinct subsequent action
+436 produced acknowledged Telegram message `31282`, closing the owner-report receipt
+gate. A later full-inbox reconciliation remains normal background operation; it does
+not replace or invalidate the completed 140-thread coverage receipt. Apply + Negotiate
+OSS acceptance is now the active cursor.
 
 ## Current scoped milestone: finish the public Coconala package
 
@@ -48,17 +925,21 @@ validate this package without this seller's private checkout, credentials, custo
 or runtime state.
 
 The public product principle is **fast, cheap, accurate, and minimal-human-loop**. Human work is
-front-loaded into one guided setup session. Before any 24/7 lane starts, the installer collects and
-completes every marketplace identity, SMS, eKYC, bank and consent step required for uninterrupted
-selling and bank payout. After activation, ordinary operation asks no questions and waits for no
-owner approval. The installer and loops own dependency installation, permitted signup/login automation,
-mailbox verification, capability discovery, listing construction, pricing research, application
-selection, negotiation, estimates, production, validation and delivery. They must not turn any
-of those responsibilities into an owner questionnaire or approval queue. The four independent
+front-loaded into one owner-controlled official setup session covering marketplace identity, SMS,
+eKYC, bank and consent steps required for uninterrupted selling and bank payout. After activation,
+ordinary operation asks no questions and waits for no owner approval. The installer and loops own
+dependency installation, session reuse, capability discovery, listing construction, pricing research,
+application selection, negotiation, estimates, production, validation and delivery. They must not
+turn any of those responsibilities into an owner questionnaire or approval queue. The four independent
 lanes then run in parallel. Apply finds and submits only work that a concrete preflight proves
-the installed system can deliver; Negotiate answers buyers and returns estimates; Paid builds,
+the installed AI/Mac/tool system can deliver; Negotiate answers buyers and returns estimates; Paid builds,
 verifies and delivers paid work; Storefront creates, measures and improves listings. Revenue
 claims come only from official marketplace/payment readback.
+The account owner is not the delivery workforce: personal skill, free time, health, sleep and manual
+workload never throttle AI-delivered Coconala, Upwork or future marketplace work. Independent jobs fan
+out up to measured compute, browser/tool, platform, deadline, cost and quality limits. Job Hunter is
+the explicit exception because the human is the employee, so it uses that person's real employment
+facts, eligibility, availability and offer authority.
 The public package must not promise guaranteed income or describe unverified activity as
 revenue. Owner notifications use a provider adapter; the distributable default is email,
 not this operator's Telegram identity.
@@ -66,29 +947,26 @@ not this operator's Telegram identity.
 ### Target one-session onboarding contract
 
 The public command is `./install.sh coconala`. One interactive setup session completes all required
-owner input before starting the loops. The wizard asks only for facts the official marketplace or
-bank rail requires; it never asks the owner to describe skills, choose categories, write listings,
-set prices, approve applications, approve replies, approve estimates, or approve deliveries.
+owner work before starting the loops. It never asks the owner to duplicate official identity/bank
+facts in Life Manager, describe skills, choose categories, write listings, set prices, approve
+applications, approve replies, approve estimates, or approve deliveries.
 
-1. Inspect the device and install or configure the declared runtime, model route, browser, email
-   adapter, four lane jobs and release watcher.
-2. Collect the notification/registration email, create or recover exactly one Coconala account with
-   the signup/login skill or CLI, and consume email verification through the mailbox adapter. Never
-   create a second account when one already exists.
-3. In the same setup session, complete the official seller-information form (name/furigana, address,
-   birth date and gender), mobile-number SMS verification, required terms/consents, eKYC document and
-   face capture, and matching domestic bank-account registration. Sensitive values remain only on
-   official surfaces or in the minimum private local credential store; documents, OTPs and bank
-   details are never committed, logged, placed in model prompts or sent in reports.
-4. Discover executable capabilities from installed tools and prove them with a bounded local
-   preflight. Import any existing official listings and history. When the account is new, build the
-   initial sellable listing, price, scope, FAQ and assets from verified capabilities and observed
-   marketplace demand. Unknown capability fails closed; it does not become a human question.
-5. Verify before activation that account/session, seller information, SMS, eKYC and payout account
-   are accepted by the official site. Invoice registration remains optional and is not invented as a
-   setup requirement.
-6. Activate Apply, Negotiate, Storefront and Submission plus their browser/release owners, then
-   report official receipts and bank-payout state to the configured email. Ordinary operation has no
+1. Inspect the device and install or configure the declared runtime, model route, browser, four lane
+   jobs and release watcher; then show every official prerequisite on one screen.
+2. Open the official Coconala setup surface. The owner creates or recovers the account and completes
+   email, SMS, seller information, required consents, eKYC and the matching domestic bank account in
+   one uninterrupted official-site session. Life Manager never creates a second account or stores a
+   second copy of documents, OTPs, passwords or bank details.
+3. After the owner reports `finished` once, read back that account/session, seller information,
+   SMS, eKYC and payout account are accepted by the official site. Invoice registration remains
+   optional and is not invented as a setup requirement.
+4. Activate Apply, Negotiate, Storefront and Submission plus their browser/release owners. Storefront
+   imports existing listings; if the official listing count is zero, Storefront discovers executable
+   capabilities and owns the first truthful listing, price, scope, FAQ, assets and official readback.
+   Unknown capability fails closed; it does not become a human questionnaire.
+5. After activation, report official receipts and bank-payout state to the configured notification
+   adapter. Apply can run before Storefront creates a first listing; Negotiate and Paid remain idle
+   until buyer activity exists. Ordinary operation has no
    approval gate. Login expiry uses autonomous session recovery; if the marketplace later introduces
    a new non-delegable identity ceremony, the loop reports the exact blocker without pretending to
    be 24/7 complete.
@@ -1212,8 +2090,9 @@ self-cleaning and restartable, and all four may run concurrently.
 | Paid | one project owner per purchased talkroom | reconstruct complete contract/context → build/revise → verify → exact delivery → readback → await approval/payment | context-correct artifact delivered once, replay-zero |
 | Storefront | one portfolio/listing owner per service | observe demand/outcomes → select capability bundle → create/update truthful listing → readback → attribute sales | real listing mutation and attributable revenue |
 
-The Economic Manager allocates attention across lanes using expected value, deadline, buyer risk, marginal cost,
-capacity and evidence quality. It may call any registered skill whose input contract is satisfied: research,
+The Economic Manager allocates AI/Mac execution across lanes using expected net income, deadline, buyer risk,
+marginal compute/tool cost, measured machine/tool capacity and evidence quality. Human time, health, sleep and
+manual workload are not marketplace capacity. It may call any registered skill whose input contract is satisfied: research,
 writing, design, image, software, marketing, pricing, localization and future capabilities are not separate
 islands. A skill publishes `inputs`, `outputs`, `cost`, `permissions`, `evidence`, `quality history` and
 `marketplace constraints`; the manager composes skills for the current goal, while the outcome ledger updates
@@ -1225,7 +2104,7 @@ parallel, not from shortening or mixing their reasoning. The Paid supervisor per
 priority, lease and worker lifecycle. For every `platform + account + talkroom/contract`, exactly one durable
 Project Owner receives one project root, one conversation ledger, one artifact lineage and one effect namespace.
 It cannot read another buyer's project context. Sequential work inside one project stays with the same owner;
-independent projects may run concurrently up to the measured capacity limit.
+independent projects may run concurrently up to measured compute, browser and external-tool capacity.
 
 ```mermaid
 flowchart TB
@@ -2547,7 +3426,7 @@ action completes.
 
 - [x] Remove operator capability paths from public defaults and load them from the private install
   configuration via `GIG_STOREFRONT_CAPABILITY_EVIDENCE`.
-- [ ] Activate `f90898caf` or a descendant for the loaded Storefront job, then read back the loaded
+- [x] Activate `f90898caf` or a descendant for the loaded Storefront job, then read back the loaded
   environment with two configured evidence paths without exposing their values.
 - [x] Reconcile the sellable product truth before any mutation: the private 4313386 contract now
   binds to the latest official version `3c862a33…`, and the official seller form reads back both
@@ -2556,9 +3435,13 @@ action completes.
   contract.
 - [x] Delete the unused listing-envelope protocol instead of exposing a half-built consumer;
   `storefront_direct.py` no longer writes or reports envelopes/ACK state (24 focused tests pass).
-- [ ] Produce one valid, scoped, unfenced create/update mutation contract.
-- [ ] Execute exactly one official listing create/update and read back the resulting live listing.
-- [ ] Replay it and prove zero duplicate or wrong-service mutations.
+- [x] Produce one valid, scoped, unfenced create/update mutation contract. Natural release
+  `ead7fd657` sealed the `4312985/body` contract and a second independent `4302213/title` contract.
+- [x] Execute exactly one official listing create/update and read back the resulting live listing.
+  Wake `...-54125` changed `4312985/body` with `effect=1/readback=1/duplicate=0`.
+- [x] Replay it and prove zero duplicate or wrong-service mutations. Wake `...-95440` did not
+  replay the first experiment; it changed a different contract-bound service with
+  `effect=1/readback=1/duplicate=0`. Telegram receipts are `30741` and `30746`.
 
 #### E. Prove natural Paid delivery
 
@@ -2711,7 +3594,19 @@ a later successful example.
   `shipment_basis=max_review_iterations`, selected `delivery_action=progress` with
   `formal_delivery_checkbox=false`, and returned exact-room `effect=1`, `readback=1`, `failed=0`.
 - [ ] P31 — Prove one natural order end to end from complete context through one formal delivery and
-  replay-zero.
+  replay-zero. The generic Paid owner selects talkroom `18183618` first, reads the booked JAIC
+  consultation and subsequent Gmail context, replies to the substantive pre-consultation question,
+  and sends privacy-redacted `JAIC-appointment-confirmation-v4.zip` once with exact Coconala
+  readback. The next natural wake records Coconala `effect=0`, `failed=0`, proving that progress
+  attachment is replay-safe. This project remains open: the owner must read the official Meet URL,
+  update the existing Calendar event without duplication, preserve truthful consultation-completion
+  evidence, report the requested four post-consultation facts, formally deliver, observe buyer
+  acceptance/transaction completion, and then prove another replay-zero. In parallel,
+  `18184558`, `18180857`, and `18169985` each progress under their own owner, page, state, and
+  evidence root without waiting for `18183618`; Manledge sends no additional candidate message
+  until its buyer explicitly approves the already-sent private-DM sample format. LBJ `18130722`
+  remains a later repair: a seller acknowledgement after an unrevoked buyer approval must not erase
+  that approval; a later buyer revocation must.
 
 **Accepted architecture — ship within ten reviews.** A production worker builds the buyer-requested
 artifact and a fresh reviewer supplies bounded improvement feedback. The worker may revise the same
@@ -2909,14 +3804,16 @@ messages, outreach or delivery. No manual/Codex effect may be used as that proof
   tree and pass the exact `f90898caf` public acceptance.
 - [x] Provide email-first notification plus documented install, status, upgrade and uninstall.
 - [ ] Add the public `./install.sh coconala` entrypoint and one-session wizard. Before activation it
-  completes registration/recovery, seller information, SMS, eKYC, bank registration and all current
-  mandatory official consents; no ordinary setup prompt may appear after lane activation.
-- [ ] Add the local mailbox adapter and permitted Coconala signup/login skill/CLI path so account
-  creation, session recovery and email verification do not become recurring human tasks. Preserve
-  platform-mandated CAPTCHA, passkey, terms and identity ceremonies as explicit resumable exceptions.
+  opens one official-site session where the owner completes registration/recovery, seller information,
+  SMS, eKYC, bank registration and all current mandatory consents; it then readbacks every gate and no
+  ordinary setup prompt may appear after lane activation.
+- [ ] Keep account creation and initial recovery on the official owner-controlled surface. After the
+  setup, reuse the authenticated browser/session and automate only delegable recovery; platform-mandated
+  CAPTCHA, passkey, terms and identity ceremonies remain explicit resumable owner exceptions.
 - [ ] Replace the private capability-bundle onboarding requirement with automatic installed-tool
   discovery, bounded production preflights, official listing import and new-account storefront
-  generation. Unknown capability must fail closed without asking the owner what they can do.
+  generation. Capability means demonstrated AI/Mac/tool execution, never the owner's personal skill
+  or available labor. Unknown capability must fail closed without asking the owner what they can do.
 - [ ] Perform a fresh third-party/friend install through one continuous setup session; do not copy
   this operator's marketplace account, configuration, capability bundle, state or credentials.
 - [ ] Prove the clean install causes no marketplace effect before its own account/session is
@@ -2997,7 +3894,7 @@ counts and no delivery outcomes, and treated the counts as the whole story.
 
 So the honest reading of the numbers below is the opposite of what I wrote: **apply submitting
 nothing is not a system problem to be unlocked. Six of seven classes are correct, and the
-seventh is correct too.** The board genuinely does not have much this seller can do well, and
+seventh is correct too.** The board genuinely does not have much the installed AI/Mac/tool system can deliver, and
 the remaining lever is on the storefront and negotiate side — being faster and clearer on the
 work that does fit — not on widening what gets accepted.
 
@@ -3017,7 +3914,7 @@ retry a potentially duplicate priced proposal.
 
 Measured on `~/gig/b2-ineligible-cache.json`: 249 cached
 ineligible postings, and **every one of them is `hard_prohibited`**. Not one was turned down for
-being unwinnable, mispriced or outside the seller's skill. Every refusal is a policy class this
+being unwinnable, mispriced or outside the installed AI/Mac/tool capability. Every refusal is a policy class this
 loop applies to itself:
 
 | count | class |

@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["mappings"],
+  "properties": {
+    "mappings": {
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "service_id", "supported", "skill_path", "outcome", "inclusions",
+          "deliverables", "required_inputs", "principles", "answer_patterns", "reason"
+        ],
+        "properties": {
+          "service_id": {"type": "string", "pattern": "^[0-9]+$"},
+          "supported": {"type": "boolean"},
+          "skill_path": {"type": ["string", "null"], "pattern": "^skills/.+/SKILL\\.md$"},
+          "outcome": {"type": ["string", "null"], "maxLength": 240},
+          "inclusions": {"type": "array", "maxItems": 8, "items": {"type": "string", "minLength": 1, "maxLength": 160}},
+          "deliverables": {"type": "array", "maxItems": 8, "items": {"type": "string", "minLength": 1, "maxLength": 160}},
+          "required_inputs": {"type": "array", "maxItems": 8, "items": {"type": "string", "minLength": 1, "maxLength": 160}},
+          "principles": {"type": "array", "maxItems": 8, "items": {"type": "string", "minLength": 1, "maxLength": 160}},
+          "answer_patterns": {
+            "type": "array", "maxItems": 8,
+            "items": {
+              "type": "object", "additionalProperties": false,
+              "required": ["intent", "triggers", "response"],
+              "properties": {
+                "intent": {"type": "string", "minLength": 1, "maxLength": 80},
+                "triggers": {"type": "array", "minItems": 1, "maxItems": 6, "items": {"type": "string", "minLength": 1, "maxLength": 80}},
+                "response": {"type": "string", "minLength": 1, "maxLength": 400}
+              }
+            }
+          },
+          "reason": {"type": "string", "minLength": 1, "maxLength": 400}
+        }
+      }
+    }
+  }
+}

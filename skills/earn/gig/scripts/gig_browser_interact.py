@@ -1,8 +1,23 @@
 import asyncio
 import json
+import os
 import sys
 import websockets
 import base64
+from pathlib import Path
+
+
+CREDENTIALS = Path(os.environ.get("ANICCA_CREDENTIALS_FILE") or Path.home() / ".local/share/anicca/credentials.json")
+
+
+def credential_value(ref, field):
+    if not ref.startswith("credentials:") or field not in {"password", "passcode", "token", "api_key"}:
+        raise ValueError("invalid credential reference")
+    rows = json.loads(CREDENTIALS.read_text(encoding="utf-8")).get("credentials", [])
+    value = rows[int(ref.split(":", 1)[1])].get(field)
+    if not isinstance(value, str) or not value:
+        raise ValueError("credential field unavailable")
+    return value
 
 async def cdp_call(ws, method, params=None):
     request_id = 1
@@ -108,6 +123,9 @@ async def main():
         selector = sys.argv[3]
         text = sys.argv[4]
         await type_text(ws_url, selector, text)
+    elif action == "type_credential":
+        selector, ref, field = sys.argv[3:6]
+        await type_text(ws_url, selector, credential_value(ref, field))
     elif action == "evaluate_js":
         expression = sys.argv[3]
         await evaluate_js(ws_url, expression)

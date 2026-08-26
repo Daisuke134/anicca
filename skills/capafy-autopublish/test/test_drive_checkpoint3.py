@@ -129,6 +129,8 @@ class _SubmitPage:
         self.expressions.append(expression)
         if expression == self._module.SUBMIT_STATE_JS:
             return next(self.states)
+        if "document.querySelectorAll('textarea')" in expression:
+            return {"ok": True, "hydrated": True, "required": False}
         return next(self.click_results)
 
 
@@ -181,6 +183,7 @@ def test_submit_duplicate_or_disabled_fails_closed(state) -> None:
 
 def test_cp3_output_contains_no_url_or_token(monkeypatch, capsys) -> None:
     module = load_module()
+    monkeypatch.delenv("CP3_TRANSPORT", raising=False)
 
     class _Page:
         def call(self, *_args, **_kwargs):

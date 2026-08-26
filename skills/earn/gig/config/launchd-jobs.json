@@ -13,7 +13,7 @@
   "defaults": {
     "PYTHON": "/opt/homebrew/bin/python3",
     "HOME": "{{HOME}}",
-    "PATH": "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin",
+    "PATH": "{{HOME}}/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin",
     "GIG_STATE_DIR": "{{HOME}}/gig",
     "GIG_LOG_DIR": "{{GIG_STATE_DIR}}/logs",
     "GIG_BRAKE_DIR": "{{GIG_STATE_DIR}}/state",
@@ -26,8 +26,8 @@
     "GIG_BROWSER_TLS_COMPAT": "",
     "GIG_REPORT_CHAT": "",
     "GIG_NOTIFY_EMAIL": "",
-    "GIG_NOTIFY_FROM": "",
-    "GIG_SENDMAIL": "/usr/sbin/sendmail",
+    "GIG_GOG_ACCOUNT": "",
+    "GIG_GOG_BIN": "/opt/homebrew/bin/gog",
     "GIG_SANDBOX_DENY": "",
     "GIG_STOREFRONT_ROOT": "",
     "GIG_STOREFRONT_TARGET_SERVICE_ID": "",
@@ -37,7 +37,8 @@
     "GIG_STOREFRONT_CAPABILITY_EVIDENCE": "",
     "WRITER_STATE_DIR": "{{HOME}}/.local/state/life-manager/writer",
     "WRITER_LOG_DIR": "{{HOME}}/.openclaw/logs",
-    "WRITER_TELEGRAM_TARGET": "8547730585",
+    "WRITER_TELEGRAM_TARGET": "",
+    "WRITER_GMAIL_ACCOUNT": "",
     "ANICCA_JOB_PROFILE": "{{HOME}}/.config/anicca/job-search/profile.json"
   },
 
@@ -52,8 +53,8 @@
     "GIG_ENV_FILE": "{{LIFE_MANAGER_HOME}}/.env",
     "GIG_REPORT_CHAT": "{{GIG_REPORT_CHAT}}",
     "GIG_NOTIFY_EMAIL": "{{GIG_NOTIFY_EMAIL}}",
-    "GIG_NOTIFY_FROM": "{{GIG_NOTIFY_FROM}}",
-    "GIG_SENDMAIL": "{{GIG_SENDMAIL}}",
+    "GIG_GOG_ACCOUNT": "{{GIG_GOG_ACCOUNT}}",
+    "GIG_GOG_BIN": "{{GIG_GOG_BIN}}",
     "LIFE_MANAGER_HOME": "{{LIFE_MANAGER_HOME}}",
     "LIFE_MANAGER_REPO": "{{RELEASE}}",
     "GIG_STOREFRONT_ROOT": "{{GIG_STOREFRONT_ROOT}}",
@@ -95,6 +96,30 @@
 
   "jobs": [
     {
+      "label": "ai.anicca.life-manager-upwork-browser",
+      "lane": "upwork-browser",
+      "summary": "Keeps the dedicated logged-in Chromium for the zero-spend Upwork lane.",
+      "program": [
+        "/bin/bash",
+        "{{RELEASE}}/skills/earn/gig/scripts/launch_gig_browser.sh"
+      ],
+      "env": {
+        "GIG_BROWSER_PORT": "9233",
+        "GIG_BROWSER_PROFILE": "{{HOME}}/.cloak/profiles/gig-upwork",
+        "GIG_BROWSER_FINGERPRINT": "80138",
+        "GIG_DISK_HEADROOM_KIB": "524288",
+        "GIG_IGNORE_DISK_PRESSURE_BLOCK": "1",
+        "GIG_IGNORE_DISK_WRITERS_STOP": "1",
+        "CLOAK_CDP_BASE_URL": "http://127.0.0.1:9233",
+        "CLOAK_BROWSER_LAUNCHD_LABEL": "ai.anicca.life-manager-upwork-browser"
+      },
+      "RunAtLoad": true,
+      "KeepAlive": true,
+      "ThrottleInterval": 30,
+      "ProcessType": "Interactive",
+      "log_basename": "upwork-browser-launchd"
+    },
+    {
       "label": "ai.anicca.life-manager-upwork-free-loop",
       "lane": "upwork-free",
       "summary": "Reconciles free Upwork capacity, invitations, proposals, and offers without purchasing anything.",
@@ -103,6 +128,8 @@
         "{{RELEASE}}/skills/earn/gig/scripts/providers/upwork_browser_provider.py",
         "--cdp-base",
         "http://127.0.0.1:9233",
+        "--browser-profile",
+        "{{HOME}}/.cloak/profiles/gig-upwork",
         "--candidates",
         "{{RELEASE}}/skills/earn/gig/config/upwork-candidates.public.json",
         "--transitions",
@@ -112,7 +139,8 @@
       ],
       "env": {
         "CLOAK_BROWSER_OWNER": "life-manager-upwork-free-loop",
-        "CLOAK_CDP_BASE_URL": "http://127.0.0.1:9233"
+        "CLOAK_CDP_BASE_URL": "http://127.0.0.1:9233",
+        "CLOAK_BROWSER_LAUNCHD_LABEL": "ai.anicca.life-manager-upwork-browser"
       },
       "StartInterval": 300,
       "ThrottleInterval": 60,
@@ -164,6 +192,9 @@
       "env": {
         "CLOAK_BROWSER_OWNER": "gig-storefront-direct",
         "CLOAK_CONTEXT_LEASES_FILE": "{{CLOAK_VAULT_DIR}}/gig-leases.json",
+        "GIG_IGNORE_DISK_PRESSURE_BLOCK": "1",
+        "GIG_IGNORE_DISK_WRITERS_STOP": "1",
+        "GIG_DISK_HEADROOM_KIB": "524288",
         "GIG_OPERATOR_BRAKE_FILE": "{{GIG_BRAKE_DIR}}/storefront.operator.brake",
         "GIG_NEGOTIATE_RUN_LOG": "{{GIG_LOG_DIR}}/gig-reply-detector-launchd.out.log",
         "GIG_STOREFRONT_TARGET_SERVICE_ID": "{{GIG_STOREFRONT_TARGET_SERVICE_ID}}",
@@ -401,7 +432,7 @@
         "--runner",
         "{{RELEASE}}/skills/writer-agent/runtime/model-runner.sh"
       ],
-      "env": {"WRITER_GMAIL_ACCOUNT": "keiodaisuke@gmail.com"},
+      "env": {"WRITER_GMAIL_ACCOUNT": "{{WRITER_GMAIL_ACCOUNT}}"},
       "StartInterval": 900,
       "RunAtLoad": true,
       "ProcessType": "Background",

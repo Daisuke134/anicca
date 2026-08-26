@@ -145,7 +145,6 @@ def test_submit_mutation_requires_explicit_positive_fence_decision():
 
     browser.require_effect_start(receipt, lambda value: calls.append(value) or True)
     assert calls == [receipt, receipt]
-    assert ".click()" in browser.submit_click_expression("~012345678901234")
 
 
 def test_submit_readback_requires_exact_official_proposal_id():
