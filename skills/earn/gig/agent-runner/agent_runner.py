@@ -595,8 +595,15 @@ def codex_effect_started(stdout: str) -> bool:
     return False
 
 
-def should_retry_next_codex_account(error_class: str | None, effect_started: bool) -> bool:
-    return not effect_started and error_class in {"transient_quota", "transient_auth"}
+def should_retry_next_codex_account(
+    error_class: str | None,
+    effect_started: bool,
+    *,
+    retry_safe_local_effects: bool = False,
+) -> bool:
+    return (not effect_started or retry_safe_local_effects) and error_class in {
+        "transient_quota", "transient_auth",
+    }
 
 
 # The live provider Popen, if any. start_new_session detaches the provider into its
@@ -1256,6 +1263,7 @@ def run() -> int:
     parser.add_argument("--timeout-seconds", type=int)
     parser.add_argument("--image", action="append", type=Path, default=[])
     parser.add_argument("--read-only", action="store_true")
+    parser.add_argument("--retry-safe-local-effects", action="store_true")
     parsed = parser.parse_args()
 
     if parsed.task_class in ("composition-agent", "reply-semantic-agent", "storefront-proposal-agent", "application-intent-planner") and not parsed.prompt_stdin:
@@ -1794,7 +1802,10 @@ def run() -> int:
             break
         if provider == "codex" and effective_candidate.get("account"):
             effect_started = codex_effect_started(stdout_text)
-            if should_retry_next_codex_account(error_class, effect_started):
+            if should_retry_next_codex_account(
+                error_class, effect_started,
+                retry_safe_local_effects=parsed.retry_safe_local_effects,
+            ):
                 if effective_candidate["account_index"] + 1 >= effective_candidate["account_count"]:
                     skip_remaining_codex_accounts = True
                 continue

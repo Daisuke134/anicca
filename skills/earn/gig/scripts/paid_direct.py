@@ -2784,6 +2784,7 @@ def _run_isolated_file_owner(args, root: Path, context: Path, prompt_text: str,
             "--prompt-file", str(prompt), "--schema", str(args.runner_schema),
             "--evidence-dir", str(staged_evidence), "--task-label", "paid-file-owner",
             "--loop", "gig", "--workdir", str(staging), "--timeout-seconds", "3600",
+            "--retry-safe-local-effects",
             "--escalation-reason", "One isolated paid owner must build the buyer deliverable",
         ]
         try:

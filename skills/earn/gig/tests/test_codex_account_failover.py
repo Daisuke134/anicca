@@ -34,6 +34,18 @@ def test_only_pre_effect_quota_or_auth_retries_account() -> None:
     assert not runner.should_retry_next_codex_account("transient_quota", True)
 
 
+def test_isolated_local_builder_can_retry_quota_after_local_effect() -> None:
+    assert runner.should_retry_next_codex_account(
+        "transient_quota", True, retry_safe_local_effects=True,
+    )
+    assert runner.should_retry_next_codex_account(
+        "transient_auth", True, retry_safe_local_effects=True,
+    )
+    assert not runner.should_retry_next_codex_account(
+        "validation_or_task_failure", True, retry_safe_local_effects=True,
+    )
+
+
 def test_effect_detection_uses_machine_events() -> None:
     message = json.dumps({"type": "item.completed", "item": {"type": "agent_message", "text": "run command"}})
     effect = json.dumps({"type": "item.started", "item": {"type": "command_execution", "command": "true"}})
