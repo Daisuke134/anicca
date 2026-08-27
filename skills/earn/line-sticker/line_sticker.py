@@ -746,11 +746,15 @@ def validate_package(root: Path, policy_path: Path, ffmpeg: str = "ffmpeg") -> d
 
     artifact_sha256 = _sha256(zip_bytes) if zip_bytes is not None else ""
     package_sha256 = _canonical_package_hash(file_hashes, provenance, zip_payloads)
+    set_id = provenance.get("set_id") if isinstance(provenance, dict) and type(provenance.get("set_id")) is str else ""
+    character_id = provenance.get("character_id") if isinstance(provenance, dict) and type(provenance.get("character_id")) is str else ""
     errors_list = sorted(errors)
     return {
         "status": "ready" if not errors_list else "invalid",
         "effect": 0,
         "readback": 0,
+        "set_id": set_id,
+        "character_id": character_id,
         "artifact_sha256": artifact_sha256,
         "package_sha256": package_sha256,
         "files": sorted(file_records, key=lambda record: str(record["name"])),
@@ -1082,10 +1086,16 @@ def _validate_receipt_transitions(rows: list[dict[str, object]], identity: dict[
         expected = ["intent"] + (["unknown"] if len(submit) > 1 and submit[1]["outcome"] == "unknown" else [])
         if [row["outcome"] for row in submit] != expected[:len(submit)] + (["acknowledged"] if len(submit) == len(expected) + 1 else []):
             raise OwnerStateError("ledger_conflict")
-        if any(row["outcome"] == "unknown" and row["product_id"] is not None for row in submit):
-            raise OwnerStateError("ledger_conflict")
+        submit_unknown = next((row for row in submit if row["outcome"] == "unknown"), None)
+    else:
+        submit_unknown = None
     submit_ack = next((row for row in submit if row["outcome"] == "acknowledged"), None)
     if submit_ack is not None and (not isinstance(submit_ack["product_id"], str) or not submit_ack["product_id"]):
+        raise OwnerStateError("ledger_conflict")
+    if submit_unknown is not None and submit_unknown["product_id"] is not None and (
+        not isinstance(submit_unknown["product_id"], str)
+        or submit_ack is not None and submit_unknown["product_id"] != submit_ack["product_id"]
+    ):
         raise OwnerStateError("ledger_conflict")
     if release:
         if submit_ack is None or release[0]["outcome"] != "intent" or release[0]["before_status"] != "approved":
@@ -1192,22 +1202,16 @@ def _identity_from_package(package: Path, policy: Path, account_id: str, revisio
         errors = result.get("errors")
         reason = str(errors[0]) if isinstance(errors, list) and errors else "invalid"
         raise OwnerStateError(f"package_invalid:{reason}")
-    try:
-        provenance = json.loads((package / "provenance.json").read_text(encoding="utf-8"))
-    except OwnerStateError:
-        raise
-    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
-        raise OwnerStateError("package_identity_unavailable") from exc
-    if not isinstance(provenance, dict) or type(provenance.get("set_id")) is not str or not provenance["set_id"] or type(provenance.get("character_id")) is not str or not provenance["character_id"]:
-        raise OwnerStateError("package_identity_invalid")
+    set_id = result.get("set_id")
+    character_id = result.get("character_id")
     artifact_sha256 = result.get("artifact_sha256")
     package_sha256 = result.get("package_sha256")
-    if type(artifact_sha256) is not str or not HEX64.fullmatch(artifact_sha256) or type(package_sha256) is not str or not HEX64.fullmatch(package_sha256):
+    if type(set_id) is not str or not set_id or type(character_id) is not str or not character_id or type(artifact_sha256) is not str or not HEX64.fullmatch(artifact_sha256) or type(package_sha256) is not str or not HEX64.fullmatch(package_sha256):
         raise OwnerStateError("package_identity_invalid")
     return {
         "account_id": account_id,
-        "set_id": provenance["set_id"],
-        "character_id": provenance["character_id"],
+        "set_id": set_id,
+        "character_id": character_id,
         "revision": revision,
         "artifact_sha256": artifact_sha256,
         "package_sha256": package_sha256,
@@ -1641,7 +1645,7 @@ def _validate_owner_ledger_state(
     submit_ack = receipts["submit"].get("acknowledged")
     chain_product = submit_ack.get("product_id") if submit_ack is not None else None
     state = str(owner["state"])
-    if chain_product is not None and owner.get("product_id") is not None and owner.get("product_id") != chain_product:
+    if submit_ack is not None and owner.get("product_id") != chain_product:
         raise OwnerStateError("owner_state_conflict")
     if submit_ack is not None:
         after_status = submit_ack["after_status"]

@@ -639,7 +639,7 @@ class LineStickerValidatorTests(unittest.TestCase):
         self.assertEqual(len(completed.stdout.splitlines()), 1)
         payload = json.loads(completed.stdout)
         self.assertEqual(payload["status"], "ready")
-        self.assertEqual(set(("status", "effect", "readback", "artifact_sha256", "package_sha256", "files", "errors")), set(payload))
+        self.assertEqual(set(("status", "effect", "readback", "set_id", "character_id", "artifact_sha256", "package_sha256", "files", "errors")), set(payload))
         self.assertNotIn("prompt:", completed.stdout)
 
     def test_every_cli_parse_error_is_one_stable_json_object(self) -> None:
