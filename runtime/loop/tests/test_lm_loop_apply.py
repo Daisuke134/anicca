@@ -72,10 +72,12 @@ class LmLoopApplyTest(unittest.TestCase):
         self.assertEqual(len(calls), 1)
         self.assertEqual(result[0]["loaded_arguments"], calls[0]["expected_arguments"])
 
-    def test_targeted_apply_preflights_all_but_installs_only_target(self):
+    def test_targeted_apply_ignores_unrelated_missing_entrypoint(self):
         calls = []
         installer = lambda item: calls.append(item) or item
-        result = apply_registry(two_loop_registry(), self.root, SHA, installer, target="second")
+        value = two_loop_registry()
+        value["loops"]["example"]["entrypoint"] = "bin/missing.sh"
+        result = apply_registry(value, self.root, SHA, installer, target="second")
         self.assertEqual([item["loop_id"] for item in calls], ["second"])
         self.assertEqual([item["loop_id"] for item in result], ["second"])
         with self.assertRaisesRegex(ValueError, "unknown apply target"):
