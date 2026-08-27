@@ -240,3 +240,18 @@ test("Anicca EN Affirmation Instagram boot reads the dedicated marketing env", (
   assert.match(result.stderr, /LM_RUNTIME_TENANT_ID is required/);
   assert.doesNotMatch(result.stderr, /LM_DATA_DIR is required/);
 });
+
+test("Anicca EN Slideshow TikTok boot reads the dedicated marketing env", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "lm-anicca-en-slideshow-env-"));
+  const envFile = path.join(dir, "marketing.env");
+  fs.writeFileSync(envFile, `LM_DATA_DIR=${dir}\n`);
+  const result = spawnSync("bash", [
+    path.join(__dirname, "anicca-en-slideshow-tiktok-production-boot.sh"),
+  ], {
+    encoding: "utf8",
+    env: { ...process.env, LIFE_MANAGER_MARKETING_ENV_FILE: envFile },
+  });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /LM_RUNTIME_TENANT_ID is required/);
+  assert.doesNotMatch(result.stderr, /LM_DATA_DIR is required/);
+});
