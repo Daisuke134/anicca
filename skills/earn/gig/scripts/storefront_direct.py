@@ -6746,6 +6746,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                             row = json.loads(line)
                             draft_id = str(row.get("draft_service_id") or "")
                             if (row.get("capability_family") == create_family and draft_id.isdigit()
+                                    and draft_id not in inventory_ids
                                     and int(row.get("public_effect") or 0) == 0
                                     and row.get("status") in {"draft_created", "draft_prepared"}):
                                 preferred_draft_ids.append(draft_id)

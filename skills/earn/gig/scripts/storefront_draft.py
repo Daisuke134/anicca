@@ -778,10 +778,18 @@ def _preferred_recoverable_draft(
     return next((str(value) for value in preferred_ids if str(value) in available), None)
 
 
+def _preferred_ledger_draft(preferred_ids: list[str]) -> str | None:
+    return next((str(value) for value in preferred_ids if str(value).isdigit()), None)
+
+
 def create_or_claim_blank_draft(
     default_tab_script: Path, preferred_draft_ids: list[str] | None = None,
 ) -> dict[str, Any]:
     """Claim one recoverable blank draft, creating it only when none exists."""
+    ledger_draft = _preferred_ledger_draft(preferred_draft_ids or [])
+    if ledger_draft is not None:
+        return {"draft_service_id": ledger_draft, "effect": 0, "recovered": True,
+                "abandoned_drafts": []}
     list_opened = subprocess.run(
         [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
          "--background", "open", "https://coconala.com/mypage/services_lists"],

@@ -307,6 +307,8 @@ def test_a_known_unpublished_candidate_draft_is_reused_even_after_it_has_a_title
         ["4371773", "4371756"], cards,
     ) == "4371773"
     assert storefront_draft._preferred_recoverable_draft(["1111111"], cards) is None
+    assert storefront_draft._preferred_ledger_draft(["4371790", "4371773"]) == "4371790"
+    assert storefront_draft._preferred_ledger_draft(["bad", ""]) is None
 
 
 def test_recurring_potential_comes_from_the_owned_capability_not_marketplace_copy():
