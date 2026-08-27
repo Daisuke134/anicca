@@ -1,6 +1,6 @@
 # macOS Life Manager Loop Control Plane
 
-**Status:** spec approved / implementation pending  
+**Status:** TODO 1 complete / TODO 2 pending
 **TODO ID:** `MACOS-LOOP-CONTROL-PLANE-1`  
 **Canonical registry:** `config/loop-registry.json`  
 **Scope:** macOS launchd only
@@ -211,7 +211,7 @@ Allowed values are closed and versioned with the registry schema:
 
 | Order | TODO | Done evidence |
 |---:|---|---|
-| 1 | Inventory every installed `ai.anicca.*` Life Manager label and classify owner/domain/effect/state/release | registry coverage report; unmanaged and ambiguous labels listed |
+| 1 | ✅ Inventory every installed `ai.anicca.*` Life Manager label and classify owner/domain/effect/state/release | `docs/evidence/runtime/2026-08-28-macos-loop-control-plane-inventory.{md,json}`; 226 installed labels, 191 classified Life Manager-owned, 34 installed ambiguous, loaded/disabled-only rows retained |
 | 2 | Upgrade `config/loop-registry.json` to schema v2 and import all active definitions without changing launchd | schema test and byte-stable deterministic render fixture |
 | 3 | Implement `bin/lm-loop doctor/status/watch` as read-only commands | focused tests; live output separates runtime from effect truth |
 | 4 | Implement plist generation and fail-closed `apply` using `launchctl-safe` | invalid registry causes zero mutation; exact loaded argv readback |
@@ -237,3 +237,14 @@ bin/lm-loop watch all
 
 No user GUI task is required. Authentication stays in existing private profile
 stores; this control-plane slice never creates or copies credentials.
+
+### TODO 1 execution state
+
+The read-only capture joins installed plist text with loaded and disabled
+launchd readback. It records the complete 266-label union, including 40 labels
+without an installed plist, rather than treating plist presence as runtime
+truth. The installed set contains 191 classified Life Manager-owned labels; all
+191 are unmanaged by the future registry. Thirty-four installed labels and 29
+loaded/disabled-only labels remain explicitly ambiguous. Unknown domains,
+unknown releases, mutable checkout paths, and three invalid plists fail closed
+for TODO 2 import. No launchd mutation or cleanup occurred.
