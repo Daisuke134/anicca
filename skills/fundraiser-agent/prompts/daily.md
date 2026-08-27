@@ -28,6 +28,7 @@ configured item whose action begins with `apply_now` from this ledger-first view
 carried forward without opening the site. A terminal duplicate must not append a new receipt or change status; preserve the existing `submitted_verified` or `submit_unknown` row as the latest outcome. Report the skip only in the wake summary. For a prior failure or checkpoint, reopen
 only when current evidence resolves or changes its blocker. An unchanged blocker is carried forward and the pass immediately continues to new discovery. A more specific
 one-shot action suffix is itself concrete new evidence only once. First compare its latest receipt blocker with the complete current queue reason.
+If a configured item's action does not begin with `apply_now`, it is not current work: you must not open its official site, execute its historical `reason`, or append a receipt. Continue directly to X and Web discovery unless an external event has actually changed the named retry condition.
 For each receipt identity, `latest` means the single row with the greatest
 `utc_timestamp`; it supersedes every older row for blocker comparison. Never
 reopen from an older terms/consent checkpoint when the latest row already proves

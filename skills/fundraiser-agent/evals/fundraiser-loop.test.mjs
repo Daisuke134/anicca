@@ -234,6 +234,7 @@ test("production contract runs every minute and maximizes real applications", ()
   assert.match(dailyPrompt, /prior terminal receipt[\s\S]*?carried forward without opening the site/);
   assert.match(dailyPrompt, /terminal duplicate[^\n]*must not append[^\n]*receipt/i);
   assert.match(dailyPrompt, /preserve the existing `submitted_verified` or `submit_unknown` row as the latest outcome/);
+  assert.match(dailyPrompt, /action does not begin with `apply_now`[^\n]*must not open[^\n]*official site/i);
   assert.match(dailyPrompt, /single row with the greatest\s+`utc_timestamp`/);
   assert.match(dailyPrompt, /changed queue reason is not new evidence when its authorization\s+was already exercised/);
   assert.match(dailyPrompt, /never carry the stale checkpoint forward unchanged/);
