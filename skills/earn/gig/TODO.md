@@ -97,25 +97,35 @@ capability claim is backed by an installed executable capability.
   family with sufficient views and zero purchases, and selects one winner with a durable scorecard.
   The natural owner selected `業務自動化 AI エージェント 開発` (score 12) ahead of one-off
   candidates after recurring potential became a ranking input.
-- [ ] `S05` Permit a stronger candidate to replace a measured zero-purchase service before all 20
+- [x] `S05` Permit a stronger candidate to replace a measured zero-purchase service before all 20
   slots are full.
   PASS = a regression changes one eligible allocation from `IMPROVE` to `REPLACE` when its sample
   is sufficient, purchases/payments are zero and the replacement has stronger paid-demand proof;
   a paid or insufficient-sample service remains protected.
-- [ ] `S06` Produce one original, truthful offer contract for the selected market.
+  Closed by the focused portfolio regression: a sufficient-sample zero-purchase offer becomes
+  `REPLACE` for stronger paid demand without slot pressure; paid and insufficient-sample offers stay protected.
+- [x] `S06` Produce one original, truthful offer contract for the selected market.
   PASS = title, body, packages, FAQ, price, original image brief and recurring-support boundary are
   complete; prohibited-copy checks reject exact competitor prose, identity and image reuse.
-  Draft `4371756` remains unpublished. Its first generated contract was rejected because it excluded
-  implementation and priced the service below the paid-comparable median. CREATE now requires one
-  bounded working implementation plus verification/handover and enforces the paid-demand price floor.
-- [ ] `S07` Resolve the executable mutation/publication contract selected by `S06`.
+  The rejected discovery-only and unrelated-niche drafts never became public. Contract
+  `1f77845e1fe8f3c8c16eb25f137a6dfdee826ad36392495d3f0f500af2bedc24` binds one original
+  AI-assisted workflow implementation, verified handover, paid-demand pricing, one original image,
+  and post-acceptance maintenance; only selected-capability evidence enters the proposal.
+- [x] `S07` Resolve the executable mutation/publication contract selected by `S06`.
   PASS = the natural Storefront owner no longer ends
   `no_executable_unfenced_mutation_contract` for that exact contract and records one fenced effect
   intent before any seller-page mutation.
-- [ ] `S08` Publish through the installed Storefront owner and read the seller page back.
+  The owner reused candidate `4371816`, persisted `prepared/readback=1`, checkpointed the exact
+  prepared contract instead of regenerating it, and advanced it through one fenced public effect.
+- [x] `S08` Publish through the installed Storefront owner and read the seller page back.
   PASS = an immutable main release is current; official Coconala DOM matches the selected original
   title, price, packages, body and image; the retired/replaced listing remains recoverable; replay
   performs zero duplicate effects.
+  Natural owner pass `storefront-direct-1787828293102000000-83451` published
+  `https://coconala.com/services/4371816` with public effect/readback `1/1`, image identity
+  `44547340-9588932.png`, no public readback error, and the generated maintenance option. Natural
+  replay `storefront-direct-1787829207737098000-21430` read 14 official services and 14 active
+  listing contracts with effect zero and no duplicate publication.
 - [ ] `S09` Attribute the first inquiry, order and payment to the originating service.
   PASS = official talkroom/service identity, order and payment receipts retain the same service ID;
   unknown remains explicit and storefront revenue is never inferred from views, favourites or chat.
