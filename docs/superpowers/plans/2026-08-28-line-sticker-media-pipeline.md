@@ -1,0 +1,178 @@
+# LINE Sticker Media Pipeline Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Turn one original character reference plus model/provider command outputs into a validated, provenance-bound 24-item animated LINE sticker package.
+
+**Architecture:** A model command makes the 60-motion plan and later selects/orders 24 candidates; deterministic Python validates those JSON contracts, invokes an animation provider command for six ten-motion videos, segments/chroma-keys/encodes each candidate with FFmpeg, assembles main/tab/ZIP/provenance, and calls the existing package validator. Creative judgment stays in the model; code owns effects, cost/disk bounds, media arithmetic, hashes, and receipts.
+
+**Tech Stack:** Python 3 standard library, FFmpeg/FFprobe, existing `line_sticker.py`, JSON/JSONL, subprocess.
+
+**Spec:** `docs/superpowers/specs/2026-08-28-line-sticker-loop-design.md`
+
+## Global Constraints
+
+- The first product has one original AI-generated character, text-free universal expressions, 60 candidates, six ten-motion source videos, and exactly 24 selected animated stickers.
+- No keyword/regex/hand-score decides creativity, quality, usefulness, variety, or ordering; the configured model decides from full motion/media evidence.
+- Deterministic code validates fixed schemas, timestamps, dimensions, costs, hashes, provider receipts, and official LINE package rules only.
+- Every paid provider effect has one stable request id, quoted cost at or below the local per-set cap, acknowledged output hash, and no retry after unknown acknowledgement.
+- Disk below configured media headroom, unknown cost, malformed model/provider output, missing provenance, provider mismatch, or invalid candidate fails before package promotion.
+- Process one source video at a time and remove regenerable intermediates only after durable hashes/receipts; never delete selected outputs, provenance, state, or receipts.
+- No network implementation, credential, browser mutation, launchd edit, hardcoded character copy, or income claim in this slice.
+
+---
+
+### Task 1: Plan, convert, select, and package 24 animations
+
+**Files:**
+- Create: `skills/earn/line-sticker/creative-prompt.md`
+- Create: `skills/earn/line-sticker/line_sticker_media.py`
+- Create: `skills/earn/line-sticker/tests/test_line_sticker_media.py`
+
+**Interfaces:**
+- CLI `plan --character PATH --model-command JSON_ARGV --work-dir PATH --set-id ID --character-id ID`.
+- CLI `convert --plan PATH --animation-command JSON_ARGV --work-dir PATH --max-cost-usd DECIMAL --ffmpeg PATH --ffprobe PATH`.
+- CLI `select --plan PATH --candidates PATH --model-command JSON_ARGV --work-dir PATH`.
+- CLI `package --selection PATH --work-dir PATH --output PATH --policy PATH --ffmpeg PATH`.
+- Every CLI prints one stable JSON object with `status`, `effect`, `readback`, `reason`, hashes, and output path only; no prompt body, credential, environment, or provider response body.
+
+- [ ] **Step 1: Write the right-altitude creative prompt**
+
+Create `creative-prompt.md` with two explicit modes, `plan` and `select`. It tells the model:
+
+- design text-free, large, legible motion for everyday global chat;
+- keep the supplied character's visual anchors consistent;
+- produce exactly 60 distinct candidates grouped into six coherent ten-motion videos;
+- do not prematurely discard difficult ideas; generation failures are filtered later;
+- in selection mode inspect every candidate path, validator result, first frame, timing, and motion preview;
+- select exactly 24, put the strongest/high-frequency face first, front-load frequent reactions,
+  separate visually similar motions, and explain each choice briefly;
+- never invent provider success, rights, hashes, cost, or visual evidence it did not inspect.
+
+Include three canonical examples showing good plan variety, rejection of a broken/ambiguous candidate,
+and ordering that separates similar motions. Do not include keyword lists or category scores.
+
+- [ ] **Step 2: Write RED contract tests and fake commands**
+
+Tests create executable fake model/provider commands in `TemporaryDirectory`. The plan fake consumes
+JSON on stdin and returns exactly 60 records:
+
+```json
+{
+  "version": 1,
+  "mode": "plan",
+  "set_id": "set-1",
+  "character_id": "char-1",
+  "character_anchors": ["round blue ears", "white face", "short tail"],
+  "motions": [{
+    "motion_id": "motion-01",
+    "batch": 1,
+    "position": 1,
+    "intent": "friendly acknowledgement",
+    "action": "leans forward and gives one broad nod",
+    "provider_prompt": "...",
+    "duration_ms": 1200
+  }]
+}
+```
+
+The provider fake returns one source-video receipt per batch with exact keys `request_id`, `batch`,
+`provider`, `model`, `quoted_cost_usd`, `acknowledged`, `video_path`, `video_sha256`, and ten segments
+(`motion_id`, `start_ms`, `end_ms`). Tests first fail because `line_sticker_media.py` is absent.
+
+- [ ] **Step 3: Implement safe command and JSON contracts**
+
+Parse command argv from a JSON array of nonempty strings; never use a shell. Send one bounded JSON
+request on stdin, cap stdout/stderr at 1 MiB via temporary files, use a 10-minute timeout, require one
+JSON object and exact schema/types/keys. Model plan must contain 60 unique ids, batches 1–6, positions
+1–10 exactly once, duration 500–2000 ms, and 64-character hashes for the character bytes and prompt.
+These are format/arithmetic checks, not creative judgment.
+
+Write outputs atomically and content-address them. `plan` writes `plan.json` and `plan-receipt.json`.
+Repeated identical invocation returns the existing receipt without calling the model again; conflicting
+inputs fail closed.
+
+- [ ] **Step 4: Implement provider effect fencing and one-video-at-a-time conversion**
+
+Before each animation command, persist an intent keyed by SHA-256 of set id, plan hash, batch, provider,
+model, and input character hash. Require a Decimal quote, nonnegative cumulative cost, and total at or
+below `--max-cost-usd`. Unknown acknowledgement writes `reconcile_unknown` and never calls the provider
+again. A later command may reconcile only by presenting the same request id and output hash.
+
+Validate segments are ordered, nonoverlapping, within probed source duration, and bind the exact ten
+motion ids. For each segment run FFmpeg without a shell:
+
+```text
+-ss START -t DURATION -i VIDEO
+-vf chromakey=0x00FF00:0.12:0.08,fps=10,
+    scale=320:270:force_original_aspect_ratio=decrease,
+    pad=320:270:(ow-iw)/2:(oh-ih)/2:color=0x00000000
+-plays 1 -f apng OUTPUT.png
+```
+
+Keep between 5 and 20 frames by choosing a bounded fps from duration, never by dropping the final
+motion phase. Call existing `parse_png` and alpha checks for every candidate. Persist candidate SHA,
+source SHA, segment, conversion argv hash, and validation errors. Remove only the processed unselected
+source video after its ten durable candidate records exist and the provider receipt marks it regenerable.
+
+- [ ] **Step 5: Implement model visual selection and ordering**
+
+Build `selection-input.json` containing the 60 candidate paths, hashes, parsed APNG facts, errors,
+first-frame PNG paths, and motion-plan text. Call the model in `select` mode. Require exactly 24 unique
+existing valid motion ids, exact positions 1–24, one declared cover id equal to position 1, and a
+nonempty natural-language reason for each. Do not calculate or override a creative score.
+
+Repeated identical selection input returns the existing selection receipt. A changed candidate hash
+invalidates selection and requires a fresh model call.
+
+- [ ] **Step 6: Assemble the exact official package**
+
+Copy selected APNG bytes as `01.png`–`24.png`. Create `main.png` from the cover APNG with a transparent
+240×240 canvas while preserving animation. Extract the cover first frame and create a transparent
+96×74 `tab.png`. Build `provenance.json` with original rights, model/provider names, prompt hashes,
+character hash, plan/selection hashes, costs, provider request ids, source/candidate hashes, and exact
+asset hashes. Create deterministic `submission.zip` containing only the 26 PNGs with fixed metadata.
+
+Run existing `validate_package`; promote to the output directory only when `status=ready`. Promotion is
+same-filesystem atomic rename and refuses an existing conflicting package. Emit raw artifact and canonical
+package digests returned by the validator.
+
+- [ ] **Step 7: Add fail-closed and replay regressions**
+
+Cover malformed/extra model keys, 59/61/duplicate motions, duplicate batch positions, invalid durations,
+shell-like argv values remaining literal, command timeout/output overflow, quote over cap, NaN/boolean
+cost, provider unknown acknowledgement and no retry, changed request/video hash, overlapping/out-of-range
+segments, wrong source SHA, invalid chroma/opaque/alpha-hole candidate, 23/25/duplicate selection, selection
+of invalid candidate, changed candidate after selection, output conflict, low disk, and replay call counts.
+
+Generate one real six-batch FFmpeg fixture with simple distinct green-screen motions and prove the resulting
+24 package passes the existing validator. Keep fixtures temporary and bounded.
+
+- [ ] **Step 8: Run verification and commit**
+
+Run:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest skills/earn/line-sticker/tests/test_line_sticker_media.py -v
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest skills/earn/line-sticker/tests/test_line_sticker.py -v
+git diff --check
+git status --short
+```
+
+Expected: all media tests and existing 78 validator/owner tests pass; only the three owned files change.
+
+```bash
+git add skills/earn/line-sticker/creative-prompt.md \
+  skills/earn/line-sticker/line_sticker_media.py \
+  skills/earn/line-sticker/tests/test_line_sticker_media.py
+git commit -m "feat(line-sticker): build animated media packages"
+git push
+```
+
+## Self-review result
+
+- Spec coverage: this slice closes model plan/selection contracts, provider receipts/cost fence,
+  deterministic video→APNG conversion, package/provenance assembly, and replay. Real image/video provider
+  network adapters, Creators Market browser, launchd/onboarding, and production publication remain later.
+- Placeholder scan: every JSON shape, count, effect fence, conversion, selection, package, and command is explicit.
+- Type consistency: set/character/motion/batch/request ids and artifact/package hashes are stable across all stages.
