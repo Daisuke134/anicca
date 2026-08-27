@@ -419,6 +419,12 @@ test("production queue enforces founder geography, format, priority, and YC hold
     "ASAC 4th Pre-seed / 23rd Seed Program",
     "Y Combinator",
   ]);
+  assert.deepEqual(fundraising.priority_queue.map((item) => item.action), [
+    "retry_when_provider_password_validator_changes",
+    "terminal_ledger_owned",
+    "retry_when_password_recovery_arrives",
+    "hold_do_not_submit",
+  ]);
   assert.match(fundraising.priority_queue[0].reason, /password-reset\/account-recovery/);
   assert.match(fundraising.priority_queue[0].reason, /official free new-customer registration route/);
   assert.match(fundraising.priority_queue[0].reason, /Do not preserve no-registration as a human checkpoint/);
