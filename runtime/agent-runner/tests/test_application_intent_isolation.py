@@ -66,7 +66,7 @@ class ApplicationIntentIsolationTest(unittest.TestCase):
             "route": "luna-high-isolated-application-intent",
             "requires_explicit_escalation": True,
             "token_reservation": 24576,
-            "timeout_seconds": 900,
+            "timeout_seconds": 3600,
             "candidates": [
                 {"provider": "codex", "model": "gpt-5.6-luna", "effort": "high"},
                 {"provider": "codex", "model": "gpt-5.6-terra", "effort": "medium"},

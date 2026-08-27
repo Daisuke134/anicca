@@ -10,6 +10,7 @@ const skill = await readFile(new URL("../SKILL.md", import.meta.url), "utf8");
 const runtimeScript = await readFile(new URL("../runtime/run.sh", import.meta.url), "utf8");
 const productionContext = JSON.parse(await readFile(new URL("../../../.agents/startup-context.json", import.meta.url), "utf8"));
 const productionOpportunities = JSON.parse(await readFile(new URL("../../../.agents/fundraising-opportunities.json", import.meta.url), "utf8"));
+const runnerConfig = JSON.parse(await readFile(new URL("../../../runtime/agent-runner/config.json", import.meta.url), "utf8"));
 const emailValidator = new URL("../runtime/validate-outbound-email.py", import.meta.url);
 const applicationRecorder = new URL("../runtime/record-application.py", import.meta.url);
 const startupContext = Object.freeze({
@@ -279,6 +280,7 @@ test("production contract runs every minute and maximizes real applications", ()
   assert.match(runtimeScript, /--task-class application-intent-planner/);
   assert.match(runtimeScript, /--escalation-reason/);
   assert.match(runtimeScript, /AGENT_RUNNER_MODEL="gpt-5\.6-luna"/);
+  assert.equal(runnerConfig.task_classes["application-intent-planner"].timeout_seconds, 3600);
   assert.doesNotMatch(contract, /at most one/i);
   assert.doesNotMatch(contract, /per user-local day/i);
 });
