@@ -2279,6 +2279,38 @@ def _observed_deleted_draft_ids(evidence_root: Path) -> set[str]:
     return deleted
 
 
+def _recover_prepared_create_contract(
+    state_dir: Path, family_name: str, demand_evidence_path: str,
+) -> dict | None:
+    wakes = state_dir / "wakes.jsonl"
+    if not wakes.is_file():
+        return None
+    for line in reversed(wakes.read_text(encoding="utf-8").splitlines()):
+        if not line.strip():
+            continue
+        row = json.loads(line)
+        draft = row.get("new_listing_draft") if isinstance(row.get("new_listing_draft"), dict) else {}
+        if (row.get("status") != "completed" or draft.get("status") != "prepared"
+                or int(draft.get("readback") or 0) != 1 or int(draft.get("public_effect") or 0) != 0
+                or draft.get("capability_family") != family_name
+                or str(draft.get("demand_evidence_path") or "") != demand_evidence_path):
+            continue
+        path = state_dir / "evidence" / str(row.get("pass_id") or "") / "generated-create-contract.json"
+        try:
+            contract = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        digest = str(contract.get("contract_sha256") or "")
+        unsigned = {key: value for key, value in contract.items() if key != "contract_sha256"}
+        expected = hashlib.sha256(json.dumps(
+            unsigned, ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+        ).encode()).hexdigest()
+        if (digest == expected == draft.get("contract_sha256")
+                and str(contract.get("draft_service_id") or "") == str(draft.get("draft_service_id") or "")):
+            return contract
+    return None
+
+
 def _near_duplicate_listings(rows: list[dict], families: dict[str, str]) -> list[dict]:
     """Report live listings that sell the same thing under nearly the same name.
 
@@ -6734,19 +6766,28 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                           if cluster_blueprint is not None else
                           {**new_listing_contract["demand_evidence"],
                            "evidence_path": str(Path(new_listing_path).resolve())})
-                create_seller_snapshot = _seller_snapshot_from_fresh_tab(
-                    getattr(args, "default_tab_script", DEFAULT_TAB), source_service_id,
+                recovered_create_contract = _recover_prepared_create_contract(
+                    args.state_dir, create_family, str(demand["evidence_path"]),
                 )
-                create_proposal, create_route, create_allowed_refs = _invoke_create_proposal(
-                    runner=getattr(args, "runner", DEFAULT_RUNNER),
-                    schema=getattr(args, "create_proposal_schema", DEFAULT_CREATE_PROPOSAL_SCHEMA),
-                    workdir=args.workdir,
-                    evidence_dir=inventory_path.parent / "create-proposal-agent",
-                    source=create_source, family_name=create_family, family=create_template,
-                    demand=demand, capability_paths=create_capability_paths,
-                    catalog_titles=[str(row.get("title") or "") for row in inventory["services"]],
-                    timeout_seconds=args.timeout_seconds,
-                )
+                if recovered_create_contract is not None:
+                    create_seller_snapshot = None
+                    create_proposal = {"decision": "create"}
+                    create_route = {"status": "recovered_prepared_contract"}
+                    create_allowed_refs = set()
+                else:
+                    create_seller_snapshot = _seller_snapshot_from_fresh_tab(
+                        getattr(args, "default_tab_script", DEFAULT_TAB), source_service_id,
+                    )
+                    create_proposal, create_route, create_allowed_refs = _invoke_create_proposal(
+                        runner=getattr(args, "runner", DEFAULT_RUNNER),
+                        schema=getattr(args, "create_proposal_schema", DEFAULT_CREATE_PROPOSAL_SCHEMA),
+                        workdir=args.workdir,
+                        evidence_dir=inventory_path.parent / "create-proposal-agent",
+                        source=create_source, family_name=create_family, family=create_template,
+                        demand=demand, capability_paths=create_capability_paths,
+                        catalog_titles=[str(row.get("title") or "") for row in inventory["services"]],
+                        timeout_seconds=args.timeout_seconds,
+                    )
                 proposal_agent = create_route
                 if create_proposal.get("decision") == "create" and args.effect:
                     blocked = _persist_effect_block(
@@ -6779,7 +6820,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     blueprint = cluster_blueprint or {
                         **new_listing_contract,
                         "demand_evidence_path": str(Path(new_listing_path).resolve())}
-                    if cluster_blueprint is not None:
+                    if cluster_blueprint is not None and recovered_create_contract is None:
                         # The category's sub and type options only exist once a draft holds the
                         # chosen top-level category, so they are read and picked here.
                         draft_id = str(create_draft_claim["draft_service_id"])
@@ -6824,7 +6865,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                         demand_derivation = {**(demand_derivation or {}),
                                              "category_triple": blueprint["category"],
                                              "category_child_route": child_route.get("model")}
-                    new_listing_contract = _seal_create_contract(
+                    new_listing_contract = recovered_create_contract or _seal_create_contract(
                         create_proposal, source=create_source, family_name=create_family,
                         family=create_template,
                         allowed_refs=create_allowed_refs, blueprint=blueprint,

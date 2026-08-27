@@ -320,6 +320,41 @@ def test_official_draft_deletion_evidence_prevents_reusing_a_deleted_id(tmp_path
     assert sd._observed_deleted_draft_ids(tmp_path / "evidence") == {"4371796"}
 
 
+def test_a_prepared_readback_contract_is_reused_instead_of_regenerated(tmp_path):
+    import hashlib
+    sd = _sd()
+    unsigned = {
+        "draft_service_id": "4371816",
+        "capability_evidence": {"family": "ai-automation-builder"},
+        "demand_evidence_path": "/evidence/ai.json",
+    }
+    digest = hashlib.sha256(json.dumps(
+        unsigned, ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+    ).encode()).hexdigest()
+    contract = {**unsigned, "contract_sha256": digest}
+    evidence = tmp_path / "evidence" / "wake-1"
+    evidence.mkdir(parents=True)
+    (evidence / "generated-create-contract.json").write_text(
+        json.dumps(contract) + "\n", encoding="utf-8",
+    )
+    (tmp_path / "wakes.jsonl").write_text(json.dumps({
+        "pass_id": "wake-1", "status": "completed",
+        "new_listing_draft": {
+            "status": "prepared", "readback": 1, "public_effect": 0,
+            "draft_service_id": "4371816", "contract_sha256": digest,
+            "capability_family": "ai-automation-builder",
+            "demand_evidence_path": "/evidence/ai.json",
+        },
+    }) + "\n", encoding="utf-8")
+
+    assert sd._recover_prepared_create_contract(
+        tmp_path, "ai-automation-builder", "/evidence/ai.json",
+    ) == contract
+    assert sd._recover_prepared_create_contract(
+        tmp_path, "other-family", "/evidence/ai.json",
+    ) is None
+
+
 def test_recurring_potential_comes_from_the_owned_capability_not_marketplace_copy():
     sd = _sd()
     assert sd._capability_recurring_potential({
