@@ -737,3 +737,29 @@ def test_runner_loop_id_uses_managed_control_plane_identity(monkeypatch):
     paid = load("paid_direct")
     monkeypatch.setenv("LIFE_MANAGER_LOOP_ID", "hf-gig-paid-direct")
     assert paid._runner_loop_id() == "hf-gig-paid-direct"
+
+
+def test_normalize_acceptance_absolutizes_project_relative_asset_path(tmp_path):
+    paid = load("paid_direct")
+    root = tmp_path / "project"
+    (root / "delivery").mkdir(parents=True)
+    (root / "acceptance").mkdir(); (root / "context").mkdir()
+    archive = root / "delivery" / "draft-v1.zip"; archive.write_bytes(b"zip")
+    acceptance = root / "acceptance" / "acceptance-v1.json"
+    write_json(acceptance, {"status": "PASS", "acceptance_delta": ["ready"]})
+    assets = [{"asset_id": "draft", "kind": "linked_asset", "minimum_count": 1,
+               "buyer_visible_purpose": "download", "source_authority": "builder",
+               "archive_required": True}]
+    write_json(root / "context" / "paid-work-decision.json", {"required_assets": assets})
+    write_json(root / "delivery" / "paid-work-result.json", {
+        "status": "ok", "artifact_path": str(archive),
+        "acceptance_evidence_path": str(acceptance), "acceptance_status": "PASS",
+        "acceptance_delta": ["ready"], "required_assets": assets,
+        "artifact_assets": [{"asset_id": "draft", "path": "delivery/draft-v1.zip",
+            "bytes": 3, "sha256": hashlib.sha256(b"zip").hexdigest(),
+            "mime_type": "application/zip", "provenance": "builder"}],
+    })
+
+    paid._normalize_acceptance_delta(root)
+    asset = json.loads((root / "delivery" / "paid-work-result.json").read_text())["artifact_assets"][0]
+    assert asset["path"] == str(archive.resolve())

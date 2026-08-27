@@ -2356,6 +2356,12 @@ def _normalize_acceptance_delta(root: Path) -> None:
         raise ValueError("invalid asset contract")
     artifact_path = Path(_text(manifest.get("artifact_path"))).resolve()
     for asset in artifact_assets:
+        if not isinstance(asset, dict):
+            continue
+        asset_path = Path(_text(asset.get("path")))
+        asset_path = (root / asset_path if not asset_path.is_absolute() else asset_path).resolve()
+        asset_path.relative_to(root.resolve())
+        asset["path"] = str(asset_path)
         member = _text(asset.get("archive_member")) if isinstance(asset, dict) else ""
         if not member:
             continue
