@@ -380,7 +380,7 @@ def refresh_engagement(page, posted_path: Path) -> list:
             records.append(None)
 
     due, updated = [], []
-    for rec in records:
+    for rec in records[-10:]:
         if not rec or not rec.get("post_url"):
             continue
         try:
