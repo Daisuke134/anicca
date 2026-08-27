@@ -376,6 +376,7 @@ test("production queue enforces founder geography, format, priority, and YC hold
   assert.match(dailyPrompt, /Never submit a `hold_do_not_submit` program/);
   assert.match(dailyPrompt, /Ordinary privacy-policy and data-processing consent/);
   assert.match(dailyPrompt, /Do not infer consent to investment, equity/);
+  assert.match(dailyPrompt, /operate on the visible, enabled\s+control inside the active dialog/);
 });
 
 test("unseen rendered fields are filled from startup context and read back after one submit", async () => {

@@ -26,6 +26,11 @@ CAPTCHA blocker. A changed queue reason is not new evidence when its authorizati
 was already exercised and reflected by that latest receipt.
 For an opened candidate, complete every truthful authorized field and either
 obtain an official submission receipt or record the exact current checkpoint.
+When a page contains duplicate labels, names, or IDs because a modal overlays a
+background form, inspect bounding boxes and operate on the visible, enabled
+control inside the active dialog. Read back that same control before continuing;
+an error on a still-empty modal field is a local selector fault, not a human
+checkpoint.
 Read each priority item's complete current `reason`, not only its program, URL,
 and action. The current reason is the authority source and overrides an older
 checkpoint when it explicitly authorizes a previously unresolved application-stage
