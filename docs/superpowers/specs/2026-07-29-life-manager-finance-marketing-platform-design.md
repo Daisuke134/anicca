@@ -2241,18 +2241,28 @@ order is the §12.3 recovery checklist: `MKT-09R0 → MKT-09R1 → MKT-09R2 →
 MKT-09R3-01..13 → MKT-09R4..R9 → MKT-10 → MKT-11 → MKT-12 → MKT-13`.
 No later row starts early.
 
-Current TODO state: **incident recovery remains open at MKT-11 cadence Order 8,
-one destination at a time.** MKT-09R0 through the selected Postiz canary
-portfolio are terminal: capacity is safe, the shared publication fence remains closed,
-the JP4 false completion is quarantined, and the 13-effect set is 12 `present`
-plus one truthful `absent`. The full publication ledger is 43 `completed`,
-one `conflict`, and zero unknown/running/reconciling jobs. This does not prove
-all accounts or schedules healthy: the measured live schedules still produced
-only 32 of 64 expected provider rows, most accounts remain unclassified at
-0/day, and two delayed effects missed their logical slots by hours.
-MKT-12A0 remains blocked until cadence and attribution are healthy. Honne still has TikTok
-destinations only; dedicated Honne Instagram and YouTube integrations do not
-yet exist.
+Current TODO state: **incident recovery is open at MKT-13 cadence soak (Order
+28C).** MKT-09R0 through the selected Postiz canary portfolio are terminal.
+The previously uncertain Anicca HE effect is also terminal: the live Postiz
+API row `cmt32u9dj00jxqp0yqdh6yi96` is `PUBLISHED` with the exact Japanese
+caption, integration `cmq2aoena08bhqp0yx1epjcik`, and `DIRECT_POST` settings;
+the matching native URL is
+`https://www.tiktok.com/@anicca.he/video/7676500512308481296` (HTTP 200 and
+oEmbed caption/owner match); Telegram receipt `28431` carries that URL; and
+the local job `marketing-video-publication:7732e4c1e7ff88ccad12a0295e6740125f58da2d6e07558e6f9e432bf85349dd`
+is `completed`, `reconciliation_decision=present`, `unknown_effect=false`.
+Its 24h snapshot measured 125 views and 0 likes/comments/shares/saves; fields
+not supplied by the source remain `unavailable`.
+
+The live manifest has 13 selected routes (Honne 2 + Anicca 11), each with
+three calendar opportunities per day (39 slots/day), and the 13 publication
+owners plus the two metric owners are loaded with last exit 0. The current
+2026-08-28 cadence snapshot is pre-due and truthfully records
+`published=0,pending=39,missed=0,duplicate=0`; this is not a posting claim.
+Honne still has TikTok destinations only; no Honne Instagram or YouTube route
+is created. The final audit remains `not_ready` until cadence soak, attribution
+gated hook decisions/consumption, and the permitted ownership retirement gate
+are independently terminal.
 
 For every selected Postiz video/Reel/carousel lane, publication success now
 requires the exact Postiz API row in `PUBLISHED` state plus the exact LM
@@ -2266,20 +2276,20 @@ An external observation clock is not an active implementation item. It remains
 terminal acceptance evidence. Exactly one executable atomic item remains active;
 when the clock fires, its readback is reconciled before any dependent account arm.
 
-**Active executable atomic item:** MKT-09R9-15 / Order 24F10 reconciles the
-existing `@anicca_slideshow` API canary; it creates no new publication. For this
+**Historical terminal item:** MKT-09R9-15 / Order 24F10 reconciled the existing
+`@anicca_slideshow` API canary and created no new publication. For this
 TikTok **native photo carousel** lane only, publication acceptance is the exact
 Postiz API/DB row in `PUBLISHED` state with matching integration, caption, title,
 slot, and DIRECT_POST settings plus the LM-local SHA-verified pack, six ordered
 JPEGs, caption, approval, and media-order hash. A direct native photo URL is not
 required because Postiz does not expose one for this photo form. This exception
 does not weaken video/Reel lanes: those still require their direct native URL.
-After durable reconciliation, send one natural Telegram receipt describing the
-account/content/Postiz state without inventing a URL, prove same-effect replay 0,
-record immediate source status, and register 2h/24h/72h/7d under the durable LM
-owner. No other account or cadence begins.
+After durable reconciliation, the runner sent one natural Telegram receipt describing the
+account/content/Postiz state without inventing a URL, proved same-effect replay 0,
+recorded immediate source status, and registered 2h/24h/72h/7d under the durable LM
+owner. No other account or cadence began from that item.
 
-The first 24F10 slot `2026-08-26T04:46:42.000Z` is terminal `absent`, not a
+The first 24F10 slot `2026-08-26T04:46:42.000Z` was terminal `absent`, not a
 publication success and not retryable as the same job. Exact job
 `marketing-native-carousel-publication:87916760…038c6e2` failed attempt 1 in
 local pre-provider validation with `carousel images are Instagram-only`; the
@@ -2289,7 +2299,7 @@ sets `unknown_effect=false`, `decision=absent`. The shared transport's second
 Instagram-only branch is corrected to accept only Instagram/TikTok photo
 carousels, preserve the caller's exact platform/title, poll the exact platform,
 and require a direct TikTok URL before success. Python regression is 21/21.
-After this fix is pushed, 24F10 permits one new-slot attempt only; it does not
+After that fix was pushed, 24F10 permitted one new-slot attempt only; it did not
 reuse or reinterpret the absent effect.
 
 The initial new-slot command then failed locally at enqueue with `local ledger
@@ -2302,7 +2312,7 @@ pack/media/caption, with approval
 The old absent effect and approval remain retained evidence; no ledger dedupe
 rule is weakened and no media/caption changes are smuggled into the retry.
 
-The R2 provider effect exists and is accepted under the photo-carousel rule;
+The R2 provider effect exists and was accepted under the photo-carousel rule;
 it must not be retried. Postiz row `cmt9mebpj0341mp0ymi31r582` is `PUBLISHED` with the
 exact caption/title/integration and numeric release suffix
 `7678198747632977937`, while its release URL is still only the profile URL.
@@ -2314,20 +2324,20 @@ terminal `completed`, `reconciliation_decision=present`, and
 `cmnenjkff01j1pa0ysufmzhfr`, exact caption/title/DIRECT_POST metadata, pack
 `3241653e…de624c`, six ordered media hashes, order hash `97cb56b3…1c3855`, and
 caption hash `8e6f7cec…f2c6d`; `public_url=null` is explicit and no URL is invented.
-Telegram/replay/metrics are the next atomic steps.
+Telegram/replay/metrics were the subsequent atomic steps and are now terminal.
 The shared natural-language renderer now accepts this exact photo proof as
 `postiz_published_exact_assets`, says Postiz API `PUBLISHED` and exact approved
 local assets/caption matched, and omits a nonexistent public URL. Video/Reel
-messages retain their direct-URL validation. Focused liveness/runner tests are
-21/21; the next action is replaying the existing slot to create exactly one
-Telegram message, followed by a second replay proving message 0/publication 0.
+messages retain their direct-URL validation. Focused liveness/runner tests were
+21/21; the runner then replayed the existing slot to create exactly one Telegram
+message and performed a second replay proving message 0/publication 0.
 
 That Telegram/replay gate is now terminal. The LM runner replayed the existing
 slot with publication `created=false`, sent one natural receipt as provider
 message `34998`, then replayed again with publication `created=false` and
 Telegram `created=false` returning the same message ID. The retained publication
 receipt count for Postiz row `cmt9mebpj0341mp0ymi31r582` remains exactly one.
-The only active atomic item is immediate Postiz metric-source status plus durable
+The historical next step was immediate Postiz metric-source status plus durable
 2h/24h/72h/7d ownership for this photo receipt; no new publication starts.
 
 Metrics code now discovers this exact reconciled photo receipt by job/account/
@@ -2337,9 +2347,16 @@ plus latest-20 aggregates from account analytics, and marks every empty or
 unsupported field `unavailable` rather than zero. URL-free photo snapshots and
 their natural Telegram wording use the same
 `postiz_published_exact_assets` evidence. Existing direct-video metrics remain
-unchanged. Focused metrics/liveness tests pass 18/18. Next: push, trigger the
-existing LM metrics owner, and read back pending/due status plus any immediate
-provider source observation.
+unchanged. Focused metrics/liveness tests passed 18/18. That item is terminal;
+the current active item is the installed MKT-13 cadence reconciler below.
+
+**Current active executable atomic item:** MKT-13 / Order 28C evaluates the
+13-route, 39-slot daily cadence through the existing Life Manager owner. It
+must classify each naturally due slot as `published`, `pending`, `missed`,
+`duplicate`, or `explicit_failure`, preserve source-labelled unavailable
+metrics, and update the 7-day soak snapshot and natural Telegram report. No
+future slot is manually triggered, no missed history is burst-posted, and no
+later account/ownership row starts before this gate is terminal.
 
 **Remaining atomic TODO SSOT — execute strictly in this order:**
 
