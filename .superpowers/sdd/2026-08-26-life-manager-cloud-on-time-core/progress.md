@@ -206,4 +206,5 @@ Baseline: focused Life Manager suite 175/175 PASS.
 - Ruling: reuse only the matched outbound Travel block's non-empty location as the route destination. Keep the original event title/location for user-visible reminder text and durable claim identity. Do not add another resolver, provider, table, or fetch.
 - Task 12 R0: `71c8e9dc2` passed the related 76/76 suite but failed a parent realistic return-block counterexample: a prior-event Travel block arriving home at the target start was selected as the target destination. Multiple same-start candidates were also not identity-safe because legacy blocks store no source event ID.
 - Task 12 ruling: reject home-destination candidates and require exactly one eligible adjacent Travel candidate; zero or multiple candidates fail closed to the original event location.
-- Task 12 status: fix RED/GREEN, review, deploy, real route readback, Telegram receipt, and replay-zero remain.
+- Task 12 R1: `a9ab7069c` rejects normalized home-destination helpers and requires exactly one eligible adjacent Travel candidate. The realistic return and multiple-candidate tests were RED before the fix; the related reminder/wake suite is 78/78 PASS after it. Commit is pushed and worktree is clean.
+- Task 12 status: fresh read-only review, PR/merge, exact Railway deploy, real route readback, Telegram receipt, and replay-zero remain.
