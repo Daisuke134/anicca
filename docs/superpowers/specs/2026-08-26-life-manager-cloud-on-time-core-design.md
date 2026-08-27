@@ -140,7 +140,7 @@ Transit APIの公式契約は次を使う。
 | AC-24 | 送信前に既存`lm_travel_log`へ`leg=telegram-t5`をatomic claimする。Telegram非2xxまたはmessage ID欠落時は同claimをreleaseし、次tickでretryする。新DB tableを作らない。 |
 | AC-25 | reminderはComposio予算で5分へ劣化する`organsUserOnce`から分離する。in-process ownerは固定60秒`startReminderLoop`、`LIFE_RUN_LOOPS=false` ownerは既存の毎分Inngest `sweep-wake → wake-user → wakeUserOnce → reminderUserOnce`で走り、どちらのowner modeでも0経路・二重経路を作らない。各tenantを独立timeoutで処理し、route timeoutやTelegram失敗が`wakeCallOnce`、他tenant、他organを止めない。 |
 | AC-26 | success logはuidの先頭12文字、event key hash、provider、Telegram message IDを含む。event title、location、phoneをlogへ出さない。 |
-| AC-36 | event開始へ隣接するoutbound `[Travel]` blockに非空locationがある時、T-5 routeのdestinationはその解決済みlocationを使う。対応blockが無い時だけeventのfree-form locationへ戻す。別event、return block、`[PENDING]`、`[APPLIED]`のlocationを流用しない。Telegramの予定名と表示目的地は元eventの値を維持する。 |
+| AC-36 | event開始へ隣接するoutbound `[Travel]` blockが一意で、非空locationがhomeと異なる時だけ、T-5 routeのdestinationにその解決済みlocationを使う。候補0件・複数件・home行きの時はeventのfree-form locationへ戻す。別event、return block、`[PENDING]`、`[APPLIED]`のlocationを流用しない。Telegramの予定名と表示目的地は元eventの値を維持する。 |
 
 AC-36の根拠:
 
@@ -300,7 +300,7 @@ Telegram本文の固定形:
 ### Slice 2C — Reuse the autofill-resolved destination
 
 - [ ] `travel-reminder.test.js`へ、隣接outbound Travel住所をroute destinationに使うREDを追加する。
-- [ ] 別event、return block、非Travel helper、時刻不一致を流用しないnegative regressionを追加する。
+- [ ] 別event、home行きreturn block、複数候補、非Travel helper、時刻不一致を流用しないnegative regressionを追加する。
 - [ ] `travel-reminder.js`で既存event配列だけから対応Travel blockを選び、新provider・DB・Calendar fetchを追加せずGREENにする。
 - [ ] productionの既存physical eventで、曖昧な元locationではなく完全住所に対するTransit route factsをreadbackする。
 

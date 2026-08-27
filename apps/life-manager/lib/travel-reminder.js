@@ -34,19 +34,20 @@ function travelHelper(event) {
   return summary.startsWith("[Travel]") || summary.includes("🚆 移動");
 }
 
-function resolveReminderDestination(event, { events = [] } = {}) {
+function resolveReminderDestination(event, { events = [], home } = {}) {
   const fallback = String(event && event.location || "").trim();
+  const normalizedHome = String(home || "").replace(/\s+/g, "").toLowerCase();
   const start = startMs(event), end = endMs(event);
-  let match = null;
+  const matches = [];
   for (const candidate of Array.isArray(events) ? events : []) {
     if (!candidate || candidate === event || (candidate.id && candidate.id === event.id) || !travelHelper(candidate)) continue;
     const candidateStart = startMs(candidate), candidateEnd = endMs(candidate);
     const location = String(candidate.location || "").trim();
-    if (!location || start === null || candidateStart === null || candidateEnd === null) continue;
+    if (!location || (normalizedHome && location.replace(/\s+/g, "").toLowerCase() === normalizedHome) || start === null || candidateStart === null || candidateEnd === null) continue;
     if (candidateEnd < start - 2 * 60000 || candidateEnd > start + 60000 || candidateStart > start || (end !== null && candidateStart >= end)) continue;
-    if (!match || candidateStart > match.start) match = { start: candidateStart, location };
+    matches.push({ start: candidateStart, location });
   }
-  return match ? match.location : fallback;
+  return matches.length === 1 ? matches[0].location : fallback;
 }
 
 function nextReminderEvent(events, nowMs = Date.now()) {
@@ -208,12 +209,13 @@ async function travelReminderOnce(user, nowMs = Date.now(), deps = {}) {
   const events = Array.isArray(deps.events) ? deps.events : [];
   const event = nextReminderEvent(events, now);
   if (!event) return { status: "suppressed", reason: "no-event" };
+  const home = deps.home !== undefined ? deps.home : user.home_address;
   const origin = resolveReminderOrigin(event, {
     events, liveLocation: deps.liveLocation,
-    home: deps.home !== undefined ? deps.home : user.home_address, nowMs: now,
+    home, nowMs: now,
   });
   const routeAttempted = physical(event) && Boolean(origin);
-  const destination = resolveReminderDestination(event, { events });
+  const destination = resolveReminderDestination(event, { events, home });
   let route = null;
   if (routeAttempted) {
     try {

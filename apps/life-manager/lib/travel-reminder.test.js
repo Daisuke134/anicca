@@ -108,9 +108,9 @@ test("origin precedence is fresh live location, previous venue within 90m, then 
   assert.equal(resolveReminderOrigin(current, { events: [far, current], home: "", nowMs: NOW }), null);
 });
 
-test("resolved destination uses the latest adjacent outbound Travel location only", () => {
+test("resolved destination uses a unique adjacent outbound Travel location only", () => {
   const current = event({ id: "target", location: "渋谷" });
-  const older = { id: "travel-old", summary: "[Travel] 🚆 home→old", location: "旧住所", startMs: START - 50 * 60000, endMs: START - 60000 };
+  const older = { id: "travel-old", summary: "[Travel] 🚆 unrelated", location: "旧住所", startMs: START - 50 * 60000, endMs: START - 5 * 60000 };
   const latest = { id: "travel-latest", summary: "🚆 移動 home→complete", location: "東京都渋谷区神南1-1-1", startMs: START - 40 * 60000, endMs: START + 30000 };
   assert.equal(resolveReminderDestination(current, { events: [older, latest, current] }), latest.location);
 
@@ -119,6 +119,21 @@ test("resolved destination uses the latest adjacent outbound Travel location onl
   const unrelated = { summary: "[Travel] 🚆 unrelated", location: "遠い住所", startMs: START - 30 * 600000, endMs: START - 30 * 600000 };
   const empty = { summary: "[Travel] 🚆 empty", location: "", startMs: START - 5 * 60000, endMs: START };
   assert.equal(resolveReminderDestination(current, { events: [returnBlock, pending, unrelated, empty, current] }), current.location);
+});
+
+test("resolved destination rejects a home-destination return block", () => {
+  const current = event({ id: "target-home-return", location: "MUIT 出社 (着席)" });
+  const homeReturn = { summary: "[Travel] 🚆 赤坂→南元町", location: HOME, startMs: START - 20 * 60000, endMs: START };
+  assert.equal(resolveReminderDestination(current, { events: [homeReturn, current], home: HOME }), current.location);
+});
+
+test("resolved destination fails closed when adjacent candidates are ambiguous", () => {
+  const current = event({ id: "target-ambiguous", location: "渋谷" });
+  const ambiguous = [
+    { summary: "[Travel] 🚆 first", location: "候補A", startMs: START - 40 * 60000, endMs: START },
+    { summary: "[Travel] 🚆 second", location: "候補B", startMs: START - 30 * 60000, endMs: START + 30000 },
+  ];
+  assert.equal(resolveReminderDestination(current, { events: [...ambiguous, current], home: HOME }), current.location);
 });
 
 test("travel reminder routes through resolved destination while displaying the original event location", async () => {

@@ -153,7 +153,7 @@ This runs alongside code tasks but closes before production call acceptance:
 **Files:** Modify `lib/travel-reminder.js`, `lib/travel-reminder.test.js` only. Soft target: production ≤35 LOC, test ≤80 LOC.
 
 1. RED: an event with ambiguous free-form location and its immediately preceding outbound `[Travel]` block must call `directionsRoute` with the block's complete destination address.
-2. RED negatives: do not reuse a return block, non-Travel helper, unrelated block, empty location, or block outside the existing adjacency tolerance.
-3. GREEN: add one pure destination resolver over the already-fetched tenant event array. Preserve the original event for selection, claim key, title, and displayed destination.
+2. RED negatives: do not reuse a home-destination return block, multiple ambiguous candidates, non-Travel helper, unrelated block, empty location, or block outside the existing adjacency tolerance.
+3. GREEN: add one pure destination resolver over the already-fetched tenant event array. Reuse only one non-home candidate; otherwise fail closed to the original location. Preserve the original event for selection, claim key, title, and displayed destination.
 4. Run focused and related reminder/wake suites. Mutation-check removal of the adjacency guard and Travel-only guard.
 5. Fresh read-only review, merge/deploy exact SHA, then read back a real event route and the natural Telegram message receipt/replay-zero.
