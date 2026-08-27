@@ -5360,7 +5360,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 failing the whole wake on it costs a decision cycle for nothing.
                 """
                 failure = "official_inventory_empty_or_invalid"
-                for attempt in range(3):
+                for attempt in range(5):
                     read = listing_inventory.observe_storefront(
                         output_path=inventory_path, ws_url=ws_url, include_contract_sources=True,
                     )
@@ -5381,8 +5381,8 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                                 and len(set(ids)) == len(ids) and set(ids) == listed):
                             return read, sources, count
                         failure = "official_service_contract_invalid"
-                    if attempt < 2:
-                        time.sleep(2)
+                    if attempt < 4:
+                        time.sleep(3)
                 raise RuntimeError(failure)
 
             inventory, contract_sources, observed = _read_official_catalog()
