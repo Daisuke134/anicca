@@ -94,7 +94,7 @@ async function reconcileCadence({ dataDir, nowMs = Date.now(), graceMs = DEFAULT
     outputRoutes.push({ label: route.label, account: route.account, platform: route.platform, integration: route.integration, slots: outputSlots });
   }
   const message = `Life Manager::: ${day.iso} mobile marketing cadenceです。Published ${counts.published}、Pending ${counts.pending}、Missed ${counts.missed}、Duplicate ${counts.duplicate}、Explicit failure ${counts.explicit_failure}。${outputRoutes.map((route) => `${route.account}: ${route.slots.map((slot) => `${slot.clock}=${slot.status}`).join(", ")}`).join(" / ")}。Miss/duplicateは次回slotで自動再確認し、取得不可を0にはしません。`;
-  const result = writeSnapshot(dataDir, { schema_version: 1, kind: "marketing_cadence_reconciliation", period: "daily", report_day: day.iso, observed_at: new Date(nowMs).toISOString(), source: "launchd_plist_plus_lm_receipts", counts, routes: outputRoutes, source_refs: [], message });
+  const result = writeSnapshot(dataDir, { schema_version: 1, kind: "marketing_cadence_reconciliation", period: "daily", product_id: "mobile-marketing", report_day: day.iso, observed_at: new Date(nowMs).toISOString(), source: "launchd_plist_plus_lm_receipts", counts, routes: outputRoutes, source_refs: [], message });
   const telegram = sendReport ? await sendSummary({ created: result.created, file: result.file, snapshot: result.snapshot }, env, dataDir) : null;
   return { ...result.snapshot, file: result.file, created: result.created, telegram };
 }
