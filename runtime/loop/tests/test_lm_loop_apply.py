@@ -88,6 +88,36 @@ class LmLoopApplyTest(unittest.TestCase):
         self.assertEqual(target.read_bytes(), old)
         self.assertGreaterEqual(sum(call[0] == "bootstrap" for call in calls), 2)
 
+    def test_swap_preserves_existing_operational_attributes(self):
+        target = self.root / "installed.plist"
+        target.write_bytes(plistlib.dumps({
+            "Label": "ai.anicca.example",
+            "ProgramArguments": ["/old/run.sh"],
+            "EnvironmentVariables": {"CUSTOM": "kept", "LIFE_MANAGER_RELEASE_SHA": "old"},
+            "WorkingDirectory": "/var/tmp/example",
+            "ProcessType": "Interactive",
+            "RunAtLoad": True,
+            "ThrottleInterval": 30,
+        }))
+        rendered = build_apply_plan(registry(), self.root, SHA)[0]
+
+        def launchctl(args):
+            if args[0] == "print":
+                current = plistlib.loads(target.read_bytes())
+                return 0, "arguments = {\n" + "\n".join(current["ProgramArguments"]) + "\n}\n"
+            return 0, ""
+
+        result = install_one(rendered, target, launchctl, attempts=1)
+        installed = plistlib.loads(target.read_bytes())
+        self.assertTrue(result["ok"])
+        self.assertEqual(installed["EnvironmentVariables"]["CUSTOM"], "kept")
+        self.assertEqual(installed["EnvironmentVariables"]["LIFE_MANAGER_RELEASE_SHA"], SHA)
+        self.assertEqual(installed["WorkingDirectory"], "/var/tmp/example")
+        self.assertEqual(installed["ProcessType"], "Interactive")
+        self.assertTrue(installed["RunAtLoad"])
+        self.assertEqual(installed["ThrottleInterval"], 30)
+        self.assertEqual(installed["ProgramArguments"], rendered["expected_arguments"])
+
 
 if __name__ == "__main__":
     unittest.main()

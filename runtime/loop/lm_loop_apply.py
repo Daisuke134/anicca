@@ -94,6 +94,20 @@ def _atomic_write(path: Path, data: bytes) -> None:
             temporary.unlink()
 
 
+def _preserve_operational_attributes(new_bytes: bytes, old_bytes: bytes | None) -> bytes:
+    if old_bytes is None:
+        return new_bytes
+    old, new = plistlib.loads(old_bytes), plistlib.loads(new_bytes)
+    for key in ("WorkingDirectory", "ProcessType", "RunAtLoad", "ThrottleInterval", "Umask", "Nice"):
+        if key in old:
+            new[key] = old[key]
+    new["EnvironmentVariables"] = {
+        **(old.get("EnvironmentVariables") or {}),
+        **(new.get("EnvironmentVariables") or {}),
+    }
+    return plistlib.dumps(new, fmt=plistlib.FMT_XML, sort_keys=True)
+
+
 def _loaded_arguments(text: str) -> list[str]:
     arguments, inside = [], False
     for raw in text.splitlines():
@@ -115,7 +129,7 @@ def install_one(item: dict, target: Path,
     old_bytes = target.read_bytes() if target.is_file() else None
     initial_rc, _ = launchctl(["print", service])
     was_loaded = initial_rc == 0
-    _atomic_write(target, item["plist_bytes"])
+    _atomic_write(target, _preserve_operational_attributes(item["plist_bytes"], old_bytes))
     launchctl(["bootout", service])
     last_detail = ""
     for _ in range(attempts):
