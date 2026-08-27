@@ -11,6 +11,38 @@ release `2b3eb470…` を実行先として保持しており、pass 3本とheal
 すべて `78: EX_CONFIG` である。現在のrelease `87001ce0…` は存在するが、6 jobへまだ
 再適用されていない。つまり、**実験機能は実証済みだが、24時間運転は現在停止中**である。
 
+## コードはmain 1本、worktreeは作業中だけ使う
+
+Life Managerのコード正本は、GitHub `Daisuke134/life-manager` の `main` 1本とする。
+各loopに永続branchや専用worktreeを持たせない。本番loopはbranchもworktreeも直接実行せず、
+`main`の1 commitから作った同じimmutable releaseを実行する。
+
+```mermaid
+flowchart TD
+    W[一時feature worktree] -->|PRをmerge| M[origin/main 唯一のコード正本]
+    W -->|merge後| X[branchとworktreeを削除]
+    M --> B[1 commitからbuild]
+    B --> R[1つのimmutable release SHA]
+    R --> A[English Repost]
+    R --> D[Dice Repost]
+    R --> T[Chinese-source Tweeter]
+    A --> S1[専用state]
+    D --> S2[専用state]
+    T --> S3[専用state]
+```
+
+コードreleaseは共通にする。投稿履歴、重複防止ledger、候補cache、browser identityは
+loop別に分ける。これらを1つのstateへ混ぜると、別accountのsource消費や重複判定が衝突する。
+
+worktreeは複数agentが同時に編集する間だけ使う。ライフサイクルは
+`作成 → 実装 → test → PR → mainへmerge → branch削除 → worktree削除`で閉じる。
+merge後もworktreeを本番ownerや保管場所として残さない。削除前には、dirty変更、未merge commit、
+実行中agentのownerを確認し、他セッションが使用中のworktreeは触らない。
+
+本番releaseはappend-onlyとし、作成後に編集しない。cleanupは`current`、`previous`に加え、
+loaded launchd jobが参照するexact releaseをpinする。loaded jobが存在する限り、そのreleaseを
+削除候補にしてはならない。
+
 ## この実験で確かめること
 
 目的は、投稿本数を機械的に増やすことではない。異なる情報源・投稿形式・文体を同じ
@@ -120,8 +152,8 @@ Xの投稿を引用せず、中国語圏の公開ページからsource固有の�
 ## 60分後viewsの中央値で次の設定を決める
 
 各投稿についてlikes、replies、reposts、bookmarks、viewsを保存する。比較に使う主指標は、
-投稿から60分以上経過した最初のsampleのviewsである。古い投稿が有利になる最終累計ではなく、
-初速を比べるためである。
+投稿から60分以上経過した最初のsampleのviewsである。最終累計は古い投稿が有利になるため
+使わず、初速を同じ条件で比べる。
 
 比較する軸は3つ。
 
@@ -154,13 +186,16 @@ cleanupで削除されているため、実行entrypoint `bin/lm-loop-run` が�
 3 passと3 healthcheckはすべて `78: EX_CONFIG` で停止している。
 
 一方、`~/loops/current` はrelease `87001ce0…` を指しており、GitHub `origin/main` の祖先である。
-問題はコードの欠落ではなく、loaded jobが保持するexact releaseとcleanupの保持対象が一致して
-いないことである。
+原因は、loaded jobが保持するexact releaseとcleanupの保持対象が一致していないことである。
 
 Chinese candidate cacheも現在0件である。これは新しい検索実装が存在しないという意味ではない。
 停止後に0件receiptがlatestへ上書きされた状態なので、runtime復旧後に再収集が必要である。
 
 ## 残TODO — この順番で閉じる
+
+Daisがbranchを選んだり、worktreeを手作業で削除したりする必要はない。Codexがowner、dirty、
+merge状態をread-onlyで確認し、安全な対象だけを整理する。同じworktreeを別セッションが使用中と
+判定した場合だけ、競合する作業を止めずにDaisへ選択を求める。
 
 ### P0: 6 jobを存在するexact releaseへ戻す
 
@@ -197,6 +232,15 @@ Chinese candidate cacheも現在0件である。これは新しい検索実装�
 - 条件を満たした比較だけ`strategy.json`へ反映する
 - 日次digestで投稿数、計測coverage、中央値、最良・最低投稿を報告する
 
+### P1: merge済みbranchとworktreeを整理する
+
+- 全worktreeを`使用中`、`dirty`、`未merge`、`merge済みclean`に分類する
+- 実行中agentが所有するworktreeと、dirty・未mergeのworktreeは保護する
+- merge済みcleanなworktreeを`git worktree remove`で削除する
+- 対応するlocal・remote feature branchを削除する
+- 永続branchが`main`だけになっていることを確認する
+- 新しいPRがmergeされたらbranch/worktreeを片付ける手順をrelease workflowへ組み込む
+
 ## 6 jobの復旧とreplay-zeroで運用完了とする
 
 次のすべてを満たした時点で、実験基盤と現在の本番運用を完了とする。
@@ -207,6 +251,8 @@ Chinese candidate cacheも現在0件である。これは新しい検索実装�
 4. 3レーンのsecond wakeで重複作用が0である
 5. cleanup後もloaded releaseが残る
 6. GitHub main、release SHA、loaded runtimeの内容が一致する
+7. 本番plistがbranch・worktree・mutable checkoutを参照しない
+8. merge済みcleanなworktreeとfeature branchが残っていない
 
 toneや投稿形式の勝者決定は、この基盤完了とは別である。各armのsampleが3件未満なら、
 「実験は動いているが、勝敗は未確定」と報告する。
