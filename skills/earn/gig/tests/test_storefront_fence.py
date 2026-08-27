@@ -108,6 +108,33 @@ def test_a_stale_hand_authored_contract_is_skipped_not_fatal(tmp_path):
     assert derived and derived[0]["service_version_sha256"] == "b" * 64
 
 
+def test_a_published_generated_service_gets_a_reply_contract_without_private_family_config(tmp_path):
+    root = tmp_path / "contracts"
+    root.mkdir()
+    families = families_fixture(tmp_path, "90000001")
+    created = tmp_path / "new-listing-drafts.jsonl"
+    created.write_text(json.dumps({
+        "status": "published", "public_effect": 1, "draft_service_id": "4371816",
+        "capability_family": "ai-automation-builder",
+    }) + "\n", encoding="utf-8")
+    observed = [{
+        "service_id": "4371816", "public_url": "https://coconala.com/services/4371816",
+        "service_version_sha256": "c" * 64, "price_jpy": 30000,
+        "title": "AIで定型業務1件を自動化します", "state": "公開中",
+        "category": "生成AI", "public_text": "サービス内容\n購入にあたってのお願い",
+    }]
+
+    loaded = sd._load_listing_contracts(
+        root, observed, families_path=families, created_path=created,
+    )
+
+    contract = loaded[0]
+    assert contract["service_id"] == "4371816"
+    assert contract["generated_from_family"] == "ai-automation-builder"
+    assert contract["offer"]["base_price_jpy"] == 30000
+    assert contract["inquiry_playbook"]["required_clarifications"]
+
+
 if __name__ == "__main__":
     import pytest
     raise SystemExit(pytest.main([__file__, "-q"]))

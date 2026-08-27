@@ -1988,6 +1988,29 @@ def _validate_listing_contract_static(contract: object) -> dict:
     return contract
 
 
+def _generated_listing_family_template() -> dict:
+    """Reply contract shared by products created from public capability and demand evidence."""
+    required_inputs = [
+        "達成したい結果", "現在の手順", "代表的な入力例", "期待する出力例",
+        "利用環境・ツール", "権限と承認が必要な操作", "希望納期",
+    ]
+    return {
+        "inclusions": ["出品ページに記載した基本範囲", "購入後に合意した対象1件の制作・実施"],
+        "deliverables": ["合意した成果物", "確認・検証結果", "利用・引継ぎ手順"],
+        "required_inputs": required_inputs,
+        "principles": [
+            "入力例と期待結果を確認する前に実現性・納期・成果を保証しない",
+            "出品範囲外、未承認の外部操作、秘密情報の成果物混入を認めない",
+            "成果物を検証し、既知の制約と継続支援の境界を明記する",
+        ],
+        "answer_patterns": [{
+            "intent": "scope_and_feasibility",
+            "triggers": ["対応できますか", "何が納品", "費用", "納期", "継続"],
+            "response": "出品ページの基本範囲を基準に、現在の手順、代表入力、期待する出力、利用環境、権限・承認境界、希望納期を確認して対応範囲とお見積りをご案内します。",
+        }],
+    }
+
+
 def _load_listing_contracts(
     root: Path, observed_contracts: list[dict], families_path: Path = DEFAULT_LISTING_CONTRACT_FAMILIES,
     created_path: Path | None = None,
@@ -2039,8 +2062,9 @@ def _load_listing_contracts(
             if row.get("status") in {"published", "already_public"} and service_id.isdigit():
                 if service_id in mappings:
                     continue
-                if not isinstance(family_name, str) or family_name not in families:
+                if not isinstance(family_name, str) or not family_name.strip():
                     raise RuntimeError(f"created_listing_family_missing:{service_id}")
+                families.setdefault(family_name, _generated_listing_family_template())
                 mappings[service_id] = family_name
     for source in observed_contracts:
         service_id = source["service_id"]
