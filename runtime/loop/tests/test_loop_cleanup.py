@@ -1,0 +1,85 @@
+import json
+import os
+import tempfile
+import time
+import unittest
+from unittest import mock
+from pathlib import Path
+
+from runtime.loop.loop_cleanup import cleanup_run_root, gc_releases
+from runtime.loop.lm_loop_run import prepare_loop_run
+from runtime.loop.central_cleanup import loaded_release_roots
+
+
+def completed(root: Path, name: str, size: int = 1) -> Path:
+    run = root / "runs" / name; run.mkdir(parents=True)
+    (run / ".lm-regenerable").write_text("1\n")
+    (run / "summary.json").write_text("{}\n")
+    (run / "payload.bin").write_bytes(b"x" * size)
+    return run
+
+
+class LoopCleanupTest(unittest.TestCase):
+    def test_loop_cleanup_preserves_active_unmarked_and_receipts(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); old = completed(root, "old"); active = completed(root, "active")
+            newest = completed(root, "newest")
+            unmarked = root / "runs/unmarked"; unmarked.mkdir(); (unmarked / "data").write_text("keep")
+            receipt = root / "receipts"; receipt.mkdir(); (receipt / "official.json").write_text("keep")
+            for index, path in enumerate((old, active, newest), 1): os.utime(path, (index, index))
+            result = cleanup_run_root(root, {"max_runs": 1, "max_age_days": 365}, {"active"}, now=4)
+            self.assertFalse(old.exists())
+            self.assertTrue(active.exists())
+            self.assertTrue(newest.exists())
+            self.assertTrue(unmarked.exists())
+            self.assertTrue(receipt.exists())
+            self.assertEqual(result["protected_deletions"], 0)
+
+    def test_pressure_cleanup_reclaims_completed_bytes_only(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); completed(root, "old", 1024 * 1024)
+            result = cleanup_run_root(root, {"max_runs": 0, "max_age_days": 1}, set(), now=time.time() + 172800)
+            self.assertGreaterEqual(result["reclaimed_bytes"], 1024 * 1024)
+            self.assertEqual(result["removed_runs"], 1)
+
+    def test_release_gc_preserves_current_and_explicit_protected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            releases = Path(directory) / "releases"; releases.mkdir()
+            paths=[]
+            for index in range(4):
+                path=releases/f"2026010{index}T000000-{'a'*7}{index}"; path.mkdir()
+                (path/"RELEASE.json").write_text(json.dumps({"sha": f"{index:040x}"}))
+                os.utime(path,(index,index)); paths.append(path)
+            current=Path(directory)/"current"; current.symlink_to(paths[1])
+            result=gc_releases(releases,current,keep=1,protected={paths[2].resolve()})
+            self.assertTrue(paths[1].exists()); self.assertTrue(paths[2].exists()); self.assertTrue(paths[3].exists())
+            self.assertFalse(paths[0].exists())
+            self.assertEqual(result["protected_deletions"],0)
+
+    def test_loop_run_cleans_only_its_root_then_returns_exact_release_argv(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory); entry=root/'bin/job.sh'; entry.parent.mkdir(); entry.write_text('#!/bin/sh\n'); entry.chmod(0o755)
+            state=root/'home/state'; completed(state,'old',128)
+            registry={"schema_version":2,"loops":{"job":{
+                "label":"ai.anicca.job","domain":"system","entrypoint":"bin/job.sh",
+                "cadence":{"run_at_load":True},"effect_class":"none",
+                "state_root":"~/state","log_root":"~/state/logs",
+                "cleanup":{"max_runs":1,"max_age_days":1},"provider_route":"deterministic"}}}
+            with mock.patch.dict(os.environ,{"HOME":str(root/'home')}):
+                argv,receipt=prepare_loop_run(registry,"job",root,active_run_ids=set(),now=time.time()+172800)
+            self.assertEqual(argv,[str(entry.resolve())])
+            self.assertFalse((state/'runs/old').exists())
+            self.assertGreaterEqual(receipt['reclaimed_bytes'],128)
+
+    def test_loaded_plist_release_is_discovered_as_protected(self):
+        import plistlib
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory); releases=root/'releases'; release=releases/('20260101T000000-'+'a'*8)
+            entry=release/'bin/job.sh'; entry.parent.mkdir(parents=True); entry.write_text('x')
+            agents=root/'agents'; agents.mkdir()
+            (agents/'ai.anicca.job.plist').write_bytes(plistlib.dumps({
+                'Label':'ai.anicca.job','ProgramArguments':[str(entry)]}))
+            self.assertEqual(loaded_release_roots(agents,releases),{release.resolve()})
+
+
+if __name__ == "__main__": unittest.main()

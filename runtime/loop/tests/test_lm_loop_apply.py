@@ -28,6 +28,8 @@ class LmLoopApplyTest(unittest.TestCase):
         (self.root / "bin").mkdir()
         (self.root / "bin/example.sh").write_text("#!/bin/sh\nexit 0\n")
         (self.root / "bin/example.sh").chmod(0o755)
+        (self.root / "bin/lm-loop-run").write_text("#!/bin/sh\nexit 0\n")
+        (self.root / "bin/lm-loop-run").chmod(0o755)
         (self.root / "RELEASE.json").write_text(json.dumps({"sha": SHA}))
 
     def tearDown(self):
@@ -38,7 +40,8 @@ class LmLoopApplyTest(unittest.TestCase):
         second = build_apply_plan(registry(), self.root, SHA)
         self.assertEqual(first[0]["plist_bytes"], second[0]["plist_bytes"])
         value = plistlib.loads(first[0]["plist_bytes"])
-        self.assertEqual(value["ProgramArguments"], [str(self.root.resolve() / "bin/example.sh")])
+        self.assertEqual(value["ProgramArguments"], [
+            str(self.root.resolve() / "bin/lm-loop-run"), "example", str(self.root.resolve())])
         self.assertEqual(value["StartInterval"], 60)
         self.assertEqual(value["EnvironmentVariables"]["LIFE_MANAGER_RELEASE_SHA"], SHA)
 

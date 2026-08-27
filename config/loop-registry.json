@@ -1635,7 +1635,7 @@
       },
       "domain": "system",
       "effect_class": "none",
-      "entrypoint": "skills/self/disk-cleanup/disk_cleanup.py",
+      "entrypoint": "runtime/loop/central_cleanup.py",
       "label": "ai.anicca.life-manager-disk-cleanup",
       "log_root": "~/.local/state/life-manager/life-manager-disk-cleanup/logs",
       "provider_route": "deterministic",

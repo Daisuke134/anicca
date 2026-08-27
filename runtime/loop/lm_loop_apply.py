@@ -15,10 +15,11 @@ from runtime.loop.macos_loop_registry import validate_registry
 
 def _plist(loop_id: str, entry: dict, release_root: Path, release_sha: str) -> bytes:
     executable = str(release_root / entry["entrypoint"])
+    loop_runner = str(release_root / "bin/lm-loop-run")
     log_root = os.path.expanduser(entry["log_root"])
     value = {
         "Label": entry["label"],
-        "ProgramArguments": [executable],
+        "ProgramArguments": [loop_runner, loop_id, str(release_root)],
         "ProcessType": "Background",
         "EnvironmentVariables": {
             "LIFE_MANAGER_LOOP_ID": loop_id,
@@ -51,6 +52,9 @@ def build_apply_plan(registry: dict, release_root: Path, release_sha: str) -> li
         raise ValueError("release manifest missing or invalid") from exc
     if manifest.get("sha") != release_sha:
         raise ValueError("release manifest SHA mismatch")
+    loop_runner = release_root / "bin/lm-loop-run"
+    if not loop_runner.is_file() or not os.access(loop_runner, os.X_OK):
+        raise ValueError("release loop runner missing or not executable")
     plan = []
     for loop_id in sorted(registry["loops"]):
         entry = registry["loops"][loop_id]
@@ -63,7 +67,7 @@ def build_apply_plan(registry: dict, release_root: Path, release_sha: str) -> li
             "loop_id": loop_id,
             "label": entry["label"],
             "plist_bytes": _plist(loop_id, entry, release_root, release_sha),
-            "expected_arguments": [str(executable)],
+            "expected_arguments": [str(loop_runner), loop_id, str(release_root)],
             "release_sha": release_sha,
         })
     return plan
