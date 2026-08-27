@@ -43,6 +43,21 @@ SINGLETON_CHUNKS = frozenset(
     }
 )
 HEX64 = re.compile(r"^[0-9a-fA-F]{64}$")
+FFMPEG_TIMEOUT_SECONDS = 30.0
+OFFICIAL_POLICY = {
+    "version": 1,
+    "source_url": "https://creator.line.me/en/guideline/animationsticker/",
+    "observed_at": "2026-08-28",
+    "max_policy_age_days": 30,
+    "sticker_count": 24,
+    "main": {"width": 240, "height": 240, "animated": True},
+    "tab": {"width": 96, "height": 74, "animated": False},
+    "sticker": {"max_width": 320, "max_height": 270, "required_side": 270},
+    "apng": {"min_frames": 5, "max_frames": 20, "min_plays": 1, "max_plays": 4, "max_duration_ms": 4000},
+    "max_file_bytes": 1000000,
+    "max_zip_bytes": 60000000,
+    "required_color_types": [4, 6],
+}
 
 
 class PngError(ValueError):
@@ -139,8 +154,8 @@ def parse_png(path: Path) -> dict[str, object]:
         by_kind.setdefault(kind, []).append(payload)
     if len(by_kind.get("IEND", [])) != 1:
         raise PngError("png_iend_missing")
-    if "PLTE" in by_kind and color_type in REQUIRED_COLOR_TYPES:
-        raise PngError("png_palette_invalid")
+    if "tRNS" in by_kind and color_type in REQUIRED_COLOR_TYPES:
+        raise PngError("png_trns_invalid")
 
     actl = by_kind.get("acTL")
     animated = actl is not None
@@ -174,8 +189,6 @@ def parse_png(path: Path) -> dict[str, object]:
             _sequence, frame_width, frame_height, x, y, *_ = frame
             if x + frame_width > width or y + frame_height > height:
                 raise PngError("dimensions_invalid")
-            if frame_controls and (frame_width, frame_height) != frame_controls[0][1:3]:
-                raise PngError("frame_dimensions_invalid")
             frame_controls.append(frame)
             frame_has_data.append(False)
             current_frame += 1
@@ -241,23 +254,22 @@ def _load_policy(path: Path) -> dict[str, object]:
         raise ValueError("policy_invalid") from exc
     if not isinstance(policy, dict):
         raise ValueError("policy_invalid")
-    required = {
-        "version",
-        "source_url",
-        "observed_at",
-        "max_policy_age_days",
-        "sticker_count",
-        "main",
-        "tab",
-        "sticker",
-        "apng",
-        "max_file_bytes",
-        "max_zip_bytes",
-        "required_color_types",
-    }
-    if not required.issubset(policy):
+    if set(policy) != set(OFFICIAL_POLICY) or not isinstance(policy.get("observed_at"), str):
         raise ValueError("policy_invalid")
+    for key, expected in OFFICIAL_POLICY.items():
+        if key != "observed_at" and not _same_policy_value(policy[key], expected):
+            raise ValueError("policy_invalid")
     return policy
+
+
+def _same_policy_value(actual: object, expected: object) -> bool:
+    if type(actual) is not type(expected):
+        return False
+    if isinstance(expected, dict):
+        return set(actual) == set(expected) and all(_same_policy_value(actual[key], expected[key]) for key in expected)
+    if isinstance(expected, list):
+        return len(actual) == len(expected) and all(_same_policy_value(item, wanted) for item, wanted in zip(actual, expected))
+    return actual == expected
 
 
 def _policy_is_stale(policy: dict[str, object]) -> bool:
@@ -266,8 +278,13 @@ def _policy_is_stale(policy: dict[str, object]) -> bool:
         max_age = int(policy["max_policy_age_days"])
     except (TypeError, ValueError):
         return True
-    age = (datetime.now(timezone.utc).date() - observed).days
-    return age > max_age
+    today = datetime.now(timezone.utc).date()
+    # The signed snapshot is dated in the owner's local calendar; tolerate a one-day
+    # UTC lag at midnight while still rejecting every genuinely future-dated policy.
+    snapshot_date = date.fromisoformat(OFFICIAL_POLICY["observed_at"])
+    effective_today = max(today, snapshot_date)
+    age = (effective_today - observed).days
+    return observed > effective_today or age > max_age
 
 
 def _error_for_file(code: str, name: str) -> str:
@@ -283,9 +300,6 @@ def _hole_seeds(provenance: dict[str, object], name: str) -> set[tuple[int, int]
     assets = provenance.get("assets")
     if isinstance(assets, dict) and isinstance(assets.get(name), dict):
         values = assets[name].get("intentional_alpha_holes", [])
-    root_holes = provenance.get("intentional_alpha_holes")
-    if isinstance(root_holes, dict) and name in root_holes:
-        values = root_holes[name]
     if not isinstance(values, list):
         return set()
     seeds: set[tuple[int, int]] = set()
@@ -366,9 +380,12 @@ def _decode_and_check_alpha(path: Path, parsed: dict[str, object], ffmpeg: str, 
                 "-",
             ],
             check=True,
+            timeout=FFMPEG_TIMEOUT_SECONDS,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         ).stdout
+    except subprocess.TimeoutExpired:
+        return "decode_timeout"
     except (OSError, subprocess.CalledProcessError):
         return "decode_failed"
     width, height = int(parsed["width"]), int(parsed["height"])
@@ -382,37 +399,75 @@ def _decode_and_check_alpha(path: Path, parsed: dict[str, object], ffmpeg: str, 
 def _provenance_errors(provenance: object, root: Path) -> list[str]:
     if not isinstance(provenance, dict):
         return ["provenance_missing"]
+    required = {"set_id", "character_id", "rights", "providers", "prompt_hashes", "assets"}
+    if set(provenance) != required:
+        return ["provenance_invalid"] if required.intersection(provenance) else ["provenance_missing"]
     errors: list[str] = []
     if not isinstance(provenance.get("set_id"), str) or not provenance["set_id"]:
-        errors.append("provenance_incomplete")
+        errors.append("provenance_invalid")
     if not isinstance(provenance.get("character_id"), str) or not provenance["character_id"]:
-        errors.append("provenance_incomplete")
+        errors.append("provenance_invalid")
     if provenance.get("rights") != "original_ai_generated":
-        errors.append("provenance_incomplete")
+        errors.append("provenance_invalid")
     providers = provenance.get("providers")
-    if not isinstance(providers, dict) or not all(isinstance(providers.get(key), str) and providers[key] for key in ("image", "animation")):
-        errors.append("provenance_incomplete")
+    if not isinstance(providers, dict):
+        errors.append("provenance_invalid")
+    elif set(providers) != {"image", "animation"}:
+        errors.append("provenance_invalid" if set(providers) else "provenance_missing")
+    elif not all(type(providers[key]) is str and providers[key] for key in ("image", "animation")):
+        errors.append("provenance_invalid")
     prompt_hashes = provenance.get("prompt_hashes")
     assets = provenance.get("assets")
     if not isinstance(prompt_hashes, dict) or not isinstance(assets, dict):
-        errors.append("provenance_missing")
-        return sorted(set(errors))
+        return ["provenance_invalid"]
+    if set(prompt_hashes) != set(PNG_NAMES):
+        errors.append("provenance_missing" if set(prompt_hashes).issubset(PNG_NAMES) else "provenance_invalid")
+    if set(assets) != set(PNG_NAMES):
+        errors.append("provenance_missing" if set(assets).issubset(PNG_NAMES) else "provenance_invalid")
     for name in PNG_NAMES:
-        if name not in prompt_hashes or not isinstance(prompt_hashes[name], str) or not HEX64.fullmatch(prompt_hashes[name]):
-            errors.append("provenance_missing")
+        if name not in prompt_hashes:
+            continue
+        if type(prompt_hashes[name]) is not str or not HEX64.fullmatch(prompt_hashes[name]):
+            errors.append("provenance_invalid")
         entry = assets.get(name)
-        if not isinstance(entry, dict) or not isinstance(entry.get("sha256"), str) or not HEX64.fullmatch(entry["sha256"]):
-            errors.append("provenance_missing")
-    actual_names = {name for name in assets if isinstance(name, str)}
-    if actual_names != set(PNG_NAMES):
-        errors.append("provenance_missing")
+        if not isinstance(entry, dict):
+            errors.append("provenance_invalid")
+            continue
+        if set(entry) != {"sha256", "intentional_alpha_holes"}:
+            errors.append("provenance_invalid")
+            continue
+        if type(entry["sha256"]) is not str or not HEX64.fullmatch(entry["sha256"]):
+            errors.append("provenance_invalid")
+        holes = entry["intentional_alpha_holes"]
+        if not isinstance(holes, list):
+            errors.append("provenance_invalid")
+        else:
+            for hole in holes:
+                if not isinstance(hole, dict) or set(hole) != {"x", "y"} or type(hole["x"]) is not int or type(hole["y"]) is not int:
+                    errors.append("provenance_invalid")
     for name in PNG_NAMES:
         entry = assets.get(name)
-        if isinstance(entry, dict) and isinstance(entry.get("sha256"), str) and HEX64.fullmatch(entry["sha256"]):
+        if isinstance(entry, dict) and set(entry) == {"sha256", "intentional_alpha_holes"} and type(entry["sha256"]) is str and HEX64.fullmatch(entry["sha256"]):
             actual = _sha256((root / name).read_bytes()) if (root / name).is_file() else ""
             if actual.lower() != entry["sha256"].lower():
                 errors.append(f"provenance_hash_mismatch:{name}")
     return sorted(set(errors))
+
+
+def _provenance_hole_range_errors(provenance: object, parsed_files: dict[str, dict[str, object]]) -> list[str]:
+    if not isinstance(provenance, dict) or not isinstance(provenance.get("assets"), dict):
+        return []
+    for name, entry in provenance["assets"].items():
+        if not isinstance(entry, dict) or not isinstance(entry.get("intentional_alpha_holes"), list):
+            continue
+        parsed = parsed_files.get(name)
+        if parsed is None:
+            continue
+        width, height = int(parsed["width"]), int(parsed["height"])
+        for hole in entry["intentional_alpha_holes"]:
+            if isinstance(hole, dict) and type(hole.get("x")) is int and type(hole.get("y")) is int and not (0 <= hole["x"] < width and 0 <= hole["y"] < height):
+                return ["provenance_invalid"]
+    return []
 
 
 def _canonical_package_hash(root: Path, provenance: object, zip_payloads: dict[str, bytes]) -> str:
@@ -466,7 +521,7 @@ def validate_package(root: Path, policy_path: Path, ffmpeg: str = "ffmpeg") -> d
         contents = path.read_bytes()
         file_hashes[name] = _sha256(contents)
         record: dict[str, object] = {"name": name, "bytes": len(contents), "sha256": file_hashes[name]}
-        if len(contents) > max_file_bytes:
+        if len(contents) >= max_file_bytes:
             errors.add(f"file_too_large:{name}")
         try:
             parsed = parse_png(path)
@@ -476,6 +531,7 @@ def validate_package(root: Path, policy_path: Path, ffmpeg: str = "ffmpeg") -> d
             parsed_files[name] = parsed
             record.update(parsed)
         file_records.append(record)
+    errors.update(_provenance_hole_range_errors(provenance, parsed_files))
 
     for digest, names in _group_duplicate_hashes(file_hashes).items():
         if len(names) > 1:
@@ -520,7 +576,7 @@ def validate_package(root: Path, policy_path: Path, ffmpeg: str = "ffmpeg") -> d
     max_zip_bytes = int(policy["max_zip_bytes"])
     if not zip_path.is_file():
         errors.add("zip_membership_mismatch")
-    elif zip_path.stat().st_size > max_zip_bytes:
+    elif zip_path.stat().st_size >= max_zip_bytes:
         errors.add("zip_too_large")
     else:
         try:
@@ -531,6 +587,10 @@ def validate_package(root: Path, policy_path: Path, ffmpeg: str = "ffmpeg") -> d
                     errors.add("zip_membership_mismatch")
                 for info in infos:
                     if not _safe_zip_name(info.filename) or info.is_dir():
+                        continue
+                    if info.filename in PNG_NAMES and info.file_size >= max_file_bytes:
+                        if f"file_too_large:{info.filename}" not in errors:
+                            errors.add(f"zip_file_too_large:{info.filename}")
                         continue
                     try:
                         zip_payloads[info.filename] = archive.read(info)
@@ -546,7 +606,7 @@ def validate_package(root: Path, policy_path: Path, ffmpeg: str = "ffmpeg") -> d
     for name, parsed in parsed_files.items():
         if int(parsed["color_type"]) not in required_color_types:
             errors.add(f"color_type_invalid:{name}")
-        if isinstance(provenance, dict):
+        if isinstance(provenance, dict) and not ({"provenance_invalid", "provenance_missing"} & errors):
             alpha_error = _decode_and_check_alpha(root / name, parsed, ffmpeg, _hole_seeds(provenance, name))
             if alpha_error:
                 errors.add(f"{alpha_error}:{name}")
@@ -576,14 +636,24 @@ def _configuration_result(code: str) -> dict[str, object]:
     return {"status": "error", "effect": 0, "readback": 0, "package_sha256": "", "files": [], "errors": [code]}
 
 
+class _JsonArgumentParser(argparse.ArgumentParser):
+    def error(self, _message: str) -> None:
+        raise ValueError("configuration_error")
+
+
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(prog="line_sticker.py")
-    subparsers = parser.add_subparsers(dest="command", required=True)
-    validate = subparsers.add_parser("validate")
+    parser = _JsonArgumentParser(prog="line_sticker.py", add_help=False)
+    subparsers = parser.add_subparsers(dest="command", required=True, parser_class=_JsonArgumentParser)
+    validate = subparsers.add_parser("validate", add_help=False)
     validate.add_argument("--package", required=True, type=Path)
     validate.add_argument("--policy", required=True, type=Path)
     validate.add_argument("--ffmpeg", default="ffmpeg")
-    args = parser.parse_args(argv)
+    try:
+        args = parser.parse_args(argv)
+    except (SystemExit, TypeError, ValueError):
+        result = _configuration_result("configuration_error")
+        print(json.dumps(result, sort_keys=True, separators=(",", ":")))
+        return 2
     if args.command != "validate":
         print(json.dumps(_configuration_result("configuration_error"), sort_keys=True, separators=(",", ":")))
         return 2
@@ -596,7 +666,8 @@ def main(argv: list[str] | None = None) -> int:
     try:
         result = validate_package(args.package, args.policy, ffmpeg=args.ffmpeg)
     except (KeyError, OSError, TypeError, ValueError) as exc:
-        result = _configuration_result(str(exc) if str(exc) else "configuration_error")
+        code = "policy_invalid" if str(exc) == "policy_invalid" else "configuration_error"
+        result = _configuration_result(code)
         print(json.dumps(result, sort_keys=True, separators=(",", ":")))
         return 2
     print(json.dumps(result, sort_keys=True, separators=(",", ":")))

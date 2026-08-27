@@ -12,6 +12,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 import zipfile
 import zlib
 
@@ -42,9 +43,12 @@ def _png(
     delay_num: int = 20,
     delay_den: int = 100,
     marker: str = "",
+    extra_chunks: list[tuple[str, bytes]] | None = None,
 ) -> bytes:
     chunks = [b"\x89PNG\r\n\x1a\n"]
     chunks.append(_chunk("IHDR", struct.pack(">IIBBBBB", width, height, 8, color_type, 0, 0, 0)))
+    for kind, payload in extra_chunks or []:
+        chunks.append(_chunk(kind, payload))
     if animated:
         chunks.append(_chunk("acTL", struct.pack(">II", frames, plays)))
         sequence = 0
@@ -243,6 +247,116 @@ class LineStickerValidatorTests(unittest.TestCase):
         self.assertEqual(parsed["duration_ms"], 1000)
         self.assertTrue(parsed["chunk_hashes"])
 
+    def test_policy_schema_values_and_dates_are_fail_closed(self) -> None:
+        variants = {
+            "wrong value": lambda policy: policy["main"].update({"width": 1}),
+            "wrong type": lambda policy: policy.update({"max_file_bytes": "1000000"}),
+            "extra key": lambda policy: policy.update({"untrusted": True}),
+            "missing key": lambda policy: policy.pop("required_color_types"),
+        }
+        for label, mutate in variants.items():
+            with self.subTest(label=label):
+                policy_path = self.root.parent / f"policy-{label.replace(' ', '-')}.json"
+                policy = json.loads(POLICY.read_text(encoding="utf-8"))
+                mutate(policy)
+                policy_path.write_text(json.dumps(policy) + "\n", encoding="utf-8")
+                with self.assertRaisesRegex(ValueError, "^policy_invalid$"):
+                    MODULE.validate_package(self.root, policy_path, ffmpeg=str(self.ffmpeg))
+        future = _copy_policy(self.root, observed_at="2999-01-01")
+        result = self._validate(policy=future)
+        self.assertEqual(result["errors"], ["policy_stale"])
+
+    def test_exact_file_limit_is_rejected(self) -> None:
+        self._make_asset_at_limit()
+        self.assertEqual(self._validate()["errors"], ["file_too_large:01.png"])
+
+    def test_exact_zip_limit_is_rejected(self) -> None:
+        with (self.root / "submission.zip").open("r+b") as stream:
+            stream.seek(60_000_000 - 1)
+            stream.write(b"x")
+        self.assertEqual(self._validate()["errors"], ["zip_too_large"])
+
+    def test_provenance_schema_and_hole_declarations_are_exact(self) -> None:
+        variants = {
+            "top-level unknown": lambda provenance: provenance.update({"unknown": True}),
+            "asset unknown": lambda provenance: provenance["assets"]["01.png"].update({"unknown": True}),
+            "hole missing": lambda provenance: provenance["assets"]["01.png"].pop("intentional_alpha_holes"),
+            "hole malformed": lambda provenance: provenance["assets"]["01.png"].update({"intentional_alpha_holes": [{"x": "135", "y": 135}]}),
+            "hole out of range": lambda provenance: provenance["assets"]["01.png"].update({"intentional_alpha_holes": [{"x": 270, "y": 135}]}),
+            "hole unknown field": lambda provenance: provenance["assets"]["01.png"].update({"intentional_alpha_holes": [{"x": 135, "y": 135, "extra": 1}]}),
+        }
+        for label, mutate in variants.items():
+            with self.subTest(label=label):
+                provenance_path = self.root / "provenance.json"
+                provenance = json.loads(provenance_path.read_text(encoding="utf-8"))
+                mutate(provenance)
+                provenance_path.write_text(json.dumps(provenance) + "\n", encoding="utf-8")
+                self.assertEqual(self._validate()["errors"], ["provenance_invalid"])
+                self.tearDown()
+                self.setUp()
+
+    def test_rgba_palette_chunk_is_legal(self) -> None:
+        _replace_asset(
+            self.root,
+            "01.png",
+            _png(270, 270, animated=True, marker="01-plte", extra_chunks=[("PLTE", b"\x00\x00\x00")]),
+        )
+        self.assertEqual(self._validate()["status"], "ready")
+
+    def test_rgba_trns_chunk_is_rejected(self) -> None:
+        _replace_asset(
+            self.root,
+            "01.png",
+            _png(270, 270, animated=True, marker="01-trns", extra_chunks=[("tRNS", b"\x00\x00")]),
+        )
+        self.assertEqual(self._validate()["errors"], ["png_trns_invalid:01.png"])
+
+    def test_zip_declared_expansion_is_rejected_before_read(self) -> None:
+        entries = {name: (self.root / name).read_bytes() for name in PNG_NAMES}
+        entries["01.png"] = b"\x00" * 1_000_001
+        _with_zip_entries(self.root, entries)
+        self.assertEqual(self._validate()["errors"], ["zip_file_too_large:01.png"])
+
+    def test_ffmpeg_timeout_is_a_stable_error(self) -> None:
+        def run(command: list[str], **kwargs: object) -> subprocess.CompletedProcess[bytes]:
+            self.assertGreater(float(kwargs["timeout"]), 0)
+            path = Path(command[command.index("-i") + 1])
+            if path.name == "01.png":
+                raise subprocess.TimeoutExpired(command, float(kwargs["timeout"]))
+            parsed = MODULE.parse_png(path)
+            output = b"\xff" * (int(parsed["width"]) * int(parsed["height"]) * 4)
+            return subprocess.CompletedProcess(command, 0, stdout=output, stderr=b"")
+
+        with mock.patch.object(MODULE.subprocess, "run", side_effect=run):
+            self.assertEqual(self._validate()["errors"], ["decode_timeout:01.png"])
+
+    def test_real_ffmpeg_generated_apng_decodes(self) -> None:
+        real_apng = Path(self.tempdir.name) / "real.png"
+        generated = subprocess.run(
+            [
+                "ffmpeg",
+                "-y",
+                "-f",
+                "lavfi",
+                "-i",
+                "color=c=red@1.0:s=270x270:r=5,format=rgba",
+                "-frames:v",
+                "5",
+                "-plays",
+                "1",
+                "-f",
+                "apng",
+                str(real_apng),
+            ],
+            check=False,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        self.assertEqual(generated.returncode, 0, generated.stderr.decode(errors="replace"))
+        parsed = MODULE.parse_png(real_apng)
+        self.assertTrue(parsed["animated"])
+        self.assertEqual(MODULE._decode_and_check_alpha(real_apng, parsed, "ffmpeg", set()), None)
+
     def test_cli_prints_one_json_object_and_returns_ready_exit_code(self) -> None:
         completed = subprocess.run(
             [
@@ -268,6 +382,50 @@ class LineStickerValidatorTests(unittest.TestCase):
         self.assertEqual(set(("status", "effect", "readback", "package_sha256", "files", "errors")), set(payload))
         self.assertNotIn("prompt:", completed.stdout)
 
+    def test_every_cli_parse_error_is_one_stable_json_object(self) -> None:
+        for arguments in ([], ["--help"], ["unknown"], ["validate"], ["validate", "--package"]):
+            with self.subTest(arguments=arguments):
+                completed = subprocess.run(
+                    [sys.executable, str(MODULE_ROOT / "line_sticker.py"), *arguments],
+                    check=False,
+                    text=True,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                )
+                self.assertEqual(completed.returncode, 2)
+                self.assertEqual(completed.stderr, "")
+                self.assertEqual(len(completed.stdout.splitlines()), 1)
+                payload = json.loads(completed.stdout)
+                self.assertEqual(payload["errors"], ["configuration_error"])
+                self.assertNotIn(str(self.root), completed.stdout)
+                self.assertNotIn("prompt:", completed.stdout)
+
+    def test_cli_invalid_policy_is_stable_json_exit_two(self) -> None:
+        invalid_policy = self.root.parent / "invalid-policy.json"
+        invalid_policy.write_text('{"prompt": "do not leak"}\n', encoding="utf-8")
+        completed = subprocess.run(
+            [
+                sys.executable,
+                str(MODULE_ROOT / "line_sticker.py"),
+                "validate",
+                "--package",
+                str(self.root),
+                "--policy",
+                str(invalid_policy),
+                "--ffmpeg",
+                str(self.ffmpeg),
+            ],
+            check=False,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        self.assertEqual(completed.returncode, 2)
+        self.assertEqual(completed.stderr, "")
+        self.assertEqual(len(completed.stdout.splitlines()), 1)
+        self.assertEqual(json.loads(completed.stdout)["errors"], ["policy_invalid"])
+        self.assertNotIn("do not leak", completed.stdout)
+
     def test_fail_closed_mutations(self) -> None:
         mutations = {
             "policy_stale": lambda: self._validate(policy=_copy_policy(self.root, observed_at="2026-01-01")),
@@ -290,13 +448,15 @@ class LineStickerValidatorTests(unittest.TestCase):
         }
         for expected, mutate in mutations.items():
             with self.subTest(expected=expected):
-                result = mutate()
-                if result is None:
-                    result = self._validate()
-                self.assertNotEqual(result["status"], "ready")
-                self.assertIn(expected, result["errors"])
-                self.tearDown()
-                self.setUp()
+                try:
+                    result = mutate()
+                    if result is None:
+                        result = self._validate()
+                    self.assertNotEqual(result["status"], "ready")
+                    self.assertEqual(result["errors"], [expected])
+                finally:
+                    self.tearDown()
+                    self.setUp()
 
     def test_declared_alpha_hole_is_allowed(self) -> None:
         provenance_path = self.root / "provenance.json"
@@ -319,7 +479,10 @@ class LineStickerValidatorTests(unittest.TestCase):
         _with_zip_entries(self.root, entries)
 
     def _remove_provenance(self) -> None:
-        (self.root / "provenance.json").unlink()
+        path = self.root / "provenance.json"
+        provenance = json.loads(path.read_text(encoding="utf-8"))
+        del provenance["prompt_hashes"]["01.png"]
+        path.write_text(json.dumps(provenance, sort_keys=True) + "\n", encoding="utf-8")
 
     def _change_provenance_hash(self) -> None:
         path = self.root / "provenance.json"
@@ -340,7 +503,11 @@ class LineStickerValidatorTests(unittest.TestCase):
         _replace_asset(self.root, "01.png", _png(270, 270, animated=True, frames=4, marker="01-short"))
 
     def _make_excessive_play_count(self) -> None:
-        _replace_asset(self.root, "01.png", _png(270, 270, animated=True, plays=5, marker="01-plays"))
+        _replace_asset(
+            self.root,
+            "01.png",
+            _png(270, 270, animated=True, plays=5, delay_num=1, delay_den=100, marker="01-plays"),
+        )
 
     def _make_long_animation(self) -> None:
         _replace_asset(self.root, "01.png", _png(270, 270, animated=True, delay_num=1000, delay_den=1000, marker="01-long"))
@@ -355,6 +522,15 @@ class LineStickerValidatorTests(unittest.TestCase):
         contents = bytearray((self.root / "01.png").read_bytes())
         iend = contents.rfind(b"IEND") - 4
         contents[iend:iend] = _chunk("tEXt", b"x" * 1_000_001)
+        _replace_asset(self.root, "01.png", bytes(contents))
+
+    def _make_asset_at_limit(self) -> None:
+        contents = bytearray((self.root / "01.png").read_bytes())
+        iend = contents.rfind(b"IEND") - 4
+        payload_size = 1_000_000 - len(contents) - 12
+        self.assertGreater(payload_size, 0)
+        contents[iend:iend] = _chunk("tEXt", b"x" * payload_size)
+        self.assertEqual(len(contents), 1_000_000)
         _replace_asset(self.root, "01.png", bytes(contents))
 
     def _make_large_zip(self) -> None:
