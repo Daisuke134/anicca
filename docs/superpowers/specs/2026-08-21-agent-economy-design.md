@@ -2,7 +2,7 @@
 
 **Status: P0-P2 and P3 failed-settlement reconciliation complete; successful paid compute remains open; P4-P6 open.**
 The natural `ai.anicca.agent-economy-loop` owner and its dedicated `:8422` proxy run from sealed
-release `20260827T175256-22a86ec1`, and the canonical journal contains one chain-verified outside
+release `20260828T014729-53ec563a`, and the canonical journal contains one chain-verified outside
 x402 receipt with replay-zero. A later receipt-bound attempt transferred `0.002` USDC from that
 instance to BlockRun on Base, but the request ended with HTTP 429 `FREE_MODEL_FAILED` and no usable
 model output. The joined failed-output receipt now records that `0.002` USDC cost exactly once and
@@ -470,7 +470,7 @@ Current readback shows:
   ahead of the latest fetched `origin/main`; integration still requires a normal merge and review,
   never a force-push;
 - `/Users/anicca/loops/life-manager/current` resolves to sealed Life Manager release
-  `20260827T175256-22a86ec1`; its manifest names the Life Manager repository and the loaded
+  `20260828T014729-53ec563a`; its manifest names the Life Manager repository and the loaded
   launchd environment pins both `ANICCA_REPO` and `ANICCA_CODE_ROOT` to that release;
 - `ai.anicca.agent-economy-loop` is running, and its supervised children are the release's
   `runtime/loop/index.mjs` and dedicated compute proxy listening on `127.0.0.1:8422`;
@@ -487,10 +487,16 @@ Current readback shows:
 - the corresponding intent is no longer `AMBIGUOUS`: a sanitized failure-source digest plus the
   strict chain tuple append one HTTP 429 `FREE_MODEL_FAILED`, `output_present=false` cost row before
   the intent and funding locks are removed. Re-appending the same receipt adds zero, and treasury
-  policy rejects another spend from that funding receipt at the `0.001` reserve floor. The
-  release left `ANICCA_FRONTIER_MODEL` unset, so the direct gateway proxy forced its stale default
-  `openai/gpt-5-nano`; the current BlockRun catalog omits that exact id while ClawRouter maps the
-  alias to `openai/gpt-5.4-nano`. The direct proxy bypasses that ClawRouter alias layer;
+  policy rejects another spend from that funding receipt at the `0.001` reserve floor;
+- the loaded plist explicitly sets `ANICCA_FRONTIER_MODEL=openai/gpt-5.4-nano`, the direct proxy
+  fallback is the same model, and the current BlockRun catalog contains that id while omitting
+  stale `openai/gpt-5-nano`. Public failures remain generic 502s and internal diagnostics accept
+  only finite allowlisted fields/codes; provider-controlled body values and diagnostic-sink
+  failures do not escape that boundary;
+- the first `loop-install.sh` swap reported loaded before launchd completed asynchronous bootout,
+  then the old service was removed. A direct `launchctl-safe bootstrap` recovered the valid new
+  plist; sealed dependency validation completed before `:8422` became ready. Order 7 must add a
+  bootout-absence/readiness regression so fresh-clone integration cannot repeat the false success;
 - no graduated shelter receipt or autonomous child has been produced.
 
 The target instance has now proven a small outside revenue atom, a durable control plane, and an
@@ -694,7 +700,7 @@ do not open a later provider, article, cloud migration, or child lane early.
 | 4 | Reconcile failed BlockRun settlement and close its consumed funding | 3 | 0.002-USDC cost row, tx/log join, stale-model diagnosis, no receipt reuse | complete |
 | 5 | Reproduce external revenue and complete paid BlockRun inference | 4 | new outside receipt, current explicit model, successful output, cost receipt, balance conservation, replay-zero | **current** |
 | 6 | Revenue-funded ephemeral BlockRun compute | 5 | Modal payment, output, teardown, joined receipt | pending |
-| 7 | Integrate feature into canonical `main` | 4-6 | normal merge, clean tests, fresh-clone reproduction; no force-push | pending |
+| 7 | Integrate feature into canonical `main` | 4-6 | normal merge, clean tests, fresh-clone reproduction, launchd swap-race regression; no force-push | pending |
 | 8 | Publish article 1 and BlockRun quickstart | 7 | durable public URL, redacted receipt links, attributed quickstart | pending |
 | 9 | Revenue-funded raw VPS shelter | 7 | x402Compute pay/provision/restore/health/renew-or-terminate receipts | pending |
 | 10 | Publish article 2: shelter proof | 9 | durable public URL linked to joined shelter evidence | pending |
@@ -782,7 +788,7 @@ independent official settlement verifier; their absence cannot manufacture reven
    `0x1b31ef38…e2774`, Transfer log `29`, atomic amount `2000`, payer/payee, HTTP 429, missing output,
    and the consumed funding receipt into an append-only failure receipt; release the ambiguity lock
    only through that evidence and prove the same funding receipt can never authorize another spend.
-5. [ ] Replace the stale implicit `openai/gpt-5-nano` direct-gateway default with an explicit current
+5. [x] Replace the stale implicit `openai/gpt-5-nano` direct-gateway default with an explicit current
    catalog model (`openai/gpt-5.4-nano` for the capped canary), preserve safe internal stage/model/
    HTTP/provider-code diagnostics, and verify RED/GREEN without exposing prompts or keys.
 6. [ ] Obtain a new verified outside revenue receipt because the original 0.003 USDC now funds the
@@ -795,7 +801,8 @@ independent official settlement verifier; their absence cannot manufacture reven
 
 **Exit:** an externally earned balance pays for a real BlockRun call from the same identity.
 
-Current evidence: commits `e9eb55703`, `dabfd6ea7`, `60941c13a`, `56e9b4340`, and `22a86ec18`
+Current evidence: commits `e9eb55703`, `dabfd6ea7`, `60941c13a`, `56e9b4340`, `22a86ec18`,
+`63a294643`, and `53ec563a9`
 implement the receipt contract, natural-owner supervision, SDK error-boundary fixes, and signed-fetch
 ambiguity fence. The focused/wider suites pass, including real installed `@x402/fetch` 402 flows,
 real EVM signing, no-signature over-cap retries, forced paid-model routing, proxy death, and TERM
@@ -806,7 +813,9 @@ The strict verifier joins chain `8453`, canonical USDC, payer, payee, amount, an
 the sanitized failure digest joins the HTTP/output classification. Append readback precedes lock
 removal. Replay leaves one row, the wallet stays at `1.698000`, and the original 0.003-USDC funding
 receipt has 0.002 cost plus the required 0.001 reserve, so another authorization returns
-`reserve-floor`. Two earlier failed
+`reserve-floor`. The loaded release and both supervised children resolve to `53ec563a…`; launchd
+readback shows explicit `openai/gpt-5.4-nano`, while the journal remains one row and the wallet
+remains `1.698000`, so the cutover adds no paid effect. Two earlier failed
 canary attempts produced no balance change; their exact false/expired ambiguity locks were moved,
 not deleted, under
 `state/reconciled-compute/20260827T083626Z-no-settlement` and
