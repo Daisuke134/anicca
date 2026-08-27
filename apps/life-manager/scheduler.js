@@ -787,6 +787,14 @@ async function wakeUserOnce(u, nowMs, deps = {}) {
     // must not strand the Telegram and daily organs for this user. Do not print event text here.
     console.error(`[wake] call organ uid=${String(u && u.uid || "?").slice(0, 12)} err ${e && e.message}`);
   }
+  const reminderTimeoutMs = deps.reminderTimeoutMs !== undefined
+    ? deps.reminderTimeoutMs
+    : (deps.travelReminderTimeoutMs !== undefined ? deps.travelReminderTimeoutMs : REMINDER_TIMEOUT_MS);
+  try {
+    await withTimeout(() => reminderUserOnce(u, nowMs, deps), reminderTimeoutMs, "reminder");
+  } catch (e) {
+    console.error(`[wake] reminder organ uid=${String(u && u.uid || "?").slice(0, 12)} err ${e && e.message}`);
+  }
   await organsUserOnce(u, nowMs, deps);
 }
 
