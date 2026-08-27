@@ -64,7 +64,7 @@ class XRoleSeparationTests(unittest.TestCase):
 
     def test_launchd_model_call_cannot_wait_on_inherited_stdin(self) -> None:
         source = (ROOT / "skills" / "x-repost" / "x-repost-cli.sh").read_text()
-        self.assertIn('"$(cat "$prompt_file")" </dev/null', source)
+        self.assertIn('<"$prompt_file" >"$EV/model.stdout"', source)
 
 
 if __name__ == "__main__":

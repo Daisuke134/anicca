@@ -32,8 +32,11 @@ RELEASE_FILES = (
     "skills/_shared/marketplace-core/schemas/payment.schema.json",
     "skills/gig-work/schemas/application_decisions.schema.json",
     "skills/gig-work/schemas/reply_composition.schema.json",
-    "skills/agent-runner/agent_runner.py",
-    "skills/agent-runner/config.json",
+    "runtime/agent-runner/agent_runner.py",
+    "runtime/agent-runner/config.json",
+    "runtime/agent-runner/token_budget.py",
+    "runtime/loop/macos_loop_registry.py",
+    "runtime/loop/runtime_event.py",
     "skills/earn/lancers/scripts/telegram_report.py",
     "skills/_shared/marketplace-core/scripts/telegram_outbox.py",
 )
@@ -96,7 +99,7 @@ class InstallLocalTests(unittest.TestCase):
             self.assertEqual(release, root / "reconcile/install/releases" / self.release_sha)
             for relative in RELEASE_FILES:
                 self.assertTrue((release / relative).is_file(), relative)
-            self.assertFalse((release / "runtime/agent-runner").exists())
+            self.assertTrue((release / "runtime/agent-runner").is_dir())
 
             self.assertEqual(manifest["deployed_sha"], self.release_sha)
             self.assertEqual(manifest["mode"], "reconcile-only")

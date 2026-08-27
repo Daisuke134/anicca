@@ -17,7 +17,7 @@ import storefront_direct as direct  # noqa: E402
 
 
 def test_storefront_proposal_runner_class_is_accepted_and_toolless(tmp_path):
-    runner_dir = SCRIPTS.parent / "agent-runner"
+    runner_dir = SCRIPTS.parents[3] / "runtime/agent-runner"
     sys.path.insert(0, str(runner_dir))
     import agent_runner
 

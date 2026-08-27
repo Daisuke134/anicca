@@ -212,7 +212,7 @@ Allowed values are closed and versioned with the registry schema:
 | Order | TODO | Done evidence |
 |---:|---|---|
 | 1 | ✅ Inventory every installed `ai.anicca.*` Life Manager label and classify owner/domain/effect/state/release | `docs/evidence/runtime/2026-08-28-macos-loop-control-plane-inventory.{md,json}`; 226 installed labels, 211 classified Life Manager-owned, 14 disabled/unloaded installed ambiguous, loaded/disabled-only rows retained |
-| 2 | ✅ Upgrade `config/loop-registry.json` to schema v2 and import all active definitions without changing launchd | 172/172 active classified labels; four schema/coverage/render tests; fixture SHA-256 `446034c8493ed520f585b6eb0a876a5bb5cbdfffc68d20f81bf48403259eb9f1`; `docs/evidence/runtime/2026-08-28-macos-loop-control-plane-schema-v2.md` |
+| 2 | ✅ Upgrade `config/loop-registry.json` to schema v2 and import all active definitions without changing launchd | 172/172 active classified labels; four schema/coverage/render tests; fixture SHA-256 `c600fc72534558a8a7fcebb5d33736dd254aa1c8a941771d9e12cf5df4ab8689`; `docs/evidence/runtime/2026-08-28-macos-loop-control-plane-schema-v2.md` |
 | 3 | ✅ Implement `bin/lm-loop doctor/status/watch` as read-only commands | five focused tests; live 172-row status/watch; runtime/effect truth separated; `docs/evidence/runtime/2026-08-28-macos-loop-control-plane-readonly-cli.md` |
 | 4 | ✅ Implement plist generation and fail-closed `apply` using `launchctl-safe` | five focused tests; production invalid generation zero mutation; isolated exact loaded argv readback and cleanup; `docs/evidence/runtime/2026-08-28-macos-loop-control-plane-atomic-apply.md` |
 | 5 | ✅ Implement `start/stop/restart` for one ID and `all`, collecting every return code | four focused tests; isolated one-label start/restart/stop; real collect-all `[0,2,0]`; cleanup remaining 0; `docs/evidence/runtime/2026-08-28-macos-loop-control-plane-lifecycle.md` |
@@ -237,6 +237,16 @@ bin/lm-loop watch all
 
 No user GUI task is required. Authentication stays in existing private profile
 stores; this control-plane slice never creates or copies credentials.
+
+### TODO 7 execution state
+
+Account rotation and per-caller provider overrides are removed. Gig, Job
+Search, Connector, Life Manager daily, Lancers portable releases, and all X
+model calls use the canonical runner with one explicit `acct2` profile. The
+duplicate Gig runner is removed after token-budget/history/context parity is
+moved. Writer opportunity discovery/response remain on their legacy
+model-runner, so TODO 7 is still pending. Evidence:
+`docs/evidence/runtime/2026-08-28-macos-loop-control-plane-provider-boundary-progress.md`.
 
 ### TODO 1 execution state
 

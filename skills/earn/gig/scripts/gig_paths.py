@@ -16,10 +16,9 @@ LIFE_MANAGER_HOME = Path(
         ),
     )
 )
-# The runner lives inside the gig folder so the whole coconala loop is one
-# self-contained directory: scripts, schemas, config, evals and the engine that
-# drives them. runtime/agent-runner stays where it is for the other loops.
-RUNNER_DIR = Path(os.environ.get("GIG_RUNNER_DIR", GIG_DIR / "agent-runner"))
+# Provider/profile selection is repository-global. Gig business code keeps its
+# schemas and adapters here but never owns a second runner or auth boundary.
+RUNNER_DIR = REPO_ROOT / "runtime/agent-runner"
 BROWSER_DIR = Path(os.environ.get("GIG_BROWSER_DIR", REPO_ROOT / "skills/browser"))
 STATE_DIR = Path(os.environ.get("GIG_STATE_DIR", Path.home() / "gig"))
 HOST_STATE_DIR = Path(os.environ.get("GIG_HOST_STATE_DIR", LIFE_MANAGER_HOME / "state"))

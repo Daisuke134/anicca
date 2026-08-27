@@ -14,7 +14,7 @@ from typing import Any
 
 HERE = Path(__file__).resolve().parent
 GIG_ROOT = HERE.parent
-DEFAULT_RUNNER = GIG_ROOT / "agent-runner/agent_runner.py"
+DEFAULT_RUNNER = GIG_ROOT.parents[2] / "runtime/agent-runner/agent_runner.py"
 DEFAULT_SCHEMA = GIG_ROOT / "schemas/gig_step_result.schema.json"
 DEFAULT_EVIDENCE = Path.home() / "gig/evidence/market-form-operator"
 

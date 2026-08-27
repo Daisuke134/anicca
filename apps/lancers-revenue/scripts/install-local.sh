@@ -85,16 +85,14 @@ git -C "$REPO_ROOT" archive --format=tar "$RELEASE_SHA" \
   skills/gig-work/schemas/application_decisions.schema.json \
   skills/gig-work/schemas/reply_composition.schema.json \
   runtime/agent-runner/agent_runner.py \
-  runtime/agent-runner/config.json | tar -xf - -C "$STAGING"
+  runtime/agent-runner/config.json \
+  runtime/agent-runner/token_budget.py \
+  runtime/loop/macos_loop_registry.py \
+  runtime/loop/runtime_event.py | tar -xf - -C "$STAGING"
 git -C "$REPO_ROOT" archive --format=tar "$RELEASE_SHA" \
   skills/earn/lancers/scripts/telegram_report.py \
   skills/_shared/marketplace-core/scripts/telegram_outbox.py | tar -xf - -C "$STAGING"
-mkdir -p "$STAGING/skills/agent-runner"
-for source in agent_runner.py config.json; do
-  mv "$STAGING/runtime/agent-runner/$source" "$STAGING/skills/agent-runner/$source"
-done
-rmdir "$STAGING/runtime/agent-runner" "$STAGING/runtime"
-chmod 755 "$STAGING/skills/agent-runner/agent_runner.py"
+chmod 755 "$STAGING/runtime/agent-runner/agent_runner.py"
 
 PYTHONDONTWRITEBYTECODE=1 "$PYTHON_BIN" - "$STAGING" "$CHECK_ROOT" <<'PY'
 import importlib.util

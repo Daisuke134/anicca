@@ -62,7 +62,7 @@ refresh_summary() {
     --output "$JOB_SEARCH_STATE_ROOT/summary.v2.json" \
     --compat-output "$JOB_SEARCH_STATE_ROOT/summary.v1.json" \
     --day "$JAPAN_DAY" \
-    --model-route "${AGENT_RUNNER_PROVIDER:-unconfigured}"
+    --model-route "shared-agent-runner"
 }
 report_wake() {
   local original_rc=$?

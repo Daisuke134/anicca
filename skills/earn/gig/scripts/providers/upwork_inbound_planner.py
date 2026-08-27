@@ -22,7 +22,7 @@ if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
 from application_planner import common_marketplace_feasibility_policy  # noqa: E402
 
-DEFAULT_RUNNER = GIG_ROOT / "agent-runner/agent_runner.py"
+DEFAULT_RUNNER = GIG_ROOT.parents[2] / "runtime/agent-runner/agent_runner.py"
 DEFAULT_SCHEMA = GIG_ROOT / "schemas/upwork_inbound_proposal.schema.json"
 DEFAULT_PROFILE = Path.home() / ".config/anicca/job-search/profile.json"
 DEFAULT_MARKET_PROFILE = Path.home() / ".config/anicca/gig/upwork-profile-state.json"

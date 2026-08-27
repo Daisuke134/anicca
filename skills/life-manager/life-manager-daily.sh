@@ -207,10 +207,6 @@ fi
 
 EVIDENCE_DIR="${LM_DAILY_EVIDENCE_DIR:-$LM_DATA_ROOT/state/agent-runner-evidence/life-manager-daily/$(date +%s)-$$}"
 export ANICCA_USAGE_LEDGER="$USAGE_LEDGER"
-# 9b requires Luna and forbids the retired Claude/CLIProxy fallback. marketing-agent selects
-# gpt-5.6-luna; provider pinning makes a Luna failure visible instead of switching providers.
-export AGENT_RUNNER_PROVIDER="codex"
-
 set +e
 printf '%s\n' "$PROMPT" | "$RUN_AGENT" --task-class marketing-agent \
   --evidence-dir "$EVIDENCE_DIR" --task-label life-manager-daily --loop life-manager >>"$LOG" 2>&1

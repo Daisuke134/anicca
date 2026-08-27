@@ -132,7 +132,7 @@ test("local runner pins Codex Terra and accepts only an evidence-contained resul
   assert.deepEqual(result.value, { ranked_events: [] });
   assert.equal(invocation.command, "python3");
   assert.deepEqual(invocation.args.slice(0, 3), [path.join(root, "agent_runner.py"), "--task-class", "repeatable-agent"]);
-  assert.equal(invocation.options.env.AGENT_RUNNER_PROVIDER, "codex");
+  assert.equal(invocation.options.env.AGENT_RUNNER_PROVIDER, undefined);
   assert.equal(invocation.options.input, "x".repeat(200));
 
   assert.doesNotThrow(() => runLocalAgentRunner({

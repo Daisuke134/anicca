@@ -19,7 +19,7 @@ from upwork_inbound_planner import InboundPlannerError, _object
 
 HERE = Path(__file__).resolve()
 GIG_ROOT = HERE.parents[2]
-DEFAULT_RUNNER = GIG_ROOT / "agent-runner/agent_runner.py"
+DEFAULT_RUNNER = GIG_ROOT.parents[2] / "runtime/agent-runner/agent_runner.py"
 DEFAULT_SCHEMA = GIG_ROOT / "schemas/upwork_offer_decision.schema.json"
 DEFAULT_PROFILE = Path.home() / ".config/anicca/job-search/profile.json"
 

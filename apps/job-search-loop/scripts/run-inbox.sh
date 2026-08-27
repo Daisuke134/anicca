@@ -76,7 +76,7 @@ JAPAN_DAY=$(TZ=Asia/Tokyo /bin/date +%F)
   --output "$JOB_SEARCH_STATE_ROOT/summary.v2.json" \
   --compat-output "$JOB_SEARCH_STATE_ROOT/summary.v1.json" \
   --day "$JAPAN_DAY" \
-  --model-route "${AGENT_RUNNER_PROVIDER:-unconfigured}"
+  --model-route "shared-agent-runner"
 "$JOB_SEARCH_PYTHON" -m job_search_loop.inbox scan \
   --account "$GMAIL_ACCOUNT" \
   --state "$SEEN_STATE" \
@@ -187,7 +187,7 @@ esac
   --output "$JOB_SEARCH_STATE_ROOT/summary.v2.json" \
   --compat-output "$JOB_SEARCH_STATE_ROOT/summary.v1.json" \
   --day "$JAPAN_DAY" \
-  --model-route "${AGENT_RUNNER_PROVIDER:-unconfigured}"
+  --model-route "shared-agent-runner"
 "$JOB_SEARCH_PYTHON" -m job_search_loop.interview_prep deliver \
   --database "$PREP_DATABASE" \
   --outbox "$OUTBOX_DATABASE" \

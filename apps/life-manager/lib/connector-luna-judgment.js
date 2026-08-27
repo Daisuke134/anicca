@@ -68,7 +68,7 @@ function runLocalAgentRunner(input = {}, deps = {}) {
       encoding: "utf8",
       timeout: timeoutMs + 5_000,
       maxBuffer: 1_000_000,
-      env: { ...process.env, AGENT_RUNNER_PROVIDER: "codex" },
+      env: { ...process.env },
     });
     if (!completed || completed.status !== 0) unavailable();
     let summary;

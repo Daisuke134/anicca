@@ -21,7 +21,7 @@ secret-like, absolute-path, invalid cadence, invalid cleanup, duplicate-label,
 domain, effect, and provider-route values. Rendering sorts by loop ID and emits
 canonical JSON bytes. The checked fixture is
 `runtime/loop/tests/fixtures/macos-loop-jobs.json`, SHA-256
-`446034c8493ed520f585b6eb0a876a5bb5cbdfffc68d20f81bf48403259eb9f1`.
+`c600fc72534558a8a7fcebb5d33736dd254aa1c8a941771d9e12cf5df4ab8689`.
 
 The focused suite runs four tests: missing/secret rejection, insertion-order
 stability, exact active-label coverage plus safety-critical classifications,
@@ -40,4 +40,3 @@ but its historical hard-breach writer can add an `allocation` field that schema
 v2 rejects. `apply` must therefore remain unavailable until mutable allocation
 state is separated from the immutable registry and the enforcement reader is
 updated. No such mutation occurs in this slice.
-

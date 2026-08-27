@@ -3,22 +3,19 @@ import json
 import unittest
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[3]
 CONFIG = ROOT / "runtime" / "agent-runner" / "config.json"
 
 
-class CodexAccountRoutingTest(unittest.TestCase):
-    def test_codex_orders_account_one_then_account_two_without_proxy_override(self):
-        provider = json.loads(CONFIG.read_text(encoding="utf-8"))["providers"]["codex"]
+class CodexProfileRoutingTest(unittest.TestCase):
+    def test_every_codex_route_names_the_single_supported_profile(self):
+        config = json.loads(CONFIG.read_text()); provider = config["providers"]["codex"]
+        self.assertNotIn("accounts", provider)
+        self.assertEqual(set(provider["profiles"]), {"acct2"})
+        codex = [candidate for task in config["task_classes"].values()
+                 for candidate in task["candidates"] if candidate["provider"] == "codex"]
+        self.assertTrue(codex)
+        self.assertEqual({candidate.get("profile_alias") for candidate in codex}, {"acct2"})
 
-        self.assertEqual(
-            [account["auth_file"] for account in provider["accounts"]],
-            ["~/.codex/auth.json", "~/.codex-acct2/auth.json"],
-        )
-        self.assertNotIn("model_provider", provider)
-        self.assertNotIn("model_providers", provider)
 
-
-if __name__ == "__main__":
-    unittest.main()
+if __name__ == "__main__": unittest.main()

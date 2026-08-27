@@ -8,6 +8,7 @@ import errno
 import fcntl
 import hashlib
 import json
+import math
 import os
 import re
 import signal
@@ -28,6 +29,7 @@ if str(REPO_ROOT) not in sys.path:
 
 from runtime.loop.macos_loop_registry import validate_registry  # noqa: E402
 from runtime.loop.runtime_event import append_runtime_event, build_runtime_event  # noqa: E402
+from token_budget import TokenBudgetLedger, budget_day_for  # noqa: E402
 # These tools can perform the filesystem mutation required by a high-value
 # invocation.  Artifact truth is still decided by the deterministic domain
 # validator after the provider exits.
@@ -45,6 +47,7 @@ CODEX_UNSUPPORTED_SCHEMA_KEYWORDS = frozenset(("uniqueItems", "allOf", "if", "th
 # rule. Callers that legitimately want a stricter floor set
 # AGENT_RUNNER_MIN_PROMPT_CHARS (run_agent.sh does, for loop prompts).
 MIN_PROMPT_CHARS = 16
+DEFAULT_HISTORY_GENERATIONS = 3
 # Evidence is useful only while it is recent and inspectable.  Letting each
 # provider stream indefinitely into a permanent per-run directory eventually
 # turns a recoverable disk-pressure incident into a failed paid invocation.
@@ -59,6 +62,11 @@ CODEX_MTOK_PRICING_USD = {
     "gpt-5.6-terra": (2.50, 0.25, 15.00),
     "gpt-5.6-sol": (5.00, 0.50, 30.00),
 }
+TOOLLESS_TASK_CLASSES = (
+    "composition-agent", "diagnostic-agent", "application-intent-planner",
+    "reply-semantic-agent", "storefront-proposal-agent",
+)
+TOOLLESS_CODEX_DISABLED_FEATURES = ("shell_tool", "code_mode_host", "unified_exec")
 
 
 def emit_runtime_event(*, loop_id: str, evidence_dir: Path,
@@ -140,6 +148,30 @@ def tree_size(path: Path) -> int:
             except OSError:
                 continue
     return total
+
+
+def prune_history_generations(history: Path, *, keep: int = DEFAULT_HISTORY_GENERATIONS) -> dict[str, int]:
+    """Bound rotated runner output without touching ledgers or the active run."""
+    result = {"removed": 0, "bytes_reclaimed": 0, "errors": 0}
+    try:
+        generations = sorted(path for path in history.iterdir()
+                             if path.is_dir() and not path.is_symlink()
+                             and ".gc-trash." not in path.name)
+    except OSError:
+        result["errors"] += 1
+        return result
+    for generation in generations[:-max(0, keep)] if keep > 0 else generations:
+        reclaimed = tree_size(generation)
+        trash = generation.with_name(f"{generation.name}.gc-trash.{os.getpid()}")
+        try:
+            os.replace(generation, trash)
+            shutil.rmtree(trash)
+        except OSError:
+            result["errors"] += 1
+            continue
+        result["removed"] += 1
+        result["bytes_reclaimed"] += reclaimed
+    return result
 
 
 def reclaim_completed_evidence(
@@ -356,6 +388,20 @@ def extract_provider_usage(provider: str, stdout_text: str, model: str | None = 
     return usage
 
 
+def budget_charge_tokens(provider: str, usage: dict[str, Any], reservation_tokens: int) -> int:
+    if usage.get("measurement") != "provider_reported":
+        return reservation_tokens
+    total = _token(usage.get("total_tokens"))
+    if total is None or total <= 0:
+        return reservation_tokens
+    if provider != "codex":
+        return total
+    cached = _token(usage.get("cached_input_tokens"))
+    if cached is None or cached > total:
+        return reservation_tokens
+    return total - cached
+
+
 def extract_claude_payload(stdout_path: Path, result_path: Path) -> str:
     """Unwrap Claude's JSON output envelope while tolerating legacy plain output."""
     text = stdout_path.read_text(encoding="utf-8", errors="replace")
@@ -518,49 +564,30 @@ def provider_process_env(provider: str, provider_config: dict[str, Any],
     return child_env
 
 
-def expand_codex_candidates(
+def resolve_provider_profiles(
     candidates: list[dict[str, Any]], providers: dict[str, Any]
 ) -> list[dict[str, Any]]:
-    """Expand one Codex model candidate into isolated account candidates."""
-    expanded: list[dict[str, Any]] = []
+    """Resolve one explicitly named provider profile without candidate expansion."""
+    resolved: list[dict[str, Any]] = []
     for candidate in candidates:
-        accounts = providers.get(candidate.get("provider"), {}).get("accounts", [])
-        if candidate.get("provider") != "codex" or not accounts:
-            expanded.append(dict(candidate))
+        if candidate.get("provider") != "codex":
+            resolved.append(dict(candidate))
             continue
-        for account_index, account in enumerate(accounts):
-            scoped = dict(candidate)
-            scoped.update({
-                "account": account["alias"],
-                "account_index": account_index,
-                "account_count": len(accounts),
-                "automation_home": account["automation_home"],
-                "auth_file": account["auth_file"],
-            })
-            expanded.append(scoped)
-    return expanded
-
-
-CODEX_EFFECT_ITEM_TYPES = frozenset({
-    "command_execution", "file_change", "mcp_tool_call", "web_search",
-})
-
-
-def codex_effect_started(stdout: str) -> bool:
-    """Fail closed after any machine-readable Codex tool/effect item starts."""
-    for line in stdout.splitlines():
-        try:
-            event = json.loads(line)
-        except json.JSONDecodeError:
-            continue
-        item = event.get("item") if isinstance(event, dict) else None
-        if isinstance(item, dict) and item.get("type") in CODEX_EFFECT_ITEM_TYPES:
-            return True
-    return False
-
-
-def should_retry_next_codex_account(error_class: str | None, effect_started: bool) -> bool:
-    return not effect_started and error_class in {"transient_quota", "transient_auth"}
+        alias = candidate.get("profile_alias")
+        if not isinstance(alias, str) or not alias:
+            raise ValueError("codex candidate requires explicit profile_alias")
+        profile = providers.get("codex", {}).get("profiles", {}).get(alias)
+        if not isinstance(profile, dict):
+            raise ValueError(f"codex profile_alias is not configured: {alias}")
+        scoped = dict(candidate)
+        scoped.update({
+            "automation_home": profile.get("automation_home"),
+            "auth_file": profile.get("auth_file"),
+        })
+        if not scoped["automation_home"] or not scoped["auth_file"]:
+            raise ValueError(f"codex profile is incomplete: {alias}")
+        resolved.append(scoped)
+    return resolved
 
 
 # The live provider Popen, if any. start_new_session detaches the provider into its
@@ -1029,7 +1056,13 @@ def command_for(provider: str, executable: str, provider_config: dict[str, Any],
             "--ignore-user-config", "--json",
             "--output-schema", str(provider_schema_path), "-o", str(result_path),
         ])
-        if args.task_class in ("composition-agent", "diagnostic-agent"):
+        for image in getattr(args, "image", []) or []:
+            command.extend(["--image", str(image)])
+        if args.task_class in TOOLLESS_TASK_CLASSES:
+            command.extend(["--sandbox", "read-only"])
+            for feature in TOOLLESS_CODEX_DISABLED_FEATURES:
+                command.extend(["--disable", feature])
+        elif getattr(args, "read_only", False):
             command.extend(["--sandbox", "read-only"])
         else:
             command.append("--dangerously-bypass-approvals-and-sandbox")
@@ -1043,7 +1076,7 @@ def command_for(provider: str, executable: str, provider_config: dict[str, Any],
             executable, "--model", model, "--no-session-persistence",
             "--output-format", "json",
         ]
-        if args.task_class in ("composition-agent", "diagnostic-agent"):
+        if args.task_class in TOOLLESS_TASK_CLASSES:
             command.extend(["--tools", ""])
         command.append("-p")
         if not prompt_via_stdin:
@@ -1121,7 +1154,7 @@ def classify_provider_error(rc: int, timed_out: bool, stdout: str, stderr: str, 
 def run() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--task-class", required=True,
-                        choices=("deterministic", "composition-agent", "storefront-proposal-agent", "repeatable-agent", "tool-agent", "browser-lane-agent", "application-lane-agent", "application-intent-planner", "diagnostic-agent", "marketing-agent", "high-value-agent", "escalation-agent"))
+                        choices=("deterministic", "composition-agent", "reply-semantic-agent", "storefront-proposal-agent", "repeatable-agent", "tool-agent", "browser-lane-agent", "application-lane-agent", "application-intent-planner", "diagnostic-agent", "marketing-agent", "high-value-agent", "escalation-agent"))
     prompt_source = parser.add_mutually_exclusive_group(required=True)
     prompt_source.add_argument("--prompt-file", type=Path)
     prompt_source.add_argument("--prompt-stdin", action="store_true")
@@ -1133,9 +1166,11 @@ def run() -> int:
     parser.add_argument("--candidate-profile")
     parser.add_argument("--escalation-reason")
     parser.add_argument("--timeout-seconds", type=int)
+    parser.add_argument("--image", action="append", type=Path, default=[])
+    parser.add_argument("--read-only", action="store_true")
     parsed = parser.parse_args()
 
-    if parsed.task_class in {"composition-agent", "storefront-proposal-agent"} and not parsed.prompt_stdin:
+    if parsed.task_class in {"composition-agent", "reply-semantic-agent", "storefront-proposal-agent", "application-intent-planner"} and not parsed.prompt_stdin:
         parser.error(f"{parsed.task_class} requires --prompt-stdin")
 
     config_path = Path(os.environ.get("AGENT_RUNNER_CONFIG", HERE / "config.json"))
@@ -1158,19 +1193,16 @@ def run() -> int:
                 "refusing to launch a paid provider"
             )
         task_config = config["task_classes"][parsed.task_class]
-        candidates = expand_codex_candidates(
+        candidates = resolve_provider_profiles(
             task_config["candidates"], config.get("providers", {})
         )
-        selected_provider = os.environ.get("AGENT_RUNNER_PROVIDER", "").strip()
-        if selected_provider:
-            if selected_provider not in config.get("providers", {}):
-                raise ValueError("selected provider is not configured")
-            candidates = [
-                candidate for candidate in candidates
-                if candidate.get("provider") == selected_provider
-            ]
-            if not candidates:
-                raise ValueError("selected provider is not a candidate for task class")
+        for candidate in candidates:
+            if "timeout_seconds" not in candidate:
+                continue
+            candidate_timeout = candidate["timeout_seconds"]
+            if (not isinstance(candidate_timeout, int)
+                    or isinstance(candidate_timeout, bool) or candidate_timeout <= 0):
+                raise ValueError("candidate timeout_seconds must be a positive integer")
         configured_timeout_seconds = int(
             task_config.get("timeout_seconds", config["timeout_seconds"])
         )
@@ -1211,6 +1243,31 @@ def run() -> int:
                 raise ValueError(f"candidate profile not configured: {parsed.candidate_profile}")
             if candidate_profile.get("task_class") != parsed.task_class:
                 raise ValueError("candidate profile task_class mismatch")
+        budget_scope_id = os.environ.get("ANICCA_BUDGET_SCOPE_ID", "").strip()
+        pass_budget_raw = os.environ.get("ANICCA_PASS_TOKEN_BUDGET", "").strip()
+        daily_budget_raw = os.environ.get("ANICCA_LOOP_DAILY_TOKEN_BUDGET", "").strip()
+        budget_values = tuple(bool(value) for value in (
+            budget_scope_id, pass_budget_raw, daily_budget_raw))
+        if any(budget_values) and not all(budget_values):
+            raise ValueError("token budget scope/pass/daily settings must be provided together")
+        budget_enabled = all(budget_values)
+        if os.environ.get("ANICCA_BUDGET_REQUIRED", "").strip() == "1" and not budget_enabled:
+            raise ValueError("token budget is required but scope/pass/daily settings are missing")
+        token_reservation = int(task_config.get("token_reservation", 0))
+        pass_token_budget = int(pass_budget_raw or 0)
+        daily_token_budget = int(daily_budget_raw or 0)
+        if budget_enabled and (
+            token_reservation <= 0 or pass_token_budget <= 0 or daily_token_budget <= 0
+        ):
+            raise ValueError("enabled token budgets and task reservation must be positive")
+        budget_daily_scope = (
+            os.environ.get("ANICCA_BUDGET_DAILY_SCOPE", "").strip() or parsed.loop)
+        budget_ledger = TokenBudgetLedger(Path(os.environ.get(
+            "ANICCA_TOKEN_BUDGET_LEDGER",
+            Path.home() / ".local/state/life-manager/telemetry/token-budget.jsonl")))
+        budget_day = budget_day_for(
+            datetime.now(timezone.utc),
+            os.environ.get("ANICCA_BUDGET_DAY_TZ", "").strip() or "Asia/Tokyo")
     except Exception as error:
         print(f"agent-runner: invalid input/config: {error}", file=sys.stderr)
         return 2
@@ -1238,20 +1295,20 @@ def run() -> int:
     started_at = utc_now()
     attempts: list[dict[str, Any]] = []
     selected: dict[str, Any] | None = None
-    skip_remaining_codex_accounts = False
+    budget_blocked: dict[str, Any] | None = None
+    last_budget: dict[str, Any] = {"status": "disabled"}
+    total_deadline = time.monotonic() + timeout_seconds
     for index, candidate in enumerate(candidates, 1):
+        remaining_timeout_seconds = math.floor(total_deadline - time.monotonic())
+        if remaining_timeout_seconds < 1:
+            break
         effective_candidate = dict(candidate)
+        attempt_timeout_seconds = min(
+            remaining_timeout_seconds,
+            effective_candidate.get("timeout_seconds", remaining_timeout_seconds))
         provider = effective_candidate["provider"]
-        if (
-            skip_remaining_codex_accounts
-            and provider == "codex"
-            and effective_candidate.get("account")
-        ):
-            continue
-        if provider != "codex":
-            skip_remaining_codex_accounts = False
         provider_config = dict(config.get("providers", {}).get(provider, {}))
-        for key in ("account", "automation_home", "auth_file"):
+        for key in ("profile_alias", "automation_home", "auth_file"):
             if key in effective_candidate:
                 provider_config[key] = effective_candidate[key]
         profile_openclaw: dict[str, Any] = {}
@@ -1266,6 +1323,21 @@ def run() -> int:
         result_path = evidence_dir / f"attempt-{index:02d}.result.json"
         for stale_path in (stdout_path, stderr_path, result_path):
             stale_path.unlink(missing_ok=True)
+        budget_event_id = f"agent-budget-{uuid.uuid4().hex}"
+        if budget_enabled:
+            last_budget = budget_ledger.reserve(
+                event_id=budget_event_id,
+                loop=parsed.loop,
+                scope_id=budget_scope_id,
+                daily_scope=budget_daily_scope,
+                day=budget_day,
+                reservation_tokens=token_reservation,
+                pass_limit=pass_token_budget,
+                daily_limit=daily_token_budget,
+            )
+            if last_budget["status"] == "blocked":
+                budget_blocked = last_budget
+                break
         attempt_started = utc_now()
         attempt_started_ns = time.time_ns()
         monotonic_start = time.monotonic()
@@ -1297,7 +1369,7 @@ def run() -> int:
                 openclaw_workdir = sandbox_preflight["sandbox_project_root"]
             command = command_for(
                 provider, executable, provider_config, effective_candidate, parsed, candidate_prompt,
-                schema, result_path, timeout_seconds, session_id, openclaw_workdir,
+                schema, result_path, attempt_timeout_seconds, session_id, openclaw_workdir,
                 prompt_via_stdin=parsed.prompt_stdin,
             )
             with stdout_path.open("wb") as stdout, stderr_path.open("wb") as stderr:
@@ -1306,7 +1378,7 @@ def run() -> int:
                         command,
                         stdout=stdout,
                         stderr=stderr,
-                        timeout=timeout_seconds,
+                        timeout=attempt_timeout_seconds,
                         cwd=parsed.workdir,
                         input_bytes=prompt.encode("utf-8") if parsed.prompt_stdin else None,
                         stdin=None if parsed.prompt_stdin else subprocess.DEVNULL,
@@ -1352,6 +1424,20 @@ def run() -> int:
         stdout_text = stdout_path.read_text(encoding="utf-8", errors="replace")
         stderr_text = stderr_path.read_text(encoding="utf-8", errors="replace")
         usage = extract_provider_usage(provider, stdout_text, model=effective_candidate.get("model"))
+        if budget_enabled:
+            charged_tokens = budget_charge_tokens(provider, usage, token_reservation)
+            settlement = budget_ledger.settle(
+                event_id=budget_event_id,
+                actual_tokens=charged_tokens,
+                measurement=str(usage["measurement"]),
+            )
+            last_budget = {
+                **last_budget,
+                "charged_tokens": charged_tokens,
+                "measurement": usage["measurement"],
+                "pass_consumed_after_tokens": settlement["pass_consumed_after_tokens"],
+                "daily_consumed_after_tokens": settlement["daily_consumed_after_tokens"],
+            }
         error_class = None if (rc == 0 and schema_valid) else classify_provider_error(
             rc, timed_out, stdout_text, stderr_text, launch_error,
         )
@@ -1367,7 +1453,8 @@ def run() -> int:
             "escalated": requires_explicit_escalation,
             "escalation_reason": escalation_reason,
             "provider": provider,
-            "account": provider_config.get("account"),
+            "profile_alias": provider_config.get("profile_alias"),
+            "budget": last_budget,
             "model": effective_candidate.get("model"),
             "effort": effective_candidate.get("effort"),
             "thinking": effective_candidate.get("thinking", "off") if provider == "openclaw" else None,
@@ -1415,7 +1502,7 @@ def run() -> int:
             "escalation_reason": escalation_reason,
             "attempt": index,
             "provider": provider,
-            "account": provider_config.get("account"),
+            "profile_alias": provider_config.get("profile_alias"),
             "provider_name": provider_name,
             "model": effective_candidate.get("model"),
             "upstream_model": usage.get("upstream_model"),
@@ -1455,16 +1542,6 @@ def run() -> int:
         # timeout, expired provider auth, provider availability, or quota failures.
         if rc == 0 and result_fresh and not schema_valid:
             break
-        if provider == "codex" and effective_candidate.get("account"):
-            effect_started = codex_effect_started(stdout_text)
-            if should_retry_next_codex_account(error_class, effect_started):
-                if effective_candidate["account_index"] + 1 >= effective_candidate["account_count"]:
-                    skip_remaining_codex_accounts = True
-                continue
-            if error_class in ("transient_timeout", "transient_unavailable"):
-                skip_remaining_codex_accounts = True
-                continue
-            break
         if error_class not in (
             "transient_timeout", "transient_quota", "transient_unavailable", "transient_auth",
         ):
@@ -1480,8 +1557,10 @@ def run() -> int:
         "route": route,
         "escalated": requires_explicit_escalation,
         "escalation_reason": escalation_reason,
-        "status": "success" if selected else "failed",
+        "status": "success" if selected else ("budget_blocked" if budget_blocked else "failed"),
+        "budget": budget_blocked or last_budget,
         "selected_provider": selected["provider"] if selected else None,
+        "selected_profile_alias": selected["profile_alias"] if selected else None,
         "selected_model": selected["model"] if selected else None,
         "selected_effort": selected["effort"] if selected else None,
         "attempt_count": len(attempts),
@@ -1500,7 +1579,8 @@ def run() -> int:
                 evidence_dir=evidence_dir,
                 selected=selected,
                 attempts=attempts,
-                candidate_profile=parsed.candidate_profile,
+                candidate_profile=(selected or (attempts[-1] if attempts else {})).get(
+                    "profile_alias"),
                 registry_path=registry_path,
                 release_sha=release_sha,
             )
@@ -1513,7 +1593,7 @@ def run() -> int:
     print(json.dumps(summary, ensure_ascii=False, separators=(",", ":")))
     if selected and not runtime_event_failed:
         return 0
-    return 1
+    return 75 if budget_blocked else 1
 
 
 if __name__ == "__main__":

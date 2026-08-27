@@ -574,40 +574,8 @@ class SemanticJudge:
         ).encode()).hexdigest()
 
     def runner_environment(self) -> dict[str, str]:
-        """Prefer the configured local semantic proxy when its token is present.
-
-        The reply route is read-only, so selecting the healthy local provider is
-        safe.  The normal three-provider fallback remains the default for public
-        installs without this explicit loopback configuration.  A longer child
-        timeout is needed for the real conversation-sized prompt; the old 40s
-        candidate cap was only proven with a tiny canary and caused every live
-        judgement to expire before producing a schema result.
-        """
-        environment = os.environ.copy()
-        try:
-            config = json.loads((self.runner.parent / "config.json").read_text(encoding="utf-8"))
-            provider = config.get("providers", {}).get("claude-direct", {})
-            next(
-                row for row in config.get("task_classes", {})
-                .get(SEMANTIC_RUNNER_PROFILE, {}).get("candidates", [])
-                if isinstance(row, dict)
-                and row.get("provider") == "claude-direct"
-                and row.get("model") == "gpt-5.3-codex-spark"
-            )
-            token_path = Path(os.path.expandvars(os.path.expanduser(str(
-                provider.get("auth_token_file", "~/.cli-proxy-api-key")
-            ))))
-            if provider.get("loopback_proxy") is True and token_path.is_file():
-                if token_path.read_text(encoding="utf-8").strip():
-                    if not environment.get("AGENT_RUNNER_PROVIDER", "").strip():
-                        environment["AGENT_RUNNER_PROVIDER_PREFERENCE"] = "claude-direct"
-                    environment["AGENT_RUNNER_PROXY_TIMEOUT_SECONDS"] = "90"
-                    return environment
-        except (OSError, StopIteration, TypeError, ValueError, json.JSONDecodeError):
-            # A malformed/partial optional proxy setup must not disable the
-            # configured provider fallback route.
-            pass
-        return environment
+        """Pass ambient non-routing inputs; the shared runner alone selects providers."""
+        return os.environ.copy()
 
     def receipt_current(self, value: Any) -> bool:
         if not (

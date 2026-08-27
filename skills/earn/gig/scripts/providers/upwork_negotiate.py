@@ -17,7 +17,7 @@ from typing import Any
 
 HERE = Path(__file__).resolve()
 GIG_ROOT = HERE.parents[2]
-DEFAULT_RUNNER = GIG_ROOT / "agent-runner/agent_runner.py"
+DEFAULT_RUNNER = GIG_ROOT.parents[2] / "runtime/agent-runner/agent_runner.py"
 DEFAULT_SCHEMA = GIG_ROOT / "schemas/upwork_negotiation_decision.schema.json"
 DEFAULT_INBOX = Path.home() / "gig/state/upwork-inbox.jsonl"
 DEFAULT_LOOP_STATE = Path.home() / "gig/state/upwork-free-loop.json"

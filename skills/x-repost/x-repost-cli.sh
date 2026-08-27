@@ -25,18 +25,16 @@ STATE="${X_REPOST_STATE_DIR:-$SKILL/state}"
 POSTED="$STATE/posted.jsonl"
 LOOP_NAME="${X_LOOP_NAME:-x-repost}"
 PY=/opt/homebrew/bin/python3; [ -x "$PY" ] || PY=python3
-CODEX="$(command -v codex || echo "$HOME/.local/bin/codex")"
-MODEL_BOUNDARY="$SKILL/scripts/model_boundary.py"
-CODEX_AUTH_FILE="${X_REPOST_CODEX_AUTH_FILE:-$HOME/.codex-acct2/auth.json}"
-CODEX_AUTOMATION_HOME="${X_REPOST_CODEX_HOME:-$HOME/.local/state/life-manager/x-repost-codex}"
+AGENT_RUNNER="${AGENT_RUNNER_BIN:-$REPO_ROOT/runtime/agent-runner/agent_runner.py}"
+AGENT_RUNNER_CONFIG="${AGENT_RUNNER_CONFIG:-$REPO_ROOT/runtime/agent-runner/config.json}"
+MODEL_SCHEMA="$SKILL/config/model-output.schema.json"
 IDENTITY="${X_REPOST_BROWSER_IDENTITY:-x:anicca}"
 ACCOUNT_HANDLE="${X_REPOST_ACCOUNT_HANDLE:-@selawmqt}"
 ACCOUNT_DESCRIPTION="${X_REPOST_ACCOUNT_DESCRIPTION:-AI・プロダクト・深層技術・crypto・finance・build in public・お笑いを、検証可能なsourceと実体験で届ける}"
 SOURCE_LANGUAGE_POLICY="${X_REPOST_SOURCE_LANGUAGE_POLICY:-target_only}"
 QUERIES_FILE="${X_REPOST_QUERIES_FILE:-$SKILL/config/queries.txt}"
-# x-repost is Codex-only: Claude's subscription ceiling must not be able to stall this loop.
-MODEL="${X_REPOST_MODEL:-gpt-5.6-luna}"
-REASONING_EFFORT="${X_REPOST_REASONING_EFFORT:-max}"
+MODEL="shared-agent-runner"
+REASONING_EFFORT="configured"
 TELEGRAM_SEND_TIMEOUT="${X_REPOST_TELEGRAM_SEND_TIMEOUT:-30}"
 HUMANIZER_SKILL="${X_REPOST_HUMANIZER:-$HOME/.openclaw/skills/jp-humanizer-pro/SKILL.md}"
 GUARD="$HOME/.config/ai/bin/browser-guard.sh"
@@ -154,48 +152,42 @@ finish() {
 # Every Codex call in this loop is one-shot, Luna/max, and must end in a JSON object. Anything else
 # is a failed step -- the prompt is never "retried creatively", the pass just stops.
 ask_model() {
-  local prompt_file="$1" out_file="$2" prepared_home rc
+  local prompt_file="$1" out_file="$2" run_dir summary rc error_class
   MODEL_FAILURE="other"
-  prepared_home="$("$PY" "$MODEL_BOUNDARY" prepare \
-    --home "$CODEX_AUTOMATION_HOME" --auth "$CODEX_AUTH_FILE")" || {
-      MODEL_FAILURE="auth"
-      return 1
-    }
-  CODEX_AUTOMATION_HOME="$prepared_home"
-  # Bounded, because the cadence is hourly and a model call has no natural end. On 2026-08-19 a
-  # single pass spent over half an hour across three calls, which on this schedule means two passes
-  # driving the same browser at once. A call that overruns is a failed step, not a slow one.
-  timeout "${X_REPOST_MODEL_TIMEOUT:-600}" \
-    env -u ANTHROPIC_API_KEY CODEX_HOME="$CODEX_AUTOMATION_HOME" \
-    "$CODEX" exec --ephemeral --model "$MODEL" \
-    -c "model_reasoning_effort=\"$REASONING_EFFORT\"" -c project_doc_max_bytes=0 \
-    --ignore-user-config --json --disable plugins --disable hooks --disable apps \
-    --disable multi_agent --disable browser_use --disable browser_use_external \
-    --disable browser_use_full_cdp_access --disable shell_tool --disable code_mode_host \
-    --disable unified_exec --disable workspace_dependencies --disable tool_suggest \
-    --disable tool_call_mcp_elicitation --disable goals --disable image_generation \
-    -o "$out_file" --dangerously-bypass-approvals-and-sandbox \
-    --skip-git-repo-check -C "$SKILL" --add-dir "$SKILL" \
-    "$(cat "$prompt_file")" </dev/null >"$EV/model.stdout" 2>"$EV/model.err"
+  run_dir="$EV/model-$(basename "$out_file")"
+  AGENT_RUNNER_CONFIG="$AGENT_RUNNER_CONFIG" \
+    "$PY" "$AGENT_RUNNER" --task-class composition-agent \
+      --prompt-stdin --schema "$MODEL_SCHEMA" \
+      --evidence-dir "$run_dir" --task-label "$LOOP_NAME" --loop "$LOOP_NAME" \
+      --workdir "$SKILL" --timeout-seconds "${X_REPOST_MODEL_TIMEOUT:-600}" \
+      <"$prompt_file" >"$EV/model.stdout" 2>"$EV/model.err"
   rc=$?
-  if [ "$rc" -eq 0 ] && "$PY" - "$out_file" <<'PYEOF'
-import json, re, sys
-raw = open(sys.argv[1], encoding="utf-8", errors="replace").read()
-blocks = re.findall(r"\{.*\}", raw, re.S)
-for candidate in reversed(blocks):
-    for start in range(len(candidate)):
-        try:
-            json.dump(json.loads(candidate[start:]), sys.stdout, ensure_ascii=False)
-            raise SystemExit(0)
-        except json.JSONDecodeError:
-            continue
-raise SystemExit(1)
+  summary="$run_dir/summary.json"
+  if [ "$rc" -eq 0 ] && "$PY" - "$summary" "$out_file" <<'PYEOF'
+import json, pathlib, shutil, sys
+summary = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"))
+source = pathlib.Path(summary["result_path"])
+value = json.loads(source.read_text(encoding="utf-8"))
+pathlib.Path(sys.argv[2]).write_text(json.dumps(value, ensure_ascii=False), encoding="utf-8")
+json.dump(value, sys.stdout, ensure_ascii=False)
 PYEOF
   then
     return 0
   fi
-  MODEL_FAILURE="$("$PY" "$MODEL_BOUNDARY" classify \
-    "$EV/model.stdout" "$EV/model.err" --returncode "$rc")" || MODEL_FAILURE="other"
+  error_class="$("$PY" - "$summary" <<'PYEOF' 2>/dev/null || true
+import json, pathlib, sys
+value=json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"))
+attempts=pathlib.Path(value["attempts_path"])
+rows=[json.loads(line) for line in attempts.read_text().splitlines() if line]
+print((rows[-1].get("error_class") if rows else "") or "")
+PYEOF
+)"
+  case "$error_class" in
+    transient_quota) MODEL_FAILURE="quota" ;;
+    transient_auth) MODEL_FAILURE="auth" ;;
+    transient_timeout) MODEL_FAILURE="timeout" ;;
+    transient_unavailable) MODEL_FAILURE="network" ;;
+  esac
   return 1
 }
 

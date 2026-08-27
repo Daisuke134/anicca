@@ -240,7 +240,7 @@ def _targeted_args(tmp_path, script):
         snapshot_script=script, queue_script=script, lane_script=script,
         fence_script=script, fences=fences, database=tmp_path / "outbox.sqlite3",
         manifest=GIG_ROOT / "config" / "connectors" / "coconala.json",
-        runner=GIG_ROOT / "agent-runner" / "agent_runner.py",
+        runner=GIG_ROOT.parents[2] / "runtime/agent-runner/agent_runner.py",
         semantic_schema=GIG_ROOT / "schemas" / "reply_semantic_judgement.schema.json",
         estimate_schema=GIG_ROOT / "schemas" / "estimate_category_selection.schema.json",
         schema=GIG_ROOT / "schemas" / "reply_composition.schema.json",

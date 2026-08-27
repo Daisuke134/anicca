@@ -73,7 +73,7 @@ DEFAULT_OWNER_PROFILE = Path.home() / ".config/anicca/gig/owner-profile.json"
 DEFAULT_GIG_DIR = Path.home() / "gig"
 DEFAULT_PROJECTS_ROOT = DEFAULT_GIG_DIR / "projects"
 DEFAULT_PROJECT_WORKER = SCRIPTS / "project_worker.py"
-DEFAULT_AGENT_RUNNER = SCRIPTS.parent / "agent-runner/agent_runner.py"
+DEFAULT_AGENT_RUNNER = SCRIPTS.parent.parents[2] / "runtime/agent-runner/agent_runner.py"
 TERMINAL_JOB_STATUSES = {"closed", "removed"}
 _COUNT_LABELS = {
     "offers": r"Offers\s*\((\d+)\)",

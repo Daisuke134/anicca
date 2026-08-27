@@ -14,13 +14,17 @@ class TerraDefaultTest(unittest.TestCase):
                 continue
             with self.subTest(task_class=name):
                 expected = [
-                    {"provider": "codex", "model": "gpt-5.6-terra", "effort": "medium"},
+                    {"provider": "codex", "model": "gpt-5.6-terra", "effort": "medium", "profile_alias": "acct2"},
                 ]
                 if name == "application-intent-planner":
                     expected = [
-                        {"provider": "codex", "model": "gpt-5.6-luna", "effort": "high"},
-                        {"provider": "codex", "model": "gpt-5.6-terra", "effort": "medium"},
+                        {"provider": "codex", "model": "gpt-5.6-luna", "effort": "high", "profile_alias": "acct2"},
+                        {"provider": "codex", "model": "gpt-5.6-terra", "effort": "medium", "profile_alias": "acct2"},
                     ]
+                if name == "reply-semantic-agent":
+                    expected = [{"provider": "codex", "model": "gpt-5.6-luna",
+                                 "effort": "medium", "timeout_seconds": 120,
+                                 "profile_alias": "acct2"}]
                 if name in {"composition-agent", "browser-lane-agent"}:
                     expected.append(
                         {"provider": "claude", "model": "claude-sonnet-5"}

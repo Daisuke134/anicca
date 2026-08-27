@@ -13,7 +13,7 @@ import sys
 from typing import Any
 
 
-SHARED = Path(__file__).resolve().parents[2] / "agent-runner" / "context_packet.py"
+SHARED = Path(__file__).resolve().parents[4] / "runtime/agent-runner/context_packet.py"
 SPEC = importlib.util.spec_from_file_location("shared_context_packet", SHARED)
 if SPEC is None or SPEC.loader is None:
     raise RuntimeError("shared context packet module is unavailable")

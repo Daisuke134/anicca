@@ -84,22 +84,13 @@ class ModelBoundaryTest(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertEqual(result.stdout.strip(), "network")
 
-    def test_cli_uses_prepared_home_and_classifies_all_model_calls(self) -> None:
+    def test_cli_routes_all_model_calls_through_shared_runner(self) -> None:
         normalized = " ".join(CLI.read_text().split())
-        self.assertIn('"$PY" "$MODEL_BOUNDARY" prepare', normalized)
-        self.assertIn('CODEX_HOME="$CODEX_AUTOMATION_HOME"', normalized)
-        self.assertIn('--disable plugins', normalized)
-        self.assertIn('--disable shell_tool', normalized)
-        self.assertIn('--disable multi_agent', normalized)
-        self.assertIn('--disable browser_use', normalized)
-        self.assertIn('-c project_doc_max_bytes=0', normalized)
-        self.assertIn('"$PY" "$MODEL_BOUNDARY" classify', normalized)
-        self.assertIn(
-            '"$EV/model.stdout" "$EV/model.err" --returncode "$rc"', normalized
-        )
-        self.assertNotIn(
-            '"$EV/model.stdout" "$EV/model.err" "$out_file"', normalized
-        )
+        self.assertIn('"$PY" "$AGENT_RUNNER" --task-class composition-agent', normalized)
+        self.assertIn('--schema "$MODEL_SCHEMA"', normalized)
+        self.assertNotIn('CODEX_HOME=', normalized)
+        self.assertNotIn('auth.json', normalized)
+        self.assertNotIn(' codex exec ', normalized)
         self.assertIn('2>"$EV/model.err"', normalized)
         self.assertNotIn('2>>"$EV/model.err"', normalized)
         self.assertEqual(normalized.count("handle_model_failure"), 8)
@@ -117,18 +108,22 @@ class ModelBoundaryTest(unittest.TestCase):
         handle_end = source.index("# Publishing and collection", handle_start)
         functions = source[ask_start:handle_end]
         cases = (
-            ('printf \'{"type":"error","message":"usage limit"}\\n\'; exit 1', "quota", 0, True),
-            ('printf \'{"type":"error","message":"failed to lookup address information"}\\n\'; exit 1', "network", 1, False),
-            ('printf \'{"type":"error","message":"unauthorized"}\\n\'; exit 1', "auth", 1, False),
-            ("sleep 2", "timeout", 1, False),
+            ("transient_quota", "quota", 0, True),
+            ("transient_unavailable", "network", 1, False),
+            ("transient_auth", "auth", 1, False),
+            ("transient_timeout", "timeout", 1, False),
         )
-        for fake_body, expected_kind, expected_rc, expected_heartbeat in cases:
+        for error_class, expected_kind, expected_rc, expected_heartbeat in cases:
             with self.subTest(expected_kind=expected_kind), tempfile.TemporaryDirectory() as root:
                 root_path = Path(root)
-                auth = root_path / "auth.json"
-                auth.write_text("{}")
-                fake = root_path / "codex"
-                fake.write_text(f"#!/bin/sh\n{fake_body}\n")
+                fake = root_path / "agent-runner"
+                fake.write_text("""#!/usr/bin/env python3
+import json, os, pathlib, sys
+args=sys.argv[1:]; evidence=pathlib.Path(args[args.index('--evidence-dir')+1]); evidence.mkdir(parents=True)
+attempts=evidence/'attempts.jsonl'; attempts.write_text(json.dumps({'error_class':os.environ['FAKE_ERROR_CLASS']})+'\\n')
+(evidence/'summary.json').write_text(json.dumps({'attempts_path':str(attempts),'result_path':None}))
+raise SystemExit(1)
+""")
                 fake.chmod(0o755)
                 prompt = root_path / "prompt.txt"
                 prompt.write_text("return json")
@@ -136,10 +131,10 @@ class ModelBoundaryTest(unittest.TestCase):
                 state.mkdir()
                 evidence.mkdir()
                 values = {
-                    "PY": sys.executable, "MODEL_BOUNDARY": str(SCRIPT),
-                    "CODEX_AUTH_FILE": str(auth),
-                    "CODEX_AUTOMATION_HOME": str(root_path / "automation"),
-                    "CODEX": str(fake), "MODEL": "fake", "REASONING_EFFORT": "low",
+                    "PY": sys.executable, "AGENT_RUNNER": str(fake),
+                    "AGENT_RUNNER_CONFIG": str(root_path / "config.json"),
+                    "MODEL_SCHEMA": str(CLI.parent / "config/model-output.schema.json"),
+                    "LOOP_NAME": "x-repost", "FAKE_ERROR_CLASS": error_class,
                     "SKILL": str(CLI.parent), "EV": str(evidence), "STATE": str(state),
                 }
                 assignments = "\n".join(
@@ -147,6 +142,7 @@ class ModelBoundaryTest(unittest.TestCase):
                 )
                 harness = f"""set -uo pipefail
 {assignments}
+export FAKE_ERROR_CLASS
 X_REPOST_MODEL_TIMEOUT=1
 MODEL_FAILURE=other
 {functions}

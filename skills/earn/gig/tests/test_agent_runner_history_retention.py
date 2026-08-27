@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 
-RUNNER_DIR = Path(__file__).resolve().parents[1] / "agent-runner"
+RUNNER_DIR = Path(__file__).resolve().parents[4] / "runtime/agent-runner"
 sys.path.insert(0, str(RUNNER_DIR))
 SPEC = importlib.util.spec_from_file_location("gig_agent_runner_history_test", RUNNER_DIR / "agent_runner.py")
 assert SPEC and SPEC.loader

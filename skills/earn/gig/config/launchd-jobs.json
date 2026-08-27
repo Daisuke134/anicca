@@ -159,7 +159,7 @@
         "{{RELEASE}}/skills/earn/gig/scripts/application_direct.py",
         "--all-eligible",
         "--planner-runner",
-        "{{RELEASE}}/skills/earn/gig/agent-runner/agent_runner.py"
+        "{{RELEASE}}/runtime/agent-runner/agent_runner.py"
       ],
       "env": {
         "CLOAK_BROWSER_OWNER": "gig-apply-direct",
@@ -220,9 +220,9 @@
         "--trigger",
         "fallback",
         "--runner",
-        "{{RELEASE}}/skills/earn/gig/agent-runner/agent_runner.py",
+        "{{RELEASE}}/runtime/agent-runner/agent_runner.py",
         "--runner-config",
-        "{{RELEASE}}/skills/earn/gig/agent-runner/config.json",
+        "{{RELEASE}}/runtime/agent-runner/config.json",
         "--continuous",
         "--poll-seconds",
         "30",

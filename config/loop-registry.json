@@ -820,7 +820,7 @@
       },
       "domain": "earn",
       "effect_class": "application",
-      "entrypoint": "skills/earn/gig/agent-runner/agent_runner.py",
+      "entrypoint": "skills/earn/gig/scripts/application_direct.py",
       "label": "ai.anicca.hf-gig-apply-direct",
       "log_root": "~/.openclaw/logs",
       "provider_route": "shared-agent-runner",
@@ -903,7 +903,7 @@
       },
       "domain": "earn",
       "effect_class": "none",
-      "entrypoint": "skills/earn/gig/agent-runner/agent_runner.py",
+      "entrypoint": "skills/earn/gig/scripts/reply_detector.py",
       "label": "ai.anicca.hf-gig-reply-detector",
       "log_root": "~/.openclaw/logs",
       "provider_route": "shared-agent-runner",
@@ -2710,7 +2710,7 @@
       "entrypoint": "skills/x-repost/x-repost-cli.sh",
       "label": "ai.anicca.x-repost-pass",
       "log_root": "~/loops/logs",
-      "provider_route": "deterministic",
+      "provider_route": "shared-agent-runner",
       "state_root": "~/loops"
     },
     "x-repost-digest": {
@@ -2784,7 +2784,7 @@
       "entrypoint": "skills/x-repost/x-repost-ja-cli.sh",
       "label": "ai.anicca.x-repost-ja-pass",
       "log_root": "~/.openclaw/logs",
-      "provider_route": "deterministic",
+      "provider_route": "shared-agent-runner",
       "state_root": "~/.openclaw"
     },
     "x-tweeter": {
@@ -2807,7 +2807,7 @@
       "entrypoint": "skills/x-tweeter/x-tweeter-cli.sh",
       "label": "ai.anicca.x-tweeter-pass",
       "log_root": "~/loops/logs",
-      "provider_route": "deterministic",
+      "provider_route": "shared-agent-runner",
       "state_root": "~/loops"
     },
     "x-tweeter-healthcheck": {

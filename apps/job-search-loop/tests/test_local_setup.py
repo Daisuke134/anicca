@@ -192,7 +192,7 @@ class LocalSetupTests(unittest.TestCase):
         self.assertEqual(replaced.returncode, 0, replaced.stderr)
         self.assertIn("Replacement Candidate", installed.read_text(encoding="utf-8"))
 
-    def test_runtime_paths_load_only_selected_provider_from_receipt(self):
+    def test_runtime_paths_use_only_the_canonical_router(self):
         self._write_executable(
             "codex",
             'test "$1" = "login" && test "$2" = "status"',
@@ -206,7 +206,7 @@ class LocalSetupTests(unittest.TestCase):
                 "-c",
                 (
                     f'source "{APP_ROOT / "scripts" / "runtime-paths.sh"}"; '
-                    'printf "%s" "$AGENT_RUNNER_PROVIDER"'
+                    'printf "%s|%s" "${AGENT_RUNNER_PROVIDER-unset}" "$AGENT_RUNNER_CONFIG"'
                 ),
             ],
             check=False,
@@ -216,7 +216,10 @@ class LocalSetupTests(unittest.TestCase):
         )
 
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(result.stdout, "codex")
+        self.assertEqual(
+            result.stdout,
+            f"unset|{APP_ROOT.parents[1] / 'runtime' / 'agent-runner' / 'config.json'}",
+        )
 
     def test_install_local_none_is_a_clean_home_end_to_end(self):
         self._write_executable(

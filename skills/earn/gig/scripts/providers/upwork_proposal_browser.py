@@ -34,7 +34,7 @@ _SNAPSHOT_KEYS = {
 }
 _SUBMIT_KEYS = {"form_url", "job_id", "proposal_id", "state"}
 GIG_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_RUNNER = GIG_ROOT / "agent-runner/agent_runner.py"
+DEFAULT_RUNNER = GIG_ROOT.parents[2] / "runtime/agent-runner/agent_runner.py"
 DEFAULT_STEP_SCHEMA = GIG_ROOT / "schemas/gig_step_result.schema.json"
 DEFAULT_OPERATOR_EVIDENCE = Path.home() / "gig/evidence/upwork-browser-operator"
 

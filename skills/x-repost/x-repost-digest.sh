@@ -9,6 +9,7 @@ set -uo pipefail
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
 
 SKILL="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SKILL/../.." && pwd)"
 STATE="${X_REPOST_STATE_DIR:-$SKILL/state}"
 PY=/opt/homebrew/bin/python3; [ -x "$PY" ] || PY=python3
 WINDOW="${X_REPOST_DIGEST_WINDOW_HOURS:-24}"
@@ -84,9 +85,9 @@ if [ "$ALREADY_EVALUATED" != "True" ]; then
 # model call to every publish and pushed one pass past 35 minutes on an hourly schedule. The
 # cooldown is fourteen days, so a seed a day is more than the loop can spend.
 SEEDS="$STATE/seeds.jsonl"
-CODEX_BIN="$(command -v codex || echo "$HOME/.local/bin/codex")"
-MODEL="${X_REPOST_MODEL:-gpt-5.6-luna}"
-REASONING_EFFORT="${X_REPOST_REASONING_EFFORT:-max}"
+AGENT_RUNNER="${AGENT_RUNNER_BIN:-$REPO_ROOT/runtime/agent-runner/agent_runner.py}"
+AGENT_RUNNER_CONFIG="${AGENT_RUNNER_CONFIG:-$REPO_ROOT/runtime/agent-runner/config.json}"
+MODEL_SCHEMA="$SKILL/config/model-output.schema.json"
 {
   echo "以下は実在の出力だけを貼ったものだ。ここに書かれていることからのみ、"
   echo "**読んだ人が自分の状況に当てはめられる教訓** を ${X_REPOST_HARVEST_COUNT:-5}件 取り出せ。"
@@ -119,41 +120,18 @@ print("state:",dict(collections.Counter(x.get("actual_state") for x in a)))' 2>/
   echo '[{"fact":"...","measured_on":"YYYY-MM-DD","source":"どのセクションから取ったか"}]'
 } >"$STATE/last-harvest-prompt.txt"
 
-if timeout "${X_REPOST_MODEL_TIMEOUT:-600}" env -u ANTHROPIC_API_KEY "$CODEX_BIN" \
-     exec --ephemeral --model "$MODEL" -c "model_reasoning_effort=\"$REASONING_EFFORT\"" \
-     --ignore-user-config --json -o "$STATE/last-harvest.raw" \
-     --dangerously-bypass-approvals-and-sandbox --skip-git-repo-check -C "$SKILL" \
-     --add-dir "$SKILL" "$(cat "$STATE/last-harvest-prompt.txt")" \
+HARVEST_RUN="$STATE/evidence/digest-$(date +%Y%m%dT%H%M%S)"
+if AGENT_RUNNER_CONFIG="$AGENT_RUNNER_CONFIG" "$PY" "$AGENT_RUNNER" \
+     --task-class composition-agent --prompt-stdin --schema "$MODEL_SCHEMA" \
+     --evidence-dir "$HARVEST_RUN" --task-label x-repost-digest --loop x-repost-digest \
+     --workdir "$SKILL" --timeout-seconds "${X_REPOST_MODEL_TIMEOUT:-600}" \
+     <"$STATE/last-harvest-prompt.txt" \
      >"$STATE/last-harvest.stdout" 2>"$STATE/last-harvest.err"; then
-  "$PY" - "$STATE/last-harvest.raw" >"$STATE/last-harvest.json" <<'PYEOF'
-import json, sys
-raw = open(sys.argv[1], encoding="utf-8", errors="replace").read()
-try:
-    value = json.loads(raw)
-    if isinstance(value, (list, dict)):
-        json.dump(value, sys.stdout, ensure_ascii=False)
-        raise SystemExit(0)
-except json.JSONDecodeError:
-    pass
-decoder = json.JSONDecoder()
-values = []
-for start, char in enumerate(raw):
-    if char not in "[{":
-        continue
-    try:
-        value, _ = decoder.raw_decode(raw[start:])
-        if isinstance(value, (list, dict)):
-            values.append(value)
-    except json.JSONDecodeError:
-        pass
-for value in reversed(values):
-    if isinstance(value, list):
-        json.dump(value, sys.stdout, ensure_ascii=False)
-        raise SystemExit(0)
-if values:
-    json.dump(values[-1], sys.stdout, ensure_ascii=False)
-    raise SystemExit(0)
-raise SystemExit(1)
+  "$PY" - "$HARVEST_RUN/summary.json" >"$STATE/last-harvest.json" <<'PYEOF'
+import json, pathlib, sys
+summary=json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"))
+value=json.loads(pathlib.Path(summary["result_path"]).read_text(encoding="utf-8"))
+json.dump(value,sys.stdout,ensure_ascii=False)
 PYEOF
   # The well drains far faster than it fills: the pass may publish up to twelve times a day and
   # each published post spends a seed, while this job used to add exactly one. Harvest several at
