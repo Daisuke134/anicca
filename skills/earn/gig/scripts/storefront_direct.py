@@ -3215,9 +3215,23 @@ def _extract_quality_signals(body: str) -> dict:
     }
 
 
+def _own_page_readback_valid(
+    observed: dict, service_id: str, expected_image_count: int | None = None,
+) -> bool:
+    body = str(observed.get("body") or "")
+    image_ids = observed.get("service_image_ids")
+    return bool(
+        urlsplit(str(observed.get("url") or "")).path.rstrip("/") == f"/services/{service_id}"
+        and body.strip() and isinstance(image_ids, list)
+        and all(isinstance(value, str) and value for value in image_ids)
+        and len(set(image_ids)) == len(image_ids)
+        and (expected_image_count is None or len(image_ids) == expected_image_count)
+    )
+
+
 def _observe_own_page(
     ws_url: str, evidence_dir: Path, name: str = "own-candidate.json",
-    service_id: str = TARGET_SERVICE_ID,
+    service_id: str = TARGET_SERVICE_ID, expected_image_count: int | None = None,
 ) -> dict:
     import listing_inventory
 
@@ -3245,12 +3259,7 @@ def _observe_own_page(
         observed = asyncio.run(listing_inventory._eval_json(ws_url, url, expression))
         body = str(observed.get("body") or "")
         image_ids = observed.get("service_image_ids")
-        valid = (
-            urlsplit(str(observed.get("url") or "")).path.rstrip("/") == f"/services/{service_id}"
-            and bool(body.strip()) and isinstance(image_ids, list)
-            and all(isinstance(value, str) and value for value in image_ids)
-            and len(set(image_ids)) == len(image_ids)
-        )
+        valid = _own_page_readback_valid(observed, service_id, expected_image_count)
         if valid:
             break
         if attempt < 2:
@@ -5842,11 +5851,15 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
             image_render_path = inventory_path.parent / "mutation-render-image.json"
             if image_render is not None:
                 _atomic_write(image_render_path, image_render)
-            gallery_page = _observe_own_page(
-                ws_url, inventory_path.parent, "own-gallery-candidate.json", GALLERY_SERVICE_ID,
-            )
             gallery_asset = _load_gallery_contract(
                 getattr(args, "gallery_contract", DEFAULT_GALLERY_CONTRACT)
+            )
+            expected_gallery_images = len(gallery_asset["kept_image_ids"]) + len(
+                gallery_asset["replacements"]
+            )
+            gallery_page = _observe_own_page(
+                ws_url, inventory_path.parent, "own-gallery-candidate.json", GALLERY_SERVICE_ID,
+                expected_image_count=expected_gallery_images,
             )
             gallery_source = next(
                 (row for row in validated_contracts if row["service_id"] == GALLERY_SERVICE_ID), None

@@ -266,6 +266,14 @@ def test_market_expansion_prefers_capabilities_not_already_represented_by_a_list
     }
 
 
+def test_gallery_readback_retries_a_hydrated_page_with_zero_images():
+    sd = _sd()
+    observed = {"url": "https://coconala.com/services/1", "body": "service", "service_image_ids": []}
+    assert sd._own_page_readback_valid(observed, "1", expected_image_count=6) is False
+    observed["service_image_ids"] = [str(index) for index in range(6)]
+    assert sd._own_page_readback_valid(observed, "1", expected_image_count=6) is True
+
+
 
 def test_demand_exploration_never_kills_a_wake(monkeypatch, tmp_path):
     """A failing exploration must be recorded, not raised into the wake."""
