@@ -3595,7 +3595,11 @@ want that artifact's niche. The product buyer job must directly match the offici
 comparables. Example: generic `AI agent business automation` demand plus a past computer-vision build
 may prove implementation ability, but it does not justify selling that past vision niche; propose a
 bounded business workflow automation instead. If uncertainty says the proposed product's own demand is
-unverified, revise it to the evidenced buyer job or choose no_op. Choose create only
+unverified, revise it to the evidenced buyer job or choose no_op. Bound a broad evidenced market by
+workflow count, inputs, outputs, tools, and approval boundaries; do not invent an industry or use-case
+niche that the demand evidence did not measure. Example: generic business-automation demand -> implement
+one buyer-supplied repetitive workflow, not an arbitrarily selected email, board-game, or other niche.
+Choose create only
 when the proposal is clearly distinct and supported. Otherwise choose no_op, set every nullable
 commercial field and metric/window to null, and provide no_op_reason. Do not claim that creation itself
 caused KPI improvement.\nCONTEXT_JSON=""" + json.dumps(context, ensure_ascii=False, separators=(",", ":"))
