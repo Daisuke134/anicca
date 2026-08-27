@@ -870,7 +870,7 @@ def _file_review_images(root: Path, artifact_sha256: str, finding: str = "",
                     target.write_bytes(archive.read(name))
                     pages.append(target)
             if not pages:
-                raise Failure("file_visual_evidence")
+                return []
             _write(review_dir / "review-manifest.json", {
                 "version": 1, "artifact_path": str(artifact),
                 "artifact_sha256": artifact_sha256,
