@@ -46,12 +46,13 @@ def _png(
     extra_chunks: list[tuple[str, bytes]] | None = None,
     after_idat_chunks: list[tuple[str, bytes]] | None = None,
     frame_dimensions: list[tuple[int, int]] | None = None,
+    actl_after_idat: bool = False,
 ) -> bytes:
     chunks = [b"\x89PNG\r\n\x1a\n"]
     chunks.append(_chunk("IHDR", struct.pack(">IIBBBBB", width, height, 8, color_type, 0, 0, 0)))
     for kind, payload in extra_chunks or []:
         chunks.append(_chunk(kind, payload))
-    if animated:
+    if animated and not actl_after_idat:
         chunks.append(_chunk("acTL", struct.pack(">II", frames, plays)))
         sequence = 0
         for frame in range(frames):
@@ -72,6 +73,8 @@ def _png(
                 sequence += 1
     else:
         chunks.append(_chunk("IDAT", zlib.compress(b"\x00\x00\x00\x00")))
+    if animated and actl_after_idat:
+        chunks.append(_chunk("acTL", struct.pack(">II", frames, plays)))
     for kind, payload in after_idat_chunks or []:
         chunks.append(_chunk(kind, payload))
     if marker:
@@ -80,7 +83,17 @@ def _png(
     return b"".join(chunks)
 
 
-def _write_fake_ffmpeg(path: Path, *, enclosed_hole: bool = False) -> Path:
+def _write_fake_ffmpeg(
+    path: Path,
+    *,
+    enclosed_hole: bool = False,
+    opaque_background: bool = False,
+    opaque_background_name: str | None = None,
+    later_hole: bool = False,
+    identical_frames: bool = False,
+    identical_frames_name: str | None = None,
+    extra_frame: bool = False,
+) -> Path:
     path.write_text(
         "#!/usr/bin/env python3\n"
         "from pathlib import Path\n"
@@ -88,14 +101,45 @@ def _write_fake_ffmpeg(path: Path, *, enclosed_hole: bool = False) -> Path:
         "input_path = Path(sys.argv[sys.argv.index('-i') + 1])\n"
         "data = input_path.read_bytes()\n"
         "width, height = struct.unpack('>II', data[16:24])\n"
-        "pixels = bytearray(b'\\xff' * (width * height * 4))\n"
+        "frame_count = int(sys.argv[sys.argv.index('-frames:v') + 1])\n"
+        "output_path = Path(sys.argv[-1])\n"
+        "frames = []\n"
+        "for frame in range(frame_count):\n"
+        "    pixels = bytearray(b'\\xff' * (width * height * 4))\n"
         + (
-            "if input_path.name == '01.png':\n"
-            "    pixels[((height // 2) * width + (width // 2)) * 4 + 3] = 0\n"
+            "    if not (" + repr(opaque_background) + " or input_path.name == " + repr(opaque_background_name) + "):\n"
+            "        for x in range(width):\n"
+            "            pixels[(x * 4) + 3] = 0\n"
+            "            pixels[((height - 1) * width + x) * 4 + 3] = 0\n"
+            "        for y in range(height):\n"
+            "            pixels[(y * width) * 4 + 3] = 0\n"
+            "            pixels[(y * width + width - 1) * 4 + 3] = 0\n"
+            if True
+            else ""
+        )
+        + (
+            "    if not (" + repr(identical_frames) + " or input_path.name == " + repr(identical_frames_name) + "):\n"
+            "        center = ((height // 2) * width + (width // 2)) * 4\n"
+            "        pixels[center] = frame % 255\n"
+            if True
+            else ""
+        )
+        + (
+            "    if input_path.name == '01.png' and " + repr(enclosed_hole) + " and frame == 0:\n"
+            "        pixels[((height // 2) * width + (width // 2)) * 4 + 3] = 0\n"
             if enclosed_hole
             else ""
         )
-        + "sys.stdout.buffer.write(pixels)\n",
+        + (
+            "    if input_path.name == '01.png' and " + repr(later_hole) + " and frame == 1:\n"
+            "        pixels[((height // 2) * width + (width // 2)) * 4 + 3] = 0\n"
+            if later_hole
+            else ""
+        )
+        + "    frames.append(bytes(pixels))\n"
+        + "output = b''.join(frames)\n"
+        + ("output += frames[-1]\n" if extra_frame else "")
+        + "(sys.stdout.buffer.write(output) if str(output_path) == '-' else output_path.write_bytes(output))\n",
         encoding="utf-8",
     )
     path.chmod(0o755)
@@ -195,6 +239,76 @@ def _with_zip_entries(root: Path, entries: dict[str, bytes]) -> None:
             archive.writestr(info, contents)
 
 
+def _generate_real_apng(path: Path, width: int, height: int, seed: int = 1) -> None:
+    generated = subprocess.run(
+        [
+            "ffmpeg",
+            "-y",
+            "-v",
+            "error",
+            "-f",
+            "lavfi",
+            "-i",
+            f"nullsrc=size={width}x{height}:rate=5,format=rgba,geq=r='mod(X+Y+{seed}+N*17,256)':g='mod(X*2+Y+{seed}+N*29,256)':b='mod(X+Y*2+{seed}+N*43,256)':a='if(eq(X,0)+eq(X,W-1)+eq(Y,0)+eq(Y,H-1),0,255)'",
+            "-frames:v",
+            "5",
+            "-plays",
+            "1",
+            "-f",
+            "apng",
+            str(path),
+        ],
+        check=False,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    if generated.returncode:
+        raise AssertionError(generated.stderr.decode(errors="replace"))
+
+
+def _generate_real_png(path: Path, width: int, height: int) -> None:
+    generated = subprocess.run(
+        [
+            "ffmpeg",
+            "-y",
+            "-v",
+            "error",
+            "-f",
+            "lavfi",
+            "-i",
+            f"color=c=black@0.0:s={width}x{height},format=rgba",
+            "-frames:v",
+            "1",
+            "-f",
+            "image2",
+            str(path),
+        ],
+        check=False,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    if generated.returncode:
+        raise AssertionError(generated.stderr.decode(errors="replace"))
+
+
+def _corrupt_fdat_payload(contents: bytes) -> bytes:
+    data = bytearray(contents)
+    offset = 8
+    while offset + 12 <= len(data):
+        length = struct.unpack(">I", data[offset : offset + 4])[0]
+        kind = bytes(data[offset + 4 : offset + 8])
+        if kind == b"fdAT" and length > 5:
+            payload_start = offset + 8
+            data[payload_start + 4 : payload_start + length] = b"\x00" * (length - 4)
+            crc_body = bytes(data[offset + 4 : payload_start + length])
+            data[payload_start + length : payload_start + length + 4] = struct.pack(
+                ">I", zlib.crc32(crc_body) & 0xFFFFFFFF
+            )
+            return bytes(data)
+        offset += length + 12
+    raise AssertionError("fixture has no fdAT chunk")
+
+
 class LineStickerValidatorTests(unittest.TestCase):
     def setUp(self) -> None:
         self.tempdir = tempfile.TemporaryDirectory()
@@ -267,11 +381,103 @@ class LineStickerValidatorTests(unittest.TestCase):
                 policy = json.loads(POLICY.read_text(encoding="utf-8"))
                 mutate(policy)
                 policy_path.write_text(json.dumps(policy) + "\n", encoding="utf-8")
-                with self.assertRaisesRegex(ValueError, "^policy_invalid$"):
+                with self.assertRaisesRegex(ValueError, "^policy_hash_mismatch$"):
                     MODULE.validate_package(self.root, policy_path, ffmpeg=str(self.ffmpeg))
-        future = _copy_policy(self.root, observed_at="2999-01-01")
-        result = self._validate(policy=future)
-        self.assertEqual(result["errors"], ["policy_stale"])
+        self.assertTrue(MODULE._policy_is_stale({"observed_at": "2999-01-01", "max_policy_age_days": 30}))
+
+    def test_policy_uses_versioned_file_hash_trust_anchor(self) -> None:
+        self.assertFalse(hasattr(MODULE, "OFFICIAL_POLICY"))
+        self.assertEqual(MODULE.POLICY_SHA256_V1, _sha256(POLICY.read_bytes()))
+        tampered = self.root.parent / "tampered-policy.json"
+        tampered.write_bytes(POLICY.read_bytes().replace(b'"version": 1', b'"version": 2'))
+        with self.assertRaisesRegex(ValueError, "^policy_hash_mismatch$"):
+            MODULE.validate_package(self.root, tampered, ffmpeg=str(self.ffmpeg))
+
+    def test_invalid_png_type_or_size_is_rejected_before_parse_and_ffmpeg(self) -> None:
+        target = self.root / "01.png"
+        target.unlink()
+        target.symlink_to(self.root / "02.png")
+        original_parse = MODULE.parse_png
+        original_run = MODULE.subprocess.run
+
+        def parse(path: Path) -> dict[str, object]:
+            if Path(path).name == "01.png":
+                raise AssertionError("non-regular PNG was parsed")
+            return original_parse(path)
+
+        def run(command: list[str], **kwargs: object) -> subprocess.CompletedProcess[bytes]:
+            if "-i" in command and Path(command[command.index("-i") + 1]).name == "01.png":
+                raise AssertionError("non-regular PNG reached ffmpeg")
+            return original_run(command, **kwargs)
+
+        with mock.patch.object(MODULE, "parse_png", side_effect=parse), mock.patch.object(MODULE.subprocess, "run", side_effect=run):
+            self.assertEqual(self._validate()["errors"], ["file_not_regular:01.png"])
+
+    def test_oversized_png_skips_parse_and_ffmpeg(self) -> None:
+        self._make_large_asset()
+        original_parse = MODULE.parse_png
+        original_run = MODULE.subprocess.run
+
+        def parse(path: Path) -> dict[str, object]:
+            if Path(path).name == "01.png":
+                raise AssertionError("oversized PNG was parsed")
+            return original_parse(path)
+
+        def run(command: list[str], **kwargs: object) -> subprocess.CompletedProcess[bytes]:
+            if "-i" in command and Path(command[command.index("-i") + 1]).name == "01.png":
+                raise AssertionError("oversized PNG reached ffmpeg")
+            return original_run(command, **kwargs)
+
+        with mock.patch.object(MODULE, "parse_png", side_effect=parse), mock.patch.object(MODULE.subprocess, "run", side_effect=run):
+            self.assertEqual(self._validate()["errors"], ["file_too_large:01.png"])
+
+    def test_invalid_dimensions_skip_ffmpeg(self) -> None:
+        self._make_bad_dimensions()
+        original_run = MODULE.subprocess.run
+
+        def run(command: list[str], **kwargs: object) -> subprocess.CompletedProcess[bytes]:
+            if "-i" in command and Path(command[command.index("-i") + 1]).name == "01.png":
+                raise AssertionError("invalid-dimension PNG reached ffmpeg")
+            return original_run(command, **kwargs)
+
+        with mock.patch.object(MODULE.subprocess, "run", side_effect=run):
+            self.assertEqual(self._validate()["errors"], ["dimensions_invalid:01.png"])
+
+    def test_acTL_must_precede_IDAT(self) -> None:
+        _replace_asset(self.root, "01.png", _png(270, 270, animated=True, actl_after_idat=True, marker="01-actl-after"))
+        self.assertEqual(self._validate()["errors"], ["png_apng_order_invalid:01.png"])
+
+    def test_opaque_background_is_rejected(self) -> None:
+        ffmpeg = _write_fake_ffmpeg(Path(self.tempdir.name) / "opaque-ffmpeg", opaque_background_name="01.png")
+        self.assertEqual(self._validate(ffmpeg=ffmpeg)["errors"], ["alpha_background_missing:01.png"])
+
+    def test_later_frame_unexpected_hole_is_rejected(self) -> None:
+        ffmpeg = _write_fake_ffmpeg(Path(self.tempdir.name) / "later-hole-ffmpeg", later_hole=True)
+        self.assertEqual(self._validate(ffmpeg=ffmpeg)["errors"], ["alpha_hole_unexpected:01.png"])
+
+    def test_identical_decoded_frames_are_rejected(self) -> None:
+        ffmpeg = _write_fake_ffmpeg(Path(self.tempdir.name) / "identical-ffmpeg", identical_frames_name="01.png")
+        self.assertEqual(self._validate(ffmpeg=ffmpeg)["errors"], ["animation_static:01.png"])
+
+    def test_later_frame_corrupt_payload_fails_real_decode(self) -> None:
+        real_apng = Path(self.tempdir.name) / "corrupt-source.png"
+        corrupt_apng = Path(self.tempdir.name) / "corrupt-later-frame.png"
+        _generate_real_apng(real_apng, 270, 270, seed=81)
+        corrupt_apng.write_bytes(_corrupt_fdat_payload(real_apng.read_bytes()))
+        parsed = MODULE.parse_png(corrupt_apng)
+        self.assertEqual(MODULE._decode_and_check_alpha(corrupt_apng, parsed, "ffmpeg", set()), "decode_failed")
+
+    def test_complete_real_ffmpeg_package_is_ready(self) -> None:
+        package = Path(self.tempdir.name) / "real-package"
+        package.mkdir()
+        _generate_real_apng(package / "main.png", 240, 240, seed=100)
+        _generate_real_png(package / "tab.png", 96, 74)
+        for number in range(1, 25):
+            _generate_real_apng(package / f"{number:02d}.png", 270, 270, seed=100 + number * 3)
+        _refresh_package(package)
+        result = MODULE.validate_package(package, POLICY, ffmpeg="ffmpeg")
+        self.assertEqual(result["status"], "ready")
+        self.assertEqual(result["errors"], [])
 
     def test_exact_file_limit_is_rejected(self) -> None:
         self._make_asset_at_limit()
@@ -325,14 +531,14 @@ class LineStickerValidatorTests(unittest.TestCase):
         self.assertEqual(self._validate()["errors"], ["zip_file_too_large:01.png"])
 
     def test_ffmpeg_timeout_is_a_stable_error(self) -> None:
+        original_run = MODULE.subprocess.run
+
         def run(command: list[str], **kwargs: object) -> subprocess.CompletedProcess[bytes]:
             self.assertGreater(float(kwargs["timeout"]), 0)
             path = Path(command[command.index("-i") + 1])
             if path.name == "01.png":
                 raise subprocess.TimeoutExpired(command, float(kwargs["timeout"]))
-            parsed = MODULE.parse_png(path)
-            output = b"\xff" * (int(parsed["width"]) * int(parsed["height"]) * 4)
-            return subprocess.CompletedProcess(command, 0, stdout=output, stderr=b"")
+            return original_run(command, **kwargs)
 
         with mock.patch.object(MODULE.subprocess, "run", side_effect=run):
             self.assertEqual(self._validate()["errors"], ["decode_timeout:01.png"])
@@ -346,7 +552,7 @@ class LineStickerValidatorTests(unittest.TestCase):
                 "-f",
                 "lavfi",
                 "-i",
-                "nullsrc=size=270x270:rate=5,geq=r='random(1)*255':g='random(2)*255':b='random(3)*255',format=rgba",
+                "nullsrc=size=270x270:rate=5,format=rgba,geq=r='random(1)*255':g='random(2)*255':b='random(3)*255':a='if(eq(X,0)+eq(X,W-1)+eq(Y,0)+eq(Y,H-1),0,255)'",
                 "-frames:v",
                 "5",
                 "-plays",
@@ -469,12 +675,12 @@ class LineStickerValidatorTests(unittest.TestCase):
         self.assertEqual(completed.returncode, 2)
         self.assertEqual(completed.stderr, "")
         self.assertEqual(len(completed.stdout.splitlines()), 1)
-        self.assertEqual(json.loads(completed.stdout)["errors"], ["policy_invalid"])
+        self.assertEqual(json.loads(completed.stdout)["errors"], ["policy_hash_mismatch"])
         self.assertNotIn("do not leak", completed.stdout)
 
     def test_fail_closed_mutations(self) -> None:
         mutations = {
-            "policy_stale": lambda: self._validate(policy=_copy_policy(self.root, observed_at="2026-01-01")),
+            "policy_hash_mismatch": lambda: self._validate(policy=_copy_policy(self.root, observed_at="2026-01-01")),
             "package_membership_mismatch": lambda: self._add_extra_file(),
             "zip_membership_mismatch": lambda: self._add_zip_extra(),
             "zip_content_mismatch:01.png": lambda: self._add_zip_content_mismatch(),
@@ -495,7 +701,10 @@ class LineStickerValidatorTests(unittest.TestCase):
         for expected, mutate in mutations.items():
             with self.subTest(expected=expected):
                 try:
-                    result = mutate()
+                    try:
+                        result = mutate()
+                    except ValueError as exc:
+                        result = {"status": "error", "errors": [str(exc)]}
                     if result is None:
                         result = self._validate()
                     self.assertNotEqual(result["status"], "ready")

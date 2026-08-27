@@ -11,9 +11,11 @@ import json
 from pathlib import Path
 import re
 import shutil
+import stat
 import struct
 import subprocess
 import sys
+import tempfile
 import zipfile
 import zlib
 
@@ -21,7 +23,6 @@ import zlib
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 PNG_NAMES = tuple(sorted(["main.png", "tab.png"] + [f"{number:02d}.png" for number in range(1, 25)]))
 PACKAGE_NAMES = frozenset((*PNG_NAMES, "provenance.json", "submission.zip"))
-REQUIRED_COLOR_TYPES = frozenset((4, 6))
 KNOWN_CRITICAL_CHUNKS = frozenset(("IHDR", "PLTE", "IDAT", "IEND", "acTL", "fcTL", "fdAT"))
 SINGLETON_CHUNKS = frozenset(
     {
@@ -44,20 +45,7 @@ SINGLETON_CHUNKS = frozenset(
 )
 HEX64 = re.compile(r"^[0-9a-fA-F]{64}$")
 FFMPEG_TIMEOUT_SECONDS = 30.0
-OFFICIAL_POLICY = {
-    "version": 1,
-    "source_url": "https://creator.line.me/en/guideline/animationsticker/",
-    "observed_at": "2026-08-28",
-    "max_policy_age_days": 30,
-    "sticker_count": 24,
-    "main": {"width": 240, "height": 240, "animated": True},
-    "tab": {"width": 96, "height": 74, "animated": False},
-    "sticker": {"max_width": 320, "max_height": 270, "required_side": 270},
-    "apng": {"min_frames": 5, "max_frames": 20, "min_plays": 1, "max_plays": 4, "max_duration_ms": 4000},
-    "max_file_bytes": 1000000,
-    "max_zip_bytes": 60000000,
-    "required_color_types": [4, 6],
-}
+POLICY_SHA256_V1 = "3a3462f9b644c624836aa2a847cc7aae3fc9ce97dee87f8c0c02cdbb320fc8fe"
 
 
 class PngError(ValueError):
@@ -146,7 +134,7 @@ def parse_png(path: Path) -> dict[str, object]:
         raise PngError("dimensions_invalid")
     if bit_depth != 8 or compression != 0 or filter_method != 0 or interlace not in (0, 1):
         raise PngError("png_ihdr_invalid")
-    if color_type not in REQUIRED_COLOR_TYPES:
+    if color_type not in (0, 2, 3, 4, 6):
         raise PngError("color_type_invalid")
 
     by_kind: dict[str, list[bytes]] = {}
@@ -160,7 +148,7 @@ def parse_png(path: Path) -> dict[str, object]:
         first_idat_index = next((index for index, chunk in enumerate(chunks) if chunk[0] == "IDAT"), None)
         if color_type != 6 or not (3 <= len(plte[0]) <= 768) or len(plte[0]) % 3 or (first_idat_index is not None and plte_index > first_idat_index):
             raise PngError("png_palette_invalid")
-    if "tRNS" in by_kind and color_type in REQUIRED_COLOR_TYPES:
+    if "tRNS" in by_kind and color_type in (4, 6):
         raise PngError("png_trns_invalid")
 
     actl = by_kind.get("acTL")
@@ -171,6 +159,10 @@ def parse_png(path: Path) -> dict[str, object]:
         declared_frames, plays = struct.unpack(">II", actl[0])
         if declared_frames == 0:
             raise PngError("acTL_invalid")
+        actl_index = next(index for index, chunk in enumerate(chunks) if chunk[0] == "acTL")
+        first_idat_index = next((index for index, chunk in enumerate(chunks) if chunk[0] == "IDAT"), None)
+        if first_idat_index is not None and actl_index > first_idat_index:
+            raise PngError("png_apng_order_invalid")
     else:
         declared_frames, plays = 1, 1
 
@@ -257,27 +249,18 @@ def parse_png(path: Path) -> dict[str, object]:
 
 def _load_policy(path: Path) -> dict[str, object]:
     try:
-        policy = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
+        raw = path.read_bytes()
+    except OSError as exc:
+        raise ValueError("policy_invalid") from exc
+    if _sha256(raw) != POLICY_SHA256_V1:
+        raise ValueError("policy_hash_mismatch")
+    try:
+        policy = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise ValueError("policy_invalid") from exc
     if not isinstance(policy, dict):
         raise ValueError("policy_invalid")
-    if set(policy) != set(OFFICIAL_POLICY) or not isinstance(policy.get("observed_at"), str):
-        raise ValueError("policy_invalid")
-    for key, expected in OFFICIAL_POLICY.items():
-        if key != "observed_at" and not _same_policy_value(policy[key], expected):
-            raise ValueError("policy_invalid")
     return policy
-
-
-def _same_policy_value(actual: object, expected: object) -> bool:
-    if type(actual) is not type(expected):
-        return False
-    if isinstance(expected, dict):
-        return set(actual) == set(expected) and all(_same_policy_value(actual[key], expected[key]) for key in expected)
-    if isinstance(expected, list):
-        return len(actual) == len(expected) and all(_same_policy_value(item, wanted) for item, wanted in zip(actual, expected))
-    return actual == expected
 
 
 def _policy_is_stale(policy: dict[str, object]) -> bool:
@@ -286,11 +269,9 @@ def _policy_is_stale(policy: dict[str, object]) -> bool:
         max_age = int(policy["max_policy_age_days"])
     except (TypeError, ValueError):
         return True
-    today = datetime.now(timezone.utc).date()
-    # The signed snapshot is dated in the owner's local calendar; tolerate a one-day
-    # UTC lag at midnight while still rejecting every genuinely future-dated policy.
-    snapshot_date = date.fromisoformat(OFFICIAL_POLICY["observed_at"])
-    effective_today = max(today, snapshot_date)
+    # The host can be one local calendar day ahead while UTC is still the previous
+    # date; use the later clock only for this boundary check.
+    effective_today = max(datetime.now(timezone.utc).date(), date.today())
     age = (effective_today - observed).days
     return observed > effective_today or age > max_age
 
@@ -319,9 +300,9 @@ def _hole_seeds(provenance: dict[str, object], name: str) -> set[tuple[int, int]
     return seeds
 
 
-def _has_unexpected_alpha_hole(raw: bytes, width: int, height: int, seeds: set[tuple[int, int]]) -> bool:
+def _alpha_frame_error(raw: bytes, width: int, height: int, seeds: set[tuple[int, int]]) -> str | None:
     if len(raw) != width * height * 4:
-        return True
+        return "decoded_byte_count"
     transparent = bytearray(width * height)
     for index in range(width * height):
         transparent[index] = raw[index * 4 + 3] == 0
@@ -347,6 +328,8 @@ def _has_unexpected_alpha_hole(raw: bytes, width: int, height: int, seeds: set[t
                 if transparent[index] and not outside[index]:
                     outside[index] = 1
                     queue.append((nx, ny))
+    if not any(outside):
+        return "alpha_background_missing"
     visited = bytearray(width * height)
     for y in range(height):
         for x in range(width):
@@ -366,45 +349,76 @@ def _has_unexpected_alpha_hole(raw: bytes, width: int, height: int, seeds: set[t
                             visited[index] = 1
                             queue.append((nx, ny))
             if not component.intersection(seeds):
-                return True
-    return False
-
-
-def _decode_and_check_alpha(path: Path, parsed: dict[str, object], ffmpeg: str, seeds: set[tuple[int, int]]) -> str | None:
-    try:
-        decoded = subprocess.run(
-            [
-                ffmpeg,
-                "-v",
-                "error",
-                "-i",
-                str(path),
-                "-frames:v",
-                "1",
-                "-f",
-                "rawvideo",
-                "-pix_fmt",
-                "rgba",
-                "-",
-            ],
-            check=True,
-            timeout=FFMPEG_TIMEOUT_SECONDS,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        ).stdout
-    except subprocess.TimeoutExpired:
-        return "decode_timeout"
-    except (OSError, subprocess.CalledProcessError):
-        return "decode_failed"
-    width, height = int(parsed["width"]), int(parsed["height"])
-    if len(decoded) != width * height * 4:
-        return "decoded_byte_count"
-    if _has_unexpected_alpha_hole(decoded, width, height, seeds):
-        return "alpha_hole_unexpected"
+                return "alpha_hole_unexpected"
     return None
 
 
-def _provenance_errors(provenance: object, root: Path) -> list[str]:
+def _has_unexpected_alpha_hole(raw: bytes, width: int, height: int, seeds: set[tuple[int, int]]) -> bool:
+    return _alpha_frame_error(raw, width, height, seeds) == "alpha_hole_unexpected"
+
+
+def _decode_frames(path: Path, parsed: dict[str, object], ffmpeg: str) -> tuple[list[bytes], str | None]:
+    width, height = int(parsed["width"]), int(parsed["height"])
+    frame_count = int(parsed["frames"])
+    if frame_count <= 0:
+        return [], "decoded_byte_count"
+    frame_bytes = width * height * 4
+    expected_bytes = frame_bytes * frame_count
+    try:
+        with tempfile.TemporaryDirectory(prefix="line-sticker-decode-") as directory:
+            output_path = Path(directory) / "frames.rgba"
+            subprocess.run(
+                [
+                    ffmpeg,
+                    "-v",
+                    "error",
+                    "-xerror",
+                    "-i",
+                    str(path),
+                    "-frames:v",
+                    str(frame_count),
+                    "-f",
+                    "rawvideo",
+                    "-pix_fmt",
+                    "rgba",
+                    str(output_path),
+                ],
+                check=True,
+                timeout=FFMPEG_TIMEOUT_SECONDS,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.PIPE,
+            )
+            metadata = output_path.stat()
+            if not stat.S_ISREG(metadata.st_mode) or metadata.st_size != expected_bytes:
+                return [], "decoded_byte_count"
+            decoded = output_path.read_bytes()
+    except subprocess.TimeoutExpired:
+        return [], "decode_timeout"
+    except (OSError, subprocess.CalledProcessError):
+        return [], "decode_failed"
+    if len(decoded) != expected_bytes:
+        return [], "decoded_byte_count"
+    return [decoded[offset : offset + frame_bytes] for offset in range(0, expected_bytes, frame_bytes)], None
+
+
+def _decode_and_check_alpha(path: Path, parsed: dict[str, object], ffmpeg: str, seeds: set[tuple[int, int]]) -> str | None:
+    frames, error = _decode_frames(path, parsed, ffmpeg)
+    if error:
+        return error
+    try:
+        width, height = int(parsed["width"]), int(parsed["height"])
+        for frame in frames:
+            frame_error = _alpha_frame_error(frame, width, height, seeds)
+            if frame_error:
+                return frame_error
+        if parsed["animated"] and len({hashlib.sha256(frame).digest() for frame in frames}) < 2:
+            return "animation_static"
+    except (KeyError, TypeError, ValueError):
+        return "decoded_byte_count"
+    return None
+
+
+def _provenance_errors(provenance: object, file_hashes: dict[str, str]) -> list[str]:
     if not isinstance(provenance, dict):
         return ["provenance_missing"]
     required = {"set_id", "character_id", "rights", "providers", "prompt_hashes", "assets"}
@@ -456,8 +470,8 @@ def _provenance_errors(provenance: object, root: Path) -> list[str]:
     for name in PNG_NAMES:
         entry = assets.get(name)
         if isinstance(entry, dict) and set(entry) == {"sha256", "intentional_alpha_holes"} and type(entry["sha256"]) is str and HEX64.fullmatch(entry["sha256"]):
-            actual = _sha256((root / name).read_bytes()) if (root / name).is_file() else ""
-            if actual.lower() != entry["sha256"].lower():
+            actual = file_hashes.get(name)
+            if actual is not None and actual.lower() != entry["sha256"].lower():
                 errors.append(f"provenance_hash_mismatch:{name}")
     return sorted(set(errors))
 
@@ -478,14 +492,12 @@ def _provenance_hole_range_errors(provenance: object, parsed_files: dict[str, di
     return []
 
 
-def _canonical_package_hash(root: Path, provenance: object, zip_payloads: dict[str, bytes]) -> str:
+def _canonical_package_hash(file_hashes: dict[str, str], provenance: object, zip_payloads: dict[str, bytes]) -> str:
     digest = hashlib.sha256()
     for name in PNG_NAMES:
         digest.update(name.encode("utf-8"))
         digest.update(b"\0")
-        path = root / name
-        if path.is_file():
-            digest.update(path.read_bytes())
+        digest.update(file_hashes.get(name, "").encode("ascii"))
     if isinstance(provenance, dict):
         digest.update(json.dumps(provenance, sort_keys=True, separators=(",", ":")).encode("utf-8"))
     for name in sorted(zip_payloads):
@@ -495,6 +507,20 @@ def _canonical_package_hash(root: Path, provenance: object, zip_payloads: dict[s
     return digest.hexdigest()
 
 
+def _preflight_png(root: Path, path: Path, name: str, max_file_bytes: int) -> tuple[object | None, str | None]:
+    if path.name != name or path.parent != root:
+        return None, f"unsafe_filename:{name}"
+    try:
+        metadata = path.lstat()
+    except OSError:
+        return None, f"file_missing:{name}"
+    if not stat.S_ISREG(metadata.st_mode):
+        return metadata, f"file_not_regular:{name}"
+    if metadata.st_size >= max_file_bytes:
+        return metadata, f"file_too_large:{name}"
+    return metadata, None
+
+
 def validate_package(root: Path, policy_path: Path, ffmpeg: str = "ffmpeg") -> dict[str, object]:
     """Return a stable, effect-free acceptance record for one package directory."""
     root = Path(root)
@@ -502,12 +528,19 @@ def validate_package(root: Path, policy_path: Path, ffmpeg: str = "ffmpeg") -> d
     errors: set[str] = set()
     if _policy_is_stale(policy):
         errors.add("policy_stale")
+    max_file_bytes = int(policy["max_file_bytes"])
+    preflight: dict[str, tuple[object | None, str | None]] = {}
+    for name in PNG_NAMES:
+        path = root / name
+        metadata, preflight_error = _preflight_png(root, path, name, max_file_bytes)
+        preflight[name] = (metadata, preflight_error)
+        if preflight_error:
+            errors.add(preflight_error)
     try:
         provenance = json.loads((root / "provenance.json").read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         provenance = None
         errors.add("provenance_missing")
-    errors.update(_provenance_errors(provenance, root))
 
     try:
         actual_members = {entry.name for entry in root.iterdir()} if root.is_dir() else set()
@@ -519,18 +552,32 @@ def validate_package(root: Path, policy_path: Path, ffmpeg: str = "ffmpeg") -> d
     parsed_files: dict[str, dict[str, object]] = {}
     file_records: list[dict[str, object]] = []
     file_hashes: dict[str, str] = {}
-    max_file_bytes = int(policy["max_file_bytes"])
     for name in PNG_NAMES:
         path = root / name
-        if not path.is_file():
+        metadata, preflight_error = preflight[name]
+        bytes_count = int(getattr(metadata, "st_size", 0))
+        record: dict[str, object] = {"name": name, "bytes": bytes_count, "sha256": ""}
+        if preflight_error or metadata is None:
+            file_records.append(record)
+            continue
+        try:
+            current = path.lstat()
+        except OSError:
             errors.add(f"file_missing:{name}")
-            file_records.append({"name": name, "bytes": 0, "sha256": ""})
+            file_records.append(record)
+            continue
+        if not stat.S_ISREG(current.st_mode):
+            errors.add(f"file_not_regular:{name}")
+            file_records.append(record)
+            continue
+        if current.st_size >= max_file_bytes:
+            errors.add(f"file_too_large:{name}")
+            file_records.append(record)
             continue
         contents = path.read_bytes()
         file_hashes[name] = _sha256(contents)
-        record: dict[str, object] = {"name": name, "bytes": len(contents), "sha256": file_hashes[name]}
-        if len(contents) >= max_file_bytes:
-            errors.add(f"file_too_large:{name}")
+        record["bytes"] = len(contents)
+        record["sha256"] = file_hashes[name]
         try:
             parsed = parse_png(path)
         except PngError as exc:
@@ -539,6 +586,7 @@ def validate_package(root: Path, policy_path: Path, ffmpeg: str = "ffmpeg") -> d
             parsed_files[name] = parsed
             record.update(parsed)
         file_records.append(record)
+    errors.update(_provenance_errors(provenance, file_hashes))
     errors.update(_provenance_hole_range_errors(provenance, parsed_files))
 
     for digest, names in _group_duplicate_hashes(file_hashes).items():
@@ -608,19 +656,21 @@ def validate_package(root: Path, policy_path: Path, ffmpeg: str = "ffmpeg") -> d
         except (OSError, zipfile.BadZipFile, RuntimeError):
             errors.add("zip_invalid")
         for name in PNG_NAMES:
-            if name in zip_payloads and name in file_hashes and zip_payloads[name] != (root / name).read_bytes():
+            if name in zip_payloads and name in file_hashes and _sha256(zip_payloads[name]) != file_hashes[name]:
                 errors.add(f"zip_content_mismatch:{name}")
 
-    required_color_types = set(policy.get("required_color_types", REQUIRED_COLOR_TYPES))
+    required_color_types = set(policy["required_color_types"])
     for name, parsed in parsed_files.items():
         if int(parsed["color_type"]) not in required_color_types:
             errors.add(f"color_type_invalid:{name}")
+        if any(error.endswith(f":{name}") for error in errors):
+            continue
         if isinstance(provenance, dict) and not ({"provenance_invalid", "provenance_missing"} & errors):
             alpha_error = _decode_and_check_alpha(root / name, parsed, ffmpeg, _hole_seeds(provenance, name))
             if alpha_error:
                 errors.add(f"{alpha_error}:{name}")
 
-    package_sha256 = _canonical_package_hash(root, provenance, zip_payloads)
+    package_sha256 = _canonical_package_hash(file_hashes, provenance, zip_payloads)
     errors_list = sorted(errors)
     return {
         "status": "ready" if not errors_list else "invalid",
@@ -675,7 +725,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         result = validate_package(args.package, args.policy, ffmpeg=args.ffmpeg)
     except (KeyError, OSError, TypeError, ValueError) as exc:
-        code = "policy_invalid" if str(exc) == "policy_invalid" else "configuration_error"
+        code = str(exc) if str(exc) in {"policy_invalid", "policy_hash_mismatch"} else "configuration_error"
         result = _configuration_result(code)
         print(json.dumps(result, sort_keys=True, separators=(",", ":")))
         return 2
