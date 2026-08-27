@@ -35,6 +35,7 @@ class XTweeterLaunchdContractTests(unittest.TestCase):
         environment = plist["EnvironmentVariables"]
         self.assertEqual(environment["X_REPOST_BROWSER_IDENTITY"], "x:affiliate-en")
         self.assertTrue(environment["X_TWEETER_STATE_DIR"].endswith("/loops/x-tweeter"))
+        self.assertEqual(environment["X_REPOST_PUBLISH_TRANSPORT"], "postiz")
 
     def test_healthcheck_keeps_five_minute_observation(self) -> None:
         loop = tomllib.loads(LOOP.read_text(encoding="utf-8"))
@@ -46,6 +47,7 @@ class XTweeterLaunchdContractTests(unittest.TestCase):
             loop, "healthcheck", loop["jobs"]["healthcheck"],
             Path("/tmp/home"), Path("/tmp/current"), Path("/tmp/logs"),
         )
+        self.assertEqual(health["Label"], "ai.anicca.x-tweeter-healthcheck")
         self.assertEqual(health["StartInterval"], 300)
 
 
