@@ -201,7 +201,7 @@ def test_public_skill_inventory_extends_existing_market_capabilities_without_ove
     merged = sd._market_capability_templates(configured, inventory)
 
     assert merged["excel_automation"] == {"deliverables": ["macro"]}
-    assert merged["skills/ai-automation-builder/SKILL.md"] == {
+    assert merged["ai-automation-builder"] == {
         "name": "ai-automation-builder",
         "description": "Build and verify bounded AI business automations.",
         "skill_path": "skills/ai-automation-builder/SKILL.md",
@@ -214,12 +214,12 @@ def test_new_public_skill_uses_its_own_capability_contract_with_an_existing_form
     sd = _sd()
     source = {"service_id": "1", "service_version_sha256": "a" * 64}
     family, template, evidence = sd._resolve_create_capability(
-        wanted="skills/ai-automation-builder/SKILL.md",
+        wanted="ai-automation-builder",
         source=source,
         service_families={"1": "seo_writing"},
         templates={
             "seo_writing": {"deliverables": ["article"]},
-            "skills/ai-automation-builder/SKILL.md": {
+            "ai-automation-builder": {
                 "skill_path": "skills/ai-automation-builder/SKILL.md",
                 "description": "Build AI automations",
             },
@@ -227,7 +227,7 @@ def test_new_public_skill_uses_its_own_capability_contract_with_an_existing_form
         repo=Path("/repo"),
     )
 
-    assert family == "skills/ai-automation-builder/SKILL.md"
+    assert family == "ai-automation-builder"
     assert template["description"] == "Build AI automations"
     assert evidence == {"/repo/skills/ai-automation-builder/SKILL.md"}
 
@@ -259,10 +259,10 @@ def test_market_expansion_prefers_capabilities_not_already_represented_by_a_list
     sd = _sd()
     templates = {
         "excel_automation": {"deliverables": ["macro"]},
-        "skills/ai-automation-builder/SKILL.md": {"description": "AI systems"},
+        "ai-automation-builder": {"description": "AI systems"},
     }
     assert sd._unlisted_capability_templates(templates, {"1": "excel_automation"}) == {
-        "skills/ai-automation-builder/SKILL.md": {"description": "AI systems"},
+        "ai-automation-builder": {"description": "AI systems"},
     }
 
 

@@ -1534,7 +1534,7 @@ def _market_capability_templates(configured: dict, inventory: dict) -> dict:
         if (not path.startswith("skills/") or not path.endswith("/SKILL.md")
                 or not name or not description or not re.fullmatch(r"[0-9a-f]{64}", digest)):
             continue
-        merged.setdefault(path, {
+        merged.setdefault(name, {
             "name": name, "description": description, "skill_path": path,
             "source_sha256": digest, "runtime": "agent_skill",
         })
