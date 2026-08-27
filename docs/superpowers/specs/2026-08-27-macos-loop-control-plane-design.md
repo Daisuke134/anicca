@@ -1,6 +1,6 @@
 # macOS Life Manager Loop Control Plane
 
-**Status:** TODO 4 complete / TODO 5 pending
+**Status:** TODO 5 complete / TODO 6 pending
 **TODO ID:** `MACOS-LOOP-CONTROL-PLANE-1`  
 **Canonical registry:** `config/loop-registry.json`  
 **Scope:** macOS launchd only
@@ -215,7 +215,7 @@ Allowed values are closed and versioned with the registry schema:
 | 2 | ✅ Upgrade `config/loop-registry.json` to schema v2 and import all active definitions without changing launchd | 172/172 active classified labels; four schema/coverage/render tests; fixture SHA-256 `446034c8493ed520f585b6eb0a876a5bb5cbdfffc68d20f81bf48403259eb9f1`; `docs/evidence/runtime/2026-08-28-macos-loop-control-plane-schema-v2.md` |
 | 3 | ✅ Implement `bin/lm-loop doctor/status/watch` as read-only commands | five focused tests; live 172-row status/watch; runtime/effect truth separated; `docs/evidence/runtime/2026-08-28-macos-loop-control-plane-readonly-cli.md` |
 | 4 | ✅ Implement plist generation and fail-closed `apply` using `launchctl-safe` | five focused tests; production invalid generation zero mutation; isolated exact loaded argv readback and cleanup; `docs/evidence/runtime/2026-08-28-macos-loop-control-plane-atomic-apply.md` |
-| 5 | Implement `start/stop/restart` for one ID and `all`, collecting every return code | lifecycle tests and isolated labels only |
+| 5 | ✅ Implement `start/stop/restart` for one ID and `all`, collecting every return code | four focused tests; isolated one-label start/restart/stop; real collect-all `[0,2,0]`; cleanup remaining 0; `docs/evidence/runtime/2026-08-28-macos-loop-control-plane-lifecycle.md` |
 | 6 | Add the uniform runtime event envelope at the shared runner boundary | schema tests; secret scan 0; existing ledgers remain authoritative |
 | 7 | Consolidate all model/profile selection into the shared provider router | direct `CODEX_HOME`/auth selection in loop entrypoints 0 |
 | 8 | Add per-loop cleanup contracts and central shared-artifact GC reconciliation | pressure test recovers headroom; protected data deletion 0 |

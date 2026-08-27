@@ -14,6 +14,7 @@ from pathlib import Path
 from runtime.loop.macos_launchd_inventory import extract_release, parse_disabled, parse_loaded
 from runtime.loop.macos_loop_registry import validate_registry
 from runtime.loop.lm_loop_apply import apply_registry, install_one
+from runtime.loop.lm_loop_lifecycle import lifecycle, lifecycle_one
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -193,8 +194,9 @@ def apply_live(release_root: Path, agents_dir: Path, launchctl_safe: Path) -> li
 
 def main(argv: list[str] | None = None) -> int:
     args = argv or sys.argv[1:]
-    if not args or args[0] not in {"apply", "doctor", "status", "watch"}:
-        print("usage: lm-loop apply|doctor|status [<loop-id|all>]|watch [<loop-id|all>]", file=sys.stderr)
+    commands = {"apply", "doctor", "start", "stop", "restart", "status", "watch"}
+    if not args or args[0] not in commands:
+        print("usage: lm-loop apply|doctor|start|stop|restart <loop-id|all>|status|watch [<loop-id|all>]", file=sys.stderr)
         return 2
     command = args[0]
     if command == "apply":
@@ -211,6 +213,29 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(results, indent=2, sort_keys=True))
         return 0
     registry = validate_registry(json.loads((ROOT / "config/loop-registry.json").read_text()))
+    if command in {"start", "stop", "restart"}:
+        if len(args) != 2:
+            print(json.dumps({"ok": False, "error": f"{command} requires <loop-id|all>"}))
+            return 2
+        target = args[1]
+        if target != "all" and target not in registry["loops"]:
+            print(json.dumps({"ok": False, "error": f"unknown loop id: {target}"}))
+            return 2
+        agents_dir = Path(os.environ.get(
+            "LIFE_MANAGER_LAUNCH_AGENTS_DIR", "~/Library/LaunchAgents")).expanduser()
+        launchctl_safe = Path(os.environ.get(
+            "LIFE_MANAGER_LAUNCHCTL_SAFE", str(ROOT / "bin/launchctl-safe"))).expanduser()
+        preflight_rc, detail = _safe_launchctl(launchctl_safe, ["preflight"])
+        if preflight_rc:
+            print(json.dumps({"ok": False, "error": detail.strip()}, sort_keys=True))
+            return 1
+        results = lifecycle(
+            registry, command, target,
+            lambda action, loop_id, entry: lifecycle_one(
+                action, loop_id, entry, agents_dir,
+                lambda launch_args: _safe_launchctl(launchctl_safe, launch_args)))
+        print(json.dumps(results, indent=2, sort_keys=True))
+        return 1 if any(row["return_code"] for row in results) else 0
     target = args[1] if len(args) > 1 else "all"
     if command == "doctor":
         loaded, _, _, _, installed = collect_live(registry)
