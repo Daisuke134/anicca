@@ -479,7 +479,8 @@ def validate_paid_work(
             for key in ("artifact_path", "artifact_version", "acceptance_evidence_path", "acceptance_status", "package_sha256", "acceptance_delta"):
                 if evidence_payload.get(key) != payload.get(key):
                     errors.append(f"delivery_evidence_{key}_mismatch")
-            if evidence_payload.get("status") not in (None, "ok"):
+            accepted_evidence_statuses = (None, "ok", "REVIEW_READY") if review_ready else (None, "ok")
+            if evidence_payload.get("status") not in accepted_evidence_statuses:
                 errors.append("delivery_evidence_status_not_ok")
 
     # ── Is this even the thing the buyer bought? ──────────────────────────────────

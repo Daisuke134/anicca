@@ -3385,7 +3385,7 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
     )
     if not ok:
         _owner_feedback(root, "paid.file_presend_validation", errors, [
-            root / "delivery" / "paid-work-result.json", stable,
+            root / "delivery" / "paid-work-result.json",
         ])
         raise Failure("file_owner_feedback")
     paid_work_evidence.resolve_fresh_blocked_after_review(
@@ -3397,7 +3397,7 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
     )
     if not ok:
         _owner_feedback(root, "paid.file_final_validation", errors, [
-            root / "delivery" / "paid-work-result.json", stable,
+            root / "delivery" / "paid-work-result.json",
         ])
         raise Failure("file_owner_feedback")
     _write(root / "context" / "paid-file-authorization.json", {

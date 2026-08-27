@@ -48,8 +48,7 @@ def test_review_ready_wav_is_valid_only_through_review_aperture(tmp_path):
         artifact_judge=lambda *_: ("deliverable", "reviewable"),
     )
     review_ok, errors = evidence.validate_paid_work(
-        tmp_path, tmp_path / "unused-delivery-evidence.json", manifest_path=manifest,
-        require_delivery_evidence=False,
+        tmp_path, manifest, manifest_path=manifest,
         artifact_judge=lambda *_: ("deliverable", "reviewable"),
         allow_review_ready=True,
     )
