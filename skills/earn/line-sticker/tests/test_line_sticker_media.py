@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from pathlib import Path
 import stat
 import subprocess
@@ -107,6 +108,10 @@ def _video(root: Path) -> Path:
 
 class LineStickerMediaTests(unittest.TestCase):
     def setUp(self) -> None:
+        # Tests must not inherit the host's producer floor. The dedicated disk
+        # regression below exercises the production gate with an explicit fake.
+        self._environment = mock.patch.dict(os.environ, {"LINE_STICKER_MEDIA_HEADROOM_BYTES": "0"})
+        self._environment.start()
         self.temp = tempfile.TemporaryDirectory(prefix="line-sticker-media-test-")
         self.root = Path(self.temp.name)
         self.work = self.root / "work"
@@ -116,6 +121,7 @@ class LineStickerMediaTests(unittest.TestCase):
 
     def tearDown(self) -> None:
         self.temp.cleanup()
+        self._environment.stop()
 
     def _plan(self) -> None:
         MODULE.plan(self.character, [sys.executable, str(self.model)], self.work, "set-1", "char-1")
@@ -174,7 +180,8 @@ class LineStickerMediaTests(unittest.TestCase):
             MODULE._run_external([sys.executable, str(overflow)], cwd=self.work)
 
     def test_disk_gate_stops_allocating_stage_before_model(self) -> None:
-        with mock.patch.dict("os.environ", {"LINE_STICKER_MEDIA_HEADROOM_BYTES": str(2**63 - 1)}):
+        usage = type("Usage", (), {"free": 99})()
+        with mock.patch.dict(os.environ, {"LINE_STICKER_MEDIA_HEADROOM_BYTES": "100"}), mock.patch.object(MODULE.shutil, "disk_usage", return_value=usage):
             with self.assertRaisesRegex(MODULE.MediaError, "disk_headroom_low"):
                 self._plan()
         self.assertFalse((self.root / "model.count").exists())
