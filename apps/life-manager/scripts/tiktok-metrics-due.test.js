@@ -1,7 +1,8 @@
 "use strict";
 const assert = require("node:assert/strict"); const fs = require("node:fs"); const os = require("node:os"); const path = require("node:path"); const test = require("node:test");
 const crypto = require("node:crypto");
-const { TARGETS, discoverTarget, discoverTargets, runDue } = require("./tiktok-metrics-due.js");
+const due = require("./tiktok-metrics-due.js");
+const { TARGETS, discoverTarget, discoverTargets, runDue } = due;
 const EXPECTED = { tenant_id: "dais-local", product_id: "anicca-ios", locale: "ja", account_id: "@anicca.jp4", native_owner: "anicca.jp4", integration_id: "cmn8x8hdv028uqx0y4gdfse5t", provider_post_id: "cmt328uot00s2qk0y23e8ptii", shortcode: "7676495865816632583", video_id: "7676495865816632583", public_url: "https://www.tiktok.com/@anicca.jp4/video/7676495865816632583", caption: "今すぐやれ", published_at: "2026-08-21T14:46:13.240Z" };
 
 test("JP4 due loop reports delayed and daily once while true 24h stays pending", async () => {
@@ -18,6 +19,20 @@ test("fresh TikTok daily report stays pending until its first metric window", as
   const daily = result.find((row) => row.window === "daily");
   assert.equal(daily.state, "pending");
   assert.equal(daily.due_at, "2026-08-27T14:34:05.147Z");
+});
+
+test("native content mismatch becomes explicit unavailable and does not throw", async () => {
+  assert.equal(typeof due.collectWindowSafely, "function");
+  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "lm-tiktok-mismatch-"));
+  const observedAt = "2026-08-27T12:35:00.000Z";
+  const result = await due.collectWindowSafely({
+    dataDir, expected: EXPECTED, window: "24h", observedAt,
+    collect: async () => { throw new Error("TikTok native metric content mismatch"); },
+  });
+  assert.equal(result.state, "source_mismatch");
+  assert.equal(result.observation.snapshot.sources.tiktok_native.status, "unavailable");
+  assert.equal(result.observation.snapshot.sources.tiktok_native.reason, "native_content_mismatch");
+  assert.equal(JSON.parse(fs.readFileSync(result.observation.file, "utf8")).post.views.value, null);
 });
 
 test("discovery keeps verified Honne EN and JA relationship-confession lanes isolated", () => {
