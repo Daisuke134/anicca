@@ -359,10 +359,14 @@ test("production queue enforces founder geography, format, priority, and YC hold
   ]);
   assert.match(fundraising.format_priority, /in-person/i);
   assert.deepEqual(fundraising.explicit_format_exceptions, []);
-  assert.deepEqual(fundraising.priority_queue.slice(0, 2).map((item) => item.program), [
+  assert.deepEqual(fundraising.priority_queue.map((item) => item.program), [
+    "GSAP2026 Enterprise B2B Course Phase 2",
+    "3 Month Program + Community",
     "ASAC 4th Pre-seed / 23rd Seed Program",
     "Y Combinator",
   ]);
+  assert.match(fundraising.priority_queue[0].reason, /existing JETRO service record/);
+  assert.match(fundraising.priority_queue[1].reason, /U\.S\. travel-authorization/);
   assert.equal(fundraising.priority_queue.find((item) => item.program === "Y Combinator")?.action, "hold_do_not_submit");
   assert.match(dailyPrompt, /Reject Kenya and every other geography/);
   assert.match(dailyPrompt, /Never submit a `hold_do_not_submit` program/);

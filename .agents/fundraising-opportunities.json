@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-08-27T02:50:00+09:00",
+  "updated_at": "2026-08-27T14:30:00+09:00",
   "geographies": [
     "Tokyo, Japan",
     "United States, with San Francisco Bay Area first"
@@ -9,10 +9,26 @@
   "explicit_format_exceptions": [],
   "priority_queue": [
     {
+      "program": "GSAP2026 Enterprise B2B Course Phase 2",
+      "official_url": "https://www.jetro.go.jp/customer/act?actId=B0091249B",
+      "action": "apply_now_existing_account_repair",
+      "reason": "JETRO officially accepts Phase 2 applications through August 30, 2026. The private machine credential SSOT contains an existing JETRO service record; match it by service/service_url without printing values, log in, complete the application, and require an official completion PNG plus Telegram photo message ID. Do not carry forward the stale authorized_jetro_account_unavailable checkpoint.",
+      "organization": "JETRO",
+      "cohort_window": "2026-08-30"
+    },
+    {
+      "program": "3 Month Program + Community",
+      "official_url": "https://form.fillout.com/t/wbEMzSKo4vus?choice=3+Month+Program+%2B+Community",
+      "action": "apply_now_private_profile_repair",
+      "reason": "Resume the existing second-page Solo Founders application. Read country, city, U.S. travel-authorization type and employment-authorization status from their exact nested private-profile fields; use the founder's stated preference for an in-person San Francisco cohort for ordinary non-binding availability and housing-preference answers. Never invent citizenship or immigration facts. Complete every truthfully answerable page and require an official completion PNG plus Telegram photo message ID.",
+      "organization": "Solo Founders",
+      "cohort_window": "September 10 2026"
+    },
+    {
       "program": "ASAC 4th Pre-seed / 23rd Seed Program",
       "official_url": "https://www.acceleration-tokyo.metro.tokyo.lg.jp/program.php",
       "action": "apply_now_current_official_batch",
-      "reason": "Tokyo Metropolitan Government officially opened applications on August 25, 2026 for the ASAC 4th Pre-seed and 23rd Seed programs, with a September 13, 2026 deadline. The official program page requires login before the application form and does not publicly list a founder-video requirement. Reconcile the prior nonterminal registration attempt before any new registration effect; if no terminal registration receipt exists, complete the ordinary account/application flow, then require an official completion PNG plus Telegram photo message ID. Later interview or attendance is a human checkpoint and is not authorized for agent impersonation.",
+      "reason": "Tokyo Metropolitan Government officially opened applications on August 25, 2026 for the ASAC 4th Pre-seed and 23rd Seed programs, with a September 13, 2026 deadline. The private machine credential SSOT contains an existing ASAC service record; match it by service/service_url without printing values and reconcile the prior nonterminal registration attempt. If no terminal registration receipt exists, complete the ordinary account/application flow, then require an official completion PNG plus Telegram photo message ID. Later interview or attendance is a human checkpoint and is not authorized for agent impersonation.",
       "organization": "Tokyo Metropolitan Government",
       "cohort_window": "2026-08-25 through 2026-09-13"
     },

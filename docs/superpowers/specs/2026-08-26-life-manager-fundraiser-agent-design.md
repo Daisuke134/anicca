@@ -31,7 +31,7 @@ flowchart LR
 5. The Submit effect is claimed exactly once using `organization + program + cohort/window + account`.
 6. A fresh UI or matching provider-mail readback creates the ApplicationReceipt.
 7. The next one-minute slot cannot reapply to the same receipt identity; `submit_unknown` is never retried automatically.
-8. CAPTCHA, founder video, interview attendance, KYC, binding terms, banking, and funds movement stop for the human.
+8. CAPTCHA and ordinary account/OTP transport are completed autonomously through the installed solver, credential SSOT, and Gmail/browser routes. Founder video, interview attendance, KYC, binding terms, banking, and funds movement remain human-only boundaries.
 9. Three unrelated live forms complete without any production-code change between them.
 10. Missing canned answers do not end a pass: Luna makes reasonable inferences for ordinary narrative and judgment fields, checkpoints human-only ceremonies, and continues with other candidates.
 11. Production contains no accelerator-specific script, selector, field map, compiler, registry, numbered catalog, dedicated fundraising database, dedicated MCP, competing scheduler, or provider-specific executor.
@@ -74,6 +74,8 @@ that bounded owner; no second daemon, database worker, provider adapter, or MCP 
 - The model owns search generation, qualification, prioritization, answers, and browser actions.
 - Deterministic code owns cadence claims, effect uniqueness, receipts, and replay-zero only.
 - The agent uses canonical context, scoped private founder data, official opportunity evidence, and founder-attested claims with provenance. It makes reasonable inferences for ordinary narrative/judgment fields without fabricating identities, credentials, legal registrations, banking details, signatures, or consent.
+- Existing credentials are matched from the private list by service/service URL, not a guessed provider-named JSON path. Ordinary registration creates and verifies a strong credential in that same private SSOT instead of becoming a human checkpoint.
+- Receipt identity uses the stable application account hash. Context, deck, application, or run digests are never account identities; normalized provider/program/cohort terminal receipts remain replay barriers across account-label migrations.
 - X is lead evidence; eligibility, deadline, terms, and application route MUST come from an official page.
 - Failed or ineligible discovery remains run evidence and MUST NOT become a funder/source registry.
 - The acquisition target is maximum truthful throughput with a one-minute wake. Zero applications is a failed pass, and one submission does not end a pass.
@@ -141,8 +143,12 @@ that bounded owner; no second daemon, database worker, provider adapter, or MCP 
 | 43 | checkpoint | Complete founding team and SF residence or relocation commitment are not attested |
 | Camford Capital | checkpoint | Privacy-policy and terms consent is required before Submit |
 | Base Batches 004 | checkpoint | Required founder video is absent |
-| Open Network Lab | checkpoint | Separate participation, investment-discussion restrictions, and share agreement require founder authority |
-| DelightX | checkpoint | Six months in San Francisco, visa/housing/cost commitment, and $60K for 5% require founder authority |
+| Open Network Lab | submitted_verified | Official completion UI says `回答が送信されました。`; completion PNG and Telegram photo message ID are recorded |
+| DelightX | submitted_verified | Official completion UI says `ありがとうございました！`; completion PNG and Telegram photo message ID are recorded |
+| a16z Speedrun SR008 | submitted_verified | Official completion UI says `Thank You for Applying!`; completion PNG, confirmation-email notice, and Telegram photo message ID are recorded |
+| Solo Founders | retrying | Resume page two using scoped Tokyo/contact/U.S. travel-authorization facts and the founder's stated in-person SF preference; do not invent citizenship or immigration facts |
+| JETRO GSAP Enterprise B2B Phase 2 | retrying | Existing private JETRO credential record resolves the stale account-unavailable checkpoint; deadline August 30, 2026 |
+| ASAC Pre-seed / Seed | retrying | Existing private ASAC credential record resolves the stale password-unavailable checkpoint |
 | JETRO GSAP StartX | checkpoint | Three-minute English pitch video, full participation, and terms acceptance require founder action |
 | Y Combinator | held | Explicitly do not submit yet |
 
