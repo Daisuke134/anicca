@@ -154,8 +154,8 @@ allowed until official readback proves whether the prior action happened. `CLOSE
 
 Image/video providers are commands described by a local private configuration. The public repo
 contains interfaces and safe fixtures, never credentials. A generation quote must be read before
-effect, be within the configured per-set cap, and be durably reserved by `set_id`. Unknown cost,
-missing provenance, or disk below the media headroom floor fails before generation or submission.
+effect, be within the configured per-set cap, and be durably reserved by `set_id`. Unknown cost or
+missing provenance fails before generation or submission.
 No provider is retried after an acknowledged paid generation effect; it is reconciled first.
 
 The animation adapter protocol is two-phase and identity-first. `quote` returns provider, model,
@@ -166,8 +166,12 @@ acknowledgement. Provider/model/request/video hashes match across all three phas
 
 Generated source media is deleted only when the provider explicitly marks it regenerable, all ten
 bound segments produced valid durable candidates, and their hashes/receipts are fsynced. Otherwise
-the source remains. Every media wake checks shared disk policy and configured headroom before any
-model/provider/FFmpeg allocation.
+the source remains. Every media wake calculates the bytes required by its exact next operation from
+input size, frame dimensions/count, encoder intermediates, output limit, and receipt reserve. It
+compares that requirement with current free bytes immediately before allocation. If insufficient,
+it performs only approved regenerable-cache cleanup, then splits work down to one source, segment,
+or candidate and retries. There is no fixed disk-capacity floor and disk pressure never permanently
+blocks the loop; it yields an effect-free bounded wake with the next smaller operation recorded.
 
 Creators Market has no assumed public submission API. The adapter uses the dedicated authenticated
 browser and official pages. Credentials remain in the private credential SSOT and browser profile,
@@ -219,7 +223,8 @@ Code-owned gate:
 
 - clean fixture run creates one valid 24-item package and manifest;
 - malformed dimensions, frame count, playback, file size, alpha hole, duplicate asset, missing
-  provenance, stale policy, low disk, and unknown cost all fail closed;
+  provenance, stale policy, insufficient bytes for the exact next operation, and unknown cost all
+  prevent that allocation/effect and produce an adaptive retry receipt;
 - fake provider proves submit, lost-ack reconciliation, rejection repair, release, official
   readback, restart/resume, and next-wake `duplicate_effect=0`;
 - installer manifest and launchd job pass existing Life Manager validators;
@@ -269,28 +274,33 @@ do not count as money.
    credential entry is configured in the private credential SSOT.
 3. The redesigned media diff still needs a fresh adversarial re-review and a fresh parent run of
    the full 78 validator/owner regressions after its core provenance-schema change.
-4. Host free space is only slightly above the 2 GiB media floor and fluctuates under other active
-   writers. A generation wake must re-read the disk gate immediately before allocating media.
+
+Disk capacity is a changing runtime input, not a revenue blocker. The remaining implementation must
+replace the temporary fixed-threshold media gate with the adaptive per-operation byte calculation,
+safe-cache cleanup, and smaller-operation fallback defined above.
 
 ### Remaining TODO order
 
-1. Close the redesigned media task review: fresh parent 78-test regression and fresh Sol review;
-   repair every Critical/Important finding.
-2. Add one real animation-provider adapter using the two-phase quote/reserve/generate/reconcile
+1. Replace the temporary fixed media threshold with adaptive per-operation byte estimation,
+   safe-cache cleanup, smaller-unit fallback, and an effect-free retry receipt; prove continued
+   progress without any fixed disk-size requirement.
+2. Close the redesigned media task review: fresh parent validator/owner regression and fresh Sol
+   review; repair every Critical/Important finding.
+3. Add one real animation-provider adapter using the two-phase quote/reserve/generate/reconcile
    contract; establish an authenticated provider account and verify quote/cost/output readback.
-3. Generate the original character sheet with rights evidence, obtain the model's 60-motion plan,
+4. Generate the original character sheet with rights evidence, obtain the model's 60-motion plan,
    generate six ten-motion source videos, convert all candidates, and obtain the model's exact
    24-item visual selection.
-4. Produce the real validator-ready package and bind all generation receipts, costs, prompts,
+5. Produce the real validator-ready package and bind all generation receipts, costs, prompts,
    sources, segments, candidates, and rights evidence into package provenance.
-5. Implement and verify the dedicated Creators Market browser adapter: registration/login state,
+6. Implement and verify the dedicated Creators Market browser adapter: registration/login state,
    inventory observation, one fenced submit, review polling, rejection repair, one release, and
    official LINE STORE readback.
-6. Add the public integration manifest, installer/status/outcomes commands, dedicated browser owner,
+7. Add the public integration manifest, installer/status/outcomes commands, dedicated browser owner,
    bounded launchd wake, recovery, upgrade, stop, and uninstall behavior.
-7. Trigger the installed launchd loop—not foreground Codex—to generate and submit the first real
+8. Trigger the installed launchd loop—not foreground Codex—to generate and submit the first real
    set. Continue through approval and automatic release.
-8. Prove the public product, then run a later observe-only natural wake with submit/release
+9. Prove the public product, then run a later observe-only natural wake with submit/release
    `duplicate_effect=0`.
-9. Read official sales/region/payout state, record actual revenue or zero, and make exactly one
+10. Read official sales/region/payout state, record actual revenue or zero, and make exactly one
    evidence-backed change for the next set.
