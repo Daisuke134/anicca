@@ -10,7 +10,14 @@ import {
   buildComputeReceipt,
   executeComputeRequest,
 } from "../compute-receipt.mjs";
-import { createComputeProxy, paidTransport, publicProxyError, requireInstancePort, selectCappedRequirement } from "../proxy.mjs";
+import {
+  createComputeProxy,
+  paidTransport,
+  publicProxyError,
+  requireInstancePort,
+  resolveFrontierModel,
+  selectCappedRequirement,
+} from "../proxy.mjs";
 
 const PAYER = "0x810f6d61f7606deee2657d3083e150a222bc29c5";
 const TX = `0x${"ab".repeat(32)}`;
@@ -112,6 +119,13 @@ test("compute proxy requires a dedicated non-shared port", () => {
   assert.throws(() => requireInstancePort("8402"), /instance-specific/u);
   assert.equal(requireInstancePort("8402", { receiptBacked: false }), 8402);
   assert.throws(() => requireInstancePort(undefined), /instance-specific/u);
+});
+
+test("frontier model resolver trims explicit values and defaults to the current catalog model", () => {
+  assert.equal(resolveFrontierModel(" openai/custom-model "), "openai/custom-model");
+  assert.equal(resolveFrontierModel(" \t"), "openai/gpt-5.4-nano");
+  assert.equal(resolveFrontierModel(undefined), "openai/gpt-5.4-nano");
+  assert.notEqual(resolveFrontierModel(undefined), "openai/gpt-5-nano");
 });
 
 test("payment requirement selector rejects an over-cap quote before signing", () => {
@@ -249,6 +263,56 @@ test("installed x402 wrapper marks signer failure as unbroadcast and releases lo
   assert.equal(signatures, 2);
 });
 
+test("paidTransport projects only validated status and provider code for non-OK responses", async () => {
+  const sentinel = "SECRET_PROVIDER_BODY_AND_MESSAGE";
+  const transport = paidTransport({ address: PAYER }, async () => new Response(JSON.stringify({
+    error: { message: sentinel, code: "FREE_MODEL_FAILED" }, prompt: sentinel, apiKey: sentinel,
+  }), { status: 503, headers: { "content-type": "application/json" } }));
+  await assert.rejects(() => transport({ request: valid().request, maxCostUsdc: 0.001 }), (error) => {
+    assert.equal(error.message, "BlockRun request failed");
+    assert.equal(error.httpStatus, 503);
+    assert.equal(error.providerCode, "FREE_MODEL_FAILED");
+    assert.doesNotMatch(error.message, new RegExp(sentinel, "u"));
+    assert.equal(Object.keys(error).sort().join(","), "httpStatus,providerCode");
+    return true;
+  });
+});
+
+test("unknown provider codes are dropped before they reach the proxy diagnostic sink", async () => {
+  const root = await mkdtemp(join(tmpdir(), "compute-unknown-provider-code-"));
+  const sentinel = "SECRET_TOKEN_PATH_RAW_MESSAGE";
+  const diagnostics = [];
+  const transport = paidTransport({ address: PAYER }, async () => new Response(JSON.stringify({
+    error: { message: sentinel, code: sentinel }, path: `/private/${sentinel}`,
+  }), { status: 503, headers: { "content-type": "application/json" } }));
+  const server = createComputeProxy({
+    payer: PAYER,
+    revenueJournalPath: join(root, "revenue.jsonl"),
+    computeJournalPath: join(root, "compute.jsonl"),
+    fundingReceiptIds: [REVENUE_ID], maxCostUsdc: 0.001, reserveUsdc: 0, sessionCapUsdc: 0.001,
+    getBalance: async () => 1.7, transport, frontierModel: "openai/gpt-5.4-nano",
+    diagnosticSink: (diagnostic) => diagnostics.push(diagnostic),
+  });
+  await import("node:fs/promises").then(({ writeFile }) => writeFile(join(root, "revenue.jsonl"), `${JSON.stringify(revenue[0])}\n`));
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  try {
+    const { port } = server.address();
+    const response = await fetch(`http://127.0.0.1:${port}/v1/chat/completions`, {
+      method: "POST", headers: { "content-type": "application/json", "idempotency-key": "unknown-provider-code" },
+      body: JSON.stringify({ model: "free/glm-4.7", messages: [{ role: "user", content: "hello" }] }),
+    });
+    assert.equal(response.status, 502);
+    assert.deepEqual(await response.json(), publicProxyError(true));
+    assert.deepEqual(diagnostics, [{
+      event: "compute_execution_failed", stage: "paid_compute", model: "openai/gpt-5.4-nano",
+      httpStatus: 503, providerCode: null,
+    }]);
+    assert.doesNotMatch(JSON.stringify(diagnostics), new RegExp(sentinel, "u"));
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+
 test("signed fetch overwrites misleading safe code and remains durably ambiguous", async () => {
   const root = await mkdtemp(join(tmpdir(), "compute-x402-broadcast-"));
   let initialFetches = 0;
@@ -299,7 +363,7 @@ test("receipt-backed proxy forces the configured paid model regardless of reside
       seenModel = request.model;
       return { output: valid().output, costUsdc: 0.001, settlement: valid().settlement };
     },
-    frontierModel: "openai/gpt-5-nano",
+    frontierModel: " openai/gpt-5.4-nano ",
   });
   await import("node:fs/promises").then(({ writeFile }) => writeFile(join(root, "revenue.jsonl"), `${JSON.stringify(revenue[0])}\n`));
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
@@ -310,8 +374,93 @@ test("receipt-backed proxy forces the configured paid model regardless of reside
       body: JSON.stringify({ model: "free/glm-4.7", messages: [{ role: "user", content: "hello" }] }),
     });
     assert.equal(response.status, 200);
-    assert.equal(seenModel, "openai/gpt-5-nano");
+    assert.equal(seenModel, "openai/gpt-5.4-nano");
   } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+
+test("receipt-backed proxy keeps a generic HTTP error and sends an allowlisted diagnostic", async () => {
+  const root = await mkdtemp(join(tmpdir(), "compute-diagnostic-"));
+  const sentinel = "SECRET_SENTINEL_PRIVATE_MATERIAL";
+  const diagnostics = [];
+  const server = createComputeProxy({
+    payer: PAYER,
+    revenueJournalPath: join(root, "revenue.jsonl"),
+    computeJournalPath: join(root, "compute.jsonl"),
+    fundingReceiptIds: [REVENUE_ID], maxCostUsdc: 0.001, reserveUsdc: 0, sessionCapUsdc: 0.001,
+    getBalance: async () => 1.7,
+    transport: async () => {
+      const error = new Error(sentinel);
+      Object.assign(error, {
+        httpStatus: 503, providerCode: "FREE_MODEL_FAILED", prompt: sentinel, request: { token: sentinel },
+        response: { body: sentinel }, output: sentinel, key: sentinel, path: `/private/${sentinel}`,
+        settlement: { body: sentinel }, unknown: sentinel,
+      });
+      throw error;
+    },
+    frontierModel: " openai/gpt-5.4-nano ",
+    diagnosticSink: (diagnostic) => diagnostics.push(diagnostic),
+  });
+  await import("node:fs/promises").then(({ writeFile }) => writeFile(join(root, "revenue.jsonl"), `${JSON.stringify(revenue[0])}\n`));
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  try {
+    const { port } = server.address();
+    const response = await fetch(`http://127.0.0.1:${port}/v1/chat/completions`, {
+      method: "POST", headers: { "content-type": "application/json", "idempotency-key": "diagnostic" },
+      body: JSON.stringify({ model: "free/glm-4.7", messages: [{ role: "user", content: sentinel }] }),
+    });
+    assert.equal(response.status, 502);
+    assert.deepEqual(await response.json(), publicProxyError(true));
+    assert.deepEqual(diagnostics, [{
+      event: "compute_execution_failed",
+      stage: "paid_compute",
+      model: "openai/gpt-5.4-nano",
+      httpStatus: 503,
+      providerCode: "FREE_MODEL_FAILED",
+    }]);
+    assert.doesNotMatch(JSON.stringify(diagnostics), new RegExp(sentinel, "u"));
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+
+test("async diagnostic sink rejection does not change the generic HTTP error or become unhandled", async () => {
+  const root = await mkdtemp(join(tmpdir(), "compute-async-diagnostic-"));
+  const diagnostics = [];
+  const unhandled = [];
+  const onUnhandled = (reason) => unhandled.push(reason);
+  process.on("unhandledRejection", onUnhandled);
+  const server = createComputeProxy({
+    payer: PAYER,
+    revenueJournalPath: join(root, "revenue.jsonl"),
+    computeJournalPath: join(root, "compute.jsonl"),
+    fundingReceiptIds: [REVENUE_ID], maxCostUsdc: 0.001, reserveUsdc: 0, sessionCapUsdc: 0.001,
+    getBalance: async () => 1.7,
+    transport: async () => {
+      const error = new Error("transport failure");
+      error.httpStatus = 503;
+      error.providerCode = "FREE_MODEL_FAILED";
+      throw error;
+    },
+    frontierModel: "openai/gpt-5.4-nano",
+    diagnosticSink: async () => { throw new Error("DIAGNOSTIC_SINK_SENTINEL"); },
+  });
+  await import("node:fs/promises").then(({ writeFile }) => writeFile(join(root, "revenue.jsonl"), `${JSON.stringify(revenue[0])}\n`));
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  try {
+    const { port } = server.address();
+    const response = await fetch(`http://127.0.0.1:${port}/v1/chat/completions`, {
+      method: "POST", headers: { "content-type": "application/json", "idempotency-key": "async-diagnostic" },
+      body: JSON.stringify({ model: "free/glm-4.7", messages: [{ role: "user", content: "hello" }] }),
+    });
+    assert.equal(response.status, 502);
+    assert.deepEqual(await response.json(), publicProxyError(true));
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.deepEqual(unhandled, []);
+    assert.deepEqual(diagnostics, []);
+  } finally {
+    process.off("unhandledRejection", onUnhandled);
     await new Promise((resolve) => server.close(resolve));
   }
 });

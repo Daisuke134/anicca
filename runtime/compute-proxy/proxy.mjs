@@ -9,6 +9,34 @@ import { loadEvmKey } from "../../skills/earn/lib/resolve-identity.mjs";
 const BASE_USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
 const API = "https://blockrun.ai/api/v1/chat/completions";
 const PROFILES = new Set(["auto", "premium", "eco", "free", "blockrun/auto", "blockrun/premium", "blockrun/eco", "blockrun/free"]);
+const CURRENT_FRONTIER_MODEL = "openai/gpt-5.4-nano";
+const SAFE_PROVIDER_CODES = new Set(["FREE_MODEL_FAILED"]);
+
+export function resolveFrontierModel(value) {
+  const model = typeof value === "string" ? value.trim() : "";
+  return model || CURRENT_FRONTIER_MODEL;
+}
+
+function validatedHttpStatus(value) {
+  const status = Number(value);
+  return Number.isInteger(status) && status >= 100 && status <= 599 ? status : null;
+}
+
+function validatedProviderCode(value) {
+  return SAFE_PROVIDER_CODES.has(value) ? value : null;
+}
+
+export function safeComputeDiagnostic(error, { stage = "paid_compute", model } = {}) {
+  return {
+    event: "compute_execution_failed",
+    stage: stage === "paid_compute" ? stage : "paid_compute",
+    model: resolveFrontierModel(model),
+    httpStatus: validatedHttpStatus(error?.httpStatus),
+    providerCode: validatedProviderCode(error?.providerCode),
+  };
+}
+
+const defaultDiagnosticSink = (diagnostic) => console.error(JSON.stringify(diagnostic));
 
 export function requireInstancePort(value, { receiptBacked = true } = {}) {
   const port = Number(value);
@@ -92,8 +120,19 @@ export function paidTransport(account, fetchImpl = fetch) {
       throw error;
     }
     const header = response.headers.get("PAYMENT-RESPONSE") || response.headers.get("X-PAYMENT-RESPONSE");
+    if (!response.ok) {
+      let providerCode;
+      try {
+        const body = await response.json();
+        providerCode = validatedProviderCode(body?.error?.code ?? body?.code);
+      } catch { /* provider body is intentionally discarded */ }
+      const error = new Error("BlockRun request failed");
+      const httpStatus = validatedHttpStatus(response.status);
+      if (httpStatus !== null) error.httpStatus = httpStatus;
+      if (providerCode) error.providerCode = providerCode;
+      throw error;
+    }
     const output = await response.json();
-    if (!response.ok) throw new Error(`BlockRun request failed: HTTP ${response.status}`);
     if (!header) throw new Error("BlockRun response omitted PAYMENT-RESPONSE settlement proof");
     const settlement = decodePaymentResponseHeader(header);
     if (!selected || (settlement.amount !== undefined && BigInt(settlement.amount) !== BigInt(selected.amount))) {
@@ -150,15 +189,18 @@ export function createComputeProxy({
   getBalance,
   transport,
   frontierModel,
+  diagnosticSink = defaultDiagnosticSink,
   executeCompute,
 } = {}) {
   if (!payer || !revenueJournalPath || !computeJournalPath || !Array.isArray(fundingReceiptIds)
     || fundingReceiptIds.length === 0 || typeof getBalance !== "function" || typeof transport !== "function"
     || !Number.isFinite(Number(maxCostUsdc)) || Number(maxCostUsdc) <= 0
     || !Number.isFinite(Number(reserveUsdc)) || Number(reserveUsdc) < 0
-    || !Number.isFinite(Number(sessionCapUsdc)) || Number(sessionCapUsdc) <= 0) {
+    || !Number.isFinite(Number(sessionCapUsdc)) || Number(sessionCapUsdc) <= 0
+    || typeof diagnosticSink !== "function") {
     throw new Error("compute proxy receipt-backed configuration is incomplete");
   }
+  const configuredModel = resolveFrontierModel(frontierModel);
   return http.createServer((req, res) => {
     if (req.method !== "POST" || !req.url?.includes("/chat/completions")) {
       res.writeHead(req.url?.includes("/models") ? 200 : 404, { "content-type": "application/json" });
@@ -172,7 +214,7 @@ export function createComputeProxy({
         const body = JSON.parse(raw);
         const intentId = req.headers["idempotency-key"];
         if (typeof intentId !== "string" || !intentId) throw new Error("Idempotency-Key header is required");
-        body.model = frontierModel;
+        body.model = configuredModel;
         const revenueReceipts = await jsonl(revenueJournalPath);
         const execute = executeCompute || (await import("./compute-receipt.mjs")).executeComputeRequest;
         const result = await execute({
@@ -188,6 +230,9 @@ export function createComputeProxy({
         res.writeHead(200, { "content-type": "application/json", "x-agent-economy-receipt": result.receipt.idempotency_key });
         res.end(JSON.stringify(result.output));
       } catch (error) {
+        try {
+          Promise.resolve(diagnosticSink(safeComputeDiagnostic(error, { stage: "paid_compute", model: configuredModel }))).catch(() => {});
+        } catch { /* diagnostics never alter the public response */ }
         res.writeHead(502, { "content-type": "application/json" });
         res.end(JSON.stringify(publicProxyError(true)));
       }
@@ -211,7 +256,7 @@ async function main() {
   const ids = String(process.env.AGENT_ECONOMY_FUNDING_RECEIPT_IDS || "").split(",").map((v) => v.trim()).filter(Boolean);
   const receiptBacked = process.env.ANICCA_INSTANCE === "agent-economy" || ids.length > 0;
   const port = requireInstancePort(process.env.COMPUTE_PROXY_PORT, { receiptBacked });
-  const frontierModel = process.env.ANICCA_FRONTIER_MODEL || "openai/gpt-5-nano";
+  const frontierModel = resolveFrontierModel(process.env.ANICCA_FRONTIER_MODEL);
   if (!receiptBacked) {
     (await createLegacyProxy(pk, frontierModel)).listen(port, "127.0.0.1", () => console.log(`compute proxy on 127.0.0.1:${port}`));
     return;

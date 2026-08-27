@@ -677,6 +677,10 @@ test("agent-economy natural owner uses the dedicated receipt-backed compute prox
   assert.match(declaration, /AGENT_ECONOMY_COMPUTE_MAX_COST_USDC/u);
   assert.match(declaration, /AGENT_ECONOMY_COMPUTE_RESERVE_USDC/u);
   assert.match(declaration, /AGENT_ECONOMY_COMPUTE_SESSION_CAP_USDC/u);
+  assert.match(declaration, /ANICCA_FRONTIER_MODEL\s*=\s*["']openai\/gpt-5\.4-nano["']/u);
+  assert.doesNotMatch(declaration, /openai\/gpt-5-nano/u);
+  const proxy = readFileSync(join(REPO_ROOT, "runtime/compute-proxy/proxy.mjs"), "utf8");
+  assert.doesNotMatch(proxy, /openai\/gpt-5-nano/u);
 
   const daemon = readFileSync(join(REPO_ROOT, "runtime/anicca-daemon.sh"), "utf8");
   assert.match(daemon, /if \[ "\$INSTANCE" = "agent-economy" \]; then/u);
