@@ -10,6 +10,7 @@ ROOT = Path(__file__).parents[3]
 
 class XRoleSeparationTests(unittest.TestCase):
     def test_tweeter_is_original_only_with_independent_state_and_queues(self) -> None:
+        english_repost = (ROOT / "skills" / "x-repost" / "x-repost-en-cli.sh").read_text()
         tweeter = (ROOT / "skills" / "x-tweeter" / "x-tweeter-cli.sh").read_text()
         repost = tomllib.loads((ROOT / "loops" / "x-repost" / "loop.toml").read_text())
         tweeter_loop = tomllib.loads((ROOT / "loops" / "x-tweeter" / "loop.toml").read_text())
@@ -17,6 +18,10 @@ class XRoleSeparationTests(unittest.TestCase):
         self.assertEqual(repost["env"]["X_REPOST_FORCE_KIND"], "quote")
         self.assertEqual(repost["env"]["X_REPOST_FORCE_LANGUAGE"], "en")
         self.assertEqual(repost["env"]["X_REPOST_DISABLE_AFFILIATE"], "1")
+        self.assertEqual(repost["jobs"]["pass"]["program"],
+                         "skills/x-repost/x-repost-en-cli.sh")
+        self.assertIn("no-affiliate-proposal.json", english_repost)
+        self.assertIn("no-affiliate-jobs.jsonl", english_repost)
         self.assertEqual(repost["jobs"]["pass"]["calendars"], [
             {"minute": 0}, {"minute": 30},
         ])
