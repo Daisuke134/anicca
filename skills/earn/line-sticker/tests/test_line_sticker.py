@@ -1019,6 +1019,87 @@ class LineStickerOwnerTests(unittest.TestCase):
         self.assertEqual((third["state"], third["effect"], third["readback"]), ("WAITING_REVIEW", 0, 0))
         self.assertEqual((self.state / "effects.jsonl").read_bytes(), ledger_before)
 
+    def test_known_submit_unknown_product_reconciles_only_with_same_product(self) -> None:
+        class PostObserveFails(FakeProvider):
+            def submit(self, intent: dict[str, object]) -> dict[str, object]:
+                self.submit_calls += 1
+                self.inventory.update(
+                    {
+                        "account_id": intent["account_id"],
+                        "set_id": intent["set_id"],
+                        "revision": intent["revision"],
+                        "artifact_sha256": intent["artifact_sha256"],
+                        "product_id": "123",
+                        "status": "submitted",
+                        "public_url": None,
+                    }
+                )
+                return FakeProvider.observe(self, intent)
+
+            def observe(self, identity: dict[str, object]) -> dict[str, object]:
+                if self.inventory["status"] == "absent":
+                    return FakeProvider.observe(self, identity)
+                raise RuntimeError("post-submit observe lost")
+
+        provider = PostObserveFails()
+        first = self._wake(provider)
+        self.assertEqual((first["state"], first["effect"]), ("RECONCILE_UNKNOWN", None))
+        rows = [json.loads(line) for line in (self.state / "effects.jsonl").read_text(encoding="utf-8").splitlines()]
+        self.assertEqual(rows[-1]["product_id"], "123")
+
+        restarted = FakeProvider(provider.inventory)
+        second = self._wake(restarted)
+        self.assertEqual((second["state"], second["effect"], second["readback"]), ("WAITING_REVIEW", 0, 1))
+        self.assertEqual(restarted.submit_calls, 0)
+        rows = [json.loads(line) for line in (self.state / "effects.jsonl").read_text(encoding="utf-8").splitlines()]
+        self.assertEqual(rows[-1]["product_id"], "123")
+
+        self.tearDown()
+        self.setUp()
+        provider = PostObserveFails()
+        self._wake(provider)
+        mismatched = FakeProvider(provider.inventory.copy())
+        mismatched.inventory["product_id"] = "999"
+        failed = self._wake(mismatched)
+        self.assertEqual((failed["reason"], failed["effect"]), ("ledger_conflict", 0))
+
+    def test_identity_uses_validator_provenance_snapshot_not_replaced_path(self) -> None:
+        original_validate = MODULE.validate_package
+
+        def replace_provenance(*args: object, **kwargs: object) -> dict[str, object]:
+            result = original_validate(*args, **kwargs)
+            provenance = json.loads((self.root / "provenance.json").read_text(encoding="utf-8"))
+            provenance.update({"set_id": "replacement-set", "character_id": "replacement-character"})
+            (self.root / "provenance.json").write_text(json.dumps(provenance, sort_keys=True) + "\n", encoding="utf-8")
+            return result
+
+        with mock.patch.object(MODULE, "validate_package", side_effect=replace_provenance):
+            result = self._wake()
+        self.assertEqual(result["state"], "WAITING_REVIEW")
+        owner = json.loads((self.state / "owner.json").read_text(encoding="utf-8"))
+        self.assertEqual((owner["identity"]["set_id"], owner["identity"]["character_id"]), ("set-20260828-001", "char-001"))
+
+    def test_submit_ack_requires_exact_owner_product_for_state_and_wake(self) -> None:
+        self._wake()
+        owner_path = self.state / "owner.json"
+        ledger_path = self.state / "effects.jsonl"
+        owner = json.loads(owner_path.read_text(encoding="utf-8"))
+        owner["product_id"] = None
+        owner_path.write_text(json.dumps(owner, sort_keys=True) + "\n", encoding="utf-8")
+        owner_before = owner_path.read_bytes()
+        ledger_before = ledger_path.read_bytes()
+        completed = subprocess.run(
+            [sys.executable, str(MODULE_ROOT / "line_sticker.py"), "state", "--state-dir", str(self.state)],
+            check=False,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        self.assertEqual((completed.returncode, json.loads(completed.stdout)), (2, {"reason": "owner_state_conflict", "status": "error"}))
+        wake = self._wake()
+        self.assertEqual((wake["reason"], wake["effect"]), ("owner_state_conflict", 0))
+        self.assertEqual((owner_path.read_bytes(), ledger_path.read_bytes()), (owner_before, ledger_before))
+
     def test_unknown_submit_resolution_ack_append_failure_recovers_without_retry(self) -> None:
         self.provider.raise_on_submit = True
         self._wake()

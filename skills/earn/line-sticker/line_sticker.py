@@ -1777,6 +1777,8 @@ def _wake_owner_unlocked(
             atomic_json(owner_path, closed)
             return _owner_result(closed, status="ok", effect=0, readback=1, duplicate_effect=0, effect_key=_effect_key(identity, "replay"), reason="closed")
         expected_product = owner.get("product_id") if isinstance(owner.get("product_id"), str) else None
+        if state == "RECONCILE_UNKNOWN" and owner.get("pending_action") == "submit":
+            expected_product = None
         expected_url = owner.get("public_url") if isinstance(owner.get("public_url"), str) else None
         observation = _observe(provider, identity, expected_product=expected_product, expected_url=expected_url)
         action = _next_action(owner)
@@ -1785,6 +1787,9 @@ def _wake_owner_unlocked(
         unknown_submit = state == "RECONCILE_UNKNOWN" and owner.get("pending_action") == "submit"
         pending_submit = _rows_for_action(rows, identity, "submit")
         pending_release = _rows_for_action(rows, identity, "release")
+        unknown_submit_receipt = pending_submit.get("unknown")
+        if unknown_submit_receipt is not None and isinstance(unknown_submit_receipt.get("product_id"), str) and observation["product_id"] != unknown_submit_receipt["product_id"]:
+            raise OwnerStateError("ledger_conflict")
         if observation["status"] == "released" and "intent" not in pending_release:
             raise OwnerStateError("provider_state_conflict")
         if observation["status"] == "absent" and state != "NEW" and not unknown_submit:
