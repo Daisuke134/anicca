@@ -133,6 +133,20 @@ capability claim is backed by an installed executable capability.
   PASS = each later wake either records a bounded official no-change reason or performs one fenced
   mutation selected from conversion evidence; zero-sale offers can be replaced, paid offers stay
   protected, and no competitor-owned prose/image/identity enters a published contract.
+- [ ] `S11` Persist one website-neutral `MarketProductContract` from the accepted Storefront offer.
+  PASS = buyer job, delivery kind, inclusions, exclusions, inputs, artifact acceptance, base price,
+  recurring-support boundary, capability evidence, paid-demand evidence and originality provenance
+  validate without a Coconala service ID, form field or category ID.
+- [ ] `S12` Render the same product contract through thin Coconala, Lancers, CrowdWorks and Fiverr adapters.
+  PASS = each adapter maps only platform fields, categories, currency and limits; no adapter changes
+  the buyer job, invents credentials/results, copies competitor prose/images, or owns product judgment.
+- [ ] `S13` Qualify the product independently on each configured marketplace.
+  PASS = each platform records current official sold/reviewed comparable evidence and fees; missing,
+  unknown or zero-sale evidence remains explicit and never inherits Coconala demand as proof.
+- [ ] `S14` Publish one additional-platform canary through its installed Storefront owner.
+  PASS = an authenticated and authorized adapter performs one fenced publish, exact official readback
+  matches the shared product contract, replay is effect-zero, and inquiry/order/payment retain the
+  platform plus listing identity. Unconfigured platforms remain effect-zero rather than blocking others.
 
 ### Live four-lane repair
 
