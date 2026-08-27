@@ -172,6 +172,27 @@ def _write_provenance(root: Path) -> None:
             "intentional_alpha_holes": [],
         }
         prompt_hashes[name] = _sha256(("prompt:" + name).encode("ascii"))
+    digest = "a" * 64
+    generation = {
+        "rights_evidence": {"kind": "original_ai_generated", "character_sha256": digest},
+        "character_sha256": digest,
+        "plan_sha256": digest,
+        "selection_sha256": digest,
+        "prompt_sha256": digest,
+        "model": "fixture-model",
+        "provider": "fixture-provider",
+        "reserved_cost_usd": "0.06",
+        "actual_cost_usd": "0.06",
+        "batches": {
+            str(batch): {"quote_request_id": f"quote-{batch}", "generation_request_id": f"generate-{batch}", "quote_token": f"token-{batch}", "provider": "fixture-provider", "model": "fixture-model", "reserved_cost_usd": "0.01", "actual_cost_usd": "0.01", "source_sha256": digest, "regenerable": True}
+            for batch in range(1, 7)
+        },
+        "candidate_bindings": {
+            f"{index:02d}.png": {"motion_id": f"motion-{index:02d}", "source_sha256": digest, "segment": {"motion_id": f"motion-{index:02d}", "start_ms": 0, "end_ms": 500}, "candidate_sha256": digest, "conversion_argv_sha256": digest, "asset_sha256": assets[f"{index:02d}.png"]["sha256"]}
+            for index in range(1, 25)
+        },
+    }
+    generation["generation_sha256"] = _sha256(json.dumps(generation, sort_keys=True, separators=(",", ":")).encode("utf-8"))
     (root / "provenance.json").write_text(
         json.dumps(
             {
@@ -181,6 +202,7 @@ def _write_provenance(root: Path) -> None:
                 "providers": {"image": "openai", "animation": "runway"},
                 "prompt_hashes": prompt_hashes,
                 "assets": assets,
+                "generation": generation,
             },
             sort_keys=True,
             indent=2,

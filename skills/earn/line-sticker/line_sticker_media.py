@@ -14,10 +14,12 @@ import math
 import os
 from pathlib import Path
 import shutil
+import signal
 import stat
 import subprocess
 import sys
 import tempfile
+import time
 import zipfile
 
 try:
@@ -35,6 +37,11 @@ MOTIONS_PER_BATCH = 10
 MIN_DURATION_MS = 500
 MAX_DURATION_MS = 2_000
 HEX64 = set("0123456789abcdef")
+SAFE_MOTION_IDS = frozenset(f"motion-{value:02d}" for value in range(1, MOTION_COUNT + 1))
+GENERATION_KEYS = frozenset({
+    "rights_evidence", "character_sha256", "plan_sha256", "selection_sha256", "prompt_sha256",
+    "model", "provider", "reserved_cost_usd", "actual_cost_usd", "batches", "candidate_bindings", "generation_sha256",
+})
 
 
 class MediaError(ValueError):
@@ -93,6 +100,27 @@ def _ensure_directory(path: Path) -> Path:
     if not stat.S_ISDIR(metadata.st_mode):
         raise MediaError("work_dir_invalid")
     return path
+
+
+def _disk_gate(path: Path) -> None:
+    """Fail before a stage allocates media or invokes an external producer."""
+    state = Path(os.environ.get("GIG_HOST_STATE_DIR", str(Path.home() / ".openclaw" / "state")))
+    for name, code in (("disk-writers.stop", "disk_writers_stop"), ("disk-pressure.block", "disk_pressure_block")):
+        try:
+            metadata = (state / name).lstat()
+        except FileNotFoundError:
+            continue
+        except OSError as exc:
+            raise MediaError("disk_policy_unavailable") from exc
+        if not stat.S_ISREG(metadata.st_mode):
+            raise MediaError("disk_policy_unavailable")
+        raise MediaError(code)
+    try:
+        floor = int(os.environ.get("LINE_STICKER_MEDIA_HEADROOM_BYTES", str(2 * 1024**3)))
+    except ValueError as exc:
+        raise MediaError("disk_headroom_invalid") from exc
+    if floor < 0 or shutil.disk_usage(path).free < floor:
+        raise MediaError("disk_headroom_low")
 
 
 def _atomic_bytes(path: Path, data: bytes) -> None:
@@ -156,50 +184,65 @@ def _strict_json_object(raw: bytes) -> dict[str, object]:
 
 
 def _run_external(argv: list[str], *, cwd: Path, stdin: bytes | None = None) -> tuple[bytes, bytes]:
-    """Run one literal argv with bounded captured output and no shell."""
+    """Run one literal argv; stream-limit output and kill its whole process group."""
     if not argv or any(type(item) is not str or not item for item in argv):
         raise MediaError("configuration_error")
     cwd = _ensure_directory(cwd)
     try:
-        with tempfile.TemporaryDirectory(prefix="line-sticker-cmd-", dir=str(cwd)) as directory:
-            stdout_path = Path(directory) / "stdout"
-            stderr_path = Path(directory) / "stderr"
-            with stdout_path.open("wb") as stdout, stderr_path.open("wb") as stderr:
-                try:
-                    process = subprocess.Popen(
-                        argv,
-                        cwd=str(cwd),
-                        stdin=subprocess.PIPE if stdin is not None else subprocess.DEVNULL,
-                        stdout=stdout,
-                        stderr=stderr,
-                        shell=False,
-                    )
-                except OSError as exc:
-                    raise MediaError("command_failed") from exc
-                try:
-                    process.communicate(input=stdin, timeout=COMMAND_TIMEOUT_SECONDS)
-                except subprocess.TimeoutExpired as exc:
-                    process.kill()
-                    process.communicate()
-                    raise MediaError("command_timeout") from exc
-                stdout.flush()
-                stderr.flush()
-            try:
-                stdout_size = stdout_path.stat().st_size
-                stderr_size = stderr_path.stat().st_size
-                if stdout_size > MAX_COMMAND_OUTPUT or stderr_size > MAX_COMMAND_OUTPUT:
-                    raise MediaError("command_output_overflow")
-                output = stdout_path.read_bytes()
-                error_output = stderr_path.read_bytes()
-            except OSError as exc:
-                raise MediaError("command_output_unreadable") from exc
-            if process.returncode != 0:
-                raise MediaError("command_failed")
-            return output, error_output
-    except MediaError:
-        raise
+        process = subprocess.Popen(argv, cwd=str(cwd), stdin=subprocess.PIPE if stdin is not None else subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False, start_new_session=True)
     except OSError as exc:
         raise MediaError("command_failed") from exc
+    output, error_output = bytearray(), bytearray()
+    overflow = False
+    import threading
+    lock = threading.Lock()
+
+    def drain(stream: object, target: bytearray) -> None:
+        nonlocal overflow
+        reader = stream  # keep the pipe lifetime local to this reader
+        while True:
+            chunk = reader.read(65536)  # type: ignore[attr-defined]
+            if not chunk:
+                return
+            with lock:
+                if len(target) + len(chunk) > MAX_COMMAND_OUTPUT:
+                    overflow = True
+                    return
+                target.extend(chunk)
+
+    readers = [threading.Thread(target=drain, args=(process.stdout, output), daemon=True), threading.Thread(target=drain, args=(process.stderr, error_output), daemon=True)]
+    for reader in readers:
+        reader.start()
+    try:
+        if stdin is not None and process.stdin is not None:
+            process.stdin.write(stdin)
+            process.stdin.close()
+        deadline = time.monotonic() + COMMAND_TIMEOUT_SECONDS
+        while process.poll() is None and not overflow and time.monotonic() < deadline:
+            time.sleep(0.01)
+        if process.poll() is None:
+            os.killpg(process.pid, signal.SIGKILL)
+        process.wait(timeout=5)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except OSError:
+            pass
+        raise MediaError("command_failed") from exc
+    finally:
+        for reader in readers:
+            reader.join(timeout=1)
+        if process.stdout is not None:
+            process.stdout.close()
+        if process.stderr is not None:
+            process.stderr.close()
+    if overflow:
+        raise MediaError("command_output_overflow")
+    if time.monotonic() >= deadline and process.returncode is not None and process.returncode < 0:
+        raise MediaError("command_timeout")
+    if process.returncode != 0:
+        raise MediaError("command_failed")
+    return bytes(output), bytes(error_output)
 
 
 def _run_json_command(argv: list[str], request: dict[str, object], *, cwd: Path) -> dict[str, object]:
@@ -251,7 +294,7 @@ def _validate_plan_model(
     for motion in motions:
         if type(motion) is not dict or set(motion) != motion_keys:
             raise MediaError("motion_schema_invalid")
-        if not _nonempty_text(motion["motion_id"]) or motion["motion_id"] in ids:
+        if not _nonempty_text(motion["motion_id"]) or motion["motion_id"] not in SAFE_MOTION_IDS or motion["motion_id"] in ids:
             raise MediaError("motion_id_invalid")
         batch, position, duration = motion["batch"], motion["position"], motion["duration_ms"]
         if type(batch) is not int or type(position) is not int or type(duration) is not int:
@@ -322,6 +365,7 @@ def plan(
 ) -> dict[str, object]:
     """Ask the model for exactly sixty machine-valid motion records."""
     work_dir = _ensure_directory(Path(work_dir))
+    _disk_gate(work_dir)
     character = Path(character)
     if not _nonempty_text(set_id) or not _nonempty_text(character_id):
         raise MediaError("configuration_error")
@@ -450,79 +494,45 @@ def _probe_duration(ffprobe: str, source: Path, *, cwd: Path) -> Decimal:
     return parsed * Decimal(1000)
 
 
-def _provider_hint(argv: list[str], plan_payload: dict[str, object]) -> tuple[str, str]:
-    provider = plan_payload.get("animation_provider")
-    model = plan_payload.get("animation_model")
-    if not _nonempty_text(provider):
-        provider = Path(argv[0]).name
-    if not _nonempty_text(model):
-        model = argv[1] if len(argv) > 1 else Path(argv[0]).name
-    return str(provider), str(model)
-
-
-def _intent_key(
-    *, set_id: str, plan_hash: str, batch: int, provider: str, model: str, character_hash: str
-) -> str:
+def _reservation_key(*, set_id: str, plan_hash: str, batch: int, provider: str, model: str, request_id: str, quote_token: str, character_hash: str) -> str:
     return _sha256_bytes(
         _canonical(
             {
                 "set_id": set_id,
                 "plan_sha256": plan_hash,
                 "batch": batch,
-                "provider": provider,
-                "model": model,
+                "provider": provider, "model": model, "request_id": request_id, "quote_token": quote_token,
                 "character_sha256": character_hash,
             }
         )
     )
 
 
-def _validate_provider_response(
-    response: dict[str, object], *, batch: int, motions: list[dict[str, object]]
-) -> dict[str, object]:
-    expected = {
-        "request_id",
-        "batch",
-        "provider",
-        "model",
-        "quoted_cost_usd",
-        "acknowledged",
-        "video_path",
-        "video_sha256",
-        "segments",
-    }
-    if set(response) != expected:
+def _quote(response: dict[str, object], batch: int) -> dict[str, object]:
+    expected = {"request_id", "quote_token", "batch", "provider", "model", "quoted_cost_usd", "expires_at", "regenerable"}
+    if set(response) != expected or type(response.get("batch")) is not int or response["batch"] != batch or not all(_nonempty_text(response.get(key)) for key in ("request_id", "quote_token", "provider", "model", "expires_at")) or type(response.get("regenerable")) is not bool:
         raise MediaError("provider_schema_invalid")
-    if not _nonempty_text(response["request_id"]) or type(response["batch"]) is not int or response["batch"] != batch:
+    return {**response, "quoted_cost_usd": format(_decimal_cost(response["quoted_cost_usd"]), "f")}
+
+
+def _generation(response: dict[str, object], reservation: dict[str, object], motions: list[dict[str, object]], *, reconciled: bool = False) -> dict[str, object]:
+    expected = {"request_id", "quote_token", "batch", "provider", "model", "acknowledged", "video_path", "video_sha256", "segments"}
+    if not reconciled:
+        expected |= {"regenerable", "actual_cost_usd"}
+    if set(response) != expected or any(response.get(key) != reservation.get(key) for key in ("request_id", "quote_token", "batch", "provider", "model")):
+        raise MediaError("provider_identity_mismatch")
+    acknowledged = response.get("acknowledged")
+    if acknowledged is not True:
+        if acknowledged not in (False, "unknown", None):
+            raise MediaError("acknowledgement_invalid")
+        return {**response, "acknowledged": "unknown"}
+    if not _nonempty_text(response.get("video_path")) or not _is_hash(response.get("video_sha256")):
         raise MediaError("provider_schema_invalid")
-    if not _nonempty_text(response["provider"]) or not _nonempty_text(response["model"]):
+    if not reconciled and (type(response.get("regenerable")) is not bool or format(_decimal_cost(response["actual_cost_usd"]), "f") != reservation["quoted_cost_usd"]):
         raise MediaError("provider_schema_invalid")
-    quote = _decimal_cost(response["quoted_cost_usd"])
-    # Keep the value as a decimal string; binary floats are not accepted.
-    if type(response["quoted_cost_usd"]) is not str:
-        raise MediaError("cost_invalid")
-    acknowledged = response["acknowledged"]
-    if not (type(acknowledged) is bool or acknowledged in ("unknown", None)):
-        raise MediaError("acknowledgement_invalid")
-    if not _nonempty_text(response["video_path"]) or not _is_hash(response["video_sha256"]):
-        raise MediaError("provider_schema_invalid")
-    segments = response["segments"]
-    if type(segments) is not list:
+    segments = response.get("segments")
+    if type(segments) is not list or len(segments) != MOTIONS_PER_BATCH:
         raise MediaError("segments_invalid")
-    if acknowledged in (False, "unknown", None):
-        # An unacknowledged response is an effect fence, not a conversion input.
-        # Preserve only its stable receipt fields; never infer missing segments.
-        return {
-            "request_id": response["request_id"],
-            "batch": batch,
-            "provider": response["provider"],
-            "model": response["model"],
-            "quoted_cost_usd": format(quote, "f"),
-            "acknowledged": "unknown" if acknowledged is None else acknowledged,
-            "video_path": response["video_path"],
-            "video_sha256": response["video_sha256"].lower(),
-            "segments": [],
-        }
     if len(segments) != MOTIONS_PER_BATCH:
         raise MediaError("segments_invalid")
     motion_ids = [motion["motion_id"] for motion in motions]
@@ -543,18 +553,15 @@ def _validate_provider_response(
         normalized_segments.append({"motion_id": motion_id, "start_ms": start, "end_ms": end})
     if seen != expected_ids:
         raise MediaError("segments_invalid")
-    # Keep Decimal arithmetic out of the provider body while checking its type.
-    return {
-        "request_id": response["request_id"],
-        "batch": batch,
-        "provider": response["provider"],
-        "model": response["model"],
-        "quoted_cost_usd": format(quote, "f"),
-        "acknowledged": acknowledged,
-        "video_path": response["video_path"],
-        "video_sha256": response["video_sha256"].lower(),
-        "segments": normalized_segments,
-    }
+    result = dict(response)
+    result["segments"] = normalized_segments
+    if reconciled:
+        result["regenerable"] = reservation["regenerable"]
+        result["actual_cost_usd"] = reservation["quoted_cost_usd"]
+    else:
+        result["actual_cost_usd"] = format(_decimal_cost(response["actual_cost_usd"]), "f")
+    result["video_sha256"] = str(response["video_sha256"]).lower()
+    return result
 
 
 def _candidate_path(record: dict[str, object], *, candidates_root: Path) -> Path:
@@ -599,7 +606,7 @@ def _png_chunk(kind: str, payload: bytes) -> bytes:
     return struct.pack(">I", len(payload)) + raw + struct.pack(">I", zlib.crc32(raw) & 0xFFFFFFFF)
 
 
-def _encode_full_frame_apng(raw: bytes, *, width: int, height: int, frames: int) -> bytes:
+def _encode_full_frame_apng(raw: bytes, *, width: int, height: int, frames: int, duration_ms: Decimal) -> bytes:
     """Encode decoded RGBA frames with full-size controls for strict validators."""
     import struct
     import zlib
@@ -607,12 +614,20 @@ def _encode_full_frame_apng(raw: bytes, *, width: int, height: int, frames: int)
     frame_size = width * height * 4
     if frames < 1 or len(raw) != frame_size * frames:
         raise MediaError("candidate_png_invalid")
+    total_ms = int(duration_ms.to_integral_value())
+    if total_ms <= 0:
+        raise MediaError("candidate_png_invalid")
+    numerator, denominator = total_ms, frames * 1000
+    divisor = math.gcd(numerator, denominator)
+    numerator //= divisor; denominator //= divisor
+    if numerator > 65535 or denominator > 65535:
+        raise MediaError("candidate_png_invalid")
     output = [line_sticker.PNG_SIGNATURE]
     output.append(_png_chunk("IHDR", struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0)))
     output.append(_png_chunk("acTL", struct.pack(">II", frames, 1)))
     for index in range(frames):
         control_sequence = 0 if index == 0 else index * 2 - 1
-        control = struct.pack(">IIIIIHHBB", control_sequence, width, height, 0, 0, 1, 10, 0, 0)
+        control = struct.pack(">IIIIIHHBB", control_sequence, width, height, 0, 0, numerator, denominator, 0, 0)
         output.append(_png_chunk("fcTL", control))
         frame = raw[index * frame_size : (index + 1) * frame_size]
         scanlines = b"".join(b"\x00" + frame[row * width * 4 : (row + 1) * width * 4] for row in range(height))
@@ -664,7 +679,7 @@ def _normalize_candidate_apng(
             raise MediaError("candidate_png_invalid") from exc
         if len(raw) != expected:
             raise MediaError("candidate_png_invalid")
-        _atomic_bytes(path, _encode_full_frame_apng(raw, width=width, height=height, frames=frame_count))
+        _atomic_bytes(path, _encode_full_frame_apng(raw, width=width, height=height, frames=frame_count, duration_ms=duration_ms))
 
 
 def _validate_candidate(path: Path, *, ffmpeg: str) -> tuple[dict[str, object] | None, list[str]]:
@@ -805,18 +820,10 @@ def _convert_batch(
         parsed, errors = _validate_candidate(output, ffmpeg=ffmpeg)
         if errors:
             try:
-                _normalize_candidate_apng(
-                    output,
-                    ffmpeg=ffmpeg,
-                    duration_ms=duration_seconds * 1000,
-                    cwd=work_dir,
-                    fps=fps,
-                )
+                _normalize_candidate_apng(output, ffmpeg=ffmpeg, duration_ms=duration_seconds * 1000, cwd=work_dir, fps=fps)
                 candidate_hash = _sha256_file(output)
                 parsed, errors = _validate_candidate(output, ffmpeg=ffmpeg)
             except MediaError as exc:
-                # Preserve the first parser/validator reason when normalization
-                # cannot repair the provider's bytes.
                 errors = sorted(set(errors + [exc.code]))
         first_frame_path = batch_dir / f"{motion_id}.first.png"
         if not errors:
@@ -849,7 +856,7 @@ def _convert_batch(
         )
     except OSError:
         removable_source = False
-    if len(records) == MOTIONS_PER_BATCH and provider_receipt.get("regenerable", True) and removable_source:
+    if len(records) == MOTIONS_PER_BATCH and all(not record["validation_errors"] for record in records) and provider_receipt.get("regenerable") is True and removable_source:
         # The receipt and all ten records are durable before deleting the source.
         try:
             source.unlink()
@@ -860,9 +867,9 @@ def _convert_batch(
 
 def _load_convert_state(path: Path) -> dict[str, object]:
     if not path.exists():
-        return {"version": 1, "batches": {}, "total_cost_usd": "0"}
+        return {"version": 2, "batches": {}, "reserved_cost_usd": "0", "actual_cost_usd": "0"}
     value = _load_json(path)
-    if type(value) is not dict or value.get("version") != 1 or type(value.get("batches")) is not dict:
+    if type(value) is not dict or value.get("version") != 2 or type(value.get("batches")) is not dict:
         raise MediaError("convert_state_invalid")
     return value
 
@@ -875,7 +882,7 @@ def convert(
     ffmpeg: str = "ffmpeg",
     ffprobe: str = "ffprobe",
 ) -> dict[str, object]:
-    """Fence six provider calls and convert each source video one at a time."""
+    """Quote, reserve, then generate one video at a time without post-effect retry."""
     work_dir = _ensure_directory(Path(work_dir))
     plan_payload = _load_plan(Path(plan_path))
     argv = _parse_argv(animation_command)
@@ -885,126 +892,56 @@ def convert(
         raise MediaError("character_hash_mismatch")
     state_path = work_dir / "convert-state.json"
     state = _load_convert_state(state_path)
-    total_cost = _decimal_cost(str(state.get("total_cost_usd", "0")))
+    reserved_cost = _decimal_cost(str(state.get("reserved_cost_usd", "0")))
+    actual_cost = _decimal_cost(str(state.get("actual_cost_usd", "0")))
     all_records: list[dict[str, object]] = []
-    provider_hint, model_hint = _provider_hint(argv, plan_payload)
-    intents_dir = work_dir / "intents"
+    generated_now = False
+    reservations_dir = work_dir / "reservations"
     receipts_dir = work_dir / "provider-receipts"
-    intents_dir.mkdir(parents=True, exist_ok=True)
-    receipts_dir.mkdir(parents=True, exist_ok=True)
+    reservations_dir.mkdir(parents=True, exist_ok=True); receipts_dir.mkdir(parents=True, exist_ok=True)
     for batch in range(1, BATCH_COUNT + 1):
         motions = _batch_motions(plan_payload, batch)
-        intent_key = _intent_key(
-            set_id=str(plan_payload["set_id"]),
-            plan_hash=str(plan_payload["plan_sha256"]),
-            batch=batch,
-            provider=provider_hint,
-            model=model_hint,
-            character_hash=str(plan_payload["character_sha256"]),
-        )
-        intent_path = intents_dir / f"{batch:02d}.json"
-        receipt_path = receipts_dir / f"{batch:02d}.json"
-        if receipt_path.exists():
-            receipt_value = _load_json(receipt_path)
-            if type(receipt_value) is not dict or receipt_value.get("intent_key") != intent_key:
-                raise MediaError("request_conflict")
-            provider_receipt = receipt_value.get("provider_receipt")
+        batch_state = state["batches"].get(str(batch))
+        if type(batch_state) is dict and batch_state.get("status") == "reconcile_unknown":
+            raise MediaError("reconcile_unknown")
+        if type(batch_state) is dict and batch_state.get("status") == "cost_rejected":
+            raise MediaError("cost_exceeded")
+        reservation_path, receipt_path = reservations_dir / f"{batch:02d}.json", receipts_dir / f"{batch:02d}.json"
+        if receipt_path.is_file():
+            receipt = _load_json(receipt_path); provider_receipt = receipt.get("generation") if type(receipt) is dict else None
             if type(provider_receipt) is not dict:
                 raise MediaError("receipt_invalid")
-            if receipt_value.get("status") == "cost_rejected":
-                raise MediaError("cost_exceeded")
-            acknowledged = provider_receipt.get("acknowledged")
-            if acknowledged in (False, "unknown") or receipt_value.get("status") == "reconcile_unknown":
-                raise MediaError("reconcile_unknown")
-            if acknowledged is not True:
-                raise MediaError("acknowledgement_invalid")
             records = _durable_batch_records(work_dir, motions)
             if not records:
-                records = _convert_batch(
-                    plan_payload=plan_payload,
-                    batch=batch,
-                    provider_receipt=provider_receipt,
-                    work_dir=work_dir,
-                    ffmpeg=ffmpeg,
-                    ffprobe=ffprobe,
-                )
-            all_records.extend(records)
-            continue
-        if intent_path.exists():
-            raise MediaError("reconcile_required")
-        intent = {
-            "version": 1,
-            "status": "intent",
-            "intent_key": intent_key,
-            "set_id": plan_payload["set_id"],
-            "plan_sha256": plan_payload["plan_sha256"],
-            "batch": batch,
-            "provider": provider_hint,
-            "model": model_hint,
-            "character_sha256": plan_payload["character_sha256"],
-        }
-        _atomic_json(intent_path, intent)
-        request = {
-            "version": 1,
-            "mode": "convert",
-            "set_id": plan_payload["set_id"],
-            "character_id": plan_payload["character_id"],
-            "character_path": plan_payload["character_path"],
-            "character_sha256": plan_payload["character_sha256"],
-            "plan_sha256": plan_payload["plan_sha256"],
-            "batch": batch,
-            "motions": motions,
-            "intent_key": intent_key,
-        }
+                _disk_gate(work_dir)
+                records = _convert_batch(plan_payload=plan_payload, batch=batch, provider_receipt=provider_receipt, work_dir=work_dir, ffmpeg=ffmpeg, ffprobe=ffprobe)
+            all_records.extend(records); continue
+        if reservation_path.is_file():
+            reservation = _load_json(reservation_path)
+            if type(reservation) is not dict or reservation.get("batch") != batch:
+                raise MediaError("reservation_invalid")
+        else:
+            _disk_gate(work_dir)
+            quote = _quote(_run_json_command(argv, {"version": 1, "operation": "quote", "set_id": plan_payload["set_id"], "character_id": plan_payload["character_id"], "character_sha256": plan_payload["character_sha256"], "plan_sha256": plan_payload["plan_sha256"], "batch": batch, "motions": motions}, cwd=work_dir), batch)
+            quoted = _decimal_cost(quote["quoted_cost_usd"])
+            if reserved_cost + quoted > max_cost:
+                state["batches"][str(batch)] = {"status": "cost_rejected"}; _atomic_json(state_path, state); raise MediaError("cost_exceeded")
+            key = _reservation_key(set_id=str(plan_payload["set_id"]), plan_hash=str(plan_payload["plan_sha256"]), batch=batch, provider=str(quote["provider"]), model=str(quote["model"]), request_id=str(quote["request_id"]), quote_token=str(quote["quote_token"]), character_hash=str(plan_payload["character_sha256"]))
+            reservation = {**quote, "version": 1, "reservation_key": key, "set_id": plan_payload["set_id"], "plan_sha256": plan_payload["plan_sha256"], "character_sha256": plan_payload["character_sha256"]}
+            _atomic_json(reservation_path, reservation)
+            reserved_cost += quoted; state["reserved_cost_usd"] = format(reserved_cost, "f"); state["batches"][str(batch)] = {"status": "reserved", "reservation_key": key}; _atomic_json(state_path, state)
+        _disk_gate(work_dir)
+        state["batches"][str(batch)] = {"status": "generate_started", "reservation_key": reservation["reservation_key"]}; _atomic_json(state_path, state)
+        request = {"version": 1, "operation": "generate", "set_id": plan_payload["set_id"], "character_id": plan_payload["character_id"], "character_path": plan_payload["character_path"], "character_sha256": plan_payload["character_sha256"], "plan_sha256": plan_payload["plan_sha256"], "batch": batch, "motions": motions, "remaining_cap_usd": format(max_cost - reserved_cost + _decimal_cost(reservation["quoted_cost_usd"]), "f"), **{key: reservation[key] for key in ("request_id", "quote_token", "provider", "model")}}
         try:
-            raw_response = _run_json_command(argv, request, cwd=work_dir)
+            provider_receipt = _generation(_run_json_command(argv, request, cwd=work_dir), reservation, motions)
         except MediaError:
-            raise
-        try:
-            provider_receipt = _validate_provider_response(raw_response, batch=batch, motions=motions)
-        except MediaError:
-            # Keep the intent durable. No second provider call can be guessed safe.
-            raise
-        quoted = _decimal_cost(str(provider_receipt["quoted_cost_usd"]))
-        if total_cost + quoted > max_cost:
-            rejected = {
-                "version": 1,
-                "status": "cost_rejected",
-                "intent_key": intent_key,
-                "provider_receipt": provider_receipt,
-            }
-            _atomic_json(receipt_path, rejected)
-            raise MediaError("cost_exceeded")
-        if provider_receipt["acknowledged"] in (False, "unknown"):
-            unknown = {
-                "version": 1,
-                "status": "reconcile_unknown",
-                "intent_key": intent_key,
-                "provider_receipt": provider_receipt,
-            }
-            _atomic_json(receipt_path, unknown)
-            _atomic_json(state_path, {**state, "batches": {**state.get("batches", {}), str(batch): unknown}})
-            raise MediaError("reconcile_unknown")
-        source = Path(str(provider_receipt["video_path"])).expanduser()
-        if not source.is_absolute():
-            source = work_dir / source
-        if not source.is_file() or _sha256_file(source) != provider_receipt["video_sha256"]:
-            raise MediaError("source_hash_mismatch")
-        provider_receipt["regenerable"] = True
-        durable_receipt = {
-            "version": 1,
-            "status": "acknowledged",
-            "intent_key": intent_key,
-            "provider_receipt": provider_receipt,
-        }
-        _atomic_json(receipt_path, durable_receipt)
-        total_cost += quoted
-        state = {
-            **state,
-            "batches": {**state.get("batches", {}), str(batch): {"status": "acknowledged", "intent_key": intent_key}},
-            "total_cost_usd": format(total_cost, "f"),
-        }
-        _atomic_json(state_path, state)
+            state["batches"][str(batch)] = {"status": "reconcile_unknown", "reservation_key": reservation["reservation_key"]}; _atomic_json(state_path, state); raise MediaError("reconcile_unknown")
+        if provider_receipt["acknowledged"] != True:
+            state["batches"][str(batch)] = {"status": "reconcile_unknown", "reservation_key": reservation["reservation_key"]}; _atomic_json(state_path, state); raise MediaError("reconcile_unknown")
+        _atomic_json(receipt_path, {"version": 1, "reservation": reservation, "generation": provider_receipt})
+        generated_now = True
+        actual_cost += _decimal_cost(provider_receipt["actual_cost_usd"]); state["actual_cost_usd"] = format(actual_cost, "f"); state["batches"][str(batch)] = {"status": "generated", "reservation_key": reservation["reservation_key"]}; _atomic_json(state_path, state)
         records = _convert_batch(
             plan_payload=plan_payload,
             batch=batch,
@@ -1019,7 +956,7 @@ def convert(
         "operation": "convert",
         "plan_sha256": plan_payload["plan_sha256"],
         "character_sha256": plan_payload["character_sha256"],
-        "total_cost_usd": format(total_cost, "f"),
+        "reserved_cost_usd": format(reserved_cost, "f"), "actual_cost_usd": format(actual_cost, "f"),
         "candidate_count": len(all_records) if all_records else sum(1 for _ in (work_dir / "candidates").glob("*.json")),
         "candidate_dir": str(work_dir / "candidates"),
     }
@@ -1028,14 +965,30 @@ def convert(
     _atomic_json(work_dir / "convert-receipt.json", convert_payload)
     return _public_result(
         "ready",
-        "converted" if all_records else "replayed",
-        effect=1 if all_records else 0,
+        "converted" if generated_now else "replayed", effect=1 if generated_now else 0,
         readback=1,
         output=str(work_dir / "convert-receipt.json"),
         plan_sha256=str(plan_payload["plan_sha256"]),
         character_sha256=str(plan_payload["character_sha256"]),
         convert_sha256=convert_hash,
     )
+
+
+def reconcile(convert_state: Path, animation_command: str | list[str], batch: int) -> dict[str, object]:
+    """Read one fenced generation acknowledgement; this path never generates media."""
+    state_path = Path(convert_state); state = _load_convert_state(state_path)
+    if type(batch) is not int or not 1 <= batch <= BATCH_COUNT or not isinstance(state.get("batches", {}).get(str(batch)), dict) or state["batches"][str(batch)].get("status") != "reconcile_unknown":
+        raise MediaError("reconcile_required")
+    reservation = _load_json(state_path.parent / "reservations" / f"{batch:02d}.json")
+    if type(reservation) is not dict:
+        raise MediaError("reservation_invalid")
+    response = _run_json_command(_parse_argv(animation_command), {"version": 1, "operation": "reconcile", "request_id": reservation["request_id"], "quote_token": reservation["quote_token"], "batch": batch, "provider": reservation["provider"], "model": reservation["model"]}, cwd=state_path.parent)
+    generated = _generation(response, reservation, _batch_motions(_load_plan(state_path.parent / "plan.json"), batch), reconciled=True)
+    if generated["acknowledged"] is not True:
+        raise MediaError("reconcile_unknown")
+    _atomic_json(state_path.parent / "provider-receipts" / f"{batch:02d}.json", {"version": 1, "reservation": reservation, "generation": generated})
+    state["batches"][str(batch)] = {"status": "generated", "reservation_key": reservation["reservation_key"]}; _atomic_json(state_path, state)
+    return _public_result("ready", "reconciled", effect=0, readback=1, output=str(state_path), reservation_key=str(reservation["reservation_key"]))
 
 
 def _load_candidate_records(candidates: Path) -> tuple[list[dict[str, object]], Path]:
@@ -1079,13 +1032,15 @@ def _load_candidate_records(candidates: Path) -> tuple[list[dict[str, object]], 
 
 
 def _selection_model(response: dict[str, object]) -> tuple[str, list[dict[str, object]]]:
-    expected = {"version", "mode", "cover_motion_id", "selections"}
+    expected = {"version", "mode", "cover_motion_id", "inspected_candidate_hashes", "selections"}
     if set(response) != expected or response.get("version") != 1 or response.get("mode") != "select":
         raise MediaError("selection_schema_invalid")
     cover = response.get("cover_motion_id")
-    selections = response.get("selections")
+    selections, inspected = response.get("selections"), response.get("inspected_candidate_hashes")
     if not _nonempty_text(cover) or type(selections) is not list or len(selections) != 24:
         raise MediaError("selection_count_invalid")
+    if type(inspected) is not list or len(inspected) != MOTION_COUNT or any(not _is_hash(value) for value in inspected):
+        raise MediaError("selection_readback_invalid")
     keys = {"position", "motion_id", "reason"}
     positions: set[int] = set()
     ids: set[str] = set()
@@ -1147,6 +1102,7 @@ def _selection_input(
                 "parsed": record.get("parsed"),
                 "errors": sorted(set(str(item) for item in current_errors)),
                 "first_frame_path": str(first_frame_path) if first_frame_path else "",
+                "motion_preview_path": str(record.get("motion_preview_path") or path),
                 "motion": motion,
             }
         )
@@ -1156,6 +1112,7 @@ def _selection_input(
         "plan_sha256": plan_payload["plan_sha256"],
         "character_sha256": plan_payload["character_sha256"],
         "candidates": values,
+        "contact_sheet_path": str(candidates_root / "contact-sheet.png"),
     }
     return payload, _sha256_bytes(_canonical(payload))
 
@@ -1168,6 +1125,7 @@ def select(
 ) -> dict[str, object]:
     """Ask the model to choose and order twenty-four valid candidates."""
     work_dir = _ensure_directory(Path(work_dir))
+    _disk_gate(work_dir)
     plan_payload = _load_plan(Path(plan_path))
     records, candidates_root = _load_candidate_records(Path(candidates))
     selection_input, input_hash = _selection_input(plan_payload, records, candidates_root)
@@ -1212,6 +1170,8 @@ def select(
     response = _run_json_command(argv, request, cwd=work_dir)
     cover, selected_model = _selection_model(response)
     candidate_map = {str(value["motion_id"]): value for value in selection_input["candidates"]}
+    if sorted(response["inspected_candidate_hashes"]) != sorted(str(value["sha256"]) for value in selection_input["candidates"]):
+        raise MediaError("selection_readback_invalid")
     selected: list[dict[str, object]] = []
     for entry in selected_model:
         candidate = candidate_map.get(str(entry["motion_id"]))
@@ -1226,6 +1186,9 @@ def select(
                 "reason": entry["reason"],
                 "path": candidate["path"],
                 "candidate_sha256": candidate["sha256"],
+                "source_sha256": next(record.get("source_sha256", "") for record in records if record.get("motion_id") == entry["motion_id"]),
+                "segment": next(record.get("segment", {}) for record in records if record.get("motion_id") == entry["motion_id"]),
+                "conversion_argv_sha256": next(record.get("conversion_argv_sha256", "") for record in records if record.get("motion_id") == entry["motion_id"]),
                 "prompt_sha256": _sha256_bytes(str(candidate["motion"].get("provider_prompt", "")).encode("utf-8")),
             }
         )
@@ -1236,6 +1199,7 @@ def select(
         "character_sha256": plan_payload["character_sha256"],
         "selection_input_sha256": input_hash,
         "cover_motion_id": cover,
+        "inspected_candidate_hashes": response["inspected_candidate_hashes"],
         "selections": selected,
     }
     selection_hash = _sha256_bytes(_canonical(payload))
@@ -1277,6 +1241,7 @@ def _load_selection(path: Path) -> dict[str, object]:
         "character_sha256",
         "selection_input_sha256",
         "cover_motion_id",
+        "inspected_candidate_hashes",
         "selections",
         "selection_sha256",
     }
@@ -1297,6 +1262,7 @@ def _load_selection(path: Path) -> dict[str, object]:
                 "version": 1,
                 "mode": "select",
                 "cover_motion_id": value["cover_motion_id"],
+                "inspected_candidate_hashes": value["inspected_candidate_hashes"],
                 "selections": model_selections,
             }
         )
@@ -1374,7 +1340,7 @@ def _package_provenance(
     root: Path,
     plan_payload: dict[str, object],
     selection: dict[str, object],
-    providers: dict[str, str],
+    work_dir: Path,
 ) -> dict[str, object]:
     prompt_hashes: dict[str, str] = {}
     assets: dict[str, object] = {}
@@ -1387,69 +1353,43 @@ def _package_provenance(
             prompt_hashes[name] = str(selected[str(int(name[:2]))].get("prompt_sha256", cover_prompt))
         prompt_hashes[name] = prompt_hashes[name] if _is_hash(prompt_hashes[name]) else _sha256_bytes(prompt_hashes[name].encode())
         assets[name] = {"sha256": _sha256_file(root / name), "intentional_alpha_holes": []}
-    # The existing validator intentionally keeps the package provenance schema small.
+    state = _load_convert_state(work_dir / "convert-state.json")
+    batches: dict[str, object] = {}
+    providers: set[str] = set()
+    models: set[str] = set()
+    for batch in range(1, 7):
+        value = _load_json(work_dir / "provider-receipts" / f"{batch:02d}.json")
+        if type(value) is not dict or type(value.get("reservation")) is not dict or type(value.get("generation")) is not dict:
+            raise MediaError("receipt_invalid")
+        reservation, generation = value["reservation"], value["generation"]
+        providers.add(str(reservation.get("provider", ""))); models.add(str(reservation.get("model", "")))
+        if not all(_nonempty_text(reservation.get(key)) for key in ("request_id", "quote_token", "provider", "model", "quoted_cost_usd")) or not _nonempty_text(generation.get("request_id")) or not _is_hash(generation.get("video_sha256")) or generation.get("request_id") != reservation.get("request_id"):
+            raise MediaError("receipt_invalid")
+        batches[str(batch)] = {"quote_request_id": reservation["request_id"], "generation_request_id": generation["request_id"], "quote_token": reservation["quote_token"], "provider": reservation["provider"], "model": reservation["model"], "reserved_cost_usd": reservation["quoted_cost_usd"], "actual_cost_usd": generation["actual_cost_usd"], "source_sha256": generation["video_sha256"], "regenerable": generation["regenerable"]}
+    if len(providers) != 1 or len(models) != 1 or not all(providers) or not all(models):
+        raise MediaError("receipt_invalid")
+    bindings: dict[str, object] = {}
+    for position in range(1, 25):
+        entry = selected[str(position)]
+        for key in ("motion_id", "source_sha256", "candidate_sha256", "conversion_argv_sha256"):
+            if not _nonempty_text(entry.get(key)) if key == "motion_id" else not _is_hash(entry.get(key)):
+                raise MediaError("selection_invalid")
+        segment = entry.get("segment")
+        if not isinstance(segment, dict):
+            raise MediaError("selection_invalid")
+        name = f"{position:02d}.png"
+        bindings[name] = {"motion_id": entry["motion_id"], "source_sha256": entry["source_sha256"], "segment": segment, "candidate_sha256": entry["candidate_sha256"], "conversion_argv_sha256": entry["conversion_argv_sha256"], "asset_sha256": _sha256_file(root / name)}
+    generation = {"rights_evidence": {"kind": "original_ai_generated", "character_sha256": plan_payload["character_sha256"]}, "character_sha256": plan_payload["character_sha256"], "plan_sha256": plan_payload["plan_sha256"], "selection_sha256": selection["selection_sha256"], "prompt_sha256": plan_payload["prompt_sha256"], "model": next(iter(models)), "provider": next(iter(providers)), "reserved_cost_usd": state["reserved_cost_usd"], "actual_cost_usd": state["actual_cost_usd"], "batches": batches, "candidate_bindings": bindings}
+    generation["generation_sha256"] = _sha256_bytes(_canonical(generation))
     return {
         "set_id": plan_payload["set_id"],
         "character_id": plan_payload["character_id"],
         "rights": "original_ai_generated",
-        "providers": providers,
+        "providers": {"image": "original-character-input", "animation": next(iter(providers))},
         "prompt_hashes": prompt_hashes,
         "assets": assets,
+        "generation": generation,
     }
-
-
-def _rich_provenance(
-    work_dir: Path,
-    plan_payload: dict[str, object],
-    selection: dict[str, object],
-    package_provenance: dict[str, object],
-) -> None:
-    provider_receipts: list[dict[str, object]] = []
-    for path in sorted((work_dir / "provider-receipts").glob("*.json")):
-        try:
-            value = _load_json(path)
-        except MediaError:
-            continue
-        if type(value) is dict and type(value.get("provider_receipt")) is dict:
-            receipt = value["provider_receipt"]
-            provider_receipts.append(
-                {
-                    "request_id": receipt.get("request_id"),
-                    "provider": receipt.get("provider"),
-                    "model": receipt.get("model"),
-                    "quoted_cost_usd": receipt.get("quoted_cost_usd"),
-                    "video_sha256": receipt.get("video_sha256"),
-                }
-            )
-    candidates: list[dict[str, object]] = []
-    for path in sorted((work_dir / "candidates").glob("*.json")):
-        try:
-            value = _load_json(path)
-        except MediaError:
-            continue
-        if type(value) is dict and "motion_id" in value:
-            candidates.append(
-                {
-                    "motion_id": value.get("motion_id"),
-                    "candidate_sha256": value.get("candidate_sha256"),
-                    "source_sha256": value.get("source_sha256"),
-                    "validation_errors": value.get("validation_errors", []),
-                }
-            )
-    ledger = {
-        "version": 1,
-        "rights": "original_ai_generated",
-        "providers": package_provenance["providers"],
-        "character_sha256": plan_payload["character_sha256"],
-        "prompt_sha256": plan_payload["prompt_sha256"],
-        "plan_sha256": plan_payload["plan_sha256"],
-        "selection_sha256": selection["selection_sha256"],
-        "cost_usd": _load_convert_state(work_dir / "convert-state.json").get("total_cost_usd", "0"),
-        "provider_receipts": provider_receipts,
-        "candidates": candidates,
-        "assets": package_provenance["assets"],
-    }
-    _atomic_json(work_dir / "provenance-ledger.json", ledger)
 
 
 def package(
@@ -1461,6 +1401,7 @@ def package(
 ) -> dict[str, object]:
     """Build, validate, and atomically promote the official 26-PNG package."""
     work_dir = _ensure_directory(Path(work_dir))
+    _disk_gate(work_dir)
     selected_payload = _load_selection(Path(selection))
     plan_path = work_dir / "plan.json"
     plan_payload = _load_plan(plan_path)
@@ -1514,27 +1455,12 @@ def package(
                 height=240,
             )
         _ffmpeg_make_tab(ffmpeg, first_frame_path, staging / "tab.png", cwd=work_dir)
-        providers = {"image": "character-input", "animation": "animation-command"}
-        provider_paths = sorted((work_dir / "provider-receipts").glob("*.json"))
-        if provider_paths:
-            values = []
-            for path in provider_paths:
-                try:
-                    value = _load_json(path)
-                except MediaError:
-                    continue
-                if type(value) is dict and type(value.get("provider_receipt")) is dict:
-                    values.append(str(value["provider_receipt"].get("provider", "")))
-            values = sorted(set(value for value in values if value))
-            if values:
-                providers["animation"] = ",".join(values)
-        provenance = _package_provenance(staging, plan_payload, selected_payload, providers)
+        provenance = _package_provenance(staging, plan_payload, selected_payload, work_dir)
         _atomic_json(staging / "provenance.json", provenance)
         _atomic_bytes(staging / "submission.zip", _write_png_zip(staging))
         validation = line_sticker.validate_package(staging, Path(policy), ffmpeg=ffmpeg)
         if validation.get("status") != "ready":
             raise MediaError("validator_invalid")
-        _rich_provenance(work_dir, plan_payload, selected_payload, provenance)
         os.replace(staging, output)
         staging = None
         return _public_result(
@@ -1583,6 +1509,10 @@ def main(argv: list[str] | None = None) -> int:
     convert_parser.add_argument("--max-cost-usd", required=True)
     convert_parser.add_argument("--ffmpeg", required=True)
     convert_parser.add_argument("--ffprobe", required=True)
+    reconcile_parser = subparsers.add_parser("reconcile", add_help=False)
+    reconcile_parser.add_argument("--convert-state", required=True, type=Path)
+    reconcile_parser.add_argument("--animation-command", required=True)
+    reconcile_parser.add_argument("--batch", required=True, type=int)
     select_parser = subparsers.add_parser("select", add_help=False)
     select_parser.add_argument("--plan", required=True, type=Path)
     select_parser.add_argument("--candidates", required=True, type=Path)
@@ -1605,6 +1535,8 @@ def main(argv: list[str] | None = None) -> int:
             result = plan(args.character, args.model_command, args.work_dir, args.set_id, args.character_id)
         elif args.command == "convert":
             result = convert(args.plan, args.animation_command, args.work_dir, args.max_cost_usd, args.ffmpeg, args.ffprobe)
+        elif args.command == "reconcile":
+            result = reconcile(args.convert_state, args.animation_command, args.batch)
         elif args.command == "select":
             result = select(args.plan, args.candidates, args.model_command, args.work_dir)
         elif args.command == "package":

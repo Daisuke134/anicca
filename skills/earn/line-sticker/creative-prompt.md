@@ -38,7 +38,9 @@ timing, and motion preview. A missing, changed, malformed, opaque, ambiguous,
 or otherwise invalid candidate cannot be selected. Do not infer a visual fact
 from its filename or description when the asset itself contradicts it.
 
-Select exactly 24 distinct valid motion ids and assign exact positions 1
+Return the `inspected_candidate_hashes` list containing the exact 60 hashes you
+actually inspected, once each. This is evidence of inspection, not a quality
+score. Select exactly 24 distinct valid motion ids and assign exact positions 1
 through 24. Declare one `cover_motion_id`; it must be the motion at position 1.
 Put the strongest and most frequently useful facial reaction first, then
 front-load frequent reactions while preserving a satisfying set. Separate

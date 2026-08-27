@@ -6,6 +6,7 @@ import argparse
 from collections import deque
 from contextlib import contextmanager
 from datetime import date, datetime, timezone
+from decimal import Decimal, InvalidOperation
 from fractions import Fraction
 import fcntl
 import hashlib
@@ -486,10 +487,16 @@ def _decode_and_check_alpha(path: Path, parsed: dict[str, object], ffmpeg: str, 
     return None
 
 
+GENERATION_KEYS = frozenset({
+    "rights_evidence", "character_sha256", "plan_sha256", "selection_sha256", "prompt_sha256",
+    "model", "provider", "reserved_cost_usd", "actual_cost_usd", "batches", "candidate_bindings", "generation_sha256",
+})
+
+
 def _provenance_errors(provenance: object, file_hashes: dict[str, str]) -> list[str]:
     if not isinstance(provenance, dict):
         return ["provenance_missing"]
-    required = {"set_id", "character_id", "rights", "providers", "prompt_hashes", "assets"}
+    required = {"set_id", "character_id", "rights", "providers", "prompt_hashes", "assets", "generation"}
     if set(provenance) != required:
         return ["provenance_invalid"] if required.intersection(provenance) else ["provenance_missing"]
     errors: list[str] = []
@@ -541,6 +548,40 @@ def _provenance_errors(provenance: object, file_hashes: dict[str, str]) -> list[
             actual = file_hashes.get(name)
             if actual is not None and actual.lower() != entry["sha256"].lower():
                 errors.append(f"provenance_hash_mismatch:{name}")
+    generation = provenance.get("generation")
+    if not isinstance(generation, dict) or set(generation) != GENERATION_KEYS:
+        errors.append("provenance_invalid")
+        return sorted(set(errors))
+    generation_body = dict(generation)
+    generation_hash = generation_body.pop("generation_sha256")
+    if not isinstance(generation_hash, str) or not HEX64.fullmatch(generation_hash) or _sha256(_canonical_json(generation_body)) != generation_hash:
+        errors.append("provenance_invalid")
+    if not all(type(generation.get(key)) is str and HEX64.fullmatch(str(generation[key])) for key in ("character_sha256", "plan_sha256", "selection_sha256", "prompt_sha256")):
+        errors.append("provenance_invalid")
+    if not isinstance(generation["rights_evidence"], dict) or set(generation["rights_evidence"]) != {"kind", "character_sha256"} or generation["rights_evidence"].get("kind") != "original_ai_generated" or generation["rights_evidence"].get("character_sha256") != generation["character_sha256"]:
+        errors.append("provenance_invalid")
+    if not all(type(generation.get(key)) is str and generation[key] for key in ("model", "provider", "reserved_cost_usd", "actual_cost_usd")):
+        errors.append("provenance_invalid")
+    for key in ("reserved_cost_usd", "actual_cost_usd"):
+        try:
+            value = Decimal(str(generation[key]))
+            if not value.is_finite() or value < 0:
+                errors.append("provenance_invalid")
+        except (InvalidOperation, ValueError):
+            errors.append("provenance_invalid")
+    batches = generation["batches"]
+    bindings = generation["candidate_bindings"]
+    if not isinstance(batches, dict) or set(batches) != {str(value) for value in range(1, 7)} or not isinstance(bindings, dict) or set(bindings) != {f"{value:02d}.png" for value in range(1, 25)}:
+        errors.append("provenance_invalid")
+    else:
+        for batch in batches.values():
+            if not isinstance(batch, dict) or set(batch) != {"quote_request_id", "generation_request_id", "quote_token", "provider", "model", "reserved_cost_usd", "actual_cost_usd", "source_sha256", "regenerable"} or not all(type(batch.get(key)) is str and batch[key] for key in ("quote_request_id", "generation_request_id", "quote_token", "provider", "model", "reserved_cost_usd", "actual_cost_usd")) or not isinstance(batch.get("regenerable"), bool) or not isinstance(batch.get("source_sha256"), str) or not HEX64.fullmatch(str(batch["source_sha256"])):
+                errors.append("provenance_invalid")
+                break
+        for name, binding in bindings.items():
+            if not isinstance(binding, dict) or set(binding) != {"motion_id", "source_sha256", "segment", "candidate_sha256", "conversion_argv_sha256", "asset_sha256"} or not isinstance(binding.get("motion_id"), str) or not binding["motion_id"] or any(not isinstance(binding.get(key), str) or not HEX64.fullmatch(str(binding[key])) for key in ("source_sha256", "candidate_sha256", "conversion_argv_sha256", "asset_sha256")) or (name in file_hashes and binding.get("asset_sha256") != file_hashes[name]) or not isinstance(binding.get("segment"), dict) or set(binding["segment"]) != {"motion_id", "start_ms", "end_ms"} or binding["segment"].get("motion_id") != binding["motion_id"] or type(binding["segment"].get("start_ms")) is not int or type(binding["segment"].get("end_ms")) is not int or binding["segment"]["start_ms"] < 0 or binding["segment"]["end_ms"] <= binding["segment"]["start_ms"]:
+                errors.append("provenance_invalid")
+                break
     return sorted(set(errors))
 
 
