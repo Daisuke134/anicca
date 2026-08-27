@@ -1570,7 +1570,19 @@ def _next_unused_demand_cluster(clusters: list[dict], dismissed: set[str]) -> di
 
 
 def _capability_inventory_needs_market_probe(clusters: list[dict], digest: str) -> bool:
-    return not any(row.get("capability_inventory_sha256") == digest for row in clusters)
+    return not any(
+        row.get("capability_inventory_sha256") == digest
+        and row.get("status") == "known" and (row.get("score") or 0) > 0
+        for row in clusters
+    )
+
+
+def _unlisted_capability_templates(
+    templates: dict[str, dict], service_families: dict[str, str],
+) -> dict[str, dict]:
+    represented = set(service_families.values())
+    unlisted = {name: value for name, value in templates.items() if name not in represented}
+    return unlisted or templates
 
 
 def _invoke_demand_proposal(
@@ -6535,7 +6547,9 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                         schema=getattr(args, "demand_proposal_schema", DEFAULT_DEMAND_PROPOSAL_SCHEMA),
                         workdir=args.workdir,
                         evidence_dir=inventory_path.parent / "demand-proposal-agent",
-                        families=capability_templates,
+                        families=_unlisted_capability_templates(
+                            capability_templates, capability_families,
+                        ),
                         catalog_titles=[str(row.get("title") or "") for row in inventory["services"]],
                         timeout_seconds=args.timeout_seconds,
                     )

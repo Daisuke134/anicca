@@ -247,9 +247,23 @@ def test_dismissed_zero_conversion_market_never_blocks_the_next_demand_cluster()
 
 def test_a_changed_public_capability_inventory_triggers_fresh_market_discovery_once():
     sd = _sd()
-    clusters = [{"capability_inventory_sha256": "a" * 64}]
+    clusters = [{"capability_inventory_sha256": "a" * 64, "status": "known", "score": 1}]
     assert sd._capability_inventory_needs_market_probe(clusters, "b" * 64) is True
     assert sd._capability_inventory_needs_market_probe(clusters, "a" * 64) is False
+    assert sd._capability_inventory_needs_market_probe([
+        {"capability_inventory_sha256": "a" * 64, "status": "unknown", "score": None},
+    ], "a" * 64) is True
+
+
+def test_market_expansion_prefers_capabilities_not_already_represented_by_a_listing():
+    sd = _sd()
+    templates = {
+        "excel_automation": {"deliverables": ["macro"]},
+        "skills/ai-automation-builder/SKILL.md": {"description": "AI systems"},
+    }
+    assert sd._unlisted_capability_templates(templates, {"1": "excel_automation"}) == {
+        "skills/ai-automation-builder/SKILL.md": {"description": "AI systems"},
+    }
 
 
 
