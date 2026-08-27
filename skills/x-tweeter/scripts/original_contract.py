@@ -11,7 +11,6 @@ import unicodedata
 from pathlib import Path
 from urllib.parse import urlparse
 
-
 VALUE_TYPES = {
     "procedure", "decision_criterion", "failure_condition", "comparison_method",
 }
@@ -20,6 +19,18 @@ SOURCE_KINDS = {
     "first_party_article", "public_source_post",
 }
 URL = re.compile(r"https?://\S+")
+ALLOWED_DOMAINS = (
+    "xiaohongshu.com", "douyin.com", "kuaishou.com", "bilibili.com",
+    "weibo.com", "tieba.baidu.com", "zhihu.com",
+)
+
+
+def canonical_domain(hostname: str | None) -> str | None:
+    host = (hostname or "").lower().rstrip(".")
+    if host.startswith("www."):
+        host = host[4:]
+    return next((domain for domain in ALLOWED_DOMAINS
+                 if host == domain or host.endswith(f".{domain}")), None)
 
 
 def sha256_file(path: Path) -> str:
@@ -79,14 +90,32 @@ def posted_text_hashes(path: Path) -> set[str]:
     return hashes
 
 
+def posted_source_urls(path: Path) -> set[str]:
+    if not path.is_file():
+        return set()
+    urls = set()
+    for line in path.read_text(encoding="utf-8").splitlines():
+        try:
+            row = json.loads(line)
+        except ValueError:
+            continue
+        source_url = row.get("source_url") if isinstance(row, dict) else None
+        if isinstance(source_url, str) and source_url:
+            urls.add(source_url)
+    return urls
+
+
 def admit(source_path: Path, draft_path: Path, critic_path: Path, posted_path: Path) -> dict:
     source, draft, critic = map(read_object, (source_path, draft_path, critic_path))
     source_sha, draft_sha = sha256_file(source_path), sha256_file(draft_path)
     source_url = source.get("url")
     parsed = urlparse(source_url) if isinstance(source_url, str) else None
+    source_domain = canonical_domain(parsed.hostname if parsed else None)
     source_text = source.get("text")
     if not all((
-        parsed and parsed.scheme == "https" and parsed.hostname,
+        parsed and parsed.scheme == "https" and source_domain,
+        source.get("source_domain") == source_domain,
+        source.get("source_language") == "zh",
         source.get("source_kind") in SOURCE_KINDS,
         isinstance(source.get("title"), str) and source["title"].strip(),
         isinstance(source_text, str) and source_text.strip(),
@@ -96,6 +125,7 @@ def admit(source_path: Path, draft_path: Path, critic_path: Path, posted_path: P
 
     text = draft.get("text")
     evidence = draft.get("evidence_quote")
+    evidence_translation = draft.get("evidence_translation")
     reader_value = draft.get("reader_value")
     draft_values = draft.get("value_types")
     if not all((
@@ -104,6 +134,7 @@ def admit(source_path: Path, draft_path: Path, critic_path: Path, posted_path: P
         draft.get("source_url") == source_url,
         isinstance(evidence, str) and len(normalized(evidence)) >= 8,
         normalized(evidence) in normalized(source_text),
+        isinstance(evidence_translation, str) and len(normalized(evidence_translation)) >= 8,
         isinstance(reader_value, str) and reader_value.strip(),
         isinstance(draft_values, list),
         len(set(draft_values) & VALUE_TYPES) >= 2,
@@ -130,6 +161,8 @@ def admit(source_path: Path, draft_path: Path, critic_path: Path, posted_path: P
     text_sha = hashlib.sha256(text.encode()).hexdigest()
     if text_sha in posted_text_hashes(posted_path):
         raise ValueError("exact original duplicate")
+    if source_url in posted_source_urls(posted_path):
+        raise ValueError("source URL duplicate")
     core = {
         "schema_version": 1,
         "receipt_type": "X_TWEETER_ORIGINAL_PAYLOAD",
@@ -137,10 +170,12 @@ def admit(source_path: Path, draft_path: Path, critic_path: Path, posted_path: P
         "text": text,
         "text_sha256": text_sha,
         "source_url": source_url,
+        "source_domain": source_domain,
         "source_sha256": source_sha,
         "draft_sha256": draft_sha,
         "critic_sha256": sha256_file(critic_path),
         "evidence_quote": evidence,
+        "evidence_translation": evidence_translation,
         "reader_value": reader_value,
         "value_types": sorted(set(draft_values) & VALUE_TYPES),
         "weighted_length_with_source": weighted_length(f"{text}\n{source_url}"),
