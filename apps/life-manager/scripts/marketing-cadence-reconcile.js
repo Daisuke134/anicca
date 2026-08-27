@@ -70,7 +70,8 @@ function receiptFor(route, slot, state) {
 function writeSnapshot(dataDir, snapshot) {
   const file = path.join(dataDir, "marketing/cadence", `${snapshot.report_day}.json`); fs.mkdirSync(path.dirname(file), { recursive: true, mode: 0o700 });
   const existing = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, "utf8")) : null;
-  if (existing && crypto.createHash("sha256").update(JSON.stringify(existing)).digest("hex") === crypto.createHash("sha256").update(JSON.stringify(snapshot)).digest("hex")) return { created: false, file, snapshot: existing };
+  const stable = (value) => { const { observed_at: _observedAt, ...withoutObservation } = value; return JSON.stringify(withoutObservation); };
+  if (existing && crypto.createHash("sha256").update(stable(existing)).digest("hex") === crypto.createHash("sha256").update(stable(snapshot)).digest("hex")) return { created: false, file, snapshot: existing };
   const temporary = `${file}.tmp-${process.pid}-${crypto.randomUUID()}`; fs.writeFileSync(temporary, `${JSON.stringify(snapshot, null, 2)}\n`, { mode: 0o600, flag: "wx" }); fs.renameSync(temporary, file); fs.chmodSync(file, 0o600); return { created: true, file, snapshot };
 }
 

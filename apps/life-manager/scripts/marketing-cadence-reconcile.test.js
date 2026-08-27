@@ -76,3 +76,13 @@ test("cadence reconciliation leaves future slots pending and never turns a miss 
   assert.equal(result.counts.missed, 2);
   assert.equal(result.metrics, undefined);
 });
+
+test("repeating the same cadence state does not create a new snapshot", async () => {
+  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "lm-cadence-replay-"));
+  const route = cadence.ROUTES.find((candidate) => candidate.account === "@honnevideo");
+  const input = { dataDir, nowMs: Date.parse("2026-08-27T04:00:00.000Z"), graceMs: 0, routes: [route], scheduleReader: () => ["08:30", "12:30", "21:30"], sendReport: false };
+  const first = await cadence.reconcileCadence(input);
+  const replay = await cadence.reconcileCadence({ ...input, nowMs: input.nowMs + 1000 });
+  assert.equal(first.created, true);
+  assert.equal(replay.created, false);
+});
