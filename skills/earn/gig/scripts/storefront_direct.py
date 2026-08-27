@@ -1521,6 +1521,44 @@ def _seal_demand_proposal(proposal: dict, family_names: set[str], catalog_titles
     return sealed
 
 
+def _market_capability_templates(configured: dict, inventory: dict) -> dict:
+    """Expose public executable skills to ongoing market discovery, not only first bootstrap."""
+    merged = dict(configured)
+    for row in inventory.get("skills") or []:
+        if not isinstance(row, dict) or row.get("runtime") != "agent_skill":
+            continue
+        path = str(row.get("skill_path") or "")
+        name = str(row.get("name") or "").strip()
+        description = str(row.get("description") or "").strip()
+        digest = str(row.get("source_sha256") or "")
+        if (not path.startswith("skills/") or not path.endswith("/SKILL.md")
+                or not name or not description or not re.fullmatch(r"[0-9a-f]{64}", digest)):
+            continue
+        merged.setdefault(path, {
+            "name": name, "description": description, "skill_path": path,
+            "source_sha256": digest, "runtime": "agent_skill",
+        })
+    return merged
+
+
+def _resolve_create_capability(
+    *, wanted: str, source: dict, service_families: dict[str, str],
+    templates: dict[str, dict], repo: Path | None = None,
+) -> tuple[str, dict, set[str]]:
+    """Keep the chosen public capability while reusing an existing seller form as the adapter."""
+    fallback = str(service_families.get(str(source.get("service_id") or "")) or "")
+    family = wanted if wanted in templates else fallback
+    template = templates.get(family)
+    if not family or not isinstance(template, dict):
+        raise RuntimeError("storefront_create_capability_missing")
+    evidence = set()
+    repo = repo or GIG_DIR.parents[2]
+    skill_path = str(template.get("skill_path") or "")
+    if skill_path.startswith("skills/") and skill_path.endswith("/SKILL.md"):
+        evidence.add(str((repo / skill_path).resolve()))
+    return family, template, evidence
+
+
 def _invoke_demand_proposal(
     *, runner: Path, schema: Path, workdir: Path, evidence_dir: Path,
     families: dict, catalog_titles: list[str], timeout_seconds: int,
@@ -3464,8 +3502,9 @@ def _create_proposal_prompt(
         "allowed_evidence_refs": sorted(allowed_refs),
     }
     prompt = """Create one distinct Coconala service proposal from CONTEXT_JSON and return only the
-strict schema object. The source_service_id must equal source_offer.service_id. The new service must
-sell a narrower buyer-visible outcome supported by the same owned capability family; it must not
+strict schema object. The source_service_id must equal source_offer.service_id; that existing service
+supplies the seller-form adapter, not proof of the new capability. The new service must sell a bounded
+buyer-visible outcome supported by the owned capability family; it must not
 duplicate or merely rephrase any current_catalog_titles. Use the demand page only as demand evidence,
 never copy seller wording, reviews, sales, guarantees or unsupported claims. Include exact evidence
 refs for the official offer, owned family and demand evidence. The title_stem excludes the final
@@ -5711,6 +5750,11 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
             capability_families, capability_templates = _load_capability_families(
                 getattr(args, "listing_contract_families", DEFAULT_LISTING_CONTRACT_FAMILIES),
             )
+            from storefront_bootstrap import inventory as bootstrap_inventory
+            public_capability_inventory = bootstrap_inventory()
+            capability_templates = _market_capability_templates(
+                capability_templates, public_capability_inventory,
+            )
             presentation_snapshot = _seller_snapshot_for(ws_url, PRESENTATION_SERVICE_ID)
             scope_snapshot = _seller_snapshot_for(ws_url, SCOPE_SERVICE_ID)
             # Retained so the listing-state adapter can bind the real seller submit controls.
@@ -6537,10 +6581,14 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     )
                 create_source = next((row for row in validated_contracts
                                       if row["service_id"] == source_service_id), None)
-                create_family = capability_families.get(source_service_id)
-                create_template = capability_templates.get(str(create_family or ""))
-                if create_source is None or not isinstance(create_family, str) or not isinstance(create_template, dict):
+                if create_source is None:
                     raise RuntimeError("storefront_create_source_contract_missing")
+                wanted_family = str((cluster_blueprint or {}).get("capability_family") or "")
+                create_family, create_template, selected_evidence = _resolve_create_capability(
+                    wanted=wanted_family, source=create_source,
+                    service_families=capability_families, templates=capability_templates,
+                )
+                create_capability_paths = capability_paths | selected_evidence
                 demand = ({**cluster_blueprint["demand_evidence"],
                            "evidence_path": cluster_blueprint["demand_evidence_path"]}
                           if cluster_blueprint is not None else
@@ -6555,7 +6603,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     workdir=args.workdir,
                     evidence_dir=inventory_path.parent / "create-proposal-agent",
                     source=create_source, family_name=create_family, family=create_template,
-                    demand=demand, capability_paths=capability_paths,
+                    demand=demand, capability_paths=create_capability_paths,
                     catalog_titles=[str(row.get("title") or "") for row in inventory["services"]],
                     timeout_seconds=args.timeout_seconds,
                 )

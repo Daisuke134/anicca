@@ -186,6 +186,52 @@ def test_a_no_op_must_say_why_and_carry_no_queries():
         sd._seal_demand_proposal({"decision": "no_op", "no_op_reason": None, "queries": []}, FAMILIES, [])
 
 
+def test_public_skill_inventory_extends_existing_market_capabilities_without_overwriting_them():
+    sd = _sd()
+    configured = {"excel_automation": {"deliverables": ["macro"]}}
+    inventory = {"skills": [{
+        "name": "ai-automation-builder",
+        "description": "Build and verify bounded AI business automations.",
+        "skill_path": "skills/ai-automation-builder/SKILL.md",
+        "source_sha256": "a" * 64,
+        "runtime": "agent_skill",
+        "slot": None,
+    }]}
+
+    merged = sd._market_capability_templates(configured, inventory)
+
+    assert merged["excel_automation"] == {"deliverables": ["macro"]}
+    assert merged["skills/ai-automation-builder/SKILL.md"] == {
+        "name": "ai-automation-builder",
+        "description": "Build and verify bounded AI business automations.",
+        "skill_path": "skills/ai-automation-builder/SKILL.md",
+        "source_sha256": "a" * 64,
+        "runtime": "agent_skill",
+    }
+
+
+def test_new_public_skill_uses_its_own_capability_contract_with_an_existing_form_source():
+    sd = _sd()
+    source = {"service_id": "1", "service_version_sha256": "a" * 64}
+    family, template, evidence = sd._resolve_create_capability(
+        wanted="skills/ai-automation-builder/SKILL.md",
+        source=source,
+        service_families={"1": "seo_writing"},
+        templates={
+            "seo_writing": {"deliverables": ["article"]},
+            "skills/ai-automation-builder/SKILL.md": {
+                "skill_path": "skills/ai-automation-builder/SKILL.md",
+                "description": "Build AI automations",
+            },
+        },
+        repo=Path("/repo"),
+    )
+
+    assert family == "skills/ai-automation-builder/SKILL.md"
+    assert template["description"] == "Build AI automations"
+    assert evidence == {"/repo/skills/ai-automation-builder/SKILL.md"}
+
+
 
 def test_demand_exploration_never_kills_a_wake(monkeypatch, tmp_path):
     """A failing exploration must be recorded, not raised into the wake."""
