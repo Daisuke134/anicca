@@ -2298,6 +2298,17 @@ def _file_bundle_snapshots(
     return manifest, snapshots
 
 
+def _archive_member_data(artifact: Path, claimed: str) -> tuple[str, bytes]:
+    with zipfile.ZipFile(artifact) as archive:
+        try:
+            return claimed, archive.read(claimed)
+        except KeyError:
+            members = [name for name in archive.namelist() if name and not name.endswith("/")]
+            if len(members) != 1:
+                raise
+            return members[0], archive.read(members[0])
+
+
 def _normalize_acceptance_delta(root: Path) -> None:
     manifest_path = root / "delivery" / "paid-work-result.json"
     manifest = _load(manifest_path)
@@ -2384,10 +2395,12 @@ def _normalize_acceptance_delta(root: Path) -> None:
         if artifact_path.suffix.casefold() != ".zip" or not artifact_path.is_file():
             raise ValueError("invalid archive asset")
         try:
-            with zipfile.ZipFile(artifact_path) as archive:
-                data = archive.read(member)
+            member, data = _archive_member_data(artifact_path, member)
         except (KeyError, OSError, zipfile.BadZipFile) as error:
             raise ValueError("invalid archive member") from error
+        asset["archive_member"] = member
+        if isinstance(asset.get("buyer_visible_asset"), str):
+            asset["buyer_visible_asset"] = True
         asset["path"] = str(artifact_path)
         asset["bytes"] = len(data)
         asset["sha256"] = hashlib.sha256(data).hexdigest()

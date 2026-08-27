@@ -6,6 +6,7 @@ import json
 import sys
 import threading
 import time
+import zipfile
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -647,6 +648,18 @@ def test_fresh_owner_staging_tolerates_precreated_context_directory(tmp_path):
     paid._prepare_file_owner_staging(root, root / "context" / "current.json", staging)
 
     assert (staging / "context" / "current.json").is_file()
+
+
+def test_single_member_archive_uses_its_actual_utf8_name(tmp_path):
+    paid = load("paid_direct")
+    archive = tmp_path / "review.zip"
+    with zipfile.ZipFile(archive, "w") as output:
+        output.writestr("硝子色の恋_review_v3.mp3", b"audio")
+
+    name, data = paid._archive_member_data(archive, "硝子色の恋_review_v1.mp3")
+
+    assert name == "硝子色の恋_review_v3.mp3"
+    assert data == b"audio"
 
 
 def test_paid_effect_child_does_not_take_global_browser_lock(tmp_path):
