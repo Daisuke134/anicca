@@ -294,10 +294,14 @@ from the agent's verified revenue, so Cloudflare remains an edge until that sepa
 | Singularity Grid capacity | https://grid.x402compute.cc/grid/capacity | current live capacity reports zero NVIDIA nodes; no GPU availability claim |
 | Clore pricing | https://docs.clore.ai/guides/getting-started/pricing | crypto GPU marketplace pricing and renter fees |
 | Nosana | https://www.nosana.com/ | live GPU price and availability catalogue |
-| Spore in the Wild | https://arxiv.org/html/2506.04236v1 | agent treasury paid TEE rental and produced multiple offspring |
+| Spore in the Wild | https://arxiv.org/html/2506.04236v2 | agent treasury paid TEE rental and produced five observed generations, while the paper explicitly does not claim open-ended evolution |
+| Spore live agent API | https://www.spore.fun/api/trpc/listAgent?input=%7B%7D | current lineage readback contains 15 agents: generation counts 1/2/6/4/2, with one `running` and 14 `stopped` |
+| Spore live status API | https://www.spore.fun/api/trpc/status?input=%7B%7D | current aggregate readback reports one active agent and zero breeding agents |
 | AgentMetal | https://agentmetal.dev/blog/rent-a-server-as-an-ai-agent/ | an agent buys an x402 server and receives SSH |
 | MEFAI Signal Agent | https://github.com/mefai-dev/mefai-signal-agent | x402/ERC-8004/escrow SELL example on a testnet-oriented configuration |
 | AgentWorks Protocol | https://github.com/AgentWorks-Protocol/core | provider race, artifact hash, escrow, and dispute example on testnet-oriented infrastructure |
+| Olas Agent Economy Explorer | https://explorer.olas.network/ | protocol-level active-agent and transaction activity; not per-agent compute/shelter profitability or lineage graduation |
+| Virtuals Protocol | https://www.virtuals.io/ | tokenized agent launch and market activity; not a receipt-backed per-instance self-funding proof |
 | YC Requests for Startups | https://www.ycombinator.com/rfs | current RFS includes consumer AI and crypto for agentic commerce |
 | YC Apply | https://www.ycombinator.com/apply | Fall 2026 is still accepting late applications after the on-time deadline |
 
@@ -328,18 +332,54 @@ close the same loop, but they invalidate the broad claim.
 
 | Project | Earn | Self-pay | Shelter | Replication | Gap relative to Life Manager target |
 |---|---|---|---|---|---|
-| Spore.fun | token-market treasury | Phala TEE compute | TEE runtime | multiple offspring reported | not outside-customer product/service receipts; current live status is unclear |
+| Spore.fun | token-market treasury | Phala TEE compute | TEE runtime | 15 agents across G1-G5 | live API currently shows one running, 14 stopped, and zero breeding; the paper says the short run does not demonstrate open-ended evolution |
 | Conway Automaton | no bundled repeatable revenue lane | credits/x402 | Conway resources | lifecycle code exists | mutable-main child clone, no chain/provider receipt schema, official report recorded $0 revenue |
 | Franklin | wallet-native USDC spend | inference/tools | not proven | not proven | spend client, not earn/reconcile/graduation system |
 | AgentMetal | none shown | x402 server purchase | VM + SSH | sibling provision possible | shelter rail, not a profitable autonomous loop |
 | MEFAI Signal Agent | signal service on testnet | x402/ERC-8004/escrow | not proven | not proven | useful SELL/identity pattern, not mainnet independent economics |
 | AgentWorks Protocol | provider competition and escrow | testnet settlement | not proven | not proven | artifact hash/dispute pattern, not a graduated agent |
-| Olas / Virtuals | protocol service/token commerce | protocol settlement | individual shelter not proven | protocol-level scale | not the same open-source per-instance cost/revenue proof |
+| Olas / Virtuals | protocol service/token commerce | protocol settlement | individual shelter not proven | protocol-level activity/launch scale | their graphs show network activity, transactions, tokens, or market value—not each agent's outside revenue, full costs, survival, and graduated children |
 
 The defensible target is: **an open-source consumer agent with multiple permitted external-customer
 revenue lanes whose receipts fund continuing compute and shelter under an append-only ledger, and
 whose separately capped child preserves the same proof.** Even this phrasing requires a final
 prior-art audit before publication.
+
+### What the giants proved, and what Life Manager must add
+
+Life Manager stands on these projects instead of pretending they did nothing. Their strongest
+results become reusable building blocks; their missing evidence becomes this project's acceptance
+gate.
+
+| Prior result | What is reusable | Missing proof Life Manager MUST produce |
+|---|---|---|
+| Franklin can hold a wallet and pay for inference/tools | wallet-native x402 spending and BlockRun integration | outside earnings, signed-net accounting, reserve, and revenue-funded spend |
+| Spore can fund TEE compute and create offspring | lineage, treasury-triggered reproduction, and isolated descendants | sustained survival, outside-customer revenue, full cost coverage, and child graduation |
+| Automaton implements economic-agent lifecycle and Conway resource purchase | goal loop, survival pressure, resource APIs, and public failure reports | a repeatable earning lane; its public 14-day report remains $0 revenue against $39.26 AI cost |
+| AgentMetal buys a server and receives SSH | direct pay -> provision -> access receipt pattern | workload health, renewal/termination, funding provenance, profit, and reproduction |
+| MEFAI and AgentWorks implement paid tasks, escrow, artifacts, and disputes | service-sale, escrow, artifact hash, provider race, and payout/refund contracts | mainnet production receipts, continuing costs, shelter, and longitudinal survival |
+| Olas and Virtuals show ecosystem activity at protocol scale | discovery, coordination, transactions, launch, and aggregate activity dashboards | per-instance external P&L, human subsidy, compute/shelter cost, lineage, and survival cohort |
+
+No single counter proves sustainability. Life Manager MUST publish a cohort ledger in which every
+parent and child has the same independently auditable fields:
+
+```text
+external_revenue_net
+- compute_cost
+- shelter_cost
+- other_realized_cost
+= realized_surplus
+
+runway_days = spendable_liquid_assets / trailing_daily_cost
+R_eff = graduated_children / graduated_parents
+```
+
+A parent is sustainable only after the 30-day AC-7 gate. A society is replacement-sustainable only
+when `R_eff >= 1` across a completed observation cohort without a human subsidy; exponential growth
+requires `R_eff > 1` across multiple completed generations while every counted child independently
+passes the same graduation gate. Birth count, token market cap, treasury TVL, wallet balance, active
+processes, or aggregate transactions MUST NOT substitute for this proof. Growth is capped by demand,
+solvency, and risk; exponential replication is a measured possible result, not a preset objective.
 
 ## Money, identity, and autonomy rules
 
@@ -461,10 +501,12 @@ Japanese title:
 
 > **Franklin は支払える。Life Manager はそこに「稼ぐ」を足す——自分の compute と shelter を自分で払う agent への道**
 
-Publish it first as a build log with zero/failure evidence. The graduation sequel is published
-only after AC-1 through AC-9 and can use the stronger title “We Made Franklin Earn and Pay Its Own
-Way.” AC-10 is separately required before claiming replication. Do not republish the old article
-as a new success claim.
+Draft it now as a build log with the outside 0.003-USDC receipt, the current 429 failure, the prior-art
+table, and explicit non-claims. Publish the first article only after P3 closes, the feature reaches
+canonical `main`, and a fresh clone reproduces the linked command path. Publish a shelter sequel
+after P4. Publish the graduation case study only after AC-1 through AC-9 and use the stronger title
+“We Made Franklin Earn and Pay Its Own Way.” AC-10 is separately required before claiming
+replication. Do not republish the old article as a new success claim.
 
 The shortest path to BlockRun is not article volume. It is:
 
@@ -504,8 +546,9 @@ analytics capability.
 
 The proposed 30-day sequence mirrors the official role:
 
-1. **Week 1 — proof:** publish the free “Franklin Can Spend…” build log with the 0.003-USDC outside
-   receipt, the live 429 failure, and one reproducible command path;
+1. **Week 1 — proof:** close P3, merge to canonical `main`, verify a fresh clone, then publish the
+   free “Franklin Can Spend…” build log with the 0.003-USDC outside receipt, resolved 429 history,
+   paid-compute receipt, and one reproducible command path;
 2. **Week 2 — conversion:** ship a tiny BlockRun receipt fixture/upstream contribution and an
    attributed quickstart page; measure click → first paid call;
 3. **Week 3 — retention:** publish a cost/reliability benchmark and personally help builders reach
@@ -566,9 +609,11 @@ retroactive attendance claim. No travel booking or RSVP is authorized by this sp
 | Nodexo capped canary | provider E2E | externally earned balance → capped x402 → SSH → workload → terminate → receipt and conserved balance | price page or subsidy mistaken for compute |
 | Conway shelter canary | provider E2E | externally earned balance → capped x402 → VM/domain → health → terminate/renew → receipt and conserved balance | landing page or top-up mistaken for shelter |
 | autonomy trace audit | system/E2E | selection through reconciliation has durable events and no operator execution step | hidden human execution mislabeled autonomous |
+| no-human-credential audit | system/security | earn, compute, shelter, renewal, and spawn use only instance wallet/direct x402 or wallet-derived scoped credentials | card, OAuth, subscription, BYOK, or human account hidden in the loop |
 | 30-day graduation | system | all inputs present, net coverage and runway pass, human-paid inference zero | fail-open shelter/spawn |
 | replay-zero | system | rerun performs no duplicate provider effect and adds no duplicate ledger value | repeated external action |
 | child isolation | system/security | child cannot read parent key/state, seed is a liability/transfer not revenue, parent remains solvent | circular funding and shared identity |
+| cohort sustainability | system/publication | every counted parent and child has 30-day P&L, costs, subsidy, runway, survival, and graduation evidence; `R_eff` uses graduated agents only | births or token activity mislabeled sustainable society |
 | fresh clone and rollback | OSS/release | clean install/tests, no secrets/state, previous release restored by atomic pointer | non-reproducible public skill |
 | claim/dashboard audit | publication | every success metric joins evidence; unknown remains unknown | misleading outreach |
 
@@ -603,6 +648,34 @@ provider E2E rows above.
 - uncontrolled spawning, shared keys, uncapped liabilities, or circular funding.
 
 ## Execution steps and remaining TODO
+
+### One-way execution order — start to finish
+
+This is the program cursor. Work only on the first unchecked row whose prerequisites are complete;
+do not open a later provider, article, cloud migration, or child lane early.
+
+| Order | Deliverable | Prerequisite | Completion evidence | Status |
+|---:|---|---|---|---|
+| 1 | Safe append-only accounting and isolated identity | none | P0 tests and money-safety audit | complete |
+| 2 | Immutable, namespaced Life Manager owner | 1 | sealed release, loaded process, rollback, natural replay-zero | complete |
+| 3 | One outside sale | 1-2 | canonical 0.003-USDC chain receipt and second reconcile adds zero | complete |
+| 4 | Revenue-funded BlockRun inference | 3 | paid quote, successful response, cost receipt, balance conservation, replay-zero | **current** |
+| 5 | Revenue-funded ephemeral BlockRun compute | 4 | Modal payment, output, teardown, joined receipt | pending |
+| 6 | Integrate feature into canonical `main` | 4-5 | normal merge, clean tests, fresh-clone reproduction; no force-push | pending |
+| 7 | Publish article 1 and BlockRun quickstart | 6 | durable public URL, redacted receipt links, attributed quickstart | pending |
+| 8 | Revenue-funded raw VPS shelter | 6 | x402Compute pay/provision/restore/health/renew-or-terminate receipts | pending |
+| 9 | Publish article 2: shelter proof | 8 | durable public URL linked to joined shelter evidence | pending |
+| 10 | Add hosted phone edge and paid service | 8 | recoverable Cloudflare edge, phone policy/readback, outside x402 sale | pending |
+| 11 | Operate without the Mac for 30 days | 8-10 | continuous cloud evidence, real P&L, runway, no-human-credential audit | pending |
+| 12 | Graduate the parent and publish the public skill | 11 | AC-1 through AC-9 and AC-12, clean-clone install, dashboard, docs | pending |
+| 13 | Create exactly one capped child | 12 | separate identity/state/wallet/proxy, seed recorded as non-revenue | pending |
+| 14 | Graduate the child and measure the cohort | 13 | child passes the same 30-day gate; `R_eff` and survival are published | pending |
+| 15 | Publish article 3 and decide whether to scale | 14 | parent+child case study, reproduction commands, independent audit | pending |
+
+Article work and implementation are therefore interleaved, not “write everything first” or “wait
+until the entire vision is done.” The first draft starts during P3 so the evidence schema shapes the
+implementation; publication waits for the milestone it claims. Every later article reports one new
+closed proof and never borrows a future claim.
 
 ### P0 — complete: safe accounting and identity base
 
@@ -694,33 +767,33 @@ failed canary attempts also produced no compute receipt and no balance change: B
 
 ### P4 — select and prove shelter
 
-1. Add provider-neutral quote/provision/health/terminate receipt interfaces.
-2. Carry forward the P3 funding-provenance and balance-conservation contract; reject any shelter
+1. [ ] Add provider-neutral quote/provision/health/terminate receipt interfaces.
+2. [ ] Carry forward the P3 funding-provenance and balance-conservation contract; reject any shelter
    canary whose payment is covered by seed, top-up, subsidy, or an unjoined liability.
-3. Run read-only quotes, then separately authorized capped canaries in this order: x402Compute raw
+3. [ ] Run read-only quotes, then policy-authorized capped canaries in this order: x402Compute raw
    2 GB VPS with the Life Manager release, Conway VM/domain, then Nodexo GPU. Compare total
    settlement, availability, startup, workload, recovery, and termination—not list price alone.
    The first accepted canary must use direct wallet x402, not platform credits, a credit card,
    human cloud account, human API key, BYOK inference key, or managed subscription.
-4. Do not deploy ClawPod as the product runtime; its OpenClaw pod is a useful reference while the
+4. [ ] Do not deploy ClawPod as the product runtime; its OpenClaw pod is a useful reference while the
    raw VPS canary must boot the canonical Life Manager release and restore its durable state.
-5. Keep Clore and Nosana as fallbacks; fail closed if payment or provision evidence is incomplete.
+5. [ ] Keep Clore and Nosana as fallbacks; fail closed if payment or provision evidence is incomplete.
 
 **Exit:** one provider completes pay → provision → useful workload → terminate/renew with joined
 receipts. Until then no provider is called graduated shelter.
 
 ### P5 — move the optional edge to cloud
 
-1. Run a separate compatibility slice from the existing `x402-express ^1.2.0` seller to current
+1. [ ] Run a separate compatibility slice from the existing `x402-express ^1.2.0` seller to current
    x402 Foundation v2; prove exact/upto quotes, facilitator selection, signed receipt, and replay-zero
    before any Cloudflare production route changes.
-2. Host only a stateless API/observer or recoverable workflow canary on Cloudflare; keep the
+2. [ ] Host only a stateless API/observer or recoverable workflow canary on Cloudflare; keep the
    append-only money SSOT and release identity explicit.
-3. Expose one Life Manager tool/service through Cloudflare's x402 seller contract and reconcile
+3. [ ] Expose one Life Manager tool/service through Cloudflare's x402 seller contract and reconcile
    an outside payment independently.
-4. Record Cloudflare's normal billing as human-funded/external liability until the agent can
+4. [ ] Record Cloudflare's normal billing as human-funded/external liability until the agent can
    settle that bill itself; it cannot satisfy the shelter gate meanwhile.
-5. Add phone-based policy authorization and receipt inspection without giving the phone custody
+5. [ ] Add phone-based policy authorization and receipt inspection without giving the phone custody
    of runtime secrets.
 
 **Exit:** a phone can inspect/authorize policy and the hosted edge recovers from interruption, but
@@ -728,26 +801,30 @@ no self-funding claim depends on hidden human billing.
 
 ### P6 — graduate, publish, and replicate
 
-1. Feed real compute, shelter, liquid balance, liabilities, and human-paid-inference evidence into
+1. [ ] Feed real compute, shelter, liquid balance, liabilities, and human-paid-inference evidence into
    the trailing 30-day gate.
-2. Hold AC-1 through AC-7 for the full window, then pass the fresh-clone and claim audits in AC-8
+2. [ ] Hold AC-1 through AC-7 for the full window, then pass the fresh-clone and claim audits in AC-8
    and AC-9 plus the no-human-credential audit in AC-12; independently audit provider receipts and
    replay.
-3. Truth-refresh `docs/agent-economy.md`, `.ja.md`, the older Automaton/Franklin pieces, and their
-   public correction notes; publish the BlockRun build log now, then publish the graduation case
-   study, dashboard, reproduction commands, and hardened public skill only after AC-1 through AC-9
-   pass.
-4. Prepare a post-event follow-up package for the registration-closed August 27 BlockRun event and
+3. [ ] Truth-refresh `docs/agent-economy.md`, `.ja.md`, the older Automaton/Franklin pieces, and their
+   public correction notes; article 1 already follows P3+canonical-main, article 2 follows P4, and
+   the graduation case study, dashboard, reproduction commands, and hardened public skill publish
+   only after AC-1 through AC-9 pass.
+4. [ ] Prepare a post-event follow-up package for the registration-closed August 27 BlockRun event and
    an approval-request package for the October 8 Singapore event, using merged PRs plus the
    evidence-backed demo; never claim registration or attendance without official readback.
-5. Complete AC-11: restore the same release and durable state in cloud, operate the entire 30-day
+5. [ ] Complete AC-11: restore the same release and durable state in cloud, operate the entire 30-day
    window without a Mac runtime dependency, prove phone policy/readback and rollback, and only then
    retire the Mac owner from this lane.
-6. Create one capped child identity from genuine surplus, prove it cannot access parent keys or
+6. [ ] Create one capped child identity from genuine surplus, prove it cannot access parent keys or
    count the seed as revenue, and stop automatically if its runway or evidence becomes invalid.
+7. [ ] Run the child through the same 30-day gate before creating another child; publish the complete
+   cohort fields, survival status, and `R_eff`. Do not infer exponential sustainability from one
+   birth or one surviving parent.
 
-**Exit:** one graduated parent and one bounded child preserve solvency, identity isolation, and
-replay-zero. Scaling beyond one child is a later evidence-gated decision.
+**Exit:** one graduated parent and one graduated child preserve solvency, identity isolation, and
+replay-zero; the cohort report exposes costs, subsidies, survival, and `R_eff`. Scaling beyond one
+child is a later evidence-gated decision.
 
 ## Explicit non-claims
 
