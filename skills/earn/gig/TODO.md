@@ -4461,3 +4461,12 @@ of that merge. Merge it when that clears.
   postings observed, 26 are already applied to, 27 are cached ineligible and 28 hit a prohibition.
   The judgement fields either side of the repository move are unchanged; only the
   already-applied and cached-ineligible counts grew, which is what they do.
+
+### Paid audio archive delivery recovery
+
+- [x] Reproduce talkroom `18197848` at `file_visual_evidence`: an audio-only ZIP was incorrectly required to contain review images.
+- [x] Add the audio-only ZIP regression and return no visual inputs when the archive has no images; `13 passed` and `py_compile` pass.
+- [x] Push public main commit `2fb9c8ad516347a3db4b300dfd108c34c3ee1c68` and activate only `ai.anicca.hf-gig-paid-direct` from that immutable release.
+- [ ] Clear the host `disk-pressure.block` through the existing cleanup owner without deleting Codex/Claude sessions or durable evidence; current free space is about 1.2 GiB and the cleanup owner cannot create its temporary directory.
+- [ ] Obtain natural official readback for `18197848`, then rerun once and prove replay-zero.
+- [ ] Resolve `18202085` without weakening buyer-visible quality: the WAV is structurally usable, but the producer emitted `REVIEW_READY`, `audio/wav` conflicts with macOS `audio/x-wav`, and the reference TikTok audio remains unavailable for correspondence review.
