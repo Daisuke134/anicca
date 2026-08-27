@@ -327,6 +327,29 @@ test("provider ranking reports bounded aggregate request retry and bisect timing
   ]);
 });
 
+test("provider ranking bounds a long public event description before validation and transport", async () => {
+  const candidate = Object.freeze({
+    ...PROVIDER_CANDIDATES[0],
+    body: `AI builders ${"x".repeat(9_000)}`,
+  });
+  let transported;
+  const ranking = await inferProviderCandidateRanking({
+    candidates: [candidate], preferences: "Tokyo AI events",
+  }, {
+    generateDecision: async ({ prompt }) => {
+      transported = JSON.parse(prompt.match(/EVENT_DATA_START\n([\s\S]+)\nEVENT_DATA_END/)[1]);
+      return { ranked_events: transported.map((event) => ({
+        event_ref: event.event_ref,
+        priority_class: "ai",
+        preference_fit: "strong",
+        preference_reason: "Direct AI event.",
+      })) };
+    },
+  });
+  assert.equal(ranking.ranked_events.length, 1);
+  assert.equal(transported[0].body.length, 1_000);
+});
+
 async function fixtureSnapshot(slugs = ["ai-night", "pottery-social", "crypto-builders"]) {
   const coverage = buildRollingEventCoverage({
     tenantId: "dais-local",
