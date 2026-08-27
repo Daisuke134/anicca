@@ -87,7 +87,10 @@ async function runDue(nowMs = Date.now(), env = process.env, provided = null) {
       const observation = await (expected.postiz_photo_only ? collectPostizPhotoWindow : collectTikTokWindow)(input, env, new Date(nowMs).toISOString()); results.push({ video_id: expected.video_id, window, state: "measured", telegram: await sendMetricSnapshot(observation, env, dataDir) });
     }
     const parts = Object.fromEntries(new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Tokyo", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(new Date(nowMs)).map(({ type, value }) => [type, value])); const reportDay = `${parts.year}-${parts.month}-${parts.day}`;
-    if (Number(parts.hour) > 17 || (Number(parts.hour) === 17 && Number(parts.minute) >= 30)) { const digest = persistDailyDigest({ dataDir, reportDay, observedAt: new Date(nowMs).toISOString(), expected }); results.push({ video_id: expected.video_id, window: "daily", state: digest.created ? "reported" : "complete", telegram: await sendMetricSnapshot(digest, env, dataDir) }); }
+    if (Number(parts.hour) > 17 || (Number(parts.hour) === 17 && Number(parts.minute) >= 30)) {
+      if (!Object.keys(WINDOWS).some((window) => fs.existsSync(snapshotFile(dataDir, expected, window)))) { results.push({ video_id: expected.video_id, window: "daily", state: "pending", due_at: new Date(Date.parse(expected.published_at) + WINDOWS["2h"]).toISOString() }); continue; }
+      const digest = persistDailyDigest({ dataDir, reportDay, observedAt: new Date(nowMs).toISOString(), expected }); results.push({ video_id: expected.video_id, window: "daily", state: digest.created ? "reported" : "complete", telegram: await sendMetricSnapshot(digest, env, dataDir) });
+    }
     else results.push({ video_id: expected.video_id, window: "daily", state: "pending", due_at: `${reportDay}T17:30:00+09:00` });
   }
   if (Number(reportParts.hour) >= 22 && !provided) {

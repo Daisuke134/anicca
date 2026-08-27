@@ -10,6 +10,16 @@ test("JP4 due loop reports delayed and daily once while true 24h stays pending",
   try { const now = Date.parse(EXPECTED.published_at) + 18.5 * 3600_000; const first = await runDue(now, env, [EXPECTED]); assert.equal(first.find((row) => row.window === "2h").state, "source_delayed"); assert.equal(first.find((row) => row.window === "24h").state, "pending"); assert.equal(first.find((row) => row.window === "daily").state, "reported"); assert.equal(sends, 2); const replay = await runDue(now, env, [EXPECTED]); assert.equal(replay.find((row) => row.window === "2h").state, "complete"); assert.equal(replay.find((row) => row.window === "daily").state, "complete"); assert.equal(sends, 2); } finally { global.fetch = originalFetch; }
 });
 
+test("fresh TikTok daily report stays pending until its first metric window", async () => {
+  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "lm-tiktok-fresh-daily-"));
+  const publishedAt = "2026-08-27T12:34:05.147Z";
+  const expected = { ...EXPECTED, published_at: publishedAt, video_id: "7678688077728385040", shortcode: "7678688077728385040", public_url: "https://www.tiktok.com/@anicca.jp4/video/7678688077728385040" };
+  const result = await runDue(Date.parse(publishedAt) + 30 * 60_000, { LM_DATA_DIR: dataDir }, [expected]);
+  const daily = result.find((row) => row.window === "daily");
+  assert.equal(daily.state, "pending");
+  assert.equal(daily.due_at, "2026-08-27T14:34:05.147Z");
+});
+
 test("discovery keeps verified Honne EN and JA relationship-confession lanes isolated", () => {
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "lm-honne-en-due-")); const caption = "I still think about you";
   const captionPath = path.join(dataDir, "objects", "caption"); fs.mkdirSync(path.dirname(captionPath), { recursive: true }); fs.writeFileSync(captionPath, caption);
