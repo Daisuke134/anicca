@@ -8,7 +8,7 @@ effect in a durable ledger, and exits.
 |---|---|---|---|---|
 | `x-repost` | English quote post | Live X search | minute 0 and 30 | `~/loops/x-repost-en` |
 | `x-repost-ja` | Japanese quote post for Dice | Live Japanese or English X search | minute 5 and 35 | `~/loops/x-repost-ja` |
-| `x-tweeter` | English original | Public Chinese platforms | minute 0 hourly | `~/loops/x-tweeter` |
+| `x-tweeter` | English original | Public Chinese platforms | minute 15 hourly | `~/loops/x-tweeter` |
 
 The owners never share their state or Affiliate queues. A private firsthand seed is optional:
 exact source-specific evidence is sufficient. Empty seed state therefore cannot stop an otherwise

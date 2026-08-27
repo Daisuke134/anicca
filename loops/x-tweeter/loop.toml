@@ -11,7 +11,7 @@ X_REPOST_POSTIZ_INTEGRATION_ID = "cmt4l2jld031tqp0y8qtyo983"
 [jobs.pass]
 label     = "ai.anicca.x-tweeter-pass"
 program   = "skills/x-tweeter/x-tweeter-cli.sh"
-calendars = [{ minute = 0 }]
+calendars = [{ minute = 15 }]
 
 [jobs.healthcheck]
 label            = "ai.anicca.x-tweeter-healthcheck"

@@ -28,7 +28,7 @@ class XTweeterLaunchdContractTests(unittest.TestCase):
             )
 
         self.assertEqual(plist["Label"], "ai.anicca.x-tweeter-pass")
-        self.assertEqual(plist["StartCalendarInterval"], [{"Minute": 0}])
+        self.assertEqual(plist["StartCalendarInterval"], [{"Minute": 15}])
         self.assertTrue(plist["ProgramArguments"][1].endswith(
             "/skills/x-tweeter/x-tweeter-cli.sh"
         ))
