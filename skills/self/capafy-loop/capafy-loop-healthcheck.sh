@@ -83,12 +83,5 @@ PY
   exit 0
 fi
 
-# A stale/missing terminal receipt means the real launchd loop needs a pass.
-# kickstart that owner directly; never spawn a parallel executor.
-if launchctl kickstart -k "$DOMAIN/$LABEL"; then
-  echo "$(date '+%F %T') stale healthy-pass (${age}s); kickstarted $LABEL" >>"$LOG"
-  exit 0
-fi
-
-echo "$(date '+%F %T') failed to kickstart $LABEL" >>"$LOG"
+echo "$(date '+%F %T') stale healthy-pass (${age}s); lifecycle repair required via lm-loop for $LABEL" >>"$LOG"
 exit 1

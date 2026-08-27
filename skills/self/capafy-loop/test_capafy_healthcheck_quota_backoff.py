@@ -13,7 +13,7 @@ HEALTHCHECK = ROOT / "skills" / "self" / "capafy-loop" / "capafy-loop-healthchec
 
 
 class CapafyHealthcheckQuotaBackoffTest(unittest.TestCase):
-    def run_healthcheck(self, error_class, incomplete_name):
+    def run_healthcheck(self, error_class, incomplete_name, expected_return=0):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             state_home = root / "state-home"
@@ -54,7 +54,7 @@ class CapafyHealthcheckQuotaBackoffTest(unittest.TestCase):
                 ["bash", str(HEALTHCHECK)], env=env, text=True, capture_output=True, check=False
             )
 
-            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(result.returncode, expected_return, result.stderr)
             recorded = calls.read_text(encoding="utf-8")
             receipt_path = state_home / "state" / "capafy-provider-backoff.json"
             receipt = json.loads(receipt_path.read_text(encoding="utf-8")) if receipt_path.exists() else None
@@ -68,6 +68,11 @@ class CapafyHealthcheckQuotaBackoffTest(unittest.TestCase):
 
     def test_recent_incomplete_attempt_gets_grace_without_kickstart(self):
             recorded, _ = self.run_healthcheck("transient_unavailable", f"{int(time.time())}-2")
+            self.assertNotIn("kickstart", recorded)
+
+    def test_stale_nonquota_receipt_is_reported_without_kickstart(self):
+            recorded, _ = self.run_healthcheck(
+                "transient_unavailable", "101-2", expected_return=1)
             self.assertNotIn("kickstart", recorded)
 
 
