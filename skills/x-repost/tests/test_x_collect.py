@@ -6,6 +6,7 @@ import tempfile
 import unittest
 from datetime import datetime, timezone
 from pathlib import Path
+from unittest.mock import patch
 
 
 SCRIPT = Path(__file__).parents[1] / "scripts" / "x_collect.py"
@@ -16,6 +17,26 @@ SPEC.loader.exec_module(MODULE)
 
 
 class XCollectTests(unittest.TestCase):
+    def test_engagement_refresh_is_bounded_to_ten_recent_posts(self) -> None:
+        now = datetime.now(timezone.utc)
+        rows = [
+            {"posted_at": now.isoformat(), "post_url": f"https://x.com/me/status/{index}"}
+            for index in range(12)
+        ]
+        metrics = {"ok": True, "views": 1, "likes": 0, "replies": 0,
+                   "reposts": 0, "bookmarks": 0}
+        with tempfile.TemporaryDirectory() as root:
+            posted = Path(root) / "posted.jsonl"
+            posted.write_text("".join(json.dumps(row) + "\n" for row in rows))
+            with patch.object(MODULE, "read_metrics", return_value=metrics) as read:
+                MODULE.refresh_engagement(object(), posted)
+            persisted = [json.loads(line) for line in posted.read_text().splitlines()]
+
+        self.assertEqual(read.call_count, 10)
+        self.assertNotIn("engagement", persisted[0])
+        self.assertNotIn("engagement", persisted[1])
+        self.assertEqual(persisted[-1]["engagement"]["views"], 1)
+
     def test_parse_metrics_from_canonical_action_bar(self) -> None:
         self.assertEqual(
             MODULE.parse_metrics("15 replies, 72 reposts, 454 likes, 605 bookmarks, 44,084 views"),
