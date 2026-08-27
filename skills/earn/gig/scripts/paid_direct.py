@@ -3327,6 +3327,8 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
             proof = {
                 "summary_sha256": hashlib.sha256(summary_path.read_bytes()).hexdigest(),
                 "result_sha256": hashlib.sha256(prior_result_path.read_bytes()).hexdigest(),
+                "selected_provider": _text(prior_summary.get("selected_provider")),
+                "selected_model": _text(prior_summary.get("selected_model")),
             }
             shipment_basis = "single_material_review_repaired"
             verdict = {"verdict": "deliverable", "reason": f"Owner repaired the one material finding: {finding}"}
