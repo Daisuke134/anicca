@@ -154,6 +154,12 @@ def parse_png(path: Path) -> dict[str, object]:
         by_kind.setdefault(kind, []).append(payload)
     if len(by_kind.get("IEND", [])) != 1:
         raise PngError("png_iend_missing")
+    plte = by_kind.get("PLTE")
+    if plte:
+        plte_index = next(index for index, chunk in enumerate(chunks) if chunk[0] == "PLTE")
+        first_idat_index = next((index for index, chunk in enumerate(chunks) if chunk[0] == "IDAT"), None)
+        if color_type != 6 or not (3 <= len(plte[0]) <= 768) or len(plte[0]) % 3 or (first_idat_index is not None and plte_index > first_idat_index):
+            raise PngError("png_palette_invalid")
     if "tRNS" in by_kind and color_type in REQUIRED_COLOR_TYPES:
         raise PngError("png_trns_invalid")
 
@@ -188,6 +194,8 @@ def parse_png(path: Path) -> dict[str, object]:
             expected_sequence += 1
             _sequence, frame_width, frame_height, x, y, *_ = frame
             if x + frame_width > width or y + frame_height > height:
+                raise PngError("dimensions_invalid")
+            if frame_controls and (frame_width, frame_height) != frame_controls[0][1:3]:
                 raise PngError("dimensions_invalid")
             frame_controls.append(frame)
             frame_has_data.append(False)
@@ -586,11 +594,12 @@ def validate_package(root: Path, policy_path: Path, ffmpeg: str = "ffmpeg") -> d
                 if len(names) != len(set(names)) or set(names) != set(PNG_NAMES) or any(not _safe_zip_name(name) for name in names):
                     errors.add("zip_membership_mismatch")
                 for info in infos:
-                    if not _safe_zip_name(info.filename) or info.is_dir():
+                    if info.file_size >= max_file_bytes:
+                        if info.filename in PNG_NAMES and f"file_too_large:{info.filename}" in errors:
+                            continue
+                        errors.add(f"zip_file_too_large:{info.filename}")
                         continue
-                    if info.filename in PNG_NAMES and info.file_size >= max_file_bytes:
-                        if f"file_too_large:{info.filename}" not in errors:
-                            errors.add(f"zip_file_too_large:{info.filename}")
+                    if not _safe_zip_name(info.filename) or info.is_dir() or info.filename not in PNG_NAMES:
                         continue
                     try:
                         zip_payloads[info.filename] = archive.read(info)

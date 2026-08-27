@@ -44,6 +44,8 @@ def _png(
     delay_den: int = 100,
     marker: str = "",
     extra_chunks: list[tuple[str, bytes]] | None = None,
+    after_idat_chunks: list[tuple[str, bytes]] | None = None,
+    frame_dimensions: list[tuple[int, int]] | None = None,
 ) -> bytes:
     chunks = [b"\x89PNG\r\n\x1a\n"]
     chunks.append(_chunk("IHDR", struct.pack(">IIBBBBB", width, height, 8, color_type, 0, 0, 0)))
@@ -53,10 +55,13 @@ def _png(
         chunks.append(_chunk("acTL", struct.pack(">II", frames, plays)))
         sequence = 0
         for frame in range(frames):
+            frame_width, frame_height = (
+                frame_dimensions[frame] if frame_dimensions is not None else (width, height)
+            )
             chunks.append(
                 _chunk(
                     "fcTL",
-                    struct.pack(">IIIIIHHBB", sequence, width, height, 0, 0, delay_num, delay_den, 0, 0),
+                    struct.pack(">IIIIIHHBB", sequence, frame_width, frame_height, 0, 0, delay_num, delay_den, 0, 0),
                 )
             )
             sequence += 1
@@ -67,6 +72,8 @@ def _png(
                 sequence += 1
     else:
         chunks.append(_chunk("IDAT", zlib.compress(b"\x00\x00\x00\x00")))
+    for kind, payload in after_idat_chunks or []:
+        chunks.append(_chunk(kind, payload))
     if marker:
         chunks.append(_chunk("tEXt", b"asset=" + marker.encode("ascii")))
     chunks.append(_chunk("IEND", b""))
@@ -339,7 +346,7 @@ class LineStickerValidatorTests(unittest.TestCase):
                 "-f",
                 "lavfi",
                 "-i",
-                "color=c=red@1.0:s=270x270:r=5,format=rgba",
+                "nullsrc=size=270x270:rate=5,geq=r='random(1)*255':g='random(2)*255':b='random(3)*255',format=rgba",
                 "-frames:v",
                 "5",
                 "-plays",
@@ -356,6 +363,45 @@ class LineStickerValidatorTests(unittest.TestCase):
         parsed = MODULE.parse_png(real_apng)
         self.assertTrue(parsed["animated"])
         self.assertEqual(MODULE._decode_and_check_alpha(real_apng, parsed, "ffmpeg", set()), None)
+
+    def test_fcTL_frame_dimensions_must_match(self) -> None:
+        dimensions = [(270, 270), (269, 270), (269, 270), (269, 270), (269, 270)]
+        _replace_asset(self.root, "01.png", _png(270, 270, animated=True, frame_dimensions=dimensions, marker="01-dimension-mismatch"))
+        self.assertEqual(self._validate()["errors"], ["dimensions_invalid:01.png"])
+
+    def test_plte_legality_is_exact(self) -> None:
+        variants = {
+            "gray-alpha": _png(270, 270, animated=True, color_type=4, extra_chunks=[("PLTE", b"\x00\x00\x00")], marker="01-plte-gray-alpha"),
+            "zero-length": _png(270, 270, animated=True, extra_chunks=[("PLTE", b"")], marker="01-plte-zero"),
+            "not-divisible": _png(270, 270, animated=True, extra_chunks=[("PLTE", b"\x00\x00\x00\x00")], marker="01-plte-four"),
+            "too-many": _png(270, 270, animated=True, extra_chunks=[("PLTE", b"\x00" * 769)], marker="01-plte-large"),
+            "after-idat": _png(270, 270, animated=True, after_idat_chunks=[("PLTE", b"\x00\x00\x00")], marker="01-plte-after"),
+        }
+        for label, contents in variants.items():
+            with self.subTest(label=label):
+                try:
+                    _replace_asset(self.root, "01.png", contents)
+                    self.assertEqual(self._validate()["errors"], ["png_palette_invalid:01.png"])
+                finally:
+                    self.tearDown()
+                    self.setUp()
+
+    def test_unknown_zip_bomb_is_bounded_before_read(self) -> None:
+        entries = {name: (self.root / name).read_bytes() for name in PNG_NAMES}
+        entries["unknown.bin"] = b"\x00" * 1_000_001
+        _with_zip_entries(self.root, entries)
+        original_read = MODULE.zipfile.ZipFile.read
+
+        def read(archive: zipfile.ZipFile, info: zipfile.ZipInfo, *args: object, **kwargs: object) -> bytes:
+            if info.filename == "unknown.bin":
+                raise AssertionError("unknown entry was decompressed before preflight")
+            return original_read(archive, info, *args, **kwargs)
+
+        with mock.patch.object(MODULE.zipfile.ZipFile, "read", autospec=True, side_effect=read):
+            self.assertEqual(
+                self._validate()["errors"],
+                ["zip_file_too_large:unknown.bin", "zip_membership_mismatch"],
+            )
 
     def test_cli_prints_one_json_object_and_returns_ready_exit_code(self) -> None:
         completed = subprocess.run(
