@@ -42,7 +42,13 @@ SKILLS = os.environ.get("CAPAFY_SKILLS_ROOT") or str(REPO_ROOT / "skills")
 CATALOG = os.environ.get("CAPAFY_CATALOG_DIR") or str(REPO_ROOT / "skills/capafy/catalog")
 
 ONLINE = {"online", "approved"}
-UNLISTED = {"draft", "under_review"}   # occupy the 5-slot publish cap
+# Capafy's create endpoint counts rejected agents toward its five-unlisted-agent
+# limit as well as drafts and submissions under review.  Treating a rejection as
+# a free slot made the drainer select a fresh catalog item that publish-init could
+# never create, then report a successful runner pass while the outer loop stayed
+# PUBLISHABLE forever.  Keep the retry classification below, but include it in
+# capacity accounting so the handoff mirrors the server's actual admission rule.
+UNLISTED = {"draft", "under_review", "review_rejected"}
 REJECTED = {"review_rejected", "banned"}
 CAP = 5
 
@@ -68,11 +74,12 @@ def normalize_agents(agents):
             lifecycle = "listed"
             counts["listed"] += 1
         elif status in UNLISTED:
-            lifecycle = "occupied"
+            # A rejected agent is still retryable, but it also consumes one of
+            # the platform's unlisted slots until Capafy releases it.
+            lifecycle = "retry" if status == "review_rejected" else "occupied"
             counts["occupied"] += 1
-        elif status == "review_rejected":
-            lifecycle = "retry"
-            counts["retry"] += 1
+            if status == "review_rejected":
+                counts["retry"] += 1
         elif status == "banned":
             lifecycle = "blocked"
             counts["blocked"] += 1

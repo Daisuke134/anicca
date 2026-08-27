@@ -45,8 +45,8 @@ def test_normalize_agents_returns_exact_slot_and_retry_counts() -> None:
     assert result["counts"] == {
         "total": 6,
         "listed": 2,
-        "occupied": 2,
-        "free": 3,
+        "occupied": 3,
+        "free": 2,
         "retry": 1,
         "blocked": 1,
         "unknown": 0,
@@ -62,6 +62,27 @@ def test_normalize_agents_returns_exact_slot_and_retry_counts() -> None:
         "sales": 2,
         "recent_sales": 1,
     }
+    assert result["agents"][4]["lifecycle"] == "retry"
+
+
+def test_rejections_consume_the_live_unlisted_cap() -> None:
+    module = load_module()
+    rows = [
+        agent("under-review", "under_review"),
+        agent("rejected-1", "review_rejected"),
+        agent("rejected-2", "review_rejected"),
+        agent("rejected-3", "review_rejected"),
+        agent("rejected-4", "review_rejected"),
+    ]
+
+    normalized = module.normalize_agents(rows)
+    decision = module.allocate_action(
+        normalized, [], [{"feature": "catalog:fresh", "title": "Fresh Skill"}]
+    )
+
+    assert normalized["counts"]["occupied"] == 5
+    assert normalized["counts"]["retry"] == 4
+    assert decision == {"verdict": "CAP_FULL", "occupied": 5}
 
 
 def test_unknown_status_fails_closed_without_free_slot_claim() -> None:
