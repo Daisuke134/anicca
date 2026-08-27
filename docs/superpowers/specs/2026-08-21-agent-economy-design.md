@@ -834,6 +834,18 @@ reports zero open postings. The existing inflow watcher and controller are kicks
 receipt exists yet, so the smallest honest unblock is a genuinely outside buyer settlement on the
 registered v2 origin; neither a self-probe nor a historical unaccepted row may substitute.
 
+Blocked audit: the same external-demand condition remains unchanged across three consecutive goal
+turns after three distinct in-scope remedies. The retired Agentic Market validator returns 404 and
+indexes nothing; the founder-origin x402scan registration rejects all 31 resources as v1; the
+same-wallet v2 origin registers 5/5 resources successfully and the existing inflow watcher plus
+acquisition controller run, but the seller journal remains 38 sales, attempts remain 3629, the
+acquisition source reports zero open postings, the canonical revenue journal remains one row, and
+the wallet remains `1.698000`. No code, registration, retry, or internal transfer can manufacture
+outside demand. The smallest unblock is one independently controlled buyer settling a newly
+observed v2 route payment to `0x810f…29c5`; its new Base-USDC tx/log then enters the strict verifier
+and replay-zero journal path. A human/self purchase, top-up, old-row reclassification, or paid
+BlockRun call is not an unblock.
+
 ### P4 — select and prove shelter
 
 1. [ ] Add provider-neutral quote/provision/health/terminate receipt interfaces.
