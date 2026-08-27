@@ -118,7 +118,7 @@ function normalizeProviderInput(input = {}) {
     const eventRef = publicText(candidate.event_ref, 300);
     const canonicalUrl = publicText(candidate.canonical_url, 2_000);
     const title = publicText(candidate.title, 500);
-    const body = publicText(candidate.body || candidate.description, 8_000, false);
+    const body = publicText(String(candidate.body || candidate.description || "").slice(0, 8_000), 8_000, false);
     let parsed;
     try { parsed = new URL(canonicalUrl); } catch { invalid(); }
     if (!/^[a-z][a-z0-9_-]{1,31}$/.test(provider) || parsed.protocol !== "https:" || seen.has(eventRef)) invalid();
