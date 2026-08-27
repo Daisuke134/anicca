@@ -374,6 +374,8 @@ test("production queue enforces founder geography, format, priority, and YC hold
   assert.match(fundraising.priority_queue[1].reason, /X\/Twitter credential record/);
   assert.match(fundraising.priority_queue[1].reason, /candidate\.citizenship/);
   assert.match(fundraising.priority_queue[1].reason, /ESTA travel authorization is not a U\.S\. visa/);
+  assert.match(fundraising.priority_queue[1].reason, /private profile facts\[\]/);
+  assert.match(fundraising.priority_queue[1].reason, /do not checkpoint this already-established fact/);
   assert.match(fundraising.priority_queue[2].reason, /candidate\.name_kana/);
   assert.match(fundraising.priority_queue[2].reason, /never serialize the JSON object/);
   assert.equal(fundraising.priority_queue.find((item) => item.program === "Y Combinator")?.action, "hold_do_not_submit");
@@ -387,6 +389,8 @@ test("production queue enforces founder geography, format, priority, and YC hold
   assert.match(dailyPrompt, /Every coordinate passed to `cdp\.py clickxy` must be a validated base-10 integer/);
   assert.match(dailyPrompt, /prefer an exact visible `aria-label`/);
   assert.match(dailyPrompt, /Structural position selectors are a last resort/);
+  assert.match(dailyPrompt, /top-level `facts\[\]` claim records/);
+  assert.match(dailyPrompt, /Never infer legal ownership merely from the words/);
 });
 
 test("unseen rendered fields are filled from startup context and read back after one submit", async () => {
