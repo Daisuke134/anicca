@@ -1,4 +1,5 @@
 import importlib.util
+import sys
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -227,3 +228,31 @@ def test_default_release_scope_is_only_the_four_coconala_business_lanes():
 
 def test_explicit_release_scope_is_preserved():
     assert gig_release.activation_labels({"example.job"}) == {"example.job"}
+
+
+def test_watch_publishes_release_without_reactivating_launchd(monkeypatch, tmp_path):
+    sha = "a" * 40
+    release = tmp_path / sha
+    release.mkdir()
+    published = []
+    monkeypatch.setattr(sys, "argv", [str(SCRIPT), "watch"])
+    monkeypatch.setattr(
+        gig_release, "git",
+        lambda *args, **_kwargs: sha if args[:2] == ("rev-parse", "origin/main") else "",
+    )
+    monkeypatch.setattr(gig_release, "current_sha", lambda: "")
+    monkeypatch.setattr(gig_release, "build", lambda _sha: release)
+    monkeypatch.setattr(gig_release, "publish", published.append)
+    monkeypatch.setattr(gig_release, "collect_old_releases", lambda: [])
+    monkeypatch.setattr(gig_release, "settings", lambda _release: ({}, {}))
+    monkeypatch.setattr(gig_release, "job_needs_activation", lambda _job, _table: True)
+    monkeypatch.setattr(gig_release, "control_plane_available", lambda: True)
+    monkeypatch.setattr(gig_release, "require_control_plane", lambda: True)
+    monkeypatch.setattr(
+        gig_release, "activate",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("watch must not mutate launchd")),
+    )
+
+    assert gig_release.main() == 0
+    assert published == [release]

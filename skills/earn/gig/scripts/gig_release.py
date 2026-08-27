@@ -549,13 +549,7 @@ def main() -> int:
         # divergence must not stop release publication after fetch succeeds.
         git("fetch", "--quiet", "origin", "main")
         sha = git("rev-parse", "origin/main")
-        wanted = activation_labels(None)
-        _, stable_table = settings(CURRENT_RELEASE)
-        behind = [
-            job for job in manifest["jobs"] if job["label"] in wanted
-            and job_needs_activation(job, stable_table)
-        ]
-        if current_sha() == sha and not behind:
+        if current_sha() == sha:
             removed = collect_old_releases()
             if removed:
                 print(f"collected {len(removed)} old releases")
@@ -564,16 +558,6 @@ def main() -> int:
         if current_sha() != sha:
             publish(release)
         print(f"release {sha[:12]} -> {release}")
-        # SHA-specific definitions are migrated once. Stable definitions need no
-        # deploy-time reload: their next process start follows CURRENT_RELEASE.
-        if behind and not control_plane_available():
-            print("launchd readback unavailable; current published, legacy jobs left running")
-            return 0
-        if behind and not require_control_plane():
-            return 75
-        for job in behind:
-            activate(job, stable_table, release, False,
-                     skip_busy=job["label"] not in CONTINUOUS_RELOADABLE)
         removed = collect_old_releases()
         if removed:
             print(f"collected {len(removed)} old releases")
