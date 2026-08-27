@@ -484,6 +484,51 @@ def provider_process_env(provider: str, provider_config: dict[str, Any],
     return child_env
 
 
+def expand_codex_candidates(
+    candidates: list[dict[str, Any]], providers: dict[str, Any]
+) -> list[dict[str, Any]]:
+    """Expand one Codex model candidate into isolated account candidates."""
+    expanded: list[dict[str, Any]] = []
+    for candidate in candidates:
+        accounts = providers.get(candidate.get("provider"), {}).get("accounts", [])
+        if candidate.get("provider") != "codex" or not accounts:
+            expanded.append(dict(candidate))
+            continue
+        for account_index, account in enumerate(accounts):
+            scoped = dict(candidate)
+            scoped.update({
+                "account": account["alias"],
+                "account_index": account_index,
+                "account_count": len(accounts),
+                "automation_home": account["automation_home"],
+                "auth_file": account["auth_file"],
+            })
+            expanded.append(scoped)
+    return expanded
+
+
+CODEX_EFFECT_ITEM_TYPES = frozenset({
+    "command_execution", "file_change", "mcp_tool_call", "web_search",
+})
+
+
+def codex_effect_started(stdout: str) -> bool:
+    """Fail closed after any machine-readable Codex tool/effect item starts."""
+    for line in stdout.splitlines():
+        try:
+            event = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        item = event.get("item") if isinstance(event, dict) else None
+        if isinstance(item, dict) and item.get("type") in CODEX_EFFECT_ITEM_TYPES:
+            return True
+    return False
+
+
+def should_retry_next_codex_account(error_class: str | None, effect_started: bool) -> bool:
+    return not effect_started and error_class in {"transient_quota", "transient_auth"}
+
+
 # The live provider Popen, if any. start_new_session detaches the provider into its
 # own session, so a signal aimed at the RUNNER's process group never reaches it — when
 # the runner is killed externally the provider survives as an orphan (2026-07-27: an
@@ -1079,7 +1124,9 @@ def run() -> int:
                 "refusing to launch a paid provider"
             )
         task_config = config["task_classes"][parsed.task_class]
-        candidates = task_config["candidates"]
+        candidates = expand_codex_candidates(
+            task_config["candidates"], config.get("providers", {})
+        )
         selected_provider = os.environ.get("AGENT_RUNNER_PROVIDER", "").strip()
         if selected_provider:
             if selected_provider not in config.get("providers", {}):
@@ -1157,10 +1204,22 @@ def run() -> int:
     started_at = utc_now()
     attempts: list[dict[str, Any]] = []
     selected: dict[str, Any] | None = None
+    skip_remaining_codex_accounts = False
     for index, candidate in enumerate(candidates, 1):
         effective_candidate = dict(candidate)
         provider = effective_candidate["provider"]
-        provider_config = config.get("providers", {}).get(provider, {})
+        if (
+            skip_remaining_codex_accounts
+            and provider == "codex"
+            and effective_candidate.get("account")
+        ):
+            continue
+        if provider != "codex":
+            skip_remaining_codex_accounts = False
+        provider_config = dict(config.get("providers", {}).get(provider, {}))
+        for key in ("account", "automation_home", "auth_file"):
+            if key in effective_candidate:
+                provider_config[key] = effective_candidate[key]
         profile_openclaw: dict[str, Any] = {}
         if provider == "openclaw" and candidate_profile:
             value = candidate_profile.get("openclaw", {})
@@ -1361,6 +1420,16 @@ def run() -> int:
         # must not silently switch providers. Fallback is only for transient
         # timeout, expired provider auth, provider availability, or quota failures.
         if rc == 0 and result_fresh and not schema_valid:
+            break
+        if provider == "codex" and effective_candidate.get("account"):
+            effect_started = codex_effect_started(stdout_text)
+            if should_retry_next_codex_account(error_class, effect_started):
+                if effective_candidate["account_index"] + 1 >= effective_candidate["account_count"]:
+                    skip_remaining_codex_accounts = True
+                continue
+            if error_class in ("transient_timeout", "transient_unavailable"):
+                skip_remaining_codex_accounts = True
+                continue
             break
         if error_class not in (
             "transient_timeout", "transient_quota", "transient_unavailable", "transient_auth",
