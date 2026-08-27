@@ -107,6 +107,12 @@ class OwnerStateError(ValueError):
         self.code = code
 
 
+class ReceiptPendingError(OwnerStateError):
+    def __init__(self, effect: int) -> None:
+        super().__init__("receipt_pending")
+        self.effect = effect
+
+
 class PngError(ValueError):
     """A parse failure with a stable, non-sensitive error code."""
 
@@ -729,7 +735,10 @@ def validate_package(root: Path, policy_path: Path, ffmpeg: str = "ffmpeg") -> d
             if alpha_error:
                 errors.add(f"{alpha_error}:{name}")
 
-    package_sha256 = _canonical_package_hash(file_hashes, provenance, zip_payloads)
+    try:
+        package_sha256 = _sha256(zip_path.read_bytes())
+    except OSError:
+        package_sha256 = _canonical_package_hash(file_hashes, provenance, zip_payloads)
     errors_list = sorted(errors)
     return {
         "status": "ready" if not errors_list else "invalid",
@@ -954,6 +963,10 @@ def _read_receipts(path: Path, identity: dict[str, object]) -> list[dict[str, ob
             raise OwnerStateError("ledger_malformed")
         if type(row["receipt_id"]) is not str or not row["receipt_id"]:
             raise OwnerStateError("ledger_malformed")
+        receipt_body = dict(row)
+        receipt_body.pop("receipt_id")
+        if row["receipt_id"] != _sha256(_canonical_json(receipt_body)):
+            raise OwnerStateError("ledger_conflict")
         if row["receipt_id"] in seen_receipt_ids:
             raise OwnerStateError("ledger_duplicate")
         seen_receipt_ids.add(row["receipt_id"])
@@ -1042,7 +1055,37 @@ def _read_receipts(path: Path, identity: dict[str, object]) -> list[dict[str, ob
     for key in set(unknown_rows).intersection(acknowledged_rows):
         if acknowledged_rows[key] < unknown_rows[key]:
             raise OwnerStateError("ledger_conflict")
+    _validate_receipt_transitions(rows, identity)
     return rows
+
+
+def _validate_receipt_transitions(rows: list[dict[str, object]], identity: dict[str, object]) -> None:
+    actions = [str(row["action"]) for row in rows]
+    order = {"submit": 0, "release": 1, "replay": 2}
+    if any(order[left] > order[right] for left, right in zip(actions, actions[1:])):
+        raise OwnerStateError("ledger_conflict")
+    grouped = {action: [row for row in rows if row["action"] == action] for action in order}
+    submit = grouped["submit"]
+    release = grouped["release"]
+    replay = grouped["replay"]
+    if submit:
+        expected = ["intent"] + (["unknown"] if len(submit) > 1 and submit[1]["outcome"] == "unknown" else [])
+        if [row["outcome"] for row in submit] != expected[:len(submit)] + (["acknowledged"] if len(submit) == len(expected) + 1 else []):
+            raise OwnerStateError("ledger_conflict")
+    submit_ack = next((row for row in submit if row["outcome"] == "acknowledged"), None)
+    if release:
+        if submit_ack is None or release[0]["outcome"] != "intent" or release[0]["before_status"] != "approved":
+            raise OwnerStateError("ledger_conflict")
+        expected = ["intent"] + (["unknown"] if len(release) > 1 and release[1]["outcome"] == "unknown" else [])
+        if [row["outcome"] for row in release] != expected[:len(release)] + (["acknowledged"] if len(release) == len(expected) + 1 else []):
+            raise OwnerStateError("ledger_conflict")
+        product = submit_ack["product_id"]
+        if not isinstance(product, str) or not product or any(row["product_id"] != product for row in release):
+            raise OwnerStateError("ledger_conflict")
+    release_ack = next((row for row in release if row["outcome"] == "acknowledged"), None)
+    if replay:
+        if release_ack is None or len(replay) != 1 or replay[0]["outcome"] != "acknowledged" or replay[0]["product_id"] != release_ack["product_id"]:
+            raise OwnerStateError("ledger_conflict")
 
 
 def _receipt(
@@ -1137,10 +1180,6 @@ def _identity_from_package(package: Path, policy: Path, account_id: str, revisio
         raise OwnerStateError(f"package_invalid:{reason}")
     try:
         provenance = json.loads((package / "provenance.json").read_text(encoding="utf-8"))
-        zip_metadata = (package / "submission.zip").lstat()
-        if stat.S_ISLNK(zip_metadata.st_mode) or not stat.S_ISREG(zip_metadata.st_mode):
-            raise OwnerStateError("artifact_not_regular")
-        artifact_sha256 = _sha256((package / "submission.zip").read_bytes())
     except OwnerStateError:
         raise
     except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
@@ -1155,9 +1194,23 @@ def _identity_from_package(package: Path, policy: Path, account_id: str, revisio
         "set_id": provenance["set_id"],
         "character_id": provenance["character_id"],
         "revision": revision,
-        "artifact_sha256": artifact_sha256,
+        "artifact_sha256": package_sha256,
         "package_sha256": package_sha256,
     }
+
+
+def _verify_submission_artifact(package: Path, identity: dict[str, object]) -> None:
+    path = Path(package) / "submission.zip"
+    try:
+        metadata = path.lstat()
+        if stat.S_ISLNK(metadata.st_mode) or not stat.S_ISREG(metadata.st_mode) or metadata.st_size <= 0:
+            raise OwnerStateError("artifact_not_regular")
+        if _sha256(path.read_bytes()) != identity["artifact_sha256"]:
+            raise OwnerStateError("artifact_changed")
+    except OwnerStateError:
+        raise
+    except OSError as exc:
+        raise OwnerStateError("artifact_unavailable") from exc
 
 
 def _owner_identity_conflict(owner: dict[str, object], identity: dict[str, object]) -> str | None:
@@ -1309,7 +1362,10 @@ def _acknowledge_unknown(
         outcome="acknowledged",
         resolving=True,
     )
-    _append_receipt(ledger_path, acknowledged)
+    try:
+        _append_receipt(ledger_path, acknowledged)
+    except OwnerStateError as exc:
+        raise ReceiptPendingError(0) from exc
     rows.append(acknowledged)
     return next_owner
 
@@ -1352,7 +1408,10 @@ def _acknowledge_intent(
         after_status=str(observation["status"]),
         outcome="acknowledged",
     )
-    _append_receipt(ledger_path, acknowledged)
+    try:
+        _append_receipt(ledger_path, acknowledged)
+    except OwnerStateError as exc:
+        raise ReceiptPendingError(0) from exc
     rows.append(acknowledged)
     return next_owner
 
@@ -1368,10 +1427,6 @@ def _close_with_replay(
     prior = _rows_for_action(rows, identity, "replay")
     if "intent" in prior or "unknown" in prior:
         raise OwnerStateError("ledger_conflict")
-    closed = dict(owner)
-    closed["state"] = "CLOSED"
-    if owner.get("state") != "CLOSED":
-        atomic_json(owner_path, closed)
     if "acknowledged" not in prior:
         replay = _receipt(
             identity,
@@ -1381,8 +1436,15 @@ def _close_with_replay(
             after_status="released",
             outcome="acknowledged",
         )
-        _append_receipt(ledger_path, replay)
+        try:
+            _append_receipt(ledger_path, replay)
+        except OwnerStateError as exc:
+            raise ReceiptPendingError(0) from exc
         rows.append(replay)
+    closed = dict(owner)
+    closed["state"] = "CLOSED"
+    if owner.get("state") != "CLOSED":
+        atomic_json(owner_path, closed)
     return closed, 1
 
 
@@ -1421,6 +1483,7 @@ def _fenced_mutation(
     rows: list[dict[str, object]],
     identity: dict[str, object],
     provider: object,
+    package: Path,
     *,
     action: str,
     before: ProviderObservation,
@@ -1449,6 +1512,9 @@ def _fenced_mutation(
             before_status=str(before["status"]),
         )
         return unknown_owner, {"effect": None, "readback": 0, "duplicate_effect": None, "reason": "reconcile_unknown"}
+
+    if action == "submit":
+        _verify_submission_artifact(package, identity)
 
     intent = dict(identity)
     intent.update({"action": action, "effect_key": _effect_key(identity, action), "product_id": owner.get("product_id")})
@@ -1528,7 +1594,10 @@ def _fenced_mutation(
     next_owner["product_id"] = post["product_id"]
     next_owner["public_url"] = post["public_url"]
     atomic_json(owner_path, next_owner)
-    _append_receipt(ledger_path, acknowledged)
+    try:
+        _append_receipt(ledger_path, acknowledged)
+    except OwnerStateError as exc:
+        raise ReceiptPendingError(1) from exc
     return next_owner, {"effect": 1, "readback": 1, "duplicate_effect": 0, "reason": action + "_acknowledged"}
 
 
@@ -1555,7 +1624,9 @@ def _validate_owner_ledger_state(
     replay_ack = "acknowledged" in receipts["replay"]
     release_complete = "intent" in receipts["release"] and acknowledged["release"]
     state = str(owner["state"])
-    if replay_ack and state != "CLOSED":
+    if replay_ack and state not in ("CLOSED", "TERMINAL_PENDING_REPLAY"):
+        raise OwnerStateError("owner_state_conflict")
+    if state == "CLOSED" and not replay_ack:
         raise OwnerStateError("owner_state_conflict")
     if state == "NEW" and any(acknowledged.values()):
         raise OwnerStateError("owner_state_conflict")
@@ -1599,17 +1670,21 @@ def _state_summary(state_dir: Path) -> dict[str, object]:
         raise OwnerStateError("owner_malformed")
     rows = _read_receipts(ledger_path, identity) if ledger_metadata is not None else []
     _validate_owner_ledger_state(owner, rows, identity)
+    replay_ack = "acknowledged" in _rows_for_action(rows, identity, "replay")
+    summary_owner = dict(owner)
+    if summary_owner["state"] == "TERMINAL_PENDING_REPLAY" and replay_ack:
+        summary_owner["state"] = "CLOSED"
     latest = rows[-1] if rows else None
     action = _next_action(owner)
     summary: dict[str, object] = {
         "status": "ok",
-        "state": owner["state"],
+        "state": summary_owner["state"],
         "effect": latest["effect"] if latest is not None else 0,
         "readback": latest["readback"] if latest is not None else 0,
         "duplicate_effect": latest["duplicate_effect"] if latest is not None else 0,
         "effect_key": latest["effect_key"] if latest is not None else _effect_key(identity, action),
-        "product_id": owner["product_id"],
-        "public_url": owner["public_url"],
+        "product_id": summary_owner["product_id"],
+        "public_url": summary_owner["public_url"],
         "reason": latest["outcome"] if latest is not None else "uninitialized",
         "outcome": latest["outcome"] if latest is not None else None,
         "identity": dict(identity),
@@ -1625,12 +1700,14 @@ def _wake_owner_unlocked(
     account_id: str,
     revision: int,
     ffmpeg: str = "ffmpeg",
+    identity: dict[str, object] | None = None,
 ) -> dict[str, object]:
     """Run one bounded, restart-safe owner wake against an injected provider."""
-    try:
-        identity = _identity_from_package(Path(package), Path(policy), account_id, revision, ffmpeg)
-    except OwnerStateError as exc:
-        return _owner_result(None, status="error", effect=0, readback=0, duplicate_effect=0, effect_key="", reason=exc.code)
+    if identity is None:
+        try:
+            identity = _identity_from_package(Path(package), Path(policy), account_id, revision, ffmpeg)
+        except OwnerStateError as exc:
+            return _owner_result(None, status="error", effect=0, readback=0, duplicate_effect=0, effect_key="", reason=exc.code)
     state_dir = Path(state_dir)
     owner_path = state_dir / "owner.json"
     ledger_path = state_dir / "effects.jsonl"
@@ -1661,10 +1738,16 @@ def _wake_owner_unlocked(
                     return _owner_result(owner, status="unknown", effect=None, readback=0, duplicate_effect=None, effect_key=_effect_key(identity, str(owner["pending_action"])), reason="reconcile_unknown")
                 raise
         _validate_owner_ledger_state(owner, rows, identity, allow_release_ack_gap=True)
+        state = str(owner["state"])
+        replay = _rows_for_action(rows, identity, "replay")
+        if state == "TERMINAL_PENDING_REPLAY" and "acknowledged" in replay:
+            closed = dict(owner)
+            closed["state"] = "CLOSED"
+            atomic_json(owner_path, closed)
+            return _owner_result(closed, status="ok", effect=0, readback=1, duplicate_effect=0, effect_key=_effect_key(identity, "replay"), reason="closed")
         expected_product = owner.get("product_id") if isinstance(owner.get("product_id"), str) else None
         expected_url = owner.get("public_url") if isinstance(owner.get("public_url"), str) else None
         observation = _observe(provider, identity, expected_product=expected_product, expected_url=expected_url)
-        state = str(owner["state"])
         action = _next_action(owner)
         key = _effect_key(identity, action)
 
@@ -1774,6 +1857,7 @@ def _wake_owner_unlocked(
                 rows,
                 identity,
                 provider,
+                package,
                 action="submit",
                 before=observation,
                 expected_status="submitted",
@@ -1812,6 +1896,7 @@ def _wake_owner_unlocked(
                 rows,
                 identity,
                 provider,
+                package,
                 action="release",
                 before=observation,
                 expected_status="released",
@@ -1819,6 +1904,9 @@ def _wake_owner_unlocked(
             return _owner_result(mutation_owner, status="unknown" if metrics["effect"] is None else "ok", effect=metrics["effect"], readback=int(metrics["readback"]), duplicate_effect=metrics["duplicate_effect"], effect_key=_effect_key(identity, "release"), reason=str(metrics["reason"]))
 
         raise OwnerStateError("owner_state_invalid")
+    except ReceiptPendingError as exc:
+        actual = _read_owner(owner_path) if owner is not None else None
+        return _owner_result(actual, status="ok", effect=exc.effect, readback=1, duplicate_effect=0, effect_key=_effect_key(identity, _next_action(actual)) if actual else "", reason="receipt_pending")
     except OwnerStateError as exc:
         if owner is None:
             return _owner_result(None, status="error", effect=0, readback=0, duplicate_effect=0, effect_key="", reason=exc.code)
@@ -1830,20 +1918,84 @@ def _wake_owner_unlocked(
         return _owner_result(owner, status="error", effect=0, readback=0, duplicate_effect=0, effect_key=_effect_key(identity, _next_action(owner)) if owner else "", reason=reason)
 
 
+def _canonical_lock_root() -> Path:
+    return Path.home() / ".local" / "state" / "life-manager" / "line-sticker" / "locks"
+
+
+def _canonical_lock_identity(identity: dict[str, object]) -> dict[str, object]:
+    return {key: identity[key] for key in ("account_id", "set_id", "revision")}
+
+
+def _canonical_lock_path(identity: dict[str, object]) -> Path:
+    return _canonical_lock_root() / (_sha256(_canonical_json(_canonical_lock_identity(identity))) + ".lock")
+
+
+def _ensure_canonical_lock_root(root: Path) -> None:
+    root.mkdir(parents=True, mode=0o700, exist_ok=True)
+    metadata = root.lstat()
+    if stat.S_ISLNK(metadata.st_mode) or not stat.S_ISDIR(metadata.st_mode):
+        raise OwnerStateError("lock_root_invalid")
+    os.chmod(root, 0o700)
+
+
 @contextmanager
-def _state_lock(state_dir: Path):
-    path = Path(state_dir) / "owner.lock"
-    _state_target(path, "lock")
-    flags = os.O_RDWR | os.O_CREAT
-    if hasattr(os, "O_NOFOLLOW"):
-        flags |= os.O_NOFOLLOW
+def _state_lock(state_dir: Path, identity: dict[str, object]):
+    root = _canonical_lock_root()
     descriptor: int | None = None
     try:
-        descriptor = os.open(str(path), flags, 0o600)
-        metadata = path.lstat()
-        if stat.S_ISLNK(metadata.st_mode) or not stat.S_ISREG(metadata.st_mode):
-            raise OwnerStateError("lock_symlink" if stat.S_ISLNK(metadata.st_mode) else "lock_not_regular")
+        _ensure_canonical_lock_root(root)
+        path = _canonical_lock_path(identity)
+        try:
+            existing = path.lstat()
+        except FileNotFoundError:
+            existing = None
+        if existing is not None and (stat.S_ISLNK(existing.st_mode) or not stat.S_ISREG(existing.st_mode)):
+            raise OwnerStateError("lock_symlink" if stat.S_ISLNK(existing.st_mode) else "lock_not_regular")
+        flags = os.O_RDWR | os.O_CREAT | os.O_EXCL
+        if hasattr(os, "O_NOFOLLOW"):
+            flags |= os.O_NOFOLLOW
+        created = False
+        try:
+            descriptor = os.open(str(path), flags, 0o600)
+            created = True
+        except FileExistsError:
+            flags = os.O_RDWR
+            if hasattr(os, "O_NOFOLLOW"):
+                flags |= os.O_NOFOLLOW
+            descriptor = os.open(str(path), flags)
+        opened = os.fstat(descriptor)
+        listed = path.lstat()
+        if stat.S_ISLNK(listed.st_mode) or not stat.S_ISREG(opened.st_mode):
+            raise OwnerStateError("lock_symlink" if stat.S_ISLNK(listed.st_mode) else "lock_not_regular")
+        if (opened.st_dev, opened.st_ino) != (listed.st_dev, listed.st_ino):
+            raise OwnerStateError("lock_replaced")
         fcntl.flock(descriptor, fcntl.LOCK_EX)
+        state_binding = str(Path(state_dir).resolve())
+        if created:
+            os.fchmod(descriptor, 0o600)
+            lock_metadata = {
+                "identity": _canonical_lock_identity(identity),
+                "state_dir": state_binding,
+                "st_dev": opened.st_dev,
+                "st_ino": opened.st_ino,
+            }
+            os.write(descriptor, _canonical_json(lock_metadata) + b"\n")
+            os.fsync(descriptor)
+            _fsync_directory(root)
+        else:
+            os.lseek(descriptor, 0, os.SEEK_SET)
+            raw = os.read(descriptor, 4096)
+            try:
+                lock_metadata = json.loads(raw.decode("utf-8"))
+            except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+                raise OwnerStateError("lock_malformed") from exc
+            if not isinstance(lock_metadata, dict) or lock_metadata != {
+                "identity": _canonical_lock_identity(identity),
+                "state_dir": state_binding,
+                "st_dev": opened.st_dev,
+                "st_ino": opened.st_ino,
+            }:
+                raise OwnerStateError("lock_state_dir_conflict")
         yield
     except OwnerStateError:
         raise
@@ -1872,9 +2024,10 @@ def wake_owner(
 ) -> dict[str, object]:
     state_dir = Path(state_dir)
     try:
+        identity = _identity_from_package(Path(package), Path(policy), account_id, revision, ffmpeg)
         _ensure_state_dir(state_dir, create=True)
-        with _state_lock(state_dir):
-            return _wake_owner_unlocked(state_dir, package, policy, provider, account_id, revision, ffmpeg)
+        with _state_lock(state_dir, identity):
+            return _wake_owner_unlocked(state_dir, package, policy, provider, account_id, revision, ffmpeg, identity)
     except OwnerStateError as exc:
         return _owner_result(None, status="error", effect=0, readback=0, duplicate_effect=0, effect_key="", reason=exc.code)
 

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from contextlib import contextmanager
 import hashlib
 import json
 import os
@@ -889,8 +890,14 @@ class LineStickerOwnerTests(unittest.TestCase):
         self.state.mkdir()
         self.ffmpeg = _write_fake_ffmpeg(Path(self.tempdir.name) / "ffmpeg")
         self.provider = FakeProvider()
+        self.lock_root = Path(self.tempdir.name) / "locks"
+        self.lock_patch = mock.patch.object(MODULE, "_canonical_lock_root", return_value=self.lock_root)
+        self.lock_patch.start()
 
     def tearDown(self) -> None:
+        patch = getattr(self, "lock_patch", None)
+        if patch is not None:
+            patch.stop()
         current = getattr(self, "tempdir", None)
         if current is not None:
             current.cleanup()
@@ -1028,7 +1035,7 @@ class LineStickerOwnerTests(unittest.TestCase):
         self.provider.raise_on_submit = False
         with mock.patch.object(MODULE, "_append_receipt", side_effect=fail_resolution_ack):
             first = self._wake()
-        self.assertEqual((first["state"], first["effect"]), ("RECONCILE_UNKNOWN", 0))
+        self.assertEqual((first["state"], first["effect"], first["readback"], first["reason"]), ("WAITING_REVIEW", 0, 1, "receipt_pending"))
         owner = json.loads((self.state / "owner.json").read_text(encoding="utf-8"))
         self.assertEqual(owner["state"], "WAITING_REVIEW")
         rows_before = (self.state / "effects.jsonl").read_bytes()
@@ -1055,7 +1062,7 @@ class LineStickerOwnerTests(unittest.TestCase):
         self.provider.raise_on_release = False
         with mock.patch.object(MODULE, "_append_receipt", side_effect=fail_resolution_ack):
             first = self._wake()
-        self.assertEqual((first["state"], first["effect"]), ("RECONCILE_UNKNOWN", 0))
+        self.assertEqual((first["state"], first["effect"], first["readback"], first["reason"]), ("RELEASED", 0, 1, "receipt_pending"))
         owner = json.loads((self.state / "owner.json").read_text(encoding="utf-8"))
         self.assertEqual(owner["state"], "RELEASED")
         second = self._wake()
@@ -1196,16 +1203,53 @@ class LineStickerOwnerTests(unittest.TestCase):
     def test_lock_symlink_fails_before_provider(self) -> None:
         target = Path(self.tempdir.name) / "outside-lock"
         target.write_text("", encoding="utf-8")
-        (self.state / "owner.lock").symlink_to(target)
+        identity = MODULE._identity_from_package(self.root, POLICY, "acct-1", 1, str(self.ffmpeg))
+        lock_path = MODULE._canonical_lock_path(identity)
+        lock_path.parent.mkdir(parents=True)
+        lock_path.symlink_to(target)
         result = self._wake()
         self.assertEqual((result["reason"], result["effect"]), ("lock_symlink", 0))
         self.assertEqual((self.provider.submit_calls, self.provider.release_calls), (0, 0))
 
     def test_lock_nonregular_path_fails_before_provider(self) -> None:
-        (self.state / "owner.lock").mkdir()
+        identity = MODULE._identity_from_package(self.root, POLICY, "acct-1", 1, str(self.ffmpeg))
+        lock_path = MODULE._canonical_lock_path(identity)
+        lock_path.parent.mkdir(parents=True)
+        lock_path.mkdir()
         result = self._wake()
         self.assertEqual((result["reason"], result["effect"]), ("lock_not_regular", 0))
         self.assertEqual((self.provider.submit_calls, self.provider.release_calls), (0, 0))
+
+    def test_canonical_lock_binds_identity_to_one_state_dir_and_rejects_replacement(self) -> None:
+        self._wake()
+        other_state = Path(self.tempdir.name) / "other-state"
+        other_state.mkdir()
+        other = MODULE.wake_owner(other_state, self.root, POLICY, self.provider, "acct-1", 1, ffmpeg=str(self.ffmpeg))
+        self.assertEqual((other["reason"], other["effect"]), ("lock_state_dir_conflict", 0))
+        self.assertEqual(self.provider.submit_calls, 1)
+
+        identity = MODULE._identity_from_package(self.root, POLICY, "acct-1", 1, str(self.ffmpeg))
+        lock_path = MODULE._canonical_lock_path(identity)
+        lock_path.unlink()
+        lock_path.write_text("{}\n", encoding="utf-8")
+        replaced = self._wake()
+        self.assertEqual((replaced["reason"], replaced["effect"]), ("lock_state_dir_conflict", 0))
+        self.assertEqual(self.provider.submit_calls, 1)
+
+    def test_submit_rehashes_zip_after_lock_before_effect(self) -> None:
+        original_lock = MODULE._state_lock
+
+        @contextmanager
+        def replace_zip(state_dir: Path, identity: dict[str, object]):
+            with original_lock(state_dir, identity):
+                zip_path = self.root / "submission.zip"
+                zip_path.write_bytes(zip_path.read_bytes() + b"changed-after-validation")
+                yield
+
+        with mock.patch.object(MODULE, "_state_lock", replace_zip):
+            result = self._wake()
+        self.assertEqual((result["reason"], result["effect"]), ("artifact_changed", 0))
+        self.assertEqual(self.provider.submit_calls, 0)
 
     def test_absent_after_submit_is_fail_closed_without_retry(self) -> None:
         self._wake()
@@ -1243,7 +1287,7 @@ class LineStickerOwnerTests(unittest.TestCase):
 
         with mock.patch.object(MODULE, "_append_receipt", side_effect=fail_submit_ack):
             first = self._wake()
-        self.assertEqual((first["state"], first["effect"]), ("NEW", 0))
+        self.assertEqual((first["state"], first["effect"], first["readback"], first["reason"]), ("WAITING_REVIEW", 1, 1, "receipt_pending"))
         self.assertEqual(self.provider.submit_calls, 1)
         owner = json.loads((self.state / "owner.json").read_text(encoding="utf-8"))
         self.assertEqual(owner["state"], "WAITING_REVIEW")
@@ -1270,7 +1314,7 @@ class LineStickerOwnerTests(unittest.TestCase):
 
         with mock.patch.object(MODULE, "_append_receipt", side_effect=fail_release_ack):
             first = self._wake()
-        self.assertEqual((first["state"], first["effect"]), ("APPROVED", 0))
+        self.assertEqual((first["state"], first["effect"], first["readback"], first["reason"]), ("RELEASED", 1, 1, "receipt_pending"))
         self.assertEqual(self.provider.release_calls, 1)
         owner = json.loads((self.state / "owner.json").read_text(encoding="utf-8"))
         self.assertEqual(owner["state"], "RELEASED")
@@ -1297,9 +1341,9 @@ class LineStickerOwnerTests(unittest.TestCase):
 
         with mock.patch.object(MODULE, "_append_receipt", side_effect=fail_replay):
             first = self._wake()
-        self.assertEqual((first["state"], first["effect"]), ("TERMINAL_PENDING_REPLAY", 0))
+        self.assertEqual((first["state"], first["effect"], first["readback"], first["reason"]), ("TERMINAL_PENDING_REPLAY", 0, 1, "receipt_pending"))
         owner = json.loads((self.state / "owner.json").read_text(encoding="utf-8"))
-        self.assertEqual(owner["state"], "CLOSED")
+        self.assertEqual(owner["state"], "TERMINAL_PENDING_REPLAY")
         rows = [json.loads(line) for line in (self.state / "effects.jsonl").read_text(encoding="utf-8").splitlines()]
         replay_rows = [row for row in rows if row["action"] == "replay"]
         self.assertEqual(len(replay_rows), 0)
@@ -1346,7 +1390,7 @@ class LineStickerOwnerTests(unittest.TestCase):
 
                 with mock.patch.object(MODULE, "_append_receipt", side_effect=fail_submit_ack):
                     first = self._wake()
-                self.assertEqual(first["state"], "NEW")
+                self.assertEqual(first["state"], "WAITING_REVIEW")
                 self.provider.inventory["status"] = status
                 self.provider.inventory["public_url"] = None
                 second = self._wake()
@@ -1525,7 +1569,7 @@ class LineStickerOwnerTests(unittest.TestCase):
         self._wake()
         self._wake()
         self._wake()
-        for rollback in ("RELEASED", "WAITING_REVIEW", "TERMINAL_PENDING_REPLAY"):
+        for rollback in ("RELEASED", "WAITING_REVIEW"):
             with self.subTest(rollback=rollback):
                 owner_path = self.state / "owner.json"
                 ledger_path = self.state / "effects.jsonl"
@@ -1547,7 +1591,7 @@ class LineStickerOwnerTests(unittest.TestCase):
         self._wake()
         self._wake()
         owner_path = self.state / "owner.json"
-        for rollback in ("TERMINAL_PENDING_REPLAY", "NEEDS_OWNER_CEREMONY", "NEEDS_POLICY_REVIEW", "RELEASED"):
+        for rollback in ("NEEDS_OWNER_CEREMONY", "NEEDS_POLICY_REVIEW", "RELEASED"):
             with self.subTest(rollback=rollback):
                 owner = json.loads(owner_path.read_text(encoding="utf-8"))
                 owner["state"] = rollback
@@ -1557,6 +1601,21 @@ class LineStickerOwnerTests(unittest.TestCase):
                 self.assertEqual((result["reason"], result["effect"]), ("owner_state_conflict", 0))
                 owner["state"] = "CLOSED"
                 owner_path.write_text(json.dumps(owner, sort_keys=True) + "\n", encoding="utf-8")
+
+    def test_replay_receipt_terminal_crash_recovers_without_provider_mutation(self) -> None:
+        self._wake()
+        self.provider.inventory["status"] = "approved"
+        self._wake()
+        self._wake()
+        self._wake()
+        owner_path = self.state / "owner.json"
+        owner = json.loads(owner_path.read_text(encoding="utf-8"))
+        owner["state"] = "TERMINAL_PENDING_REPLAY"
+        owner_path.write_text(json.dumps(owner, sort_keys=True) + "\n", encoding="utf-8")
+        with mock.patch.object(self.provider, "observe", side_effect=AssertionError("provider observation reached")):
+            result = self._wake()
+        self.assertEqual((result["state"], result["effect"], result["readback"]), ("CLOSED", 0, 1))
+        self.assertEqual(json.loads(owner_path.read_text(encoding="utf-8"))["state"], "CLOSED")
 
     def test_state_cli_returns_valid_summary_and_rejects_symlink(self) -> None:
         self._wake()
