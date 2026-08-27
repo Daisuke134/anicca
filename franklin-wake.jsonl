@@ -36054,3 +36054,11 @@
 {"ts":1787862292,"wake_id":"00MTBZ1PVT708B8300093B4DA8","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1787862424,"wake_id":"00MTBZ4JV8A6ACB0A3BFEC4EF5","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"HALT: missing-wallet bySkill=null byAgent=null [earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='') — HALT (fail-closed), skipping wake. "}
 {"ts":1787862557,"wake_id":"00MTBZ7E3H7BF7FAE0613F4416","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787862694,"wake_id":"00MTBZAC7YE6C6963F0B504F33","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1787862767,"wake_id":"00MTBZBW2CB40741A7B8F24B9D","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787862902,"wake_id":"00MTBZES7S2E5EFF8A763C4FD4","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787863036,"wake_id":"00MTBZHO2Z1BD706719F0B45C7","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787863185,"wake_id":"00MTBZKUUQFAB2002C91134CC0","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1787863257,"wake_id":"00MTBZMEEP581CAA0181254E07","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1787863329,"wake_id":"00MTBZNXNMF6E1419B70F14E00","kind":"wake","sleep_s":120,"model":"auto","slot":"x402_sell","profitable":false,"exit_code":0,"result":"shell-init: error retrieving current directory: getcwd: cannot access parent directories: No such file or directory chdir: error retrieving current directory: getcwd: cannot access parent directories:"}
+{"ts":1787863468,"wake_id":"00MTBZQX2O57AA8B049A2E4795","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"shell-init: error retrieving current directory: getcwd: cannot access parent directories: No such file or directory chdir: error retrieving current directory: getcwd: cannot access parent directories:"}
