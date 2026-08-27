@@ -86,3 +86,13 @@ test("repeating the same cadence state does not create a new snapshot", async ()
   assert.equal(first.created, true);
   assert.equal(replay.created, false);
 });
+
+test("cadence soak distinguishes complete healthy days from pending and unhealthy days", () => {
+  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "lm-cadence-soak-")); const route = cadence.ROUTES[0]; const root = path.join(dataDir, "marketing/cadence"); fs.mkdirSync(root, { recursive: true });
+  const day = (offset) => new Date(Date.parse("2026-08-28T00:00:00.000Z") - offset * 86400000).toISOString().slice(0, 10);
+  for (let offset = 1; offset <= 6; offset += 1) fs.writeFileSync(path.join(root, `${day(offset)}.json`), JSON.stringify({ report_day: day(offset), counts: { published: 3, pending: 0, missed: 0, duplicate: 0, explicit_failure: 0 } }));
+  fs.writeFileSync(path.join(root, "2026-08-28.json"), JSON.stringify({ report_day: "2026-08-28", counts: { published: 0, pending: 3, missed: 0, duplicate: 0, explicit_failure: 0 } }));
+  const pending = cadence.evaluateCadenceSoak(dataDir, "2026-08-28", [route]); assert.equal(pending.status, "pending"); assert.equal(pending.healthy_days, 6);
+  fs.writeFileSync(path.join(root, "2026-08-28.json"), JSON.stringify({ report_day: "2026-08-28", counts: { published: 2, pending: 0, missed: 1, duplicate: 0, explicit_failure: 0 } }));
+  const unhealthy = cadence.evaluateCadenceSoak(dataDir, "2026-08-28", [route]); assert.equal(unhealthy.status, "unhealthy"); assert.equal(unhealthy.healthy_days, 6);
+});

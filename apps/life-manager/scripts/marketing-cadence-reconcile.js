@@ -75,6 +75,18 @@ function writeSnapshot(dataDir, snapshot) {
   const temporary = `${file}.tmp-${process.pid}-${crypto.randomUUID()}`; fs.writeFileSync(temporary, `${JSON.stringify(snapshot, null, 2)}\n`, { mode: 0o600, flag: "wx" }); fs.renameSync(temporary, file); fs.chmodSync(file, 0o600); return { created: true, file, snapshot };
 }
 
+function evaluateCadenceSoak(dataDir, reportDay, routes = ROUTES, windowDays = 7, currentSnapshot = null) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(reportDay)) || !Number.isInteger(windowDays) || windowDays < 1 || windowDays > 31) throw new Error("marketing cadence soak input is invalid");
+  const end = Date.parse(`${reportDay}T00:00:00.000Z`); const expectedPublished = routes.length * 3; const days = [];
+  for (let offset = windowDays - 1; offset >= 0; offset -= 1) {
+    const day = new Date(end - offset * 86400000).toISOString().slice(0, 10); const file = path.join(dataDir, "marketing/cadence", `${day}.json`); if (currentSnapshot?.report_day === day) { const counts = currentSnapshot.counts; const status = counts.pending > 0 ? "pending" : counts.published === expectedPublished && counts.missed === 0 && counts.duplicate === 0 && counts.explicit_failure === 0 ? "healthy" : "unhealthy"; days.push({ day, status, counts }); continue; } if (!fs.statSync(file, { throwIfNoEntry: false })?.isFile()) { days.push({ day, status: "unavailable", counts: null }); continue; }
+    const snapshot = JSON.parse(fs.readFileSync(file, "utf8")); const counts = snapshot.counts; if (snapshot.report_day !== day || !counts || !Object.values(counts).every((value) => Number.isSafeInteger(value) && value >= 0)) throw new Error("marketing cadence soak snapshot invalid");
+    const status = counts.pending > 0 ? "pending" : counts.published === expectedPublished && counts.missed === 0 && counts.duplicate === 0 && counts.explicit_failure === 0 ? "healthy" : "unhealthy"; days.push({ day, status, counts });
+  }
+  const healthyDays = days.filter(({ status }) => status === "healthy").length; const pendingDays = days.filter(({ status }) => status === "pending").length; const unavailableDays = days.filter(({ status }) => status === "unavailable").length; const unhealthyDays = days.filter(({ status }) => status === "unhealthy").length; const status = pendingDays || unavailableDays ? "pending" : unhealthyDays ? "unhealthy" : "healthy";
+  return { window_days: windowDays, expected_published_per_day: expectedPublished, status, healthy_days: healthyDays, unhealthy_days: unhealthyDays, pending_days: pendingDays, unavailable_days: unavailableDays, days };
+}
+
 async function reconcileCadence({ dataDir, nowMs = Date.now(), graceMs = DEFAULT_GRACE_MS, routes = ROUTES, scheduleReader = (label) => defaultScheduleReader(label), env = process.env, sendReport = true } = {}) {
   if (!Number.isFinite(nowMs) || !Number.isFinite(graceMs) || graceMs < 0) throw new Error("marketing cadence clock/grace is invalid");
   const day = localDay(nowMs); const cutoff = nowMs - graceMs; const state = readLatestState(dataDir); const outputRoutes = []; const counts = { published: 0, pending: 0, missed: 0, duplicate: 0, explicit_failure: 0 };
@@ -94,12 +106,12 @@ async function reconcileCadence({ dataDir, nowMs = Date.now(), graceMs = DEFAULT
     }
     outputRoutes.push({ label: route.label, account: route.account, platform: route.platform, integration: route.integration, slots: outputSlots });
   }
-  const message = `Life Manager::: ${day.iso} mobile marketing cadenceです。Published ${counts.published}、Pending ${counts.pending}、Missed ${counts.missed}、Duplicate ${counts.duplicate}、Explicit failure ${counts.explicit_failure}。${outputRoutes.map((route) => `${route.account}: ${route.slots.map((slot) => `${slot.clock}=${slot.status}`).join(", ")}`).join(" / ")}。Miss/duplicateは次回slotで自動再確認し、取得不可を0にはしません。`;
-  const result = writeSnapshot(dataDir, { schema_version: 1, kind: "marketing_product_metric_summary", period: "daily", product_id: "mobile-marketing", report_key: `cadence-${day.iso}`, report_day: day.iso, observed_at: new Date(nowMs).toISOString(), source: "launchd_plist_plus_lm_receipts", counts, routes: outputRoutes, source_refs: [], message });
+  const soak = evaluateCadenceSoak(dataDir, day.iso, routes, 7, { report_day: day.iso, counts }); const message = `Life Manager::: ${day.iso} mobile marketing cadenceです。Published ${counts.published}、Pending ${counts.pending}、Missed ${counts.missed}、Duplicate ${counts.duplicate}、Explicit failure ${counts.explicit_failure}。Soak ${soak.window_days}日: ${soak.status}（healthy ${soak.healthy_days}/${soak.window_days}）。${outputRoutes.map((route) => `${route.account}: ${route.slots.map((slot) => `${slot.clock}=${slot.status}`).join(", ")}`).join(" / ")}。Miss/duplicateは次回slotで自動再確認し、取得不可を0にはしません。`;
+  const result = writeSnapshot(dataDir, { schema_version: 1, kind: "marketing_product_metric_summary", period: "daily", product_id: "mobile-marketing", report_key: `cadence-${day.iso}`, report_day: day.iso, observed_at: new Date(nowMs).toISOString(), source: "launchd_plist_plus_lm_receipts", counts, soak, routes: outputRoutes, source_refs: [], message });
   const telegram = sendReport ? await sendSummary({ created: result.created, file: result.file, snapshot: result.snapshot }, env, dataDir) : null;
   return { ...result.snapshot, file: result.file, created: result.created, telegram };
 }
 
 if (require.main === module) reconcileCadence({ dataDir: process.env.LM_DATA_DIR }).then((result) => process.stdout.write(`${JSON.stringify(result)}\n`)).catch((error) => { process.stderr.write(`${error.message}\n`); process.exitCode = 1; });
 
-module.exports = { DEFAULT_GRACE_MS, ROUTES, defaultScheduleReader, reconcileCadence };
+module.exports = { DEFAULT_GRACE_MS, ROUTES, defaultScheduleReader, evaluateCadenceSoak, reconcileCadence };
