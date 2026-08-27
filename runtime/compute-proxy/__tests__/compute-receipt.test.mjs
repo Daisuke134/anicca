@@ -324,7 +324,14 @@ test("different intents cannot spend the same earned receipts past cumulative re
     fundingReceiptIds: [REVENUE_ID], revenueReceipts: revenue,
     maxCostUsdc: 0.001, reserveUsdc: 0.001, sessionCapUsdc: 1,
     getBalance: async () => 1.7 - calls * 0.001,
-    transport: async () => { calls += 1; return { output: valid().output, costUsdc: 0.001, settlement: valid().settlement }; },
+    transport: async () => {
+      calls += 1;
+      return {
+        output: valid().output,
+        costUsdc: 0.001,
+        settlement: { ...valid().settlement, transaction: `0x${String(calls).padStart(64, "0")}` },
+      };
+    },
   };
   await executeComputeRequest({ ...common, intentId: "cumulative-1" });
   await executeComputeRequest({ ...common, intentId: "cumulative-2" });

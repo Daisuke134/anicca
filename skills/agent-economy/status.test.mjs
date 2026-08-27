@@ -47,6 +47,28 @@ test("status sums verified external net, compute, and shelter costs over the las
   assert.equal(result.graduation.eligible, true);
 });
 
+test("status counts compute receipt cost_usdc and defaults to the instance journal", () => {
+  const result = summarizeEconomyStatus({
+    nowMs: NOW,
+    earnRows: [],
+    corrections: [],
+    computeRows: [{ ts: (NOW - 86400000) / 1000, cost_usdc: 0.002 }],
+    shelterRows: [],
+  });
+  assert.equal(result.compute_cost_30d, 0.002);
+  const paths = resolveStatusPaths({
+    env: { ANICCA_HOME: "/tmp/agent-economy-instance", HOME: "/tmp/owner" },
+  });
+  assert.equal(paths.computePath, "/tmp/agent-economy-instance/.blockrun/compute-receipts.jsonl");
+  const overridden = resolveStatusPaths({
+    env: {
+      ANICCA_HOME: "/tmp/agent-economy-instance", HOME: "/tmp/owner",
+      COMPUTE_COST_LOG: "/tmp/explicit-compute.jsonl",
+    },
+  });
+  assert.equal(overridden.computePath, "/tmp/explicit-compute.jsonl");
+});
+
 test("status-only status=0x1 rows contribute zero by default", () => {
   const result = summarizeEconomyStatus({
     nowMs: NOW,
@@ -203,14 +225,14 @@ test("status discovers its ledger from ANICCA_HOME when no paths are supplied", 
   assert.equal(result.external_realized_net_30d, 15);
 });
 
-test("status discovers compute and shelter ledgers from the run.sh owner defaults", async () => {
+test("status discovers compute from the instance journal and shelter from the owner default", async () => {
   const root = await mkdtemp(join(tmpdir(), "agent-economy-status-owner-"));
   const home = join(root, "instance-home");
   const state = join(home, "skills", "earn", "state");
-  const ownerCompute = join(root, ".blockrun", "cost_log.jsonl");
+  const ownerCompute = join(home, ".blockrun", "compute-receipts.jsonl");
   const ownerShelter = join(root, ".hermes", "state", "shelter-cost.jsonl");
   await mkdir(state, { recursive: true });
-  await mkdir(join(root, ".blockrun"), { recursive: true });
+  await mkdir(join(home, ".blockrun"), { recursive: true });
   await mkdir(join(root, ".hermes", "state"), { recursive: true });
   await Promise.all([
     writeFile(join(state, "earn-ledger.jsonl"), ""),
@@ -261,4 +283,27 @@ test("status rejects an explicit earn path without explicit compute and shelter 
   assert.equal(paths.earnPath, "/tmp/earn-ledger.jsonl");
   assert.equal(paths.computePath, "/tmp/compute.jsonl");
   assert.equal(paths.shelterPath, "/tmp/shelter.jsonl");
+});
+
+test("run.sh counts cost_usdc from the instance-scoped compute journal by default", async () => {
+  const root = await mkdtemp(join(tmpdir(), "agent-economy-run-instance-compute-"));
+  const state = join(root, "skills", "earn", "state");
+  const instanceCompute = join(root, ".blockrun", "compute-receipts.jsonl");
+  const owner = join(root, "owner-home");
+  await mkdir(join(root, ".blockrun"), { recursive: true });
+  await mkdir(state, { recursive: true });
+  await Promise.all([
+    writeFile(join(state, "earn-ledger.jsonl"), ""),
+    writeFile(join(state, "receipt-reconciliations.jsonl"), ""),
+    writeFile(join(state, "revenue-receipts.inbox.jsonl"), ""),
+    writeFile(join(state, "revenue-receipts.jsonl"), ""),
+    writeFile(instanceCompute, `${JSON.stringify({ ts: Date.now() / 1000, cost_usdc: 0.002 })}\n`),
+  ]);
+  const env = { ...process.env, ANICCA_HOME: root, HOME: owner };
+  delete env.COMPUTE_COST_LOG;
+  delete env.SHELTER_COST_LEDGER;
+  const result = JSON.parse((await execFileAsync("bash", ["skills/agent-economy/run.sh"], {
+    cwd: process.cwd(), timeout: 5_000, env,
+  })).stdout.trim());
+  assert.equal(result.compute_cost_30d, 0.002);
 });

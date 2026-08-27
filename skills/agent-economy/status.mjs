@@ -39,6 +39,7 @@ export function resolveStatusPaths({ args = [], env = process.env } = {}) {
   if (!home && explicit && (!explicitComputePath || !explicitShelterPath)) throw new StatusConfigError();
   if (home && !ownerHome && (!explicitComputePath || !explicitShelterPath)) throw new StatusConfigError();
   const computePath = explicitComputePath
+    || (home && path.join(home, ".blockrun", "compute-receipts.jsonl"))
     || (ownerHome && path.join(ownerHome, ".blockrun", "cost_log.jsonl"));
   const shelterPath = explicitShelterPath
     || (ownerHome && path.join(ownerHome, ".hermes", "state", "shelter-cost.jsonl"));
@@ -88,7 +89,7 @@ export function summarizeEconomyStatus({
   // Production status requires the same verified proof gate as the reconcile loop.  Legacy rows that
   // merely claim status=0x1 remain visible as unverified but never become realized revenue.
   const revenue = summarizeRealizedRevenue(earn30, corrections);
-  const computeCost = sumField(compute30, ["cost_usd", "costUsd", "est_usd"]);
+  const computeCost = sumField(compute30, ["cost_usdc", "cost_usd", "costUsd", "est_usd"]);
   const shelterCost = sumField(shelter30, ["settledLeaseCostUsd", "shelter_cost_usd"]);
   const graduation = graduationGate({
     externalRealizedNet30d: revenue.external_net_usdc,

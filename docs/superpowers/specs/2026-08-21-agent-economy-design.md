@@ -1,11 +1,13 @@
 # Life Manager Agent Economy
 
-**Status: P0-P2 complete; P3 has a chain-settled payment but no successful compute response/receipt; P4-P6 open.**
+**Status: P0-P2 and P3 failed-settlement reconciliation complete; successful paid compute remains open; P4-P6 open.**
 The natural `ai.anicca.agent-economy-loop` owner and its dedicated `:8422` proxy run from sealed
 release `20260827T175256-22a86ec1`, and the canonical journal contains one chain-verified outside
 x402 receipt with replay-zero. A later receipt-bound attempt transferred `0.002` USDC from that
-instance to BlockRun on Base, but the request ended with HTTP 429 `FREE_MODEL_FAILED` and no compute
-receipt or usable model output. This proves payment, not successful paid compute. No self-funded
+instance to BlockRun on Base, but the request ended with HTTP 429 `FREE_MODEL_FAILED` and no usable
+model output. The joined failed-output receipt now records that `0.002` USDC cost exactly once and
+permanently consumes the original funding receipt while preserving its `0.001` reserve. This proves
+payment and failed-output accounting, not successful paid compute. No self-funded
 shelter, 30-day graduation, or financially independent Life Manager instance has been proven.
 “The world's first financially independent AI” is neither a
 current claim nor an unqualified graduation claim: Spore.fun is a material prior example of
@@ -84,10 +86,10 @@ No individual row, including AC-2, is sufficient to claim financial independence
 | Release | `~/loops/life-manager/current` is a sealed release and `previous` is a validated rollback target | preserve atomic cuts, bounded retention, and clean-clone reproduction |
 | Process | `ai.anicca.agent-economy-loop` naturally runs the pinned Life Manager `runtime/loop/index.mjs` | keep one owner healthy and retire remaining legacy earning owners only through explicit cutover |
 | Revenue | one outside x402 transfer is chain-verified and contributes 0.003 USDC once; replay contributes zero | reproduce additional outside sales through the resident lane and keep unverified providers at zero |
-| Compute | one receipt-bound BlockRun attempt settled 0.002 USDC but returned no usable output and is absent from the compute journal | reconcile the settled cost, use a current explicit paid model, then join settlement plus output into one replay-zero receipt |
+| Compute | one receipt-bound BlockRun attempt settled 0.002 USDC, returned no usable output, and is reconciled once as failed-output cost | use a current explicit paid model, then join a new settlement plus usable output into one replay-zero receipt |
 | Shelter | Franklin 1 previously ran Mac-off on Nosana for 6 hours and performed replacement handover, but the funds were internal bootstrap and current continuity is stopped | reproduce the lifecycle from accepted external earnings; a direct-x402 x402Compute raw VPS canary is first |
 | Control plane | local Mac and mixed provider scripts | Life Manager remains SSOT; Cloudflare is an optional hosted edge, not the money SSOT |
-| Publication | useful build logs and a historical Nosana Level 3 proof exist, but the current BlockRun cost is unreconciled | draft the honest build log now; publish article 1 after P3 plus canonical-main/fresh-clone proof, shelter proof after P4, and graduation proof after AC-1 through AC-9 |
+| Publication | useful build logs and a historical Nosana Level 3 proof exist; the current BlockRun payment is truthfully classified as failed-output cost | draft the honest build log now; publish article 1 after P3 plus canonical-main/fresh-clone proof, shelter proof after P4, and graduation proof after AC-1 through AC-9 |
 | Replication | vision only | one graduated parent creates a capped, separately accountable child and preserves replay-zero |
 
 ## Skill portfolio boundary
@@ -462,7 +464,7 @@ symlinking dependencies from another worktree.
 
 ## Current live truth
 
-Read-only inspection on 2026-08-27 observed:
+Current readback shows:
 
 - the feature worktree is clean before this spec change and is 339 commits behind / 75 commits
   ahead of the latest fetched `origin/main`; integration still requires a normal merge and review,
@@ -476,23 +478,24 @@ Read-only inspection on 2026-08-27 observed:
   canonical USDC, outside payer, target recipient, atomic amount 3000, terminal settlement, and
   transfer log index 503. Its accepted net is 0.003 USDC and replay adds zero;
 - `status` reports trailing-30-day external realized net 0.003 USDC, one verified row, zero
-  unverified rows, compute cost 0, shelter cost 0, and graduation `invalid-input`; this cost output
-  is now known to under-report the settled but unreconciled 0.002-USDC attempt;
-- no `.blockrun/compute-receipts.jsonl` exists, but Base transaction
+  unverified rows, compute cost 0.002 USDC, shelter cost 0, and graduation `invalid-input`;
+- `.blockrun/compute-receipts.jsonl` contains exactly one owner-only failed-output row, and Base transaction
   `0x1b31ef383fae0078a24adcfa1f78fe0eefd390bc2b02fdb25c558498032e2774` has receipt status `1`,
   block `50516213`, and canonical USDC Transfer log `29`: instance payer
   `0x810f…29c5` -> BlockRun payee `0xe903…1aBf`, atomic amount `2000`. Current balance is
   `1.698000` USDC, exactly 0.002 below the pre-attempt 1.700000 snapshot;
-- the corresponding intent remains durably `AMBIGUOUS` because the paid request returned HTTP 429
-  `FREE_MODEL_FAILED` without usable output or a `PAYMENT-RESPONSE`-backed compute receipt. The
+- the corresponding intent is no longer `AMBIGUOUS`: a sanitized failure-source digest plus the
+  strict chain tuple append one HTTP 429 `FREE_MODEL_FAILED`, `output_present=false` cost row before
+  the intent and funding locks are removed. Re-appending the same receipt adds zero, and treasury
+  policy rejects another spend from that funding receipt at the `0.001` reserve floor. The
   release left `ANICCA_FRONTIER_MODEL` unset, so the direct gateway proxy forced its stale default
   `openai/gpt-5-nano`; the current BlockRun catalog omits that exact id while ClawRouter maps the
   alias to `openai/gpt-5.4-nano`. The direct proxy bypasses that ClawRouter alias layer;
 - no graduated shelter receipt or autonomous child has been produced.
 
 The target instance has now proven a small outside revenue atom, a durable control plane, and an
-on-chain BlockRun payment within the receipt-backed cap. It has not proven successful paid compute
-because the output and canonical compute receipt are missing, and it has not proven externally
+on-chain BlockRun payment within the receipt-backed cap with exactly-once failed-output accounting.
+It has not proven successful paid compute because usable output is missing, and it has not proven externally
 funded shelter. More article volume, model spend, or trading risk cannot substitute for those
 missing joined receipts.
 
@@ -688,8 +691,8 @@ do not open a later provider, article, cloud migration, or child lane early.
 | 1 | Safe append-only accounting and isolated identity | none | P0 tests and money-safety audit | complete |
 | 2 | Immutable, namespaced Life Manager owner | 1 | sealed release, loaded process, rollback, natural replay-zero | complete |
 | 3 | One outside sale | 1-2 | canonical 0.003-USDC chain receipt and second reconcile adds zero | complete |
-| 4 | Reconcile failed BlockRun settlement and close its consumed funding | 3 | 0.002-USDC cost row, tx/log join, stale-model diagnosis, no receipt reuse | **current** |
-| 5 | Reproduce external revenue and complete paid BlockRun inference | 4 | new outside receipt, current explicit model, successful output, cost receipt, balance conservation, replay-zero | pending |
+| 4 | Reconcile failed BlockRun settlement and close its consumed funding | 3 | 0.002-USDC cost row, tx/log join, stale-model diagnosis, no receipt reuse | complete |
+| 5 | Reproduce external revenue and complete paid BlockRun inference | 4 | new outside receipt, current explicit model, successful output, cost receipt, balance conservation, replay-zero | **current** |
 | 6 | Revenue-funded ephemeral BlockRun compute | 5 | Modal payment, output, teardown, joined receipt | pending |
 | 7 | Integrate feature into canonical `main` | 4-6 | normal merge, clean tests, fresh-clone reproduction; no force-push | pending |
 | 8 | Publish article 1 and BlockRun quickstart | 7 | durable public URL, redacted receipt links, attributed quickstart | pending |
@@ -775,7 +778,7 @@ independent official settlement verifier; their absence cannot manufacture reven
    `0.001` USDC reserve. Seed/top-up remains excluded.
 3. [x] Wire the natural launchd owner to the receipt-backed proxy and supervise proxy+loop as one
    failure unit; force the configured paid model only on this receipt-backed path.
-4. [ ] Reconcile the settled failed attempt as cost, not success: bind Base transaction
+4. [x] Reconcile the settled failed attempt as cost, not success: bind Base transaction
    `0x1b31ef38…e2774`, Transfer log `29`, atomic amount `2000`, payer/payee, HTTP 429, missing output,
    and the consumed funding receipt into an append-only failure receipt; release the ambiguity lock
    only through that evidence and prove the same funding receipt can never authorize another spend.
@@ -796,14 +799,19 @@ Current evidence: commits `e9eb55703`, `dabfd6ea7`, `60941c13a`, `56e9b4340`, an
 implement the receipt contract, natural-owner supervision, SDK error-boundary fixes, and signed-fetch
 ambiguity fence. The focused/wider suites pass, including real installed `@x402/fetch` 402 flows,
 real EVM signing, no-signature over-cap retries, forced paid-model routing, proxy death, and TERM
-cleanup. The namespaced release runs both the loop and dedicated proxy on `:8422`, but no compute
-journal exists. One latest attempt did settle: Base USDC moved `1.700000 -> 1.698000`, and transaction
-`0x1b31ef38…e2774` transferred 2000 atomic USDC to BlockRun before the HTTP 429 failure. This must
-be recorded as cost and consumed funding even though it produced no output. Two earlier failed
+cleanup. The namespaced release runs both the loop and dedicated proxy on `:8422`. The instance
+compute journal now contains exactly one `failed_output` receipt for
+`0x1b31ef38…e2774`, Transfer log `29`, 2000 atomic USDC, HTTP 429 `FREE_MODEL_FAILED`, and no output.
+The strict verifier joins chain `8453`, canonical USDC, payer, payee, amount, and log before append;
+the sanitized failure digest joins the HTTP/output classification. Append readback precedes lock
+removal. Replay leaves one row, the wallet stays at `1.698000`, and the original 0.003-USDC funding
+receipt has 0.002 cost plus the required 0.001 reserve, so another authorization returns
+`reserve-floor`. Two earlier failed
 canary attempts produced no balance change; their exact false/expired ambiguity locks were moved,
 not deleted, under
 `state/reconciled-compute/20260827T083626Z-no-settlement` and
-`state/reconciled-compute/20260827T085725Z-no-settlement`. Therefore P3 exit is not claimed yet.
+`state/reconciled-compute/20260827T085725Z-no-settlement`. P3 exit still requires a new outside
+receipt and a usable paid-compute response in item 6.
 
 ### P4 — select and prove shelter
 
