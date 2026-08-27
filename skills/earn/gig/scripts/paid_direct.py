@@ -2969,6 +2969,9 @@ def _execute_owner_tool_requests(staging: Path, code_root: Path) -> int:
         return 0
     value = _load(request_path)
     requests = value.get("requests") if isinstance(value, dict) else None
+    if isinstance(value, dict) and value.get("version") == 1 and requests == []:
+        request_path.unlink()
+        return 0
     if (not isinstance(value, dict) or value.get("version") != 1
             or not isinstance(requests, list) or not 1 <= len(requests) <= 4):
         raise Failure("file_builder")

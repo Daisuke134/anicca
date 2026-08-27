@@ -625,6 +625,16 @@ def test_empty_tool_request_cannot_overwrite_success_receipt(tmp_path):
     assert (root / "context" / "paid-tool-results.json").read_text() == success
 
 
+def test_empty_tool_request_is_consumed_as_no_request(tmp_path):
+    paid = load("paid_direct")
+    (tmp_path / "delivery").mkdir()
+    request = tmp_path / "delivery" / "paid-tool-requests.json"
+    request.write_text('{"version":1,"requests":[]}')
+
+    assert paid._execute_owner_tool_requests(tmp_path, tmp_path) == 0
+    assert not request.exists()
+
+
 def test_paid_effect_child_does_not_take_global_browser_lock(tmp_path):
     paid = load("paid_direct")
     args = SimpleNamespace(**{
