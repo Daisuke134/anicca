@@ -19,5 +19,19 @@ class EntryDispatchTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'no dispatch command'):
             command_for('missing',Path('/release'),Path('/home'))
 
+    def test_paid_lane_dispatches_complete_legacy_argv(self):
+        command=command_for('hf-gig-paid-direct',Path('/release'),Path('/home'))
+        self.assertEqual(command,[
+            sys.executable,
+            '/release/skills/earn/gig/scripts/gig_disk_guard.py',
+            sys.executable,
+            '/release/skills/earn/gig/scripts/paid_direct.py',
+            '--output','/home/gig/evidence/paid-direct-live/latest.json',
+            '--evidence-dir','/home/gig/evidence/paid-direct-live',
+            '--projects-root','/home/gig/projects',
+            '--lock-file','/home/gig/.paid-direct.lock',
+            '--cdp-lock-dir','/home/gig/.cdp-gig.lock',
+        ])
+
 
 if __name__=='__main__':unittest.main()

@@ -32,6 +32,15 @@ def command_for(loop_id: str, root: Path, home: Path) -> list[str]:
                                    "--repo-root", str(root), "--home", str(home)],
         "marketing-weekly-review": [str(root / "skills/earn/marketing-engine/bin/lm"),
                                     "intel", "gap", "--telegram"],
+        "hf-gig-paid-direct": [
+            python, str(root / "skills/earn/gig/scripts/gig_disk_guard.py"),
+            python, str(root / "skills/earn/gig/scripts/paid_direct.py"),
+            "--output", str(home / "gig/evidence/paid-direct-live/latest.json"),
+            "--evidence-dir", str(home / "gig/evidence/paid-direct-live"),
+            "--projects-root", str(home / "gig/projects"),
+            "--lock-file", str(home / "gig/.paid-direct.lock"),
+            "--cdp-lock-dir", str(home / "gig/.cdp-gig.lock"),
+        ],
     }
     if loop_id in {"marketing-owner-daily", "marketing-owner-weekly"}:
         kind = "product_daily" if loop_id.endswith("daily") else "portfolio_weekly"

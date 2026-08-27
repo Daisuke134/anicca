@@ -877,7 +877,7 @@
       },
       "domain": "earn",
       "effect_class": "none",
-      "entrypoint": "skills/earn/gig/scripts/paid_direct.py",
+      "entrypoint": "runtime/loop/entry_dispatch.py",
       "label": "ai.anicca.hf-gig-paid-direct",
       "log_root": "~/.openclaw/logs",
       "provider_route": "deterministic",
