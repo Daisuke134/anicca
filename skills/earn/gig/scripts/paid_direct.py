@@ -91,7 +91,7 @@ def _private_model_runner(root: Path, command: list[str], label: str) -> list[st
     profile.chmod(0o600)
     return ["/usr/bin/sandbox-exec", "-f", str(profile), *command]
 PAID_DECISION_SCHEMA_VERSION = 4
-PAID_DECISION_PROMPT_VERSION = "paid-semantic-decision-v16"
+PAID_DECISION_PROMPT_VERSION = "paid-semantic-decision-v17"
 PAID_DECISION_MODEL = "gpt-5.6-terra"
 PAID_FILE_MODEL = "gpt-5.6-terra"
 PAID_RUNNER_CANDIDATES = {
@@ -181,10 +181,17 @@ def _run_bounded(command: list[str], *, env=None, timeout: float | None = None):
     The runner already budgets itself, but nothing enforced that from out here: one child that
     never returned held the whole lane for an hour, sleeping, with no output written.
     """
+    stdout_file = tempfile.TemporaryFile(mode="w+", encoding="utf-8")
+    stderr_file = tempfile.TemporaryFile(mode="w+", encoding="utf-8")
     process = subprocess.Popen(
-        command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env,
+        command, stdout=stdout_file, stderr=stderr_file, text=True, env=env,
         start_new_session=os.name == "posix",
     )
+
+    def captured() -> tuple[str, str]:
+        stdout_file.flush(); stderr_file.flush()
+        stdout_file.seek(0); stderr_file.seek(0)
+        return stdout_file.read(), stderr_file.read()
 
     def terminate() -> None:
         if process.poll() is not None:
@@ -217,17 +224,19 @@ def _run_bounded(command: list[str], *, env=None, timeout: float | None = None):
             signal.signal(signum, forward)
     effective_timeout = timeout or DEFAULT_STEP_TIMEOUT_SECONDS
     try:
-        stdout, stderr = process.communicate(timeout=effective_timeout)
+        process.wait(timeout=effective_timeout)
+        stdout, stderr = captured()
         return subprocess.CompletedProcess(command, process.returncode, stdout, stderr)
     except subprocess.TimeoutExpired as error:
         terminate()
-        stdout, stderr = process.communicate()
+        stdout, stderr = captured()
         return subprocess.CompletedProcess(
-            command, STEP_TIMEOUT_RETURNCODE, stdout or error.stdout or "",
-            (stderr or error.stderr or "") + f"\nstep timed out after {error.timeout}s")
+            command, STEP_TIMEOUT_RETURNCODE, stdout,
+            stderr + f"\nstep timed out after {error.timeout}s")
     finally:
         for signum, handler in previous.items():
             signal.signal(signum, handler)
+        stdout_file.close(); stderr_file.close()
 
 
 def _run(command: list[str], step: str, timeout: float | None = None) -> str:

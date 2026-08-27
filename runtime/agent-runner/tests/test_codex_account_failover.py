@@ -21,10 +21,10 @@ class CodexProfileBoundaryTest(unittest.TestCase):
             ],
         )
 
-    def test_codex_uses_direct_tool_runtime_without_code_mode_host(self):
+    def test_codex_keeps_code_mode_host_for_tool_using_escalations(self):
         config = json.loads((ROOT / "config.json").read_text())
         disabled = config["providers"]["codex"]["disabled_features"]
-        self.assertIn("code_mode_host", disabled)
+        self.assertNotIn("code_mode_host", disabled)
         self.assertNotIn("unified_exec", disabled)
 
     def test_candidate_resolves_one_explicit_profile_without_expansion(self):
