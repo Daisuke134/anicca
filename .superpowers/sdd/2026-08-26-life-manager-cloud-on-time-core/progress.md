@@ -183,3 +183,9 @@ Baseline: focused Life Manager suite 175/175 PASS.
 - Task 10 fix round 2: `2faec285f` — `wakeUserOnce` now runs the existing bounded `reminderUserOnce` once after the bounded call attempt and before later organs. RED was 35/38 with the three expected zero-reminder failures; parent GREEN is focused 38/38 and related Inngest/scheduler/reminder 115/115, with syntax and diff checks clean.
 - Task 10 re-review R2: ship — the existing Inngest sweep owns exactly one reminder evaluation per uid/run, the in-process owner remains non-duplicated, call failure/timeout cannot suppress reminder, reminder timeout cannot suppress later organs, and raw Calendar reuse/privacy/atomic claim contracts are unchanged. Reviewer focused tests were 7/7 and the additional composition probe returned one reminder and one later-organ start.
 - Task 10 status: code and review complete; exact Railway deployment, production Telegram provider receipt, and replay-zero remain acceptance work.
+
+## Task 11 clean Telegram actor production reachability
+
+- Production RED: two isolated, previously absent Telegram actor IDs submitted correctly signed, current initData with the exact Railway origin. The origin gate passed, but both `/api/panel/session/telegram` requests returned 500 `panel_auth_unavailable`; user, session, and replay writes remained zero.
+- PostgreSQL reproduction: `BEGIN; SELECT * FROM claim_lm_panel_telegram_init_v2(...); ROLLBACK;` failed with SQLSTATE `42702`, because the `RETURNS TABLE` output variable `uid` conflicts with the unqualified `ON CONFLICT (uid)` target in the first-actor INSERT branch. Existing actors never enter that branch.
+- Ruling: do not change global or function-wide `plpgsql.variable_conflict`. Replace the ambiguous arbiter with the existing primary-key constraint name, patch the clean-install migration, and add an ordered replacement migration for production. Preserve deterministic uid, replay, profile-name, and actor-binding behavior.
