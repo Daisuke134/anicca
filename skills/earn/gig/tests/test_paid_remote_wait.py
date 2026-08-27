@@ -635,6 +635,20 @@ def test_empty_tool_request_is_consumed_as_no_request(tmp_path):
     assert not request.exists()
 
 
+def test_fresh_owner_staging_tolerates_precreated_context_directory(tmp_path):
+    paid = load("paid_direct")
+    root, staging = tmp_path / "root", tmp_path / "staging"
+    for name in ("requirements", "source", "context"):
+        (root / name).mkdir(parents=True)
+    (root / "context" / "current.json").write_text("{}")
+    (root / "state.json").write_text("{}")
+    (staging / "context").mkdir(parents=True)
+
+    paid._prepare_file_owner_staging(root, root / "context" / "current.json", staging)
+
+    assert (staging / "context" / "current.json").is_file()
+
+
 def test_paid_effect_child_does_not_take_global_browser_lock(tmp_path):
     paid = load("paid_direct")
     args = SimpleNamespace(**{

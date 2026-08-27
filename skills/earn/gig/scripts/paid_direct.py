@@ -2684,7 +2684,7 @@ def _prepare_file_owner_staging(root: Path, context: Path, staging: Path) -> Pat
 
     shutil.copytree(root / "source", staging / "source", ignore=ignore_private)
     context_target = staging / "context"
-    context_target.mkdir(parents=True)
+    context_target.mkdir(parents=True, exist_ok=True)
     excluded = {
         "paid-source-census.json", "paid-review-state.json", "paid-file-authorization.json",
         "paid-output-visual-audit.json", "paid-output-audit-runner-error.json",
