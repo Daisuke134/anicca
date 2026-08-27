@@ -13,6 +13,24 @@ SCRIPT = Path(__file__).parents[1] / "scripts" / "chinese_source_collect.py"
 
 
 class ChineseSourceCollectTests(unittest.TestCase):
+    def test_discovery_bounds_each_transport_attempt(self) -> None:
+        module = self.load_module()
+        timeouts = []
+
+        def run(_command, **kwargs):
+            timeouts.append(kwargs["timeout"])
+            return SimpleNamespace(returncode=1, stdout="")
+
+        with tempfile.TemporaryDirectory() as root:
+            query_file = Path(root) / "queries.txt"
+            query_file.write_text(
+                "AI Agent\thttps://www.xiaohongshu.com/search_result?keyword=AI\n"
+            )
+            with patch.object(module.subprocess, "run", side_effect=run):
+                module.discover(query_file, "2026-08-28T00:00:00Z")
+
+        self.assertLessEqual(max(timeouts), 20)
+
     def test_discovery_uses_bing_when_duckduckgo_is_blocked(self) -> None:
         module = self.load_module()
 
