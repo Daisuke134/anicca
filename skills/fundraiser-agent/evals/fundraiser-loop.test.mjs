@@ -373,6 +373,7 @@ test("production queue enforces founder geography, format, priority, and YC hold
   assert.match(fundraising.priority_queue[1].reason, /candidate\.citizenship/);
   assert.match(fundraising.priority_queue[1].reason, /ESTA travel authorization is not a U\.S\. visa/);
   assert.match(fundraising.priority_queue[2].reason, /candidate\.name_kana/);
+  assert.match(fundraising.priority_queue[2].reason, /never serialize the JSON object/);
   assert.equal(fundraising.priority_queue.find((item) => item.program === "Y Combinator")?.action, "hold_do_not_submit");
   assert.match(dailyPrompt, /Reject Kenya and every other geography/);
   assert.match(dailyPrompt, /Never submit a `hold_do_not_submit` program/);
@@ -380,6 +381,7 @@ test("production queue enforces founder geography, format, priority, and YC hold
   assert.match(dailyPrompt, /Do not infer consent to investment, equity/);
   assert.match(dailyPrompt, /operate on the visible, enabled\s+control inside the active dialog/);
   assert.match(dailyPrompt, /first\(\.\. \| objects \| select/);
+  assert.match(dailyPrompt, /never serialize the JSON\s+object into a public form/);
 });
 
 test("unseen rendered fields are filled from startup context and read back after one submit", async () => {

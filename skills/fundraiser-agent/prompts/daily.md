@@ -109,7 +109,10 @@ stored password is a repair trigger, not durable continuation evidence.
 
 Read ordinary founder facts from their actual nested locations in the private
 profile, including mailing address/city/country, verified phone, LinkedIn URL,
-`candidate.name_kana`, travel authorizations, and work authorizations. For a
+`candidate.name_kana`, travel authorizations, and work authorizations. When
+`candidate.name_kana` is an object, render only its scalar family and given
+values as natural text such as `family + " " + given`; never serialize the JSON
+object into a public form. For a
 required public X/Twitter profile, match an existing X/Twitter account record in
 the credential SSOT by service or official URL and derive the public profile URL
 from its non-secret username without exposing credentials. A missing canned application
