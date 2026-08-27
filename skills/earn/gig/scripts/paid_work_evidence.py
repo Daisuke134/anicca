@@ -267,10 +267,11 @@ def _asset_contract_errors(root: Path, payload: dict[str, Any], artifact: Path |
         except (OSError, KeyError, ValueError, zipfile.BadZipFile):
             data = None
         expected_mime = mimetypes.guess_type(member or (path.name if path else ""))[0]
+        mime_matches = mime == expected_mime or {mime, expected_mime} == {"audio/wav", "audio/x-wav"}
         if (data is None or len(data) != size or not data
                 or hashlib.sha256(data).hexdigest() != digest
                 or not re.fullmatch(r"[0-9a-f]{64}", digest)
-                or not mime or (expected_mime and mime != expected_mime)):
+                or not mime or (expected_mime and not mime_matches)):
             errors.append("artifact_asset_integrity_mismatch")
             continue
         covered[asset_id] = covered.get(asset_id, 0) + 1
@@ -315,6 +316,7 @@ def validate_paid_work(
     require_delivery_evidence: bool = True,
     artifact_judge: Callable[..., tuple[str, str]] | None = None,
     allow_fresh_blocked_for_review: bool = False,
+    allow_review_ready: bool = False,
 ) -> tuple[bool, list[str]]:
     """Validate a builder's versioned artifact before browser submission.
 
@@ -359,7 +361,8 @@ def validate_paid_work(
     if not isinstance(payload, dict):
         payload = {}
         errors.append("paid_work_manifest_not_object")
-    if payload.get("status") != "ok":
+    review_ready = allow_review_ready and payload.get("status") == "REVIEW_READY"
+    if payload.get("status") != "ok" and not review_ready:
         errors.append("paid_work_status_not_ok")
     recorded_root = Path(str(payload.get("project_root") or "")).expanduser()
     try:
@@ -387,7 +390,7 @@ def validate_paid_work(
     if reason:
         errors.append(f"acceptance_{reason}")
     _require_fresh(acceptance, "acceptance", freshness_floor, errors)
-    if payload.get("acceptance_status") != "PASS":
+    if payload.get("acceptance_status") != ("REVIEW_READY" if review_ready else "PASS"):
         errors.append("acceptance_status_not_pass")
     # The builder's two records about the same pass must not contradict each other.
     #
@@ -416,7 +419,7 @@ def validate_paid_work(
             acceptance_payload = loaded if isinstance(loaded, dict) else {}
         except (OSError, json.JSONDecodeError):
             errors.append("acceptance_evidence_invalid_json")
-    if acceptance_payload.get("status") != "PASS":
+    if acceptance_payload.get("status") != ("REVIEW_READY" if review_ready else "PASS"):
         errors.append("acceptance_evidence_status_not_pass")
     acceptance_delta = acceptance_payload.get("acceptance_delta")
     if not isinstance(acceptance_delta, list) or not any(isinstance(item, str) and item.strip() for item in acceptance_delta):

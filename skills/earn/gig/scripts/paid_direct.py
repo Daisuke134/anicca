@@ -3019,6 +3019,7 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
     context = root / "context" / "current.json"
     _run([sys.executable, str(args.context_compiler), "--project-root", str(root),
           "--queue-item", str(item_path), "--output", str(context)], "context_compile")
+    review_ready_allowed = _load(root / "context" / "paid-work-decision.json").get("delivery_stage") == "review"
     operator_policy_path, operator_policy, operator_policy_sha256 = _file_operator_policy(
         root, feedback, requirements_sha256,
     )
@@ -3159,7 +3160,7 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
         review_images = _file_review_images(root, snapshots["artifact"][1], finding)
         ok, errors = paid_work_evidence.validate_paid_work(
             root, stable, require_delivery_evidence=False, artifact_judge=paid_work_evidence.STRUCTURE_ONLY,
-            allow_fresh_blocked_for_review=True,
+            allow_fresh_blocked_for_review=True, allow_review_ready=review_ready_allowed,
         )
         if not ok:
             _owner_feedback(root, "paid.file_structure", errors, [
@@ -3322,7 +3323,7 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
             ok, errors = paid_work_evidence.validate_paid_work(
                 root, stable, require_delivery_evidence=False,
                 artifact_judge=paid_work_evidence.STRUCTURE_ONLY,
-                allow_fresh_blocked_for_review=True,
+                allow_fresh_blocked_for_review=True, allow_review_ready=review_ready_allowed,
             )
             if not ok:
                 _owner_feedback(root, "paid.file_structure", errors, [
@@ -3368,7 +3369,7 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
     _write(stable, manifest)
     ok, errors = paid_work_evidence.validate_paid_work(
         root, stable, artifact_judge=lambda *_: ("deliverable", _text(verdict.get("reason"))),
-        allow_fresh_blocked_for_review=True,
+        allow_fresh_blocked_for_review=True, allow_review_ready=review_ready_allowed,
     )
     if not ok:
         _owner_feedback(root, "paid.file_presend_validation", errors, [
@@ -3380,6 +3381,7 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
     )
     ok, errors = paid_work_evidence.validate_paid_work(
         root, stable, artifact_judge=lambda *_: ("deliverable", _text(verdict.get("reason"))),
+        allow_review_ready=review_ready_allowed,
     )
     if not ok:
         _owner_feedback(root, "paid.file_final_validation", errors, [
