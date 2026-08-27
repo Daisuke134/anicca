@@ -717,3 +717,17 @@ def test_normalize_acceptance_repairs_archive_member_bookkeeping(tmp_path):
     assert asset["sha256"] == hashlib.sha256(member).hexdigest()
     assert asset["mime_type"] in {"audio/wav", "audio/x-wav"}
     assert isinstance(asset["provenance"], str)
+
+
+def test_run_bounded_does_not_wait_for_grandchild_inherited_pipe():
+    paid = load("paid_direct")
+    started = time.monotonic()
+
+    result = paid._run_bounded([
+        sys.executable, "-c",
+        "import subprocess; subprocess.Popen(['sleep', '1.5']); print('done')",
+    ], timeout=1)
+
+    assert result.returncode == 0
+    assert result.stdout.strip() == "done"
+    assert time.monotonic() - started < 1
