@@ -670,6 +670,56 @@ test("start-local exports ANICCA_HOME before launching the identity-bound proxy"
   assert.match(source, /ANICCA_INSTANCE_WALLET_FILE="\$WALLET"/u);
 });
 
+test("agent-economy natural owner uses the dedicated receipt-backed compute proxy", () => {
+  const declaration = readFileSync(join(REPO_ROOT, "loops/agent-economy/loop.toml"), "utf8");
+  assert.match(declaration, /COMPUTE_PROXY_PORT\s*=\s*["']8422["']/u);
+  assert.match(declaration, /AGENT_ECONOMY_FUNDING_RECEIPT_IDS/u);
+  assert.match(declaration, /AGENT_ECONOMY_COMPUTE_MAX_COST_USDC/u);
+  assert.match(declaration, /AGENT_ECONOMY_COMPUTE_RESERVE_USDC/u);
+  assert.match(declaration, /AGENT_ECONOMY_COMPUTE_SESSION_CAP_USDC/u);
+
+  const daemon = readFileSync(join(REPO_ROOT, "runtime/anicca-daemon.sh"), "utf8");
+  assert.match(daemon, /if \[ "\$INSTANCE" = "agent-economy" \]; then/u);
+  assert.match(daemon, /runtime\/compute-proxy\/proxy\.mjs/u);
+  assert.match(daemon, /agent-economy compute proxy failed readiness/u);
+  assert.match(daemon, /OPENAI_BASE_URL="http:\/\/127\.0\.0\.1:\$PORT\/v1"/u);
+  assert.match(daemon, /AGENT_ECONOMY_PROXY_PID/u);
+  assert.match(daemon, /supervise_agent_economy_children/u);
+});
+
+test("agent-economy daemon stops the resident loop when its receipt proxy dies", () => {
+  const daemon = join(REPO_ROOT, "runtime/anicca-daemon.sh");
+  const script = [
+    '(sleep 0.1) & proxy=$!',
+    '(sleep 30) & loop=$!',
+    'ANICCA_DAEMON_SUPERVISION_TEST=1 ANICCA_TEST_PROXY_PID="$proxy" ANICCA_TEST_LOOP_PID="$loop" ANICCA_TEST_POLL_SECONDS=0.02 bash "$1"',
+    'rc=$?',
+    'kill -0 "$loop" 2>/dev/null && exit 99',
+    'exit "$rc"',
+  ].join("\n");
+  const result = spawnSync("bash", ["-c", script, "daemon-supervision", daemon], { encoding: "utf8", timeout: 5_000 });
+  assert.equal(result.status, 2, result.stderr);
+  assert.match(result.stderr, /compute proxy exited; stopping resident loop/u);
+});
+
+test("agent-economy daemon TERM cleans up both exact supervised children", () => {
+  const daemon = join(REPO_ROOT, "runtime/anicca-daemon.sh");
+  const script = [
+    '(sleep 30) & proxy=$!',
+    '(sleep 30) & loop=$!',
+    'ANICCA_DAEMON_SUPERVISION_TEST=1 ANICCA_TEST_PROXY_PID="$proxy" ANICCA_TEST_LOOP_PID="$loop" bash "$1" & supervisor=$!',
+    'sleep 0.1',
+    'kill -TERM "$supervisor"',
+    'wait "$supervisor"',
+    'rc=$?',
+    'kill -0 "$proxy" 2>/dev/null && exit 98',
+    'kill -0 "$loop" 2>/dev/null && exit 99',
+    'test "$rc" -eq 143',
+  ].join("\n");
+  const result = spawnSync("bash", ["-c", script, "daemon-term", daemon], { encoding: "utf8", timeout: 5_000 });
+  assert.equal(result.status, 0, result.stderr);
+});
+
 test("release sealing is fatal and occurs before the current symlink move", () => {
   const source = readFileSync(join(REPO_ROOT, "bin/cut-loop-release.sh"), "utf8");
   assert.doesNotMatch(source, /LOOPS_NPM_BIN/u);

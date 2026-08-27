@@ -127,7 +127,10 @@ export function createComputeProxy({
   executeCompute,
 } = {}) {
   if (!payer || !revenueJournalPath || !computeJournalPath || !Array.isArray(fundingReceiptIds)
-    || fundingReceiptIds.length === 0 || typeof getBalance !== "function" || typeof transport !== "function") {
+    || fundingReceiptIds.length === 0 || typeof getBalance !== "function" || typeof transport !== "function"
+    || !Number.isFinite(Number(maxCostUsdc)) || Number(maxCostUsdc) <= 0
+    || !Number.isFinite(Number(reserveUsdc)) || Number(reserveUsdc) < 0
+    || !Number.isFinite(Number(sessionCapUsdc)) || Number(sessionCapUsdc) <= 0) {
     throw new Error("compute proxy receipt-backed configuration is incomplete");
   }
   return http.createServer((req, res) => {

@@ -54,10 +54,51 @@ INSTANCE="${ANICCA_INSTANCE:-clawrouter}"
 # franklin-loop-revival REQ-004(a)/(c): PORT resolves to ClawRouter's 8402 for EVERY instance,
 # including franklin — franklin no longer runs its own dedicated `franklin proxy` on 8403 (see step
 # 2 below), so its PORT must no longer derive from FRANKLIN_PROXY_PORT at all.
-PORT="${COMPUTE_PROXY_PORT:-8402}"
+if [ "$INSTANCE" = "agent-economy" ]; then
+  PORT="${COMPUTE_PROXY_PORT:-8422}"
+else
+  PORT="${COMPUTE_PROXY_PORT:-8402}"
+fi
 LOGDIR="$ANICCA_HOME/logs"; mkdir -p "$LOGDIR"
 
 log() { echo "[$(date -u +%FT%TZ)] anicca-daemon: $*" >&2; }
+
+AGENT_ECONOMY_PROXY_PID=""
+AGENT_ECONOMY_LOOP_PID=""
+cleanup_agent_economy_children() {
+  local child
+  for child in "$AGENT_ECONOMY_LOOP_PID" "$AGENT_ECONOMY_PROXY_PID"; do
+    if [ -n "$child" ] && kill -0 "$child" 2>/dev/null; then
+      kill "$child" 2>/dev/null || true
+      wait "$child" 2>/dev/null || true
+    fi
+  done
+}
+
+supervise_agent_economy_children() {
+  local proxy_pid="$1" loop_pid="$2" interval="${3:-1}"
+  while kill -0 "$proxy_pid" 2>/dev/null && kill -0 "$loop_pid" 2>/dev/null; do sleep "$interval"; done
+  if ! kill -0 "$proxy_pid" 2>/dev/null; then
+    log "agent-economy compute proxy exited; stopping resident loop"
+    kill "$loop_pid" 2>/dev/null || true
+    wait "$loop_pid" 2>/dev/null || true
+    return 2
+  fi
+  wait "$loop_pid" 2>/dev/null
+  local loop_status=$?
+  kill "$proxy_pid" 2>/dev/null || true
+  wait "$proxy_pid" 2>/dev/null || true
+  return "$loop_status"
+}
+
+if [ "${ANICCA_DAEMON_SUPERVISION_TEST:-0}" = "1" ]; then
+  AGENT_ECONOMY_PROXY_PID="$ANICCA_TEST_PROXY_PID"
+  AGENT_ECONOMY_LOOP_PID="$ANICCA_TEST_LOOP_PID"
+  trap cleanup_agent_economy_children EXIT
+  trap 'exit 143' INT TERM
+  supervise_agent_economy_children "$AGENT_ECONOMY_PROXY_PID" "$AGENT_ECONOMY_LOOP_PID" "${ANICCA_TEST_POLL_SECONDS:-0.05}"
+  exit $?
+fi
 
 # franklin2-daemon-identity REQ-001: pure, deterministic instance-classification predicate — matches
 # 'franklin' (unchanged, original citizen) or 'franklin' followed by a digit-run (franklin2, franklin10,
@@ -97,7 +138,35 @@ if [ "$PINNED_RELEASE" -eq 0 ] && [ -d "$REPO/skills" ] && [ "$REPO" != "$ANICCA
     && log "linked node_modules for skill deps"
 fi
 # 2. brain: start this instance's own OpenAI-compatible proxy on $PORT if not already answering.
-if is_franklin_instance "$INSTANCE"; then
+if [ "$INSTANCE" = "agent-economy" ]; then
+  [ "$PORT" != "8402" ] || { log "agent-economy refuses shared compute port :8402"; exit 2; }
+  : "${AGENT_ECONOMY_FUNDING_RECEIPT_IDS:?agent-economy funding receipts are required}"
+  : "${AGENT_ECONOMY_COMPUTE_MAX_COST_USDC:?agent-economy compute max cost is required}"
+  : "${AGENT_ECONOMY_COMPUTE_RESERVE_USDC:?agent-economy compute reserve is required}"
+  : "${AGENT_ECONOMY_COMPUTE_SESSION_CAP_USDC:?agent-economy compute session cap is required}"
+  if curl -sf "http://127.0.0.1:$PORT/v1/models" >/dev/null 2>&1; then
+    log "agent-economy dedicated compute port :$PORT is already occupied"
+    exit 2
+  fi
+  node "$CODE_ROOT/runtime/compute-proxy/proxy.mjs" >>"$LOGDIR/compute-proxy.log" 2>&1 &
+  AGENT_ECONOMY_PROXY_PID=$!
+  trap cleanup_agent_economy_children EXIT
+  trap 'exit 143' INT TERM
+  AGENT_ECONOMY_PROXY_READY=0
+  for _ in $(seq 1 30); do
+    if curl -sf "http://127.0.0.1:$PORT/v1/models" >/dev/null 2>&1; then
+      AGENT_ECONOMY_PROXY_READY=1
+      break
+    fi
+    kill -0 "$AGENT_ECONOMY_PROXY_PID" 2>/dev/null || break
+    sleep 0.5
+  done
+  [ "$AGENT_ECONOMY_PROXY_READY" -eq 1 ] || {
+    log "agent-economy compute proxy failed readiness on :$PORT"
+    exit 2
+  }
+  log "agent-economy receipt-backed compute proxy ready on :$PORT"
+elif is_franklin_instance "$INSTANCE"; then
   # franklin-loop-revival REQ-004(b)/REQ-005/PROP-016 (2026-07-08): Franklin's brain is the
   # ALREADY-RUNNING, SEPARATELY-launchd shared free-tier LLM-router job on :8402 (its own
   # RunAtLoad+KeepAlive plist, confirmed live — free-tier-only, no shared-wallet credential
@@ -194,4 +263,10 @@ fi
 
 log "exec loop (model tiers from config; funded=$(node -e 'import("'"$CODE_ROOT"'/runtime/loop/config.mjs").then(m=>console.log(m.loadConfig(process.env,"").ANICCA_FUNDED_MODEL)).catch(()=>console.log("?"))' 2>/dev/null))"
 # 5. run the loop in the foreground — its exit (crash/shutdown) ends this script; supervisor restarts.
+if [ "$INSTANCE" = "agent-economy" ]; then
+  node "$CODE_ROOT/runtime/loop/index.mjs" &
+  AGENT_ECONOMY_LOOP_PID=$!
+  supervise_agent_economy_children "$AGENT_ECONOMY_PROXY_PID" "$AGENT_ECONOMY_LOOP_PID"
+  exit $?
+fi
 exec node "$CODE_ROOT/runtime/loop/index.mjs"
