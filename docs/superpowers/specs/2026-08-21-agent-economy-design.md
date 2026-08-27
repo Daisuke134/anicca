@@ -1,8 +1,10 @@
 # Life Manager Agent Economy
 
-**Status: P0-P2 complete; P3-P6 open.** The natural `ai.anicca.agent-economy-loop` owner runs from
-the sealed, namespaced Life Manager release and the canonical journal contains one chain-verified
-outside x402 receipt with replay-zero. No self-funded compute, shelter, 30-day graduation, or
+**Status: P0-P2 complete; P3 implementation/review/release complete but its live paid receipt is pending; P4-P6 open.**
+The natural `ai.anicca.agent-economy-loop` owner is loaded from sealed release
+`20260827T175256-22a86ec1`, and the canonical journal contains one chain-verified outside x402
+receipt with replay-zero. The release is currently completing its dependency-manifest launch
+preflight before the dedicated `:8422` proxy starts. No self-funded compute, shelter, 30-day graduation, or
 financially independent Life Manager instance has been proven. “The world's first financially independent AI” is neither a current
 claim nor an unqualified graduation claim: Spore.fun is a material prior example of agent-funded
 compute and replication. Life Manager must describe the narrower receipt-backed result it proves.
@@ -503,17 +505,33 @@ independent official settlement verifier; their absence cannot manufacture reven
 
 ### P3 — prove self-funded food/compute
 
-1. Run a dedicated BlockRun proxy/ClawRouter port for this instance and verify the public address
-   equals the agent-economy wallet.
-2. Persist the pre-call balance, accepted outside inflows, non-revenue funding/liabilities, and
-   prior costs; reject the call unless external earned net alone covers it after reserve.
-3. Make one capped paid call only after solvency/reserve policy passes; join settlement, response,
-   post-call balance, and instance-attributed cost, then prove balance conservation.
-4. Run one bounded BlockRun Modal Sandbox task and join payment, runtime output, and teardown;
+1. [x] Implement and adversarially review a dedicated BlockRun proxy on `:8422`; reject shared
+   `:8402`, foreign keys, non-Base-USDC funding, refunds/chargebacks, over-cap quotes, replay, and
+   concurrent double-spend.
+2. [x] Persist the pre-call balance, accepted outside inflows, non-revenue funding/liabilities, and
+   prior costs; permit at most `0.002` USDC from the verified `0.003` receipt while preserving a
+   `0.001` USDC reserve. Seed/top-up remains excluded.
+3. [x] Wire the natural launchd owner to the receipt-backed proxy and supervise proxy+loop as one
+   failure unit; force the configured paid model only on this receipt-backed path.
+4. [ ] Finish the currently running sealed-release launch preflight, obtain one successful capped
+   paid BlockRun response, append its settlement/cost receipt, verify the Base balance equation,
+   and replay the same idempotency key with zero second payment.
+5. [ ] Run one bounded BlockRun Modal Sandbox task and join payment, runtime output, and teardown;
    classify it as ephemeral compute, not graduated shelter.
-5. Treat a free-model call as a zero-cost observation, never revenue or paid-compute proof.
+6. [x] Treat a free-model call as a zero-cost observation, never revenue or paid-compute proof.
 
 **Exit:** an externally earned balance pays for a real BlockRun call from the same identity.
+
+Current evidence: commits `e9eb55703`, `dabfd6ea7`, `60941c13a`, `56e9b4340`, and `22a86ec18`
+implement the receipt contract, natural-owner supervision, SDK error-boundary fixes, and signed-fetch
+ambiguity fence. The focused/wider suites pass, including real installed `@x402/fetch` 402 flows,
+real EVM signing, no-signature over-cap retries, forced paid-model routing, proxy death, and TERM
+cleanup. Two failed canary attempts produced no compute receipt and no balance change: Base USDC
+remained `1.700000`. Their exact false/expired ambiguity locks were moved, not deleted, under
+`state/reconciled-compute/20260827T083626Z-no-settlement` and
+`state/reconciled-compute/20260827T085725Z-no-settlement`. The latest loaded release remains in
+manifest preflight with `:8422` not yet listening and an empty live `.blockrun` directory; therefore
+P3 exit is not claimed yet.
 
 ### P4 — select and prove shelter
 
