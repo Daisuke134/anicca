@@ -574,6 +574,58 @@ Atomic remaining work for this incident:
 - [ ] Confirm the friend has exactly six loaded Coconala labels and zero Coconala-triggered unrelated labels.
 - [ ] Rerun the friend bootstrap once and prove state reuse plus zero duplicate effect.
 
+#### Reply and estimate latency contract
+
+**1. Overview.** Reply is intended to answer or issue a required estimate before the seller has time
+to intervene manually. The loaded owner is continuous with a 30-second poll and two workers, but
+configuration is not outcome proof. The latest 20 replied actions measured from the official buyer
+origin encoded in the durable event to verified `seller_sent_at` have median 232 seconds; 9/20 exceed
+five minutes and 8/20 exceed two hours. The newest current-release action completes in 53 seconds.
+Therefore historical latency is unacceptable and one fast action does not close the incident.
+
+**2. Acceptance criteria.** Every actionable buyer message or estimate request MUST be observed,
+classified, dispatched, sent and officially read back within five minutes of its official buyer
+timestamp. Twenty consecutive natural actionable events MUST each meet that bound, including
+estimate-required events. A no-reply decision MUST reach a durable terminal reason within the same
+bound. Manual seller intervention MUST NOT count as an automated Reply success.
+
+**3. As-Is / To-Be.** As-Is has two independent delay classes: some events remain unobserved for
+hours before action creation, while others are created promptly but wait hours before verified send.
+Past disk exhaustion also stopped SQLite initialization and receipt persistence. To-Be records one
+monotonic latency chain per event (`official_origin -> observed -> queued -> claimed -> sent ->
+official_readback`) and gives each stage a bounded owner. A live PID, 30-second setting, queue row or
+manual reply never substitutes for the end-to-end receipt.
+
+**4. Test matrix.** Existing continuous-runtime and concurrency tests cover 30-second polling,
+parallel workers, leases and duplicate fencing. Missing coverage is: official-origin latency field
+integrity, observation timeout, queue/claim timeout, send/readback timeout, estimate priority under
+ordinary reply load, restart continuity, and twenty-event natural five-minute acceptance. These
+remain NG until implemented and read back.
+
+**5. Boundaries.** Reply MUST preserve no-contact, stop-contact, officially-unrepliable, seller-last,
+duplicate and estimate-no-longer-required closures. It MUST NOT send filler merely to satisfy the
+clock, bypass official readback, reopen DLQ rows, or reply after the seller has already answered.
+The friend-device first-run repair remains a separate acceptance contract above.
+
+**6. Execution steps.** First persist stage timestamps without changing effect authority. Then
+separately close observation delay and post-observation worker delay. Verify focused concurrency and
+restart tests, publish an immutable release, and observe twenty consecutive natural official events.
+UI change: none. Maestro: not required because verification is browser/SQLite/official-readback E2E.
+
+Atomic remaining work for Reply latency:
+
+- [x] Verify the loaded owner is continuous with `poll_seconds=30`, two workers and a healthy CDP.
+- [x] Audit the latest 20 replied actions: median 232 seconds, 9 exceed five minutes, 8 exceed two
+  hours; the newest current-release action completes in 53 seconds.
+- [ ] Persist official-origin, observed, queued, claimed, sent and official-readback timestamps in
+  one privacy-minimized per-action receipt.
+- [ ] Identify and close every path where observation begins more than 30 seconds after official origin.
+- [ ] Identify and close every path where send/readback completes more than 270 seconds after observation.
+- [ ] Prove estimate-required actions retain priority and complete within five minutes under reply load.
+- [ ] Prove restart/release migration resumes pending work without resetting its original latency clock.
+- [ ] Observe twenty consecutive natural actionable events at five minutes or less with replay-zero.
+- [ ] Run the same latency receipt audit on the friend's updated device.
+
 ### Completed and not TODO
 
 - [x] Apply production acceptance: 24/7 launchd owner, official application readback,
