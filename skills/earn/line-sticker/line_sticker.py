@@ -958,7 +958,7 @@ def _read_receipts(path: Path, identity: dict[str, object]) -> list[dict[str, ob
         seen_receipt_ids.add(row["receipt_id"])
         if type(row["effect_key"]) is not str or not HEX64.fullmatch(row["effect_key"]):
             raise OwnerStateError("ledger_malformed")
-        if row["action"] not in ("submit", "release"):
+        if row["action"] not in ("submit", "release", "replay"):
             raise OwnerStateError("ledger_malformed")
         if type(row["account_id"]) is not str or type(row["set_id"]) is not str:
             raise OwnerStateError("ledger_malformed")
@@ -978,6 +978,12 @@ def _read_receipts(path: Path, identity: dict[str, object]) -> list[dict[str, ob
             raise OwnerStateError("ledger_malformed")
         if row["outcome"] not in ("intent", "acknowledged", "unknown"):
             raise OwnerStateError("ledger_malformed")
+        if row["action"] == "replay" and (
+            row["outcome"] != "acknowledged"
+            or row["before_status"] != "released"
+            or row["after_status"] != "released"
+        ):
+            raise OwnerStateError("ledger_malformed")
         if row["account_id"] != identity["account_id"] or row["set_id"] != identity["set_id"] or row["revision"] != identity["revision"] or row["artifact_sha256"] != identity["artifact_sha256"]:
             raise OwnerStateError("ledger_identity_mismatch")
         expected_key = _effect_key(identity, str(row["action"]))
@@ -992,7 +998,7 @@ def _read_receipts(path: Path, identity: dict[str, object]) -> list[dict[str, ob
             unknown_rows[str(row["effect_key"])] = len(rows)
         elif outcome == "acknowledged":
             acknowledged_rows[str(row["effect_key"])] = len(rows)
-        expected = {
+        expected = (0, 1, 0) if row["action"] == "replay" else {
             "intent": (1, 0, 0),
             "acknowledged": (None, 1, None) if str(row["effect_key"]) in unknown_rows else (1, 1, 0),
             "unknown": (None, 0, None),
@@ -1001,15 +1007,21 @@ def _read_receipts(path: Path, identity: dict[str, object]) -> list[dict[str, ob
             raise OwnerStateError("ledger_malformed")
         if outcome == "unknown" and row["after_status"] != "unknown":
             raise OwnerStateError("ledger_malformed")
-        if outcome == "acknowledged" and expected[0] is None and (
+        if outcome == "acknowledged" and row["action"] != "replay" and expected[0] is None and (
             row["before_status"] != "unknown" or row["after_status"] not in ("submitted", "released")
         ):
             raise OwnerStateError("ledger_malformed")
         rows.append(row)
     by_effect: dict[str, set[str]] = {}
+    action_by_effect: dict[str, str] = {}
     for row in rows:
         by_effect.setdefault(str(row["effect_key"]), set()).add(str(row["outcome"]))
-    for outcomes in by_effect.values():
+        action_by_effect[str(row["effect_key"])] = str(row["action"])
+    for key, outcomes in by_effect.items():
+        if action_by_effect[key] == "replay":
+            if outcomes != {"acknowledged"}:
+                raise OwnerStateError("ledger_conflict")
+            continue
         if ("acknowledged" in outcomes or "unknown" in outcomes) and "intent" not in outcomes:
             raise OwnerStateError("ledger_conflict")
     for key in set(unknown_rows).intersection(acknowledged_rows):
@@ -1028,9 +1040,10 @@ def _receipt(
     outcome: str,
     resolving: bool = False,
 ) -> dict[str, object]:
-    effect = 1 if outcome in ("intent", "acknowledged") and not resolving else None
+    replay_ack = action == "replay" and outcome == "acknowledged"
+    effect = 0 if replay_ack else (1 if outcome in ("intent", "acknowledged") and not resolving else None)
     readback = 1 if outcome == "acknowledged" else 0
-    duplicate_effect = 0 if outcome in ("intent", "acknowledged") and not resolving else None
+    duplicate_effect = 0 if replay_ack or (outcome in ("intent", "acknowledged") and not resolving) else None
     row: dict[str, object] = {
         "receipt_id": "",
         "effect_key": _effect_key(identity, action),
@@ -1239,6 +1252,73 @@ def _acknowledge_unknown(
     rows.append(acknowledged)
 
 
+def _acknowledge_intent(
+    owner_path: Path,
+    ledger_path: Path,
+    rows: list[dict[str, object]],
+    identity: dict[str, object],
+    owner: dict[str, object],
+    *,
+    action: str,
+    expected_status: str,
+    observation: ProviderObservation,
+) -> dict[str, object]:
+    prior = _rows_for_action(rows, identity, action)
+    intent = prior.get("intent")
+    if intent is None or "unknown" in prior or "acknowledged" in prior:
+        raise OwnerStateError("ledger_conflict")
+    if observation["status"] != expected_status:
+        raise OwnerStateError("owner_state_conflict")
+    next_owner = dict(owner)
+    next_owner["state"] = "WAITING_REVIEW" if action == "submit" else "RELEASED"
+    next_owner["product_id"] = observation["product_id"]
+    next_owner["public_url"] = observation["public_url"]
+    if action == "submit":
+        next_owner["public_url"] = None
+    if next_owner != owner:
+        atomic_json(owner_path, next_owner)
+    acknowledged = _receipt(
+        identity,
+        action=action,
+        product_id=observation["product_id"],
+        before_status=str(intent["before_status"]),
+        after_status=str(observation["status"]),
+        outcome="acknowledged",
+    )
+    _append_receipt(ledger_path, acknowledged)
+    rows.append(acknowledged)
+    return next_owner
+
+
+def _close_with_replay(
+    owner_path: Path,
+    ledger_path: Path,
+    rows: list[dict[str, object]],
+    identity: dict[str, object],
+    owner: dict[str, object],
+    observation: ProviderObservation,
+) -> tuple[dict[str, object], int]:
+    prior = _rows_for_action(rows, identity, "replay")
+    if "intent" in prior or "unknown" in prior:
+        raise OwnerStateError("ledger_conflict")
+    closed = dict(owner)
+    closed["state"] = "CLOSED"
+    if owner.get("state") != "CLOSED":
+        atomic_json(owner_path, closed)
+    if "acknowledged" not in prior:
+        replay = _receipt(
+            identity,
+            action="replay",
+            product_id=observation["product_id"],
+            before_status="released",
+            after_status="released",
+            outcome="acknowledged",
+        )
+        _append_receipt(ledger_path, replay)
+        rows.append(replay)
+    return closed, 1
+
+
 def _persist_unknown(
     owner_path: Path,
     ledger_path: Path,
@@ -1375,13 +1455,13 @@ def _fenced_mutation(
         after_status=str(post["status"]),
         outcome="acknowledged",
     )
-    _append_receipt(ledger_path, acknowledged)
     next_owner = dict(owner)
     next_owner.pop("pending_action", None)
     next_owner["state"] = "WAITING_REVIEW" if action == "submit" else "RELEASED"
     next_owner["product_id"] = post["product_id"]
     next_owner["public_url"] = post["public_url"]
     atomic_json(owner_path, next_owner)
+    _append_receipt(ledger_path, acknowledged)
     return next_owner, {"effect": 1, "readback": 1, "duplicate_effect": 0, "reason": action + "_acknowledged"}
 
 
@@ -1389,30 +1469,34 @@ def _next_action(owner: dict[str, object]) -> str:
     pending = owner.get("pending_action")
     if pending in ("submit", "release"):
         return str(pending)
+    if owner.get("state") in ("TERMINAL_PENDING_REPLAY", "CLOSED"):
+        return "replay"
     if owner.get("state") in ("NEW",) and owner.get("product_id") is None:
         return "submit"
     return "release"
 
 
 def _validate_owner_ledger_state(owner: dict[str, object], rows: list[dict[str, object]], identity: dict[str, object]) -> None:
-    acknowledged = {
-        action: any(
-            row["effect_key"] == _effect_key(identity, action) and row["outcome"] == "acknowledged"
-            for row in rows
-        )
-        for action in ("submit", "release")
-    }
+    receipts = {action: _rows_for_action(rows, identity, action) for action in ("submit", "release", "replay")}
+    acknowledged = {action: "acknowledged" in receipts[action] for action in ("submit", "release")}
+    replay_ack = "acknowledged" in receipts["replay"]
     released_readback = any(row["outcome"] == "acknowledged" and row["after_status"] == "released" for row in rows)
     state = str(owner["state"])
-    if state == "NEW" and any(acknowledged.values()):
+    if state == "NEW" and (any(acknowledged.values()) or replay_ack):
         raise OwnerStateError("owner_state_conflict")
-    if state == "RECONCILE_UNKNOWN" and acknowledged.get(str(owner.get("pending_action")), False):
+    if state == "RECONCILE_UNKNOWN" and (
+        acknowledged.get(str(owner.get("pending_action")), False) or replay_ack
+    ):
         raise OwnerStateError("owner_state_conflict")
-    if state in ("WAITING_REVIEW", "REJECTED", "APPROVED") and acknowledged["release"]:
+    if state in ("WAITING_REVIEW", "REJECTED", "APPROVED") and (acknowledged["release"] or replay_ack):
         raise OwnerStateError("owner_state_conflict")
-    if state in ("WAITING_REVIEW", "REJECTED", "APPROVED") and not acknowledged["submit"]:
+    if state in ("WAITING_REVIEW", "REJECTED", "APPROVED") and not acknowledged["submit"] and "intent" not in receipts["submit"]:
         raise OwnerStateError("owner_state_conflict")
-    if state in ("RELEASED", "TERMINAL_PENDING_REPLAY", "CLOSED") and not (acknowledged["release"] or released_readback):
+    if state == "RELEASED" and replay_ack:
+        raise OwnerStateError("owner_state_conflict")
+    if state == "RELEASED" and not (acknowledged["release"] or released_readback or "intent" in receipts["release"]):
+        raise OwnerStateError("owner_state_conflict")
+    if state in ("TERMINAL_PENDING_REPLAY", "CLOSED") and not (acknowledged["release"] or released_readback):
         raise OwnerStateError("owner_state_conflict")
     if state in ("RELEASED", "TERMINAL_PENDING_REPLAY", "CLOSED") and (
         not isinstance(owner.get("product_id"), str) or not owner.get("product_id")
@@ -1503,21 +1587,57 @@ def _wake_owner_unlocked(
         key = _effect_key(identity, action)
 
         unknown_submit = state == "RECONCILE_UNKNOWN" and owner.get("pending_action") == "submit"
+        pending_submit = _rows_for_action(rows, identity, "submit")
+        pending_release = _rows_for_action(rows, identity, "release")
         if observation["status"] == "absent" and state != "NEW" and not unknown_submit:
             raise OwnerStateError("provider_absent_after_submit")
+
+        if state in ("NEW", "WAITING_REVIEW") and "intent" in pending_submit and "acknowledged" not in pending_submit and "unknown" not in pending_submit:
+            if observation["status"] == "submitted":
+                recovered = _acknowledge_intent(
+                    owner_path,
+                    ledger_path,
+                    rows,
+                    identity,
+                    owner,
+                    action="submit",
+                    expected_status="submitted",
+                    observation=observation,
+                )
+                return _owner_result(recovered, status="ok", effect=0, readback=1, duplicate_effect=0, effect_key=_effect_key(identity, "submit"), reason="reconciled")
+            if not (state == "NEW" and observation["status"] == "absent"):
+                raise OwnerStateError("owner_state_conflict")
+
+        if state in ("APPROVED", "RELEASED") and "intent" in pending_release and "acknowledged" not in pending_release and "unknown" not in pending_release:
+            if observation["status"] == "released":
+                recovered = _acknowledge_intent(
+                    owner_path,
+                    ledger_path,
+                    rows,
+                    identity,
+                    owner,
+                    action="release",
+                    expected_status="released",
+                    observation=observation,
+                )
+                return _owner_result(recovered, status="ok", effect=0, readback=1, duplicate_effect=0, effect_key=_effect_key(identity, "release"), reason="reconciled")
+            if not (state == "APPROVED" and observation["status"] == "approved"):
+                raise OwnerStateError("owner_state_conflict")
 
         if state == "CLOSED":
             if observation["status"] != "released":
                 raise OwnerStateError("provider_state_conflict")
+            replay = _rows_for_action(rows, identity, "replay")
+            if "acknowledged" not in replay:
+                closed, replay_readback = _close_with_replay(owner_path, ledger_path, rows, identity, owner, observation)
+                return _owner_result(closed, status="ok", effect=0, readback=replay_readback, duplicate_effect=0, effect_key=_effect_key(identity, "replay"), reason="closed")
             return _owner_result(owner, status="ok", effect=0, readback=0, duplicate_effect=0, effect_key=key, reason="closed")
 
         if state == "TERMINAL_PENDING_REPLAY":
             if observation["status"] != "released":
                 raise OwnerStateError("provider_state_conflict")
-            closed = dict(owner)
-            closed["state"] = "CLOSED"
-            atomic_json(owner_path, closed)
-            return _owner_result(closed, status="ok", effect=0, readback=0, duplicate_effect=0, effect_key=key, reason="closed")
+            closed, replay_readback = _close_with_replay(owner_path, ledger_path, rows, identity, owner, observation)
+            return _owner_result(closed, status="ok", effect=0, readback=replay_readback, duplicate_effect=0, effect_key=_effect_key(identity, "replay"), reason="closed")
 
         if state == "RELEASED":
             if observation["status"] != "released":
@@ -1580,7 +1700,7 @@ def _wake_owner_unlocked(
                 owner = approved
                 state = "APPROVED"
             else:
-                return _owner_result(owner, status="ok", effect=0, readback=0, duplicate_effect=0, effect_key=_effect_key(identity, "release"), reason="waiting_review")
+                raise OwnerStateError("provider_state_conflict")
 
         if state == "REJECTED":
             if observation["status"] != "rejected":

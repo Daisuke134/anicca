@@ -1126,6 +1126,142 @@ class LineStickerOwnerTests(unittest.TestCase):
         self.assertEqual((result["reason"], result["effect"]), ("provider_absent_after_submit", 0))
         self.assertEqual(provider.release_calls, 1)
 
+    def test_submit_ack_append_failure_leaves_state_ahead_and_recovers(self) -> None:
+        original_append = MODULE._append_receipt
+        failed = False
+
+        def fail_submit_ack(path: Path, value: dict[str, object]) -> None:
+            nonlocal failed
+            if value.get("action") == "submit" and value.get("outcome") == "acknowledged" and not failed:
+                failed = True
+                raise MODULE.OwnerStateError("injected_receipt_write_failure")
+            original_append(path, value)
+
+        with mock.patch.object(MODULE, "_append_receipt", side_effect=fail_submit_ack):
+            first = self._wake()
+        self.assertEqual((first["state"], first["effect"]), ("NEW", 0))
+        self.assertEqual(self.provider.submit_calls, 1)
+        owner = json.loads((self.state / "owner.json").read_text(encoding="utf-8"))
+        self.assertEqual(owner["state"], "WAITING_REVIEW")
+        rows_before = (self.state / "effects.jsonl").read_bytes()
+        second = self._wake()
+        self.assertEqual((second["state"], second["effect"], second["readback"]), ("WAITING_REVIEW", 0, 1))
+        self.assertEqual(self.provider.submit_calls, 1)
+        self.assertNotEqual((self.state / "effects.jsonl").read_bytes(), rows_before)
+        rows = [json.loads(line) for line in (self.state / "effects.jsonl").read_text(encoding="utf-8").splitlines()]
+        self.assertEqual([row["outcome"] for row in rows], ["intent", "acknowledged"])
+
+    def test_release_ack_append_failure_leaves_state_ahead_and_recovers(self) -> None:
+        self._wake()
+        self.provider.inventory["status"] = "approved"
+        original_append = MODULE._append_receipt
+        failed = False
+
+        def fail_release_ack(path: Path, value: dict[str, object]) -> None:
+            nonlocal failed
+            if value.get("action") == "release" and value.get("outcome") == "acknowledged" and not failed:
+                failed = True
+                raise MODULE.OwnerStateError("injected_receipt_write_failure")
+            original_append(path, value)
+
+        with mock.patch.object(MODULE, "_append_receipt", side_effect=fail_release_ack):
+            first = self._wake()
+        self.assertEqual((first["state"], first["effect"]), ("APPROVED", 0))
+        self.assertEqual(self.provider.release_calls, 1)
+        owner = json.loads((self.state / "owner.json").read_text(encoding="utf-8"))
+        self.assertEqual(owner["state"], "RELEASED")
+        second = self._wake()
+        self.assertEqual((second["state"], second["effect"], second["readback"]), ("RELEASED", 0, 1))
+        self.assertEqual(self.provider.release_calls, 1)
+        rows = [json.loads(line) for line in (self.state / "effects.jsonl").read_text(encoding="utf-8").splitlines()]
+        self.assertEqual([row["outcome"] for row in rows], ["intent", "acknowledged", "intent", "acknowledged"])
+
+    def test_replay_receipt_append_failure_leaves_closed_state_and_recovers(self) -> None:
+        self._wake()
+        self.provider.inventory["status"] = "approved"
+        self._wake()
+        self._wake()
+        original_append = MODULE._append_receipt
+        failed = False
+
+        def fail_replay(path: Path, value: dict[str, object]) -> None:
+            nonlocal failed
+            if value.get("action") == "replay" and value.get("outcome") == "acknowledged" and not failed:
+                failed = True
+                raise MODULE.OwnerStateError("injected_receipt_write_failure")
+            original_append(path, value)
+
+        with mock.patch.object(MODULE, "_append_receipt", side_effect=fail_replay):
+            first = self._wake()
+        self.assertEqual((first["state"], first["effect"]), ("TERMINAL_PENDING_REPLAY", 0))
+        owner = json.loads((self.state / "owner.json").read_text(encoding="utf-8"))
+        self.assertEqual(owner["state"], "CLOSED")
+        rows = [json.loads(line) for line in (self.state / "effects.jsonl").read_text(encoding="utf-8").splitlines()]
+        replay_rows = [row for row in rows if row["action"] == "replay"]
+        self.assertEqual(len(replay_rows), 0)
+        second = self._wake()
+        self.assertEqual((second["state"], second["effect"], second["readback"]), ("CLOSED", 0, 1))
+        rows_after = [json.loads(line) for line in (self.state / "effects.jsonl").read_text(encoding="utf-8").splitlines()]
+        self.assertEqual(len([row for row in rows_after if row["action"] == "replay"]), 1)
+        owner_before = (self.state / "owner.json").read_bytes()
+        ledger_before = (self.state / "effects.jsonl").read_bytes()
+        third = self._wake()
+        fourth = self._wake()
+        self.assertEqual((third["state"], fourth["state"]), ("CLOSED", "CLOSED"))
+        self.assertEqual((self.state / "owner.json").read_bytes(), owner_before)
+        self.assertEqual((self.state / "effects.jsonl").read_bytes(), ledger_before)
+
+    def test_ledger_ahead_owner_below_acknowledgement_is_conflict(self) -> None:
+        self._wake()
+        owner_path = self.state / "owner.json"
+        owner = json.loads(owner_path.read_text(encoding="utf-8"))
+        owner["state"] = "NEW"
+        owner["product_id"] = None
+        owner_path.write_text(json.dumps(owner, sort_keys=True) + "\n", encoding="utf-8")
+        before = owner_path.read_bytes()
+        result = self._wake()
+        self.assertEqual((result["reason"], result["effect"]), ("owner_state_conflict", 0))
+        self.assertEqual(owner_path.read_bytes(), before)
+        self.assertEqual(self.provider.submit_calls, 1)
+
+    def test_waiting_review_released_is_provider_state_conflict(self) -> None:
+        self._wake()
+        self.provider.inventory.update(
+            {
+                "status": "released",
+                "public_url": "https://store.line.me/stickershop/product/123/en",
+            }
+        )
+        result = self._wake()
+        self.assertEqual((result["reason"], result["effect"], result["state"]), ("provider_state_conflict", 0, "WAITING_REVIEW"))
+        self.assertEqual((self.provider.submit_calls, self.provider.release_calls), (1, 0))
+
+    def test_acknowledged_without_intent_is_ledger_conflict(self) -> None:
+        self._wake()
+        ledger = self.state / "effects.jsonl"
+        rows = [json.loads(line) for line in ledger.read_text(encoding="utf-8").splitlines()]
+        ledger.write_text(json.dumps(rows[1], sort_keys=True) + "\n", encoding="utf-8")
+        result = self._wake()
+        self.assertEqual((result["reason"], result["effect"]), ("ledger_conflict", 0))
+
+    def test_acknowledged_before_unknown_is_ledger_conflict(self) -> None:
+        self.provider.raise_on_submit = True
+        self._wake()
+        ledger = self.state / "effects.jsonl"
+        rows = [json.loads(line) for line in ledger.read_text(encoding="utf-8").splitlines()]
+        unknown = rows.pop()
+        acknowledged = dict(rows[0])
+        acknowledged["outcome"] = "acknowledged"
+        acknowledged["effect"] = 1
+        acknowledged["readback"] = 1
+        acknowledged["duplicate_effect"] = 0
+        acknowledged["receipt_id"] = "conflicting-ack"
+        rows.append(acknowledged)
+        rows.append(unknown)
+        ledger.write_text("".join(json.dumps(row, sort_keys=True) + "\n" for row in rows), encoding="utf-8")
+        result = self._wake()
+        self.assertEqual((result["reason"], result["effect"]), ("ledger_conflict", 0))
+
     def test_released_url_must_bind_exact_product_path(self) -> None:
         self._wake()
         self.provider.inventory["status"] = "approved"
@@ -1191,6 +1327,27 @@ class LineStickerOwnerTests(unittest.TestCase):
         result = self._wake()
         self.assertEqual(result["state"], "CLOSED")
         self.assertEqual((self.provider.submit_calls, self.provider.release_calls), (1, 1))
+
+    def test_closed_rollback_to_released_or_waiting_is_rejected_and_not_rewritten(self) -> None:
+        self._wake()
+        self.provider.inventory["status"] = "approved"
+        self._wake()
+        self._wake()
+        self._wake()
+        for rollback in ("RELEASED", "WAITING_REVIEW"):
+            with self.subTest(rollback=rollback):
+                owner_path = self.state / "owner.json"
+                ledger_path = self.state / "effects.jsonl"
+                owner = json.loads(owner_path.read_text(encoding="utf-8"))
+                owner["state"] = rollback
+                owner_path.write_text(json.dumps(owner, sort_keys=True) + "\n", encoding="utf-8")
+                owner_before = owner_path.read_bytes()
+                ledger_before = ledger_path.read_bytes()
+                result = self._wake()
+                self.assertEqual((result["reason"], result["effect"]), ("owner_state_conflict", 0))
+                self.assertEqual((owner_path.read_bytes(), ledger_path.read_bytes()), (owner_before, ledger_before))
+                owner["state"] = "CLOSED"
+                owner_path.write_text(json.dumps(owner, sort_keys=True) + "\n", encoding="utf-8")
 
     def test_state_cli_returns_valid_summary_and_rejects_symlink(self) -> None:
         self._wake()
