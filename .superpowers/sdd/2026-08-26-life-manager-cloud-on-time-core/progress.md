@@ -198,3 +198,10 @@ Baseline: focused Life Manager suite 175/175 PASS.
 - Task 11 production E2E: actor A and B each created a `/panel/onboarding` session with HTTP 200 and distinct deterministic tenant references; exact initData replay returned 409, a fresh A initData resumed A while preserving the first profile name, and hostile cross-actor `uid/tg` query values did not change either session scope. Both states were `calendar`.
 - Task 11 cleanup: pre-delete readback was exactly two test users, three current test sessions, and three replay receipts. The first assertion wrapper was rejected before deletion; the exact transaction was then simplified and committed. Final readback is users 0, sessions 0, replays 0.
 - Task 11: complete. A real second-person Telegram client QR scan remains the separate final clean-device acceptance item.
+
+## Task 12 resolved destination reuse
+
+- Production diagnosis: the real `MUIT 出社 (着席)` event stores free-form `MIRSUBISHI UFJ INFORMATION TECHNOLOGY`; destination geocoding returned `ZERO_RESULTS` and the route was null.
+- Existing autofill evidence: the adjacent outbound `[Travel]` block ends at the event start and stores the complete Akasaka destination address. The same production Maps key and home origin returned a Transit journey with real station steps when that address was used.
+- Ruling: reuse only the matched outbound Travel block's non-empty location as the route destination. Keep the original event title/location for user-visible reminder text and durable claim identity. Do not add another resolver, provider, table, or fetch.
+- Task 12 status: spec/brief complete; RED, minimal implementation, review, deploy, real route readback, Telegram receipt, and replay-zero remain.
