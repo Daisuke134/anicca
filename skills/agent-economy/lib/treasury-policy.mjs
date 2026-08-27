@@ -1,9 +1,12 @@
 // treasury-policy.mjs — pure money-safety policy shared by future signers and compute adapters.
+import { isNormalizedRevenueReceipt } from "./revenue-receipt.mjs";
 
 const GRADUATION_MULTIPLIER = 1.5;
 const MIN_RUNWAY_DAYS = 30;
 const finite = (value) => Number.isFinite(Number(value));
 const round = (value) => Math.round(Number(value) * 1e6) / 1e6;
+const SETTLED = new Set(["settled", "paid", "received", "completed"]);
+const NEGATIVE_TERMINAL = new Set(["refunded", "charged_back", "chargeback", "reversed"]);
 
 /** Liquid funds that may be spent after reserve and already-committed liabilities. */
 export function computeSpendable({ liquidUsdc, reserveUsdc, committedUsdc = 0 } = {}) {
@@ -45,6 +48,71 @@ export function authorizeSpend({
   };
 }
 
+/** Authorize from selected, independently verified outside revenue only. */
+export function authorizeEarnedSpend({
+  amountUsdc,
+  fundingReceiptIds,
+  revenueReceipts,
+  recipient,
+  fundingSpentUsdc = 0,
+  reserveUsdc = 0,
+  sessionSpentUsdc = 0,
+  sessionCapUsdc,
+} = {}) {
+  if (!Array.isArray(fundingReceiptIds) || fundingReceiptIds.length === 0
+    || !Array.isArray(revenueReceipts) || typeof recipient !== "string" || !recipient
+    || !finite(fundingSpentUsdc) || Number(fundingSpentUsdc) < 0) {
+    return { allowed: false, reason: "invalid-funding-provenance" };
+  }
+  const selected = new Map();
+  for (const row of revenueReceipts) {
+    const id = row?.receipt_id || row?.idempotency_key;
+    if (typeof id === "string" && fundingReceiptIds.includes(id)) selected.set(id, row);
+  }
+  if (selected.size !== new Set(fundingReceiptIds).size) {
+    return { allowed: false, reason: "invalid-funding-provenance" };
+  }
+  let earnedUsdc = 0;
+  for (const id of new Set(fundingReceiptIds)) {
+    const row = selected.get(id);
+    if (!isNormalizedRevenueReceipt(row)
+      || String(row.recipient).toLowerCase() !== recipient.toLowerCase()
+      || String(row.payer).toLowerCase() === recipient.toLowerCase()
+      || row.asset !== "USDC" || row.proof?.chain_id !== 8453
+      || row.proof?.verified !== true
+      || !SETTLED.has(String(row.terminal_state || "").toLowerCase())
+      || !finite(row.signed_net) || Number(row.signed_net) <= 0) {
+      return { allowed: false, reason: "invalid-funding-provenance" };
+    }
+    earnedUsdc += Number(row.signed_net);
+  }
+  // A later refund/chargeback has its own immutable proof and therefore its own
+  // receipt id.  Funding selectors name the positive provenance, but they must
+  // never act as a revocation allowlist: every verified negative correction for
+  // this resident reduces the currently earned balance before any signature.
+  const selectedIds = new Set(fundingReceiptIds);
+  for (const row of revenueReceipts) {
+    if (!finite(row?.signed_net) || Number(row.signed_net) >= 0) continue;
+    const id = row?.receipt_id || row?.idempotency_key;
+    if (typeof id !== "string" || selectedIds.has(id)
+      || !isNormalizedRevenueReceipt(row)
+      || String(row.recipient).toLowerCase() !== recipient.toLowerCase()
+      || String(row.payer).toLowerCase() === recipient.toLowerCase()
+      || row.asset !== "USDC" || row.proof?.chain_id !== 8453
+      || row.proof?.verified !== true
+      || !NEGATIVE_TERMINAL.has(String(row.terminal_state || "").toLowerCase())) {
+      return { allowed: false, reason: "invalid-funding-provenance" };
+    }
+    earnedUsdc += Number(row.signed_net);
+  }
+  earnedUsdc = round(earnedUsdc);
+  const result = authorizeSpend({
+    amountUsdc, liquidUsdc: earnedUsdc, reserveUsdc, committedUsdc: fundingSpentUsdc,
+    sessionSpentUsdc, sessionCapUsdc,
+  });
+  return { ...result, earnedUsdc, fundingSpentUsdc: round(fundingSpentUsdc), fundingReceiptIds: [...new Set(fundingReceiptIds)] };
+}
+
 /** Proposed graduation gate: external net covers compute+shelter with margin and no human fuel. */
 export function graduationGate({
   externalRealizedNet30d,
@@ -74,4 +142,3 @@ export function graduationGate({
   }
   return { eligible: true, reason: "ok", coverage };
 }
-

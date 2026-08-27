@@ -14,6 +14,7 @@ import http from 'node:http';
 import os from 'node:os';
 import fs from 'node:fs';
 import { spawn } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { buildSystemPrompt, buildUserMessage, getToolDefinitions } from './prompt.mjs';
 // spec 25 O1: expose each live skill as a pickable tool (enum on run_skill.slot).
 import { scrubPrivateKeys } from './env-filter.mjs';
@@ -76,12 +77,13 @@ async function thinkProxy(ctx, config) {
     tool_choice: 'auto',
     max_tokens: 512,
   });
+  const intentId = `wake:${createHash('sha256').update(`${ctx.wakeId || 'unknown'}\n${body}`).digest('hex')}`;
 
   let lastErr;
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     if (attempt > 0) await delay(RETRY_DELAY_MS);
     try {
-      const raw = await httpPost(url, body);
+      const raw = await httpPost(url, body, intentId);
       return JSON.parse(raw);
     } catch (err) {
       lastErr = err;
@@ -311,7 +313,7 @@ export function readCliProxyKey(home) {
   }
 }
 
-function httpPost(url, body) {
+function httpPost(url, body, intentId) {
   return new Promise((resolve, reject) => {
     const parsed = new URL(url);
     const lib = parsed.protocol === 'https:' ? https : http;
@@ -324,6 +326,7 @@ function httpPost(url, body) {
         'Content-Type': 'application/json',
         'Content-Length': Buffer.byteLength(body),
         'Authorization': `Bearer ${process.env.OPENAI_API_KEY || 'x402-local'}`,
+        'Idempotency-Key': intentId,
       },
       timeout: 30000,
     };

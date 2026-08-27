@@ -34,7 +34,9 @@ const baseCtx = (over) => ({
 // captured live; 200 entries return a minimal valid chat/completions body.
 function startMockProxy(statuses) {
   let i = 0;
+  const headers = [];
   const server = http.createServer((req, res) => {
+    headers.push(req.headers);
     const status = statuses[Math.min(i, statuses.length - 1)];
     i += 1;
     res.writeHead(status, { 'Content-Type': 'application/json' });
@@ -50,7 +52,7 @@ function startMockProxy(statuses) {
     }
   });
   return new Promise((resolve) => {
-    server.listen(0, '127.0.0.1', () => resolve({ server, requestCount: () => i }));
+    server.listen(0, '127.0.0.1', () => resolve({ server, requestCount: () => i, headers: () => headers }));
   });
 }
 
@@ -67,12 +69,14 @@ test('think(): all attempts 403 -> throws instead of returning the error body as
 });
 
 test('think(): transient 403s then 200 -> retry loop recovers a real completion', async () => {
-  const { server, requestCount } = await startMockProxy([403, 403, 200]);
+  const { server, requestCount, headers } = await startMockProxy([403, 403, 200]);
   try {
     const { port } = server.address();
     const result = await think(baseCtx(), { ANICCA_BRAIN: 'proxy', OPENAI_BASE_URL: `http://127.0.0.1:${port}/v1` });
     assert.equal(result.choices[0].message.content, 'ok');
     assert.equal(requestCount(), 3); // proves it actually retried past the two 403s
+    assert.match(headers()[0]['idempotency-key'], /^wake:[0-9a-f]{64}$/u);
+    assert.equal(headers()[0]['idempotency-key'], headers()[2]['idempotency-key']);
   } finally {
     server.close();
   }

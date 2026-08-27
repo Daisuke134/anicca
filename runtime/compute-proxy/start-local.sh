@@ -22,7 +22,11 @@
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PORT="${COMPUTE_PROXY_PORT:-8402}"
+if [ "${ANICCA_INSTANCE:-}" = "agent-economy" ]; then
+  PORT="${COMPUTE_PROXY_PORT:-8422}"
+else
+  PORT="${COMPUTE_PROXY_PORT:-8402}"
+fi
 # Resolve the instance home before creating the wallet or starting the proxy. The proxy receives
 # this exported value and therefore cannot fall back to another process's default HOME identity.
 export ANICCA_HOME="${ANICCA_HOME:-$HOME/.anicca}"
