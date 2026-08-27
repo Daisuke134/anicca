@@ -41,6 +41,25 @@ def command_for(loop_id: str, root: Path, home: Path) -> list[str]:
             "--lock-file", str(home / "gig/.paid-direct.lock"),
             "--cdp-lock-dir", str(home / "gig/.cdp-gig.lock"),
         ],
+        "hf-gig-apply-direct": [
+            python, str(root / "skills/earn/gig/scripts/gig_disk_guard.py"),
+            python, str(root / "skills/earn/gig/scripts/application_direct.py"),
+            "--all-eligible", "--planner-runner",
+            str(root / "runtime/agent-runner/agent_runner.py"),
+        ],
+        "hf-gig-reply-detector": [
+            python, str(root / "skills/earn/gig/scripts/gig_disk_guard.py"),
+            python, str(root / "skills/earn/gig/scripts/reply_detector.py"),
+            "--trigger", "fallback", "--runner",
+            str(root / "runtime/agent-runner/agent_runner.py"),
+            "--runner-config", str(root / "runtime/agent-runner/config.json"),
+            "--continuous", "--poll-seconds", "30", "--workers", "2",
+        ],
+        "hf-gig-storefront-direct": [
+            python, str(root / "skills/earn/gig/scripts/gig_disk_guard.py"),
+            python, str(root / "skills/earn/gig/scripts/storefront_direct.py"),
+            "--effect", "--auto-cadence", "--full-interval-seconds", "60",
+        ],
     }
     if loop_id in {"marketing-owner-daily", "marketing-owner-weekly"}:
         kind = "product_daily" if loop_id.endswith("daily") else "portfolio_weekly"

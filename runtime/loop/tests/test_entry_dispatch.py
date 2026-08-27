@@ -33,5 +33,14 @@ class EntryDispatchTest(unittest.TestCase):
             '--cdp-lock-dir','/home/gig/.cdp-gig.lock',
         ])
 
+    def test_other_coconala_lanes_keep_production_modes(self):
+        root=Path('/release'); home=Path('/home')
+        apply=command_for('hf-gig-apply-direct',root,home)
+        reply=command_for('hf-gig-reply-detector',root,home)
+        storefront=command_for('hf-gig-storefront-direct',root,home)
+        self.assertIn('--all-eligible',apply)
+        self.assertEqual(reply[-5:],['--continuous','--poll-seconds','30','--workers','2'])
+        self.assertEqual(storefront[-4:],['--effect','--auto-cadence','--full-interval-seconds','60'])
+
 
 if __name__=='__main__':unittest.main()
