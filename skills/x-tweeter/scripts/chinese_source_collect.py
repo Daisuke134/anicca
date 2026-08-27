@@ -4,6 +4,8 @@
 from __future__ import annotations
 
 import argparse
+import base64
+import html
 import json
 import re
 import subprocess
@@ -56,11 +58,19 @@ def content_url_allowed(value: str) -> bool:
 
 
 def result_url(href: str) -> str | None:
-    candidate = f"https:{href}" if href.startswith("//") else href
+    candidate = html.unescape(f"https:{href}" if href.startswith("//") else href)
     parsed = urlparse(candidate)
     if parsed.hostname and parsed.hostname.endswith("duckduckgo.com"):
         values = parse_qs(parsed.query).get("uddg") or []
         candidate = unquote(values[0]) if values else ""
+        parsed = urlparse(candidate)
+    elif parsed.hostname and parsed.hostname.endswith("bing.com"):
+        values = parse_qs(parsed.query).get("u") or []
+        encoded = values[0][2:] if values and values[0].startswith("a1") else ""
+        try:
+            candidate = base64.urlsafe_b64decode(encoded + "=" * (-len(encoded) % 4)).decode()
+        except (ValueError, UnicodeDecodeError):
+            candidate = ""
         parsed = urlparse(candidate)
     if parsed.scheme != "https" or not content_url_allowed(candidate):
         return None
@@ -154,6 +164,34 @@ def collect_markdown(markdown: str, query: str, observed_at: str, limit: int = 2
     }
 
 
+def collect_bing(search_html: str, query: str, observed_at: str, limit: int = 21) -> dict:
+    candidates, seen = [], set()
+    pattern = r'<li[^>]*class="[^"]*b_algo[^"]*".*?<h2[^>]*>\s*<a[^>]*href="([^"]+)"[^>]*>(.*?)</a>'
+    for href, raw_title in re.findall(pattern, search_html, re.S | re.I):
+        url = result_url(href)
+        if not url or url in seen:
+            continue
+        seen.add(url)
+        candidates.append({
+            "url": url,
+            "title": " ".join(html.unescape(re.sub(r"<[^>]+>", "", raw_title)).split()),
+            "snippet": "",
+            "query": query,
+            "source_domain": canonical_domain(urlparse(url).hostname),
+            "source_language": "zh",
+        })
+        if len(candidates) >= limit:
+            break
+    return {
+        "schema_version": 1,
+        "receipt_type": "CHINESE_PUBLIC_SOURCE_CANDIDATES",
+        "query": query,
+        "observed_at": observed_at,
+        "candidate_count": len(candidates),
+        "candidates": candidates,
+    }
+
+
 def hydrate(receipt: dict, fetcher, limit: int = 7) -> dict:
     hydrated = []
     for row in receipt.get("candidates", [])[:limit]:
@@ -228,6 +266,12 @@ def discover(query_file: Path, observed_at: str, limit: int = 7) -> dict:
                 + quote(f"site:{domain} {query}")
             )
             rows = collect(scrapy_fetch(fallback_url), query, observed_at, limit=3)["candidates"]
+        if not rows:
+            bing_url = (
+                "https://www.bing.com/search?q="
+                + quote(f"site:{domain} {query}")
+            )
+            rows = collect_bing(scrapy_fetch(bing_url), query, observed_at, limit=3)["candidates"]
         for row in rows:
             if row["url"] in seen:
                 continue
