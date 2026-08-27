@@ -4471,6 +4471,24 @@ of that merge. Merge it when that clears.
 - [ ] Obtain natural official readback for `18197848`, then rerun once and prove replay-zero.
 - [ ] Resolve `18202085` without weakening buyer-visible quality: the WAV is structurally usable, but the producer emitted `REVIEW_READY`, `audio/wav` conflicts with macOS `audio/x-wav`, and the reference TikTok audio remains unavailable for correspondence review.
 
+Current buyer-level readback after the public `88baabdb368abb7d0510bb807bd7daf6d05b7f9f`
+release:
+
+| Buyer | Talkroom | Project root | Current artifact / action | Official state | Exact blocker |
+|---|---|---|---|---|---|
+| Chii【CK protect】 | `18180857` | `~/gig/projects/18180857` | `CKprotect_TikTok_initial_review_v7.zip`; external TikTok work remains required | Latest buyer-visible seller message says work will proceed on the seller account; no new artifact readback | Paid effect is stopped before mutation by host capacity; do not ask for another OTP or send another progress promise |
+| 貴ㅤㅤ | `18197848` | `~/gig/projects/5231240` | `硝子色の恋_review_v1.zip`, SHA256 `7d61e8223c7b852bffffba1b3dbab21c8bc9843006a08e7841731e6ad948f1de` | Official talkroom still has buyer MP3 and no seller artifact; formal delivery is off | Audio-only visual gate is fixed; fresh decision is file/review, but the exact artifact also remains reviewer-blocked for unproved from-scratch correspondence and host capacity prevents a new effect |
+| ユウ ブログ | `18202085` | `~/gig/projects/18202085` | `cinematic_suspense_bgm_v1.wav`, SHA256 `45b93eb111cbda8e6d5ac51953220d7f699002f5f9a43af340acfe7c7e78c231` | 80s PCM s16le, 44.1kHz stereo local readback; no buyer-visible artifact yet; formal delivery is off | Public review-stage contract now accepts `REVIEW_READY` only on review decisions and treats `audio/wav`/`audio/x-wav` as aliases while preserving fresh evaluation; host capacity still blocks the owner before send |
+| ITフランチャイズ経営 | `18184558` | `~/gig/projects/18184558` | No artifact or reply required | Buyer explicitly requested no reply while Coconala cancellation is pending; replay is `satisfied_noop`, effect 0 | Observe official cancellation only |
+| 厚木 | `18171850` | `~/gig/projects/18171850` | Existing review artifact already handled | Natural replay is completed/deduplicated with effect 0 and formal delivery off | No additional send |
+
+`18169985` (Manledge) and the account-owner excluded Kitty lane receive no additional
+message in this recovery.  The host cleanup owner is reinstalled from stable `current`, exits 0,
+and release GC now preserves its loaded immutable release while idle.  The remaining shared
+blocker is physical capacity: after removing closed regenerable uv cache and orphaned
+CoreSimulator temporary directories, free space remains below the 1 GiB unblock floor.  Codex
+session databases and `.cloak` stay protected and are not cleanup candidates.
+
 ### Host disk and Account 2 runtime verification
 
 - [x] Verify Account 2 at the actual model boundary: the four Coconala plists intentionally omit `CODEX_HOME`, while the immutable runner config binds Codex to `~/.codex-acct2/auth.json`; its isolated automation-home auth symlink resolves to that exact file.
