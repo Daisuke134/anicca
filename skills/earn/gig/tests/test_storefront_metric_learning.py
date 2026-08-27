@@ -133,6 +133,43 @@ def test_official_quality_signals_separate_no_rating_from_zero():
     assert missing["lifetime_sales"]["status"] == "unknown"
 
 
+def test_catalog_baseline_binds_each_listing_version_to_its_latest_official_metrics(tmp_path):
+    analytics = tmp_path / "analytics.jsonl"
+    analytics.write_text("\n".join(json.dumps(row) for row in [
+        {"service_id": "2", "observed_at_epoch": 10,
+         "metrics": {"views": {"status": "known", "value": 8},
+                     "favorites": {"status": "known", "value": 1},
+                     "purchases": {"status": "known", "value": 0}}},
+        {"service_id": "1", "observed_at_epoch": 9,
+         "metrics": {"views": {"status": "known", "value": 3},
+                     "favorites": {"status": "known", "value": 0},
+                     "purchases": {"status": "known", "value": 0}}},
+        {"service_id": "1", "observed_at_epoch": 11,
+         "metrics": {"views": {"status": "known", "value": 5},
+                     "favorites": {"status": "known", "value": 0},
+                     "purchases": {"status": "known", "value": 0}}},
+    ]) + "\n", encoding="utf-8")
+    contracts = [
+        {"service_id": "2", "title": "AI agent", "category": "IT", "price_jpy": 30000,
+         "state": "公開中", "service_version_sha256": "b" * 64},
+        {"service_id": "1", "title": "Writing", "category": "文章", "price_jpy": 5000,
+         "state": "公開中", "service_version_sha256": "a" * 64},
+    ]
+
+    baseline = sd._catalog_conversion_baseline(analytics, contracts)
+
+    assert baseline["services"] == [
+        {"service_id": "1", "title": "Writing", "category": "文章", "price_jpy": 5000,
+         "state": "公開中", "service_version_sha256": "a" * 64,
+         "views": 5, "favorites": 0, "purchases": 0, "observed_at_epoch": 11},
+        {"service_id": "2", "title": "AI agent", "category": "IT", "price_jpy": 30000,
+         "state": "公開中", "service_version_sha256": "b" * 64,
+         "views": 8, "favorites": 1, "purchases": 0, "observed_at_epoch": 10},
+    ]
+    assert baseline["totals"] == {"services": 2, "views": 13, "favorites": 1, "purchases": 0}
+    assert len(baseline["baseline_sha256"]) == 64
+
+
 if __name__ == "__main__":
     import pytest
     raise SystemExit(pytest.main([__file__, "-q"]))

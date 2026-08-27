@@ -687,6 +687,47 @@ def _last_known_good_catalog_analytics(
     return catalog
 
 
+def _catalog_conversion_baseline(analytics_path: Path, contracts: list[dict]) -> dict:
+    """Bind each current listing version to its latest official conversion counters."""
+    rows, error = _jsonl_rows(analytics_path)
+    if error:
+        raise RuntimeError("storefront_catalog_baseline_invalid")
+    latest: dict[str, dict] = {}
+    for row in rows:
+        service_id = str(row.get("service_id") or "")
+        if service_id and int(row.get("observed_at_epoch") or 0) >= int(
+                latest.get(service_id, {}).get("observed_at_epoch") or 0):
+            latest[service_id] = row
+    services = []
+    for contract in sorted(contracts, key=lambda row: str(row.get("service_id") or "")):
+        service_id = str(contract.get("service_id") or "")
+        snapshot = latest.get(service_id)
+        metrics = snapshot.get("metrics") if isinstance(snapshot, dict) else None
+        if not isinstance(metrics, dict):
+            raise RuntimeError("storefront_catalog_baseline_incomplete")
+        values = {}
+        for name in ("views", "favorites", "purchases"):
+            metric = metrics.get(name)
+            if (not isinstance(metric, dict) or metric.get("status") != "known"
+                    or type(metric.get("value")) is not int):
+                raise RuntimeError("storefront_catalog_baseline_incomplete")
+            values[name] = metric["value"]
+        services.append({
+            "service_id": service_id, "title": contract.get("title"),
+            "category": contract.get("category"), "price_jpy": contract.get("price_jpy"),
+            "state": contract.get("state"),
+            "service_version_sha256": contract.get("service_version_sha256"),
+            **values, "observed_at_epoch": int(snapshot.get("observed_at_epoch") or 0),
+        })
+    totals = {"services": len(services), **{
+        name: sum(row[name] for row in services) for name in ("views", "favorites", "purchases")
+    }}
+    identity = {"services": services, "totals": totals}
+    return {**identity, "baseline_sha256": hashlib.sha256(json.dumps(
+        identity, ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+    ).encode()).hexdigest()}
+
+
 def _last_full_competitor_evidence(state_dir: Path, now: int) -> dict:
     wakes, error = _jsonl_rows(state_dir / "wakes.jsonl")
     if error not in {None, "wakes.jsonl_missing"}:
@@ -5626,6 +5667,9 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 catalog_analytics = _last_known_good_catalog_analytics(
                     args.state_dir, source_ids, cutoff,
                 )
+                catalog_baseline = _catalog_conversion_baseline(
+                    args.state_dir / "analytics.jsonl", validated_contracts,
+                )
                 competitor_evidence = _last_full_competitor_evidence(args.state_dir, cutoff)
                 contract_count = sum(int(_append_contract_once(
                     args.state_dir / "offer-contracts.jsonl", contract,
@@ -5650,6 +5694,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                         if line.strip()),
                     inventory_content_sha256=inventory.get("content_sha256"),
                     incremental_public_readback=1, catalog_analytics=catalog_analytics,
+                    catalog_conversion_baseline=catalog_baseline,
                     funnel=funnel, portfolio=portfolio,
                     new_listing_draft={"status": "not_checked_incremental", "effect": 0,
                                        "readback": 0, "public_effect": 0},
@@ -6816,6 +6861,9 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 _append_key_once(
                     args.state_dir / "prepared-hypotheses.jsonl", "hypothesis_key", next_hypothesis,
                 )
+            catalog_baseline = _catalog_conversion_baseline(
+                args.state_dir / "analytics.jsonl", validated_contracts,
+            )
             row = _receipt(
                 pass_id,
                 status=("delivery_unknown" if retire_attempted_this_wake and not retire_effect_this_wake
@@ -6846,6 +6894,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 recovered_effect=bool(pending_effect and pending_effect["recovered"]),
                 analytics_snapshot_key=analytics["snapshot_key"],
                 catalog_analytics=analytics.get("catalog_metrics"),
+                catalog_conversion_baseline=catalog_baseline,
                 funnel=funnel,
                 portfolio=portfolio,
                 new_listing_draft=draft_result,
