@@ -274,17 +274,22 @@ function reminderUser(overrides = {}) {
 
 test("a due call and the reminder both run from one raw calendar fetch", async () => {
   clearEvents();
-  const h = deps();
+  const fetches = [];
+  const h = deps({ fetches });
+  const order = [];
   const seen = [];
   h.deps.travelReminder = async (u, nowMs, options) => {
+    order.push("reminder");
     seen.push({ uid: u.uid, nowMs, events: options.events });
     return { status: "sent", telegramMessageId: 701 };
   };
-  await wakeCallOnce(reminderUser(), DEPARTURE_MS - 5 * MINUTE, h.deps);
-  await reminderUserOnce(reminderUser(), DEPARTURE_MS - 5 * MINUTE, h.deps);
+  h.deps.lateNotice = async () => { order.push("late"); return null; };
+  await wakeUserOnce(reminderUser(), DEPARTURE_MS - 5 * MINUTE, h.deps);
   assert.equal(h.dialed.length, 1, "the due T-5 call is placed");
-  assert.equal(seen.length, 1, "the reminder organ runs once");
+  assert.equal(fetches.length, 1, "wake and reminder reuse one raw calendar fetch");
+  assert.equal(seen.length, 1, "wakeUserOnce invokes the reminder once");
   assert.equal(seen[0].events[0].id, EVENT.id, "the reminder receives the fetched event");
+  assert.deepEqual(order, ["reminder", "late"], "later organs continue after the reminder");
 });
 
 test("a reminder throw or delay cannot suppress the call that ran first", async () => {
@@ -302,16 +307,14 @@ test("a reminder throw or delay cannot suppress the call that ran first", async 
   assert.ok(callAt, "the call completed before the reminder settled");
 });
 
-test("a call failure does not own the reminder; the fixed reminder path still runs", async () => {
+test("a call failure still invokes the reminder exactly once before later organs", async () => {
   clearEvents();
   const h = deps();
   let reminders = 0;
   h.deps.wakeCall = async () => { throw new Error("call path exploded"); };
   h.deps.travelReminder = async () => { reminders += 1; return { status: "suppressed" }; };
   await wakeUserOnce(reminderUser(), DEPARTURE_MS - 5 * MINUTE, h.deps);
-  assert.equal(reminders, 0, "the call path no longer owns the reminder");
-  await reminderUserOnce(reminderUser(), DEPARTURE_MS - 5 * MINUTE, h.deps);
-  assert.equal(reminders, 1, "the fixed reminder path still runs after a call failure");
+  assert.equal(reminders, 1, "a call throw still reaches the reminder exactly once");
 });
 
 test("call-disabled users still receive the fixed reminder", async () => {
@@ -398,7 +401,7 @@ test("a reminder hang in one tenant does not stop the next tenant", async () => 
   assert.equal(nextRan, 1, "the next tenant is still served after the first reminder hangs");
 });
 
-test("a never-resolving call is bounded and the reminder still runs", async () => {
+test("a never-resolving call is bounded and wakeUserOnce runs the reminder exactly once", async () => {
   clearEvents();
   const h = deps();
   let callStarted = false;
@@ -413,9 +416,7 @@ test("a never-resolving call is bounded and the reminder still runs", async () =
   ]);
   assert.notStrictEqual(result, sentinel, "wakeUserOnce must not await a hung call forever");
   assert.equal(callStarted, true, "the call path remains first");
-  assert.equal(reminderRan, 0, "wakeUserOnce no longer owns the reminder");
-  await reminderUserOnce(reminderUser(), DEPARTURE_MS - 5 * MINUTE, h.deps);
-  assert.equal(reminderRan, 1, "the reminder runs from its fixed path");
+  assert.equal(reminderRan, 1, "a call timeout still reaches the reminder exactly once");
 });
 
 test("a never-resolving reminder is bounded and the late organ still runs", async () => {
