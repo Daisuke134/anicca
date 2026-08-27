@@ -31,12 +31,9 @@ die() { echo "cut-loop-release: $*" >&2; exit 1; }
 
 prune_releases_after() {
   local keep="$1"
-  ls -1dt "$RELEASES"/*/ 2>/dev/null | tail -n +$((keep + 1)) | while IFS= read -r old; do
-    [ "$(readlink "$CURRENT")" = "${old%/}" ] && continue
-    chmod -R u+w "$old" 2>/dev/null || true
-    rm -rf "$old"
-    echo "cut-loop-release: pruned $(basename "${old%/}")"
-  done
+  LIFE_MANAGER_RELEASE_KEEP="$keep" \
+    python3 "$REPO_ROOT/runtime/loop/central_cleanup.py" --release-gc-only >/dev/null || \
+    die "safe release pruning failed"
 }
 
 SHA="$(git -C "$REPO_ROOT" rev-parse "$REF" 2>/dev/null)" || die "cannot resolve ref '$REF'"
