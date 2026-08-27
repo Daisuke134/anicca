@@ -237,3 +237,60 @@ Production gate:
 - official sales observation seeds one bounded next-set decision.
 
 No narrower evidence closes the goal.
+
+## Current measured status and remaining work
+
+### Verified implementation state
+
+- The package validator and durable submit/release owner are implemented and pushed on
+  `feat/line-sticker-loop`. Their fresh whole-branch review is `READY` with no remaining
+  Critical or Important finding.
+- The validator/owner suite has 78 tests covering real FFmpeg APNG packages, official-policy
+  bounds, provenance, concurrent effect fencing, lost acknowledgement, receipt crash recovery,
+  public URL/product binding, and replay zero.
+- The redesigned media pipeline implements model-owned 60-motion planning and 24-item selection,
+  quote-before-generate cost reservation, reconcile-only unknown recovery, bounded subprocesses,
+  safe motion ids, disk gating, APNG timing, visual-inspection readback, and package-bound generation
+  provenance. A fresh parent run passes all 8 media tests, including a real six-batch FFmpeg package.
+- No real image/video provider call, Creators Market submission, review, release, public product,
+  sale, payout, or bank effect has occurred.
+
+### Money truth
+
+Verified LINE sticker revenue is **JPY 0**. There is no Creators Market sales receipt, payout
+receipt, or bank-arrival receipt. Local tests, generated fixtures, commits, and provider research
+do not count as money.
+
+### Current blockers to revenue
+
+1. No authenticated animation-provider credential/account is configured. The current machine has
+   no Runware, Runway, Seedance, fal, or Replicate credential in the private credential SSOT.
+2. No authenticated LINE Creators Market browser session or dedicated profile exists, and no LINE
+   credential entry is configured in the private credential SSOT.
+3. The redesigned media diff still needs a fresh adversarial re-review and a fresh parent run of
+   the full 78 validator/owner regressions after its core provenance-schema change.
+4. Host free space is only slightly above the 2 GiB media floor and fluctuates under other active
+   writers. A generation wake must re-read the disk gate immediately before allocating media.
+
+### Remaining TODO order
+
+1. Close the redesigned media task review: fresh parent 78-test regression and fresh Sol review;
+   repair every Critical/Important finding.
+2. Add one real animation-provider adapter using the two-phase quote/reserve/generate/reconcile
+   contract; establish an authenticated provider account and verify quote/cost/output readback.
+3. Generate the original character sheet with rights evidence, obtain the model's 60-motion plan,
+   generate six ten-motion source videos, convert all candidates, and obtain the model's exact
+   24-item visual selection.
+4. Produce the real validator-ready package and bind all generation receipts, costs, prompts,
+   sources, segments, candidates, and rights evidence into package provenance.
+5. Implement and verify the dedicated Creators Market browser adapter: registration/login state,
+   inventory observation, one fenced submit, review polling, rejection repair, one release, and
+   official LINE STORE readback.
+6. Add the public integration manifest, installer/status/outcomes commands, dedicated browser owner,
+   bounded launchd wake, recovery, upgrade, stop, and uninstall behavior.
+7. Trigger the installed launchd loop—not foreground Codex—to generate and submit the first real
+   set. Continue through approval and automatic release.
+8. Prove the public product, then run a later observe-only natural wake with submit/release
+   `duplicate_effect=0`.
+9. Read official sales/region/payout state, record actual revenue or zero, and make exactly one
+   evidence-backed change for the next set.
