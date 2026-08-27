@@ -2,7 +2,7 @@ name      = "x-tweeter"
 state_dir = "~/loops/x-tweeter"
 
 [env]
-X_REPOST_BROWSER_IDENTITY = "x:affiliate-en"
+X_REPOST_BROWSER_IDENTITY = "x:anicca"
 X_REPOST_MODEL = "gpt-5.6-luna"
 X_REPOST_REASONING_EFFORT = "max"
 X_REPOST_PUBLISH_TRANSPORT = "postiz"

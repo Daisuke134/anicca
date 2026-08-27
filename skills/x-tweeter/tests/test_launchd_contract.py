@@ -33,7 +33,7 @@ class XTweeterLaunchdContractTests(unittest.TestCase):
             "/skills/x-tweeter/x-tweeter-cli.sh"
         ))
         environment = plist["EnvironmentVariables"]
-        self.assertEqual(environment["X_REPOST_BROWSER_IDENTITY"], "x:affiliate-en")
+        self.assertEqual(environment["X_REPOST_BROWSER_IDENTITY"], "x:anicca")
         self.assertTrue(environment["X_TWEETER_STATE_DIR"].endswith("/loops/x-tweeter"))
         self.assertEqual(environment["X_REPOST_PUBLISH_TRANSPORT"], "postiz")
 
