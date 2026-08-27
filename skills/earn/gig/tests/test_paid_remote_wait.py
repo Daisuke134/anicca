@@ -685,6 +685,17 @@ def test_paid_preflight_uses_one_shared_browser_lock(tmp_path, monkeypatch):
     assert (tmp_path / ".paid-preflight-browser.lock").is_file()
 
 
+def test_effect_process_diagnostic_keeps_returncode_and_bounded_output():
+    paid = load("paid_direct")
+    process = SimpleNamespace(returncode=-9, stdout="out", stderr="err")
+
+    assert paid._effect_process_diagnostic(process) == {
+        "returncode": -9,
+        "stdout_tail": "out",
+        "stderr_tail": "err",
+    }
+
+
 def test_paid_effect_child_does_not_take_global_browser_lock(tmp_path):
     paid = load("paid_direct")
     args = SimpleNamespace(**{

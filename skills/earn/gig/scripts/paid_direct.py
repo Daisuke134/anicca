@@ -4661,7 +4661,12 @@ def _run_paid_item(args, room: str, item_file: Path, prepared_file: Path,
         try:
             prepared = _load(prepared_file)
         except (OSError, json.JSONDecodeError):
-            prepared = {"status": "failed", "failed_step": "remote_resume"}
+            prepared = {
+                "status": "failed",
+                "failed_step": "remote_resume",
+                "prepare_process": _effect_process_diagnostic(prepare),
+            }
+            _write(prepared_file, prepared)
         if (attempt == 0 and prepare.returncode
                 and prepared.get("failed_step") == "remote_resume"):
             continue
