@@ -55,6 +55,6 @@ Expected: all tests PASS. Mentally mutate tx/log/amount/payer/payee, funding ID,
 
 The primary calls the exported reconciler against the live instance using the exact tuple above and the existing strict RPC verifier, reads back the single redacted row, verifies both ambiguity locks are absent, verifies status cost `0.002`, recreates no payment, and reruns reconciliation to prove append zero. No implementer changes live state.
 
-- [ ] **Step 6: Review, spec update, commit, and push**
+- [x] **Step 6: Review, spec update, commit, and push**
 
 Fresh read-only Sol review checks spec compliance, chain binding, append ordering, replay-zero, funding consumption, reserve preservation, and secret/prompt exclusion. The primary updates the one-way execution table/evidence, runs the relevant suites, commits, fetches, and pushes only `origin/feat/agent-economy-implementation`.
