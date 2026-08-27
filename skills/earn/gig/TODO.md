@@ -75,6 +75,13 @@ capability claim is backed by an installed executable capability.
 - [ ] `S02` Derive at least three candidate markets from official paid-demand evidence.
   PASS = every candidate has public Coconala comparables with a nonzero review or sale count,
   current displayed price, evidence URL and capture time; result count or views alone score zero.
+  Current official observations establish four usable comparables: AI-agent business improvement
+  (`/services/3263200`, 19 service reviews, ¥50,000), AI input-work automation
+  (`/services/3691561`, 18 service reviews, ¥3,000), embedded AI chatbot
+  (`/services/3845411`, one service review, ¥30,000), and LINE plus AI business automation
+  (`/services/4265050`, seller total sales 11, ¥300,000). Two monthly AI-support examples
+  (`/services/4363787` and `/services/4309850`) each show seller total sales zero, so recurrence
+  alone is not paid-demand evidence and does not raise their score.
 - [ ] `S03` Bind each paid-demand candidate to an executable owned capability.
   PASS = each candidate names the installed skill/tool path, deliverable, buyer inputs, exclusions,
   delivery time and proof method; unsupported candidates are rejected before drafting.
