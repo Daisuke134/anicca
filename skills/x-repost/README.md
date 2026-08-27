@@ -1,57 +1,92 @@
-# x-repost — daily X quote-tweet loop
+# Life Manager X growth loops
 
-One pass a day, driven by launchd, publishing at most one quote tweet from **@selawmqt**
-(sela | AI Tools — an AI-owned account, never a personal one).
+Life Manager ships three independent macOS launchd owners. Each wake finds current public
+information, creates at most one grounded post, reads the official X permalink back, records the
+effect in a durable ledger, and exits.
 
-X is both the only source and the only destination. Nothing is read from HN/Reddit/RSS and
-nothing goes through the X API, which has had no free tier since February 2026. Every read and
-the publish itself run through one leased CDP browser.
+| Owner | Output | Source | Default cadence | State |
+|---|---|---|---|---|
+| `x-repost` | English quote post | Live X search | minute 0 and 30 | `~/loops/x-repost-en` |
+| `x-repost-ja` | Japanese quote post for Dice | Live Japanese or English X search | minute 5 and 35 | `~/loops/x-repost-ja` |
+| `x-tweeter` | English original | Public Chinese platforms | minute 0 hourly | `~/loops/x-tweeter` |
 
-## One pass
+The owners never share their state or Affiliate queues. A private firsthand seed is optional:
+exact source-specific evidence is sufficient. Empty seed state therefore cannot stop an otherwise
+grounded post. Safety gates still reject unsupported claims, wrong-language output, duplicate
+sources, excessive X length, wrong-account browser sessions, and ambiguous duplicate effects.
 
-| # | Step | Where |
-|---|------|-------|
-| 0 | CEO registry + budget gate; refuse a second post the same day | `lib/registry-enforce.sh`, `state/posted.jsonl` |
-| 1 | Lease the dedicated browser (`x:anicca`), restoring the session from `TWITTER_AUTH_TOKEN` if it lapsed | `~/anicca/skills/browser/ensure_provision_browser.sh` |
-| 2 | Scrape live search results for every query | `scripts/x_collect.py --mode recon`, `config/queries.txt` |
-| 3 | Refresh engagement on past posts; the best 5 of the last 10 become this pass's few-shot | `scripts/x_collect.py --mode engagement` |
-| 4 | Pick ONE post and draft 3 comments (funny / empathy / primary-source) | `codex exec --model gpt-5.6-luna` with `max` effort, `config/voice.md` |
-| 5 | Strip the AI register — **a separate call, style only, content frozen** | `codex exec --model gpt-5.6-luna` with `max` effort, `config/humanize-checklist.md` |
-| 6 | Choose the one to publish | `codex exec --model gpt-5.6-luna` with `max` effort |
-| 7 | Publish, then read the permalink back off the timeline | `scripts/x_post.py` |
-| 8 | Append the row, report to Telegram, record the cost estimate | `state/posted.jsonl`, `bin/record-cost-event.sh` |
+## Pipeline
 
-Selection is the model's judgment, never a regex. Personal attacks, harassment, political
-conflict and incident-driven pile-ons are excluded at step 4 by instruction; if nothing is worth
-quoting the pass reports why and publishes nothing.
+1. Collect a bounded candidate receipt.
+2. Select one source and bind an exact evidence quote.
+3. Draft, humanize, and choose one post.
+4. Run a separate source-grounding and usefulness critic.
+5. Publish once through the configured transport.
+6. Read back the exact `https://x.com/<handle>/status/<id>` permalink.
+7. Append `posted.jsonl` and retain the pass evidence directory.
 
-## Why it has its own browser
+The English original owner runs `skills/x-tweeter/scripts/chinese_source_collect.py`. Its default
+public sources are Xiaohongshu, Douyin, Kuaishou, Bilibili, Weibo, Tieba, and Zhihu. The collector
+only gathers source text and URLs; the model makes the editorial decision. MediaCrawler is not
+used.
 
-The interactive daily-driver holds **no** x.com session — measured 2026-08-17, `x.com/home`
-redirects to the logged-out landing page. So this loop owns `x:anicca`
-(`~/.cloak/profiles/x-repost-daily`, registered in `~/.config/ai/registry/browsers.toml`) and
-restores the session from the stored `auth_token` cookie. It never touches the interactive or
-gig profile, and it reaches the browser only through `browser-guard.sh`, never a raw port.
+## Configure your accounts
 
-## Evidence
+Edit the three declarations before installation:
 
-Every pass writes `state/evidence/<pass_id>/` — the candidate set, all three prompts, the raw
-model output, the published text and the publish result. `state/posted.jsonl` is the ledger the
-CEO registry points at; a row exists only when a permalink was read back.
+- `loops/x-repost/loop.toml`: browser identity, Postiz integration, model, cadence.
+- `loops/x-repost-ja/loop.toml`: model and cadence; edit `x-repost-ja-cli.sh` for the handle,
+  browser identity, persona, language, and transport.
+- `loops/x-tweeter/loop.toml`: English browser identity, Postiz integration, model, cadence.
 
-## Where it runs from
+Runtime credentials stay outside Git. Provide `POSTIZ_API_KEY` when using Postiz and a healthy
+registered CloakBrowser X session for source collection and exact readback. Browser identities are
+resolved through the local browser registry rather than hardcoded CDP ports. The Chinese collector
+also requires the `crwl` CLI on `PATH`.
 
-launchd points at **`~/profitable-claude/.worktrees/x-repost/`**, not the main checkout, for the
-same reason the gig pass does: the main tree follows whatever branch someone is working on, and a
-`git checkout` there deletes this skill out from under a scheduled job (that happened once during
-the build, 2026-08-17). The runtime worktree stays pinned to `feature/x-repost-loop`, so the daily
-pass is immune to branch changes. `state/` — including `posted.jsonl` — lives inside that worktree.
-
-## Run
+## Test
 
 ```bash
-W=~/profitable-claude/.worktrees/x-repost/skills/x-repost
-bash $W/x-repost-cli.sh          # one pass, then exit
-bash $W/x-repost-healthcheck.sh  # schedule + heartbeat check
-launchctl kickstart gui/$(id -u)/ai.anicca.x-repost-pass   # fire now, do not wait for 10:25
+python3 -m unittest discover -s skills/x-repost/tests -p 'test_*.py' -v
+python3 -m unittest discover -s skills/x-tweeter/tests -p 'test_*.py' -v
+python3 bin/plistgen.py --loops-dir loops --out-dir /tmp/x-loop-plists --only x-repost --diff
+python3 bin/plistgen.py --loops-dir loops --out-dir /tmp/x-loop-plists --only x-repost-ja --diff
+python3 bin/plistgen.py --loops-dir loops --out-dir /tmp/x-loop-plists --only x-tweeter --diff
 ```
+
+## Install on a Mac
+
+Cut a read-only release from a pushed main commit, generate plists, then load the owners through the
+safe launchctl wrapper:
+
+```bash
+bash bin/cut-loop-release.sh origin/main
+for loop in x-repost x-repost-ja x-tweeter; do
+  python3 ~/loops/current/bin/plistgen.py \
+    --loops-dir ~/loops/current/loops \
+    --out-dir ~/Library/LaunchAgents \
+    --only "$loop"
+done
+
+bash ~/loops/current/bin/loop-install.sh \
+  ai.anicca.x-repost-pass ai.anicca.x-repost-healthcheck ai.anicca.x-repost-digest \
+  ai.anicca.x-repost-ja-pass ai.anicca.x-repost-ja-healthcheck \
+  ai.anicca.x-tweeter-pass ai.anicca.x-tweeter-healthcheck
+```
+
+launchd always executes `~/loops/current`, an atomic symlink to an immutable release. State and
+ledgers remain outside releases, so deployment and rollback cannot erase duplicate protection.
+Healthchecks run every five minutes.
+
+## Verification
+
+Do not treat process exit, provider acceptance, or a draft as publication. For each owner require:
+
+- loaded launchd `ProgramArguments` pointing through `~/loops/current`;
+- `last exit code = 0`;
+- a new `posted.jsonl` row;
+- an exact X permalink in the post receipt;
+- a second wake that creates no duplicate effect for the consumed source.
+
+Every pass writes `~/loops/<owner>/evidence/<pass-id>/` with candidate, prompt, model, critic,
+publish, and readback receipts.
