@@ -19,11 +19,12 @@ set -uo pipefail
 
 URL_FILE="$HOME/.openclaw/state/anicca_phone_url.txt"
 HEALTH="http://localhost:3100/health"
-LABEL="ai.anicca.phone-conversation"
-UID_NUM=$(id -u)
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+LOOP_CLI="${LIFE_MANAGER_LOOP_CLI:-$ROOT/bin/lm-loop}"
+SLEEP_SECONDS="${TUNNEL_WATCH_SLEEP_SECONDS:-30}"
 
 while true; do
-  sleep 30
+  sleep "$SLEEP_SECONDS"
   # current live tunnel URL (written by tunnel.sh)
   want=$(cat "$URL_FILE" 2>/dev/null | tr -d '[:space:]')
   [ -z "$want" ] && continue
@@ -33,6 +34,7 @@ while true; do
   # if sutando is up AND its URL differs from the live tunnel → restart sutando
   if [ -n "$got" ] && [ "$want" != "$got" ]; then
     echo "$(date '+%H:%M:%S') tunnel rotated: sutando=$got live=$want → restarting sutando"
-    launchctl kickstart -k "gui/$UID_NUM/$LABEL" 2>&1 | head -1
+    "$LOOP_CLI" restart phone-conversation
   fi
+  [ "${TUNNEL_WATCH_ONCE:-0}" = "1" ] && exit 0
 done
