@@ -35354,3 +35354,7 @@
 {"ts":1787785205,"wake_id":"00MTAP5GZS153B73F618F042F6","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1787785337,"wake_id":"00MTAP8AW6102E9BF64D6F42C7","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1787785469,"wake_id":"00MTAPB53N7F869AA8B3274BDE","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787785604,"wake_id":"00MTAPE1DF0823CFA52B284908","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787785807,"wake_id":"00MTAPIDJX094936F875F842D3","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787787506,"wake_id":"00MTAQISOY722E3C1533F74887","kind":"shutdown","sleep_s":0}
+{"ts":1787789425,"wake_id":"00MTARNX1P8D5F393A17C74EBC","kind":"wake_error","sleep_s":60,"model":"auto"}
