@@ -39,3 +39,20 @@ test("ASC campaign totals are measured only from a matching detailed-report toke
   const measured = summarize(honne, downloads, engagement, [], detailed); assert.equal(measured.metrics.campaign_first_time_downloads.value, 6); assert.equal(measured.metrics.campaign_impressions.value, 20); assert.equal(measured.campaign_status, "measured");
   const withheld = summarize(honne, downloads, engagement.map((row) => ({ ...row, Campaign: "other" })), [], detailed.map((row) => ({ ...row, Campaign: "other" }))); assert.equal(withheld.metrics.campaign_first_time_downloads.value, null); assert.equal(withheld.metrics.campaign_first_time_downloads.status, "unavailable");
 });
+
+test("ASC proceeds aggregate only the exact app financial rows and stay unavailable without a finance source", () => {
+  const product = PRODUCTS[0];
+  const downloads = [{ Date: "2026-08-23", "App Apple Identifier": product.app_id, "Download Type": "First-time download", Counts: "1" }];
+  const engagement = [{ Date: "2026-08-23", "App Apple Identifier": product.app_id, Event: "Impression", "Page Type": "No page", Counts: "1", "Unique Counts": "1" }];
+  const finance = [{ "Apple Identifier": product.app_id, "Developer Proceeds": "4.50", "Currency of Proceeds": "USD" }, { "Apple Identifier": "other-app", "Developer Proceeds": "99.00", "Currency of Proceeds": "USD" }];
+  const measured = summarize(product, downloads, engagement, [], [], finance);
+  assert.deepEqual(measured.metrics.proceeds, { status: "measured", value: 4.5, currency: "USD", source: "app_store_connect_financial" });
+  const unavailable = summarize(product, downloads, engagement, [], [], null);
+  assert.deepEqual(unavailable.metrics.proceeds, { status: "unavailable", value: null, reason: "finance_report_unavailable" });
+});
+
+test("ASC proceeds reject missing values instead of coercing them to zero", () => {
+  const product = PRODUCTS[0];
+  const malformed = summarize(product, [{ Date: "2026-08-23" }], [{ Date: "2026-08-23", Event: "Impression" }], [], [], [{ "Apple Identifier": product.app_id, "Developer Proceeds": "", "Currency of Proceeds": "USD" }]);
+  assert.deepEqual(malformed.metrics.proceeds, { status: "unavailable", value: null, reason: "finance_value_invalid" });
+});
