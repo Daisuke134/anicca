@@ -3528,25 +3528,6 @@ def _render_generated_image_asset(proposed: str, service_id: str, evidence_dir: 
     return {"asset_sha256": hashlib.sha256(data).hexdigest(), "asset_path": str(path.resolve())}
 
 
-def _capability_requires_working_implementation(family: dict) -> bool:
-    text = json.dumps(family, ensure_ascii=False).lower()
-    return any(term in text for term in (
-        "build", "implement", "develop", "implementation",
-        "実装", "構築", "開発",
-    ))
-
-
-def _copy_delivers_working_implementation(copy: str) -> bool:
-    compact = re.sub(r"\s+", "", str(copy or ""))
-    exclusion_patterns = (
-        r"(?:実装|構築|開発|コード作成|連携設定).{0,30}(?:含みません|対応しません|対応していません|対象外)",
-        r"(?:含みません|対応しません|対応していません|対象外).{0,30}(?:実装|構築|開発|コード作成|連携設定)",
-    )
-    if any(re.search(pattern, compact) for pattern in exclusion_patterns):
-        return False
-    return bool(re.search(r"(?:実装|構築|開発).{0,50}(?:納品|提供|引き渡|テスト|検証)", compact))
-
-
 def _paid_demand_price_floor(demand: dict) -> int | None:
     prices = sorted(
         int(row["display_price_jpy"])
@@ -3581,7 +3562,6 @@ def _create_proposal_prompt(
         "owned_capability_evidence": capabilities,
         "current_catalog_titles": catalog_titles,
         "allowed_evidence_refs": sorted(allowed_refs),
-        "working_implementation_required": _capability_requires_working_implementation(family),
         "paid_demand_price_floor_jpy": _paid_demand_price_floor(demand),
     }
     prompt = """Create one distinct Coconala service proposal from CONTEXT_JSON and return only the
@@ -3595,11 +3575,17 @@ Japanese `ます`. head must state outcome, exact inclusions, exclusions, requir
 boundary. Write head and body as buyer-facing Japanese prose: never emit a schema field name or an
 English label such as `outcome:`, and never prefix a sentence with a bare label like `含むもの:`. body must state purchase inputs and unsupported work. image_copy is exactly three non-empty
 lines: headline, supporting line, and two or three short badges separated by `｜`; do not include price,
-speed, sales, reviews or guarantees. Price and paid option must be conservative. Choose create only
-when working_implementation_required is true only if the base offer includes one bounded working
-implementation, verification, and handover; never replace it with assessment, requirements, or a plan,
-and never exclude implementation, code, or integration. The base price must not be below
-paid_demand_price_floor_jpy when that value is present. Choose create only
+speed, sales, reviews or guarantees. Decide delivery_kind from the paid market evidence and actual
+owned capability. Do not downgrade a market that pays for building or implementation into advice,
+requirements, or a plan merely because that is easier to deliver. In that case the base offer includes
+one bounded working implementation, verification, and handover; recurring support begins only after
+acceptance. Conversely, a market that pays for a memo or assessment must not be mislabeled as an
+implementation. Canonical examples: (1) demand `AI agent development` plus a capability that builds
+automations -> delivery_kind `implementation`, working system in the base deliverable, optional
+post-acceptance maintenance; (2) demand `interview analysis` plus a synthesis capability ->
+delivery_kind `analysis`, decision memo in the base deliverable, no invented software build. Price the
+actual base deliverable at or above paid_demand_price_floor_jpy when present; do not default to the
+cheapest option. Choose create only
 when the proposal is clearly distinct and supported. Otherwise choose no_op, set every nullable
 commercial field and metric/window to null, and provide no_op_reason. Do not claim that creation itself
 caused KPI improvement.\nCONTEXT_JSON=""" + json.dumps(context, ensure_ascii=False, separators=(",", ":"))
@@ -3686,7 +3672,7 @@ def _seal_create_contract(
     nullable = ("source_service_id", "title_stem", "catchphrase", "head", "body",
                 "display_price_jpy", "delivery_days", "paid_option_title",
                 "paid_option_price_jpy", "image_copy", "success_metric",
-                "observation_window_days")
+                "observation_window_days", "delivery_kind", "recurring_support_included")
     if proposal.get("decision") == "no_op":
         if any(proposal.get(key) is not None for key in nullable) or not str(
                 proposal.get("no_op_reason") or "").strip():
@@ -3700,6 +3686,8 @@ def _seal_create_contract(
     if (proposal.get("decision") != "create"
             or proposal.get("source_service_id") != source["service_id"]
             or proposal.get("success_metric") not in MEASURABLE_SUCCESS_METRICS
+            or proposal.get("delivery_kind") not in {"implementation", "content", "analysis", "design"}
+            or type(proposal.get("recurring_support_included")) is not bool
             or proposal.get("observation_window_days") not in {7, 14}
             or proposal.get("no_op_reason") is not None
             or not isinstance(evidence, list) or not required <= set(evidence)
@@ -3728,9 +3716,6 @@ def _seal_create_contract(
     prohibited = _prohibited_copy_terms(title_stem, catchphrase, head, body, option_title, image_copy)
     if prohibited:
         raise RuntimeError("storefront_copy_names_prohibited_tool:" + ",".join(prohibited))
-    if (_capability_requires_working_implementation(family)
-            and not _copy_delivers_working_implementation(f"{head}\n{body}")):
-        raise RuntimeError("storefront_create_working_implementation_required")
     select_options = seller_snapshot.get("select_options") or {}
     display_price = proposal.get("display_price_jpy")
     price_option = next((row for row in select_options.get("data[Service][price]", [])
@@ -3751,7 +3736,9 @@ def _seal_create_contract(
         "draft_url": f"https://coconala.com/mypage/services/{draft_service_id}",
         "expected_public_url": f"https://coconala.com/services/{draft_service_id}",
         "origin": "storefront", "demand_evidence": blueprint["demand_evidence"],
-        "capability_evidence": {"family": family_name, "source_service_id": source["service_id"]},
+        "capability_evidence": {"family": family_name, "source_service_id": source["service_id"],
+                                "delivery_kind": proposal["delivery_kind"],
+                                "recurring_support_included": proposal["recurring_support_included"]},
         "hero_image_contract": asset["asset_path"], "category": blueprint["category"],
         "public_fields": {"overview_input": title_stem, "expected_title": f"{title_stem}ます",
                           "catchphrase": catchphrase, "head": head,

@@ -5,7 +5,8 @@
   "required": [
     "decision", "source_service_id", "title_stem", "catchphrase", "head", "body",
     "display_price_jpy", "delivery_days", "paid_option_title", "paid_option_price_jpy",
-    "image_copy", "hypothesis", "evidence", "success_metric", "observation_window_days",
+    "image_copy", "delivery_kind", "recurring_support_included",
+    "hypothesis", "evidence", "success_metric", "observation_window_days",
     "no_op_reason", "uncertainty"
   ],
   "properties": {
@@ -20,6 +21,8 @@
     "paid_option_title": {"type": ["string", "null"], "minLength": 1, "maxLength": 60},
     "paid_option_price_jpy": {"type": ["integer", "null"], "minimum": 500, "maximum": 1000000},
     "image_copy": {"type": ["string", "null"], "maxLength": 240},
+    "delivery_kind": {"type": ["string", "null"], "enum": ["implementation", "content", "analysis", "design", null]},
+    "recurring_support_included": {"type": ["boolean", "null"]},
     "hypothesis": {"type": "string", "minLength": 1, "maxLength": 1000},
     "evidence": {"type": "array", "minItems": 0, "maxItems": 16, "items": {"type": "string", "minLength": 1, "maxLength": 2048}},
     "success_metric": {"type": ["string", "null"], "enum": ["inquiries", "purchases", "views_to_inquiry", "views_to_purchase", "net_receipt", null]},

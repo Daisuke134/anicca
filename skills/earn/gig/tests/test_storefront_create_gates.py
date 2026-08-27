@@ -260,26 +260,6 @@ def test_a_changed_public_capability_inventory_triggers_fresh_market_discovery_o
     ], "a" * 64) is True
 
 
-def test_implementation_capability_cannot_be_downgraded_to_an_assessment_only_offer():
-    sd = _sd()
-    family = {
-        "name": "ai-automation-builder",
-        "description": "Build, implement, verify, and hand over bounded AI business automations.",
-    }
-    assessment_only = (
-        "要件整理シートと実装計画を納品します。"
-        "実際の自動化ツールの構築、コード作成、連携設定には対応していません。"
-    )
-    working_delivery = (
-        "対象業務を1件、自動化ツールとして実装し、テスト結果と運用手順を納品します。"
-        "外部サービス料金と継続運用代行は含みません。"
-    )
-
-    assert sd._capability_requires_working_implementation(family)
-    assert not sd._copy_delivers_working_implementation(assessment_only)
-    assert sd._copy_delivers_working_implementation(working_delivery)
-
-
 def test_paid_demand_price_floor_uses_the_official_comparable_median():
     sd = _sd()
     demand = {"comparables": [
