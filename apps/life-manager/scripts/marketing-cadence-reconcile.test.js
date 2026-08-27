@@ -56,6 +56,7 @@ test("cadence reconciliation classifies each due slot from launchd schedule and 
   assert.equal(fs.existsSync(result.file), true);
   assert.equal(JSON.parse(fs.readFileSync(result.file, "utf8")).counts.duplicate, 1);
   assert.equal(JSON.parse(fs.readFileSync(result.file, "utf8")).product_id, "mobile-marketing");
+  assert.equal(JSON.parse(fs.readFileSync(result.file, "utf8")).kind, "marketing_product_metric_summary");
 });
 
 test("cadence reconciliation leaves future slots pending and never turns a miss into zero metrics", async () => {
