@@ -311,6 +311,35 @@ def test_delivery_cadence_accepts_oversize_linked_asset_and_latest_buyer_approva
     assert cadence.delivery_decision(item)["mode"] == "formal"
 
 
+def test_review_ready_acceptance_routes_to_progress_not_formal(tmp_path):
+    cadence = load("delivery_cadence")
+    queue = load("delivery_queue")
+    artifact = tmp_path / "draft-v1.wav"
+    artifact.write_bytes(b"review draft")
+    acceptance = tmp_path / "acceptance.json"
+    write_json(acceptance, {"status": "REVIEW_READY"})
+    digest = hashlib.sha256(artifact.read_bytes()).hexdigest()
+    item = {"talkroom_id": "123", "buyer_feedback_stage": "initial_request"}
+    evidence_root = tmp_path / "evidence"
+    evidence_root.mkdir()
+    write_json(queue.evidence_path(evidence_root, item), {
+        "status": "REVIEW_READY",
+        "project_root": str(tmp_path),
+        "artifact_path": str(artifact),
+        "artifact_version": "v1",
+        "acceptance_status": "REVIEW_READY",
+        "acceptance_evidence_path": str(acceptance),
+        "package_sha256": digest,
+    })
+
+    evidence, blockers = queue.delivery_gate(item, evidence_root, tmp_path / "projects")
+    decision = cadence.delivery_decision({**item, **evidence, "blockers": blockers})
+
+    assert "missing_acceptance_evidence" not in blockers
+    assert decision["mode"] == "progress"
+    assert decision["formal_delivery_checkbox"] is False
+
+
 def test_formal_browser_accepts_latest_buyer_approval_and_linked_asset():
     formal = load("coconala_formal_delivery_browser")
     buyer = {"message_id": "buyer-approval", "content_sha256": "a" * 64, "side": "buyer"}

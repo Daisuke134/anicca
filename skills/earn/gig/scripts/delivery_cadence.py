@@ -144,7 +144,9 @@ def _acceptance_ready(item: dict[str, Any]) -> bool:
     # A boolean emitted by a model or local ledger is not evidence.  The
     # acceptance report must be a real file in the request-scoped workspace.
     evidence_path = str(item.get("acceptance_evidence_path") or "")
-    return status == "PASS" and bool(evidence_path and Path(evidence_path).is_file())
+    return status in {"PASS", "REVIEW_READY"} and bool(
+        evidence_path and Path(evidence_path).is_file()
+    )
 
 
 def _delivery_attempt() -> Any:
@@ -437,6 +439,8 @@ def delivery_decision(item: dict[str, Any]) -> dict[str, Any]:
     approval = item.get("formal_approval_evidence")
     latest_identity = item.get("latest_buyer_message_identity") or item.get("latest_message_identity")
     formal_approval_ready = (
+        str(item.get("acceptance_status") or "").upper() == "PASS"
+        and
         isinstance(approval, dict)
         and isinstance(latest_identity, dict)
         and approval == latest_identity

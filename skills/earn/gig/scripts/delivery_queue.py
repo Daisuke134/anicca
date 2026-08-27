@@ -398,7 +398,7 @@ def delivery_gate(
         blockers.append("artifact_exceeds_marketplace_limit")
     acceptance_value = evidence.get("acceptance_evidence_path")
     acceptance = Path(os.path.expanduser(str(acceptance_value))) if acceptance_value else None
-    if evidence.get("acceptance_status") != "PASS" or not acceptance or not acceptance.is_file():
+    if evidence.get("acceptance_status") not in {"PASS", "REVIEW_READY"} or not acceptance or not acceptance.is_file():
         blockers.append("missing_acceptance_evidence")
     package_hash = str(evidence.get("package_sha256") or "")
     if not artifact or not artifact.is_file() or not re.fullmatch(r"[0-9a-f]{64}", package_hash) or sha256_file(artifact) != package_hash:
