@@ -134,6 +134,21 @@ class LmLoopApplyTest(unittest.TestCase):
         self.assertEqual(installed["ThrottleInterval"], 30)
         self.assertEqual(installed["ProgramArguments"], rendered["expected_arguments"])
 
+    def test_swap_waits_for_launchd_to_settle_after_bootout(self):
+        target = self.root / "installed.plist"
+        target.write_bytes(plistlib.dumps({
+            "Label": "ai.anicca.example", "ProgramArguments": ["/old/run.sh"]}))
+        rendered = build_apply_plan(registry(), self.root, SHA)[0]
+        sleeps = []
+
+        def launchctl(args):
+            if args[0] == "print":
+                return 0, "arguments = {\n" + "\n".join(rendered["expected_arguments"]) + "\n}\n"
+            return 0, ""
+
+        install_one(rendered, target, launchctl, attempts=1, sleeper=sleeps.append)
+        self.assertEqual(sleeps, [1.0])
+
 
 if __name__ == "__main__":
     unittest.main()

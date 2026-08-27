@@ -7,6 +7,7 @@ import os
 import plistlib
 import re
 import tempfile
+import time
 from pathlib import Path
 from typing import Callable
 
@@ -127,7 +128,8 @@ def _loaded_arguments(text: str) -> list[str]:
 
 
 def install_one(item: dict, target: Path,
-                launchctl: Callable[[list[str]], tuple[int, str]], *, attempts: int = 3) -> dict:
+                launchctl: Callable[[list[str]], tuple[int, str]], *, attempts: int = 3,
+                sleeper: Callable[[float], None] = time.sleep) -> dict:
     label = item["label"]
     domain = f"gui/{os.getuid()}"
     service = f"{domain}/{label}"
@@ -136,6 +138,7 @@ def install_one(item: dict, target: Path,
     was_loaded = initial_rc == 0
     _atomic_write(target, _preserve_operational_attributes(item["plist_bytes"], old_bytes))
     launchctl(["bootout", service])
+    sleeper(1.0)
     last_detail = ""
     for _ in range(attempts):
         bootstrap_rc, last_detail = launchctl(["bootstrap", domain, str(target)])
@@ -146,6 +149,7 @@ def install_one(item: dict, target: Path,
                 return {"ok": True, "label": label, "loaded_arguments": loaded,
                         "release_sha": item["release_sha"]}
         launchctl(["bootout", service])
+        sleeper(1.0)
     if old_bytes is None:
         if target.exists():
             target.unlink()
