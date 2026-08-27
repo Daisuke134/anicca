@@ -1,1 +1,85 @@
-{}
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "selected": {"type": ["boolean", "null"]},
+    "source_url": {"type": ["string", "null"]},
+    "evidence_quote": {"type": ["string", "null"]},
+    "reader_value": {"type": ["string", "null"]},
+    "why": {"type": ["string", "null"]},
+    "seed_id": {"type": ["string", "null"]},
+    "evidence_translation": {"type": ["string", "null"]},
+    "drafts": {
+      "type": ["array", "null"],
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "tone": {"type": "string"},
+          "text": {"type": "string"}
+        },
+        "required": ["tone", "text"]
+      }
+    },
+    "tone": {"type": ["string", "null"]},
+    "text": {"type": ["string", "null"]},
+    "supported": {"type": ["boolean", "null"]},
+    "useful": {"type": ["boolean", "null"]},
+    "source_specific": {"type": ["boolean", "null"]},
+    "five_points": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "properties": {
+        "does_not_disparage": {"type": "boolean"},
+        "includes_positive_note": {"type": "boolean"},
+        "adds_unique_firsthand_detail": {"type": "boolean"},
+        "avoids_excessive_self_focus": {"type": "boolean"},
+        "leads_to_action": {"type": "boolean"}
+      },
+      "required": [
+        "does_not_disparage",
+        "includes_positive_note",
+        "adds_unique_firsthand_detail",
+        "avoids_excessive_self_focus",
+        "leads_to_action"
+      ]
+    },
+    "novel": {"type": ["boolean", "null"]},
+    "spam_risk": {"type": ["string", "null"]},
+    "unsupported_claims": {
+      "type": ["array", "null"],
+      "items": {"type": "string"}
+    },
+    "near_duplicate_post_ids": {
+      "type": ["array", "null"],
+      "items": {"type": "string"}
+    },
+    "value_types": {
+      "type": ["array", "null"],
+      "items": {"type": "string"}
+    },
+    "reason": {"type": ["string", "null"]}
+  },
+  "required": [
+    "selected",
+    "source_url",
+    "evidence_quote",
+    "reader_value",
+    "why",
+    "seed_id",
+    "evidence_translation",
+    "drafts",
+    "tone",
+    "text",
+    "supported",
+    "useful",
+    "source_specific",
+    "five_points",
+    "novel",
+    "spam_risk",
+    "unsupported_claims",
+    "near_duplicate_post_ids",
+    "value_types",
+    "reason"
+  ]
+}

@@ -10,9 +10,18 @@ from pathlib import Path
 
 SCRIPT = Path(__file__).parents[1] / "scripts" / "model_boundary.py"
 CLI = Path(__file__).parents[1] / "x-repost-cli.sh"
+MODEL_SCHEMA = Path(__file__).parents[1] / "config" / "model-output.schema.json"
 
 
 class ModelBoundaryTest(unittest.TestCase):
+    def test_shared_model_schema_is_strict_and_covers_each_stage(self) -> None:
+        schema = json.loads(MODEL_SCHEMA.read_text())
+        self.assertEqual(schema["type"], "object")
+        self.assertFalse(schema["additionalProperties"])
+        self.assertEqual(set(schema["required"]), set(schema["properties"]))
+        for field in ("selected", "drafts", "tone", "text", "supported", "five_points"):
+            self.assertIn(field, schema["properties"])
+
     def run_boundary(self, *args: str) -> subprocess.CompletedProcess[str]:
         return subprocess.run(
             [sys.executable, str(SCRIPT), *args], check=False, text=True,
