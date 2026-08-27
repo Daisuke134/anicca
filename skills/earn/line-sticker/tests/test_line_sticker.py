@@ -1678,6 +1678,58 @@ class LineStickerOwnerTests(unittest.TestCase):
         self.assertEqual(replay_completed.returncode, 2)
         self.assertEqual(json.loads(replay_completed.stdout), {"reason": "ledger_conflict", "status": "error"})
 
+    def test_state_cli_binds_acknowledgement_before_status_to_action_history(self) -> None:
+        def state_cli() -> subprocess.CompletedProcess[str]:
+            return subprocess.run(
+                [sys.executable, str(MODULE_ROOT / "line_sticker.py"), "state", "--state-dir", str(self.state)],
+                check=False,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+
+        for action, forged_before in (("submit", "approved"), ("release", "absent"), ("replay", "approved")):
+            with self.subTest(action=action):
+                self.tearDown()
+                self.setUp()
+                if action == "submit":
+                    self._wake()
+                elif action == "release":
+                    self._wake()
+                    self.provider.inventory["status"] = "approved"
+                    self._wake()
+                else:
+                    self._wake()
+                    self.provider.inventory["status"] = "approved"
+                    self._wake()
+                    self._wake()
+                    self._wake()
+                self.assertEqual(state_cli().returncode, 0)
+                ledger_path = self.state / "effects.jsonl"
+                rows = [json.loads(line) for line in ledger_path.read_text(encoding="utf-8").splitlines()]
+                acknowledged = rows[-1]
+                rows[-1] = MODULE._receipt(
+                    json.loads((self.state / "owner.json").read_text(encoding="utf-8"))["identity"],
+                    action=action,
+                    product_id=acknowledged["product_id"],
+                    before_status=forged_before,
+                    after_status=acknowledged["after_status"],
+                    outcome="acknowledged",
+                )
+                ledger_path.write_text("".join(json.dumps(row, sort_keys=True) + "\n" for row in rows), encoding="utf-8")
+                completed = state_cli()
+                self.assertEqual(completed.returncode, 2)
+                self.assertEqual(json.loads(completed.stdout), {"reason": "ledger_conflict", "status": "error"})
+
+        self.tearDown()
+        self.setUp()
+        self.provider.raise_on_submit = True
+        self._wake()
+        self.provider.raise_on_submit = False
+        resolved = self._wake()
+        self.assertEqual((resolved["state"], resolved["effect"], resolved["readback"]), ("WAITING_REVIEW", 0, 1))
+        self.assertEqual(state_cli().returncode, 0)
+
     def test_valid_package_bytes_changed_after_creation_are_rejected(self) -> None:
         self._wake()
         _replace_asset(self.root, "01.png", _png(270, 270, animated=True, marker="changed"))

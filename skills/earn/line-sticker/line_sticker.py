@@ -940,6 +940,7 @@ def _read_receipts(path: Path, identity: dict[str, object]) -> list[dict[str, ob
     rows: list[dict[str, object]] = []
     seen_receipt_ids: set[str] = set()
     seen_outcomes: set[tuple[str, str]] = set()
+    intent_rows: dict[str, dict[str, object]] = {}
     unknown_rows: dict[str, int] = {}
     acknowledged_rows: dict[str, int] = {}
     for raw in raw_lines:
@@ -994,9 +995,23 @@ def _read_receipts(path: Path, identity: dict[str, object]) -> list[dict[str, ob
             raise OwnerStateError("ledger_duplicate")
         seen_outcomes.add(outcome_key)
         outcome = str(row["outcome"])
-        if outcome == "unknown":
+        key = str(row["effect_key"])
+        if outcome == "intent":
+            intent_rows[key] = row
+        elif outcome == "unknown":
+            intent = intent_rows.get(key)
+            if intent is None or row["before_status"] != intent["before_status"]:
+                raise OwnerStateError("ledger_conflict")
             unknown_rows[str(row["effect_key"])] = len(rows)
         elif outcome == "acknowledged":
+            if row["action"] != "replay":
+                intent = intent_rows.get(key)
+                resolving = key in unknown_rows
+                expected_before = "unknown" if resolving else {"submit": "absent", "release": "approved"}[str(row["action"])]
+                if intent is None or row["before_status"] != expected_before or (
+                    not resolving and row["before_status"] != intent["before_status"]
+                ):
+                    raise OwnerStateError("ledger_conflict")
             acknowledged_rows[str(row["effect_key"])] = len(rows)
         expected = (0, 1, 0) if row["action"] == "replay" else {
             "intent": (1, 0, 0),
@@ -1010,8 +1025,6 @@ def _read_receipts(path: Path, identity: dict[str, object]) -> list[dict[str, ob
         if outcome == "acknowledged" and row["action"] == "submit" and row["after_status"] not in ("submitted", "rejected", "approved"):
             raise OwnerStateError("ledger_conflict")
         if outcome == "acknowledged" and row["action"] == "release" and row["after_status"] != "released":
-            raise OwnerStateError("ledger_conflict")
-        if outcome == "acknowledged" and row["action"] != "replay" and expected[0] is None and row["before_status"] != "unknown":
             raise OwnerStateError("ledger_conflict")
         rows.append(row)
     by_effect: dict[str, set[str]] = {}
