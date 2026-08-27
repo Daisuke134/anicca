@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Recover verified paid remote answers through existing delivery boundaries."""
 from __future__ import annotations
-import argparse, fcntl, hashlib, json, os, re, shutil, signal, stat, subprocess, sys, tempfile, threading, time, zipfile
+import argparse, fcntl, hashlib, json, mimetypes, os, re, shutil, signal, stat, subprocess, sys, tempfile, threading, time, zipfile
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from datetime import date, datetime
@@ -2343,6 +2343,26 @@ def _normalize_acceptance_delta(root: Path) -> None:
     artifact_assets = manifest.get("artifact_assets")
     if not isinstance(required_assets, list) or not isinstance(artifact_assets, list):
         raise ValueError("invalid asset contract")
+    artifact_path = Path(_text(manifest.get("artifact_path"))).resolve()
+    for asset in artifact_assets:
+        member = _text(asset.get("archive_member")) if isinstance(asset, dict) else ""
+        if not member:
+            continue
+        if artifact_path.suffix.casefold() != ".zip" or not artifact_path.is_file():
+            raise ValueError("invalid archive asset")
+        try:
+            with zipfile.ZipFile(artifact_path) as archive:
+                data = archive.read(member)
+        except (KeyError, OSError, zipfile.BadZipFile) as error:
+            raise ValueError("invalid archive member") from error
+        asset["path"] = str(artifact_path)
+        asset["bytes"] = len(data)
+        asset["sha256"] = hashlib.sha256(data).hexdigest()
+        asset["mime_type"] = mimetypes.guess_type(member)[0] or "application/octet-stream"
+        if not isinstance(asset.get("provenance"), str):
+            asset["provenance"] = json.dumps(
+                asset.get("provenance"), ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+            )
     if (acceptance_status == "BLOCKED_NON_DELEGABLE"
             and not _text(acceptance.get("blocking_action"))):
         raise ValueError("missing non-delegable blocking action")

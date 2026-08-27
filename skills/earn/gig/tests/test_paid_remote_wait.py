@@ -680,3 +680,40 @@ def test_paid_runner_contract_matches_runtime_terra_route():
     assert paid.PAID_DECISION_MODEL == "gpt-5.6-terra"
     assert paid.PAID_FILE_MODEL == "gpt-5.6-terra"
     assert ("codex", "gpt-5.6-terra") in paid.PAID_RUNNER_CANDIDATES
+
+
+def test_normalize_acceptance_repairs_archive_member_bookkeeping(tmp_path):
+    paid = load("paid_direct")
+    root = tmp_path / "project"
+    (root / "delivery").mkdir(parents=True)
+    (root / "acceptance").mkdir()
+    (root / "context").mkdir()
+    write_json(root / "context" / "paid-work-decision.json", {"required_assets": []})
+    member = b"member audio"
+    archive = root / "delivery" / "draft-v1.zip"
+    import zipfile
+    with zipfile.ZipFile(archive, "w") as bundle:
+        bundle.writestr("draft-v1.wav", member)
+    acceptance = root / "acceptance" / "acceptance-v1.json"
+    write_json(acceptance, {"status": "REVIEW_READY", "acceptance_delta": ["review"]})
+    write_json(root / "delivery" / "paid-work-result.json", {
+        "status": "REVIEW_READY",
+        "artifact_path": str(archive),
+        "acceptance_evidence_path": str(acceptance),
+        "acceptance_status": "REVIEW_READY",
+        "acceptance_delta": ["review"],
+        "required_assets": [],
+        "artifact_assets": [{
+            "asset_id": "draft", "path": str(archive), "archive_member": "draft-v1.wav",
+            "bytes": archive.stat().st_size, "sha256": hashlib.sha256(archive.read_bytes()).hexdigest(),
+            "mime_type": "application/zip", "provenance": {"kind": "builder"},
+        }],
+    })
+
+    paid._normalize_acceptance_delta(root)
+    asset = json.loads((root / "delivery" / "paid-work-result.json").read_text())["artifact_assets"][0]
+
+    assert asset["bytes"] == len(member)
+    assert asset["sha256"] == hashlib.sha256(member).hexdigest()
+    assert asset["mime_type"] in {"audio/wav", "audio/x-wav"}
+    assert isinstance(asset["provenance"], str)
