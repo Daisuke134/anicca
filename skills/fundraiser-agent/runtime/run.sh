@@ -14,7 +14,7 @@ SCHEMA="$REPO_ROOT/skills/fundraiser-agent/runtime/pass-result.schema.json"
 SENDER="$REPO_ROOT/skills/_shared/send-telegram.sh"
 PHOTO_SENDER="$REPO_ROOT/skills/_shared/send-telegram-photo.sh"
 MIN_FREE_KIB=$((1536 * 1024))
-PRESSURE_FREE_KIB=$((4 * 1024 * 1024))
+PRESSURE_FREE_KIB=$((2 * 1024 * 1024))
 DISK_PRESSURE_FLAG="$HOME/.openclaw/state/disk-pressure.block"
 
 available_kib() {

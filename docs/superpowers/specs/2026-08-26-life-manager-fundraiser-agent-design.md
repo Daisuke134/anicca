@@ -79,7 +79,7 @@ that bounded owner; no second daemon, database worker, provider adapter, or MCP 
 - X is lead evidence; eligibility, deadline, terms, and application route MUST come from an official page.
 - Failed or ineligible discovery remains run evidence and MUST NOT become a funder/source registry.
 - The acquisition target is maximum truthful throughput with a one-minute wake. Zero applications is a failed pass, and one submission does not end a pass.
-- The shared disk-pressure flag defers Fundraiser only below its measured 4 GiB pressure floor; the absolute 1.5 GiB preflight remains mandatory. The host governor's 20 GiB hysteresis must not turn a safe local pressure warning into an indefinite Fundraiser shutdown.
+- The shared disk-pressure flag defers Fundraiser only below its measured 2 GiB pressure floor; the absolute 1.5 GiB preflight remains mandatory. The host governor's 20 GiB hysteresis must not turn a safe local pressure warning into an indefinite Fundraiser shutdown.
 
 ## 6. Execution Steps
 
