@@ -382,6 +382,7 @@ test("production queue enforces founder geography, format, priority, and YC hold
   assert.match(dailyPrompt, /operate on the visible, enabled\s+control inside the active dialog/);
   assert.match(dailyPrompt, /first\(\.\. \| objects \| select/);
   assert.match(dailyPrompt, /never serialize the JSON\s+object into a public form/);
+  assert.match(dailyPrompt, /Every coordinate passed to `cdp\.py clickxy` must be a validated base-10 integer/);
 });
 
 test("unseen rendered fields are filled from startup context and read back after one submit", async () => {
