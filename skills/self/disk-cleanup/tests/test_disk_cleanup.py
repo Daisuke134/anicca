@@ -421,6 +421,26 @@ def test_open_whisper_cache_is_preserved(tmp_path: Path) -> None:
     assert result["preserved_reasons"] == {"open": 1}
 
 
+def test_closed_exact_runtime_cache_with_source_named_dependency_is_reclaimed(tmp_path: Path) -> None:
+    cache = tmp_path / ".cache/codex-runtimes"
+    dependency = cache / "dependencies/source"
+    dependency.mkdir(parents=True)
+    (dependency / "payload.bin").write_bytes(b"x" * 32)
+    governor = HostDiskGovernor(
+        home=tmp_path,
+        state_dir=tmp_path / "state",
+        lsof=lambda _path: "confirmed-closed",
+        usage=lambda: (0, 1),
+    )
+
+    candidates = [item for item in governor.discover_candidates()
+                  if item["owner"] == "codex-runtime-cache"]
+    result = governor.sweep(candidates)
+
+    assert not cache.exists()
+    assert result["reclaimed"] == 32
+
+
 def test_lsof_stderr_is_probe_error(monkeypatch) -> None:
     class Result:
         returncode = 1

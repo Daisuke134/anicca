@@ -630,7 +630,8 @@ class HostDiskGovernor:
                 result["errors"] += state == "probe-error"
                 preserve(state)
                 continue
-            descendant_state = self._protected_descendant(path, deadline=deadline)
+            exact_cache = item.get("owner") in {"codex-runtime-cache", "whisper-model-cache"}
+            descendant_state = None if exact_cache else self._protected_descendant(path, deadline=deadline)
             if descendant_state is not None:
                 result["errors"] += descendant_state == "descendant_probe_error"
                 preserve(descendant_state)
@@ -648,7 +649,7 @@ class HostDiskGovernor:
             if deadline is not None and self.clock() + POST_SWEEP_RESERVE_SECONDS >= deadline:
                 preserve("probe-budget-exhausted")
                 continue
-            descendant_state = self._protected_descendant(path, deadline=deadline)
+            descendant_state = None if exact_cache else self._protected_descendant(path, deadline=deadline)
             if descendant_state is not None:
                 result["errors"] += descendant_state == "descendant_probe_error"
                 preserve(descendant_state)
