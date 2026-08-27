@@ -588,6 +588,25 @@ def test_resumed_file_owner_refreshes_controller_tool_results(tmp_path):
     assert (staging / "context" / "paid-tool-results.json").read_text() == '{"status":"success"}'
 
 
+def test_empty_tool_request_cannot_overwrite_success_receipt(tmp_path):
+    paid = load("paid_direct")
+    staging, root = tmp_path / "staging", tmp_path / "root"
+    (staging / "delivery").mkdir(parents=True)
+    (root / "context").mkdir(parents=True)
+    (staging / "delivery" / "paid-tool-requests.json").write_text(
+        '{"version":1,"requests":[]}'
+    )
+    (staging / "delivery" / "paid-tool-results.json").write_text(
+        '{"version":1,"results":[]}'
+    )
+    success = '{"version":1,"status":"success"}'
+    (root / "context" / "paid-tool-results.json").write_text(success)
+
+    paid._persist_owner_tool_failure(staging, root)
+
+    assert (root / "context" / "paid-tool-results.json").read_text() == success
+
+
 def test_paid_effect_child_does_not_take_global_browser_lock(tmp_path):
     paid = load("paid_direct")
     args = SimpleNamespace(**{

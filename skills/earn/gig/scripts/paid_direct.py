@@ -3051,7 +3051,8 @@ def _persist_owner_tool_failure(staging: Path, root: Path) -> None:
     request = _load(request_path)
     result = _load(result_path)
     requests = request.get("requests") if isinstance(request, dict) else None
-    if (not isinstance(request, dict) or request.get("version") != 1 or not isinstance(requests, list)
+    if (not isinstance(request, dict) or request.get("version") != 1
+            or not isinstance(requests, list) or not 1 <= len(requests) <= 4
             or not isinstance(result, dict) or result.get("version") != 1):
         return
     inputs = []
