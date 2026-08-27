@@ -13,6 +13,7 @@ from pathlib import Path
 
 from runtime.loop.macos_launchd_inventory import extract_release, parse_disabled, parse_loaded
 from runtime.loop.macos_loop_registry import validate_registry
+from runtime.loop.lm_loop_apply import apply_registry, install_one
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -156,13 +157,60 @@ def snapshot(registry: dict, target: str) -> list[dict]:
                                events=events, installed_releases=releases), target)
 
 
+def _safe_launchctl(executable: Path, args: list[str]) -> tuple[int, str]:
+    result = subprocess.run([str(executable), *args], capture_output=True, text=True, timeout=30)
+    return result.returncode, result.stdout + result.stderr
+
+
+def apply_live(release_root: Path, agents_dir: Path, launchctl_safe: Path) -> list[dict]:
+    release_root = release_root.resolve()
+    registry = json.loads((release_root / "config/loop-registry.json").read_text())
+    manifest = json.loads((release_root / "RELEASE.json").read_text())
+    release_sha = manifest.get("sha")
+    plan = apply_registry(registry, release_root, release_sha, lambda item: item)
+    preflight_rc, detail = _safe_launchctl(launchctl_safe, ["preflight"])
+    if preflight_rc:
+        raise RuntimeError(f"launchctl-safe preflight failed: {detail.strip()}")
+    results = []
+    for item in plan:
+        target = agents_dir / f"{item['label']}.plist"
+        if target.is_file() and target.read_bytes() == item["plist_bytes"]:
+            rc, printed = _safe_launchctl(
+                launchctl_safe, ["print", f"gui/{os.getuid()}/{item['label']}"])
+            from runtime.loop.lm_loop_apply import _loaded_arguments
+            loaded = _loaded_arguments(printed) if rc == 0 else []
+            if loaded == item["expected_arguments"]:
+                results.append({"ok": True, "label": item["label"],
+                                "loaded_arguments": loaded, "release_sha": release_sha,
+                                "changed": False})
+                continue
+        result = install_one(
+            item, target, lambda args: _safe_launchctl(launchctl_safe, args))
+        result["changed"] = True
+        results.append(result)
+    return results
+
+
 def main(argv: list[str] | None = None) -> int:
     args = argv or sys.argv[1:]
-    if not args or args[0] not in {"doctor", "status", "watch"}:
-        print("usage: lm-loop doctor|status [<loop-id|all>]|watch [<loop-id|all>]", file=sys.stderr)
+    if not args or args[0] not in {"apply", "doctor", "status", "watch"}:
+        print("usage: lm-loop apply|doctor|status [<loop-id|all>]|watch [<loop-id|all>]", file=sys.stderr)
         return 2
-    registry = validate_registry(json.loads((ROOT / "config/loop-registry.json").read_text()))
     command = args[0]
+    if command == "apply":
+        release_root = Path(os.environ.get("LIFE_MANAGER_RELEASE_ROOT", "~/loops/current")).expanduser()
+        agents_dir = Path(os.environ.get(
+            "LIFE_MANAGER_LAUNCH_AGENTS_DIR", "~/Library/LaunchAgents")).expanduser()
+        launchctl_safe = Path(os.environ.get(
+            "LIFE_MANAGER_LAUNCHCTL_SAFE", str(release_root / "bin/launchctl-safe"))).expanduser()
+        try:
+            results = apply_live(release_root, agents_dir, launchctl_safe)
+        except (OSError, ValueError, RuntimeError, json.JSONDecodeError) as exc:
+            print(json.dumps({"ok": False, "error": str(exc)}, sort_keys=True))
+            return 1
+        print(json.dumps(results, indent=2, sort_keys=True))
+        return 0
+    registry = validate_registry(json.loads((ROOT / "config/loop-registry.json").read_text()))
     target = args[1] if len(args) > 1 else "all"
     if command == "doctor":
         loaded, _, _, _, installed = collect_live(registry)

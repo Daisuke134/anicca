@@ -1,6 +1,6 @@
 # macOS Life Manager Loop Control Plane
 
-**Status:** TODO 3 complete / TODO 4 pending
+**Status:** TODO 4 complete / TODO 5 pending
 **TODO ID:** `MACOS-LOOP-CONTROL-PLANE-1`  
 **Canonical registry:** `config/loop-registry.json`  
 **Scope:** macOS launchd only
@@ -214,7 +214,7 @@ Allowed values are closed and versioned with the registry schema:
 | 1 | ✅ Inventory every installed `ai.anicca.*` Life Manager label and classify owner/domain/effect/state/release | `docs/evidence/runtime/2026-08-28-macos-loop-control-plane-inventory.{md,json}`; 226 installed labels, 211 classified Life Manager-owned, 14 disabled/unloaded installed ambiguous, loaded/disabled-only rows retained |
 | 2 | ✅ Upgrade `config/loop-registry.json` to schema v2 and import all active definitions without changing launchd | 172/172 active classified labels; four schema/coverage/render tests; fixture SHA-256 `446034c8493ed520f585b6eb0a876a5bb5cbdfffc68d20f81bf48403259eb9f1`; `docs/evidence/runtime/2026-08-28-macos-loop-control-plane-schema-v2.md` |
 | 3 | ✅ Implement `bin/lm-loop doctor/status/watch` as read-only commands | five focused tests; live 172-row status/watch; runtime/effect truth separated; `docs/evidence/runtime/2026-08-28-macos-loop-control-plane-readonly-cli.md` |
-| 4 | Implement plist generation and fail-closed `apply` using `launchctl-safe` | invalid registry causes zero mutation; exact loaded argv readback |
+| 4 | ✅ Implement plist generation and fail-closed `apply` using `launchctl-safe` | five focused tests; production invalid generation zero mutation; isolated exact loaded argv readback and cleanup; `docs/evidence/runtime/2026-08-28-macos-loop-control-plane-atomic-apply.md` |
 | 5 | Implement `start/stop/restart` for one ID and `all`, collecting every return code | lifecycle tests and isolated labels only |
 | 6 | Add the uniform runtime event envelope at the shared runner boundary | schema tests; secret scan 0; existing ledgers remain authoritative |
 | 7 | Consolidate all model/profile selection into the shared provider router | direct `CODEX_HOME`/auth selection in loop entrypoints 0 |
@@ -243,8 +243,9 @@ stores; this control-plane slice never creates or copies credentials.
 The read-only capture joins installed plist text with loaded and disabled
 launchd readback. It records the complete 266-label union, including 40 labels
 without an installed plist, rather than treating plist presence as runtime
-truth. The installed set contains 191 classified Life Manager-owned labels; all
-191 are unmanaged by the future registry. Thirty-four installed labels and 29
-loaded/disabled-only labels remain explicitly ambiguous. Unknown domains,
-unknown releases, mutable checkout paths, and three invalid plists fail closed
-for TODO 2 import. No launchd mutation or cleanup occurred.
+truth. The installed set contains 211 classified Life Manager-owned labels. The
+172 loaded jobs are represented by schema-v2 entries; 39 disabled jobs remain
+migration inventory. Fourteen installed disabled/unloaded labels and 29
+loaded/disabled-only labels remain explicitly ambiguous. Unknown releases,
+mutable checkout paths, and three invalid plists fail closed for migration. No
+launchd mutation or cleanup occurred during inventory.
