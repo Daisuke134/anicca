@@ -822,6 +822,18 @@ not deleted, under
 `state/reconciled-compute/20260827T085725Z-no-settlement`. P3 exit still requires a new outside
 receipt and a usable paid-compute response in item 6.
 
+The current revenue-reproduction preflight keeps the existing target-wallet seller public at
+`https://founder.tail7a0ba4.ts.net` and confirms an unsigned `/research` call returns a canonical
+0.003-USDC 402 quote. Three discovery paths are measured: the retired Agentic Market validator is
+404 and indexes nothing; x402scan rejects all 31 founder resources because that working endpoint
+still serves x402 v1; the already-v2 `https://claude-p.tail7a0ba4.ts.net` origin, which settles to
+the same target wallet, refreshes through SIWX with 5 registered resources and zero failures.
+x402scan publicly reads back those 5 routes. Registration probes increase attempts but not sales;
+the sales journal remains 38 rows, wallet balance remains `1.698000`, and the acquisition controller
+reports zero open postings. The existing inflow watcher and controller are kickstarted. No new
+receipt exists yet, so the smallest honest unblock is a genuinely outside buyer settlement on the
+registered v2 origin; neither a self-probe nor a historical unaccepted row may substitute.
+
 ### P4 — select and prove shelter
 
 1. [ ] Add provider-neutral quote/provision/health/terminate receipt interfaces.
