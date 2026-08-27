@@ -93,13 +93,16 @@ by the selected Life Manager media path; the implementation must not add a workf
 Creative judgment stays in the configured model runner. Deterministic code never uses keyword
 lists or hand scores to decide what is expressive, attractive, or marketable.
 
-The production package contains three units:
+The production package contains four units:
 
 1. `line_sticker.py`: state machine, immutable artifact manifest, official policy validation,
    effect keys, receipts, and CLI.
-2. `line_sticker_browser.py`: the only Creators Market mutation boundary. It attaches to one
+2. `line_sticker_media.py`: model-facing motion-plan/selection tools and deterministic bounded
+   video segmentation, chroma-key, APNG conversion, package assembly, provider receipts, and
+   disk/cost gates. Creative judgment remains in the configured model, not this tool.
+3. `line_sticker_browser.py`: the only Creators Market mutation boundary. It attaches to one
    dedicated profile, observes official state, submits/resubmits/releases once, and reads back.
-3. `line-sticker-loop.sh`: disk guard, model/media command resolution, one bounded wake, and
+4. `line-sticker-loop.sh`: disk guard, model/media command resolution, one bounded wake, and
    structured outcome emission for launchd.
 
 Tests use generated tiny fixtures and a fake browser adapter. They never log in, upload, submit,
