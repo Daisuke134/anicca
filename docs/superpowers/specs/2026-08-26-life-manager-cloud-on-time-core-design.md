@@ -296,7 +296,7 @@ Telegram本文の固定形:
 - [x] `telegram.js`の`/start` buttonをRailway `/panel/onboarding`の`web_app`へ変更する。
 - [x] 既存`panel-auth.js`のTelegram initData/sessionをonboarding tenant authorityとして再利用する。
 - [x] production PostgreSQLで再現した新規actorの`42702 uid is ambiguous`を、既存RPCの局所的なconflict arbiter修飾でRED→GREENにする。
-- [ ] 隔離した2 actorでcreate、replay拒否、same-actor resume、cross-actor分離をproduction E2Eし、test rowを事後0件へ戻す。
+- [x] 隔離した2 actorでcreate、replay拒否、same-actor resume、cross-actor分離をproduction E2Eし、test rowを事後0件へ戻す。
 
 ### Slice 3B — Railway Calendar consent
 
