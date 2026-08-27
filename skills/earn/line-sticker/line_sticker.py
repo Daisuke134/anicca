@@ -9,6 +9,7 @@ from datetime import date, datetime, timezone
 from fractions import Fraction
 import fcntl
 import hashlib
+import io
 import json
 import os
 from pathlib import Path
@@ -108,8 +109,10 @@ class OwnerStateError(ValueError):
 
 
 class ReceiptPendingError(OwnerStateError):
-    def __init__(self, effect: int) -> None:
+    def __init__(self, action: str, effect_key: str, effect: int) -> None:
         super().__init__("receipt_pending")
+        self.action = action
+        self.effect_key = effect_key
         self.effect = effect
 
 
@@ -695,13 +698,19 @@ def validate_package(root: Path, policy_path: Path, ffmpeg: str = "ffmpeg") -> d
     zip_payloads: dict[str, bytes] = {}
     zip_path = root / "submission.zip"
     max_zip_bytes = int(policy["max_zip_bytes"])
-    if not zip_path.is_file():
+    zip_bytes: bytes | None = None
+    try:
+        zip_metadata = zip_path.lstat()
+    except OSError:
+        zip_metadata = None
+    if zip_metadata is None or stat.S_ISLNK(zip_metadata.st_mode) or not stat.S_ISREG(zip_metadata.st_mode):
         errors.add("zip_membership_mismatch")
-    elif zip_path.stat().st_size >= max_zip_bytes:
+    elif zip_metadata.st_size >= max_zip_bytes:
         errors.add("zip_too_large")
     else:
         try:
-            with zipfile.ZipFile(zip_path) as archive:
+            zip_bytes = zip_path.read_bytes()
+            with zipfile.ZipFile(io.BytesIO(zip_bytes)) as archive:
                 infos = archive.infolist()
                 names = [info.filename for info in infos]
                 if len(names) != len(set(names)) or set(names) != set(PNG_NAMES) or any(not _safe_zip_name(name) for name in names):
@@ -735,15 +744,14 @@ def validate_package(root: Path, policy_path: Path, ffmpeg: str = "ffmpeg") -> d
             if alpha_error:
                 errors.add(f"{alpha_error}:{name}")
 
-    try:
-        package_sha256 = _sha256(zip_path.read_bytes())
-    except OSError:
-        package_sha256 = _canonical_package_hash(file_hashes, provenance, zip_payloads)
+    artifact_sha256 = _sha256(zip_bytes) if zip_bytes is not None else ""
+    package_sha256 = _canonical_package_hash(file_hashes, provenance, zip_payloads)
     errors_list = sorted(errors)
     return {
         "status": "ready" if not errors_list else "invalid",
         "effect": 0,
         "readback": 0,
+        "artifact_sha256": artifact_sha256,
         "package_sha256": package_sha256,
         "files": sorted(file_records, key=lambda record: str(record["name"])),
         "errors": errors_list,
@@ -1069,10 +1077,16 @@ def _validate_receipt_transitions(rows: list[dict[str, object]], identity: dict[
     release = grouped["release"]
     replay = grouped["replay"]
     if submit:
+        if submit[0]["outcome"] != "intent" or submit[0]["before_status"] != "absent" or submit[0]["after_status"] != "submitted" or submit[0]["product_id"] is not None:
+            raise OwnerStateError("ledger_conflict")
         expected = ["intent"] + (["unknown"] if len(submit) > 1 and submit[1]["outcome"] == "unknown" else [])
         if [row["outcome"] for row in submit] != expected[:len(submit)] + (["acknowledged"] if len(submit) == len(expected) + 1 else []):
             raise OwnerStateError("ledger_conflict")
+        if any(row["outcome"] == "unknown" and row["product_id"] is not None for row in submit):
+            raise OwnerStateError("ledger_conflict")
     submit_ack = next((row for row in submit if row["outcome"] == "acknowledged"), None)
+    if submit_ack is not None and (not isinstance(submit_ack["product_id"], str) or not submit_ack["product_id"]):
+        raise OwnerStateError("ledger_conflict")
     if release:
         if submit_ack is None or release[0]["outcome"] != "intent" or release[0]["before_status"] != "approved":
             raise OwnerStateError("ledger_conflict")
@@ -1186,15 +1200,16 @@ def _identity_from_package(package: Path, policy: Path, account_id: str, revisio
         raise OwnerStateError("package_identity_unavailable") from exc
     if not isinstance(provenance, dict) or type(provenance.get("set_id")) is not str or not provenance["set_id"] or type(provenance.get("character_id")) is not str or not provenance["character_id"]:
         raise OwnerStateError("package_identity_invalid")
+    artifact_sha256 = result.get("artifact_sha256")
     package_sha256 = result.get("package_sha256")
-    if type(package_sha256) is not str or not HEX64.fullmatch(package_sha256):
+    if type(artifact_sha256) is not str or not HEX64.fullmatch(artifact_sha256) or type(package_sha256) is not str or not HEX64.fullmatch(package_sha256):
         raise OwnerStateError("package_identity_invalid")
     return {
         "account_id": account_id,
         "set_id": provenance["set_id"],
         "character_id": provenance["character_id"],
         "revision": revision,
-        "artifact_sha256": package_sha256,
+        "artifact_sha256": artifact_sha256,
         "package_sha256": package_sha256,
     }
 
@@ -1365,7 +1380,7 @@ def _acknowledge_unknown(
     try:
         _append_receipt(ledger_path, acknowledged)
     except OwnerStateError as exc:
-        raise ReceiptPendingError(0) from exc
+        raise ReceiptPendingError(action, _effect_key(identity, action), 0) from exc
     rows.append(acknowledged)
     return next_owner
 
@@ -1411,7 +1426,7 @@ def _acknowledge_intent(
     try:
         _append_receipt(ledger_path, acknowledged)
     except OwnerStateError as exc:
-        raise ReceiptPendingError(0) from exc
+        raise ReceiptPendingError(action, _effect_key(identity, action), 0) from exc
     rows.append(acknowledged)
     return next_owner
 
@@ -1439,7 +1454,7 @@ def _close_with_replay(
         try:
             _append_receipt(ledger_path, replay)
         except OwnerStateError as exc:
-            raise ReceiptPendingError(0) from exc
+            raise ReceiptPendingError("replay", _effect_key(identity, "replay"), 0) from exc
         rows.append(replay)
     closed = dict(owner)
     closed["state"] = "CLOSED"
@@ -1597,7 +1612,7 @@ def _fenced_mutation(
     try:
         _append_receipt(ledger_path, acknowledged)
     except OwnerStateError as exc:
-        raise ReceiptPendingError(1) from exc
+        raise ReceiptPendingError(action, _effect_key(identity, action), 1) from exc
     return next_owner, {"effect": 1, "readback": 1, "duplicate_effect": 0, "reason": action + "_acknowledged"}
 
 
@@ -1623,7 +1638,19 @@ def _validate_owner_ledger_state(
     acknowledged = {action: "acknowledged" in receipts[action] for action in ("submit", "release")}
     replay_ack = "acknowledged" in receipts["replay"]
     release_complete = "intent" in receipts["release"] and acknowledged["release"]
+    submit_ack = receipts["submit"].get("acknowledged")
+    chain_product = submit_ack.get("product_id") if submit_ack is not None else None
     state = str(owner["state"])
+    if chain_product is not None and owner.get("product_id") is not None and owner.get("product_id") != chain_product:
+        raise OwnerStateError("owner_state_conflict")
+    if submit_ack is not None:
+        after_status = submit_ack["after_status"]
+        if after_status == "rejected" and state != "REJECTED":
+            raise OwnerStateError("owner_state_conflict")
+        if after_status == "approved" and state not in ("APPROVED", "RELEASED", "TERMINAL_PENDING_REPLAY", "CLOSED", "RECONCILE_UNKNOWN"):
+            raise OwnerStateError("owner_state_conflict")
+        if after_status == "submitted" and state not in ("WAITING_REVIEW", "REJECTED", "APPROVED", "RELEASED", "TERMINAL_PENDING_REPLAY", "CLOSED", "RECONCILE_UNKNOWN"):
+            raise OwnerStateError("owner_state_conflict")
     if replay_ack and state not in ("CLOSED", "TERMINAL_PENDING_REPLAY"):
         raise OwnerStateError("owner_state_conflict")
     if state == "CLOSED" and not replay_ack:
@@ -1906,7 +1933,7 @@ def _wake_owner_unlocked(
         raise OwnerStateError("owner_state_invalid")
     except ReceiptPendingError as exc:
         actual = _read_owner(owner_path) if owner is not None else None
-        return _owner_result(actual, status="ok", effect=exc.effect, readback=1, duplicate_effect=0, effect_key=_effect_key(identity, _next_action(actual)) if actual else "", reason="receipt_pending")
+        return _owner_result(actual, status="ok", effect=exc.effect, readback=1, duplicate_effect=0, effect_key=exc.effect_key, reason="receipt_pending")
     except OwnerStateError as exc:
         if owner is None:
             return _owner_result(None, status="error", effect=0, readback=0, duplicate_effect=0, effect_key="", reason=exc.code)
