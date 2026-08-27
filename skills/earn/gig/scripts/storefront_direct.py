@@ -1561,7 +1561,11 @@ def _resolve_create_capability(
 
 def _next_unused_demand_cluster(clusters: list[dict], dismissed: set[str]) -> dict | None:
     return next(
-        (row for row in sorted(clusters, key=lambda candidate: -(candidate.get("score") or 0))
+        (row for row in sorted(clusters, key=lambda candidate: (
+            -int(bool(candidate.get("capability_inventory_sha256"))),
+            -(candidate.get("score") or 0),
+            -(candidate.get("median_price_jpy") or 0),
+        ))
          if row.get("status") == "known" and (row.get("score") or 0) > 0
          and not row.get("consumed_at_epoch")
          and str(row.get("cluster_key") or "") not in dismissed),
