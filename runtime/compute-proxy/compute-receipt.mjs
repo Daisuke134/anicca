@@ -214,7 +214,8 @@ export async function executeComputeRequest({
     await fs.rm(fundingLock, { recursive: true, force: true });
     return { ...appended, output: result.output };
   } catch (error) {
-    if (!transportStarted) {
+    const rejectedBeforeSigning = error?.code === "PAYMENT_REQUIREMENT_REJECTED_BEFORE_SIGNING";
+    if (!transportStarted || rejectedBeforeSigning) {
       await fs.rm(intentLock, { recursive: true, force: true });
       await fs.rm(fundingLock, { recursive: true, force: true });
     }

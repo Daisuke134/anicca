@@ -164,6 +164,23 @@ test("ambiguous transport failure leaves a durable no-retry intent", async () =>
   assert.equal(calls, 1);
 });
 
+test("typed pre-sign payment requirement rejection releases intent and funding locks", async () => {
+  const root = await mkdtemp(join(tmpdir(), "compute-presign-reject-"));
+  let calls = 0;
+  const error = new Error("quote over cap");
+  error.code = "PAYMENT_REQUIREMENT_REJECTED_BEFORE_SIGNING";
+  const args = {
+    journalPath: join(root, "compute.jsonl"), intentId: "pre-sign-reject", payer: PAYER,
+    request: valid().request, fundingReceiptIds: [REVENUE_ID], revenueReceipts: revenue,
+    maxCostUsdc: 0.001, reserveUsdc: 0, sessionCapUsdc: 0.001,
+    getBalance: async () => 1.7,
+    transport: async () => { calls += 1; throw error; },
+  };
+  await assert.rejects(() => executeComputeRequest(args), /quote over cap/u);
+  await assert.rejects(() => executeComputeRequest(args), /quote over cap/u);
+  assert.equal(calls, 2, "retry reaches the pre-sign selector instead of a stale ambiguity lock");
+});
+
 test("different intents cannot spend the same earned receipts past cumulative reserve", async () => {
   const root = await mkdtemp(join(tmpdir(), "compute-cumulative-"));
   let calls = 0;

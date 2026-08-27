@@ -30,7 +30,11 @@ export function selectCappedRequirement(maxCostUsdc, accepts) {
         && BigInt(item.amount) > 0n && BigInt(item.amount) <= maxAtomic;
     } catch { return false; }
   }).sort((a, b) => BigInt(a.amount) < BigInt(b.amount) ? -1 : BigInt(a.amount) > BigInt(b.amount) ? 1 : 0);
-  if (eligible.length === 0) throw new Error("BlockRun payment requirement exceeds authorization or uses an unsupported asset");
+  if (eligible.length === 0) {
+    const error = new Error("BlockRun payment requirement exceeds authorization or uses an unsupported asset");
+    error.code = "PAYMENT_REQUIREMENT_REJECTED_BEFORE_SIGNING";
+    throw error;
+  }
   return eligible[0];
 }
 
