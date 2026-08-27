@@ -32,6 +32,8 @@ class XTweeterEntrypointTests(unittest.TestCase):
         self.assertIn("X_REPOST_FORCE_LANGUAGE=en", wrapper)
         self.assertIn("X_REPOST_CANDIDATES_FILE", wrapper)
         self.assertIn("chinese_source_collect.py", wrapper)
+        self.assertIn("X_TWEETER_CANDIDATE_MAX_AGE_SECONDS", wrapper)
+        self.assertIn("candidate_count", wrapper)
         self.assertNotIn("mediacrawler", wrapper.lower())
         self.assertIn('X_REPOST_CANDIDATES_FILE:-', shared)
 
