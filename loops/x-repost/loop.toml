@@ -4,7 +4,7 @@
 # bin/plistgen.py, which is what makes this file portable to another Mac.
 
 name      = "x-repost"
-state_dir = "~/loops/x-repost"
+state_dir = "~/loops/x-repost-en"
 
 [env]
 X_REPOST_BROWSER_IDENTITY = "x:anicca"

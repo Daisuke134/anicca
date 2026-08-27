@@ -18,6 +18,7 @@ class XRoleSeparationTests(unittest.TestCase):
         self.assertEqual(repost["env"]["X_REPOST_FORCE_KIND"], "quote")
         self.assertEqual(repost["env"]["X_REPOST_FORCE_LANGUAGE"], "en")
         self.assertEqual(repost["env"]["X_REPOST_DISABLE_AFFILIATE"], "1")
+        self.assertEqual(repost["state_dir"], "~/loops/x-repost-en")
         self.assertEqual(repost["jobs"]["pass"]["program"],
                          "skills/x-repost/x-repost-en-cli.sh")
         self.assertIn("no-affiliate-proposal.json", english_repost)
