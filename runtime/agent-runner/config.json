@@ -23,7 +23,6 @@
       "disabled_features": [
         "apps",
         "auth_elicitation",
-        "code_mode_host",
         "goals",
         "hooks",
         "image_generation",
