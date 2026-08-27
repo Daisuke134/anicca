@@ -1,0 +1,8 @@
+# QUERY<TAB>PUBLIC_SEARCH_URL. The model judges value later.
+AI Agent 工具 实测	https://www.xiaohongshu.com/search_result?keyword=AI%20Agent&source=web_search_result_notes
+AI Agent 工作流 失败恢复	https://www.douyin.com/search/AI%20Agent
+AI 自动化 创作者 工具	https://www.kuaishou.com/search/video?searchKey=AI%20Agent
+AI Agent 实战 工具	https://search.bilibili.com/all?keyword=AI%20Agent
+AI 工具 独立开发	https://s.weibo.com/weibo?q=AI%20Agent
+AI Agent 自动化 经验	https://tieba.baidu.com/f/search/res?ie=utf-8&qw=AI%20Agent
+AI Agent 工作流 实测	https://www.zhihu.com/search?type=content&q=AI%20Agent

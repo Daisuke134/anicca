@@ -44,6 +44,34 @@ class ChineseSourceCollectTests(unittest.TestCase):
         self.assertEqual(receipt["candidates"][0]["source_language"], "zh")
         self.assertEqual(receipt["observed_at"], "2026-08-27T00:00:00Z")
 
+    def test_decodes_allowed_results_from_crwl_markdown(self) -> None:
+        module = self.load_module()
+        markdown = """
+## [Bilibili agent workflow](https://duckduckgo.com/l/?uddg=https%3A%2F%2Fwww.bilibili.com%2Fvideo%2FBV1abc&rut=one)
+[www.bilibili.com/video/BV1abc](https://duckduckgo.com/l/?uddg=https%3A%2F%2Fwww.bilibili.com%2Fvideo%2FBV1abc&rut=two)
+## [Bilibili ad tracker](https://cm.bilibili.com/cm/api/fees/pc/sync/v2?msg=ad)
+## [Unrelated](https://duckduckgo.com/l/?uddg=https%3A%2F%2Fexample.com%2Fpost&rut=three)
+"""
+
+        receipt = module.collect_markdown(markdown, "AI agent", "2026-08-27T00:00:00Z")
+
+        self.assertEqual(receipt["candidate_count"], 1)
+        self.assertEqual(receipt["candidates"][0]["url"], "https://www.bilibili.com/video/BV1abc")
+        self.assertEqual(receipt["candidates"][0]["title"], "Bilibili agent workflow")
+
+    def test_parses_public_search_specs_without_treating_urls_as_queries(self) -> None:
+        module = self.load_module()
+        specs = module.parse_search_specs("""
+        # comment
+        AI Agent 实战\thttps://search.bilibili.com/all?keyword=AI%20Agent
+        AI 工具\thttps://www.zhihu.com/search?type=content&q=AI%20Agent
+        """)
+
+        self.assertEqual(specs, [
+            ("AI Agent 实战", "https://search.bilibili.com/all?keyword=AI%20Agent"),
+            ("AI 工具", "https://www.zhihu.com/search?type=content&q=AI%20Agent"),
+        ])
+
     def test_supports_each_configured_chinese_platform_domain(self) -> None:
         module = self.load_module()
         urls = [
@@ -64,6 +92,44 @@ class ChineseSourceCollectTests(unittest.TestCase):
         receipt = module.collect(html, "AI", "2026-08-27T00:00:00Z")
 
         self.assertEqual(receipt["candidate_count"], 7)
+
+    def test_hydrate_keeps_only_candidates_with_direct_source_text(self) -> None:
+        module = self.load_module()
+        receipt = {
+            "candidates": [
+                {"url": "https://zhihu.com/question/1", "title": "Zhihu", "snippet": "index"},
+                {"url": "https://bilibili.com/video/2", "title": "Bilibili", "snippet": "index"},
+            ]
+        }
+        pages = {
+            "https://zhihu.com/question/1": "这是从原始页面直接读取的具体 AI 工作流和失败恢复步骤。",
+            "https://bilibili.com/video/2": "",
+        }
+
+        hydrated = module.hydrate(receipt, pages.get, limit=5)
+
+        self.assertEqual(hydrated["candidate_count"], 1)
+        self.assertEqual(hydrated["candidates"][0]["url"], "https://zhihu.com/question/1")
+        self.assertEqual(hydrated["candidates"][0]["text"], pages["https://zhihu.com/question/1"])
+        self.assertEqual(hydrated["candidates"][0]["handle"], "zhihu.com")
+        self.assertEqual(hydrated["candidates"][0]["metrics"], {})
+
+    def test_hydrate_never_attempts_more_sources_than_limit(self) -> None:
+        module = self.load_module()
+        attempted = []
+        receipt = {"candidates": [
+            {"url": f"https://zhihu.com/question/{index}", "title": str(index), "snippet": ""}
+            for index in range(10)
+        ]}
+
+        def unavailable(url: str) -> str:
+            attempted.append(url)
+            return ""
+
+        hydrated = module.hydrate(receipt, unavailable, limit=3)
+
+        self.assertEqual(hydrated["candidate_count"], 0)
+        self.assertEqual(len(attempted), 3)
 
 
 if __name__ == "__main__":

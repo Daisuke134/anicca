@@ -5,6 +5,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
+import subprocess
 from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlparse
@@ -31,6 +33,28 @@ def canonical_domain(hostname: str | None) -> str | None:
     return None
 
 
+def content_url_allowed(value: str) -> bool:
+    parsed = urlparse(value)
+    domain = canonical_domain(parsed.hostname)
+    host, path = (parsed.hostname or "").lower(), parsed.path
+    if domain == "xiaohongshu.com":
+        return host in {"xiaohongshu.com", "www.xiaohongshu.com"} and path.startswith("/explore/")
+    if domain == "douyin.com":
+        return host in {"douyin.com", "www.douyin.com"} and path.startswith("/video/")
+    if domain == "kuaishou.com":
+        return host in {"kuaishou.com", "www.kuaishou.com"} and path.startswith("/short-video/")
+    if domain == "bilibili.com":
+        return host in {"bilibili.com", "www.bilibili.com"} and path.startswith("/video/")
+    if domain == "weibo.com":
+        return host in {"weibo.com", "www.weibo.com"} and len(path.strip("/").split("/")) >= 2
+    if domain == "tieba.baidu.com":
+        return host == "tieba.baidu.com" and path.startswith("/p/")
+    if domain == "zhihu.com":
+        return ((host in {"zhihu.com", "www.zhihu.com"} and path.startswith("/question/"))
+                or (host == "zhuanlan.zhihu.com" and path.startswith("/p/")))
+    return False
+
+
 def result_url(href: str) -> str | None:
     candidate = f"https:{href}" if href.startswith("//") else href
     parsed = urlparse(candidate)
@@ -38,7 +62,7 @@ def result_url(href: str) -> str | None:
         values = parse_qs(parsed.query).get("uddg") or []
         candidate = unquote(values[0]) if values else ""
         parsed = urlparse(candidate)
-    if parsed.scheme != "https" or not canonical_domain(parsed.hostname):
+    if parsed.scheme != "https" or not content_url_allowed(candidate):
         return None
     return candidate
 
@@ -102,19 +126,130 @@ def collect(search_html: str, query: str, observed_at: str, limit: int = 21) -> 
     }
 
 
+def collect_markdown(markdown: str, query: str, observed_at: str, limit: int = 21) -> dict:
+    candidates, seen = [], set()
+    for title, href in re.findall(r"^#{2,4}\s+\[([^]]+)\]\((https?://[^)]+)\)", markdown, re.M):
+        url = result_url(href)
+        if not url or url in seen:
+            continue
+        seen.add(url)
+        domain = canonical_domain(urlparse(url).hostname)
+        candidates.append({
+            "url": url,
+            "title": " ".join(title.split()),
+            "snippet": "",
+            "query": query,
+            "source_domain": domain,
+            "source_language": "zh",
+        })
+        if len(candidates) >= limit:
+            break
+    return {
+        "schema_version": 1,
+        "receipt_type": "CHINESE_PUBLIC_SOURCE_CANDIDATES",
+        "query": query,
+        "observed_at": observed_at,
+        "candidate_count": len(candidates),
+        "candidates": candidates,
+    }
+
+
+def hydrate(receipt: dict, fetcher, limit: int = 7) -> dict:
+    hydrated = []
+    for row in receipt.get("candidates", [])[:limit]:
+        try:
+            text = "\n".join(line.rstrip() for line in (fetcher(row["url"]) or "").splitlines()).strip()
+        except Exception:
+            continue
+        if len(" ".join(text.split())) < 16:
+            continue
+        domain = canonical_domain(urlparse(row["url"]).hostname)
+        hydrated.append({
+            **row,
+            "source_domain": domain,
+            "source_language": "zh",
+            "handle": domain,
+            "text": text[:6000],
+            "metrics": {},
+        })
+        if len(hydrated) >= limit:
+            break
+    return {
+        **receipt,
+        "candidate_count": len(hydrated),
+        "candidates": hydrated,
+    }
+
+
+def parse_search_specs(value: str) -> list[tuple[str, str]]:
+    specs = []
+    for raw in value.splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        query, separator, search_url = line.partition("\t")
+        if not separator or urlparse(search_url).scheme != "https":
+            raise ValueError("search spec must be QUERY<TAB>HTTPS_URL")
+        specs.append((query.strip(), search_url.strip()))
+    return specs
+
+
+def discover(query_file: Path, observed_at: str, limit: int = 7) -> dict:
+    specs = parse_search_specs(query_file.read_text(encoding="utf-8"))
+    buckets, seen = [], set()
+    for query, search_url in specs:
+        search = subprocess.run(
+            ["crwl", "crawl", search_url, "-o", "markdown-fit"],
+            capture_output=True, text=True, timeout=60, check=False,
+        )
+        markdown = search.stdout if search.returncode == 0 else ""
+        bucket = []
+        for row in collect_markdown(markdown, query, observed_at, limit=3)["candidates"]:
+            if row["url"] in seen:
+                continue
+            seen.add(row["url"])
+            bucket.append(row)
+        buckets.append(bucket)
+
+    combined = []
+    for index in range(3):
+        combined.extend(bucket[index] for bucket in buckets if len(bucket) > index)
+
+    def fetch_source(url: str) -> str:
+        result = subprocess.run(
+            ["crwl", "crawl", url, "-o", "markdown-fit"],
+            capture_output=True, text=True, timeout=60, check=False,
+        )
+        return result.stdout if result.returncode == 0 else ""
+
+    return hydrate({
+        "schema_version": 1,
+        "receipt_type": "CHINESE_PUBLIC_SOURCE_CANDIDATES",
+        "query_count": len(specs),
+        "queries": [query for query, _ in specs],
+        "observed_at": observed_at,
+        "candidates": combined,
+    }, fetch_source, limit=limit)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--html-file", type=Path, required=True)
-    parser.add_argument("--query", required=True)
+    parser.add_argument("--html-file", type=Path)
+    parser.add_argument("--query")
+    parser.add_argument("--query-file", type=Path)
     parser.add_argument("--observed-at", required=True)
     parser.add_argument("--limit", type=int, default=21)
     args = parser.parse_args()
-    print(json.dumps(collect(
-        args.html_file.read_text(encoding="utf-8", errors="replace"),
-        args.query,
-        args.observed_at,
-        max(1, args.limit),
-    ), ensure_ascii=False, sort_keys=True))
+    if args.query_file:
+        result = discover(args.query_file, args.observed_at, max(1, args.limit))
+    elif args.html_file and args.query:
+        result = collect(
+            args.html_file.read_text(encoding="utf-8", errors="replace"),
+            args.query, args.observed_at, max(1, args.limit),
+        )
+    else:
+        parser.error("provide --query-file or both --html-file and --query")
+    print(json.dumps(result, ensure_ascii=False, sort_keys=True))
     return 0
 
 
