@@ -4414,8 +4414,12 @@ def _write_file_effect(args, item_path: Path, output: Path, prepared: dict[str, 
         return 0
     except (AttributeError, Failure, OSError, ValueError, TypeError, json.JSONDecodeError,
             reconcile_paid_delivery.ReconcileError) as error:
+        cause = error.__cause__
         _write(output, {"status": "failed", "talkroom_id": room, "failed": 1,
                         "failed_step": error.step if isinstance(error, Failure) else "file_delivery",
+                        "error_type": type(error).__name__, "error_detail": str(error)[:500],
+                        "cause_type": type(cause).__name__ if cause is not None else None,
+                        "cause_detail": str(cause)[:500] if cause is not None else None,
                         "effect": sent_effect, "readback": 0})
         return 1
 
