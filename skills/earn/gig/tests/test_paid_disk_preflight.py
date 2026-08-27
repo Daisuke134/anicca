@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import os
+import zipfile
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -24,6 +25,23 @@ def test_paid_browser_diagnostics_use_private_data_redactor():
     paid = _load_paid()
 
     assert paid.redact_prompt_text("password:secret-value") == "password:[REDACTED]"
+
+
+def test_audio_only_zip_does_not_require_visual_review_images(tmp_path):
+    paid = _load_paid()
+    root = tmp_path / "project"
+    delivery = root / "delivery"
+    delivery.mkdir(parents=True)
+    artifact = delivery / "review.zip"
+    with zipfile.ZipFile(artifact, "w") as archive:
+        archive.writestr("review.mp3", b"audio")
+    digest = paid.hashlib.sha256(artifact.read_bytes()).hexdigest()
+    (delivery / "paid-work-result.json").write_text(json.dumps({
+        "artifact_path": str(artifact),
+        "package_sha256": digest,
+    }), encoding="utf-8")
+
+    assert paid._file_review_images(root, digest) == []
 
 
 def test_browser_contract_failure_becomes_owner_repair_finding():

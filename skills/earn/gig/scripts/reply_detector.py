@@ -79,13 +79,17 @@ def _atomic_json(path: Path, value: dict[str, Any]) -> None:
         raise
 
 
-def _run(step: str, arguments: list[str], *, accepted: tuple[int, ...] = (0,)) -> None:
+def _run(
+    step: str, arguments: list[str], *, accepted: tuple[int, ...] = (0,),
+    timeout: float | None = None,
+) -> None:
     completed = subprocess.run(
         arguments,
         stdin=subprocess.DEVNULL,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
+        timeout=timeout,
         check=False,
     )
     if completed.returncode not in accepted:
@@ -160,7 +164,7 @@ def _collect_head_snapshot(args: Any, evidence: Path) -> dict[str, Any]:
         "--mode", "direct-inbox-head-only", "--hidden-no-screenshot",
         "--database", str(args.database), "--manifest", str(args.manifest),
     ]
-    _run("head_collect", command)
+    _run("head_collect", command, timeout=45)
     value = json.loads(snapshot.read_text(encoding="utf-8"))
     if (
         not isinstance(value, dict)

@@ -681,6 +681,48 @@ def test_run_once_records_inventory_summary(tmp_path: Path, monkeypatch) -> None
     assert receipt["inventory_roots"] == 2
 
 
+def test_run_once_clears_shared_producer_block_above_one_gib(tmp_path: Path, monkeypatch) -> None:
+    state = tmp_path / "state"
+    state.mkdir()
+    pressure = state / "disk-pressure.block"
+    pressure.write_text("stale")
+    monkeypatch.setattr(
+        disk_cleanup,
+        "collect_host_inventory",
+        lambda **_kwargs: {"coverage": {"mount_count": 0, "root_count": 0, "gaps": []}},
+    )
+    governor = HostDiskGovernor(
+        home=tmp_path,
+        state_dir=state,
+        lsof=lambda _path: "confirmed-closed",
+        usage=lambda: (2 * GiB, 100 * GiB),
+    )
+
+    governor.run_once()
+
+    assert not pressure.exists()
+
+
+def test_run_once_blocks_producers_below_512_mib(tmp_path: Path, monkeypatch) -> None:
+    state = tmp_path / "state"
+    state.mkdir()
+    monkeypatch.setattr(
+        disk_cleanup,
+        "collect_host_inventory",
+        lambda **_kwargs: {"coverage": {"mount_count": 0, "root_count": 0, "gaps": []}},
+    )
+    governor = HostDiskGovernor(
+        home=tmp_path,
+        state_dir=state,
+        lsof=lambda _path: "confirmed-closed",
+        usage=lambda: (512 * 1024**2 - 1, 100 * GiB),
+    )
+
+    governor.run_once()
+
+    assert (state / "disk-pressure.block").is_file()
+
+
 def test_run_once_global_budget_preserves_candidate_and_does_not_advance_full_marker(
     tmp_path: Path, monkeypatch
 ) -> None:

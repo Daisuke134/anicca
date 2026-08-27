@@ -4,8 +4,18 @@
   "providers": {
     "codex": {
       "executable": "codex",
-      "automation_home": "~/.local/state/anicca/codex-runner",
-      "auth_file": "~/.codex-acct2/auth.json",
+      "accounts": [
+        {
+          "alias": "account-1",
+          "automation_home": "~/.local/state/anicca/codex-runner/account-1",
+          "auth_file": "~/.codex/auth.json"
+        },
+        {
+          "alias": "account-2",
+          "automation_home": "~/.local/state/anicca/codex-runner/account-2",
+          "auth_file": "~/.codex-acct2/auth.json"
+        }
+      ],
       "ssl_cert_file": "/etc/ssl/cert.pem",
       "project_doc_max_bytes": 0,
       "disabled_skills": [

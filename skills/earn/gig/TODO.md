@@ -180,6 +180,22 @@ capability claim is backed by an installed executable capability.
   PASS = `ai.anicca.manledge-x-dm-campaign` is absent from launchd and LaunchAgents, while its logs
   and delivery evidence remain intact. The obsolete 1,200-second owner had run 40 times and last
   exited 1 after the customer case was already closed; its plist is recoverably retained in Trash.
+- [x] `R00g` Bound the continuous Reply inbox-head collector.
+  PASS = one Coconala collector hang cannot stop the permanent producer; the subprocess exits after
+  45 seconds and the supervisor returns to its next 30-second probe. Production PID `972` remained
+  alive while probes stopped after `probe-1164` at 19:03 because `_run("head_collect")` had no timeout.
+  Release `661923ca0` adds the bound; the focused timeout, overlap and restart regressions pass.
+- [x] `R00h` Complete the overdue FORCLE hearing-sheet obligation.
+  PASS = authenticated DM `10103725` records the buyer's DOCX request, the completed nine response
+  fields contain only private-profile/application evidence, and the seller reply contains the filled
+  DOCX. Official readback binds message SHA
+  `f158c6de333990a334e382b8abf07d5a0379b48a368f567403b393a0590a0235` and attachment SHA
+  `7e0713a9e18a829937e191bcb6f7c6481601c5d653fb5ca840a473844bad4fd8` with no formal delivery effect.
+- [ ] `R00i` Route future pre-purchase attachment obligations through a general artifact owner.
+  PASS = a buyer-provided DOCX/PDF/XLSX form, requested sample or requested revision remains an
+  outstanding buyer action after a seller acknowledgement; the owner reads the verified attachment,
+  creates the requested buyer-visible artifact, sends it through the Direct Message attachment
+  executor, obtains exact message/filename/SHA readback, and replay performs zero duplicate effects.
 - [ ] `R01` Read back production `current` and prove commit `8eb732958` is an ancestor.
   PASS = immutable release SHA plus successful `merge-base --is-ancestor`.
 - [ ] `R02` Start one stopped disposable registered browser through `with-browser.sh`.
@@ -196,8 +212,10 @@ capability claim is backed by an installed executable capability.
   PASS = every `evidence/agent-*/history/` contains at most three generations.
 - [ ] `R08` Verify host cleanup recurrence.
   PASS = cleanup launchd run count advances and last exit is zero without protected deletion.
-- [ ] `R09` Observe three consecutive Reply probes.
+- [x] `R09` Observe three consecutive Reply probes.
   PASS = three official inbox snapshots have increasing capture times no more than 30 seconds apart.
+  Release `661923ca0`, owner PID `8577`, produced probes 1–4 at 22:18–22:19 while remaining loaded;
+  FORCLE's already-sent seller-last identity produced no duplicate reply.
 - [ ] `R10` Read back the Reply durable queue.
   PASS = every live pending buyer event has either an active owner or a terminal receipt.
 - [ ] `R11` Read back the latest Apply cycle.
@@ -4443,3 +4461,21 @@ of that merge. Merge it when that clears.
   postings observed, 26 are already applied to, 27 are cached ineligible and 28 hit a prohibition.
   The judgement fields either side of the repository move are unchanged; only the
   already-applied and cached-ineligible counts grew, which is what they do.
+
+### Paid audio archive delivery recovery
+
+- [x] Reproduce talkroom `18197848` at `file_visual_evidence`: an audio-only ZIP was incorrectly required to contain review images.
+- [x] Add the audio-only ZIP regression and return no visual inputs when the archive has no images; `13 passed` and `py_compile` pass.
+- [x] Push public main commit `2fb9c8ad516347a3db4b300dfd108c34c3ee1c68` and activate only `ai.anicca.hf-gig-paid-direct` from that immutable release.
+- [ ] Clear the host `disk-pressure.block` through the existing cleanup owner without deleting Codex/Claude sessions or durable evidence; current free space is about 1.2 GiB and the cleanup owner cannot create its temporary directory.
+- [ ] Obtain natural official readback for `18197848`, then rerun once and prove replay-zero.
+- [ ] Resolve `18202085` without weakening buyer-visible quality: the WAV is structurally usable, but the producer emitted `REVIEW_READY`, `audio/wav` conflicts with macOS `audio/x-wav`, and the reference TikTok audio remains unavailable for correspondence review.
+
+### Host disk and Account 2 runtime verification
+
+- [x] Verify Account 2 at the actual model boundary: the four Coconala plists intentionally omit `CODEX_HOME`, while the immutable runner config binds Codex to `~/.codex-acct2/auth.json`; its isolated automation-home auth symlink resolves to that exact file.
+- [x] Verify Reply/Paid fixes and Account 2 failover are all ancestors of public `origin/main`; they are not stranded on private feature branches.
+- [x] Reclaim 1.5 GiB from the closed regenerable `~/.cache/codex-runtimes` cache without touching Codex/Claude sessions, memory, state, marketplace evidence, or active releases; host free space rose from 274 MiB to 1.8 GiB.
+- [x] Replace the shared producer stop hysteresis from 11/20 GiB to 512 MiB/1 GiB. The 20/11/6/3 GiB values remain observability tiers only; they no longer stop money loops.
+- [x] Deploy public immutable release `188a669e98243ecce0624faa2d76c5fcdda236ca`, run the central cleanup owner from that exact read-only release, and prove exit 0 plus removal of stale `disk-pressure.block` at 2.1 GiB free.
+- [ ] Read back Apply, Reply, Paid, and Storefront from the same public release and record their natural receipts; Paid still has three work failures (`18180857 remote_resume`, `18197848 file_builder`, `18202085 file_owner_feedback`) independent of Account 2.
