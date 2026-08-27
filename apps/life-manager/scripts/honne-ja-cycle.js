@@ -65,6 +65,11 @@ function telegramNativeUrlVerified(lane, env, publicUrl) {
     || String(env[lane.verifiedDirectUrlKey] || "").trim() === publicUrl;
 }
 
+function buildCyclePublicationJob(lane, tenantId, slot, artifact, approvalRef) {
+  const integrationRef = `integration://postiz/${lane.platform}/${lane.integrationId}`;
+  return buildMarketingVideoPublicationJob({ tenantId, productId: lane.product, formatId: lane.format, form: artifact.form, locale: lane.locale, slot, creativeId: artifact.creative_id, platform: lane.platform, videoRef: artifact.video_ref, captionRef: artifact.copy_ref, approvalRef, instagramProfileRef: lane.platform === "instagram" ? lane.instagramProfileRef : "profile://instagram/unassigned", postizTokenRef: "secret://postiz/api-key", slotScopedEffect: true, ...(lane.platform === "instagram" ? { instagramIntegrationRef: integrationRef } : { tiktokIntegrationRef: integrationRef }) });
+}
+
 function historyProvider(dataDir) {
   const file = path.join(dataDir, "marketing", "receipts.jsonl");
   return { async list(scope) {
@@ -149,7 +154,7 @@ async function runHonneJaCycle(argv, deps = {}) {
   const generationQueued = await store.enqueueJob({ jobId: generationJob.job_id, tenantId, loopId: generationJob.loop_id, capability: generationJob.capability, effectClass: generationJob.effect_class, effectKey: generationJob.effect_key, inputRefs: generationJob.input_refs, maxAttempts: generationJob.max_attempts, availableAt: new Date(nowMs).toISOString() });
   const generationAdapter = createMarketingVideoGenerationLoopAdapter({ dataDir, historyProvider: historyProvider(dataDir), now: () => new Date(nowMs).toISOString() });
   const artifact = await executeJob(store, generationJob, "honne-ja-cycle", (job) => generationAdapter.execute(job));
-  const publicationJob = buildMarketingVideoPublicationJob({ tenantId, productId: lane.product, formatId: lane.format, form: artifact.form, locale: lane.locale, slot, creativeId: artifact.creative_id, platform: lane.platform, videoRef: artifact.video_ref, captionRef: artifact.copy_ref, approvalRef, instagramProfileRef: lane.platform === "instagram" ? lane.instagramProfileRef : "profile://instagram/unassigned", postizTokenRef: "secret://postiz/api-key", ...(lane.platform === "instagram" ? { instagramIntegrationRef: lane.integrationRef } : { tiktokIntegrationRef: lane.integrationRef }) });
+  const publicationJob = buildCyclePublicationJob(lane, tenantId, slot, artifact, approvalRef);
   const publicationQueued = await store.enqueueJob({ jobId: publicationJob.job_id, tenantId, loopId: publicationJob.loop_id, capability: publicationJob.capability, effectClass: publicationJob.effect_class, effectKey: publicationJob.effect_key, inputRefs: publicationJob.input_refs, maxAttempts: publicationJob.max_attempts, availableAt: new Date(nowMs).toISOString() });
   const runtime = services(env, dataDir, tenantId, lane);
   const publication = await executeJob(store, publicationJob, "honne-ja-cycle", (job) => runtime.publication.execute(job));
@@ -169,4 +174,4 @@ async function runHonneJaCycle(argv, deps = {}) {
 
 if (require.main === module) runHonneJaCycle(process.argv.slice(2)).then((result) => process.stdout.write(`${JSON.stringify(result)}\n`)).catch((error) => { process.stderr.write(`${error.message}\n`); process.exitCode = 1; });
 
-module.exports = { ANICCA_EN_CARD_INSTAGRAM_SLOTS, ANICCA_EN_WIDGET_INSTAGRAM_SLOTS, ANICCA_HE_SLOTS, ANICCA_JA_WIDGET_INSTAGRAM_SLOTS, ANICCA_JP4_SLOTS, ANICCA_MAIN_INSTAGRAM_SLOTS, ANICCA_MAIN_SLOTS, PRODUCTION_SLOTS, parseArgs, runHonneJaCycle, runSlot, telegramNativeUrlVerified };
+module.exports = { ANICCA_EN_CARD_INSTAGRAM_SLOTS, ANICCA_EN_WIDGET_INSTAGRAM_SLOTS, ANICCA_HE_SLOTS, ANICCA_JA_WIDGET_INSTAGRAM_SLOTS, ANICCA_JP4_SLOTS, ANICCA_MAIN_INSTAGRAM_SLOTS, ANICCA_MAIN_SLOTS, PRODUCTION_SLOTS, buildCyclePublicationJob, parseArgs, runHonneJaCycle, runSlot, telegramNativeUrlVerified };

@@ -2,7 +2,8 @@
 
 const assert = require("node:assert/strict");
 const test = require("node:test");
-const { ANICCA_EN_CARD_INSTAGRAM_SLOTS, ANICCA_EN_WIDGET_INSTAGRAM_SLOTS, ANICCA_HE_SLOTS, ANICCA_JA_WIDGET_INSTAGRAM_SLOTS, ANICCA_JP4_SLOTS, ANICCA_MAIN_INSTAGRAM_SLOTS, ANICCA_MAIN_SLOTS, PRODUCTION_SLOTS, parseArgs, runSlot, telegramNativeUrlVerified } = require("./honne-ja-cycle.js");
+const cycle = require("./honne-ja-cycle.js");
+const { ANICCA_EN_CARD_INSTAGRAM_SLOTS, ANICCA_EN_WIDGET_INSTAGRAM_SLOTS, ANICCA_HE_SLOTS, ANICCA_JA_WIDGET_INSTAGRAM_SLOTS, ANICCA_JP4_SLOTS, ANICCA_MAIN_INSTAGRAM_SLOTS, ANICCA_MAIN_SLOTS, PRODUCTION_SLOTS, parseArgs, runSlot, telegramNativeUrlVerified } = cycle;
 
 test("Honne JA production cadence has three exact idempotent slots", () => {
   assert.deepEqual([...PRODUCTION_SLOTS], ["08:30", "12:30", "21:30"]);
@@ -77,4 +78,23 @@ test("JP4 lane is account-bound and capped at three isolated slots", () => {
 test("HE lane is account-bound and capped at three isolated slots", () => {
   const lane = parseArgs(["run-anicca-he"]).lane;
   assert.equal(lane.account, "@anicca.he"); assert.equal(lane.integrationId, "cmq2aoena08bhqp0yx1epjcik"); assert.equal(lane.approvalKey, "LM_ANICCA_HE_TIKTOK_APPROVAL_REF"); assert.deepEqual([...ANICCA_HE_SLOTS], ["07:15", "13:45", "18:15"]); assert.equal(lane.slots.length, 3);
+});
+
+test("production publication identity is stable per slot and distinct across days", () => {
+  assert.equal(typeof cycle.buildCyclePublicationJob, "function");
+  const lane = parseArgs(["run-anicca-main-instagram"]).lane;
+  const artifact = {
+    form: "nudge-card",
+    creative_id: "AJ-CARD-002-7e24db967bf7",
+    video_ref: `object://sha256/${"1".repeat(64)}`,
+    copy_ref: `object://sha256/${"2".repeat(64)}`,
+  };
+  const approvalRef = `object://sha256/${"3".repeat(64)}`;
+  const first = cycle.buildCyclePublicationJob(lane, "dais-local", "2026-08-26T10:10:00.000Z", artifact, approvalRef);
+  const replay = cycle.buildCyclePublicationJob(lane, "dais-local", "2026-08-26T10:10:00.000Z", artifact, approvalRef);
+  const nextDay = cycle.buildCyclePublicationJob(lane, "dais-local", "2026-08-27T10:10:00.000Z", artifact, approvalRef);
+  assert.equal(first.job_id, replay.job_id);
+  assert.equal(first.effect_key, replay.effect_key);
+  assert.notEqual(first.job_id, nextDay.job_id);
+  assert.notEqual(first.effect_key, nextDay.effect_key);
 });
