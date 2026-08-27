@@ -2301,7 +2301,10 @@ def _recover_prepared_create_contract(
         except (OSError, json.JSONDecodeError):
             continue
         digest = str(contract.get("contract_sha256") or "")
-        unsigned = {key: value for key, value in contract.items() if key != "contract_sha256"}
+        unsigned = {
+            key: value for key, value in contract.items()
+            if key not in {"contract_sha256", "hero_image"}
+        }
         expected = hashlib.sha256(json.dumps(
             unsigned, ensure_ascii=False, sort_keys=True, separators=(",", ":"),
         ).encode()).hexdigest()
