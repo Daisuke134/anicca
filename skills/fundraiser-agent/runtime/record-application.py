@@ -8,8 +8,10 @@ import hashlib
 import json
 import os
 import pathlib
+import re
 import tempfile
 from datetime import datetime, timezone
+from urllib.parse import urlsplit
 
 
 TERMINAL = {"submitted_verified", "submit_unknown"}
@@ -41,6 +43,56 @@ def canonical_identity(data: dict) -> tuple[str, str]:
     return identity, hashlib.sha256(identity.encode()).hexdigest()
 
 
+def normalized_url(value: object) -> str:
+    if not isinstance(value, str):
+        return ""
+    parsed = urlsplit(value.strip().casefold())
+    host = parsed.netloc.removeprefix("www.")
+    return f"{host}{parsed.path.rstrip('/') or '/'}"
+
+
+def date_markers(*values: object) -> set[str]:
+    text = " ".join(str(value) for value in values if value).casefold()
+    markers = set(re.findall(r"\b(?:19|20)\d{2}-\d{2}-\d{2}\b", text))
+    months = {name.casefold(): index for index, name in enumerate(
+        ("January", "February", "March", "April", "May", "June", "July",
+         "August", "September", "October", "November", "December"), 1)}
+    for month, day, year in re.findall(
+            r"\b(" + "|".join(months) + r")\s+(\d{1,2}),?\s+((?:19|20)\d{2})\b", text):
+        markers.add(f"{year}-{months[month]:02d}-{int(day):02d}")
+    return markers
+
+
+def row_parts(row: dict) -> tuple[str, str, str, str]:
+    structured = tuple(str(row.get(key) or "").strip() for key in
+                       ("organization", "program", "cohort_window", "account"))
+    if any(structured):
+        return structured
+    parts = [part.strip() for part in str(row.get("receipt_identity") or "").split("|")]
+    return tuple((parts + [""] * 4)[:4])
+
+
+def is_terminal_duplicate(data: dict, identity_hash: str, rows: list[dict]) -> bool:
+    candidate_url = normalized_url(data.get("official_url"))
+    candidate_dates = date_markers(data.get("organization"), data.get("program"),
+                                   data.get("cohort_window"))
+    for row in rows:
+        if row.get("status") not in TERMINAL:
+            continue
+        if row.get("receipt_identity_hash") == identity_hash:
+            return True
+        organization, program, cohort, account = row_parts(row)
+        prior_dates = date_markers(organization, program, cohort)
+        if candidate_url and candidate_url == normalized_url(row.get("official_url")) \
+                and candidate_dates & prior_dates:
+            return True
+        if tuple(str(data.get(key) or "").strip().casefold() for key in
+                 ("organization", "program", "cohort_window", "account")) == tuple(
+                    value.casefold() for value in (organization, program, cohort, account)):
+            return True
+    return False
+
+
 def read_rows(path: pathlib.Path) -> list[dict]:
     if not path.exists():
         return []
@@ -49,6 +101,18 @@ def read_rows(path: pathlib.Path) -> list[dict]:
         try:
             rows.append(json.loads(line))
         except json.JSONDecodeError:
+            continue
+    return rows
+
+
+def read_dossiers(path: pathlib.Path) -> list[dict]:
+    if not path.exists():
+        return []
+    rows = []
+    for dossier in path.glob("*.json"):
+        try:
+            rows.append(json.loads(dossier.read_text(encoding="utf-8")))
+        except (OSError, json.JSONDecodeError):
             continue
     return rows
 
@@ -111,6 +175,11 @@ def main() -> None:
     digest = application_digest(data)
 
     if args.prepare:
+        if not args.ledger or not args.applications_dir:
+            fail("--prepare requires --ledger and --applications-dir for pre-submit deduplication")
+        prior = read_rows(pathlib.Path(args.ledger)) + read_dossiers(pathlib.Path(args.applications_dir))
+        if is_terminal_duplicate(data, identity_hash, prior):
+            fail(f"duplicate terminal application: {identity_hash}")
         if data.get("submitted_at") is not None or data.get("evidence") is not None:
             fail("prepare requires a pre-submit draft without submitted_at or evidence")
         data["application_digest"] = digest
@@ -146,9 +215,9 @@ def main() -> None:
     required_text(evidence.get("provider_readback"), "evidence.provider_readback")
 
     ledger = pathlib.Path(args.ledger)
-    for row in read_rows(ledger):
-        if row.get("receipt_identity_hash") == identity_hash and row.get("status") in TERMINAL:
-            fail(f"duplicate terminal application: {identity_hash}")
+    prior = read_rows(ledger) + read_dossiers(pathlib.Path(args.applications_dir))
+    if is_terminal_duplicate(data, identity_hash, prior):
+        fail(f"duplicate terminal application: {identity_hash}")
 
     applications_dir = pathlib.Path(args.applications_dir)
     applications_dir.mkdir(parents=True, exist_ok=True, mode=0o700)

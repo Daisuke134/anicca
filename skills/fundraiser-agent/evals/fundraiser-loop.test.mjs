@@ -244,7 +244,7 @@ test("production contract runs every minute and maximizes real applications", ()
   assert.match(runtimeScript, /FUNDRAISER_APPLICATIONS_DIR/);
   assert.match(runtimeScript, /record-application\.py/);
   assert.doesNotMatch(runtimeScript, /delete context\./);
-  assert.match(runtimeScript, /--prepare/);
+  assert.match(runtimeScript, /--prepare --draft <draft> --ledger "\$STATE_ROOT\/application-receipts\.jsonl" --applications-dir "\$STATE_ROOT\/applications"/);
   assert.match(dailyPrompt, /application_digest/);
   assert.match(runtimeScript, /MIN_FREE_KIB=\$\(\(1536 \* 1024\)\)/);
   assert.match(runtimeScript, /PRESSURE_FREE_KIB=\$\(\(2 \* 1024 \* 1024\)\)/);
@@ -307,6 +307,7 @@ test("verified application recorder writes a full dossier and rejects exact repl
   const expectedContextArgs = ["--expected-context-version", contextVersion,
     "--expected-context-digest", contextDigest];
   const prepare = spawnSync("python3", [applicationRecorder.pathname, "--prepare", "--draft", draft,
+    "--ledger", ledger, "--applications-dir", applications,
     ...expectedContextArgs], { encoding: "utf8" });
   assert.equal(prepare.status, 0, prepare.stderr);
   const prepared = JSON.parse(await readFile(draft, "utf8"));
@@ -336,6 +337,48 @@ test("verified application recorder writes a full dossier and rejects exact repl
   const replay = spawnSync("python3", args, { encoding: "utf8" });
   assert.notEqual(replay.status, 0);
   assert.match(replay.stderr, /duplicate terminal application/);
+});
+
+test("application prepare rejects a prior terminal cohort despite date wording drift", async () => {
+  const root = await mkdtemp(join(tmpdir(), "fundraiser-recorder-dedupe-"));
+  const draft = join(root, "draft.json");
+  const ledger = join(root, "receipts.jsonl");
+  const applications = join(root, "applications");
+  const contextVersion = "2026-08-27.2";
+  const contextDigest = "9fbe6198c6d61da47d68767eec90a1d95d2e07058f024448d86372b5f3035338";
+  await writeFile(ledger, `${JSON.stringify({
+    receipt_identity: "SF Startup Labs|September 14 2026 cohort|rolling application|account:test",
+    official_url: "https://www.sfstartuplabs.com/apply",
+    status: "submitted_verified",
+  })}\n`);
+  await writeFile(draft, JSON.stringify({
+    organization: "SF Startup Labs",
+    program: "SF Startup Labs",
+    cohort_window: "2026-09-14 through 2026-10-03",
+    account: "account:test",
+    official_url: "https://sfstartuplabs.com/apply",
+    contact: { method: "web_form", destination: "https://sfstartuplabs.com/apply" },
+    question_answers: [{ question: "What are you building?", answer: "Life Manager" }],
+    attachments: [],
+    context_used: { "product.name": ".agents/startup-context.json" },
+    context_version: contextVersion,
+    context_digest: contextDigest,
+  }));
+  const prepare = spawnSync("python3", [applicationRecorder.pathname, "--prepare", "--draft", draft,
+    "--ledger", ledger, "--applications-dir", applications,
+    "--expected-context-version", contextVersion, "--expected-context-digest", contextDigest],
+  { encoding: "utf8" });
+  assert.notEqual(prepare.status, 0);
+  assert.match(prepare.stderr, /duplicate terminal application/);
+
+  const newCohort = JSON.parse(await readFile(draft, "utf8"));
+  newCohort.cohort_window = "2027-09-14 through 2027-10-03";
+  await writeFile(draft, JSON.stringify(newCohort));
+  const allowed = spawnSync("python3", [applicationRecorder.pathname, "--prepare", "--draft", draft,
+    "--ledger", ledger, "--applications-dir", applications,
+    "--expected-context-version", contextVersion, "--expected-context-digest", contextDigest],
+  { encoding: "utf8" });
+  assert.equal(allowed.status, 0, allowed.stderr);
 });
 
 test("outbound email preflight rejects rendered spam defects", () => {
