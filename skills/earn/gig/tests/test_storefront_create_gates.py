@@ -295,6 +295,20 @@ def test_gallery_readback_retries_a_hydrated_page_with_zero_images():
     assert sd._own_page_readback_valid(observed, "1", expected_image_count=6) is True
 
 
+def test_a_known_unpublished_candidate_draft_is_reused_even_after_it_has_a_title():
+    import storefront_draft
+
+    cards = [
+        {"ids": ["4371756"], "titled": True},
+        {"ids": ["4371773"], "titled": True},
+        {"ids": ["9999999"], "titled": True},
+    ]
+    assert storefront_draft._preferred_recoverable_draft(
+        ["4371773", "4371756"], cards,
+    ) == "4371773"
+    assert storefront_draft._preferred_recoverable_draft(["1111111"], cards) is None
+
+
 def test_recurring_potential_comes_from_the_owned_capability_not_marketplace_copy():
     sd = _sd()
     assert sd._capability_recurring_potential({

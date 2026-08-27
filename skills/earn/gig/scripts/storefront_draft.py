@@ -768,7 +768,19 @@ async def _submit_blank_draft(ws_url: str) -> str:
     raise RuntimeError("storefront_create_draft_id_missing")
 
 
-def create_or_claim_blank_draft(default_tab_script: Path) -> dict[str, Any]:
+def _preferred_recoverable_draft(
+    preferred_ids: list[str], draft_cards: list[dict[str, Any]],
+) -> str | None:
+    available = {
+        str(value) for row in draft_cards if isinstance(row, dict)
+        for value in row.get("ids") or [] if str(value).isdigit()
+    }
+    return next((str(value) for value in preferred_ids if str(value) in available), None)
+
+
+def create_or_claim_blank_draft(
+    default_tab_script: Path, preferred_draft_ids: list[str] | None = None,
+) -> dict[str, Any]:
     """Claim one recoverable blank draft, creating it only when none exists."""
     list_opened = subprocess.run(
         [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
@@ -789,6 +801,10 @@ def create_or_claim_blank_draft(default_tab_script: Path) -> dict[str, Any]:
                 check=False, timeout=30,
             )
     abandoned = [row for row in draft_cards if row.get("titled") is True]
+    preferred = _preferred_recoverable_draft(preferred_draft_ids or [], draft_cards)
+    if preferred is not None:
+        return {"draft_service_id": preferred, "effect": 0, "recovered": True,
+                "abandoned_drafts": [row for row in abandoned if preferred not in row.get("ids", [])]}
     if len(blank_ids) > 1:
         raise RuntimeError("storefront_create_multiple_blank_drafts")
     if blank_ids:

@@ -6737,8 +6737,21 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     )
                     if blocked is not None:
                         return 0, blocked
+                    preferred_draft_ids = []
+                    candidate_ledger = args.state_dir / "new-listing-drafts.jsonl"
+                    if candidate_ledger.exists():
+                        for line in reversed(candidate_ledger.read_text(encoding="utf-8").splitlines()):
+                            if not line.strip():
+                                continue
+                            row = json.loads(line)
+                            draft_id = str(row.get("draft_service_id") or "")
+                            if (row.get("capability_family") == create_family and draft_id.isdigit()
+                                    and int(row.get("public_effect") or 0) == 0
+                                    and row.get("status") in {"draft_created", "draft_prepared"}):
+                                preferred_draft_ids.append(draft_id)
                     create_draft_claim = storefront_draft.create_or_claim_blank_draft(
-                        getattr(args, "default_tab_script", DEFAULT_TAB)
+                        getattr(args, "default_tab_script", DEFAULT_TAB),
+                        preferred_draft_ids=preferred_draft_ids,
                     )
                     create_effect_this_wake = int(
                         create_draft_claim.get("effect") or create_draft_claim.get("public_effect") or 0
