@@ -211,8 +211,8 @@ Allowed values are closed and versioned with the registry schema:
 
 | Order | TODO | Done evidence |
 |---:|---|---|
-| 1 | ✅ Inventory every installed `ai.anicca.*` Life Manager label and classify owner/domain/effect/state/release | `docs/evidence/runtime/2026-08-28-macos-loop-control-plane-inventory.{md,json}`; 226 installed labels, 211 classified Life Manager-owned, 14 disabled/unloaded installed ambiguous, loaded/disabled-only rows retained |
-| 2 | ✅ Upgrade `config/loop-registry.json` to schema v2 and import all active definitions without changing launchd | 172/172 active classified labels; four schema/coverage/render tests; fixture SHA-256 `8ac7027ef34651a60d8a70eb56236ff7ad920a60974f25d9af0efc1a866eef69`; `docs/evidence/runtime/2026-08-28-macos-loop-control-plane-schema-v2.md` |
+| 1 | ✅ Inventory every installed `ai.anicca.*` Life Manager label and classify owner/domain/effect/state/release | `docs/evidence/runtime/2026-08-28-macos-loop-control-plane-inventory.{md,json}`; 226 installed labels, 208 classified Life Manager-owned, 14 disabled/unloaded installed ambiguous, loaded/disabled-only rows retained |
+| 2 | ✅ Upgrade `config/loop-registry.json` to schema v2 and import all active definitions without changing launchd | 169/169 active classified labels, one external and two retired labels; fixture SHA-256 `35e3b1ae25ed87a815772b14c00c4a87e7e38a87e125bba98f1c04661b9b6c49`; `docs/evidence/runtime/2026-08-28-macos-loop-control-plane-schema-v2.md` |
 | 3 | ✅ Implement `bin/lm-loop doctor/status/watch` as read-only commands | five focused tests; live 172-row status/watch; runtime/effect truth separated; `docs/evidence/runtime/2026-08-28-macos-loop-control-plane-readonly-cli.md` |
 | 4 | ✅ Implement plist generation and fail-closed `apply` using `launchctl-safe` | five focused tests; production invalid generation zero mutation; isolated exact loaded argv readback and cleanup; `docs/evidence/runtime/2026-08-28-macos-loop-control-plane-atomic-apply.md` |
 | 5 | ✅ Implement `start/stop/restart` for one ID and `all`, collecting every return code | four focused tests; isolated one-label start/restart/stop; real collect-all `[0,2,0]`; cleanup remaining 0; `docs/evidence/runtime/2026-08-28-macos-loop-control-plane-lifecycle.md` |
@@ -249,13 +249,21 @@ legacy Writer CLI delegates production normal and repair/session modes to the
 canonical router. Direct active-entrypoint auth/profile selection is zero. Evidence:
 `docs/evidence/runtime/2026-08-28-macos-loop-control-plane-provider-boundary-progress.md`.
 
+### TODO 9 execution state
+
+Source preflight is complete: all 169 managed entrypoints are present,
+executable, and release-relative. One third-party label is explicit external;
+two source-missing/127 labels are explicit retired. No production label has
+been cut over yet. Evidence:
+`docs/evidence/runtime/2026-08-28-macos-loop-control-plane-source-consolidation.md`.
+
 ### TODO 1 execution state
 
 The read-only capture joins installed plist text with loaded and disabled
 launchd readback. It records the complete 266-label union, including 40 labels
 without an installed plist, rather than treating plist presence as runtime
-truth. The installed set contains 211 classified Life Manager-owned labels. The
-172 loaded jobs are represented by schema-v2 entries; 39 disabled jobs remain
+truth. The installed set contains 208 classified Life Manager-owned labels. The
+169 loaded jobs are represented by schema-v2 entries; 39 disabled jobs remain
 migration inventory. Fourteen installed disabled/unloaded labels and 29
 loaded/disabled-only labels remain explicitly ambiguous. Unknown releases,
 mutable checkout paths, and three invalid plists fail closed for migration. No

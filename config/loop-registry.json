@@ -1,4 +1,7 @@
 {
+  "external_labels": [
+    "ai.anicca.tsbridge"
+  ],
   "loops": {
     "affiliate-browser": {
       "cadence": {
@@ -10,7 +13,7 @@
       },
       "domain": "growth",
       "effect_class": "none",
-      "entrypoint": "skills/_shared/venv-cloak/bin/python",
+      "entrypoint": "runtime/loop/entry_dispatch.py",
       "label": "ai.anicca.affiliate-browser",
       "log_root": "~/.local/state/life-manager/affiliate-browser/logs",
       "provider_route": "shared-agent-runner",
@@ -26,7 +29,7 @@
       },
       "domain": "growth",
       "effect_class": "none",
-      "entrypoint": "bin/sh",
+      "entrypoint": "runtime/loop/entry_dispatch.py",
       "label": "ai.anicca.affiliate-composition",
       "log_root": "~/.local/state/life-manager/affiliate-composition/logs",
       "provider_route": "deterministic",
@@ -42,7 +45,7 @@
       },
       "domain": "growth",
       "effect_class": "none",
-      "entrypoint": "skills/_shared/venv-cloak/bin/python",
+      "entrypoint": "runtime/loop/entry_dispatch.py",
       "label": "ai.anicca.affiliate-impact-browser",
       "log_root": "~/.local/state/life-manager/affiliate-impact-browser/logs",
       "provider_route": "shared-agent-runner",
@@ -58,7 +61,7 @@
       },
       "domain": "growth",
       "effect_class": "publish",
-      "entrypoint": "bin/sh",
+      "entrypoint": "runtime/loop/entry_dispatch.py",
       "label": "ai.anicca.affiliate-loop",
       "log_root": "~/.local/state/life-manager/affiliate-loop/logs",
       "provider_route": "deterministic",
@@ -74,7 +77,7 @@
       },
       "domain": "growth",
       "effect_class": "none",
-      "entrypoint": "bin/sh",
+      "entrypoint": "runtime/loop/entry_dispatch.py",
       "label": "ai.anicca.affiliate-source-refresh",
       "log_root": "~/.local/state/life-manager/affiliate-source-refresh/logs",
       "provider_route": "deterministic",
@@ -90,7 +93,7 @@
       },
       "domain": "growth",
       "effect_class": "none",
-      "entrypoint": "skills/_shared/venv-cloak/bin/python",
+      "entrypoint": "runtime/loop/entry_dispatch.py",
       "label": "ai.anicca.affiliate-x-browser",
       "log_root": "~/.local/state/life-manager/affiliate-x-browser/logs",
       "provider_route": "shared-agent-runner",
@@ -527,22 +530,6 @@
       "provider_route": "shared-agent-runner",
       "state_root": "~/.openclaw"
     },
-    "cfo-daily": {
-      "cadence": {
-        "run_at_load": true
-      },
-      "cleanup": {
-        "max_age_days": 14,
-        "max_runs": 100
-      },
-      "domain": "financial",
-      "effect_class": "message",
-      "entrypoint": "skills/cfo-core/run-cfo.sh",
-      "label": "ai.anicca.cfo-daily",
-      "log_root": "~/.local/state/life-manager/cfo-daily/logs",
-      "provider_route": "shared-agent-runner",
-      "state_root": "~/.local/state/life-manager/cfo-daily"
-    },
     "citizen-refill": {
       "cadence": {
         "start_interval_seconds": 3600
@@ -601,7 +588,7 @@
       },
       "domain": "growth",
       "effect_class": "publish",
-      "entrypoint": "skills/earn/marketing-engine/report/scheduled_runner.py",
+      "entrypoint": "runtime/loop/entry_dispatch.py",
       "label": "ai.anicca.clip-loop",
       "log_root": "~/.openclaw/logs",
       "provider_route": "shared-agent-runner",
@@ -785,7 +772,7 @@
       },
       "domain": "earn",
       "effect_class": "none",
-      "entrypoint": "bin/bash",
+      "entrypoint": "tools/gig-outcome-watch/notify.sh",
       "label": "ai.anicca.gig-outcome-watch",
       "log_root": "~/.local/state/life-manager/gig-outcome-watch/logs",
       "provider_route": "deterministic",
@@ -1875,7 +1862,7 @@
       },
       "domain": "growth",
       "effect_class": "none",
-      "entrypoint": "skills/earn/marketing-engine/report/scheduled_runner.py",
+      "entrypoint": "runtime/loop/entry_dispatch.py",
       "label": "ai.anicca.marketing-dashboard",
       "log_root": "~/Library/Application Support/AniccaMarketing/logs",
       "provider_route": "shared-agent-runner",
@@ -1891,7 +1878,7 @@
       },
       "domain": "growth",
       "effect_class": "none",
-      "entrypoint": "skills/earn/marketing-engine/bin/marketing",
+      "entrypoint": "runtime/loop/entry_dispatch.py",
       "label": "ai.anicca.marketing-metrics",
       "log_root": "~/Library/Application Support/AniccaMarketing/logs",
       "provider_route": "shared-agent-runner",
@@ -1910,7 +1897,7 @@
       },
       "domain": "growth",
       "effect_class": "none",
-      "entrypoint": "skills/earn/marketing-engine/report/scheduled_runner.py",
+      "entrypoint": "runtime/loop/entry_dispatch.py",
       "label": "ai.anicca.marketing-metrics-daily",
       "log_root": "~/.local/state/life-manager/marketing-metrics-daily/logs",
       "provider_route": "shared-agent-runner",
@@ -1929,7 +1916,7 @@
       },
       "domain": "growth",
       "effect_class": "publish",
-      "entrypoint": "skills/earn/marketing-engine/report/scheduled_runner.py",
+      "entrypoint": "runtime/loop/entry_dispatch.py",
       "label": "ai.anicca.marketing-mine-daily",
       "log_root": "~/.local/state/life-manager/marketing-mine-daily/logs",
       "provider_route": "shared-agent-runner",
@@ -1948,7 +1935,7 @@
       },
       "domain": "growth",
       "effect_class": "publish",
-      "entrypoint": "skills/earn/marketing-engine/state",
+      "entrypoint": "runtime/loop/entry_dispatch.py",
       "label": "ai.anicca.marketing-owner-daily",
       "log_root": "~/.local/state/life-manager/marketing-owner-daily/logs",
       "provider_route": "shared-agent-runner",
@@ -1964,7 +1951,7 @@
       },
       "domain": "growth",
       "effect_class": "none",
-      "entrypoint": "skills/earn/marketing-engine/report/truth_pipeline.py",
+      "entrypoint": "runtime/loop/entry_dispatch.py",
       "label": "ai.anicca.marketing-owner-events",
       "log_root": "~/.local/state/life-manager/marketing-owner-events/logs",
       "provider_route": "shared-agent-runner",
@@ -1984,7 +1971,7 @@
       },
       "domain": "growth",
       "effect_class": "publish",
-      "entrypoint": "skills/earn/marketing-engine/state",
+      "entrypoint": "runtime/loop/entry_dispatch.py",
       "label": "ai.anicca.marketing-owner-weekly",
       "log_root": "~/.local/state/life-manager/marketing-owner-weekly/logs",
       "provider_route": "shared-agent-runner",
@@ -2003,7 +1990,7 @@
       },
       "domain": "growth",
       "effect_class": "none",
-      "entrypoint": "skills/earn/marketing-engine/report/scheduled_runner.py",
+      "entrypoint": "runtime/loop/entry_dispatch.py",
       "label": "ai.anicca.marketing-score-daily",
       "log_root": "~/.local/state/life-manager/marketing-score-daily/logs",
       "provider_route": "shared-agent-runner",
@@ -2023,7 +2010,7 @@
       },
       "domain": "growth",
       "effect_class": "message",
-      "entrypoint": "skills/earn/marketing-engine/bin/lm",
+      "entrypoint": "runtime/loop/entry_dispatch.py",
       "label": "ai.anicca.marketing-weekly-review",
       "log_root": "~/.local/state/life-manager/marketing-weekly-review/logs",
       "provider_route": "shared-agent-runner",
@@ -2323,7 +2310,7 @@
       },
       "domain": "system",
       "effect_class": "none",
-      "entrypoint": "skills/earn/marketing-engine/report/scheduled_runner.py",
+      "entrypoint": "runtime/loop/entry_dispatch.py",
       "label": "ai.anicca.self-improve-evolve",
       "log_root": "~/.openclaw/logs",
       "provider_route": "shared-agent-runner",
@@ -2392,22 +2379,6 @@
       "log_root": "~/.local/state/life-manager/stripe-revenue-poller/logs",
       "provider_route": "shared-agent-runner",
       "state_root": "~/.local/state/life-manager/stripe-revenue-poller"
-    },
-    "sync-memory": {
-      "cadence": {
-        "start_interval_seconds": 10800
-      },
-      "cleanup": {
-        "max_age_days": 14,
-        "max_runs": 100
-      },
-      "domain": "mental",
-      "effect_class": "none",
-      "entrypoint": "skills/anicca-core/scripts/sync-memory.sh",
-      "label": "ai.anicca.sync-memory",
-      "log_root": "~/.local/state/life-manager/sync-memory/logs",
-      "provider_route": "shared-agent-runner",
-      "state_root": "~/.local/state/life-manager/sync-memory"
     },
     "telegram-bot": {
       "cadence": {
@@ -2507,22 +2478,6 @@
       "log_root": "~/.local/state/life-manager/token-daily-report/logs",
       "provider_route": "deterministic",
       "state_root": "~/.local/state/life-manager/token-daily-report"
-    },
-    "tsbridge": {
-      "cadence": {
-        "run_at_load": true
-      },
-      "cleanup": {
-        "max_age_days": 14,
-        "max_runs": 100
-      },
-      "domain": "system",
-      "effect_class": "none",
-      "entrypoint": "services/tsbridge/run.sh",
-      "label": "ai.anicca.tsbridge",
-      "log_root": "~/.local/state/life-manager/tsbridge/logs",
-      "provider_route": "deterministic",
-      "state_root": "~/.local/state/life-manager/tsbridge"
     },
     "verify-loops-audit": {
       "cadence": {
@@ -3095,5 +3050,9 @@
       "state_root": "~/.local/state/life-manager/x402-tunnel"
     }
   },
+  "retired_labels": [
+    "ai.anicca.cfo-daily",
+    "ai.anicca.sync-memory"
+  ],
   "schema_version": 2
 }

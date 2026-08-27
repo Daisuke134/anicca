@@ -1,0 +1,17 @@
+{
+  "schema_version": "marketing.product.v1",
+  "product_id": "ebook-en",
+  "type": "ebook",
+  "live_status": "direct_live_kdp_unavailable",
+  "destination_url": "https://aniccaai.com/monk",
+  "price": {"amount": 10.99, "currency": "USD", "basis": "direct_purchase"},
+  "approved_claims": ["English-language guided reflection ebook", "Digital access is sold through the owned checkout page"],
+  "cta": "Read The Anicca Reset",
+  "conversion_events": ["landing_view", "checkout_start", "purchase"],
+  "revenue_events": ["gross_sale", "refund", "net_sale"],
+  "margin_rule": "gross sales minus refunds and payment or marketplace fees",
+  "audiences": ["English readers seeking practical reflection exercises"],
+  "metric_adapters": ["owned_redirect", "stripe", "kdp"],
+  "primary_metric": "contribution_margin",
+  "attribution_method": "owned_campaign_redirect"
+}

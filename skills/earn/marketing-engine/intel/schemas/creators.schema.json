@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aniccaai.com/schemas/marketing-creator-v1.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "id", "platform", "handle", "language", "product_id", "source_url", "source_null_reason", "captured_at", "metrics", "green_flags", "red_flags", "verdict", "evidence_url", "evidence_null_reason"],
+  "properties": {
+    "schema_version": {"const": "marketing.creator.v1"},
+    "id": {"type": "string"},
+    "platform": {"enum": ["tiktok", "instagram", "youtube", "x"]},
+    "handle": {"type": "string", "minLength": 1},
+    "language": {"enum": ["en", "ja", "es", "multi", "unknown"]},
+    "product_id": {"type": ["string", "null"]},
+    "source_url": {"type": ["string", "null"]},
+    "source_null_reason": {"type": ["string", "null"]},
+    "captured_at": {"type": "string", "format": "date-time"},
+    "metrics": {"type": "array"},
+    "green_flags": {"type": "array", "items": {"type": "string"}},
+    "red_flags": {"type": "array", "items": {"type": "string"}},
+    "verdict": {"enum": ["green", "red", "unknown"]},
+    "evidence_url": {"type": ["string", "null"]},
+    "evidence_null_reason": {"type": ["string", "null"]}
+  }
+}

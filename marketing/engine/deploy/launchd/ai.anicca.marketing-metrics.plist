@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>ai.anicca.marketing-metrics</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>__REPO_ROOT__/marketing/engine/bin/marketing</string>
+    <string>observe</string>
+    <string>--root</string>
+    <string>__RUNTIME_ROOT__</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>__REPO_ROOT__</string>
+  <key>StartInterval</key>
+  <integer>900</integer>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>ProcessType</key>
+  <string>Background</string>
+  <key>StandardOutPath</key>
+  <string>__RUNTIME_ROOT__/logs/marketing-metrics.out.log</string>
+  <key>StandardErrorPath</key>
+  <string>__RUNTIME_ROOT__/logs/marketing-metrics.err.log</string>
+</dict>
+</plist>

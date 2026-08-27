@@ -1,0 +1,18 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://anicca.ai/schemas/marketing/native-candidates.v1.json",
+  "type":"array",
+  "maxItems":1,
+  "items":{
+    "type":"object",
+    "additionalProperties":false,
+    "required":["native_handle","native_post_id","native_post_url","caption","published_at"],
+    "properties":{
+      "native_handle":{"type":"string","minLength":1},
+      "native_post_id":{"type":"string","pattern":"^[0-9]{10,30}$"},
+      "native_post_url":{"type":"string","pattern":"^https://www\\.tiktok\\.com/@[^/]+/video/[0-9]{10,30}$"},
+      "caption":{"type":"string"},
+      "published_at":{"type":"string","format":"date-time"}
+    }
+  }
+}

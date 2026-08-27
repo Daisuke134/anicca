@@ -1008,7 +1008,8 @@ def command_for(provider: str, executable: str, provider_config: dict[str, Any],
                 candidate: dict[str, Any], args: argparse.Namespace, prompt: str,
                 schema: dict[str, Any], result_path: Path, timeout_seconds: int,
                 session_id: str | None, openclaw_workdir: str | None = None,
-                *, prompt_via_stdin: bool = False) -> list[str]:
+                *, prompt_via_stdin: bool = False,
+                rollout_budget_tokens: int | None = None) -> list[str]:
     model = candidate["model"]
     effort = candidate.get("effort", "medium")
     if provider == "codex":
@@ -1053,6 +1054,14 @@ def command_for(provider: str, executable: str, provider_config: dict[str, Any],
                 raise ValueError("codex disabled_features must be a list of nonempty names")
             for feature in disabled_features:
                 command.extend(["--disable", feature])
+        if rollout_budget_tokens is not None:
+            if rollout_budget_tokens <= 0:
+                raise ValueError("codex rollout budget must be positive")
+            command.extend(["-c", (
+                "features.rollout_budget={enabled=true,"
+                f"limit_tokens={rollout_budget_tokens},"
+                "reminder_at_remaining_tokens=[],"
+                "sampling_token_weight=1.0,prefill_token_weight=1.0}")])
         command.extend([
             "--ignore-user-config", "--json",
             "--output-schema", str(provider_schema_path), "-o", str(result_path),
@@ -1127,6 +1136,8 @@ def classify_provider_error(rc: int, timed_out: bool, stdout: str, stderr: str, 
     # Claude prints quota/weekly-limit notices to stdout (with an empty
     # stderr), so both provider streams are part of the transient signal.
     text = f"{stdout}\n{stderr}\n{launch_error}".lower()
+    if "shared rollout token budget exhausted" in text:
+        return "native_rollout_budget_exhausted"
     if any(token in text for token in (
         "failed to lookup address information", "could not resolve host",
         "nodename nor servname", "name or service not known",
@@ -1162,7 +1173,7 @@ def classify_provider_error(rc: int, timed_out: bool, stdout: str, stderr: str, 
 def run() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--task-class", required=True,
-                        choices=("deterministic", "composition-agent", "reply-semantic-agent", "storefront-proposal-agent", "repeatable-agent", "tool-agent", "browser-lane-agent", "application-lane-agent", "application-intent-planner", "diagnostic-agent", "marketing-agent", "high-value-agent", "escalation-agent", "writer-sol-audit", "writer-repair-agent"))
+                        choices=("deterministic", "composition-agent", "reply-semantic-agent", "storefront-proposal-agent", "repeatable-agent", "tool-agent", "browser-lane-agent", "application-lane-agent", "application-intent-planner", "diagnostic-agent", "marketing-agent", "high-value-agent", "escalation-agent", "writer-sol-audit", "writer-repair-agent", "affiliate-marketing-agent", "affiliate-escalation-agent"))
     prompt_source = parser.add_mutually_exclusive_group(required=True)
     prompt_source.add_argument("--prompt-file", type=Path)
     prompt_source.add_argument("--prompt-stdin", action="store_true")
@@ -1255,20 +1266,20 @@ def run() -> int:
         budget_scope_id = os.environ.get("ANICCA_BUDGET_SCOPE_ID", "").strip()
         pass_budget_raw = os.environ.get("ANICCA_PASS_TOKEN_BUDGET", "").strip()
         daily_budget_raw = os.environ.get("ANICCA_LOOP_DAILY_TOKEN_BUDGET", "").strip()
-        budget_values = tuple(bool(value) for value in (
-            budget_scope_id, pass_budget_raw, daily_budget_raw))
-        if any(budget_values) and not all(budget_values):
-            raise ValueError("token budget scope/pass/daily settings must be provided together")
-        budget_enabled = all(budget_values)
+        if bool(budget_scope_id) != bool(pass_budget_raw):
+            raise ValueError("token budget scope/pass settings must be provided together")
+        budget_enabled = bool(budget_scope_id and pass_budget_raw)
         if os.environ.get("ANICCA_BUDGET_REQUIRED", "").strip() == "1" and not budget_enabled:
             raise ValueError("token budget is required but scope/pass/daily settings are missing")
-        token_reservation = int(task_config.get("token_reservation", 0))
+        task_token_reservation = int(task_config.get("token_reservation", 0))
         pass_token_budget = int(pass_budget_raw or 0)
-        daily_token_budget = int(daily_budget_raw or 0)
+        daily_token_budget = int(daily_budget_raw) if daily_budget_raw else None
         if budget_enabled and (
-            token_reservation <= 0 or pass_token_budget <= 0 or daily_token_budget <= 0
+            task_token_reservation <= 0 or pass_token_budget <= 0
+            or (daily_token_budget is not None and daily_token_budget <= 0)
         ):
             raise ValueError("enabled token budgets and task reservation must be positive")
+        token_reservation = pass_token_budget if budget_enabled else task_token_reservation
         budget_daily_scope = (
             os.environ.get("ANICCA_BUDGET_DAILY_SCOPE", "").strip() or parsed.loop)
         budget_ledger = TokenBudgetLedger(Path(os.environ.get(
@@ -1380,6 +1391,7 @@ def run() -> int:
                 provider, executable, provider_config, effective_candidate, parsed, candidate_prompt,
                 schema, result_path, attempt_timeout_seconds, session_id, openclaw_workdir,
                 prompt_via_stdin=parsed.prompt_stdin,
+                rollout_budget_tokens=pass_token_budget if budget_enabled else None,
             )
             with stdout_path.open("wb") as stdout, stderr_path.open("wb") as stderr:
                 try:

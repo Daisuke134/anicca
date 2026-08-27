@@ -1,0 +1,9 @@
+{
+  "_comment": "niche -> TikTok hashtags mined daily. Niche keys MUST match FAMILY_MAP in library-structural-analyze.py, otherwise the scrape lands in a raw-*.jsonl nobody reads.",
+  "mental-health-ja": ["メンタルケア", "不安", "自己肯定感", "生きづらさ", "HSP", "心の整え方"],
+  "mental-health-en": ["mentalhealth", "anxietyrelief", "selfworth", "healingjourney", "innerpeace", "overthinking"],
+  "lockscreen-widget": ["ロック画面", "lockscreen", "widget", "ホーム画面カスタム"],
+  "affirmation-slideshow-ja": ["アファメーション", "引き寄せ", "マインドフルネス", "瞑想", "スピリチュアル", "自分を大切に"],
+  "monk-wisdom": ["buddhism", "monk", "zen", "stoicism", "mindfulness", "meditation"],
+  "honne-relationship": ["恋愛", "本音", "人間関係", "恋愛心理", "片思い", "復縁"]
+}

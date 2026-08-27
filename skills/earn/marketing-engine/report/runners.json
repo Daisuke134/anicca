@@ -1,0 +1,45 @@
+{
+  "schema_version": "marketing.runners.v1",
+  "runners": {
+    "mine": {
+      "command": ["{repo}/skills/earn/marketing-engine/bin/lm", "intel", "daily"],
+      "product_ids": ["aniccaios", "honne", "ebook-ja", "ebook-en"],
+      "quarantine_reason": null
+    },
+    "score": {
+      "command": ["{python}", "{repo}/skills/earn/marketing-engine/brain/score.py"],
+      "product_ids": [],
+      "quarantine_reason": "verified_writeback_not_ready_until_gate_14"
+    },
+    "metrics": {
+      "command": ["{python}", "{repo}/skills/earn/marketing-engine/measure/business_outcomes.py"],
+      "product_ids": ["aniccaios", "honne", "ebook-ja", "ebook-en"],
+      "quarantine_reason": null
+    },
+    "dashboard": {
+      "command": ["{home}/profitable-claude/marketing/engine/bin/marketing", "dashboard", "--root", "{home}/Library/Application Support/AniccaMarketing", "--output", "{home}/Library/Application Support/AniccaMarketing/dashboard/index.html"],
+      "product_ids": ["aniccaios", "honne", "ebook-ja", "ebook-en"],
+      "quarantine_reason": null
+    },
+    "clip": {
+      "command": ["/bin/bash", "{repo}/skills/earn/clip/clip_daily.sh"],
+      "product_ids": [],
+      "quarantine_reason": "publisher_quarantined_until_gate_12"
+    },
+    "video": {
+      "command": ["/bin/bash", "{repo}/skills/earn/video/run.sh"],
+      "product_ids": ["ebook-en"],
+      "quarantine_reason": "publisher_quarantined_until_gate_12"
+    },
+    "self-improve": {
+      "command": ["/bin/bash", "{repo}/skills/earn/self-improve/run_evolve.sh"],
+      "product_ids": [],
+      "quarantine_reason": "verified_writeback_not_ready_until_gate_14"
+    },
+    "capafy": {
+      "command": ["/bin/bash", "{repo}/skills/earn/capafy-marketing/capafy-ig-marketing-daily.sh"],
+      "product_ids": ["capafy"],
+      "quarantine_reason": "publisher_quarantined_until_gate_12"
+    }
+  }
+}

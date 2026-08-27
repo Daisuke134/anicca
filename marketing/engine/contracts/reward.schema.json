@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://anicca.dev/marketing/contracts/reward.schema.json",
+  "type": "object",
+  "required": [
+    "reward_id",
+    "scope",
+    "name",
+    "status",
+    "window",
+    "value"
+  ],
+  "properties": {
+    "reward_id": {"type": "string", "minLength": 1},
+    "scope": {"type": "string", "minLength": 1},
+    "name": {"type": "string", "minLength": 1},
+    "status": {"enum": ["scorable", "unknown", "insufficient"]},
+    "window": {"type": "string", "minLength": 1},
+    "value": {"type": ["number", "null"]},
+    "currency": {"type": "string", "minLength": 3}
+  },
+  "additionalProperties": true
+}

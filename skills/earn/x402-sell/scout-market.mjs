@@ -126,6 +126,27 @@ export function aggregateMarket(resources, now) {
     .sort((a, b) => b.priceUsd - a.priceUsd || compareText(a.resource, b.resource))
     .slice(0, 15)
     .map(({ resource, priceUsd }) => ({ resource, priceUsd: roundUsd(priceUsd) }));
+  const topDemandSamples = [...listings]
+    .filter((item) => item.calls30d > 0 && item.payerSignals30d > 0)
+    .sort((a, b) => (b.calls30d * b.priceUsd) - (a.calls30d * a.priceUsd)
+      || b.payerSignals30d - a.payerSignals30d
+      || compareText(a.resource, b.resource))
+    .slice(0, 50)
+    .map(({ resource, category, priceUsd, calls30d, payerSignals30d }) => ({
+      resource,
+      category,
+      priceUsd: roundUsd(priceUsd),
+      calls30d,
+      payerSignals30d,
+      estimatedGrossUsd30d: roundUsd(calls30d * priceUsd),
+    }));
+
+  const paidCalls30d = byCategory.reduce((sum, item) => sum + item.calls30d, 0);
+  const payerSignals30d = byCategory.reduce((sum, item) => sum + item.payerSignals30d, 0);
+  const categoriesWithPaidDemand = byCategory
+    .filter((item) => item.calls30d > 0 && item.payerSignals30d > 0)
+    .length;
+  const demandPassed = categoriesWithPaidDemand > 0;
 
   return {
     ts: Math.floor(timestamp),
@@ -139,6 +160,16 @@ export function aggregateMarket(resources, now) {
     },
     byCategory,
     topPricedSamples,
+    topDemandSamples,
+    demandGate: {
+      passed: demandPassed,
+      paidCalls30d,
+      payerSignals30d,
+      categoriesWithPaidDemand,
+      reason: demandPassed
+        ? 'observed paid calls and payer signals in the last 30 days'
+        : 'no category has both paid calls and payer signals in the last 30 days',
+    },
   };
 }
 

@@ -1,12 +1,26 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-import { scoutIsFresh, summarizeOwnProducts } from '../store-improve.mjs';
+import { experimentExternalCount, scoutIsFresh, summarizeOwnProducts } from '../store-improve.mjs';
 
 const SERVED_PATHS = ['/web-search', '/funding-rates', '/funding-rate-arb', '/research'];
 const NOW = Date.parse('2026-07-18T12:00:00.000Z');
 const SELF = '0x0000000000000000000000000000000000000abc';
 const EXTERNAL = '0x0000000000000000000000000000000000000def';
+const HERE = dirname(fileURLToPath(import.meta.url));
+
+test('controller stays dependency-free in the rsynced Franklin runtime body', () => {
+  const source = readFileSync(join(HERE, '..', 'store-improve.mjs'), 'utf8');
+  assert.doesNotMatch(source, /from ['"]\.\/llm-resale\.mjs['"]/, 'controller must not import paid-runtime dependencies');
+  assert.match(source, /from ['"]\.\/llm-offers\.mjs['"]/, 'controller must import the pure offer catalog');
+  assert.match(source, /import \{ CORE_PATHS, computeGaps \} from ['"]\.\/product-gaps\.mjs['"];/,
+    'controller must share the product-gaps served-path catalog');
+  assert.doesNotMatch(source, /const CORE_PATHS =/,
+    'controller must not drift a second served-path catalog');
+});
 
 test('summarizeOwnProducts aggregates only served routes with external, attempts, and age wakes', () => {
   const sales = [
@@ -46,4 +60,14 @@ test('scoutIsFresh accepts a recent demand-aware cache', () => {
     ts: now / 1_000,
     byCategory: [{ category: 'defi', count: 1_014, medianPriceUsd: 0.01, calls30d: 9_398 }],
   }, now), true);
+});
+
+test('LLM experiment reward ignores external sales on every other route', () => {
+  const products = [
+    { path: '/research', external: 4 },
+    { path: '/web-search', external: 2 },
+    { path: '/llm', external: 0 },
+  ];
+  assert.equal(experimentExternalCount(products, '/llm'), 0);
+  assert.equal(experimentExternalCount([{ path: '/llm', external: 1 }], '/llm'), 1);
 });

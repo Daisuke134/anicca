@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://anicca.dev/marketing/contracts/publication.schema.json",
+  "type": "object",
+  "required": ["artifact_id", "status", "idempotency_key"],
+  "properties": {
+    "artifact_id": {"type": "string", "minLength": 1},
+    "status": {"enum": ["intent", "published", "failed", "unknown"]},
+    "idempotency_key": {"type": "string", "minLength": 1},
+    "public_url": {"type": "string"},
+    "readback_status": {"enum": ["pending", "pass", "fail"]}
+  },
+  "additionalProperties": true
+}

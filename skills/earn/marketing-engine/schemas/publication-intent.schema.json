@@ -1,0 +1,30 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://anicca.ai/schemas/marketing/publication-intent.v2.json",
+  "type":"object",
+  "additionalProperties":false,
+  "required":["schema_version","publish_key","experiment_id","creative_id","product_id","account_id","hook_id","renderer_id","adapter","asset_path","asset_sha256","caption","caption_sha256","attribution_token","scheduled_at","integration_id","platform","native_handle","provider_settings","visual_approval_id"],
+  "properties":{
+    "schema_version":{"const":"marketing.publication-intent.v2"},
+    "publish_key":{"type":"string","pattern":"^publication\\.[0-9a-f]{24}$"},
+    "experiment_id":{"type":"string","minLength":1},
+    "creative_id":{"type":"string","minLength":1},
+    "product_id":{"type":"string","minLength":1},
+    "account_id":{"type":"string","minLength":1},
+    "hook_id":{"type":"string","minLength":1},
+    "renderer_id":{"type":"string","minLength":1},
+    "adapter":{"enum":["postiz","browser"]},
+    "asset_path":{"type":"string","minLength":1},
+    "asset_sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "caption":{"type":"string","minLength":1},
+    "caption_sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "attribution_token":{"type":"string","minLength":1},
+    "scheduled_at":{"type":"string","format":"date-time"},
+    "integration_id":{"type":"string","minLength":1},
+    "platform":{"enum":["tiktok","instagram","youtube"]},
+    "native_handle":{"type":"string","minLength":1},
+    "provider_settings":{"type":"object","required":["__type"],"properties":{"__type":{"type":"string","minLength":1}}},
+    "visual_approval_id":{"type":"string","pattern":"^visual\\.accepted\\."},
+    "script_id":{"type":"string","pattern":"^script\\."}
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "schema_version": "marketing.product.v1",
+  "product_id": "honne",
+  "type": "ios_app",
+  "live_status": "app_store_live",
+  "destination_url": "https://apps.apple.com/jp/app/id6759667221",
+  "price": {"amount": 0, "currency": "JPY", "basis": "free_download_with_premium"},
+  "approved_claims": ["Analyzes pasted conversation text", "Suggests possible emotional context and a reply"],
+  "cta": "Try Honne on the App Store",
+  "conversion_events": ["app_store_impression", "install", "analysis_complete", "paywall_view", "trial_start"],
+  "revenue_events": ["subscription_start", "renewal", "refund"],
+  "margin_rule": "report gross subscription revenue and estimated App Store proceeds separately",
+  "audiences": ["people seeking help understanding relationship conversations"],
+  "metric_adapters": ["app_store_connect", "revenuecat", "posthog"],
+  "primary_metric": "retained_subscription_revenue",
+  "attribution_method": "apple_campaign_token"
+}

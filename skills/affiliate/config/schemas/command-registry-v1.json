@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "command-registry-v1.json",
+  "type": "object",
+  "required": ["schema_version", "commands"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {"const": 1},
+    "commands": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/command"}
+    }
+  },
+  "$defs": {
+    "schema": {"type": "object", "required": ["$ref"], "additionalProperties": false, "properties": {"$ref": {"type": "string"}}},
+    "command": {
+      "type": "object",
+      "required": ["command", "entrypoint", "effect_class", "input_schema", "output_schema", "effect_schema", "precondition_schema", "semantic_postcondition_schema"],
+      "additionalProperties": false,
+      "properties": {
+        "command": {"type": "string", "minLength": 1},
+        "entrypoint": {"type": "string", "pattern": "^scripts/[a-z_]+\\.py$"},
+        "effect_class": {"enum": ["READ_ONLY", "WRITE_LOCAL", "SECRET_LOCAL", "MODEL_EXTERNAL", "WRITE_EXTERNAL", "MONEY_RECONCILE", "REPORT"]},
+        "input_schema": {"$ref": "#/$defs/schema"},
+        "output_schema": {"$ref": "#/$defs/schema"},
+        "effect_schema": {"$ref": "#/$defs/schema"},
+        "precondition_schema": {"$ref": "#/$defs/schema"},
+        "semantic_postcondition_schema": {"$ref": "#/$defs/schema"}
+      }
+    },
+    "input": {
+      "type": "object",
+      "required": ["argv"],
+      "additionalProperties": false,
+      "properties": {"argv": {"type": "array", "items": {"type": "string"}}}
+    },
+    "output": {
+      "type": "object",
+      "required": ["status"],
+      "properties": {"status": {"type": "string", "minLength": 1}, "data": {}, "error": {"type": ["string", "null"]}}
+    },
+    "effect": {
+      "type": "object",
+      "required": ["effect_class", "external_effect"],
+      "additionalProperties": false,
+      "properties": {
+        "effect_class": {"enum": ["READ_ONLY", "WRITE_LOCAL", "SECRET_LOCAL", "MODEL_EXTERNAL", "WRITE_EXTERNAL", "MONEY_RECONCILE", "REPORT"]},
+        "external_effect": {"type": "boolean"}
+      }
+    },
+    "precondition_base": {
+      "type": "object",
+      "required": ["command", "exact_readback_required"],
+      "properties": {"command": {"type": "string", "minLength": 1}, "exact_readback_required": {"type": "boolean"}}
+    },
+    "precondition_read_only": {"$ref": "#/$defs/precondition_base"},
+    "precondition_write_local": {"$ref": "#/$defs/precondition_base"},
+    "precondition_secret_local": {"allOf": [{"$ref": "#/$defs/precondition_base"}, {"type": "object", "required": ["private_state_root"], "properties": {"private_state_root": {"type": "string", "minLength": 1}}}]},
+    "precondition_model_external": {"allOf": [{"$ref": "#/$defs/precondition_base"}, {"type": "object", "required": ["cost_budget_admitted"], "properties": {"cost_budget_admitted": {"const": true}}}]},
+    "precondition_write_external": {"allOf": [{"$ref": "#/$defs/precondition_base"}, {"type": "object", "required": ["owner_claim_id", "effect_journal_ready"], "properties": {"owner_claim_id": {"type": "string", "minLength": 1}, "effect_journal_ready": {"const": true}}}]},
+    "precondition_money_reconcile": {"allOf": [{"$ref": "#/$defs/precondition_base"}, {"type": "object", "required": ["official_provider_evidence_only"], "properties": {"official_provider_evidence_only": {"const": true}}}]},
+    "precondition_report": {"allOf": [{"$ref": "#/$defs/precondition_base"}, {"type": "object", "required": ["dedupe_key"], "properties": {"dedupe_key": {"type": "string", "minLength": 1}}}]},
+    "postcondition_base": {
+      "type": "object",
+      "required": ["status", "effect_certainty", "readback_status"],
+      "properties": {
+        "status": {"type": "string", "minLength": 1},
+        "effect_certainty": {"enum": ["NO_EFFECT", "READ_ONLY_CONFIRMED", "EFFECT_CONFIRMED", "EFFECT_UNKNOWN"]},
+        "readback_status": {"enum": ["EXACT", "NOT_APPLICABLE", "UNKNOWN"]}
+      }
+    },
+    "postcondition_read_only": {"$ref": "#/$defs/postcondition_base"},
+    "postcondition_write_local": {"$ref": "#/$defs/postcondition_base"},
+    "postcondition_secret_local": {"$ref": "#/$defs/postcondition_base"},
+    "postcondition_model_external": {"$ref": "#/$defs/postcondition_base"},
+    "postcondition_write_external": {"allOf": [{"$ref": "#/$defs/postcondition_base"}, {"type": "object", "required": ["effect_id"], "properties": {"effect_id": {"type": ["string", "null"]}}}]},
+    "postcondition_money_reconcile": {"allOf": [{"$ref": "#/$defs/postcondition_base"}, {"type": "object", "required": ["money_evidence_state"], "properties": {"money_evidence_state": {"enum": ["NO_TRANSACTIONS", "PENDING", "APPROVED", "PAID", "REVERSED", "UNKNOWN"]}}}]},
+    "postcondition_report": {"allOf": [{"$ref": "#/$defs/postcondition_base"}, {"type": "object", "required": ["delivery_receipt_id"], "properties": {"delivery_receipt_id": {"type": ["string", "null"]}}}]}
+  }
+}

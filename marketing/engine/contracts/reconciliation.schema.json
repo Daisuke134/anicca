@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://anicca.dev/marketing/contracts/reconciliation.schema.json",
+  "type": "object",
+  "required": [
+    "reconciliation_id",
+    "scope",
+    "identity",
+    "desired_state",
+    "actual_state",
+    "status",
+    "differences",
+    "allowed_mutations"
+  ],
+  "properties": {
+    "reconciliation_id": {"type": "string", "minLength": 1},
+    "scope": {"type": "object"},
+    "identity": {"type": "object"},
+    "desired_state": {"type": "object"},
+    "actual_state": {"type": "object"},
+    "status": {"enum": ["action_required", "converged", "quarantined"]},
+    "differences": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "desired", "actual"],
+        "properties": {
+          "path": {"type": "string", "minLength": 1},
+          "desired": {},
+          "actual": {}
+        },
+        "additionalProperties": false
+      }
+    },
+    "allowed_mutations": {
+      "type": "array",
+      "items": {
+        "enum": ["adapter_action", "checkpoint_state", "retry_schedule"]
+      },
+      "uniqueItems": true
+    }
+  },
+  "additionalProperties": false
+}

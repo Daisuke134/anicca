@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://anicca.ai/schemas/marketing/account-manifest.v1.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version","account_id","product_id","product_ids","platform","native_handle","publisher_integration_id","integration_null_reason","publisher_provider","publisher_settings","language","audience","allowed_renderer_ids","status"],
+  "properties": {
+    "schema_version":{"const":"marketing.account.v1"},
+    "account_id":{"type":"string","minLength":1},
+    "product_id":{"type":"string","minLength":1},
+    "product_ids":{"type":"array","minItems":1,"maxItems":1,"items":{"type":"string","minLength":1}},
+    "platform":{"enum":["tiktok","instagram","youtube"]},
+    "native_handle":{"type":"string","minLength":1},
+    "publisher_integration_id":{"type":["string","null"]},
+    "integration_null_reason":{"type":["string","null"]},
+    "publisher_provider":{"type":["string","null"]},
+    "publisher_settings":{"type":["object","null"]},
+    "language":{"enum":["en","ja"]},
+    "audience":{"type":"string","minLength":1},
+    "allowed_renderer_ids":{"type":"array","minItems":1,"uniqueItems":true,"items":{"type":"string","minLength":1}},
+    "status":{"type":"string","minLength":1}
+  }
+}

@@ -1,0 +1,363 @@
+#!/usr/bin/env python3
+"""Life/launch manager CLI boundary for the Marketing Engine."""
+
+from __future__ import annotations
+
+import argparse
+import datetime as dt
+import json
+import pathlib
+import sys
+
+
+HERE = pathlib.Path(__file__).resolve().parent
+ENGINE_ROOT = HERE.parent
+INTEL_ROOT = ENGINE_ROOT / "intel"
+GATES_ROOT = ENGINE_ROOT / "gates"
+PUBLISH_ROOT = ENGINE_ROOT / "publish"
+MEASURE_ROOT = ENGINE_ROOT / "measure"
+BRAIN_ROOT = ENGINE_ROOT / "brain"
+sys.path.insert(0, str(INTEL_ROOT))
+sys.path.insert(0, str(GATES_ROOT))
+sys.path.insert(0, str(PUBLISH_ROOT))
+sys.path.insert(0, str(MEASURE_ROOT))
+sys.path.insert(0, str(BRAIN_ROOT))
+
+import intel_gap  # noqa: E402
+import intel_daily  # noqa: E402
+import intel_pull  # noqa: E402
+import intel_store  # noqa: E402
+import video_intel  # noqa: E402
+import video_hook_judge  # noqa: E402
+import product_router  # noqa: E402
+import variation  # noqa: E402
+import publish_cli  # noqa: E402
+import experiment_attribution  # noqa: E402
+import performance_writeback  # noqa: E402
+
+
+def _telegram_sender():
+    shared = ENGINE_ROOT.parents[1] / "_shared"
+    sys.path.insert(0, str(shared))
+    from telegram import TelegramClient
+    return TelegramClient.from_env().send_text
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(prog="lm")
+    groups = parser.add_subparsers(dest="group", required=True)
+    intel = groups.add_parser("intel")
+    commands = intel.add_subparsers(dest="command", required=True)
+    pull = commands.add_parser("pull")
+    pull.add_argument("--no-judge", action="store_true")
+    pull.add_argument("--registry", type=pathlib.Path, default=INTEL_ROOT / "sources.json")
+    pull.add_argument("--intel-root", type=pathlib.Path, default=INTEL_ROOT)
+    pull.add_argument("--evidence-root", type=pathlib.Path, default=ENGINE_ROOT / "evidence" / "intel" / "pulls")
+    retry = commands.add_parser("judge-pending")
+    retry.add_argument("--intel-root", type=pathlib.Path, default=INTEL_ROOT)
+    retry.add_argument("--evidence-root", type=pathlib.Path, default=ENGINE_ROOT / "evidence" / "intel" / "judge-retries")
+    gap = commands.add_parser("gap")
+    gap.add_argument("--telegram", action="store_true")
+    gap.add_argument("--intel-root", type=pathlib.Path, default=INTEL_ROOT)
+    gap.add_argument("--evidence-root", type=pathlib.Path, default=ENGINE_ROOT / "evidence" / "intel" / "gaps")
+    video = commands.add_parser("video-discover")
+    video.add_argument("--registry", type=pathlib.Path, default=INTEL_ROOT / "video-sources.json")
+    video.add_argument("--intel-root", type=pathlib.Path, default=INTEL_ROOT)
+    video.add_argument("--evidence-root", type=pathlib.Path,
+                       default=ENGINE_ROOT / "evidence" / "intel" / "video-discovery")
+    ingest = commands.add_parser("video-ingest")
+    ingest.add_argument("--registry", type=pathlib.Path, default=INTEL_ROOT / "video-sources.json")
+    ingest.add_argument("--intel-root", type=pathlib.Path, default=INTEL_ROOT)
+    ingest.add_argument("--evidence-root", type=pathlib.Path,
+                        default=ENGINE_ROOT / "evidence" / "intel" / "video-ingest")
+    judge_video = commands.add_parser("video-judge")
+    judge_video.add_argument("--intel-root", type=pathlib.Path, default=INTEL_ROOT)
+    judge_video.add_argument("--evidence-root", type=pathlib.Path,
+                             default=ENGINE_ROOT / "evidence" / "intel" / "video-judge")
+    daily = commands.add_parser("daily")
+    daily.add_argument("--source-registry", type=pathlib.Path, default=INTEL_ROOT / "sources.json")
+    daily.add_argument("--video-registry", type=pathlib.Path, default=INTEL_ROOT / "video-sources.json")
+    daily.add_argument("--intel-root", type=pathlib.Path, default=INTEL_ROOT)
+    daily.add_argument("--evidence-root", type=pathlib.Path,
+                       default=ENGINE_ROOT / "evidence" / "intel" / "daily")
+    creative = groups.add_parser("creative")
+    creative_commands = creative.add_subparsers(dest="creative_command", required=True)
+    candidates = creative_commands.add_parser("candidates")
+    candidates.add_argument("--product", required=True)
+    candidates.add_argument("--account", required=True)
+    candidates.add_argument("--history", type=pathlib.Path)
+    creative_plan = creative_commands.add_parser("plan")
+    creative_plan.add_argument("--product", required=True)
+    creative_plan.add_argument("--account", required=True)
+    creative_plan.add_argument("--hook", required=True)
+    creative_plan.add_argument("--tactic", required=True)
+    creative_plan.add_argument("--renderer", required=True)
+    creative_plan.add_argument("--idempotency-key", required=True)
+    creative_plan.add_argument("--output", type=pathlib.Path,
+                               default=ENGINE_ROOT / "state" / "creative-plans.jsonl")
+    publish = groups.add_parser("publish")
+    publish_commands = publish.add_subparsers(dest="publish_command", required=True)
+    intent_create = publish_commands.add_parser("intent-create")
+    intent_create.add_argument("--experiment", required=True)
+    intent_create.add_argument("--creative", required=True)
+    intent_create.add_argument("--product", required=True)
+    intent_create.add_argument("--account", required=True)
+    intent_create.add_argument("--hook", required=True)
+    intent_create.add_argument("--renderer", required=True)
+    intent_create.add_argument("--adapter", choices=("postiz", "browser"), default="postiz")
+    intent_create.add_argument("--asset", type=pathlib.Path, required=True)
+    intent_create.add_argument("--caption-file", type=pathlib.Path, required=True)
+    intent_create.add_argument("--attribution-token", required=True)
+    intent_create.add_argument("--scheduled-at", required=True)
+    intent_create.add_argument("--approval-id", required=True)
+    intent_create.add_argument("--output", type=pathlib.Path, required=True)
+    shadow = publish_commands.add_parser("shadow")
+    shadow.add_argument("--intent", type=pathlib.Path, required=True)
+    shadow.add_argument("--db", type=pathlib.Path,
+                        default=ENGINE_ROOT / "state" / "publication-jobs.sqlite3")
+    shadow.add_argument("--approvals", type=pathlib.Path,
+                        default=ENGINE_ROOT / "evidence/renderers/gate12-visual-approvals.jsonl")
+    shadow.add_argument("--owner", required=True)
+    shadow.add_argument("--now", required=True)
+    shadow.add_argument("--ttl-seconds", type=int, default=300)
+    postiz = publish_commands.add_parser("postiz")
+    postiz.add_argument("--operation", choices=("upload", "draft", "promote"), required=True)
+    postiz.add_argument("--publish-key", required=True)
+    postiz.add_argument("--db", type=pathlib.Path,
+                        default=ENGINE_ROOT / "state" / "publication-jobs.sqlite3")
+    postiz.add_argument("--approvals", type=pathlib.Path,
+                        default=ENGINE_ROOT / "evidence/renderers/gate12-visual-approvals.jsonl")
+    postiz.add_argument("--owner", required=True)
+    postiz.add_argument("--now", required=True)
+    postiz.add_argument("--ttl-seconds", type=int, default=300)
+    postiz.add_argument("--production", action="store_true")
+    route_check = publish_commands.add_parser("route-check")
+    route_check.add_argument("--account", required=True)
+    reconcile = publish_commands.add_parser("reconcile")
+    reconcile.add_argument("--publish-key", required=True)
+    reconcile.add_argument("--db", type=pathlib.Path,
+                           default=ENGINE_ROOT / "state" / "publication-jobs.sqlite3")
+    reconcile.add_argument("--post", type=pathlib.Path, required=True)
+    reconcile.add_argument("--native", type=pathlib.Path, required=True)
+    reconcile.add_argument("--ledger", type=pathlib.Path,
+                           default=ENGINE_ROOT / "state" / "publication-identity.jsonl")
+    reconcile.add_argument("--observed-at", required=True)
+    approve = publish_commands.add_parser("approve")
+    approve.add_argument("--approval-id", required=True)
+    approve.add_argument("--asset", type=pathlib.Path, required=True)
+    approve.add_argument("--product", required=True)
+    approve.add_argument("--account", required=True)
+    approve.add_argument("--owner-confirmation", required=True)
+    approve.add_argument("--confirmation-ref", required=True)
+    approve.add_argument("--approved-at", required=True)
+    approve.add_argument("--ledger", type=pathlib.Path,
+                         default=ENGINE_ROOT / "evidence/renderers/gate12-visual-approvals.jsonl")
+    native_candidates = publish_commands.add_parser("native-candidates")
+    native_candidates.add_argument("--publish-key", required=True)
+    native_candidates.add_argument("--db", type=pathlib.Path,
+                                   default=ENGINE_ROOT / "state/publication-jobs.sqlite3")
+    native_candidates.add_argument("--output", type=pathlib.Path, required=True)
+    native_candidates.add_argument("--report", type=pathlib.Path)
+    native_candidates.add_argument("--cdp-url", default="http://127.0.0.1:9222")
+    native_candidates.add_argument("--wait-ms", type=int, default=7000)
+    postiz_readback = publish_commands.add_parser("postiz-readback")
+    postiz_readback.add_argument("--publish-key", required=True)
+    postiz_readback.add_argument("--db", type=pathlib.Path,
+                                 default=ENGINE_ROOT / "state/publication-jobs.sqlite3")
+    postiz_readback.add_argument("--output", type=pathlib.Path, required=True)
+    postiz_readback.add_argument("--report", type=pathlib.Path)
+    status = publish_commands.add_parser("status")
+    status.add_argument("--publish-key", required=True)
+    status.add_argument("--db", type=pathlib.Path,
+                        default=ENGINE_ROOT / "state/publication-jobs.sqlite3")
+    measure = groups.add_parser("measure")
+    measure_commands = measure.add_subparsers(dest="measure_command", required=True)
+    attribution_join = measure_commands.add_parser("attribution")
+    attribution_join.add_argument("--publish-key", required=True)
+    attribution_join.add_argument("--db", type=pathlib.Path,
+                                  default=ENGINE_ROOT / "state/publication-jobs.sqlite3")
+    attribution_join.add_argument("--identity", type=pathlib.Path,
+                                  default=ENGINE_ROOT / "state/publication-identity.jsonl")
+    attribution_join.add_argument("--post-metrics", type=pathlib.Path,
+                                  default=ENGINE_ROOT / "state/post-metrics.jsonl")
+    attribution_join.add_argument("--business", type=pathlib.Path,
+                                  default=ENGINE_ROOT / "state/business-outcomes.jsonl")
+    attribution_join.add_argument("--business-date", required=True)
+    attribution_join.add_argument("--observed-at", required=True)
+    attribution_join.add_argument("--ledger", type=pathlib.Path,
+                                  default=ENGINE_ROOT / "state/experiment-attribution.jsonl")
+    attribution_join.add_argument("--evidence", type=pathlib.Path, required=True)
+    writeback = measure_commands.add_parser("writeback")
+    writeback.add_argument("--product", required=True)
+    writeback.add_argument("--platform", required=True)
+    writeback.add_argument("--renderer", required=True)
+    writeback.add_argument("--observed-at", required=True)
+    writeback.add_argument("--checkpoint-hours", type=float, default=24)
+    writeback.add_argument("--min-cohort", type=int, default=10)
+    writeback.add_argument("--attribution", type=pathlib.Path,
+                           default=ENGINE_ROOT / "state/experiment-attribution.jsonl")
+    writeback.add_argument("--plans", type=pathlib.Path,
+                           default=ENGINE_ROOT / "evidence/creative/gate10/plans.jsonl")
+    writeback.add_argument("--perf", type=pathlib.Path,
+                           default=ENGINE_ROOT / "state/hook-perf.jsonl")
+    writeback.add_argument("--evidence", type=pathlib.Path, required=True)
+    args = parser.parse_args(argv)
+
+    try:
+        if args.group == "measure":
+            if args.measure_command == "attribution":
+                result = experiment_attribution.run_attribution(
+                    db_path=args.db, publish_key=args.publish_key,
+                    identity_path=args.identity, post_metrics_path=args.post_metrics,
+                    business_path=args.business, business_date=args.business_date,
+                    observed_at=args.observed_at, ledger_path=args.ledger,
+                    evidence_path=args.evidence, repo_root=ENGINE_ROOT.parents[2])
+            else:
+                result = performance_writeback.run_writeback(
+                    attribution_path=args.attribution, plans_path=args.plans,
+                    perf_path=args.perf, evidence_path=args.evidence,
+                    observed_at=args.observed_at, product_id=args.product,
+                    platform=args.platform, renderer_id=args.renderer,
+                    checkpoint_hours=args.checkpoint_hours, min_cohort=args.min_cohort)
+            print(json.dumps(result, ensure_ascii=False, sort_keys=True))
+            return 0
+        if args.group == "publish":
+            if args.publish_command == "intent-create":
+                result = publish_cli.run_create_intent(
+                    engine=ENGINE_ROOT, output_path=args.output,
+                    experiment_id=args.experiment, creative_id=args.creative,
+                    product_id=args.product, account_id=args.account,
+                    hook_id=args.hook, renderer_id=args.renderer,
+                    adapter=args.adapter, asset_path=args.asset,
+                    caption=args.caption_file.read_text(encoding="utf-8"),
+                    attribution_token=args.attribution_token,
+                    scheduled_at=args.scheduled_at,
+                    visual_approval_id=args.approval_id)
+            elif args.publish_command == "shadow":
+                result = publish_cli.run_shadow(
+                    intent_path=args.intent, db_path=args.db, approvals_path=args.approvals,
+                    owner=args.owner, now=args.now, ttl_seconds=args.ttl_seconds,
+                    engine=ENGINE_ROOT)
+            elif args.publish_command == "postiz":
+                result = publish_cli.run_postiz_operation(
+                    db_path=args.db, publish_key=args.publish_key,
+                    operation=args.operation, approvals_path=args.approvals,
+                    owner=args.owner, now=args.now, ttl_seconds=args.ttl_seconds,
+                    engine=ENGINE_ROOT, production=args.production)
+            elif args.publish_command == "route-check":
+                result = publish_cli.run_route_check(
+                    account_id=args.account, engine=ENGINE_ROOT)
+            elif args.publish_command == "reconcile":
+                result = publish_cli.run_reconcile(
+                    db_path=args.db, publish_key=args.publish_key,
+                    post_path=args.post, native_path=args.native,
+                    ledger_path=args.ledger, observed_at=args.observed_at,
+                    engine=ENGINE_ROOT)
+            elif args.publish_command == "approve":
+                result = publish_cli.record_visual_approval(
+                    ledger_path=args.ledger, approval_id=args.approval_id,
+                    asset_path=args.asset, product_id=args.product,
+                    account_id=args.account, owner_confirmation=args.owner_confirmation,
+                    confirmation_ref=args.confirmation_ref, approved_at=args.approved_at)
+            elif args.publish_command == "native-candidates":
+                result = publish_cli.run_native_candidates(
+                    db_path=args.db, publish_key=args.publish_key,
+                    output_path=args.output, engine=ENGINE_ROOT,
+                    cdp_url=args.cdp_url, wait_ms=args.wait_ms,
+                    report_path=args.report)
+            elif args.publish_command == "postiz-readback":
+                result = publish_cli.run_postiz_readback(
+                    db_path=args.db, publish_key=args.publish_key,
+                    output_path=args.output, report_path=args.report)
+            else:
+                result = publish_cli.run_status(
+                    db_path=args.db, publish_key=args.publish_key)
+            print(json.dumps(result, ensure_ascii=False, sort_keys=True))
+            return 0
+        if args.group == "creative":
+            registry = product_router.load_registry(ENGINE_ROOT)
+            hooks_path = INTEL_ROOT / "hook-library.jsonl"
+            if args.creative_command == "candidates":
+                result = {"status": "success", "candidates": variation.eligible_hooks(
+                    registry, hooks_path, args.product, args.account, args.history)}
+            else:
+                result = variation.create_plan(
+                    registry, hooks_path, product_id=args.product,
+                    account_id=args.account, hook_id=args.hook,
+                    tactic_id=args.tactic, renderer_id=args.renderer,
+                    idempotency_key=args.idempotency_key)
+                appended = variation.append_plan(
+                    args.output, result,
+                    dt.datetime.now(dt.timezone.utc).isoformat().replace("+00:00", "Z"))
+                result = {**result, "appended": appended}
+            print(json.dumps(result, ensure_ascii=False, sort_keys=True))
+            return 0
+        if args.command == "pull":
+            result = intel_pull.run_pull(
+                registry_path=args.registry,
+                intel_root=args.intel_root,
+                evidence_root=args.evidence_root,
+                judge=None if args.no_judge else intel_pull.agent_judge,
+            )
+            print(json.dumps(result, ensure_ascii=False, sort_keys=True))
+            return 0 if result["status"] in {"success", "partial"} else 1
+        if args.command == "judge-pending":
+            result = intel_pull.run_pending_judge(
+                intel_root=args.intel_root,
+                evidence_root=args.evidence_root,
+            )
+            print(json.dumps(result, ensure_ascii=False, sort_keys=True))
+            return 0 if result["status"] in {"success", "skipped"} else 1
+        if args.command == "video-discover":
+            result = video_intel.discover_videos(
+                registry_path=args.registry,
+                intel_root=args.intel_root,
+                evidence_root=args.evidence_root,
+            )
+            print(json.dumps(result, ensure_ascii=False, sort_keys=True))
+            return 0 if result["status"] in {"success", "partial"} else 1
+        if args.command == "video-ingest":
+            result = video_intel.ingest_transcripts(
+                registry_path=args.registry,
+                intel_root=args.intel_root,
+                evidence_root=args.evidence_root,
+            )
+            print(json.dumps(result, ensure_ascii=False, sort_keys=True))
+            return 0 if result["status"] in {"success", "partial", "skipped"} else 1
+        if args.command == "video-judge":
+            result = video_hook_judge.judge_pending_video_hooks(
+                intel_root=args.intel_root,
+                evidence_root=args.evidence_root,
+                judge=video_hook_judge.agent_hook_judge,
+            )
+            print(json.dumps(result, ensure_ascii=False, sort_keys=True))
+            return 0 if result["status"] in {"success", "skipped"} else 1
+        if args.command == "daily":
+            result = intel_daily.run_daily(
+                source_registry=args.source_registry,
+                video_registry=args.video_registry,
+                intel_root=args.intel_root,
+                evidence_root=args.evidence_root,
+            )
+            print(json.dumps(result, ensure_ascii=False, sort_keys=True))
+            return 0 if result["status"] in {"success", "partial"} else 1
+        playbook = intel_store.read_jsonl(args.intel_root / "playbook.jsonl")
+        latest = intel_gap.latest_pull(args.intel_root / "pull-runs.jsonl")
+        enrichment_path = args.intel_root / "source-enrichments.jsonl"
+        enrichments = intel_store.read_jsonl(enrichment_path) if enrichment_path.exists() else []
+        result = intel_gap.run_gap(
+            playbook_rows=playbook,
+            latest_run=latest,
+            evidence_root=args.evidence_root,
+            sender=_telegram_sender() if args.telegram else None,
+            enrichments=enrichments,
+        )
+        print(json.dumps(result, ensure_ascii=False, sort_keys=True))
+        return 0
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        print(json.dumps({"status": "failed", "error": str(exc)}, ensure_ascii=False), file=sys.stderr)
+        return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

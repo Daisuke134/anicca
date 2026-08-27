@@ -70,7 +70,9 @@ def status_rows(registry: dict, *, loaded: dict, disabled: dict, events: dict,
 def doctor_report(registry: dict, *, installed_labels: set[str], loaded_labels: set[str],
                   existing_entrypoints: set[str]) -> dict:
     validate_registry(registry)
-    managed = {entry["label"] for entry in registry["loops"].values()}
+    retired = set(registry.get("retired_labels", []))
+    managed = ({entry["label"] for entry in registry["loops"].values()}
+               | set(registry.get("external_labels", [])) | retired)
     unmanaged = sorted((installed_labels | loaded_labels) - managed)
     missing = sorted(
         f"{loop_id}:{entry['entrypoint']}"
@@ -78,10 +80,11 @@ def doctor_report(registry: dict, *, installed_labels: set[str], loaded_labels: 
         if entry["entrypoint"] not in existing_entrypoints
     )
     return {
-        "ok": not unmanaged and not missing,
+        "ok": not unmanaged and not missing and not ((installed_labels | loaded_labels) & retired),
         "registry_entries": len(registry["loops"]),
         "unmanaged_labels": unmanaged,
         "missing_entrypoints": missing,
+        "retired_installed_labels": sorted((installed_labels | loaded_labels) & retired),
     }
 
 

@@ -1,0 +1,11 @@
+#!/bin/bash
+set -euo pipefail
+
+# launchd does not inherit the managed shell environment. Load it here, then
+# deliberately restore Franklin's funded home: ~/.openclaw/.env belongs to the
+# operator service and sets ANICCA_HOME to a different agent.
+source "$HOME/.openclaw/.env"
+export ANICCA_HOME="${REFILL_ANICCA_HOME:-$HOME/.blockrun}"
+
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+exec /opt/homebrew/bin/node "$REPO_ROOT/bin/citizen-refill" --live

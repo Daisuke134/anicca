@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "receipt_type",
+    "state",
+    "job_id",
+    "effect_identity",
+    "placement_id",
+    "owned_article_url",
+    "content_sha256",
+    "experiment_lineage",
+    "target_x_account",
+    "cadence_class",
+    "policy_sha256",
+    "source_set_sha256",
+    "created_at",
+    "private_tracking_url_state",
+    "revenue_credit_state"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "receipt_type": {"const": "AFFILIATE_X_DISTRIBUTION_JOB"},
+    "state": {"const": "QUEUED"},
+    "job_id": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "effect_identity": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "placement_id": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 80,
+      "pattern": "^[a-z0-9][a-z0-9-]+$"
+    },
+    "owned_article_url": {
+      "type": "string",
+      "pattern": "^https://aniccaai\\.com/blog/[a-z0-9][a-z0-9-]*$"
+    },
+    "content_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "experiment_lineage": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "decision_id", "control_placement_id"],
+          "properties": {
+            "kind": {"const": "BASE"},
+            "decision_id": {"type": "null"},
+            "control_placement_id": {"type": "null"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "decision_id", "control_placement_id"],
+          "properties": {
+            "kind": {"const": "EXPERIMENT"},
+            "decision_id": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+            "control_placement_id": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 80,
+              "pattern": "^[a-z0-9][a-z0-9-]+$"
+            }
+          }
+        }
+      ]
+    },
+    "target_x_account": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 15,
+      "pattern": "^[A-Za-z0-9_]+$"
+    },
+    "cadence_class": {"const": "AFFILIATE_MONETIZATION"},
+    "distribution_mode": {
+      "enum": ["QUOTE_CONTROL_POST", "QUOTE_RELEVANT_EXTERNAL"]
+    },
+    "distribution_route_id": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "control_post_url": {
+      "type": "string",
+      "pattern": "^https://x\\.com/[A-Za-z0-9_]{1,15}/status/[0-9]+$"
+    },
+    "policy_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "source_set_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "private_tracking_url_state": {"const": "NOT_INCLUDED"},
+    "revenue_credit_state": {"const": "NO_REVENUE_CREDIT"}
+  }
+}

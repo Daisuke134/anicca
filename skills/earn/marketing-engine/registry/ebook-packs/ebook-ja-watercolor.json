@@ -1,0 +1,16 @@
+{
+  "schema_version": "marketing.ebook-pack.v1",
+  "product_id": "ebook-ja",
+  "pack_id": "ebook-ja-watercolor",
+  "language": "ja",
+  "renderer_id": "watercolor-monk",
+  "destination_url": "https://aniccaai.com/achan",
+  "price": {"amount": 1580, "currency": "JPY"},
+  "slots_jst": ["07:00", "12:30", "20:00"],
+  "accounts": [
+    {"account_id": "tiktok.obou_anicca", "integration_id": "cmo5s4edx00vgn10ygnu34a0n"},
+    {"account_id": "instagram.obou_anicca", "integration_id": "cmooplxmu04tpmd0y4h3cpk33"}
+  ],
+  "allowed_claims": ["Japanese-language guided reflection ebook", "Digital access is sold through the owned checkout page"],
+  "stop_rules": ["missing_native_receipt", "identity_preflight_failed", "duplicate_publish_key", "unverified_render_cost"]
+}

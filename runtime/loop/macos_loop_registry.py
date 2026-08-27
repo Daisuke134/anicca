@@ -23,8 +23,11 @@ def _fail(message: str) -> None:
 
 
 def validate_registry(registry: dict) -> dict:
-    if not isinstance(registry, dict) or set(registry) != {"schema_version", "loops"}:
-        _fail("registry must contain only schema_version and loops")
+    allowed_top = {"schema_version", "loops", "external_labels", "retired_labels"}
+    if (not isinstance(registry, dict)
+            or not {"schema_version", "loops"}.issubset(registry)
+            or set(registry) - allowed_top):
+        _fail("registry must contain schema_version, loops, and optional external_labels")
     if registry["schema_version"] != 2 or not isinstance(registry["loops"], dict):
         _fail("schema_version must be 2 and loops must be an object")
     labels = set()
@@ -73,6 +76,19 @@ def validate_registry(registry: dict) -> dict:
             _fail(f"{loop_id}: cleanup contract is incomplete")
         if any(not isinstance(cleanup[key], int) or cleanup[key] <= 0 for key in cleanup):
             _fail(f"{loop_id}: cleanup bounds must be positive integers")
+    external = registry.get("external_labels", [])
+    if (not isinstance(external, list) or len(external) != len(set(external))
+            or any(not isinstance(label, str) or not label.startswith("ai.anicca.")
+                   for label in external)):
+        _fail("external_labels must be unique ai.anicca labels")
+    if labels.intersection(external):
+        _fail("external_labels overlap managed labels")
+    retired = registry.get("retired_labels", [])
+    if (not isinstance(retired, list) or len(retired) != len(set(retired))
+            or any(not isinstance(label, str) or not label.startswith("ai.anicca.") for label in retired)):
+        _fail("retired_labels must be unique ai.anicca labels")
+    if labels.intersection(retired) or set(external).intersection(retired):
+        _fail("retired_labels overlap managed or external labels")
     return registry
 
 

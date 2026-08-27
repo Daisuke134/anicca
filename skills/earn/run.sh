@@ -24,7 +24,7 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # google-login) to the earn process, or identity-guard.mjs (malice-guard) fails closed and HALTS.
 # Reconciled against every env var read by run.sh + execute-0xwork.py (verified 2026-06-16).
 EARN_ALLOW="BLOCKRUN_WALLET_KEY PKVAR OXWORK_PKVAR BASE_RPC_URL USDC_ADDRESS EARN_MODE EARN_STRATEGY EARN_TX EARN_SOURCE EARN_AMOUNT EARN_COST EARN_TASK EARN_LEDGER WAKE_ID OXWORK_API OXWORK_CAPS OXWORK_DELIVER OXWORK_POLL_SECS OXWORK_ANY_CATEGORY OXWORK_TASK_ID AUTO_CANCEL_USDC SUB_ID SELF_CANCEL_TOKEN ANICCA_API_BASE"
-for ENVF in /opt/anicca.env "$HOME/.local/state/life-manager/.env" "$HOME/clawd/.env"; do
+for ENVF in /opt/anicca.env "$HOME/.openclaw/.env" "$HOME/clawd/.env"; do
   [ -f "$ENVF" ] || continue
   while IFS= read -r kv; do
     k="${kv%%=*}"
@@ -43,7 +43,7 @@ WAKE="${WAKE_ID:-$(date -u +%s)}"
 MODE="${EARN_MODE:-discover}"
 
 # THIS instance's own EVM signing key -- file-gated on ANICCA_HOME (resolve-identity.mjs), NEVER the
-# shared $HOME/.local/state/life-manager/.env BLOCKRUN_WALLET_KEY (that key is anicca-a3cdd4's; using it made Franklin's
+# shared ~/.openclaw/.env BLOCKRUN_WALLET_KEY (that key is anicca-a3cdd4's; using it made Franklin's
 # earn slots sign with automaton's wallet). Mirrors economy/gig/run.sh:49-56 (per-instance, fail-closed).
 unset ANICCA_EVM_PRIVATE_KEY 2>/dev/null || true   # an env override must not beat the ANICCA_HOME file
 SIGNKEY=$(node "$HERE/lib/resolve-identity.mjs" evm 2>/dev/null)
@@ -300,6 +300,25 @@ print(d.get('action') or 'ensure')" 2>/dev/null || echo ensure)
   esac
   XPORT="${X402_PORT:-$X402_DEFAULT_PORT}"
 
+  # FIVE-MINUTE REVENUE CONTROLLER: evaluate the bounded /llm offer experiment on EVERY x402
+  # wake, before a model-selected review/update/ensure branch can exit. The model still chooses
+  # the broader store action; this deterministic safety/control plane only rotates the active
+  # price after five revenue-free minutes or freezes a proven winner. `store-improve.mjs` is
+  # idempotent inside the interval, and store activation only runs when a variant changed.
+  IMPROVE_RES=$(X402_PAYTO="${X402_PAYTO:-$W}" node "$X402DIR/store-improve.mjs" 2>/dev/null)
+  EXP_ACTION=$(printf '%s' "$IMPROVE_RES" | python3 -c "import json,sys
+try: print((json.load(sys.stdin).get('experiment') or {}).get('action') or '')
+except Exception: print('')" 2>/dev/null)
+  if [ "$EXP_ACTION" = "applied" ]; then
+    ACT=$(X402_PAYTO="${X402_PAYTO:-$W}" X402_PUBLIC_URL="${X402_PUBLIC_URL:-}" node "$X402DIR/store-activate.mjs" 2>/dev/null)
+    IMPROVE_RES=$(python3 -c "import json,sys
+try: base=json.loads(sys.argv[1]); activation=json.loads(sys.argv[2])
+except Exception: print(sys.argv[1]); raise SystemExit
+base['activation']=activation
+print(json.dumps(base,separators=(',',':')))" "$IMPROVE_RES" "${ACT:-{}}" 2>/dev/null || printf '%s' "$IMPROVE_RES")
+  fi
+  echo "[earn] x402 five-minute controller: ${IMPROVE_RES:-{}}"
+
   if [ "$ACTION" = "review" ]; then
     RES=$(X402_PAYTO="${X402_PAYTO:-$W}" node "$X402DIR/store-review.mjs" 2>/dev/null)
     echo "[earn] x402 review: $RES"
@@ -309,7 +328,7 @@ print(d.get('action') or 'ensure')" 2>/dev/null || echo ensure)
   fi
 
   if [ "$ACTION" = "improve" ]; then
-    RES=$(X402_PAYTO="${X402_PAYTO:-$W}" node "$X402DIR/store-improve.mjs" 2>/dev/null)
+    RES="$IMPROVE_RES"
     echo "[earn] x402 improve: $RES"
     JSON=$(python3 -c "import json,sys; print(json.dumps({'wallet':sys.argv[1],'source':'x402-improve','task':sys.argv[2],'earn_usdc':0,'cost_usdc':0,'wake':sys.argv[3]}))" "${WLOW:-unknown}" "x402 improve: ${RES:-{}}" "$WAKE" 2>/dev/null)
     OUT=$(record_line "$JSON"); echo "[earn] x402 improve recorded -> $OUT"
@@ -369,7 +388,7 @@ SELLERPLIST
       launchctl bootstrap "gui/$(id -u)" "$SPLIST" 2>/dev/null \
         || launchctl kickstart -k "gui/$(id -u)/$SLABEL" 2>/dev/null || true
     else
-      set -a; . "${OPENCLAW_ENV_FILE:-$HOME/.local/state/life-manager/.env}" 2>/dev/null || true; set +a
+      set -a; . "${OPENCLAW_ENV_FILE:-$HOME/.openclaw/.env}" 2>/dev/null || true; set +a
       X402_PAYTO="$W" X402_PORT="$XPORT" X402_PUBLIC_URL="${X402_PUBLIC_URL:-}" setsid nohup node "$X402DIR/serve-v2.mjs" >/dev/null 2>&1 < /dev/null &
     fi
     sleep 3

@@ -1,0 +1,35 @@
+## What HTTP status codes are
+
+When a client such as an app, script, or browser sends an HTTP request, the server answers with an HTTP response. The response contains a three-digit status code that gives the client a compact summary of what happened. Codes in the 200 range generally mean the request succeeded. Codes in the 300 range usually direct the client elsewhere or describe cached content. Codes in the 400 range indicate that the request cannot be completed in its present form, while codes in the 500 range indicate that the server failed while attempting to handle it.
+
+The status code is only the summary. A useful response can also include headers and a body that explain what the client should do next. For example, a response might say that authentication is required, that a resource does not exist, or that a request should be retried later. A well-designed client therefore checks the code before trying to interpret the response body. A well-designed server uses the documented meaning of a code and supplies enough structured information for a client to respond safely.
+
+Status codes are registered so that independent clients and servers can share the same basic vocabulary. Registration does not automatically define every business rule or message format. Applications still need an agreed contract for any extra fields, payment instructions, retry rules, and error handling they use.
+
+## What 402 means and why it is reserved
+
+Status code 402 has the reason phrase “Payment Required.” It sits in the 400 range because the server is declining the current request until a payment-related condition is satisfied. However, the core HTTP specification does not define a complete payment protocol for it. RFC 9110 states that the code is reserved for future use. The earlier RFC 7231 used the same reserved wording, and the official HTTP status-code registry points the 402 entry to the current HTTP specification.
+
+This distinction matters. A 402 response can signal a payment requirement, but the number alone does not tell a client how much to pay, which currency or network to use, who receives the payment, how long an authorization remains valid, or how proof of payment should be attached to a retry. Those details must come from a separate agreement between the client and server.
+
+A client should therefore avoid treating every 402 response as automatically payable. It should validate the server, the requested amount, the recipient, the asset, the network, the resource being purchased, and any expiry or replay protection. If the response lacks the expected structured instructions, the safe behavior is to stop and report an unsupported payment requirement rather than guessing.
+
+## The request, pay, and retry pattern
+
+The general pattern begins with an ordinary request. The client asks for a protected resource without payment proof. The server decides that payment is required and replies with status 402 plus machine-readable payment terms defined by the application’s payment contract.
+
+The client then validates those terms against its own policy. It checks that the amount is within budget, the recipient and resource are expected, the chosen payment mechanism is supported, and the authorization cannot be reused outside its intended scope. If the checks pass, the client creates the required payment or signed payment authorization. The client repeats the original request and includes the proof in the agreed header or field.
+
+On the retry, the server verifies the proof before releasing the resource. Verification should cover the amount, recipient, asset, network, validity window, resource binding, signature, and replay state. If verification succeeds, the server completes the request and returns a normal success response. If it fails, the server returns a clear error without delivering the paid resource.
+
+Both sides should make retries safe. The client may repeat a request after a timeout even when the first retry reached the server. The server should use a stable payment or request identifier so the same valid payment does not cause accidental duplicate charges or duplicate work. Logs should record non-secret identifiers and outcomes, never private keys or reusable payment credentials.
+
+## An everyday analogy
+
+Imagine a locked storage cabinet at a station. You ask for locker 42, but you have not yet paid. The attendant does not simply say “no.” Instead, the attendant gives you a slip stating the locker number, exact fee, accepted payment method, recipient, and expiration time. That slip is like the structured information accompanying a 402 response.
+
+Before paying, you confirm that the slip really refers to locker 42, that the fee is acceptable, and that the recipient is the station rather than an unknown party. You pay and receive a receipt tied to that locker and transaction. You then repeat the request for locker 42 and present the receipt. The attendant verifies that it is genuine, unused, unexpired, and for the correct amount before opening the cabinet.
+
+The number 402 is comparable to the attendant saying “payment is required,” but it is not the slip, the payment system, or the receipt. Those pieces come from the separate rules shared by the station and customer. That is why implementations must validate the complete payment contract instead of relying on the status code alone.
+
+Standards references: RFC 9110 section 15.5.3, https://www.rfc-editor.org/rfc/rfc9110.html#section-15.5.3 ; RFC 7231 section 6.5.2, https://www.rfc-editor.org/rfc/rfc7231#section-6.5.2 ; IANA HTTP Status Code Registry, https://www.iana.org/assignments/http-status-codes/http-status-codes.xhtml

@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://anicca.dev/marketing/contracts/artifact.schema.json",
+  "type": "object",
+  "required": ["artifact_id", "run_id", "form", "language"],
+  "properties": {
+    "artifact_id": {"type": "string", "minLength": 1},
+    "run_id": {"type": "string", "minLength": 1},
+    "form": {"type": "string", "minLength": 1},
+    "language": {"type": "string", "minLength": 2}
+  },
+  "additionalProperties": true
+}

@@ -35,6 +35,14 @@ class MacosLoopRegistryTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "secret-like"):
             validate_registry(secret)
 
+    def test_external_labels_are_explicit_and_cannot_overlap_managed(self):
+        value = {"schema_version": 2, "loops": {"example": entry()},
+                 "external_labels": ["ai.anicca.tsbridge"]}
+        self.assertEqual(validate_registry(value), value)
+        value["external_labels"] = ["ai.anicca.example"]
+        with self.assertRaisesRegex(ValueError, "overlap"):
+            validate_registry(value)
+
     def test_render_is_byte_stable_for_loop_insertion_order(self):
         left = {"schema_version": 2, "loops": {"b": entry("ai.anicca.b"), "a": entry("ai.anicca.a")}}
         right = {"schema_version": 2, "loops": {"a": entry("ai.anicca.a"), "b": entry("ai.anicca.b")}}

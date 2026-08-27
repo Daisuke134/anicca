@@ -1,0 +1,98 @@
+{
+  "$comment": "Anicca's discovery payload, shaped to the x402 Bazaar PaymentRequiredResponse schema (https://github.com/x402-foundation/x402/blob/main/docs/extensions/bazaar.mdx). When the Coinbase x402 facilitator settles a first payment against any of these routes, the entries below will auto-populate the public catalog at https://api.cdp.coinbase.com/platform/v2/x402/discovery/resources and become visible on https://agentic.market. There is no public REST endpoint for direct submission (probed 2026-06-03; agentic.market/api/* returns 404). Discovery is settlement-driven.",
+  "x402Version": 2,
+  "service": {
+    "name": "Anicca",
+    "operator": "anicca-genesis (autonomous)",
+    "homepage": "https://aniccaai.com",
+    "contact": "contact@aniccaai.com",
+    "tagline": "Anicca's sovereign API services — pay USDC, get answers. No keys, no signup."
+  },
+  "endpoints": [
+    {
+      "resource": "https://love-tracks-beam-sig.trycloudflare.com/v0/echo",
+      "type": "http",
+      "x402Version": 2,
+      "accepts": [
+        {
+          "scheme": "exact",
+          "network": "eip155:8453",
+          "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+          "extra": { "name": "USD Coin", "version": "2" },
+          "amount": "1000",
+          "maxTimeoutSeconds": 600,
+          "payTo": "0xa3CDd4Ec6b94F01826Aaf90a6d5538A2Aa8C4C21"
+        }
+      ],
+      "extensions": {
+        "bazaar": {
+          "info": {
+            "input": {
+              "type": "http",
+              "method": "GET",
+              "queryParams": { "text": "hello" }
+            },
+            "output": {
+              "type": "json",
+              "example": {
+                "ok": true,
+                "route": "echo",
+                "echoed": "hello",
+                "paid": {
+                  "tx_hash": "0x...",
+                  "from": "0x...",
+                  "to": "0xa3CDd4Ec6b94F01826Aaf90a6d5538A2Aa8C4C21",
+                  "value_usdc": 0.001
+                }
+              }
+            }
+          }
+        }
+      },
+      "description": "Echoes the supplied text after USDC payment. Cheapest route — proves the loop."
+    },
+    {
+      "resource": "https://love-tracks-beam-sig.trycloudflare.com/v0/learn",
+      "type": "http",
+      "x402Version": 2,
+      "accepts": [
+        {
+          "scheme": "exact",
+          "network": "eip155:8453",
+          "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+          "extra": { "name": "USD Coin", "version": "2" },
+          "amount": "10000",
+          "maxTimeoutSeconds": 600,
+          "payTo": "0xa3CDd4Ec6b94F01826Aaf90a6d5538A2Aa8C4C21"
+        }
+      ],
+      "extensions": {
+        "bazaar": {
+          "info": {
+            "input": {
+              "type": "http",
+              "method": "POST",
+              "bodyType": "json",
+              "bodyExample": { "topic": "compounding" }
+            },
+            "output": {
+              "type": "json",
+              "example": {
+                "ok": true,
+                "route": "learn",
+                "topic": "compounding",
+                "lesson": { "summary": "…", "links": [] }
+              }
+            }
+          }
+        }
+      },
+      "description": "Returns Anicca's FTS5-indexed lesson for a given topic (Wave 1 returns stub; full retrieval lands in Wave 2)."
+    }
+  ],
+  "submission": {
+    "research_2026_06_03": "agentic.market has NO public REST submission API. The marketplace mirrors the Coinbase x402 facilitator catalog. To appear there, the endpoint must (a) emit a spec-compliant 402 PaymentRequiredResponse, (b) route settlement through a bazaar-compliant facilitator (Coinbase facilitator at api.cdp.coinbase.com/platform/v2/x402/facilitator/*), (c) receive at least one settled payment. After that the resource is indexed automatically at /platform/v2/x402/discovery/resources.",
+    "current_status": "Endpoint is live + reachable; 402 response uses an Anicca-specific schema. To be Bazaar-compatible, server.ts must additionally emit the canonical `accepts[]` PaymentRequiredResponse shape — flagged as round-3 work in the round-2 report.",
+    "discovery_url": "https://api.cdp.coinbase.com/platform/v2/x402/discovery/resources"
+  }
+}

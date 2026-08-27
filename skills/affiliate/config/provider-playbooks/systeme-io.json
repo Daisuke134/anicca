@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "provider": "systeme-io",
+  "allowed_origins": [
+    "https://systeme.io"
+  ],
+  "target": {
+    "url_contains_any": [
+      "systeme.io/en/login",
+      "systeme.io/dashboard"
+    ],
+    "title_contains_any": [
+      ""
+    ]
+  },
+  "states": [
+    {
+      "state": "SIGN_IN_REQUIRED",
+      "url_contains": "/en/login",
+      "all_text": [
+        "Log in",
+        "Email address",
+        "Password"
+      ],
+      "next_action": "RESUME_LOGIN_ONCE"
+    },
+    {
+      "state": "AUTHENTICATED",
+      "url_contains": "/dashboard",
+      "all_text": [],
+      "next_action": "READ_AFFILIATE_ID"
+    }
+  ],
+  "login": {
+    "credential_section": "Systeme.io",
+    "username_selector": "input[name='email']",
+    "password_selector": "input[name='password']",
+    "password_submit_text_any": [
+      "Log in"
+    ],
+    "response_url_contains": "/api/security/login",
+    "submit_selector": "button[type='submit']"
+  },
+  "fallback_state": "UNKNOWN_RENDERED_STATE",
+  "fallback_next_action": "RESEARCH_AND_UPDATE_PLAYBOOK"
+}

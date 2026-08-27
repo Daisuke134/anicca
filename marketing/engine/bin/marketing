@@ -1,0 +1,69 @@
+#!/usr/bin/env python3
+"""Shared Marketing Engine command line."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+
+REPO_ROOT = Path(__file__).resolve().parents[3]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from marketing.engine.observability.observations import (  # noqa: E402
+    terminalize_due,
+)
+from marketing.engine.dashboard import (  # noqa: E402
+    build_snapshot,
+    render_dashboard,
+    write_dashboard,
+)
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(prog="marketing")
+    commands = parser.add_subparsers(dest="command", required=True)
+    observe = commands.add_parser("observe")
+    observe.add_argument("--root", required=True)
+    observe.add_argument("--now")
+    dashboard = commands.add_parser("dashboard")
+    dashboard.add_argument("--root", required=True)
+    dashboard.add_argument("--output", required=True)
+    dashboard.add_argument("--now")
+    args = parser.parse_args()
+
+    if args.command == "observe":
+        now = args.now or datetime.now(timezone.utc).isoformat()
+        summary = terminalize_due(
+            runtime_root=Path(args.root),
+            now=now,
+        )
+        print(json.dumps(summary, sort_keys=True))
+        return 0
+    if args.command == "dashboard":
+        now = args.now or datetime.now(timezone.utc).isoformat()
+        output = Path(args.output)
+        snapshot = build_snapshot(
+            runtime_root=Path(args.root),
+            generated_at=now,
+        )
+        write_dashboard(output, render_dashboard(snapshot))
+        print(
+            json.dumps(
+                {
+                    "output": str(output),
+                    "projection_errors": snapshot["projection_errors"],
+                },
+                sort_keys=True,
+            )
+        )
+        return 0
+    return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

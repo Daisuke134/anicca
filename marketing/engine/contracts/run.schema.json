@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://anicca.dev/marketing/contracts/run.schema.json",
+  "type": "object",
+  "required": ["run_id", "product_id", "channel_id", "status"],
+  "properties": {
+    "run_id": {"type": "string", "minLength": 1},
+    "product_id": {"type": "string", "minLength": 1},
+    "channel_id": {"type": "string", "minLength": 1},
+    "status": {
+      "enum": ["pending", "running", "blocked", "complete", "quarantined"]
+    }
+  },
+  "additionalProperties": true
+}

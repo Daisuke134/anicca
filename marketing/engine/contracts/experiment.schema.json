@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://anicca.dev/marketing/contracts/experiment.schema.json",
+  "type": "object",
+  "required": [
+    "experiment_id",
+    "reward",
+    "opponent",
+    "weight_file",
+    "status",
+    "before_hash",
+    "after_hash"
+  ],
+  "properties": {
+    "experiment_id": {"type": "string", "minLength": 1},
+    "reward": {"type": "string", "minLength": 1},
+    "opponent": {"type": "string", "minLength": 1},
+    "weight_file": {"type": "string", "minLength": 1},
+    "status": {"enum": ["keep", "revert", "no_change"]},
+    "before_hash": {"type": "string", "minLength": 64},
+    "after_hash": {"type": "string", "minLength": 64}
+  },
+  "additionalProperties": true
+}

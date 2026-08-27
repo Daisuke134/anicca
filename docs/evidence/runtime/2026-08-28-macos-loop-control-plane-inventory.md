@@ -14,22 +14,22 @@ plist. No credential values or command arguments are stored.
 | Set | Count | Running | Loaded idle | Disabled | Unloaded |
 |---|---:|---:|---:|---:|---:|
 | Installed `ai.anicca.*` plist labels | 226 | 44 | 129 | 52 | 1 |
-| Installed, classified Life Manager-owned | 211 | 43 | 129 | 39 | 0 |
+| Installed, classified Life Manager-owned | 208 | 43 | 126 | 39 | 0 |
 | Full plist/loaded/disabled union | 266 | 48 | 129 | 74 | 15 |
 
 Ownership uses the previous explicit owner classification first, then only
 known Life Manager checkout/release roots. A second readback resolved 20 active
 affiliate, marketing, finance, earn, and system labels from their installed
 argv and existing family ownership. The union classifies 221 Life
-Manager-owned, 2 external, and 43 ambiguous labels. Of the installed set, 211
-are Life Manager-owned, 1 is external, and 14 disabled/unloaded labels are
+Manager-owned, 3 external, 2 retired, and 43 ambiguous labels. Of the installed set, 208
+are Life Manager-owned, 2 are external, 2 are retired, and 14 disabled/unloaded labels are
 ambiguous. All individual owner/domain/effect/state/release
 values and parse errors are in the JSON evidence.
 
 ## Gaps that must fail closed during import
 
-- All 211 installed Life Manager-owned jobs were unmanaged at capture time.
-  TODO 2 imports the 172 loaded jobs; the 39 disabled jobs remain visible but
+- All 208 installed Life Manager-owned jobs were unmanaged at capture time.
+  TODO 2 imports the 169 loaded jobs; the 39 disabled jobs remain visible but
   are not active definitions.
 - 141 initially classified installed Life Manager-owned rows have no immutable release SHA readable
   from plist argv. Twenty explicitly run from a mutable

@@ -471,13 +471,13 @@
       "release": null
     },
     {
-      "domain": "financial",
-      "effect_class": "message",
+      "domain": null,
+      "effect_class": null,
       "installed": true,
       "label": "ai.anicca.cfo-daily",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "retired",
       "parse_error": "ExpatError",
       "plist": "~/Library/LaunchAgents/ai.anicca.cfo-daily.plist",
       "release": null
@@ -2572,12 +2572,12 @@
     },
     {
       "domain": null,
-      "effect_class": "none",
+      "effect_class": null,
       "installed": true,
       "label": "ai.anicca.sync-memory",
       "last_exit": "127",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "retired",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.sync-memory.plist",
       "release": null
@@ -2668,12 +2668,12 @@
     },
     {
       "domain": null,
-      "effect_class": "none",
+      "effect_class": null,
       "installed": true,
       "label": "ai.anicca.tsbridge",
       "last_exit": "0",
       "launchd_state": "loaded-running",
-      "owner": "life-manager",
+      "owner": "external",
       "parse_error": "ExpatError",
       "plist": "~/Library/LaunchAgents/ai.anicca.tsbridge.plist",
       "release": null
@@ -3208,8 +3208,9 @@
     "labels": 266,
     "owners": {
       "ambiguous": 43,
-      "external": 2,
-      "life-manager": 221
+      "external": 3,
+      "life-manager": 218,
+      "retired": 2
     },
     "states": {
       "disabled": 74,
@@ -3217,6 +3218,6 @@
       "loaded-running": 48,
       "unloaded": 15
     },
-    "unmanaged_life_manager": 221
+    "unmanaged_life_manager": 218
   }
 }

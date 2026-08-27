@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://anicca.dev/marketing/contracts/strategy-version.schema.json",
+  "type": "object",
+  "required": [
+    "version_id",
+    "scope",
+    "status",
+    "reward_id",
+    "mutations"
+  ],
+  "properties": {
+    "version_id": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "scope": {"type": "string", "minLength": 1},
+    "status": {"enum": ["candidate", "active", "reverted"]},
+    "reward_id": {"type": "string", "minLength": 1},
+    "mutations": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1,
+      "items": {
+        "type": "string",
+        "pattern": "^strategy\\.(demo|rule|weight)\\."
+      }
+    }
+  },
+  "additionalProperties": false
+}

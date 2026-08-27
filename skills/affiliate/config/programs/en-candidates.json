@@ -1,0 +1,150 @@
+{
+  "schema_version": 1,
+  "market": "en",
+  "programs": [
+    {
+      "id": "systeme-io",
+      "priority": 1,
+      "network": "first-party",
+      "decision": "EXTERNAL_CHALLENGE",
+      "program_url": "https://systeme.io/affiliate-program",
+      "terms_url": "https://systeme.io/affiliate-agreement",
+      "commission": "60% lifetime recurring on eligible sales",
+      "next_action": "RESUME_EXISTING_SIGNUP_AFTER_RECAPTCHA_AND_READ_BACK_AFFILIATE_ID",
+      "evidence": "Anyone, free to join, no application, no purchase required; live signup is waiting on visible reCAPTCHA",
+      "credential_ref": "keychain://ai.anicca.affiliate.provider.systeme-io/primary"
+    },
+    {
+      "id": "elevenlabs",
+      "priority": 2,
+      "network": "PartnerStack",
+      "decision": "ACTIVE_LINK_VERIFIED",
+      "program_url": "https://elevenlabs.io/affiliates",
+      "terms_url": null,
+      "commission": "22% of qualifying subscription payments for 12 months",
+      "next_action": "BUILD_FIRST_DISCLOSED_OWNED_PLACEMENT_WITH_DEFAULT_TRACKING_LINK",
+      "evidence": "Authenticated UI says active affiliate account; anonymous browser execution sets PartnerStack referral query and cookies",
+      "credential_ref": "keychain://ai.anicca.affiliate.provider.elevenlabs/primary"
+    },
+    {
+      "id": "grammarly",
+      "priority": 3,
+      "network": "Impact",
+      "decision": "AUTH_RECOVERY_PROVIDER_DEFECT",
+      "program_url": "https://www.grammarly.com/affiliates",
+      "terms_url": "https://www.grammarly.com/affiliates/terms",
+      "commission": "Commission for qualified account sign-ups and purchases; offer amount is dashboard-controlled",
+      "next_action": "RECOVER_EXISTING_IMPACT_CREDENTIAL_THEN_APPLY_ON_EXISTING_ACCOUNT",
+      "evidence": "Impact password reset email rendered an unexpanded changepasswordurl placeholder in both branded and generic flows",
+      "credential_ref": "keychain://ai.anicca.affiliate.provider.impact/primary"
+    },
+    {
+      "id": "notion",
+      "priority": 4,
+      "network": "PartnerStack",
+      "decision": "PROGRAM_PAUSED",
+      "program_url": "https://www.notion.com/affiliates",
+      "terms_url": "https://app.notion.com/p/Marketing-Program-Participant-Terms-c17a5869de9b4a22b91c610585b8ceca",
+      "commission": "Up to $50 per activated signup plus 20% of year-one revenue",
+      "next_action": "DO_NOT_APPLY_UNTIL_NOTION_REOPENS_NEW_AFFILIATE_ADMISSION",
+      "evidence": "Live PartnerStack application says Notion stopped accepting new affiliates and all applications will be auto-declined for the time being",
+      "credential_ref": null
+    },
+    {
+      "id": "hubspot-impact",
+      "priority": 5,
+      "network": "Impact",
+      "decision": "APPLICATION_REJECTED",
+      "program_url": "https://www.hubspot.com/partners/affiliates",
+      "terms_url": "https://legal.hubspot.com/marketing-affiliate-program-agreement",
+      "commission": "30% monthly recurring commission for up to one year",
+      "next_action": "DO_NOT_RESUBMIT_UNCHANGED",
+      "evidence": "Authenticated Impact readback renders the existing HubSpot, Inc. application as Declined; the owner persists REJECTED and must not resubmit unchanged",
+      "credential_ref": "keychain://ai.anicca.affiliate.provider.impact/primary"
+    },
+    {
+      "id": "pipedrive",
+      "priority": 6,
+      "network": "PartnerStack",
+      "decision": "ELIGIBILITY_BLOCKED",
+      "program_url": "https://www.pipedrive.com/en/affiliate-partnership",
+      "terms_url": null,
+      "commission": "20% revenue share for the first 12 months at the entry tier",
+      "next_action": "PUBLISH_RELEVANT_PROFESSIONAL_B2B_CONTENT_BEFORE_APPLICATION",
+      "evidence": "you need to have either a relevant professional website with landing pages or at least one appropriate professional social media channel",
+      "credential_ref": null
+    },
+    {
+      "id": "getresponse",
+      "priority": 7,
+      "network": "PartnerStack",
+      "decision": "DEFER_CONTENT_GATE",
+      "program_url": "https://www.getresponse.com/affiliate-programs",
+      "terms_url": null,
+      "commission": "40% recurring for 12 months at the entry tier",
+      "next_action": "WAIT_FOR_FIRST_PARTNERSTACK_COMMISSION_BEFORE_RECHECKING_MARKETPLACE_ACCESS",
+      "evidence": "Live application readback hides submit and requires one commission in an existing program before PartnerStack Marketplace unlocks",
+      "credential_ref": null
+    },
+    {
+      "id": "beehiiv",
+      "priority": 8,
+      "network": "first-party",
+      "decision": "DEFER_FIT_GATE",
+      "program_url": "https://www.beehiiv.com/partners/affiliate",
+      "terms_url": null,
+      "commission": "Up to 60% of referral payments for 12 months",
+      "next_action": "ESTABLISH_NEWSLETTER_OR_COURSE_CREATOR_FIT_BEFORE_APPLICATION",
+      "evidence": "Join thousands of bloggers, newsletter writers, content creators, comparison sites, and marketing pros",
+      "credential_ref": null
+    },
+    {
+      "id": "descript",
+      "priority": 9,
+      "network": "PartnerStack",
+      "decision": "DEFER_AUDIENCE_GATE",
+      "program_url": "https://www.descript.com/affiliate",
+      "terms_url": "https://www.descript.com/affiliate-terms",
+      "commission": "$25 per new subscriber",
+      "next_action": "ESTABLISH_RELEVANT_CREATOR_AUDIENCE_BEFORE_APPLICATION",
+      "evidence": "Enter basic information about your primary platform, audience/following, and how you plan to promote Descript",
+      "credential_ref": null
+    },
+    {
+      "id": "riverside",
+      "priority": 10,
+      "network": "PartnerStack",
+      "decision": "DEFER_AUDIENCE_GATE",
+      "program_url": "https://riverside.com/affiliate-program",
+      "terms_url": null,
+      "commission": "Up to 20% per subscription",
+      "next_action": "ESTABLISH_RELEVANT_CREATOR_AUDIENCE_BEFORE_APPLICATION",
+      "evidence": "Got a loyal audience? Turn them into your biggest earning ally",
+      "credential_ref": null
+    },
+    {
+      "id": "semrush",
+      "priority": 11,
+      "network": "Impact",
+      "decision": "DEFER_THRESHOLD_GATE",
+      "program_url": "https://www.semrush.com/lp/affiliate-program/en/",
+      "terms_url": null,
+      "commission": "$10 per eligible trial; $50-$300 per eligible sale at the basic tier; up to $450 per sale at Platinum; 120-day last-click cookie",
+      "next_action": "WAIT_FOR_1000_MONTHLY_VISITORS_OR_SIGNIFICANT_SOCIAL_AUDIENCE",
+      "evidence": "official program page requires at least 1,000 monthly unique visitors or significant organic social audience; current page also states 120-day last-click attribution, Impact reporting, EFT/PayPal payout, and no self-referrals; application remains deferred until the threshold gate",
+      "credential_ref": "keychain://ai.anicca.affiliate.provider.impact/primary"
+    },
+    {
+      "id": "kit",
+      "priority": 12,
+      "network": "PartnerStack",
+      "decision": "APPLICATION_REJECTED",
+      "program_url": "https://kit.com/affiliate",
+      "terms_url": "https://kit.com/affiliate-tos",
+      "commission": "50% for 12 months, with later tier-based recurring commission",
+      "next_action": "DO_NOT_REAPPLY_UNCHANGED",
+      "evidence": "include details about why you're a good fit and your promotion plans",
+      "credential_ref": null
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "selected_variable",
+    "hypothesis",
+    "evidence",
+    "next_campaign_instruction",
+    "success_metric"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "selected_variable": {
+      "type": "string",
+      "enum": ["title", "opening_hook", "article_structure", "cta"]
+    },
+    "hypothesis": {"type": "string"},
+    "evidence": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "next_campaign_instruction": {"type": "string"},
+    "success_metric": {"type": "string"}
+  }
+}

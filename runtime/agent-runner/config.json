@@ -305,6 +305,24 @@
           "profile_alias": "acct2"
         }
       ]
+    },
+    "affiliate-marketing-agent": {
+      "route": "affiliate-terra-high-strategy",
+      "requires_explicit_escalation": true,
+      "token_reservation": 32768,
+      "timeout_seconds": 900,
+      "candidates": [
+        {"provider": "codex", "model": "gpt-5.6-terra", "effort": "high", "profile_alias": "acct2"}
+      ]
+    },
+    "affiliate-escalation-agent": {
+      "route": "affiliate-sol-one-use-repair",
+      "requires_explicit_escalation": true,
+      "token_reservation": 65536,
+      "timeout_seconds": 3600,
+      "candidates": [
+        {"provider": "codex", "model": "gpt-5.6-sol", "effort": "high", "profile_alias": "acct2"}
+      ]
     }
   }
 }

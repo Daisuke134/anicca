@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["selected_family", "hypothesis", "evidence", "success_metric"],
+  "additionalProperties": false,
+  "properties": {
+    "selected_family": {"type": "string"},
+    "hypothesis": {"type": "string"},
+    "evidence": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"type": "string"}
+    },
+    "success_metric": {"type": "string"}
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "version": "v1",
+  "currency": "USDC",
+  "chain": "base",
+  "receiver": "0xa3CDd4Ec6b94F01826Aaf90a6d5538A2Aa8C4C21",
+  "routes": {
+    "echo": {
+      "path": "/v0/echo",
+      "method": "GET",
+      "price_usdc": 0.001,
+      "description": "Echoes the supplied text. Cheapest route, proves the loop."
+    },
+    "learn": {
+      "path": "/v0/learn",
+      "method": "POST",
+      "price_usdc": 0.01,
+      "description": "Returns Anicca's FTS5 lesson for a given topic."
+    },
+    "draft": {
+      "path": "/v0/draft",
+      "method": "POST",
+      "price_usdc": 0.05,
+      "description": "Gig-reply draft using project context + relationships."
+    },
+    "call": {
+      "path": "/v0/call",
+      "method": "POST",
+      "price_usdc": 0.30,
+      "description": "Bland.ai outbound voice call (~30s)."
+    }
+  }
+}

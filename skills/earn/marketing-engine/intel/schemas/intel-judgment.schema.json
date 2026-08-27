@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aniccaai.com/schemas/marketing-intel-judgment-v1.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["playbook", "creators", "ad_swipe"],
+  "properties": {
+    "playbook": {"type": "array", "items": {"$ref": "#/$defs/playbook"}},
+    "creators": {"type": "array", "items": {"$ref": "#/$defs/creator"}},
+    "ad_swipe": {"type": "array", "items": {"$ref": "#/$defs/ad"}}
+  },
+  "$defs": {
+    "playbook": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "id", "source_type", "source_url", "source_handle", "source_null_reason", "captured_at", "provenance", "claim", "mechanism", "applies_to", "testable", "status", "evidence_url", "evidence_null_reason", "our_result", "result_evidence"],
+      "properties": {
+        "schema_version": {"type": "string", "const": "marketing.tactic.v1"},
+        "id": {"type": "string"},
+        "source_type": {"enum": ["x_article", "owner_observation", "oss", "web", "video", "ad"]},
+        "source_url": {"type": ["string", "null"]},
+        "source_handle": {"type": ["string", "null"]},
+        "source_null_reason": {"type": ["string", "null"]},
+        "captured_at": {"type": "string", "format": "date-time"},
+        "provenance": {"enum": ["owner_supplied_summary", "live_observed", "imported_oss"]},
+        "claim": {"type": "string"},
+        "mechanism": {"type": "string"},
+        "applies_to": {"type": "array", "items": {"enum": ["app", "ebook", "content", "outreach"]}},
+        "testable": {"type": "boolean"},
+        "status": {"type": "string", "const": "new"},
+        "evidence_url": {"type": ["string", "null"]},
+        "evidence_null_reason": {"type": ["string", "null"]},
+        "our_result": {"type": "null"},
+        "result_evidence": {"type": "null"}
+      }
+    },
+    "creator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "id", "platform", "handle", "language", "product_id", "source_url", "source_null_reason", "captured_at", "metrics", "green_flags", "red_flags", "verdict", "evidence_url", "evidence_null_reason"],
+      "properties": {
+        "schema_version": {"type": "string", "const": "marketing.creator.v1"},
+        "id": {"type": "string"},
+        "platform": {"enum": ["tiktok", "instagram", "youtube", "x"]},
+        "handle": {"type": "string"},
+        "language": {"enum": ["en", "ja", "es", "multi", "unknown"]},
+        "product_id": {"type": ["string", "null"]},
+        "source_url": {"type": ["string", "null"]},
+        "source_null_reason": {"type": ["string", "null"]},
+        "captured_at": {"type": "string", "format": "date-time"},
+        "metrics": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "value", "observed_at", "source_url", "null_reason"],
+            "properties": {
+              "name": {"type": "string"},
+              "value": {"type": ["number", "null"]},
+              "observed_at": {"type": "string"},
+              "source_url": {"type": ["string", "null"]},
+              "null_reason": {"type": ["string", "null"]}
+            }
+          }
+        },
+        "green_flags": {"type": "array", "items": {"type": "string"}},
+        "red_flags": {"type": "array", "items": {"type": "string"}},
+        "verdict": {"enum": ["green", "red", "unknown"]},
+        "evidence_url": {"type": ["string", "null"]},
+        "evidence_null_reason": {"type": ["string", "null"]}
+      }
+    },
+    "ad": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "id", "platform", "advertiser", "product_id", "source_url", "source_null_reason", "captured_at", "first_seen_at", "last_seen_at", "impressions", "impressions_null_reason", "why_it_works", "replication_plan", "status", "evidence_url", "evidence_null_reason"],
+      "properties": {
+        "schema_version": {"type": "string", "const": "marketing.ad-swipe.v1"},
+        "id": {"type": "string"},
+        "platform": {"enum": ["meta", "tiktok", "youtube", "app_store", "web"]},
+        "advertiser": {"type": "string"},
+        "product_id": {"type": ["string", "null"]},
+        "source_url": {"type": ["string", "null"]},
+        "source_null_reason": {"type": ["string", "null"]},
+        "captured_at": {"type": "string", "format": "date-time"},
+        "first_seen_at": {"type": ["string", "null"]},
+        "last_seen_at": {"type": ["string", "null"]},
+        "impressions": {"type": ["integer", "null"]},
+        "impressions_null_reason": {"type": ["string", "null"]},
+        "why_it_works": {"type": "string"},
+        "replication_plan": {"type": "string"},
+        "status": {"type": "string", "const": "new"},
+        "evidence_url": {"type": ["string", "null"]},
+        "evidence_null_reason": {"type": ["string", "null"]}
+      }
+    }
+  }
+}

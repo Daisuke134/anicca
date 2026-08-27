@@ -97,11 +97,12 @@ class TokenBudgetLedger:
         day: str,
         reservation_tokens: int,
         pass_limit: int,
-        daily_limit: int,
+        daily_limit: int | None,
     ) -> dict[str, Any]:
         if (
             not event_id or not loop or not scope_id or not daily_scope or not day
-            or reservation_tokens <= 0 or pass_limit <= 0 or daily_limit <= 0
+            or reservation_tokens <= 0 or pass_limit <= 0
+            or (daily_limit is not None and daily_limit <= 0)
         ):
             raise TokenBudgetError("token budget inputs must be nonempty and positive")
         self.lock_path.parent.mkdir(parents=True, exist_ok=True)
@@ -125,7 +126,7 @@ class TokenBudgetLedger:
             reason = None
             if pass_consumed + reservation_tokens > pass_limit:
                 reason = "pass_token_budget_exceeded"
-            elif daily_consumed + reservation_tokens > daily_limit:
+            elif daily_limit is not None and daily_consumed + reservation_tokens > daily_limit:
                 reason = "loop_daily_token_budget_exceeded"
             decision = {
                 "version": 1,

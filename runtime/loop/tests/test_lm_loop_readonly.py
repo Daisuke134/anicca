@@ -41,6 +41,15 @@ class LmLoopReadonlyTest(unittest.TestCase):
         self.assertEqual(report["missing_entrypoints"], ["example:bin/example.sh"])
         self.assertFalse(report["ok"])
 
+    def test_doctor_does_not_call_explicit_external_label_unmanaged(self):
+        registry = {**REGISTRY, "external_labels": ["ai.anicca.tsbridge"]}
+        report = doctor_report(registry,
+            installed_labels={"ai.anicca.example", "ai.anicca.tsbridge"},
+            loaded_labels={"ai.anicca.example", "ai.anicca.tsbridge"},
+            existing_entrypoints={"bin/example.sh"})
+        self.assertEqual(report["unmanaged_labels"], [])
+        self.assertTrue(report["ok"])
+
     def test_no_event_never_becomes_success_from_pid_or_exit(self):
         row = status_rows(REGISTRY, loaded={}, disabled={}, events={}, installed_releases={})[0]
         self.assertEqual(row["next_eligible_run"], "interval:60s")

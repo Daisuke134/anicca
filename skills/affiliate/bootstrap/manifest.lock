@@ -1,0 +1,4 @@
+# Life Manager Affiliate bootstrap manifest.
+# Current-host artifact URLs and hashes are selected by later capability inventory.
+# Format: name<TAB>version<TAB>file:// or https:// URL<TAB>lowercase SHA-256.
+cpython-runtime	3.14.7.20260814	https://github.com/astral-sh/python-build-standalone/releases/download/20260814/cpython-3.14.7%2B20260814-aarch64-apple-darwin-install_only_stripped.tar.gz	423717c485b9ee7822590b9d973c1b5fb2cda0fe43448ab82a3d44f823bd329c
