@@ -13,6 +13,8 @@ X_REPOST_REASONING_EFFORT = "max"
 X_REPOST_PUBLISH_TRANSPORT = "postiz"
 X_REPOST_POSTIZ_INTEGRATION_ID = "cmt4l2jld031tqp0y8qtyo983"
 X_REPOST_FORCE_KIND = "quote"
+X_REPOST_FORCE_LANGUAGE = "en"
+X_REPOST_DISABLE_AFFILIATE = "1"
 
 # One pass per half-hour. The pass refuses duplicate effects in the same slot; the quality gate
 # may still produce no output, so the schedule is a floor on attempts, not a promise of posts.

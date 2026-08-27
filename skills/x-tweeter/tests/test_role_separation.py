@@ -15,6 +15,8 @@ class XRoleSeparationTests(unittest.TestCase):
         tweeter_loop = tomllib.loads((ROOT / "loops" / "x-tweeter" / "loop.toml").read_text())
 
         self.assertEqual(repost["env"]["X_REPOST_FORCE_KIND"], "quote")
+        self.assertEqual(repost["env"]["X_REPOST_FORCE_LANGUAGE"], "en")
+        self.assertEqual(repost["env"]["X_REPOST_DISABLE_AFFILIATE"], "1")
         self.assertEqual(repost["jobs"]["pass"]["calendars"], [
             {"minute": 0}, {"minute": 30},
         ])
