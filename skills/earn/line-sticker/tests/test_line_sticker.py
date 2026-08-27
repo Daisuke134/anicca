@@ -11,6 +11,8 @@ import struct
 import subprocess
 import sys
 import tempfile
+import threading
+import time
 import unittest
 from unittest import mock
 import zipfile
@@ -816,13 +818,8 @@ class FakeProvider:
         self.status = "absent"
         self.raise_on_submit = False
         self.raise_on_release = False
-        self.malformed_observation = False
-        self.mutation_before_submit_error = False
-        self.mutation_before_release_error = False
 
     def observe(self, identity: dict[str, object]) -> dict[str, object]:
-        if self.malformed_observation:
-            return {"status": "wat"}
         status = str(self.inventory.get("status", self.status))
         if status == "absent":
             return {
@@ -930,6 +927,46 @@ class LineStickerOwnerTests(unittest.TestCase):
         self.assertEqual((fourth["state"], fourth["effect"], fourth["duplicate_effect"]), ("CLOSED", 0, 0))
         self.assertEqual((self.provider.submit_calls, self.provider.release_calls), (1, 1))
 
+    def test_two_concurrent_wakes_have_one_submit_and_one_intent(self) -> None:
+        shared_inventory: dict[str, object] = {
+            "status": "absent",
+            "account_id": None,
+            "set_id": None,
+            "revision": None,
+            "artifact_sha256": None,
+            "product_id": None,
+            "public_url": None,
+        }
+        counters = {"submit": 0}
+        counter_lock = threading.Lock()
+
+        class SlowProvider(FakeProvider):
+            def submit(self, intent: dict[str, object]) -> dict[str, object]:
+                with counter_lock:
+                    counters["submit"] += 1
+                time.sleep(0.1)
+                return super().submit(intent)
+
+        providers = [SlowProvider(shared_inventory), SlowProvider(shared_inventory)]
+        barrier = threading.Barrier(2)
+        results: list[dict[str, object]] = []
+
+        def wake(provider: FakeProvider) -> None:
+            barrier.wait(timeout=5)
+            results.append(self._wake(provider))
+
+        threads = [threading.Thread(target=wake, args=(provider,)) for provider in providers]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join(timeout=10)
+        self.assertTrue(all(not thread.is_alive() for thread in threads))
+        self.assertEqual(counters["submit"], 1)
+        self.assertEqual(sum(provider.submit_calls for provider in providers), 1)
+        rows = [json.loads(line) for line in (self.state / "effects.jsonl").read_text(encoding="utf-8").splitlines()]
+        self.assertEqual([row["outcome"] for row in rows].count("intent"), 1)
+        self.assertEqual([row["outcome"] for row in rows].count("acknowledged"), 1)
+
     def test_provider_identity_and_shape_mismatches_fail_closed(self) -> None:
         self._wake()
         cases = {
@@ -965,6 +1002,15 @@ class LineStickerOwnerTests(unittest.TestCase):
         second = self._wake(restarted)
         self.assertEqual((second["state"], second["effect"], second["readback"]), ("WAITING_REVIEW", 0, 1))
         self.assertEqual(restarted.submit_calls, 0)
+        rows = [json.loads(line) for line in (self.state / "effects.jsonl").read_text(encoding="utf-8").splitlines()]
+        self.assertEqual([row["outcome"] for row in rows], ["intent", "unknown", "acknowledged"])
+        self.assertIsNone(rows[-1]["effect"])
+        self.assertEqual(rows[-1]["readback"], 1)
+        self.assertIsNone(rows[-1]["duplicate_effect"])
+        ledger_before = (self.state / "effects.jsonl").read_bytes()
+        third = self._wake(restarted)
+        self.assertEqual((third["state"], third["effect"], third["readback"]), ("WAITING_REVIEW", 0, 0))
+        self.assertEqual((self.state / "effects.jsonl").read_bytes(), ledger_before)
 
     def test_lost_submit_ack_still_absent_never_retries(self) -> None:
         class StillAbsent(FakeProvider):
@@ -1026,6 +1072,12 @@ class LineStickerOwnerTests(unittest.TestCase):
         self.assertEqual((fifth["state"], fifth["effect"], fifth["duplicate_effect"]), ("CLOSED", 0, 0))
         self.assertEqual((self.state / "owner.json").read_bytes(), owner_before)
         self.assertEqual((self.state / "effects.jsonl").read_bytes(), ledger_before)
+        sixth = self._wake()
+        seventh = self._wake()
+        self.assertEqual((sixth["state"], sixth["effect"], sixth["duplicate_effect"]), ("CLOSED", 0, 0))
+        self.assertEqual((seventh["state"], seventh["effect"], seventh["duplicate_effect"]), ("CLOSED", 0, 0))
+        self.assertEqual((self.state / "owner.json").read_bytes(), owner_before)
+        self.assertEqual((self.state / "effects.jsonl").read_bytes(), ledger_before)
 
     def test_owner_identity_and_state_path_fail_closed(self) -> None:
         self._wake()
@@ -1036,6 +1088,109 @@ class LineStickerOwnerTests(unittest.TestCase):
         owner_path.write_text("{", encoding="utf-8")
         malformed = self._wake()
         self.assertEqual((malformed["reason"], malformed["effect"]), ("owner_malformed", 0))
+
+    def test_lock_symlink_fails_before_provider(self) -> None:
+        target = Path(self.tempdir.name) / "outside-lock"
+        target.write_text("", encoding="utf-8")
+        (self.state / "owner.lock").symlink_to(target)
+        result = self._wake()
+        self.assertEqual((result["reason"], result["effect"]), ("lock_symlink", 0))
+        self.assertEqual((self.provider.submit_calls, self.provider.release_calls), (0, 0))
+
+    def test_lock_nonregular_path_fails_before_provider(self) -> None:
+        (self.state / "owner.lock").mkdir()
+        result = self._wake()
+        self.assertEqual((result["reason"], result["effect"]), ("lock_not_regular", 0))
+        self.assertEqual((self.provider.submit_calls, self.provider.release_calls), (0, 0))
+
+    def test_absent_after_submit_is_fail_closed_without_retry(self) -> None:
+        self._wake()
+        self.provider.inventory["status"] = "absent"
+        result = self._wake()
+        self.assertEqual((result["reason"], result["effect"], result["state"]), ("provider_absent_after_submit", 0, "WAITING_REVIEW"))
+        self.assertEqual(self.provider.submit_calls, 1)
+
+    def test_absent_after_release_unknown_is_fail_closed_without_retry(self) -> None:
+        class NoEffectRelease(FakeProvider):
+            def release(self, intent: dict[str, object]) -> dict[str, object]:
+                self.release_calls += 1
+                raise RuntimeError("release failed before effect")
+
+        self._wake()
+        self.provider.inventory["status"] = "approved"
+        provider = NoEffectRelease(self.provider.inventory)
+        unknown = self._wake(provider)
+        self.assertEqual(unknown["state"], "RECONCILE_UNKNOWN")
+        provider.inventory["status"] = "absent"
+        result = self._wake(provider)
+        self.assertEqual((result["reason"], result["effect"]), ("provider_absent_after_submit", 0))
+        self.assertEqual(provider.release_calls, 1)
+
+    def test_released_url_must_bind_exact_product_path(self) -> None:
+        self._wake()
+        self.provider.inventory["status"] = "approved"
+        self._wake()
+        self.provider.inventory["public_url"] = "https://store.line.me/stickershop/product/999/en"
+        result = self._wake()
+        self.assertEqual((result["reason"], result["effect"]), ("provider_url_invalid", 0))
+        self.assertEqual(self.provider.release_calls, 1)
+
+        self.provider.inventory["public_url"] = "https://store.line.me/stickershop/product/123/ja"
+        replay_result = self._wake()
+        self.assertEqual((replay_result["reason"], replay_result["effect"]), ("provider_url_mismatch", 0))
+        self.assertEqual(self.provider.release_calls, 1)
+
+    def test_owner_rollback_below_acknowledged_minimum_is_rejected(self) -> None:
+        self._wake()
+        owner_path = self.state / "owner.json"
+        owner = json.loads(owner_path.read_text(encoding="utf-8"))
+        owner["state"] = "NEW"
+        owner_path.write_text(json.dumps(owner, sort_keys=True) + "\n", encoding="utf-8")
+        before = owner_path.read_bytes()
+        result = self._wake()
+        self.assertEqual((result["reason"], result["effect"]), ("owner_state_conflict", 0))
+        self.assertEqual(owner_path.read_bytes(), before)
+        self.assertEqual(self.provider.submit_calls, 1)
+
+    def test_ledger_symlink_truncated_and_conflicting_rows_fail_closed(self) -> None:
+        self._wake()
+        ledger = self.state / "effects.jsonl"
+        ledger_bytes = ledger.read_bytes()
+        ledger.unlink()
+        outside = Path(self.tempdir.name) / "outside-ledger"
+        outside.write_bytes(ledger_bytes)
+        ledger.symlink_to(outside)
+        symlink_result = self._wake()
+        self.assertEqual((symlink_result["reason"], symlink_result["effect"]), ("ledger_symlink", 0))
+
+        ledger.unlink()
+        ledger.write_bytes(b'{"truncated"')
+        truncated_result = self._wake()
+        self.assertEqual((truncated_result["reason"], truncated_result["effect"]), ("ledger_malformed", 0))
+
+        ledger.write_bytes(ledger_bytes + ledger_bytes.splitlines(keepends=True)[1])
+        conflict_result = self._wake()
+        self.assertEqual((conflict_result["reason"], conflict_result["effect"]), ("ledger_duplicate", 0))
+
+    def test_provider_observe_failure_is_fail_closed(self) -> None:
+        class BrokenObserve(FakeProvider):
+            def observe(self, identity: dict[str, object]) -> dict[str, object]:
+                raise RuntimeError("provider unavailable")
+
+        broken = BrokenObserve()
+        result = self._wake(broken)
+        self.assertEqual((result["reason"], result["effect"], result["state"]), ("provider_observe_failed", 0, "NEW"))
+        self.assertEqual(broken.submit_calls, 0)
+
+    def test_terminal_state_never_calls_provider_mutation(self) -> None:
+        self._wake()
+        self.provider.inventory["status"] = "approved"
+        self._wake()
+        self._wake()
+        self._wake()
+        result = self._wake()
+        self.assertEqual(result["state"], "CLOSED")
+        self.assertEqual((self.provider.submit_calls, self.provider.release_calls), (1, 1))
 
     def test_state_cli_returns_valid_summary_and_rejects_symlink(self) -> None:
         self._wake()
