@@ -25,6 +25,8 @@
 ### Task 1: Plan, convert, select, and package 24 animations
 
 **Files:**
+- Modify: `skills/earn/line-sticker/line_sticker.py`
+- Modify: `skills/earn/line-sticker/tests/test_line_sticker.py`
 - Create: `skills/earn/line-sticker/creative-prompt.md`
 - Create: `skills/earn/line-sticker/line_sticker_media.py`
 - Create: `skills/earn/line-sticker/tests/test_line_sticker_media.py`
@@ -32,9 +34,12 @@
 **Interfaces:**
 - CLI `plan --character PATH --model-command JSON_ARGV --work-dir PATH --set-id ID --character-id ID`.
 - CLI `convert --plan PATH --animation-command JSON_ARGV --work-dir PATH --max-cost-usd DECIMAL --ffmpeg PATH --ffprobe PATH`.
+- CLI `reconcile --convert-state PATH --animation-command JSON_ARGV --batch N`.
 - CLI `select --plan PATH --candidates PATH --model-command JSON_ARGV --work-dir PATH`.
 - CLI `package --selection PATH --work-dir PATH --output PATH --policy PATH --ffmpeg PATH`.
 - Every CLI prints one stable JSON object with `status`, `effect`, `readback`, `reason`, hashes, and output path only; no prompt body, credential, environment, or provider response body.
+- Every allocating stage checks the shared host disk-stop flags and `LINE_STICKER_MEDIA_HEADROOM_BYTES`
+  (default 2 GiB). Stage replay verifies every durable output/hash/receipt before returning effect zero.
 
 - [ ] **Step 1: Write the right-altitude creative prompt**
 
@@ -76,16 +81,19 @@ JSON on stdin and returns exactly 60 records:
 }
 ```
 
-The provider fake returns one source-video receipt per batch with exact keys `request_id`, `batch`,
-`provider`, `model`, `quoted_cost_usd`, `acknowledged`, `video_path`, `video_sha256`, and ten segments
-(`motion_id`, `start_ms`, `end_ms`). Tests first fail because `line_sticker_media.py` is absent.
+The provider fake supports exact operations `quote`, `generate`, and `reconcile`. Quote returns
+`request_id`, `quote_token`, `batch`, `provider`, `model`, `quoted_cost_usd`, `expires_at`, and
+`regenerable` without creating media. Generate echoes that identity and returns acknowledgement,
+video path/hash, and ten segments (`motion_id`, `start_ms`, `end_ms`). Tests first fail because
+`line_sticker_media.py` is absent.
 
 - [ ] **Step 3: Implement safe command and JSON contracts**
 
 Parse command argv from a JSON array of nonempty strings; never use a shell. Send one bounded JSON
-request on stdin, cap stdout/stderr at 1 MiB via temporary files, use a 10-minute timeout, require one
+request on stdin, stream stdout/stderr with a hard 1 MiB cap while the process runs, start a process
+group and terminate the whole group on cap/timeout, use a 10-minute timeout, require one
 JSON object and exact schema/types/keys. Model plan must contain 60 unique ids, batches 1–6, positions
-1–10 exactly once, duration 500–2000 ms, and 64-character hashes for the character bytes and prompt.
+1–10 exactly once, exact ids `motion-01` through `motion-60`, duration 500–2000 ms, and 64-character hashes for the character bytes and prompt.
 These are format/arithmetic checks, not creative judgment.
 
 Write outputs atomically and content-address them. `plan` writes `plan.json` and `plan-receipt.json`.
@@ -94,10 +102,15 @@ inputs fail closed.
 
 - [ ] **Step 4: Implement provider effect fencing and one-video-at-a-time conversion**
 
-Before each animation command, persist an intent keyed by SHA-256 of set id, plan hash, batch, provider,
-model, and input character hash. Require a Decimal quote, nonnegative cumulative cost, and total at or
-below `--max-cost-usd`. Unknown acknowledgement writes `reconcile_unknown` and never calls the provider
-again. A later command may reconcile only by presenting the same request id and output hash.
+Call side-effect-free `quote` first. It fixes provider, model, stable request id, quote token, Decimal
+cost, expiry, and regenerable flag. Persist and fsync a reservation keyed by SHA-256 of set id, plan
+hash, batch, provider, model, request id, quote token, and character hash. Verify cumulative reserved
+cost is at or below `--max-cost-usd` before calling `generate`; send that same identity and remaining
+cap to generate and require an exact echo.
+
+Unknown acknowledgement writes `reconcile_unknown` and never calls `generate` again. CLI
+`reconcile --convert-state PATH --animation-command JSON_ARGV --batch N` calls only provider operation
+`reconcile` with the original request id. It accepts output only when all identities and hashes match.
 
 Validate segments are ordered, nonoverlapping, within probed source duration, and bind the exact ten
 motion ids. For each segment run FFmpeg without a shell:
@@ -112,13 +125,15 @@ motion ids. For each segment run FFmpeg without a shell:
 
 Keep between 5 and 20 frames by choosing a bounded fps from duration, never by dropping the final
 motion phase. Call existing `parse_png` and alpha checks for every candidate. Persist candidate SHA,
-source SHA, segment, conversion argv hash, and validation errors. Remove only the processed unselected
-source video after its ten durable candidate records exist and the provider receipt marks it regenerable.
+source SHA, segment, conversion argv hash, and validation errors. Remove a source video only when all
+ten candidate records are durable and valid and quote/generation explicitly marked it regenerable.
+Any invalid candidate retains the source.
 
 - [ ] **Step 5: Implement model visual selection and ordering**
 
 Build `selection-input.json` containing the 60 candidate paths, hashes, parsed APNG facts, errors,
-first-frame PNG paths, and motion-plan text. Call the model in `select` mode. Require exactly 24 unique
+first-frame PNG paths, contact-sheet path, motion-preview paths, and motion-plan text. Call the model
+in `select` mode. Require a readback listing all 60 inspected hashes and exactly 24 unique
 existing valid motion ids, exact positions 1–24, one declared cover id equal to position 1, and a
 nonempty natural-language reason for each. Do not calculate or override a creative score.
 
@@ -129,9 +144,12 @@ invalidates selection and requires a fresh model call.
 
 Copy selected APNG bytes as `01.png`–`24.png`. Create `main.png` from the cover APNG with a transparent
 240×240 canvas while preserving animation. Extract the cover first frame and create a transparent
-96×74 `tab.png`. Build `provenance.json` with original rights, model/provider names, prompt hashes,
-character hash, plan/selection hashes, costs, provider request ids, source/candidate hashes, and exact
-asset hashes. Create deterministic `submission.zip` containing only the 26 PNGs with fixed metadata.
+96×74 `tab.png`. Extend the core validator's exact provenance schema with a package-bound
+`generation` object. It contains original-character rights evidence, model/provider names, prompt,
+character, plan and selection hashes, reserved/actual costs, quote/generation request ids, source,
+segment and candidate hashes, conversion argv hashes, and exact asset hashes. Missing receipts or
+rights evidence fails; no fallback provider/rights string and no sidecar ledger substitutes for it.
+Create deterministic `submission.zip` containing only the 26 PNGs with fixed metadata.
 
 Run existing `validate_package`; promote to the output directory only when `status=ready`. Promotion is
 same-filesystem atomic rename and refuses an existing conflicting package. Emit raw artifact and canonical
@@ -139,11 +157,13 @@ package digests returned by the validator.
 
 - [ ] **Step 7: Add fail-closed and replay regressions**
 
-Cover malformed/extra model keys, 59/61/duplicate motions, duplicate batch positions, invalid durations,
+Cover malformed/extra model keys, 59/61/duplicate/unsafe motions, duplicate batch positions, invalid durations,
 shell-like argv values remaining literal, command timeout/output overflow, quote over cap, NaN/boolean
-cost, provider unknown acknowledgement and no retry, changed request/video hash, overlapping/out-of-range
+cost, quote-before-generate call order, provider/model/request mismatch, provider unknown acknowledgement,
+reconcile without generate retry, changed request/video hash, overlapping/out-of-range
 segments, wrong source SHA, invalid chroma/opaque/alpha-hole candidate, 23/25/duplicate selection, selection
-of invalid candidate, changed candidate after selection, output conflict, low disk, and replay call counts.
+of invalid candidate, changed candidate after selection, identical output replay, output conflict, low disk,
+source retention/deletion, package-bound provenance tamper, and stage-specific replay call counts.
 
 Generate one real six-batch FFmpeg fixture with simple distinct green-screen motions and prove the resulting
 24 package passes the existing validator. Keep fixtures temporary and bounded.
@@ -159,12 +179,14 @@ git diff --check
 git status --short
 ```
 
-Expected: all media tests and existing 78 validator/owner tests pass; only the three owned files change.
+Expected: all media tests and existing validator/owner tests pass; only the five owned files change.
 
 ```bash
 git add skills/earn/line-sticker/creative-prompt.md \
   skills/earn/line-sticker/line_sticker_media.py \
-  skills/earn/line-sticker/tests/test_line_sticker_media.py
+  skills/earn/line-sticker/tests/test_line_sticker_media.py \
+  skills/earn/line-sticker/line_sticker.py \
+  skills/earn/line-sticker/tests/test_line_sticker.py
 git commit -m "feat(line-sticker): build animated media packages"
 git push
 ```

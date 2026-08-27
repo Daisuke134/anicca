@@ -158,6 +158,17 @@ effect, be within the configured per-set cap, and be durably reserved by `set_id
 missing provenance, or disk below the media headroom floor fails before generation or submission.
 No provider is retried after an acknowledged paid generation effect; it is reconciled first.
 
+The animation adapter protocol is two-phase and identity-first. `quote` returns provider, model,
+stable request id, quote token, exact Decimal cost, and expiry without generating media. The loop
+binds that identity to plan/batch/character hashes, reserves cost durably, then calls `generate`
+with the same identity and remaining cap. `reconcile` is the only operation allowed after unknown
+acknowledgement. Provider/model/request/video hashes match across all three phases.
+
+Generated source media is deleted only when the provider explicitly marks it regenerable, all ten
+bound segments produced valid durable candidates, and their hashes/receipts are fsynced. Otherwise
+the source remains. Every media wake checks shared disk policy and configured headroom before any
+model/provider/FFmpeg allocation.
+
 Creators Market has no assumed public submission API. The adapter uses the dedicated authenticated
 browser and official pages. Credentials remain in the private credential SSOT and browser profile,
 never state, prompts, Git, logs, reports, or notifications.
@@ -195,6 +206,12 @@ receipts, and replay proof. A clean Mac installation opens the dedicated Creator
 asks the owner to complete only missing official registration ceremonies, verifies readiness, and
 starts the launchd owner. Private state and generated artifacts are preserved on uninstall unless
 the owner explicitly requests their deletion.
+
+The package's exact provenance schema includes a `generation` object bound into
+`package_sha256`: character rights evidence, character/plan/selection hashes, provider quote and
+generation receipts, request ids, costs, source/segment/candidate hashes, and conversion argv
+hashes. Missing or invented rights/provider evidence fails validation. A parallel mutable ledger
+cannot substitute for package-bound provenance.
 
 ## Acceptance gates
 
