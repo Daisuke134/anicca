@@ -93,3 +93,10 @@ test("TikTok metrics owner routes the current source set to hook decision evalua
   assert.deepEqual(received, { dataDir: "/tmp/lm-decision-fixture", observations: {}, observedAt: "2026-08-28T00:00:00.000Z" });
   assert.equal(result.created, true);
 });
+
+test("TikTok metrics owner routes the decision state to hook consumption proof", () => {
+  let received;
+  const result = due.runHookConsumptionProof("/tmp/lm-proof-fixture", "2026-08-28T00:00:00.000Z", (input) => { received = input; return { created: true, snapshot_ref: "object://sha256/" + "b".repeat(64), proofs: [] }; });
+  assert.deepEqual(received, { dataDir: "/tmp/lm-proof-fixture", observedAt: "2026-08-28T00:00:00.000Z" });
+  assert.equal(result.created, true);
+});
