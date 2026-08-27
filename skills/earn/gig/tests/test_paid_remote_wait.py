@@ -731,3 +731,9 @@ def test_run_bounded_does_not_wait_for_grandchild_inherited_pipe():
     assert result.returncode == 0
     assert result.stdout.strip() == "done"
     assert time.monotonic() - started < 1
+
+
+def test_runner_loop_id_uses_managed_control_plane_identity(monkeypatch):
+    paid = load("paid_direct")
+    monkeypatch.setenv("LIFE_MANAGER_LOOP_ID", "hf-gig-paid-direct")
+    assert paid._runner_loop_id() == "hf-gig-paid-direct"

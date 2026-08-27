@@ -170,6 +170,8 @@ def _project_workspace(root: Path, prefix: str, *, resume: bool = False) -> Iter
 
 def _text(value: Any) -> str: return str(value or "").strip()
 
+def _runner_loop_id() -> str: return _text(os.environ.get("LIFE_MANAGER_LOOP_ID")) or "gig"
+
 def _comparison_key(value: str) -> str: return " ".join(value.split())
 
 STEP_TIMEOUT_RETURNCODE = 124
@@ -1025,7 +1027,7 @@ def _prepare_blind_output_audit(
             "--task-class", "escalation-agent",
             "--prompt-file", str(prompt), "--schema", str(schema),
             "--evidence-dir", str(evidence_dir), "--task-label", "paid-output-blind-audit",
-            "--loop", "gig", "--workdir", str(isolated), "--timeout-seconds", "1800", "--read-only",
+            "--loop", _runner_loop_id(), "--workdir", str(isolated), "--timeout-seconds", "1800", "--read-only",
             "--escalation-reason", "Blind output crop readback before paid submission",
         ]
         for image in copied:
@@ -1406,7 +1408,7 @@ def _paid_decision(args, item_path: Path, root: Path, base: Path) -> dict[str, A
               "--prompt-file", str(prompt), "--schema", str(schema), "--evidence-dir", str(evidence),
               "--task-label", "paid-work-decision", "--escalation-reason",
               "Paid delivery routing must use an authorized escalation semantic model.",
-              "--loop", "gig", "--workdir", str(root), "--timeout-seconds", "1800", "--read-only"]
+              "--loop", _runner_loop_id(), "--workdir", str(root), "--timeout-seconds", "1800", "--read-only"]
         _run(_private_model_runner(root, decision_command, "paid-work-decision"),
              "paid_work_decision")
         try:
@@ -2140,7 +2142,7 @@ def _prepare_source_census(args, root: Path, requirements_sha256: str, code_root
             "--task-class", "escalation-agent",
             "--prompt-file", str(prompt), "--schema", str(isolated_schema),
             "--evidence-dir", str(evidence), "--task-label", "paid-source-census",
-            "--loop", "gig", "--workdir", str(isolated), "--timeout-seconds", "3600",
+            "--loop", _runner_loop_id(), "--workdir", str(isolated), "--timeout-seconds", "3600",
             "--escalation-reason", "Independent source-only census before paid build",
         ]
         for image in visual_images:
@@ -2822,7 +2824,7 @@ def _run_isolated_file_owner(args, root: Path, context: Path, prompt_text: str,
             "--task-class", "escalation-agent",
             "--prompt-file", str(prompt), "--schema", str(args.runner_schema),
             "--evidence-dir", str(staged_evidence), "--task-label", "paid-file-owner",
-            "--loop", "gig", "--workdir", str(staging), "--timeout-seconds", "3600",
+            "--loop", _runner_loop_id(), "--workdir", str(staging), "--timeout-seconds", "3600",
             "--escalation-reason", "One isolated paid owner must build the buyer deliverable",
         ]
         try:
@@ -3313,7 +3315,7 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
             sys.executable, str(args.agent_runner), "--task-class", "escalation-agent",
             "--prompt-file", str(verifier_prompt), "--schema", str(args.artifact_schema),
             "--evidence-dir", str(verifier_evidence), "--task-label", "paid-file-verifier",
-            "--loop", "gig", "--workdir", str(root), "--timeout-seconds", "1800", "--read-only",
+            "--loop", _runner_loop_id(), "--workdir", str(root), "--timeout-seconds", "1800", "--read-only",
             "--escalation-reason", "Fresh independent review before paid submission",
         ]
         for image in review_images + reference_images:
@@ -3879,7 +3881,7 @@ def _run_consultation_review(args, item_path: Path, root: Path, feedback: str, b
                    "--prompt-file", str(owner_prompt), "--schema", str(schema),
                    "--evidence-dir", str(owner_evidence), "--task-label", "paid-answer-owner",
                    "--escalation-reason", "Paid owner composes the exact paid buyer answer",
-                   "--loop", "gig", "--workdir", str(root), "--timeout-seconds", "1800"]
+                   "--loop", _runner_loop_id(), "--workdir", str(root), "--timeout-seconds", "1800"]
         for image in images:
             command += ["--image", str(image)]
         command = _private_model_runner(root, command, "paid-answer-owner")
@@ -4029,7 +4031,7 @@ def _run_remote_repair(args, item_path: Path, root: Path, feedback: str, base: P
                   "--prompt-file", str(prompt), "--schema", str(args.runner_schema),
                   "--evidence-dir", str(owner_evidence), "--task-label", "paid-remote-owner",
                   "--escalation-reason", "Paid owner mutates the authenticated paid target",
-                  "--loop", "gig", "--workdir", str(root), "--timeout-seconds", "1800"]
+                  "--loop", _runner_loop_id(), "--workdir", str(root), "--timeout-seconds", "1800"]
             progress_size = progress.stat().st_size if _regular_file(progress) else 0
             try:
                 _run(_private_model_runner(root, owner_command, "paid-remote-owner"), "remote_builder")
@@ -4090,7 +4092,7 @@ def _run_remote_repair(args, item_path: Path, root: Path, feedback: str, base: P
               "--prompt-file", str(prompt), "--schema", str(args.runner_schema),
               "--evidence-dir", str(verifier_evidence), "--task-label", "paid-remote-verifier",
               "--escalation-reason", "Fresh model independently verifies the paid live target",
-              "--loop", "gig", "--workdir", str(root), "--timeout-seconds", "1800"]
+              "--loop", _runner_loop_id(), "--workdir", str(root), "--timeout-seconds", "1800"]
         _run(_private_model_runner(root, verifier_command, "paid-remote-verifier"), "remote_verifier")
         if (_requirements_snapshot(root) != requirements_snapshot
                 or _delivery_snapshot(root) != delivery_snapshot
