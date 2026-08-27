@@ -311,12 +311,18 @@ def _corrupt_fdat_payload(contents: bytes) -> bytes:
 
 class LineStickerValidatorTests(unittest.TestCase):
     def setUp(self) -> None:
+        previous = getattr(self, "tempdir", None)
+        if previous is not None:
+            previous.cleanup()
         self.tempdir = tempfile.TemporaryDirectory()
         self.root = _make_package(Path(self.tempdir.name) / "package")
         self.ffmpeg = _write_fake_ffmpeg(Path(self.tempdir.name) / "ffmpeg")
 
     def tearDown(self) -> None:
-        self.tempdir.cleanup()
+        current = getattr(self, "tempdir", None)
+        if current is not None:
+            current.cleanup()
+            self.tempdir = None
 
     def _validate(self, *, policy: Path = POLICY, ffmpeg: Path | None = None) -> dict[str, object]:
         return MODULE.validate_package(self.root, policy, ffmpeg=str(ffmpeg or self.ffmpeg))
@@ -485,8 +491,7 @@ class LineStickerValidatorTests(unittest.TestCase):
 
     def test_exact_zip_limit_is_rejected(self) -> None:
         with (self.root / "submission.zip").open("r+b") as stream:
-            stream.seek(60_000_000 - 1)
-            stream.write(b"x")
+            stream.truncate(60_000_000)
         self.assertEqual(self._validate()["errors"], ["zip_too_large"])
 
     def test_provenance_schema_and_hole_declarations_are_exact(self) -> None:
@@ -790,8 +795,7 @@ class LineStickerValidatorTests(unittest.TestCase):
 
     def _make_large_zip(self) -> None:
         with (self.root / "submission.zip").open("r+b") as stream:
-            stream.seek(60_000_000)
-            stream.write(b"x")
+            stream.truncate(60_000_001)
 
 
 class FakeProvider:
@@ -879,6 +883,9 @@ class FakeProvider:
 
 class LineStickerOwnerTests(unittest.TestCase):
     def setUp(self) -> None:
+        previous = getattr(self, "tempdir", None)
+        if previous is not None:
+            previous.cleanup()
         self.tempdir = tempfile.TemporaryDirectory()
         self.root = _make_package(Path(self.tempdir.name) / "package")
         self.state = Path(self.tempdir.name) / "state"
@@ -887,7 +894,10 @@ class LineStickerOwnerTests(unittest.TestCase):
         self.provider = FakeProvider()
 
     def tearDown(self) -> None:
-        self.tempdir.cleanup()
+        current = getattr(self, "tempdir", None)
+        if current is not None:
+            current.cleanup()
+            self.tempdir = None
 
     def _wake(self, provider: FakeProvider | None = None, **kwargs: object) -> dict[str, object]:
         policy = kwargs.pop("policy", POLICY)
