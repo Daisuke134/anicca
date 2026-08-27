@@ -136,6 +136,26 @@ test("resolved destination fails closed when adjacent candidates are ambiguous",
   assert.equal(resolveReminderDestination(current, { events: [...ambiguous, current], home: HOME }), current.location);
 });
 
+test("resolved destination fails closed when the adjacent Travel block belongs to a different nearby event", () => {
+  const eventB = event({ id: "event-b", summary: "歯医者", location: "銀座4丁目歯科", startMs: START });
+  const eventC = event({ id: "event-c", summary: "打ち合わせ", location: "六本木ヒルズ森タワー", startMs: START + 90000 });
+  const travelForC = {
+    id: "travel-for-c", summary: "[Travel] 🚆 移動", location: "六本木ヒルズ森タワー",
+    startMs: START - 20 * 60000, endMs: START + 30000,
+  };
+  assert.equal(resolveReminderDestination(eventB, { events: [eventB, eventC, travelForC] }), eventB.location);
+});
+
+test("resolved destination normalizes full-width digits and dash variants before comparing against home", () => {
+  const home = "東京都新宿区南元町1-1-1";
+  const current = event({ id: "target-fullwidth-home", location: "MUIT 出社 (着席)" });
+  const fullwidthHomeReturn = {
+    summary: "[Travel] 🚆 帰宅", location: "東京都新宿区南元町１－１－１",
+    startMs: START - 20 * 60000, endMs: START,
+  };
+  assert.equal(resolveReminderDestination(current, { events: [fullwidthHomeReturn, current], home }), current.location);
+});
+
 test("travel reminder routes through resolved destination while displaying the original event location", async () => {
   const destination = "東京都渋谷区神南1-1-1";
   const current = event({ id: "target-route", location: "渋谷", startMs: NOW + 3 * T5_MS, endMs: NOW + 63 * 60000 });

@@ -34,17 +34,37 @@ function travelHelper(event) {
   return summary.startsWith("[Travel]") || summary.includes("🚆 移動");
 }
 
+function normalizeLocation(value) {
+  return String(value || "").normalize("NFKC").replace(/[－ー‐‑–—]/g, "-").replace(/\s+/g, "").toLowerCase();
+}
+
+// A Travel block's end-window adjacency is not enough on its own: the same block can also fall in
+// ANOTHER nearby timed event's [start-2min, start+1min] window (e.g. two back-to-back events with a
+// single travel leg between them). If it matches more than one event's window, which one it belongs
+// to is genuinely ambiguous, so fail closed to the event's own location rather than misattribute it.
+function matchesOtherEventWindow(candidateEnd, events, event, candidate) {
+  return events.some((other) => {
+    if (!other || other === event || other === candidate) return false;
+    if (other.id && (other.id === event.id || (candidate.id && other.id === candidate.id))) return false;
+    if (helper(other)) return false;
+    const otherStart = startMs(other);
+    return otherStart !== null && candidateEnd >= otherStart - 2 * 60000 && candidateEnd <= otherStart + 60000;
+  });
+}
+
 function resolveReminderDestination(event, { events = [], home } = {}) {
   const fallback = String(event && event.location || "").trim();
-  const normalizedHome = String(home || "").replace(/\s+/g, "").toLowerCase();
+  const normalizedHome = normalizeLocation(home);
   const start = startMs(event), end = endMs(event);
+  const list = Array.isArray(events) ? events : [];
   const matches = [];
-  for (const candidate of Array.isArray(events) ? events : []) {
+  for (const candidate of list) {
     if (!candidate || candidate === event || (candidate.id && candidate.id === event.id) || !travelHelper(candidate)) continue;
     const candidateStart = startMs(candidate), candidateEnd = endMs(candidate);
     const location = String(candidate.location || "").trim();
-    if (!location || (normalizedHome && location.replace(/\s+/g, "").toLowerCase() === normalizedHome) || start === null || candidateStart === null || candidateEnd === null) continue;
+    if (!location || (normalizedHome && normalizeLocation(location) === normalizedHome) || start === null || candidateStart === null || candidateEnd === null) continue;
     if (candidateEnd < start - 2 * 60000 || candidateEnd > start + 60000 || candidateStart > start || (end !== null && candidateStart >= end)) continue;
+    if (matchesOtherEventWindow(candidateEnd, list, event, candidate)) continue;
     matches.push({ start: candidateStart, location });
   }
   return matches.length === 1 ? matches[0].location : fallback;
