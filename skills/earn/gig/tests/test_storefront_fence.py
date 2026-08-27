@@ -114,7 +114,7 @@ def test_a_published_generated_service_gets_a_reply_contract_without_private_fam
     families = families_fixture(tmp_path, "90000001")
     created = tmp_path / "new-listing-drafts.jsonl"
     created.write_text(json.dumps({
-        "status": "published", "public_effect": 1, "draft_service_id": "4371816",
+        "status": "prepared", "public_effect": 0, "draft_service_id": "4371816",
         "capability_family": "ai-automation-builder",
     }) + "\n", encoding="utf-8")
     observed = [{
@@ -133,6 +133,18 @@ def test_a_published_generated_service_gets_a_reply_contract_without_private_fam
     assert contract["generated_from_family"] == "ai-automation-builder"
     assert contract["offer"]["base_price_jpy"] == 30000
     assert contract["inquiry_playbook"]["required_clarifications"]
+
+
+def test_prepared_and_published_are_distinct_events_for_the_same_contract(tmp_path):
+    path = tmp_path / "drafts.jsonl"
+    digest = "a" * 64
+    prepared = {"contract_sha256": digest, "status": "prepared",
+                "draft_event_key": f"{digest}:prepared"}
+    published = {"contract_sha256": digest, "status": "published",
+                 "draft_event_key": f"{digest}:published"}
+    assert sd._append_key_once(path, "draft_event_key", prepared) is True
+    assert sd._append_key_once(path, "draft_event_key", published) is True
+    assert len(path.read_text(encoding="utf-8").splitlines()) == 2
 
 
 if __name__ == "__main__":

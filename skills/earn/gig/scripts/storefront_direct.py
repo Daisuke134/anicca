@@ -2059,7 +2059,7 @@ def _load_listing_contracts(
         for row in created_rows:
             service_id = str(row.get("draft_service_id") or "")
             family_name = row.get("capability_family")
-            if row.get("status") in {"published", "already_public"} and service_id.isdigit():
+            if service_id.isdigit() and service_id in observed:
                 if service_id in mappings:
                     continue
                 if not isinstance(family_name, str) or not family_name.strip():
@@ -7064,9 +7064,15 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 1 for line in (args.state_dir / "listing-contracts.jsonl").read_text(encoding="utf-8").splitlines()
                 if line.strip()
             )
+            draft_result = {
+                **draft_result,
+                "draft_event_key": (
+                    f"{draft_result.get('contract_sha256')}:{draft_result.get('status')}"
+                ),
+            }
             _append_key_once(
                 args.state_dir / "new-listing-drafts.jsonl",
-                "contract_sha256",
+                "draft_event_key",
                 draft_result,
             )
             accepted_effect = int(
