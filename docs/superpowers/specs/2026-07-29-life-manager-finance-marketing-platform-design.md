@@ -1592,7 +1592,8 @@ SSOT. Thirteen selected TikTok/Instagram destinations are production-armed at
 exactly 3/day, but arming is not current publication health. The shared Life
 Manager env overwrite was repaired with a dedicated private marketing env and
 all thirteen publication owners now have a natural launchd readback with latest
-exit `0`. The latest live cadence snapshot (2026-08-27 23:16 JST) classifies
+exit `0`. The latest retained live cadence snapshot (observed at
+2026-08-27 23:10 JST) classifies
 the 39 scheduled slots as `published=13`, `pending=2`, `missed=24`, and
 `duplicate=0`; those counts include bounded catch-up effects and preserve the
 missed-slot evidence. This proves the repaired control plane and observed
