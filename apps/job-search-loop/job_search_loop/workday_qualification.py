@@ -127,6 +127,10 @@ def qualify_one(
         prompt = (
             "Evaluate exactly one Workday job for realistic interview fit. "
             "Use only evidence in the candidate memory and official job description. "
+            "Treat candidate.preferred_employer_types as an eligibility requirement. "
+            "Reject a domestic Japanese employer for this candidate; qualify only a "
+            "foreign-capital company operating in Japan or an overseas employer that "
+            "supports Japan-based employment, EOR, or contracting. "
             "Do not infer missing skills, years, management scope, credentials, salary, "
             "or work authorization. Judge mandatory requirements, Tokyo/Japan feasibility, "
             "and a credible path to USD 120,000 annual gross base. If compensation is "
