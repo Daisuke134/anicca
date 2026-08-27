@@ -191,6 +191,11 @@ capability claim is backed by an installed executable capability.
   DOCX. Official readback binds message SHA
   `f158c6de333990a334e382b8abf07d5a0379b48a368f567403b393a0590a0235` and attachment SHA
   `7e0713a9e18a829937e191bcb6f7c6481601c5d653fb5ca840a473844bad4fd8` with no formal delivery effect.
+- [ ] `R00i` Route future pre-purchase attachment obligations through a general artifact owner.
+  PASS = a buyer-provided DOCX/PDF/XLSX form, requested sample or requested revision remains an
+  outstanding buyer action after a seller acknowledgement; the owner reads the verified attachment,
+  creates the requested buyer-visible artifact, sends it through the Direct Message attachment
+  executor, obtains exact message/filename/SHA readback, and replay performs zero duplicate effects.
 - [ ] `R01` Read back production `current` and prove commit `8eb732958` is an ancestor.
   PASS = immutable release SHA plus successful `merge-base --is-ancestor`.
 - [ ] `R02` Start one stopped disposable registered browser through `with-browser.sh`.
