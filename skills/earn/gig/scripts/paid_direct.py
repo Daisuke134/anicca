@@ -91,7 +91,7 @@ def _private_model_runner(root: Path, command: list[str], label: str) -> list[st
     profile.chmod(0o600)
     return ["/usr/bin/sandbox-exec", "-f", str(profile), *command]
 PAID_DECISION_SCHEMA_VERSION = 4
-PAID_DECISION_PROMPT_VERSION = "paid-semantic-decision-v16"
+PAID_DECISION_PROMPT_VERSION = "paid-semantic-decision-v17"
 PAID_DECISION_MODEL = "gpt-5.6-terra"
 PAID_FILE_MODEL = "gpt-5.6-terra"
 PAID_RUNNER_CANDIDATES = {
