@@ -179,3 +179,13 @@ test("verified JA Larry production carousel is discovered for automatic metrics"
   const directory = path.join(dataDir, "tenants/dais-local/marketing/native-carousel-publication/anicca-ios"); fs.mkdirSync(directory, { recursive: true }); fs.writeFileSync(path.join(directory, "distribution.jsonl"), `${JSON.stringify({ effect_key: "exact", receipt })}\n`);
   assert.equal(discoverExpected(dataDir).some((row) => row.shortcode === "DcfzPeRGyUn" && row.native_owner === "ani.cca1234"), true);
 });
+
+test("metrics owner also emits the permanent cadence reconciliation snapshot", async () => {
+  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "lm-instagram-cadence-owner-"));
+  const result = await runDue(Date.parse("2026-08-27T08:00:00.000Z"), { LM_DATA_DIR: dataDir, LM_MARKETING_CADENCE_REPORT: "0" });
+  const cadence = result.find((row) => row.window === "cadence");
+  assert.equal(cadence.state, "created");
+  assert.equal(cadence.counts.published, 0);
+  assert.equal(cadence.counts.missed + cadence.counts.pending, 39);
+  assert.ok(cadence.file);
+});

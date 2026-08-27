@@ -11,6 +11,7 @@ const {
   verifyMarketingNativeCarouselPublicationReceipt,
 } = require("../lib/marketing-native-carousel-publication-adapter.js");
 const { EXPECTED, collectWindow, persistDailyDigest, persistDelayedSnapshot, sendMetricSnapshot } = require("./instagram-metrics-read.js");
+const { reconcileCadence } = require("./marketing-cadence-reconcile.js");
 
 const WINDOWS = Object.freeze({ "2h": 2 * 3600_000, "24h": 24 * 3600_000, "72h": 72 * 3600_000, "7d": 7 * 86400_000 });
 const GRACE_MS = 90 * 60_000;
@@ -107,6 +108,10 @@ async function runDue(nowMs = Date.now(), env = process.env, provided = null) {
       const telegram = await sendMetricSnapshot(digest, env, dataDir);
       results.push({ shortcode: expected.shortcode, window: "daily", state: digest.created ? "reported" : "complete", telegram });
     } else results.push({ shortcode: expected.shortcode, window: "daily", state: "pending", due_at: `${reportDay}T17:30:00+09:00` });
+  }
+  if (!provided) {
+    const cadence = await reconcileCadence({ dataDir, nowMs, env, sendReport: env.LM_MARKETING_CADENCE_REPORT !== "0" });
+    results.push({ window: "cadence", state: cadence.created ? "created" : "complete", counts: cadence.counts, file: cadence.file, telegram: cadence.telegram });
   }
   return results;
 }
