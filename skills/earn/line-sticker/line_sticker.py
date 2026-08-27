@@ -1008,7 +1008,7 @@ def _read_receipts(path: Path, identity: dict[str, object]) -> list[dict[str, ob
         if outcome == "unknown" and row["after_status"] != "unknown":
             raise OwnerStateError("ledger_malformed")
         if outcome == "acknowledged" and row["action"] != "replay" and expected[0] is None and (
-            row["before_status"] != "unknown" or row["after_status"] not in ("submitted", "released")
+            row["before_status"] != "unknown" or row["after_status"] not in ("submitted", "rejected", "approved", "released")
         ):
             raise OwnerStateError("ledger_malformed")
         rows.append(row)
@@ -1226,19 +1226,65 @@ def _rows_for_action(rows: list[dict[str, object]], identity: dict[str, object],
     return {str(row["outcome"]): row for row in rows if row["effect_key"] == key}
 
 
-def _acknowledge_unknown(
+def _restore_unknown_receipt(
     ledger_path: Path,
     rows: list[dict[str, object]],
     identity: dict[str, object],
+    owner: dict[str, object],
+) -> None:
+    action = str(owner.get("pending_action"))
+    prior = _rows_for_action(rows, identity, action)
+    intent = prior.get("intent")
+    if intent is None:
+        raise OwnerStateError("ledger_conflict")
+    if "unknown" in prior or "acknowledged" in prior:
+        return
+    unknown = _receipt(
+        identity,
+        action=action,
+        product_id=intent["product_id"] if isinstance(intent.get("product_id"), str) else None,
+        before_status=str(intent["before_status"]),
+        after_status="unknown",
+        outcome="unknown",
+    )
+    try:
+        _append_receipt(ledger_path, unknown)
+    except OwnerStateError as exc:
+        raise OwnerStateError("reconcile_unknown") from exc
+    rows.append(unknown)
+
+
+def _acknowledge_unknown(
+    owner_path: Path,
+    ledger_path: Path,
+    rows: list[dict[str, object]],
+    identity: dict[str, object],
+    owner: dict[str, object],
     *,
     action: str,
     observation: ProviderObservation,
-) -> None:
+) -> dict[str, object]:
     prior = _rows_for_action(rows, identity, action)
     if "unknown" not in prior:
         raise OwnerStateError("ledger_conflict")
     if "acknowledged" in prior:
-        return
+        return owner
+    if action == "submit":
+        targets = {"submitted": "WAITING_REVIEW", "rejected": "REJECTED", "approved": "APPROVED", "released": "RELEASED"}
+        target_state = targets.get(str(observation["status"]))
+        if target_state is None:
+            raise OwnerStateError("owner_state_conflict")
+    elif observation["status"] == "released":
+        target_state = "RELEASED"
+    else:
+        raise OwnerStateError("owner_state_conflict")
+    next_owner = dict(owner)
+    next_owner.pop("pending_action", None)
+    next_owner["state"] = target_state
+    next_owner["product_id"] = observation["product_id"]
+    next_owner["public_url"] = observation["public_url"] if target_state == "RELEASED" else None
+    if next_owner != owner:
+        atomic_json(owner_path, next_owner)
     acknowledged = _receipt(
         identity,
         action=action,
@@ -1250,6 +1296,7 @@ def _acknowledge_unknown(
     )
     _append_receipt(ledger_path, acknowledged)
     rows.append(acknowledged)
+    return next_owner
 
 
 def _acknowledge_intent(
@@ -1260,17 +1307,22 @@ def _acknowledge_intent(
     owner: dict[str, object],
     *,
     action: str,
-    expected_status: str,
     observation: ProviderObservation,
 ) -> dict[str, object]:
     prior = _rows_for_action(rows, identity, action)
     intent = prior.get("intent")
     if intent is None or "unknown" in prior or "acknowledged" in prior:
         raise OwnerStateError("ledger_conflict")
-    if observation["status"] != expected_status:
+    if action == "submit":
+        target_state = {"submitted": "WAITING_REVIEW", "rejected": "REJECTED", "approved": "APPROVED"}.get(str(observation["status"]))
+        if target_state is None:
+            raise OwnerStateError("owner_state_conflict")
+    elif observation["status"] == "released":
+        target_state = "RELEASED"
+    else:
         raise OwnerStateError("owner_state_conflict")
     next_owner = dict(owner)
-    next_owner["state"] = "WAITING_REVIEW" if action == "submit" else "RELEASED"
+    next_owner["state"] = target_state
     next_owner["product_id"] = observation["product_id"]
     next_owner["public_url"] = observation["public_url"]
     if action == "submit":
@@ -1490,6 +1542,8 @@ def _validate_owner_ledger_state(owner: dict[str, object], rows: list[dict[str, 
         raise OwnerStateError("owner_state_conflict")
     if state in ("WAITING_REVIEW", "REJECTED", "APPROVED") and (acknowledged["release"] or replay_ack):
         raise OwnerStateError("owner_state_conflict")
+    if state == "TERMINAL_PENDING_REPLAY" and replay_ack:
+        raise OwnerStateError("owner_state_conflict")
     if state in ("WAITING_REVIEW", "REJECTED", "APPROVED") and not acknowledged["submit"] and "intent" not in receipts["submit"]:
         raise OwnerStateError("owner_state_conflict")
     if state == "RELEASED" and replay_ack:
@@ -1578,6 +1632,13 @@ def _wake_owner_unlocked(
         rows = _read_receipts(ledger_path, identity)
         if owner is None:
             raise OwnerStateError("owner_malformed")
+        if owner["state"] == "RECONCILE_UNKNOWN":
+            try:
+                _restore_unknown_receipt(ledger_path, rows, identity, owner)
+            except OwnerStateError as exc:
+                if exc.code == "reconcile_unknown":
+                    return _owner_result(owner, status="unknown", effect=None, readback=0, duplicate_effect=None, effect_key=_effect_key(identity, str(owner["pending_action"])), reason="reconcile_unknown")
+                raise
         _validate_owner_ledger_state(owner, rows, identity)
         expected_product = owner.get("product_id") if isinstance(owner.get("product_id"), str) else None
         expected_url = owner.get("public_url") if isinstance(owner.get("public_url"), str) else None
@@ -1592,8 +1653,14 @@ def _wake_owner_unlocked(
         if observation["status"] == "absent" and state != "NEW" and not unknown_submit:
             raise OwnerStateError("provider_absent_after_submit")
 
-        if state in ("NEW", "WAITING_REVIEW") and "intent" in pending_submit and "acknowledged" not in pending_submit and "unknown" not in pending_submit:
-            if observation["status"] == "submitted":
+        if state in ("NEW", "WAITING_REVIEW", "REJECTED", "APPROVED") and "intent" in pending_submit and "acknowledged" not in pending_submit and "unknown" not in pending_submit:
+            submit_statuses = {"submitted", "rejected", "approved"}
+            allowed_statuses = submit_statuses
+            if state == "REJECTED":
+                allowed_statuses = {"rejected", "approved"}
+            elif state == "APPROVED":
+                allowed_statuses = {"approved"}
+            if observation["status"] in allowed_statuses:
                 recovered = _acknowledge_intent(
                     owner_path,
                     ledger_path,
@@ -1601,12 +1668,23 @@ def _wake_owner_unlocked(
                     identity,
                     owner,
                     action="submit",
-                    expected_status="submitted",
                     observation=observation,
                 )
                 return _owner_result(recovered, status="ok", effect=0, readback=1, duplicate_effect=0, effect_key=_effect_key(identity, "submit"), reason="reconciled")
             if not (state == "NEW" and observation["status"] == "absent"):
                 raise OwnerStateError("owner_state_conflict")
+
+        if state in ("WAITING_REVIEW", "REJECTED", "APPROVED") and "unknown" in pending_submit and "acknowledged" not in pending_submit:
+            submit_statuses = {"submitted", "rejected", "approved", "released"}
+            allowed_statuses = submit_statuses
+            if state == "REJECTED":
+                allowed_statuses = {"rejected"}
+            elif state == "APPROVED":
+                allowed_statuses = {"approved"}
+            if observation["status"] in allowed_statuses:
+                reconciled = _acknowledge_unknown(owner_path, ledger_path, rows, identity, owner, action="submit", observation=observation)
+                return _owner_result(reconciled, status="ok", effect=0, readback=1, duplicate_effect=0, effect_key=_effect_key(identity, "submit"), reason="reconciled")
+            raise OwnerStateError("owner_state_conflict")
 
         if state in ("APPROVED", "RELEASED") and "intent" in pending_release and "acknowledged" not in pending_release and "unknown" not in pending_release:
             if observation["status"] == "released":
@@ -1617,12 +1695,17 @@ def _wake_owner_unlocked(
                     identity,
                     owner,
                     action="release",
-                    expected_status="released",
                     observation=observation,
                 )
                 return _owner_result(recovered, status="ok", effect=0, readback=1, duplicate_effect=0, effect_key=_effect_key(identity, "release"), reason="reconciled")
             if not (state == "APPROVED" and observation["status"] == "approved"):
                 raise OwnerStateError("owner_state_conflict")
+
+        if state in ("RELEASED",) and "unknown" in pending_release and "acknowledged" not in pending_release:
+            if observation["status"] != "released":
+                raise OwnerStateError("owner_state_conflict")
+            reconciled = _acknowledge_unknown(owner_path, ledger_path, rows, identity, owner, action="release", observation=observation)
+            return _owner_result(reconciled, status="ok", effect=0, readback=1, duplicate_effect=0, effect_key=_effect_key(identity, "release"), reason="reconciled")
 
         if state == "CLOSED":
             if observation["status"] != "released":
@@ -1649,23 +1732,12 @@ def _wake_owner_unlocked(
 
         if state == "RECONCILE_UNKNOWN":
             pending_action = str(owner.get("pending_action"))
-            if pending_action == "submit" and observation["status"] == "submitted":
-                _acknowledge_unknown(ledger_path, rows, identity, action=pending_action, observation=observation)
-                reconciled = dict(owner)
-                reconciled.pop("pending_action", None)
-                reconciled["state"] = "WAITING_REVIEW"
-                reconciled["product_id"] = observation["product_id"]
-                reconciled["public_url"] = None
-                atomic_json(owner_path, reconciled)
+            submit_statuses = {"submitted", "rejected", "approved", "released"}
+            if pending_action == "submit" and observation["status"] in submit_statuses:
+                reconciled = _acknowledge_unknown(owner_path, ledger_path, rows, identity, owner, action=pending_action, observation=observation)
                 return _owner_result(reconciled, status="ok", effect=0, readback=1, duplicate_effect=0, effect_key=_effect_key(identity, "submit"), reason="reconciled")
-            if observation["status"] == "released":
-                _acknowledge_unknown(ledger_path, rows, identity, action=pending_action, observation=observation)
-                reconciled = dict(owner)
-                reconciled.pop("pending_action", None)
-                reconciled["state"] = "RELEASED"
-                reconciled["product_id"] = observation["product_id"]
-                reconciled["public_url"] = observation["public_url"]
-                atomic_json(owner_path, reconciled)
+            if pending_action == "release" and observation["status"] == "released":
+                reconciled = _acknowledge_unknown(owner_path, ledger_path, rows, identity, owner, action=pending_action, observation=observation)
                 return _owner_result(reconciled, status="ok", effect=0, readback=1, duplicate_effect=0, effect_key=_effect_key(identity, pending_action), reason="reconciled")
             return _owner_result(owner, status="unknown", effect=None, readback=0, duplicate_effect=None, effect_key=_effect_key(identity, pending_action), reason="reconcile_unknown")
 

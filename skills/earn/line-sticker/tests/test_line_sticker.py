@@ -1012,6 +1012,56 @@ class LineStickerOwnerTests(unittest.TestCase):
         self.assertEqual((third["state"], third["effect"], third["readback"]), ("WAITING_REVIEW", 0, 0))
         self.assertEqual((self.state / "effects.jsonl").read_bytes(), ledger_before)
 
+    def test_unknown_submit_resolution_ack_append_failure_recovers_without_retry(self) -> None:
+        self.provider.raise_on_submit = True
+        self._wake()
+        original_append = MODULE._append_receipt
+        failed = False
+
+        def fail_resolution_ack(path: Path, value: dict[str, object]) -> None:
+            nonlocal failed
+            if value.get("action") == "submit" and value.get("outcome") == "acknowledged" and not failed:
+                failed = True
+                raise MODULE.OwnerStateError("injected_receipt_write_failure")
+            original_append(path, value)
+
+        self.provider.raise_on_submit = False
+        with mock.patch.object(MODULE, "_append_receipt", side_effect=fail_resolution_ack):
+            first = self._wake()
+        self.assertEqual((first["state"], first["effect"]), ("RECONCILE_UNKNOWN", 0))
+        owner = json.loads((self.state / "owner.json").read_text(encoding="utf-8"))
+        self.assertEqual(owner["state"], "WAITING_REVIEW")
+        rows_before = (self.state / "effects.jsonl").read_bytes()
+        second = self._wake()
+        self.assertEqual((second["state"], second["effect"], second["readback"]), ("WAITING_REVIEW", 0, 1))
+        self.assertEqual(self.provider.submit_calls, 1)
+        self.assertNotEqual((self.state / "effects.jsonl").read_bytes(), rows_before)
+
+    def test_unknown_release_resolution_ack_append_failure_recovers_without_retry(self) -> None:
+        self._wake()
+        self.provider.inventory["status"] = "approved"
+        self.provider.raise_on_release = True
+        self._wake()
+        original_append = MODULE._append_receipt
+        failed = False
+
+        def fail_resolution_ack(path: Path, value: dict[str, object]) -> None:
+            nonlocal failed
+            if value.get("action") == "release" and value.get("outcome") == "acknowledged" and not failed:
+                failed = True
+                raise MODULE.OwnerStateError("injected_receipt_write_failure")
+            original_append(path, value)
+
+        self.provider.raise_on_release = False
+        with mock.patch.object(MODULE, "_append_receipt", side_effect=fail_resolution_ack):
+            first = self._wake()
+        self.assertEqual((first["state"], first["effect"]), ("RECONCILE_UNKNOWN", 0))
+        owner = json.loads((self.state / "owner.json").read_text(encoding="utf-8"))
+        self.assertEqual(owner["state"], "RELEASED")
+        second = self._wake()
+        self.assertEqual((second["state"], second["effect"], second["readback"]), ("RELEASED", 0, 1))
+        self.assertEqual(self.provider.release_calls, 1)
+
     def test_lost_submit_ack_still_absent_never_retries(self) -> None:
         class StillAbsent(FakeProvider):
             def submit(self, intent: dict[str, object]) -> dict[str, object]:
@@ -1025,6 +1075,60 @@ class LineStickerOwnerTests(unittest.TestCase):
         self.assertEqual(second["state"], "RECONCILE_UNKNOWN")
         self.assertIsNone(second["effect"])
         self.assertEqual(provider.submit_calls, 1)
+
+    def test_missing_submit_unknown_receipt_is_restored_before_reconcile(self) -> None:
+        original_append = MODULE._append_receipt
+        failed = False
+
+        def fail_unknown(path: Path, value: dict[str, object]) -> None:
+            nonlocal failed
+            if value.get("action") == "submit" and value.get("outcome") == "unknown" and not failed:
+                failed = True
+                raise MODULE.OwnerStateError("injected_receipt_write_failure")
+            original_append(path, value)
+
+        self.provider.raise_on_submit = True
+        with mock.patch.object(MODULE, "_append_receipt", side_effect=fail_unknown):
+            first = self._wake()
+        self.assertEqual(first["state"], "NEW")
+        owner = json.loads((self.state / "owner.json").read_text(encoding="utf-8"))
+        self.assertEqual(owner["state"], "RECONCILE_UNKNOWN")
+        rows = [json.loads(line) for line in (self.state / "effects.jsonl").read_text(encoding="utf-8").splitlines()]
+        self.assertEqual([row["outcome"] for row in rows], ["intent"])
+        self.provider.raise_on_submit = False
+        second = self._wake()
+        self.assertEqual((second["state"], second["effect"], second["readback"]), ("WAITING_REVIEW", 0, 1))
+        rows = [json.loads(line) for line in (self.state / "effects.jsonl").read_text(encoding="utf-8").splitlines()]
+        self.assertEqual([row["outcome"] for row in rows], ["intent", "unknown", "acknowledged"])
+        self.assertEqual(self.provider.submit_calls, 1)
+
+    def test_missing_release_unknown_receipt_is_restored_before_reconcile(self) -> None:
+        self._wake()
+        self.provider.inventory["status"] = "approved"
+        self.provider.raise_on_release = True
+        original_append = MODULE._append_receipt
+        failed = False
+
+        def fail_unknown(path: Path, value: dict[str, object]) -> None:
+            nonlocal failed
+            if value.get("action") == "release" and value.get("outcome") == "unknown" and not failed:
+                failed = True
+                raise MODULE.OwnerStateError("injected_receipt_write_failure")
+            original_append(path, value)
+
+        with mock.patch.object(MODULE, "_append_receipt", side_effect=fail_unknown):
+            first = self._wake()
+        self.assertEqual(first["state"], "APPROVED")
+        owner = json.loads((self.state / "owner.json").read_text(encoding="utf-8"))
+        self.assertEqual(owner["state"], "RECONCILE_UNKNOWN")
+        rows = [json.loads(line) for line in (self.state / "effects.jsonl").read_text(encoding="utf-8").splitlines()]
+        self.assertEqual([row["outcome"] for row in rows], ["intent", "acknowledged", "intent"])
+        self.provider.raise_on_release = False
+        second = self._wake()
+        self.assertEqual((second["state"], second["effect"], second["readback"]), ("RELEASED", 0, 1))
+        rows = [json.loads(line) for line in (self.state / "effects.jsonl").read_text(encoding="utf-8").splitlines()]
+        self.assertEqual([row["outcome"] for row in rows], ["intent", "acknowledged", "intent", "unknown", "acknowledged"])
+        self.assertEqual(self.provider.release_calls, 1)
 
     def test_owner_and_receipts_have_stable_exact_shapes(self) -> None:
         first = self._wake()
@@ -1224,6 +1328,54 @@ class LineStickerOwnerTests(unittest.TestCase):
         self.assertEqual(owner_path.read_bytes(), before)
         self.assertEqual(self.provider.submit_calls, 1)
 
+    def test_submit_state_ahead_reconciles_review_progress_without_resubmit(self) -> None:
+        for status, expected_state in (("submitted", "WAITING_REVIEW"), ("rejected", "REJECTED"), ("approved", "APPROVED")):
+            with self.subTest(status=status):
+                if status != "submitted":
+                    self.tearDown()
+                    self.setUp()
+                original_append = MODULE._append_receipt
+                failed = False
+
+                def fail_submit_ack(path: Path, value: dict[str, object]) -> None:
+                    nonlocal failed
+                    if value.get("action") == "submit" and value.get("outcome") == "acknowledged" and not failed:
+                        failed = True
+                        raise MODULE.OwnerStateError("injected_receipt_write_failure")
+                    original_append(path, value)
+
+                with mock.patch.object(MODULE, "_append_receipt", side_effect=fail_submit_ack):
+                    first = self._wake()
+                self.assertEqual(first["state"], "NEW")
+                self.provider.inventory["status"] = status
+                self.provider.inventory["public_url"] = None
+                second = self._wake()
+                self.assertEqual((second["state"], second["effect"], second["readback"]), (expected_state, 0, 1))
+                self.assertEqual(self.provider.submit_calls, 1)
+
+    def test_submit_state_ahead_released_without_release_intent_is_conflict(self) -> None:
+        original_append = MODULE._append_receipt
+        failed = False
+
+        def fail_submit_ack(path: Path, value: dict[str, object]) -> None:
+            nonlocal failed
+            if value.get("action") == "submit" and value.get("outcome") == "acknowledged" and not failed:
+                failed = True
+                raise MODULE.OwnerStateError("injected_receipt_write_failure")
+            original_append(path, value)
+
+        with mock.patch.object(MODULE, "_append_receipt", side_effect=fail_submit_ack):
+            self._wake()
+        self.provider.inventory.update(
+            {
+                "status": "released",
+                "public_url": "https://store.line.me/stickershop/product/123/en",
+            }
+        )
+        result = self._wake()
+        self.assertEqual((result["reason"], result["effect"]), ("owner_state_conflict", 0))
+        self.assertEqual(self.provider.submit_calls, 1)
+
     def test_waiting_review_released_is_provider_state_conflict(self) -> None:
         self._wake()
         self.provider.inventory.update(
@@ -1334,7 +1486,7 @@ class LineStickerOwnerTests(unittest.TestCase):
         self._wake()
         self._wake()
         self._wake()
-        for rollback in ("RELEASED", "WAITING_REVIEW"):
+        for rollback in ("RELEASED", "WAITING_REVIEW", "TERMINAL_PENDING_REPLAY"):
             with self.subTest(rollback=rollback):
                 owner_path = self.state / "owner.json"
                 ledger_path = self.state / "effects.jsonl"
