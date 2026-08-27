@@ -240,7 +240,7 @@ def discover(query_file: Path, observed_at: str, limit: int = 7) -> dict:
         try:
             result = subprocess.run(
                 ["crwl", "crawl", url, "-o", "markdown-fit"],
-                capture_output=True, text=True, timeout=60, check=False,
+                capture_output=True, text=True, timeout=20, check=False,
             )
         except (OSError, subprocess.TimeoutExpired):
             return ""
@@ -250,7 +250,7 @@ def discover(query_file: Path, observed_at: str, limit: int = 7) -> dict:
         try:
             result = subprocess.run(
                 ["scrapy", "fetch", url],
-                capture_output=True, text=True, timeout=30, check=False,
+                capture_output=True, text=True, timeout=15, check=False,
             )
         except (OSError, subprocess.TimeoutExpired):
             return ""
