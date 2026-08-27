@@ -180,6 +180,17 @@ capability claim is backed by an installed executable capability.
   PASS = `ai.anicca.manledge-x-dm-campaign` is absent from launchd and LaunchAgents, while its logs
   and delivery evidence remain intact. The obsolete 1,200-second owner had run 40 times and last
   exited 1 after the customer case was already closed; its plist is recoverably retained in Trash.
+- [x] `R00g` Bound the continuous Reply inbox-head collector.
+  PASS = one Coconala collector hang cannot stop the permanent producer; the subprocess exits after
+  45 seconds and the supervisor returns to its next 30-second probe. Production PID `972` remained
+  alive while probes stopped after `probe-1164` at 19:03 because `_run("head_collect")` had no timeout.
+  Release `661923ca0` adds the bound; the focused timeout, overlap and restart regressions pass.
+- [x] `R00h` Complete the overdue FORCLE hearing-sheet obligation.
+  PASS = authenticated DM `10103725` records the buyer's DOCX request, the completed nine response
+  fields contain only private-profile/application evidence, and the seller reply contains the filled
+  DOCX. Official readback binds message SHA
+  `f158c6de333990a334e382b8abf07d5a0379b48a368f567403b393a0590a0235` and attachment SHA
+  `7e0713a9e18a829937e191bcb6f7c6481601c5d653fb5ca840a473844bad4fd8` with no formal delivery effect.
 - [ ] `R01` Read back production `current` and prove commit `8eb732958` is an ancestor.
   PASS = immutable release SHA plus successful `merge-base --is-ancestor`.
 - [ ] `R02` Start one stopped disposable registered browser through `with-browser.sh`.
@@ -196,8 +207,10 @@ capability claim is backed by an installed executable capability.
   PASS = every `evidence/agent-*/history/` contains at most three generations.
 - [ ] `R08` Verify host cleanup recurrence.
   PASS = cleanup launchd run count advances and last exit is zero without protected deletion.
-- [ ] `R09` Observe three consecutive Reply probes.
+- [x] `R09` Observe three consecutive Reply probes.
   PASS = three official inbox snapshots have increasing capture times no more than 30 seconds apart.
+  Release `661923ca0`, owner PID `8577`, produced probes 1–4 at 22:18–22:19 while remaining loaded;
+  FORCLE's already-sent seller-last identity produced no duplicate reply.
 - [ ] `R10` Read back the Reply durable queue.
   PASS = every live pending buyer event has either an active owner or a terminal receipt.
 - [ ] `R11` Read back the latest Apply cycle.
