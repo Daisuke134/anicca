@@ -149,6 +149,25 @@ class LmLoopApplyTest(unittest.TestCase):
         install_one(rendered, target, launchctl, attempts=1, sleeper=sleeps.append)
         self.assertEqual(sleeps, [1.0])
 
+    def test_swap_increases_settle_time_before_retry(self):
+        target = self.root / "installed.plist"
+        target.write_bytes(plistlib.dumps({
+            "Label": "ai.anicca.example", "ProgramArguments": ["/old/run.sh"]}))
+        rendered = build_apply_plan(registry(), self.root, SHA)[0]
+        sleeps, bootstraps = [], 0
+
+        def launchctl(args):
+            nonlocal bootstraps
+            if args[0] == "bootstrap":
+                bootstraps += 1
+                return (5, "teardown pending") if bootstraps == 1 else (0, "")
+            if args[0] == "print":
+                return 0, "arguments = {\n" + "\n".join(rendered["expected_arguments"]) + "\n}\n"
+            return 0, ""
+
+        install_one(rendered, target, launchctl, attempts=2, sleeper=sleeps.append)
+        self.assertEqual(sleeps, [1.0, 3.0])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -140,7 +140,8 @@ def install_one(item: dict, target: Path,
     launchctl(["bootout", service])
     sleeper(1.0)
     last_detail = ""
-    for _ in range(attempts):
+    retry_delays = (3.0, 10.0)
+    for attempt in range(attempts):
         bootstrap_rc, last_detail = launchctl(["bootstrap", domain, str(target)])
         if bootstrap_rc == 0:
             print_rc, printed = launchctl(["print", service])
@@ -149,7 +150,7 @@ def install_one(item: dict, target: Path,
                 return {"ok": True, "label": label, "loaded_arguments": loaded,
                         "release_sha": item["release_sha"]}
         launchctl(["bootout", service])
-        sleeper(1.0)
+        sleeper(retry_delays[min(attempt, len(retry_delays) - 1)])
     if old_bytes is None:
         if target.exists():
             target.unlink()
