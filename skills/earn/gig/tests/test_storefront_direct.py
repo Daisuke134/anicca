@@ -83,6 +83,13 @@ def test_catalog_baseline_keeps_latest_official_known_metrics(tmp_path):
     assert baseline["services"][0]["observed_at_epoch"] == 1
 
 
+def test_transient_official_inventory_failure_retries_without_success_claim():
+    assert direct._storefront_failure_disposition(
+        "official_inventory_empty_or_invalid"
+    ) == ("pending", 0)
+    assert direct._storefront_failure_disposition("unexpected") == ("failed", 1)
+
+
 def _args(tmp_path: Path):
     """Start from the real CLI contract so the fixture cannot drift from the runtime."""
     args = direct.build_parser().parse_args([])

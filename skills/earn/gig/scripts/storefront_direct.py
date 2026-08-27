@@ -739,6 +739,15 @@ def _catalog_conversion_baseline(analytics_path: Path, contracts: list[dict]) ->
     ).encode()).hexdigest()}
 
 
+def _storefront_failure_disposition(reason: str) -> tuple[str, int]:
+    if reason in {
+        "official_inventory_empty_or_invalid",
+        "storefront_catalog_baseline_incomplete",
+    }:
+        return "pending", 0
+    return "failed", 1
+
+
 def _last_full_competitor_evidence(state_dir: Path, now: int) -> dict:
     wakes, error = _jsonl_rows(state_dir / "wakes.jsonl")
     if error not in {None, "wakes.jsonl_missing"}:
@@ -7227,10 +7236,12 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     released = release.get("released") == task
                 except (OSError, RuntimeError, TypeError, ValueError, subprocess.SubprocessError):
                     pass
-            row = _receipt(pass_id, status="failed", reason=str(error).strip() or type(error).__name__,
+            reason = str(error).strip() or type(error).__name__
+            status, returncode = _storefront_failure_disposition(reason)
+            row = _receipt(pass_id, status=status, reason=reason,
                            lease={"task": task, "released": released} if lease is not None else None)
             row = _persist_receipt(args, output, row)
-            return 1, row
+            return returncode, row
         finally:
             if lease is not None and not released:
                 try:
