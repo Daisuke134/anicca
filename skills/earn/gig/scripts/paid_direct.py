@@ -1135,6 +1135,14 @@ def _review_ready_may_ship(verdict: Any, review_ready_allowed: bool, review_roun
     )
 
 
+def _shipment_basis_authorized(shipment_basis: Any, verdict: Any) -> bool:
+    return (shipment_basis, verdict) in {
+        ("reviewer_approved", "deliverable"),
+        ("single_material_review_repaired", "needs_revision"),
+        ("max_review_iterations_review_ready", "undeterminable"),
+    }
+
+
 def _file_progress_payload(cadence: dict[str, Any]) -> dict[str, Any]:
     """Keep internal acceptance evidence out of the buyer-facing progress note."""
     payload = delivery_queue.progress_payload(cadence)
@@ -2554,11 +2562,7 @@ def _validate_file_authorization(root: Path, stable: Path, feedback: str,
     result = _load(result_path)
     review_state = _load(root / "context" / "paid-review-state.json")
     shipment_basis = receipt.get("shipment_basis") if isinstance(receipt, dict) else None
-    review_authorized = (
-        (shipment_basis == "reviewer_approved" and result.get("verdict") == "deliverable")
-        or (shipment_basis == "single_material_review_repaired"
-            and result.get("verdict") == "needs_revision")
-    )
+    review_authorized = _shipment_basis_authorized(shipment_basis, result.get("verdict"))
     if (not isinstance(receipt, dict) or receipt.get("version") != 4
             or receipt.get("buyer_feedback_sha256") != feedback
             or receipt.get("requirements_sha256") != requirements_sha256
