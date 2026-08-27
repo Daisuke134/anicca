@@ -8,6 +8,7 @@ from datetime import date, datetime, timezone
 from fractions import Fraction
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 import shutil
@@ -16,6 +17,7 @@ import struct
 import subprocess
 import sys
 import tempfile
+from typing import Literal, TypedDict
 import zipfile
 import zlib
 
@@ -46,6 +48,61 @@ SINGLETON_CHUNKS = frozenset(
 HEX64 = re.compile(r"^[0-9a-fA-F]{64}$")
 FFMPEG_TIMEOUT_SECONDS = 30.0
 POLICY_SHA256_V1 = "3a3462f9b644c624836aa2a847cc7aae3fc9ce97dee87f8c0c02cdbb320fc8fe"
+
+OWNER_STATES = (
+    "NEW",
+    "WAITING_REVIEW",
+    "REJECTED",
+    "APPROVED",
+    "RELEASED",
+    "TERMINAL_PENDING_REPLAY",
+    "CLOSED",
+    "RECONCILE_UNKNOWN",
+    "NEEDS_OWNER_CEREMONY",
+    "NEEDS_POLICY_REVIEW",
+)
+PROVIDER_STATUSES = ("absent", "draft", "submitted", "rejected", "approved", "released")
+ProviderStatus = Literal["absent", "draft", "submitted", "rejected", "approved", "released"]
+
+
+class ProviderObservation(TypedDict):
+    account_id: str
+    set_id: str
+    revision: int
+    artifact_sha256: str
+    product_id: str | None
+    status: ProviderStatus
+    public_url: str | None
+
+
+OWNER_IDENTITY_KEYS = frozenset(
+    {"account_id", "set_id", "character_id", "revision", "artifact_sha256", "package_sha256"}
+)
+OWNER_KEYS = frozenset({"version", "identity", "state", "product_id", "public_url", "pending_action"})
+RECEIPT_KEYS = frozenset(
+    {
+        "receipt_id",
+        "effect_key",
+        "action",
+        "account_id",
+        "set_id",
+        "revision",
+        "artifact_sha256",
+        "product_id",
+        "before_status",
+        "after_status",
+        "effect",
+        "readback",
+        "duplicate_effect",
+        "outcome",
+    }
+)
+class OwnerStateError(ValueError):
+    """A stable, non-sensitive durable-owner failure code."""
+
+    def __init__(self, code: str):
+        super().__init__(code)
+        self.code = code
 
 
 class PngError(ValueError):
@@ -682,6 +739,823 @@ def validate_package(root: Path, policy_path: Path, ffmpeg: str = "ffmpeg") -> d
     }
 
 
+def _canonical_json(value: object) -> bytes:
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+
+
+def _effect_key(identity: dict[str, object], action: str) -> str:
+    return _sha256(
+        _canonical_json(
+            {
+                "account_id": identity["account_id"],
+                "set_id": identity["set_id"],
+                "revision": identity["revision"],
+                "action": action,
+            }
+        )
+    )
+
+
+def _fsync_directory(path: Path) -> None:
+    try:
+        descriptor = os.open(str(path), os.O_RDONLY)
+        try:
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
+    except OSError as exc:
+        raise OwnerStateError("state_sync_failed") from exc
+
+
+def _state_target(path: Path, label: str, *, missing_ok: bool = True) -> stat._struct_stat | None:
+    try:
+        metadata = path.lstat()
+    except FileNotFoundError:
+        if missing_ok:
+            return None
+        raise OwnerStateError(f"{label}_missing")
+    except OSError as exc:
+        raise OwnerStateError(f"{label}_unreadable") from exc
+    if stat.S_ISLNK(metadata.st_mode):
+        raise OwnerStateError(f"{label}_symlink")
+    if not stat.S_ISREG(metadata.st_mode):
+        raise OwnerStateError(f"{label}_not_regular")
+    return metadata
+
+
+def _ensure_state_dir(path: Path, *, create: bool) -> bool:
+    try:
+        metadata = path.lstat()
+    except FileNotFoundError:
+        if not create:
+            return False
+        try:
+            path.mkdir(parents=True, exist_ok=False)
+        except FileExistsError:
+            return _ensure_state_dir(path, create=False)
+        except OSError as exc:
+            raise OwnerStateError("state_dir_unavailable") from exc
+        return True
+    except OSError as exc:
+        raise OwnerStateError("state_dir_unreadable") from exc
+    if stat.S_ISLNK(metadata.st_mode):
+        raise OwnerStateError("state_dir_symlink")
+    if not stat.S_ISDIR(metadata.st_mode):
+        raise OwnerStateError("state_dir_not_directory")
+    return True
+
+
+def atomic_json(path: Path, value: object) -> None:
+    """Atomically replace one regular JSON file and durably sync its directory."""
+    path = Path(path)
+    parent = path.parent
+    if not parent.is_dir() or parent.is_symlink():
+        raise OwnerStateError("state_dir_unavailable")
+    label = "owner" if path.name == "owner.json" else "state"
+    _state_target(path, label)
+    temporary: str | None = None
+    descriptor: int | None = None
+    try:
+        descriptor, temporary = tempfile.mkstemp(prefix=f".{path.name}.", dir=str(parent))
+        with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
+            descriptor = None
+            stream.write(json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False))
+            stream.write("\n")
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temporary, path)
+        temporary = None
+        _fsync_directory(parent)
+    except OwnerStateError:
+        raise
+    except OSError as exc:
+        raise OwnerStateError("state_write_failed") from exc
+    finally:
+        if descriptor is not None:
+            try:
+                os.close(descriptor)
+            except OSError:
+                pass
+        if temporary is not None:
+            try:
+                os.unlink(temporary)
+            except OSError:
+                pass
+
+
+def _append_receipt(path: Path, receipt: dict[str, object]) -> None:
+    """Append one canonical receipt line, refusing links and non-regular targets."""
+    path = Path(path)
+    parent = path.parent
+    if not parent.is_dir() or parent.is_symlink():
+        raise OwnerStateError("state_dir_unavailable")
+    _state_target(path, "ledger")
+    flags = os.O_WRONLY | os.O_APPEND | os.O_CREAT
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+    descriptor: int | None = None
+    try:
+        descriptor = os.open(str(path), flags, 0o600)
+        with os.fdopen(descriptor, "ab") as stream:
+            descriptor = None
+            stream.write(_canonical_json(receipt) + b"\n")
+            stream.flush()
+            os.fsync(stream.fileno())
+        _fsync_directory(parent)
+    except OwnerStateError:
+        raise
+    except OSError as exc:
+        raise OwnerStateError("ledger_write_failed") from exc
+    finally:
+        if descriptor is not None:
+            try:
+                os.close(descriptor)
+            except OSError:
+                pass
+
+
+def _read_owner(path: Path) -> dict[str, object]:
+    _state_target(path, "owner", missing_ok=False)
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise OwnerStateError("owner_malformed") from exc
+    if not isinstance(value, dict):
+        raise OwnerStateError("owner_malformed")
+    return value
+
+
+def _validate_owner(owner: dict[str, object]) -> None:
+    required = {"version", "identity", "state", "product_id", "public_url"}
+    if not required.issubset(owner) or not set(owner).issubset(OWNER_KEYS):
+        raise OwnerStateError("owner_malformed")
+    if owner.get("version") != 1 or owner.get("state") not in OWNER_STATES:
+        raise OwnerStateError("owner_malformed")
+    identity = owner.get("identity")
+    if not isinstance(identity, dict) or set(identity) != OWNER_IDENTITY_KEYS:
+        raise OwnerStateError("owner_malformed")
+    for key in ("account_id", "set_id", "character_id"):
+        if type(identity.get(key)) is not str or not identity[key]:
+            raise OwnerStateError("owner_malformed")
+    if type(identity.get("revision")) is not int or isinstance(identity["revision"], bool) or identity["revision"] <= 0:
+        raise OwnerStateError("owner_malformed")
+    for key in ("artifact_sha256", "package_sha256"):
+        if type(identity.get(key)) is not str or not HEX64.fullmatch(identity[key]):
+            raise OwnerStateError("owner_malformed")
+    product_id = owner.get("product_id")
+    if product_id is not None and (type(product_id) is not str or not product_id):
+        raise OwnerStateError("owner_malformed")
+    public_url = owner.get("public_url")
+    if public_url is not None and (
+        type(public_url) is not str
+        or not public_url.startswith("https://store.line.me/")
+        or len(public_url) <= len("https://store.line.me/")
+    ):
+        raise OwnerStateError("owner_malformed")
+    pending = owner.get("pending_action")
+    if "pending_action" in owner and pending not in ("submit", "release"):
+        raise OwnerStateError("owner_malformed")
+    if owner["state"] == "RECONCILE_UNKNOWN" and pending not in ("submit", "release"):
+        raise OwnerStateError("owner_malformed")
+    if owner["state"] != "RECONCILE_UNKNOWN" and "pending_action" in owner:
+        raise OwnerStateError("owner_malformed")
+
+
+def _read_receipts(path: Path, identity: dict[str, object]) -> list[dict[str, object]]:
+    metadata = _state_target(path, "ledger")
+    if metadata is None:
+        return []
+    try:
+        raw_lines = path.read_bytes().splitlines()
+    except (OSError, UnicodeDecodeError) as exc:
+        raise OwnerStateError("ledger_malformed") from exc
+    rows: list[dict[str, object]] = []
+    seen_receipt_ids: set[str] = set()
+    seen_outcomes: set[tuple[str, str]] = set()
+    for raw in raw_lines:
+        if not raw.strip():
+            raise OwnerStateError("ledger_malformed")
+        try:
+            row = json.loads(raw.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise OwnerStateError("ledger_malformed") from exc
+        if not isinstance(row, dict) or set(row) != RECEIPT_KEYS:
+            raise OwnerStateError("ledger_malformed")
+        if type(row["receipt_id"]) is not str or not row["receipt_id"]:
+            raise OwnerStateError("ledger_malformed")
+        if row["receipt_id"] in seen_receipt_ids:
+            raise OwnerStateError("ledger_duplicate")
+        seen_receipt_ids.add(row["receipt_id"])
+        if type(row["effect_key"]) is not str or not HEX64.fullmatch(row["effect_key"]):
+            raise OwnerStateError("ledger_malformed")
+        if row["action"] not in ("submit", "release"):
+            raise OwnerStateError("ledger_malformed")
+        if type(row["account_id"]) is not str or type(row["set_id"]) is not str:
+            raise OwnerStateError("ledger_malformed")
+        if type(row["revision"]) is not int or isinstance(row["revision"], bool) or row["revision"] <= 0:
+            raise OwnerStateError("ledger_malformed")
+        if type(row["artifact_sha256"]) is not str or not HEX64.fullmatch(row["artifact_sha256"]):
+            raise OwnerStateError("ledger_malformed")
+        if row["product_id"] is not None and (type(row["product_id"]) is not str or not row["product_id"]):
+            raise OwnerStateError("ledger_malformed")
+        if row["before_status"] not in (*PROVIDER_STATUSES, "unknown") or row["after_status"] not in (*PROVIDER_STATUSES, "unknown"):
+            raise OwnerStateError("ledger_malformed")
+        for key in ("effect", "duplicate_effect"):
+            value = row[key]
+            if value is not None and (type(value) is not int or value not in (0, 1)):
+                raise OwnerStateError("ledger_malformed")
+        if type(row["readback"]) is not int or row["readback"] not in (0, 1):
+            raise OwnerStateError("ledger_malformed")
+        if row["outcome"] not in ("intent", "acknowledged", "unknown"):
+            raise OwnerStateError("ledger_malformed")
+        if row["account_id"] != identity["account_id"] or row["set_id"] != identity["set_id"] or row["revision"] != identity["revision"] or row["artifact_sha256"] != identity["artifact_sha256"]:
+            raise OwnerStateError("ledger_identity_mismatch")
+        expected_key = _effect_key(identity, str(row["action"]))
+        if row["effect_key"] != expected_key:
+            raise OwnerStateError("ledger_identity_mismatch")
+        outcome_key = (row["effect_key"], str(row["outcome"]))
+        if outcome_key in seen_outcomes:
+            raise OwnerStateError("ledger_duplicate")
+        seen_outcomes.add(outcome_key)
+        expected = {
+            "intent": (1, 0, 0),
+            "acknowledged": (1, 1, 0),
+            "unknown": (None, 0, None),
+        }[str(row["outcome"])]
+        if (row["effect"], row["readback"], row["duplicate_effect"]) != expected:
+            raise OwnerStateError("ledger_malformed")
+        rows.append(row)
+    by_effect: dict[str, set[str]] = {}
+    for row in rows:
+        by_effect.setdefault(str(row["effect_key"]), set()).add(str(row["outcome"]))
+    for outcomes in by_effect.values():
+        if "acknowledged" in outcomes and "unknown" in outcomes:
+            raise OwnerStateError("ledger_conflict")
+        if ("acknowledged" in outcomes or "unknown" in outcomes) and "intent" not in outcomes:
+            raise OwnerStateError("ledger_conflict")
+    return rows
+
+
+def _receipt(
+    identity: dict[str, object],
+    *,
+    action: str,
+    product_id: str | None,
+    before_status: str,
+    after_status: str,
+    outcome: str,
+) -> dict[str, object]:
+    effect = 1 if outcome in ("intent", "acknowledged") else None
+    readback = 1 if outcome == "acknowledged" else 0
+    duplicate_effect = 0 if outcome in ("intent", "acknowledged") else None
+    row: dict[str, object] = {
+        "receipt_id": "",
+        "effect_key": _effect_key(identity, action),
+        "action": action,
+        "account_id": identity["account_id"],
+        "set_id": identity["set_id"],
+        "revision": identity["revision"],
+        "artifact_sha256": identity["artifact_sha256"],
+        "product_id": product_id,
+        "before_status": before_status,
+        "after_status": after_status,
+        "effect": effect,
+        "readback": readback,
+        "duplicate_effect": duplicate_effect,
+        "outcome": outcome,
+    }
+    receipt_body = dict(row)
+    receipt_body.pop("receipt_id")
+    row["receipt_id"] = _sha256(_canonical_json(receipt_body))
+    return row
+
+
+def _initial_owner(identity: dict[str, object]) -> dict[str, object]:
+    return {
+        "version": 1,
+        "identity": dict(identity),
+        "state": "NEW",
+        "product_id": None,
+        "public_url": None,
+    }
+
+
+def _owner_result(
+    owner: dict[str, object] | None,
+    *,
+    status: str,
+    effect: int | None,
+    readback: int,
+    duplicate_effect: int | None,
+    effect_key: str,
+    reason: str,
+) -> dict[str, object]:
+    return {
+        "status": status,
+        "state": str(owner.get("state", "NEW")) if owner else "NEW",
+        "effect": effect,
+        "readback": readback,
+        "duplicate_effect": duplicate_effect,
+        "effect_key": effect_key,
+        "product_id": owner.get("product_id") if owner else None,
+        "public_url": owner.get("public_url") if owner else None,
+        "reason": reason,
+    }
+
+
+def _identity_from_package(package: Path, policy: Path, account_id: str, revision: int, ffmpeg: str) -> dict[str, object]:
+    if type(account_id) is not str or not account_id:
+        raise OwnerStateError("account_id_invalid")
+    if type(revision) is not int or isinstance(revision, bool) or revision <= 0:
+        raise OwnerStateError("revision_invalid")
+    package = Path(package)
+    try:
+        package_metadata = package.lstat()
+    except OSError as exc:
+        raise OwnerStateError("package_unavailable") from exc
+    if stat.S_ISLNK(package_metadata.st_mode) or not stat.S_ISDIR(package_metadata.st_mode):
+        raise OwnerStateError("package_not_directory")
+    try:
+        result = validate_package(package, Path(policy), ffmpeg=ffmpeg)
+    except (KeyError, OSError, TypeError, ValueError) as exc:
+        code = str(exc) if str(exc) in {"policy_invalid", "policy_hash_mismatch"} else "package_validation_failed"
+        raise OwnerStateError(code) from exc
+    if result.get("status") != "ready":
+        errors = result.get("errors")
+        reason = str(errors[0]) if isinstance(errors, list) and errors else "invalid"
+        raise OwnerStateError(f"package_invalid:{reason}")
+    try:
+        provenance = json.loads((package / "provenance.json").read_text(encoding="utf-8"))
+        zip_metadata = (package / "submission.zip").lstat()
+        if stat.S_ISLNK(zip_metadata.st_mode) or not stat.S_ISREG(zip_metadata.st_mode):
+            raise OwnerStateError("artifact_not_regular")
+        artifact_sha256 = _sha256((package / "submission.zip").read_bytes())
+    except OwnerStateError:
+        raise
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise OwnerStateError("package_identity_unavailable") from exc
+    if not isinstance(provenance, dict) or type(provenance.get("set_id")) is not str or not provenance["set_id"] or type(provenance.get("character_id")) is not str or not provenance["character_id"]:
+        raise OwnerStateError("package_identity_invalid")
+    package_sha256 = result.get("package_sha256")
+    if type(package_sha256) is not str or not HEX64.fullmatch(package_sha256):
+        raise OwnerStateError("package_identity_invalid")
+    return {
+        "account_id": account_id,
+        "set_id": provenance["set_id"],
+        "character_id": provenance["character_id"],
+        "revision": revision,
+        "artifact_sha256": artifact_sha256,
+        "package_sha256": package_sha256,
+    }
+
+
+def _owner_identity_conflict(owner: dict[str, object], identity: dict[str, object]) -> str | None:
+    stored = owner.get("identity")
+    if not isinstance(stored, dict):
+        return "owner_malformed"
+    for key in ("account_id", "set_id", "character_id", "revision"):
+        if stored.get(key) != identity.get(key):
+            return f"identity_mismatch:{key}"
+    if stored.get("artifact_sha256") != identity.get("artifact_sha256"):
+        return "artifact_changed"
+    if stored.get("package_sha256") != identity.get("package_sha256"):
+        return "package_changed"
+    return None
+
+
+def _validate_observation(
+    raw: object,
+    identity: dict[str, object],
+    *,
+    expected_product: str | None = None,
+) -> ProviderObservation:
+    if not isinstance(raw, dict) or set(raw) != {"account_id", "set_id", "revision", "artifact_sha256", "product_id", "status", "public_url"}:
+        raise OwnerStateError("provider_observation_invalid")
+    for key in ("account_id", "set_id", "artifact_sha256"):
+        if type(raw.get(key)) is not str:
+            raise OwnerStateError("provider_observation_invalid")
+        if raw[key] != identity[key]:
+            raise OwnerStateError(f"identity_mismatch:{key}")
+    if type(raw.get("revision")) is not int or isinstance(raw["revision"], bool):
+        raise OwnerStateError("provider_observation_invalid")
+    if raw["revision"] != identity["revision"]:
+        raise OwnerStateError("identity_mismatch:revision")
+    if not HEX64.fullmatch(str(raw["artifact_sha256"])):
+        raise OwnerStateError("provider_observation_invalid")
+    status = raw.get("status")
+    if type(status) is not str or status not in PROVIDER_STATUSES:
+        raise OwnerStateError("provider_status_invalid")
+    product_id = raw.get("product_id")
+    if product_id is not None and (type(product_id) is not str or not product_id):
+        raise OwnerStateError("provider_mismatch:product_id")
+    public_url = raw.get("public_url")
+    if public_url is not None and type(public_url) is not str:
+        raise OwnerStateError("provider_url_invalid")
+    if status == "absent":
+        if product_id is not None or public_url is not None:
+            raise OwnerStateError("provider_url_invalid" if public_url is not None else "provider_mismatch:product_id")
+    else:
+        if product_id is None:
+            raise OwnerStateError("provider_mismatch:product_id")
+        if expected_product is not None and product_id != expected_product:
+            raise OwnerStateError("provider_mismatch:product_id")
+        if status == "released":
+            if public_url is None or not public_url.startswith("https://store.line.me/") or len(public_url) <= len("https://store.line.me/"):
+                raise OwnerStateError("provider_url_invalid")
+        elif public_url is not None:
+            raise OwnerStateError("provider_url_invalid")
+    return raw  # type: ignore[return-value]
+
+
+def _observe(provider: object, identity: dict[str, object], *, expected_product: str | None = None) -> ProviderObservation:
+    try:
+        observer = getattr(provider, "observe")
+        raw = observer(identity)
+    except Exception as exc:
+        raise OwnerStateError("provider_observe_failed") from exc
+    return _validate_observation(raw, identity, expected_product=expected_product)
+
+
+def _rows_for_action(rows: list[dict[str, object]], identity: dict[str, object], action: str) -> dict[str, dict[str, object]]:
+    key = _effect_key(identity, action)
+    return {str(row["outcome"]): row for row in rows if row["effect_key"] == key}
+
+
+def _persist_unknown(
+    owner_path: Path,
+    ledger_path: Path,
+    owner: dict[str, object],
+    identity: dict[str, object],
+    *,
+    action: str,
+    product_id: str | None,
+    before_status: str,
+) -> tuple[dict[str, object], dict[str, object]]:
+    unknown_owner = dict(owner)
+    unknown_owner["state"] = "RECONCILE_UNKNOWN"
+    unknown_owner["product_id"] = product_id
+    unknown_owner["public_url"] = None
+    unknown_owner["pending_action"] = action
+    atomic_json(owner_path, unknown_owner)
+    unknown = _receipt(
+        identity,
+        action=action,
+        product_id=product_id,
+        before_status=before_status,
+        after_status="unknown",
+        outcome="unknown",
+    )
+    _append_receipt(ledger_path, unknown)
+    return unknown_owner, unknown
+
+
+def _fenced_mutation(
+    owner_path: Path,
+    ledger_path: Path,
+    owner: dict[str, object],
+    rows: list[dict[str, object]],
+    identity: dict[str, object],
+    provider: object,
+    *,
+    action: str,
+    before: ProviderObservation,
+    expected_status: str,
+) -> tuple[dict[str, object], dict[str, object]]:
+    prior = _rows_for_action(rows, identity, action)
+    if "unknown" in prior:
+        unknown_owner = dict(owner)
+        unknown_owner["state"] = "RECONCILE_UNKNOWN"
+        unknown_owner["pending_action"] = action
+        if owner.get("state") != "RECONCILE_UNKNOWN" or owner.get("pending_action") != action:
+            atomic_json(owner_path, unknown_owner)
+        return unknown_owner, {"effect": None, "readback": 0, "duplicate_effect": None, "reason": "reconcile_unknown"}
+    if "acknowledged" in prior:
+        if before["status"] != expected_status:
+            raise OwnerStateError("ledger_state_conflict")
+        return owner, {"effect": 0, "readback": 1, "duplicate_effect": 0, "reason": "acknowledged"}
+    if "intent" in prior:
+        unknown_owner, _unknown = _persist_unknown(
+            owner_path,
+            ledger_path,
+            owner,
+            identity,
+            action=action,
+            product_id=owner.get("product_id") if isinstance(owner.get("product_id"), str) else None,
+            before_status=str(before["status"]),
+        )
+        return unknown_owner, {"effect": None, "readback": 0, "duplicate_effect": None, "reason": "reconcile_unknown"}
+
+    intent = dict(identity)
+    intent.update({"action": action, "effect_key": _effect_key(identity, action), "product_id": owner.get("product_id")})
+    intent_receipt = _receipt(
+        identity,
+        action=action,
+        product_id=owner.get("product_id") if isinstance(owner.get("product_id"), str) else None,
+        before_status=str(before["status"]),
+        after_status=str(expected_status),
+        outcome="intent",
+    )
+    _append_receipt(ledger_path, intent_receipt)
+    rows.append(intent_receipt)
+    try:
+        mutation = getattr(provider, action)
+        returned = mutation(intent)
+    except Exception:
+        unknown_owner, _unknown = _persist_unknown(
+            owner_path,
+            ledger_path,
+            owner,
+            identity,
+            action=action,
+            product_id=owner.get("product_id") if isinstance(owner.get("product_id"), str) else None,
+            before_status=str(before["status"]),
+        )
+        return unknown_owner, {"effect": None, "readback": 0, "duplicate_effect": None, "reason": "reconcile_unknown"}
+    try:
+        returned_observation = _validate_observation(
+            returned,
+            identity,
+            expected_product=owner.get("product_id") if isinstance(owner.get("product_id"), str) else None,
+        )
+        if returned_observation["status"] != expected_status:
+            raise OwnerStateError("provider_mutation_invalid")
+    except OwnerStateError:
+        unknown_owner, _unknown = _persist_unknown(
+            owner_path,
+            ledger_path,
+            owner,
+            identity,
+            action=action,
+            product_id=owner.get("product_id") if isinstance(owner.get("product_id"), str) else None,
+            before_status=str(before["status"]),
+        )
+        return unknown_owner, {"effect": None, "readback": 0, "duplicate_effect": None, "reason": "reconcile_unknown"}
+    try:
+        post = _observe(
+            provider,
+            identity,
+            expected_product=returned_observation.get("product_id") if expected_status == "released" else None,
+        )
+        if post["status"] != expected_status:
+            raise OwnerStateError("provider_postcondition_failed")
+    except OwnerStateError:
+        unknown_owner, _unknown = _persist_unknown(
+            owner_path,
+            ledger_path,
+            owner,
+            identity,
+            action=action,
+            product_id=returned_observation.get("product_id"),
+            before_status=str(before["status"]),
+        )
+        return unknown_owner, {"effect": None, "readback": 0, "duplicate_effect": None, "reason": "reconcile_unknown"}
+    acknowledged = _receipt(
+        identity,
+        action=action,
+        product_id=post["product_id"],
+        before_status=str(before["status"]),
+        after_status=str(post["status"]),
+        outcome="acknowledged",
+    )
+    _append_receipt(ledger_path, acknowledged)
+    next_owner = dict(owner)
+    next_owner.pop("pending_action", None)
+    next_owner["state"] = "WAITING_REVIEW" if action == "submit" else "RELEASED"
+    next_owner["product_id"] = post["product_id"]
+    next_owner["public_url"] = post["public_url"]
+    atomic_json(owner_path, next_owner)
+    return next_owner, {"effect": 1, "readback": 1, "duplicate_effect": 0, "reason": action + "_acknowledged"}
+
+
+def _next_action(owner: dict[str, object]) -> str:
+    pending = owner.get("pending_action")
+    if pending in ("submit", "release"):
+        return str(pending)
+    if owner.get("state") in ("NEW",) and owner.get("product_id") is None:
+        return "submit"
+    return "release"
+
+
+def _state_summary(state_dir: Path) -> dict[str, object]:
+    state_dir = Path(state_dir)
+    if not _ensure_state_dir(state_dir, create=False):
+        return {"status": "uninitialized", "effect": 0, "readback": 0}
+    owner_path = state_dir / "owner.json"
+    ledger_path = state_dir / "effects.jsonl"
+    owner_metadata = _state_target(owner_path, "owner")
+    ledger_metadata = _state_target(ledger_path, "ledger")
+    if owner_metadata is None and ledger_metadata is None:
+        return {"status": "uninitialized", "effect": 0, "readback": 0}
+    if owner_metadata is None and ledger_metadata is not None:
+        raise OwnerStateError("state_conflict")
+    if owner_metadata is None:
+        raise OwnerStateError("state_conflict")
+    owner = _read_owner(owner_path)
+    _validate_owner(owner)
+    identity = owner["identity"]
+    if not isinstance(identity, dict):
+        raise OwnerStateError("owner_malformed")
+    rows = _read_receipts(ledger_path, identity) if ledger_metadata is not None else []
+    latest = rows[-1] if rows else None
+    action = _next_action(owner)
+    summary: dict[str, object] = {
+        "status": "ok",
+        "state": owner["state"],
+        "effect": latest["effect"] if latest is not None else 0,
+        "readback": latest["readback"] if latest is not None else 0,
+        "duplicate_effect": latest["duplicate_effect"] if latest is not None else 0,
+        "effect_key": latest["effect_key"] if latest is not None else _effect_key(identity, action),
+        "product_id": owner["product_id"],
+        "public_url": owner["public_url"],
+        "reason": latest["outcome"] if latest is not None else "uninitialized",
+        "outcome": latest["outcome"] if latest is not None else None,
+        "identity": dict(identity),
+    }
+    return summary
+
+
+def wake_owner(
+    state_dir: Path,
+    package: Path,
+    policy: Path,
+    provider: object,
+    account_id: str,
+    revision: int,
+    ffmpeg: str = "ffmpeg",
+) -> dict[str, object]:
+    """Run one bounded, restart-safe owner wake against an injected provider."""
+    try:
+        identity = _identity_from_package(Path(package), Path(policy), account_id, revision, ffmpeg)
+    except OwnerStateError as exc:
+        return _owner_result(None, status="error", effect=0, readback=0, duplicate_effect=0, effect_key="", reason=exc.code)
+    state_dir = Path(state_dir)
+    owner_path = state_dir / "owner.json"
+    ledger_path = state_dir / "effects.jsonl"
+    owner: dict[str, object] | None = None
+    try:
+        _ensure_state_dir(state_dir, create=True)
+        owner_metadata = _state_target(owner_path, "owner")
+        ledger_metadata = _state_target(ledger_path, "ledger")
+        if owner_metadata is None:
+            if ledger_metadata is not None:
+                raise OwnerStateError("state_conflict")
+            owner = _initial_owner(identity)
+            atomic_json(owner_path, owner)
+        else:
+            owner = _read_owner(owner_path)
+            _validate_owner(owner)
+            conflict = _owner_identity_conflict(owner, identity)
+            if conflict:
+                return _owner_result(owner, status="error", effect=0, readback=0, duplicate_effect=0, effect_key=_effect_key(identity, _next_action(owner)), reason=conflict)
+        rows = _read_receipts(ledger_path, identity)
+        if owner is None:
+            raise OwnerStateError("owner_malformed")
+        expected_product = owner.get("product_id") if isinstance(owner.get("product_id"), str) else None
+        observation = _observe(provider, identity, expected_product=expected_product)
+        state = str(owner["state"])
+        action = _next_action(owner)
+        key = _effect_key(identity, action)
+
+        if state == "CLOSED":
+            if observation["status"] != "released":
+                raise OwnerStateError("provider_state_conflict")
+            return _owner_result(owner, status="ok", effect=0, readback=0, duplicate_effect=0, effect_key=key, reason="closed")
+
+        if state == "TERMINAL_PENDING_REPLAY":
+            if observation["status"] != "released":
+                raise OwnerStateError("provider_state_conflict")
+            closed = dict(owner)
+            closed["state"] = "CLOSED"
+            atomic_json(owner_path, closed)
+            return _owner_result(closed, status="ok", effect=0, readback=0, duplicate_effect=0, effect_key=key, reason="closed")
+
+        if state == "RELEASED":
+            if observation["status"] != "released":
+                raise OwnerStateError("provider_state_conflict")
+            pending = dict(owner)
+            pending["state"] = "TERMINAL_PENDING_REPLAY"
+            atomic_json(owner_path, pending)
+            return _owner_result(pending, status="ok", effect=0, readback=0, duplicate_effect=0, effect_key=key, reason="awaiting_replay")
+
+        if state == "RECONCILE_UNKNOWN":
+            pending_action = str(owner.get("pending_action"))
+            if pending_action == "submit" and observation["status"] == "submitted":
+                reconciled = dict(owner)
+                reconciled.pop("pending_action", None)
+                reconciled["state"] = "WAITING_REVIEW"
+                reconciled["product_id"] = observation["product_id"]
+                reconciled["public_url"] = None
+                atomic_json(owner_path, reconciled)
+                return _owner_result(reconciled, status="ok", effect=0, readback=1, duplicate_effect=0, effect_key=_effect_key(identity, "submit"), reason="reconciled")
+            if observation["status"] == "released":
+                reconciled = dict(owner)
+                reconciled.pop("pending_action", None)
+                reconciled["state"] = "RELEASED"
+                reconciled["product_id"] = observation["product_id"]
+                reconciled["public_url"] = observation["public_url"]
+                atomic_json(owner_path, reconciled)
+                return _owner_result(reconciled, status="ok", effect=0, readback=1, duplicate_effect=0, effect_key=_effect_key(identity, "release"), reason="reconciled")
+            return _owner_result(owner, status="unknown", effect=None, readback=0, duplicate_effect=None, effect_key=_effect_key(identity, pending_action), reason="reconcile_unknown")
+
+        if state == "NEW":
+            if observation["status"] == "absent":
+                mutation_owner, metrics = _fenced_mutation(
+                    owner_path,
+                    ledger_path,
+                    owner,
+                    rows,
+                    identity,
+                    provider,
+                    action="submit",
+                    before=observation,
+                    expected_status="submitted",
+                )
+                return _owner_result(mutation_owner, status="unknown" if metrics["effect"] is None else "ok", effect=metrics["effect"], readback=int(metrics["readback"]), duplicate_effect=metrics["duplicate_effect"], effect_key=_effect_key(identity, "submit"), reason=str(metrics["reason"]))
+            if observation["status"] in ("draft", "submitted"):
+                waiting = dict(owner)
+                waiting["state"] = "WAITING_REVIEW"
+                waiting["product_id"] = observation["product_id"]
+                atomic_json(owner_path, waiting)
+                return _owner_result(waiting, status="ok", effect=0, readback=0, duplicate_effect=0, effect_key=_effect_key(identity, "release"), reason="waiting_review")
+            if observation["status"] == "rejected":
+                rejected = dict(owner)
+                rejected["state"] = "REJECTED"
+                rejected["product_id"] = observation["product_id"]
+                atomic_json(owner_path, rejected)
+                return _owner_result(rejected, status="ok", effect=0, readback=0, duplicate_effect=0, effect_key=_effect_key(identity, "release"), reason="rejected")
+            if observation["status"] == "released":
+                released = dict(owner)
+                released["state"] = "RELEASED"
+                released["product_id"] = observation["product_id"]
+                released["public_url"] = observation["public_url"]
+                atomic_json(owner_path, released)
+                return _owner_result(released, status="ok", effect=0, readback=0, duplicate_effect=0, effect_key=_effect_key(identity, "release"), reason="released")
+            if observation["status"] == "approved":
+                approved = dict(owner)
+                approved["state"] = "APPROVED"
+                approved["product_id"] = observation["product_id"]
+                atomic_json(owner_path, approved)
+                owner = approved
+                state = "APPROVED"
+
+        if state in ("WAITING_REVIEW", "REJECTED"):
+            if observation["status"] in ("draft", "submitted") and state == "WAITING_REVIEW":
+                return _owner_result(owner, status="ok", effect=0, readback=0, duplicate_effect=0, effect_key=_effect_key(identity, "release"), reason="waiting_review")
+            if observation["status"] == "rejected":
+                rejected = dict(owner)
+                rejected["state"] = "REJECTED"
+                atomic_json(owner_path, rejected)
+                return _owner_result(rejected, status="ok", effect=0, readback=0, duplicate_effect=0, effect_key=_effect_key(identity, "release"), reason="rejected")
+            if observation["status"] == "released":
+                released = dict(owner)
+                released["state"] = "RELEASED"
+                released["product_id"] = observation["product_id"]
+                released["public_url"] = observation["public_url"]
+                atomic_json(owner_path, released)
+                return _owner_result(released, status="ok", effect=0, readback=0, duplicate_effect=0, effect_key=_effect_key(identity, "release"), reason="released")
+            if observation["status"] == "approved":
+                approved = dict(owner)
+                approved["state"] = "APPROVED"
+                atomic_json(owner_path, approved)
+                owner = approved
+                state = "APPROVED"
+            else:
+                return _owner_result(owner, status="ok", effect=0, readback=0, duplicate_effect=0, effect_key=_effect_key(identity, "release"), reason="waiting_review")
+
+        if state == "APPROVED":
+            if observation["status"] == "released":
+                released = dict(owner)
+                released["state"] = "RELEASED"
+                released["public_url"] = observation["public_url"]
+                atomic_json(owner_path, released)
+                return _owner_result(released, status="ok", effect=0, readback=0, duplicate_effect=0, effect_key=_effect_key(identity, "release"), reason="released")
+            if observation["status"] != "approved":
+                raise OwnerStateError("provider_state_conflict")
+            mutation_owner, metrics = _fenced_mutation(
+                owner_path,
+                ledger_path,
+                owner,
+                rows,
+                identity,
+                provider,
+                action="release",
+                before=observation,
+                expected_status="released",
+            )
+            return _owner_result(mutation_owner, status="unknown" if metrics["effect"] is None else "ok", effect=metrics["effect"], readback=int(metrics["readback"]), duplicate_effect=metrics["duplicate_effect"], effect_key=_effect_key(identity, "release"), reason=str(metrics["reason"]))
+
+        raise OwnerStateError("owner_state_invalid")
+    except OwnerStateError as exc:
+        if owner is None:
+            return _owner_result(None, status="error", effect=0, readback=0, duplicate_effect=0, effect_key="", reason=exc.code)
+        if exc.code == "reconcile_unknown":
+            return _owner_result(owner, status="unknown", effect=None, readback=0, duplicate_effect=None, effect_key=_effect_key(identity, str(owner.get("pending_action", _next_action(owner)))), reason="reconcile_unknown")
+        return _owner_result(owner, status="error", effect=0, readback=0, duplicate_effect=0, effect_key=_effect_key(identity, _next_action(owner)), reason=exc.code)
+    except (OSError, TypeError, ValueError) as exc:
+        reason = str(exc) if str(exc) else "state_error"
+        return _owner_result(owner, status="error", effect=0, readback=0, duplicate_effect=0, effect_key=_effect_key(identity, _next_action(owner)) if owner else "", reason=reason)
+
+
 def _group_duplicate_hashes(hashes: dict[str, str]) -> dict[str, list[str]]:
     grouped: dict[str, list[str]] = {}
     for name, digest in hashes.items():
@@ -707,12 +1581,22 @@ def main(argv: list[str] | None = None) -> int:
     validate.add_argument("--package", required=True, type=Path)
     validate.add_argument("--policy", required=True, type=Path)
     validate.add_argument("--ffmpeg", default="ffmpeg")
+    state = subparsers.add_parser("state", add_help=False)
+    state.add_argument("--state-dir", required=True, type=Path)
     try:
         args = parser.parse_args(argv)
     except (SystemExit, TypeError, ValueError):
         result = _configuration_result("configuration_error")
         print(json.dumps(result, sort_keys=True, separators=(",", ":")))
         return 2
+    if args.command == "state":
+        try:
+            result = _state_summary(args.state_dir)
+        except OwnerStateError as exc:
+            print(json.dumps({"status": "error", "reason": exc.code}, sort_keys=True, separators=(",", ":")))
+            return 2
+        print(json.dumps(result, sort_keys=True, separators=(",", ":")))
+        return 0
     if args.command != "validate":
         print(json.dumps(_configuration_result("configuration_error"), sort_keys=True, separators=(",", ":")))
         return 2

@@ -794,5 +794,315 @@ class LineStickerValidatorTests(unittest.TestCase):
             stream.write(b"x")
 
 
+class FakeProvider:
+    """Small official inventory used by the durable owner contract tests."""
+
+    def __init__(self, inventory: dict[str, object] | None = None) -> None:
+        self.inventory = inventory if inventory is not None else {
+            "status": "absent",
+            "account_id": None,
+            "set_id": None,
+            "revision": None,
+            "artifact_sha256": None,
+            "product_id": None,
+            "public_url": None,
+        }
+        self.submit_calls = 0
+        self.release_calls = 0
+        self.status = "absent"
+        self.raise_on_submit = False
+        self.raise_on_release = False
+        self.malformed_observation = False
+        self.mutation_before_submit_error = False
+        self.mutation_before_release_error = False
+
+    def observe(self, identity: dict[str, object]) -> dict[str, object]:
+        if self.malformed_observation:
+            return {"status": "wat"}
+        status = str(self.inventory.get("status", self.status))
+        if status == "absent":
+            return {
+                "account_id": identity["account_id"],
+                "set_id": identity["set_id"],
+                "revision": identity["revision"],
+                "artifact_sha256": identity["artifact_sha256"],
+                "product_id": None,
+                "status": "absent",
+                "public_url": None,
+            }
+        return {
+            "account_id": self.inventory.get("account_id", identity["account_id"]),
+            "set_id": self.inventory.get("set_id", identity["set_id"]),
+            "revision": self.inventory.get("revision", identity["revision"]),
+            "artifact_sha256": self.inventory.get("artifact_sha256", identity["artifact_sha256"]),
+            "product_id": self.inventory.get("product_id"),
+            "status": status,
+            "public_url": self.inventory.get("public_url"),
+        }
+
+    def submit(self, intent: dict[str, object]) -> dict[str, object]:
+        self.submit_calls += 1
+        self.status = "submitted"
+        self.inventory.update(
+            {
+                "account_id": intent["account_id"],
+                "set_id": intent["set_id"],
+                "revision": intent["revision"],
+                "artifact_sha256": intent["artifact_sha256"],
+                "product_id": "123",
+                "status": "submitted",
+                "public_url": None,
+            }
+        )
+        if self.raise_on_submit:
+            raise RuntimeError("submit transport lost")
+        return self.observe(intent)
+
+    def release(self, intent: dict[str, object]) -> dict[str, object]:
+        self.release_calls += 1
+        self.status = "released"
+        self.inventory.update(
+            {
+                "account_id": intent["account_id"],
+                "set_id": intent["set_id"],
+                "revision": intent["revision"],
+                "artifact_sha256": intent["artifact_sha256"],
+                "product_id": "123",
+                "status": "released",
+                "public_url": "https://store.line.me/stickershop/product/123/en",
+            }
+        )
+        if self.raise_on_release:
+            raise RuntimeError("release transport lost")
+        return self.observe(intent)
+
+
+class LineStickerOwnerTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.tempdir = tempfile.TemporaryDirectory()
+        self.root = _make_package(Path(self.tempdir.name) / "package")
+        self.state = Path(self.tempdir.name) / "state"
+        self.state.mkdir()
+        self.ffmpeg = _write_fake_ffmpeg(Path(self.tempdir.name) / "ffmpeg")
+        self.provider = FakeProvider()
+
+    def tearDown(self) -> None:
+        self.tempdir.cleanup()
+
+    def _wake(self, provider: FakeProvider | None = None, **kwargs: object) -> dict[str, object]:
+        policy = kwargs.pop("policy", POLICY)
+        return MODULE.wake_owner(
+            self.state,
+            self.root,
+            policy,
+            provider or self.provider,
+            kwargs.pop("account_id", "acct-1"),
+            kwargs.pop("revision", 1),
+            ffmpeg=str(self.ffmpeg),
+            **kwargs,
+        )
+
+    def test_submit_release_and_observe_only_replay_are_fenced(self) -> None:
+        first = self._wake()
+        self.assertEqual((first["state"], first["effect"], first["readback"]), ("WAITING_REVIEW", 1, 1))
+        self.assertEqual(self.provider.submit_calls, 1)
+
+        self.provider.inventory["status"] = "approved"
+        second = self._wake()
+        self.assertEqual((second["state"], second["effect"], second["readback"]), ("RELEASED", 1, 1))
+        self.assertEqual(self.provider.release_calls, 1)
+
+        third = self._wake()
+        self.assertEqual(third["state"], "TERMINAL_PENDING_REPLAY")
+        self.assertEqual(third["public_url"], "https://store.line.me/stickershop/product/123/en")
+
+        fourth = self._wake()
+        self.assertEqual((fourth["state"], fourth["effect"], fourth["duplicate_effect"]), ("CLOSED", 0, 0))
+        self.assertEqual((self.provider.submit_calls, self.provider.release_calls), (1, 1))
+
+    def test_provider_identity_and_shape_mismatches_fail_closed(self) -> None:
+        self._wake()
+        cases = {
+            "account_id": "identity_mismatch:account_id",
+            "set_id": "identity_mismatch:set_id",
+            "revision": "identity_mismatch:revision",
+            "artifact_sha256": "identity_mismatch:artifact_sha256",
+            "product_id": "provider_mismatch:product_id",
+            "status": "provider_status_invalid",
+            "public_url": "provider_url_invalid",
+        }
+        for field, expected in cases.items():
+            with self.subTest(field=field):
+                provider = FakeProvider(self.provider.inventory.copy())
+                if field in {"account_id", "set_id", "artifact_sha256", "product_id", "public_url"}:
+                    provider.inventory[field] = "wrong"
+                elif field == "revision":
+                    provider.inventory[field] = 99
+                else:
+                    provider.inventory[field] = "invalid"
+                result = self._wake(provider)
+                self.assertEqual(result["reason"], expected)
+                self.assertEqual(result["effect"], 0)
+
+    def test_lost_submit_ack_reconciles_without_retry_after_restart(self) -> None:
+        self.provider.raise_on_submit = True
+        first = self._wake()
+        self.assertEqual((first["state"], first["effect"], first["readback"]), ("RECONCILE_UNKNOWN", None, 0))
+        self.assertIsNone(first["duplicate_effect"])
+        self.assertEqual(self.provider.submit_calls, 1)
+
+        restarted = FakeProvider(self.provider.inventory)
+        second = self._wake(restarted)
+        self.assertEqual((second["state"], second["effect"], second["readback"]), ("WAITING_REVIEW", 0, 1))
+        self.assertEqual(restarted.submit_calls, 0)
+
+    def test_lost_submit_ack_still_absent_never_retries(self) -> None:
+        class StillAbsent(FakeProvider):
+            def submit(self, intent: dict[str, object]) -> dict[str, object]:
+                self.submit_calls += 1
+                raise RuntimeError("submit transport lost before effect")
+
+        provider = StillAbsent()
+        first = self._wake(provider)
+        second = self._wake(provider)
+        self.assertEqual(first["state"], "RECONCILE_UNKNOWN")
+        self.assertEqual(second["state"], "RECONCILE_UNKNOWN")
+        self.assertIsNone(second["effect"])
+        self.assertEqual(provider.submit_calls, 1)
+
+    def test_owner_and_receipts_have_stable_exact_shapes(self) -> None:
+        first = self._wake()
+        self.assertEqual(
+            set(first),
+            {"status", "state", "effect", "readback", "duplicate_effect", "effect_key", "product_id", "public_url", "reason"},
+        )
+        owner = json.loads((self.state / "owner.json").read_text(encoding="utf-8"))
+        self.assertEqual(set(owner), {"version", "identity", "state", "product_id", "public_url"})
+        self.assertEqual(owner["version"], 1)
+        self.assertEqual(owner["state"], "WAITING_REVIEW")
+        self.assertEqual(set(owner["identity"]), {"account_id", "set_id", "character_id", "revision", "artifact_sha256", "package_sha256"})
+        rows = [json.loads(line) for line in (self.state / "effects.jsonl").read_text(encoding="utf-8").splitlines()]
+        self.assertEqual(len(rows), 2)
+        expected_keys = {
+            "receipt_id", "effect_key", "action", "account_id", "set_id", "revision", "artifact_sha256",
+            "product_id", "before_status", "after_status", "effect", "readback", "duplicate_effect", "outcome",
+        }
+        self.assertTrue(all(set(row) == expected_keys for row in rows))
+        self.assertEqual([row["outcome"] for row in rows], ["intent", "acknowledged"])
+        expected_effect_key = _sha256(json.dumps({"account_id": "acct-1", "action": "submit", "revision": 1, "set_id": owner["identity"]["set_id"]}, sort_keys=True, separators=(",", ":")).encode())
+        self.assertEqual(first["effect_key"], expected_effect_key)
+
+    def test_release_lost_ack_is_reconciled_without_release_retry(self) -> None:
+        self._wake()
+        self.provider.inventory["status"] = "approved"
+        self.provider.raise_on_release = True
+        first = self._wake()
+        self.assertEqual((first["state"], first["effect"], first["readback"], first["duplicate_effect"]), ("RECONCILE_UNKNOWN", None, 0, None))
+        self.assertEqual(self.provider.release_calls, 1)
+        restarted = FakeProvider(self.provider.inventory)
+        second = self._wake(restarted)
+        self.assertEqual((second["state"], second["effect"], second["readback"]), ("RELEASED", 0, 1))
+        self.assertEqual(restarted.release_calls, 0)
+
+    def test_closed_wakes_do_not_write_owner_or_ledger(self) -> None:
+        self._wake()
+        self.provider.inventory["status"] = "approved"
+        self._wake()
+        self._wake()
+        self._wake()
+        owner_before = (self.state / "owner.json").read_bytes()
+        ledger_before = (self.state / "effects.jsonl").read_bytes()
+        fifth = self._wake()
+        self.assertEqual((fifth["state"], fifth["effect"], fifth["duplicate_effect"]), ("CLOSED", 0, 0))
+        self.assertEqual((self.state / "owner.json").read_bytes(), owner_before)
+        self.assertEqual((self.state / "effects.jsonl").read_bytes(), ledger_before)
+
+    def test_owner_identity_and_state_path_fail_closed(self) -> None:
+        self._wake()
+        wrong_account = self._wake(account_id="acct-2")
+        self.assertEqual((wrong_account["reason"], wrong_account["effect"]), ("identity_mismatch:account_id", 0))
+        owner_path = self.state / "owner.json"
+        owner_path.unlink()
+        owner_path.write_text("{", encoding="utf-8")
+        malformed = self._wake()
+        self.assertEqual((malformed["reason"], malformed["effect"]), ("owner_malformed", 0))
+
+    def test_state_cli_returns_valid_summary_and_rejects_symlink(self) -> None:
+        self._wake()
+        completed = subprocess.run(
+            [sys.executable, str(MODULE_ROOT / "line_sticker.py"), "state", "--state-dir", str(self.state)],
+            check=False,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        self.assertEqual(completed.returncode, 0)
+        summary = json.loads(completed.stdout)
+        self.assertEqual((summary["status"], summary["state"], summary["outcome"]), ("ok", "WAITING_REVIEW", "acknowledged"))
+        self.assertNotIn(str(self.state), completed.stdout)
+        self.tearDown()
+        self.setUp()
+        self._wake()
+        owner_path = self.state / "owner.json"
+        replacement = self.state / "owner-copy.json"
+        replacement.write_bytes(owner_path.read_bytes())
+        owner_path.unlink()
+        owner_path.symlink_to(replacement)
+        bad = subprocess.run(
+            [sys.executable, str(MODULE_ROOT / "line_sticker.py"), "state", "--state-dir", str(self.state)],
+            check=False,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        self.assertEqual(bad.returncode, 2)
+        self.assertEqual(json.loads(bad.stdout), {"reason": "owner_symlink", "status": "error"})
+
+    def test_valid_package_bytes_changed_after_creation_are_rejected(self) -> None:
+        self._wake()
+        _replace_asset(self.root, "01.png", _png(270, 270, animated=True, marker="changed"))
+        result = self._wake()
+        self.assertEqual((result["reason"], result["effect"]), ("artifact_changed", 0))
+        self.assertEqual(self.provider.submit_calls, 1)
+
+    def test_duplicate_ledger_row_is_rejected_without_provider_observe(self) -> None:
+        self._wake()
+        ledger = self.state / "effects.jsonl"
+        original = ledger.read_bytes()
+        ledger.write_bytes(original + original.splitlines(keepends=True)[0])
+        observed = 0
+        original_observe = self.provider.observe
+
+        def observe(identity: dict[str, object]) -> dict[str, object]:
+            nonlocal observed
+            observed += 1
+            return original_observe(identity)
+
+        self.provider.observe = observe  # type: ignore[method-assign]
+        result = self._wake()
+        self.assertEqual((result["reason"], result["effect"]), ("ledger_duplicate", 0))
+        self.assertEqual(observed, 0)
+
+    def test_invalid_policy_is_a_stable_owner_error(self) -> None:
+        invalid_policy = self.root.parent / "invalid-policy.json"
+        invalid_policy.write_text('{"prompt":"do not leak"}\n', encoding="utf-8")
+        result = self._wake(policy=invalid_policy)
+        self.assertEqual((result["status"], result["state"], result["effect"], result["reason"]), ("error", "NEW", 0, "policy_hash_mismatch"))
+
+    def test_state_cli_reports_uninitialized_without_creating_state(self) -> None:
+        missing = Path(self.tempdir.name) / "missing"
+        completed = subprocess.run(
+            [sys.executable, str(MODULE_ROOT / "line_sticker.py"), "state", "--state-dir", str(missing)],
+            check=False,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        self.assertEqual(completed.returncode, 0)
+        self.assertEqual(json.loads(completed.stdout), {"status": "uninitialized", "effect": 0, "readback": 0})
+        self.assertEqual(completed.stderr, "")
+        self.assertFalse(missing.exists())
+
+
 if __name__ == "__main__":
     unittest.main()
