@@ -232,6 +232,26 @@ def test_new_public_skill_uses_its_own_capability_contract_with_an_existing_form
     assert evidence == {"/repo/skills/ai-automation-builder/SKILL.md"}
 
 
+def test_dismissed_zero_conversion_market_never_blocks_the_next_demand_cluster():
+    sd = _sd()
+    clusters = [
+        {"cluster_key": "excel", "query": "Excel 自動化", "status": "known", "score": 12},
+        {"cluster_key": "ai", "query": "AI 業務自動化", "status": "known", "score": 8},
+    ]
+
+    selected = sd._next_unused_demand_cluster(clusters, {"excel"})
+
+    assert selected["cluster_key"] == "ai"
+    assert sd._next_unused_demand_cluster(clusters, {"excel", "ai"}) is None
+
+
+def test_a_changed_public_capability_inventory_triggers_fresh_market_discovery_once():
+    sd = _sd()
+    clusters = [{"capability_inventory_sha256": "a" * 64}]
+    assert sd._capability_inventory_needs_market_probe(clusters, "b" * 64) is True
+    assert sd._capability_inventory_needs_market_probe(clusters, "a" * 64) is False
+
+
 
 def test_demand_exploration_never_kills_a_wake(monkeypatch, tmp_path):
     """A failing exploration must be recorded, not raised into the wake."""

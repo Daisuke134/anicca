@@ -63,7 +63,7 @@ STATE_FILES = (
     "effects.jsonl", "experiments.jsonl", "offer-contracts.jsonl", "attribution-map.jsonl",
     "analytics.jsonl", "outcomes.jsonl", "prepared-hypotheses.jsonl", "listing-contracts.jsonl",
     "new-listing-drafts.jsonl", "funnel-events.jsonl", "portfolio-allocations.jsonl",
-    "demand-evidence.jsonl", "superseded-candidates.jsonl",
+    "demand-evidence.jsonl", "demand-dismissals.jsonl", "superseded-candidates.jsonl",
     "demand-category.jsonl", "demand-category-options.jsonl",
 )
 TARGET_SERVICE_ID = os.environ.get("GIG_STOREFRONT_TARGET_SERVICE_ID", "91000001").strip()
@@ -1557,6 +1557,20 @@ def _resolve_create_capability(
     if skill_path.startswith("skills/") and skill_path.endswith("/SKILL.md"):
         evidence.add(str((repo / skill_path).resolve()))
     return family, template, evidence
+
+
+def _next_unused_demand_cluster(clusters: list[dict], dismissed: set[str]) -> dict | None:
+    return next(
+        (row for row in sorted(clusters, key=lambda candidate: -(candidate.get("score") or 0))
+         if row.get("status") == "known" and (row.get("score") or 0) > 0
+         and not row.get("consumed_at_epoch")
+         and str(row.get("cluster_key") or "") not in dismissed),
+        None,
+    )
+
+
+def _capability_inventory_needs_market_probe(clusters: list[dict], digest: str) -> bool:
+    return not any(row.get("capability_inventory_sha256") == digest for row in clusters)
 
 
 def _invoke_demand_proposal(
@@ -6424,12 +6438,12 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
             # When the committed demand is spent, look for the next market instead of idling.
             demand_ledger = args.state_dir / "demand-evidence.jsonl"
             known_clusters = _jsonl_rows(demand_ledger)[0] if demand_ledger.exists() else []
-            unused_cluster = next(
-                (row for row in sorted(known_clusters, key=lambda c: -(c.get("score") or 0))
-                 if row.get("status") == "known" and (row.get("score") or 0) > 0
-                 and not row.get("consumed_at_epoch")),
-                None,
-            )
+            dismissal_ledger = args.state_dir / "demand-dismissals.jsonl"
+            dismissed_clusters = {
+                str(row.get("cluster_key") or "") for row in _jsonl_rows(dismissal_ledger)[0]
+                if row.get("status") == "dismissed"
+            } if dismissal_ledger.exists() else set()
+            unused_cluster = _next_unused_demand_cluster(known_clusters, dismissed_clusters)
             # A no-op must name the market it would go after next, not just say it did nothing.
             demand_derivation = None if unused_cluster is None else {
                 "proposed": 0, "appended": 0,
@@ -6510,7 +6524,11 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 except Exception as error:  # reading options must never end a wake
                     demand_derivation = {**(demand_derivation or {}),
                                          "category_options_error": f"{type(error).__name__}:{str(error)[:140]}"}
-            if demand_already_sold and unused_cluster is None:
+            inventory_digest = str(public_capability_inventory["inventory_sha256"])
+            inventory_probe_due = _capability_inventory_needs_market_probe(
+                known_clusters, inventory_digest,
+            )
+            if demand_already_sold and (unused_cluster is None or inventory_probe_due):
                 try:
                     proposal, route = _invoke_demand_proposal(
                         runner=getattr(args, "runner", DEFAULT_RUNNER),
@@ -6533,6 +6551,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                         scored = _score_demand_cluster(cluster)
                         row = {**cluster, **scored, "capability_family": candidate["capability_family"],
                                "rationale": candidate["rationale"], "route": route,
+                               "capability_inventory_sha256": inventory_digest,
                                "observed_at_epoch": int(time.time()),
                                "cluster_key": _demand_cluster_key(candidate["query"], "")}
                         appended += int(_append_key_once(demand_ledger, "cluster_key", row))
@@ -6554,6 +6573,14 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 str((unused_cluster or {}).get("capability_family") or ""))
                 if unused_cluster is not None else None)
             if unsold_family is not None:
+                cluster_key = str((unused_cluster or {}).get("cluster_key") or "")
+                if cluster_key:
+                    _append_key_once(dismissal_ledger, "cluster_key", {
+                        "version": 1, "cluster_key": cluster_key, "status": "dismissed",
+                        "reason": "own_family_has_traffic_without_sales",
+                        "own_family_evidence": unsold_family,
+                        "observed_at_epoch": int(time.time()),
+                    })
                 demand_derivation = {**(demand_derivation or {}),
                                      "create_blocked": "own_family_has_traffic_without_sales",
                                      "own_family_evidence": unsold_family}
