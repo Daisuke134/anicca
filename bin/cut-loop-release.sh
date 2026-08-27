@@ -88,7 +88,14 @@ if [ -n "$RELEASE_PATHS" ]; then
       ;;
   esac
 fi
-if ! git -C "$REPO_ROOT" archive --format=tar "$SHA" -- "${ARCHIVE_PATHS[@]}" | tar -x -C "$DEST"; then
+if [ "${#ARCHIVE_PATHS[@]}" -eq 0 ]; then
+  git -C "$REPO_ROOT" archive --format=tar "$SHA" | tar -x -C "$DEST"
+  ARCHIVE_RC=$?
+else
+  git -C "$REPO_ROOT" archive --format=tar "$SHA" -- "${ARCHIVE_PATHS[@]}" | tar -x -C "$DEST"
+  ARCHIVE_RC=$?
+fi
+if [ "$ARCHIVE_RC" -ne 0 ]; then
   rm -rf "$DEST"
   die "export of $SHORT failed"
 fi
