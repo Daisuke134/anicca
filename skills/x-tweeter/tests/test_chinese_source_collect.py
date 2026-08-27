@@ -1,14 +1,50 @@
 from __future__ import annotations
 
 import importlib.util
+import subprocess
+import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import patch
 
 
 SCRIPT = Path(__file__).parents[1] / "scripts" / "chinese_source_collect.py"
 
 
 class ChineseSourceCollectTests(unittest.TestCase):
+    def test_discovery_continues_after_one_source_times_out(self) -> None:
+        module = self.load_module()
+        calls = []
+
+        def run(command, **_kwargs):
+            url = command[2]
+            calls.append(url)
+            if "xiaohongshu.com/search" in url:
+                raise subprocess.TimeoutExpired(command, 60)
+            if "search.bilibili.com" in url:
+                return SimpleNamespace(returncode=0, stdout=(
+                    "## [Agent workflow](https://www.bilibili.com/video/BV1abc)\n"
+                ))
+            if url == "https://www.bilibili.com/video/BV1abc":
+                return SimpleNamespace(
+                    returncode=0,
+                    stdout="这是一个可重复执行的人工智能工作流，包含失败恢复条件和具体步骤。",
+                )
+            return SimpleNamespace(returncode=1, stdout="")
+
+        with tempfile.TemporaryDirectory() as root:
+            query_file = Path(root) / "queries.txt"
+            query_file.write_text(
+                "AI\thttps://www.xiaohongshu.com/search_result?keyword=AI\n"
+                "Agent\thttps://search.bilibili.com/all?keyword=Agent\n"
+            )
+            with patch.object(module.subprocess, "run", side_effect=run):
+                receipt = module.discover(query_file, "2026-08-28T00:00:00Z")
+
+        self.assertEqual(receipt["candidate_count"], 1)
+        self.assertIn("https://search.bilibili.com/all?keyword=Agent", calls)
+
     def load_module(self):
         self.assertTrue(SCRIPT.is_file(), f"missing collector: {SCRIPT}")
         spec = importlib.util.spec_from_file_location("chinese_source_collect", SCRIPT)

@@ -197,14 +197,20 @@ def parse_search_specs(value: str) -> list[tuple[str, str]]:
 def discover(query_file: Path, observed_at: str, limit: int = 7) -> dict:
     specs = parse_search_specs(query_file.read_text(encoding="utf-8"))
     buckets, seen = [], set()
+
+    def crawl(url: str) -> str:
+        try:
+            result = subprocess.run(
+                ["crwl", "crawl", url, "-o", "markdown-fit"],
+                capture_output=True, text=True, timeout=60, check=False,
+            )
+        except (OSError, subprocess.TimeoutExpired):
+            return ""
+        return result.stdout if result.returncode == 0 else ""
+
     for query, search_url in specs:
-        search = subprocess.run(
-            ["crwl", "crawl", search_url, "-o", "markdown-fit"],
-            capture_output=True, text=True, timeout=60, check=False,
-        )
-        markdown = search.stdout if search.returncode == 0 else ""
         bucket = []
-        for row in collect_markdown(markdown, query, observed_at, limit=3)["candidates"]:
+        for row in collect_markdown(crawl(search_url), query, observed_at, limit=3)["candidates"]:
             if row["url"] in seen:
                 continue
             seen.add(row["url"])
@@ -215,13 +221,6 @@ def discover(query_file: Path, observed_at: str, limit: int = 7) -> dict:
     for index in range(3):
         combined.extend(bucket[index] for bucket in buckets if len(bucket) > index)
 
-    def fetch_source(url: str) -> str:
-        result = subprocess.run(
-            ["crwl", "crawl", url, "-o", "markdown-fit"],
-            capture_output=True, text=True, timeout=60, check=False,
-        )
-        return result.stdout if result.returncode == 0 else ""
-
     return hydrate({
         "schema_version": 1,
         "receipt_type": "CHINESE_PUBLIC_SOURCE_CANDIDATES",
@@ -229,7 +228,7 @@ def discover(query_file: Path, observed_at: str, limit: int = 7) -> dict:
         "queries": [query for query, _ in specs],
         "observed_at": observed_at,
         "candidates": combined,
-    }, fetch_source, limit=limit)
+    }, crawl, limit=limit)
 
 
 def main() -> int:
