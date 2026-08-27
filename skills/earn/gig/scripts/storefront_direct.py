@@ -1563,6 +1563,7 @@ def _next_unused_demand_cluster(clusters: list[dict], dismissed: set[str]) -> di
     return next(
         (row for row in sorted(clusters, key=lambda candidate: (
             -int(bool(candidate.get("capability_inventory_sha256"))),
+            -int(candidate.get("recurring_potential") is True),
             -(candidate.get("score") or 0),
             -(candidate.get("median_price_jpy") or 0),
         ))
@@ -1587,6 +1588,16 @@ def _unlisted_capability_templates(
     represented = set(service_families.values())
     unlisted = {name: value for name, value in templates.items() if name not in represented}
     return unlisted or templates
+
+
+def _capability_recurring_potential(template: dict) -> bool:
+    text = " ".join(str(value) for value in (
+        template.get("name"), template.get("description"),
+        template.get("deliverables"), template.get("principles"),
+    ) if value).lower()
+    return any(term in text for term in (
+        "recurring", "maintenance", "subscription", "monthly", "継続", "保守", "月額",
+    ))
 
 
 def _invoke_demand_proposal(
@@ -6467,6 +6478,12 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
             # When the committed demand is spent, look for the next market instead of idling.
             demand_ledger = args.state_dir / "demand-evidence.jsonl"
             known_clusters = _jsonl_rows(demand_ledger)[0] if demand_ledger.exists() else []
+            known_clusters = [{
+                **row,
+                "recurring_potential": _capability_recurring_potential(
+                    capability_templates.get(str(row.get("capability_family") or ""), {})
+                ),
+            } for row in known_clusters]
             dismissal_ledger = args.state_dir / "demand-dismissals.jsonl"
             dismissed_clusters = {
                 str(row.get("cluster_key") or "") for row in _jsonl_rows(dismissal_ledger)[0]
@@ -6583,6 +6600,9 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                         row = {**cluster, **scored, "capability_family": candidate["capability_family"],
                                "rationale": candidate["rationale"], "route": route,
                                "capability_inventory_sha256": inventory_digest,
+                               "recurring_potential": _capability_recurring_potential(
+                                   capability_templates.get(candidate["capability_family"], {})
+                               ),
                                "observed_at_epoch": int(time.time()),
                                "cluster_key": _demand_cluster_key(candidate["query"], "")}
                         appended += int(_append_key_once(demand_ledger, "cluster_key", row))

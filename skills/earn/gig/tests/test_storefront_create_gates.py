@@ -237,13 +237,17 @@ def test_dismissed_zero_conversion_market_never_blocks_the_next_demand_cluster()
     clusters = [
         {"cluster_key": "excel", "query": "Excel 自動化", "status": "known", "score": 12},
         {"cluster_key": "ai", "query": "AI 業務自動化", "status": "known", "score": 8,
-         "capability_inventory_sha256": "a" * 64},
+         "capability_inventory_sha256": "a" * 64, "recurring_potential": True,
+         "median_price_jpy": 15000},
+        {"cluster_key": "interview", "query": "インタビュー分析", "status": "known", "score": 12,
+         "capability_inventory_sha256": "a" * 64, "recurring_potential": False,
+         "median_price_jpy": 55000},
     ]
 
     selected = sd._next_unused_demand_cluster(clusters, set())
 
     assert selected["cluster_key"] == "ai"
-    assert sd._next_unused_demand_cluster(clusters, {"excel", "ai"}) is None
+    assert sd._next_unused_demand_cluster(clusters, {"excel", "ai", "interview"}) is None
 
 
 def test_a_changed_public_capability_inventory_triggers_fresh_market_discovery_once():
@@ -273,6 +277,14 @@ def test_gallery_readback_retries_a_hydrated_page_with_zero_images():
     assert sd._own_page_readback_valid(observed, "1", expected_image_count=6) is False
     observed["service_image_ids"] = [str(index) for index in range(6)]
     assert sd._own_page_readback_valid(observed, "1", expected_image_count=6) is True
+
+
+def test_recurring_potential_comes_from_the_owned_capability_not_marketplace_copy():
+    sd = _sd()
+    assert sd._capability_recurring_potential({
+        "description": "Build a system and provide recurring maintenance after acceptance",
+    }) is True
+    assert sd._capability_recurring_potential({"description": "Deliver one interview memo"}) is False
 
 
 
