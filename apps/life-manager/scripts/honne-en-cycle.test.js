@@ -7,7 +7,8 @@ const path = require("node:path");
 const test = require("node:test");
 
 const { createContentObjectStore } = require("../lib/content-object-store.js");
-const { campaignCaptionRef, enqueuePublication, parseArgs, runSlot } = require("./honne-en-cycle.js");
+const cycle = require("./honne-en-cycle.js");
+const { campaignCaptionRef, enqueuePublication, parseArgs, runSlot } = cycle;
 
 const SLOT = "2026-08-21T11:30:00.000Z";
 
@@ -47,4 +48,17 @@ test("Honne EN cycle reuses an existing publication effect", async () => {
   assert.equal(result.created, false);
   assert.equal(result.job.status, "completed");
   assert.equal(enqueues, 0);
+});
+
+test("Honne EN production publication identity is distinct across days", () => {
+  assert.equal(typeof cycle.buildHonneEnPublicationJob, "function");
+  const artifact = { form: "relationship-confession", creative_id: "HEN-020-aaaaaaaaaaaa", video_ref: `object://sha256/${"1".repeat(64)}` };
+  const captionRef = `object://sha256/${"2".repeat(64)}`;
+  const approvalRef = `object://sha256/${"3".repeat(64)}`;
+  const first = cycle.buildHonneEnPublicationJob("dais-local", "2026-08-26T11:30:00.000Z", artifact, captionRef, approvalRef);
+  const replay = cycle.buildHonneEnPublicationJob("dais-local", "2026-08-26T11:30:00.000Z", artifact, captionRef, approvalRef);
+  const nextDay = cycle.buildHonneEnPublicationJob("dais-local", "2026-08-27T11:30:00.000Z", artifact, captionRef, approvalRef);
+  assert.equal(first.job_id, replay.job_id);
+  assert.notEqual(first.job_id, nextDay.job_id);
+  assert.notEqual(first.effect_key, nextDay.effect_key);
 });

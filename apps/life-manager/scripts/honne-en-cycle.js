@@ -92,6 +92,16 @@ async function enqueuePublication(store, job, availableAt) {
   });
 }
 
+function buildHonneEnPublicationJob(tenantId, slot, artifact, captionRef, approvalRef) {
+  return buildMarketingVideoPublicationJob({
+    tenantId, productId: PRODUCT, formatId: FORMAT, form: artifact.form, locale: LOCALE, slot,
+    creativeId: artifact.creative_id, platform: "tiktok", videoRef: artifact.video_ref,
+    captionRef, approvalRef, instagramProfileRef: "profile://instagram/unassigned",
+    postizTokenRef: "secret://postiz/api-key", tiktokIntegrationRef: INTEGRATION_REF,
+    slotScopedEffect: true,
+  });
+}
+
 async function runHonneEnCycle(argv, deps = {}) {
   const requestedSlot = parseArgs(argv);
   const env = deps.env || process.env;
@@ -112,12 +122,7 @@ async function runHonneEnCycle(argv, deps = {}) {
   const generationJob = buildMarketingVideoGenerationJob({ tenantId, productId: PRODUCT, formatId: FORMAT, locale: LOCALE, slot, packRef, mediaRefs });
   const generation = await generate(store, generationJob, dataDir, new Date(nowMs).toISOString());
   const captionRef = campaignCaptionRef(objectStore, dataDir, generation.receipt.copy_ref, env.LM_HONNE_EN_CAMPAIGN_URL);
-  const publicationJob = buildMarketingVideoPublicationJob({
-    tenantId, productId: PRODUCT, formatId: FORMAT, form: generation.receipt.form, locale: LOCALE, slot,
-    creativeId: generation.receipt.creative_id, platform: "tiktok", videoRef: generation.receipt.video_ref,
-    captionRef, approvalRef, instagramProfileRef: "profile://instagram/unassigned",
-    postizTokenRef: "secret://postiz/api-key", tiktokIntegrationRef: INTEGRATION_REF,
-  });
+  const publicationJob = buildHonneEnPublicationJob(tenantId, slot, generation.receipt, captionRef, approvalRef);
   await enqueuePublication(store, publicationJob, new Date(nowMs).toISOString());
   const result = await runHonneEnCanary(["run", "--tenant", tenantId, "--job-id", publicationJob.job_id], {
     store,
@@ -128,4 +133,4 @@ async function runHonneEnCycle(argv, deps = {}) {
 
 if (require.main === module) runHonneEnCycle(process.argv.slice(2)).then((result) => process.stdout.write(`${JSON.stringify(result)}\n`)).catch((error) => { process.stderr.write(`${error.message}\n`); process.exitCode = 1; });
 
-module.exports = { campaignCaptionRef, enqueuePublication, parseArgs, runHonneEnCycle, runSlot };
+module.exports = { buildHonneEnPublicationJob, campaignCaptionRef, enqueuePublication, parseArgs, runHonneEnCycle, runSlot };
