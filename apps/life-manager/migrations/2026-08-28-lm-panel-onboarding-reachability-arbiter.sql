@@ -40,10 +40,10 @@ BEGIN
       WHERE u.telegram_chat_id::text = p_actor_id ORDER BY u.uid LIMIT 1 FOR UPDATE;
     IF bound_uid IS NULL THEN RAISE EXCEPTION 'telegram_tenant_conflict'; END IF;
   END IF;
-  UPDATE public.lm_users SET
+  UPDATE public.lm_users AS u SET
     name = CASE WHEN name IS NULL OR trim(name) = '' THEN NULLIF(trim(profile_name), '') ELSE name END,
     tg_onboard_stage = COALESCE(tg_onboard_stage, 'calendar'), updated_at = now()
-    WHERE uid = bound_uid;
+    WHERE u.uid = bound_uid;
   RETURN QUERY SELECT 'claimed'::text, bound_uid, p_actor_id;
 END;
 $$;

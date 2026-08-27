@@ -456,5 +456,7 @@ test("Task 11: clean and additive actor claims pin the lm_users primary-key arbi
     const functionBody = sql.slice(start, sql.indexOf("$$;", start) + 3);
     assert.match(functionBody, /ON CONFLICT ON CONSTRAINT lm_users_pkey DO NOTHING/i, `${label} migration must pin lm_users_pkey`);
     assert.doesNotMatch(functionBody, /ON CONFLICT\s*\(\s*uid\s*\)\s+DO NOTHING/i, `${label} migration must not use an ambiguous uid arbiter`);
+    assert.match(functionBody, /UPDATE\s+public\.lm_users\s+AS\s+u[\s\S]*WHERE\s+u\.uid\s*=\s*bound_uid/i, `${label} migration must qualify the update uid`);
+    assert.doesNotMatch(functionBody, /UPDATE\s+public\.lm_users\s+SET[\s\S]*WHERE\s+uid\s*=\s*bound_uid/i, `${label} migration must not use an ambiguous update uid`);
   }
 });
