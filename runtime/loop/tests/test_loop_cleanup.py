@@ -9,6 +9,7 @@ from pathlib import Path
 from runtime.loop.loop_cleanup import cleanup_run_root, gc_releases
 from runtime.loop.lm_loop_run import prepare_loop_run
 from runtime.loop.central_cleanup import loaded_release_roots
+from runtime.loop.central_cleanup import host_cleanup_command
 
 
 def completed(root: Path, name: str, size: int = 1) -> Path:
@@ -20,6 +21,9 @@ def completed(root: Path, name: str, size: int = 1) -> Path:
 
 
 class LoopCleanupTest(unittest.TestCase):
+    def test_host_cleanup_uses_durable_shared_pressure_state(self):
+        command = host_cleanup_command(Path('/release'), Path('/home'))
+        self.assertEqual(command[-4:], ['--home', '/home', '--state-dir', '/home/.openclaw/state'])
     def test_loop_cleanup_preserves_active_unmarked_and_receipts(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory); old = completed(root, "old"); active = completed(root, "active")

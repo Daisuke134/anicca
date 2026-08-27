@@ -6,10 +6,20 @@ from __future__ import annotations
 import json
 import os
 import plistlib
+import subprocess
 import sys
 from pathlib import Path
 
+ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
 from runtime.loop.loop_cleanup import gc_releases
+
+
+def host_cleanup_command(root: Path, home: Path) -> list[str]:
+    return [sys.executable, str(root / "skills/self/disk-cleanup/disk_cleanup.py"),
+            "--home", str(home), "--state-dir", str(home / ".openclaw/state")]
 
 
 def loaded_release_roots(agents_dir: Path, releases_root: Path) -> set[Path]:
@@ -35,6 +45,15 @@ def loaded_release_roots(agents_dir: Path, releases_root: Path) -> set[Path]:
 
 
 def main() -> int:
+    home = Path.home()
+    try:
+        host_process = subprocess.run(
+            host_cleanup_command(ROOT, home), capture_output=True, text=True, timeout=240,
+        )
+        host_result = json.loads(host_process.stdout.splitlines()[-1]) if host_process.stdout.strip() else {}
+        host_ok = host_process.returncode == 0 and isinstance(host_result, dict)
+    except (OSError, subprocess.TimeoutExpired, json.JSONDecodeError, IndexError) as error:
+        host_ok, host_result = False, {"error": str(error)}
     loops_root = Path(os.environ.get("LOOPS_ROOT", "~/loops")).expanduser()
     releases = loops_root / "releases"
     current = loops_root / "current"
@@ -55,7 +74,9 @@ def main() -> int:
                              protected=protected)
     except (OSError, ValueError) as error:
         print(json.dumps({"ok": False, "error": str(error)}, sort_keys=True)); return 1
-    result.update({"ok": result["errors"] == 0, "protected_release_count": len(protected),
+    result.update({"ok": result["errors"] == 0 and host_ok,
+                   "host_cleanup": host_result,
+                   "protected_release_count": len(protected),
                    "shared_cache_candidates": 0, "orphan_candidates": 0})
     print(json.dumps(result, sort_keys=True, separators=(",", ":")))
     return 0 if result["ok"] else 1
