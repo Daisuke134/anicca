@@ -30,6 +30,10 @@ MODEL_BOUNDARY="$SKILL/scripts/model_boundary.py"
 CODEX_AUTH_FILE="${X_REPOST_CODEX_AUTH_FILE:-$HOME/.codex-acct2/auth.json}"
 CODEX_AUTOMATION_HOME="${X_REPOST_CODEX_HOME:-$HOME/.local/state/life-manager/x-repost-codex}"
 IDENTITY="${X_REPOST_BROWSER_IDENTITY:-x:anicca}"
+ACCOUNT_HANDLE="${X_REPOST_ACCOUNT_HANDLE:-@selawmqt}"
+ACCOUNT_DESCRIPTION="${X_REPOST_ACCOUNT_DESCRIPTION:-AI・プロダクト・深層技術・crypto・finance・build in public・お笑いを、検証可能なsourceと実体験で届ける}"
+SOURCE_LANGUAGE_POLICY="${X_REPOST_SOURCE_LANGUAGE_POLICY:-target_only}"
+QUERIES_FILE="${X_REPOST_QUERIES_FILE:-$SKILL/config/queries.txt}"
 # x-repost is Codex-only: Claude's subscription ceiling must not be able to stall this loop.
 MODEL="${X_REPOST_MODEL:-gpt-5.6-luna}"
 REASONING_EFFORT="${X_REPOST_REASONING_EFFORT:-max}"
@@ -243,7 +247,7 @@ run_x_post() {
 # ---------------------------------------------------------------- gate: CEO registry + budget
 # shellcheck source=/dev/null
 source "$REPO_ROOT/lib/registry-enforce.sh"
-registry_enforce_or_exit x-repost
+registry_enforce_or_exit "$LOOP_NAME"
 
 # Reporting configuration must exist before backlog flush. Loading it after the flush made every
 # queued receipt target the placeholder rather than the owner's private destination.
@@ -1170,7 +1174,7 @@ PYEOF
   fi
 else
   if ! run_x_script x_collect.py --cdp "$CDP" --mode recon \
-        --queries "$SKILL/config/queries.txt" --posted "$POSTED" >"$EV/candidates.json" 2>>"$EV/collect.err"; then
+        --queries "$QUERIES_FILE" --posted "$POSTED" >"$EV/candidates.json" 2>>"$EV/collect.err"; then
     report "❌ recon failed — $(tail -1 "$EV/collect.err" 2>/dev/null)"
     finish 1 "recon failed"
   fi
@@ -1178,7 +1182,7 @@ fi
 CAND_COUNT="$("$PY" -c 'import json,sys; print(json.load(open(sys.argv[1]))["candidate_count"])' "$EV/candidates.json" 2>/dev/null || echo 0)"
 log "collected $CAND_COUNT candidates"
 if [ "${CAND_COUNT:-0}" -eq 0 ]; then
-  report "⚠️ 候補 0 件（検索 $(wc -l <"$SKILL/config/queries.txt") クエリを実走したが該当なし）。DOM セレクタ変更を疑う。"
+  report "⚠️ 候補 0 件（検索 $(wc -l <"$QUERIES_FILE") クエリを実走したが該当なし）。DOM セレクタ変更を疑う。"
   lesson "候補0件" "検索が0件を返し続けるなら話題不足でなく data-testid 変更を先に疑う"
   finish 0 "no candidates"
 fi
@@ -1289,7 +1293,7 @@ log "target language: $TARGET_LANGUAGE (rolling EN 7 / JA 3)"
 
 {
   cat <<'EOF'
-あなたは X アカウント @selawmqt（sela | AI Tools）の運用者。AI/creator toolsの実務情報を、検証可能なsourceに基づいて届ける。
+あなたはXアカウントの運用者。後続の「アカウント固有設定」に従い、検証可能なsourceへ読者価値を足す。
 
 ## いまやること
 1. 候補一覧から、読者へ具体的な価値を足せる投稿を **1本だけ** 選ぶ。
@@ -1297,7 +1301,7 @@ log "target language: $TARGET_LANGUAGE (rolling EN 7 / JA 3)"
 
 ## 選定基準
 - 伸びていて、かつ議論を呼んでいる（数字は candidates[].metrics を見る。regex ではなくお前の判断で選ぶ）。
-- **のっかれる AI / crypto の技術・実務の話題であること。**
+- **アカウント固有設定の関心領域に入り、技術・実務・創作の具体を足せる話題であること。**
 - 次は必ず除外する: 個人攻撃・誹謗中傷・政治対立・事件性の高い炎上・人の不幸・訃報・センシティブな属性の話。
 - 迷ったら選ばない。該当なしなら {"selected": false, "reason": "..."} だけを返す。
 
@@ -1315,7 +1319,7 @@ log "target language: $TARGET_LANGUAGE (rolling EN 7 / JA 3)"
 足す場合だけ自分の経験を1文まで使う。ハッシュタグと絵文字は使わない。
 
 ## 言語（最重要）
-この後に指定されるslot言語だけで書く。言語を混ぜない。候補にその言語の投稿が無ければ selected=false。
+この後に指定される出力言語だけで書き、言語を混ぜない。引用元に許可される言語はアカウント固有設定に従う。
 
 ## ここで失敗している（直近5本すべてに出た欠陥。同じ書き方をするな）
 
@@ -1347,8 +1351,15 @@ X の上限は 280 で、**日本語や全角文字は1文字が2と数えられ
 {"selected": true, "source_url": "...", "evidence_quote": "候補本文からの原文そのまま", "reader_value": "誰が何を試せるか", "why": "選んだ理由1文", "seed_id": "v00X または null",
  "drafts": [{"tone":"funny","text":"..."},{"tone":"empathy","text":"..."},{"tone":"primary","text":"..."}]}
 EOF
+  echo "## アカウント固有設定"
+  echo "運用アカウント: $ACCOUNT_HANDLE"
+  echo "人物像: $ACCOUNT_DESCRIPTION"
   if [ "$TARGET_LANGUAGE" = "ja" ]; then
-    echo "**このpassは日本語slot。日本語の候補だけを選び、日本語で書く。無ければ selected=false。**"
+    if [ "$SOURCE_LANGUAGE_POLICY" = "any" ]; then
+      echo "**出力は日本語のみ。日本語・英語どちらの候補も選べる。英語sourceは自然な日本語の付加価値へ翻訳し、英語本文を混ぜない。**"
+    else
+      echo "**このpassは日本語slot。日本語の候補だけを選び、日本語で書く。無ければ selected=false。**"
+    fi
   else
     echo "**このpassは英語slot。英語の候補だけを選び、英語で書く。**"
   fi

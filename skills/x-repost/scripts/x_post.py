@@ -146,11 +146,18 @@ def submit_effect(transport, text, mode, source_url, postiz_submit, browser_subm
     raise ValueError("unsupported X publish transport")
 
 
+def require_expected_handle(handle: str) -> None:
+    expected_handle = os.environ.get("X_REPOST_EXPECTED_HANDLE", "").strip().lstrip("@")
+    if expected_handle and handle.lower() != expected_handle.lower():
+        raise ValueError("leased browser account does not match expected handle")
+
+
 def browser_publish(pw, cdp: str, text: str, mode: str, source_url: str | None) -> dict:
     """Historical leased-browser composer effect restored from 95d4c151e^."""
     browser = pw.chromium.connect_over_cdp(cdp)
     ctx = browser.contexts[0] if browser.contexts else browser.new_context()
     handle = ensure_logged_in(get_page(browser))
+    require_expected_handle(handle)
     compose = ctx.new_page()
     published = False
     try:
