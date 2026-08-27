@@ -1,6 +1,8 @@
 "use strict";
 
 const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
 const test = require("node:test");
 const { classifyOwnership } = require("./marketing-ownership-audit.js");
 
@@ -18,4 +20,9 @@ test("ownership audit is ready only when every legacy candidate is unloaded or d
   assert.equal(result.status, "ready");
   assert.equal(result.conflicts.length, 0);
   assert.equal(result.legacy_safe, true);
+});
+
+test("ownership audit source does not introduce legacy path tokens into LM runtime", () => {
+  const source = fs.readFileSync(path.join(__dirname, "marketing-ownership-audit.js"), "utf8");
+  assert.doesNotMatch(source, /profitable-claude|\.openclaw/);
 });

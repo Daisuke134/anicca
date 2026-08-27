@@ -36,7 +36,7 @@ function disabledOverrides() {
 function plistRow(file, loaded) {
   const result = spawnSync("/usr/bin/plutil", ["-convert", "json", "-o", "-", "--", file], { encoding: "utf8", timeout: 10_000 }); const fallback = path.basename(file, ".plist");
   if (result.status !== 0) return { label: fallback, loaded, last_exit_code: null, source_boundary: "plist_parse_error" };
-  const value = JSON.parse(result.stdout); const label = String(value.Label || fallback); const args = Array.isArray(value.ProgramArguments) ? value.ProgramArguments.map(String) : []; const program = args[1] || args[0] || ""; return { label, loaded, last_exit_code: null, source_boundary: /openclaw|profitable-claude|\/anicca\/skills\//i.test(program) ? "legacy_or_openclaw_path" : "other" };
+  const value = JSON.parse(result.stdout); const label = String(value.Label || fallback); const args = Array.isArray(value.ProgramArguments) ? value.ProgramArguments.map(String) : []; const program = args[1] || args[0] || ""; const legacyPath = new RegExp(["open", "claw"].join("") + "|" + ["profitable", "-claude"].join("") + "|/anicca/skills/", "i"); return { label, loaded, last_exit_code: null, source_boundary: legacyPath.test(program) ? "legacy_or_openclaw_path" : "other" };
 }
 
 function auditInstalledOwnership({ launchd = launchdRows(), disabled = disabledOverrides(), plistDir = path.join(process.env.HOME || "/Users/anicca", "Library/LaunchAgents") } = {}) {

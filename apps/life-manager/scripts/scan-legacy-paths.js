@@ -182,11 +182,6 @@ const ALLOWLIST = [
     lineIncludes: "LEGACY_DEV_STORE =",
     reason: "fail-loud guard names the legacy dev-state dir only to refuse silent empty-state starts",
   },
-  {
-    file: "skills/video/daily-lm-video/generate.py",
-    lineIncludes: "LM_LEGACY_STATE_ROOT",
-    reason: "fail-loud guard names the legacy lm-video state only to refuse silent empty-state starts",
-  },
 ];
 
 function isTestFile(filePath) {
