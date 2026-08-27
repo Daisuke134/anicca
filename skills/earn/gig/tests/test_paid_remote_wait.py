@@ -565,6 +565,16 @@ def test_answer_receipt_does_not_close_pending_buyer_artifact():
     }) is True
 
 
+def test_successful_external_artifact_receipt_is_reverified():
+    paid = load("paid_direct")
+    instruction = paid._owner_tool_result_instruction()
+
+    assert "status=success" in instruction
+    assert "independently verify every declared artifact and acceptance hash" in instruction
+    assert "commercial-use evidence" in instruction
+    assert "not an automatic approval" in instruction
+
+
 def test_paid_effect_child_does_not_take_global_browser_lock(tmp_path):
     paid = load("paid_direct")
     args = SimpleNamespace(**{

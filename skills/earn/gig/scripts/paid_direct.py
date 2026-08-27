@@ -2773,6 +2773,19 @@ def _file_customer_message_instruction() -> str:
     )
 
 
+def _owner_tool_result_instruction() -> str:
+    return (
+        "If context/paid-tool-results.json exists, inspect its status. For status=success, independently "
+        "verify every declared artifact and acceptance hash, provider provenance, commercial-use evidence, "
+        "and correspondence to the buyer requirements before using that artifact; a receipt is evidence, "
+        "not an automatic approval. For status=failed, treat it as mechanical failure evidence and "
+        "semantically choose a different honest skill-supported input or approach. When failed evidence "
+        "explicitly marks interrupted_before_effect=true, controller/native-application health failed before "
+        "the input produced an effect; after health is repaired and read back, retry the same capability/input "
+        "hash. Otherwise never repeat the same capability and input hash."
+    )
+
+
 def _run_isolated_file_owner(args, root: Path, context: Path, prompt_text: str,
                              owner_evidence: Path) -> int:
     decision = _load(root / "context" / "paid-work-decision.json")
@@ -2820,12 +2833,8 @@ def _run_isolated_file_owner(args, root: Path, context: Path, prompt_text: str,
             "must contain capability, input, output and receipt fields using paths relative to this workdir. The currently "
             "available capability is illustrator_native_roundtrip with input, output and receipt fields. Return "
             "blocked after writing the request; the durable controller will execute it outside this sandbox and "
-            "resume this same owner to inspect the official receipt and finish the artifact. If "
-            "context/paid-tool-results.json exists, read it as mechanical failure evidence and semantically choose "
-            "a different honest skill-supported input or approach. When that evidence explicitly marks "
-            "interrupted_before_effect=true, controller/native-application health failed before the input produced "
-            "an effect; after health is repaired and read back, retry the same capability/input hash. Otherwise "
-            "never repeat the same capability and input hash.",
+            "resume this same owner to inspect the official receipt and finish the artifact. "
+            + _owner_tool_result_instruction(),
             encoding="utf-8",
         )
         staged_evidence = staging / "runner-evidence"
