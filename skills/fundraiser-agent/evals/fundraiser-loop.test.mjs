@@ -368,6 +368,8 @@ test("production queue enforces founder geography, format, priority, and YC hold
     "Y Combinator",
   ]);
   assert.match(fundraising.priority_queue[0].reason, /password-reset\/account-recovery/);
+  assert.match(fundraising.priority_queue[0].reason, /official free new-customer registration route/);
+  assert.match(fundraising.priority_queue[0].reason, /Do not preserve no-registration as a human checkpoint/);
   assert.match(fundraising.priority_queue[1].reason, /candidate\.travel_authorizations\[\]/);
   assert.match(fundraising.priority_queue[1].reason, /X\/Twitter credential record/);
   assert.match(fundraising.priority_queue[1].reason, /candidate\.citizenship/);

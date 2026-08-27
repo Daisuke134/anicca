@@ -12,7 +12,7 @@
       "program": "GSAP2026 Enterprise B2B Course Phase 2",
       "official_url": "https://www.jetro.go.jp/customer/act?actId=B0091249B",
       "action": "apply_now_rejected_credential_recovery",
-      "reason": "JETRO officially accepts Phase 2 applications through August 30, 2026. The latest official readback proves the matching stored credential is rejected as incorrect or unregistered. Do not retry that value. Use the official password-reset/account-recovery route, read the matching verification message through authenticated Gmail, atomically update the JETRO credential record, verify a fresh login, complete the application, and require an official completion PNG plus Telegram photo message ID.",
+      "reason": "JETRO officially accepts Phase 2 applications through August 30, 2026. The latest official readback proves the matching stored credential is rejected as incorrect or unregistered. Do not retry that value. Use the official password-reset/account-recovery route. If the official recovery route says no registration matches the authorized email and both authorized name forms, immediately use the official free new-customer registration route, generate a strong password, complete authenticated Gmail verification, atomically replace or update the stale JETRO credential record, verify a fresh login, and continue the application. Do not preserve no-registration as a human checkpoint. Complete the application and require an official completion PNG plus Telegram photo message ID.",
       "organization": "JETRO",
       "cohort_window": "2026-08-30"
     },
