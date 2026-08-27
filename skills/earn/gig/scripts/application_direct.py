@@ -1456,6 +1456,9 @@ def main(argv: list[str] | None = None) -> int:
                 output, pass_id, values, status="failed", args=args,
                 error="refresh_count_incoherent",
             )
+        if last_rc != 0 and phase_source_denials.get("refresh") is not None:
+            values["source_health"] = "新着sourceは一時access denial。既存intentを保持して次wakeで再試行"
+            return _finish(output, pass_id, values, status="ok", args=args)
         if last_rc != 0:
             values["source_health"] = f"新着情報の取得に失敗したため深掘りを停止（終了コード {last_rc}）"
         elif values["failed"]:
