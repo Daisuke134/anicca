@@ -58,7 +58,15 @@ export function paidTransport(account, fetchImpl = fetch) {
     ]);
     let selected;
     let selectorRejectedBeforeSigning = false;
-    const paidFetch = wrapFetchWithPaymentFromConfig(fetchImpl, {
+    let paymentBroadcastStarted = false;
+    const trackedFetch = async (input, init) => {
+      const outbound = input instanceof Request ? input : new Request(input, init);
+      if (outbound.headers.has("PAYMENT-SIGNATURE") || outbound.headers.has("X-PAYMENT")) {
+        paymentBroadcastStarted = true;
+      }
+      return fetchImpl(input, init);
+    };
+    const paidFetch = wrapFetchWithPaymentFromConfig(trackedFetch, {
       schemes: [{ network: "eip155:8453", client: new ExactEvmScheme(account) }],
       paymentRequirementsSelector: (_version, accepts) => {
         try {
@@ -78,7 +86,9 @@ export function paidTransport(account, fetchImpl = fetch) {
         body: JSON.stringify(request),
       });
     } catch (error) {
-      if (selectorRejectedBeforeSigning) error.code = "PAYMENT_REQUIREMENT_REJECTED_BEFORE_SIGNING";
+      if (paymentBroadcastStarted) error.code = "PAYMENT_REQUEST_BROADCAST_AMBIGUOUS";
+      else if (selectorRejectedBeforeSigning) error.code = "PAYMENT_REQUIREMENT_REJECTED_BEFORE_SIGNING";
+      else if (!paymentBroadcastStarted) error.code = "PAYMENT_REQUEST_NOT_BROADCAST";
       throw error;
     }
     const header = response.headers.get("PAYMENT-RESPONSE") || response.headers.get("X-PAYMENT-RESPONSE");
@@ -162,7 +172,7 @@ export function createComputeProxy({
         const body = JSON.parse(raw);
         const intentId = req.headers["idempotency-key"];
         if (typeof intentId !== "string" || !intentId) throw new Error("Idempotency-Key header is required");
-        if (PROFILES.has(String(body.model || "").toLowerCase())) body.model = frontierModel;
+        body.model = frontierModel;
         const revenueReceipts = await jsonl(revenueJournalPath);
         const execute = executeCompute || (await import("./compute-receipt.mjs")).executeComputeRequest;
         const result = await execute({

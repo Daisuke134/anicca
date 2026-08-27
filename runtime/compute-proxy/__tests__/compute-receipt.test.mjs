@@ -3,13 +3,14 @@ import { mkdtemp, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
+import { privateKeyToAccount } from "viem/accounts";
 import { normalizeRevenueReceipt } from "../../../skills/agent-economy/lib/revenue-receipt.mjs";
 import {
   appendComputeReceipt,
   buildComputeReceipt,
   executeComputeRequest,
 } from "../compute-receipt.mjs";
-import { paidTransport, publicProxyError, requireInstancePort, selectCappedRequirement } from "../proxy.mjs";
+import { createComputeProxy, paidTransport, publicProxyError, requireInstancePort, selectCappedRequirement } from "../proxy.mjs";
 
 const PAYER = "0x810f6d61f7606deee2657d3083e150a222bc29c5";
 const TX = `0x${"ab".repeat(32)}`;
@@ -213,6 +214,106 @@ test("installed x402 wrapper preserves pre-sign rejection through paidTransport 
   }
   assert.equal(fetchCalls, 2, "each retry reaches only the initial unsigned 402 quote");
   assert.equal(signatures, 0);
+});
+
+test("installed x402 wrapper marks signer failure as unbroadcast and releases locks", async () => {
+  const root = await mkdtemp(join(tmpdir(), "compute-x402-sign-fail-"));
+  let fetchCalls = 0;
+  let signatures = 0;
+  const requirement = {
+    scheme: "exact", network: "eip155:8453", asset: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+    amount: "1000", payTo: `0x${"22".repeat(20)}`, maxTimeoutSeconds: 60,
+    extra: { name: "USD Coin", version: "2" },
+  };
+  const encoded = Buffer.from(JSON.stringify({
+    x402Version: 2, accepts: [requirement],
+    resource: { url: "https://blockrun.ai/api/v1/chat/completions", description: "test", mimeType: "application/json" },
+  }), "utf8").toString("base64url");
+  const transport = paidTransport({
+    address: PAYER,
+    signTypedData: async () => { signatures += 1; throw new Error("local signer failed"); },
+  }, async () => {
+    fetchCalls += 1;
+    return new Response("", { status: 402, headers: { "PAYMENT-REQUIRED": encoded } });
+  });
+  const args = {
+    journalPath: join(root, "compute.jsonl"), intentId: "x402-sign-fail", payer: PAYER,
+    request: valid().request, fundingReceiptIds: [REVENUE_ID], revenueReceipts: revenue,
+    maxCostUsdc: 0.001, reserveUsdc: 0, sessionCapUsdc: 0.001,
+    getBalance: async () => 1.7, transport,
+  };
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    await assert.rejects(() => executeComputeRequest(args), (error) => error?.code === "PAYMENT_REQUEST_NOT_BROADCAST");
+  }
+  assert.equal(fetchCalls, 2);
+  assert.equal(signatures, 2);
+});
+
+test("signed fetch overwrites misleading safe code and remains durably ambiguous", async () => {
+  const root = await mkdtemp(join(tmpdir(), "compute-x402-broadcast-"));
+  let initialFetches = 0;
+  let signedFetches = 0;
+  const requirement = {
+    scheme: "exact", network: "eip155:8453", asset: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+    amount: "1000", payTo: `0x${"22".repeat(20)}`, maxTimeoutSeconds: 60,
+    extra: { name: "USD Coin", version: "2" },
+  };
+  const encoded = Buffer.from(JSON.stringify({
+    x402Version: 2, accepts: [requirement],
+    resource: { url: "https://blockrun.ai/api/v1/chat/completions", description: "test", mimeType: "application/json" },
+  }), "utf8").toString("base64url");
+  const transport = paidTransport(privateKeyToAccount(`0x${"11".repeat(32)}`), async (input) => {
+    const request = input instanceof Request ? input : new Request(input);
+    if (request.headers.has("PAYMENT-SIGNATURE") || request.headers.has("X-PAYMENT")) {
+      signedFetches += 1;
+      const error = new Error("connection lost after signed request");
+      error.code = "PAYMENT_REQUEST_NOT_BROADCAST";
+      throw error;
+    }
+    initialFetches += 1;
+    return new Response("", { status: 402, headers: { "PAYMENT-REQUIRED": encoded } });
+  });
+  const args = {
+    journalPath: join(root, "compute.jsonl"), intentId: "x402-broadcast", payer: PAYER,
+    request: valid().request, fundingReceiptIds: [REVENUE_ID], revenueReceipts: revenue,
+    maxCostUsdc: 0.001, reserveUsdc: 0, sessionCapUsdc: 0.001,
+    getBalance: async () => 1.7, transport,
+  };
+  await assert.rejects(() => executeComputeRequest(args), (error) => error?.code === "PAYMENT_REQUEST_BROADCAST_AMBIGUOUS");
+  await assert.rejects(() => executeComputeRequest(args), /requires reconciliation/u);
+  assert.equal(initialFetches, 1);
+  assert.equal(signedFetches, 1);
+});
+
+test("receipt-backed proxy forces the configured paid model regardless of resident free tier", async () => {
+  const root = await mkdtemp(join(tmpdir(), "compute-model-force-"));
+  let seenModel;
+  let balanceCalls = 0;
+  const server = createComputeProxy({
+    payer: PAYER,
+    revenueJournalPath: join(root, "revenue.jsonl"),
+    computeJournalPath: join(root, "compute.jsonl"),
+    fundingReceiptIds: [REVENUE_ID], maxCostUsdc: 0.001, reserveUsdc: 0, sessionCapUsdc: 0.001,
+    getBalance: async () => (++balanceCalls === 1 ? 1.7 : 1.699),
+    transport: async ({ request }) => {
+      seenModel = request.model;
+      return { output: valid().output, costUsdc: 0.001, settlement: valid().settlement };
+    },
+    frontierModel: "openai/gpt-5-nano",
+  });
+  await import("node:fs/promises").then(({ writeFile }) => writeFile(join(root, "revenue.jsonl"), `${JSON.stringify(revenue[0])}\n`));
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  try {
+    const { port } = server.address();
+    const response = await fetch(`http://127.0.0.1:${port}/v1/chat/completions`, {
+      method: "POST", headers: { "content-type": "application/json", "idempotency-key": "force-paid-model" },
+      body: JSON.stringify({ model: "free/glm-4.7", messages: [{ role: "user", content: "hello" }] }),
+    });
+    assert.equal(response.status, 200);
+    assert.equal(seenModel, "openai/gpt-5-nano");
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
 });
 
 test("different intents cannot spend the same earned receipts past cumulative reserve", async () => {
