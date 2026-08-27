@@ -424,7 +424,7 @@ test("R1A actor claim provisions one deterministic Telegram tenant under the exi
   assert.match(sql, /INSERT INTO public\.lm_panel_telegram_replays/i);
   assert.match(sql, /INSERT INTO public\.lm_users/i);
   assert.match(sql, /md5\(p_actor_id\)/i);
-  assert.match(sql, /ON CONFLICT\s*\(uid\)\s+DO NOTHING/i);
+  assert.match(sql, /ON CONFLICT ON CONSTRAINT lm_users_pkey DO NOTHING/i);
   assert.match(sql, /telegram_chat_id::text\s*=\s*p_actor_id/i);
   assert.match(sql, /FOR UPDATE/i);
   assert.match(sql, /RETURN QUERY SELECT 'replayed'/i);
@@ -439,4 +439,24 @@ test("R1A2 v2 actor claim stores profile name only for an empty existing name", 
   assert.match(sql, /CASE WHEN name IS NULL OR trim\(name\)\s*=\s*'' THEN NULLIF\(trim\(profile_name\), ''\) ELSE name END/i);
   assert.match(sql, /claim_lm_panel_telegram_init_v2\(p_init_hash, p_actor_id, NULL\)/i);
   assert.match(sql, /REVOKE ALL ON FUNCTION public\.claim_lm_panel_telegram_init_v2/i);
+});
+
+test("Task 11: clean and additive actor claims pin the lm_users primary-key arbiter", () => {
+  const migrationDir = path.join(__dirname, "../migrations");
+  const cleanName = "2026-08-27-lm-panel-onboarding-reachability.sql";
+  const additiveName = "2026-08-28-lm-panel-onboarding-reachability-arbiter.sql";
+  assert.equal(additiveName > cleanName, true, "the production repair migration must be lexically later");
+
+  for (const [label, name] of [["clean-install", cleanName], ["additive", additiveName]]) {
+    const migrationPath = path.join(migrationDir, name);
+    assert.equal(fs.existsSync(migrationPath), true, `${label} migration must exist`);
+    const sql = fs.readFileSync(migrationPath, "utf8");
+    const start = sql.search(/CREATE OR REPLACE FUNCTION public\.claim_lm_panel_telegram_init_v2\(/i);
+    assert.notEqual(start, -1, `${label} migration must define the v2 actor claim`);
+    const functionBody = sql.slice(start, sql.indexOf("$$;", start) + 3);
+    assert.match(functionBody, /ON CONFLICT ON CONSTRAINT lm_users_pkey DO NOTHING/i, `${label} migration must pin lm_users_pkey`);
+    assert.doesNotMatch(functionBody, /ON CONFLICT\s*\(\s*uid\s*\)\s+DO NOTHING/i, `${label} migration must not use an ambiguous uid arbiter`);
+    assert.match(functionBody, /UPDATE\s+public\.lm_users\s+AS\s+u[\s\S]*WHERE\s+u\.uid\s*=\s*bound_uid/i, `${label} migration must qualify the update uid`);
+    assert.doesNotMatch(functionBody, /UPDATE\s+public\.lm_users\s+SET[\s\S]*WHERE\s+uid\s*=\s*bound_uid/i, `${label} migration must not use an ambiguous update uid`);
+  }
 });
