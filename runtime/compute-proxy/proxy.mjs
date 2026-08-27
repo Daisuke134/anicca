@@ -57,18 +57,30 @@ export function paidTransport(account, fetchImpl = fetch) {
       import("@x402/fetch"), import("@x402/evm"),
     ]);
     let selected;
+    let selectorRejectedBeforeSigning = false;
     const paidFetch = wrapFetchWithPaymentFromConfig(fetchImpl, {
       schemes: [{ network: "eip155:8453", client: new ExactEvmScheme(account) }],
       paymentRequirementsSelector: (_version, accepts) => {
-        selected = selectCappedRequirement(maxCostUsdc, accepts);
-        return selected;
+        try {
+          selected = selectCappedRequirement(maxCostUsdc, accepts);
+          return selected;
+        } catch (error) {
+          if (error?.code === "PAYMENT_REQUIREMENT_REJECTED_BEFORE_SIGNING") selectorRejectedBeforeSigning = true;
+          throw error;
+        }
       },
     });
-    const response = await paidFetch(API, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(request),
-    });
+    let response;
+    try {
+      response = await paidFetch(API, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(request),
+      });
+    } catch (error) {
+      if (selectorRejectedBeforeSigning) error.code = "PAYMENT_REQUIREMENT_REJECTED_BEFORE_SIGNING";
+      throw error;
+    }
     const header = response.headers.get("PAYMENT-RESPONSE") || response.headers.get("X-PAYMENT-RESPONSE");
     const output = await response.json();
     if (!response.ok) throw new Error(`BlockRun request failed: HTTP ${response.status}`);

@@ -9,7 +9,7 @@ import {
   buildComputeReceipt,
   executeComputeRequest,
 } from "../compute-receipt.mjs";
-import { publicProxyError, requireInstancePort, selectCappedRequirement } from "../proxy.mjs";
+import { paidTransport, publicProxyError, requireInstancePort, selectCappedRequirement } from "../proxy.mjs";
 
 const PAYER = "0x810f6d61f7606deee2657d3083e150a222bc29c5";
 const TX = `0x${"ab".repeat(32)}`;
@@ -179,6 +179,40 @@ test("typed pre-sign payment requirement rejection releases intent and funding l
   await assert.rejects(() => executeComputeRequest(args), /quote over cap/u);
   await assert.rejects(() => executeComputeRequest(args), /quote over cap/u);
   assert.equal(calls, 2, "retry reaches the pre-sign selector instead of a stale ambiguity lock");
+});
+
+test("installed x402 wrapper preserves pre-sign rejection through paidTransport and retries without signing", async () => {
+  const root = await mkdtemp(join(tmpdir(), "compute-x402-presign-"));
+  let fetchCalls = 0;
+  let signatures = 0;
+  const requirement = {
+    scheme: "exact", network: "eip155:8453", asset: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+    amount: "1001", payTo: `0x${"22".repeat(20)}`, maxTimeoutSeconds: 60,
+    extra: { name: "USD Coin", version: "2" },
+  };
+  const paymentRequired = {
+    x402Version: 2, accepts: [requirement],
+    resource: { url: "https://blockrun.ai/api/v1/chat/completions", description: "test", mimeType: "application/json" },
+  };
+  const encoded = Buffer.from(JSON.stringify(paymentRequired), "utf8").toString("base64url");
+  const transport = paidTransport({
+    address: PAYER,
+    signTypedData: async () => { signatures += 1; throw new Error("must not sign"); },
+  }, async () => {
+    fetchCalls += 1;
+    return new Response("", { status: 402, headers: { "PAYMENT-REQUIRED": encoded } });
+  });
+  const args = {
+    journalPath: join(root, "compute.jsonl"), intentId: "x402-pre-sign", payer: PAYER,
+    request: valid().request, fundingReceiptIds: [REVENUE_ID], revenueReceipts: revenue,
+    maxCostUsdc: 0.001, reserveUsdc: 0, sessionCapUsdc: 0.001,
+    getBalance: async () => 1.7, transport,
+  };
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    await assert.rejects(() => executeComputeRequest(args), (error) => error?.code === "PAYMENT_REQUIREMENT_REJECTED_BEFORE_SIGNING");
+  }
+  assert.equal(fetchCalls, 2, "each retry reaches only the initial unsigned 402 quote");
+  assert.equal(signatures, 0);
 });
 
 test("different intents cannot spend the same earned receipts past cumulative reserve", async () => {
