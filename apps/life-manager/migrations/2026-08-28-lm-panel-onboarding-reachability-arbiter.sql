@@ -1,5 +1,6 @@
--- Task 7A R1A: make verified Telegram onboarding reachable without a legacy browser identity.
--- This migration only replaces existing RPCs; lm_users and lm_panel_preferences remain the SSOT.
+-- Task 11: repair the first-actor Telegram claim for installations that already ran
+-- 2026-08-27-lm-panel-onboarding-reachability.sql. Keep the full RPC contract and
+-- use the existing lm_users primary-key constraint as the unambiguous arbiter.
 
 CREATE OR REPLACE FUNCTION public.claim_lm_panel_telegram_init_v2(p_init_hash text, p_actor_id text, p_profile_name text)
 RETURNS TABLE(status text, uid text, chat_id text)
@@ -47,52 +48,5 @@ BEGIN
 END;
 $$;
 
--- Preserve the old service-role entrypoint for callers that have no profile display data.
-CREATE OR REPLACE FUNCTION public.claim_lm_panel_telegram_init(p_init_hash text, p_actor_id text)
-RETURNS TABLE(status text, uid text, chat_id text)
-LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
-BEGIN
-  RETURN QUERY SELECT * FROM public.claim_lm_panel_telegram_init_v2(p_init_hash, p_actor_id, NULL);
-END;
-$$;
-
-CREATE OR REPLACE FUNCTION public.sync_lm_panel_calendar_status(p_uid text, p_chat_id text, p_status text)
-RETURNS boolean
-LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
-DECLARE binding_uid text;
-BEGIN
-  SELECT uid INTO binding_uid FROM public.lm_users
-   WHERE uid = p_uid AND telegram_chat_id::text = p_chat_id FOR UPDATE;
-  IF binding_uid IS NULL THEN RAISE EXCEPTION 'scope_mismatch'; END IF;
-  IF p_status = 'ACTIVE' THEN
-    UPDATE public.lm_users SET calendar_provider = 'composio_gcal', updated_at = now() WHERE uid = p_uid;
-  ELSIF p_status IN ('MISSING', 'DISABLED', 'INACTIVE') THEN
-    UPDATE public.lm_users SET calendar_provider = NULL, updated_at = now()
-      WHERE uid = p_uid AND calendar_provider = 'composio_gcal';
-  ELSE
-    RAISE EXCEPTION 'calendar_status_unknown';
-  END IF;
-  RETURN true;
-END;
-$$;
-
--- The POST onboarding path must not commit a provider marker before a transition can reject. Both
--- operations therefore share this one transaction and the same tenant row lock.
-CREATE OR REPLACE FUNCTION public.lm_panel_onboarding_transition_with_calendar(
-  p_uid text, p_chat_id text, p_status text, p_action text, p_payload jsonb DEFAULT '{}'::jsonb
-) RETURNS jsonb
-LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
-BEGIN
-  PERFORM public.sync_lm_panel_calendar_status(p_uid, p_chat_id, p_status);
-  RETURN public.lm_panel_onboarding_transition(p_uid, p_chat_id, p_action, p_payload);
-END;
-$$;
-
-REVOKE ALL ON FUNCTION public.claim_lm_panel_telegram_init(text,text) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.claim_lm_panel_telegram_init_v2(text,text,text) FROM PUBLIC, anon, authenticated;
-REVOKE ALL ON FUNCTION public.sync_lm_panel_calendar_status(text,text,text) FROM PUBLIC, anon, authenticated;
-REVOKE ALL ON FUNCTION public.lm_panel_onboarding_transition_with_calendar(text,text,text,text,jsonb) FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.claim_lm_panel_telegram_init(text,text) TO service_role;
 GRANT EXECUTE ON FUNCTION public.claim_lm_panel_telegram_init_v2(text,text,text) TO service_role;
-GRANT EXECUTE ON FUNCTION public.sync_lm_panel_calendar_status(text,text,text) TO service_role;
-GRANT EXECUTE ON FUNCTION public.lm_panel_onboarding_transition_with_calendar(text,text,text,text,jsonb) TO service_role;
