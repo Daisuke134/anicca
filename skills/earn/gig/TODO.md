@@ -54,6 +54,57 @@ model narration, and local success without the named readback are not PASS.
   Official talkroom readback shows the exact message and 32.5 MB attachment; the formal-delivery
   checkbox remained off. Screenshot receipt: `evidence/coconala-manledge-v39-readback.png`.
 
+### Storefront paid-demand correction — current account-owner priority override
+
+Production measurement, not catalogue size, opens this override. The official 30-day seller
+analytics currently read 13 services, 479 views, 2 favourites and 0 purchases. The latest natural
+Storefront wake selects `Excel 自動化`, but the seller already has three Excel-family services with
+195 views and 0 purchases. It then blocks a new offer as
+`own_family_has_traffic_without_sales`, allocates 10 services to `IMPROVE`, zero to `REPLACE` or
+`RETIRE`, and ends `no_executable_unfenced_mutation_contract`. Storefront is technically alive but
+has not proved a product people pay for.
+
+Competitive research may copy public demand facts, package structure and price ranges. It must not
+copy another seller's identity, profile image, copyrighted listing image, exact prose, reviews,
+portfolio, credentials or results claims. Every published asset and sentence is original and every
+capability claim is backed by an installed executable capability.
+
+- [ ] `S01` Record the current official catalogue and conversion baseline.
+  PASS = one receipt binds all 13 service IDs to title, category, price, views, favourites,
+  purchases and current listing version; totals remain reconcilable to the official seller page.
+- [ ] `S02` Derive at least three candidate markets from official paid-demand evidence.
+  PASS = every candidate has public Coconala comparables with a nonzero review or sale count,
+  current displayed price, evidence URL and capture time; result count or views alone score zero.
+- [ ] `S03` Bind each paid-demand candidate to an executable owned capability.
+  PASS = each candidate names the installed skill/tool path, deliverable, buyer inputs, exclusions,
+  delivery time and proof method; unsupported candidates are rejected before drafting.
+- [ ] `S04` Rank candidates by verified demand, price, recurring potential and own conversion.
+  PASS = the ranker prefers official purchase/review evidence over search volume, penalizes an own
+  family with sufficient views and zero purchases, and selects one winner with a durable scorecard.
+- [ ] `S05` Permit a stronger candidate to replace a measured zero-purchase service before all 20
+  slots are full.
+  PASS = a regression changes one eligible allocation from `IMPROVE` to `REPLACE` when its sample
+  is sufficient, purchases/payments are zero and the replacement has stronger paid-demand proof;
+  a paid or insufficient-sample service remains protected.
+- [ ] `S06` Produce one original, truthful offer contract for the selected market.
+  PASS = title, body, packages, FAQ, price, original image brief and recurring-support boundary are
+  complete; prohibited-copy checks reject exact competitor prose, identity and image reuse.
+- [ ] `S07` Resolve the executable mutation/publication contract selected by `S06`.
+  PASS = the natural Storefront owner no longer ends
+  `no_executable_unfenced_mutation_contract` for that exact contract and records one fenced effect
+  intent before any seller-page mutation.
+- [ ] `S08` Publish through the installed Storefront owner and read the seller page back.
+  PASS = an immutable main release is current; official Coconala DOM matches the selected original
+  title, price, packages, body and image; the retired/replaced listing remains recoverable; replay
+  performs zero duplicate effects.
+- [ ] `S09` Attribute the first inquiry, order and payment to the originating service.
+  PASS = official talkroom/service identity, order and payment receipts retain the same service ID;
+  unknown remains explicit and storefront revenue is never inferred from views, favourites or chat.
+- [ ] `S10` Continue measured portfolio learning without cloning competitors.
+  PASS = each later wake either records a bounded official no-change reason or performs one fenced
+  mutation selected from conversion evidence; zero-sale offers can be replaced, paid offers stay
+  protected, and no competitor-owned prose/image/identity enters a published contract.
+
 ### Live four-lane repair
 
 - [x] `R00a` Reproduce the Reply and Paid retention faults from current production state.
