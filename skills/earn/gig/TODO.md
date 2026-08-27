@@ -69,10 +69,13 @@ copy another seller's identity, profile image, copyrighted listing image, exact 
 portfolio, credentials or results claims. Every published asset and sentence is original and every
 capability claim is backed by an installed executable capability.
 
-- [ ] `S01` Record the current official catalogue and conversion baseline.
+- [x] `S01` Record the current official catalogue and conversion baseline.
   PASS = one receipt binds all 13 service IDs to title, category, price, views, favourites,
   purchases and current listing version; totals remain reconcilable to the official seller page.
-- [ ] `S02` Derive at least three candidate markets from official paid-demand evidence.
+  Closed by `catalog_conversion_baseline`: 13 IDs, 479 views, 2 favourites, 0 purchases,
+  with per-listing version hashes and baseline SHA256
+  `3556abdf9ec79a4905d018bd33d198077b4313753b7ce65e9d1b93adf27cd89f`.
+- [x] `S02` Derive at least three candidate markets from official paid-demand evidence.
   PASS = every candidate has public Coconala comparables with a nonzero review or sale count,
   current displayed price, evidence URL and capture time; result count or views alone score zero.
   Current official observations establish four usable comparables: AI-agent business improvement
@@ -82,12 +85,18 @@ capability claim is backed by an installed executable capability.
   (`/services/4265050`, seller total sales 11, ¥300,000). Two monthly AI-support examples
   (`/services/4363787` and `/services/4309850`) each show seller total sales zero, so recurrence
   alone is not paid-demand evidence and does not raise their score.
-- [ ] `S03` Bind each paid-demand candidate to an executable owned capability.
+  The natural owner retained known paid-demand clusters for AI business automation, YouTube script
+  production and user-interview analysis; each has reviewed/sold comparables and a current median.
+- [x] `S03` Bind each paid-demand candidate to an executable owned capability.
   PASS = each candidate names the installed skill/tool path, deliverable, buyer inputs, exclusions,
   delivery time and proof method; unsupported candidates are rejected before drafting.
-- [ ] `S04` Rank candidates by verified demand, price, recurring potential and own conversion.
+  The public skill inventory now extends the capability market without replacing private families;
+  `skills/ai-automation-builder/SKILL.md` binds bounded implementation, verification and handover.
+- [x] `S04` Rank candidates by verified demand, price, recurring potential and own conversion.
   PASS = the ranker prefers official purchase/review evidence over search volume, penalizes an own
   family with sufficient views and zero purchases, and selects one winner with a durable scorecard.
+  The natural owner selected `業務自動化 AI エージェント 開発` (score 12) ahead of one-off
+  candidates after recurring potential became a ranking input.
 - [ ] `S05` Permit a stronger candidate to replace a measured zero-purchase service before all 20
   slots are full.
   PASS = a regression changes one eligible allocation from `IMPROVE` to `REPLACE` when its sample
@@ -96,6 +105,9 @@ capability claim is backed by an installed executable capability.
 - [ ] `S06` Produce one original, truthful offer contract for the selected market.
   PASS = title, body, packages, FAQ, price, original image brief and recurring-support boundary are
   complete; prohibited-copy checks reject exact competitor prose, identity and image reuse.
+  Draft `4371756` remains unpublished. Its first generated contract was rejected because it excluded
+  implementation and priced the service below the paid-comparable median. CREATE now requires one
+  bounded working implementation plus verification/handover and enforces the paid-demand price floor.
 - [ ] `S07` Resolve the executable mutation/publication contract selected by `S06`.
   PASS = the natural Storefront owner no longer ends
   `no_executable_unfenced_mutation_contract` for that exact contract and records one fenced effect

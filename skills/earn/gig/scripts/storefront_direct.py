@@ -3528,6 +3528,37 @@ def _render_generated_image_asset(proposed: str, service_id: str, evidence_dir: 
     return {"asset_sha256": hashlib.sha256(data).hexdigest(), "asset_path": str(path.resolve())}
 
 
+def _capability_requires_working_implementation(family: dict) -> bool:
+    text = json.dumps(family, ensure_ascii=False).lower()
+    return any(term in text for term in (
+        "build", "implement", "develop", "implementation",
+        "実装", "構築", "開発",
+    ))
+
+
+def _copy_delivers_working_implementation(copy: str) -> bool:
+    compact = re.sub(r"\s+", "", str(copy or ""))
+    exclusion_patterns = (
+        r"(?:実装|構築|開発|コード作成|連携設定).{0,30}(?:含みません|対応しません|対応していません|対象外)",
+        r"(?:含みません|対応しません|対応していません|対象外).{0,30}(?:実装|構築|開発|コード作成|連携設定)",
+    )
+    if any(re.search(pattern, compact) for pattern in exclusion_patterns):
+        return False
+    return bool(re.search(r"(?:実装|構築|開発).{0,50}(?:納品|提供|引き渡|テスト|検証)", compact))
+
+
+def _paid_demand_price_floor(demand: dict) -> int | None:
+    prices = sorted(
+        int(row["display_price_jpy"])
+        for row in demand.get("comparables") or []
+        if isinstance(row, dict)
+        and type(row.get("display_price_jpy")) is int
+        and row["display_price_jpy"] > 0
+        and (int(row.get("review_count") or 0) > 0 or int(row.get("sales_count") or 0) > 0)
+    )
+    return prices[len(prices) // 2] if prices else None
+
+
 def _create_proposal_prompt(
     source: dict, family_name: str, family: dict, demand: dict,
     capability_paths: set[str], catalog_titles: list[str],
@@ -3550,6 +3581,8 @@ def _create_proposal_prompt(
         "owned_capability_evidence": capabilities,
         "current_catalog_titles": catalog_titles,
         "allowed_evidence_refs": sorted(allowed_refs),
+        "working_implementation_required": _capability_requires_working_implementation(family),
+        "paid_demand_price_floor_jpy": _paid_demand_price_floor(demand),
     }
     prompt = """Create one distinct Coconala service proposal from CONTEXT_JSON and return only the
 strict schema object. The source_service_id must equal source_offer.service_id; that existing service
@@ -3563,6 +3596,10 @@ boundary. Write head and body as buyer-facing Japanese prose: never emit a schem
 English label such as `outcome:`, and never prefix a sentence with a bare label like `含むもの:`. body must state purchase inputs and unsupported work. image_copy is exactly three non-empty
 lines: headline, supporting line, and two or three short badges separated by `｜`; do not include price,
 speed, sales, reviews or guarantees. Price and paid option must be conservative. Choose create only
+when working_implementation_required is true only if the base offer includes one bounded working
+implementation, verification, and handover; never replace it with assessment, requirements, or a plan,
+and never exclude implementation, code, or integration. The base price must not be below
+paid_demand_price_floor_jpy when that value is present. Choose create only
 when the proposal is clearly distinct and supported. Otherwise choose no_op, set every nullable
 commercial field and metric/window to null, and provide no_op_reason. Do not claim that creation itself
 caused KPI improvement.\nCONTEXT_JSON=""" + json.dumps(context, ensure_ascii=False, separators=(",", ":"))
@@ -3643,7 +3680,7 @@ def _invoke_create_proposal(
 
 
 def _seal_create_contract(
-    proposal: dict, *, source: dict, family_name: str, allowed_refs: set[str],
+    proposal: dict, *, source: dict, family_name: str, family: dict, allowed_refs: set[str],
     blueprint: dict, seller_snapshot: dict, draft_service_id: str, evidence_dir: Path,
 ) -> dict | None:
     nullable = ("source_service_id", "title_stem", "catchphrase", "head", "body",
@@ -3691,6 +3728,9 @@ def _seal_create_contract(
     prohibited = _prohibited_copy_terms(title_stem, catchphrase, head, body, option_title, image_copy)
     if prohibited:
         raise RuntimeError("storefront_copy_names_prohibited_tool:" + ",".join(prohibited))
+    if (_capability_requires_working_implementation(family)
+            and not _copy_delivers_working_implementation(f"{head}\n{body}")):
+        raise RuntimeError("storefront_create_working_implementation_required")
     select_options = seller_snapshot.get("select_options") or {}
     display_price = proposal.get("display_price_jpy")
     price_option = next((row for row in select_options.get("data[Service][price]", [])
@@ -3700,6 +3740,9 @@ def _seal_create_contract(
                              if str(row.get("label") or "").replace(",", "") == f"{option_price}円"), None)
     if type(display_price) is not int or price_option is None or type(option_price) is not int or option_price_row is None:
         raise RuntimeError("storefront_create_price_invalid")
+    price_floor = _paid_demand_price_floor(blueprint.get("demand_evidence") or {})
+    if price_floor is not None and display_price < price_floor:
+        raise RuntimeError("storefront_create_below_paid_demand_price_floor")
     asset = _render_generated_image_asset(image_copy, draft_service_id, evidence_dir)
     unsigned = {
         "version": 1, "platform": "coconala",
@@ -6748,6 +6791,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                                              "category_child_route": child_route.get("model")}
                     new_listing_contract = _seal_create_contract(
                         create_proposal, source=create_source, family_name=create_family,
+                        family=create_template,
                         allowed_refs=create_allowed_refs, blueprint=blueprint,
                         seller_snapshot=create_seller_snapshot,
                         draft_service_id=str(create_draft_claim["draft_service_id"]),
