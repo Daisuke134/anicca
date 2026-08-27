@@ -692,13 +692,22 @@ provider E2E rows above.
 This is the program cursor. Work only on the first unchecked row whose prerequisites are complete;
 do not open a later provider, article, cloud migration, or child lane early.
 
+**Current stop — Order 5 is blocked on outside demand.** The only accepted 0.003-USDC revenue
+receipt is fully allocated: 0.002 USDC is the reconciled failed-compute cost and 0.001 USDC is the
+required reserve, leaving zero spendable accepted earnings. The seller, public 402 route, v2
+x402scan registration, inflow watcher, and acquisition controller are live, but no independently
+controlled buyer has produced a new settlement. Resume Order 5 only after a new Base-USDC tx/log to
+the target wallet passes the strict outside-payer verifier and appends once with replay-zero. A
+self-purchase, bootstrap/top-up, internal transfer, historical-row reclassification, reserve spend,
+or unverified marketplace event cannot satisfy this prerequisite.
+
 | Order | Deliverable | Prerequisite | Completion evidence | Status |
 |---:|---|---|---|---|
 | 1 | Safe append-only accounting and isolated identity | none | P0 tests and money-safety audit | complete |
 | 2 | Immutable, namespaced Life Manager owner | 1 | sealed release, loaded process, rollback, natural replay-zero | complete |
 | 3 | One outside sale | 1-2 | canonical 0.003-USDC chain receipt and second reconcile adds zero | complete |
 | 4 | Reconcile failed BlockRun settlement and close its consumed funding | 3 | 0.002-USDC cost row, tx/log join, stale-model diagnosis, no receipt reuse | complete |
-| 5 | Reproduce external revenue and complete paid BlockRun inference | 4 | new outside receipt, current explicit model, successful output, cost receipt, balance conservation, replay-zero | **current** |
+| 5 | Reproduce external revenue and complete paid BlockRun inference | 4 | new outside receipt, current explicit model, successful output, cost receipt, balance conservation, replay-zero | **blocked — outside buyer required** |
 | 6 | Revenue-funded ephemeral BlockRun compute | 5 | Modal payment, output, teardown, joined receipt | pending |
 | 7 | Integrate feature into canonical `main` | 4-6 | normal merge, clean tests, fresh-clone reproduction, launchd swap-race regression; no force-push | pending |
 | 8 | Publish article 1 and BlockRun quickstart | 7 | durable public URL, redacted receipt links, attributed quickstart | pending |
