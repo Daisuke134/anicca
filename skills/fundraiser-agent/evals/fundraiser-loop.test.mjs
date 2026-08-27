@@ -368,8 +368,10 @@ test("production queue enforces founder geography, format, priority, and YC hold
     "Y Combinator",
   ]);
   assert.match(fundraising.priority_queue[0].reason, /password-reset\/account-recovery/);
-  assert.match(fundraising.priority_queue[1].reason, /U\.S\. travel-authorization/);
+  assert.match(fundraising.priority_queue[1].reason, /candidate\.travel_authorizations\[\]/);
   assert.match(fundraising.priority_queue[1].reason, /X\/Twitter credential record/);
+  assert.match(fundraising.priority_queue[1].reason, /candidate\.citizenship/);
+  assert.match(fundraising.priority_queue[1].reason, /ESTA travel authorization is not a U\.S\. visa/);
   assert.match(fundraising.priority_queue[2].reason, /candidate\.name_kana/);
   assert.equal(fundraising.priority_queue.find((item) => item.program === "Y Combinator")?.action, "hold_do_not_submit");
   assert.match(dailyPrompt, /Reject Kenya and every other geography/);

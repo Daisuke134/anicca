@@ -20,7 +20,7 @@
       "program": "3 Month Program + Community",
       "official_url": "https://form.fillout.com/t/wbEMzSKo4vus?choice=3+Month+Program+%2B+Community",
       "action": "apply_now_private_profile_repair",
-      "reason": "Resume the existing Solo Founders application. Read country, city, U.S. travel-authorization type and employment-authorization status from their exact nested private-profile fields. Resolve the required public X/Twitter profile from the existing X/Twitter credential record's non-secret username. Use the founder's stated preference for an in-person San Francisco cohort for ordinary non-binding availability and housing-preference answers. Never invent citizenship or immigration facts. Complete every truthfully answerable page and require an official completion PNG plus Telegram photo message ID.",
+      "reason": "Resume the existing Solo Founders application. Read citizenship from candidate.citizenship. Read the United States record from candidate.travel_authorizations[] and candidate.work_authorizations[]; an ESTA travel authorization is not a U.S. visa, so select 'I would need a visa to be in the U.S.' without inventing status. Read country and city from candidate.mailing_address. Resolve the required public X/Twitter profile from the existing X/Twitter credential record's non-secret username. Use the founder's stated preference for an in-person San Francisco cohort for ordinary non-binding availability and housing-preference answers. Complete every truthfully answerable page and require an official completion PNG plus Telegram photo message ID.",
       "organization": "Solo Founders",
       "cohort_window": "September 10 2026"
     },
