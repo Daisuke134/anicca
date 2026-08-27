@@ -695,7 +695,18 @@ def _catalog_conversion_baseline(analytics_path: Path, contracts: list[dict]) ->
     latest: dict[str, dict] = {}
     for row in rows:
         service_id = str(row.get("service_id") or "")
-        if service_id and int(row.get("observed_at_epoch") or 0) >= int(
+        metrics = row.get("metrics")
+        known = (
+            row.get("official") is True
+            and isinstance(metrics, dict)
+            and all(
+                isinstance(metrics.get(name), dict)
+                and metrics[name].get("status") == "known"
+                and type(metrics[name].get("value")) is int
+                for name in ("views", "favorites", "purchases")
+            )
+        )
+        if service_id and known and int(row.get("observed_at_epoch") or 0) >= int(
                 latest.get(service_id, {}).get("observed_at_epoch") or 0):
             latest[service_id] = row
     services = []

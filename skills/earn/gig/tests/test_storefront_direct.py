@@ -55,6 +55,34 @@ def test_capability_evidence_default_comes_only_from_operator_env(monkeypatch):
     assert direct.build_parser().parse_args([]).capability_evidence == [Path("a"), Path("b")]
 
 
+def test_catalog_baseline_keeps_latest_official_known_metrics(tmp_path):
+    analytics = tmp_path / "analytics.jsonl"
+    known = {
+        "views": {"status": "known", "value": 7},
+        "favorites": {"status": "known", "value": 1},
+        "purchases": {"status": "known", "value": 0},
+    }
+    unavailable = {
+        name: {"status": "unavailable", "value": None}
+        for name in ("views", "favorites", "purchases")
+    }
+    analytics.write_text(
+        json.dumps({"service_id": "1", "official": True, "observed_at_epoch": 1,
+                    "metrics": known}) + "\n"
+        + json.dumps({"service_id": "1", "official": False, "observed_at_epoch": 2,
+                      "metrics": unavailable}) + "\n"
+    )
+
+    baseline = direct._catalog_conversion_baseline(
+        analytics,
+        [{"service_id": "1", "title": "service", "category": "cat",
+          "price_jpy": 1000, "state": "published", "service_version_sha256": "a" * 64}],
+    )
+
+    assert baseline["services"][0]["views"] == 7
+    assert baseline["services"][0]["observed_at_epoch"] == 1
+
+
 def _args(tmp_path: Path):
     """Start from the real CLI contract so the fixture cannot drift from the runtime."""
     args = direct.build_parser().parse_args([])
