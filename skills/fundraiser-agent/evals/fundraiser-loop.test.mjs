@@ -385,6 +385,8 @@ test("production queue enforces founder geography, format, priority, and YC hold
   assert.match(dailyPrompt, /first\(\.\. \| objects \| select/);
   assert.match(dailyPrompt, /never serialize the JSON\s+object into a public form/);
   assert.match(dailyPrompt, /Every coordinate passed to `cdp\.py clickxy` must be a validated base-10 integer/);
+  assert.match(dailyPrompt, /prefer an exact visible `aria-label`/);
+  assert.match(dailyPrompt, /Structural position selectors are a last resort/);
 });
 
 test("unseen rendered fields are filled from startup context and read back after one submit", async () => {

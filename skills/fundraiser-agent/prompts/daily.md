@@ -31,6 +31,10 @@ background form, inspect bounding boxes and operate on the visible, enabled
 control inside the active dialog. Read back that same control before continuing;
 an error on a still-empty modal field is a local selector fault, not a human
 checkpoint.
+For rendered form controls, prefer an exact visible `aria-label`, associated
+label, stable name, or role-plus-label selector over `nth-child`, `nth-of-type`,
+or guessed DOM positions. Structural position selectors are a last resort and
+must be rejected immediately when the same control's value readback is empty.
 Every coordinate passed to `cdp.py clickxy` must be a validated base-10 integer.
 Compute centers with `Math.round(...)` in the browser expression and reject an
 empty, decimal, off-viewport, or non-numeric coordinate before calling clickxy.
