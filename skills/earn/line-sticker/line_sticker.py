@@ -1788,7 +1788,7 @@ def _wake_owner_unlocked(
         pending_submit = _rows_for_action(rows, identity, "submit")
         pending_release = _rows_for_action(rows, identity, "release")
         unknown_submit_receipt = pending_submit.get("unknown")
-        if unknown_submit_receipt is not None and isinstance(unknown_submit_receipt.get("product_id"), str) and observation["product_id"] != unknown_submit_receipt["product_id"]:
+        if unknown_submit_receipt is not None and observation["status"] in ("submitted", "rejected", "approved") and isinstance(unknown_submit_receipt.get("product_id"), str) and observation["product_id"] != unknown_submit_receipt["product_id"]:
             raise OwnerStateError("ledger_conflict")
         if observation["status"] == "released" and "intent" not in pending_release:
             raise OwnerStateError("provider_state_conflict")

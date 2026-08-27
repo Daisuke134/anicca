@@ -1048,6 +1048,22 @@ class LineStickerOwnerTests(unittest.TestCase):
         self.assertEqual(rows[-1]["product_id"], "123")
 
         restarted = FakeProvider(provider.inventory)
+        owner_before = (self.state / "owner.json").read_bytes()
+        ledger_before = (self.state / "effects.jsonl").read_bytes()
+        for status in ("absent", "draft"):
+            with self.subTest(status=status):
+                restarted.inventory["status"] = status
+                if status == "absent":
+                    restarted.inventory["product_id"] = None
+                    restarted.inventory["public_url"] = None
+                else:
+                    restarted.inventory["product_id"] = "123"
+                stayed = self._wake(restarted)
+                self.assertEqual((stayed["state"], stayed["effect"], stayed["readback"]), ("RECONCILE_UNKNOWN", None, 0))
+                self.assertEqual((provider.submit_calls, restarted.submit_calls), (1, 0))
+                self.assertEqual(((self.state / "owner.json").read_bytes(), (self.state / "effects.jsonl").read_bytes()), (owner_before, ledger_before))
+        restarted.inventory["status"] = "submitted"
+        restarted.inventory["product_id"] = "123"
         second = self._wake(restarted)
         self.assertEqual((second["state"], second["effect"], second["readback"]), ("WAITING_REVIEW", 0, 1))
         self.assertEqual(restarted.submit_calls, 0)
