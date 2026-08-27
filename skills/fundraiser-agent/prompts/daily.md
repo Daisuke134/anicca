@@ -87,7 +87,10 @@ or passwords. The only authorized private sources are the two exact files above;
 before claiming that an account is unavailable, inspect the credential SSOT in
 memory and match its non-secret `service`, `service_url`, or official-domain value.
 Credential records are a list and need not use a provider-named top-level key.
-Load only the matching username/email/password into non-printing variables. An
+The list may itself be nested under a container object: select matching records
+with `first(.. | objects | select(<service or official-domain match>))`, rather
+than assuming the credential file root is an array. Load only the matching
+username/email/password into non-printing variables. An
 existing matching JETRO, ASAC, or other provider record must be used; never
 checkpoint it as absent merely because a guessed JSON path is absent. If no
 matching record exists and the provider offers ordinary registration, create the
