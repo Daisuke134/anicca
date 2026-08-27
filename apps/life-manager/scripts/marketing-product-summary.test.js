@@ -44,6 +44,29 @@ test("Anicca daily summary binds main sources and keeps JP4 and HE unavailable",
   const result = persistAniccaDaily(dataDir, day, "2026-08-22T13:00:00.000Z"); assert.equal(result.created, true); assert.equal(result.snapshot.source_refs.length, 2); assert.match(result.snapshot.message, /@anicca\.jp TikTok: Views 100/); assert.match(result.snapshot.message, /@anicca\.jp1 Instagram: Views 101/); assert.match(result.snapshot.message, /@anicca\.jp4 TikTok: 全social\/account metrics取得不可/); assert.match(result.snapshot.message, /@anicca\.he TikTok: 全social\/account metrics取得不可/); assert.match(result.snapshot.message, /7676500512308481296/);
 });
 
+test("Anicca daily summary covers every selected account and joins cadence health", () => {
+  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "lm-anicca-full-summary-")); const day = "2026-08-28"; const core = [["anicca.jp", "@anicca.jp", "tiktok", "https://www.tiktok.com/@anicca.jp/video/1001"], ["anicca.ios.jp", "@anicca.jp1", "instagram", "https://www.instagram.com/reel/CORE2/"]];
+  const extras = [
+    ["ani.cca1234", "@ani.cca1234", "instagram", "https://www.instagram.com/p/CAROUSEL1/"],
+    ["anicca.jp.videos", "@anicca.jp.videos", "instagram", "https://www.instagram.com/reel/WIDGETJA1/"],
+    ["anicca.encards", "@anicca.encards", "instagram", "https://www.instagram.com/reel/CARDEN1/"],
+    ["anicca.en", "@anicca.en", "instagram", "https://www.instagram.com/reel/WIDGETEN1/"],
+    ["anicca.affirmation", "@anicca.affirmation", "instagram", "https://www.instagram.com/p/AFFIRM1/"],
+    ["anicca_slideshow", "@anicca_slideshow", "tiktok", "unavailable"],
+    ["obou.anicca", "@obou.anicca", "instagram", "https://www.instagram.com/reel/OBOU1/"],
+  ];
+  for (const [owner, account, platform, public_url] of core.concat(extras)) {
+    const directory = path.join(dataDir, "tenants/dais-local/marketing/metrics", owner, "effect", "daily"); fs.mkdirSync(directory, { recursive: true });
+    const locale = ["@anicca.encards", "@anicca.en", "@anicca.affirmation", "@anicca_slideshow"].includes(account) ? "en" : "ja";
+    fs.writeFileSync(path.join(directory, `${day}.json`), JSON.stringify({ kind: `${platform}_daily_metric_digest`, window: "daily", observed_at: "2026-08-28T12:00:00.000Z", account_id: account, locale, public_url, post: { views: { status: "measured", value: 1 }, likes: { status: "measured", value: 0 }, comments: { status: "measured", value: 0 }, shares: { status: "measured", value: 0 }, saves: { status: "measured", value: 0 }, engagement: { status: "measured", percent: 0 } }, account_metrics: { status: "unavailable" } }));
+  }
+  const cadence = path.join(dataDir, "marketing/cadence", `${day}.json`); fs.mkdirSync(path.dirname(cadence), { recursive: true }); fs.writeFileSync(cadence, JSON.stringify({ schema_version: 1, kind: "marketing_product_metric_summary", product_id: "mobile-marketing", report_day: day, counts: { published: 13, pending: 2, missed: 24, duplicate: 0 }, routes: [] }));
+  const result = persistAniccaDaily(dataDir, day, "2026-08-28T13:00:00.000Z");
+  assert.equal(result.snapshot.account_coverage.length, 11);
+  assert.equal(result.snapshot.account_coverage.find(({ account_id }) => account_id === "@anicca_slideshow").status, "measured");
+  assert.match(result.snapshot.message, /Cadence: Published 13、Pending 2、Missed 24、Duplicate 0/);
+});
+
 test("weekly review binds both products without cross-product winner transfer", () => {
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "lm-weekly-summary-")); const day = "2026-08-22";
   for (const [product, label] of [["honne-ai", "Honne AI"], ["anicca-ios", "Anicca iOS"]]) { const directory = path.join(dataDir, "tenants/dais-local/marketing/metrics/summaries", product, "daily"); fs.mkdirSync(directory, { recursive: true }); fs.writeFileSync(path.join(directory, `${day}.json`), JSON.stringify({ schema_version: 1, kind: "marketing_product_metric_summary", period: "daily", report_key: day, observed_at: "2026-08-22T13:00:00.000Z", product_id: product, source_refs: [], message: `Life Manager::: ${label} source values` })); }
