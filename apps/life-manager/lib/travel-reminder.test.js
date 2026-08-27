@@ -10,6 +10,7 @@ const {
   isReminderDue,
   nextReminderEvent,
   resolveReminderOrigin,
+  resolveReminderDestination,
   computeDepartureMs,
   computeReminderDueAt,
   formatTravelReminder,
@@ -105,6 +106,36 @@ test("origin precedence is fresh live location, previous venue within 90m, then 
     kind: "home", value: HOME,
   });
   assert.equal(resolveReminderOrigin(current, { events: [far, current], home: "", nowMs: NOW }), null);
+});
+
+test("resolved destination uses the latest adjacent outbound Travel location only", () => {
+  const current = event({ id: "target", location: "渋谷" });
+  const older = { id: "travel-old", summary: "[Travel] 🚆 home→old", location: "旧住所", startMs: START - 50 * 60000, endMs: START - 60000 };
+  const latest = { id: "travel-latest", summary: "🚆 移動 home→complete", location: "東京都渋谷区神南1-1-1", startMs: START - 40 * 60000, endMs: START + 30000 };
+  assert.equal(resolveReminderDestination(current, { events: [older, latest, current] }), latest.location);
+
+  const returnBlock = { summary: "[Travel] 🚆 return", location: "帰宅住所", startMs: START + 30000, endMs: START + 30000 };
+  const pending = { summary: "[PENDING] helper", location: "保留住所", startMs: START - 10 * 60000, endMs: START };
+  const unrelated = { summary: "[Travel] 🚆 unrelated", location: "遠い住所", startMs: START - 30 * 600000, endMs: START - 30 * 600000 };
+  const empty = { summary: "[Travel] 🚆 empty", location: "", startMs: START - 5 * 60000, endMs: START };
+  assert.equal(resolveReminderDestination(current, { events: [returnBlock, pending, unrelated, empty, current] }), current.location);
+});
+
+test("travel reminder routes through resolved destination while displaying the original event location", async () => {
+  const destination = "東京都渋谷区神南1-1-1";
+  const current = event({ id: "target-route", location: "渋谷", startMs: NOW + 3 * T5_MS, endMs: NOW + 63 * 60000 });
+  const outbound = { id: "travel-route", summary: "[Travel] 🚆 home→resolved", location: destination, startMs: current.startMs - 40 * 60000, endMs: current.startMs - 30000 };
+  const seen = [], sent = [];
+  const result = await travelReminderOnce({ uid: "u-destination", telegram_chat_id: "chat-destination", notifications_enabled: true }, NOW, {
+    events: [outbound, current], home: HOME, mapsKey: "maps", timezone: "Asia/Tokyo", telegramToken: "token", supaUrl: "supa", supaKey: "key",
+    directionsRoute: async (_origin, to) => { seen.push(to); return { durationSeconds: 5 * 60 }; },
+    claimTravel: async () => true,
+    sendMessage: async (_token, _chat, text) => { sent.push(text); return { ok: true, result: { message_id: 709 } }; },
+  });
+  assert.equal(result.status, "sent");
+  assert.deepEqual(seen, [destination]);
+  assert.match(sent[0], /目的地: 渋谷/);
+  assert.doesNotMatch(sent[0], new RegExp(destination));
 });
 
 test("formatter emits the canonical ordered Japanese route shape and only provider facts", () => {
