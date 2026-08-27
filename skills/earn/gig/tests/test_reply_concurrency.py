@@ -1667,6 +1667,31 @@ def test_supervise_slow_workers_overlap_and_claim_second_before_first_finishes(t
     assert first_finished.is_set()
 
 
+def test_head_snapshot_collector_has_a_bounded_process_timeout(tmp_path, monkeypatch):
+    calls = []
+    snapshot = tmp_path / "head-snapshot.json"
+
+    def run(step, arguments, **kwargs):
+        calls.append((step, kwargs.get("timeout")))
+        snapshot.write_text(json.dumps({
+            "collector_mode": "direct-inbox-head-only",
+            "head_only": True,
+            "inquiries": [],
+        }), encoding="utf-8")
+
+    monkeypatch.setattr(detector, "_run", run)
+    args = argparse.Namespace(
+        snapshot_script=tmp_path / "snapshot.py",
+        database=tmp_path / "outbox.sqlite3",
+        manifest=tmp_path / "manifest.json",
+    )
+
+    result = detector._collect_head_snapshot(args, tmp_path)
+
+    assert result["inquiries"] == []
+    assert calls == [("head_collect", 45)]
+
+
 def test_supervise_restart_replays_pending_inbox_once(tmp_path):
     args = _supervisor_args(tmp_path)
     database = outbox.ConnectorOutbox(args.database, args.manifest)
