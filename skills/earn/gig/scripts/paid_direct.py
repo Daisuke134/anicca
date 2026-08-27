@@ -379,6 +379,13 @@ def _validated_customer_attachment(root: Path, value: Any) -> dict[str, str] | N
     return {"path": str(path), "filename": filename, "sha256": digest}
 
 
+def _answer_cycle_may_close(item: dict[str, Any]) -> bool:
+    return not (
+        item.get("buyer_feedback_pending_artifact") is True
+        and item.get("buyer_visible_artifact_observed") is not True
+    )
+
+
 def _reported_remote_cycle(args, item: dict[str, Any]) -> Path | None:
     """Recognize a verified remote cycle already reported in the official room."""
     try:
@@ -403,7 +410,8 @@ def _reported_remote_cycle(args, item: dict[str, Any]) -> Path | None:
         # semantic decision stale. Replay recognition therefore binds the signed answer intent
         # directly to the unchanged buyer feedback and official seller-last readback; requiring
         # the old decision to remain current makes every successful answer look actionable again.
-        if intent.get("mode") in {"answer", "consultation_answer"} and not new_non_answer_work:
+        if (intent.get("mode") in {"answer", "consultation_answer"}
+                and not new_non_answer_work and _answer_cycle_may_close(observed)):
             _validate_consultation_authorization(root, feedback)
             message = _text(answer.get("message"))
             formal = observed.get("formal_delivery_observed", observed.get("formal_delivery_confirmed"))

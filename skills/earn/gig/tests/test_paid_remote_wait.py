@@ -552,6 +552,19 @@ def test_paid_project_executor_runs_different_owners_in_parallel():
     assert maximum == 2
 
 
+def test_answer_receipt_does_not_close_pending_buyer_artifact():
+    paid = load("paid_direct")
+
+    assert paid._answer_cycle_may_close({
+        "buyer_feedback_pending_artifact": True,
+        "buyer_visible_artifact_observed": False,
+    }) is False
+    assert paid._answer_cycle_may_close({
+        "buyer_feedback_pending_artifact": False,
+        "buyer_visible_artifact_observed": False,
+    }) is True
+
+
 def test_paid_effect_child_does_not_take_global_browser_lock(tmp_path):
     paid = load("paid_direct")
     args = SimpleNamespace(**{
