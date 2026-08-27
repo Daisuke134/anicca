@@ -36009,3 +36009,11 @@
 {"ts":1787857638,"wake_id":"00MTBW9YLE227CD27459644439","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1787857780,"wake_id":"00MTBWD029B447A46DD6D74E3C","kind":"wake_error","sleep_s":60,"model":"auto"}
 {"ts":1787857849,"wake_id":"00MTBWEHS80998E548500045D1","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787857988,"wake_id":"00MTBWHH1FF35E400E3B0F4FB0","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787858126,"wake_id":"00MTBWKFF8336B92411C8D46D4","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787858276,"wake_id":"00MTBWNMU5B1F53DFE145A4A5D","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1787858348,"wake_id":"00MTBWP6LXF4A1ABDA9C41456B","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787858487,"wake_id":"00MTBWS5O33738D08453834AF5","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1787858558,"wake_id":"00MTBWTOSG56F79F5665A749D4","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787858694,"wake_id":"00MTBWWLG3F855015CD84A44A2","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1787858764,"wake_id":"00MTBWY3V64A02F98D71C84B7E","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"shell-init: error retrieving current directory: getcwd: cannot access parent directories: No such file or directory chdir: error retrieving current directory: getcwd: cannot access parent directories:"}
