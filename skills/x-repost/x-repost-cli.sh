@@ -1151,10 +1151,29 @@ if [ "${X_REPOST_DAILY_MAX:-0}" -gt 0 ] \
 fi
 
 # ---------------------------------------------------------------- 1. recon
-if ! run_x_script x_collect.py --cdp "$CDP" --mode recon \
-      --queries "$SKILL/config/queries.txt" --posted "$POSTED" >"$EV/candidates.json" 2>>"$EV/collect.err"; then
-  report "❌ recon failed — $(tail -1 "$EV/collect.err" 2>/dev/null)"
-  finish 1 "recon failed"
+if [ -n "${X_REPOST_CANDIDATES_FILE:-}" ]; then
+  if ! "$PY" - "$X_REPOST_CANDIDATES_FILE" >"$EV/candidates.json" <<'PYEOF'
+import json, sys
+value = json.load(open(sys.argv[1], encoding="utf-8"))
+candidates = value.get("candidates") if isinstance(value, dict) else None
+if not isinstance(candidates, list): raise SystemExit(1)
+for row in candidates:
+    if not isinstance(row, dict) or not all(isinstance(row.get(key), str) and row[key]
+                                            for key in ("url", "text", "handle")):
+        raise SystemExit(1)
+value["candidate_count"] = len(candidates)
+json.dump(value, sys.stdout, ensure_ascii=False)
+PYEOF
+  then
+    report "❌ external source candidate receipt is invalid"
+    finish 1 "external source candidate receipt invalid"
+  fi
+else
+  if ! run_x_script x_collect.py --cdp "$CDP" --mode recon \
+        --queries "$SKILL/config/queries.txt" --posted "$POSTED" >"$EV/candidates.json" 2>>"$EV/collect.err"; then
+    report "❌ recon failed — $(tail -1 "$EV/collect.err" 2>/dev/null)"
+    finish 1 "recon failed"
+  fi
 fi
 CAND_COUNT="$("$PY" -c 'import json,sys; print(json.load(open(sys.argv[1]))["candidate_count"])' "$EV/candidates.json" 2>/dev/null || echo 0)"
 log "collected $CAND_COUNT candidates"
@@ -1285,7 +1304,7 @@ log "target language: $TARGET_LANGUAGE (rolling EN 7 / JA 3)"
 ## 3案が必ず守ること
 1. 相手をディスらない（否定・反論・訂正から入らない）
 2. ポジティブな話を入れる
-3. 自分にしかできない話をする（一次情報の種にある自分の実測だけ。合う種が無ければ selected=false）
+3. source固有のexact detailを使う。一次情報の種が自然に合う時だけ自分の実測を足す
 4. 自分の話をしすぎない（相手と読者が主役。自分への言及は1回まで）
 5. アクションにつなげる（読んだ人が次に何を試すか）
 6. source本文または一次情報の種に無い数値・期間・回数を新しく作らない
@@ -1360,9 +1379,20 @@ EOF
 「幅が広がる」「一歩だ」「試したい」で終わる感想文は selected=false より悪い。
 EOF
   fi
-  echo; echo "## 一次情報の種（この一覧の事実だけ使う。使ったら seed_id を返す）"
-  echo "直近14日に使った種は除外済み。引用元に自然に接続できる一次情報の種が無ければ selected=false。
-5点はすべて必須で、③を一般論・創作・相手の投稿の言い換えで代用しない。"
+  if [ "${X_REPOST_SOURCE_MODE:-}" = "chinese-public" ]; then
+    cat <<'EOF'
+## Chinese public source mode（この節が上の候補言語・一次体験seed規則を置換する）
+候補本文は中国語、最終投稿は英語にする。中国語だから候補を除外してはいけない。
+自分の体験やseedは不要で、source固有の事実・手順・制約を読者が試せる形に翻訳する。
+evidence_quote は候補本文から中国語原文を一字も創作せず抜き、evidence_translation に
+忠実な英訳を書く。元URLは投稿処理が末尾へ付ける。一般論しか作れないなら selected=false。
+このmodeの出力では seed_id は null とし、次のfieldを必ず含める:
+{"evidence_translation":"中国語 evidence_quote の忠実な英訳"}
+EOF
+  fi
+  echo; echo "## 任意の一次情報の種（自然に合う時だけ使い、使ったら seed_id を返す）"
+  echo "種が0件でもsource固有のexact detailがあれば投稿を作る。③を一般論・創作・
+相手の投稿の言い換えで代用しない。合う種が無ければ seed_id は null。"
   cat "$EV/seeds-available.json"
   echo; echo "## 過去に伸びた自分の投稿（文体の参考。内容の再利用はしない）"; cat "$EV/fewshot.json"
   echo; echo "## 候補一覧"; cat "$EV/candidates.json"
@@ -1377,19 +1407,17 @@ if [ "$SELECTED" != "True" ]; then
   report "⚠️ 今回は該当なしで見送り: $REASON"
   finish 0 "model selected nothing"
 fi
-if ! "$PY" - "$EV/select.json" "$EV/seeds-available.json" >"$EV/chosen-seed.json" <<'PYEOF'
+"$PY" - "$EV/select.json" "$EV/seeds-available.json" >"$EV/chosen-seed.json" <<'PYEOF'
 import json, sys
 selected = json.load(open(sys.argv[1], encoding="utf-8"))
 seeds = json.load(open(sys.argv[2], encoding="utf-8"))
 seed_id = selected.get("seed_id")
 seed = next((row for row in seeds if row.get("id") == seed_id), None)
-json.dump({"ok": bool(seed), "seed": seed}, sys.stdout, ensure_ascii=False)
-raise SystemExit(0 if seed else 1)
+json.dump({"ok": True, "seed": seed,
+           "reason": ("selected optional firsthand seed" if seed else
+                      "source evidence replaces firsthand seed")},
+          sys.stdout, ensure_ascii=False)
 PYEOF
-then
-  report "⚠️ 5点目標の③を裏付ける一次情報の種が無いため投稿を見送り"
-  finish 0 "unique firsthand seed contract failed"
-fi
 if ! "$PY" - "$EV/select.json" "$EV/candidates.json" >"$EV/grounding.json" <<'PYEOF'
 import json, sys
 selected = json.load(open(sys.argv[1], encoding="utf-8"))
@@ -1565,11 +1593,14 @@ SRC_METRICS="$("$PY" -c 'import json,sys; print(json.load(open(sys.argv[1]))["me
   echo "さらに、sourceの要約や『幅が広がる』『試したい』だけなら useful=false。"
   echo "読者が実行できる手順、判断基準、失敗条件、比較方法のうち異なる2種類を具体的に足した時だけ useful=true。"
   echo "source固有の仕組み・数字・制約を少なくとも1つ使わない一般論は useful=false。"
-  echo "five_points は画像の5点を最終本文そのものについて個別判定し、1つでも欠ければ false にする。adds_unique_firsthand_detail は一次情報の種に根拠がある固有の実測だけ true。"
+  echo "five_points は5点を最終本文そのものについて個別判定し、1つでも欠ければ false にする。adds_unique_firsthand_detail はsource固有のexact detail、または選択済みの一次情報seedに根拠がある時だけ true。"
   echo "URL、文体、viralらしさではなく事実支持と読者効用を別々に判定する。"
   if [ "$KIND" = "original" ]; then
     echo "Originalについてはrecent postsとの主張・角度・表現のnear-duplicateも判定し、novel、spam_risk、near_duplicate_post_idsを返す。"
     echo; echo "## recent originals / posts"; cat "$EV/fewshot.json"
+  fi
+  if [ "${X_REPOST_SOURCE_MODE:-}" = "chinese-public" ]; then
+    echo "evidence_quoteの英訳がfinal postの主張と一致しなければ supported=false。"
   fi
   echo; echo "## source"; cat "$EV/source.json"
   echo; echo "## 選択済み一次情報の種"; cat "$EV/chosen-seed.json"
@@ -1602,9 +1633,11 @@ candidate = next((row for row in candidates.get("candidates", [])
 if candidate is None: raise SystemExit(1)
 source = {
     "url": source_url,
-    "title": (candidate.get("handle") or source_url).strip(),
+    "title": (candidate.get("title") or candidate.get("handle") or source_url).strip(),
     "text": (candidate.get("text") or "").strip(),
     "source_kind": "public_source_post",
+    "source_domain": candidate.get("source_domain"),
+    "source_language": candidate.get("source_language"),
     "observed_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
 }
 text = open(os.path.join(ev, "post.txt"), encoding="utf-8").read().strip()
@@ -1615,6 +1648,7 @@ draft = {
     "text": text,
     "source_url": source_url,
     "evidence_quote": grounding.get("canonical_evidence"),
+    "evidence_translation": selected.get("evidence_translation"),
     "reader_value": selected.get("reader_value"),
     "value_types": verify.get("value_types") or [],
 }

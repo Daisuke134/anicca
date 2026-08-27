@@ -20,16 +20,19 @@ class OriginalContractTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             source = {
-                "url": "https://example.com/official-ai-workflow",
-                "title": "Official workflow guide",
-                "text": "Validate the source before automating the next publishing handoff.",
-                "source_kind": "official_documentation",
+                "url": "https://www.xiaohongshu.com/explore/official-ai-workflow",
+                "title": "Chinese creator workflow guide",
+                "text": "先验证来源，再自动执行下一个发布交接。",
+                "source_kind": "public_source_post",
+                "source_domain": "xiaohongshu.com",
+                "source_language": "zh",
                 "observed_at": "2026-08-24T00:00:00+00:00",
             }
             draft = {
                 "text": "Validate the source before automating a publishing handoff. Keep the step only when recovery is clear.",
                 "source_url": source["url"],
-                "evidence_quote": "Validate the source before automating the next publishing handoff.",
+                "evidence_quote": "先验证来源，再自动执行下一个发布交接。",
+                "evidence_translation": "Validate the source before automating the next publishing handoff.",
                 "reader_value": "A creator can test one handoff and its recovery path.",
                 "value_types": ["procedure", "failure_condition"],
             }
@@ -55,14 +58,51 @@ class OriginalContractTests(unittest.TestCase):
             self.assertEqual(admitted["source_sha256"], source_sha)
             self.assertEqual(admitted["draft_sha256"], draft_sha)
             self.assertEqual(admitted["source_url"], source["url"])
+            self.assertEqual(admitted["source_domain"], "xiaohongshu.com")
+            self.assertEqual(admitted["evidence_translation"], draft["evidence_translation"])
             self.assertEqual(admitted["value_types"], ["failure_condition", "procedure"])
 
             posted.write_text(json.dumps({
                 "post_url": "https://x.com/selawmqt/status/1",
-                "text_sha256": admitted["text_sha256"],
+                "text_sha256": "0" * 64,
+                "source_url": admitted["source_url"],
             }) + "\n")
             with self.assertRaises(ValueError):
                 module.admit(source_path, draft_path, critic_path, posted)
+
+    def test_rejects_non_chinese_domain_or_missing_translation(self) -> None:
+        spec = importlib.util.spec_from_file_location("x_tweeter_original_contract", SCRIPT)
+        module = importlib.util.module_from_spec(spec)
+        assert spec.loader is not None
+        spec.loader.exec_module(module)
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = {
+                "url": "https://example.com/source", "title": "Source",
+                "text": "一个具体的来源事实。", "source_kind": "public_source_post",
+                "source_domain": "example.com", "source_language": "zh",
+                "observed_at": "2026-08-24T00:00:00+00:00",
+            }
+            draft = {
+                "text": "A concrete source fact changes how a creator tests an automation recovery path.",
+                "source_url": source["url"], "evidence_quote": source["text"],
+                "reader_value": "A creator can test the recovery path.",
+                "value_types": ["procedure", "failure_condition"],
+            }
+            source_path, draft_path = root / "source.json", root / "draft.json"
+            source_path.write_text(json.dumps(source)); draft_path.write_text(json.dumps(draft))
+            critic_path = root / "critic.json"
+            critic_path.write_text(json.dumps({
+                "source_sha256": module.sha256_file(source_path),
+                "draft_sha256": module.sha256_file(draft_path),
+                "supported": True, "useful": True, "novel": True,
+                "spam_risk": "low", "unsupported_claims": [],
+                "near_duplicate_post_ids": [],
+                "value_types": ["procedure", "failure_condition"],
+                "reason": "Concrete and source-specific.",
+            }))
+            with self.assertRaises(ValueError):
+                module.admit(source_path, draft_path, critic_path, root / "posted.jsonl")
 
     def test_rejects_unbound_or_generic_model_output(self) -> None:
         spec = importlib.util.spec_from_file_location("x_tweeter_original_contract", SCRIPT)
