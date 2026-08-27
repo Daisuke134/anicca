@@ -1,5 +1,7 @@
 import json
 import os
+import subprocess
+import sys
 import tempfile
 import time
 import unittest
@@ -8,6 +10,7 @@ from pathlib import Path
 
 from runtime.loop.loop_cleanup import cleanup_run_root, gc_releases
 from runtime.loop.lm_loop_run import prepare_loop_run
+from runtime.loop.runtime_event import validate_runtime_event
 from runtime.loop.central_cleanup import loaded_release_roots
 from runtime.loop.central_cleanup import host_cleanup_command
 
@@ -84,6 +87,38 @@ class LoopCleanupTest(unittest.TestCase):
             (agents/'ai.anicca.job.plist').write_bytes(plistlib.dumps({
                 'Label':'ai.anicca.job','ProgramArguments':[str(entry)]}))
             self.assertEqual(loaded_release_roots(agents,releases),{release.resolve()})
+
+    def _run_terminal_event(self, exit_code: int) -> dict:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); home = root / "home"; home.mkdir()
+            entry = root / "bin/job.sh"; entry.parent.mkdir()
+            entry.write_text(f"#!/bin/sh\nexit {exit_code}\n"); entry.chmod(0o755)
+            registry = {"schema_version": 2, "loops": {"job": {
+                "label": "ai.anicca.job", "domain": "system", "entrypoint": "bin/job.sh",
+                "cadence": {"run_at_load": True}, "effect_class": "none",
+                "state_root": "~/state", "log_root": "~/state/logs",
+                "cleanup": {"max_runs": 1, "max_age_days": 1},
+                "provider_route": "deterministic"}}}
+            (root / "config").mkdir(); (root / "config/loop-registry.json").write_text(json.dumps(registry))
+            (root / "RELEASE.json").write_text(json.dumps({"sha": "a" * 40}))
+            result = subprocess.run(
+                [sys.executable, "-m", "runtime.loop.lm_loop_run", "job", str(root)],
+                cwd=Path(__file__).parents[3], env={**os.environ, "HOME": str(home)}, check=False)
+            self.assertEqual(result.returncode, exit_code)
+            event = json.loads((home / "state/events.jsonl").read_text().splitlines()[-1])
+            return validate_runtime_event(event)
+
+    def test_loop_run_records_success_terminal_event(self):
+        event = self._run_terminal_event(0)
+        self.assertEqual((event["status"], event["release_sha"], event["provider"]),
+                         ("pass", "a" * 40, "deterministic"))
+        self.assertEqual(event["effect_status"], "not_applicable")
+        self.assertTrue(event["evidence_refs"][0].startswith("lm-loop://job/"))
+
+    def test_loop_run_records_failed_terminal_event(self):
+        event = self._run_terminal_event(7)
+        self.assertEqual((event["status"], event["blocker"]),
+                         ("fail", "entrypoint_exit_7"))
 
 
 if __name__ == "__main__": unittest.main()

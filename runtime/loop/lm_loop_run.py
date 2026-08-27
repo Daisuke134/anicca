@@ -5,6 +5,8 @@ from __future__ import annotations
 
 import json
 import os
+import signal
+import subprocess
 import sys
 import tempfile
 import time
@@ -12,6 +14,7 @@ from pathlib import Path
 
 from runtime.loop.loop_cleanup import cleanup_run_root
 from runtime.loop.macos_loop_registry import validate_registry
+from runtime.loop.runtime_event import append_runtime_event, build_runtime_event
 
 
 def prepare_loop_run(registry: dict, loop_id: str, release_root: Path, *,
@@ -50,6 +53,24 @@ def _atomic_json(path: Path, value: dict) -> None:
         except FileNotFoundError: pass
 
 
+def _run_entrypoint(command: list[str]) -> int:
+    process = subprocess.Popen(command)
+    previous = {}
+
+    def forward(signum, _frame):
+        if process.poll() is None:
+            process.send_signal(signum)
+
+    for signum in (signal.SIGTERM, signal.SIGINT):
+        previous[signum] = signal.signal(signum, forward)
+    try:
+        return_code = process.wait()
+    finally:
+        for signum, handler in previous.items():
+            signal.signal(signum, handler)
+    return return_code if return_code >= 0 else 128 - return_code
+
+
 def main(argv: list[str] | None = None) -> int:
     args = argv or sys.argv[1:]
     if len(args) != 2:
@@ -70,8 +91,21 @@ def main(argv: list[str] | None = None) -> int:
                               "release_sha": manifest["sha"], **cleanup})
     except (OSError, ValueError, json.JSONDecodeError) as error:
         print(f"lm-loop-run: {error}", file=sys.stderr); return 78
-    os.execv(command[0], command)
-    return 70
+    return_code = _run_entrypoint(command)
+    run_id = os.environ.get("LIFE_MANAGER_RUN_ID") or f"{time.time_ns():x}-{os.getpid()}"
+    try:
+        event = build_runtime_event(
+            loop_id=loop_id, domain=entry["domain"], run_id=run_id,
+            release_sha=manifest["sha"], provider=entry["provider_route"],
+            profile_alias=None, effect_class=entry["effect_class"],
+            succeeded=return_code == 0,
+            blocker=None if return_code == 0 else f"entrypoint_exit_{return_code}",
+            evidence_scheme="lm-loop",
+        )
+        append_runtime_event(Path(os.path.expanduser(entry["state_root"])) / "events.jsonl", event)
+    except (OSError, ValueError) as error:
+        print(f"lm-loop-run: terminal event failed: {error}", file=sys.stderr)
+    return return_code
 
 
 if __name__ == "__main__":

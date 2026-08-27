@@ -69,7 +69,8 @@ def validate_runtime_event(event: dict) -> dict:
 
 def build_runtime_event(*, loop_id: str, domain: str, run_id: str, release_sha: str,
                         provider: str, profile_alias: str | None, effect_class: str,
-                        succeeded: bool, blocker: str | None) -> dict:
+                        succeeded: bool, blocker: str | None,
+                        evidence_scheme: str = "agent-runner") -> dict:
     timestamp = datetime.now(timezone.utc).isoformat()
     status = "pass" if succeeded else "fail"
     material = f"{release_sha}:{loop_id}:{run_id}:report:{status}"
@@ -88,7 +89,7 @@ def build_runtime_event(*, loop_id: str, domain: str, run_id: str, release_sha: 
         "effect_class": effect_class,
         "effect_status": "not_applicable" if effect_class == "none" else "unknown",
         "blocker": blocker,
-        "evidence_refs": [f"agent-runner://{loop_id}/{run_id}/summary.json"],
+        "evidence_refs": [f"{evidence_scheme}://{loop_id}/{run_id}/summary.json"],
     }
     return validate_runtime_event(event)
 
