@@ -391,6 +391,36 @@ def test_open_codex_sparkle_installation_generation_is_preserved(tmp_path: Path)
     assert result["preserved_reasons"] == {"open": 1}
 
 
+def test_discovery_includes_exact_regenerable_model_and_runtime_caches(tmp_path: Path) -> None:
+    for relative in (".cache/codex-runtimes", ".cache/whisper"):
+        (tmp_path / relative).mkdir(parents=True)
+    governor = HostDiskGovernor(home=tmp_path, state_dir=tmp_path / "state")
+
+    owners = {item["owner"]: Path(item["path"]) for item in governor.discover_candidates()}
+
+    assert owners["codex-runtime-cache"] == tmp_path / ".cache/codex-runtimes"
+    assert owners["whisper-model-cache"] == tmp_path / ".cache/whisper"
+
+
+def test_open_whisper_cache_is_preserved(tmp_path: Path) -> None:
+    cache = tmp_path / ".cache/whisper"
+    cache.mkdir(parents=True)
+    (cache / "small.pt").write_bytes(b"x" * 32)
+    governor = HostDiskGovernor(
+        home=tmp_path,
+        state_dir=tmp_path / "state",
+        lsof=lambda _path: "open",
+        usage=lambda: (0, 1),
+    )
+
+    candidates = [item for item in governor.discover_candidates()
+                  if item["owner"] == "whisper-model-cache"]
+    result = governor.sweep(candidates)
+
+    assert cache.exists()
+    assert result["preserved_reasons"] == {"open": 1}
+
+
 def test_lsof_stderr_is_probe_error(monkeypatch) -> None:
     class Result:
         returncode = 1

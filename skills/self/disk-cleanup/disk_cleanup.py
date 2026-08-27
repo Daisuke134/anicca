@@ -437,6 +437,14 @@ class HostDiskGovernor:
                 resolved.parent == installation
                 and re.fullmatch(r"[A-Za-z0-9]{6,64}", resolved.name) is not None
             )
+        if item.get("class") == "regenerable_output":
+            exact_caches = {
+                "codex-runtime-cache": (self.home / ".cache/codex-runtimes").resolve(),
+                "whisper-model-cache": (self.home / ".cache/whisper").resolve(),
+            }
+            expected = exact_caches.get(item.get("owner"))
+            if expected is not None:
+                return resolved == expected
         return False
 
     @staticmethod
@@ -689,6 +697,18 @@ class HostDiskGovernor:
         a deletion candidate merely because it is large.
         """
         candidates: list[dict] = []
+        for relative, owner in (
+            (".cache/codex-runtimes", "codex-runtime-cache"),
+            (".cache/whisper", "whisper-model-cache"),
+        ):
+            cache = self.home / relative
+            if cache.is_dir() and not cache.is_symlink():
+                candidates.append({
+                    "path": cache,
+                    "class": "regenerable_output",
+                    "owner": owner,
+                    "discovery": "allowlisted",
+                })
         sparkle_installation = (
             self.home
             / "Library/Caches/com.openai.codex/org.sparkle-project.Sparkle/Installation"
