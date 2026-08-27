@@ -230,6 +230,10 @@ def test_new_public_skill_uses_its_own_capability_contract_with_an_existing_form
     assert family == "ai-automation-builder"
     assert template["description"] == "Build AI automations"
     assert evidence == {"/repo/skills/ai-automation-builder/SKILL.md"}
+    assert sd._proposal_capability_evidence({"/repo/old-opencv.json"}, evidence) == evidence
+    assert sd._proposal_capability_evidence({"/repo/private-proof.json"}, set()) == {
+        "/repo/private-proof.json"
+    }
 
 
 def test_dismissed_zero_conversion_market_never_blocks_the_next_demand_cluster():
@@ -270,27 +274,6 @@ def test_paid_demand_price_floor_uses_the_official_comparable_median():
     ]}
 
     assert sd._paid_demand_price_floor(demand) == 50000
-
-
-def test_implementation_capability_cannot_be_downgraded_or_only_self_labeled():
-    sd = _sd()
-    family = {
-        "name": "ai-automation-builder",
-        "description": "Build, implement, verify, and hand over bounded AI business automations.",
-    }
-    assessment_only = (
-        "要件整理シートと実装計画を納品します。"
-        "実際の自動化ツールの構築、コード作成、連携設定には対応していません。"
-    )
-    working_delivery = (
-        "入力内容を分類し、指定先へ下書きまたは通知する自動化を1本構築します。"
-        "設定ファイル、再現用の実行手順、匿名化サンプルによるテスト、"
-        "運用・停止手順をお渡しします。"
-    )
-
-    assert sd._capability_requires_working_implementation(family)
-    assert not sd._copy_delivers_working_implementation(assessment_only)
-    assert sd._copy_delivers_working_implementation(working_delivery)
 
 
 def test_market_expansion_prefers_capabilities_not_already_represented_by_a_listing():

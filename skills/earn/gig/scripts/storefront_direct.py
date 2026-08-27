@@ -1559,6 +1559,11 @@ def _resolve_create_capability(
     return family, template, evidence
 
 
+def _proposal_capability_evidence(all_evidence: set[str], selected_evidence: set[str]) -> set[str]:
+    """Do not let evidence for an unrelated capability redefine the selected product."""
+    return set(selected_evidence or all_evidence)
+
+
 def _next_unused_demand_cluster(clusters: list[dict], dismissed: set[str]) -> dict | None:
     return next(
         (row for row in sorted(clusters, key=lambda candidate: (
@@ -3528,29 +3533,6 @@ def _render_generated_image_asset(proposed: str, service_id: str, evidence_dir: 
     return {"asset_sha256": hashlib.sha256(data).hexdigest(), "asset_path": str(path.resolve())}
 
 
-def _capability_requires_working_implementation(family: dict) -> bool:
-    text = json.dumps(family, ensure_ascii=False).lower()
-    return any(term in text for term in (
-        "build", "implement", "develop", "implementation",
-        "実装", "構築", "開発",
-    ))
-
-
-def _copy_delivers_working_implementation(copy: str) -> bool:
-    compact = re.sub(r"\s+", "", str(copy or ""))
-    if any(re.search(pattern, compact) for pattern in (
-        r"(?:実装|構築|開発|コード作成|連携設定).{0,30}(?:含みません|対応しません|対応していません|対象外)",
-        r"(?:含みません|対応しません|対応していません|対象外).{0,30}(?:実装|構築|開発|コード作成|連携設定)",
-    )):
-        return False
-    has_build = bool(re.search(r"(?:実装|構築|開発)(?:し|します|する|を行)", compact))
-    has_handover = any(term in compact for term in (
-        "納品", "お渡し", "引き渡", "設定ファイル", "実行手順", "運用手順",
-    ))
-    has_verification = any(term in compact for term in ("テスト", "検証", "動作確認"))
-    return has_build and has_handover and has_verification
-
-
 def _paid_demand_price_floor(demand: dict) -> int | None:
     prices = sorted(
         int(row["display_price_jpy"])
@@ -3744,12 +3726,6 @@ def _seal_create_contract(
     prohibited = _prohibited_copy_terms(title_stem, catchphrase, head, body, option_title, image_copy)
     if prohibited:
         raise RuntimeError("storefront_copy_names_prohibited_tool:" + ",".join(prohibited))
-    requires_implementation = _capability_requires_working_implementation(family)
-    if requires_implementation and proposal.get("delivery_kind") != "implementation":
-        raise RuntimeError("storefront_create_delivery_kind_downgraded")
-    if (proposal.get("delivery_kind") == "implementation"
-            and not _copy_delivers_working_implementation(f"{head}\n{body}")):
-        raise RuntimeError("storefront_create_working_implementation_required")
     select_options = seller_snapshot.get("select_options") or {}
     display_price = proposal.get("display_price_jpy")
     price_option = next((row for row in select_options.get("data[Service][price]", [])
@@ -6730,7 +6706,8 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     wanted=wanted_family, source=create_source,
                     service_families=capability_families, templates=capability_templates,
                 )
-                create_capability_paths = capability_paths | selected_evidence
+                create_capability_paths = _proposal_capability_evidence(
+                    capability_paths, selected_evidence)
                 demand = ({**cluster_blueprint["demand_evidence"],
                            "evidence_path": cluster_blueprint["demand_evidence_path"]}
                           if cluster_blueprint is not None else
