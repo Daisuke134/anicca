@@ -86,3 +86,10 @@ test("slideshow discovery includes every exact production photo receipt instead 
   const target = TARGETS.find((row) => row.account_id === "@anicca_slideshow");
   assert.deepEqual(discoverTarget(dataDir, target).map((row) => row.provider_post_id), ["cmt-canary", "cmt-production"]);
 });
+
+test("TikTok metrics owner routes the current source set to hook decision evaluation", () => {
+  let received;
+  const result = due.runHookDecision("/tmp/lm-decision-fixture", "2026-08-28T00:00:00.000Z", (input) => { received = input; return { created: true, snapshot_ref: "object://sha256/" + "a".repeat(64), decisions: [] }; });
+  assert.deepEqual(received, { dataDir: "/tmp/lm-decision-fixture", observations: {}, observedAt: "2026-08-28T00:00:00.000Z" });
+  assert.equal(result.created, true);
+});

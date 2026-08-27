@@ -10,6 +10,7 @@ const { collectPostizPhotoWindow, collectTikTokWindow } = require("./tiktok-nati
 const { persistAniccaDaily, persistAttributionCoverage, persistHonneDaily, persistWeeklyReview, sendSummary } = require("./marketing-product-summary.js");
 const { persistAscAcquisition } = require("./marketing-asc-acquisition.js");
 const { persistRevenueCatSubscriptions } = require("./marketing-revenuecat-subscriptions.js");
+const { persistHookDecisions } = require("./marketing-hook-decision.js");
 
 const WINDOWS = Object.freeze({ "2h": 2 * 3600_000, "24h": 24 * 3600_000, "72h": 72 * 3600_000, "7d": 7 * 86400_000 });
 const GRACE_MS = 90 * 60_000;
@@ -59,6 +60,10 @@ function discoverTarget(dataDir, target) {
 function discoverJp4(dataDir) { return discoverTarget(dataDir, TARGETS[0]); }
 function discoverTargets(dataDir) { return TARGETS.flatMap((target) => discoverTarget(dataDir, target)); }
 
+function runHookDecision(dataDir, observedAt, persist = persistHookDecisions) {
+  return persist({ dataDir, observations: {}, observedAt });
+}
+
 function snapshotFile(dataDir, expected, window) { return path.join(dataDir, "tenants", expected.tenant_id, "marketing", "metrics", expected.native_owner, expected.shortcode, `${window}.combined.json`); }
 
 function delayed(dataDir, expected, window, observedAt, reason = "source_delayed") {
@@ -104,8 +109,9 @@ async function runDue(nowMs = Date.now(), env = process.env, provided = null) {
   if (Number(reportParts.hour) >= 22 && !provided) {
     for (const [productId, persist] of [["honne-ai", persistHonneDaily], ["anicca-ios", persistAniccaDaily]]) { const summary = persist(dataDir, reportDay, new Date(nowMs).toISOString()); results.push({ product_id: productId, window: "daily-product", state: summary.created ? "reported" : "complete", telegram: await sendSummary(summary, env, dataDir) }); }
   }
+  if (!provided) { const decision = runHookDecision(dataDir, new Date(nowMs).toISOString()); results.push({ product_id: "mobile-marketing", window: "hook-decision", state: decision.created ? "observed" : "complete", snapshot_ref: decision.snapshot_ref, decisions: decision.decisions?.map(({ lane_id, decision_status, decision, reason }) => ({ lane_id, status: decision_status, decision, reason })) }); }
   return results;
 }
 
 if (require.main === module) runDue().then((result) => process.stdout.write(`${JSON.stringify(result)}\n`)).catch((error) => { process.stderr.write(`${error.message}\n`); process.exitCode = 1; });
-module.exports = { GRACE_MS, TARGETS, WINDOWS, collectWindowSafely, delayed, discoverJp4, discoverTarget, discoverTargets, runDue, snapshotFile };
+module.exports = { GRACE_MS, TARGETS, WINDOWS, collectWindowSafely, delayed, discoverJp4, discoverTarget, discoverTargets, runDue, runHookDecision, snapshotFile };
