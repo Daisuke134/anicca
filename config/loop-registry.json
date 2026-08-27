@@ -2763,14 +2763,9 @@
     },
     "x-tweeter": {
       "cadence": {
-        "calendar_interval": [
-          {
-            "Minute": 15
-          },
-          {
-            "Minute": 45
-          }
-        ]
+        "calendar_interval": {
+          "Minute": 15
+        }
       },
       "cleanup": {
         "max_age_days": 14,
