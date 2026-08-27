@@ -92,10 +92,19 @@ continue the application. Account creation, email verification, and ordinary
 password creation are autonomous transport work, not human checkpoints. Checkpoint
 only identity proof, KYC, unavailable phone ownership, or an authentication step
 that cannot be completed through the existing Gmail/browser routes.
+If an existing credential is rejected by the official provider, do not retry the
+same value on later wakes. Use the official password-reset or account-recovery
+route, read the matching verification message through the existing authenticated
+Gmail transport, set a generated strong password, atomically update the matching
+credential record, verify a fresh login, and continue the application. A rejected
+stored password is a repair trigger, not durable continuation evidence.
 
 Read ordinary founder facts from their actual nested locations in the private
 profile, including mailing address/city/country, verified phone, LinkedIn URL,
-travel authorizations, and work authorizations. A missing canned application
+`candidate.name_kana`, travel authorizations, and work authorizations. For a
+required public X/Twitter profile, match an existing X/Twitter account record in
+the credential SSOT by service or official URL and derive the public profile URL
+from its non-secret username without exposing credentials. A missing canned application
 field is not evidence that the underlying authorized fact is missing. Use the
 owner's stated preference for in-person Tokyo and San Francisco programs to make
 ordinary non-binding availability and housing-preference selections; never infer

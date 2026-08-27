@@ -367,8 +367,10 @@ test("production queue enforces founder geography, format, priority, and YC hold
     "ASAC 4th Pre-seed / 23rd Seed Program",
     "Y Combinator",
   ]);
-  assert.match(fundraising.priority_queue[0].reason, /existing JETRO service record/);
+  assert.match(fundraising.priority_queue[0].reason, /password-reset\/account-recovery/);
   assert.match(fundraising.priority_queue[1].reason, /U\.S\. travel-authorization/);
+  assert.match(fundraising.priority_queue[1].reason, /X\/Twitter credential record/);
+  assert.match(fundraising.priority_queue[2].reason, /candidate\.name_kana/);
   assert.equal(fundraising.priority_queue.find((item) => item.program === "Y Combinator")?.action, "hold_do_not_submit");
   assert.match(dailyPrompt, /Reject Kenya and every other geography/);
   assert.match(dailyPrompt, /Never submit a `hold_do_not_submit` program/);
