@@ -76,3 +76,18 @@ test("all four launchd boot scripts load the shared guarded env loader", () => {
     assert.ok(source.includes("lm_load_env_file"), `${script} must call lm_load_env_file`);
   }
 });
+
+test("Anicca main Instagram boot reads the dedicated marketing env", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "lm-marketing-env-"));
+  const envFile = path.join(dir, "marketing.env");
+  fs.writeFileSync(envFile, `LM_DATA_DIR=${dir}\n`);
+  const result = spawnSync("bash", [
+    path.join(__dirname, "anicca-main-instagram-production-boot.sh"),
+  ], {
+    encoding: "utf8",
+    env: { ...process.env, LIFE_MANAGER_MARKETING_ENV_FILE: envFile },
+  });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /LM_RUNTIME_TENANT_ID is required/);
+  assert.doesNotMatch(result.stderr, /LM_DATA_DIR is required/);
+});
