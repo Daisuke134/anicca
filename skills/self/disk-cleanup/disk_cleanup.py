@@ -28,6 +28,8 @@ from typing import Callable
 from host_inventory import FULL_INVENTORY_BUDGET_SECONDS, collect_host_inventory
 
 GiB = 1024**3
+PRODUCER_BLOCK_FLOOR_BYTES = 512 * 1024**2
+PRODUCER_BLOCK_CLEAR_BYTES = GiB
 FULL_INVENTORY_INTERVAL_SECONDS = 3600
 GOVERNOR_BUDGET_SECONDS = 90
 LSOF_TIMEOUT_SECONDS = 15
@@ -771,7 +773,7 @@ class HostDiskGovernor:
         )
         free_after = int(result["free_after"])
         pressure_file = self.state_dir / "disk-pressure.block"
-        if free_after < 11 * GiB:
+        if free_after < PRODUCER_BLOCK_FLOOR_BYTES:
             pressure_file.write_text(
                 json.dumps(
                     {
@@ -783,7 +785,7 @@ class HostDiskGovernor:
                 )
                 + "\n"
             )
-        elif free_after >= 20 * GiB:
+        elif free_after >= PRODUCER_BLOCK_CLEAR_BYTES:
             pressure_file.unlink(missing_ok=True)
         full_inventory = (
             os.environ.get("EMERGENCY_GUARD_FULL_PASS") == "1" or self._full_inventory_due()

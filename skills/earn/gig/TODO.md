@@ -4470,3 +4470,12 @@ of that merge. Merge it when that clears.
 - [ ] Clear the host `disk-pressure.block` through the existing cleanup owner without deleting Codex/Claude sessions or durable evidence; current free space is about 1.2 GiB and the cleanup owner cannot create its temporary directory.
 - [ ] Obtain natural official readback for `18197848`, then rerun once and prove replay-zero.
 - [ ] Resolve `18202085` without weakening buyer-visible quality: the WAV is structurally usable, but the producer emitted `REVIEW_READY`, `audio/wav` conflicts with macOS `audio/x-wav`, and the reference TikTok audio remains unavailable for correspondence review.
+
+### Host disk and Account 2 runtime verification
+
+- [x] Verify Account 2 at the actual model boundary: the four Coconala plists intentionally omit `CODEX_HOME`, while the immutable runner config binds Codex to `~/.codex-acct2/auth.json`; its isolated automation-home auth symlink resolves to that exact file.
+- [x] Verify Reply/Paid fixes and Account 2 failover are all ancestors of public `origin/main`; they are not stranded on private feature branches.
+- [x] Reclaim 1.5 GiB from the closed regenerable `~/.cache/codex-runtimes` cache without touching Codex/Claude sessions, memory, state, marketplace evidence, or active releases; host free space rose from 274 MiB to 1.8 GiB.
+- [x] Replace the shared producer stop hysteresis from 11/20 GiB to 512 MiB/1 GiB. The 20/11/6/3 GiB values remain observability tiers only; they no longer stop money loops.
+- [ ] Deploy the public immutable release, run the central cleanup owner, and prove the stale `disk-pressure.block` is removed above 1 GiB.
+- [ ] Read back Apply, Reply, Paid, and Storefront from the same public release and record their natural receipts; Paid still has three work failures (`18180857 remote_resume`, `18197848 file_builder`, `18202085 file_owner_feedback`) independent of Account 2.
