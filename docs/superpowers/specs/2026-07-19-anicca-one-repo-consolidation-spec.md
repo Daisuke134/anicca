@@ -1525,6 +1525,13 @@ aniccaios の affirmation の進化形。full schedule を知っているから�
 
 ## 10. 残 TODO 表（唯一の live 状態。上から順に実行）
 
+**Current infrastructure atomic:** `MACOS-LOOP-CONTROL-PLANE-1` is specified in
+`docs/superpowers/specs/2026-08-27-macos-loop-control-plane-design.md`. Its ordered
+TODO is canonical only in that dedicated spec: one macOS registry, one immutable
+release path, one lifecycle CLI, one provider/profile router, uniform events,
+and bounded cleanup for every Life Manager loop. Do not duplicate its atomic
+TODO in this file.
+
 ### 10.0 Dais 裁定（2026-07-25。以降の全 marketing atomic に優先適用）
 
 1. **通話録音は marketing 素材として永久に禁止**。音声は必ず MoneyPrinterTurbo のナレーション（edge-tts）。
