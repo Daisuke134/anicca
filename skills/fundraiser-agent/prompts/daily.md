@@ -25,7 +25,7 @@ Canonical examples:
 
 Before X discovery, broad Web discovery, or any unlisted candidate, classify every
 configured item whose action begins with `apply_now` from this ledger-first view. A prior terminal receipt is
-carried forward without opening the site. For a prior failure or checkpoint, reopen
+carried forward without opening the site. A terminal duplicate must not append a new receipt or change status; preserve the existing `submitted_verified` or `submit_unknown` row as the latest outcome. Report the skip only in the wake summary. For a prior failure or checkpoint, reopen
 only when current evidence resolves or changes its blocker. An unchanged blocker is carried forward and the pass immediately continues to new discovery. A more specific
 one-shot action suffix is itself concrete new evidence only once. First compare its latest receipt blocker with the complete current queue reason.
 For each receipt identity, `latest` means the single row with the greatest
