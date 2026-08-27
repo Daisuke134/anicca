@@ -3,73 +3,73 @@
   "captured_at": "2026-08-27T15:38:29.583719+00:00",
   "labels": [
     {
-      "domain": null,
-      "effect_class": null,
+      "domain": "growth",
+      "effect_class": "none",
       "installed": true,
       "label": "ai.anicca.affiliate-browser",
       "last_exit": "1",
       "launchd_state": "loaded-running",
-      "owner": "ambiguous",
+      "owner": "life-manager",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.affiliate-browser.plist",
       "release": null
     },
     {
-      "domain": null,
-      "effect_class": null,
+      "domain": "growth",
+      "effect_class": "none",
       "installed": true,
       "label": "ai.anicca.affiliate-composition",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "ambiguous",
+      "owner": "life-manager",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.affiliate-composition.plist",
       "release": null
     },
     {
-      "domain": null,
-      "effect_class": null,
+      "domain": "growth",
+      "effect_class": "none",
       "installed": true,
       "label": "ai.anicca.affiliate-impact-browser",
       "last_exit": "1",
       "launchd_state": "loaded-running",
-      "owner": "ambiguous",
+      "owner": "life-manager",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.affiliate-impact-browser.plist",
       "release": null
     },
     {
-      "domain": null,
-      "effect_class": null,
+      "domain": "growth",
+      "effect_class": "publish",
       "installed": true,
       "label": "ai.anicca.affiliate-loop",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "ambiguous",
+      "owner": "life-manager",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.affiliate-loop.plist",
       "release": null
     },
     {
-      "domain": null,
-      "effect_class": null,
+      "domain": "growth",
+      "effect_class": "none",
       "installed": true,
       "label": "ai.anicca.affiliate-source-refresh",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "ambiguous",
+      "owner": "life-manager",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.affiliate-source-refresh.plist",
       "release": null
     },
     {
-      "domain": null,
-      "effect_class": null,
+      "domain": "growth",
+      "effect_class": "none",
       "installed": true,
       "label": "ai.anicca.affiliate-x-browser",
       "last_exit": "1",
       "launchd_state": "loaded-running",
-      "owner": "ambiguous",
+      "owner": "life-manager",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.affiliate-x-browser.plist",
       "release": null
@@ -723,13 +723,13 @@
       "release": null
     },
     {
-      "domain": null,
-      "effect_class": null,
+      "domain": "system",
+      "effect_class": "none",
       "installed": true,
       "label": "ai.anicca.effect-watch",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "ambiguous",
+      "owner": "life-manager",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.effect-watch.plist",
       "release": null
@@ -831,13 +831,13 @@
       "release": null
     },
     {
-      "domain": null,
-      "effect_class": null,
+      "domain": "financial",
+      "effect_class": "none",
       "installed": true,
       "label": "ai.anicca.fuel-watch",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "ambiguous",
+      "owner": "life-manager",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.fuel-watch.plist",
       "release": null
@@ -855,13 +855,13 @@
       "release": "48c54b52"
     },
     {
-      "domain": null,
-      "effect_class": null,
+      "domain": "earn",
+      "effect_class": "none",
       "installed": true,
       "label": "ai.anicca.gig-outcome-watch",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "ambiguous",
+      "owner": "life-manager",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.gig-outcome-watch.plist",
       "release": null
@@ -1191,13 +1191,13 @@
       "release": "82acfd306fab1840183fe4d63d1e21c929f54e9e"
     },
     {
-      "domain": null,
-      "effect_class": null,
+      "domain": "earn",
+      "effect_class": "none",
       "installed": true,
       "label": "ai.anicca.lancers-revenue-browser",
       "last_exit": "0",
       "launchd_state": "loaded-running",
-      "owner": "ambiguous",
+      "owner": "life-manager",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.lancers-revenue-browser.plist",
       "release": null
@@ -1539,13 +1539,13 @@
       "release": "7eb86d63b1040b0abb3e0041460211d4fd29a5f1"
     },
     {
-      "domain": null,
-      "effect_class": null,
+      "domain": "financial",
+      "effect_class": "message",
       "installed": true,
       "label": "ai.anicca.life-manager-cfo-hourly",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "ambiguous",
+      "owner": "life-manager",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.life-manager-cfo-hourly.plist",
       "release": null
@@ -1827,13 +1827,13 @@
       "release": null
     },
     {
-      "domain": null,
-      "effect_class": null,
+      "domain": "growth",
+      "effect_class": "message",
       "installed": true,
       "label": "ai.anicca.marketing-daily-report",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "ambiguous",
+      "owner": "life-manager",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.marketing-daily-report.plist",
       "release": null
@@ -1863,61 +1863,61 @@
       "release": null
     },
     {
-      "domain": null,
-      "effect_class": null,
+      "domain": "growth",
+      "effect_class": "none",
       "installed": true,
       "label": "ai.anicca.marketing-metrics-daily",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "ambiguous",
+      "owner": "life-manager",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.marketing-metrics-daily.plist",
       "release": null
     },
     {
-      "domain": null,
-      "effect_class": null,
+      "domain": "growth",
+      "effect_class": "publish",
       "installed": true,
       "label": "ai.anicca.marketing-mine-daily",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "ambiguous",
+      "owner": "life-manager",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.marketing-mine-daily.plist",
       "release": null
     },
     {
-      "domain": null,
-      "effect_class": null,
+      "domain": "growth",
+      "effect_class": "publish",
       "installed": true,
       "label": "ai.anicca.marketing-owner-daily",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "ambiguous",
+      "owner": "life-manager",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.marketing-owner-daily.plist",
       "release": null
     },
     {
-      "domain": null,
-      "effect_class": null,
+      "domain": "growth",
+      "effect_class": "none",
       "installed": true,
       "label": "ai.anicca.marketing-owner-events",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "ambiguous",
+      "owner": "life-manager",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.marketing-owner-events.plist",
       "release": null
     },
     {
-      "domain": null,
-      "effect_class": null,
+      "domain": "growth",
+      "effect_class": "publish",
       "installed": true,
       "label": "ai.anicca.marketing-owner-weekly",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "ambiguous",
+      "owner": "life-manager",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.marketing-owner-weekly.plist",
       "release": null
@@ -1959,25 +1959,25 @@
       "release": null
     },
     {
-      "domain": null,
-      "effect_class": null,
+      "domain": "growth",
+      "effect_class": "none",
       "installed": true,
       "label": "ai.anicca.marketing-score-daily",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "ambiguous",
+      "owner": "life-manager",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.marketing-score-daily.plist",
       "release": null
     },
     {
-      "domain": null,
-      "effect_class": null,
+      "domain": "growth",
+      "effect_class": "message",
       "installed": true,
       "label": "ai.anicca.marketing-weekly-review",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "ambiguous",
+      "owner": "life-manager",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.marketing-weekly-review.plist",
       "release": null
@@ -3135,13 +3135,13 @@
       "release": null
     },
     {
-      "domain": null,
-      "effect_class": null,
+      "domain": "financial",
+      "effect_class": "money",
       "installed": true,
       "label": "ai.anicca.x402-seller-8404",
       "last_exit": "0",
       "launchd_state": "loaded-running",
-      "owner": "ambiguous",
+      "owner": "life-manager",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.x402-seller-8404.plist",
       "release": null
@@ -3203,13 +3203,13 @@
     "docs/migrations/openclaw/runtime-inventory.json"
   ],
   "summary": {
-    "ambiguous": 63,
+    "ambiguous": 43,
     "installed": 226,
     "labels": 266,
     "owners": {
-      "ambiguous": 63,
+      "ambiguous": 43,
       "external": 2,
-      "life-manager": 201
+      "life-manager": 221
     },
     "states": {
       "disabled": 74,
@@ -3217,6 +3217,6 @@
       "loaded-running": 48,
       "unloaded": 15
     },
-    "unmanaged_life_manager": 201
+    "unmanaged_life_manager": 221
   }
 }

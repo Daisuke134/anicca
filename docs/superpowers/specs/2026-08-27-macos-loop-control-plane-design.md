@@ -1,6 +1,6 @@
 # macOS Life Manager Loop Control Plane
 
-**Status:** TODO 1 complete / TODO 2 pending
+**Status:** TODO 2 complete / TODO 3 pending
 **TODO ID:** `MACOS-LOOP-CONTROL-PLANE-1`  
 **Canonical registry:** `config/loop-registry.json`  
 **Scope:** macOS launchd only
@@ -211,8 +211,8 @@ Allowed values are closed and versioned with the registry schema:
 
 | Order | TODO | Done evidence |
 |---:|---|---|
-| 1 | ✅ Inventory every installed `ai.anicca.*` Life Manager label and classify owner/domain/effect/state/release | `docs/evidence/runtime/2026-08-28-macos-loop-control-plane-inventory.{md,json}`; 226 installed labels, 191 classified Life Manager-owned, 34 installed ambiguous, loaded/disabled-only rows retained |
-| 2 | Upgrade `config/loop-registry.json` to schema v2 and import all active definitions without changing launchd | schema test and byte-stable deterministic render fixture |
+| 1 | ✅ Inventory every installed `ai.anicca.*` Life Manager label and classify owner/domain/effect/state/release | `docs/evidence/runtime/2026-08-28-macos-loop-control-plane-inventory.{md,json}`; 226 installed labels, 211 classified Life Manager-owned, 14 disabled/unloaded installed ambiguous, loaded/disabled-only rows retained |
+| 2 | ✅ Upgrade `config/loop-registry.json` to schema v2 and import all active definitions without changing launchd | 172/172 active classified labels; four schema/coverage/render tests; fixture SHA-256 `446034c8493ed520f585b6eb0a876a5bb5cbdfffc68d20f81bf48403259eb9f1`; `docs/evidence/runtime/2026-08-28-macos-loop-control-plane-schema-v2.md` |
 | 3 | Implement `bin/lm-loop doctor/status/watch` as read-only commands | focused tests; live output separates runtime from effect truth |
 | 4 | Implement plist generation and fail-closed `apply` using `launchctl-safe` | invalid registry causes zero mutation; exact loaded argv readback |
 | 5 | Implement `start/stop/restart` for one ID and `all`, collecting every return code | lifecycle tests and isolated labels only |

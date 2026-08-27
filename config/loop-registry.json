@@ -1,46 +1,3099 @@
 {
   "loops": {
-    "x-repost": {
-      "loop": "x-repost",
-      "skill_dir": "skills/x-repost",
-      "status": "live",
-      "last_observed_at": "2026-08-19T09:45:00.000000+09:00",
-      "allocation": {
-        "status": "normal",
-        "pass_frequency_multiplier": 1.0,
-        "capital_cap_usd": null
+    "affiliate-browser": {
+      "cadence": {
+        "keep_alive": true
       },
-      "cadence_contract": "one half-hour pass publishes at most one quality-gated post from @selawmqt, or records why it published none",
-      "evidence_path": "~/loops/x-repost/posted.jsonl",
-      "ledger_paths": [
-        "~/loops/x-repost/posted.jsonl",
-        "~/loops/x-repost/engagement.jsonl"
-      ],
-      "base_interval_seconds": 1800,
-      "base_minute": 0,
-      "base_hour": 0,
-      "notes": "First loop ported to this repo. Runs from ~/loops/current, state in ~/loops/x-repost."
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "growth",
+      "effect_class": "none",
+      "entrypoint": "skills/_shared/venv-cloak/bin/python",
+      "label": "ai.anicca.affiliate-browser",
+      "log_root": "~/.local/state/life-manager/affiliate-browser/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.local/state/life-manager/affiliate-browser"
+    },
+    "affiliate-composition": {
+      "cadence": {
+        "start_interval_seconds": 600
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "growth",
+      "effect_class": "none",
+      "entrypoint": "bin/sh",
+      "label": "ai.anicca.affiliate-composition",
+      "log_root": "~/.local/state/life-manager/affiliate-composition/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.local/state/life-manager/affiliate-composition"
+    },
+    "affiliate-impact-browser": {
+      "cadence": {
+        "keep_alive": true
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "growth",
+      "effect_class": "none",
+      "entrypoint": "skills/_shared/venv-cloak/bin/python",
+      "label": "ai.anicca.affiliate-impact-browser",
+      "log_root": "~/.local/state/life-manager/affiliate-impact-browser/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.local/state/life-manager/affiliate-impact-browser"
+    },
+    "affiliate-loop": {
+      "cadence": {
+        "start_interval_seconds": 600
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "growth",
+      "effect_class": "publish",
+      "entrypoint": "bin/sh",
+      "label": "ai.anicca.affiliate-loop",
+      "log_root": "~/.local/state/life-manager/affiliate-loop/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.local/state/life-manager/affiliate-loop"
+    },
+    "affiliate-source-refresh": {
+      "cadence": {
+        "start_interval_seconds": 600
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "growth",
+      "effect_class": "none",
+      "entrypoint": "bin/sh",
+      "label": "ai.anicca.affiliate-source-refresh",
+      "log_root": "~/.local/state/life-manager/affiliate-source-refresh/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.local/state/life-manager/affiliate-source-refresh"
+    },
+    "affiliate-x-browser": {
+      "cadence": {
+        "keep_alive": true
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "growth",
+      "effect_class": "none",
+      "entrypoint": "skills/_shared/venv-cloak/bin/python",
+      "label": "ai.anicca.affiliate-x-browser",
+      "log_root": "~/.local/state/life-manager/affiliate-x-browser/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.local/state/life-manager/affiliate-x-browser"
+    },
+    "agent-economy-loop": {
+      "cadence": {
+        "keep_alive": true
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "financial",
+      "effect_class": "none",
+      "entrypoint": "skills/agent-economy/launch.sh",
+      "label": "ai.anicca.agent-economy-loop",
+      "log_root": "~/.openclaw/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.openclaw"
+    },
+    "agentmail-nudge": {
+      "cadence": {
+        "calendar_interval": {
+          "Hour": 9,
+          "Minute": 0
+        }
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "earn",
+      "effect_class": "message",
+      "entrypoint": "runtime/agentmail/nudge-tick.sh",
+      "label": "ai.anicca.agentmail-nudge",
+      "log_root": "~/.openclaw/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.openclaw"
+    },
+    "agentmail-replier": {
+      "cadence": {
+        "start_interval_seconds": 21600
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "earn",
+      "effect_class": "message",
+      "entrypoint": "runtime/agentmail/replier-tick.sh",
+      "label": "ai.anicca.agentmail-replier",
+      "log_root": "~/.openclaw/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.openclaw"
+    },
+    "agentmail-webhook": {
+      "cadence": {
+        "keep_alive": true
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "earn",
+      "effect_class": "message",
+      "entrypoint": "runtime/agentmail/launch.sh",
+      "label": "ai.anicca.agentmail-webhook",
+      "log_root": "~/.openclaw/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.openclaw"
+    },
+    "agents-skills-sync": {
+      "cadence": {
+        "start_interval_seconds": 1800
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "system",
+      "effect_class": "none",
+      "entrypoint": "skills/self-sync/sync.sh",
+      "label": "ai.anicca.agents-skills-sync",
+      "log_root": "~/.openclaw/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.openclaw"
+    },
+    "article-audit-7day": {
+      "cadence": {
+        "calendar_interval": {
+          "Hour": 22,
+          "Minute": 0,
+          "Weekday": 0
+        }
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "earn",
+      "effect_class": "none",
+      "entrypoint": "skills/writer-agent/scripts/audit-7day.sh",
+      "label": "ai.anicca.article-audit-7day",
+      "log_root": "~/.openclaw/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.openclaw"
+    },
+    "article-daily": {
+      "cadence": {
+        "calendar_interval": {
+          "Hour": 6,
+          "Minute": 0
+        }
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "earn",
+      "effect_class": "none",
+      "entrypoint": "skills/writer-agent/article-daily.sh",
+      "label": "ai.anicca.article-daily",
+      "log_root": "~/.openclaw/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.openclaw"
+    },
+    "article-healthcheck": {
+      "cadence": {
+        "start_interval_seconds": 300
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "earn",
+      "effect_class": "none",
+      "entrypoint": "skills/writer-agent/article-healthcheck.sh",
+      "label": "ai.anicca.article-healthcheck",
+      "log_root": "~/.openclaw/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.openclaw"
+    },
+    "article-learn-whitelist": {
+      "cadence": {
+        "calendar_interval": {
+          "Hour": 3,
+          "Minute": 0,
+          "Weekday": 0
+        }
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "earn",
+      "effect_class": "none",
+      "entrypoint": "skills/writer-agent/scripts/learn-whitelist.sh",
+      "label": "ai.anicca.article-learn-whitelist",
+      "log_root": "~/.openclaw/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.openclaw"
+    },
+    "article-resume": {
+      "cadence": {
+        "start_interval_seconds": 300
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "earn",
+      "effect_class": "none",
+      "entrypoint": "skills/writer-agent/scripts/article-resume-pending.sh",
+      "label": "ai.anicca.article-resume",
+      "log_root": "~/.openclaw/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.openclaw"
+    },
+    "article-self-improve": {
+      "cadence": {
+        "calendar_interval": {
+          "Hour": 22,
+          "Minute": 30
+        }
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "earn",
+      "effect_class": "none",
+      "entrypoint": "skills/writer-agent/scripts/self-improve.sh",
+      "label": "ai.anicca.article-self-improve",
+      "log_root": "~/.openclaw/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.openclaw"
+    },
+    "article-zenn-retry": {
+      "cadence": {
+        "start_interval_seconds": 300
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "earn",
+      "effect_class": "none",
+      "entrypoint": "skills/writer-agent/scripts/zenn-deferred-worker.sh",
+      "label": "ai.anicca.article-zenn-retry",
+      "log_root": "~/.openclaw/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.openclaw"
+    },
+    "autohedge": {
+      "cadence": {
+        "calendar_interval": {
+          "Hour": 9,
+          "Minute": 0
+        }
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "financial",
+      "effect_class": "none",
+      "entrypoint": "skills/earn/autohedge/run-autohedge.sh",
+      "label": "ai.anicca.autohedge",
+      "log_root": "~/autohedge/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/autohedge"
+    },
+    "bounty-core-healthcheck": {
+      "cadence": {
+        "start_interval_seconds": 300
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "earn",
+      "effect_class": "none",
+      "entrypoint": "skills/bounty/bounty-healthcheck.sh",
+      "label": "ai.anicca.bounty-core-healthcheck",
+      "log_root": "~/.openclaw/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.openclaw"
+    },
+    "browser-state-backup": {
+      "cadence": {
+        "start_interval_seconds": 86400
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "system",
+      "effect_class": "none",
+      "entrypoint": "skills/_shared/browser-state-backup.sh",
+      "label": "ai.anicca.browser-state-backup",
+      "log_root": "~/.openclaw/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.openclaw"
+    },
+    "cadence-deadline-check": {
+      "cadence": {
+        "calendar_interval": {
+          "Hour": 21,
+          "Minute": 5
+        }
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "system",
+      "effect_class": "none",
+      "entrypoint": "skills/self/cadence-deadline-check.sh",
+      "label": "ai.anicca.cadence-deadline-check",
+      "log_root": "~/.openclaw/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.openclaw"
+    },
+    "capafy-goal-monitor": {
+      "cadence": {
+        "calendar_interval": {
+          "Hour": 9,
+          "Minute": 30
+        }
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "growth",
+      "effect_class": "none",
+      "entrypoint": "skills/earn/capafy-marketing/capafy-goal-monitor.sh",
+      "label": "ai.anicca.capafy-goal-monitor",
+      "log_root": "~/.local/state/life-manager/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.local/state/life-manager"
+    },
+    "capafy-goal-monitor-daily-close": {
+      "cadence": {
+        "calendar_interval": {
+          "Hour": 23,
+          "Minute": 50
+        }
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "growth",
+      "effect_class": "none",
+      "entrypoint": "skills/earn/capafy-marketing/capafy-goal-monitor.sh",
+      "label": "ai.anicca.capafy-goal-monitor-daily-close",
+      "log_root": "~/.local/state/life-manager/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.local/state/life-manager"
+    },
+    "capafy-goal-monitor-hourly": {
+      "cadence": {
+        "calendar_interval": {
+          "Minute": 0
+        }
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "growth",
+      "effect_class": "none",
+      "entrypoint": "skills/earn/capafy-marketing/capafy-goal-monitor.sh",
+      "label": "ai.anicca.capafy-goal-monitor-hourly",
+      "log_root": "~/.local/state/life-manager/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.local/state/life-manager"
+    },
+    "capafy-ig-account-manager": {
+      "cadence": {
+        "start_interval_seconds": 300
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "growth",
+      "effect_class": "none",
+      "entrypoint": "skills/earn/capafy-marketing/capafy-ig-account-manager.sh",
+      "label": "ai.anicca.capafy-ig-account-manager",
+      "log_root": "~/.local/state/life-manager/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.local/state/life-manager"
+    },
+    "capafy-ig-marketing-daily": {
+      "cadence": {
+        "start_interval_seconds": 3600
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "growth",
+      "effect_class": "none",
+      "entrypoint": "skills/earn/capafy-marketing/capafy-ig-marketing-daily.sh",
+      "label": "ai.anicca.capafy-ig-marketing-daily",
+      "log_root": "~/.local/state/life-manager/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.local/state/life-manager"
+    },
+    "capafy-loop-daily": {
+      "cadence": {
+        "start_interval_seconds": 3600
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "growth",
+      "effect_class": "none",
+      "entrypoint": "skills/self/capafy-loop/capafy-loop-daily.sh",
+      "label": "ai.anicca.capafy-loop-daily",
+      "log_root": "~/.local/state/life-manager/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.local/state/life-manager"
+    },
+    "capafy-loop-healthcheck": {
+      "cadence": {
+        "start_interval_seconds": 300
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "growth",
+      "effect_class": "none",
+      "entrypoint": "skills/self/capafy-loop/capafy-loop-healthcheck.sh",
+      "label": "ai.anicca.capafy-loop-healthcheck",
+      "log_root": "~/.local/state/life-manager/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.local/state/life-manager"
+    },
+    "capafy-outcome-monitor": {
+      "cadence": {
+        "start_interval_seconds": 60
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "growth",
+      "effect_class": "none",
+      "entrypoint": "skills/earn/capafy-marketing/capafy-outcome-monitor.sh",
+      "label": "ai.anicca.capafy-outcome-monitor",
+      "log_root": "~/.local/state/life-manager/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.local/state/life-manager"
+    },
+    "ceo-runner": {
+      "cadence": {
+        "start_interval_seconds": 86400
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "system",
+      "effect_class": "none",
+      "entrypoint": "bin/ceo-run.sh",
+      "label": "ai.anicca.ceo-runner",
+      "log_root": "~/.openclaw/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.openclaw"
+    },
+    "cfo-daily": {
+      "cadence": {
+        "run_at_load": true
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "financial",
+      "effect_class": "message",
+      "entrypoint": "skills/cfo-core/run-cfo.sh",
+      "label": "ai.anicca.cfo-daily",
+      "log_root": "~/.local/state/life-manager/cfo-daily/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.local/state/life-manager/cfo-daily"
+    },
+    "citizen-refill": {
+      "cadence": {
+        "start_interval_seconds": 3600
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "system",
+      "effect_class": "none",
+      "entrypoint": "bin/citizen-refill-launchd",
+      "label": "ai.anicca.citizen-refill",
+      "log_root": "~/.anicca/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.anicca"
+    },
+    "citizens-diff-monitor": {
+      "cadence": {
+        "keep_alive": true
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "system",
+      "effect_class": "none",
+      "entrypoint": "skills/self/spawn/scripts/citizens-diff-monitor.sh",
+      "label": "ai.anicca.citizens-diff-monitor",
+      "log_root": "~/.hermes/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.hermes"
+    },
+    "claude-projects-backup": {
+      "cadence": {
+        "start_interval_seconds": 86400
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "system",
+      "effect_class": "none",
+      "entrypoint": "skills/_shared/claude-projects-backup.sh",
+      "label": "ai.anicca.claude-projects-backup",
+      "log_root": "~/.openclaw/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.openclaw"
+    },
+    "clip-loop": {
+      "cadence": {
+        "start_interval_seconds": 86400
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "growth",
+      "effect_class": "publish",
+      "entrypoint": "skills/earn/marketing-engine/report/scheduled_runner.py",
+      "label": "ai.anicca.clip-loop",
+      "log_root": "~/.openclaw/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.openclaw"
+    },
+    "daily-nl-report": {
+      "cadence": {
+        "calendar_interval": {
+          "Hour": 21,
+          "Minute": 0
+        }
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "system",
+      "effect_class": "none",
+      "entrypoint": "runtime/reports/daily-nl-report.sh",
+      "label": "ai.anicca.daily-nl-report",
+      "log_root": "~/.local/state/life-manager/daily-nl-report/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.local/state/life-manager/daily-nl-report"
+    },
+    "earn-watch": {
+      "cadence": {
+        "start_interval_seconds": 1800
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "system",
+      "effect_class": "none",
+      "entrypoint": "runtime/earn/earn-watch.sh",
+      "label": "ai.anicca.earn-watch",
+      "log_root": "~/.local/state/life-manager/earn-watch/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.local/state/life-manager/earn-watch"
+    },
+    "earning-health-allslots": {
+      "cadence": {
+        "start_interval_seconds": 300
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "system",
+      "effect_class": "none",
+      "entrypoint": "skills/self/earning-health-allslots.sh",
+      "label": "ai.anicca.earning-health-allslots",
+      "log_root": "~/.openclaw/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.openclaw"
+    },
+    "effect-watch": {
+      "cadence": {
+        "calendar_interval": {
+          "Hour": 12,
+          "Minute": 0
+        }
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "system",
+      "effect_class": "none",
+      "entrypoint": "bin/effect-watch.py",
+      "label": "ai.anicca.effect-watch",
+      "log_root": "~/.local/state/life-manager/effect-watch/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.local/state/life-manager/effect-watch"
+    },
+    "f7-silence-check": {
+      "cadence": {
+        "calendar_interval": {
+          "Minute": 7
+        }
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "system",
+      "effect_class": "none",
+      "entrypoint": "skills/anicca-core/scripts/f7-silence-check.sh",
+      "label": "ai.anicca.f7-silence-check",
+      "log_root": "~/.openclaw/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.openclaw"
+    },
+    "founder-loop-cadence": {
+      "cadence": {
+        "start_interval_seconds": 1800
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "system",
+      "effect_class": "none",
+      "entrypoint": "skills/self/founder-loop/founder-loop.sh",
+      "label": "ai.anicca.founder-loop-cadence",
+      "log_root": "~/.openclaw/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.openclaw"
+    },
+    "franklin-loop": {
+      "cadence": {
+        "keep_alive": true
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "system",
+      "effect_class": "none",
+      "entrypoint": "runtime/anicca-daemon.sh",
+      "label": "ai.anicca.franklin-loop",
+      "log_root": "~/.blockrun/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.blockrun"
+    },
+    "franklin2-loop": {
+      "cadence": {
+        "keep_alive": true
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "system",
+      "effect_class": "none",
+      "entrypoint": "runtime/anicca-daemon.sh",
+      "label": "ai.anicca.franklin2-loop",
+      "log_root": "~/.franklin2-home/.blockrun/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.franklin2-home/.blockrun"
+    },
+    "fuel-watch": {
+      "cadence": {
+        "start_interval_seconds": 900
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "financial",
+      "effect_class": "none",
+      "entrypoint": "bin/fuel-watch.py",
+      "label": "ai.anicca.fuel-watch",
+      "log_root": "~/.local/state/life-manager/fuel-watch/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.local/state/life-manager/fuel-watch"
+    },
+    "fundraiser": {
+      "cadence": {
+        "start_interval_seconds": 60
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "earn",
+      "effect_class": "application",
+      "entrypoint": "skills/fundraiser-agent/runtime/run.sh",
+      "label": "ai.anicca.fundraiser",
+      "log_root": "~/.local/state/life-manager/fundraiser/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.local/state/life-manager/fundraiser"
+    },
+    "gig-outcome-watch": {
+      "cadence": {
+        "start_interval_seconds": 3600
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "earn",
+      "effect_class": "none",
+      "entrypoint": "bin/bash",
+      "label": "ai.anicca.gig-outcome-watch",
+      "log_root": "~/.local/state/life-manager/gig-outcome-watch/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.local/state/life-manager/gig-outcome-watch"
+    },
+    "hf-bounty-daily": {
+      "cadence": {
+        "calendar_interval": {
+          "Hour": 9,
+          "Minute": 29
+        }
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "earn",
+      "effect_class": "none",
+      "entrypoint": "skills/bounty/bounty-cli.sh",
+      "label": "ai.anicca.hf-bounty-daily",
+      "log_root": "~/.openclaw/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.openclaw"
+    },
+    "hf-gig-apply-direct": {
+      "cadence": {
+        "start_interval_seconds": 60
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "earn",
+      "effect_class": "application",
+      "entrypoint": "skills/earn/gig/agent-runner/agent_runner.py",
+      "label": "ai.anicca.hf-gig-apply-direct",
+      "log_root": "~/.openclaw/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.openclaw"
+    },
+    "hf-gig-browser": {
+      "cadence": {
+        "keep_alive": true
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "earn",
+      "effect_class": "none",
+      "entrypoint": "skills/earn/gig/scripts/launch_gig_browser.sh",
+      "label": "ai.anicca.hf-gig-browser",
+      "log_root": "~/.openclaw/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.openclaw"
+    },
+    "hf-gig-daily-report": {
+      "cadence": {
+        "calendar_interval": {
+          "Hour": 9,
+          "Minute": 7
+        }
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "earn",
+      "effect_class": "none",
+      "entrypoint": "skills/earn/gig/gig_daily_report.sh",
+      "label": "ai.anicca.hf-gig-daily-report",
+      "log_root": "~/.openclaw/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.openclaw"
+    },
+    "hf-gig-paid-direct": {
+      "cadence": {
+        "start_interval_seconds": 300
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "earn",
+      "effect_class": "none",
+      "entrypoint": "skills/earn/gig/scripts/paid_direct.py",
+      "label": "ai.anicca.hf-gig-paid-direct",
+      "log_root": "~/.openclaw/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.openclaw"
+    },
+    "hf-gig-release-watch": {
+      "cadence": {
+        "start_interval_seconds": 300
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "earn",
+      "effect_class": "none",
+      "entrypoint": "skills/earn/gig/scripts/gig_release.py",
+      "label": "ai.anicca.hf-gig-release-watch",
+      "log_root": "~/.openclaw/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.openclaw"
+    },
+    "hf-gig-reply-detector": {
+      "cadence": {
+        "keep_alive": true
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "earn",
+      "effect_class": "none",
+      "entrypoint": "skills/earn/gig/agent-runner/agent_runner.py",
+      "label": "ai.anicca.hf-gig-reply-detector",
+      "log_root": "~/.openclaw/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.openclaw"
+    },
+    "hf-gig-storefront-direct": {
+      "cadence": {
+        "start_interval_seconds": 60
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "earn",
+      "effect_class": "publish",
+      "entrypoint": "skills/earn/gig/scripts/storefront_direct.py",
+      "label": "ai.anicca.hf-gig-storefront-direct",
+      "log_root": "~/.openclaw/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.openclaw"
+    },
+    "hf-reddit-loop-daily": {
+      "cadence": {
+        "calendar_interval": {
+          "Hour": 8,
+          "Minute": 35
+        }
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "earn",
+      "effect_class": "none",
+      "entrypoint": "skills/reddit/reddit-loop-daily.sh",
+      "label": "ai.anicca.hf-reddit-loop-daily",
+      "log_root": "~/.openclaw/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.openclaw"
+    },
+    "hf-reddit-loop-healthcheck": {
+      "cadence": {
+        "start_interval_seconds": 300
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "system",
+      "effect_class": "none",
+      "entrypoint": "skills/reddit/reddit-loop-healthcheck.sh",
+      "label": "ai.anicca.hf-reddit-loop-healthcheck",
+      "log_root": "~/.openclaw/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.openclaw"
+    },
+    "image-claude-p": {
+      "cadence": {
+        "keep_alive": true
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "system",
+      "effect_class": "none",
+      "entrypoint": "skills/earn/x402-sell/image-claude-p-boot.sh",
+      "label": "ai.anicca.image-claude-p",
+      "log_root": "~/anicca/skills/earn/x402-sell/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/anicca/skills/earn/x402-sell"
+    },
+    "image-franklin1": {
+      "cadence": {
+        "keep_alive": true
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "system",
+      "effect_class": "none",
+      "entrypoint": "skills/earn/x402-sell/image-franklin1-boot.sh",
+      "label": "ai.anicca.image-franklin1",
+      "log_root": "~/anicca/skills/earn/x402-sell/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/anicca/skills/earn/x402-sell"
+    },
+    "image-franklin2": {
+      "cadence": {
+        "keep_alive": true
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "system",
+      "effect_class": "none",
+      "entrypoint": "skills/earn/x402-sell/image-franklin2-boot.sh",
+      "label": "ai.anicca.image-franklin2",
+      "log_root": "~/anicca/skills/earn/x402-sell/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/anicca/skills/earn/x402-sell"
+    },
+    "job-search-browser": {
+      "cadence": {
+        "keep_alive": true
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "earn",
+      "effect_class": "application",
+      "entrypoint": "apps/job-search-loop/scripts/run-browser.sh",
+      "label": "ai.anicca.job-search-browser",
+      "log_root": "~/.local/state/anicca/job-search/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.local/state/anicca/job-search"
+    },
+    "job-search-daily": {
+      "cadence": {
+        "start_interval_seconds": 1800
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "earn",
+      "effect_class": "none",
+      "entrypoint": "apps/job-search-loop/scripts/run-daily.sh",
+      "label": "ai.anicca.job-search-daily",
+      "log_root": "~/.local/state/anicca/job-search/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.local/state/anicca/job-search"
+    },
+    "job-search-health": {
+      "cadence": {
+        "start_interval_seconds": 300
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "earn",
+      "effect_class": "application",
+      "entrypoint": "apps/job-search-loop/scripts/run-health.sh",
+      "label": "ai.anicca.job-search-health",
+      "log_root": "~/.local/state/anicca/job-search/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.local/state/anicca/job-search"
+    },
+    "job-search-inbox": {
+      "cadence": {
+        "start_interval_seconds": 900
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "earn",
+      "effect_class": "none",
+      "entrypoint": "apps/job-search-loop/scripts/run-inbox.sh",
+      "label": "ai.anicca.job-search-inbox",
+      "log_root": "~/.local/state/anicca/job-search/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.local/state/anicca/job-search"
+    },
+    "job-search-learning": {
+      "cadence": {
+        "calendar_interval": {
+          "Hour": 9,
+          "Minute": 15,
+          "Weekday": 1
+        }
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "earn",
+      "effect_class": "application",
+      "entrypoint": "apps/job-search-loop/scripts/run-learning.sh",
+      "label": "ai.anicca.job-search-learning",
+      "log_root": "~/.local/state/anicca/job-search/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.local/state/anicca/job-search"
+    },
+    "job-search-mercor": {
+      "cadence": {
+        "start_interval_seconds": 3600
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "earn",
+      "effect_class": "application",
+      "entrypoint": "apps/job-search-loop/scripts/run-mercor.sh",
+      "label": "ai.anicca.job-search-mercor",
+      "log_root": "~/.local/state/anicca/job-search/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.local/state/anicca/job-search"
+    },
+    "job-search-mercor-browser": {
+      "cadence": {
+        "keep_alive": true
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "earn",
+      "effect_class": "application",
+      "entrypoint": "apps/job-search-loop/scripts/run-browser.sh",
+      "label": "ai.anicca.job-search-mercor-browser",
+      "log_root": "~/.local/state/anicca/job-search/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.local/state/anicca/job-search"
+    },
+    "lancers-revenue-application": {
+      "cadence": {
+        "start_interval_seconds": 300
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "earn",
+      "effect_class": "application",
+      "entrypoint": "skills/earn/lancers/scripts/application_loop.py",
+      "label": "ai.anicca.lancers-revenue-application",
+      "log_root": "~/.local/state/anicca/lancers/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.local/state/anicca/lancers"
+    },
+    "lancers-revenue-browser": {
+      "cadence": {
+        "keep_alive": true
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "earn",
+      "effect_class": "none",
+      "entrypoint": "runtime/legacy/lancers-revenue-browser/run.sh",
+      "label": "ai.anicca.lancers-revenue-browser",
+      "log_root": "~/.local/state/life-manager/lancers-revenue-browser/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.local/state/life-manager/lancers-revenue-browser"
+    },
+    "lancers-revenue-storefront": {
+      "cadence": {
+        "start_interval_seconds": 1800
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "earn",
+      "effect_class": "publish",
+      "entrypoint": "skills/earn/lancers/scripts/storefront_offer.py",
+      "label": "ai.anicca.lancers-revenue-storefront",
+      "log_root": "~/.local/state/anicca/lancers/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.local/state/anicca/lancers"
+    },
+    "lancers-revenue-telegram-report": {
+      "cadence": {
+        "start_interval_seconds": 300
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "earn",
+      "effect_class": "message",
+      "entrypoint": "skills/earn/lancers/scripts/telegram_report.py",
+      "label": "ai.anicca.lancers-revenue-telegram-report",
+      "log_root": "~/.local/state/anicca/lancers/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.local/state/anicca/lancers"
+    },
+    "lancers-revenue-work-sync": {
+      "cadence": {
+        "start_interval_seconds": 300
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "earn",
+      "effect_class": "none",
+      "entrypoint": "skills/earn/lancers/scripts/work_sync.py",
+      "label": "ai.anicca.lancers-revenue-work-sync",
+      "log_root": "~/.local/state/anicca/lancers/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.local/state/anicca/lancers"
+    },
+    "lateness-heartbeat": {
+      "cadence": {
+        "start_interval_seconds": 300
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "physical",
+      "effect_class": "none",
+      "entrypoint": "skills/anicca-life-manager/scripts/run.sh",
+      "label": "ai.anicca.lateness-heartbeat",
+      "log_root": "~/.local/state/life-manager/lateness-heartbeat/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.local/state/life-manager/lateness-heartbeat"
+    },
+    "life-manager-anicca-en-affirmation-instagram": {
+      "cadence": {
+        "calendar_interval": [
+          {
+            "Hour": 10,
+            "Minute": 0
+          },
+          {
+            "Hour": 15,
+            "Minute": 0
+          },
+          {
+            "Hour": 20,
+            "Minute": 0
+          }
+        ]
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "growth",
+      "effect_class": "publish",
+      "entrypoint": "apps/life-manager/scripts/anicca-en-affirmation-instagram-production-boot.sh",
+      "label": "ai.anicca.life-manager-anicca-en-affirmation-instagram",
+      "log_root": "~/.local/state/life-manager/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.local/state/life-manager"
+    },
+    "life-manager-anicca-en-card-instagram": {
+      "cadence": {
+        "calendar_interval": [
+          {
+            "Hour": 8,
+            "Minute": 45
+          },
+          {
+            "Hour": 12,
+            "Minute": 45
+          },
+          {
+            "Hour": 21,
+            "Minute": 30
+          }
+        ]
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "growth",
+      "effect_class": "publish",
+      "entrypoint": "apps/life-manager/scripts/anicca-en-card-instagram-production-boot.sh",
+      "label": "ai.anicca.life-manager-anicca-en-card-instagram",
+      "log_root": "~/.local/state/life-manager/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.local/state/life-manager"
+    },
+    "life-manager-anicca-en-slideshow-tiktok": {
+      "cadence": {
+        "calendar_interval": [
+          {
+            "Hour": 9,
+            "Minute": 0
+          },
+          {
+            "Hour": 15,
+            "Minute": 0
+          },
+          {
+            "Hour": 21,
+            "Minute": 0
+          }
+        ]
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "growth",
+      "effect_class": "publish",
+      "entrypoint": "apps/life-manager/scripts/anicca-en-slideshow-tiktok-production-boot.sh",
+      "label": "ai.anicca.life-manager-anicca-en-slideshow-tiktok",
+      "log_root": "~/.local/state/life-manager/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.local/state/life-manager"
+    },
+    "life-manager-anicca-en-widget-instagram": {
+      "cadence": {
+        "calendar_interval": [
+          {
+            "Hour": 7,
+            "Minute": 30
+          },
+          {
+            "Hour": 9,
+            "Minute": 30
+          },
+          {
+            "Hour": 19,
+            "Minute": 0
+          }
+        ]
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "growth",
+      "effect_class": "publish",
+      "entrypoint": "apps/life-manager/scripts/anicca-en-widget-instagram-production-boot.sh",
+      "label": "ai.anicca.life-manager-anicca-en-widget-instagram",
+      "log_root": "~/.local/state/life-manager/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.local/state/life-manager"
+    },
+    "life-manager-anicca-he": {
+      "cadence": {
+        "calendar_interval": [
+          {
+            "Hour": 7,
+            "Minute": 15
+          },
+          {
+            "Hour": 13,
+            "Minute": 45
+          },
+          {
+            "Hour": 18,
+            "Minute": 15
+          }
+        ]
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "growth",
+      "effect_class": "publish",
+      "entrypoint": "apps/life-manager/scripts/anicca-he-production-boot.sh",
+      "label": "ai.anicca.life-manager-anicca-he",
+      "log_root": "~/.local/state/life-manager/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.local/state/life-manager"
+    },
+    "life-manager-anicca-ja-widget-instagram": {
+      "cadence": {
+        "calendar_interval": [
+          {
+            "Hour": 8,
+            "Minute": 5
+          },
+          {
+            "Hour": 13,
+            "Minute": 5
+          },
+          {
+            "Hour": 18,
+            "Minute": 20
+          }
+        ]
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "growth",
+      "effect_class": "publish",
+      "entrypoint": "apps/life-manager/scripts/anicca-ja-widget-instagram-production-boot.sh",
+      "label": "ai.anicca.life-manager-anicca-ja-widget-instagram",
+      "log_root": "~/.local/state/life-manager/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.local/state/life-manager"
+    },
+    "life-manager-anicca-jp4": {
+      "cadence": {
+        "calendar_interval": [
+          {
+            "Hour": 9,
+            "Minute": 15
+          },
+          {
+            "Hour": 15,
+            "Minute": 15
+          },
+          {
+            "Hour": 20,
+            "Minute": 45
+          }
+        ]
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "growth",
+      "effect_class": "publish",
+      "entrypoint": "apps/life-manager/scripts/anicca-jp4-production-boot.sh",
+      "label": "ai.anicca.life-manager-anicca-jp4",
+      "log_root": "~/.local/state/life-manager/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.local/state/life-manager"
+    },
+    "life-manager-anicca-larry-ja-instagram": {
+      "cadence": {
+        "calendar_interval": [
+          {
+            "Hour": 10,
+            "Minute": 30
+          },
+          {
+            "Hour": 16,
+            "Minute": 30
+          },
+          {
+            "Hour": 22,
+            "Minute": 30
+          }
+        ]
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "growth",
+      "effect_class": "publish",
+      "entrypoint": "apps/life-manager/scripts/anicca-larry-ja-instagram-production-boot.sh",
+      "label": "ai.anicca.life-manager-anicca-larry-ja-instagram",
+      "log_root": "~/.local/state/life-manager/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.local/state/life-manager"
+    },
+    "life-manager-anicca-main-instagram": {
+      "cadence": {
+        "calendar_interval": [
+          {
+            "Hour": 8,
+            "Minute": 10
+          },
+          {
+            "Hour": 13,
+            "Minute": 10
+          },
+          {
+            "Hour": 19,
+            "Minute": 10
+          }
+        ]
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "growth",
+      "effect_class": "publish",
+      "entrypoint": "apps/life-manager/scripts/anicca-main-instagram-production-boot.sh",
+      "label": "ai.anicca.life-manager-anicca-main-instagram",
+      "log_root": "~/.local/state/life-manager/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.local/state/life-manager"
+    },
+    "life-manager-anicca-main-tiktok": {
+      "cadence": {
+        "calendar_interval": [
+          {
+            "Hour": 8,
+            "Minute": 0
+          },
+          {
+            "Hour": 16,
+            "Minute": 0
+          },
+          {
+            "Hour": 22,
+            "Minute": 37
+          }
+        ]
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "growth",
+      "effect_class": "publish",
+      "entrypoint": "apps/life-manager/scripts/anicca-main-tiktok-production-boot.sh",
+      "label": "ai.anicca.life-manager-anicca-main-tiktok",
+      "log_root": "~/.local/state/life-manager/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.local/state/life-manager"
+    },
+    "life-manager-anicca-obou-instagram": {
+      "cadence": {
+        "calendar_interval": [
+          {
+            "Hour": 7,
+            "Minute": 0
+          },
+          {
+            "Hour": 14,
+            "Minute": 0
+          },
+          {
+            "Hour": 20,
+            "Minute": 0
+          }
+        ]
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "growth",
+      "effect_class": "publish",
+      "entrypoint": "apps/life-manager/scripts/anicca-obou-instagram-production-boot.sh",
+      "label": "ai.anicca.life-manager-anicca-obou-instagram",
+      "log_root": "~/.local/state/life-manager/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.local/state/life-manager"
+    },
+    "life-manager-cfo-hourly": {
+      "cadence": {
+        "start_interval_seconds": 3600
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "financial",
+      "effect_class": "message",
+      "entrypoint": "skills/cfo/run.sh",
+      "label": "ai.anicca.life-manager-cfo-hourly",
+      "log_root": "~/.local/state/life-manager/life-manager-cfo-hourly/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.local/state/life-manager/life-manager-cfo-hourly"
+    },
+    "life-manager-connector-native": {
+      "cadence": {
+        "start_interval_seconds": 3600
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "system",
+      "effect_class": "none",
+      "entrypoint": "skills/connector/run.sh",
+      "label": "ai.anicca.life-manager-connector-native",
+      "log_root": "~/.local/state/life-manager/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.local/state/life-manager"
+    },
+    "life-manager-daily": {
+      "cadence": {
+        "calendar_interval": {
+          "Hour": 10,
+          "Minute": 15
+        }
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "growth",
+      "effect_class": "publish",
+      "entrypoint": "skills/life-manager/life-manager-daily.sh",
+      "label": "ai.anicca.life-manager-daily",
+      "log_root": "~/.openclaw/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.openclaw"
+    },
+    "life-manager-daily-driver": {
+      "cadence": {
+        "keep_alive": true
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "system",
+      "effect_class": "none",
+      "entrypoint": "skills/browser/cdp_persistent_context.py",
+      "label": "ai.anicca.life-manager-daily-driver",
+      "log_root": "~/.local/state/life-manager/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.local/state/life-manager"
+    },
+    "life-manager-dev": {
+      "cadence": {
+        "calendar_interval": {
+          "Hour": 4,
+          "Minute": 10
+        }
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "system",
+      "effect_class": "none",
+      "entrypoint": "apps/life-manager/scripts/life-manager-dev-daily.js",
+      "label": "ai.anicca.life-manager-dev",
+      "log_root": "~/.openclaw/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.openclaw"
+    },
+    "life-manager-disk-cleanup": {
+      "cadence": {
+        "start_interval_seconds": 300
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "system",
+      "effect_class": "none",
+      "entrypoint": "skills/self/disk-cleanup/disk_cleanup.py",
+      "label": "ai.anicca.life-manager-disk-cleanup",
+      "log_root": "~/.local/state/life-manager/life-manager-disk-cleanup/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.local/state/life-manager/life-manager-disk-cleanup"
+    },
+    "life-manager-financial-report": {
+      "cadence": {
+        "start_interval_seconds": 300
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "financial",
+      "effect_class": "message",
+      "entrypoint": "apps/life-manager/scripts/financial-report-boot.sh",
+      "label": "ai.anicca.life-manager-financial-report",
+      "log_root": "~/.anicca/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.anicca"
+    },
+    "life-manager-honne-en": {
+      "cadence": {
+        "calendar_interval": [
+          {
+            "Hour": 7,
+            "Minute": 0
+          },
+          {
+            "Hour": 11,
+            "Minute": 0
+          },
+          {
+            "Hour": 20,
+            "Minute": 30
+          }
+        ]
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "growth",
+      "effect_class": "publish",
+      "entrypoint": "apps/life-manager/scripts/honne-en-production-boot.sh",
+      "label": "ai.anicca.life-manager-honne-en",
+      "log_root": "~/.local/state/life-manager/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.local/state/life-manager"
+    },
+    "life-manager-honne-ja": {
+      "cadence": {
+        "calendar_interval": [
+          {
+            "Hour": 8,
+            "Minute": 30
+          },
+          {
+            "Hour": 12,
+            "Minute": 30
+          },
+          {
+            "Hour": 21,
+            "Minute": 30
+          }
+        ]
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "growth",
+      "effect_class": "publish",
+      "entrypoint": "apps/life-manager/scripts/honne-ja-production-boot.sh",
+      "label": "ai.anicca.life-manager-honne-ja",
+      "log_root": "~/.local/state/life-manager/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.local/state/life-manager"
+    },
+    "life-manager-instagram-metrics": {
+      "cadence": {
+        "start_interval_seconds": 1800
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "growth",
+      "effect_class": "publish",
+      "entrypoint": "apps/life-manager/scripts/instagram-metrics-production-boot.sh",
+      "label": "ai.anicca.life-manager-instagram-metrics",
+      "log_root": "~/.local/state/life-manager/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.local/state/life-manager"
+    },
+    "life-manager-payout": {
+      "cadence": {
+        "start_interval_seconds": 300
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "financial",
+      "effect_class": "money",
+      "entrypoint": "apps/life-manager/scripts/payout-boot.sh",
+      "label": "ai.anicca.life-manager-payout",
+      "log_root": "~/.anicca/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.anicca"
+    },
+    "life-manager-selfbuild": {
+      "cadence": {
+        "calendar_interval": {
+          "Hour": 4,
+          "Minute": 10
+        }
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "system",
+      "effect_class": "none",
+      "entrypoint": "skills/life-manager/self-build-daily.sh",
+      "label": "ai.anicca.life-manager-selfbuild",
+      "log_root": "~/.openclaw/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.openclaw"
+    },
+    "life-manager-taskmarket-ledger": {
+      "cadence": {
+        "start_interval_seconds": 300
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "financial",
+      "effect_class": "none",
+      "entrypoint": "apps/life-manager/scripts/taskmarket-work-ledger-boot.sh",
+      "label": "ai.anicca.life-manager-taskmarket-ledger",
+      "log_root": "~/.openclaw/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.openclaw"
+    },
+    "life-manager-tiktok-metrics": {
+      "cadence": {
+        "start_interval_seconds": 1800
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "growth",
+      "effect_class": "publish",
+      "entrypoint": "apps/life-manager/scripts/tiktok-metrics-production-boot.sh",
+      "label": "ai.anicca.life-manager-tiktok-metrics",
+      "log_root": "~/.local/state/life-manager/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.local/state/life-manager"
+    },
+    "life-manager-ugig-invoice-observer": {
+      "cadence": {
+        "start_interval_seconds": 300
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "earn",
+      "effect_class": "none",
+      "entrypoint": "apps/life-manager/scripts/ugig-invoice-observer-boot.sh",
+      "label": "ai.anicca.life-manager-ugig-invoice-observer",
+      "log_root": "~/.openclaw/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.openclaw"
+    },
+    "life-manager-x402-ledger": {
+      "cadence": {
+        "start_interval_seconds": 300
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "financial",
+      "effect_class": "none",
+      "entrypoint": "apps/life-manager/scripts/x402-sale-ledger-boot.sh",
+      "label": "ai.anicca.life-manager-x402-ledger",
+      "log_root": "~/.anicca/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.anicca"
+    },
+    "lm-recording-store": {
+      "cadence": {
+        "start_interval_seconds": 1800
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "system",
+      "effect_class": "none",
+      "entrypoint": "skills/life-manager-video/run-store-recordings.sh",
+      "label": "ai.anicca.lm-recording-store",
+      "log_root": "~/.openclaw/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.openclaw"
+    },
+    "marketing-daily-report": {
+      "cadence": {
+        "calendar_interval": {
+          "Hour": 22,
+          "Minute": 0
+        }
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "growth",
+      "effect_class": "message",
+      "entrypoint": "skills/earn/marketing-engine/report/daily_report.py",
+      "label": "ai.anicca.marketing-daily-report",
+      "log_root": "~/.local/state/life-manager/marketing-daily-report/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.local/state/life-manager/marketing-daily-report"
+    },
+    "marketing-dashboard": {
+      "cadence": {
+        "start_interval_seconds": 900
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "growth",
+      "effect_class": "none",
+      "entrypoint": "skills/earn/marketing-engine/report/scheduled_runner.py",
+      "label": "ai.anicca.marketing-dashboard",
+      "log_root": "~/Library/Application Support/AniccaMarketing/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/Library/Application Support/AniccaMarketing"
+    },
+    "marketing-metrics": {
+      "cadence": {
+        "start_interval_seconds": 900
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "growth",
+      "effect_class": "none",
+      "entrypoint": "skills/earn/marketing-engine/bin/marketing",
+      "label": "ai.anicca.marketing-metrics",
+      "log_root": "~/Library/Application Support/AniccaMarketing/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/Library/Application Support/AniccaMarketing"
+    },
+    "marketing-metrics-daily": {
+      "cadence": {
+        "calendar_interval": {
+          "Hour": 7,
+          "Minute": 0
+        }
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "growth",
+      "effect_class": "none",
+      "entrypoint": "skills/earn/marketing-engine/report/scheduled_runner.py",
+      "label": "ai.anicca.marketing-metrics-daily",
+      "log_root": "~/.local/state/life-manager/marketing-metrics-daily/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.local/state/life-manager/marketing-metrics-daily"
+    },
+    "marketing-mine-daily": {
+      "cadence": {
+        "calendar_interval": {
+          "Hour": 5,
+          "Minute": 30
+        }
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "growth",
+      "effect_class": "publish",
+      "entrypoint": "skills/earn/marketing-engine/report/scheduled_runner.py",
+      "label": "ai.anicca.marketing-mine-daily",
+      "log_root": "~/.local/state/life-manager/marketing-mine-daily/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.local/state/life-manager/marketing-mine-daily"
+    },
+    "marketing-owner-daily": {
+      "cadence": {
+        "calendar_interval": {
+          "Hour": 22,
+          "Minute": 0
+        }
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "growth",
+      "effect_class": "publish",
+      "entrypoint": "skills/earn/marketing-engine/state",
+      "label": "ai.anicca.marketing-owner-daily",
+      "log_root": "~/.local/state/life-manager/marketing-owner-daily/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.local/state/life-manager/marketing-owner-daily"
+    },
+    "marketing-owner-events": {
+      "cadence": {
+        "start_interval_seconds": 3600
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "growth",
+      "effect_class": "none",
+      "entrypoint": "skills/earn/marketing-engine/report/truth_pipeline.py",
+      "label": "ai.anicca.marketing-owner-events",
+      "log_root": "~/.local/state/life-manager/marketing-owner-events/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.local/state/life-manager/marketing-owner-events"
+    },
+    "marketing-owner-weekly": {
+      "cadence": {
+        "calendar_interval": {
+          "Hour": 21,
+          "Minute": 0,
+          "Weekday": 0
+        }
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "growth",
+      "effect_class": "publish",
+      "entrypoint": "skills/earn/marketing-engine/state",
+      "label": "ai.anicca.marketing-owner-weekly",
+      "log_root": "~/.local/state/life-manager/marketing-owner-weekly/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.local/state/life-manager/marketing-owner-weekly"
+    },
+    "marketing-score-daily": {
+      "cadence": {
+        "calendar_interval": {
+          "Hour": 8,
+          "Minute": 0
+        }
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "growth",
+      "effect_class": "none",
+      "entrypoint": "skills/earn/marketing-engine/report/scheduled_runner.py",
+      "label": "ai.anicca.marketing-score-daily",
+      "log_root": "~/.local/state/life-manager/marketing-score-daily/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.local/state/life-manager/marketing-score-daily"
+    },
+    "marketing-weekly-review": {
+      "cadence": {
+        "calendar_interval": {
+          "Hour": 21,
+          "Minute": 0,
+          "Weekday": 0
+        }
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "growth",
+      "effect_class": "message",
+      "entrypoint": "skills/earn/marketing-engine/bin/lm",
+      "label": "ai.anicca.marketing-weekly-review",
+      "log_root": "~/.local/state/life-manager/marketing-weekly-review/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.local/state/life-manager/marketing-weekly-review"
+    },
+    "mcp-claude-p": {
+      "cadence": {
+        "keep_alive": true
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "system",
+      "effect_class": "none",
+      "entrypoint": "skills/earn/x402-sell/mcp-claude-p-boot.sh",
+      "label": "ai.anicca.mcp-claude-p",
+      "log_root": "~/anicca/skills/earn/x402-sell/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/anicca/skills/earn/x402-sell"
+    },
+    "mcp-franklin1": {
+      "cadence": {
+        "keep_alive": true
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "system",
+      "effect_class": "none",
+      "entrypoint": "skills/earn/x402-sell/mcp-franklin1-boot.sh",
+      "label": "ai.anicca.mcp-franklin1",
+      "log_root": "~/anicca/skills/earn/x402-sell/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/anicca/skills/earn/x402-sell"
+    },
+    "mcp-franklin2": {
+      "cadence": {
+        "keep_alive": true
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "system",
+      "effect_class": "none",
+      "entrypoint": "skills/earn/x402-sell/mcp-franklin2-boot.sh",
+      "label": "ai.anicca.mcp-franklin2",
+      "log_root": "~/anicca/skills/earn/x402-sell/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/anicca/skills/earn/x402-sell"
+    },
+    "monkey-watchdog": {
+      "cadence": {
+        "calendar_interval": {
+          "Hour": 4,
+          "Minute": 0
+        }
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "system",
+      "effect_class": "none",
+      "entrypoint": "skills/anicca-monkey-watchdog/scripts/run.sh",
+      "label": "ai.anicca.monkey-watchdog",
+      "log_root": "~/.local/state/life-manager/monkey-watchdog/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.local/state/life-manager/monkey-watchdog"
+    },
+    "openclaw-conformity-monkey": {
+      "cadence": {
+        "calendar_interval": [
+          {
+            "Hour": 0,
+            "Minute": 0
+          },
+          {
+            "Hour": 6,
+            "Minute": 0
+          },
+          {
+            "Hour": 12,
+            "Minute": 0
+          },
+          {
+            "Hour": 18,
+            "Minute": 0
+          }
+        ]
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "system",
+      "effect_class": "none",
+      "entrypoint": "skills/anicca-conformity-monkey/scripts/run.sh",
+      "label": "ai.anicca.openclaw-conformity-monkey",
+      "log_root": "~/.openclaw/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.openclaw"
+    },
+    "openclaw-core-backup": {
+      "cadence": {
+        "calendar_interval": {
+          "Hour": 4,
+          "Minute": 20
+        }
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "system",
+      "effect_class": "none",
+      "entrypoint": "skills/anicca-core/scripts/openclaw-core-backup.sh",
+      "label": "ai.anicca.openclaw-core-backup",
+      "log_root": "~/.openclaw/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.openclaw"
+    },
+    "openclaw-janitor-monkey": {
+      "cadence": {
+        "calendar_interval": {
+          "Hour": 3,
+          "Minute": 0
+        }
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "system",
+      "effect_class": "none",
+      "entrypoint": "skills/anicca-janitor-monkey/scripts/run.sh",
+      "label": "ai.anicca.openclaw-janitor-monkey",
+      "log_root": "~/.openclaw/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.openclaw"
+    },
+    "phone-conversation": {
+      "cadence": {
+        "keep_alive": true
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "physical",
+      "effect_class": "message",
+      "entrypoint": "services/sutando-phone/start.sh",
+      "label": "ai.anicca.phone-conversation",
+      "log_root": "~/.local/state/life-manager/phone-conversation/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.local/state/life-manager/phone-conversation"
+    },
+    "phone-tunnel": {
+      "cadence": {
+        "keep_alive": true
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "physical",
+      "effect_class": "none",
+      "entrypoint": "services/sutando-phone/tunnel.sh",
+      "label": "ai.anicca.phone-tunnel",
+      "log_root": "~/.local/state/life-manager/phone-tunnel/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.local/state/life-manager/phone-tunnel"
+    },
+    "phone-tunnel-watcher": {
+      "cadence": {
+        "keep_alive": true
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "physical",
+      "effect_class": "none",
+      "entrypoint": "services/sutando-phone/tunnel-watcher.sh",
+      "label": "ai.anicca.phone-tunnel-watcher",
+      "log_root": "~/.local/state/life-manager/phone-tunnel-watcher/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.local/state/life-manager/phone-tunnel-watcher"
+    },
+    "pipecat-phone": {
+      "cadence": {
+        "keep_alive": true
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "physical",
+      "effect_class": "message",
+      "entrypoint": "skills/anicca-phone/outbound/run.sh",
+      "label": "ai.anicca.pipecat-phone",
+      "log_root": "~/.local/state/life-manager/pipecat-phone/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.local/state/life-manager/pipecat-phone"
+    },
+    "pm-decision-loop": {
+      "cadence": {
+        "start_interval_seconds": 3600
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "financial",
+      "effect_class": "none",
+      "entrypoint": "skills/earn/polymarket-trade/run_decision_loop.sh",
+      "label": "ai.anicca.pm-decision-loop",
+      "log_root": "~/.local/state/life-manager/pm-decision-loop/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.local/state/life-manager/pm-decision-loop"
+    },
+    "pm-live-trade": {
+      "cadence": {
+        "start_interval_seconds": 3600
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "financial",
+      "effect_class": "trade",
+      "entrypoint": "skills/earn/polymarket-trade/run.sh",
+      "label": "ai.anicca.pm-live-trade",
+      "log_root": "~/.local/state/life-manager/pm-live-trade/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.local/state/life-manager/pm-live-trade"
+    },
+    "realtime-guide": {
+      "cadence": {
+        "keep_alive": true
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "mental",
+      "effect_class": "none",
+      "entrypoint": "skills/anicca-life-manager/scripts/realtime_guide.py",
+      "label": "ai.anicca.realtime-guide",
+      "log_root": "~/.local/state/life-manager/realtime-guide/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.local/state/life-manager/realtime-guide"
+    },
+    "reinvest": {
+      "cadence": {
+        "start_interval_seconds": 21600
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "financial",
+      "effect_class": "money",
+      "entrypoint": "runtime/earn/reinvest.sh",
+      "label": "ai.anicca.reinvest",
+      "log_root": "~/.local/state/life-manager/reinvest/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.local/state/life-manager/reinvest"
+    },
+    "sbi-usdc-monitor": {
+      "cadence": {
+        "calendar_interval": {
+          "Minute": 7
+        }
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "financial",
+      "effect_class": "none",
+      "entrypoint": "skills/sbi-usdc-monitor/scripts/run.sh",
+      "label": "ai.anicca.sbi-usdc-monitor",
+      "log_root": "~/.local/state/life-manager/sbi-usdc-monitor/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.local/state/life-manager/sbi-usdc-monitor"
+    },
+    "self-improve-evolve": {
+      "cadence": {
+        "start_interval_seconds": 21600
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "system",
+      "effect_class": "none",
+      "entrypoint": "skills/earn/marketing-engine/report/scheduled_runner.py",
+      "label": "ai.anicca.self-improve-evolve",
+      "log_root": "~/.openclaw/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.openclaw"
+    },
+    "session-vault": {
+      "cadence": {
+        "start_interval_seconds": 1800
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "system",
+      "effect_class": "none",
+      "entrypoint": "skills/browser/scripts/session_vault_tick.sh",
+      "label": "ai.anicca.session-vault",
+      "log_root": "~/.openclaw/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.openclaw"
+    },
+    "slack-bridge": {
+      "cadence": {
+        "keep_alive": true
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "system",
+      "effect_class": "message",
+      "entrypoint": "services/slack-bridge/slack-bridge.py",
+      "label": "ai.anicca.slack-bridge",
+      "log_root": "~/.local/state/life-manager/slack-bridge/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.local/state/life-manager/slack-bridge"
+    },
+    "stripe-revenue-listener": {
+      "cadence": {
+        "keep_alive": true
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "financial",
+      "effect_class": "none",
+      "entrypoint": "skills/stripe-revenue-listener/scripts/listen.sh",
+      "label": "ai.anicca.stripe-revenue-listener",
+      "log_root": "~/.local/state/life-manager/stripe-revenue-listener/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.local/state/life-manager/stripe-revenue-listener"
+    },
+    "stripe-revenue-poller": {
+      "cadence": {
+        "start_interval_seconds": 21600
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "financial",
+      "effect_class": "none",
+      "entrypoint": "skills/stripe-revenue-poller/scripts/poll.sh",
+      "label": "ai.anicca.stripe-revenue-poller",
+      "log_root": "~/.local/state/life-manager/stripe-revenue-poller/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.local/state/life-manager/stripe-revenue-poller"
+    },
+    "sync-memory": {
+      "cadence": {
+        "start_interval_seconds": 10800
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "mental",
+      "effect_class": "none",
+      "entrypoint": "skills/anicca-core/scripts/sync-memory.sh",
+      "label": "ai.anicca.sync-memory",
+      "log_root": "~/.local/state/life-manager/sync-memory/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.local/state/life-manager/sync-memory"
+    },
+    "telegram-bot": {
+      "cadence": {
+        "keep_alive": true
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "system",
+      "effect_class": "message",
+      "entrypoint": "skills/anicca-life-manager/scripts/telegram_bot.py",
+      "label": "ai.anicca.telegram-bot",
+      "log_root": "~/.local/state/life-manager/telegram-bot/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.local/state/life-manager/telegram-bot"
+    },
+    "the402-provider": {
+      "cadence": {
+        "keep_alive": true
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "financial",
+      "effect_class": "money",
+      "entrypoint": "skills/earn/x402-sell/the402-boot.sh",
+      "label": "ai.anicca.the402-provider",
+      "log_root": "~/.anicca/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.anicca"
+    },
+    "the402-worker": {
+      "cadence": {
+        "keep_alive": true
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "financial",
+      "effect_class": "money",
+      "entrypoint": "skills/earn/x402-sell/the402-worker-boot.sh",
+      "label": "ai.anicca.the402-worker",
+      "log_root": "~/.anicca/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.anicca"
+    },
+    "tier1-remediate": {
+      "cadence": {
+        "start_interval_seconds": 900
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "system",
+      "effect_class": "none",
+      "entrypoint": "skills/anicca-core/scripts/tier1-remediate.sh",
+      "label": "ai.anicca.tier1-remediate",
+      "log_root": "~/.local/state/life-manager/tier1-remediate/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.local/state/life-manager/tier1-remediate"
+    },
+    "tier2-agent-diagnose": {
+      "cadence": {
+        "start_interval_seconds": 3600
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "system",
+      "effect_class": "none",
+      "entrypoint": "skills/anicca-core/scripts/tier2-agent-diagnose.sh",
+      "label": "ai.anicca.tier2-agent-diagnose",
+      "log_root": "~/.local/state/life-manager/tier2-agent-diagnose/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.local/state/life-manager/tier2-agent-diagnose"
+    },
+    "token-daily-report": {
+      "cadence": {
+        "calendar_interval": {
+          "Hour": 9,
+          "Minute": 15
+        }
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "financial",
+      "effect_class": "none",
+      "entrypoint": "skills/self/token-daily-report.sh",
+      "label": "ai.anicca.token-daily-report",
+      "log_root": "~/.local/state/life-manager/token-daily-report/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.local/state/life-manager/token-daily-report"
+    },
+    "tsbridge": {
+      "cadence": {
+        "run_at_load": true
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "system",
+      "effect_class": "none",
+      "entrypoint": "services/tsbridge/run.sh",
+      "label": "ai.anicca.tsbridge",
+      "log_root": "~/.local/state/life-manager/tsbridge/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.local/state/life-manager/tsbridge"
+    },
+    "verify-loops-audit": {
+      "cadence": {
+        "start_interval_seconds": 21600
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "system",
+      "effect_class": "none",
+      "entrypoint": "skills/self/verify-loops-audit.sh",
+      "label": "ai.anicca.verify-loops-audit",
+      "log_root": "~/.openclaw/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.openclaw"
+    },
+    "warmup-flip-daily": {
+      "cadence": {
+        "calendar_interval": {
+          "Hour": 6,
+          "Minute": 30
+        }
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "growth",
+      "effect_class": "publish",
+      "entrypoint": "skills/anicca-warmup-flip/scripts/run.sh",
+      "label": "ai.anicca.warmup-flip-daily",
+      "log_root": "~/.openclaw/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.openclaw"
+    },
+    "watchdog": {
+      "cadence": {
+        "start_interval_seconds": 300
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "system",
+      "effect_class": "none",
+      "entrypoint": "skills/anicca-core/scripts/watchdog.sh",
+      "label": "ai.anicca.watchdog",
+      "log_root": "~/.local/state/life-manager/watchdog/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.local/state/life-manager/watchdog"
+    },
+    "writer-claim-loop": {
+      "cadence": {
+        "start_interval_seconds": 900
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "earn",
+      "effect_class": "none",
+      "entrypoint": "skills/writer-agent/scripts/claim_loop.py",
+      "label": "ai.anicca.writer-claim-loop",
+      "log_root": "~/.openclaw/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.openclaw"
+    },
+    "writer-craft-train": {
+      "cadence": {
+        "calendar_interval": {
+          "Hour": 23,
+          "Minute": 10
+        }
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "earn",
+      "effect_class": "none",
+      "entrypoint": "skills/writer-agent/scripts/craft-train-notify.sh",
+      "label": "ai.anicca.writer-craft-train",
+      "log_root": "~/.openclaw/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.openclaw"
+    },
+    "writer-money-sync": {
+      "cadence": {
+        "start_interval_seconds": 300
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "earn",
+      "effect_class": "none",
+      "entrypoint": "skills/writer-agent/scripts/money_sync.py",
+      "label": "ai.anicca.writer-money-sync",
+      "log_root": "~/.openclaw/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.openclaw"
+    },
+    "writer-opportunity-discovery": {
+      "cadence": {
+        "start_interval_seconds": 86400
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "earn",
+      "effect_class": "none",
+      "entrypoint": "skills/writer-agent/runtime/model-runner.sh",
+      "label": "ai.anicca.writer-opportunity-discovery",
+      "log_root": "~/.openclaw/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.openclaw"
+    },
+    "writer-opportunity-response": {
+      "cadence": {
+        "start_interval_seconds": 900
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "earn",
+      "effect_class": "application",
+      "entrypoint": "skills/writer-agent/runtime/model-runner.sh",
+      "label": "ai.anicca.writer-opportunity-response",
+      "log_root": "~/.openclaw/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.openclaw"
+    },
+    "writer-report": {
+      "cadence": {
+        "start_interval_seconds": 300
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "earn",
+      "effect_class": "message",
+      "entrypoint": "skills/writer-agent/scripts/writer_report_worker.py",
+      "label": "ai.anicca.writer-report",
+      "log_root": "~/.openclaw/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.openclaw"
+    },
+    "writer-sales-measure": {
+      "cadence": {
+        "start_interval_seconds": 3600
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "earn",
+      "effect_class": "none",
+      "entrypoint": "skills/writer-agent/scripts/writer-sales-measure-worker.sh",
+      "label": "ai.anicca.writer-sales-measure",
+      "log_root": "~/.openclaw/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.openclaw"
+    },
+    "x-repost": {
+      "cadence": {
+        "calendar_interval": [
+          {
+            "Minute": 0
+          },
+          {
+            "Minute": 30
+          }
+        ]
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "growth",
+      "effect_class": "publish",
+      "entrypoint": "skills/x-repost/x-repost-cli.sh",
+      "label": "ai.anicca.x-repost-pass",
+      "log_root": "~/loops/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/loops"
+    },
+    "x-repost-digest": {
+      "cadence": {
+        "calendar_interval": {
+          "Hour": 9,
+          "Minute": 12
+        }
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "growth",
+      "effect_class": "publish",
+      "entrypoint": "skills/x-repost/x-repost-digest.sh",
+      "label": "ai.anicca.x-repost-digest",
+      "log_root": "~/loops/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/loops"
+    },
+    "x-repost-healthcheck": {
+      "cadence": {
+        "start_interval_seconds": 300
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "growth",
+      "effect_class": "publish",
+      "entrypoint": "skills/x-repost/x-repost-healthcheck.sh",
+      "label": "ai.anicca.x-repost-healthcheck",
+      "log_root": "~/loops/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/loops"
+    },
+    "x-repost-ja-healthcheck": {
+      "cadence": {
+        "start_interval_seconds": 300
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "growth",
+      "effect_class": "publish",
+      "entrypoint": "skills/x-repost/x-repost-healthcheck.sh",
+      "label": "ai.anicca.x-repost-ja-healthcheck",
+      "log_root": "~/.openclaw/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.openclaw"
+    },
+    "x-repost-ja-pass": {
+      "cadence": {
+        "calendar_interval": [
+          {
+            "Minute": 5
+          },
+          {
+            "Minute": 35
+          }
+        ]
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "growth",
+      "effect_class": "publish",
+      "entrypoint": "skills/x-repost/x-repost-ja-cli.sh",
+      "label": "ai.anicca.x-repost-ja-pass",
+      "log_root": "~/.openclaw/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.openclaw"
     },
     "x-tweeter": {
-      "loop": "x-tweeter",
-      "skill_dir": "skills/x-tweeter",
-      "status": "live",
-      "last_observed_at": null,
-      "allocation": {
-        "status": "normal",
-        "pass_frequency_multiplier": 1.0,
-        "capital_cap_usd": null
+      "cadence": {
+        "calendar_interval": [
+          {
+            "Minute": 15
+          },
+          {
+            "Minute": 45
+          }
+        ]
       },
-      "cadence_contract": "independent :15/:45 opportunities publish at most one source-grounded quality-gated original or record why none was published",
-      "evidence_path": "~/loops/x-tweeter/posted.jsonl",
-      "ledger_paths": [
-        "~/loops/x-tweeter/posted.jsonl",
-        "~/loops/x-tweeter/engagement.jsonl"
-      ],
-      "base_interval_seconds": 1800,
-      "base_minute": 15,
-      "base_hour": 0,
-      "notes": "Independent Original owner; shares proven tools with x-repost but owns separate state and admission."
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "growth",
+      "effect_class": "publish",
+      "entrypoint": "skills/x-tweeter/x-tweeter-cli.sh",
+      "label": "ai.anicca.x-tweeter-pass",
+      "log_root": "~/loops/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/loops"
+    },
+    "x-tweeter-healthcheck": {
+      "cadence": {
+        "start_interval_seconds": 300
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "growth",
+      "effect_class": "publish",
+      "entrypoint": "skills/x-tweeter/x-tweeter-healthcheck.sh",
+      "label": "ai.anicca.x-tweeter-healthcheck",
+      "log_root": "~/loops/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/loops"
+    },
+    "x402-acquisition-controller": {
+      "cadence": {
+        "start_interval_seconds": 300
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "financial",
+      "effect_class": "none",
+      "entrypoint": "skills/earn/x402-sell/acquisition-controller-boot.sh",
+      "label": "ai.anicca.x402-acquisition-controller",
+      "log_root": "~/.anicca/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.anicca"
+    },
+    "x402-claude-p": {
+      "cadence": {
+        "keep_alive": true
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "financial",
+      "effect_class": "none",
+      "entrypoint": "skills/earn/x402-sell/serve-claude-p-boot.sh",
+      "label": "ai.anicca.x402-claude-p",
+      "log_root": "~/anicca/skills/earn/x402-sell/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/anicca/skills/earn/x402-sell"
+    },
+    "x402-experiment-franklin1": {
+      "cadence": {
+        "start_interval_seconds": 300
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "financial",
+      "effect_class": "none",
+      "entrypoint": "skills/earn/x402-sell/experiment-tick.mjs",
+      "label": "ai.anicca.x402-experiment-franklin1",
+      "log_root": "~/anicca/skills/earn/x402-sell/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/anicca/skills/earn/x402-sell"
+    },
+    "x402-franklin1": {
+      "cadence": {
+        "keep_alive": true
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "financial",
+      "effect_class": "none",
+      "entrypoint": "skills/earn/x402-sell/serve-franklin1-boot.sh",
+      "label": "ai.anicca.x402-franklin1",
+      "log_root": "~/anicca/skills/earn/x402-sell/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/anicca/skills/earn/x402-sell"
+    },
+    "x402-franklin2": {
+      "cadence": {
+        "keep_alive": true
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "financial",
+      "effect_class": "none",
+      "entrypoint": "skills/earn/x402-sell/serve-franklin2-boot.sh",
+      "label": "ai.anicca.x402-franklin2",
+      "log_root": "~/anicca/skills/earn/x402-sell/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/anicca/skills/earn/x402-sell"
+    },
+    "x402-inflow-watch": {
+      "cadence": {
+        "calendar_interval": [
+          {
+            "Minute": 5
+          },
+          {
+            "Minute": 35
+          }
+        ]
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "financial",
+      "effect_class": "none",
+      "entrypoint": "skills/earn/x402-sell/watch-inflow.sh",
+      "label": "ai.anicca.x402-inflow-watch",
+      "log_root": "~/.local/state/life-manager/x402-inflow-watch/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.local/state/life-manager/x402-inflow-watch"
+    },
+    "x402-inflow-watch-claude-p": {
+      "cadence": {
+        "calendar_interval": [
+          {
+            "Minute": 5
+          },
+          {
+            "Minute": 35
+          }
+        ]
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "financial",
+      "effect_class": "none",
+      "entrypoint": "skills/earn/x402-sell/watch-inflow.sh",
+      "label": "ai.anicca.x402-inflow-watch-claude-p",
+      "log_root": "~/.local/state/life-manager/x402-inflow-watch-claude-p/logs",
+      "provider_route": "shared-agent-runner",
+      "state_root": "~/.local/state/life-manager/x402-inflow-watch-claude-p"
+    },
+    "x402-inflow-watch-franklin1": {
+      "cadence": {
+        "calendar_interval": [
+          {
+            "Minute": 5
+          },
+          {
+            "Minute": 35
+          }
+        ]
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "financial",
+      "effect_class": "none",
+      "entrypoint": "skills/earn/x402-sell/watch-inflow.sh",
+      "label": "ai.anicca.x402-inflow-watch-franklin1",
+      "log_root": "~/.local/state/life-manager/x402-inflow-watch-franklin1/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.local/state/life-manager/x402-inflow-watch-franklin1"
+    },
+    "x402-inflow-watch-franklin2": {
+      "cadence": {
+        "calendar_interval": [
+          {
+            "Minute": 5
+          },
+          {
+            "Minute": 35
+          }
+        ]
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "financial",
+      "effect_class": "none",
+      "entrypoint": "skills/earn/x402-sell/watch-inflow.sh",
+      "label": "ai.anicca.x402-inflow-watch-franklin2",
+      "log_root": "~/.local/state/life-manager/x402-inflow-watch-franklin2/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.local/state/life-manager/x402-inflow-watch-franklin2"
+    },
+    "x402-monitor": {
+      "cadence": {
+        "keep_alive": true
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "financial",
+      "effect_class": "none",
+      "entrypoint": "services/x402-endpoint/monitor.sh",
+      "label": "ai.anicca.x402-monitor",
+      "log_root": "~/.local/state/life-manager/x402-monitor/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.local/state/life-manager/x402-monitor"
+    },
+    "x402-research-serve": {
+      "cadence": {
+        "keep_alive": true
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "financial",
+      "effect_class": "none",
+      "entrypoint": "skills/earn/x402-sell/serve-mainnet-boot.sh",
+      "label": "ai.anicca.x402-research-serve",
+      "log_root": "~/anicca/skills/earn/x402-sell/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/anicca/skills/earn/x402-sell"
+    },
+    "x402-sale-observer": {
+      "cadence": {
+        "start_interval_seconds": 300
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "financial",
+      "effect_class": "none",
+      "entrypoint": "skills/earn/x402-sell/sale-observer-boot.sh",
+      "label": "ai.anicca.x402-sale-observer",
+      "log_root": "~/.anicca/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.anicca"
+    },
+    "x402-seller-8404": {
+      "cadence": {
+        "keep_alive": true
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "financial",
+      "effect_class": "money",
+      "entrypoint": "skills/earn/x402-sell/seller-boot-v2.sh",
+      "label": "ai.anicca.x402-seller-8404",
+      "log_root": "~/.local/state/life-manager/x402-seller-8404/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.local/state/life-manager/x402-seller-8404"
+    },
+    "x402-settlement-recorder": {
+      "cadence": {
+        "start_interval_seconds": 300
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "financial",
+      "effect_class": "money",
+      "entrypoint": "skills/earn/x402-sell/settlement-recorder-boot.sh",
+      "label": "ai.anicca.x402-settlement-recorder",
+      "log_root": "~/.anicca/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.anicca"
+    },
+    "x402-tunnel": {
+      "cadence": {
+        "keep_alive": true
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "financial",
+      "effect_class": "none",
+      "entrypoint": "services/x402-endpoint/tunnel.sh",
+      "label": "ai.anicca.x402-tunnel",
+      "log_root": "~/.local/state/life-manager/x402-tunnel/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.local/state/life-manager/x402-tunnel"
     }
-  }
+  },
+  "schema_version": 2
 }
