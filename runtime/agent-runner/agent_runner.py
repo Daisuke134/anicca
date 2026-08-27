@@ -617,7 +617,8 @@ def install_termination_forwarding() -> None:
 
 def run_provider_process(command: list[str], *, stdout: Any, stderr: Any,
                          timeout: int, cwd: str, input_bytes: bytes | None,
-                         stdin: Any, env: dict[str, str]) -> int:
+                         stdin: Any, env: dict[str, str],
+                         completion_path: Path | None = None) -> int:
     """Run one provider in an isolated process group with a hard timeout."""
     global _ACTIVE_PROVIDER_PROCESS
     process = subprocess.Popen(
@@ -631,10 +632,23 @@ def run_provider_process(command: list[str], *, stdout: Any, stderr: Any,
     )
     _ACTIVE_PROVIDER_PROCESS = process
     try:
-        process.communicate(input=input_bytes, timeout=timeout)
-    except subprocess.TimeoutExpired:
-        terminate_process_tree(process)
-        raise
+        if input_bytes is not None and process.stdin is not None:
+            process.stdin.write(input_bytes)
+            process.stdin.close()
+        deadline = time.monotonic() + timeout
+        stable: tuple[int, int, float] | None = None
+        while process.poll() is None:
+            if completion_path is not None and completion_path.is_file():
+                snapshot = (completion_path.stat().st_size, completion_path.stat().st_mtime_ns)
+                if stable is None or stable[:2] != snapshot:
+                    stable = (*snapshot, time.monotonic())
+                elif time.monotonic() - stable[2] >= 2:
+                    terminate_process_tree(process)
+                    return 0
+            if time.monotonic() >= deadline:
+                terminate_process_tree(process)
+                raise subprocess.TimeoutExpired(command, timeout)
+            time.sleep(0.25)
     finally:
         _ACTIVE_PROVIDER_PROCESS = None
     return process.returncode
@@ -1406,6 +1420,7 @@ def run() -> int:
                         env=provider_process_env(
                             provider, provider_config, task_class=parsed.task_class,
                         ),
+                        completion_path=result_path,
                     )
                 except subprocess.TimeoutExpired:
                     timed_out = True
