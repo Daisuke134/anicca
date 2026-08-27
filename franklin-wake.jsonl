@@ -36134,3 +36134,10 @@
 {"ts":1787871792,"wake_id":"00MTC4PC735CFB9547511A49BC","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1787871925,"wake_id":"00MTC4S6CR75FBB97B841E40DB","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1787872062,"wake_id":"00MTC4V48J924DFE4F3B8742ED","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787872196,"wake_id":"00MTC4XZT3FE4F9128E7F344F2","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787872335,"wake_id":"00MTC50ZBBB7DDBCCACF3D4307","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787872468,"wake_id":"00MTC53TG6AEC97517952946B6","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"shell-init: error retrieving current directory: getcwd: cannot access parent directories: No such file or directory chdir: error retrieving current directory: getcwd: cannot access parent directories:"}
+{"ts":1787872599,"wake_id":"00MTC56MG024A610FA2A0841CC","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787872733,"wake_id":"00MTC59I9SB04BC306071E4ADD","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787872867,"wake_id":"00MTC5CDJ3A97613E6175243C2","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787873003,"wake_id":"00MTC5FANJCBDFBFED10944145","kind":"narrate","sleep_s":120,"model":"auto"}
