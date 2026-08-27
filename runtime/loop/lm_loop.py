@@ -167,12 +167,13 @@ def _safe_launchctl(executable: Path, args: list[str]) -> tuple[int, str]:
     return result.returncode, result.stdout + result.stderr
 
 
-def apply_live(release_root: Path, agents_dir: Path, launchctl_safe: Path) -> list[dict]:
+def apply_live(release_root: Path, agents_dir: Path, launchctl_safe: Path,
+               target: str | None = None) -> list[dict]:
     release_root = release_root.resolve()
     registry = json.loads((release_root / "config/loop-registry.json").read_text())
     manifest = json.loads((release_root / "RELEASE.json").read_text())
     release_sha = manifest.get("sha")
-    plan = apply_registry(registry, release_root, release_sha, lambda item: item)
+    plan = apply_registry(registry, release_root, release_sha, lambda item: item, target=target)
     preflight_rc, detail = _safe_launchctl(launchctl_safe, ["preflight"])
     if preflight_rc:
         raise RuntimeError(f"launchctl-safe preflight failed: {detail.strip()}")
@@ -210,7 +211,9 @@ def main(argv: list[str] | None = None) -> int:
         launchctl_safe = Path(os.environ.get(
             "LIFE_MANAGER_LAUNCHCTL_SAFE", str(release_root / "bin/launchctl-safe"))).expanduser()
         try:
-            results = apply_live(release_root, agents_dir, launchctl_safe)
+            results = apply_live(
+                release_root, agents_dir, launchctl_safe,
+                target=os.environ.get("LIFE_MANAGER_APPLY_TARGET"))
         except (OSError, ValueError, RuntimeError, json.JSONDecodeError) as exc:
             print(json.dumps({"ok": False, "error": str(exc)}, sort_keys=True))
             return 1

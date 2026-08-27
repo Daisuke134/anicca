@@ -21,6 +21,12 @@ def registry(entrypoint="bin/example.sh"):
     }}}
 
 
+def two_loop_registry():
+    value = registry()
+    value["loops"]["second"] = {**value["loops"]["example"], "label": "ai.anicca.second"}
+    return value
+
+
 class LmLoopApplyTest(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
@@ -65,6 +71,16 @@ class LmLoopApplyTest(unittest.TestCase):
         })
         self.assertEqual(len(calls), 1)
         self.assertEqual(result[0]["loaded_arguments"], calls[0]["expected_arguments"])
+
+    def test_targeted_apply_preflights_all_but_installs_only_target(self):
+        calls = []
+        installer = lambda item: calls.append(item) or item
+        result = apply_registry(two_loop_registry(), self.root, SHA, installer, target="second")
+        self.assertEqual([item["loop_id"] for item in calls], ["second"])
+        self.assertEqual([item["loop_id"] for item in result], ["second"])
+        with self.assertRaisesRegex(ValueError, "unknown apply target"):
+            apply_registry(two_loop_registry(), self.root, SHA, installer, target="missing")
+        self.assertEqual([item["loop_id"] for item in calls], ["second"])
 
     def test_failed_swap_restores_previous_plist_and_loaded_job(self):
         target = self.root / "installed.plist"

@@ -74,8 +74,13 @@ def build_apply_plan(registry: dict, release_root: Path, release_sha: str) -> li
 
 
 def apply_registry(registry: dict, release_root: Path, release_sha: str,
-                   installer: Callable[[dict], dict]) -> list[dict]:
+                   installer: Callable[[dict], dict], *, target: str | None = None) -> list[dict]:
     plan = build_apply_plan(registry, release_root, release_sha)
+    if target is not None:
+        selected = [item for item in plan if item["loop_id"] == target]
+        if not selected:
+            raise ValueError(f"unknown apply target: {target}")
+        plan = selected
     return [installer(item) for item in plan]
 
 
