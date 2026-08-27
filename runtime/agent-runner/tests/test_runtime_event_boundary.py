@@ -1,0 +1,41 @@
+import json
+import os
+import sys
+import tempfile
+import unittest
+from unittest import mock
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(ROOT / "runtime/agent-runner"))
+
+from agent_runner import emit_runtime_event  # noqa: E402
+
+
+class RuntimeEventBoundaryTest(unittest.TestCase):
+    def test_final_runner_summary_emits_one_registry_grounded_event(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            state = root / "state"
+            registry = root / "registry.json"
+            registry.write_text(json.dumps({"schema_version": 2, "loops": {"example": {
+                "label": "ai.anicca.example", "domain": "earn", "entrypoint": "bin/example.sh",
+                "cadence": {"run_at_load": True}, "effect_class": "application",
+                "state_root": "~/state", "log_root": "~/state/logs",
+                "cleanup": {"max_runs": 10, "max_age_days": 7},
+                "provider_route": "shared-agent-runner",
+            }}}))
+            with mock.patch.dict(os.environ, {"HOME": directory}):
+                event = emit_runtime_event(
+                    loop_id="example", evidence_dir=root / "private evidence path",
+                    selected={"provider": "codex"}, attempts=[], candidate_profile="acct2",
+                    registry_path=registry, release_sha="b" * 40,
+                )
+            rows = (state / "events.jsonl").read_text().splitlines()
+            self.assertEqual(len(rows), 1)
+            self.assertEqual(event["effect_status"], "unknown")
+            self.assertNotIn(str(root), rows[0])
+
+
+if __name__ == "__main__":
+    unittest.main()

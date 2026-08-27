@@ -1,6 +1,6 @@
 # macOS Life Manager Loop Control Plane
 
-**Status:** TODO 5 complete / TODO 6 pending
+**Status:** TODO 6 complete / TODO 7 pending
 **TODO ID:** `MACOS-LOOP-CONTROL-PLANE-1`  
 **Canonical registry:** `config/loop-registry.json`  
 **Scope:** macOS launchd only
@@ -216,7 +216,7 @@ Allowed values are closed and versioned with the registry schema:
 | 3 | ✅ Implement `bin/lm-loop doctor/status/watch` as read-only commands | five focused tests; live 172-row status/watch; runtime/effect truth separated; `docs/evidence/runtime/2026-08-28-macos-loop-control-plane-readonly-cli.md` |
 | 4 | ✅ Implement plist generation and fail-closed `apply` using `launchctl-safe` | five focused tests; production invalid generation zero mutation; isolated exact loaded argv readback and cleanup; `docs/evidence/runtime/2026-08-28-macos-loop-control-plane-atomic-apply.md` |
 | 5 | ✅ Implement `start/stop/restart` for one ID and `all`, collecting every return code | four focused tests; isolated one-label start/restart/stop; real collect-all `[0,2,0]`; cleanup remaining 0; `docs/evidence/runtime/2026-08-28-macos-loop-control-plane-lifecycle.md` |
-| 6 | Add the uniform runtime event envelope at the shared runner boundary | schema tests; secret scan 0; existing ledgers remain authoritative |
+| 6 | ✅ Add the uniform runtime event envelope at the shared runner boundary | exact 15-field schema; private idempotent JSONL; shared-runner integration; invalid-event spoof rejection; existing ledgers unchanged; `docs/evidence/runtime/2026-08-28-macos-loop-control-plane-runtime-events.md` |
 | 7 | Consolidate all model/profile selection into the shared provider router | direct `CODEX_HOME`/auth selection in loop entrypoints 0 |
 | 8 | Add per-loop cleanup contracts and central shared-artifact GC reconciliation | pressure test recovers headroom; protected data deletion 0 |
 | 9 | Migrate active labels one by one: system, growth, earn, financial, mental, physical | each label has old→new loaded readback and rollback receipt |

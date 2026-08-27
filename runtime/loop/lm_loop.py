@@ -15,6 +15,7 @@ from runtime.loop.macos_launchd_inventory import extract_release, parse_disabled
 from runtime.loop.macos_loop_registry import validate_registry
 from runtime.loop.lm_loop_apply import apply_registry, install_one
 from runtime.loop.lm_loop_lifecycle import lifecycle, lifecycle_one
+from runtime.loop.runtime_event import validate_runtime_event
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -100,10 +101,10 @@ def _last_event(state_root: str) -> dict | None:
     for line in reversed(lines):
         try:
             value = json.loads(line)
-        except json.JSONDecodeError:
+            validate_runtime_event(value)
+        except (json.JSONDecodeError, ValueError):
             continue
-        if isinstance(value, dict):
-            return value
+        return value
     return None
 
 

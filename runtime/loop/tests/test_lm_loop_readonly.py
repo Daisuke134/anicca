@@ -1,9 +1,10 @@
 import unittest
 import json
 import subprocess
+import tempfile
 from pathlib import Path
 
-from runtime.loop.lm_loop import doctor_report, status_rows
+from runtime.loop.lm_loop import _last_event, doctor_report, status_rows
 
 
 REGISTRY = {"schema_version": 2, "loops": {"example": {
@@ -65,6 +66,12 @@ class LmLoopReadonlyTest(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(json.loads(result.stdout)[0]["loop_id"], "fundraiser")
+
+    def test_invalid_event_cannot_spoof_pass_or_verified_effect(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "events.jsonl").write_text('{"status":"pass","effect_status":"verified"}\n')
+            self.assertIsNone(_last_event(str(root)))
 
 
 if __name__ == "__main__":

@@ -22,6 +22,12 @@ from pathlib import Path, PurePosixPath
 from typing import Any
 
 HERE = Path(__file__).resolve().parent
+REPO_ROOT = HERE.parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from runtime.loop.macos_loop_registry import validate_registry  # noqa: E402
+from runtime.loop.runtime_event import append_runtime_event, build_runtime_event  # noqa: E402
 # These tools can perform the filesystem mutation required by a high-value
 # invocation.  Artifact truth is still decided by the deterministic domain
 # validator after the provider exits.
@@ -53,6 +59,34 @@ CODEX_MTOK_PRICING_USD = {
     "gpt-5.6-terra": (2.50, 0.25, 15.00),
     "gpt-5.6-sol": (5.00, 0.50, 30.00),
 }
+
+
+def emit_runtime_event(*, loop_id: str, evidence_dir: Path,
+                       selected: dict[str, Any] | None, attempts: list[dict[str, Any]],
+                       candidate_profile: str | None, registry_path: Path,
+                       release_sha: str) -> dict[str, Any]:
+    registry = validate_registry(json.loads(registry_path.read_text(encoding="utf-8")))
+    entry = registry["loops"].get(loop_id)
+    if not isinstance(entry, dict):
+        raise ValueError(f"managed runtime event loop is absent from registry: {loop_id}")
+    last = selected or (attempts[-1] if attempts else {})
+    provider = str(last.get("provider") or "unavailable")
+    blocker = None if selected else str(last.get("error_class") or "runner_failed")
+    run_id = hashlib.sha256(str(evidence_dir.resolve()).encode()).hexdigest()[:24]
+    event = build_runtime_event(
+        loop_id=loop_id,
+        domain=entry["domain"],
+        run_id=run_id,
+        release_sha=release_sha,
+        provider=provider,
+        profile_alias=candidate_profile,
+        effect_class=entry["effect_class"],
+        succeeded=selected is not None,
+        blocker=blocker,
+    )
+    path = Path(os.path.expanduser(entry["state_root"])) / "events.jsonl"
+    append_runtime_event(path, event)
+    return event
 
 
 def utc_now() -> str:
@@ -1455,9 +1489,29 @@ def run() -> int:
         "result_path": selected["result_path"] if selected else None,
         "evidence_reclamation": retention,
     }
+    runtime_event_failed = False
+    release_sha = os.environ.get("LIFE_MANAGER_RELEASE_SHA", "").strip()
+    if release_sha:
+        registry_path = Path(os.environ.get(
+            "LIFE_MANAGER_REGISTRY", REPO_ROOT / "config" / "loop-registry.json"))
+        try:
+            event = emit_runtime_event(
+                loop_id=parsed.loop,
+                evidence_dir=evidence_dir,
+                selected=selected,
+                attempts=attempts,
+                candidate_profile=parsed.candidate_profile,
+                registry_path=registry_path,
+                release_sha=release_sha,
+            )
+            summary["runtime_event_id"] = event["event_id"]
+        except (OSError, ValueError, json.JSONDecodeError) as error:
+            runtime_event_failed = True
+            summary["status"] = "failed"
+            summary["runtime_event_error"] = str(error)
     atomic_json(summary_path, summary)
     print(json.dumps(summary, ensure_ascii=False, separators=(",", ":")))
-    if selected:
+    if selected and not runtime_event_failed:
         return 0
     return 1
 
