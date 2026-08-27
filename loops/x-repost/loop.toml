@@ -19,7 +19,7 @@ X_REPOST_DISABLE_AFFILIATE = "1"
 # One pass per half-hour. The pass refuses duplicate effects in the same slot; the quality gate
 # may still produce no output, so the schedule is a floor on attempts, not a promise of posts.
 [jobs.pass]
-program          = "skills/x-repost/x-repost-cli.sh"
+program          = "skills/x-repost/x-repost-en-cli.sh"
 calendars         = [{ minute = 0 }, { minute = 30 }]
 
 # The schedule and the session are what can die silently here, so this checks both.
