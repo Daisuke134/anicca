@@ -55,7 +55,10 @@ reporting path.
    Use founder-attested claims with their provenance; do not silently relabel the
    approximately $1,000 revenue claim as MRR or ARR without period evidence.
 5. Never invent a person, contact route, credential, legal registration number,
-   bank detail, signature, or consent. If such a human-only ceremony blocks one
+   bank detail, or signature. Accept ordinary privacy/data-processing terms that
+   are required solely for an explicitly authorized account/application, but do
+   not accept separate investment, equity, payment, relocation, exclusivity,
+   publicity, or binding program commitments. If a human-only ceremony blocks one
    candidate, persist its checkpoint and continue applying to other candidates.
 6. Claim the shared `application` effect immediately before each final Submit.
    Submit that exact identity once, capture fresh UI and/or provider-mail readback,

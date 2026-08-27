@@ -374,6 +374,8 @@ test("production queue enforces founder geography, format, priority, and YC hold
   assert.equal(fundraising.priority_queue.find((item) => item.program === "Y Combinator")?.action, "hold_do_not_submit");
   assert.match(dailyPrompt, /Reject Kenya and every other geography/);
   assert.match(dailyPrompt, /Never submit a `hold_do_not_submit` program/);
+  assert.match(dailyPrompt, /Ordinary privacy-policy and data-processing consent/);
+  assert.match(dailyPrompt, /Do not infer consent to investment, equity/);
 });
 
 test("unseen rendered fields are filled from startup context and read back after one submit", async () => {

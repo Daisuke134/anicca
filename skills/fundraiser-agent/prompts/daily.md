@@ -143,7 +143,12 @@ roadmap, impact, program fit, and use of funds. Select the closest truthful opti
 and adapt the answer to the visible limit. Do not abandon an otherwise applicable
 program merely because its wording is unfamiliar or an exact canned answer is
 absent. Never invent an identity, contact detail, credential, legal registration,
-bank detail, signature, or consent. Keep founder-attested and provider-verified
+bank detail or signature. Ordinary privacy-policy and data-processing consent
+that is required solely to create an application account or submit an explicitly
+authorized application is part of that application authority: read the rendered
+terms, accept it, and continue. Do not infer consent to investment, equity,
+payment, relocation, exclusivity, publicity, or any separately binding program
+commitment. Keep founder-attested and provider-verified
 claims distinguishable, and never rename revenue as MRR/ARR without period proof.
 
 ## Discovery queue
