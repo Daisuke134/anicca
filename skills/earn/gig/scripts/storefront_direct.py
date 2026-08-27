@@ -3608,7 +3608,12 @@ automations -> delivery_kind `implementation`, working system in the base delive
 post-acceptance maintenance; (2) demand `interview analysis` plus a synthesis capability ->
 delivery_kind `analysis`, decision memo in the base deliverable, no invented software build. Price the
 actual base deliverable at or above paid_demand_price_floor_jpy when present; do not default to the
-cheapest option. Choose create only
+cheapest option. Capability artifacts prove that the workforce can execute; they do not prove buyers
+want that artifact's niche. The product buyer job must directly match the official demand query and
+comparables. Example: generic `AI agent business automation` demand plus a past computer-vision build
+may prove implementation ability, but it does not justify selling that past vision niche; propose a
+bounded business workflow automation instead. If uncertainty says the proposed product's own demand is
+unverified, revise it to the evidenced buyer job or choose no_op. Choose create only
 when the proposal is clearly distinct and supported. Otherwise choose no_op, set every nullable
 commercial field and metric/window to null, and provide no_op_reason. Do not claim that creation itself
 caused KPI improvement.\nCONTEXT_JSON=""" + json.dumps(context, ensure_ascii=False, separators=(",", ":"))
