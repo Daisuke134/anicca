@@ -13,6 +13,39 @@ SCRIPT = Path(__file__).parents[1] / "scripts" / "chinese_source_collect.py"
 
 
 class ChineseSourceCollectTests(unittest.TestCase):
+    def test_discovery_falls_back_to_duckduckgo_over_scrapy(self) -> None:
+        module = self.load_module()
+
+        def run(command, **_kwargs):
+            if command[:2] == ["crwl", "crawl"] and "search_result" in command[2]:
+                raise subprocess.TimeoutExpired(command, 60)
+            if command[:2] == ["scrapy", "fetch"]:
+                return SimpleNamespace(returncode=0, stdout=(
+                    '<a class="result__a" href="//duckduckgo.com/l/?uddg='
+                    'https%3A%2F%2Fwww.xiaohongshu.com%2Fexplore%2Fabc">Workflow</a>'
+                    '<a class="result__snippet">具体的なAI手順</a>'
+                ))
+            if command[:2] == ["crwl", "crawl"]:
+                return SimpleNamespace(
+                    returncode=0,
+                    stdout="这是一个可重复执行的人工智能工作流，包含失败恢复条件和具体步骤。",
+                )
+            return SimpleNamespace(returncode=1, stdout="")
+
+        with tempfile.TemporaryDirectory() as root:
+            query_file = Path(root) / "queries.txt"
+            query_file.write_text(
+                "AI Agent\thttps://www.xiaohongshu.com/search_result?keyword=AI\n"
+            )
+            with patch.object(module.subprocess, "run", side_effect=run):
+                receipt = module.discover(query_file, "2026-08-28T00:00:00Z")
+
+        self.assertEqual(receipt["candidate_count"], 1)
+        self.assertEqual(
+            receipt["candidates"][0]["url"],
+            "https://www.xiaohongshu.com/explore/abc",
+        )
+
     def test_discovery_continues_after_one_source_times_out(self) -> None:
         module = self.load_module()
         calls = []

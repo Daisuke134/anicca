@@ -9,7 +9,7 @@ import re
 import subprocess
 from html.parser import HTMLParser
 from pathlib import Path
-from urllib.parse import parse_qs, unquote, urlparse
+from urllib.parse import parse_qs, quote, unquote, urlparse
 
 
 ALLOWED_DOMAINS = (
@@ -208,9 +208,27 @@ def discover(query_file: Path, observed_at: str, limit: int = 7) -> dict:
             return ""
         return result.stdout if result.returncode == 0 else ""
 
+    def scrapy_fetch(url: str) -> str:
+        try:
+            result = subprocess.run(
+                ["scrapy", "fetch", url],
+                capture_output=True, text=True, timeout=30, check=False,
+            )
+        except (OSError, subprocess.TimeoutExpired):
+            return ""
+        return result.stdout if result.returncode == 0 else ""
+
     for query, search_url in specs:
         bucket = []
-        for row in collect_markdown(crawl(search_url), query, observed_at, limit=3)["candidates"]:
+        rows = collect_markdown(crawl(search_url), query, observed_at, limit=3)["candidates"]
+        if not rows:
+            domain = canonical_domain(urlparse(search_url).hostname)
+            fallback_url = (
+                "https://html.duckduckgo.com/html/?q="
+                + quote(f"site:{domain} {query}")
+            )
+            rows = collect(scrapy_fetch(fallback_url), query, observed_at, limit=3)["candidates"]
+        for row in rows:
             if row["url"] in seen:
                 continue
             seen.add(row["url"])
