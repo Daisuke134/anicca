@@ -65,6 +65,8 @@ class MacosLoopRegistryTest(unittest.TestCase):
         self.assertEqual(registry["loops"]["phone-conversation"]["domain"], "physical")
         self.assertEqual(registry["loops"]["x-repost"]["label"], "ai.anicca.x-repost-pass")
         self.assertEqual(registry["loops"]["x-tweeter"]["label"], "ai.anicca.x-tweeter-pass")
+        self.assertEqual(registry["loops"]["x-tweeter"]["cadence"],
+                         {"calendar_interval": {"Minute": 15}})
 
     def test_production_render_matches_byte_stable_fixture(self):
         registry = json.loads((ROOT / "config/loop-registry.json").read_text())
