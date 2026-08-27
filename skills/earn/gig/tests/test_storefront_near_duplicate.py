@@ -64,3 +64,19 @@ def test_a_withdrawn_listing_is_never_deleted_as_litter(tmp_path):
 
     assert storefront_direct._deletable_drafts(ledger, drafts) == ["4356299", "4357788"]
     assert storefront_direct._deletable_drafts(tmp_path / "absent.jsonl", drafts) == sorted(drafts)
+
+
+def test_latest_unpublished_candidate_per_family_is_not_deleted_as_litter(tmp_path):
+    import json as _json
+
+    ledger = tmp_path / "new-listing-drafts.jsonl"
+    ledger.write_text("\n".join(_json.dumps(row) for row in [
+        {"draft_service_id": "4371756", "status": "draft_created",
+         "capability_family": "ai-automation-builder", "public_effect": 0},
+        {"draft_service_id": "4371796", "status": "draft_created",
+         "capability_family": "ai-automation-builder", "public_effect": 0},
+    ]) + "\n", encoding="utf-8")
+
+    assert storefront_direct._deletable_drafts(
+        ledger, ["4371756", "4371796"],
+    ) == ["4371756"]

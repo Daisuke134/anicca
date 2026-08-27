@@ -2252,6 +2252,7 @@ def _deletable_drafts(ledger_path: Path, draft_ids: list[str]) -> list[str]:
     it carries views and a listing history, so it is repaired or left alone, never deleted.
     """
     published = set()
+    active_by_family: dict[str, str] = {}
     if ledger_path.exists():
         for line in ledger_path.read_text(encoding="utf-8").splitlines():
             if not line.strip():
@@ -2259,7 +2260,23 @@ def _deletable_drafts(ledger_path: Path, draft_ids: list[str]) -> list[str]:
             row = json.loads(line)
             if row.get("status") == "published":
                 published.add(str(row.get("draft_service_id") or ""))
-    return [value for value in sorted(draft_ids) if value not in published]
+            family = str(row.get("capability_family") or "")
+            draft_id = str(row.get("draft_service_id") or "")
+            if (row.get("status") in {"draft_created", "draft_prepared"}
+                    and int(row.get("public_effect") or 0) == 0 and family and draft_id.isdigit()):
+                active_by_family[family] = draft_id
+    protected = published | set(active_by_family.values())
+    return [value for value in sorted(draft_ids) if value not in protected]
+
+
+def _observed_deleted_draft_ids(evidence_root: Path) -> set[str]:
+    deleted = set()
+    if evidence_root.is_dir():
+        for path in evidence_root.glob("*/draft-delete-*.json"):
+            match = re.fullmatch(r"draft-delete-(\d+)\.json", path.name)
+            if match:
+                deleted.add(match.group(1))
+    return deleted
 
 
 def _near_duplicate_listings(rows: list[dict], families: dict[str, str]) -> list[dict]:
@@ -6739,6 +6756,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                         return 0, blocked
                     preferred_draft_ids = []
                     candidate_ledger = args.state_dir / "new-listing-drafts.jsonl"
+                    deleted_draft_ids = _observed_deleted_draft_ids(args.state_dir / "evidence")
                     if candidate_ledger.exists():
                         for line in reversed(candidate_ledger.read_text(encoding="utf-8").splitlines()):
                             if not line.strip():
@@ -6747,6 +6765,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                             draft_id = str(row.get("draft_service_id") or "")
                             if (row.get("capability_family") == create_family and draft_id.isdigit()
                                     and draft_id not in inventory_ids
+                                    and draft_id not in deleted_draft_ids
                                     and int(row.get("public_effect") or 0) == 0
                                     and row.get("status") in {"draft_created", "draft_prepared"}):
                                 preferred_draft_ids.append(draft_id)

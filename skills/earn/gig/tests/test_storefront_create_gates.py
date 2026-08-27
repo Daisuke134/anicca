@@ -311,6 +311,15 @@ def test_a_known_unpublished_candidate_draft_is_reused_even_after_it_has_a_title
     assert storefront_draft._preferred_ledger_draft(["bad", ""]) is None
 
 
+def test_official_draft_deletion_evidence_prevents_reusing_a_deleted_id(tmp_path):
+    sd = _sd()
+    evidence = tmp_path / "evidence" / "wake-1"
+    evidence.mkdir(parents=True)
+    (evidence / "draft-delete-4371796.json").write_text("{}\n", encoding="utf-8")
+    (evidence / "draft-delete-not-an-id.json").write_text("{}\n", encoding="utf-8")
+    assert sd._observed_deleted_draft_ids(tmp_path / "evidence") == {"4371796"}
+
+
 def test_recurring_potential_comes_from_the_owned_capability_not_marketplace_copy():
     sd = _sd()
     assert sd._capability_recurring_potential({
