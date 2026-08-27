@@ -580,12 +580,30 @@ def test_resumed_file_owner_refreshes_controller_tool_results(tmp_path):
     root, staging = tmp_path / "root", tmp_path / "staging"
     (root / "context").mkdir(parents=True)
     (staging / "context").mkdir(parents=True)
-    (root / "context" / "paid-tool-results.json").write_text('{"status":"success"}')
+    artifact = root / "delivery" / "artifact.zip"
+    acceptance = root / "acceptance" / "acceptance.json"
+    rights = root / "evidence" / "rights.json"
+    for path, content in ((artifact, b"zip"), (acceptance, b"accept"), (rights, b"rights")):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(content)
+    success = {
+        "status": "success",
+        "artifact": {"path": str(artifact), "sha256": hashlib.sha256(b"zip").hexdigest()},
+        "acceptance": {"path": str(acceptance), "sha256": hashlib.sha256(b"accept").hexdigest()},
+        "rights_and_correspondence": {
+            "path": str(rights), "sha256": hashlib.sha256(b"rights").hexdigest(),
+        },
+    }
+    (root / "context" / "paid-tool-results.json").write_text(json.dumps(success))
     (staging / "context" / "paid-tool-results.json").write_text('{"status":"failed"}')
 
     paid._refresh_owner_controller_context(root, staging)
 
-    assert (staging / "context" / "paid-tool-results.json").read_text() == '{"status":"success"}'
+    refreshed = json.loads((staging / "context" / "paid-tool-results.json").read_text())
+    for field in ("artifact", "acceptance", "rights_and_correspondence"):
+        copied = Path(refreshed[field]["path"])
+        assert copied.is_file()
+        copied.relative_to(staging)
 
 
 def test_empty_tool_request_cannot_overwrite_success_receipt(tmp_path):

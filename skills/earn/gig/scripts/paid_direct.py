@@ -2792,7 +2792,27 @@ def _refresh_owner_controller_context(root: Path, staging: Path) -> None:
     for name in ("paid-tool-results.json", "paid-owner-feedback.json"):
         source, target = root / "context" / name, target_dir / name
         if source.is_file() and not source.is_symlink():
-            shutil.copyfile(source, target)
+            value = _load(source)
+            if name == "paid-tool-results.json" and value.get("status") == "success":
+                evidence_dir = staging / "work" / "provider-evidence"
+                evidence_dir.mkdir(parents=True, exist_ok=True)
+                for field in ("artifact", "acceptance", "rights_and_correspondence"):
+                    record = value.get(field)
+                    if not isinstance(record, dict):
+                        raise Failure("file_builder")
+                    original = Path(_text(record.get("path"))).resolve()
+                    original.relative_to(root.resolve())
+                    digest = _text(record.get("sha256"))
+                    if (original.is_symlink() or not _regular_file(original)
+                            or not re.fullmatch(r"[0-9a-f]{64}", digest)
+                            or hashlib.sha256(original.read_bytes()).hexdigest() != digest):
+                        raise Failure("file_builder")
+                    copied = evidence_dir / f"{field}-{original.name}"
+                    shutil.copyfile(original, copied)
+                    record["path"] = str(copied.resolve())
+                _write(target, value)
+            else:
+                shutil.copyfile(source, target)
         else:
             target.unlink(missing_ok=True)
 
