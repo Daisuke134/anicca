@@ -983,7 +983,7 @@ def _read_receipts(path: Path, identity: dict[str, object]) -> list[dict[str, ob
             or row["before_status"] != "released"
             or row["after_status"] != "released"
         ):
-            raise OwnerStateError("ledger_malformed")
+            raise OwnerStateError("ledger_conflict")
         if row["account_id"] != identity["account_id"] or row["set_id"] != identity["set_id"] or row["revision"] != identity["revision"] or row["artifact_sha256"] != identity["artifact_sha256"]:
             raise OwnerStateError("ledger_identity_mismatch")
         expected_key = _effect_key(identity, str(row["action"]))
@@ -1004,13 +1004,15 @@ def _read_receipts(path: Path, identity: dict[str, object]) -> list[dict[str, ob
             "unknown": (None, 0, None),
         }[outcome]
         if (row["effect"], row["readback"], row["duplicate_effect"]) != expected:
-            raise OwnerStateError("ledger_malformed")
+            raise OwnerStateError("ledger_conflict" if row["action"] == "replay" else "ledger_malformed")
         if outcome == "unknown" and row["after_status"] != "unknown":
             raise OwnerStateError("ledger_malformed")
-        if outcome == "acknowledged" and row["action"] != "replay" and expected[0] is None and (
-            row["before_status"] != "unknown" or row["after_status"] not in ("submitted", "rejected", "approved", "released")
-        ):
-            raise OwnerStateError("ledger_malformed")
+        if outcome == "acknowledged" and row["action"] == "submit" and row["after_status"] not in ("submitted", "rejected", "approved"):
+            raise OwnerStateError("ledger_conflict")
+        if outcome == "acknowledged" and row["action"] == "release" and row["after_status"] != "released":
+            raise OwnerStateError("ledger_conflict")
+        if outcome == "acknowledged" and row["action"] != "replay" and expected[0] is None and row["before_status"] != "unknown":
+            raise OwnerStateError("ledger_conflict")
         rows.append(row)
     by_effect: dict[str, set[str]] = {}
     action_by_effect: dict[str, str] = {}
@@ -1528,11 +1530,17 @@ def _next_action(owner: dict[str, object]) -> str:
     return "release"
 
 
-def _validate_owner_ledger_state(owner: dict[str, object], rows: list[dict[str, object]], identity: dict[str, object]) -> None:
+def _validate_owner_ledger_state(
+    owner: dict[str, object],
+    rows: list[dict[str, object]],
+    identity: dict[str, object],
+    *,
+    allow_release_ack_gap: bool = False,
+) -> None:
     receipts = {action: _rows_for_action(rows, identity, action) for action in ("submit", "release", "replay")}
     acknowledged = {action: "acknowledged" in receipts[action] for action in ("submit", "release")}
     replay_ack = "acknowledged" in receipts["replay"]
-    released_readback = any(row["outcome"] == "acknowledged" and row["after_status"] == "released" for row in rows)
+    release_complete = "intent" in receipts["release"] and acknowledged["release"]
     state = str(owner["state"])
     if replay_ack and state != "CLOSED":
         raise OwnerStateError("owner_state_conflict")
@@ -1546,9 +1554,11 @@ def _validate_owner_ledger_state(owner: dict[str, object], rows: list[dict[str, 
         raise OwnerStateError("owner_state_conflict")
     if state in ("WAITING_REVIEW", "REJECTED", "APPROVED") and not acknowledged["submit"] and "intent" not in receipts["submit"]:
         raise OwnerStateError("owner_state_conflict")
-    if state == "RELEASED" and not (acknowledged["release"] or released_readback or "intent" in receipts["release"]):
+    if state == "RELEASED" and not (
+        release_complete or (allow_release_ack_gap and "intent" in receipts["release"])
+    ):
         raise OwnerStateError("owner_state_conflict")
-    if state in ("TERMINAL_PENDING_REPLAY", "CLOSED") and not (acknowledged["release"] or released_readback):
+    if state in ("TERMINAL_PENDING_REPLAY", "CLOSED") and not release_complete:
         raise OwnerStateError("owner_state_conflict")
     if state in ("RELEASED", "TERMINAL_PENDING_REPLAY", "CLOSED") and (
         not isinstance(owner.get("product_id"), str) or not owner.get("product_id")
@@ -1637,7 +1647,7 @@ def _wake_owner_unlocked(
                 if exc.code == "reconcile_unknown":
                     return _owner_result(owner, status="unknown", effect=None, readback=0, duplicate_effect=None, effect_key=_effect_key(identity, str(owner["pending_action"])), reason="reconcile_unknown")
                 raise
-        _validate_owner_ledger_state(owner, rows, identity)
+        _validate_owner_ledger_state(owner, rows, identity, allow_release_ack_gap=True)
         expected_product = owner.get("product_id") if isinstance(owner.get("product_id"), str) else None
         expected_url = owner.get("public_url") if isinstance(owner.get("public_url"), str) else None
         observation = _observe(provider, identity, expected_product=expected_product, expected_url=expected_url)
