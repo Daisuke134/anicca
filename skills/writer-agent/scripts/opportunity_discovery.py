@@ -426,7 +426,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--db", type=Path, default=SCRIPT_DIR.parent / "state/opportunities.sqlite3")
     parser.add_argument("--claims-db", type=Path, default=SCRIPT_DIR.parent / "state/claims.sqlite3")
     parser.add_argument("--receipt", type=Path, default=SCRIPT_DIR.parent / "state/opportunity-discovery-latest.json")
-    parser.add_argument("--runner", type=Path, default=SCRIPT_DIR.parent / "runtime/model-runner.sh")
+    parser.add_argument("--runner", type=Path, default=SCRIPT_DIR.parent / "runtime/shared-model-runner.py")
     parser.add_argument(
         "--observed-at", default=lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     )

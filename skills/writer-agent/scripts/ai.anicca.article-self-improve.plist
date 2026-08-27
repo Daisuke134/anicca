@@ -30,8 +30,6 @@
 
   <key>EnvironmentVariables</key>
   <dict>
-    <key>ARTICLE_PROVIDER</key>
-    <string>codex</string>
     <key>ARTICLE_SKILL_DIR</key>
     <string>/Users/anicca/Projects/life-manager-main/skills/writer-agent</string>
     <key>ARTICLE_STATE_DIR</key>

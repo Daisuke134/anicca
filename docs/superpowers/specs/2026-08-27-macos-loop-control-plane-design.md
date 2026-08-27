@@ -1,6 +1,6 @@
 # macOS Life Manager Loop Control Plane
 
-**Status:** TODO 6 complete / TODO 7 pending
+**Status:** TODO 7 complete / TODO 8 pending
 **TODO ID:** `MACOS-LOOP-CONTROL-PLANE-1`  
 **Canonical registry:** `config/loop-registry.json`  
 **Scope:** macOS launchd only
@@ -212,12 +212,12 @@ Allowed values are closed and versioned with the registry schema:
 | Order | TODO | Done evidence |
 |---:|---|---|
 | 1 | ✅ Inventory every installed `ai.anicca.*` Life Manager label and classify owner/domain/effect/state/release | `docs/evidence/runtime/2026-08-28-macos-loop-control-plane-inventory.{md,json}`; 226 installed labels, 211 classified Life Manager-owned, 14 disabled/unloaded installed ambiguous, loaded/disabled-only rows retained |
-| 2 | ✅ Upgrade `config/loop-registry.json` to schema v2 and import all active definitions without changing launchd | 172/172 active classified labels; four schema/coverage/render tests; fixture SHA-256 `c600fc72534558a8a7fcebb5d33736dd254aa1c8a941771d9e12cf5df4ab8689`; `docs/evidence/runtime/2026-08-28-macos-loop-control-plane-schema-v2.md` |
+| 2 | ✅ Upgrade `config/loop-registry.json` to schema v2 and import all active definitions without changing launchd | 172/172 active classified labels; four schema/coverage/render tests; fixture SHA-256 `8b59e862bfb59b5c2d648910ab608a8abdd951d068b851e346bff1e10da81b09`; `docs/evidence/runtime/2026-08-28-macos-loop-control-plane-schema-v2.md` |
 | 3 | ✅ Implement `bin/lm-loop doctor/status/watch` as read-only commands | five focused tests; live 172-row status/watch; runtime/effect truth separated; `docs/evidence/runtime/2026-08-28-macos-loop-control-plane-readonly-cli.md` |
 | 4 | ✅ Implement plist generation and fail-closed `apply` using `launchctl-safe` | five focused tests; production invalid generation zero mutation; isolated exact loaded argv readback and cleanup; `docs/evidence/runtime/2026-08-28-macos-loop-control-plane-atomic-apply.md` |
 | 5 | ✅ Implement `start/stop/restart` for one ID and `all`, collecting every return code | four focused tests; isolated one-label start/restart/stop; real collect-all `[0,2,0]`; cleanup remaining 0; `docs/evidence/runtime/2026-08-28-macos-loop-control-plane-lifecycle.md` |
 | 6 | ✅ Add the uniform runtime event envelope at the shared runner boundary | exact 15-field schema; private idempotent JSONL; shared-runner integration; invalid-event spoof rejection; existing ledgers unchanged; `docs/evidence/runtime/2026-08-28-macos-loop-control-plane-runtime-events.md` |
-| 7 | Consolidate all model/profile selection into the shared provider router | direct `CODEX_HOME`/auth selection in loop entrypoints 0 |
+| 7 | ✅ Consolidate all model/profile selection into the shared provider router | one explicit `acct2` profile; account rotation and caller provider override 0; duplicate runner 0; active entrypoint direct auth/CODEX_HOME selection 0; Writer normal/repair/session delegated; `docs/evidence/runtime/2026-08-28-macos-loop-control-plane-provider-boundary-progress.md` |
 | 8 | Add per-loop cleanup contracts and central shared-artifact GC reconciliation | pressure test recovers headroom; protected data deletion 0 |
 | 9 | Migrate active labels one by one: system, growth, earn, financial, mental, physical | each label has old→new loaded readback and rollback receipt |
 | 10 | Remove superseded installers/manifests only after registry parity and replay-zero | source dependency scan 0; all enabled loops still loaded |
@@ -244,8 +244,9 @@ Account rotation and per-caller provider overrides are removed. Gig, Job
 Search, Connector, Life Manager daily, Lancers portable releases, and all X
 model calls use the canonical runner with one explicit `acct2` profile. The
 duplicate Gig runner is removed after token-budget/history/context parity is
-moved. Writer opportunity discovery/response remain on their legacy
-model-runner, so TODO 7 is still pending. Evidence:
+moved. Writer opportunity discovery/response use the shared adapter, while the
+legacy Writer CLI delegates production normal and repair/session modes to the
+canonical router. Direct active-entrypoint auth/profile selection is zero. Evidence:
 `docs/evidence/runtime/2026-08-28-macos-loop-control-plane-provider-boundary-progress.md`.
 
 ### TODO 1 execution state

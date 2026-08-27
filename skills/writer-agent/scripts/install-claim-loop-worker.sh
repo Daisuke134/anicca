@@ -36,7 +36,6 @@ cat >"$TMP_PLIST" <<PLIST
   </array>
   <key>EnvironmentVariables</key>
   <dict>
-    <key>ARTICLE_PROVIDER</key><string>codex</string>
     <key>ARTICLE_CODEX_PROVIDER_ID</key><string>local_proxy</string>
     <key>ARTICLE_CODEX_PROVIDER_BASE_URL</key><string>http://127.0.0.1:8317/v1</string>
     <key>ARTICLE_CODEX_PROVIDER_ENV_KEY</key><string>CLIPROXY_API_KEY</string>

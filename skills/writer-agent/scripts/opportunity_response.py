@@ -660,7 +660,7 @@ def main(argv: list[str] | None = None) -> int:
         default=SCRIPT_DIR.parent / "state/opportunity-response-latest.json",
     )
     parser.add_argument("--account", default=os.environ.get("WRITER_GMAIL_ACCOUNT", "keiodaisuke@gmail.com"))
-    parser.add_argument("--runner", type=Path, default=SCRIPT_DIR.parent / "runtime/model-runner.sh")
+    parser.add_argument("--runner", type=Path, default=SCRIPT_DIR.parent / "runtime/shared-model-runner.py")
     parser.add_argument("--observed-at")
     args = parser.parse_args(argv)
     from datetime import datetime, timezone

@@ -1013,10 +1013,11 @@ def command_for(provider: str, executable: str, provider_config: dict[str, Any],
     effort = candidate.get("effort", "medium")
     if provider == "codex":
         provider_schema_path = codex_output_schema(schema, result_path)
-        command = [
-            executable, "exec", "--ephemeral", "--model", model,
-            "-c", f'model_reasoning_effort="{effort}"',
-        ]
+        resume_session_id = getattr(args, "codex_resume_session_id", None)
+        command = [executable, "exec"]
+        if not resume_session_id:
+            command.append("--ephemeral")
+        command.extend(["--model", model, "-c", f'model_reasoning_effort="{effort}"'])
         model_provider = provider_config.get("model_provider")
         if model_provider:
             if not isinstance(model_provider, str):
@@ -1058,7 +1059,14 @@ def command_for(provider: str, executable: str, provider_config: dict[str, Any],
         ])
         for image in getattr(args, "image", []) or []:
             command.extend(["--image", str(image)])
-        if args.task_class in TOOLLESS_TASK_CLASSES:
+        if args.task_class == "writer-repair-agent":
+            command.extend([
+                "--sandbox", "workspace-write",
+                "-c", "sandbox_workspace_write.exclude_slash_tmp=true",
+                "-c", "sandbox_workspace_write.exclude_tmpdir_env_var=true",
+                "-c", "sandbox_workspace_write.network_access=false",
+            ])
+        elif args.task_class in TOOLLESS_TASK_CLASSES:
             command.extend(["--sandbox", "read-only"])
             for feature in TOOLLESS_CODEX_DISABLED_FEATURES:
                 command.extend(["--disable", feature])
@@ -1066,10 +1074,10 @@ def command_for(provider: str, executable: str, provider_config: dict[str, Any],
             command.extend(["--sandbox", "read-only"])
         else:
             command.append("--dangerously-bypass-approvals-and-sandbox")
-        command.extend([
-            "--skip-git-repo-check", "-C", str(args.workdir),
-            "-" if prompt_via_stdin else prompt,
-        ])
+        command.extend(["--skip-git-repo-check", "-C", str(args.workdir)])
+        if resume_session_id:
+            command.extend(["resume", resume_session_id])
+        command.append("-" if prompt_via_stdin else prompt)
         return command
     if provider in CLAUDE_PROVIDERS:
         command = [
@@ -1154,7 +1162,7 @@ def classify_provider_error(rc: int, timed_out: bool, stdout: str, stderr: str, 
 def run() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--task-class", required=True,
-                        choices=("deterministic", "composition-agent", "reply-semantic-agent", "storefront-proposal-agent", "repeatable-agent", "tool-agent", "browser-lane-agent", "application-lane-agent", "application-intent-planner", "diagnostic-agent", "marketing-agent", "high-value-agent", "escalation-agent"))
+                        choices=("deterministic", "composition-agent", "reply-semantic-agent", "storefront-proposal-agent", "repeatable-agent", "tool-agent", "browser-lane-agent", "application-lane-agent", "application-intent-planner", "diagnostic-agent", "marketing-agent", "high-value-agent", "escalation-agent", "writer-sol-audit", "writer-repair-agent"))
     prompt_source = parser.add_mutually_exclusive_group(required=True)
     prompt_source.add_argument("--prompt-file", type=Path)
     prompt_source.add_argument("--prompt-stdin", action="store_true")
@@ -1168,6 +1176,7 @@ def run() -> int:
     parser.add_argument("--timeout-seconds", type=int)
     parser.add_argument("--image", action="append", type=Path, default=[])
     parser.add_argument("--read-only", action="store_true")
+    parser.add_argument("--codex-resume-session-id")
     parsed = parser.parse_args()
 
     if parsed.task_class in {"composition-agent", "reply-semantic-agent", "storefront-proposal-agent", "application-intent-planner"} and not parsed.prompt_stdin:

@@ -25,6 +25,12 @@ class TerraDefaultTest(unittest.TestCase):
                     expected = [{"provider": "codex", "model": "gpt-5.6-luna",
                                  "effort": "medium", "timeout_seconds": 120,
                                  "profile_alias": "acct2"}]
+                if name == "writer-sol-audit":
+                    expected = [{"provider": "codex", "model": "gpt-5.6-sol",
+                                 "effort": "medium", "profile_alias": "acct2"}]
+                if name == "writer-repair-agent":
+                    expected = [{"provider": "codex", "model": "gpt-5.6-terra",
+                                 "effort": "medium", "profile_alias": "acct2"}]
                 if name in {"composition-agent", "browser-lane-agent"}:
                     expected.append(
                         {"provider": "claude", "model": "claude-sonnet-5"}

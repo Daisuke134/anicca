@@ -415,7 +415,7 @@ def run_offline_cycle(
             for case in cases
         ],
         replay_contract={
-            "model_provider": os.environ.get("ARTICLE_PROVIDER", "auto"),
+            "model_provider": "shared-agent-runner",
             "model_version": os.environ.get("ARTICLE_MODEL_VERSION", "provider-current"),
             "evaluator_version": "writer-pairwise-v2",
             "trials_per_case": config["trials_per_case"],

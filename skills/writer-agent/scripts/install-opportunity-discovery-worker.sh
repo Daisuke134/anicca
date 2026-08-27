@@ -34,11 +34,10 @@ cat >"$TMP_PLIST" <<PLIST
     <string>--db</string><string>$HOME/.local/state/life-manager/writer/opportunities.sqlite3</string>
     <string>--claims-db</string><string>$HOME/.local/state/life-manager/writer/claims.sqlite3</string>
     <string>--receipt</string><string>$HOME/.local/state/life-manager/writer/opportunity-discovery-latest.json</string>
-    <string>--runner</string><string>$SCRIPT_DIR/../runtime/model-runner.sh</string>
+    <string>--runner</string><string>$SCRIPT_DIR/../runtime/shared-model-runner.py</string>
   </array>
   <key>EnvironmentVariables</key>
   <dict>
-    <key>ARTICLE_PROVIDER</key><string>codex</string>
     <key>PATH</key><string>$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
   </dict>
   <key>StartInterval</key><integer>86400</integer>

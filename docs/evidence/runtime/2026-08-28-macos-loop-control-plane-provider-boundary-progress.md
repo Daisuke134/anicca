@@ -1,4 +1,4 @@
-# macOS Loop Control Plane — TODO 7 provider boundary progress
+# macOS Loop Control Plane — TODO 7 provider boundary
 
 This slice removes the prohibited Codex subscription-account rotation and
 consolidates the active Gig, Job Search, Connector, Life Manager daily, and X
@@ -24,15 +24,31 @@ Source scans show zero account rotation, account-index fallback, provider env
 override, or direct auth selection in the canonical router and zero direct
 profile/auth selection among active existing registry entrypoints.
 
-## Remaining before TODO 7 is complete
+## Writer completion
 
-Two active labels still reach the legacy Writer model boundary:
+The two misclassified Writer registry entrypoints now name their business
+workers:
 
 - `writer-opportunity-discovery`
 - `writer-opportunity-response`
 
-Both point to `skills/writer-agent/runtime/model-runner.sh`, whose repair,
-session resume, judge broker, and vision contracts must be adapted without
-losing behavior. TODO 7 remains pending until these two paths and their callers
-use the canonical router and the final direct-provider scan is zero.
+Their judge calls use `shared-model-runner.py`. The established
+`model-runner.sh` CLI delegates production agent/judge/vision/Sol/repair/session
+runs to the canonical router. Repair keeps its workspace-write cage, `/tmp`
+exclusions, network denial, explicit session ID, live event stream, and
+schema-bound last message. Explicit fake binaries retain the historical command
+contract for isolated tests only; no installed Writer plist configures one.
 
+## Final readback
+
+- Active existing registry entrypoints with direct `CODEX_HOME`, `auth.json`,
+  or `AGENT_RUNNER_PROVIDER`: 0.
+- Canonical runtime account rotation/failover symbols: 0.
+- Canonical Codex profiles: exactly `acct2`; every Codex candidate names it.
+- Duplicate operational provider runners: 0.
+- Production Writer delegation tests: normal judge and repair/session pass.
+
+Twenty-four unrelated Writer repair-state tests already fail identically at
+the pre-slice commit `50b8c9ea6`; the isolated baseline run records the same
+24-test list. They remain a final full-suite blocker, not evidence against the
+provider/profile boundary.

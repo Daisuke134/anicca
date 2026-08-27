@@ -16,8 +16,7 @@ Boundaries this script keeps:
   runbook command and resuming the run is Order 5, so no publisher side effect
   is produced here.
 * An UNKNOWN route builds the deterministic investigation receipt and then asks
-  Terra, through the existing `runtime/model-runner.sh` boundary, with
-  `ARTICLE_MODEL_ROLE=terra` and `ARTICLE_PROVIDER=codex`.  Sol is unreachable:
+  Terra through the shared runner with `ARTICLE_MODEL_ROLE=terra`. Sol is unreachable:
   `sol-audit` additionally requires an `ARTICLE_SOL_TRIGGER_RECEIPT`, which this
   script never sets and actively removes from the child environment.
 * The model call is the only slow step and it runs inside the held publication

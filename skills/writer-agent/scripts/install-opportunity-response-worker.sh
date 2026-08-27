@@ -33,12 +33,11 @@ cat >"$TMP_PLIST" <<PLIST
     <string>$PYTHON_BIN</string><string>$WORKER</string>
     <string>--db</string><string>$HOME/.local/state/life-manager/writer/opportunities.sqlite3</string>
     <string>--receipt</string><string>$HOME/.local/state/life-manager/writer/opportunity-response-latest.json</string>
-    <string>--runner</string><string>$SCRIPT_DIR/../runtime/model-runner.sh</string>
+    <string>--runner</string><string>$SCRIPT_DIR/../runtime/shared-model-runner.py</string>
   </array>
   <key>EnvironmentVariables</key>
   <dict>
     <key>HOME</key><string>$HOME</string>
-    <key>ARTICLE_PROVIDER</key><string>codex</string>
     <key>WRITER_GMAIL_ACCOUNT</key><string>keiodaisuke@gmail.com</string>
     <key>PATH</key><string>$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
   </dict>

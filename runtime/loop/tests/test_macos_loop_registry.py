@@ -1,4 +1,5 @@
 import json
+import re
 import unittest
 from pathlib import Path
 
@@ -61,6 +62,16 @@ class MacosLoopRegistryTest(unittest.TestCase):
         registry = json.loads((ROOT / "config/loop-registry.json").read_text())
         expected = (ROOT / "runtime/loop/tests/fixtures/macos-loop-jobs.json").read_bytes()
         self.assertEqual(render_job_models(registry), expected)
+
+    def test_loop_entrypoints_do_not_select_auth_or_codex_home(self):
+        registry = json.loads((ROOT / "config/loop-registry.json").read_text())
+        forbidden = re.compile(r"CODEX_HOME|auth\.json|AGENT_RUNNER_PROVIDER")
+        violations = []
+        for loop_id, entry in registry["loops"].items():
+            path = ROOT / entry["entrypoint"]
+            if path.is_file() and forbidden.search(path.read_text(errors="replace")):
+                violations.append((loop_id, entry["entrypoint"]))
+        self.assertEqual(violations, [])
 
 
 if __name__ == "__main__":

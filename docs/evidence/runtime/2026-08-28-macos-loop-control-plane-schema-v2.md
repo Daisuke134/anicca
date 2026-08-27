@@ -21,7 +21,7 @@ secret-like, absolute-path, invalid cadence, invalid cleanup, duplicate-label,
 domain, effect, and provider-route values. Rendering sorts by loop ID and emits
 canonical JSON bytes. The checked fixture is
 `runtime/loop/tests/fixtures/macos-loop-jobs.json`, SHA-256
-`c600fc72534558a8a7fcebb5d33736dd254aa1c8a941771d9e12cf5df4ab8689`.
+`8b59e862bfb59b5c2d648910ab608a8abdd951d068b851e346bff1e10da81b09`.
 
 The focused suite runs four tests: missing/secret rejection, insertion-order
 stability, exact active-label coverage plus safety-critical classifications,

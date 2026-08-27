@@ -309,6 +309,17 @@ case "$MODEL_ROLE" in
     ;;
 esac
 
+# Production Writer passes use the repository-global provider/profile router.
+# Explicit fake binaries keep the executable contract harness deterministic.
+# Every production mode, including repair/session, otherwise delegates.
+if [ -z "${ARTICLE_CODEX_BIN:-}" ] \
+  && [ -z "${ARTICLE_CLAUDE_BIN:-}" ]; then
+  SHARED_ADAPTER="$SCRIPT_DIR/shared-model-runner.py"
+  SHARED_ARGS=("$MODE" --prompt-file "$PROMPT_FILE")
+  [ "$MODE" = "vision" ] && SHARED_ARGS+=(--image "$IMAGE_FILE")
+  exec python3 "$SHARED_ADAPTER" "${SHARED_ARGS[@]}"
+fi
+
 mkdir -p "$(dirname "$MODEL_LOG")" "$(dirname "$HEALTH_FILE")" "$MODEL_STATE_ROOT"
 
 log_event() {
