@@ -7,17 +7,27 @@ actions beginning with `apply_now`, including one-shot repair actions such as
 `apply_now_callback_fix`, then continue into authenticated X and live Web
 discovery. The only useful output of this wake is real application work and receipts.
 
-Mandatory first action: read `.agents/startup-context.json` for canonical public facts,
-then read `.agents/fundraising-opportunities.json` for the current priority queue
-together with prior receipts. Before X discovery, broad Web discovery, or
-any unlisted candidate, process every program whose action begins with `apply_now`
-in queue order. A more specific one-shot action suffix is itself concrete new
-evidence and requires one reopen during that wake. First
-compare its latest receipt blocker with the complete current queue reason. Open
-the official application only when there is no prior checkpoint, or when the
-reason/current artifacts contain concrete new evidence that resolves or changes
-that blocker. Otherwise append a carried-forward checkpoint without opening the
-site, report it, and immediately continue toward new discovery and applications.
+## Ledger-first selection
+
+Mandatory first action: read the complete receipt ledger and application dossiers before the priority queue,
+then read `.agents/startup-context.json` and `.agents/fundraising-opportunities.json`.
+Build the pass queue from opportunities that do not already have a terminal receipt
+for the same organization, program, cohort/batch, and account. The ledger is memory:
+never open or submit the same provider application twice merely because its URL,
+display spelling, or date wording changed. A different named or dated cohort is a
+new opportunity. The recorder's `--prepare` call is the final deterministic replay
+gate immediately before Submit.
+
+Canonical examples:
+- Speedrun SR008 with a terminal receipt is skipped; SR009 is a new opportunity.
+- YC Fall 2026 and YC F26 describe the same cohort and are skipped; YC Winter 2027 is new.
+- `September 14 2026 cohort` and `2026-09-14 through 2026-10-03` on the same official application describe the same cohort and are skipped.
+
+Before X discovery, broad Web discovery, or any unlisted candidate, classify every
+configured item whose action begins with `apply_now` from this ledger-first view. A prior terminal receipt is
+carried forward without opening the site. For a prior failure or checkpoint, reopen
+only when current evidence resolves or changes its blocker. An unchanged blocker is carried forward and the pass immediately continues to new discovery. A more specific
+one-shot action suffix is itself concrete new evidence only once. First compare its latest receipt blocker with the complete current queue reason.
 For each receipt identity, `latest` means the single row with the greatest
 `utc_timestamp`; it supersedes every older row for blocker comparison. Never
 reopen from an older terms/consent checkpoint when the latest row already proves

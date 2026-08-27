@@ -202,6 +202,11 @@ test("production contract runs every minute and maximizes real applications", ()
   assert.match(contract, /authenticated[^\n]*X[^\n]*CDP/i);
   assert.match(contract, /Telegram[^\n]*(?:immediately|real.?time)/i);
   assert.match(contract, /reasonable inference/i);
+  assert.match(dailyPrompt, /Ledger-first selection/);
+  assert.match(dailyPrompt, /read the complete receipt ledger and application dossiers before the priority queue/);
+  assert.match(dailyPrompt, /SR008[^\n]*terminal[^\n]*SR009[^\n]*new opportunity/i);
+  assert.match(dailyPrompt, /Fall 2026[^\n]*F26[^\n]*same cohort/i);
+  assert.match(dailyPrompt, /unchanged blocker[^\n]*new discovery/i);
   assert.match(dailyPrompt, /cdp_tab_gc\.py --owner ai\.anicca\.fundraiser/);
   assert.match(dailyPrompt, /cdp_context_lease\.py acquire ai\.anicca\.fundraiser/);
   assert.match(dailyPrompt, /jq -r '\.target_id'/);
@@ -226,7 +231,7 @@ test("production contract runs every minute and maximizes real applications", ()
   assert.match(dailyPrompt, /action begins with `apply_now`/);
   assert.match(dailyPrompt, /one-shot action suffix is itself concrete new\s+evidence/);
   assert.match(dailyPrompt, /compare its latest receipt blocker with the complete current queue reason/);
-  assert.match(dailyPrompt, /carried-forward checkpoint without opening the\s+site/);
+  assert.match(dailyPrompt, /prior terminal receipt[\s\S]*?carried forward without opening the site/);
   assert.match(dailyPrompt, /single row with the greatest\s+`utc_timestamp`/);
   assert.match(dailyPrompt, /changed queue reason is not new evidence when its authorization\s+was already exercised/);
   assert.match(dailyPrompt, /never carry the stale checkpoint forward unchanged/);
