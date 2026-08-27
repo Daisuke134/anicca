@@ -575,6 +575,19 @@ def test_successful_external_artifact_receipt_is_reverified():
     assert "not an automatic approval" in instruction
 
 
+def test_resumed_file_owner_refreshes_controller_tool_results(tmp_path):
+    paid = load("paid_direct")
+    root, staging = tmp_path / "root", tmp_path / "staging"
+    (root / "context").mkdir(parents=True)
+    (staging / "context").mkdir(parents=True)
+    (root / "context" / "paid-tool-results.json").write_text('{"status":"success"}')
+    (staging / "context" / "paid-tool-results.json").write_text('{"status":"failed"}')
+
+    paid._refresh_owner_controller_context(root, staging)
+
+    assert (staging / "context" / "paid-tool-results.json").read_text() == '{"status":"success"}'
+
+
 def test_paid_effect_child_does_not_take_global_browser_lock(tmp_path):
     paid = load("paid_direct")
     args = SimpleNamespace(**{

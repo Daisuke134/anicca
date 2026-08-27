@@ -2786,6 +2786,17 @@ def _owner_tool_result_instruction() -> str:
     )
 
 
+def _refresh_owner_controller_context(root: Path, staging: Path) -> None:
+    target_dir = staging / "context"
+    target_dir.mkdir(parents=True, exist_ok=True)
+    for name in ("paid-tool-results.json", "paid-owner-feedback.json"):
+        source, target = root / "context" / name, target_dir / name
+        if source.is_file() and not source.is_symlink():
+            shutil.copyfile(source, target)
+        else:
+            target.unlink(missing_ok=True)
+
+
 def _run_isolated_file_owner(args, root: Path, context: Path, prompt_text: str,
                              owner_evidence: Path) -> int:
     decision = _load(root / "context" / "paid-work-decision.json")
@@ -2804,6 +2815,7 @@ def _run_isolated_file_owner(args, root: Path, context: Path, prompt_text: str,
         else:
             _prepare_file_owner_staging(root, context, staging)
             prior_dir = staging / "work" / "prior-artifact"
+        _refresh_owner_controller_context(root, staging)
         prior_dir.mkdir(parents=True, exist_ok=True)
         for candidate in _prior_artifact_candidates(root):
             target = prior_dir / candidate.name
