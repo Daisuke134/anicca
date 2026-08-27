@@ -92,11 +92,13 @@ def _private_model_runner(root: Path, command: list[str], label: str) -> list[st
     return ["/usr/bin/sandbox-exec", "-f", str(profile), *command]
 PAID_DECISION_SCHEMA_VERSION = 4
 PAID_DECISION_PROMPT_VERSION = "paid-semantic-decision-v16"
-PAID_DECISION_MODEL = "gpt-5.6-sol"
-PAID_FILE_MODEL = "gpt-5.6-sol"
+PAID_DECISION_MODEL = "gpt-5.6-terra"
+PAID_FILE_MODEL = "gpt-5.6-terra"
 PAID_RUNNER_CANDIDATES = {
+    ("codex", "gpt-5.6-terra"),
     ("codex", "gpt-5.6-sol"),
     ("codex", "gpt-5.6-luna"),
+    ("claude", "claude-sonnet-5"),
     ("claude-direct", "sonnet"),
 }
 PAID_FILE_POLICY_VERSION = "paid-file-build-review-v21"
@@ -2792,7 +2794,6 @@ def _run_isolated_file_owner(args, root: Path, context: Path, prompt_text: str,
             "--prompt-file", str(prompt), "--schema", str(args.runner_schema),
             "--evidence-dir", str(staged_evidence), "--task-label", "paid-file-owner",
             "--loop", "gig", "--workdir", str(staging), "--timeout-seconds", "3600",
-            "--retry-safe-local-effects",
             "--escalation-reason", "One isolated paid owner must build the buyer deliverable",
         ]
         try:

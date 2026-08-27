@@ -1,6 +1,7 @@
 import sys
 import tempfile
 import unittest
+import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -9,6 +10,17 @@ from agent_runner import provider_process_env, resolve_provider_profiles  # noqa
 
 
 class CodexProfileBoundaryTest(unittest.TestCase):
+    def test_escalation_route_has_account_two_then_cross_provider_fallback(self):
+        config = json.loads((ROOT / "config.json").read_text())
+        candidates = config["task_classes"]["escalation-agent"]["candidates"]
+        self.assertEqual(
+            [(row["provider"], row["model"], row.get("profile_alias")) for row in candidates],
+            [
+                ("codex", "gpt-5.6-terra", "acct2"),
+                ("claude", "claude-sonnet-5", None),
+            ],
+        )
+
     def test_candidate_resolves_one_explicit_profile_without_expansion(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory); auth = root / "auth.json"; auth.write_text("{}\n")

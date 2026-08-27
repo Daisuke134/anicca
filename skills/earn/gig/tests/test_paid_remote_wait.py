@@ -672,3 +672,11 @@ def test_review_ready_undeterminable_ships_only_at_final_review_round():
     assert not paid._review_ready_may_ship("undeterminable", False, paid.MAX_FILE_REVIEW_ITERATIONS)
     assert not paid._review_ready_may_ship("semantic_refusal", True, paid.MAX_FILE_REVIEW_ITERATIONS)
     assert not paid._review_ready_may_ship("needs_revision", True, paid.MAX_FILE_REVIEW_ITERATIONS)
+
+
+def test_paid_runner_contract_matches_runtime_terra_route():
+    paid = load("paid_direct")
+
+    assert paid.PAID_DECISION_MODEL == "gpt-5.6-terra"
+    assert paid.PAID_FILE_MODEL == "gpt-5.6-terra"
+    assert ("codex", "gpt-5.6-terra") in paid.PAID_RUNNER_CANDIDATES
