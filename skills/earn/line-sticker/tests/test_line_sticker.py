@@ -1373,8 +1373,47 @@ class LineStickerOwnerTests(unittest.TestCase):
             }
         )
         result = self._wake()
-        self.assertEqual((result["reason"], result["effect"]), ("owner_state_conflict", 0))
+        self.assertEqual((result["reason"], result["effect"]), ("provider_state_conflict", 0))
         self.assertEqual(self.provider.submit_calls, 1)
+
+    def test_unknown_submit_reconciles_review_states_but_rejects_released_before_ack(self) -> None:
+        for status, expected_state in (("submitted", "WAITING_REVIEW"), ("rejected", "REJECTED"), ("approved", "APPROVED")):
+            with self.subTest(status=status):
+                self.provider.raise_on_submit = True
+                self._wake()
+                self.provider.raise_on_submit = False
+                self.provider.inventory.update({"status": status, "public_url": None})
+                result = self._wake()
+                self.assertEqual((result["state"], result["effect"], result["readback"]), (expected_state, 0, 1))
+                self.assertEqual(self.provider.submit_calls, 1)
+                self.tearDown()
+                self.setUp()
+
+        self.provider.raise_on_submit = True
+        self._wake()
+        self.provider.inventory.update(
+            {
+                "status": "released",
+                "public_url": "https://store.line.me/stickershop/product/123/en",
+            }
+        )
+        owner_path = self.state / "owner.json"
+        ledger_path = self.state / "effects.jsonl"
+        owner_before = owner_path.read_bytes()
+        ledger_before = ledger_path.read_bytes()
+        append_calls = 0
+
+        def fail_if_ack_appended(path: Path, value: dict[str, object]) -> None:
+            nonlocal append_calls
+            append_calls += 1
+            raise MODULE.OwnerStateError("ack_append_reached")
+
+        with mock.patch.object(MODULE, "_append_receipt", side_effect=fail_if_ack_appended):
+            result = self._wake()
+        self.assertEqual((result["reason"], result["effect"], result["state"]), ("provider_state_conflict", 0, "RECONCILE_UNKNOWN"))
+        self.assertEqual(append_calls, 0)
+        self.assertEqual((owner_path.read_bytes(), ledger_path.read_bytes()), (owner_before, ledger_before))
+        self.assertEqual((self.provider.submit_calls, self.provider.release_calls), (1, 0))
 
     def test_waiting_review_released_is_provider_state_conflict(self) -> None:
         self._wake()
@@ -1498,6 +1537,24 @@ class LineStickerOwnerTests(unittest.TestCase):
                 result = self._wake()
                 self.assertEqual((result["reason"], result["effect"]), ("owner_state_conflict", 0))
                 self.assertEqual((owner_path.read_bytes(), ledger_path.read_bytes()), (owner_before, ledger_before))
+                owner["state"] = "CLOSED"
+                owner_path.write_text(json.dumps(owner, sort_keys=True) + "\n", encoding="utf-8")
+
+    def test_replay_ack_requires_closed_before_provider_observe(self) -> None:
+        self._wake()
+        self.provider.inventory["status"] = "approved"
+        self._wake()
+        self._wake()
+        self._wake()
+        owner_path = self.state / "owner.json"
+        for rollback in ("TERMINAL_PENDING_REPLAY", "NEEDS_OWNER_CEREMONY", "NEEDS_POLICY_REVIEW", "RELEASED"):
+            with self.subTest(rollback=rollback):
+                owner = json.loads(owner_path.read_text(encoding="utf-8"))
+                owner["state"] = rollback
+                owner_path.write_text(json.dumps(owner, sort_keys=True) + "\n", encoding="utf-8")
+                with mock.patch.object(self.provider, "observe", side_effect=AssertionError("provider observation reached")):
+                    result = self._wake()
+                self.assertEqual((result["reason"], result["effect"]), ("owner_state_conflict", 0))
                 owner["state"] = "CLOSED"
                 owner_path.write_text(json.dumps(owner, sort_keys=True) + "\n", encoding="utf-8")
 

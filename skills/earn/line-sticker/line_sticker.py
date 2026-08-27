@@ -1270,7 +1270,7 @@ def _acknowledge_unknown(
     if "acknowledged" in prior:
         return owner
     if action == "submit":
-        targets = {"submitted": "WAITING_REVIEW", "rejected": "REJECTED", "approved": "APPROVED", "released": "RELEASED"}
+        targets = {"submitted": "WAITING_REVIEW", "rejected": "REJECTED", "approved": "APPROVED"}
         target_state = targets.get(str(observation["status"]))
         if target_state is None:
             raise OwnerStateError("owner_state_conflict")
@@ -1534,19 +1534,17 @@ def _validate_owner_ledger_state(owner: dict[str, object], rows: list[dict[str, 
     replay_ack = "acknowledged" in receipts["replay"]
     released_readback = any(row["outcome"] == "acknowledged" and row["after_status"] == "released" for row in rows)
     state = str(owner["state"])
-    if state == "NEW" and (any(acknowledged.values()) or replay_ack):
+    if replay_ack and state != "CLOSED":
+        raise OwnerStateError("owner_state_conflict")
+    if state == "NEW" and any(acknowledged.values()):
         raise OwnerStateError("owner_state_conflict")
     if state == "RECONCILE_UNKNOWN" and (
-        acknowledged.get(str(owner.get("pending_action")), False) or replay_ack
+        acknowledged.get(str(owner.get("pending_action")), False)
     ):
         raise OwnerStateError("owner_state_conflict")
-    if state in ("WAITING_REVIEW", "REJECTED", "APPROVED") and (acknowledged["release"] or replay_ack):
-        raise OwnerStateError("owner_state_conflict")
-    if state == "TERMINAL_PENDING_REPLAY" and replay_ack:
+    if state in ("WAITING_REVIEW", "REJECTED", "APPROVED") and acknowledged["release"]:
         raise OwnerStateError("owner_state_conflict")
     if state in ("WAITING_REVIEW", "REJECTED", "APPROVED") and not acknowledged["submit"] and "intent" not in receipts["submit"]:
-        raise OwnerStateError("owner_state_conflict")
-    if state == "RELEASED" and replay_ack:
         raise OwnerStateError("owner_state_conflict")
     if state == "RELEASED" and not (acknowledged["release"] or released_readback or "intent" in receipts["release"]):
         raise OwnerStateError("owner_state_conflict")
@@ -1650,6 +1648,8 @@ def _wake_owner_unlocked(
         unknown_submit = state == "RECONCILE_UNKNOWN" and owner.get("pending_action") == "submit"
         pending_submit = _rows_for_action(rows, identity, "submit")
         pending_release = _rows_for_action(rows, identity, "release")
+        if observation["status"] == "released" and "intent" not in pending_release:
+            raise OwnerStateError("provider_state_conflict")
         if observation["status"] == "absent" and state != "NEW" and not unknown_submit:
             raise OwnerStateError("provider_absent_after_submit")
 
@@ -1675,7 +1675,7 @@ def _wake_owner_unlocked(
                 raise OwnerStateError("owner_state_conflict")
 
         if state in ("WAITING_REVIEW", "REJECTED", "APPROVED") and "unknown" in pending_submit and "acknowledged" not in pending_submit:
-            submit_statuses = {"submitted", "rejected", "approved", "released"}
+            submit_statuses = {"submitted", "rejected", "approved"}
             allowed_statuses = submit_statuses
             if state == "REJECTED":
                 allowed_statuses = {"rejected"}
@@ -1732,7 +1732,7 @@ def _wake_owner_unlocked(
 
         if state == "RECONCILE_UNKNOWN":
             pending_action = str(owner.get("pending_action"))
-            submit_statuses = {"submitted", "rejected", "approved", "released"}
+            submit_statuses = {"submitted", "rejected", "approved"}
             if pending_action == "submit" and observation["status"] in submit_statuses:
                 reconciled = _acknowledge_unknown(owner_path, ledger_path, rows, identity, owner, action=pending_action, observation=observation)
                 return _owner_result(reconciled, status="ok", effect=0, readback=1, duplicate_effect=0, effect_key=_effect_key(identity, "submit"), reason="reconciled")
