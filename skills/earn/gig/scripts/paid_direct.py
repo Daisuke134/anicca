@@ -2309,6 +2309,14 @@ def _archive_member_data(artifact: Path, claimed: str) -> tuple[str, bytes]:
             return members[0], archive.read(members[0])
 
 
+def _repair_finding_applies(review_state: dict[str, Any], artifact_sha256: str) -> bool:
+    return (
+        review_state.get("state") == "REPAIR_PENDING"
+        and review_state.get("mode") == "file"
+        and review_state.get("artifact_sha256") == artifact_sha256
+    )
+
+
 def _normalize_acceptance_delta(root: Path) -> None:
     manifest_path = root / "delivery" / "paid-work-result.json"
     manifest = _load(manifest_path)
@@ -3146,8 +3154,7 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
     finding = ""
     blocked_recheck_finding = ""
     if (resumed is not None and isinstance(review_state, dict)
-            and review_state.get("state") == "REPAIR_PENDING"
-            and review_state.get("mode") == "file"
+            and _repair_finding_applies(review_state, resumed[1]["artifact"][1])
             and review_state.get("review_policy_version") == PAID_FILE_POLICY_VERSION
             and review_state.get("operator_policy_sha256") == operator_policy_sha256
             and review_state.get("buyer_feedback_sha256") == feedback

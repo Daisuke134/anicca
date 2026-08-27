@@ -662,6 +662,18 @@ def test_single_member_archive_uses_its_actual_utf8_name(tmp_path):
     assert data == b"audio"
 
 
+def test_repair_finding_only_applies_to_rejected_artifact_hash():
+    paid = load("paid_direct")
+    state = {
+        "state": "REPAIR_PENDING",
+        "mode": "file",
+        "artifact_sha256": "a" * 64,
+    }
+
+    assert paid._repair_finding_applies(state, "a" * 64) is True
+    assert paid._repair_finding_applies(state, "b" * 64) is False
+
+
 def test_paid_effect_child_does_not_take_global_browser_lock(tmp_path):
     paid = load("paid_direct")
     args = SimpleNamespace(**{
