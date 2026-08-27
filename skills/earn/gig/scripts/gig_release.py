@@ -65,7 +65,11 @@ COCONALA_BUSINESS_LANES = {
 }
 # These long-lived owners are excluded from release garbage collection unless
 # their loaded argv is inspected explicitly.
-DEFAULT_EXCLUDED = {"ai.anicca.hf-gig-browser", "ai.anicca.hf-gig-release-watch"}
+DEFAULT_EXCLUDED = {
+    "ai.anicca.hf-gig-browser",
+    "ai.anicca.hf-gig-release-watch",
+    "ai.anicca.life-manager-disk-cleanup",
+}
 # Negotiate is a durable supervisor rather than a periodic one-shot pass.  Waiting for
 # ``is_running`` would therefore postpone every source release forever; its outbox is the
 # restart boundary, so the watcher may reload it while periodic lanes wait for a gap.

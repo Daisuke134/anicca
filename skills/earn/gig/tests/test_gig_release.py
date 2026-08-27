@@ -66,6 +66,38 @@ def test_gc_preserves_release_referenced_by_loaded_launchd_job(tmp_path, monkeyp
     assert (tmp_path / loaded_sha).is_dir()
 
 
+def test_gc_inspects_loaded_disk_cleanup_owner_while_idle(tmp_path, monkeypatch):
+    current_sha = "a" * 40
+    cleanup_sha = "b" * 40
+    rollback_sha = "c" * 40
+    stale_sha = "d" * 40
+    for sha in (current_sha, cleanup_sha, rollback_sha, stale_sha):
+        (tmp_path / sha).mkdir()
+    (tmp_path / "current").symlink_to(current_sha)
+
+    monkeypatch.setattr(gig_release, "RELEASE_ROOT", tmp_path)
+    monkeypatch.setattr(gig_release, "CURRENT_RELEASE", tmp_path / "current")
+    monkeypatch.setattr(
+        gig_release,
+        "loaded_program",
+        lambda label: (
+            ["/usr/bin/python3", str(tmp_path / cleanup_sha / "disk_cleanup.py")]
+            if label == "ai.anicca.life-manager-disk-cleanup"
+            else []
+        ),
+    )
+    monkeypatch.setattr(
+        gig_release.subprocess,
+        "run",
+        lambda *args, **kwargs: SimpleNamespace(returncode=0, stdout=""),
+    )
+
+    removed = gig_release.collect_old_releases()
+
+    assert cleanup_sha not in removed
+    assert (tmp_path / cleanup_sha).is_dir()
+
+
 def test_gc_preserves_release_pinned_by_live_wrapper(tmp_path, monkeypatch):
     current_sha = "a" * 40
     pinned_sha = "b" * 40
