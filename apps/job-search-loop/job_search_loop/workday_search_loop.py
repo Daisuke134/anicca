@@ -320,9 +320,15 @@ def main() -> int:
                 task="improve",
                 prompt=(
                 "Rank the Workday jobs for this candidate's realistic chance of winning "
-                "an interview and reaching at least JPY 7M, prioritizing JPY 10M-30M. "
+                "an interview and reaching the Candidate Memory compensation floor of "
+                "JPY 8M, with JPY 10M as the target. Unknown compensation remains eligible. "
                 "Use the whole supplied snapshot, not company prestige or source order. "
                 "Prefer roles whose actual work is supported by demonstrated experience. "
+                "Prioritize junior, associate, specialist, analyst, and early-career "
+                "individual-contributor roles accepting roughly zero to three years of "
+                "relevant experience. Do not assume a senior title is better. Manager, "
+                "director, head, principal, and senior-manager roles rank behind credible "
+                "junior-to-mid roles unless Candidate Memory directly supports their scope. "
                 "This is a company-wide portfolio search, not a single-company campaign. "
                 "Treat candidate.preferred_employer_types as an eligibility requirement, "
                 "not a soft tie-breaker. Rank only foreign-capital companies operating "
