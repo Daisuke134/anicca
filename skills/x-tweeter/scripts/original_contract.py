@@ -33,6 +33,23 @@ def canonical_domain(hostname: str | None) -> str | None:
                  if host == domain or host.endswith(f".{domain}")), None)
 
 
+def content_url_allowed(value: str) -> bool:
+    parsed = urlparse(value)
+    domain = canonical_domain(parsed.hostname)
+    host, path = (parsed.hostname or "").lower(), parsed.path
+    rules = {
+        "xiaohongshu.com": host in {"xiaohongshu.com", "www.xiaohongshu.com"} and path.startswith("/explore/"),
+        "douyin.com": host in {"douyin.com", "www.douyin.com"} and path.startswith("/video/"),
+        "kuaishou.com": host in {"kuaishou.com", "www.kuaishou.com"} and path.startswith("/short-video/"),
+        "bilibili.com": host in {"bilibili.com", "www.bilibili.com"} and path.startswith("/video/"),
+        "weibo.com": host in {"weibo.com", "www.weibo.com"} and len(path.strip("/").split("/")) >= 2,
+        "tieba.baidu.com": host == "tieba.baidu.com" and path.startswith("/p/"),
+        "zhihu.com": ((host in {"zhihu.com", "www.zhihu.com"} and path.startswith("/question/"))
+                      or (host == "zhuanlan.zhihu.com" and path.startswith("/p/"))),
+    }
+    return bool(rules.get(domain))
+
+
 def sha256_file(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
@@ -113,7 +130,7 @@ def admit(source_path: Path, draft_path: Path, critic_path: Path, posted_path: P
     source_domain = canonical_domain(parsed.hostname if parsed else None)
     source_text = source.get("text")
     if not all((
-        parsed and parsed.scheme == "https" and source_domain,
+        parsed and parsed.scheme == "https" and source_domain and content_url_allowed(source_url),
         source.get("source_domain") == source_domain,
         source.get("source_language") == "zh",
         source.get("source_kind") in SOURCE_KINDS,
