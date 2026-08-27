@@ -56,6 +56,13 @@ test("generic video generation job is deterministic, tenant-bound, and reference
   assert.doesNotMatch(JSON.stringify(value), /\.openclaw|profitable-claude|\/Users\//);
 });
 
+test("generation job binds an optional hook assignment reference", () => {
+  const assignmentRef = `object://sha256/${"e".repeat(64)}`;
+  const value = job({ assignmentRef });
+  assert.equal(value.input_refs.assignment_ref, assignmentRef);
+  assert.notEqual(value.job_id, job().job_id);
+});
+
 test("mobile product packs reject the Life Manager wake/demo format", () => {
   assert.throws(
     () => job({ productId: "anicca-ios", formatId: "anicca-wake" }),
@@ -159,6 +166,24 @@ test("adapter selects the least-recent hook and creates immutable copy plus vide
   const workspaceFiles = fs.readdirSync(workspace);
   assert.ok(workspaceFiles.some((name) => name.endsWith(".copy.txt")));
   assert.ok(!workspaceFiles.some((name) => name.endsWith(".copy.json")));
+  assert.equal(verifyMarketingVideoGenerationReceipt(result.receipt), true);
+});
+
+test("adapter consumes the exact assignment snapshot and records the selected variant", async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "lm-video-assignment-"));
+  const objects = path.join(root, "objects");
+  const packPath = path.join(root, "pack.json"); const videoPath = path.join(root, "video.mp4");
+  const packValue = { schema_version: 1, product_id: "honne-ai", format_id: "reelclaw", form: "relationship-confession", locale: "ja", title: "Honne", hashtags: ["honne"], hooks: [{ id: "HJA-001", text: "baseline", status: "active", prior_used_at: null }, { id: "HJA-002", text: "challenger", status: "active", prior_used_at: null }] };
+  fs.writeFileSync(packPath, `${JSON.stringify(packValue)}\n`); fs.writeFileSync(videoPath, "video");
+  const pack = importContentObject(packPath, { objectDir: objects }); const media = importContentObject(videoPath, { objectDir: objects });
+  const assignment = { schema_version: 1, kind: "marketing_hook_experiment_assignment", assignment_id: "mkt12-hook-test", experiment_id: "mkt12-test", tenant_id: "dais-local", lane_id: "honne-ja", product_id: "honne-ai", format_id: "reelclaw", form: "relationship-confession", locale: "ja", platform: "tiktok", account_id: "@honnevideo", pack_ref: pack.ref, baseline: { variant: "baseline", hook_id: "HJA-001", hook_sha256: crypto.createHash("sha256").update("baseline").digest("hex"), hook_text: "baseline" }, challenger: { variant: "challenger", hook_id: "HJA-002", hook_sha256: crypto.createHash("sha256").update("challenger").digest("hex"), hook_text: "challenger" }, allocation: { baseline: 0.5, challenger: 0.5 }, primary_metric: "attributed_installs_per_1000_impressions", secondary_metrics: ["views"], guardrail_metrics: ["source_unavailable_rate"], status: "assigned", observed_at: "2026-07-30T00:00:00.000Z" };
+  const assignmentPath = path.join(root, "assignment.json"); fs.writeFileSync(assignmentPath, JSON.stringify({ schema_version: 1, kind: "marketing_hook_experiment_assignments", tenant_id: "dais-local", assignments: [assignment] })); const assignmentRef = importContentObject(assignmentPath, { objectDir: objects }).ref;
+  const generationJob = buildMarketingVideoGenerationJob({ tenantId: "dais-local", productId: "honne-ai", formatId: "reelclaw", locale: "ja", slot: "2026-07-30T12:30:00.000Z", packRef: pack.ref, mediaRefs: [media.ref], assignmentRef });
+  const adapter = createMarketingVideoGenerationLoopAdapter({ dataDir: root, historyProvider: { list: async () => [] }, now: () => "2026-07-30T12:30:01.000Z" });
+  const result = await adapter.execute(generationJob);
+  assert.equal(result.receipt.assignment_ref, assignmentRef);
+  assert.ok(["baseline", "challenger"].includes(result.receipt.hook_variant));
+  assert.equal(result.receipt.hook_id, result.receipt.hook_variant === "baseline" ? "HJA-001" : "HJA-002");
   assert.equal(verifyMarketingVideoGenerationReceipt(result.receipt), true);
 });
 

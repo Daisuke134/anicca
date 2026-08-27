@@ -53,6 +53,7 @@ const RECEIPT_KEYS = new Set([
   "copy_sha256",
   "generated_at",
 ]);
+const ASSIGNED_RECEIPT_KEYS = new Set([...RECEIPT_KEYS, "assignment_ref", "hook_variant"]);
 
 function identifier(value, label) {
   const text = String(value == null ? "" : value).trim();
@@ -106,6 +107,7 @@ function buildMarketingVideoGenerationJob(input = {}) {
     pack_ref: objectRef(input.packRef, "marketing video pack"),
     media_refs: mediaRefs,
   };
+  if (input.assignmentRef != null) inputRefs.assignment_ref = objectRef(input.assignmentRef, "marketing hook assignment");
   const digest = crypto.createHash("sha256")
     .update(JSON.stringify({ tenant_id: tenantId, input_refs: inputRefs }))
     .digest("hex");
@@ -123,18 +125,12 @@ function buildMarketingVideoGenerationJob(input = {}) {
 
 function normalizeJob(job) {
   const refs = job && job.input_refs;
+  const keys = refs && typeof refs === "object" && !Array.isArray(refs) ? Object.keys(refs).sort() : [];
   if (
     !refs
     || typeof refs !== "object"
     || Array.isArray(refs)
-    || JSON.stringify(Object.keys(refs).sort()) !== JSON.stringify([
-      "format_ref",
-      "locale_ref",
-      "media_refs",
-      "pack_ref",
-      "product_ref",
-      "slot_ref",
-    ])
+    || !["format_ref,locale_ref,media_refs,pack_ref,product_ref,slot_ref", "assignment_ref,format_ref,locale_ref,media_refs,pack_ref,product_ref,slot_ref"].includes(keys.join(","))
   ) {
     throw new Error("marketing video generation job contract is invalid");
   }
@@ -153,6 +149,7 @@ function normalizeJob(job) {
     slot: slotMatch[1],
     packRef: refs.pack_ref,
     mediaRefs: refs.media_refs,
+    assignmentRef: refs.assignment_ref || null,
   };
   const expected = buildMarketingVideoGenerationJob(input);
   if (
@@ -254,9 +251,29 @@ function normalizeMarketingVideoPack(value, expected) {
   };
 }
 
+function normalizeHookAssignment(value, contract, pack) {
+  if (!value || value.schema_version !== 1 || value.kind !== "marketing_hook_experiment_assignments" || value.tenant_id !== contract.tenantId || !Array.isArray(value.assignments)) throw new Error("marketing hook assignment snapshot is invalid");
+  const assignment = value.assignments.find((candidate) => candidate.product_id === contract.productId && candidate.format_id === contract.formatId && candidate.locale === contract.locale && candidate.pack_ref === contract.packRef);
+  if (!assignment || assignment.status !== "assigned" || !assignment.pack_ref || !assignment.baseline || !assignment.challenger) throw new Error("marketing hook assignment scope mismatch");
+  const packHooks = new Map(pack.hooks.map((hook) => [hook.id, hook]));
+  for (const [variant, selected] of [["baseline", assignment.baseline], ["challenger", assignment.challenger]]) {
+    const hook = packHooks.get(selected.hook_id); const digest = hook && crypto.createHash("sha256").update(hook.text).digest("hex");
+    if (!hook || hook.status === "killed" || selected.variant !== variant || selected.hook_sha256 !== digest || selected.hook_text !== hook.text) throw new Error("marketing hook assignment hook mismatch");
+  }
+  if (!assignment.allocation || assignment.allocation.baseline !== 0.5 || assignment.allocation.challenger !== 0.5) throw new Error("marketing hook assignment allocation is invalid");
+  return assignment;
+}
+
+function assignedHook(pack, assignment, slot) {
+  const digest = crypto.createHash("sha256").update(`${assignment.assignment_id}:${slot}`).digest();
+  const variant = digest[0] < 128 ? "baseline" : "challenger";
+  const selected = assignment[variant];
+  return { hook: pack.hooks.find(({ id }) => id === selected.hook_id), variant };
+}
+
 function verifyMarketingVideoGenerationReceipt(receipt) {
   if (
-    !exactKeys(receipt, RECEIPT_KEYS)
+    !(exactKeys(receipt, RECEIPT_KEYS) || exactKeys(receipt, ASSIGNED_RECEIPT_KEYS))
     || receipt.schema_version !== 1
     || receipt.kind !== "marketing_video_artifact"
     || receipt.status !== "ready"
@@ -270,6 +287,7 @@ function verifyMarketingVideoGenerationReceipt(receipt) {
   ) {
     return false;
   }
+  if (exactKeys(receipt, ASSIGNED_RECEIPT_KEYS) && (!OBJECT_REF.test(String(receipt.assignment_ref || "")) || !["baseline", "challenger"].includes(receipt.hook_variant))) return false;
   const video = OBJECT_REF.exec(String(receipt.video_ref || ""));
   const copy = OBJECT_REF.exec(String(receipt.copy_ref || ""));
   if (
@@ -345,6 +363,7 @@ function safeMarketingVideoGenerationSummary(receipt) {
     hook_id: receipt.hook_id,
     video_ref: receipt.video_ref,
     copy_ref: receipt.copy_ref,
+    ...(receipt.assignment_ref ? { assignment_ref: receipt.assignment_ref, hook_variant: receipt.hook_variant } : {}),
   };
 }
 
@@ -394,7 +413,11 @@ function createMarketingVideoGenerationLoopAdapter(deps = {}) {
         formatId: contract.formatId,
         locale: contract.locale,
       });
-      const hook = selectHook(pack, history);
+      const assignment = contract.assignmentRef
+        ? normalizeHookAssignment(JSON.parse(fs.readFileSync(objectStore.resolve(contract.assignmentRef), "utf8")), contract, pack)
+        : null;
+      const selected = assignment ? assignedHook(pack, assignment, contract.slot) : { hook: selectHook(pack, history), variant: null };
+      const hook = selected.hook;
       if (hook.media_ref && !contract.mediaRefs.includes(hook.media_ref)) {
         throw new Error("marketing video hook media is not approved");
       }
@@ -445,6 +468,10 @@ function createMarketingVideoGenerationLoopAdapter(deps = {}) {
         copy_sha256: copy.sha256,
         generated_at: exactInstant(now(), "marketing video generation time"),
       };
+      if (assignment) {
+        receipt.assignment_ref = contract.assignmentRef;
+        receipt.hook_variant = selected.variant;
+      }
       if (!verifyMarketingVideoGenerationReceipt(receipt)) {
         throw new Error("marketing video generation receipt verification failed");
       }

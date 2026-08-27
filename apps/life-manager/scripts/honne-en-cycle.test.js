@@ -62,3 +62,9 @@ test("Honne EN production publication identity is distinct across days", () => {
   assert.notEqual(first.job_id, nextDay.job_id);
   assert.notEqual(first.effect_key, nextDay.effect_key);
 });
+
+test("Honne EN generation job carries the required hook assignment", () => {
+  const assignmentRef = `object://sha256/${"e".repeat(64)}`;
+  const generation = cycle.buildHonneEnGenerationJob("dais-local", "2026-08-28T02:00:00.000Z", `object://sha256/${"1".repeat(64)}`, [`object://sha256/${"2".repeat(64)}`], assignmentRef);
+  assert.equal(generation.input_refs.assignment_ref, assignmentRef);
+});

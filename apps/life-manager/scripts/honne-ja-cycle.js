@@ -18,6 +18,7 @@ const {
 const { buildMarketingLivenessJob, executeMarketingLivenessJob } = require("../lib/marketing-liveness-adapter.js");
 const { marketingVideoDueSlot } = require("../lib/honne-ja-shadow-schedule.js");
 const { executeCapabilityJob } = require("./runtime-up.js");
+const { requiredAssignmentRef } = require("./marketing-hook-assignment.js");
 
 const TENANT = "dais-local";
 const PRODUCTION_SLOTS = Object.freeze(["08:30", "12:30", "21:30"]);
@@ -29,8 +30,8 @@ const ANICCA_JA_WIDGET_INSTAGRAM_SLOTS = Object.freeze(["08:05", "13:05", "18:20
 const ANICCA_JP4_SLOTS = Object.freeze(["09:15", "15:15", "20:45"]);
 const ANICCA_HE_SLOTS = Object.freeze(["07:15", "13:45", "18:15"]);
 const LANES = Object.freeze({
-  run: { name: "honne JA", product: "honne-ai", format: "reelclaw", locale: "ja", platform: "tiktok", account: "@honnevideo", integrationId: "cmnit95mg015rrm0ye5vm8dhl", slots: PRODUCTION_SLOTS, packKey: "LM_HONNE_JA_PACK_REF", mediaKey: "LM_HONNE_JA_MEDIA_REFS", approvalKey: "LM_HONNE_JA_PUBLICATION_APPROVAL_REF", telegramLane: "honne-ja" },
-  "run-anicca-main": { name: "Anicca main", product: "anicca-ios", format: "reelclaw-card", locale: "ja", platform: "tiktok", account: "@anicca.jp", integrationId: "cmp9sdev5012voh0y58qs45xc", slots: ANICCA_MAIN_SLOTS, packKey: "LM_ANICCA_MAIN_PACK_REF", mediaKey: "LM_ANICCA_MAIN_MEDIA_REFS", approvalKey: "LM_ANICCA_MAIN_TIKTOK_APPROVAL_REF", telegramLane: "anicca-main-ja-tiktok" },
+  run: { name: "honne JA", product: "honne-ai", format: "reelclaw", locale: "ja", platform: "tiktok", account: "@honnevideo", integrationId: "cmnit95mg015rrm0ye5vm8dhl", slots: PRODUCTION_SLOTS, packKey: "LM_HONNE_JA_PACK_REF", mediaKey: "LM_HONNE_JA_MEDIA_REFS", approvalKey: "LM_HONNE_JA_PUBLICATION_APPROVAL_REF", telegramLane: "honne-ja", assignmentLaneId: "honne-ja" },
+  "run-anicca-main": { name: "Anicca main", product: "anicca-ios", format: "reelclaw-card", locale: "ja", platform: "tiktok", account: "@anicca.jp", integrationId: "cmp9sdev5012voh0y58qs45xc", slots: ANICCA_MAIN_SLOTS, packKey: "LM_ANICCA_MAIN_PACK_REF", mediaKey: "LM_ANICCA_MAIN_MEDIA_REFS", approvalKey: "LM_ANICCA_MAIN_TIKTOK_APPROVAL_REF", telegramLane: "anicca-main-ja-tiktok", assignmentLaneId: "anicca-main-ja" },
   "run-anicca-main-instagram": { name: "Anicca main Instagram", product: "anicca-ios", format: "reelclaw-card", locale: "ja", platform: "instagram", account: "@anicca.jp1", instagramProfileRef: "profile://instagram/anicca.jp1", integrationId: "cmn8ycvtn02djqx0ytuisn9mw", slots: ANICCA_MAIN_INSTAGRAM_SLOTS, packKey: "LM_ANICCA_MAIN_PACK_REF", mediaKey: "LM_ANICCA_MAIN_MEDIA_REFS", approvalKey: "LM_ANICCA_MAIN_INSTAGRAM_APPROVAL_REF", telegramLane: "anicca-main-ja-instagram" },
   "run-anicca-en-card-instagram": { name: "Anicca EN Card Instagram", product: "anicca-ios", format: "reelclaw-card", locale: "en", platform: "instagram", account: "@anicca.encards", instagramProfileRef: "profile://instagram/anicca.encards", integrationId: "cmpc3gx4001nklg0y27a8o66q", slots: ANICCA_EN_CARD_INSTAGRAM_SLOTS, packKey: "LM_ANICCA_EN_CARD_PACK_REF", mediaKey: "LM_ANICCA_EN_CARD_MEDIA_REFS", approvalKey: "LM_ANICCA_EN_CARD_INSTAGRAM_APPROVAL_REF", telegramLane: "anicca-en-card-instagram" },
   "run-anicca-en-widget-instagram": { name: "Anicca EN Widget Instagram", product: "anicca-ios", format: "reelclaw-widget", locale: "en", platform: "instagram", account: "@anicca.en", instagramProfileRef: "profile://instagram/anicca.en", integrationId: "cmn8y95rg02d2qx0y09bbk5pb", slots: ANICCA_EN_WIDGET_INSTAGRAM_SLOTS, packKey: "LM_ANICCA_EN_WIDGET_PRODUCTION_PACK_REF", mediaKey: "LM_ANICCA_EN_WIDGET_PRODUCTION_MEDIA_REFS", approvalKey: "LM_ANICCA_EN_WIDGET_PRODUCTION_APPROVAL_REF", telegramLane: "anicca-en-widget-instagram" },
@@ -68,6 +69,10 @@ function telegramNativeUrlVerified(lane, env, publicUrl) {
 function buildCyclePublicationJob(lane, tenantId, slot, artifact, approvalRef) {
   const integrationRef = `integration://postiz/${lane.platform}/${lane.integrationId}`;
   return buildMarketingVideoPublicationJob({ tenantId, productId: lane.product, formatId: lane.format, form: artifact.form, locale: lane.locale, slot, creativeId: artifact.creative_id, platform: lane.platform, videoRef: artifact.video_ref, captionRef: artifact.copy_ref, approvalRef, instagramProfileRef: lane.platform === "instagram" ? lane.instagramProfileRef : "profile://instagram/unassigned", postizTokenRef: "secret://postiz/api-key", slotScopedEffect: true, ...(lane.platform === "instagram" ? { instagramIntegrationRef: integrationRef } : { tiktokIntegrationRef: integrationRef }) });
+}
+
+function buildCycleGenerationJob(lane, tenantId, slot, packRef, mediaRefs, assignmentRef = null) {
+  return buildMarketingVideoGenerationJob({ tenantId, productId: lane.product, formatId: lane.format, locale: lane.locale, slot, packRef, mediaRefs, ...(assignmentRef ? { assignmentRef } : {}) });
 }
 
 function historyProvider(dataDir) {
@@ -150,7 +155,8 @@ async function runHonneJaCycle(argv, deps = {}) {
     throw new Error(`${lane.name} cycle approval scope is invalid`);
   }
   const store = deps.store || createMarketingLocalLedger({ dataDir });
-  const generationJob = buildMarketingVideoGenerationJob({ tenantId, productId: lane.product, formatId: lane.format, locale: lane.locale, slot, packRef, mediaRefs });
+  const assignmentRef = lane.assignmentLaneId ? requiredAssignmentRef(dataDir, lane.assignmentLaneId) : null;
+  const generationJob = buildCycleGenerationJob(lane, tenantId, slot, packRef, mediaRefs, assignmentRef);
   const generationQueued = await store.enqueueJob({ jobId: generationJob.job_id, tenantId, loopId: generationJob.loop_id, capability: generationJob.capability, effectClass: generationJob.effect_class, effectKey: generationJob.effect_key, inputRefs: generationJob.input_refs, maxAttempts: generationJob.max_attempts, availableAt: new Date(nowMs).toISOString() });
   const generationAdapter = createMarketingVideoGenerationLoopAdapter({ dataDir, historyProvider: historyProvider(dataDir), now: () => new Date(nowMs).toISOString() });
   const artifact = await executeJob(store, generationJob, "honne-ja-cycle", (job) => generationAdapter.execute(job));
@@ -174,4 +180,4 @@ async function runHonneJaCycle(argv, deps = {}) {
 
 if (require.main === module) runHonneJaCycle(process.argv.slice(2)).then((result) => process.stdout.write(`${JSON.stringify(result)}\n`)).catch((error) => { process.stderr.write(`${error.message}\n`); process.exitCode = 1; });
 
-module.exports = { ANICCA_EN_CARD_INSTAGRAM_SLOTS, ANICCA_EN_WIDGET_INSTAGRAM_SLOTS, ANICCA_HE_SLOTS, ANICCA_JA_WIDGET_INSTAGRAM_SLOTS, ANICCA_JP4_SLOTS, ANICCA_MAIN_INSTAGRAM_SLOTS, ANICCA_MAIN_SLOTS, PRODUCTION_SLOTS, buildCyclePublicationJob, parseArgs, runHonneJaCycle, runSlot, telegramNativeUrlVerified };
+module.exports = { ANICCA_EN_CARD_INSTAGRAM_SLOTS, ANICCA_EN_WIDGET_INSTAGRAM_SLOTS, ANICCA_HE_SLOTS, ANICCA_JA_WIDGET_INSTAGRAM_SLOTS, ANICCA_JP4_SLOTS, ANICCA_MAIN_INSTAGRAM_SLOTS, ANICCA_MAIN_SLOTS, PRODUCTION_SLOTS, buildCycleGenerationJob, buildCyclePublicationJob, parseArgs, runHonneJaCycle, runSlot, telegramNativeUrlVerified };

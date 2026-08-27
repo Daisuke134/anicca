@@ -42,6 +42,16 @@ function buildHookAssignment(lane, pack, observedAt) {
 
 function assignmentPointer(dataDir) { return path.join(dataDir, "tenants", TENANT, "marketing", "experiments", "hook-assignments.json"); }
 
+function assignmentRefFor(dataDir, laneId) {
+  const pointer = assignmentPointer(dataDir); if (!fs.statSync(pointer, { throwIfNoEntry: false })?.isFile()) return null;
+  const snapshot = JSON.parse(fs.readFileSync(pointer, "utf8")); if (snapshot.schema_version !== 1 || snapshot.kind !== "marketing_hook_experiment_assignments" || snapshot.tenant_id !== TENANT || !OBJECT_REF.test(String(snapshot.snapshot_ref || "")) || !Array.isArray(snapshot.assignments)) throw new Error("marketing hook assignment pointer is invalid");
+  return snapshot.assignments.some((assignment) => assignment.lane_id === laneId) ? snapshot.snapshot_ref : null;
+}
+
+function requiredAssignmentRef(dataDir, laneId) {
+  const ref = assignmentRefFor(dataDir, laneId); if (!ref) throw new Error(`${laneId} hook assignment missing`); return ref;
+}
+
 function persistHookAssignments({ dataDir = resolveDataRoot(process.env), env = process.env, observedAt = new Date().toISOString() } = {}) {
   const pointer = assignmentPointer(dataDir); const objectStore = createContentObjectStore({ objectDir: path.join(dataDir, "objects") });
   if (fs.statSync(pointer, { throwIfNoEntry: false })?.isFile()) return { ...JSON.parse(fs.readFileSync(pointer, "utf8")), created: false, pointer };
@@ -60,4 +70,4 @@ if (require.main === module) {
   process.stdout.write(`${JSON.stringify({ created: result.created, snapshot_ref: result.snapshot_ref, assignments: result.assignments?.map(({ lane_id, assignment_id, baseline, challenger }) => ({ lane_id, assignment_id, baseline: baseline.hook_id, challenger: challenger.hook_id })) })}\n`);
 }
 
-module.exports = { LANES, assignmentPointer, buildHookAssignment, persistHookAssignments };
+module.exports = { LANES, assignmentPointer, assignmentRefFor, buildHookAssignment, persistHookAssignments, requiredAssignmentRef };

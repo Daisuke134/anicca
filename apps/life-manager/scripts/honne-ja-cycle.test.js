@@ -98,3 +98,11 @@ test("production publication identity is stable per slot and distinct across day
   assert.notEqual(first.job_id, nextDay.job_id);
   assert.notEqual(first.effect_key, nextDay.effect_key);
 });
+
+test("Honne JA generation job carries an assignment only for an assigned lane", () => {
+  const lane = parseArgs(["run"]).lane; const assignmentRef = `object://sha256/${"e".repeat(64)}`;
+  const generation = cycle.buildCycleGenerationJob(lane, "dais-local", "2026-08-28T03:30:00.000Z", `object://sha256/${"1".repeat(64)}`, [`object://sha256/${"2".repeat(64)}`], assignmentRef);
+  assert.equal(generation.input_refs.assignment_ref, assignmentRef);
+  const other = cycle.buildCycleGenerationJob(parseArgs(["run-anicca-en-widget-instagram"]).lane, "dais-local", "2026-08-28T00:00:00.000Z", `object://sha256/${"1".repeat(64)}`, [`object://sha256/${"2".repeat(64)}`], null);
+  assert.equal(other.input_refs.assignment_ref, undefined);
+});

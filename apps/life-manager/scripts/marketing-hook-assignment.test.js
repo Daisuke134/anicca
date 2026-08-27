@@ -6,7 +6,7 @@ const os = require("node:os");
 const path = require("node:path");
 const test = require("node:test");
 const { importContentObject } = require("../lib/content-object-store.js");
-const { LANES, buildHookAssignment, persistHookAssignments } = require("./marketing-hook-assignment.js");
+const { LANES, assignmentRefFor, buildHookAssignment, persistHookAssignments, requiredAssignmentRef } = require("./marketing-hook-assignment.js");
 
 function pack(productId, formatId, locale, prefix) {
   return { schema_version: 1, product_id: productId, format_id: formatId, form: formatId === "reelclaw" ? "relationship-confession" : "nudge-card", locale, title: "test", hashtags: [], hooks: [{ id: `${prefix}-001`, text: "baseline hook", status: "active", prior_used_at: null }, { id: `${prefix}-002`, text: "challenger hook", status: "active", prior_used_at: null }] };
@@ -42,4 +42,14 @@ test("hook assignments persist immutably and replay without a second object", ()
   assert.equal(replay.created, false);
   assert.equal(replay.snapshot_ref, first.snapshot_ref);
   assert.equal(fs.statSync(first.pointer).mode & 0o777, 0o600);
+});
+
+test("assignment lookup is lane-scoped and fails closed when a required lane is absent", () => {
+  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "lm-hook-assignment-lookup-"));
+  const pointer = path.join(dataDir, "tenants/dais-local/marketing/experiments/hook-assignments.json"); fs.mkdirSync(path.dirname(pointer), { recursive: true });
+  const ref = `object://sha256/${"f".repeat(64)}`;
+  fs.writeFileSync(pointer, JSON.stringify({ schema_version: 1, kind: "marketing_hook_experiment_assignments", tenant_id: "dais-local", snapshot_ref: ref, assignments: [{ lane_id: "honne-en" }] }));
+  assert.equal(assignmentRefFor(dataDir, "honne-en"), ref);
+  assert.equal(assignmentRefFor(dataDir, "honne-ja"), null);
+  assert.throws(() => requiredAssignmentRef(dataDir, "honne-ja"), /assignment missing/i);
 });
