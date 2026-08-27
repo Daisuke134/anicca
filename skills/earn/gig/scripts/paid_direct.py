@@ -1114,6 +1114,14 @@ def _file_review_disposition(verdict: Any) -> str:
     return "block"
 
 
+def _review_ready_may_ship(verdict: Any, review_ready_allowed: bool, review_round: int) -> bool:
+    return (
+        review_ready_allowed
+        and verdict == "undeterminable"
+        and review_round == MAX_FILE_REVIEW_ITERATIONS
+    )
+
+
 def _file_progress_payload(cadence: dict[str, Any]) -> dict[str, Any]:
     """Keep internal acceptance evidence out of the buyer-facing progress note."""
     payload = delivery_queue.progress_payload(cadence)
@@ -3290,6 +3298,9 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
         finding = _text(verdict.get("reason")) or "The reviewer did not prove the artifact deliverable."
         verdict_path = _consultation_result_path(verifier_evidence)
         _owner_feedback(root, "paid.file_evaluator", [verdict], [verdict_path])
+        if _review_ready_may_ship(verdict.get("verdict"), review_ready_allowed, review_round):
+            shipment_basis = "max_review_iterations_review_ready"
+            break
         if disposition == "repair" and review_round == MAX_FILE_REVIEW_ITERATIONS:
             _write(root / "context" / "paid-review-state.json", {
                 "version": 1, "state": "REPAIR_PENDING", "mode": "file",

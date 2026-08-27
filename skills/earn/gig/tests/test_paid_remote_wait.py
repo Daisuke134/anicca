@@ -634,3 +634,12 @@ def test_queued_paid_project_keeps_parent_pending():
 
     assert paid._paid_pending_count(rows) == 1
     assert paid._paid_parent_status(failed=0, pending=1) == "pending"
+
+
+def test_review_ready_undeterminable_ships_only_at_final_review_round():
+    paid = load("paid_direct")
+
+    assert paid._review_ready_may_ship("undeterminable", True, paid.MAX_FILE_REVIEW_ITERATIONS)
+    assert not paid._review_ready_may_ship("undeterminable", False, paid.MAX_FILE_REVIEW_ITERATIONS)
+    assert not paid._review_ready_may_ship("semantic_refusal", True, paid.MAX_FILE_REVIEW_ITERATIONS)
+    assert not paid._review_ready_may_ship("needs_revision", True, paid.MAX_FILE_REVIEW_ITERATIONS)
