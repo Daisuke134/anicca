@@ -1,12 +1,13 @@
 # Life Manager Agent Economy
 
-**Status: P0-P2 complete; P3 code/review/release is live but its paid-compute receipt is pending; P4-P6 open.**
+**Status: P0-P2 complete; P3 has a chain-settled payment but no successful compute response/receipt; P4-P6 open.**
 The natural `ai.anicca.agent-economy-loop` owner and its dedicated `:8422` proxy run from sealed
 release `20260827T175256-22a86ec1`, and the canonical journal contains one chain-verified outside
-x402 receipt with replay-zero. No compute receipt exists yet; recent natural wakes receive a
-BlockRun HTTP 429 `FREE_MODEL_FAILED` response and therefore prove neither a paid model call nor a
-payment. No self-funded compute, shelter, 30-day graduation, or financially independent Life
-Manager instance has been proven. “The world's first financially independent AI” is neither a
+x402 receipt with replay-zero. A later receipt-bound attempt transferred `0.002` USDC from that
+instance to BlockRun on Base, but the request ended with HTTP 429 `FREE_MODEL_FAILED` and no compute
+receipt or usable model output. This proves payment, not successful paid compute. No self-funded
+shelter, 30-day graduation, or financially independent Life Manager instance has been proven.
+“The world's first financially independent AI” is neither a
 current claim nor an unqualified graduation claim: Spore.fun is a material prior example of
 agent-funded compute and replication. Life Manager must describe the narrower receipt-backed
 result it proves.
@@ -83,10 +84,10 @@ No individual row, including AC-2, is sufficient to claim financial independence
 | Release | `~/loops/life-manager/current` is a sealed release and `previous` is a validated rollback target | preserve atomic cuts, bounded retention, and clean-clone reproduction |
 | Process | `ai.anicca.agent-economy-loop` naturally runs the pinned Life Manager `runtime/loop/index.mjs` | keep one owner healthy and retire remaining legacy earning owners only through explicit cutover |
 | Revenue | one outside x402 transfer is chain-verified and contributes 0.003 USDC once; replay contributes zero | reproduce additional outside sales through the resident lane and keep unverified providers at zero |
-| Compute | prior runtime could inherit a shared router/key | per-instance wallet and proxy port; BlockRun receipt joins the cost ledger |
-| Shelter | historical Nosana evidence exists, but no graduated current lease | a direct-x402 x402Compute raw VPS canary is first; Conway is secondary VM/domain and Nodexo is GPU compute |
+| Compute | one receipt-bound BlockRun attempt settled 0.002 USDC but returned no usable output and is absent from the compute journal | reconcile the settled cost, use a current explicit paid model, then join settlement plus output into one replay-zero receipt |
+| Shelter | Franklin 1 previously ran Mac-off on Nosana for 6 hours and performed replacement handover, but the funds were internal bootstrap and current continuity is stopped | reproduce the lifecycle from accepted external earnings; a direct-x402 x402Compute raw VPS canary is first |
 | Control plane | local Mac and mixed provider scripts | Life Manager remains SSOT; Cloudflare is an optional hosted edge, not the money SSOT |
-| Publication | useful build logs exist, but public URLs/metrics/dashboard have not been reconciled to the current 0.003-USDC atom and P3 failure | publish the honest build log now and the success case only after AC-1 through AC-9 |
+| Publication | useful build logs and a historical Nosana Level 3 proof exist, but the current BlockRun cost is unreconciled | draft the honest build log now; publish article 1 after P3 plus canonical-main/fresh-clone proof, shelter proof after P4, and graduation proof after AC-1 through AC-9 |
 | Replication | vision only | one graduated parent creates a capped, separately accountable child and preserves replay-zero |
 
 ## Skill portfolio boundary
@@ -195,7 +196,7 @@ composes specialist rails instead of replacing the Life Manager runtime.
 | Singularity Layer / x402Compute | live accountless Base/Solana x402 VPS API plus always-on ClawPod reference; 2 GB Vultr-backed plan is $0.018056/h ($13/mo) | primary raw-VPS shelter canary; deploy the Life Manager release itself, not a second OpenClaw/ClawPod product runtime |
 | Nodexo | live GPU inventory and accountless Base USDC x402 `upto` rental | provisional direct-x402 GPU rail after capped pay/provision/SSH/terminate canary |
 | Clore.ai | cheaper marketplace GPU listings with crypto payments | price fallback; account/API-key dependency means it is not the primary autonomous rail |
-| Nosana | known crypto GPU provider, but sampled 4090/A100/H100 inventory was unavailable | retain as fallback/history until a current end-to-end canary beats it |
+| Nosana | historical Franklin 1 proof covered Mac-off 6-hour survival, signed heartbeats, statement, renewal, and a one-successor handover | retain the lifecycle code/evidence as Level 3 prior work; it used internal bootstrap, later stopped, and never proved external-revenue-funded shelter |
 | AgentMetal | public example of an agent buying an x402 server and receiving SSH | shelter fallback/prior-art reference; still requires independent current canary and receipts |
 | Cloudflare Agents/Workflows/x402 | durable agent state, retries, paid MCP/API seller tools | optional hosted edge/control and revenue surface; Cloudflare's own bill is not payable by agent x402 today |
 | Spheron | crypto GPU marketplace | not selected: current public x402 endpoint/repository was not verified; the remembered x402 shelter post is more likely Singularity Layer/x402Compute |
@@ -245,6 +246,24 @@ Implementation compatibility matters:
   Its edge payment verification and variable pricing are relevant later, but current revenue must
   use the open Agents/x402 SDK and independent Life Manager readback.
 
+### Historical Nosana shelter proof — reusable capability, not financial independence
+
+The repository already preserves a real Franklin 1 cloud-survival experiment. It MUST be reused as
+the starting shelter lifecycle rather than described as if no cloud work ever happened:
+
+| Evidence | Proven result | Limit |
+|---|---|---|
+| `S21-MAC-OFF` | Mac main loop unloaded; confidential Nosana job `DdUqQh8…WPS4` ran for the 21,600-second ceiling; public root/statement/heartbeats were HTTP 200 while live; verifier passed 40/40 with 130+ heartbeats | the job later reached state 2; this was a bounded 6-hour survival proof |
+| `SHELTER-REPLACE-1` | capped in-job wallet created one successor, delivered confidential state, verified three routes plus signed heartbeat, then stopped the old job; controller and one wall-clock replacement were observed on Nosana/Solana mainnet | the successor chain later stopped; this is replacement capability, not permanent continuity |
+| Funding provenance | shelter balances and refill rail were observed, including `0.670368 NOS / 0.013662961 SOL` at the publication checkpoint | funds came from internal treasury/bootstrap; verified Franklin external revenue was `$0.00` |
+
+Authoritative historical references are
+`docs/superpowers/specs/2026-07-19-anicca-one-repo-consolidation-spec.md` rows
+`S21-MAC-OFF`, `SHELTER-REPLACE-1`, and `SURVIVE-RAIL`, plus
+`docs/evidence/agent-economy/2026-07-28-publication-audit-ja.md`. The reusable asset is the
+pay/list/deliver/health/heartbeat/replace/terminate lifecycle. P4 must bind that lifecycle to the
+current `RevenueReceipt` and cost ledger; it MUST NOT relabel bootstrap funds as earned revenue.
+
 ### Cloudflare adoption map
 
 Cloudflare's `cloudflare/agents` repository was inspected at commit
@@ -272,6 +291,7 @@ from the agent's verified revenue, so Cloudflare remains an edge until that sepa
 | BlockRun | https://blockrun.ai/ | “Every AI model. One API. Pay per call.” |
 | ClawRouter | https://blockrun.ai/clawrouter | “sits between your agent and the AI models it calls” |
 | BlockRun Modal | https://blockrun.ai/services/modal | isolated runtimes paid per run with x402 |
+| BlockRun settled P3 transfer | https://basescan.org/tx/0x1b31ef383fae0078a24adcfa1f78fe0eefd390bc2b02fdb25c558498032e2774 | Base receipt status 1 transferred 2000 atomic USDC from the instance wallet to BlockRun; no successful output/compute receipt accompanied it |
 | BlockRun Growth Head | https://blockrun.ai/careers/founding-ai-native-growth-head | “This is not a marketing role that writes blog posts”; measure first-call conversion and 7-day retention |
 | Franklin | https://blockrun.ai/signal/franklin-open-source-ai-agent-pays-usdc-base | “hold a wallet, price its own actions, spend toward an outcome” |
 | Conway Docs | https://docs.conway.tech/ | agents can buy cloud resources with stablecoins and no provider API keys |
@@ -444,7 +464,7 @@ symlinking dependencies from another worktree.
 
 Read-only inspection on 2026-08-27 observed:
 
-- the feature worktree is clean before this spec change and is 332 commits behind / 73 commits
+- the feature worktree is clean before this spec change and is 339 commits behind / 75 commits
   ahead of the latest fetched `origin/main`; integration still requires a normal merge and review,
   never a force-push;
 - `/Users/anicca/loops/life-manager/current` resolves to sealed Life Manager release
@@ -456,17 +476,25 @@ Read-only inspection on 2026-08-27 observed:
   canonical USDC, outside payer, target recipient, atomic amount 3000, terminal settlement, and
   transfer log index 503. Its accepted net is 0.003 USDC and replay adds zero;
 - `status` reports trailing-30-day external realized net 0.003 USDC, one verified row, zero
-  unverified rows, compute cost 0, shelter cost 0, and graduation `invalid-input` because the
-  required runway/human-paid-inference/shelter evidence is not complete;
-- no `.blockrun/compute-receipts.jsonl` exists. The `:8422` proxy is alive, but recent natural
-  wakes return BlockRun HTTP 429 `FREE_MODEL_FAILED`; no signed payment or Base balance change is
-  inferred from that error;
+  unverified rows, compute cost 0, shelter cost 0, and graduation `invalid-input`; this cost output
+  is now known to under-report the settled but unreconciled 0.002-USDC attempt;
+- no `.blockrun/compute-receipts.jsonl` exists, but Base transaction
+  `0x1b31ef383fae0078a24adcfa1f78fe0eefd390bc2b02fdb25c558498032e2774` has receipt status `1`,
+  block `50516213`, and canonical USDC Transfer log `29`: instance payer
+  `0x810f…29c5` -> BlockRun payee `0xe903…1aBf`, atomic amount `2000`. Current balance is
+  `1.698000` USDC, exactly 0.002 below the pre-attempt 1.700000 snapshot;
+- the corresponding intent remains durably `AMBIGUOUS` because the paid request returned HTTP 429
+  `FREE_MODEL_FAILED` without usable output or a `PAYMENT-RESPONSE`-backed compute receipt. The
+  release left `ANICCA_FRONTIER_MODEL` unset, so the direct gateway proxy forced its stale default
+  `openai/gpt-5-nano`; the current BlockRun catalog omits that exact id while ClawRouter maps the
+  alias to `openai/gpt-5.4-nano`. The direct proxy bypasses that ClawRouter alias layer;
 - no graduated shelter receipt or autonomous child has been produced.
 
-The target instance has now proven a small outside revenue atom and a durable control plane. It
-has not proven that the same revenue paid for compute or shelter. More article volume, model
-spend, or trading risk cannot substitute for that missing provider receipt and conserved-balance
-proof.
+The target instance has now proven a small outside revenue atom, a durable control plane, and an
+on-chain BlockRun payment within the receipt-backed cap. It has not proven successful paid compute
+because the output and canonical compute receipt are missing, and it has not proven externally
+funded shelter. More article volume, model spend, or trading risk cannot substitute for those
+missing joined receipts.
 
 ## Publication, BlockRun, and YC strategy
 
@@ -605,6 +633,7 @@ retroactive attendance claim. No travel booking or RSVP is authorized by this sp
 | wallet/key isolation | integration | proxy account equals instance public address; inherited key overrides are absent | cross-instance spend |
 | outside paid-work cycle | provider E2E | award → execution → delivery → finalized payout → ledger | local PASS mistaken for demand |
 | BlockRun paid call and funds conservation | provider E2E | beginning balance + accepted outside inflow - known costs = ending balance; no seed/top-up/subsidy covers the settled call | shared, free, or human-funded compute claim |
+| settled failure reconciliation | money/provider integration | a chain-settled request with missing output contributes cost exactly once, never success/revenue, and its funding receipt cannot authorize another spend | invisible burn and reuse of consumed earnings |
 | x402Compute shelter canary | provider E2E | direct wallet x402 → raw VPS → canonical Life Manager release/state → health → extend/terminate → receipt, with no card/account/human key | hosted OpenClaw or platform credits mistaken for independent shelter |
 | Nodexo capped canary | provider E2E | externally earned balance → capped x402 → SSH → workload → terminate → receipt and conserved balance | price page or subsidy mistaken for compute |
 | Conway shelter canary | provider E2E | externally earned balance → capped x402 → VM/domain → health → terminate/renew → receipt and conserved balance | landing page or top-up mistaken for shelter |
@@ -659,18 +688,19 @@ do not open a later provider, article, cloud migration, or child lane early.
 | 1 | Safe append-only accounting and isolated identity | none | P0 tests and money-safety audit | complete |
 | 2 | Immutable, namespaced Life Manager owner | 1 | sealed release, loaded process, rollback, natural replay-zero | complete |
 | 3 | One outside sale | 1-2 | canonical 0.003-USDC chain receipt and second reconcile adds zero | complete |
-| 4 | Revenue-funded BlockRun inference | 3 | paid quote, successful response, cost receipt, balance conservation, replay-zero | **current** |
-| 5 | Revenue-funded ephemeral BlockRun compute | 4 | Modal payment, output, teardown, joined receipt | pending |
-| 6 | Integrate feature into canonical `main` | 4-5 | normal merge, clean tests, fresh-clone reproduction; no force-push | pending |
-| 7 | Publish article 1 and BlockRun quickstart | 6 | durable public URL, redacted receipt links, attributed quickstart | pending |
-| 8 | Revenue-funded raw VPS shelter | 6 | x402Compute pay/provision/restore/health/renew-or-terminate receipts | pending |
-| 9 | Publish article 2: shelter proof | 8 | durable public URL linked to joined shelter evidence | pending |
-| 10 | Add hosted phone edge and paid service | 8 | recoverable Cloudflare edge, phone policy/readback, outside x402 sale | pending |
-| 11 | Operate without the Mac for 30 days | 8-10 | continuous cloud evidence, real P&L, runway, no-human-credential audit | pending |
-| 12 | Graduate the parent and publish the public skill | 11 | AC-1 through AC-9 and AC-12, clean-clone install, dashboard, docs | pending |
-| 13 | Create exactly one capped child | 12 | separate identity/state/wallet/proxy, seed recorded as non-revenue | pending |
-| 14 | Graduate the child and measure the cohort | 13 | child passes the same 30-day gate; `R_eff` and survival are published | pending |
-| 15 | Publish article 3 and decide whether to scale | 14 | parent+child case study, reproduction commands, independent audit | pending |
+| 4 | Reconcile failed BlockRun settlement and close its consumed funding | 3 | 0.002-USDC cost row, tx/log join, stale-model diagnosis, no receipt reuse | **current** |
+| 5 | Reproduce external revenue and complete paid BlockRun inference | 4 | new outside receipt, current explicit model, successful output, cost receipt, balance conservation, replay-zero | pending |
+| 6 | Revenue-funded ephemeral BlockRun compute | 5 | Modal payment, output, teardown, joined receipt | pending |
+| 7 | Integrate feature into canonical `main` | 4-6 | normal merge, clean tests, fresh-clone reproduction; no force-push | pending |
+| 8 | Publish article 1 and BlockRun quickstart | 7 | durable public URL, redacted receipt links, attributed quickstart | pending |
+| 9 | Revenue-funded raw VPS shelter | 7 | x402Compute pay/provision/restore/health/renew-or-terminate receipts | pending |
+| 10 | Publish article 2: shelter proof | 9 | durable public URL linked to joined shelter evidence | pending |
+| 11 | Add hosted phone edge and paid service | 9 | recoverable Cloudflare edge, phone policy/readback, outside x402 sale | pending |
+| 12 | Operate without the Mac for 30 days | 9-11 | continuous cloud evidence, real P&L, runway, no-human-credential audit | pending |
+| 13 | Graduate the parent and publish the public skill | 12 | AC-1 through AC-9 and AC-12, clean-clone install, dashboard, docs | pending |
+| 14 | Create exactly one capped child | 13 | separate identity/state/wallet/proxy, seed recorded as non-revenue | pending |
+| 15 | Graduate the child and measure the cohort | 14 | child passes the same 30-day gate; `R_eff` and survival are published | pending |
+| 16 | Publish article 3 and decide whether to scale | 15 | parent+child case study, reproduction commands, independent audit | pending |
 
 Article work and implementation are therefore interleaved, not “write everything first” or “wait
 until the entire vision is done.” The first draft starts during P3 so the evidence schema shapes the
@@ -729,8 +759,9 @@ The resident identity resolver returns that same seller recipient after the empt
 was retired; the prior seller key remains private and is never copied into a release or receipt.
 The canonical 30-day status is external realized net `0.003` USDC, verified rows `1`, unverified
 rows `0`. Replaying the same chain proof reports accepted `0`, duplicate `1`, and appends no row.
-The wallet's remaining `1.697` USDC is seed/top-up funding and MUST remain a non-revenue liability;
-P3 authorization can consume only the unencumbered portion of the accepted `0.003` USDC receipt.
+The current `1.698000` USDC balance consists of `1.697000` USDC seed/top-up liability plus the
+required `0.001000` USDC reserve remaining from the accepted receipt after the settled P3 cost;
+neither portion may authorize another P3 spend.
 Coconala, Lancers, TaskMarket, and Writer remain durable rejection-only lanes until each has an
 independent official settlement verifier; their absence cannot manufacture revenue.
 
@@ -744,13 +775,20 @@ independent official settlement verifier; their absence cannot manufacture reven
    `0.001` USDC reserve. Seed/top-up remains excluded.
 3. [x] Wire the natural launchd owner to the receipt-backed proxy and supervise proxy+loop as one
    failure unit; force the configured paid model only on this receipt-backed path.
-4. [ ] Trace the current HTTP 429 `FREE_MODEL_FAILED` without exposing prompts or keys, prove the
-   receipt-backed proxy sent the configured paid model and received a valid paid quote, then obtain
-   one successful capped BlockRun response, append its settlement/cost receipt, verify the Base
-   balance equation, and replay the same idempotency key with zero second payment.
-5. [ ] Run one bounded BlockRun Modal Sandbox task and join payment, runtime output, and teardown;
+4. [ ] Reconcile the settled failed attempt as cost, not success: bind Base transaction
+   `0x1b31ef38…e2774`, Transfer log `29`, atomic amount `2000`, payer/payee, HTTP 429, missing output,
+   and the consumed funding receipt into an append-only failure receipt; release the ambiguity lock
+   only through that evidence and prove the same funding receipt can never authorize another spend.
+5. [ ] Replace the stale implicit `openai/gpt-5-nano` direct-gateway default with an explicit current
+   catalog model (`openai/gpt-5.4-nano` for the capped canary), preserve safe internal stage/model/
+   HTTP/provider-code diagnostics, and verify RED/GREEN without exposing prompts or keys.
+6. [ ] Obtain a new verified outside revenue receipt because the original 0.003 USDC now funds the
+   settled 0.002 cost plus the required 0.001 reserve. Use only the new unencumbered earnings for one
+   successful capped BlockRun response; append settlement+output+cost, verify the Base balance
+   equation, and replay the same idempotency key with zero second payment.
+7. [ ] Run one bounded BlockRun Modal Sandbox task and join payment, runtime output, and teardown;
    classify it as ephemeral compute, not graduated shelter.
-6. [x] Treat a free-model call as a zero-cost observation, never revenue or paid-compute proof.
+8. [x] Treat a free-model call as a zero-cost observation, never revenue or paid-compute proof.
 
 **Exit:** an externally earned balance pays for a real BlockRun call from the same identity.
 
@@ -758,10 +796,12 @@ Current evidence: commits `e9eb55703`, `dabfd6ea7`, `60941c13a`, `56e9b4340`, an
 implement the receipt contract, natural-owner supervision, SDK error-boundary fixes, and signed-fetch
 ambiguity fence. The focused/wider suites pass, including real installed `@x402/fetch` 402 flows,
 real EVM signing, no-signature over-cap retries, forced paid-model routing, proxy death, and TERM
-cleanup. The namespaced release now runs both the loop and dedicated proxy on `:8422`, but no
-compute journal exists; recent wakes terminate at BlockRun HTTP 429 `FREE_MODEL_FAILED`. Two earlier
-failed canary attempts also produced no compute receipt and no balance change: Base USDC remained
-`1.700000`. Their exact false/expired ambiguity locks were moved, not deleted, under
+cleanup. The namespaced release runs both the loop and dedicated proxy on `:8422`, but no compute
+journal exists. One latest attempt did settle: Base USDC moved `1.700000 -> 1.698000`, and transaction
+`0x1b31ef38…e2774` transferred 2000 atomic USDC to BlockRun before the HTTP 429 failure. This must
+be recorded as cost and consumed funding even though it produced no output. Two earlier failed
+canary attempts produced no balance change; their exact false/expired ambiguity locks were moved,
+not deleted, under
 `state/reconciled-compute/20260827T083626Z-no-settlement` and
 `state/reconciled-compute/20260827T085725Z-no-settlement`. Therefore P3 exit is not claimed yet.
 
@@ -828,8 +868,9 @@ child is a later evidence-gated decision.
 
 ## Explicit non-claims
 
-The project does not currently claim financial independence, profit, self-funded compute, shelter
-payment, a self-paid Cloudflare account, event registration, or an autonomous child. It claims one
-successful outside x402 sale only to the extent of the chain-bound 0.003 USDC receipt above. No
-wallet funding, provider purchase, public post, application, event RSVP, or on-chain broadcast is
-authorized by this specification update.
+The project does not currently claim financial independence, profit, successful self-funded
+compute, externally funded shelter, a self-paid Cloudflare account, event registration, or an
+autonomous child. It claims one successful outside x402 sale to the extent of the chain-bound 0.003
+USDC receipt, one failed-output BlockRun purchase costing 0.002 USDC, and the bounded historical
+Nosana Level 3 capability above. No new wallet funding, provider purchase, public post, application,
+event RSVP, or on-chain broadcast is authorized by this specification update.
