@@ -320,6 +320,14 @@ def _collect_dm_context(args, item: dict[str, Any], root: Path, base: Path) -> N
         if not required.is_file() or required.is_symlink():
             raise Failure("dm_context")
 
+
+def _run_paid_preflight(args, command: list[str]) -> str:
+    lock_path = args.cdp_lock_dir.parent / ".paid-preflight-browser.lock"
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    with lock_path.open("a+", encoding="utf-8") as lock:
+        fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+        return _run(command, "remote_resume")
+
 def _row(snapshot: dict[str, Any], room: str) -> dict[str, Any]:
     for value in snapshot.get("orders", []):
         if isinstance(value, dict) and _text(value.get("talkroom_id")) == room:
@@ -4235,7 +4243,10 @@ def _prepare_one(args, item_path: Path, output: Path) -> int:
         base = args.evidence_dir / "paid-direct" / room
         preflight = base / "preflight" / "selected-talkroom-snapshot.json"
         diagnostic_stage = "preflight_collect"
-        _run(_collector(args, "selected-talkroom-only", preflight, preflight.parent, item_path, item), "remote_resume")
+        _run_paid_preflight(
+            args,
+            _collector(args, "selected-talkroom-only", preflight, preflight.parent, item_path, item),
+        )
         diagnostic_stage = "preflight_validate"
         preflight_row = _row(_load(preflight), room)
         if _text(preflight_row.get("buyer_feedback_sha256")) != feedback: raise Failure("remote_resume")

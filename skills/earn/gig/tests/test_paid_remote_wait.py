@@ -674,6 +674,17 @@ def test_repair_finding_only_applies_to_rejected_artifact_hash():
     assert paid._repair_finding_applies(state, "b" * 64) is False
 
 
+def test_paid_preflight_uses_one_shared_browser_lock(tmp_path, monkeypatch):
+    paid = load("paid_direct")
+    called = []
+    monkeypatch.setattr(paid, "_run", lambda command, step: called.append((command, step)) or "ok")
+    args = SimpleNamespace(cdp_lock_dir=tmp_path / ".cdp-gig.lock")
+
+    assert paid._run_paid_preflight(args, ["collector"]) == "ok"
+    assert called == [(["collector"], "remote_resume")]
+    assert (tmp_path / ".paid-preflight-browser.lock").is_file()
+
+
 def test_paid_effect_child_does_not_take_global_browser_lock(tmp_path):
     paid = load("paid_direct")
     args = SimpleNamespace(**{
