@@ -4467,8 +4467,8 @@ of that merge. Merge it when that clears.
 - [x] Reproduce talkroom `18197848` at `file_visual_evidence`: an audio-only ZIP was incorrectly required to contain review images.
 - [x] Add the audio-only ZIP regression and return no visual inputs when the archive has no images; `13 passed` and `py_compile` pass.
 - [x] Push public main commit `2fb9c8ad516347a3db4b300dfd108c34c3ee1c68` and activate only `ai.anicca.hf-gig-paid-direct` from that immutable release.
-- [ ] Clear the host `disk-pressure.block` through the existing cleanup owner without deleting Codex/Claude sessions or durable evidence; current free space is about 1.2 GiB and the cleanup owner cannot create its temporary directory.
-- [ ] Obtain natural official readback for `18197848`, then rerun once and prove replay-zero.
+- [x] Clear the host `disk-pressure.block` through the existing cleanup owner without deleting Codex/Claude sessions or durable evidence. Central cleanup exits 0 with errors 0 and protected deletions 0; reclaiming unused regenerable Whisper and Codex runtime caches restored about 2.0 GiB free.
+- [x] Obtain natural official readback for `18197848`, then rerun once and prove replay-zero. Public release `7223d9802286917e4f2a803595aa36f985af3414` sent `硝子色の恋_review_v1.zip` once with SHA256 `e041c39e10cff1bb2e3fd3febca172ff32fc4ed21bc40b1a6978228a5c85c15e`; official DOM binds the exact message and attachment with formal delivery off. The next natural wake returned `awaiting_buyer`, `effect=0`, `deduplicated=true`, and the official room contains exactly one matching attachment message.
 - [x] Resolve `18202085` without weakening buyer-visible quality. Public loop release `ed16da8631cc746ee5e0ea8ee383ac9529384080` sent `cinematic_suspense_bgm_v1.zip` once as progress with SHA256 `d5403a67e0e270d08f62c41b1a66407ac376c6f371d11c455ff98e5456d26424`; official talkroom readback contains the exact attachment/message and formal delivery is off. The next natural wake returned `satisfied_noop`, `effect=0`, `deduplicated=true`, formal off; Telegram messageId `38896`.
 
 Current buyer-level readback after the public `88baabdb368abb7d0510bb807bd7daf6d05b7f9f`
@@ -4477,17 +4477,17 @@ release:
 | Buyer | Talkroom | Project root | Current artifact / action | Official state | Exact blocker |
 |---|---|---|---|---|---|
 | Chii【CK protect】 | `18180857` | `~/gig/projects/18180857` | `CKprotect_TikTok_initial_review_v7.zip`; external TikTok work remains required | Latest buyer-visible seller message says work will proceed on the seller account; no new artifact readback | Paid effect is stopped before mutation by host capacity; do not ask for another OTP or send another progress promise |
-| 貴ㅤㅤ | `18197848` | `~/gig/projects/5231240` | `硝子色の恋_review_v1.zip`, SHA256 `7d61e8223c7b852bffffba1b3dbab21c8bc9843006a08e7841731e6ad948f1de` | Official talkroom still has buyer MP3 and no seller artifact; formal delivery is off | Audio-only visual gate is fixed; fresh decision is file/review, but the exact artifact also remains reviewer-blocked for unproved from-scratch correspondence and host capacity prevents a new effect |
+| 貴ㅤㅤ | `18197848` | `~/gig/projects/5231240` | `硝子色の恋_review_v1.zip`, SHA256 `e041c39e10cff1bb2e3fd3febca172ff32fc4ed21bc40b1a6978228a5c85c15e` | Official talkroom contains the exact ZIP and review message; buyer-visible artifact is true and formal delivery is off | Closed: exact English outro was independently transcribed, the artifact was sent once, and replay is `awaiting_buyer`, effect 0, deduplicated true |
 | ユウ ブログ | `18202085` | `~/gig/projects/18202085` | `cinematic_suspense_bgm_v1.zip`, SHA256 `d5403a67e0e270d08f62c41b1a66407ac376c6f371d11c455ff98e5456d26424` | Official talkroom readback contains the exact ZIP and buyer-review message; formal delivery is off | Closed: replay is `satisfied_noop`, effect 0, deduplicated true |
 | ITフランチャイズ経営 | `18184558` | `~/gig/projects/18184558` | No artifact or reply required | Buyer explicitly requested no reply while Coconala cancellation is pending; replay is `satisfied_noop`, effect 0 | Observe official cancellation only |
 | 厚木 | `18171850` | `~/gig/projects/18171850` | Existing review artifact already handled | Natural replay is completed/deduplicated with effect 0 and formal delivery off | No additional send |
 
 `18169985` (Manledge) and the account-owner excluded Kitty lane receive no additional
 message in this recovery.  The host cleanup owner is reinstalled from stable `current`, exits 0,
-and release GC now preserves its loaded immutable release while idle.  The remaining shared
-blocker is physical capacity: after removing closed regenerable uv cache and orphaned
-CoreSimulator temporary directories, free space remains below the 1 GiB unblock floor.  Codex
-session databases and `.cloak` stay protected and are not cleanup candidates.
+and release GC now preserves its loaded immutable release while idle. Regenerable Whisper and
+Codex runtime caches were reclaimed only after open-file checks; free space recovered to about
+2.0 GiB and `disk-pressure.block` is absent. Codex session databases and `.cloak` stay
+protected and are not cleanup candidates.
 
 ### Host disk and Account 2 runtime verification
 
