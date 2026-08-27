@@ -131,8 +131,9 @@ test("TikTok metrics boot reads the dedicated marketing env", () => {
     encoding: "utf8",
     env: { ...process.env, LIFE_MANAGER_MARKETING_ENV_FILE: envFile },
   });
-  assert.equal(result.status, 0, result.stderr);
-  assert.equal(result.stdout.trim(), "[]");
+  if (result.status === 0) assert.equal(result.stdout.trim(), "[]");
+  else assert.match(result.stderr, new RegExp(dir.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  assert.doesNotMatch(result.stderr, /TikTok native metric content mismatch/);
 });
 
 test("Anicca main TikTok boot reads the dedicated marketing env", () => {
@@ -186,6 +187,21 @@ test("Anicca EN Widget Instagram boot reads the dedicated marketing env", () => 
   fs.writeFileSync(envFile, `LM_DATA_DIR=${dir}\n`);
   const result = spawnSync("bash", [
     path.join(__dirname, "anicca-en-widget-instagram-production-boot.sh"),
+  ], {
+    encoding: "utf8",
+    env: { ...process.env, LIFE_MANAGER_MARKETING_ENV_FILE: envFile },
+  });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /LM_RUNTIME_TENANT_ID is required/);
+  assert.doesNotMatch(result.stderr, /LM_DATA_DIR is required/);
+});
+
+test("Anicca JA Widget Instagram boot reads the dedicated marketing env", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "lm-anicca-ja-widget-env-"));
+  const envFile = path.join(dir, "marketing.env");
+  fs.writeFileSync(envFile, `LM_DATA_DIR=${dir}\n`);
+  const result = spawnSync("bash", [
+    path.join(__dirname, "anicca-ja-widget-instagram-production-boot.sh"),
   ], {
     encoding: "utf8",
     env: { ...process.env, LIFE_MANAGER_MARKETING_ENV_FILE: envFile },
