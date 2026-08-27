@@ -971,6 +971,10 @@ def _allocate_portfolio(
         weak_demand = demand.get(service_id) in {0, 1}
         replacement = next((row for row in replacements if isinstance(row, dict)
                             and row.get("replaces_service_id") == service_id), None)
+        stronger_paid_demand = bool(
+            replacement and type(replacement.get("paid_demand_score")) is int
+            and replacement["paid_demand_score"] > 0
+        )
         untouched_by_buyers = (inquiries.get(service_id, 0) == 0
                                and payments.get(service_id, 0) == 0
                                and (purchases == 0 or purchases is None))
@@ -979,10 +983,16 @@ def _allocate_portfolio(
             minimum_sample and inquiries.get(service_id, 0) == 0 and purchases == 0
             and payments.get(service_id, 0) == 0 and weak_demand and capacity_pressure
         )
-        replace_ready = bool(retire_ready and replacement)
+        replace_ready = bool(
+            replacement and minimum_sample and untouched_by_buyers and weak_demand
+            and (capacity_pressure or stronger_paid_demand)
+        )
+        recoverable_ready = retire_ready or replace_ready
         gap = gaps.get(service_id)
         if replace_ready:
-            action, reason = "REPLACE", "all_replacement_gates_met"
+            action = "REPLACE"
+            reason = ("all_replacement_gates_met" if capacity_pressure
+                      else "stronger_paid_demand_replaces_zero_purchase_offer")
         elif retire_ready:
             action = "RETIRE"
             reason = (f"duplicate_of_service_{duplicates}" if duplicates
@@ -1006,7 +1016,7 @@ def _allocate_portfolio(
                       "weak_demand_evidence": weak_demand, "stronger_replacement_candidate": bool(replacement),
                       "slot_capacity_pressure": capacity_pressure,
                       "duplicate_of_service_id": duplicates,
-                      "recoverable_retire_gates_met": retire_ready},
+                      "recoverable_retire_gates_met": recoverable_ready},
             "improvement_field": gap.get("field") if gap else None,
             "rollback_version": contract["service_version_sha256"],
             "official_readback_required": action in {"IMPROVE", "RETIRE", "REPLACE"},

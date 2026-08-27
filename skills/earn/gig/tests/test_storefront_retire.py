@@ -3,6 +3,7 @@
 Run: python3 -m pytest skills/earn/gig/tests/test_storefront_retire.py
 """
 import sys
+import json
 from pathlib import Path
 
 import pytest
@@ -104,6 +105,49 @@ def test_replace_plan_requires_a_ready_candidate_and_keeps_a_republish_rollback(
         sd._render_replace_plan(retire, {**create, "draft_service_id": SERVICE_ID}, allocation)
     with pytest.raises(RuntimeError, match="storefront_replace_allocation_invalid"):
         sd._render_replace_plan(retire, create, ALLOCATION)
+
+
+def test_stronger_paid_demand_replaces_a_measured_zero_purchase_offer_before_capacity(tmp_path):
+    state = tmp_path / "state"
+    state.mkdir()
+    (state / "analytics.jsonl").write_text(json.dumps({
+        "service_id": SERVICE_ID,
+        "metrics": {
+            "views": {"status": "known", "value": 120},
+            "favorites": {"status": "known", "value": 0},
+            "purchases": {"status": "known", "value": 0},
+        },
+    }) + "\n", encoding="utf-8")
+    scorecard = tmp_path / "scorecard.json"
+    scorecard.write_text(json.dumps({
+        "portfolio_policy": {
+            "version": 1,
+            "slot_limit": 20,
+            "minimum_views_for_retirement": 100,
+            "short_term_zero_sales_can_retire": False,
+            "retirement_mode": "recoverable_unpublish_before_delete",
+            "replacement_candidates": [{
+                "replaces_service_id": SERVICE_ID,
+                "candidate_key": "ai-agent-system",
+                "paid_demand_score": 12,
+            }],
+        },
+        "services": [{"service_id": SERVICE_ID, "scores": {"demand": 0}}],
+        "priority_backlog": [{"priority": 1, "service_id": SERVICE_ID, "field": "body"}],
+    }), encoding="utf-8")
+
+    result = sd._allocate_portfolio(
+        state,
+        [{"service_id": SERVICE_ID, "service_version_sha256": VERSION}],
+        {"cutoff_cursor": "official"},
+        scorecard,
+        now=1,
+    )
+
+    assert result["capacity"] == {"used": 1, "limit": 20, "pressure": False}
+    assert result["selected"]["action"] == "REPLACE"
+    assert result["selected"]["reason"] == "stronger_paid_demand_replaces_zero_purchase_offer"
+    assert result["selected"]["gates"]["recoverable_retire_gates_met"] is True
 
 
 
