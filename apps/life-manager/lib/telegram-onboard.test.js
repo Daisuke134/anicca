@@ -181,6 +181,29 @@ test("expired trial claims before send and keeps the claim after Telegram receip
   assert.equal(h.unclaims.length, 0);
 });
 
+test("exact expiry timestamp enters the upgrade branch and sends once", async () => {
+  const h = trialRun({ trial_expires_at: new Date(TRIAL_NOW).toISOString() });
+  assert.equal(await onboardNudgeAll(h.opts), 1);
+  assert.deepEqual(h.order.map((entry) => entry[0]), ["claim", "send"]);
+  assert.equal(h.sent.length, 1);
+  assert.match(h.sent[0][2], /<a href="https:\/\/buy\.stripe\.com\//);
+  assert.equal(h.sent[0].result.message_id, 901);
+  assert.equal(h.unclaims.length, 0);
+});
+
+test("trial upgrade send throw releases the claim without an uncaught rejection", async () => {
+  const h = trialRun();
+  h.opts.sendMessage = async (...args) => {
+    h.order.push(["send", ...args]);
+    h.sent.push(args);
+    throw new Error("telegram unavailable");
+  };
+  assert.equal(await onboardNudgeAll(h.opts), 0);
+  assert.deepEqual(h.order.map((entry) => entry[0]), ["claim", "send", "unclaim"]);
+  assert.equal(h.unclaims.length, 1);
+  assert.deepEqual(h.errors, []);
+});
+
 test("a duplicate trial claim sends zero additional messages", async () => {
   let attempts = 0;
   const h = trialRun();
