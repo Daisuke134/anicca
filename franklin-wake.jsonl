@@ -36606,3 +36606,11 @@
 {"ts":1787926516,"wake_id":"00MTD1A98LAF131456D6A741B4","kind":"wake_error","sleep_s":60,"model":"auto"}
 {"ts":1787926590,"wake_id":"00MTD1BU4904DC06308FA54EE6","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1787926725,"wake_id":"00MTD1EQXO21636F15C4974E39","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787926866,"wake_id":"00MTD1HRPOAAD8CB0C7CE64CC0","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787927003,"wake_id":"00MTD1KP5C9604A5E748F74C32","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1787927074,"wake_id":"00MTD1M7MB34EF9B7939BA490B","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787927206,"wake_id":"00MTD1P1LS4E97799903B4478B","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: open-source DeFi yield strategy 2026 base [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates surfaced for th"}
+{"ts":1787927341,"wake_id":"00MTD1RXRK2EDD46AB717B45C7","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787927501,"wake_id":"00MTD1VD3PC21402B5AF0149EB","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1787927572,"wake_id":"00MTD1WWBB3EF1FC82FB5348EB","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1787927643,"wake_id":"00MTD1YFDL05BB4DC1BEC44542","kind":"narrate","sleep_s":120,"model":"auto"}
