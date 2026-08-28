@@ -4379,6 +4379,8 @@ bindされ、未確認founder videoをexpected blockerとして保持し`submit_
 
 ### 5.6 Order 3B — Dais個人CFO
 
+現在のMoneytree plugin readbackはowner確認済みの正しい観測として扱う。実装はO3B-00→O3B-24を上から一件ずつ進め、先頭の未完1件だけをactiveにする。
+
 - [ ] O3B-00 公式current docsとlocal secret有無を監査し、必要credential/scope/契約をDaisへ一括質問
 - [ ] O3B-01 account、transaction、position、liability schema
 - [ ] O3B-02 JPY、original currency、FX provenance
