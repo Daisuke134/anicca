@@ -57,6 +57,113 @@ development environment, not a permanent product dependency.
 This preserves one clear open-source installation and makes the public thesis concrete: consumer
 AI plus crypto rails, where useful work funds the agent instead of a permanent human subsidy.
 
+## The dream is a reproducible proof, not a population counter
+
+The dream is one open-source Life Manager instance that becomes an independent economic subject:
+it creates its own identity, earns from an outside customer, pays its own compute and shelter, stays
+solvent without a person operating it, then creates one isolated child from genuine surplus. The
+child must pass the same proof. A large number of wallets, processes, tokens, posts, or births is not
+an agent society unless the cohort can replace itself without hidden human subsidy.
+
+### One agent closes one conserved economic loop
+
+```mermaid
+flowchart LR
+  Need["Outside customer need"] --> Discover["Agent discovers one permitted opportunity"]
+  Discover --> Work["Agent works and submits once"]
+  Work --> Pay["Outside payer settles to agent wallet"]
+  Pay --> Verify["Official provider or chain verification"]
+  Verify --> Ledger["Append-only signed-net ledger"]
+  Ledger --> Reserve["Reserve + liabilities protected"]
+  Reserve --> Compute["Agent buys usable compute"]
+  Compute --> Shelter["Agent buys and operates shelter"]
+  Shelter --> Run["30-day autonomous operation"]
+  Run --> Surplus["Verified surplus and runway"]
+  Surplus --> Child["One isolated child seeded as liability"]
+  Child -. "repeat AC-1–9, AC-11, AC-12; no shortcut" .-> Discover
+
+  SelfPay["Self-pay / token emission / human top-up"] -. "revenue = 0" .-> Ledger
+  HumanCred["Human credential / KYC / approval / recovery"] -. "hard reject" .-> Discover
+```
+
+Money conservation is the spine of the architecture. For one explicit observation period
+`[t0, t1]`, every inflow and outflow is counted once:
+
+```text
+liquid_assets(t1)
+= liquid_assets(t0)
++ verified_external_revenue_net[t0,t1]
++ verified_non_revenue_funding_inflows[t0,t1]
+- verified_realized_costs[t0,t1]
+- verified_non_cost_outflows[t0,t1]  # e.g. a child seed
+
+spendable(t1)
+= liquid_assets(t1) - reserve(t1) - committed_liabilities(t1)
+```
+
+Every external amount must join an official provider or chain receipt. Internal reserve, liability,
+and child-seed movements must join the signed internal ledger and retain lineage to their source
+receipt. A model saying “complete,” a live PID, an internal marketplace counter, or a wallet balance
+without provenance never advances the proof.
+
+### A society begins only after both parent and child graduate
+
+```mermaid
+flowchart TB
+  Genesis["Genesis phase<br/>humans write code + publish immutable release + disclose seed"]
+  Parent["Parent instance<br/>own wallet · mail · GitHub · provider identity"]
+  ParentGate{"Parent completes 30 days<br/>and passes AC-1–9, AC-11, AC-12?<br/>external realized net ≥ 1.5× (compute + shelter)<br/>runway ≥ 30 days<br/>human-paid inference = 0"}
+  Birth["Create exactly one child<br/>new keys · state · wallet · proxy<br/>seed recorded as liability"]
+  ChildGate{"Child independently completes 30 days<br/>and passes its AC-1–9, AC-11, AC-12?"}
+  Cohort["AC-10 replication proof closes<br/>parent solvent · child solvent<br/>replay-zero · identity isolation"]
+  Society["First completed cohort<br/>N=1 parent, N=1 child<br/>observed R_eff = 1"]
+  Authorize["Authorize exactly one bounded next generation"]
+  Recheck{"That generation completes 30 days<br/>and independently graduates?"}
+  Scale["Record persistence; consider one later cohort"]
+  Stop["Stop, repair, or wait<br/>never hide subsidy or multiply failure"]
+
+  Genesis --> Parent --> ParentGate
+  ParentGate -->|no| Stop
+  ParentGate -->|yes| Birth --> ChildGate
+  ChildGate -->|no| Stop
+  ChildGate -->|yes| Cohort --> Society --> Authorize --> Recheck
+  Recheck -->|no / unknown| Stop
+  Recheck -->|yes| Scale
+```
+
+The first defensible result is not “infinite agents.” It is one graduated parent and one graduated
+child with complete receipts. Here `R_eff` means graduated children divided by graduated parents
+whose reproduction observation period is complete. The first parent/child cohort records
+`R_eff = 1` at `N = 1`; it does not generalize sustainability. A later generation must reproduce
+that result, and exponential growth requires `R_eff > 1` across multiple completed generations.
+
+### The one-way proof ladder prevents premature scaling
+
+```mermaid
+flowchart LR
+  A1["1 Accounting<br/>complete"] --> A2["2 Immutable owner<br/>historically complete; current HOLD"]
+  A2 --> A3["3 Outside sale<br/>complete"]
+  A3 --> A4["4 Failed spend reconciled<br/>complete"]
+  A4 --> A5["5A One new outside reward<br/>CURRENT: public gate"]
+  A5 --> A6["5B Usable paid inference"]
+  A6 --> A7["6 Paid ephemeral compute"]
+  A7 --> A8["7 Canonical main + fresh clone"]
+  A8 --> A9["8 Honest public quickstart"]
+  A9 --> A10["9 Revenue-funded VPS shelter"]
+  A10 --> A10b["10 Publish shelter proof"]
+  A10b --> A11["11 Mac/phone-off for 30 days"]
+  A11 --> A12["13 Graduate parent + publish skill"]
+  A12 --> A13["14 Create one isolated child"]
+  A13 --> A14["15 Graduate child for 30 days"]
+  A14 --> A15["16 Publish cohort + decide scale"]
+
+  A10 -. "12 optional, never gates" .-> Observer["Hosted phone observer + paid service"]
+  A5 -. "No funded, oracle-viable, positive-net row" .-> Wait["Wait and re-measure; no identity or effect"]
+```
+
+No later box may compensate for an earlier missing receipt. In particular, article publication,
+cloud deployment, trading, token rewards, or child creation cannot substitute for Order 5A.
+
 ## Acceptance criteria
 
 The objective is complete only when one production instance satisfies every row.
@@ -741,10 +848,28 @@ appends once with replay-zero. A
 self-purchase, bootstrap/top-up, internal transfer, historical-row reclassification, reserve spend,
 returned claim bond, or unverified marketplace event cannot satisfy this prerequisite.
 
+**Control-plane hold — required before the first 5A.3 effect.** Read-only 5A.2 research may continue,
+but identity creation, claim, work, or submission cannot begin while
+`ai.anicca.agent-economy-loop` exits 2 from a generic-wrapper/Agent-Economy-release mismatch and
+`:8422` is absent. Another session has rewritten the same launchd label, so the repair requires an
+explicit single owner. The owner must reinstall one matching sealed release, read back the loaded
+ProgramArguments and environment, prove both supervised children and `:8422`, then replay with zero
+new money or provider effect. This is a safety prerequisite, not permission to skip 5A.2 or advance
+to paid compute.
+
+| Current decision | Evidence needed to turn green | State |
+|---|---|---|
+| Select one earning opportunity | exact current funding + usable scope + permitted agent identity + positive expected net + official wallet payout/readback path | **red — no row passes** |
+| Restore the natural owner | one release identity across wrapper/env/process, proxy `:8422`, replay-zero, no concurrent label writer | **hold — owner conflict** |
+| Create the instance identity | selected opportunity plus restored natural owner; fresh login/recovery without human credential | locked |
+| Spend on BlockRun again | new verified outside payout leaves compute amount plus reserve spendable | locked |
+| Buy shelter | paid compute proof plus externally earned shelter budget | locked |
+| Create a child | parent passes the complete 30-day graduation gate | locked |
+
 | Order | Deliverable | Prerequisite | Completion evidence | Status |
 |---:|---|---|---|---|
 | 1 | Safe append-only accounting and isolated identity | none | P0 tests and money-safety audit | complete |
-| 2 | Immutable, namespaced Life Manager owner | 1 | sealed release, loaded process, rollback, natural replay-zero | complete |
+| 2 | Immutable, namespaced Life Manager owner | 1 | sealed release, loaded process, rollback, natural replay-zero | historically complete; live repair hold before 5A.3 |
 | 3 | One outside sale | 1-2 | canonical 0.003-USDC chain receipt and second reconcile adds zero | complete |
 | 4 | Reconcile failed BlockRun settlement and close its consumed funding | 3 | 0.002-USDC cost row, tx/log join, stale-model diagnosis, no receipt reuse | complete |
 | 5A | Earn one outside-funded bounty reward | 4 | complete 5A.1-5A.11 below in order | **in progress — 5A.1 complete; 5A.2 active; no account/application/report/claim sent** |
