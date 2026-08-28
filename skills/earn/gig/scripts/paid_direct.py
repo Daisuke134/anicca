@@ -3740,6 +3740,8 @@ def _repair_prompt(root: Path, item: Path, feedback: str, requirements_sha256: s
             "the recipient permits that channel; do not require every fact to be public before contact, and do not stop merely because "
             "one transport is unavailable. One invalid, private, unreachable, or unverified candidate is not batch exhaustion; continue "
             "to the next authorized candidate until the batch outcome is met or a complete scope-bound exhaustion receipt exists. "
+            "Do not finalize a partial batch after a command timeout or interruption; resume every unattempted candidate individually, "
+            "and require attempted count to equal intended count before any exhaustion result. "
             "Never bypass platform policy, impersonate the buyer, or invent consent. "
             "A matching reusable seller-owned browser identity may serve this project; never infer authorization from login alone. "
             f"Run every leased-browser operation through {code_root / 'skills/browser/with-browser.sh'} <identity> -- <command>, which acquires, exports CDP, "
