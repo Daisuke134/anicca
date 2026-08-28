@@ -165,6 +165,13 @@ The source of truth is `https://runware.ai/docs/models/prunaai-p-video` plus the
 `model pricing` readback. The production reference enters through its previously read-back Runware
 media UUID. No local path, credential, or invented cost enters the provider request.
 
+If a paid provider cannot start without personal funding, the zero-cost local fallback is a native
+FFmpeg motion provider. It uses the exact hashed production reference, produces one ten-second green
+screen source with ten visibly different whole-character transforms, and returns the same fenced
+quote/generate/reconcile receipt shape at USD 0. Deterministic transforms generate candidates only;
+they never score, select, or claim that a transform matches a chat intent. The model still inspects
+the rendered animations and owns all creative selection. The source is retained as non-regenerable.
+
 The animation adapter protocol is two-phase and identity-first. `quote` returns provider, model,
 stable request id, quote token, exact Decimal cost, and expiry without generating media. The loop
 binds that identity to plan/batch/character hashes, reserves cost durably, then calls `generate`
@@ -291,12 +298,13 @@ No narrower evidence closes the goal.
   fits one ten-second source video without adaptive timing. Its canonical SHA-256 and durable plan
   receipt match. Real model execution exposed and closed two prompt/validator gaps: the top-level
   JSON schema and the source-video duration bound.
-- Batch 1 has one fenced Runware task with an unknown acknowledgement. Official account readback
-  still reports USD 0.05 balance and zero requests/credits, while raw `getResponse` reports
-  `processing`; the same response for a never-submitted control UUID proves that status alone does
-  not establish task existence. The batch remains `reconcile_required`, no retry is allowed, and an
-  official support inquiry has a Gmail sent-readback receipt. No Creators Market submission, review,
-  release, public product, sale, payout, or bank effect has occurred.
+- The fenced Runware batch 1 task is authoritatively no-effect. Official `getTaskDetails` archives
+  the exact request and terminal `videoInferenceInsufficientCredits` response with no generation
+  data or cost; the dashboard independently reads `Failed 402`. Runware requires a paid invoice or
+  at least USD 5 credit for video inference, so personal funding is not used. One free LTX ZeroGPU
+  source preserved identity and green background but visual inspection found materially duplicate
+  frames, so it is retained as rejection evidence and not converted into candidates. No Creators
+  Market submission, review, release, public product, sale, payout, or bank effect has occurred.
 
 ### Money truth
 
@@ -306,10 +314,9 @@ do not count as money.
 
 ### Current blockers to revenue
 
-1. Batch 1 task existence, terminal state, and charge remain officially unresolved. The Runware
-   balance and usage remain USD 0.05 / zero, but provider polling cannot distinguish this task from
-   an unknown UUID. Official support confirmation is pending; retry remains fenced. Later personal
-   funding must obey the money-safety boundary.
+1. Runware video generation requires a paid invoice or USD 5 minimum credit. Personal funding is not
+   authorized for this effect, so batch 1 moves to the zero-cost native FFmpeg provider. The rejected
+   Runware and LTX attempts remain durable evidence and are never retried.
 2. No authenticated LINE Creators Market browser session or dedicated profile exists, and no LINE
    credential entry is configured in the private credential SSOT.
 
