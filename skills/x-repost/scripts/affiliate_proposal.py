@@ -491,7 +491,7 @@ def revise_payload_for_raw_limit(
         copy = read_json(copy_path)
         candidate = copy.get("text")
         extras = {key: value for key, value in copy.items() if key not in {"text", "claims"}}
-        if copy.get("claims") not in (None, []) or any(value is not None for value in extras.values()):
+        if copy.get("claims") not in (None, []) or any(value not in (None, []) for value in extras.values()):
             raise ValueError("model revision contract invalid")
         text_candidates = (candidate,)
     elif mode == "QUOTE_CONTROL_POST":
