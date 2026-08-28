@@ -80,7 +80,7 @@ Add the manifest definition before `marketplace-application`:
 
 Run the RED command plus `apps/life-manager/scripts/runtime-up.test.js` when dependencies are available.
 
-- [ ] **Step 5: Commit and push**
+- [x] **Step 5: Commit and push** (`f7b6853ea`)
 
 ```bash
 git add apps/life-manager/lib/general-agent-work-adapter.js \
