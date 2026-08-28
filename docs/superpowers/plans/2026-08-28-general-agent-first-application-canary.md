@@ -35,15 +35,24 @@
 
 Measured result: the provider-neutral adapter composes GA-04 with an injected bounded execution service, manifest registration is portable, production worker capability remains disabled, and focused/adjacent Node tests pass 52/52.
 
-### Task 4: Execute one live canary
+### Task 4: Execute one live canary — DONE
 
 1. Read official application history before the effect.
 2. Claim the immutable effect once and execute the bounded specialist once.
 3. On timeout/ack loss, send nothing again; reconcile official proposal history.
 4. Accept success only from an exact provider proposal/application ID represented as the canonical `ApplicationReceipt`.
 
-### Task 5: Replay zero and close
+### Task 5: Replay zero and close — DONE
 
 1. Run the same WorkItem again.
 2. Require official readback `present`, `executeOnce` count zero, and the same receipt identity.
 3. Persist the private receipt/evidence, update only GA-10 to DONE, fetch, commit, push, and read back PR #3018.
+
+## Completion record
+
+- Opportunity: Lancers `5593059`, AI use allowed, JPY 600, online-only 200-character writing task.
+- Effect identity: `marketplace-application:v1:7314f1edb71008e78bbc65b432e505af57f429bda39d1389ae7c52050c90c53a`.
+- Official application ID: `27861812`, confirmed by finish page, direct proposal page, mypage row, and own-proposal card.
+- Canonical ledger: Lancers `application_verified` 32 → 33 after the first effect.
+- Replay: official state `present`, `executeOnce=0`, `effect_started=false`, ledger insert false, verified count remains 33.
+- Private evidence root: `~/.local/state/anicca/lancers/general-agent/ga10/`, files mode 600. No Lancers official permission contact or reply monitoring is part of this flow.
