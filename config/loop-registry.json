@@ -1138,7 +1138,7 @@
       },
       "domain": "earn",
       "effect_class": "publish",
-      "entrypoint": "skills/earn/lancers/scripts/storefront_offer.py",
+      "entrypoint": "runtime/loop/entry_dispatch.py",
       "label": "ai.anicca.lancers-revenue-storefront",
       "log_root": "~/.local/state/anicca/lancers/logs",
       "provider_route": "deterministic",
