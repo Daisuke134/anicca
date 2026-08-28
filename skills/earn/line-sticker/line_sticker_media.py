@@ -729,20 +729,22 @@ def _durable_batch_records(work_dir: Path, motions: list[dict[str, object]], ffm
             continue
         if type(value) is dict and value.get("motion_id") in expected:
             records.append(value)
-    if {str(value.get("motion_id")) for value in records} == expected and len(records) == MOTIONS_PER_BATCH:
-        for record in records:
-            if record.get("validation_errors"):
-                if record.get("candidate_sha256") and (not _candidate_path(record, candidates_root=work_dir / "candidates").is_file() or _sha256_file(_candidate_path(record, candidates_root=work_dir / "candidates")) != record["candidate_sha256"]): raise MediaError("candidate_replay_invalid")
-                continue
-            if not _is_hash(record.get("candidate_sha256")): raise MediaError("candidate_replay_invalid")
+    if {str(value.get("motion_id")) for value in records} != expected or len(records) != MOTIONS_PER_BATCH:
+        return []
+    for record in records:
+        if record.get("validation_errors") != [] or not _is_hash(record.get("candidate_sha256")):
+            return []
+        try:
             path = _candidate_path(record, candidates_root=work_dir / "candidates")
-            if not path.is_file() or _sha256_file(path) != record["candidate_sha256"]:
-                raise MediaError("candidate_replay_invalid")
-            parsed, errors = _validate_candidate(path, ffmpeg=ffmpeg)
-            if errors or parsed != record.get("parsed"):
-                raise MediaError("candidate_replay_invalid")
-        return records
-    return []
+            metadata = path.lstat()
+        except (MediaError, OSError):
+            return []
+        if not stat.S_ISREG(metadata.st_mode) or _sha256_file(path) != record["candidate_sha256"]:
+            return []
+        parsed, errors = _validate_candidate(path, ffmpeg=ffmpeg)
+        if errors or parsed != record.get("parsed"):
+            return []
+    return records
 
 
 def _convert_batch(
@@ -905,10 +907,20 @@ def _completed_batch(state: dict[str, object], batch: int, motions: list[dict[st
     _generation(receipt, quote, motions)
     source = Path(str(receipt.get("video_path", "")))
     if not source.is_absolute(): source = work_dir / source
-    if not source.is_file() or _sha256_file(source) != receipt.get("video_sha256"):
-        records = _durable_batch_records(work_dir, motions, ffmpeg)
-        if not receipt.get("regenerable") or len(records) != MOTIONS_PER_BATCH or any(record.get("provider_request_id") != receipt["request_id"] or record.get("provider") != receipt["provider"] or record.get("model") != receipt["model"] or record.get("source_sha256") != receipt["video_sha256"] for record in records):
+    try:
+        metadata = source.lstat()
+    except FileNotFoundError:
+        metadata = None
+    except OSError as exc:
+        raise MediaError("completed_receipt_invalid") from exc
+    if metadata is not None:
+        if not stat.S_ISREG(metadata.st_mode) or _sha256_file(source) != receipt.get("video_sha256"):
             raise MediaError("completed_receipt_invalid")
+        return receipt
+    records = _durable_batch_records(work_dir, motions, ffmpeg)
+    segments = {segment["motion_id"]: segment for segment in receipt["segments"]}
+    if not receipt.get("regenerable") or len(records) != MOTIONS_PER_BATCH or any(record.get("provider_request_id") != receipt["request_id"] or record.get("provider") != receipt["provider"] or record.get("model") != receipt["model"] or record.get("source_sha256") != receipt["video_sha256"] or record.get("segment") != segments.get(record.get("motion_id")) for record in records):
+        raise MediaError("completed_receipt_invalid")
     return receipt
 
 

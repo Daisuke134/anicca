@@ -406,6 +406,8 @@ class LineStickerValidatorTests(unittest.TestCase):
             "provider": lambda g: g["batches"]["1"].update({"provider": "other"}),
             "top_provider": lambda g: g.update({"provider": "other"}),
             "wrong_batch_source": lambda g: (g["batches"]["2"].update({"source_sha256": "b" * 64}), g["candidate_bindings"]["01.png"].update({"source_sha256": "b" * 64})),
+            "unsafe_motion_id": lambda g: g["candidate_bindings"]["01.png"].update({"motion_id": "junk-01", "segment": {"motion_id": "junk-01", "start_ms": 0, "end_ms": 500}}),
+            "unpadded_motion_id": lambda g: g["candidate_bindings"]["01.png"].update({"motion_id": "motion-1", "segment": {"motion_id": "motion-1", "start_ms": 0, "end_ms": 500}}),
         }
         for label, mutate in variants.items():
             with self.subTest(label=label):
@@ -416,6 +418,17 @@ class LineStickerValidatorTests(unittest.TestCase):
                 generation["generation_sha256"] = _sha256(json.dumps(generation, sort_keys=True, separators=(",", ":")).encode())
                 (self.root / "provenance.json").write_text(json.dumps(provenance, sort_keys=True) + "\n")
                 self.assertIn("provenance_invalid", self._validate()["errors"])
+
+    def test_non_mapping_providers_are_validation_errors(self) -> None:
+        for providers in (None, [], "provider", 1):
+            with self.subTest(providers=providers):
+                provenance_path = self.root / "provenance.json"
+                provenance = json.loads(provenance_path.read_text())
+                provenance["providers"] = providers
+                provenance_path.write_text(json.dumps(provenance) + "\n")
+                self.assertIn("provenance_invalid", self._validate()["errors"])
+                self.tearDown()
+                self.setUp()
 
     def test_parse_png_reports_apng_fields_and_chunk_hashes(self) -> None:
         parsed = MODULE.parse_png(self.root / "01.png")

@@ -583,7 +583,7 @@ def _provenance_errors(provenance: object, file_hashes: dict[str, str]) -> list[
             if not isinstance(batch, dict) or set(batch) != {"quote_request_id", "generation_request_id", "quote_token", "provider", "model", "reserved_cost_usd", "actual_cost_usd", "source_sha256", "regenerable"} or not all(type(batch.get(key)) is str and batch[key] for key in ("quote_request_id", "generation_request_id", "quote_token", "provider", "model", "reserved_cost_usd", "actual_cost_usd")) or not isinstance(batch.get("regenerable"), bool) or not isinstance(batch.get("source_sha256"), str) or not HEX64.fullmatch(str(batch["source_sha256"])):
                 errors.append("provenance_invalid")
                 break
-            if batch.get("generation_request_id") != batch.get("quote_request_id") or batch.get("provider") != generation.get("provider") or batch.get("model") != generation.get("model") or batch.get("provider") != providers.get("animation"):
+            if not isinstance(providers, dict) or batch.get("generation_request_id") != batch.get("quote_request_id") or batch.get("provider") != generation.get("provider") or batch.get("model") != generation.get("model") or batch.get("provider") != providers.get("animation"):
                 errors.append("provenance_invalid")
                 break
             try:
@@ -599,12 +599,10 @@ def _provenance_errors(provenance: object, file_hashes: dict[str, str]) -> list[
         if format(reserved_total, "f") != generation.get("reserved_cost_usd") or format(actual_total, "f") != generation.get("actual_cost_usd"):
             errors.append("provenance_invalid")
         for name, binding in bindings.items():
-            try:
-                motion_number = int(str(binding.get("motion_id", "") if isinstance(binding, dict) else "").split("-")[1])
-                expected_batch = str((motion_number - 1) // 10 + 1)
-            except (IndexError, ValueError):
-                expected_batch = ""
-            if not isinstance(binding, dict) or set(binding) != {"motion_id", "source_sha256", "segment", "candidate_sha256", "conversion_argv_sha256", "asset_sha256"} or expected_batch not in batches or not isinstance(binding.get("motion_id"), str) or not binding["motion_id"] or any(not isinstance(binding.get(key), str) or not HEX64.fullmatch(str(binding[key])) for key in ("source_sha256", "candidate_sha256", "conversion_argv_sha256", "asset_sha256")) or (name in file_hashes and (binding.get("asset_sha256") != file_hashes[name] or binding.get("candidate_sha256") != file_hashes[name])) or binding.get("source_sha256") != batches[expected_batch].get("source_sha256") or not isinstance(binding.get("segment"), dict) or set(binding["segment"]) != {"motion_id", "start_ms", "end_ms"} or binding["segment"].get("motion_id") != binding["motion_id"] or type(binding["segment"].get("start_ms")) is not int or type(binding["segment"].get("end_ms")) is not int or binding["segment"]["start_ms"] < 0 or binding["segment"]["end_ms"] <= binding["segment"]["start_ms"]:
+            motion_id = binding.get("motion_id") if isinstance(binding, dict) else None
+            matched = re.fullmatch(r"motion-(0[1-9]|[1-5][0-9]|60)", motion_id) if isinstance(motion_id, str) else None
+            expected_batch = str((int(matched.group(1)) - 1) // 10 + 1) if matched else ""
+            if not isinstance(binding, dict) or set(binding) != {"motion_id", "source_sha256", "segment", "candidate_sha256", "conversion_argv_sha256", "asset_sha256"} or expected_batch not in batches or not isinstance(motion_id, str) or not matched or any(not isinstance(binding.get(key), str) or not HEX64.fullmatch(str(binding[key])) for key in ("source_sha256", "candidate_sha256", "conversion_argv_sha256", "asset_sha256")) or (name in file_hashes and (binding.get("asset_sha256") != file_hashes[name] or binding.get("candidate_sha256") != file_hashes[name])) or binding.get("source_sha256") != batches[expected_batch].get("source_sha256") or not isinstance(binding.get("segment"), dict) or set(binding["segment"]) != {"motion_id", "start_ms", "end_ms"} or binding["segment"].get("motion_id") != motion_id or type(binding["segment"].get("start_ms")) is not int or type(binding["segment"].get("end_ms")) is not int or binding["segment"]["start_ms"] < 0 or binding["segment"]["end_ms"] <= binding["segment"]["start_ms"]:
                 errors.append("provenance_invalid")
                 break
     return sorted(set(errors))

@@ -134,9 +134,10 @@ class LineStickerMediaTests(unittest.TestCase):
         self.assertEqual(replay["reason"], "replayed")
         self.assertEqual((self.root / "model.count").read_text(), "1")
         payload = json.loads((self.work / "plan.json").read_text())
-        payload["motions"][0]["motion_id"] = "../../unsafe"
-        with self.assertRaisesRegex(MODULE.MediaError, "motion_id_invalid"):
-            MODULE._validate_plan_model({key: payload[key] for key in ("version", "mode", "set_id", "character_id", "character_anchors", "motions")}, set_id="set-1", character_id="char-1")
+        for unsafe_id in ("../../unsafe", "junk-01", "motion-1"):
+            payload["motions"][0]["motion_id"] = unsafe_id
+            with self.subTest(unsafe_id=unsafe_id), self.assertRaisesRegex(MODULE.MediaError, "motion_id_invalid"):
+                MODULE._validate_plan_model({key: payload[key] for key in ("version", "mode", "set_id", "character_id", "character_anchors", "motions")}, set_id="set-1", character_id="char-1")
         (self.work / "plan-receipt.json").unlink()
         self._plan()
         self.assertEqual((self.root / "model.count").read_text(), "1")
@@ -276,6 +277,65 @@ class LineStickerMediaTests(unittest.TestCase):
         provenance["generation"]["plan_sha256"] = "0" * 64
         (output / "provenance.json").write_text(json.dumps(provenance))
         self.assertIn("provenance_invalid", MODULE.line_sticker.validate_package(output, MODULE_ROOT / "official-policy.json")["errors"])
+
+    def test_completed_batch_source_and_candidate_fallback_are_exact(self) -> None:
+        self._plan()
+        provider = _provider(self.root / "provider.py", _video(self.root))
+        MODULE.convert(self.work / "plan.json", [sys.executable, str(provider)], self.work, "1.00", "ffmpeg", "ffprobe")
+        state = json.loads((self.work / "convert-state.json").read_text())
+        plan = json.loads((self.work / "plan.json").read_text())
+        motions = MODULE._batch_motions(plan, 1)
+        source = Path(state["batches"]["1"]["receipt"]["video_path"])
+        source_bytes = source.read_bytes()
+        candidate_records = {
+            path: path.read_bytes()
+            for path in (self.work / "candidates").glob("motion-*.json")
+        }
+
+        for path in candidate_records:
+            record = json.loads(path.read_text())
+            record["source_sha256"] = "0" * 64
+            path.write_text(json.dumps(record))
+        forged = json.loads(json.dumps(state))
+        forged["batches"]["1"]["receipt"]["video_sha256"] = "0" * 64
+        with self.assertRaisesRegex(MODULE.MediaError, "completed_receipt_invalid"):
+            MODULE._completed_batch(forged, 1, motions, self.work, plan, "ffmpeg")
+        for path, contents in candidate_records.items():
+            path.write_bytes(contents)
+
+        source.unlink()
+        self.assertTrue(MODULE._completed_batch(state, 1, motions, self.work, plan, "ffmpeg"))
+
+        def reject_candidate(mutator: object) -> None:
+            path = self.work / "candidates" / "motion-01.json"
+            record = json.loads(path.read_text())
+            mutator(record)
+            path.write_text(json.dumps(record))
+            with self.assertRaisesRegex(MODULE.MediaError, "completed_receipt_invalid"):
+                MODULE._completed_batch(state, 1, motions, self.work, plan, "ffmpeg")
+            path.write_bytes(candidate_records[path])
+
+        reject_candidate(lambda record: record.update({"validation_errors": ["candidate_png_invalid"]}))
+        reject_candidate(lambda record: record.update({"segment": {"motion_id": "motion-01", "start_ms": 1, "end_ms": 500}}))
+
+        candidate = self.work / "candidates" / "motion-01.png"
+        candidate_saved = candidate.with_suffix(".saved")
+        candidate.rename(candidate_saved)
+        candidate.symlink_to(candidate_saved)
+        with self.assertRaisesRegex(MODULE.MediaError, "completed_receipt_invalid"):
+            MODULE._completed_batch(state, 1, motions, self.work, plan, "ffmpeg")
+        candidate.unlink()
+        candidate_saved.rename(candidate)
+
+        source.write_bytes(source_bytes)
+        source.unlink()
+        source.symlink_to(candidate)
+        with self.assertRaisesRegex(MODULE.MediaError, "completed_receipt_invalid"):
+            MODULE._completed_batch(state, 1, motions, self.work, plan, "ffmpeg")
+        source.unlink()
+        source.mkdir()
+        with self.assertRaisesRegex(MODULE.MediaError, "completed_receipt_invalid"):
+            MODULE._completed_batch(state, 1, motions, self.work, plan, "ffmpeg")
 
 
 if __name__ == "__main__":
