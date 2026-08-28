@@ -184,7 +184,7 @@ def _write_provenance(root: Path) -> None:
         "reserved_cost_usd": "0.06",
         "actual_cost_usd": "0.06",
         "batches": {
-            str(batch): {"quote_request_id": f"quote-{batch}", "generation_request_id": f"generate-{batch}", "quote_token": f"token-{batch}", "provider": "fixture-provider", "model": "fixture-model", "reserved_cost_usd": "0.01", "actual_cost_usd": "0.01", "source_sha256": digest, "regenerable": True}
+            str(batch): {"quote_request_id": f"quote-{batch}", "generation_request_id": f"quote-{batch}", "quote_token": f"token-{batch}", "provider": "fixture-provider", "model": "fixture-model", "reserved_cost_usd": "0.01", "actual_cost_usd": "0.01", "source_sha256": digest, "regenerable": True}
             for batch in range(1, 7)
         },
         "candidate_bindings": {
@@ -200,7 +200,7 @@ def _write_provenance(root: Path) -> None:
                 "set_id": "set-20260828-001",
                 "character_id": "char-001",
                 "rights": "original_ai_generated",
-                "providers": {"image": "openai", "animation": "runway"},
+                "providers": {"image": "openai", "animation": "fixture-provider"},
                 "prompt_hashes": prompt_hashes,
                 "assets": assets,
                 "generation": generation,
@@ -216,6 +216,15 @@ def _write_provenance(root: Path) -> None:
 def _refresh_package(root: Path) -> None:
     _write_provenance(root)
     _write_zip(root)
+
+
+def _rehash_generation(root: Path) -> dict[str, object]:
+    provenance = json.loads((root / "provenance.json").read_text())
+    generation = provenance["generation"]
+    generation.pop("generation_sha256")
+    generation["generation_sha256"] = _sha256(json.dumps(generation, sort_keys=True, separators=(",", ":")).encode())
+    (root / "provenance.json").write_text(json.dumps(provenance, sort_keys=True) + "\n")
+    return provenance
 
 
 def _make_package(root: Path) -> Path:
@@ -388,6 +397,25 @@ class LineStickerValidatorTests(unittest.TestCase):
         self.assertRegex(first["package_sha256"], r"^[0-9a-f]{64}$")
         self.assertEqual(first, second)
         self.assertEqual([entry["name"] for entry in first["files"]], sorted(PNG_NAMES))
+
+    def test_generation_batch_contract_rejects_cost_identity_and_source_mismatches(self) -> None:
+        variants = {
+            "negative": lambda g: g["batches"]["1"].update({"actual_cost_usd": "-1"}),
+            "overrun": lambda g: g["batches"]["1"].update({"actual_cost_usd": "0.02"}),
+            "request": lambda g: g["batches"]["1"].update({"generation_request_id": "other"}),
+            "provider": lambda g: g["batches"]["1"].update({"provider": "other"}),
+            "top_provider": lambda g: g.update({"provider": "other"}),
+            "wrong_batch_source": lambda g: (g["batches"]["2"].update({"source_sha256": "b" * 64}), g["candidate_bindings"]["01.png"].update({"source_sha256": "b" * 64})),
+        }
+        for label, mutate in variants.items():
+            with self.subTest(label=label):
+                _refresh_package(self.root)
+                provenance = json.loads((self.root / "provenance.json").read_text())
+                mutate(provenance["generation"])
+                generation = provenance["generation"]; generation.pop("generation_sha256")
+                generation["generation_sha256"] = _sha256(json.dumps(generation, sort_keys=True, separators=(",", ":")).encode())
+                (self.root / "provenance.json").write_text(json.dumps(provenance, sort_keys=True) + "\n")
+                self.assertIn("provenance_invalid", self._validate()["errors"])
 
     def test_parse_png_reports_apng_fields_and_chunk_hashes(self) -> None:
         parsed = MODULE.parse_png(self.root / "01.png")
