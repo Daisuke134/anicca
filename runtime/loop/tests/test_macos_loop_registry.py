@@ -57,6 +57,7 @@ class MacosLoopRegistryTest(unittest.TestCase):
             if row["installed"] and row["owner"] == "life-manager"
             and row["launchd_state"].startswith("loaded")
         }
+        expected -= set(registry.get("retired_labels", []))
         self.assertEqual({row["label"] for row in registry["loops"].values()}, expected)
         self.assertEqual(registry["loops"]["pm-live-trade"]["effect_class"], "trade")
         self.assertEqual(registry["loops"]["life-manager-payout"]["effect_class"], "money")

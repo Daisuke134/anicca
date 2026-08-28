@@ -2447,22 +2447,6 @@
       "provider_route": "deterministic",
       "state_root": "~/.anicca"
     },
-    "tier1-remediate": {
-      "cadence": {
-        "start_interval_seconds": 900
-      },
-      "cleanup": {
-        "max_age_days": 14,
-        "max_runs": 100
-      },
-      "domain": "system",
-      "effect_class": "none",
-      "entrypoint": "skills/anicca-core/scripts/tier1-remediate.sh",
-      "label": "ai.anicca.tier1-remediate",
-      "log_root": "~/.local/state/life-manager/tier1-remediate/logs",
-      "provider_route": "shared-agent-runner",
-      "state_root": "~/.local/state/life-manager/tier1-remediate"
-    },
     "tier2-agent-diagnose": {
       "cadence": {
         "start_interval_seconds": 3600
@@ -3102,6 +3086,7 @@
     "ai.anicca.slack-metrics-poller",
     "ai.anicca.sol-trade-earning-healthcheck",
     "ai.anicca.sync-memory",
+    "ai.anicca.tier1-remediate",
     "ai.anicca.watercolor-jp-evening",
     "ai.anicca.watercolor-jp-morning",
     "ai.anicca.watercolor-jp-noon",
