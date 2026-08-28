@@ -35,11 +35,15 @@ model narration, and local success without the named readback are not PASS.
   `hard_prohibited / music_or_audio_production` with an exact listing excerpt, while music-service
   software with no audio production `9000002` remained `submit_required`; music-event research
   requiring an in-person visit `9000003` remained `hard_prohibited / physical_or_onsite`.
-- [ ] `AM02` Deploy the policy through the normal immutable Apply release boundary.
-  PASS = the change is merged to pushed main, a read-only immutable release contains the exact policy,
-  loaded Apply argv points to that release, one natural pass reaches a terminal result from the same
-  SHA, and subsequent candidate decisions use the new prompt. Do not submit a synthetic or otherwise
-  ineligible application solely to prove this rule.
+- [x] `AM03` Stop every future Reply action to Studio BlackWave.
+  PASS = the official counterparty readback binds Studio BlackWave to talkroom `10131237`; Reply
+  prompt v28 receives that verified thread ID and always returns `stop_contact / stop`, never reply,
+  estimate or clarify. Existing messages are not resent or changed. Focused semantic tests pass 34/34.
+- [ ] `AM02` Deploy both prompt policies through the normal immutable release boundary.
+  PASS = the change is merged to pushed main, a read-only immutable release contains the exact Apply
+  and Reply policies, loaded owner argv points to that release, one natural pass per affected owner
+  reaches a terminal result from the same SHA, and subsequent decisions use the new prompts. Do not
+  submit a synthetic application or send a synthetic reply solely to prove either rule.
 
 ### Manledge closure — account-owner priority override
 
