@@ -242,7 +242,7 @@ authorization、dedupe、公式receipt、money truthを置き換えない。
 | 18 | CTX-08E terminal receipt and replay-zero | TODO | official completion PNG、Telegram photo message ID、application dossier SHA-256、ledger resultを同じdigest chainへ束ね、再wakeでexternal effect 0をreadbackしてCTX-08 DONE |
 | 19 | GA-01 existing-core and OSS code map | DONE | fixed commit、license、entrypoint、call graph、state、recovery、effect/readbackを上表へ固定し、reuse/rejectを確定 |
 | 20 | GA-02 one Goal to WorkItem | DONE | commit `31323bd43`。active explicit Goalをimmutable・reference-only・effect-free WorkItemへ変換し、goal本文とprovenanceをjobへ保存しない。focused/adjacent Node tests 19/19 PASS、新graph engine 0 |
-| 21 | GA-03 one capability manifest | TODO | 最初の許可済みsiteについてauthorization、transport、human requirement、readbackだけをdata化。margin/ranking 0 |
+| 21 | GA-03 one capability manifest | DONE | commit `440fe882a`。既存public catalogueへLancers application能力一件を追加し、state=`unknown`、transport=`cloak_browser`、private receipt必須、human-only ceremony、`application_receipt` readbackを固定。authorization/onboarding tests 29/29 PASS、margin/ranking 0 |
 | 22 | GA-04 shared effect and receipt kernel | TODO | 既存runtime jobとreceipt contractをつなぎ、pre-readback → single execution → post-readback → replay-zeroを一件実証 |
 | 23 | GA-05 bounded specialist runtime | TODO | existing agent-runnerで一仕事・step/time limit・heartbeat/cancel・structured resultを共通化 |
 | 24 | GA-10 first authorized-site canary | TODO | provider固有brainを追加せず一件のofficial ApplicationReceiptとreplay effect 0を閉じる |

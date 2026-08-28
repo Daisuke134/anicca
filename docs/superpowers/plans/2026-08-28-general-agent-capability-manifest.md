@@ -29,7 +29,7 @@
 - Consumes: existing public catalogue version 1 and private `authorize(provider, account, action, transport, now)` runtime contract.
 - Produces: `catalogue["providers"]["lancers"]["capability"]` with an exact closed JSON shape.
 
-- [ ] **Step 1: Extend the failing public-catalogue contract test**
+- [x] **Step 1: Extend the failing public-catalogue contract test**
 
 In `test_public_catalogue_defaults_every_action_to_unknown`, add `"lancers"` to the expected provider set, then append:
 
@@ -51,7 +51,7 @@ In `test_public_catalogue_defaults_every_action_to_unknown`, add `"lancers"` to 
     }
 ```
 
-- [ ] **Step 2: Run the focused test and verify RED**
+- [x] **Step 2: Run the focused test and verify RED**
 
 Run:
 
@@ -62,7 +62,7 @@ PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 -m pytest -q \
 
 Expected: FAIL because the provider set lacks `lancers`.
 
-- [ ] **Step 3: Add the exact manifest entry**
+- [x] **Step 3: Add the exact manifest entry**
 
 Add this provider beside the other public entries in
 `skills/earn/gig/config/provider-capabilities.public.json`:
@@ -85,7 +85,7 @@ Add this provider beside the other public entries in
     },
 ```
 
-- [ ] **Step 4: Run focused authorization tests and JSON validation**
+- [x] **Step 4: Run focused authorization tests and JSON validation**
 
 Run:
 
@@ -98,7 +98,7 @@ git diff --check
 
 Expected: all focused tests PASS and both validation commands exit 0.
 
-- [ ] **Step 5: Commit and push the manifest slice**
+- [x] **Step 5: Commit and push the manifest slice**
 
 ```bash
 git add skills/earn/gig/config/provider-capabilities.public.json \
