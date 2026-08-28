@@ -18,7 +18,7 @@
 - [x] Add a failing contract that the default runner resolves inside the release and contains no external checkout path.
 - [x] Copy the working legacy wrapper and schema, changing only runner/schema resolution to the immutable release tree.
 - [x] Run tier-2 focused tests, shell syntax, agent-runner schema/evidence tests, OSS changed-line scan, and `git diff --check`.
-- [ ] Push the source change without touching the loaded label or legacy checkout.
+- [x] Push the source change without touching the loaded label or legacy checkout.
 - [ ] After merge, cut a main-derived immutable release, apply only `tier2-agent-diagnose`, retain the prior plist/release as rollback, and require a natural terminal pass from the new SHA.
 - [ ] Read back loaded argv, release SHA, state path, external legacy path use 0, rollback receipt, and only then close GA-13A.
 
@@ -28,3 +28,5 @@
 - Historical evidence literals and verifier deny-patterns are not runtime dependencies and are not deleted to improve counts.
 
 Source verification: tier-2 contract PASS; canonical agent-runner schema/evidence 8/8; shell/JSON syntax PASS; developer-checkout references 0. The existing `.openclaw` state reference remains a separately measured OSS finding.
+
+Source delivery: commit `f0cecf7a2`; PR #3018 head-matched, open, and mergeable. Production remains on immutable `d9021490…` with latest natural terminal `pass`.
