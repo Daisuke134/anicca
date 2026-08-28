@@ -116,7 +116,8 @@ class LoopCleanupTest(unittest.TestCase):
                 "runtime.loop.central_cleanup.subprocess.run", return_value=completed,
             ) as run:
                 self.assertEqual(open_release_roots(releases), {entry.parents[1].resolve()})
-            self.assertEqual(run.call_args.args[0], ["lsof", "-Fn"])
+            run.assert_called_once_with(
+                ["lsof", "-Fn"], capture_output=True, text=True, timeout=30)
 
     def _run_terminal_event(self, exit_code: int) -> dict:
         with tempfile.TemporaryDirectory() as directory:
