@@ -4054,9 +4054,17 @@ def _remote_wait_before_decision(root: Path, item: dict[str, Any],
                                  now: float | None = None) -> bool:
     feedback = _text(item.get("buyer_feedback_sha256"))
     intent = _load(root / "delivery" / "paid-remote-intent.json")
-    result = _load(root / "delivery" / "paid-remote-result.json")
+    result_path = root / "delivery" / "paid-remote-result.json"
+    result = _load(result_path)
     _, semantic_sha256 = _semantic_effect_contract(root)
     if _require_semantic_effect_binding(root, intent, result) != semantic_sha256:
+        return False
+    requirements_sha256 = paid_remote_result.requirements_digest(root, feedback)
+    policy_path, _policy, _policy_sha256 = _file_operator_policy(
+        root, feedback, requirements_sha256,
+    )
+    if (policy_path is not None
+            and policy_path.stat().st_mtime_ns > result_path.stat().st_mtime_ns):
         return False
     return _remote_wait_is_fresh(
         root, feedback, _text(intent.get("desired_state_sha256")), now=now,

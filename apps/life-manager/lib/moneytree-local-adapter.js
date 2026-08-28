@@ -23,7 +23,26 @@ function normalizeAccounts(toolResult, observedAt = new Date().toISOString()) {
   }));
 }
 
-function readAccounts({ codexBin = "codex", cwd = process.cwd(), timeoutMs = 20_000 } = {}) {
+function normalizeTransactions(toolResult) {
+  const rows = toolResult?.structuredContent?.data?.transactions;
+  if (!Array.isArray(rows)) throw new Error("Moneytree transaction data is unavailable");
+  return rows.map((row) => {
+    const key = `${row.account_id}:${row.id}`;
+    const transaction = {
+      id: `moneytree:${createHash("sha256").update(key).digest("hex").slice(0, 24)}`,
+      source_ref: `moneytree:${createHash("sha256").update(`source:${key}`).digest("hex")}`,
+      account_id: `moneytree:${createHash("sha256").update(String(row.account_id)).digest("hex").slice(0, 24)}`,
+      amount_jpy: row.amount_in_base ?? row.amount,
+      occurred_at: row.date,
+      merchant: row.description,
+      category: row.category_name || "未分類",
+    };
+    if (row.category_name === "振替") transaction.transfer_id = `moneytree:${row.id}`;
+    return validateFinancialRecord("transaction", transaction);
+  });
+}
+
+function callTool(tool, args, { codexBin = "codex", cwd = process.cwd(), timeoutMs = 20_000 } = {}) {
   return new Promise((resolve, reject) => {
     const child = spawn(codexBin, ["app-server", "--stdio"], { cwd, stdio: ["pipe", "pipe", "ignore"] });
     let buffer = "";
@@ -56,14 +75,14 @@ function readAccounts({ codexBin = "codex", cwd = process.cwd(), timeoutMs = 20_
             params: {
               threadId: message.result.thread.id,
               server: "codex_apps",
-              tool: "moneytree.show-accounts",
-              arguments: { locale: "ja" },
+              tool,
+              arguments: args,
             },
           });
         } else if (message.id === 3) {
           const result = message.result;
           if (result?.isError) return finish(new Error("Moneytree tool returned an error"));
-          return finish(null, normalizeAccounts(result));
+          return finish(null, result);
         }
       }
     });
@@ -75,6 +94,16 @@ function readAccounts({ codexBin = "codex", cwd = process.cwd(), timeoutMs = 20_
   });
 }
 
+function readAccounts(options = {}) {
+  return callTool("moneytree.show-accounts", { locale: "ja" }, options).then((result) => normalizeAccounts(result));
+}
+
+function readTransactions({ startDate, endDate, limit = 1000, ...options }) {
+  return callTool("moneytree.show-transactions", {
+    locale: "ja", start_date: startDate, end_date: endDate, limit, sort_key: "date", sort_order: "desc",
+  }, options).then((result) => normalizeTransactions(result));
+}
+
 if (require.main === module) {
   readAccounts().then((accounts) => {
     process.stdout.write(`${JSON.stringify({ connected: true, accounts: accounts.length })}\n`);
@@ -84,4 +113,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { normalizeAccounts, readAccounts };
+module.exports = { normalizeAccounts, normalizeTransactions, readAccounts, readTransactions };

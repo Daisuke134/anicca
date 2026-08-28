@@ -545,6 +545,29 @@ def test_current_wait_is_reused_before_semantic_decision(tmp_path):
     ) is True
 
 
+def test_newer_exact_cycle_operator_policy_invalidates_remote_wait(tmp_path):
+    paid = load("paid_direct")
+    root, feedback, _digest = blocked_project(tmp_path)
+    requirements_sha = paid.paid_remote_result.requirements_digest(root, feedback)
+    result = root / "delivery/paid-remote-result.json"
+    policy = root / "context/paid-file-operator-policy.json"
+    write_json(policy, {
+        "version": 1,
+        "authorized_by": "account_owner",
+        "request_id": root.name,
+        "buyer_feedback_sha256": feedback,
+        "requirements_sha256": requirements_sha,
+        "directives": ["Reconcile newly verified project evidence."],
+    })
+    policy.touch()
+    result.touch()
+    policy.touch()
+
+    assert paid._remote_wait_before_decision(
+        root, {"buyer_feedback_sha256": feedback}, now=None,
+    ) is False
+
+
 def test_paid_project_executor_runs_different_owners_in_parallel():
     paid = load("paid_direct")
     active = 0
