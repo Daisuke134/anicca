@@ -23,4 +23,20 @@ function summarizeTransactions(transactions) {
   return { income_jpy: incomeJpy, spending_jpy: spendingJpy, net_jpy: incomeJpy - spendingJpy, excluded_transfer_rows: excludedTransferRows };
 }
 
-module.exports = { normalizeTransaction, summarizeTransactions };
+function detectSubscriptions(transactions) {
+  const groups = new Map();
+  for (const input of transactions) {
+    const row = normalizeTransaction(input);
+    if (row.transfer_id || row.amount_jpy >= 0 || !row.merchant || !row.occurred_at) continue;
+    const amount = Math.abs(row.amount_jpy);
+    const key = `${row.merchant}\u0000${amount}`;
+    const group = groups.get(key) || { merchant: row.merchant, amount_jpy: amount, months: new Set() };
+    group.months.add(String(row.occurred_at).slice(0, 7));
+    groups.set(key, group);
+  }
+  return [...groups.values()]
+    .filter((group) => group.months.size >= 2)
+    .map((group) => ({ merchant: group.merchant, amount_jpy: group.amount_jpy, months: [...group.months].sort(), usage_status: "unknown" }));
+}
+
+module.exports = { detectSubscriptions, normalizeTransaction, summarizeTransactions };
