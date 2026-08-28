@@ -337,43 +337,40 @@ actionable repair count.
 Ordered operational TODO:
 
 Completed evidence: `affiliate-browser` is repaired by PRs #2946, #2947, and
-#2949. It is not part of the remaining queue.
+#2949. Account 1 primary/Account 2 pre-effect fallback is merged by PR #2983
+and deployed at `3d69c74b`; real controlled reads prove `acct1` success and
+`acct1 quota -> acct2 success` with effect 0. Obsolete `hf-gig-release-watch`
+is retired by PR #2986, not loaded, not installed, and has no production
+recreator. Completed items are not part of the remaining queue.
 
-1. ⏳ Implement account 1 primary/account 2 pre-effect fallback at the shared
-   runner boundary, then run controlled real fallback E2E with duplicate effect
-   zero. Do not add account switching inside marketplace loops.
-2. ⏳ Retire `hf-gig-release-watch`. It is the obsolete Gig-only release
-   deployer, not the Gig business loop. Remove its registry row and installed
-   job through `lm-loop`, preserve the real Apply/Reply/Storefront/Paid owners,
-   and prove no code path recreates it.
-3. ⏳ Make one complete resolver table. One read-only command must show managed,
+1. ⏳ Make one complete resolver table. One read-only command must show managed,
    external, retired, and unmanaged labels together with owner/domain,
    loaded-state, exact release, latest terminal result, and effect status.
-   Current `status all` shows only the 167 managed rows and is therefore not the
+   Current `status all` shows only the 166 managed rows and is therefore not the
    whole-machine resolver view.
-4. ⏳ Restore clean inventory: classify and register or retire the running
+2. ⏳ Restore clean inventory: classify and register or retire the running
    unmanaged label `ai.anicca.provision-browser.tiktok.anicca`; `doctor` must
    return unmanaged 0 again without stopping its active browser blindly.
-5. ⏳ Keep Coconala live as the reference kernel and repair all five Lancers
+3. ⏳ Keep Coconala live as the reference kernel and repair all five Lancers
    rows to natural pass plus official marketplace readback.
-6. ⏳ Move CrowdWorks from four unloaded external labels into thin adapters over
+4. ⏳ Move CrowdWorks from four unloaded external labels into thin adapters over
    the same kernel. Keep Upwork retired/off; do not treat it as missing runtime.
-7. ⏳ Repair mobile-app marketing: all three TikTok rows currently fail; seven
+5. ⏳ Repair mobile-app marketing: all three TikTok rows currently fail; seven
    of eight Instagram rows fail; marketing also has missing terminal events.
    Require real post/metrics readback and duplicate publication zero.
-8. ⏳ Make OSS startup truthful: a few commands must provision user-owned
+6. ⏳ Make OSS startup truthful: a few commands must provision user-owned
    secrets, choose supported loops, start local scheduler/workers, install the
    platform-appropriate supervisor, and show the same resolver table. Passing
    Docker health or plist rendering alone is insufficient.
-9. ⏳ Repair `agent-economy-loop`, the next real terminal-fail/loaded-idle row
+7. ⏳ Repair `agent-economy-loop`, the next real terminal-fail/loaded-idle row
    after obsolete ownership rows are removed.
    Diagnose its latest event and log before changing code; preserve every
    sibling label and external effect fence.
-10. ⏳ Continue the remaining terminal-fail/non-running rows strictly in
+8. ⏳ Continue the remaining terminal-fail/non-running rows strictly in
    table order, one locked worktree and one production label at a time.
-11. ⏳ Classify the 26 rows without terminal events as cadence-not-yet-due,
+9. ⏳ Classify the 26 rows without terminal events as cadence-not-yet-due,
    long-running, or missing event wiring; do not count absence as success.
-12. ⏳ Track repo-wide nonrequired security-CI debt separately from loop health:
+10. ⏳ Track repo-wide nonrequired security-CI debt separately from loop health:
    OSS boundary, PII gate, Python syntax, and dependency audit.
 
 ### TODO 1 execution state
