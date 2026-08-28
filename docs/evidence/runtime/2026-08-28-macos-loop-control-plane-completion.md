@@ -20,18 +20,20 @@
   `effect_status=unknown`, proving process completion was not promoted to an
   official external effect without readback.
 - Merged-main final release:
-  `~/loops/releases/20260828T110343-69184b22`, commit
-  `69184b22f9591f30bdfa7720e4f2e7b5a0b5232a`. After AutoHedge retirement,
+  `~/loops/releases/20260828T114714-bcba782a`, commit
+  `bcba782a4ee0217924df29618ebc3ca028d081f4`. After AutoHedge retirement,
   167/167 generated plists and loaded argv referenced this existing release;
-  `status all` returned the same full 40-character SHA for all 167 rows.
+  apply wrote 167/167 plan/install events, and `status all` returned the same
+  full 40-character SHA for all 167 rows.
 - Final `doctor`: unmanaged 0, missing entrypoint 0, installed retired 0.
-- Final runtime table: 121 loaded-idle and 46 loaded-running at readback;
+- Final runtime table: 132 loaded-idle and 35 loaded-running at readback;
   terminal/effect failures remained visible rather than being promoted to
   success.
 - Final cleanup replay: errors 0, protected deletions 0, loaded release
   protected. Active entrypoint scan: worktree source 0, direct provider 0,
-  sibling managed launchd mutation 0. Runtime event validation: 76,014 valid,
-  invalid 0, secret-shaped violations 0. Current-tree gitleaks: 0.
+  sibling managed launchd mutation 0. Deduplicated runtime event validation:
+  7,436 valid, invalid 0, secret-shaped violations 0; the final release has an
+  event for every one of 167 loop IDs. Current-tree gitleaks: 0.
 
 The 31 failures are visible business-loop repair work, not control-plane
 successes. The control plane reports them through `status/watch`; it does not
@@ -67,7 +69,7 @@ silently count them healthy.
   exports an exact Git commit into an isolated release, starts from an empty
   LaunchAgents directory, installs every generated job, and reads every loaded
   argv back through an isolated launchctl boundary.
-- Control-plane suite reached 62 passing tests after full-SHA status readback,
+- Control-plane suite reached 65 passing tests after full-SHA status readback,
   process-group, and runtime replay hardening. Focused AgentMail tests reached
   4/4 and the loop-adapter registry reached 13/13.
 
