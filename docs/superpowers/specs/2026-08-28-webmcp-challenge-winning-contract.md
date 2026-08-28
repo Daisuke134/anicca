@@ -437,7 +437,7 @@ Visual surfaceは変更可能である。Life Managerの中核architectureを置
 
 ### 8.3 Canonical judge demo — one traced opportunity inside a 24/7 product
 
-製品runtimeはOpire、Lancers、Mercorから継続的にopportunityを取り込み、scout、qualify、claim、work、human handoff、delivery、reconciliationを繰り返す。三分動画では、公開GitHub issue、公開報酬、公開PR、public merge/readbackを持つOpire bounty一件をend-to-end traceとして追う。一件を処理して停止するdemo executorやone-shot POCは作らない。デモ収録時にlive、eligible、未claim、30分〜半日で完了可能、official readback pathあり、repository policyがagent contributionを許すopportunityを固定する。
+製品runtimeはX、Web、GitHub、mail、search、任意marketplace URLから継続的にopportunityを見つけるEntrepreneur Agentである。Modelがmarket、reward、requirements、deadline、capability、cost、riskを読み、どこで何をすれば収益になるかを判断し、scout、qualify、claim、work、human handoff、delivery、reconciliationを繰り返す。LancersとMercorは最初の実証adapterであってproduct boundaryではない。三分動画では、現行codeがあるLancers application kernelを修復し、公開listing一件をdiscovery→fit判断→proposal preparation→`Needs You`→one fenced application→official readbackまで追う。一件を処理して停止するdemo executorやone-shot POCは作らない。
 
 Canonical flowは七段だけである。
 
@@ -445,23 +445,32 @@ Canonical flowは七段だけである。
 2. Modelがreward、deadline、eligibility、required work、cost、riskを判断する
 3. Orchestratorが一件をclaimし、persistent isolated workroomを作る
 4. General earning agentがbrowser、code、files、media等を使って実作業を進める
-5. Public delivery authorization、payout setup、provider-required identity等が本当に必要な時だけ`Needs You`を一件出す
+5. Proposal authority、private profile、provider-required identity等が本当に必要な時だけ`Needs You`を一件出す
 6. 人間の回答後、同じworkroomとagent threadから自動再開し、一度だけ応募・納品する
 7. Providerのofficial readback、cost、verified moneyをDashboardへ記録する
 
 WebMCPの主役は、対応agentと人間が同じMoney Printer Dashboardを共有する点である。Agentはtyped toolsでopportunity、workroom、human task、artifact、receiptを読み書きし、人は`Needs You`だけを処理する。WebMCPを24/7 background schedulerとは説明しない。Background continuationはLife Manager runtimeが担う。
 
-WebMCP Challenge応募自体をMoney Printerへ実行させない。Hackathon応募は通常の開発・提出processで行う。Primary traceはOpire bounty一件で閉じるが、DashboardにはLancersとMercorを含む複数source、複数cycle、複数opportunity、dedupe、restart recoveryを表示する。Mercorの選考結果や長期契約獲得は外部都合で2〜4週間かかり得るため、今回のDone条件にしない。
+WebMCP Challenge応募自体をMoney Printerへ実行させない。Hackathon応募は通常の開発・提出processで行う。Primary traceはLancers application一件で閉じるが、DashboardにはMercorとgeneric bounty intakeを含む複数source、複数cycle、複数opportunity、dedupe、restart recoveryを表示する。Lancersの契約獲得、Mercorの選考結果、cash settlementは外部都合のため今回のDone条件にしない。
 
-### 8.3A Source portfolio — proof speedとlong-term valueを分ける
+### 8.3A Launch adapters — general capabilityをprovider listへ縮めない
 
 | Source | Product role | Human boundary | Hackathon proof |
 |---|---|---|---|
-| Opire | Primary public bounty source。現在79 bounties available、公開GitHub issue/PR、公開報酬 | Claim/command、public delivery authorization、payout setup | 一件をdiscovery→work→PR→official readbackまで追うprimary demo |
-| Lancers | 日本向け短期gig/application source。公開searchに多数の新着task/projectあり | profile/private answers、proposal authority、provider-required本人操作 | application receiptとmultiple-opportunity pipeline。acceptance/cashは必須にしない |
+| Lancers | Primary live marketplace。日本向け短期gig/application sourceで、公開searchに多数の新着task/projectあり | profile/private answers、proposal authority、provider-required本人操作 | application receiptとmultiple-opportunity pipelineをprimary demoにする。acceptance/cashは必須にしない |
 | Mercor | 高単価AI project/job source。公開listingに$70–250/hr級rolesあり | 約20分のcamera/microphone AI interview、本人の経験回答。Interview中のAI代答は禁止 | public listing→fit判断→application steps→`Needs You`まで。2〜4週間の選考結果は必須にしない |
+| Open Web / arbitrary URL | X、Web、GitHub、mail、search、User入力、任意marketplace URLからopportunityを受けるgeneral lane | claim、public delivery authority、payout setup、provider-specific ceremony | ModelがURL、requirements、environment feedbackから次のtoolsを選ぶ。mechanical effectに必要な時だけthin adapterを追加する |
 
-Rejected for primary proof: Algoraは調査時点でopen bounty 0。OnlyDustはservice終了。IssueHuntは候補だが、Opireに79 live bountiesがあるため追加しない。X live searchはdaily-driverにlogged-in X tabがなく未確認で、Hackathon必須sourceにしない。
+Rejected for primary proof: Opire public APIの56 recordsをGitHub一次証拠で照合すると、33 closed、7 missing/deleted、openは16だけだった。Open案件も大半が競争済みまたは大規模で、唯一の低競争候補はstale listing、22 competing PRs、payout uncertaintyを持っていた。Algoraはopen bounty 0。OnlyDustはservice終了。X discoveryはproduct capabilityに残すが、live searchはdaily-driverにlogged-in X tabがなく現在blockedであり、Lancers primary E2Eの提出gateにはしない。
+
+General-agent invariant:
+
+- Provider inventoryをcapability whitelistにしない
+- Unknown URLでもModelがopportunity、requirements、feasibility、expected value、next actionを判断する
+- Browser、Web、GitHub、code、files、media、mail等のgeneral toolsを先に使う
+- Platform固有codeはauth、selectors、typed effect、official readbackだけを持つthin mechanical adapterにする
+- Adapter不足を理由にcustomer workを人へ丸投げしない。Agentが対応可能ならadapterを作り、test→fence→readback後にeffectを行う
+- External effectだけは「既存adapter＋auth＋intent＋idempotency＋official readback」が揃うまでfail closedにする
 
 Primary sources:
 
@@ -469,6 +478,7 @@ Primary sources:
 - Mercor AI interview: `https://talent.docs.mercor.com/support/ai-interview`
 - Lancers work search: `https://www.lancers.jp/work/search`
 - Opire rewards: `https://app.opire.dev/`
+- Opire public API: `https://api.opire.dev/rewards`
 - Algora bounties: `https://algora.io/algora/bounties`
 - OnlyDust closure notice: `https://onlydust.com/`
 
@@ -476,12 +486,12 @@ Primary sources:
 
 | Official criterion | 5/5 target evidence from this source mix |
 |---|---|
-| WebMCP Leverage | ChatGPTが三sourceのopportunityを同じtyped toolsでinspect/qualify/claimし、Opire artifact、Lancers application、Mercor human interview taskを同じvisible workroomで扱う。`Needs You`回答後のsame-agent continuationとreceipt確認までWebMCPを使う |
-| Execution | Zero-login live Dashboard、24/7三source scout、multiple concurrent workrooms、Opireのpublic issue→code/test→PR→official readback、Lancersのapplication receipt、ChatGPT/Chrome E2Eを実物で見せる。単なるfixture/POCにしない |
-| Potential Impact | Mercorの$70–250/hr級AI roles、Lancersの多数のlive freelance projects、Opireの79 available bountiesというreal marketを対象にする。Human minutes、agent steps、applications、deliveries、official moneyを別々に測る |
-| Creativity & Ambition | Symphonyのper-work-item agent orchestrationをcoding repo内からopen Web上のeconomic opportunitiesへ拡張する。人はhuman-only 1%だけを行い、providerを跨いでも一つのworkroom contractとmoney-truth ledgerで閉じる |
+| WebMCP Leverage | ChatGPTがX/Webで発見した任意opportunity、Lancers、Mercorを同じtyped toolsでinspect/qualify/claimし、application、artifact、human interview taskを同じvisible workroomで扱う。`Needs You`回答後のsame-agent continuationとreceipt確認までWebMCPを使う |
+| Execution | Zero-login live Dashboard、24/7 multi-source scout、multiple concurrent workrooms、Lancersのreal application receipt、Mercorのreal application-step state、generic bounty intake、ChatGPT/Chrome E2Eを実物で見せる。単なるfixture/POCにしない |
+| Potential Impact | Mercorの$70–250/hr級AI roles、Lancersの多数のlive freelance projects、X/Web上の新しい機会を対象にする。特定marketplaceに閉じず、任意URLから新しい収益機会を処理する。Human minutes、agent steps、applications、deliveries、official moneyを別々に測る |
+| Creativity & Ambition | Symphonyのper-work-item agent orchestrationをcoding repo内からopen Web上のeconomic opportunitiesへ拡張する。人はhuman-only 1%だけを行い、未知marketplaceでも同じworkroom contractとmoney-truth ledgerで閉じる |
 
-満点はsource数ではなく証拠の深さで決まる。動画ではOpire一件を最後まで追い、LancersとMercorは同じproductが複数marketを扱うlive evidenceとして短く見せる。
+満点はsource数ではなく証拠の深さで決まる。動画ではLancers一件をofficial application readbackまで追い、Mercorと任意URL intakeは同じgeneral agentが既知・未知marketを扱うlive evidenceとして短く見せる。
 
 ### 8.4 Visual surface
 
@@ -489,8 +499,8 @@ Primary sources:
 ┌──────────────────────── Life Manager ────────────────────────────┐
 │ Backlog │ Ready │ Working │ Needs You │ Review │ Waiting │ Done │ Paid │
 ├─────────┴───────┴─────────┴───────────┴────────┴──────┴─────────┤
-│ Opire bounty      live reward  Needs You: approve public PR      │
-│ Lancers project  live reward  Applying                           │
+│ Lancers project  live reward  Needs You: approve proposal        │
+│ Public bounty URL live reward Working                             │
 │ Mercor role       $85/hr       Needs You: take interview          │
 │                                                                    │
 │ Selected workroom: goal / plan / artifact / agent events / proof │
@@ -638,7 +648,7 @@ Workroomのisolationはopportunity、tenant、credential、effectの交差を防
 
 最初のimplementation sliceはgeneral architectureのまま、低risk・短時間のreal opportunitiesで実証する。
 
-1. Opire、Lancers、Mercorの三つのlive sourceからopportunityを継続発見
+1. X、Web、GitHub、mail、Lancers、Mercor、任意marketplace URLからopportunityを継続発見
 2. 30分〜半日で完了可能なbounty/taskを一件選ぶ
 3. persistent per-opportunity workroomでagentが実作業する
 4. 必要ならhuman taskを一件出す
@@ -671,9 +681,9 @@ Current `lm-loop status all`、現行entrypoints、focused tests、既存gig ker
 | TaskMarket ledger | installed loop latest terminal pass、isolated focused tests 6/6 pass | award/work receipt shape、Base verification、self-award rejection、duplicate-safe earnings projection | primary demo sourceにはまだ固定しない |
 | x402 observers | acquisition、inflow、sale observerのlatest terminal pass、isolated focused tests 11/11 pass | on-chain receipt verification、sale/work ledger、external-buyer/self-pay boundary | seller/service processesは複数fail中。demoのlive earning pathに依存しない |
 | Affiliate/X | source refresh/composition pass、browser ownersと一部posting loopsはfail | recurring source cadence、source/effect separation、X session ownership pattern | X Repostをpaid-opportunity scoutと誤認しない。新しいread-only opportunity prompt/adapterが必要 |
-| Lancers | application/browser/storefront/work-syncは現在fail。Repoにはapplication loop/tickとmarketplace coreがある | 第二live sourceとしてbrowser/auth/application readbackを修復し、generic contractへ接続 | repairとofficial readback前にworking sourceと主張しない |
+| Lancers | application/browser/storefront/work-syncは現在fail。Repoにはapplication loop/tickとmarketplace coreがある | Primary live sourceとしてbrowser/auth/application readbackを修復し、generic contractへ接続 | repairとofficial readback前にworking sourceと主張しない |
 | Mercor / Job Hunter assets | profile、Mercor reference、ATS/application receipt contractsあり。既存local Workday ownerはpause | public role inventory、fit判断、application-step state、human interview task | 既存Workday ownerは再開しない。Mercor interviewの本人回答をagentに代行させない |
-| Opire | official boardで79 bounties available、$427,638.31 available。GitHub issue/PR型でpublic proofあり | primary read-only scout、bounty normalization、public workroom、PR/merge readback | repository policy、claim status、competition、payout eligibility未確認の案件は実行しない |
+| Opire audit | UIは79 availableと表示するがpublic API二pageは56 records。GitHub照合で33 closed、7 missing/deleted、16 open | generic bounty intakeのnegative example、stale-source reconciliation requirement | Primary sourceにしない。Open案件も競争・scope・payout uncertaintyが高い |
 
 Focused reuse suiteはruntime/browser jobs、ask/reply、reconciliation、panelで38/38 pass。Earnings、TaskMarket、x402はlocked `@noble/hashes` / `@noble/curves`だけを隔離tempへinstallして31/31 passし、合計69/69 pass。最初のfull `npm ci`はdisk headroom不足で中断したため、生成されたworktree node_modulesだけを削除した。Ledger logicの不確実性は解消したが、submission releaseのclean install前にdisk headroom確保とexact runtime import smokeを必須とする。
 
@@ -688,13 +698,14 @@ Focused reuse suiteはruntime/browser jobs、ask/reply、reconciliation、panel�
 
 #### 10.4C Remaining uncertainties and decisions
 
-1. **Primary end-to-end source:** Opireをprimary public proofに固定する。現在79 bounties availableだが、exact targetはrepository policy、claim status、scope、tests、competition、payout eligibilityをread backしてから一件だけ選ぶ
-2. **Second/third sources:** Lancersはexisting adapter repairが必要。Mercorはpublic inventoryとapplication stepsを接続し、human interviewを`Needs You`へ出す。両者のacceptance/cashはdeadline gateにしない
-3. **Unified projection:** existing loopsは別state rootsを持つ。新しいbusiness executorを作らず、各loopのreadbackをgeneric `Opportunity / Workroom / HumanTask / Receipt`へ投影するadapterが必要
-4. **WebMCP layer:** existing loopsはWebMCPを公開していない。既存domain functionsとprojectionを呼ぶtop-level toolsは新規実装である
-5. **Dependency/disk headroom:** focused reused-contract testsは69/69 pass。残るのはcode uncertaintyではなくdisk空き約630MiBで、clean installとexact submission runtime import smokeに不足する可能性である
-6. **Current production failures:** Lancers current ownersはfail中なので、repair→read-only inventory→one fenced application→official readbackの順で復旧する。Affiliate browser、x402 sellers等のfailをMoney Printer全体の失敗と混同しない
-7. **Real outcome timing:** Opire PR/merge、Lancers acceptance、Mercor selection、cash settlementは外部依存。Primary proofはOpireのpublic issue/PR/readbackまでを狙い、提出copyでは実際に得たterminalだけを主張する
+1. **Primary end-to-end source:** Opire inventoryは質・freshness・competition gateを通らないためskipする。Lancers existing adapterを修復し、一件のpublic listingをofficial application readbackまで閉じる
+2. **Second source:** Mercor public inventoryとapplication stepsを接続し、human interviewを`Needs You`へ出す。Selection/cashはdeadline gateにしない
+3. **Unknown marketplaces:** provider inventoryをadmission whitelistにしない。X、Web、GitHub、mail、search、任意URLをgeneric opportunityとして受け、Modelがrequirementsとavailable toolsから実行可否・次actionを判断する。Mechanical effect/readbackが不足する場合だけthin adapterを追加する
+4. **Unified projection:** existing loopsは別state rootsを持つ。新しいbusiness executorを作らず、各loopのreadbackをgeneric `Opportunity / Workroom / HumanTask / Receipt`へ投影するadapterが必要
+5. **WebMCP layer:** existing loopsはWebMCPを公開していない。既存domain functionsとprojectionを呼ぶtop-level toolsは新規実装である
+6. **Dependency/disk headroom:** focused reused-contract testsは69/69 pass。残るのはcode uncertaintyではなくdisk空き約630MiBで、clean installとexact submission runtime import smokeに不足する可能性である
+7. **Current production failures:** Lancers current ownersはfail中なので、repair→read-only inventory→one fenced application→official readbackの順で復旧する。Affiliate browser、x402 sellers等のfailをMoney Printer全体の失敗と混同しない
+8. **Real outcome timing:** Lancers acceptance、Mercor selection、cash settlementは外部依存。Primary proofはLancers official application readbackまでを必須とし、提出copyでは実際に得たterminalだけを主張する
 
 ### 10.5 One product, one mode
 
@@ -913,7 +924,7 @@ The top-level page registers focused tools with `document.modelContext.registerT
 
 ### Impact and future
 
-The initial product continuously discovers opportunities from Opire, Lancers, and Mercor. Its primary public proof follows one Opire bounty from a funded GitHub issue through implementation, one genuine human boundary, a public pull request, and official readback. Lancers demonstrates the same runtime on freelance applications, while Mercor demonstrates high-value roles and a provider-required human interview boundary. Life Manager remains free and unrestricted to judges throughout the judging period and records revenue only when an official receipt confirms that money was received.
+The initial product is a general entrepreneur agent that continuously searches X, the Web, GitHub, mail, Lancers, Mercor, and arbitrary marketplace URLs for paid opportunities. Its primary proof follows one Lancers project from public listing through qualification, proposal preparation, one genuine human boundary, a fenced application, and official readback. Mercor demonstrates high-value roles and a provider-required human interview boundary. The same agent can inspect an unfamiliar marketplace URL and explain the work, tools, and missing mechanical adapter without a provider-specific routing branch. Life Manager remains free and unrestricted to judges throughout the judging period and records revenue only when an official receipt confirms that money was received.
 
 ---
 
@@ -944,7 +955,7 @@ The initial product continuously discovers opportunities from Opire, Lancers, an
 - [ ] public live URL
 - [ ] zero-login guest account
 - [ ] guest/actual runが同一build SHA、agent entrypoint、domain transition function、workroom schemaを使う。外部credential/submit authorityだけが異なる
-- [ ] Opire + Lancers + Mercorを24/7 scoutする
+- [ ] X/Web/GitHub/mail discovery + Lancers/Mercor + arbitrary marketplace URL intakeを24/7運用する
 - [ ] same deployed releaseから24時間・3回以上のnatural scout cycle receipt
 - [ ] multiple real opportunities + source-level dedupe readback
 - [ ] multiple concurrent workrooms + restart recovery
@@ -1043,14 +1054,14 @@ Judgesがeconomic autonomyより安全で楽しいcreative collaborationを好�
 このspec承認後に`writing-plans`で実装planへ分解する。順序は次を超えない。
 
 1. [completed] judge story + interactive one-screen HTML
-2. Opire inventoryをnormalizeし、policy/claim/competition/payoutをread backしてprimary bountyを一件固定
-3. `Opire / Lancers / Mercor → Opportunity / Workroom / HumanTask / Receipt`のgeneric read-only projection
+2. Lancers browser/application current failureをroot-cause repairし、public inventoryをofficial readbackする
+3. `X / Web / GitHub / mail / Lancers / Mercor / arbitrary URL → Opportunity / Workroom / HumanTask / Receipt`のgeneric read-only projection
 4. existing Panel auth/APIへMoney Printer Dashboard sectionを追加
 5. projectionと既存domain functionsを呼ぶinspect/control/artifact WebMCP tools
 6. existing ask/reply contractをgeneric `Needs You`へ接続し、answer後にsame ownerをresume
-7. Opire workroomでreal code/test/PR、public effect、official readback、replay-zeroを閉じる
-8. Lancers browser/application adapterを修復し、inventory→one fenced application→official receiptを閉じる
-9. Mercor public inventory/application stepsを投影し、provider-required interviewをhuman taskへ出す
+7. Lancers inventory→proposal preparation→one fenced application→official receipt→replay-zeroを閉じる
+8. Mercor public inventory/application stepsを投影し、provider-required interviewをhuman taskへ出す
+9. X/Web discoveryと任意URL ingestを接続し、Modelが未知marketplaceのrequirements、available tools、missing mechanical adapterを説明できることを実証する
 10. existing runtime job store/reconcilerでretry/backoff、controlled failure、restart recoveryを見せる
 11. state-dependent tool registration + visible activity log
 12. clean dependency install/import smoke + focused reused-contract tests
