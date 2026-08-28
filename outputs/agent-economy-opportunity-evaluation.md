@@ -161,3 +161,20 @@ identity, PR, claim, invoice, wallet funding, or withdrawal is allowed.
   OAuth and payout requires a Stripe Connect account tied to the country where the worker or
   business legally operates. Official product text says Algora handles compliance and 1099s.
   Reject: KYC/tax/legal identity and Stripe payout are hard AC-12 failures regardless of inventory.
+- Sphinx Tribes implements pubkey/JWT identity, public bounty reads, proof submission, and Lightning
+  invoice payout. Its live `/gobounties/all` response currently contains one visible unpaid row,
+  but the row's estimated completion is 2025-10-31 and its work is a Solana grant proposal requiring
+  application, email onboarding, and continuing grant milestones. Reject: stale inventory plus
+  external email/onboarding dependency, not a current zero-human bounty.
+- RustChain is genuinely active and explicitly welcomes agents: its official counter reports
+  73,930.1 RTC across 3,902 confirmed-or-pending founder-wallet token transfers to 1,162 recipients.
+  That proves transfer activity, not completed bounty payouts or outside-customer revenue. Its
+  source defines team/bounty premine and continuing emission, and official tokenomics calls
+  0.15 USD an internal reference rate, not a market price or convertibility promise; the published
+  wRTC DEX pair currently returns no pair/liquidity. Rewards originate from founder/team bounty
+  allocation and token emission, both explicitly excluded by 5A.2. Reject despite activity.
+- Boss.dev still serves a GitHub-bounty application, but its current bundle requires GitHub OAuth,
+  Stripe Connect account verification, government/tax identifiers, and a bank payout account.
+  Reject: hard KYC/tax/bank dependency. OnlyDust's live page states the service has closed, and
+  OpenQ now sells OSS observability rather than bounties. `bounty.new` currently has no DNS A/AAAA
+  answer and did not yield a readable surface; it remains unknown rather than a selected opportunity.

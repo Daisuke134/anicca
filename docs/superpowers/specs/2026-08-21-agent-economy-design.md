@@ -819,6 +819,14 @@ income.
    endpoint remains an experiment hypothesis because new-seller market share and positive expected
    net above the roughly 13-USDC monthly fixed-cost floor are unproved. 5A.2 remains active with zero
    passing opportunities.
+   A further cross-market pass rejects Sphinx Tribes because its only live public row is a stale
+   2025 Solana-grant application with email onboarding; RustChain because its aggregate includes
+   confirmed and pending founder-wallet RTC transfers, while source economics define premine/team
+   allocation and ongoing emission at an internal reference rate with no current DEX pair—none of
+   which proves outside revenue; Boss.dev because payout requires Stripe Connect,
+   government/tax identity, and bank details; OnlyDust because the service is closed; and OpenQ
+   because it has pivoted from bounties to OSS observability. `bounty.new` remains unknown after no
+   DNS A/AAAA answer or readable current surface and is not selected.
    Hats policy clarification is open at `hats-finance/hats-contracts#593`; no identity, audit,
    disclosure, claim, or transaction may begin before an affirmative authoritative reply proves
    agent-operated submission and direct-wallet payout without a human claimant.
