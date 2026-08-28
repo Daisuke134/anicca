@@ -47,7 +47,7 @@ flowchart TD
 | Slice | Production responsibility | Tests |
 |---|---|---|
 | Task 12 | `lib/travel-reminder.js`: select one safe resolved destination | `lib/travel-reminder.test.js` |
-| Task 13A | `migrations/2026-08-28-lm-trial-first.sql`: trial column and same-signature onboarding RPC replacement | `lib/panel-api.test.js` |
+| Task 13A | `migrations/2026-08-28-lm-trial-first.sql`: trial column and same-signature onboarding RPC replacement | `test/postgres/lm-trial-first.integration.sh`, unchanged panel contracts |
 | Task 13B | `lib/payment-link.js`: one Stripe link validator; `panel-api.js`/`panel-ui.js`: server trial truth and ready screen | `payment-link.test.js`, `panel-api.test.js`, `panel-ui.test.js` |
 | Task 13C | `lib/user-selector.js`: one scheduler cohort SSOT | `user-selector.test.js`, existing scheduler suites |
 | Task 13D | `lib/telegram-onboard.js`: active-trial stage and one durable expiry notice | `telegram-onboard.test.js`, `ch1-atomic-dedup.test.js` |
@@ -167,7 +167,8 @@ Fresh Sol reviews the exact commit for return blocks, multiple events, NFKC/home
 **Files:**
 
 - Create: `apps/life-manager/migrations/2026-08-28-lm-trial-first.sql`
-- Test: `apps/life-manager/lib/panel-api.test.js`
+- Create/Test: `apps/life-manager/test/postgres/lm-trial-first.integration.sh`
+- Verify unchanged: `apps/life-manager/lib/panel-api.test.js`, `test/onboarding-resume-contract.test.js`, `test/calendar-connect-signature-contract.test.js`
 
 **Interfaces:**
 
@@ -175,35 +176,44 @@ Fresh Sol reviews the exact commit for return blocks, multiple events, NFKC/home
 - Produces: nullable `lm_users.trial_expires_at timestamptz`; JSON `trialExpiresAt: string|null`, `trialActive: boolean`.
 - Grants once: exact `notifications.enable` transition writes `coalesce(trial_expires_at, now() + interval '3 days')` under the existing user-row lock.
 
-- [ ] **Step 1: Add the missing-migration RED**
+- [ ] **Step 1: Add a real PostgreSQL behavior RED**
 
-Append this source contract to `panel-api.test.js`:
+Create `test/postgres/lm-trial-first.integration.sh` by reusing the local-PostgreSQL/Docker bootstrap and cleanup structure from `test/postgres/panel-score-postgres.integration.sh`. Use a disposable database named `lm_trial_test`; create roles `anon`, `authenticated`, and `service_role`; create minimal `lm_users` and `lm_panel_preferences` tables with every column referenced by `2026-08-27-lm-panel-onboarding-core.sql`; apply that core migration, then require the new migration file to exist before applying it.
 
-```js
-test("Task 13A trial migration grants once and preserves Stripe authority", () => {
-  const sql = fs.readFileSync(
-    path.join(__dirname, "../migrations/2026-08-28-lm-trial-first.sql"),
-    "utf8",
-  );
-  assert.match(sql, /ADD COLUMN IF NOT EXISTS trial_expires_at timestamptz/i);
-  assert.match(sql, /trial_expires_at\s*=\s*coalesce\(trial_expires_at,\s*now\(\)\s*\+\s*interval '3 days'\)/i);
-  assert.match(sql, /'trialExpiresAt',\s*u\.trial_expires_at/i);
-  assert.match(sql, /'trialActive',\s*coalesce\(u\.trial_expires_at\s*>\s*now\(\),\s*false\)/i);
-  assert.match(sql, /phone\.skip[\s\S]*tg_onboard_stage\s*=\s*'done'/i);
-  assert.match(sql, /call\.enable[\s\S]*tg_onboard_stage\s*=\s*'done'/i);
-  assert.doesNotMatch(sql, /SET\s+paid\s*=/i);
-  assert.doesNotMatch(sql, /CREATE\s+TABLE/i);
-});
+The behavior phase inserts `tenant-a` at stage `notifications` with Calendar, home, name, unpaid, and notifications false. As `service_role`, call:
+
+```sql
+SELECT public.lm_panel_onboarding_transition(
+  'tenant-a', '101', 'notifications.enable', '{}'::jsonb
+);
+```
+
+Capture `trial_expires_at`, reset only the stage/preferences fixture to the same pre-completion state, call the transition again, and require the exact timestamp unchanged. Then require:
+
+```sql
+SELECT
+  (public.lm_panel_onboarding_state('tenant-a', '101')->>'trialExpiresAt')::timestamptz
+    = trial_expires_at,
+  (public.lm_panel_onboarding_state('tenant-a', '101')->>'trialActive')::boolean,
+  paid = false
+FROM public.lm_users
+WHERE uid = 'tenant-a';
+```
+
+Also require `phone.skip`, `call.enable`, and `call.skip` end at `done`; a different chat ID gets no state; `service_role` has EXECUTE while `anon`/`authenticated` do not; and `SET ROLE anon; SELECT lm_panel_onboarding_state(...)` fails. Finish with one stable line:
+
+```text
+lm-trial-first-postgres: PASS grant_once=1 trial_active=1 tenant_scope=1 acl=1 paid_writes=0
 ```
 
 - [ ] **Step 2: Run RED**
 
 ```bash
 cd apps/life-manager
-node --test --test-name-pattern="Task 13A trial migration" lib/panel-api.test.js
+bash test/postgres/lm-trial-first.integration.sh
 ```
 
-Expected: FAIL with `ENOENT` for `2026-08-28-lm-trial-first.sql`.
+Expected: FAIL with `missing migration: migrations/2026-08-28-lm-trial-first.sql` before any trial RPC can run.
 
 - [ ] **Step 3: Create the additive migration**
 
@@ -245,15 +255,16 @@ Retain `SECURITY DEFINER SET search_path = public, pg_temp`, the tenant/chat sco
 - [ ] **Step 4: Run local GREEN and related contracts**
 
 ```bash
+bash test/postgres/lm-trial-first.integration.sh
 node --test lib/panel-api.test.js test/onboarding-resume-contract.test.js test/calendar-connect-signature-contract.test.js
 ```
 
-Expected: PASS, with the new Task 13A contract included.
+Expected: the PostgreSQL script prints its single PASS line and the unchanged Node contracts all PASS.
 
 - [ ] **Step 5: Commit and fresh migration review**
 
 ```bash
-git add apps/life-manager/migrations/2026-08-28-lm-trial-first.sql apps/life-manager/lib/panel-api.test.js
+git add apps/life-manager/migrations/2026-08-28-lm-trial-first.sql apps/life-manager/test/postgres/lm-trial-first.integration.sh
 git commit -m "feat(life-manager): grant one server owned trial"
 ```
 
