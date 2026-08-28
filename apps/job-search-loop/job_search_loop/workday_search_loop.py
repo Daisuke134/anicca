@@ -20,6 +20,10 @@ from .workday_qualification import fetch_official_description, qualify_one
 SHORTLIST_SIZE = 24
 
 
+def normalize_company_name(value: str) -> str:
+    return str(value).strip().casefold()
+
+
 def rotated_sources(
     sources: tuple[dict[str, str], ...], index: int
 ) -> tuple[dict[str, str], ...]:
@@ -124,11 +128,11 @@ def interleave_companies(
     buckets: dict[str, deque[dict[str, str]]] = {}
     order: list[str] = []
     for row in candidates:
-        key = str(
+        key = normalize_company_name(
             row.get("company")
             or urlsplit(str(row.get("url") or "")).hostname
             or "unknown"
-        ).strip().casefold()
+        )
         if key not in buckets:
             buckets[key] = deque()
             order.append(key)
@@ -141,15 +145,62 @@ def interleave_companies(
     return result
 
 
-def submitted_company_portfolio(ledger_path: Path) -> dict[str, int]:
+def company_submit_attempt_exposure(ledger_path: Path) -> dict[str, int]:
     ledger = Ledger(ledger_path)
     try:
         rows = ledger.connection.execute(
-            "SELECT company FROM applications WHERE current_state='submitted'"
+            """
+            SELECT company
+            FROM (
+                SELECT DISTINCT applications.id, applications.company
+                FROM applications
+                JOIN submit_intents
+                  ON submit_intents.application_id = applications.id
+                WHERE applications.current_state IN
+                        ('submit_claimed', 'submit_unknown', 'submitted')
+                  AND submit_intents.status IN
+                        ('submit_claimed', 'submit_unknown', 'submitted')
+            )
+            """
         ).fetchall()
     finally:
         ledger.close()
     return dict(Counter(str(row[0]) for row in rows))
+
+
+def submit_attempt_hosts(ledger_path: Path) -> frozenset[str]:
+    ledger = Ledger(ledger_path)
+    try:
+        rows = ledger.connection.execute(
+            """
+            SELECT DISTINCT applications.canonical_url
+            FROM applications
+            JOIN submit_intents
+              ON submit_intents.application_id = applications.id
+            WHERE submit_intents.status IN
+                ('submit_claimed', 'submit_unknown', 'submitted')
+            """
+        ).fetchall()
+    finally:
+        ledger.close()
+    hosts = {
+        (urlsplit(str(row[0])).hostname or "").strip().casefold()
+        for row in rows
+    }
+    return frozenset(host for host in hosts if host)
+
+
+def filter_submit_attempt_sources(
+    sources: tuple[dict[str, str], ...], attempted_hosts: set[str] | frozenset[str]
+) -> tuple[dict[str, str], ...]:
+    normalized_hosts = {
+        str(host).strip().casefold() for host in attempted_hosts
+    }
+    return tuple(
+        source
+        for source in sources
+        if str(source["host"]).strip().casefold() not in normalized_hosts
+    )
 
 
 def candidate_employer_exclusions(candidate_memory_path: Path) -> frozenset[str]:
@@ -282,6 +333,9 @@ def main() -> int:
         tuple(dict(row) for row in source_payload.get("sources", []))
     )
     employer_exclusions = candidate_employer_exclusions(args.candidate_memory)
+    company_exposure = company_submit_attempt_exposure(args.ledger)
+    attempted_hosts = submit_attempt_hosts(args.ledger)
+    sources = filter_submit_attempt_sources(sources, attempted_hosts)
     sources = tuple(
         source
         for source in sources
@@ -314,7 +368,6 @@ def main() -> int:
     preferred_urls: tuple[str, ...] = ()
     if candidates:
         candidate_memory = args.candidate_memory.read_text(encoding="utf-8")
-        portfolio = submitted_company_portfolio(args.ledger)
         def rank_chunk(chunk: list[dict[str, str]]) -> dict[str, Any]:
             return runner.run(
                 task="improve",
@@ -325,8 +378,10 @@ def main() -> int:
                 "Prefer roles whose actual work is supported by demonstrated experience. "
                 "This is a company-wide portfolio search, not a single-company campaign. "
                 "When interview fit is comparable, prefer employers with fewer prior "
-                "submitted applications and keep credible finalists across different "
-                "companies. Do not repeatedly choose one employer merely because it has "
+                "submit attempts and keep credible finalists across different companies. "
+                "Company submit-attempt exposure below counts each application with a "
+                "submit attempt once; materials_ready and rejected are not counted. Do "
+                "not repeatedly choose one employer merely because it has "
                 "more postings in the snapshot. "
                 "Do not invent requirements, compensation, or candidate facts. Return up "
                 f"exactly {min(SHORTLIST_SIZE, len(chunk))} unique candidate_id values, "
@@ -340,8 +395,12 @@ def main() -> int:
                 + wrap_untrusted("candidate_memory", candidate_memory)
                 + "\n\n"
                 + wrap_untrusted(
-                    "submitted_company_portfolio",
-                    json.dumps(portfolio, ensure_ascii=False, sort_keys=True),
+                    "company_submit_attempt_exposure",
+                    json.dumps(
+                        company_exposure,
+                        ensure_ascii=False,
+                        sort_keys=True,
+                    ),
                 )
             ),
                 schema_path=args.shortlist_schema,
