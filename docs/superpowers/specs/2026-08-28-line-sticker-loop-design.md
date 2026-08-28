@@ -291,8 +291,12 @@ No narrower evidence closes the goal.
   fits one ten-second source video without adaptive timing. Its canonical SHA-256 and durable plan
   receipt match. Real model execution exposed and closed two prompt/validator gaps: the top-level
   JSON schema and the source-video duration bound.
-- No real Runware animation generation, Creators Market submission, review, release, public product,
-  sale, payout, or bank effect has occurred.
+- Batch 1 has one fenced Runware task with an unknown acknowledgement. Official account readback
+  still reports USD 0.05 balance and zero requests/credits, while raw `getResponse` reports
+  `processing`; the same response for a never-submitted control UUID proves that status alone does
+  not establish task existence. The batch remains `reconcile_required`, no retry is allowed, and an
+  official support inquiry has a Gmail sent-readback receipt. No Creators Market submission, review,
+  release, public product, sale, payout, or bank effect has occurred.
 
 ### Money truth
 
@@ -302,8 +306,9 @@ do not count as money.
 
 ### Current blockers to revenue
 
-1. No real motion generation has run. The Runware balance is USD 0.05 and the first ten-second
-   P-Video draft quote is exactly USD 0.05, leaving no balance for later batches. Any later personal
+1. Batch 1 task existence, terminal state, and charge remain officially unresolved. The Runware
+   balance and usage remain USD 0.05 / zero, but provider polling cannot distinguish this task from
+   an unknown UUID. Official support confirmation is pending; retry remains fenced. Later personal
    funding must obey the money-safety boundary.
 2. No authenticated LINE Creators Market browser session or dedicated profile exists, and no LINE
    credential entry is configured in the private credential SSOT.
