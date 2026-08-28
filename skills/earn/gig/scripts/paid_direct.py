@@ -3738,7 +3738,9 @@ def _repair_prompt(root: Path, item: Path, feedback: str, requirements_sha256: s
             "When the first channel is unavailable, use the complete project context to resolve another authorized skill, account, "
             "or contact surface that achieves the same buyer outcome. Treat qualification questions as legitimate first contact when "
             "the recipient permits that channel; do not require every fact to be public before contact, and do not stop merely because "
-            "one transport is unavailable. Never bypass platform policy, impersonate the buyer, or invent consent. "
+            "one transport is unavailable. One invalid, private, unreachable, or unverified candidate is not batch exhaustion; continue "
+            "to the next authorized candidate until the batch outcome is met or a complete scope-bound exhaustion receipt exists. "
+            "Never bypass platform policy, impersonate the buyer, or invent consent. "
             "A matching reusable seller-owned browser identity may serve this project; never infer authorization from login alone. "
             f"Run every leased-browser operation through {code_root / 'skills/browser/with-browser.sh'} <identity> -- <command>, which acquires, exports CDP, "
             "and releases through an EXIT/signal trap; never split browser-guard acquire and release across separate commands. Verify the live "
@@ -3774,6 +3776,15 @@ def _repair_prompt(root: Path, item: Path, feedback: str, requirements_sha256: s
 def _normalize_builder_result(root: Path) -> None:
     intent_path, result_path = root / "delivery/paid-remote-intent.json", root / "delivery/paid-remote-result.json"
     intent, result = _load(intent_path), _load(result_path)
+    feedback = _text(intent.get("buyer_feedback_sha256") or intent.get("feedback_sha256"))
+    if re.fullmatch(r"[0-9a-f]{64}", feedback):
+        intent["feedback_sha256"] = intent["buyer_feedback_sha256"] = feedback
+        result["feedback_sha256"] = result["buyer_feedback_sha256"] = feedback
+    desired = intent.get("desired_state")
+    if isinstance(desired, dict):
+        digest = paid_remote_result._sha(desired)
+        intent["desired_state_sha256"] = intent["desired_digest"] = digest
+        result["desired_state_sha256"] = result["desired_digest"] = digest
     raw_after = Path(_text(result.get("after_evidence")))
     after_path = (root / raw_after if not raw_after.is_absolute() else raw_after).resolve()
     after_path.relative_to(root)
@@ -3781,7 +3792,8 @@ def _normalize_builder_result(root: Path) -> None:
     if (after.get("authenticated") is True and after.get("target") == intent.get("target")
             and paid_remote_result.canonical_equal(after.get("observed_state"), intent.get("desired_state"))):
         result["observed_state"] = after["observed_state"]
-        result["after_state_digest"] = intent.get("desired_state_sha256")
+        result["after_state_digest"] = result["observed_digest"] = intent.get("desired_state_sha256")
+        _write(intent_path, intent)
         _write(result_path, result)
 
 
@@ -4162,6 +4174,8 @@ def _run_remote_repair(args, item_path: Path, root: Path, feedback: str, base: P
                 delivery_result = _load(root / "delivery" / "paid-remote-result.json")
                 if _require_semantic_effect_binding(root, intent, delivery_result) != semantic_contract_sha256:
                     raise ValueError("semantic effect contract changed")
+                _normalize_builder_result(root)
+                intent = _load(root / "delivery" / "paid-remote-intent.json")
                 digest = _text(intent.get("desired_state_sha256"))
                 checkpoint = _remote_owner_checkpoint(
                     step_result_status.status_from_evidence(owner_evidence),
@@ -4169,7 +4183,6 @@ def _run_remote_repair(args, item_path: Path, root: Path, feedback: str, base: P
                 )
                 if checkpoint == "pending":
                     raise Failure("remote_progress")
-                _normalize_builder_result(root)
                 paid_remote_result.validate_builder(root, feedback, digest, pass_start)
             except (OSError, ValueError, TypeError, json.JSONDecodeError) as error:
                 raise Failure("remote_builder") from error

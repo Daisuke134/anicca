@@ -14,7 +14,9 @@ from job_search_loop.workday_search_loop import (
     rotated_sources,
     search_until_qualified,
     snapshot_candidates,
-    submitted_company_portfolio,
+    company_submit_attempt_exposure,
+    filter_submit_attempt_sources,
+    submit_attempt_hosts,
     validate_shortlist,
     unique_sources,
 )
@@ -35,7 +37,55 @@ class WorkdayQualificationTests(unittest.TestCase):
             ["r-0", "s-1", "z-1", "r-1", "r-2", "r-3"],
         )
 
-    def test_submitted_portfolio_is_counted_for_model_ranking(self):
+    def test_submit_attempt_sources_match_workday_host_case_insensitively(self):
+        sources = (
+            {
+                "company": "Rakuten Group, Inc.",
+                "host": "RAKUTEN.WD1.MYWORKDAYJOBS.COM",
+                "tenant": "rakuten",
+                "site": "Careers",
+            },
+            {
+                "company": "New Company",
+                "host": "new.wd1.myworkdayjobs.com",
+                "tenant": "new",
+                "site": "Careers",
+            },
+        )
+        self.assertEqual(
+            filter_submit_attempt_sources(
+                sources, {"rakuten.wd1.myworkdayjobs.com"}
+            ),
+            (sources[1],),
+        )
+
+    def test_submit_attempt_sources_return_empty_when_all_are_exposed(self):
+        sources = (
+            {
+                "company": "Rakuten",
+                "host": "rakuten.wd1.myworkdayjobs.com",
+                "tenant": "rakuten",
+                "site": "Careers",
+            },
+            {
+                "company": "Salesforce",
+                "host": "salesforce.wd1.myworkdayjobs.com",
+                "tenant": "salesforce",
+                "site": "Careers",
+            },
+        )
+        self.assertEqual(
+            filter_submit_attempt_sources(
+                sources,
+                {
+                    "rakuten.wd1.myworkdayjobs.com",
+                    "salesforce.wd1.myworkdayjobs.com",
+                },
+            ),
+            (),
+        )
+
+    def test_company_submit_attempt_exposure_counts_submit_intents_once(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "ledger.sqlite3"
             ledger = Ledger(path)
@@ -51,11 +101,92 @@ class WorkdayQualificationTests(unittest.TestCase):
                     "UPDATE applications SET current_state='submitted' WHERE id=?",
                     (application_id,),
                 )
+                ledger.connection.execute(
+                    """
+                    INSERT INTO submit_intents
+                      (intent_id, application_id, fence, payload_hash, japan_day,
+                       slot, status, created_at)
+                    VALUES (?, ?, 1, ?, '2026-08-28', ?, 'submitted',
+                            '2026-08-28T00:00:00+00:00')
+                    """,
+                    (
+                        f"intent-{application_id}",
+                        application_id,
+                        "a" * 64,
+                        index + 1,
+                    ),
+                )
+            claimed_id = ledger.add_application(
+                "Salesforce",
+                "Claimed Role",
+                "https://salesforce.wd1.myworkdayjobs.com/job/claimed",
+            )
+            unknown_id = ledger.add_application(
+                "Nvidia",
+                "Unknown Role",
+                "https://nvidia.wd1.myworkdayjobs.com/job/unknown",
+            )
+            materials_id = ledger.add_application(
+                "Zendesk",
+                "Materials Role",
+                "https://zendesk.wd1.myworkdayjobs.com/job/materials",
+            )
+            rejected_id = ledger.add_application(
+                "Autodesk",
+                "Rejected Role",
+                "https://autodesk.wd1.myworkdayjobs.com/job/rejected",
+            )
+            for slot, (application_id, state, status) in enumerate(
+                (
+                    (claimed_id, "submit_claimed", "submit_claimed"),
+                    (unknown_id, "submit_unknown", "submit_unknown"),
+                    (materials_id, "materials_ready", "submit_claimed"),
+                    (rejected_id, "rejected", "submit_unknown"),
+                ),
+                start=1,
+            ):
+                ledger.connection.execute(
+                    "UPDATE applications SET current_state=? WHERE id=?",
+                    (state, application_id),
+                )
+                ledger.connection.execute(
+                    """
+                    INSERT INTO submit_intents
+                      (intent_id, application_id, fence, payload_hash, japan_day,
+                       slot, status, created_at)
+                    VALUES (?, ?, 1, ?, '2026-08-28', ?, ?, '2026-08-28T00:00:00+00:00')
+                    """,
+                    (
+                        f"intent-{application_id}",
+                        application_id,
+                        "a" * 64,
+                        slot,
+                        status,
+                    ),
+                )
             ledger.connection.commit()
             ledger.close()
             self.assertEqual(
-                submitted_company_portfolio(path),
-                {"Rakuten": 2, "Razer": 1},
+                company_submit_attempt_exposure(path),
+                {
+                    "Rakuten": 2,
+                    "Razer": 1,
+                    "Salesforce": 1,
+                    "Nvidia": 1,
+                },
+            )
+            self.assertEqual(
+                submit_attempt_hosts(path),
+                frozenset(
+                    {
+                        "rakuten.wd1.myworkdayjobs.com",
+                        "razer.wd1.myworkdayjobs.com",
+                        "salesforce.wd1.myworkdayjobs.com",
+                        "nvidia.wd1.myworkdayjobs.com",
+                        "zendesk.wd1.myworkdayjobs.com",
+                        "autodesk.wd1.myworkdayjobs.com",
+                    }
+                ),
             )
     def test_transient_qualification_failure_retries_same_wake(self):
         attempts = 0

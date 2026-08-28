@@ -25,6 +25,7 @@ from telegram_outbox import TelegramOutbox, dispatch_one  # noqa: E402
 from owner_notify import send_email_if_configured  # noqa: E402
 from gig_paths import BROWSER_DIR, GIG_DIR, HOST_STATE_DIR, RUNNER_DIR, STATE_DIR  # noqa: E402
 from gig_disk_guard import disk_headroom_ok  # noqa: E402
+import evidence_gc  # noqa: E402
 
 DEFAULT_STATE = STATE_DIR / "storefront-direct"
 DEFAULT_BRAKE = HOST_STATE_DIR / "gig-work" / "storefront.operator.brake"
@@ -81,6 +82,14 @@ DEFAULT_PRICE_MUTATION = DEFAULT_STOREFRONT_ROOT / "contracts" / "mutations" / "
 DEFAULT_LISTING_CONTRACT_DIR = DEFAULT_STOREFRONT_ROOT / "contracts" / "listings"
 DEFAULT_LISTING_CONTRACT_FAMILIES = DEFAULT_STOREFRONT_ROOT / "families.json"
 DEFAULT_NEW_LISTING_CONTRACT = DEFAULT_STOREFRONT_ROOT / "contracts" / "new-listing.json"
+
+
+def _collect_storefront_evidence(state_dir: Path, current_evidence_dir: Path) -> None:
+    evidence_gc.collect(
+        state_dir=state_dir,
+        evidence_root=state_dir / "evidence",
+        current_evidence_dir=current_evidence_dir,
+    )
 
 
 def _walk_json_items(value: object):
@@ -5417,6 +5426,9 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
         lease = None
         released = False
         try:
+            _collect_storefront_evidence(
+                args.state_dir, args.state_dir / "evidence" / pass_id,
+            )
             browser = subprocess.run(
                 ["/bin/bash", str(args.ensure_browser_script)],
                 capture_output=True, text=True, check=False, timeout=60,

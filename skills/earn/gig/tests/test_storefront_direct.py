@@ -700,6 +700,18 @@ def test_effect_ledger_append_is_idempotent(tmp_path):
         raise AssertionError("corrupt effect ledger ignored")
 
 
+def test_storefront_collects_its_own_evidence(monkeypatch, tmp_path):
+    calls = []
+    monkeypatch.setattr(direct.evidence_gc, "collect", lambda **kwargs: calls.append(kwargs))
+    current = tmp_path / "evidence" / "storefront-direct-current"
+
+    direct._collect_storefront_evidence(tmp_path, current)
+
+    assert calls == [{"state_dir": tmp_path,
+                      "evidence_root": tmp_path / "evidence",
+                      "current_evidence_dir": current}]
+
+
 def test_verified_image_contract_becomes_one_exact_image_judgement(monkeypatch):
     """The judgement itself; the contract validator has its own tests."""
     monkeypatch.setattr(direct, "_validate_image_mutation_contract", lambda contract, **_kwargs: None)

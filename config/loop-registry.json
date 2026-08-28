@@ -17,6 +17,7 @@
     "ai.anicca.probe-rollback-1782857566-85245-proactive",
     "ai.anicca.provision-browser.buyma.na-l5-client",
     "ai.anicca.provision-browser.instagram.capafy-provision",
+    "ai.anicca.provision-browser.tiktok.anicca",
     "ai.anicca.provision-browser.x.anicca",
     "ai.anicca.provision-browser.x.diceai0",
     "ai.anicca.tsbridge"
@@ -864,22 +865,6 @@
       "provider_route": "deterministic",
       "state_root": "~/.openclaw"
     },
-    "hf-gig-release-watch": {
-      "cadence": {
-        "start_interval_seconds": 300
-      },
-      "cleanup": {
-        "max_age_days": 14,
-        "max_runs": 100
-      },
-      "domain": "earn",
-      "effect_class": "none",
-      "entrypoint": "skills/earn/gig/scripts/gig_release.py",
-      "label": "ai.anicca.hf-gig-release-watch",
-      "log_root": "~/.openclaw/logs",
-      "provider_route": "deterministic",
-      "state_root": "~/.openclaw"
-    },
     "hf-gig-reply-detector": {
       "cadence": {
         "keep_alive": true
@@ -1121,7 +1106,7 @@
       },
       "domain": "earn",
       "effect_class": "application",
-      "entrypoint": "skills/earn/lancers/scripts/application_loop.py",
+      "entrypoint": "runtime/loop/entry_dispatch.py",
       "label": "ai.anicca.lancers-revenue-application",
       "log_root": "~/.local/state/anicca/lancers/logs",
       "provider_route": "deterministic",
@@ -1153,7 +1138,7 @@
       },
       "domain": "earn",
       "effect_class": "publish",
-      "entrypoint": "skills/earn/lancers/scripts/storefront_offer.py",
+      "entrypoint": "runtime/loop/entry_dispatch.py",
       "label": "ai.anicca.lancers-revenue-storefront",
       "log_root": "~/.local/state/anicca/lancers/logs",
       "provider_route": "deterministic",
@@ -1169,7 +1154,7 @@
       },
       "domain": "earn",
       "effect_class": "message",
-      "entrypoint": "skills/earn/lancers/scripts/telegram_report.py",
+      "entrypoint": "runtime/loop/entry_dispatch.py",
       "label": "ai.anicca.lancers-revenue-telegram-report",
       "log_root": "~/.local/state/anicca/lancers/logs",
       "provider_route": "deterministic",
@@ -1185,7 +1170,7 @@
       },
       "domain": "earn",
       "effect_class": "none",
-      "entrypoint": "skills/earn/lancers/scripts/work_sync.py",
+      "entrypoint": "runtime/loop/entry_dispatch.py",
       "label": "ai.anicca.lancers-revenue-work-sync",
       "log_root": "~/.local/state/anicca/lancers/logs",
       "provider_route": "deterministic",
@@ -3034,6 +3019,7 @@
     "ai.anicca.bounty-proactive",
     "ai.anicca.cfo-daily",
     "ai.anicca.dd-keepalive-healthcheck",
+    "ai.anicca.hf-gig-release-watch",
     "ai.anicca.larry-anicca-en-v1",
     "ai.anicca.larry-anicca-en-v2",
     "ai.anicca.larry-anicca-en-v3",

@@ -49,6 +49,9 @@ def status_rows(registry: dict, *, loaded: dict, disabled: dict, events: dict,
             launchd_state = "unloaded"
         event = events.get(loop_id) or {}
         rows.append({
+            "classification": "managed",
+            "owner": "life-manager",
+            "desired_mode": "continuous" if "keep_alive" in entry["cadence"] else "scheduled",
             "loop_id": loop_id,
             "label": label,
             "domain": entry["domain"],
@@ -68,6 +71,58 @@ def status_rows(registry: dict, *, loaded: dict, disabled: dict, events: dict,
             "blocker": event.get("blocker"),
         })
     return rows
+
+
+def resolver_rows(registry: dict, *, loaded: dict, disabled: dict, events: dict,
+                  installed_releases: dict, installed_labels: set[str]) -> list[dict]:
+    rows = status_rows(registry, loaded=loaded, disabled=disabled, events=events,
+                       installed_releases=installed_releases)
+    managed = {entry["label"] for entry in registry["loops"].values()}
+    external = set(registry.get("external_labels", []))
+    retired = set(registry.get("retired_labels", []))
+    labels = external | retired | installed_labels | {
+        label for label in loaded if label.startswith("ai.anicca.")
+    }
+    for label in sorted(labels - managed):
+        runtime = loaded.get(label)
+        classification = (
+            "retired" if label in retired else
+            "external" if label in external else
+            "unmanaged"
+        )
+        if disabled.get(label):
+            launchd_state = "disabled"
+        elif runtime:
+            launchd_state = "loaded-running" if runtime.get("pid") else "loaded-idle"
+        else:
+            launchd_state = "unloaded"
+        present = bool(runtime or label in installed_labels)
+        rows.append({
+            "classification": classification,
+            "owner": "external" if classification == "external" else (
+                "retired" if classification == "retired" else "unknown"),
+            "desired_mode": classification,
+            "loop_id": label,
+            "label": label,
+            "domain": None,
+            "launchd_state": launchd_state,
+            "pid": runtime.get("pid") if runtime else None,
+            "last_exit": runtime.get("last_exit") if runtime else None,
+            "installed_release_sha": installed_releases.get(label),
+            "provider_route": None,
+            "provider": None,
+            "profile_alias": None,
+            "last_pass": None,
+            "last_terminal_result": None,
+            "effect_class": "unknown",
+            "effect_status": "unknown",
+            "event_release_sha": None,
+            "next_eligible_run": None,
+            "blocker": (
+                "retired_still_present" if classification == "retired" and present else
+                "unmanaged_label" if classification == "unmanaged" else None),
+        })
+    return sorted(rows, key=lambda row: row["label"])
 
 
 def doctor_report(registry: dict, *, installed_labels: set[str], loaded_labels: set[str],
@@ -148,8 +203,11 @@ def collect_live(registry: dict) -> tuple[dict, dict, dict, set[str], set[str]]:
     loaded = parse_loaded(_launchctl("list"))
     disabled = parse_disabled(_launchctl("print-disabled", f"gui/{os.getuid()}"))
     plist_dir = Path.home() / "Library/LaunchAgents"
-    installed = {path.stem for path in plist_dir.glob("ai.anicca.*.plist")}
+    installed_paths = list(plist_dir.glob("ai.anicca.*.plist"))
+    installed = {path.stem for path in installed_paths}
     releases, events = {}, {}
+    for path in installed_paths:
+        releases[path.stem] = _release_from_plist(path)
     for loop_id, entry in registry["loops"].items():
         label = entry["label"]
         releases[label] = _release_from_plist(plist_dir / f"{label}.plist")
@@ -169,9 +227,11 @@ def _select(rows: list[dict], target: str) -> list[dict]:
 
 
 def snapshot(registry: dict, target: str) -> list[dict]:
-    loaded, disabled, events, releases, _ = collect_live(registry)
-    return _select(status_rows(registry, loaded=loaded, disabled=disabled,
-                               events=events, installed_releases=releases), target)
+    loaded, disabled, events, releases, installed = collect_live(registry)
+    rows = resolver_rows(
+        registry, loaded=loaded, disabled=disabled, events=events,
+        installed_releases=releases, installed_labels=installed)
+    return _select(rows, target)
 
 
 def _safe_launchctl(executable: Path, args: list[str]) -> tuple[int, str]:
@@ -266,9 +326,9 @@ def apply_live(release_root: Path, agents_dir: Path, launchctl_safe: Path,
 
 def main(argv: list[str] | None = None) -> int:
     args = argv or sys.argv[1:]
-    commands = {"apply", "doctor", "start", "stop", "restart", "status", "watch"}
+    commands = {"apply", "doctor", "reconcile", "start", "stop", "restart", "status", "watch"}
     if not args or args[0] not in commands:
-        print("usage: lm-loop apply|doctor|start|stop|restart <loop-id|all>|status|watch [<loop-id|all>]", file=sys.stderr)
+        print("usage: lm-loop apply|doctor|reconcile <provider-route>|start|stop|restart <loop-id|all>|status|watch [<loop-id|all>]", file=sys.stderr)
         return 2
     command = args[0]
     if command == "apply":
@@ -287,6 +347,37 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(results, indent=2, sort_keys=True))
         return 0
     registry = validate_registry(json.loads((ROOT / "config/loop-registry.json").read_text()))
+    if command == "reconcile":
+        if len(args) != 2:
+            print(json.dumps({"ok": False, "error": "reconcile requires <provider-route>"}))
+            return 2
+        route = args[1]
+        current_sha = json.loads((ROOT / "RELEASE.json").read_text()).get("sha")
+        rows = snapshot(registry, "all")
+        eligible = [row for row in rows if (
+            row["classification"] == "managed"
+            and row["provider_route"] == route
+            and row["launchd_state"] == "loaded-idle"
+            and row["installed_release_sha"] != current_sha
+        )]
+        applied, failed = [], []
+        for row in eligible:
+            try:
+                applied.extend(apply_live(
+                    ROOT, Path("~/Library/LaunchAgents").expanduser(), ROOT / "bin/launchctl-safe",
+                    target=row["loop_id"]))
+            except (OSError, ValueError, RuntimeError, json.JSONDecodeError) as exc:
+                failed.append({"loop_id": row["loop_id"], "error": str(exc)})
+        print(json.dumps({
+            "ok": not failed, "route": route, "release_sha": current_sha,
+            "eligible": len(eligible), "applied": applied, "failed": failed,
+            "skipped_running": [row["loop_id"] for row in rows if (
+                row["classification"] == "managed"
+                and row["provider_route"] == route
+                and row["launchd_state"] == "loaded-running"
+                and row["installed_release_sha"] != current_sha)],
+        }, indent=2, sort_keys=True))
+        return 1 if failed else 0
     if command in {"start", "stop", "restart"}:
         if len(args) != 2:
             print(json.dumps({"ok": False, "error": f"{command} requires <loop-id|all>"}))

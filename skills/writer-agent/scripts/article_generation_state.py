@@ -131,6 +131,18 @@ def _charged_attempt_count(state: dict[str, Any]) -> int:
     return len(attempts) - min(empty_interruptions, free_recoveries)
 
 
+def _failed_before_publication(state: dict[str, Any]) -> bool:
+    attempts = state.get("attempts")
+    return bool(
+        state.get("status") == "provider-failed-ambiguous"
+        and isinstance(attempts, list)
+        and attempts
+        and isinstance(attempts[-1].get("return_code"), int)
+        and attempts[-1]["return_code"] != 0
+        and attempts[-1].get("boundary") == "prepublication-empty"
+    )
+
+
 def _lock(path: Path):
     lock_path = path.with_name(f".{path.name}.lock")
     lock_path.parent.mkdir(parents=True, exist_ok=True)
@@ -265,6 +277,8 @@ def begin(
             "provider-failed-safe",
             "interrupted-safe",
         }
+        if _failed_before_publication(state):
+            allowed_statuses.add("provider-failed-ambiguous")
         if quality_reroute:
             allowed_statuses.add("provider-returned")
         if state.get("status") not in allowed_statuses:
@@ -487,6 +501,8 @@ def archive_interrupted(
                         "sha256": file_sha256(path),
                     }
                 )
+            if state.get("status") == "provider-failed-ambiguous" and return_code == 75:
+                attempt["provider_return_code"] = attempt.get("return_code")
             attempt.update(
                 {
                     "status": "interruption-archiving",
@@ -601,8 +617,11 @@ def resume_decision(
             or state.get("run_dir") != str(resolved)
             or state.get("prompt_path") != str(prompt_file.resolve(strict=True))
             or state.get("prompt_sha256") != file_sha256(prompt_file)
-            or state.get("status")
-            not in {"provider-failed-safe", "interrupted-safe"}
+            or (
+                state.get("status")
+                not in {"provider-failed-safe", "interrupted-safe"}
+                and not _failed_before_publication(state)
+            )
         ):
             return {"resumable": False, "reason": "generation-state-not-safe"}
         attempts = state.get("attempts", [])

@@ -109,7 +109,7 @@ class ModelBrowserLoopContractTests(unittest.TestCase):
             RowQueueSupervisor.collect(ledger, active_provider="workday"), ()
         )
 
-    def test_model_selected_application_moves_to_front_of_workday_queue(self):
+    def test_model_selected_application_is_the_only_workday_row_for_this_wake(self):
         from job_search_loop.browser_agent.queue import RowQueueSupervisor
 
         rows = [
@@ -132,7 +132,33 @@ class ModelBrowserLoopContractTests(unittest.TestCase):
             collected = RowQueueSupervisor.collect(ledger, active_provider="workday")
         self.assertEqual(
             [row["application_id"] for row in collected],
-            ["new-company", "old-rakuten"],
+            ["new-company"],
+        )
+
+    def test_missing_preferred_workday_application_keeps_existing_queue(self):
+        from job_search_loop.browser_agent.queue import RowQueueSupervisor
+
+        rows = [
+            {
+                "application_id": value,
+                "company": value,
+                "title": "AI Role",
+                "canonical_url": f"https://{value}.wd1.myworkdayjobs.com/job/role",
+            }
+            for value in ("old-rakuten", "new-company")
+        ]
+        ledger = Mock()
+        ledger.pending_materials_ready_applications.return_value = rows
+        ledger.retryable_applications.return_value = []
+        ledger.workday_fit_qualified.return_value = True
+        with patch.dict(
+            os.environ,
+            {"JOB_SEARCH_PREFERRED_APPLICATION_ID": "not-in-queue"},
+        ):
+            collected = RowQueueSupervisor.collect(ledger, active_provider="workday")
+        self.assertEqual(
+            [row["application_id"] for row in collected],
+            ["old-rakuten", "new-company"],
         )
 
     def test_transport_failed_requires_a_real_nonzero_runtime_command(self):

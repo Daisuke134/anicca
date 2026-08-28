@@ -6,11 +6,16 @@
     "codex": {
       "executable": "codex",
       "profiles": {
+        "acct1": {
+          "automation_home": "~/.local/state/life-manager/codex-runner/acct1",
+          "auth_file": "~/.codex/auth.json"
+        },
         "acct2": {
           "automation_home": "~/.local/state/life-manager/codex-runner/acct2",
           "auth_file": "~/.codex-acct2/auth.json"
         }
       },
+      "account_profile_order": ["acct1", "acct2"],
       "ssl_cert_file": "/etc/ssl/cert.pem",
       "project_doc_max_bytes": 0,
       "disabled_skills": [

@@ -6,7 +6,7 @@
 「日本語リポスト」「英語リポスト」「中国語圏の情報を使った英語オリジナル投稿」が
 技術的に成立することは確認できた。
 
-6 jobはGitHub main祖先の同じimmutable release `fb9eb051…` を参照する。loaded
+6 jobはGitHub main祖先の同じimmutable release `3f668d6a…` を参照する。loaded
 ProgramArgumentsと実ファイルをreadback済みで、worktreeやbranchを本番実行先にしていない。
 release切替とregistry applyは同じhost-wide lockを使い、stale releaseと同時applyを変更前に
 拒否する。
@@ -16,11 +16,11 @@ release切替とregistry applyは同じhost-wide lockを使い、stale release�
 
 | owner | installed SHA | launchd | last terminal | last event SHA | 最新公式投稿 | 残確認 |
 |---|---|---|---|---|---|---|
-| English Repost | `fb9eb051…` | loaded-idle | pass | `b9d38b84…` | https://x.com/selawmqt/status/2093147587130106046 | current SHAの自然terminal、replay-zero |
-| Dice Repost | `fb9eb051…` | loaded-idle | fail 143 | `b9d38b84…` | https://x.com/diceai0/status/2093136603065790831 | current SHAのterminal 0、replay-zero |
-| Chinese-source Tweeter | `fb9eb051…` | loaded-idle | pass | `69184b22…` | https://x.com/selawmqt/status/2093028734823768073 | current SHAの自然terminal、replay-zero |
+| English Repost | `3f668d6a…` | loaded-idle | pass | `23ca4d6c…` | https://x.com/selawmqt/status/2093179411780805094 | current SHAの自然terminal |
+| Dice Repost | `3f668d6a…` | loaded-idle | pass | `8efb1840…` | https://x.com/diceai0/status/2093272506090283071 | current SHAの自然terminal |
+| Chinese-source Tweeter | `3f668d6a…` | loaded-idle | pass | `8efb1840…` | https://x.com/selawmqt/status/2093028734823768073 | current SHAの自然terminal |
 
-healthcheck 3本のlast terminalはすべてpassである。ただし、**実験基盤の復旧と、実験の
+healthcheck 3本は`3f668d6a…`からterminal passを出している。ただし、**実験基盤の復旧と、実験の
 勝敗確定は別**である。60分後viewsの比較sampleはまだ不足している。
 
 ## コードはmain 1本、worktreeは作業中だけ使う
@@ -55,7 +55,7 @@ merge後もworktreeを本番ownerや保管場所として残さない。削除�
 loaded launchd jobが参照するexact releaseをpinする。loaded jobが存在する限り、そのreleaseを
 削除候補にしてはならない。
 
-GitHub `main`はPR必須、strict required check `Loop control contracts`必須、adminにも適用、
+GitHub `main`はPR必須、required check `Loop control contracts`必須、adminにも適用、
 force-push・branch削除禁止である。PR branchはmerge後に自動削除する。全agentはloop変更前に
 `skills/loop-development/SKILL.md`を読み、`worktree → PR → main → immutable release →
 lm-loop apply → readback`の一本道を使う。local hookは回避可能なのでproduction保証には使わない。
@@ -121,7 +121,7 @@ AI・開発ツール・オープンソース・自動化などの英語投稿を
 - 投稿: https://x.com/selawmqt/status/2093017798494838886
 - source: https://x.com/ClementDelangue/status/2092931447644442635
 
-最新のruntime復旧後投稿は https://x.com/selawmqt/status/2093147587130106046 である。
+最新のruntime復旧後投稿は https://x.com/selawmqt/status/2093179411780805094 である。
 affiliate revisionは共有model schemaの空フィールドを安全に受理するよう修正し、POSTED terminal
 receiptとprovider submission IDを保存した。
 
@@ -205,7 +205,7 @@ tone weightは0.5、original比率は0.05ずつ動かす。1回の結果で全�
 保護する回帰テストを追加した。実際に旧loaded release `defa620c…` を残したまま次releaseを
 作成できた。
 
-installed・loadedの6 jobはexact release SHA `fb9eb051…` で一致する。production plistの
+installed・loadedの6 jobはexact release SHA `3f668d6a…` で一致する。production plistの
 worktree参照は0である。Life Manager全体もregistry 167、loaded 167、installed release SHA
 1種類、unmanaged 0、missing entrypoint 0である。
 
@@ -236,16 +236,16 @@ merge状態をread-onlyで確認し、安全な対象だけを整理する。同
 - `loops/x-tweeter/loop.toml`、`config/loop-registry.json`、loaded plistの3つを照合する
 - English Repostの0分・30分、Diceの5分・35分と重ならないことを確認する
 
-### P0: 最新releaseで公開E2Eとreplay-zeroを閉じる
+### P0: 最新releaseの自然terminalを閉じる
 
-- English Repost: `fb9eb051…`の自然terminalを取得する
-- Dice Repost: `fb9eb051…`でexit 143を解消し、terminal 0を取得する
-- Chinese-source Tweeter: `fb9eb051…`の自然terminalを取得する
-- 各レーンのsecond wakeで同じsourceの重複作用が0であることを確認する
-- 3つの最新公式URL、source、provider receipt、posted/result ledgerを1対1で固定する
+- English Repost: `3f668d6a…`の自然terminalを取得する
+- Dice Repost: `3f668d6a…`の自然terminalを取得する
+- Chinese-source Tweeter: `3f668d6a…`の自然terminalを取得する
 
-English Repostのaffiliate payload revision failureは解消済みであり、公式投稿
-`2093147587130106046`とPOSTED terminal receiptを得た。healthcheck 3本もpass済みである。
+3レーンのsecond wakeとledgerを照合し、最新effectの重複作用0を確認した。Englishはjob receipt
+3行中POSTED 1、Dice sourceはposted 1、Tweeter sourceはposted 1である。English Repostの
+affiliate quote-copy schema failureも解消し、再wakeはpayload ready・新規投稿0でterminal passした。
+Diceは106候補のcritic棄却、Tweeterは7媒体候補0で、どちらも安全なno-effect terminal passだった。
 
 ### 完了: production apply ownerを1つにする
 
@@ -256,7 +256,7 @@ English Repostのaffiliate payload revision failureは解消済みであり、�
 
 ### 完了: agent開発経路をGitHubで強制する
 
-- `main`はPR必須、strict `Loop control contracts`必須、admin bypassなし
+- `main`はPR必須、`Loop control contracts`必須、admin bypassなし
 - force-push・main削除は禁止し、merge後remote branchを自動削除する
 - CIはmacOSでregistry、release、apply fence、clean installを検証する
 - `skills/loop-development/SKILL.md`をClaude/Codex共通ルールから必読にする
@@ -272,7 +272,7 @@ English Repostのaffiliate payload revision failureは解消済みであり、�
 
 - 全worktreeを`使用中`、`dirty`、`未merge`、`merge済みclean`に分類する
 - 実行中agentが所有するworktreeと、dirty・未mergeのworktreeは保護する
-- 現在24 worktree、dirty 15、未mergeまたはdetached 21、merge済みclean 3である
+- 現在30 worktree、dirty 16、未mergeまたはdetached 25、merge済みclean 4である
 - 全worktreeがlock中なので、ownerと実行processを確認した対象だけunlock・削除する
 - 対応するlocal・remote feature branchを削除する
 - 永続branchが`main`だけになっていることを確認する

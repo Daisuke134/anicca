@@ -665,6 +665,7 @@ if route_status == "absent":
         fail("generation-state-invalid")
     attempts = generation.get("attempts")
     latest = attempts[-1] if isinstance(attempts, list) and attempts else None
+    archive_manifest = latest.get("archive_manifest") if isinstance(latest, dict) else None
     empty_interruption = (
         generation.get("version") == 1
         and generation.get("run_id") == run_id
@@ -672,7 +673,22 @@ if route_status == "absent":
         and isinstance(latest, dict)
         and latest.get("status") == "interrupted-safe"
         and latest.get("boundary") == "archived-prepublication-artifacts"
-        and latest.get("archive_manifest") == []
+        and isinstance(archive_manifest, list)
+        and all(
+            isinstance(item, dict)
+            and item.get("path") == "gates/selfimprove-verify.json"
+            for item in archive_manifest
+        )
+        and path_status(topic_route_path) == "absent"
+    )
+    empty_provider_failure = (
+        generation.get("version") == 1
+        and generation.get("run_id") == run_id
+        and generation.get("status") == "provider-failed-ambiguous"
+        and isinstance(latest, dict)
+        and isinstance(latest.get("return_code"), int)
+        and latest["return_code"] != 0
+        and latest.get("boundary") == "prepublication-empty"
         and path_status(topic_route_path) == "absent"
     )
     public_row = False
@@ -699,7 +715,7 @@ if route_status == "absent":
             )
         ):
             public_row = True
-    if empty_interruption and not public_row:
+    if (empty_interruption or empty_provider_failure) and not public_row:
         write_receipt({
             "version": 1,
             "run_id": run_id,
@@ -1046,7 +1062,7 @@ fi
 # starts never replays the complete prompt on another provider because public side effects may exist.
 run_model_pass() {
   local active_prompt_file="${1:-$PROMPT_FILE}"
-  BOUNDED_EXEC_STOP_PATHS="$HOME/.openclaw/state/disk-writers.stop:$HOME/.openclaw/state/disk-pressure.block" \
+  BOUNDED_EXEC_STOP_PATHS="$HOME/.openclaw/state/disk-writers.stop" \
   ARTICLE_RUN_ID="$RUN_TS" ARTICLE_MODEL_LOG="$LOG" \
     python3 "$ARTICLE_ROOT/runtime/bounded-exec.py" \
       "$ARTICLE_MODEL_AGENT_TIMEOUT_SECONDS" \
@@ -1172,4 +1188,4 @@ if pass_is_complete; then
     echo "=== article-daily: active-four completion notification remains pending $(date '+%F %T %Z') ===" >>"$LOG"
   touch "$HOME/.openclaw/state/.article-loop-last-pass" 2>/dev/null || true
 fi
-exit 0
+exit "$RC"

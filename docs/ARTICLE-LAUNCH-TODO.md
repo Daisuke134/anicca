@@ -16,17 +16,23 @@
       sibling loopのrelease/state/plist/argv変更0であることを証明する。自然wakeで進んだsibling receiptは同じownerの
       valid terminal advancementとして分離し、停止・失敗・重複作用へのregressionがないことを確認する。完了:
       doctor hash同一、167 loop中release差分はWriter 3件だけ、3件とも新SHAで自然terminal PASS。
-- [ ] W1g 未完prepublication runをprunerから保護する。inner provider rc=1の`20260828-043519`が同じpassで
+- [x] W1g 未完prepublication runをprunerから保護する。inner provider rc=1の`20260828-043519`が同じpassで
       `deleted`になった再現を閉じ、同じrunのgeneration state・prompt・artifactをresume可能なまま保持する。
       code完了: PR #2956、generation-stateを持つrunはpruneしない5行修正。release `40065a10`へproduction反映済み。
-      残りはdisk floor 512MiB以上でprovider-failure canaryを起動し、同じrunがprune後も残るreadback。
+      production完了: run `20260828-083954`はprovider rc=1後もgeneration stateとpromptを保持し、prunerは
+      古いterminal `daily-2026-08-18`だけを削除した。
 - [x] W1i Writer helper sourceをloaded immutable releaseへ統一する。現在のplistはProgramArgumentsがloops releaseでも
       `ARTICLE_ROOT/ARTICLE_SKILL_DIR/LIFE_MANAGER_REPO`をgig releaseへ向けるため、pruner等が別SHAを読む。
       daily/resume/healthcheckに加え、money/discovery/response/reportを含む全Writer ownerのenvとargvを同じmain由来
       release SHAへ一致させ、他loop env変更0をreadbackする。完了: PR #2962/#2965、14 Writer labelのargv/rootが
       sparse immutable release `40065a10`へ一致。general currentは元full releaseへ復元。
+- [x] W1j concurrent apply後の3 label driftをreconcileする。3 labelのowner idleを確認してsparse immutable
+      release `40065a10`へtarget applyし、全14 Writer labelのargv、release SHA、`ARTICLE_ROOT`、
+      `ARTICLE_SKILL_DIR`、`LIFE_MANAGER_REPO`が同じreleaseへ一致することをplistからreadbackした。
 - [ ] W1h `article-daily.sh`のinner rc=1をruntime terminal PASSへ変換しない。外部作用0を保持したまま、exact
       release/run/error classをterminal failure eventへ記録し、launchd process resultとbusiness effectを分離する。
+      code/deploy完了: PR #2985で末尾を`exit "$RC"`へ変更し、sparse immutable release `f4653e08`を全14 Writer
+      labelへapplyした。残りは同releaseの自然provider failureでgeneration-stateのinner rcとlm-loop terminal FAILをreadbackする。
 - [ ] W2 installed loopの1回のwakeで新しいsource articleと記事固有のheadlineを生成する。OpenAI Image APIの
       `model=gpt-image-2-2026-04-21`、x-request-id、request model、prompt/response/file SHA、dimensions、alt、rights receiptを保存する。
 - [ ] W3 W2のNote JAだけをprovider-native readbackし、title、body、owner、headline、paywall、URLを確認する。
