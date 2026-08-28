@@ -21,7 +21,7 @@ class CutLoopReleaseTest(unittest.TestCase):
             agents = root / "agents"
             agents.mkdir()
             result = subprocess.run(
-                ["/bin/bash", str(ROOT / "bin/cut-loop-release.sh"), "HEAD"],
+                ["/bin/bash", str(ROOT / "bin/cut-loop-release.sh"), "origin/main"],
                 cwd=ROOT,
                 env={
                     **os.environ,
