@@ -54,6 +54,12 @@ raise SystemExit(1 if reason else 0)
 
 
 class CdpPersistentContextPreflightTests(unittest.TestCase):
+    def test_persistent_context_disables_code_sign_clone(self) -> None:
+        self.assertIn(
+            '"--disable-features=MacAppCodeSignClone"',
+            SCRIPT.read_text(encoding="utf-8"),
+        )
+
     def install_guard(self, home: Path) -> Path:
         guard = home / GUARD_RELATIVE
         guard.parent.mkdir(parents=True)

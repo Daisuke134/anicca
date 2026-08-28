@@ -92,6 +92,7 @@ def main(argv: list[str] | None = None) -> int:
             f"--remote-debugging-port={port}",
             "--remote-debugging-address=127.0.0.1",
             "--remote-allow-origins=*",
+            "--disable-features=MacAppCodeSignClone",
             "--disk-cache-size=67108864",
             "--media-cache-size=33554432",
             f"--disk-cache-dir={_canonical_home() / '.cache' / 'life-manager-daily-driver'}",
