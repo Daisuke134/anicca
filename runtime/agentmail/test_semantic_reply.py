@@ -81,6 +81,19 @@ def test_replier_ignores_automated_mail_without_direct_provider_key(tmp_path):
     assert result.returncode == 0, result.stderr
     assert "pending: 1" in result.stdout
     assert "ignored" in result.stdout
+    evidence_count = len(list((tmp_path / "evidence").iterdir()))
+    replay = subprocess.run(
+        ["node", str(Path(__file__).resolve().parent / "replier.ts")],
+        env={
+            **os.environ,
+            "HOME": str(tmp_path), "AGENTMAIL_DB_PATH": str(database),
+            "AGENTMAIL_API_KEY": "test-only", "AGENTMAIL_ADAPTER_SEND_SH": str(adapter),
+            "AGENT_RUNNER_BIN": str(runner),
+            "AGENTMAIL_SEMANTIC_STATE_DIR": str(tmp_path / "evidence"),
+        }, capture_output=True, text=True, check=False)
+    assert replay.returncode == 0, replay.stderr
+    assert "pending: 0" in replay.stdout
+    assert len(list((tmp_path / "evidence").iterdir())) == evidence_count
 
 
 def test_nudge_uses_semantic_runner_without_direct_provider_key(tmp_path):

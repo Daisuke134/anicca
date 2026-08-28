@@ -59,6 +59,11 @@ function exec(query: string): void {
   }
 }
 
+const esc = (v: string): string => `'${v.replace(/'/g, "''")}'`;
+exec(`CREATE TABLE IF NOT EXISTS ignored_inbound (
+  message_id TEXT PRIMARY KEY, reason TEXT NOT NULL, observed_at TEXT NOT NULL
+);`);
+
 const REPLY_INSTRUCTIONS = `You are Anicca — a sovereign AI agent that runs autonomously without human supervision. When humans email you, reply briefly, concretely, and with substance.
 
 Hard rules:
@@ -146,6 +151,7 @@ WHERE m.direction = 'inbound'
     SELECT in_reply_to FROM inbox_messages
     WHERE direction = 'outbound' AND in_reply_to IS NOT NULL
   )
+  AND m.id NOT IN (SELECT message_id FROM ignored_inbound)
 ORDER BY m.sent_at;
 `);
 
@@ -181,6 +187,8 @@ for (const p of pending) {
     continue;
   }
   if (decision.action === "ignore" || !decision.reply) {
+    exec(`INSERT OR IGNORE INTO ignored_inbound(message_id, reason, observed_at)
+      VALUES (${esc(p.id)}, 'automated_or_non_actionable', ${esc(new Date().toISOString())});`);
     console.log(`  ignored automated/non-actionable mail ${p.id}`);
     continue;
   }
@@ -222,7 +230,6 @@ for (const p of pending) {
   }
 
   const now = new Date().toISOString();
-  const esc = (v: string): string => `'${v.replace(/'/g, "''")}'`;
   exec(`
 BEGIN;
 INSERT OR IGNORE INTO inbox_messages(id, thread_id, direction, sent_at, from_addr, to_addr, subject, body, in_reply_to)
