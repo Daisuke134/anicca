@@ -277,16 +277,33 @@ Disk capacity is not a product requirement or revenue blocker. The temporary fix
 gate must be removed; ordinary write failure uses the same checkpoint-and-retry path as any other
 temporary local failure.
 
-### Remaining TODO order
+### Atomic remaining TODO order
 
-1. **Make one complete 24-sticker set.** Remove the temporary fixed disk threshold, finish the media
-   review, connect one real animation provider, create the original character, generate 60 motions
-   in six videos, select 24, and produce one validator-ready package with rights/cost receipts.
-2. **Upload and release it.** Connect one dedicated Creators Market browser session, upload once,
-   read the official review result, repair a rejection, release automatically, and verify the public
-   LINE STORE product.
-3. **Repeat without duplicates.** Add only the small integration manifest and scheduled owner needed
-   to resume checkpoints, check official inventory before effects, and prove the next wake creates no
-   duplicate submit or release.
-4. **Read sales and improve the next set.** Record official sales/payout or zero, change one creative
-   decision from that evidence, and start the next set through the same loop.
+Each row is one action with one completion receipt. Execute from top to bottom; do not start a later
+row while an earlier row is unfinished.
+
+| ID | One action | Done evidence |
+| --- | --- | --- |
+| A01 | Remove the temporary fixed disk threshold; on write failure retain the current checkpoint and exit with no external effect. | A forced write failure resumes the same item on the next wake. |
+| A02 | Run the redesigned media tests plus the full validator/owner regression and obtain fresh adversarial review. | All tests pass and review has no Critical or Important finding. |
+| A03 | Connect one real animation provider account through the private credential SSOT. | Official provider identity and one side-effect-free quote read back successfully. |
+| A04 | Generate one original character sheet and save its rights evidence. | Character file hash and rights receipt exist. |
+| A05 | Ask the model for the exact 60-motion plan. | `plan.json` contains 60 inspected, unique motions in six batches. |
+| A06 | Generate and convert batch 1 into ten valid candidates. | Ten candidate hashes pass the LINE validator. |
+| A07 | Generate and convert batch 2 into ten valid candidates. | Ten candidate hashes pass the LINE validator. |
+| A08 | Generate and convert batch 3 into ten valid candidates. | Ten candidate hashes pass the LINE validator. |
+| A09 | Generate and convert batch 4 into ten valid candidates. | Ten candidate hashes pass the LINE validator. |
+| A10 | Generate and convert batch 5 into ten valid candidates. | Ten candidate hashes pass the LINE validator. |
+| A11 | Generate and convert batch 6 into ten valid candidates. | Ten candidate hashes pass the LINE validator. |
+| A12 | Ask the model to inspect all 60 candidates and select/order 24. | Selection receipt binds all 60 input hashes and 24 ordered output ids. |
+| A13 | Build the real LINE package. | `main.png`, `tab.png`, 24 APNGs, provenance, and ZIP pass the validator. |
+| B01 | Create or recover one dedicated authenticated Creators Market browser session. | Official account page reads back the creator identity. |
+| B02 | Read the official product inventory before mutation. | Inventory receipt records whether the package already exists. |
+| B03 | Upload and submit the package once. | Official Creators Market product id and submitted state read back. |
+| B04 | Read the official review result on a later wake. | Exact approved or rejected state and reason are recorded. |
+| B05 | If rejected, repair only the stated defect and resubmit once. | New official submitted state binds the repaired package hash. |
+| B06 | When approved, release once and verify the public product. | Matching LINE STORE URL loads with the intended product id and 24 items. |
+| C01 | Install one scheduled owner that runs the same next-step command. | Launchd definition and process argv read back the immutable release. |
+| C02 | Run the next natural wake after release. | Submit and release both report `duplicate_effect=0`. |
+| D01 | Read official sales and payout state. | Provider receipt records actual revenue or zero. |
+| D02 | Change exactly one creative decision and start the next set. | Next-set plan names the evidence, hypothesis, and one changed variable. |
