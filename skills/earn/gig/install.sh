@@ -125,7 +125,7 @@ if [ "${1:-}" = "stop" ] || [ "${1:-}" = "uninstall" ]; then
   labels=(
     ai.anicca.hf-gig-browser ai.anicca.hf-gig-apply-direct
     ai.anicca.hf-gig-reply-detector ai.anicca.hf-gig-storefront-direct
-    ai.anicca.hf-gig-paid-direct ai.anicca.hf-gig-release-watch
+    ai.anicca.hf-gig-paid-direct
   )
   domain="gui/$(id -u)"
   for label in "${labels[@]}"; do
@@ -134,7 +134,7 @@ if [ "${1:-}" = "stop" ] || [ "${1:-}" = "uninstall" ]; then
       rm -f "$HOME/Library/LaunchAgents/$label.plist"
     fi
   done
-  printf '{"status":"%s","jobs":6,"private_state":"preserved"}\n' "$1"
+  printf '{"status":"%s","jobs":5,"private_state":"preserved"}\n' "$1"
   exit 0
 fi
 
@@ -254,12 +254,10 @@ raise SystemExit(0 if any(needle in str(row.get("subject", ""))+str(row.get("bod
     exit 2
   fi
   four_lanes="$("$venv/bin/python" "$GIG_DIR/scripts/gig_release.py" activate)"
-  release_watch="$("$venv/bin/python" "$GIG_DIR/scripts/gig_release.py" activate \
-    --jobs ai.anicca.hf-gig-release-watch)"
-  launchd_sha="$(printf '%s\n%s' "$four_lanes" "$release_watch" | shasum -a 256 | awk '{print $1}')"
+  launchd_sha="$(printf '%s\n' "$four_lanes" | shasum -a 256 | awk '{print $1}')"
   "$venv/bin/python" "$GIG_DIR/scripts/coconala_onboarding.py" record \
     --state launchd_readback --evidence-sha256 "$launchd_sha" >/dev/null
-  printf '%s\n%s\n%s\n' "$ready" "$four_lanes" "$release_watch"
+  printf '%s\n%s\n' "$ready" "$four_lanes"
   exit 0
 fi
 
