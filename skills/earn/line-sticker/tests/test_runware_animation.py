@@ -7,6 +7,7 @@ import hashlib
 import importlib.util
 import json
 from pathlib import Path
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import stat
 import subprocess
 import sys
@@ -14,6 +15,7 @@ import tempfile
 import textwrap
 import unittest
 import uuid
+from threading import Thread
 
 
 MODULE_ROOT = Path(__file__).resolve().parents[1]
@@ -23,6 +25,40 @@ MODULE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(MODULE)
 MEDIA_UUID = "12345678-1234-4234-8234-1234567890ab"
 API_KEY = "runware-test-secret-never-output"
+MODEL = "prunaai:p-video@0"
+
+
+class _DetailsHandler(BaseHTTPRequestHandler):
+    def do_GET(self) -> None:
+        self.server.redirect_followed = True
+        self.send_response(200); self.end_headers()
+
+    def do_POST(self) -> None:
+        length = int(self.headers.get("Content-Length", "0"))
+        request = json.loads(self.rfile.read(length))
+        self.server.headers.append(self.headers.get("Authorization", ""))
+        if self.server.redirect and self.path == "/redirect":
+            self.send_response(302); self.send_header("Location", self.server.redirect_target); self.end_headers(); return
+        if self.path == "/v1" and self.server.redirect:
+            self.server.redirect_followed = True
+        self.server.requests.append(request)
+        if self.server.fail:
+            self.send_response(500); self.end_headers(); return
+        task = request[0]["taskUUID"]
+        if self.server.insufficient:
+            response = {"errors": [{"code": "videoInferenceInsufficientCredits", "message": "requires paid invoice", "taskType": self.server.error_task_type, "taskUUID": task}]}
+        else:
+            video = "\u0000invalid" if self.server.invalid else str(self.server.video)
+            response = {"data": [{"taskType": "videoInference", "taskUUID": task, "videoURL": video, "cost": "0.05", "status": "success"}]}
+        if self.server.mixed:
+            response["errors"] = [{"code": "also-an-error", "taskType": "videoInference", "taskUUID": task}]
+        body = json.dumps({"data": [{"taskType": self.server.outer_task_type, "taskUUID": self.server.outer_task_uuid or task,
+                                      "request": [{"taskType": self.server.request_task_type, "model": self.server.request_model,
+                                                    "taskUUID": self.server.request_task_uuid or task}], "response": response}]}).encode()
+        self.send_response(200); self.send_header("Content-Type", "application/json"); self.send_header("Content-Length", str(len(body))); self.end_headers(); self.wfile.write(body)
+
+    def log_message(self, *_args: object) -> None:
+        pass
 
 
 class RunwareAnimationTests(unittest.TestCase):
@@ -66,11 +102,25 @@ class RunwareAnimationTests(unittest.TestCase):
             encoding="utf-8",
         )
         self.fake.chmod(self.fake.stat().st_mode | stat.S_IXUSR)
+        self.server = ThreadingHTTPServer(("127.0.0.1", 0), _DetailsHandler)
+        self.server.requests, self.server.video = [], self.video
+        self.server.headers = []
+        self.server.fail = self.server.invalid = self.server.insufficient = self.server.mixed = False
+        self.server.redirect = self.server.redirect_followed = False
+        self.server.redirect_target = ""
+        self.server.outer_task_type = "getTaskDetails"
+        self.server.outer_task_uuid = ""
+        self.server.request_task_type = "videoInference"
+        self.server.request_model = "prunaai:p-video@0"
+        self.server.request_task_uuid = ""
+        self.server.error_task_type = "videoInference"
+        self.thread = Thread(target=self.server.serve_forever, daemon=True); self.thread.start()
 
     def tearDown(self) -> None:
+        self.server.shutdown(); self.thread.join(); self.server.server_close()
         self.temp.cleanup()
 
-    def _env(self, *, fail_reconcile: bool = False, invalid_reconcile: bool = False) -> dict[str, str]:
+    def _env(self, *, fail_reconcile: bool = False, invalid_reconcile: bool = False, api_url: str | None = None) -> dict[str, str]:
         env = dict(__import__("os").environ)
         env.update(
             {
@@ -79,26 +129,27 @@ class RunwareAnimationTests(unittest.TestCase):
                 "LINE_STICKER_RUNWARE_BIN": str(self.fake),
                 "RUNWARE_FAKE_LOG": str(self.log),
                 "RUNWARE_FAKE_VIDEO": str(self.video),
+                "LINE_STICKER_RUNWARE_API_URL": api_url or f"http://127.0.0.1:{self.server.server_port}/v1",
             }
         )
         if fail_reconcile:
-            env["RUNWARE_FAKE_FAIL"] = "1"
+            self.server.fail = True
         else:
             env.pop("RUNWARE_FAKE_FAIL", None)
         if invalid_reconcile:
-            env["RUNWARE_FAKE_INVALID"] = "1"
+            self.server.invalid = True
         else:
             env.pop("RUNWARE_FAKE_INVALID", None)
         return env
 
-    def _run(self, request: dict[str, object], *, fail_reconcile: bool = False, invalid_reconcile: bool = False) -> subprocess.CompletedProcess[str]:
+    def _run(self, request: dict[str, object], *, fail_reconcile: bool = False, invalid_reconcile: bool = False, api_url: str | None = None) -> subprocess.CompletedProcess[str]:
         return subprocess.run(
             [sys.executable, str(ADAPTER)],
             input=json.dumps(request) + "\n",
             text=True,
             capture_output=True,
             cwd=self.root,
-            env=self._env(fail_reconcile=fail_reconcile, invalid_reconcile=invalid_reconcile),
+            env=self._env(fail_reconcile=fail_reconcile, invalid_reconcile=invalid_reconcile, api_url=api_url),
         )
 
     def _quote_request(self) -> dict[str, object]:
@@ -287,10 +338,8 @@ class RunwareAnimationTests(unittest.TestCase):
         self.assertEqual(len(result["segments"]), 10)
         self.assertEqual(result["video_path"], str((self.root / "source-batch-1.mp4").resolve()))
         invocations = [json.loads(line)["argv"] for line in self.log.read_text(encoding="utf-8").splitlines()]
-        self.assertEqual(invocations, [
-            ["model", "pricing", "prunaai:p-video@0", "--format", "json"],
-            ["result", quote["request_id"], "--format", "json", "--no-download"],
-        ])
+        self.assertEqual(invocations, [["model", "pricing", "prunaai:p-video@0", "--format", "json"]])
+        self.assertEqual(self.server.requests[-1], [{"taskType": "getTaskDetails", "taskUUID": quote["request_id"]}])
         self._assert_secret_absent(process)
 
     def test_expired_signed_token_still_reconciles_but_cannot_generate(self) -> None:
@@ -301,12 +350,11 @@ class RunwareAnimationTests(unittest.TestCase):
         quote["quote_token"] = expired
         generate = self._run(self._generate_request(quote))
         self.assertNotEqual(generate.returncode, 0)
-        before = len(self.log.read_text(encoding="utf-8").splitlines())
+        before = len(self.server.requests)
         reconciled = self._run(self._reconcile_request(quote))
         result = self._json_stdout(reconciled)
         self.assertEqual(result["status"], "completed")
-        after = [json.loads(line)["argv"] for line in self.log.read_text(encoding="utf-8").splitlines()[before:]]
-        self.assertEqual(after, [["result", quote["request_id"], "--format", "json", "--no-download"]])
+        self.assertEqual(self.server.requests[before:], [[{"taskType": "getTaskDetails", "taskUUID": quote["request_id"]}]])
         self._assert_secret_absent(generate)
         self._assert_secret_absent(reconciled)
 
@@ -333,11 +381,19 @@ class RunwareAnimationTests(unittest.TestCase):
             },
         )
         invocations = [json.loads(line)["argv"] for line in self.log.read_text(encoding="utf-8").splitlines()]
-        self.assertEqual(invocations, [
-            ["model", "pricing", "prunaai:p-video@0", "--format", "json"],
-            ["result", quote["request_id"], "--format", "json", "--no-download"],
-        ])
+        self.assertEqual(invocations, [["model", "pricing", "prunaai:p-video@0", "--format", "json"]])
+        self.assertEqual(self.server.requests[-1], [{"taskType": "getTaskDetails", "taskUUID": quote["request_id"]}])
         self._assert_secret_absent(process)
+
+    def test_insufficient_credits_archive_is_authoritative_absent(self) -> None:
+        quote = self._json_stdout(self._run(self._quote_request()))
+        self.server.insufficient = True
+        process = self._run(self._reconcile_request(quote))
+        result = self._json_stdout(process)
+        self.assertEqual(result["status"], "absent")
+        self.assertEqual(result["actual_cost_usd"], "0")
+        self.assertEqual(result["video_path"], "")
+        self.assertEqual(result["segments"], [])
 
     def test_unusable_reconcile_video_returns_unknown(self) -> None:
         quote_process = self._run(self._quote_request())
@@ -350,6 +406,61 @@ class RunwareAnimationTests(unittest.TestCase):
         self.assertEqual(result["video_path"], "")
         self.assertEqual(result["segments"], [])
         self._assert_secret_absent(process)
+
+    def test_api_url_override_is_loopback_only_and_authorization_stays_local(self) -> None:
+        quote = self._json_stdout(self._run(self._quote_request()))
+        local = self._run(self._reconcile_request(quote))
+        self.assertEqual(self._json_stdout(local)["status"], "completed")
+        self.assertEqual(self.server.headers[-1], f"Bearer {API_KEY}")
+        before = len(self.server.requests)
+        rejected = self._run(self._reconcile_request(quote), api_url=f"http://0.0.0.0:{self.server.server_port}/v1")
+        self.assertEqual(rejected.returncode, 0, rejected.stderr)
+        self.assertEqual(self._json_stdout(rejected)["status"], "unknown")
+        self.assertEqual(len(self.server.requests), before)
+        self._assert_secret_absent(rejected)
+
+    def test_redirect_is_not_followed_with_authorization(self) -> None:
+        quote = self._json_stdout(self._run(self._quote_request()))
+        self.server.redirect = True
+        self.server.redirect_target = f"http://127.0.0.1:{self.server.server_port}/v1"
+        process = self._run(self._reconcile_request(quote), api_url=f"http://127.0.0.1:{self.server.server_port}/redirect")
+        self.assertEqual(process.returncode, 0, process.stderr)
+        self.assertEqual(self._json_stdout(process)["status"], "unknown")
+        self.assertFalse(self.server.redirect_followed)
+        self._assert_secret_absent(process)
+
+    def test_task_details_rejects_wrong_outer_or_original_identity(self) -> None:
+        quote = self._json_stdout(self._run(self._quote_request()))
+        for attribute, value in (
+            ("outer_task_type", "videoInference"),
+            ("outer_task_uuid", "wrong-task"),
+            ("request_task_type", "imageInference"),
+            ("request_model", "other:model@0"),
+            ("request_task_uuid", "wrong-task"),
+        ):
+            with self.subTest(attribute=attribute):
+                setattr(self.server, attribute, value)
+                process = self._run(self._reconcile_request(quote))
+                self.assertEqual(process.returncode, 0, process.stderr)
+                self.assertEqual(self._json_stdout(process)["status"], "unknown")
+                setattr(self.server, attribute, "" if attribute in {"outer_task_uuid", "request_task_uuid"} else {
+                    "outer_task_type": "getTaskDetails", "request_task_type": "videoInference", "request_model": MODEL,
+                }[attribute])
+
+    def test_task_details_rejects_mixed_response_data_and_errors(self) -> None:
+        quote = self._json_stdout(self._run(self._quote_request()))
+        self.server.mixed = True
+        process = self._run(self._reconcile_request(quote))
+        self.assertEqual(process.returncode, 0, process.stderr)
+        self.assertEqual(self._json_stdout(process)["status"], "unknown")
+
+    def test_insufficient_credits_requires_video_task_identity(self) -> None:
+        quote = self._json_stdout(self._run(self._quote_request()))
+        self.server.insufficient = True
+        self.server.error_task_type = "imageInference"
+        process = self._run(self._reconcile_request(quote))
+        self.assertEqual(process.returncode, 0, process.stderr)
+        self.assertEqual(self._json_stdout(process)["status"], "unknown")
 
 
 if __name__ == "__main__":

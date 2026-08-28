@@ -8,6 +8,7 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal, InvalidOperation
 import hashlib
 import hmac
+import ipaddress
 import json
 import os
 from pathlib import Path
@@ -16,7 +17,7 @@ import subprocess
 import sys
 import tempfile
 from urllib.parse import urlparse
-from urllib.request import urlopen
+from urllib.request import HTTPRedirectHandler, Request, build_opener, urlopen
 import uuid
 
 
@@ -26,6 +27,8 @@ UNIT_PRICE = Decimal("0.005")
 MOTION_COUNT = 10
 MEDIA_UUID_ENV = "LINE_STICKER_RUNWARE_MEDIA_UUID"
 BIN_ENV = "LINE_STICKER_RUNWARE_BIN"
+API_URL_ENV = "LINE_STICKER_RUNWARE_API_URL"
+DEFAULT_API_URL = "https://api.runware.ai/v1"
 
 
 class AdapterError(ValueError):
@@ -326,13 +329,86 @@ def _unknown(request: dict[str, object], payload: dict[str, object]) -> dict[str
     }
 
 
+def _absent(request: dict[str, object], payload: dict[str, object]) -> dict[str, object]:
+    return {**_unknown(request, payload), "status": "absent"}
+
+
+def _api_url() -> str:
+    value = os.environ.get(API_URL_ENV)
+    if value is None:
+        return DEFAULT_API_URL
+    try:
+        parsed = urlparse(value)
+        host = parsed.hostname
+        parsed.port
+    except ValueError as exc:
+        raise AdapterError("provider_unknown") from exc
+    if parsed.scheme not in {"http", "https"} or not host or parsed.username or parsed.password or parsed.query or parsed.fragment:
+        raise AdapterError("provider_unknown")
+    try:
+        loopback = ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        loopback = host.lower() == "localhost"
+    if not loopback:
+        raise AdapterError("provider_unknown")
+    return value
+
+
+class _NoRedirect(HTTPRedirectHandler):
+    def redirect_request(self, *_args: object, **_kwargs: object) -> None:
+        return None
+
+
+def _task_details(key: str, task_id: str) -> dict[str, object]:
+    body = _canonical([{"taskType": "getTaskDetails", "taskUUID": task_id}])
+    request = Request(
+        _api_url(),
+        data=body,
+        headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        with build_opener(_NoRedirect()).open(request, timeout=30) as response:
+            value = json.loads(response.read())
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        raise AdapterError("provider_unknown") from exc
+    if not isinstance(value, dict) or "errors" in value or not isinstance(value.get("data"), list) or len(value["data"]) != 1:
+        raise AdapterError("provider_unknown")
+    details = value["data"][0]
+    original = details.get("request") if isinstance(details, dict) else None
+    if (
+        not isinstance(details, dict)
+        or details.get("taskType") != "getTaskDetails"
+        or details.get("taskUUID") != task_id
+        or not isinstance(original, list)
+        or len(original) != 1
+        or not isinstance(original[0], dict)
+        or original[0].get("taskType") != "videoInference"
+        or original[0].get("model") != MODEL
+        or original[0].get("taskUUID") != task_id
+        or not isinstance(details.get("response"), dict)
+    ):
+        raise AdapterError("provider_unknown")
+    response = details["response"]
+    has_data, has_errors = "data" in response, "errors" in response
+    if has_data == has_errors or not isinstance(response.get("data" if has_data else "errors"), list):
+        raise AdapterError("provider_unknown")
+    return response
+
+
 def reconcile(request: dict[str, object], key: str, media_uuid: str, binary: str) -> dict[str, object]:
     if request.get("version") != 1 or request.get("operation") != "reconcile":
         raise AdapterError("request_invalid")
     payload = _verify_token(request, key, media_uuid, enforce_expiry=False)
     try:
-        value = _run(binary, ["result", str(payload["request_id"]), "--format", "json", "--no-download"])
-        return _receipt(request, payload, value, reconcile=True)
+        archive = _task_details(key, str(payload["request_id"]))
+        errors = archive.get("errors")
+        if isinstance(errors, list) and len(errors) == 1 and isinstance(errors[0], dict) and errors[0].get("code") == "videoInferenceInsufficientCredits" and errors[0].get("taskType") == "videoInference" and errors[0].get("taskUUID") == payload["request_id"]:
+            return _absent(request, payload)
+        data = archive.get("data")
+        if not isinstance(data, list) or len(data) != 1 or not isinstance(data[0], dict) or data[0].get("taskType") != "videoInference" or data[0].get("taskUUID") != payload["request_id"] or data[0].get("status") != "success":
+            return _unknown(request, payload)
+        return _receipt(request, payload, data[0], reconcile=True)
     except AdapterError:
         return _unknown(request, payload)
 
