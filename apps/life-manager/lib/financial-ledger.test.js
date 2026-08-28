@@ -2,7 +2,7 @@
 
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { normalizeTransaction, summarizeTransactions } = require("./financial-ledger.js");
+const { detectSubscriptions, normalizeTransaction, summarizeTransactions } = require("./financial-ledger.js");
 
 test("excludes both sides of an internal transfer", () => {
   assert.deepEqual(summarizeTransactions([
@@ -18,4 +18,12 @@ test("normalizes merchant whitespace and preserves provider category", () => {
     id: "t1", merchant: "Example Store", category: "食費",
   });
   assert.equal(normalizeTransaction({ id: "t2" }).category, "未分類");
+});
+
+test("detects recurring charges without claiming they are unused", () => {
+  assert.deepEqual(detectSubscriptions([
+    { merchant: "Service", amount_jpy: -980, occurred_at: "2026-01-10" },
+    { merchant: "Service", amount_jpy: -980, occurred_at: "2026-02-10" },
+    { merchant: "One-off", amount_jpy: -980, occurred_at: "2026-02-11" },
+  ]), [{ merchant: "Service", amount_jpy: 980, months: ["2026-01", "2026-02"], usage_status: "unknown" }]);
 });
