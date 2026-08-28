@@ -314,9 +314,9 @@ AC-37/38の根拠:
 
 ### Slice 2C — Reuse the autofill-resolved destination
 
-- [ ] `travel-reminder.test.js`へ、隣接outbound Travel住所をroute destinationに使うREDを追加する。
-- [ ] 別event、home行きreturn block、複数候補、非Travel helper、時刻不一致を流用しないnegative regressionを追加する。
-- [ ] `travel-reminder.js`で既存event配列だけから対応Travel blockを選び、新provider・DB・Calendar fetchを追加せずGREENにする。
+- [x] `travel-reminder.test.js`へ、隣接outbound Travel住所をroute destinationに使うREDを追加する。
+- [x] 別event、home行きreturn block、旧home/意味的住所表記のreturn block、複数候補、非Travel helper、時刻不一致を流用しないnegative regressionを追加する。
+- [x] `travel-reminder.js`で既存event配列だけから対応Travel blockを選び、新provider・DB・Calendar fetchを追加せずGREENにする。
 - [ ] productionの既存physical eventで、曖昧な元locationではなく完全住所に対するTransit route factsをreadbackする。
 
 ### Slice 3A — Telegram actor as onboarding identity

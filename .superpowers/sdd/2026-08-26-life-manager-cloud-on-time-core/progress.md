@@ -212,6 +212,9 @@ Baseline: focused Life Manager suite 175/175 PASS.
 - Task 12 review R3 (fresh read-only Sol): FIX-FIRST — Critical 0 / High 1 / Medium 0. The cross-event and NFKC examples are closed, but a return block whose destination is an old-home or semantically equivalent home spelling can still pass exact normalized equality and be reused. Display/claim identity, replay safety, privacy, timezone, and prior fixed boundaries held; reviewer focused suites were 59/59 and 19/19 PASS.
 - Task 12 ruling R3: address equivalence is not a reliable return discriminator. Add one structural negative: a Travel candidate whose start matches another timed non-helper event end within Calendar drift is a possible return block and must fail closed. No address parser, geocoder, provider, fetch, or table.
 - Task 12 status: same Luna implementation lane must add the old-home/semantic-address RED and minimal structural guard; then fresh exact-commit re-review, PR/merge, exact Railway deploy, real route readback, Telegram receipt, and replay-zero remain.
+- Task 12 fix round 3: `07d0b3124` — rejects a Travel candidate whose start matches another timed non-helper event end within ±60 seconds. The old-home return fixture was RED with the wrong old-home destination before production code; focused 20/20, related 81/81, and mutation removal FAIL/restored PASS.
+- Task 12 review R4 (fresh read-only Sol): ship — spec compliant and Task quality Approved; Critical/Important/Minor findings zero. Original event selection, provider count, display/claim identity, privacy, and timezone boundaries remain unchanged.
+- Task 12 code status: complete at `07d0b3124`. Production merge/deploy, physical route/Telegram receipt, and replay-zero remain under finish-plan Tasks 6 and 8.
 
 ## Production E2E — controlled event 2026-08-27 evening (deployed SHA 5b06e1ee0)
 

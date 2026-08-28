@@ -69,7 +69,7 @@ flowchart TD
 - Produces: `matchesOtherEventEnd(candidateStart, events, target, candidate) → boolean`, used only by `resolveReminderDestination`.
 - Preserves: original event selection, claim key, title, displayed location, privacy log, and provider call count.
 
-- [ ] **Step 1: Add the old-home return RED**
+- [x] **Step 1: Add the old-home return RED**
 
 Add this test beside the existing home-return regressions:
 
@@ -97,7 +97,7 @@ test("resolved destination rejects an old-home return block by event geometry", 
 });
 ```
 
-- [ ] **Step 2: Run the one test and confirm RED**
+- [x] **Step 2: Run the one test and confirm RED**
 
 Run:
 
@@ -108,7 +108,7 @@ node --test --test-name-pattern="old-home return block by event geometry" lib/tr
 
 Expected: FAIL because the actual destination is `東京都新宿区1丁目1番1号 旧建物`, not `MUIT 出社 (着席)`.
 
-- [ ] **Step 3: Add the minimum structural guard**
+- [x] **Step 3: Add the minimum structural guard**
 
 Add this pure helper next to `matchesOtherEventWindow`:
 
@@ -134,7 +134,7 @@ if (matchesOtherEventEnd(candidateStart, list, event, candidate)) continue;
 
 Do not change normalization or parse an address/summary.
 
-- [ ] **Step 4: Run GREEN and related regressions**
+- [x] **Step 4: Run GREEN and related regressions**
 
 Run:
 
@@ -145,11 +145,11 @@ node --test lib/travel-reminder.test.js lib/wake-filter.test.js test/wake-levels
 
 Expected: new focused count 20/20; related count 81/81.
 
-- [ ] **Step 5: Mutation-check the new assertion**
+- [x] **Step 5: Mutation-check the new assertion**
 
 Temporarily remove the `matchesOtherEventEnd` call, rerun the one-test command, and require FAIL with the old-home destination. Restore the call and require PASS.
 
-- [ ] **Step 6: Commit and fresh review**
+- [x] **Step 6: Commit and fresh review**
 
 ```bash
 git add apps/life-manager/lib/travel-reminder.js apps/life-manager/lib/travel-reminder.test.js
