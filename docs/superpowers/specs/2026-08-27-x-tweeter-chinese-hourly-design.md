@@ -230,12 +230,12 @@ merge状態をread-onlyで確認し、安全な対象だけを整理する。同
 - English Repostのaffiliate payload revision failを、一般repostの成功と混同せず解消する
 - Dice Repostの最新release wakeを完了し、healthcheckのstale警告を0へ戻す
 
-### P0: production apply ownerを1つにする
+### 実装完了・deploy検証待ち: production apply ownerを1つにする
 
-- release作成と全registry applyを行う唯一のcontrol-plane jobを特定する
-- 手動・別sessionのapplyをowner leaseまたはcompare-and-swapで拒否する
-- apply前後にexpected SHAを照合し、途中で別SHAへ変わったらfail-closeする
-- 6 plistが同じSHAのまま1 cadence維持されることをreadbackする
+- release切替と全registry applyは同じhost-wide `fcntl` lockを使う
+- stale releaseと同時applyはplist・launchctl変更前にfail-closeする
+- legacy `loop-install.sh`はmutation不能な互換tombstoneとする
+- production deploy後、6 plistが同じSHAのまま1 cadence維持されることをreadbackする
 
 ### P1: 計測をためて最初の比較を閉じる
 

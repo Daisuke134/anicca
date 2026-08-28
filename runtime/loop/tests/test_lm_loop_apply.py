@@ -1,9 +1,15 @@
+import fcntl
 import json
+import os
 import plistlib
+import shlex
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
 
+import runtime.loop.lm_loop as lm_loop
+from runtime.loop.lm_loop import apply_live
 from runtime.loop.lm_loop_apply import apply_registry, build_apply_plan, install_one
 
 
@@ -40,6 +46,71 @@ class LmLoopApplyTest(unittest.TestCase):
 
     def tearDown(self):
         self.temp.cleanup()
+
+    def _release(self, name: str) -> Path:
+        release = self.root / name
+        (release / "bin").mkdir(parents=True)
+        (release / "config").mkdir()
+        (release / "bin/example.sh").write_text("#!/bin/sh\nexit 0\n")
+        (release / "bin/example.sh").chmod(0o755)
+        (release / "bin/lm-loop-run").write_text("#!/bin/sh\nexit 0\n")
+        (release / "bin/lm-loop-run").chmod(0o755)
+        (release / "config/loop-registry.json").write_text(json.dumps(registry()))
+        (release / "RELEASE.json").write_text(json.dumps({"sha": SHA}))
+        return release
+
+    def _launchctl_recorder(self, expected_arguments: list[str] | None = None) -> tuple[Path, Path]:
+        calls = self.root / "launchctl.calls"
+        state = self.root / "launchctl.state"
+        executable = self.root / "launchctl-safe"
+        script = (
+            "#!/bin/sh\n"
+            f"printf '%s\\n' \"$*\" >> {shlex.quote(str(calls))}\n"
+        )
+        if expected_arguments is not None:
+            domain = f"gui/{os.getuid()}"
+            service = f"{domain}/ai.anicca.example"
+            plist = self.root / "LaunchAgents/ai.anicca.example.plist"
+            script += "if [ \"$1\" = preflight ]; then\n"
+            script += "[ \"$#\" -eq 1 ] || exit 90\n"
+            script += "elif [ \"$1\" = print ]; then\n"
+            script += f"[ \"$#\" -eq 2 ] && [ \"$2\" = {shlex.quote(service)} ] || exit 91\n"
+            script += f"[ -f {shlex.quote(str(state))} ] || exit 1\n"
+            script += "printf '%s\\n' 'arguments = {'\n"
+            script += "".join(
+                f"printf '%s\\n' {shlex.quote(argument)}\n"
+                for argument in expected_arguments
+            )
+            script += "printf '%s\\n' '}'\n"
+            script += "elif [ \"$1\" = bootout ]; then\n"
+            script += f"[ \"$#\" -eq 2 ] && [ \"$2\" = {shlex.quote(service)} ] || exit 92\n"
+            script += f"rm -f {shlex.quote(str(state))}\n"
+            script += "elif [ \"$1\" = bootstrap ]; then\n"
+            script += (
+                f"[ \"$#\" -eq 3 ] && [ \"$2\" = {shlex.quote(domain)} ] && "
+                f"[ \"$3\" = {shlex.quote(str(plist))} ] || exit 93\n"
+            )
+            script += f"touch {shlex.quote(str(state))}\n"
+            script += "else\n"
+            script += "exit 94\n"
+            script += "fi\n"
+        script += "exit 0\n"
+        executable.write_text(script)
+        executable.chmod(0o755)
+        return executable, calls
+
+    def _apply_kwargs(self, current: Path, lock_path: Path,
+                      expected_arguments: list[str] | None = None) -> dict:
+        launchctl_safe, calls = self._launchctl_recorder(expected_arguments)
+        agents_dir = self.root / "LaunchAgents"
+        agents_dir.mkdir()
+        return {
+            "agents_dir": agents_dir,
+            "launchctl_safe": launchctl_safe,
+            "current": current,
+            "lock_path": lock_path,
+            "calls": calls,
+        }
 
     def test_rendered_plist_is_deterministic_and_release_exact(self):
         first = build_apply_plan(registry(), self.root, SHA)
@@ -169,6 +240,105 @@ class LmLoopApplyTest(unittest.TestCase):
 
         install_one(rendered, target, launchctl, attempts=2, sleeper=sleeps.append)
         self.assertEqual(sleeps, [1.0, 3.0])
+
+    def test_apply_rejects_busy_owner_before_launchctl_or_plist_mutation(self):
+        release = self._release("release-a")
+        current = self.root / "current"
+        current.symlink_to(release)
+        lock_path = self.root / "apply.lock"
+        values = self._apply_kwargs(current, lock_path)
+
+        with lock_path.open("a+") as owner_lock:
+            fcntl.flock(owner_lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            with self.assertRaisesRegex(RuntimeError, "production apply is already owned"):
+                apply_live(
+                    release,
+                    values["agents_dir"],
+                    values["launchctl_safe"],
+                    current=current,
+                    lock_path=lock_path,
+                )
+
+        self.assertEqual(list(values["agents_dir"].iterdir()), [])
+        self.assertFalse(values["calls"].exists())
+
+    def test_apply_rejects_release_that_is_not_current_before_mutation(self):
+        release_a = self._release("release-a")
+        release_b = self._release("release-b")
+        current = self.root / "current"
+        current.symlink_to(release_b)
+        values = self._apply_kwargs(current, self.root / "apply.lock")
+
+        with self.assertRaisesRegex(RuntimeError, "apply release is not current"):
+            apply_live(
+                release_a,
+                values["agents_dir"],
+                values["launchctl_safe"],
+                current=current,
+                lock_path=values["lock_path"],
+            )
+
+        self.assertEqual(list(values["agents_dir"].iterdir()), [])
+        self.assertFalse(values["calls"].exists())
+
+    def test_apply_current_release_records_real_launchctl_calls(self):
+        release = self._release("release-a").resolve()
+        current = self.root / "current"
+        current.symlink_to(release)
+        expected_arguments = [str(release / "bin/lm-loop-run"), "example", str(release)]
+        values = self._apply_kwargs(
+            current,
+            self.root / "apply.lock",
+            expected_arguments,
+        )
+
+        result = apply_live(
+            release,
+            values["agents_dir"],
+            values["launchctl_safe"],
+            current=current,
+            lock_path=values["lock_path"],
+        )
+
+        self.assertTrue(result[0]["ok"])
+        self.assertTrue(result[0]["changed"])
+        self.assertTrue(values["calls"].is_file())
+        calls = values["calls"].read_text().splitlines()
+        self.assertEqual(calls[0], "preflight")
+        self.assertEqual(calls, [
+            "preflight",
+            f"print gui/{os.getuid()}/ai.anicca.example",
+            f"bootout gui/{os.getuid()}/ai.anicca.example",
+            f"bootstrap gui/{os.getuid()} {values['agents_dir'] / 'ai.anicca.example.plist'}",
+            f"print gui/{os.getuid()}/ai.anicca.example",
+        ])
+        self.assertTrue((values["agents_dir"] / "ai.anicca.example.plist").is_file())
+
+    def test_launchctl_recorder_rejects_wrong_service(self):
+        launchctl_safe, _ = self._launchctl_recorder(["/release/bin/lm-loop-run", "example", "/release"])
+
+        result = subprocess.run(
+            [str(launchctl_safe), "print", f"gui/{os.getuid()}/ai.anicca.wrong"],
+            capture_output=True,
+            text=True,
+        )
+
+        self.assertNotEqual(result.returncode, 0)
+
+    def test_activate_current_rejects_busy_owner_without_current_swap(self):
+        release_a = self._release("release-a").resolve()
+        release_b = self._release("release-b").resolve()
+        current = self.root / "current"
+        current.symlink_to(release_a)
+        lock_path = self.root / "apply.lock"
+
+        with lock_path.open("a+") as owner_lock:
+            fcntl.flock(owner_lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            with self.assertRaisesRegex(RuntimeError, "production apply is already owned"):
+                lm_loop.activate_current(current, release_b, lock_path)
+
+        self.assertEqual(current.resolve(), release_a)
+        self.assertFalse((self.root / "current.swap").exists())
 
 
 if __name__ == "__main__":
