@@ -30,7 +30,7 @@
 - Produces: `buildGoalWorkItem(goal, nowMs) -> Readonly<RuntimeJob>` using the existing `buildRuntimeJob(...)` return shape.
 - Constants: `LOOP_ID = "life-manager.manager"`, `CAPABILITY = "general-agent.work"`.
 
-- [ ] **Step 1: Write the failing contract test**
+- [x] **Step 1: Write the failing contract test**
 
 Create `apps/life-manager/lib/goal-work-item.test.js`:
 
@@ -92,7 +92,7 @@ test("inactive or non-goal entries cannot become WorkItems", () => {
 });
 ```
 
-- [ ] **Step 2: Run the focused test and verify RED**
+- [x] **Step 2: Run the focused test and verify RED**
 
 Run:
 
@@ -102,7 +102,7 @@ node --test apps/life-manager/lib/goal-work-item.test.js
 
 Expected: FAIL because `goal-work-item.js` does not exist.
 
-- [ ] **Step 3: Implement the minimum pure adapter**
+- [x] **Step 3: Implement the minimum pure adapter**
 
 Create `apps/life-manager/lib/goal-work-item.js`:
 
@@ -139,7 +139,7 @@ function buildGoalWorkItem(goal, nowMs) {
 module.exports = { LOOP_ID, CAPABILITY, buildGoalWorkItem };
 ```
 
-- [ ] **Step 4: Run focused and adjacent contract tests**
+- [x] **Step 4: Run focused and adjacent contract tests**
 
 Run:
 
@@ -153,7 +153,7 @@ git diff --check
 
 Expected: all Node tests PASS, failures 0, and `git diff --check` exits 0.
 
-- [ ] **Step 5: Commit and push the code slice**
+- [x] **Step 5: Commit and push the code slice**
 
 ```bash
 git add apps/life-manager/lib/goal-work-item.js \

@@ -241,7 +241,7 @@ authorization、dedupe、公式receipt、money truthを置き換えない。
 | 17 | CTX-08D exactly-once accelerator submit | TODO | durable effect claim取得後、同じownerがofficial submitを一度だけ実行。timeout/unknownは再送せずofficial readbackでreconcile |
 | 18 | CTX-08E terminal receipt and replay-zero | TODO | official completion PNG、Telegram photo message ID、application dossier SHA-256、ledger resultを同じdigest chainへ束ね、再wakeでexternal effect 0をreadbackしてCTX-08 DONE |
 | 19 | GA-01 existing-core and OSS code map | DONE | fixed commit、license、entrypoint、call graph、state、recovery、effect/readbackを上表へ固定し、reuse/rejectを確定 |
-| 20 | GA-02 one Goal to WorkItem | TODO | 既存intent graphとruntime job storeだけで一つのGoalを一つの再開可能WorkItemへ変換。新graph engine 0 |
+| 20 | GA-02 one Goal to WorkItem | DONE | commit `31323bd43`。active explicit Goalをimmutable・reference-only・effect-free WorkItemへ変換し、goal本文とprovenanceをjobへ保存しない。focused/adjacent Node tests 19/19 PASS、新graph engine 0 |
 | 21 | GA-03 one capability manifest | TODO | 最初の許可済みsiteについてauthorization、transport、human requirement、readbackだけをdata化。margin/ranking 0 |
 | 22 | GA-04 shared effect and receipt kernel | TODO | 既存runtime jobとreceipt contractをつなぎ、pre-readback → single execution → post-readback → replay-zeroを一件実証 |
 | 23 | GA-05 bounded specialist runtime | TODO | existing agent-runnerで一仕事・step/time limit・heartbeat/cancel・structured resultを共通化 |
