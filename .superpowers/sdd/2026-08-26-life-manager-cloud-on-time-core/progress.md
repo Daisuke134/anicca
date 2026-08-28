@@ -227,5 +227,5 @@ Baseline: focused Life Manager suite 175/175 PASS.
 
 - Dais approved the launch order: finish the existing on-time core first; add Poke/Town-style free conversation only after friend beta is receipt-bearing.
 - Visual product and architecture SSOT: `docs/superpowers/specs/2026-08-28-life-manager-cloud-telegram-product-ux-design.md`.
-- Ordered remaining work is plan Tasks 12–14: structural return guard → server-owned trial → cohort/UI/upgrade → PR/deploy → real actor/event E2E → replay-zero/cleanup.
+- Sole active checklist: `docs/superpowers/plans/2026-08-28-life-manager-cloud-on-time-core-finish.md` — structural return guard → server-owned trial → cohort/UI/upgrade → PR/deploy → real actor/event E2E → replay-zero/cleanup.
 - OpenClawMU/Hermes is a post-launch conversation sidecar candidate, not the tenant/billing/ledger owner and not an active implementation item.

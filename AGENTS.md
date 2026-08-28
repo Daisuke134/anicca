@@ -66,7 +66,7 @@ No deletion — decay only affects retrieval priority.
 - Before creating, changing, migrating, debugging, or retiring a Life Manager loop, MUST read and follow `skills/loop-development/SKILL.md`.
 
 ## Life Manager Cloud development
-- Use `docs/superpowers/specs/2026-08-28-life-manager-cloud-telegram-product-ux-design.md` for product UX, `docs/superpowers/specs/2026-08-26-life-manager-cloud-on-time-core-design.md` for current MUST/DO NOT, `docs/superpowers/plans/2026-08-26-life-manager-cloud-on-time-core.md` for ordered implementation, and the matching `.superpowers/sdd/.../progress.md` for measured state.
+- Use `docs/superpowers/specs/2026-08-28-life-manager-cloud-telegram-product-ux-design.md` for product UX, `docs/superpowers/specs/2026-08-26-life-manager-cloud-on-time-core-design.md` for current MUST/DO NOT, `docs/superpowers/plans/2026-08-28-life-manager-cloud-on-time-core-finish.md` for the active checklist, and the matching `.superpowers/sdd/.../progress.md` for measured state.
 - Work one active TODO at a time: Ponytail full → Superpowers spec/plan → TDD implementation → fresh read-only review → provider readback/replay-zero → primary updates progress.
 
 ## Access

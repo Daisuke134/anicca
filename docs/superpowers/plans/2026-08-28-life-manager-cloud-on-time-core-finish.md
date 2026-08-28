@@ -1,0 +1,780 @@
+# Life Manager Cloud On-Time Core Finish Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:subagent-driven-development` to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. The primary owns this plan, the product specs, progress, provider E2E, and completion judgment.
+
+**Goal:** Finish the cloud on-time core so a new Telegram actor can activate a three-day trial and receive receipt-bearing travel blocks, T-10/T-5 calls, and one T-5 route reminder with replay-zero.
+
+**Architecture:** Keep the existing Railway/Supabase deterministic core. Fix the remaining Travel-block attribution defect with one structural fail-closed guard, then add trial entitlement through the existing onboarding RPC, selector SSOT, panel UI, onboarding loop, Stripe link validator, and durable travel ledger. OpenClawMU/Hermes remains outside this plan.
+
+**Tech Stack:** Node.js `>=20.19.0`, built-in `node:test`, PostgreSQL/Supabase, Railway, Telegram Bot API, Google Calendar/Composio, Transit API with Google fallback, Telnyx, Stripe, GitHub CLI, `gog` Calendar CLI.
+
+**Specs:**
+
+- `docs/superpowers/specs/2026-08-26-life-manager-cloud-on-time-core-design.md`
+- `docs/superpowers/specs/2026-08-28-life-manager-cloud-telegram-product-ux-design.md`
+
+## Global Constraints
+
+- Writable checkout: `/Users/anicca/Projects/life-manager-main/.worktrees/lm-cloud-core-spec` only.
+- Branch/upstream: `codex/lm-cloud-core-spec` → `origin/codex/lm-cloud-core-spec`.
+- Never modify `deploy/local`, `/Users/anicca/Projects/life-manager-main`, or `/Users/anicca/anicca-project`.
+- Each code slice uses the assigned Luna implementation lane and receives a fresh exact-commit read-only Sol review. Only the primary edits spec, plan, progress, PR, deploy, and production evidence.
+- Ponytail full applies before each slice: reuse existing event arrays, RPCs, loops, claims, providers, and validators. Add no package, table, service, queue, auth provider, route provider, conversational runtime, or usage meter.
+- Calls require valid E.164 plus `call_enabled === true`. Phone presence alone is never consent.
+- Stripe webhook remains the only `paid` writer. Client input never sets `paid` or a trial deadline.
+- Provider completion requires official IDs/readback plus Supabase durable claims. Local tests and process health alone do not close an effect.
+- Unknown/failed delivery is reconciled before retry. A failed provider call releases only its owned claim.
+- Never print credentials, raw Telegram initData, phone, home, live coordinates, OAuth URLs, or provider payloads into ordinary logs or chat.
+- No personal-card charge without exact amount, currency, and source approval. Current successful Telnyx calls mean top-up is not an active task unless official balance evidence proves it necessary.
+
+## Active Order
+
+```mermaid
+flowchart TD
+  T12[1. Task 12 structural return guard] --> T13A[2. Trial schema + atomic grant]
+  T13A --> T13B[3. Value-first panel]
+  T13B --> T13C[4. Trial scheduler cohort]
+  T13C --> T13D[5. One upgrade Telegram]
+  T13D --> V[6. Full verify + fresh review]
+  V --> PR[7. PR merge + exact SHA deploy]
+  PR --> ACTOR[8. Real second actor onboarding]
+  ACTOR --> E2E[9. Controlled event + replay-zero]
+  E2E --> BETA[10. Friend beta]
+```
+
+## File and Interface Map
+
+| Slice | Production responsibility | Tests |
+|---|---|---|
+| Task 12 | `lib/travel-reminder.js`: select one safe resolved destination | `lib/travel-reminder.test.js` |
+| Task 13A | `migrations/2026-08-28-lm-trial-first.sql`: trial column and same-signature onboarding RPC replacement | `lib/panel-api.test.js` |
+| Task 13B | `lib/payment-link.js`: one Stripe link validator; `panel-api.js`/`panel-ui.js`: server trial truth and ready screen | `payment-link.test.js`, `panel-api.test.js`, `panel-ui.test.js` |
+| Task 13C | `lib/user-selector.js`: one scheduler cohort SSOT | `user-selector.test.js`, existing scheduler suites |
+| Task 13D | `lib/telegram-onboard.js`: active-trial stage and one durable expiry notice | `telegram-onboard.test.js`, `ch1-atomic-dedup.test.js` |
+
+---
+
+### Task 1: Reject structurally identifiable return blocks
+
+**Ownership:** Same Luna implementation lane that owns Task 12. Production/test files only.
+
+**Files:**
+
+- Modify: `apps/life-manager/lib/travel-reminder.js:45-70`
+- Test: `apps/life-manager/lib/travel-reminder.test.js:111-170`
+
+**Interfaces:**
+
+- Consumes: existing `startMs(event)`, `endMs(event)`, `helper(event)`, `travelHelper(event)`, and the already-fetched `events` array.
+- Produces: `matchesOtherEventEnd(candidateStart, events, target, candidate) → boolean`, used only by `resolveReminderDestination`.
+- Preserves: original event selection, claim key, title, displayed location, privacy log, and provider call count.
+
+- [ ] **Step 1: Add the old-home return RED**
+
+Add this test beside the existing home-return regressions:
+
+```js
+test("resolved destination rejects an old-home return block by event geometry", () => {
+  const previous = event({
+    id: "previous-old-home",
+    summary: "前の予定",
+    location: "赤坂",
+    startMs: START - 60 * 60000,
+    endMs: START - 20 * 60000,
+  });
+  const returnBlock = {
+    id: "return-old-home",
+    summary: "[Travel] 🚆 赤坂→旧自宅",
+    location: "東京都新宿区1丁目1番1号 旧建物",
+    startMs: previous.endMs,
+    endMs: START,
+  };
+  const current = event({ id: "target-after-return", location: "MUIT 出社 (着席)" });
+  assert.equal(
+    resolveReminderDestination(current, { events: [previous, returnBlock, current], home: HOME }),
+    current.location,
+  );
+});
+```
+
+- [ ] **Step 2: Run the one test and confirm RED**
+
+Run:
+
+```bash
+cd apps/life-manager
+node --test --test-name-pattern="old-home return block by event geometry" lib/travel-reminder.test.js
+```
+
+Expected: FAIL because the actual destination is `東京都新宿区1丁目1番1号 旧建物`, not `MUIT 出社 (着席)`.
+
+- [ ] **Step 3: Add the minimum structural guard**
+
+Add this pure helper next to `matchesOtherEventWindow`:
+
+```js
+function matchesOtherEventEnd(candidateStart, events, event, candidate) {
+  return events.some((other) => {
+    if (!other || other === event || other === candidate) return false;
+    if (other.id && (other.id === event.id || (candidate.id && other.id === candidate.id))) return false;
+    if (helper(other)) return false;
+    const otherEnd = endMs(other);
+    return otherEnd !== null
+      && candidateStart >= otherEnd - 60000
+      && candidateStart <= otherEnd + 60000;
+  });
+}
+```
+
+In `resolveReminderDestination`, after the existing `matchesOtherEventWindow` rejection, add:
+
+```js
+if (matchesOtherEventEnd(candidateStart, list, event, candidate)) continue;
+```
+
+Do not change normalization or parse an address/summary.
+
+- [ ] **Step 4: Run GREEN and related regressions**
+
+Run:
+
+```bash
+node --test lib/travel-reminder.test.js
+node --test lib/travel-reminder.test.js lib/wake-filter.test.js test/wake-levels.test.js test/wake-catchup.test.js test/wake-loop-isolation.test.js
+```
+
+Expected: new focused count 20/20; related count 81/81.
+
+- [ ] **Step 5: Mutation-check the new assertion**
+
+Temporarily remove the `matchesOtherEventEnd` call, rerun the one-test command, and require FAIL with the old-home destination. Restore the call and require PASS.
+
+- [ ] **Step 6: Commit and fresh review**
+
+```bash
+git add apps/life-manager/lib/travel-reminder.js apps/life-manager/lib/travel-reminder.test.js
+git commit -m "fix(life-manager): reject return travel destinations"
+```
+
+Fresh Sol reviews the exact commit for return blocks, multiple events, NFKC/home drift, display/claim preservation, privacy, and timezone boundaries. Any correctness finding returns to the same Luna lane before Task 2.
+
+---
+
+### Task 2: Persist one server-owned three-day trial
+
+**Ownership:** Luna owns the migration and the specified static contract tests. The primary owns production rollback/apply/readback.
+
+**Files:**
+
+- Create: `apps/life-manager/migrations/2026-08-28-lm-trial-first.sql`
+- Test: `apps/life-manager/lib/panel-api.test.js`
+
+**Interfaces:**
+
+- Keeps signatures unchanged: `lm_panel_onboarding_step(text,text,text,text,text,boolean,boolean)`, `lm_panel_onboarding_state(text,text)`, `lm_panel_onboarding_transition(text,text,text,jsonb)`.
+- Produces: nullable `lm_users.trial_expires_at timestamptz`; JSON `trialExpiresAt: string|null`, `trialActive: boolean`.
+- Grants once: exact `notifications.enable` transition writes `coalesce(trial_expires_at, now() + interval '3 days')` under the existing user-row lock.
+
+- [ ] **Step 1: Add the missing-migration RED**
+
+Append this source contract to `panel-api.test.js`:
+
+```js
+test("Task 13A trial migration grants once and preserves Stripe authority", () => {
+  const sql = fs.readFileSync(
+    path.join(__dirname, "../migrations/2026-08-28-lm-trial-first.sql"),
+    "utf8",
+  );
+  assert.match(sql, /ADD COLUMN IF NOT EXISTS trial_expires_at timestamptz/i);
+  assert.match(sql, /trial_expires_at\s*=\s*coalesce\(trial_expires_at,\s*now\(\)\s*\+\s*interval '3 days'\)/i);
+  assert.match(sql, /'trialExpiresAt',\s*u\.trial_expires_at/i);
+  assert.match(sql, /'trialActive',\s*coalesce\(u\.trial_expires_at\s*>\s*now\(\),\s*false\)/i);
+  assert.match(sql, /phone\.skip[\s\S]*tg_onboard_stage\s*=\s*'done'/i);
+  assert.match(sql, /call\.enable[\s\S]*tg_onboard_stage\s*=\s*'done'/i);
+  assert.doesNotMatch(sql, /SET\s+paid\s*=/i);
+  assert.doesNotMatch(sql, /CREATE\s+TABLE/i);
+});
+```
+
+- [ ] **Step 2: Run RED**
+
+```bash
+cd apps/life-manager
+node --test --test-name-pattern="Task 13A trial migration" lib/panel-api.test.js
+```
+
+Expected: FAIL with `ENOENT` for `2026-08-28-lm-trial-first.sql`.
+
+- [ ] **Step 3: Create the additive migration**
+
+The migration starts with:
+
+```sql
+ALTER TABLE public.lm_users
+  ADD COLUMN IF NOT EXISTS trial_expires_at timestamptz;
+```
+
+Copy the current onboarding functions into this later migration with their existing signatures. Make these exact behavioral changes:
+
+```sql
+-- lm_panel_onboarding_step, after core prerequisites
+IF p_paid IS TRUE THEN RETURN 'dashboard'; END IF;
+IF stage IN ('done', 'dashboard', 'pay', 'payment', 'gmail') THEN RETURN 'dashboard'; END IF;
+IF nullif(trim(coalesce(p_phone, '')), '') IS NULL THEN RETURN 'phone'; END IF;
+RETURN 'call';
+```
+
+```sql
+-- notifications.enable, inside the existing locked transition
+UPDATE public.lm_users
+SET tg_onboard_stage = 'phone',
+    trial_expires_at = coalesce(trial_expires_at, now() + interval '3 days'),
+    updated_at = now()
+WHERE uid = p_uid;
+```
+
+`phone.skip`, `call.enable`, and `call.skip` set `tg_onboard_stage = 'done'`. The state JSON adds:
+
+```sql
+'trialExpiresAt', u.trial_expires_at,
+'trialActive', coalesce(u.trial_expires_at > now(), false)
+```
+
+Retain `SECURITY DEFINER SET search_path = public, pg_temp`, the tenant/chat scope checks, user-row `FOR UPDATE`, service-role grants, and anon/authenticated revokes. Do not redefine `transition_with_calendar`; it already calls the replaced transition by name.
+
+- [ ] **Step 4: Run local GREEN and related contracts**
+
+```bash
+node --test lib/panel-api.test.js test/onboarding-resume-contract.test.js test/calendar-connect-signature-contract.test.js
+```
+
+Expected: PASS, with the new Task 13A contract included.
+
+- [ ] **Step 5: Commit and fresh migration review**
+
+```bash
+git add apps/life-manager/migrations/2026-08-28-lm-trial-first.sql apps/life-manager/lib/panel-api.test.js
+git commit -m "feat(life-manager): grant one server owned trial"
+```
+
+Fresh Sol reviews migration order, same-signature replacement, one-time grant, row locking, ACL, no paid writer, and clean-install ordering.
+
+- [ ] **Step 6: Primary performs production rollback preflight only**
+
+Run the exact migration inside `BEGIN; ... ROLLBACK;` against production PostgreSQL and inspect zero persistent row/schema drift. Do not apply it yet: the current deployed selector does not admit trial tenants, while the new selector cannot query the column before it exists. Record the following rollback readbacks:
+
+- column type `timestamptz` and nullability;
+- function bodies containing `coalesce(trial_expires_at, now() + interval '3 days')`;
+- service-role execute true, anon/authenticated execute false;
+- an isolated actor transition sets one deadline and replay preserves the exact timestamp before rollback.
+
+Record SQLSTATE/output facts in progress without secret values.
+
+---
+
+### Task 3: Show value before checkout
+
+**Ownership:** Luna owns the three production files and three focused tests.
+
+**Files:**
+
+- Create: `apps/life-manager/lib/payment-link.js`
+- Modify: `apps/life-manager/lib/panel-api.js`, `apps/life-manager/lib/panel-ui.js`
+- Test: `apps/life-manager/lib/payment-link.test.js`, `apps/life-manager/lib/panel-api.test.js`, `apps/life-manager/lib/panel-ui.test.js`
+
+**Interfaces:**
+
+- Produces: `paymentLink(opts = {}, scope = {}) → trusted HTTPS Stripe URL|string empty`.
+- Extends onboarding response with `trialExpiresAt`, `trialActive`, optional `paymentLink`, and optional `nextEvent: {summary,startAt}`.
+- The browser derives no identity/deadline and renders Calendar text through `textContent` only.
+
+- [ ] **Step 1: Add payment-link module RED**
+
+Create `payment-link.test.js` first:
+
+```js
+"use strict";
+const { test } = require("node:test");
+const assert = require("node:assert/strict");
+const { paymentLink } = require("./payment-link.js");
+
+test("paymentLink allows only tenant-scoped buy.stripe.com HTTPS", () => {
+  assert.equal(
+    paymentLink({ stripePaymentLink: "https://buy.stripe.com/test_life_manager" }, { uid: "tenant-a" }),
+    "https://buy.stripe.com/test_life_manager?client_reference_id=tenant-a",
+  );
+  assert.equal(paymentLink({ stripePaymentLink: "https://evil.example/pay" }, { uid: "tenant-a" }), "");
+  assert.equal(paymentLink({ stripePaymentLink: "https://buy.stripe.com/test" }, {}), "");
+});
+```
+
+- [ ] **Step 2: Add panel/UI RED contracts**
+
+In `panel-api.test.js`, add a core-ready trial state with:
+
+```js
+const h = onboardingHarness({
+  step: "dashboard",
+  stage: "done",
+  paid: false,
+  trialExpiresAt: "2026-08-31T12:00:00.000Z",
+  trialActive: true,
+});
+```
+
+Require HTTP 200, dashboard, server deadline, and trusted payment link. A missing Stripe link must still return dashboard 200 with no `paymentLink`.
+
+In `panel-ui.test.js`, require the dashboard branch to contain `準備できました`, `移動時間を自動追加`, `出発5分前`, `無料期間`, and no required payment action. Calendar summary/start must be assigned with `textContent`.
+
+- [ ] **Step 3: Run RED**
+
+```bash
+cd apps/life-manager
+node --test lib/payment-link.test.js lib/panel-api.test.js lib/panel-ui.test.js
+```
+
+Expected: first failure is `MODULE_NOT_FOUND` for `payment-link.js`; after adding only the module, panel/UI trial assertions still fail.
+
+- [ ] **Step 4: Extract the existing validator without semantic change**
+
+Move the current `paymentLink` function from `panel-api.js` into `payment-link.js` and export it:
+
+```js
+"use strict";
+
+function paymentLink(opts = {}, scope = {}) {
+  const value = String(
+    opts.stripePaymentLink || opts.paymentLink
+      || process.env.LM_STRIPE_PAYMENT_LINK || process.env.STRIPE_PAYMENT_LINK || "",
+  ).trim();
+  try {
+    const url = new URL(value);
+    if (url.protocol !== "https:" || url.hostname !== "buy.stripe.com"
+      || !scope.uid || url.username || url.password || url.pathname.length <= 1) return "";
+    url.searchParams.set("client_reference_id", String(scope.uid));
+    return url.toString();
+  } catch { return ""; }
+}
+
+module.exports = { paymentLink };
+```
+
+Import it from `panel-api.js`; do not duplicate it.
+
+- [ ] **Step 5: Extend server response and ready screen**
+
+Add `trialExpiresAt`, `trialActive` to the existing response allowlist. Map legacy `payment`, `pay`, `done`, and `gmail` stages to `dashboard`. For an unpaid dashboard, add a payment link only when `paymentLink(opts, scope)` is non-empty; missing checkout must not return 503.
+
+On dashboard GET, use the existing `timeline(scope.uid, opts)` reader and select the first future non-helper item for the optional preview:
+
+```js
+body.nextEvent = next ? { summary: String(next.summary || "予定"), startAt: next.start_at } : null;
+```
+
+If timeline fails, keep `nextEvent = null`; onboarding remains ready. In `panel-ui.js`, render the ready copy and optional next event with DOM `textContent`. Keep the validated checkout as a secondary action.
+
+- [ ] **Step 6: Run GREEN and mutation checks**
+
+```bash
+node --test lib/payment-link.test.js lib/panel-api.test.js lib/panel-ui.test.js lib/billing.test.js lib/panel-auth.test.js
+```
+
+Expected: PASS. Temporarily accept `evil.example` and require the payment-link test to fail; restore. Temporarily use client `trialExpiresAt` and require panel tests to fail; restore.
+
+- [ ] **Step 7: Commit and fresh review**
+
+```bash
+git add apps/life-manager/lib/payment-link.js apps/life-manager/lib/payment-link.test.js apps/life-manager/lib/panel-api.js apps/life-manager/lib/panel-api.test.js apps/life-manager/lib/panel-ui.js apps/life-manager/lib/panel-ui.test.js
+git commit -m "feat(life-manager): show value before checkout"
+```
+
+Fresh Sol checks tenant scope, Stripe host validation, trial truth, XSS/textContent, missing-provider degradation, and no new client authority.
+
+---
+
+### Task 4: Admit paid, active-trial, or comp tenants only
+
+**Ownership:** Luna owns `user-selector.js` and its tests. No scheduler rewrite.
+
+**Files:**
+
+- Modify: `apps/life-manager/lib/user-selector.js`
+- Test: `apps/life-manager/lib/user-selector.test.js`
+- Verify unchanged consumers: `apps/life-manager/scheduler.js`, `apps/life-manager/lib/daily-preflight.js`
+
+**Interfaces:**
+
+- Produces: `trialEntitlementFilter(nowMs) → PostgREST or(...) fragment` and existing `schedulerCohortFilter(env, nowMs)`.
+- Both scheduler selectors and daily preflight keep consuming the one SSOT.
+
+- [ ] **Step 1: Replace fixed-paid expectations with clocked RED tests**
+
+Add:
+
+```js
+const CLOCK = Date.parse("2026-08-28T12:00:00.000Z");
+const CLOCK_ISO = encodeURIComponent(new Date(CLOCK).toISOString());
+
+test("scheduler cohort is paid OR trial-active at the exact server clock", () => {
+  assert.equal(
+    schedulerCohortFilter({}, CLOCK),
+    `or=(paid.is.true,trial_expires_at.gt.${CLOCK_ISO})&calendar_provider=in.(composio_gcal,pipedream_gcal)`,
+  );
+});
+
+test("active comp removes only the entitlement predicate", () => {
+  assert.equal(
+    schedulerCohortFilter({ LM_COMP_UNTIL: "2026-08-28T12:01:00.000Z" }, CLOCK),
+    "calendar_provider=in.(composio_gcal,pipedream_gcal)",
+  );
+});
+```
+
+Retain the exact-two-caller source assertion.
+
+- [ ] **Step 2: Run RED**
+
+```bash
+cd apps/life-manager
+node --test lib/user-selector.test.js
+```
+
+Expected: FAIL because the current result starts with `paid=is.true&`.
+
+- [ ] **Step 3: Implement the single filter**
+
+```js
+function trialEntitlementFilter(nowMs = Date.now()) {
+  const clock = Number.isFinite(nowMs) ? nowMs : Date.now();
+  return `or=(paid.is.true,trial_expires_at.gt.${encodeURIComponent(new Date(clock).toISOString())})`;
+}
+
+function schedulerCohortFilter(env, nowMs = Date.now()) {
+  const entitlement = compActive(env || process.env, nowMs)
+    ? ""
+    : `${trialEntitlementFilter(nowMs)}&`;
+  return `${entitlement}${calendarProviderFilter()}`;
+}
+```
+
+Export `trialEntitlementFilter` for focused boundary tests. Do not touch `scheduler.js` query construction.
+
+- [ ] **Step 4: Run GREEN and consumer regressions**
+
+```bash
+node --test lib/user-selector.test.js lib/daily-preflight.test.js lib/daily-preflight-production-wiring.test.js test/wake-loop-isolation.test.js lib/travel-reminder.test.js
+```
+
+Expected: PASS. Mutation-check `.gt.` to `.gte.` by requiring the exact filter test to fail, then restore `.gt.`.
+
+- [ ] **Step 5: Commit and fresh review**
+
+```bash
+git add apps/life-manager/lib/user-selector.js apps/life-manager/lib/user-selector.test.js
+git commit -m "feat(life-manager): admit active trial tenants"
+```
+
+Fresh Sol checks exact expiry, invalid clock fallback, comp independence, provider filter preservation, phone independence, and both consumers.
+
+---
+
+### Task 5: Send one durable upgrade Telegram after expiry
+
+**Ownership:** Luna owns `telegram-onboard.js` and its test. Existing loop/ledger only.
+
+**Files:**
+
+- Modify: `apps/life-manager/lib/telegram-onboard.js`
+- Test: `apps/life-manager/lib/telegram-onboard.test.js`
+- Verify unchanged claim contract: `apps/life-manager/lib/ch1-atomic-dedup.test.js`
+
+**Interfaces:**
+
+- Consumes: `paymentLink(opts, {uid})`, `claimTravel(uid,eventKey,"trial-upgrade",supaUrl,supaKey)`, `unclaimTravel(...)`, and `sendMessage(...)`.
+- Produces: at most one Telegram message ID per `(uid, trial_expires_at, trial-upgrade)`; no new loop/table.
+
+- [ ] **Step 1: Add active/expired stage RED tests**
+
+Add fixed-clock cases:
+
+```js
+const TRIAL_NOW = Date.parse("2026-08-31T12:00:00.000Z");
+
+test("legacy pay rows do not reopen ordinary pay nudges", () => {
+  const base = nudgeRow({ tg_onboard_stage: "pay", paid: false, trial_expires_at: "2026-08-31T12:01:00.000Z" });
+  assert.equal(computeStage(base, { now: TRIAL_NOW, env: {} }), "done");
+  assert.equal(computeStage({ ...base, trial_expires_at: "2026-08-31T12:00:00.000Z" }, { now: TRIAL_NOW, env: {} }), "done");
+});
+```
+
+The expiry message is a separate durable branch, not a stage transition.
+
+- [ ] **Step 2: Add claim/send/release RED**
+
+Create one harness row with Calendar, home, notifications, Telegram binding, `paid:false`, `tg_onboard_stage:"done"`, and expired `trial_expires_at`. Inject `claimTravel`, `unclaimTravel`, `sendMessage`, and `paymentLink` seams. Require:
+
+```js
+assert.deepEqual(order.map((entry) => entry[0]), ["claim", "send"]);
+assert.equal(sent[0].result.message_id, 901);
+assert.equal(unclaims, 0);
+```
+
+Run twice with the second claim returning false; total sends remain one. For `{ok:false}` and missing `message_id`, require order `claim → send → unclaim`.
+
+- [ ] **Step 3: Run RED**
+
+```bash
+cd apps/life-manager
+node --test --test-name-pattern="trial|upgrade" lib/telegram-onboard.test.js
+```
+
+Expected: FAIL because no durable expiry branch exists and the selector omits `trial_expires_at`.
+
+- [ ] **Step 4: Implement within the existing two-minute owner**
+
+Add `trial_expires_at` to `SEL`. Before ordinary stage-drift nudges, evaluate:
+
+```js
+const expiresAt = Date.parse(String(row.trial_expires_at || ""));
+const expired = Number.isFinite(expiresAt) && expiresAt <= now && row.paid !== true && coreReady(row);
+```
+
+At the top of `computeStage`, preserve core-ready legacy terminal stages:
+
+```js
+const storedStage = String(row && row.tg_onboard_stage || "").toLowerCase();
+if (coreReady(row) && ["done", "dashboard", "pay", "payment", "gmail"].includes(storedStage)) return "done";
+```
+
+For an expired, notifications-enabled, Telegram-bound row:
+
+```js
+const eventKey = String(row.trial_expires_at);
+const claimed = await claim(row.uid, eventKey, "trial-upgrade", opts.supaUrl, opts.supaKey);
+if (!claimed) continue;
+const checkout = link(opts, { uid: row.uid });
+const result = checkout
+  ? await send(opts.token, row.telegram_chat_id, `無料期間が終了しました。\n\n<a href="${checkout}">月額プランを確認する</a>`)
+  : { ok: false };
+const messageId = result && result.ok === true && result.result && result.result.message_id;
+if (!messageId) await unclaim(row.uid, eventKey, "trial-upgrade", opts.supaUrl, opts.supaKey);
+else sent++;
+continue;
+```
+
+Resolve `claim`, `unclaim`, `send`, and `link` from injected seams first, then existing functions. HTML-escape or URL-validate every inserted value; only the validated Stripe URL is interpolated.
+
+- [ ] **Step 5: Run GREEN and negative matrix**
+
+```bash
+node --test lib/telegram-onboard.test.js lib/payment-link.test.js lib/ch1-atomic-dedup.test.js lib/panel-api.test.js lib/billing.test.js
+```
+
+Expected: PASS for active, exact-expiry, paid, incomplete, notification-off, Telegram-unbound, duplicate, failure-release, and missing-ID cases.
+
+- [ ] **Step 6: Commit and fresh review**
+
+```bash
+git add apps/life-manager/lib/telegram-onboard.js apps/life-manager/lib/telegram-onboard.test.js
+git commit -m "feat(life-manager): send one trial upgrade"
+```
+
+Fresh Sol checks durable dedupe, exact expiry, failed-send retry, link validation, HTML safety, ordinary nudge preservation, and no extra loop.
+
+---
+
+### Task 6: Run integrated verification and merge one PR
+
+**Ownership:** Primary only. No code change unless verification returns work to the owning Luna slice.
+
+- [ ] **Step 1: Install the exact dependency lock in the worktree**
+
+```bash
+cd apps/life-manager
+npm ci --ignore-scripts
+```
+
+Expected: exit 0. ENOSPC or partial install is not a test failure and must be resolved before full verification.
+
+- [ ] **Step 2: Run the focused route/reminder/call group**
+
+```bash
+node --test \
+  lib/transit.test.js \
+  lib/travel-transit-wire.test.js \
+  lib/route-cache.test.js \
+  lib/travel-routes.test.js \
+  lib/travel-return.test.js \
+  lib/travel-reminder.test.js \
+  lib/wake-filter.test.js \
+  test/wake-levels.test.js \
+  test/wake-catchup.test.js \
+  test/wake-claim-token.test.js \
+  test/wake-loop-isolation.test.js
+```
+
+Expected: all tests PASS, zero skipped acceptance tests.
+
+- [ ] **Step 3: Run the focused onboarding/trial/billing group**
+
+```bash
+node --test \
+  lib/payment-link.test.js \
+  lib/telegram-onboard.test.js \
+  lib/panel-auth.test.js \
+  lib/panel-api.test.js \
+  lib/panel-ui.test.js \
+  lib/user-selector.test.js \
+  lib/billing.test.js \
+  lib/ch1-atomic-dedup.test.js \
+  test/onboarding-resume-contract.test.js \
+  test/calendar-connect-signature-contract.test.js
+```
+
+Expected: all tests PASS.
+
+- [ ] **Step 4: Run full and static checks**
+
+```bash
+npm test
+cd ../..
+git diff --check
+git diff --exit-code origin/main...HEAD -- apps/life-manager/package.json apps/life-manager/package-lock.json
+gitleaks git . --log-opts="origin/main..HEAD" --redact=100 --no-banner
+```
+
+Expected: exit 0 for every command; dependency diff empty; secret findings zero.
+
+- [ ] **Step 5: Fresh whole-slice Sol review**
+
+Fresh read-only Sol reviews `origin/main..HEAD` against AC-01–38, with emphasis on money loss, duplicate effects, tenant crossing, client-written truth, secret/PII logs, trial extension, and OpenClawMU/local scope creep. Critical/High must be zero.
+
+- [ ] **Step 6: Rebase safely, push, and create the PR**
+
+```bash
+git fetch origin
+git rebase origin/main
+git push --force-with-lease origin HEAD:codex/lm-cloud-core-spec
+gh pr create \
+  --repo Daisuke134/life-manager \
+  --base main \
+  --head codex/lm-cloud-core-spec \
+  --title "feat(life-manager): finish Telegram cloud core" \
+  --body "Finishes Task 12 destination safety, server-owned three-day trials, value-first onboarding, durable expiry upgrade, and receipt/replay acceptance gates."
+```
+
+Re-run Step 4 after rebase if the merge base changes. Leave the approved PR unmerged until Step 7.
+
+- [ ] **Step 7: Apply the migration, merge immediately, and read back exact deploy**
+
+Pause new friend invitations for this controlled release window. Apply `2026-08-28-lm-trial-first.sql` in one production transaction and read back the column, function bodies, ACL, and unchanged existing trial-null rows. Then merge the already-approved PR immediately:
+
+```bash
+gh pr merge --repo Daisuke134/life-manager --merge --delete-branch=false
+```
+
+Read the merged SHA from GitHub, then require a successful GitHub Deployment for that exact SHA and `/health.build` equal to the same immutable release. A later unrelated deployment is not proof that this release is live. If deploy fails, do not roll the schema backward while old code remains compatible; fix/redeploy from the same approved release line.
+
+---
+
+### Task 7: Prove public QR onboarding with a real second actor
+
+**Ownership:** Primary coordinates and records official evidence. No synthetic actor can close this task.
+
+- [ ] **Step 1: Decode the public QR**
+
+Require the payload to equal the public Telegram `/start` deep link and contain no uid, chat ID, email, or secret.
+
+- [ ] **Step 2: A real Telegram account different from Dais scans and starts**
+
+The actor opens the bot, receives the `web_app` button, and completes Calendar consent, home, notifications, phone skip or phone+explicit call choice. Do not use Supabase Google login.
+
+- [ ] **Step 3: Read server truth**
+
+Read back one new `lm_users` row and its `lm_panel_preferences` row by the verified Telegram binding. Require distinct UID from Dais, Calendar ACTIVE, home non-empty, notifications true, correct phone/call branch, `trial_expires_at = core_completion + 3 days`, and `paid=false`.
+
+- [ ] **Step 4: Attack cross-actor scope and replay**
+
+Reopen with the same actor and require the same tenant/deadline. Replay the same initData and require rejection. Supply hostile `uid/tg/chat_id` query/body values from another actor and require zero cross-tenant reads/writes.
+
+- [ ] **Step 5: Record provider evidence**
+
+Record only hashes/redacted IDs in progress: Telegram actor binding result, HTTP status, distinct tenant refs, trial timestamp, Calendar connected-account ID/status, and cross-actor zero result. Do not delete the real beta tenant.
+
+- [ ] **Step 6: Prove the active-trial and natural-expiry boundary**
+
+The acceptance actor does not pay during this proof. During the three-day window, require at least one real eligible Calendar event to produce its normal enabled effect and read back the provider ID plus tenant ledger. At the exact stored deadline, read the scheduler cohort and require the actor absent while paid remains false.
+
+Continue the existing two-minute onboarding owner until it sends one upgrade Telegram. Record its Telegram message ID and `lm_travel_log` key `(uid, trial_expires_at, trial-upgrade)`. Replay the owner and require additional upgrade messages `0`. Reopening onboarding must return the original deadline and must not re-admit the expired actor.
+
+---
+
+### Task 8: Prove the complete natural event and replay-zero
+
+**Ownership:** Primary only. This task creates and later deletes one controlled private Calendar event.
+
+- [ ] **Step 1: Reconcile old controlled events**
+
+Read Google status for `lnpffie7md7fp0qp5j9hrudkq4` and `ah40e31tqlstvk2qvo1e0jt82c`, plus Supabase/Telnyx/Telegram receipts. Do not resend. Count the old no-location event as accepted only if both T-10 and T-5 Telnyx call/webhook/ledger triples and replay-zero are present. If effect outcome is unknown, leave the event confirmed until reconciliation is complete and schedule the replacement in Step 3.
+
+- [ ] **Step 2: Create one future physical event after the exact deployment**
+
+Choose explicit RFC3339 start/end values 45–60 minutes in the future and a provider-routable full address read from the existing resolved Travel block. Keep the address private. Then run with those explicit environment values:
+
+```bash
+gog calendar create primary \
+  --summary="Life Manager controlled cloud acceptance — 行動不要" \
+  --from="$CONTROL_START" \
+  --to="$CONTROL_END" \
+  --start-timezone="Asia/Tokyo" \
+  --end-timezone="Asia/Tokyo" \
+  --location="$CONTROL_LOCATION" \
+  --description="Private controlled production verification. No action required." \
+  --visibility=private \
+  --send-updates=none \
+  --private-prop="life_manager_e2e=cloud-core-finish" \
+  --json --no-input
+```
+
+Save the returned exact event ID privately and read it back:
+
+```bash
+gog calendar raw primary "$CONTROL_EVENT_ID" --json --no-input
+```
+
+- [ ] **Step 3: Create a replacement no-location event when old proof is incomplete**
+
+If Step 1 does not prove both no-location call levels, create a second private controlled event with explicit start/end 20–30 minutes in the future, no location, no Meet link, `send-updates=none`, and private property `life_manager_e2e=cloud-core-no-location`. Save/read back its exact event ID. Do not manually trigger the scheduler.
+
+- [ ] **Step 4: Observe natural provider effects without manual trigger**
+
+Require all of the following correlated to the exact event:
+
+- outbound `[Travel]` Google event ID/status/location;
+- T-10 Telnyx call ID plus signed webhook and matching `lm_wake_log` key;
+- T-5 Telnyx call ID plus signed webhook and matching `lm_wake_log` key;
+- one Telegram T-5 message ID with the original event title/location and provider-backed route;
+- one `lm_travel_log` `telegram-t5` claim;
+- Railway health/deploy SHA equal to the release under test.
+
+For the accepted old or replacement no-location event, require T-10 and T-5 Telnyx call IDs, signed webhooks, and distinct `lm_wake_log` keys. It has no route or travel-block requirement.
+
+- [ ] **Step 5: Replay and require zero additional effects**
+
+Re-evaluate the same tenant/event through the real scheduler owner. Official readback counts before and after must show new travel block `0`, new call `0`, new Telegram message `0`, and unchanged durable claims.
+
+- [ ] **Step 6: Delete controlled events only after receipts and replay-zero**
+
+For each exact controlled ID whose evidence is reconciled:
+
+```bash
+gog calendar delete primary "$CONTROL_EVENT_ID" \
+  --send-updates=none --force --no-input
+gog calendar raw primary "$CONTROL_EVENT_ID" --json --no-input
+```
+
+Expected final status: `cancelled`. Never delete the recurring real `MUIT 出社` series.
+
+- [ ] **Step 7: Close the product contract**
+
+Update the on-time core spec to COMPLETE only when AC-01–38 each points to official evidence and replay-zero. Update progress, commit/push the docs, send one `Codex:::` Telegram completion report with provider message ID readback, and start friend beta. Free conversation/OpenClawMU remains the next separate spec.

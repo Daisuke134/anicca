@@ -8,6 +8,7 @@
 
 - `docs/superpowers/plans/2026-08-08-life-manager-provider-cost-guard.md` Task 3の経路構造は、本specの経路契約に従う。
 - `docs/superpowers/specs/2026-08-08-lm-dais-tenant-cloud-migration-design.md`はDaisテナントのruntime移行だけを扱い、本specの製品挙動を定義しない。
+- current implementation orderは`docs/superpowers/plans/2026-08-28-life-manager-cloud-on-time-core-finish.md`、測定済み状態は対応する`progress.md`を正本とする。
 - `deploy/local`はself-host製品として残す。本specはlocal runtimeへ機能を追加しない。
 
 ## 1. Overview — What and Why
@@ -261,6 +262,8 @@ AC-37/38の根拠:
 - Google Gmail connector。Calendar consentだけを扱う。
 
 ## 6. Execution Steps
+
+以下はacceptanceのslice分解を残すhistorical checklistである。currentの一件ずつの実行順、exact files、RED/GREEN command、review、provider E2Eは`docs/superpowers/plans/2026-08-28-life-manager-cloud-on-time-core-finish.md`に従う。
 
 各sliceは前sliceのprovider readback後に始める。1 sliceはproduction 3 files以下、production差分100 LOC以下にする。下記sliceを結合しない。
 

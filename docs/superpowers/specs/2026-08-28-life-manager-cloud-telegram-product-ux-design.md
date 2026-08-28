@@ -7,7 +7,7 @@
 実装契約と現在地:
 
 - on-time coreのMUST/DO NOT → `2026-08-26-life-manager-cloud-on-time-core-design.md`
-- atomic implementation order → `../plans/2026-08-26-life-manager-cloud-on-time-core.md`
+- atomic implementation order → `../plans/2026-08-28-life-manager-cloud-on-time-core-finish.md`
 - 測定済みstatusとreceipt → `.superpowers/sdd/2026-08-26-life-manager-cloud-on-time-core/progress.md`
 
 ## 1. Telegramが製品で、Webは3分の設定画面に限定する

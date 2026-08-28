@@ -152,65 +152,8 @@ This runs alongside code tasks but closes before production call acceptance:
 3. Before the irreversible charge, show the exact amount/currency/payment source and obtain the required approval if not already explicit for that exact charge.
 4. Add only the minimum amount, save the official receipt privately, read back the new balance, and place one controlled call through the real runtime.
 
-## Task 12: Route reminders through the autofill-resolved destination
+## Remaining execution
 
-**Files:** Modify `lib/travel-reminder.js`, `lib/travel-reminder.test.js` only. Soft target: production ≤35 LOC, test ≤80 LOC.
+Tasks 1–11 above are the implemented baseline. The sole active checklist is:
 
-1. RED: an event with ambiguous free-form location and its immediately preceding outbound `[Travel]` block must call `directionsRoute` with the block's complete destination address.
-2. RED negatives: do not reuse a home-destination return block, an old-home/semantic-address variant return block, multiple ambiguous candidates, non-Travel helper, unrelated block, empty location, or block outside the existing adjacency tolerance. The old-home fixture starts exactly at the previous real event end and ends at the target event start.
-3. GREEN: add one structural return guard over the already-fetched tenant event array. A candidate whose start matches another timed non-helper event end within the existing one-minute Calendar drift tolerance is ambiguous and fails closed. Do not add address parsing, geocoding, a provider, a fetch, or a table. Preserve the original event for selection, claim key, title, and displayed destination.
-4. Run focused and related reminder/wake suites. Mutation-check removal of the adjacency guard and Travel-only guard.
-5. Fresh read-only review, merge/deploy exact SHA, then read back a real event route and the natural Telegram message receipt/replay-zero.
-
-## Task 13A: Grant one server-owned three-day trial
-
-**Files:** Create one forward migration; add focused migration/onboarding tests. Production SQL is the only implementation file in this slice.
-
-1. RED: completing Calendar + home + notifications writes `trial_expires_at = transition_time + interval '3 days'`; a second completion, resume, or replay leaves the first value unchanged.
-2. RED: client payload, localStorage, query parameters, and non-service roles cannot set or extend the deadline. Stripe webhook remains the only `paid` writer.
-3. GREEN: add nullable `lm_users.trial_expires_at timestamptz`. In the locked onboarding transition, use `coalesce(trial_expires_at, now() + interval '3 days')` exactly when core prerequisites become complete.
-4. Return the stored deadline and derived active/expired state from the existing onboarding state RPC. Do not add a table, trigger, usage meter, or second clock.
-5. Run the migration in `BEGIN ... ROLLBACK` against production PostgreSQL, then apply once and read back the column, function body, ACL, and one isolated rollback fixture.
-6. Commit: `feat(life-manager): grant one server owned trial`.
-
-## Task 13B: Remove payment from activation and show the first value
-
-**Files:** Create `lib/payment-link.js`; modify `lib/panel-api.js`, `lib/panel-ui.js`; test `lib/payment-link.test.js`, `lib/panel-api.test.js`, `lib/panel-ui.test.js`.
-
-1. RED: a core-ready unpaid trial user lands on dashboard, not payment. The response exposes only `trialExpiresAt`, `trialActive`, `paid`, next-event summary/start, and a tenant-scoped Stripe link.
-2. RED: the 375px ready screen shows the next event, the three active benefits, and remaining trial time. It contains no required checkout, Supabase login, raw uid/chat ID, or client-derived deadline.
-3. GREEN: move the existing `paymentLink()` implementation unchanged into `lib/payment-link.js`, then reuse it from panel and later Telegram delivery. Extend the onboarding response allowlist and render branch; use the existing Calendar transport for the next-event preview and degrade to a truthful no-event state if the read fails.
-4. Run focused panel/auth/billing tests and mutation-check removal of the server deadline and Stripe host validation.
-5. Commit: `feat(life-manager): show value before checkout`.
-
-## Task 13C: Admit only paid, active-trial, or comp tenants to effects
-
-**Files:** Modify `lib/user-selector.js`; test `lib/user-selector.test.js` and existing scheduler isolation tests.
-
-1. RED: paid enters, active trial enters, active global comp enters, and expired unpaid enters none of the batch or uid selectors. Phone remains irrelevant to cohort membership.
-2. RED: an exact deadline is expired; one millisecond before it is active. Invalid/missing deadline fails closed.
-3. GREEN: extend the single `schedulerCohortFilter` SSOT to the PostgREST equivalent of `paid OR trial_expires_at > now`, while the existing comp window removes only that entitlement predicate.
-4. Run selector, reminder, travel, wake, and daily-preflight tests. Mutation-check the strict `>` boundary and both selector call sites.
-5. Commit: `feat(life-manager): admit active trial tenants`.
-
-## Task 13D: Send one durable upgrade message after expiry
-
-**Files:** Modify `lib/telegram-onboard.js`; test `lib/telegram-onboard.test.js`. Reuse `claimTravel`/`unclaimTravel` from `lib/travel.js` and the shared validator from `lib/payment-link.js` without changing their contracts.
-
-1. RED: an expired unpaid core-ready tenant receives one upgrade Telegram containing the validated tenant-scoped Stripe link; replay sends zero.
-2. RED: paid, active-trial, incomplete, notifications-disabled, or Telegram-unbound tenants receive zero. A Telegram failure or missing message ID releases the claim for retry.
-3. GREEN: reuse the existing two-minute onboarding owner. Claim `lm_travel_log` with `event_key = trial_expires_at` and `leg = trial-upgrade` before send; release only failed delivery.
-4. Keep ordinary onboarding nudges unchanged and remove the legacy pay-stage prompt for active-trial users.
-5. Run Telegram onboarding, atomic dedupe, panel, billing, and scheduler cohort tests. Mutation-check claim-before-send and failed-send release.
-6. Commit: `feat(life-manager): send one trial upgrade`.
-
-## Task 14: Release, real-user proof, and replay-zero
-
-1. Run the focused groups from the design spec, then full `npm test` in a clean dependency environment. The current worktree's partial `node_modules` is not full-suite evidence.
-2. Run `git diff --check`, dependency/lockfile diff, branch secret scan, and added-PII scan. Production code must not add OpenClawMU/Hermes or touch `deploy/local`.
-3. Fresh Sol review exact commits for Task 12 and Tasks 13A–13D. Critical/High must be zero before merge.
-4. Merge through a PR, read back the GitHub Deployment and Railway `/health` exact SHA, and prove it contains every owning commit.
-5. A separate real Telegram actor scans the public QR and completes Calendar, home, notifications, phone/no-phone, call opt-in/skip, and trial grant without Google/Supabase browser login.
-6. Create one new future controlled physical event after deployment. Read back travel event ID, Telnyx T-10/T-5 call/webhook, Telegram route message ID, Supabase claims, and provider route facts.
-7. Replay the same tenant/event and prove additional travel block 0, call 0, Telegram 0. Only then delete controlled events with `send-updates none` and verify exact IDs are cancelled.
-8. Mark the spec COMPLETE and start friend beta. The OpenClawMU/Hermes sidecar remains a separate post-launch spec.
+→ `docs/superpowers/plans/2026-08-28-life-manager-cloud-on-time-core-finish.md`
