@@ -4384,7 +4384,7 @@ bindされ、未確認founder videoをexpected blockerとして保持し`submit_
 - [x] O3B-00 公式current docsとlocal secret有無を監査。Moneytree pluginは実口座1件を正常readback。credential SSOTはmode 600、LINK本番credentialは未登録。Cloud要件は契約後の`client_id`・`client_secret`・登録済み`redirect_uri`、最小scopeは`guest_read accounts_read transactions_read request_refresh`。追加質問なし、LINK申請はO3B-03で実行
 - [x] O3B-01 account、transaction、position、liabilityの最小schemaを`financial-organ-schema.js`へ固定し、focused testで4種類と必須field拒否を実証
 - [x] O3B-02 `financial-organ-schema.js`で金額をsafe integer JPYに限定し、小数と非JPYをfocused testで拒否
-- [ ] O3B-03 `2026-07-29-life-manager-finance-marketing-platform-design.md` §6.5.1のdeployment-owned Moneytree adapter契約を実接続する
+- [ ] O3B-03 **local完了 / Cloud待ち**: local adapterがCodex app-serverからMoneytree structured toolを直接呼び、口座番号を破棄したJPY account recordへ変換。実readbackは`connected=true`・account 1。Cloud LINK問い合わせPOST後のresponse receiptが未取得のため再送せずprovider返答を待つ
 - [ ] O3B-04 銀行・card・証券の実残高と実明細をimportし、fake/mock/dry-runを完了証拠にしない
 - [ ] O3B-05 Binance read-only接続
 - [ ] O3B-06 Daisのon-chain walletをread-only取得
