@@ -121,6 +121,18 @@ cmd_status() {
   require_docker
   [ -f "$ENV_FILE" ] || die "no deploy/local/.env -- this stack was never started from here."
   compose ps
+  say ""
+  say "runtime owners:"
+  compose exec -T scheduler node -e '
+    const e = process.env;
+    console.log(JSON.stringify({role:e.LM_DEPLOYMENT_ROLE,owner:e.LM_SCHEDULER_OWNER,
+      loops_enabled:e.LIFE_RUN_LOOPS==="true",effects:{
+        financial:Boolean(e.LM_RUNTIME_TENANT_ID),
+        marketing_generation:e.LM_MARKETING_GENERATION_ENABLED==="true",
+        marketing_publication:e.LM_MARKETING_PUBLICATION_CHAIN_ENABLED==="true",
+        marketing_observation:e.LM_MARKETING_OBSERVATION_ENABLED==="true"}}));'
+  compose exec -T worker node -e "fetch('http://localhost:8790/health').then(r=>r.text()).then(console.log)"
+  compose exec -T marketing-liveness node -e "fetch('http://localhost:8791/health').then(r=>r.text()).then(console.log)"
 }
 
 cmd_logs() {

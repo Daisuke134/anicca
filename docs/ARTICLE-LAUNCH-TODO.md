@@ -29,12 +29,19 @@
 - [x] W1j concurrent apply後の3 label driftをreconcileする。3 labelのowner idleを確認してsparse immutable
       release `40065a10`へtarget applyし、全14 Writer labelのargv、release SHA、`ARTICLE_ROOT`、
       `ARTICLE_SKILL_DIR`、`LIFE_MANAGER_REPO`が同じreleaseへ一致することをplistからreadbackした。
-- [ ] W1h `article-daily.sh`のinner rc=1をruntime terminal PASSへ変換しない。外部作用0を保持したまま、exact
+- [x] W1h `article-daily.sh`のinner rc=1をruntime terminal PASSへ変換しない。外部作用0を保持したまま、exact
       release/run/error classをterminal failure eventへ記録し、launchd process resultとbusiness effectを分離する。
-      code/deploy完了: PR #2985で末尾を`exit "$RC"`へ変更し、sparse immutable release `f4653e08`を全14 Writer
-      labelへapplyした。残りは同releaseの自然provider failureでgeneration-stateのinner rcとlm-loop terminal FAILをreadbackする。
+      完了: PR #2985で末尾を`exit "$RC"`へ変更し、productionの非zero wakeが`entrypoint_exit_75/78`を持つ
+      terminal FAILになることをreadbackした。process successをpublication successとして数えない。
 - [ ] W2 installed loopの1回のwakeで新しいsource articleと記事固有のheadlineを生成する。OpenAI Image APIの
       `model=gpt-image-2-2026-04-21`、x-request-id、request model、prompt/response/file SHA、dimensions、alt、rights receiptを保存する。
+      現在: restart/rebootは不要かつ禁止された復旧案である。browser/processの自然終了と公式cache/release GCで
+      capacityを回復する。PR #2990/#2993/#2998/#3003/#3007/#3009/#3011/#3016/#3020/#3023で、empty resume、
+      demand race、preventive disk marker、provider schema、exhaustion、900秒agent、pre-topic receipt、release rebind、
+      quality前crashを順に修復する。run `20260828-111213`はJA/EN draftとmediaを生成したがENOSPC前にquality/publicationへ
+      到達せず、Note/Substack/Xの新規live URLは0、received writing revenueは0である。headlineはImageMagick生成のため
+      GPT Image 2 receipt要件を満たさない。次は5GiB以上の安定headroomでmain由来releaseを作り、orphan cardをqueueへ
+      hash-bound復旧して新runを1回wakeする。
 - [ ] W3 W2のNote JAだけをprovider-native readbackし、title、body、owner、headline、paywall、URLを確認する。
 - [ ] W4 W2のSubstack JAだけを同じ項目でprovider-native readbackする。
 - [ ] W5 W2のSubstack ENだけを同じ項目でprovider-native readbackする。
