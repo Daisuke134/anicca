@@ -112,6 +112,22 @@ scale後は06:00/14:00/22:00の3 slotを使い、各slotへunique run/topicを�
 
 ### 現在のproduction truth
 
+Mac restart/rebootはWriter復旧手段ではない。低容量はbrowser/processの自然終了と、loaded/open/current releaseを
+保護する公式cache/release GCで回復する。restartを要求する前に、`df`、open PID、loaded release、disk governor receiptを
+読み、同じ既知事故を再発させない。
+
+W1hは完了する。productionの非zero Writer wakeは`entrypoint_exit_75/78`を持つterminal FAILになり、inner failureを
+PASSへ変換しない。PR #2990/#2993/#2998/#3003/#3007/#3009/#3011/#3016/#3020/#3023は、safe empty resume、
+demand authority race、preventive disk marker、strict provider schema、hash-bound exhaustion、900秒high-value agent、
+pre-topic receipt、pruned release path rebinding、quality前crash exhaustionを閉じる。
+
+current run `20260828-111213`はpaid-demand route、JA/EN draft、X post、headline PNG、body diagramまで生成するが、run中に
+free diskが枯渇し、generation-state atomic writeがENOSPCで失敗する。全artifactはSHA付きattempt archiveへ退避され、
+publication state、public ledger row、Note/Substack/Xの新規live URLは0である。headline PNGはImageMagick生成であり、
+GPT Image 2 receipt契約を満たさない。received writing revenueは0である。次の唯一のcursorは、5GiB以上の安定headroom、
+main由来immutable release、orphan paid-demand cardのhash-bound queue復旧、新runのGPT Image 2 headlineとactive-four native
+readbackである。
+
 W1iはPR #2962/#2965で一度完了し、14 Writer labelをsparse immutable release `40065a10`へ揃えた。general
 `current`は元のfull releaseへ復元した。W1g production canary `20260828-083954`はprovider rc=1後もrun、prompt、
 generation stateを保持し、prunerは古いterminal runだけを削除したためW1gは完了である。
@@ -122,10 +138,8 @@ labelへapplyし、ProgramArguments、release SHA、`ARTICLE_ROOT`、`ARTICLE_SK
 readbackした。general `current`は元のfull releaseへ復元した。
 
 apply直後の自然wakeは既存run `20260828-083954`を`same-jst-day-unclassified-run`としてmodel前に安全停止したため、
-provider failure acceptanceには数えない。隔離runtime canaryではentrypoint非zeroが同release、同runtime run ID、
-`entrypoint_exit_<rc>`を持つterminal FAILになることを確認した。残りは同releaseの自然provider failureで、generation-stateの
-inner rcとlm-loop terminal FAILを同じwakeからreadbackすることだけである。received writing revenueは0、記事公開成功と
-収益化成功は未達である。次の唯一のcursorはW1h production acceptanceとする。
+provider failure acceptanceには数えない。その後のproduction非zero wakeとruntime eventでW1hを完了する。received writing
+revenueは0、記事公開成功と収益化成功は未達である。次の唯一のcursorはW2とする。
 
 Writerの経済目的は、記事に結び付いた一意な外部payment receiptを受け取ることである。記事本数は活動量として
 別に測る。
