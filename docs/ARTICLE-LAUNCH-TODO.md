@@ -21,7 +21,8 @@
       code完了: PR #2956、generation-stateを持つrunはpruneしない5行修正。production反映はW1i待ち。
 - [ ] W1i Writer helper sourceをloaded immutable releaseへ統一する。現在のplistはProgramArgumentsがloops releaseでも
       `ARTICLE_ROOT/ARTICLE_SKILL_DIR/LIFE_MANAGER_REPO`をgig releaseへ向けるため、pruner等が別SHAを読む。
-      3 labelのenvとargvを同じmain由来release SHAへ一致させ、他loop env変更0をreadbackする。
+      daily/resume/healthcheckに加え、money/discovery/response/reportを含む全Writer ownerのenvとargvを同じmain由来
+      release SHAへ一致させ、他loop env変更0をreadbackする。
 - [ ] W1h `article-daily.sh`のinner rc=1をruntime terminal PASSへ変換しない。外部作用0を保持したまま、exact
       release/run/error classをterminal failure eventへ記録し、launchd process resultとbusiness effectを分離する。
 - [ ] W2 installed loopの1回のwakeで新しいsource articleと記事固有のheadlineを生成する。OpenAI Image APIの
