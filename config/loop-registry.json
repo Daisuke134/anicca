@@ -1154,7 +1154,7 @@
       },
       "domain": "earn",
       "effect_class": "message",
-      "entrypoint": "skills/earn/lancers/scripts/telegram_report.py",
+      "entrypoint": "runtime/loop/entry_dispatch.py",
       "label": "ai.anicca.lancers-revenue-telegram-report",
       "log_root": "~/.local/state/anicca/lancers/logs",
       "provider_route": "deterministic",
