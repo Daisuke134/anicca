@@ -675,6 +675,16 @@ if route_status == "absent":
         and latest.get("archive_manifest") == []
         and path_status(topic_route_path) == "absent"
     )
+    empty_provider_failure = (
+        generation.get("version") == 1
+        and generation.get("run_id") == run_id
+        and generation.get("status") == "provider-failed-ambiguous"
+        and isinstance(latest, dict)
+        and isinstance(latest.get("return_code"), int)
+        and latest["return_code"] != 0
+        and latest.get("boundary") == "prepublication-empty"
+        and path_status(topic_route_path) == "absent"
+    )
     public_row = False
     try:
         ledger_lines = ledger.read_text(encoding="utf-8").splitlines()
@@ -699,7 +709,7 @@ if route_status == "absent":
             )
         ):
             public_row = True
-    if empty_interruption and not public_row:
+    if (empty_interruption or empty_provider_failure) and not public_row:
         write_receipt({
             "version": 1,
             "run_id": run_id,
