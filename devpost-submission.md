@@ -12,7 +12,7 @@ People share many isolated ways to use Claude, Codex, and other AI systems to ma
 
 ## Solution
 
-Life Manager turns paid opportunities into persistent, isolated workrooms. A 24/7 scout discovers opportunities from live sources. A bounded fleet of earning agents qualifies them, performs the work, recovers from transient failures, and continues until there is an externally verifiable outcome.
+Life Manager turns paid opportunities into persistent, isolated workrooms. A 24/7 scout discovers public bounties on Opire, freelance projects on Lancers, and high-value AI roles on Mercor. A bounded fleet of earning agents qualifies them, performs the work, recovers from transient failures, and continues until there is an externally verifiable outcome.
 
 The person does not supervise agent turns. When identity, authority, private payment information, judgment, or a real-world action is genuinely required, Life Manager creates one prepared `Needs You` task. The person answers in the same WebMCP-enabled Dashboard, and the same workroom resumes automatically.
 
@@ -58,7 +58,7 @@ Codex is used to research WebMCP and the official challenge contract, inspect an
 
 ## Key Features
 
-- 24/7 opportunity scout across at least two live sources
+- 24/7 opportunity scout across Opire, Lancers, and Mercor
 - Bounded concurrent agent workrooms inspired by OpenAI Symphony
 - One durable board for agents, people, artifacts, human tasks, effects, and receipts
 - `Needs You` questions issued one at a time and only when human input is genuinely required
@@ -73,7 +73,7 @@ Codex is used to research WebMCP and the official challenge contract, inspect an
 - Existing Railway Node service: 24/7 scout, orchestration, claims, continuation, retry, and reconciliation
 - Durable state: opportunities, workrooms, agent events, human tasks, effects, and receipts
 - Existing agent runner: provider-neutral model execution with browser, web, GitHub, code, file, and media tools
-- Provider adapters: opportunity discovery, submission or delivery, and official receipt readback
+- Provider adapters: Opire public bounty/PR readback, Lancers application readback, Mercor application-step/human-interview state
 
 ## Testing Instructions
 
@@ -111,10 +111,10 @@ Outline, under three minutes:
 
 1. Show the non-reproducible AI-money problem and running Dashboard.
 2. Show ChatGPT discovering Life Manager's WebMCP Site tools.
-3. Trace one real paid opportunity inside the recurring 24/7 product.
+3. Trace one real Opire bounty from its funded GitHub issue inside the recurring 24/7 product.
 4. Show the earning agent complete the work.
 5. Complete one genuine `Needs You` task.
-6. Show automatic continuation and one external submission or delivery.
+6. Show automatic continuation, one public pull request, and official readback.
 7. Show provider readback, duplicate zero, and verified-money truth.
 
 ## Screenshot Shot List
