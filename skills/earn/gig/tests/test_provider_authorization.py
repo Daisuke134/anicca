@@ -188,3 +188,38 @@ def test_public_catalogue_defaults_every_action_to_unknown():
             "readback": {"record_type": "application_receipt"},
         },
     }
+
+
+def test_public_marketplace_example_is_reference_only_and_provider_neutral():
+    path = Path(__file__).resolve().parents[1] / "config" / "provider-capability.example.json"
+    example = json.loads(path.read_text(encoding="utf-8"))
+    assert example == {
+        "version": 1,
+        "default_state": "unknown",
+        "capability": "marketplace.application",
+        "transport": "cloak_browser",
+        "authorization": {
+            "receipt_required": True,
+            "required_state": "approved_browser",
+        },
+        "input_refs": {
+            "goal_ref": "intent-entry://{tenant_id}/{goal_id}",
+            "capability_ref": "provider-capability://{provider}/marketplace.application",
+            "opportunity_ref": "marketplace-opportunity://{provider}/{opportunity_id}",
+            "intent_ref": "application-intent://sha256/{intent_sha256}",
+            "authorization_ref": "authorization-receipt://sha256/{receipt_sha256}",
+        },
+        "effect": {
+            "class": "publish",
+            "max_attempts": 1,
+            "unknown_state": "reconcile_without_resend",
+            "replay": "zero",
+        },
+        "readback": {
+            "record_type": "application_receipt",
+            "required_status": "verified",
+        },
+    }
+    encoded = json.dumps(example, sort_keys=True).lower()
+    for forbidden in ("http://", "https://", "password", "token", "selector", "xpath", "human"):
+        assert forbidden not in encoded

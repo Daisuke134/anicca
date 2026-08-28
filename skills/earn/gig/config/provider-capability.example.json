@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "default_state": "unknown",
+  "capability": "marketplace.application",
+  "transport": "cloak_browser",
+  "authorization": {
+    "receipt_required": true,
+    "required_state": "approved_browser"
+  },
+  "input_refs": {
+    "goal_ref": "intent-entry://{tenant_id}/{goal_id}",
+    "capability_ref": "provider-capability://{provider}/marketplace.application",
+    "opportunity_ref": "marketplace-opportunity://{provider}/{opportunity_id}",
+    "intent_ref": "application-intent://sha256/{intent_sha256}",
+    "authorization_ref": "authorization-receipt://sha256/{receipt_sha256}"
+  },
+  "effect": {
+    "class": "publish",
+    "max_attempts": 1,
+    "unknown_state": "reconcile_without_resend",
+    "replay": "zero"
+  },
+  "readback": {
+    "record_type": "application_receipt",
+    "required_status": "verified"
+  }
+}

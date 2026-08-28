@@ -14,8 +14,8 @@
 
 ## Task 1: Public sample contract
 
-- [ ] Add a failing test for a versioned `marketplace.application` example with `provider_ref`, `account_ref`, and `opportunity_ref` placeholders only.
-- [ ] Require default `unknown`, `cloak_browser`, private authorization receipt, `application_receipt`, replay-zero, and no credential/PII/provider-specific instructions.
-- [ ] Add the smallest JSON example that passes the contract.
-- [ ] Run the focused provider authorization test and PII/OSS checks for only the changed paths.
+- [x] Add a failing test for a versioned `marketplace.application` example with reference placeholders only.
+- [x] Require default `unknown`, `cloak_browser`, private authorization receipt, `application_receipt`, replay-zero, and no credential/PII/provider-specific instructions.
+- [x] Add the smallest JSON example that passes the contract.
+- [x] Run the focused provider authorization test and PII/OSS checks for only the changed paths.
 - [ ] Mark GA-12 `IN_PROGRESS` with GA-12A evidence, fetch, commit, push, and read back PR #3018.
