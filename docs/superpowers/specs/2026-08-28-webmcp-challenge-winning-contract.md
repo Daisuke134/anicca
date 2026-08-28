@@ -628,6 +628,49 @@ Workroomのisolationはopportunity、tenant、credential、effectの交差を防
 
 Telegramは重要なstate changeをpushする。Web dashboardは全体状況、workroom、人間task、proof、moneyを確認・操作する。WebMCPは同じdashboard stateをagentへ公開する。
 
+#### 10.4A Measured reuse audit
+
+Current `lm-loop status all`、現行entrypoints、focused tests、Coconalaのordered TODOを照合した。Money Printerは新しいagent platformを一から作らず、既存loopsのverified primitivesを一つのWebMCP-visible control planeへ接続する。
+
+| Existing asset | Current evidence | Money Printerで再利用するもの | 今回依存しないもの |
+|---|---|---|---|
+| Coconala Apply | `hf-gig-apply-direct` loaded/running、latest terminal pass、60秒cadence | opportunity discovery、eligibility、application fence、official application readback | Coconala固有selectorをcore判断へ持ち込まない |
+| Coconala Paid | `hf-gig-paid-direct` loaded/running、latest terminal pass、300秒cadence。Paid regressionはproject別isolated ownerとdifferent-key parallelismを実証済み | per-job owner/workspace、context compiler、resume、artifact/effect checkpoints、formal delivery/readback | buyer固有instructions、customer state、未完liabilityをguest demoへ出さない |
+| Coconala Reply | `hf-gig-reply-detector` loaded/running、latest terminal pass | buyer event consumption、answer checkpoint、same-thread continuation | provider固有conversation UIをgeneric state machineにしない |
+| Runtime job store | focused tests pass | tenant-bound immutable job、atomic claim、lease、heartbeat、complete/fail、reconciliation、unique effect | 新しいqueue frameworkを作らない |
+| Browser job store | focused tests pass | durable browser queue、trace、terminal result、tenant isolation | 新しいbrowser schedulerを作らない |
+| Shared agent runner | current production provider routeで使用、bounded evidence/cost/provider abstractionあり | provider-neutral model turns、task class、usage/evidence、model failover boundary | loop内でprovider credentialやAPIを直接選ばない |
+| Human ask/reply | callback visibility tests pass。既存calendar flowでmodel-led resolve→ask→replyを実装済み | `Needs You` dedupe、exact question、answer acknowledgement、known factならaskしない原則 | calendar-specific question copyを再利用しない |
+| Effect reconciler | focused tests pass | present/absent/unknown readback、unknown時no-resend、bounded dead-letter | unknown external effectのblind retry |
+| Existing Panel | panel API/auth/ledger focused tests pass | session/tenant auth、cost/financial projection、safe UI validation、control actions | 現行Life Manager panelを別dashboardとしてforkしない |
+| Earnings runtime | isolated focused tests 14/14 pass | exact atomic/minor-unit money、entry-key dedupe、private-key rejection、database/read failure honesty、monthly report | provider receiptなしのrowを収益に昇格しない |
+| TaskMarket ledger | installed loop latest terminal pass、isolated focused tests 6/6 pass | award/work receipt shape、Base verification、self-award rejection、duplicate-safe earnings projection | primary demo sourceにはまだ固定しない |
+| x402 observers | acquisition、inflow、sale observerのlatest terminal pass、isolated focused tests 11/11 pass | on-chain receipt verification、sale/work ledger、external-buyer/self-pay boundary | seller/service processesは複数fail中。demoのlive earning pathに依存しない |
+| Affiliate/X | source refresh/composition pass、browser ownersと一部posting loopsはfail | recurring source cadence、source/effect separation、X session ownership pattern | X Repostをpaid-opportunity scoutと誤認しない。新しいread-only opportunity prompt/adapterが必要 |
+| Lancers | application/browser/storefront/work-syncが現在fail | thin provider adapterの参考 | Hackathon primary pathに依存しない |
+| Job Hunter | codeとWorkday receipt contractあり、local ownerは意図的pause | 将来verticalのprofile/ATS/receipt contract | 明示指示なしに再開しない。今回のMoney Printer primary demoにしない |
+
+Focused reuse suiteはruntime/browser jobs、ask/reply、reconciliation、panelで38/38 pass。Earnings、TaskMarket、x402はlocked `@noble/hashes` / `@noble/curves`だけを隔離tempへinstallして31/31 passし、合計69/69 pass。最初のfull `npm ci`はdisk headroom不足で中断したため、生成されたworktree node_modulesだけを削除した。Ledger logicの不確実性は解消したが、submission releaseのclean install前にdisk headroom確保とexact runtime import smokeを必須とする。
+
+#### 10.4B Resolved uncertainties
+
+- **Agent fleet:** Coconala Paidでprojectごとのisolated ownerとdifferent-key parallelismが既にある。Symphony相当のwork ownershipをゼロから発明しない
+- **Durable orchestration:** runtime job store、browser job store、leases、heartbeat、retry/reconciliationが既にある
+- **Minimal human loop:** model-led resolve、semantic dedupe、question、reply acknowledgementの既存contractがある
+- **External-effect safety:** application fence、effect keys、official readback、unknown quarantine、replay-zero patternsがある
+- **Money truth:** earnings、TaskMarket、x402でapplication/activityとverified receiptを分けるledger contractがある
+- **UI/auth base:** existing Life Manager Panelのsession、tenant、financial projection、control actionを拡張できる
+
+#### 10.4C Remaining uncertainties and decisions
+
+1. **Primary end-to-end source:** Coconalaを最初のlive verticalとして再利用する。Apply/Paid/Replyがpassしているため、新規platformより低riskである
+2. **Second discovery source:** X Repostは仕事発見ではない。XまたはGitHubのread-only paid-opportunity scoutは新規thin adapterとして実装し、実提出effectはCoconalaのverified pathを先に使う
+3. **Unified projection:** existing loopsは別state rootsを持つ。新しいbusiness executorを作らず、各loopのreadbackをgeneric `Opportunity / Workroom / HumanTask / Receipt`へ投影するadapterが必要
+4. **WebMCP layer:** existing loopsはWebMCPを公開していない。既存domain functionsとprojectionを呼ぶtop-level toolsは新規実装である
+5. **Dependency/disk headroom:** focused reused-contract testsは69/69 pass。残るのはcode uncertaintyではなくdisk空き約630MiBで、clean installとexact submission runtime import smokeに不足する可能性である
+6. **Current production failures:** Affiliate browser、Lancers、x402 sellers等のfailをMoney Printer全体の失敗と混同しない。Hackathon pathはpass済みownersだけへfenceする
+7. **Real outcome timing:** Coconala application/delivery readbackは実証可能だが、新規buyer acceptanceやcash settlementは外部依存。提出copyでは実際に得たterminalまでだけ主張する
+
 ### 10.5 One product, one mode
 
 Hackathonで提供するmodeは一つだけである。Primary experienceは、UserがChatGPT desktopのin-app browserで無料の`https://aniccaai.com/lm`を開き、「Turn on my Money Printer」と頼むflowである。ChatGPT WorkまたはCodexがpageのsite toolsを発見し、同じDashboard上でconstraints設定、opportunity確認、`Needs You`回答、continuation、receipt確認を行う。別product、別judge system、別local/cloud modeを作らない。
@@ -945,6 +988,7 @@ The initial product proves the provider-neutral runtime on one real short bounty
 
 | Risk | Strongest counterargument | Design response |
 |---|---|---|
+| 既存loopsを無視して作り直す | 一週間で新orchestrator、browser、agent、ledgerを作るのは遅く危険 | pass済みCoconala owners、runtime/browser stores、agent runner、ask/reply、reconciler、money ledgersをthin projectionで接続する |
 | job dashboardに見える | status columnsだけならWebMCP不要 | live agent activity、human task→continuation、retry、proof、moneyを主役にする |
 | Devpost helper pluginと近い | official pluginもdiscover/build/submitを支援する | hackathon helperではなく、短期real bounty/gigを閉じ、同じcontractで長期workへ拡張できるarchitectureを示す |
 | autonomous earningとWebMCPが矛盾 | WebMCPはpage-localで24/7 watcherではない | background loopとvisible collaboration surfaceを明確に分ける |
@@ -973,21 +1017,21 @@ Judgesがeconomic autonomyより安全で楽しいcreative collaborationを好�
 
 このspec承認後に`writing-plans`で実装planへ分解する。順序は次を超えない。
 
-1. judge story + one-screen wireframe
-2. X + one structured public sourceのrecurring scout、dedupe、cycle history
-3. versioned opportunity/workroom state + public guest opportunity
-4. human UI using shared domain functions
-5. inspect/control/artifact WebMCP tools
-6. agent continuation + human task handoff
-7. retry/backoff + controlled failure/recovery
-8. real effect/handoff/receipt/replay
-9. state-dependent registration + activity log
-10. ChatGPT/Chrome E2E
-11. polish/accessibility/reset
-12. public repo/license/judge guide
-13. English submission copy/screenshots
-14. under-3-minute video
-15. fresh adversarial review against four criteria
-16. immutable deploy/repo/submission receipts and freeze
+1. [completed] judge story + interactive one-screen HTML
+2. generic read-only projection over existing Coconala owner/readback: `Opportunity / Workroom / HumanTask / Receipt`
+3. existing Panel auth/APIへMoney Printer Dashboard sectionを追加
+4. projectionと既存domain functionsを呼ぶinspect/control/artifact WebMCP tools
+5. existing ask/reply contractをgeneric `Needs You`へ接続し、answer後にsame ownerをresume
+6. Coconala pass ownersのreal effect/handoff/receipt/replayをDashboardへ表示
+7. XまたはGitHubのread-only opportunity scoutをthin adapterで追加し、dedupe/cycle historyを投影
+8. existing runtime job store/reconcilerでretry/backoff、controlled failure、restart recoveryを見せる
+9. state-dependent tool registration + visible activity log
+10. clean dependency install/import smoke + focused reused-contract tests
+11. ChatGPT/Chrome E2E
+12. polish/accessibility/zero-login guest/reset
+13. public repo/license/judge guide/post-August-25 diff
+14. English submission copy/screenshots/thumbnail
+15. under-3-minute video
+16. four-criteria self-check、immutable deploy/repo/submission receipts、freeze
 
 One active item at a time。各itemは実物readbackを閉じてから次へ進む。
