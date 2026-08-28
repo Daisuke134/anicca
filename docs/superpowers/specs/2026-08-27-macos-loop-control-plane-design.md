@@ -277,6 +277,32 @@ release, use only `lm-loop` for lifecycle, and require exact loaded readback plu
 a natural event before Done. Completion evidence:
 `docs/evidence/runtime/2026-08-28-macos-loop-control-plane-completion.md`.
 
+### Post-completion operational repair cursor
+
+The control plane is complete; business-loop repair continues one loop at a
+time from `lm-loop status all`. Current measured inventory is 167 rows: 39
+loaded-running and 128 loaded-idle. Terminal history contains 65 pass, 76 fail,
+and 26 without a terminal result. A terminal failure is retained as audit
+history while a KeepAlive process is running, so 76 is not an actionable repair
+count. The actionable queue is the 50 rows that are both terminal-fail and not
+loaded-running.
+
+Ordered operational TODO:
+
+1. ✅ Repair `affiliate-browser`: restore its exact CloakBrowser interpreter,
+   apply only that label, and verify stable PID plus CDP 9324 readback. PRs
+   #2946, #2947, and #2949 contain the code, release-GC prerequisite, evidence,
+   and permanent skill rule.
+2. ⏳ Repair `agent-economy-loop`, the first terminal-fail/loaded-idle row.
+   Diagnose its latest event and log before changing code; preserve every
+   sibling label and external effect fence.
+3. ⏳ Continue the remaining 49 terminal-fail/non-running rows strictly in
+   table order, one locked worktree and one production label at a time.
+4. ⏳ Classify the 26 rows without terminal events as cadence-not-yet-due,
+   long-running, or missing event wiring; do not count absence as success.
+5. ⏳ Track repo-wide nonrequired security-CI debt separately from loop health:
+   OSS boundary, PII gate, Python syntax, and dependency audit.
+
 ### TODO 1 execution state
 
 The read-only capture joins installed plist text with loaded and disabled
