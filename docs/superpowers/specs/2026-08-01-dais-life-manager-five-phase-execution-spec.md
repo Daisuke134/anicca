@@ -4382,7 +4382,7 @@ bindされ、未確認founder videoをexpected blockerとして保持し`submit_
 現在のMoneytree plugin readbackはowner確認済みの正しい観測として扱う。実装はO3B-00→O3B-24を上から一件ずつ進め、先頭の未完1件だけをactiveにする。
 
 - [x] O3B-00 公式current docsとlocal secret有無を監査。Moneytree pluginは実口座1件を正常readback。credential SSOTはmode 600、LINK本番credentialは未登録。Cloud要件は契約後の`client_id`・`client_secret`・登録済み`redirect_uri`、最小scopeは`guest_read accounts_read transactions_read request_refresh`。追加質問なし、LINK申請はO3B-03で実行
-- [ ] O3B-01 account、transaction、position、liability schema
+- [x] O3B-01 account、transaction、position、liabilityの最小schemaを`financial-organ-schema.js`へ固定し、focused testで4種類と必須field拒否を実証
 - [ ] O3B-02 金額を整数JPYに統一し、非JPYは換算せずunsupportedとして除外
 - [ ] O3B-03 `2026-07-29-life-manager-finance-marketing-platform-design.md` §6.5.1のdeployment-owned Moneytree adapter契約を実接続する
 - [ ] O3B-04 銀行・card・証券の実残高と実明細をimportし、fake/mock/dry-runを完了証拠にしない
