@@ -428,6 +428,14 @@ official contract, fee, payout, and bank receipts advance it.
    and composer preflight passed, but no second DM or Sheet row exists. Resume there only after the
    host disk block is officially cleared. A draft or preflight is not a campaign result.
 
+   The live recovery now has three verified DM/Sheet pairs: `@_yayoisan` at 15:49,
+   `@arichan_make` at 20:17, and `@tare_tanu` at 21:11. The latter two were reconciled from exact
+   official TikTok conversation text without replay; the authorized `2026年8月` Sheet contains
+   exactly one row for each of all three recipients. The owner completed the mandated candidate
+   attempt receipt with `intended_count=10`, `attempted_count=10`, `query_errors=0`, sent one
+   concise results handoff to Coconala with formal delivery OFF, and the immediate natural replay
+   completed with `effect=0`, `failed=0`, `deduplicated=true` for talkroom `18180857`.
+
    The buyer-visible initial-review package is already sent: v7
    `CKprotect_TikTok_initial_review_v7.zip`, SHA256
    `d0c16a537ebf5ea3329ce2e724b21e5675ccad2f34f224c397df44528c53d057`, contains ten qualified
@@ -4574,13 +4582,18 @@ protected and are not cleanup candidates.
   pass and merge it to public main `3e2328d4d`. The installed immutable release reads all 14
   official public services and exits with `effect=0`, `duplicate=0`; historical GC readback shows
   2,414 intermediate directories and 282.6 MB reclaimed with zero errors.
-- [ ] Complete the one-time migration on this already-affected Mac: stop only the two managed
+- [x] Complete the one-time migration on this already-affected Mac: stop only the managed
   CloakBrowser roots, verify their profiles and credentials remain on disk, remove only the exact
   user-owned `*.code_sign_clone` temp bundles after open handles close, relaunch from public main
   with `MacAppCodeSignClone` disabled, and verify `:9222`/`:9223`, authenticated sessions, free
-  space, cleanup receipt and absence of new clone growth. This is a destructive browser restart
-  boundary and requires the account owner's explicit go-ahead; it is not required on a fresh OSS
-  install.
+  space, cleanup receipt and absence of new clone growth. The account owner explicitly approved
+  the restart; this one-time migration is not required on a fresh OSS install.
+- [x] Complete the affected-Mac browser migration and generalize it beyond the four Coconala
+  lanes. Public main adds `MacAppCodeSignClone` prevention to the shared persistent-context owner,
+  Gig `:9223`, shared `:9222`, Affiliate's three browser owners, Lancers, and Job Hunter. The
+  measured stale Chromium clone set was reclaimed only after exact process/profile/open-handle
+  checks; all re-enabled current browser roots show the prevention flag. Job Hunter remains locally
+  paused. Storefront self-GC and the browser producer fix are in public immutable releases.
 - [ ] After free space is at least 1 GiB, let the existing cleanup owner remove the stale
   `disk-pressure.block`, activate Apply/Reply/Paid/Storefront from public main-derived immutable
   releases, and verify each natural pass with Account 2 receipt. Then resume Chii at the unsent
