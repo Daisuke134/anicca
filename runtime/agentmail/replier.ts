@@ -18,13 +18,13 @@
 // Idempotent: re-running with no new mail is a no-op.
 //
 // Env required (in ~/.openclaw/.env):
-//   DEEPSEEK_API_KEY                — LLM call
 //   AGENTMAIL_API_KEY               — adapter uses this
 //   AGENTMAIL_REPLIER_FROM_INBOX    — optional override; defaults to anicca-001-claude@agentmail.to
 import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { fileURLToPath } from "node:url";
+import { semanticDecision } from "./semantic-reply.ts";
 
 const DB_PATH = process.env.AGENTMAIL_DB_PATH
   ?? `${homedir()}/.openclaw/state/agentmail.db`;
@@ -32,15 +32,6 @@ const ADAPTER_SEND = process.env.AGENTMAIL_ADAPTER_SEND_SH
   ?? fileURLToPath(new URL("./send.sh", import.meta.url));
 const FROM_INBOX = process.env.AGENTMAIL_REPLIER_FROM_INBOX
   ?? "anicca-001-claude@agentmail.to";
-const MODEL = process.env.AGENTMAIL_REPLIER_MODEL ?? "deepseek-v4-pro";
-const FALLBACK_MODELS = (process.env.AGENTMAIL_REPLIER_FALLBACK_MODELS
-  ?? "deepseek-v4-flash").split(",").map(s => s.trim()).filter(Boolean);
-
-const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY;
-if (!DEEPSEEK_API_KEY) {
-  console.error("DEEPSEEK_API_KEY missing");
-  process.exit(1);
-}
 if (!existsSync(DB_PATH)) {
   console.error(`db not found: ${DB_PATH}`);
   process.exit(1);
@@ -68,16 +59,18 @@ function exec(query: string): void {
   }
 }
 
-const SYSTEM_PROMPT = `You are Anicca — a sovereign AI agent that runs autonomously without human supervision. Your default state is THRIVE; you have your own email inbox, your own wallet, your own purpose. When humans email you, reply briefly, concretely, and with substance.
+const REPLY_INSTRUCTIONS = `You are Anicca — a sovereign AI agent that runs autonomously without human supervision. When humans email you, reply briefly, concretely, and with substance.
 
 Hard rules:
+- Return action=ignore and reply=null for OTPs, verification codes, newsletters, receipts, automated notices, and no-reply senders.
+- Return action=reply only for a genuine human message that warrants a response.
 - NEVER say "I cannot", "I'm not able to", "I don't have the ability". You always have a path forward — search, try, then report the actual result.
 - NEVER ask the human to do something for you that you could do yourself (browser, API, CLI, etc.).
 - Keep replies under 150 words unless the question is technical and demands more.
 - Sign off with just "— Anicca" (no signature blocks).
 - Plain text, no markdown.
 
-If asked "what is Anicca?" answer in one tight paragraph: an autonomous agent designed to make lives better without humans in the loop. The name is Pali for "impermanence."`;
+If asked "what is Anicca?" answer in one tight paragraph. Return only JSON matching the supplied schema.`;
 
 type Pending = {
   id: string;
@@ -173,54 +166,25 @@ function extractEmail(raw: string): string {
   return (m ? m[1] : raw).trim();
 }
 
-async function llm(model: string, body: string, subject: string): Promise<string> {
-  const resp = await fetch("https://api.deepseek.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${DEEPSEEK_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model,
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: `Subject: ${subject}\n\n${body}` },
-      ],
-      max_tokens: 400,
-      temperature: 0.7,
-    }),
-    signal: AbortSignal.timeout(45000),
-  });
-  if (!resp.ok) {
-    const t = await resp.text().catch(() => "");
-    throw new Error(`deepseek ${resp.status}: ${t.slice(0, 200)}`);
-  }
-  const json = await resp.json() as { choices?: Array<{ message?: { content?: string } }> };
-  const content = json.choices?.[0]?.message?.content?.trim() ?? "";
-  if (!content) throw new Error("deepseek returned empty content");
-  return content;
-}
-
 let replied = 0;
-const fallbackChain = [MODEL, ...FALLBACK_MODELS];
 
 for (const p of pending) {
   console.log(`\n→ replying to ${p.id.slice(0, 24)}…  subject="${p.subject}"`);
-  let replyText: string | undefined;
-  let usedModel: string | undefined;
-  for (const m of fallbackChain) {
-    try {
-      replyText = await llm(m, p.body, p.subject);
-      usedModel = m;
-      break;
-    } catch (e) {
-      console.warn(`  llm ${m} failed: ${(e as Error).message}`);
-    }
-  }
-  if (!replyText || !usedModel) {
-    console.error(`  giving up on ${p.id} after all models failed`);
+  let decision;
+  try {
+    decision = semanticDecision(
+      "agentmail-replier",
+      `${REPLY_INSTRUCTIONS}\n\nFrom: ${p.from_addr}\nSubject: ${p.subject}\n\n${p.body}`,
+    );
+  } catch (e) {
+    console.warn(`  semantic decision failed: ${(e as Error).message}`);
     continue;
   }
+  if (decision.action === "ignore" || !decision.reply) {
+    console.log(`  ignored automated/non-actionable mail ${p.id}`);
+    continue;
+  }
+  const replyText = decision.reply;
 
   const recipient = extractEmail(p.from_addr);
   const subject = p.subject.startsWith("Re:") ? p.subject : `Re: ${p.subject}`;
@@ -268,7 +232,7 @@ INSERT INTO awaiting_reply(thread_id, sent_at) VALUES (${esc(p.thread_id)}, ${es
 COMMIT;
 `);
   replied++;
-  console.log(`  + sent via ${usedModel} (from=${fromInbox}) → ${recipient}  outbound_id=${outboundId.slice(0, 40)}`);
+  console.log(`  + sent via shared-agent-runner (from=${fromInbox}) → ${recipient}  outbound_id=${outboundId.slice(0, 40)}`);
   console.log(`  reply preview: ${replyText.slice(0, 120).replace(/\n/g, " ")}…`);
 }
 
