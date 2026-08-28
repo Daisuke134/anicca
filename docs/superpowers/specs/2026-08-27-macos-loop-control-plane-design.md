@@ -279,6 +279,12 @@ a natural event before Done. Completion evidence:
 
 ### Post-completion operational repair cursor
 
+> Current scope override: this cursor owns only Account auto rollout and OSS
+> startup. Marketplace-specific repair (including Lancers and CrowdWorks) is
+> outside this session. Business work is always performed by the owning loop;
+> Codex repairs source/spec/releases, triggers that real loop, and observes
+> authoritative readback.
+
 The control plane is complete; business-loop repair continues one loop at a
 time from `lm-loop status all`. Current measured inventory is 167 rows: 36
 loaded-running and 131 loaded-idle. Terminal history contains 61 pass, 80 fail,
@@ -296,21 +302,19 @@ actionable repair count.
 - Upwork remains intentionally off. Its code may serve as implementation
   evidence, but its retired launchd labels are not restarted and it is not an
   activation TODO.
-- Lancers is the next live adapter repair target. CrowdWorks follows using the
-  same kernel contract. A marketplace-specific customer case must improve the
-  shared kernel or its thin adapter, never create another independent agent.
+- Lancers and CrowdWorks remain separate marketplace backlogs. They are not
+  Account auto or OSS-startup tasks and are not touched by this cursor.
 - Delivery order is local-first, then the same contract on the cloud worker,
   then an OSS setup that a new user can start with a few documented commands.
   The current `scripts/local-up.sh` starts only the Docker API, scheduler, and
   worker; it does not install or run all 167 macOS loops. The clean-user launchd
   test renders and reads back jobs without starting workloads. Therefore
   few-command full-loop OSS startup is not yet implemented.
-- Codex account isolation exists, but automatic account 1 to account 2 failover
-  is not implemented or enabled. Production defines only `acct2`, candidates
-  name `acct2` explicitly, and profile resolution intentionally performs no
-  expansion. Failover may occur only before any external effect; after an
-  effect starts or becomes unknown, the task fails closed without account
-  retry.
+- Account 1 primary to Account 2 fallback is implemented in the shared runner.
+  Expansion uses `account_profile_order=[acct1,acct2]`; Account 2 is attempted
+  only for transient quota/auth failure with no fresh result, agent message,
+  tool item, or external effect. PR #2983 proves Account 1 success and a
+  controlled Account 1 quota to real Account 2 success with effect 0.
 
 #### Daily operation and repair
 
@@ -334,7 +338,7 @@ actionable repair count.
    the one repaired loop, official effect evidence, remaining cursor, and any
    fail-closed blocker.
 
-Ordered operational TODO:
+Ordered operational TODO (this is the only active order):
 
 Completed evidence: `affiliate-browser` is repaired by PRs #2946, #2947, and
 #2949. Account 1 primary/Account 2 pre-effect fallback is merged by PR #2983
@@ -343,34 +347,25 @@ and deployed at `3d69c74b`; real controlled reads prove `acct1` success and
 is retired by PR #2986, not loaded, not installed, and has no production
 recreator. Completed items are not part of the remaining queue.
 
-1. ⏳ Make one complete resolver table. One read-only command must show managed,
-   external, retired, and unmanaged labels together with owner/domain,
-   loaded-state, exact release, latest terminal result, and effect status.
-   Current `status all` shows only the 166 managed rows and is therefore not the
-   whole-machine resolver view.
-2. ⏳ Restore clean inventory: classify and register or retire the running
-   unmanaged label `ai.anicca.provision-browser.tiktok.anicca`; `doctor` must
-   return unmanaged 0 again without stopping its active browser blindly.
-3. ⏳ Keep Coconala live as the reference kernel and repair all five Lancers
-   rows to natural pass plus official marketplace readback.
-4. ⏳ Move CrowdWorks from four unloaded external labels into thin adapters over
-   the same kernel. Keep Upwork retired/off; do not treat it as missing runtime.
-5. ⏳ Repair mobile-app marketing: all three TikTok rows currently fail; seven
-   of eight Instagram rows fail; marketing also has missing terminal events.
-   Require real post/metrics readback and duplicate publication zero.
-6. ⏳ Make OSS startup truthful: a few commands must provision user-owned
+1. ✅ Implement Account 1 to Account 2 pre-effect fallback in the shared runner.
+   PR #2983 is merged; controlled real readback proves both primary success and
+   quota-triggered fallback success.
+2. ⏳ Finish loop-owned Account auto rollout. `life-manager-dev` now cuts pushed
+   main into a complete immutable release and reconciles only
+   `shared-agent-runner` rows that are `loaded-idle`; `loaded-running` rows are
+   reported and untouched. PRs #3010, #3012, and #3015 are merged. First real
+   pass applied 19 idle rows and skipped 15 running rows. Remaining condition:
+   a quiet owner pass completes from the latest full release with failed 0,
+   then later-running rows move only after they naturally become idle.
+3. ⏳ Make OSS startup truthful: a few commands must provision user-owned
    secrets, choose supported loops, start local scheduler/workers, install the
    platform-appropriate supervisor, and show the same resolver table. Passing
    Docker health or plist rendering alone is insufficient.
-7. ⏳ Repair `agent-economy-loop`, the next real terminal-fail/loaded-idle row
-   after obsolete ownership rows are removed.
-   Diagnose its latest event and log before changing code; preserve every
-   sibling label and external effect fence.
-8. ⏳ Continue the remaining terminal-fail/non-running rows strictly in
-   table order, one locked worktree and one production label at a time.
-9. ⏳ Classify the 26 rows without terminal events as cadence-not-yet-due,
-   long-running, or missing event wiring; do not count absence as success.
-10. ⏳ Track repo-wide nonrequired security-CI debt separately from loop health:
+4. ⏳ Prove the OSS supervisor owns parallel work after the initiating shell
+   exits, and `status` distinguishes scheduler liveness, provider/auth state,
+   terminal result, and official business effect. Do not claim every private
+   Dais loop is portable; unsupported capabilities remain explicitly off.
+5. ⏳ Track repo-wide nonrequired security-CI debt separately from loop health:
    OSS boundary, PII gate, Python syntax, and dependency audit.
 
 ### TODO 1 execution state
