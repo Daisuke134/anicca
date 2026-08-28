@@ -257,13 +257,13 @@ No narrower evidence closes the goal.
 - The package validator and durable submit/release owner are implemented and pushed on
   `feat/line-sticker-loop`. Their fresh whole-branch review is `READY` with no remaining
   Critical or Important finding.
-- The validator/owner suite has 78 tests covering real FFmpeg APNG packages, official-policy
+- The validator/owner suite has 80 tests covering real FFmpeg APNG packages, official-policy
   bounds, provenance, concurrent effect fencing, lost acknowledgement, receipt crash recovery,
   public URL/product binding, and replay zero.
 - The redesigned media pipeline implements model-owned 60-motion planning and 24-item selection,
   quote-before-generate cost reservation, reconcile-only unknown recovery, bounded subprocesses,
   safe motion ids, one-video-at-a-time checkpoints, APNG timing, visual-inspection readback, and
-  package-bound generation provenance. A fresh parent run passes all 9 media tests, including a real
+  package-bound generation provenance. A fresh parent run passes all 13 media tests, including a real
   six-batch FFmpeg package.
 - No real image/video provider call, Creators Market submission, review, release, public product,
   sale, payout, or bank effect has occurred.
@@ -280,8 +280,6 @@ do not count as money.
    no Runware, Runway, Seedance, fal, or Replicate credential in the private credential SSOT.
 2. No authenticated LINE Creators Market browser session or dedicated profile exists, and no LINE
    credential entry is configured in the private credential SSOT.
-3. The redesigned media diff still needs a fresh adversarial re-review and a fresh parent run of
-   the full 78 validator/owner regressions after its core provenance-schema change.
 
 Disk capacity is not a product requirement or revenue blocker. The fixed-threshold media gate is
 removed. A forced `ENOSPC` preserves the prior checkpoint, and the same destination succeeds when
@@ -295,7 +293,7 @@ row while an earlier row is unfinished.
 | ID | One action | Done evidence |
 | --- | --- | --- |
 | A01 — DONE | Remove the temporary fixed disk threshold; on write failure retain the current checkpoint and exit with no external effect. | Parent media 9/9 PASS; fresh review READY; forced `ENOSPC` preserves and retries the same checkpoint. |
-| A02 | Run the redesigned media tests plus the full validator/owner regression and obtain fresh adversarial review. | All tests pass and review has no Critical or Important finding. |
+| A02 — DONE | Run the redesigned media tests plus the full validator/owner regression and obtain fresh adversarial review. | Parent Media 13/13 + Validator 32/32 + Owner 48/48 PASS; final review has no Critical, Important, or Minor finding. |
 | A03 | Connect one real animation provider account through the private credential SSOT. | Official provider identity and one side-effect-free quote read back successfully. |
 | A04 | Generate one original character sheet and save its rights evidence. | Character file hash and rights receipt exist. |
 | A05 | Ask the model for the exact 60-motion plan. | `plan.json` contains 60 inspected, unique motions in six batches. |
