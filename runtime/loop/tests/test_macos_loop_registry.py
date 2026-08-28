@@ -1,9 +1,12 @@
 import json
+import copy
 import re
+import time
 import unittest
 from pathlib import Path
 
 from runtime.loop.macos_loop_registry import render_job_models, validate_registry
+from runtime.loop.lm_loop import status_rows
 
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -83,6 +86,30 @@ class MacosLoopRegistryTest(unittest.TestCase):
             if path.is_file() and forbidden.search(path.read_text(errors="replace")):
                 violations.append((loop_id, entry["entrypoint"]))
         self.assertEqual(violations, [])
+
+    def test_render_500_loops_and_status_under_five_seconds(self):
+        base = entry()
+        loops = {}
+        for index in range(500):
+            loop_id = f"scale-{index:03d}"
+            row = copy.deepcopy(base)
+            row["label"] = f"ai.anicca.{loop_id}"
+            row["state_root"] = f"~/.local/state/life-manager/{loop_id}"
+            row["log_root"] = f"~/.local/state/life-manager/{loop_id}/logs"
+            loops[loop_id] = row
+        registry = {"schema_version": 2, "loops": loops}
+
+        started = time.perf_counter()
+        rendered = render_job_models(registry)
+        render_seconds = time.perf_counter() - started
+        started = time.perf_counter()
+        rows = status_rows(
+            registry, loaded={}, disabled={}, events={}, installed_releases={})
+        status_seconds = time.perf_counter() - started
+
+        self.assertEqual((len(rendered.splitlines()), len(rows)), (1, 500))
+        self.assertLess(render_seconds, 5)
+        self.assertLess(status_seconds, 5)
 
 
 if __name__ == "__main__":
