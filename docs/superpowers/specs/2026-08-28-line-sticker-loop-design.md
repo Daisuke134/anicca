@@ -300,6 +300,10 @@ No narrower evidence closes the goal.
   fits one ten-second source video without adaptive timing. Its canonical SHA-256 and durable plan
   receipt match. Real model execution exposed and closed two prompt/validator gaps: the top-level
   JSON schema and the source-video duration bound.
+- The model inspected the exact 60-candidate hash multiset and selected 24 distinct ordered items.
+  `motion-03` is the cover; canonical selection SHA-256 is
+  `5114f378b99002461f08d1f65b37d0a384b97d20e82b0bebccfab2ca2526a0e9`. The receipt matches,
+  every selected candidate remains validator-clean, and a later selection replay reports effect 0.
 - The fenced Runware batch 1 task is authoritatively no-effect. Official `getTaskDetails` archives
   the exact request and terminal `videoInferenceInsufficientCredits` response with no generation
   data or cost; the dashboard independently reads `Failed 402`. Runware requires a paid invoice or
@@ -326,8 +330,8 @@ do not count as money.
 
 ### Current blockers to revenue
 
-1. The model has not yet inspected all 60 validated candidates or selected the ordered 24. The
-   rejected Runware and LTX attempts remain durable evidence and are never retried.
+1. The real 24-item LINE package, main image, tab image, provenance manifest, and ZIP have not yet
+   been built. The rejected Runware and LTX attempts remain durable evidence and are never retried.
 2. No authenticated LINE Creators Market browser session or dedicated profile exists, and no LINE
    credential entry is configured in the private credential SSOT.
 
@@ -353,7 +357,7 @@ row while an earlier row is unfinished.
 | A09 — DONE | Generate and convert batch 4 into ten valid candidates. | Batches 1–4 contain 40 unique candidate hashes; batch 4 passes the LINE validator and replay reports `effect=0`. |
 | A10 — DONE | Generate and convert batch 5 into ten valid candidates. | Batches 1–5 contain 50 unique candidate hashes; batch 5 passes the LINE validator and replay reports `effect=0`. |
 | A11 — DONE | Generate and convert batch 6 into ten valid candidates. | All six batches contain 60 unique validator-clean candidate hashes; batch 6 replay reports `effect=0` and total provider cost remains USD 0. |
-| A12 | Ask the model to inspect all 60 candidates and select/order 24. | Selection receipt binds all 60 input hashes and 24 ordered output ids. |
+| A12 — DONE | Ask the model to inspect all 60 candidates and select/order 24. | Selection SHA-256 `5114f378b99002461f08d1f65b37d0a384b97d20e82b0bebccfab2ca2526a0e9` binds the exact 60-hash multiset, 24 ordered ids, cover `motion-03`, and replay `effect=0`. |
 | A13 | Build the real LINE package. | `main.png`, `tab.png`, 24 APNGs, provenance, and ZIP pass the validator. |
 | B01 | Create or recover one dedicated authenticated Creators Market browser session. | Official account page reads back the creator identity. |
 | B02 | Read the official product inventory before mutation. | Inventory receipt records whether the package already exists. |
