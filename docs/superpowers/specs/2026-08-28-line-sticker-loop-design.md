@@ -158,6 +158,13 @@ effect, be within the configured per-set cap, and be durably reserved by `set_id
 missing provenance fails before generation or submission.
 No provider is retried after an acknowledged paid generation effect; it is reconciled first.
 
+The first live animation route uses official Runware P-Video
+(`prunaai:p-video@0`) in 720p draft mode. The official schema supports image-to-video and a maximum
+duration of ten seconds; the official catalog price is USD 0.005 per second in that configuration.
+The source of truth is `https://runware.ai/docs/models/prunaai-p-video` plus the official
+`model pricing` readback. The production reference enters through its previously read-back Runware
+media UUID. No local path, credential, or invented cost enters the provider request.
+
 The animation adapter protocol is two-phase and identity-first. `quote` returns provider, model,
 stable request id, quote token, exact Decimal cost, and expiry without generating media. The loop
 binds that identity to plan/batch/character hashes, reserves cost durably, then calls `generate`
@@ -263,23 +270,27 @@ No narrower evidence closes the goal.
 - The redesigned media pipeline implements model-owned 60-motion planning and 24-item selection,
   quote-before-generate cost reservation, reconcile-only unknown recovery, bounded subprocesses,
   safe motion ids, one-video-at-a-time checkpoints, APNG timing, visual-inspection readback, and
-  package-bound generation provenance. A fresh parent run passes all 14 media tests, including a real
+  package-bound generation provenance. A fresh parent run passes all 16 media tests, including a real
   six-batch FFmpeg package.
 - The private credential SSOT contains one email-verified Runware workspace and an enabled
   `line-sticker-loop` API key. Official read-only account readback reports USD 0.05 balance and zero
-  generation requests/credits. Official `model_pricing` readback identifies live
-  `bytedance:seedance@2.5` and quotes 720p text/image-to-video at USD 0.2304 per second without
-  generating media.
+  generation requests/credits. Current official CLI pricing readback identifies live
+  `prunaai:p-video@0` and quotes 720p draft video at USD 0.005 per second. The adapter recomputes the
+  ten-second USD 0.05 quote from that live readback before signing it; all eight adapter tests pass.
 - Private set `set-001` contains one original text-free `char-001` character sheet with four views,
   six expressions, and stable color/silhouette anchors. Its exact SHA-256 is bound by a mode-600
   `original_ai_generated` rights receipt. The built-in image generator created it without Runware
   credit use; its attempted transparent background is RGB checkerboard, so it remains a character
   reference rather than a submission asset.
-- The real model plan contains 60 unique ids, 60 unique batch/position pairs, six batches of ten,
-  60 distinct intents/actions, and durations from 700 through 1400 milliseconds. Its canonical
-  SHA-256 and durable plan receipt match. The first real model attempt exposed a missing top-level
-  schema in the creative prompt; one exact schema block and one boundary regression fix that root
-  cause without adding an adapter.
+- A derived production reference contains one centered front-facing character on chroma green. Its
+  SHA-256 and mode-600 rights receipt match, and an official Runware media receipt binds its upload.
+- The active real model plan has canonical `plan_sha256`
+  `b90a1682e791bb71f61fe74b9be8454e6680d4af70362dccb019dbe93bc005f4` and contains 60 unique ids,
+  60 unique batch/position pairs, six batches of
+  ten, and 60 distinct intents/actions. Every motion is exactly 1000 milliseconds, so every batch
+  fits one ten-second source video without adaptive timing. Its canonical SHA-256 and durable plan
+  receipt match. Real model execution exposed and closed two prompt/validator gaps: the top-level
+  JSON schema and the source-video duration bound.
 - No real Runware animation generation, Creators Market submission, review, release, public product,
   sale, payout, or bank effect has occurred.
 
@@ -291,9 +302,9 @@ do not count as money.
 
 ### Current blockers to revenue
 
-1. No real motion generation has run. The Runware balance is USD 0.05, below the official minimum
-   four-second Seedance 2.5 quote even at 480p; any later personal funding must obey the money-safety
-   boundary.
+1. No real motion generation has run. The Runware balance is USD 0.05 and the first ten-second
+   P-Video draft quote is exactly USD 0.05, leaving no balance for later batches. Any later personal
+   funding must obey the money-safety boundary.
 2. No authenticated LINE Creators Market browser session or dedicated profile exists, and no LINE
    credential entry is configured in the private credential SSOT.
 
@@ -310,9 +321,9 @@ row while an earlier row is unfinished.
 | --- | --- | --- |
 | A01 — DONE | Remove the temporary fixed disk threshold; on write failure retain the current checkpoint and exit with no external effect. | Parent media 9/9 PASS; fresh review READY; forced `ENOSPC` preserves and retries the same checkpoint. |
 | A02 — DONE | Run the redesigned media tests plus the full validator/owner regression and obtain fresh adversarial review. | Parent Media 13/13 + Validator 32/32 + Owner 48/48 PASS; final review has no Critical, Important, or Minor finding. |
-| A03 — DONE | Connect one real animation provider account through the private credential SSOT. | Official Runware account readback binds workspace `anicca-line-sticker` and enabled key `line-sticker-loop`; free `model_pricing` readback binds live `bytedance:seedance@2.5` and USD 0.2304/second at 720p; usage remains zero. |
-| A04 — DONE | Generate one original character sheet and save its rights evidence. | Private `set-001/character/char-001-sheet.png` SHA-256 `902222ab709ab930c7651ce8c89c3807fcf8c53f3ccd2c79e7a2b14f6ae1b3ba` exactly matches its mode-600 `original_ai_generated` rights receipt. |
-| A05 — DONE | Ask the model for the exact 60-motion plan. | Private canonical `plan_sha256` `1e15c7092207dd2d50d206f48b37e1cbf58632bbe13e138d9600688ce10936de` binds 60 unique motions in six exact batches; its receipt and recomputed canonical hash match. |
+| A03 — DONE | Connect one real animation provider account through the private credential SSOT. | Official Runware account readback binds workspace `anicca-line-sticker` and enabled key `line-sticker-loop`; current official CLI pricing binds live `prunaai:p-video@0` and USD 0.005/second for 720p draft; usage remains zero. |
+| A04 — DONE | Generate one original character sheet and save its rights evidence. | The sheet SHA-256 `902222ab709ab930c7651ce8c89c3807fcf8c53f3ccd2c79e7a2b14f6ae1b3ba` and production-reference SHA-256 `7aa14830d0cba2cebf09c33cbcab5cc651f5d6cd5ae0c60dc3e357f358ab830b` each match their mode-600 rights receipts; the latter also has an official Runware media-upload receipt. |
+| A05 — DONE | Ask the model for the exact 60-motion plan. | Active canonical `plan_sha256` `b90a1682e791bb71f61fe74b9be8454e6680d4af70362dccb019dbe93bc005f4` binds 60 unique one-second motions in six exact ten-second batches; its receipt and recomputed canonical hash match. |
 | A06 | Generate and convert batch 1 into ten valid candidates. | Ten candidate hashes pass the LINE validator. |
 | A07 | Generate and convert batch 2 into ten valid candidates. | Ten candidate hashes pass the LINE validator. |
 | A08 | Generate and convert batch 3 into ten valid candidates. | Ten candidate hashes pass the LINE validator. |

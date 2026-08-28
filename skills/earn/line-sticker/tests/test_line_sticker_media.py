@@ -162,6 +162,17 @@ class LineStickerMediaTests(unittest.TestCase):
         self._plan()
         self.assertEqual((self.root / "model.count").read_text(), "1")
 
+    def test_plan_rejects_a_batch_longer_than_the_source_video(self) -> None:
+        response = json.loads(subprocess.run(
+            [sys.executable, str(self.model)],
+            input=json.dumps({"mode": "plan", "set_id": "set-1", "character_id": "char-1"}),
+            text=True, capture_output=True, check=True,
+        ).stdout)
+        for motion in response["motions"][:10]:
+            motion["duration_ms"] = 1100
+        with self.assertRaisesRegex(MODULE.MediaError, "duration_invalid"):
+            MODULE._validate_plan_model(response, set_id="set-1", character_id="char-1")
+
     def test_rights_receipt_is_required_and_hash_binds_its_bytes(self) -> None:
         self._plan()
         bad = self.root / "bad-rights.json"
@@ -192,6 +203,16 @@ class LineStickerMediaTests(unittest.TestCase):
             MODULE.convert(self.work / "plan.json", [sys.executable, str(provider)], self.work, "0.005", "ffmpeg", "ffprobe")
         calls = [json.loads(line) for line in (self.root / "provider.jsonl").read_text().splitlines()]
         self.assertEqual([call["operation"] for call in calls], ["quote"])
+
+    def test_target_batch_stops_after_one_completed_batch(self) -> None:
+        self._plan()
+        provider = _provider(self.root / "provider.py", _video(self.root))
+        result = MODULE.convert(self.work / "plan.json", [sys.executable, str(provider)], self.work, "0.01", "ffmpeg", "ffprobe", target_batch=1)
+        calls = [json.loads(line) for line in (self.root / "provider.jsonl").read_text().splitlines()]
+        self.assertEqual([call["operation"] for call in calls], ["quote", "generate"])
+        self.assertEqual(result["status"], "ready")
+        self.assertEqual(json.loads((self.work / "convert-receipt.json").read_text())["candidate_count"], 10)
+        self.assertEqual(set(json.loads((self.work / "convert-state.json").read_text())["batches"]), {"1"})
 
     def test_lowered_cap_keeps_reserved_batch_from_generating(self) -> None:
         self._plan()

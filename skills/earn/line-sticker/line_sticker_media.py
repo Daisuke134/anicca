@@ -37,6 +37,7 @@ BATCH_COUNT = 6
 MOTIONS_PER_BATCH = 10
 MIN_DURATION_MS = 500
 MAX_DURATION_MS = 2_000
+MAX_BATCH_DURATION_MS = 10_000
 HEX64 = set("0123456789abcdef")
 SAFE_MOTION_IDS = frozenset(f"motion-{value:02d}" for value in range(1, MOTION_COUNT + 1))
 GENERATION_KEYS = frozenset({
@@ -293,6 +294,8 @@ def _validate_plan_model(
         normalized.append(dict(motion))
     if pairs != {(batch, position) for batch in range(1, BATCH_COUNT + 1) for position in range(1, MOTIONS_PER_BATCH + 1)}:
         raise MediaError("motion_positions_invalid")
+    if any(sum(int(motion["duration_ms"]) for motion in normalized if motion["batch"] == batch) > MAX_BATCH_DURATION_MS for batch in range(1, BATCH_COUNT + 1)):
+        raise MediaError("duration_invalid")
     return {
         "version": 1,
         "mode": "plan",
@@ -931,9 +934,13 @@ def convert(
     max_cost_usd: str | Decimal,
     ffmpeg: str = "ffmpeg",
     ffprobe: str = "ffprobe",
+    target_batch: int | None = None,
 ) -> dict[str, object]:
     """One state file fences quote, reservation, generation, and reconciliation."""
     work_dir = _ensure_directory(Path(work_dir)); plan_payload = _load_plan(Path(plan_path)); argv = _parse_argv(animation_command)
+    if target_batch is not None and (type(target_batch) is not int or not 1 <= target_batch <= BATCH_COUNT):
+        raise MediaError("configuration_error")
+    last_batch = BATCH_COUNT if target_batch is None else target_batch
     max_cost = _decimal_cost(max_cost_usd if type(max_cost_usd) is str else format(max_cost_usd, "f"))
     if not Path(str(plan_payload["character_path"])).is_file() or _sha256_file(Path(str(plan_payload["character_path"]))) != plan_payload["character_sha256"]:
         raise MediaError("character_hash_mismatch")
@@ -943,7 +950,7 @@ def convert(
     if state["plan_sha256"] != plan_payload["plan_sha256"] or state["character_sha256"] != plan_payload["character_sha256"]:
         raise MediaError("convert_state_conflict")
     generated_now = False; all_records: list[dict[str, object]] = []
-    for batch in range(1, BATCH_COUNT + 1):
+    for batch in range(1, last_batch + 1):
         motions = _batch_motions(plan_payload, batch); record = state["batches"].get(str(batch))
         if isinstance(record, dict) and record.get("status") == "completed":
             receipt = _completed_batch(state, batch, motions, work_dir, plan_payload, ffmpeg)
@@ -1557,6 +1564,7 @@ def main(argv: list[str] | None = None) -> int:
     convert_parser.add_argument("--max-cost-usd", required=True)
     convert_parser.add_argument("--ffmpeg", required=True)
     convert_parser.add_argument("--ffprobe", required=True)
+    convert_parser.add_argument("--batch", type=int)
     reconcile_parser = subparsers.add_parser("reconcile", add_help=False)
     reconcile_parser.add_argument("--convert-state", required=True, type=Path)
     reconcile_parser.add_argument("--animation-command", required=True)
@@ -1583,7 +1591,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "plan":
             result = plan(args.character, args.model_command, args.work_dir, args.set_id, args.character_id)
         elif args.command == "convert":
-            result = convert(args.plan, args.animation_command, args.work_dir, args.max_cost_usd, args.ffmpeg, args.ffprobe)
+            result = convert(args.plan, args.animation_command, args.work_dir, args.max_cost_usd, args.ffmpeg, args.ffprobe, args.batch)
         elif args.command == "reconcile":
             result = reconcile(args.convert_state, args.animation_command, args.batch)
         elif args.command == "select":

@@ -39,8 +39,8 @@ Return exactly this JSON shape; do not rename `motions` to `candidates` or add k
 ```
 
 Use motion ids `motion-01` through `motion-60` exactly once. Use every batch/position pair from
-batch 1 position 1 through batch 6 position 10 exactly once. `duration_ms` is an integer from 500
-through 2000.
+batch 1 position 1 through batch 6 position 10 exactly once. Set every `duration_ms` to 1000 so each
+batch fits one 10-second source video without adaptive timing.
 
 Create exactly 60 distinct motion candidates in six coherent videos of ten
 motions each. Use the given schema exactly. Assign every candidate one unique
