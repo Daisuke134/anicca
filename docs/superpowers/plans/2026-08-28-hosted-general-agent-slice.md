@@ -74,7 +74,7 @@ node --test \
   apps/life-manager/lib/runtime-job-store.test.js
 ```
 
-- [ ] **Step 5: Commit and push Task 1**
+- [x] **Step 5: Commit and push Task 1** (`212dadf68`)
 
 ```bash
 git add apps/life-manager/lib/hosted-goal-ingress.js apps/life-manager/lib/hosted-goal-ingress.test.js
