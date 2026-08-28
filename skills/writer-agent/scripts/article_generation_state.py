@@ -13,6 +13,7 @@ import fcntl
 import hashlib
 import json
 import os
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -89,6 +90,15 @@ def _atomic_write(path: Path, value: dict[str, Any]) -> None:
     with temporary.open("w", encoding="utf-8") as handle:
         json.dump(value, handle, ensure_ascii=False, separators=(",", ":"))
         handle.write("\n")
+        handle.flush()
+        os.fsync(handle.fileno())
+    os.replace(temporary, path)
+
+
+def _atomic_write_bytes(path: Path, value: bytes) -> None:
+    temporary = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    with temporary.open("xb") as handle:
+        handle.write(value)
         handle.flush()
         os.fsync(handle.fileno())
     os.replace(temporary, path)
@@ -251,6 +261,60 @@ def initialize(run_dir: Path, run_id: str, prompt_file: Path, ledger: Path) -> d
         }
         _atomic_write(state_path, state)
         return state
+
+
+def rebind_release(
+    run_dir: Path,
+    run_id: str,
+    prompt_file: Path,
+    ledger: Path,
+    current_root: Path,
+) -> dict[str, Any]:
+    """Move a safely resumable prompt from a pruned release to this release."""
+    resolved = _validate_boundary(run_dir, run_id, prompt_file)
+    state_path = _state_path(resolved)
+    current_root = current_root.resolve(strict=True)
+    releases_dir = current_root.parents[2]
+    if Path(*current_root.parts[-2:]) != Path("skills/writer-agent"):
+        raise GenerationInvariant("current root is not a writer-agent release path")
+    with _lock(state_path):
+        state = _load(state_path)
+        if state.get("run_id") != run_id or state.get("status") not in {
+            "provider-failed-safe",
+            "provider-failed-ambiguous",
+            "interrupted-safe",
+        }:
+            raise GenerationInvariant("generation state is not safely resumable")
+        safe, reason = prepublication_empty(resolved, run_id, ledger)
+        if not safe:
+            raise GenerationInvariant(reason)
+        original = prompt_file.read_bytes()
+        if state.get("prompt_sha256") != hashlib.sha256(original).hexdigest():
+            raise GenerationInvariant("prompt hash does not match generation state")
+        pattern = re.compile(
+            re.escape(str(releases_dir)).encode()
+            + rb"/[^/\s`\"']+/skills/writer-agent"
+        )
+        roots = set(pattern.findall(original))
+        if not roots:
+            raise GenerationInvariant("prompt contains no writer release root")
+        updated = pattern.sub(str(current_root).encode(), original)
+        if updated == original:
+            return {"action": "unchanged", "prompt_sha256": state["prompt_sha256"]}
+        _atomic_write_bytes(prompt_file, updated)
+        previous_sha = state["prompt_sha256"]
+        state["prompt_sha256"] = hashlib.sha256(updated).hexdigest()
+        state["updated_at"] = utc_now()
+        state.setdefault("release_rebindings", []).append(
+            {
+                "at": state["updated_at"],
+                "from": sorted(root.decode() for root in roots),
+                "to": str(current_root),
+                "previous_prompt_sha256": previous_sha,
+            }
+        )
+        _atomic_write(state_path, state)
+        return {"action": "rebound", "prompt_sha256": state["prompt_sha256"]}
 
 
 def begin(
@@ -661,6 +725,8 @@ def main() -> int:
     orphan_parser.add_argument(
         "--minimum-age-seconds", type=int, default=60
     )
+    rebind_parser = subparsers.add_parser("rebind-release")
+    rebind_parser.add_argument("--current-root", required=True, type=Path)
     subparsers.add_parser("resume-check")
     args = parser.parse_args()
     common = (args.run_dir, args.run_id, args.prompt_file, args.ledger)
@@ -677,6 +743,8 @@ def main() -> int:
             *common,
             minimum_age_seconds=args.minimum_age_seconds,
         )
+    elif args.command == "rebind-release":
+        value = rebind_release(*common, current_root=args.current_root)
     else:
         value = resume_decision(*common)
     print(json.dumps(value, ensure_ascii=False, separators=(",", ":")))
