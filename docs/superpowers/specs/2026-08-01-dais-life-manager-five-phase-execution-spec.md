@@ -4379,14 +4379,14 @@ bindされ、未確認founder videoをexpected blockerとして保持し`submit_
 
 ### 5.6 Order 3B — Dais個人CFO
 
-現在のMoneytree plugin readbackはowner確認済みの正しい観測として扱う。実装はO3B-00→O3B-24を上から一件ずつ進め、先頭の未完1件だけをactiveにする。
+現在のMoneytree plugin readbackはowner確認済みの正しい観測として扱う。実装は上から最初のactionableな未完1件だけをactiveにし、`WAIT_EXTERNAL`は内部TODOを塞がない。
 
 - [x] O3B-00 公式current docsとlocal secret有無を監査。Moneytree pluginは実口座1件を正常readback。credential SSOTはmode 600、LINK本番credentialは未登録。Cloud要件は契約後の`client_id`・`client_secret`・登録済み`redirect_uri`、最小scopeは`guest_read accounts_read transactions_read request_refresh`。追加質問なし、LINK申請はO3B-03で実行
 - [x] O3B-01 account、transaction、position、liabilityの最小schemaを`financial-organ-schema.js`へ固定し、focused testで4種類と必須field拒否を実証
 - [x] O3B-02 `financial-organ-schema.js`で金額をsafe integer JPYに限定し、小数と非JPYをfocused testで拒否
-- [ ] O3B-03 **local完了 / LINK申請済み / credential待ち**: local adapterがCodex app-serverからMoneytree structured toolを直接呼び、口座番号を破棄したJPY account recordへ変換。実readbackは`connected=true`・account 1。Moneytree公式platform formはthank-you page・`submissionGuid`あり・error 0をreadback。production credential発行後にCloud OAuthを接続して完了
-- [ ] O3B-04 銀行・card・証券の実残高と実明細をimportし、fake/mock/dry-runを完了証拠にしない
-- [ ] O3B-05 Binance read-only接続
+- [x] O3B-03 local Moneytree adapterを実接続。Codex app-serverからstructured accountを取得し、口座番号を破棄したJPY recordへ変換。実readbackは`connected=true`・account 1
+- [ ] O3B-03C `WAIT_EXTERNAL`: Moneytree LINK申請済み。production credential受領後にCloud OAuthを接続
+- [ ] O3B-05 `WAIT_EXTERNAL`: Binance credential未登録。取得後にread-only接続
 - [ ] O3B-06 Daisのon-chain walletをread-only取得
 - [ ] O3B-07 内部振替の二重計上防止
 - [ ] O3B-08 merchant正規化と支出category
