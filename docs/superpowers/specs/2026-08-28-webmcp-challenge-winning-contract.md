@@ -693,6 +693,33 @@ JudgeはDashboardを直接確認でき、対応WebMCP clientからの操作も�
 
 動画で実装していないX watcher、application、work、payoutを成功として見せない。各claimは公式readbackがある範囲に限定する。
 
+### 12.3 Exact recording plan — one 16:9 video
+
+最終deliverableは16:9のYouTube video一つにする。WebMCP interactionはMacのChatGPT desktopまたはChrome 149+でcaptureする。人間が`Needs You`を完了する場面だけiPhoneで撮る。NarrationはiPhoneで別録りしてよい。Phone-only screen recordingはWebMCP tool discoveryを証明できないため採用しない。
+
+| Time | Recorded screen | Narration |
+|---:|---|---|
+| 0:00–0:12 | Title + empty Life Manager Work board | “People are told that AI can find jobs and make money, but the process is rarely reproducible. Opportunities, agent work, human steps, and payment proof all live in different places.” |
+| 0:12–0:26 | Full board: Backlog, Working, Needs You, Waiting, Paid | “Life Manager puts the entire journey on one board. Its worker keeps each job in a persistent workroom and continues until the outcome is verified.” |
+| 0:26–0:42 | ChatGPT/Chrome Site tools drawer | “The page exposes WebMCP tools, so my WebMCP agent reads and changes the same state I see instead of guessing at buttons.” |
+| 0:42–0:58 | WebMCP agent adds a public job card | “I ask it to add this public job. Life Manager checks the opportunity and starts one workroom.” |
+| 0:58–1:15 | Worker events and application artifacts appear | “The Life Manager worker researches the role and prepares the application without me supervising every turn.” |
+| 1:15–1:32 | Intro-video script opens; WebMCP visible diff | “The job requires an introduction video. My WebMCP agent reads the script, revises the visible artifact, and records exactly which revision changed.” |
+| 1:32–1:48 | Card moves to Needs You; prepared task visible | “Now Life Manager reaches the one step it should not do for me. It moves the card to Needs You with the final script, time limit, and one exact action.” |
+| 1:48–2:03 | iPhone: open the task, record/select, upload | “On my phone, I open one task and upload my video. I do not reconstruct context or manage the agent.” |
+| 2:03–2:18 | Mac: card returns to Working; same workroom resumes | “The same workroom resumes automatically and uses the artifact revision I approved.” |
+| 2:18–2:32 | Fixed label `Actual Owner Run — read-only`; official application receipt | “This is the actual owner run. The provider readback proves one application, and the replay count proves there was no duplicate submission.” |
+| 2:32–2:45 | WebMCP Challenge workroom and real artifacts | “We also use the same runtime for the remaining work on this multi-day WebMCP Challenge submission.” |
+| 2:45–2:56 | Work board zooms out; Paid column and receipt visible | “One agent handles short jobs and long projects, asks only when it needs a person, and counts money only when an official receipt proves it was received.” |
+
+Recording assets:
+
+- Mac landscape screen capture of the real WebMCP E2E
+- iPhone portrait capture of the real `Needs You` task
+- iPhone narration recording in a quiet room
+- no copyrighted music; silence or an original/submission-safe bed only
+- captions generated from the final narration and manually checked
+
 ---
 
 ## 13. English submission description — v0.1
