@@ -4382,7 +4382,7 @@ bindされ、未確認founder videoをexpected blockerとして保持し`submit_
 - [ ] O3B-00 公式current docsとlocal secret有無を監査し、必要credential/scope/契約をDaisへ一括質問
 - [ ] O3B-01 account、transaction、position、liability schema
 - [ ] O3B-02 JPY、original currency、FX provenance
-- [ ] O3B-03 Moneytree LINK契約済みならproduction OAuth、未契約ならMoneytree Web公式exportへ実接続
+- [ ] O3B-03 `2026-07-29-life-manager-finance-marketing-platform-design.md` §6.5.1のdeployment-owned Moneytree adapter契約を実接続する
 - [ ] O3B-04 銀行・card・証券の実残高と実明細をimportし、fake/mock/dry-runを完了証拠にしない
 - [ ] O3B-05 Binance read-only接続
 - [ ] O3B-06 Daisのon-chain walletをread-only取得
