@@ -406,6 +406,9 @@ class LineStickerValidatorTests(unittest.TestCase):
             "provider": lambda g: g["batches"]["1"].update({"provider": "other"}),
             "top_provider": lambda g: g.update({"provider": "other"}),
             "wrong_batch_source": lambda g: (g["batches"]["2"].update({"source_sha256": "b" * 64}), g["candidate_bindings"]["01.png"].update({"source_sha256": "b" * 64})),
+            "batch_list": lambda g: g["batches"].update({"1": []}),
+            "batch_null": lambda g: g["batches"].update({"1": None}),
+            "batch_string": lambda g: g["batches"].update({"1": "invalid"}),
             "unsafe_motion_id": lambda g: g["candidate_bindings"]["01.png"].update({"motion_id": "junk-01", "segment": {"motion_id": "junk-01", "start_ms": 0, "end_ms": 500}}),
             "unpadded_motion_id": lambda g: g["candidate_bindings"]["01.png"].update({"motion_id": "motion-1", "segment": {"motion_id": "motion-1", "start_ms": 0, "end_ms": 500}}),
         }
