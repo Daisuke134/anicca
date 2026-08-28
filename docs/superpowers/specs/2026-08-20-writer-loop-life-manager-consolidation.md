@@ -24,6 +24,12 @@ state、money/sales ledger rowは0だった。ここで次の独立欠陥を観�
 修復自体は成立しているが、W2の前にdata lossとfalse-greenを閉じる必要がある。resumeは既存quality run
 `20260821-130847`を処理し、`retryable-incomplete`を保持して外部公開しなかった。
 
+W1g codeはPR #2956でmainへmergeした。`generation-state.json`が存在するrunを5行の保護条件でprunerから
+除外する。production applyは未完である。loaded plistのProgramArgumentsはloops release `edcc3577`だが、
+`ARTICLE_ROOT`、`ARTICLE_SKILL_DIR`、`LIFE_MANAGER_REPO`はgig releaseを指し、helper sourceが別SHAになる。
+full release buildもENOSPCで停止した。次のcursor W1iでsource rootを一つのimmutable releaseへ揃えるまで、
+W1gをproduction完了またはWriter全体復旧とは扱わない。
+
 ## Writer $10k monthly / OSS money playbook contract
 
 Writerの経済目的は、記事に結び付いた一意な外部payment receiptを受け取ることである。記事本数は活動量として
