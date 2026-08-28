@@ -241,3 +241,10 @@ Baseline: focused Life Manager suite 175/175 PASS.
 - Review R0 found two Important evidence gaps (exact three-day window and actual paid-column write tripwire) plus one Minor pre-grant JSON gap. Fix round 1 added server clock bounds, `BEFORE UPDATE OF paid` rejection, and null/false state. Scoped fresh Sol re-review: all addressed, new breakage none, ship.
 - Production Supabase rollback-only preflight: exact transaction-timestamp + 3 days, repeat deadline unchanged, tenant/chat isolation, service-role ACL, paid false. Post-rollback official readback is `trial_column_count=0`, `fixture_count=0`, `trial_body_present=false`.
 - Task 13A code/preflight status: complete at `d8974760d`. Production migration apply remains intentionally deferred to finish-plan Task 6 immediately before exact-SHA deploy.
+
+## Task 13B value-first panel
+
+- Implementation: `982bd74ce` extracts one tenant-scoped `buy.stripe.com` validator, exposes server-owned trial truth, normalizes legacy ready stages, makes checkout optional/secondary, and adds a truthful optional next-event preview plus ready UI. `e12458c07` fixes review findings.
+- TDD: missing-module and four behavior REDs; first GREEN 96/96; fix RED 52/54; final focused panel/auth/billing/payment suite 97/97. Stripe-host and client-deadline mutations were detected.
+- Review R0 found two Important defects: helper blocks could enter preview because nonexistent flags were checked, and expired/paid states received false active-trial copy. Fix round 1 reuses `isHelperBlock(summary)` and branches copy only on server `paid`/`trialActive`. Scoped re-review: both addressed, new breakage none, ship.
+- Primary verification: 97/97 plus syntax/diff PASS. Task 13B: complete at `e12458c07`; no production migration/deploy/Stripe effect occurred.

@@ -299,7 +299,7 @@ Record SQLSTATE/output facts in progress without secret values.
 - Extends onboarding response with `trialExpiresAt`, `trialActive`, optional `paymentLink`, and optional `nextEvent: {summary,startAt}`.
 - The browser derives no identity/deadline and renders Calendar text through `textContent` only.
 
-- [ ] **Step 1: Add payment-link module RED**
+- [x] **Step 1: Add payment-link module RED**
 
 Create `payment-link.test.js` first:
 
@@ -319,7 +319,7 @@ test("paymentLink allows only tenant-scoped buy.stripe.com HTTPS", () => {
 });
 ```
 
-- [ ] **Step 2: Add panel/UI RED contracts**
+- [x] **Step 2: Add panel/UI RED contracts**
 
 In `panel-api.test.js`, add a core-ready trial state with:
 
@@ -337,7 +337,7 @@ Require HTTP 200, dashboard, server deadline, and trusted payment link. A missin
 
 In `panel-ui.test.js`, require the dashboard branch to contain `準備できました`, `移動時間を自動追加`, `出発5分前`, `無料期間`, and no required payment action. Calendar summary/start must be assigned with `textContent`.
 
-- [ ] **Step 3: Run RED**
+- [x] **Step 3: Run RED**
 
 ```bash
 cd apps/life-manager
@@ -346,7 +346,7 @@ node --test lib/payment-link.test.js lib/panel-api.test.js lib/panel-ui.test.js
 
 Expected: first failure is `MODULE_NOT_FOUND` for `payment-link.js`; after adding only the module, panel/UI trial assertions still fail.
 
-- [ ] **Step 4: Extract the existing validator without semantic change**
+- [x] **Step 4: Extract the existing validator without semantic change**
 
 Move the current `paymentLink` function from `panel-api.js` into `payment-link.js` and export it:
 
@@ -372,7 +372,7 @@ module.exports = { paymentLink };
 
 Import it from `panel-api.js`; do not duplicate it.
 
-- [ ] **Step 5: Extend server response and ready screen**
+- [x] **Step 5: Extend server response and ready screen**
 
 Add `trialExpiresAt`, `trialActive` to the existing response allowlist. Map legacy `payment`, `pay`, `done`, and `gmail` stages to `dashboard`. For an unpaid dashboard, add a payment link only when `paymentLink(opts, scope)` is non-empty; missing checkout must not return 503.
 
@@ -384,7 +384,7 @@ body.nextEvent = next ? { summary: String(next.summary || "予定"), startAt: ne
 
 If timeline fails, keep `nextEvent = null`; onboarding remains ready. In `panel-ui.js`, render the ready copy and optional next event with DOM `textContent`. Keep the validated checkout as a secondary action.
 
-- [ ] **Step 6: Run GREEN and mutation checks**
+- [x] **Step 6: Run GREEN and mutation checks**
 
 ```bash
 node --test lib/payment-link.test.js lib/panel-api.test.js lib/panel-ui.test.js lib/billing.test.js lib/panel-auth.test.js
@@ -392,7 +392,7 @@ node --test lib/payment-link.test.js lib/panel-api.test.js lib/panel-ui.test.js 
 
 Expected: PASS. Temporarily accept `evil.example` and require the payment-link test to fail; restore. Temporarily use client `trialExpiresAt` and require panel tests to fail; restore.
 
-- [ ] **Step 7: Commit and fresh review**
+- [x] **Step 7: Commit and fresh review**
 
 ```bash
 git add apps/life-manager/lib/payment-link.js apps/life-manager/lib/payment-link.test.js apps/life-manager/lib/panel-api.js apps/life-manager/lib/panel-api.test.js apps/life-manager/lib/panel-ui.js apps/life-manager/lib/panel-ui.test.js
