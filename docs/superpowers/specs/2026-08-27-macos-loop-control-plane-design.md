@@ -266,6 +266,9 @@ and 20 explicit external labels. Runtime source, dependencies, argv, cleanup, pr
 routing, and terminal events resolve through immutable releases. Natural
 boot-window events keep process status separate from official effect status;
 failed business loops remain visible rather than being counted as healthy.
+The final merged release applies 167/167 labels, emits 167/167 install events,
+and gives every registered loop an event at the installed SHA. `doctor` passes
+with unmanaged, missing-entrypoint, and installed-retired counts all zero.
 
 Loop development now has one repository contract:
 `skills/loop-development/SKILL.md`. Agents work in locked linked worktrees,
