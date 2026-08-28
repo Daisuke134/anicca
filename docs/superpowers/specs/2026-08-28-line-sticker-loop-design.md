@@ -265,6 +265,11 @@ No narrower evidence closes the goal.
   safe motion ids, one-video-at-a-time checkpoints, APNG timing, visual-inspection readback, and
   package-bound generation provenance. A fresh parent run passes all 13 media tests, including a real
   six-batch FFmpeg package.
+- The private credential SSOT contains one email-verified Runware workspace and an enabled
+  `line-sticker-loop` API key. Official read-only account readback reports USD 0.05 balance and zero
+  generation requests/credits. Official `model_pricing` readback identifies live
+  `bytedance:seedance@2.5` and quotes 720p text/image-to-video at USD 0.2304 per second without
+  generating media.
 - No real image/video provider call, Creators Market submission, review, release, public product,
   sale, payout, or bank effect has occurred.
 
@@ -276,8 +281,9 @@ do not count as money.
 
 ### Current blockers to revenue
 
-1. No authenticated animation-provider credential/account is configured. The current machine has
-   no Runware, Runway, Seedance, fal, or Replicate credential in the private credential SSOT.
+1. No real character or motion generation has run. The Runware balance is USD 0.05, below the
+   official minimum four-second Seedance 2.5 quote even at 480p; any later personal funding remains
+   outside A03 and must obey the money-safety boundary.
 2. No authenticated LINE Creators Market browser session or dedicated profile exists, and no LINE
    credential entry is configured in the private credential SSOT.
 
@@ -294,7 +300,7 @@ row while an earlier row is unfinished.
 | --- | --- | --- |
 | A01 — DONE | Remove the temporary fixed disk threshold; on write failure retain the current checkpoint and exit with no external effect. | Parent media 9/9 PASS; fresh review READY; forced `ENOSPC` preserves and retries the same checkpoint. |
 | A02 — DONE | Run the redesigned media tests plus the full validator/owner regression and obtain fresh adversarial review. | Parent Media 13/13 + Validator 32/32 + Owner 48/48 PASS; final review has no Critical, Important, or Minor finding. |
-| A03 | Connect one real animation provider account through the private credential SSOT. | Official provider identity and one side-effect-free quote read back successfully. |
+| A03 — DONE | Connect one real animation provider account through the private credential SSOT. | Official Runware account readback binds workspace `anicca-line-sticker` and enabled key `line-sticker-loop`; free `model_pricing` readback binds live `bytedance:seedance@2.5` and USD 0.2304/second at 720p; usage remains zero. |
 | A04 | Generate one original character sheet and save its rights evidence. | Character file hash and rights receipt exist. |
 | A05 | Ask the model for the exact 60-motion plan. | `plan.json` contains 60 inspected, unique motions in six batches. |
 | A06 | Generate and convert batch 1 into ten valid candidates. | Ten candidate hashes pass the LINE validator. |
