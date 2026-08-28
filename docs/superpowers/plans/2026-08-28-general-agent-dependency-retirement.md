@@ -30,3 +30,5 @@
 Source verification: tier-2 contract PASS; canonical agent-runner schema/evidence 8/8; shell/JSON syntax PASS; developer-checkout references 0. The existing `.openclaw` state reference remains a separately measured OSS finding.
 
 Source delivery: commit `f0cecf7a2`; PR #3018 head-matched, open, and mergeable. Production remains on immutable `d9021490…` with latest natural terminal `pass`.
+
+Production progress: PR #3018 merged as main `cc94f70eb`; main Security Scan 8/8 SUCCESS. Sparse immutable release `20260829T000118-cc94f70e` is current and only `tier2-agent-diagnose` was applied. Loaded argv, release SHA and state path match; source search finds the retired developer-checkout path 0. Private rollback bundle `~/.local/state/life-manager/rollback/tier2-agent-diagnose-cc94f70e/` is mode 700 with mode-600 prior/current plists and manifest. Natural target-SHA terminal event remains pending; install/pass is not counted as the natural gate.
