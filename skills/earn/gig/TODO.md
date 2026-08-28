@@ -387,30 +387,48 @@ official contract, fee, payout, and bank receipts advance it.
    Coconala cancellation, enter terminal pending replay, prove all effects zero, and close as
    cancelled. The latest buyer message says they contacted Coconala support and asks us to wait for
    cancellation completion; remain observe-only.
-7. [ ] `18180857`: use the buyer-authorized TikTok account and stored credential. The historical
-   code is no longer reusable. At the first official observation outside Chii's unavailable
-   19:00–22:00 JST window, ask once only whether TikTok authentication can be handled now; do not
-   ask for a code in that message. After a newer availability confirmation, start login immediately
-   and request a six-digit code only if official TikTok issues a new OTP in that same continuation;
-   enter it immediately and never ask again pre-emptively. Then perform the exact campaign scope,
-   checkpoint every verified DM/sheet effect, verify the live result, deliver, obtain buyer
-   completion, and prove replay-zero.
-   At the account owner's direction, one stored-credential login submit was performed at
-   `2026-08-24T12:24:33Z`. The official TikTok DOM remained on the email/password route and read
-   `試行回数が上限に達しました。後ほどお試しください。`; authentication and OTP challenge were
-   both false. Durable evidence is
-   `evidence/tiktok-login-preflight-20260824T122433Z.json`. Do not submit login again or contact the
-   buyer while that provider state remains. The next TikTok action is read-only provider-state
-   observation; only after the limit clears may the owner make one new login attempt and follow the
-   OTP continuation above. The installed owner subsequently asked for a safe authentication window
-   and obtained exact buyer readback `22時にお願いいたします🙇‍♀️`. At 22:00 JST, make exactly one
-   stored-credential login submit. If TikTok still shows the attempt limit, stop without another
-   buyer message. If it issues a fresh OTP, ask for that code and enter it immediately in the same
-   continuation.
-   The account owner has now transferred Chii to a separate agent. The installed Paid owner is
-   observe-only for this exact cycle and must produce zero login/OTP/message/DM/sheet/delivery/
-   cancellation effects. Preserve existing context/evidence and resume only after a genuinely newer
-   official buyer/provider event or a verified handback receipt; do not duplicate the other agent.
+7. [ ] `18180857`: finish the live TikTok campaign and its Google Sheet from the seller-owned
+   `@anicca.jp` account. The buyer explicitly accepted proceeding with the seller account, and the
+   account owner has handed this project back to the installed Paid owner. Do not use the buyer's
+   TikTok credential, request another buyer OTP, or send another authentication explanation.
+   Official TikTok login is now verified in two isolated browser profiles: normal username/password
+   login reached `/foryou`, exposed authenticated session cookies, and read back the exact
+   `https://www.tiktok.com/@anicca.jp` identity. The successful credential lives only in the private
+   credential SSOT under service `tiktok-anicca-jp`; never copy its value into repo, prompts, logs,
+   Coconala or Telegram.
+
+   The buyer-visible initial-review package is already sent: v7
+   `CKprotect_TikTok_initial_review_v7.zip`, SHA256
+   `d0c16a537ebf5ea3329ce2e724b21e5675ccad2f34f224c397df44528c53d057`, contains ten qualified
+   candidate reviews, individualized DM drafts and the recording/analysis plan. Official project
+   state records that package as buyer-visible with the talkroom delivery confirmed and formal
+   delivery OFF. Do not send v7 again. Buyer feedback has not arrived; absence of feedback does not
+   authorize changing the agreed campaign or duplicating the review request.
+
+   Complete the contracted live work in this order:
+   1. Re-verify each candidate immediately before send against the buyer criteria and exclusions;
+      personalize from current official profile/post evidence and reject minors, DM/solicitation
+      opt-outs, unverifiable identity, existing-campaign duplicates and already-contacted accounts.
+   2. Send only through `@anicca.jp`, one recipient at a time, with a durable intent/effect key and
+      exact official TikTok Sent/readback before advancing. The monthly contract target is 300–500
+      DMs; never count a draft, profile visit or uncertain send as one of them.
+   3. For every verified send, append exactly one matching row to the buyer's editable Google Sheet
+      monthly tab with `アカウント名` and `送信日`. The official workbook has four pages/tabs:
+      `DM送信詳細`, `送信数計算シート`, `契約率確認表`, and `2026年8月`. Preserve the complete page
+      layout, tab order, headers, formulas, formatting and existing cells. Never write to
+      `送信数計算シート`; it is buyer-owned and read-only for this job. A TikTok send without its
+      one Sheet row, or a Sheet row without its verified TikTok send, is incomplete and must stop
+      before the next recipient.
+   4. Read back all four official Sheet tabs after each bounded batch. Require the monthly rows to
+      reconcile one-to-one with verified TikTok sends and require the calculation/contract-rate
+      pages to remain structurally intact. Record replies, interviews and contracts only from
+      official events; then calculate reply/interview/contract rates and write the improvement
+      analysis without inventing outcomes.
+   5. Share buyer-reviewable access to the seller-owned account only through an official safe
+      mechanism that does not expose the reusable password in Coconala. Keep formal delivery OFF
+      until the buyer explicitly approves the completed campaign output. Then deliver the final
+      campaign report once, save exact Coconala/TikTok/Sheet readbacks, and replay the same input to
+      prove effect zero and `deduplicated=true`.
 8. [ ] `18169985`: the buyer has now explicitly approved the unchanged @diceai0 account, the
    shown DM format with a recipient-specific introduction, a total of 100 DMs, and formal
    delivery with evidence. The buyer then replaced the common body with an explicitly estimated
