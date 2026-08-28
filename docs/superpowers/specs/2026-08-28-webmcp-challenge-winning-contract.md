@@ -3,11 +3,11 @@
 **Status:** Draft for Dais review — official contract snapshot verified / product concept recommended / implementation not started  
 **Canonical repository:** `https://github.com/Daisuke134/life-manager`  
 **Submission deadline:** September 3, 2026 1:00 PM PT / **September 4, 2026 05:00 JST**  
-**Working product name:** `Life Manager — Money Printer`
+**Product name:** `Life Manager`
 **Primary objective:** WebMCP Challenge top 10に入り、賞金・ChatGPT Pro・Codex Micro等を獲得する  
 **Long-term objective:** Life Managerが継続的に収益機会を発見し、応募・実行・納品・着金確認まで閉じるentrepreneur agentになる
 
-**中心主張:** Money Printerは「お金を稼ぐSymphony」である。Web上の収益機会を見つけ、案件ごとのpersistent workroomでgeneral agentを完了まで走らせる。設計目標はagentが作業の99%を担い、人間には本人確認、創造的判断、最終承認、現実世界での操作が必要な1%だけを明確なtaskとして返すこと。WebMCPは、人とagentが同じlive stateを共同操作するinterfaceであり、製品をWebMCP Challengeに限定するものではない。99%/1%は実測後だけ対外claimに使う。
+**中心主張:** Life Managerは、人の仕事を完了まで管理するgeneral agentである。Jira/Symphony型の一つのWork boardで、agentが案件ごとのpersistent workroomを進める。人間が触れるのは`Needs You`列だけで、本人確認、創造的判断、最終承認、現実世界での操作を一件ずつ完了する。回答後、agentは同じworkroomから自動再開する。WebMCPは、人とagentが同じboard、artifact、taskを共同操作するinterfaceである。
 
 ---
 
@@ -17,10 +17,10 @@
 
 1. **不変層:** WebMCPとは何か、公式ルール、提出物、審査構造、失格条件
 2. **戦略層:** 審査4軸を満たすための勝利条件、judge experience、競合基準
-3. **可変層:** 現在の推奨案 `Life Manager — Money Printer`
+3. **可変層:** Life ManagerのWork boardとcanonical demo
 4. **長期層:** hackathon後もLife Managerが機会を探し、収益へ変えるloop
 
-製品名、visual identity、最初のopportunity sourceは変更できる。公式要件、WebMCPの技術境界、審査証拠、外部作用の安全境界は変更しない。公式ページと本specが衝突した場合は、最新の公式ルールを再取得し、本specを置換する。
+Visual identityと最初のopportunity sourceは変更できる。製品名は`Life Manager`で固定する。公式要件、WebMCPの技術境界、審査証拠、外部作用の安全境界は変更しない。公式ページと本specが衝突した場合は、最新の公式ルールを再取得し、本specを置換する。
 
 ## 1. Goal / Done
 
@@ -189,6 +189,22 @@ Primary sources:
 - `https://webmcp.devpost.com/rules`
 - `https://webmcp.devpost.com/resources`
 
+### 3.6 Known submission fields and link gates
+
+| Field | Final value / creation gate | Current status | Final gate |
+|---|---|---|---|
+| Project name | `Life Manager` | fixed | Devpost readback matches |
+| Tagline | `A general agent that does the work and asks only when it needs you.` | design copy | authenticated form review |
+| Live URL | `https://aniccaai.com/lm` | reachable landing only | Work board deploy SHA + zero-login E2E + `registerTool()` discovery |
+| Public repository | `https://github.com/Daisuke134/life-manager` | public | challenge source/instructions + clean clone verified |
+| OSS license | `https://github.com/Daisuke134/life-manager/blob/main/LICENSE` | GitHub detects MIT | license visible in submitted repo |
+| Demo video title | `Life Manager — The Agent That Finishes Work With You` | reserved copy | final E2E edit complete |
+| Public YouTube URL | created by the final verified upload | not created | public URL + duration/audio readback |
+| Devpost entry URL | created when the authenticated draft is first saved | not created | every required field read back |
+| Testing instructions | zero-login `https://aniccaai.com/lm` + one WebMCP prompt + Chrome 149 steps | planned | clean-browser judge replay |
+
+Unauthenticated access to `webmcp.devpost.com/submissions/new` returns a login gate, so additional standard Devpost fields cannot be claimed from the public page. After registration, inspect the authenticated draft form and add only fields actually shown there. The four official description questions、live URL、repo、license、videoはこのspecで先に固定する。
+
 ---
 
 ## 4. Showcaseから固定する製品原則
@@ -256,7 +272,7 @@ Pitchの中心を、検証可能な共同作業に置く。
 
 Devpost galleryは調査時点で未公開。GitHub exact phrase searchでは公開候補repoが少なくとも59件あった。valid submissions数と競合数は未確定だが、公開build activityはすでに大きい。
 
-| Competitor | Strongest evidence | Money Printerが超える点 |
+| Competitor | Strongest evidence | Life Managerが超える点 |
 |---|---|---|
 | SpendMCP | x402、policy、dynamic 9→10 tools、idempotency、delivery receipt、143 tests | 購入だけでなく、機会発見→workroom→成果→入金まで閉じる |
 | ONE | 4 independent sites、stale intent、slot loss recovery、exact-resource approval | 一目標の購入から、任意の短期・長期workを継続実行するgeneral runtimeへ広げる |
@@ -345,7 +361,7 @@ Impact proof:
 
 必要証拠:
 
-- Money Printer自身がWebMCP Challengeという数日規模のopportunityを発見し、workroomを作り、submissionまで進めるdogfooding demo
+- Life Manager自身がWebMCP Challengeという数日規模のopportunityをworkroomで進め、submissionまで到達するdogfooding demo
 - general workroomが複数turnを継続し、proof付きでterminalへ進む
 - human-only visual/taste decisionとagent-only structured analysisを統合する
 - state進行により新しいtoolsがunlockされる
@@ -366,15 +382,16 @@ Ambitionはfeature数ではない。「open Web上の仕事を、人とagentが�
 | Leverage | replayで新規effect 0 | original receipt + duplicate count | same idempotency key twice | final-cut gate | planned |
 | Execution | zero-loginで90秒以内に完走 | public judge URL + reset | clean browser E2E | final-cut gate | planned |
 | Execution | failureが説明可能で回復する | error + retry/recovery trace | controlled transient failure | final-cut gate | planned |
+| Execution | runtime restart後も同じworkroomを再開する | durable workroom + artifact revision | terminate → restart → continue、duplicate 0 | final-cut gate | planned |
 | Impact | manualよりsupervisionを減らす | before/after measurement | same opportunity comparison | final-cut gate | planned |
 | Impact | human-only workが正確なtaskになる | task cards + dedupe readback | repeated model wording → one stable task | final-cut gate | planned |
 | Creativity | general earning agentが自分のhackathon entryを完成する | completed dogfooding workroom | artifact/source verification | final-cut gate | planned |
 
 ### 7.6 Product replacement gate
 
-Money Printerの名称とvisual surfaceは変更可能である。中核architectureを置き換えるのは、一次証拠で次をすべて満たす場合だけにする。
+Visual surfaceは変更可能である。Life Managerの中核architectureを置き換えるのは、一次証拠で次をすべて満たす場合だけにする。
 
-- 4軸internal rubricがMoney Printer以上
+- 4軸internal rubricが現Life Manager案以上
 - 20秒以内のmagic momentが明確
 - 90秒以内のjudge pathを実装可能
 - humanとagentが同じshared artifactを変更する
@@ -383,65 +400,67 @@ Money Printerの名称とvisual surfaceは変更可能である。中核architec
 
 ---
 
-## 8. Recommended product — Life Manager: Money Printer
+## 8. Recommended product — Life Manager
 
 ### 8.1 One sentence
 
-**Money Printer is Symphony for earning: a general agent that finds legitimate paid opportunities, gives each one a persistent workroom, handles most routine execution, and asks a person only for identity, judgment, approval, or real-world action.**
+**Life Manager is a general agent that manages work to completion. It gives every job, bounty, application, or long-horizon project a persistent workroom, completes routine execution, and asks a person only for identity, judgment, approval, or real-world action.**
 
 ### 8.2 Product boundary
 
-Money PrinterはWebMCP Challenge専用agentでも、「Mercor案件ならMercor専用loopへ渡す」といったprovider routerでもない。X、Web、GitHub、Devpost、marketplaces、mail等から公開・許可済みの機会を発見し、同じgeneral agent runtimeで短期bountyから数日規模のhackathonまで実行する。
+Life ManagerはWebMCP Challenge専用agentでも、「Mercor案件ならMercor専用loopへ渡す」といったprovider routerでもない。X、Web、GitHub、Devpost、marketplaces、mail等から公開・許可済みの機会を発見し、同じgeneral agent runtimeでjob application、短期bounty、gig work、数日規模のhackathonを実行する。
 
 既存Mercor、Coconala、TaskMarket等のcodeは、general runtimeが再利用できるtools、browser state、evidence、historyとして段階的に吸収する。Core orchestratorは「MercorならMercor loop」のようなprovider分岐を持たない。Modelが現在のopportunityとenvironment feedbackを読み、利用可能なtoolsから次の行動を選ぶ。
 
-### 8.3 Canonical dogfooding demo
+### 8.3 Canonical judge demo — job application
 
-WebMCP ChallengeはMoney Printerが扱う多数のopportunityの一例である。Demoでは次を実物で見せる。
+Primary demoは、短いintro videoを要求するjob applicationである。`Needs You`へのhandoffが自然で、judgeがhuman-agent collaborationを一目で理解できる。
 
-1. Opportunity ScoutがWebMCP Challengeと短期bountyを発見する
-2. Modelがreward、deadline、eligibility、cost、time、riskを比較する
-3. WebMCP Challengeを選び、persistent per-opportunity workroomを作る
-4. Agentが公式rules、showcase、競合、repo stateを調査する
-5. Product、live URL、repo、English copy、videoを複数turnで作る
-6. 人間のtaste/authorityが必要な時だけtaskを一件出す
-7. 人間の回答後、同じworkroom/threadから再開する
-8. failureはenvironment feedbackとして受け取り、修正・再検証する
-9. Runtime稼働後に残るsubmission workを同じworkroomで続け、実Devpost submissionを一度だけ行い、provider readbackを保存する
-10. Dashboardにapplication、proof、cost、resultを表示する
+1. Life Manager workerがpublic job opportunityを発見する
+2. Modelがeligibility、fit、deadline、expected value、riskを判断する
+3. Persistent workroomを作り、company researchとapplication artifactsを進める
+4. Intro video requirementへ到達する
+5. Life Manager workerがintro-video script、length、upload instructionsを準備し、cardを`Needs You`へ移す
+6. WebMCP agentが同じscriptを読み、base revision付きのvisible diffを作る
+7. 人間がdiffを確認し、そのscriptでvideoをrecord/uploadする
+8. Life Manager workerが同じworkroom/threadから自動再開し、採用したrevisionをapplicationへ使う
+9. 実accountではexact applicationを一度だけsubmitし、provider readbackを保存する
+10. Guest accountでは外部submit直前まで同じflowを操作でき、actual runのreceiptをread-onlyで確認できる
 
-Self-referenceは、general agentが数日規模のreal opportunityを完了できるdogfooding proofとして使う。Runtime bootstrap前に人間や別agentが完了した作業はMoney Printerの成果に数えず、provenanceで区別する。
+WebMCP Challengeは第二のdogfooding proofである。Runtime稼働後に残るsubmission workを同じgeneral contractで進める。Bootstrap前に人間や別agentが完了した作業はLife Managerの成果に数えず、provenanceで区別する。
 
 ### 8.4 Visual surface
 
 ```text
-┌────────────────── Life Manager ─ Money Printer ──────────────────┐
-│ Verified net $0.01 │ Active work 3 │ Human tasks 1 │ Paid 1     │
-├────────────────┬────────────────────────────┬─────────────────────┤
-│ OPPORTUNITIES  │ WORKROOM                   │ HUMAN TASKS         │
-│                │                            │                     │
-│ WebMCP $3,500  │ Goal / plan / artifacts    │ Choose hero visual  │
-│ Bounty $500    │ Current agent activity     │ Agent prepared 3    │
-│ AI eval $80/h  │ Evidence / errors / proof  │ options              │
-│ x402 sale      │ Cost / expected reward     │ [Choose A/B/C]       │
-├────────────────┴────────────────────────────┴─────────────────────┤
-│ ACTIVITY & MONEY PROOF                                            │
-│ discovered → working → needs human → resumed → submitted → paid  │
+┌──────────────────────── Life Manager ────────────────────────────┐
+│ Backlog │ Ready │ Working │ Needs You │ Review │ Waiting │ Done │ Paid │
+├─────────┴───────┴─────────┴───────────┴────────┴──────┴─────────┤
+│ WebMCP Challenge  $3,500       Working                           │
+│ AI evaluation     $80/h        Needs You: record intro video     │
+│ Public bounty     $500         Review                            │
+│                                                                    │
+│ Selected workroom: goal / plan / artifact / agent events / proof │
+│ Human task: prepared context + one exact action                   │
+│ Receipt: application / delivery / payment readback                │
 └───────────────────────────────────────────────────────────────────┘
 ```
 
 Telegramは重要なstate changeをpushする。Web pageは全体状況、workroom、人間task、proof、moneyを確認・操作する。両者は同じstate、action、ledgerを参照する。
+
+Life Manager workerは同じdomain state-transition functionsを直接使い、cardを`Backlog → Ready → Working → Needs You → Review → Waiting → Done / Paid`へ動かす。自分自身の内部処理にWebMCPを必須としない。WebMCP agentは同じboard、workroom、artifact、human taskを共同操作する。
+
+人間は全列をreadできる。通常のwrite操作は`Needs You` cardを一件開いて、回答、選択、file upload、本人操作完了を返すことに限定する。回答後はcardをagentへ戻し、同じworkroomを自動再開する。緊急停止のため全体`Pause`だけは常時表示する。
 
 ### 8.5 Human task card
 
 Agentが実行できない、または越えるべきでないhuman-only boundaryだけをcard化する。対象は本人確認、創造的判断、最終承認、規約上のhuman-only step、現実世界での操作である。
 
 ```text
-Task: Choose the final hero visual
-Why you: This is an authorship and taste decision
-Agent prepared: three options scored against the judging criteria
-Required action: [Choose A] [Choose B] [Choose C]
-Resume: the same workroom continues automatically after your choice
+Task: Record your introduction video
+Why you: This step requires your identity and voice
+Agent prepared: final script, time limit, and upload instructions
+Required action: [Upload video]
+Resume: Life Manager continues the same workroom after upload
 State: waiting_for_human
 ```
 
@@ -449,15 +468,15 @@ State: waiting_for_human
 
 ### 8.6 WebMCP tools
 
-WebMCPはbackground runtimeではない。人間と対応agentが、Dashboardの同じlive stateを読み、指示し、再開するためのinterfaceである。
+WebMCPはbackground runtimeではない。人間と対応agentが、Life Managerの同じboard、workroom、artifact、human taskを読み書きするinterfaceである。
 
-- `inspect_money_printer` — opportunities、running、blocked、human tasks、cost、verified moneyを読む
+- `inspect_life_manager` — backlog、running、blocked、human tasks、cost、verified moneyを読む
 - `inspect_workroom` — goal、plan、history、artifacts、last agent event、proofを読む
 - `add_opportunity` — URLまたは自然言語から新しいwork itemを作る
 - `set_constraints` — time、spend cap、risk、forbidden actions、human availabilityを更新する
 - `revise_work_artifact` — base revisionを指定し、visible artifactへpatchとrationaleを記録する
 - `continue_work` — eligibleなworkroomをagentへ再開させる
-- `complete_human_task` — exact taskへ本人の明示回答だけを記録する。Agentがidentity/authorityを代行しない
+- `record_human_answer` — UIが発行したhuman-confirmation tokenと本人の明示入力だけをexact taskへ記録する。Agent自身の生成値でidentity/authority boundaryを閉じない
 - `pause_work` — future agent turnsを停止する
 - `inspect_receipt` — application、delivery、paymentのofficial readbackを読む
 
@@ -505,13 +524,13 @@ Agent promptは目的、証拠基準、authority boundary、canonical examples�
 
 OpenAI Symphony commit `8001b52e3062495a16e520e4ceaf8f9de868c4d0`のSPECとreference implementationを比較した。Symphonyはissue trackerをpollし、issueごとのisolated workspaceを作り、repo-owned `WORKFLOW.md`をprompt/config contractとしてCodexを継続実行する。Orchestratorはsingle authoritative runtime state、claim、bounded concurrency、retry、reconciliationを持つ。Agent turnが正常終了してもissueがactiveなら同じworkspace/threadでcontinuationする。一時失敗はexponential backoffする。Human handoffはworkflow/agentが`Human Review`等のstateへ移し、orchestratorがeligibilityとstateを再照合する。Dashboardはrunning、retrying、blocked、last event、tokens、workspace、runtimeを表示する。
 
-Money Printerはこの構造を次のようにadaptする。
+Life Managerはこの構造を次のようにadaptする。
 
-| Symphony | Money Printer |
+| Symphony | Life Manager |
 |---|---|
 | Issue tracker | Opportunity inbox |
 | Issue | Paid opportunity / work item |
-| WORKFLOW.md | Opportunity contract + Money Printer policy |
+| WORKFLOW.md | Work contract + Life Manager policy |
 | Code workspace | Isolated workroom |
 | Coding agent | General earning agent |
 | PR / CI proof | Application / artifact / delivery / payment proof |
@@ -522,7 +541,7 @@ Money Printerはこの構造を次のようにadaptする。
 
 ---
 
-## 10. General Money Printer runtime
+## 10. General Life Manager runtime
 
 ### 10.1 One orchestrator, not provider routing
 
@@ -555,7 +574,7 @@ Workroomのisolationはopportunity、tenant、credential、effectの交差を防
 
 最初のimplementation sliceはgeneral architectureのまま、低risk・短時間のreal opportunitiesで実証する。
 
-1. X/Web/GitHubからpublic opportunityを発見
+1. X/Web/GitHubのうちapproved public source一つからopportunityを発見
 2. 30分〜半日で完了可能なbounty/taskを一件選ぶ
 3. persistent per-opportunity workroomでagentが実作業する
 4. 必要ならhuman taskを一件出す
@@ -567,18 +586,17 @@ Workroomのisolationはopportunity、tenant、credential、effectの交差を防
 
 ### 10.4 Existing Life Manager assets
 
-現行repoにはbrowser ownership、leases、agent runner、private state、human gates、Telegram ACK、effect fences、provider readback、earnings ledgerがある。Money Printerはこれらをcopyせず再利用する。ただし各laneの`live / partial / planned`を再測定し、未完のshared money contractや未着金を完成済みと表示しない。
+現行repoにはbrowser ownership、leases、agent runner、private state、human gates、Telegram ACK、effect fences、provider readback、earnings ledgerがある。Life Managerはこれらをcopyせず再利用する。ただし各capabilityの`live / partial / planned`を再測定し、未完のshared money contractや未着金を完成済みと表示しない。
 
 Telegramは重要なstate changeをpushする。Web dashboardは全体状況、workroom、人間task、proof、moneyを確認・操作する。WebMCPは同じdashboard stateをagentへ公開する。
 
-### 10.5 User access and business model
+### 10.5 One product, one mode
 
-利用方法を二つに分ける。
+Hackathonで提供するmodeは一つだけである。Userは無料の`https://aniccaai.com/lm`を開く。Normal browserでは人間用Work boardとして動き、対応WebMCP clientで開くと同じboardのsite toolsをagentが発見する。別product、別judge system、別local/cloud modeを作らない。
 
-1. **Interactive WebMCP mode:** Userは対応するWebMCP clientからMoney Printerを開く。対話的なtool callにはUser自身のclient/subscriptionを使うため、Life Managerへmodel API keyを渡さない。このmodeはpage/sessionが開いている間だけ使える。
-2. **Autonomous hosted mode:** Life Managerの有料planが、pageを閉じた後のOpportunity Scout、continuation、retry、browser、storage、monitoringを提供する。Userのconsumer ChatGPT subscriptionを第三者SaaSのbackground APIとして流用できるとは主張しない。
+Life Managerのagent runtimeは同じcloud productの一部としてworkroomを進める。WebMCP対応agentも同じdomain functionsとversioned stateを使う。Judgeはlogin、支払い、Life Manager API keyなしでguest accountを試せる。対応clientを持たない場合もnormal UI、video、READMEで全flowを確認できる。
 
-Self-hosted operatorは自分のapproved agent runtimeを接続できる。Hosted planの価格は実costとconversionを測るまで固定しない。Judgeは無料guest accountを使う。Life Managerへの支払いもAPI keyも不要で、normal UIとvideoだけでも全flowを確認できる。対応WebMCP clientがあれば、同じguest stateを実際に操作できる。
+将来のpricing、自前model接続、self-hostingは今回のsubmission scope外とする。Consumer ChatGPT subscriptionを第三者SaaSのbackground APIとして流用できるとは主張しない。
 
 ---
 
@@ -599,6 +617,19 @@ DELIVERED → PAYMENT_PENDING → PAID_SETTLED → REVENUE_RECORDED
 ```
 
 同じstate machineをbounty、job application、content delivery、hackathonへ使う。Opportunity typeごとに不要なstateは飛ばしてよいが、provider名をcore stateへ入れない。
+
+Work boardはcanonical stateのprojectionであり、独立したstate machineではない。
+
+| Board column | Canonical states |
+|---|---|
+| Backlog | `DISCOVERED`, `QUALIFYING` |
+| Ready | `QUALIFIED`, `CLAIMED` |
+| Working | `WORKING` |
+| Needs You | `NEEDS_HUMAN` |
+| Review | `READY_FOR_EFFECT` |
+| Waiting | `EFFECT_UNCERTAIN`, `SUBMITTED`, `WON`, `CONTRACTED`, `PAYMENT_PENDING` |
+| Done | `INELIGIBLE`, `EXPIRED`, `LOST`, `DELIVERED` |
+| Paid | `PAID_SETTLED`, `REVENUE_RECORDED` |
 
 ### 11.2 External effect fence
 
@@ -633,7 +664,7 @@ Effect開始後に結果が不明なら`EFFECT_UNCERTAIN`へ進み、別account�
 ### 12.1 Judge path
 
 - landing pageにone-sentence value
-- `Try Money Printer`で同じproduction productのguest accountへ入る
+- `Try Life Manager`で同じproduction productのguest accountへ入る
 - Life Manager側のAPI key、wallet、private credentialは不要
 - primary judge pathはzero-login live URL + video + README
 - WebMCP E2Eは主催者の対応環境とChrome 149+の両経路を記載する
@@ -649,14 +680,15 @@ JudgeはDashboardを直接確認でき、対応WebMCP clientからの操作も�
 | Time | Content |
 |---:|---|
 | 0:00–0:15 | Webに仕事はあるが、発見→完了→入金が分断されている問題 |
-| 0:15–0:30 | Money Printer dashboard: opportunities、workrooms、human tasks、verified money |
-| 0:30–0:50 | ChatGPTがWebMCP toolsを発見し、public opportunityを追加 |
-| 0:50–1:15 | General agentがqualifyし、persistent workroomで作業開始 |
-| 1:15–1:35 | ChatGPTがlive artifactを読み、visible revisionを作り、tasteが必要なhuman taskを一件作る |
-| 1:35–1:50 | Judgeがartifactを確認してhuman taskへ回答し、agentが同じworkroomで再開 |
-| 1:50–2:10 | 一時失敗→retry→proof更新をDashboardで表示 |
-| 2:10–2:30 | WebMCP Challenge dogfooding workroomと実submission artifactsを表示 |
-| 2:30–2:45 | application/delivery/payment receiptとreplay-zeroを表示 |
+| 0:15–0:30 | Life Manager Work board: workrooms、Needs You、proof、verified money |
+| 0:30–0:48 | 対応agentがWebMCP toolsを発見し、public jobをWork boardへ追加 |
+| 0:48–1:10 | Life Manager workerがqualifyし、persistent workroomでapplicationを進める |
+| 1:10–1:28 | Workerがintro-video scriptを準備し、cardを`Needs You`へ移す |
+| 1:28–1:45 | WebMCP agentがscriptを読み、base revision付きvisible diffを作る |
+| 1:45–2:00 | 人間がdiffを確認し、そのscriptでvideoをuploadする |
+| 2:00–2:15 | Life Manager workerが同じworkroomから再開し、採用revisionを使用 |
+| 2:15–2:30 | `Actual Owner Run — read-only`へ切替え、application official readbackとduplicate 0を表示 |
+| 2:30–2:45 | WebMCP Challenge dogfooding workroomと実submission artifactsを表示 |
 | 2:45–2:58 | short taskからlong-horizon hackathonまで同じruntimeで動くことを説明 |
 
 動画で実装していないX watcher、application、work、payoutを成功として見せない。各claimは公式readbackがある範囲に限定する。
@@ -669,23 +701,23 @@ JudgeはDashboardを直接確認でき、対応WebMCP clientからの操作も�
 
 ### Project summary
 
-**Life Manager — Money Printer is a general earning agent that discovers paid opportunities, gives each one a persistent workroom, and keeps working across multiple turns until the outcome is verified. It handles most routine execution and asks a person only at human-only boundaries such as identity, judgment, approval, or real-world action. The provider-agnostic runtime is demonstrated on an unrelated short opportunity and a multi-day hackathon workroom.**
+**Life Manager is a general agent that manages work to completion. It gives every job, application, bounty, or long-horizon project a persistent workroom, keeps working across multiple turns, and asks a person only at human-only boundaries such as identity, judgment, approval, or real-world action. The same runtime is demonstrated on a short paid opportunity and a multi-day hackathon workroom.**
 
 ### Why this use case is a strong fit for WebMCP
 
-Money Printer runs autonomously for long periods, but earning work still contains moments where a person and an agent must share context: choosing a direction, completing identity-bound steps, changing constraints, approving a consequential action, or resolving a genuine blocker. WebMCP makes the live Money Printer dashboard a shared control surface. A compatible agent can inspect opportunities, open a workroom, revise a visible artifact, change constraints, record a human answer, continue the work, pause it, and verify receipts through typed site tools instead of guessing at dashboard controls.
+Life Manager can work autonomously for long periods, but real work still contains moments where a person and an agent must share context: recording an application video, completing identity-bound steps, choosing a direction, approving a consequential action, or resolving a genuine blocker. WebMCP turns the live Work board into a shared control surface. A compatible agent can inspect work items, open a workroom, revise a visible artifact, change constraints, record a human answer, continue the work, and verify receipts through typed site tools instead of guessing at dashboard controls.
 
 Every WebMCP action updates the same versioned state that the person sees. The page therefore becomes the shared control plane for an autonomous agent rather than a passive monitoring dashboard.
 
 ### How it creates a better user experience
 
-Without Money Printer, people repeatedly search for work, open separate chats, supervise each agent turn, reconstruct what failed, and manually distinguish applications from actual income. Money Printer preserves one workroom across turns and days. It shows the current goal, last agent event, artifacts, costs, proof, retries, and the exact next human task. After the person answers, the agent resumes from the same state. The money view counts only officially verified payments, not applications, offers, or model claims.
+Without Life Manager, people repeatedly search for work, open separate chats, supervise each agent turn, reconstruct what failed, and manually distinguish applications from actual income. Life Manager preserves one workroom across turns and days. It shows the current goal, last agent event, artifacts, costs, proof, retries, and the exact next human task. After the person answers, the agent resumes from the same state. The money view counts only officially verified payments, not applications, offers, or model claims.
 
 ### What people and agents can do together that was difficult before
 
-The agent can discover an unfamiliar opportunity, investigate it, plan the work, use browser and coding tools, create artifacts, recover from transient failures, and continue without a person supervising every step. When the task reaches a boundary the agent should not cross, Money Printer converts that blocker into one prepared human task. The person provides the missing identity, judgment, or approval, and the agent resumes in the same workroom.
+The agent can discover an unfamiliar opportunity, investigate it, plan the work, use browser and coding tools, create artifacts, recover from transient failures, and continue without a person supervising every step. When the task reaches a boundary the agent should not cross, Life Manager moves the item to `Needs You` with one prepared human task. The person provides the missing identity, judgment, or approval, and the agent resumes in the same workroom.
 
-Together, they can complete multi-day paid work without constant supervision while preserving human control at the moments that matter. This division of labor was difficult before because autonomous execution and human collaboration lived in separate interfaces. Money Printer makes the handoff part of the same persistent work state. After the core runtime is live, we dogfood it on the remaining work for this WebMCP Challenge entry and preserve timestamped provenance for what it actually completes.
+Together, they can complete multi-day work without constant supervision while preserving human control at the moments that matter. This division of labor was difficult before because autonomous execution and human collaboration lived in separate interfaces. Life Manager makes the handoff part of the same persistent work state. After the core runtime is live, we dogfood it on the remaining work for this WebMCP Challenge entry and preserve timestamped provenance for what it actually completes.
 
 ### How WebMCP was implemented
 
@@ -693,7 +725,7 @@ The top-level page registers focused tools with `document.modelContext.registerT
 
 ### Impact and future
 
-The initial product proves a provider-agnostic runtime on one unrelated short, low-risk public opportunity and this multi-day hackathon workroom. The same work contract can then expand to longer jobs without adding a provider-specific orchestrator branch. Users can bring a supported WebMCP client for interactive collaboration. A hosted subscription can fund the background agent runtime, browser, storage, and monitoring required after the page closes. Money Printer records revenue only when an official receipt confirms that the money was received.
+The initial product proves one general runtime on a short, low-risk public opportunity and this multi-day hackathon workroom. The same work contract can then expand to longer jobs without adding a provider-specific orchestrator branch. Life Manager remains free and unrestricted to judges throughout the judging period and records revenue only when an official receipt confirms that money was received.
 
 ---
 
@@ -723,6 +755,7 @@ The initial product proves a provider-agnostic runtime on one unrelated short, l
 
 - [ ] public live URL
 - [ ] zero-login guest account
+- [ ] guest/actual runが同一build SHA、agent entrypoint、domain transition function、workroom schemaを使う。外部credential/submit authorityだけが異なる
 - [ ] one approved public sourceを実検索し、stable opportunityとsource readbackを作る
 - [ ] normal browser human UI
 - [ ] ChatGPT built-in browser WebMCP E2E
@@ -731,6 +764,7 @@ The initial product proves a provider-agnostic runtime on one unrelated short, l
 - [ ] state-dependent registration
 - [ ] stale revision demo
 - [ ] intentional failure/recovery
+- [ ] hosted runtime restart後に同じworkroom/revisionを復元し、duplicate 0でcontinue
 - [ ] real submission receipt or clearly scoped official handoff receipt
 - [ ] replay duplicate 0
 - [ ] reset
@@ -750,7 +784,7 @@ The initial product proves a provider-agnostic runtime on one unrelated short, l
 
 ### Devpost
 
-- [ ] final project name chosen by Dais
+- [ ] Devpost project name matches the canonical `Life Manager` name
 - [ ] English one-line summary
 - [ ] English four-part description
 - [ ] screenshots
@@ -808,7 +842,7 @@ Anicca/Finite GardenはDaisの哲学とvisual originalityに合う。しかし�
 
 ### 自分が間違うとしたら最有力の筋
 
-Judgesがeconomic autonomyより安全で楽しいcreative collaborationを好み、Money Printerを業務dashboardと判断する可能性がある。対策は実演である。20秒以内にagentがworkroomを開始し、human task、continuation、failure recovery、real proof、verified moneyを同じ画面で見せる。
+Judgesがeconomic autonomyより安全で楽しいcreative collaborationを好み、Life Managerを業務dashboardと判断する可能性がある。対策は実演である。20秒以内にagentがworkroomを開始し、`Needs You`、continuation、failure recovery、real proof、verified moneyを同じ画面で見せる。
 
 ---
 
