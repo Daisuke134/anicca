@@ -161,28 +161,62 @@ Coreが所有する最小entityは`Goal`、`Opportunity`、`CapabilityManifest`�
 `EffectIntent`、`OutcomeReceipt`、`EconomicReceipt`である。provider固有codeはdiscovery/transport/readback selectorだけを持ち、
 goal選択、price/margin、state transition、retry、dedupe、receipt判定を持たない。
 
-OSSは新しいframeworkを発明せず次の境界をreuse/copy+tweakする。導入前に固定commit、license、entrypoint、call graph、state、
-error recovery、effect/readbackを実codeで再監査し、noticeを保持する。
+OSSは新しいframeworkを発明せず次の境界をreuse/copy+tweakする。GA-01では固定commit、license、entrypoint、call graph、state、
+error recovery、effect/readbackを実codeで監査し、noticeを保持する。
 
 | 外部実装 | 採用する境界 | 採用しないもの |
 |---|---|---|
 | DeepAgentsJS / LangGraph | specialist harness、checkpoint、bounded subagent pattern | Life Managerのbusiness stateやreceipt正本 |
 | browser-use | modelが未知siteを視覚的に扱うbrowser-tool contract | provider permission、effect success判定 |
 | OpenClaw | current local wake、channel、skill packaging | provider別の新しいdecision brain |
-| OpenHands | `WorkerRuntime`のlocal/container/remote port pattern | framework全体の置換 |
+| OpenHands software-agent-sdk | Conversation、event log、resume、local/container/remote workspace | framework全体の置換 |
 | Stagehand | local/hostedでbrowser backendを差し替えるcontract | Upwork UI automationの許可根拠 |
 | Steel | hosted browser backend、session isolation、health | local CloakBrowserの即時置換 |
 | Temporal | durable resume/effect semanticsのreference | 計測前のTemporal server導入 |
+
+#### GA-01 measured code map and first implementation scope
+
+最初の実装は、一つの許可済みsiteで`Goal → WorkItem → agent execution → official ApplicationReceipt`を一件閉じ、
+同じWorkItemの再実行で外部effect 0を証明する。Coconalaのcode、state、browser、ownerは変更しない。
+margin計算、複数siteへの配分、cross-organ allocator、local/cloud parity、self-fundingは、最初のreceiptが閉じるまで作らない。
+
+現行coreは次のように再利用する。新しいgraph framework、scheduler、database、provider別brainは追加しない。
+
+| 現行実装 | 実測したcall graph / state | 判断 |
+|---|---|---|
+| `runtime/agent-runner/agent_runner.py` | task class → provider process → schema/evidence/runtime event | bounded specialistの実行境界として再利用 |
+| `apps/life-manager/lib/intent-graph.js` | provenance付きentry → correction/expiry → effective entries | Goalの根拠と訂正履歴だけ再利用 |
+| `apps/life-manager/lib/runtime-job-store.js` + `20260729_runtime_jobs.sql` | enqueue → lease claim → heartbeat → complete/fail/reconcile → immutable receipt | WorkItem、dedupe、unknown-effect recoveryの正本として再利用 |
+| `skills/_shared/marketplace-core/scripts/contracts.py` | application → contract → authorization → QA → delivery → payment → payout match | 既存`ApplicationReceipt`を最初のsliceで再利用 |
+| `skills/earn/gig/scripts/market_form_operator.py` | sealed intent → common browser ACI → structured result | 自然言語browser operatorの境界だけ再利用 |
+| `apps/life-manager/lib/generic-browser-task.js` | claim → discover/act → provider readback → evidence → release → terminal receipt | `possibly_completed`と必ずreleaseする外枠だけ再利用 |
+| `apps/life-manager/lib/stagehand-steel-driver.js` | Stagehand/Steel session → agent action → extracted readback | session backendとして再利用。regexによるsemantic成功判定は採用しない |
+| `skills/earn/gig/scripts/application_parent.py` / `apps/life-manager/lib/opportunity-engine.js` | provider固有の巨大pipeline / deterministic subjective cascade | 新kernelへ移植しない。判断はmodel、codeはformat・算術・bookkeepingだけ |
+
+外部実装は固定commitでentrypoint、state、recovery、effect/readbackを比較した。いずれもLife Managerの
+authorization、dedupe、公式receipt、money truthを置き換えない。
+
+| 外部実装 / fixed commit / license | 採用する境界 | 採用しないもの |
+|---|---|---|
+| DeepAgentsJS `b13a9966d` / MIT | `createDeepAgent → createAgent`、checkpointer、bounded subagent | business state、commerce receipt |
+| browser-use `67e7194c0` / MIT | `Agent.run → step → observe/act → history`、replan、reconnect | modelのdoneをprovider成功とすること |
+| OpenClaw `640d73e3d` / MIT | `CronService → locked ops`、wake、channel、durable delivery | provider別brain、marketplace truth |
+| OpenHands software-agent-sdk `5d380a3b1` / MIT | Conversation、event log、resume、workspace境界 | SDK全体への置換 |
+| Stagehand `4d88741a0` / MIT | `observe / extract / act` ACI、schema-bound result | action resultをofficial receiptとすること |
+| Steel `3fe2410ad` / Apache-2.0 | hosted session、context、release lifecycle | business判断、effect成功判定 |
+| Temporal samples `75e7d591b` / MIT | Sagaとdurable DSLのreference | server/runtime依存の追加 |
 
 #### Acceptance Criteria
 
 1. Upworkが公式receipt付きで`API_APPROVED`、`API_INELIGIBLE`、`API_DENIED`、`SCOPE_INSUFFICIENT`の一つへ終端し、UI loopはOFFである。
 2. startup-context、README、README.ja、`/lm`、root site、fundraising kit、active formでproduct/mission/tractionの矛盾が0である。
-3. 一つのshared commerce state machineが、少なくともCoconalaと第二providerで同じreceipt schemaを使い、coreにsite名分岐を増やさない。
-4. 成功funnelは`discovered → eligible → verified_application → buyer_reply → funded_contract → artifact_accepted → formal_delivery_readback → paid/withdrawable → banked → compute_paid`を区別する。
+3. 一つの許可済みsiteで、site固有brainを追加せず`Goal → WorkItem → official ApplicationReceipt`を一件閉じる。
+4. 同じWorkItemのreplayで外部effect 0を公式readbackし、ack不明時は再送せず`reconciling`へ入る。
 5. localとcloudが同じkernel contract suiteを通り、差分はruntime/browser/vault/scheduler/billing adapterだけである。
 6. clean machineへ公開repoだけからinstallでき、private checkout、外部symlink、生credential、Dais固有pathが0である。
-7. working Coconala loopは移行中も止めず、shared adapterで同等のofficial receiptとreplay-zeroを得てから旧ownerを退役する。
+7. semantic判断、未知UI、候補選択はmodelが行い、regex・keyword・provider分岐を判断根拠にしない。
+
+最初の実装を受け入れる条件は3、4、7だけとする。5、6と後段のmoney pathはcanaryを止めない。
 
 #### Atomic remaining TODO — この順序だけで進める
 
@@ -206,16 +240,16 @@ error recovery、effect/readbackを実codeで再監査し、noticeを保持す�
 | 16 | CTX-08C digest-bound application preview | TODO | context `2026-08-27.2` / `9fbe6198…5338`、kit/deck、全回答、attachment hashを一つの`application_digest`へ固定し、unsupported claim・空required field 0を確認 |
 | 17 | CTX-08D exactly-once accelerator submit | TODO | durable effect claim取得後、同じownerがofficial submitを一度だけ実行。timeout/unknownは再送せずofficial readbackでreconcile |
 | 18 | CTX-08E terminal receipt and replay-zero | TODO | official completion PNG、Telegram photo message ID、application dossier SHA-256、ledger resultを同じdigest chainへ束ね、再wakeでexternal effect 0をreadbackしてCTX-08 DONE |
-| 19 | GA-01 existing-core and OSS code map | TODO | 現行agent-runner/connector/gig/evidence/Agent Economyと上記OSSを固定commitで読み、copy/reuse/rejectとlicenseをcall graph付きで確定 |
-| 20 | GA-02 one Goal / Opportunity Graph | TODO | body/mind/moneyのgoal、opportunity、dependency、deadline、outcomeを同じdurable graphで表現し、一つのmanager cursorが再開可能 |
-| 21 | GA-03 capability registry | TODO | capability、provider、required authorization、cost、human requirement、transport、readbackをdata manifest化し、site名をcoreから除去 |
-| 22 | GA-04 shared effect and receipt kernel | TODO | intent、pre-readback、single execution、unknown-effect reconciliation、post-readback、economic attributionを一つのstate machineへ統合 |
-| 23 | GA-05 bounded specialist runtime | TODO | existing agent-runnerをWorkerRuntimeへ接続し、一仕事・step/time/cost limit・heartbeat/cancel・structured resultを共通化 |
-| 24 | GA-06 allocator across organs | TODO | urgency、expected verified utility、capacity、risk、costでDaily/Care/Financialから次の一件を選び、starvation防止を実証 |
-| 25 | GA-07 local/cloud adapter parity | TODO | same kernelをlocal processとhosted workerで実行し、browser/vault/scheduler adapter差替え以外のbranchを0にする |
-| 26 | GA-08 self-funding economic loop | TODO | provider収益と全costをjobへ帰属し、`banked`残高内だけで`compute_paid`を発行。owner資金と混同しない |
-| 27 | GA-09 migrate working Coconala lane | TODO | 現loopを停止せずshadow receipt→replay-zero→natural wake parity→owner切替の順でshared kernelへ載せる |
-| 28 | GA-10 second-provider generality proof | TODO | provider-specific brainを追加せず第二providerでapplication→contract→delivery→bankedを一件閉じ、同じkernelへ学習を返す |
+| 19 | GA-01 existing-core and OSS code map | DONE | fixed commit、license、entrypoint、call graph、state、recovery、effect/readbackを上表へ固定し、reuse/rejectを確定 |
+| 20 | GA-02 one Goal to WorkItem | TODO | 既存intent graphとruntime job storeだけで一つのGoalを一つの再開可能WorkItemへ変換。新graph engine 0 |
+| 21 | GA-03 one capability manifest | TODO | 最初の許可済みsiteについてauthorization、transport、human requirement、readbackだけをdata化。margin/ranking 0 |
+| 22 | GA-04 shared effect and receipt kernel | TODO | 既存runtime jobとreceipt contractをつなぎ、pre-readback → single execution → post-readback → replay-zeroを一件実証 |
+| 23 | GA-05 bounded specialist runtime | TODO | existing agent-runnerで一仕事・step/time limit・heartbeat/cancel・structured resultを共通化 |
+| 24 | GA-10 first authorized-site canary | TODO | provider固有brainを追加せず一件のofficial ApplicationReceiptとreplay effect 0を閉じる |
+| 25 | GA-06 allocator across organs | DEFERRED | 最初のApplicationReceipt後までmargin、cross-site配分、body/mind/money allocatorを作らない |
+| 26 | GA-07 local/cloud adapter parity | DEFERRED | 最初のApplicationReceipt後までlocal/cloud共通化を作らない |
+| 27 | GA-08 self-funding economic loop | DEFERRED | 最初のApplicationReceipt後までcost attributionと`compute_paid`を作らない |
+| 28 | GA-09 Coconala migration | OUT_OF_SCOPE | このtrackではCoconalaのcode、state、browser、ownerを変更しない |
 | 29 | GA-11 hosted product slice | TODO | phone/Telegram/Webだけでtenant onboarding、vault、scheduler、billing、worker isolation、receiptsを同じkernel上で一人分E2E実証 |
 | 30 | GA-12 OSS clean-install release | TODO | public repoのfresh machine install、sample provider manifest、secret refs、local/cloud docs、license notices、reproducible acceptanceを公開 |
 | 31 | GA-13 dependency retirement | TODO | profitable/open-core/Hermes等のruntime/config/symlink/import参照が0、replacementのnatural E2Eとrollback bundle取得後だけ旧dependencyを退役 |
@@ -224,28 +258,24 @@ Upworkは`API_INELIGIBLE / UI_AUTOMATION_DENIED / SUPPORT_SCOPE_PENDING`でclean
 Support返信待ちは#7以降を止めない。後日API approvalまたはaction-level scope変更を受けた時だけ、exact evidence hashとexpiryを持つ
 private receiptを追加し、GA-03のmanifest更新として同じshared kernelへ再参加させる。
 
-#### Test Matrix — all OK required
+#### First implementation test matrix — all OK required
 
 | Case | 必須結果 |
 |---|---|
-| Upwork eligible / approved | approved scope以外OFF、credential混在0、rate limit内、公式API readbackあり |
-| Upwork ineligible / denied / scope不足 | UI fallback 0、terminal reason/case receipt、汎用trackは継続 |
 | provider effect前crash | retry可能、外部effect 0 |
 | provider effect後ack loss | blind retry 0、reconciliationでofficial readback後だけterminal |
 | duplicate wake / duplicate candidate | intent exact 1、application/delivery/payment duplicate 0 |
 | human-only requirement | candidate reject、応募/契約/外部effect 0 |
-| negative margin / capacity conflict | commitment 0、理由と次回観測を保存 |
-| local / hosted | 同じfixtureとstate transition、adapter名だけが異なる |
-| public context drift | build/CI fail、古いvalueを公開・応募へ出さない |
-| Coconala migration | old loop継続、shadow parity、切替後replay-zero、rollback可能 |
-| money | attempted/contracted/pendingをrevenueへ加算せず、bank/payout receiptだけbanked |
-| compute | banked reserveを超える支出0、owner walletからの暗黙補填0 |
+| semantic judgment | regex・keyword・provider分岐0、model judgmentとstructured resultあり |
+| first authorized-site canary | official ApplicationReceipt exact 1、同一WorkItem replay effect 0 |
 
 #### Boundaries / Non-goals
 
 - Upworkの未承認UI automation、CloakBrowserを検出回避として使うこと、session cookie/API key混在を実装しない。
 - 一つの巨大promptへ全責任を入れない。決定論coreとbounded specialistを分離する。
 - providerごとの新しいplanner、ledger、scheduler、database、browserを作らない。
+- Coconalaのcode、state、browser、ownerをこのtrackで変更しない。
+- 最初のApplicationReceipt前にmargin、cross-site ranking、cross-organ allocator、local/cloud parity、self-fundingを作らない。
 - working loopをbig-bang rewriteで置換・停止しない。shadow parityとrollbackを先に作る。
 - modelの自己申告、local PASS、PID、Telegramだけで外部完了・収益をclaimしない。
 - KYC、税務契約、bank登録、本人の声・身体・出席をagentが偽装しない。
@@ -262,7 +292,7 @@ private receiptを追加し、GA-03のmanifest更新として同じshared kernel
 
 この設計自体はdocs-onlyでありruntime E2Eを発生させない。CTX-03〜05はpublic UI変更なので、unit snapshotだけで閉じず、desktop/mobileの
 実browserでhero、CTA、Telegram deep link、cloud/local説明、claim sourceをreadbackする。iOS UIは変更しないためMaestroは不要。
-GA-09〜11は実provider・実receipt・自然owner wake・replay-zeroが必須で、mock/dry-runは補助証拠にしかならない。
+GA-10は実provider・実receipt・自然owner wake・replay-zeroが必須で、mock/dry-runは補助証拠にしかならない。
 
 ### 0.0 Connector growth contract — current SSOT
 
