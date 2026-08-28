@@ -112,14 +112,15 @@ scale後は06:00/14:00/22:00の3 slotを使い、各slotへunique run/topicを�
 
 ### 現在のproduction truth
 
-W1iはPR #2962/#2965で完了した。14 Writer labelのProgramArguments、`ARTICLE_ROOT`、`ARTICLE_SKILL_DIR`、
-`LIFE_MANAGER_REPO`はsparse immutable release `40065a10d2a6d33838fd54fe16213497d94ae0ae`へ一致する。
-general `current`は元のfull releaseへ復元し、非Writer applyを阻害しない。W1gの5行修正も同releaseに含まれる。
+W1iはPR #2962/#2965で一度完了し、14 Writer labelをsparse immutable release `40065a10`へ揃えた。general
+`current`は元のfull releaseへ復元した。W1g production canary `20260828-083954`はprovider rc=1後もrun、prompt、
+generation stateを保持し、prunerは古いterminal runだけを削除したためW1gは完了である。
 
-現在のdaily自然wakeはdisk floor未達でgeneration前にterminal FAILとなるため、W1gの未完run保持はproduction未証明である。
-doctorには別session所有のunmanaged TikTok labelが1件あり、Writer作業では変更しない。received writing revenueは0である。
-現状は24/7、記事公開成功、収益化成功のいずれも未達である。次の唯一のcursorは、空き512MiB以上でW1g canaryを
-readbackし、その後W1h false-greenを閉じることとする。
+その後のconcurrent applyでdriftした`article-audit-7day`、`article-learn-whitelist`、`article-self-improve`は、
+owner idleを確認して同じsparse immutable releaseへtarget applyした。全14 Writer labelのProgramArguments、release SHA、
+`ARTICLE_ROOT`、`ARTICLE_SKILL_DIR`、`LIFE_MANAGER_REPO`は`40065a10`へ一致し、general `current`は元のfull releaseへ復元した。
+daily/resumeは同releaseでterminal PASS、received writing revenueは0である。doctorには別session所有のunmanaged TikTok
+labelが1件ある。記事公開成功と収益化成功は未達である。次の唯一のcursorはW1h false-greenとする。
 
 Writerの経済目的は、記事に結び付いた一意な外部payment receiptを受け取ることである。記事本数は活動量として
 別に測る。
