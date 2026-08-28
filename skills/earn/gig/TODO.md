@@ -4588,12 +4588,22 @@ protected and are not cleanup candidates.
   with `MacAppCodeSignClone` disabled, and verify `:9222`/`:9223`, authenticated sessions, free
   space, cleanup receipt and absence of new clone growth. The account owner explicitly approved
   the restart; this one-time migration is not required on a fresh OSS install.
-- [x] Complete the affected-Mac browser migration and generalize it beyond the four Coconala
+- [x] Complete the affected-Mac browser migration for the four Coconala lanes and the measured
   lanes. Public main adds `MacAppCodeSignClone` prevention to the shared persistent-context owner,
   Gig `:9223`, shared `:9222`, Affiliate's three browser owners, Lancers, and Job Hunter. The
-  measured stale Chromium clone set was reclaimed only after exact process/profile/open-handle
-  checks; all re-enabled current browser roots show the prevention flag. Job Hunter remains locally
-  paused. Storefront self-GC and the browser producer fix are in public immutable releases.
+  stale Chromium clone set was reclaimed only after exact process/profile/open-handle checks;
+  re-enabled Coconala, Affiliate and Lancers roots show the prevention flag. Job Hunter remains
+  locally paused. Storefront self-GC and the browser producer fix are in public immutable releases.
+- [ ] Close the remaining host-wide browser boundary. Two legacy X keepalive roots
+  (`x-repost-daily` and `x-diceai0`) still launch from the separate `~/anicca` runtime without
+  `MacAppCodeSignClone` prevention and regenerated about 700 MiB. Patch that runtime's canonical
+  launcher, deploy its own public immutable release, restart only those two owners, and prove the
+  Chromium clone root is flat before calling host-wide cleanup complete.
+- [ ] Repair the latest Storefront compact release contract: its natural pass fails because
+  `skills/registry.json` is absent from the sparse release. Include that exact runtime dependency,
+  rerun official 14-service readback and replay-zero, then verify the newest Apply/Reply/Paid/
+  Storefront runner receipts all use Account 2; the latest observed Paid semantic receipt reported
+  `profile_alias=acct1`, so Account 2 is not currently proven for all four lanes.
 - [ ] After free space is at least 1 GiB, let the existing cleanup owner remove the stale
   `disk-pressure.block`, activate Apply/Reply/Paid/Storefront from public main-derived immutable
   releases, and verify each natural pass with Account 2 receipt. Then resume Chii at the unsent
