@@ -839,7 +839,7 @@ or whole-business financial-health report.
 | [Railway Cron Jobs](https://docs.railway.com/reference/cron-jobs) | “Services configured as cron jobs are expected to execute a task, and terminate as soon as that task is finished.” | Railway cron only enqueues bounded jobs; long rendering, browser, and learning work runs in leased workers |
 | [The Twelve-Factor App: Codebase](https://12factor.net/codebase) | “One codebase tracked in revision control, many deploys” | Local and cloud use the same source and release artifact; deployment configuration changes, business logic does not |
 | [Telegram Bot API](https://core.telegram.org/bots/api) | “The Bot API is an HTTP-based interface” | Telegram is a delivery surface, not the financial source of truth |
-| [Moneytree LINK](https://docs.link.getmoneytree.com/docs) | Moneytree LINK exposes standardized financial data after user authorization and uses OAuth 2.0 Authorization Code Grant with PKCE | Production users connect through Moneytree LINK/OAuth; raw bank credentials never enter Life Manager |
+| [Moneytree LINK](https://docs.link.getmoneytree.com/docs) | Moneytree LINK exposes standardized financial data after user authorization and uses OAuth 2.0 Authorization Code Grant with PKCE | Hosted production tenants connect through Moneytree LINK/OAuth; local owners use their own Codex/Moneytree plugin connection; raw bank credentials never enter Life Manager |
 | [Postiz Post Analytics](https://docs.postiz.com/public-api/analytics/post) | “Get analytics data for a specific published post.” | Keep Postiz during migration and collect post-level metrics by provider post ID instead of scraping immediately after publication |
 | [Postiz public analytics controller](https://github.com/gitroomhq/postiz-app/blob/39516ab97fab8de49c00300a617bd39e0c325c77/apps/backend/src/public-api/routes/v1/public.integrations.controller.ts) | The public controller delegates `GET /analytics/post/:postId` to `checkPostAnalytics(postId, date)` | Treat provider post ID as a required future receipt join key and keep the observation window explicit |
 | [instagrapi best practices](https://github.com/subzeroid/instagrapi/blob/master/docs/usage-guide/best-practices.md) | “Use the settings file next time” after one successful login and verification | Reuse a saved device/session; quarantine challenges instead of hammering password login, and require exact provider identity before recovery |
@@ -1033,7 +1033,7 @@ Initial connectors:
 
 | Domain | Connectors |
 |---|---|
-| Cash and net worth | Moneytree LINK, manual balance, exchange/wallet read-only APIs |
+| Cash and net worth | Local: the owner's authenticated Codex plus the OpenAI-curated Moneytree plugin. Cloud: Moneytree LINK/OAuth. Both normalize into the same ledger; manual balance and exchange/wallet read-only APIs remain fallbacks |
 | Mobile apps | App Store Connect Analytics/Sales, Mixpanel, and product-pack metric inputs |
 | Web products | Stripe |
 | Autonomous income | uGig, Capafy, clipping affiliate, writer, x402, bounty |
@@ -1041,6 +1041,37 @@ Initial connectors:
 
 An unavailable connector returns `unavailable` with its last successful
 snapshot. It never returns a fabricated zero.
+
+#### 6.5.1 Moneytree deployment adapters
+
+Moneytree transport follows deployment ownership; it is not one global
+credential path.
+
+| Mode | Authentication and execution | Required owner ceremony | Product boundary |
+|---|---|---|---|
+| Local/self-hosted | The owner signs Codex Local in with their own ChatGPT/Codex subscription, installs the OpenAI-curated Moneytree plugin, connects their own Moneytree account, and the local Life Manager scheduler invokes that authenticated Codex tool | One Codex sign-in and one official Moneytree connection/consent; repeat only after an explicit expired or revoked state | No Life Manager Moneytree LINK client is required. The Mac must remain online and plugin availability, Codex quota, and Moneytree freshness remain external dependencies |
+| Cloud | The hosted tenant authorizes the Life Manager Moneytree LINK client with OAuth Authorization Code + PKCE; cloud workers sync only that tenant | One tenant-scoped Moneytree OAuth consent | Requires Moneytree LINK production approval, registered redirect URI, granted read scopes, tenant vault isolation, and contract/usage compliance |
+
+The OSS installer may verify Codex authentication and offer the canonical
+Moneytree plugin install/connect action. It MUST NOT copy another user's Codex
+session, silently consent to financial access, extract plugin credentials, or
+claim connection until a real account readback succeeds. Until the supported
+plugin-install interface is production-stable, onboarding presents the exact
+owner action and resumes automatically after readback instead of depending on
+an undocumented installer API.
+
+An adapter becomes `available` only after a contract test proves that it can
+project its provider response into the same source receipt: tenant, adapter
+id, provider, account pseudonym, provider balance, currency, retrieved time,
+provider data time when supplied, newest transaction time, cursor, and
+raw-response hash. A plugin whose callable tool lacks sufficient structured
+readback remains `unavailable` or `stale_or_unconfirmed`; agent prose and a
+rendered widget are not parsed as a canonical financial receipt.
+`retrieved_at` never substitutes for `provider_data_at`. When provider data
+time is absent or a newer official bank readback disagrees, retain both values,
+mark the Moneytree snapshot `stale_or_unconfirmed`, exclude it from fresh
+deltas and savings limits, and tell the user the exact discrepancy. Never
+silently overwrite the audit row or call a plugin response real-time bank data.
 
 ## 7. Financial-health model
 
@@ -1125,6 +1156,22 @@ The daily message stays concise. Details open the authenticated panel.
 Telegram is the daily command surface; the web panel is the detailed system of
 record. The bot sends one scheduled digest per health domain plus
 exception-only alerts, rather than narrating every background job.
+
+The same Telegram contract operates in local and cloud modes. `残高`, `明細`,
+`今月`, `節約案`, and `接続状態` enqueue read-only financial jobs and reply
+with the canonical snapshot hash, source freshness, and any excluded account
+or liability. Telegram never receives bank passwords, Moneytree tokens, Codex
+credentials, or full account numbers. A savings recommendation is unavailable
+until liabilities, scheduled payments, source freshness, and the configured
+cash-reserve floor are sufficient; the bot names the missing evidence instead
+of inventing an amount.
+
+Before any Moneytree value enters a model prompt, JSONL event, ledger receipt,
+or Telegram message, deterministic code projects an explicit field allowlist
+and replaces the provider account identifier with a tenant-scoped pseudonym.
+Acceptance requires negative fixtures proving plain account numbers, access or
+refresh tokens, raw provider payloads, and unapproved fields occur zero times
+in prompts, logs, receipts, and Telegram output.
 
 ```text
                          TELEGRAM TO-BE
@@ -2098,13 +2145,13 @@ URL or verified metric row.
 ### 10.6 Connections and deployment
 
 Users connect App Store Connect with an API key, social platforms with
-OAuth/session adapters, and banking through Moneytree LINK. Raw passwords are
-not a product interface.
+OAuth/session adapters, and banking through the deployment-owned Moneytree
+adapter defined in section 6.5.1. Raw passwords are not a product interface.
 
 | Mode | User experience | Availability |
 |---|---|---|
 | Cloud, recommended | sign in from phone/web, authorize connectors, Life Manager remains online without a personal computer | managed multi-tenant services and autoscaled workers |
-| Local/self-hosted | install Life Manager, run one command, use localhost/PWA and optional Telegram | runs only while that machine is online |
+| Local/self-hosted | install Life Manager, sign in with the owner's ChatGPT/Codex subscription, connect the Moneytree plugin once, and use localhost/PWA or Telegram | runs only while that machine is online; does not wait for the Life Manager Moneytree LINK contract |
 | Local→Cloud migration | export an encrypted tenant bundle, import it to cloud, reconcile cursors and receipts, then switch scheduler ownership | no loop runs from both schedulers during cutover |
 
 The panel shows the active deployment, scheduler owner, last successful cycle,
@@ -2186,7 +2233,7 @@ effect-dedupe guards remain active.
 | 25 | Ship monthly cloud subscription | phone/web signup, Stripe monthly entitlement, cloud connector authorization, quotas, source health, export/delete, cancellation, and self-host option |
 | 26 | Prove 1,000-tenant scale and recovery | synthetic workload demonstrates fair scheduling, credential isolation, idempotent effects, worker loss recovery, and bounded queue age |
 | 27 | Add financial connector framework | cursors, freshness, original currency, FX provenance, transfer handling, and explicit unavailable states |
-| 28 | Add Moneytree and App Store Connect | bank balance plus per-product installs, proceeds, and connector health; subscription metrics arrive only through a product-pack input owned outside Life Manager |
+| 28 | Add Moneytree and App Store Connect | OSS proves the owner's Codex + Moneytree plugin path on a clean Mac; cloud applies for and proves Moneytree LINK/OAuth. Each remains unavailable until structured readback passes the common snapshot/freshness/discrepancy/secret-zero contract; rendered widget or agent prose is insufficient. Per-product installs and proceeds arrive through their owned connector |
 | 29 | Add Stripe and read-only crypto/investment assets | net worth and business P&L reconcile across supported sources |
 | 30 | Ship Financial Health UI and Telegram | panel and Telegram render the same snapshot hash with daily, weekly, monthly, and exception receipts |
 | 31 | Create Anicca and Honne product packs | independent JA/EN offers, attribution, rewards, weights, accounts, and forbidden claims |
@@ -3421,7 +3468,7 @@ Cloud becomes Dais's scheduler owner only after:
 | Credentials | encrypted at rest; references only in jobs; redacted in logs and reports |
 | Local secrets | OS keychain or encrypted Life Manager vault; never `.env` files inherited from OpenClaw |
 | Cloud secrets | tenant-scoped vault with audited access and rotation |
-| Bank access | Moneytree LINK/OAuth; no raw MUFG credentials |
+| Bank access | Local uses the owner's authenticated Codex + Moneytree plugin; cloud uses tenant-scoped Moneytree LINK/OAuth; neither accepts raw MUFG credentials |
 | Apple access | App Store Connect API keys/delegated roles; no stored Apple ID password |
 | Financial action | read-only in this spec |
 | Publishing | explicit connector authorization and auditable publication receipt |
