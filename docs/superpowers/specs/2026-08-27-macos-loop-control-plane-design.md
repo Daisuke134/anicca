@@ -350,21 +350,34 @@ recreator. Completed items are not part of the remaining queue.
 1. ✅ Implement Account 1 to Account 2 pre-effect fallback in the shared runner.
    PR #2983 is merged; controlled real readback proves both primary success and
    quota-triggered fallback success.
-2. ⏳ Finish loop-owned Account auto rollout. `life-manager-dev` now cuts pushed
+2. ✅ Finish loop-owned Account auto rollout. `life-manager-dev` now cuts pushed
    main into a complete immutable release and reconciles only
    `shared-agent-runner` rows that are `loaded-idle`; `loaded-running` rows are
-   reported and untouched. PRs #3010, #3012, and #3015 are merged. First real
-   pass applied 19 idle rows and skipped 15 running rows. Remaining condition:
-   a quiet owner pass completes from the latest full release with failed 0,
-   then later-running rows move only after they naturally become idle.
-3. ⏳ Make OSS startup truthful: a few commands must provision user-owned
+   reported and untouched. PRs #3010, #3012, and #3015 are merged. A real owner
+   pass completed `eligible=63`, `failed=0`, and `skipped_running=12`. The final
+   capability audit covers all 78 consumers: installed SHA missing 0; the three
+   installed releases (`6ab86c33`, `d9021490`, `def55ccd`) are all descendants
+   of Account auto merge `3d69c74b`. Runtime state is 61 loaded-idle, 14
+   loaded-running, and 3 intentionally unloaded; exact equality with mutable
+   `current` is not a capability gate while main continues to advance.
+3. ✅ Make OSS startup truthful: a few commands provision local-only state,
    secrets, choose supported loops, start local scheduler/workers, install the
-   platform-appropriate supervisor, and show the same resolver table. Passing
-   Docker health or plist rendering alone is insufficient.
-4. ⏳ Prove the OSS supervisor owns parallel work after the initiating shell
-   exits, and `status` distinguishes scheduler liveness, provider/auth state,
-   terminal result, and official business effect. Do not claim every private
-   Dais loop is portable; unsupported capabilities remain explicitly off.
+   platform-appropriate supervisor, and show runtime ownership. PR #3024 makes
+   `scripts/local-up.sh` build the shared runtime image once, then starts the
+   Compose stack without duplicate builds; it also makes `lm-loop apply
+   --help` fail before mutation. A clean Colima run created the local-only
+   password and brought API, scheduler, worker, liveness, Postgres, and object
+   store to healthy from one command.
+4. ✅ Prove the OSS supervisor owns parallel work after the initiating shell
+   exits. PR #3025 extends `local-up.sh status` with scheduler owner,
+   `loops_enabled`, effect scheduler flags, worker capabilities, and liveness
+   last-poll readback. After the start shell exited, all six services remained
+   healthy; scheduler PID 3176 and worker PID 3193 were distinct and both used
+   `restart=unless-stopped`. Default supported capabilities were
+   `runtime.noop,marketing.liveness.telegram`; financial and all marketing
+   external-effect schedulers read back false. Do not claim every private Dais
+   loop is portable; unsupported or unconfigured capabilities remain
+   explicitly off.
 5. ⏳ Track repo-wide nonrequired security-CI debt separately from loop health:
    OSS boundary, PII gate, Python syntax, and dependency audit.
 
