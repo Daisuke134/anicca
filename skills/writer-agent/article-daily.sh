@@ -676,7 +676,11 @@ if route_status == "absent":
         and isinstance(archive_manifest, list)
         and all(
             isinstance(item, dict)
-            and item.get("path") == "gates/selfimprove-verify.json"
+            and item.get("path") in {
+                "gates/selfimprove-verify.json",
+                "gates/required-demand-authority-blocker.json",
+                "gates/telegram-report.json",
+            }
             for item in archive_manifest
         )
         and path_status(topic_route_path) == "absent"
