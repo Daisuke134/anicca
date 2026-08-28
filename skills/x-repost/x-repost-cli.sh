@@ -158,7 +158,8 @@ ask_model() {
   AGENT_RUNNER_CONFIG="$AGENT_RUNNER_CONFIG" \
     "$PY" "$AGENT_RUNNER" --task-class composition-agent \
       --prompt-stdin --schema "$MODEL_SCHEMA" \
-      --evidence-dir "$run_dir" --task-label "$LOOP_NAME" --loop "$LOOP_NAME" \
+      --evidence-dir "$run_dir" --task-label "$LOOP_NAME" \
+      --loop "${LIFE_MANAGER_LOOP_ID:-$LOOP_NAME}" \
       --workdir "$SKILL" --timeout-seconds "${X_REPOST_MODEL_TIMEOUT:-600}" \
       <"$prompt_file" >"$EV/model.stdout" 2>"$EV/model.err"
   rc=$?
