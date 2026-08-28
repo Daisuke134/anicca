@@ -112,8 +112,10 @@ class LoopCleanupTest(unittest.TestCase):
             entry.write_text("x")
 
             completed = mock.Mock(returncode=0, stdout=f"p123\nn{entry}\n", stderr="")
-            with mock.patch("runtime.loop.central_cleanup.subprocess.run", return_value=completed):
+            with mock.patch("runtime.loop.central_cleanup.subprocess.run", return_value=completed) as run:
                 self.assertEqual(open_release_roots(releases), {entry.parents[1].resolve()})
+            run.assert_called_once_with(
+                ["lsof", "-Fn"], capture_output=True, text=True, timeout=30)
 
     def _run_terminal_event(self, exit_code: int) -> dict:
         with tempfile.TemporaryDirectory() as directory:

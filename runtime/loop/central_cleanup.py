@@ -47,7 +47,7 @@ def loaded_release_roots(agents_dir: Path, releases_root: Path) -> set[Path]:
 def open_release_roots(releases_root: Path) -> set[Path]:
     """Return release roots referenced by any open file or process cwd."""
     completed = subprocess.run(
-        ["lsof", "-Fn", "+D", str(releases_root)],
+        ["lsof", "-Fn"],
         capture_output=True, text=True, timeout=30,
     )
     if completed.returncode not in (0, 1):
