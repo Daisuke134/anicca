@@ -2,7 +2,7 @@
 
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { detectSubscriptions, normalizeTransaction, summarizeTransactions } = require("./financial-ledger.js");
+const { detectSubscriptions, normalizeTransaction, summarizePeriods, summarizeTransactions } = require("./financial-ledger.js");
 
 test("excludes both sides of an internal transfer", () => {
   assert.deepEqual(summarizeTransactions([
@@ -26,4 +26,16 @@ test("detects recurring charges without claiming they are unused", () => {
     { merchant: "Service", amount_jpy: -980, occurred_at: "2026-02-10" },
     { merchant: "One-off", amount_jpy: -980, occurred_at: "2026-02-11" },
   ]), [{ merchant: "Service", amount_jpy: 980, months: ["2026-01", "2026-02"], usage_status: "unknown" }]);
+});
+
+test("summarizes one, three, and twelve calendar months", () => {
+  const summary = summarizePeriods([
+    { amount_jpy: 300, occurred_at: "2026-03-01" },
+    { amount_jpy: -100, occurred_at: "2026-02-01" },
+    { amount_jpy: -50, occurred_at: "2026-01-01" },
+    { amount_jpy: 999, occurred_at: "2025-03-01" },
+  ], "2026-03-31T23:59:59Z");
+  assert.equal(summary["1m"].net_jpy, 300);
+  assert.equal(summary["3m"].net_jpy, 150);
+  assert.equal(summary["12m"].net_jpy, 150);
 });

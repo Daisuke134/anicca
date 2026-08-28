@@ -39,4 +39,19 @@ function detectSubscriptions(transactions) {
     .map((group) => ({ merchant: group.merchant, amount_jpy: group.amount_jpy, months: [...group.months].sort(), usage_status: "unknown" }));
 }
 
-module.exports = { detectSubscriptions, normalizeTransaction, summarizeTransactions };
+function summarizePeriods(transactions, asOf) {
+  const end = new Date(asOf);
+  if (Number.isNaN(end.getTime())) throw new Error("asOf must be a date");
+  const result = {};
+  for (const months of [1, 3, 12]) {
+    const start = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth() - months + 1, 1));
+    const rows = transactions.filter((row) => {
+      const at = new Date(row.occurred_at);
+      return !Number.isNaN(at.getTime()) && at >= start && at <= end;
+    });
+    result[`${months}m`] = summarizeTransactions(rows);
+  }
+  return result;
+}
+
+module.exports = { detectSubscriptions, normalizeTransaction, summarizePeriods, summarizeTransactions };
