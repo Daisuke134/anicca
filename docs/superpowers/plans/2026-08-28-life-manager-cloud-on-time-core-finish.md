@@ -499,12 +499,16 @@ Fresh Sol checks exact expiry, invalid clock fallback, comp independence, provid
 
 - Modify: `apps/life-manager/lib/telegram-onboard.js`
 - Test: `apps/life-manager/lib/telegram-onboard.test.js`
-- Verify unchanged claim contract: `apps/life-manager/lib/ch1-atomic-dedup.test.js`
+- Modify: `apps/life-manager/lib/travel.js`
+- Test: `apps/life-manager/lib/ch1-atomic-dedup.test.js`
+- Create: `apps/life-manager/migrations/2026-08-28-lm-travel-log-legs.sql`
+- Create/Test: `apps/life-manager/test/postgres/lm-travel-log-legs.integration.sh`
 
 **Interfaces:**
 
 - Consumes: `paymentLink(opts, {uid})`, `claimTravel(uid,eventKey,"trial-upgrade",supaUrl,supaKey)`, `unclaimTravel(...)`, and `sendMessage(...)`.
 - Produces: at most one Telegram message ID per `(uid, trial_expires_at, trial-upgrade)`; no new loop/table.
+- Preserves `lm_travel_log` as the ledger, widening only its existing `leg` CHECK to `go|return|telegram-t5|trial-upgrade`. `unclaimTravel(...) → boolean` reports verified DELETE success to every caller.
 
 - [ ] **Step 1: Add active/expired stage RED tests**
 
@@ -533,6 +537,10 @@ assert.equal(unclaims, 0);
 ```
 
 Run twice with the second claim returning false; total sends remain one. For `{ok:false}` and missing `message_id`, require order `claim → send → unclaim`.
+
+Add malformed receipt cases: negative, zero, boolean, object, string, and non-integer `message_id` all release. Only a positive integer retains the claim. Add release-result cases: verified DELETE success permits a later retry; DELETE non-2xx/network failure is surfaced as reconciliation-required and does not claim delivery success.
+
+Create a disposable PostgreSQL test by reusing the existing `test/postgres` local/Docker harness. Apply `2026-06-24-ch1-atomic-dedup.sql`, prove `telegram-t5` is rejected before the new migration, apply the new migration twice, then require inserts for `go`, `return`, `telegram-t5`, and `trial-upgrade`; reject an unknown leg; preserve unique `(uid,event_key,leg)`.
 
 - [ ] **Step 3: Run RED**
 
@@ -577,9 +585,14 @@ continue;
 
 Resolve `claim`, `unclaim`, `send`, and `link` from injected seams first, then existing functions. HTML-escape or URL-validate every inserted value; only the validated Stripe URL is interpolated.
 
+Change `unclaimTravel` in `travel.js` to return `true` only for an HTTP 2xx DELETE and `false` for non-2xx/network failure. Existing callers may ignore the return; the trial-upgrade caller must inspect it. A failed release is delivery reconciliation state: emit one generic owner-visible error without event title/location/phone/home/URL and do not automatically resend while the claim remains.
+
+The leg migration must drop only the CHECK constraint whose constrained column set is exactly `lm_travel_log.leg`, then add and validate an explicitly named idempotent constraint allowing `go`, `return`, `telegram-t5`, and `trial-upgrade`. Do not modify the unique constraint, RLS, rows, or table shape otherwise. Production apply remains Task 6; Task 5 primary runs rollback-only preflight.
+
 - [ ] **Step 5: Run GREEN and negative matrix**
 
 ```bash
+bash test/postgres/lm-travel-log-legs.integration.sh
 node --test lib/telegram-onboard.test.js lib/payment-link.test.js lib/ch1-atomic-dedup.test.js lib/panel-api.test.js lib/billing.test.js
 ```
 
