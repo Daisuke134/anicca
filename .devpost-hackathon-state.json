@@ -1,0 +1,36 @@
+{
+  "plugin": "devpost-hackathon",
+  "version": 2,
+  "hackathon": {
+    "slug": "webmcp",
+    "name": "The WebMCP Challenge",
+    "url": "https://webmcp.devpost.com",
+    "selected": true,
+    "source": "known"
+  },
+  "participant": {
+    "name": "",
+    "display_name": ""
+  },
+  "project": {
+    "name": "Life Manager",
+    "summary": "A general agent that does the work and asks only when it needs you.",
+    "ai_usage": "",
+    "codex_usage": ""
+  },
+  "current_stage": "start-hackathon",
+  "completed_stages": [],
+  "rules_acknowledged": false,
+  "learning": {
+    "status": "not-started",
+    "current_step": "",
+    "completed_steps": [],
+    "plan_file": "",
+    "checklist_file": ""
+  },
+  "submission": {
+    "draft_file": "devpost-submission.md",
+    "status": "not-started"
+  },
+  "next_command": "start-hackathon"
+}

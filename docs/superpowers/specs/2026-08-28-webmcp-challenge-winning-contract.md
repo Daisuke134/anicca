@@ -159,6 +159,26 @@ Primary sources:
 5. **Language**
    - English、または全materialにEnglish translation
 
+### 3.3A Devpost pluginで取得した実提出フォーム
+
+提出時のrequired fieldsは次で固定する。`App Status`は`Existing`を選び、submission period中に追加したWebMCP Work board、tools、human handoff、receipt flowを説明する。
+
+| Field ID | Field | Planned answer |
+|---:|---|---|
+| 28249 | Submitter Type | Individual |
+| 28250 | Country of residence | Japan |
+| 28252 | App Status | Existing |
+| 28254 | Live URL | final Netlify `/lm` URL |
+| 28256 | Public Code Repo | `https://github.com/Daisuke134/life-manager` |
+| 28257 | Tested WebMCP agents/clients | ChatGPT in-app browser and Chrome WebMCP testing; final実測だけ記載 |
+| 28258 | AI tools used | Codex、ChatGPT等、実際に使ったtoolsだけ記載 |
+| 28259 | Level of learning | Significant |
+| 28260 | Career AI value | Yes |
+
+Optional fieldsは、organization name、existing appで更新した内容、judge-only testing instructionsである。提出物はworking live URL、4問に答えるEnglish description、public OSS repository、audio付き3分未満のpublic YouTube demoである。zipは不要。
+
+Devpost登録自体は未完了である。登録前に参加形態、職業、Codex利用頻度、WebMCP経験、ChatGPT in-app browser経験、eligibility、rules、termsへの明示同意が必要である。
+
 Judgesはlive appを操作しなくても、text、images、videoだけで採点できる。したがって動画だけで、解く問題、WebMCPが必要な理由、実際の動作、得られる結果まで伝わる必要がある。Live appは追加の検証経路として提供する。
 
 ### 3.4 Deadlineとfreeze
@@ -203,7 +223,7 @@ Primary sources:
 | Devpost entry URL | created when the authenticated draft is first saved | not created | every required field read back |
 | Testing instructions | zero-login `https://aniccaai.com/lm` + one WebMCP prompt + Chrome 149 steps | planned | clean-browser judge replay |
 
-Unauthenticated access to `webmcp.devpost.com/submissions/new` returns a login gate, so additional standard Devpost fields cannot be claimed from the public page. After registration, inspect the authenticated draft form and add only fields actually shown there. The four official description questions、live URL、repo、license、videoはこのspecで先に固定する。
+Devpost pluginから実提出fieldsを取得済みである。正本はSection 3.3Aとし、authenticated draft作成後は送信前に同じfieldsをread backする。
 
 ---
 
@@ -285,7 +305,7 @@ Devpost galleryは調査時点で未公開。GitHub exact phrase searchでは公
 
 ## 7. Internal 10/10 readiness rubric — official scoringではない
 
-公式の4軸は均等配点で、tie-breakは記載順に適用される。公式には10点尺度がない。本節の10/10は、提出前に不足を見つけるための内部rubricである。WebMCP Leverage → Execution → Potential Impact → Creativity & Ambitionの順で優先する。
+公式の4軸は各5点尺度である。本節の10/10は、提出前に不足を見つけるための内部rubricである。WebMCP Leverage → Execution → Potential Impact → Creativity & Ambitionの順で優先する。
 
 ### 7.1 WebMCP Leverage — target 10/10
 
@@ -412,20 +432,22 @@ Life ManagerはWebMCP Challenge専用agentでも、「Mercor案件ならMercor�
 
 既存Mercor、Coconala、TaskMarket等のcodeは、general runtimeが再利用できるtools、browser state、evidence、historyとして段階的に吸収する。Core orchestratorは「MercorならMercor loop」のようなprovider分岐を持たない。Modelが現在のopportunityとenvironment feedbackを読み、利用可能なtoolsから次の行動を選ぶ。
 
-### 8.3 Canonical judge demo — job application
+### 8.3 Canonical judge demo — end-to-end Job Hunter
 
-Primary demoは、短いintro videoを要求するjob applicationである。`Needs You`へのhandoffが自然で、judgeがhuman-agent collaborationを一目で理解できる。
+製品全体はgeneral earning agentの`Life Manager`である。Hackathonのprimary demoだけをJob Hunterに絞る。求人応募は、agentに任せる部分と本人しかできない部分の境界が誰にでも即座に伝わり、1週間でcomplete productとして仕上げられるためである。
 
-1. Life Manager workerがpublic job opportunityを発見する
-2. Modelがeligibility、fit、deadline、expected value、riskを判断する
-3. Persistent workroomを作り、company researchとapplication artifactsを進める
-4. Intro video requirementへ到達する
-5. Life Manager workerがintro-video script、length、upload instructionsを準備し、cardを`Needs You`へ移す
-6. WebMCP agentが同じscriptを読み、base revision付きのvisible diffを作る
-7. 人間がdiffを確認し、そのscriptでvideoをrecord/uploadする
-8. Life Manager workerが同じworkroom/threadから自動再開し、採用したrevisionをapplicationへ使う
-9. 実accountではexact applicationを一度だけsubmitし、provider readbackを保存する
-10. Guest accountでは外部submit直前まで同じflowを操作でき、actual runのreceiptをread-onlyで確認できる
+最初の実案件は、既存accountと実flowがあるMercorのeligibleなAI training / evaluation contractを候補にする。Mercor公式は専門性に合うremote contractとのmatchingとAI interviewを案内している。最終案件はデモ収録時にlive、eligible、未応募であることをread backして一件だけ固定する。次段階でpublic GitHub bounty、Devpost、X上の明示的bountyへ広げるが、今回のjudge pathへ混ぜない。
+
+Canonical flowは六段だけである。
+
+1. 人が「私に合う仕事を見つけて応募を進めて」と頼む
+2. WebMCP agentがLife Managerのtoolを呼び、workerが求人を一件選び、応募情報を準備する
+3. 本人動画、写真、本人回答のいずれかが必要になった時だけcardが`Needs You`へ移る
+4. 人はcardを開き、要求された一件を回答またはuploadする
+5. workerが同じworkroomから自動再開し、応募を一度だけ完了する
+6. boardにofficial application readbackを表示する。採用や入金は発生するまで主張しない
+
+WebMCPの主役は、agentが画面を推測してclickする代わりに、同じvisible boardをtyped toolsで読み、仕事を開始し、human answerを渡し、再開状態とreceiptを確認できる点である。script作成、visible diff、複数review modeはcanonical demoに含めない。
 
 WebMCP Challengeは第二のdogfooding proofである。Runtime稼働後に残るsubmission workを同じgeneral contractで進める。Bootstrap前に人間や別agentが完了した作業はLife Managerの成果に数えず、provenanceで区別する。
 
@@ -458,7 +480,7 @@ Agentが実行できない、または越えるべきでないhuman-only boundar
 ```text
 Task: Record your introduction video
 Why you: This step requires your identity and voice
-Agent prepared: final script, time limit, and upload instructions
+Agent prepared: exact requirement, time limit, and upload instructions
 Required action: [Upload video]
 Resume: Life Manager continues the same workroom after upload
 State: waiting_for_human
@@ -683,10 +705,9 @@ JudgeはDashboardを直接確認でき、対応WebMCP clientからの操作も�
 | 0:15–0:30 | Life Manager Work board: workrooms、Needs You、proof、verified money |
 | 0:30–0:48 | 対応agentがWebMCP toolsを発見し、public jobをWork boardへ追加 |
 | 0:48–1:10 | Life Manager workerがqualifyし、persistent workroomでapplicationを進める |
-| 1:10–1:28 | Workerがintro-video scriptを準備し、cardを`Needs You`へ移す |
-| 1:28–1:45 | WebMCP agentがscriptを読み、base revision付きvisible diffを作る |
-| 1:45–2:00 | 人間がdiffを確認し、そのscriptでvideoをuploadする |
-| 2:00–2:15 | Life Manager workerが同じworkroomから再開し、採用revisionを使用 |
+| 1:10–1:30 | 本人動画が必要になり、cardがexact requirement付きで`Needs You`へ移る |
+| 1:30–1:55 | 人間がphoneでcardを開き、本人動画をuploadする |
+| 1:55–2:15 | Life Manager workerが同じworkroomから自動再開する |
 | 2:15–2:30 | `Actual Owner Run — read-only`へ切替え、application official readbackとduplicate 0を表示 |
 | 2:30–2:45 | WebMCP Challenge dogfooding workroomと実submission artifactsを表示 |
 | 2:45–2:58 | short taskからlong-horizon hackathonまで同じruntimeで動くことを説明 |
@@ -704,10 +725,9 @@ JudgeはDashboardを直接確認でき、対応WebMCP clientからの操作も�
 | 0:26–0:42 | ChatGPT/Chrome Site tools drawer | “The page exposes WebMCP tools, so my WebMCP agent reads and changes the same state I see instead of guessing at buttons.” |
 | 0:42–0:58 | WebMCP agent adds a public job card | “I ask it to add this public job. Life Manager checks the opportunity and starts one workroom.” |
 | 0:58–1:15 | Worker events and application artifacts appear | “The Life Manager worker researches the role and prepares the application without me supervising every turn.” |
-| 1:15–1:32 | Intro-video script opens; WebMCP visible diff | “The job requires an introduction video. My WebMCP agent reads the script, revises the visible artifact, and records exactly which revision changed.” |
-| 1:32–1:48 | Card moves to Needs You; prepared task visible | “Now Life Manager reaches the one step it should not do for me. It moves the card to Needs You with the final script, time limit, and one exact action.” |
-| 1:48–2:03 | iPhone: open the task, record/select, upload | “On my phone, I open one task and upload my video. I do not reconstruct context or manage the agent.” |
-| 2:03–2:18 | Mac: card returns to Working; same workroom resumes | “The same workroom resumes automatically and uses the artifact revision I approved.” |
+| 1:15–1:35 | Card moves to Needs You; exact video requirement visible | “This application requires my identity and voice, so Life Manager asks me for the one thing it should not do on my behalf.” |
+| 1:35–1:58 | iPhone: open the task, record/select, upload | “On my phone, I open one task and upload my video. I do not reconstruct context or manage the agent.” |
+| 1:58–2:18 | Mac: card returns to Working; same workroom resumes | “The same workroom resumes automatically from the exact state where it stopped.” |
 | 2:18–2:32 | Fixed label `Actual Owner Run — read-only`; official application receipt | “This is the actual owner run. The provider readback proves one application, and the replay count proves there was no duplicate submission.” |
 | 2:32–2:45 | WebMCP Challenge workroom and real artifacts | “We also use the same runtime for the remaining work on this multi-day WebMCP Challenge submission.” |
 | 2:45–2:56 | Work board zooms out; Paid column and receipt visible | “One agent handles short jobs and long projects, asks only when it needs a person, and counts money only when an official receipt proves it was received.” |
@@ -738,11 +758,11 @@ Every WebMCP action updates the same versioned state that the person sees. The p
 
 ### How it creates a better user experience
 
-Without Life Manager, people repeatedly search for work, open separate chats, supervise each agent turn, reconstruct what failed, and manually distinguish applications from actual income. Life Manager preserves one workroom across turns and days. It shows the current goal, last agent event, artifacts, costs, proof, retries, and the exact next human task. After the person answers, the agent resumes from the same state. The money view counts only officially verified payments, not applications, offers, or model claims.
+Without WebMCP, an agent must infer Life Manager's interface from pixels and DOM controls, while the person has to translate state between the dashboard, chat, and the application site. With WebMCP, the agent uses typed tools to read and update the same visible workroom the person sees. The person receives one prepared `Needs You` card instead of supervising every step, supplies the missing video, photo, or answer, and the worker resumes from the exact same state. This removes repeated navigation and context reconstruction, makes every handoff visible, and lets both sides verify the same application receipt.
 
 ### What people and agents can do together that was difficult before
 
-The agent can discover an unfamiliar opportunity, investigate it, plan the work, use browser and coding tools, create artifacts, recover from transient failures, and continue without a person supervising every step. When the task reaches a boundary the agent should not cross, Life Manager moves the item to `Needs You` with one prepared human task. The person provides the missing identity, judgment, or approval, and the agent resumes in the same workroom.
+Before, people generally had two choices: do the whole application themselves, or hand it to an opaque agent and supervise its browser actions. With Life Manager and WebMCP, the agent can discover a suitable role, prepare the application, and continue across multiple steps while the person contributes only identity-bound input. When the task reaches a boundary the agent should not cross, Life Manager moves the item to `Needs You` with one prepared human task. The person supplies the requested video, photo, or answer, and the agent resumes in the same workroom.
 
 Together, they can complete multi-day work without constant supervision while preserving human control at the moments that matter. This division of labor was difficult before because autonomous execution and human collaboration lived in separate interfaces. Life Manager makes the handoff part of the same persistent work state. After the core runtime is live, we dogfood it on the remaining work for this WebMCP Challenge entry and preserve timestamped provenance for what it actually completes.
 
