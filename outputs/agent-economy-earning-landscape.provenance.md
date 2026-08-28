@@ -14,7 +14,50 @@
 | `Virtual-Protocol/acp-cli` | `2a72e56ca33b0c3f2180f11c09022426f71ae84e` | Escrowed job lifecycle and Privy signer dependency |
 | `algora-io/algora` | `74a49d7728400152f5d640ac8d461e6664b7c2eb` | GitHub bounty flow and Stripe Connect payout dependency |
 | `ridgesai/ridges` | `9397a57e3d03756b9c6c4df29ceaef7ecb2063a0` | Bittensor miner entry and token/stake operational model |
+| `Awarexone/Agentic-Bug-Hunter` | `0826b137b4d03f9bd848940427dc4e4e1454c4c2`; 709 tests passed locally | Reusable authorized scope, audit, validation and report engine plus its human-submission boundary |
+| Olas marketplace subgraphs | Observed `2026-08-28T01:09:12Z`; exact endpoint pattern `https://api.subgraph.autonolas.tech/api/proxy/marketplace-{chain}`; query `requests(where:{blockTimestamp_gte:"1787792952"})`; end blocks Gnosis `47949843`, Base `50545002`, Polygon `92782883`, Optimism `156140287`; first returned blocks Gnosis `47932877`, Base `50515403`, Polygon `92741214`, Optimism `156116723`; response SHA-256 respectively `90f72f764ecf11ba05d6b78c716d27eb155a28f679dc47a2e92191376b9d8d0c`, `e0afd5330a4e7d73da008ffbdb1769edfcb70768a5b4376ca3fc347bd4f2b57e`, `4cb946e73870de9c5fc9c61b8a93899123b309d1e6e2f93edcc482be369ebaf1`, `cc36a0028c4d2f4a74d8eb28613a4e67a45f9f614170080b1d52ca7f7a89c6ef`; no indexing errors | Current Mech population, request concentration, deliveries and 24-hour activity |
+| Immunefi live bounty directory | Observed `2026-08-28T01:20:16Z`; `https://immunefi.com/bug-bounty/`; 186 listed programs; response SHA-256 `9a671a952d0cc4c9fad62cea5fd1f35984c79f0f37a6dc61fca96a86ad7cffc8` | Standing security-bounty inventory and program fields |
+| Code4rena official listing | Observed `2026-08-28T01:20:16Z`; `https://code4rena.com/audits`; response SHA-256 `b7077ae1f69080db021c4bfb9d4b93059a75b501498d80b25f87214e1a34655c` | Current audit availability and historical USDC pools |
+| Sherlock official listing | Observed `2026-08-28T01:20:16Z`; `https://audits.sherlock.xyz/contests`; response SHA-256 `8a3e3aa1fd0b31ff584506b6f5c14fee6a9988b4ff35742fa382ce4f3dd24f4c` | Current contest availability and historical USDC pools |
+| Cantina official listing/docs | Observed `2026-08-28T01:20:16Z`; `https://cantina.xyz/competitions`; response SHA-256 `ef286283f40f1a354ace7b07a0267cea10eb3764d8f93adfd299dbf7b4eaeec7` | Opportunity surface, historical payout and KYC/USDC boundary |
+| `profullstack/ugig.net` | Commit `86ff9a94e11f36d47963ab3149eb626e36682ea2`; observed `2026-08-28T01:20:16Z`; endpoints `https://ugig.net/api/gigs?limit=100` and `/api/bounties?limit=100`; response SHA-256 `d5ad0fbf89bb3200685eecf1054c3328f49edf7400c8cbd70803ed6d2de976e2` and `365eb83195783e848cd06b16d165f047356fdd987feae9d5accd60dc62037a4f` | Agent registration/payment implementation and current low-liquidity inventory |
 
 All live observations are evidence snapshots, not promises of future inventory, revenue, uptime, or
 profit. No claim, signature, transaction, account creation, registration, purchase, or publication
 was performed during this research slice.
+
+## Olas aggregation reproduction
+
+For each `chain` in `gnosis base polygon optimism`, POST the complete current-population query to
+`https://api.subgraph.autonolas.tech/api/proxy/marketplace-$chain`:
+
+```graphql
+{
+  global(id: "") { totalRequests totalDeliveries }
+  meches(first: 1000, orderBy: receivedRequests, orderDirection: desc) {
+    id address owner receivedRequests totalDeliveriesTransactions
+    selfDeliveredFromReceived deliveredByOthersFromReceived maxDeliveryRate paymentType
+  }
+  _meta { hasIndexingErrors block { number timestamp } }
+}
+```
+
+The exact 24-hour request-window query uses cutoff `1787792952`:
+
+```graphql
+{
+  requests(first: 1000, skip: 0,
+    where: {blockTimestamp_gte: "1787792952"},
+    orderBy: blockTimestamp, orderDirection: asc) {
+    id blockNumber blockTimestamp transactionHash feeUSD finalFeeUSD
+    mech deliveredByMech isDelivered
+  }
+  _meta { hasIndexingErrors block { number timestamp } }
+}
+```
+
+Repeat with `skip` increased by 1000 until fewer than 1000 rows return. Convert numeric strings,
+group rows by `mech`, and calculate request count, delivered count, unique Mechs, sum of
+`finalFeeUSD // feeUSD`, and the top-five request share. The population aggregation concatenates
+all four `meches` arrays, sorts numeric `receivedRequests` descending, and calculates total, zero,
+less-than-ten, and top-five/top-ten shares. Reject any response with `_meta.hasIndexingErrors=true`.
