@@ -336,10 +336,12 @@ actionable repair count.
 
 Ordered operational TODO:
 
-1. ✅ Repair `affiliate-browser`: restore its exact CloakBrowser interpreter,
-   apply only that label, and verify stable PID plus CDP 9324 readback. PRs
-   #2946, #2947, and #2949 contain the code, release-GC prerequisite, evidence,
-   and permanent skill rule.
+Completed evidence: `affiliate-browser` is repaired by PRs #2946, #2947, and
+#2949. It is not part of the remaining queue.
+
+1. ⏳ Implement account 1 primary/account 2 pre-effect fallback at the shared
+   runner boundary, then run controlled real fallback E2E with duplicate effect
+   zero. Do not add account switching inside marketplace loops.
 2. ⏳ Retire `hf-gig-release-watch`. It is the obsolete Gig-only release
    deployer, not the Gig business loop. Remove its registry row and installed
    job through `lm-loop`, preserve the real Apply/Reply/Storefront/Paid owners,
@@ -356,9 +358,9 @@ Ordered operational TODO:
    rows to natural pass plus official marketplace readback.
 6. ⏳ Move CrowdWorks from four unloaded external labels into thin adapters over
    the same kernel. Keep Upwork retired/off; do not treat it as missing runtime.
-7. ⏳ Implement account 1 primary/account 2 pre-effect fallback at the shared
-   runner boundary, then run controlled real fallback E2E with duplicate effect
-   zero. Do not add account switching inside marketplace loops.
+7. ⏳ Repair mobile-app marketing: all three TikTok rows currently fail; seven
+   of eight Instagram rows fail; marketing also has missing terminal events.
+   Require real post/metrics readback and duplicate publication zero.
 8. ⏳ Make OSS startup truthful: a few commands must provision user-owned
    secrets, choose supported loops, start local scheduler/workers, install the
    platform-appropriate supervisor, and show the same resolver table. Passing
@@ -367,14 +369,11 @@ Ordered operational TODO:
    after obsolete ownership rows are removed.
    Diagnose its latest event and log before changing code; preserve every
    sibling label and external effect fence.
-10. ⏳ Repair mobile-app marketing: all three TikTok rows currently fail; seven
-   of eight Instagram rows fail; marketing also has missing terminal events.
-   Require real post/metrics readback and duplicate publication zero.
-11. ⏳ Continue the remaining terminal-fail/non-running rows strictly in
+10. ⏳ Continue the remaining terminal-fail/non-running rows strictly in
    table order, one locked worktree and one production label at a time.
-12. ⏳ Classify the 26 rows without terminal events as cadence-not-yet-due,
+11. ⏳ Classify the 26 rows without terminal events as cadence-not-yet-due,
    long-running, or missing event wiring; do not count absence as success.
-13. ⏳ Track repo-wide nonrequired security-CI debt separately from loop health:
+12. ⏳ Track repo-wide nonrequired security-CI debt separately from loop health:
    OSS boundary, PII gate, Python syntax, and dependency audit.
 
 ### TODO 1 execution state
