@@ -13,6 +13,11 @@ PROTECTED = {"waiting", "pending", "live-recorded"}
 
 
 def is_protected(run_dir: Path) -> bool:
+    generation = run_dir / "gates/generation-state.json"
+    # ponytail: retain every generation state; narrow only when archive growth
+    # is measured and a durable external archive proof can authorize deletion.
+    if generation.exists() or generation.is_symlink():
+        return True
     # A duplicate-media quarantine is the durable proof that its repair queue
     # items must never be retried.  Retention may not delete that proof while
     # the queue still points at the run.
