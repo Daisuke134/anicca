@@ -277,8 +277,10 @@ No narrower evidence closes the goal.
 - The redesigned media pipeline implements model-owned 60-motion planning and 24-item selection,
   quote-before-generate cost reservation, reconcile-only unknown recovery, bounded subprocesses,
   safe motion ids, one-video-at-a-time checkpoints, APNG timing, visual-inspection readback, and
-  package-bound generation provenance. A fresh parent run passes all 16 media tests, including a real
-  six-batch FFmpeg package.
+  package-bound generation provenance. A fresh parent run passes all 22 media tests, including a real
+  six-batch FFmpeg package, plus all 11 focused native-provider tests.
+- The zero-cost native provider tests cover temporal motion, exact source
+  duration/frame rate, chroma keyability, crash recovery, symlink/conflict rejection, and replay.
 - The private credential SSOT contains one email-verified Runware workspace and an enabled
   `line-sticker-loop` API key. Official read-only account readback reports USD 0.05 balance and zero
   generation requests/credits. Current official CLI pricing readback identifies live
@@ -305,6 +307,11 @@ No narrower evidence closes the goal.
   source preserved identity and green background but visual inspection found materially duplicate
   frames, so it is retained as rejection evidence and not converted into candidates. No Creators
   Market submission, review, release, public product, sale, payout, or bank effect has occurred.
+- Native batch 1 is complete. Its retained ten-second source SHA-256 is
+  `fb17a08ea2b89eb5ddc0164322788f768487f5ef2fa6a6e7171d38e93d8932aa`; the durable convert
+  SHA-256 is `753fbcfd34f65365dd499bccf0f811ec3e9590a41318f2d08427bb8b2a0308e7`.
+  Ten distinct APNG hashes each pass the existing validator at 320×270 RGBA, five frames, one second,
+  one play. Provider cost is USD 0 and a later replay reports effect 0.
 
 ### Money truth
 
@@ -314,9 +321,8 @@ do not count as money.
 
 ### Current blockers to revenue
 
-1. Runware video generation requires a paid invoice or USD 5 minimum credit. Personal funding is not
-   authorized for this effect, so batch 1 moves to the zero-cost native FFmpeg provider. The rejected
-   Runware and LTX attempts remain durable evidence and are never retried.
+1. Native batches 2 through 6 have not been generated or validated. The rejected Runware and LTX
+   attempts remain durable evidence and are never retried.
 2. No authenticated LINE Creators Market browser session or dedicated profile exists, and no LINE
    credential entry is configured in the private credential SSOT.
 
@@ -336,7 +342,7 @@ row while an earlier row is unfinished.
 | A03 — DONE | Connect one real animation provider account through the private credential SSOT. | Official Runware account readback binds workspace `anicca-line-sticker` and enabled key `line-sticker-loop`; current official CLI pricing binds live `prunaai:p-video@0` and USD 0.005/second for 720p draft; usage remains zero. |
 | A04 — DONE | Generate one original character sheet and save its rights evidence. | The sheet SHA-256 `902222ab709ab930c7651ce8c89c3807fcf8c53f3ccd2c79e7a2b14f6ae1b3ba` and production-reference SHA-256 `7aa14830d0cba2cebf09c33cbcab5cc651f5d6cd5ae0c60dc3e357f358ab830b` each match their mode-600 rights receipts; the latter also has an official Runware media-upload receipt. |
 | A05 — DONE | Ask the model for the exact 60-motion plan. | Active canonical `plan_sha256` `b90a1682e791bb71f61fe74b9be8454e6680d4af70362dccb019dbe93bc005f4` binds 60 unique one-second motions in six exact ten-second batches; its receipt and recomputed canonical hash match. |
-| A06 | Generate and convert batch 1 into ten valid candidates. | Ten candidate hashes pass the LINE validator. |
+| A06 — DONE | Generate and convert batch 1 into ten valid candidates. | Ten distinct native candidate hashes pass the LINE validator; source/convert receipts bind cost USD 0, and a later replay reports `effect=0`. |
 | A07 | Generate and convert batch 2 into ten valid candidates. | Ten candidate hashes pass the LINE validator. |
 | A08 | Generate and convert batch 3 into ten valid candidates. | Ten candidate hashes pass the LINE validator. |
 | A09 | Generate and convert batch 4 into ten valid candidates. | Ten candidate hashes pass the LINE validator. |

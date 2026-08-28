@@ -5,6 +5,7 @@ from __future__ import annotations
 import errno
 import hashlib
 import json
+from decimal import Decimal
 from pathlib import Path
 import stat
 import subprocess
@@ -365,6 +366,7 @@ class LineStickerMediaTests(unittest.TestCase):
         candidate.symlink_to(candidate_saved)
         with self.assertRaisesRegex(MODULE.MediaError, "completed_receipt_invalid"):
             MODULE._completed_batch(state, 1, motions, self.work, plan, "ffmpeg")
+
         candidate.unlink()
         candidate_saved.rename(candidate)
 
@@ -377,6 +379,122 @@ class LineStickerMediaTests(unittest.TestCase):
         source.mkdir()
         with self.assertRaisesRegex(MODULE.MediaError, "completed_receipt_invalid"):
             MODULE._completed_batch(state, 1, motions, self.work, plan, "ffmpeg")
+
+    def test_alpha_hole_repair_keeps_exterior_transparent_and_fills_hole(self) -> None:
+        width = height = 7
+        raw = bytearray()
+        for y in range(height):
+            for x in range(width):
+                if 2 <= x <= 4 and 2 <= y <= 4 and (x, y) != (3, 3):
+                    raw.extend((120, 40, 80, 255))
+                else:
+                    raw.extend((0, 255, 0, 0))
+        repaired = MODULE._repair_alpha_holes(bytes(raw), width, height)
+        self.assertEqual(len(repaired), len(raw))
+        for y in range(height):
+            for x in range(width):
+                pixel = repaired[(y * width + x) * 4 : (y * width + x + 1) * 4]
+                if (x, y) == (3, 3):
+                    self.assertEqual(pixel[3], 255)
+                    self.assertNotEqual(tuple(pixel[:3]), (0, 255, 0))
+                    self.assertEqual(tuple(pixel[:3]), (120, 40, 80))
+                elif x in (0, width - 1) or y in (0, height - 1):
+                    self.assertEqual(pixel[3], 0)
+
+        with tempfile.TemporaryDirectory(prefix="alpha-hole-normalize-") as directory:
+            path = Path(directory) / "hole.png"
+            frames = []
+            for index in range(5):
+                frame = bytearray(raw)
+                frame[(2 * width + 2) * 4] = 120 + index
+                frames.append(bytes(frame))
+            path.write_bytes(MODULE._encode_full_frame_apng(b"".join(frames), width=width, height=height, frames=5, duration_ms=Decimal("500")))
+            MODULE._normalize_candidate_apng(path, ffmpeg="ffmpeg", duration_ms=Decimal("500"), cwd=Path(directory), width=width, height=height, fps=10)
+            parsed = MODULE.line_sticker.parse_png(path)
+            self.assertIsNone(MODULE.line_sticker._decode_and_check_alpha(path, parsed, "ffmpeg", set()))
+
+    def test_alpha_hole_repair_keeps_deep_border_connected_transparency(self) -> None:
+        width = height = 9
+        raw = bytearray((0, 255, 0, 0) * (width * height))
+        for x in range(2, 7):
+            for y in (2, 6):
+                raw[(y * width + x) * 4 : (y * width + x + 1) * 4] = bytes((120, 40, 80, 255))
+        for y in range(2, 7):
+            for x in (2, 6):
+                raw[(y * width + x) * 4 : (y * width + x + 1) * 4] = bytes((120, 40, 80, 255))
+        raw[(2 * width + 4) * 4 + 3] = 0
+        repaired = MODULE._repair_alpha_holes(bytes(raw), width, height)
+        for x, y in ((4, 3), (4, 4), (4, 5)):
+            self.assertEqual(repaired[(y * width + x) * 4 + 3], 0)
+
+    def test_alpha_hole_repair_propagates_multiple_non_green_seeds_deterministically(self) -> None:
+        width = height = 7
+        raw = bytearray((0, 255, 0, 0) * (width * height))
+        red, blue = (220, 20, 20, 255), (20, 20, 220, 255)
+        for x in range(1, 6):
+            raw[(1 * width + x) * 4 : (1 * width + x + 1) * 4] = bytes(red)
+            raw[(5 * width + x) * 4 : (5 * width + x + 1) * 4] = bytes(blue)
+        for y in range(1, 6):
+            raw[(y * width + 1) * 4 : (y * width + 2) * 4] = bytes(red)
+            raw[(y * width + 5) * 4 : (y * width + 6) * 4] = bytes(blue)
+        repaired = MODULE._repair_alpha_holes(bytes(raw), width, height)
+        self.assertEqual(repaired, MODULE._repair_alpha_holes(bytes(raw), width, height))
+        self.assertEqual(tuple(repaired[(2 * width + 3) * 4 : (2 * width + 3) * 4 + 3]), red[:3])
+        self.assertEqual(tuple(repaired[(4 * width + 3) * 4 : (4 * width + 3) * 4 + 3]), blue[:3])
+        self.assertNotEqual(
+            tuple(repaired[(2 * width + 3) * 4 : (2 * width + 3) * 4 + 3]),
+            tuple(repaired[(4 * width + 3) * 4 : (4 * width + 3) * 4 + 3]),
+        )
+
+    def test_alpha_hole_repair_fills_two_independent_holes_with_their_own_seeds(self) -> None:
+        width, height = 11, 7
+        raw = bytearray((0, 255, 0, 0) * (width * height))
+        colors = ((2, (220, 20, 20)), (8, (20, 20, 220)))
+        for center_x, color in colors:
+            for x in range(center_x - 1, center_x + 2):
+                for y in (1, 5):
+                    raw[(y * width + x) * 4 : (y * width + x + 1) * 4] = bytes((*color, 255))
+            for y in range(1, 6):
+                for x in (center_x - 1, center_x + 1):
+                    raw[(y * width + x) * 4 : (y * width + x + 1) * 4] = bytes((*color, 255))
+        repaired = MODULE._repair_alpha_holes(bytes(raw), width, height)
+        self.assertEqual(tuple(repaired[(3 * width + 2) * 4 : (3 * width + 2) * 4 + 3]), colors[0][1])
+        self.assertEqual(tuple(repaired[(3 * width + 8) * 4 : (3 * width + 8) * 4 + 3]), colors[1][1])
+
+    def test_alpha_hole_repair_reaches_valid_seed_outside_partial_and_green_rings(self) -> None:
+        width = height = 9
+        raw = bytearray((0, 255, 0, 0) * (width * height))
+        partial = (200, 40, 80, 128)
+        green = (100, 255, 0, 255)
+        seed = (40, 80, 200, 255)
+        for x in range(2, 7):
+            for y in (2, 6):
+                raw[(y * width + x) * 4 : (y * width + x + 1) * 4] = bytes(seed)
+        for y in range(2, 7):
+            for x in (2, 6):
+                raw[(y * width + x) * 4 : (y * width + x + 1) * 4] = bytes(seed)
+        for x in range(3, 6):
+            for y in (3, 5):
+                raw[(y * width + x) * 4 : (y * width + x + 1) * 4] = bytes(partial)
+        for y in range(3, 6):
+            for x in (3, 5):
+                raw[(y * width + x) * 4 : (y * width + x + 1) * 4] = bytes(green)
+        repaired = MODULE._repair_alpha_holes(bytes(raw), width, height)
+        center = repaired[(4 * width + 4) * 4 : (4 * width + 4) * 4 + 4]
+        self.assertEqual(tuple(center), seed)
+
+    def test_alpha_hole_repair_rejects_partial_alpha_and_all_green_seeds(self) -> None:
+        width = height = 5
+        raw = bytearray((0, 255, 0, 0) * (width * height))
+        for x in range(1, 4):
+            for y in (1, 3):
+                raw[(y * width + x) * 4 : (y * width + x + 1) * 4] = bytes((100, 255, 0, 255))
+        for y in range(1, 4):
+            for x in (1, 3):
+                raw[(y * width + x) * 4 : (y * width + x + 1) * 4] = bytes((100, 255, 0, 255))
+        raw[(1 * width + 2) * 4 : (1 * width + 2) * 4 + 4] = bytes((200, 40, 80, 128))
+        with self.assertRaisesRegex(MODULE.MediaError, "alpha_hole_unrepairable"):
+            MODULE._repair_alpha_holes(bytes(raw), width, height)
 
 
 if __name__ == "__main__":

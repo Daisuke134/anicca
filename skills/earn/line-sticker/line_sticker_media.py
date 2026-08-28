@@ -7,6 +7,7 @@ machine contracts, hashes, process fences, media conversion, and bookkeeping.
 from __future__ import annotations
 
 import argparse
+from collections import deque
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 import hashlib
@@ -634,6 +635,87 @@ def _encode_full_frame_apng(raw: bytes, *, width: int, height: int, frames: int,
     return b"".join(output)
 
 
+def _repair_alpha_holes(raw: bytes, width: int, height: int) -> bytes:
+    """Fill enclosed zero-alpha components from deterministic opaque seeds."""
+    frame_size = width * height * 4
+    if width < 1 or height < 1 or len(raw) != frame_size:
+        raise MediaError("candidate_png_invalid")
+    transparent = bytearray(raw[index * 4 + 3] == 0 for index in range(width * height))
+    outside = bytearray(width * height)
+    queue: deque[tuple[int, int]] = deque()
+
+    def enqueue(x: int, y: int) -> None:
+        index = y * width + x
+        if transparent[index] and not outside[index]:
+            outside[index] = 1
+            queue.append((x, y))
+
+    for y in range(height):
+        enqueue(0, y)
+        enqueue(width - 1, y)
+    for x in range(width):
+        enqueue(x, 0)
+        enqueue(x, height - 1)
+    while queue:
+        x, y = queue.popleft()
+        for nx, ny in ((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)):
+            if 0 <= nx < width and 0 <= ny < height:
+                enqueue(nx, ny)
+
+    def is_green(rgb: tuple[int, int, int]) -> bool:
+        return rgb[1] >= 128 and rgb[1] - max(rgb[0], rgb[2]) >= 50
+
+    owners: list[tuple[int, int, int, tuple[int, int, int]] | None] = [None] * (width * height)
+    for y in range(height):
+        for x in range(width):
+            index = y * width + x
+            if raw[index * 4 + 3] == 255:
+                rgb = tuple(raw[index * 4 : index * 4 + 3])
+                if not is_green(rgb):
+                    owners[index] = (0, y, x, rgb)
+                    queue.append((x, y))
+    while queue:
+        x, y = queue.popleft()
+        current = owners[y * width + x]
+        if current is None:
+            continue
+        for nx, ny in ((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)):
+            if not (0 <= nx < width and 0 <= ny < height):
+                continue
+            index = ny * width + nx
+            if (transparent[index] and outside[index]) or owners[index] is not None:
+                continue
+            owners[index] = (current[0] + 1, current[1], current[2], current[3])
+            queue.append((nx, ny))
+
+    visited = bytearray(width * height)
+    repaired = bytearray(raw)
+    for y in range(height):
+        for x in range(width):
+            start = y * width + x
+            if not transparent[start] or outside[start] or visited[start]:
+                continue
+            component: list[tuple[int, int]] = []
+            queue.append((x, y))
+            visited[start] = 1
+            while queue:
+                cx, cy = queue.popleft()
+                component.append((cx, cy))
+                for nx, ny in ((cx - 1, cy), (cx + 1, cy), (cx, cy - 1), (cx, cy + 1)):
+                    if 0 <= nx < width and 0 <= ny < height:
+                        index = ny * width + nx
+                        if transparent[index] and not outside[index] and not visited[index]:
+                            visited[index] = 1
+                            queue.append((nx, ny))
+            if any(owners[cy * width + cx] is None for cx, cy in component):
+                raise MediaError("alpha_hole_unrepairable")
+            for cx, cy in component:
+                index = (cy * width + cx) * 4
+                repaired[index : index + 3] = bytes(owners[cy * width + cx][3])  # type: ignore[index]
+                repaired[index + 3] = 255
+    return bytes(repaired)
+
+
 def _normalize_candidate_apng(
     path: Path,
     *,
@@ -673,7 +755,12 @@ def _normalize_candidate_apng(
             raise MediaError("candidate_png_invalid") from exc
         if len(raw) != expected:
             raise MediaError("candidate_png_invalid")
-        _atomic_bytes(path, _encode_full_frame_apng(raw, width=width, height=height, frames=frame_count, duration_ms=duration_ms))
+        frame_size = width * height * 4
+        repaired = b"".join(
+            _repair_alpha_holes(raw[offset : offset + frame_size], width, height)
+            for offset in range(0, len(raw), frame_size)
+        )
+        _atomic_bytes(path, _encode_full_frame_apng(repaired, width=width, height=height, frames=frame_count, duration_ms=duration_ms))
 
 
 def _validate_candidate(path: Path, *, ffmpeg: str) -> tuple[dict[str, object] | None, list[str]]:
