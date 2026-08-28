@@ -17,5 +17,7 @@
 - [x] Add a failing test that archives the staged tree and requires the manifest, all `_REF` example values to use `secret://`, local/cloud quick starts, `LICENSE`, and four notices.
 - [x] Add the smallest root notice with project, license, source URL, and “design reference only; no vendored source” boundary.
 - [x] Run the clean-user test, provider manifest test, changed-path PII/OSS scans, and `git diff --check`.
-- [ ] Commit/push, archive the pushed commit into a clean temporary directory, rerun acceptance there, and read back PR #3018.
-- [ ] Mark GA-12 DONE only if the pushed archive passes with no private checkout, credential, personal path, or provider-specific code.
+- [x] Commit/push, archive the pushed commit into a clean temporary directory, rerun acceptance there, and read back PR #3018.
+- [x] Mark GA-12 DONE only if the pushed archive passes with no private checkout, credential, personal path, or provider-specific code.
+
+Delivery: remote commit `f108b591d9744f203873cc3a07e594dfac0146fa`; `GA12_PUSHED_ARCHIVE=PASS`.
