@@ -4393,11 +4393,38 @@ bindされ、未確認founder videoをexpected blockerとして保持し`submit_
 - [x] O3B-11 net worth・income・spending・cash flow・budget残額だけを同じJPY ledgerから算出。未使用のburn/runway/baseline/anomaly engineは作らない
 - [x] O3B-12 Moneytree実account・transactionsから今日・7日・今月のJPY briefingを生成し、private SSOTの`telegram-life-manager` credentialとLife Manager `telegram.js`だけで実送信。`message_id=40518`、CFO経路のOpenClaw/Profitable Claude参照0
 - [ ] O3B-13 reportの全数値からsource receiptへ遡れることを実証
-- [ ] O3B-14 今月のbudget残額、subscription候補、最大支出categoryから役立つ提案を最大3件返す
+- [ ] O3B-14 決定論的に計算した今月の金額・上位category/merchant・subscription候補・source refをLLM conciergeへ渡し、自然な日本語で役立つ提案を最大3件返す。keyword/regexで生活判断せず、取引名だけから依存症や健康状態を断定しない
 - [ ] O3B-15 Telegramで`残高`・`明細`・`今月`・`節約案`・`接続状態`を使えるようにする
 - [ ] O3B-16 日次briefingと週次reviewをLife Manager loopで自動実行
 - [ ] O3B-17 Moneytree取得失敗・stale・未接続をTelegramで明示し、古い数字を現在値として出さない
 - [ ] O3B-18 local releaseで再起動後も動作し、duplicate message 0を実証して完了
+
+Telegram UX contract:
+
+```text
+CFO · 今週
+
+ひとこと
+外食の支出が先週より増えています。今週は2回減らすと約¥X残せます。
+
+今月
+支出 ¥X / 予算残 ¥Y
+
+気になったこと
+1. ○○の利用が今月N回、合計¥Xです。回数を決めると抑えやすいです。
+2. △△は毎月¥Xです。使っていなければ解約候補です。
+
+今日やるなら
+△△を今も使っているか確認してください。
+
+確認: 残高 / 明細 / 今月 / 節約案 / 接続状態
+```
+
+- 定期配信は取引一覧を付けず、重要な変化と最大3提案だけを送る。
+- 全取引はユーザーが`明細`を要求した時だけ返す。
+- 提案には必ず金額・回数・merchant/categoryの根拠を添える。
+- 居酒屋や酒販店の支出は「飲酒量」ではなく「その店・categoryへの支出」として説明する。健康・依存の断定はしない。
+- 変化も提案もない日は長文を送らず「大きな変化なし」と返す。
 
 完了条件: Moneytreeの確認済みJPY資産・収入・支出が元データへ遡れ、1・3・12か月集計、役立つ節約提案、Telegram操作、自動briefingがLife Managerだけで動く。外部待ちは利用可能になるまで明示的に除外する。
 
