@@ -193,7 +193,7 @@ and rollback evidence pass.
 | Life Manager panel | Timeline, connection, score, gate, API cost, and limited financial-ledger projections exist | Extend; do not build a second dashboard |
 | Financial report loop | the legacy launchd loop remains active; the Life Manager local scheduler/job/worker path separately sent real Telegram `message_id=432` with immutable snapshot/effect receipt and restart count `1 → 1` | Report execution is OpenClaw-independent and shadow-ready; scheduler ownership is intentionally not cut over until seven expected runs |
 | Financial report scope | x402/TaskMarket/USDC earnings, fees, losses, API costs, payout reserve | Bank, App Store, Stripe, broader crypto, and business P&L are absent |
-| Moneytree connector | One connected Japanese bank account is readable | Bank balance can seed the personal balance sheet; account identifiers must stay private |
+| Moneytree connector | One connected Japanese bank account is readable and the owner confirms the current plugin readback is accurate | Accept the current readback; no balance-discrepancy incident is open. Keep the private amount and account identifiers out of Git |
 | Historical Anicca metrics | 299 seven-day downloads on 2026-05-15; subsequent snapshot showed zero due to ASC collection failure; historical trial start rate about 3.5–3.8% | Data quality must be first-class; zero and unavailable cannot be conflated |
 
 RevenueCat administration and credential operations belong to the separate
