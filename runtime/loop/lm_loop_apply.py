@@ -39,6 +39,12 @@ def _plist(loop_id: str, entry: dict, release_root: Path, release_sha: str) -> b
         value["RunAtLoad"] = True
     else:
         value["KeepAlive"] = True
+    if entry["entrypoint"].startswith("skills/writer-agent/"):
+        writer_root = str(release_root / "skills/writer-agent")
+        value["EnvironmentVariables"].update({
+            "ARTICLE_ROOT": writer_root, "ARTICLE_SKILL_DIR": writer_root,
+            "LIFE_MANAGER_REPO": str(release_root),
+        })
     return plistlib.dumps(value, fmt=plistlib.FMT_XML, sort_keys=True)
 
 
