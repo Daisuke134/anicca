@@ -12,6 +12,7 @@ const { buildScorePeriods, computePanelScores } = require("./panel-score-semanti
 const { presentPanelSection } = require("./panel-presentation.js");
 const { normalizePhone } = require("./telegram-onboard.js");
 const { paymentLink } = require("./payment-link.js");
+const { isHelperBlock } = require("./wake-filter.js");
 
 const ENDPOINTS = new Set(["timeline", "scores", "ledger", "gates", "settings"]);
 const ONBOARDING_ACTIONS = new Set(["name.save", "home.save", "notifications.enable", "phone.save", "phone.skip", "call.enable", "call.skip", "payment.skip"]);
@@ -419,7 +420,7 @@ async function addNextEvent(body, scope, opts) {
   try {
     const result = await timeline(scope.uid, { ...opts, nowMs });
     const next = (result && Array.isArray(result.events) ? result.events : []).find((item) => {
-      if (!item || item.is_helper === true || item.helper === true) return false;
+      if (!item || isHelperBlock(item.summary)) return false;
       const startMs = Date.parse(String(item.start_at || ""));
       return Number.isFinite(startMs) && startMs > nowMs;
     });

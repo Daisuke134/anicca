@@ -197,6 +197,31 @@ test("Task 3: ready dashboard shows value, trial, and next event without requiri
   assert.equal(withoutCheckout.root.querySelector("[data-onboarding-actions]").children.length, 0);
 });
 
+test("Task 3: ready copy follows server-owned paid and trial state", async () => {
+  const visibleText = async (state) => {
+    const fake = await runOnboardingInline(state);
+    const visible = [];
+    const walk = (node) => { visible.push(node.textContent, node.value, node.href || ""); for (const child of node.children) walk(child); };
+    walk(fake.root);
+    return { fake, text: visible.join("\n") };
+  };
+
+  const paid = await visibleText({ step: "dashboard", paid: true, trialActive: false, trialExpiresAt: "2026-08-31T12:00:00.000Z" });
+  assert.match(paid.text, /移動時間を自動追加/);
+  assert.match(paid.text, /出発5分前/);
+  assert.match(paid.text, /有料プランが有効/);
+  assert.doesNotMatch(paid.text, /無料期間/);
+
+  const ended = await visibleText({ step: "dashboard", paid: false, trialActive: false, paymentLink: "https://buy.stripe.com/test_life_manager?client_reference_id=server" });
+  assert.match(ended.text, /無料期間は終了/);
+  assert.match(ended.text, /停止中/);
+  assert.doesNotMatch(ended.text, /移動時間を自動追加|出発5分前/);
+  const endedActions = ended.fake.root.querySelector("[data-onboarding-actions]").children;
+  assert.equal(endedActions.length, 1);
+  assert.equal(endedActions[0].className, "secondary-action");
+  assert.match(endedActions[0].href, /^https:\/\/buy\.stripe\.com\//);
+});
+
 function safeIntegerFinancialOrgans() {
   const ref = "outcome:10000000-0000-4000-8000-000000000001";
   const period = (kind) => ({ kind, start_at: "2026-07-08T12:00:00.000Z", end_at: "2026-07-15T12:00:00.000Z" });

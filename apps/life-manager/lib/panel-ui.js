@@ -115,7 +115,12 @@ function renderPanelOnboardingPage(options = {}) {
     const calendarStart = "/api/panel/onboarding/calendar/start";
     const calendarStatus = "/api/panel/onboarding/calendar/status";
     const titles = Object.freeze({ name:"名前を確認", calendar:"カレンダーをつなぐ", home:"住んでいる場所", notifications:"通知を有効にする", phone:"電話番号", call:"電話での確認", payment:"利用を開始する", dashboard:"準備完了" });
-    const copies = Object.freeze({ name:"呼びかけに使う名前を確認します。", calendar:"予定を読み取り、必要なタイミングで知らせます。", home:"Telegramでライブ位置情報を共有している間はそれを使い、共有が終わった後は登録した自宅住所や直近の予定へフォールバックして再開します。", notifications:"通知を受け取れるようにします。", phone:"電話番号を登録します。日本の国内表記（090-1234-5678）または国際表記（+81 90-1234-5678）を入力してください。", call:"電話での確認方法を選びます。", payment:"月額プランを確認して利用を開始します。", dashboard:"準備できました。移動時間を自動追加し、出発5分前にお知らせします。無料期間でお試しください。" });
+    const copies = Object.freeze({ name:"呼びかけに使う名前を確認します。", calendar:"予定を読み取り、必要なタイミングで知らせます。", home:"Telegramでライブ位置情報を共有している間はそれを使い、共有が終わった後は登録した自宅住所や直近の予定へフォールバックして再開します。", notifications:"通知を受け取れるようにします。", phone:"電話番号を登録します。日本の国内表記（090-1234-5678）または国際表記（+81 90-1234-5678）を入力してください。", call:"電話での確認方法を選びます。", payment:"月額プランを確認して利用を開始します。", dashboard:"準備状態を確認しました。" });
+    const readyCopy = (state) => {
+      if (state && state.paid === true) return "準備できました。移動時間を自動追加し、出発5分前にお知らせします。有料プランが有効です。";
+      if (state && state.trialActive === true) return "準備できました。移動時間を自動追加し、出発5分前にお知らせします。無料期間中です。";
+      return "無料期間は終了しました。移動・通知の自動化は停止中です。";
+    };
     const key = () => globalThis.crypto && typeof globalThis.crypto.randomUUID === "function" ? globalThis.crypto.randomUUID() : String(Date.now()) + "-onboarding" + Math.random().toString(36).slice(2);
     const text = (node, value) => { node.textContent = String(value == null ? "" : value); };
     const button = (label, action, primary) => { const node = document.createElement("button"); node.type = "button"; node.dataset.onboardingAction = action; node.className = primary ? "primary-action" : "secondary-action"; node.textContent = label; return node; };
@@ -130,8 +135,16 @@ function renderPanelOnboardingPage(options = {}) {
       const trial = document.createElement("p");
       const trialLabel = document.createElement("span");
       const trialDeadline = document.createElement("span");
-      text(trialLabel, state && state.trialActive === true ? "無料期間: " : "無料期間の状態: ");
-      text(trialDeadline, state && state.trialExpiresAt ? state.trialExpiresAt : "確認中");
+      if (state && state.paid === true) {
+        text(trialLabel, "有料プラン: ");
+        text(trialDeadline, "有効");
+      } else if (state && state.trialActive === true) {
+        text(trialLabel, "無料期間中: ");
+        text(trialDeadline, state.trialExpiresAt || "期限確認中");
+      } else {
+        text(trialLabel, "無料期間: ");
+        text(trialDeadline, "終了");
+      }
       trial.append(trialLabel, trialDeadline);
       value.append(trial);
       const next = state && state.nextEvent && typeof state.nextEvent === "object" ? state.nextEvent : null;
@@ -154,7 +167,7 @@ function renderPanelOnboardingPage(options = {}) {
     const render = (state) => {
       const step = String(state && state.step || "");
       title.textContent = titles[step] || "Life Manager";
-      copy.textContent = copies[step] || "現在の準備状態を確認しています。";
+      copy.textContent = step === "dashboard" ? readyCopy(state) : copies[step] || "現在の準備状態を確認しています。";
       form.replaceChildren(); actions.replaceChildren(); status.textContent = "";
       switch (step) {
         case "name": form.append(input("名前", "text", state.name)); actions.append(button("次へ", "name.save", true)); break;

@@ -740,6 +740,9 @@ test("Task 3 ready dashboard previews the first future calendar event and degrad
   h.opts.calendar = {
     listEventsRaw: async () => [
       { id: "past", summary: "過去の予定", start: { dateTime: "2026-08-28T10:00:00.000Z" } },
+      { id: "travel-helper", summary: "[Travel] Dentist", start: { dateTime: "2026-08-28T13:00:00.000Z" } },
+      { id: "pending-helper", summary: "[PENDING] Dentist", start: { dateTime: "2026-08-28T13:10:00.000Z" } },
+      { id: "applied-helper", summary: "[APPLIED] Dentist", start: { dateTime: "2026-08-28T13:20:00.000Z" } },
       { id: "next", summary: "Dentist", start: { dateTime: "2026-08-28T14:00:00.000Z" } },
     ],
   };
