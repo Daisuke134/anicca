@@ -23,6 +23,28 @@ readback; a phase name is never a checkbox. Do not start a later item until ever
 is checked. Check an item only with the evidence named after `PASS =`. Chat, process liveness,
 model narration, and local success without the named readback are not PASS.
 
+### Apply music-production prohibition — account-owner priority override
+
+- [x] `AM01` Add a semantic Apply prohibition for music or produced/edited audio as the required
+  buyer-visible deliverable, including work performed through prompting or generative tools.
+  PASS = the Coconala planner names one model-owned prohibition class, the cross-provider policy stays
+  unchanged, no category/keyword/regex gate exists, and a focused regression preserves other semantic
+  prohibitions for music-adjacent work. `music_or_audio_production` is now part of the existing
+  exact-evidence contract. All Application regressions pass 22/22. A side-effect-free Luna evaluation
+  classified original BGM/audio delivery `9000001` as
+  `hard_prohibited / music_or_audio_production` with an exact listing excerpt, while music-service
+  software with no audio production `9000002` remained `submit_required`; music-event research
+  requiring an in-person visit `9000003` remained `hard_prohibited / physical_or_onsite`.
+- [x] `AM03` Stop every future Reply action to Studio BlackWave.
+  PASS = the official counterparty readback binds Studio BlackWave to talkroom `10131237`; Reply
+  prompt v28 receives that verified thread ID and always returns `stop_contact / stop`, never reply,
+  estimate or clarify. Existing messages are not resent or changed. Focused semantic tests pass 34/34.
+- [ ] `AM02` Deploy both prompt policies through the normal immutable release boundary.
+  PASS = the change is merged to pushed main, a read-only immutable release contains the exact Apply
+  and Reply policies, loaded owner argv points to that release, one natural pass per affected owner
+  reaches a terminal result from the same SHA, and subsequent decisions use the new prompts. Do not
+  submit a synthetic application or send a synthetic reply solely to prove either rule.
+
 ### Manledge closure — account-owner priority override
 
 - [x] `M01` Refresh Coconala talkroom `18169985` and bind the buyer's latest request for

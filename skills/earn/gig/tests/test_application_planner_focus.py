@@ -39,4 +39,19 @@ def test_common_policy_never_uses_skills_as_admission_or_execution_authority():
     assert "Submit is the default for every feasible job" in normalized
     assert "unverified payment" in normalized
     assert "never standalone skip reasons" in normalized
+    assert "music" not in policy.casefold()
+    assert "audio" not in policy.casefold()
+    assert "music_or_audio_production" not in policy
     assert policy in prompt
+
+
+def test_coconala_prompt_scopes_music_boundary_and_preserves_other_prohibitions():
+    planner = load_planner()
+
+    prompt = planner.planner_prompt({"request_details": []})
+
+    assert "Coconala application lane" in prompt
+    assert "music_or_audio_production" in prompt
+    assert "generated or prompted music/audio" in prompt
+    assert "music software, music research, or writing about music is not music_or_audio_production" in prompt
+    assert "only when no other hard-prohibition class applies" in prompt

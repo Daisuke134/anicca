@@ -823,14 +823,15 @@ def test_negotiate_runs_every_30_seconds_without_changing_other_job_intervals():
     assert by_lane["browser"]["ThrottleInterval"] == 30
 
 
-def test_semantic_prompt_v27_is_proactive_and_reads_verified_attachments():
+def test_semantic_prompt_v28_is_proactive_and_stops_blackwave():
     prompt = requested_estimate.semantic_prompt(
         [{"message_id": "buyer-1", "role": "buyer", "sent_at": "2026-08-19T00:00:00Z", "body": "質問です"}],
         official_context=None,
         seller_facts=[],
+        thread_id="10131237",
     )
 
-    assert requested_estimate.SEMANTIC_PROMPT_VERSION == "reply-negotiate-v27"
+    assert requested_estimate.SEMANTIC_PROMPT_VERSION == "reply-negotiate-v28"
     assert requested_estimate.semantic_prompt_compatible(
         {"prompt_version": "reply-negotiate-v26"}
     ) is True
@@ -848,6 +849,10 @@ def test_semantic_prompt_v27_is_proactive_and_reads_verified_attachments():
     assert "verified_attachments" in prompt
     assert "再送や文字起こしをbuyerへ要求" in prompt
     assert "確認不能と誤案内" in prompt
+    assert '"conversation_thread_id":"10131237"' in prompt
+    assert "Studio BlackWave" in prompt
+    assert "next_action=stop" in prompt
+    assert "reply・send_estimate・clarifyを一切返しません" in prompt
     assert "clarifyでは、こちらが確認する不足情報をuncertaintyにだけ列挙" in prompt
     assert "unanswered_questionsは空配列" in prompt
     assert "saas_lp_cvr_3_to_10_20260819" in requested_estimate.SELLER_FACT_IDS
