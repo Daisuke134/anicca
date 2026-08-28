@@ -419,6 +419,15 @@ official contract, fee, payout, and bank receipts advance it.
    credential SSOT under service `tiktok-anicca-jp`; never copy its value into repo, prompts, logs,
    Coconala or Telegram.
 
+   The first real campaign effect is complete. The installed owner sent one personalized DM from
+   `@anicca.jp` to `@_yayoisan`, obtained official TikTok Sent readback, appended the matching
+   account/date row to `2026年8月`, read it back through the authenticated Sheets API, and replayed
+   the same effect key at zero. Receipt
+   `~/gig/projects/18180857/delivery/tiktok-dm-intent-_yayoisan.json` is the reconciliation
+   authority. Do not resend it. The next selected candidate is `@kaho__1204`; its recipient route
+   and composer preflight passed, but no second DM or Sheet row exists. Resume there only after the
+   host disk block is officially cleared. A draft or preflight is not a campaign result.
+
    The buyer-visible initial-review package is already sent: v7
    `CKprotect_TikTok_initial_review_v7.zip`, SHA256
    `d0c16a537ebf5ea3329ce2e724b21e5675ccad2f34f224c397df44528c53d057`, contains ten qualified
@@ -4537,7 +4546,7 @@ release:
 
 | Buyer | Talkroom | Project root | Current artifact / action | Official state | Exact blocker |
 |---|---|---|---|---|---|
-| Chii【CK protect】 | `18180857` | `~/gig/projects/18180857` | `CKprotect_TikTok_initial_review_v7.zip`; external TikTok work remains required | Buyer approved a seller-owned account and wants reply access; no campaign send yet | Seller account email password recovery and image CAPTCHA are complete. Official TikTok 2SV now requires the SMS sent to the registered phone ending 0314; Mac Messages has no synchronized SMS. Do not send another progress promise |
+| Chii【CK protect】 | `18180857` | `~/gig/projects/18180857` | v7 review package plus one verified live DM/Sheet pair; bounded campaign remains required | `@_yayoisan` has official TikTok Sent readback, one matching `2026年8月` Sheet row and replay-zero; formal delivery remains off | `@kaho__1204` is selected and preflighted but not sent. Clear the official disk block, then resume through the installed Paid owner; do not send another progress-only Coconala message |
 | 貴ㅤㅤ | `18197848` | `~/gig/projects/5231240` | `硝子色の恋_review_v1.zip`, SHA256 `e041c39e10cff1bb2e3fd3febca172ff32fc4ed21bc40b1a6978228a5c85c15e` | Official talkroom contains the exact ZIP and review message; buyer-visible artifact is true and formal delivery is off | Closed: exact English outro was independently transcribed, the artifact was sent once, and replay is `awaiting_buyer`, effect 0, deduplicated true |
 | ユウ ブログ | `18202085` | `~/gig/projects/18202085` | `cinematic_suspense_bgm_v1.zip`, SHA256 `d5403a67e0e270d08f62c41b1a66407ac376c6f371d11c455ff98e5456d26424` | Official talkroom readback contains the exact ZIP and buyer-review message; formal delivery is off | Closed: replay is `satisfied_noop`, effect 0, deduplicated true |
 | ITフランチャイズ経営 | `18184558` | `~/gig/projects/18184558` | No artifact or reply required | Buyer explicitly requested no reply while Coconala cancellation is pending; replay is `satisfied_noop`, effect 0 | Observe official cancellation only |
@@ -4551,6 +4560,32 @@ Codex runtime caches were reclaimed only after open-file checks; free space reco
 protected and are not cleanup candidates.
 
 ### Host disk and Account 2 runtime verification
+
+- [x] Identify the recurring host producer instead of treating low space as an operator cleanup
+  task. The user temp `X` directory contains about 7.2 GiB of Chromium/Chrome
+  `*.code_sign_clone/code_sign_clone.*` bundles, while buyer projects, receipts, sessions and
+  `.cloak` remain protected. Upstream Chromium/Capybara evidence identifies
+  `--disable-features=MacAppCodeSignClone` as the launch-time prevention.
+- [x] Add that prevention to both Coconala browser launch paths (`:9222` shared daily-driver and
+  `:9223` Gig browser), cover both paths with a focused regression, and merge it to public main
+  `efced3beb`. A fresh device therefore prevents the leak from its first managed browser launch;
+  it does not need a machine-specific cleanup plugin or a private path.
+- [x] Make Storefront invoke the shared protected evidence GC at the start of every natural owner
+  pass and merge it to public main `3e2328d4d`. The installed immutable release reads all 14
+  official public services and exits with `effect=0`, `duplicate=0`; historical GC readback shows
+  2,414 intermediate directories and 282.6 MB reclaimed with zero errors.
+- [ ] Complete the one-time migration on this already-affected Mac: stop only the two managed
+  CloakBrowser roots, verify their profiles and credentials remain on disk, remove only the exact
+  user-owned `*.code_sign_clone` temp bundles after open handles close, relaunch from public main
+  with `MacAppCodeSignClone` disabled, and verify `:9222`/`:9223`, authenticated sessions, free
+  space, cleanup receipt and absence of new clone growth. This is a destructive browser restart
+  boundary and requires the account owner's explicit go-ahead; it is not required on a fresh OSS
+  install.
+- [ ] After free space is at least 1 GiB, let the existing cleanup owner remove the stale
+  `disk-pressure.block`, activate Apply/Reply/Paid/Storefront from public main-derived immutable
+  releases, and verify each natural pass with Account 2 receipt. Then resume Chii at the unsent
+  `@kaho__1204` effect; require official TikTok Sent, one matching Sheet row, Coconala formal OFF,
+  and immediate replay-zero before advancing.
 
 - [x] Verify Account 2 at the actual model boundary: the four Coconala plists intentionally omit `CODEX_HOME`, while the immutable runner config binds Codex to `~/.codex-acct2/auth.json`; its isolated automation-home auth symlink resolves to that exact file.
 - [x] Verify Reply/Paid fixes and Account 2 failover are all ancestors of public `origin/main`; they are not stranded on private feature branches.
