@@ -37,6 +37,16 @@ class RuntimeEventTest(unittest.TestCase):
             validate_runtime_event({**BASE, "blocker": "TOKEN=do-not-store"})
         with self.assertRaisesRegex(ValueError, "secret-like"):
             validate_runtime_event({**BASE, "evidence_refs": ["/Users/operator/private.json"]})
+        with self.assertRaisesRegex(ValueError, "secret-like"):
+            validate_runtime_event({**BASE, "blocker": "sk-abcdefghijklmnopqrstuvwxyz012345"})
+
+    def test_disk_cleanup_loop_id_is_not_mistaken_for_api_key(self):
+        event = {
+            **BASE,
+            "loop_id": "life-manager-disk-cleanup",
+            "evidence_refs": ["lm-loop://life-manager-disk-cleanup/install/summary.json"],
+        }
+        self.assertEqual(validate_runtime_event(event), event)
 
     def test_runner_success_does_not_claim_external_effect(self):
         event = build_runtime_event(
