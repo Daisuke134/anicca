@@ -197,9 +197,13 @@ process_start_token() {
   ps -p "$1" -o lstart= 2>/dev/null | sed 's/^[[:space:]]*//'
 }
 write_lock_owner() {
-  local lock_path="$1"
-  printf '%s' "$$" >"$lock_path/owner.pid"
-  process_start_token "$$" >"$lock_path/owner.start"
+  local lock_path="$1" current_start observed_pid observed_start
+  current_start="$(process_start_token "$$")"
+  [ -n "$current_start" ] || return 1
+  printf '%s' "$$" >"$lock_path/owner.pid" \
+    && printf '%s' "$current_start" >"$lock_path/owner.start" || return 1
+  observed_pid="$(cat "$lock_path/owner.pid" 2>/dev/null || true)"; observed_start="$(cat "$lock_path/owner.start" 2>/dev/null || true)"
+  [ "$observed_pid" = "$$" ] && [ -n "$observed_start" ] && [ "$observed_start" = "$current_start" ]
 }
 lock_owner_alive() {
   local lock_path="$1" owner_pid expected_start actual_start
@@ -241,13 +245,35 @@ release_publication_lock() {
   rm -f "$LOCK_DIR/owner.pid" "$LOCK_DIR/owner.start" 2>/dev/null || true
   rmdir "$LOCK_DIR" 2>/dev/null || true
 }
+PUBLICATION_TRANSACTION_ACTIVE=0
+NEW_LOCK_DIR=""
+STALE_METADATA_DIR=""
+DEFERRED_LOCK_SIGNAL=0
+cleanup_stale_metadata_temp() { [ -n "${STALE_METADATA_DIR:-}" ] && [ -e "$STALE_METADATA_DIR" ] || return 0; for LOCK_METADATA in owner.token owner.pid owner.start; do rm -f "$STALE_METADATA_DIR/$LOCK_METADATA" 2>/dev/null || true; done; rmdir "$STALE_METADATA_DIR" 2>/dev/null || true; }
+rollback_publication_transaction() {
+  if [ -n "${STALE_QUARANTINE:-}" ] && [ -e "$STALE_QUARANTINE" ]; then
+    if [ -n "${STALE_METADATA_DIR:-}" ] && [ -e "$STALE_METADATA_DIR" ]; then
+      for LOCK_METADATA in owner.token owner.pid owner.start; do [ -e "$STALE_METADATA_DIR/$LOCK_METADATA" ] && mv "$STALE_METADATA_DIR/$LOCK_METADATA" "$STALE_QUARANTINE/$LOCK_METADATA" 2>/dev/null || true; done
+      rmdir "$STALE_METADATA_DIR" 2>/dev/null || true
+    fi
+    if [ -n "${NEW_LOCK_DIR:-}" ] && [ -e "$NEW_LOCK_DIR" ]; then rm -f "$NEW_LOCK_DIR/owner.token" "$NEW_LOCK_DIR/owner.pid" "$NEW_LOCK_DIR/owner.start" 2>/dev/null || true; rmdir "$NEW_LOCK_DIR" 2>/dev/null || true; fi
+    release_publication_lock
+    [ ! -e "$LOCK_DIR" ] && mv "$STALE_QUARANTINE" "$LOCK_DIR" 2>/dev/null || true
+  else
+    if [ -n "${NEW_LOCK_DIR:-}" ] && [ -e "$NEW_LOCK_DIR" ]; then rm -f "$NEW_LOCK_DIR/owner.token" "$NEW_LOCK_DIR/owner.pid" "$NEW_LOCK_DIR/owner.start" 2>/dev/null || true; rmdir "$NEW_LOCK_DIR" 2>/dev/null || true; fi
+    release_publication_lock
+  fi
+  PUBLICATION_TRANSACTION_ACTIVE=0
+}
 cleanup_article_locks() {
+  [ "${PUBLICATION_TRANSACTION_ACTIVE:-0}" -ne 1 ] || rollback_publication_transaction
+  cleanup_stale_metadata_temp
   release_publication_lock
   release_recovery_lock
 }
 if mkdir "$RECOVERY_LOCK_DIR" 2>/dev/null; then
   printf '%s' "$RECOVERY_LOCK_TOKEN" >"$RECOVERY_LOCK_OWNER"
-  write_lock_owner "$RECOVERY_LOCK_DIR"
+  write_lock_owner "$RECOVERY_LOCK_DIR" || { release_recovery_lock; echo "=== $(date '+%F %T %Z') article-daily TERMINAL — recovery owner write/validation failed ===" >>"$LOG"; exit 1; }
 else
   RECOVERY_SNAPSHOT="$(lock_identity "$RECOVERY_LOCK_DIR")"
   RECOVERY_MTIME="$(stat -f %m "$RECOVERY_LOCK_DIR" 2>/dev/null || echo 0)"
@@ -286,11 +312,19 @@ else
     exit 0
   fi
   printf '%s' "$RECOVERY_LOCK_TOKEN" >"$RECOVERY_LOCK_OWNER"
-  write_lock_owner "$RECOVERY_LOCK_DIR"
+  write_lock_owner "$RECOVERY_LOCK_DIR" || { release_recovery_lock; echo "=== $(date '+%F %T %Z') article-daily TERMINAL — recovery owner write/validation failed ===" >>"$LOG"; exit 1; }
 fi
 trap 'cleanup_article_locks' EXIT
-if mkdir "$LOCK_DIR" 2>/dev/null; then
-  write_lock_owner "$LOCK_DIR"
+if [ ! -e "$LOCK_DIR" ]; then
+  PUBLICATION_TRANSACTION_ACTIVE=1
+  DEFERRED_LOCK_SIGNAL=0; trap 'DEFERRED_LOCK_SIGNAL=143' TERM; trap 'DEFERRED_LOCK_SIGNAL=130' INT
+  NEW_LOCK_DIR="$(mktemp -d "$STATE_DIR/.article-daily.lockdir.new.XXXXXX")"; DEFERRED_LOCK_RC=$?; trap - TERM INT
+  if [ "$DEFERRED_LOCK_SIGNAL" -ne 0 ]; then rollback_publication_transaction; release_recovery_lock; exit "$DEFERRED_LOCK_SIGNAL"; fi
+  if [ "$DEFERRED_LOCK_RC" -ne 0 ] || [ -z "$NEW_LOCK_DIR" ]; then rollback_publication_transaction; release_recovery_lock; echo "=== $(date '+%F %T %Z') article-daily TERMINAL — publication staging allocation failed ===" >>"$LOG"; exit 1; fi
+  if ! write_lock_owner "$NEW_LOCK_DIR" || ! mv "$NEW_LOCK_DIR" "$LOCK_DIR" 2>/dev/null; then
+    rollback_publication_transaction; release_recovery_lock; echo "=== $(date '+%F %T %Z') article-daily TERMINAL — publication owner staging/reacquire failed ===" >>"$LOG"; exit 1
+  fi
+  PUBLICATION_TRANSACTION_ACTIVE=0
 else
   # stale-lock guard: a valid live owner always wins; a dead owner is quarantined
   # after start-token and directory-identity checks, regardless of lock age.
@@ -299,42 +333,55 @@ else
     echo "=== $(date '+%F %T %Z') article-daily SKIPPED — live publication owner ===" >>"$LOG"
     exit 0
   fi
-  if [ ! -s "$LOCK_DIR/owner.pid" ] || [ ! -s "$LOCK_DIR/owner.start" ]; then
-    release_recovery_lock
-    echo "=== $(date '+%F %T %Z') article-daily SKIPPED — publication owner identity unavailable ===" >>"$LOG"
-    exit 0
+  LOCK_OWNER_PID="$(cat "$LOCK_DIR/owner.pid" 2>/dev/null || true)"
+  case "$LOCK_OWNER_PID" in
+    ''|*[!0-9]*|0)
+      release_recovery_lock
+      echo "=== $(date '+%F %T %Z') article-daily TERMINAL — invalid or missing publication owner PID ===" >>"$LOG"
+      exit 1
+      ;;
+  esac
+  LEGACY_PID_ONLY=0; if [ ! -s "$LOCK_DIR/owner.start" ]; then
+    LEGACY_PID_ONLY=1
+    if kill -0 "$LOCK_OWNER_PID" 2>/dev/null; then
+      release_recovery_lock
+      echo "=== $(date '+%F %T %Z') article-daily TERMINAL — live PID-only publication owner is ambiguous ===" >>"$LOG"
+      exit 1
+    fi
   fi
     LOCK_SNAPSHOT="$(lock_identity "$LOCK_DIR")"
     LOCK_SNAPSHOT_NOW="$(lock_identity "$LOCK_DIR")"
     if [ -z "$LOCK_SNAPSHOT" ] || [ "$LOCK_SNAPSHOT" != "$LOCK_SNAPSHOT_NOW" ]; then
       release_recovery_lock
-      echo "=== $(date '+%F %T %Z') article-daily SKIPPED — stale publication lock identity changed ===" >>"$LOG"
-      exit 0
+      echo "=== $(date '+%F %T %Z') article-daily TERMINAL — stale publication lock identity changed ===" >>"$LOG"
+      exit 1
     fi
     STALE_QUARANTINE="$STATE_DIR/.article-daily.lockdir.stale.$$.$RANDOM"
-    if ! mv "$LOCK_DIR" "$STALE_QUARANTINE" 2>/dev/null; then
-      release_recovery_lock
-      echo "=== $(date '+%F %T %Z') article-daily SKIPPED — stale publication lock quarantine failed ===" >>"$LOG"
-      exit 0
-    fi
-    if [ "$(lock_identity "$STALE_QUARANTINE")" != "$LOCK_SNAPSHOT" ]; then
-      [ ! -e "$LOCK_DIR" ] && mv "$STALE_QUARANTINE" "$LOCK_DIR" 2>/dev/null || true
-      release_recovery_lock
-      echo "=== $(date '+%F %T %Z') article-daily SKIPPED — stale quarantine identity changed ===" >>"$LOG"
-      exit 0
-    fi
-    # claim-loop may leave an owner receipt in this shared lockdir.  Remove it
-    # only after the exact stale directory is quarantined; a replacement owner
-    # at the canonical path is never touched.
-    rm -f "$STALE_QUARANTINE/owner.token" "$STALE_QUARANTINE/owner.pid" "$STALE_QUARANTINE/owner.start" 2>/dev/null || true
-    if rmdir "$STALE_QUARANTINE" 2>/dev/null && mkdir "$LOCK_DIR" 2>/dev/null; then
-      write_lock_owner "$LOCK_DIR"
-    else
-      [ ! -e "$LOCK_DIR" ] && mv "$STALE_QUARANTINE" "$LOCK_DIR" 2>/dev/null || true
-      release_recovery_lock
-      echo "=== $(date '+%F %T %Z') article-daily SKIPPED — stale publication lock recovery failed for $LOCK_DIR ===" >>"$LOG"
-      exit 0
-    fi
+    NEW_LOCK_DIR=""
+    STALE_METADATA_DIR=""
+    fail_stale_publication_recovery() { release_recovery_lock; echo "=== $(date '+%F %T %Z') article-daily TERMINAL — stale publication lock recovery failed for $LOCK_DIR ===" >>"$LOG"; exit 1; }
+    fail_stale_publication_quarantine() { release_recovery_lock; echo "=== $(date '+%F %T %Z') article-daily TERMINAL — stale publication lock quarantine failed ===" >>"$LOG"; exit 1; }
+    [ ! -e "$STALE_QUARANTINE" ] || { release_recovery_lock; echo "=== $(date '+%F %T %Z') article-daily TERMINAL — stale publication lock quarantine failed ===" >>"$LOG"; exit 1; }
+    PUBLICATION_TRANSACTION_ACTIVE=1
+    [ "$LEGACY_PID_ONLY" -eq 1 ] && kill -0 "$LOCK_OWNER_PID" 2>/dev/null && { PUBLICATION_TRANSACTION_ACTIVE=0; release_recovery_lock; echo "=== $(date '+%F %T %Z') article-daily TERMINAL — live PID-only publication owner is ambiguous ===" >>"$LOG"; exit 1; }
+    if ! mv "$LOCK_DIR" "$STALE_QUARANTINE" 2>/dev/null; then rollback_publication_transaction; fail_stale_publication_quarantine; fi
+    if [ "$(lock_identity "$STALE_QUARANTINE")" != "$LOCK_SNAPSHOT" ]; then rollback_publication_transaction; fail_stale_publication_recovery; fi
+    DEFERRED_LOCK_SIGNAL=0; trap 'DEFERRED_LOCK_SIGNAL=143' TERM; trap 'DEFERRED_LOCK_SIGNAL=130' INT
+    NEW_LOCK_DIR="$(mktemp -d "$STATE_DIR/.article-daily.lockdir.new.XXXXXX")"; DEFERRED_LOCK_RC=$?; trap - TERM INT
+    if [ "$DEFERRED_LOCK_SIGNAL" -ne 0 ]; then rollback_publication_transaction; release_recovery_lock; exit "$DEFERRED_LOCK_SIGNAL"; fi
+    if [ "$DEFERRED_LOCK_RC" -ne 0 ] || [ -z "$NEW_LOCK_DIR" ]; then rollback_publication_transaction; fail_stale_publication_recovery; fi
+    if ! write_lock_owner "$NEW_LOCK_DIR"; then rollback_publication_transaction; fail_stale_publication_recovery; fi
+    if ! mv "$NEW_LOCK_DIR" "$LOCK_DIR" 2>/dev/null; then rollback_publication_transaction; fail_stale_publication_recovery; fi
+    DEFERRED_LOCK_SIGNAL=0; trap 'DEFERRED_LOCK_SIGNAL=143' TERM; trap 'DEFERRED_LOCK_SIGNAL=130' INT
+    STALE_METADATA_DIR="$(mktemp -d "$STATE_DIR/.article-daily.lockdir.metadata.XXXXXX")"; DEFERRED_LOCK_RC=$?; trap - TERM INT
+    if [ "$DEFERRED_LOCK_SIGNAL" -ne 0 ]; then rollback_publication_transaction; release_recovery_lock; exit "$DEFERRED_LOCK_SIGNAL"; fi
+    if [ "$DEFERRED_LOCK_RC" -ne 0 ] || [ -z "$STALE_METADATA_DIR" ]; then rollback_publication_transaction; fail_stale_publication_recovery; fi
+    for LOCK_METADATA in owner.token owner.pid owner.start; do
+      if [ -e "$STALE_QUARANTINE/$LOCK_METADATA" ] && ! mv "$STALE_QUARANTINE/$LOCK_METADATA" "$STALE_METADATA_DIR/$LOCK_METADATA" 2>/dev/null; then rollback_publication_transaction; fail_stale_publication_recovery; fi
+    done
+    if ! rmdir "$STALE_QUARANTINE" 2>/dev/null; then rollback_publication_transaction; fail_stale_publication_recovery; fi
+    PUBLICATION_TRANSACTION_ACTIVE=0
+    cleanup_stale_metadata_temp
 fi
 release_recovery_lock
 
