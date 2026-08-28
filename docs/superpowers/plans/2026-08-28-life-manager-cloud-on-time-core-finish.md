@@ -613,7 +613,7 @@ Fresh Sol checks durable dedupe, exact expiry, failed-send retry, link validatio
 
 **Ownership:** Primary only. No code change unless verification returns work to the owning Luna slice.
 
-- [ ] **Step 1: Install the exact dependency lock in the worktree**
+- [x] **Step 1: Install the exact dependency lock in the worktree**
 
 ```bash
 cd apps/life-manager
@@ -622,7 +622,7 @@ npm ci --ignore-scripts
 
 Expected: exit 0. ENOSPC or partial install is not a test failure and must be resolved before full verification.
 
-- [ ] **Step 2: Run the focused route/reminder/call group**
+- [x] **Step 2: Run the focused route/reminder/call group**
 
 ```bash
 node --test \
@@ -641,7 +641,7 @@ node --test \
 
 Expected: all tests PASS, zero skipped acceptance tests.
 
-- [ ] **Step 3: Run the focused onboarding/trial/billing group**
+- [x] **Step 3: Run the focused onboarding/trial/billing group**
 
 ```bash
 node --test \
@@ -661,7 +661,7 @@ bash test/postgres/lm-travel-log-legs.integration.sh
 
 Expected: all tests PASS.
 
-- [ ] **Step 4: Run full and static checks**
+- [x] **Step 4: Run full and static checks**
 
 ```bash
 npm test
@@ -673,7 +673,7 @@ gitleaks git . --log-opts="origin/main..HEAD" --redact=100 --no-banner
 
 Expected: exit 0 for every command; dependency diff empty; secret findings zero.
 
-- [ ] **Step 5: Fresh whole-slice Sol review**
+- [x] **Step 5: Fresh whole-slice Sol review**
 
 Fresh read-only Sol reviews `origin/main..HEAD` against AC-01–38, with emphasis on money loss, duplicate effects, tenant crossing, client-written truth, secret/PII logs, trial extension, and OpenClawMU/local scope creep. Critical/High must be zero.
 

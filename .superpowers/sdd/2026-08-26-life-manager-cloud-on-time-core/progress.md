@@ -264,3 +264,10 @@ Baseline: focused Life Manager suite 175/175 PASS.
 - Fix round 2 `cd6669dee`: test-only exact millisecond expiry claim→send and send-throw claim→send→unclaim. Focused 7/7, full Task 5 Node matrix 119/119, PostgreSQL PASS. Scoped fresh Sol re-review: both addressed, new breakage none, ship.
 - Production Supabase rollback-only leg preflight: existing rows/unique/RLS/other CHECK preserved; four allowed, unknown/duplicate rejected, constraint validated. Post-rollback official readback: fixture 0 and `telegram_t5_allowed=false` restored.
 - Task 13D code/preflight status: complete at `cd6669dee`. Both trial and leg migrations remain unapplied until controlled Task 6 release.
+
+## Task 13E integrated verification and final review
+
+- Clean lock install completed with 452 packages and `viem@2.55.10` read back. Focused route/reminder/call is 154/154; focused onboarding/trial/billing is 181/181; both disposable PostgreSQL migrations pass with grant-once/ACL/paid-write and four-leg/row/unique/RLS preservation evidence.
+- Full `npm test`, `git diff --check`, dependency diff, and gitleaks all pass. Existing lock warnings remain unchanged; no dependency or secret change was introduced.
+- Whole-slice review found Telegram unknown-delivery replay risk, previous-event outbound misclassification, and legacy phone/pay truth gaps. Five TDD fix rounds closed them with durable claim retention, exact target-go/previous-return association, fail-closed read errors, core-ready legacy suppression, and truthful optional-phone `/start` copy.
+- Final scoped review at `19dc013b9` is ship with Critical/High zero and no findings. Primary focused readback is 84/84. Production migrations remain unapplied; rebase/PR and exact-SHA release are Task 6 Steps 6–7.
