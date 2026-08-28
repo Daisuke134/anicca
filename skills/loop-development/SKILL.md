@@ -39,6 +39,10 @@ locked worktree -> focused test -> merged main -> immutable release -> lm-loop a
 - Model work goes through `runtime/agent-runner/agent_runner.py` with a task
   class. Do not select provider credentials, `CODEX_HOME`, auth files, or a
   direct provider API inside loop code.
+- Preserve the working interpreter/runtime named by the old loaded argv. Never
+  replace a loop-specific venv with the control-plane Python merely because the
+  script path is portable; generate the command, then import-smoke its runtime
+  dependency on the target host before apply.
 - Do not create production plists, loop installers, release watchers, or raw
   mutating `launchctl` calls. Use `lm-loop apply/start/stop/restart`. Never
   restart another loop's process, browser, profile, or state owner.
@@ -79,7 +83,8 @@ locked worktree -> focused test -> merged main -> immutable release -> lm-loop a
   installed-retired 0.
 - Active entrypoints have no legacy installer, managed raw launchd mutation,
   direct provider selection, worktree source, or release-local mutable state.
-- Dependency import smoke tests pass. Runtime events validate with secret
+- Dependency import smoke tests pass through the exact interpreter returned by
+  the generated command. Runtime events validate with secret
   violations 0. Process success never substitutes for payment, message,
   publication, application, or trade readback.
 - Cleanup replay has errors 0 and protected deletions 0 and preserves every

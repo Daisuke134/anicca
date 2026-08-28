@@ -39,6 +39,23 @@ The 31 failures are visible business-loop repair work, not control-plane
 successes. The control plane reports them through `status/watch`; it does not
 silently count them healthy.
 
+## Post-migration repair cursor
+
+- First repaired loop: `affiliate-browser`. The migration preserved its release
+  script but replaced the working CloakBrowser venv with the generic control
+  Python, producing `ModuleNotFoundError: cloakbrowser` every KeepAlive pass.
+- PR #2946 restores the existing shared CloakBrowser interpreter for the three
+  Affiliate browser commands. Exact generated-command import smoke passes.
+- PR #2947 replaces recursive `lsof +D` release protection, which timed out at
+  30 seconds on dependency-complete releases, with a system open-file inventory
+  filtered to release paths. Live GC completes in 3.76 seconds with errors 0
+  and protected deletions 0.
+- Production applies only `affiliate-browser` at release
+  `8efb18403348fa15ae9c41c3ee4bd32df9c58138`; the other 166 labels remain at
+  their prior release. After the natural KeepAlive retry, PID 97698 remains
+  stable beyond the 30-second throttle and CDP 9324 returns Chrome version and
+  WebSocket endpoint readback. `doctor` remains PASS.
+
 ## Migration and incident proof
 
 - Every label moved separately with generated plist, immutable entrypoint,
