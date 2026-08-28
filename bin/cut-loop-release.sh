@@ -119,10 +119,10 @@ mkdir -p "$DEST/state/effective-cron"
 chmod -R a-w "$DEST" 2>/dev/null || true
 chmod -R u+w "$DEST/state" 2>/dev/null || true
 
-# rename(2) over an existing symlink is atomic, so no pass can ever observe a missing `current`.
-# -h is load-bearing: without it mv follows `current` into the directory it points at and creates
-# the new link INSIDE the old release instead of replacing it.
-ln -sfn "$DEST" "$CURRENT.swap" && mv -fh "$CURRENT.swap" "$CURRENT" || die "could not move the current symlink"
+# Use the same host-wide owner lock as `lm-loop apply` while replacing `current` atomically.
+PYTHONPATH="$REPO_ROOT${PYTHONPATH:+:$PYTHONPATH}" \
+  python3 -c 'import sys; from pathlib import Path; from runtime.loop.lm_loop import activate_current; activate_current(Path(sys.argv[1]), Path(sys.argv[2]), Path(sys.argv[3]))' \
+  "$CURRENT" "$DEST" "$LOOPS_ROOT/.apply.lock" || die "could not activate current release"
 
 # Keep a few older releases so rollback is a symlink move rather than a rebuild.
 prune_releases_after "$KEEP"

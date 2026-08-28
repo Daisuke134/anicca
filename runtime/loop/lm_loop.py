@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+from contextlib import contextmanager
+import fcntl
 import json
 import os
 import plistlib
@@ -167,34 +169,81 @@ def _safe_launchctl(executable: Path, args: list[str]) -> tuple[int, str]:
     return result.returncode, result.stdout + result.stderr
 
 
+@contextmanager
+def _apply_lock(current: Path, lock_path: Path | None):
+    lock_path = Path(lock_path or current.parent / ".apply.lock").expanduser()
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    lock_fd = os.open(lock_path, os.O_RDWR | os.O_CREAT, 0o600)
+    try:
+        os.fchmod(lock_fd, 0o600)
+        with os.fdopen(lock_fd, "a+") as owner_lock:
+            lock_fd = -1
+            try:
+                fcntl.flock(owner_lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError as exc:
+                raise RuntimeError("production apply is already owned") from exc
+            yield
+    finally:
+        if lock_fd >= 0:
+            os.close(lock_fd)
+
+
+def activate_current(current: Path, release_root: Path,
+                     lock_path: Path | None = None) -> None:
+    current = Path(current).expanduser()
+    release_root = Path(release_root).expanduser()
+    with _apply_lock(current, lock_path):
+        release_root = release_root.resolve(strict=True)
+        if not release_root.is_dir():
+            raise ValueError("release root is not a directory")
+        current.parent.mkdir(parents=True, exist_ok=True)
+        swap = current.with_name(current.name + ".swap")
+        swap.unlink(missing_ok=True)
+        swap.symlink_to(release_root)
+        try:
+            os.replace(swap, current)
+        finally:
+            swap.unlink(missing_ok=True)
+
+
 def apply_live(release_root: Path, agents_dir: Path, launchctl_safe: Path,
-               target: str | None = None) -> list[dict]:
+               target: str | None = None, *, current: Path | None = None,
+               lock_path: Path | None = None) -> list[dict]:
     release_root = release_root.resolve()
-    registry = json.loads((release_root / "config/loop-registry.json").read_text())
-    manifest = json.loads((release_root / "RELEASE.json").read_text())
-    release_sha = manifest.get("sha")
-    plan = apply_registry(registry, release_root, release_sha, lambda item: item, target=target)
-    preflight_rc, detail = _safe_launchctl(launchctl_safe, ["preflight"])
-    if preflight_rc:
-        raise RuntimeError(f"launchctl-safe preflight failed: {detail.strip()}")
-    results = []
-    for item in plan:
-        target = agents_dir / f"{item['label']}.plist"
-        if target.is_file() and target.read_bytes() == item["plist_bytes"]:
-            rc, printed = _safe_launchctl(
-                launchctl_safe, ["print", f"gui/{os.getuid()}/{item['label']}"])
-            from runtime.loop.lm_loop_apply import _loaded_arguments
-            loaded = _loaded_arguments(printed) if rc == 0 else []
-            if loaded == item["expected_arguments"]:
-                results.append({"ok": True, "label": item["label"],
-                                "loaded_arguments": loaded, "release_sha": release_sha,
-                                "changed": False})
-                continue
-        result = install_one(
-            item, target, lambda args: _safe_launchctl(launchctl_safe, args))
-        result["changed"] = True
-        results.append(result)
-    return results
+    current = Path(current or "~/loops/current").expanduser()
+    with _apply_lock(current, lock_path):
+        def assert_current() -> None:
+            if current.resolve(strict=True) != release_root:
+                raise RuntimeError("apply release is not current")
+
+        assert_current()
+        registry = json.loads((release_root / "config/loop-registry.json").read_text())
+        manifest = json.loads((release_root / "RELEASE.json").read_text())
+        release_sha = manifest.get("sha")
+        plan = apply_registry(registry, release_root, release_sha, lambda item: item, target=target)
+        preflight_rc, detail = _safe_launchctl(launchctl_safe, ["preflight"])
+        if preflight_rc:
+            raise RuntimeError(f"launchctl-safe preflight failed: {detail.strip()}")
+        results = []
+        for item in plan:
+            assert_current()
+            target = agents_dir / f"{item['label']}.plist"
+            if target.is_file() and target.read_bytes() == item["plist_bytes"]:
+                rc, printed = _safe_launchctl(
+                    launchctl_safe, ["print", f"gui/{os.getuid()}/{item['label']}"])
+                from runtime.loop.lm_loop_apply import _loaded_arguments
+                loaded = _loaded_arguments(printed) if rc == 0 else []
+                if loaded == item["expected_arguments"]:
+                    results.append({"ok": True, "label": item["label"],
+                                    "loaded_arguments": loaded, "release_sha": release_sha,
+                                    "changed": False})
+                    continue
+            assert_current()
+            result = install_one(
+                item, target, lambda args: _safe_launchctl(launchctl_safe, args))
+            result["changed"] = True
+            results.append(result)
+        return results
 
 
 def main(argv: list[str] | None = None) -> int:
