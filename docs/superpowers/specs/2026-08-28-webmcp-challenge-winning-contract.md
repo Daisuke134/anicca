@@ -214,7 +214,7 @@ Primary sources:
 | Field | Final value / creation gate | Current status | Final gate |
 |---|---|---|---|
 | Project name | `Life Manager` | fixed | Devpost readback matches |
-| Tagline | `An open-source AI money printer that finds paid opportunities, does the work, and asks you only for the human 1%.` | fixed draft | authenticated form review |
+| Tagline | `An open-source, 24/7 AI money printer that finds paid opportunities, does the work, and asks you only for the human 1%.` | fixed draft | authenticated form review |
 | Live URL | `https://aniccaai.com/lm` | reachable landing only | Work board deploy SHA + zero-login E2E + `registerTool()` discovery |
 | Public repository | `https://github.com/Daisuke134/life-manager` | public | challenge source/instructions + clean clone verified |
 | OSS license | `https://github.com/Daisuke134/life-manager/blob/main/LICENSE` | GitHub detects MIT | license visible in submitted repo |
@@ -370,6 +370,8 @@ Problem:
 Impact proof:
 
 - one real public opportunityを発見・qualify・claim
+- 24/7 scoutがpageを閉じても複数のnatural cycleを継続し、新規opportunityをdedupe付きで追加
+- 複数opportunity/workroomが`Working`、`Needs You`、`Waiting`等の異なるstateで同時に存在
 - workroom progress/proof before/after
 - human task数とmechanical stepsの削減
 - complete real work/application + provider readback
@@ -382,6 +384,7 @@ Impact proof:
 必要証拠:
 
 - 一件の短いreal bounty/gigを、発見からwork、human handoff、delivery、official readbackまで同じworkroomで閉じる
+- recurring scoutがその一件の前後にも止まらず、次のopportunityを発見・qualifyする
 - general workroomが複数turnを継続し、proof付きでterminalへ進む
 - genuine human authority/identity/actionとagent-only executionを同じworkroomで統合する
 - state進行により新しいtoolsがunlockされる
@@ -424,7 +427,7 @@ Visual surfaceは変更可能である。Life Managerの中核architectureを置
 
 ### 8.1 One sentence
 
-**Life Manager is an open-source AI money printer that finds paid opportunities, does the work, submits or delivers it, and asks you only for the human 1% it cannot or should not perform.**
+**Life Manager is an open-source, 24/7 AI money printer that continuously finds paid opportunities, does the work, submits or delivers it, and asks you only for the human 1% it cannot or should not perform.**
 
 ### 8.2 Product boundary
 
@@ -432,9 +435,9 @@ Visual surfaceは変更可能である。Life Managerの中核architectureを置
 
 既存Mercor、Coconala、TaskMarket等のcodeは、general runtimeが再利用できるtools、browser state、evidence、historyとして段階的に吸収する。Core orchestratorは「MercorならMercor loop」のようなprovider分岐を持たない。Modelが現在のopportunityとenvironment feedbackを読み、利用可能なtoolsから次の行動を選ぶ。
 
-### 8.3 Canonical judge demo — one real earning opportunity
+### 8.3 Canonical judge demo — one traced opportunity inside a 24/7 product
 
-製品はgeneral Money Printerだが、primary demoは一件の短いreal bountyまたはgigだけをend-to-endで閉じる。全source、全work typeを同時実装しない。デモ収録時にlive、eligible、未claim、30分〜半日で完了可能、official readback pathあり、genuine human-only boundaryが一件あるopportunityを固定する。
+製品runtimeは24/7でscout、qualify、claim、work、human handoff、delivery、reconciliationを何度も繰り返す。三分動画では理解可能にするため、その稼働中productから一件の短いreal bountyまたはgigを選び、end-to-end traceとして追う。一件を処理して停止するdemo executorやone-shot POCは作らない。全source、全work typeを同時実装せず、デモ収録時にlive、eligible、未claim、30分〜半日で完了可能、official readback pathあり、genuine human-only boundaryが一件あるopportunityを固定する。
 
 Canonical flowは七段だけである。
 
@@ -448,7 +451,7 @@ Canonical flowは七段だけである。
 
 WebMCPの主役は、対応agentと人間が同じMoney Printer Dashboardを共有する点である。Agentはtyped toolsでopportunity、workroom、human task、artifact、receiptを読み書きし、人は`Needs You`だけを処理する。WebMCPを24/7 background schedulerとは説明しない。Background continuationはLife Manager runtimeが担う。
 
-WebMCP Challenge応募自体をMoney Printerへ実行させない。Hackathon応募は通常の開発・提出processで行い、Money Printerのdemoとclaimは一件の短いreal bounty/gigだけで閉じる。数日規模のlong-horizon executionは将来拡張であり、今回のDone条件にしない。
+WebMCP Challenge応募自体をMoney Printerへ実行させない。Hackathon応募は通常の開発・提出processで行う。Money Printerのprimary traceは一件の短いreal bounty/gigで閉じるが、product evidenceには24/7 recurring scout、複数cycle、複数opportunity、dedupe、restart recoveryを含める。数日規模のlong-horizon executionは将来拡張であり、今回のDone条件にしない。
 
 ### 8.3A Next vertical / fallback — Job Hunter
 
@@ -599,13 +602,13 @@ Workroomのisolationはopportunity、tenant、credential、effectの交差を防
 
 最初のimplementation sliceはgeneral architectureのまま、低risk・短時間のreal opportunitiesで実証する。
 
-1. X/Web/GitHubのうちapproved public source一つからopportunityを発見
+1. Xと、GitHubまたはstructured public bounty platformの最低二つのlive sourceからopportunityを継続発見
 2. 30分〜半日で完了可能なbounty/taskを一件選ぶ
 3. persistent per-opportunity workroomでagentが実作業する
 4. 必要ならhuman taskを一件出す
 5. 実提出とofficial readbackを閉じる
 6. costとverified resultをDashboardへ表示する
-7. official readback、cost、verified resultをDashboardで確認する
+7. terminal後もscoutが次cycleへ進み、次のopportunityをdedupe付きで追加する
 
 製品を短期task専用にしない。短いopportunityでorchestrator、continuation、human handoff、effect、proofを先に実証し、その同じcontractで長い仕事へ進む。
 
@@ -646,6 +649,22 @@ flowchart LR
 - **WebMCP:** background agentそのものではなく、同じdomain functionsとversioned stateを人と対応agentへ公開するcontrol surfaceである
 
 一つのopportunityにつき一つのisolated workroomを持つ。Orchestratorはbounded concurrencyでclaimし、agent turn終了後もterminal proofがなければ同じthreadを続行する。`NEEDS_HUMAN`ではrunを止めるがworkroomを捨てず、人間のexact answerが記録されると再開する。External effectがunknownなら再送せずreconciliationへ進む。
+
+### 10.7 24/7 product gate — POCとの境界
+
+Working productは、一件のscripted walkthroughが成功しただけでは成立しない。次をすべて実測する。
+
+- Browser pageやWebMCP sessionを閉じてもhosted scout/orchestratorが稼働を続ける
+- 最低24時間、少なくとも3回のnatural scheduled scout cycleが同じdeployed releaseからterminal eventを出す
+- 最低二つのlive sourceをpollし、複数のreal opportunityを発見する
+- 同じopportunityを再発見してもstable source identityで重複workroomを作らない
+- bounded concurrencyで複数workroomを保持し、一件の終了後も次のopportunityへ進む
+- runtime restart後もactive workroom、human task、effect fence、receiptを復元する
+- `NEEDS_HUMAN`回答後に同じworkroom/threadから自動再開する
+- transient failureはbackoffして再評価し、unknown external effectは再送しない
+- Dashboardがcycle history、active/blocked/waiting、cost、official receipt、verified moneyをlive readbackする
+
+Judge videoはこの継続productの一件を追う。READMEとDashboardでは24時間のcycle history、複数opportunity、restart recoveryを追加証拠として見せる。Guest resetはjudgeの操作stateだけを戻し、production scoutやactual receiptsをfakeに置き換えない。
 
 ---
 
@@ -775,7 +794,7 @@ Recording assets:
 
 ### Project summary
 
-**Life Manager is an open-source AI money printer that discovers paid opportunities, does the work, submits or delivers it, and tracks the verified outcome. Its agent handles the routine ninety-nine percent and asks a person only for the one percent that genuinely requires human identity, authority, judgment, payment information, or real-world action.**
+**Life Manager is an open-source, 24/7 AI money printer that continuously discovers paid opportunities, does the work, submits or delivers it, and tracks the verified outcome. Its agent handles the routine ninety-nine percent and asks a person only for the one percent that genuinely requires human identity, authority, judgment, payment information, or real-world action.**
 
 ### Why this use case is a strong fit for WebMCP
 
@@ -830,7 +849,10 @@ The initial product proves the provider-neutral runtime on one real short bounty
 - [ ] public live URL
 - [ ] zero-login guest account
 - [ ] guest/actual runが同一build SHA、agent entrypoint、domain transition function、workroom schemaを使う。外部credential/submit authorityだけが異なる
-- [ ] one approved public sourceを実検索し、stable opportunityとsource readbackを作る
+- [ ] X + one structured public bounty/GitHub sourceを24/7 scoutする
+- [ ] same deployed releaseから24時間・3回以上のnatural scout cycle receipt
+- [ ] multiple real opportunities + source-level dedupe readback
+- [ ] multiple concurrent workrooms + restart recovery
 - [ ] normal browser human UI
 - [ ] ChatGPT built-in browser WebMCP E2E
 - [ ] Chrome WebMCP E2E
@@ -899,15 +921,15 @@ The initial product proves the provider-neutral runtime on one real short bounty
 | job dashboardに見える | status columnsだけならWebMCP不要 | live agent activity、human task→continuation、retry、proof、moneyを主役にする |
 | Devpost helper pluginと近い | official pluginもdiscover/build/submitを支援する | hackathon helperではなく、短期real bounty/gigを閉じ、同じcontractで長期workへ拡張できるarchitectureを示す |
 | autonomous earningとWebMCPが矛盾 | WebMCPはpage-localで24/7 watcherではない | background loopとvisible collaboration surfaceを明確に分ける |
-| scope過大 | 全source、全work type、全payment railを一週間で閉じられない | general architectureを保ち、短期real opportunity一件だけを深く閉じる |
+| scope過大 | 全source、全work type、全payment railを一週間で閉じられない | 二つのlive sourceと24/7 recurring coreを完成させ、動画では短期real opportunity一件を深く追う |
 | real external outcomeがない | dashboardだけではeconomic impactが弱い | public opportunityの実提出・納品とprovider official readbackを使う |
 | safetyが弱い | agentが勝手に応募・送金できる | effect fence、exact packet、idempotency、official readback、uncertain quarantine |
 | 美しさでcreative appsに負ける | workbenchは地味 | workroomが自律進行し、人間taskで止まり、回答後に再開するmotion/state changeを磨く |
 
 ### Best / Base / Worst
 
-- **Best:** 4軸全証拠、one real earning opportunity、real ChatGPT E2E、top 10競争力
-- **Base:** zero-login complete product、opportunity→workroom→human task→proofが安定し、valid submissionとして強い
+- **Best:** 4軸全証拠、24/7 multi-cycle product、one real earning outcome、real ChatGPT E2E、top 10競争力
+- **Base:** zero-login complete product、recurring scout、multiple workrooms、opportunity→human task→proofが安定し、valid submissionとして強い
 - **Worst:** ChatGPT rollout差があってもChrome/WebMCP inspectorでworking E2Eを示し、Stage Oneを落とさない
 
 ### 棄却案の最強論拠
@@ -925,7 +947,7 @@ Judgesがeconomic autonomyより安全で楽しいcreative collaborationを好�
 このspec承認後に`writing-plans`で実装planへ分解する。順序は次を超えない。
 
 1. judge story + one-screen wireframe
-2. one approved public source scout + stable opportunity/source readback
+2. X + one structured public sourceのrecurring scout、dedupe、cycle history
 3. versioned opportunity/workroom state + public guest opportunity
 4. human UI using shared domain functions
 5. inspect/control/artifact WebMCP tools
