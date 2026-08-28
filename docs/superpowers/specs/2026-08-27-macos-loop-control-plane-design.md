@@ -293,14 +293,21 @@ Ordered operational TODO:
    apply only that label, and verify stable PID plus CDP 9324 readback. PRs
    #2946, #2947, and #2949 contain the code, release-GC prerequisite, evidence,
    and permanent skill rule.
-2. ⏳ Repair `agent-economy-loop`, the first terminal-fail/loaded-idle row.
+2. ⏳ Restore clean inventory: classify and register or retire the running
+   unmanaged label `ai.anicca.provision-browser.tiktok.anicca`; `doctor` must
+   return unmanaged 0 again without stopping its active browser blindly.
+3. ⏳ Consolidate marketplace ownership. CrowdWorks has four acknowledged
+   external labels and all four are not loaded. The two legacy Upwork labels
+   are retired and not loaded. They are not yet managed/on through the 167-row
+   control-plane table.
+4. ⏳ Repair `agent-economy-loop`, the first terminal-fail/loaded-idle row.
    Diagnose its latest event and log before changing code; preserve every
    sibling label and external effect fence.
-3. ⏳ Continue the remaining 49 terminal-fail/non-running rows strictly in
+5. ⏳ Continue the remaining 49 terminal-fail/non-running rows strictly in
    table order, one locked worktree and one production label at a time.
-4. ⏳ Classify the 26 rows without terminal events as cadence-not-yet-due,
+6. ⏳ Classify the 26 rows without terminal events as cadence-not-yet-due,
    long-running, or missing event wiring; do not count absence as success.
-5. ⏳ Track repo-wide nonrequired security-CI debt separately from loop health:
+7. ⏳ Track repo-wide nonrequired security-CI debt separately from loop health:
    OSS boundary, PII gate, Python syntax, and dependency audit.
 
 ### TODO 1 execution state
