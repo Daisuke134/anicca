@@ -14,7 +14,7 @@ from pathlib import Path
 
 from runtime.loop.loop_cleanup import cleanup_run_root
 from runtime.loop.macos_loop_registry import validate_registry
-from runtime.loop.runtime_event import append_runtime_event, build_runtime_event
+from runtime.loop.runtime_event import append_runtime_event, build_runtime_event, build_runtime_start_event
 
 
 def prepare_loop_run(registry: dict, loop_id: str, release_root: Path, *,
@@ -94,8 +94,17 @@ def main(argv: list[str] | None = None) -> int:
                               "release_sha": manifest["sha"], **cleanup})
     except (OSError, ValueError, json.JSONDecodeError) as error:
         print(f"lm-loop-run: {error}", file=sys.stderr); return 78
-    return_code = _run_entrypoint(command)
     run_id = os.environ.get("LIFE_MANAGER_RUN_ID") or f"{time.time_ns():x}-{os.getpid()}"
+    event_path = Path(os.path.expanduser(entry["state_root"])) / "events.jsonl"
+    try:
+        append_runtime_event(event_path, build_runtime_start_event(
+            loop_id=loop_id, domain=entry["domain"], run_id=run_id,
+            release_sha=manifest["sha"], provider=entry["provider_route"],
+            profile_alias=None, effect_class=entry["effect_class"],
+        ))
+    except (OSError, ValueError) as error:
+        print(f"lm-loop-run: start event failed: {error}", file=sys.stderr)
+    return_code = _run_entrypoint(command)
     try:
         event = build_runtime_event(
             loop_id=loop_id, domain=entry["domain"], run_id=run_id,
@@ -105,7 +114,7 @@ def main(argv: list[str] | None = None) -> int:
             blocker=None if return_code == 0 else f"entrypoint_exit_{return_code}",
             evidence_scheme="lm-loop",
         )
-        append_runtime_event(Path(os.path.expanduser(entry["state_root"])) / "events.jsonl", event)
+        append_runtime_event(event_path, event)
     except (OSError, ValueError) as error:
         print(f"lm-loop-run: terminal event failed: {error}", file=sys.stderr)
     return return_code

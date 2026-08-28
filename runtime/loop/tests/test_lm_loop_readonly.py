@@ -83,6 +83,16 @@ class LmLoopReadonlyTest(unittest.TestCase):
             (root / "events.jsonl").write_text('{"status":"pass","effect_status":"verified"}\n')
             self.assertIsNone(_last_event(str(root)))
 
+    def test_last_event_filters_shared_state_by_loop_id(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            rows = [
+                {"version":1,"event_id":"a"*24,"timestamp":"2026-08-28T00:00:00Z","loop_id":"a","domain":"system","run_id":"run-a","phase":"report","status":"pass","release_sha":"b"*40,"provider":"deterministic","profile_alias":None,"effect_class":"none","effect_status":"not_applicable","blocker":None,"evidence_refs":["lm-loop://a/run-a/summary.json"]},
+                {"version":1,"event_id":"c"*24,"timestamp":"2026-08-28T00:01:00Z","loop_id":"b","domain":"system","run_id":"run-b","phase":"report","status":"fail","release_sha":"b"*40,"provider":"deterministic","profile_alias":None,"effect_class":"none","effect_status":"not_applicable","blocker":"entrypoint_exit_1","evidence_refs":["lm-loop://b/run-b/summary.json"]},
+            ]
+            (root / "events.jsonl").write_text("\n".join(json.dumps(x) for x in rows) + "\n")
+            self.assertEqual(_last_event(str(root), "a")["status"], "pass")
+
     def test_installed_release_uses_full_sha_from_generated_plist(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "job.plist"

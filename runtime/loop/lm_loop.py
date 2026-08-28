@@ -98,7 +98,7 @@ def _launchctl(*args: str) -> str:
     return result.stdout
 
 
-def _last_event(state_root: str) -> dict | None:
+def _last_event(state_root: str, loop_id: str | None = None) -> dict | None:
     path = Path(os.path.expanduser(state_root)) / "events.jsonl"
     try:
         lines = path.read_text(encoding="utf-8").splitlines()
@@ -109,6 +109,10 @@ def _last_event(state_root: str) -> dict | None:
             value = json.loads(line)
             validate_runtime_event(value)
         except (json.JSONDecodeError, ValueError):
+            continue
+        if loop_id is not None and value.get("loop_id") != loop_id:
+            continue
+        if value.get("status") == "running":
             continue
         return value
     return None
@@ -149,7 +153,7 @@ def collect_live(registry: dict) -> tuple[dict, dict, dict, set[str], set[str]]:
     for loop_id, entry in registry["loops"].items():
         label = entry["label"]
         releases[label] = _release_from_plist(plist_dir / f"{label}.plist")
-        event = _last_event(entry["state_root"])
+        event = _last_event(entry["state_root"], loop_id)
         if event:
             events[loop_id] = event
     return loaded, disabled, events, releases, installed

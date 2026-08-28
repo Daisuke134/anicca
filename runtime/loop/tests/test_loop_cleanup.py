@@ -157,6 +157,8 @@ class LoopCleanupTest(unittest.TestCase):
                 if pid_file.exists():break
                 time.sleep(0.02)
             grandchild=int(pid_file.read_text())
+            start_event=json.loads((home/'state/events.jsonl').read_text().splitlines()[-1])
+            self.assertEqual(start_event['status'],'running')
             wrapper.terminate();wrapper.wait(timeout=5);time.sleep(0.1)
             with self.assertRaises(ProcessLookupError):
                 os.kill(grandchild,0)
