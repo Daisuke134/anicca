@@ -15,10 +15,11 @@ def command_for(loop_id: str, root: Path, home: Path) -> list[str]:
     writer = root / "skills/writer-agent/scripts"
     writer_state = home / ".local/state/life-manager/writer"
     python = sys.executable
+    cloak_python = str(home / ".openclaw/skills/_shared/venv-cloak/bin/python")
     fixed = {
-        "affiliate-browser": [python, str(affiliate_browser)],
-        "affiliate-impact-browser": [python, str(affiliate_browser)],
-        "affiliate-x-browser": [python, str(affiliate_browser)],
+        "affiliate-browser": [cloak_python, str(affiliate_browser)],
+        "affiliate-impact-browser": [cloak_python, str(affiliate_browser)],
+        "affiliate-x-browser": [cloak_python, str(affiliate_browser)],
         "affiliate-composition": [str(affiliate), "compose", "wake"],
         "affiliate-loop": [str(affiliate), "loop", "wake"],
         "affiliate-source-refresh": [str(affiliate), "sources", "wake"],
