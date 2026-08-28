@@ -4,17 +4,22 @@
 
 この順序がWriterの現在の実行cursorである。後続項目は前項のreceiptなしに開始しない。
 
-- [ ] W0 stale publication lock互換を修復する。`owner.pid`だけの旧lockについて、実PID不在、start token取得不能、
+- [x] W0 stale publication lock互換を修復する。`owner.pid`だけの旧lockについて、実PID不在、start token取得不能、
       directory identity不変を確認した場合だけquarantineし、新lockを取得する。`identity unavailable`を成功扱いの
-      exit 0にせずterminal failure receiptへ残す。
-- [ ] W1a `lm-loop doctor all`と`lm-loop status all`で全loopのlabel、release、argv、state root、terminal receiptをbefore保存する。
-- [ ] W1b current `origin/main`からWriter修復を含むimmutable releaseを作る。
-- [ ] W1c `LIFE_MANAGER_APPLY_TARGET=article-daily`だけをapplyし、release SHA、argv、state root、terminal receiptをreadbackする。
-- [ ] W1d 同じreleaseから`article-resume`だけをtarget applyして同じ項目をreadbackする。
-- [ ] W1e 同じreleaseから`article-healthcheck`だけをtarget applyして同じ項目をreadbackする。
-- [ ] W1f `lm-loop doctor all`と`lm-loop status all`をafter保存し、W1aとの差分がWriter 3 labelだけで、
+      exit 0にせずterminal failure receiptへ残す。完了: PR #2952、21 lock cases PASS、production legacy lock回収。
+- [x] W1a `lm-loop doctor all`と`lm-loop status all`で全loopのlabel、release、argv、state root、terminal receiptをbefore保存する。
+- [x] W1b current `origin/main`からWriter修復を含むimmutable releaseを作る。完了release=`edcc3577`。
+- [x] W1c `LIFE_MANAGER_APPLY_TARGET=article-daily`だけをapplyし、release SHA、argv、state root、terminal receiptをreadbackする。
+- [x] W1d 同じreleaseから`article-resume`だけをtarget applyして同じ項目をreadbackする。
+- [x] W1e 同じreleaseから`article-healthcheck`だけをtarget applyして同じ項目をreadbackする。
+- [x] W1f `lm-loop doctor all`と`lm-loop status all`をafter保存し、W1aとの差分がWriter 3 labelだけで、
       sibling loopのrelease/state/plist/argv変更0であることを証明する。自然wakeで進んだsibling receiptは同じownerの
-      valid terminal advancementとして分離し、停止・失敗・重複作用へのregressionがないことを確認する。
+      valid terminal advancementとして分離し、停止・失敗・重複作用へのregressionがないことを確認する。完了:
+      doctor hash同一、167 loop中release差分はWriter 3件だけ、3件とも新SHAで自然terminal PASS。
+- [ ] W1g 未完prepublication runをprunerから保護する。inner provider rc=1の`20260828-043519`が同じpassで
+      `deleted`になった再現をREDとし、同じrunのgeneration state・prompt・artifactをresume可能なまま保持する。
+- [ ] W1h `article-daily.sh`のinner rc=1をruntime terminal PASSへ変換しない。外部作用0を保持したまま、exact
+      release/run/error classをterminal failure eventへ記録し、launchd process resultとbusiness effectを分離する。
 - [ ] W2 installed loopの1回のwakeで新しいsource articleと記事固有のheadlineを生成する。OpenAI Image APIの
       `model=gpt-image-2-2026-04-21`、x-request-id、request model、prompt/response/file SHA、dimensions、alt、rights receiptを保存する。
 - [ ] W3 W2のNote JAだけをprovider-native readbackし、title、body、owner、headline、paywall、URLを確認する。
