@@ -378,8 +378,15 @@ recreator. Completed items are not part of the remaining queue.
    external-effect schedulers read back false. Do not claim every private Dais
    loop is portable; unsupported or unconfigured capabilities remain
    explicitly off.
-5. ⏳ Track repo-wide nonrequired security-CI debt separately from loop health:
-   OSS boundary, PII gate, Python syntax, and dependency audit.
+5. ✅ Track repo-wide nonrequired security-CI debt separately from loop health.
+   Latest main measures OSS self-contained boundary 336 findings (stale source
+   root and absorbed-source inventories), PII shape gate 28 redacted findings,
+   Python syntax failures 0, and production dependency audit 24 findings (17
+   low, 2 moderate, 5 high, 0 critical). The high findings are transitive
+   OpenTelemetry, `brace-expansion`, and `fast-uri` paths. These are a separate
+   security/consolidation backlog; they do not change Account auto, local
+   supervisor health, or external-effect receipts, and are not silenced with a
+   blanket allowlist or breaking `npm audit fix --force`.
 
 ### TODO 1 execution state
 
