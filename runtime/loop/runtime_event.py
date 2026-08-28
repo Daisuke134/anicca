@@ -18,7 +18,7 @@ FIELDS = {
 }
 DOMAINS = {"physical", "mental", "financial", "earn", "growth", "system"}
 PHASES = {"plan", "execute", "reconcile", "verify", "report"}
-STATUSES = {"pass", "fail", "blocked"}
+STATUSES = {"running", "pass", "fail", "blocked"}
 EFFECTS = {"none", "publish", "message", "money", "application", "trade", "account_mutation"}
 EFFECT_STATUSES = {"not_applicable", "unknown", "planned", "started", "verified", "failed", "reconciled"}
 SAFE_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,127}\Z")
@@ -92,6 +92,30 @@ def build_runtime_event(*, loop_id: str, domain: str, run_id: str, release_sha: 
         "evidence_refs": [f"{evidence_scheme}://{loop_id}/{run_id}/summary.json"],
     }
     return validate_runtime_event(event)
+
+
+def build_runtime_start_event(*, loop_id: str, domain: str, run_id: str,
+                              release_sha: str, provider: str,
+                              profile_alias: str | None, effect_class: str) -> dict:
+    timestamp = datetime.now(timezone.utc).isoformat()
+    material = f"{release_sha}:{loop_id}:{run_id}:execute:running"
+    return validate_runtime_event({
+        "version": 1,
+        "event_id": hashlib.sha256(material.encode()).hexdigest()[:24],
+        "timestamp": timestamp,
+        "loop_id": loop_id,
+        "domain": domain,
+        "run_id": run_id,
+        "phase": "execute",
+        "status": "running",
+        "release_sha": release_sha,
+        "provider": provider,
+        "profile_alias": profile_alias,
+        "effect_class": effect_class,
+        "effect_status": "not_applicable" if effect_class == "none" else "started",
+        "blocker": None,
+        "evidence_refs": [f"lm-loop://{loop_id}/{run_id}/summary.json"],
+    })
 
 
 def append_runtime_event(path: Path, event: dict) -> None:
