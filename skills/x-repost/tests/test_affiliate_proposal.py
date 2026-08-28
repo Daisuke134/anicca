@@ -130,7 +130,8 @@ class AffiliateProposalTests(unittest.TestCase):
             copy = root / "copy.json"
             copy.write_text(json.dumps({
                 "text": "Caption workflow trade-offs matter most when publishing at scale.",
-                "claims": [], "source_url": candidate_url,
+                "claims": None, "source_url": candidate_url,
+                "selected": None, "unsupported_claims": [],
             }))
 
             payload = MODULE.render_claimed_job(claims, payloads, copy, candidates)
