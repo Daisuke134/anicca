@@ -63,6 +63,7 @@ No deletion — decay only affects retrieval priority.
 - Don't run destructive commands unless explicitly asked.
 - Never claim you lack access — try it first, report errors after.
 - On macOS, every `launchctl` mutation MUST go through `bin/launchctl-safe`; exit 75 means stop without changing plists, locks, jobs, or OS services and follow `docs/runbooks/launchd-control-plane-recovery.md`.
+- Before creating, changing, migrating, debugging, or retiring a Life Manager loop, MUST read and follow `skills/loop-development/SKILL.md`.
 
 ## Access
 

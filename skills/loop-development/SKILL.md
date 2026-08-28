@@ -1,75 +1,95 @@
 ---
 name: loop-development
-description: Develop, fix, deploy, or retire Life Manager loops without modifying another loop's code, state, browser, launchd job, or production release. Use for any change under loops/, runtime/loop/, loop entrypoints, loop registry, launchd cadence, healthchecks, or immutable releases.
+description: Develop, fix, deploy, migrate, or retire macOS Life Manager loops without modifying another loop's code, state, browser, launchd job, provider profile, or production release. Use for changes to loop entrypoints, config/loop-registry.json, launchd cadence, runtime events, releases, healthchecks, or cleanup.
 ---
 
-# Life Manager loop development
+# Life Manager Loop Development
 
-Life Manager has one code source: GitHub `main`. A loop never owns a permanent branch, worktree,
-checkout, or release. Temporary worktrees isolate development; immutable main-derived releases run
-production; each loop owns only its repository-external state.
-
-## Required shape
+Life Manager has one code source: GitHub `main`; one lifecycle registry:
+`config/loop-registry.json`; and one operator interface: `bin/lm-loop`. A loop
+owns business effects, not its plist, release selector, provider route, sibling
+restart, global monitor, or shared cleanup.
 
 ```text
-temporary worktree -> tested PR -> main -> immutable release -> lm-loop apply -> official readback
-                                                   |
-                                                   +-> loop-specific state outside the release
+locked worktree -> focused test -> merged main -> immutable release -> lm-loop apply -> readback
+                                                           |
+                                                           +-> mutable private state outside release
 ```
 
 ## Before editing
 
-1. Read the loop's current spec, registry entry, entrypoint, state path, loaded plist arguments, and
-   latest terminal receipt. Do not infer production from the current checkout.
-2. Fetch `origin/main`. If the shared checkout is dirty or another agent may edit it, create one
-   temporary `.worktrees/<change>` branch from current `origin/main`. Preserve every unrelated diff.
-3. Name the exact files and loop IDs owned by the change. Do not modify sibling loops while fixing
-   one loop unless the root cause is in their shared runtime boundary.
+1. Read the current spec, registry row, entrypoint, state path, loaded plist
+   arguments, latest terminal event, and official effect receipt. Never infer
+   production from a checkout or PID.
+2. Fetch and record `HEAD`, upstream, `origin/main`, and dirty state. Work only
+   in a dedicated linked worktree. For production validation, run `git worktree
+   lock --reason '<task>' <path>`. Never edit the shared checkout.
+3. Name the exact loop IDs and files owned by one registry TODO. Do not modify a
+   sibling loop unless the root cause is its shared runtime boundary.
 
-## Development rules
+## Source, state, and ownership
 
-- Keep code in the Life Manager repo. Keep credentials, ledgers, receipts, browser profiles,
-  candidate caches, and duplicate fences outside Git and outside releases.
-- Add or change one registry entry and one tested repository-relative entrypoint. Do not create a
-  handwritten production plist, a loop-specific installer, or another provider/router/cleanup owner.
-- Use the smallest focused tests that catch the reported failure. Do not run destructive production
-  E2E from a worktree.
-- Never point launchd at a branch, worktree, mutable checkout, or `~/loops/current` symlink inside
-  ProgramArguments. It must hold one exact release path.
-- Never directly run `launchctl load/unload/bootstrap/bootout`. Use `bin/launchctl-safe`; use
-  `~/loops/current/bin/lm-loop apply` as the only installer.
-- Never kill or restart another loop's process, browser, profile, or state owner. Shared browser work
-  requires the existing identity lease and sequential execution.
+- Executable code, adapters, schemas, prompts, and dependency lockfiles live in
+  this repository. Runtime may not depend on another checkout, worktree, or
+  `~/.../skills` source tree.
+- Credentials, state, logs, ledgers, receipts, sessions, browser profiles,
+  evidence, and duplicate fences live outside Git and immutable releases.
+- Add a loop with one registry row and one tested repository-relative
+  entrypoint. Use `runtime/loop/entry_dispatch.py` when argv is required.
+- Model work goes through `runtime/agent-runner/agent_runner.py` with a task
+  class. Do not select provider credentials, `CODEX_HOME`, auth files, or a
+  direct provider API inside loop code.
+- Do not create production plists, loop installers, release watchers, or raw
+  mutating `launchctl` calls. Use `lm-loop apply/start/stop/restart`. Never
+  restart another loop's process, browser, profile, or state owner.
+- Loaded `ProgramArguments` must contain one exact release directory, never a
+  branch, worktree, mutable checkout, or `~/loops/current` symlink.
 
-## Merge and deploy
+## Develop, merge, and deploy
 
-1. Run focused tests and `git diff --check`; inspect the owned diff.
-2. Fetch, rebase the temporary branch onto current `origin/main`, commit, push, open a PR, and merge.
-3. Cut a release only from the merged `origin/main` commit with `bin/cut-loop-release.sh origin/main`.
-4. Apply through `~/loops/current/bin/lm-loop apply`. For a scoped repair, set
-   `LIFE_MANAGER_APPLY_TARGET=<loop-id>` one loop at a time. Never regenerate/install plists directly.
-5. The release activation and apply lock must be free. A stale release or busy owner is a hard stop;
-   do not bypass the lock or retry through another checkout.
+1. Write the focused failing test first. Cover the real failure boundary:
+   state outside release, exact argv, no sibling mutation, replay-zero,
+   secret-free event, cleanup protection, or official effect readback.
+2. Make the smallest root-cause change. Normal target is at most three files
+   and 100 production LOC; split larger work by registry TODO.
+3. Run focused tests, `git diff --check`, then:
 
-## Done means production evidence
+   ```bash
+   python3 -m unittest discover -s runtime/loop/tests -p 'test_*.py'
+   node --test apps/life-manager/lib/loop-adapter-registry.test.js
+   ~/loops/current/bin/lm-loop doctor
+   ```
 
-All applicable statements must be true:
+4. Fetch again, preserve concurrent commits, commit and push the task branch,
+   and merge or verified-fast-forward `main`. Never force-push.
+5. Cut only a pushed main commit with `bin/cut-loop-release.sh origin/main`.
+   Build installs locked production dependencies before sealing the release
+   read-only. Never patch an active release.
+6. The host-wide apply lock must be free. Validate the full registry before
+   mutation. Apply one label at a time in domain order; after every swap require
+   plist argv, loaded argv, release SHA, state path, and rollback receipt.
+7. Require a natural scheduled terminal event from the installed SHA. Keep
+   launchd state, process result, and official effect result separate. Only
+   official provider/account readback can set an external effect `verified`.
 
-- PR is merged and release SHA is an ancestor of `origin/main`.
-- `RELEASE.json`, installed plist, loaded ProgramArguments, and actual entrypoint identify the same
-  exact immutable release.
-- The natural or explicitly authorized launchd wake reaches a terminal event from that release.
-- External effects have official provider/account readback and a durable receipt.
-- A second wake proves the same effect/source is not duplicated.
-- Cleanup preserves the loaded release and every durable state/receipt.
-- The temporary worktree is clean, merged, unused, then removed. Dirty, unmerged, or active worktrees
-  are never removed by another session.
+## Done gates
 
-Tests, exit 0, a running PID, or a model `completed` response alone are not Done.
+- Every managed label exists once, is enabled and loaded, and points to one
+  existing immutable release. `doctor` reports unmanaged 0, missing 0, and
+  installed-retired 0.
+- Active entrypoints have no legacy installer, managed raw launchd mutation,
+  direct provider selection, worktree source, or release-local mutable state.
+- Dependency import smoke tests pass. Runtime events validate with secret
+  violations 0. Process success never substitutes for payment, message,
+  publication, application, or trade readback.
+- Cleanup replay has errors 0 and protected deletions 0 and preserves every
+  loaded release, active run, receipt, ledger, credential, and session.
+- 500-loop scale, clean-user install, reboot recovery, natural pass, official
+  effect separation, gitleaks, and replay-zero pass.
+- The worktree is clean, merged, and unused before it is unlocked and removed.
+  Never remove another session's dirty, unmerged, locked, or active worktree.
 
 ## One runtime table
-
-Use the registry-backed control plane instead of process searches or per-loop status scripts:
 
 ```bash
 ~/loops/current/bin/lm-loop doctor
@@ -77,11 +97,19 @@ Use the registry-backed control plane instead of process searches or per-loop st
 ~/loops/current/bin/lm-loop watch all
 ```
 
-`doctor` finds unmanaged/missing definitions. `status all` is the snapshot table. `watch all` is
-the live table. Do not build another inventory or infer health from launchd PID existence.
+Do not build another inventory or infer health from process searches.
 
-## Canonical references
+## Recovery
 
-- Loop architecture and commands: `docs/loops/README.md`
-- macOS control plane: `docs/superpowers/specs/2026-08-27-macos-loop-control-plane-design.md`
-- Runtime truth: `config/loop-registry.json` plus loaded `launchctl-safe print` readback
+Fail closed. Preserve old plist/release, use the apply lock, and restore prior
+loaded argv on swap failure. Never retry an uncertain external effect. Recover
+lifecycle through `lm-loop`; recover source by building a new pushed release.
+Record the incident and missing gate in the control-plane spec.
+
+## References
+
+- `docs/loops/README.md`
+- `docs/superpowers/specs/2026-08-27-macos-loop-control-plane-design.md`
+- https://developer.apple.com/library/archive/documentation/MacOSX/Conceptual/BPSystemStartup/Chapters/CreatingLaunchdJobs.html
+- https://git-scm.com/docs/git-worktree
+- https://12factor.net/build-release-run

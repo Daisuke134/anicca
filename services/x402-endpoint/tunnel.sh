@@ -11,12 +11,8 @@ set -u
 
 TUNNEL_LOG="/tmp/anicca-x402-cloudflared.log"
 URL_FILE="${HOME}/.openclaw/state/anicca_x402_url.txt"
-# Worktree-relative mirror for consumers that look inside the repo (matches team-lead's R4.1
-# verify path `state/public-url.txt`).
-URL_FILE_WORKTREE="/Users/anicca/anicca-oss/.worktrees/earn-x402/services/x402-endpoint/state/public-url.txt"
 
 mkdir -p "${HOME}/.openclaw/state"
-mkdir -p "$(dirname "${URL_FILE_WORKTREE}")"
 
 # Reset the tunnel log on every boot so the URL harvester sees ONLY this run's URL.
 : >"${TUNNEL_LOG}"
@@ -43,9 +39,6 @@ echo "[$(date -u +%FT%TZ)] :8403 healthy, launching cloudflared" >>"${TUNNEL_LOG
       # Atomic write to canonical state (consumer cron, listing-bumper).
       tmp="${URL_FILE}.tmp.$$"
       printf '%s\n' "${URL}" >"${tmp}" && mv "${tmp}" "${URL_FILE}"
-      # Mirror to worktree-relative path so reviewers checking the repo see the live URL.
-      tmpw="${URL_FILE_WORKTREE}.tmp.$$"
-      printf '%s\n' "${URL}" >"${tmpw}" && mv "${tmpw}" "${URL_FILE_WORKTREE}"
       echo "[$(date -u +%FT%TZ)] tunnel live: ${URL}" >>"${TUNNEL_LOG}"
       break
     fi

@@ -11,11 +11,12 @@
 
 set -u
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ENV_FILE="${HOME}/.openclaw/.env"
 SERVER_LOG="/tmp/anicca-x402.log"
 STATE_FILE="${HOME}/.openclaw/state/anicca_x402_revenue.jsonl"
 SLACK_CHANNEL="C091G3PKHL2"
-CFO_HOOK="/Users/anicca/anicca-oss/.worktrees/earn-x402/services/x402-endpoint/cfo-hook.sh"
+CFO_HOOK="${X402_CFO_HOOK:-$SCRIPT_DIR/cfo-hook.sh}"
 
 # shellcheck disable=SC1090
 [ -f "${ENV_FILE}" ] && set -a && . "${ENV_FILE}" && set +a
