@@ -166,12 +166,9 @@ acknowledgement. Provider/model/request/video hashes match across all three phas
 
 Generated source media is deleted only when the provider explicitly marks it regenerable, all ten
 bound segments produced valid durable candidates, and their hashes/receipts are fsynced. Otherwise
-the source remains. Every media wake calculates the bytes required by its exact next operation from
-input size, frame dimensions/count, encoder intermediates, output limit, and receipt reserve. It
-compares that requirement with current free bytes immediately before allocation. If insufficient,
-it performs only approved regenerable-cache cleanup, then splits work down to one source, segment,
-or candidate and retries. There is no fixed disk-capacity floor and disk pressure never permanently
-blocks the loop; it yields an effect-free bounded wake with the next smaller operation recorded.
+the source remains. The loop processes one source video at a time. If a file write fails, it keeps
+the last durable checkpoint, creates no external effect, and retries that same item on a later wake.
+There is no fixed disk-size requirement, capacity calculator, or disk-management subsystem.
 
 Creators Market has no assumed public submission API. The adapter uses the dedicated authenticated
 browser and official pages. Credentials remain in the private credential SSOT and browser profile,
@@ -223,8 +220,8 @@ Code-owned gate:
 
 - clean fixture run creates one valid 24-item package and manifest;
 - malformed dimensions, frame count, playback, file size, alpha hole, duplicate asset, missing
-  provenance, stale policy, insufficient bytes for the exact next operation, and unknown cost all
-  prevent that allocation/effect and produce an adaptive retry receipt;
+  provenance, stale policy, failed file writes, and unknown cost prevent the external effect and
+  preserve a retryable checkpoint;
 - fake provider proves submit, lost-ack reconciliation, rejection repair, release, official
   readback, restart/resume, and next-wake `duplicate_effect=0`;
 - installer manifest and launchd job pass existing Life Manager validators;
@@ -255,8 +252,9 @@ No narrower evidence closes the goal.
   public URL/product binding, and replay zero.
 - The redesigned media pipeline implements model-owned 60-motion planning and 24-item selection,
   quote-before-generate cost reservation, reconcile-only unknown recovery, bounded subprocesses,
-  safe motion ids, disk gating, APNG timing, visual-inspection readback, and package-bound generation
-  provenance. A fresh parent run passes all 8 media tests, including a real six-batch FFmpeg package.
+  safe motion ids, one-video-at-a-time checkpoints, APNG timing, visual-inspection readback, and
+  package-bound generation provenance. A fresh parent run passes all 8 media tests, including a real
+  six-batch FFmpeg package.
 - No real image/video provider call, Creators Market submission, review, release, public product,
   sale, payout, or bank effect has occurred.
 
@@ -275,32 +273,20 @@ do not count as money.
 3. The redesigned media diff still needs a fresh adversarial re-review and a fresh parent run of
    the full 78 validator/owner regressions after its core provenance-schema change.
 
-Disk capacity is a changing runtime input, not a revenue blocker. The remaining implementation must
-replace the temporary fixed-threshold media gate with the adaptive per-operation byte calculation,
-safe-cache cleanup, and smaller-operation fallback defined above.
+Disk capacity is not a product requirement or revenue blocker. The temporary fixed-threshold media
+gate must be removed; ordinary write failure uses the same checkpoint-and-retry path as any other
+temporary local failure.
 
 ### Remaining TODO order
 
-1. Replace the temporary fixed media threshold with adaptive per-operation byte estimation,
-   safe-cache cleanup, smaller-unit fallback, and an effect-free retry receipt; prove continued
-   progress without any fixed disk-size requirement.
-2. Close the redesigned media task review: fresh parent validator/owner regression and fresh Sol
-   review; repair every Critical/Important finding.
-3. Add one real animation-provider adapter using the two-phase quote/reserve/generate/reconcile
-   contract; establish an authenticated provider account and verify quote/cost/output readback.
-4. Generate the original character sheet with rights evidence, obtain the model's 60-motion plan,
-   generate six ten-motion source videos, convert all candidates, and obtain the model's exact
-   24-item visual selection.
-5. Produce the real validator-ready package and bind all generation receipts, costs, prompts,
-   sources, segments, candidates, and rights evidence into package provenance.
-6. Implement and verify the dedicated Creators Market browser adapter: registration/login state,
-   inventory observation, one fenced submit, review polling, rejection repair, one release, and
-   official LINE STORE readback.
-7. Add the public integration manifest, installer/status/outcomes commands, dedicated browser owner,
-   bounded launchd wake, recovery, upgrade, stop, and uninstall behavior.
-8. Trigger the installed launchd loop—not foreground Codex—to generate and submit the first real
-   set. Continue through approval and automatic release.
-9. Prove the public product, then run a later observe-only natural wake with submit/release
-   `duplicate_effect=0`.
-10. Read official sales/region/payout state, record actual revenue or zero, and make exactly one
-   evidence-backed change for the next set.
+1. **Make one complete 24-sticker set.** Remove the temporary fixed disk threshold, finish the media
+   review, connect one real animation provider, create the original character, generate 60 motions
+   in six videos, select 24, and produce one validator-ready package with rights/cost receipts.
+2. **Upload and release it.** Connect one dedicated Creators Market browser session, upload once,
+   read the official review result, repair a rejection, release automatically, and verify the public
+   LINE STORE product.
+3. **Repeat without duplicates.** Add only the small integration manifest and scheduled owner needed
+   to resume checkpoints, check official inventory before effects, and prove the next wake creates no
+   duplicate submit or release.
+4. **Read sales and improve the next set.** Record official sales/payout or zero, change one creative
+   decision from that evidence, and start the next set through the same loop.
