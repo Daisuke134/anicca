@@ -31,6 +31,7 @@
 # target cron's own task).
 set -uo pipefail
 ANICCA_HOME="${ANICCA_HOME:-$HOME/.openclaw}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$ANICCA_HOME/.env" 2>/dev/null || true
 ST="$ANICCA_HOME/state"; mkdir -p "$ST"
 NOW=$(date +%s)
@@ -54,7 +55,7 @@ case "$MAX_AGENT_DIAGNOSES_PER_PASS" in
   ''|*[!0-9]*|0) echo "tier2: invalid MAX_AGENT_DIAGNOSES_PER_PASS" >&2; exit 2 ;;
 esac
 AGENT_DIAGNOSES_THIS_PASS=0
-TIER2_AGENT_RUNNER="${TIER2_AGENT_RUNNER:-$HOME/profitable-claude/skills/control-plane/tier2/run_diagnosis.sh}"
+TIER2_AGENT_RUNNER="${TIER2_AGENT_RUNNER:-$SCRIPT_DIR/tier2-run-diagnosis.sh}"
 CRON_CONTEXT_MAX_BYTES=16000
 STATUS_CONTEXT_MAX_BYTES=12000
 LOG_CONTEXT_MAX_BYTES=30000
