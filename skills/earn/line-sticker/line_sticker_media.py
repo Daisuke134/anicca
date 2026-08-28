@@ -894,19 +894,20 @@ def _state_totals(state: dict[str, object]) -> tuple[Decimal, Decimal]:
     return reserved, actual
 
 
-def _completed_batch(state: dict[str, object], batch: int, motions: list[dict[str, object]], work_dir: Path) -> dict[str, object]:
+def _completed_batch(state: dict[str, object], batch: int, motions: list[dict[str, object]], work_dir: Path, plan: dict[str, object], ffmpeg: str) -> dict[str, object]:
     record = state.get("batches", {}).get(str(batch))
     if not isinstance(record, dict) or record.get("status") != "completed" or not isinstance(record.get("quote"), dict) or not isinstance(record.get("receipt"), dict):
         raise MediaError("completed_receipt_invalid")
     quote, receipt = record["quote"], record["receipt"]
-    if not _nonempty_text(quote.get("reservation_key")) or any(receipt.get(key) != quote.get(key) for key in ("request_id", "quote_token", "batch", "provider", "model")) or receipt.get("acknowledged") is not True or type(receipt.get("regenerable")) is not bool or _decimal_cost(receipt.get("actual_cost_usd")) > _decimal_cost(quote.get("quoted_cost_usd")):
+    expected_key = _reservation_key(set_id=str(plan["set_id"]), plan_hash=str(plan["plan_sha256"]), batch=batch, provider=str(quote.get("provider", "")), model=str(quote.get("model", "")), request_id=str(quote.get("request_id", "")), quote_token=str(quote.get("quote_token", "")), character_hash=str(plan["character_sha256"]))
+    if quote.get("batch") != batch or receipt.get("batch") != batch or quote.get("reservation_key") != expected_key or any(receipt.get(key) != quote.get(key) for key in ("request_id", "quote_token", "batch", "provider", "model")) or receipt.get("acknowledged") is not True or type(receipt.get("regenerable")) is not bool or _decimal_cost(receipt.get("actual_cost_usd")) > _decimal_cost(quote.get("quoted_cost_usd")):
         raise MediaError("completed_receipt_invalid")
     _generation(receipt, quote, motions)
     source = Path(str(receipt.get("video_path", "")))
     if not source.is_absolute(): source = work_dir / source
     if not source.is_file() or _sha256_file(source) != receipt.get("video_sha256"):
-        # A removed source is permitted only after the bound candidates survive.
-        if not receipt.get("regenerable"):
+        records = _durable_batch_records(work_dir, motions, ffmpeg)
+        if not receipt.get("regenerable") or len(records) != MOTIONS_PER_BATCH or any(record.get("provider_request_id") != receipt["request_id"] or record.get("provider") != receipt["provider"] or record.get("model") != receipt["model"] or record.get("source_sha256") != receipt["video_sha256"] for record in records):
             raise MediaError("completed_receipt_invalid")
     return receipt
 
@@ -933,7 +934,7 @@ def convert(
     for batch in range(1, BATCH_COUNT + 1):
         motions = _batch_motions(plan_payload, batch); record = state["batches"].get(str(batch))
         if isinstance(record, dict) and record.get("status") == "completed":
-            receipt = _completed_batch(state, batch, motions, work_dir)
+            receipt = _completed_batch(state, batch, motions, work_dir, plan_payload, ffmpeg)
             records = _durable_batch_records(work_dir, motions, ffmpeg)
             if not records: records = _convert_batch(plan_payload=plan_payload, batch=batch, provider_receipt=receipt, work_dir=work_dir, ffmpeg=ffmpeg, ffprobe=ffprobe)
             all_records.extend(records); continue
@@ -954,12 +955,11 @@ def convert(
             if reserved + _decimal_cost(quote["quoted_cost_usd"]) > max_cost: raise MediaError("cost_exceeded")
             quote = {**quote, "reservation_key": _reservation_key(set_id=str(plan_payload["set_id"]), plan_hash=str(plan_payload["plan_sha256"]), batch=batch, provider=str(quote["provider"]), model=str(quote["model"]), request_id=str(quote["request_id"]), quote_token=str(quote["quote_token"]), character_hash=str(plan_payload["character_sha256"]))}
             state["batches"][str(batch)] = {"status": "reserved", "quote": quote}; _atomic_json(state_path, state)
-        # This durable transition is intentionally the last action before provider effect.
-        state["batches"][str(batch)] = {"status": "reconcile_required", "quote": quote}; _atomic_json(state_path, state)
         reserved_now, actual_now = _state_totals(state)
         if reserved_now > max_cost or actual_now > max_cost:
-            state["batches"][str(batch)] = {"status": "reserved", "quote": quote}; _atomic_json(state_path, state)
             raise MediaError("cost_exceeded")
+        # This durable transition is intentionally the last action before provider effect.
+        state["batches"][str(batch)] = {"status": "reconcile_required", "quote": quote}; _atomic_json(state_path, state)
         request = {"version": 1, "operation": "generate", "set_id": plan_payload["set_id"], "character_id": plan_payload["character_id"], "character_path": plan_payload["character_path"], "character_sha256": plan_payload["character_sha256"], "plan_sha256": plan_payload["plan_sha256"], "batch": batch, "motions": motions, "remaining_cap_usd": format(max_cost - _state_totals(state)[0] + _decimal_cost(quote["quoted_cost_usd"]), "f"), **{key: quote[key] for key in ("request_id", "quote_token", "provider", "model")}}
         try:
             receipt = _generation(_run_json_command(argv, request, cwd=work_dir), quote, motions)
@@ -1354,6 +1354,7 @@ def _package_provenance(
     selection: dict[str, object],
     work_dir: Path,
     rights_evidence: dict[str, object],
+    ffmpeg: str,
 ) -> dict[str, object]:
     prompt_hashes: dict[str, str] = {}
     assets: dict[str, object] = {}
@@ -1371,7 +1372,7 @@ def _package_provenance(
     providers: set[str] = set()
     models: set[str] = set()
     for batch in range(1, 7):
-        generation = _completed_batch(state, batch, _batch_motions(plan_payload, batch), work_dir)
+        generation = _completed_batch(state, batch, _batch_motions(plan_payload, batch), work_dir, plan_payload, ffmpeg)
         value = state["batches"][str(batch)]; reservation = value["quote"]
         providers.add(str(reservation.get("provider", ""))); models.add(str(reservation.get("model", "")))
         if not all(_nonempty_text(reservation.get(key)) for key in ("request_id", "quote_token", "provider", "model", "quoted_cost_usd")) or not _nonempty_text(generation.get("request_id")) or not _is_hash(generation.get("video_sha256")) or generation.get("request_id") != reservation.get("request_id"):
@@ -1490,7 +1491,7 @@ def package(
                 height=240,
             )
         _ffmpeg_make_tab(ffmpeg, first_frame_path, staging / "tab.png", cwd=work_dir)
-        provenance = _package_provenance(staging, plan_payload, selected_payload, work_dir, rights_evidence)
+        provenance = _package_provenance(staging, plan_payload, selected_payload, work_dir, rights_evidence, ffmpeg)
         _atomic_json(staging / "provenance.json", provenance)
         _atomic_bytes(staging / "submission.zip", _write_png_zip(staging))
         validation = line_sticker.validate_package(staging, Path(policy), ffmpeg=ffmpeg)
