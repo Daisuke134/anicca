@@ -968,7 +968,7 @@ code変更前にMoneytree LINK、Moneytree Web export、Binance Japan API、対�
 既存環境ではsecret値を表示せずcredentialの有無だけを監査してください。必要credential、scope、発行画面、
 契約条件をDaisへ一度に質問し、回答後に実read-only接続を行ってください。Moneytree LINK契約済みならOAuth、
 未契約ならMoneytree Web公式CSV/Excel exportを実railとして使い、架空adapter、mock、dry-runを完成証拠にしません。
-TDDでruntime DB env/boot/executor/launchd templateを修復し、account/transaction/balance/category/JPY/FX/
+runtime DB env/boot/executor/launchd templateを修復し、account/transaction/balance/category/integer JPY/
 budget/baseline/anomaly/receiptの統一財務台帳へ実残高・実明細をimportしてください。BinanceはEnable Readingのみ、
 trade/withdrawal無効、可能ならMac mini IP allowlistを使います。walletはpublic addressだけを要求し、private keyや
 seed phraseを要求しません。実送金・実取引は禁止です。
@@ -4383,7 +4383,7 @@ bindされ、未確認founder videoをexpected blockerとして保持し`submit_
 
 - [ ] O3B-00 公式current docsとlocal secret有無を監査し、必要credential/scope/契約をDaisへ一括質問
 - [ ] O3B-01 account、transaction、position、liability schema
-- [ ] O3B-02 JPY、original currency、FX provenance
+- [ ] O3B-02 金額を整数JPYに統一し、非JPYは換算せずunsupportedとして除外
 - [ ] O3B-03 `2026-07-29-life-manager-finance-marketing-platform-design.md` §6.5.1のdeployment-owned Moneytree adapter契約を実接続する
 - [ ] O3B-04 銀行・card・証券の実残高と実明細をimportし、fake/mock/dry-runを完了証拠にしない
 - [ ] O3B-05 Binance read-only接続
@@ -5677,7 +5677,7 @@ run 169ではTerraがCloakBrowser接続前に未導入の`require('playwright')`
 | U14 | MoneytreeがDaisの全銀行/card/証券と必要履歴を返すか | production本人同意または公式Web exportで、実1口座から残高・1/3/12か月明細・categoryを実測 |
 | U15 | Binance Japan口座で使えるendpointと履歴範囲 | read-only `USER_DATA` keyをIP制限し、balance/trades/deposit/withdraw履歴を実測 |
 | U16 | Binance Earnやwallet外資産を総資産へ含められるか | product別endpointを列挙し、unsupportedは手動snapshotとして明示 |
-| U17 | JPY換算の価格sourceと時刻 | original currencyを保存し、FX/crypto quote sourceとtimestampを全行へ付与 |
+| U17 | 非JPY sourceの扱い | 換算を実装せずunsupportedとして除外し、JPY合計へ混ぜない |
 | U18 | subscriptionの「未使用」を何で判断するか | 支払明細だけで断定せず、login/app usage/mail receiptの有無とconfidenceを表示 |
 | U19 | crypto/fiatのexecution権限 | Order 3Bはread-only。Order 4/5で隔離口座、上限、signer、emergency stopを実証 |
 | U20 | local profileをWeb multi-tenantへどう移すか | tenant別OAuth、secret、browser profile、worker isolationのcontract test |
