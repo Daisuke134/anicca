@@ -27,12 +27,14 @@ model narration, and local success without the named readback are not PASS.
 
 - [x] `AM01` Add a semantic Apply prohibition for music or produced/edited audio as the required
   buyer-visible deliverable, including work performed through prompting or generative tools.
-  PASS = the shared feasibility policy names one model-owned prohibition class, contains no category,
-  keyword or regex gate, and a focused regression preserves music-adjacent software eligibility.
-  `music_or_audio_production` is now part of the existing exact-evidence contract. Focused tests pass
-  3/3. A side-effect-free Luna evaluation classified original BGM/audio delivery `9000001` as
+  PASS = the Coconala planner names one model-owned prohibition class, the cross-provider policy stays
+  unchanged, no category/keyword/regex gate exists, and a focused regression preserves other semantic
+  prohibitions for music-adjacent work. `music_or_audio_production` is now part of the existing
+  exact-evidence contract. All Application regressions pass 22/22. A side-effect-free Luna evaluation
+  classified original BGM/audio delivery `9000001` as
   `hard_prohibited / music_or_audio_production` with an exact listing excerpt, while music-service
-  software with no audio production `9000002` remained `submit_required`.
+  software with no audio production `9000002` remained `submit_required`; music-event research
+  requiring an in-person visit `9000003` remained `hard_prohibited / physical_or_onsite`.
 - [ ] `AM02` Deploy the policy through the normal immutable Apply release boundary.
   PASS = the change is merged to pushed main, a read-only immutable release contains the exact policy,
   loaded Apply argv points to that release, one natural pass reaches a terminal result from the same

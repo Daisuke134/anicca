@@ -59,8 +59,7 @@ def common_marketplace_feasibility_policy() -> str:
 - Skip only when the actual required outcome is illegal/scam, requires unavoidable physical/on-site
   work, mandatory human face/voice/phone/live presence, a legal qualification or immutable identity
   fact that cannot be supplied truthfully, off-platform payment/contact, explicit AI prohibition, or
-  scope/deadline/economics the general agent truly cannot complete. Also skip work whose required
-  deliverable is generated or prompted music/audio; do not produce music or audio through prompts.
+  scope/deadline/economics the general agent truly cannot complete.
 - Preserve scope fidelity: do not make infeasible work appear feasible by silently replacing the
   buyer's required outcome with a smaller or different deliverable. Ask concise pre-contract questions
   when ordinary implementation details are missing.
@@ -288,7 +287,7 @@ def planner_prompt(envelope: dict) -> str:
         "A requested skill, work history, domain experience, portfolio, numeric achievement, prior client result, or tool experience is never a personal-attribute-fabrication prohibition. Even when the listing says it is required, limited, preferred, experienced-only, or asks the applicant to describe it, choose submit_required and answer honestly with verified transferable capability plus a concrete sample/plan. Do not claim the missing experience.\n"
         "A numbered application question or field label such as `5 年代` is not evidence that the buyer requires fabrication. Answer it from verified facts when available. Use mandatory_attribute_fabrication only when the listing requires a specific immutable/current attribute value that conflicts with verified facts or cannot be answered truthfully; the evidence excerpt must include that required value or condition, not merely the field name.\n"
         "A generic meeting, discussion, interview, consultation, explanation, coordination, or communication requirement is not mandatory_human_presence unless the listing explicitly requires synchronous phone, live voice, live video, face appearance, performance, or human voice recording. Ambiguous modality remains submit_required and the proposal offers asynchronous Coconala messages/documents.\n"
-        "Canonical boundary: an original song, BGM, performance, mix, master, or edited audio deliverable is music_or_audio_production even when generative tools could create it; music software, music research, or writing about music remains submit_required when producing or editing audio is not required.\n"
+        "Coconala application lane music boundary: generated or prompted music/audio is prohibited as a required deliverable; do not produce music or audio through prompts. An original song, BGM, performance, mix, master, or edited audio deliverable is music_or_audio_production even when generative tools could create it; music software, music research, or writing about music is not music_or_audio_production and remains submit_required only when no other hard-prohibition class applies.\n"
         "Experience uncertainty, weak portfolio, broad scope, low budget, difficulty, unclear production scope, optional consultation, and unverified achievements remain discretionary weaknesses. Missing Adobe experience alone is not a refusal reason, but required desktop-application operation is hard-prohibited.\n\n"
         "狙う仕事の順序: ①software / landing_page / article / strategyとしてcode・file・documentで非同期完結する仕事 "
         "②その他の非同期成果物。継続性より、現在のskillで高品質な完成成果を自律納品できることを優先する。\n"

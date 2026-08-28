@@ -4,7 +4,7 @@
 
 **Goal:** Prevent Coconala Apply from proposing work whose required deliverable is music or produced/edited audio.
 
-**Architecture:** Extend the existing model-owned semantic feasibility policy with one prohibition class and two canonical boundary examples. Reuse the current exact-evidence contract; add no deterministic category or keyword gate.
+**Architecture:** Extend the existing Coconala model-owned planner with one prohibition class and canonical boundary examples. Keep the shared cross-provider feasibility policy unchanged, reuse the current exact-evidence contract, and add no deterministic category or keyword gate.
 
 **Tech Stack:** Python 3, pytest, existing model planner.
 
@@ -26,7 +26,7 @@
 
 **Interfaces:**
 - Consumes: `common_marketplace_feasibility_policy() -> str` and `planner_prompt(envelope: dict) -> str`.
-- Produces: a `music_or_audio_production` hard-prohibition class available to the existing model planner.
+- Produces: a Coconala-only `music_or_audio_production` hard-prohibition class available to the existing model planner.
 
 - [ ] **Step 1: Write the failing prompt-contract test**
 
@@ -48,7 +48,7 @@ Expected: FAIL because the new prohibition text is absent.
 
 - [ ] **Step 3: Add the minimal semantic policy**
 
-Add `music_or_audio_production` to `HARD_PROHIBITION_CLASSES`, state the prohibition once in `common_marketplace_feasibility_policy()`, and add two short canonical boundary examples to `planner_prompt()`. Do not add parsing or execution code.
+Add `music_or_audio_production` to `HARD_PROHIBITION_CLASSES` and state the Coconala-only prohibition plus short canonical boundary examples in `planner_prompt()`. Assert that `common_marketplace_feasibility_policy()` contains no music-specific rule. Do not add parsing or execution code.
 
 - [ ] **Step 4: Run focused tests and verify GREEN**
 
