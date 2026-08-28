@@ -313,11 +313,11 @@ def render_claimed_job(
         copy = read_json(copy_path)
         wrapper = copy.get("text")
         external = mode == "QUOTE_RELEVANT_EXTERNAL"
-        expected_copy_fields = {"text", "claims", "source_url"} if external else {
-            "text", "claims",
-        }
+        contract_fields = {"text", "claims", "source_url"} if external else {"text", "claims"}
+        extras = {key: value for key, value in copy.items() if key not in contract_fields}
         if not (
-            set(copy) == expected_copy_fields and copy.get("claims") == []
+            copy.get("claims") in (None, [])
+            and not any(value not in (None, []) for value in extras.values())
             and isinstance(wrapper, str) and wrapper == wrapper.strip()
             and 40 <= len(wrapper) <= (120 if external else 220)
             and not URL.search(wrapper)
