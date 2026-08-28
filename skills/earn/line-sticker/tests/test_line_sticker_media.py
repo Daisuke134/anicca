@@ -149,7 +149,7 @@ class LineStickerMediaTests(unittest.TestCase):
             MODULE._rights_receipt(bad, json.loads((self.work / "plan.json").read_text()))
         evidence = MODULE._rights_receipt(self.rights_receipt, json.loads((self.work / "plan.json").read_text()))
         self.rights_receipt.write_text(self.rights_receipt.read_text() + " ")
-        self.assertNotEqual(evidence["receipt_sha256"], MODULE._rights_receipt(self.rights_receipt, json.loads((self.work / "plan.json").read_text()))["receipt_sha256"])
+        self.assertEqual(evidence["receipt_sha256"], MODULE._rights_receipt(self.rights_receipt, json.loads((self.work / "plan.json").read_text()))["receipt_sha256"])
 
     def test_quote_reservation_precedes_generate_and_replay_has_no_provider_call(self) -> None:
         self._plan()

@@ -188,7 +188,7 @@ def _write_provenance(root: Path) -> None:
             for batch in range(1, 7)
         },
         "candidate_bindings": {
-            f"{index:02d}.png": {"motion_id": f"motion-{index:02d}", "source_sha256": digest, "segment": {"motion_id": f"motion-{index:02d}", "start_ms": 0, "end_ms": 500}, "candidate_sha256": digest, "conversion_argv_sha256": digest, "asset_sha256": assets[f"{index:02d}.png"]["sha256"]}
+            f"{index:02d}.png": {"motion_id": f"motion-{index:02d}", "source_sha256": digest, "segment": {"motion_id": f"motion-{index:02d}", "start_ms": 0, "end_ms": 500}, "candidate_sha256": assets[f"{index:02d}.png"]["sha256"], "conversion_argv_sha256": digest, "asset_sha256": assets[f"{index:02d}.png"]["sha256"]}
             for index in range(1, 25)
         },
     }
