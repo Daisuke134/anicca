@@ -30,11 +30,11 @@
 - Consumes: `buildGoalWorkItem(goal, nowMs)`, injected `loadTenant(tenantId)`, `secretProvider.health()`, and `enqueueJob(input)`.
 - Produces: `enqueueHostedGoal({scope, goal, nowMs}, deps) -> {created, tenant_id, job_id, job_ref, vault_provider}`.
 
-- [ ] **Step 1: Write the failing ingress tests**
+- [x] **Step 1: Write the failing ingress tests**
 
 Test a paid same-tenant row with healthy `{mode:"cloud", provider:"vault"}` health. Assert first enqueue creates one exact reference-only job, replay returns `created:false`, and neither result/job JSON contains goal statement, chat ID, phone, or a secret value. Add a second test where unpaid, cross-tenant chat, mismatched goal uid, and unhealthy vault each reject before enqueue.
 
-- [ ] **Step 2: Run the RED test**
+- [x] **Step 2: Run the RED test**
 
 Run:
 
@@ -44,7 +44,7 @@ node --test apps/life-manager/lib/hosted-goal-ingress.test.js
 
 Expected: FAIL because `hosted-goal-ingress.js` does not exist.
 
-- [ ] **Step 3: Implement the minimum ingress**
+- [x] **Step 3: Implement the minimum ingress**
 
 Implement `enqueueHostedGoal` with these exact checks and mapping:
 
@@ -64,7 +64,7 @@ const queued = await deps.enqueueJob({
 
 Return only safe identities and `created`.
 
-- [ ] **Step 4: Run GREEN and adjacent tests**
+- [x] **Step 4: Run GREEN and adjacent tests**
 
 ```bash
 node --test \
