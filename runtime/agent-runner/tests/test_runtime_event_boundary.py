@@ -9,10 +9,24 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "runtime/agent-runner"))
 
-from agent_runner import emit_runtime_event  # noqa: E402
+from agent_runner import emit_runtime_event, runtime_event_loop_id  # noqa: E402
 
 
 class RuntimeEventBoundaryTest(unittest.TestCase):
+    def test_managed_parent_loop_id_overrides_legacy_child_alias(self):
+        with mock.patch.dict(
+            os.environ,
+            {"LIFE_MANAGER_LOOP_ID": "hf-gig-storefront-direct"},
+        ):
+            self.assertEqual(
+                runtime_event_loop_id("gig-storefront"),
+                "hf-gig-storefront-direct",
+            )
+
+    def test_unmanaged_invocation_keeps_requested_loop_id(self):
+        with mock.patch.dict(os.environ, {}, clear=True):
+            self.assertEqual(runtime_event_loop_id("standalone-loop"), "standalone-loop")
+
     def test_final_runner_summary_emits_one_registry_grounded_event(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

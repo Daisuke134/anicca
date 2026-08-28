@@ -69,6 +69,11 @@ TOOLLESS_TASK_CLASSES = (
 TOOLLESS_CODEX_DISABLED_FEATURES = ("shell_tool", "code_mode_host", "unified_exec")
 
 
+def runtime_event_loop_id(requested_loop_id: str) -> str:
+    """Bind nested agent evidence to its managed parent loop when available."""
+    return os.environ.get("LIFE_MANAGER_LOOP_ID", "").strip() or requested_loop_id
+
+
 def emit_runtime_event(*, loop_id: str, evidence_dir: Path,
                        selected: dict[str, Any] | None, attempts: list[dict[str, Any]],
                        candidate_profile: str | None, registry_path: Path,
@@ -1611,7 +1616,7 @@ def run() -> int:
             "LIFE_MANAGER_REGISTRY", REPO_ROOT / "config" / "loop-registry.json"))
         try:
             event = emit_runtime_event(
-                loop_id=parsed.loop,
+                loop_id=runtime_event_loop_id(parsed.loop),
                 evidence_dir=evidence_dir,
                 selected=selected,
                 attempts=attempts,

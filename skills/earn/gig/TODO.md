@@ -1351,17 +1351,28 @@ The order to the end is:
    generic 35-minute outer timeout no longer terminates the file workflow. v10 fresh review, one
    delivery effect, exact-room official readback and replay zero remain to be proved.
 6. **Prove 24/7 control-plane durability.** Browser, Apply, Negotiate, Storefront and Paid must each
-   survive process exit and start again from the immutable release. The current shell cannot read
-   the launchd domain (`launchctl` returns 141, `Reentrancy avoided`), although browser CDP and new
-   Apply, Negotiate, Storefront and Paid PIDs are simultaneously visible. Process presence is not
-   durable registration
-   proof; capture two successive natural starts per lane and a loaded-definition readback from a
-   valid GUI launchd context.
-7. **The code-level public-package gate is closed at `f90898caf`, but anyone-device acceptance is
-   still open.** Exact-archive acceptance passes 194 package
-   tests, compilation, four empty-HOME plist renders, gitleaks and the owner-ID/path denylist.
-   The remote `main` now points to `e4337a2f`. A clean third-party/friend install must still prove
-   no effect before authentication and one natural official receipt for each of the four lanes.
+   survive process exit and start again from one immutable main release. Current `lm-loop doctor`
+   is PASS with 167 registry entries and missing/unmanaged/installed-retired counts all zero.
+   Apply, Reply and Paid have current natural terminal PASS events whose event SHA equals installed
+   SHA `bcba782a4`; Reply's nested Codex work uses Account 2. Storefront is not closed: after a real
+   disk-pressure stop and loop-owned sentinel release, its natural pass still failed because nested
+   proposal agents emitted runtime events under legacy alias `gig-storefront`, which is absent from
+   the managed registry. The shared runner fix must prefer `LIFE_MANAGER_LOOP_ID` over a nested
+   caller's legacy `--loop` label, then be released and proved by two successive natural Storefront
+   passes with official 14-service readback and replay effect zero. Process presence is never proof.
+7. **Anyone-device acceptance is still open.** Current immutable public-package onboarding tests
+   pass 13/13 in an isolated HOME and `lm-loop doctor` passes, but that is not an independent-device
+   business receipt. A clean third-party/friend Mac must still prove zero effect before official
+   authentication, resumable account setup, immutable-main installation, reboot recovery, and one
+   natural official outcome for Apply, Reply, Storefront and Paid. Paid specifically needs a new,
+   previously unseen purchased order to flow from authoritative context and attachments through
+   production, fresh review, one correct buyer send, exact official readback, formal-delivery
+   boundary and replay-zero without Dais or Codex acting as the project executor.
+   The host self-clean contract is also open: free space fell below the 1 GiB release floor,
+   `disk-pressure.block` correctly stopped Storefront, but the cleanup owner reclaimed zero bytes.
+   Manual `uv cache clean` recovered 1.1 GiB and the cleanup owner then removed the sentinel with
+   errors zero and protected deletions zero. Done requires the cleanup owner itself to reclaim an
+   eligible closed cache, cross the release floor and resume all four lanes without an operator.
 8. Finish the remaining product items in this file: **4 listing contract/product truth** →
    **2 stable paid-feedback identity and credential handling** → **5 storefront attribution** →
    **1 browser-major qualification** → **6 merge the already-pushed legacy-removal branch when its
@@ -1370,6 +1381,12 @@ The order to the end is:
 The system is complete only when all four business outcomes have natural official receipts:
 application, buyer reply/estimate, listing create/update, and paid delivery. A running process,
 Telegram/email report, dry run, model response or local ledger row is not completion.
+
+The product goal is the reusable four-lane Coconala money loop, not closure of one named buyer.
+Buyer projects are acceptance fixtures for the shared Paid contract. Do not mark the system Done
+until a newly purchased, previously unseen order is completed naturally on a clean install and the
+same public package can repeat that outcome on another owner's device with only their own official
+accounts, credentials, consent and payout setup.
 
 ### Atomic remaining checklist
 
