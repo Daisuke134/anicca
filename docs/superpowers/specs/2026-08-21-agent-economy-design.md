@@ -742,7 +742,7 @@ returned claim bond, or unverified marketplace event cannot satisfy this prerequ
 | 2 | Immutable, namespaced Life Manager owner | 1 | sealed release, loaded process, rollback, natural replay-zero | complete |
 | 3 | One outside sale | 1-2 | canonical 0.003-USDC chain receipt and second reconcile adds zero | complete |
 | 4 | Reconcile failed BlockRun settlement and close its consumed funding | 3 | 0.002-USDC cost row, tx/log join, stale-model diagnosis, no receipt reuse | complete |
-| 5A | Earn one outside-funded bounty reward | 4 | complete 5A.1-5A.11 below in order | **in progress — read-only scout first; no account/application/report/claim sent** |
+| 5A | Earn one outside-funded bounty reward | 4 | complete 5A.1-5A.11 below in order | **in progress — 5A.1 complete; 5A.2 active; no account/application/report/claim sent** |
 | 5B | Complete paid BlockRun inference | 5A | current explicit model, successful output, cost receipt funded only by new spendable accepted earnings, balance conservation, replay-zero | pending |
 | 6 | Revenue-funded ephemeral BlockRun compute | 5B | Modal payment, output, teardown, joined receipt | pending |
 | 7 | Integrate feature into canonical `main` | 4-6 | normal merge, clean tests, fresh-clone reproduction, launchd swap-race regression; no force-push | pending |
@@ -765,10 +765,12 @@ preserves exact raw response hashes under an isolated instance state root. The l
 `aacac47727e2b796914f0f542f9381593d688ffbdfce8d731d0e17a15f09cbb5`. The Agent Bounties
 claimable body was `[]`. Olas Gnosis reached its latest-1,000 page limit and is explicitly
 `coverage=unknown` with `next_cursor=skip:1000`; Base, Polygon, and Optimism were complete for the
-24-hour window. 5A.1 remains active until the model records evidence-backed values or explicit
-unknown reasons for all nine evaluation fields; collection alone is not selection or income.
+24-hour window. The model-owned matrix in
+`outputs/agent-economy-opportunity-evaluation.md` records evidence-backed values or explicit
+unknown reasons for all nine fields. It selects no market; collection and normalization are not
+income.
 
-1. [ ] **5A.1 — Scout:** read current Immunefi, Agent Bounties, Olas, uGig, Code4rena, Sherlock, and
+1. [x] **5A.1 — Scout:** read current Immunefi, Agent Bounties, Olas, uGig, Code4rena, Sherlock, and
    Cantina inventory and normalize scope, funding, recent payout, competition, signup/identity
    requirements, payout rail, deadline, expected compute, and official receipt fields without
    reserving, creating an account, or submitting.
