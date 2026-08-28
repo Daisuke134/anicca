@@ -1056,7 +1056,7 @@ fi
 # starts never replays the complete prompt on another provider because public side effects may exist.
 run_model_pass() {
   local active_prompt_file="${1:-$PROMPT_FILE}"
-  BOUNDED_EXEC_STOP_PATHS="$HOME/.openclaw/state/disk-writers.stop:$HOME/.openclaw/state/disk-pressure.block" \
+  BOUNDED_EXEC_STOP_PATHS="$HOME/.openclaw/state/disk-writers.stop" \
   ARTICLE_RUN_ID="$RUN_TS" ARTICLE_MODEL_LOG="$LOG" \
     python3 "$ARTICLE_ROOT/runtime/bounded-exec.py" \
       "$ARTICLE_MODEL_AGENT_TIMEOUT_SECONDS" \
