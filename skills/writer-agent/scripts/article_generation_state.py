@@ -501,6 +501,8 @@ def archive_interrupted(
                         "sha256": file_sha256(path),
                     }
                 )
+            if state.get("status") == "provider-failed-ambiguous" and return_code == 75:
+                attempt["provider_return_code"] = attempt.get("return_code")
             attempt.update(
                 {
                     "status": "interruption-archiving",

@@ -557,14 +557,14 @@ def _exhausted_prepublication_archive(
             return False
     if run_dir.is_symlink() or not run_dir.is_dir():
         return False
-    for path in run_dir.rglob("*"):
-        if path.is_symlink():
-            return False
-        relative = str(path.relative_to(run_dir))
-        if path.is_file() and not relative.startswith(
-            ("gates/judge-broker/", "gates/.attempts/", "gates/media-candidates/")
-        ):
-            return False
+    scripts = Path(__file__).resolve().parent
+    if str(scripts) not in sys.path:
+        sys.path.insert(0, str(scripts))
+    from article_generation_state import prepublication_empty  # pylint: disable=import-outside-toplevel
+
+    safe, _ = prepublication_empty(run_dir, run_id, state_dir / "articles.jsonl")
+    if not safe:
+        return False
     archive_parent = state_dir / "interrupted-generation" / run_id
     attempts = sorted(
         (
@@ -577,12 +577,7 @@ def _exhausted_prepublication_archive(
     if not attempts:
         return False
     latest = attempts[-1]
-    required = (
-        "article-en.md", "article-ja.md", "headline-image.png",
-        "body-diagram.png", "gates/quality-terminal-en.json",
-        "gates/quality-terminal-ja.json", "generation-state.json",
-        "generation-exhaustion-receipt.json",
-    )
+    required = ("generation-state.json", "generation-exhaustion-receipt.json")
     if any(
         not (latest / relative).is_file()
         or (latest / relative).is_symlink()
@@ -607,10 +602,25 @@ def _exhausted_prepublication_archive(
     if (
         not isinstance(final, dict)
         or final.get("status") != "interrupted-safe"
-        or final.get("return_code") not in {124, 130, 143}
+        or final.get("return_code") not in {75, 124, 130, 143}
         or not isinstance(final.get("archive_manifest"), list)
+        or (
+            final.get("return_code") == 75
+            and (
+                not isinstance(final.get("provider_return_code"), int)
+                or final["provider_return_code"] == 0
+            )
+        )
     ):
         return False
+    if final["archive_manifest"]:
+        content = (
+            "article-en.md", "article-ja.md", "headline-image.png",
+            "body-diagram.png", "gates/quality-terminal-en.json",
+            "gates/quality-terminal-ja.json",
+        )
+        if any(not (latest / path).is_file() or (latest / path).is_symlink() for path in content):
+            return False
     maximum = archived_state.get("maximum_attempts")
     if not isinstance(maximum, int) or maximum < 1:
         return False
