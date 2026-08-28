@@ -6,6 +6,8 @@ const { signedGmailConnectUrl } = require("./gmail-onboard.js");
 const { backfillCalendarContext } = require("./context-graph.js");
 const { mailAvailable } = require("./mail-availability.js");
 const { compActive } = require("./comp-window.js");
+const { paymentLink } = require("./payment-link.js");
+const { claimTravel, unclaimTravel } = require("./travel.js");
 
 // PURE: calendar/pay are taps, phone is the only typed question, and Gmail is skippable after pay.
 // COMP WINDOW: while LM_COMP_UNTIL is in the future an unpaid row passes the paywall and continues to
@@ -19,7 +21,8 @@ function coreReady(row) {
 }
 
 function computeStage(row, opts = {}) {
-  if (row && String(row.tg_onboard_stage || "").toLowerCase() === "done" && coreReady(row)) return "done";
+  const storedStage = String(row && row.tg_onboard_stage || "").toLowerCase();
+  if (coreReady(row) && ["done", "dashboard", "pay", "payment", "gmail"].includes(storedStage)) return "done";
   if (!row || row.calendar_provider !== "composio_gcal") return "calendar";
   // The panel state machine owns the canonical paid/core-ready terminal state. The legacy loop must
   // not reopen phone or Gmail for a paid user who intentionally skipped a phone, nor can it rewrite
@@ -104,7 +107,7 @@ async function sendStage(token, chatId, row, base, opts = {}) {
 
 // payout_destination rides along so the webhook can see a pending wallet-address intake (13d-a)
 // without a second round trip on every typed message.
-const SEL = "uid,name,telegram_chat_id,tg_onboard_stage,calendar_provider,gmail_account_id,gmail_skipped,email,phone,paid,home_address,payout_destination";
+const SEL = "uid,name,telegram_chat_id,tg_onboard_stage,calendar_provider,gmail_account_id,gmail_skipped,email,phone,paid,trial_expires_at,home_address,payout_destination";
 async function saveField(uid, patch, supaUrl, supaKey) {
   await fetch(`${supaUrl}/rest/v1/lm_users?uid=eq.${encodeURIComponent(uid)}`, {
     method: "PATCH",
@@ -216,6 +219,25 @@ const NUDGE_COOLDOWN_MS = 30 * 60 * 1000;
 // sharded across processes, move this to a column next to last_discovery_at.
 const nudgeSentAt = new Map();
 
+function escapeHtml(value) {
+  return String(value).replace(/[&<>\"]/g, (character) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;",
+  }[character]));
+}
+
+function trustedCheckoutLink(opts, uid) {
+  try {
+    const link = typeof opts.paymentLink === "function"
+      ? opts.paymentLink(opts, { uid })
+      : typeof opts.link === "function" ? opts.link(opts, { uid }) : paymentLink(opts, { uid });
+    const url = new URL(String(link || ""));
+    if (url.protocol !== "https:" || url.hostname !== "buy.stripe.com"
+      || url.username || url.password || url.pathname.length <= 1) return "";
+    url.searchParams.set("client_reference_id", String(uid));
+    return escapeHtml(url.toString());
+  } catch { return ""; }
+}
+
 async function onboardNudgeAll(opts) {
   if (!opts.token || !opts.supaUrl || !opts.supaKey) return 0;
   const list = opts.linkedRows || linkedRows;
@@ -230,6 +252,29 @@ async function onboardNudgeAll(opts) {
   for (const row of rows) {
     // Honour the panel notifications switch, like the ask and discovery loops already do.
     if (row.notifications_enabled === false) continue;
+    const expiresAt = Date.parse(String(row.trial_expires_at || ""));
+    const expired = Number.isFinite(expiresAt) && expiresAt <= now && row.paid !== true && coreReady(row);
+    if (expired && row.telegram_chat_id) {
+      const eventKey = String(row.trial_expires_at);
+      const claim = opts.claimTravel || claimTravel;
+      const unclaim = opts.unclaimTravel || unclaimTravel;
+      let claimed = false;
+      try { claimed = await claim(row.uid, eventKey, "trial-upgrade", opts.supaUrl, opts.supaKey); } catch { claimed = false; }
+      if (!claimed) continue;
+      const link = trustedCheckoutLink(opts, row.uid);
+      let result = { ok: false };
+      if (link) {
+        try {
+          result = await (opts.sendMessage || sendMessage)(opts.token, row.telegram_chat_id,
+            `無料期間が終了しました。\n\n<a href="${link}">月額プランを確認する</a>`);
+        } catch { result = { ok: false }; }
+      }
+      const messageId = result && result.ok === true && result.result && result.result.message_id;
+      if (!messageId) {
+        try { await unclaim(row.uid, eventKey, "trial-upgrade", opts.supaUrl, opts.supaKey); } catch { /* retry next tick */ }
+      } else sent++;
+      continue;
+    }
     const lastNudge = cooldown.get(row.uid);
     if (typeof lastNudge === "number" && now - lastNudge < NUDGE_COOLDOWN_MS) continue;
     let stage = computeStage(row);

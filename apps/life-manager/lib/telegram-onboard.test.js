@@ -6,6 +6,7 @@ const assert = require("node:assert");
 const {
   computeStage, stageMessage, isNativeStage, normalizePhone, telegramProfileName,
   applyTelegramProfileName, handleOnboardingText, handleGmailCallback, onboardNudgeAll, backfillIfCalendarCompleted,
+  linkedRows,
   NUDGE_COOLDOWN_MS,
 } = require("./telegram-onboard.js");
 const { startReply } = require("./telegram.js");
@@ -116,6 +117,110 @@ test("telegram-onboard.js contains no write of the paid column", () => {
 // re-prompted the moment a stage changes, and the loop ignored the notifications toggle its siblings
 // (ask/discovery) already honour.
 const nudgeRow = (over = {}) => ({ ...full, phone: null, paid: false, tg_onboard_stage: "calendar", ...over });
+
+// ── Trial upgrade (durable, separate from onboarding stage drift) ────────────
+const TRIAL_NOW = Date.parse("2026-08-31T12:00:00.000Z");
+const expiredTrialRow = {
+  ...full, uid: "trial-user", telegram_chat_id: "42", paid: false, tg_onboard_stage: "done",
+  trial_expires_at: "2026-08-31T11:59:00.000Z",
+};
+
+function trialRun(over = {}, overrides = {}) {
+  const order = [], sent = [], unclaims = [];
+  const row = { ...expiredTrialRow, ...over };
+  const opts = {
+    token: "t", base: "https://panel.example", supaUrl: "https://supa.example", supaKey: "k", now: TRIAL_NOW,
+    nudgeStore: new Map(), linkedRows: async () => [row], sendStage: async () => { throw new Error("ordinary nudge must not send"); },
+    setStage: async () => { throw new Error("trial upgrade must not rewrite stage"); },
+    backfillCalendarContext: async () => {},
+    claimTravel: async (...args) => { order.push(["claim", ...args]); return overrides.claimed !== false; },
+    unclaimTravel: async (...args) => { order.push(["unclaim", ...args]); unclaims.push(args); },
+    paymentLink: overrides.paymentLink || (() => "https://buy.stripe.com/test_life_manager?client_reference_id=trial-user"),
+    sendMessage: async (...args) => {
+      order.push(["send", ...args]);
+      const result = overrides.result === undefined ? { ok: true, result: { message_id: 901 } } : overrides.result;
+      args.result = result.result;
+      sent.push(args);
+      return result;
+    },
+  };
+  return { opts, order, sent, unclaims };
+}
+
+test("legacy pay rows do not reopen ordinary pay nudges", () => {
+  const base = nudgeRow({ tg_onboard_stage: "pay", paid: false, trial_expires_at: "2026-08-31T12:01:00.000Z" });
+  assert.equal(computeStage(base, { now: TRIAL_NOW, env: {} }), "done");
+  assert.equal(computeStage({ ...base, trial_expires_at: "2026-08-31T12:00:00.000Z" }, { now: TRIAL_NOW, env: {} }), "done");
+});
+
+test("linkedRows selects trial_expires_at with the existing user projection", async () => {
+  const urls = [];
+  const fetchImpl = async (url) => {
+    urls.push(String(url));
+    if (String(url).includes("lm_panel_preferences")) return { ok: true, json: async () => [] };
+    return { ok: true, json: async () => [] };
+  };
+  await linkedRows("https://supa.example", "k", { fetchImpl });
+  assert.match(urls[0], /select=[^&]*trial_expires_at/);
+});
+
+test("expired trial claims before send and keeps the claim after Telegram receipt", async () => {
+  const h = trialRun();
+  const count = await onboardNudgeAll(h.opts);
+  assert.equal(count, 1);
+  assert.deepEqual(h.order.map((entry) => entry[0]), ["claim", "send"]);
+  assert.equal(h.sent[0][1], "42");
+  assert.match(h.sent[0][2], /^無料期間が終了しました。/);
+  assert.match(h.sent[0][2], /<a href="https:\/\/buy\.stripe\.com\//);
+  assert.equal(h.sent[0].result.message_id, 901);
+  assert.equal(h.unclaims.length, 0);
+});
+
+test("a duplicate trial claim sends zero additional messages", async () => {
+  let attempts = 0;
+  const h = trialRun();
+  h.opts.claimTravel = async (...args) => {
+    h.order.push(["claim", ...args]);
+    attempts++;
+    return attempts === 1;
+  };
+  assert.equal(await onboardNudgeAll(h.opts), 1);
+  assert.equal(await onboardNudgeAll({ ...h.opts, nudgeStore: new Map() }), 0);
+  assert.deepEqual(h.order.map((entry) => entry[0]), ["claim", "send", "claim"]);
+  assert.equal(h.sent.length, 1);
+});
+
+test("failed or receipt-less trial sends release the claim for retry", async () => {
+  for (const result of [{ ok: false }, { ok: true, result: {} }]) {
+    const h = trialRun({}, { result });
+    assert.equal(await onboardNudgeAll(h.opts), 0);
+    assert.deepEqual(h.order.map((entry) => entry[0]), ["claim", "send", "unclaim"]);
+    assert.deepEqual(h.unclaims[0].slice(0, 3), ["trial-user", expiredTrialRow.trial_expires_at, "trial-upgrade"]);
+  }
+});
+
+test("missing trusted checkout releases the claim without sending", async () => {
+  const h = trialRun({}, { paymentLink: () => "" });
+  assert.equal(await onboardNudgeAll(h.opts), 0);
+  assert.deepEqual(h.order.map((entry) => entry[0]), ["claim", "unclaim"]);
+  assert.equal(h.sent.length, 0);
+});
+
+test("active, paid, incomplete, notifications-off, and Telegram-unbound rows send no upgrade", async () => {
+  const cases = [
+    { name: "active", row: { trial_expires_at: "2026-08-31T12:01:00.000Z" } },
+    { name: "paid", row: { paid: true } },
+    { name: "incomplete", row: { home_address: null, phone: null, tg_onboard_stage: "phone" } },
+    { name: "notifications-off", row: { notifications_enabled: false } },
+    { name: "Telegram-unbound", row: { telegram_chat_id: null } },
+  ];
+  for (const item of cases) {
+    const h = trialRun(item.row);
+    assert.equal(await onboardNudgeAll(h.opts), 0, item.name);
+    assert.equal(h.sent.length, 0, item.name);
+    assert.equal(h.order.length, 0, item.name);
+  }
+});
 
 test("notifications_enabled=false gets nothing", async () => {
   const calls = [];
@@ -278,7 +383,9 @@ test("Gmail skip persists gmail_skipped=true and advances to done", async () => 
 test("Gmail OFF: onboarding auto-skips with an honest preparation message and no OAuth button", async () => {
   await withCompUntilAsync(future(), async () => {
     const saved = [], stages = [], messages = [];
-    const row = { ...full, paid: false, gmail_account_id: null, gmail_skipped: false, tg_onboard_stage: "gmail" };
+    // Keep this row outside the core-ready terminal guard: the optional Gmail fallback is
+    // still exercised for legacy/incomplete rows, while a core-ready stored `gmail` stage is done.
+    const row = { ...full, paid: false, home_address: null, gmail_account_id: null, gmail_skipped: false, tg_onboard_stage: "gmail" };
     const sent = await onboardNudgeAll({ token: "t", base: "https://x", supaUrl: "s", supaKey: "k",
       nudgeStore: new Map(), // isolated per test: the real store is module-level and 30-min sticky
       linkedRows: async () => [row], mailAvailable: async () => false,
