@@ -1,5 +1,13 @@
 "use strict";
 
+function normalizeTransaction(row) {
+  return {
+    ...row,
+    merchant: String(row.merchant || "").trim().replace(/\s+/g, " "),
+    category: String(row.category || "未分類").trim() || "未分類",
+  };
+}
+
 function summarizeTransactions(transactions) {
   let incomeJpy = 0;
   let spendingJpy = 0;
@@ -15,4 +23,4 @@ function summarizeTransactions(transactions) {
   return { income_jpy: incomeJpy, spending_jpy: spendingJpy, net_jpy: incomeJpy - spendingJpy, excluded_transfer_rows: excludedTransferRows };
 }
 
-module.exports = { summarizeTransactions };
+module.exports = { normalizeTransaction, summarizeTransactions };
