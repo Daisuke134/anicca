@@ -48,7 +48,7 @@ different agent) can pick up exactly where this left off.
   already logged into the live `aniccabuddha.substack.com`/`anicca123`/etc accounts. Always
   `cdp_incognito.py close <ctx_id>` when done — never leave orphaned contexts on Dais's
   shared browser.
-- OTP / magic-link read: `gog gmail search --account keiodaisuke@gmail.com "<query>
+- OTP / magic-link read: `gog gmail search --account "$WRITER_GMAIL_ACCOUNT" "<query>
   in:anywhere newer_than:1h" --max 3 --plain` (needs `GOG_KEYRING_PASSWORD` in
   `~/.openclaw/.env`). Verified working (2026-07-17, live test against the real inbox).
 

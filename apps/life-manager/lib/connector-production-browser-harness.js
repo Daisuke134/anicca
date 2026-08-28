@@ -1350,9 +1350,10 @@ function createBoundedActionProposer(options = {}) {
   const evidenceDir = absoluteDirectory(options.evidenceDir);
   const runAgentRunner = options.runAgentRunner || runLocalAgentRunner;
   const extensionProvider = options.extensionProvider;
+  const stepTokenBudget = Number(options.stepTokenBudget == null ? 24_576 : options.stepTokenBudget);
   if (extensionProvider != null && (typeof extensionProvider !== "string" || !EXTENSION_PROVIDER.test(extensionProvider) || PROVIDERS.has(extensionProvider))) invalid();
   const supportsProvider = (provider) => PROVIDERS.has(provider) || (extensionProvider != null && provider === extensionProvider);
-  if (typeof runAgentRunner !== "function") invalid();
+  if (typeof runAgentRunner !== "function" || !Number.isSafeInteger(stepTokenBudget) || stepTokenBudget < 1 || stepTokenBudget > 1_000_000) invalid();
   const fallbackSequences = new Map();
   return async function proposeAction(input = {}) {
     const targetId = String(input.target_id || "");
@@ -1396,6 +1397,10 @@ function createBoundedActionProposer(options = {}) {
       },
       taskClass: "browser-lane-agent",
       timeoutMs: 30_000,
+      signal: input.signal,
+      readOnly: true,
+      tokenBudget: stepTokenBudget,
+      budgetScopeId: `connector-step-${input.provider}-${targetId}-${sequence}-${step}`,
       evidenceDir: path.join(evidenceDir, `target-${targetId}`, `fallback-${sequence}`, `step-${step}`),
       repoRoot,
     });
@@ -1777,6 +1782,7 @@ function createProductionBrowserHarness(options = {}) {
   }
 
   async function runFallback(input = {}) {
+    if (input.expectedState != null && input.expectedState !== "registered_or_pending") throw new Error("Browser Harness adapter invalid");
     if (!supportsProvider(input.provider) || !input.candidate) invalid();
     if (input.provider === "techplay") return runTechPlayInputFallback(input);
     const workflow = input.provider === extensionProvider ? extensionWorkflow

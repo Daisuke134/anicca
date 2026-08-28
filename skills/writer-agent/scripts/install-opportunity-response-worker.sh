@@ -12,6 +12,7 @@ LABEL="ai.anicca.writer-opportunity-response"
 DOMAIN="gui/$(id -u)"
 PLIST="$HOME/Library/LaunchAgents/$LABEL.plist"
 LOG_DIR="$HOME/.openclaw/logs"
+WRITER_GMAIL_ACCOUNT="${WRITER_GMAIL_ACCOUNT:?WRITER_GMAIL_ACCOUNT is required}"
 
 if [ "$DRY_RUN" = "1" ]; then
   printf 'DRY-RUN: install %s -> %s (StartInterval=900 RunAtLoad=true gmail-no-send=required kickstart=immediate)\n' \
@@ -38,7 +39,7 @@ cat >"$TMP_PLIST" <<PLIST
   <key>EnvironmentVariables</key>
   <dict>
     <key>HOME</key><string>$HOME</string>
-    <key>WRITER_GMAIL_ACCOUNT</key><string>keiodaisuke@gmail.com</string>
+    <key>WRITER_GMAIL_ACCOUNT</key><string>$WRITER_GMAIL_ACCOUNT</string>
     <key>PATH</key><string>$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
   </dict>
   <key>StartInterval</key><integer>900</integer>

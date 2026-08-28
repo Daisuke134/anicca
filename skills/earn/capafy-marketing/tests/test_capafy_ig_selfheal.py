@@ -40,12 +40,16 @@ def run_selfheal(
             (state / label).touch()
     calls = tmp_path / "calls.log"
     safe = tmp_path / "launchctl-safe"
+    bootstrap_action = (
+        "exit 1" if fail_bootstrap
+        else 'label=$(basename "$3" .plist); mkdir -p "$STATE"; touch "$STATE/$label"'
+    )
     safe.write_text(
         "#!/bin/sh\n"
         f"echo \"$*\" >> '{calls}'\n"
         "case \"$1\" in\n"
         " print) label=${2##*/}; [ -f \"$STATE/$label\" ] || exit 1 ;;\n"
-        f" bootstrap) {'exit 1' if fail_bootstrap else 'label=$(basename \"$3\" .plist); mkdir -p \"$STATE\"; touch \"$STATE/$label\"'} ;;\n"
+        f" bootstrap) {bootstrap_action} ;;\n"
         " kickstart) ;;\n"
         " preflight) ;;\n"
         "esac\n",

@@ -122,3 +122,97 @@ test("adapter stops after ten unsuccessful steps without changing the page owner
   assert.equal(performed, 10);
   assert.equal(result.repaired_actions.length, 10);
 });
+
+test("bounded specialist supports application readback and heartbeats every model step", async () => {
+  const calls = [];
+  const adapter = createBrowserHarnessAdapter({
+    async heartbeat(input) {
+      calls.push(["heartbeat", input.step, input.expected_state]);
+    },
+    async observePage(input) {
+      assert.equal(input.signal.aborted, false);
+      return Object.freeze({ state: "application_form", controls: ["proposal"] });
+    },
+    async proposeAction(input) {
+      assert.equal(input.expected_state, "application_present");
+      assert.equal(input.signal.aborted, false);
+      return Object.freeze({ purpose: "submit", method: "ax_click", control: "proposal_submit" });
+    },
+    async performAction(input) {
+      assert.equal(input.signal.aborted, false);
+      return Object.freeze({ status: "success" });
+    },
+    async readExpectedState(input) {
+      assert.equal(input.signal.aborted, false);
+      return Object.freeze({ status: "present" });
+    },
+    isCompletedState(state, expectedState) {
+      calls.push(["complete", state.status, expectedState]);
+      return expectedState === "application_present" && state.status === "present";
+    },
+  });
+
+  const result = await adapter.runFallback({
+    provider: "lancers",
+    page: {},
+    pageWebsocket: PAGE_WS,
+    expectedState: "application_present",
+    maxSteps: 3,
+    maxDurationMs: 1_000,
+  });
+
+  assert.equal(result.status, "completed");
+  assert.deepEqual(calls, [
+    ["heartbeat", 1, "application_present"],
+    ["complete", "present", "application_present"],
+  ]);
+});
+
+test("bounded specialist stops before work when its parent is cancelled", async () => {
+  const controller = new AbortController();
+  controller.abort();
+  const adapter = createBrowserHarnessAdapter({
+    async heartbeat() { throw new Error("cancelled specialist must not heartbeat"); },
+    async observePage() { throw new Error("cancelled specialist must not observe"); },
+    async proposeAction() { throw new Error("cancelled specialist must not decide"); },
+    async performAction() { throw new Error("cancelled specialist must not act"); },
+    async readExpectedState() { throw new Error("cancelled specialist must not read back"); },
+  });
+
+  const result = await adapter.runFallback({
+    provider: "lancers", page: {}, pageWebsocket: PAGE_WS,
+    expectedState: "application_present", maxSteps: 3, maxDurationMs: 1_000,
+    signal: controller.signal,
+  });
+
+  assert.deepEqual(result, {
+    status: "failed",
+    safe_reason: "cancelled",
+    repaired_actions: [],
+  });
+});
+
+test("bounded specialist deadline aborts an in-flight dependency", async () => {
+  let observedSignal;
+  const adapter = createBrowserHarnessAdapter({
+    async observePage(input) {
+      observedSignal = input.signal;
+      return new Promise(() => {});
+    },
+    async proposeAction() { throw new Error("deadline must stop before decision"); },
+    async performAction() { throw new Error("deadline must stop before action"); },
+    async readExpectedState() { throw new Error("deadline must stop before readback"); },
+  });
+
+  const result = await adapter.runFallback({
+    provider: "lancers", page: {}, pageWebsocket: PAGE_WS,
+    expectedState: "application_present", maxSteps: 3, maxDurationMs: 20,
+  });
+
+  assert.equal(observedSignal.aborted, true);
+  assert.deepEqual(result, {
+    status: "failed",
+    safe_reason: "time_limit",
+    repaired_actions: [],
+  });
+});

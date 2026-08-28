@@ -43,6 +43,7 @@ const PORTABLE_RUNTIME_FILES = new Set([
 const VERIFIED_VENDOR_ROOTS = [
   "skills/capafy-autopublish/vendor",
 ];
+const BASELINE_PATH = ".oss-self-contained-baseline.json";
 
 function git(root, args, encoding = "utf8") {
   return execFileSync("git", args, {
@@ -144,6 +145,45 @@ function generatedArtifact(path) {
 
 function sha256(value) {
   return createHash("sha256").update(value).digest("hex");
+}
+
+function evidenceDigest(root, path, entries) {
+  const exact = entries.find((entry) => entry.path === path);
+  if (exact && exact.mode !== "120000" && exact.mode !== "160000") {
+    const absolute = resolve(root, path);
+    if (existsSync(absolute)) return sha256(readFileSync(absolute));
+  }
+  const inventory = entries
+    .filter((entry) => entry.path.startsWith(`${path}/`))
+    .map((entry) => `${entry.mode}\0${entry.object}\0${entry.path}\n`)
+    .sort()
+    .join("");
+  return sha256(inventory || `missing\0${path}`);
+}
+
+function applyBaseline(root, entries, violations) {
+  const absolute = resolve(root, BASELINE_PATH);
+  if (!existsSync(absolute)) return violations;
+  let baseline;
+  try {
+    baseline = JSON.parse(readFileSync(absolute, "utf8"));
+  } catch {
+    return [...violations, { code: "baseline_invalid", path: BASELINE_PATH, detail: "invalid JSON" }];
+  }
+  if (baseline.version !== 1 || !Array.isArray(baseline.entries)) {
+    return [...violations, { code: "baseline_invalid", path: BASELINE_PATH, detail: "invalid contract" }];
+  }
+  const accepted = new Set();
+  for (const entry of baseline.entries) {
+    if (!entry || typeof entry.code !== "string" || typeof entry.path !== "string"
+      || !/^[0-9a-f]{64}$/u.test(String(entry.evidence_sha256 || ""))) {
+      return [...violations, { code: "baseline_invalid", path: BASELINE_PATH, detail: "invalid entry" }];
+    }
+    accepted.add(`${entry.code}\0${entry.path}\0${entry.evidence_sha256}`);
+  }
+  return violations.filter((violation) => !accepted.has(
+    `${violation.code}\0${violation.path}\0${evidenceDigest(root, violation.path, entries)}`,
+  ));
 }
 
 function readManifest(root, violations, entries) {
@@ -295,9 +335,10 @@ export function verifyRepository(inputRoot) {
   }
 
   readManifest(root, violations, entries);
-  violations.sort((left, right) =>
+  const remaining = applyBaseline(root, entries, violations);
+  remaining.sort((left, right) =>
     left.path.localeCompare(right.path) || left.code.localeCompare(right.code));
-  return { ok: violations.length === 0, violations };
+  return { ok: remaining.length === 0, violations: remaining };
 }
 
 function parseArgs(argv) {

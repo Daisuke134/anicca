@@ -10,6 +10,21 @@
       "state": "unknown",
       "actions": ["discover", "inspect", "submit_proposal", "message", "accept_offer", "deliver_milestone", "read_payments", "read_payouts"]
     },
+    "lancers": {
+      "state": "unknown",
+      "actions": ["submit_proposal"],
+      "capability": {
+        "id": "marketplace.application",
+        "action": "submit_proposal",
+        "transport": "cloak_browser",
+        "authorization": {
+          "receipt_required": true,
+          "required_state": "approved_browser"
+        },
+        "human_only_when_required": ["captcha", "identity", "tax", "payout"],
+        "readback": {"record_type": "application_receipt"}
+      }
+    },
     "fiverr": {
       "state": "unknown",
       "actions": ["read_catalogue", "publish_gig", "update_gig", "message", "custom_offer", "read_order", "deliver", "revise", "read_earnings", "read_payouts"]

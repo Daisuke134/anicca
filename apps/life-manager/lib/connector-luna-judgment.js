@@ -2,7 +2,7 @@
 
 const fs = require("node:fs");
 const path = require("node:path");
-const { spawnSync } = require("node:child_process");
+const { spawn } = require("node:child_process");
 
 const { inferEventGoalSerendipity } = require("./event-goal-serendipity.js");
 const { inferEventPreferenceRanking } = require("./event-preference-ranking.js");
@@ -27,12 +27,55 @@ function containedFile(root, value) {
   return file;
 }
 
-function runLocalAgentRunner(input = {}, deps = {}) {
+function runChild(command, args, options, deps) {
+  if (typeof deps.spawnSync === "function") {
+    return Promise.resolve(deps.spawnSync(command, args, options));
+  }
+  return new Promise((resolve, reject) => {
+    const { input, maxBuffer, encoding: _encoding, ...spawnOptions } = options;
+    const child = (typeof deps.spawn === "function" ? deps.spawn : spawn)(
+      command, args, { ...spawnOptions, stdio: ["pipe", "pipe", "pipe"] },
+    );
+    let stdout = "";
+    let stderr = "";
+    let settled = false;
+    const fail = (error) => {
+      if (settled) return;
+      settled = true;
+      reject(error);
+    };
+    const append = (current, chunk) => {
+      const next = current + String(chunk);
+      if (Buffer.byteLength(next) > maxBuffer) {
+        child.kill("SIGTERM");
+        throw new Error("agent-runner output exceeded limit");
+      }
+      return next;
+    };
+    child.stdout.setEncoding("utf8");
+    child.stderr.setEncoding("utf8");
+    child.stdout.on("data", (chunk) => { try { stdout = append(stdout, chunk); } catch (error) { fail(error); } });
+    child.stderr.on("data", (chunk) => { try { stderr = append(stderr, chunk); } catch (error) { fail(error); } });
+    child.once("error", fail);
+    child.once("close", (code) => {
+      if (settled) return;
+      settled = true;
+      resolve({ status: code, stdout, stderr });
+    });
+    child.stdin.end(input);
+  });
+}
+
+async function runLocalAgentRunner(input = {}, deps = {}) {
   try {
     const prompt = String(input.prompt == null ? "" : input.prompt);
     const taskClass = input.taskClass == null ? "repeatable-agent" : String(input.taskClass);
     const schema = input.schema;
     const timeoutMs = Number(input.timeoutMs);
+    const signal = input.signal;
+    const readOnly = input.readOnly === true;
+    const tokenBudget = input.tokenBudget == null ? null : Number(input.tokenBudget);
+    const budgetScopeId = input.budgetScopeId == null ? "" : String(input.budgetScopeId);
     const evidenceDir = absoluteDirectory(input.evidenceDir);
     const repoRoot = absoluteDirectory(input.repoRoot);
     const runnerPath = path.resolve(String(
@@ -43,6 +86,10 @@ function runLocalAgentRunner(input = {}, deps = {}) {
       || !schema || typeof schema !== "object" || Array.isArray(schema)
       || !["repeatable-agent", "browser-lane-agent"].includes(taskClass)
       || !Number.isSafeInteger(timeoutMs) || timeoutMs < 1_000 || timeoutMs > 900_000
+      || (signal != null && (typeof signal !== "object" || typeof signal.aborted !== "boolean"))
+      || ((tokenBudget == null) !== (budgetScopeId === ""))
+      || (tokenBudget != null && (!Number.isSafeInteger(tokenBudget) || tokenBudget < 1 || tokenBudget > 1_000_000))
+      || (budgetScopeId && !/^[A-Za-z0-9._:-]{1,200}$/.test(budgetScopeId))
     ) unavailable();
     const isRunnerFile = typeof deps.isRunnerFile === "function"
       ? deps.isRunnerFile
@@ -52,8 +99,7 @@ function runLocalAgentRunner(input = {}, deps = {}) {
     fs.chmodSync(evidenceDir, 0o700);
     const schemaPath = path.join(evidenceDir, "schema.json");
     fs.writeFileSync(schemaPath, `${JSON.stringify(schema)}\n`, { encoding: "utf8", mode: 0o600, flag: "w" });
-    const execute = typeof deps.spawnSync === "function" ? deps.spawnSync : spawnSync;
-    const completed = execute("python3", [
+    const args = [
       runnerPath,
       "--task-class", taskClass,
       "--prompt-stdin",
@@ -63,13 +109,23 @@ function runLocalAgentRunner(input = {}, deps = {}) {
         ? "connector-event-application" : "connector-event-judgment",
       "--loop", "connector",
       "--workdir", repoRoot,
-    ], {
+      "--timeout-seconds", String(Math.ceil(timeoutMs / 1_000)),
+      ...(readOnly ? ["--read-only"] : []),
+    ];
+    const env = { ...process.env };
+    if (tokenBudget != null) Object.assign(env, {
+      ANICCA_BUDGET_REQUIRED: "1",
+      ANICCA_BUDGET_SCOPE_ID: budgetScopeId,
+      ANICCA_PASS_TOKEN_BUDGET: String(tokenBudget),
+    });
+    const completed = await runChild("python3", args, {
       input: prompt,
       encoding: "utf8",
       timeout: timeoutMs + 5_000,
       maxBuffer: 1_000_000,
-      env: { ...process.env },
-    });
+      env,
+      signal,
+    }, deps);
     if (!completed || completed.status !== 0) unavailable();
     let summary;
     try { summary = JSON.parse(String(completed.stdout || "").trim()); }

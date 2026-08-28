@@ -95,7 +95,7 @@ const ROUTE_META: Record<RouteId, {
     method: "POST",
     path: "/v0/call",
     description: "Bland.ai outbound voice call (~30 s).",
-    inputExample: { phone: "+15551234567", topic: "lateness check" },
+    inputExample: { phone: "phone-ref", topic: "lateness check" },
     outputExample: { ok: true, call_id: "…" },
   },
 };

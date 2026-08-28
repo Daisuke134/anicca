@@ -13,6 +13,54 @@ ROOT = Path(__file__).resolve().parents[3]
 
 
 class CleanUserInstallTest(unittest.TestCase):
+    def test_public_archive_contains_general_agent_release_contract(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            release = root / "release"
+            release.mkdir()
+            archive = root / "release.tar"
+            tree = subprocess.run(
+                ["git", "write-tree"], cwd=ROOT, check=True,
+                capture_output=True, text=True).stdout.strip()
+            subprocess.run(
+                [
+                    "git", "archive", "--format=tar", "-o", str(archive), tree,
+                    "README.md", "LICENSE", "THIRD_PARTY_NOTICES.md",
+                    "apps/life-manager/.env.example",
+                    "skills/earn/gig/config/provider-capability.example.json",
+                ],
+                cwd=ROOT, check=True)
+            with tarfile.open(archive) as handle:
+                handle.extractall(release)
+
+            manifest = json.loads((
+                release / "skills/earn/gig/config/provider-capability.example.json"
+            ).read_text())
+            self.assertEqual(manifest["capability"], "marketplace.application")
+            self.assertEqual(manifest["effect"]["replay"], "zero")
+
+            env_lines = (release / "apps/life-manager/.env.example").read_text().splitlines()
+            refs = [line.split("=", 1)[1] for line in env_lines
+                    if line and not line.startswith("#") and line.split("=", 1)[0].endswith("_REF")]
+            self.assertTrue(refs)
+            self.assertTrue(all(value.startswith("secret://") for value in refs))
+
+            readme = (release / "README.md").read_text()
+            self.assertIn("### Use it — cloud", readme)
+            self.assertIn("./scripts/local-up.sh", readme)
+            self.assertTrue((release / "LICENSE").is_file())
+
+            notices = (release / "THIRD_PARTY_NOTICES.md").read_text()
+            for project, license_name in (
+                ("DeepAgentsJS", "MIT"),
+                ("browser-use", "MIT"),
+                ("OpenClaw", "MIT"),
+                ("Steel Browser", "Apache-2.0"),
+            ):
+                self.assertIn(project, notices)
+                self.assertIn(license_name, notices)
+            self.assertIn("No source code from these projects is vendored", notices)
+
     def test_clean_user_installs_every_generated_job_without_starting_workloads(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

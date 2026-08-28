@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { mkdtempSync, mkdirSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -83,6 +84,34 @@ test("a clean committed fixture passes the OSS self-contained contract", () => {
     `verifier failed\nstdout=${result.stdout}\nstderr=${result.stderr}`,
   );
   assert.deepEqual(result.payload, { ok: true, violations: [] });
+});
+
+test("an exact legacy baseline passes until the violating file changes", () => {
+  const root = createFixture();
+  const path = "runtime/legacy.sh";
+  write(root, path, 'ROOT="$HOME/anicca/legacy"\n');
+  git(root, "add", path);
+  const evidenceSha256 = createHash("sha256")
+    .update(readFileSync(join(root, path)))
+    .digest("hex");
+  write(root, ".oss-self-contained-baseline.json", `${JSON.stringify({
+    version: 1,
+    entries: [{ code: "forbidden_source_root", path, evidence_sha256: evidenceSha256 }],
+  }, null, 2)}\n`);
+  git(root, "add", ".oss-self-contained-baseline.json");
+
+  const accepted = verify(root);
+  assert.equal(accepted.status, 0, accepted.stderr);
+  assert.deepEqual(accepted.payload, { ok: true, violations: [] });
+
+  write(root, path, 'ROOT="$HOME/anicca/changed"\n');
+  git(root, "add", path);
+  const drifted = verify(root);
+  assert.equal(drifted.status, 1);
+  assert.deepEqual(
+    drifted.payload.violations.map(({ code, path: value }) => [code, value]),
+    [["forbidden_source_root", path]],
+  );
 });
 
 test("gitlinks and symlinks escaping the checkout fail with closed codes", () => {
