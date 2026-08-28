@@ -2,9 +2,10 @@ import unittest
 import json
 import subprocess
 import tempfile
+import plistlib
 from pathlib import Path
 
-from runtime.loop.lm_loop import _last_event, doctor_report, status_rows
+from runtime.loop.lm_loop import _last_event, _release_from_plist, doctor_report, status_rows
 
 
 REGISTRY = {"schema_version": 2, "loops": {"example": {
@@ -81,6 +82,15 @@ class LmLoopReadonlyTest(unittest.TestCase):
             root = Path(directory)
             (root / "events.jsonl").write_text('{"status":"pass","effect_status":"verified"}\n')
             self.assertIsNone(_last_event(str(root)))
+
+    def test_installed_release_uses_full_sha_from_generated_plist(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "job.plist"
+            path.write_bytes(plistlib.dumps({
+                "ProgramArguments": ["/loops/releases/20260828T000000-12345678/bin/lm-loop-run"],
+                "EnvironmentVariables": {"LIFE_MANAGER_RELEASE_SHA": "a" * 40},
+            }))
+            self.assertEqual(_release_from_plist(path), "a" * 40)
 
 
 if __name__ == "__main__":
