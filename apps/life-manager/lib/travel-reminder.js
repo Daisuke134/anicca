@@ -52,6 +52,18 @@ function matchesOtherEventWindow(candidateEnd, events, event, candidate) {
   });
 }
 
+function matchesOtherEventEnd(candidateStart, events, event, candidate) {
+  return events.some((other) => {
+    if (!other || other === event || other === candidate) return false;
+    if (other.id && (other.id === event.id || (candidate.id && other.id === candidate.id))) return false;
+    if (helper(other)) return false;
+    const otherEnd = endMs(other);
+    return otherEnd !== null
+      && candidateStart >= otherEnd - 60000
+      && candidateStart <= otherEnd + 60000;
+  });
+}
+
 function resolveReminderDestination(event, { events = [], home } = {}) {
   const fallback = String(event && event.location || "").trim();
   const normalizedHome = normalizeLocation(home);
@@ -65,6 +77,7 @@ function resolveReminderDestination(event, { events = [], home } = {}) {
     if (!location || (normalizedHome && normalizeLocation(location) === normalizedHome) || start === null || candidateStart === null || candidateEnd === null) continue;
     if (candidateEnd < start - 2 * 60000 || candidateEnd > start + 60000 || candidateStart > start || (end !== null && candidateStart >= end)) continue;
     if (matchesOtherEventWindow(candidateEnd, list, event, candidate)) continue;
+    if (matchesOtherEventEnd(candidateStart, list, event, candidate)) continue;
     matches.push({ start: candidateStart, location });
   }
   return matches.length === 1 ? matches[0].location : fallback;

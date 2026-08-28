@@ -127,6 +127,28 @@ test("resolved destination rejects a home-destination return block", () => {
   assert.equal(resolveReminderDestination(current, { events: [homeReturn, current], home: HOME }), current.location);
 });
 
+test("resolved destination rejects an old-home return block by event geometry", () => {
+  const previous = event({
+    id: "previous-old-home",
+    summary: "前の予定",
+    location: "赤坂",
+    startMs: START - 60 * 60000,
+    endMs: START - 20 * 60000,
+  });
+  const returnBlock = {
+    id: "return-old-home",
+    summary: "[Travel] 🚆 赤坂→旧自宅",
+    location: "東京都新宿区1丁目1番1号 旧建物",
+    startMs: previous.endMs,
+    endMs: START,
+  };
+  const current = event({ id: "target-after-return", location: "MUIT 出社 (着席)" });
+  assert.equal(
+    resolveReminderDestination(current, { events: [previous, returnBlock, current], home: HOME }),
+    current.location,
+  );
+});
+
 test("resolved destination fails closed when adjacent candidates are ambiguous", () => {
   const current = event({ id: "target-ambiguous", location: "渋谷" });
   const ambiguous = [
