@@ -572,7 +572,7 @@ def provider_process_env(provider: str, provider_config: dict[str, Any],
 def resolve_provider_profiles(
     candidates: list[dict[str, Any]], providers: dict[str, Any]
 ) -> list[dict[str, Any]]:
-    """Resolve one explicitly named provider profile without candidate expansion."""
+    """Resolve explicit profiles and expand the configured Codex account route."""
     resolved: list[dict[str, Any]] = []
     for candidate in candidates:
         if candidate.get("provider") != "codex":
@@ -581,18 +581,43 @@ def resolve_provider_profiles(
         alias = candidate.get("profile_alias")
         if not isinstance(alias, str) or not alias:
             raise ValueError("codex candidate requires explicit profile_alias")
-        profile = providers.get("codex", {}).get("profiles", {}).get(alias)
-        if not isinstance(profile, dict):
-            raise ValueError(f"codex profile_alias is not configured: {alias}")
-        scoped = dict(candidate)
-        scoped.update({
-            "automation_home": profile.get("automation_home"),
-            "auth_file": profile.get("auth_file"),
-        })
-        if not scoped["automation_home"] or not scoped["auth_file"]:
-            raise ValueError(f"codex profile is incomplete: {alias}")
-        resolved.append(scoped)
+        codex = providers.get("codex", {})
+        profiles = codex.get("profiles", {})
+        order = codex.get("account_profile_order") or [alias]
+        if not isinstance(order, list) or not order or not all(
+            isinstance(value, str) and value for value in order
+        ):
+            raise ValueError("codex account_profile_order is invalid")
+        for position, profile_alias in enumerate(order):
+            profile = profiles.get(profile_alias)
+            if not isinstance(profile, dict):
+                raise ValueError(f"codex profile_alias is not configured: {profile_alias}")
+            scoped = dict(candidate)
+            scoped.update({
+                "profile_alias": profile_alias,
+                "automation_home": profile.get("automation_home"),
+                "auth_file": profile.get("auth_file"),
+                "account_fallback_next": position < len(order) - 1,
+            })
+            if not scoped["automation_home"] or not scoped["auth_file"]:
+                raise ValueError(f"codex profile is incomplete: {profile_alias}")
+            resolved.append(scoped)
     return resolved
+
+
+def codex_attempt_started_work(stdout: str) -> bool:
+    """Treat any non-error Codex item as effect-uncertain work."""
+    for line in stdout.splitlines():
+        try:
+            event = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if event.get("type") not in {"item.started", "item.completed"}:
+            continue
+        item = event.get("item")
+        if isinstance(item, dict) and item.get("type") != "error":
+            return True
+    return False
 
 
 # The live provider Popen, if any. start_new_session detaches the provider into its
@@ -1583,6 +1608,14 @@ def run() -> int:
         # timeout, expired provider auth, provider availability, or quota failures.
         if rc == 0 and result_fresh and not schema_valid:
             break
+        if effective_candidate.get("account_fallback_next"):
+            if (
+                error_class not in ("transient_quota", "transient_auth")
+                or result_fresh
+                or codex_attempt_started_work(stdout_text)
+            ):
+                break
+            continue
         if error_class not in (
             "transient_timeout", "transient_quota", "transient_unavailable", "transient_auth",
         ):
