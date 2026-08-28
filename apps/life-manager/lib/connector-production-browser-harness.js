@@ -1777,6 +1777,7 @@ function createProductionBrowserHarness(options = {}) {
   }
 
   async function runFallback(input = {}) {
+    if (input.expectedState != null && input.expectedState !== "registered_or_pending") throw new Error("Browser Harness adapter invalid");
     if (!supportsProvider(input.provider) || !input.candidate) invalid();
     if (input.provider === "techplay") return runTechPlayInputFallback(input);
     const workflow = input.provider === extensionProvider ? extensionWorkflow

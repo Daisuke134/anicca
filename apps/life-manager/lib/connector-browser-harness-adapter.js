@@ -3,6 +3,8 @@
 const PAGE_WEBSOCKET = /^ws:\/\/127\.0\.0\.1:9222\/devtools\/page\/([A-Za-z0-9._-]{3,128})$/;
 const PROVIDER = /^[a-z][a-z0-9_-]{1,31}$/;
 const CONTROL = /^[a-z][a-z0-9_-]{1,63}$/;
+const EXPECTED_STATE = /^[a-z][a-z0-9_]{1,63}$/;
+const DEFAULT_DURATION_MS = 120_000;
 const ALLOWED = new Map([
   ["observe", new Set(["ax_inspect", "dom_inspect", "parent_readback"])],
   ["fill", new Set(["ax_fill", "dom_fill", "ax_check", "ax_select", "ax_uncheck"])],
@@ -19,7 +21,13 @@ function dependencies(input) {
   for (const name of ["observePage", "proposeAction", "performAction", "readExpectedState"]) {
     if (typeof input[name] !== "function") invalid();
   }
-  return input;
+  if (input.heartbeat != null && typeof input.heartbeat !== "function") invalid();
+  if (input.isCompletedState != null && typeof input.isCompletedState !== "function") invalid();
+  return {
+    ...input,
+    heartbeat: input.heartbeat || (async () => {}),
+    isCompletedState: input.isCompletedState || ((value) => completedState(value)),
+  };
 }
 
 function scope(input) {
@@ -28,16 +36,26 @@ function scope(input) {
   const match = PAGE_WEBSOCKET.exec(websocket);
   if (!match || !input.page || typeof input.page !== "object") invalid();
   const provider = String(input.provider || "");
-  if (!PROVIDER.test(provider) || input.expectedState !== "registered_or_pending") invalid();
+  const expectedState = String(input.expectedState || "");
+  if (!PROVIDER.test(provider) || !EXPECTED_STATE.test(expectedState)) invalid();
   const maxSteps = Number(input.maxSteps);
   if (!Number.isInteger(maxSteps) || maxSteps < 1 || maxSteps > 10) invalid();
+  const maxDurationMs = Number(input.maxDurationMs == null ? DEFAULT_DURATION_MS : input.maxDurationMs);
+  if (!Number.isInteger(maxDurationMs) || maxDurationMs < 1 || maxDurationMs > 900_000) invalid();
+  const signal = input.signal;
+  if (signal != null && (
+    typeof signal !== "object" || typeof signal.aborted !== "boolean"
+    || typeof signal.addEventListener !== "function" || typeof signal.removeEventListener !== "function"
+  )) invalid();
   return Object.freeze({
     provider,
     page: input.page,
     page_websocket: websocket,
     target_id: match[1],
-    expected_state: input.expectedState,
+    expected_state: expectedState,
     max_steps: maxSteps,
+    max_duration_ms: maxDurationMs,
+    signal: signal || null,
   });
 }
 
@@ -59,53 +77,62 @@ function createBrowserHarnessAdapter(options = {}) {
 
   async function execute(bounded) {
     const repaired = [];
-    for (let step = 1; step <= bounded.max_steps; step += 1) {
-      const observation = await deps.observePage(Object.freeze({
-        page: bounded.page,
-        target_id: bounded.target_id,
-      }));
-      const proposed = await deps.proposeAction(Object.freeze({
-        provider: bounded.provider,
-        page_websocket: bounded.page_websocket,
-        target_id: bounded.target_id,
-        expected_state: bounded.expected_state,
-        step,
-        observation,
-      }));
-      const action = safeAction(proposed);
-      if (!action) {
-        return Object.freeze({
-          status: "failed",
-          safe_reason: "unsafe_agent_action",
-          repaired_actions: Object.freeze([...repaired]),
+    const controller = new AbortController();
+    let stopReason = "time_limit";
+    const stop = () => Object.freeze({
+      status: "failed",
+      safe_reason: stopReason,
+      repaired_actions: Object.freeze([...repaired]),
+    });
+    const parentAbort = () => {
+      stopReason = "cancelled";
+      controller.abort();
+    };
+    if (bounded.signal) bounded.signal.addEventListener("abort", parentAbort, { once: true });
+    if (bounded.signal && bounded.signal.aborted) parentAbort();
+    const timer = setTimeout(() => controller.abort(), bounded.max_duration_ms);
+    const call = (fn, input) => new Promise((resolve, reject) => {
+      if (controller.signal.aborted) return reject(new Error("bounded specialist stopped"));
+      const onAbort = () => reject(new Error("bounded specialist stopped"));
+      controller.signal.addEventListener("abort", onAbort, { once: true });
+      Promise.resolve().then(() => fn(Object.freeze({ ...input, signal: controller.signal })))
+        .then(resolve, reject).finally(() => controller.signal.removeEventListener("abort", onAbort));
+    });
+    try {
+      for (let step = 1; step <= bounded.max_steps; step += 1) {
+        await call(deps.heartbeat, {
+          provider: bounded.provider, target_id: bounded.target_id,
+          expected_state: bounded.expected_state, step,
         });
-      }
-      const effect = await deps.performAction(Object.freeze({
-        page: bounded.page,
-        target_id: bounded.target_id,
-        action,
-      }));
-      if (!effect || effect.status !== "success") {
-        return Object.freeze({
-          status: "failed",
-          safe_reason: "agent_action_failed",
-          repaired_actions: Object.freeze([...repaired]),
+        const observation = await call(deps.observePage, {
+          page: bounded.page, target_id: bounded.target_id,
         });
-      }
-      repaired.push(action);
-      const providerState = await deps.readExpectedState(Object.freeze({
-        page: bounded.page,
-        target_id: bounded.target_id,
-        provider: bounded.provider,
-        expected_state: bounded.expected_state,
-      }));
-      if (completedState(providerState)) {
-        return Object.freeze({
-          status: "completed",
-          provider_state: Object.freeze({ ...providerState }),
-          repaired_actions: Object.freeze([...repaired]),
+        const proposed = await call(deps.proposeAction, {
+          provider: bounded.provider, page_websocket: bounded.page_websocket,
+          target_id: bounded.target_id, expected_state: bounded.expected_state,
+          step, observation,
         });
+        const action = safeAction(proposed);
+        if (!action) return Object.freeze({ status: "failed", safe_reason: "unsafe_agent_action", repaired_actions: Object.freeze([...repaired]) });
+        const effect = await call(deps.performAction, {
+          page: bounded.page, target_id: bounded.target_id, action,
+        });
+        if (!effect || effect.status !== "success") return Object.freeze({ status: "failed", safe_reason: "agent_action_failed", repaired_actions: Object.freeze([...repaired]) });
+        repaired.push(action);
+        const providerState = await call(deps.readExpectedState, {
+          page: bounded.page, target_id: bounded.target_id, provider: bounded.provider,
+          expected_state: bounded.expected_state,
+        });
+        if (deps.isCompletedState(providerState, bounded.expected_state)) {
+          return Object.freeze({ status: "completed", provider_state: Object.freeze({ ...providerState }), repaired_actions: Object.freeze([...repaired]) });
+        }
       }
+    } catch (error) {
+      if (controller.signal.aborted) return stop();
+      throw error;
+    } finally {
+      clearTimeout(timer);
+      if (bounded.signal) bounded.signal.removeEventListener("abort", parentAbort);
     }
     return Object.freeze({
       status: "failed",

@@ -11,6 +11,7 @@
 **Files:**
 - Modify: `apps/life-manager/lib/connector-browser-harness-adapter.js`
 - Modify: `apps/life-manager/lib/connector-browser-harness-adapter.test.js`
+- Modify: `apps/life-manager/lib/connector-production-browser-harness.js` (preserve the event-only expected-state fence)
 
 1. Add failing tests for a generic `application_present` expected state, per-step heartbeat, parent cancellation, and a hard elapsed-time boundary.
 2. Preserve the existing maximum ten actions and allowlist.
