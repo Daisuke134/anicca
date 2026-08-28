@@ -61,6 +61,8 @@ HARD_PROHIBITED = "hard_prohibited"
 DUPLICATE_FENCED = "duplicate_fenced"
 OFFICIALLY_UNSUBMITTABLE = "officially_unsubmittable"
 DIRECT_MAX_APPLICATIONS = 20
+APPLY_EVIDENCE_HIGH_WATER_BYTES = 400 * 1024 * 1024
+APPLY_EVIDENCE_LOW_WATER_BYTES = 250 * 1024 * 1024
 
 
 def _official_open_scan_prep(prep: dict[str, Any]) -> dict[str, Any]:
@@ -1193,8 +1195,8 @@ def main(argv: list[str] | None = None) -> int:
             "--state-dir", str(args.state_dir.parent),
             "--evidence-root", str(args.state_dir),
             "--current-evidence-dir", str(run_dir),
-            "--high-water-bytes", str(1 * 1024 * 1024 * 1024),
-            "--low-water-bytes", str(750 * 1024 * 1024),
+            "--high-water-bytes", str(APPLY_EVIDENCE_HIGH_WATER_BYTES),
+            "--low-water-bytes", str(APPLY_EVIDENCE_LOW_WATER_BYTES),
             "--quiet",
         ])
     except Exception:
