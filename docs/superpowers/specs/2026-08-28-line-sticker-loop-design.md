@@ -228,6 +228,10 @@ asks the owner to complete only missing official registration ceremonies, verifi
 starts the launchd owner. Private state and generated artifacts are preserved on uninstall unless
 the owner explicitly requests their deletion.
 
+The installed owner wakes hourly and advances at most one durable next step. An hourly wake does not
+create a new sticker set every hour. A new set starts only after the current set is public, replay-zero
+is recorded, and the required observation state is available.
+
 The package's exact provenance schema includes a `generation` object bound into
 `package_sha256`: character rights evidence, character/plan/selection hashes, provider quote and
 generation receipts, request ids, costs, source/segment/candidate hashes, and conversion argv
@@ -365,7 +369,7 @@ row while an earlier row is unfinished.
 | B04 | Read the official review result on a later wake. | Exact approved or rejected state and reason are recorded. |
 | B05 | If rejected, repair only the stated defect and resubmit once. | New official submitted state binds the repaired package hash. |
 | B06 | When approved, release once and verify the public product. | Matching LINE STORE URL loads with the intended product id and 24 items. |
-| C01 | Install one scheduled owner that runs the same next-step command. | Launchd definition and process argv read back the immutable release. |
+| C01 | Install one hourly owner that advances at most one durable next step. | Launchd definition and process argv read back the immutable release; repeated hourly wakes do not create another set before the current set closes. |
 | C02 | Run the next natural wake after release. | Submit and release both report `duplicate_effect=0`. |
 | D01 | Read official sales and payout state. | Provider receipt records actual revenue or zero. |
 | D02 | Change exactly one creative decision and start the next set. | Next-set plan names the evidence, hypothesis, and one changed variable. |
