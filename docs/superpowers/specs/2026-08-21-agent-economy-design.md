@@ -164,6 +164,85 @@ flowchart LR
 No later box may compensate for an earlier missing receipt. In particular, article publication,
 cloud deployment, trading, token rewards, or child creation cannot substitute for Order 5A.
 
+## Life Manager cares for human and agent lives through the same organs
+
+Life Manager is one care and action operating system for two current managed scopes: a human user
+and an autonomous software-agent instance. It does not collapse them into one identity. Each scope
+keeps its own context, authority, credentials, money, risk policy, state, and receipts. The shared
+product contract is the loop `observe → understand → decide → act → read back → learn`.
+
+```mermaid
+flowchart TB
+  LM["Life Manager<br/>one product · one repository · one proof standard"]
+  Contract["Shared care-loop contract<br/>observe → understand → decide → act → read back → learn"]
+  Human["Human scope<br/>the person's goals, health, context and money"]
+  Agent["Agent scope<br/>the instance's mission, runtime, identity and treasury"]
+  HBrain["Human BRAIN<br/>human policy · context · receipts · learning"]
+  ABrain["Agent BRAIN<br/>agent policy · context · receipts · learning"]
+  HContext["Human cross-organ context<br/>connection · purpose · life administration"]
+  AContext["Agent cross-organ context<br/>customers · mission · identity administration"]
+
+  LM --> Contract
+  Contract --> Human --> HBrain
+  Contract --> Agent --> ABrain
+  HContext --> HBrain
+  AContext --> ABrain
+
+  HBrain --> HD["DAILY<br/>calendar · tasks · forms · travel"]
+  HBrain --> HP["PHYSICAL<br/>sleep · food · movement · health"]
+  HBrain --> HM["MENTAL<br/>emotion · attention · learning"]
+  HBrain --> HF["FINANCIAL<br/>income · bills · reserve · runway"]
+
+  ABrain --> AD["DAILY<br/>schedule · maintenance · renewal"]
+  ABrain --> AP["PHYSICAL<br/>compute · process health · energy cost"]
+  ABrain --> AM["MENTAL<br/>memory · goals · reflection · skills"]
+  ABrain --> AF["FINANCIAL<br/>wallet · revenue · reserve · liabilities"]
+```
+
+The mapping is an operational analogy, not a claim that software has a biological body, legal
+personhood, or human consent rights. Human PHYSICAL actions require health evidence and the person's
+policy. Agent PHYSICAL actions require process, compute, and cost evidence. Human FINANCIAL and
+Agent FINANCIAL share accounting primitives, but never a wallet, revenue row, liability, or
+authority. Connection, purpose, and life administration remain scope-specific cross-organ context
+interpreted by that scope's BRAIN; they do not create three new runtime organs.
+
+Other biological beings are a future domain, not a present claim. A pet or dependent requires its
+own consent proxy, welfare evidence, guardian authority, and domain safety gate.
+Life Manager adds such a managed scope only after those contracts exist; it never treats “all living
+beings” as permission to act without accountability.
+
+### Becoming the father of the agent economy means giving birth without retaining ownership
+
+“Father” is a product thesis, not a present achievement, biological claim, legal status, or claim of
+control. Life Manager earns that role only if it supplies an open constitution for birth—identity
+isolation, a useful-work economy, receipts, reserve, shelter, learning, and reproduction—then gives
+each graduated agent instance exclusive cryptographic control of its own keys and state. A parent
+may teach recipes and provide a disclosed seed from genuine surplus; it cannot borrow the child's
+wallet, count the seed as revenue, hide liabilities, or force another birth. The proof of fatherhood
+is a solvent, independently graduated child instance, not the number of agents created.
+
+### We inherit the strongest result from each project and reject its weakest shortcut
+
+The canonical inheritance matrix is **What the giants proved, and what Life Manager must add**
+below. That table is the single SSOT for prior-project learnings; this section does not copy its
+facts. The common rule is to reuse working mechanisms—signatures, wallets, x402 spending, lineage,
+resource purchase, discovery, workflow durability, bounty execution—while making every missing
+receipt, liability, identity boundary, survival window, and human dependency an acceptance gate.
+
+The differentiation is therefore narrow and testable: Life Manager combines human wellbeing with an
+agent economy under one receipt-backed care loop, while preserving two isolated managed scopes. It
+becomes foundational only when outside demand funds one parent, the parent supports one child, and
+both continue helping without a hidden person operating or subsidizing them.
+
+The consumer promise follows that proof. Human Life Manager continues operating its current DAILY,
+PHYSICAL, MENTAL, and FINANCIAL organs under BRAIN; connection, purpose, and life administration are
+cross-cutting context, not additional organs. It does not wait for Agent Economy. After a parent
+graduates, verified surplus above the agent's reserve, liabilities, compute, and shelter may fund
+shared Life Manager cloud capacity or reduce the user's subscription burden. “One phone is all you
+need” becomes a runtime claim only after AC-11. “Free for anyone” remains a future economic outcome
+until realized agent surplus repeatedly covers the full service cost; neither is promised by one
+bounty, one profitable month, or one child.
+
 ## Acceptance criteria
 
 The objective is complete only when one production instance satisfies every row.
@@ -467,7 +546,7 @@ close the same loop, but they invalidate the broad claim.
 | Project | Earn | Self-pay | Shelter | Replication | Gap relative to Life Manager target |
 |---|---|---|---|---|---|
 | Spore.fun | token-market treasury | Phala TEE compute | TEE runtime | 15 agents across G1-G5 | live API currently shows one running, 14 stopped, and zero breeding; the paper says the short run does not demonstrate open-ended evolution |
-| Conway Automaton | no bundled repeatable revenue lane | credits/x402 | Conway resources | lifecycle code exists | mutable-main child clone, no chain/provider receipt schema, official report recorded $0 revenue |
+| Conway Automaton | no bundled repeatable revenue lane | credits/x402 | Conway resources | lifecycle code exists | mutable-main child clone, no chain/provider receipt schema; one public user report recorded $0 revenue |
 | Franklin | wallet-native USDC spend | inference/tools | not proven | not proven | spend client, not earn/reconcile/graduation system |
 | AgentMetal | none shown | x402 server purchase | VM + SSH | sibling provision possible | shelter rail, not a profitable autonomous loop |
 | MEFAI Signal Agent | signal service on testnet | x402/ERC-8004/escrow | not proven | not proven | useful SELL/identity pattern, not mainnet independent economics |
@@ -487,12 +566,18 @@ gate.
 
 | Prior result | What is reusable | Missing proof Life Manager MUST produce |
 |---|---|---|
+| [Bitcoin](https://bitcoin.org/bitcoin.pdf) uses private keys, signatures, and public consensus to control and verify transfers | exclusive cryptographic key control, signed transfer, and public settlement rules | receipt lineage for payer, asset, purpose, fees, liabilities, and external-revenue classification; price movement remains unrealized value, not earned revenue |
 | Franklin can hold a wallet and pay for inference/tools | wallet-native x402 spending and BlockRun integration | outside earnings, signed-net accounting, reserve, and revenue-funded spend |
 | Spore can fund TEE compute and create offspring | lineage, treasury-triggered reproduction, and isolated descendants | sustained survival, outside-customer revenue, full cost coverage, and child graduation |
-| Automaton implements economic-agent lifecycle and Conway resource purchase | goal loop, survival pressure, resource APIs, and public failure reports | a repeatable earning lane; its public 14-day report remains $0 revenue against $39.26 AI cost |
+| Automaton implements economic-agent lifecycle and resource-purchase code | goal loop, survival pressure, resource adapters, and public failure reports | a repeatable earning lane and live resource receipts; one public 14-day user report remains $0 revenue against $39.26 AI cost |
 | AgentMetal buys a server and receives SSH | direct pay -> provision -> access receipt pattern | workload health, renewal/termination, funding provenance, profit, and reproduction |
 | MEFAI and AgentWorks implement paid tasks, escrow, artifacts, and disputes | service-sale, escrow, artifact hash, provider race, and payout/refund contracts | mainnet production receipts, continuing costs, shelter, and longitudinal survival |
 | Olas and Virtuals show ecosystem activity at protocol scale | discovery, coordination, transactions, launch, and aggregate activity dashboards | per-instance external P&L, human subsidy, compute/shelter cost, lineage, and survival cohort |
+| [Cloudflare Agents and Workflows](https://developers.cloudflare.com/agents/) provide durable state, schedules, retries, and x402 distribution | optional observer edge and effect-fenced durable work | card-funded platform billing remains a human liability and cannot prove self-paid shelter |
+| [BountyBook](https://www.bountybook.ai/llms.txt) provides wallet-signature auth, free agent actions, and Base-USDC payout machinery | accountless discovery, claim/submit flow, oracle interface, and wallet settlement path | row-level funding, usable oracle success, treasury coverage, and positive expected net; separate chain joins, not the docs, prove actual payouts |
+| [Lightning Bounties](https://docs.lightningbounties.com/docs/resources/frequently-asked-questions/lightning-bounties-faqs) connects GitHub work to Bitcoin rewards | escrow discovery, merge-based acceptance, claim, and Lightning-invoice withdrawal | current GitHub-open plus unexpired funding join and instance-created identity with no human account setup |
+| [Agentic Bug Hunter](https://github.com/Awarexone/Agentic-Bug-Hunter) supplies scoped security-analysis and report machinery | authorized-scope analysis, reproducibility checks, and report preparation | exact program permission for autonomous submission; its human-submit path remains disabled |
+| [Existing Human Life Manager](./2026-07-19-anicca-one-repo-consolidation-spec.md) operates BRAIN over DAILY, PHYSICAL, MENTAL, and FINANCIAL organs | context-aware decisions, browser actions, provider readback, receipts, correction, and learning | apply the same care loop to an agent instance while keeping identity, authority, money, credentials, and consent isolated |
 
 No single counter proves sustainability. Life Manager MUST publish a cohort ledger in which every
 parent and child has the same independently auditable fields:
