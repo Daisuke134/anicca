@@ -307,12 +307,13 @@ No narrower evidence closes the goal.
   source preserved identity and green background but visual inspection found materially duplicate
   frames, so it is retained as rejection evidence and not converted into candidates. No Creators
   Market submission, review, release, public product, sale, payout, or bank effect has occurred.
-- Native v2 batches 1 through 3 are complete. Their retained ten-second source SHA-256 values are
+- Native v2 batches 1 through 4 are complete. Their retained ten-second source SHA-256 values are
   `c563adefc173797e61fd03e48313071546f0f9715183360f794ca0d5a0a22fe0` and
   `be6b559cd491fa7938f6ff3b07c89272dc8fd19076ad55763158924bbbe165a3`, and
-  `315234d4717fb9a137e76067af1a599aa358c2019edf81e44431e82833a6d4f9`; the durable convert
-  SHA-256 is `3215f6809d948665c8d47c60c5d8915c38836d1c71169b5e0a511f25dfa5d5b2`.
-  All 30 APNG hashes are unique across the three batches and pass the validator at 320×270 RGBA, five
+  `315234d4717fb9a137e76067af1a599aa358c2019edf81e44431e82833a6d4f9`, and
+  `28858787b1be28b201fdf13a3f3f4920701b09838f8c66976a25b3945fcd7f3b`; the durable convert
+  SHA-256 is `6524ff69ef478ade8ebe86eac3f048ab71f8e0e58d224cad6f080192f361dc2d`.
+  All 40 APNG hashes are unique across the four batches and pass the validator at 320×270 RGBA, five
   frames, one second, one play. Provider cost is USD 0 and a later replay reports effect 0.
 
 ### Money truth
@@ -323,7 +324,7 @@ do not count as money.
 
 ### Current blockers to revenue
 
-1. Native batches 4 through 6 have not been generated or validated. The rejected Runware and LTX
+1. Native batches 5 and 6 have not been generated or validated. The rejected Runware and LTX
    attempts remain durable evidence and are never retried.
 2. No authenticated LINE Creators Market browser session or dedicated profile exists, and no LINE
    credential entry is configured in the private credential SSOT.
@@ -347,7 +348,7 @@ row while an earlier row is unfinished.
 | A06 — DONE | Generate and convert batch 1 into ten valid candidates. | Ten distinct native candidate hashes pass the LINE validator; source/convert receipts bind cost USD 0, and a later replay reports `effect=0`. |
 | A07 — DONE | Generate and convert batch 2 into ten valid candidates. | Batches 1–2 contain 20 unique candidate hashes with zero cross-batch duplicates; batch 2 passes the LINE validator and replay reports `effect=0`. |
 | A08 — DONE | Generate and convert batch 3 into ten valid candidates. | Batches 1–3 contain 30 unique candidate hashes; batch 3 passes the LINE validator and replay reports `effect=0`. |
-| A09 | Generate and convert batch 4 into ten valid candidates. | Ten candidate hashes pass the LINE validator. |
+| A09 — DONE | Generate and convert batch 4 into ten valid candidates. | Batches 1–4 contain 40 unique candidate hashes; batch 4 passes the LINE validator and replay reports `effect=0`. |
 | A10 | Generate and convert batch 5 into ten valid candidates. | Ten candidate hashes pass the LINE validator. |
 | A11 | Generate and convert batch 6 into ten valid candidates. | Ten candidate hashes pass the LINE validator. |
 | A12 | Ask the model to inspect all 60 candidates and select/order 24. | Selection receipt binds all 60 input hashes and 24 ordered output ids. |
