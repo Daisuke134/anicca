@@ -21,8 +21,7 @@ function coreReady(row) {
 }
 
 function computeStage(row, opts = {}) {
-  const storedStage = String(row && row.tg_onboard_stage || "").toLowerCase();
-  if (coreReady(row) && ["done", "dashboard", "phone", "pay", "payment", "gmail", "call"].includes(storedStage)) return "done";
+  if (coreReady(row)) return "done";
   if (!row || row.calendar_provider !== "composio_gcal") return "calendar";
   // The panel state machine owns the canonical paid/core-ready terminal state. The legacy loop must
   // not reopen phone or Gmail for a paid user who intentionally skipped a phone, nor can it rewrite
@@ -269,7 +268,11 @@ async function onboardNudgeAll(opts) {
             `無料期間が終了しました。\n\n<a href="${link}">月額プランを確認する</a>`);
         } catch { result = { ok: false, delivery_unknown: true }; }
       }
-      if (result && (result.delivery_unknown === true || result.deliveryUnknown === true)) {
+      const deliveryUnknown = !result || typeof result !== "object" || Array.isArray(result)
+        || result.delivery_unknown === true || result.deliveryUnknown === true
+        || typeof result.ok !== "boolean" || (result.ok === true && !(result.result && typeof result.result === "object"
+          && !Array.isArray(result.result) && Number.isInteger(result.result.message_id) && result.result.message_id > 0));
+      if (deliveryUnknown) {
         try { (opts.logError || opts.log || console.error)("[onboard] trial-upgrade reconciliation required"); } catch { /* keep loop alive */ }
         continue;
       }

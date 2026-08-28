@@ -299,13 +299,13 @@ test("travelReminderOnce claims telegram-t5 before send, suppresses duplicate, a
     unclaimTravel: async (...args) => { missingIdCalls.push(["release", ...args]); },
     sendMessage: async () => ({ ok: true, result: {} }),
   });
-  assert.equal(missingId.status, "send_failed");
-  assert.equal(missingIdCalls.some((x) => x[0] === "release"), true);
+  assert.equal(missingId.status, "delivery_unknown");
+  assert.equal(missingIdCalls.some((x) => x[0] === "release"), false);
 });
 
 test("travelReminderOnce keeps the claim on throw or delivery_unknown and replay sends zero", async () => {
   const dueEvent = event({ id: "unknown-delivery", startMs: NOW + 3 * T5_MS, startIso: "2026-08-28T13:15:00+09:00" });
-  for (const mode of ["throw", "unknown"]) {
+  for (const mode of ["throw", "unknown", "ambiguous"]) {
     const calls = [], logs = [];
     let claims = 0;
     const deps = {
@@ -316,6 +316,7 @@ test("travelReminderOnce keeps the claim on throw or delivery_unknown and replay
       sendMessage: async (...args) => {
         calls.push(["send", ...args]);
         if (mode === "throw") throw new Error("transport failure");
+        if (mode === "ambiguous") return { error: "upstream reset" };
         return { ok: false, delivery_unknown: true };
       },
       telegramToken: "token", supaUrl: "supa", supaKey: "key", log: (line) => logs.push(line),
@@ -328,6 +329,30 @@ test("travelReminderOnce keeps the claim on throw or delivery_unknown and replay
     assert.equal(logs.length, 1, mode);
     assert.match(logs[0], /reconciliation required/);
   }
+});
+
+test("stale target go claim plus previous event return claim falls back to event location", async () => {
+  const targetStart = NOW + 3 * T5_MS;
+  const previous = event({ id: "previous-return", summary: "前の予定", location: "前の場所", startMs: targetStart - 90 * 60000, endMs: targetStart - 30 * 60000 });
+  const outbound = { id: "target-go-stale", summary: "[Travel] 🚆 前の場所→解決住所", location: "東京都渋谷区神南1-1-1", startMs: previous.endMs, endMs: targetStart };
+  const target = event({ id: "target-event-stale", startMs: targetStart, endMs: targetStart + 60 * 60000, location: "元の会場名" });
+  const destinations = [], queries = [];
+  const result = await travelReminderOnce({ uid: "tenant-stale", telegram_chat_id: "chat-stale", notifications_enabled: true }, NOW, {
+    events: [previous, outbound, target], home: HOME, mapsKey: "maps", timezone: "Asia/Tokyo", telegramToken: "token", supaUrl: "supa", supaKey: "key",
+    fetchImpl: async (url, init) => {
+      const value = String(url);
+      queries.push({ url: value, init });
+      if (value.includes("leg=eq.go")) return { ok: true, status: 200, json: async () => [{ event_key: "target-event-stale" }] };
+      return { ok: true, status: 200, json: async () => [{ event_key: "previous-return" }] };
+    },
+    directionsRoute: async (_origin, destination) => { destinations.push(destination); return { durationSeconds: 5 * 60 }; },
+    claimTravel: async () => true, sendMessage: async () => ({ ok: true, result: { message_id: 803 } }),
+  });
+  assert.equal(result.status, "sent");
+  assert.deepEqual(destinations, [target.location]);
+  assert.equal(queries.length, 2);
+  assert.match(queries[1].url, /event_key=eq\.previous-return/);
+  assert.match(queries[1].url, /leg=eq\.return/);
 });
 
 test("adjacent outbound Travel starts at prior event end only when target go claim is present", async () => {
@@ -344,11 +369,13 @@ test("adjacent outbound Travel starts at prior event end only when target go cla
   });
   assert.equal(result.status, "sent");
   assert.deepEqual(destinations, [outbound.location]);
-  assert.equal(queries.length, 1);
+  assert.equal(queries.length, 2);
   assert.match(queries[0].url, /uid=eq\.tenant-target/);
   assert.match(queries[0].url, /event_key=eq\.target-event/);
   assert.match(queries[0].url, /leg=eq\.go/);
   assert.equal(queries[0].init.method, undefined);
+  assert.match(queries[1].url, /event_key=eq\.previous-event/);
+  assert.match(queries[1].url, /leg=eq\.return/);
 });
 
 test("the same adjacent geometry without a target go claim falls back to event location", async () => {

@@ -19,8 +19,8 @@ const full = {
 
 test("null row → calendar (name is never a blocking typed stage)", () => assert.equal(computeStage(null), "calendar"));
 test("no calendar → calendar even when name is absent", () => assert.equal(computeStage({ ...full, name: null, calendar_provider: null }), "calendar"));
-test("calendar set, no phone → phone", () => assert.equal(computeStage({ ...full, phone: null, paid: false }), "phone"));
-test("phone set, not paid → pay", () => assert.equal(computeStage({ ...full, paid: false }), "pay"));
+test("calendar set, no phone → phone", () => assert.equal(computeStage({ ...full, home_address: null, phone: null, paid: false }), "phone"));
+test("phone set, not paid → pay", () => assert.equal(computeStage({ ...full, home_address: null, paid: false }), "pay"));
 test("paid without Gmail decision → done (Gmail is not a core prerequisite)", () => assert.equal(computeStage({ ...full, gmail_account_id: null, gmail_skipped: false }), "done"));
 test("Gmail connected → done", () => assert.equal(computeStage(full), "done"));
 test("Gmail skipped → done", () => assert.equal(computeStage({ ...full, gmail_account_id: null, gmail_skipped: true }), "done"));
@@ -40,8 +40,8 @@ test("legacy done rows without core readiness keep the old unpaid and comp branc
   assert.equal(computeStage({ ...coreReadyUnpaid, notifications_enabled: false }), "phone", "missing notification consent is not core-ready");
 });
 test("order is strict: phone and pay precede Gmail", () => {
-  assert.equal(computeStage({ ...full, phone: null, paid: false, gmail_account_id: null }), "phone");
-  assert.equal(computeStage({ ...full, paid: false, gmail_account_id: null }), "pay");
+  assert.equal(computeStage({ ...full, home_address: null, phone: null, paid: false, gmail_account_id: null }), "phone");
+  assert.equal(computeStage({ ...full, home_address: null, paid: false, gmail_account_id: null }), "pay");
 });
 
 // ── Demo comp window (LM_COMP_UNTIL) ──────────────────────────────────────────
@@ -68,28 +68,28 @@ const past = () => new Date(Date.now() - 1000).toISOString();
 test("comp active: an unpaid row walks past the paywall to the next stage", () => {
   withCompUntil(future(), () => {
     assert.equal(computeStage({ ...full, paid: false }), "done");
-    assert.equal(computeStage({ ...full, paid: false, gmail_account_id: null, gmail_skipped: false }), "gmail");
+    assert.equal(computeStage({ ...full, home_address: null, paid: false, gmail_account_id: null, gmail_skipped: false }), "gmail");
   });
 });
 
 test("comp active does NOT skip earlier stages — calendar and phone still gate", () => {
   withCompUntil(future(), () => {
     assert.equal(computeStage({ ...full, paid: false, calendar_provider: null }), "calendar");
-    assert.equal(computeStage({ ...full, paid: false, phone: null }), "phone");
+    assert.equal(computeStage({ ...full, home_address: null, paid: false, phone: null }), "phone");
   });
 });
 
 test("comp expired or invalid → the pay gate is exactly as before", () => {
-  withCompUntil(past(), () => assert.equal(computeStage({ ...full, paid: false }), "pay"));
-  withCompUntil("whenever", () => assert.equal(computeStage({ ...full, paid: false }), "pay"));
-  withCompUntil("", () => assert.equal(computeStage({ ...full, paid: false }), "pay"));
+  withCompUntil(past(), () => assert.equal(computeStage({ ...full, home_address: null, paid: false }), "pay"));
+  withCompUntil("whenever", () => assert.equal(computeStage({ ...full, home_address: null, paid: false }), "pay"));
+  withCompUntil("", () => assert.equal(computeStage({ ...full, home_address: null, paid: false }), "pay"));
 });
 
 test("comp is injectable, so callers can pin the clock without touching process.env", () => {
   const until = "2026-07-27T12:00:00.000Z";
   const env = { LM_COMP_UNTIL: until };
   assert.equal(computeStage({ ...full, paid: false }, { env, now: Date.parse(until) - 1 }), "done");
-  assert.equal(computeStage({ ...full, paid: false }, { env, now: Date.parse(until) }), "pay");
+  assert.equal(computeStage({ ...full, home_address: null, paid: false }, { env, now: Date.parse(until) }), "pay");
 });
 
 test("comp NEVER writes lm_users.paid — Stripe stays the single writer", async () => {
@@ -231,6 +231,26 @@ test("trial upgrade delivery_unknown keeps the claim and does not resend", async
   assert.deepEqual(h.errors, ["[onboard] trial-upgrade reconciliation required"]);
 });
 
+test("trial upgrade ambiguous Telegram receipt keeps the claim and replay sends zero", async () => {
+  const h = trialRun();
+  let attempts = 0;
+  h.opts.claimTravel = async (...args) => {
+    h.order.push(["claim", ...args]);
+    attempts++;
+    return attempts === 1;
+  };
+  h.opts.sendMessage = async (...args) => {
+    h.order.push(["send", ...args]);
+    h.sent.push(args);
+    return { error: "upstream reset" };
+  };
+  assert.equal(await onboardNudgeAll(h.opts), 0);
+  assert.equal(await onboardNudgeAll({ ...h.opts, nudgeStore: new Map() }), 0);
+  assert.deepEqual(h.order.map((entry) => entry[0]), ["claim", "send", "claim"]);
+  assert.equal(h.unclaims.length, 0);
+  assert.deepEqual(h.errors, ["[onboard] trial-upgrade reconciliation required"]);
+});
+
 test("a duplicate trial claim sends zero additional messages", async () => {
   let attempts = 0;
   const h = trialRun();
@@ -245,20 +265,24 @@ test("a duplicate trial claim sends zero additional messages", async () => {
   assert.equal(h.sent.length, 1);
 });
 
-test("failed or receipt-less trial sends release the claim for retry", async () => {
+test("explicit rejection releases, while receipt-less success retains the claim", async () => {
   for (const result of [{ ok: false }, { ok: true, result: {} }]) {
     const h = trialRun({}, { result });
     assert.equal(await onboardNudgeAll(h.opts), 0);
-    assert.deepEqual(h.order.map((entry) => entry[0]), ["claim", "send", "unclaim"]);
-    assert.deepEqual(h.unclaims[0].slice(0, 3), ["trial-user", expiredTrialRow.trial_expires_at, "trial-upgrade"]);
+    const explicitReject = result.ok === false;
+    assert.deepEqual(h.order.map((entry) => entry[0]), explicitReject ? ["claim", "send", "unclaim"] : ["claim", "send"]);
+    assert.equal(h.unclaims.length, explicitReject ? 1 : 0);
+    assert.deepEqual(h.errors, explicitReject ? [] : ["[onboard] trial-upgrade reconciliation required"]);
+    if (explicitReject) assert.deepEqual(h.unclaims[0].slice(0, 3), ["trial-user", expiredTrialRow.trial_expires_at, "trial-upgrade"]);
   }
 });
 
-test("only a positive integer Telegram message_id keeps the claim", async () => {
+test("only a positive integer Telegram message_id keeps the claim; ambiguous receipts retain it", async () => {
   for (const messageId of [-1, 0, true, {}, "901", 1.5, undefined]) {
     const h = trialRun({}, { result: { ok: true, result: { message_id: messageId } } });
     assert.equal(await onboardNudgeAll(h.opts), 0, `message_id=${String(messageId)}`);
-    assert.equal(h.unclaims.length, 1, `message_id=${String(messageId)}`);
+    assert.equal(h.unclaims.length, 0, `message_id=${String(messageId)}`);
+    assert.deepEqual(h.errors, ["[onboard] trial-upgrade reconciliation required"], `message_id=${String(messageId)}`);
   }
   const h = trialRun({}, { result: { ok: true, result: { message_id: 901 } } });
   assert.equal(await onboardNudgeAll(h.opts), 1);
@@ -319,6 +343,9 @@ test("active, paid, incomplete, notifications-off, and Telegram-unbound rows sen
 
 test("core-ready legacy phone/pay rows remain done and do not emit optional-stage nudges", async () => {
   for (const row of [
+    { ...full, paid: false, tg_onboard_stage: "calendar", phone: null, trial_expires_at: "2026-08-31T12:01:00.000Z" },
+    { ...full, paid: false, tg_onboard_stage: "", phone: null, trial_expires_at: "2026-08-31T12:01:00.000Z" },
+    { ...full, paid: false, tg_onboard_stage: "unknown-stage", phone: null, trial_expires_at: "2026-08-31T12:01:00.000Z" },
     { ...full, paid: false, tg_onboard_stage: "phone", phone: "+81", trial_expires_at: "2026-08-31T12:01:00.000Z" },
     { ...full, paid: false, tg_onboard_stage: "pay", phone: null, trial_expires_at: "2026-08-31T12:01:00.000Z" },
     { ...full, paid: false, tg_onboard_stage: "phone", phone: "+81", trial_expires_at: "2026-08-31T11:59:00.000Z" },
@@ -370,7 +397,7 @@ test("notifications_enabled true/undefined still nudges (direct row compatibilit
   for (const value of [true, undefined]) {
     const sent = await onboardNudgeAll({
       token: "t", base: "https://x", supaUrl: "s", supaKey: "k", nudgeStore: new Map(),
-      linkedRows: async () => [nudgeRow({ notifications_enabled: value })],
+      linkedRows: async () => [nudgeRow({ home_address: null, notifications_enabled: value })],
       sendStage: async () => {}, setStage: async () => {}, backfillCalendarContext: async () => {},
     });
     assert.equal(sent, 1, `notifications_enabled=${value}`);
@@ -413,7 +440,7 @@ test("the cooldown is 30 minutes and is per-uid, not global", async () => {
   assert.equal(NUDGE_COOLDOWN_MS, 30 * 60 * 1000);
   const store = new Map();
   const t0 = Date.parse("2026-07-27T00:00:00.000Z");
-  const rows = [nudgeRow({ uid: "a" }), nudgeRow({ uid: "b" })];
+  const rows = [nudgeRow({ uid: "a", home_address: null }), nudgeRow({ uid: "b", home_address: null })];
   const sent = await onboardNudgeAll({
     token: "t", base: "https://x", supaUrl: "s", supaKey: "k", nudgeStore: store, now: t0,
     linkedRows: async () => rows, sendStage: async () => {}, setStage: async () => {},
@@ -481,6 +508,16 @@ test("Telegram transport failure returns a delivery_unknown marker without provi
     assert.equal(result.ok, false);
     assert.equal(result.delivery_unknown, true);
     assert.equal(Object.hasOwn(result, "error"), false);
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test("Telegram JSON without a boolean ok is delivery_unknown", async () => {
+  const originalFetch = global.fetch;
+  global.fetch = async () => ({ ok: true, status: 200, json: async () => ({ error: "upstream reset" }) });
+  try {
+    assert.deepEqual(await tgCall("token", "sendMessage", { chat_id: "42", text: "hello" }), { ok: false, delivery_unknown: true });
   } finally {
     global.fetch = originalFetch;
   }
@@ -592,7 +629,7 @@ test("rowByChatId-shaped paid phone-less done rows are webhook no-ops without jo
 
 test("calendar completion triggers best-effort context backfill once before announcing phone", async () => {
   const calls = [];
-  const row = { ...full, phone: null, paid: false, tg_onboard_stage: "calendar" };
+  const row = { ...full, home_address: null, phone: null, paid: false, tg_onboard_stage: "calendar" };
   const sent = await onboardNudgeAll({ token: "t", base: "https://x", supaUrl: "s", supaKey: "k",
     nudgeStore: new Map(), // isolated per test: the real store is module-level and 30-min sticky
     linkedRows: async () => [row], sendStage: async () => calls.push("send"),
@@ -605,7 +642,7 @@ test("calendar completion triggers best-effort context backfill once before anno
 
 test("calendar completion hook also runs on immediate /start or text resume", async () => {
   const calls = [];
-  const row = { ...full, phone: null, paid: false, tg_onboard_stage: "calendar" };
+  const row = { ...full, home_address: null, phone: null, paid: false, tg_onboard_stage: "calendar" };
   assert.equal(await backfillIfCalendarCompleted(row, {
     backfillCalendarContext: async (uid) => calls.push(uid),
   }), true);

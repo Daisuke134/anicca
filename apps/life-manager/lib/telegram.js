@@ -23,7 +23,7 @@ async function tgCall(token, method, body) {
   } catch { return { ok: false, delivery_unknown: true }; }
   try {
     const result = await response.json();
-    return result && typeof result === "object" && !Array.isArray(result)
+    return result && typeof result === "object" && !Array.isArray(result) && typeof result.ok === "boolean"
       ? result : { ok: false, delivery_unknown: true };
   } catch { return { ok: false, delivery_unknown: true }; }
 }

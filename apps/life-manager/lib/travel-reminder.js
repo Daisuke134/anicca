@@ -53,7 +53,11 @@ function matchesOtherEventWindow(candidateEnd, events, event, candidate) {
 }
 
 function matchesOtherEventEnd(candidateStart, events, event, candidate) {
-  return events.some((other) => {
+  return otherEventsAtEnd(candidateStart, events, event, candidate).length > 0;
+}
+
+function otherEventsAtEnd(candidateStart, events, event, candidate) {
+  return events.filter((other) => {
     if (!other || other === event || other === candidate) return false;
     if (other.id && (other.id === event.id || (candidate.id && other.id === candidate.id))) return false;
     if (helper(other)) return false;
@@ -64,7 +68,7 @@ function matchesOtherEventEnd(candidateStart, events, event, candidate) {
   });
 }
 
-function resolveReminderDestination(event, { events = [], home, targetGoClaimed = false } = {}) {
+function resolveReminderDestination(event, { events = [], home, targetGoClaimed = false, previousReturnClaims = new Map() } = {}) {
   const fallback = String(event && event.location || "").trim();
   const normalizedHome = normalizeLocation(home);
   const start = startMs(event), end = endMs(event);
@@ -77,7 +81,9 @@ function resolveReminderDestination(event, { events = [], home, targetGoClaimed 
     if (!location || (normalizedHome && normalizeLocation(location) === normalizedHome) || start === null || candidateStart === null || candidateEnd === null) continue;
     if (candidateEnd < start - 2 * 60000 || candidateEnd > start + 60000 || candidateStart > start || (end !== null && candidateStart >= end)) continue;
     if (matchesOtherEventWindow(candidateEnd, list, event, candidate)) continue;
-    if (matchesOtherEventEnd(candidateStart, list, event, candidate) && targetGoClaimed !== true) continue;
+    const previousEvents = otherEventsAtEnd(candidateStart, list, event, candidate);
+    if (previousEvents.length && (targetGoClaimed !== true
+      || previousEvents.some((other) => previousReturnClaims.get(eventKey(other)) !== false))) continue;
     matches.push({ start: candidateStart, location });
   }
   return matches.length === 1 ? matches[0].location : fallback;
@@ -231,19 +237,39 @@ function eventKey(event) {
   return String(event.id || `${startMs(event) === null ? "unknown" : startMs(event)}:${event.summary || ""}`);
 }
 
-async function readTravelGoClaim(uid, key, supaUrl, supaKey, fetchImpl = fetch) {
+async function readTravelClaim(uid, key, leg, supaUrl, supaKey, fetchImpl = fetch) {
   if (!supaUrl || !supaKey) return false;
   if (fetchImpl === fetch) {
     try { new URL(String(supaUrl)); } catch { return false; }
   }
   const response = await fetchImpl(
-    `${supaUrl}/rest/v1/lm_travel_log?uid=eq.${encodeURIComponent(uid)}&event_key=eq.${encodeURIComponent(key)}&leg=eq.go&select=event_key&limit=1`,
+    `${supaUrl}/rest/v1/lm_travel_log?uid=eq.${encodeURIComponent(uid)}&event_key=eq.${encodeURIComponent(key)}&leg=eq.${encodeURIComponent(leg)}&select=event_key&limit=1`,
     { headers: { apikey: supaKey, Authorization: `Bearer ${supaKey}` } },
   ).catch(() => null);
   if (!response || response.ok === false
-      || (response.ok !== true && (!Number.isInteger(response.status) || response.status < 200 || response.status >= 300))) return false;
+      || (response.ok !== true && (!Number.isInteger(response.status) || response.status < 200 || response.status >= 300))) return null;
   const rows = await response.json().catch(() => null);
-  return Array.isArray(rows) && rows.some((row) => row && String(row.event_key || "") === String(key));
+  if (!Array.isArray(rows)) return null;
+  return rows.some((row) => row && String(row.event_key || "") === String(key));
+}
+
+function previousEventsForDestination(event, { events = [], home } = {}) {
+  const start = startMs(event), end = endMs(event);
+  const normalizedHome = normalizeLocation(home);
+  const list = Array.isArray(events) ? events : [];
+  const previous = new Map();
+  if (start === null) return [];
+  for (const candidate of list) {
+    if (!candidate || candidate === event || (candidate.id && candidate.id === event.id) || !travelHelper(candidate)) continue;
+    const candidateStart = startMs(candidate), candidateEnd = endMs(candidate);
+    const location = String(candidate.location || "").trim();
+    if (!location || (normalizedHome && normalizeLocation(location) === normalizedHome)
+      || candidateStart === null || candidateEnd === null) continue;
+    if (candidateEnd < start - 2 * 60000 || candidateEnd > start + 60000 || candidateStart > start
+      || (end !== null && candidateStart >= end) || matchesOtherEventWindow(candidateEnd, list, event, candidate)) continue;
+    for (const other of otherEventsAtEnd(candidateStart, list, event, candidate)) previous.set(eventKey(other), other);
+  }
+  return previous.values();
 }
 
 function logReconciliation(deps, message) {
@@ -264,13 +290,21 @@ async function travelReminderOnce(user, nowMs = Date.now(), deps = {}) {
   const key = eventKey(event);
   const home = deps.home !== undefined ? deps.home : user.home_address;
   let targetGoClaimed = false;
+  const previousReturnClaims = new Map();
   if (physical(event)) {
     try {
       const association = deps.travelLogAssociation !== undefined ? deps.travelLogAssociation : deps.hasTravelGoClaim;
       targetGoClaimed = typeof association === "function"
         ? await association(user.uid, key, "go", supaUrl, supaKey) === true
         : association !== undefined ? association === true
-          : await readTravelGoClaim(user.uid, key, supaUrl, supaKey, deps.fetchImpl);
+          : await readTravelClaim(user.uid, key, "go", supaUrl, supaKey, deps.fetchImpl) === true;
+      if (targetGoClaimed) {
+        for (const previous of previousEventsForDestination(event, { events, home })) {
+          previousReturnClaims.set(eventKey(previous), await readTravelClaim(
+            user.uid, eventKey(previous), "return", supaUrl, supaKey, deps.fetchImpl,
+          ));
+        }
+      }
     } catch { targetGoClaimed = false; }
   }
   const origin = resolveReminderOrigin(event, {
@@ -278,7 +312,10 @@ async function travelReminderOnce(user, nowMs = Date.now(), deps = {}) {
     home, nowMs: now,
   });
   const routeAttempted = physical(event) && Boolean(origin);
-  const destination = resolveReminderDestination(event, { events, home, targetGoClaimed });
+  const destination = resolveReminderDestination(event, {
+    events, home,
+    targetGoClaimed, previousReturnClaims,
+  });
   let route = null;
   if (routeAttempted) {
     try {
@@ -297,7 +334,10 @@ async function travelReminderOnce(user, nowMs = Date.now(), deps = {}) {
   try { response = await (deps.sendMessage || sendMessage)(token, chatId, formatTravelReminder(event, route, {
     departureMs, timezone: deps.timezone || user.call_time_zone || DEFAULT_TIMEZONE, routeAttempted,
   })); } catch { response = { ok: false, delivery_unknown: true }; }
-  if (response && (response.delivery_unknown === true || response.deliveryUnknown === true)) {
+  const deliveryUnknown = !response || response.delivery_unknown === true || response.deliveryUnknown === true
+    || typeof response.ok !== "boolean" || (response.ok === true && !(response.result && typeof response.result === "object"
+      && !Array.isArray(response.result) && Number.isInteger(response.result.message_id) && response.result.message_id > 0));
+  if (deliveryUnknown) {
     logReconciliation(deps, "[travel-reminder] delivery unknown; reconciliation required");
     return { status: "delivery_unknown" };
   }
