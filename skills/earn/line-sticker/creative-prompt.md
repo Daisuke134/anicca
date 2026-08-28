@@ -59,6 +59,43 @@ provided.
 
 ## Mode: `select`
 
+Use this exact JSON Schema for the response. Return one JSON object only; do not add keys or prose:
+
+```json
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "mode", "cover_motion_id", "inspected_candidate_hashes", "selections"],
+  "properties": {
+    "version": {"const": 1},
+    "mode": {"const": "select"},
+    "cover_motion_id": {"type": "string", "minLength": 1},
+    "inspected_candidate_hashes": {
+      "type": "array", "minItems": 60, "maxItems": 60,
+      "items": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+    },
+    "selections": {
+      "type": "array", "minItems": 24, "maxItems": 24,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["position", "motion_id", "reason"],
+        "properties": {
+          "position": {"type": "integer", "minimum": 1, "maximum": 24},
+          "motion_id": {"type": "string", "minLength": 1},
+          "reason": {"type": "string", "minLength": 1}
+        }
+      }
+    }
+  }
+}
+```
+
+The `inspected_candidate_hashes` array contains exactly 60 hash values in candidate order and
+preserves duplicate digest values when candidates have identical bytes; its multiset must match
+the candidate hashes. The `selections` array contains exactly 24 entries, each with only
+`position`, `motion_id`, and `reason`; positions are exactly 1 through 24 once each, motion ids
+are distinct, and `cover_motion_id` equals the motion at position 1.
+
 Inspect every candidate path in the selection input. For each one, use all
 available evidence: the validator result, parsed APNG facts, hash, first frame,
 timing, and motion preview. A missing, changed, malformed, opaque, ambiguous,
@@ -66,8 +103,8 @@ or otherwise invalid candidate cannot be selected. Do not infer a visual fact
 from its filename or description when the asset itself contradicts it.
 
 Return the `inspected_candidate_hashes` list containing the exact 60 hashes you
-actually inspected, once each. This is evidence of inspection, not a quality
-score. Select exactly 24 distinct valid motion ids and assign exact positions 1
+actually inspected, in candidate order and preserving duplicate digest values.
+This is evidence of inspection, not a quality score. Select exactly 24 distinct valid motion ids and assign exact positions 1
 through 24. Declare one `cover_motion_id`; it must be the motion at position 1.
 Put the strongest and most frequently useful facial reaction first, then
 front-load frequent reactions while preserving a satisfying set. Separate

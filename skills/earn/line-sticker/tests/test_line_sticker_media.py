@@ -289,6 +289,68 @@ class LineStickerMediaTests(unittest.TestCase):
         self.assertEqual(first["status"], "ready"); self.assertEqual(second["status"], "ready")
         self.assertEqual((self.root / "model.count").read_text(), "3")
 
+    def test_select_model_receives_exact_machine_readable_schema_prompt(self) -> None:
+        self._plan()
+        candidates = self.work / "schema-candidates"; candidates.mkdir()
+        for index in range(1, 61):
+            path = candidates / f"motion-{index:02d}.png"; path.write_bytes(f"candidate-{(index - 1) % 12}".encode())
+            (candidates / f"motion-{index:02d}.json").write_text(json.dumps({
+                "version": 1, "motion_id": f"motion-{index:02d}", "path": str(path), "candidate_sha256": _sha256(path),
+                "source_sha256": "a" * 64, "segment": {"motion_id": f"motion-{index:02d}", "start_ms": 0, "end_ms": 500},
+                "conversion_argv_sha256": "b" * 64, "parsed": {}, "validation_errors": [],
+                "first_frame_path": str(path), "motion_preview_path": str(path),
+            }))
+        model = _executable(self.root / "schema-select-model.py", """
+            #!/usr/bin/env python3
+            import json, sys
+            from pathlib import Path
+            request = json.load(sys.stdin)
+            prompt = request['creative_prompt']
+            try:
+                select_prompt = prompt.split('## Mode: `select`', 1)[1]
+                schema = json.loads(select_prompt.split('```json', 1)[1].split('```', 1)[0])
+            except (IndexError, json.JSONDecodeError):
+                schema = None
+            expected = {
+                'type': 'object', 'additionalProperties': False,
+                'required': ['version', 'mode', 'cover_motion_id', 'inspected_candidate_hashes', 'selections'],
+                'properties': {
+                    'version': {'const': 1}, 'mode': {'const': 'select'},
+                    'cover_motion_id': {'type': 'string', 'minLength': 1},
+                    'inspected_candidate_hashes': {
+                        'type': 'array', 'minItems': 60, 'maxItems': 60,
+                        'items': {'type': 'string', 'pattern': '^[0-9a-f]{64}$'},
+                    },
+                    'selections': {
+                        'type': 'array', 'minItems': 24, 'maxItems': 24,
+                        'items': {
+                            'type': 'object', 'additionalProperties': False,
+                            'required': ['position', 'motion_id', 'reason'],
+                            'properties': {
+                                'position': {'type': 'integer', 'minimum': 1, 'maximum': 24},
+                                'motion_id': {'type': 'string', 'minLength': 1},
+                                'reason': {'type': 'string', 'minLength': 1},
+                            },
+                        },
+                    },
+                },
+            }
+            if schema != expected:
+                print(json.dumps({'version': 1, 'mode': 'select', 'wrong_shape': True}))
+                raise SystemExit
+            payload = json.loads(Path(request['selection_input_path']).read_text())
+            candidates = payload['candidates']
+            chosen = candidates[:24]
+            print(json.dumps({
+                'version': 1, 'mode': 'select', 'cover_motion_id': chosen[0]['motion_id'],
+                'inspected_candidate_hashes': [item['sha256'] for item in candidates],
+                'selections': [{'position': position, 'motion_id': item['motion_id'], 'reason': 'observed evidence'}
+                               for position, item in enumerate(chosen, 1)],
+            }))
+        """)
+        result = MODULE.select(self.work / "plan.json", candidates, [sys.executable, str(model)], self.work)
+        self.assertEqual(result["status"], "ready")
+
     def test_full_pipeline_writes_package_bound_generation(self) -> None:
         self._plan()
         provider = _provider(self.root / "provider.py", _video(self.root))
