@@ -168,7 +168,23 @@ def test_public_catalogue_defaults_every_action_to_unknown():
         "prolific",
         "outlier",
         "babel_audio",
+        "lancers",
     }
     for provider in catalogue["providers"].values():
         assert provider["actions"]
         assert provider["state"] == "unknown"
+    assert catalogue["providers"]["lancers"] == {
+        "state": "unknown",
+        "actions": ["submit_proposal"],
+        "capability": {
+            "id": "marketplace.application",
+            "action": "submit_proposal",
+            "transport": "cloak_browser",
+            "authorization": {
+                "receipt_required": True,
+                "required_state": "approved_browser",
+            },
+            "human_only_when_required": ["captcha", "identity", "tax", "payout"],
+            "readback": {"record_type": "application_receipt"},
+        },
+    }
