@@ -6,6 +6,14 @@ from runtime.loop.entry_dispatch import command_for
 
 
 class EntryDispatchTest(unittest.TestCase):
+    def test_affiliate_browsers_use_installed_cloakbrowser_python(self):
+        root=Path('/release'); home=Path('/home')
+        expected=home/'.openclaw/skills/_shared/venv-cloak/bin/python'
+        for loop_id in ('affiliate-browser','affiliate-impact-browser','affiliate-x-browser'):
+            command=command_for(loop_id,root,home)
+            self.assertEqual(Path(command[0]),expected)
+            self.assertEqual(command[1],str(root/'skills/affiliate/scripts/local_browser.py'))
+
     def test_affiliate_subcommand_is_preserved_inside_release(self):
         root=Path('/release'); command=command_for('affiliate-composition',root,Path('/home'))
         self.assertEqual(command,[str(root/'skills/affiliate/affiliate'),'compose','wake'])
