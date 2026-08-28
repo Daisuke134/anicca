@@ -207,4 +207,25 @@ Baseline: focused Life Manager suite 175/175 PASS.
 - Task 12 R0: `71c8e9dc2` passed the related 76/76 suite but failed a parent realistic return-block counterexample: a prior-event Travel block arriving home at the target start was selected as the target destination. Multiple same-start candidates were also not identity-safe because legacy blocks store no source event ID.
 - Task 12 ruling: reject home-destination candidates and require exactly one eligible adjacent Travel candidate; zero or multiple candidates fail closed to the original event location.
 - Task 12 R1: `a9ab7069c` rejects normalized home-destination helpers and requires exactly one eligible adjacent Travel candidate. The realistic return and multiple-candidate tests were RED before the fix; the related reminder/wake suite is 78/78 PASS after it. Commit is pushed and worktree is clean.
-- Task 12 status: fresh read-only review, PR/merge, exact Railway deploy, real route readback, Telegram receipt, and replay-zero remain.
+- Task 12 review R2 (fresh read-only Sonnet, 2026-08-27): FIX-FIRST — Critical: cross-event misattribution (a Travel block belonging to a different event 90s away can be the sole adjacency candidate and is reused); High: home equality check misses NFKC drift (full-width digits/dashes let a return block's home address through). Display/claim invariants, privacy logging, and timezone boundaries were attacked and held.
+- Task 12 fix round 2: `beb038f9d` — a candidate matching another timed non-helper event's [start-2min,start+1min] window is ambiguous and fails closed; home comparison NFKC-normalizes with dash-class folding. RED first (both counterexamples reproduced), focused 19/19, related suite 80/80 PASS. Pushed.
+- Task 12 review R3 (fresh read-only Sol): FIX-FIRST — Critical 0 / High 1 / Medium 0. The cross-event and NFKC examples are closed, but a return block whose destination is an old-home or semantically equivalent home spelling can still pass exact normalized equality and be reused. Display/claim identity, replay safety, privacy, timezone, and prior fixed boundaries held; reviewer focused suites were 59/59 and 19/19 PASS.
+- Task 12 ruling R3: address equivalence is not a reliable return discriminator. Add one structural negative: a Travel candidate whose start matches another timed non-helper event end within Calendar drift is a possible return block and must fail closed. No address parser, geocoder, provider, fetch, or table.
+- Task 12 status: same Luna implementation lane must add the old-home/semantic-address RED and minimal structural guard; then fresh exact-commit re-review, PR/merge, exact Railway deploy, real route readback, Telegram receipt, and replay-zero remain.
+
+## Production E2E — controlled event 2026-08-27 evening (deployed SHA 5b06e1ee0)
+
+- Verified 2faec285f (Inngest reminder owner fix) is an ancestor of origin/main; Railway production deployment SHA readback is 5b06e1ee0 (GitHub Deployments, success).
+- Focused 78-test suite re-run at session start: 78/78 PASS.
+- Controlled no-location event `ah40e31tqlstvk2qvo1e0jt82c` created 20:03–20:13 JST via gog (Google create readback with ID/status=confirmed). T-10 wake claim `…|2026-08-27T20:03:00+09:00|10` called_at 10:53:24Z (19:53:24 JST) amd_result=human — durable Supabase readback. T-5 call and telegram-t5 claim pending observation.
+- Spec revision (Dais 2026-08-27): trial-first payment — AC-30 amended, AC-37/38 and Slice 3G added, commit `620a8a8ec`.
+- Current Google official readback: controlled events `lnpffie7md7fp0qp5j9hrudkq4` and `ah40e31tqlstvk2qvo1e0jt82c` are past but still `confirmed`. Do not delete until exact T-5/Telegram/replay evidence is reconciled; then delete with `send-updates none` and verify `cancelled`.
+- The 2026-08-28 08:40 `MUIT 出社 (着席)` instance is past. Later recurrence instances currently have no location, so they cannot close the resolved-address route acceptance. After deploy, create one new future controlled physical event for the combined provider E2E.
+- Current focused Task 12/reminder/wake command is 80/80 PASS. A clean `npm ci` hit local ENOSPC after restoring the declared `canonicalize@1.0.8`; full-suite completion requires a clean dependency environment or CI and must not be inferred from the focused run.
+
+## Telegram-first product UX authority
+
+- Dais approved the launch order: finish the existing on-time core first; add Poke/Town-style free conversation only after friend beta is receipt-bearing.
+- Visual product and architecture SSOT: `docs/superpowers/specs/2026-08-28-life-manager-cloud-telegram-product-ux-design.md`.
+- Ordered remaining work is plan Tasks 12–14: structural return guard → server-owned trial → cohort/UI/upgrade → PR/deploy → real actor/event E2E → replay-zero/cleanup.
+- OpenClawMU/Hermes is a post-launch conversation sidecar candidate, not the tenant/billing/ledger owner and not an active implementation item.
