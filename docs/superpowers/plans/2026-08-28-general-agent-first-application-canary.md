@@ -8,17 +8,17 @@
 
 ## Measured starting state
 
-- Lancers terms Article 8 recognizes its provider-native automatic-proposal feature, but does not grant blanket external-browser permission.
-- Private `authorizations.json` contains no Lancers receipt; public capability therefore remains `unknown`.
-- The action-specific support inquiry is officially accepted and Gmail-confirmed. Private receipt: `~/.local/state/anicca/lancers/evidence/ga10-authorization-inquiry-receipt.json`.
-- `lancers-revenue-application` is unloaded while authorization is pending. Historical `application_verified` count remains 32, latest `2026-08-15T11:50:29.420236Z`.
+- Public capability remains `unknown`; Dais's direct instruction is the private execution authority.
+- Private `authorizations.json` resolves the exact Lancers `submit_proposal` / `cloak_browser` action to `approved_browser` with evidence and receipt hashes.
+- No further Lancers official inquiry, follow-up, or reply monitoring is allowed. The already-sent inquiry is left untouched.
+- The legacy application owner stays unloaded; the general-agent canary owns the next effect. Historical `application_verified` count remains 32.
 
-### Task 1: Terminal authorization receipt
+### Task 1: Terminal authorization receipt — DONE
 
-1. Read the existing Gmail support thread only; do not send a duplicate inquiry.
-2. Accept only a response that names external browser automation for the requested read/fill/submit/readback actions and conditions.
-3. Hash the official response into one mode-600 private receipt. Map it to `approved_browser`, `approved_assisted`, or `denied`; silence remains `unknown`.
-4. Keep the legacy application owner unloaded unless the exact action becomes approved.
+1. Use Dais's direct instruction as the exact private execution authority.
+2. Keep authorization mode 600 and bind provider, account, action, transport, evidence hash, receipt hash, and expiry.
+3. Never contact or monitor Lancers official support for permission.
+4. Keep the legacy application owner unloaded; only the general-agent canary may create the next effect.
 
 ### Task 2: One effect-free candidate and immutable intent
 
@@ -27,11 +27,13 @@
 3. Seal one proposal intent and bind Goal, capability, opportunity, authorization, and intent refs into the GA-04 effect identity.
 4. Require no paid option and no account/profile mutation.
 
-### Task 3: Register the shared application adapter
+### Task 3: Register the shared application adapter — DONE (`6c9d5d1ee`)
 
 1. Add only the thin `marketplace.application` adapter/services wiring needed to compose GA-04 with GA-05.
 2. Write the focused failing tests first: pre-readback present replay, absent single bounded execution, cancel/heartbeat unknown effect, and official receipt verification.
 3. Do not enable a production worker capability before the private authorization and candidate intent both exist.
+
+Measured result: the provider-neutral adapter composes GA-04 with an injected bounded execution service, manifest registration is portable, production worker capability remains disabled, and focused/adjacent Node tests pass 52/52.
 
 ### Task 4: Execute one live canary
 
