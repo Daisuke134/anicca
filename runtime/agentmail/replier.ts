@@ -24,11 +24,12 @@
 import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { homedir } from "node:os";
+import { fileURLToPath } from "node:url";
 
 const DB_PATH = process.env.AGENTMAIL_DB_PATH
   ?? `${homedir()}/.openclaw/state/agentmail.db`;
 const ADAPTER_SEND = process.env.AGENTMAIL_ADAPTER_SEND_SH
-  ?? `${homedir()}/anicca-oss/.worktrees/adapters/adapters/custom/agentmail/scripts/send.sh`;
+  ?? fileURLToPath(new URL("./send.sh", import.meta.url));
 const FROM_INBOX = process.env.AGENTMAIL_REPLIER_FROM_INBOX
   ?? "anicca-001-claude@agentmail.to";
 const MODEL = process.env.AGENTMAIL_REPLIER_MODEL ?? "deepseek-v4-pro";
@@ -124,7 +125,7 @@ async function directSend(
   const msgId = parsed.message_id ?? `direct-${Date.now()}`;
   // Mirror the adapter's append-only sent-log so audits stay coherent.
   try {
-    const LOG = `${homedir()}/anicca-oss/.worktrees/adapters/adapters/custom/agentmail/state/sent-log.jsonl`;
+    const LOG = `${process.env.AGENTMAIL_ADAPTER_STATE_DIR ?? `${homedir()}/.openclaw/state/agentmail-adapter`}/sent-log.jsonl`;
     fsMkdir(fsDirname(LOG), { recursive: true });
     fsAppend(LOG, JSON.stringify({
       ts: new Date().toISOString(),
