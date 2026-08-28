@@ -128,6 +128,26 @@ class LineStickerMediaTests(unittest.TestCase):
     def _plan(self) -> None:
         MODULE.plan(self.character, [sys.executable, str(self.model)], self.work, "set-1", "char-1")
 
+    def test_plan_prompt_gives_model_the_exact_top_level_schema(self) -> None:
+        model = _executable(self.root / "schema-model.py", """
+            #!/usr/bin/env python3
+            import json, sys
+            request = json.load(sys.stdin)
+            prompt = request['creative_prompt']
+            if not all(token in prompt for token in ('"version": 1', '"mode": "plan"', '"character_anchors"', '"motions"')):
+                print(json.dumps({'set_id': request['set_id'], 'character_id': request['character_id'], 'candidates': []}))
+                raise SystemExit
+            motions = []
+            for number in range(1, 61):
+                motions.append({'motion_id': f'motion-{number:02d}', 'batch': (number - 1) // 10 + 1,
+                  'position': (number - 1) % 10 + 1, 'intent': f'reaction {number}',
+                  'action': f'action {number}', 'provider_prompt': f'animate {number}', 'duration_ms': 500})
+            print(json.dumps({'version': 1, 'mode': 'plan', 'set_id': request['set_id'],
+              'character_id': request['character_id'], 'character_anchors': ['blue ears'], 'motions': motions}))
+        """)
+        result = MODULE.plan(self.character, [sys.executable, str(model)], self.work, "set-1", "char-1")
+        self.assertEqual(result["status"], "ready")
+
     def test_plan_requires_exact_safe_motion_ids_and_replays(self) -> None:
         self._plan()
         replay = MODULE.plan(self.character, [sys.executable, str(self.model)], self.work, "set-1", "char-1")

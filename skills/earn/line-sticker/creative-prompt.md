@@ -15,6 +15,33 @@ or visual observation exists unless the supplied evidence actually shows it.
 
 ## Mode: `plan`
 
+Return exactly this JSON shape; do not rename `motions` to `candidates` or add keys:
+
+```json
+{
+  "version": 1,
+  "mode": "plan",
+  "set_id": "<supplied set_id>",
+  "character_id": "<supplied character_id>",
+  "character_anchors": ["<one or more observed visual anchors>"],
+  "motions": [
+    {
+      "motion_id": "motion-01",
+      "batch": 1,
+      "position": 1,
+      "intent": "<chat intent>",
+      "action": "<visible action>",
+      "provider_prompt": "<generation prompt>",
+      "duration_ms": 500
+    }
+  ]
+}
+```
+
+Use motion ids `motion-01` through `motion-60` exactly once. Use every batch/position pair from
+batch 1 position 1 through batch 6 position 10 exactly once. `duration_ms` is an integer from 500
+through 2000.
+
 Create exactly 60 distinct motion candidates in six coherent videos of ten
 motions each. Use the given schema exactly. Assign every candidate one unique
 `motion_id`, a batch from 1 through 6, and a position from 1 through 10 within

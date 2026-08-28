@@ -263,7 +263,7 @@ No narrower evidence closes the goal.
 - The redesigned media pipeline implements model-owned 60-motion planning and 24-item selection,
   quote-before-generate cost reservation, reconcile-only unknown recovery, bounded subprocesses,
   safe motion ids, one-video-at-a-time checkpoints, APNG timing, visual-inspection readback, and
-  package-bound generation provenance. A fresh parent run passes all 13 media tests, including a real
+  package-bound generation provenance. A fresh parent run passes all 14 media tests, including a real
   six-batch FFmpeg package.
 - The private credential SSOT contains one email-verified Runware workspace and an enabled
   `line-sticker-loop` API key. Official read-only account readback reports USD 0.05 balance and zero
@@ -275,6 +275,11 @@ No narrower evidence closes the goal.
   `original_ai_generated` rights receipt. The built-in image generator created it without Runware
   credit use; its attempted transparent background is RGB checkerboard, so it remains a character
   reference rather than a submission asset.
+- The real model plan contains 60 unique ids, 60 unique batch/position pairs, six batches of ten,
+  60 distinct intents/actions, and durations from 700 through 1400 milliseconds. Its canonical
+  SHA-256 and durable plan receipt match. The first real model attempt exposed a missing top-level
+  schema in the creative prompt; one exact schema block and one boundary regression fix that root
+  cause without adding an adapter.
 - No real Runware animation generation, Creators Market submission, review, release, public product,
   sale, payout, or bank effect has occurred.
 
@@ -307,7 +312,7 @@ row while an earlier row is unfinished.
 | A02 — DONE | Run the redesigned media tests plus the full validator/owner regression and obtain fresh adversarial review. | Parent Media 13/13 + Validator 32/32 + Owner 48/48 PASS; final review has no Critical, Important, or Minor finding. |
 | A03 — DONE | Connect one real animation provider account through the private credential SSOT. | Official Runware account readback binds workspace `anicca-line-sticker` and enabled key `line-sticker-loop`; free `model_pricing` readback binds live `bytedance:seedance@2.5` and USD 0.2304/second at 720p; usage remains zero. |
 | A04 — DONE | Generate one original character sheet and save its rights evidence. | Private `set-001/character/char-001-sheet.png` SHA-256 `902222ab709ab930c7651ce8c89c3807fcf8c53f3ccd2c79e7a2b14f6ae1b3ba` exactly matches its mode-600 `original_ai_generated` rights receipt. |
-| A05 | Ask the model for the exact 60-motion plan. | `plan.json` contains 60 inspected, unique motions in six batches. |
+| A05 — DONE | Ask the model for the exact 60-motion plan. | Private canonical `plan_sha256` `1e15c7092207dd2d50d206f48b37e1cbf58632bbe13e138d9600688ce10936de` binds 60 unique motions in six exact batches; its receipt and recomputed canonical hash match. |
 | A06 | Generate and convert batch 1 into ten valid candidates. | Ten candidate hashes pass the LINE validator. |
 | A07 | Generate and convert batch 2 into ten valid candidates. | Ten candidate hashes pass the LINE validator. |
 | A08 | Generate and convert batch 3 into ten valid candidates. | Ten candidate hashes pass the LINE validator. |
