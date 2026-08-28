@@ -655,6 +655,8 @@ node --test \
   lib/ch1-atomic-dedup.test.js \
   test/onboarding-resume-contract.test.js \
   test/calendar-connect-signature-contract.test.js
+bash test/postgres/lm-trial-first.integration.sh
+bash test/postgres/lm-travel-log-legs.integration.sh
 ```
 
 Expected: all tests PASS.
@@ -693,7 +695,7 @@ Re-run Step 4 after rebase if the merge base changes. Leave the approved PR unme
 
 - [ ] **Step 7: Apply the migration, merge immediately, and read back exact deploy**
 
-Pause new friend invitations for this controlled release window. Apply `2026-08-28-lm-trial-first.sql` in one production transaction and read back the column, function bodies, ACL, and unchanged existing trial-null rows. Then merge the already-approved PR immediately:
+Pause new friend invitations for this controlled release window. Apply `2026-08-28-lm-trial-first.sql` and `2026-08-28-lm-travel-log-legs.sql` in one production transaction. Read back the trial column/function bodies/ACL/unchanged existing null rows and the validated four-leg CHECK with existing travel rows/unique/RLS/other CHECKs preserved. Then merge the already-approved PR immediately:
 
 ```bash
 gh pr merge --repo Daisuke134/life-manager --merge --delete-branch=false
