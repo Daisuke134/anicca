@@ -64,6 +64,28 @@ direct wallet payout are permitted without any human claimant, KYC, account, OAu
 payout intermediary. Until the maintainer answers affirmatively with the authoritative current
 path, no identity, audit, disclosure, claim, or transaction is allowed for this candidate.
 
+### Agentic Market x402 inputs
+
+The public Agentic Market API currently exposes 2,423 services with endpoint-level 30-day paid-call
+and unique-payer counters. An independent fixed-commit collector snapshot reports 283,405 calls and
+about 9,450 USDC gross after excluding the extreme-price outlier, while labor marketplaces in the
+same measurement remain nearly empty. This supports the architectural lesson from BlockRun: sell a
+small machine-readable input repeatedly instead of waiting for a human-shaped job.
+
+The current `isNew=true` catalog subset does not pass the public gate; the flag's definition and
+listing ages are unknown. Only three services carry the flag and two have zero calls. Otto AI has
+5,729 calls, 116 maximum endpoint-level payers, and an
+endpoint-price-times-calls estimate of 22.961 USDC. Its gross is concentrated: tweet search alone is
+about 13.995 USDC from 2,799 calls and 13 payers, while image generation, Exa search, Gemini research,
+and other endpoint descriptions name upstream services. It is an inference, not yet primary-source
+proof, that operating those endpoints needs paid capacity or credentials; only human-provided
+credentials would violate the instance's identity boundary.
+Self-hostable/keyless examples such as DNS, RDAP, public-chain, weather, and public-market-data
+endpoints demonstrate demand but do not independently prove the roughly 13 USDC/month fixed-cost
+floor. A self-hosted SearXNG search/content service is therefore a valid experiment hypothesis, not
+a positive-expected-net selected opportunity. No service registration, wallet, deployment, or paid
+call is authorized from this evidence alone.
+
 ### Other added candidates
 
 - CodeHawks exposes a nominally live BattleChain page, but its dated contest has results and the

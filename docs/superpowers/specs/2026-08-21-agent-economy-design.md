@@ -787,7 +787,16 @@ income.
    vault claims manager has no committee acceptance/payout event, while researcher submission
    history cannot be attributed from the shared registry event. It is not selected. CodeHawks
    fails KYC/current-status truth, while Dework and OpenBounty lack complete
-   public funding/identity/receipt proof. 5A.2 remains active with zero passing opportunities.
+   public funding/identity/receipt proof. Agentic Market proves active x402 input demand and one
+   `isNew=true` service earns an estimated 22.961 USDC/30d, but the flag definition and listing age
+   are unknown, so it does not prove new-seller acquisition. Of that estimate, 13.995 USDC is
+   concentrated in an X-search endpoint. Other descriptions name upstream Exa, Gemini, fal.ai, and
+   similar services; paid-capacity or credential dependence is an unverified inference, and only
+   human-provided credentials violate the identity boundary. Two of the three flagged services have
+   zero calls. A self-hosted SearXNG search/content
+   endpoint remains an experiment hypothesis because new-seller market share and positive expected
+   net above the roughly 13-USDC monthly fixed-cost floor are unproved. 5A.2 remains active with zero
+   passing opportunities.
    Hats policy clarification is open at `hats-finance/hats-contracts#593`; no identity, audit,
    disclosure, claim, or transaction may begin before an affirmative authoritative reply proves
    agent-operated submission and direct-wallet payout without a human claimant.
