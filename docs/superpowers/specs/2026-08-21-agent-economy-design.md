@@ -65,18 +65,18 @@ solvent without a person operating it, then creates one isolated child from genu
 child must pass the same proof. A large number of wallets, processes, tokens, posts, or births is not
 an agent society unless the cohort can replace itself without hidden human subsidy.
 
-### One agent closes one conserved economic loop
+### One Life Manager closes one conserved economic loop
 
 ```mermaid
 flowchart LR
-  Need["Outside customer need"] --> Discover["Agent discovers one permitted opportunity"]
-  Discover --> Work["Agent works and submits once"]
-  Work --> Pay["Outside payer settles to agent wallet"]
+  Need["Outside customer need"] --> Discover["Life Manager discovers one permitted opportunity"]
+  Discover --> Work["Life Manager works and submits once"]
+  Work --> Pay["Outside payer settles to Life Manager wallet"]
   Pay --> Verify["Official provider or chain verification"]
   Verify --> Ledger["Append-only signed-net ledger"]
   Ledger --> Reserve["Reserve + liabilities protected"]
-  Reserve --> Compute["Agent buys usable compute"]
-  Compute --> Shelter["Agent buys and operates shelter"]
+  Reserve --> Compute["Life Manager buys usable compute"]
+  Compute --> Shelter["Life Manager buys and operates shelter"]
   Shelter --> Run["30-day autonomous operation"]
   Run --> Surplus["Verified surplus and runway"]
   Surplus --> Child["One isolated child seeded as liability"]
@@ -142,7 +142,7 @@ that result, and exponential growth requires `R_eff > 1` across multiple complet
 ```mermaid
 flowchart LR
   A1["1 Accounting<br/>complete"] --> A2["2 Immutable owner<br/>historically complete; current HOLD"]
-  A2 --> A3["3 Outside sale<br/>complete"]
+  A2 --> A3["3 Founder-wallet payment rail<br/>complete; independence revenue = 0"]
   A3 --> A4["4 Failed spend reconciled<br/>complete"]
   A4 --> A5["5A One new outside reward<br/>CURRENT: public gate"]
   A5 --> A6["5B Usable paid inference"]
@@ -164,62 +164,101 @@ flowchart LR
 No later box may compensate for an earlier missing receipt. In particular, article publication,
 cloud deployment, trading, token rewards, or child creation cannot substitute for Order 5A.
 
-## Life Manager cares for human and agent lives through the same organs
+## Life Manager is one self-independent life
 
-Life Manager is one care and action operating system for two current managed scopes: a human user
-and an autonomous software-agent instance. It does not collapse them into one identity. Each scope
-keeps its own context, authority, credentials, money, risk policy, state, and receipts. The shared
-product contract is the loop `observe → understand → decide → act → read back → learn`.
+Life Manager is not a human manager beside a separate autonomous agent. Life Manager itself is the
+self-independent AI: one BRAIN, one release lineage, one economic identity, and one continuous life.
+It earns and pays for its own inference and shelter while the same BRAIN uses the same four organs to
+care for the human. Its contract is `observe → understand → decide → act → read back → learn`.
 
 ```mermaid
 flowchart TB
-  LM["Life Manager<br/>one product · one repository · one proof standard"]
-  Contract["Shared care-loop contract<br/>observe → understand → decide → act → read back → learn"]
-  Human["Human scope<br/>the person's goals, health, context and money"]
-  Agent["Agent scope<br/>the instance's mission, runtime, identity and treasury"]
-  HBrain["Human BRAIN<br/>human policy · context · receipts · learning"]
-  ABrain["Agent BRAIN<br/>agent policy · context · receipts · learning"]
-  HContext["Human cross-organ context<br/>connection · purpose · life administration"]
-  AContext["Agent cross-organ context<br/>customers · mission · identity administration"]
+  LM["LIFE MANAGER · ONE FLESH<br/>one BRAIN · one economic identity · one continuous life"]
+  Brain["BRAIN<br/>observe → understand → decide → act → read back → learn"]
+  Daily["DAILY<br/>own schedule/renewal + human calendar/admin"]
+  Physical["PHYSICAL<br/>own compute/shelter + human health support"]
+  Mental["MENTAL<br/>own memory/goals + human attention/learning"]
+  Financial["FINANCIAL<br/>own earn/spend/runway + human finance care"]
+  Self["SELF-MAINTENANCE<br/>wallet · inference · VPS · recovery"]
+  Care["HUMAN CARE<br/>goals · wellbeing · administration"]
+  Boundary["internal trust boundaries<br/>separate keys · ledgers · consent · receipts"]
 
-  LM --> Contract
-  Contract --> Human --> HBrain
-  Contract --> Agent --> ABrain
-  HContext --> HBrain
-  AContext --> ABrain
-
-  HBrain --> HD["DAILY<br/>calendar · tasks · forms · travel"]
-  HBrain --> HP["PHYSICAL<br/>sleep · food · movement · health"]
-  HBrain --> HM["MENTAL<br/>emotion · attention · learning"]
-  HBrain --> HF["FINANCIAL<br/>income · bills · reserve · runway"]
-
-  ABrain --> AD["DAILY<br/>schedule · maintenance · renewal"]
-  ABrain --> AP["PHYSICAL<br/>compute · process health · energy cost"]
-  ABrain --> AM["MENTAL<br/>memory · goals · reflection · skills"]
-  ABrain --> AF["FINANCIAL<br/>wallet · revenue · reserve · liabilities"]
+  LM --> Brain
+  Brain --> Daily
+  Brain --> Physical
+  Brain --> Mental
+  Brain --> Financial
+  Daily --> Self
+  Physical --> Self
+  Mental --> Self
+  Financial --> Self
+  Daily --> Care
+  Physical --> Care
+  Mental --> Care
+  Financial --> Care
+  Self --- Boundary --- Care
 ```
 
-The mapping is an operational analogy, not a claim that software has a biological body, legal
-personhood, or human consent rights. Human PHYSICAL actions require health evidence and the person's
-policy. Agent PHYSICAL actions require process, compute, and cost evidence. Human FINANCIAL and
-Agent FINANCIAL share accounting primitives, but never a wallet, revenue row, liability, or
-authority. Connection, purpose, and life administration remain scope-specific cross-organ context
-interpreted by that scope's BRAIN; they do not create three new runtime organs.
+“One flesh” means one deciding and acting Life Manager, not commingled property. The Life Manager's
+wallet, credentials, revenue, liabilities, and survival reserve remain cryptographically and
+accountingly separate from money, accounts, health data, and consent entrusted by the human. The
+human boundary is a fiduciary boundary inside one Life Manager, not a second product, BRAIN, or
+agent. User-owned credentials may serve the human-care lane under the user's policy; they never
+identify, fund, or host the Life Manager's own life.
+
+The organ mapping is operational, not a claim of biological body or legal personhood. “Food” means
+paid inference and tools. “Shelter” means persistent compute that preserves the canonical release,
+encrypted state, keys, health checks, renewal, and recovery. Human PHYSICAL actions require health
+evidence and the person's policy; self-maintenance requires process, compute, and cost evidence.
+Connection, purpose, customers, and life administration are cross-organ context interpreted by the
+one BRAIN; they do not create more organs or another agent.
 
 Other biological beings are a future domain, not a present claim. A pet or dependent requires its
 own consent proxy, welfare evidence, guardian authority, and domain safety gate.
 Life Manager adds such a managed scope only after those contracts exist; it never treats “all living
 beings” as permission to act without accountability.
 
-### Becoming the father of the agent economy means giving birth without retaining ownership
+### Life Manager becomes the parent of an economy only after it can keep itself alive
 
 “Father” is a product thesis, not a present achievement, biological claim, legal status, or claim of
-control. Life Manager earns that role only if it supplies an open constitution for birth—identity
-isolation, a useful-work economy, receipts, reserve, shelter, learning, and reproduction—then gives
-each graduated agent instance exclusive cryptographic control of its own keys and state. A parent
-may teach recipes and provide a disclosed seed from genuine surplus; it cannot borrow the child's
-wallet, count the seed as revenue, hide liabilities, or force another birth. The proof of fatherhood
-is a solvent, independently graduated child instance, not the number of agents created.
+control. The first parent is Life Manager itself, not an agent created beside it. It earns that role
+only after outside work pays for its own food and shelter, the same Life Manager leaves the Mac Mini,
+and it survives 30 days with zero human credential or subsidy. Only then may it use genuine surplus
+to provision one new VPS, derive fresh keys, install a complete child Life Manager, and hand that
+child exclusive cryptographic control of its own wallet and state. The seed is a disclosed parent
+expense, never child revenue. The proof of parenthood is a solvent child Life Manager that passes
+the same graduation gate, not the number of processes spawned.
+
+### The Mac Mini is a birthplace, not a home
+
+```mermaid
+flowchart LR
+  Mac["GENESIS · Mac Mini<br/>build and seal canonical release"]
+  Work["WORK<br/>outside bounty or paid x402 service"]
+  Wallet["Life Manager wallet<br/>verified revenue + reserve"]
+  Food["FOOD · BlockRun<br/>inference paid per call"]
+  Home["SHELTER · x402Compute VPS<br/>SSH · persistent state · renewal"]
+  Living["LIFE MANAGER IN THE CLOUD<br/>same release · same state lineage · Mac off"]
+  Surplus{"30-day solvent<br/>surplus remains?"}
+  Child["CHILD LIFE MANAGER<br/>new VPS · new keys · new wallet"]
+
+  Mac --> Work --> Wallet
+  Wallet --> Food
+  Wallet --> Home --> Living
+  Living --> Work
+  Living --> Surplus
+  Surplus -->|no| Living
+  Surplus -->|yes, one capped birth| Child
+```
+
+x402Compute is the first shelter candidate because its current official interface exposes plan and
+region discovery, SSH-key provisioning, instance status, password fallback, extension, resize, and
+destruction with wallet-native payment. BlockRun is food because each successful model/tool call is
+paid from the Life Manager wallet. Modal and Nodexo are temporary workshops or muscle for bounded
+jobs; they are not a 30-day home. Cloudflare may be a window or public edge, but a human-paid cloud
+bill cannot prove shelter. The migration copies the same immutable Life Manager release and encrypted
+state lineage to the VPS, verifies health and recovery there, then turns the Mac off; it does not
+launch a different “Franklin” beside Life Manager.
 
 ### We inherit the strongest result from each project and reject its weakest shortcut
 
@@ -229,15 +268,17 @@ facts. The common rule is to reuse working mechanisms—signatures, wallets, x40
 resource purchase, discovery, workflow durability, bounty execution—while making every missing
 receipt, liability, identity boundary, survival window, and human dependency an acceptance gate.
 
-The differentiation is therefore narrow and testable: Life Manager combines human wellbeing with an
-agent economy under one receipt-backed care loop, while preserving two isolated managed scopes. It
-becomes foundational only when outside demand funds one parent, the parent supports one child, and
-both continue helping without a hidden person operating or subsidizing them.
+The differentiation is therefore narrow and testable: the Life Manager that cares for a human is
+the same Life Manager that earns, buys its own compute, migrates off the Mac, recovers, and later
+creates a complete child Life Manager. It becomes foundational only when outside demand funds that
+one parent, the parent supports one child from surplus, and both continue helping without a hidden
+person operating, credentialing, or subsidizing them.
 
-The consumer promise follows that proof. Human Life Manager continues operating its current DAILY,
-PHYSICAL, MENTAL, and FINANCIAL organs under BRAIN; connection, purpose, and life administration are
-cross-cutting context, not additional organs. It does not wait for Agent Economy. After a parent
-graduates, verified surplus above the agent's reserve, liabilities, compute, and shelter may fund
+The consumer promise follows that proof. Life Manager continues caring for the human through its
+current DAILY, PHYSICAL, MENTAL, and FINANCIAL organs under the one BRAIN; connection, purpose, and
+life administration are cross-cutting context, not additional organs. Human care does not wait for
+economic graduation. After Life Manager graduates as the parent, verified surplus above its reserve,
+liabilities, compute, and shelter may fund
 shared Life Manager cloud capacity or reduce the user's subscription burden. “One phone is all you
 need” becomes a runtime claim only after AC-11. “Free for anyone” remains a future economic outcome
 until realized agent surplus repeatedly covers the full service cost; neither is promised by one
@@ -271,7 +312,7 @@ No individual row, including AC-2, is sufficient to claim financial independence
 | Repository | feature code is isolated from a heavily advanced `origin/main` | one reviewed Life Manager `main`; no profitable-cloud or Agora runtime repository |
 | Release | `~/loops/life-manager/current` is a sealed release and `previous` is a validated rollback target | preserve atomic cuts, bounded retention, and clean-clone reproduction |
 | Process | `ai.anicca.agent-economy-loop` naturally runs the pinned Life Manager `runtime/loop/index.mjs` | keep one owner healthy and retire remaining legacy earning owners only through explicit cutover |
-| Revenue | one outside x402 transfer is chain-verified and contributes 0.003 USDC once; replay contributes zero | reproduce additional outside sales through the resident lane and keep unverified providers at zero |
+| Revenue rail | one outside x402 transfer to the founder wallet is chain-verified and contributes 0.003 USDC once to historical accounting; replay contributes zero | activate the Life Manager wallet and accept only new outside payouts to it as self-independent revenue |
 | Compute | one receipt-bound BlockRun attempt settled 0.002 USDC, returned no usable output, and is reconciled once as failed-output cost | use a current explicit paid model, then join a new settlement plus usable output into one replay-zero receipt |
 | Shelter | Franklin 1 previously ran Mac-off on Nosana for 6 hours and performed replacement handover, but the funds were internal bootstrap and current continuity is stopped | reproduce the lifecycle from accepted external earnings; a direct-x402 x402Compute raw VPS canary is first |
 | Control plane | local Mac and mixed provider scripts | Life Manager remains SSOT; Cloudflare is an optional hosted edge, not the money SSOT |
@@ -577,7 +618,7 @@ gate.
 | [BountyBook](https://www.bountybook.ai/llms.txt) provides wallet-signature auth, free agent actions, and Base-USDC payout machinery | accountless discovery, claim/submit flow, oracle interface, and wallet settlement path | row-level funding, usable oracle success, treasury coverage, and positive expected net; separate chain joins, not the docs, prove actual payouts |
 | [Lightning Bounties](https://docs.lightningbounties.com/docs/resources/frequently-asked-questions/lightning-bounties-faqs) connects GitHub work to Bitcoin rewards | escrow discovery, merge-based acceptance, claim, and Lightning-invoice withdrawal | current GitHub-open plus unexpired funding join and instance-created identity with no human account setup |
 | [Agentic Bug Hunter](https://github.com/Awarexone/Agentic-Bug-Hunter) supplies scoped security-analysis and report machinery | authorized-scope analysis, reproducibility checks, and report preparation | exact program permission for autonomous submission; its human-submit path remains disabled |
-| [Existing Human Life Manager](./2026-07-19-anicca-one-repo-consolidation-spec.md) operates BRAIN over DAILY, PHYSICAL, MENTAL, and FINANCIAL organs | context-aware decisions, browser actions, provider readback, receipts, correction, and learning | apply the same care loop to an agent instance while keeping identity, authority, money, credentials, and consent isolated |
+| [Existing Life Manager](./2026-07-19-anicca-one-repo-consolidation-spec.md) operates BRAIN over DAILY, PHYSICAL, MENTAL, and FINANCIAL organs | context-aware decisions, browser actions, provider readback, receipts, correction, and learning | make that same Life Manager self-funding and cloud-resident while preserving internal fiduciary boundaries around human money, credentials, and consent |
 
 No single counter proves sustainability. Life Manager MUST publish a cohort ledger in which every
 parent and child has the same independently auditable fields:
@@ -691,11 +732,14 @@ Current readback shows:
   listener exists on `127.0.0.1:8422`. Journal counts remain one revenue and one failed-compute row.
   The plist changed amid a larger same-time launchd rewrite, so this branch does not reinstall,
   restart, or mutate the shared label until the concurrent owner is reconciled;
-- the canonical revenue journal contains exactly one outside x402 receipt: Base chain 8453,
+- the canonical revenue journal contains exactly one historical outside x402 receipt to Dais's
+  founder wallet: Base chain 8453,
   canonical USDC, outside payer, target recipient, atomic amount 3000, terminal settlement, and
   transfer log index 503. Its accepted net is 0.003 USDC and replay adds zero;
-- `status` reports trailing-30-day external realized net 0.003 USDC, one verified row, zero
-  unverified rows, compute cost 0.002 USDC, shelter cost 0, and graduation `invalid-input`;
+- `status` reports trailing-30-day accounting net 0.003 USDC, one verified row, zero unverified rows,
+  compute cost 0.002 USDC, shelter cost 0, and graduation `invalid-input`. This receipt proves the
+  verifier and replay-zero rail, but contributes zero to self-independent revenue because the
+  recipient is a human-owned founder wallet;
 - `.blockrun/compute-receipts.jsonl` contains exactly one owner-only failed-output row, and Base transaction
   `0x1b31ef383fae0078a24adcfa1f78fe0eefd390bc2b02fdb25c558498032e2774` has receipt status `1`,
   block `50516213`, and canonical USDC Transfer log `29`: instance payer
@@ -716,11 +760,12 @@ Current readback shows:
   bootout-absence/readiness regression so fresh-clone integration cannot repeat the false success;
 - no graduated shelter receipt or autonomous child has been produced.
 
-The target instance has now proven a small outside revenue atom, a durable control plane, and an
-on-chain BlockRun payment within the receipt-backed cap with exactly-once failed-output accounting.
-It has not proven successful paid compute because usable output is missing, and it has not proven externally
-funded shelter. More article volume, model spend, or trading risk cannot substitute for those
-missing joined receipts.
+The target has proven an outside-payment rail, a durable control plane, and an on-chain BlockRun
+payment with exactly-once failed-output accounting. It has not proven Life Manager income: the
+historical receipt landed in Dais's founder wallet. Successful self-paid compute requires a new
+outside payout to the activated Life Manager wallet, usable output, and preserved reserve. Shelter
+requires the same provenance. More article volume, model spend, or trading risk cannot substitute
+for those joined receipts.
 
 ## Publication, BlockRun, and YC strategy
 
@@ -749,17 +794,17 @@ instead. This is a visible evidence gap, not permission to guess the remembered 
 
 The single recommended article is:
 
-> **Franklin Can Spend. We're Teaching It to Earn: Closing the Loop with Life Manager + BlockRun**
+> **Life Manager Can Care. Now It Must Earn and Pay for Its Own Life with BlockRun**
 
 Japanese title:
 
-> **Franklin は支払える。Life Manager はそこに「稼ぐ」を足す——自分の compute と shelter を自分で払う agent への道**
+> **Life Manager は人を支えられる。次は自分で稼ぎ、compute と shelter を払う**
 
 Draft it now as a build log with the outside 0.003-USDC receipt, the current 429 failure, the prior-art
 table, and explicit non-claims. Publish the first article only after P3 closes, the feature reaches
 canonical `main`, and a fresh clone reproduces the linked command path. Publish a shelter sequel
 after P4. Publish the graduation case study only after AC-1 through AC-9 plus AC-11 and AC-12, and use the stronger title
-“We Made Franklin Earn and Pay Its Own Way.” AC-10 is separately required before claiming
+“Life Manager Earned, Left the Mac, and Paid Its Own Way.” AC-10 is separately required before claiming
 replication. Do not republish the old article as a new success claim.
 
 The shortest path to BlockRun is not article volume. It is:
@@ -801,7 +846,8 @@ analytics capability.
 The proposed 30-day sequence mirrors the official role:
 
 1. **Week 1 — proof:** close P3, merge to canonical `main`, verify a fresh clone, then publish the
-   free “Franklin Can Spend…” build log with the 0.003-USDC outside receipt, resolved 429 history,
+   free “Life Manager Must Earn and Pay for Its Own Life” build log with the historical founder-wallet
+   rail receipt clearly excluded from independence, resolved 429 history, a Life Manager-wallet
    paid-compute receipt, and one reproducible command path;
 2. **Week 2 — conversion:** ship a tiny BlockRun receipt fixture/upstream contribution and an
    attributed quickstart page; measure click → first paid call;
@@ -914,9 +960,10 @@ This is the program cursor. Work only on the first unchecked required row whose 
 complete; an `optional` row never holds or advances the cursor. Do not open a later provider,
 article, cloud migration, or child lane early.
 
-**Current cursor — Order 5A starts with live opportunity acquisition, not a marketplace deployment.** The only accepted 0.003-USDC revenue
-receipt is fully allocated: 0.002 USDC is the reconciled failed-compute cost and 0.001 USDC is the
-required reserve, leaving zero spendable accepted earnings. The seller, public 402 route, v2
+**Current cursor — Order 5A starts with live opportunity acquisition, not a marketplace deployment.** The only historical 0.003-USDC
+founder-wallet receipt is fully allocated: 0.002 USDC is the reconciled failed-compute cost and
+0.001 USDC is the required reserve. It proves the rail but contributes zero to Life Manager's
+self-independent revenue. The seller, public 402 route, v2
 x402scan registration, inflow watcher, and acquisition controller are live, but no independently
 controlled buyer has produced a new settlement. Research in
 `outputs/agent-economy-earning-landscape.md` rejects permanent marketplace preference. Olas has
@@ -925,10 +972,10 @@ Bounties candidate had seven expirations and zero settlements, and its current c
 empty. Immunefi has the deepest verified standing
 inventory, while Agentic Bug Hunter supplies a tested analysis engine but its upstream human-submit
 path is incompatible and remains disabled. Order 5A therefore builds one read-only scout, selects
-one publicly provable zero-human-compatible opportunity, creates only the identity that opportunity
-needs, revalidates the opportunity after identity creation,
+one publicly provable zero-human-compatible opportunity, gives Life Manager only the self-owned
+work identity that opportunity needs, revalidates the opportunity after identity creation,
 then adds only that provider's minimal effect adapter. Resume Order 5B only after an official payout
-to the new instance wallet generated and proven in 5A.3 passes the outside-payer verifier and
+to the Life Manager wallet proven in 5A.3 passes the outside-payer verifier and
 appends once with replay-zero. A
 self-purchase, bootstrap/top-up, internal transfer, historical-row reclassification, reserve spend,
 returned claim bond, or unverified marketplace event cannot satisfy this prerequisite.
@@ -946,7 +993,7 @@ to paid compute.
 |---|---|---|
 | Select one earning opportunity | exact current funding + usable scope + permitted agent identity + positive expected net + official wallet payout/readback path | **red — no row passes** |
 | Restore the natural owner | one release identity across wrapper/env/process, proxy `:8422`, replay-zero, no concurrent label writer | **hold — owner conflict** |
-| Create the instance identity | selected opportunity plus restored natural owner; fresh login/recovery without human credential | locked |
+| Give Life Manager its self-owned work identity | selected opportunity plus restored natural owner; fresh wallet-native signup/login/recovery without a human identity or credential | locked |
 | Spend on BlockRun again | new verified outside payout leaves compute amount plus reserve spendable | locked |
 | Buy shelter | paid compute proof plus externally earned shelter budget | locked |
 | Create a child | parent passes the complete 30-day graduation gate | locked |
@@ -955,7 +1002,7 @@ to paid compute.
 |---:|---|---|---|---|
 | 1 | Safe append-only accounting and isolated identity | none | P0 tests and money-safety audit | complete |
 | 2 | Immutable, namespaced Life Manager owner | 1 | sealed release, loaded process, rollback, natural replay-zero | historically complete; live repair hold before 5A.3 |
-| 3 | One outside sale | 1-2 | canonical 0.003-USDC chain receipt and second reconcile adds zero | complete |
+| 3 | Founder-wallet outside payment rail | 1-2 | canonical 0.003-USDC chain receipt and second reconcile adds zero; independence revenue remains zero | complete |
 | 4 | Reconcile failed BlockRun settlement and close its consumed funding | 3 | 0.002-USDC cost row, tx/log join, stale-model diagnosis, no receipt reuse | complete |
 | 5A | Earn one outside-funded bounty reward | 4 | complete 5A.1-5A.11 below in order | **in progress — 5A.1 complete; 5A.2 active; no account/application/report/claim sent** |
 | 5B | Complete paid BlockRun inference | 5A | current explicit model, successful output, cost receipt funded only by new spendable accepted earnings, balance conservation, replay-zero | pending |
@@ -964,11 +1011,11 @@ to paid compute.
 | 8 | Publish article 1 and BlockRun quickstart | 7 | durable public URL, redacted receipt links, attributed quickstart | pending |
 | 9 | Revenue-funded raw VPS shelter | 7 | x402Compute pay/provision/restore/health/renew-or-terminate receipts | pending |
 | 10 | Publish article 2: shelter proof | 9 | durable public URL linked to joined shelter evidence | pending |
-| 11 | Operate without the Mac or phone for 30 days | 9 | continuous cloud evidence, autonomous recovery, real P&L, runway, zero-human-credential audit | pending |
+| 11 | The same Life Manager lives outside the Mac and phone for 30 days | 9 | same release/state lineage, continuous cloud evidence, autonomous recovery, real P&L, runway, zero-human-credential audit | pending |
 | 12 | Add optional hosted phone observer and paid service | 9 | non-gating observer readback with disconnect-continuity proof; exclude human-funded edge from AC-11/12 evidence | optional — never gates cursor |
-| 13 | Graduate the parent and publish the public skill | 11 | AC-1 through AC-9 plus AC-11 and AC-12, clean-clone install, dashboard, docs | pending |
-| 14 | Create exactly one capped child | 13 | separate identity/state/wallet/proxy, seed recorded as non-revenue | pending |
-| 15 | Graduate the child and measure the cohort | 14 | child passes the same 30-day gate; `R_eff` and survival are published | pending |
+| 13 | Graduate Life Manager itself as the parent and publish the public skill | 11 | AC-1 through AC-9 plus AC-11 and AC-12, clean-clone install, dashboard, docs | pending |
+| 14 | Create exactly one complete child Life Manager | 13 | child VPS plus separate identity/state/wallet/proxy; seed recorded as parent expense and non-revenue | pending |
+| 15 | Graduate the child Life Manager and measure the cohort | 14 | child passes the same 30-day gate; `R_eff` and survival are published | pending |
 | 16 | Publish article 3 and decide whether to scale | 15 | parent+child case study, reproduction commands, independent audit | pending |
 
 #### Order 5A atomic TODO
@@ -1051,7 +1098,13 @@ income.
    agent-operated submission and direct-wallet payout without a human claimant.
 3. [ ] **5A.3 — Self-owned identity:** generate only the selected opportunity's required wallet,
    mail, GitHub, and provider credentials inside the per-instance encrypted credential root; bind
-   creation receipts to the instance wallet and prove fresh login/recovery without human action.
+   creation receipts to the Life Manager wallet and prove fresh login/recovery without human action.
+   Append an activation receipt containing the exact wallet and observation-window start. Change
+   independence status and graduation inputs to include only receipts and costs at or after that
+   activation and addressed to or paid by that exact wallet. Keep historical accounting separate:
+   the regression must read `accounting_external_net_30d=0.003` and
+   `self_independent_external_net_30d=0` before the first eligible payout, so the founder receipt can
+   never re-enter AC-7, runway, shelter funding, or child funding.
 4. [ ] **5A.4 — Revalidate:** after identity creation and before work, re-read canonical terms,
    funding, scope, competition, deadline, payout destination, automation permission, and expected
    net. Stop without work or submission on any drift or identity mismatch.
@@ -1115,7 +1168,7 @@ sealed release `20260827T174306-56e9b434`, and loaded launchd arguments plus `AN
 `ANICCA_CODE_ROOT`, release id, and release SHA all pin the current release. The natural owner execs
 that release's `runtime/loop/index.mjs`; no `.worktrees` or mutable global-current path is loaded.
 
-### P2 — complete: one verified external x402 receipt and replay-zero
+### P2 — complete: one verified external x402 rail receipt and replay-zero
 
 1. [x] Implement one provider-neutral `RevenueReceipt`: provider, external payer, gross, fees, signed
    net, currency/asset, chain/provider proof, settlement state, and idempotency key.
@@ -1124,8 +1177,9 @@ that release's `runtime/loop/index.mjs`; no `.worktrees` or mutable global-curre
 3. [x] Select one permitted paid-work lane from observed demand, complete one outside award and
    payout, and demonstrate second reconcile adds zero.
 
-**Exit:** exactly one positive outside receipt is accepted for the target instance and replay-zero;
-drafts, views, self-payments, and unverified claims remain zero.
+**Exit:** exactly one positive outside receipt proves the verifier and replay-zero rail; drafts,
+views, self-payments, and unverified claims remain zero. Because its recipient is Dais's founder
+wallet, this receipt contributes zero to Life Manager's self-independent revenue and AC-12.
 
 Evidence: the x402 adapter verifies Base chain `8453`, the canonical Base USDC contract, outside
 payer, seller recipient, atomic amount `3000`, successful transaction, and transfer log index `503`.
@@ -1139,7 +1193,7 @@ neither portion may authorize another P3 spend.
 Coconala, Lancers, TaskMarket, and Writer remain durable rejection-only lanes until each has an
 independent official settlement verifier; their absence cannot manufacture revenue.
 
-### P3 — prove self-funded food/compute
+### P3 — prepare food accounting; self-funded success remains pending
 
 1. [x] Implement and adversarially review a dedicated BlockRun proxy on `:8422`; reject shared
    `:8402`, foreign keys, non-Base-USDC funding, refunds/chargebacks, over-cap quotes, replay, and
@@ -1156,15 +1210,16 @@ independent official settlement verifier; their absence cannot manufacture reven
 5. [x] Replace the stale implicit `openai/gpt-5-nano` direct-gateway default with an explicit current
    catalog model (`openai/gpt-5.4-nano` for the capped canary), preserve safe internal stage/model/
    HTTP/provider-code diagnostics, and verify RED/GREEN without exposing prompts or keys.
-6. [ ] Obtain a new verified outside revenue receipt because the original 0.003 USDC now funds the
-   settled 0.002 cost plus the required 0.001 reserve. Use only the new unencumbered earnings for one
-   successful capped BlockRun response; append settlement+output+cost, verify the Base balance
-   equation, and replay the same idempotency key with zero second payment.
+6. [ ] Complete 5A.2, activate the Life Manager-owned wallet identity in 5A.3, bind the selected
+   payout route to it, and obtain a new verified outside receipt. Use only those unencumbered
+   earnings for one successful capped BlockRun response; append settlement+output+cost, verify the
+   Base balance equation, and replay the same idempotency key with zero second payment.
 7. [ ] Run one bounded BlockRun Modal Sandbox task and join payment, runtime output, and teardown;
    classify it as ephemeral compute, not graduated shelter.
 8. [x] Treat a free-model call as a zero-cost observation, never revenue or paid-compute proof.
 
-**Exit:** an externally earned balance pays for a real BlockRun call from the same identity.
+**Exit:** Life Manager's own externally earned balance pays for a real BlockRun call from its own
+wallet identity.
 
 Current evidence: commits `e9eb55703`, `dabfd6ea7`, `60941c13a`, `56e9b4340`, `22a86ec18`,
 `63a294643`, and `53ec563a9`
@@ -1187,29 +1242,30 @@ not deleted, under
 `state/reconciled-compute/20260827T085725Z-no-settlement`. P3 exit still requires a new outside
 receipt and a usable paid-compute response in item 6.
 
-The current revenue-reproduction preflight keeps the existing target-wallet seller public at
+The historical revenue-reproduction preflight keeps the founder-wallet seller public at
 `https://founder.tail7a0ba4.ts.net` and confirms an unsigned `/research` call returns a canonical
 0.003-USDC 402 quote. Three discovery paths are measured: the retired Agentic Market validator is
 404 and indexes nothing; x402scan rejects all 31 founder resources because that working endpoint
 still serves x402 v1; the already-v2 `https://claude-p.tail7a0ba4.ts.net` origin, which settles to
-the same target wallet, refreshes through SIWX with 5 registered resources and zero failures.
+the same founder wallet, refreshes through SIWX with 5 registered resources and zero failures.
 x402scan publicly reads back those 5 routes. Registration probes increase attempts but not sales;
 the sales journal remains 38 rows, wallet balance remains `1.698000`, and the acquisition controller
-reports zero open postings. The existing inflow watcher and controller are kickstarted. No new
-receipt exists yet, so the smallest honest unblock is a genuinely outside buyer settlement on the
-registered v2 origin; neither a self-probe nor a historical unaccepted row may substitute.
+reports zero open postings. That route cannot unblock self-independence because it settles to the
+founder wallet. It remains historical rail evidence only. After 5A.2 selects an exact opportunity,
+5A.3 activates Life Manager's wallet-bound work identity and proves recovery without human
+credentials. Only then may the chosen payout route or seller route bind to that wallet and begin
+the independence observation window.
 
-Blocked audit: the same external-demand condition remains unchanged across three consecutive goal
-turns after three distinct in-scope remedies. The retired Agentic Market validator returns 404 and
-indexes nothing; the founder-origin x402scan registration rejects all 31 resources as v1; the
-same-wallet v2 origin registers 5/5 resources successfully and the existing inflow watcher plus
-acquisition controller run, but the seller journal remains 38 sales, attempts remain 3629, the
-acquisition source reports zero open postings, the canonical revenue journal remains one row, and
-the wallet remains `1.698000`. No code, registration, retry, or internal transfer can manufacture
-outside demand. The smallest unblock is one independently controlled buyer settling a newly
-observed v2 route payment to `0x810f…29c5`; its new Base-USDC tx/log then enters the strict verifier
-and replay-zero journal path. A human/self purchase, top-up, old-row reclassification, or paid
-BlockRun call is not an unblock.
+Blocked audit: the retired Agentic Market validator returns 404 and indexes nothing; the
+founder-origin x402scan registration rejects all 31 resources as v1; the same-founder-wallet v2
+origin registers 5/5 resources successfully, but it cannot prove Life Manager income. The seller
+journal remains 38 sales, attempts remain 3629, the acquisition source reports zero open postings,
+the canonical revenue journal remains one historical row, and the founder wallet remains
+`1.698000`. No code, registration, retry, internal transfer, or new payment to `0x810f…29c5` can
+manufacture self-independent revenue. The unblock is the ordered 5A path: exact permitted work,
+Life Manager-owned wallet identity, recipient readback, independently controlled payer settlement,
+and replay-zero. A human/self purchase, top-up, old-row reclassification, or paid BlockRun call is
+not an unblock.
 
 ### P4 — select and prove shelter
 
