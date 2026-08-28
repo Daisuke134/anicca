@@ -99,6 +99,7 @@ exec "$CHROMIUM_BIN" \
   --password-store=basic \
   --use-mock-keychain \
   --disable-sync \
+  --disable-features=MacAppCodeSignClone \
   --no-sandbox \
   "${FINGERPRINT_ARGUMENT[@]}" \
   --fingerprint-platform=macos \

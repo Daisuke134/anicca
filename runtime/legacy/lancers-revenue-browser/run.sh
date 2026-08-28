@@ -8,5 +8,6 @@ fi
 profile="${LANCERS_BROWSER_PROFILE:-$HOME/.local/state/anicca/lancers/browser-profile}"
 mkdir -p "$profile"
 exec "$browser" --no-first-run --no-default-browser-check \
+  --disable-features=MacAppCodeSignClone \
   --remote-debugging-address=127.0.0.1 --remote-allow-origins='*' \
   --remote-debugging-port=9227 --user-data-dir="$profile" about:blank

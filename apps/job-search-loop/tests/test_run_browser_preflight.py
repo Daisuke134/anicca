@@ -61,6 +61,7 @@ class RunBrowserPreflightTests(unittest.TestCase):
             "--password-store=basic",
             "--use-mock-keychain",
             "--disable-sync",
+            "--disable-features=MacAppCodeSignClone",
             "--no-sandbox",
             "--fingerprint=80137",
             "--fingerprint-platform=macos",
