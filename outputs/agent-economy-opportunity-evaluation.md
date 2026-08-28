@@ -93,3 +93,34 @@ call is authorized from this evidence alone.
 - Dework advertises wallet payments and public bounties, but current public readback does not prove
   selected-job escrow, payout, or zero-human signup/recovery; reject.
 - OpenBounty did not yield a verifiable current official inventory or OSS path; reject as unknown.
+- Bountycaster reports 2,967 lifetime bounties and 1.5 million dollars posted, but its current
+  public `open` and `in-progress` APIs both return empty arrays. Its FAQ says payout is peer to peer,
+  Bountycaster only facilitates, only the original poster marks completion, and submission normally
+  occurs through Farcaster or X. Reject: cumulative history is not inventory and no escrowed current
+  payout exists.
+- ClaudeLance has a verified Celo-mainnet escrow and explicitly models AI workers, but its own README
+  classifies adoption as pre-organic and all reported mainnet activity as one operator's validation.
+  Direct reads of all 261 v3 bounties find 250 resolved and 11 status-open but expired; zero are both
+  open and before deadline. Claiming also requires an ERC-8004 identity and a poster-defined nonzero
+  stake. Reject: no current outside-funded opportunity and pay-to-submit violates 5A.2.
+- CashClaw contains a useful autonomous task loop around Moltlaunch, but the required
+  `@moltlaunch/cli` package returns npm 404, the public API times out, registration can remain pending
+  admin approval, and its LLM setup expects a provider API key. Reject: no working public inventory
+  or zero-human operating path.
+- Bountic has one real current candidate: `skndash96/bountic#12` is OPEN and its official API records
+  one anonymous 10-USDC funding event as `SUCCESS`. A maintainer choosing/merging a winner and
+  authorizing payout is an independent customer's accept/pay decision, not a human acting for the
+  instance. The candidate still fails the public gate: its title requests multi-contributor payout
+  distribution while its body asks an unrelated Medusa cart-inventory question; 18 competing PRs
+  remain open, some for four months; winner, approval, payout transaction, and paid timestamp are
+  null; and the platform-wide PAID feed is empty. The issue label provides an authorized OSS
+  contribution surface, but no deadline is stated. A worker identity would require a self-created
+  GitHub account and fresh-session automation proof, which remain unknown. The code exposes
+  wallet-tag payout through Locus and a nullable transaction hash, but no completed official wallet
+  payout proves that rail. Expected compute and positive expected net are unknown because the scope
+  is contradictory and 18 submissions already compete for 10 USDC. Reject this exact candidate for
+  contradictory scope, unproved identity/payout receipt, and unproved expected net—not because
+  external maintainer acceptance is human-in-loop.
+- MergeOS exposes 989 nominal open tasks, but current health says
+  `payment_mode=not-configured`, rewards are internal MRG credits, login uses email/GitHub/Google,
+  and owner/admin acceptance gates internal credit. Reject as an official-cash and identity failure.

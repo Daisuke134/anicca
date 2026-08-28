@@ -1,8 +1,7 @@
 # Life Manager Agent Economy
 
 **Status: P0-P2 and P3 failed-settlement reconciliation complete; successful paid compute remains open; P4-P6 open.**
-The natural `ai.anicca.agent-economy-loop` owner and its dedicated `:8422` proxy run from sealed
-release `20260828T014729-53ec563a`, and the canonical journal contains one chain-verified outside
+The canonical journal contains one chain-verified outside
 x402 receipt with replay-zero. A later receipt-bound attempt transferred `0.002` USDC from that
 instance to BlockRun on Base, but the request ended with HTTP 429 `FREE_MODEL_FAILED` and no usable
 model output. The joined failed-output receipt now records that `0.002` USDC cost exactly once and
@@ -486,14 +485,20 @@ symlink. This proves the focused slice, not the branch-wide install/OSS gates th
 
 Current readback shows:
 
-- the feature worktree is clean before this spec change and is 339 commits behind / 75 commits
-  ahead of the latest fetched `origin/main`; integration still requires a normal merge and review,
-  never a force-push;
+- the feature worktree is clean before this spec change and remains substantially diverged from the
+  latest fetched `origin/main`; exact ahead/behind counts are read at integration time because main
+  advances concurrently. Integration still requires a normal merge and review, never a force-push;
 - `/Users/anicca/loops/life-manager/current` resolves to sealed Life Manager release
   `20260828T014729-53ec563a`; its manifest names the Life Manager repository and the loaded
   launchd environment pins both `ANICCA_REPO` and `ANICCA_CODE_ROOT` to that release;
-- `ai.anicca.agent-economy-loop` is running, and its supervised children are the release's
-  `runtime/loop/index.mjs` and dedicated compute proxy listening on `127.0.0.1:8422`;
+- `ai.anicca.agent-economy-loop` is not currently running. Repeated bulk release installations rewrite
+  this label's ProgramArguments to a generic wrapper release while preserving
+  `ANICCA_REPO` and `ANICCA_CODE_ROOT` at Agent Economy release
+  `20260828T014729-53ec563a`. The wrapper's release-identity guard exits 2 with
+  `runtime repository must be the executing release`; launchd reports `spawn scheduled`, and no
+  listener exists on `127.0.0.1:8422`. Journal counts remain one revenue and one failed-compute row.
+  The plist changed amid a larger same-time launchd rewrite, so this branch does not reinstall,
+  restart, or mutate the shared label until the concurrent owner is reconciled;
 - the canonical revenue journal contains exactly one outside x402 receipt: Base chain 8453,
   canonical USDC, outside payer, target recipient, atomic amount 3000, terminal settlement, and
   transfer log index 503. Its accepted net is 0.003 USDC and replay adds zero;
@@ -787,7 +792,15 @@ income.
    vault claims manager has no committee acceptance/payout event, while researcher submission
    history cannot be attributed from the shared registry event. It is not selected. CodeHawks
    fails KYC/current-status truth, while Dework and OpenBounty lack complete
-   public funding/identity/receipt proof. Agentic Market proves active x402 input demand and one
+   public funding/identity/receipt proof. Bountycaster has zero open and zero in-progress inventory;
+   ClaudeLance has zero unexpired open mainnet bounties and requires a nonzero claim stake;
+   CashClaw/Moltlaunch lacks its published CLI, its API is unavailable, and registration may require
+   admin approval. Bountic has one anonymous-funded 10-USDC OPEN row, and external maintainer
+   acceptance is allowed, but its title/body contradict each other, 18 competing PRs remain open,
+   platform-wide PAID inventory is zero, payout tx/winner/approval are null, and expected net is
+   unproved. MergeOS reports `payment_mode=not-configured` and internal MRG rewards behind
+   account gates. Agentic Market
+   proves active x402 input demand and one
    `isNew=true` service earns an estimated 22.961 USDC/30d, but the flag definition and listing age
    are unknown, so it does not prove new-seller acquisition. Of that estimate, 13.995 USDC is
    concentrated in an X-search endpoint. Other descriptions name upstream Exa, Gemini, fal.ai, and
