@@ -250,7 +250,7 @@ authorization、dedupe、公式receipt、money truthを置き換えない。
 | 26 | GA-07 local/cloud adapter parity | DEFERRED | 最初のApplicationReceipt後までlocal/cloud共通化を作らない |
 | 27 | GA-08 self-funding economic loop | DEFERRED | 最初のApplicationReceipt後までcost attributionと`compute_paid`を作らない |
 | 28 | GA-09 Coconala migration | OUT_OF_SCOPE | このtrackではCoconalaのcode、state、browser、ownerを変更しない |
-| 29 | GA-11 hosted product slice | IN_PROGRESS | 既存Railway health、Telegram/Web onboarding、Stripe authority、cloud vault、runtime queue/workerを再利用し、欠けているpaid tenant→reference-only Goal WorkItem ingressとbounded worker receiptだけを追加して一人分E2Eを閉じる |
+| 29 | GA-11 hosted product slice | DONE | commits `212dadf68` / `f7b6853ea`。authenticated+paid同一tenantだけをcloud vault health→reference-only Goal WorkItem→既存queue/worker→bounded specialist→安全な7-field receiptへ通し、同一goal replayはcreated=false・worker再実行0。focused hosted/billing/secret/onboarding 39/39、tenant isolation 9/9。fresh productionはhealth HTTP 200、canonical panel query 0、stable identity hash `e892f219…e98`、paid/phone/call/notifications true、Telegram認証済み。Calendar=`action_required`、email=`unavailable`を維持し、新規tenant/payment/connector/provider連絡/契約/納品/入金0 |
 | 30 | GA-12 OSS clean-install release | TODO | public repoのfresh machine install、sample provider manifest、secret refs、local/cloud docs、license notices、reproducible acceptanceを公開 |
 | 31 | GA-13 dependency retirement | TODO | profitable/open-core/Hermes等のruntime/config/symlink/import参照が0、replacementのnatural E2Eとrollback bundle取得後だけ旧dependencyを退役 |
 

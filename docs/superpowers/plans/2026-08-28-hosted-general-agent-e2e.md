@@ -22,8 +22,16 @@
 - Modify: `apps/life-manager/lib/hosted-goal-ingress.test.js`
 - Modify: `docs/superpowers/specs/2026-08-01-dais-life-manager-five-phase-execution-spec.md`
 
-- [ ] **Step 1:** Add a test that calls ingress, runs the queued job through `executeCapabilityJob` plus `createGeneralAgentWorkLoopAdapter`, invokes the scheduled heartbeat inside the specialist, and asserts the call order `heartbeat → clear → complete` with one safe receipt.
-- [ ] **Step 2:** Call ingress with the same goal again, assert `created=false`, worker execution remains one, and receipt count remains one.
-- [ ] **Step 3:** Run hosted ingress/adapter/runtime/billing/secret/tenant focused tests.
-- [ ] **Step 4:** Record fresh production evidence: public health 200, authenticated canonical panel query 0, stable identity hash, paid true, phone/call/notifications true, and current connection states. Keep Calendar `action_required` visible.
+- [x] **Step 1:** Add a test that calls ingress, runs the queued job through `executeCapabilityJob` plus `createGeneralAgentWorkLoopAdapter`, invokes the scheduled heartbeat inside the specialist, and asserts the call order `heartbeat → clear → complete` with one safe receipt.
+- [x] **Step 2:** Call ingress with the same goal again, assert `created=false`, worker execution remains one, and receipt count remains one.
+- [x] **Step 3:** Run hosted ingress/adapter/runtime/billing/secret/tenant focused tests.
+- [x] **Step 4:** Record fresh production evidence: public health 200, authenticated canonical panel query 0, stable identity hash, paid true, phone/call/notifications true, and current connection states. Keep Calendar `action_required` visible.
 - [ ] **Step 5:** Update GA-11 to DONE with contract/live boundaries, fetch, commit, push, and read back PR #3018.
+
+## Completion evidence
+
+- Contract: the focused hosted/billing/secret/onboarding suite passes 39 tests; tenant isolation passes 9 tests.
+- Worker path: one paid-tenant goal produces one safe seven-field receipt; replay creates no job and runs no second specialist.
+- Production: `https://life-call-production.up.railway.app/health` returns HTTP 200; the authenticated canonical panel has zero query parameters and stable identity hash `e892f219bf2be691fbff8691cf00e1b9ac21a7a549dab10bf6c86f77a8c22e98`.
+- Tenant state: `paid=true`, phone present, calls enabled, notifications enabled, Telegram authenticated; current Calendar state remains `action_required` and email remains `unavailable`.
+- Boundary: no new tenant, payment, connector, marketplace contact, contract, delivery, or cash receipt was created by GA-11.
