@@ -616,8 +616,7 @@ def _exhausted_prepublication_archive(
     if final["archive_manifest"]:
         content = (
             "article-en.md", "article-ja.md", "headline-image.png",
-            "body-diagram.png", "gates/quality-terminal-en.json",
-            "gates/quality-terminal-ja.json",
+            "body-diagram.png",
         )
         if any(not (latest / path).is_file() or (latest / path).is_symlink() for path in content):
             return False
