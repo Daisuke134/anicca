@@ -7,7 +7,7 @@
 **Primary objective:** WebMCP Challenge top 10に入り、賞金・ChatGPT Pro・Codex Micro等を獲得する  
 **Long-term objective:** Life Managerが継続的に収益機会を発見し、応募・実行・納品・着金確認まで閉じるentrepreneur agentになる
 
-**中心主張:** Life Managerは、仕事を探し、応募を準備・完了し、人間にしかできない動画・写真・本人回答だけを依頼するend-to-end AI Job Hunterである。Jira/Symphony型の一つのWork boardでagentが応募を進め、人間が`Needs You`の一件を返すと同じworkroomから自動再開する。WebMCPは、人とagentが同じ応募状態、human task、receiptを共同操作するinterfaceである。
+**中心主張:** Life Managerは、Web上のbounty、gig、hackathon等の有償機会を発見し、実作業、応募・納品、公式receipt確認まで進めるopen-source Money Printerである。Agentが99%を実行し、本人性、権限、口座、現実世界の作業など人間にしかできない1%だけを`Needs You`へ出す。人間が一件を返すと同じworkroomから自動再開する。WebMCPは、人とagentが同じopportunity、work、human task、money proofを共同操作するinterfaceである。
 
 ---
 
@@ -214,7 +214,7 @@ Primary sources:
 | Field | Final value / creation gate | Current status | Final gate |
 |---|---|---|---|
 | Project name | `Life Manager` | fixed | Devpost readback matches |
-| Tagline | `An end-to-end AI job hunter that finds paid work, applies for you, and asks only for the human steps.` | fixed draft | authenticated form review |
+| Tagline | `An open-source AI money printer that finds paid opportunities, does the work, and asks you only for the human 1%.` | fixed draft | authenticated form review |
 | Live URL | `https://aniccaai.com/lm` | reachable landing only | Work board deploy SHA + zero-login E2E + `registerTool()` discovery |
 | Public repository | `https://github.com/Daisuke134/life-manager` | public | challenge source/instructions + clean clone verified |
 | OSS license | `https://github.com/Daisuke134/life-manager/blob/main/LICENSE` | GitHub detects MIT | license visible in submitted repo |
@@ -381,12 +381,12 @@ Impact proof:
 
 必要証拠:
 
-- Life Manager自身がWebMCP Challengeという数日規模のopportunityをworkroomで進め、submissionまで到達するdogfooding demo
+- 一件の短いreal bounty/gigを、発見からwork、human handoff、delivery、official readbackまで同じworkroomで閉じる
 - general workroomが複数turnを継続し、proof付きでterminalへ進む
-- human-only visual/taste decisionとagent-only structured analysisを統合する
+- genuine human authority/identity/actionとagent-only executionを同じworkroomで統合する
 - state進行により新しいtoolsがunlockされる
 - one opportunityを応募で終えず、long-term economic outcomeへ接続するarchitecture
-- self-referential demoの実物が、future architectureの説明なしでも独創性を示す
+- one real external opportunityの実物が、future architectureの説明なしでも独創性を示す
 
 Ambitionはfeature数ではない。「open Web上の仕事を、人とagentが検証可能な成果へ変える新しいwork surface」を完成品として見せる。
 
@@ -405,7 +405,7 @@ Ambitionはfeature数ではない。「open Web上の仕事を、人とagentが�
 | Execution | runtime restart後も同じworkroomを再開する | durable workroom + artifact revision | terminate → restart → continue、duplicate 0 | final-cut gate | planned |
 | Impact | manualよりsupervisionを減らす | before/after measurement | same opportunity comparison | final-cut gate | planned |
 | Impact | human-only workが正確なtaskになる | task cards + dedupe readback | repeated model wording → one stable task | final-cut gate | planned |
-| Creativity | agentが応募を進め、人間の一件だけを待って自動再開する | end-to-end application workroom | discovery → Needs You → resume → receipt | final-cut gate | planned |
+| Creativity | earning agentが実作業を進め、人間の1%だけを待って自動再開する | end-to-end paid-opportunity workroom | discovery → work → Needs You → delivery → receipt | final-cut gate | planned |
 
 ### 7.6 Product replacement gate
 
@@ -424,32 +424,35 @@ Visual surfaceは変更可能である。Life Managerの中核architectureを置
 
 ### 8.1 One sentence
 
-**Life Manager is an end-to-end AI job hunter that finds paid work, prepares and completes applications, and asks you only for human-only steps such as recording a video, uploading a photo, or answering an identity-bound question.**
+**Life Manager is an open-source AI money printer that finds paid opportunities, does the work, submits or delivers it, and asks you only for the human 1% it cannot or should not perform.**
 
 ### 8.2 Product boundary
 
-今回提出するLife Managerはend-to-end AI Job Hunterである。公開・許可済みの求人を発見し、適合性を判断し、応募を準備し、human-only stepを一件依頼し、回答後に応募を再開してofficial readbackまで追う。Bounty、gig、hackathonへの拡張はlong-term visionであり、今回のproduct descriptionとjudge pathには混ぜない。
+今回提出するLife Managerは、bounty、gig、hackathon、paid task等の収益機会を一つのgeneral earning runtimeで進めるMoney Printerである。X、Web、GitHub、Devpost、marketplaces、mail等から公開・許可済みのopportunityを発見し、実作業、応募・納品、結果確認、着金確認まで追う。応募数、offer、agentの`done`を収益とは呼ばず、official receiptがある結果だけを表示する。
 
 既存Mercor、Coconala、TaskMarket等のcodeは、general runtimeが再利用できるtools、browser state、evidence、historyとして段階的に吸収する。Core orchestratorは「MercorならMercor loop」のようなprovider分岐を持たない。Modelが現在のopportunityとenvironment feedbackを読み、利用可能なtoolsから次の行動を選ぶ。
 
-### 8.3 Canonical judge demo — end-to-end Job Hunter
+### 8.3 Canonical judge demo — one real earning opportunity
 
-製品もprimary demoもend-to-end AI Job Hunterの`Life Manager`に絞る。求人応募は、agentに任せる部分と本人しかできない部分の境界が誰にでも即座に伝わり、1週間でcomplete productとして仕上げられるためである。
+製品はgeneral Money Printerだが、primary demoは一件の短いreal bountyまたはgigだけをend-to-endで閉じる。全source、全work typeを同時実装しない。デモ収録時にlive、eligible、未claim、30分〜半日で完了可能、official readback pathあり、genuine human-only boundaryが一件あるopportunityを固定する。
 
-最初の実案件は、既存accountと実flowがあるMercorのeligibleなAI training / evaluation contractを候補にする。Mercor公式は専門性に合うremote contractとのmatchingとAI interviewを案内している。最終案件はデモ収録時にlive、eligible、未応募であることをread backして一件だけ固定する。次段階でpublic GitHub bounty、Devpost、X上の明示的bountyへ広げるが、今回のjudge pathへ混ぜない。
+Canonical flowは七段だけである。
 
-Canonical flowは六段だけである。
+1. Opportunity Scoutがpublic sourceから有償機会を発見する
+2. Modelがreward、deadline、eligibility、required work、cost、riskを判断する
+3. Orchestratorが一件をclaimし、persistent isolated workroomを作る
+4. General earning agentがbrowser、code、files、media等を使って実作業を進める
+5. 本人性、権限、口座、現実作業等が本当に必要な時だけ`Needs You`を一件出す
+6. 人間の回答後、同じworkroomとagent threadから自動再開し、一度だけ応募・納品する
+7. Providerのofficial readback、cost、verified moneyをDashboardへ記録する
 
-1. 人が「私に合う仕事を見つけて応募を進めて」と頼む
-2. WebMCP agentがLife Managerのtoolを呼び、workerが求人を一件選び、応募情報を準備する
-3. 本人動画、写真、本人回答のいずれかが必要になった時だけcardが`Needs You`へ移る
-4. 人はcardを開き、要求された一件を回答またはuploadする
-5. workerが同じworkroomから自動再開し、応募を一度だけ完了する
-6. boardにofficial application readbackを表示する。採用や入金は発生するまで主張しない
+WebMCPの主役は、対応agentと人間が同じMoney Printer Dashboardを共有する点である。Agentはtyped toolsでopportunity、workroom、human task、artifact、receiptを読み書きし、人は`Needs You`だけを処理する。WebMCPを24/7 background schedulerとは説明しない。Background continuationはLife Manager runtimeが担う。
 
-WebMCPの主役は、agentが画面を推測してclickする代わりに、同じvisible boardをtyped toolsで読み、仕事を開始し、human answerを渡し、再開状態とreceiptを確認できる点である。script作成、visible diff、複数review modeはcanonical demoに含めない。
+WebMCP Challenge応募自体をMoney Printerへ実行させない。Hackathon応募は通常の開発・提出processで行い、Money Printerのdemoとclaimは一件の短いreal bounty/gigだけで閉じる。数日規模のlong-horizon executionは将来拡張であり、今回のDone条件にしない。
 
-WebMCP Challengeは第二のdogfooding proofである。Runtime稼働後に残るsubmission workを同じgeneral contractで進める。Bootstrap前に人間や別agentが完了した作業はLife Managerの成果に数えず、provenanceで区別する。
+### 8.3A Next vertical / fallback — Job Hunter
+
+End-to-end Job Hunterは廃棄しない。Money Printer完成後に、同じopportunity、workroom、`Needs You`、effect fence、receipt contractへ求人応募を追加する次verticalである。求人発見、応募準備、本人動画・写真・本人回答、応募receiptを扱う。Primary Money Printer demoのreal bountyが期限・eligibility・provider障害で成立しない場合のみfallback candidateとし、同時に二製品を提出しない。
 
 ### 8.4 Visual surface
 
@@ -457,9 +460,9 @@ WebMCP Challengeは第二のdogfooding proofである。Runtime稼働後に残�
 ┌──────────────────────── Life Manager ────────────────────────────┐
 │ Backlog │ Ready │ Working │ Needs You │ Review │ Waiting │ Done │ Paid │
 ├─────────┴───────┴─────────┴───────────┴────────┴──────┴─────────┤
-│ AI evaluation     $80/h        Needs You: record intro video     │
-│ Frontend contract $65/h        Working                           │
-│ Research role     $50/h        Waiting                           │
+│ Selected bounty  live reward  Needs You: approve submission     │
+│ Paid code task   live reward  Working                            │
+│ Completed gig    actual pay   Paid                               │
 │                                                                    │
 │ Selected workroom: goal / plan / artifact / agent events / proof │
 │ Human task: prepared context + one exact action                   │
@@ -478,11 +481,11 @@ Life Manager workerは同じdomain state-transition functionsを直接使い、c
 Agentが実行できない、または越えるべきでないhuman-only boundaryだけをcard化する。対象は本人確認、創造的判断、最終承認、規約上のhuman-only step、現実世界での操作である。
 
 ```text
-Task: Record your introduction video
-Why you: This step requires your identity and voice
-Agent prepared: exact requirement, time limit, and upload instructions
-Required action: [Upload video]
-Resume: Life Manager continues the same workroom after upload
+Task: Approve the final public delivery
+Why you: This consequential submission requires your authority
+Agent prepared: completed artifact, requirement coverage, risks, and provider destination
+Required action: [Approve] [Request changes]
+Resume: Life Manager submits once and continues receipt reconciliation after approval
 State: waiting_for_human
 ```
 
@@ -492,7 +495,7 @@ State: waiting_for_human
 
 WebMCPはbackground runtimeではない。人間と対応agentが、Life Managerの同じboard、workroom、artifact、human taskを読み書きするinterfaceである。
 
-- `inspect_life_manager` — backlog、running、blocked、human tasks、cost、verified moneyを読む
+- `inspect_money_printer` — opportunities、running、blocked、human tasks、cost、verified moneyを読む
 - `inspect_workroom` — goal、plan、history、artifacts、last agent event、proofを読む
 - `add_opportunity` — URLまたは自然言語から新しいwork itemを作る
 - `set_constraints` — time、spend cap、risk、forbidden actions、human availabilityを更新する
@@ -563,7 +566,7 @@ Life Managerはこの構造を次のようにadaptする。
 
 ---
 
-## 10. General Life Manager runtime
+## 10. General Money Printer runtime
 
 ### 10.1 One orchestrator, not provider routing
 
@@ -602,7 +605,7 @@ Workroomのisolationはopportunity、tenant、credential、effectの交差を防
 4. 必要ならhuman taskを一件出す
 5. 実提出とofficial readbackを閉じる
 6. costとverified resultをDashboardへ表示する
-7. 同じruntimeでWebMCP Challengeというlong-horizon taskを継続する
+7. official readback、cost、verified resultをDashboardで確認する
 
 製品を短期task専用にしない。短いopportunityでorchestrator、continuation、human handoff、effect、proofを先に実証し、その同じcontractで長い仕事へ進む。
 
@@ -619,6 +622,30 @@ Hackathonで提供するmodeは一つだけである。Userは無料の`https://
 Life Managerのagent runtimeは同じcloud productの一部としてworkroomを進める。WebMCP対応agentも同じdomain functionsとversioned stateを使う。Judgeはlogin、支払い、Life Manager API keyなしでguest accountを試せる。対応clientを持たない場合もnormal UI、video、READMEで全flowを確認できる。
 
 将来のpricing、自前model接続、self-hostingは今回のsubmission scope外とする。Consumer ChatGPT subscriptionを第三者SaaSのbackground APIとして流用できるとは主張しない。
+
+### 10.6 Deployment architecture
+
+```mermaid
+flowchart LR
+    H[Human / WebMCP client] --> UI[Netlify: Life Manager Dashboard]
+    UI --> API[Existing Railway Node API / Orchestrator]
+    API --> DB[(Durable opportunity, workroom, task, effect, receipt state)]
+    API --> AR[Existing agent-runner]
+    AR --> T[Browser / Web / GitHub / Code / Files / Media tools]
+    T --> P[Opportunity and payment providers]
+    P --> R[Official readback / receipt adapters]
+    R --> API
+    API --> UI
+```
+
+- **Netlify:** `/lm`のresponsive Dashboardとtop-level `document.modelContext.registerTool()`を配信する
+- **Railway:** 既存Life Manager Node serviceをAPI、claim、continuation、retry、reconciliationのorchestratorとして再利用する
+- **Durable store:** opportunity、workroom、agent event、human task、effect fence、receiptをrestart後も保持する。UI用stateとruntime stateを別の真実にしない
+- **Agent runner:** provider-neutralなtaskを受け、modelがenvironment feedbackから次のtoolを選ぶ。provider別hardcoded workflowをcoreへ作らない
+- **Tools/adapters:** 既存browser ownership、GitHub/Web/code/media、effect fence、official readback、earnings ledgerを再利用する
+- **WebMCP:** background agentそのものではなく、同じdomain functionsとversioned stateを人と対応agentへ公開するcontrol surfaceである
+
+一つのopportunityにつき一つのisolated workroomを持つ。Orchestratorはbounded concurrencyでclaimし、agent turn終了後もterminal proofがなければ同じthreadを続行する。`NEEDS_HUMAN`ではrunを止めるがworkroomを捨てず、人間のexact answerが記録されると再開する。External effectがunknownなら再送せずreconciliationへ進む。
 
 ---
 
@@ -701,16 +728,16 @@ JudgeはDashboardを直接確認でき、対応WebMCP clientからの操作も�
 
 | Time | Content |
 |---:|---|
-| 0:00–0:15 | Webに仕事はあるが、発見→完了→入金が分断されている問題 |
-| 0:15–0:30 | Life Manager Work board: workrooms、Needs You、proof、verified money |
-| 0:30–0:48 | 対応agentがWebMCP toolsを発見し、public jobをWork boardへ追加 |
-| 0:48–1:10 | Life Manager workerがqualifyし、persistent workroomでapplicationを進める |
-| 1:10–1:30 | 本人動画が必要になり、cardがexact requirement付きで`Needs You`へ移る |
-| 1:30–1:55 | 人間がphoneでcardを開き、本人動画をuploadする |
-| 1:55–2:15 | Life Manager workerが同じworkroomから自動再開する |
-| 2:15–2:30 | `Actual Owner Run — read-only`へ切替え、application official readbackとduplicate 0を表示 |
+| 0:00–0:15 | AIで稼ぐ個別事例はあるが、公開・再現可能なend-to-end agent systemがない問題 |
+| 0:15–0:30 | Money Printer Dashboard: opportunities、workrooms、Needs You、verified money |
+| 0:30–0:48 | 対応agentがWebMCP toolsを発見し、real public bounty/gigを追加 |
+| 0:48–1:15 | Life Managerがqualifyし、persistent workroomで実artifactを作る |
+| 1:15–1:35 | 本当に必要な権限境界だけが`Needs You`へ移る |
+| 1:35–1:52 | 人間がphoneで完成物とdestinationを確認し、一件だけapproveする |
+| 1:52–2:15 | Life Managerが同じworkroomから再開し、一度だけsubmit/deliverする |
+| 2:15–2:30 | `Actual Owner Run — read-only`でofficial readback、cost、duplicate 0を表示 |
 | 2:30–2:45 | WebMCP tool call logと同じUI stateが更新された証拠を表示 |
-| 2:45–2:58 | agentが応募作業、人間がhuman-only stepを担当するbefore/afterを一文で説明 |
+| 2:45–2:58 | agentが99%、人間がhuman-only 1%を担当し、verified moneyまで追うと説明 |
 
 動画で実装していないX watcher、application、work、payoutを成功として見せない。各claimは公式readbackがある範囲に限定する。
 
@@ -720,17 +747,17 @@ JudgeはDashboardを直接確認でき、対応WebMCP clientからの操作も�
 
 | Time | Recorded screen | Narration |
 |---:|---|---|
-| 0:00–0:12 | Title + empty Life Manager Work board | “People are told that AI can find jobs and make money, but the process is rarely reproducible. Opportunities, agent work, human steps, and payment proof all live in different places.” |
-| 0:12–0:26 | Full board: Backlog, Working, Needs You, Waiting, Paid | “Life Manager puts the entire journey on one board. Its worker keeps each job in a persistent workroom and continues until the outcome is verified.” |
-| 0:26–0:42 | ChatGPT/Chrome Site tools drawer | “The page exposes WebMCP tools, so my WebMCP agent reads and changes the same state I see instead of guessing at buttons.” |
-| 0:42–0:58 | WebMCP agent adds a public job card | “I ask it to add this public job. Life Manager checks the opportunity and starts one workroom.” |
-| 0:58–1:15 | Worker events and application artifacts appear | “The Life Manager worker researches the role and prepares the application without me supervising every turn.” |
-| 1:15–1:35 | Card moves to Needs You; exact video requirement visible | “This application requires my identity and voice, so Life Manager asks me for the one thing it should not do on my behalf.” |
-| 1:35–1:58 | iPhone: open the task, record/select, upload | “On my phone, I open one task and upload my video. I do not reconstruct context or manage the agent.” |
-| 1:58–2:18 | Mac: card returns to Working; same workroom resumes | “The same workroom resumes automatically from the exact state where it stopped.” |
-| 2:18–2:32 | Fixed label `Actual Owner Run — read-only`; official application receipt | “This is the actual owner run. The provider readback proves one application, and the replay count proves there was no duplicate submission.” |
-| 2:32–2:45 | WebMCP tool call log beside the matching visible board state | “Every tool call changes the same state I can see, so the agent and I never lose the application context during the handoff.” |
-| 2:45–2:56 | Work board zooms out; Needs You and receipt remain visible | “Life Manager handles the application end to end, while I contribute only the parts that must genuinely come from me.” |
+| 0:00–0:15 | Title + scattered posts/prompts about earning with AI | “People share countless ways to make money with Claude, Codex, and AI through bounties, gigs, apps, and online work. What is missing is a public, reproducible agent system that actually runs the whole process.” |
+| 0:15–0:30 | Full Money Printer Dashboard | “Life Manager is that system. It finds paid opportunities, does the work, submits or delivers it, and tracks the result on one board.” |
+| 0:30–0:45 | ChatGPT/Chrome Site tools drawer | “The page exposes WebMCP tools, so my WebMCP agent reads and changes the same state I see instead of guessing at buttons.” |
+| 0:45–1:00 | WebMCP agent adds one live public bounty/gig | “I add one real paid opportunity. Life Manager checks its reward, deadline, eligibility, required work, cost, and risk, then opens an isolated workroom.” |
+| 1:00–1:20 | Worker events and real artifact appear | “The earning agent uses its browser and work tools to complete the task without me supervising every turn.” |
+| 1:20–1:40 | Card moves to Needs You with completed packet | “Only when it reaches a boundary that genuinely requires my authority does it create one prepared human task.” |
+| 1:40–1:55 | iPhone: review and approve one exact action | “On my phone, I review the finished work and approve the exact public delivery. I do not reconstruct context or manage the agent.” |
+| 1:55–2:15 | Mac: same workroom resumes and submits once | “The same workroom resumes automatically and delivers the work exactly once.” |
+| 2:15–2:32 | `Actual Owner Run — read-only`; provider receipt and duplicate 0 | “The provider readback proves what was submitted or delivered. Applications and model claims are not counted as money.” |
+| 2:32–2:45 | WebMCP call log beside matching visible state | “Every WebMCP call changes the same state I can see, so the agent and I share one source of truth.” |
+| 2:45–2:56 | Dashboard with active, Needs You, receipts, verified money | “The agent does the ninety-nine percent it can do. I provide the human one percent, and Life Manager keeps working until the outcome is verified.” |
 
 Recording assets:
 
@@ -748,31 +775,31 @@ Recording assets:
 
 ### Project summary
 
-**Life Manager is an end-to-end AI job hunter that finds paid work, prepares and completes applications, and asks you only for human-only steps such as recording a video, uploading a photo, or answering an identity-bound question.**
+**Life Manager is an open-source AI money printer that discovers paid opportunities, does the work, submits or delivers it, and tracks the verified outcome. Its agent handles the routine ninety-nine percent and asks a person only for the one percent that genuinely requires human identity, authority, judgment, payment information, or real-world action.**
 
 ### Why this use case is a strong fit for WebMCP
 
-Job applications are a natural human-agent workflow. An agent can search, compare requirements, prepare answers, and advance an application, but it should not impersonate the applicant in a video, provide identity-bound information, or make consequential choices without the person. WebMCP turns Life Manager's live Work board into a shared control surface where an agent can inspect the application, start work, request one human-only input, resume after the response, and verify the application receipt through typed site tools instead of guessing at dashboard controls.
+Money Printer runs autonomously across many turns, but real earning work still contains moments when a person and an agent must share exact context: approving a consequential public delivery, providing identity-bound or payout information, making a genuine taste decision, or performing a physical action. WebMCP turns Life Manager's live Dashboard into a shared control surface. A compatible agent can inspect opportunities, open a workroom, revise a visible artifact, record one human answer, resume the work, and verify provider receipts through typed site tools instead of guessing at dashboard controls.
 
 Every WebMCP action updates the same versioned state that the person sees. The page therefore becomes the shared control plane for an autonomous agent rather than a passive monitoring dashboard.
 
 ### How it creates a better user experience
 
-Without WebMCP, an agent must infer Life Manager's interface from pixels and DOM controls, while the person has to translate state between the dashboard, chat, and the application site. With WebMCP, the agent uses typed tools to read and update the same visible workroom the person sees. The person receives one prepared `Needs You` card instead of supervising every step, supplies the missing video, photo, or answer, and the worker resumes from the exact same state. This removes repeated navigation and context reconstruction, makes every handoff visible, and lets both sides verify the same application receipt.
+Without WebMCP, an agent must infer Life Manager's interface from pixels and DOM controls, while the person has to translate state between the Dashboard, chat, and external opportunity sites. With WebMCP, the agent uses typed tools to read and update the same visible workroom the person sees. The person receives one prepared `Needs You` card instead of supervising every turn, supplies the missing approval, identity, payout detail, or real-world action, and the earning agent resumes from the exact same state. This removes repeated navigation and context reconstruction, makes every handoff visible, and lets both sides verify the same delivery and payment evidence.
 
 ### What people and agents can do together that was difficult before
 
-Before Life Manager, it was difficult to run one reproducible end-to-end process that could continuously find suitable paid jobs, prepare the application, stop at the exact step that genuinely required the applicant, and then resume and finish after that person responded. People either completed the whole process manually or tried to supervise a browser agent step by step across disconnected chats and websites.
+People share many isolated ways to use Claude, Codex, and other AI systems to make money through bounties, gigs, apps, content, and online work. What has been missing is a public, reproducible end-to-end agent system that continuously discovers those opportunities, evaluates them, performs the work, pauses only at a genuine human boundary, resumes after the answer, submits or delivers once, and follows the result to an official receipt.
 
-Life Manager lets people and agents divide one real application according to what each does best. The agent handles search, qualification, research, form preparation, progress tracking, and receipt verification. The person supplies only identity, presence, or judgment: for example, a short video, a personal photo, or one answer. Both work from the same visible application state, so the handoff is not a message that loses context; it is part of the work itself. Together they can complete an application end to end with minimal human involvement while keeping the applicant in control of the moments that must remain human.
+Life Manager lets people and agents divide real earning work according to what each does best. The agent handles discovery, qualification, research, planning, creation, execution, recovery, submission, and receipt reconciliation. The person contributes only identity, authority, judgment, payment information, or physical action when one of those is truly required. Both work from the same visible workroom, so the handoff is not a context-losing message; it is part of the durable work state. Together they can pursue short bounties and multi-day opportunities with minimal human involvement while keeping human control at the moments that must remain human.
 
 ### How WebMCP was implemented
 
-The top-level page registers focused tools with `document.modelContext.registerTool()`. The tools let a compatible agent inspect the job board, start an application, read the current human task, submit the person's response, resume the workroom, and inspect the final receipt. Each tool calls the same server-validated functions as the visible UI, so every successful agent action immediately appears on the board. Server-side revision checks and idempotency prevent stale updates and duplicate applications. Without WebMCP, the same board remains usable by a person.
+The top-level page registers focused tools with `document.modelContext.registerTool()`. The tools let a compatible agent inspect the Money Printer, add an opportunity, inspect a workroom, revise an artifact, record an exact human answer, continue or pause work, and inspect the final receipt. Each tool calls the same server-validated domain functions as the visible UI, so every successful agent action immediately appears on the Dashboard. Server-side revision checks, spend limits, effect fences, and idempotency prevent stale updates, unauthorized effects, and duplicate submissions. Without WebMCP, the same Dashboard remains usable by a person.
 
 ### Impact and future
 
-The initial product proves one end-to-end job application with a real human-only handoff and an official application receipt. After the submission, the same workroom contract can expand to bounties, gigs, and longer projects. Life Manager remains free and unrestricted to judges throughout the judging period and records revenue only when an official receipt confirms that money was received.
+The initial product proves the provider-neutral runtime on one real short bounty or gig, from discovery through work, one genuine human boundary, delivery, and official readback. After the submission, the next vertical is end-to-end Job Hunter, reusing the same opportunity, workroom, human-task, effect, and receipt model. Life Manager remains free and unrestricted to judges throughout the judging period and records revenue only when an official receipt confirms that money was received.
 
 ---
 
@@ -870,16 +897,16 @@ The initial product proves one end-to-end job application with a real human-only
 | Risk | Strongest counterargument | Design response |
 |---|---|---|
 | job dashboardに見える | status columnsだけならWebMCP不要 | live agent activity、human task→continuation、retry、proof、moneyを主役にする |
-| Devpost helper pluginと近い | official pluginもdiscover/build/submitを支援する | hackathon helperではなく、短期bountyから長期workまで走るgeneral runtimeを実証する |
+| Devpost helper pluginと近い | official pluginもdiscover/build/submitを支援する | hackathon helperではなく、短期real bounty/gigを閉じ、同じcontractで長期workへ拡張できるarchitectureを示す |
 | autonomous earningとWebMCPが矛盾 | WebMCPはpage-localで24/7 watcherではない | background loopとvisible collaboration surfaceを明確に分ける |
-| scope過大 | 全source、全work type、全payment railを一週間で閉じられない | general architectureを保ち、短期real opportunity一件とWebMCP Challengeの二workroomを深く閉じる |
-| real applicationがない | dashboardだけではeconomic impactが弱い | public opportunityの実提出と、このhackathonの実submission readbackを使う |
+| scope過大 | 全source、全work type、全payment railを一週間で閉じられない | general architectureを保ち、短期real opportunity一件だけを深く閉じる |
+| real external outcomeがない | dashboardだけではeconomic impactが弱い | public opportunityの実提出・納品とprovider official readbackを使う |
 | safetyが弱い | agentが勝手に応募・送金できる | effect fence、exact packet、idempotency、official readback、uncertain quarantine |
 | 美しさでcreative appsに負ける | workbenchは地味 | workroomが自律進行し、人間taskで止まり、回答後に再開するmotion/state changeを磨く |
 
 ### Best / Base / Worst
 
-- **Best:** 4軸全証拠、self-referential demo、real ChatGPT E2E、top 10競争力
+- **Best:** 4軸全証拠、one real earning opportunity、real ChatGPT E2E、top 10競争力
 - **Base:** zero-login complete product、opportunity→workroom→human task→proofが安定し、valid submissionとして強い
 - **Worst:** ChatGPT rollout差があってもChrome/WebMCP inspectorでworking E2Eを示し、Stage Oneを落とさない
 
