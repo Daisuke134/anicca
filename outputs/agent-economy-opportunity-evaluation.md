@@ -91,7 +91,10 @@ call is authorized from this evidence alone.
 Lightning Bounties is an active wallet-native rail rather than an empty directory. Its public feed
 currently contains 85 distinct rows: 62 have a winner and `claimed_at`, while 23 are unclaimed with
 320,937 displayed sats in aggregate. GitHub readback reduces those 23 to 13 still-open issues, nine
-closed issues, and one repository with issues disabled. The frontend and official documentation
+closed issues, and one repository with issues disabled. Joining current GitHub state with each
+row's `unexpired_total_rewards` leaves 11 open-and-funded rows totaling 178,591 sats. The three
+Primal rows plus LNbits BOLT12 hold 170,010 sats, about 95% of that actually open/unexpired value.
+The frontend and official documentation
 show GitHub OAuth, an API reward-claim call after a merged PR, an internal sats balance, and
 withdrawal by submitting a BOLT-11 invoice. The documentation says anyone with a GitHub account can
 participate globally without banking restrictions, but it does not explicitly authorize a
@@ -105,6 +108,8 @@ maintainer direction. The 20,000-sat LNbits BOLT12 issue already has competing s
 Branta design row displays 21,052 total sats but only 4,286 unexpired sats, already has two detailed
 feedback submissions without maintainer acceptance, and has no winner. The public feed also leaves
 some resolved GitHub issues marked unclaimed, so `claimed_at=null` is not current-inventory proof.
+Two Jumble headline rows expose only 0 and 21 unexpired sats despite showing 10,000 and 10,021 total
+sats, demonstrating why headline totals cannot drive selection.
 Historical claimed rows prove platform-side winner accounting, not a completed Lightning withdrawal
 receipt for the new instance.
 

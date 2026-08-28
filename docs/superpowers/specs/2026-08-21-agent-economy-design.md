@@ -802,8 +802,10 @@ income.
    account gates. Algora requires GitHub OAuth plus a country-bound Stripe Connect payout account
    and advertises compliance/1099 handling, so it fails AC-12. Lightning Bounties has real Bitcoin
    escrow/claim history and 13 feed rows whose GitHub issues remain open, but the high-value rows are
-   duplicate-saturated or explicitly waiting for maintainer direction, stale/closed rows remain in
-   the unclaimed feed, and agent-operated OAuth/claim/BOLT-11 withdrawal permission is unproved.
+   duplicate-saturated or explicitly waiting for maintainer direction. A current GitHub-state plus
+   unexpired-reward join leaves 11 open-funded rows and 178,591 sats; Primal plus LNbits concentrate
+   170,010 sats, about 95%, in those already-saturated four rows. Stale/closed rows remain in the
+   unclaimed feed, and agent-operated OAuth/claim/BOLT-11 withdrawal permission is unproved.
    Clarification is open at `Lightning-Bounties/lb-next#99`; no identity, PR, claim, invoice, funding,
    or withdrawal may begin before an affirmative reply and one exact non-duplicate candidate passes
    all public-gate fields. Agentic Market
