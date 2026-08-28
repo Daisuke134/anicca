@@ -56,22 +56,11 @@ python3 bin/plistgen.py --loops-dir loops --out-dir /tmp/x-loop-plists --only x-
 
 ## Install on a Mac
 
-Cut a read-only release from a pushed main commit, generate plists, then load the owners through the
-safe launchctl wrapper:
+Cut a read-only release from a pushed main commit, then apply the registry through its single owner:
 
 ```bash
 bash bin/cut-loop-release.sh origin/main
-for loop in x-repost x-repost-ja x-tweeter; do
-  python3 ~/loops/current/bin/plistgen.py \
-    --loops-dir ~/loops/current/loops \
-    --out-dir ~/Library/LaunchAgents \
-    --only "$loop"
-done
-
-bash ~/loops/current/bin/loop-install.sh \
-  ai.anicca.x-repost-pass ai.anicca.x-repost-healthcheck ai.anicca.x-repost-digest \
-  ai.anicca.x-repost-ja-pass ai.anicca.x-repost-ja-healthcheck \
-  ai.anicca.x-tweeter-pass ai.anicca.x-tweeter-healthcheck
+~/loops/current/bin/lm-loop apply
 ```
 
 launchd always executes `~/loops/current`, an atomic symlink to an immutable release. State and

@@ -22,9 +22,8 @@ The other loops there have not moved yet.
 
 ```bash
 python3 bin/cut-loop-release.sh origin/main            # commit -> read-only release -> current
-python3 bin/plistgen.py --loops-dir loops --out-dir ~/Library/LaunchAgents
+~/loops/current/bin/lm-loop apply                      # single-owner registry apply + readback
 python3 bin/plistgen.py --loops-dir loops --out-dir ~/Library/LaunchAgents --diff   # show only
-bash bin/loop-install.sh ai.anicca.<name>-<job>        # swap a job and prove it came back
 python3 bin/launchd_inventory.py --format json         # registry vs launchctl, read-only
 ```
 
@@ -35,7 +34,7 @@ python3 bin/launchd_inventory.py --format json         # registry vs launchctl, 
 1. `loops/<name>/loop.toml` — cadence, entrypoint, state dir, env, required credentials
 2. `skills/<name>/` — a script that runs ONE pass and exits
 3. register it in `config/loop-registry.json` and `config/ceo-budget-config.json`
-4. `cut-loop-release.sh` → `plistgen.py` → `loop-install.sh`
+4. `cut-loop-release.sh` → `lm-loop apply`
 
 No plist is written by hand. The absolute paths are produced at install time, which is what makes
 the repo portable to another Mac.
@@ -46,7 +45,7 @@ the repo portable to another Mac.
 |---|---|
 | Core ported here | budget check reports `enforcement=active`; the gate resolves x-repost and writes cadence `0 */1 * * *` |
 | Jobs generated from declarations | the three generated x-repost jobs matched the hand-written ones on every key, and `--diff` now reports all three `unchanged` |
-| A job swap proves itself | `loop-install.sh` retries, then restores the plist it replaced; verified on a live job |
+| A job swap proves itself | `lm-loop apply` validates one exact release, swaps one label at a time, reads argv back, and restores on failure |
 | x-repost fully migrated | release `20260819T100138-39bfb418` is cut from life-manager, `provenance: ancestor-of-origin-main`; healthcheck runs from it and reports OK |
 
 ## What is not done

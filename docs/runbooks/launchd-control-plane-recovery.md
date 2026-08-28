@@ -5,7 +5,7 @@ Life Managerのlaunchd変更は必ず次の入口を使う。
 ```bash
 bin/launchctl-safe preflight
 bin/launchctl-safe kickstart gui/$(id -u)/LABEL
-bash bin/loop-install.sh LABEL
+~/loops/current/bin/lm-loop apply
 ```
 
 preflightはUID、username、Directory Services、Aqua manager、manager UID/PID、`gui/$UID`を
