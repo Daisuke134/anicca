@@ -40,6 +40,9 @@ def _character_png() -> bytes:
     return b"\x89PNG\r\n\x1a\n" + _chunk(b"IHDR", struct.pack(">IIBBBBB", 512, 512, 8, 6, 0, 0, 0)) + _chunk(b"IDAT", zlib.compress(raw)) + _chunk(b"IEND", b"")
 
 
+MODEL_V2 = "whole-character-transforms-v2"
+
+
 class NativeAnimationTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temp = tempfile.TemporaryDirectory(prefix="native-animation-test-")
@@ -59,11 +62,11 @@ class NativeAnimationTests(unittest.TestCase):
             cwd=self.root,
         )
 
-    def _motions(self) -> list[dict[str, object]]:
+    def _motions(self, batch: int = 1) -> list[dict[str, object]]:
         return [
             {
-                "motion_id": f"motion-{index:02d}",
-                "batch": 1,
+                "motion_id": f"motion-{(batch - 1) * 10 + index:02d}",
+                "batch": batch,
                 "position": index,
                 "intent": f"intent {index}",
                 "action": f"action {index}",
@@ -73,7 +76,7 @@ class NativeAnimationTests(unittest.TestCase):
             for index in range(1, 11)
         ]
 
-    def _quote_request(self) -> dict[str, object]:
+    def _quote_request(self, batch: int = 1) -> dict[str, object]:
         return {
             "version": 1,
             "operation": "quote",
@@ -81,12 +84,12 @@ class NativeAnimationTests(unittest.TestCase):
             "character_id": "char-1",
             "character_sha256": hashlib.sha256(self.character.read_bytes()).hexdigest(),
             "plan_sha256": "a" * 64,
-            "batch": 1,
-            "motions": self._motions(),
+            "batch": batch,
+            "motions": self._motions(batch),
         }
 
     def _generate_request(self, quote: dict[str, object]) -> dict[str, object]:
-        request = self._quote_request()
+        request = self._quote_request(int(quote["batch"]))
         request.update(
             {
                 "operation": "generate",
@@ -131,7 +134,7 @@ class NativeAnimationTests(unittest.TestCase):
             {"request_id", "quote_token", "batch", "provider", "model", "quoted_cost_usd", "expires_at", "regenerable"},
         )
         self.assertEqual(first["provider"], "native-ffmpeg")
-        self.assertEqual(first["model"], "whole-character-transforms-v1")
+        self.assertEqual(first["model"], MODEL_V2)
         self.assertEqual(first["quoted_cost_usd"], "0")
         self.assertFalse(first["regenerable"])
         self.assertTrue(str(first["expires_at"]).endswith("Z"))
@@ -153,7 +156,7 @@ class NativeAnimationTests(unittest.TestCase):
         self.assertEqual(process.returncode, 0, process.stderr)
         result = self._json(process)
         self.assertEqual(result["provider"], "native-ffmpeg")
-        self.assertEqual(result["model"], "whole-character-transforms-v1")
+        self.assertEqual(result["model"], MODEL_V2)
         self.assertTrue(result["acknowledged"])
         self.assertFalse(result["regenerable"])
         self.assertEqual(result["actual_cost_usd"], "0")
@@ -206,6 +209,39 @@ class NativeAnimationTests(unittest.TestCase):
                 self.assertLess(red, 100, (timestamp, x, y))
                 self.assertGreater(green, 170, (timestamp, x, y))
                 self.assertLess(blue, 100, (timestamp, x, y))
+
+    def test_batches_have_distinct_source_and_representative_frame_hashes(self) -> None:
+        outputs = []
+        for batch in (1, 2):
+            quote = self._json(self._run(self._quote_request(batch)))
+            process = self._run(self._generate_request(quote))
+            self.assertEqual(process.returncode, 0, process.stderr)
+            result = self._json(process)
+            video = Path(str(result["video_path"]))
+            representative = []
+            for index in range(10):
+                frame = self.root / f"representative-{batch}-{index}.png"
+                extracted = subprocess.run(
+                    ["ffmpeg", "-y", "-v", "error", "-i", str(video), "-ss", str(index + 0.5), "-frames:v", "1", str(frame)],
+                    capture_output=True,
+                    text=True,
+                )
+                self.assertEqual(extracted.returncode, 0, extracted.stderr)
+                representative.append(hashlib.sha256(frame.read_bytes()).hexdigest())
+            temporal = []
+            for offset in (0.1, 0.5, 0.9):
+                frame = self.root / f"temporal-{batch}-{offset}.png"
+                extracted = subprocess.run(
+                    ["ffmpeg", "-y", "-v", "error", "-i", str(video), "-ss", str(offset), "-frames:v", "1", str(frame)],
+                    capture_output=True,
+                    text=True,
+                )
+                self.assertEqual(extracted.returncode, 0, extracted.stderr)
+                temporal.append(hashlib.sha256(frame.read_bytes()).hexdigest())
+            self.assertGreater(len(set(temporal)), 1, batch)
+            outputs.append((result["video_sha256"], set(representative)))
+        self.assertNotEqual(outputs[0][0], outputs[1][0])
+        self.assertTrue(outputs[0][1].isdisjoint(outputs[1][1]))
 
     def test_reconcile_requires_matching_source_and_sidecar(self) -> None:
         quote = self._json(self._run(self._quote_request()))
@@ -386,7 +422,7 @@ class NativeAnimationTests(unittest.TestCase):
             "quote_token": quote["quote_token"],
             "batch": 1,
             "provider": "native-ffmpeg",
-            "model": "whole-character-transforms-v1",
+            "model": MODEL_V2,
             "video_path": str(target.resolve()),
             "video_sha256": "b" * 64,
             "segments": [
@@ -409,7 +445,7 @@ class NativeAnimationTests(unittest.TestCase):
         commit = Path(str(target) + ".commit.json")
         valid = {
             "request_id": quote["request_id"], "quote_token": quote["quote_token"], "batch": 1,
-            "provider": "native-ffmpeg", "model": "whole-character-transforms-v1", "video_path": str(target.resolve()),
+            "provider": "native-ffmpeg", "model": MODEL_V2, "video_path": str(target.resolve()),
             "video_sha256": "b" * 64,
             "segments": [
                 {"motion_id": f"motion-{index:02d}", "start_ms": (index - 1) * 1000, "end_ms": index * 1000}

@@ -15,7 +15,7 @@ import tempfile
 
 
 PROVIDER = "native-ffmpeg"
-MODEL = "whole-character-transforms-v1"
+MODEL = "whole-character-transforms-v2"
 SEGMENT_MS = 1_000
 MOTION_COUNT = 10
 BATCH_COUNT = 6
@@ -155,11 +155,16 @@ def _png_size(path: Path) -> tuple[int, int]:
 
 def _render(request: dict[str, object], source: Path, output: Path, cwd: Path, width: int, height: int) -> None:
     rhythms = ((-18, -12, -8), (-10, -8, 8), (0, 0, -10), (10, 8, 8), (18, 12, -8), (-14, -10, 8), (14, 10, -8), (-6, -6, 6), (6, 6, -6), (0, 0, 10))
+    batch = int(request["batch"])
+    frequency = 1 + batch / 10
+    amplitude = 0.8 + batch / 20
     segments = [cwd / f".native-{int(request['batch'])}-{i}.mp4" for i in range(MOTION_COUNT)]
     concat = cwd / f".native-{int(request['batch'])}.concat.txt"
     try:
-        for segment, (angle, dx, dy) in zip(segments, rhythms):
-            vf = f"rotate={angle}*PI/180*sin(2*PI*t):ow=iw:oh=ih:fillcolor=0x00FF00,scale={width}:{height},pad={width + 64}:{height + 64}:32:32:color=0x00FF00,crop={width}:{height}:32+{dx}*sin(2*PI*t):32+{dy}*sin(2*PI*t),format=yuv420p"
+        for index, (segment, (angle, dx, dy)) in enumerate(zip(segments, rhythms)):
+            phase = batch * 0.37 + index * 0.17
+            wave = f"sin(2*PI*{frequency}*t+{phase})"
+            vf = f"rotate={angle * amplitude}*PI/180*{wave}:ow=iw:oh=ih:fillcolor=0x00FF00,scale={width}:{height},pad={width + 64}:{height + 64}:32:32:color=0x00FF00,crop={width}:{height}:32+{dx * amplitude}*{wave}:32+{dy * amplitude}*{wave},format=yuv420p"
             _run(["ffmpeg", "-y", "-v", "error", "-xerror", "-loop", "1", "-framerate", "24", "-i", str(source), "-t", "1", "-vf", vf,
                   "-r", "24", "-an", "-c:v", "libx264", "-pix_fmt", "yuv420p", str(segment)], cwd)
         concat.write_text("".join(f"file '{path.name}'\n" for path in segments), encoding="utf-8")
