@@ -4144,7 +4144,9 @@ def _run_remote_repair(args, item_path: Path, root: Path, feedback: str, base: P
                     "hash-bound project sources supporting the outbound claims. Reduce the ledger by effect_key with the last row effective; "
                     "a classification_revision is an audit correction, never another external effect. If the exact outbound payload asks the "
                     "recipient to confirm any required qualification, classify it as qualification with counts_toward_50=false until an "
-                    "affirmative official response supplies that missing fact. If an earlier row violates this rule, preserve its effect identity "
+                    "affirmative official response supplies that missing fact. A classification revision preserves the prior effect's semantic_contract_sha256 "
+                    "as part of immutable effect identity; only the current-cycle intent and result use the current semantic digest. "
+                    "If an earlier row violates this rule, preserve its effect identity "
                     "and receipt, write a corrected effect JSON with classification_revision=true and a nonempty revision_reason, and checkpoint "
                     "that same effect_key before calculating totals.\n"
                 )
