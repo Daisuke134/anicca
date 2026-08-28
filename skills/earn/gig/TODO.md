@@ -23,6 +23,22 @@ readback; a phase name is never a checkbox. Do not start a later item until ever
 is checked. Check an item only with the evidence named after `PASS =`. Chat, process liveness,
 model narration, and local success without the named readback are not PASS.
 
+### Apply music-production prohibition — account-owner priority override
+
+- [x] `AM01` Add a semantic Apply prohibition for music or produced/edited audio as the required
+  buyer-visible deliverable, including work performed through prompting or generative tools.
+  PASS = the shared feasibility policy names one model-owned prohibition class, contains no category,
+  keyword or regex gate, and a focused regression preserves music-adjacent software eligibility.
+  `music_or_audio_production` is now part of the existing exact-evidence contract. Focused tests pass
+  3/3. A side-effect-free Luna evaluation classified original BGM/audio delivery `9000001` as
+  `hard_prohibited / music_or_audio_production` with an exact listing excerpt, while music-service
+  software with no audio production `9000002` remained `submit_required`.
+- [ ] `AM02` Deploy the policy through the normal immutable Apply release boundary.
+  PASS = the change is merged to pushed main, a read-only immutable release contains the exact policy,
+  loaded Apply argv points to that release, one natural pass reaches a terminal result from the same
+  SHA, and subsequent candidate decisions use the new prompt. Do not submit a synthetic or otherwise
+  ineligible application solely to prove this rule.
+
 ### Manledge closure — account-owner priority override
 
 - [x] `M01` Refresh Coconala talkroom `18169985` and bind the buyer's latest request for

@@ -40,3 +40,13 @@ def test_common_policy_never_uses_skills_as_admission_or_execution_authority():
     assert "unverified payment" in normalized
     assert "never standalone skip reasons" in normalized
     assert policy in prompt
+
+
+def test_prompt_prohibits_music_production_but_not_music_adjacent_software():
+    planner = load_planner()
+
+    prompt = planner.planner_prompt({"request_details": []})
+
+    assert "music_or_audio_production" in prompt
+    assert "generated or prompted music/audio" in prompt
+    assert "music software" in prompt
