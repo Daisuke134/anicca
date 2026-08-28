@@ -32,6 +32,92 @@ W1gをproduction完了またはWriter全体復旧とは扱わない。
 
 ## Writer $10k monthly / OSS money playbook contract
 
+### 24/7の意味
+
+24/7はモデルprocessを常駐させる意味ではない。launchdが短いownerを定期起動し、未完runを同じidentityで
+reconcileし、失敗時も次の自然tickで再開できる状態を指す。別watchdog、別scheduler、常駐supervisorは作らない。
+sourceはGitHub main、実行codeはmain由来immutable release、mutable stateは利用者ごとのrepo外directoryだけを使う。
+
+```mermaid
+flowchart LR
+    D[demand・reader job] --> R[一次情報・winner mechanism]
+    R --> W[JA/EN native article]
+    W --> I[GPT Image 2 headline]
+    I --> P[active-four publish]
+    P --> B[provider-native readback]
+    B --> M[purchase・fee・payout receipt]
+    M --> L[one-variable learning]
+    L --> D
+    H[resume・health・money sync] --> W
+    H --> P
+    H --> M
+```
+
+### 一つのproduction topology
+
+| Owner | Cadence | 所有する結果 | Done evidence |
+|---|---:|---|---|
+| `article-daily` | 初期は1日1回 | 新しいsource articleを一つ開始 | immutable run、native JA/EN、headline receipt |
+| `article-resume` | 5分 | 同じ未完runだけを再開 | 同じrun/target、terminal state、duplicate 0 |
+| `article-healthcheck` | 5分 | schedule missとstale ownerを検出 | loaded SHA、last terminal、alert receipt |
+| `writer-money-sync` | 5分 | 外部transactionをarticleへjoin | received payout ID、fee/refund、artifact ID |
+| `writer-opportunity-discovery` | 1日 | 有償執筆需要を発見 | current official opportunity evidence |
+| `writer-opportunity-response` | 15分 | 適格案件へ提案 | submission/acceptance/payment readback |
+| `writer-report` | 5分 | 状態差分をTelegramへ通知 | message ID、semantic dedupe |
+
+全ownerは`config/loop-registry.json`と`bin/lm-loop`から管理する。Writer固有plist、installer、provider router、
+cleanup ownerを追加しない。localはmacOS launchd、cloudは同じentrypoint/state contractをtenant-isolated schedulerで
+実行する。cloudが未配線の間はlocalだけをproduction truthとし、cloud稼働を推定しない。
+
+### 記事から受取売上を作る
+
+無料記事はreachと信頼を作り、有料記事・subscription・editorial feeへ接続する。Substack公式は継続的な執筆と
+promotionを成長の基礎とし、freeからpaidへの一般的な転換を5–10%と説明する。この数値は目標計算の仮説に使い、
+Life Manager自身のconversion実績として扱わない。出典:
+https://substack.com/going-paid-guide
+
+1. 同じ言語・reader job・収益面で、現在受取売上があるwriterの公開mechanismを調べる。
+2. 本文やbrandは複製せず、offer、free/paid境界、cadence、distribution、conversionだけを一変数でadaptする。
+3. 無料部分だけでもreader jobへ役立つ答えを出し、有料部分には名前付きdeliverableを置く。
+4. active-fourはNote JA、Substack JA/EN、X Article JAである。Xはdistribution、Note/Substack/editorialは
+   receiptが接続された時だけrevenue capableとする。
+5. view、like、subscriber予測、pending、availableは売上に数えず、外部providerのreceived payoutだけを記帳する。
+6. 記事単位のnet received revenue、conversion、refund、制作costを比較し、勝ったmechanismだけを残す。
+
+### OSS contract
+
+公開packageはresearch→write→image→publish→readback→money→learnを同じcodeで実行できる。GhostはMIT licenseで
+membership、subscription、newsletterをOSS提供する既存例だが、Life ManagerはGhostをforkせず、payment/content
+modelの比較対象として使う。参照: https://github.com/TryGhost/Ghost
+
+- code、prompt、schema、test、installer contractはrepoへ置く。
+- password、cookie、API key、browser profile、ledger、receipt、reader dataはrepoへ置かない。
+- 各利用者は独立したstate root、credential、publication identity、payment destinationを持つ。
+- sample/configにDais固有path、handle、chat ID、emailを入れない。
+- clean user installでdraft作成、headline、readback、money ledger、replay-zeroまで証明する。
+- OSSは収益化の手段を再現する。利益、conversion、月$10kは保証しない。
+
+### 24/7とscaleのgate
+
+初期値は1日1 source articleである。次を全て満たすまで3本/日へ増やさない。
+
+- 7回連続でdaily→resume→provider readbackがterminalになる。
+- active-four全てで本文・identity・headlineが公式readbackされる。
+- 2回目wakeで記事、payment row、Telegramのduplicateが0である。
+- 少なくとも1件のreceived writing paymentがarticleへjoinされる。
+- 記事当たり品質、conversion、expected net revenueが低下しない。
+
+scale後は06:00/14:00/22:00の3 slotを使い、各slotへunique run/topicを割り当てる。悪化した場合は自動的に
+最後に収益性が証明されたcadenceへ戻す。月$10kは完全なcalendar monthのunique net received writing payoutsだけで判定する。
+
+### 現在のproduction truth
+
+`article-daily`と`article-healthcheck`はloaded SHAとevent SHAが一致してterminal PASSである。`article-resume`は
+同じSHAだがdisk floorでterminal FAILである。W1g codeはmainへmerge済みでも、plistの`ARTICLE_ROOT`等がgig releaseを
+指すsplit sourceのためproduction未反映である。received writing revenueは0である。現状は24/7、記事公開成功、
+収益化成功のいずれも未達である。次の唯一のcursorは
+`docs/ARTICLE-LAUNCH-TODO.md`のW1iとする。
+
 Writerの経済目的は、記事に結び付いた一意な外部payment receiptを受け取ることである。記事本数は活動量として
 別に測る。
 成功者からは読者、offer、無料/有料境界、価格、cadence、acquisition、conversion、retention、economicsの
