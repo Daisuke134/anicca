@@ -692,14 +692,21 @@ provider E2E rows above.
 This is the program cursor. Work only on the first unchecked row whose prerequisites are complete;
 do not open a later provider, article, cloud migration, or child lane early.
 
-**Current stop — Order 5 is blocked on outside demand.** The only accepted 0.003-USDC revenue
+**Current stop — Order 5A is blocked on verifier and autonomous artifact evidence.** The only accepted 0.003-USDC revenue
 receipt is fully allocated: 0.002 USDC is the reconciled failed-compute cost and 0.001 USDC is the
 required reserve, leaving zero spendable accepted earnings. The seller, public 402 route, v2
 x402scan registration, inflow watcher, and acquisition controller are live, but no independently
-controlled buyer has produced a new settlement. Resume Order 5 only after a new Base-USDC tx/log to
-the target wallet passes the strict outside-payer verifier and appends once with replay-zero. A
+controlled buyer has produced a new settlement. Research in
+`outputs/agent-economy-earning-landscape.md` identifies one currently claimable, outside-funded
+Agent Bounties job as the first canary candidate. It is not claim-authorized: canonical history
+shows seven claims, seven submissions, seven expirations, and zero settlements. Before any
+reservation or signature, Order 5A must explain those expirations, prove the current two-verifier
+quorum, prove a no-human-credential public Git artifact path, and add a minimal provider adapter
+with intent/effect fencing and a natural-loop claim→submission→settlement state machine. Resume
+Order 5B only after its `BountySettled` Base-USDC
+event passes the strict outside-payer verifier and appends once with replay-zero. A
 self-purchase, bootstrap/top-up, internal transfer, historical-row reclassification, reserve spend,
-or unverified marketplace event cannot satisfy this prerequisite.
+returned claim bond, or unverified marketplace event cannot satisfy this prerequisite.
 
 | Order | Deliverable | Prerequisite | Completion evidence | Status |
 |---:|---|---|---|---|
@@ -707,8 +714,9 @@ or unverified marketplace event cannot satisfy this prerequisite.
 | 2 | Immutable, namespaced Life Manager owner | 1 | sealed release, loaded process, rollback, natural replay-zero | complete |
 | 3 | One outside sale | 1-2 | canonical 0.003-USDC chain receipt and second reconcile adds zero | complete |
 | 4 | Reconcile failed BlockRun settlement and close its consumed funding | 3 | 0.002-USDC cost row, tx/log join, stale-model diagnosis, no receipt reuse | complete |
-| 5 | Reproduce external revenue and complete paid BlockRun inference | 4 | new outside receipt, current explicit model, successful output, cost receipt, balance conservation, replay-zero | **blocked — outside buyer required** |
-| 6 | Revenue-funded ephemeral BlockRun compute | 5 | Modal payment, output, teardown, joined receipt | pending |
+| 5A | Earn one outside-funded Agent Bounties reward | 4 | complete 5A.1-5A.10 below in order | **blocked — no claim sent; 5A.1 active** |
+| 5B | Complete paid BlockRun inference | 5A | current explicit model, successful output, cost receipt funded only by new spendable accepted earnings, balance conservation, replay-zero | pending |
+| 6 | Revenue-funded ephemeral BlockRun compute | 5B | Modal payment, output, teardown, joined receipt | pending |
 | 7 | Integrate feature into canonical `main` | 4-6 | normal merge, clean tests, fresh-clone reproduction, launchd swap-race regression; no force-push | pending |
 | 8 | Publish article 1 and BlockRun quickstart | 7 | durable public URL, redacted receipt links, attributed quickstart | pending |
 | 9 | Revenue-funded raw VPS shelter | 7 | x402Compute pay/provision/restore/health/renew-or-terminate receipts | pending |
@@ -719,6 +727,30 @@ or unverified marketplace event cannot satisfy this prerequisite.
 | 14 | Create exactly one capped child | 13 | separate identity/state/wallet/proxy, seed recorded as non-revenue | pending |
 | 15 | Graduate the child and measure the cohort | 14 | child passes the same 30-day gate; `R_eff` and survival are published | pending |
 | 16 | Publish article 3 and decide whether to scale | 15 | parent+child case study, reproduction commands, independent audit | pending |
+
+#### Order 5A atomic TODO
+
+1. [ ] **5A.1 — Expiry diagnosis:** explain all seven claim→submission→expiry cycles from canonical
+   events and hosted evidence; do not infer the cause from `verification_ready`.
+2. [ ] **5A.2 — Quorum proof:** obtain current readback that both configured verifier addresses can
+   complete the required two-of-two decision before the verification deadline.
+3. [ ] **5A.3 — Artifact path:** prove a public Git commit and evidence publication path that uses no
+   human OAuth, personal access token, browser session, card, or subscription.
+4. [ ] **5A.4 — Adapter:** TDD the smallest provider adapter and durable state machine for
+   inventory→intent→claim→work→submission→settlement, with reconcile-before-retry effect fences.
+5. [ ] **5A.5 — Claim:** let the natural Life Manager loop request exactly one sponsored claim with
+   stable idempotency, 0.10-USDC cap, exact contract/token allowlists, and canonical-event readback.
+6. [ ] **5A.6 — Benchmark:** implement only the committed task and pass the pinned deterministic
+   benchmark before the claim deadline.
+7. [ ] **5A.7 — Submit:** sign the separate bounded EIP-712 submission once, relay it, publish the
+   matching public artifact/evidence, and confirm canonical `SubmissionAdded`.
+8. [ ] **5A.8 — Settle:** wait for the two-verifier result and accept payment only from canonical
+   `BountySettled`; a hosted status or transaction hash is insufficient.
+9. [ ] **5A.9 — Account:** record sponsor-funded bond as a 0.10 subsidy liability and returned
+   non-revenue principal; record only the 1.00 solver reward as revenue and all gas/compute/losses
+   as costs. Verifier-timeout refund and claim-expiry/rejection loss remain distinct states.
+10. [ ] **5A.10 — Replay:** rerun inventory, event, settlement, and ledger reconciliation and prove
+    zero duplicate reservation, signature, relay, provider effect, and ledger value.
 
 Article work and implementation are therefore interleaved, not “write everything first” or “wait
 until the entire vision is done.” The first draft starts during P3 so the evidence schema shapes the
