@@ -71,6 +71,7 @@ _cdp_guard_relaunch() {
   nohup "$chromium_bin" \
     --remote-debugging-port="$CDP_PORT" \
     --user-data-dir="$CDP_PROFILE" \
+    --disable-features=MacAppCodeSignClone \
     --no-first-run --no-default-browser-check \
     >>"$CDP_GUARD_LOG" 2>&1 < /dev/null &
   disown 2>/dev/null || true

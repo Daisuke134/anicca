@@ -631,3 +631,12 @@ def test_writer_lanes_render_from_immutable_release_and_life_manager_state():
             assert rendered["StartCalendarInterval"] == job["StartCalendarInterval"]
         else:
             assert "StartCalendarInterval" not in rendered
+
+
+def test_all_coconala_chromium_launches_disable_code_sign_clone():
+    scripts = [
+        GIG_ROOT / "scripts" / "launch_gig_browser.sh",
+        GIG_ROOT / "scripts" / "cdp_daily_driver_guard.sh",
+    ]
+    for script in scripts:
+        assert "--disable-features=MacAppCodeSignClone" in script.read_text()

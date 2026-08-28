@@ -79,6 +79,7 @@ exec "$chromium_bin" \
   --password-store=basic \
   --use-mock-keychain \
   --disable-sync \
+  --disable-features=MacAppCodeSignClone \
   --no-sandbox \
   --fingerprint="$GIG_BROWSER_FINGERPRINT" \
   --fingerprint-platform=macos \
