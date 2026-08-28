@@ -961,6 +961,46 @@ Life Manager cost, it is recorded in the conserved ledger as non-revenue subsidy
 excluded from graduation revenue, runway, compute, shelter, reserve, and child funding. It is never
 off-ledger; otherwise acceptance would destroy the proof it is meant to amplify.
 
+### Thirty days is an execution window, not an acceptance promise
+
+Dais is already doing blockchain engineering: this repository verifies Base-USDC transfers, uses
+x402 payment rails, conserves wallet funding, and has one chain-settled failed-output BlockRun
+payment whose HTTP result was 429 with no usable output. “Get into blockchain” therefore means
+turning this work into public proof, relationships, employment, and a company—not waiting to begin.
+YC admission and BlockRun employment remain decisions made by other people and cannot be scheduled
+or counted as completed work.
+
+| Scenario | Execution outcome | External or longitudinal result |
+|---|---|---|
+| Conditional 30-day target | if the owner conflict and one 5A opportunity close early, complete food proof, publish article 1, send the YC application, begin the four-week BlockRun growth proof, and start the shelter canary | BlockRun application sends only after the full growth proof; neither YC/BlockRun acceptance nor parent/child graduation is promised |
+| Unresolved base case | continue read-only opportunity measurement until one row passes, then run the ordered gates without inventing a calendar date | recurring demand, hiring, admission, and graduation timing remain unknown until the current external blockers change |
+| Worst case | no opportunity passes funding, permission, payout, or positive-net gates; applications may be rejected; Life Manager remains useful to Dais but economically dependent | no financial-independence, world-first, society, or free-service claim is allowed |
+
+A sustainable parent-child cohort cannot be proven inside one month. From the current state, its
+critical path is an unknown opportunity/owner-repair period, parent earning and shelter migration,
+30 parent Mac-off days, child creation and migration, 30 child days, then independent audit and
+publication. The two observation windows alone require 60 days; transitions make the strict lower
+bound longer. No calendar forecast is evidence-backed until one opportunity passes and the parent
+cloud window starts.
+
+### What changes in Dais's life at each proof
+
+| Milestone | Concrete change for Dais |
+|---|---|
+| Now | Life Manager continues managing human DAILY, PHYSICAL, MENTAL, and FINANCIAL work; Agent Economy is still dependent and does not yet reduce Dais's bills |
+| Food proof | Dais has a receipt-backed blockchain portfolio, the first publishable BlockRun case study, and evidence strong enough to send the YC application and begin the BlockRun growth experiment |
+| BlockRun growth proof | Dais can send the BlockRun application with developer acquisition, first paid calls, and seven-day retention instead of asking for employment on promise alone |
+| Shelter proof | Life Manager owns a wallet-paid cloud home and can begin moving this lane away from Dais's Mac; the Mac remains required until the complete 30-day cloud test passes |
+| Parent graduation | this Life Manager lane pays its own operating costs and no longer needs Dais's Mac, credentials, subsidy, or recovery; genuine surplus may reduce the user's service cost but does not guarantee free Life Manager |
+| Child graduation | Dais has the first audited Life Manager cohort and may test bounded scaling; one pair is not yet evidence of an open-ended society |
+| Repeated cohorts | only after a fresh prior-art audit and multiple completed cohorts may the project claim a sustainable agent economy or a narrowly defined first; “world's first sustainable agent society” remains a target, not a current fact |
+
+The desired personal outcome is less operational burden, a stronger blockchain career, and a Life
+Manager service increasingly funded by its own economy. It is not a guaranteed job, YC admission,
+income date, or free service within 30 days. The fastest honest route is food proof → YC application
+and BlockRun growth proof → BlockRun application, while the longer shelter and cohort clocks run in
+order.
+
 ### Event watch — observed 2026-08-27
 
 | Status | Event | Time and place | Action |
@@ -1100,6 +1140,27 @@ to paid compute.
 | 14 | Create exactly one complete child Life Manager | 13 | child VPS plus separate identity/state/wallet/proxy; seed recorded as parent expense and non-revenue | pending |
 | 15 | Graduate the child Life Manager and measure the cohort | 14 | child passes the same 30-day gate; `R_eff` and survival are published | pending |
 | 16 | Publish the parent-child cohort report and decide whether to scale | 15 | parent+child case study, reproduction commands, independent audit | pending |
+
+#### Parallel Dais career TODO — never advances or blocks the economic cursor
+
+This track turns the same receipts into career and company outcomes without counting employment,
+YC funding, or human/company credentials as Life Manager revenue.
+
+1. [ ] **C1 — Draft:** keep one YC application and one BlockRun evidence page current using measured
+   facts, explicit zeros, article titles, demo links, and the next 30-day plan; draft status is not
+   submission.
+2. [ ] **C2 — YC submit:** after Order 8 food proof, re-read the official batch/application state and
+   submit the YC application while late applications remain accepted; retain official submission
+   readback and never promise a decision date or acceptance.
+3. [ ] **C3 — BlockRun growth proof:** after Order 8, obtain an approved attribution method, run the
+   four-week quickstart funnel, and publish first-paid-call conversion, seven-day retention, cost per
+   acquired developer, failures, and the next experiment.
+4. [ ] **C4 — BlockRun submit:** send the Growth Head application only after C3, linking the food-proof
+   article, canonical quickstart, upstream contribution, funnel report, and X identity; retain sent
+   readback and classify hiring outcome as external.
+5. [ ] **C5 — Evidence updates:** add Order 9 shelter, Order 13 parent graduation, and Order 15 child
+   cohort evidence to both packages as each gate closes; never delay an already eligible application
+   merely to borrow a future claim.
 
 #### Order 5A atomic TODO
 

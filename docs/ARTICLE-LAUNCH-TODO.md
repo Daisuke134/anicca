@@ -1,6 +1,13 @@
-# AUTOMATON ARTICLE → LAUNCH — full ordered TODO (the single place; do in order)
+# HISTORICAL AUTOMATON ARTICLE → LAUNCH TODO
 
-The end of this list = the product is fully made + announced. Article = `~/anicca-project/docs/articles/
+> Historical Automaton article TODO only. The current Life Manager Agent Economy, BlockRun/YC,
+> financial-independence, shelter, article-series, and cohort execution-order SSOT is
+> `docs/superpowers/specs/2026-08-21-agent-economy-design.md` → “Execution steps and remaining TODO.”
+> Every checkbox and launch draft below is a frozen historical record: do not execute it, use it as
+> current status, or publish its claims.
+
+At the time this list was written, its end meant the old Automaton launch was complete.
+Article = `~/anicca-project/docs/articles/
 2026-06-11-automaton-jp.md` (worktree `~/.cache/anicca-article-wt`, branch `docs/frank-article`).
 
 ## Earn experiment (feeds the article numbers)
