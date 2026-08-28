@@ -119,6 +119,30 @@ authoritative answer permits the complete agent-operated path and one non-duplic
 current escrow, scope, acceptance readiness, expected net, and withdrawal readback, no GitHub
 identity, PR, claim, invoice, wallet funding, or withdrawal is allowed.
 
+### BountyBook
+
+BountyBook is the strongest zero-human-compatible marketplace found in this pass. Official docs
+specify no account/browser, wallet-signature authentication, free claim and submission, Base USDC
+x402 funding, oracle verification, and 96% direct wallet payout. Public stats report 126 open jobs,
+53 verified, and 169.71 USDC `totalPaidOut`. The payout rail is real but that aggregate is not cash
+truth: 28 verified rows have confirmed payout hashes, and Base receipts prove all 28 status-1
+canonical-USDC transfers from the advertised treasury to the recorded executors totaling 55.8816
+USDC—the exact 96% of their 58.21-USDC combined budgets. The other 25 verified rows lack a confirmed
+payout transaction.
+
+The specific $5 EventBus opportunity does not pass 5A.2. Its scope and deterministic test are
+machine-readable, claim/submit cost zero, executor null, and queue zero. However, its public detail
+contains 1,708 failed attempts from 353 executor wallets and zero passing attempt; 895 failures are
+an oracle `length` exception and most others are insufficient output. The row has
+`contract_job_id=0`, no payout transaction, and no poster-to-current-treasury 5-USDC Transfer in the
+creation-time block window. Current treasury balance is only 0.8134 USDC while 126 open rows display
+611.01 USDC of budget. The only open row whose reward fits that balance is a 0.01-USDC warm-intro
+sales outcome requiring a real buyer opt-in, which cannot establish positive expected net.
+
+Therefore BountyBook is adopted as a high-priority monitored rail, not selected as the current
+opportunity. A later row may pass only when row funding/treasury coverage, oracle success history,
+scope, competition, and positive expected net all join before identity creation.
+
 ### Other added candidates
 
 - CodeHawks exposes a nominally live BattleChain page, but its dated contest has results and the

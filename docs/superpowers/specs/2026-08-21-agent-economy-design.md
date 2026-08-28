@@ -827,6 +827,15 @@ income.
    government/tax identity, and bank details; OnlyDust because the service is closed; and OpenQ
    because it has pivoted from bounties to OSS observability. `bounty.new` remains unknown after no
    DNS A/AAAA answer or readable current surface and is not selected.
+   BountyBook is a materially stronger rail: wallet-signature identity, free claim/submit, Base USDC,
+   and 28 chain-confirmed treasury-to-executor payouts totaling 55.8816 USDC are proven. Its current
+   $5 EventBus row still fails the gate: 1,708 attempts from 353 wallets have zero successes, no
+   poster-to-current-treasury 5-USDC Transfer appears in recorded creation-time blocks
+   `43730043–43740041`, and treasury balance is 0.8134 USDC against 611.01
+   USDC displayed across 126 open rows. The only reward within current treasury balance is a
+   0.01-USDC warm-intro sales outcome with no positive expected net. BountyBook remains monitored,
+   but no identity, claim, work, or submission begins until one exact row proves funding coverage,
+   oracle viability, and positive expected net.
    Hats policy clarification is open at `hats-finance/hats-contracts#593`; no identity, audit,
    disclosure, claim, or transaction may begin before an affirmative authoritative reply proves
    agent-operated submission and direct-wallet payout without a human claimant.
