@@ -280,12 +280,59 @@ a natural event before Done. Completion evidence:
 ### Post-completion operational repair cursor
 
 The control plane is complete; business-loop repair continues one loop at a
-time from `lm-loop status all`. Current measured inventory is 167 rows: 39
-loaded-running and 128 loaded-idle. Terminal history contains 65 pass, 76 fail,
+time from `lm-loop status all`. Current measured inventory is 167 rows: 36
+loaded-running and 131 loaded-idle. Terminal history contains 61 pass, 80 fail,
 and 26 without a terminal result. A terminal failure is retained as audit
-history while a KeepAlive process is running, so 76 is not an actionable repair
-count. The actionable queue is the 50 rows that are both terminal-fail and not
-loaded-running.
+history while a KeepAlive process is running, so 80 is not by itself an
+actionable repair count.
+
+#### Target operating model
+
+- Coconala remains the working local reference and is never stopped merely to
+  generalize the system. The shared job-doing kernel owns goal, capability,
+  context, effect fence, delivery, official readback, replay-zero, and revenue;
+  marketplace-specific URLs, selectors, fees, message rooms, and receipts stay
+  in thin adapters.
+- Upwork remains intentionally off. Its code may serve as implementation
+  evidence, but its retired launchd labels are not restarted and it is not an
+  activation TODO.
+- Lancers is the next live adapter repair target. CrowdWorks follows using the
+  same kernel contract. A marketplace-specific customer case must improve the
+  shared kernel or its thin adapter, never create another independent agent.
+- Delivery order is local-first, then the same contract on the cloud worker,
+  then an OSS setup that a new user can start with a few documented commands.
+  The current `scripts/local-up.sh` starts only the Docker API, scheduler, and
+  worker; it does not install or run all 167 macOS loops. The clean-user launchd
+  test renders and reads back jobs without starting workloads. Therefore
+  few-command full-loop OSS startup is not yet implemented.
+- Codex account isolation exists, but automatic account 1 to account 2 failover
+  is not implemented or enabled. Production defines only `acct2`, candidates
+  name `acct2` explicitly, and profile resolution intentionally performs no
+  expansion. Failover may occur only before any external effect; after an
+  effect starts or becomes unknown, the task fails closed without account
+  retry.
+
+#### Daily operation and repair
+
+1. Build one resolver view containing managed, external, retired, and unmanaged
+   labels. Continuous jobs are healthy only while loaded-running. Scheduled
+   jobs are healthy while loaded-idle only when their next eligible time is not
+   overdue and their latest due pass has a valid terminal event.
+2. Remove unused jobs instead of healing them. Retirement removes the registry
+   owner, installed job, legacy installer/recreator, and active process while
+   preserving audit receipts and proving recreation zero.
+3. Rank the remaining queue: unmanaged or duplicate owners first, overdue
+   external-effect loops second, failed deterministic support loops third, and
+   missing-event classification last. Work one loop at a time.
+4. Repair in a locked worktree, merge main, cut one immutable release, apply one
+   label, and prove loaded argv plus natural runtime event. Never restart all
+   loops to repair one.
+5. For messages, applications, publication, delivery, payment, or trade, require
+   official provider/account readback and replay-zero. Process exit zero is not
+   business success.
+6. Send one daily Telegram summary with resolver totals, deleted unused jobs,
+   the one repaired loop, official effect evidence, remaining cursor, and any
+   fail-closed blocker.
 
 Ordered operational TODO:
 
@@ -305,19 +352,29 @@ Ordered operational TODO:
 4. ⏳ Restore clean inventory: classify and register or retire the running
    unmanaged label `ai.anicca.provision-browser.tiktok.anicca`; `doctor` must
    return unmanaged 0 again without stopping its active browser blindly.
-5. ⏳ Consolidate marketplace ownership. CrowdWorks has four acknowledged
-   external labels and all four are not loaded. The two legacy Upwork labels
-   are retired and not loaded. They are not yet managed/on through the 167-row
-   control-plane table.
-6. ⏳ Repair `agent-economy-loop`, the next real terminal-fail/loaded-idle row
+5. ⏳ Keep Coconala live as the reference kernel and repair all five Lancers
+   rows to natural pass plus official marketplace readback.
+6. ⏳ Move CrowdWorks from four unloaded external labels into thin adapters over
+   the same kernel. Keep Upwork retired/off; do not treat it as missing runtime.
+7. ⏳ Implement account 1 primary/account 2 pre-effect fallback at the shared
+   runner boundary, then run controlled real fallback E2E with duplicate effect
+   zero. Do not add account switching inside marketplace loops.
+8. ⏳ Make OSS startup truthful: a few commands must provision user-owned
+   secrets, choose supported loops, start local scheduler/workers, install the
+   platform-appropriate supervisor, and show the same resolver table. Passing
+   Docker health or plist rendering alone is insufficient.
+9. ⏳ Repair `agent-economy-loop`, the next real terminal-fail/loaded-idle row
    after obsolete ownership rows are removed.
    Diagnose its latest event and log before changing code; preserve every
    sibling label and external effect fence.
-7. ⏳ Continue the remaining terminal-fail/non-running rows strictly in
+10. ⏳ Repair mobile-app marketing: all three TikTok rows currently fail; seven
+   of eight Instagram rows fail; marketing also has missing terminal events.
+   Require real post/metrics readback and duplicate publication zero.
+11. ⏳ Continue the remaining terminal-fail/non-running rows strictly in
    table order, one locked worktree and one production label at a time.
-8. ⏳ Classify the 26 rows without terminal events as cadence-not-yet-due,
+12. ⏳ Classify the 26 rows without terminal events as cadence-not-yet-due,
    long-running, or missing event wiring; do not count absence as success.
-9. ⏳ Track repo-wide nonrequired security-CI debt separately from loop health:
+13. ⏳ Track repo-wide nonrequired security-CI debt separately from loop health:
    OSS boundary, PII gate, Python syntax, and dependency audit.
 
 ### TODO 1 execution state
