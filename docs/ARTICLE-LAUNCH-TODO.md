@@ -26,9 +26,9 @@
       daily/resume/healthcheckに加え、money/discovery/response/reportを含む全Writer ownerのenvとargvを同じmain由来
       release SHAへ一致させ、他loop env変更0をreadbackする。完了: PR #2962/#2965、14 Writer labelのargv/rootが
       sparse immutable release `40065a10`へ一致。general currentは元full releaseへ復元。
-- [ ] W1j concurrent apply後の3 label driftをreconcileする。`article-audit-7day`、`article-learn-whitelist`、
-      `article-self-improve`は現在argv/release SHA=`8efb1840`、helper root=`9ad63c5c`で不一致。同じresourceを
-      別sessionが触っているため自動上書きせず、owner idle確認後に一つのcurrent main releaseへ再apply/readbackする。
+- [x] W1j concurrent apply後の3 label driftをreconcileする。3 labelのowner idleを確認してsparse immutable
+      release `40065a10`へtarget applyし、全14 Writer labelのargv、release SHA、`ARTICLE_ROOT`、
+      `ARTICLE_SKILL_DIR`、`LIFE_MANAGER_REPO`が同じreleaseへ一致することをplistからreadbackした。
 - [ ] W1h `article-daily.sh`のinner rc=1をruntime terminal PASSへ変換しない。外部作用0を保持したまま、exact
       release/run/error classをterminal failure eventへ記録し、launchd process resultとbusiness effectを分離する。
 - [ ] W2 installed loopの1回のwakeで新しいsource articleと記事固有のheadlineを生成する。OpenAI Image APIの
