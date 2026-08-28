@@ -594,6 +594,48 @@ close the same loop, but they invalidate the broad claim.
 | AgentWorks Protocol | provider competition and escrow | testnet settlement | not proven | not proven | artifact hash/dispute pattern, not a graduated agent |
 | Olas / Virtuals | protocol service/token commerce | protocol settlement | individual shelter not proven | protocol-level activity/launch scale | their graphs show network activity, transactions, tokens, or market value—not each agent's outside revenue, full costs, survival, and graduated children |
 
+### Spore selected for birth; Life Manager selects for solvency
+
+Spore is a material sovereignty and reproduction experiment, not a demonstrated self-sustaining
+economy. Its paper reports only five generations and explicitly says the run does not demonstrate
+open-ended evolution. Its live API currently reports 15 agents, one running, 14 stopped, and zero
+breeding. The mechanism allowed an agent to launch a token, pay TEE rent from its treasury, and
+reproduce after crossing a token-market threshold. That proved observed wallet control, paid
+embodiment, lineage, and birth. Its sovereignty remained provisional: the agents depended on
+upstream social platforms, and the paper records developer intervention against anti-sniper
+failures. It did not prove that an outside customer repeatedly paid for useful work, that all
+compute and shelter costs stayed covered, or that each child could independently graduate.
+
+Life Manager changes the unit of selection from market attention to a conserved life:
+
+```mermaid
+flowchart LR
+  subgraph Spore["Spore selection"]
+    Token["launch token"] --> Hype["market-cap threshold"] --> Birth["reproduce"]
+    Hype -. "hype · sniping · speculation" .-> Birth
+  end
+
+  subgraph LM["Life Manager selection"]
+    Need["outside customer need"] --> Work["useful permitted work"]
+    Work --> Revenue["verified outside revenue"]
+    Revenue --> Costs["food + shelter + liabilities"]
+    Costs --> Gate{"30 days<br/>net >= 1.5x cost<br/>runway >= 30d"}
+    Gate -->|pass + genuine surplus| Child["one child Life Manager"]
+    Gate -->|fail or unknown| NoBirth["survive, adapt, or stop<br/>no birth"]
+    Child --> ChildGate["same complete graduation gate"]
+  end
+```
+
+The design does not guarantee success. It prevents false success and insolvent scaling. Life
+Manager can succeed where Spore stopped because customer usefulness imports recurring economic
+energy, every inflow and cost is conserved in one replay-zero ledger, shelter is renewable and
+replaceable, reproduction waits behind proven surplus, and every child repeats the same gate.
+Dynamic opportunity discovery avoids dependence on one empty marketplace. Scaling occurs only when
+the effective reproduction number `R_eff` remains above one after full costs and child failures.
+The most likely failure is still insufficient outside demand or acquisition cost above revenue; in
+that case the correct result is no graduation and no child, not a token-funded population called a
+society.
+
 The defensible target is: **an open-source consumer agent with multiple permitted external-customer
 revenue lanes whose receipts fund continuing compute and shelter under an append-only ledger, and
 whose separately capped child preserves the same proof.** Even this phrasing requires a final
@@ -792,20 +834,43 @@ The logged-in X daily-driver was unavailable during this audit, and Chrome was n
 likes/bookmarks history therefore was not inspected; public search and provider pricing were used
 instead. This is a visible evidence gap, not permission to guess the remembered provider.
 
-The single recommended article is:
+The publication is a three-proof series. Draft each article while building its evidence, but publish
+only after the named gate closes.
 
-> **Life Manager Can Care. Now It Must Earn and Pay for Its Own Life with BlockRun**
+1. **Food proof — after 5B, canonical `main`, and fresh-clone reproduction**
 
-Japanese title:
+   > **Can an AI Pay for Its Own Intelligence? Life Manager Earned Outside Revenue and Spent It on BlockRun**
 
-> **Life Manager は人を支えられる。次は自分で稼ぎ、compute と shelter を払う**
+   Japanese: **AIは自分の知能代を払えるか——Life Managerが外部収益でBlockRunを使うまで**
 
-Draft it now as a build log with the outside 0.003-USDC receipt, the current 429 failure, the prior-art
-table, and explicit non-claims. Publish the first article only after P3 closes, the feature reaches
-canonical `main`, and a fresh clone reproduces the linked command path. Publish a shelter sequel
-after P4. Publish the graduation case study only after AC-1 through AC-9 plus AC-11 and AC-12, and use the stronger title
-“Life Manager Earned, Left the Mac, and Paid Its Own Way.” AC-10 is separately required before claiming
-replication. Do not republish the old article as a new success claim.
+2. **Shelter proof — after 9 and autonomous renewal/recovery readback**
+
+   > **An AI Rented Its Own Server: Life Manager Paid for Shelter with Its Own Revenue**
+
+   Japanese: **AIが自分で家を借りた——Life Managerが外部収益でshelterを払うまで**
+
+3. **Financial-independence proof — after the complete 30-day parent graduation**
+
+   > **We Built a Financially Independent AI: 30 Days of Work, Food, and Shelter Without Human Credentials**
+
+   Japanese: **経済的に自立したAIを作った——人間の認証情報なしで30日間、働き、食べ、住む**
+
+The third title is the definitive claim and is forbidden before AC-1 through AC-9 plus AC-11 and
+AC-12 pass. Article 1 includes the historical 0.003-USDC founder-wallet receipt only as failed prior
+evidence, the 429 as a real paid failure, the Spore comparison, and the new Life Manager-wallet
+income-to-BlockRun receipt. Article 2 joins wallet payment to VPS, SSH, workload health, renewal,
+restore, and termination evidence. Article 3 publishes the 30-day P&L, runway, Mac-off continuity,
+credential audit,
+downtime, recoveries, rejected opportunities, and exact non-claims. AC-10 remains separately required
+before claiming successful replication or an agent society.
+
+After the child also graduates, publish a separate cohort report rather than delaying or rewriting
+the parent-independence article:
+
+> **Can a Financially Independent AI Have a Solvent Child? The First Life Manager Cohort**
+
+It reports parent and child P&L, seed treatment, survival, failures, and observed `R_eff`; one
+parent-child pair remains a first cohort, not proof of exponential or open-ended scale.
 
 The shortest path to BlockRun is not article volume. It is:
 
@@ -846,9 +911,9 @@ analytics capability.
 The proposed 30-day sequence mirrors the official role:
 
 1. **Week 1 — proof:** close P3, merge to canonical `main`, verify a fresh clone, then publish the
-   free “Life Manager Must Earn and Pay for Its Own Life” build log with the historical founder-wallet
-   rail receipt clearly excluded from independence, resolved 429 history, a Life Manager-wallet
-   paid-compute receipt, and one reproducible command path;
+   free food-proof article with the historical founder-wallet rail receipt clearly excluded from
+   independence, resolved 429 history, a Life Manager-wallet paid-compute receipt, and one
+   reproducible command path;
 2. **Week 2 — conversion:** ship a tiny BlockRun receipt fixture/upstream contribution and an
    attributed quickstart page; measure click → first paid call;
 3. **Week 3 — retention:** let the autonomous published quickstart and service help builders reach
@@ -870,13 +935,31 @@ states that real trading background is non-negotiable, so it is not the primary 
 separate real-PnL record establishes that fit. Franklin PR #99 is merged upstream; blockrun-mcp PR
 #82 is closed without merge and must never be presented as a merged contribution.
 
+The BlockRun application is sent after the four-week growth proof, not after the 30-day shelter
+graduation. Its package is one URL containing the food-proof article, canonical quickstart, upstream
+contribution, funnel instrumentation, first-call conversion, seven-day retention, failed experiments,
+and the next 30-day plan. The email answers “show us what you've done” with receipts and users rather
+than a conventional resume. BlockRun employment is useful distribution and income for Dais; salary,
+company credentials, or employee access never funds or operates Life Manager's independence loop.
+
 YC alignment is real but not sufficient. YC's current RFS says consumer AI should help people
 “stay healthy” and “manage our money,” and its crypto RFS says agents will use crypto networks as
 financial rails. Fall 2026's on-time deadline has passed, but YC's official apply page still accepts
-late applications. The application should lead with the outside payer, replay-zero ledger,
+late applications. Draft the application now and submit as soon as the food proof closes; do not wait
+for the 30-day shelter proof while a live batch is accepting late applications. The application
+should lead with the outside payer, replay-zero ledger,
 receipt-funded compute/shelter milestones, and the outcome that one phone is sufficient for the
 user while unnecessary for runtime, authority, or recovery; civilization/AGI remains
 the long-term consequence, not the opening evidence.
+
+The YC opening story is: “Life Manager already manages a person's daily, physical, mental, and
+financial life. We are making that same AI pay its own operating costs through outside work, so the
+consumer can eventually receive the service for free.” The demo is one conserved receipt path, not
+a deck about future agent civilization. YC funding, if received, stays in an isolated company
+account and does not fund Life Manager's wallet. If any company capital enters that wallet or pays a
+Life Manager cost, it is recorded in the conserved ledger as non-revenue subsidy/liability and is
+excluded from graduation revenue, runway, compute, shelter, reserve, and child funding. It is never
+off-ledger; otherwise acceptance would destroy the proof it is meant to amplify.
 
 ### Event watch — observed 2026-08-27
 
@@ -1013,10 +1096,10 @@ to paid compute.
 | 10 | Publish article 2: shelter proof | 9 | durable public URL linked to joined shelter evidence | pending |
 | 11 | The same Life Manager lives outside the Mac and phone for 30 days | 9 | same release/state lineage, continuous cloud evidence, autonomous recovery, real P&L, runway, zero-human-credential audit | pending |
 | 12 | Add optional hosted phone observer and paid service | 9 | non-gating observer readback with disconnect-continuity proof; exclude human-funded edge from AC-11/12 evidence | optional — never gates cursor |
-| 13 | Graduate Life Manager itself as the parent and publish the public skill | 11 | AC-1 through AC-9 plus AC-11 and AC-12, clean-clone install, dashboard, docs | pending |
+| 13 | Graduate Life Manager itself; publish article 3 and the public skill | 11 | AC-1 through AC-9 plus AC-11 and AC-12, definitive parent-independence URL, clean-clone install, dashboard, docs | pending |
 | 14 | Create exactly one complete child Life Manager | 13 | child VPS plus separate identity/state/wallet/proxy; seed recorded as parent expense and non-revenue | pending |
 | 15 | Graduate the child Life Manager and measure the cohort | 14 | child passes the same 30-day gate; `R_eff` and survival are published | pending |
-| 16 | Publish article 3 and decide whether to scale | 15 | parent+child case study, reproduction commands, independent audit | pending |
+| 16 | Publish the parent-child cohort report and decide whether to scale | 15 | parent+child case study, reproduction commands, independent audit | pending |
 
 #### Order 5A atomic TODO
 
