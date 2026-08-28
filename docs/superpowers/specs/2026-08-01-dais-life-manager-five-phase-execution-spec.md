@@ -4379,15 +4379,13 @@ bindされ、未確認founder videoをexpected blockerとして保持し`submit_
 
 ### 5.6 Order 3B — Dais個人CFO
 
-現在のMoneytree plugin readbackはowner確認済みの正しい観測として扱う。実装は上から最初のactionableな未完1件だけをactiveにし、`WAIT_EXTERNAL`は内部TODOを塞がない。
+現在のMoneytree plugin readbackはowner確認済みの正しい観測として扱う。実装は上から最初のactionableな未完1件だけをactiveにし、`WAIT_EXTERNAL`は内部TODOを塞がない。各TODOはユーザーに見える価値または必須安全性を直接増やすものだけを残す。
 
 - [x] O3B-00 公式current docsとlocal secret有無を監査。Moneytree pluginは実口座1件を正常readback。credential SSOTはmode 600、LINK本番credentialは未登録。Cloud要件は契約後の`client_id`・`client_secret`・登録済み`redirect_uri`、最小scopeは`guest_read accounts_read transactions_read request_refresh`。追加質問なし、LINK申請はO3B-03で実行
 - [x] O3B-01 account、transaction、position、liabilityの最小schemaを`financial-organ-schema.js`へ固定し、focused testで4種類と必須field拒否を実証
 - [x] O3B-02 `financial-organ-schema.js`で金額をsafe integer JPYに限定し、小数と非JPYをfocused testで拒否
 - [x] O3B-03 local Moneytree adapterを実接続。Codex app-serverからstructured accountを取得し、口座番号を破棄したJPY recordへ変換。実readbackは`connected=true`・account 1
 - [ ] O3B-03C `WAIT_EXTERNAL`: Moneytree LINK申請済み。production credential受領後にCloud OAuthを接続
-- [ ] O3B-05 `WAIT_EXTERNAL`: Binance credential未登録。取得後にread-only接続
-- [ ] O3B-06 `WAIT_EXTERNAL`: Dais本人のpublic wallet address未登録。登録後にread-only取得
 - [x] O3B-07 `transfer_id`付き取引の両側をincome・spending・netから除外し、focused testで二重計上0を実証
 - [x] O3B-08 merchantの空白を決定論的に正規化し、provider categoryを保持、欠落時だけ`未分類`にするfocused testを実証
 - [x] O3B-09 同merchant・同金額が別月に2回以上ある支出をsubscription候補として検出し、利用証拠がない限り`usage_status=unknown`を維持
@@ -4395,19 +4393,13 @@ bindされ、未確認founder videoをexpected blockerとして保持し`submit_
 - [x] O3B-11 net worth・income・spending・cash flow・budget残額だけを同じJPY ledgerから算出。未使用のburn/runway/baseline/anomaly engineは作らない
 - [x] O3B-12 Moneytree実account・transactionsから今日・7日・今月のJPY briefingを生成し、private SSOTの`telegram-life-manager` credentialとLife Manager `telegram.js`だけで実送信。`message_id=40518`、CFO経路のOpenClaw/Profitable Claude参照0
 - [ ] O3B-13 reportの全数値からsource receiptへ遡れることを実証
-- [ ] O3B-14 CFO Lead Agentのgoal、input、tool、output、停止条件を定義
-- [ ] O3B-15 Bookkeeper、Cashflow、Income、Capital、Fiat/NISA、Crypto、Tax、Reporter specialistのcontractを定義
-- [ ] O3B-16 specialistが同じ統一財務台帳だけを読み書きし、agent間chatを正本にしない
-- [ ] O3B-17 FinRobot型の「数値はコード、解釈はagent、全数値は出典付き」をcontract test化
-- [ ] O3B-18 Actual Budgetのaccount/transaction/budget modelをLife Manager schemaと比較し、移植範囲を決定
-- [ ] O3B-19 Ghostfolio/rotkiのUX・会計modelについてlicense reviewとcopy禁止境界を記録
-- [ ] O3B-20 Financial Organの日次close loopと週次reflection loopを実装
-- [ ] O3B-21 specialistごとの予測、提案、実行、結果を同一decision IDで追跡
-- [ ] O3B-22 self-improvement変更をhistorical replay→shadow→canary→promotionで検証
-- [ ] O3B-23 agentが権限、損失上限、署名policyを自己変更できないことをtest
-- [ ] O3B-24 CFOが全specialist結果を一つの人間向けTelegram briefingへ統合
+- [ ] O3B-14 今月のbudget残額、subscription候補、最大支出categoryから役立つ提案を最大3件返す
+- [ ] O3B-15 Telegramで`残高`・`明細`・`今月`・`節約案`・`接続状態`を使えるようにする
+- [ ] O3B-16 日次briefingと週次reviewをLife Manager loopで自動実行
+- [ ] O3B-17 Moneytree取得失敗・stale・未接続をTelegramで明示し、古い数字を現在値として出さない
+- [ ] O3B-18 local releaseで再起動後も動作し、duplicate message 0を実証して完了
 
-完了条件: Daisの総資産、収入、支出、負債、投資、cryptoがJPYで照合され、1か月・3か月報告が正しい。
+完了条件: Moneytreeの確認済みJPY資産・収入・支出が元データへ遡れ、1・3・12か月集計、役立つ節約提案、Telegram操作、自動briefingがLife Managerだけで動く。外部待ちは利用可能になるまで明示的に除外する。
 
 ### 5.7 Order 4 — 暗号資産運用
 
