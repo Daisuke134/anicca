@@ -129,7 +129,7 @@ STATE_CHECK="$("${PSQL[@]}" -Atqc "SELECT (public.lm_panel_onboarding_state('ten
 
 "${PSQL[@]}" >/dev/null <<'SQL'
 UPDATE public.lm_users
-SET tg_onboard_stage = 'call', phone = '+819012345678', updated_at = now()
+SET tg_onboard_stage = 'call', phone = '+12025550123', updated_at = now()
 WHERE uid = 'tenant-a';
 UPDATE public.lm_panel_preferences
 SET notifications_enabled = true, call_enabled = false, updated_at = now()
