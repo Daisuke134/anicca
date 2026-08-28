@@ -33,7 +33,7 @@ def main(argv: list[str] | None = None) -> int:
     loop_id = os.environ.get("LIFE_MANAGER_LOOP_ID", "writer")
     role = os.environ.get("ARTICLE_MODEL_ROLE", "terra")
     schema_path = Path(os.environ.get("ARTICLE_CODEX_OUTPUT_SCHEMA", SCHEMA))
-    task_class = "tool-agent" if args.mode == "agent" else "composition-agent"
+    task_class = "high-value-agent" if args.mode == "agent" else "composition-agent"
     workdir = REPO_ROOT
     if args.mode == "repair":
         task_class = "writer-repair-agent"
