@@ -331,6 +331,53 @@ test("travelReminderOnce keeps the claim on throw or delivery_unknown and replay
   }
 });
 
+test("travelReminderOnce keeps an accepted receipt claim when the transport status contradicts ok", async () => {
+  const dueEvent = event({ id: "contradictory-status", startMs: NOW + 3 * T5_MS, startIso: "2026-08-28T13:15:00+09:00" });
+  let claims = 0;
+  let sends = 0;
+  let releases = 0;
+  const deps = {
+    events: [dueEvent], home: HOME, mapsKey: "maps", timezone: "Asia/Tokyo",
+    directionsRoute: async () => ({ durationSeconds: 5 * 60 }),
+    claimTravel: async () => { claims += 1; return claims === 1; },
+    unclaimTravel: async () => { releases += 1; return true; },
+    sendMessage: async () => { sends += 1; return { ok: true, result: { message_id: 803 }, status: 500 }; },
+    telegramToken: "token", supaUrl: "supa", supaKey: "key", log: () => {},
+  };
+
+  const first = await travelReminderOnce({ uid: "u-contradictory", telegram_chat_id: "chat", notifications_enabled: true }, NOW, deps);
+  const replay = await travelReminderOnce({ uid: "u-contradictory", telegram_chat_id: "chat", notifications_enabled: true }, NOW, deps);
+
+  assert.equal(first.status, "sent");
+  assert.equal(first.telegramMessageId, 803);
+  assert.equal(replay.status, "suppressed");
+  assert.equal(sends, 1);
+  assert.equal(releases, 0);
+});
+
+test("travelReminderOnce quotes reserved fallback event keys and preserves the tenant filter", async () => {
+  const summary = '予定: A, B.(C) "引用"';
+  const dueEvent = event({ id: "", summary, location: "渋谷", startMs: NOW + 3 * T5_MS, startIso: "2026-08-28T13:15:00+09:00" });
+  const uid = "tenant:alpha,beta.(gamma)";
+  const queries = [];
+  const result = await travelReminderOnce({ uid, telegram_chat_id: "chat", notifications_enabled: true }, NOW, {
+    events: [dueEvent], home: HOME, mapsKey: "maps", timezone: "Asia/Tokyo", telegramToken: "token", supaUrl: "https://supa.example", supaKey: "key",
+    fetchImpl: async (url) => { queries.push(String(url)); return { ok: true, status: 200, json: async () => [] }; },
+    directionsRoute: async () => ({ durationSeconds: 5 * 60 }),
+    claimTravel: async () => true,
+    sendMessage: async () => ({ ok: true, result: { message_id: 804 } }),
+  });
+
+  const eventKey = `${dueEvent.startMs}:${summary}`;
+  const quote = (value) => `"${String(value).replace(/\\/g, "\\\\").replace(/"/g, '\\\"')}"`;
+  assert.equal(result.status, "sent");
+  assert.equal(queries.length, 1);
+  const params = new URL(queries[0]).searchParams;
+  assert.equal(params.get("uid"), `eq.${quote(uid)}`);
+  assert.equal(params.get("event_key"), `eq.${quote(eventKey)}`);
+  assert.equal(params.get("leg"), "eq.go");
+});
+
 test("stale target go claim plus previous event return claim falls back to event location", async () => {
   const targetStart = NOW + 3 * T5_MS;
   const previous = event({ id: "previous-return", summary: "前の予定", location: "前の場所", startMs: targetStart - 90 * 60000, endMs: targetStart - 30 * 60000 });

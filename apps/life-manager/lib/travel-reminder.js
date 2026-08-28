@@ -237,13 +237,20 @@ function eventKey(event) {
   return String(event.id || `${startMs(event) === null ? "unknown" : startMs(event)}:${event.summary || ""}`);
 }
 
+function postgrestEqValue(value) {
+  const text = String(value);
+  if (!/[,:.()"\\]/.test(text)) return encodeURIComponent(text);
+  const escaped = text.replace(/\\/g, "\\\\").replace(/"/g, '\\\"');
+  return `%22${encodeURIComponent(escaped)}%22`;
+}
+
 async function readTravelClaim(uid, key, leg, supaUrl, supaKey, fetchImpl = fetch) {
   if (!supaUrl || !supaKey) return false;
   if (fetchImpl === fetch) {
     try { new URL(String(supaUrl)); } catch { return false; }
   }
   const response = await fetchImpl(
-    `${supaUrl}/rest/v1/lm_travel_log?uid=eq.${encodeURIComponent(uid)}&event_key=eq.${encodeURIComponent(key)}&leg=eq.${encodeURIComponent(leg)}&select=event_key&limit=1`,
+    `${supaUrl}/rest/v1/lm_travel_log?uid=eq.${postgrestEqValue(uid)}&event_key=eq.${postgrestEqValue(key)}&leg=eq.${postgrestEqValue(leg)}&select=event_key&limit=1`,
     { headers: { apikey: supaKey, Authorization: `Bearer ${supaKey}` } },
   ).catch(() => null);
   if (!response || response.ok === false
@@ -341,8 +348,7 @@ async function travelReminderOnce(user, nowMs = Date.now(), deps = {}) {
     logReconciliation(deps, "[travel-reminder] delivery unknown; reconciliation required");
     return { status: "delivery_unknown" };
   }
-  const status = Number(response && response.status);
-  const ok = Boolean(response && response.ok === true && (!Number.isFinite(status) || status >= 200 && status < 300));
+  const ok = Boolean(response && response.ok === true);
   const messageId = response && response.result && response.result.message_id;
   if (!ok || !Number.isInteger(messageId) || messageId <= 0) {
     let released = false;
