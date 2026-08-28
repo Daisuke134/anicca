@@ -38,7 +38,7 @@
     "owners": [
       "ai.anicca.hf-gig-browser", "ai.anicca.hf-gig-apply-direct",
       "ai.anicca.hf-gig-reply-detector", "ai.anicca.hf-gig-storefront-direct",
-      "ai.anicca.hf-gig-paid-direct", "ai.anicca.hf-gig-release-watch"
+      "ai.anicca.hf-gig-paid-direct"
     ]
   },
   "receipts": [

@@ -116,11 +116,16 @@ W1iはPR #2962/#2965で一度完了し、14 Writer labelをsparse immutable rele
 `current`は元のfull releaseへ復元した。W1g production canary `20260828-083954`はprovider rc=1後もrun、prompt、
 generation stateを保持し、prunerは古いterminal runだけを削除したためW1gは完了である。
 
-その後のconcurrent applyでdriftした`article-audit-7day`、`article-learn-whitelist`、`article-self-improve`は、
-owner idleを確認して同じsparse immutable releaseへtarget applyした。全14 Writer labelのProgramArguments、release SHA、
-`ARTICLE_ROOT`、`ARTICLE_SKILL_DIR`、`LIFE_MANAGER_REPO`は`40065a10`へ一致し、general `current`は元のfull releaseへ復元した。
-daily/resumeは同releaseでterminal PASS、received writing revenueは0である。doctorには別session所有のunmanaged TikTok
-labelが1件ある。記事公開成功と収益化成功は未達である。次の唯一のcursorはW1h false-greenとする。
+W1h codeはPR #2985でmainへmergeした。`article-daily.sh`はmodel passの`RC`をgeneration-stateへ保存した後、末尾でも
+同じ`RC`を親へ返す。main由来sparse immutable release `f4653e08cb9d7a16402c7c0e896eb42c266f221b`を全14 Writer
+labelへapplyし、ProgramArguments、release SHA、`ARTICLE_ROOT`、`ARTICLE_SKILL_DIR`、`LIFE_MANAGER_REPO`の14/14一致を
+readbackした。general `current`は元のfull releaseへ復元した。
+
+apply直後の自然wakeは既存run `20260828-083954`を`same-jst-day-unclassified-run`としてmodel前に安全停止したため、
+provider failure acceptanceには数えない。隔離runtime canaryではentrypoint非zeroが同release、同runtime run ID、
+`entrypoint_exit_<rc>`を持つterminal FAILになることを確認した。残りは同releaseの自然provider failureで、generation-stateの
+inner rcとlm-loop terminal FAILを同じwakeからreadbackすることだけである。received writing revenueは0、記事公開成功と
+収益化成功は未達である。次の唯一のcursorはW1h production acceptanceとする。
 
 Writerの経済目的は、記事に結び付いた一意な外部payment receiptを受け取ることである。記事本数は活動量として
 別に測る。

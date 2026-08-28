@@ -67,7 +67,6 @@ COCONALA_BUSINESS_LANES = {
 # their loaded argv is inspected explicitly.
 DEFAULT_EXCLUDED = {
     "ai.anicca.hf-gig-browser",
-    "ai.anicca.hf-gig-release-watch",
     "ai.anicca.life-manager-disk-cleanup",
 }
 # Negotiate is a durable supervisor rather than a periodic one-shot pass.  Waiting for
@@ -535,33 +534,13 @@ def activate(job: dict, table: dict[str, str], release: Path, dry_run: bool,
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("command", choices=("build", "activate", "status", "watch"))
+    parser.add_argument("command", choices=("build", "activate", "status"))
     parser.add_argument("--sha", help="release this commit instead of HEAD")
     parser.add_argument("--jobs", help="comma-separated labels; default is the four lanes")
     parser.add_argument("--dry-run", action="store_true", help="print the plists, load nothing")
     args = parser.parse_args()
 
     manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
-
-    if args.command == "watch":
-        # The watcher only needs the immutable commit object.  Do not merge the
-        # operator's checkout: a concurrent local commit or a temporary branch
-        # divergence must not stop release publication after fetch succeeds.
-        git("fetch", "--quiet", "origin", "main")
-        sha = git("rev-parse", "origin/main")
-        if current_sha() == sha:
-            removed = collect_old_releases()
-            if removed:
-                print(f"collected {len(removed)} old releases")
-            return 0
-        release = build(sha)
-        if current_sha() != sha:
-            publish(release)
-        print(f"release {sha[:12]} -> {release}")
-        removed = collect_old_releases()
-        if removed:
-            print(f"collected {len(removed)} old releases")
-        return 0
 
     sha = git("rev-parse", args.sha or "HEAD")
 

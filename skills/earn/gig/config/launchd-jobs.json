@@ -541,22 +541,6 @@
       "log_basename": "article-learn-whitelist"
     },
     {
-      "label": "ai.anicca.hf-gig-release-watch",
-      "lane": "release",
-      "summary": "Fast-forwards the checkout to origin/main and moves idle lanes onto the new release.",
-      "_warning": "The only job that runs from the checkout rather than a release -- it has to fetch. gig_release.py leaves it alone unless you name it, since booting it out mid-tick would kill the switch it is performing.",
-      "program": [
-        "{{PYTHON}}",
-        "{{CHECKOUT}}/skills/earn/gig/scripts/gig_release.py",
-        "watch"
-      ],
-      "env": {},
-      "StartInterval": 300,
-      "ThrottleInterval": 60,
-      "ProcessType": "Background",
-      "log_basename": "gig-release-watch-launchd"
-    },
-    {
       "label": "ai.anicca.hf-gig-browser",
       "lane": "browser",
       "summary": "Keeps the one logged-in Chromium the four lanes share on the CDP port.",

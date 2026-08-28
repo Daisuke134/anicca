@@ -864,22 +864,6 @@
       "provider_route": "deterministic",
       "state_root": "~/.openclaw"
     },
-    "hf-gig-release-watch": {
-      "cadence": {
-        "start_interval_seconds": 300
-      },
-      "cleanup": {
-        "max_age_days": 14,
-        "max_runs": 100
-      },
-      "domain": "earn",
-      "effect_class": "none",
-      "entrypoint": "skills/earn/gig/scripts/gig_release.py",
-      "label": "ai.anicca.hf-gig-release-watch",
-      "log_root": "~/.openclaw/logs",
-      "provider_route": "deterministic",
-      "state_root": "~/.openclaw"
-    },
     "hf-gig-reply-detector": {
       "cadence": {
         "keep_alive": true
@@ -3034,6 +3018,7 @@
     "ai.anicca.bounty-proactive",
     "ai.anicca.cfo-daily",
     "ai.anicca.dd-keepalive-healthcheck",
+    "ai.anicca.hf-gig-release-watch",
     "ai.anicca.larry-anicca-en-v1",
     "ai.anicca.larry-anicca-en-v2",
     "ai.anicca.larry-anicca-en-v3",

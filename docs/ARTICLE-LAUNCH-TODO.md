@@ -31,6 +31,8 @@
       `ARTICLE_SKILL_DIR`、`LIFE_MANAGER_REPO`が同じreleaseへ一致することをplistからreadbackした。
 - [ ] W1h `article-daily.sh`のinner rc=1をruntime terminal PASSへ変換しない。外部作用0を保持したまま、exact
       release/run/error classをterminal failure eventへ記録し、launchd process resultとbusiness effectを分離する。
+      code/deploy完了: PR #2985で末尾を`exit "$RC"`へ変更し、sparse immutable release `f4653e08`を全14 Writer
+      labelへapplyした。残りは同releaseの自然provider failureでgeneration-stateのinner rcとlm-loop terminal FAILをreadbackする。
 - [ ] W2 installed loopの1回のwakeで新しいsource articleと記事固有のheadlineを生成する。OpenAI Image APIの
       `model=gpt-image-2-2026-04-21`、x-request-id、request model、prompt/response/file SHA、dimensions、alt、rights receiptを保存する。
 - [ ] W3 W2のNote JAだけをprovider-native readbackし、title、body、owner、headline、paywall、URLを確認する。
