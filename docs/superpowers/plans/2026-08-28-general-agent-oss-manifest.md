@@ -18,4 +18,6 @@
 - [x] Require default `unknown`, `cloak_browser`, private authorization receipt, `application_receipt`, replay-zero, and no credential/PII/provider-specific instructions.
 - [x] Add the smallest JSON example that passes the contract.
 - [x] Run the focused provider authorization test and PII/OSS checks for only the changed paths.
-- [ ] Mark GA-12 `IN_PROGRESS` with GA-12A evidence, fetch, commit, push, and read back PR #3018.
+- [x] Mark GA-12 `IN_PROGRESS` with GA-12A evidence, fetch, commit, push, and read back PR #3018.
+
+Delivery: commit `1d87e401f`; PR #3018 is open, head-matched, and mergeable.
