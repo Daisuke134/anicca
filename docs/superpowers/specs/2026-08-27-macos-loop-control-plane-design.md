@@ -1,6 +1,6 @@
 # macOS Life Manager Loop Control Plane
 
-**Status:** Complete — TODO 1–13 evidenced and final production audit passed
+**Status:** Control plane implemented — stale ownership cleanup remains active
 **TODO ID:** `MACOS-LOOP-CONTROL-PLANE-1`  
 **Canonical registry:** `config/loop-registry.json`  
 **Scope:** macOS launchd only
@@ -226,7 +226,7 @@ Allowed values are closed and versioned with the registry schema:
 | 7 | ✅ Consolidate all model/profile selection into the shared provider router | one explicit `acct2` profile; account rotation and caller provider override 0; duplicate runner 0; active entrypoint direct auth/CODEX_HOME selection 0; Writer normal/repair/session delegated; `docs/evidence/runtime/2026-08-28-macos-loop-control-plane-provider-boundary-progress.md` |
 | 8 | ✅ Add per-loop cleanup contracts and central shared-artifact GC reconciliation | immutable loop-run wrapper; marker/terminal/protected gates; loaded/current release protection; isolated 2,097,203-byte pressure recovery; protected deletion 0; `docs/evidence/runtime/2026-08-28-macos-loop-control-plane-cleanup.md` |
 | 9 | ✅ Migrate active labels one by one: system, growth, earn, financial, mental, physical | reboot candidate 168/168 exact generated plist and loaded argv; unsafe AutoHedge subsequently retired; current managed 167, retired 43 |
-| 10 | ✅ Remove superseded installers/manifests only after registry parity and replay-zero | Gig watcher publish-only; managed healthchecks report-only or `lm-loop` delegated; Tier1 retired; doctor unmanaged 0 |
+| 10 | ⚠️ Remove superseded installers/manifests only after registry parity and replay-zero | Tier1 is retired, but obsolete `hf-gig-release-watch` was retained and currently exits 2 every five minutes; retire it instead of integrating it |
 | 11 | ✅ Run 500-loop scale test and clean-user install E2E | persistent scale test; isolated empty-user 168/168 install/readback; no model/browser starts |
 | 12 | ✅ Run reboot and natural scheduled-pass E2E on the target Mac | boot ID changed; 168/168 recovered from existing release; doctor PASS; 356 boot-window events across 72 loops; process/effect truth separated |
 | 13 | ✅ Make safe loop development discoverable to every coding agent | `skills/loop-development/SKILL.md`; one-line routing in `AGENTS.md` and `CLAUDE.md`; worktree locked against prune/remove |
@@ -293,21 +293,31 @@ Ordered operational TODO:
    apply only that label, and verify stable PID plus CDP 9324 readback. PRs
    #2946, #2947, and #2949 contain the code, release-GC prerequisite, evidence,
    and permanent skill rule.
-2. ⏳ Restore clean inventory: classify and register or retire the running
+2. ⏳ Retire `hf-gig-release-watch`. It is the obsolete Gig-only release
+   deployer, not the Gig business loop. Remove its registry row and installed
+   job through `lm-loop`, preserve the real Apply/Reply/Storefront/Paid owners,
+   and prove no code path recreates it.
+3. ⏳ Make one complete resolver table. One read-only command must show managed,
+   external, retired, and unmanaged labels together with owner/domain,
+   loaded-state, exact release, latest terminal result, and effect status.
+   Current `status all` shows only the 167 managed rows and is therefore not the
+   whole-machine resolver view.
+4. ⏳ Restore clean inventory: classify and register or retire the running
    unmanaged label `ai.anicca.provision-browser.tiktok.anicca`; `doctor` must
    return unmanaged 0 again without stopping its active browser blindly.
-3. ⏳ Consolidate marketplace ownership. CrowdWorks has four acknowledged
+5. ⏳ Consolidate marketplace ownership. CrowdWorks has four acknowledged
    external labels and all four are not loaded. The two legacy Upwork labels
    are retired and not loaded. They are not yet managed/on through the 167-row
    control-plane table.
-4. ⏳ Repair `agent-economy-loop`, the first terminal-fail/loaded-idle row.
+6. ⏳ Repair `agent-economy-loop`, the next real terminal-fail/loaded-idle row
+   after obsolete ownership rows are removed.
    Diagnose its latest event and log before changing code; preserve every
    sibling label and external effect fence.
-5. ⏳ Continue the remaining 49 terminal-fail/non-running rows strictly in
+7. ⏳ Continue the remaining terminal-fail/non-running rows strictly in
    table order, one locked worktree and one production label at a time.
-6. ⏳ Classify the 26 rows without terminal events as cadence-not-yet-due,
+8. ⏳ Classify the 26 rows without terminal events as cadence-not-yet-due,
    long-running, or missing event wiring; do not count absence as success.
-7. ⏳ Track repo-wide nonrequired security-CI debt separately from loop health:
+9. ⏳ Track repo-wide nonrequired security-CI debt separately from loop health:
    OSS boundary, PII gate, Python syntax, and dependency audit.
 
 ### TODO 1 execution state
