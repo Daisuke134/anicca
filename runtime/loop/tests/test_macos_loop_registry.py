@@ -87,6 +87,16 @@ class MacosLoopRegistryTest(unittest.TestCase):
                 violations.append((loop_id, entry["entrypoint"]))
         self.assertEqual(violations, [])
 
+    def test_active_entrypoints_do_not_depend_on_other_worktrees(self):
+        registry = json.loads((ROOT / "config/loop-registry.json").read_text())
+        forbidden = re.compile(r"/Users/[^/]+/.*(?:\.worktrees|/Projects/|/profitable-claude)")
+        violations = []
+        for loop_id, entry in registry["loops"].items():
+            path = ROOT / entry["entrypoint"]
+            if path.is_file() and forbidden.search(path.read_text(errors="replace")):
+                violations.append((loop_id, entry["entrypoint"]))
+        self.assertEqual(violations, [])
+
     def test_render_500_loops_and_status_under_five_seconds(self):
         base = entry()
         loops = {}

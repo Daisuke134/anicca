@@ -1,6 +1,6 @@
 # macOS Life Manager Loop Control Plane
 
-**Status:** TODO 8 complete / TODO 9 pending
+**Status:** TODO 13 complete / final completion audit pending
 **TODO ID:** `MACOS-LOOP-CONTROL-PLANE-1`  
 **Canonical registry:** `config/loop-registry.json`  
 **Scope:** macOS launchd only
@@ -100,6 +100,11 @@ flowchart TD
 13. After a Mac reboot, enabled loops return through launchd, `doctor` reports no
     unmanaged Life Manager labels, and a natural scheduled pass emits a uniform
     event from the installed release.
+14. Every loop change follows `skills/loop-development/SKILL.md`: one locked
+    worktree, one registry owner, repository-contained source, state outside the
+    release, test-first change, exact release apply, loaded readback, natural
+    event, and replay-zero. `AGENTS.md` and `CLAUDE.md` route agents to that
+    contract rather than duplicating it.
 
 ### Operator interface
 
@@ -179,6 +184,7 @@ Allowed values are closed and versioned with the registry schema:
 | 12 | One-label migration safety | `test_failed_migration_retains_prior_loaded_job` | OK |
 | 13 | Reboot recovery | `test_bootstrap_generation_has_enabled_recoverable_jobs` | OK |
 | 14 | Natural runtime E2E | `test_natural_pass_reports_installed_release_and_effect_state` | OK |
+| 15 | Safe loop development | `skills/loop-development/SKILL.md` plus completion audit | OK |
 
 ### E2E judgment
 
@@ -219,10 +225,11 @@ Allowed values are closed and versioned with the registry schema:
 | 6 | ✅ Add the uniform runtime event envelope at the shared runner boundary | exact 15-field schema; private idempotent JSONL; shared-runner integration; invalid-event spoof rejection; existing ledgers unchanged; `docs/evidence/runtime/2026-08-28-macos-loop-control-plane-runtime-events.md` |
 | 7 | ✅ Consolidate all model/profile selection into the shared provider router | one explicit `acct2` profile; account rotation and caller provider override 0; duplicate runner 0; active entrypoint direct auth/CODEX_HOME selection 0; Writer normal/repair/session delegated; `docs/evidence/runtime/2026-08-28-macos-loop-control-plane-provider-boundary-progress.md` |
 | 8 | ✅ Add per-loop cleanup contracts and central shared-artifact GC reconciliation | immutable loop-run wrapper; marker/terminal/protected gates; loaded/current release protection; isolated 2,097,203-byte pressure recovery; protected deletion 0; `docs/evidence/runtime/2026-08-28-macos-loop-control-plane-cleanup.md` |
-| 9 | Migrate active labels one by one: system, growth, earn, financial, mental, physical | each label has old→new loaded readback and rollback receipt |
-| 10 | Remove superseded installers/manifests only after registry parity and replay-zero | source dependency scan 0; all enabled loops still loaded |
-| 11 | Run 500-loop scale test and clean-user install E2E | render/status budgets pass; no model/browser starts |
-| 12 | Run reboot and natural scheduled-pass E2E on the target Mac | enabled recovery, exact release SHA, uniform event, official effect state |
+| 9 | ✅ Migrate active labels one by one: system, growth, earn, financial, mental, physical | reboot candidate 168/168 exact generated plist and loaded argv; unsafe AutoHedge subsequently retired; current managed 167, retired 43 |
+| 10 | ✅ Remove superseded installers/manifests only after registry parity and replay-zero | Gig watcher publish-only; managed healthchecks report-only or `lm-loop` delegated; Tier1 retired; doctor unmanaged 0 |
+| 11 | ✅ Run 500-loop scale test and clean-user install E2E | persistent scale test; isolated empty-user 168/168 install/readback; no model/browser starts |
+| 12 | ✅ Run reboot and natural scheduled-pass E2E on the target Mac | boot ID changed; 168/168 recovered from existing release; doctor PASS; 356 boot-window events across 72 loops; process/effect truth separated |
+| 13 | ✅ Make safe loop development discoverable to every coding agent | `skills/loop-development/SKILL.md`; one-line routing in `AGENTS.md` and `CLAUDE.md`; worktree locked against prune/remove |
 
 Implementation commands are standardized by this spec:
 
@@ -249,13 +256,23 @@ legacy Writer CLI delegates production normal and repair/session modes to the
 canonical router. Direct active-entrypoint auth/profile selection is zero. Evidence:
 `docs/evidence/runtime/2026-08-28-macos-loop-control-plane-provider-boundary-progress.md`.
 
-### TODO 9 execution state
+### TODO 9–13 execution state
 
-Source preflight is complete: all 169 managed entrypoints are present,
-executable, and release-relative. One third-party label is explicit external;
-two source-missing/127 labels are explicit retired. No production label has
-been cut over yet. Evidence:
-`docs/evidence/runtime/2026-08-28-macos-loop-control-plane-source-consolidation.md`.
+The 168-label reboot candidate recovered through the same launchd control plane
+after a real Mac reboot. AutoHedge was then found to bypass the shared provider
+boundary while being misclassified as effect `none`, so it was retired rather
+than silently left unsafe. Current registry truth is 167 managed, 43 retired,
+and 20 explicit external labels. Runtime source, dependencies, argv, cleanup, provider
+routing, and terminal events resolve through immutable releases. Natural
+boot-window events keep process status separate from official effect status;
+failed business loops remain visible rather than being counted as healthy.
+
+Loop development now has one repository contract:
+`skills/loop-development/SKILL.md`. Agents work in locked linked worktrees,
+change one registry TODO, keep source in this repository and state outside the
+release, use only `lm-loop` for lifecycle, and require exact loaded readback plus
+a natural event before Done. Completion evidence:
+`docs/evidence/runtime/2026-08-28-macos-loop-control-plane-completion.md`.
 
 ### TODO 1 execution state
 

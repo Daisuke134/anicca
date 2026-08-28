@@ -98,7 +98,7 @@ if [ "$ARCHIVE_RC" -ne 0 ]; then
   die "export of $SHORT failed"
 fi
 
-for package_dir in "$DEST" "$DEST/runtime/agentmail"; do
+for package_dir in "$DEST" "$DEST/runtime/agentmail" "$DEST/apps/life-manager"; do
   [ -f "$package_dir/package.json" ] && [ -f "$package_dir/package-lock.json" ] || continue
   [ -n "$NPM_BIN" ] || die "npm is required to build locked runtime dependencies"
   (cd "$package_dir" && "$NPM_BIN" ci --omit=dev --ignore-scripts) || \

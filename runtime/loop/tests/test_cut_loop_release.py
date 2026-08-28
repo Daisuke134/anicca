@@ -37,9 +37,10 @@ class CutLoopReleaseTest(unittest.TestCase):
 
             self.assertEqual(result.returncode, 0, result.stderr)
             recorded = calls.read_text().splitlines()
-            self.assertEqual(len(recorded), 2)
+            self.assertEqual(len(recorded), 3)
             self.assertTrue(recorded[0].endswith("|ci --omit=dev --ignore-scripts"))
             self.assertIn("/runtime/agentmail|ci --omit=dev --ignore-scripts", recorded[1])
+            self.assertIn("/apps/life-manager|ci --omit=dev --ignore-scripts", recorded[2])
 
 
 if __name__ == "__main__":
