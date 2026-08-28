@@ -2,7 +2,7 @@
 
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { detectSubscriptions, normalizeTransaction, summarizePeriods, summarizeTransactions } = require("./financial-ledger.js");
+const { computeFinancialHealth, detectSubscriptions, normalizeTransaction, summarizePeriods, summarizeTransactions } = require("./financial-ledger.js");
 
 test("excludes both sides of an internal transfer", () => {
   assert.deepEqual(summarizeTransactions([
@@ -38,4 +38,13 @@ test("summarizes one, three, and twelve calendar months", () => {
   assert.equal(summary["1m"].net_jpy, 300);
   assert.equal(summary["3m"].net_jpy, 150);
   assert.equal(summary["12m"].net_jpy, 150);
+});
+
+test("computes the minimal financial health totals", () => {
+  assert.deepEqual(computeFinancialHealth({
+    accounts: [{ balance_jpy: 1000 }],
+    liabilities: [{ balance_jpy: 300 }],
+    transactions: [{ amount_jpy: 500 }, { amount_jpy: -200 }],
+    budget_jpy: 800,
+  }), { net_worth_jpy: 700, income_jpy: 500, spending_jpy: 200, cash_flow_jpy: 300, budget_remaining_jpy: 600 });
 });
