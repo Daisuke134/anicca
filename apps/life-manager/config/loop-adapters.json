@@ -82,6 +82,16 @@
       "factory_export": "createLumaRsvpLoopAdapter"
     },
     {
+      "adapter_id": "marketplace-application",
+      "loop_id": "life-manager.manager",
+      "capability": "marketplace.application",
+      "effect_classes": [
+        "publish"
+      ],
+      "module_ref": "lib/marketplace-application-adapter.js",
+      "factory_export": "createMarketplaceApplicationLoopAdapter"
+    },
+    {
       "adapter_id": "connector-coverage-refresh",
       "loop_id": "connector.coverage",
       "capability": "connector.coverage.refresh",
