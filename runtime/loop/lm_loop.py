@@ -18,7 +18,7 @@ from runtime.loop.macos_launchd_inventory import extract_release, parse_disabled
 from runtime.loop.macos_loop_registry import validate_registry
 from runtime.loop.lm_loop_apply import apply_registry, install_one
 from runtime.loop.lm_loop_lifecycle import lifecycle, lifecycle_one
-from runtime.loop.runtime_event import validate_runtime_event
+from runtime.loop.runtime_event import append_runtime_event, build_install_event, validate_runtime_event
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -112,7 +112,7 @@ def _last_event(state_root: str, loop_id: str | None = None) -> dict | None:
             continue
         if loop_id is not None and value.get("loop_id") != loop_id:
             continue
-        if value.get("status") == "running":
+        if value.get("phase") != "report":
             continue
         return value
     return None
@@ -218,7 +218,8 @@ def activate_current(current: Path, release_root: Path,
 
 def apply_live(release_root: Path, agents_dir: Path, launchctl_safe: Path,
                target: str | None = None, *, current: Path | None = None,
-               lock_path: Path | None = None) -> list[dict]:
+               lock_path: Path | None = None,
+               event_writer=append_runtime_event) -> list[dict]:
     release_root = release_root.resolve()
     current = Path(current or "~/loops/current").expanduser()
     with _apply_lock(current, lock_path):
@@ -238,20 +239,27 @@ def apply_live(release_root: Path, agents_dir: Path, launchctl_safe: Path,
         for item in plan:
             assert_current()
             target = agents_dir / f"{item['label']}.plist"
+            result = None
             if target.is_file() and target.read_bytes() == item["plist_bytes"]:
                 rc, printed = _safe_launchctl(
                     launchctl_safe, ["print", f"gui/{os.getuid()}/{item['label']}"])
                 from runtime.loop.lm_loop_apply import _loaded_arguments
                 loaded = _loaded_arguments(printed) if rc == 0 else []
                 if loaded == item["expected_arguments"]:
-                    results.append({"ok": True, "label": item["label"],
-                                    "loaded_arguments": loaded, "release_sha": release_sha,
-                                    "changed": False})
-                    continue
-            assert_current()
-            result = install_one(
-                item, target, lambda args: _safe_launchctl(launchctl_safe, args))
-            result["changed"] = True
+                    result = {"ok": True, "label": item["label"],
+                              "loaded_arguments": loaded, "release_sha": release_sha,
+                              "changed": False}
+            if result is None:
+                assert_current()
+                result = install_one(
+                    item, target, lambda args: _safe_launchctl(launchctl_safe, args))
+                result["changed"] = True
+            entry = registry["loops"][item["loop_id"]]
+            event = build_install_event(
+                loop_id=item["loop_id"], domain=entry["domain"], release_sha=release_sha,
+                provider=entry["provider_route"], effect_class=entry["effect_class"])
+            event_writer(Path(os.path.expanduser(entry["state_root"])) / "events.jsonl", event)
+            result["install_event_id"] = event["event_id"]
             results.append(result)
         return results
 

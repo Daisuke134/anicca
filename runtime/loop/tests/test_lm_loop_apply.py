@@ -291,6 +291,7 @@ class LmLoopApplyTest(unittest.TestCase):
             self.root / "apply.lock",
             expected_arguments,
         )
+        events = []
 
         result = apply_live(
             release,
@@ -298,6 +299,7 @@ class LmLoopApplyTest(unittest.TestCase):
             values["launchctl_safe"],
             current=current,
             lock_path=values["lock_path"],
+            event_writer=lambda path, event: events.append((path, event)),
         )
 
         self.assertTrue(result[0]["ok"])
@@ -313,6 +315,9 @@ class LmLoopApplyTest(unittest.TestCase):
             f"print gui/{os.getuid()}/ai.anicca.example",
         ])
         self.assertTrue((values["agents_dir"] / "ai.anicca.example.plist").is_file())
+        self.assertEqual(len(events), 1)
+        self.assertEqual((events[0][1]["loop_id"], events[0][1]["phase"]),
+                         ("example", "plan"))
 
     def test_launchctl_recorder_rejects_wrong_service(self):
         launchctl_safe, _ = self._launchctl_recorder(["/release/bin/lm-loop-run", "example", "/release"])

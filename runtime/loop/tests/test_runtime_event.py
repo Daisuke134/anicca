@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from runtime.loop.runtime_event import append_runtime_event, build_runtime_event, validate_runtime_event
+from runtime.loop.runtime_event import append_runtime_event, build_install_event, build_runtime_event, validate_runtime_event
 
 
 BASE = {
@@ -56,6 +56,14 @@ class RuntimeEventTest(unittest.TestCase):
         )
         self.assertEqual(event["effect_status"], "not_applicable")
         self.assertEqual(event["status"], "fail")
+
+    def test_install_event_is_plan_truth_not_external_effect_truth(self):
+        event = build_install_event(
+            loop_id="example", domain="earn", release_sha="b" * 40,
+            provider="shared-agent-runner", effect_class="application")
+        self.assertEqual((event["phase"], event["status"], event["effect_status"]),
+                         ("plan", "pass", "unknown"))
+        self.assertEqual(event["evidence_refs"], ["lm-loop://example/install/summary.json"])
 
 
 if __name__ == "__main__":
