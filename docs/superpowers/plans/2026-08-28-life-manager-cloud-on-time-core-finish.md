@@ -410,7 +410,7 @@ Fresh Sol checks tenant scope, Stripe host validation, trial truth, XSS/textCont
 **Files:**
 
 - Modify: `apps/life-manager/lib/user-selector.js`
-- Test: `apps/life-manager/lib/user-selector.test.js`
+- Test: `apps/life-manager/lib/user-selector.test.js`, `apps/life-manager/lib/daily-preflight.test.js`
 - Verify unchanged consumers: `apps/life-manager/scheduler.js`, `apps/life-manager/lib/daily-preflight.js`
 
 **Interfaces:**
@@ -442,6 +442,8 @@ test("active comp removes only the entitlement predicate", () => {
 ```
 
 Retain the exact-two-caller source assertion.
+
+Update the existing daily-preflight consumer assertion to require the exact `or=(paid.is.true,trial_expires_at.gt.<encoded-clock>)` query parameter instead of the retired standalone `paid=is.true` parameter. Preserve its supported-provider and phone-optional assertions. This test is a consumer of the selector interface; `daily-preflight.js` remains unchanged.
 
 - [ ] **Step 2: Run RED**
 
@@ -481,7 +483,7 @@ Expected: PASS. Mutation-check `.gt.` to `.gte.` by requiring the exact filter t
 - [ ] **Step 5: Commit and fresh review**
 
 ```bash
-git add apps/life-manager/lib/user-selector.js apps/life-manager/lib/user-selector.test.js
+git add apps/life-manager/lib/user-selector.js apps/life-manager/lib/user-selector.test.js apps/life-manager/lib/daily-preflight.test.js
 git commit -m "feat(life-manager): admit active trial tenants"
 ```
 
