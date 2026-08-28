@@ -1,15 +1,20 @@
 # X成長ループ3本 実験仕様・運用状況
 
-## 実投稿は成立したが、現在の24時間運転は停止している
+## 実投稿は成立し、6 jobは同じmain releaseへ復旧した
 
 3種類の投稿経路は、実際のX投稿と公式URLの読み戻しまで成功している。したがって、
 「日本語リポスト」「英語リポスト」「中国語圏の情報を使った英語オリジナル投稿」が
 技術的に成立することは確認できた。
 
-ただし、現在の本番運用は完了していない。loaded launchd jobが、cleanupで削除された
-release `2b3eb470…` を実行先として保持しており、pass 3本とhealthcheck 3本の直近終了は
-すべて `78: EX_CONFIG` である。現在のrelease `87001ce0…` は存在するが、6 jobへまだ
-再適用されていない。つまり、**実験機能は実証済みだが、24時間運転は現在停止中**である。
+6 jobをGitHub main commit `c50e98ff…` の同じimmutable releaseへ適用し、ProgramArgumentsと
+実ファイルをreadbackした。しかし09:08に別のproduction apply ownerが6 plistをmain祖先
+`8377ba1b…` へ一括更新した。worktreeやbranchの直接実行ではないが、複数control-plane ownerが
+同じplistを同時更新できる競合は残る。release作成時のGCがloaded releaseを保持する修正は有効である。
+
+ただし、**実験基盤の復旧と、実験の勝敗確定は別である**。復旧後wakeでは、Tweeterは
+中国語圏5候補からdraftを作ったがcriticが公開前に棄却し、English Repostはaffiliate
+payload revisionを通せず、どちらも投稿0だった。Dice Repostで見つかったmanaged loop IDの
+不一致はmainで修正済みだが、最新releaseでの実投稿readbackはまだ残る。
 
 ## コードはmain 1本、worktreeは作業中だけ使う
 
@@ -87,9 +92,8 @@ flowchart LR
 | Dice Repost | `@diceai0` | 日本語の引用投稿 | Xの日本語・英語投稿 | 毎時5分・35分 | `~/loops/x-repost-ja` |
 | Chinese-source Tweeter | `@selawmqt` | 英語の単独投稿 | 中国語圏の公開ページ | 毎時15分 | `~/loops/x-tweeter` |
 
-`config/loop-registry.json` にはTweeterが15分・45分として残っている。`loop.toml`の
-毎時15分と矛盾するため、復旧時に毎時15分へ統一する。英語リポストの0分・30分と同じ
-browser identityを使うので、45分を残すと不要な投稿数増加と長時間passの重なりを招く。
+`loops/x-tweeter/loop.toml`、`config/loop-registry.json`、loaded plistはすべて毎時15分で
+一致している。English Repostの0分・30分、Diceの5分・35分と投稿開始時刻を分ける。
 
 ## 実際に何が投稿されるか
 
@@ -178,18 +182,17 @@ tone weightは0.5、original比率は0.05ずつ動かす。1回の結果で全�
 - 同じslotの再wakeでledger行数が増えないことを確認した
 - Life Managerの公開mainへ実装、テスト、READMEを統合した
 
-## loaded releaseが削除され、現在は6 jobとも停止している
+## release削除事故は修正し、同じmain releaseへ統一した
 
-現在loadedされている6 jobは、exact release
-`/Users/anicca/loops/releases/20260828T045303-2b3eb470` を参照している。このdirectoryは既に
-cleanupで削除されているため、実行entrypoint `bin/lm-loop-run` が存在しない。結果として、
-3 passと3 healthcheckはすべて `78: EX_CONFIG` で停止している。
+事故原因はrelease作成scriptと中央cleanupが別々にGCを持ち、前者がloaded plistのexact pathを
+保護しなかったことである。release作成scriptを中央GCへ一本化し、currentとloaded plistを
+保護する回帰テストを追加した。実際に旧loaded release `defa620c…` を残したまま次releaseを
+作成できた。
 
-一方、`~/loops/current` はrelease `87001ce0…` を指しており、GitHub `origin/main` の祖先である。
-原因は、loaded jobが保持するexact releaseとcleanupの保持対象が一致していないことである。
-
-Chinese candidate cacheも現在0件である。これは新しい検索実装が存在しないという意味ではない。
-停止後に0件receiptがlatestへ上書きされた状態なので、runtime復旧後に再収集が必要である。
+09:08時点のinstalled plistは6本ともexact release
+`/Users/anicca/loops/releases/20260828T090440-8377ba1b` を参照する。これはorigin/main祖先だが、
+一部loaded stateとterminal eventが追随していない。Tweeterの復旧wakeは中国語圏5候補を収集し、
+公開前critic棄却だったため、このwakeの外部作用と重複作用はともに0である。
 
 ## 残TODO — この順番で閉じる
 
@@ -197,7 +200,7 @@ Daisがbranchを選んだり、worktreeを手作業で削除したりする必�
 merge状態をread-onlyで確認し、安全な対象だけを整理する。同じworktreeを別セッションが使用中と
 判定した場合だけ、競合する作業を止めずにDaisへ選択を求める。
 
-### P0: 6 jobを存在するexact releaseへ戻す
+### 完了: 6 jobを存在するexact releaseへ戻す
 
 - `origin/main`から新しいimmutable releaseを作る
 - `runtime/`、`skills/x-repost`、`skills/x-tweeter`、`loops/`、`bin/`、`lib/`をreleaseへ含める
@@ -205,25 +208,34 @@ merge状態をread-onlyで確認し、安全な対象だけを整理する。同
 - loaded `ProgramArguments`、release SHA、実ファイルの存在をreadbackする
 - 6 jobの直近終了を0へ戻す
 
-### P0: cleanupがloaded releaseを消さない契約を追加する
+### 完了: cleanupがloaded releaseを消さない契約を追加する
 
 - cleanup候補から、launchdが現在参照しているreleaseを除外する
 - `current`だけでなくloaded plistのexact pathもpinとして扱う
 - cleanup実行後に6 entrypointが存在することを回帰テストする
 - current、previous、loadedの最低3世代を混同しない
 
-### P0: cadenceの正本を一致させる
+### 完了: cadenceの正本を一致させる
 
 - Tweeterを毎時15分に統一する
 - `loops/x-tweeter/loop.toml`、`config/loop-registry.json`、loaded plistの3つを照合する
 - English Repostの0分・30分、Diceの5分・35分と重ならないことを確認する
 
-### P0: runtime復旧後のE2Eを再実行する
+### P0: 最新releaseで公開E2Eとreplay-zeroを閉じる
 
 - English Repost: live X候補、英語quote、公式status URL
 - Dice Repost: 日本語または英語source、日本語quote、公式status URL
 - Chinese-source Tweeter: 中国語source、原文・英訳receipt、英語original、公式status URL
 - 各レーンのsecond wakeで同じsourceの重複作用が0であることを確認する
+- English Repostのaffiliate payload revision failを、一般repostの成功と混同せず解消する
+- Dice Repostの最新release wakeを完了し、healthcheckのstale警告を0へ戻す
+
+### P0: production apply ownerを1つにする
+
+- release作成と全registry applyを行う唯一のcontrol-plane jobを特定する
+- 手動・別sessionのapplyをowner leaseまたはcompare-and-swapで拒否する
+- apply前後にexpected SHAを照合し、途中で別SHAへ変わったらfail-closeする
+- 6 plistが同じSHAのまま1 cadence維持されることをreadbackする
 
 ### P1: 計測をためて最初の比較を閉じる
 
@@ -236,12 +248,12 @@ merge状態をread-onlyで確認し、安全な対象だけを整理する。同
 
 - 全worktreeを`使用中`、`dirty`、`未merge`、`merge済みclean`に分類する
 - 実行中agentが所有するworktreeと、dirty・未mergeのworktreeは保護する
-- merge済みcleanなworktreeを`git worktree remove`で削除する
+- merge済みcleanなworktree 5件は削除済み。残る21件を同じ基準で継続整理する
 - 対応するlocal・remote feature branchを削除する
 - 永続branchが`main`だけになっていることを確認する
 - 新しいPRがmergeされたらbranch/worktreeを片付ける手順をrelease workflowへ組み込む
 
-## 6 jobの復旧とreplay-zeroで運用完了とする
+## 配置復旧は完了、公開E2Eとreplay-zeroで運用完了とする
 
 次のすべてを満たした時点で、実験基盤と現在の本番運用を完了とする。
 
