@@ -11,6 +11,7 @@ const { DISCOVERY_STRINGS } = require("./i18n.js");
 const { buildScorePeriods, computePanelScores } = require("./panel-score-semantics.js");
 const { presentPanelSection } = require("./panel-presentation.js");
 const { normalizePhone } = require("./telegram-onboard.js");
+const { paymentLink } = require("./payment-link.js");
 
 const ENDPOINTS = new Set(["timeline", "scores", "ledger", "gates", "settings"]);
 const ONBOARDING_ACTIONS = new Set(["name.save", "home.save", "notifications.enable", "phone.save", "phone.skip", "call.enable", "call.skip", "payment.skip"]);
@@ -323,16 +324,6 @@ function sendPanelSection(res, section, candidate, opts) {
   }
 }
 
-function paymentLink(opts = {}, scope = {}) {
-  const value = String(opts.stripePaymentLink || opts.paymentLink || process.env.LM_STRIPE_PAYMENT_LINK || process.env.STRIPE_PAYMENT_LINK || "").trim();
-  try {
-    const url = new URL(value);
-    if (url.protocol !== "https:" || url.hostname !== "buy.stripe.com" || !scope.uid || url.username || url.password || url.pathname.length <= 1) return "";
-    url.searchParams.set("client_reference_id", String(scope.uid));
-    return url.toString();
-  } catch { return ""; }
-}
-
 function onboardingError(message, status) { const error = new Error(message); error.status = status; return error; }
 function normalizedOnboardingPhone(value) {
   const raw = String(value || "").trim();
@@ -406,16 +397,34 @@ function onboardingMutation(body, pathAction) {
 function onboardingResponse(value, opts = {}, scope = {}) {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw onboardingError("onboarding_unavailable", 502);
   const body = {};
-  for (const key of ["step", "stage", "name", "calendarConnected", "homeAddress", "notificationsEnabled", "phone", "callEnabled", "paid"]) {
+  for (const key of ["step", "stage", "name", "calendarConnected", "homeAddress", "notificationsEnabled", "phone", "callEnabled", "paid", "trialExpiresAt", "trialActive"]) {
     if (Object.hasOwn(value, key)) body[key] = value[key];
   }
-  const aliases = { pay: "payment", done: "dashboard", gmail: "dashboard" };
+  const aliases = { payment: "dashboard", pay: "dashboard", done: "dashboard", gmail: "dashboard" };
   body.step = aliases[String(body.step || body.stage || "")] || String(body.step || body.stage || "");
-  if (body.step === "payment" || (body.step === "dashboard" && body.paid !== true)) {
+  if (body.step === "payment") {
     const link = paymentLink(opts, scope);
     if (!link) throw onboardingError("payment_unavailable", 503);
     body.paymentLink = link;
-  } else delete body.paymentLink;
+  } else if (body.step === "dashboard" && body.paid !== true) {
+    const link = paymentLink(opts, scope);
+    if (link) body.paymentLink = link;
+  }
+  return body;
+}
+
+async function addNextEvent(body, scope, opts) {
+  body.nextEvent = null;
+  const nowMs = opts.nowMs == null ? Date.now() : opts.nowMs;
+  try {
+    const result = await timeline(scope.uid, { ...opts, nowMs });
+    const next = (result && Array.isArray(result.events) ? result.events : []).find((item) => {
+      if (!item || item.is_helper === true || item.helper === true) return false;
+      const startMs = Date.parse(String(item.start_at || ""));
+      return Number.isFinite(startMs) && startMs > nowMs;
+    });
+    if (next) body.nextEvent = { summary: String(next.summary || "予定"), startAt: next.start_at };
+  } catch { body.nextEvent = null; }
   return body;
 }
 
@@ -644,7 +653,9 @@ async function handlePanelApiRequest(req, res, opts = {}) {
       try {
         await refreshCalendar(scope, commandStore, opts);
         const state = await (commandStore.readOnboardingState || (() => { throw onboardingError("onboarding_unavailable", 502); }))(scope);
-        sendJson(res, 200, onboardingResponse(state, opts, scope));
+        const body = onboardingResponse(state, opts, scope);
+        if (body.step === "dashboard") await addNextEvent(body, scope, opts);
+        sendJson(res, 200, body);
       } catch (error) { sendJson(res, error.status || 502, { error: ["payment_unavailable", "unauthorized", "calendar_unavailable"].includes(error.message) ? error.message : "onboarding_unavailable" }); }
       return;
     }
