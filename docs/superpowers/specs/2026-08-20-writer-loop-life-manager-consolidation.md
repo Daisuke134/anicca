@@ -2,6 +2,28 @@
 
 状態: 実装順序を固定。公開成功を宣言する仕様ではない。
 
+## Current W0 production acceptance
+
+Writer停止の直接原因だったlegacy PID-only publication lockを回収した。旧lockは
+`owner.pid=37810`だけを持ち、実PIDは不在だった。修復はdead PIDの二重確認、directory identity、
+unique staging、atomic rename、signal rollback、partial metadata、quarantine collisionを21ケースで検証し、
+live/invalid/ambiguous ownerを変更しない。focused lock、start-control、disk-floor、関連pytest 42件、
+shell syntax、diff check、fresh adversarial reviewはPASSした。PR #2952をmainへmergeし、main由来release
+`edcc3577bb54a488c3118e53cb70f85f157fee7a`を作成した。
+
+production applyは`article-daily`、`article-resume`、`article-healthcheck`を一件ずつ行った。同releaseへ
+3 labelのloaded argv、state root、installed/event SHAが一致し、dailyは13:36、healthcheckは13:42、
+resumeは13:43に自然terminal PASSとなった。publication lockはdaily終了後に消滅した。全167 loopの
+before/final比較でrelease変更はこの3件だけで、doctorはbefore/finalとも`ok=true`、missing/unmanaged/
+retiredは0である。evidenceはrepo外
+`~/.local/state/life-manager/evidence/writer-w0/{before,final}-{status,doctor}.json`に保存する。
+
+W0 wakeは新run `20260828-043519`を作成したが、providerはpublication前にrc=1で停止し、URL、publication
+state、money/sales ledger rowは0だった。ここで次の独立欠陥を観測した。`prune-article-runs.py`がこの未完runを
+同じpassで削除し、`article-daily.sh`はinner rc=1でも最終exit 0、runtime eventをPASSにした。W0 lock
+修復自体は成立しているが、W2の前にdata lossとfalse-greenを閉じる必要がある。resumeは既存quality run
+`20260821-130847`を処理し、`retryable-incomplete`を保持して外部公開しなかった。
+
 ## Writer $10k monthly / OSS money playbook contract
 
 Writerの経済目的は、記事に結び付いた一意な外部payment receiptを受け取ることである。記事本数は活動量として

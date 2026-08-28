@@ -33,14 +33,14 @@
 - Consumes: legacy lock directory with `owner.pid` and optional `owner.start`
 - Produces: acquired current lock or terminal JSON receipt with no publication effect
 
-- [ ] Write a failing fixture proving a dead legacy PID-only lock currently returns success without acquiring the lock.
-- [ ] Run the fixture and preserve the exact RED output.
-- [ ] Implement the minimum identity-stable quarantine path and nonzero terminal failure for unsafe ambiguity.
-- [ ] Run the lock fixture, Writer focused tests, and `bash -n skills/writer-agent/article-daily.sh`.
-- [ ] Save `lm-loop doctor all` and `lm-loop status all` before snapshots with every label, release, argv, state root, and terminal receipt.
-- [ ] Commit, push, open a PR, obtain fresh read-only review, merge, and cut a main-derived immutable release.
-- [ ] Apply `article-daily`, `article-resume`, and `article-healthcheck` one at a time with `LIFE_MANAGER_APPLY_TARGET`; read back each exact release SHA, argv, state root, and terminal receipt before applying the next label.
-- [ ] Save the same all-loop after snapshots and fail the task unless only those three Writer labels changed and every sibling release, state root, and plist/argv is unchanged. Accept a sibling receipt change only as a valid natural terminal advancement from the same owner with no new failure or duplicate effect.
+- [x] Write a failing fixture proving a dead legacy PID-only lock currently returns success without acquiring the lock.
+- [x] Run the fixture and preserve the exact RED output.
+- [x] Implement the minimum identity-stable quarantine path and nonzero terminal failure for unsafe ambiguity.
+- [x] Run the lock fixture, Writer focused tests, and `bash -n skills/writer-agent/article-daily.sh`.
+- [x] Save `lm-loop doctor all` and `lm-loop status all` before snapshots with every label, release, argv, state root, and terminal receipt.
+- [x] Commit, push, open a PR, obtain fresh read-only review, merge, and cut a main-derived immutable release.
+- [x] Apply `article-daily`, `article-resume`, and `article-healthcheck` one at a time with `LIFE_MANAGER_APPLY_TARGET`; read back each exact release SHA, argv, state root, and terminal receipt before applying the next label.
+- [x] Save the same all-loop after snapshots and fail the task unless only those three Writer labels changed and every sibling release, state root, and plist/argv is unchanged. Accept a sibling receipt change only as a valid natural terminal advancement from the same owner with no new failure or duplicate effect.
 
 ### Task 2: Prove one complete headline-backed article run
 
