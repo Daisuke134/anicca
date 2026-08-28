@@ -84,7 +84,8 @@ def main() -> int:
     profile.mkdir(mode=0o700, parents=True, exist_ok=True)
     context = launch_persistent_context(
         str(profile), headless=False,
-        args=[f"--remote-debugging-port={port}", "--remote-allow-origins=*"],
+        args=[f"--remote-debugging-port={port}", "--remote-allow-origins=*",
+              "--disable-features=MacAppCodeSignClone"],
     )
     pages = context.pages
     page = pages[0] if pages else context.new_page()
