@@ -8,6 +8,7 @@ import fcntl
 import json
 import os
 import plistlib
+import re
 import subprocess
 import sys
 import time
@@ -115,9 +116,14 @@ def _last_event(state_root: str) -> dict | None:
 
 def _release_from_plist(path: Path) -> str | None:
     try:
-        plist = plistlib.load(path.open("rb"))
+        with path.open("rb") as handle:
+            plist = plistlib.load(handle)
     except Exception:
         return None
+    release_sha = str((plist.get("EnvironmentVariables") or {}).get(
+        "LIFE_MANAGER_RELEASE_SHA") or "")
+    if re.fullmatch(r"[0-9a-f]{40}", release_sha):
+        return release_sha
     args = list(map(str, plist.get("ProgramArguments") or []))
     release = extract_release(" ".join(args))
     if release:
