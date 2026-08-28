@@ -272,7 +272,13 @@ def codex_output_schema(schema: Any, result_path: Path) -> Path:
 
     prefix = result_path.name.removesuffix(".result.json")
     path = result_path.with_name(f"{prefix}.codex-output-schema.json")
-    atomic_json(path, compatible(schema))
+    provider_schema = compatible(schema)
+    if provider_schema == {}:
+        provider_schema = {
+            "type": "object", "properties": {}, "required": [],
+            "additionalProperties": False,
+        }
+    atomic_json(path, provider_schema)
     return path
 
 
