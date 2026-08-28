@@ -1,5 +1,48 @@
 # AUTOMATON ARTICLE → LAUNCH — full ordered TODO (the single place; do in order)
 
+## Current Writer money order
+
+この順序がWriterの現在の実行cursorである。後続項目は前項のreceiptなしに開始しない。
+
+- [ ] W0 stale publication lock互換を修復する。`owner.pid`だけの旧lockについて、実PID不在、start token取得不能、
+      directory identity不変を確認した場合だけquarantineし、新lockを取得する。`identity unavailable`を成功扱いの
+      exit 0にせずterminal failure receiptへ残す。
+- [ ] W1a `lm-loop doctor all`と`lm-loop status all`で全loopのlabel、release、argv、state root、terminal receiptをbefore保存する。
+- [ ] W1b current `origin/main`からWriter修復を含むimmutable releaseを作る。
+- [ ] W1c `LIFE_MANAGER_APPLY_TARGET=article-daily`だけをapplyし、release SHA、argv、state root、terminal receiptをreadbackする。
+- [ ] W1d 同じreleaseから`article-resume`だけをtarget applyして同じ項目をreadbackする。
+- [ ] W1e 同じreleaseから`article-healthcheck`だけをtarget applyして同じ項目をreadbackする。
+- [ ] W1f `lm-loop doctor all`と`lm-loop status all`をafter保存し、W1aとの差分がWriter 3 labelだけで、
+      sibling loopのrelease/state/plist/argv変更0であることを証明する。自然wakeで進んだsibling receiptは同じownerの
+      valid terminal advancementとして分離し、停止・失敗・重複作用へのregressionがないことを確認する。
+- [ ] W2 installed loopの1回のwakeで新しいsource articleと記事固有のheadlineを生成する。OpenAI Image APIの
+      `model=gpt-image-2-2026-04-21`、x-request-id、request model、prompt/response/file SHA、dimensions、alt、rights receiptを保存する。
+- [ ] W3 W2のNote JAだけをprovider-native readbackし、title、body、owner、headline、paywall、URLを確認する。
+- [ ] W4 W2のSubstack JAだけを同じ項目でprovider-native readbackする。
+- [ ] W5 W2のSubstack ENだけを同じ項目でprovider-native readbackする。
+- [ ] W6 W2のX Article JAだけを同じ項目でprovider-native readbackする。
+- [ ] W7 W2のinstalled loopを2回目wakeし、article、payment row、notificationのduplicate effect=0を証明する。
+- [ ] W8 `WinnerObservation` schemaを実装し、source、observed_at、evidence excerpt/hash、fact/inference、
+      transfer hypothesisの欠落を拒否する。
+- [ ] W9 winner researcher promptを既存research境界へ接続する。
+- [ ] W10 mechanism adapter promptを接続し、1変数experimentだけを許可する。
+- [ ] W11 article builderとrevenue reviewer promptを既存generation/review境界へ接続する。本文・画像・brand copyを拒否する。
+- [ ] W12 learning reviewer promptを既存learning境界へ接続し、losing experimentを保存する。
+- [ ] W13 note purchase/fee/refund/payoutをartifact/runへjoinする。
+- [ ] W14 Substack purchase/fee/refund/payoutをartifact/runへjoinする。
+- [ ] W15 editorial/self-owned purchase/fee/refund/payoutをartifact/runへjoinする。
+- [ ] W16 最初のreceived writing paymentを公式readbackする。view、like、pending、availableはrevenue 0/unknownのままにする。
+- [ ] W17 1日1本を7 terminal runs連続観測する。headline readback、payment attribution、Telegram receipt、
+      duplicate=0を各runで保持する。
+- [ ] W18 W17と最初のreceived payment後だけ、06:00/14:00/22:00の3独立slotを追加する。各slotは異なるtopic、
+      unique run、同じ品質・money gateを持ち、記事当たりexpected net revenueが下がれば1日1本へ戻す。
+- [ ] W19 OSS packageを別tenantへinstallし、credential/state/receipt交差0を証明する。
+- [ ] W20 W19 tenantの実provider draft、headline、money ledgerをreadbackし、2回目wakeでreplay-zeroを証明する。
+      「誰でも必ず儲かる」とは表示しない。
+- [ ] W21 完全なcalendar monthのunique net received writing payoutsを受領日ECB rateのFX receiptでUSD換算し、
+      $10,000以上であることをreadbackする。rate欠落はunknownで加算しない。
+      Writer software revenueはwriting payoutと別streamで報告する。
+
 The end of this list = the product is fully made + announced. Article = `~/anicca-project/docs/articles/
 2026-06-11-automaton-jp.md` (worktree `~/.cache/anicca-article-wt`, branch `docs/frank-article`).
 

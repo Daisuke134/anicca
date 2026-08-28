@@ -2,6 +2,37 @@
 
 状態: 実装順序を固定。公開成功を宣言する仕様ではない。
 
+## Writer $10k monthly / OSS money playbook contract
+
+Writerの経済目的は、記事に結び付いた一意な外部payment receiptを受け取ることである。記事本数は活動量として
+別に測る。
+成功者からは読者、offer、無料/有料境界、価格、cadence、acquisition、conversion、retention、economicsの
+仕組みだけを学ぶ。本文、見出し、画像、人格、ブランド、未検証の収益claimはコピーしない。正本playbookと
+canonical promptsは`skills/writer-agent/reference/proven-writer-money-playbook.md`に置く。実行cursorの正本は
+`docs/ARTICLE-LAUNCH-TODO.md`のW0以降だけである。本spec内のQ/A表は履歴と依存証拠であり、独立cursorとして
+実行しない。
+
+各記事は記事固有のheadline imageを必須とする。OpenAI Image APIへ固定snapshot
+`model=gpt-image-2-2026-04-21`を明示し、`x-request-id`、request model、prompt SHA、response SHA、画像SHA、
+寸法、rights provenance、alt textをrun receiptへ保存する。provider-native readbackで
+headline imageが存在し本文と一致するまで公開完了としない。画像は長文、捏造数値、第三者logoを含めない。
+
+収益面は`skills/writer-agent/config/revenue-surfaces.json`を正本とし、note paid article、Substack subscription、editorial fee、
+self-owned publicationを直接writing revenueとして扱う。view、like、draft、subscriber projection、pending、
+availableはreceived cashではない。OSS版は同じresearch→write→image→publish→readback→money→learn契約を
+利用できる。credential、account、state、receiptはrepo外に置き、利用者ごとに完全分離する。OSSは収益機会を
+再現可能にするが、利益を保証しない。
+
+初期cadenceは1 source article/dayである。7回連続terminal completion、全destinationのheadline/native
+readback、replay duplicate=0、最初のreceived writing paymentが揃った後だけ、06:00/14:00/22:00の3 slotを
+独立runとして検証する。品質、conversion、または記事当たりexpected net revenueが低下したら直前の収益性ある
+cadenceへ戻す。月$10kは完全なcalendar monthに属するunique net received writing payoutsをUSDへ換算して判定する。
+原通貨を保持し、receipt受領日のECB reference rateで原通貨→EUR→USDを計算する。非営業日は直前営業日のrateを使い、
+source URL、rate date、取得時刻、通貨pair、rate、丸め前後の値をFX receiptへ保存する。ECB未対応通貨またはrate欠落の
+記録は`unknown`であり、$10kへ加算しない。換算式は`source_amount / source_units_per_eur * usd_per_eur`、計算は
+`Decimal`、USD小数6桁で`ROUND_HALF_EVEN`とする。ECBはreference rateを情報目的とし取引利用を推奨しないため、この換算は月次報告の
+比較単位にだけ使い、実際のsettlement amountを書き換えない。
+
 ## Current SSOT（2026-08-21 実測）
 
 ### 2026-08-21 X Article anchor canary と次の実行境界（19:58 JST）
@@ -1117,7 +1148,7 @@ Profitable Cloud、Open Cloudの生存に依存させない。
 manifest snapshot、`launchctl print gui/$UID/<Writer label>`、既存receipt readbackである。
 実Macの故障fixtureではOS serviceを故意に壊さず、command runnerをstubして141/153を再現する。
 
-## Current atomic remaining TODO（2026-08-22 5回品質反復・強制公開境界後）
+## Historical atomic TODO snapshot（5回品質反復・強制公開境界後）
 
 各行は一つの外部状態または証拠だけを変える。前行の完了証拠がない限り、次行を開始しない。
 
@@ -1166,14 +1197,14 @@ read-only scanして優先するコードまで反映済みである。
 |---:|---|---|---|
 | Q1 | 5回品質反復のreceipt chainを実装する | attempt 2〜5のwrapper invocation receipt、unique plan SHA、draft変更、verdict意味一致、exact 5 validator。provider/researchの再試行は品質回数と分離し、最大20 invocationまで許可 | 完了（`quality_self_heal.py`、`quality_feedback_recovery.py`） |
 | Q2 | force境界をpublication resumeへ結合する | marker単体を拒否し、`validate_force_receipt()`とterminal identity/safetyを再検証 | 完了（focused 5件＋writer回帰46件、fresh adversarial review GO） |
-| Q3 | 混在したローカル障害後も同じrunのquality recoveryを安全に再開する | 既存10 invocation receiptを保持したまま、quota切れと誤分類せず、controllerがretryableへ戻し、現稿gateを再評価する。quality attempt数を水増ししない | 未完（現在 `terminal-blocked`、次の先頭TODO） |
+| Q3 | 混在したローカル障害後も同じrunのquality recoveryを安全に再開する | 既存10 invocation receiptを保持したまま、quota切れと誤分類せず、controllerがretryableへ戻し、現稿gateを再評価する。quality attempt数を水増ししない | 履歴上未完（current cursorではない） |
 | Q4 | 現稿JA/ENのeditorial receiptをcurrent SHAへ更新する | high-escalation claimを勝手に削除せず、正規の次quality iterationでfresh judgeを実行し、JA/EN両方のreceipt・snapshotを作成 | Q3待ち |
 | Q5 | quality attempt 2〜5を同一runで完了する | 各回のdraft変更、invocation chain、feedback consumption、editorial/reader/identity snapshot、exact five validator | Q3/Q4待ち |
 | Q6 | 5回目のforce handoffを実runで検証する | `force_publish_advisory`、identity/safety/conscience/PII/duplicate/media/CTA/monetization/platform guardの全PASS | Q5待ち |
 | Q7 | force後の4面native publicationとTelegram readbackを取得する | Note、Substack JA/EN、X Article JAのURL・本文・owner・media、publisher/payment receipt、自然文Telegram | Q6待ち |
 | Q8 | 毎日の公開を2日以上連続で実測する | 各日または各slotに4面native live receipt、delivery ledger、Telegram message receipt、重複外部作用0 | Q7待ち。現在は未達 |
 
-### A1復旧後のCoconala parity実行順
+### Historical A1復旧後のCoconala parity実行順
 
 「Coconalaのように24/7で動かす」は、別のWriter supervisorを追加することではなく、同じ
 `gig_release.py`、immutable `current`、`gig_disk_guard.py`、ユーザーLaunchAgent domainを使い、
