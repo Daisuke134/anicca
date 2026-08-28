@@ -16,6 +16,7 @@ const { createBrowserHarnessAdapter } = require("./connector-browser-harness-ada
 
 test("bounded proposer requests one structured action from Terra with sanitized controls only", async () => {
   let request;
+  const controller = new AbortController();
   const proposer = createBoundedActionProposer({
     repoRoot: "/private/repo",
     evidenceDir: "/private/evidence",
@@ -33,6 +34,7 @@ test("bounded proposer requests one structured action from Terra with sanitized 
     target_id: "OWNEDTARGET1",
     expected_state: "registered_or_pending",
     step: 2,
+    signal: controller.signal,
     observation: {
       state: "registration_page",
       controls: [{ control: "register_button", kind: "button", label: "Register", required: false, submittable: true }],
@@ -41,6 +43,10 @@ test("bounded proposer requests one structured action from Terra with sanitized 
   assert.deepEqual(action, { control: "register_button" });
   assert.equal(request.taskClass, "browser-lane-agent");
   assert.equal(request.timeoutMs, 30_000);
+  assert.equal(request.signal, controller.signal);
+  assert.equal(request.readOnly, true);
+  assert.equal(request.tokenBudget, 24_576);
+  assert.equal(request.budgetScopeId, "connector-step-luma-OWNEDTARGET1-1-2");
   assert.match(request.prompt, /one browser action/i);
   assert.match(request.prompt, /register_button/);
   assert.doesNotMatch(request.prompt, /purpose|method/i);
@@ -49,6 +55,12 @@ test("bounded proposer requests one structured action from Terra with sanitized 
   assert.doesNotMatch(request.prompt, /private-phone|cookie|password/i);
   assert.equal(JSON.stringify(request).includes("page_websocket"), false);
   assert.equal(JSON.stringify(request).includes("ws://"), false);
+  for (const stepTokenBudget of [0, 1_000_001]) {
+    assert.throws(() => createBoundedActionProposer({
+      repoRoot: "/private/repo", evidenceDir: "/private/evidence", stepTokenBudget,
+      async runAgentRunner() {},
+    }), /Connector production Browser Harness invalid/);
+  }
 });
 
 test("bounded proposer admits only one exact configured extension token", async () => {
