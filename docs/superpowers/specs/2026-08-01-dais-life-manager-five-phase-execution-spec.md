@@ -244,7 +244,7 @@ authorization、dedupe、公式receipt、money truthを置き換えない。
 | 20 | GA-02 one Goal to WorkItem | DONE | commit `31323bd43`。active explicit Goalをimmutable・reference-only・effect-free WorkItemへ変換し、goal本文とprovenanceをjobへ保存しない。focused/adjacent Node tests 19/19 PASS、新graph engine 0 |
 | 21 | GA-03 one capability manifest | DONE | commit `440fe882a`。既存public catalogueへLancers application能力一件を追加し、state=`unknown`、transport=`cloak_browser`、private receipt必須、human-only ceremony、`application_receipt` readbackを固定。authorization/onboarding tests 29/29 PASS、margin/ranking 0 |
 | 22 | GA-04 shared effect and receipt kernel | DONE | commits `99398fca0` / `42d233ae5`。Goal WorkItem、capability/opportunity/intent/private-authorization refsを一つのimmutable publish effectへ固定し、pre-readback → single execution → verified post-readback → replay-zeroを実証。unknown pre/post stateは再送せず`unknownEffect=true`。focused/adjacent Node tests 22/22 PASS |
-| 23 | GA-05 bounded specialist runtime | TODO | existing agent-runnerで一仕事・step/time limit・heartbeat/cancel・structured resultを共通化 |
+| 23 | GA-05 bounded specialist runtime | DONE | commits `e768d1833` / `d005e828c` / `04dc0cd55`。既存browser step loopとagent-runnerを共通境界化し、最大10 step、既定120秒job deadline、各model decision 30秒・24,576 token、step heartbeat、親cancelのPython/provider child伝播、applicationを含むstructured readbackを実装。focused/adjacent Node tests 238/238 PASS |
 | 24 | GA-10 first authorized-site canary | TODO | provider固有brainを追加せず一件のofficial ApplicationReceiptとreplay effect 0を閉じる |
 | 25 | GA-06 allocator across organs | DEFERRED | 最初のApplicationReceipt後までmargin、cross-site配分、body/mind/money allocatorを作らない |
 | 26 | GA-07 local/cloud adapter parity | DEFERRED | 最初のApplicationReceipt後までlocal/cloud共通化を作らない |
