@@ -1,6 +1,6 @@
 # macOS Life Manager Loop Control Plane
 
-**Status:** Complete — TODO 1–13 evidenced and final production audit passed
+**Status:** Control plane implemented — stale ownership cleanup remains active
 **TODO ID:** `MACOS-LOOP-CONTROL-PLANE-1`  
 **Canonical registry:** `config/loop-registry.json`  
 **Scope:** macOS launchd only
@@ -226,7 +226,7 @@ Allowed values are closed and versioned with the registry schema:
 | 7 | ✅ Consolidate all model/profile selection into the shared provider router | one explicit `acct2` profile; account rotation and caller provider override 0; duplicate runner 0; active entrypoint direct auth/CODEX_HOME selection 0; Writer normal/repair/session delegated; `docs/evidence/runtime/2026-08-28-macos-loop-control-plane-provider-boundary-progress.md` |
 | 8 | ✅ Add per-loop cleanup contracts and central shared-artifact GC reconciliation | immutable loop-run wrapper; marker/terminal/protected gates; loaded/current release protection; isolated 2,097,203-byte pressure recovery; protected deletion 0; `docs/evidence/runtime/2026-08-28-macos-loop-control-plane-cleanup.md` |
 | 9 | ✅ Migrate active labels one by one: system, growth, earn, financial, mental, physical | reboot candidate 168/168 exact generated plist and loaded argv; unsafe AutoHedge subsequently retired; current managed 167, retired 43 |
-| 10 | ✅ Remove superseded installers/manifests only after registry parity and replay-zero | Gig watcher publish-only; managed healthchecks report-only or `lm-loop` delegated; Tier1 retired; doctor unmanaged 0 |
+| 10 | ⚠️ Remove superseded installers/manifests only after registry parity and replay-zero | Tier1 is retired, but obsolete `hf-gig-release-watch` was retained and currently exits 2 every five minutes; retire it instead of integrating it |
 | 11 | ✅ Run 500-loop scale test and clean-user install E2E | persistent scale test; isolated empty-user 168/168 install/readback; no model/browser starts |
 | 12 | ✅ Run reboot and natural scheduled-pass E2E on the target Mac | boot ID changed; 168/168 recovered from existing release; doctor PASS; 356 boot-window events across 72 loops; process/effect truth separated |
 | 13 | ✅ Make safe loop development discoverable to every coding agent | `skills/loop-development/SKILL.md`; one-line routing in `AGENTS.md` and `CLAUDE.md`; worktree locked against prune/remove |
@@ -276,6 +276,97 @@ change one registry TODO, keep source in this repository and state outside the
 release, use only `lm-loop` for lifecycle, and require exact loaded readback plus
 a natural event before Done. Completion evidence:
 `docs/evidence/runtime/2026-08-28-macos-loop-control-plane-completion.md`.
+
+### Post-completion operational repair cursor
+
+> Current scope override: this cursor owns only Account auto rollout and OSS
+> startup. Marketplace-specific repair (including Lancers and CrowdWorks) is
+> outside this session. Business work is always performed by the owning loop;
+> Codex repairs source/spec/releases, triggers that real loop, and observes
+> authoritative readback.
+
+The control plane is complete; business-loop repair continues one loop at a
+time from `lm-loop status all`. Current measured inventory is 167 rows: 36
+loaded-running and 131 loaded-idle. Terminal history contains 61 pass, 80 fail,
+and 26 without a terminal result. A terminal failure is retained as audit
+history while a KeepAlive process is running, so 80 is not by itself an
+actionable repair count.
+
+#### Target operating model
+
+- Coconala remains the working local reference and is never stopped merely to
+  generalize the system. The shared job-doing kernel owns goal, capability,
+  context, effect fence, delivery, official readback, replay-zero, and revenue;
+  marketplace-specific URLs, selectors, fees, message rooms, and receipts stay
+  in thin adapters.
+- Upwork remains intentionally off. Its code may serve as implementation
+  evidence, but its retired launchd labels are not restarted and it is not an
+  activation TODO.
+- Lancers and CrowdWorks remain separate marketplace backlogs. They are not
+  Account auto or OSS-startup tasks and are not touched by this cursor.
+- Delivery order is local-first, then the same contract on the cloud worker,
+  then an OSS setup that a new user can start with a few documented commands.
+  The current `scripts/local-up.sh` starts only the Docker API, scheduler, and
+  worker; it does not install or run all 167 macOS loops. The clean-user launchd
+  test renders and reads back jobs without starting workloads. Therefore
+  few-command full-loop OSS startup is not yet implemented.
+- Account 1 primary to Account 2 fallback is implemented in the shared runner.
+  Expansion uses `account_profile_order=[acct1,acct2]`; Account 2 is attempted
+  only for transient quota/auth failure with no fresh result, agent message,
+  tool item, or external effect. PR #2983 proves Account 1 success and a
+  controlled Account 1 quota to real Account 2 success with effect 0.
+
+#### Daily operation and repair
+
+1. Build one resolver view containing managed, external, retired, and unmanaged
+   labels. Continuous jobs are healthy only while loaded-running. Scheduled
+   jobs are healthy while loaded-idle only when their next eligible time is not
+   overdue and their latest due pass has a valid terminal event.
+2. Remove unused jobs instead of healing them. Retirement removes the registry
+   owner, installed job, legacy installer/recreator, and active process while
+   preserving audit receipts and proving recreation zero.
+3. Rank the remaining queue: unmanaged or duplicate owners first, overdue
+   external-effect loops second, failed deterministic support loops third, and
+   missing-event classification last. Work one loop at a time.
+4. Repair in a locked worktree, merge main, cut one immutable release, apply one
+   label, and prove loaded argv plus natural runtime event. Never restart all
+   loops to repair one.
+5. For messages, applications, publication, delivery, payment, or trade, require
+   official provider/account readback and replay-zero. Process exit zero is not
+   business success.
+6. Send one daily Telegram summary with resolver totals, deleted unused jobs,
+   the one repaired loop, official effect evidence, remaining cursor, and any
+   fail-closed blocker.
+
+Ordered operational TODO (this is the only active order):
+
+Completed evidence: `affiliate-browser` is repaired by PRs #2946, #2947, and
+#2949. Account 1 primary/Account 2 pre-effect fallback is merged by PR #2983
+and deployed at `3d69c74b`; real controlled reads prove `acct1` success and
+`acct1 quota -> acct2 success` with effect 0. Obsolete `hf-gig-release-watch`
+is retired by PR #2986, not loaded, not installed, and has no production
+recreator. Completed items are not part of the remaining queue.
+
+1. ✅ Implement Account 1 to Account 2 pre-effect fallback in the shared runner.
+   PR #2983 is merged; controlled real readback proves both primary success and
+   quota-triggered fallback success.
+2. ⏳ Finish loop-owned Account auto rollout. `life-manager-dev` now cuts pushed
+   main into a complete immutable release and reconciles only
+   `shared-agent-runner` rows that are `loaded-idle`; `loaded-running` rows are
+   reported and untouched. PRs #3010, #3012, and #3015 are merged. First real
+   pass applied 19 idle rows and skipped 15 running rows. Remaining condition:
+   a quiet owner pass completes from the latest full release with failed 0,
+   then later-running rows move only after they naturally become idle.
+3. ⏳ Make OSS startup truthful: a few commands must provision user-owned
+   secrets, choose supported loops, start local scheduler/workers, install the
+   platform-appropriate supervisor, and show the same resolver table. Passing
+   Docker health or plist rendering alone is insufficient.
+4. ⏳ Prove the OSS supervisor owns parallel work after the initiating shell
+   exits, and `status` distinguishes scheduler liveness, provider/auth state,
+   terminal result, and official business effect. Do not claim every private
+   Dais loop is portable; unsupported capabilities remain explicitly off.
+5. ⏳ Track repo-wide nonrequired security-CI debt separately from loop health:
+   OSS boundary, PII gate, Python syntax, and dependency audit.
 
 ### TODO 1 execution state
 

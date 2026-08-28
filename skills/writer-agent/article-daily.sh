@@ -676,7 +676,11 @@ if route_status == "absent":
         and isinstance(archive_manifest, list)
         and all(
             isinstance(item, dict)
-            and item.get("path") == "gates/selfimprove-verify.json"
+            and item.get("path") in {
+                "gates/selfimprove-verify.json",
+                "gates/required-demand-authority-blocker.json",
+                "gates/telegram-report.json",
+            }
             for item in archive_manifest
         )
         and path_status(topic_route_path) == "absent"
@@ -1041,6 +1045,11 @@ trap 'cleanup_generation_exit' EXIT
 if [ "$RESUME_GENERATION" -eq 1 ]; then
   [ -f "$PROMPT_FILE" ] || {
     echo "=== article-daily generation resume BLOCK: immutable prompt is missing ===" >>"$LOG"
+    exit 0
+  }
+  python3 "$GENERATION_STATE" "${GENERATION_ARGS[@]}" \
+    rebind-release --current-root "$ARTICLE_ROOT" >>"$LOG" 2>&1 || {
+    echo "=== article-daily generation resume BLOCK: release rebind failed ===" >>"$LOG"
     exit 0
   }
 else

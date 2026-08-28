@@ -53,6 +53,12 @@ raise SystemExit(1 if reason or os.environ.get("STUB_RESULT") == "1" else 0)
 
 
 class LocalBrowserPreflightTest(unittest.TestCase):
+    def test_browser_disables_code_sign_clone(self) -> None:
+        self.assertIn(
+            '"--disable-features=MacAppCodeSignClone"',
+            SCRIPT.read_text(encoding="utf-8"),
+        )
+
     def install_guard(self, home: Path) -> Path:
         guard = home / GUARD_RELATIVE
         guard.parent.mkdir(parents=True)
