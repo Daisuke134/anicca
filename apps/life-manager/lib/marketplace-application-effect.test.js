@@ -6,6 +6,9 @@ const {
   buildMarketplaceApplicationJob,
   marketplaceApplicationContract,
 } = require("./marketplace-application-job.js");
+const {
+  runMarketplaceApplicationEffect,
+} = require("./marketplace-application-effect.js");
 
 function goalWorkItem() {
   return {
@@ -70,4 +73,56 @@ test("noncanonical parent or unbound references are rejected", () => {
     }),
     /job invalid/i,
   );
+});
+
+test("absent effect executes once, completes from post-readback, and replays zero", async () => {
+  const job = buildMarketplaceApplicationJob(input());
+  let submitted = false;
+  let executions = 0;
+  const deps = {
+    inspectApplication: async () => submitted
+      ? { state: "present", receipt: { record_type: "application_receipt" } }
+      : { state: "absent" },
+    executeOnce: async () => { executions += 1; submitted = true; },
+    verifyReceipt: (receipt) => Object.freeze({ ...receipt, verified: true }),
+  };
+  const first = await runMarketplaceApplicationEffect(job, deps);
+  const replay = await runMarketplaceApplicationEffect(job, deps);
+  assert.equal(first.effect_started, true);
+  assert.equal(first.receipt.verified, true);
+  assert.equal(replay.replayed, true);
+  assert.equal(executions, 1);
+});
+
+test("unknown pre-readback never executes and remains an unknown effect", async () => {
+  const job = buildMarketplaceApplicationJob(input());
+  let executions = 0;
+  await assert.rejects(
+    runMarketplaceApplicationEffect(job, {
+      inspectApplication: async () => ({ state: "unknown" }),
+      executeOnce: async () => { executions += 1; },
+      verifyReceipt: (receipt) => receipt,
+    }),
+    (error) => error.code === "APPLICATION_EFFECT_UNKNOWN" && error.unknownEffect === true,
+  );
+  assert.equal(executions, 0);
+});
+
+test("post-readback failure is unknown after exactly one execution", async () => {
+  const job = buildMarketplaceApplicationJob(input());
+  let inspections = 0;
+  let executions = 0;
+  await assert.rejects(
+    runMarketplaceApplicationEffect(job, {
+      inspectApplication: async () => {
+        inspections += 1;
+        if (inspections === 1) return { state: "absent" };
+        throw new Error("provider unavailable");
+      },
+      executeOnce: async () => { executions += 1; },
+      verifyReceipt: (receipt) => receipt,
+    }),
+    (error) => error.code === "APPLICATION_EFFECT_UNKNOWN" && error.unknownEffect === true,
+  );
+  assert.equal(executions, 1);
 });
