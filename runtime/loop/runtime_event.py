@@ -118,6 +118,29 @@ def build_runtime_start_event(*, loop_id: str, domain: str, run_id: str,
     })
 
 
+def build_install_event(*, loop_id: str, domain: str, release_sha: str,
+                        provider: str, effect_class: str) -> dict:
+    timestamp = datetime.now(timezone.utc).isoformat()
+    material = f"{release_sha}:{loop_id}:install:plan:pass"
+    return validate_runtime_event({
+        "version": 1,
+        "event_id": hashlib.sha256(material.encode()).hexdigest()[:24],
+        "timestamp": timestamp,
+        "loop_id": loop_id,
+        "domain": domain,
+        "run_id": "install",
+        "phase": "plan",
+        "status": "pass",
+        "release_sha": release_sha,
+        "provider": provider,
+        "profile_alias": None,
+        "effect_class": effect_class,
+        "effect_status": "not_applicable" if effect_class == "none" else "unknown",
+        "blocker": None,
+        "evidence_refs": [f"lm-loop://{loop_id}/install/summary.json"],
+    })
+
+
 def append_runtime_event(path: Path, event: dict) -> None:
     validate_runtime_event(event)
     path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
