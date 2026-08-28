@@ -13,15 +13,15 @@
 //
 // Idempotent: if AGENTMAIL_HERMES_API_KEY is already in ~/.openclaw/.env we
 // just confirm the inbox exists. If signup is needed, we use a +alias gmail
-// address (keiodaisuke+hermes@gmail.com) so the OTP lands in the canonical
+// address from HERMES_HUMAN_EMAIL so the OTP lands in the canonical
 // gog gmail inbox and can be fetched programmatically.
 import { AgentMailClient } from "agentmail";
 import { spawnSync } from "node:child_process";
 import { setTimeout as sleep } from "node:timers/promises";
 
 const HERMES_USERNAME = "anicca-001-hermes";
-const HERMES_HUMAN_EMAIL = process.env.HERMES_HUMAN_EMAIL ?? "keiodaisuke+hermes@gmail.com";
-const GOG_ACCOUNT = process.env.GOG_ACCOUNT ?? "keiodaisuke@gmail.com";
+const HERMES_HUMAN_EMAIL = process.env.HERMES_HUMAN_EMAIL ?? "";
+const GOG_ACCOUNT = process.env.GOG_ACCOUNT ?? "";
 const OTP_GMAIL_QUERY = process.env.HERMES_OTP_QUERY ?? "from:agentmail subject:verification";
 
 async function existingHermes(): Promise<{ key: string; inbox: string } | null> {
@@ -59,6 +59,9 @@ const existing = await existingHermes();
 if (existing) {
   console.log(`= ${existing.inbox} already provisioned via AGENTMAIL_HERMES_API_KEY`);
   process.exit(0);
+}
+if (!HERMES_HUMAN_EMAIL || !GOG_ACCOUNT) {
+  throw new Error("HERMES_HUMAN_EMAIL and GOG_ACCOUNT are required for signup");
 }
 
 console.log(`+ no hermes org yet — signing up via human_email=${HERMES_HUMAN_EMAIL}`);

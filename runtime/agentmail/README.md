@@ -68,8 +68,8 @@ DEEPSEEK_API_KEY=…
 
 | What | When | Result |
 |---|---|---|
-| keiodaisuke@gmail.com → anicca-001-claude (R3 final) | 14:59:13Z send → 14:59:35Z reply | "Confirmed: Gmail → AgentMail → Tailscale Funnel → :8810…" — Anicca |
-| keiodaisuke@gmail.com → anicca-001-hermes (round 4) | 15:46:48Z send → 15:49:50Z reply | `org=hermes` verified, reply FROM `anicca-001-hermes@agentmail.to`: "Received. Dual-secret webhook routing verified. — Anicca" |
+| `<owner-gmail>` → anicca-001-claude (R3 final) | 14:59:13Z send → 14:59:35Z reply | "Confirmed: Gmail → AgentMail → Tailscale Funnel → :8810…" — Anicca |
+| `<owner-gmail>` → anicca-001-hermes (round 4) | 15:46:48Z send → 15:49:50Z reply | `org=hermes` verified, reply FROM `anicca-001-hermes@agentmail.to`: "Received. Dual-secret webhook routing verified. — Anicca" |
 | Synthetic 25h-old nudge | 2026-06-03 | `eligible nudges: 1` → v4-pro produced text → http=200 → nudge_count 0→1; re-run = 0 (idempotent) |
 
 ## G1–G6 final status

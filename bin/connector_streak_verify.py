@@ -39,8 +39,8 @@ are reused verbatim; the CONNECTOR_STREAK_* ones below are new, scoped to this s
   CONNECTOR_STREAK_NOW_OVERRIDE     ISO8601 UTC instant, test-only (pins "today").
   CONNECTOR_STREAK_OPENCLAW_OVERRIDE  openclaw binary override. Default: "openclaw"
   CONNECTOR_STREAK_TELEGRAM_TARGET  Telegram target for the daily digest. Default: "8547730585"
-  CONNECTOR_STREAK_COMPLETION_EMAIL  address for the day-7 completion email. Default:
-                                    "keiodaisuke@gmail.com"
+  CONNECTOR_STREAK_COMPLETION_EMAIL  address for the day-7 completion email. Required
+                                    when the completion email becomes due.
   CONNECTOR_STREAK_CRON_JOB_ID      cron job id whose lastRunStatus is recorded (informational only,
                                     never gates day_pass). Default: connector's own
                                     "ad89027d-c869-4956-8967-542bfa8b31d9"
@@ -268,7 +268,9 @@ def compute_streak(rows):
 
 
 def send_completion_email(streak, qualifying_rows):
-    email = os.environ.get("CONNECTOR_STREAK_COMPLETION_EMAIL", "keiodaisuke@gmail.com")
+    email = os.environ.get("CONNECTOR_STREAK_COMPLETION_EMAIL", "").strip()
+    if not email:
+        return False
     lines = [f"connector 7日streak達成 -- {len(qualifying_rows)}日連続 day_pass:true", ""]
     for row in qualifying_rows:
         reg = row.get("registration")

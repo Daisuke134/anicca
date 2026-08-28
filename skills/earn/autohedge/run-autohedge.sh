@@ -3,6 +3,8 @@
 set -u
 cd /Users/anicca/autohedge
 set -a; . /Users/anicca/.openclaw/.env; set +a
+AUTOHEDGE_GMAIL_ACCOUNT="${AUTOHEDGE_GMAIL_ACCOUNT:?AUTOHEDGE_GMAIL_ACCOUNT is required}"
+AUTOHEDGE_REPORT_TO="${AUTOHEDGE_REPORT_TO:-$AUTOHEDGE_GMAIL_ACCOUNT}"
 WALLET="tvTn7tisC5JWV81iDeFeLPcHapAamvXcyJVKia1TrNT"
 USDC_MINT="EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
 TS=$(date +%Y%m%d-%H%M%S); LOG=/Users/anicca/autohedge/logs/cycle-$TS.log; mkdir -p /Users/anicca/autohedge/logs
@@ -33,4 +35,4 @@ USDC before: ${BEFORE}  after: ${AFTER}
 P&L today: ${PNL} USDC
 Wallet: $WALLET
 (log: $LOG)"
-gog gmail send --account keiodaisuke@gmail.com --to keiodaisuke@gmail.com --subject "AutoHedge daily P&L: ${PNL} USDC (${DECISION:-hold})" --body "$BODY" 2>&1 | head -2
+gog gmail send --account "$AUTOHEDGE_GMAIL_ACCOUNT" --to "$AUTOHEDGE_REPORT_TO" --subject "AutoHedge daily P&L: ${PNL} USDC (${DECISION:-hold})" --body "$BODY" 2>&1 | head -2
