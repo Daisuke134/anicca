@@ -475,9 +475,9 @@ End-to-end Job Hunterは廃棄しない。Money Printer完成後に、同じoppo
 
 Telegramは重要なstate changeをpushする。Web pageは全体状況、workroom、人間task、proof、moneyを確認・操作する。両者は同じstate、action、ledgerを参照する。
 
-Life Manager workerは同じdomain state-transition functionsを直接使い、cardを`Backlog → Ready → Working → Needs You → Review → Waiting → Done / Paid`へ動かす。自分自身の内部処理にWebMCPを必須としない。WebMCP agentは同じboard、workroom、artifact、human taskを共同操作する。
+Life Manager workerはWebMCP toolsと同じdomain state-transition functionsを使い、cardを`Backlog → Ready → Working → Needs You → Review → Waiting → Done / Paid`へ動かす。Background workerのcall自体はpage-local WebMCP invocationではないが、WebMCP-visible stateを通らないhidden work、hidden task、hidden effectを禁止する。WebMCP agent、人間UI、background workerの全操作が同じboard、workroom、artifact、human task、receiptへ収束する。
 
-人間は全列をreadできる。通常のwrite操作は`Needs You` cardを一件開いて、回答、選択、file upload、本人操作完了を返すことに限定する。回答後はcardをagentへ戻し、同じworkroomを自動再開する。緊急停止のため全体`Pause`だけは常時表示する。
+人間は全列をreadできる。通常のwrite操作はChatGPT conversationまたは`Needs You` cardから、一件の回答、選択、file upload、本人操作完了を返すことに限定する。回答後はcardをagentへ戻し、同じworkroomを自動再開する。緊急停止のため全体`Pause`だけは常時表示する。
 
 ### 8.5 Human task card
 
@@ -494,9 +494,18 @@ State: waiting_for_human
 
 各taskはstable ID、opportunity ID、reason、deadline、prepared context、exact action、return path、statusを持つ。同じlogical taskをwording差で重複生成しない。
 
+Minimal-human invariant:
+
+- profile、過去回答、connected account、provider readback、available toolsで解ける限り人へ聞かない
+- 「できない」「不明」だけを理由にhandoffせず、agentが調査・tool利用・retryを先に尽くす
+- 本人性、権限、private fact、payment destination、規約上のhuman action、現実世界の行為だけを質問候補にする
+- 質問は一度に一件だけ出し、なぜ人が必要か、必要形式、deadline、回答後に何を再開するかを示す
+- 同じ情報を再質問せず、再利用可能な回答はprivate profileへversion付きで保存する
+- 答えが来るまでそのworkroomだけを`NEEDS_HUMAN`にし、他のagent/workroom/scoutは止めない
+
 ### 8.6 WebMCP tools
 
-WebMCPはbackground runtimeではない。人間と対応agentが、Life Managerの同じboard、workroom、artifact、human taskを読み書きするinterfaceである。
+WebMCPはbackground runtimeではないが、Life Manager全体のagent-native control surfaceである。人間と対応agentが同じboard、workroom、artifact、human taskを読み書きし、background runtimeの全状態とeffectもこのsurfaceへ投影する。
 
 - `inspect_money_printer` — opportunities、running、blocked、human tasks、cost、verified moneyを読む
 - `inspect_workroom` — goal、plan、history、artifacts、last agent event、proofを読む
@@ -504,6 +513,7 @@ WebMCPはbackground runtimeではない。人間と対応agentが、Life Manager
 - `set_constraints` — time、spend cap、risk、forbidden actions、human availabilityを更新する
 - `revise_work_artifact` — base revisionを指定し、visible artifactへpatchとrationaleを記録する
 - `continue_work` — eligibleなworkroomをagentへ再開させる
+- `inspect_next_human_task` — Userが今答えるべき一件と、なぜ必要か、prepared context、required format、return pathを読む
 - `record_human_answer` — UIが発行したhuman-confirmation tokenと本人の明示入力だけをexact taskへ記録する。Agent自身の生成値でidentity/authority boundaryを閉じない
 - `pause_work` — future agent turnsを停止する
 - `inspect_receipt` — application、delivery、paymentのofficial readbackを読む
@@ -620,11 +630,28 @@ Telegramは重要なstate changeをpushする。Web dashboardは全体状況、w
 
 ### 10.5 One product, one mode
 
-Hackathonで提供するmodeは一つだけである。Userは無料の`https://aniccaai.com/lm`を開く。Normal browserでは人間用Work boardとして動き、対応WebMCP clientで開くと同じboardのsite toolsをagentが発見する。別product、別judge system、別local/cloud modeを作らない。
+Hackathonで提供するmodeは一つだけである。Primary experienceは、UserがChatGPT desktopのin-app browserで無料の`https://aniccaai.com/lm`を開き、「Turn on my Money Printer」と頼むflowである。ChatGPT WorkまたはCodexがpageのsite toolsを発見し、同じDashboard上でconstraints設定、opportunity確認、`Needs You`回答、continuation、receipt確認を行う。別product、別judge system、別local/cloud modeを作らない。
 
-Life Managerのagent runtimeは同じcloud productの一部としてworkroomを進める。WebMCP対応agentも同じdomain functionsとversioned stateを使う。Judgeはlogin、支払い、Life Manager API keyなしでguest accountを試せる。対応clientを持たない場合もnormal UI、video、READMEで全flowを確認できる。
+Life Managerのagent runtimeは同じcloud productの一部としてworkroomを24/7進める。Pageを閉じるとWebMCP toolsは一時的に利用不能になるが、workroomとscoutは同じdurable state上で継続する。Userがpageを再び開くと、対応agentは最新stateと未回答`Needs You`を再発見する。Judgeはlogin、支払い、Life Manager API keyなしでguest accountを試せる。Normal browser UIはfallbackとして同じ機能を持つが、primary demoとproduct storyはChatGPT in-app browserに置く。
+
+Canonical first-use UX:
+
+1. UserがChatGPT in-app browserでLife Managerを開く
+2. 「Turn on my Money Printer. Ask only when you genuinely need me」と頼む
+3. WebMCP agentが既存profileとcurrent constraintsをinspectする
+4. 稼働に不可欠で未取得の情報だけを一問ずつ`Needs You`で聞く
+5. Minimum setupが揃うと24/7 scoutとagent fleetを開始する
+6. Agentは自律実行し、human-only boundaryでのみ質問する
+7. UserがChatGPT conversationまたはcardで答えると、同じworkroomが自動再開する
+8. Userは後から「What is working, what needs me, and how much is verified?」と聞き、同じlive stateを確認する
 
 将来のpricing、自前model接続、self-hostingは今回のsubmission scope外とする。Consumer ChatGPT subscriptionを第三者SaaSのbackground APIとして流用できるとは主張しない。
+
+Testing clients:
+
+- **Primary:** latest ChatGPT desktop in-app browser。OpenAIのSite tools対応環境でGPT-5.6 SolまたはTerraを使う。availabilityはrollout、plan、region、workspace settingsに依存し、Enterprise/Eduでは現在利用不可
+- **Secondary:** Chrome 149+で`chrome://flags/#enable-webmcp-testing`を有効化してtool discovery、schema、execution、visible state changeを検証する
+- **Fallback:** normal browserで同じDashboardと`Needs You` flowを操作する。WebMCP非対応を理由にproductを利用不能にしない
 
 ### 10.6 Deployment architecture
 
@@ -732,11 +759,11 @@ Effect開始後に結果が不明なら`EFFECT_UNCERTAIN`へ進み、別account�
 ### 12.1 Judge path
 
 - landing pageにone-sentence value
-- `Try Life Manager`で同じproduction productのguest accountへ入る
+- ChatGPT in-app browserで`Try Life Manager`を開き、同じproduction productのguest accountへ入る
 - Life Manager側のAPI key、wallet、private credentialは不要
 - primary judge pathはzero-login live URL + video + README
 - WebMCP E2Eは主催者の対応環境とChrome 149+の両経路を記載する
-- copyable prompt 1つ
+- copyable prompt 1つ: `Turn on my Money Printer. Do everything you can autonomously and ask me only when you genuinely need human input.`
 - reset button 1つ
 - `How WebMCP works` drawerにcurrent toolsとrecent calls
 - under-one-minute judge guide
