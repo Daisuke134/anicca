@@ -2245,6 +2245,33 @@ effect-dedupe guards remain active.
 | 37 | Design and build mobile-app development loop | metrics and feedback drive bounded app iteration before generalized creation/release |
 | 38 | Generalize web-app development loop | reuse portable runtime, product, finance, marketing, experiment, and deployment contracts |
 
+### 12.0.1 Financial completion checklist
+
+This checklist is subordinate to the numbered program and cannot choose the
+next task. Work proceeds strictly through Order 27, then 28, 29, and 30; it
+does not preempt the active migration or marketing cursor. A Moneytree LINK
+application may wait on the provider in parallel, but no later-order coding
+starts early.
+
+| Program order | Work | Owner action | Exit evidence |
+|---:|---|---|---|
+| 27 — Source correction contract | Treat provider values as immutable observations, not bank truth. A correction event names `correction_id`, tenant owner actor, exact source observation, official evidence reference/hash, reason, and event time. Its idempotency key binds tenant + source observation + evidence hash. Append-only compare-and-set permits one active head; a correction of a correction must target that head, and concurrent heads fail closed | Correct a displayed value only when an official provider/account screen disagrees | Canonical snapshot selects one deterministic head, labels the rejected observation, duplicate correction replay is zero, conflict changes no balance, and no historical receipt is updated or deleted |
+| 27 — Connector receipt framework | Define the structured snapshot, freshness, cursor, pseudonym, source hash, allowlist projection, unavailable state, and secret-zero contract used by every financial adapter | None | Contract tests reject prose/widget-only output, missing provenance, raw identifiers, ambiguous corrections, unavailable-as-zero, and non-idempotent replay |
+| 28 — OSS Moneytree readback | On a clean Mac, verify Codex subscription authentication and detect a supported Moneytree plugin if available; call accounts and transactions, project the deterministic allowlist, pseudonymize the account, and persist one structured source receipt. The connector remains unavailable when the plugin, permission, or schema is unsupported | Sign in to Codex and complete the official Moneytree connect/consent once | Real account and transaction readback, secret violations zero, structured receipt accepted, and second sync duplicate zero; installation, widget, or agent prose alone remains unavailable |
+| 28 — Moneytree LINK application | Prepare the company/product description, data-flow diagram, privacy/security/deletion policy, tenant volume, redirect URI, minimum read scopes, and test plan; use the official business channel and track application, NDA/DPA, staging, review, pricing, and production-client state | Review and accept every binding attestation, terms/NDA/DPA acceptance, authority representation, paid-plan acceptance, legal signature, and irreversible company payment | Provider receipt for each submitted state; no production claim before issued client data, approved scopes, and registered redirect URI are read back |
+| 28 — Cloud Moneytree adapter | Store tenant-scoped LINK credentials in the cloud vault; implement Authorization Code + PKCE, mandatory `state` generation/verification, exact registered redirect binding, single-use short-lived code exchange, and single-flight/CAS refresh-token rotation. Tokens never enter URL query, logs, prompts, or receipts. Add cursor sync, bounded backoff, disconnect, and deletion | Each cloud user gives Moneytree OAuth consent | CSRF/state mismatch and redirect mismatch fail closed; concurrent refresh loses no valid token; cross-tenant access, raw bank credentials, and token leakage are zero; refresh/revoke/readback E2E produces the common receipt |
+| 29 — Complete personal ledger | Add connected cash, cards, liabilities, investments, income, Stripe, and read-only crypto sources; normalize transfers, categories, original currency, FX provenance, scheduled payments, and unsupported/manual accounts | Connect each desired source or explicitly mark it excluded; confirm the emergency-cash floor | Assets and liabilities reconcile to source receipts; transfer double-count zero; unsupported coverage is visible; net worth and 1/3/12-month cash flow never replace unavailable with zero |
+| 30 — Telegram read-only surface | Route `残高`, `明細`, `今月`, `節約案`, and `接続状態` through the existing Telegram job/receipt path. Financial data is private-chat-only; deterministic output allowlists cover merchant/description/category fields as well as account fields | Use the bot normally; reconnect only after an explicit expired/revoked state | Owner chat and actor match; Telegram and panel share a snapshot hash; passwords, tokens, raw payloads, full account numbers, and unapproved transaction text are zero; replay sends no duplicate |
+| 30 — Advice | Compute safe-to-save amount, runway, budget variance, recurring-cost candidates, and one prioritized action from deterministic ledger values; the agent explains but does not invent or move money | Approve any later cancellation, transfer, investment, filing, or regulated action at its own authority boundary | Every recommendation reverses to source rows and policy inputs; stale/incomplete liabilities block the amount; follow-up records money actually saved rather than money merely suggested |
+| 30 — Parity and release | Shadow local and cloud against the same consented account, reconcile allowed freshness differences, activate exactly one scheduler owner, and ship Financial Health UI plus scheduled/exception Telegram reports | Choose local or cloud as the active deployment; no repeated bank setup | Local/cloud contract suite passes, differences are explained, scheduler owners exactly one, duplicate effects/messages zero, reboot/restart recovery passes, and official readback remains traceable |
+
+Financial delivery is complete only after every Order 27–30 checklist row passes
+with real read-only provider data. A successful command, plugin installation, OAuth
+redirect, process exit, widget render, or Telegram delivery by itself is not
+Done. Money movement, cancellation, trading, lending, tax filing, or regulated
+personal financial advice remains outside this read-only delivery and requires
+its own approved authority and risk contract.
+
 ### 12.1 Remaining work from the measured state
 
 The numbered program above remains the SSOT. Until Order 26 passes, only
