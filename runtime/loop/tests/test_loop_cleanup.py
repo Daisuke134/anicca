@@ -63,6 +63,22 @@ class LoopCleanupTest(unittest.TestCase):
             self.assertFalse(paths[0].exists())
             self.assertEqual(result["protected_deletions"],0)
 
+    def test_release_gc_removes_selected_read_only_release(self):
+        with tempfile.TemporaryDirectory() as directory:
+            releases = Path(directory) / "releases"; releases.mkdir()
+            stale = releases / ("20260101T000000-" + "a" * 8); stale.mkdir()
+            (stale / "RELEASE.json").write_text(json.dumps({"sha": "a" * 40}))
+            nested = stale / "nested"; nested.mkdir(); (nested / "code.py").write_text("x")
+            for path in (nested / "code.py", stale / "RELEASE.json"):
+                path.chmod(0o444)
+            nested.chmod(0o555); stale.chmod(0o555)
+            current = Path(directory) / "current"
+
+            result = gc_releases(releases, current, keep=0, protected=set())
+
+            self.assertFalse(stale.exists())
+            self.assertEqual(result["errors"], 0)
+
     def test_loop_run_cleans_only_its_root_then_returns_exact_release_argv(self):
         with tempfile.TemporaryDirectory() as directory:
             root=Path(directory); entry=root/'bin/job.sh'; entry.parent.mkdir(); entry.write_text('#!/bin/sh\n'); entry.chmod(0o755)

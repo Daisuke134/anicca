@@ -46,6 +46,11 @@ def _remove_marked(path: Path) -> int:
     return size
 
 
+def _make_tree_removable(path: Path) -> None:
+    for current, _, _ in os.walk(path, followlinks=False):
+        os.chmod(current, 0o700)
+
+
 def cleanup_run_root(root: Path, contract: dict, active_run_ids: set[str], *,
                      now: float | None = None) -> dict[str, int]:
     result = {"evaluated_runs": 0, "removed_runs": 0, "reclaimed_bytes": 0,
@@ -122,6 +127,7 @@ def gc_releases(releases_root: Path, current: Path, *, keep: int,
         result["preserved_releases"] += 1
     for _, path in reversed(ordered[max(0, keep):]):
         try:
+            _make_tree_removable(path)
             result["reclaimed_bytes"] += _remove_marked(path)
             result["removed_releases"] += 1
         except OSError:
