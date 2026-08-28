@@ -103,14 +103,19 @@ test("Connector judgment rejects fallback models and unverified profiles", async
   }), /Connector Luna judgment unavailable/);
 });
 
-test("local runner pins Codex Terra and accepts only an evidence-contained result", async () => {
+test("local runner pins Codex Terra and enforces timeout cancellation and token bounds", async () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "connector-luna-runner-"));
   const evidenceDir = path.join(root, "evidence");
+  const controller = new AbortController();
   let invocation;
-  const result = runLocalAgentRunner({
+  const result = await runLocalAgentRunner({
     prompt: "x".repeat(200),
     schema: { type: "object", properties: { ranked_events: { type: "array" } }, required: ["ranked_events"] },
     timeoutMs: 120_000,
+    signal: controller.signal,
+    readOnly: true,
+    tokenBudget: 4_096,
+    budgetScopeId: "connector-step-target-1",
     evidenceDir,
     repoRoot: path.resolve(__dirname, "../../.."),
     runnerPath: path.join(root, "agent_runner.py"),
@@ -133,9 +138,15 @@ test("local runner pins Codex Terra and accepts only an evidence-contained resul
   assert.equal(invocation.command, "python3");
   assert.deepEqual(invocation.args.slice(0, 3), [path.join(root, "agent_runner.py"), "--task-class", "repeatable-agent"]);
   assert.equal(invocation.options.env.AGENT_RUNNER_PROVIDER, undefined);
+  assert.equal(invocation.options.env.ANICCA_BUDGET_REQUIRED, "1");
+  assert.equal(invocation.options.env.ANICCA_BUDGET_SCOPE_ID, "connector-step-target-1");
+  assert.equal(invocation.options.env.ANICCA_PASS_TOKEN_BUDGET, "4096");
+  assert.equal(invocation.options.signal, controller.signal);
+  assert.equal(invocation.options.timeout, 125_000);
+  assert.deepEqual(invocation.args.slice(-3), ["--timeout-seconds", "120", "--read-only"]);
   assert.equal(invocation.options.input, "x".repeat(200));
 
-  assert.doesNotThrow(() => runLocalAgentRunner({
+  await assert.doesNotReject(() => runLocalAgentRunner({
     prompt: "x".repeat(200),
     schema: { type: "object", properties: { ranked_events: { type: "array" } }, required: ["ranked_events"] },
     timeoutMs: 120_000,
@@ -153,6 +164,27 @@ test("local runner pins Codex Terra and accepts only an evidence-contained resul
     })),
     isRunnerFile: () => true,
   }));
+});
+
+test("local runner aborts its real child process instead of orphaning it", async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "connector-luna-cancel-"));
+  const runnerPath = path.join(root, "agent_runner.py");
+  fs.writeFileSync(runnerPath, "import time\ntime.sleep(60)\n", { mode: 0o700 });
+  const controller = new AbortController();
+  const startedAt = Date.now();
+  setTimeout(() => controller.abort(), 20);
+
+  await assert.rejects(runLocalAgentRunner({
+    prompt: "x".repeat(200),
+    schema: { type: "object", properties: {}, required: [] },
+    timeoutMs: 1_000,
+    signal: controller.signal,
+    evidenceDir: path.join(root, "evidence"),
+    repoRoot: path.resolve(__dirname, "../../.."),
+    runnerPath,
+  }), /Connector Luna judgment unavailable/);
+
+  assert.ok(Date.now() - startedAt < 1_000);
 });
 
 test("Luna creates the preference ranking before goal and serendipity judgment", async () => {
