@@ -17,4 +17,6 @@ test("accepts the four minimal financial records and rejects missing fields", ()
     assert.equal(validateFinancialRecord(type, row), row);
   }
   assert.throws(() => validateFinancialRecord("account", { ...rows.account, balance_jpy: null }), /account\.balance_jpy is required/);
+  assert.throws(() => validateFinancialRecord("account", { ...rows.account, balance_jpy: 1.5 }), /integer JPY/);
+  assert.throws(() => validateFinancialRecord("account", { ...rows.account, currency: "USD" }), /currency is unsupported/);
 });

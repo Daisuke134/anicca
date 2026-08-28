@@ -18,6 +18,14 @@ function validateFinancialRecord(type, record) {
       throw new Error(`${type}.${field} is required`);
     }
   }
+  if (record.currency && record.currency !== "JPY") {
+    throw new Error(`${type}.currency is unsupported`);
+  }
+  for (const field of ["balance_jpy", "amount_jpy", "value_jpy"]) {
+    if (record[field] !== undefined && !Number.isSafeInteger(record[field])) {
+      throw new Error(`${type}.${field} must be an integer JPY amount`);
+    }
+  }
   return record;
 }
 
