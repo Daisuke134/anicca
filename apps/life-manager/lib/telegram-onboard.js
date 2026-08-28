@@ -22,7 +22,7 @@ function coreReady(row) {
 
 function computeStage(row, opts = {}) {
   const storedStage = String(row && row.tg_onboard_stage || "").toLowerCase();
-  if (coreReady(row) && ["done", "dashboard", "phone", "pay", "payment", "gmail"].includes(storedStage)) return "done";
+  if (coreReady(row) && ["done", "dashboard", "phone", "pay", "payment", "gmail", "call"].includes(storedStage)) return "done";
   if (!row || row.calendar_provider !== "composio_gcal") return "calendar";
   // The panel state machine owns the canonical paid/core-ready terminal state. The legacy loop must
   // not reopen phone or Gmail for a paid user who intentionally skipped a phone, nor can it rewrite

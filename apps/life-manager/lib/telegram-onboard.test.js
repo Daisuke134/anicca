@@ -337,6 +337,22 @@ test("core-ready legacy phone/pay rows remain done and do not emit optional-stag
   }
 });
 
+test("core-ready call stage does not fall through to pay, and expiry uses upgrade only", async () => {
+  for (const [trialExpiresAt, expectedCount] of [
+    ["2026-08-31T12:01:00.000Z", 0],
+    ["2026-08-31T11:59:00.000Z", 1],
+  ]) {
+    const row = { ...full, uid: "call-stage", paid: false, phone: "+81", tg_onboard_stage: "call", trial_expires_at: trialExpiresAt };
+    const h = trialRun(row);
+    const ordinary = [];
+    h.opts.sendStage = async (...args) => ordinary.push(args);
+    assert.equal(computeStage(row, { now: TRIAL_NOW, env: {} }), "done");
+    assert.equal(await onboardNudgeAll({ ...h.opts, now: TRIAL_NOW }), expectedCount);
+    assert.equal(ordinary.length, 0);
+    assert.equal(h.sent.some((args) => /Phone saved|Subscribe/i.test(args[2])), false);
+  }
+});
+
 test("notifications_enabled=false gets nothing", async () => {
   const calls = [];
   const sent = await onboardNudgeAll({
