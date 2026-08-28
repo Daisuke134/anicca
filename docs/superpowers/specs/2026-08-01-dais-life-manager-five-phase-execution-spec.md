@@ -4387,9 +4387,9 @@ bindされ、未確認founder videoをexpected blockerとして保持し`submit_
 - [x] O3B-03 local Moneytree adapterを実接続。Codex app-serverからstructured accountを取得し、口座番号を破棄したJPY recordへ変換。実readbackは`connected=true`・account 1
 - [ ] O3B-03C `WAIT_EXTERNAL`: Moneytree LINK申請済み。production credential受領後にCloud OAuthを接続
 - [ ] O3B-05 `WAIT_EXTERNAL`: Binance credential未登録。取得後にread-only接続
-- [ ] O3B-06 Daisのon-chain walletをread-only取得
-- [ ] O3B-07 内部振替の二重計上防止
-- [ ] O3B-08 merchant正規化と支出category
+- [ ] O3B-06 `WAIT_EXTERNAL`: Dais本人のpublic wallet address未登録。登録後にread-only取得
+- [x] O3B-07 `transfer_id`付き取引の両側をincome・spending・netから除外し、focused testで二重計上0を実証
+- [x] O3B-08 merchantの空白を決定論的に正規化し、provider categoryを保持、欠落時だけ`未分類`にするfocused testを実証
 - [ ] O3B-09 subscription検出と利用状況
 - [ ] O3B-10 1か月・3か月・12か月集計
 - [ ] O3B-11 net worth、cash flow、burn、runway、budget、baseline、anomaly
