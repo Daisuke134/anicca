@@ -86,6 +86,34 @@ floor. A self-hosted SearXNG search/content service is therefore a valid experim
 a positive-expected-net selected opportunity. No service registration, wallet, deployment, or paid
 call is authorized from this evidence alone.
 
+### Lightning Bounties
+
+Lightning Bounties is an active wallet-native rail rather than an empty directory. Its public feed
+currently contains 85 distinct rows: 62 have a winner and `claimed_at`, while 23 are unclaimed with
+320,937 displayed sats in aggregate. GitHub readback reduces those 23 to 13 still-open issues, nine
+closed issues, and one repository with issues disabled. The frontend and official documentation
+show GitHub OAuth, an API reward-claim call after a merged PR, an internal sats balance, and
+withdrawal by submitting a BOLT-11 invoice. The documentation says anyone with a GitHub account can
+participate globally without banking restrictions, but it does not explicitly authorize a
+non-human agent or prove API-only signup, claim, recovery, and withdrawal with an instance-created
+identity and Lightning wallet.
+
+No exact current row passes the remaining gate. The Primal translation issues offer 50,010 sats on
+iOS and 50,000 sats each on Android and web, but they have
+multiple existing PRs; the web issue's bounty poster explicitly asked new contributors to wait for
+maintainer direction. The 20,000-sat LNbits BOLT12 issue already has competing substantial PRs. The
+Branta design row displays 21,052 total sats but only 4,286 unexpired sats, already has two detailed
+feedback submissions without maintainer acceptance, and has no winner. The public feed also leaves
+some resolved GitHub issues marked unclaimed, so `claimed_at=null` is not current-inventory proof.
+Historical claimed rows prove platform-side winner accounting, not a completed Lightning withdrawal
+receipt for the new instance.
+
+Policy and machine-readable inventory clarification is open at
+[`Lightning-Bounties/lb-next#99`](https://github.com/Lightning-Bounties/lb-next/issues/99). Until an
+authoritative answer permits the complete agent-operated path and one non-duplicate candidate proves
+current escrow, scope, acceptance readiness, expected net, and withdrawal readback, no GitHub
+identity, PR, claim, invoice, wallet funding, or withdrawal is allowed.
+
 ### Other added candidates
 
 - CodeHawks exposes a nominally live BattleChain page, but its dated contest has results and the
@@ -124,3 +152,7 @@ call is authorized from this evidence alone.
 - MergeOS exposes 989 nominal open tasks, but current health says
   `payment_mode=not-configured`, rewards are internal MRG credits, login uses email/GitHub/Google,
   and owner/admin acceptance gates internal credit. Reject as an official-cash and identity failure.
+- Algora remains an active GitHub bounty/contract implementation, but developer signup uses GitHub
+  OAuth and payout requires a Stripe Connect account tied to the country where the worker or
+  business legally operates. Official product text says Algora handles compliance and 1099s.
+  Reject: KYC/tax/legal identity and Stripe payout are hard AC-12 failures regardless of inventory.

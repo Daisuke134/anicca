@@ -799,7 +799,14 @@ income.
    acceptance is allowed, but its title/body contradict each other, 18 competing PRs remain open,
    platform-wide PAID inventory is zero, payout tx/winner/approval are null, and expected net is
    unproved. MergeOS reports `payment_mode=not-configured` and internal MRG rewards behind
-   account gates. Agentic Market
+   account gates. Algora requires GitHub OAuth plus a country-bound Stripe Connect payout account
+   and advertises compliance/1099 handling, so it fails AC-12. Lightning Bounties has real Bitcoin
+   escrow/claim history and 13 feed rows whose GitHub issues remain open, but the high-value rows are
+   duplicate-saturated or explicitly waiting for maintainer direction, stale/closed rows remain in
+   the unclaimed feed, and agent-operated OAuth/claim/BOLT-11 withdrawal permission is unproved.
+   Clarification is open at `Lightning-Bounties/lb-next#99`; no identity, PR, claim, invoice, funding,
+   or withdrawal may begin before an affirmative reply and one exact non-duplicate candidate passes
+   all public-gate fields. Agentic Market
    proves active x402 input demand and one
    `isNew=true` service earns an estimated 22.961 USDC/30d, but the flag definition and listing age
    are unknown, so it does not prove new-seller acquisition. Of that estimate, 13.995 USDC is
