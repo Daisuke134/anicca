@@ -232,3 +232,12 @@ Baseline: focused Life Manager suite 175/175 PASS.
 - Visual product and architecture SSOT: `docs/superpowers/specs/2026-08-28-life-manager-cloud-telegram-product-ux-design.md`.
 - Sole active checklist: `docs/superpowers/plans/2026-08-28-life-manager-cloud-on-time-core-finish.md` — structural return guard → server-owned trial → cohort/UI/upgrade → PR/deploy → real actor/event E2E → replay-zero/cleanup.
 - OpenClawMU/Hermes is a post-launch conversation sidecar candidate, not the tenant/billing/ledger owner and not an active implementation item.
+
+## Task 13A server-owned trial persistence
+
+- Plan ruling: source-regex migration assertions were rejected as change detectors. The slice uses a disposable real PostgreSQL harness plus an independent production rollback preflight.
+- Implementation: `736979c2f` adds nullable `trial_expires_at`, same-signature onboarding RPC replacements, one-time `notifications.enable` grant, dashboard terminal stages, JSON deadline/active fields, preserved tenant lock/scope/ACL, and no `paid` writer. `d8974760d` strengthens the real PostgreSQL evidence.
+- TDD/readback: missing-migration RED; local PostgreSQL `grant_once=1 trial_active=1 tenant_scope=1 acl=1 paid_writes=0`; unchanged Node panel/onboarding contracts 34/34.
+- Review R0 found two Important evidence gaps (exact three-day window and actual paid-column write tripwire) plus one Minor pre-grant JSON gap. Fix round 1 added server clock bounds, `BEFORE UPDATE OF paid` rejection, and null/false state. Scoped fresh Sol re-review: all addressed, new breakage none, ship.
+- Production Supabase rollback-only preflight: exact transaction-timestamp + 3 days, repeat deadline unchanged, tenant/chat isolation, service-role ACL, paid false. Post-rollback official readback is `trial_column_count=0`, `fixture_count=0`, `trial_body_present=false`.
+- Task 13A code/preflight status: complete at `d8974760d`. Production migration apply remains intentionally deferred to finish-plan Task 6 immediately before exact-SHA deploy.

@@ -176,7 +176,7 @@ Fresh Sol reviews the exact commit for return blocks, multiple events, NFKC/home
 - Produces: nullable `lm_users.trial_expires_at timestamptz`; JSON `trialExpiresAt: string|null`, `trialActive: boolean`.
 - Grants once: exact `notifications.enable` transition writes `coalesce(trial_expires_at, now() + interval '3 days')` under the existing user-row lock.
 
-- [ ] **Step 1: Add a real PostgreSQL behavior RED**
+- [x] **Step 1: Add a real PostgreSQL behavior RED**
 
 Create `test/postgres/lm-trial-first.integration.sh` by reusing the local-PostgreSQL/Docker bootstrap and cleanup structure from `test/postgres/panel-score-postgres.integration.sh`. Use a disposable database named `lm_trial_test`; create roles `anon`, `authenticated`, and `service_role`; create minimal `lm_users` and `lm_panel_preferences` tables with every column referenced by `2026-08-27-lm-panel-onboarding-core.sql`; apply that core migration, then require the new migration file to exist before applying it.
 
@@ -206,7 +206,7 @@ Also require `phone.skip`, `call.enable`, and `call.skip` end at `done`; a diffe
 lm-trial-first-postgres: PASS grant_once=1 trial_active=1 tenant_scope=1 acl=1 paid_writes=0
 ```
 
-- [ ] **Step 2: Run RED**
+- [x] **Step 2: Run RED**
 
 ```bash
 cd apps/life-manager
@@ -215,7 +215,7 @@ bash test/postgres/lm-trial-first.integration.sh
 
 Expected: FAIL with `missing migration: migrations/2026-08-28-lm-trial-first.sql` before any trial RPC can run.
 
-- [ ] **Step 3: Create the additive migration**
+- [x] **Step 3: Create the additive migration**
 
 The migration starts with:
 
@@ -252,7 +252,7 @@ WHERE uid = p_uid;
 
 Retain `SECURITY DEFINER SET search_path = public, pg_temp`, the tenant/chat scope checks, user-row `FOR UPDATE`, service-role grants, and anon/authenticated revokes. Do not redefine `transition_with_calendar`; it already calls the replaced transition by name.
 
-- [ ] **Step 4: Run local GREEN and related contracts**
+- [x] **Step 4: Run local GREEN and related contracts**
 
 ```bash
 bash test/postgres/lm-trial-first.integration.sh
@@ -261,7 +261,7 @@ node --test lib/panel-api.test.js test/onboarding-resume-contract.test.js test/c
 
 Expected: the PostgreSQL script prints its single PASS line and the unchanged Node contracts all PASS.
 
-- [ ] **Step 5: Commit and fresh migration review**
+- [x] **Step 5: Commit and fresh migration review**
 
 ```bash
 git add apps/life-manager/migrations/2026-08-28-lm-trial-first.sql apps/life-manager/test/postgres/lm-trial-first.integration.sh
@@ -270,7 +270,7 @@ git commit -m "feat(life-manager): grant one server owned trial"
 
 Fresh Sol reviews migration order, same-signature replacement, one-time grant, row locking, ACL, no paid writer, and clean-install ordering.
 
-- [ ] **Step 6: Primary performs production rollback preflight only**
+- [x] **Step 6: Primary performs production rollback preflight only**
 
 Run the exact migration inside `BEGIN; ... ROLLBACK;` against production PostgreSQL and inspect zero persistent row/schema drift. Do not apply it yet: the current deployed selector does not admit trial tenants, while the new selector cannot query the column before it exists. Record the following rollback readbacks:
 
