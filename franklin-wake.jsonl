@@ -36422,3 +36422,13 @@
 {"ts":1787905512,"wake_id":"00MTCOS2IE03B96061752A4A2D","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1787905642,"wake_id":"00MTCOUV12C55F091DC0FA4FB9","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1787905773,"wake_id":"00MTCOXNZJ0376A4BE364D4F16","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787905908,"wake_id":"00MTCP0K3ED4E9B8A9E2F84CC9","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787906045,"wake_id":"00MTCP3HXV14AC5CB1AF6A41FF","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787906117,"wake_id":"00MTCP51F693E33EA7DE854637","kind":"shutdown","sleep_s":0}
+{"ts":1787906127,"wake_id":"00MTCP59IQ58D97B27A4684C83","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1787906198,"wake_id":"00MTCP6RW21FBB575C2B37419D","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787906330,"wake_id":"00MTCP9LMI6DE39C8214D84025","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787906375,"wake_id":"00MTCPAKQ44EDBAAA0B35C47A9","kind":"shutdown","sleep_s":0}
+{"ts":1787906386,"wake_id":"00MTCPAT7S627A32F702054111","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1787906458,"wake_id":"00MTCPCCW34694F0B7FD6D4D5F","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787906591,"wake_id":"00MTCPF79W59C608A57FA74112","kind":"narrate","sleep_s":120,"model":"auto"}
