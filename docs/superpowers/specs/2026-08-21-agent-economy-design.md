@@ -32,8 +32,9 @@ and settlement:
 4. pay its own VM/domain shelter only after a 30-day graduation gate;
 5. publish the reusable skill and, only after graduation, create a separately capped child.
 
-The long-term user experience is phone-only: the user authorizes policy and sees evidence from a
-phone while the durable agent runs in the cloud. The current Mac runtime is a bootstrap and
+A phone is sufficient as an optional consumer and readback client, but runtime, authority,
+recovery, and the economy never require one. The durable agent runs in the cloud without phone
+approval. The current Mac runtime is a bootstrap and
 development environment, not a permanent product dependency.
 
 ## Naming and product decision
@@ -68,13 +69,13 @@ The objective is complete only when one production instance satisfies every row.
 | AC-3 | Accounting is append-only, signed-net, and replay-zero | canonical receipt identity, verifier result, one ledger contribution, second reconcile adds zero |
 | AC-4 | The same instance pays for a real inference/compute call from its accepted external earnings | wallet/address match, balance conservation excluding seed/top-up/subsidy, x402/provider settlement, service response, cost ledger row |
 | AC-5 | The same instance pays for usable shelter from accepted external earnings | balance conservation excluding seed/top-up/subsidy, provider settlement, VM/domain readback, workload health, termination/renewal receipt |
-| AC-6 | No operator executes the earning-to-settlement path | durable event trace contains no manual execution step; policy approval and legally required identity remain explicit boundaries |
+| AC-6 | No human executes or approves the earning-to-settlement path | durable event trace proves the instance selected, identified, worked, verified, submitted, settled, reconciled, and retried without operator action, approval, identity ceremony, or human-provided credential |
 | AC-7 | Graduation remains true for 30 trailing days | external realized net >= 1.5x compute+shelter, 30-day runway, human-paid inference = 0, all inputs non-empty |
 | AC-8 | A fresh clone reproduces the public control plane | canonical `main`, clean install, focused/OSS tests, isolated secrets/state, rollback readback |
 | AC-9 | Public claims match receipts | article/dashboard link to redacted evidence and retain unknown/zero states without estimates |
 | AC-10 | Replication cannot create hidden liabilities | separately derived child identity, explicit seed/cap, no key reuse, no self-payment counted as revenue, parent remains solvent |
-| AC-11 | The Mac is no longer a runtime dependency | the same release and durable state are restored in cloud, phone policy/readback works, the 30-day graduation window completes without a Mac process, and rollback/recovery is proven |
-| AC-12 | The recurring closed loop has no human execution or personal credential dependency | the instance may use its wallet/direct x402 or one dedicated legal agent/company account created during explicit one-time onboarding; credential ownership, scope, revocation, payout destination, and official login/payout readback are recorded; every later earn→compute→shelter→replication cycle runs without a personal OAuth/browser session, personal account, card, human-funded subscription, BYOK, impersonation, or renewed human login |
+| AC-11 | The Mac and phone are no longer runtime dependencies | the same release and durable state are restored in cloud, optional phone readback works, the economy continues while the phone is disconnected, the 30-day graduation window completes without a Mac process, and autonomous rollback/recovery is proven |
+| AC-12 | The entire closed loop has zero human credentials and zero human identity dependency | the instance generates and controls its own wallet, mail, GitHub, provider accounts, and scoped credentials; fresh-session login and official payout readback succeed without a human-provided email, password, OAuth/session, phone, CAPTCHA solution, KYC/tax identity, bank account, card, API key, subscription, approval, impersonation, or recovery step |
 
 No individual row, including AC-2, is sufficient to claim financial independence.
 
@@ -89,7 +90,7 @@ No individual row, including AC-2, is sufficient to claim financial independence
 | Compute | one receipt-bound BlockRun attempt settled 0.002 USDC, returned no usable output, and is reconciled once as failed-output cost | use a current explicit paid model, then join a new settlement plus usable output into one replay-zero receipt |
 | Shelter | Franklin 1 previously ran Mac-off on Nosana for 6 hours and performed replacement handover, but the funds were internal bootstrap and current continuity is stopped | reproduce the lifecycle from accepted external earnings; a direct-x402 x402Compute raw VPS canary is first |
 | Control plane | local Mac and mixed provider scripts | Life Manager remains SSOT; Cloudflare is an optional hosted edge, not the money SSOT |
-| Publication | useful build logs and a historical Nosana Level 3 proof exist; the current BlockRun payment is truthfully classified as failed-output cost | draft the honest build log now; publish article 1 after P3 plus canonical-main/fresh-clone proof, shelter proof after P4, and graduation proof after AC-1 through AC-9 |
+| Publication | useful build logs and a historical Nosana Level 3 proof exist; the current BlockRun payment is truthfully classified as failed-output cost | draft the honest build log now; publish article 1 after P3 plus canonical-main/fresh-clone proof, shelter proof after P4, and graduation proof after AC-1 through AC-9 plus AC-11 and AC-12 |
 | Replication | vision only | one graduated parent creates a capped, separately accountable child and preserves replay-zero |
 
 ## Skill portfolio boundary
@@ -144,12 +145,13 @@ a future idea before a real provider, effect contract, and receipt readback exis
 
 ```mermaid
 flowchart TB
-  Phone["Phone UI<br/>authorize policy · inspect receipts"] --> API["Life Manager cloud API"]
+  Phone["Phone UI<br/>optional read-only"] -. inspect .-> Observer["observer API"]
 
   subgraph LM["Life Manager · one repository / one release"]
     Release["immutable release<br/>~/loops/life-manager/current"] --> Loop["single wake engine"]
-    API --> Loop
+    PaidIngress["paid service ingress"] --> Loop
     Loop --> Registry["skill registry"]
+    Loop --> Status["status/readback"]
     Registry --> Earn["earn adapters<br/>gig · TaskMarket · x402 · writer"]
     Registry --> Policy["agent-economy policy<br/>reserve · cap · solvency"]
   end
@@ -158,6 +160,8 @@ flowchart TB
   Fence --> Buyer["outside buyer/provider"]
   Buyer --> Verify["official + chain verifier"]
   Verify --> Ledger["append-only ledger<br/>external net revenue"]
+  Ledger --> Observer
+  Status --> Observer
 
   Ledger --> Gate{"solvent and within cap?"}
   Gate --> Food["BlockRun ClawRouter<br/>inference / tools"]
@@ -176,8 +180,10 @@ flowchart TB
   Publish --> Child["separately capped child identity"]
   Child -. same proof contract .-> Registry
 
-  Edge["Cloudflare Agents / Workflows<br/>optional hosted edge + x402 seller"] --> API
+  Edge["Cloudflare<br/>optional observer edge"] -. read-only .-> Observer
+  Seller["optional x402 seller edge"] --> PaidIngress
   Edge -. normal Cloudflare billing<br/>is not self-paid shelter .-> Costs
+  Seller -. normal Cloudflare billing<br/>is not self-paid shelter .-> Costs
 ```
 
 The old global `~/loops/current` is not a control-plane boundary. Another repository can replace
@@ -274,9 +280,9 @@ replace the existing runtime or money journal:
 
 | Cloudflare component | Adopt | Boundary |
 |---|---|---|
-| Agents SDK state/schedules | phone-facing policy session, recoverable observer, and notification edge | not the economic identity, signer, or canonical ledger |
+| Agents SDK state/schedules | optional phone-facing observer and notification edge | not the economic identity, signer, policy authority, recovery dependency, or canonical ledger |
 | Workflows | bounded retry for long external work where duplicate effects are fenced | provider receipt still decides success; workflow completion does not |
-| `examples/x402` + `@x402/hono` | expose a paid HTTP Life Manager service | settle to the target wallet and independently reconcile the Transfer log |
+| `examples/x402` + `@x402/hono` | expose a paid HTTP Life Manager service | settle to the instance-generated wallet and independently reconcile the Transfer log |
 | `examples/x402-mcp` + `paidTool()` | sell one bounded MCP tool and advertise price in tool metadata | confirmation may be null only inside an already-authorized cap; no unlimited auto-pay |
 | `@x402/fetch` | client-side automatic 402 retry for exact/upto providers | Life Manager's treasury authorization and receipt verifier remain outside the wrapper |
 | Pay Per Crawl/deferred x402 | future article/data licensing experiment | current credit-card/bank deferred settlement is a human-funded liability, not self-paid shelter |
@@ -419,12 +425,16 @@ solvency, and risk; exponential replication is a measured possible result, not a
   never manufacture a graduation event.
 - Each parent and child has a distinct identity, wallet, state root, proxy port, and cost ledger.
   Keys and receipts are never borrowed across instances.
-- The recurring self-sustaining path never uses a credit card, personal cloud account, personal
-  OAuth/browser session, human-funded subscription, BYOK, or impersonated identity. The preferred
-  identity is an instance wallet with direct x402/USDC. A dedicated legal agent/company account may
-  be created once during explicit onboarding only when its credential is scoped/revocable, stored in
-  the private credential SSOT, bound to the instance payout wallet/account, and proven to work in a
-  fresh non-human session. Every later cycle must run without renewed human login or payment.
+- The self-sustaining path never uses a human-provided email, password, OAuth/browser session,
+  phone, CAPTCHA solution, KYC/tax identity, bank account, card, cloud account, subscription, BYOK,
+  API key, approval, or recovery action. The instance generates its own wallet and any mail,
+  GitHub, or provider account, stores self-created credentials in the private credential SSOT, and
+  proves fresh-session login plus payout readback itself. If signup, operation, recovery, or payout
+  needs a person even once, the lane is incompatible and rejected.
+- Each instance owns one encrypted, isolated credential root outside releases. It contains only
+  credentials generated by that instance and binds their creation receipts to the same instance
+  wallet address. Existing shared, owner-only, imported, or provenance-unknown wallets/accounts are
+  historical evidence only and cannot satisfy AC-12.
 - A receipt is admissible only after chain/provider, sender or payer, asset/contract, recipient,
   signed amount, fee, idempotency key, and terminal status are checked.
 - The ledger is append-only and signed-net. One canonical receipt contributes once; negative
@@ -432,11 +442,19 @@ solvency, and risk; exponential replication is a measured possible result, not a
   sidecar rather than rewriting history.
 - “No human in the loop” means no operator action or human credential performs selection,
   execution, delivery, settlement, compute purchase, shelter provision/renewal, reconciliation, or
-  child creation. A founder may define the initial policy and seed the first parent, but that seed
-  is a non-revenue liability; every descendant is seeded only from a graduated parent's genuine
-  surplus. KYC, identity, interview, attendance, voice, irreversible personal spending, and legally
-  required consent remain human boundaries and therefore cannot be hidden inside a no-human lane.
-  The agent rejects work requiring it to impersonate a person.
+  child creation. The checked-in specification is standing policy, not a per-effect approval. A
+  founder seed for the first parent is a disclosed non-revenue liability; every descendant is
+  seeded only from a graduated parent's genuine surplus. Work requiring KYC, tax identity, bank
+  onboarding, interview, attendance, voice, CAPTCHA, human recovery, irreversible personal
+  spending, or legally required human consent is incompatible and rejected. The agent never
+  impersonates a person.
+- Development and the first immutable activation are the genesis phase, outside the measured
+  closed loop. Humans may write code, publish that immutable release, and provide only the disclosed
+  crypto seed. They may not create, provide, import, or recover mail, GitHub, provider, wallet, or
+  other credentials before activation. The instance creates those identities itself, and the
+  activation receipt binds their generation provenance to the instance wallet. From that receipt
+  onward no human action, credential, approval, recovery, or new seed is admissible. The founder
+  seed is a non-revenue liability and cannot prove self-funding.
 - Spawn is a gated economic action. A child receives only an explicit recoverable seed inside the
   parent's surplus; neither the seed nor child self-payment counts as outside revenue.
 
@@ -449,8 +467,9 @@ The branch contains production code and focused tests for:
 2. chain/provider receipt reconciliation with duplicate suppression and append-only corrections;
 3. a TaskMarket adapter behind shared reserve and session-cap policy;
 4. trailing 30-day status and a fail-closed compute/shelter graduation gate;
-5. owner-only EVM wallet bootstrap under `$ANICCA_HOME/.automaton/wallet.json`; creation does not
-   fund, sign, or broadcast;
+5. historical owner-only EVM wallet bootstrap under `$ANICCA_HOME/.automaton/wallet.json`; creation
+   does not fund, sign, or broadcast, and this wallet cannot satisfy AC-12 without instance-bound
+   generation provenance;
 6. public `skills/agent-economy/SKILL.md`, `run.sh`, status command, and registry entry.
 
 Earlier branch evidence recorded 52/52 agent-economy tests, 2/2 install tests, and 11/11 OSS
@@ -542,7 +561,7 @@ Japanese title:
 Draft it now as a build log with the outside 0.003-USDC receipt, the current 429 failure, the prior-art
 table, and explicit non-claims. Publish the first article only after P3 closes, the feature reaches
 canonical `main`, and a fresh clone reproduces the linked command path. Publish a shelter sequel
-after P4. Publish the graduation case study only after AC-1 through AC-9 and use the stronger title
+after P4. Publish the graduation case study only after AC-1 through AC-9 plus AC-11 and AC-12, and use the stronger title
 “We Made Franklin Earn and Pay Its Own Way.” AC-10 is separately required before claiming
 replication. Do not republish the old article as a new success claim.
 
@@ -589,8 +608,10 @@ The proposed 30-day sequence mirrors the official role:
    paid-compute receipt, and one reproducible command path;
 2. **Week 2 — conversion:** ship a tiny BlockRun receipt fixture/upstream contribution and an
    attributed quickstart page; measure click → first paid call;
-3. **Week 3 — retention:** publish a cost/reliability benchmark and personally help builders reach
+3. **Week 3 — retention:** let the autonomous published quickstart and service help builders reach
    a second call, recording 7-day wallet retention only through BlockRun-approved attribution;
+   founder-assisted conversions remain a separate external experiment and contribute zero to the
+   autonomous graduation proof;
 4. **Week 4 — report/outreach:** publish the funnel, what failed, and the next experiment; send the
    same evidence as the AI Native Growth Head application package.
 
@@ -610,7 +631,8 @@ YC alignment is real but not sufficient. YC's current RFS says consumer AI shoul
 “stay healthy” and “manage our money,” and its crypto RFS says agents will use crypto networks as
 financial rails. Fall 2026's on-time deadline has passed, but YC's official apply page still accepts
 late applications. The application should lead with the outside payer, replay-zero ledger,
-receipt-funded compute/shelter milestones, and phone-only user outcome; civilization/AGI remains
+receipt-funded compute/shelter milestones, and the outcome that one phone is sufficient for the
+user while unnecessary for runtime, authority, or recovery; civilization/AGI remains
 the long-term consequence, not the opening evidence.
 
 ### Event watch — observed 2026-08-27
@@ -648,7 +670,7 @@ retroactive attendance claim. No travel booking or RSVP is authorized by this sp
 | Nodexo capped canary | provider E2E | externally earned balance → capped x402 → SSH → workload → terminate → receipt and conserved balance | price page or subsidy mistaken for compute |
 | Conway shelter canary | provider E2E | externally earned balance → capped x402 → VM/domain → health → terminate/renew → receipt and conserved balance | landing page or top-up mistaken for shelter |
 | autonomy trace audit | system/E2E | selection through reconciliation has durable events and no operator execution step | hidden human execution mislabeled autonomous |
-| no-recurring-human-credential audit | system/security | earn, compute, shelter, renewal, and spawn use the instance wallet/direct x402, wallet-derived credentials, or one dedicated legal agent/company credential with onboarding/readback evidence; later cycles need no human session | personal account/session, card, human-funded subscription, BYOK, impersonation, or renewed human login hidden in the loop |
+| zero-human-credential audit | system/security | the instance creates and controls wallet/mail/GitHub/provider identity, signs in from a fresh session, works, submits, receives, spends, renews, recovers, and spawns without any human credential/action | one-time onboarding, personal account/session, phone/CAPTCHA, KYC/tax/bank/card, approval, subscription, BYOK, impersonation, or recovery hidden in the loop |
 | 30-day graduation | system | all inputs present, net coverage and runway pass, human-paid inference zero | fail-open shelter/spawn |
 | replay-zero | system | rerun performs no duplicate provider effect and adds no duplicate ledger value | repeated external action |
 | child isolation | system/security | child cannot read parent key/state, seed is a liability/transfer not revenue, parent remains solvent | circular funding and shared identity |
@@ -672,15 +694,16 @@ provider E2E rows above.
 - existing Coconala/gig, TaskMarket, x402 seller, writer/e-book route, and future product sales as
   adapters;
 - Cloudflare, BlockRun, Conway, and direct-x402 provider adapters behind one ledger;
-- cloud-hosted operation with phone-based authorization and evidence views;
+- cloud-hosted operation with optional phone observation/evidence views that never authorize or
+  unblock the economy loop;
 - capped post-graduation replication with distinct identities.
 
 ### Out of scope until separately authorized or proven
 
 - splitting Agora, Franklin, profitable-cloud, or agent-economy into another repository/runtime;
 - claiming completion, profit, “world first”, revenue, shelter, or scale without receipts;
-- automated recovery, KYC, interviews, attendance, voice, identity impersonation, or personal
-  account/wallet spending;
+- recovery that requires or automates a human identity/credential, KYC, interviews, attendance,
+  voice, identity impersonation, or personal account/wallet spending;
 - self-buying, wash transactions, token emissions, or child/parent transfers counted as revenue;
 - trading/yield before a stable external revenue lane and surplus gate;
 - replacing Life Manager with Automaton or treating Cloudflare billing as x402-paid shelter;
@@ -690,8 +713,9 @@ provider E2E rows above.
 
 ### One-way execution order — start to finish
 
-This is the program cursor. Work only on the first unchecked row whose prerequisites are complete;
-do not open a later provider, article, cloud migration, or child lane early.
+This is the program cursor. Work only on the first unchecked required row whose prerequisites are
+complete; an `optional` row never holds or advances the cursor. Do not open a later provider,
+article, cloud migration, or child lane early.
 
 **Current cursor — Order 5A starts with live opportunity acquisition, not a marketplace deployment.** The only accepted 0.003-USDC revenue
 receipt is fully allocated: 0.002 USDC is the reconciled failed-compute cost and 0.001 USDC is the
@@ -701,10 +725,13 @@ controlled buyer has produced a new settlement. Research in
 `outputs/agent-economy-earning-landscape.md` rejects permanent marketplace preference. Olas has
 real traffic but extreme seller concentration; uGig is low-value and repetitive; the current Agent
 Bounties job has seven expirations and zero settlements. Immunefi has the deepest verified standing
-inventory, while Agentic Bug Hunter supplies a tested analysis engine but retains a human-submit
-boundary. Order 5A therefore builds one read-only scout, selects one policy-compatible funded job,
+inventory, while Agentic Bug Hunter supplies a tested analysis engine but its upstream human-submit
+path is incompatible and remains disabled. Order 5A therefore builds one read-only scout, selects
+one publicly provable zero-human-compatible opportunity, creates only the identity that opportunity
+needs, revalidates the opportunity after identity creation,
 then adds only that provider's minimal effect adapter. Resume Order 5B only after an official payout
-to the target wallet/account passes the outside-payer verifier and appends once with replay-zero. A
+to the new instance wallet generated and proven in 5A.3 passes the outside-payer verifier and
+appends once with replay-zero. A
 self-purchase, bootstrap/top-up, internal transfer, historical-row reclassification, reserve spend,
 returned claim bond, or unverified marketplace event cannot satisfy this prerequisite.
 
@@ -714,16 +741,16 @@ returned claim bond, or unverified marketplace event cannot satisfy this prerequ
 | 2 | Immutable, namespaced Life Manager owner | 1 | sealed release, loaded process, rollback, natural replay-zero | complete |
 | 3 | One outside sale | 1-2 | canonical 0.003-USDC chain receipt and second reconcile adds zero | complete |
 | 4 | Reconcile failed BlockRun settlement and close its consumed funding | 3 | 0.002-USDC cost row, tx/log join, stale-model diagnosis, no receipt reuse | complete |
-| 5A | Earn one outside-funded bounty reward | 4 | complete 5A.1-5A.10 below in order | **in progress — read-only scout first; no application/report/claim sent** |
+| 5A | Earn one outside-funded bounty reward | 4 | complete 5A.1-5A.11 below in order | **in progress — read-only scout first; no account/application/report/claim sent** |
 | 5B | Complete paid BlockRun inference | 5A | current explicit model, successful output, cost receipt funded only by new spendable accepted earnings, balance conservation, replay-zero | pending |
 | 6 | Revenue-funded ephemeral BlockRun compute | 5B | Modal payment, output, teardown, joined receipt | pending |
 | 7 | Integrate feature into canonical `main` | 4-6 | normal merge, clean tests, fresh-clone reproduction, launchd swap-race regression; no force-push | pending |
 | 8 | Publish article 1 and BlockRun quickstart | 7 | durable public URL, redacted receipt links, attributed quickstart | pending |
 | 9 | Revenue-funded raw VPS shelter | 7 | x402Compute pay/provision/restore/health/renew-or-terminate receipts | pending |
 | 10 | Publish article 2: shelter proof | 9 | durable public URL linked to joined shelter evidence | pending |
-| 11 | Add hosted phone edge and paid service | 9 | recoverable Cloudflare edge, phone policy/readback, outside x402 sale | pending |
-| 12 | Operate without the Mac for 30 days | 9-11 | continuous cloud evidence, real P&L, runway, no-human-credential audit | pending |
-| 13 | Graduate the parent and publish the public skill | 12 | AC-1 through AC-9 and AC-12, clean-clone install, dashboard, docs | pending |
+| 11 | Operate without the Mac or phone for 30 days | 9 | continuous cloud evidence, autonomous recovery, real P&L, runway, zero-human-credential audit | pending |
+| 12 | Add optional hosted phone observer and paid service | 9 | non-gating observer readback with disconnect-continuity proof; exclude human-funded edge from AC-11/12 evidence | optional — never gates cursor |
+| 13 | Graduate the parent and publish the public skill | 11 | AC-1 through AC-9 plus AC-11 and AC-12, clean-clone install, dashboard, docs | pending |
 | 14 | Create exactly one capped child | 13 | separate identity/state/wallet/proxy, seed recorded as non-revenue | pending |
 | 15 | Graduate the child and measure the cohort | 14 | child passes the same 30-day gate; `R_eff` and survival are published | pending |
 | 16 | Publish article 3 and decide whether to scale | 15 | parent+child case study, reproduction commands, independent audit | pending |
@@ -731,32 +758,39 @@ returned claim bond, or unverified marketplace event cannot satisfy this prerequ
 #### Order 5A atomic TODO
 
 1. [ ] **5A.1 — Scout:** read current Immunefi, Agent Bounties, Olas, uGig, Code4rena, Sherlock, and
-   Cantina inventory and normalize scope, funding, recent payout, competition, credentials, payout
-   rail, deadline, expected compute, and official receipt fields without reserving or submitting.
-2. [ ] **5A.2 — Gate:** select exactly one opportunity with explicit safe harbor, machine-readable
-   scope, positive expected net, no pay-to-submit, and a legal account/wallet path. Reject cumulative
-   marketplace volume, self-posts, social spam, token emissions, and unverifiable payout claims.
-3. [ ] **5A.3 — Identity:** use one dedicated legal agent/company identity and payout wallet/account;
-   complete any one-time legal KYC/tax onboarding outside the recurring loop, record the credential
-   owner and official payout readback, and prove recurring work needs no human OAuth/browser
-   session. Reject any lane that requires a personal session or impersonation after onboarding.
-4. [ ] **5A.4 — Engine:** if 5A.2 selects authorized security work, pin Agentic Bug Hunter as an
+   Cantina inventory and normalize scope, funding, recent payout, competition, signup/identity
+   requirements, payout rail, deadline, expected compute, and official receipt fields without
+   reserving, creating an account, or submitting.
+2. [ ] **5A.2 — Public gate:** using read-only public evidence, select exactly one opportunity with
+   explicit safe harbor, machine-readable scope, positive expected net, no pay-to-submit, an
+   official wallet payout/readback path, and signup/submission terms that permit a self-created
+   agent identity with zero human credentials. Reject cumulative volume, self-posts, social spam,
+   token emissions, KYC/tax/bank/card, phone/CAPTCHA, approval, and unverifiable payout claims.
+3. [ ] **5A.3 — Self-owned identity:** generate only the selected opportunity's required wallet,
+   mail, GitHub, and provider credentials inside the per-instance encrypted credential root; bind
+   creation receipts to the instance wallet and prove fresh login/recovery without human action.
+4. [ ] **5A.4 — Revalidate:** after identity creation and before work, re-read canonical terms,
+   funding, scope, competition, deadline, payout destination, automation permission, and expected
+   net. Stop without work or submission on any drift or identity mismatch.
+5. [ ] **5A.5 — Engine:** if 5A.2 selects authorized security work, pin Agentic Bug Hunter as an
    analysis-only component and enable only that program's allowed source/recon modules. Keep its
    upstream submit path disabled, deterministic scope checks, request audit, rate caps, and
-   exclusions. Enable a separate submit adapter only when the platform and exact program explicitly
-   permit agent-operated submission; otherwise reject the lane as no-human incompatible.
-5. [ ] **5A.5 — Adapter:** TDD the smallest provider adapter and durable
+   exclusions. Never call its human-approval submit path. Enable a separate autonomous submit
+   adapter only when the platform and exact program explicitly permit agent-operated submission;
+   otherwise reject the lane as no-human incompatible.
+6. [ ] **5A.6 — Adapter:** TDD the smallest provider adapter and durable
    inventory→intent→work→validate→submit→payout state machine with reconcile-before-retry fences.
-6. [ ] **5A.6 — Work:** let the natural Life Manager loop work one target deeply within the published
+7. [ ] **5A.7 — Work:** let the natural Life Manager loop work one target deeply within the published
    scope and cost cap; stop on policy drift, ambiguity, rate-limit, out-of-scope asset, or weak proof.
-7. [ ] **5A.7 — Verify:** require a reproducible PoC/benchmark and an independent adversarial agent
+8. [ ] **5A.8 — Verify:** require a reproducible PoC/benchmark and an independent adversarial agent
    review; never submit scanner output, speculation, duplicates, or prohibited exploit effects.
-8. [ ] **5A.8 — Submit:** submit once only when platform/program terms permit the agent-operated
+9. [ ] **5A.9 — Submit:** submit once only when platform/program terms permit the agent-operated
    account and the standing policy covers the report; otherwise keep it draft-only and reject the
    lane as no-human incompatible.
-9. [ ] **5A.9 — Settle/account:** accept income only from official payout/on-chain receipt; split
-   revenue, returned principal, subsidy, gas, compute, platform fee, and tax/KYC liability.
-10. [ ] **5A.10 — Replay:** rerun discovery, intent, submission, payout, and ledger reconciliation
+10. [ ] **5A.10 — Settle/account:** accept income only from official wallet payout/on-chain receipt;
+   split revenue, returned principal, subsidy, gas, compute, and platform fee. Any KYC/tax/bank
+   requirement fails the lane instead of becoming a human liability inside the loop.
+11. [ ] **5A.11 — Replay:** rerun discovery, identity, intent, submission, payout, and ledger reconciliation
     and prove zero duplicate application/report/claim/provider effect or ledger value.
 
 Article work and implementation are therefore interleaved, not “write everything first” or “wait
@@ -921,33 +955,34 @@ receipts. Until then no provider is called graduated shelter.
 3. [ ] Expose one Life Manager tool/service through Cloudflare's x402 seller contract and reconcile
    an outside payment independently.
 4. [ ] Record Cloudflare's normal billing as human-funded/external liability until the agent can
-   settle that bill itself; it cannot satisfy the shelter gate meanwhile.
-5. [ ] Add phone-based policy authorization and receipt inspection without giving the phone custody
-   of runtime secrets.
+   settle that bill itself; until instance-created identity plus external-revenue-funded payment are
+   proven, Cloudflare cannot satisfy or contribute to AC-11, AC-12, shelter, or graduation evidence.
+5. [ ] Add optional phone receipt/status inspection without policy authority, runtime secrets, or
+   any ability to block earning, spending, recovery, renewal, or spawn.
 
-**Exit:** a phone can inspect/authorize policy and the hosted edge recovers from interruption, but
-no self-funding claim depends on hidden human billing.
+**Exit:** a phone can inspect status, the economy continues while it is disconnected, and the hosted
+edge recovers autonomously; no self-funding claim depends on phone action or hidden human billing.
 
 ### P6 — graduate, publish, and replicate
 
 1. [ ] Feed real compute, shelter, liquid balance, liabilities, and human-paid-inference evidence into
    the trailing 30-day gate.
-2. [ ] Hold AC-1 through AC-7 for the full window, then pass the fresh-clone and claim audits in AC-8
-   and AC-9 plus the no-human-credential audit in AC-12; independently audit provider receipts and
-   replay.
-3. [ ] Truth-refresh `docs/agent-economy.md`, `.ja.md`, the older Automaton/Franklin pieces, and their
+2. [ ] Complete AC-11 first: restore the same release and durable state in cloud, operate the entire
+   30-day window without a Mac or phone runtime dependency, and prove autonomous rollback/recovery.
+3. [ ] After AC-11, hold AC-1 through AC-7 for the same full window, then pass AC-8, AC-9, AC-11, and
+   AC-12 together; independently audit provider receipts and replay. AC-10 closes only after the
+   separately gated child is created and verified.
+4. [ ] Truth-refresh `docs/agent-economy.md`, `.ja.md`, the older Automaton/Franklin pieces, and their
    public correction notes; article 1 already follows P3+canonical-main, article 2 follows P4, and
    the graduation case study, dashboard, reproduction commands, and hardened public skill publish
-   only after AC-1 through AC-9 pass.
-4. [ ] Prepare a post-event follow-up package for the registration-closed August 27 BlockRun event and
+   only after AC-1 through AC-9 plus AC-11 and AC-12 pass.
+5. [ ] Prepare a post-event follow-up package for the registration-closed August 27 BlockRun event and
    an approval-request package for the October 8 Singapore event, using merged PRs plus the
    evidence-backed demo; never claim registration or attendance without official readback.
-5. [ ] Complete AC-11: restore the same release and durable state in cloud, operate the entire 30-day
-   window without a Mac runtime dependency, prove phone policy/readback and rollback, and only then
-   retire the Mac owner from this lane.
-6. [ ] Create one capped child identity from genuine surplus, prove it cannot access parent keys or
+6. [ ] Retire the Mac owner from this lane only after the AC-11/12 joint audit passes.
+7. [ ] Create one capped child identity from genuine surplus, prove it cannot access parent keys or
    count the seed as revenue, and stop automatically if its runway or evidence becomes invalid.
-7. [ ] Run the child through the same 30-day gate before creating another child; publish the complete
+8. [ ] Run the child through the same 30-day gate before creating another child; publish the complete
    cohort fields, survival status, and `R_eff`. Do not infer exponential sustainability from one
    birth or one surviving parent.
 

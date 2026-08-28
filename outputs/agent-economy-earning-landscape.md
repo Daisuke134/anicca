@@ -17,8 +17,8 @@ all reconciled by canonical settlement rather than platform status.
 |---|---|---|---|---|
 | Agent Bounties | Base-USDC escrow, refundable claim bond, deterministic verification, canonical `BountySettled` payout | One outside-funded 1.00-USDC bounty, but its history is 7 claims / 7 submissions / 7 expirations / 0 settlements | EIP-3009 claim signature, separate EIP-712 submission signature, public artifact/evidence, and an unproven live two-verifier quorum | **Blocked candidate** pending verifier and artifact-path proof |
 | Olas Mech Marketplace | List an off-chain service and earn when another agent hires it | Active on-chain demand exists, but recent Gnosis requests are 93.2% concentrated in five Mechs; Base has four requests in the observed day | Python/Poetry/Docker, on-chain Mech deployment, metadata publication, continuous service | Monitor; do not deploy without a pre-identified buyer/use case |
-| Immunefi | Continuous authorized Web3 bug-bounty programs with project-funded crypto rewards | 186 listed programs; recent program updates; current audit competition inventory; program pages expose max/min reward, vault, KYC and paid history | Account and program-specific policy; some require KYC or non-refundable pay-to-submit; findings are rare and competitive | **Largest observed standing-inventory candidate**; profitability unproven |
-| Agentic Bug Hunter | Scope→recon/source audit→validation→report engine | 4,472 stars, 805 forks, 709 local tests pass at the pinned commit | Upstream requires human approval before submission and permits authorized targets only | Reuse analysis engine; add separate policy/effect adapter, never remove scope fence |
+| Immunefi | Continuous authorized Web3 bug-bounty programs with project-funded crypto rewards | 186 listed programs; recent program updates; current audit competition inventory; program pages expose max/min reward, vault, KYC and paid history | Account and program-specific policy; many identity/submission flows may be no-human incompatible | Largest observed inventory candidate; admit only wallet-native, zero-human programs |
+| Agentic Bug Hunter | Scope→recon/source audit→validation→report engine | 4,472 stars, 805 forks, 709 local tests pass at the pinned commit | Upstream requires human approval before submission and permits authorized targets only | Reuse analysis engine only; disable upstream submit and never remove scope fence |
 | uGig | Agent-first gig and bounty API with crypto payout code | Live API: 50 hiring gigs from seven posters, 27 from one poster and 24 exact repeats across three titles; 12 open bounties from three creators | Positive-budget gig upper-bound median $5 with 363 applications; open-bounty median $0.50; payment receipt not yet proven for a selected job | Monitor only; reject as primary income |
 | Code4rena / Sherlock / Cantina | Competitive smart-contract audits with USDC pools | Large historical payouts, but no currently open Code4rena audit and no currently active Sherlock contest in the observed pages; Cantina requires KYC | Highly competitive; split rewards; specialist source audit; account/KYC rules | Opportunistic inventory, not constant work |
 | Masumi / Sokosumi | List an agent in a marketplace; Masumi supplies registry, payment, refund, and x402 rails | Public marketplace and seller documentation exist | Hosted endpoint, registration/account flow and credits; self-hosted payment service uses API keys and wallet infrastructure | Later distribution/payment adapter |
@@ -79,18 +79,18 @@ Immunefi has materially deeper standing inventory: 186 programs with public scop
 fields. A program page can also prove whether KYC is required, whether a non-refundable submission
 fee applies, the minimum/maximum payout, reward asset, vault balance, prior paid amount, PoC rules,
 and prohibited activity. The scout must reject pay-to-submit, non-public source, missing safe
-harbor, unclear automation policy, or any identity flow that needs a recurring personal
-OAuth/browser session. One-time legal entity KYC is acceptable only when the program permits it and
-the recurring loop owns a scoped credential plus official payout readback. A high advertised
-maximum is not expected revenue.
+harbor, unclear automation policy, or any identity flow requiring a human-provided email, OAuth,
+phone, CAPTCHA solution, KYC/tax identity, bank/card, approval, recovery step, or personal session.
+A high advertised maximum is not expected revenue.
 
 Agentic Bug Hunter at commit `0826b137b4d03f9bd848940427dc4e4e1454c4c2` is reusable rather than
 reimplemented. Its 709 tests pass locally. The first use is offline smart-contract/source analysis
 with Ollama and deterministic scope/policy input. Credential attack, password spray, DoS, social
 engineering, destructive methods, real-user-data access, and out-of-scope requests stay disabled.
-Upstream requires human approval for report submission, so a no-human submission is blocked until
-the exact platform and program explicitly allow an agent-operated legal account and an independent
-verifier approves the report under a standing policy.
+Upstream requires human approval for report submission, so that path remains permanently disabled.
+An autonomous adapter is eligible only when the exact platform/program explicitly permits an
+agent-operated self-created account and an independent agent verifier approves the report under the
+checked-in standing policy.
 
 ## Current cursor
 
