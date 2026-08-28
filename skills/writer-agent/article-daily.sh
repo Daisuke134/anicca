@@ -665,6 +665,7 @@ if route_status == "absent":
         fail("generation-state-invalid")
     attempts = generation.get("attempts")
     latest = attempts[-1] if isinstance(attempts, list) and attempts else None
+    archive_manifest = latest.get("archive_manifest") if isinstance(latest, dict) else None
     empty_interruption = (
         generation.get("version") == 1
         and generation.get("run_id") == run_id
@@ -672,7 +673,12 @@ if route_status == "absent":
         and isinstance(latest, dict)
         and latest.get("status") == "interrupted-safe"
         and latest.get("boundary") == "archived-prepublication-artifacts"
-        and latest.get("archive_manifest") == []
+        and isinstance(archive_manifest, list)
+        and all(
+            isinstance(item, dict)
+            and item.get("path") == "gates/selfimprove-verify.json"
+            for item in archive_manifest
+        )
         and path_status(topic_route_path) == "absent"
     )
     empty_provider_failure = (
