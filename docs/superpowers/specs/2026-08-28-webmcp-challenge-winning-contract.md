@@ -3,11 +3,11 @@
 **Status:** Draft for Dais review — official contract snapshot verified / product concept recommended / implementation not started  
 **Canonical repository:** `https://github.com/Daisuke134/life-manager`  
 **Submission deadline:** September 3, 2026 1:00 PM PT / **September 4, 2026 05:00 JST**  
-**Working product name:** `Opportunity Forge by Life Manager` — final public name is chosen by Dais before submission  
+**Working product name:** `Life Manager — Money Printer`
 **Primary objective:** WebMCP Challenge top 10に入り、賞金・ChatGPT Pro・Codex Micro等を獲得する  
 **Long-term objective:** Life Managerが継続的に収益機会を発見し、応募・実行・納品・着金確認まで閉じるentrepreneur agentになる
 
-**中心主張:** 勝つために、WebMCPを単なる操作APIとして見せない。人とagentが同じ成果物を共同で完成し、失敗から回復し、検証可能なreceiptまで到達する製品として示す。現在の推奨案はOpportunity Forgeだが、公式契約と4軸の証拠基準は製品案が変わっても維持する。
+**中心主張:** Money Printerは「お金を稼ぐSymphony」である。Web上の収益機会を見つけ、案件ごとのpersistent workroomでgeneral agentを完了まで走らせる。設計目標はagentが作業の99%を担い、人間には本人確認、創造的判断、最終承認、現実世界での操作が必要な1%だけを明確なtaskとして返すこと。WebMCPは、人とagentが同じlive stateを共同操作するinterfaceであり、製品をWebMCP Challengeに限定するものではない。99%/1%は実測後だけ対外claimに使う。
 
 ---
 
@@ -17,7 +17,7 @@
 
 1. **不変層:** WebMCPとは何か、公式ルール、提出物、審査構造、失格条件
 2. **戦略層:** 審査4軸を満たすための勝利条件、judge experience、競合基準
-3. **可変層:** 現在の推奨案 `Opportunity Forge`
+3. **可変層:** 現在の推奨案 `Life Manager — Money Printer`
 4. **長期層:** hackathon後もLife Managerが機会を探し、収益へ変えるloop
 
 製品名、visual identity、最初のopportunity sourceは変更できる。公式要件、WebMCPの技術境界、審査証拠、外部作用の安全境界は変更しない。公式ページと本specが衝突した場合は、最新の公式ルールを再取得し、本specを置換する。
@@ -26,7 +26,7 @@
 
 ### 1.1 Hackathon Done
 
-応募完了は、Section 3のofficial pass/fail、Section 7のinternal readiness rubric、Section 14のoperational checklistがすべて閉じ、Devpost側の提出状態を期限内にread backした時だけ成立する。
+Hackathon Submittedは、Section 3のofficial pass/failとSection 14のofficial gatesを閉じ、Devpost側の提出状態を期限内にread backし、submitted artifactsのfreezeを開始した時に成立する。Winning ReadyはSection 7のinternal readiness rubricで別に判定する。
 
 本specでは、次の語を一貫して使う。
 
@@ -159,7 +159,7 @@ Primary sources:
 5. **Language**
    - English、または全materialにEnglish translation
 
-Judgesはlive appを操作せず、text、images、videoだけで判断できる。したがって動画だけで、解く問題、WebMCPが必要な理由、実際の動作、得られる結果まで伝わる必要がある。
+Judgesはlive appを操作しなくても、text、images、videoだけで採点できる。したがって動画だけで、解く問題、WebMCPが必要な理由、実際の動作、得られる結果まで伝わる必要がある。Live appは追加の検証経路として提供する。
 
 ### 3.4 Deadlineとfreeze
 
@@ -246,7 +246,7 @@ Sponsor demoから追加採用する原則:
 5. **Toyではなくcomplete productが欲しい**
    - Executionが独立の均等配点であり、proof of conceptでは不十分と明記される
 
-Pitchの中心は全面自動化ではなく、検証可能な共同作業に置く。
+Pitchの中心を、検証可能な共同作業に置く。
 
 > WebMCP turns websites from interfaces agents must imitate into shared workspaces where people and agents can inspect the same state, divide work by capability, and complete verifiable outcomes together.
 
@@ -256,12 +256,12 @@ Pitchの中心は全面自動化ではなく、検証可能な共同作業に置
 
 Devpost galleryは調査時点で未公開。GitHub exact phrase searchでは公開候補repoが少なくとも59件あった。valid submissions数と競合数は未確定だが、公開build activityはすでに大きい。
 
-| Competitor | Strongest evidence | Opportunity Forgeが超える点 |
+| Competitor | Strongest evidence | Money Printerが超える点 |
 |---|---|---|
-| SpendMCP | x402、policy、dynamic 9→10 tools、idempotency、delivery receipt、143 tests | earningを「購入」で終えず、opportunity→verified submission→resultへ閉じる |
-| ONE | 4 independent sites、stale intent、slot loss recovery、exact-resource approval | multi-source opportunityとrequirements/evidence artifactを一つのeconomic outcomeへ閉じる |
-| Deal Floor | visitors' agentsがlive bid/counter/accept、人がmandate/veto | agent同士の交渉でなく、人+agentがreal workを完成するproofを見せる |
-| Verdant | polished 3D garden、13 tools、preview、background jobs | visual gardenを避け、specific economic outcomeとsubmission proofへ集中 |
+| SpendMCP | x402、policy、dynamic 9→10 tools、idempotency、delivery receipt、143 tests | 購入だけでなく、機会発見→workroom→成果→入金まで閉じる |
+| ONE | 4 independent sites、stale intent、slot loss recovery、exact-resource approval | 一目標の購入から、任意の短期・長期workを継続実行するgeneral runtimeへ広げる |
+| Deal Floor | visitors' agentsがlive bid/counter/accept、人がmandate/veto | 交渉だけでなく、実work、human handoff、proof、paymentを一つのruntimeで扱う |
+| Verdant | polished 3D garden、13 tools、preview、background jobs | creative toyではなく、specific economic outcomeとverified moneyへ集中する |
 
 単なるgarden、trip planner、shopping cart、task board、approval dashboard、chatbotは棄却する。これらのUI patternは利用してよいが、product conceptにしない。
 
@@ -275,14 +275,14 @@ Devpost galleryは調査時点で未公開。GitHub exact phrase searchでは公
 
 必要証拠:
 
-- read、write、validation、effect、receiptまで複数段階でWebMCPを使う
+- read、constraint update、human task、continuation、pause、receiptまで複数段階でWebMCPを使う
 - toolsは現在のworkspace stateに応じてregister/unregisterされる
 - human UIとtoolsが同じdomain functionsを使う
 - tool callごとにactivity、input summary、result、actor、timestampが画面へ出る
-- agentがshared artifactを変更し、人が直接修正できる
-- human変更でstale revisionが発生し、agentが再読込・再計画する
-- missing requirementでvalidationが失敗し、agentがerror contextから自己修正する
-- submission receiptをagentと人が同じ画面で確認する
+- agentがworkroom stateとartifactsを変更し、人が直接inspect/steerできる
+- human回答でblocked workroomが同じthreadからcontinuationする
+- transient failureでretry/backoffし、agentがerror contextから自己修正する
+- application、delivery、payment receiptをagentと人が同じ画面で確認する
 - replayがoriginal receiptを返し、duplicate effect 0
 - video内で「通常browser clickingとの違い」をbefore/afterで示す
 
@@ -303,10 +303,10 @@ Devpost galleryは調査時点で未公開。GitHub exact phrase searchでは公
 - initial magic moment 20秒以内
 - happy path 90秒以内
 - intentional failure + recovery 45秒以内
-- reset可能なseeded workspace
+- reset可能なguest account
 - responsive、accessible、normal browserでもhuman UIが動く
 - server-side validation、rate limit、safe error messages
-- deterministic fixtureでdemoが毎回同じ重要状態を再現
+- guest accountで同じpublic opportunityとhuman-task flowを再現
 - Chrome/ChatGPT real E2E receipt
 - public repo、license、setup、judge guide、tests
 - video、description、screenshotsがlive behaviorと一致
@@ -333,10 +333,10 @@ Problem:
 
 Impact proof:
 
-- one real public opportunityをread-only ingest
-- requirement coverage before/after
+- one real public opportunityを発見・qualify・claim
+- workroom progress/proof before/after
 - human task数とmechanical stepsの削減
-- complete sandbox submission packet
+- complete real work/application + provider readback
 - verified receipt/replay-zero
 - long-termにはwon/contracted/delivered/paid conversionを追跡
 - 同じreal opportunityでmanual baselineとWebMCP flowを比較し、操作step、requirement coverage、human task数、failure数を測る
@@ -345,8 +345,8 @@ Impact proof:
 
 必要証拠:
 
-- Opportunity Forge自身が自分のWebMCP Challenge submissionを組み立てるself-referential demo
-- requirement graphがartifact/evidenceで目に見えて完成する
+- Money Printer自身がWebMCP Challengeという数日規模のopportunityを発見し、workroomを作り、submissionまで進めるdogfooding demo
+- general workroomが複数turnを継続し、proof付きでterminalへ進む
 - human-only visual/taste decisionとagent-only structured analysisを統合する
 - state進行により新しいtoolsがunlockされる
 - one opportunityを応募で終えず、long-term economic outcomeへ接続するarchitecture
@@ -361,19 +361,20 @@ Ambitionはfeature数ではない。「open Web上の仕事を、人とagentが�
 | Criterion | Claim | Required artifact | Verification / E2E | Video timestamp | Status |
 |---|---|---|---|---|---|
 | Leverage | stateに応じてtoolsが変わる | registered-tools before/after snapshot | ChatGPT + Chrome readback | final-cut gate | planned |
-| Leverage | human edit後にagentがstale stateから回復 | revision trace + final artifact | stale mutation rejection → reread → repair | final-cut gate | planned |
+| Leverage | 対応agentがlive artifactを共同編集する | visible revision diff + actor trace | inspect → revise → human review | final-cut gate | planned |
+| Leverage | human task回答後に同じagent runが続く | task + thread/workroom trace | blocked → answer → continuation | final-cut gate | planned |
 | Leverage | replayで新規effect 0 | original receipt + duplicate count | same idempotency key twice | final-cut gate | planned |
 | Execution | zero-loginで90秒以内に完走 | public judge URL + reset | clean browser E2E | final-cut gate | planned |
-| Execution | failureが説明可能で回復する | validation error + recovery trace | missing license fixture | final-cut gate | planned |
-| Impact | manualよりrequirements漏れを減らす | before/after measurement | same opportunity comparison | final-cut gate | planned |
+| Execution | failureが説明可能で回復する | error + retry/recovery trace | controlled transient failure | final-cut gate | planned |
+| Impact | manualよりsupervisionを減らす | before/after measurement | same opportunity comparison | final-cut gate | planned |
 | Impact | human-only workが正確なtaskになる | task cards + dedupe readback | repeated model wording → one stable task | final-cut gate | planned |
-| Creativity | productが自分のsubmissionを作る | completed self-referential workspace | artifact/source verification | final-cut gate | planned |
+| Creativity | general earning agentが自分のhackathon entryを完成する | completed dogfooding workroom | artifact/source verification | final-cut gate | planned |
 
 ### 7.6 Product replacement gate
 
-Opportunity Forgeは変更可能である。代替案へ置き換えるのは、一次証拠で次をすべて満たす場合だけにする。
+Money Printerの名称とvisual surfaceは変更可能である。中核architectureを置き換えるのは、一次証拠で次をすべて満たす場合だけにする。
 
-- 4軸internal rubricがOpportunity Forge以上
+- 4軸internal rubricがMoney Printer以上
 - 20秒以内のmagic momentが明確
 - 90秒以内のjudge pathを実装可能
 - humanとagentが同じshared artifactを変更する
@@ -382,97 +383,85 @@ Opportunity Forgeは変更可能である。代替案へ置き換えるのは、
 
 ---
 
-## 8. Recommended mutable product — Opportunity Forge
+## 8. Recommended product — Life Manager: Money Printer
 
 ### 8.1 One sentence
 
-**Opportunity Forge is a shared WebMCP workspace where agents turn scattered opportunities into verified, submission-ready work while people keep control of identity, taste, and consequential commitments.**
+**Money Printer is Symphony for earning: a general agent that finds legitimate paid opportunities, gives each one a persistent workroom, handles most routine execution, and asks a person only for identity, judgment, approval, or real-world action.**
 
-### 8.2 Canonical demo
+### 8.2 Product boundary
 
-Opportunity Forge自身のWebMCP Challenge entryを、Opportunity Forgeで完成させる。
+Money PrinterはWebMCP Challenge専用agentでも、「Mercor案件ならMercor専用loopへ渡す」といったprovider routerでもない。X、Web、GitHub、Devpost、marketplaces、mail等から公開・許可済みの機会を発見し、同じgeneral agent runtimeで短期bountyから数日規模のhackathonまで実行する。
 
-1. seeded workspaceにはchallenge URLだけがある
-2. agentがrequirementsをimportする
-3. empty canvasがcriteria/evidence graphへ変わる
-4. agentがrepo、live URL、description、video script、licenseをartifact cardsとして作る
-5. criteriaはevidence linkがある時だけgreenになる
-6. Dais/judgeがvisual directionを変更する
-7. affected artifactsがstaleになり、package toolが一時的に消える
-8. agentが変更を読んでartifactを修正する
-9. intentional missing-license fixtureでvalidationが失敗する
-10. agentがlicense evidenceを追加して再検証する
-11. `finalize_packet`がunlockされる
-12. humanがexact packetを確認する
-13. `submit_sandbox`がreceiptを作る
-14. 同一idempotency keyで再実行し、new submission 0を示す
+既存Mercor、Coconala、TaskMarket等のcodeは、general runtimeが再利用できるtools、browser state、evidence、historyとして段階的に吸収する。Core orchestratorは「MercorならMercor loop」のようなprovider分岐を持たない。Modelが現在のopportunityとenvironment feedbackを読み、利用可能なtoolsから次の行動を選ぶ。
 
-### 8.3 Visual surface
+### 8.3 Canonical dogfooding demo
+
+WebMCP ChallengeはMoney Printerが扱う多数のopportunityの一例である。Demoでは次を実物で見せる。
+
+1. Opportunity ScoutがWebMCP Challengeと短期bountyを発見する
+2. Modelがreward、deadline、eligibility、cost、time、riskを比較する
+3. WebMCP Challengeを選び、persistent per-opportunity workroomを作る
+4. Agentが公式rules、showcase、競合、repo stateを調査する
+5. Product、live URL、repo、English copy、videoを複数turnで作る
+6. 人間のtaste/authorityが必要な時だけtaskを一件出す
+7. 人間の回答後、同じworkroom/threadから再開する
+8. failureはenvironment feedbackとして受け取り、修正・再検証する
+9. Runtime稼働後に残るsubmission workを同じworkroomで続け、実Devpost submissionを一度だけ行い、provider readbackを保存する
+10. Dashboardにapplication、proof、cost、resultを表示する
+
+Self-referenceは、general agentが数日規模のreal opportunityを完了できるdogfooding proofとして使う。Runtime bootstrap前に人間や別agentが完了した作業はMoney Printerの成果に数えず、provenanceで区別する。
+
+### 8.4 Visual surface
 
 ```text
-┌──────────────── Opportunity Forge ────────────────┐
-│ Goal: Ship a winning WebMCP Challenge submission   │
-│ Deadline: 6d 04h (demo fixture)   Prize: $3,500  │
-├──────────────┬──────────────────────┬──────────────┤
-│ Opportunities│ Requirement Graph    │ Human Tasks  │
-│              │                      │              │
-│ WebMCP       │ WebMCP fit      ✓    │ Choose hero  │
-│ Bounty A     │ Live URL        ✓    │ Review copy  │
-│ Gig B        │ Public repo     ✓    │ Record audio │
-│              │ License         ✕    │              │
-│              │ Video           ◐    │              │
-├──────────────┴──────────────────────┴──────────────┤
-│ Agent activity / proof / receipts                  │
-│ inspect → map → draft → validate BLOCKED: license  │
-└─────────────────────────────────────────────────────┘
+┌────────────────── Life Manager ─ Money Printer ──────────────────┐
+│ Verified net $0.01 │ Active work 3 │ Human tasks 1 │ Paid 1     │
+├────────────────┬────────────────────────────┬─────────────────────┤
+│ OPPORTUNITIES  │ WORKROOM                   │ HUMAN TASKS         │
+│                │                            │                     │
+│ WebMCP $3,500  │ Goal / plan / artifacts    │ Choose hero visual  │
+│ Bounty $500    │ Current agent activity     │ Agent prepared 3    │
+│ AI eval $80/h  │ Evidence / errors / proof  │ options              │
+│ x402 sale      │ Cost / expected reward     │ [Choose A/B/C]       │
+├────────────────┴────────────────────────────┴─────────────────────┤
+│ ACTIVITY & MONEY PROOF                                            │
+│ discovered → working → needs human → resumed → submitted → paid  │
+└───────────────────────────────────────────────────────────────────┘
 ```
 
-Telegramは重要な状態変化をpush通知する。Web pageは、shared artifact、全体状況、人間のtask、evidence、receiptを確認し操作する画面になる。両者は別々のbackendを持たず、同じstate、action、ledgerを参照する。
+Telegramは重要なstate changeをpushする。Web pageは全体状況、workroom、人間task、proof、moneyを確認・操作する。両者は同じstate、action、ledgerを参照する。
 
-### 8.4 Human task card
+### 8.5 Human task card
 
-Agentが実行できない、または決めるべきでない仕事だけをcard化する。対象はidentity、taste、authorization、policy、physical ceremonyである。
+Agentが実行できない、または越えるべきでないhuman-only boundaryだけをcard化する。対象は本人確認、創造的判断、最終承認、規約上のhuman-only step、現実世界での操作である。
 
 ```text
-Task: Record the 150-second English demo narration
-Why you: We choose the entrant's narration for authorship; the rules require audio, not a specific voice
-Deadline: Sep 3, 11:00 PT
-Agent prepared: final script, shot list, timing
-Required action: [Start recording]
-Return path: upload completes this exact artifact card
+Task: Choose the final hero visual
+Why you: This is an authorship and taste decision
+Agent prepared: three options scored against the judging criteria
+Required action: [Choose A] [Choose B] [Choose C]
+Resume: the same workroom continues automatically after your choice
 State: waiting_for_human
 ```
 
 各taskはstable ID、opportunity ID、reason、deadline、prepared context、exact action、return path、statusを持つ。同じlogical taskをwording差で重複生成しない。
 
-### 8.5 WebMCP tools
+### 8.6 WebMCP tools
 
-Initial read tool:
+WebMCPはbackground runtimeではない。人間と対応agentが、Dashboardの同じlive stateを読み、指示し、再開するためのinterfaceである。
 
-- `inspect_workspace` — selected opportunity、requirements、artifacts、human tasks、current revisionを返す
+- `inspect_money_printer` — opportunities、running、blocked、human tasks、cost、verified moneyを読む
+- `inspect_workroom` — goal、plan、history、artifacts、last agent event、proofを読む
+- `add_opportunity` — URLまたは自然言語から新しいwork itemを作る
+- `set_constraints` — time、spend cap、risk、forbidden actions、human availabilityを更新する
+- `revise_work_artifact` — base revisionを指定し、visible artifactへpatchとrationaleを記録する
+- `continue_work` — eligibleなworkroomをagentへ再開させる
+- `complete_human_task` — exact taskへ本人の明示回答だけを記録する。Agentがidentity/authorityを代行しない
+- `pause_work` — future agent turnsを停止する
+- `inspect_receipt` — application、delivery、paymentのofficial readbackを読む
 
-Build tools:
-
-- `import_requirements`
-- `upsert_artifact` — create/reviseを同じversioned operationへ統合
-- `attach_evidence`
-- `validate_submission`
-
-Effect tools:
-
-- `finalize_packet`
-- `submit_sandbox`
-- `inspect_receipt`
-
-Registration policy:
-
-- workspace作成前は`inspect_workspace`と`import_requirements`だけ
-- requirements作成後にartifact/evidence/validation toolsを登録
-- validation pass後だけ`finalize_packet`
-- visible prepared packetとhuman authorityが揃った時だけ`submit_sandbox`
-- terminal後はmutation toolsを外し、receipt/read toolsだけ残す
-
-実装時にoverlapが見つかったtoolは統合する。tool count targetは置かない。
+ToolsはUIと同じdomain functionsを呼ぶ。AgentがWebMCP toolを使うたび、Dashboardの同じstateが更新される。Tool countはscoreではないため、overlapが見つかったtoolは統合する。
 
 ---
 
@@ -512,85 +501,84 @@ Registration policy:
 
 Agent promptは目的、証拠基準、authority boundary、canonical examplesを伝える。全providerの画面分岐、職種keyword、応募文patternを列挙しない。
 
-参考architecture:
+### 9.4 Symphonyから採用するarchitecture
 
-- Anthropic: LLM + tools + environmental feedback loop
-- OpenAI Symphony: boardを監視し、isolated runを実行し、CI/review/complexity/walkthrough等のproof of workを返す
+OpenAI Symphony commit `8001b52e3062495a16e520e4ceaf8f9de868c4d0`のSPECとreference implementationを比較した。Symphonyはissue trackerをpollし、issueごとのisolated workspaceを作り、repo-owned `WORKFLOW.md`をprompt/config contractとしてCodexを継続実行する。Orchestratorはsingle authoritative runtime state、claim、bounded concurrency、retry、reconciliationを持つ。Agent turnが正常終了してもissueがactiveなら同じworkspace/threadでcontinuationする。一時失敗はexponential backoffする。Human handoffはworkflow/agentが`Human Review`等のstateへ移し、orchestratorがeligibilityとstateを再照合する。Dashboardはrunning、retrying、blocked、last event、tokens、workspace、runtimeを表示する。
 
-Opportunity ForgeはSymphonyをcopyしない。Symphonyの「agentを逐次監督せず、proof付きの仕事を管理する」原則を、external economic opportunityへadaptする。
+Money Printerはこの構造を次のようにadaptする。
+
+| Symphony | Money Printer |
+|---|---|
+| Issue tracker | Opportunity inbox |
+| Issue | Paid opportunity / work item |
+| WORKFLOW.md | Opportunity contract + Money Printer policy |
+| Code workspace | Isolated workroom |
+| Coding agent | General earning agent |
+| PR / CI proof | Application / artifact / delivery / payment proof |
+| Human Review | Exact human task |
+| Done | Verified terminal outcome |
+
+採用するのはpoll、isolated workroom、continuation、retry、reconciliation、observabilityである。Symphonyのcoding-only assumption、特定tracker、PR-centric completionは採用しない。
 
 ---
 
-## 10. Life Manager integration
+## 10. General Money Printer runtime
 
-### 10.1 Reuse, do not rebuild
+### 10.1 One orchestrator, not provider routing
 
-#### Existing verified or partial capabilities
+Coreはprovider名でexecutorを選ばない。Opportunityはstable ID、source URL、goal、reward、deadline、terms、current state、workroom、human tasks、cost、proofを持つgeneric work itemである。General agentは同じtool surfaceからbrowser、Web、GitHub、files、code、media、mail、calendar、ledger等を使い、environment feedbackを受けて次の行動を決める。
 
-現行code/specには次のcapabilitiesがある。ただし全provider共通のmoney stateへ統合済みとは主張しない。
+既存Mercor、Coconala、Connector、TaskMarket、uGig、x402 codeは削除しない。新coreのadmission whitelistや固定routeにも使わない。再利用価値があるbrowser session、tool、prompt example、effect guard、receipt readerをgeneral runtimeへ段階的に提供する。専用skillは反復作業を速くするcacheであり、能力の上限ではない。
 
-- Mercor discovery/application/inbox/human gates/earnings reconciliation
-- Connector event discovery/application/calendar/Telegram
-- Coconala、Upwork、gig、TaskMarket、uGig、x402等のprovider-local loops
-- browser ownership、leases、dedupe、effect fences
-- Telegram outbox/ACK
-- provider-local evidence、receipts、revenue ledgers
-
-Mercorはdiscovery、application、human gates、Earnings readbackまで部分的に動く。shared money receipt contract、first paid E2E、OSS operator replayは未完である。Connector、gig、Coconala、Upwork等もproviderごとに`live / partial / planned`が異なる。Opportunity Forge実装前に、redacted fixtureへ使うlaneだけを現行specとreceiptで再確認する。
-
-#### Target integration
-
-Opportunity Forgeは、既存loopと同じ外部作用を起こす第二のexecutorにならない。providerへの外部作用は既存ownerだけが実行する。WebMCP appは、共有状態の表示とcommandの受付に限定する。
+### 10.2 Runtime flow
 
 ```text
-Existing provider loops / watcher
-  → canonical opportunity + job + human-task + receipt state
-  → Opportunity Forge web projection
-  ↔ human UI
-  ↔ WebMCP agent tools
-  → existing provider owner for authorized effect
-  → official readback / receipt
-  → same web projection + existing Telegram push
+Opportunity Scout
+  → normalized opportunity
+  → model-led qualification
+  → claim + persistent per-opportunity workroom
+  → general agent turns
+  → environment feedback
+      ├─ continue automatically
+      ├─ retry transient failure
+      ├─ create exact human task
+      ├─ quarantine uncertain effect
+      └─ verify terminal proof
+  → result / cost / verified money ledger
 ```
 
-TelegramとWebの共通projectionはpost-hackathon targetとする。Hackathon P0ではWeb judge experienceを優先し、Telegramの新規integrationを作らない。
+正常turn終了はDoneを意味しない。Opportunityがactiveで残作業がある限り、同じworkroomとagent threadでcontinuationする。Short taskは1 turnで閉じ、hackathonのようなlong-horizon taskは複数turn・複数日でstateとartifactsを保持する。
 
-### 10.2 Hackathon slice
+Workroomのisolationはopportunity、tenant、credential、effectの交差を防ぐ境界である。Fake tools、fake effects、別製品のjudge-only executorを意味しない。
 
-実装する:
+### 10.3 Start small without narrowing the product
 
-- challenge/bountyのseeded + one real read-only opportunity ingest
-- requirements/evidence/artifact workspace
-- human task cards
-- sandbox submit/receipt/replay-zero
-- one existing Life Manager laneのredacted fixture projection
+最初のimplementation sliceはgeneral architectureのまま、低risk・短時間のreal opportunitiesで実証する。
 
-実装しない:
+1. X/Web/GitHubからpublic opportunityを発見
+2. 30分〜半日で完了可能なbounty/taskを一件選ぶ
+3. persistent per-opportunity workroomでagentが実作業する
+4. 必要ならhuman taskを一件出す
+5. 実提出とofficial readbackを閉じる
+6. costとverified resultをDashboardへ表示する
+7. 同じruntimeでWebMCP Challengeというlong-horizon taskを継続する
 
-- Xのproduction常時監視
-- 全marketplace統合
-- real Devpost自動submit
-- real money movement
-- new multi-agent runtime
-- provider side-effect ownerの移設
+製品を短期task専用にしない。短いopportunityでorchestrator、continuation、human handoff、effect、proofを先に実証し、その同じcontractで長い仕事へ進む。
 
-### 10.3 Post-hackathon entrepreneur loop
+### 10.4 Existing Life Manager assets
 
-Hackathon後に一つずつ追加する。
+現行repoにはbrowser ownership、leases、agent runner、private state、human gates、Telegram ACK、effect fences、provider readback、earnings ledgerがある。Money Printerはこれらをcopyせず再利用する。ただし各laneの`live / partial / planned`を再測定し、未完のshared money contractや未着金を完成済みと表示しない。
 
-1. X、GitHub、Devpost、Discord/mail、bounty boardsのauthorized discovery adapters
-2. opportunity dedupeとexpiry
-3. model-led qualification
-4. expected net / time / risk / eligibility evidence
-5. existing build/work loopsへのhandoff
-6. human-only ceremony cards
-7. provider submission adapters
-8. result/inbox reconciliation
-9. authorized work、QA、delivery
-10. payment readbackとverified net ledger
-11. source/strategy別conversion learning
+Telegramは重要なstate changeをpushする。Web dashboardは全体状況、workroom、人間task、proof、moneyを確認・操作する。WebMCPは同じdashboard stateをagentへ公開する。
 
-Skillが未実装でも、それだけで応募不可としない。general agentと利用可能なtoolsで実行できるかを検討し、需要が繰り返し確認された場合だけskill化する。現地参加、本人確認、AI利用禁止の仕事など、実行上の制約がある場合は`needs_human`または`ineligible`にする。
+### 10.5 User access and business model
+
+利用方法を二つに分ける。
+
+1. **Interactive WebMCP mode:** Userは対応するWebMCP clientからMoney Printerを開く。対話的なtool callにはUser自身のclient/subscriptionを使うため、Life Managerへmodel API keyを渡さない。このmodeはpage/sessionが開いている間だけ使える。
+2. **Autonomous hosted mode:** Life Managerの有料planが、pageを閉じた後のOpportunity Scout、continuation、retry、browser、storage、monitoringを提供する。Userのconsumer ChatGPT subscriptionを第三者SaaSのbackground APIとして流用できるとは主張しない。
+
+Self-hosted operatorは自分のapproved agent runtimeを接続できる。Hosted planの価格は実costとconversionを測るまで固定しない。Judgeは無料guest accountを使う。Life Managerへの支払いもAPI keyも不要で、normal UIとvideoだけでも全flowを確認できる。対応WebMCP clientがあれば、同じguest stateを実際に操作できる。
 
 ---
 
@@ -598,26 +586,23 @@ Skillが未実装でも、それだけで応募不可としない。general agen
 
 ### 11.1 Opportunity states
 
-Hackathon P0のcanonical state:
+Canonical state:
 
 ```text
 DISCOVERED → QUALIFYING → QUALIFIED | INELIGIBLE | EXPIRED
-QUALIFIED → BUILDING ↔ NEEDS_HUMAN
-BUILDING → READY_TO_SUBMIT → SUBMISSION_PREPARED
-SUBMISSION_PREPARED → SUBMITTED | SUBMISSION_UNCERTAIN
-```
-
-Post-hackathon economic extension:
-
-```text
+QUALIFIED → CLAIMED → WORKING ↔ NEEDS_HUMAN
+WORKING → READY_FOR_EFFECT → EFFECT_UNCERTAIN | SUBMITTED | DELIVERED
 SUBMITTED → WON | LOST | CONTRACTED
-CONTRACTED → AUTHORIZED_WORK → QA_ACCEPTED → DELIVERED
+WON → PAYMENT_PENDING
+CONTRACTED → WORKING → QA_ACCEPTED → DELIVERED
 DELIVERED → PAYMENT_PENDING → PAID_SETTLED → REVENUE_RECORDED
 ```
 
+同じstate machineをbounty、job application、content delivery、hackathonへ使う。Opportunity typeごとに不要なstateは飛ばしてよいが、provider名をcore stateへ入れない。
+
 ### 11.2 External effect fence
 
-Hackathon demoはsandbox only。productionでは次を必須にする。
+Production effectでは次を必須にする。
 
 - exact opportunity/provider identity
 - current revision
@@ -629,14 +614,14 @@ Hackathon demoはsandbox only。productionでは次を必須にする。
 - stable idempotency key
 - provider readback path
 
-Effect開始後に結果が不明なら`SUBMISSION_UNCERTAIN`へ進み、別account、別browser、別agentで再送しない。official readbackで成功/失敗を確定してから次へ進む。
+Effect開始後に結果が不明なら`EFFECT_UNCERTAIN`へ進み、別account、別browser、別agentで再送しない。official readbackで成功/失敗を確定してから次へ進む。
 
 ### 11.3 Security
 
 - tool outputのexternal textはuntrusted
 - prompt injection textをinstructionとして実行しない
 - credentials、resume、private profile、payment detailsをWebMCP resultへ出さない
-- judge fixturesは架空identityのみ
+- guest accountはpublic opportunitiesとdemo identityだけを持ち、Dais/clientのprivate stateを共有しない
 - public repoにsecret/PIIを含めない
 - write toolsはserver-side auth/validation/rate limitを持つ
 - sensitive production actionsはnormal application policyを維持する
@@ -648,29 +633,33 @@ Effect開始後に結果が不明なら`SUBMISSION_UNCERTAIN`へ進み、別acco
 ### 12.1 Judge path
 
 - landing pageにone-sentence value
-- `Try the judge demo`でseeded workspaceへ入る
-- login、wallet、API key、extension setup不要
+- `Try Money Printer`で同じproduction productのguest accountへ入る
+- Life Manager側のAPI key、wallet、private credentialは不要
+- primary judge pathはzero-login live URL + video + README
+- WebMCP E2Eは主催者の対応環境とChrome 149+の両経路を記載する
 - copyable prompt 1つ
 - reset button 1つ
 - `How WebMCP works` drawerにcurrent toolsとrecent calls
 - under-one-minute judge guide
 
+JudgeはDashboardを直接確認でき、対応WebMCP clientからの操作もできる。Guestは同じproduction product上でinternal state、visible artifact revision、human handoff、agent continuationまで実行できる。実外部提出権限は持たない。Daisのactual runで得たexternal submission/receiptはvideoとread-only proofとして表示する。別sandboxやmock executorは作らない。
+
 ### 12.2 Under-3-minute video
 
 | Time | Content |
 |---:|---|
-| 0:00–0:15 | scattered opportunity problem + one sentence product |
-| 0:15–0:30 | normal human board、empty requirement state |
-| 0:30–1:00 | agent imports challenge; board transforms into criteria graph |
-| 1:00–1:25 | agent drafts/links artifacts; visible activity and coverage update |
-| 1:25–1:45 | human changes one creative requirement; stale state blocks package |
-| 1:45–2:05 | agent rereads, revises, validation fails on missing license, then repairs |
-| 2:05–2:25 | prepare + sandbox submit + durable receipt |
-| 2:25–2:35 | replay same submit; new effect 0 |
-| 2:35–2:50 | tools/state-dependent registration + same UI/domain logic |
-| 2:50–2:58 | impact: discovery loop → work → verified earnings |
+| 0:00–0:15 | Webに仕事はあるが、発見→完了→入金が分断されている問題 |
+| 0:15–0:30 | Money Printer dashboard: opportunities、workrooms、human tasks、verified money |
+| 0:30–0:50 | ChatGPTがWebMCP toolsを発見し、public opportunityを追加 |
+| 0:50–1:15 | General agentがqualifyし、persistent workroomで作業開始 |
+| 1:15–1:35 | ChatGPTがlive artifactを読み、visible revisionを作り、tasteが必要なhuman taskを一件作る |
+| 1:35–1:50 | Judgeがartifactを確認してhuman taskへ回答し、agentが同じworkroomで再開 |
+| 1:50–2:10 | 一時失敗→retry→proof更新をDashboardで表示 |
+| 2:10–2:30 | WebMCP Challenge dogfooding workroomと実submission artifactsを表示 |
+| 2:30–2:45 | application/delivery/payment receiptとreplay-zeroを表示 |
+| 2:45–2:58 | short taskからlong-horizon hackathonまで同じruntimeで動くことを説明 |
 
-動画で実装していないproduction X watcher、real application、real payoutを成功として見せない。
+動画で実装していないX watcher、application、work、payoutを成功として見せない。各claimは公式readbackがある範囲に限定する。
 
 ---
 
@@ -680,33 +669,31 @@ Effect開始後に結果が不明なら`SUBMISSION_UNCERTAIN`へ進み、別acco
 
 ### Project summary
 
-**Opportunity Forge is a shared WebMCP workspace where people and agents turn scattered hackathons, bounties, and other paid opportunities into verified, submission-ready work. Agents analyze requirements, map evidence, draft, validate, and package artifacts. People retain control over identity, creative direction, and consequential submission decisions. They work in the same live workspace and see the same status, errors, and receipts.**
+**Life Manager — Money Printer is a general earning agent that discovers paid opportunities, gives each one a persistent workroom, and keeps working across multiple turns until the outcome is verified. It handles most routine execution and asks a person only at human-only boundaries such as identity, judgment, approval, or real-world action. The provider-agnostic runtime is demonstrated on an unrelated short opportunity and a multi-day hackathon workroom.**
 
 ### Why this use case is a strong fit for WebMCP
 
-Opportunity work is fragmented across rules pages, repositories, forms, media, and human-only decisions. An agent that must infer actions from the interface repeatedly rediscovers controls and cannot reliably link each requirement to the artifact that satisfies it. Opportunity Forge exposes the workspace's real actions as typed WebMCP tools. The agent can inspect live state, import requirements, create and revise artifacts, attach evidence, validate the packet, and inspect receipts while the person watches the same board change in real time.
+Money Printer runs autonomously for long periods, but earning work still contains moments where a person and an agent must share context: choosing a direction, completing identity-bound steps, changing constraints, approving a consequential action, or resolving a genuine blocker. WebMCP makes the live Money Printer dashboard a shared control surface. A compatible agent can inspect opportunities, open a workroom, revise a visible artifact, change constraints, record a human answer, continue the work, pause it, and verify receipts through typed site tools instead of guessing at dashboard controls.
 
-WebMCP is the right interface for this shared workspace: tools appear only when valid for the current state; human edits invalidate stale agent work; validation errors return actionable context; and completed submissions remain visible through durable receipts.
+Every WebMCP action updates the same versioned state that the person sees. The page therefore becomes the shared control plane for an autonomous agent rather than a passive monitoring dashboard.
 
 ### How it creates a better user experience
 
-Without Opportunity Forge, people copy requirements between tabs, ask an agent to generate disconnected drafts, manually track missing deliverables, and still risk an incomplete or duplicate submission. With Opportunity Forge, one prompt turns the opportunity into a visible requirement graph. Every claim links to evidence. Missing work stays visibly open. Actions that require identity, taste, or authorization appear as precise task cards with prepared context. The agent can repair failures without making the user restart. Retrying the same submission returns the original receipt instead of creating a duplicate.
+Without Money Printer, people repeatedly search for work, open separate chats, supervise each agent turn, reconstruct what failed, and manually distinguish applications from actual income. Money Printer preserves one workroom across turns and days. It shows the current goal, last agent event, artifacts, costs, proof, retries, and the exact next human task. After the person answers, the agent resumes from the same state. The money view counts only officially verified payments, not applications, offers, or model claims.
 
 ### What people and agents can do together that was difficult before
 
-Agents are strong at reading long rules, comparing requirements, producing drafts, and checking consistency. People provide identity, taste, authorization, and the final judgment about what represents them. Opportunity Forge combines those different strengths in one live workspace. A person can change the creative direction while the agent is working; the workspace marks affected artifacts stale, the agent observes the change, and the two converge on a packet that is both complete and genuinely human-owned.
+The agent can discover an unfamiliar opportunity, investigate it, plan the work, use browser and coding tools, create artifacts, recover from transient failures, and continue without a person supervising every step. When the task reaches a boundary the agent should not cross, Money Printer converts that blocker into one prepared human task. The person provides the missing identity, judgment, or approval, and the agent resumes in the same workroom.
 
-The canonical demo is self-referential: Opportunity Forge uses its own WebMCP tools to assemble and verify its WebMCP Challenge submission.
+Together, they can complete multi-day paid work without constant supervision while preserving human control at the moments that matter. This division of labor was difficult before because autonomous execution and human collaboration lived in separate interfaces. Money Printer makes the handoff part of the same persistent work state. After the core runtime is live, we dogfood it on the remaining work for this WebMCP Challenge entry and preserve timestamped provenance for what it actually completes.
 
 ### How WebMCP was implemented
 
-At the top level, the page registers tools through `document.modelContext.registerTool()`. Each tool has a focused name, description, JSON Schema input, and behavior annotations. Read tools inspect the same versioned state rendered by the human UI. Write tools call the same validated domain functions as buttons and editors.
-
-Registration changes with workspace state, so preparation and submission tools are unavailable until their prerequisites are satisfied. Server-side guards enforce revision checks, validation, rate limits, idempotency, and receipt persistence. The activity panel shows every tool call and resulting UI change. Browsers without WebMCP retain the complete human interface.
+The top-level page registers focused tools with `document.modelContext.registerTool()`. Read tools expose the same versioned state displayed by the dashboard, while write tools call the same server-validated functions as the human controls. Tool availability follows workroom state, and every successful call updates both the UI and the structured result. Server-side guards enforce tenant isolation, revision checks, spend limits, idempotency, effect fences, and persistent receipts. Without WebMCP, the full human interface still works.
 
 ### Impact and future
 
-Opportunity Forge begins with hackathons and bounties, but the underlying problem is broader: valuable work is constantly published across the open web, while the path from discovery to verified payment remains fragmented. Over time, Life Manager will discover opportunities from approved sources, bring them into Opportunity Forge for human-agent collaboration, and track each one through application, authorized work, delivery, and settled payment. It records revenue only when an official receipt confirms that the money was received.
+The initial product proves a provider-agnostic runtime on one unrelated short, low-risk public opportunity and this multi-day hackathon workroom. The same work contract can then expand to longer jobs without adding a provider-specific orchestrator branch. Users can bring a supported WebMCP client for interactive collaboration. A hosted subscription can fund the background agent runtime, browser, storage, and monitoring required after the page closes. Money Printer records revenue only when an official receipt confirms that the money was received.
 
 ---
 
@@ -735,7 +722,8 @@ Opportunity Forge begins with hackathons and bounties, but the underlying proble
 ### Product
 
 - [ ] public live URL
-- [ ] zero-login judge workspace
+- [ ] zero-login guest account
+- [ ] one approved public sourceを実検索し、stable opportunityとsource readbackを作る
 - [ ] normal browser human UI
 - [ ] ChatGPT built-in browser WebMCP E2E
 - [ ] Chrome WebMCP E2E
@@ -743,7 +731,7 @@ Opportunity Forge begins with hackathons and bounties, but the underlying proble
 - [ ] state-dependent registration
 - [ ] stale revision demo
 - [ ] intentional failure/recovery
-- [ ] sandbox submission receipt
+- [ ] real submission receipt or clearly scoped official handoff receipt
 - [ ] replay duplicate 0
 - [ ] reset
 
@@ -800,18 +788,18 @@ Opportunity Forge begins with hackathons and bounties, but the underlying proble
 
 | Risk | Strongest counterargument | Design response |
 |---|---|---|
-| job dashboardに見える | status columnsだけならWebMCP不要 | self-referential artifact graph、dynamic tools、stale recovery、receiptを主役にする |
-| Devpost helper pluginと近い | official pluginもdiscover/build/submitを支援する | generic chat helperでなく、evidence-linked shared artifactとprovider-neutral economic lifecycleを作る |
+| job dashboardに見える | status columnsだけならWebMCP不要 | live agent activity、human task→continuation、retry、proof、moneyを主役にする |
+| Devpost helper pluginと近い | official pluginもdiscover/build/submitを支援する | hackathon helperではなく、短期bountyから長期workまで走るgeneral runtimeを実証する |
 | autonomous earningとWebMCPが矛盾 | WebMCPはpage-localで24/7 watcherではない | background loopとvisible collaboration surfaceを明確に分ける |
-| scope過大 | discovery→work→payment全部は締切に間に合わない | hackathon sliceはimport後→sandbox receiptだけ。長期loopはpost-hackathon |
-| real applicationがない | sandboxはimpactが弱い | one real public opportunity ingest + real submission packet、external effectだけsandbox |
+| scope過大 | 全source、全work type、全payment railを一週間で閉じられない | general architectureを保ち、短期real opportunity一件とWebMCP Challengeの二workroomを深く閉じる |
+| real applicationがない | dashboardだけではeconomic impactが弱い | public opportunityの実提出と、このhackathonの実submission readbackを使う |
 | safetyが弱い | agentが勝手に応募・送金できる | effect fence、exact packet、idempotency、official readback、uncertain quarantine |
-| 美しさでcreative appsに負ける | workbenchは地味 | requirement graphが完成するvisual transformationとself-referenceを磨く |
+| 美しさでcreative appsに負ける | workbenchは地味 | workroomが自律進行し、人間taskで止まり、回答後に再開するmotion/state changeを磨く |
 
 ### Best / Base / Worst
 
 - **Best:** 4軸全証拠、self-referential demo、real ChatGPT E2E、top 10競争力
-- **Base:** zero-login complete product、requirements→receiptが安定し、valid submissionとして強い
+- **Base:** zero-login complete product、opportunity→workroom→human task→proofが安定し、valid submissionとして強い
 - **Worst:** ChatGPT rollout差があってもChrome/WebMCP inspectorでworking E2Eを示し、Stage Oneを落とさない
 
 ### 棄却案の最強論拠
@@ -820,7 +808,7 @@ Anicca/Finite GardenはDaisの哲学とvisual originalityに合う。しかし�
 
 ### 自分が間違うとしたら最有力の筋
 
-Judgesがeconomic autonomyより安全で楽しいcreative collaborationを好み、Opportunity Forgeを業務dashboardと判断する可能性がある。対策は説明ではなく実演である。20秒以内のvisual transformation、human変更によるstale invalidation、agent recovery、self-referential submission、receipt/replayを見せる。
+Judgesがeconomic autonomyより安全で楽しいcreative collaborationを好み、Money Printerを業務dashboardと判断する可能性がある。対策は実演である。20秒以内にagentがworkroomを開始し、human task、continuation、failure recovery、real proof、verified moneyを同じ画面で見せる。
 
 ---
 
@@ -829,19 +817,20 @@ Judgesがeconomic autonomyより安全で楽しいcreative collaborationを好�
 このspec承認後に`writing-plans`で実装planへ分解する。順序は次を超えない。
 
 1. judge story + one-screen wireframe
-2. versioned workspace state + redacted fixture
-3. human UI using shared domain functions
-4. read tools
-5. build/evidence tools
-6. stale revision + validation failure/recovery
-7. prepare/sandbox effect/receipt/replay
-8. state-dependent registration + activity log
-9. ChatGPT/Chrome E2E
-10. polish/accessibility/reset
-11. public repo/license/judge guide
-12. English submission copy/screenshots
-13. under-3-minute video
-14. fresh adversarial review against four criteria
-15. immutable deploy/repo/submission receipts and freeze
+2. one approved public source scout + stable opportunity/source readback
+3. versioned opportunity/workroom state + public guest opportunity
+4. human UI using shared domain functions
+5. inspect/control/artifact WebMCP tools
+6. agent continuation + human task handoff
+7. retry/backoff + controlled failure/recovery
+8. real effect/handoff/receipt/replay
+9. state-dependent registration + activity log
+10. ChatGPT/Chrome E2E
+11. polish/accessibility/reset
+12. public repo/license/judge guide
+13. English submission copy/screenshots
+14. under-3-minute video
+15. fresh adversarial review against four criteria
+16. immutable deploy/repo/submission receipts and freeze
 
 One active item at a time。各itemは実物readbackを閉じてから次へ進む。
