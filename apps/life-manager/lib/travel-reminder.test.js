@@ -303,6 +303,70 @@ test("travelReminderOnce claims telegram-t5 before send, suppresses duplicate, a
   assert.equal(missingIdCalls.some((x) => x[0] === "release"), true);
 });
 
+test("travelReminderOnce keeps the claim on throw or delivery_unknown and replay sends zero", async () => {
+  const dueEvent = event({ id: "unknown-delivery", startMs: NOW + 3 * T5_MS, startIso: "2026-08-28T13:15:00+09:00" });
+  for (const mode of ["throw", "unknown"]) {
+    const calls = [], logs = [];
+    let claims = 0;
+    const deps = {
+      events: [dueEvent], home: HOME, mapsKey: "maps", timezone: "Asia/Tokyo",
+      directionsRoute: async () => ({ ...routeFixture(), durationSeconds: 5 * 60 }),
+      claimTravel: async (...args) => { calls.push(["claim", ...args]); claims++; return claims === 1; },
+      unclaimTravel: async (...args) => { calls.push(["release", ...args]); return true; },
+      sendMessage: async (...args) => {
+        calls.push(["send", ...args]);
+        if (mode === "throw") throw new Error("transport failure");
+        return { ok: false, delivery_unknown: true };
+      },
+      telegramToken: "token", supaUrl: "supa", supaKey: "key", log: (line) => logs.push(line),
+    };
+    const first = await travelReminderOnce({ uid: `u-${mode}`, telegram_chat_id: "chat", notifications_enabled: true }, NOW, deps);
+    const replay = await travelReminderOnce({ uid: `u-${mode}`, telegram_chat_id: "chat", notifications_enabled: true }, NOW, deps);
+    assert.equal(first.status, "delivery_unknown", mode);
+    assert.equal(replay.status, "suppressed", mode);
+    assert.deepEqual(calls.map((entry) => entry[0]), ["claim", "send", "claim"], mode);
+    assert.equal(logs.length, 1, mode);
+    assert.match(logs[0], /reconciliation required/);
+  }
+});
+
+test("adjacent outbound Travel starts at prior event end only when target go claim is present", async () => {
+  const targetStart = NOW + 3 * T5_MS;
+  const previous = event({ id: "previous-event", summary: "前の予定", location: "前の場所", startMs: targetStart - 90 * 60000, endMs: targetStart - 30 * 60000 });
+  const outbound = { id: "target-go", summary: "[Travel] 🚆 前の場所→解決住所", location: "東京都渋谷区神南1-1-1", startMs: previous.endMs, endMs: targetStart };
+  const target = event({ id: "target-event", startMs: targetStart, endMs: targetStart + 60 * 60000 });
+  const destinations = [], queries = [];
+  const result = await travelReminderOnce({ uid: "tenant-target", telegram_chat_id: "chat-target", notifications_enabled: true }, NOW, {
+    events: [previous, outbound, target], home: HOME, mapsKey: "maps", timezone: "Asia/Tokyo", telegramToken: "token", supaUrl: "supa", supaKey: "key",
+    fetchImpl: async (url, init) => { queries.push({ url: String(url), init }); return { ok: true, status: 200, json: async () => [{ event_key: "target-event" }] }; },
+    directionsRoute: async (_origin, destination) => { destinations.push(destination); return { durationSeconds: 5 * 60 }; },
+    claimTravel: async () => true, sendMessage: async () => ({ ok: true, result: { message_id: 801 } }),
+  });
+  assert.equal(result.status, "sent");
+  assert.deepEqual(destinations, [outbound.location]);
+  assert.equal(queries.length, 1);
+  assert.match(queries[0].url, /uid=eq\.tenant-target/);
+  assert.match(queries[0].url, /event_key=eq\.target-event/);
+  assert.match(queries[0].url, /leg=eq\.go/);
+  assert.equal(queries[0].init.method, undefined);
+});
+
+test("the same adjacent geometry without a target go claim falls back to event location", async () => {
+  const targetStart = NOW + 3 * T5_MS;
+  const previous = event({ id: "previous-no-claim", summary: "前の予定", location: "前の場所", startMs: targetStart - 90 * 60000, endMs: targetStart - 30 * 60000 });
+  const outbound = { id: "target-go-no-claim", summary: "[Travel] 🚆 前の場所→解決住所", location: "東京都渋谷区神南1-1-1", startMs: previous.endMs, endMs: targetStart };
+  const target = event({ id: "target-event-no-claim", startMs: targetStart, endMs: targetStart + 60 * 60000, location: "元の会場名" });
+  const destinations = [];
+  const result = await travelReminderOnce({ uid: "tenant-no-claim", telegram_chat_id: "chat-no-claim", notifications_enabled: true }, NOW, {
+    events: [previous, outbound, target], home: HOME, mapsKey: "maps", timezone: "Asia/Tokyo", telegramToken: "token", supaUrl: "supa", supaKey: "key",
+    fetchImpl: async () => ({ ok: true, status: 200, json: async () => [] }),
+    directionsRoute: async (_origin, destination) => { destinations.push(destination); return { durationSeconds: 5 * 60 }; },
+    claimTravel: async () => true, sendMessage: async () => ({ ok: true, result: { message_id: 802 } }),
+  });
+  assert.equal(result.status, "sent");
+  assert.deepEqual(destinations, [target.location]);
+});
+
 test("travelReminderOnce sends an event-only reminder when origin is unavailable and does not invent a route", async () => {
   const sent = [];
   const online = event({ id: "online", location: "", online: true, startMs: NOW + T5_MS, startIso: "2026-08-28T13:05:00+09:00" });

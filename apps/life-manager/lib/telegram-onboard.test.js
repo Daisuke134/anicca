@@ -9,7 +9,7 @@ const {
   linkedRows,
   NUDGE_COOLDOWN_MS,
 } = require("./telegram-onboard.js");
-const { startReply } = require("./telegram.js");
+const { startReply, tgCall } = require("./telegram.js");
 
 const full = {
   uid: "u1", telegram_chat_id: "1", name: "Dais", calendar_provider: "composio_gcal",
@@ -103,7 +103,7 @@ test("comp NEVER writes lm_users.paid — Stripe stays the single writer", async
       setStage: async (_uid, stage) => stages.push(stage),
     });
   });
-  assert.deepEqual(stages, ["done"]);
+  assert.deepEqual(stages, []);
   for (const patch of patches) assert.equal(Object.prototype.hasOwnProperty.call(patch, "paid"), false);
 });
 
@@ -191,17 +191,44 @@ test("exact expiry timestamp enters the upgrade branch and sends once", async ()
   assert.equal(h.unclaims.length, 0);
 });
 
-test("trial upgrade send throw releases the claim without an uncaught rejection", async () => {
+test("trial upgrade send throw keeps the claim and replay sends zero", async () => {
   const h = trialRun();
+  let attempts = 0;
+  h.opts.claimTravel = async (...args) => {
+    h.order.push(["claim", ...args]);
+    attempts++;
+    return attempts === 1;
+  };
   h.opts.sendMessage = async (...args) => {
     h.order.push(["send", ...args]);
     h.sent.push(args);
     throw new Error("telegram unavailable");
   };
   assert.equal(await onboardNudgeAll(h.opts), 0);
-  assert.deepEqual(h.order.map((entry) => entry[0]), ["claim", "send", "unclaim"]);
-  assert.equal(h.unclaims.length, 1);
-  assert.deepEqual(h.errors, []);
+  assert.equal(await onboardNudgeAll({ ...h.opts, nudgeStore: new Map() }), 0);
+  assert.deepEqual(h.order.map((entry) => entry[0]), ["claim", "send", "claim"]);
+  assert.equal(h.unclaims.length, 0);
+  assert.deepEqual(h.errors, ["[onboard] trial-upgrade reconciliation required"]);
+});
+
+test("trial upgrade delivery_unknown keeps the claim and does not resend", async () => {
+  const h = trialRun({});
+  let attempts = 0;
+  h.opts.claimTravel = async (...args) => {
+    h.order.push(["claim", ...args]);
+    attempts++;
+    return attempts === 1;
+  };
+  h.opts.sendMessage = async (...args) => {
+    h.order.push(["send", ...args]);
+    h.sent.push(args);
+    return { ok: false, delivery_unknown: true };
+  };
+  assert.equal(await onboardNudgeAll(h.opts), 0);
+  assert.equal(await onboardNudgeAll({ ...h.opts, nudgeStore: new Map() }), 0);
+  assert.deepEqual(h.order.map((entry) => entry[0]), ["claim", "send", "claim"]);
+  assert.equal(h.unclaims.length, 0);
+  assert.deepEqual(h.errors, ["[onboard] trial-upgrade reconciliation required"]);
 });
 
 test("a duplicate trial claim sends zero additional messages", async () => {
@@ -290,6 +317,26 @@ test("active, paid, incomplete, notifications-off, and Telegram-unbound rows sen
   }
 });
 
+test("core-ready legacy phone/pay rows remain done and do not emit optional-stage nudges", async () => {
+  for (const row of [
+    { ...full, paid: false, tg_onboard_stage: "phone", phone: "+81", trial_expires_at: "2026-08-31T12:01:00.000Z" },
+    { ...full, paid: false, tg_onboard_stage: "pay", phone: null, trial_expires_at: "2026-08-31T12:01:00.000Z" },
+    { ...full, paid: false, tg_onboard_stage: "phone", phone: "+81", trial_expires_at: "2026-08-31T11:59:00.000Z" },
+    { ...full, paid: false, tg_onboard_stage: "pay", phone: null, trial_expires_at: "2026-08-31T11:59:00.000Z" },
+  ]) {
+    assert.equal(computeStage(row, { now: TRIAL_NOW, env: {} }), "done");
+    const stages = [];
+    const messages = [];
+    const expired = Date.parse(row.trial_expires_at) <= TRIAL_NOW;
+    const h = trialRun(row);
+    h.opts.sendStage = async (_token, _chat, stageRow) => stages.push(computeStage(stageRow));
+    h.opts.sendMessage = async (...args) => { messages.push(args[2]); return { ok: true, result: { message_id: 903 } }; };
+    assert.equal(await onboardNudgeAll({ ...h.opts, now: TRIAL_NOW }), expired ? 1 : 0);
+    assert.deepEqual(stages, []);
+    assert.equal(messages.some((text) => /Phone saved|Subscribe/i.test(text)), false);
+  }
+});
+
 test("notifications_enabled=false gets nothing", async () => {
   const calls = [];
   const sent = await onboardNudgeAll({
@@ -335,14 +382,14 @@ test("a stage CHANGE inside the 30-min cooldown still waits, then fires once ela
     linkedRows: async () => [row], sendStage: async () => {},
     setStage: async (_uid, stage) => stages.push(stage), backfillCalendarContext: async () => {},
   });
-  assert.equal(await run(nudgeRow({ tg_onboard_stage: "calendar" }), t0), 1); // calendar → phone
+  assert.equal(await run(nudgeRow({ home_address: null, tg_onboard_stage: "calendar" }), t0), 1); // calendar → phone
   assert.deepEqual(stages, ["phone"]);
   // stage really changed (phone → pay) but only 2 minutes have passed → hold
-  assert.equal(await run(nudgeRow({ phone: "+81", tg_onboard_stage: "phone" }), t0 + 2 * 60000), 0);
-  assert.equal(await run(nudgeRow({ phone: "+81", tg_onboard_stage: "phone" }), t0 + NUDGE_COOLDOWN_MS - 1), 0);
+  assert.equal(await run(nudgeRow({ home_address: null, phone: "+81", tg_onboard_stage: "phone" }), t0 + 2 * 60000), 0);
+  assert.equal(await run(nudgeRow({ home_address: null, phone: "+81", tg_onboard_stage: "phone" }), t0 + NUDGE_COOLDOWN_MS - 1), 0);
   assert.deepEqual(stages, ["phone"]);
   // cooldown elapsed → the pending change is finally announced
-  assert.equal(await run(nudgeRow({ phone: "+81", tg_onboard_stage: "phone" }), t0 + NUDGE_COOLDOWN_MS), 1);
+  assert.equal(await run(nudgeRow({ home_address: null, phone: "+81", tg_onboard_stage: "phone" }), t0 + NUDGE_COOLDOWN_MS), 1);
   assert.deepEqual(stages, ["phone", "pay"]);
 });
 
@@ -401,6 +448,42 @@ test("Telegram /start opens only the authenticated panel onboarding web app", ()
 test("Telegram /start rejects missing, non-HTTPS, malformed, and credentialed panel origins", () => {
   for (const base of [undefined, "", "http://panel.example", "panel.example", "https:panel.example", "https:/panel.example", " https://panel.example", "https://user:pass@panel.example"]) {
     assert.throws(() => startReply("987654", base), /panel base URL is unavailable/);
+  }
+});
+
+test("Telegram /start describes phone and subscription as optional", () => {
+  const text = startReply("1", "https://life.example").text;
+  assert.doesNotMatch(text, /add your phone|subscribe/i);
+  assert.match(text, /optional/i);
+});
+
+test("Telegram transport failure returns a delivery_unknown marker without provider error text", async () => {
+  const originalFetch = global.fetch;
+  global.fetch = async () => { throw new Error("provider-secret-detail"); };
+  try {
+    const result = await tgCall("token", "sendMessage", { chat_id: "42", text: "hello" });
+    assert.equal(result.ok, false);
+    assert.equal(result.delivery_unknown, true);
+    assert.equal(Object.hasOwn(result, "error"), false);
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test("unreadable Telegram JSON is delivery_unknown while explicit rejection stays definitive", async () => {
+  const originalFetch = global.fetch;
+  global.fetch = async () => ({ ok: true, status: 200, json: async () => { throw new Error("secret-body"); } });
+  try {
+    const unknown = await tgCall("token", "sendMessage", { chat_id: "42", text: "hello" });
+    assert.deepEqual(unknown, { ok: false, delivery_unknown: true });
+  } finally {
+    global.fetch = originalFetch;
+  }
+  global.fetch = async () => ({ ok: false, status: 400, json: async () => ({ ok: false, description: "rejected" }) });
+  try {
+    assert.deepEqual(await tgCall("token", "sendMessage", { chat_id: "42", text: "hello" }), { ok: false, description: "rejected" });
+  } finally {
+    global.fetch = originalFetch;
   }
 });
 

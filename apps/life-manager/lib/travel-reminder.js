@@ -64,7 +64,7 @@ function matchesOtherEventEnd(candidateStart, events, event, candidate) {
   });
 }
 
-function resolveReminderDestination(event, { events = [], home } = {}) {
+function resolveReminderDestination(event, { events = [], home, targetGoClaimed = false } = {}) {
   const fallback = String(event && event.location || "").trim();
   const normalizedHome = normalizeLocation(home);
   const start = startMs(event), end = endMs(event);
@@ -77,7 +77,7 @@ function resolveReminderDestination(event, { events = [], home } = {}) {
     if (!location || (normalizedHome && normalizeLocation(location) === normalizedHome) || start === null || candidateStart === null || candidateEnd === null) continue;
     if (candidateEnd < start - 2 * 60000 || candidateEnd > start + 60000 || candidateStart > start || (end !== null && candidateStart >= end)) continue;
     if (matchesOtherEventWindow(candidateEnd, list, event, candidate)) continue;
-    if (matchesOtherEventEnd(candidateStart, list, event, candidate)) continue;
+    if (matchesOtherEventEnd(candidateStart, list, event, candidate) && targetGoClaimed !== true) continue;
     matches.push({ start: candidateStart, location });
   }
   return matches.length === 1 ? matches[0].location : fallback;
@@ -231,6 +231,25 @@ function eventKey(event) {
   return String(event.id || `${startMs(event) === null ? "unknown" : startMs(event)}:${event.summary || ""}`);
 }
 
+async function readTravelGoClaim(uid, key, supaUrl, supaKey, fetchImpl = fetch) {
+  if (!supaUrl || !supaKey) return false;
+  if (fetchImpl === fetch) {
+    try { new URL(String(supaUrl)); } catch { return false; }
+  }
+  const response = await fetchImpl(
+    `${supaUrl}/rest/v1/lm_travel_log?uid=eq.${encodeURIComponent(uid)}&event_key=eq.${encodeURIComponent(key)}&leg=eq.go&select=event_key&limit=1`,
+    { headers: { apikey: supaKey, Authorization: `Bearer ${supaKey}` } },
+  ).catch(() => null);
+  if (!response || response.ok === false
+      || (response.ok !== true && (!Number.isInteger(response.status) || response.status < 200 || response.status >= 300))) return false;
+  const rows = await response.json().catch(() => null);
+  return Array.isArray(rows) && rows.some((row) => row && String(row.event_key || "") === String(key));
+}
+
+function logReconciliation(deps, message) {
+  try { (deps.logError || deps.log || console.error)(message); } catch { /* keep loop alive */ }
+}
+
 async function travelReminderOnce(user, nowMs = Date.now(), deps = {}) {
   const now = toMs(nowMs), chatId = String(user && user.telegram_chat_id || "").trim();
   if (!user || !user.uid || !chatId || user.notifications_enabled === false || now === null) return { status: "skipped" };
@@ -242,13 +261,24 @@ async function travelReminderOnce(user, nowMs = Date.now(), deps = {}) {
   const events = Array.isArray(deps.events) ? deps.events : [];
   const event = nextReminderEvent(events, now);
   if (!event) return { status: "suppressed", reason: "no-event" };
+  const key = eventKey(event);
   const home = deps.home !== undefined ? deps.home : user.home_address;
+  let targetGoClaimed = false;
+  if (physical(event)) {
+    try {
+      const association = deps.travelLogAssociation !== undefined ? deps.travelLogAssociation : deps.hasTravelGoClaim;
+      targetGoClaimed = typeof association === "function"
+        ? await association(user.uid, key, "go", supaUrl, supaKey) === true
+        : association !== undefined ? association === true
+          : await readTravelGoClaim(user.uid, key, supaUrl, supaKey, deps.fetchImpl);
+    } catch { targetGoClaimed = false; }
+  }
   const origin = resolveReminderOrigin(event, {
     events, liveLocation: deps.liveLocation,
     home, nowMs: now,
   });
   const routeAttempted = physical(event) && Boolean(origin);
-  const destination = resolveReminderDestination(event, { events, home });
+  const destination = resolveReminderDestination(event, { events, home, targetGoClaimed });
   let route = null;
   if (routeAttempted) {
     try {
@@ -259,7 +289,6 @@ async function travelReminderOnce(user, nowMs = Date.now(), deps = {}) {
   const departureMs = computeDepartureMs(event, route, { bufferMin: deps.bufferMin });
   const dueAt = computeReminderDueAt(event, { departureMs });
   if (!isReminderDue(now, dueAt)) return { status: "suppressed", reason: "not-due", dueAt };
-  const key = eventKey(event);
   let claimed = false;
   try { claimed = await (deps.claimTravel || claimTravel)(user.uid, key, "telegram-t5", supaUrl, supaKey); }
   catch { return { status: "suppressed", reason: "claim-failed" }; }
@@ -267,12 +296,18 @@ async function travelReminderOnce(user, nowMs = Date.now(), deps = {}) {
   let response = null;
   try { response = await (deps.sendMessage || sendMessage)(token, chatId, formatTravelReminder(event, route, {
     departureMs, timezone: deps.timezone || user.call_time_zone || DEFAULT_TIMEZONE, routeAttempted,
-  })); } catch { /* release below */ }
+  })); } catch { response = { ok: false, delivery_unknown: true }; }
+  if (response && (response.delivery_unknown === true || response.deliveryUnknown === true)) {
+    logReconciliation(deps, "[travel-reminder] delivery unknown; reconciliation required");
+    return { status: "delivery_unknown" };
+  }
   const status = Number(response && response.status);
   const ok = Boolean(response && response.ok === true && (!Number.isFinite(status) || status >= 200 && status < 300));
   const messageId = response && response.result && response.result.message_id;
-  if (!ok || messageId === null || messageId === undefined || messageId === "") {
-    try { await (deps.unclaimTravel || unclaimTravel)(user.uid, key, "telegram-t5", supaUrl, supaKey); } catch { /* retry next tick */ }
+  if (!ok || !Number.isInteger(messageId) || messageId <= 0) {
+    let released = false;
+    try { released = await (deps.unclaimTravel || unclaimTravel)(user.uid, key, "telegram-t5", supaUrl, supaKey); } catch { /* retry next tick */ }
+    if (released !== true) logReconciliation(deps, "[travel-reminder] reconciliation required");
     return { status: "send_failed", eventKey: key };
   }
   const provider = route && route.provider ? String(route.provider) : "none";

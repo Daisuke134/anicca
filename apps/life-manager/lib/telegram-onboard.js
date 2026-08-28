@@ -22,7 +22,7 @@ function coreReady(row) {
 
 function computeStage(row, opts = {}) {
   const storedStage = String(row && row.tg_onboard_stage || "").toLowerCase();
-  if (coreReady(row) && ["done", "dashboard", "pay", "payment", "gmail"].includes(storedStage)) return "done";
+  if (coreReady(row) && ["done", "dashboard", "phone", "pay", "payment", "gmail"].includes(storedStage)) return "done";
   if (!row || row.calendar_provider !== "composio_gcal") return "calendar";
   // The panel state machine owns the canonical paid/core-ready terminal state. The legacy loop must
   // not reopen phone or Gmail for a paid user who intentionally skipped a phone, nor can it rewrite
@@ -267,7 +267,11 @@ async function onboardNudgeAll(opts) {
         try {
           result = await (opts.sendMessage || sendMessage)(opts.token, row.telegram_chat_id,
             `無料期間が終了しました。\n\n<a href="${link}">月額プランを確認する</a>`);
-        } catch { result = { ok: false }; }
+        } catch { result = { ok: false, delivery_unknown: true }; }
+      }
+      if (result && (result.delivery_unknown === true || result.deliveryUnknown === true)) {
+        try { (opts.logError || opts.log || console.error)("[onboard] trial-upgrade reconciliation required"); } catch { /* keep loop alive */ }
+        continue;
       }
       const messageId = result && result.ok === true && result.result
         && Number.isInteger(result.result.message_id) && result.result.message_id > 0;
@@ -283,6 +287,7 @@ async function onboardNudgeAll(opts) {
     const lastNudge = cooldown.get(row.uid);
     if (typeof lastNudge === "number" && now - lastNudge < NUDGE_COOLDOWN_MS) continue;
     let stage = computeStage(row);
+    if (stage === "done" && coreReady(row)) continue;
     if (stage === "gmail") {
       const available = await (opts.mailAvailable || mailAvailable)(row, opts.mailOptions || {});
       if (!available) {
