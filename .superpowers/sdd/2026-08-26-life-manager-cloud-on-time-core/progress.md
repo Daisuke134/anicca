@@ -255,3 +255,12 @@ Baseline: focused Life Manager suite 175/175 PASS.
 - TDD: selector RED 7/11 then GREEN 11/11; `.gt→.gte` mutation detected. Consumer RED 79/80 exposed the retired `paid` query assertion; exact `or` fix produced combined 80/80.
 - Fresh Sol review: ship, spec compliant, Critical/Important/Minor zero; PostgREST grammar, exact expiry, comp boundary, Date.now/process.env restoration, two scheduler selectors, and daily-preflight URL were verified.
 - Primary verification: selector/daily/wake/reminder suite 80/80 plus syntax/diff PASS. Task 13C: complete at `11a6cc993`; production column/code deploy remains deferred to Task 6.
+
+## Task 13D durable trial upgrade and travel-ledger repair
+
+- Initial implementation `b3dc841bd` added the existing onboarding-owner expiry branch. Fresh Sol R0 found a Critical schema mismatch: production `lm_travel_log.leg` still allowed only `go|return`, so both existing `telegram-t5` and new `trial-upgrade` claims 400. It also found malformed Telegram receipt acceptance and swallowed release failure.
+- Plan ruling `9e6b6f323`: retain the existing travel ledger, widen only its exact `leg` CHECK to `go|return|telegram-t5|trial-upgrade`, verify with real PostgreSQL, accept only positive integer Telegram message IDs, make `unclaimTravel` return verified DELETE status, and fail closed to generic reconciliation when release fails.
+- Fix round 1 `34187a389`: 4-leg idempotent migration/integration test, verified release boolean, positive-integer receipt, generic reconciliation. PostgreSQL PASS, Node 117/117. Re-review closed Critical/Important findings but required exact-expiry/send-throw regressions.
+- Fix round 2 `cd6669dee`: test-only exact millisecond expiry claim→send and send-throw claim→send→unclaim. Focused 7/7, full Task 5 Node matrix 119/119, PostgreSQL PASS. Scoped fresh Sol re-review: both addressed, new breakage none, ship.
+- Production Supabase rollback-only leg preflight: existing rows/unique/RLS/other CHECK preserved; four allowed, unknown/duplicate rejected, constraint validated. Post-rollback official readback: fixture 0 and `telegram_t5_allowed=false` restored.
+- Task 13D code/preflight status: complete at `cd6669dee`. Both trial and leg migrations remain unapplied until controlled Task 6 release.

@@ -510,7 +510,7 @@ Fresh Sol checks exact expiry, invalid clock fallback, comp independence, provid
 - Produces: at most one Telegram message ID per `(uid, trial_expires_at, trial-upgrade)`; no new loop/table.
 - Preserves `lm_travel_log` as the ledger, widening only its existing `leg` CHECK to `go|return|telegram-t5|trial-upgrade`. `unclaimTravel(...) → boolean` reports verified DELETE success to every caller.
 
-- [ ] **Step 1: Add active/expired stage RED tests**
+- [x] **Step 1: Add active/expired stage RED tests**
 
 Add fixed-clock cases:
 
@@ -526,7 +526,7 @@ test("legacy pay rows do not reopen ordinary pay nudges", () => {
 
 The expiry message is a separate durable branch, not a stage transition.
 
-- [ ] **Step 2: Add claim/send/release RED**
+- [x] **Step 2: Add claim/send/release RED**
 
 Create one harness row with Calendar, home, notifications, Telegram binding, `paid:false`, `tg_onboard_stage:"done"`, and expired `trial_expires_at`. Inject `claimTravel`, `unclaimTravel`, `sendMessage`, and `paymentLink` seams. Require:
 
@@ -542,7 +542,7 @@ Add malformed receipt cases: negative, zero, boolean, object, string, and non-in
 
 Create a disposable PostgreSQL test by reusing the existing `test/postgres` local/Docker harness. Apply `2026-06-24-ch1-atomic-dedup.sql`, prove `telegram-t5` is rejected before the new migration, apply the new migration twice, then require inserts for `go`, `return`, `telegram-t5`, and `trial-upgrade`; reject an unknown leg; preserve unique `(uid,event_key,leg)`.
 
-- [ ] **Step 3: Run RED**
+- [x] **Step 3: Run RED**
 
 ```bash
 cd apps/life-manager
@@ -551,7 +551,7 @@ node --test --test-name-pattern="trial|upgrade" lib/telegram-onboard.test.js
 
 Expected: FAIL because no durable expiry branch exists and the selector omits `trial_expires_at`.
 
-- [ ] **Step 4: Implement within the existing two-minute owner**
+- [x] **Step 4: Implement within the existing two-minute owner**
 
 Add `trial_expires_at` to `SEL`. Before ordinary stage-drift nudges, evaluate:
 
@@ -589,7 +589,7 @@ Change `unclaimTravel` in `travel.js` to return `true` only for an HTTP 2xx DELE
 
 The leg migration must drop only the CHECK constraint whose constrained column set is exactly `lm_travel_log.leg`, then add and validate an explicitly named idempotent constraint allowing `go`, `return`, `telegram-t5`, and `trial-upgrade`. Do not modify the unique constraint, RLS, rows, or table shape otherwise. Production apply remains Task 6; Task 5 primary runs rollback-only preflight.
 
-- [ ] **Step 5: Run GREEN and negative matrix**
+- [x] **Step 5: Run GREEN and negative matrix**
 
 ```bash
 bash test/postgres/lm-travel-log-legs.integration.sh
@@ -598,7 +598,7 @@ node --test lib/telegram-onboard.test.js lib/payment-link.test.js lib/ch1-atomic
 
 Expected: PASS for active, exact-expiry, paid, incomplete, notification-off, Telegram-unbound, duplicate, failure-release, and missing-ID cases.
 
-- [ ] **Step 6: Commit and fresh review**
+- [x] **Step 6: Commit and fresh review**
 
 ```bash
 git add apps/life-manager/lib/telegram-onboard.js apps/life-manager/lib/telegram-onboard.test.js
