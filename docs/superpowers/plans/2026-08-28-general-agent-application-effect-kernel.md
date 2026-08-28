@@ -32,7 +32,7 @@
 - Produces: `buildMarketplaceApplicationJob(input) -> Readonly<RuntimeJob>` and `marketplaceApplicationContract(job) -> Readonly<ApplicationEffectContract>`.
 - Constants: `LOOP_ID = "life-manager.manager"`, `CAPABILITY = "marketplace.application"`.
 
-- [ ] **Step 1: Write the failing effect-identity tests**
+- [x] **Step 1: Write the failing effect-identity tests**
 
 Create `apps/life-manager/lib/marketplace-application-effect.test.js`:
 
@@ -112,7 +112,7 @@ test("noncanonical parent or unbound references are rejected", () => {
 });
 ```
 
-- [ ] **Step 2: Run the focused test and verify RED**
+- [x] **Step 2: Run the focused test and verify RED**
 
 Run:
 
@@ -122,7 +122,7 @@ node --test apps/life-manager/lib/marketplace-application-effect.test.js
 
 Expected: FAIL because `marketplace-application-job.js` does not exist.
 
-- [ ] **Step 3: Implement the minimum job builder and contract reader**
+- [x] **Step 3: Implement the minimum job builder and contract reader**
 
 Create `apps/life-manager/lib/marketplace-application-job.js`:
 
@@ -259,7 +259,7 @@ module.exports = {
 };
 ```
 
-- [ ] **Step 4: Run the focused and runtime-job tests**
+- [x] **Step 4: Run the focused and runtime-job tests**
 
 Run:
 
@@ -273,7 +273,7 @@ git diff --check
 
 Expected: all tests PASS and `git diff --check` exits 0.
 
-- [ ] **Step 5: Commit and push Task 1**
+- [x] **Step 5: Commit and push Task 1**
 
 ```bash
 git add apps/life-manager/lib/marketplace-application-job.js \
@@ -292,7 +292,7 @@ git push
 - Consumes: canonical application job and dependencies `inspectApplication`, `executeOnce`, and `verifyReceipt`.
 - Produces: `runMarketplaceApplicationEffect(job, deps) -> {receipt, effect_started, replayed}` or `MarketplaceApplicationEffectError` with `code` and `unknownEffect`.
 
-- [ ] **Step 1: Add failing execution and replay tests**
+- [x] **Step 1: Add failing execution and replay tests**
 
 Append to `apps/life-manager/lib/marketplace-application-effect.test.js`:
 
@@ -354,7 +354,7 @@ test("post-readback failure is unknown after exactly one execution", async () =>
 });
 ```
 
-- [ ] **Step 2: Run the focused test and verify RED**
+- [x] **Step 2: Run the focused test and verify RED**
 
 Run:
 
@@ -364,7 +364,7 @@ node --test apps/life-manager/lib/marketplace-application-effect.test.js
 
 Expected: FAIL because `marketplace-application-effect.js` does not exist.
 
-- [ ] **Step 3: Implement the minimum pre/execute/post kernel**
+- [x] **Step 3: Implement the minimum pre/execute/post kernel**
 
 Create `apps/life-manager/lib/marketplace-application-effect.js`:
 
@@ -468,7 +468,7 @@ module.exports = {
 };
 ```
 
-- [ ] **Step 4: Run focused and adjacent effect tests**
+- [x] **Step 4: Run focused and adjacent effect tests**
 
 Run:
 
@@ -483,7 +483,7 @@ git diff --check
 
 Expected: all tests PASS and `git diff --check` exits 0.
 
-- [ ] **Step 5: Commit and push Task 2**
+- [x] **Step 5: Commit and push Task 2**
 
 ```bash
 git add apps/life-manager/lib/marketplace-application-effect.js \
