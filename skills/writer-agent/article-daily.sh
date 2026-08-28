@@ -1172,4 +1172,4 @@ if pass_is_complete; then
     echo "=== article-daily: active-four completion notification remains pending $(date '+%F %T %Z') ===" >>"$LOG"
   touch "$HOME/.openclaw/state/.article-loop-last-pass" 2>/dev/null || true
 fi
-exit 0
+exit "$RC"
