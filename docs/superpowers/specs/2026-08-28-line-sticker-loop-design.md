@@ -307,14 +307,15 @@ No narrower evidence closes the goal.
   source preserved identity and green background but visual inspection found materially duplicate
   frames, so it is retained as rejection evidence and not converted into candidates. No Creators
   Market submission, review, release, public product, sale, payout, or bank effect has occurred.
-- Native v2 batches 1 through 5 are complete. Their retained ten-second source SHA-256 values are
+- Native v2 batches 1 through 6 are complete. Their retained ten-second source SHA-256 values are
   `c563adefc173797e61fd03e48313071546f0f9715183360f794ca0d5a0a22fe0` and
   `be6b559cd491fa7938f6ff3b07c89272dc8fd19076ad55763158924bbbe165a3`, and
   `315234d4717fb9a137e76067af1a599aa358c2019edf81e44431e82833a6d4f9`, and
   `28858787b1be28b201fdf13a3f3f4920701b09838f8c66976a25b3945fcd7f3b`, and
-  `6a0a0d2892241510479671a6ada957bf11f40f5e086ec1bcf90e2b340413686e`; the durable convert
-  SHA-256 is `d43fb050d2c294aeb30ce20dc6c6a69101c6c8a0d910b74aeb48ede80e755690`.
-  All 50 APNG hashes are unique across the five batches and pass the validator at 320×270 RGBA, five
+  `6a0a0d2892241510479671a6ada957bf11f40f5e086ec1bcf90e2b340413686e`, and
+  `ba6f14ad12a76826712f5c80f84cd3cff9b546d936981bfbd9596f5645bc77df`; the durable convert
+  SHA-256 is `3151313073b09b3ce09d4fed4088b84255ee5edc85a174e5bc99194eafc530b0`.
+  All 60 APNG hashes are unique across the six batches and pass the validator at 320×270 RGBA, five
   frames, one second, one play. Provider cost is USD 0 and a later replay reports effect 0.
 
 ### Money truth
@@ -325,8 +326,8 @@ do not count as money.
 
 ### Current blockers to revenue
 
-1. Native batch 6 has not been generated or validated. The rejected Runware and LTX
-   attempts remain durable evidence and are never retried.
+1. The model has not yet inspected all 60 validated candidates or selected the ordered 24. The
+   rejected Runware and LTX attempts remain durable evidence and are never retried.
 2. No authenticated LINE Creators Market browser session or dedicated profile exists, and no LINE
    credential entry is configured in the private credential SSOT.
 
@@ -351,7 +352,7 @@ row while an earlier row is unfinished.
 | A08 — DONE | Generate and convert batch 3 into ten valid candidates. | Batches 1–3 contain 30 unique candidate hashes; batch 3 passes the LINE validator and replay reports `effect=0`. |
 | A09 — DONE | Generate and convert batch 4 into ten valid candidates. | Batches 1–4 contain 40 unique candidate hashes; batch 4 passes the LINE validator and replay reports `effect=0`. |
 | A10 — DONE | Generate and convert batch 5 into ten valid candidates. | Batches 1–5 contain 50 unique candidate hashes; batch 5 passes the LINE validator and replay reports `effect=0`. |
-| A11 | Generate and convert batch 6 into ten valid candidates. | Ten candidate hashes pass the LINE validator. |
+| A11 — DONE | Generate and convert batch 6 into ten valid candidates. | All six batches contain 60 unique validator-clean candidate hashes; batch 6 replay reports `effect=0` and total provider cost remains USD 0. |
 | A12 | Ask the model to inspect all 60 candidates and select/order 24. | Selection receipt binds all 60 input hashes and 24 ordered output ids. |
 | A13 | Build the real LINE package. | `main.png`, `tab.png`, 24 APNGs, provenance, and ZIP pass the validator. |
 | B01 | Create or recover one dedicated authenticated Creators Market browser session. | Official account page reads back the creator identity. |
