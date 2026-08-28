@@ -112,11 +112,14 @@ scale後は06:00/14:00/22:00の3 slotを使い、各slotへunique run/topicを�
 
 ### 現在のproduction truth
 
-`article-daily`と`article-healthcheck`はloaded SHAとevent SHAが一致してterminal PASSである。`article-resume`は
-同じSHAだがdisk floorでterminal FAILである。W1g codeはmainへmerge済みでも、plistの`ARTICLE_ROOT`等がgig releaseを
-指すsplit sourceのためproduction未反映である。received writing revenueは0である。現状は24/7、記事公開成功、
-収益化成功のいずれも未達である。次の唯一のcursorは
-`docs/ARTICLE-LAUNCH-TODO.md`のW1iとする。
+W1iはPR #2962/#2965で完了した。14 Writer labelのProgramArguments、`ARTICLE_ROOT`、`ARTICLE_SKILL_DIR`、
+`LIFE_MANAGER_REPO`はsparse immutable release `40065a10d2a6d33838fd54fe16213497d94ae0ae`へ一致する。
+general `current`は元のfull releaseへ復元し、非Writer applyを阻害しない。W1gの5行修正も同releaseに含まれる。
+
+現在のdaily自然wakeはdisk floor未達でgeneration前にterminal FAILとなるため、W1gの未完run保持はproduction未証明である。
+doctorには別session所有のunmanaged TikTok labelが1件あり、Writer作業では変更しない。received writing revenueは0である。
+現状は24/7、記事公開成功、収益化成功のいずれも未達である。次の唯一のcursorは、空き512MiB以上でW1g canaryを
+readbackし、その後W1h false-greenを閉じることとする。
 
 Writerの経済目的は、記事に結び付いた一意な外部payment receiptを受け取ることである。記事本数は活動量として
 別に測る。
