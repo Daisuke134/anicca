@@ -960,6 +960,11 @@ def test_runner_loop_id_uses_managed_control_plane_identity(monkeypatch):
     assert paid._runner_loop_id() == "hf-gig-paid-direct"
 
 
+def test_remote_owner_cannot_treat_one_invalid_candidate_as_exhaustion():
+    source = (SCRIPTS / "paid_direct.py").read_text(encoding="utf-8")
+    assert "One invalid, private, unreachable, or unverified candidate is not batch exhaustion" in source
+
+
 def test_normalize_acceptance_absolutizes_project_relative_asset_path(tmp_path):
     paid = load("paid_direct")
     root = tmp_path / "project"
