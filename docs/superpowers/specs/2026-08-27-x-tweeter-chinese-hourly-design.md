@@ -6,9 +6,10 @@
 「日本語リポスト」「英語リポスト」「中国語圏の情報を使った英語オリジナル投稿」が
 技術的に成立することは確認できた。
 
-6 jobはGitHub main commit `c50e98ff…` から作った同じimmutable release
-`20260828T090538-c50e98ff` を参照している。ProgramArgumentsと実ファイルをreadback済みで、
-worktreeやbranchを本番実行先にしていない。release作成時のGCもloaded releaseを保持した。
+6 jobをGitHub main commit `c50e98ff…` の同じimmutable releaseへ適用し、ProgramArgumentsと
+実ファイルをreadbackした。しかし09:08に別のproduction apply ownerが6 plistをmain祖先
+`8377ba1b…` へ一括更新した。worktreeやbranchの直接実行ではないが、複数control-plane ownerが
+同じplistを同時更新できる競合は残る。release作成時のGCがloaded releaseを保持する修正は有効である。
 
 ただし、**実験基盤の復旧と、実験の勝敗確定は別である**。復旧後wakeでは、Tweeterは
 中国語圏5候補からdraftを作ったがcriticが公開前に棄却し、English Repostはaffiliate
@@ -188,9 +189,10 @@ tone weightは0.5、original比率は0.05ずつ動かす。1回の結果で全�
 保護する回帰テストを追加した。実際に旧loaded release `defa620c…` を残したまま次releaseを
 作成できた。
 
-6 jobは現在、exact release `/Users/anicca/loops/releases/20260828T090538-c50e98ff` を参照する。
-Tweeterの復旧wakeは中国語圏5候補を収集した。公開前critic棄却なので、このwakeの外部作用と
-重複作用はともに0である。
+09:08時点のinstalled plistは6本ともexact release
+`/Users/anicca/loops/releases/20260828T090440-8377ba1b` を参照する。これはorigin/main祖先だが、
+一部loaded stateとterminal eventが追随していない。Tweeterの復旧wakeは中国語圏5候補を収集し、
+公開前critic棄却だったため、このwakeの外部作用と重複作用はともに0である。
 
 ## 残TODO — この順番で閉じる
 
@@ -227,6 +229,13 @@ merge状態をread-onlyで確認し、安全な対象だけを整理する。同
 - 各レーンのsecond wakeで同じsourceの重複作用が0であることを確認する
 - English Repostのaffiliate payload revision failを、一般repostの成功と混同せず解消する
 - Dice Repostの最新release wakeを完了し、healthcheckのstale警告を0へ戻す
+
+### P0: production apply ownerを1つにする
+
+- release作成と全registry applyを行う唯一のcontrol-plane jobを特定する
+- 手動・別sessionのapplyをowner leaseまたはcompare-and-swapで拒否する
+- apply前後にexpected SHAを照合し、途中で別SHAへ変わったらfail-closeする
+- 6 plistが同じSHAのまま1 cadence維持されることをreadbackする
 
 ### P1: 計測をためて最初の比較を閉じる
 
