@@ -96,6 +96,12 @@ def _character(root: Path) -> Path:
     return path
 
 
+def _rights_receipt(root: Path, character: Path) -> Path:
+    path = root / "rights.json"
+    path.write_text(json.dumps({"version": 1, "set_id": "set-1", "character_id": "char-1", "character_sha256": _sha256(character), "creation_source": "fixture-image-model", "rights": "original_ai_generated"}), encoding="utf-8")
+    return path
+
+
 def _video(root: Path) -> Path:
     path = root / "template.mp4"
     result = subprocess.run(["ffmpeg", "-y", "-v", "error", "-f", "lavfi", "-i",
@@ -113,6 +119,7 @@ class LineStickerMediaTests(unittest.TestCase):
         self.work = self.root / "work"
         self.work.mkdir()
         self.character = _character(self.root)
+        self.rights_receipt = _rights_receipt(self.root, self.character)
         self.model = _model(self.root / "model.py")
 
     def tearDown(self) -> None:
@@ -130,6 +137,19 @@ class LineStickerMediaTests(unittest.TestCase):
         payload["motions"][0]["motion_id"] = "../../unsafe"
         with self.assertRaisesRegex(MODULE.MediaError, "motion_id_invalid"):
             MODULE._validate_plan_model({key: payload[key] for key in ("version", "mode", "set_id", "character_id", "character_anchors", "motions")}, set_id="set-1", character_id="char-1")
+        (self.work / "plan-receipt.json").unlink()
+        self._plan()
+        self.assertEqual((self.root / "model.count").read_text(), "1")
+
+    def test_rights_receipt_is_required_and_hash_binds_its_bytes(self) -> None:
+        self._plan()
+        bad = self.root / "bad-rights.json"
+        bad.write_text(json.dumps({"version": 1, "set_id": "set-1", "character_id": "char-1", "character_sha256": _sha256(self.character), "creation_source": "fixture", "rights": "copied"}))
+        with self.assertRaisesRegex(MODULE.MediaError, "rights_receipt_invalid"):
+            MODULE._rights_receipt(bad, json.loads((self.work / "plan.json").read_text()))
+        evidence = MODULE._rights_receipt(self.rights_receipt, json.loads((self.work / "plan.json").read_text()))
+        self.rights_receipt.write_text(self.rights_receipt.read_text() + " ")
+        self.assertNotEqual(evidence["receipt_sha256"], MODULE._rights_receipt(self.rights_receipt, json.loads((self.work / "plan.json").read_text()))["receipt_sha256"])
 
     def test_quote_reservation_precedes_generate_and_replay_has_no_provider_call(self) -> None:
         self._plan()
@@ -140,7 +160,9 @@ class LineStickerMediaTests(unittest.TestCase):
         self.assertEqual([call["operation"] for call in calls], ["quote", "generate"] * 6)
         self.assertEqual(first["status"], "ready")
         self.assertEqual(second["effect"], 0)
-        self.assertTrue((self.work / "reservations" / "01.json").is_file())
+        state = json.loads((self.work / "convert-state.json").read_text())
+        self.assertEqual(state["batches"]["1"]["status"], "completed")
+        self.assertFalse((self.work / "reservations").exists())
 
     def test_quote_over_cap_does_not_generate(self) -> None:
         self._plan()
@@ -150,6 +172,13 @@ class LineStickerMediaTests(unittest.TestCase):
         calls = [json.loads(line) for line in (self.root / "provider.jsonl").read_text().splitlines()]
         self.assertEqual([call["operation"] for call in calls], ["quote"])
 
+    def test_convert_state_is_the_only_batch_authority_and_expired_quotes_fail(self) -> None:
+        state = MODULE._load_convert_state(self.work / "convert-state.json")
+        self.assertEqual(set(state), {"version", "plan_sha256", "character_sha256", "batches"})
+        expired = {"request_id": "r", "quote_token": "q", "batch": 1, "provider": "p", "model": "m", "quoted_cost_usd": "0.01", "expires_at": "2000-01-01T00:00:00Z", "regenerable": True}
+        with self.assertRaisesRegex(MODULE.MediaError, "quote_expired"):
+            MODULE._quote(expired, 1)
+
     def test_unknown_ack_reconciles_without_generate_retry(self) -> None:
         self._plan()
         provider = _executable(self.root / "unknown.py", """
@@ -158,9 +187,9 @@ class LineStickerMediaTests(unittest.TestCase):
             request=json.load(sys.stdin); base={'request_id':'r','quote_token':'q','batch':request['batch'],'provider':'p','model':'m'}
             if request['operation']=='quote': print(json.dumps({**base,'quoted_cost_usd':'0.01','expires_at':'2999-01-01T00:00:00Z','regenerable':False}))
             elif request['operation']=='generate': print(json.dumps({**base,'acknowledged':'unknown','video_path':'','video_sha256':'','segments':[],'regenerable':False,'actual_cost_usd':'0.01'}))
-            elif request['operation']=='reconcile': print(json.dumps({**base,'acknowledged':'unknown','video_path':'','video_sha256':'','segments':[]}))
+            elif request['operation']=='reconcile': print(json.dumps({**base,'status':'unknown','actual_cost_usd':'0.01','regenerable':False,'video_path':'','video_sha256':'','segments':[]}))
         """)
-        with self.assertRaisesRegex(MODULE.MediaError, "reconcile_unknown"):
+        with self.assertRaisesRegex(MODULE.MediaError, "reconcile_required"):
             MODULE.convert(self.work / "plan.json", [sys.executable, str(provider)], self.work, "1", "ffmpeg", "ffprobe")
         with self.assertRaisesRegex(MODULE.MediaError, "reconcile_unknown"):
             MODULE.reconcile(self.work / "convert-state.json", [sys.executable, str(provider)], 1)
@@ -211,9 +240,11 @@ class LineStickerMediaTests(unittest.TestCase):
         MODULE.convert(self.work / "plan.json", [sys.executable, str(provider)], self.work, "1.00", "ffmpeg", "ffprobe")
         MODULE.select(self.work / "plan.json", self.work / "candidates", [sys.executable, str(self.model)], self.work)
         output = self.root / "package"
-        result = MODULE.package(self.work / "selection.json", self.work, output, MODULE_ROOT / "official-policy.json", "ffmpeg")
+        result = MODULE.package(self.work / "selection.json", self.work, output, MODULE_ROOT / "official-policy.json", self.rights_receipt, "ffmpeg")
         provenance = json.loads((output / "provenance.json").read_text())
         self.assertEqual(result["status"], "ready")
+        replay = MODULE.package(self.work / "selection.json", self.work, output, MODULE_ROOT / "official-policy.json", self.rights_receipt, "ffmpeg")
+        self.assertEqual(replay["effect"], 0)
         self.assertEqual(set(provenance["generation"]), MODULE.GENERATION_KEYS)
         provenance["generation"]["plan_sha256"] = "0" * 64
         (output / "provenance.json").write_text(json.dumps(provenance))

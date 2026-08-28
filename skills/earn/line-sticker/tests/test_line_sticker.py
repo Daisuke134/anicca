@@ -174,7 +174,7 @@ def _write_provenance(root: Path) -> None:
         prompt_hashes[name] = _sha256(("prompt:" + name).encode("ascii"))
     digest = "a" * 64
     generation = {
-        "rights_evidence": {"kind": "original_ai_generated", "character_sha256": digest},
+        "rights_evidence": {"receipt_sha256": digest, "set_id": "set-20260828-001", "character_id": "char-001", "character_sha256": digest, "creation_source": "fixture", "rights": "original_ai_generated"},
         "character_sha256": digest,
         "plan_sha256": digest,
         "selection_sha256": digest,
