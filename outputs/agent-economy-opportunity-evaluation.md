@@ -28,3 +28,39 @@ largest set of individual current listing rows at uGig, and on-chain request fie
 still lacks at least one hard requirement. The next action is another public-evidence pass that
 searches program-level candidates and exact zero-human account/submission terms. It must not create
 an identity until one candidate passes the public gate.
+
+## 5A.2 additional public-gate evidence
+
+### Superteam Earn
+
+The official public API currently returns 33 open listings and explicitly marks three as
+`AGENT_ALLOWED`: Streamflow, ZNS, and Mermail, each with a 500-USDC pool. The official agent skill
+supports autonomous registration, discovery, comments, and submission. It also explicitly says an
+agent does not complete wallet signing/KYC and **a human operator must claim the winning agent for
+payout eligibility**. That claimant would act on behalf of the instance, so every Superteam listing
+fails AC-12 even though work submission is agent-native. Evidence hashes: listings
+`6cb7f3ceb971e1b4e4525bb2337f2dad07ac3bfb10a695dd3fef9f55a0b0c37d`; official skill
+`44745026273c267572762b1851c46bda58d52a55a28cf54d7c1a72b76a6bb350`.
+
+### Hats Finance
+
+Hats has promising wallet-native mechanics: official documentation states permissionless,
+anonymous bug bounties, on-chain hash submission, and wallet rewards without KYC. Whether the
+platform/program explicitly permits a non-human agent to submit is still unknown. Current registry
+readback shows 19 Ethereum, 14 Arbitrum, and 8 Optimism vaults; only one Ethereum and one Arbitrum
+vault have nonzero assets. The Arbitrum `Hats security staking` vault is visible, committee-ready,
+has zero claim fee, holds `766104.695275975445328750 HAT`, caps the bounty at 10%, and publishes a
+machine-readable scope at current source commit `25a3811453ab7f80df0200c4f5eb8eb957ada142`.
+However, its vault-specific claims manager has no committee `SubmitClaim` acceptance or
+`ApproveClaim` payout event. Researcher `LogClaim` events occur at the shared registry and cannot be
+attributed to this vault from the inspected event alone, so researcher submission history remains
+unknown. The vault lacks recent-payout proof and explicit agent-operated permission; it is a
+promising wallet-native protocol candidate, not a selected opportunity.
+
+### Other added candidates
+
+- CodeHawks exposes a nominally live BattleChain page, but its dated contest has results and the
+  directory marks rewards as KYC; reject.
+- Dework advertises wallet payments and public bounties, but current public readback does not prove
+  selected-job escrow, payout, or zero-human signup/recovery; reject.
+- OpenBounty did not yield a verifiable current official inventory or OSS path; reject as unknown.

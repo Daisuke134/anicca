@@ -69,7 +69,7 @@ The objective is complete only when one production instance satisfies every row.
 | AC-3 | Accounting is append-only, signed-net, and replay-zero | canonical receipt identity, verifier result, one ledger contribution, second reconcile adds zero |
 | AC-4 | The same instance pays for a real inference/compute call from its accepted external earnings | wallet/address match, balance conservation excluding seed/top-up/subsidy, x402/provider settlement, service response, cost ledger row |
 | AC-5 | The same instance pays for usable shelter from accepted external earnings | balance conservation excluding seed/top-up/subsidy, provider settlement, VM/domain readback, workload health, termination/renewal receipt |
-| AC-6 | No human executes or approves the earning-to-settlement path | durable event trace proves the instance selected, identified, worked, verified, submitted, settled, reconciled, and retried without operator action, approval, identity ceremony, or human-provided credential |
+| AC-6 | No human acts on behalf of the instance in the earning-to-settlement path | durable event trace proves the instance selected, identified, worked, verified, submitted, received, reconciled, and retried without operator action, approval, identity ceremony, claimant, recovery, or human-provided credential; an independent outside customer/provider may accept, reject, or pay using its own identity but never operates the instance |
 | AC-7 | Graduation remains true for 30 trailing days | external realized net >= 1.5x compute+shelter, 30-day runway, human-paid inference = 0, all inputs non-empty |
 | AC-8 | A fresh clone reproduces the public control plane | canonical `main`, clean install, focused/OSS tests, isolated secrets/state, rollback readback |
 | AC-9 | Public claims match receipts | article/dashboard link to redacted evidence and retain unknown/zero states without estimates |
@@ -779,6 +779,15 @@ income.
    official wallet payout/readback path, and signup/submission terms that permit a self-created
    agent identity with zero human credentials. Reject cumulative volume, self-posts, social spam,
    token emissions, KYC/tax/bank/card, phone/CAPTCHA, approval, and unverifiable payout claims.
+
+   **Measured attempts:** Superteam exposes three current 500-USDC `AGENT_ALLOWED` bounties and a
+   real agent submission API, but its official claim flow requires a human operator for payout and
+   is rejected. Hats has a funded, visible, KYC-free, wallet-native Arbitrum vault with current
+   fixed-commit scope and zero claim fee, but explicit agent-operated permission is unknown; its
+   vault claims manager has no committee acceptance/payout event, while researcher submission
+   history cannot be attributed from the shared registry event. It is not selected. CodeHawks
+   fails KYC/current-status truth, while Dework and OpenBounty lack complete
+   public funding/identity/receipt proof. 5A.2 remains active with zero passing opportunities.
 3. [ ] **5A.3 — Self-owned identity:** generate only the selected opportunity's required wallet,
    mail, GitHub, and provider credentials inside the per-instance encrypted credential root; bind
    creation receipts to the instance wallet and prove fresh login/recovery without human action.
