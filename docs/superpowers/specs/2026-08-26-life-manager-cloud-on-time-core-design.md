@@ -8,6 +8,7 @@
 
 - `docs/superpowers/plans/2026-08-08-life-manager-provider-cost-guard.md` Task 3の経路構造は、本specの経路契約に従う。
 - `docs/superpowers/specs/2026-08-08-lm-dais-tenant-cloud-migration-design.md`はDaisテナントのruntime移行だけを扱い、本specの製品挙動を定義しない。
+- current implementation orderは`docs/superpowers/plans/2026-08-28-life-manager-cloud-on-time-core-finish.md`、測定済み状態は対応する`progress.md`を正本とする。
 - `deploy/local`はself-host製品として残す。本specはlocal runtimeへ機能を追加しない。
 
 ## 1. Overview — What and Why
@@ -40,9 +41,10 @@ flowchart LR
   PREF --> PHONE{電話番号あり}
   PHONE -->|あり| CALL[通話を明示有効化]
   PHONE -->|なし| CHAT[Telegramのみ]
-  CALL --> PAY[$20/月 checkout]
-  CHAT --> PAY
-  PAY --> RUN[cloud scheduler]
+  CALL --> TRIAL[3日間 無料trial 自動付与]
+  CHAT --> TRIAL
+  TRIAL --> RUN[cloud scheduler]
+  TRIAL -->|期限切れ| PAY[$20/月 checkout] --> RUN
   RUN --> FILL[移動時間を自動挿入]
   RUN --> T5[出発5分前に次予定と乗換を送信]
   RUN --> T10C[出発10分前に電話]
@@ -140,6 +142,13 @@ Transit APIの公式契約は次を使う。
 | AC-24 | 送信前に既存`lm_travel_log`へ`leg=telegram-t5`をatomic claimする。Telegram非2xxまたはmessage ID欠落時は同claimをreleaseし、次tickでretryする。新DB tableを作らない。 |
 | AC-25 | reminderはComposio予算で5分へ劣化する`organsUserOnce`から分離する。in-process ownerは固定60秒`startReminderLoop`、`LIFE_RUN_LOOPS=false` ownerは既存の毎分Inngest `sweep-wake → wake-user → wakeUserOnce → reminderUserOnce`で走り、どちらのowner modeでも0経路・二重経路を作らない。各tenantを独立timeoutで処理し、route timeoutやTelegram失敗が`wakeCallOnce`、他tenant、他organを止めない。 |
 | AC-26 | success logはuidの先頭12文字、event key hash、provider、Telegram message IDを含む。event title、location、phoneをlogへ出さない。 |
+| AC-36 | event開始へ隣接するoutbound `[Travel]` blockが一意で、非空locationがhomeと異なる時だけ、T-5 routeのdestinationにその解決済みlocationを使う。候補0件・複数件・home行きの時はeventのfree-form locationへ戻す。別event、return block、`[PENDING]`、`[APPLIED]`のlocationを流用しない。Telegramの予定名と表示目的地は元eventの値を維持する。 |
+
+AC-36の根拠:
+
+- Google Calendar Events API: `location`は“Geographic location of the event as free-form text.”であり、route可能住所を保証しない。https://developers.google.com/workspace/calendar/api/v3/reference/events
+- Google Geocoding best practices: “complete, unambiguous, postal addresses”はGeocoding向けだが、ambiguous queryは“zero results”になり得る。https://developers.google.com/maps/documentation/geocoding/best-practices
+- production readback: `MIRSUBISHI UFJ INFORMATION TECHNOLOGY`はdestination geocode `ZERO_RESULTS`、隣接Travel blockの完全住所は同じ本番keyでTransit routeを返した。新providerではなく、既存autofillの解決結果を再利用する。
 
 Telegram本文の固定形:
 
@@ -163,12 +172,20 @@ Telegram本文の固定形:
 | AC-27 | public QRはLife Manager Telegram botの`/start` deep linkだけをencodeする。uid、chat ID、secret、emailをQRへ入れない。 |
 | AC-28 | botはRailway `/panel/onboarding`を開くTelegram Mini App `web_app` buttonを返し、Telegram `initData`のHMAC、5分age、private actorを既存`panel-auth.js`で検証してtenantを確定する。生の`?tg=`をidentityやbinding authorityに使わない。 |
 | AC-29 | Supabase Google Sign-in stepを削除する。Google画面はRailwayのtenant-scoped Calendar connectorが開始するGoogle Calendar consentの1回だけ開く。Calendar consent結果は検証済みTelegram tenantへbindする。 |
-| AC-30 | onboarding順はCalendar consent → home address → Telegram notifications ON → phone入力または「電話なしで続ける」→ phone入力時だけcall opt-in → Stripe $20/月 → dashboardとする。nameはTelegram profileを使い、空の場合だけ入力させる。 |
+| AC-30 | onboarding順はCalendar consent → home address → Telegram notifications ON → phone入力または「電話なしで続ける」→ phone入力時だけcall opt-in → dashboardとする。Stripe checkoutをonboardingの必須stepにしない（2026-08-27 Dais改訂: 課金前に価値を体験させる）。nameはTelegram profileを使い、空の場合だけ入力させる。 |
 | AC-31 | home addressなしではtravel autofillをreadyと表示しない。live location共有中は現在地routeを使い、共有終了後はhome/previous-event fallbackへ戻ることを説明する。 |
 | AC-32 | phoneなしのpaid userはCalendar autofillとTelegram reminderを受ける。phoneありかつcall opt-inのpaid userだけがTelnyx callを受ける。 |
 | AC-33 | onboarding statusはserver-side `lm_users`と`lm_panel_preferences`だけから復元する。localStorageをtenant identity、connector truth、payment truthにしない。legacy Netlify `telegram-link` actionは410を返す。 |
-| AC-34 | Stripe webhookだけが`paid`を書き、success redirectだけでpaidにしない。paid=falseかつcomp window外ではscheduler external effectsを開始しない。 |
+| AC-34 | Stripe webhookだけが`paid`を書き、success redirectだけでpaidにしない。paid=falseかつtrial期限外かつcomp window外ではscheduler external effectsを開始しない。 |
 | AC-35 | 同じTelegram actorの再scan/reopenは同じtenantを再開し、新tenantを作らない。別Telegram actorは別tenantとなり、他tenantのCalendar、phone、location、billingを読めない。 |
+| AC-37 | onboardingのcore prerequisites（Calendar consent + home + notifications）完了時、serverがper-tenant trial期限（完了時刻+3日）を1回だけ書く。trial期限内はpaidと同じscheduler external effects（travel autofill、T-5 Telegram、call opt-in時のcall）を受ける。trial期限はserver-sideの値だけを真とし、client入力・localStorage・再onboardingで延長できない。 |
+| AC-38 | trial期限切れかつpaid=falseのtenantは、external effectsを停止し、Stripe checkout linkを含むupgrade Telegram通知を最大1回送る（既存ledgerでdedupe）。再scan/reopenはtrialを再付与せず、dashboardのcheckout導線は維持する。global `LM_COMP_UNTIL`はdemo用killスイッチとして残し、per-tenant trialと独立に評価する。 |
+
+AC-37/38の根拠:
+
+- Dais指示 (2026-08-27 verbatim): "I first want to kind of make it for free and then when they start using it ... after like certain few days we recommend them to actually pay for it"。
+- RevenueCat: trial長は7日defaultでなくactivation時間（core valueを体験するまでの時間）で決める。本製品のactivationは初回のT-5 Telegram/callで、実カレンダー予定1〜2日分で到達するため3日で足りる。https://www.revenuecat.com/blog/growth/7-day-trial-subscription-app
+- token/usage meteringによるcutoffは棄却（新しい計測infra必須）。時間boxはserver timestampの比較1個で済み、既存`comp-window.js`と同じ読み時評価パターンを再利用する。乱用が実測されたら初めてmeteringを足す。
 
 ## 3. As-Is / To-Be
 
@@ -185,6 +202,7 @@ Telegram本文の固定形:
 | QR identity | `/lm?tg=<chat_id>`とGoogle login | QR→bot→検証済みTelegram Mini App session |
 | Google auth | Supabase Google loginとCalendar consent | Calendar consentだけを残す |
 | Phone | typed phoneがonboarding必須 | phoneなしTelegram-only経路とphoneありcall経路を分ける |
+| Payment | onboardingが$20 checkoutで止まる（global comp env varで一括解除のみ） | per-tenant 3日trialを自動付与し、価値体験後にStripeへ誘導。webhookのみがpaid writer |
 
 ## 4. Test Matrix
 
@@ -218,6 +236,9 @@ Telegram本文の固定形:
 | 26 | AC-33 server truth | `lm-onboard: localStorage cannot choose tenant or stage` | OK |
 | 27 | AC-34 payment authority | existing `billing` tests + Stripe webhook E2E | OK |
 | 28 | AC-35 tenant isolation | `lm-onboard: same actor resume and cross-actor denial` | OK |
+| 29 | AC-36 resolved destination reuse | `travel-reminder: adjacent outbound Travel location` | OK |
+| 30 | AC-37 trial grant and effects | `billing/panel-api: trial grant once, trial-active scheduler cohort` | OK |
+| 31 | AC-38 trial expiry boundary | `billing: expiry stops effects, single dedupe upgrade message, no re-grant` | OK |
 
 ### E2E Judgment
 
@@ -241,6 +262,8 @@ Telegram本文の固定形:
 - Google Gmail connector。Calendar consentだけを扱う。
 
 ## 6. Execution Steps
+
+以下はacceptanceのslice分解を残すhistorical checklistである。currentの一件ずつの実行順、exact files、RED/GREEN command、review、provider E2Eは`docs/superpowers/plans/2026-08-28-life-manager-cloud-on-time-core-finish.md`に従う。
 
 各sliceは前sliceのprovider readback後に始める。1 sliceはproduction 3 files以下、production差分100 LOC以下にする。下記sliceを結合しない。
 
@@ -289,6 +312,13 @@ Telegram本文の固定形:
 - [x] `LIFE_RUN_LOOPS=false`で既存毎分Inngest `wake-user`が同じ`reminderUserOnce`を実行し、in-process modeでは同経路がno-op ownerであることをRED→GREENにする。
 - [ ] Telegram test chatへ1件送り、message ID、本文、再実行0件をreadbackする。
 
+### Slice 2C — Reuse the autofill-resolved destination
+
+- [x] `travel-reminder.test.js`へ、隣接outbound Travel住所をroute destinationに使うREDを追加する。
+- [x] 別event、home行きreturn block、旧home/意味的住所表記のreturn block、複数候補、非Travel helper、時刻不一致を流用しないnegative regressionを追加する。
+- [x] `travel-reminder.js`で既存event配列だけから対応Travel blockを選び、新provider・DB・Calendar fetchを追加せずGREENにする。
+- [ ] productionの既存physical eventで、曖昧な元locationではなく完全住所に対するTransit route factsをreadbackする。
+
 ### Slice 3A — Telegram actor as onboarding identity
 
 - [x] QRが`https://t.me/LifeManagerBotbot?start=lp`だけをdecodeすることをreadbackする。
@@ -296,7 +326,7 @@ Telegram本文の固定形:
 - [x] `telegram.js`の`/start` buttonをRailway `/panel/onboarding`の`web_app`へ変更する。
 - [x] 既存`panel-auth.js`のTelegram initData/sessionをonboarding tenant authorityとして再利用する。
 - [x] production PostgreSQLで再現した新規actorの`42702 uid is ambiguous`を、既存RPCの局所的なconflict arbiter修飾でRED→GREENにする。
-- [ ] 隔離した2 actorでcreate、replay拒否、same-actor resume、cross-actor分離をproduction E2Eし、test rowを事後0件へ戻す。
+- [x] 隔離した2 actorでcreate、replay拒否、same-actor resume、cross-actor分離をproduction E2Eし、test rowを事後0件へ戻す。
 
 ### Slice 3B — Railway Calendar consent
 
@@ -330,6 +360,14 @@ Telegram本文の固定形:
 - [x] `billing.test.js`へonboarding scopeから`paid`を書けないREDを追加する。
 - [x] Stripe webhook以外が`paid`を書けないことと、unpaid scheduler effect 0を検証する。
 - [ ] clean browserと別Telegram actorでtenant isolationをE2E検証する。
+
+### Slice 3G — Trial-first payment (2026-08-27 Dais改訂で追加)
+
+- [ ] `billing.test.js`/`panel-api.test.js`へAC-37/38のREDを追加する: trial 1回付与、再onboarding非延長、trial-active cohort通過、期限切れeffect停止、dedupe upgrade通知、Stripe webhook以外のpaid書込0。
+- [ ] `lm_users`へtrial期限列を1 migrationで追加し、onboarding core完了transitionでserverが1回だけ書く。
+- [ ] scheduler cohortとstage計算を`paid OR trial-active OR comp-active`へ変更し、onboardingのpay stepを非必須化する。
+- [ ] 期限切れtenantへのupgrade Telegram（checkout link付き、既存ledger dedupe）をGREENにする。
+- [ ] production readback: 新規actorのtrial付与値、trial中のexternal effect、期限切れ後のeffect 0とupgrade通知1をSupabase/Telegram IDで確認する。
 
 ### Slice 4 — Deploy and production acceptance
 
@@ -382,3 +420,4 @@ git diff --check
 | Tenant identity | verified Telegram actor/session | device-only identity、raw chat query、second Google login |
 | Google interaction | Calendar connector consent only | Supabase Google Sign-in plus Calendar consent |
 | Current location | fresh Telegram live location only | inferred or claimed background tracking |
+| Payment timing | free-first: per-tenant 3-day trial → Stripe checkout (Dais 2026-08-27) | pay-at-onboarding hard stop、token/usage metering cutoff、global comp env varのみ |

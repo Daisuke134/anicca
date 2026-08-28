@@ -142,14 +142,18 @@ test("Task 7B: every server-provided step has exactly one primary action and onl
     { step: "call" },
     { step: "payment", paymentLink: "https://buy.stripe.com/test_life_manager?client_reference_id=server" },
     { step: "dashboard", paid: false, paymentLink: "https://buy.stripe.com/test_life_manager?client_reference_id=server" },
+    { step: "dashboard", paid: false },
     { step: "dashboard", paid: true },
   ];
   for (const state of states) {
     const fake = await runOnboardingInline(state);
     const actions = fake.root.querySelector("[data-onboarding-actions]").children;
-    assert.equal(actions.filter((node) => node.className.includes("primary-action")).length, 1, state.step);
+    const expectedPrimary = state.step === "dashboard" && state.paid !== true ? 0 : 1;
+    assert.equal(actions.filter((node) => node.className.includes("primary-action")).length, expectedPrimary, state.step);
     const secondary = actions.filter((node) => node.className.includes("secondary-action"));
-    assert.equal(secondary.length, ["phone", "call", "payment"].includes(state.step) ? 1 : 0, state.step);
+    const expectedSecondary = ["phone", "call", "payment"].includes(state.step)
+      || (state.step === "dashboard" && state.paid !== true && state.paymentLink);
+    assert.equal(secondary.length, expectedSecondary ? 1 : 0, state.step);
     if (state.step === "dashboard" && state.paid === true) assert.equal(actions[0].href, "/panel");
   }
 });
@@ -163,6 +167,59 @@ test("Task 7B: inline onboarding renderer ignores forged identity/payment fields
   const walk = (node) => { visible.push(node.textContent, node.value, node.href || "", node.dataset.onboardingAction || ""); for (const child of node.children) walk(child); };
   walk(fake.root);
   assert.doesNotMatch(visible.join("\n"), /forged|evil\.example/);
+});
+
+test("Task 3: ready dashboard shows value, trial, and next event without requiring checkout", async () => {
+  const fake = await runOnboardingInline({
+    step: "dashboard",
+    paid: false,
+    trialExpiresAt: "2026-08-31T12:00:00.000Z",
+    trialActive: true,
+    nextEvent: { summary: "<img src=x onerror=alert(1)>", startAt: "2026-08-28T14:00:00.000Z" },
+    paymentLink: "https://buy.stripe.com/test_life_manager?client_reference_id=server",
+  });
+  const actions = fake.root.querySelector("[data-onboarding-actions]").children;
+  assert.equal(actions.filter((node) => node.className.includes("primary-action")).length, 0);
+  assert.equal(actions.filter((node) => node.className.includes("secondary-action")).length, 1);
+  const visible = [];
+  const walk = (node) => { visible.push(node.textContent, node.value, node.href || ""); for (const child of node.children) walk(child); };
+  walk(fake.root);
+  const text = visible.join("\n");
+  assert.match(text, /準備できました/);
+  assert.match(text, /移動時間を自動追加/);
+  assert.match(text, /出発5分前/);
+  assert.match(text, /無料期間/);
+  assert.match(text, /2026-08-31T12:00:00\.000Z/);
+  assert.match(text, /<img src=x onerror=alert\(1\)>/);
+  assert.match(text, /2026-08-28T14:00:00\.000Z/);
+
+  const withoutCheckout = await runOnboardingInline({ step: "dashboard", paid: false, trialActive: true });
+  assert.equal(withoutCheckout.root.querySelector("[data-onboarding-actions]").children.length, 0);
+});
+
+test("Task 3: ready copy follows server-owned paid and trial state", async () => {
+  const visibleText = async (state) => {
+    const fake = await runOnboardingInline(state);
+    const visible = [];
+    const walk = (node) => { visible.push(node.textContent, node.value, node.href || ""); for (const child of node.children) walk(child); };
+    walk(fake.root);
+    return { fake, text: visible.join("\n") };
+  };
+
+  const paid = await visibleText({ step: "dashboard", paid: true, trialActive: false, trialExpiresAt: "2026-08-31T12:00:00.000Z" });
+  assert.match(paid.text, /移動時間を自動追加/);
+  assert.match(paid.text, /出発5分前/);
+  assert.match(paid.text, /有料プランが有効/);
+  assert.doesNotMatch(paid.text, /無料期間/);
+
+  const ended = await visibleText({ step: "dashboard", paid: false, trialActive: false, paymentLink: "https://buy.stripe.com/test_life_manager?client_reference_id=server" });
+  assert.match(ended.text, /無料期間は終了/);
+  assert.match(ended.text, /停止中/);
+  assert.doesNotMatch(ended.text, /移動時間を自動追加|出発5分前/);
+  const endedActions = ended.fake.root.querySelector("[data-onboarding-actions]").children;
+  assert.equal(endedActions.length, 1);
+  assert.equal(endedActions[0].className, "secondary-action");
+  assert.match(endedActions[0].href, /^https:\/\/buy\.stripe\.com\//);
 });
 
 function safeIntegerFinancialOrgans() {

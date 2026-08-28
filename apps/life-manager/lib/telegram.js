@@ -14,13 +14,18 @@ function hashChatId(chatId) {
 }
 
 async function tgCall(token, method, body) {
+  let response;
   try {
-    const r = await fetch(`${TG(token)}/${method}`, {
+    response = await fetch(`${TG(token)}/${method}`, {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body || {}),
     });
-    return await r.json();
-  } catch (e) { return { ok: false, error: String(e) }; }
+  } catch { return { ok: false, delivery_unknown: true }; }
+  try {
+    const result = await response.json();
+    return result && typeof result === "object" && !Array.isArray(result) && typeof result.ok === "boolean"
+      ? result : { ok: false, delivery_unknown: true };
+  } catch { return { ok: false, delivery_unknown: true }; }
 }
 
 const sendMessage = (token, chatId, text, extra) =>
@@ -153,8 +158,8 @@ function startReply(chatId, base) {
   return {
     text:
       "👋 <b>Life Manager</b>\n\n" +
-      "I keep you on time — I call you before you must leave, fill in travel time, ask where events are, " +
-      "and handle late-notices. Set up takes a minute: connect Google Calendar, add your phone, subscribe.\n\n" +
+      "I keep you on time — I fill in travel time, send a reminder before you leave, and can call you if you choose. " +
+      "Phone calls are optional. Set up takes a minute: connect Google Calendar, choose your home base, and turn on reminders.\n\n" +
       "Tap below to start 👇",
     extra: {
       reply_markup: {

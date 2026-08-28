@@ -21,16 +21,23 @@ function calendarProviderFilter() {
 }
 
 // Full scheduler cohort contract. Any readiness check selecting a DAILY target must reuse this
-// fragment so paid/provider eligibility cannot drift from scheduler.js. Phone is a call-only gate;
+// fragment so paid/trial/provider eligibility cannot drift from scheduler.js. Phone is a call-only gate;
 // travel autofill and Telegram reminders also serve users who intentionally have no phone.
 //
 // COMP WINDOW: a comped user is unpaid in the database (lib/billing.js is the only writer of `paid`),
-// so leaving `paid=is.true` in the query would hand them a working onboarding and then zero wakes,
-// travel or asks. While LM_COMP_UNTIL is in the future the predicate drops out; the moment it expires
-// the fragment is byte-for-byte what it always was. Args exist for tests — production calls it bare.
-function schedulerCohortFilter(env, nowMs) {
-  const paidPredicate = compActive(env || process.env, nowMs) ? "" : "paid=is.true&";
-  return `${paidPredicate}${calendarProviderFilter()}`;
+// so leaving the entitlement predicate in the query would hand them a working onboarding and then
+// zero wakes, travel or asks. While LM_COMP_UNTIL is in the future the predicate drops out; the
+// moment it expires the paid/trial fragment is restored. Args exist for tests — production calls it bare.
+function trialEntitlementFilter(nowMs = Date.now()) {
+  const clock = Number.isFinite(nowMs) ? nowMs : Date.now();
+  return `or=(paid.is.true,trial_expires_at.gt.${encodeURIComponent(new Date(clock).toISOString())})`;
 }
 
-module.exports = { WAKE_CALENDAR_PROVIDERS, CALLABLE_PHONE_RE, isCallablePhone, calendarProviderFilter, schedulerCohortFilter };
+function schedulerCohortFilter(env, nowMs = Date.now()) {
+  const entitlement = compActive(env || process.env, nowMs)
+    ? ""
+    : `${trialEntitlementFilter(nowMs)}&`;
+  return `${entitlement}${calendarProviderFilter()}`;
+}
+
+module.exports = { WAKE_CALENDAR_PROVIDERS, CALLABLE_PHONE_RE, isCallablePhone, calendarProviderFilter, trialEntitlementFilter, schedulerCohortFilter };

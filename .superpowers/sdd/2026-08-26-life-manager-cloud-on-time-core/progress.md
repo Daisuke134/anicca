@@ -193,3 +193,81 @@ Baseline: focused Life Manager suite 175/175 PASS.
 - Production PostgreSQL rollback: the final additive migration executed against the real schema, a fresh actor returned `claimed` with deterministic uid and preserved profile name, the same hash returned `replayed`, and rollback readback returned both user and replay absent.
 - Task 11 fresh review: ship, all severity findings zero. Clean/additive v2 bodies match, migration order/idempotency and service-role-only ACL hold, and replay, actor binding, concurrency, profile immutability, and the legacy 2-arg wrapper are unchanged.
 - Task 11 status: code/review complete; merge, production migration apply, two-actor production session/isolation E2E, and exact cleanup remain.
+- Task 11 release: PR `#2905` merged as `cebe11224eb7a6701848d8bd236b0f88232bf16a`; GitHub Deployments reports Railway `success` for the exact SHA and life-call health is HTTP 200.
+- Task 11 migration apply: the additive replacement committed in one production transaction. Readback is `named_arbiter=true`, `qualified_update=true`, service-role execute true, anon execute false.
+- Task 11 production E2E: actor A and B each created a `/panel/onboarding` session with HTTP 200 and distinct deterministic tenant references; exact initData replay returned 409, a fresh A initData resumed A while preserving the first profile name, and hostile cross-actor `uid/tg` query values did not change either session scope. Both states were `calendar`.
+- Task 11 cleanup: pre-delete readback was exactly two test users, three current test sessions, and three replay receipts. The first assertion wrapper was rejected before deletion; the exact transaction was then simplified and committed. Final readback is users 0, sessions 0, replays 0.
+- Task 11: complete. A real second-person Telegram client QR scan remains the separate final clean-device acceptance item.
+
+## Task 12 resolved destination reuse
+
+- Production diagnosis: the real `MUIT 出社 (着席)` event stores free-form `MIRSUBISHI UFJ INFORMATION TECHNOLOGY`; destination geocoding returned `ZERO_RESULTS` and the route was null.
+- Existing autofill evidence: the adjacent outbound `[Travel]` block ends at the event start and stores the complete Akasaka destination address. The same production Maps key and home origin returned a Transit journey with real station steps when that address was used.
+- Ruling: reuse only the matched outbound Travel block's non-empty location as the route destination. Keep the original event title/location for user-visible reminder text and durable claim identity. Do not add another resolver, provider, table, or fetch.
+- Task 12 R0: `71c8e9dc2` passed the related 76/76 suite but failed a parent realistic return-block counterexample: a prior-event Travel block arriving home at the target start was selected as the target destination. Multiple same-start candidates were also not identity-safe because legacy blocks store no source event ID.
+- Task 12 ruling: reject home-destination candidates and require exactly one eligible adjacent Travel candidate; zero or multiple candidates fail closed to the original event location.
+- Task 12 R1: `a9ab7069c` rejects normalized home-destination helpers and requires exactly one eligible adjacent Travel candidate. The realistic return and multiple-candidate tests were RED before the fix; the related reminder/wake suite is 78/78 PASS after it. Commit is pushed and worktree is clean.
+- Task 12 review R2 (fresh read-only Sonnet, 2026-08-27): FIX-FIRST — Critical: cross-event misattribution (a Travel block belonging to a different event 90s away can be the sole adjacency candidate and is reused); High: home equality check misses NFKC drift (full-width digits/dashes let a return block's home address through). Display/claim invariants, privacy logging, and timezone boundaries were attacked and held.
+- Task 12 fix round 2: `beb038f9d` — a candidate matching another timed non-helper event's [start-2min,start+1min] window is ambiguous and fails closed; home comparison NFKC-normalizes with dash-class folding. RED first (both counterexamples reproduced), focused 19/19, related suite 80/80 PASS. Pushed.
+- Task 12 review R3 (fresh read-only Sol): FIX-FIRST — Critical 0 / High 1 / Medium 0. The cross-event and NFKC examples are closed, but a return block whose destination is an old-home or semantically equivalent home spelling can still pass exact normalized equality and be reused. Display/claim identity, replay safety, privacy, timezone, and prior fixed boundaries held; reviewer focused suites were 59/59 and 19/19 PASS.
+- Task 12 ruling R3: address equivalence is not a reliable return discriminator. Add one structural negative: a Travel candidate whose start matches another timed non-helper event end within Calendar drift is a possible return block and must fail closed. No address parser, geocoder, provider, fetch, or table.
+- Task 12 status: same Luna implementation lane must add the old-home/semantic-address RED and minimal structural guard; then fresh exact-commit re-review, PR/merge, exact Railway deploy, real route readback, Telegram receipt, and replay-zero remain.
+- Task 12 fix round 3: `07d0b3124` — rejects a Travel candidate whose start matches another timed non-helper event end within ±60 seconds. The old-home return fixture was RED with the wrong old-home destination before production code; focused 20/20, related 81/81, and mutation removal FAIL/restored PASS.
+- Task 12 review R4 (fresh read-only Sol): ship — spec compliant and Task quality Approved; Critical/Important/Minor findings zero. Original event selection, provider count, display/claim identity, privacy, and timezone boundaries remain unchanged.
+- Task 12 code status: complete at `07d0b3124`. Production merge/deploy, physical route/Telegram receipt, and replay-zero remain under finish-plan Tasks 6 and 8.
+
+## Production E2E — controlled event 2026-08-27 evening (deployed SHA 5b06e1ee0)
+
+- Verified 2faec285f (Inngest reminder owner fix) is an ancestor of origin/main; Railway production deployment SHA readback is 5b06e1ee0 (GitHub Deployments, success).
+- Focused 78-test suite re-run at session start: 78/78 PASS.
+- Controlled no-location event `ah40e31tqlstvk2qvo1e0jt82c` created 20:03–20:13 JST via gog (Google create readback with ID/status=confirmed). T-10 wake claim `…|2026-08-27T20:03:00+09:00|10` called_at 10:53:24Z (19:53:24 JST) amd_result=human — durable Supabase readback. T-5 call and telegram-t5 claim pending observation.
+- Spec revision (Dais 2026-08-27): trial-first payment — AC-30 amended, AC-37/38 and Slice 3G added, commit `620a8a8ec`.
+- Current Google official readback: controlled events `lnpffie7md7fp0qp5j9hrudkq4` and `ah40e31tqlstvk2qvo1e0jt82c` are past but still `confirmed`. Do not delete until exact T-5/Telegram/replay evidence is reconciled; then delete with `send-updates none` and verify `cancelled`.
+- The 2026-08-28 08:40 `MUIT 出社 (着席)` instance is past. Later recurrence instances currently have no location, so they cannot close the resolved-address route acceptance. After deploy, create one new future controlled physical event for the combined provider E2E.
+- Current focused Task 12/reminder/wake command is 80/80 PASS. A clean `npm ci` hit local ENOSPC after restoring the declared `canonicalize@1.0.8`; full-suite completion requires a clean dependency environment or CI and must not be inferred from the focused run.
+
+## Telegram-first product UX authority
+
+- Dais approved the launch order: finish the existing on-time core first; add Poke/Town-style free conversation only after friend beta is receipt-bearing.
+- Visual product and architecture SSOT: `docs/superpowers/specs/2026-08-28-life-manager-cloud-telegram-product-ux-design.md`.
+- Sole active checklist: `docs/superpowers/plans/2026-08-28-life-manager-cloud-on-time-core-finish.md` — structural return guard → server-owned trial → cohort/UI/upgrade → PR/deploy → real actor/event E2E → replay-zero/cleanup.
+- OpenClawMU/Hermes is a post-launch conversation sidecar candidate, not the tenant/billing/ledger owner and not an active implementation item.
+
+## Task 13A server-owned trial persistence
+
+- Plan ruling: source-regex migration assertions were rejected as change detectors. The slice uses a disposable real PostgreSQL harness plus an independent production rollback preflight.
+- Implementation: `736979c2f` adds nullable `trial_expires_at`, same-signature onboarding RPC replacements, one-time `notifications.enable` grant, dashboard terminal stages, JSON deadline/active fields, preserved tenant lock/scope/ACL, and no `paid` writer. `d8974760d` strengthens the real PostgreSQL evidence.
+- TDD/readback: missing-migration RED; local PostgreSQL `grant_once=1 trial_active=1 tenant_scope=1 acl=1 paid_writes=0`; unchanged Node panel/onboarding contracts 34/34.
+- Review R0 found two Important evidence gaps (exact three-day window and actual paid-column write tripwire) plus one Minor pre-grant JSON gap. Fix round 1 added server clock bounds, `BEFORE UPDATE OF paid` rejection, and null/false state. Scoped fresh Sol re-review: all addressed, new breakage none, ship.
+- Production Supabase rollback-only preflight: exact transaction-timestamp + 3 days, repeat deadline unchanged, tenant/chat isolation, service-role ACL, paid false. Post-rollback official readback is `trial_column_count=0`, `fixture_count=0`, `trial_body_present=false`.
+- Task 13A code/preflight status: complete at `d8974760d`. Production migration apply remains intentionally deferred to finish-plan Task 6 immediately before exact-SHA deploy.
+
+## Task 13B value-first panel
+
+- Implementation: `982bd74ce` extracts one tenant-scoped `buy.stripe.com` validator, exposes server-owned trial truth, normalizes legacy ready stages, makes checkout optional/secondary, and adds a truthful optional next-event preview plus ready UI. `e12458c07` fixes review findings.
+- TDD: missing-module and four behavior REDs; first GREEN 96/96; fix RED 52/54; final focused panel/auth/billing/payment suite 97/97. Stripe-host and client-deadline mutations were detected.
+- Review R0 found two Important defects: helper blocks could enter preview because nonexistent flags were checked, and expired/paid states received false active-trial copy. Fix round 1 reuses `isHelperBlock(summary)` and branches copy only on server `paid`/`trialActive`. Scoped re-review: both addressed, new breakage none, ship.
+- Primary verification: 97/97 plus syntax/diff PASS. Task 13B: complete at `e12458c07`; no production migration/deploy/Stripe effect occurred.
+
+## Task 13C trial entitlement cohort
+
+- Implementation: `4ea06aefb` replaces standalone `paid=is.true` with exact PostgREST `paid OR trial_expires_at > server clock`, preserving providers, phone independence, global comp, and one selector SSOT. Plan ruling `df3692ecb` assigns the stale daily-preflight consumer assertion to the slice; `11a6cc993` updates only that test.
+- TDD: selector RED 7/11 then GREEN 11/11; `.gt→.gte` mutation detected. Consumer RED 79/80 exposed the retired `paid` query assertion; exact `or` fix produced combined 80/80.
+- Fresh Sol review: ship, spec compliant, Critical/Important/Minor zero; PostgREST grammar, exact expiry, comp boundary, Date.now/process.env restoration, two scheduler selectors, and daily-preflight URL were verified.
+- Primary verification: selector/daily/wake/reminder suite 80/80 plus syntax/diff PASS. Task 13C: complete at `11a6cc993`; production column/code deploy remains deferred to Task 6.
+
+## Task 13D durable trial upgrade and travel-ledger repair
+
+- Initial implementation `b3dc841bd` added the existing onboarding-owner expiry branch. Fresh Sol R0 found a Critical schema mismatch: production `lm_travel_log.leg` still allowed only `go|return`, so both existing `telegram-t5` and new `trial-upgrade` claims 400. It also found malformed Telegram receipt acceptance and swallowed release failure.
+- Plan ruling `9e6b6f323`: retain the existing travel ledger, widen only its exact `leg` CHECK to `go|return|telegram-t5|trial-upgrade`, verify with real PostgreSQL, accept only positive integer Telegram message IDs, make `unclaimTravel` return verified DELETE status, and fail closed to generic reconciliation when release fails.
+- Fix round 1 `34187a389`: 4-leg idempotent migration/integration test, verified release boolean, positive-integer receipt, generic reconciliation. PostgreSQL PASS, Node 117/117. Re-review closed Critical/Important findings but required exact-expiry/send-throw regressions.
+- Fix round 2 `cd6669dee`: test-only exact millisecond expiry claim→send and send-throw claim→send→unclaim. Focused 7/7, full Task 5 Node matrix 119/119, PostgreSQL PASS. Scoped fresh Sol re-review: both addressed, new breakage none, ship.
+- Production Supabase rollback-only leg preflight: existing rows/unique/RLS/other CHECK preserved; four allowed, unknown/duplicate rejected, constraint validated. Post-rollback official readback: fixture 0 and `telegram_t5_allowed=false` restored.
+- Task 13D code/preflight status: complete at `cd6669dee`. Both trial and leg migrations remain unapplied until controlled Task 6 release.
+
+## Task 13E integrated verification and final review
+
+- Clean lock install completed with 452 packages and `viem@2.55.10` read back. Focused route/reminder/call is 154/154; focused onboarding/trial/billing is 181/181; both disposable PostgreSQL migrations pass with grant-once/ACL/paid-write and four-leg/row/unique/RLS preservation evidence.
+- Full `npm test`, `git diff --check`, dependency diff, and gitleaks all pass. Existing lock warnings remain unchanged; no dependency or secret change was introduced.
+- Whole-slice review found Telegram unknown-delivery replay risk, previous-event outbound misclassification, and legacy phone/pay truth gaps. Five TDD fix rounds closed them with durable claim retention, exact target-go/previous-return association, fail-closed read errors, core-ready legacy suppression, and truthful optional-phone `/start` copy.
+- Final scoped review at `19dc013b9` is ship with Critical/High zero and no findings. Primary focused readback is 84/84. Production migrations remain unapplied; rebase/PR and exact-SHA release are Task 6 Steps 6–7.

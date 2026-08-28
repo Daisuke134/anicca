@@ -537,16 +537,29 @@ test("Task 7A phone.save converts a Japanese domestic number and preserves expli
   assert.equal(h.wrapperCalls.at(-1).payload.phone, "+442079460958");
 });
 
-test("Task 7A payment step returns only configured server Stripe link and fails closed when absent", async () => {
+test("Task 7A legacy payment stage returns ready dashboard with optional server Stripe link", async () => {
   const h = onboardingHarness({ step: "payment", stage: "payment", paymentLink: null });
   const result = await onboardingRequest(h);
   assert.equal(result.response.status, 200);
+  assert.equal(result.body.step, "dashboard");
   assert.equal(result.body.paymentLink, "https://buy.stripe.com/test_life_manager?client_reference_id=tenant-a");
   const missing = onboardingHarness({ step: "payment", stage: "payment" });
   missing.opts.stripePaymentLink = "";
   const unavailable = await onboardingRequest(missing);
-  assert.equal(unavailable.response.status, 503);
-  assert.deepEqual(unavailable.body, { error: "payment_unavailable" });
+  assert.equal(unavailable.response.status, 200);
+  assert.equal(unavailable.body.step, "dashboard");
+  assert.equal(unavailable.body.paymentLink, undefined);
+});
+
+test("Task 3 legacy ready stages all normalize to dashboard", async () => {
+  for (const stage of ["payment", "pay", "done", "gmail"]) {
+    const h = onboardingHarness({ step: stage, stage, paid: false });
+    h.opts.stripePaymentLink = "";
+    const result = await onboardingRequest(h);
+    assert.equal(result.response.status, 200, stage);
+    assert.equal(result.body.step, "dashboard", stage);
+    assert.equal(result.body.paymentLink, undefined, stage);
+  }
 });
 
 test("Task 7A paid phone-less tenant resumes at dashboard after required core steps", async () => {
@@ -687,6 +700,61 @@ test("Task 7A unpaid dashboard remains checkout-reachable without granting paid"
   assert.equal(result.body.step, "dashboard");
   assert.equal(result.body.paid, false);
   assert.equal(result.body.paymentLink, "https://buy.stripe.com/test_life_manager?client_reference_id=tenant-a");
+});
+
+test("Task 3 ready dashboard returns server trial truth and optional checkout", async () => {
+  const h = onboardingHarness({
+    step: "dashboard",
+    stage: "done",
+    paid: false,
+    trialExpiresAt: "2026-08-31T12:00:00.000Z",
+    trialActive: true,
+  });
+  const result = await onboardingRequest(h);
+  assert.equal(result.response.status, 200);
+  assert.equal(result.body.step, "dashboard");
+  assert.equal(result.body.trialExpiresAt, "2026-08-31T12:00:00.000Z");
+  assert.equal(result.body.trialActive, true);
+  assert.equal(result.body.paymentLink, "https://buy.stripe.com/test_life_manager?client_reference_id=tenant-a");
+
+  h.opts.stripePaymentLink = "";
+  const withoutCheckout = await onboardingRequest(h);
+  assert.equal(withoutCheckout.response.status, 200);
+  assert.equal(withoutCheckout.body.step, "dashboard");
+  assert.equal(withoutCheckout.body.paymentLink, undefined);
+});
+
+test("Task 3 ready dashboard previews the first future calendar event and degrades to null", async () => {
+  const h = onboardingHarness({ step: "dashboard", stage: "done", paid: false });
+  h.opts.supaUrl = "https://db.example";
+  h.opts.supaKey = "service-key";
+  h.opts.nowMs = Date.parse("2026-08-28T12:00:00.000Z");
+  h.opts.timeZone = "UTC";
+  h.opts.fetchImpl = async (input) => {
+    const url = new URL(input);
+    if (url.pathname.endsWith("/lm_panel_preferences")) return jsonResponse([{ call_time_zone: "UTC" }]);
+    if (url.pathname.endsWith("/lm_users")) return jsonResponse([]);
+    if (url.pathname.endsWith("/lm_wake_log")) return jsonResponse([]);
+    throw new Error(`unexpected timeline URL ${url}`);
+  };
+  h.opts.calendar = {
+    listEventsRaw: async () => [
+      { id: "past", summary: "過去の予定", start: { dateTime: "2026-08-28T10:00:00.000Z" } },
+      { id: "travel-helper", summary: "[Travel] Dentist", start: { dateTime: "2026-08-28T13:00:00.000Z" } },
+      { id: "pending-helper", summary: "[PENDING] Dentist", start: { dateTime: "2026-08-28T13:10:00.000Z" } },
+      { id: "applied-helper", summary: "[APPLIED] Dentist", start: { dateTime: "2026-08-28T13:20:00.000Z" } },
+      { id: "next", summary: "Dentist", start: { dateTime: "2026-08-28T14:00:00.000Z" } },
+    ],
+  };
+  const result = await onboardingRequest(h);
+  assert.equal(result.response.status, 200);
+  assert.deepEqual(result.body.nextEvent, { summary: "Dentist", startAt: "2026-08-28T14:00:00.000Z" });
+
+  h.opts.fetchImpl = async () => { throw new Error("timeline unavailable"); };
+  const degraded = await onboardingRequest(h);
+  assert.equal(degraded.response.status, 200);
+  assert.equal(degraded.body.step, "dashboard");
+  assert.equal(degraded.body.nextEvent, null);
 });
 
 test("Task 7A onboarding migration is additive, tenant-scoped, and lock-atomic", () => {

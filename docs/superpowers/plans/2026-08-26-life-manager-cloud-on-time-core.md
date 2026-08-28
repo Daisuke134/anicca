@@ -10,6 +10,8 @@
 
 **Design spec:** `docs/superpowers/specs/2026-08-26-life-manager-cloud-on-time-core-design.md`
 
+**Product UX:** `docs/superpowers/specs/2026-08-28-life-manager-cloud-telegram-product-ux-design.md`
+
 ## Global invariants
 
 - Do not alter `deploy/local`, add a database, service, package, or authentication provider.
@@ -23,6 +25,8 @@
 - Telegram session identity is authoritative. Ignore client-supplied `uid`, `tg`, `telegram_id`, localStorage identity, and query-string identity.
 - Phone collection never enables calling. Only explicit call consent does.
 - The only paid-state writer is the verified Stripe webhook.
+- The server grants one three-day trial after Calendar, home, and notifications are ready. Reopening onboarding never extends it.
+- Do not add OpenClawMU, Hermes, a conversational runtime, or local-product parity before this on-time core has provider receipts and replay-zero.
 - Baseline before implementation: focused suite 175/175 passing.
 
 ## File map
@@ -111,9 +115,9 @@
 
 **Files:** Modify `lib/panel-api.js`, `lib/panel-api.test.js`, panel UI assets, `lib/panel-ui.test.js`.
 
-1. Add failing API tests for this fixed progression: Calendar → home → Telegram notifications → phone → explicit call consent → payment → dashboard.
+1. Add failing API tests for this fixed progression: Calendar → home → Telegram notifications → phone → explicit call consent → dashboard. Checkout remains reachable but is not an onboarding gate.
 2. Test that server state resumes on another browser session for the same Telegram user, out-of-order writes are rejected, body uid is ignored, phone save leaves calls off, and unverified clients cannot set paid.
-3. Add UI contract tests at 375px for one primary action, skippable optional phone/call/payment steps, escaped copy, and no Google/Supabase login control.
+3. Add UI contract tests at 375px for one primary action, skippable optional phone/call, escaped copy, and no Google/Supabase login control. The ready screen shows the next event and server-owned trial deadline.
 4. Implement the minimal state adapters using existing tenant/profile fields and existing panel auth; no new table or framework.
 5. Run API/UI tests plus billing/auth tests; mutation-check phone→call and client→paid prohibitions.
 6. Commit: `feat(life-manager): add telegram native onboarding state`.
@@ -132,7 +136,7 @@
 
 1. Run the focused regression set from the design spec and `npm test` in `apps/life-manager`. Any failure returns to the owning task.
 2. Inspect `git diff --check`, secret scan of the branch diff, dependency/lockfile diff, and `git status`. No unintended package or local-runtime changes.
-3. Run a fresh whole-branch read-only adversarial review against all 35 acceptance criteria; resolve every critical/high finding and rerun affected tests.
+3. Run a fresh whole-branch read-only adversarial review against all 38 acceptance criteria; resolve every critical/high finding and rerun affected tests.
 4. Fetch/rebase safely, push the branch, merge/deploy through the repository's existing production path, and read back the Railway deployment commit hash and health endpoint.
 5. On a controlled Dais calendar event, verify official effects: travel block created/updated, T-10 call, T-5 call, one T-5 Telegram message, correct event-anchored itinerary, and no duplicate on replay.
 6. On a separate test Telegram identity from the QR, verify session separation and complete onboarding without Google/Supabase browser login. Optional call remains off until consent; Stripe webhook alone changes paid state.
@@ -147,3 +151,9 @@ This runs alongside code tasks but closes before production call acceptance:
 2. Read the official portal balance and minimum permitted top-up. Do not infer balance from a low-credit error.
 3. Before the irreversible charge, show the exact amount/currency/payment source and obtain the required approval if not already explicit for that exact charge.
 4. Add only the minimum amount, save the official receipt privately, read back the new balance, and place one controlled call through the real runtime.
+
+## Remaining execution
+
+Tasks 1–11 above are the implemented baseline. The sole active checklist is:
+
+→ `docs/superpowers/plans/2026-08-28-life-manager-cloud-on-time-core-finish.md`

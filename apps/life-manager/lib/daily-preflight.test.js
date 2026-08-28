@@ -531,19 +531,32 @@ test("evidence sanitizer redacts query values, phones, email, IDs, provider keys
 });
 
 test("calendar: target selection is the scheduler paid+supported-provider cohort (phone optional)", async () => {
+  const nowMs = Date.parse("2026-07-21T06:00:00Z");
   const env = productionLikeEnv();
   const requested = [];
-  const report = await runNamed("calendar", {
-    env,
-    fetchImpl: async (url) => {
-      requested.push(String(url));
-      if (String(url).includes("/rest/v1/lm_users?")) return jsonResponse([{ uid: "synthetic-user" }]);
-      return jsonResponse({ successful: true, data: { items: [] } });
-    },
-  });
+  const previousNow = Date.now;
+  Date.now = () => nowMs;
+  let report;
+  try {
+    report = await runNamed("calendar", {
+      env,
+      nowMs,
+      now: () => nowMs,
+      fetchImpl: async (url) => {
+        requested.push(String(url));
+        if (String(url).includes("/rest/v1/lm_users?")) return jsonResponse([{ uid: "synthetic-user" }]);
+        return jsonResponse({ successful: true, data: { items: [] } });
+      },
+    });
+  } finally {
+    Date.now = previousNow;
+  }
   assert.equal(report.dependencies[0].status, "pass");
   const selectorUrl = new URL(requested.find((url) => url.includes("/rest/v1/lm_users?")));
   assert.equal(selectorUrl.searchParams.get("phone"), null);
-  assert.equal(selectorUrl.searchParams.get("paid"), "is.true");
+  assert.equal(
+    selectorUrl.searchParams.get("or"),
+    `(paid.is.true,trial_expires_at.gt.${new Date(nowMs).toISOString()})`,
+  );
   assert.equal(selectorUrl.searchParams.get("calendar_provider"), "in.(composio_gcal,pipedream_gcal)");
 });

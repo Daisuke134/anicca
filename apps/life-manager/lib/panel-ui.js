@@ -115,7 +115,12 @@ function renderPanelOnboardingPage(options = {}) {
     const calendarStart = "/api/panel/onboarding/calendar/start";
     const calendarStatus = "/api/panel/onboarding/calendar/status";
     const titles = Object.freeze({ name:"名前を確認", calendar:"カレンダーをつなぐ", home:"住んでいる場所", notifications:"通知を有効にする", phone:"電話番号", call:"電話での確認", payment:"利用を開始する", dashboard:"準備完了" });
-    const copies = Object.freeze({ name:"呼びかけに使う名前を確認します。", calendar:"予定を読み取り、必要なタイミングで知らせます。", home:"Telegramでライブ位置情報を共有している間はそれを使い、共有が終わった後は登録した自宅住所や直近の予定へフォールバックして再開します。", notifications:"通知を受け取れるようにします。", phone:"電話番号を登録します。日本の国内表記（090-1234-5678）または国際表記（+81 90-1234-5678）を入力してください。", call:"電話での確認方法を選びます。", payment:"月額プランを確認して利用を開始します。", dashboard:"現在の準備状態をサーバーから確認しました。" });
+    const copies = Object.freeze({ name:"呼びかけに使う名前を確認します。", calendar:"予定を読み取り、必要なタイミングで知らせます。", home:"Telegramでライブ位置情報を共有している間はそれを使い、共有が終わった後は登録した自宅住所や直近の予定へフォールバックして再開します。", notifications:"通知を受け取れるようにします。", phone:"電話番号を登録します。日本の国内表記（090-1234-5678）または国際表記（+81 90-1234-5678）を入力してください。", call:"電話での確認方法を選びます。", payment:"月額プランを確認して利用を開始します。", dashboard:"準備状態を確認しました。" });
+    const readyCopy = (state) => {
+      if (state && state.paid === true) return "準備できました。移動時間を自動追加し、出発5分前にお知らせします。有料プランが有効です。";
+      if (state && state.trialActive === true) return "準備できました。移動時間を自動追加し、出発5分前にお知らせします。無料期間中です。";
+      return "無料期間は終了しました。移動・通知の自動化は停止中です。";
+    };
     const key = () => globalThis.crypto && typeof globalThis.crypto.randomUUID === "function" ? globalThis.crypto.randomUUID() : String(Date.now()) + "-onboarding" + Math.random().toString(36).slice(2);
     const text = (node, value) => { node.textContent = String(value == null ? "" : value); };
     const button = (label, action, primary) => { const node = document.createElement("button"); node.type = "button"; node.dataset.onboardingAction = action; node.className = primary ? "primary-action" : "secondary-action"; node.textContent = label; return node; };
@@ -123,12 +128,46 @@ function renderPanelOnboardingPage(options = {}) {
     const safePaymentLink = (value) => { try { const url = new URL(value); if (url.protocol !== "https:" || url.hostname !== "buy.stripe.com" || url.username || url.password || !url.searchParams.get("client_reference_id")) return ""; return url.toString(); } catch { return ""; } };
     const safeRedirect = (value) => { try { const url = new URL(value); if (url.protocol !== "https:" || url.username || url.password || /[\\r\\n]/.test(String(value))) return ""; return url.toString(); } catch { return ""; } };
     const request = async (path, init = {}) => { const { mutating, ...requestInit } = init; const headers = { Accept: "application/json", ...(mutating ? { "content-type":"application/json", "x-lm-csrf":csrf, "idempotency-key":key() } : {}) }; const response = await fetch(path, { ...requestInit, credentials:"same-origin", headers }); if (response.status === 401) { window.location.reload(); throw new Error("session expired"); } const data = await response.json().catch(() => ({})); if (!response.ok) { const error = new Error(String(data.error || "request failed")); error.status = response.status; throw error; } return data; };
-    const addPaymentLink = (value, label) => { const href = safePaymentLink(value); if (!href) return false; const link = document.createElement("a"); link.href = href; link.rel = "noreferrer"; link.className = "primary-action"; link.dataset.onboardingAction = "payment.open"; link.textContent = label; actions.append(link); return true; };
+    const addPaymentLink = (value, label, primary = true) => { const href = safePaymentLink(value); if (!href) return false; const link = document.createElement("a"); link.href = href; link.rel = "noreferrer"; link.className = primary ? "primary-action" : "secondary-action"; link.dataset.onboardingAction = "payment.open"; link.textContent = label; actions.append(link); return true; };
+    const renderReadyValue = (state) => {
+      const value = document.createElement("div");
+      value.className = "onboarding-ready";
+      const trial = document.createElement("p");
+      const trialLabel = document.createElement("span");
+      const trialDeadline = document.createElement("span");
+      if (state && state.paid === true) {
+        text(trialLabel, "有料プラン: ");
+        text(trialDeadline, "有効");
+      } else if (state && state.trialActive === true) {
+        text(trialLabel, "無料期間中: ");
+        text(trialDeadline, state.trialExpiresAt || "期限確認中");
+      } else {
+        text(trialLabel, "無料期間: ");
+        text(trialDeadline, "終了");
+      }
+      trial.append(trialLabel, trialDeadline);
+      value.append(trial);
+      const next = state && state.nextEvent && typeof state.nextEvent === "object" ? state.nextEvent : null;
+      if (next) {
+        const preview = document.createElement("p");
+        const label = document.createElement("span");
+        const summary = document.createElement("span");
+        const separator = document.createElement("span");
+        const start = document.createElement("span");
+        text(label, "次の予定: ");
+        text(summary, next.summary || "予定");
+        text(separator, " · ");
+        text(start, next.startAt || "時刻未定");
+        preview.append(label, summary, separator, start);
+        value.append(preview);
+      }
+      return value;
+    };
     const retryButton = () => button("再読み込み", "retry", true);
     const render = (state) => {
       const step = String(state && state.step || "");
       title.textContent = titles[step] || "Life Manager";
-      copy.textContent = copies[step] || "現在の準備状態を確認しています。";
+      copy.textContent = step === "dashboard" ? readyCopy(state) : copies[step] || "現在の準備状態を確認しています。";
       form.replaceChildren(); actions.replaceChildren(); status.textContent = "";
       switch (step) {
         case "name": form.append(input("名前", "text", state.name)); actions.append(button("次へ", "name.save", true)); break;
@@ -138,7 +177,7 @@ function renderPanelOnboardingPage(options = {}) {
         case "phone": form.append(input("電話番号", "tel", state.phone)); actions.append(button("次へ", "phone.save", true), button("電話番号を登録せず続ける", "phone.skip", false)); break;
         case "call": actions.append(button("電話で確認する", "call.enable", true), button("電話での確認をスキップ", "call.skip", false)); break;
         case "payment": if (!addPaymentLink(state.paymentLink, "月額プランを確認する")) { text(status, "支払いリンクを確認できません。しばらくしてから再読み込みしてください。"); actions.append(retryButton()); } actions.append(button("後で決める", "payment.skip", false)); break;
-        case "dashboard": if (state.paid === true) { const link = document.createElement("a"); link.href = "/panel"; link.className = "primary-action"; link.textContent = "ダッシュボードを開く"; actions.append(link); } else if (!addPaymentLink(state.paymentLink, "月額プランを確認する")) { text(status, "支払いリンクを確認できません。しばらくしてから再読み込みしてください。"); actions.append(retryButton()); } break;
+        case "dashboard": form.append(renderReadyValue(state)); if (state.paid === true) { const link = document.createElement("a"); link.href = "/panel"; link.className = "primary-action"; link.textContent = "ダッシュボードを開く"; actions.append(link); } else addPaymentLink(state.paymentLink, "月額プランを確認する", false); break;
         default: text(status, "現在の準備状態を確認できません。"); actions.append(retryButton());
       }
     };
