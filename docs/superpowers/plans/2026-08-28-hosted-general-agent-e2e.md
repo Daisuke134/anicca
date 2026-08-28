@@ -26,7 +26,7 @@
 - [x] **Step 2:** Call ingress with the same goal again, assert `created=false`, worker execution remains one, and receipt count remains one.
 - [x] **Step 3:** Run hosted ingress/adapter/runtime/billing/secret/tenant focused tests.
 - [x] **Step 4:** Record fresh production evidence: public health 200, authenticated canonical panel query 0, stable identity hash, paid true, phone/call/notifications true, and current connection states. Keep Calendar `action_required` visible.
-- [ ] **Step 5:** Update GA-11 to DONE with contract/live boundaries, fetch, commit, push, and read back PR #3018.
+- [x] **Step 5:** Update GA-11 to DONE with contract/live boundaries, fetch, commit, push, and read back PR #3018.
 
 ## Completion evidence
 
@@ -35,3 +35,4 @@
 - Production: `https://life-call-production.up.railway.app/health` returns HTTP 200; the authenticated canonical panel has zero query parameters and stable identity hash `e892f219bf2be691fbff8691cf00e1b9ac21a7a549dab10bf6c86f77a8c22e98`.
 - Tenant state: `paid=true`, phone present, calls enabled, notifications enabled, Telegram authenticated; current Calendar state remains `action_required` and email remains `unavailable`.
 - Boundary: no new tenant, payment, connector, marketplace contact, contract, delivery, or cash receipt was created by GA-11.
+- Delivery: PR #3018 is open, head `01f89e4b5`, and mergeable. Repo-wide CI remains blocked by pre-existing Capafy Python syntax, 28 redacted PII baseline findings, and legacy `skills/earn` OSS-boundary findings; the GA-11 PII finding is zero.
