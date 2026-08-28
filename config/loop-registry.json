@@ -1170,7 +1170,7 @@
       },
       "domain": "earn",
       "effect_class": "none",
-      "entrypoint": "skills/earn/lancers/scripts/work_sync.py",
+      "entrypoint": "runtime/loop/entry_dispatch.py",
       "label": "ai.anicca.lancers-revenue-work-sync",
       "log_root": "~/.local/state/anicca/lancers/logs",
       "provider_route": "deterministic",
