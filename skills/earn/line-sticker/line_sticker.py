@@ -561,6 +561,8 @@ def _provenance_errors(provenance: object, file_hashes: dict[str, str]) -> list[
     rights = generation["rights_evidence"]
     if not isinstance(rights, dict) or set(rights) != {"receipt_sha256", "set_id", "character_id", "character_sha256", "creation_source", "rights"} or not isinstance(rights.get("receipt_sha256"), str) or not HEX64.fullmatch(str(rights["receipt_sha256"])) or rights.get("set_id") != provenance.get("set_id") or rights.get("character_id") != provenance.get("character_id") or rights.get("character_sha256") != generation["character_sha256"] or rights.get("rights") != "original_ai_generated" or not isinstance(rights.get("creation_source"), str) or not rights["creation_source"]:
         errors.append("provenance_invalid")
+    elif _sha256(_canonical_json({key: rights[key] for key in ("set_id", "character_id", "character_sha256", "creation_source", "rights")})) != rights["receipt_sha256"]:
+        errors.append("provenance_invalid")
     if not all(type(generation.get(key)) is str and generation[key] for key in ("model", "provider", "reserved_cost_usd", "actual_cost_usd")):
         errors.append("provenance_invalid")
     for key in ("reserved_cost_usd", "actual_cost_usd"):
