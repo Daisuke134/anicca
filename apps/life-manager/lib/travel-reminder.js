@@ -238,10 +238,7 @@ function eventKey(event) {
 }
 
 function postgrestEqValue(value) {
-  const text = String(value);
-  if (!/[,:.()"\\]/.test(text)) return encodeURIComponent(text);
-  const escaped = text.replace(/\\/g, "\\\\").replace(/"/g, '\\\"');
-  return `%22${encodeURIComponent(escaped)}%22`;
+  return encodeURIComponent(String(value));
 }
 
 async function readTravelClaim(uid, key, leg, supaUrl, supaKey, fetchImpl = fetch) {

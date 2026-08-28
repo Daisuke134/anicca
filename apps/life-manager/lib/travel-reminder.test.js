@@ -355,26 +355,43 @@ test("travelReminderOnce keeps an accepted receipt claim when the transport stat
   assert.equal(releases, 0);
 });
 
-test("travelReminderOnce quotes reserved fallback event keys and preserves the tenant filter", async () => {
-  const summary = '予定: A, B.(C) "引用"';
-  const dueEvent = event({ id: "", summary, location: "渋谷", startMs: NOW + 3 * T5_MS, startIso: "2026-08-28T13:15:00+09:00" });
-  const uid = "tenant:alpha,beta.(gamma)";
-  const queries = [];
+test("travelReminderOnce reads reserved fallback keys as exact eq values and uses the associated destination", async () => {
+  const summary = '予定: A, B.(C) "引用"\\suffix';
+  const targetStart = NOW + 3 * T5_MS;
+  const dueEvent = event({ id: "", summary, location: "元の会場名", startMs: targetStart, endMs: targetStart + 60 * 60000, startIso: "2026-08-28T13:15:00+09:00" });
+  const previous = event({ id: "previous-reserved", summary: "前の予定", location: "前の場所", startMs: targetStart - 90 * 60000, endMs: targetStart - 30 * 60000 });
+  const outbound = { id: "target-go-reserved", summary: "[Travel] 🚆 前の場所→解決住所", location: "東京都渋谷区神南1-1-1", startMs: previous.endMs, endMs: targetStart };
+  const uid = 'tenant:alpha,beta.(gamma)"\\suffix';
+  const eventKey = `${dueEvent.startMs}:${summary}`;
+  const queries = [], destinations = [];
+  let exactTargetRows = 0;
   const result = await travelReminderOnce({ uid, telegram_chat_id: "chat", notifications_enabled: true }, NOW, {
-    events: [dueEvent], home: HOME, mapsKey: "maps", timezone: "Asia/Tokyo", telegramToken: "token", supaUrl: "https://supa.example", supaKey: "key",
-    fetchImpl: async (url) => { queries.push(String(url)); return { ok: true, status: 200, json: async () => [] }; },
-    directionsRoute: async () => ({ durationSeconds: 5 * 60 }),
+    events: [previous, outbound, dueEvent], home: HOME, mapsKey: "maps", timezone: "Asia/Tokyo", telegramToken: "token", supaUrl: "https://supa.example", supaKey: "key",
+    fetchImpl: async (url) => {
+      const value = String(url);
+      queries.push(value);
+      const params = new URL(value).searchParams;
+      const exactTarget = params.get("uid") === `eq.${uid}`
+        && params.get("event_key") === `eq.${eventKey}`
+        && params.get("leg") === "eq.go";
+      if (exactTarget) {
+        exactTargetRows += 1;
+        return { ok: true, status: 200, json: async () => [{ event_key: eventKey }] };
+      }
+      return { ok: true, status: 200, json: async () => [] };
+    },
+    directionsRoute: async (_origin, destination) => { destinations.push(destination); return { durationSeconds: 5 * 60 }; },
     claimTravel: async () => true,
     sendMessage: async () => ({ ok: true, result: { message_id: 804 } }),
   });
 
-  const eventKey = `${dueEvent.startMs}:${summary}`;
-  const quote = (value) => `"${String(value).replace(/\\/g, "\\\\").replace(/"/g, '\\\"')}"`;
   assert.equal(result.status, "sent");
-  assert.equal(queries.length, 1);
+  assert.deepEqual(destinations, [outbound.location]);
+  assert.equal(exactTargetRows, 1);
+  assert.equal(queries.length, 2);
   const params = new URL(queries[0]).searchParams;
-  assert.equal(params.get("uid"), `eq.${quote(uid)}`);
-  assert.equal(params.get("event_key"), `eq.${quote(eventKey)}`);
+  assert.equal(params.get("uid"), `eq.${uid}`);
+  assert.equal(params.get("event_key"), `eq.${eventKey}`);
   assert.equal(params.get("leg"), "eq.go");
 });
 
