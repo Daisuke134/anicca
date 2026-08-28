@@ -326,9 +326,9 @@ def apply_live(release_root: Path, agents_dir: Path, launchctl_safe: Path,
 
 def main(argv: list[str] | None = None) -> int:
     args = argv or sys.argv[1:]
-    commands = {"apply", "doctor", "start", "stop", "restart", "status", "watch"}
+    commands = {"apply", "doctor", "reconcile", "start", "stop", "restart", "status", "watch"}
     if not args or args[0] not in commands:
-        print("usage: lm-loop apply|doctor|start|stop|restart <loop-id|all>|status|watch [<loop-id|all>]", file=sys.stderr)
+        print("usage: lm-loop apply|doctor|reconcile <provider-route>|start|stop|restart <loop-id|all>|status|watch [<loop-id|all>]", file=sys.stderr)
         return 2
     command = args[0]
     if command == "apply":
@@ -347,6 +347,37 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(results, indent=2, sort_keys=True))
         return 0
     registry = validate_registry(json.loads((ROOT / "config/loop-registry.json").read_text()))
+    if command == "reconcile":
+        if len(args) != 2:
+            print(json.dumps({"ok": False, "error": "reconcile requires <provider-route>"}))
+            return 2
+        route = args[1]
+        current_sha = json.loads((ROOT / "RELEASE.json").read_text()).get("sha")
+        rows = snapshot(registry, "all")
+        eligible = [row for row in rows if (
+            row["classification"] == "managed"
+            and row["provider_route"] == route
+            and row["launchd_state"] == "loaded-idle"
+            and row["installed_release_sha"] != current_sha
+        )]
+        applied, failed = [], []
+        for row in eligible:
+            try:
+                applied.extend(apply_live(
+                    ROOT, Path("~/Library/LaunchAgents").expanduser(), ROOT / "bin/launchctl-safe",
+                    target=row["loop_id"]))
+            except (OSError, ValueError, RuntimeError, json.JSONDecodeError) as exc:
+                failed.append({"loop_id": row["loop_id"], "error": str(exc)})
+        print(json.dumps({
+            "ok": not failed, "route": route, "release_sha": current_sha,
+            "eligible": len(eligible), "applied": applied, "failed": failed,
+            "skipped_running": [row["loop_id"] for row in rows if (
+                row["classification"] == "managed"
+                and row["provider_route"] == route
+                and row["launchd_state"] == "loaded-running"
+                and row["installed_release_sha"] != current_sha)],
+        }, indent=2, sort_keys=True))
+        return 1 if failed else 0
     if command in {"start", "stop", "restart"}:
         if len(args) != 2:
             print(json.dumps({"ok": False, "error": f"{command} requires <loop-id|all>"}))
