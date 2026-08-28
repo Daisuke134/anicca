@@ -568,6 +568,43 @@ def test_newer_exact_cycle_operator_policy_invalidates_remote_wait(tmp_path):
     ) is False
 
 
+def test_normalizer_restores_feedback_alias_and_canonical_digest(tmp_path):
+    paid = load("paid_direct")
+    root, feedback, _digest = blocked_project(tmp_path)
+    intent_path = root / "delivery/paid-remote-intent.json"
+    result_path = root / "delivery/paid-remote-result.json"
+    intent = json.loads(intent_path.read_text())
+    result = json.loads(result_path.read_text())
+    intent.pop("buyer_feedback_sha256")
+    result.pop("buyer_feedback_sha256")
+    intent["feedback_sha256"] = feedback
+    result["feedback_sha256"] = feedback
+    after = root / "evidence/agent-PAID_REMOTE_OWNER/after.json"
+    write_json(after, {
+        "authenticated": True,
+        "target": intent["target"],
+        "observed_state": intent["desired_state"],
+    })
+    result["after_evidence"] = str(after.relative_to(root))
+    for record in (intent, result):
+        for key in ("desired_state_sha256", "desired_digest", "after_state_digest", "observed_digest"):
+            if key in record:
+                record[key] = "0" * 64
+    write_json(intent_path, intent)
+    write_json(result_path, result)
+
+    paid._normalize_builder_result(root)
+
+    intent = json.loads(intent_path.read_text())
+    result = json.loads(result_path.read_text())
+    digest = paid.paid_remote_result._sha(intent["desired_state"])
+    assert intent["buyer_feedback_sha256"] == feedback
+    assert result["buyer_feedback_sha256"] == feedback
+    assert intent["desired_state_sha256"] == intent["desired_digest"] == digest
+    assert result["desired_state_sha256"] == result["desired_digest"] == digest
+    assert result["after_state_digest"] == result["observed_digest"] == digest
+
+
 def test_paid_project_executor_runs_different_owners_in_parallel():
     paid = load("paid_direct")
     active = 0
