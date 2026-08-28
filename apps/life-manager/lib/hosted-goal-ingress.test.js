@@ -46,7 +46,7 @@ function fixture(overrides = {}) {
         return overrides.tenant || {
           uid: "tenant-a",
           telegram_chat_id: "chat-a",
-          phone: "+810000000000",
+          phone: "phone-redacted",
           paid: true,
         };
       },
@@ -180,5 +180,5 @@ test("one hosted tenant crosses vault queue worker receipt and replay-zero", asy
     execution_id: "bounded-execution-1",
     next_job_refs: ["runtime-job://tenant-a/next-job-1"],
   });
-  assert.doesNotMatch(JSON.stringify(receipts), /Make money|private-provider|chat-a|\+8100|secret/i);
+  assert.doesNotMatch(JSON.stringify(receipts), /Make money|private-provider|chat-a|phone-redacted|secret/i);
 });
