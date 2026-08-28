@@ -36,7 +36,7 @@
 - CLI `convert --plan PATH --animation-command JSON_ARGV --work-dir PATH --max-cost-usd DECIMAL --ffmpeg PATH --ffprobe PATH`.
 - CLI `reconcile --convert-state PATH --animation-command JSON_ARGV --batch N`.
 - CLI `select --plan PATH --candidates PATH --model-command JSON_ARGV --work-dir PATH`.
-- CLI `package --selection PATH --work-dir PATH --output PATH --policy PATH --ffmpeg PATH`.
+- CLI `package --selection PATH --work-dir PATH --output PATH --policy PATH --rights-receipt PATH --ffmpeg PATH`.
 - Every CLI prints one stable JSON object with `status`, `effect`, `readback`, `reason`, hashes, and output path only; no prompt body, credential, environment, or provider response body.
 - There is no fixed disk threshold or capacity subsystem. Work is one source video at a time; atomic
   write failure keeps the prior checkpoint and the next wake retries the same item. Stage replay
@@ -113,6 +113,13 @@ Unknown acknowledgement writes `reconcile_unknown` and never calls `generate` ag
 `reconcile --convert-state PATH --animation-command JSON_ARGV --batch N` calls only provider operation
 `reconcile` with the original request id. It accepts output only when all identities and hashes match.
 
+`convert-state.json` is the only authority for all six quotes, reservations, batch statuses,
+generation/reconciliation receipts, and costs. Totals are recomputed from batch records. Before
+calling generate, atomically mark the batch `reconcile_required`; every later wake uses reconcile
+until the provider returns matching completed output, authoritative absent/no-effect, or unknown.
+Reconcile output includes explicit actual cost and regenerable status; the loop never copies them
+from the quote.
+
 Validate segments are ordered, nonoverlapping, within probed source duration, and bind the exact ten
 motion ids. For each segment run FFmpeg without a shell:
 
@@ -145,7 +152,9 @@ invalidates selection and requires a fresh model call.
 
 Copy selected APNG bytes as `01.png`–`24.png`. Create `main.png` from the cover APNG with a transparent
 240×240 canvas while preserving animation. Extract the cover first frame and create a transparent
-96×74 `tab.png`. Extend the core validator's exact provenance schema with a package-bound
+96×74 `tab.png`. Require a hashed rights receipt that binds set id, character id, character file
+hash, creation source, and `original_ai_generated` ownership; never infer rights from the character
+file. Extend the core validator's exact provenance schema with a package-bound
 `generation` object. It contains original-character rights evidence, model/provider names, prompt,
 character, plan and selection hashes, reserved/actual costs, quote/generation request ids, source,
 segment and candidate hashes, conversion argv hashes, and exact asset hashes. Missing receipts or
@@ -165,7 +174,10 @@ reconcile without generate retry, changed request/video hash, overlapping/out-of
 segments, wrong source SHA, invalid chroma/opaque/alpha-hole candidate, 23/25/duplicate selection, selection
 of invalid candidate, changed candidate after selection, identical output replay, output conflict, forced
 atomic write failure with same-item resume,
-source retention/deletion, package-bound provenance tamper, and stage-specific replay call counts.
+source retention/deletion, expired quote, crash before/during/after generate, fragmented-state write
+failure, actual-cost/regenerable reconcile identity, real rights receipt, candidate replay corruption,
+partial plan/selection receipt recovery, identical package replay, package-bound provenance tamper,
+and stage-specific replay call counts.
 
 Generate one real six-batch FFmpeg fixture with simple distinct green-screen motions and prove the resulting
 24 package passes the existing validator. Keep fixtures temporary and bounded.

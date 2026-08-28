@@ -164,6 +164,12 @@ binds that identity to plan/batch/character hashes, reserves cost durably, then 
 with the same identity and remaining cap. `reconcile` is the only operation allowed after unknown
 acknowledgement. Provider/model/request/video hashes match across all three phases.
 
+One atomic `convert-state.json` is the only authority for all six batch quotes, reservations,
+generation/reconciliation receipts, and costs. Totals are recomputed from those batch records rather
+than incremented separately. Immediately before a generate call, the batch is durably marked
+`reconcile_required`; every later wake calls only `reconcile` until the provider proves either a
+matching completed generation or an authoritative absent/no-effect result.
+
 Generated source media is deleted only when the provider explicitly marks it regenerable, all ten
 bound segments produced valid durable candidates, and their hashes/receipts are fsynced. Otherwise
 the source remains. The loop processes one source video at a time. If a file write fails, it keeps
@@ -213,6 +219,10 @@ The package's exact provenance schema includes a `generation` object bound into
 generation receipts, request ids, costs, source/segment/candidate hashes, and conversion argv
 hashes. Missing or invented rights/provider evidence fails validation. A parallel mutable ledger
 cannot substitute for package-bound provenance.
+
+Character rights evidence is an explicit hashed input receipt that binds the character id and exact
+character file hash. The media tool never creates or infers `original_ai_generated` rights from an
+arbitrary character file.
 
 ## Acceptance gates
 
