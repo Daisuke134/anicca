@@ -16,7 +16,7 @@
 - No keyword/regex/hand-score decides creativity, quality, usefulness, variety, or ordering; the configured model decides from full motion/media evidence.
 - Deterministic code validates fixed schemas, timestamps, dimensions, costs, hashes, provider receipts, and official LINE package rules only.
 - Every paid provider effect has one stable request id, quoted cost at or below the local per-set cap, acknowledged output hash, and no retry after unknown acknowledgement.
-- Disk below configured media headroom, unknown cost, malformed model/provider output, missing provenance, provider mismatch, or invalid candidate fails before package promotion.
+- Unknown cost, malformed model/provider output, missing provenance, provider mismatch, invalid candidate, or failed file write prevents the external effect and preserves the last durable checkpoint.
 - Process one source video at a time and remove regenerable intermediates only after durable hashes/receipts; never delete selected outputs, provenance, state, or receipts.
 - No network implementation, credential, browser mutation, launchd edit, hardcoded character copy, or income claim in this slice.
 
@@ -38,8 +38,9 @@
 - CLI `select --plan PATH --candidates PATH --model-command JSON_ARGV --work-dir PATH`.
 - CLI `package --selection PATH --work-dir PATH --output PATH --policy PATH --ffmpeg PATH`.
 - Every CLI prints one stable JSON object with `status`, `effect`, `readback`, `reason`, hashes, and output path only; no prompt body, credential, environment, or provider response body.
-- Every allocating stage checks the shared host disk-stop flags and `LINE_STICKER_MEDIA_HEADROOM_BYTES`
-  (default 2 GiB). Stage replay verifies every durable output/hash/receipt before returning effect zero.
+- There is no fixed disk threshold or capacity subsystem. Work is one source video at a time; atomic
+  write failure keeps the prior checkpoint and the next wake retries the same item. Stage replay
+  verifies every durable output/hash/receipt before returning effect zero.
 
 - [ ] **Step 1: Write the right-altitude creative prompt**
 
@@ -162,7 +163,8 @@ shell-like argv values remaining literal, command timeout/output overflow, quote
 cost, quote-before-generate call order, provider/model/request mismatch, provider unknown acknowledgement,
 reconcile without generate retry, changed request/video hash, overlapping/out-of-range
 segments, wrong source SHA, invalid chroma/opaque/alpha-hole candidate, 23/25/duplicate selection, selection
-of invalid candidate, changed candidate after selection, identical output replay, output conflict, low disk,
+of invalid candidate, changed candidate after selection, identical output replay, output conflict, forced
+atomic write failure with same-item resume,
 source retention/deletion, package-bound provenance tamper, and stage-specific replay call counts.
 
 Generate one real six-batch FFmpeg fixture with simple distinct green-screen motions and prove the resulting
