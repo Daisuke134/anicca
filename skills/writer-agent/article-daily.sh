@@ -1043,6 +1043,11 @@ if [ "$RESUME_GENERATION" -eq 1 ]; then
     echo "=== article-daily generation resume BLOCK: immutable prompt is missing ===" >>"$LOG"
     exit 0
   }
+  python3 "$GENERATION_STATE" "${GENERATION_ARGS[@]}" \
+    rebind-release --current-root "$ARTICLE_ROOT" >>"$LOG" 2>&1 || {
+    echo "=== article-daily generation resume BLOCK: release rebind failed ===" >>"$LOG"
+    exit 0
+  }
 else
   printf '%s' "$PROMPT" \
     | sed \
