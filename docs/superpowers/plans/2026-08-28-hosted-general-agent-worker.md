@@ -31,7 +31,7 @@
 - Consumes: canonical `general-agent.work` job; injected `runBoundedSpecialist({tenant_id, job_id, goal_ref})`.
 - Produces: `createGeneralAgentWorkLoopAdapter(deps)` with `plan/execute/reconcile/verify/report`.
 
-- [ ] **Step 1: Write RED tests**
+- [x] **Step 1: Write RED tests**
 
 Use one canonical job from `buildGoalWorkItem`. Assert `execute` calls the specialist once with only tenant/job/goal refs and accepts this exact receipt shape:
 
@@ -49,7 +49,7 @@ Use one canonical job from `buildGoalWorkItem`. Assert `execute` calls the speci
 
 Assert missing specialist, wrong tenant/job/goal ref, raw goal/secret fields, or malformed next-job refs fail. Update registry expectations from 10 to 11 adapters and assert the capability is exposed without production worker enablement.
 
-- [ ] **Step 2: Run RED**
+- [x] **Step 2: Run RED**
 
 ```bash
 node --test \
@@ -59,11 +59,11 @@ node --test \
 
 Expected: missing module and manifest length/capability failures.
 
-- [ ] **Step 3: Implement the adapter**
+- [x] **Step 3: Implement the adapter**
 
 Validate job fields exactly: `loop_id=life-manager.manager`, `capability=general-agent.work`, `effect_class=none`, `effect_key=null`, `max_attempts=1`, and one `goal_ref` beginning with the encoded tenant prefix. `execute` awaits the injected specialist, rejects any receipt key outside the seven listed fields, and returns `{receipt}`. `verify` revalidates receipt/job identity; `report` returns only status, execution ID, and next-job count; `reconcile` returns `{state:"unknown"}` because no external effect exists.
 
-- [ ] **Step 4: Register and verify**
+- [x] **Step 4: Register and verify**
 
 Add the manifest definition before `marketplace-application`:
 

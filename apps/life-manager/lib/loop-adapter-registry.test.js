@@ -36,6 +36,9 @@ const {
 const {
   CAPABILITY: MARKETPLACE_APPLICATION_CAPABILITY,
 } = require("./marketplace-application-adapter.js");
+const {
+  CAPABILITY: GENERAL_AGENT_WORK_CAPABILITY,
+} = require("./general-agent-work-adapter.js");
 
 const MANIFEST_PATH = path.join(
   __dirname,
@@ -155,7 +158,7 @@ test("registry rejects duplicate routing, absolute paths, and credential-shaped 
 test("committed manifest is portable and registers financial report first and Connector coverage last", () => {
   const manifest = loadLoopAdapterManifest(MANIFEST_PATH);
   assert.equal(manifest.schema_version, 1);
-  assert.equal(manifest.adapters.length, 10);
+  assert.equal(manifest.adapters.length, 11);
   assert.equal(
     manifest.adapters[0].capability,
     FINANCIAL_REPORT_CAPABILITY,
@@ -187,10 +190,12 @@ test("committed manifest is portable and registers financial report first and Co
   assert.equal(manifest.adapters[6].adapter_id, "marketing-liveness-telegram");
   assert.equal(manifest.adapters[7].capability, LUMA_RSVP_CAPABILITY);
   assert.equal(manifest.adapters[7].adapter_id, "outbound-luma-rsvp");
-  assert.equal(manifest.adapters[8].capability, MARKETPLACE_APPLICATION_CAPABILITY);
-  assert.equal(manifest.adapters[8].adapter_id, "marketplace-application");
-  assert.equal(manifest.adapters[9].capability, CONNECTOR_COVERAGE_CAPABILITY);
-  assert.equal(manifest.adapters[9].adapter_id, "connector-coverage-refresh");
+  assert.equal(manifest.adapters[8].capability, GENERAL_AGENT_WORK_CAPABILITY);
+  assert.equal(manifest.adapters[8].adapter_id, "general-agent-work");
+  assert.equal(manifest.adapters[9].capability, MARKETPLACE_APPLICATION_CAPABILITY);
+  assert.equal(manifest.adapters[9].adapter_id, "marketplace-application");
+  assert.equal(manifest.adapters[10].capability, CONNECTOR_COVERAGE_CAPABILITY);
+  assert.equal(manifest.adapters[10].adapter_id, "connector-coverage-refresh");
   assert.doesNotMatch(
     fs.readFileSync(MANIFEST_PATH, "utf8"),
     /\.openclaw|profitable-claude|life-manager-v0|\/Users\/|api[_-]?key|password|token\s*":/i,
@@ -203,6 +208,15 @@ test("configured registry exposes marketplace application without enabling a wor
   });
   assert.equal(registry.hasCapability(MARKETPLACE_APPLICATION_CAPABILITY), true);
   const adapter = registry.getByCapability(MARKETPLACE_APPLICATION_CAPABILITY);
+  for (const method of ["plan", "execute", "reconcile", "verify", "report"]) {
+    assert.equal(typeof adapter[method], "function");
+  }
+});
+
+test("configured registry exposes bounded general-agent work without enabling a worker", () => {
+  const registry = createConfiguredLoopAdapterRegistry({ appRoot: path.join(__dirname, "..") });
+  assert.equal(registry.hasCapability(GENERAL_AGENT_WORK_CAPABILITY), true);
+  const adapter = registry.getByCapability(GENERAL_AGENT_WORK_CAPABILITY);
   for (const method of ["plan", "execute", "reconcile", "verify", "report"]) {
     assert.equal(typeof adapter[method], "function");
   }

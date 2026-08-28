@@ -82,6 +82,16 @@
       "factory_export": "createLumaRsvpLoopAdapter"
     },
     {
+      "adapter_id": "general-agent-work",
+      "loop_id": "life-manager.general-agent",
+      "capability": "general-agent.work",
+      "effect_classes": [
+        "none"
+      ],
+      "module_ref": "lib/general-agent-work-adapter.js",
+      "factory_export": "createGeneralAgentWorkLoopAdapter"
+    },
+    {
       "adapter_id": "marketplace-application",
       "loop_id": "life-manager.manager",
       "capability": "marketplace.application",
