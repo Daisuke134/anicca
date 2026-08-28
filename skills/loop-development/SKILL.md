@@ -67,6 +67,19 @@ All applicable statements must be true:
 
 Tests, exit 0, a running PID, or a model `completed` response alone are not Done.
 
+## One runtime table
+
+Use the registry-backed control plane instead of process searches or per-loop status scripts:
+
+```bash
+~/loops/current/bin/lm-loop doctor
+~/loops/current/bin/lm-loop status all
+~/loops/current/bin/lm-loop watch all
+```
+
+`doctor` finds unmanaged/missing definitions. `status all` is the snapshot table. `watch all` is
+the live table. Do not build another inventory or infer health from launchd PID existence.
+
 ## Canonical references
 
 - Loop architecture and commands: `docs/loops/README.md`
