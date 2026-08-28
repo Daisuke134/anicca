@@ -418,7 +418,7 @@ Fresh Sol checks tenant scope, Stripe host validation, trial truth, XSS/textCont
 - Produces: `trialEntitlementFilter(nowMs) → PostgREST or(...) fragment` and existing `schedulerCohortFilter(env, nowMs)`.
 - Both scheduler selectors and daily preflight keep consuming the one SSOT.
 
-- [ ] **Step 1: Replace fixed-paid expectations with clocked RED tests**
+- [x] **Step 1: Replace fixed-paid expectations with clocked RED tests**
 
 Add:
 
@@ -445,7 +445,7 @@ Retain the exact-two-caller source assertion.
 
 Update the existing daily-preflight consumer assertion to require the exact `or=(paid.is.true,trial_expires_at.gt.<encoded-clock>)` query parameter instead of the retired standalone `paid=is.true` parameter. Preserve its supported-provider and phone-optional assertions. This test is a consumer of the selector interface; `daily-preflight.js` remains unchanged.
 
-- [ ] **Step 2: Run RED**
+- [x] **Step 2: Run RED**
 
 ```bash
 cd apps/life-manager
@@ -454,7 +454,7 @@ node --test lib/user-selector.test.js
 
 Expected: FAIL because the current result starts with `paid=is.true&`.
 
-- [ ] **Step 3: Implement the single filter**
+- [x] **Step 3: Implement the single filter**
 
 ```js
 function trialEntitlementFilter(nowMs = Date.now()) {
@@ -472,7 +472,7 @@ function schedulerCohortFilter(env, nowMs = Date.now()) {
 
 Export `trialEntitlementFilter` for focused boundary tests. Do not touch `scheduler.js` query construction.
 
-- [ ] **Step 4: Run GREEN and consumer regressions**
+- [x] **Step 4: Run GREEN and consumer regressions**
 
 ```bash
 node --test lib/user-selector.test.js lib/daily-preflight.test.js lib/daily-preflight-production-wiring.test.js test/wake-loop-isolation.test.js lib/travel-reminder.test.js
@@ -480,7 +480,7 @@ node --test lib/user-selector.test.js lib/daily-preflight.test.js lib/daily-pref
 
 Expected: PASS. Mutation-check `.gt.` to `.gte.` by requiring the exact filter test to fail, then restore `.gt.`.
 
-- [ ] **Step 5: Commit and fresh review**
+- [x] **Step 5: Commit and fresh review**
 
 ```bash
 git add apps/life-manager/lib/user-selector.js apps/life-manager/lib/user-selector.test.js apps/life-manager/lib/daily-preflight.test.js

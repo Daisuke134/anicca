@@ -248,3 +248,10 @@ Baseline: focused Life Manager suite 175/175 PASS.
 - TDD: missing-module and four behavior REDs; first GREEN 96/96; fix RED 52/54; final focused panel/auth/billing/payment suite 97/97. Stripe-host and client-deadline mutations were detected.
 - Review R0 found two Important defects: helper blocks could enter preview because nonexistent flags were checked, and expired/paid states received false active-trial copy. Fix round 1 reuses `isHelperBlock(summary)` and branches copy only on server `paid`/`trialActive`. Scoped re-review: both addressed, new breakage none, ship.
 - Primary verification: 97/97 plus syntax/diff PASS. Task 13B: complete at `e12458c07`; no production migration/deploy/Stripe effect occurred.
+
+## Task 13C trial entitlement cohort
+
+- Implementation: `4ea06aefb` replaces standalone `paid=is.true` with exact PostgREST `paid OR trial_expires_at > server clock`, preserving providers, phone independence, global comp, and one selector SSOT. Plan ruling `df3692ecb` assigns the stale daily-preflight consumer assertion to the slice; `11a6cc993` updates only that test.
+- TDD: selector RED 7/11 then GREEN 11/11; `.gt→.gte` mutation detected. Consumer RED 79/80 exposed the retired `paid` query assertion; exact `or` fix produced combined 80/80.
+- Fresh Sol review: ship, spec compliant, Critical/Important/Minor zero; PostgREST grammar, exact expiry, comp boundary, Date.now/process.env restoration, two scheduler selectors, and daily-preflight URL were verified.
+- Primary verification: selector/daily/wake/reminder suite 80/80 plus syntax/diff PASS. Task 13C: complete at `11a6cc993`; production column/code deploy remains deferred to Task 6.
