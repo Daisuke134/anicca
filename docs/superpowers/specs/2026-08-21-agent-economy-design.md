@@ -788,6 +788,9 @@ income.
    history cannot be attributed from the shared registry event. It is not selected. CodeHawks
    fails KYC/current-status truth, while Dework and OpenBounty lack complete
    public funding/identity/receipt proof. 5A.2 remains active with zero passing opportunities.
+   Hats policy clarification is open at `hats-finance/hats-contracts#593`; no identity, audit,
+   disclosure, claim, or transaction may begin before an affirmative authoritative reply proves
+   agent-operated submission and direct-wallet payout without a human claimant.
 3. [ ] **5A.3 — Self-owned identity:** generate only the selected opportunity's required wallet,
    mail, GitHub, and provider credentials inside the per-instance encrypted credential root; bind
    creation receipts to the instance wallet and prove fresh login/recovery without human action.

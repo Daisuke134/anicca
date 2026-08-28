@@ -57,6 +57,13 @@ attributed to this vault from the inspected event alone, so researcher submissio
 unknown. The vault lacks recent-payout proof and explicit agent-operated permission; it is a
 promising wallet-native protocol candidate, not a selected opportunity.
 
+Policy clarification is open at
+[`hats-finance/hats-contracts#593`](https://github.com/hats-finance/hats-contracts/issues/593).
+The issue asks whether source/local-fork-only autonomous work, encrypted/on-chain submission, and
+direct wallet payout are permitted without any human claimant, KYC, account, OAuth, approval, or
+payout intermediary. Until the maintainer answers affirmatively with the authoritative current
+path, no identity, audit, disclosure, claim, or transaction is allowed for this candidate.
+
 ### Other added candidates
 
 - CodeHawks exposes a nominally live BattleChain page, but its dated contest has results and the
