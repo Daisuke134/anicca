@@ -76,13 +76,14 @@ cmd_up() {
   require_docker
   ensure_env_file
 
-  local build_args=(--wait --wait-timeout "$READY_TIMEOUT_SECONDS" -d)
+  local up_args=(--wait --wait-timeout "$READY_TIMEOUT_SECONDS" -d --no-build)
   if [ "${LM_LOCAL_NO_BUILD:-0}" != "1" ]; then
-    build_args+=(--build)
+    say "building the shared runtime image once"
+    compose build api || die "the runtime image did not build."
   fi
 
   say "starting Life Manager (project: $PROJECT) -- first run builds the image and can take a few minutes"
-  if ! compose up "${build_args[@]}"; then
+  if ! compose up "${up_args[@]}"; then
     report_unhealthy
     die "the stack did not come up healthy. The output above says which part."
   fi

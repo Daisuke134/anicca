@@ -332,6 +332,9 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     command = args[0]
     if command == "apply":
+        if len(args) != 1:
+            print(json.dumps({"ok": False, "error": "apply takes no arguments"}))
+            return 2
         release_root = Path(os.environ.get("LIFE_MANAGER_RELEASE_ROOT", "~/loops/current")).expanduser()
         agents_dir = Path(os.environ.get(
             "LIFE_MANAGER_LAUNCH_AGENTS_DIR", "~/Library/LaunchAgents")).expanduser()
