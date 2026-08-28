@@ -54,4 +54,17 @@ function summarizePeriods(transactions, asOf) {
   return result;
 }
 
-module.exports = { detectSubscriptions, normalizeTransaction, summarizePeriods, summarizeTransactions };
+function computeFinancialHealth({ accounts = [], liabilities = [], transactions = [], budget_jpy = 0 }) {
+  const cash = accounts.reduce((sum, row) => sum + row.balance_jpy, 0);
+  const debt = liabilities.reduce((sum, row) => sum + row.balance_jpy, 0);
+  const flow = summarizeTransactions(transactions);
+  return {
+    net_worth_jpy: cash - debt,
+    income_jpy: flow.income_jpy,
+    spending_jpy: flow.spending_jpy,
+    cash_flow_jpy: flow.net_jpy,
+    budget_remaining_jpy: budget_jpy - flow.spending_jpy,
+  };
+}
+
+module.exports = { computeFinancialHealth, detectSubscriptions, normalizeTransaction, summarizePeriods, summarizeTransactions };

@@ -4392,7 +4392,7 @@ bindされ、未確認founder videoをexpected blockerとして保持し`submit_
 - [x] O3B-08 merchantの空白を決定論的に正規化し、provider categoryを保持、欠落時だけ`未分類`にするfocused testを実証
 - [x] O3B-09 同merchant・同金額が別月に2回以上ある支出をsubscription候補として検出し、利用証拠がない限り`usage_status=unknown`を維持
 - [x] O3B-10 calendar month基準で1・3・12か月を同じledger集計へ通し、focused testで各net JPYを実証
-- [ ] O3B-11 net worth、cash flow、burn、runway、budget、baseline、anomaly
+- [x] O3B-11 net worth・income・spending・cash flow・budget残額だけを同じJPY ledgerから算出。未使用のburn/runway/baseline/anomaly engineは作らない
 - [ ] O3B-12 daily/weekly/monthly Telegram report
 - [ ] O3B-13 reportの全数値からsource receiptへ遡れることを実証
 - [ ] O3B-14 CFO Lead Agentのgoal、input、tool、output、停止条件を定義
