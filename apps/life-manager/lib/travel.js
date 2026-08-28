@@ -394,12 +394,14 @@ async function claimTravel(uid, eventKey, leg, supaUrl, supaKey) {
   return !!r && r.status === 201; // 201 inserted (claimed) | 409 duplicate (already created)
 }
 // Release a claim when createTravelBlock failed, so a later run retries (claim→create→unclaim-on-failure).
+// Returns true only when the DELETE received a verified HTTP 2xx response.
 async function unclaimTravel(uid, eventKey, leg, supaUrl, supaKey) {
-  if (!supaUrl || !supaKey) return;
-  await fetch(`${supaUrl}/rest/v1/lm_travel_log?uid=eq.${encodeURIComponent(uid)}&event_key=eq.${encodeURIComponent(eventKey)}&leg=eq.${encodeURIComponent(leg)}`, {
+  if (!supaUrl || !supaKey) return false;
+  const response = await fetch(`${supaUrl}/rest/v1/lm_travel_log?uid=eq.${encodeURIComponent(uid)}&event_key=eq.${encodeURIComponent(eventKey)}&leg=eq.${encodeURIComponent(leg)}`, {
     method: "DELETE",
     headers: { apikey: supaKey, Authorization: `Bearer ${supaKey}`, Prefer: "return=minimal" },
-  }).catch(() => {});
+  }).catch(() => null);
+  return !!response && Number.isInteger(response.status) && response.status >= 200 && response.status < 300;
 }
 
 async function fillTravel(uid, { apiKey, mapsKey, geminiKey, home, timezone, nowMs = Date.now(), bufferMin = 5, calendar, supaUrl, supaKey, _directionsMinutes, gmailAccountId } = {}) {

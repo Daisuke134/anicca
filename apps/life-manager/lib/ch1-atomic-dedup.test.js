@@ -74,17 +74,31 @@ test("claimTravel: no supa → true (in-memory gcal dedup still guards obvious d
   assert.strictEqual(await claimTravel("u1", "k1", "go", "", ""), true);
 });
 
-test("unclaimAsk DELETEs the exact (uid,event_id) row; unclaimTravel DELETEs (uid,event_key,leg)", async () => {
+test("unclaimAsk DELETEs the exact (uid,event_id) row; unclaimTravel verifies 2xx DELETE", async () => {
   let s = stubFetch([200]);
   await unclaimAsk("u1", "e1", "http://s", "k");
   assert.strictEqual(s.calls[0].method, "DELETE");
   assert.match(s.calls[0].url, /lm_ask_log\?uid=eq\.u1&event_id=eq\.e1/);
   s.restore();
   s = stubFetch([200]);
-  await unclaimTravel("u1", "k1", "return", "http://s", "k");
+  assert.strictEqual(await unclaimTravel("u1", "k1", "return", "http://s", "k"), true);
   assert.strictEqual(s.calls[0].method, "DELETE");
   assert.match(s.calls[0].url, /lm_travel_log\?uid=eq\.u1&event_key=eq\.k1&leg=eq\.return/);
   s.restore();
+  s = stubFetch([204]);
+  assert.strictEqual(await unclaimTravel("u1", "k1", "return", "http://s", "k"), true);
+  s.restore();
+  s = stubFetch([500]);
+  assert.strictEqual(await unclaimTravel("u1", "k1", "return", "http://s", "k"), false);
+  s.restore();
+  const orig = global.fetch;
+  global.fetch = async () => { throw new Error("network unavailable"); };
+  try {
+    assert.strictEqual(await unclaimTravel("u1", "k1", "return", "http://s", "k"), false);
+  } finally {
+    global.fetch = orig;
+  }
+  assert.strictEqual(await unclaimTravel("u1", "k1", "return", "", ""), false);
 });
 
 // ── INTEGRATION: fillTravel actually uses the claim ledger (catches FIND-001 evKey collision) ──────

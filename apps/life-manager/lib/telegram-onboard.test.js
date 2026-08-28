@@ -126,7 +126,7 @@ const expiredTrialRow = {
 };
 
 function trialRun(over = {}, overrides = {}) {
-  const order = [], sent = [], unclaims = [];
+  const order = [], sent = [], unclaims = [], errors = [];
   const row = { ...expiredTrialRow, ...over };
   const opts = {
     token: "t", base: "https://panel.example", supaUrl: "https://supa.example", supaKey: "k", now: TRIAL_NOW,
@@ -134,7 +134,12 @@ function trialRun(over = {}, overrides = {}) {
     setStage: async () => { throw new Error("trial upgrade must not rewrite stage"); },
     backfillCalendarContext: async () => {},
     claimTravel: async (...args) => { order.push(["claim", ...args]); return overrides.claimed !== false; },
-    unclaimTravel: async (...args) => { order.push(["unclaim", ...args]); unclaims.push(args); },
+    unclaimTravel: async (...args) => {
+      order.push(["unclaim", ...args]);
+      unclaims.push(args);
+      return overrides.unclaimResult === undefined ? true : overrides.unclaimResult;
+    },
+    logError: (...args) => errors.push(args.join(" ")),
     paymentLink: overrides.paymentLink || (() => "https://buy.stripe.com/test_life_manager?client_reference_id=trial-user"),
     sendMessage: async (...args) => {
       order.push(["send", ...args]);
@@ -144,7 +149,7 @@ function trialRun(over = {}, overrides = {}) {
       return result;
     },
   };
-  return { opts, order, sent, unclaims };
+  return { opts, order, sent, unclaims, errors };
 }
 
 test("legacy pay rows do not reopen ordinary pay nudges", () => {
@@ -197,6 +202,46 @@ test("failed or receipt-less trial sends release the claim for retry", async () 
     assert.deepEqual(h.order.map((entry) => entry[0]), ["claim", "send", "unclaim"]);
     assert.deepEqual(h.unclaims[0].slice(0, 3), ["trial-user", expiredTrialRow.trial_expires_at, "trial-upgrade"]);
   }
+});
+
+test("only a positive integer Telegram message_id keeps the claim", async () => {
+  for (const messageId of [-1, 0, true, {}, "901", 1.5, undefined]) {
+    const h = trialRun({}, { result: { ok: true, result: { message_id: messageId } } });
+    assert.equal(await onboardNudgeAll(h.opts), 0, `message_id=${String(messageId)}`);
+    assert.equal(h.unclaims.length, 1, `message_id=${String(messageId)}`);
+  }
+  const h = trialRun({}, { result: { ok: true, result: { message_id: 901 } } });
+  assert.equal(await onboardNudgeAll(h.opts), 1);
+  assert.equal(h.unclaims.length, 0);
+});
+
+test("verified release permits a later retry, while failed release stays claimed", async () => {
+  const retry = trialRun();
+  let retrySends = 0;
+  retry.opts.sendMessage = async (...args) => {
+    retry.order.push(["send", ...args]);
+    retry.sent.push(args);
+    retrySends++;
+    return retrySends === 1 ? { ok: false } : { ok: true, result: { message_id: 902 } };
+  };
+  assert.equal(await onboardNudgeAll(retry.opts), 0);
+  assert.equal(await onboardNudgeAll({ ...retry.opts, nudgeStore: new Map() }), 1);
+  assert.equal(retry.sent.length, 2);
+  assert.equal(retry.unclaims.length, 1);
+  assert.deepEqual(retry.errors, []);
+
+  let attempts = 0;
+  const stuck = trialRun({}, { result: { ok: false }, unclaimResult: false });
+  stuck.opts.claimTravel = async (...args) => {
+    stuck.order.push(["claim", ...args]);
+    attempts++;
+    return attempts === 1;
+  };
+  assert.equal(await onboardNudgeAll(stuck.opts), 0);
+  assert.equal(await onboardNudgeAll({ ...stuck.opts, nudgeStore: new Map() }), 0);
+  assert.deepEqual(stuck.order.map((entry) => entry[0]), ["claim", "send", "unclaim", "claim"]);
+  assert.equal(stuck.sent.length, 1);
+  assert.deepEqual(stuck.errors, ["[onboard] trial-upgrade reconciliation required"]);
 });
 
 test("missing trusted checkout releases the claim without sending", async () => {

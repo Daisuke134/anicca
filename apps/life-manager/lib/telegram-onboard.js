@@ -269,9 +269,14 @@ async function onboardNudgeAll(opts) {
             `無料期間が終了しました。\n\n<a href="${link}">月額プランを確認する</a>`);
         } catch { result = { ok: false }; }
       }
-      const messageId = result && result.ok === true && result.result && result.result.message_id;
+      const messageId = result && result.ok === true && result.result
+        && Number.isInteger(result.result.message_id) && result.result.message_id > 0;
       if (!messageId) {
-        try { await unclaim(row.uid, eventKey, "trial-upgrade", opts.supaUrl, opts.supaKey); } catch { /* retry next tick */ }
+        let released = false;
+        try { released = await unclaim(row.uid, eventKey, "trial-upgrade", opts.supaUrl, opts.supaKey); } catch { /* retry next tick */ }
+        if (released !== true) {
+          try { (opts.logError || opts.log || console.error)("[onboard] trial-upgrade reconciliation required"); } catch { /* keep loop alive */ }
+        }
       } else sent++;
       continue;
     }
