@@ -84,9 +84,29 @@ INSERT INTO public.lm_panel_preferences(uid, notifications_enabled, call_enabled
 VALUES ('tenant-a', false, false);
 SQL
 
+INITIAL_STATE="$("${PSQL[@]}" -Atqc "SET ROLE service_role; SELECT (public.lm_panel_onboarding_state('tenant-a', '101')->>'trialExpiresAt') IS NULL, (public.lm_panel_onboarding_state('tenant-a', '101')->>'trialActive')::boolean = false;")"
+[[ "$INITIAL_STATE" == "t|t" ]]
+
+"${PSQL[@]}" >/dev/null <<'SQL'
+CREATE FUNCTION public.lm_trial_test_reject_paid_update()
+RETURNS trigger
+LANGUAGE plpgsql AS $$
+BEGIN
+  RAISE EXCEPTION 'paid update forbidden';
+END;
+$$;
+CREATE TRIGGER lm_trial_test_no_paid_updates
+BEFORE UPDATE OF paid ON public.lm_users
+FOR EACH ROW EXECUTE FUNCTION public.lm_trial_test_reject_paid_update();
+SQL
+
+BEFORE_GRANT="$("${PSQL[@]}" -Atqc "SELECT clock_timestamp();")"
 "${PSQL[@]}" -Atqc "SET ROLE service_role; SELECT public.lm_panel_onboarding_transition('tenant-a', '101', 'notifications.enable', '{}'::jsonb);" >/dev/null
+AFTER_GRANT="$("${PSQL[@]}" -Atqc "SELECT clock_timestamp();")"
 FIRST_EXPIRES="$("${PSQL[@]}" -Atqc "SELECT trial_expires_at::text FROM public.lm_users WHERE uid = 'tenant-a';")"
 [[ -n "$FIRST_EXPIRES" ]]
+GRANT_WINDOW="$("${PSQL[@]}" -Atqc "SELECT trial_expires_at >= '$BEFORE_GRANT'::timestamptz + interval '3 days' AND trial_expires_at <= '$AFTER_GRANT'::timestamptz + interval '3 days' FROM public.lm_users WHERE uid = 'tenant-a';")"
+[[ "$GRANT_WINDOW" == "t" ]]
 
 "${PSQL[@]}" >/dev/null <<'SQL'
 UPDATE public.lm_users
