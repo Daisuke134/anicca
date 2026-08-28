@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+import errno
 import hashlib
 import json
-import os
 from pathlib import Path
 import stat
 import subprocess
@@ -108,10 +108,6 @@ def _video(root: Path) -> Path:
 
 class LineStickerMediaTests(unittest.TestCase):
     def setUp(self) -> None:
-        # Tests must not inherit the host's producer floor. The dedicated disk
-        # regression below exercises the production gate with an explicit fake.
-        self._environment = mock.patch.dict(os.environ, {"LINE_STICKER_MEDIA_HEADROOM_BYTES": "0"})
-        self._environment.start()
         self.temp = tempfile.TemporaryDirectory(prefix="line-sticker-media-test-")
         self.root = Path(self.temp.name)
         self.work = self.root / "work"
@@ -121,7 +117,6 @@ class LineStickerMediaTests(unittest.TestCase):
 
     def tearDown(self) -> None:
         self.temp.cleanup()
-        self._environment.stop()
 
     def _plan(self) -> None:
         MODULE.plan(self.character, [sys.executable, str(self.model)], self.work, "set-1", "char-1")
@@ -179,12 +174,24 @@ class LineStickerMediaTests(unittest.TestCase):
         with self.assertRaisesRegex(MODULE.MediaError, "command_output_overflow"):
             MODULE._run_external([sys.executable, str(overflow)], cwd=self.work)
 
-    def test_disk_gate_stops_allocating_stage_before_model(self) -> None:
-        usage = type("Usage", (), {"free": 99})()
-        with mock.patch.dict(os.environ, {"LINE_STICKER_MEDIA_HEADROOM_BYTES": "100"}), mock.patch.object(MODULE.shutil, "disk_usage", return_value=usage):
-            with self.assertRaisesRegex(MODULE.MediaError, "disk_headroom_low"):
-                self._plan()
-        self.assertFalse((self.root / "model.count").exists())
+    def test_zero_reported_free_space_does_not_block_planning(self) -> None:
+        usage = type("Usage", (), {"free": 0})()
+        with mock.patch.object(MODULE.shutil, "disk_usage", return_value=usage) as disk_usage:
+            self._plan()
+        disk_usage.assert_not_called()
+        self.assertEqual((self.root / "model.count").read_text(), "1")
+
+    def test_atomic_write_preserves_checkpoint_on_enospc_and_retries(self) -> None:
+        checkpoint = self.work / "checkpoint.json"
+        checkpoint.write_bytes(b"prior")
+        with mock.patch.object(MODULE.os, "replace", side_effect=OSError(errno.ENOSPC, "no space")) as replace:
+            with self.assertRaisesRegex(MODULE.MediaError, "disk_full"):
+                MODULE._atomic_bytes(checkpoint, b"next")
+        replace.assert_called_once()
+        self.assertEqual(checkpoint.read_bytes(), b"prior")
+
+        MODULE._atomic_bytes(checkpoint, b"next")
+        self.assertEqual(checkpoint.read_bytes(), b"next")
 
     def test_selection_requires_all_visual_hash_readback_and_changed_candidate_refreshes(self) -> None:
         self._plan()

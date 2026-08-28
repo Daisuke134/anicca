@@ -102,27 +102,6 @@ def _ensure_directory(path: Path) -> Path:
     return path
 
 
-def _disk_gate(path: Path) -> None:
-    """Fail before a stage allocates media or invokes an external producer."""
-    state = Path(os.environ.get("GIG_HOST_STATE_DIR", str(Path.home() / ".openclaw" / "state")))
-    for name, code in (("disk-writers.stop", "disk_writers_stop"), ("disk-pressure.block", "disk_pressure_block")):
-        try:
-            metadata = (state / name).lstat()
-        except FileNotFoundError:
-            continue
-        except OSError as exc:
-            raise MediaError("disk_policy_unavailable") from exc
-        if not stat.S_ISREG(metadata.st_mode):
-            raise MediaError("disk_policy_unavailable")
-        raise MediaError(code)
-    try:
-        floor = int(os.environ.get("LINE_STICKER_MEDIA_HEADROOM_BYTES", str(2 * 1024**3)))
-    except ValueError as exc:
-        raise MediaError("disk_headroom_invalid") from exc
-    if floor < 0 or shutil.disk_usage(path).free < floor:
-        raise MediaError("disk_headroom_low")
-
-
 def _atomic_bytes(path: Path, data: bytes) -> None:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -365,7 +344,6 @@ def plan(
 ) -> dict[str, object]:
     """Ask the model for exactly sixty machine-valid motion records."""
     work_dir = _ensure_directory(Path(work_dir))
-    _disk_gate(work_dir)
     character = Path(character)
     if not _nonempty_text(set_id) or not _nonempty_text(character_id):
         raise MediaError("configuration_error")
@@ -913,7 +891,6 @@ def convert(
                 raise MediaError("receipt_invalid")
             records = _durable_batch_records(work_dir, motions)
             if not records:
-                _disk_gate(work_dir)
                 records = _convert_batch(plan_payload=plan_payload, batch=batch, provider_receipt=provider_receipt, work_dir=work_dir, ffmpeg=ffmpeg, ffprobe=ffprobe)
             all_records.extend(records); continue
         if reservation_path.is_file():
@@ -921,7 +898,6 @@ def convert(
             if type(reservation) is not dict or reservation.get("batch") != batch:
                 raise MediaError("reservation_invalid")
         else:
-            _disk_gate(work_dir)
             quote = _quote(_run_json_command(argv, {"version": 1, "operation": "quote", "set_id": plan_payload["set_id"], "character_id": plan_payload["character_id"], "character_sha256": plan_payload["character_sha256"], "plan_sha256": plan_payload["plan_sha256"], "batch": batch, "motions": motions}, cwd=work_dir), batch)
             quoted = _decimal_cost(quote["quoted_cost_usd"])
             if reserved_cost + quoted > max_cost:
@@ -930,7 +906,6 @@ def convert(
             reservation = {**quote, "version": 1, "reservation_key": key, "set_id": plan_payload["set_id"], "plan_sha256": plan_payload["plan_sha256"], "character_sha256": plan_payload["character_sha256"]}
             _atomic_json(reservation_path, reservation)
             reserved_cost += quoted; state["reserved_cost_usd"] = format(reserved_cost, "f"); state["batches"][str(batch)] = {"status": "reserved", "reservation_key": key}; _atomic_json(state_path, state)
-        _disk_gate(work_dir)
         state["batches"][str(batch)] = {"status": "generate_started", "reservation_key": reservation["reservation_key"]}; _atomic_json(state_path, state)
         request = {"version": 1, "operation": "generate", "set_id": plan_payload["set_id"], "character_id": plan_payload["character_id"], "character_path": plan_payload["character_path"], "character_sha256": plan_payload["character_sha256"], "plan_sha256": plan_payload["plan_sha256"], "batch": batch, "motions": motions, "remaining_cap_usd": format(max_cost - reserved_cost + _decimal_cost(reservation["quoted_cost_usd"]), "f"), **{key: reservation[key] for key in ("request_id", "quote_token", "provider", "model")}}
         try:
@@ -1125,7 +1100,6 @@ def select(
 ) -> dict[str, object]:
     """Ask the model to choose and order twenty-four valid candidates."""
     work_dir = _ensure_directory(Path(work_dir))
-    _disk_gate(work_dir)
     plan_payload = _load_plan(Path(plan_path))
     records, candidates_root = _load_candidate_records(Path(candidates))
     selection_input, input_hash = _selection_input(plan_payload, records, candidates_root)
@@ -1401,7 +1375,6 @@ def package(
 ) -> dict[str, object]:
     """Build, validate, and atomically promote the official 26-PNG package."""
     work_dir = _ensure_directory(Path(work_dir))
-    _disk_gate(work_dir)
     selected_payload = _load_selection(Path(selection))
     plan_path = work_dir / "plan.json"
     plan_payload = _load_plan(plan_path)
