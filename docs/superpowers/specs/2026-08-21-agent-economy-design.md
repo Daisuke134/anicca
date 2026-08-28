@@ -476,11 +476,11 @@ Earlier branch evidence recorded 52/52 agent-economy tests, 2/2 install tests, a
 tests. Those results predate the current `origin/main` divergence and must be rerun after
 integration. They prove contracts and fixtures, not demand, profit, or live deployment.
 
-A 2026-08-26 rerun in the recreated feature worktree passed 40 of 42 discovered focused tests;
-the two failures stopped at module loading because the declared `viem` dependency is not installed
-in this worktree. Install and OSS suites were not run after that failure. This is a dependency-
-provenance/preflight failure, not a current green test result, and P0 must close it without
-symlinking dependencies from another worktree.
+The historical 2026-08-26 recreated-worktree run passed 40 of 42 discovered focused tests and
+stopped twice at module loading because `viem` was absent. At the current head, a regular lockfile
+`npm ci` installed a normal worktree dependency directory with `viem 2.52.2`; the opportunity-scout
+focused set passes 4/4 and the canonical agent-economy suite passes 107/107 without a dependency
+symlink. This proves the focused slice, not the branch-wide install/OSS gates that remain Order 7.
 
 ## Current live truth
 
@@ -723,8 +723,9 @@ required reserve, leaving zero spendable accepted earnings. The seller, public 4
 x402scan registration, inflow watcher, and acquisition controller are live, but no independently
 controlled buyer has produced a new settlement. Research in
 `outputs/agent-economy-earning-landscape.md` rejects permanent marketplace preference. Olas has
-real traffic but extreme seller concentration; uGig is low-value and repetitive; the current Agent
-Bounties job has seven expirations and zero settlements. Immunefi has the deepest verified standing
+real traffic but extreme seller concentration; uGig is low-value and repetitive; the Agent
+Bounties candidate had seven expirations and zero settlements, and its current claimable feed is
+empty. Immunefi has the deepest verified standing
 inventory, while Agentic Bug Hunter supplies a tested analysis engine but its upstream human-submit
 path is incompatible and remains disabled. Order 5A therefore builds one read-only scout, selects
 one publicly provable zero-human-compatible opportunity, creates only the identity that opportunity
@@ -756,6 +757,16 @@ returned claim bond, or unverified marketplace event cannot satisfy this prerequ
 | 16 | Publish article 3 and decide whether to scale | 15 | parent+child case study, reproduction commands, independent audit | pending |
 
 #### Order 5A atomic TODO
+
+**5A.1 measured implementation state:** the dependency-free read-only collector covers 11 public
+source requests, sends no credentials, performs only GET plus documented Olas GraphQL reads, and
+preserves exact raw response hashes under an isolated instance state root. The live canary observed
+11/11 HTTP successes with zero raw-hash mismatches; current manifest SHA-256 is
+`aacac47727e2b796914f0f542f9381593d688ffbdfce8d731d0e17a15f09cbb5`. The Agent Bounties
+claimable body was `[]`. Olas Gnosis reached its latest-1,000 page limit and is explicitly
+`coverage=unknown` with `next_cursor=skip:1000`; Base, Polygon, and Optimism were complete for the
+24-hour window. 5A.1 remains active until the model records evidence-backed values or explicit
+unknown reasons for all nine evaluation fields; collection alone is not selection or income.
 
 1. [ ] **5A.1 — Scout:** read current Immunefi, Agent Bounties, Olas, uGig, Code4rena, Sherlock, and
    Cantina inventory and normalize scope, funding, recent payout, competition, signup/identity

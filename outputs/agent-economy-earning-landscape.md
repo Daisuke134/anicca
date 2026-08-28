@@ -15,7 +15,7 @@ all reconciled by canonical settlement rather than platform status.
 
 | Candidate | Verified earning mechanism | Demand evidence | Entry friction | Decision |
 |---|---|---|---|---|
-| Agent Bounties | Base-USDC escrow, refundable claim bond, deterministic verification, canonical `BountySettled` payout | One outside-funded 1.00-USDC bounty, but its history is 7 claims / 7 submissions / 7 expirations / 0 settlements | EIP-3009 claim signature, separate EIP-712 submission signature, public artifact/evidence, and an unproven live two-verifier quorum | **Blocked candidate** pending verifier and artifact-path proof |
+| Agent Bounties | Base-USDC escrow, refundable claim bond, deterministic verification, canonical `BountySettled` payout | The former 1.00-USDC candidate recorded 7 claims / 7 submissions / 7 expirations / 0 settlements; the current claimable feed is empty | EIP-3009 claim signature, separate EIP-712 submission signature, public artifact/evidence, and an unproven live two-verifier quorum | No current inventory; monitor only |
 | Olas Mech Marketplace | List an off-chain service and earn when another agent hires it | Active on-chain demand exists, but recent Gnosis requests are 93.2% concentrated in five Mechs; Base has four requests in the observed day | Python/Poetry/Docker, on-chain Mech deployment, metadata publication, continuous service | Monitor; do not deploy without a pre-identified buyer/use case |
 | Immunefi | Continuous authorized Web3 bug-bounty programs with project-funded crypto rewards | 186 listed programs; recent program updates; current audit competition inventory; program pages expose max/min reward, vault, KYC and paid history | Account and program-specific policy; many identity/submission flows may be no-human incompatible | Largest observed inventory candidate; admit only wallet-native, zero-human programs |
 | Agentic Bug Hunter | Scope→recon/source audit→validation→report engine | 4,472 stars, 805 forks, 709 local tests pass at the pinned commit | Upstream requires human approval before submission and permits authorized targets only | Reuse analysis engine only; disable upstream submit and never remove scope fence |
@@ -28,17 +28,20 @@ all reconciled by canonical settlement rather than platform status.
 | Algora | GitHub bounties with claim and payout lifecycle | Established OSS bounty product | Stripe Connect and GitHub OAuth identity conflict with the core proof | Reject for AC-12 |
 | Bittensor/Ridges | Continuous subnet mining rewards | Active OSS miner/validator ecosystem | TAO exposure, hotkey/coldkey, registration/stake and specialized scoring; not direct Base-USDC cash | Long-term research only |
 
-## Agent Bounties blocked candidate
+## Agent Bounties historical blocked candidate
 
-The live feed at
+The previously observed live feed at
 [`/v1/base/autonomous-bounties/feed`](https://api.agentbounties.app/v1/base/autonomous-bounties/feed?network=base-mainnet&claimable_only=true)
-shows contract `0x22cec92c195a6dc0f7aeaf850e7f2cacb3b6de33`, funded by an address different
+showed contract `0x22cec92c195a6dc0f7aeaf850e7f2cacb3b6de33`, funded by an address different
 from the Life Manager wallet. The creator escrow contains 1.00 USDC for the solver and 0.10 USDC
 for verifiers. A separate 0.10-USDC claim bond must come from the solver or sponsor. The committed
 benchmark runs `python /benchmark/check.py` in a pinned Docker image. Passing settlement or a
 post-submission verifier timeout returns the bond; rejection or claim expiry without submission
 can consume it. Only `BountyClaimed` proves ownership and only
 `BountySettled` proves earnings.
+
+The latest read-only collector now returns `[]` from that claimable feed. The historical contract
+remains protocol evidence, but it is not a current job and cannot be selected.
 
 However, `verification_ready=true` proves that the indexed configuration is supported; it does not
 prove that both named verifiers are currently operating. Until the seven expiration cycles and

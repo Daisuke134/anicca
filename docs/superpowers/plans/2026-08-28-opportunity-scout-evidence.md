@@ -32,7 +32,7 @@
 - Each source record contains `source`, `method`, `url`, optional `request_body_sha256`, `ok`, `http_status`, `content_type`, `content_bytes`, `content_sha256`, and later `evidence_path`.
 - CLI writes `$ANICCA_HOME/skills/agent-economy/state/opportunity-scout/<UTC-safe-observed-at>/manifest.json` plus one raw response file per source.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Add tests that inject a fake `fetchImpl`, then assert:
 
@@ -49,7 +49,7 @@ assert.equal(snapshot.sources.every((source) => /^[a-f0-9]{64}$/.test(source.con
 
 Also make one source return HTTP 503 and prove the collector returns both the explicit failed record and every successful record. Verify every Olas POST body contains only `global`, `meches`, `_meta`, and request/delivery fields and contains no mutation. Verify the writer stores raw bodies and a manifest whose `evidence_path` files hash back to `content_sha256`.
 
-- [ ] **Step 2: Run the focused test and observe RED**
+- [x] **Step 2: Run the focused test and observe RED**
 
 Run:
 
@@ -59,7 +59,7 @@ node --test skills/agent-economy/opportunity-scout.test.mjs
 
 Expected: FAIL because `opportunity-scout.mjs` does not exist.
 
-- [ ] **Step 3: Implement the smallest collector**
+- [x] **Step 3: Implement the smallest collector**
 
 Implement fixed transport descriptors only for:
 
@@ -73,7 +73,7 @@ Implement fixed transport descriptors only for:
 
 Use `Promise.allSettled`, never send credentials, preserve non-2xx bodies as evidence, SHA-256 the exact response bytes, and use atomic temporary-file rename for the manifest. Do not parse quality, infer category, rank markets, select work, or add a dependency.
 
-- [ ] **Step 4: Run the focused test and observe GREEN**
+- [x] **Step 4: Run the focused test and observe GREEN**
 
 Run:
 
@@ -83,7 +83,7 @@ node --test skills/agent-economy/opportunity-scout.test.mjs
 
 Expected: PASS.
 
-- [ ] **Step 5: Run one live read-only collection**
+- [x] **Step 5: Run one live read-only collection**
 
 Run with an isolated temporary state root:
 
@@ -94,11 +94,11 @@ SCOUT_STATE_DIR="$(mktemp -d)/opportunity-scout" \
 
 Expected: exit 0 when at least one source succeeds; output names the manifest and contains no account/application/report/claim/payment effect. Independently hash every raw file and compare it with the manifest.
 
-- [ ] **Step 6: Update the canonical spec with measured state**
+- [x] **Step 6: Update the canonical spec with measured state**
 
 Keep 5A.1 active. Record the collector, exact source success/failure count, manifest hash, and the next atomic action: model-owned normalization from the raw evidence. Do not mark 5A.1 complete until all required evaluation fields have evidence-backed values or explicit unknown reasons.
 
-- [ ] **Step 7: Run relevant regression tests**
+- [x] **Step 7: Run relevant regression tests**
 
 Run:
 
@@ -109,6 +109,6 @@ npm run test:agent-economy
 
 Expected: all pass.
 
-- [ ] **Step 8: Review, commit, and push**
+- [x] **Step 8: Review, commit, and push**
 
 Fresh read-only review checks no effect path, no credential inheritance, exact hashing, partial-source preservation, and model-owned judgment. Then commit and push to `origin/feat/agent-economy-implementation`.
