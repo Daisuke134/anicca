@@ -136,6 +136,31 @@ class LoopCleanupTest(unittest.TestCase):
         self.assertEqual((event["status"], event["blocker"]),
                          ("fail", "entrypoint_exit_7"))
 
+    def test_loop_run_terminates_entrypoint_process_group(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory); home=root/'home'; home.mkdir()
+            entry=root/'bin/job.sh'; entry.parent.mkdir()
+            pid_file=home/'grandchild.pid'
+            entry.write_text(f'#!/bin/sh\nsleep 60 &\necho $! > "{pid_file}"\nwait\n')
+            entry.chmod(0o755)
+            registry={"schema_version":2,"loops":{"job":{
+                "label":"ai.anicca.job","domain":"system","entrypoint":"bin/job.sh",
+                "cadence":{"keep_alive":True},"effect_class":"none",
+                "state_root":"~/state","log_root":"~/state/logs",
+                "cleanup":{"max_runs":1,"max_age_days":1},"provider_route":"deterministic"}}}
+            (root/'config').mkdir();(root/'config/loop-registry.json').write_text(json.dumps(registry))
+            (root/'RELEASE.json').write_text(json.dumps({'sha':'a'*40}))
+            wrapper=subprocess.Popen(
+                [sys.executable,'-m','runtime.loop.lm_loop_run','job',str(root)],
+                cwd=Path(__file__).parents[3],env={**os.environ,'HOME':str(home)})
+            for _ in range(50):
+                if pid_file.exists():break
+                time.sleep(0.02)
+            grandchild=int(pid_file.read_text())
+            wrapper.terminate();wrapper.wait(timeout=5);time.sleep(0.1)
+            with self.assertRaises(ProcessLookupError):
+                os.kill(grandchild,0)
+
     def test_release_gc_preserves_release_loaded_by_launchd(self):
         import plistlib
         with tempfile.TemporaryDirectory() as directory:

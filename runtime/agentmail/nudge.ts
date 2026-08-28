@@ -10,18 +10,15 @@
 import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { homedir } from "node:os";
+import { fileURLToPath } from "node:url";
+import { semanticDecision } from "./semantic-reply.ts";
 
 const DB_PATH = process.env.AGENTMAIL_DB_PATH ?? `${homedir()}/.openclaw/state/agentmail.db`;
 const ADAPTER_SEND = process.env.AGENTMAIL_ADAPTER_SEND_SH
-  ?? `${homedir()}/anicca-oss/.worktrees/adapters/adapters/custom/agentmail/scripts/send.sh`;
+  ?? fileURLToPath(new URL("./send.sh", import.meta.url));
 const FROM_INBOX = process.env.AGENTMAIL_REPLIER_FROM_INBOX ?? "anicca-001-claude@agentmail.to";
-const MODEL = process.env.AGENTMAIL_REPLIER_MODEL ?? "deepseek-v4-pro";
-const FALLBACK_MODELS = (process.env.AGENTMAIL_REPLIER_FALLBACK_MODELS ?? "deepseek-v4-flash")
-  .split(",").map(s => s.trim()).filter(Boolean);
 const MAX_COUNT = Number.parseInt(process.env.NUDGE_MAX_COUNT ?? "1", 10);
 const SLA_HOURS = Number.parseInt(process.env.NUDGE_SLA_HOURS ?? "24", 10);
-const KEY = process.env.DEEPSEEK_API_KEY;
-if (!KEY) { console.error("DEEPSEEK_API_KEY missing"); process.exit(1); }
 if (!existsSync(DB_PATH)) { console.error(`db not found: ${DB_PATH}`); process.exit(1); }
 
 // JSON output mode — sqlite3 emits one JSON array of objects, robust against any character in data.
@@ -80,37 +77,6 @@ WHERE ar.sent_at < '${cutoff}'
 console.log(`eligible nudges: ${rows.length} (cutoff=${cutoff}, max_count=${MAX_COUNT})`);
 if (rows.length === 0) process.exit(0);
 
-async function llmOne(model: string, subject: string): Promise<string> {
-  const resp = await fetch("https://api.deepseek.com/v1/chat/completions", {
-    method: "POST",
-    headers: { "Authorization": `Bearer ${KEY}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model,
-      messages: [
-        { role: "system", content: SYSTEM },
-        { role: "user", content: `Subject of the original thread: ${subject || "(no subject)"}` },
-      ],
-      max_tokens: 200,
-      temperature: 0.7,
-    }),
-    signal: AbortSignal.timeout(45000),
-  });
-  if (!resp.ok) throw new Error(`deepseek ${resp.status}: ${(await resp.text()).slice(0, 200)}`);
-  const json = await resp.json() as { choices?: Array<{ message?: { content?: string } }> };
-  const content = json.choices?.[0]?.message?.content?.trim() ?? "";
-  if (!content) throw new Error("empty content");
-  return content;
-}
-
-async function llm(subject: string): Promise<{ text: string; model: string }> {
-  let lastErr: Error | undefined;
-  for (const m of [MODEL, ...FALLBACK_MODELS]) {
-    try { return { text: await llmOne(m, subject), model: m }; }
-    catch (e) { lastErr = e as Error; console.warn(`  llm ${m} failed: ${lastErr.message}`); }
-  }
-  throw lastErr ?? new Error("no model produced a reply");
-}
-
 let nudged = 0;
 for (const r of rows) {
   const recipient = extractEmail(r.last_outbound_to ?? "");
@@ -121,10 +87,18 @@ for (const r of rows) {
   const baseSubject = r.subject ?? "Following up";
   const nudgeSubject = baseSubject.startsWith("Re:") ? baseSubject : `Re: ${baseSubject}`;
 
-  let text: string;
-  let modelUsed: string;
-  try { const res = await llm(baseSubject); text = res.text; modelUsed = res.model; }
-  catch (e) { console.warn(`  giving up: ${(e as Error).message}`); continue; }
+  let decision;
+  try {
+    decision = semanticDecision(
+      "agentmail-nudge",
+      `${SYSTEM}\nReturn action=ignore and reply=null when a follow-up is not appropriate.\n\nSubject: ${baseSubject}`,
+    );
+  } catch (e) { console.warn(`  semantic decision failed: ${(e as Error).message}`); continue; }
+  if (decision.action === "ignore" || !decision.reply) {
+    console.log(`  ignored thread=${r.thread_id.slice(0, 8)}`);
+    continue;
+  }
+  const text = decision.reply;
 
   const send = spawnSync("bash", [ADAPTER_SEND, recipient, nudgeSubject, text, FROM_INBOX], { encoding: "utf8" });
   if (send.status !== 0) { console.error(`  send failed: ${send.stderr || send.stdout}`); continue; }
@@ -140,7 +114,7 @@ UPDATE awaiting_reply SET last_nudge_at = ${esc(now)}, nudge_count = nudge_count
 COMMIT;
 `);
   nudged++;
-  console.log(`  + nudged thread=${r.thread_id.slice(0, 8)} via ${modelUsed} → ${recipient} (prev nudge_count=${r.nudge_count}, sent ${r.sent_at})`);
+  console.log(`  + nudged thread=${r.thread_id.slice(0, 8)} via shared-agent-runner → ${recipient} (prev nudge_count=${r.nudge_count}, sent ${r.sent_at})`);
 }
 
 console.log(`\nnudged: ${nudged}/${rows.length}`);

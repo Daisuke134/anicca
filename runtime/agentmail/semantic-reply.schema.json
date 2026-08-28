@@ -1,0 +1,9 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["action", "reply"],
+  "properties": {
+    "action": {"enum": ["reply", "ignore"]},
+    "reply": {"type": ["string", "null"]}
+  }
+}

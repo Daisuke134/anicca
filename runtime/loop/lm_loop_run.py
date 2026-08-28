@@ -54,12 +54,15 @@ def _atomic_json(path: Path, value: dict) -> None:
 
 
 def _run_entrypoint(command: list[str]) -> int:
-    process = subprocess.Popen(command)
+    process = subprocess.Popen(command, start_new_session=True)
     previous = {}
 
     def forward(signum, _frame):
         if process.poll() is None:
-            process.send_signal(signum)
+            try:
+                os.killpg(process.pid, signum)
+            except ProcessLookupError:
+                pass
 
     for signum in (signal.SIGTERM, signal.SIGINT):
         previous[signum] = signal.signal(signum, forward)

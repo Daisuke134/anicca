@@ -49,3 +49,9 @@ CREATE TABLE IF NOT EXISTS awaiting_reply (
 );
 CREATE INDEX IF NOT EXISTS idx_awaiting_reply_sent_at
     ON awaiting_reply(sent_at);
+
+CREATE TABLE IF NOT EXISTS ignored_inbound (
+    message_id  TEXT PRIMARY KEY,
+    reason      TEXT NOT NULL,
+    observed_at TEXT NOT NULL
+);

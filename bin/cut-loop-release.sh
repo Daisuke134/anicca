@@ -26,6 +26,7 @@ CURRENT="$LOOPS_ROOT/current"
 KEEP="${LOOPS_KEEP_RELEASES:-5}"
 REF="${1:-HEAD}"
 RELEASE_PATHS="${LOOPS_RELEASE_PATHS:-}"
+NPM_BIN="${NPM_BIN:-$(command -v npm 2>/dev/null || true)}"
 
 die() { echo "cut-loop-release: $*" >&2; exit 1; }
 
@@ -96,6 +97,13 @@ if [ "$ARCHIVE_RC" -ne 0 ]; then
   rm -rf "$DEST"
   die "export of $SHORT failed"
 fi
+
+for package_dir in "$DEST" "$DEST/runtime/agentmail"; do
+  [ -f "$package_dir/package.json" ] && [ -f "$package_dir/package-lock.json" ] || continue
+  [ -n "$NPM_BIN" ] || die "npm is required to build locked runtime dependencies"
+  (cd "$package_dir" && "$NPM_BIN" ci --omit=dev --ignore-scripts) || \
+    die "locked dependency build failed in $package_dir"
+done
 
 cat >"$DEST/RELEASE.json" <<EOF
 {

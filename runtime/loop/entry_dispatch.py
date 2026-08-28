@@ -12,6 +12,8 @@ def command_for(loop_id: str, root: Path, home: Path) -> list[str]:
     affiliate = root / "skills/affiliate/affiliate"
     affiliate_browser = root / "skills/affiliate/scripts/local_browser.py"
     scheduled = root / "skills/earn/marketing-engine/report/scheduled_runner.py"
+    writer = root / "skills/writer-agent/scripts"
+    writer_state = home / ".local/state/life-manager/writer"
     python = sys.executable
     fixed = {
         "affiliate-browser": [python, str(affiliate_browser)],
@@ -60,6 +62,24 @@ def command_for(loop_id: str, root: Path, home: Path) -> list[str]:
             python, str(root / "skills/earn/gig/scripts/storefront_direct.py"),
             "--effect", "--auto-cadence", "--full-interval-seconds", "60",
         ],
+        "writer-claim-loop": [python, str(writer / "claim_loop.py"),
+                              "--state-dir", str(writer_state)],
+        "writer-money-sync": [python, str(writer / "money_sync.py"),
+                              "--state-dir", str(writer_state),
+                              "--db", str(writer_state / "money.sqlite3")],
+        "writer-opportunity-discovery": [
+            python, str(writer / "opportunity_discovery.py"),
+            "--db", str(writer_state / "opportunities.sqlite3"),
+            "--claims-db", str(writer_state / "claims.sqlite3"),
+            "--receipt", str(writer_state / "opportunity-discovery-latest.json"),
+        ],
+        "writer-opportunity-response": [
+            python, str(writer / "opportunity_response.py"),
+            "--db", str(writer_state / "opportunities.sqlite3"),
+            "--receipt", str(writer_state / "opportunity-response-latest.json"),
+        ],
+        "writer-report": [python, str(writer / "writer_report_worker.py"),
+                          "--state-dir", str(writer_state)],
     }
     if loop_id in {"marketing-owner-daily", "marketing-owner-weekly"}:
         kind = "product_daily" if loop_id.endswith("daily") else "portfolio_weekly"
