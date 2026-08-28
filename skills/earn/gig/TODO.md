@@ -1373,6 +1373,10 @@ The order to the end is:
    Manual `uv cache clean` recovered 1.1 GiB and the cleanup owner then removed the sentinel with
    errors zero and protected deletions zero. Done requires the cleanup owner itself to reclaim an
    eligible closed cache, cross the release floor and resume all four lanes without an operator.
+   Release GC must protect both loaded plist releases and every release referenced by an open file
+   or process cwd. A keep-reduction probe exposed that loaded-only protection can remove an open
+   browser release; the shared central cleanup now requires an `lsof`-derived protected set and must
+   fail closed when that inventory cannot be read.
 8. Finish the remaining product items in this file: **4 listing contract/product truth** →
    **2 stable paid-feedback identity and credential handling** → **5 storefront attribution** →
    **1 browser-major qualification** → **6 merge the already-pushed legacy-removal branch when its

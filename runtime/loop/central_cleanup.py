@@ -44,9 +44,33 @@ def loaded_release_roots(agents_dir: Path, releases_root: Path) -> set[Path]:
     return protected
 
 
+def open_release_roots(releases_root: Path) -> set[Path]:
+    """Return release roots referenced by any open file or process cwd."""
+    completed = subprocess.run(
+        ["lsof", "-Fn", "+D", str(releases_root)],
+        capture_output=True, text=True, timeout=30,
+    )
+    if completed.returncode not in (0, 1):
+        raise OSError(f"release lsof failed: {completed.returncode}")
+    base = releases_root.resolve()
+    protected: set[Path] = set()
+    for line in completed.stdout.splitlines():
+        if not line.startswith("n"):
+            continue
+        try:
+            relative = Path(line[1:]).resolve().relative_to(base)
+        except (OSError, ValueError):
+            continue
+        if relative.parts:
+            release = base / relative.parts[0]
+            if release.is_dir():
+                protected.add(release.resolve())
+    return protected
+
+
 def release_gc(releases: Path, current: Path, agents: Path, keep: int) -> dict:
     """Collect releases while pinning every generation referenced by launchd."""
-    protected = loaded_release_roots(agents, releases)
+    protected = loaded_release_roots(agents, releases) | open_release_roots(releases)
     protected_file = Path(os.environ.get(
         "LIFE_MANAGER_PROTECTED_RELEASES", "~/.local/state/life-manager/protected-releases.json")).expanduser()
     try:

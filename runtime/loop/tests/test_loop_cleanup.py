@@ -11,7 +11,7 @@ from pathlib import Path
 from runtime.loop.loop_cleanup import cleanup_run_root, gc_releases
 from runtime.loop.lm_loop_run import prepare_loop_run
 from runtime.loop.runtime_event import validate_runtime_event
-from runtime.loop.central_cleanup import loaded_release_roots, release_gc
+from runtime.loop.central_cleanup import loaded_release_roots, open_release_roots, release_gc
 from runtime.loop.central_cleanup import host_cleanup_command
 
 
@@ -104,6 +104,17 @@ class LoopCleanupTest(unittest.TestCase):
                 'Label':'ai.anicca.job','ProgramArguments':[str(entry)]}))
             self.assertEqual(loaded_release_roots(agents,releases),{release.resolve()})
 
+    def test_open_process_release_is_discovered_as_protected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            releases = Path(directory) / "releases"
+            entry = releases / ("20260101T000000-" + "a" * 8) / "bin/job.sh"
+            entry.parent.mkdir(parents=True)
+            entry.write_text("x")
+
+            completed = mock.Mock(returncode=0, stdout=f"p123\nn{entry}\n", stderr="")
+            with mock.patch("runtime.loop.central_cleanup.subprocess.run", return_value=completed):
+                self.assertEqual(open_release_roots(releases), {entry.parents[1].resolve()})
+
     def _run_terminal_event(self, exit_code: int) -> dict:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory); home = root / "home"; home.mkdir()
@@ -184,6 +195,27 @@ class LoopCleanupTest(unittest.TestCase):
             self.assertFalse(paths[1].exists())
             self.assertTrue(paths[3].exists())
             self.assertEqual(result['protected_release_count'],1)
+
+    def test_release_gc_preserves_release_used_by_open_process(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); releases = root / "releases"; releases.mkdir()
+            paths = []
+            for index in range(4):
+                path = releases / f"2026010{index}T000000-{'a' * 7}{index}"
+                path.mkdir(); (path / "RELEASE.json").write_text(json.dumps({"sha": f"{index:040x}"}))
+                os.utime(path, (index, index)); paths.append(path)
+            current = root / "current"; current.symlink_to(paths[3])
+            agents = root / "agents"; agents.mkdir()
+            with mock.patch(
+                "runtime.loop.central_cleanup.open_release_roots",
+                return_value={paths[0].resolve()},
+            ):
+                result = release_gc(releases, current, agents, keep=1)
+            self.assertTrue(paths[0].exists())
+            self.assertFalse(paths[1].exists())
+            self.assertTrue(paths[2].exists())
+            self.assertTrue(paths[3].exists())
+            self.assertEqual(result["protected_release_count"], 1)
 
 
 if __name__ == "__main__": unittest.main()
