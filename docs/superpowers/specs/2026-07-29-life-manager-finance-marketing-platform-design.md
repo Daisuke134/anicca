@@ -1062,7 +1062,7 @@ an undocumented installer API.
 
 An adapter becomes `available` only after a contract test proves that it can
 project its provider response into the same source receipt: tenant, adapter
-id, provider, account pseudonym, provider balance, currency, retrieved time,
+id, provider, account pseudonym, integer JPY balance, retrieved time,
 provider data time when supplied, newest transaction time, cursor, and
 raw-response hash. A plugin whose callable tool lacks sufficient structured
 readback remains `unavailable` or `stale_or_unconfirmed`; agent prose and a
@@ -1085,9 +1085,10 @@ silently overwrite the audit row or call a plugin response real-time bank data.
 | Recurring revenue | MRR, active paid, trials, new MRR, expansion, contraction, churn |
 | Liquidity and risk | runway, tax reserve, emergency reserve, concentration, stale sources |
 
-Every amount stores original currency, original amount, FX rate source,
-converted amount, and timestamp. Transfers are excluded from income. Unrealized
-asset appreciation is separated from earned business income.
+Every supported amount is an integer JPY value with a timestamp. Non-JPY rows
+are shown as unsupported and excluded; Life Manager does not convert them.
+Transfers are excluded from income. Unrealized asset appreciation is separated
+from earned business income.
 
 ### 7.2 Business dimensions
 
@@ -2232,7 +2233,7 @@ effect-dedupe guards remain active.
 | 24 | Prove cloud-default availability | Mac Mini powered off through seven expected cycles; retained loops, reports, and alerts continue without duplicates |
 | 25 | Ship monthly cloud subscription | phone/web signup, Stripe monthly entitlement, cloud connector authorization, quotas, source health, export/delete, cancellation, and self-host option |
 | 26 | Prove 1,000-tenant scale and recovery | synthetic workload demonstrates fair scheduling, credential isolation, idempotent effects, worker loss recovery, and bounded queue age |
-| 27 | Add financial connector framework | cursors, freshness, original currency, FX provenance, transfer handling, and explicit unavailable states |
+| 27 | Add financial connector framework | integer JPY amounts, cursors, freshness, transfer handling, and explicit unavailable states |
 | 28 | Add Moneytree and App Store Connect | OSS proves the owner's Codex + Moneytree plugin path on a clean Mac; cloud applies for and proves Moneytree LINK/OAuth. Each remains unavailable until structured readback passes the common snapshot/freshness/discrepancy/secret-zero contract; rendered widget or agent prose is insufficient. Per-product installs and proceeds arrive through their owned connector |
 | 29 | Add Stripe and read-only crypto/investment assets | net worth and business P&L reconcile across supported sources |
 | 30 | Ship Financial Health UI and Telegram | panel and Telegram render the same snapshot hash with daily, weekly, monthly, and exception receipts |
@@ -2260,7 +2261,7 @@ starts early.
 | 28 — OSS Moneytree readback | On a clean Mac, verify Codex subscription authentication and detect a supported Moneytree plugin if available; call accounts and transactions, project the deterministic allowlist, pseudonymize the account, and persist one structured source receipt. The connector remains unavailable when the plugin, permission, or schema is unsupported | Sign in to Codex and complete the official Moneytree connect/consent once | Real account and transaction readback, secret violations zero, structured receipt accepted, and second sync duplicate zero; installation, widget, or agent prose alone remains unavailable |
 | 28 — Moneytree LINK application | Prepare the company/product description, data-flow diagram, privacy/security/deletion policy, tenant volume, redirect URI, minimum read scopes, and test plan; use the official business channel and track application, NDA/DPA, staging, review, pricing, and production-client state | Review and accept every binding attestation, terms/NDA/DPA acceptance, authority representation, paid-plan acceptance, legal signature, and irreversible company payment | Provider receipt for each submitted state; no production claim before issued client data, approved scopes, and registered redirect URI are read back |
 | 28 — Cloud Moneytree adapter | Store tenant-scoped LINK credentials in the cloud vault; implement Authorization Code + PKCE, mandatory `state` generation/verification, exact registered redirect binding, single-use short-lived code exchange, and single-flight/CAS refresh-token rotation. Tokens never enter URL query, logs, prompts, or receipts. Add cursor sync, bounded backoff, disconnect, and deletion | Each cloud user gives Moneytree OAuth consent | CSRF/state mismatch and redirect mismatch fail closed; concurrent refresh loses no valid token; cross-tenant access, raw bank credentials, and token leakage are zero; refresh/revoke/readback E2E produces the common receipt |
-| 29 — Complete personal ledger | Add connected cash, cards, liabilities, investments, income, Stripe, and read-only crypto sources; normalize transfers, categories, original currency, FX provenance, scheduled payments, and unsupported/manual accounts | Connect each desired source or explicitly mark it excluded; confirm the emergency-cash floor | Assets and liabilities reconcile to source receipts; transfer double-count zero; unsupported coverage is visible; net worth and 1/3/12-month cash flow never replace unavailable with zero |
+| 29 — Complete personal ledger | Add connected cash, cards, liabilities, investments, income, Stripe, and read-only crypto sources; normalize integer JPY amounts, transfers, categories, scheduled payments, and unsupported/manual accounts | Connect each desired source or explicitly mark it excluded; confirm the emergency-cash floor | Assets and liabilities reconcile to source receipts; transfer double-count zero; non-JPY and unsupported coverage are visible; net worth and 1/3/12-month cash flow never replace unavailable with zero |
 | 30 — Telegram read-only surface | Route `残高`, `明細`, `今月`, `節約案`, and `接続状態` through the existing Telegram job/receipt path. Financial data is private-chat-only; deterministic output allowlists cover merchant/description/category fields as well as account fields | Use the bot normally; reconnect only after an explicit expired/revoked state | Owner chat and actor match; Telegram and panel share a snapshot hash; passwords, tokens, raw payloads, full account numbers, and unapproved transaction text are zero; replay sends no duplicate |
 | 30 — Advice | Compute safe-to-save amount, runway, budget variance, recurring-cost candidates, and one prioritized action from deterministic ledger values; the agent explains but does not invent or move money | Approve any later cancellation, transfer, investment, filing, or regulated action at its own authority boundary | Every recommendation reverses to source rows and policy inputs; stale/incomplete liabilities block the amount; follow-up records money actually saved rather than money merely suggested |
 | 30 — Parity and release | Shadow local and cloud against the same consented account, reconcile allowed freshness differences, activate exactly one scheduler owner, and ship Financial Health UI plus scheduled/exception Telegram reports | Choose local or cloud as the active deployment; no repeated bank setup | Local/cloud contract suite passes, differences are explained, scheduler owners exactly one, duplicate effects/messages zero, reboot/restart recovery passes, and official readback remains traceable |
