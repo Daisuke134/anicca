@@ -1106,7 +1106,7 @@
       },
       "domain": "earn",
       "effect_class": "application",
-      "entrypoint": "skills/earn/lancers/scripts/application_loop.py",
+      "entrypoint": "runtime/loop/entry_dispatch.py",
       "label": "ai.anicca.lancers-revenue-application",
       "log_root": "~/.local/state/anicca/lancers/logs",
       "provider_route": "deterministic",

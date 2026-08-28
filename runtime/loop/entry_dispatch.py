@@ -14,6 +14,8 @@ def command_for(loop_id: str, root: Path, home: Path) -> list[str]:
     scheduled = root / "skills/earn/marketing-engine/report/scheduled_runner.py"
     writer = root / "skills/writer-agent/scripts"
     writer_state = home / ".local/state/life-manager/writer"
+    lancers = root / "skills/earn/lancers/scripts"
+    lancers_state = home / ".local/state/anicca/lancers"
     python = sys.executable
     cloak_python = str(home / ".openclaw/skills/_shared/venv-cloak/bin/python")
     fixed = {
@@ -28,6 +30,10 @@ def command_for(loop_id: str, root: Path, home: Path) -> list[str]:
         "marketing-metrics-daily": [python, str(scheduled), "metrics"],
         "marketing-mine-daily": [python, str(scheduled), "mine"],
         "marketing-score-daily": [python, str(scheduled), "score"],
+        "lancers-revenue-application": [
+            python, str(lancers / "application_loop.py"), "--json",
+            "--state-path", str(lancers_state / "application.json"),
+        ],
         "self-improve-evolve": [python, str(scheduled), "self-improve"],
         "marketing-metrics": [str(root / "marketing/engine/bin/marketing"), "observe",
                               "--root", str(home / "Library/Application Support/AniccaMarketing")],
