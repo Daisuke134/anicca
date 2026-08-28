@@ -172,6 +172,18 @@ class LineStickerMediaTests(unittest.TestCase):
         calls = [json.loads(line) for line in (self.root / "provider.jsonl").read_text().splitlines()]
         self.assertEqual([call["operation"] for call in calls], ["quote"])
 
+    def test_lowered_cap_keeps_reserved_batch_from_generating(self) -> None:
+        self._plan()
+        plan = json.loads((self.work / "plan.json").read_text())
+        quote = {"request_id": "request-1", "quote_token": "token-1", "batch": 1, "provider": "fixture-provider", "model": "fixture-model", "quoted_cost_usd": "0.01", "expires_at": "2999-01-01T00:00:00Z", "regenerable": True}
+        quote["reservation_key"] = MODULE._reservation_key(set_id="set-1", plan_hash=plan["plan_sha256"], batch=1, provider=quote["provider"], model=quote["model"], request_id=quote["request_id"], quote_token=quote["quote_token"], character_hash=plan["character_sha256"])
+        state = {"version": 3, "plan_sha256": plan["plan_sha256"], "character_sha256": plan["character_sha256"], "batches": {"1": {"status": "reserved", "quote": quote}}}
+        (self.work / "convert-state.json").write_text(json.dumps(state))
+        provider = _executable(self.root / "must-not-run.py", "#!/usr/bin/env python3\nraise SystemExit(9)\n")
+        with self.assertRaisesRegex(MODULE.MediaError, "cost_exceeded"):
+            MODULE.convert(self.work / "plan.json", [sys.executable, str(provider)], self.work, "0.005", "ffmpeg", "ffprobe")
+        self.assertEqual(json.loads((self.work / "convert-state.json").read_text())["batches"]["1"]["status"], "reserved")
+
     def test_convert_state_is_the_only_batch_authority_and_expired_quotes_fail(self) -> None:
         state = MODULE._load_convert_state(self.work / "convert-state.json")
         self.assertEqual(set(state), {"version", "plan_sha256", "character_sha256", "batches"})
@@ -238,6 +250,21 @@ class LineStickerMediaTests(unittest.TestCase):
         self._plan()
         provider = _provider(self.root / "provider.py", _video(self.root))
         MODULE.convert(self.work / "plan.json", [sys.executable, str(provider)], self.work, "1.00", "ffmpeg", "ffprobe")
+        state = json.loads((self.work / "convert-state.json").read_text())
+        plan = json.loads((self.work / "plan.json").read_text())
+        motions = MODULE._batch_motions(plan, 1)
+        self.assertTrue(MODULE._completed_batch(state, 1, motions, self.work, plan, "ffmpeg"))
+        forged = json.loads(json.dumps(state)); forged["batches"]["1"]["quote"]["batch"] = 2
+        with self.assertRaisesRegex(MODULE.MediaError, "completed_receipt_invalid"):
+            MODULE._completed_batch(forged, 1, motions, self.work, plan, "ffmpeg")
+        forged = json.loads(json.dumps(state)); forged["batches"]["1"]["quote"]["reservation_key"] = "0" * 64
+        with self.assertRaisesRegex(MODULE.MediaError, "completed_receipt_invalid"):
+            MODULE._completed_batch(forged, 1, motions, self.work, plan, "ffmpeg")
+        source = Path(state["batches"]["1"]["receipt"]["video_path"]); source_saved = source.read_bytes(); source.unlink()
+        candidate = self.work / "candidates" / "motion-01.png"; saved = candidate.read_bytes(); candidate.unlink()
+        with self.assertRaises(MODULE.MediaError):
+            MODULE._completed_batch(state, 1, motions, self.work, plan, "ffmpeg")
+        candidate.write_bytes(saved); source.write_bytes(source_saved)
         MODULE.select(self.work / "plan.json", self.work / "candidates", [sys.executable, str(self.model)], self.work)
         output = self.root / "package"
         result = MODULE.package(self.work / "selection.json", self.work, output, MODULE_ROOT / "official-policy.json", self.rights_receipt, "ffmpeg")
