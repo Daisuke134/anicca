@@ -164,6 +164,10 @@ BEGIN
 
   UPDATE public.lm_runtime_jobs
   SET status = 'waiting_human',
+      attempt = CASE
+        WHEN status = 'running' THEN GREATEST(attempt - 1, 0)
+        ELSE attempt
+      END,
       lease_owner = NULL,
       lease_expires_at = NULL,
       updated_at = clock_timestamp()

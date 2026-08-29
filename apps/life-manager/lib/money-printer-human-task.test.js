@@ -93,6 +93,7 @@ test("migration adds tenant-safe tasks and requeues the same runtime job atomica
   assert.match(MIGRATION, /FOR UPDATE/i);
   assert.match(MIGRATION, /status = 'waiting_human'[\s\S]*status = 'queued'/i);
   assert.match(MIGRATION, /WHERE tenant_id = p_uid[\s\S]*AND job_id = p_job_id/i);
+  assert.match(MIGRATION, /SET status = 'waiting_human'[\s\S]*attempt = CASE[\s\S]*WHEN status = 'running'[\s\S]*GREATEST\(attempt - 1, 0\)/i);
   const answerRpc = MIGRATION.slice(MIGRATION.indexOf("CREATE OR REPLACE FUNCTION public.answer_lm_human_task"));
   assert.doesNotMatch(answerRpc, /INSERT INTO public\.lm_runtime_jobs/i);
   assert.match(MIGRATION, /answer_ref[^\n]*vault-answer:\/\//i);
