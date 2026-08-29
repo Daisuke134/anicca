@@ -70,7 +70,8 @@ function cacheKey(uid, fromGeo, toGeo, bucket, context = {}) {
 }
 
 // makeRouteCache({ store: Map-like {get,set}, ttlMs, now }) → { getOrCompute }.
-// INVARIANT: the provider is called at most once per scoped route key within ttlMs.
+// INVARIANT: accepted non-null routes are computed at most once per scoped route key within ttlMs;
+// concurrent same-key work still collapses, while null/undefined results retry on later calls/ticks.
 function makeRouteCache({ store = new Map(), ttlMs = BUCKET_MS, now = Date.now } = {}) {
   const inFlight = new Map();
   async function getOrCompute(uid, fromGeo, toGeo, bucket, provider, context = {}) {
