@@ -7,12 +7,12 @@ const TENANT_ID = /^[a-z0-9][a-z0-9._-]{0,199}$/;
 const JOB_ID = /^goal:([0-9a-f]{64})$/;
 const GOAL_REF = /^intent-entry:\/\/([a-z0-9][a-z0-9._-]{0,199})\/([0-9a-f]{64})$/;
 const EXECUTION_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/;
-const STATUSES = new Set(["planned", "completed"]);
-const NEXT_STATUS = Object.freeze({ planned: "QUALIFIED", completed: "DELIVERED" });
+const STATUSES = new Set(["planned"]);
+const NEXT_STATUS = Object.freeze({ planned: "QUALIFIED" });
 const RESULT_SCHEMA = Object.freeze({
   type: "object", additionalProperties: false, required: ["status", "execution_id"],
   properties: {
-    status: { type: "string", enum: ["planned", "completed"] },
+    status: { type: "string", const: "planned" },
     execution_id: { type: "string", minLength: 1, maxLength: 200 },
   },
 });
@@ -109,7 +109,7 @@ function promptFor(expected, opportunity) {
     "You are the Life Manager general money-work specialist for one bounded opportunity.",
     "Inspect and research the stored public opportunity, then do feasible bounded work using available tools.",
     "Do not route to a named provider, submit external effects, move money, or invent evidence.",
-    "Return only JSON matching the schema. Use planned when work remains and completed only when this bounded work is complete.",
+    "Return only JSON matching the schema. This bounded run researches, qualifies, and plans the opportunity; always return planned and never claim delivery.",
     `Tenant-scoped job: ${expected.job_id}`,
     `Goal reference: ${expected.goal_ref}`,
     `Stored public opportunity: ${JSON.stringify(opportunity)}`,
@@ -142,7 +142,7 @@ function createMoneyPrinterSpecialist(options = {}) {
     const targetStatus = NEXT_STATUS[value.status];
     assertStatusReadback(await updateOpportunity(expected, targetStatus, opportunity), expected, targetStatus);
     return Object.freeze({
-      kind: "general_agent_work", status: value.status, tenant_id: expected.tenant_id, job_id: expected.job_id,
+      kind: "general_agent_work", status: "planned", tenant_id: expected.tenant_id, job_id: expected.job_id,
       goal_ref: expected.goal_ref, execution_id: value.execution_id, next_job_refs: [],
     });
   };

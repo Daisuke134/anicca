@@ -107,7 +107,7 @@ test("specialist reads one tenant goal, runs bounded work, updates status, and r
     additionalProperties: false,
     required: ["status", "execution_id"],
     properties: {
-      status: { type: "string", enum: ["planned", "completed"] },
+      status: { type: "string", const: "planned" },
       execution_id: { type: "string", minLength: 1, maxLength: 200 },
     },
   });
@@ -143,6 +143,17 @@ test("specialist rejects scope, malformed model output, and failed opportunity r
       updateOpportunity: async () => { updates += 1; return opportunity({ status: "QUALIFIED" }); },
     })(expected()),
     /status|receipt|specialist/i,
+  );
+  assert.equal(updates, 0);
+
+  await assert.rejects(
+    createMoneyPrinterSpecialist({
+      ...base,
+      readOpportunity: async () => opportunity(),
+      runAgentRunner: async () => ({ value: { status: "completed", execution_id: "execution-1" } }),
+      updateOpportunity: async () => { updates += 1; return opportunity({ status: "DELIVERED" }); },
+    })(expected()),
+    /status|result|specialist/i,
   );
   assert.equal(updates, 0);
 
