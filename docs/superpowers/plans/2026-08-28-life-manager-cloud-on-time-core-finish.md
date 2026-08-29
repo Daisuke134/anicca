@@ -802,7 +802,8 @@ Current atomic run order:
 - [x] observe through 18:19 JST and reject the false due-event premise: provider raw readback has no 18:00-start real event; 17:06–18:00 is a helper `[Travel]` block, so wake/travel row `0` is expected rather than a scheduler failure;
 - [x] read the corrected deployment's boot evidence: exact release `05988c717...`, `node server.js`, role/loop flag/Inngest unset, standalone transition owner, and all seven scheduler loop `started` lines;
 - [x] read the exact tenant/event boundary without external effects: one paid tenant, Calendar read success, all call/notification/automation/home/phone gates true, but the candidate window contains only past controlled events plus helper blocks and therefore no wake-eligible future event;
-- [ ] create one fresh no-location controlled event 20–30 minutes in the future and require natural T-10/T-5 Telnyx call/webhook/Supabase receipts before any new code change;
+- [x] create fresh no-location controlled event `ceepnjmqc11udi99pq2nbesdso`; Google readback is private, location absent, `confirmed`, 19:03–19:13 JST, and private property `cloud-core-no-location-v2`;
+- [ ] observe its natural 18:53 T-10 and 18:58 T-5 windows and require one Telnyx call-control ID, one signed webhook ID, and one matching Supabase claim at each level before any new code change;
 - [ ] after no-location liveness is proven, create one fresh physical controlled event and require the Travel block plus route/Telegram/call receipts;
 - [ ] no-location T-10 row has one call-control ID, one signed webhook ID, and one durable claim;
 - [ ] no-location T-5 row has one call-control ID, one signed webhook ID, and one durable claim;
