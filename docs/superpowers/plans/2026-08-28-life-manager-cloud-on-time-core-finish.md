@@ -709,9 +709,11 @@ Read the merged SHA from GitHub, then require a successful GitHub Deployment for
 
 **Ownership:** Primary coordinates and records official evidence. No synthetic actor can close this task.
 
-- [ ] **Step 1: Decode the public QR**
+- [x] **Step 1: Decode the public QR**
 
 Require the payload to equal the public Telegram `/start` deep link and contain no uid, chat ID, email, or secret.
+
+Current official readback: `https://aniccaai.com/life-manager` renders one QR through `QRCodeSVG(value=TG_DEEPLINK)`; the fixed source value and adjacent live link are exactly `https://t.me/LifeManagerBotbot?start=lp`. The payload contains no tenant, actor, email, or secret. `/lm` is a separate general-product page and is not the QR surface.
 
 - [ ] **Step 2: A real Telegram account different from Dais scans and starts**
 
@@ -756,11 +758,11 @@ The existing wake ledger stores `amd_result` but drops the Telnyx call identifie
 
 Expected: the replacement event can be read back as one exact Telnyx call ID + one signed webhook event ID + one wake row for each level, while webhook replay changes no identity and creates no call.
 
-- [ ] **Step 1: Reconcile old controlled events**
+- [x] **Step 1: Reconcile old controlled events**
 
 Read Google status for `lnpffie7md7fp0qp5j9hrudkq4` and `ah40e31tqlstvk2qvo1e0jt82c`, plus Supabase/Telnyx/Telegram receipts. Do not resend. Count the old no-location event as accepted only if both T-10 and T-5 Telnyx call/webhook/ledger triples and replay-zero are present. If effect outcome is unknown, leave the event confirmed until reconciliation is complete and schedule the replacement in Step 3.
 
-- [ ] **Step 2: Create one future physical event after the exact deployment**
+- [x] **Step 2: Create one future physical event after the exact deployment**
 
 Choose explicit RFC3339 start/end values 45–60 minutes in the future and a provider-routable full address read from the existing resolved Travel block. Keep the address private. Then run with those explicit environment values:
 
@@ -785,11 +787,11 @@ Save the returned exact event ID privately and read it back:
 gog calendar raw primary "$CONTROL_EVENT_ID" --json --no-input
 ```
 
-- [ ] **Step 3: Create a replacement no-location event when old proof is incomplete**
+- [x] **Step 3: Create a replacement no-location event when old proof is incomplete**
 
 If Step 1 does not prove both no-location call levels, create a second private controlled event with explicit start/end 20–30 minutes in the future, no location, no Meet link, `send-updates=none`, and private property `life_manager_e2e=cloud-core-no-location`. Save/read back its exact event ID. Do not manually trigger the scheduler.
 
-- [ ] **Step 4: Observe natural provider effects without manual trigger**
+- [x] **Step 4: Observe natural provider effects without manual trigger**
 
 Current atomic run order:
 
@@ -814,7 +816,7 @@ Current atomic run order:
 - [x] rollback-preflight and apply the function-only production migration SHA-256 `304c40a330baf3e03f38a6d2a91d5731af7ba3d7f556497ba10b623983b32df6`; post-readback function hash `7ccc1d1b6d6f42a6ff207909083af725`, wake rows 496, fixture zero, indexes two, RLS true, service execute true, browser execute false;
 - [x] merge/deploy/read back the hangup HTTP route: PR #3072 passes 9/9, merges as `d37cba22d26eb2a6686b5ef94e78b46cf1ac4b69`, Railway deployment `d0050aac-fe29-46ad-a073-a2243f72c11b` is SUCCESS, and public health matches;
 - [x] create post-hangup-release no-location event `or3855rnheueg91q5u5vu8tkqk`; Google/Composio agree on private, no location, `confirmed`, 20:50–21:00 JST, wake-eligible, cohort one;
-- [ ] observe natural 20:40 T-10 and 20:45 T-5 and require call/session/leg plus signed terminal or AMD webhook IDs in both durable rows;
+- [x] observe natural 20:40 T-10 and 20:45 T-5 for `or3855rnheueg91q5u5vu8tkqk`: both durable rows have call/session/leg plus signed terminal or AMD webhook IDs; Telnyx GET returns HTTP 200 with exact ID matches and `is_alive=false`;
 - [x] create physical event `7bmv7s4d2p8vh3rlnknhsekt2o`, private, location `東京駅`, `confirmed`, 21:45–21:55 JST; production Composio matches it and live Transit returns buffered departure 21:09:40, arrival 21:45, four steps, two rail legs with line/headsign, one transfer, platform data, and no station-exit field;
 - [x] TDD the measured Travel-block suppression: `ea1f295fa` requires adjacency plus normalized destination; 16T 3/3, Travel/return 32/32, ch1 19/19, scoped Sol `ship`;
 - [x] TDD the measured live-origin failure: `317c7a78c` parses valid geo directly and `649578220` normalizes every Google fallback to `lat,lon`; primary 61/61, scoped Sol `ship`;
@@ -827,17 +829,19 @@ Current atomic run order:
 - [x] merge Task 16AC as PR #3096 at `cd3a83647a8f6db01abef938c0fe555d9b9d7b06`; Railway deployment `f654d570-528a-4b46-9141-24124d09f90b` is SUCCESS and public `/health.build` matches, while the Railway-created GitHub Deployment for the same SHA reports failure and remains a separate exact-readback discrepancy;
 - [x] create post-16AC event `icqi2rhh24g1sf8q0hodja0i2s`, private, attendee zero, `渋谷駅`, confirmed, 00:05–00:15 JST; natural 60-second reminder and 30-minute travel loops are active;
 - [x] TDD the measured late-hour provider boundary: `0a671c27c` changes only the existing constants to 25-second Transit and 35-second per-tenant reminder budgets; RED 71/73, GREEN and primary 73/73, fresh Sol `SHIP` with zero findings;
-- [ ] require one `provider=transit` Telegram route message for `icqi2rhh24g1sf8q0hodja0i2s` with durable positive message ID;
-- [ ] require one outbound `[Travel]` block with provider event ID; the current previous-event Tokyo→Shinjuku route probe is null and needs separate boundary readback after the Telegram proof;
-- [ ] no-location T-10 row has one call-control ID, one signed webhook ID, and one durable claim;
-- [ ] no-location T-5 row has one call-control ID, one signed webhook ID, and one durable claim;
+- [x] require one `provider=transit` Telegram route message for `icqi2rhh24g1sf8q0hodja0i2s`: Railway logs exact `tg_message_id=981`, and Supabase `telegram-t5` stores the same positive ID/time;
+- [x] require one outbound `[Travel]` block with provider event ID: Google confirms outbound `na4a3iqdpq4vbb9npmdbt64o4c` and return `14sg8l0muaao62sutibvci3ap8`; durable `go`/`return` claims exist;
+- [x] replay the next 60-second reminder tick: event-hash send log remains one, ledger remains three rows with message ID 981, and both Travel event IDs/updated timestamps are unchanged;
+- [x] delete controlled transit event `icqi2rhh24g1sf8q0hodja0i2s` and its exact outbound/return helper IDs with `send-updates none`; Google reads all three as `cancelled`;
+- [x] no-location T-10 row has one call-control ID, one signed webhook ID, and one durable claim (`or3855rnheueg91q5u5vu8tkqk`);
+- [x] no-location T-5 row has one call-control ID, one signed webhook ID, and one durable claim (`or3855rnheueg91q5u5vu8tkqk`);
 - [ ] physical event has one outbound `[Travel]` Calendar block with provider event ID;
-- [ ] physical T-10 row has one call-control ID, one signed webhook ID, and one durable claim;
-- [ ] physical T-5 row has one call-control ID, one signed webhook ID, and one durable claim;
-- [ ] physical departure reminder has one Telegram message ID plus `lm_travel_log.telegram-t5` receipt;
-- [ ] Telnyx provider delivery/call readback hashes match the Supabase receipt hashes;
-- [ ] natural replay adds Calendar block 0, call 0, Telegram message 0;
-- [ ] controlled events are deleted with `send-updates=none` and read back `cancelled`.
+- [x] physical T-10 row has one call-control ID, one signed webhook ID, and one durable claim (`icqi2rhh24g1sf8q0hodja0i2s`);
+- [x] physical T-5 row has one call-control ID, one signed webhook ID, and one durable claim (`icqi2rhh24g1sf8q0hodja0i2s`);
+- [x] physical departure reminder has Telegram message ID `981` plus matching `lm_travel_log.telegram-t5` receipt and `provider=transit` Railway log;
+- [x] Telnyx provider GET returns HTTP 200 and exact call-control/session/leg matches for both levels of accepted no-location and physical events; all four calls are ended;
+- [x] natural replay adds Calendar block 0, call 0, Telegram message 0;
+- [x] controlled events and their uniquely correlated helper blocks are deleted with `send-updates=none` and read back `cancelled`; real Travel blocks and the recurring `MUIT 出社` series remain `confirmed`.
 
 Require all of the following correlated to the exact event:
 
@@ -850,11 +854,11 @@ Require all of the following correlated to the exact event:
 
 For the accepted old or replacement no-location event, require T-10 and T-5 Telnyx call IDs, signed webhooks, and distinct `lm_wake_log` keys. It has no route or travel-block requirement.
 
-- [ ] **Step 5: Replay and require zero additional effects**
+- [x] **Step 5: Replay and require zero additional effects**
 
 Re-evaluate the same tenant/event through the real scheduler owner. Official readback counts before and after must show new travel block `0`, new call `0`, new Telegram message `0`, and unchanged durable claims.
 
-- [ ] **Step 6: Delete controlled events only after receipts and replay-zero**
+- [x] **Step 6: Delete controlled events only after receipts and replay-zero**
 
 For each exact controlled ID whose evidence is reconciled:
 
@@ -869,3 +873,17 @@ Expected final status: `cancelled`. Never delete the recurring real `MUIT 出社
 - [ ] **Step 7: Close the product contract**
 
 Update the on-time core spec to COMPLETE only when AC-01–38 each points to official evidence and replay-zero. Update progress, commit/push the docs, send one `Codex:::` Telegram completion report with provider message ID readback, and start friend beta. Free conversation/OpenClawMU remains the next separate spec.
+
+---
+
+### Task 9: Restore exact GitHub Deployment aggregation
+
+**Ownership:** Luna owns only `services/x402-endpoint/Dockerfile` and `services/x402-endpoint/migration-contract.test.mjs`. Primary owns plan/progress, review, merge, and provider readback.
+
+Railway currently auto-selects the legacy TypeScript/pnpm Dockerfile even though the canonical service is `src/server.js` + Prisma + `package-lock.json` and `railway.toml` names the same start command. The stale lock causes every monorepo deploy to mark the GitHub Deployment aggregate failed while life-call itself succeeds.
+
+- [x] RED: extend the existing migration contract to reject the legacy pnpm/server.ts/tsx Docker path and require package-lock/npm, Prisma generation, canonical `src`, non-root runtime, dynamic runtime PORT `/health`, limited generated-output ownership, and `node src/server.js`.
+- [x] GREEN: `89f5fa6dc` updates only the existing Dockerfile and contract; review fix `5ba0c94cc` follows `${PORT:-8403}` and limits chown to `/app/src/generated`. Dependencies, x402 behavior, paid routes, wallet/network settings, and Railway settings are unchanged.
+- [x] Run focused contract 4/4, Prisma generation, current x402 service tests 68/68, syntax/diff/secret/dependency checks. Local container build reaches successful Prisma generation but stops at the disk safety floor; remote Railway build remains the acceptance gate.
+- [x] Fresh exact-range Sol review and scoped re-review return `SHIP`, Critical/Important zero, new findings zero, and Ponytail minimality.
+- [ ] Merge one PR; require x402 Railway SUCCESS, life-call SUCCESS, GitHub Deployment `success`, and public life-call `/health.build` all correlated to the same exact merge SHA.
