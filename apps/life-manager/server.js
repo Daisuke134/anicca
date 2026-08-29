@@ -330,7 +330,7 @@ const server = http.createServer((req, res) => {
         // against Telnyx, not Supabase, and it costs money rather than evidence. Silence would put us
         // back at "we are paying for two minutes of voicemail and nothing says we tried to stop it".
         if (detection.hangup && !detection.hangup.ok) {
-          console.error(`[telnyx-events] test-call hangup FAILED (${detection.hangup.error}) ${tag} — still speaking to a machine`);
+          console.error(`[telnyx-events] test-call hangup FAILED (provider_error) ${tag} — still speaking to a machine`);
         } else if (detection.hangup) {
           console.log(`[telnyx-events] test-call hung up on a ${detection.result} ${tag}`);
         } else {
@@ -355,6 +355,10 @@ const server = http.createServer((req, res) => {
       const detection = await applyAmdDetection(wake.wakeUid, wake.wakeEventKey, {
         result: payload.result, supaUrl: SUPA_URL, supaKey: SUPA_KEY,
         callControlId: payload.call_control_id,
+        callSessionId: payload.call_session_id ?? null,
+        callLegId: payload.call_leg_id ?? null,
+        webhookEventId: data.id,
+        claimToken: wake.wakeClaimToken,
       });
       const tag = `wake=${wake.wakeUid.slice(0, 12)} result=${detection.result || "missing"}`;
       // The three outcomes get three different lines, and only one of them is routine. A write that
@@ -371,7 +375,7 @@ const server = http.createServer((req, res) => {
       // Silence here would put us back where we started — paying for two minutes of voicemail with
       // nothing anywhere saying we tried to stop it.
       if (detection.hangup && !detection.hangup.ok) {
-        console.error(`[telnyx-events] hangup FAILED (${detection.hangup.error}) ${tag} — still speaking to a machine`);
+        console.error(`[telnyx-events] hangup FAILED (provider_error) ${tag} — still speaking to a machine`);
       } else if (detection.hangup) {
         console.log(`[telnyx-events] hung up on a ${detection.result} ${tag}`);
       }

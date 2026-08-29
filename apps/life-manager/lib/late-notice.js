@@ -5,6 +5,7 @@
 const { isHelperBlock } = require("./wake-filter.js");
 const { shouldMarkAnswered } = require("./answered.js");
 const { hangupCall } = require("./dial.js");
+const { recordTelnyxWakeReceipt } = require("./telnyx-receipt.js");
 const { resolveLateRecipients } = require("./late-recipient-resolver.js");
 const {
   createLateDraft,
@@ -15,6 +16,11 @@ const {
 
 const NO_DESTINATION_MESSAGE = "⚠️ 先方の連絡先が見つからず、遅刻連絡は送れていません";
 const MAIL_FAILURE_MESSAGE = "⚠️ 遅刻連絡メールを送信できませんでした";
+const MAX_PROVIDER_ID_LENGTH = 512;
+
+function validProviderId(value) {
+  return typeof value === "string" && value.trim().length > 0 && value.length <= MAX_PROVIDER_ID_LENGTH;
+}
 
 // sendMessage uses Telegram's HTML parse mode globally.  Card text contains calendar-controlled
 // recipient names, addresses, evidence, and event text, so send the wire copy escaped while keeping
@@ -520,9 +526,30 @@ async function recordAmdResult(uid, key, opts = {}) {
 // we meant to and could not, which is a thing to log rather than a thing to skip.
 async function applyAmdDetection(uid, key, opts = {}) {
   const result = typeof opts.result === "string" ? opts.result.trim() : "";
-  const amd = await recordAmdResult(uid, key, opts);
+  const claimBound = validProviderId(opts.claimToken);
+  const amd = claimBound
+    ? (!validProviderId(opts.webhookEventId)
+      ? { ok: false, matched: 0, error: "missing_event_id" }
+      : await recordTelnyxWakeReceipt({
+        uid,
+        eventKey: key,
+        claimToken: opts.claimToken,
+        callControlId: opts.callControlId,
+        callSessionId: opts.callSessionId ?? null,
+        callLegId: opts.callLegId ?? null,
+        webhookEventId: opts.webhookEventId,
+        amdResult: result,
+      }, {
+        supaUrl: opts.supaUrl,
+        supaKey: opts.supaKey,
+        fetchImpl: opts.fetchImpl,
+      }))
+    : await recordAmdResult(uid, key, opts);
   if (shouldMarkAnswered({ amdEnabled: true, signal: "amd", result })) {
-    return { result, amd, answered: await markAnswered(uid, key, opts), hangup: null };
+    const answered = claimBound && !(amd.ok && amd.matched === 1)
+      ? { ok: true, matched: 0 }
+      : await markAnswered(uid, key, opts);
+    return { result, amd, answered, hangup: null };
   }
   if (!result) return { result, amd, answered: null, hangup: null };
   const hangup = await hangupCall(opts.callControlId, {

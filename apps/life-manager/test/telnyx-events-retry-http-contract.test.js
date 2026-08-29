@@ -27,6 +27,12 @@ const WAKE_UID = "lm_fixture_uid";
 const WAKE_EVENT_KEY = "fixture-event-key";
 const wakeClientState = encodeWakeClientState({ wakeUid: WAKE_UID, wakeEventKey: WAKE_EVENT_KEY });
 const testClientState = encodeTestCallClientState({ testUid: WAKE_UID });
+const CLAIM_UID = "claim-bound-user";
+const CLAIM_EVENT_KEY = "claim-bound-event";
+const CLAIM_TOKEN = "claim-bound-token";
+const claimClientState = encodeWakeClientState({
+  wakeUid: CLAIM_UID, wakeEventKey: CLAIM_EVENT_KEY, wakeClaimToken: CLAIM_TOKEN,
+});
 
 function response(status, body) {
   return { ok: status >= 200 && status < 300, status, json: async () => body };
@@ -51,6 +57,7 @@ let originalFetch;
 // case that says nothing about Supabase gets the honest default instead of the previous case's outage.
 let supabaseHandler;
 let telnyxHandler;
+const upstreamCalls = [];
 
 before(async () => {
   keys = telnyxKeypair();
@@ -76,8 +83,10 @@ before(async () => {
   global.fetch = async (input, init = {}) => {
     const url = new URL(String(input));
     const method = String(init.method || "GET").toUpperCase();
+    upstreamCalls.push({ url: String(input), method, body: init.body || "" });
     if (url.hostname === "fixture.supabase.co") {
-      if (url.pathname === "/rest/v1/lm_wake_log" && method === "PATCH") {
+      if ((url.pathname === "/rest/v1/lm_wake_log" && method === "PATCH") ||
+        (url.pathname === "/rest/v1/rpc/record_lm_wake_telnyx_receipt" && method === "POST")) {
         return supabaseHandler(String(input), init);
       }
       throw new Error(`unexpected supabase ${method} ${url.pathname}`);
@@ -125,14 +134,20 @@ function post(path, body, headers = {}) {
 // One detection webhook exactly as Telnyx sends it, signed with the fixture key. `supabase` and
 // `telnyx` are what the two upstreams answer with for this delivery; both default to working, so a
 // case only has to describe the failure it is about.
-async function postSignedAmdEvent({ clientState, result, supabase, telnyx } = {}) {
+async function postSignedAmdEvent({
+  clientState, result, supabase, telnyx,
+  eventId = "fixture-webhook-id", callControlId = "v2:fixture-ccid",
+  callSessionId, callLegId, signatureValue,
+} = {}) {
   supabaseHandler = supabase || (() => response(200, [{ event_key: WAKE_EVENT_KEY }]));
   telnyxHandler = telnyx || (() => response(200, { data: { result: "ok" } }));
+  const payload = { result, call_control_id: callControlId, client_state: clientState };
+  if (callSessionId !== undefined) payload.call_session_id = callSessionId;
+  if (callLegId !== undefined) payload.call_leg_id = callLegId;
+  const data = { event_type: "call.machine.detection.ended", payload };
+  if (eventId !== undefined) data.id = eventId;
   const body = JSON.stringify({
-    data: {
-      event_type: "call.machine.detection.ended",
-      payload: { result, call_control_id: "v2:fixture-ccid", client_state: clientState },
-    },
+    data,
   });
   const timestamp = String(Math.floor(Date.now() / 1000));
   const signature = crypto.sign(
@@ -141,10 +156,229 @@ async function postSignedAmdEvent({ clientState, result, supabase, telnyx } = {}
     keys.privateKey,
   );
   return post("/telnyx-events", body, {
-    "telnyx-signature-ed25519": signature.toString("base64"),
+    "telnyx-signature-ed25519": signatureValue || signature.toString("base64"),
     "telnyx-timestamp": timestamp,
   });
 }
+
+function pathOf(call) {
+  return new URL(call.url).pathname;
+}
+
+function claimReceiptBody({
+  uid = CLAIM_UID, eventKey = CLAIM_EVENT_KEY, claimToken = CLAIM_TOKEN,
+  callControlId = "v2:claim-control-id", callSessionId = "claim-session-id",
+  callLegId = "claim-leg-id", webhookEventId = "claim-webhook-id", amdResult = "machine",
+} = {}) {
+  return {
+    p_uid: uid,
+    p_event_key: eventKey,
+    p_claim_token: claimToken,
+    p_telnyx_call_control_id: callControlId,
+    p_telnyx_call_session_id: callSessionId,
+    p_telnyx_call_leg_id: callLegId,
+    p_telnyx_webhook_event_id: webhookEventId,
+    p_amd_result: amdResult,
+  };
+}
+
+test("a signed claim-bound machine event writes one exact receipt before the existing hangup", async () => {
+  upstreamCalls.length = 0;
+  const rpcBodies = [];
+  const sentinels = [
+    "v2:claim-control-id", "claim-session-id", "claim-leg-id", "claim-webhook-id", CLAIM_TOKEN,
+    "+99900000000", CLAIM_EVENT_KEY, "provider-secret-hangup",
+  ];
+  const supabase = (url, init) => {
+    const parsed = new URL(url);
+    if (parsed.pathname !== "/rest/v1/rpc/record_lm_wake_telnyx_receipt") {
+      throw new Error(`unexpected supabase write ${init.method} ${parsed.pathname}`);
+    }
+    rpcBodies.push(JSON.parse(init.body));
+    return response(200, 1);
+  };
+  const logs = [];
+  const originalLog = console.log;
+  const originalError = console.error;
+  console.log = (...args) => logs.push(args.join(" "));
+  console.error = (...args) => logs.push(args.join(" "));
+  let res;
+  try {
+    res = await postSignedAmdEvent({
+      clientState: claimClientState,
+      result: " machine ",
+      eventId: "claim-webhook-id",
+      callControlId: "v2:claim-control-id",
+      callSessionId: "claim-session-id",
+      callLegId: "claim-leg-id",
+      supabase,
+      telnyx: () => response(503, { provider_secret_body: "provider-secret-hangup" }),
+    });
+  } finally {
+    console.log = originalLog;
+    console.error = originalError;
+  }
+  assert.equal(res.status, 200);
+  assert.equal(res.text, "recorded");
+  assert.deepEqual(rpcBodies, [claimReceiptBody()]);
+  assert.equal(upstreamCalls.filter((call) => pathOf(call) === "/rest/v1/rpc/record_lm_wake_telnyx_receipt").length, 1);
+  assert.equal(upstreamCalls.filter((call) => pathOf(call).endsWith("/actions/hangup")).length, 1);
+  assert.equal(upstreamCalls.filter((call) => pathOf(call) === "/v2/calls").length, 0,
+    "receipt wiring must not add outbound call creation");
+  assert.ok(
+    upstreamCalls.findIndex((call) => pathOf(call) === "/rest/v1/rpc/record_lm_wake_telnyx_receipt")
+      < upstreamCalls.findIndex((call) => pathOf(call).endsWith("/actions/hangup")),
+    "the durable receipt must be written before the existing machine hangup",
+  );
+  assert.ok(logs.length >= 1);
+  assert.ok(logs.every((line) => sentinels.every((sentinel) => !line.includes(sentinel))),
+    `provider identity/client state leaked into logs: ${JSON.stringify(logs)}`);
+});
+
+test("a claim-bound human writes answered_at only after receipt matched=1", async () => {
+  upstreamCalls.length = 0;
+  const order = [];
+  const supabase = (url, init) => {
+    const parsed = new URL(url);
+    if (parsed.pathname === "/rest/v1/rpc/record_lm_wake_telnyx_receipt") {
+      order.push("receipt");
+      assert.deepEqual(JSON.parse(init.body), claimReceiptBody({ amdResult: "human" }));
+      return response(200, 1);
+    }
+    if (parsed.pathname === "/rest/v1/lm_wake_log" && init.method === "PATCH") {
+      order.push("answered");
+      return response(200, [{ event_key: CLAIM_EVENT_KEY }]);
+    }
+    throw new Error(`unexpected supabase write ${init.method} ${parsed.pathname}`);
+  };
+  const res = await postSignedAmdEvent({
+    clientState: claimClientState, result: "human", eventId: "claim-webhook-id",
+    callControlId: "v2:claim-control-id", callSessionId: "claim-session-id", callLegId: "claim-leg-id", supabase,
+  });
+  assert.equal(res.status, 200);
+  assert.equal(res.text, "answered");
+  assert.deepEqual(order, ["receipt", "answered"], "record-first is the human answered_at fence");
+});
+
+test("a claim-bound human with receipt matched=0 writes no answered_at and answers 200", async () => {
+  upstreamCalls.length = 0;
+  let rpcCalls = 0;
+  let patchCalls = 0;
+  const supabase = (url, init) => {
+    const parsed = new URL(url);
+    if (parsed.pathname === "/rest/v1/rpc/record_lm_wake_telnyx_receipt") { rpcCalls += 1; return response(200, 0); }
+    if (parsed.pathname === "/rest/v1/lm_wake_log" && init.method === "PATCH") { patchCalls += 1; return response(200, []); }
+    throw new Error(`unexpected supabase write ${init.method} ${parsed.pathname}`);
+  };
+  const res = await postSignedAmdEvent({
+    clientState: claimClientState, result: "human", eventId: "claim-webhook-id",
+    callControlId: "v2:claim-control-id", supabase,
+  });
+  assert.equal(res.status, 200);
+  assert.equal(res.text, "answered_at unchanged");
+  assert.equal(rpcCalls, 1);
+  assert.equal(patchCalls, 0, "matched zero cannot latch answered_at");
+});
+
+test("claim-bound receipt HTTP failure and thrown fetch return 5xx after the existing machine hangup attempt", async () => {
+  for (const [supabase, forbidden] of [
+    [() => response(503, { provider_secret_body: "must-not-escape" }), "must-not-escape"],
+    [() => { throw new Error("raw-provider-error-must-not-escape"); }, "raw-provider-error-must-not-escape"],
+  ]) {
+    upstreamCalls.length = 0;
+    const logs = [];
+    const originalError = console.error;
+    const originalLog = console.log;
+    console.error = (...args) => logs.push(args.join(" "));
+    console.log = (...args) => logs.push(args.join(" "));
+    let res;
+    try {
+      res = await postSignedAmdEvent({
+        clientState: claimClientState, result: "machine", eventId: "claim-webhook-id",
+        callControlId: "v2:claim-control-id", supabase,
+      });
+    } finally {
+      console.error = originalError;
+      console.log = originalLog;
+    }
+    assert.equal(res.status >= 500 && res.status < 600, true);
+    assert.equal(upstreamCalls.filter((call) => pathOf(call).endsWith("/actions/hangup")).length, 1);
+    assert.equal(upstreamCalls.filter((call) => pathOf(call) === "/v2/calls").length, 0);
+    assert.ok(logs.every((line) => !line.includes(forbidden)), `raw provider failure leaked: ${JSON.stringify(logs)}`);
+  }
+});
+
+test("missing claim-bound event or call-control identity returns 5xx without a receipt fetch or guessed ID", async () => {
+  for (const input of [
+    { eventId: null, callControlId: "v2:claim-control-id" },
+    { eventId: "claim-webhook-id", callControlId: null },
+  ]) {
+    upstreamCalls.length = 0;
+    let rpcCalls = 0;
+    const supabase = () => { rpcCalls += 1; throw new Error("receipt must not fetch"); };
+    const res = await postSignedAmdEvent({
+      clientState: claimClientState, result: "machine", supabase, ...input,
+    });
+    assert.equal(res.status >= 500 && res.status < 600, true);
+    assert.equal(rpcCalls, 0);
+    assert.equal(upstreamCalls.filter((call) => pathOf(call).includes("/rest/v1/rpc/")).length, 0);
+    assert.equal(upstreamCalls.filter((call) => pathOf(call) === "/v2/calls").length, 0);
+  }
+});
+
+test("an exact signed replay preserves the receipt identity and creates no outbound call", async () => {
+  upstreamCalls.length = 0;
+  const rpcBodies = [];
+  const supabase = (url, init) => {
+    const parsed = new URL(url);
+    if (parsed.pathname !== "/rest/v1/rpc/record_lm_wake_telnyx_receipt") {
+      throw new Error(`unexpected supabase write ${init.method} ${parsed.pathname}`);
+    }
+    rpcBodies.push(JSON.parse(init.body));
+    return response(200, 1);
+  };
+  const first = await postSignedAmdEvent({
+    clientState: claimClientState, result: "machine", eventId: "claim-webhook-id",
+    callControlId: "v2:claim-control-id", callSessionId: "claim-session-id", callLegId: "claim-leg-id", supabase,
+  });
+  const second = await postSignedAmdEvent({
+    clientState: claimClientState, result: "machine", eventId: "claim-webhook-id",
+    callControlId: "v2:claim-control-id", callSessionId: "claim-session-id", callLegId: "claim-leg-id", supabase,
+  });
+  assert.equal(first.status, 200);
+  assert.equal(second.status, 200);
+  assert.deepEqual(rpcBodies, [claimReceiptBody(), claimReceiptBody()]);
+  assert.equal(upstreamCalls.filter((call) => pathOf(call) === "/v2/calls").length, 0);
+});
+
+test("an invalid Telnyx signature performs zero upstream fetches for claim-bound receipt work", async () => {
+  upstreamCalls.length = 0;
+  const res = await postSignedAmdEvent({
+    clientState: claimClientState, result: "machine", eventId: "claim-webhook-id",
+    callControlId: "v2:claim-control-id", signatureValue: "invalid-signature",
+  });
+  assert.equal(res.status, 403);
+  assert.equal(upstreamCalls.length, 0);
+});
+
+test("a legacy two-field wake state still uses one PATCH and never the receipt RPC", async () => {
+  upstreamCalls.length = 0;
+  let patchCalls = 0;
+  let rpcCalls = 0;
+  const supabase = (url, init) => {
+    const parsed = new URL(url);
+    if (parsed.pathname === "/rest/v1/lm_wake_log" && init.method === "PATCH") {
+      patchCalls += 1;
+      return response(200, [{ event_key: WAKE_EVENT_KEY }]);
+    }
+    if (parsed.pathname === "/rest/v1/rpc/record_lm_wake_telnyx_receipt") { rpcCalls += 1; return response(200, 1); }
+    throw new Error(`unexpected supabase write ${init.method} ${parsed.pathname}`);
+  };
+  const res = await postSignedAmdEvent({ clientState: wakeClientState, result: "machine", supabase });
+  assert.equal(res.status, 200);
+  assert.equal(patchCalls, 1);
+  assert.equal(rpcCalls, 0);
+});
 
 // Supabase answered, and answered badly. Nothing about that says the detection is unrecordable — it
 // says this second was a bad second. Telnyx is still holding the event and will bring it back with
