@@ -978,13 +978,13 @@ The initial product is a general entrepreneur agent that continuously searches X
 | Worker | dedicated Railway service `money-printer-worker`をGitHub mainから稼働。Pageを閉じたまま公開WebをGemini Interactions APIのGoogle Search citationsで調査し、抽出・dedupe・qualificationを既存runtime queueで実行する。新実装のmanual cycleはattempt 2でcompleted、旧実装の最初のnatural cycleは証拠を残してdead-letter | 16:00Zから同一releaseの3 natural cyclesを観測し、two concurrent workroomsを証明する |
 | External proof | Lancers project `5593484`のofficial application receipt `27863414`をread-only importし、official log + append-only ledgerでcontent hashを照合。applicationとして表示し、revenueへは算入せず、replay duplicate 0 | browser demoでreceiptとverified money 0を同時に見せる |
 | Devpost | project `1404362`をfresh Sol review済みEnglish draftへversion 3同期。`website_url=https://aniccaai.com/money-printer`、public repo、MIT license、README、judge guideをlive readback。`submitted_at=null`、`video_url=null` | screenshots、immutable tag、public YouTube、required custom answersを埋め、official formを再readbackして明示承認後にsubmitする |
-| Local capacity | Data volume freeは2.4 GiB前後まで回復するが、macOS swapが12–14 GiBへ再成長して8 GiB gateを維持できない | DaisがChromeのSupabase SQL Editorを保存後、Mac restartを明示承認する。再起動後ただちに8 GiB以上をreadbackする |
+| Local capacity | Mac restartなしでData volume free 8.3 GiB、swap 7 GiBへ回復。原因は長時間idleのlegacy X/Coconala browser群と一時ELZ_F13 build volume。lease 0の`x:anicca`、`x:diceai0`、`hf-gig-browser`だけをowner restartし、profiles/cookiesを保持。共有launcherへ`--disable-features=MacAppCodeSignClone`を追加しcommit `5d4a038f3`をpush | 8 GiB gate pass。build/browser E2E中も`df`を短くreadbackし、再び8 GiB未満なら新workerを増やさない |
 
 ### Submission critical path — one active item
 
 自動scoutは8時間windowのnatural cycleを待ちながら、次の手動itemを一件ずつ閉じる。順序を増やさず、未検証claimをvideoまたはDevpostへ入れない。
 
-1. 保護対象と稼働browserを壊さずData volume freeを8 GiB以上へ戻し、`df`でreadbackする
+1. [pass] 保護対象を壊さずData volume freeを8.3 GiBへ戻し、Mac restartなしで`df`、swap、owner argv、browser identityをreadbackする
 2. clean browserでzero-login、private data 0、WebMCP tool discovery、visible mutationを実測する
 3. 一つのsame-jobで`Needs You`作成→human answer→resume→receiptを閉じ、stale revisionとsafe recoveryも同じ画面で示す
 4. [pass: workroom isolation] two live workroomsを同時readし、各activity refが自分のopportunity IDだけを含みcross-contamination 0を確認。次にreset後にjudgeが60秒以内で再現できることを示す
@@ -1147,7 +1147,7 @@ One active item at a time。各itemは実物readbackを閉じてから次へ進�
 | U01 | General agentがprovider listに縮退する | design-closed | X/Web/GitHub/mail/任意URLを同じgoal→job→tool loopへ入れるcontract test | provider keyword routingを検出したらmergeしない |
 | U02 | Opireがprimary proofに使えるか | rejected | API 56 records→33 closed、7 missing/deleted、16 open。低競争候補も22 competing PRsとpayout uncertainty | Opire固有実装を作らない |
 | U03 | Current branchが最新mainと乖離 | resolved through worker release | life-call/worker main SHA `43fd11c4`とproduction deployment SHAが一致し、PR #3097のInteractions scoutを含む | stale docs/shared checkoutからproduction codeを編集しない |
-| U04 | Disk不足でinstall/build/videoが失敗 | gate blocked / restart authority pending | 再生成cache、closed session compression、clean remote checkout/worktreeを安全回収してもswapが12–14 GiBへ再成長し、freeは2.4 GiB前後。ChromeにはSupabase SQL Editorが開いているため無断restart/quitしない | Daisの`restart ok`後にMac restart。free <8 GiBの間はclean install/browser E2E/videoを実行しない |
+| U04 | Disk不足でinstall/build/videoが失敗 | resolved without Mac restart | 過去sessionを検索し、lease 0・idleのlegacy browser ownersだけをrestart。swap 14.8→7 GiB、free 0.85→8.3 GiB。`x:anicca`と`x:diceai0`は新UUIDでreachable、collision 0、Coconala browserも同じprofileでreachable。全新argvに`MacAppCodeSignClone`防止flagをreadback | free <8 GiBなら新model/browserを起動せず、owner-aware idle browser restartと一時build volume終了を先に行う。Mac restartは最後の手段 |
 | U05 | Lancers installed ownerがfail中 | resolved | application ownerのauthenticated inventory、official readback、append-only ledger、replay skipを照合 | 再びauth failureならmutationせずNeeds Youへ出す |
 | U06 | Lancers login/sessionが有効か | resolved for receipt proof | exact owned sessionからproposal `27863414`をofficial readbackし、ledger sequence 37とcontent hash一致 | guest UIへcredentialを渡さずredacted receiptだけ投影する |
 | U07 | 応募可能なLancers案件があるか | resolved for primary proof | project `5593484`をmodel判断し、official application receiptまで閉じた | 次候補がなければapplicationを送らず別market discoveryを継続 |
