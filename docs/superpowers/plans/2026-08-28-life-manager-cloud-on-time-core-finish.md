@@ -719,6 +719,8 @@ Current official readback: `https://aniccaai.com/life-manager` renders one QR th
 
 The actor opens the bot, receives the `web_app` button, and completes Calendar consent, home, notifications, phone skip or phone+explicit call choice. Do not use Supabase Google login.
 
+Current measured stop: no distinct human Telegram session exists in local browsers/Desktop/MTProto stores or the credential SSOT, and production still has no new completed actor after the public link was sent to Dais. A bot or HMAC-synthetic actor cannot close this acceptance. Minimum next operation: one person other than Dais opens `https://t.me/LifeManagerBotbot?start=lp` in their own Telegram and completes Calendar consent, home, and notifications; phone may be skipped.
+
 - [ ] **Step 3: Read server truth**
 
 Read back one new `lm_users` row and its `lm_panel_preferences` row by the verified Telegram binding. Require distinct UID from Dais, Calendar ACTIVE, home non-empty, notifications true, correct phone/call branch, `trial_expires_at = core_completion + 3 days`, and `paid=false`.
