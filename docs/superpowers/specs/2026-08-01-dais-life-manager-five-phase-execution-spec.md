@@ -27,7 +27,7 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 この節は、後段の「現在TODO」「次の一件」「local-only」「self-funded agentは別product」という相反する記述を
 上書きする最新の実行順序SSOTである。後段は実装履歴・organ別acceptanceとして保持するが、次作業の選択には使わない。
 Upworkのterminal evidence、startup context、public claim、GA-01〜13Aは完了または履歴として保持する。
-次の一件はAtomic program ledger Seq 15 `ELZ-C02`で、Life Manager pluginからlocal model proxyへzero-spend structured callを一回通す。
+次の一件はAtomic program ledger Seq 15 `ELZ-C02`で、Life ManagerとOpenAI pluginを同じruntimeへ登録し、local proxy経由でfree modelを実際に一回呼ぶ。成功はstructured JSON responseのreadbackとwallet/cost 0のbefore/after readbackまでを同atomで閉じた時だけで、endpoint/model一覧のreadbackだけでは未完とする。
 
 #### 0.0.1 最新基盤決定 — ElizaOSを完全forkし、Life Managerをlocal OSSからmulti-tenant SaaSへ育てる
 
@@ -564,7 +564,7 @@ reviewはfocused verification後のfresh adversarial P0/P1 review一回だけと
 | Seq | Atom | 状態 | 原子的完了条件 / named receipt |
 |---:|---|---|---|
 | 14 | ELZ-C01 exactly-one plugin registration | DONE | private `plugin-registration-receipt.json` mode 0600。fork PR #1 canonical merge `bd24601e…`。`@elizaos/plugin-life-manager`一つがaction `LIFE_MANAGER_HEALTH`、provider `lifeManagerHealth`、stateless service `LIFE_MANAGER`を各1件登録し、host manifestでenabled/requiredForReady=true。同名二重register後も各1件、second runtime/scheduler/DB/external effect 0 |
-| 15 | ELZ-C02 first model transport preflight | **IN_PROGRESS — NEXT** | `@elizaos/plugin-openai`→local proxy `:8402/v1`のbounded zero-spend structured call。Capafy key流用0の`model-provider-receipt.json` |
+| 15 | ELZ-C02 first model transport preflight | **IN_PROGRESS — NEXT** | `@elizaos/plugin-life-manager`＋`@elizaos/plugin-openai`の同一runtimeから`free/gpt-oss-20b`を実call 1回。JSON `{ok:true,agent:"life-manager"}`、proxy log、wallet balance `$0.00→$0.00`、cost `$0.0000→$0.0000`をreadbackし、provider/Capafy credential 0の`model-provider-receipt.json`。models/health readbackだけは成功にしない |
 | 16 | ELZ-C03 domain schema and migration | TODO | Goal/PlanGraph/WorkItem/EffectIntent/OutcomeReceipt/EconomicReceiptの型とmigrationが一つの`domain-schema-receipt.json` |
 | 17 | ELZ-C04 legacy provider bridge contract | TODO | JS/Python既存toolをopaque refとstructured resultだけで呼び、判断権0の`provider-bridge-receipt.json` |
 | 18 | ELZ-C05 Goal to reference-only WorkItem | TODO | private goal本文をjobへ複製せず、一Goal→一WorkItemの`goal-workitem-receipt.json` |
