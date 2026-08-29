@@ -27,7 +27,7 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 この節は、後段の「現在TODO」「次の一件」「local-only」「self-funded agentは別product」という相反する記述を
 上書きする最新の実行順序SSOTである。後段は実装履歴・organ別acceptanceとして保持するが、次作業の選択には使わない。
 Upworkのterminal evidence、startup context、public claim、GA-01〜13Aは完了または履歴として保持する。
-次の一件はAtomic program ledger Seq 1 `ELZ-F01`で、現行repo/owner/stateをread-only inventory化し、移行baselineを固定する。
+次の一件はAtomic program ledger Seq 2 `ELZ-F02`で、`Daisuke134/life-manager-eliza`を`elizaOS/eliza`の正式forkとして作成し、fixed SHAをreadbackする。
 
 #### 0.0.1 最新基盤決定 — ElizaOSを完全forkし、Life Managerをlocal OSSからmulti-tenant SaaSへ育てる
 
@@ -545,8 +545,8 @@ reviewはfocused verification後のfresh adversarial P0/P1 review一回だけと
 
 | Seq | Atom | 状態 | 原子的完了条件 / named receipt |
 |---:|---|---|---|
-| 1 | ELZ-F01 legacy baseline inventory | **IN_PROGRESS — NEXT** | plan=`docs/superpowers/plans/2026-08-29-eliza-local-foundation.md`。現行repoのHEAD/origin、dirty、refs、worktrees、disk、toolchainをread-only固定し、削除・stash・reset 0の`fork-baseline-receipt.json` |
-| 2 | ELZ-F02 official GitHub fork | TODO | `Daisuke134/life-manager-eliza`が`elizaOS/eliza`のpublic forkで、fixed SHA `29bed1bb3…`を取得できる`fork-source-receipt.json` |
+| 1 | ELZ-F01 legacy baseline inventory | DONE | private receipt=`~/.local/state/life-manager/migration/elz-f/fork-baseline-receipt.json` mode 0600。legacy HEAD `d71d6360…`、origin snapshot `2be59f28…`、dirty/refs/worktrees SHA-256、free `6003720` KiB、Node `v25.6.1`、Bun `1.3.9`、mutations 0。採取後のrefs前進はsnapshot concernとして保持 |
+| 2 | ELZ-F02 official GitHub fork | **IN_PROGRESS — NEXT** | `Daisuke134/life-manager-eliza`が`elizaOS/eliza`のpublic forkで、fixed SHA `29bed1bb3…`を取得できる`fork-source-receipt.json` |
 | 3 | ELZ-F03 target topology and keep/retire map | TODO | old/new repo名、remote、history join、archive、successor、絶対保全storeを固定した`fork-topology-receipt.json` |
 | 4 | ELZ-F04 pinned runtime toolchain | TODO | project-local Node `24.15.0` / Bun `1.3.14`をversion readbackし、system tool上書き0の`toolchain-receipt.json` |
 | 5 | ELZ-F05 recursive submodule | TODO | `plugin-local-inference/native/llama.cpp`を含むsubmoduleがfixed commitへ揃い、uninitialized entry 0の`submodule-receipt.json` |
