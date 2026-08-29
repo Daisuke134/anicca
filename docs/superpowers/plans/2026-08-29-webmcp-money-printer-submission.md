@@ -277,7 +277,7 @@ async function registerMoneyPrinterTools(modelContext, request) {
 - Modify: `apps/life-manager/lib/panel-api.test.js`
 
 **Interfaces:**
-- `buildHumanTask({ tenantId, jobId, reasonCode, question, requiredFormat, resumeRef, contextRefs })` returns a stable SHA-256 task ID.
+- `buildHumanTask({ tenantId, jobId, reasonCode, question, requiredFormat, resumeRef, contextRefs, humanBoundaryRef })` returns a stable SHA-256 task ID. `humanBoundaryRef` is the reference-only output of the model/policy judgment; deterministic code never classifies human-only work with keywords.
 - `answerHumanTask({ scope, taskId, version, answerRef }, store)` atomically closes one task and returns the original `resume_ref`.
 - Private answers live in the vault; the table stores only references.
 
@@ -296,11 +296,11 @@ test("one logical blocker creates one task and resumes one job", async () => {
 });
 ```
 
-Also test cross-tenant refusal, stale version conflict, replay no-op, secret rejection, and refusal to create tasks for agent-capable work.
+Also test cross-tenant refusal, stale version conflict, replay no-op, secret rejection, and missing/noncanonical `humanBoundaryRef`. The model decides whether work is human-only; code requires the bound judgment receipt and performs only bookkeeping.
 
-- [ ] Add migration constraints: `(uid, task_id)` primary key, status enum, version check, unique open `(uid, job_id, reason_code)`, RLS/service-role boundary, atomic answer RPC.
+- [ ] **Task 5A:** Add the domain module and migration constraints: `(uid, task_id)` primary key, status enum, version check, unique open `(uid, job_id, reason_code)`, RLS/service-role boundary, `waiting_human` runtime state, and atomic create/answer RPCs. Answer must requeue the same `(uid, job_id)`; it never creates another runtime job.
 - [ ] Run human-task test for RED.
-- [ ] Implement task/answer functions and authenticated endpoints:
+- [ ] **Task 5B:** Implement task/answer functions, authenticated endpoints, and the two state-dependent WebMCP tools:
 
 ```text
 GET  /api/panel/money-printer/human-task/next

@@ -530,7 +530,7 @@ Resume: Life Manager submits once and continues receipt reconciliation after app
 State: waiting_for_human
 ```
 
-各taskはstable ID、opportunity ID、reason、deadline、prepared context、exact action、return path、statusを持つ。同じlogical taskをwording差で重複生成しない。
+各taskはstable ID、opportunity ID、reason、deadline、prepared context、exact action、return path、status、`human_boundary_ref`を持つ。同じlogical taskをwording差で重複生成しない。Human-onlyかどうかはModelがcurrent work、available tools、policyを読んで判断し、deterministic codeはそのjudgment receiptのreference形式、dedupe、state transitionだけを検証する。Keywordやreason-code allowlistでhuman handoffを判断しない。
 
 Minimal-human invariant:
 
