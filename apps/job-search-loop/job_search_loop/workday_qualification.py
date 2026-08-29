@@ -190,18 +190,21 @@ def qualify_one(
             return _http_failure_receipt(row, error)
         candidate_memory = candidate_memory_path.read_text(encoding="utf-8")
         prompt = (
-            "Evaluate exactly one Workday job for realistic interview fit. "
+            "Evaluate exactly one Workday job as the best available application for this wake. "
+            "Choose the best available Workday role that the candidate can truthfully and legally pursue for this wake. "
             "Use only evidence in the candidate memory and official job description. "
             "Do not infer missing skills, years, management scope, credentials, salary, "
             "or work authorization. Judge mandatory requirements, Tokyo/Japan feasibility, "
             "and a credible path to USD 120,000 annual gross base. If compensation is "
             "unpublished, state uncertainty and never invent a range, but do not reject or "
-            "hold for unpublished compensation alone. Judge whether the candidate has a "
-            "realistic chance of winning an interview now. A stated years-of-experience gap "
-            "is evidence to weigh, not an automatic rejection, when demonstrated equivalent "
-            "impact directly covers the work. Qualify when the interview case is credible; "
-            "hold only for one resolvable material unknown; reject when the core work is not "
-            "supported. Write interview_thesis, location_feasibility, and "
+            "hold for unpublished compensation alone. Reject only when one hard blocker is "
+            "evidenced: the role no longer exists; the candidate cannot legally work in the "
+            "required location and no supported employment path exists; mandatory physical "
+            "presence is impossible; or submission would require a materially false answer. "
+            "Experience gaps, seniority, competition, and imperfect fit are positioning inputs, "
+            "not blanket rejection reasons. Unless a hard blocker is evidenced, qualify the "
+            "best available role for this wake; hold only for one resolvable material unknown. "
+            "Write interview_thesis, location_feasibility, and "
             "compensation_thesis in concise natural Japanese for the user's realtime "
             "Telegram report. Return only the schema.\n\n"
             + wrap_untrusted(
