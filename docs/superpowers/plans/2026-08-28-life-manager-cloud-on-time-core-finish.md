@@ -798,7 +798,8 @@ Current atomic run order:
 - [x] physical event `1it7jaacjfuaelalljim6nk6qs` confirmed for 15:41 JST with a private provider-routable destination;
 - [x] implement a shared scheduler-owner fallback: standalone `LIFE_RUN_LOOPS=false` with no Inngest key selects in-process loops, while explicit roles/Inngest remain unchanged;
 - [ ] prove exactly one scheduler owner in production with a fresh natural ledger write after the shared predicate deploy;
-- [ ] deploy/read back the scheduler-owner fix at one exact SHA, then create fresh controlled events because the two IDs above missed their natural windows;
+- [x] deploy/read back the corrected shared scheduler-owner fix at exact SHA `05988c7170bba91df7d375437cf61679e9e45f75`;
+- [ ] prove natural ledger liveness on the next existing due event, then create fresh controlled events because the two IDs above missed their windows;
 - [ ] no-location T-10 row has one call-control ID, one signed webhook ID, and one durable claim;
 - [ ] no-location T-5 row has one call-control ID, one signed webhook ID, and one durable claim;
 - [ ] physical event has one outbound `[Travel]` Calendar block with provider event ID;
