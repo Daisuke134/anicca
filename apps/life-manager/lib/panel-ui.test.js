@@ -359,6 +359,8 @@ test("PANEL-8h: emitted loader applies closed validators and shared secret patte
   assert.match(html, /displaySecretPatterns/);
   assert.match(html, /displayContainsSensitiveValue\(data\)/);
   assert.match(html, /if \(!response\.ok\) throw new Error\(name \+ " unavailable"\)/);
+  assert.match(html, /money-printer:refresh/);
+  assert.match(html, /loadPanelSection\("money-printer"\)/);
   assert.doesNotMatch(html, /response\.statusText|response\.text\(\)|JSON\.stringify\(data\)/);
 });
 

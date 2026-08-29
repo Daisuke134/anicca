@@ -98,6 +98,7 @@ function renderMoneyPrinterWebMcpScript({ csrf } = {}) {
           answerController = null;
           answerTask = null;
         }
+        await refreshMoneyPrinter();
         return result;
       },
     };
@@ -111,6 +112,17 @@ function renderMoneyPrinterWebMcpScript({ csrf } = {}) {
     });
     if (!response.ok) throw new Error(failure);
     return response.json();
+  };
+  const refreshMoneyPrinter = async () => {
+    if (!document || typeof document.dispatchEvent !== "function") return;
+    const detail = {};
+    try {
+      const event = typeof CustomEvent === "function"
+        ? new CustomEvent("money-printer:refresh", { detail })
+        : { type: "money-printer:refresh", detail };
+      document.dispatchEvent(event);
+      if (detail.promise && typeof detail.promise.then === "function") await detail.promise;
+    } catch {}
   };
   const request = () => getJson("/api/panel/money-printer", "inspect_money_printer unavailable");
   const opportunityKeys = ["source_url", "title", "goal_statement", "value_minor", "currency"];
@@ -151,7 +163,9 @@ function renderMoneyPrinterWebMcpScript({ csrf } = {}) {
     let value = {};
     try { value = await response.json(); } catch {}
     if (!response.ok) throw new Error(String(value && value.error || "add_opportunity unavailable"));
-    return exactOpportunityResult(value);
+    const result = exactOpportunityResult(value);
+    await refreshMoneyPrinter();
+    return result;
   };
   const inspectWorkroomRequest = (input) => {
     if (!input || typeof input !== "object" || Array.isArray(input)
@@ -181,7 +195,7 @@ function renderMoneyPrinterWebMcpScript({ csrf } = {}) {
       properties: {},
       additionalProperties: false,
     },
-    annotations: { readOnlyHint: true },
+    annotations: { readOnlyHint: true, untrustedContentHint: true },
     execute: () => request(),
     }),
     document.modelContext.registerTool({
@@ -192,7 +206,7 @@ function renderMoneyPrinterWebMcpScript({ csrf } = {}) {
       properties: {},
       additionalProperties: false,
     },
-    annotations: { readOnlyHint: true },
+    annotations: { readOnlyHint: true, untrustedContentHint: true },
     execute: () => requestNextTask(),
     }),
     document.modelContext.registerTool({
@@ -222,7 +236,7 @@ function renderMoneyPrinterWebMcpScript({ csrf } = {}) {
         required: ["opportunity_id"],
         additionalProperties: false,
       },
-      annotations: { readOnlyHint: true },
+      annotations: { readOnlyHint: true, untrustedContentHint: true },
       execute: inspectWorkroomRequest,
     }),
   ]);

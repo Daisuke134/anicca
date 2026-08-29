@@ -15,6 +15,9 @@ test("Money Printer registers inspection and state-dependent human answer tools"
 
   const registrations = [];
   const requests = [];
+  const refreshEvents = [];
+  let releaseRefresh;
+  const refreshGate = new Promise((resolve) => { releaseRefresh = resolve; });
   const body = { observed_at: "2026-08-29T00:00:00.000Z", metrics: { paid_verified: "0" } };
   const task = {
     task_id: "a".repeat(64), version: 1,
@@ -38,6 +41,11 @@ test("Money Printer registers inspection and state-dependent human answer tools"
           if (tool.name === "record_human_answer") resolveRegistrationStarted();
           return tool.name === "record_human_answer" ? answerRegistration : Promise.resolve();
         },
+      },
+      dispatchEvent(event) {
+        refreshEvents.push(event);
+        if (event.detail && typeof event.detail === "object") event.detail.promise = refreshGate;
+        return true;
       },
     },
     fetch: async (url, init) => {
@@ -77,6 +85,8 @@ test("Money Printer registers inspection and state-dependent human answer tools"
     additionalProperties: false,
   });
   assert.equal(tool.annotations.readOnlyHint, true);
+  assert.equal(tool.annotations.untrustedContentHint, true);
+  assert.equal(inspectNextTask.annotations.untrustedContentHint, true);
 
   const { tool: addOpportunity } = addOpportunityRegistration;
   assert.deepEqual(JSON.parse(JSON.stringify(addOpportunity.inputSchema)), {
@@ -101,6 +111,7 @@ test("Money Printer registers inspection and state-dependent human answer tools"
     additionalProperties: false,
   });
   assert.equal(inspectWorkroom.annotations.readOnlyHint, true);
+  assert.equal(inspectWorkroom.annotations.untrustedContentHint, true);
 
   assert.deepEqual(await tool.execute({}), body);
   assert.deepEqual(requests[0], {
@@ -132,7 +143,15 @@ test("Money Printer registers inspection and state-dependent human answer tools"
   assert.ok(options && options.signal);
   assert.equal(options.signal.aborted, false);
 
-  const answerResult = await answerTool.execute({ answer_ref: "vault-answer://tenant-a/answer-1" });
+  let answerSettled = false;
+  const answerResultPromise = answerTool.execute({ answer_ref: "vault-answer://tenant-a/answer-1" }).then((result) => {
+    answerSettled = true;
+    return result;
+  });
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(answerSettled, false);
+  releaseRefresh();
+  const answerResult = await answerResultPromise;
   assert.deepEqual(answerResult, { task_id: task.task_id, resume_ref: "runtime-job://tenant-a/job-1" });
   assert.equal(options.signal.aborted, true);
   assert.equal(requests[2].url, "/api/panel/money-printer/human-task/answer");
@@ -170,6 +189,8 @@ test("Money Printer registers inspection and state-dependent human answer tools"
   assert.deepEqual(JSON.parse(requests[4].init.body), opportunityInput);
   assert.equal(requests[4].init.headers["x-lm-csrf"], csrf);
   assert.match(requests[4].init.headers["idempotency-key"], /^add-opportunity-[A-Za-z0-9._:-]{8,128}$/);
+  assert.equal(refreshEvents.length, 2);
+  assert.deepEqual(refreshEvents.map((event) => event.type), ["money-printer:refresh", "money-printer:refresh"]);
 
   const workroom = { opportunity_id: "c".repeat(64), job_ref: created.job_ref, status: "DISCOVERED", activity: [] };
   const inspectResult = await inspectWorkroom.execute({ opportunity_id: workroom.opportunity_id });

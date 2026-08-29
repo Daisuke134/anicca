@@ -437,12 +437,15 @@ function humanTaskErrorResponse(error) {
   const message = String(error && error.message || "");
   if (message === "invalid_json") return { status: 400, body: { error: "invalid_json" } };
   if (message === "body_too_large") return { status: 413, body: { error: "body_too_large" } };
+  if (["idempotency_conflict", "idempotency_in_progress", "idempotency_failed"].includes(message)) {
+    return { status: 409, body: { error: message } };
+  }
   if (message === "human task scope mismatch") return { status: 401, body: { error: "unauthorized" } };
   if (message === "human task answer conflict" || message === "human task version conflict") {
     return { status: 409, body: { error: "human_task_conflict" } };
   }
   if (message === "human task store unavailable" || message === "human task answer not read back"
-    || message === "human_task_unavailable" || message === "panel_store_read_failed") {
+    || message === "human_task_unavailable" || message === "panel_store_read_failed" || message === "panel_receipt_unavailable") {
     return { status: 502, body: { error: "human_task_unavailable" } };
   }
   if (message.startsWith("human task ")) return { status: 400, body: { error: "human_task_invalid" } };
@@ -579,12 +582,16 @@ async function addNextEvent(body, scope, opts) {
 }
 
 function onboardingRequestHash(parsed) {
-  return crypto.createHash("sha256").update(JSON.stringify({ action: parsed.action, payload: parsed.payload })).digest("hex");
+  return mutationRequestHash(parsed.action, parsed.payload, "payload");
 }
 
 function onboardingReceiptConflict(message) { return onboardingError(message, 409); }
 
-function replayOnboardingReceipt(receipt, requestHash) {
+function mutationRequestHash(action, body, bodyKey = "body") {
+  return crypto.createHash("sha256").update(JSON.stringify({ action, [bodyKey]: body })).digest("hex");
+}
+
+function replayMutationReceipt(receipt, requestHash) {
   if (!receipt) return null;
   const storedHash = String(receipt.requestHash || receipt.request_hash || "");
   if (storedHash !== requestHash) throw onboardingReceiptConflict("idempotency_conflict");
@@ -593,20 +600,27 @@ function replayOnboardingReceipt(receipt, requestHash) {
   throw onboardingReceiptConflict("idempotency_failed");
 }
 
-async function claimOnboardingReceipt(scope, key, parsed, store) {
+function replayOnboardingReceipt(receipt, requestHash) {
+  return replayMutationReceipt(receipt, requestHash);
+}
+
+async function claimMutationReceipt(scope, key, action, body, store, requestHash = mutationRequestHash(action, body), commandType = action) {
   if (!store || typeof store.readReceipt !== "function" || typeof store.claimReceipt !== "function" || typeof store.finishReceipt !== "function") {
-    throw onboardingError("onboarding_unavailable", 502);
+    throw onboardingError("panel_receipt_unavailable", 502);
   }
-  const requestHash = onboardingRequestHash(parsed);
   const existing = await store.readReceipt(scope, key);
-  const replay = replayOnboardingReceipt(existing, requestHash);
+  const replay = replayMutationReceipt(existing, requestHash);
   if (replay) return { requestHash, replay, claimed: false };
-  const claimed = await store.claimReceipt(scope, key, { requestHash, commandType: "onboarding.transition", status: "pending" });
+  const claimed = await store.claimReceipt(scope, key, { requestHash, commandType, status: "pending" });
   if (claimed) return { requestHash, replay: null, claimed: true };
   const raced = await store.readReceipt(scope, key);
-  const racedReplay = replayOnboardingReceipt(raced, requestHash);
+  const racedReplay = replayMutationReceipt(raced, requestHash);
   if (racedReplay) return { requestHash, replay: racedReplay, claimed: false };
   throw onboardingReceiptConflict("idempotency_in_progress");
+}
+
+async function claimOnboardingReceipt(scope, key, parsed, store) {
+  return claimMutationReceipt(scope, key, parsed.action, parsed.payload, store, onboardingRequestHash(parsed), "onboarding.transition");
 }
 
 async function readJson(req) {
@@ -823,11 +837,29 @@ async function handlePanelApiRequest(req, res, opts = {}) {
     if (!timingEqual(req.headers["x-lm-csrf"], scope.csrf || csrfToken(session))) { sendJson(res, 403, { error: "csrf_rejected" }); return; }
     const key = String(req.headers["idempotency-key"] || "");
     if (!/^[A-Za-z0-9._:-]{8,128}$/.test(key)) { sendJson(res, 400, { error: "idempotency_required" }); return; }
+    let claimedReceipt = null;
     try {
-      sendJson(res, 200, await createMoneyPrinterOpportunity(scope, await readJson(req), opts));
+      const body = await readJson(req);
+      if (!body || typeof body !== "object" || Array.isArray(body)
+        || Object.keys(body).length !== 5
+        || Object.keys(body).some((name) => !["source_url", "title", "goal_statement", "value_minor", "currency"].includes(name))) {
+        throw workroomError("invalid_opportunity", 400);
+      }
+      const receipt = await claimMutationReceipt(scope, key, "money-printer.opportunity.create", body, commandStore);
+      if (receipt.replay) { sendJson(res, 200, receipt.replay); return; }
+      claimedReceipt = receipt.claimed ? receipt : null;
+      const result = await createMoneyPrinterOpportunity(scope, body, opts);
+      await commandStore.finishReceipt(scope, key, { requestHash: receipt.requestHash, commandType: "money-printer.opportunity.create", status: "succeeded", result });
+      claimedReceipt = null;
+      sendJson(res, 200, result);
     } catch (error) {
+      if (claimedReceipt) {
+        try { await commandStore.finishReceipt(scope, key, { requestHash: claimedReceipt.requestHash, commandType: "money-printer.opportunity.create", status: "failed", result: null }); } catch { /* pending keeps retries blocked */ }
+      }
       const status = error && error.status || 502;
-      sendJson(res, status, { error: status === 400 ? "invalid_opportunity" : "opportunity_unavailable" });
+      const errorCode = ["idempotency_conflict", "idempotency_in_progress", "idempotency_failed"].includes(error && error.message)
+        ? error.message : error && ["invalid_json", "body_too_large"].includes(error.message) ? error.message : status === 400 ? "invalid_opportunity" : "opportunity_unavailable";
+      sendJson(res, status, { error: errorCode });
     }
     return;
   }
@@ -862,20 +894,29 @@ async function handlePanelApiRequest(req, res, opts = {}) {
     if (!timingEqual(req.headers["x-lm-csrf"], scope.csrf || csrfToken(session))) { sendJson(res, 403, { error: "csrf_rejected" }); return; }
     const key = String(req.headers["idempotency-key"] || "");
     if (!/^[A-Za-z0-9._:-]{8,128}$/.test(key)) { sendJson(res, 400, { error: "idempotency_required" }); return; }
+    let claimedReceipt = null;
     try {
       const body = await readJson(req);
       if (!body || typeof body !== "object" || Array.isArray(body)
         || Object.keys(body).some((name) => !["task_id", "version", "answer_ref"].includes(name))) {
         throw humanTaskError("invalid_json", 400);
       }
+      const receipt = await claimMutationReceipt(scope, key, "money-printer.human-task.answer", body, commandStore);
+      if (receipt.replay) { sendJson(res, 200, receipt.replay); return; }
+      claimedReceipt = receipt.claimed ? receipt : null;
       const result = await answerHumanTask({
         scope,
         taskId: body.task_id,
         version: body.version,
         answerRef: body.answer_ref,
       }, humanTaskStore);
+      await commandStore.finishReceipt(scope, key, { requestHash: receipt.requestHash, commandType: "money-printer.human-task.answer", status: "succeeded", result });
+      claimedReceipt = null;
       sendJson(res, 200, result);
     } catch (error) {
+      if (claimedReceipt) {
+        try { await commandStore.finishReceipt(scope, key, { requestHash: claimedReceipt.requestHash, commandType: "money-printer.human-task.answer", status: "failed", result: null }); } catch { /* pending keeps retries blocked */ }
+      }
       const failure = humanTaskErrorResponse(error);
       sendJson(res, failure.status, failure.body);
     }

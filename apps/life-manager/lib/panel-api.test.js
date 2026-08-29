@@ -233,9 +233,34 @@ async function opportunityRequest(base, endpoint, { method = "POST", body, heade
   return { response, body: await response.json() };
 }
 
+function panelMutationHash(action, body) {
+  return crypto.createHash("sha256").update(JSON.stringify({ action, body })).digest("hex");
+}
+
+function receiptCommandStore() {
+  const receipts = new Map();
+  return {
+    receipts,
+    async readReceipt(_scope, key) { return receipts.get(String(key)) || null; },
+    async claimReceipt(_scope, key, value) {
+      const normalized = String(key);
+      if (receipts.has(normalized)) return false;
+      receipts.set(normalized, { requestHash: value.requestHash, status: value.status, result: null });
+      return true;
+    },
+    async finishReceipt(_scope, key, value) {
+      const receipt = receipts.get(String(key));
+      if (!receipt) throw new Error("receipt_missing");
+      receipt.status = value.status;
+      receipt.result = value.result || null;
+    },
+  };
+}
+
 test("Task 7B1 opportunity API creates one tenant-scoped workroom and returns only its public handle", async () => {
   const fixture = makeFixture();
   const calls = [];
+  const commandStore = receiptCommandStore();
   const opportunityStore = {
     async create(opportunity) {
       calls.push(opportunity);
@@ -257,9 +282,23 @@ test("Task 7B1 opportunity API creates one tenant-scoped workroom and returns on
     assert.match(result.body.opportunity_id, /^[0-9a-f]{64}$/);
     assert.equal(result.body.job_ref, `runtime-job://tenant-a/goal%3A${result.body.opportunity_id}`);
     assert.equal(result.body.status, "DISCOVERED");
+    const replay = await opportunityRequest(base, "money-printer/opportunity", { body: input });
+    assert.equal(replay.response.status, 200);
+    assert.deepEqual(replay.body, result.body);
+    const conflict = await opportunityRequest(base, "money-printer/opportunity", { body: { ...input, title: "Different" } });
+    assert.equal(conflict.response.status, 409);
+    assert.deepEqual(conflict.body, { error: "idempotency_conflict" });
+    for (const [status, error] of [["pending", "idempotency_in_progress"], ["failed", "idempotency_failed"]]) {
+      const key = `opportunity-${status}`;
+      commandStore.receipts.set(key, { requestHash: panelMutationHash("money-printer.opportunity.create", input), status, result: null });
+      const blocked = await opportunityRequest(base, "money-printer/opportunity", { body: input, headers: { "idempotency-key": key } });
+      assert.equal(blocked.response.status, 409);
+      assert.deepEqual(blocked.body, { error });
+    }
   }, {
     panelOrigin: "https://panel.example",
     sessionScopeImpl: async () => ({ uid: "tenant-a", chatId: "101", csrf: "csrf-a" }),
+    commandStore,
     opportunityStore,
   });
 
@@ -412,6 +451,7 @@ test("Task 5B human-task API returns one safe tenant task and replays one answer
       return { ...state };
     },
   };
+  const commandStore = receiptCommandStore();
   await withApiServer(fixture, async (base) => {
     const next = await humanTaskRequest(base, "money-printer/human-task/next", { method: "GET" });
     assert.equal(next.response.status, 200);
@@ -437,17 +477,22 @@ test("Task 5B human-task API returns one safe tenant task and replays one answer
 
     const conflict = await humanTaskRequest(base, "money-printer/human-task/answer", {
       body: { ...answer, answer_ref: "vault-answer://tenant-a/answer-2" },
-      headers: { "idempotency-key": "human-task-02" },
+      headers: { "idempotency-key": "human-task-01" },
     });
     assert.equal(conflict.response.status, 409);
-    assert.deepEqual(conflict.body, { error: "human_task_conflict" });
-  }, { panelOrigin: "https://panel.example", humanTaskStore, sessionScopeImpl: async () => ({ uid: "tenant-a", chatId: "101", csrf: "csrf-a" }) });
+    assert.deepEqual(conflict.body, { error: "idempotency_conflict" });
+    for (const [status, error] of [["pending", "idempotency_in_progress"], ["failed", "idempotency_failed"]]) {
+      const key = `human-task-${status}`;
+      commandStore.receipts.set(key, { requestHash: panelMutationHash("money-printer.human-task.answer", answer), status, result: null });
+      const blocked = await humanTaskRequest(base, "money-printer/human-task/answer", { body: answer, headers: { "idempotency-key": key } });
+      assert.equal(blocked.response.status, 409);
+      assert.deepEqual(blocked.body, { error });
+    }
+  }, { panelOrigin: "https://panel.example", commandStore, humanTaskStore, sessionScopeImpl: async () => ({ uid: "tenant-a", chatId: "101", csrf: "csrf-a" }) });
   assert.equal(calls[0].type, "read");
   assert.deepEqual(calls[0].scope, { uid: "tenant-a", chatId: "101", csrf: "csrf-a" });
   assert.deepEqual(calls.slice(1).map((call) => call.answer), [
     { uid: "tenant-a", taskId: task.task_id, version: 1, answerRef: "vault-answer://tenant-a/answer-1" },
-    { uid: "tenant-a", taskId: task.task_id, version: 1, answerRef: "vault-answer://tenant-a/answer-1" },
-    { uid: "tenant-a", taskId: task.task_id, version: 1, answerRef: "vault-answer://tenant-a/answer-2" },
   ]);
 });
 

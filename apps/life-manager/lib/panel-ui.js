@@ -1173,6 +1173,17 @@ function renderPanelPage(options = {}) {
       markLoaded(name, renderers[name](data));
     }
 
+    let moneyPrinterRefresh = Promise.resolve();
+    document.addEventListener("money-printer:refresh", function (event) {
+      moneyPrinterRefresh = moneyPrinterRefresh.then(async function () {
+        await loadPanelSection("money-printer");
+      }).catch(function (error) {
+        console.error("[panel] money-printer", error.message);
+        markError("money-printer");
+      });
+      if (event && event.detail && typeof event.detail === "object") event.detail.promise = moneyPrinterRefresh;
+    });
+
     function commandForAction(action, button) {
       switch (action) {
         case "connect-calendar": return { type: "connection.start", provider: "calendar" };
