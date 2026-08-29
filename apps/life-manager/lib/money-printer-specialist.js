@@ -22,9 +22,8 @@ const RESULT_SCHEMA = Object.freeze({
 });
 const QUALIFICATION_SCHEMA = Object.freeze({
   type: "object",
-  additionalProperties: false,
   required: ["status"],
-  properties: { status: { type: "string", const: "completed" } },
+  properties: { status: { type: "string", enum: ["completed"] } },
 });
 
 function invalid(label) { throw new Error(`money printer specialist ${label} invalid`); }
@@ -208,6 +207,7 @@ async function runGeminiQualification(input = {}, options = {}) {
       responseSchema: QUALIFICATION_SCHEMA,
       temperature: 0,
       maxOutputTokens: 128,
+      thinkingConfig: { thinkingBudget: 0 },
     },
   });
   const raw = responseText(extracted);

@@ -140,7 +140,14 @@ function mapHumanTask(row, uid) {
 function mapReceipt(row, uid) {
   tenantValue(row, uid);
   if (!row.receipt || typeof row.receipt !== "object" || Array.isArray(row.receipt)) invalid("runtime receipt");
-  const kind = requiredText(row.receipt.kind || row.receipt.record_type, "runtime receipt kind", 128);
+  const declaredKind = row.receipt.kind || row.receipt.record_type;
+  const outcome = String(row.outcome || "");
+  const kindlessOutcome = !declaredKind && ["failed", "reconciled_present", "reconciled_absent"].includes(outcome);
+  const kind = requiredText(
+    kindlessOutcome ? (outcome === "failed" ? "work_failure" : "work_reconciliation") : declaredKind,
+    "runtime receipt kind",
+    128,
+  );
   if (!Number.isInteger(row.attempt) || row.attempt < 1) invalid("runtime receipt attempt");
   const fallbackId = `${requiredText(row.job_id, "runtime receipt job", 200)}:${row.attempt}`;
   const receipt = {
@@ -148,8 +155,8 @@ function mapReceipt(row, uid) {
     receipt_id: APPLICATION_RECEIPT_KINDS.has(kind)
       ? (safeApplicationId(row.receipt.application_external_id) || fallbackId)
       : fallbackId,
-    status: requiredText(row.receipt.status || row.outcome || "observed", "runtime receipt status", 128),
-    observed_at: requiredTime(row.receipt.observed_at || row.created_at, "runtime receipt time"),
+    status: requiredText(kindlessOutcome ? outcome : row.receipt.status || row.outcome || "observed", "runtime receipt status", 128),
+    observed_at: requiredTime(kindlessOutcome ? row.created_at : row.receipt.observed_at || row.created_at, "runtime receipt time"),
     kind,
   };
   return receipt;
