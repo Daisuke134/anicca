@@ -46,7 +46,8 @@
 - [x] `C02-13` Luna planner callを一回実行する — session/turn/model/effort/raw response hash一致、call 1/retry 0/effect 0。post-call DB log failureを記録し、同一session readbackへ進む
 - [x] `C02-14` structured action resultを読む — 同一session/turnをplugin自身のnormalizeRouteで`LIFE_MANAGER_HEALTH/{}`へ再読出し、hash一致、追加model call/effect 0
 - [x] `C02-15` private receiptを保存する — canonical v2 mode 0600、Codex SDK/Luna call 1/retry 0/structured result/effect 0、post-call DB log failureを含む`pending_review`
-- [ ] `C02-16` adversarial reviewを一回行う
+- [x] `C02-16` adversarial reviewを一回行う — exactly 1 fresh review、FIX_FIRST。唯一のP1はpost-handler未初期化adapter loggingにより`runtime.useModel()`がreturnしないこと
+- [ ] `C02-16-F1` initialized adapterで`runtime.useModel()` returnを成立させ、全call countをreceiptへ記録する
 - [ ] `C02-17` receiptをPASSへ更新する
 - [ ] `C02-18` C02をDONEへ更新する
 - [ ] `C02-19` C03をNEXTへ更新する
