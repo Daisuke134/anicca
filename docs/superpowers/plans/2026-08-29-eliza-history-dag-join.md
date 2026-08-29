@@ -27,7 +27,7 @@
 
 **Files:**
 - Create outside repo: `/Users/anicca/.local/state/life-manager/migration/elz-f/history-join-receipt.json`
-- Create outside repo: `/Users/anicca/Projects/life-manager-main/.worktrees/eliza-atomic-roadmap-20260829/.superpowers/sdd/2026-08-29-eliza-history-dag-join/task-1-report.md`
+- Create outside repo: `/Users/anicca/Projects/life-manager-main/.worktrees/elz-f11-plan/.superpowers/sdd/2026-08-29-eliza-history-dag-join/task-1-report.md`
 - Modify Git history only: branch `migration/eliza-history` in `/Users/anicca/Projects/life-manager-eliza-migration`
 
 **Interfaces:**
