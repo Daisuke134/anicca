@@ -68,3 +68,12 @@ test('canonical Alpine runtime installs OpenSSL for Prisma engines', async () =>
 
   assert.match(dockerfile, /^RUN apk add --no-cache openssl$/m);
 });
+
+test('Railway healthcheck allows facilitator startup time', async () => {
+  const railway = await readFile(new URL('./railway.toml', import.meta.url), 'utf8');
+  const deploy = railway.match(/^\[deploy\]\n([\s\S]*)$/m)?.[1];
+
+  assert.ok(deploy, 'railway.toml must define a deploy section');
+  assert.match(deploy, /^healthcheckPath = "\/health"$/m);
+  assert.match(deploy, /^healthcheckTimeout = 60$/m);
+});
