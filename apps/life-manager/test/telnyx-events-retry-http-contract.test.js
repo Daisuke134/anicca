@@ -260,6 +260,51 @@ test("a claim-bound human writes answered_at only after receipt matched=1", asyn
   assert.deepEqual(order, ["receipt", "answered"], "record-first is the human answered_at fence");
 });
 
+test("a claim-bound answered_at failure is bounded and still answers 200 after the receipt", async () => {
+  upstreamCalls.length = 0;
+  const order = [];
+  const logs = [];
+  const forbidden = [
+    CLAIM_UID, "v2:claim-control-id", "claim-session-id", "claim-leg-id", "claim-webhook-id",
+    CLAIM_TOKEN, "+99900000000", "raw-answered-secret-sentinel",
+  ];
+  const supabase = (url, init) => {
+    const parsed = new URL(url);
+    if (parsed.pathname === "/rest/v1/rpc/record_lm_wake_telnyx_receipt") {
+      order.push("receipt");
+      assert.deepEqual(JSON.parse(init.body), claimReceiptBody({ amdResult: "human" }));
+      return response(200, 1);
+    }
+    if (parsed.pathname === "/rest/v1/lm_wake_log" && init.method === "PATCH") {
+      order.push("answered");
+      throw new Error("raw-answered-secret-sentinel");
+    }
+    throw new Error(`unexpected supabase write ${init.method} ${parsed.pathname}`);
+  };
+  const originalLog = console.log;
+  const originalError = console.error;
+  console.log = (...args) => logs.push(args.join(" "));
+  console.error = (...args) => logs.push(args.join(" "));
+  let res;
+  try {
+    res = await postSignedAmdEvent({
+      clientState: claimClientState, result: "human", eventId: "claim-webhook-id",
+      callControlId: "v2:claim-control-id", callSessionId: "claim-session-id",
+      callLegId: "claim-leg-id", supabase,
+    });
+  } finally {
+    console.log = originalLog;
+    console.error = originalError;
+  }
+  assert.equal(res.status, 200, "answered_at remains best-effort after receipt acceptance");
+  assert.equal(res.text, "answered_at unchanged");
+  assert.deepEqual(order, ["receipt", "answered"], "receipt precedes the failing answered_at PATCH");
+  assert.equal(upstreamCalls.filter((call) => pathOf(call) === "/v2/calls").length, 0);
+  assert.ok(logs.some((line) => line.includes("network_error")), `bounded error was not logged: ${JSON.stringify(logs)}`);
+  assert.ok(logs.every((line) => forbidden.every((sentinel) => !line.includes(sentinel))),
+    `answered_at failure leaked sensitive data: ${JSON.stringify(logs)}`);
+});
+
 test("a claim-bound human with receipt matched=0 writes no answered_at and answers 200", async () => {
   upstreamCalls.length = 0;
   let rpcCalls = 0;

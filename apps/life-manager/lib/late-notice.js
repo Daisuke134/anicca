@@ -473,7 +473,7 @@ async function patchWakeLog(uid, key, { filter = "", body, ...opts }) {
   const response = await f(url, {
     method: "PATCH", headers: supaHeaders(opts.supaKey, "return=representation"),
     body: JSON.stringify(body),
-  }).catch((e) => ({ __threw: (e && e.message) || "fetch failed" }));
+  }).catch(() => ({ __threw: "network_error" }));
   if (response && response.__threw) return { ok: false, matched: 0, error: response.__threw };
   if (!response || !response.ok) return { ok: false, matched: 0, error: `http_${(response && response.status) || "unknown"}` };
   const rows = await response.json().catch(() => null);
