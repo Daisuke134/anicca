@@ -805,7 +805,8 @@ Current atomic run order:
 - [x] create fresh no-location controlled event `ceepnjmqc11udi99pq2nbesdso`; Google readback is private, location absent, `confirmed`, 19:03–19:13 JST, and private property `cloud-core-no-location-v2`;
 - [x] observe its natural T-10 window: provider event is visible and wake-eligible, but production `listPaidUsers()` returns zero because Composio reports `status=ACTIVE`, `is_disabled=false`, omits non-schema `enabled`, and Life Manager misclassifies that exact active account as DISABLED, leaving `calendar_provider=NULL`;
 - [x] TDD the provider-schema fix in `panel-api.js`/existing tests: `2f584d9ab` accepts missing `enabled` only with exact owner/toolkit + ACTIVE + not-disabled, explicit false/null/nonboolean and disabled contradictions reject; fresh Sol review `ship`, findings zero, Ponytail minimal;
-- [ ] deploy/read back the minimal fix, sync the same tenant through the existing provider-status RPC, then create a new no-location event because `ceepnjmqc11udi99pq2nbesdso` missed its acceptance windows;
+- [x] deploy/read back the minimal fix: PR #3063 merges as `0c6bbd6fc895ce123ca48f28f84b84bec7e36bdb`, Railway deployment `19a195eb-3edf-4c89-8853-5fec167150ae` is SUCCESS, public health matches, canonical provider-status RPC stores `composio_gcal`, and production scheduler cohort changes from zero to one;
+- [ ] create a new no-location event because `ceepnjmqc11udi99pq2nbesdso` missed its acceptance windows before the cohort repair;
 - [ ] after no-location liveness is proven, create one fresh physical controlled event and require the Travel block plus route/Telegram/call receipts;
 - [ ] no-location T-10 row has one call-control ID, one signed webhook ID, and one durable claim;
 - [ ] no-location T-5 row has one call-control ID, one signed webhook ID, and one durable claim;
