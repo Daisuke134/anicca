@@ -3,9 +3,9 @@
 status: ACTIVE
 owner: Dais / Life Manager
 created: 2026-08-01 JST
-updated: 2026-08-26 JST
+updated: 2026-08-29 JST
 scope: Upwork終端処理、公開context収束、汎用Life Manager kernel、既存5段階の各organ
-active_execution_surface: LOCAL_FIRST_SHARED_CORE_CLOUD_DEFERRED_UNTIL_KERNEL_ACCEPTANCE
+active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_LOCAL_ACCEPTANCE
 
 ## 0. この文書の権限
 
@@ -22,12 +22,196 @@ active_execution_surface: LOCAL_FIRST_SHARED_CORE_CLOUD_DEFERRED_UNTIL_KERNEL_AC
 3. `2026-07-30-outbound-apply-engine-design.md`の各pack内部順序
 4. その他の全体・履歴仕様
 
-### 0.0 2026-08-27 current cursor — Upworkを閉じ、汎用Life Managerへ収束する
+### 0.0 2026-08-29 current cursor — ElizaOS forkでlocal general agentを先に完成させる
 
 この節は、後段の「現在TODO」「次の一件」「local-only」「self-funded agentは別product」という相反する記述を
 上書きする最新の実行順序SSOTである。後段は実装履歴・organ別acceptanceとして保持するが、次作業の選択には使わない。
-Upworkのterminal evidenceとauthorization containmentは完了した。次はstartup contextからpublic claimを収束し、その後にREADME、Web、
-general-agent kernelを順番に進める。
+Upworkのterminal evidence、startup context、public claim、GA-01〜13Aは完了または履歴として保持する。
+次の一件は`ELZ-01`で、ElizaOS固定commitを隔離forkし、未変更local runtimeのbuild、persistent DB、health、restart readbackを閉じる。
+
+#### 0.0.1 最新基盤決定 — ElizaOSを完全forkし、Life Managerをlocal OSSからmulti-tenant SaaSへ育てる
+
+製品名とrepository名は**Life Manager**で固定する。`iManager`と`Lazarus`は音声入力の誤認であり、
+新しい製品・framework・trackを意味しない。最初の収益vertical sliceはLancersである。
+
+Life Managerは`elizaOS/eliza`を丸ごとforkし、同じrepository内にlocal agent runtime、Life Manager plugin、
+Web UI、multi-tenant control planeを置く。採用起点はElizaOS main
+`29bed1bb394a2c0c7c0df6dc12babbe28667efbe` / MITとし、実装開始時にbuildとlicense noticeを再readbackして
+exact SHAを固定する。OpenClaw、Hermes、OpenAI Agents JS、Codex app-serverを別の中核runtimeとして重ねない。
+
+この決定は、cloudを「Dais専用agentをVPSへ置くこと」ではなく、任意の利用者がWebからsignup/loginし、
+tenantごとにagent、state、credential、browser、wallet、effect ledger、billingを分離して使うSaaSと定義した上での結論である。
+
+| 候補 | 実codeで確認した強み | Life Manager基盤としての判断 |
+|---|---|---|
+| **ElizaOS** | `AgentRuntime`、plugin、organization/user、credit、Stripe、provisioning、container lifecycle、Cloud UI | **完全forkして採用**。外部Steward認証とtenant境界はLife Manager所有へ置換・補強 |
+| OpenClaw | local agent、channel、cron、per-tenant container cell | trusted operator向け。signup、organization、tenant RBAC、billing、self-service control plane不足のため不採用 |
+| Hermes Agent | local agent、profile、memory、dashboard、外部Nous billing連携 | security modelがsingle-tenantで、SaaS面がrepo外Nous Portal/NAS依存のため不採用 |
+| OpenAI Agents JS | model loop、session、handoff、guardrail | SDKであり、local productとmulti-tenant control planeを再発明するため不採用 |
+| Codex app-server | coding thread、turn、sandbox、event | coding agent surfaceであり、Life Manager SaaSの製品基盤ではないため不採用 |
+
+一次証拠:
+
+- ElizaOS organization schema: <https://github.com/elizaOS/eliza/blob/29bed1bb394a2c0c7c0df6dc12babbe28667efbe/packages/cloud/shared/src/db/schemas/organizations.ts#L23-L47>
+- ElizaOS credit reserve/debit/refund: <https://github.com/elizaOS/eliza/blob/29bed1bb394a2c0c7c0df6dc12babbe28667efbe/packages/cloud/shared/src/lib/services/credits.ts#L834-L997>
+- ElizaOS agent provisioning: <https://github.com/elizaOS/eliza/blob/29bed1bb394a2c0c7c0df6dc12babbe28667efbe/packages/cloud/shared/src/lib/services/provisioning-jobs.ts#L6466-L6532>
+- ElizaOS queued job payload/result/error schema: <https://github.com/elizaOS/eliza/blob/29bed1bb394a2c0c7c0df6dc12babbe28667efbe/packages/cloud/shared/src/db/schemas/jobs.ts#L15-L48>
+- OpenClaw trust boundary: <https://github.com/openclaw/openclaw/blob/5d8ef653cd7198797983a957cd7b850f9880a8e9/docs/gateway/multi-tenant-hosting.md#L12-L24>
+- Hermes single-tenant security model: <https://github.com/NousResearch/hermes-agent/blob/f7c79efbac19ae18e8dee7c79a4e4c0935299b5f/SECURITY.md#L32-L36>
+
+##### 一つのAgent Coreをlocalとcloudの二つのhostで動かす
+
+```mermaid
+flowchart TD
+    CORE["Life Manager Agent Core<br/>Eliza AgentRuntime + plugin-life-manager"]
+
+    subgraph LOCAL["Local OSS — one owner"]
+        LUI["CLI / Local Web"]
+        LDB["Local persistent DB"]
+        LTOOLS["Local browser + tools"]
+        LUI --> LR["One AgentRuntime"]
+        LR --> LDB
+        LR --> LTOOLS
+    end
+
+    subgraph CLOUD["Cloud SaaS — untrusted multi-tenant"]
+        WEB["Signup / Login / Web App"] --> AUTH["Auth + Organization + Membership"]
+        AUTH --> CONTROL["Life Manager Control Plane"]
+        CONTROL --> BILLING["Billing + Credits + Quota"]
+        CONTROL --> QUEUE["Provisioning + Job Queue"]
+        QUEUE --> TA["Tenant A isolated agent"]
+        QUEUE --> TB["Tenant B isolated agent"]
+        QUEUE --> TC["Tenant C isolated agent"]
+    end
+
+    CORE --> LR
+    CORE --> TA
+    CORE --> TB
+    CORE --> TC
+```
+
+localとcloudでgoal選択、planning、tool判断、commerce state、effect、receipt、learningを二重実装しない。
+cloudだけが認証、organization membership、tenant-scoped database、secret vault、container/network isolation、
+billing、quota、admin control planeを追加する。tenant間で共有してよいのはversioned code、public skill、queue transportだけである。
+
+##### Fork後の最小repository
+
+```text
+life-manager/                         # elizaOS/eliza full fork
+├── packages/
+│   ├── core/                         # Eliza AgentRuntime
+│   ├── agent/                        # local host
+│   ├── app-core/
+│   │   └── deploy/                   # local/cloud container assets
+│   ├── cloud/                        # multi-tenant control plane
+│   └── ui/                           # local/cloud web app
+├── plugins/
+│   └── plugin-life-manager/          # 最初は一つ。実需要が出るまで分割しない
+└── docs/
+```
+
+現在のLife Manager repository、credential、browser profile、ledger、receipt、customer project、稼働ownerは先に削除しない。
+Eliza fork側で同じvertical sliceがofficial receiptとreplay-zeroまで通った部分だけ、shadow → canary → cutover → rollback readbackの順で
+旧runtimeを退役する。移行中に別checkoutをruntime dependencyへしない。最終公開物はLife Manager repositoryだけで再現できる状態にする。
+
+##### General Agentは固定workflowでなくGoalからloopとgraphを作る
+
+```mermaid
+flowchart LR
+    GOAL["Goal"] --> PLAN["Model-authored Plan / Graph"]
+    PLAN --> OBSERVE["Observe environment"]
+    OBSERVE --> ACT["Choose and use tools"]
+    ACT --> VERIFY["Official readback + receipt"]
+    VERIFY --> REFLECT["Outcome / cost / time / failure"]
+    REFLECT --> GOAL
+```
+
+modelはgoal分解、opportunity選択、未知siteの探索、tool選択、proposal、delivery方法、次のloop/graphを判断する。
+codeはtool、金額計算、tenant境界、immutable intent、dedupe、lease、receipt、ledger、billing、secret redactionだけを決定論的に扱う。
+marketplace名、keyword、regex、DOM selectorをsubjective judgmentの根拠にしない。Skillは成功手順のcacheであり、能力の許可リストではない。
+
+##### Self-improvingはprivate学習とglobal改善を混ぜない
+
+```mermaid
+flowchart TD
+    RECEIPT["Outcome + Economic Receipt"] --> USER["User-private memory"]
+    RECEIPT --> TENANT["Tenant-private skill / graph"]
+    RECEIPT --> CANDIDATE["Redacted global improvement candidate"]
+    CANDIDATE --> EVAL["Offline replay eval"]
+    EVAL --> CHECK{"success ↑ / duplicate 0 / leak 0 / cost acceptable?"}
+    CHECK -- yes --> CANARY["Bounded canary"]
+    CHECK -- no --> DISCARD["Discard"]
+    CANARY --> PROMOTE["Versioned promotion"]
+    PROMOTE --> MONITOR["Natural outcome monitoring"]
+    MONITOR -- regression --> ROLLBACK["Automatic rollback"]
+```
+
+利用者固有のmemory、credential、portfolio、market knowledgeはtenant外へ出さない。global改善候補はprivate dataを除き、
+保存済みfixtureでreplayしてからbounded canaryへ進める。成功率、banked net、duplicate effect、secret leak、cost、latencyの
+いずれかがgateを外れたら昇格せず、昇格後の悪化は直前versionへ戻す。人間の承認待ちを通常loopへ入れない。
+
+##### Self-healingは未知effectを再送せず、失敗層を限定して復帰する
+
+```mermaid
+flowchart TD
+    FAIL["Failure detected"] --> RESTORE["Restore checkpoint + lease state"]
+    RESTORE --> EFFECT{"External effect may exist?"}
+    EFFECT -- yes_or_unknown --> RECONCILE["Official read-only reconcile"]
+    EFFECT -- no --> REPLAN["Model chooses alternate tool/path"]
+    RECONCILE --> PRESENT{"Effect present?"}
+    PRESENT -- yes --> RECEIPT2["Recover canonical receipt"]
+    PRESENT -- no --> REPLAN
+    REPLAN --> VERIFY2["Natural E2E verification"]
+    VERIFY2 --> HEALED["Resume only failed tenant/task"]
+```
+
+process crashはcontainer/service、task中断はcheckpoint、browser変更はsemantic re-observation、provider ack lossはofficial reconcileで修復する。
+一tenantの故障で全tenantを止めず、失敗したtenant/taskだけをquarantine、restart、resumeする。
+
+##### 理想像と開始判断 — general-first、Lancers-validated、cloud-later
+
+Life Managerは最初からgeneralな`Goal → Plan/Graph → Tool → Effect → Receipt → Reflect`を実装する。
+ただし抽象的なgeneral agentを完成したつもりにせず、Lancersを最初の実環境として、案件発見、応募、受注、制作、QA、納品、
+payment、payout、bankedまでを同じcoreで閉じる。Lancers固有のscheduler、planner、brain、ledgerは作らない。
+
+```mermaid
+flowchart LR
+    FOUNDATION1["Local OSS foundation<br/>Eliza fork + persistent runtime"] --> CORE1["General Agent Core<br/>provider-neutral"]
+    CORE1 --> LANCERS["Lancers real-world proof<br/>最初のmarketplace"]
+    LANCERS --> MONEY1["Money loop<br/>discover → deliver → banked"]
+    MONEY1 --> HEAL1["Self-healing<br/>recover + reconcile"]
+    HEAL1 --> IMPROVE1["Self-improving<br/>eval + canary + rollback"]
+    IMPROVE1 --> OSS1["Local OSS stable release"]
+    OSS1 --> CLOUD1["Multi-tenant cloud SaaS"]
+    CLOUD1 --> MARKETS1["More users + marketplaces"]
+    MARKETS1 --> IMPROVE1
+```
+
+cloud先行はtenant auth、billing、isolation、provisioningに時間を使う一方、agentが一人分の実収益を閉じられるかを証明しないため採用しない。
+Lancers専用先行も未知marketplaceへ横展開できないため採用しない。最小の正解は、general coreをLancersで鍛え、local OSSの一人分を
+安定させてから同じAgent Coreをmulti-tenant hostへ載せることである。
+
+##### 実装順はlocal OSSの一つのreceiptから始める
+
+```mermaid
+flowchart LR
+    F1["F1 Eliza fork<br/>upstream health + default DB restart"] --> F2["F2 plugin-life-manager<br/>plugin health + plugin state persistence"]
+    F2 --> F3["F3 Lancers<br/>inventory → one receipt → replay-zero"]
+    F3 --> F4["F4 Lancers commerce<br/>contract → delivery → banked"]
+    F4 --> F5["F5 local self-heal<br/>+ self-improve"]
+    F5 --> F6["F6 Local OSS stable release"]
+    F6 --> F7["F7 two-tenant isolation<br/>DB + secret + browser + receipt"]
+    F7 --> F8["F8 Web signup / billing<br/>provisioning / control plane"]
+    F8 --> F9["F9 migrate capabilities<br/>and retire legacy slices"]
+```
+
+F1〜F6がlocal OSSの最初のrelease、F7〜F8がmulti-tenant cloudの最初のreleaseである。Lancersで一件の応募を増やすことより、
+Eliza fork上で`Goal → WorkItem → effect once → official receipt → replay-zero → restart recovery`を再現することを先に閉じる。
+
+Eliza Cloudから再利用するのはorganization/user、auth middleware、credits、Stripe webhook、provisioning、container lifecycle、Cloud UIである。
+そのまま採用しない境界は、外部Steward auth、共有runtime historyの`organization_id`欠落、単一organization所属model、
+限定的tenant scope checker、共有agent networkである。Life Managerは既存Supabase Auth/Postgresをself-owned identity/data planeとして再利用し、
+membership、role、invite、RLS、tenant FK、per-tenant secret、per-tenant container/networkを追加する。
 
 #### Overview / Why
 
@@ -63,7 +247,7 @@ $25,000以上のlifetime earnings/spend、freelancer JSS 90%以上、account goo
 | Financial | CFO、支出、収入、gig/business、crypto、investing、Agent Economy、自己compute費を含む |
 | self-funding | 別productではない。`earned → withdrawable → banked → compute_paid`を実receiptで閉じるFinancial capability |
 | local | free、open source、self-hosted。同じkernelをMac/Linux上で動かす |
-| cloud | phoneだけで使えるpaid monthly hosted surface。同じkernelへmulti-tenant scheduler、vault、billingを足す |
+| cloud | 任意の利用者がWebからsignup/loginできるpaid monthly multi-tenant SaaS。同じAgent Coreへorganization、tenant isolation、vault、billing、provisioningを足す |
 | revenue | founder-attested約$1,000。provider/期間証拠がない限りMRR、ARR、banked、autonomous incomeへ言い換えない |
 | AGI | mission / directionとして説明できるが、現在達成済みの科学的claimにはしない |
 | human boundary | KYC、本人の声・身体・面接・物理作業などproviderが本人を要求する仕事をagentが代行・偽装しない |
@@ -120,12 +304,12 @@ official completion PNG、Telegram photo message ID、application dossier hash�
 
 | 境界 | As-Is | To-Be |
 |---|---|---|
-| orchestration | organ・providerごとのlaunchd/scriptと独立cursorが並存 | 一つのManager LoopがGoal/Opportunity Graphを読み、次のbounded workを割当 |
+| orchestration | organ・providerごとのlaunchd/scriptと独立cursorが並存 | Eliza `AgentRuntime`上の一つのManager LoopがGoal/Opportunity Graphを読み、次のbounded workを割当 |
 | intelligence | 一部はsite script、一部は巨大prompt、一部はagent-runner | semantic判断と未知UIはshort-lived specialist agent、policy/state/money/receiptは決定論core |
 | marketplace | Coconala/Upwork/Lancers等に重複したbrainとstate | shared commerce state machine + capability manifest + thin provider transport/readback |
 | effects | click、worker success、Telegramを完了扱いし得る | `EffectIntent → execute once → official readback → OutcomeReceipt`以外は完了不可 |
 | learning | provider内の局所ログ・応募数中心 | banked net、acceptance、revision、cost、human minutesをGoal/Skill/Providerへ帰属 |
-| local/cloud | local loopとhosted productの説明・実装が分散 | 同じkernel/contract tests。runtime、browser、vault、schedulerだけadapter差替え |
+| local/cloud | local loopとhosted productの説明・実装が分散 | 同じEliza fork、Agent Core、plugin、contract tests。cloudだけtenant control planeを追加 |
 | public context | README前半、新fundraiser branch、狭い`/lm`、root manifestoが不一致 | startup-context起点でmission、product、traction、delivery、claim provenanceを同期 |
 | self-funding | READMEでは別物、Agent Economy docsに分離 | Financial Organ内でbanked revenueからcompute/cloud costを支払うclosed loop |
 
@@ -157,15 +341,47 @@ flowchart TD
     CLOUD["Hosted multi-tenant runtime"] --> MANAGER
 ```
 
+#### General Agentの開始点・現在地・理想像
+
+Lancersから直接作り始めたわけではない。最初にprovider非依存kernelを作り、Lancersを最初の実marketplace canaryにした。
+Lancersでは応募receiptとreplay-zeroまで実証したが、受注・納品・入金はまだ0である。公式への許可確認メール・問い合わせ・追跡は行わない。
+Upworkは停止、Coconalaはこのtrackの対象外とする。
+
+```mermaid
+flowchart LR
+    F["GA-01〜05<br/>共通kernel<br/>DONE"] --> L["GA-10 Lancers<br/>実応募1件 + replay-zero<br/>DONE"]
+    L --> H["GA-11 Hosted tenant<br/>queue → worker → receipt<br/>DONE"]
+    H --> O["GA-12 OSS clean install<br/>DONE"]
+    O --> R1["GA-13A tier2依存退役<br/>production natural pass<br/>DONE"]
+    R1 --> NOW["現在: ELZ-01<br/>Eliza fork local boot"]
+    NOW --> CORE2["ELZ-02 general core<br/>plugin-life-manager"]
+    CORE2 --> D["ELZ-03 / GA-14<br/>Lancersで常時Money loop"]
+    D --> W["GA-15 / GA-16<br/>受注 → 納品 → banked"]
+    W --> S["GA-18<br/>failureから自己修復"]
+    S --> I["GA-17<br/>receiptから自己改善"]
+    I --> OSS2["ELZ-04<br/>Local OSS stable"]
+    OSS2 --> CLOUD2["ELZ-05 / 06<br/>tenant isolation → Web SaaS"]
+    CLOUD2 --> X["GA-19<br/>新marketplaceをmanifestだけで追加"]
+    X --> LIFE["GA-20 Financial → Daily/Body/Mind<br/>Life Manager全体"]
+    LIFE --> D
+```
+
+理想像は、同じmanagerが`Goal → Opportunity → WorkItem → Effect → Receipt → EconomicReceipt`を回し、
+成功・失敗・利益・時間・costを次の判断へ戻すことである。provider別scriptを増やさず、未知siteは公開manifest、
+browser observation、private authorization、official state readbackだけを差し替える。自己改善はprompt/skill/graph候補をmodelが作り、
+offline eval、canary、rollbackを通った変更だけを採用する。自己修復はunknown effectを再送せずreconcileし、source/runtime/session/providerの
+失敗箇所を特定して最小修復し、同じreceipt contractで復帰を証明する。
+
 Coreが所有する最小entityは`Goal`、`Opportunity`、`CapabilityManifest`、`AuthorizationReceipt`、`WorkItem`、
 `EffectIntent`、`OutcomeReceipt`、`EconomicReceipt`である。provider固有codeはdiscovery/transport/readback selectorだけを持ち、
 goal選択、price/margin、state transition、retry、dedupe、receipt判定を持たない。
 
-OSSは新しいframeworkを発明せず次の境界をreuse/copy+tweakする。GA-01では固定commit、license、entrypoint、call graph、state、
-error recovery、effect/readbackを実codeで監査し、noticeを保持する。
+OSS基盤はElizaOS完全forkへ固定する。他の実装は学習元として境界だけをcopy+tweakし、別runtime dependencyとして重ねない。
+GA-01では固定commit、license、entrypoint、call graph、state、error recovery、effect/readbackを実codeで監査し、noticeを保持する。
 
 | 外部実装 | 採用する境界 | 採用しないもの |
 |---|---|---|
+| **ElizaOS** | **repository全体、AgentRuntime、plugin、local host、cloud control plane、UI** | 外部Steward依存、tenant FK/RLSの欠落、共有network |
 | DeepAgentsJS / LangGraph | specialist harness、checkpoint、bounded subagent pattern | Life Managerのbusiness stateやreceipt正本 |
 | browser-use | modelが未知siteを視覚的に扱うbrowser-tool contract | provider permission、effect success判定 |
 | OpenClaw | current local wake、channel、skill packaging | provider別の新しいdecision brain |
@@ -193,11 +409,13 @@ margin計算、複数siteへの配分、cross-organ allocator、local/cloud pari
 | `apps/life-manager/lib/stagehand-steel-driver.js` | Stagehand/Steel session → agent action → extracted readback | session backendとして再利用。regexによるsemantic成功判定は採用しない |
 | `skills/earn/gig/scripts/application_parent.py` / `apps/life-manager/lib/opportunity-engine.js` | provider固有の巨大pipeline / deterministic subjective cascade | 新kernelへ移植しない。判断はmodel、codeはformat・算術・bookkeepingだけ |
 
-外部実装は固定commitでentrypoint、state、recovery、effect/readbackを比較した。いずれもLife Managerの
+ElizaOSは固定commitでlocal runtimeとcloud control planeのentrypoint、state、auth、billing、provisioning、isolationを比較した。
+それ以外は固定commitでentrypoint、state、recovery、effect/readbackを比較したが、学習元に限定する。いずれもLife Managerの
 authorization、dedupe、公式receipt、money truthを置き換えない。
 
 | 外部実装 / fixed commit / license | 採用する境界 | 採用しないもの |
 |---|---|---|
+| **ElizaOS `29bed1bb3` / MIT** | **full fork、AgentRuntime、plugin、organization、credits、provisioning、Cloud UI** | Steward外部auth、未補強のtenant history/network |
 | DeepAgentsJS `b13a9966d` / MIT | `createDeepAgent → createAgent`、checkpointer、bounded subagent | business state、commerce receipt |
 | browser-use `67e7194c0` / MIT | `Agent.run → step → observe/act → history`、replan、reconnect | modelのdoneをprovider成功とすること |
 | OpenClaw `640d73e3d` / MIT | `CronService → locked ops`、wake、channel、durable delivery | provider別brain、marketplace truth |
@@ -212,13 +430,19 @@ authorization、dedupe、公式receipt、money truthを置き換えない。
 2. startup-context、README、README.ja、`/lm`、root site、fundraising kit、active formでproduct/mission/tractionの矛盾が0である。
 3. 一つの許可済みsiteで、site固有brainを追加せず`Goal → WorkItem → official ApplicationReceipt`を一件閉じる。
 4. 同じWorkItemのreplayで外部effect 0を公式readbackし、ack不明時は再送せず`reconciling`へ入る。
-5. localとcloudが同じkernel contract suiteを通り、差分はruntime/browser/vault/scheduler/billing adapterだけである。
+5. localとcloudが同じEliza fork、Agent Core、plugin、contract suiteを通り、cloudだけtenant control planeを追加する。
 6. clean machineへ公開repoだけからinstallでき、private checkout、外部symlink、生credential、Dais固有pathが0である。
 7. semantic判断、未知UI、候補選択はmodelが行い、regex・keyword・provider分岐を判断根拠にしない。
+8. tenant A/BのDB、memory、credential、browser、wallet、receipt、billingに加え、queue payload/result/error、claim/lease、artifact/log、worker/admin APIがcross-tenant read/write 0である。
+9. Web signupからtenant agent provisioning、login、dashboard、billing、account deletionまで同じcontrol planeで閉じる。
 
-最初の実装を受け入れる条件は3、4、7だけとする。5、6と後段のmoney pathはcanaryを止めない。
+現行の最初のslice `ELZ-01`は、exact SHA/license/notice、未変更local boot、persistent DB、health、restart readbackだけで受け入れる。
+`ELZ-03`は3、4、7、local OSS releaseは3〜7、multi-tenant cloudは5、8、9を追加で満たす。
 
-#### Atomic remaining TODO — この順序だけで進める
+#### Atomic remaining TODO — row 32以降だけを現在cursorとして、この順序で進める
+
+row 1〜31は完了履歴、別track停止、またはreplacement後の退役作業であり、次taskを選ばない。
+現在の先頭未完了はrow 32 `ELZ-01`である。
 
 | # | ID | 状態 | 原子的完了条件 |
 |---:|---|---|---|
@@ -235,28 +459,40 @@ authorization、dedupe、公式receipt、money truthを置き換えない。
 | 11 | CTX-05 root-site relationship | DONE | `anicca-products` PR #396をmain merge `7fe3f5f447…`へ反映。root hero/metadata/JSON-LDを`Anicca=mission/company`、`Life Manager=proactive general-agent product`、`Body/Mind/Money=3 organs`へ統一し、旧self-funding/AGI/UBI product sectionsをroot render pathから除外。contract 2/2、preview run `32989091020`、prod run `32989696892`、Netlify deploy `6a8f17a860…`、built-in money-path smoke/rollback gate PASS。live英日HTTP 200・title/CTA/3 organs・overflow 0 |
 | 12 | CTX-06 generated-context drift gate | DONE | README英日、committed fundraising kit、active formのdigest契約はoffline 28/28 GREEN。公開Web PR #397はmain `b1ee7a1208…`へmergeし、preview `32990937574`、production `32991554504`、money-path smokeがSUCCESS。live product/repo/Telegram auditは3/3 GREEN。Security Scan run `32992553073`の`Startup context drift` job `98253497091`もSUCCESS |
 | 13 | CTX-07 public live readback | DONE | isolated browserとHTTP/APIで`/lm`、英日root、public repo、英日README、Telegramをfresh readback。title、3 organs、Web/Telegram/GitHub CTA、version/digest、founder-attested約$1,000とMRR/ARR否定、banked境界、overflow 0を`docs/evidence/public-context/2026-08-27-public-context-readback.json`へ保存 |
-| 14 | CTX-08A host gate recovery | IN_PROGRESS | PR #2895をmain `db03dd58a…`へmergeしimmutable release済み。既存untracked isolated context 2件だけをdisposeして2→0、natural Apply run 166 / exit 0 / ledger 0 / isolated 0でreplay-zero、保護対象保持を確認。既存disk-cleanup run 124もevaluated 0 / reclaimed 0。free 8,613,470,208 bytes、block present、Fundraiser run 273 / exit 75のため、残る一件は明示承認されたMac再起動→free `>=21,474,836,480`・block absent・required owner・Fundraiser natural wakeのreadback |
-| 15 | CTX-08B official form capability readback | TODO | 既存Fundraiser ownerがASAC official formを一度だけ開き、current batch、締切、required fields、attachment、auth/CAPTCHA境界をreceipt化。送信effect 0 |
-| 16 | CTX-08C digest-bound application preview | TODO | context `2026-08-27.2` / `9fbe6198…5338`、kit/deck、全回答、attachment hashを一つの`application_digest`へ固定し、unsupported claim・空required field 0を確認 |
-| 17 | CTX-08D exactly-once accelerator submit | TODO | durable effect claim取得後、同じownerがofficial submitを一度だけ実行。timeout/unknownは再送せずofficial readbackでreconcile |
-| 18 | CTX-08E terminal receipt and replay-zero | TODO | official completion PNG、Telegram photo message ID、application dossier SHA-256、ledger resultを同じdigest chainへ束ね、再wakeでexternal effect 0をreadbackしてCTX-08 DONE |
+| 14 | CTX-08A host gate recovery | PAUSED_SEPARATE_TRACK | PR #2895をmain `db03dd58a…`へmergeしimmutable release済み。既存untracked isolated context 2件だけをdisposeして2→0、natural Apply run 166 / exit 0 / ledger 0 / isolated 0でreplay-zero、保護対象保持を確認。既存disk-cleanup run 124もevaluated 0 / reclaimed 0。free 8,613,470,208 bytes、block present、Fundraiser run 273 / exit 75。Life Manager foundationのcursorには使わない |
+| 15 | CTX-08B official form capability readback | PAUSED_SEPARATE_TRACK | Fundraiser trackの履歴TODO。現在のLife Manager foundation cursorには使わない |
+| 16 | CTX-08C digest-bound application preview | PAUSED_SEPARATE_TRACK | Fundraiser trackの履歴TODO。現在のLife Manager foundation cursorには使わない |
+| 17 | CTX-08D exactly-once accelerator submit | PAUSED_SEPARATE_TRACK | Fundraiser trackの履歴TODO。現在のLife Manager foundation cursorには使わない |
+| 18 | CTX-08E terminal receipt and replay-zero | PAUSED_SEPARATE_TRACK | Fundraiser trackの履歴TODO。現在のLife Manager foundation cursorには使わない |
 | 19 | GA-01 existing-core and OSS code map | DONE | fixed commit、license、entrypoint、call graph、state、recovery、effect/readbackを上表へ固定し、reuse/rejectを確定 |
 | 20 | GA-02 one Goal to WorkItem | DONE | commit `31323bd43`。active explicit Goalをimmutable・reference-only・effect-free WorkItemへ変換し、goal本文とprovenanceをjobへ保存しない。focused/adjacent Node tests 19/19 PASS、新graph engine 0 |
 | 21 | GA-03 one capability manifest | DONE | commit `440fe882a`。既存public catalogueへLancers application能力一件を追加し、state=`unknown`、transport=`cloak_browser`、private receipt必須、human-only ceremony、`application_receipt` readbackを固定。authorization/onboarding tests 29/29 PASS、margin/ranking 0 |
 | 22 | GA-04 shared effect and receipt kernel | DONE | commits `99398fca0` / `42d233ae5`。Goal WorkItem、capability/opportunity/intent/private-authorization refsを一つのimmutable publish effectへ固定し、pre-readback → single execution → verified post-readback → replay-zeroを実証。unknown pre/post stateは再送せず`unknownEffect=true`。focused/adjacent Node tests 22/22 PASS |
 | 23 | GA-05 bounded specialist runtime | DONE | commits `e768d1833` / `d005e828c` / `04dc0cd55`。既存browser step loopとagent-runnerを共通境界化し、最大10 step、既定120秒job deadline、各model decision 30秒・24,576 token、step heartbeat、親cancelのPython/provider child伝播、applicationを含むstructured readbackを実装。focused/adjacent Node tests 238/238 PASS |
 | 24 | GA-10 first authorized-site canary | DONE | `USER_DIRECTED_APPROVED`。general agentがAI使用可・オンライン完結のLancers `5593059`を選択し、JPY 600 / due `2026-09-01` / content `06bf3fa2…8000`をseal。effect `7314f1ed…c53a`を一度だけ実行し、official Proposal ID `27861812`をfinish/direct/mypage/own-cardの4 readbackで確認、canonical ledger 32→33。same WorkItem replayはpre-readback=`present`、execute 0、ledger insert false、count 33不変。private evidenceは`~/.local/state/anicca/lancers/general-agent/ga10/` mode 600、公式への許可確認・追跡0 |
-| 25 | GA-06 allocator across organs | DEFERRED | 最初のApplicationReceipt後までmargin、cross-site配分、body/mind/money allocatorを作らない |
-| 26 | GA-07 local/cloud adapter parity | DEFERRED | 最初のApplicationReceipt後までlocal/cloud共通化を作らない |
-| 27 | GA-08 self-funding economic loop | DEFERRED | 最初のApplicationReceipt後までcost attributionと`compute_paid`を作らない |
+| 25 | GA-06 allocator across organs | DEFERRED_UNTIL_GA13 | 最初のApplicationReceipt条件はGA-10で達成。旧runtime依存退役後、GA-14のmoney allocatorとして再開 |
+| 26 | GA-07 local/cloud adapter parity | DEFERRED_UNTIL_GA13 | GA-11でhosted contractは実証済み。GA-13後、GA-19の同一manifest local/cloud acceptanceへ統合 |
+| 27 | GA-08 self-funding economic loop | DEFERRED_UNTIL_BANKED | GA-16で新規外部収益がbankedになった後だけcost attributionと`compute_paid`を有効化 |
 | 28 | GA-09 Coconala migration | OUT_OF_SCOPE | このtrackではCoconalaのcode、state、browser、ownerを変更しない |
 | 29 | GA-11 hosted product slice | DONE | commits `212dadf68` / `f7b6853ea`。authenticated+paid同一tenantだけをcloud vault health→reference-only Goal WorkItem→既存queue/worker→bounded specialist→安全な7-field receiptへ通し、同一goal replayはcreated=false・worker再実行0。focused hosted/billing/secret/onboarding 39/39、tenant isolation 9/9。fresh productionはhealth HTTP 200、canonical panel query 0、stable identity hash `e892f219…e98`、paid/phone/call/notifications true、Telegram認証済み。Calendar=`action_required`、email=`unavailable`を維持し、新規tenant/payment/connector/provider連絡/契約/納品/入金0 |
 | 30 | GA-12 OSS clean-install release | DONE | commits `1d87e401f` / `f108b591d`。未知site用5-reference manifest、`secret://`例、local/cloud quick start、MIT LICENSE、DeepAgentsJS/browser-use/OpenClaw/Steel noticeを公開。provider名/DOM selector/credential/PII/human-loop field/vendor source 0。focused manifest 17/17、clean archive 1/1、変更path OSS/PII違反0。remote一致 `f108b591d9744f203873cc3a07e594dfac0146fa`を別dirへ展開し`GA12_PUSHED_ARCHIVE=PASS` |
-| 31 | GA-13 dependency retirement | IN_PROGRESS | GA-13A sourceはrepo内canonical `runtime/agent-runner`へ移行しdeveloper-checkout参照0。PR #3018→main `cc94f70eb`、Security Scan 8/8 SUCCESS。sparse immutable `20260829T000118-cc94f70e`をcutし`tier2-agent-diagnose`一件だけapply、loaded argv/SHA/state path一致。旧`d9021490…`とmode-600 prior/current plistを含むprivate rollback bundle保持。target SHAのnatural terminalはpendingでinstall passを代用しない。`citizens-diff-monitor`は`.hermes/citizens.json`正本かつlatest=`entrypoint_exit_143`のため未適格 |
+| 31 | GA-13 legacy dependency retirement | PARTIAL_DEFERRED | GA-13A DONEのevidenceとrollback bundleを保持。B1〜B4は新基盤のreplacement natural pass前に進めず、legacy code/state/ownerを先に削除しない |
+| 32 | ELZ-01 pin fork and unmodified local boot | **IN_PROGRESS — NEXT** | ElizaOS exact SHA/license/noticeを固定し、隔離forkをLife Managerとしてbuild。未変更local `AgentRuntime`、persistent DB、healthを再起動込みでreadback |
+| 33 | ELZ-02 one general Life Manager plugin | TODO | `plugin-life-manager`一つだけを登録し、provider非依存`Goal → Plan/Graph → Tool → Effect → Receipt → Reflect`をlocalで完走。別scheduler/DB/runtime 0 |
+| 34 | ELZ-03 Lancers application parity | TODO | 既存GA-10 WorkItemをEliza fork上で再現し、fresh inventory→model判断→一effect→official ApplicationReceipt→same-intent replay effect 0。Coconala変更0、公式問い合わせ0 |
+| 35 | GA-14 continuous local money discovery | TODO | local general agentが許可済みproviderを常時discoverし、profit/risk/capabilityをmodel判断してsealed intentへ変換。Lancers固有brain/DOM script 0 |
+| 36 | GA-15 contract and fulfillment loop | TODO | Lancersのreply/offer/contractを同じcommerce stateへ接続し、general specialistが制作→QA→納品→revisionを完了。official delivery/acceptance receiptを取得 |
+| 37 | GA-16 banked revenue loop | TODO | payment→platform balance→payout→受領口座を照合し、新規外部buyer由来の`banked`を一件取得。application/pending/click/self-payを売上に数えない |
+| 38 | GA-18 self-healing local runtime | TODO | process/task/browser/provider/effect failureをcheckpoint→reconcile→alternate path→natural E2Eで修復。unknown effect再送0、失敗task以外への副作用0 |
+| 39 | GA-17 self-improving local money maximizer | TODO | receiptからmodelがstrategy/skill/graph候補を作り、private/global分離、offline replay、bounded canary、automatic rollbackを通った改善だけを昇格 |
+| 40 | ELZ-04 stable local OSS release | TODO | clean Mac/Linuxが公開Life Manager repoだけから同じLancers receipt/replay/restart recoveryを再現。別checkout/symlink、生credential、Dais固有path 0 |
+| 41 | ELZ-05 two-tenant isolation proof | TODO | 同じcommitからtenant A/Bを並行起動し、DB、memory、credential、browser、wallet、receipt、billing、queue payload/result/error、claim/lease、artifact/log、worker/admin APIのcross-tenant read/write 0を攻撃的E2Eで証明 |
+| 42 | ELZ-06 multi-tenant Web SaaS | TODO | Supabase Auth、organization membership/RBAC/RLS、tenant provisioning、vault、quota、Stripe、Web signup/login/dashboard/account deletionを同じAgent Coreへ接続 |
+| 43 | GA-19 manifest-only marketplace expansion | TODO | local/cloud同じcoreでCloudWorks/Fiverr/Freelancer/Mercari/bug bounty等を一件ずつmanifest＋private refs＋readback glueだけで追加。Upwork再開0 |
+| 44 | GA-20 full Life Manager and YC proof | TODO | Financialでbanked/self-fundingを閉じ、同じGoal/WorkItem/Receipt kernelをDaily・Body・Mindへ拡張。実利用・収益・reliability evidenceからYC application/demoを生成 |
 
-Upworkは`API_INELIGIBLE / UI_AUTOMATION_DENIED / SUPPORT_SCOPE_PENDING`でclean terminalへ入った。
-Support返信待ちは#7以降を止めない。後日API approvalまたはaction-level scope変更を受けた時だけ、exact evidence hashとexpiryを持つ
-private receiptを追加し、GA-03のmanifest更新として同じshared kernelへ再参加させる。
+Upworkは`API_INELIGIBLE / UI_AUTOMATION_DENIED`でclean terminalへ入り、API/UI loopを恒久OFFとする。
+既存support caseの監視・返信・follow-up・再問い合わせは行わず、収益計画へ再参加させない。
 
 #### First implementation test matrix — all OK required
 
@@ -281,6 +517,9 @@ private receiptを追加し、GA-03のmanifest更新として同じshared kernel
 - KYC、税務契約、bank登録、本人の声・身体・出席をagentが偽装しない。
 - private credential、個人情報、provider dataをOSS、README、fundraising artifactへ複製しない。
 - localとcloudでbusiness logicを二重実装しない。cloud固有なのはtenant isolation、vault、billing、scaleだけとする。
+- Local OSSがLancersのapplication→delivery→banked、self-healing、self-improvingを閉じる前にmulti-tenant Web SaaSを実装しない。
+- OpenClaw、Hermes、Agents JS、Codex app-serverをEliza `AgentRuntime`と並ぶ第二の中核runtimeとして組み込まない。
+- shared Gateway、profile selector、application-level `tenant_id`だけをsecurity boundaryと見なさない。tenant FK/RLSとruntime/network isolationを両方要求する。
 
 #### Execution Steps / slice size
 
@@ -294,9 +533,10 @@ private receiptを追加し、GA-03のmanifest更新として同じshared kernel
 実browserでhero、CTA、Telegram deep link、cloud/local説明、claim sourceをreadbackする。iOS UIは変更しないためMaestroは不要。
 GA-10は実provider・実receipt・自然owner wake・replay-zeroが必須で、mock/dry-runは補助証拠にしかならない。
 
-### 0.0 Connector growth contract — current SSOT
+### Connector independent track contract — current foundation cursorには使わない
 
-このsectionだけをConnectorの現在contract、実装順、完了条件の正本にする。後段の14日窓、daily/8-hour schedule、
+このsectionはConnectorを明示的に再開した時だけ、同track内のcontract、実装順、完了条件を選ぶ。
+Life Manager foundationの先頭TODOはrow 32 `ELZ-01`であり、Connectorの未完了項目はそのcursorを上書きしない。後段の14日窓、daily/8-hour schedule、
 AI・cryptoをsoft preferenceとして全分野を残す記述、旧rolling coverage、fallback provider拡張、C-CORE-01〜07は
 完了済みbaselineまたは履歴であり、現在の実装判断を上書きしない。
 
@@ -843,7 +1083,7 @@ secretを出さない（`connector-coverage-telegram.js`は`runner`/`bounded`混
 | 移動時間の文言 | 同fileが「既存予定と移動時間が重なる予約もありません」を出力する | Connectorは移動時間・buffer・経路を扱わない。Calendar衝突だけを述べる |
 | provider決め打ち | `connector-ticket-telegram.js` captionが「Lumaの確認メールを受信済み」固定 | LumaとConnpassがprimary、他はfallback。実際に検証したproviderのreceipt名を出す |
 
-### 0.3 現在のlocal-only gate
+### 0.3 Historical local-only gate — 0.0.1のEliza foundation順序が上書きする
 
 Order 1Bの再開からOrder 5の完了まで、実行対象はDaisのMac mini上の
 Life Managerだけとする。現在の実装中に、将来配布、複数user、別実行環境の都合を
