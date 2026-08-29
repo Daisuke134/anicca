@@ -73,12 +73,14 @@ macOSでは、launchdで常駐させるrepository loopを明示選択します�
 だけでprivate providerや外部作用のあるloopを起動しないため、default選択は0件です。
 
 ```bash
+./scripts/local-up.sh loops-init
 ./scripts/local-up.sh loops-up <loop-id> [<loop-id> ...]
 ./scripts/local-up.sh loops-status
 ./scripts/local-up.sh loops-down
 ```
 
-選択は`~/.config/life-manager/loops`へ保存します。model利用または外部作用の
+`loops-init`はsecret値を追加せず、canonicalなuser-owned credential storeを
+作成または検証します。選択は`~/.config/life-manager/loops`へ保存します。model利用または外部作用の
 あるloopは、ユーザー自身の`~/.local/share/anicca/credentials.json`が存在し、
 親directoryがmode `700`、fileがmode `600`でなければinstall前に停止します。
 `loops-status`は`lm-loop status`と同じlaunchd、release、provider、blocker、

@@ -108,12 +108,15 @@ is no default list: Life Manager never starts private-provider or external-effec
 loops merely because the repository was cloned.
 
 ```bash
+./scripts/local-up.sh loops-init
 ./scripts/local-up.sh loops-up <loop-id> [<loop-id> ...]
 ./scripts/local-up.sh loops-status
 ./scripts/local-up.sh loops-down
 ```
 
-The selection is saved in `~/.config/life-manager/loops`. Model-backed or
+`loops-init` creates or validates the canonical user-owned credential store
+without adding any secret values. The selection is saved in
+`~/.config/life-manager/loops`. Model-backed or
 effectful selections fail before installation unless the user's own
 `~/.local/share/anicca/credentials.json` exists with parent mode `700` and file
 mode `600`. `loops-status` reports the same launchd, release, provider, blocker,
