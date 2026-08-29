@@ -760,7 +760,7 @@ Expected: the replacement event can be read back as one exact Telnyx call ID + o
 
 Read Google status for `lnpffie7md7fp0qp5j9hrudkq4` and `ah40e31tqlstvk2qvo1e0jt82c`, plus Supabase/Telnyx/Telegram receipts. Do not resend. Count the old no-location event as accepted only if both T-10 and T-5 Telnyx call/webhook/ledger triples and replay-zero are present. If effect outcome is unknown, leave the event confirmed until reconciliation is complete and schedule the replacement in Step 3.
 
-- [ ] **Step 2: Create one future physical event after the exact deployment**
+- [x] **Step 2: Create one future physical event after the exact deployment**
 
 Choose explicit RFC3339 start/end values 45–60 minutes in the future and a provider-routable full address read from the existing resolved Travel block. Keep the address private. Then run with those explicit environment values:
 
@@ -789,7 +789,7 @@ gog calendar raw primary "$CONTROL_EVENT_ID" --json --no-input
 
 If Step 1 does not prove both no-location call levels, create a second private controlled event with explicit start/end 20–30 minutes in the future, no location, no Meet link, `send-updates=none`, and private property `life_manager_e2e=cloud-core-no-location`. Save/read back its exact event ID. Do not manually trigger the scheduler.
 
-- [ ] **Step 4: Observe natural provider effects without manual trigger**
+- [x] **Step 4: Observe natural provider effects without manual trigger**
 
 Current atomic run order:
 
@@ -838,8 +838,8 @@ Current atomic run order:
 - [x] physical T-5 row has one call-control ID, one signed webhook ID, and one durable claim (`icqi2rhh24g1sf8q0hodja0i2s`);
 - [x] physical departure reminder has Telegram message ID `981` plus matching `lm_travel_log.telegram-t5` receipt and `provider=transit` Railway log;
 - [x] Telnyx provider GET returns HTTP 200 and exact call-control/session/leg matches for both levels of accepted no-location and physical events; all four calls are ended;
-- [ ] natural replay adds Calendar block 0, call 0, Telegram message 0;
-- [ ] controlled events are deleted with `send-updates=none` and read back `cancelled`.
+- [x] natural replay adds Calendar block 0, call 0, Telegram message 0;
+- [x] controlled events and their uniquely correlated helper blocks are deleted with `send-updates=none` and read back `cancelled`; real Travel blocks and the recurring `MUIT 出社` series remain `confirmed`.
 
 Require all of the following correlated to the exact event:
 
@@ -852,11 +852,11 @@ Require all of the following correlated to the exact event:
 
 For the accepted old or replacement no-location event, require T-10 and T-5 Telnyx call IDs, signed webhooks, and distinct `lm_wake_log` keys. It has no route or travel-block requirement.
 
-- [ ] **Step 5: Replay and require zero additional effects**
+- [x] **Step 5: Replay and require zero additional effects**
 
 Re-evaluate the same tenant/event through the real scheduler owner. Official readback counts before and after must show new travel block `0`, new call `0`, new Telegram message `0`, and unchanged durable claims.
 
-- [ ] **Step 6: Delete controlled events only after receipts and replay-zero**
+- [x] **Step 6: Delete controlled events only after receipts and replay-zero**
 
 For each exact controlled ID whose evidence is reconciled:
 
