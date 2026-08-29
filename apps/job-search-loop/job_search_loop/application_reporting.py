@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import json
 import os
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Callable
 
@@ -75,8 +76,21 @@ def deliver_wake_report(
         ).fetchone()
         if row is not None:
             company, role = str(row["company"]), str(row["title"])
+        cutoff = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
+        metrics = ledger.connection.execute(
+            "SELECT COUNT(DISTINCT c.intent_id), COUNT(DISTINCT a.company), COUNT(*), "
+            "(SELECT COUNT(DISTINCT application_id) FROM funnel_outcomes "
+            "WHERE funnel_stage='interview' AND disposition='positive') "
+            "FROM submission_confirmations c JOIN submit_intents i ON i.intent_id=c.intent_id "
+            "JOIN applications a ON a.id=i.application_id "
+            "WHERE datetime(c.received_at)>=datetime(?)",
+            (cutoff,),
+        ).fetchone()
     finally:
         ledger.close()
+    human_blockers = result.get("human_only_blockers")
+    human_blockers = len(human_blockers) if isinstance(human_blockers, list) else int(human_blockers or 0)
+    duplicate_effects = max(0, int(result.get("duplicate_effects") or 0))
 
     semantic_reason = semantic.get("reason") if semantic.get("status") == "failed" else None
     result_status = str(result.get("status") or "")
@@ -104,13 +118,13 @@ def deliver_wake_report(
         next_action = "resume_same_row_next_wake"
     checked = len(discovery.get("shortlist") or discovery.get("discovered") or [])
     if outcome == "success" and company != "none":
-        heading = "✅ 今回のWorkday処理を完了しました"
+        heading = "✅ 今回の処理を完了しました"
         result_text = f"会社: {company}\n求人: {role}"
     elif outcome == "success":
         heading = "🔎 新しい応募対象を確認しました"
         result_text = "今回は新しい応募の完了には至りませんでした。"
     else:
-        heading = "⚠️ Workday処理を完了できませんでした"
+        heading = "⚠️ 今回の処理を完了できませんでした"
         result_text = (
             f"会社: {company}\n求人: {role}"
             if company != "none"
@@ -118,19 +132,25 @@ def deliver_wake_report(
         )
     next_text = {
         "continue_next_eligible_workday": "次の新しい適合求人の確認を続けます。",
-        "retry_with_available_provider_capacity": "利用可能なモデル容量で同じ安全な処理を再開します。",
+        "retry_with_available_provider_capacity": "安全な処理を次回の空き時間に再開します。",
         "discover_next_eligible_workday": "登録済みsourceと新しい公式Workday会社の探索を続けます。",
         "resume_same_row_next_wake": "同じ求人の保存済みcheckpointから安全に再開します。",
     }.get(next_action, "30分後に次の安全な処理を続けます。")
+    visible_reason = "処理を完了しました。" if outcome == "success" else "次回に安全に再開します。"
     message = (
-        "Codex::: [Job Hunter][30分確認]\n"
-        f"{heading}\n\n"
-        "確認したこと\n"
-        f"公式Workday候補を{checked}件、現在のLedgerと照合しました。\n\n"
-        "結果\n"
-        f"{result_text}\n\n"
-        "理由\n"
-        f"{reason}\n\n"
+        "[Job Hunting] 24時間レポート\n\n"
+        "直近24時間の実績\n"
+        f"応募完了: {metrics[0] or 0}件\n"
+        f"新しい会社: {metrics[1] or 0}社\n"
+        f"確認メール取得: {metrics[2] or 0}件\n"
+        f"面接案内: {metrics[3] or 0}件\n"
+        f"人間の対応待ち: {human_blockers}件\n"
+        f"重複外部作用: {duplicate_effects}件\n\n"
+        "今回の処理\n"
+        f"公式求人候補を{checked}件確認しました。\n"
+        f"{heading}\n"
+        f"{result_text}\n"
+        f"状態: {visible_reason}\n\n"
         "次に自動で行うこと\n"
         f"{next_text}\nユーザーの操作は必要ありません。"
     )
@@ -221,38 +241,11 @@ def deliver_fit_decision(
     outbox_path: Path,
     sender: Callable[..., dict[str, str | None]] = send_once,
 ) -> dict[str, str | None]:
-    status = str(decision.get("decision") or "")
-    company = str(decision.get("company") or "")
-    title = str(decision.get("title") or "")
-    reason = str(decision.get("reason") or "判断理由は記録されていません。")
-    compensation = str(decision.get("compensation") or "給与情報は未確認です。")
-    if status == "qualified":
-        heading = "✅ この求人へ応募します"
-        next_action = "応募フォームを自動で進め、結果を改めて報告します。"
-    elif status == "hold":
-        heading = "⏸ この求人への応募を保留しました"
-        next_action = "確認可能な不足情報を調べながら、次の求人の確認を続けます。"
-    else:
-        heading = "🚫 この求人には応募しませんでした"
-        next_action = "次の求人の確認を続けます。ユーザーの操作は必要ありません。"
-    message = (
-        "Codex::: [Job Hunter][応募判断]\n"
-        f"{heading}\n\n"
-        f"会社: {company}\n"
-        f"求人: {title}\n"
-        f"理由: {reason}\n"
-        f"給与: {compensation}\n\n"
-        "次に自動で行うこと\n"
-        f"{next_action}"
+    event_key = (
+        f"workday-fit:{decision.get('application_id')}:"
+        f"{decision.get('evidence_sha256')}"
     )
-    return sender(
-        database=outbox_path,
-        event_key=(
-            f"workday-fit:{decision.get('application_id')}:"
-            f"{decision.get('evidence_sha256')}"
-        ),
-        message=message,
-    )
+    return {"status": "suppressed", "message_id": None, "event_key": event_key}
 
 
 def deliver_application_progress(
@@ -263,56 +256,8 @@ def deliver_application_progress(
     run_id: str,
     sender: Callable[..., dict[str, str | None]] = send_once,
 ) -> dict[str, str | None]:
-    ledger = Ledger(ledger_path)
-    try:
-        row = ledger.connection.execute(
-            "SELECT company,title,current_state FROM applications WHERE id=?",
-            (application_id,),
-        ).fetchone()
-        fit = ledger.connection.execute(
-            "SELECT decision,evidence_sha256 FROM workday_fit_decisions WHERE application_id=?",
-            (application_id,),
-        ).fetchone()
-    finally:
-        ledger.close()
-    if row is None or fit is None or str(fit["decision"]) != "qualified":
-        raise ValueError("application progress requires a qualified Workday row")
-
-    fit_key = f"workday-fit:{application_id}:{fit['evidence_sha256']}"
-    from .outbox import Outbox
-
-    outbox = Outbox(outbox_path)
-    try:
-        fit_row = outbox.connection.execute(
-            "SELECT payload,telegram_message_id FROM outbox WHERE event_key=? AND status='sent'",
-            (fit_key,),
-        ).fetchone()
-    finally:
-        outbox.close()
-    detail_lines = []
-    if fit_row is not None:
-        for line in str(fit_row[0]).splitlines():
-            if line.startswith("理由:") or line.startswith("給与:"):
-                detail_lines.append(line)
-    if not detail_lines:
-        detail_lines.append("理由: 完全な公式JDと履歴書・希望条件をモデルが比較し、面接可能性ありと判断しました。")
-
-    message = (
-        "Codex::: [Job Hunter][応募処理]\n"
-        "📨 Workday応募を開始または再開しました\n\n"
-        f"会社: {row['company']}\n"
-        f"求人: {row['title']}\n"
-        + "\n".join(detail_lines)
-        + "\n\n状態\n"
-        f"現在の台帳状態 `{row['current_state']}` から、専用ブラウザで応募フォームを進めています。\n\n"
-        "次に自動で行うこと\n"
-        "公式完了画面とGmail receiptを確認し、結果を別メッセージで報告します。ユーザーの操作は必要ありません。"
-    )
-    return sender(
-        database=outbox_path,
-        event_key=f"workday-application-progress:{application_id}:{run_id}",
-        message=message,
-    )
+    event_key = f"workday-application-progress:{application_id}:{run_id}"
+    return {"status": "suppressed", "message_id": None, "event_key": event_key}
 
 
 def deliver_submitted_resumes(
@@ -331,7 +276,8 @@ def deliver_submitted_resumes(
     deliveries = []
     for report in reports:
         message = (
-            "📎 Resume used for submitted application\n"
+            "[Job Hunting] 応募書類\n"
+            "📎 応募に使用した履歴書\n"
             f"{report['company']} — {report['title']}\n"
             f"{report['canonical_url']}"
         )
@@ -364,33 +310,13 @@ def deliver_terminal_report(
     output_path: Path,
     sender: Callable[..., dict[str, str | None]] = send_once,
 ) -> dict[str, Any]:
-    message = (
-        "Codex::: [Job Hunter][Inbox]\n"
-        f"run={run_id}\n"
-        f"outcome={outcome}\n"
-        f"reason={reason}"
-    )
-    try:
-        delivery = sender(
-            database=outbox_path,
-            event_key=f"job-search-inbox:{run_id}",
-            message=message,
-        )
-        receipt: dict[str, Any] = {
-            "delivery": "ack" if delivery.get("message_id") else "delivery_unknown",
-            "event_key": f"job-search-inbox:{run_id}",
-            "message_id": delivery.get("message_id"),
-            "outcome": outcome,
-            "reason": reason,
-        }
-    except Exception as error:
-        receipt = {
-            "delivery": "delivery_unknown",
-            "event_key": f"job-search-inbox:{run_id}",
-            "outcome": outcome,
-            "reason": reason,
-            "delivery_error": type(error).__name__,
-        }
+    receipt: dict[str, Any] = {
+        "delivery": "suppressed",
+        "event_key": f"job-search-inbox:{run_id}",
+        "message_id": None,
+        "outcome": outcome,
+        "reason": reason,
+    }
     _write_private_json(output_path, receipt)
     return receipt
 
@@ -435,7 +361,7 @@ def main() -> int:
         )
         _write_private_json(args.output, receipt)
         print(json.dumps(receipt, ensure_ascii=False, sort_keys=True))
-        return 0 if receipt.get("message_id") else 1
+        return 0 if receipt.get("message_id") or receipt.get("status") == "suppressed" else 1
 
     if args.command == "wake":
         if not all((args.run_id, args.day, args.runner_summary, args.discovery)):
