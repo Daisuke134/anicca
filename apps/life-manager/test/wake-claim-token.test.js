@@ -273,7 +273,7 @@ test("receipt mismatch, bounded failure, and throw retain the accepted claim wit
     assert.deepEqual(h.misses, [], "an uncertain receipt is not a dial miss");
     assert.equal(h.alerts, 0, "an accepted provider call is not a low-balance failure");
     assert.equal(errors.length, 1, "one generic reconciliation line is emitted");
-    assert.match(errors[0], /reconciliation/i);
+    assert.equal(errors[0], "[scheduler] accepted wake requires Telnyx receipt reconciliation");
     assert.doesNotMatch(errors[0], /provider-id-secret|session-id-secret|leg-id-secret|sentinel-claim-token|99900000000|新宿で打ち合わせ|provider-secret-error|raw-provider-secret-error/);
   }
 });
