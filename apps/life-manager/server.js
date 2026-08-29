@@ -181,7 +181,12 @@ function readRawBody(req) {
 // One tag, two readers (/health and the boot line). It was written out twice before, so a deploy
 // could report one build to curl and another to the logs — the pair of them is the only way to tell
 // live code apart from a deploy that never happened, and a pair that can disagree proves nothing.
-const BUILD_TAG = "lm2a-webhook-retry-v1";
+const FALLBACK_BUILD_TAG = "lm2a-webhook-retry-v1";
+function buildTag(env) {
+  const sha = String(env && env.RAILWAY_GIT_COMMIT_SHA || "");
+  return /^[0-9a-f]{40}$/i.test(sha) ? sha : FALLBACK_BUILD_TAG;
+}
+const BUILD_TAG = buildTag(process.env);
 const PORT = Number(process.env.PORT) || 8788;
 const GEMINI_KEY = process.env.GEMINI_API_KEY;
 const DEBUG_TRANSCRIPTS = process.env.DEBUG_TRANSCRIPTS === "1";
@@ -1053,4 +1058,4 @@ if (require.main === module) {
 // redeploy trigger 010026
 
 // Export pure helpers for unit tests (FIND-005).
-module.exports = { inngestServeAllowed, testCallAllowed, TEST_CALL_COOLDOWN_MS, TEST_CALL_DAILY_MAX };
+module.exports = { buildTag, inngestServeAllowed, testCallAllowed, TEST_CALL_COOLDOWN_MS, TEST_CALL_DAILY_MAX };
