@@ -1,6 +1,6 @@
 # macOS Life Manager Loop Control Plane
 
-**Status:** Control plane source implemented — production release completeness and full-fleet OSS startup remain
+**Status:** Control plane and production release complete — full-fleet OSS startup and security backlog remain
 **TODO ID:** `MACOS-LOOP-CONTROL-PLANE-1`  
 **Canonical registry:** `config/loop-registry.json`  
 **Scope:** macOS launchd only
@@ -390,17 +390,23 @@ recreator. Completed items are not part of the remaining queue.
 #### Current measured state and remaining TODO — execute only in this order
 
 Current registry has 166 managed rows and unmanaged labels 0. Account auto is
-present in all 78 shared-runner consumers with installed SHA missing 0. The
-active `current` release is `cc94f70e` and contains only `bin`, `config`,
-`runtime/loop`, `runtime/agent-runner`, `skills/anicca-core/scripts`, and
-`skills/_shared`. Consequently `lm-loop doctor` is red with 125 missing
-entrypoints even though retired-installed and unmanaged counts are both 0.
+present in all 78 shared-runner consumers with installed SHA missing 0. TODO 1
+is complete: PR #3040 prevents sparse owner rollout, PR #3041 executes release
+cut and cleanup code from the immutable owner while using the checkout only as
+the Git object source, and PR #3042 classifies the running TikTok provision
+browser without stopping it. The active `current` release is full `f7214aac`.
+The real owner pass completed `eligible=63`, `failed=0`, and skipped 14 running
+consumers. `lm-loop doctor` is green with missing entrypoints 0, unmanaged 0,
+and retired-installed 0. A 166-row plist audit finds missing release roots 0
+and mutable argv 0 across five protected immutable releases. The exact
+`6ab86c33` release removed by the earlier stale-checkout cleanup was rebuilt
+from its pushed commit; current immutable cleanup readback protects all five
+installed release roots.
 
 | Order | Remaining TODO | Done evidence |
 |---:|---|---|
-| 1 | Restore one complete immutable production release without restarting all loops. The release owner cuts pushed `main` with every registry entrypoint and locked dependency, then applies only idle labels; running labels move only when naturally idle. | `current/RELEASE.json` says `release_paths=ALL`; `lm-loop doctor` reports `ok=true`, missing entrypoints 0, unmanaged 0, retired-installed 0; loaded argv readback points only to existing immutable releases. |
-| 2 | Finish full-fleet OSS startup. Keep the proven Docker API/scheduler/worker subset, but add an explicit supported-loop profile and platform supervisor path so a clean user can start selected Life Manager loops rather than only render plists. Never bundle Dais credentials or claim private provider loops work without user-owned setup. | From a clean user: documented few-command setup, user-owned secret provisioning, selected loops start in parallel, initiating shell exits, supervisor retains them, and the resolver reports each selected loop's liveness, capability/auth blocker, terminal result, and official effect status. |
-| 3 | Close the separate OSS/security backlog without blanket allowlisting or `npm audit fix --force`. Start with production personal-email defaults, then source-root portability/inventory, then transitive dependency upgrades. | PII shape 0, OSS self-contained boundary 0, Python syntax 0, dependency audit critical 0 and high 0, with focused compatibility readback for affected runtime routes. |
+| 1 | Finish full-fleet OSS startup. Keep the proven Docker API/scheduler/worker subset, but add an explicit supported-loop profile and platform supervisor path so a clean user can start selected Life Manager loops rather than only render plists. Never bundle Dais credentials or claim private provider loops work without user-owned setup. | From a clean user: documented few-command setup, user-owned secret provisioning, selected loops start in parallel, initiating shell exits, supervisor retains them, and the resolver reports each selected loop's liveness, capability/auth blocker, terminal result, and official effect status. |
+| 2 | Close the separate OSS/security backlog without blanket allowlisting or `npm audit fix --force`. Start with production personal-email defaults, then source-root portability/inventory, then transitive dependency upgrades. | PII shape 0, OSS self-contained boundary 0, Python syntax 0, dependency audit critical 0 and high 0, with focused compatibility readback for affected runtime routes. |
 
 ### TODO 1 execution state
 
