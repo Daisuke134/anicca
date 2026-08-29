@@ -816,6 +816,7 @@ Current atomic run order:
 - [x] create post-hangup-release no-location event `or3855rnheueg91q5u5vu8tkqk`; Google/Composio agree on private, no location, `confirmed`, 20:50–21:00 JST, wake-eligible, cohort one;
 - [ ] observe natural 20:40 T-10 and 20:45 T-5 and require call/session/leg plus signed terminal or AMD webhook IDs in both durable rows;
 - [x] create physical event `7bmv7s4d2p8vh3rlnknhsekt2o`, private, location `東京駅`, `confirmed`, 21:45–21:55 JST; production Composio matches it and live Transit returns buffered departure 21:09:40, arrival 21:45, four steps, two rail legs with line/headsign, one transfer, platform data, and no station-exit field;
+- [ ] TDD the measured Travel-block suppression: an unrelated helper ending 21:19 must not suppress the 21:45 event; only a block adjacent within the existing two-minute tolerance or the exact durable `go` claim dedupes it;
 - [ ] require one outbound `[Travel]` block before 21:09:40 and one Telegram route message at natural due 21:04:40 with durable positive message ID;
 - [ ] no-location T-10 row has one call-control ID, one signed webhook ID, and one durable claim;
 - [ ] no-location T-5 row has one call-control ID, one signed webhook ID, and one durable claim;

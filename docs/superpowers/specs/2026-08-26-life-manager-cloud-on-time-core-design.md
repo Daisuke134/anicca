@@ -128,6 +128,7 @@ Transit APIの公式契約は次を使う。
 | AC-15 | route cache keyはtenant、origin、destination、timezone、service date、anchor time bucket、anchor type、provider modeを含む。`_shared` identityを使わない。 |
 | AC-16 | 既存`directionsMinutes` callersはstructured routeの`durationSeconds`から分数を得るadapterを通し、Calendar autofillの現行契約を壊さない。 |
 | AC-17 | exact station exit、best car、crowdingを推測・生成しない。source factがないfieldをTelegram本文へ出さない。 |
+| AC-39 | outbound `[Travel]` blockのCalendar fallback dedupeは、current event開始へ2分以内で隣接する対応blockだけを候補とする。別eventのhelper blockが過去3時間に存在するだけでcurrent eventをskipしない。durable `lm_travel_log(uid,event_key,go)`を新規eventのprimary dedupeとし、同一event replayは追加block 0を維持する。 |
 
 ### 2.4 T-5 Telegram next-event and transit reminder
 
