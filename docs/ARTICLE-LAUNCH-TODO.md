@@ -40,8 +40,9 @@
       demand race、preventive disk marker、provider schema、exhaustion、900秒agent、pre-topic receipt、release rebind、
       quality前crashを順に修復する。run `20260828-111213`はJA/EN draftとmediaを生成したがENOSPC前にquality/publicationへ
       到達せず、Note/Substack/Xの新規live URLは0、received writing revenueは0である。headlineはImageMagick生成のため
-      GPT Image 2 receipt要件を満たさない。次は5GiB以上の安定headroomでmain由来releaseを作り、orphan cardをqueueへ
-      hash-bound復旧して新runを1回wakeする。
+      GPT Image 2 receipt要件を満たさない。固定5GiBは標準でも収益条件でもないため廃止する。release buildとarticle runを
+      同時実行せず、`max(実測release-build peak, 実測article-run peak) + atomic-write reserve`をcapacity receiptへ保存し、
+      その実測floorを満たしてmain由来releaseを作る。次にorphan cardをqueueへhash-bound復旧して新runを1回wakeする。
       最新readback: `article-daily`はloaded-idle、毎朝06:00にscheduleされ、`ARTICLE_AUTOPUBLISH=1`であるが、
       installed release `def55ccd`の直近terminalはFAIL `entrypoint_exit_75`である。公開ledgerと外部公開面の最新は
       Note JA / Substack JA / Substack ENが8月21日、X Article JAが8月20日で、8月22日以降の新規live articleは0である。
@@ -51,6 +52,15 @@
 - [ ] W5 W2のSubstack ENだけを同じ項目でprovider-native readbackする。
 - [ ] W6 W2のX Article JAだけを同じ項目でprovider-native readbackする。
 - [ ] W7 W2のinstalled loopを2回目wakeし、article、payment row、notificationのduplicate effect=0を証明する。
+- [ ] W7a HubPages Earnings ProgramとKompasiana K-Rewardsについて、Dais所有accountのsignup/eligibility、対象国、
+      payout identity、税務・本人確認、現行AI/originality規則を公式画面でreadbackする。HubPagesは広告/Amazon、Kompasianaは
+      GoPay rewardを直接収益lane候補とする。未適格または受取不能ならdiscovery laneへ降格する。
+- [ ] W7b HubPages ENとKompasiana IDのplatform adapter、native readback、money receipt joinを追加する。各記事は別topic、
+      別reader job、各言語native執筆とし、自動翻訳・近似複製だけの配信を禁止する。Mediumはprimarily AI-generated記事を
+      paywall不可とする公式規則があるため、AI開示付きdiscovery-onlyに固定する。
+- [ ] W7c W2〜W7とW7a〜W7bのreceipt後、入金を待たず06:00 JA（Note paid + X）、14:00 EN（HubPages、
+      Substackは月水金だけ）、22:00 ID（Kompasiana）の3独立slotを開始し、14日で42 source articlesを観測する。
+      各slotはunique run/topic、同じidentity/safety/quality/readback/replay-zero gateを持つ。
 - [ ] W8 `WinnerObservation` schemaを実装し、source、observed_at、evidence excerpt/hash、fact/inference、
       transfer hypothesisの欠落を拒否する。
 - [ ] W9 winner researcher promptを既存research境界へ接続する。
@@ -61,11 +71,11 @@
 - [ ] W14 Substack purchase/fee/refund/payoutをartifact/runへjoinする。
 - [ ] W15 editorial/self-owned purchase/fee/refund/payoutをartifact/runへjoinする。
 - [ ] W16 最初のreceived writing paymentを公式readbackする。view、like、pending、availableはrevenue 0/unknownのままにする。
-- [ ] W17 1日1本を7 terminal runs連続観測する。headline readback、payment attribution、Telegram receipt、
-      duplicate=0を各runで保持する。この7連続receiptが揃うまで「Life Managerは毎日記事を公開することがverified」と
-      宣言しない。
-- [ ] W18 W17と最初のreceived payment後だけ、06:00/14:00/22:00の3独立slotを追加する。各slotは異なるtopic、
-      unique run、同じ品質・money gateを持ち、記事当たりexpected net revenueが下がれば1日1本へ戻す。
+- [ ] W17 3 slotを7 calendar days連続観測し、全21 scheduled source runsのterminal、headline readback、payment attribution、
+      Telegram receipt、duplicate=0を保持する。このreceiptが揃うまで「Life Managerは毎日3本公開verified」と宣言しない。
+- [ ] W18 14日42本の言語・媒体別received revenue、conversion、engagement、refund、制作costを比較する。入金0でも実験を
+      開始するが、継続判断はreceived moneyを最優先する。品質または記事当たりexpected net revenueが悪化したlaneだけを
+      停止し、勝っているlaneの頻度は維持または次の一変数実験で増やす。
 - [ ] W19 OSS packageを別tenantへinstallし、credential/state/receipt交差0を証明する。
 - [ ] W20 W19 tenantの実provider draft、headline、money ledgerをreadbackし、2回目wakeでreplay-zeroを証明する。
       「誰でも必ず儲かる」とは表示しない。

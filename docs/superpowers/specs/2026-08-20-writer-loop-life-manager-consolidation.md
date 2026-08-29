@@ -97,18 +97,39 @@ modelの比較対象として使う。参照: https://github.com/TryGhost/Ghost
 - clean user installでdraft作成、headline、readback、money ledger、replay-zeroまで証明する。
 - OSSは収益化の手段を再現する。利益、conversion、月$10kは保証しない。
 
-### 24/7とscaleのgate
+### 24/7とglobal three-daily experiment
 
-初期値は1日1 source articleである。次を全て満たすまで3本/日へ増やさない。
+初回active-four packageは1 source articleでgeneration、GPT Image 2、Note JA、Substack JA/EN、X Article JA、
+provider-native readback、2回目wakeのreplay-zeroを証明するcanaryである。最初のreceived paymentや7日連続完了を
+3本/日の開始条件にはしない。canaryとHubPages/Kompasianaのaccount・payout・adapter receiptが揃い次第、14日間の
+3 source articles/day実験を開始する。
 
-- 7回連続でdaily→resume→provider readbackがterminalになる。
-- active-four全てで本文・identity・headlineが公式readbackされる。
-- 2回目wakeで記事、payment row、Telegramのduplicateが0である。
-- 少なくとも1件のreceived writing paymentがarticleへjoinされる。
-- 記事当たり品質、conversion、expected net revenueが低下しない。
+| Slot | Native language | Direct-revenue destination | Distribution |
+|---|---|---|---|
+| 06:00 | JA | Note paid | X Article |
+| 14:00 | EN | HubPages、Substackは月水金 | Dev.to / X |
+| 22:00 | ID | Kompasiana K-Rewards | 現地向けdistribution |
 
-scale後は06:00/14:00/22:00の3 slotを使い、各slotへunique run/topicを割り当てる。悪化した場合は自動的に
-最後に収益性が証明されたcadenceへ戻す。月$10kは完全なcalendar monthのunique net received writing payoutsだけで判定する。
+各slotは別topic、別reader job、unique runを持つ。翻訳だけ、同一構造の近似複製、同じ読者への1日3通知を禁止する。
+Mediumはprimarily AI-generated writingをPartner Program paywall不可とするため、AI利用を開示したdiscovery-onlyである。
+スペイン語・タガログ語は、公式の直接収益面、Japan居住者のpayout eligibility、account、native quality readbackが揃ってから
+同じ一言語一lane契約で追加する。
+
+一次情報は量と品質の両方を支持する。Substack公式事例は週3回の固定scheduleで約4.5か月に最初の1,000 subscribers、
+当時2,300 free / 315 paidを報告する。Kompasiana K-Rewardsは参加条件に累計50記事、100 comments、25,000 views、
+月1 headlineを要求し、engagement 70% + pageviews 30%からGoPay rewardを計算する。HubPagesは高品質記事の定期公開、
+広告/Amazon収益を案内する一方、最初のpayoutまで6か月以上かかる場合が多いと明記する。Googleは価値を追加しないAI大量生成・
+自動翻訳をscaled content abuseとする。
+
+- https://on.substack.com/p/how-scott-hines-got-his-first-1000
+- https://www.kompasiana.com/k-rewards
+- https://hubpages.com/faq/
+- https://help.medium.com/hc/en-us/articles/22576852947223-Artificial-Intelligence-AI-content-policy
+- https://developers.google.com/search/docs/essentials/spam-policies#scaled-content
+
+7 calendar days・全21 scheduled source runsのterminal publication receiptで初めて「毎日3本verified」とする。14日42本で
+言語・媒体別のreceived revenue、conversion、engagement、refund、制作costを比較し、悪化したlaneだけを停止する。
+月$10kは完全なcalendar monthのunique net received writing payoutsだけで判定する。
 
 ### 現在のproduction truth
 
@@ -124,9 +145,10 @@ pre-topic receipt、pruned release path rebinding、quality前crash exhaustion�
 current run `20260828-111213`はpaid-demand route、JA/EN draft、X post、headline PNG、body diagramまで生成するが、run中に
 free diskが枯渇し、generation-state atomic writeがENOSPCで失敗する。全artifactはSHA付きattempt archiveへ退避され、
 publication state、public ledger row、Note/Substack/Xの新規live URLは0である。headline PNGはImageMagick生成であり、
-GPT Image 2 receipt契約を満たさない。received writing revenueは0である。次の唯一のcursorは、5GiB以上の安定headroom、
-main由来immutable release、orphan paid-demand cardのhash-bound queue復旧、新runのGPT Image 2 headlineとactive-four native
-readbackである。
+GPT Image 2 receipt契約を満たさない。received writing revenueは0である。固定5GiBは外部標準でなく暫定値なので廃止する。
+release buildとarticle runを同時実行せず、`max(実測release-build peak, 実測article-run peak) + atomic-write reserve`を
+capacity receiptへ保存する。次の唯一のcursorは、その実測floor、main由来immutable release、orphan paid-demand cardの
+hash-bound queue復旧、新runのGPT Image 2 headlineとactive-four native readbackである。
 
 現在のschedule contractは毎朝06:00の`article-daily`で、autopublishはarmedである。しかしinstalled release `def55ccd`の
 直近terminalはFAIL `entrypoint_exit_75`である。公開ledgerと外部公開面の最新はNote JA / Substack JA / Substack ENが
@@ -159,16 +181,17 @@ canonical promptsは`skills/writer-agent/reference/proven-writer-money-playbook.
 寸法、rights provenance、alt textをrun receiptへ保存する。provider-native readbackで
 headline imageが存在し本文と一致するまで公開完了としない。画像は長文、捏造数値、第三者logoを含めない。
 
-収益面は`skills/writer-agent/config/revenue-surfaces.json`を正本とし、note paid article、Substack subscription、editorial fee、
-self-owned publicationを直接writing revenueとして扱う。view、like、draft、subscriber projection、pending、
+収益面は`skills/writer-agent/config/revenue-surfaces.json`を正本とする。現在の直接writing revenueはnote paid article、
+Substack subscription、editorial fee、self-owned publicationである。W7a〜W7bの公式eligibility、payout、adapter readback後に
+HubPages広告/AmazonとKompasiana K-Rewardsを追加する。view、like、draft、subscriber projection、pending、
 availableはreceived cashではない。OSS版は同じresearch→write→image→publish→readback→money→learn契約を
 利用できる。credential、account、state、receiptはrepo外に置き、利用者ごとに完全分離する。OSSは収益機会を
 再現可能にするが、利益を保証しない。
 
-初期cadenceは1 source article/dayである。7回連続terminal completion、全destinationのheadline/native
-readback、replay duplicate=0、最初のreceived writing paymentが揃った後だけ、06:00/14:00/22:00の3 slotを
-独立runとして検証する。品質、conversion、または記事当たりexpected net revenueが低下したら直前の収益性ある
-cadenceへ戻す。月$10kは完全なcalendar monthに属するunique net received writing payoutsをUSDへ換算して判定する。
+初回active-four canaryとreplay-zeroの後は、入金を待たず06:00/14:00/22:00の3独立slotを14日検証する。
+7日・全21 scheduled source runsのreceiptは開始条件ではなく「毎日3本verified」の宣言条件である。品質、conversion、
+または記事当たりexpected net revenueが低下したlaneだけを停止する。月$10kは完全なcalendar monthに属するunique net
+received writing payoutsをUSDへ換算して判定する。
 原通貨を保持し、receipt受領日のECB reference rateで原通貨→EUR→USDを計算する。非営業日は直前営業日のrateを使い、
 source URL、rate date、取得時刻、通貨pair、rate、丸め前後の値をFX receiptへ保存する。ECB未対応通貨またはrate欠落の
 記録は`unknown`であり、$10kへ加算しない。換算式は`source_amount / source_units_per_eur * usd_per_eur`、計算は
@@ -1393,7 +1416,7 @@ loaded definitionと自然tickまで読み戻すことを意味する。A1のcon
 | A9j | X可読性失敗runを同日新runへ安全解放する | 3 revenue pairのreceipt、X FAIL readability receipt、target、media SHA、no-effect ledgerを再検証し、改ざん時はblock。実機start-controlが明示reasonで`new`を返す | 完了（実装・回帰23件・実機native再probe PASS。新runの4面native canaryはA9fで継続） |
 | A9g | 旧backlogを外部作用なしで扱う | 旧runのlive pairを保持したまま、未解決pairだけを現行code/state identityのfailure circuitへopenし、plannerが`WAIT`かつ`recovery_pairs=[]`を返す。新規runの公開を旧targetが先取りしない | 完了（Note circuitを現行code/state SHAで再open、receipt-backed handoff 11件をWAIT化し、さらにduplicate-media runの3件をqueue quarantine付きWAITへ隔離。planner `WAIT/blocked_pairs=[note/ja]/recovery_pairs=[]`） |
 | A9h | receiptのない旧CLAIMEDを安全に扱う | receipt-backed owner proofがないclaimは自動で盗まず、状態・所有者・次の監査を自然文receiptへ記録。新しいreceiptまたは明示的なOrder 5 ownerが現れた場合だけqueue state machineで再開 | 未完（`32446a…` credential incident 1件をfail-closedでCLAIMED維持。clean canaryの公開対象ではないが、repair queueの完全な可観測性に必要） |
-| A9b | 1日複数回の正式scheduleを追加する | 06:00/14:00/22:00などのcalendar wake、各slotのunique run ID、同日異記事、連続2周期のnative receiptを実測 | 未着手。現在は06:00のまま |
+| A9b | global three-daily scheduleを追加する | 06:00 JA Note/X、14:00 EN HubPages＋月水金Substack、22:00 ID Kompasiana。各slotのunique run/topic、native language、連続2周期のnative receiptを実測 | 未着手。現在は06:00だけ。W2〜W7とW7a〜W7b receipt後に開始し、入金は開始条件にしない |
 | A10 | 実payment/publisher receiptをmoney ledgerへ接続する | receipt ID、金額、通貨、destination identity、artifact/run IDをjoin。未取得は`unknown`のまま保持 | 未着手 |
 | A11 | 14日間の運用観測を完了する | 重複外部作用0、同一run resume、自然文の成功/失敗報告、revenue ledger整合を連続receiptで確認 | A9/A10待ち |
 | A12 | rollback検証後にWriter専用旧releaseだけをアーカイブする | archive hash、restore receipt、削除対象scope receipt。`.openclaw`と`/Users/anicca/profitable-claude`全体は削除しない | A11待ち |
