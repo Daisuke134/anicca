@@ -168,7 +168,7 @@ test("general money worker wires its injected bounded specialist through the reg
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "lm-runtime-money-specialist-"));
   const specialist = async (expected) => ({
     kind: "general_agent_work",
-    status: "planned",
+    status: "completed",
     tenant_id: expected.tenant_id,
     job_id: expected.job_id,
     goal_ref: expected.goal_ref,
@@ -313,7 +313,7 @@ test("committed local compose is self-contained and never references a legacy ru
   );
   assert.match(
     compose,
-    /LM_WORKER_CAPABILITIES: \$\{LM_WORKER_CAPABILITIES:-runtime\.noop,marketing\.liveness\.telegram\}/,
+    /LM_WORKER_CAPABILITIES: \$\{LM_WORKER_CAPABILITIES:-runtime\.noop,marketing\.liveness\.telegram,general-agent\.work\}/,
   );
   assert.match(compose, /command: \["node", "scripts\/runtime-up\.js", "internal-liveness"\]/);
   assert.match(compose, /LM_MARKETING_LIVENESS_LANES_JSON: \$\{LM_MARKETING_LIVENESS_LANES_JSON:-\[\]\}/);

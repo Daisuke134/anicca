@@ -210,7 +210,7 @@ services:
       <<: *runtime-environment
       LM_DEPLOYMENT_ROLE: worker
       LM_WORKER_ID: local-runtime-worker
-      LM_WORKER_CAPABILITIES: ${LM_WORKER_CAPABILITIES:-runtime.noop,marketing.liveness.telegram}
+      LM_WORKER_CAPABILITIES: ${LM_WORKER_CAPABILITIES:-runtime.noop,marketing.liveness.telegram,general-agent.work}
       LM_WORKER_LEASE_SECONDS: ${LM_WORKER_LEASE_SECONDS:-300}
       LM_RUNTIME_TENANT_ID: ${LM_RUNTIME_TENANT_ID:-}
       LM_TELEGRAM_BOT_TOKEN: ${LM_TELEGRAM_BOT_TOKEN:-}

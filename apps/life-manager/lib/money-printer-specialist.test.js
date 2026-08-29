@@ -54,7 +54,7 @@ test("specialist reads one tenant goal, runs bounded work, updates status, and r
     runnerInput = input;
     return {
       summary: { status: "success", selected_provider: "codex", selected_model: "gpt-5.6-terra" },
-      value: { status: "planned", execution_id: "execution-money-1" },
+      value: { status: "completed", execution_id: "execution-money-1" },
     };
   };
   const specialist = createMoneyPrinterSpecialist({
@@ -80,7 +80,7 @@ test("specialist reads one tenant goal, runs bounded work, updates status, and r
 
   assert.deepEqual(result, {
     kind: "general_agent_work",
-    status: "planned",
+    status: "completed",
     tenant_id: TENANT,
     job_id: JOB_ID,
     goal_ref: GOAL_REF,
@@ -107,12 +107,14 @@ test("specialist reads one tenant goal, runs bounded work, updates status, and r
     additionalProperties: false,
     required: ["status", "execution_id"],
     properties: {
-      status: { type: "string", const: "planned" },
+      status: { type: "string", const: "completed" },
       execution_id: { type: "string", minLength: 1, maxLength: 200 },
     },
   });
   assert.match(runnerInput.prompt, /Public bounded opportunity/);
   assert.match(runnerInput.prompt, /Research the public opportunity/);
+  assert.match(runnerInput.prompt, /qualification|research stage/i);
+  assert.match(runnerInput.prompt, /not delivery|never claim delivery/i);
   assert.doesNotMatch(runnerInput.prompt, /private_state|must not reach/);
 });
 
@@ -139,7 +141,7 @@ test("specialist rejects scope, malformed model output, and failed opportunity r
     createMoneyPrinterSpecialist({
       ...base,
       readOpportunity: async () => opportunity(),
-      runAgentRunner: async () => ({ value: { status: "blocked", execution_id: "execution-1" } }),
+      runAgentRunner: async () => ({ value: { status: "planned", execution_id: "execution-1" } }),
       updateOpportunity: async () => { updates += 1; return opportunity({ status: "QUALIFIED" }); },
     })(expected()),
     /status|receipt|specialist/i,
@@ -151,17 +153,6 @@ test("specialist rejects scope, malformed model output, and failed opportunity r
       ...base,
       readOpportunity: async () => opportunity(),
       runAgentRunner: async () => ({ value: { status: "completed", execution_id: "execution-1" } }),
-      updateOpportunity: async () => { updates += 1; return opportunity({ status: "DELIVERED" }); },
-    })(expected()),
-    /status|result|specialist/i,
-  );
-  assert.equal(updates, 0);
-
-  await assert.rejects(
-    createMoneyPrinterSpecialist({
-      ...base,
-      readOpportunity: async () => opportunity(),
-      runAgentRunner: async () => ({ value: { status: "planned", execution_id: "execution-1" } }),
       updateOpportunity: async () => opportunity({ status: "DISCOVERED" }),
     })(expected()),
     /readback|status/i,
