@@ -18,7 +18,8 @@
 set -uo pipefail
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SCRIPT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+REPO_ROOT="$(cd "${LIFE_MANAGER_SOURCE_REPO:-$SCRIPT_ROOT}" && pwd)"
 LOOPS_ROOT="${LOOPS_ROOT:-$HOME/loops}"
 RELEASES="$LOOPS_ROOT/releases"
 CURRENT="$LOOPS_ROOT/current"
@@ -33,7 +34,7 @@ die() { echo "cut-loop-release: $*" >&2; exit 1; }
 prune_releases_after() {
   local keep="$1"
   LIFE_MANAGER_RELEASE_KEEP="$keep" \
-    python3 "$REPO_ROOT/runtime/loop/central_cleanup.py" --release-gc-only >/dev/null || \
+    python3 "$SCRIPT_ROOT/runtime/loop/central_cleanup.py" --release-gc-only >/dev/null || \
     die "safe release pruning failed"
 }
 
@@ -128,7 +129,7 @@ chmod -R a-w "$DEST" 2>/dev/null || true
 chmod -R u+w "$DEST/state" 2>/dev/null || true
 
 # Use the same host-wide owner lock as `lm-loop apply` while replacing `current` atomically.
-PYTHONPATH="$REPO_ROOT${PYTHONPATH:+:$PYTHONPATH}" \
+PYTHONPATH="$SCRIPT_ROOT${PYTHONPATH:+:$PYTHONPATH}" \
   python3 -c 'import sys; from pathlib import Path; from runtime.loop.lm_loop import activate_current; activate_current(Path(sys.argv[1]), Path(sys.argv[2]), Path(sys.argv[3]))' \
   "$CURRENT" "$DEST" "$LOOPS_ROOT/.apply.lock" || die "could not activate current release"
 
