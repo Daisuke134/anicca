@@ -93,3 +93,48 @@ test("getOrCompute: provider-scoped contexts do not share a cached route", async
   await cache.getOrCompute(...args, provider, { provider: "google", mode: "drive", timezone: "Asia/Tokyo", serviceDate: "20260827", anchorType: "arrival" });
   assert.equal(calls, 2);
 });
+
+test("getOrCompute: a null route is retried, then the accepted route is cached", async () => {
+  let calls = 0;
+  const provider = async () => calls++ === 0 ? null : { durationSecs: 1029 };
+  const cache = makeRouteCache({ store: new Map(), ttlMs: 10 * 60_000, now: () => 1000 });
+  const args = ["u1", G(35.68, 139.76), G(35.69, 139.70), 100];
+
+  assert.equal(await cache.getOrCompute(...args, provider), null);
+  const route = await cache.getOrCompute(...args, provider);
+  assert.deepEqual(route, { durationSecs: 1029 });
+  assert.deepEqual(await cache.getOrCompute(...args, provider), route);
+  assert.equal(calls, 2);
+});
+
+test("getOrCompute: concurrent null calls share in-flight work, then a later call retries", async () => {
+  let calls = 0;
+  let release;
+  const gate = new Promise((resolve) => { release = resolve; });
+  const provider = async () => {
+    calls += 1;
+    if (calls === 1) { await gate; return null; }
+    return { durationSecs: 1029 };
+  };
+  const cache = makeRouteCache({ store: new Map(), ttlMs: 10 * 60_000, now: () => 1000 });
+  const args = ["u1", G(35.68, 139.76), G(35.69, 139.70), 100];
+
+  const first = cache.getOrCompute(...args, provider);
+  const second = cache.getOrCompute(...args, provider);
+  assert.equal(calls, 1);
+  release();
+  assert.deepEqual(await Promise.all([first, second]), [null, null]);
+  assert.deepEqual(await cache.getOrCompute(...args, provider), { durationSecs: 1029 });
+  assert.equal(calls, 2);
+});
+
+test("getOrCompute: an undefined route is not cached", async () => {
+  let calls = 0;
+  const provider = async () => calls++ === 0 ? undefined : { durationSecs: 1029 };
+  const cache = makeRouteCache({ store: new Map(), ttlMs: 10 * 60_000, now: () => 1000 });
+  const args = ["u1", G(35.68, 139.76), G(35.69, 139.70), 100];
+
+  assert.equal(await cache.getOrCompute(...args, provider), undefined);
+  assert.deepEqual(await cache.getOrCompute(...args, provider), { durationSecs: 1029 });
+  assert.equal(calls, 2);
+});
