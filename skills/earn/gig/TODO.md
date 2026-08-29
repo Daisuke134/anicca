@@ -3379,7 +3379,7 @@ acknowledged as `29738`.
   snapshot, intent, official-readback, SQLite and Telegram receipt writes all succeeded above that
   real floor.
 - [x] Prove the existing `ai.anicca.hf-gig-apply-direct` launchd owner. Its loaded program uses
-  `/Users/anicca/gig/releases/life-manager/current`, natural PID `80764` exited 0, and launchd then
+  the legacy gig release's `current` symlink, natural PID `80764` exited 0, and launchd then
   started PID `78438` as run 3 without a foreground executor.
 - [x] Prove a natural maximal pass with no silent loss. Pass
   `gig-apply-direct-1787394811693936000-80764` observed 40, classified the full snapshot as 17
@@ -4603,7 +4603,7 @@ protected and are not cleanup candidates.
   re-enabled Coconala, Affiliate and Lancers roots show the prevention flag. Job Hunter remains
   locally paused. Storefront self-GC and the browser producer fix are in public immutable releases.
 - [ ] Close the remaining host-wide browser boundary. Two legacy X keepalive roots
-  (`x-repost-daily` and `x-diceai0`) still launch from the separate `~/anicca` runtime without
+  (`x-repost-daily` and `x-diceai0`) still launch from a separate legacy X runtime without
   `MacAppCodeSignClone` prevention and regenerated about 700 MiB. Patch that runtime's canonical
   launcher, deploy its own public immutable release, restart only those two owners, and prove the
   Chromium clone root is flat before calling host-wide cleanup complete.
