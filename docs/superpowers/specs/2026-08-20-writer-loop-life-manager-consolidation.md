@@ -150,8 +150,10 @@ release buildとarticle runを同時実行せず、`max(実測release-build peak
 capacity receiptへ保存する。次の唯一のcursorは、その実測floor、main由来immutable release、orphan paid-demand cardの
 hash-bound queue復旧、新runのGPT Image 2 headlineとactive-four native readbackである。
 
-現在のschedule contractは毎朝06:00の`article-daily`で、autopublishはarmedである。しかしinstalled release `def55ccd`の
-直近terminalはFAIL `entrypoint_exit_75`である。公開ledgerと外部公開面の最新はNote JA / Substack JA / Substack ENが
+現在のschedule contractは毎朝06:00の`article-daily`で、autopublishはarmedである。installed release `f7214aac`のwakeは
+空き約7.37GBでdisk gateを通るが、claim-loop receiptが`MODEL_UNAVAILABLE`のためgeneration前にexit 75となる。
+run `20260828-195017`はgit hashとbaseline strategy receiptだけで、article、headline、publication state、public ledger rowは0である。
+公開ledgerと外部公開面の最新はNote JA / Substack JA / Substack ENが
 8月21日、X Article JAが8月20日で、8月22日以降の新規live articleは0である。schedule liveness、過去のpublication、
 毎日publication SLOを分離する。W17の7連続terminal publication receiptが揃うまで、毎日公開をverifiedと宣言しない。
 
