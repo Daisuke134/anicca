@@ -1071,3 +1071,36 @@ Judgesがeconomic autonomyより安全で楽しいcreative collaborationを好�
 16. four-criteria self-check、immutable deploy/repo/submission receipts、freeze
 
 One active item at a time。各itemは実物readbackを閉じてから次へ進む。
+
+---
+
+## 17. Exhaustive uncertainty register
+
+不確実性は「心配」ではなく、解消証拠が未取得のcontractとして管理する。各行のgateを閉じるまで、対応するsubmission claimを`verified`へ昇格させない。
+
+| ID | Uncertainty | Current state | Required resolution evidence | Fallback / stop condition |
+|---|---|---|---|---|
+| U01 | General agentがprovider listに縮退する | resolved in design | X/Web/GitHub/mail/任意URLを同じgoal→job→tool loopへ入れるcontract test | provider keyword routingを検出したらmergeしない |
+| U02 | Opireがprimary proofに使えるか | rejected | API 56 records→33 closed、7 missing/deleted、16 open。低競争候補も22 competing PRsとpayout uncertainty | Opire固有実装を作らない |
+| U03 | Current branchが最新mainと乖離 | open | execution worktreeをfresh `origin/main`から作り、existing general-agent/marketplace testsをbaseline pass | stale spec branchからproduction codeを編集しない |
+| U04 | Disk不足でinstall/build/videoが失敗 | blocked | Data volume free >= 8 GiB、`npm ci`、exact interpreter import smoke | safe cleanup対象が確定するまでbuildを開始しない |
+| U05 | Lancers installed ownerがfail中 | open | loaded argv、release SHA、CDP owner、latest log、exact entrypointを照合し、read-only natural pass | root causeがauthならmutationせずNeeds Youへ出す |
+| U06 | Lancers login/sessionが有効か | open | exact browser profile/CDPのofficial authenticated inventory、effect count 0、two-read stable identity | login unavailableならguest UIはlive Lancers effectを主張しない |
+| U07 | 応募可能なLancers案件があるか | open | current public inventory、complete detail、buyer/order rate、budget、deadline、eligibility、competitionをModelが判断 | suitable candidateがなければapplicationを送らず別market discoveryを継続 |
+| U08 | Lancers proposal effect/readbackが現在のDOMで動くか | open | immutable intent、presend absent、effect 1、official proposal ID、replay effect 0 | post-effect unknownは再送せずreconciliation |
+| U09 | General projectionが既存receiptを正しく表示できるか | open | exact-key schema、tenant isolation、verified-money-only tests、runtime/application/general receiptsのfixture-free projection | raw provider stateをUIへ直接渡さない |
+| U10 | Minimal human判定が丸投げになる | open | known context/tool researchを先に使うmodel cases、one exact task、semantic dedupe、answer後same owner resume | agentが実行可能なworkをhuman taskにしたらfail |
+| U11 | WebMCP toolsがChatGPTで発見・実行されるか | open | top-level imperative registration、Sol/Terra in-app browser tool list、recent call、visible state change | ChatGPT rollout不可ならChrome 149+ evidenceでStage Oneを守る |
+| U12 | Netlify/Browser security headersがWebMCPを許すか | open | origin isolation、Permissions Policy、no iframe registration、clean-browser tool discovery | headerが通るまでdeployをworking扱いしない |
+| U13 | Page close後も24/7 workが続くか | open | page closed状態で3 natural cycles、restart recovery、same workroom state | page-local toolをscheduler代わりにしない |
+| U14 | Guest judgeとprivate production stateが混ざる | open | tenant-bound fixture-free guest identity、zero private credentials/PII、same build/domain functions、effect authority denied | private owner receiptはredacted read-only projectionだけ許可 |
+| U15 | Mercorが期限内proofになるか | bounded | public inventoryとapplication-step state、human interview taskまでを実測 | 2–4週のselection/cashをDoneに含めない。AI interview代答禁止 |
+| U16 | X discovery sessionが使えるか | blocked | existing daily-driverのlogged-in X tab readback、read-only search receipt | duplicate browserを起動せずWeb/GitHub/mail discoveryで継続 |
+| U17 | Unknown marketplaceでeffect adapterがない | open | arbitrary URLをModelが解釈し、tool planとmissing mechanical adapterを説明するE2E | adapter/auth/readbackがなければeffectだけfail closed、research/workは継続 |
+| U18 | Multiple agentsでcontext/effectが交差する | open | two workrooms、different effect keys、isolated refs、bounded concurrency、sibling checkpoint preservation | shared mutable customer stateを検出したらparallel effectを止める |
+| U19 | Revenueを盛って表示する | resolved in primitives / open in UI | earnings/TaskMarket/x402 31/31 tests、UIがapplications/pending/paidを分離、official receipt link | cash receiptなしならverified money 0を表示 |
+| U20 | Real external receiptが締切までに得られない | open | Lancers official application IDを最低証拠とし、acceptance/delivery/cashは得られたterminalだけ表示 | candidate不在ならsafe blocked receiptを見せ、fake effectを作らない |
+| U21 | Existing projectの新規WebMCP差分が不明 | open | August 25以降のcommit list、README `Hackathon changes`、submitted tag diff | prior Life Manager機能をHackathon成果として数えない |
+| U22 | Public repoがclean installできない | open | clean clone、locked install、focused tests、secret/PII scan、license detection | scan/import failureならsubmit readinessは`not ready` |
+| U23 | Videoで四基準が伝わらない | open | under 3:00、audio、first working action <15s、tool call、Needs You、resume、receipt | 未実装claimをscriptから削る |
+| U24 | Devpost最終送信漏れ | open | live URL、repo、video、custom fields、explicit `yes, submit`、`submitted_at` readback | internal deadline September 3 12:00 JST、official deadline September 4 05:00 JST |
