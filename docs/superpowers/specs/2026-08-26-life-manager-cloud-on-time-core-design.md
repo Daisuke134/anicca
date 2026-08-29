@@ -140,7 +140,7 @@ Transit APIの公式契約は次を使う。
 | AC-22 | route取得失敗時も、次予定、開始時刻、目的地、基準出発時刻を送る。経路取得失敗を明記し、通知全体を失敗にしない。 |
 | AC-23 | HTML escapingを全Calendar由来textへ適用する。Telegram本文にuid、email、phone、raw provider payload、credentialを含めない。 |
 | AC-24 | 送信前に既存`lm_travel_log`へ`leg=telegram-t5`をatomic claimする。Telegram非2xxまたはmessage ID欠落時は同claimをreleaseし、次tickでretryする。新DB tableを作らない。 |
-| AC-25 | reminderはComposio予算で5分へ劣化する`organsUserOnce`から分離する。in-process ownerは固定60秒`startReminderLoop`、`LIFE_RUN_LOOPS=false` ownerは既存の毎分Inngest `sweep-wake → wake-user → wakeUserOnce → reminderUserOnce`で走り、どちらのowner modeでも0経路・二重経路を作らない。各tenantを独立timeoutで処理し、route timeoutやTelegram失敗が`wakeCallOnce`、他tenant、他organを止めない。 |
+| AC-25 | reminderはComposio予算で5分へ劣化する`organsUserOnce`から分離する。in-process ownerは固定60秒`startReminderLoop`、`LIFE_RUN_LOOPS=false` ownerは既存の毎分Inngest `sweep-wake → wake-user → wakeUserOnce → reminderUserOnce`で走り、どちらのowner modeでも0経路・二重経路を作らない。role未指定のstandaloneで`LIFE_RUN_LOOPS=false`かつInngest signing/dev設定が無い場合は、0-ownerを避けるためin-process loopsへfail overする。明示api/worker/scheduler roleまたは有効Inngest設定がある場合はこのfallbackを使わない。各tenantを独立timeoutで処理し、route timeoutやTelegram失敗が`wakeCallOnce`、他tenant、他organを止めない。 |
 | AC-26 | success logはuidの先頭12文字、event key hash、provider、Telegram message IDを含む。event title、location、phoneをlogへ出さない。 |
 | AC-36 | event開始へ隣接するoutbound `[Travel]` blockが一意で、非空locationがhomeと異なる時だけ、T-5 routeのdestinationにその解決済みlocationを使う。候補0件・複数件・home行きの時はeventのfree-form locationへ戻す。別event、return block、`[PENDING]`、`[APPLIED]`のlocationを流用しない。Telegramの予定名と表示目的地は元eventの値を維持する。 |
 
@@ -363,11 +363,19 @@ AC-37/38の根拠:
 
 ### Slice 3G — Trial-first payment (2026-08-27 Dais改訂で追加)
 
-- [ ] `billing.test.js`/`panel-api.test.js`へAC-37/38のREDを追加する: trial 1回付与、再onboarding非延長、trial-active cohort通過、期限切れeffect停止、dedupe upgrade通知、Stripe webhook以外のpaid書込0。
-- [ ] `lm_users`へtrial期限列を1 migrationで追加し、onboarding core完了transitionでserverが1回だけ書く。
-- [ ] scheduler cohortとstage計算を`paid OR trial-active OR comp-active`へ変更し、onboardingのpay stepを非必須化する。
-- [ ] 期限切れtenantへのupgrade Telegram（checkout link付き、既存ledger dedupe）をGREENにする。
+- [x] `billing.test.js`/`panel-api.test.js`へAC-37/38のREDを追加する: trial 1回付与、再onboarding非延長、trial-active cohort通過、期限切れeffect停止、dedupe upgrade通知、Stripe webhook以外のpaid書込0。
+- [x] `lm_users`へtrial期限列を1 migrationで追加し、onboarding core完了transitionでserverが1回だけ書く。
+- [x] scheduler cohortとstage計算を`paid OR trial-active OR comp-active`へ変更し、onboardingのpay stepを非必須化する。
+- [x] 期限切れtenantへのupgrade Telegram（checkout link付き、既存ledger dedupe）をGREENにする。
 - [ ] production readback: 新規actorのtrial付与値、trial中のexternal effect、期限切れ後のeffect 0とupgrade通知1をSupabase/Telegram IDで確認する。
+
+### Slice 4 — Receipt-bearing production acceptance
+
+- [x] 既存`lm_wake_log`へTelnyx call-control/session/leg/webhook IDをatomicに保存し、schedulerと署名webhookを同じclaimへ配線する。
+- [x] 既存`lm_travel_log`へTelegram `message_id`をatomicに保存し、accepted send後のreceipt失敗でclaimを解放・再送しない。
+- [x] 両migrationをproductionへ適用し、Railway life-call `/health.build`、commit status、GitHub Deploymentをexact merge SHA `0303507584458fc55cfe1d8f27db9ff1e9fedce9`でreadbackする。
+- [ ] future physical eventとreplacement no-location eventをnatural schedulerで実行し、Calendar/Telnyx/Telegram/Supabase receiptをcorrelateする。
+- [ ] 同じeventをreplayして追加block/call/message 0を確認し、controlled eventを`send-updates=none`で削除して`cancelled`をreadbackする。
 
 ### Slice 4 — Deploy and production acceptance
 
