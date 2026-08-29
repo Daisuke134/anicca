@@ -20,7 +20,8 @@ CREATE TABLE IF NOT EXISTS public.lm_human_tasks (
     AND octet_length(required_format::text) <= 4096
   ),
   resume_ref text NOT NULL CHECK (
-    resume_ref ~ '^[a-z][a-z0-9+.-]{1,31}://[A-Za-z0-9][A-Za-z0-9._~:/?#@!$&''()*+,;=%-]{0,999}$'
+    char_length(resume_ref) <= 1000
+    AND resume_ref ~ '^[a-z][a-z0-9+.-]{1,31}://[A-Za-z0-9][A-Za-z0-9._~:/?#@!$&''()*+,;=%-]*$'
   ),
   context_refs jsonb NOT NULL CHECK (
     jsonb_typeof(context_refs) = 'object'
@@ -46,6 +47,14 @@ CREATE TABLE IF NOT EXISTS public.lm_human_tasks (
     OR (status = 'answered' AND answer_ref IS NOT NULL AND answered_at IS NOT NULL)
   )
 );
+
+ALTER TABLE public.lm_human_tasks
+  DROP CONSTRAINT IF EXISTS lm_human_tasks_resume_ref_check;
+ALTER TABLE public.lm_human_tasks
+  ADD CONSTRAINT lm_human_tasks_resume_ref_check CHECK (
+    char_length(resume_ref) <= 1000
+    AND resume_ref ~ '^[a-z][a-z0-9+.-]{1,31}://[A-Za-z0-9][A-Za-z0-9._~:/?#@!$&''()*+,;=%-]*$'
+  );
 
 CREATE UNIQUE INDEX IF NOT EXISTS lm_human_tasks_open_dedupe_idx
   ON public.lm_human_tasks (uid, job_id, reason_code)
@@ -86,7 +95,8 @@ BEGIN
     OR p_question IS NULL OR char_length(p_question) NOT BETWEEN 1 AND 2000
     OR jsonb_typeof(p_required_format) NOT IN ('object', 'array', 'string')
     OR octet_length(p_required_format::text) > 4096
-    OR p_resume_ref IS NULL OR p_resume_ref !~ '^[a-z][a-z0-9+.-]{1,31}://[A-Za-z0-9][A-Za-z0-9._~:/?#@!$&''()*+,;=%-]{0,999}$'
+    OR p_resume_ref IS NULL OR char_length(p_resume_ref) > 1000
+    OR p_resume_ref !~ '^[a-z][a-z0-9+.-]{1,31}://[A-Za-z0-9][A-Za-z0-9._~:/?#@!$&''()*+,;=%-]*$'
     OR p_human_boundary_ref IS NULL OR p_human_boundary_ref !~ '^human-boundary://sha256/[0-9a-f]{64}$'
     OR jsonb_typeof(p_context_refs) <> 'object'
     OR octet_length(p_context_refs::text) > 16384 THEN
@@ -100,12 +110,14 @@ BEGIN
     IF jsonb_typeof(v_item.value) = 'array' THEN
       FOR v_ref IN SELECT value FROM jsonb_array_elements(v_item.value) LOOP
         IF jsonb_typeof(v_ref) <> 'string'
-          OR v_ref #>> '{}' !~ '^[a-z][a-z0-9+.-]{1,31}://[A-Za-z0-9][A-Za-z0-9._~:/?#@!$&''()*+,;=%-]{1,999}$' THEN
+          OR char_length(v_ref #>> '{}') > 1000
+          OR v_ref #>> '{}' !~ '^[a-z][a-z0-9+.-]{1,31}://[A-Za-z0-9][A-Za-z0-9._~:/?#@!$&''()*+,;=%-]+$' THEN
           RAISE EXCEPTION 'human task context refs must be reference-only';
         END IF;
       END LOOP;
     ELSIF jsonb_typeof(v_item.value) <> 'string'
-      OR v_item.value #>> '{}' !~ '^[a-z][a-z0-9+.-]{1,31}://[A-Za-z0-9][A-Za-z0-9._~:/?#@!$&''()*+,;=%-]{1,999}$' THEN
+      OR char_length(v_item.value #>> '{}') > 1000
+      OR v_item.value #>> '{}' !~ '^[a-z][a-z0-9+.-]{1,31}://[A-Za-z0-9][A-Za-z0-9._~:/?#@!$&''()*+,;=%-]+$' THEN
       RAISE EXCEPTION 'human task context refs must be reference-only';
     END IF;
   END LOOP;
