@@ -171,7 +171,7 @@ Telegram本文の固定形:
 |---|---|
 | AC-27 | public QRはLife Manager Telegram botの`/start` deep linkだけをencodeする。uid、chat ID、secret、emailをQRへ入れない。 |
 | AC-28 | botはRailway `/panel/onboarding`を開くTelegram Mini App `web_app` buttonを返し、Telegram `initData`のHMAC、5分age、private actorを既存`panel-auth.js`で検証してtenantを確定する。生の`?tg=`をidentityやbinding authorityに使わない。 |
-| AC-29 | Supabase Google Sign-in stepを削除する。Google画面はRailwayのtenant-scoped Calendar connectorが開始するGoogle Calendar consentの1回だけ開く。Calendar consent結果は検証済みTelegram tenantへbindする。 |
+| AC-29 | Supabase Google Sign-in stepを削除する。Google画面はRailwayのtenant-scoped Calendar connectorが開始するGoogle Calendar consentの1回だけ開く。Calendar consent結果は検証済みTelegram tenantへbindする。Composio v3 connected-account truthはexact owner/toolkit、`status=ACTIVE`、`is_disabled!=true`で判定する。現行公式schemaに無い`enabled`は欠落を許容するが、legacy responseが明示`enabled=false`ならfail closedする。 |
 | AC-30 | onboarding順はCalendar consent → home address → Telegram notifications ON → phone入力または「電話なしで続ける」→ phone入力時だけcall opt-in → dashboardとする。Stripe checkoutをonboardingの必須stepにしない（2026-08-27 Dais改訂: 課金前に価値を体験させる）。nameはTelegram profileを使い、空の場合だけ入力させる。 |
 | AC-31 | home addressなしではtravel autofillをreadyと表示しない。live location共有中は現在地routeを使い、共有終了後はhome/previous-event fallbackへ戻ることを説明する。 |
 | AC-32 | phoneなしのpaid userはCalendar autofillとTelegram reminderを受ける。phoneありかつcall opt-inのpaid userだけがTelnyx callを受ける。 |
