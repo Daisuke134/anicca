@@ -186,7 +186,7 @@ function createMoneyPrinterRuntimeStore({ query } = {}) {
         SELECT * FROM public.create_lm_human_task($1, $2, $3, $4, $5, $6, $7, $8, $9)
       `, [
         uid, task.task_id, task.job_id, task.reason_code, task.question,
-        task.required_format, task.resume_ref, task.context_refs, task.human_boundary_ref,
+        JSON.stringify(task.required_format), task.resume_ref, JSON.stringify(task.context_refs), task.human_boundary_ref,
       ]), "human task", uid);
       if (row.task_id !== task.task_id || row.job_id !== task.job_id || row.status !== "open") {
         throw new Error("money printer runtime store human task readback invalid");

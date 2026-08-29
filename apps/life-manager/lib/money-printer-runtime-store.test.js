@@ -88,7 +88,7 @@ test("runtime store creates one human task through the atomic pause RPC", async 
   assert.match(calls[0].sql, /^\s*SELECT \* FROM public\.create_lm_human_task\(\$1, \$2, \$3, \$4, \$5, \$6, \$7, \$8, \$9\)/i);
   assert.deepEqual(calls[0].values, [
     task.uid, task.task_id, task.job_id, task.reason_code, task.question,
-    task.required_format, task.resume_ref, task.context_refs, task.human_boundary_ref,
+    JSON.stringify(task.required_format), task.resume_ref, JSON.stringify(task.context_refs), task.human_boundary_ref,
   ]);
 });
 
