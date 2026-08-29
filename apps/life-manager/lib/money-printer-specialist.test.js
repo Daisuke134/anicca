@@ -201,9 +201,38 @@ test("cloud qualification grounds research, then extracts a completed qualificat
   assert.deepEqual(JSON.parse(calls[0].init.body).tools, [{ google_search: {} }]);
   const extraction = JSON.parse(calls[1].init.body);
   assert.equal(extraction.generationConfig.responseMimeType, "application/json");
-  assert.equal(extraction.generationConfig.responseSchema.properties.status.const, "completed");
+  assert.deepEqual(extraction.generationConfig.responseSchema, {
+    type: "object",
+    required: ["status"],
+    properties: { status: { type: "string", enum: ["completed"] } },
+  });
+  assert.doesNotMatch(JSON.stringify(extraction.generationConfig.responseSchema), /additionalProperties|const/);
+  assert.deepEqual(extraction.generationConfig.thinkingConfig, { thinkingBudget: 0 });
   assert.match(extraction.contents[0].parts[0].text, /Grounded public research/);
   assert.doesNotMatch(JSON.stringify(result), /Grounded public research|private_state|gemini-secret-key/);
+});
+
+test("cloud qualification rejects extra or wrong extracted output without updating status", async () => {
+  for (const output of ['{"status":"planned"}', '{"status":"completed","extra":true}']) {
+    let calls = 0;
+    let updates = 0;
+    const specialist = createMoneyPrinterSpecialist({
+      geminiKey: "gemini-secret-key",
+      dataDir: fs.mkdtempSync(path.join(os.tmpdir(), "lm-money-specialist-cloud-output-")),
+      repoRoot: "/repo",
+      readOpportunity: async () => opportunity(),
+      updateOpportunity: async () => { updates += 1; return opportunity({ status: "QUALIFIED" }); },
+      fetchImpl: async () => {
+        calls += 1;
+        return response({ candidates: [{ content: { parts: [{
+          text: calls === 1 ? "Grounded public research." : output,
+        }] } }] });
+      },
+    });
+    await assert.rejects(specialist(expected()), /cloud|qualification|unavailable/i);
+    assert.equal(calls, 2);
+    assert.equal(updates, 0);
+  }
 });
 
 test("cloud qualification rejects empty or failed Gemini responses without updating status", async () => {
