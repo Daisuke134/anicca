@@ -29,15 +29,11 @@ const {
   listPaidUsers,
   getUserByUid,
 } = require("../scheduler.js");
+const { inProcessLoopsOn } = require("../lib/maybe-start-loops.js");
 
 // ── Single-writer guard ───────────────────────────────────────────────────────
-// Returns true when the IN-PROCESS loops are ON (LIFE_RUN_LOOPS is unset or not "false").
-// In that case sweepers do nothing — they return a no-op so the in-process loops stay the
-// single writer. Only when LIFE_RUN_LOOPS="false" (voice-daemon mode) do sweepers fan out.
-function inProcessLoopsOn(env) {
-  const flag = String((env || process.env).LIFE_RUN_LOOPS || "").trim().toLowerCase();
-  return flag !== "false" && flag !== "0" && flag !== "off";
-}
+// The startup module owns this predicate. Sweepers no-op whenever in-process loops own writes,
+// including the standalone fallback used when neither Inngest nor an explicit role is present.
 
 // ── Handler factories (testable with injected stubs) ──────────────────────────
 

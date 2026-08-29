@@ -30,7 +30,7 @@ const {
 } = require("./lib/call-logic.js");
 const { startScheduler, startWakeLoop, startReminderLoop, startTravelLoop, startAskLoop, startOnboardLoop, startDiscoveryLoop, buildStreamUrl, langForPhone } = require("./scheduler.js");
 const { openingTurnForLang, resolveCallLang } = require("./lib/call-language.js");
-const { maybeStartLoops } = require("./lib/maybe-start-loops.js");
+const { maybeStartLoops, inngestConfigured } = require("./lib/maybe-start-loops.js");
 const { compBootLog } = require("./lib/comp-window.js");
 const { selfHealWebhook } = require("./lib/webhook-selfheal.js");
 const { serve: inngestServe } = require("inngest/node"); // raw Node http server (NOT express) → use the node adapter
@@ -93,9 +93,7 @@ const LM_PANEL_BASE = process.env.LM_PANEL_BASE_URL ||
 // In dev (INNGEST_DEV=1) it always returns true; in prod it requires INNGEST_SIGNING_KEY.
 // Exported for testing (FIND-005).
 function inngestServeAllowed(env) {
-  const isDev = String((env || {}).INNGEST_DEV || "").trim() === "1";
-  if (isDev) return true;
-  return Boolean((env || {}).INNGEST_SIGNING_KEY);
+  return inngestConfigured(env);
 }
 
 // stripeWebhookAllowed: mirrors inngestServeAllowed — dev (STRIPE_DEV=1) serves without a secret; prod

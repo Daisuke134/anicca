@@ -2,7 +2,7 @@
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert");
-const { maybeStartLoops } = require("./maybe-start-loops.js");
+const { maybeStartLoops, inngestConfigured, inProcessLoopsOn } = require("./maybe-start-loops.js");
 
 function counters() {
   // startWakeLoop is tracked like every other loop: the dial runs on its own timer (spec §3.1
@@ -109,4 +109,20 @@ test("OpenClaw is not a supported deployment owner or fallback", () => {
   assert.strictEqual(r.started, false);
   assert.match(r.reason, /unsupported deployment role/i);
   assert.deepStrictEqual(c, counters().c);
+});
+
+test("shared Inngest configuration treats trimmed dev/key values consistently", () => {
+  assert.equal(inngestConfigured({ INNGEST_DEV: " 1 " }), true);
+  assert.equal(inngestConfigured({ INNGEST_SIGNING_KEY: " signing-secret " }), true);
+  assert.equal(inngestConfigured({ INNGEST_SIGNING_KEY: " \t\n" }), false);
+  assert.equal(inngestConfigured({ INNGEST_SIGNING_KEY: 1 }), false);
+});
+
+test("shared in-process predicate matches the standalone fallback and explicit ownership", () => {
+  assert.equal(inProcessLoopsOn({ LIFE_RUN_LOOPS: "off" }), true);
+  assert.equal(inProcessLoopsOn({ LIFE_RUN_LOOPS: "off", INNGEST_SIGNING_KEY: "key" }), false);
+  assert.equal(inProcessLoopsOn({ LIFE_RUN_LOOPS: "off", INNGEST_SIGNING_KEY: " \t\n" }), true);
+  assert.equal(inProcessLoopsOn({ LIFE_RUN_LOOPS: "off", INNGEST_DEV: "1" }), false);
+  assert.equal(inProcessLoopsOn({ LIFE_RUN_LOOPS: "off", LM_DEPLOYMENT_ROLE: "api" }), false);
+  assert.equal(inProcessLoopsOn({ LIFE_RUN_LOOPS: "true", LM_DEPLOYMENT_ROLE: "api" }), true);
 });
