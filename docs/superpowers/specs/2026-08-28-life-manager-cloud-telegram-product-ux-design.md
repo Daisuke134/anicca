@@ -1,6 +1,6 @@
 # Life Manager Cloud Telegram-First Product UX Design
 
-状態: APPROVED — agent harnessはlocal/cloudともupstream OpenClaw一択。launch coreのprovider acceptance後に同じLife Manager Skill Packへ移す
+状態: APPROVED — launch coreを先にreleaseし、その後local/cloud共通harnessをElizaOSへ段階移行する。発売前の全面rewriteは禁止
 
 正本範囲: public QRから始まる初回体験、日常のTelegram体験、cloud/self-host共通境界、将来の会話runtime
 
@@ -146,7 +146,7 @@ sequenceDiagram
 
 表示するのはproviderが返した事実だけである。出口、最適車両、混雑を推測しない。元eventのtitle/locationは表示とclaim identityに残し、経路計算だけにautofill済み住所を使う。
 
-## 4. 既存coreを守り、upstream OpenClawを唯一のagent harnessとして足す
+## 4. 既存coreを守り、ElizaOSをlocal/cloud共通agent harnessとして採用する
 
 置き換えない。
 
@@ -165,7 +165,7 @@ flowchart LR
     ID[Telegram署名 → tenant UID]
     DB[(Supabase\n設定・trial・ledger)]
     CORE[Deterministic on-time core]
-    CHAT[Phase 2: upstream OpenClaw Gateway]
+    CHAT[Phase 2: ElizaOS AgentRuntime]
     TOOLS[許可されたLife Manager tools]
   end
 
@@ -192,52 +192,69 @@ flowchart LR
   CHAT -. DB/providerへ直接書かない .-> DB
 ```
 
-### 4.1 唯一の選択: upstream OpenClaw
+### 4.1 唯一の選択: ElizaOS
 
-agent runtimeを比較し続けない。localとcloudの両方で固定commitのupstream OpenClawを使う。HermesとOpenClawMUは採用しない。OpenClawをforkして独自agent loopを作らず、Life Managerはupstreamへinstallできるskill/plugin/toolだけを所有する。
+agent runtimeを比較し続けない。localとcloudの両方で固定commitのElizaOSを使う。OpenClaw、Hermes、OpenClawMU、独自agent loopは採用しない。Life ManagerはEliza plugin/actions/servicesだけを所有する。
 
-cloneした固定commitのproduction codeから、次を確認した。
+cloneしたEliza固定commit`29bed1bb394a2c0c7c0df6dc12babbe28667efbe`のproduction codeから、次を確認した。
 
-1. Telegram ingressはaccount別disk spoolへupdateをdurable採用してからoffsetを進める。
-2. Telegram dispatchは`bot_id/chat_id/message_id`をkeyにSQLite replay guardを持ち、commit失敗時はclaim rollbackを試みる。
-3. channel/account/peer bindingからagentとsession keyを一意に解決する。
-4. cron state、next-run、run receiptはSQLite transactionへ保存する。
-5. local tool、memory、session、cron、Telegram gatewayを一つのupstream runtimeで提供する。
+1. `AgentRuntime`がagentごとのactions、providers、evaluators、services、model routing、memory、database adapter、message loopを一つのkernelとして所有する。
+2. local agent serverとcloud dedicated agent-serverが同じ`@elizaos/core` AgentRuntimeとplugin packagesを実行する。
+3. cloudにはcontainer-free shared tierと、isolated containerを持つ`dedicated-lazy`/`dedicated-always` tierが既にある。
+4. Shared conversationはCloudflare Durable Objectでagent/roomごとに順序化され、client message IDのclaim/replay/conflictを持つ。
+5. Personal Telegram edgeはprovider message IDを保存するstrongly ordered delivery ledgerを持ち、ambiguous sendをtombstoneにして再送を防ぐ。
+6. schedulerはPostgres-backed task store、atomic `claimForFire`、idempotency key、CAS update、apply receiptを実装している。
+7. cloud control planeはorganization/user tenancy、agent quota、shared→dedicated cutover、container lifecycle、warm pool、billing、Stripe、tenant DBを既に持つ。
+8. local Dockerとremote dedicated containerのproviderが同じsandbox interfaceに実装されている。
 
-したがって、Telegram consumer、agent loop、session routing、memory、skills、tool execution、cron、replay guardをLife Manager側で再実装しない。
+したがって、agent loop、plugin system、session/memory schema、Telegram connector、cloud turn coordinator、scheduler、container control plane、shared/dedicated tierをLife Manager側で再実装しない。
+
+### 4.2 OpenClawとのcode-backed比較
+
+| 判断軸 | OpenClaw固定commit | Eliza固定commit | Life Manager判断 |
+|---|---|---|---|
+| local personal assistant | Gateway、Telegram spool、SQLite replay guard、cronが強い | AgentRuntime、desktop/mobile、plugin ecosystemがある | 両方可 |
+| cloud multi-tenant | upstreamはsingle operator。AWS sampleを別途接続する必要がある | shared/dedicated tier、org/user tenancy、billing、container lifecycleが同repo | Eliza |
+| Telegram exactly-once | disk spool + bot/chat/message replay guard | Durable Object delivery ledger + provider message IDs + uncertain tombstone | CloudではEliza |
+| local/cloud同一code | 同じGatewayをtenant別containerで動かせる | local/dedicatedは同じAgentRuntime/plugin。sharedは互換subset | Eliza dedicated-lazyを基準にする |
+| scheduler | local SQLite cron | Postgres task store、atomic fire claim、CAS、receipt | Eliza |
+| billing/plan | なし。Life Manager側でcontrol planeが必要 | quota、credits、Stripe、compute billing、shared→dedicated upgradeあり | Eliza |
+| 導入の軽さ | 小さく始めやすい | cloud全体は大きくbeta | OpenClaw |
+| 独自cloud architecture量 | 多い | 少ない | Eliza |
+
+OpenClawのTelegram実装は良いが、Life Managerが必要とするpublic SaaS、tenant、billing、shared/dedicated computeをOpenClawの外で設計する必要がある。それは「独自architectureを作らない」という決定に反する。Eliza Cloudは巨大で運用も複雑だが、複雑さそのものが既にupstream codeとして実装されているため、Life Managerが新しく設計する量は少ない。
 
 ```mermaid
 flowchart TB
-  PACK[同一Life Manager Skill Pack]
+  PACK[同一Life Manager Plugin]
 
   subgraph LOCAL[Local product]
-    LG[upstream OpenClaw Gateway\n1 operator]
-    LS[(OpenClaw local state)]
+    LG[Eliza AgentRuntime\nlocal agent server]
+    LS[(Eliza local SQL state)]
     LG --> LS
   end
 
   subgraph CLOUD[Cloud product]
-    ROUTER[Telegram actor → tenant instance]
-    A[upstream OpenClaw\ntenant A]
-    B[upstream OpenClaw\ntenant B]
-    APVC[(A PVC)]
-    BPVC[(B PVC)]
-    ROUTER --> A --> APVC
-    ROUTER --> B --> BPVC
+    EDGE[Eliza Telegram edge]
+    SHARED[shared tier\ncheap chat]
+    A[dedicated-lazy AgentRuntime\ntenant A]
+    B[dedicated-lazy AgentRuntime\ntenant B]
+    EDGE --> SHARED
+    EDGE --> A
+    EDGE --> B
   end
 
   PACK --> LG
+  PACK --> SHARED
   PACK --> A
   PACK --> B
 ```
 
-cloudはAWS公式sampleのdeployment codeをcopy/tweakする。採用するのは、tenantごとのnamespace、SandboxClaim、OpenClaw container、PVC、ServiceAccount、NetworkPolicy、ResourceQuota、ArgoCD ApplicationSetである。Cognito identity、Bedrock固定、独自auth UIは採用せず、既にproductionで証明したTelegram署名actor、Supabase tenant、Stripe webhookを入口に使う。
+Eliza Cloudをゼロからcopyして独自mini-cloudを作らない。upstream forkを固定し、Life Manager pluginとbranding/provider settingsだけを差分にする。既存Supabase/Stripe/on-time ledgerは移行期間中のauthorityとして残し、Elizaのtenant/billingへ一度に置換しない。
 
-AWS sample固定commitは完成品SaaSではない。現在のApplicationSetはSandboxをalways-onにし、scale-to-zeroを無効にしている。tenant provisioningもPod Identity、Secrets Manager、Cognito、ApplicationSet、Kubernetes Secret、health待ちの複数effectでatomicではない。よって「そのままdeployすれば完成」とは扱わない。agent architectureはcopyし、identity/billing/effect authorityは既存のprovider-backed Life Manager control planeへ接続する。
+Eliza Cloudのshared tierはfull AgentRuntime containerを持たない互換subsetである。local/cloud parityの基準は`dedicated-lazy` agent-serverとし、shared tierはtext-onlyの低コスト経路としてparityが証明されたtoolだけを後から許可する。
 
-OpenClawMUを棄却する理由は、固定commitが単一Gateway process内でtenantごとのdirectoryとCronServiceをMap管理し、registryを`tenants.json`へ直接writeするためである。registry読込例外がempty registryになる実装もcloud authorityには使わない。Hermesを棄却する理由は、別のPython agent/session/cron runtimeを追加するとsole harnessが二つになり、local/cloudで同じSkill Packを動かす決定に反するためである。
-
-### 4.2 車輪を作らない — 借りる層とLife Manager固有の薄い層
+### 4.3 車輪を作らない — 借りる層とLife Manager固有の薄い層
 
 新しく作るのは「遅刻しないための判断と証拠のつなぎ方」だけである。chat app、login、OAuth、DB、決済、agent loop、cloud runtimeは作らない。
 
@@ -252,7 +269,7 @@ flowchart LR
     PAY[Stripe Checkout + webhook]
     ROUTE[Transit / Google Routes]
     VOICE[Telnyx]
-    CHAT[Phase 2: upstream OpenClaw]
+    CHAT[Phase 2: ElizaOS]
   end
 
   subgraph OWN[Life Managerだけが持つ薄いproduct logic]
@@ -284,35 +301,35 @@ flowchart LR
 | durable state | Supabase/Postgres、unique constraint、RLS | effect key、claim、trial deadline | agent独自DB、client deadline、memoryをauthority化 |
 | 課金 | Stripe hosted Checkout、signed webhook | value-first 3-day trialとentitlement filter | card form、billing engine、`paid`の別writer |
 | route/call | provider response、Telnyx signed webhook | provider factsの整形と最大1回policy | 乗換engine、電話carrier、推測route |
-| 自由会話 | upstream OpenClawのgateway・Telegram spool・tools・memory・cron | Life Manager Skill Packとtenant instance binding | agent loop、skill system、session DB、sandboxの再実装 |
+| 自由会話 | Eliza AgentRuntime、Telegram edge、memory、actions、scheduler | Life Manager pluginとprovider adapters | agent loop、plugin kernel、session DB、cloud coordinatorの再実装 |
 
-## 5. cloudとself-hostは同じOpenClaw harnessとSkill Packを使う
+## 5. cloudとself-hostは同じEliza AgentRuntimeとLife Manager pluginを使う
 
-同じsource artifactを使うが、全ユーザーを一つのprocessへ詰め込まない。localは一人につき一つのOpenClaw Gateway、cloudも一tenantにつき一つの隔離OpenClaw instanceとする。予定選択、出発時刻、route整形、effect keyを同じLife Manager Skill Packとして両方へinstallする。
+同じsource artifactを使うが、全ユーザーを一つのunscoped processへ詰め込まない。localは一人につき一つのEliza AgentRuntime、cloudはEliza Cloudのorganization/user/agent scopeでsharedまたはdedicated-lazy runtimeを使う。予定選択、出発時刻、route整形、effect keyを同じLife Manager pluginとして両方へinstallする。
 
 ```mermaid
 flowchart TB
-  SHARED[同一Life Manager Skill Pack\n予定選択・時刻・route・effect key]
+  SHARED[同一Life Manager Plugin\n予定選択・時刻・route・effect key]
 
   subgraph HOSTED[Cloud product]
-    ROUTER[tenant router]
-    PODS[tenant別 upstream OpenClaw]
-    SUPA[(Supabase control plane)]
+    EDGE[Eliza Cloud Telegram edge]
+    PODS[shared / dedicated-lazy AgentRuntime]
+    SQL[(Eliza Cloud Postgres + Durable Objects)]
   end
 
   subgraph LOCAL[Self-host product]
-    DAEMON[upstream OpenClaw Gateway]
-    LSTATE[(OpenClaw local state)]
+    DAEMON[Eliza AgentRuntime]
+    LSTATE[(Eliza local SQL adapter)]
     ONE[一人のowner]
   end
 
   SHARED --> PODS
-  ROUTER --> PODS
-  SUPA --> ROUTER
+  EDGE --> PODS
+  SQL --> EDGE
   SHARED --> DAEMON --> LSTATE --> ONE
 ```
 
-local loopを別architectureのままcloudへ複製しない。ユーザー価値が確認された機能を一つずつOpenClaw skill/tool contractへ切り出し、同じpackageをlocal/cloudへinstallする。現行launch coreはprovider acceptanceを取り終えるまで挙動を変えず、その後の移行で既存receipt/replay testをそのままport gateにする。
+local loopを別architectureのままcloudへ複製しない。ユーザー価値が確認された機能を一つずつEliza action/service/plugin contractへ切り出し、同じpackageをlocal/dedicated cloudへinstallする。現行launch coreはprovider acceptanceを取り終えるまで挙動を変えず、その後の移行で既存receipt/replay testをそのままport gateにする。
 
 ## 6. trialは価値を体験した後に1回だけ課金を求める
 
@@ -367,8 +384,8 @@ flowchart TD
   D --> E[Active 5\n新しいfuture eventでprovider E2E]
   E --> F[Active 6\nreplay-zero + controlled event cleanup]
   F --> LAUNCH[友達betaを開始]
-  LAUNCH --> PACKAGE[Phase 2\nLife Manager Skill Pack化]
-  PACKAGE --> CLOUD[tenant別 upstream OpenClaw cloud]
+  LAUNCH --> PACKAGE[Phase 2\nLife Manager Eliza plugin化]
+  PACKAGE --> CLOUD[Eliza Cloud dedicated-lazy pilot]
   CLOUD --> CHAT[自由会話を1 toolずつ追加]
 ```
 
@@ -425,14 +442,14 @@ primaryだけがspec、plan、progress、完了判定を更新する。workerは
 | Calendar | consent 1回、以後background | 毎日のCalendar操作 |
 | 電話 | phone任意、別の明示opt-in | phone入力を同意扱い |
 | trial | server-owned 3日、1回だけ | localStorage、再登録延長、usage meter新設 |
-| 会話runtime | upstream OpenClawだけ | Hermes、OpenClawMU、独自agent loop |
-| cloud/local共有 | 同じOpenClaw + 同じLife Manager Skill Pack | 別harness、単一shared multi-tenant process |
+| 会話runtime | ElizaOSだけ | OpenClaw、Hermes、OpenClawMU、独自agent loop |
+| cloud/local共有 | 同じAgentRuntime + 同じLife Manager plugin | 別harness、挙動の異なる再実装 |
 | 完了判定 | provider ID + durable ledger + replay-zero | local test、log文、process liveness |
 
 ## 11. Current launchの範囲外
 
 - 自由会話、voice note、画像理解、email作業、browser作業。
-- upstream OpenClawへのSkill Pack移行とtenant別cloud cutover。これはlaunch acceptance後のPhase 2で行う。
+- Eliza plugin移行とEliza Cloud cutover。これはlaunch acceptance後のPhase 2で行う。
 - Gmail connector、native event store、Google Calendar不要化。
 - local loopの一括cloud移植。
 - 新しいroute provider、agent memory DB、sandbox、quota service。
@@ -442,11 +459,11 @@ primaryだけがspec、plan、progress、完了判定を更新する。workerは
 
 - Poke: https://poke.com/ — messagingを主画面にし、接続serviceとmemoryから先回りする製品例。
 - Town Telegram: https://www.town.com/features/telegram と https://www.town.com/integrations/telegram — text、photo、voiceを同じthreadへ入れ、effectをapprovalへ戻す製品例。
-- OpenClaw Telegram spool: https://github.com/openclaw/openclaw/blob/90a9622a6cf5740ab4b9f6f65d9081d47ffbc4e4/extensions/telegram/src/telegram-ingress-spool.ts — account別durable ingress queue。
-- OpenClaw Telegram replay guard: https://github.com/openclaw/openclaw/blob/90a9622a6cf5740ab4b9f6f65d9081d47ffbc4e4/extensions/telegram/src/message-dispatch-dedupe.ts — bot/chat/message ID claimとSQLite commit/rollback。
-- OpenClaw route/session: https://github.com/openclaw/openclaw/blob/90a9622a6cf5740ab4b9f6f65d9081d47ffbc4e4/src/routing/resolve-route.ts — channel/account/peerからagent/session keyを決定。
-- OpenClaw cron store: https://github.com/openclaw/openclaw/blob/90a9622a6cf5740ab4b9f6f65d9081d47ffbc4e4/src/cron/service/store.ts — SQLite transactionとrun receipt conflict。
-- AWS tenant Sandbox: https://github.com/aws-samples/sample-openclaw-multi-tenant-platform/blob/2cb44f7f0a359ef8054cac8be02f07c035e88f4d/helm/charts/openclaw-platform/templates/sandboxtemplate.yaml — tenant別OpenClaw container、PVC、ServiceAccount。
-- AWS tenant isolation: https://github.com/aws-samples/sample-openclaw-multi-tenant-platform/blob/2cb44f7f0a359ef8054cac8be02f07c035e88f4d/helm/charts/openclaw-platform/templates/networkpolicy.yaml と https://github.com/aws-samples/sample-openclaw-multi-tenant-platform/blob/2cb44f7f0a359ef8054cac8be02f07c035e88f4d/helm/charts/openclaw-platform/templates/resourcequota.yaml。
-- AWS tenant provisioning: https://github.com/aws-samples/sample-openclaw-multi-tenant-platform/blob/2cb44f7f0a359ef8054cac8be02f07c035e88f4d/scripts/provision-tenant.sh — multi-effect provisioningとhealth待ち。
-- OpenClawMU rejected registry: https://github.com/neul-labs/openclawMU/blob/f874b00ebf30b668ed7819f5ede2e0595433155d/src/tenants/registry.ts — single-process file registryの棄却根拠。
+- Eliza AgentRuntime: https://github.com/elizaOS/eliza/blob/29bed1bb394a2c0c7c0df6dc12babbe28667efbe/packages/core/src/runtime.ts — actions/providers/services/model/memory/database/message loopのkernel。
+- Eliza shared turn coordinator: https://github.com/elizaOS/eliza/blob/29bed1bb394a2c0c7c0df6dc12babbe28667efbe/packages/cloud/shared/src/lib/services/shared-runtime/conversation-coordinator.ts — Durable Objectのturn順序、claim/replay/conflict、cutover seal。
+- Eliza Telegram edge: https://github.com/elizaOS/eliza/blob/29bed1bb394a2c0c7c0df6dc12babbe28667efbe/packages/cloud/api/eliza-app/webhook/_telegram-edge.ts — connector identity、idempotent internal turn、provider delivery ledger。
+- Eliza Telegram delivery ledger: https://github.com/elizaOS/eliza/blob/29bed1bb394a2c0c7c0df6dc12babbe28667efbe/packages/cloud/api/src/personal-telegram-delivery.ts — strongly ordered provider message ID receiptとuncertain tombstone。
+- Eliza scheduled task store: https://github.com/elizaOS/eliza/blob/29bed1bb394a2c0c7c0df6dc12babbe28667efbe/plugins/plugin-scheduling/src/scheduled-task/store.ts — Postgres atomic fire claim、CAS、apply receipts。
+- Eliza sandbox lifecycle: https://github.com/elizaOS/eliza/blob/29bed1bb394a2c0c7c0df6dc12babbe28667efbe/packages/cloud/shared/src/lib/services/eliza-sandbox.ts — shared/dedicated tier、quota、idempotent create、container lifecycle。
+- Eliza local/remote provider: https://github.com/elizaOS/eliza/blob/29bed1bb394a2c0c7c0df6dc12babbe28667efbe/packages/cloud/shared/src/lib/services/sandbox-provider.ts — local Dockerとremote Dockerの共通interface。
+- OpenClaw comparison evidence: https://github.com/openclaw/openclaw/blob/90a9622a6cf5740ab4b9f6f65d9081d47ffbc4e4/extensions/telegram/src/message-dispatch-dedupe.ts と https://github.com/aws-samples/sample-openclaw-multi-tenant-platform/blob/2cb44f7f0a359ef8054cac8be02f07c035e88f4d/helm/applicationset.yaml。
