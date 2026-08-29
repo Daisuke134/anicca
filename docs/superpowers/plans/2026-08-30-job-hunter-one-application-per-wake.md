@@ -4,24 +4,23 @@
 
 **Goal:** Make each 30-minute Workday wake pursue one truthful, legally feasible application instead of accepting an all-rejected shortlist.
 
-**Architecture:** Keep the existing model-owned fit decision, browser owner, effect fence, Ledger, receipts, and replay protection. Change only the right-altitude qualification and ranking instructions; deterministic code continues to validate schemas, state, and duplicate effects without judging job fit.
+**Architecture:** Keep the existing model-owned fit decision, browser owner, effect fence, Ledger, receipts, and replay protection. Change only the shortlist ranking instruction: Japan employment feasibility first, demonstrated current scope second, compensation ambition third. Deterministic code continues to validate schemas, state, and duplicate effects without judging job fit.
 
 **Tech Stack:** Python 3.14, `unittest`, existing Job Hunter agent runner and launchd control plane.
 
 ## Global Constraints
 
 - One real submitted application is the acquisition target for every `StartInterval=1800` wake.
-- Reject only a missing role, unsupported legal work path, impossible mandatory physical presence, or a materially false required answer.
-- Experience gaps, seniority, competition, and imperfect fit guide positioning but cannot justify an all-rejected wake.
+- Preserve truthful qualification. Do not force an application when the official description is unsupported.
+- Do not spend the 24-row wake budget on Principal/Lead/Senior or foreign-location roles while the same snapshot contains Japan-feasible roles closer to demonstrated current scope.
 - Never weaken submit fences, authoritative receipt truth, Telegram ACK, or replay-zero.
 - Do not add regex, keyword judgment, a second scheduler, provider-specific fallback, dependency, or schema.
 
 ---
 
-### Task 1: Align Workday model judgment with the acquisition objective
+### Task 1: Align Workday shortlist with the acquisition objective
 
 **Files:**
-- Modify: `apps/job-search-loop/job_search_loop/workday_qualification.py`
 - Modify: `apps/job-search-loop/job_search_loop/workday_search_loop.py`
 - Test: `apps/job-search-loop/tests/test_workday_qualification.py`
 
@@ -31,7 +30,7 @@
 
 - [ ] **Step 1: Write the failing prompt-contract test**
 
-Capture the prompt passed by `qualify_one` and assert it says the wake must select the best truthfully and legally feasible application, names the four hard blockers, and says experience gaps or imperfect fit are positioning inputs rather than blanket rejection reasons. Read `workday_search_loop.py` and assert the shortlist prompt prioritizes an actionable candidate for this wake.
+Assert that the shortlist prompt orders Japan employment feasibility before demonstrated current scope and compensation ambition, and explicitly avoids consuming the bounded shortlist with senior foreign roles when closer Japan-feasible work exists. Do not change the qualification prompt.
 
 - [ ] **Step 2: Run the focused test and verify RED**
 
@@ -42,11 +41,11 @@ cd apps/job-search-loop
 python3 -m unittest tests.test_workday_qualification.WorkdayQualificationTests.test_fit_and_shortlist_prompts_require_one_feasible_application_per_wake -v
 ```
 
-Expected: `FAIL` because the current prompts optimize realistic interview fit and allow the whole shortlist to be rejected.
+Expected: `FAIL` because the current shortlist leads with interview chance plus salary ambition but does not state the required feasibility/scope ordering.
 
 - [ ] **Step 3: Apply the minimum prompt change**
 
-In `workday_qualification.py`, instruct the model to qualify the best available role unless one of the four hard blockers is evidenced. In `workday_search_loop.py`, rank candidates by actionability for the current wake while preferring fewer prior submit attempts and diverse companies. Preserve evidence grounding and prohibit invented candidate facts.
+In `workday_search_loop.py`, rank Japan-feasible roles first, demonstrated current scope second, and compensation ambition third, while retaining fewer prior submit attempts and company diversity. Preserve evidence grounding and prohibit invented candidate facts. Leave `workday_qualification.py` unchanged.
 
 - [ ] **Step 4: Verify GREEN and the existing row-safety regression**
 

@@ -458,10 +458,15 @@ def main() -> int:
             return runner.run(
                 task="improve",
                 prompt=(
-                "Rank the Workday jobs for this candidate's realistic chance of winning "
-                "an interview and reaching at least JPY 7M, prioritizing JPY 10M-30M. "
-                "Use the whole supplied snapshot, not company prestige or source order. "
-                "Prefer roles whose actual work is supported by demonstrated experience. "
+                "Rank the Workday jobs for this candidate in this order: Japan employment feasibility first; "
+                "demonstrated current career scope second; compensation ambition third. Prefer roles that "
+                "can employ someone based in Japan, then roles whose actual work is supported by the candidate's "
+                "current evidence, "
+                "then credible paths to at least JPY 7M, prioritizing JPY 10M-30M. "
+                "Do not consume the bounded shortlist with Principal, Lead, or Senior roles "
+                "or foreign-location work while closer Japan-feasible roles exist. "
+                "Treat title seniority, company prestige, and source order as weak "
+                "signals rather than fit proxies. Use the whole supplied snapshot. "
                 "This is a company-wide portfolio search, not a single-company campaign. "
                 "When interview fit is comparable, prefer employers with fewer prior "
                 "submit attempts and keep credible finalists across different companies. "
