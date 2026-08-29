@@ -1,17 +1,15 @@
 # Autonomous Job Search Loop Design
 
-**Date:** 2026-07-28
-**Last updated:** 2026-08-24
 **Owner:** Daisuke Narita
 **Current verified status:** `ai.anicca.job-search-daily` is installed with
-`StartInterval=1800`; this is a 30-minute loop, not an hourly loop. Its immutable
-runtime is release `56412ae70eaebe50bbaf1ce5e29c4f1ec6d8a422`, the private automation
-home resolves to the install-selected acct2 identity, and the authenticated
-CloakBrowser daily-driver answers at CDP `:9222`. Workday 10P is closed end to end:
-NVIDIA JR2008507 has exact completion UI, authoritative Gmail receipt
-`1a02ff31ecb7353d`, Ledger `submitted`, direct Telegram `30852`/`30853`, current
-`summary.v2`, and immediate repeated-wake duplicate count zero. Later wakes continue
-to discover and operate fresh Workday roles rather than stopping at that proof.
+`StartInterval=1800`; this is a 30-minute loop, not an hourly loop. The loaded
+immutable runtime is release `6ab86c333829a6aa0d7888b6a51485a5f7b34f6c`.
+The owner continues natural wakes, but the latest measured wake exits `2` after
+`budget_exhausted`: all 24 fit checks fail with retryable official-source
+`HTTPError`, so no browser submission starts and no new authoritative Gmail receipt
+is created. The latest accepted application receipt remains the existing Salesforce
+message `1a042891b3e71650`; newer `materials_ready`, discovery, Telegram, standalone
+screenshot, or Ledger rows do not count as applications.
 
 The application Ledger remains the state SSOT and `summary.v2` is rebuilt from its
 event stream on every wake. Every-wake and application-result Telegram delivery uses
@@ -19,25 +17,33 @@ the direct fenced Bot API transport; OpenClaw is not in the daily reporting path
 The active engineering gate is continuous Workday search 10P3. Workday form
 operation, submission fencing, authoritative verification, Ledger recording,
 Telegram reporting, and exact-URL repeated-wake dedupe are live-proven in 10P.
-Discovery now snapshots every posting from the persisted Workday company registry,
-model-ranks every unseen row, and compares each selected official job description
-to Candidate Memory before browser access. It does not use title regex or a fixed
-company preference for job judgment. However, the registry is not yet an autonomous
-accumulating catalog of all discoverable Workday employers, and unpublished salary
-remains explicitly unverified rather than assumed. Workday is not
-end-to-end complete as a useful Job Hunter until 10P1, 10P2, and 10P3 close. Until
-then the owner must process Workday only; implementing and live-proving that park is
-the first atomic task. Historical non-Workday runs are diagnostic evidence only and
-provide no accepted progress.
+Discovery snapshots every posting from the persisted Workday company registry,
+model-ranks unseen rows, and compares selected official job descriptions to
+Candidate Memory before browser access. Deterministic bookkeeping excludes a
+Workday tenant after any external Submit intent, including `submit_claimed` and
+`submit_unknown`; company aliases cannot reopen the same tenant. When the model
+selects a preferred Workday row, the browser receives only that row for the wake,
+not the old backlog. Production evidence shows cross-company evaluation across
+Omnissa, Adobe, Worldpay, Qualys, Visa, Thomson Reuters, Autodesk, Cloudera, and
+other registry companies. It does not prove an application until the mail rule
+below closes.
 
-**Accepted provider E2E bar:** `0/5 complete (0%)`. Workday is the only functioning
-provider lane, but remains incomplete because useful-job qualification and diverse
-fresh discovery are absent. Ashby, Greenhouse, Lever, and generic ATS are
-`broken_unverified`; none counts as progress. Form entry, a Submit click,
+**Accepted provider E2E bar:** `0/5 complete (0%)`. Workday is the active provider
+lane. Cross-company discovery and tenant-level repeat prevention are live, but the
+current recurring E2E is incomplete because official-description fetches fail before
+fit qualification and browser submission. Ashby, Greenhouse, Lever, and generic ATS
+remain parked and unverified. Form entry, a Submit click,
 `submit_unknown`, a Telegram message, or duplicate-zero without authoritative
 provider receipt is not provider completion. All non-Workday application lanes must
 stay parked until Workday closes 10P1, 10P2, and 10P3 with loop-owned production
 evidence.
+
+**Dais action:** no routine action is required. Do not manually reapply to a queued
+row, delete Job Hunter state, or treat discovery notifications as applications.
+Respond only when Telegram asks for CAPTCHA, identity verification, previously
+unregistered legal/private information, a proctored assessment, or an offer. The
+installed owner handles ordinary forms, tenant accounts, Gmail reconciliation,
+resume delivery, and subsequent wakes.
 
 **Workday mail rule:** no authoritative application-received message found by the
 authenticated Gog inbox owner means the application is not accepted as applied, with
@@ -54,14 +60,13 @@ bound Gog receipt promotes it to `submitted`.
 
 | Order | Atomic outcome | Done evidence |
 |---:|---|---|
-| 1 | Reconcile the already-found Rakuten receipt | Message `1a031c8ef3be0dbd`, authoritative sender, recipient, post-submit time, unique intent, Ledger `submitted`, Telegram ACK |
-| 2 | Prove next-wake duplicate 0 | Same Rakuten canonical/repost identity produces no new submit intent, fence, or click |
-| 3 | Replace confirmation phrase/title routing with semantic mail judgment | Unseen Japanese and English receipt wordings classify correctly; spoofed sender, wrong recipient, pre-submit mail, and multiple same-company uncertain intents fail closed |
-| 4 | Persist search/source cursor across every wake | Model-generated companies, queries, tried URLs, reject/hold reasons, and remaining sources resume without restarting or returning an ungrounded empty result |
-| 5 | Keep searching after every reject/hold/submit | Same owner continues until qualified job, source exhaustion receipt, or explicit wake budget; next wake resumes immediately |
-| 6 | Self-heal provider and transport failures | Official-source timeout, auth expiry, browser checkpoint, Gog timeout, and model failure retry only before uncertain effects; alerts dedupe |
-| 7 | Prove recurring useful applications | Multiple distinct fit-qualified Workday jobs from different companies reach Gog-backed `submitted`, Telegram, and duplicate 0 |
-| 8 | Soak the installed loop | Scheduled 30-minute ownership remains healthy without manual executor, duplicate submits, excluded employers, secret leaks, or false success |
+| 1 | Recover official-description qualification | One natural wake completes at least one fit decision without the current repeated `HTTPError` |
+| 2 | Submit one new-company Workday row | One preferred row enters the browser, creates at most one Submit intent, and captures post-submit UI evidence |
+| 3 | Verify the application | Authoritative Gmail receipt binds to the exact intent; Ledger becomes `submitted`; Telegram reports the receipt |
+| 4 | Prove next-wake duplicate zero | The same tenant and canonical job create no new intent, fence, click, or receipt |
+| 5 | Prove recurring cross-company applications | Multiple distinct tenants reach Gmail-backed `submitted` without returning to previously attempted tenants |
+| 6 | Soak the installed loop | Scheduled 30-minute ownership remains healthy without manual executor, duplicate submits, secret leaks, false success, or release disappearance |
+| 7 | Open Ashby second | Ashby starts only after the recurring Workday receipt and replay gates remain closed |
 
 The target Workday acquisition path is: maintain an accumulating registry of
 official company boards; snapshot every posting from every healthy board; remove
@@ -101,12 +106,12 @@ Ledger to `submitted`, and sends resume/outcome Telegram `30852` and `30853`.
 Immediate health-relayed wake `daily-20260824-035611` excludes that terminal URL,
 discovers unseen NVIDIA JR2020208-1, and hands only that row to Luna, proving duplicate
 external effects 0. Non-Workday providers remain parked until Workday 10P1–10P3 are
-complete. The minimum throughput contract is
-one verified Workday application per 30-minute wake whenever at least one eligible,
-permitted Workday role exists. There is no one-per-wake ceiling: after each verified
-submission the same owner continues until the queue or explicit wake budget is
-exhausted. A wake with no eligible role or a truthful external blocker still sends
-one company/role/outcome/next-action Telegram report with a provider message ID.
+complete. The minimum throughput contract is one verified Workday application per
+30-minute wake whenever at least one eligible, permitted Workday role exists. A wake
+processes one model-selected Workday row so an old backlog cannot produce a
+same-company burst. A wake with no eligible role or a truthful external blocker
+still sends one company/role/outcome/next-action Telegram report with a provider
+message ID.
 
 **Architecture decision:** all eligible ATS form interaction is mandatory
 model-based browser work. Deterministic code owns only discovery, eligibility,
