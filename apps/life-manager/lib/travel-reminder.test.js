@@ -3,6 +3,11 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const { fetchUpcomingEvents } = require("./events.js");
+const travel = require("./travel.js");
+
+const recordTravelTelegramReceipt = (...args) => typeof travel.recordTravelTelegramReceipt === "function"
+  ? travel.recordTravelTelegramReceipt(...args)
+  : { ok: false, matched: 0, error: "module_missing" };
 
 const {
   T5_MS,
@@ -21,6 +26,7 @@ const NOW = Date.parse("2026-08-28T04:00:00.000Z"); // 13:00 JST
 const START = Date.parse("2026-08-28T05:00:00.000Z"); // 14:00 JST
 const END = START + 60 * 60 * 1000;
 const HOME = "東京都新宿区1-1-1";
+const successfulReceipt = async () => ({ ok: true, matched: 1 });
 
 function event(overrides = {}) {
   return {
@@ -60,6 +66,84 @@ function routeFixture(overrides = {}) {
     ...overrides,
   };
 }
+
+test("Telegram receipt RPC posts the exact service body and accepts matched=1", async () => {
+  const calls = [];
+  const result = await recordTravelTelegramReceipt(
+    "tenant-a", "event-a", "telegram-t5", 901, "https://supa.example/", "service-secret",
+    { fetchImpl: async (url, init) => {
+      calls.push({ url: String(url), init });
+      return { ok: true, status: 200, json: async () => 1 };
+    } },
+  );
+  assert.deepEqual(result, { ok: true, matched: 1 });
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].url, "https://supa.example/rest/v1/rpc/record_lm_travel_telegram_receipt");
+  assert.equal(calls[0].init.method, "POST");
+  assert.deepEqual(calls[0].init.headers, {
+    "Content-Type": "application/json",
+    apikey: "service-secret",
+    Authorization: "Bearer service-secret",
+  });
+  assert.deepEqual(JSON.parse(calls[0].init.body), {
+    p_uid: "tenant-a",
+    p_event_key: "event-a",
+    p_leg: "telegram-t5",
+    p_telegram_message_id: 901,
+  });
+});
+
+test("Telegram receipt RPC rejects invalid input and never fetches or leaks raw errors", async () => {
+  const base = ["tenant-a", "event-a", "telegram-t5", 901, "https://supa.example", "service-secret"];
+  const invalid = [
+    ["uid", "\t\n"],
+    ["uid", "u".repeat(257)],
+    ["eventKey", "\t\n"],
+    ["eventKey", "e".repeat(513)],
+    ["leg", "go"],
+    ["messageId", 0],
+    ["messageId", -1],
+    ["messageId", 1.5],
+    ["messageId", Number.MAX_SAFE_INTEGER + 1],
+  ];
+  for (const [key, value] of invalid) {
+    let fetches = 0;
+    const input = { ...Object.fromEntries(["uid", "eventKey", "leg", "messageId", "supaUrl", "supaKey"].map((name, i) => [name, base[i]])), [key]: value };
+    const result = await recordTravelTelegramReceipt(
+      input.uid, input.eventKey, input.leg, input.messageId, input.supaUrl, input.supaKey,
+      { fetchImpl: async () => { fetches += 1; throw new Error("raw-secret"); } },
+    );
+    assert.equal(result.ok, false, key);
+    assert.equal(result.matched, 0, key);
+    assert.equal(fetches, 0, key);
+    assert.doesNotMatch(JSON.stringify(result), /raw-secret|service-secret|supa\.example/);
+  }
+  for (const [supaUrl, supaKey] of [["", "key"], ["https://supa.example", ""], ["https://supa.example", "\t\n"]]) {
+    let fetches = 0;
+    const result = await recordTravelTelegramReceipt("tenant-a", "event-a", "telegram-t5", 901, supaUrl, supaKey, {
+      fetchImpl: async () => { fetches += 1; throw new Error("raw-secret"); },
+    });
+    assert.equal(result.ok, false);
+    assert.equal(result.matched, 0);
+    assert.equal(fetches, 0);
+  }
+  const malformed = await recordTravelTelegramReceipt(...base, { fetchImpl: async () => ({ ok: true, status: 200, json: async () => "1" }) });
+  assert.deepEqual(malformed, { ok: false, matched: 0, error: "invalid_result" });
+  const failed = await recordTravelTelegramReceipt(...base, { fetchImpl: async () => ({ ok: false, status: 503, json: async () => ({ secret: "raw-secret" }) }) });
+  assert.deepEqual(failed, { ok: false, matched: 0, error: "http_error" });
+  const contradictoryStatus = await recordTravelTelegramReceipt(...base, {
+    fetchImpl: async () => ({ ok: true, status: 500, json: async () => 1 }),
+  });
+  assert.deepEqual(contradictoryStatus, { ok: false, matched: 0, error: "http_error" });
+  const thrown = await recordTravelTelegramReceipt(...base, { fetchImpl: async () => { throw new Error("raw-secret"); } });
+  assert.deepEqual(thrown, { ok: false, matched: 0, error: "network_error" });
+  const noFetch = await recordTravelTelegramReceipt(...base, { fetchImpl: null });
+  assert.deepEqual(noFetch, { ok: false, matched: 0, error: "network_error" });
+  const unreadable = await recordTravelTelegramReceipt(...base, {
+    fetchImpl: async () => ({ ok: true, status: 200, json: async () => { throw new Error("raw-secret"); } }),
+  });
+  assert.deepEqual(unreadable, { ok: false, matched: 0, error: "unreadable_response" });
+});
 
 test("T-5 physical event uses computed departure and non-travel uses event start", () => {
   const physical = event();
@@ -188,6 +272,7 @@ test("travel reminder routes through resolved destination while displaying the o
     directionsRoute: async (_origin, to) => { seen.push(to); return { durationSeconds: 5 * 60 }; },
     claimTravel: async () => true,
     sendMessage: async (_token, _chat, text) => { sent.push(text); return { ok: true, result: { message_id: 709 } }; },
+    recordTravelTelegramReceipt: successfulReceipt,
   });
   assert.equal(result.status, "sent");
   assert.deepEqual(seen, [destination]);
@@ -265,6 +350,7 @@ test("travelReminderOnce claims telegram-t5 before send, suppresses duplicate, a
     claimTravel: async (...args) => { calls.push(["claim", ...args]); return true; },
     unclaimTravel: async (...args) => { calls.push(["release", ...args]); },
     sendMessage: async (...args) => { calls.push(["send", ...args]); return { ok: true, result: { message_id: 701 } }; },
+    recordTravelTelegramReceipt: successfulReceipt,
     telegramToken: "token", supaUrl: "supa", supaKey: "key", log: (line) => calls.push(["log", line]),
   };
   const first = await travelReminderOnce({ uid: "u-123456789012345", telegram_chat_id: "chat-1", notifications_enabled: true }, NOW, deps);
@@ -331,6 +417,107 @@ test("travelReminderOnce keeps the claim on throw or delivery_unknown and replay
   }
 });
 
+test("Telegram receipt is recorded after claim and send in exact order", async () => {
+  const calls = [];
+  const dueEvent = event({ id: "receipt-order", startMs: NOW + 3 * T5_MS, startIso: "2026-08-28T13:15:00+09:00" });
+  const user = { uid: "receipt-user", telegram_chat_id: "receipt-chat", notifications_enabled: true };
+  const deps = {
+    events: [dueEvent], home: HOME, mapsKey: "maps", timezone: "Asia/Tokyo",
+    directionsRoute: async () => ({ durationSeconds: 5 * 60 }),
+    claimTravel: async (...args) => { calls.push(["claim", ...args]); return true; },
+    sendMessage: async (...args) => { calls.push(["send", ...args]); return { ok: true, result: { message_id: 905 } }; },
+    recordTravelTelegramReceipt: async (...args) => {
+      calls.push(["receipt", ...args]);
+      assert.deepEqual(args.slice(0, 6), [user.uid, dueEvent.id, "telegram-t5", 905, "supa", "key"]);
+      return { ok: true, matched: 1 };
+    },
+    telegramToken: "token", supaUrl: "supa", supaKey: "key", log: () => {},
+  };
+  const result = await travelReminderOnce(user, NOW, deps);
+  assert.equal(result.status, "sent");
+  assert.equal(result.telegramMessageId, 905);
+  assert.deepEqual(calls.map((entry) => entry[0]), ["claim", "send", "receipt"]);
+});
+
+test("Telegram receipt mismatch, failure, and throw retain the claim and replay sends nothing", async () => {
+  const scenarios = [
+    { result: { ok: true, matched: 0 } },
+    { result: { ok: false, matched: 0, error: "raw-provider-error" } },
+    { throws: true },
+  ];
+  for (const scenario of scenarios) {
+    const calls = [], logs = [];
+    let claims = 0;
+    const forbidden = ["receipt-user", "receipt-event", "route-secret", "901", "raw-provider-error", "token-secret"];
+    const dueEvent = event({ id: "receipt-event", summary: "route-secret", startMs: NOW + 3 * T5_MS, startIso: "2026-08-28T13:15:00+09:00" });
+    const deps = {
+      events: [dueEvent], home: "home-secret", mapsKey: "maps-secret", timezone: "Asia/Tokyo",
+      directionsRoute: async () => ({ durationSeconds: 5 * 60 }),
+      claimTravel: async (...args) => { calls.push(["claim", ...args]); claims += 1; return claims === 1; },
+      unclaimTravel: async (...args) => { calls.push(["release", ...args]); return true; },
+      sendMessage: async (...args) => { calls.push(["send", ...args]); return { ok: true, result: { message_id: 901 } }; },
+      recordTravelTelegramReceipt: async (...args) => {
+        calls.push(["receipt", ...args]);
+        if (scenario.throws) throw new Error("raw-provider-error");
+        return scenario.result;
+      },
+      telegramToken: "token-secret", supaUrl: "supa-secret", supaKey: "key-secret",
+      log: (line) => logs.push(String(line)),
+    };
+    const user = { uid: "receipt-user", telegram_chat_id: "chat-secret", notifications_enabled: true };
+    const first = await travelReminderOnce(user, NOW, deps);
+    const replay = await travelReminderOnce(user, NOW, deps);
+    assert.equal(first.status, "delivery_unknown");
+    assert.equal(replay.status, "suppressed");
+    assert.deepEqual(calls.map((entry) => entry[0]), ["claim", "send", "receipt", "claim"]);
+    assert.equal(calls.filter((entry) => entry[0] === "release").length, 0);
+    assert.equal(calls.filter((entry) => entry[0] === "receipt").length, 1);
+    assert.deepEqual(logs, ["[travel-reminder] delivery receipt reconciliation required"]);
+    assert.ok(logs.every((line) => forbidden.every((sentinel) => !line.includes(sentinel))),
+      `sensitive value leaked: ${JSON.stringify(logs)}`);
+  }
+});
+
+test("provider rejection, transport uncertainty, and duplicate claim never write a receipt", async () => {
+  const dueEvent = event({ id: "receipt-boundary", startMs: NOW + 3 * T5_MS, startIso: "2026-08-28T13:15:00+09:00" });
+  let receiptWrites = 0;
+  let releases = 0;
+  const base = {
+    events: [dueEvent], home: HOME, mapsKey: "maps", timezone: "Asia/Tokyo",
+    directionsRoute: async () => ({ durationSeconds: 5 * 60 }),
+    telegramToken: "token", supaUrl: "supa", supaKey: "key", log: () => {},
+    recordTravelTelegramReceipt: async () => { receiptWrites += 1; return { ok: true, matched: 1 }; },
+  };
+  const rejected = await travelReminderOnce({ uid: "rejected", telegram_chat_id: "chat", notifications_enabled: true }, NOW, {
+    ...base,
+    claimTravel: async () => true,
+    unclaimTravel: async (...args) => { releases += 1; assert.equal(args[2], "telegram-t5"); return true; },
+    sendMessage: async () => ({ ok: false, status: 500 }),
+  });
+  assert.equal(rejected.status, "send_failed");
+  assert.equal(releases, 1);
+  assert.equal(receiptWrites, 0);
+
+  const uncertain = await travelReminderOnce({ uid: "uncertain", telegram_chat_id: "chat", notifications_enabled: true }, NOW, {
+    ...base,
+    claimTravel: async () => true,
+    unclaimTravel: async () => { releases += 1; return true; },
+    sendMessage: async () => ({ ok: true, result: {} }),
+  });
+  assert.equal(uncertain.status, "delivery_unknown");
+  assert.equal(releases, 1);
+  assert.equal(receiptWrites, 0);
+
+  const duplicate = await travelReminderOnce({ uid: "duplicate", telegram_chat_id: "chat", notifications_enabled: true }, NOW, {
+    ...base,
+    claimTravel: async () => false,
+    sendMessage: async () => { throw new Error("duplicate must not send"); },
+  });
+  assert.equal(duplicate.status, "suppressed");
+  assert.equal(releases, 1);
+  assert.equal(receiptWrites, 0);
+});
+
 test("travelReminderOnce keeps an accepted receipt claim when the transport status contradicts ok", async () => {
   const dueEvent = event({ id: "contradictory-status", startMs: NOW + 3 * T5_MS, startIso: "2026-08-28T13:15:00+09:00" });
   let claims = 0;
@@ -342,6 +529,7 @@ test("travelReminderOnce keeps an accepted receipt claim when the transport stat
     claimTravel: async () => { claims += 1; return claims === 1; },
     unclaimTravel: async () => { releases += 1; return true; },
     sendMessage: async () => { sends += 1; return { ok: true, result: { message_id: 803 }, status: 500 }; },
+    recordTravelTelegramReceipt: successfulReceipt,
     telegramToken: "token", supaUrl: "supa", supaKey: "key", log: () => {},
   };
 
@@ -383,6 +571,7 @@ test("travelReminderOnce reads reserved fallback keys as exact eq values and use
     directionsRoute: async (_origin, destination) => { destinations.push(destination); return { durationSeconds: 5 * 60 }; },
     claimTravel: async () => true,
     sendMessage: async () => ({ ok: true, result: { message_id: 804 } }),
+    recordTravelTelegramReceipt: successfulReceipt,
   });
 
   assert.equal(result.status, "sent");
@@ -411,6 +600,7 @@ test("stale target go claim plus previous event return claim falls back to event
     },
     directionsRoute: async (_origin, destination) => { destinations.push(destination); return { durationSeconds: 5 * 60 }; },
     claimTravel: async () => true, sendMessage: async () => ({ ok: true, result: { message_id: 803 } }),
+    recordTravelTelegramReceipt: successfulReceipt,
   });
   assert.equal(result.status, "sent");
   assert.deepEqual(destinations, [target.location]);
@@ -430,6 +620,7 @@ test("adjacent outbound Travel starts at prior event end only when target go cla
     fetchImpl: async (url, init) => { queries.push({ url: String(url), init }); return { ok: true, status: 200, json: async () => [{ event_key: "target-event" }] }; },
     directionsRoute: async (_origin, destination) => { destinations.push(destination); return { durationSeconds: 5 * 60 }; },
     claimTravel: async () => true, sendMessage: async () => ({ ok: true, result: { message_id: 801 } }),
+    recordTravelTelegramReceipt: successfulReceipt,
   });
   assert.equal(result.status, "sent");
   assert.deepEqual(destinations, [outbound.location]);
@@ -453,6 +644,7 @@ test("the same adjacent geometry without a target go claim falls back to event l
     fetchImpl: async () => ({ ok: true, status: 200, json: async () => [] }),
     directionsRoute: async (_origin, destination) => { destinations.push(destination); return { durationSeconds: 5 * 60 }; },
     claimTravel: async () => true, sendMessage: async () => ({ ok: true, result: { message_id: 802 } }),
+    recordTravelTelegramReceipt: successfulReceipt,
   });
   assert.equal(result.status, "sent");
   assert.deepEqual(destinations, [target.location]);
@@ -466,6 +658,7 @@ test("travelReminderOnce sends an event-only reminder when origin is unavailable
     directionsRoute: async () => { throw new Error("online must not route"); },
     claimTravel: async () => true,
     sendMessage: async (_token, _chat, text) => { sent.push(text); return { ok: true, result: { message_id: 702 } }; },
+    recordTravelTelegramReceipt: successfulReceipt,
     telegramToken: "token", supaUrl: "supa", supaKey: "key",
   });
   assert.equal(result.status, "sent");
@@ -511,6 +704,7 @@ test("online event reminder catches up from start+1m through start+10m, but not 
     home: HOME, supaUrl: "supa", supaKey: "key", telegramToken: "token",
     claimTravel: async () => true,
     sendMessage: async (_token, _chat, text) => { sent.push(text); return { ok: true, result: { message_id: 705 + sent.length } }; },
+    recordTravelTelegramReceipt: successfulReceipt,
   };
   const one = await travelReminderOnce({ uid: "u-online-1", telegram_chat_id: "chat", notifications_enabled: true }, NOW, {
     ...deps, events: [eventAt(60 * 1000, "online-1")],
@@ -543,6 +737,7 @@ test("Calendar URL online event reaches the reminder at event-start T-5 without 
     events, home: HOME, supaUrl: "supa", supaKey: "key", telegramToken: "token",
     directionsRoute: async () => { routes += 1; return null; }, claimTravel: async () => true,
     sendMessage: async (_token, _chat, text) => { sent.push(text); return { ok: true, result: { message_id: 708 } }; },
+    recordTravelTelegramReceipt: successfulReceipt,
   });
   assert.equal(events[0].online, true);
   assert.equal(result.status, "sent");
