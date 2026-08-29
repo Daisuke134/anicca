@@ -723,7 +723,8 @@ Focused reuse suiteはruntime/browser jobs、ask/reply、reconciliation、panel�
 | Task 7 measured gap | `general-agent-work` contract/registry testsは22/22 passするが、production `runBoundedSpecialist` service、durable opportunity/goal body、Dashboard live sourceが存在しない。Current workerはserviceなしでadapterを呼ぶため実jobを完了できない | Task 7Aでatomic opportunity/job store＋source、7Bでreal API/WebMCP/worker specialistを接続する。Fixtureをgenerality proofにしない |
 | Task 7A | Provider-neutral opportunity identity/table、atomic runtime job RPC、tenant-scoped live sourceを実装。Optional walletと`record_type=application_receipt`修正後、Luna/parent 7/7、commits `610a39d7a` + `ee63a7569` | DB applyは未実施。Task 7BでPanel/WebMCP create/readとproduction specialistを接続する |
 | Task 7B1 | Authenticated opportunity create、tenant workroom GET、`add_opportunity`、`inspect_workroom`、server live sourceを実装。Luna/parent 70/70、commit `75db2fa17` | Task 7B2でproduction specialistをwire。`inspect_receipt`はLancers real receipt source後だけ登録する |
-| Task 7B2 | `general-agent.work`をexisting agent-runnerへwireし、stored public goalをbounded research/qualification/planningへ渡す。Read-only runのfalse deliveryを除去後、Luna/parent 36/36、commits `bf4733775` + `8eb7506d6` | Migration/deploy後にlive planned receiptを取得。Delivery/applicationは専用effect laneのofficial readbackだけが設定する |
+| Task 7B2 | `general-agent.work`をexisting agent-runnerへwireし、stored public goalをbounded research/qualificationへ渡す。Internal receiptは`completed`、Opportunityは`QUALIFIED`で、deliveryは主張しない。Luna/parent 36/36、commits `bf4733775`、`8eb7506d6`、`e5826d59d`、`1088ce939` | Migration/deploy後にlive qualification receiptを取得。Delivery/applicationは専用effect laneのofficial readbackだけが設定する |
+| Production adversary gate | Fresh Sol reviewはattempt resume、qualification terminal、write idempotency、currency、untrusted content、visible refresh、worker capabilityの7件を`fix-first`。修正後scoped reviewでprompt boundary/refresh propagationの2件を追加修正し、fresh final scoped review=`ship` | Code gate closed。DB apply、deploy、live E2Eは別証拠として続行 |
 
 ### 10.5 One product, one mode
 
@@ -1124,7 +1125,7 @@ One active item at a time。各itemは実物readbackを閉じてから次へ進�
 | U07 | 応募可能なLancers案件があるか | blocked by U06 | current complete detail、buyer/order rate、budget、deadline、eligibility、competitionをModelが判断。public result countだけは不可 | suitable candidateがなければapplicationを送らず別market discoveryを継続 |
 | U08 | Lancers proposal effect/readbackが現在のDOMで動くか | blocked | code kernelではなく実siteでimmutable intent、presend absent、effect 1、official proposal ID、replay effect 0 | post-effect unknownは再送せずreconciliation |
 | U09 | General projectionが既存receiptを正しく表示できるか | projection + Panel code-verified / live source open | projection 2/2、tenant-bound GETと六列UIを含むfocused suite 58/58。次にruntime/application/general receiptsをserver sourceへ接続 | raw provider stateやempty fake sourceをUIへ渡さない |
-| U10 | Minimal human判定が丸投げになる | domain code-verified / live-open | Model-selected `human_boundary_ref`、stable task/open dedupe、vault answer、same-job resume 4/4。次にlive model caseとAPI E2E | agentが実行可能なworkをhuman taskにしたらfail |
+| U10 | Minimal human判定が丸投げになる | domain/API code-verified / live-open | Model-selected `human_boundary_ref`、stable task/open dedupe、vault answer、pause attempt preservation、same-job resume focused pass。次にlive model caseとAPI E2E | agentが実行可能なworkをhuman taskにしたらfail |
 | U11 | WebMCP toolsがChatGPTで発見・実行されるか | read/write registration code-verified / browser live-open | top-level inspect toolsとstate-dependent answer toolを含むfocused suite 65/65。次にSol/Terra tool list、recent call、visible resume | ChatGPT rollout不可ならChrome 149+ evidenceでStage Oneを守る |
 | U12 | Netlify/Browser security headersがWebMCPを許すか | open | origin isolation、Permissions Policy、no iframe registration、clean-browser tool discovery | headerが通るまでdeployをworking扱いしない |
 | U13 | Page close後も24/7 workが続くか | open | page closed状態で3 natural cycles、restart recovery、same workroom state | page-local toolをscheduler代わりにしない |
@@ -1133,7 +1134,7 @@ One active item at a time。各itemは実物readbackを閉じてから次へ進�
 | U16 | X discovery sessionが使えるか | blocked | existing daily-driverのlogged-in X tab readback、read-only search receipt | duplicate browserを起動せずWeb/GitHub/mail discoveryで継続 |
 | U17 | Unknown marketplaceでeffect adapterがない | production path code-verified / live-open | Durable goal、API/WebMCP、live source、agent-runner specialistを実装。Read-only specialistは`planned→QUALIFIED`だけ。次にarbitrary URL live E2E | adapter/auth/readbackがなければeffectだけfail closed、research/planningは継続 |
 | U18 | Multiple agentsでcontext/effectが交差する | open | two workrooms、different effect keys、isolated refs、bounded concurrency、sibling checkpoint preservation | shared mutable customer stateを検出したらparallel effectを止める |
-| U19 | Revenueを盛って表示する | code-verified / UI live-open | earnings/TaskMarket/x402 31/31 tests、UIがapplications/pending/paidを分離、official receipt link | cash receiptなしならverified money 0を表示 |
+| U19 | Revenueを盛って表示する | code-verified / UI live-open | Verified external incomeだけを通貨別mapで集計し、JPY/USD等を混算しない。Application/Paymentは別receiptのまま | cash receiptなしならverified money empty/0を表示 |
 | U20 | Real external receiptが締切までに得られない | open | Lancers official application IDを最低証拠とし、acceptance/delivery/cashは得られたterminalだけ表示 | candidate不在ならsafe blocked receiptを見せ、fake effectを作らない |
 | U21 | Existing projectの新規WebMCP差分が不明 | open | August 25以降のcommit list、README `Hackathon changes`、submitted tag diff | prior Life Manager機能をHackathon成果として数えない |
 | U22 | Public repoがclean installできない | open | clean clone、locked install、focused tests、secret/PII scan、license detection | scan/import failureならsubmit readinessは`not ready` |
