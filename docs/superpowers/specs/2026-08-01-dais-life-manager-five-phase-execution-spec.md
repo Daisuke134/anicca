@@ -27,7 +27,7 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 この節は、後段の「現在TODO」「次の一件」「local-only」「self-funded agentは別product」という相反する記述を
 上書きする最新の実行順序SSOTである。後段は実装履歴・organ別acceptanceとして保持するが、次作業の選択には使わない。
 Upworkのterminal evidence、startup context、public claim、GA-01〜13Aは完了または履歴として保持する。
-次の一件はAtomic program ledger Seq 11 `ELZ-F11`で、Eliza root treeを変えずにlegacy Life Manager historyをsecond-parent ancestryへ結合する。
+次の一件はAtomic program ledger Seq 12 `ELZ-F12`で、公開可能なlegacy specs/evidenceだけをnamespace付きmanifestから取込む。
 
 #### 0.0.1 最新基盤決定 — ElizaOSを完全forkし、Life Managerをlocal OSSからmulti-tenant SaaSへ育てる
 
@@ -555,8 +555,8 @@ reviewはfocused verification後のfresh adversarial P0/P1 review一回だけと
 | 8 | ELZ-F08 model-free local boot | DONE | private `local-boot-receipt.json` mode 0600。`env -i` allowlist、isolated `127.0.0.1:2138` / state / PGliteで起動。health ready/runtime/database=`true/ok/ok`、DB liveness OK、model credential 0、marketplace effect 0、fixed source clean。local embedding取得とwallet address生成はcredential注入/broadcastなし |
 | 9 | ELZ-F09 persistent PGlite readback | DONE | private `local-persistence-receipt.json` mode 0600。F08 exact PID/executable/argv/start identity一致後にTERM、旧PID消滅・port 2138解放。private PGliteへexact markerを書き、close/reopen後も同値read。DB mode 0700、writer process 0、lock handle 0、fixed source clean |
 | 10 | ELZ-F10 clean stop and same-DB restart | DONE | private `local-health-receipt.json` / `restart-process-identity.json` mode 0600。同じargv SHA・state・PGlite pathで別PIDへrestartし、health ready/runtime/database/livenessとF09 markerを再確認。focused 4 files・32/32 tests、SIGTERM/PTY exit 0、旧PID消滅、port/listener/lock 0、fixed source clean、external effect 0 |
-| 11 | ELZ-F11 history DAG join | **IN_PROGRESS — NEXT** | Eliza root treeを変えず、旧Life Manager remote mainがsecond-parent ancestryへ入る`history-join-receipt.json` |
-| 12 | ELZ-F12 specs/evidence allowlisted import | TODO | public specs/evidence manifestをnamespace付きで取込み、credential/state/PII/dirty code混入0の`history-import-receipt.json` |
+| 11 | ELZ-F11 history DAG join | DONE | private `history-join-receipt.json` mode 0600。remote join `152ad359…`のdirect parentsはEliza `29bed1bb…`→legacy Phase F closeout `c9bea215…`。before/after root treeは同じ`ffcaf67d…`、GitHub公式readback・legacy 8,262 entries/blob/archive解決PASS。origin main不変、force/main/delete/file-import 0 |
+| 12 | ELZ-F12 specs/evidence allowlisted import | **IN_PROGRESS — NEXT** | public specs/evidence manifestをnamespace付きで取込み、credential/state/PII/dirty code混入0の`history-import-receipt.json` |
 | 13 | ELZ-F13 clean-clone foundation replay | TODO | forkのfresh cloneでF04〜F10を再現し、working tree cleanの`foundation-replay-receipt.json` |
 
 ##### Phase C — 一つのgeneral-agent pluginへ既存receipt契約を移す
