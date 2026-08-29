@@ -6,7 +6,7 @@
 
 **Architecture:** Start from current `origin/main`. Reuse `general-agent-work-adapter`, `marketplace-application-job/effect/adapter`, runtime/browser job stores, loop adapter registry, Panel auth/API/UI, Lancers application code, Mercor receipt contracts, ask/reply patterns, and money ledgers. Add one Money Printer projection, one durable human-task contract, and one Panel/WebMCP surface. The model judges opportunities and tool use; deterministic code owns identity, arithmetic, authorization, idempotency, effects, receipts, and tenant isolation.
 
-**Tech Stack:** Node.js CommonJS and `node:test`, Python 3.14-compatible standard library and pytest, PostgreSQL/Supabase RPCs, Railway, Netlify `/lm`, imperative WebMCP, ChatGPT in-app browser, Chrome 149+.
+**Tech Stack:** Node.js CommonJS and `node:test`, Python 3.14-compatible standard library and pytest, PostgreSQL/Supabase RPCs, Railway, Netlify `/money-printer`, imperative WebMCP, ChatGPT in-app browser, Chrome 149+.
 
 ## Global Constraints
 
@@ -49,7 +49,7 @@
 - [ ] Run `git fetch origin`; create and lock a worktree from current `origin/main` with `superpowers:using-git-worktrees`.
 - [ ] Verify docs commit `01c63546c` or its merge descendant is present.
 - [ ] Re-read current official rules and draft form; verify eligibility, ownership, conflicts, deadline, required fields, free/unlimited judging access, and video constraints.
-- [ ] Identify the actual Netlify source/build pipeline for `aniccaai.com/lm`; record current headers and deployed SHA before changing code.
+- [ ] Identify the actual Netlify source/build pipeline for `aniccaai.com`; preserve existing `/lm`, and record `/money-printer` headers and deployed SHA before changing code.
 - [ ] Run `~/loops/current/bin/lm-loop doctor` and `~/loops/current/bin/lm-loop status all`.
 - [ ] Run baseline tests:
 
@@ -421,7 +421,7 @@ Add a Mercor case producing a provider interview human task, and a URL case wher
 **Interfaces:**
 - Produces free judge URL, immutable deploy SHA, ChatGPT/Chrome evidence, three natural cycles, restart recovery, and resettable guest state.
 
-- [ ] Deploy `/lm` and Railway from one pushed main SHA. Preserve origin isolation and `tools` Permissions Policy; register tools at top level.
+- [ ] Deploy `/money-printer` and Railway from one pushed main SHA while preserving existing `/lm`. Preserve origin isolation and `tools` Permissions Policy; register tools at top level.
 - [ ] Run clean-browser normal UI E2E: zero-login guest, no owner state, one Needs You flow, reset, mobile layout.
 - [ ] Run ChatGPT in-app browser E2E with Sol/Terra: tool list, read call, write call, visible state change, recent activity, answer, same-work continuation, receipt.
 - [ ] Run Chrome 149+ E2E with WebMCP testing enabled: schema parse, discovery, structured output, no iframe/declarative dependency.

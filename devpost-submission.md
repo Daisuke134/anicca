@@ -79,7 +79,7 @@ Codex is used to research WebMCP and the official challenge contract, inspect an
 
 Current target flow; replace each item with verified final instructions before submission:
 
-1. Open `https://aniccaai.com/lm` in the latest ChatGPT desktop in-app browser.
+1. Open `https://aniccaai.com/money-printer` in the latest ChatGPT desktop in-app browser.
 2. Use GPT-5.6 Sol or Terra with Site tools enabled.
 3. Ask: `Turn on my Money Printer. Do everything you can autonomously and ask me only when you genuinely need human input.`
 4. Inspect the available Site tools and recent calls.
@@ -91,7 +91,7 @@ Secondary test: Chrome 149+ with `chrome://flags/#enable-webmcp-testing` enabled
 
 ## Public Demo Link
 
-`https://aniccaai.com/lm`
+`https://aniccaai.com/money-printer`
 
 Status: reachable existing Life Manager landing page. TODO: deploy the WebMCP Money Printer Dashboard and record immutable deploy SHA.
 
@@ -145,7 +145,7 @@ Devpost draft project: `https://devpost.com/software/life-manager-uny729` (proje
 - Country: Japan
 - App Status: Existing
 - Existing update: TODO final verified summary of WebMCP work added during the challenge period
-- Live URL: `https://aniccaai.com/lm` after verified WebMCP deployment
+- Live URL: `https://aniccaai.com/money-printer` after verified WebMCP deployment
 - Judge testing instructions: TODO final clean-browser steps and any credentials
 - Public repo: `https://github.com/Daisuke134/life-manager`
 - Tested clients: TODO final verified ChatGPT in-app browser and Chrome entries

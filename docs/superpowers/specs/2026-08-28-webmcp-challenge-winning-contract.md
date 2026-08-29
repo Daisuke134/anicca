@@ -168,7 +168,7 @@ Primary sources:
 | 28249 | Submitter Type | Individual |
 | 28250 | Country of residence | Japan |
 | 28252 | App Status | Existing |
-| 28254 | Live URL | final Netlify `/lm` URL |
+| 28254 | Live URL | final Netlify `/money-printer` URL |
 | 28256 | Public Code Repo | `https://github.com/Daisuke134/life-manager` |
 | 28257 | Tested WebMCP agents/clients | ChatGPT in-app browser and Chrome WebMCP testing; final実測だけ記載 |
 | 28258 | AI tools used | Codex、ChatGPT等、実際に使ったtoolsだけ記載 |
@@ -215,13 +215,13 @@ Primary sources:
 |---|---|---|---|
 | Project name | `Life Manager` | fixed | Devpost readback matches |
 | Tagline | `An open-source, 24/7 AI money printer that finds paid opportunities, does the work, and asks you only for the human 1%.` | fixed draft | authenticated form review |
-| Live URL | `https://aniccaai.com/lm` | reachable landing only | Work board deploy SHA + zero-login E2E + `registerTool()` discovery |
+| Live URL | `https://aniccaai.com/money-printer` | not deployed | Work board deploy SHA + isolated guest E2E + `registerTool()` discovery |
 | Public repository | `https://github.com/Daisuke134/life-manager` | public | challenge source/instructions + clean clone verified |
 | OSS license | `https://github.com/Daisuke134/life-manager/blob/main/LICENSE` | GitHub detects MIT | license visible in submitted repo |
 | Demo video title | `Life Manager — The Agent That Finishes Work With You` | reserved copy | final E2E edit complete |
 | Public YouTube URL | created by the final verified upload | not created | public URL + duration/audio readback |
 | Devpost entry URL | created when the authenticated draft is first saved | not created | every required field read back |
-| Testing instructions | zero-login `https://aniccaai.com/lm` + one WebMCP prompt + Chrome 149 steps | planned | clean-browser judge replay |
+| Testing instructions | isolated guest `https://aniccaai.com/money-printer` + one WebMCP prompt + Chrome 149 steps | planned | clean-browser judge replay |
 
 Devpost pluginから実提出fieldsを取得済みである。正本はSection 3.3Aとし、authenticated draft作成後は送信前に同じfieldsをread backする。
 
@@ -707,11 +707,11 @@ Focused reuse suiteはruntime/browser jobs、ask/reply、reconciliation、panel�
 7. **Current production failures:** Lancers current ownersはfail中なので、repair→read-only inventory→one fenced application→official readbackの順で復旧する。Affiliate browser、x402 sellers等のfailをMoney Printer全体の失敗と混同しない
 8. **Real outcome timing:** Lancers acceptance、Mercor selection、cash settlementは外部依存。Primary proofはLancers official application readbackまでを必須とし、提出copyでは実際に得たterminalだけを主張する
 9. **Current live proof:** Lancers application ownerとMercor hourly ownerは停止中で、保持browser pageも`about:blank`である。process、CDP、cookie、過去rowはauthenticated inventory、current application、24/7 cycleの証拠にしない
-10. **Deployment source:** `https://aniccaai.com/lm`は現時点で旧landingを返し、`registerTool()`、`Origin-Agent-Cluster`、`Permissions-Policy: tools=(self)`を持たない。正規Netlify build入口とdeployed SHAを先に固定する
+10. **Deployment source:** `https://aniccaai.com/lm`は既存Life Manager onboarding、Telegram連携、Google認証の正規routeなので上書きしない。Hackathon control roomは`https://aniccaai.com/money-printer`へ配備する。現時点では未deployなので、正規Netlify build入口、required headers、deployed SHAを先に固定する
 
 ### 10.5 One product, one mode
 
-Hackathonで提供するmodeは一つだけである。Primary experienceは、Userが`https://aniccaai.com/lm`を開き、「Turn on my Money Printer」と頼むflowである。Site tools accessがある場合はChatGPT desktopのin-app browserがpage toolsを発見し、同じDashboard上でconstraints設定、opportunity確認、`Needs You`回答、continuation、receipt確認を行う。WebMCP自体にLife Manager API keyは不要だが、ChatGPT Site toolsのavailabilityはrollout、account、plan、model、workspaceに依存する。通常browser UIはChatGPT/Codex契約なしで使える。別product、別judge system、別local/cloud modeを作らない。
+Hackathonで提供するmodeは一つだけである。Primary experienceは、Userが`https://aniccaai.com/money-printer`を開き、「Turn on my Money Printer」と頼むflowである。Site tools accessがある場合はChatGPT desktopのin-app browserがpage toolsを発見し、同じDashboard上でconstraints設定、opportunity確認、`Needs You`回答、continuation、receipt確認を行う。WebMCP自体にLife Manager API keyは不要だが、ChatGPT Site toolsのavailabilityはrollout、account、plan、model、workspaceに依存する。通常browser UIはChatGPT/Codex契約なしで使える。別product、別judge system、別local/cloud modeを作らない。
 
 Life Managerのagent runtimeは同じcloud productの一部としてworkroomを24/7進める。Pageを閉じるとWebMCP toolsは一時的に利用不能になるが、workroomとscoutは同じdurable state上で継続する。Userがpageを再び開くと、対応agentは最新stateと未回答`Needs You`を再発見する。Judgeは支払い、Life Manager API key、private owner credentialなしのisolated guest tenantで試せる。Guest sessionの生成方式は実装とclean-browser E2Eで固定し、zero-loginという語はその実証前に使わない。Normal browser UIはfallbackとして同じ機能を持つが、primary demoとproduct storyはChatGPT in-app browserに置く。
 
@@ -749,7 +749,7 @@ flowchart LR
     API --> UI
 ```
 
-- **Netlify:** `/lm`のresponsive Dashboardとtop-level `document.modelContext.registerTool()`を配信する
+- **Netlify:** 既存`/lm`を保全し、`/money-printer`にresponsive Dashboardとtop-level `document.modelContext.registerTool()`を配信する
 - **Browser security:** Netlifyは`Origin-Agent-Cluster: ?1`と`Permissions-Policy: tools=(self)`を返す。iframe/declarative registrationへ依存せず、clean browserのresponse headersとtool discoveryをreadbackする
 - **Railway:** 既存Life Manager Node serviceをAPI、claim、continuation、retry、reconciliationのorchestratorとして再利用する
 - **Durable store:** opportunity、workroom、agent event、human task、effect fence、receiptをrestart後も保持する。UI用stateとruntime stateを別の真実にしない
