@@ -35,6 +35,14 @@ The merged shortlist prompt orders Japan employment feasibility, demonstrated cu
 
 `qualify_one()` accepts the ordered model-selected canonical URLs and orders pending eligible Workday rows by that list before choosing one. Rows absent from the current shortlist remain behind every preferred row; failed preferred IDs still use the existing wake-local skip cursor. This is deterministic ordering of model output, not a title/location/skill classifier. Run `daily-20260830-082055` is the failing production example: the shortlist exists, but six initial qualification calls consume old Principal/Director/foreign backlog because current `qualify_one()` uses Ledger insertion order.
 
+#### Task 1C: Make Japan employment feasibility an actual ranking gate — active
+
+**Files:**
+- Modify: `apps/job-search-loop/job_search_loop/workday_search_loop.py`
+- Modify focused expectation in: `apps/job-search-loop/tests/test_workday_qualification.py`
+
+Run `daily-20260830-083836` has 44 Tokyo/Japan jobs in an 874-job snapshot but ranks Omnissa Korea first. Strengthen the model instruction, not deterministic code: when any posting supports employment in Japan, all such rows precede roles tied to another country; `remote` or an EOR for another country does not establish employment from Japan. Include two canonical examples showing Japan imperfect fit before foreign strong fit and Korea-remote/EOR as non-Japan. Compensation remains third after location feasibility and demonstrated scope.
+
 ---
 
 ### Task 2: Make Job Hunting notifications quiet and product-owned
