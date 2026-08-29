@@ -308,6 +308,66 @@ test -z "$(git status --porcelain=v1 --untracked-files=no)"
 
 Expected: local `.git` shrinks, remote refs remain untouched, the same locked dependency graph completes at concurrency 1, and build reaches 55/55.
 
+- [ ] **Step 4D: Physically reclone depth 1 while preserving the partial dependency tree**
+
+This step applies to the recorded Step 4C result: local shallow metadata still occupies about 350 MiB, three packages remain, tracked state is clean, and no build/runtime/test started.
+
+```bash
+set -e
+CLONE=/Users/anicca/Projects/life-manager-eliza-migration
+PARTIAL=/Users/anicca/Projects/.elz-f13-node-modules-partial
+REPLAY_SHA=52eefdac597b70f3cb769b007cc4209f0f55cc34
+test "$(realpath "$CLONE")" = "$CLONE"
+test "$(git -C "$CLONE" rev-parse HEAD)" = "$REPLAY_SHA"
+test -z "$(git -C "$CLONE" status --porcelain=v1 --untracked-files=no)"
+test -d "$CLONE/node_modules/.bun"
+test ! -e "$PARTIAL"
+test "$(git ls-remote https://github.com/Daisuke134/life-manager-eliza.git refs/heads/migration/eliza-docs | awk '{print $1}')" = "$REPLAY_SHA"
+PHYSICAL_GIT_KIB_BEFORE=$(du -sk "$CLONE/.git" | awk '{print $1}')
+printf '%s\n' "$PHYSICAL_GIT_KIB_BEFORE" > /Users/anicca/.local/state/life-manager/migration/elz-f/replay/physical-git-kib-before.txt
+mv "$CLONE/node_modules" "$PARTIAL"
+test -d "$PARTIAL/.bun"
+cd /Users/anicca
+find "$CLONE" -mindepth 1 -depth -delete
+rmdir "$CLONE"
+test ! -e "$CLONE"
+git clone --depth 1 --no-tags --filter=blob:none --single-branch --branch migration/eliza-docs --no-recurse-submodules \
+  https://github.com/Daisuke134/life-manager-eliza.git "$CLONE"
+git -C "$CLONE" remote add eliza-upstream https://github.com/elizaOS/eliza.git
+git -C "$CLONE" submodule update --init --recursive --depth 1
+mv "$PARTIAL" "$CLONE/node_modules"
+test ! -e "$PARTIAL"
+test "$(git -C "$CLONE" rev-parse HEAD)" = "$REPLAY_SHA"
+test "$(git -C "$CLONE" rev-parse --is-shallow-repository)" = true
+test "$(git -C "$CLONE" tag -l | wc -l | tr -d ' ')" = 0
+test "$(git -C "$CLONE" -C plugins/plugin-local-inference/native/llama.cpp rev-parse HEAD)" = 6543d9078051a9bb194c2ef5c2995f003c5158de
+test "$(git -C "$CLONE" -C upstreams/electrobun rev-parse HEAD)" = f1f38ce51184539de22691f56784713821fc507d
+test -z "$(git -C "$CLONE" status --porcelain=v1 --untracked-files=no)"
+PHYSICAL_GIT_KIB_AFTER=$(du -sk "$CLONE/.git" | awk '{print $1}')
+test "$PHYSICAL_GIT_KIB_AFTER" -lt "$PHYSICAL_GIT_KIB_BEFORE"
+printf '%s\n' "$PHYSICAL_GIT_KIB_AFTER" > /Users/anicca/.local/state/life-manager/migration/elz-f/replay/physical-git-kib-after.txt
+PHYSICAL_FREE_KIB=$(df -Pk /Users/anicca | awk 'END {print $4}')
+test "$PHYSICAL_FREE_KIB" -ge 550000
+printf '%s\n' "$PHYSICAL_FREE_KIB" > /Users/anicca/.local/state/life-manager/migration/elz-f/replay/physical-free-kib.txt
+```
+
+Resume the exact graph with serialized concurrency:
+
+```bash
+set -e
+export PATH=/Users/anicca/.local/share/life-manager/toolchains/elz-f/bun-1.3.14/bin:/Users/anicca/.local/share/life-manager/toolchains/elz-f/node-v24.15.0-darwin-arm64/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
+cd /Users/anicca/Projects/life-manager-eliza-migration
+bun install --frozen-lockfile --no-cache --network-concurrency=1 --concurrent-scripts=1 --filter @elizaos/agent
+bun install --frozen-lockfile --no-cache --network-concurrency=1 --concurrent-scripts=1 --filter eliza
+bun run build:server 2>&1 | tee /Users/anicca/.local/state/life-manager/migration/elz-f/replay/build-server.log
+test "${pipestatus[1]}" = 0
+rg -q '55 successful, 55 total' /Users/anicca/.local/state/life-manager/migration/elz-f/replay/build-server.log
+test "$(shasum -a 256 bun.lock | awk '{print $1}')" = 1976283db890a36ae945cd1256e9388ca84c067608df9628570bb6fce3ad7eb4
+test -z "$(git status --porcelain=v1 --untracked-files=no)"
+```
+
+Expected: the new physical `.git` is smaller, the partial package bytes remain, the final locked graph completes, and build reaches 55/55.
+
 - [ ] **Step 5: Start a fresh model-credential-free replay runtime**
 
 Create the isolated state first:
@@ -477,6 +537,9 @@ SERIAL_FREE_KIB=$(tr -d ' ' < "$STATE/serial-free-kib.txt")
 GIT_KIB_BEFORE=$(tr -d ' ' < "$STATE/git-kib-before.txt")
 GIT_KIB_AFTER=$(tr -d ' ' < "$STATE/git-kib-after.txt")
 LOCAL_TAGS_REMOVED=$(tr -d ' ' < "$STATE/local-tags-removed.txt")
+PHYSICAL_GIT_KIB_BEFORE=$(tr -d ' ' < "$STATE/physical-git-kib-before.txt")
+PHYSICAL_GIT_KIB_AFTER=$(tr -d ' ' < "$STATE/physical-git-kib-after.txt")
+PHYSICAL_FREE_KIB=$(tr -d ' ' < "$STATE/physical-free-kib.txt")
 INITIAL_EXIT=$(tr -d ' ' < "$STATE/initial-exit.txt")
 RESTART_EXIT=$(tr -d ' ' < "$STATE/restart-exit.txt")
 test "$INITIAL_EXIT" = 0
@@ -499,6 +562,9 @@ jq -n \
   --argjson git_before "$GIT_KIB_BEFORE" \
   --argjson git_after "$GIT_KIB_AFTER" \
   --argjson tags_removed "$LOCAL_TAGS_REMOVED" \
+  --argjson physical_git_before "$PHYSICAL_GIT_KIB_BEFORE" \
+  --argjson physical_git_after "$PHYSICAL_GIT_KIB_AFTER" \
+  --argjson physical_free "$PHYSICAL_FREE_KIB" \
   --argjson writers "$WRITERS" \
   --argjson lock_handles "$LOCK_HANDLES" \
   --argjson initial_exit "$INITIAL_EXIT" \
@@ -511,7 +577,7 @@ jq -n \
     initial_sigterm_exit:$initial_exit,restart_sigterm_exit:$restart_exit,listener_count_after_stop:0,
     writer_processes:$writers,lock_open_handles:$lock_handles,working_tree_clean:true,
     model_credentials:0,external_effects:0,old_clone_removed_after_remote_readback:true,
-    capacity_recovery:{merged_roadmap_worktree_removed:true,initial_cache_paths_removed:8,additional_cache_paths_removed:11,resume_free_kib:$resume_free,local_git_history_shallowed:true,local_tags_removed:$tags_removed,git_kib_before:$git_before,git_kib_after:$git_after,serialized_install_free_kib:$serial_free},
+    capacity_recovery:{merged_roadmap_worktree_removed:true,initial_cache_paths_removed:8,additional_cache_paths_removed:11,resume_free_kib:$resume_free,local_git_history_shallowed:true,local_tags_removed:$tags_removed,git_kib_before:$git_before,git_kib_after:$git_after,serialized_install_free_kib:$serial_free,physical_depth_one_reclone:true,physical_git_kib_before:$physical_git_before,physical_git_kib_after:$physical_git_after,physical_reclone_free_kib:$physical_free},
     free_kib_before:$free_before,old_clone_kib:$old_clone_kib,free_kib_after:$free_after
   }' > /Users/anicca/.local/state/life-manager/migration/elz-f/foundation-replay-receipt.json
 chmod 600 /Users/anicca/.local/state/life-manager/migration/elz-f/foundation-replay-receipt.json
@@ -526,7 +592,9 @@ jq -e '
   .capacity_recovery.merged_roadmap_worktree_removed and .capacity_recovery.initial_cache_paths_removed==8 and
   .capacity_recovery.additional_cache_paths_removed==11 and .capacity_recovery.resume_free_kib>=900000 and
   .capacity_recovery.local_git_history_shallowed and .capacity_recovery.local_tags_removed>0 and
-  .capacity_recovery.git_kib_after<.capacity_recovery.git_kib_before and .capacity_recovery.serialized_install_free_kib>=500000
+  .capacity_recovery.git_kib_after<.capacity_recovery.git_kib_before and .capacity_recovery.serialized_install_free_kib>=500000 and
+  .capacity_recovery.physical_depth_one_reclone and .capacity_recovery.physical_git_kib_after<.capacity_recovery.physical_git_kib_before and
+  .capacity_recovery.physical_reclone_free_kib>=550000
 ' /Users/anicca/.local/state/life-manager/migration/elz-f/foundation-replay-receipt.json
 test "$(stat -f '%Lp' /Users/anicca/.local/state/life-manager/migration/elz-f/foundation-replay-receipt.json)" = 600
 ```
