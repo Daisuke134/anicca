@@ -27,7 +27,7 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 この節は、後段の「現在TODO」「次の一件」「local-only」「self-funded agentは別product」という相反する記述を
 上書きする最新の実行順序SSOTである。後段は実装履歴・organ別acceptanceとして保持するが、次作業の選択には使わない。
 Upworkのterminal evidence、startup context、public claim、GA-01〜13Aは完了または履歴として保持する。
-次の一件はAtomic program ledger Seq 15 `ELZ-C02`のsubstep `C02-09`で、isolated runtimeへ`ELIZA_CLI_CLAUDE_ALL_TIERS=1`を設定する。
+次の一件はAtomic program ledger Seq 15 `ELZ-C02`のsubstep `C02-10`で、`plugin-cli-inference`の全text tier registrationを読む。
 
 #### 0.0.1 最新基盤決定 — ElizaOSを完全forkし、Life Managerをlocal OSSからmulti-tenant SaaSへ育てる
 
@@ -563,7 +563,7 @@ OpenAI API key、ClawRouter、Hermes、別model router、独自Codex adapterは�
 - [x] **C02-06** `ELIZA_CLI_CODEX_REASONING_EFFORT=medium`をisolated runtimeへ設定する — private `c02/isolated-runtime.env` exact 4行と`codex-sdk-effort-setting-evidence.json` mode 0600、SHA readback一致。binary/runtime/model call/effectは0、次はC02-07
 - [x] **C02-07** `ELIZA_CLI_CODEX_BIN=/Users/anicca/.local/bin/codex`をisolated runtimeへ設定する — private `c02/isolated-runtime.env` exact 5行と`system-codex-binary-setting-evidence.json` mode 0600。system Codex `0.151.0` path/SHAとenv SHA readback一致。planner mode/runtime/model call/effectは0、次はC02-08
 - [x] **C02-08** `ELIZA_PLANNER_NATIVE_TOOLS=0`をisolated runtimeへ設定する — private `c02/isolated-runtime.env` exact 6行と`planner-mode-setting-evidence.json` mode 0600、SHA readback一致。all-tiers/runtime/model call/effectは0、次はC02-09
-- [ ] **C02-09** `ELIZA_CLI_CLAUDE_ALL_TIERS=1`をisolated runtimeへ設定する
+- [x] **C02-09** `ELIZA_CLI_CLAUDE_ALL_TIERS=1`をisolated runtimeへ設定する — private `c02/isolated-runtime.env` exact 7行と`all-tiers-setting-evidence.json` mode 0600、SHA readback一致。upstream名を維持しcodex-sdkにも適用。model registration/runtime/model call/effectは0、次はC02-10
 - [ ] **C02-10** `plugin-cli-inference`が全text tierを登録したことを読む
 - [ ] **C02-11** `plugin-cli-inference`が`ACTION_PLANNER`を登録したことを読む
 - [ ] **C02-12** `plugin-life-manager`と`plugin-cli-inference`を同じruntimeで一回起動する
