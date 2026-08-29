@@ -217,6 +217,170 @@ async function humanTaskRequest(base, endpoint, { method = "POST", body, headers
   return { response, body: await response.json() };
 }
 
+async function opportunityRequest(base, endpoint, { method = "POST", body, headers = {} } = {}) {
+  const response = await fetch(`${base}/api/panel/${endpoint}`, {
+    method,
+    headers: {
+      Cookie: `lm_panel_session=${SESSION}`,
+      origin: "https://panel.example",
+      "content-type": "application/json",
+      "x-lm-csrf": "csrf-a",
+      "idempotency-key": "opportunity-01",
+      ...headers,
+    },
+    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+  });
+  return { response, body: await response.json() };
+}
+
+test("Task 7B1 opportunity API creates one tenant-scoped workroom and returns only its public handle", async () => {
+  const fixture = makeFixture();
+  const calls = [];
+  const opportunityStore = {
+    async create(opportunity) {
+      calls.push(opportunity);
+      return { ...opportunity, created_at: "2026-08-29T00:00:01.000Z" };
+    },
+  };
+  const input = {
+    source_url: "https://public.example/opportunity#tracking",
+    title: "Public opportunity",
+    goal_statement: "Complete the public opportunity and leave a verified receipt.",
+    value_minor: "50000",
+    currency: "JPY",
+  };
+
+  await withApiServer(fixture, async (base) => {
+    const result = await opportunityRequest(base, "money-printer/opportunity", { body: input });
+    assert.equal(result.response.status, 200);
+    assert.deepEqual(Object.keys(result.body).sort(), ["job_ref", "opportunity_id", "status"]);
+    assert.match(result.body.opportunity_id, /^[0-9a-f]{64}$/);
+    assert.equal(result.body.job_ref, `runtime-job://tenant-a/goal%3A${result.body.opportunity_id}`);
+    assert.equal(result.body.status, "DISCOVERED");
+  }, {
+    panelOrigin: "https://panel.example",
+    sessionScopeImpl: async () => ({ uid: "tenant-a", chatId: "101", csrf: "csrf-a" }),
+    opportunityStore,
+  });
+
+  assert.equal(calls.length, 1);
+  assert.deepEqual(calls[0], {
+    uid: "tenant-a",
+    opportunity_id: calls[0].opportunity_id,
+    source_url: "https://public.example/opportunity",
+    title: input.title,
+    goal_statement: input.goal_statement,
+    value_minor: input.value_minor,
+    currency: input.currency,
+    status: "DISCOVERED",
+    goal_ref: `intent-entry://tenant-a/${calls[0].opportunity_id}`,
+    job_id: `goal:${calls[0].opportunity_id}`,
+    observed_at: "2026-07-21T12:00:00.000Z",
+  });
+});
+
+test("Task 7B1 opportunity API rejects invalid write fences and body shape before the store", async () => {
+  const fixture = makeFixture();
+  let writes = 0;
+  const opportunityStore = { async create() { writes += 1; throw new Error("must not create"); } };
+  const input = {
+    source_url: "https://public.example/opportunity",
+    title: "Public opportunity",
+    goal_statement: "Complete it.",
+    value_minor: "50000",
+    currency: "JPY",
+  };
+  await withApiServer(fixture, async (base) => {
+    for (const headers of [
+      { origin: "https://evil.example" },
+      { "x-lm-csrf": "wrong-csrf" },
+      { "content-type": "text/plain" },
+      { "idempotency-key": "" },
+    ]) {
+      const result = await opportunityRequest(base, "money-printer/opportunity", { body: input, headers });
+      assert.notEqual(result.response.status, 200);
+    }
+    const malformed = await opportunityRequest(base, "money-printer/opportunity", { body: { ...input, private_ref: "must-not-pass" } });
+    assert.equal(malformed.response.status, 400);
+  }, {
+    panelOrigin: "https://panel.example",
+    sessionScopeImpl: async () => ({ uid: "tenant-a", chatId: "101", csrf: "csrf-a" }),
+    opportunityStore,
+  });
+  assert.equal(writes, 0);
+});
+
+test("Task 7B1 workroom API returns the exact tenant opportunity, matching job, and activity only", async () => {
+  const fixture = makeFixture();
+  const opportunityId = "a".repeat(64);
+  const otherId = "b".repeat(64);
+  const sourceCalls = [];
+  const moneyPrinterSource = async (scope) => {
+    sourceCalls.push(scope);
+    return {
+      tenantId: scope.uid,
+      observedAt: "2026-08-29T00:00:00.000Z",
+      opportunities: [
+        {
+          tenant_id: scope.uid, opportunity_id: opportunityId,
+          source_url: "https://public.example/opportunity", title: "Selected opportunity",
+          value_minor: "50000", currency: "JPY", status: "WORKING",
+          goal_ref: "private-goal-ref", observed_at: "2026-08-29T00:00:00.000Z",
+          goal_statement: "must not leak",
+        },
+        {
+          tenant_id: scope.uid, opportunity_id: otherId,
+          source_url: "https://public.example/other", title: "Other opportunity",
+          value_minor: "90000", currency: "JPY", status: "DISCOVERED",
+          goal_ref: "private-other-goal-ref", observed_at: "2026-08-29T00:00:00.000Z",
+        },
+      ],
+      runtimeJobs: [
+        { tenant_id: scope.uid, job_id: `goal:${opportunityId}`, status: "running", created_at: "2026-08-29T00:00:00.000Z", updated_at: "2026-08-29T00:01:00.000Z", input_refs: { goal_ref: "private-input-ref" } },
+        { tenant_id: scope.uid, job_id: `goal:${otherId}`, status: "queued", created_at: "2026-08-29T00:00:00.000Z", updated_at: "2026-08-29T00:01:00.000Z" },
+      ],
+      generalReceipts: [], applicationReceipts: [], humanTasks: [], earnings: [],
+    };
+  };
+
+  await withApiServer(fixture, async (base) => {
+    const result = await opportunityRequest(base, `money-printer/workroom?opportunity_id=${opportunityId}`, { method: "GET" });
+    assert.equal(result.response.status, 200);
+    assert.deepEqual(result.body, {
+      opportunity_id: opportunityId,
+      title: "Selected opportunity",
+      value_minor: "50000",
+      currency: "JPY",
+      source_url: "https://public.example/opportunity",
+      status: "WORKING",
+      job_ref: `runtime-job://tenant-a/goal%3A${opportunityId}`,
+      activity: [
+        { kind: "opportunity", ref: `opportunity://tenant-a/${opportunityId}`, status: "WORKING", observed_at: "2026-08-29T00:00:00.000Z" },
+        { kind: "work", ref: `runtime-job://tenant-a/goal%3A${opportunityId}`, status: "running", observed_at: "2026-08-29T00:01:00.000Z" },
+      ],
+    });
+    assert.doesNotMatch(JSON.stringify(result.body), /goal_statement|private|input_refs|other/);
+
+    const unknown = await opportunityRequest(base, `money-printer/workroom?opportunity_id=${"c".repeat(64)}`, { method: "GET" });
+    assert.equal(unknown.response.status, 404);
+    assert.deepEqual(unknown.body, { error: "not_found" });
+  }, {
+    panelOrigin: "https://panel.example",
+    sessionScopeImpl: async () => ({ uid: "tenant-a", chatId: "101", csrf: "csrf-a" }),
+    moneyPrinterSource,
+  });
+  assert.deepEqual(sourceCalls.map((scope) => scope.uid), ["tenant-a", "tenant-a"]);
+});
+
+test("Task 7B1 server source wiring is lazy and has no fake Money Printer fallback", () => {
+  const server = fs.readFileSync(path.join(__dirname, "../server.js"), "utf8");
+  assert.match(server, /createMoneyPrinterSource/);
+  assert.match(server, /moneyPrinterSource\s*:/);
+  assert.match(server, /supaUrl:\s*SUPA_URL/);
+  assert.match(server, /supaKey:\s*SUPA_KEY/);
+  assert.doesNotMatch(server, /moneyPrinterSource:\s*(?:async\s*)?\(?.*=>\s*\(\{\s*tenantId/);
+});
+
 test("Task 5B human-task API returns one safe tenant task and replays one answer", async () => {
   const fixture = makeFixture();
   const task = {

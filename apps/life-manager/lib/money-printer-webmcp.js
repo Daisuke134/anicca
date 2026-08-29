@@ -12,7 +12,7 @@ function scriptString(value) {
 function renderMoneyPrinterWebMcpScript({ csrf } = {}) {
   const pageCsrf = scriptString(csrf);
   return `
-(() => {
+(async () => {
   if (typeof document === "undefined"
     || !document.modelContext
     || typeof document.modelContext.registerTool !== "function") return;
@@ -47,11 +47,11 @@ function renderMoneyPrinterWebMcpScript({ csrf } = {}) {
   };
   const sameTask = (left, right) => Boolean(left && right
     && left.task_id === right.task_id && left.version === right.version);
-  const idempotencyKey = () => {
+  const idempotencyKey = (prefix) => {
     const randomUuid = globalThis.crypto && typeof globalThis.crypto.randomUUID === "function"
       ? globalThis.crypto.randomUUID()
       : String(Date.now()) + "-" + Math.random().toString(36).slice(2);
-    return "human-answer-" + randomUuid;
+    return prefix + randomUuid;
   };
   const answerResult = (value) => {
     if (!value || typeof value !== "object" || Array.isArray(value)
@@ -85,7 +85,7 @@ function renderMoneyPrinterWebMcpScript({ csrf } = {}) {
             Accept: "application/json",
             "content-type": "application/json",
             "x-lm-csrf": pageCsrf,
-            "idempotency-key": idempotencyKey(),
+            "idempotency-key": idempotencyKey("human-answer-"),
           },
           body: JSON.stringify({ task_id: task.task_id, version: task.version, answer_ref: input.answer_ref }),
         });
@@ -113,6 +113,53 @@ function renderMoneyPrinterWebMcpScript({ csrf } = {}) {
     return response.json();
   };
   const request = () => getJson("/api/panel/money-printer", "inspect_money_printer unavailable");
+  const opportunityKeys = ["source_url", "title", "goal_statement", "value_minor", "currency"];
+  const exactOpportunityInput = (value) => {
+    if (!value || typeof value !== "object" || Array.isArray(value)
+      || Object.keys(value).length !== opportunityKeys.length
+      || opportunityKeys.some((key) => !Object.hasOwn(value, key) || typeof value[key] !== "string")) return null;
+    return {
+      source_url: value.source_url,
+      title: value.title,
+      goal_statement: value.goal_statement,
+      value_minor: value.value_minor,
+      currency: value.currency,
+    };
+  };
+  const exactOpportunityResult = (value) => {
+    if (!value || typeof value !== "object" || Array.isArray(value)
+      || Object.keys(value).length !== 3
+      || !/^[0-9a-f]{64}$/.test(String(value.opportunity_id || ""))
+      || typeof value.job_ref !== "string" || !value.job_ref
+      || typeof value.status !== "string" || !value.status) throw new Error("add_opportunity unavailable");
+    return { opportunity_id: value.opportunity_id, job_ref: value.job_ref, status: value.status };
+  };
+  const addOpportunityRequest = async (input) => {
+    const body = exactOpportunityInput(input);
+    if (!body) throw new Error("add_opportunity invalid");
+    const response = await fetch("/api/panel/money-printer/opportunity", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {
+        Accept: "application/json",
+        "content-type": "application/json",
+        "x-lm-csrf": pageCsrf,
+        "idempotency-key": idempotencyKey("add-opportunity-"),
+      },
+      body: JSON.stringify(body),
+    });
+    let value = {};
+    try { value = await response.json(); } catch {}
+    if (!response.ok) throw new Error(String(value && value.error || "add_opportunity unavailable"));
+    return exactOpportunityResult(value);
+  };
+  const inspectWorkroomRequest = (input) => {
+    if (!input || typeof input !== "object" || Array.isArray(input)
+      || Object.keys(input).length !== 1 || !/^[0-9a-f]{64}$/.test(String(input.opportunity_id || ""))) {
+      throw new Error("inspect_workroom invalid");
+    }
+    return getJson("/api/panel/money-printer/workroom?opportunity_id=" + encodeURIComponent(input.opportunity_id), "inspect_workroom unavailable");
+  };
   const requestNextTask = async () => {
     const value = await getJson("/api/panel/money-printer/human-task/next", "inspect_next_human_task unavailable");
     if (value && value.task === null) {
@@ -125,7 +172,8 @@ function renderMoneyPrinterWebMcpScript({ csrf } = {}) {
     return { task };
   };
 
-  document.modelContext.registerTool({
+  const initialRegistration = Promise.all([
+    document.modelContext.registerTool({
     name: "inspect_money_printer",
     description: "Inspect the current Money Printer state.",
     inputSchema: {
@@ -135,8 +183,8 @@ function renderMoneyPrinterWebMcpScript({ csrf } = {}) {
     },
     annotations: { readOnlyHint: true },
     execute: () => request(),
-  });
-  document.modelContext.registerTool({
+    }),
+    document.modelContext.registerTool({
     name: "inspect_next_human_task",
     description: "Inspect the next exact human task that can be answered to resume its paused workroom.",
     inputSchema: {
@@ -146,7 +194,39 @@ function renderMoneyPrinterWebMcpScript({ csrf } = {}) {
     },
     annotations: { readOnlyHint: true },
     execute: () => requestNextTask(),
-  });
+    }),
+    document.modelContext.registerTool({
+      name: "add_opportunity",
+      description: "Add one public paid opportunity and open its tenant-scoped workroom.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          source_url: { type: "string" },
+          title: { type: "string" },
+          goal_statement: { type: "string" },
+          value_minor: { type: "string" },
+          currency: { type: "string" },
+        },
+        required: ["source_url", "title", "goal_statement", "value_minor", "currency"],
+        additionalProperties: false,
+      },
+      annotations: { readOnlyHint: false },
+      execute: addOpportunityRequest,
+    }),
+    document.modelContext.registerTool({
+      name: "inspect_workroom",
+      description: "Inspect one tenant-scoped opportunity workroom and its matching activity.",
+      inputSchema: {
+        type: "object",
+        properties: { opportunity_id: { type: "string" } },
+        required: ["opportunity_id"],
+        additionalProperties: false,
+      },
+      annotations: { readOnlyHint: true },
+      execute: inspectWorkroomRequest,
+    }),
+  ]);
+  await initialRegistration;
 })();`;
 }
 

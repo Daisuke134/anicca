@@ -281,6 +281,8 @@ test("Money Printer panel embeds focused WebMCP tools with only page CSRF for th
   assert.ok(webmcp);
   assert.match(webmcp, /document\.modelContext\.registerTool\(/);
   assert.match(webmcp, /\/api\/panel\/money-printer/);
+  assert.match(webmcp, /add_opportunity/);
+  assert.match(webmcp, /inspect_workroom/);
   assert.match(webmcp, /csrf-value/);
   assert.match(webmcp, /x-lm-csrf/);
   assert.match(webmcp, /idempotency-key/);

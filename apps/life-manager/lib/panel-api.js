@@ -15,10 +15,13 @@ const { paymentLink } = require("./payment-link.js");
 const { isHelperBlock } = require("./wake-filter.js");
 const { projectMoneyPrinter } = require("./money-printer-projection.js");
 const { answerHumanTask } = require("./money-printer-human-task.js");
+const { createOpportunity, createSupabaseOpportunityStore } = require("./money-printer-opportunity.js");
 
 const ENDPOINTS = new Set(["money-printer", "timeline", "scores", "ledger", "gates", "settings"]);
 const HUMAN_TASK_NEXT_ENDPOINT = "money-printer/human-task/next";
 const HUMAN_TASK_ANSWER_ENDPOINT = "money-printer/human-task/answer";
+const MONEY_PRINTER_OPPORTUNITY_ENDPOINT = "money-printer/opportunity";
+const MONEY_PRINTER_WORKROOM_ENDPOINT = "money-printer/workroom";
 const ONBOARDING_ACTIONS = new Set(["name.save", "home.save", "notifications.enable", "phone.save", "phone.skip", "call.enable", "call.skip", "payment.skip"]);
 const CALL_MINUTES_BEFORE = Object.freeze([10, 5]);
 const SCORE_ORGANS = Object.freeze(["daily", "physical", "mental", "financial"]);
@@ -311,6 +314,94 @@ async function moneyPrinter(scope, opts) {
   const input = await opts.moneyPrinterSource(scope);
   if (!input || input.tenantId !== scope.uid) throw new Error("money printer scope mismatch");
   return projectMoneyPrinter(input);
+}
+
+function runtimeJobRef(uid, jobId) {
+  return `runtime-job://${encodeURIComponent(uid)}/${encodeURIComponent(jobId)}`;
+}
+
+function opportunityRef(uid, opportunityId) {
+  return `opportunity://${encodeURIComponent(uid)}/${encodeURIComponent(opportunityId)}`;
+}
+
+function workroomError(message, status = 502) {
+  const error = new Error(message);
+  error.status = status;
+  return error;
+}
+
+async function createMoneyPrinterOpportunity(scope, body, opts) {
+  const expectedKeys = ["source_url", "title", "goal_statement", "value_minor", "currency"];
+  if (!body || typeof body !== "object" || Array.isArray(body)
+    || Object.keys(body).length !== expectedKeys.length
+    || Object.keys(body).some((key) => !expectedKeys.includes(key))) {
+    throw workroomError("invalid_opportunity", 400);
+  }
+  let created;
+  try {
+    created = await createOpportunity({
+      tenantId: scope.uid,
+      sourceUrl: body.source_url,
+      title: body.title,
+      goalStatement: body.goal_statement,
+      valueMinor: body.value_minor,
+      currency: body.currency,
+      observedAt: new Date(opts.nowMs == null ? Date.now() : opts.nowMs).toISOString(),
+    }, opts.opportunityStore || createSupabaseOpportunityStore({
+      supaUrl: opts.supaUrl,
+      supaKey: opts.supaKey,
+      fetchImpl: opts.fetchImpl,
+    }));
+  } catch (error) {
+    if (error && /^money printer opportunity (?:input|source URL|title|goal statement|value|currency|observed time) invalid$/.test(error.message)) {
+      throw workroomError("invalid_opportunity", 400);
+    }
+    throw error;
+  }
+  return {
+    opportunity_id: created.opportunity_id,
+    job_ref: runtimeJobRef(scope.uid, created.job_id),
+    status: created.status,
+  };
+}
+
+async function workroom(scope, opportunityId, opts) {
+  if (typeof opts.moneyPrinterSource !== "function") throw workroomError("workroom unavailable");
+  const input = await opts.moneyPrinterSource(scope);
+  if (!input || input.tenantId !== scope.uid || !Array.isArray(input.opportunities) || !Array.isArray(input.runtimeJobs)) {
+    throw workroomError("workroom unavailable");
+  }
+  const opportunity = input.opportunities.find((row) => row && row.tenant_id === scope.uid && row.opportunity_id === opportunityId);
+  const jobId = `goal:${opportunityId}`;
+  const job = input.runtimeJobs.find((row) => row && row.tenant_id === scope.uid && row.job_id === jobId);
+  if (!opportunity || !job) throw workroomError("not_found", 404);
+
+  const projected = projectMoneyPrinter({
+    ...input,
+    opportunities: [opportunity],
+    runtimeJobs: [job],
+    generalReceipts: [],
+    applicationReceipts: [],
+    humanTasks: [],
+    earnings: [],
+  });
+  const card = Object.values(projected.columns).flat().find((candidate) => candidate.opportunity_ref === opportunityRef(scope.uid, opportunityId));
+  if (!card) throw workroomError("workroom unavailable");
+  const jobRef = runtimeJobRef(scope.uid, jobId);
+  const activity = projected.activity
+    .filter((item) => item.ref === card.opportunity_ref || item.ref === jobRef)
+    .map((item) => ({ kind: item.kind, ref: item.ref, status: item.status, observed_at: item.observed_at }));
+  if (activity.length === 0) throw workroomError("workroom unavailable");
+  return {
+    opportunity_id: opportunityId,
+    title: card.title,
+    value_minor: card.value_minor,
+    currency: card.currency,
+    source_url: card.source_url,
+    status: card.status,
+    job_ref: jobRef,
+    activity,
+  };
 }
 
 function humanTaskError(message, status) { const error = new Error(message); error.status = status; return error; }
@@ -689,13 +780,15 @@ async function composioCalendarStart(scope, opts = {}) {
 }
 
 async function handlePanelApiRequest(req, res, opts = {}) {
-  const path = new URL(req.url || "/", "http://panel.local").pathname;
+  const requestUrl = new URL(req.url || "/", "http://panel.local");
+  const path = requestUrl.pathname;
   const endpoint = path.startsWith("/api/panel/") ? path.slice("/api/panel/".length) : "";
   const onboardingEndpoint = endpoint === "onboarding" || endpoint.startsWith("onboarding/");
   const humanTaskNextEndpoint = endpoint === HUMAN_TASK_NEXT_ENDPOINT;
   const humanTaskAnswerEndpoint = endpoint === HUMAN_TASK_ANSWER_ENDPOINT;
   if (!ENDPOINTS.has(endpoint) && endpoint !== "control-center" && endpoint !== "commands"
-    && !onboardingEndpoint && !humanTaskNextEndpoint && !humanTaskAnswerEndpoint) {
+    && !onboardingEndpoint && !humanTaskNextEndpoint && !humanTaskAnswerEndpoint
+    && endpoint !== MONEY_PRINTER_OPPORTUNITY_ENDPOINT && endpoint !== MONEY_PRINTER_WORKROOM_ENDPOINT) {
     sendJson(res, 404, { error: "not_found" });
     return;
   }
@@ -720,6 +813,34 @@ async function handlePanelApiRequest(req, res, opts = {}) {
   const commandStore = opts.commandStore || createSupabaseCommandStore(opts);
   if (!opts.sessionScopeImpl && !await commandStore.assertCurrentScope(scope)) {
     sendJson(res, 401, { error: "unauthorized" });
+    return;
+  }
+  if (endpoint === MONEY_PRINTER_OPPORTUNITY_ENDPOINT) {
+    if (req.method !== "POST") { sendJson(res, 405, { error: "method_not_allowed" }, { Allow: "POST" }); return; }
+    if (!/^application\/json(?:;|$)/i.test(String(req.headers["content-type"] || ""))) { sendJson(res, 415, { error: "json_required" }); return; }
+    const expectedOrigin = String(opts.panelOrigin || opts.panelBaseUrl || "").replace(/\/$/, "");
+    if (!expectedOrigin || String(req.headers.origin || "") !== expectedOrigin) { sendJson(res, 403, { error: "origin_rejected" }); return; }
+    if (!timingEqual(req.headers["x-lm-csrf"], scope.csrf || csrfToken(session))) { sendJson(res, 403, { error: "csrf_rejected" }); return; }
+    const key = String(req.headers["idempotency-key"] || "");
+    if (!/^[A-Za-z0-9._:-]{8,128}$/.test(key)) { sendJson(res, 400, { error: "idempotency_required" }); return; }
+    try {
+      sendJson(res, 200, await createMoneyPrinterOpportunity(scope, await readJson(req), opts));
+    } catch (error) {
+      const status = error && error.status || 502;
+      sendJson(res, status, { error: status === 400 ? "invalid_opportunity" : "opportunity_unavailable" });
+    }
+    return;
+  }
+  if (endpoint === MONEY_PRINTER_WORKROOM_ENDPOINT) {
+    if (req.method !== "GET") { sendJson(res, 405, { error: "method_not_allowed" }, { Allow: "GET" }); return; }
+    const opportunityId = requestUrl.searchParams.get("opportunity_id");
+    if (!/^[0-9a-f]{64}$/.test(String(opportunityId || ""))) { sendJson(res, 400, { error: "invalid_opportunity_id" }); return; }
+    try {
+      sendJson(res, 200, await workroom(scope, opportunityId, opts));
+    } catch (error) {
+      const status = error && error.status || 502;
+      sendJson(res, status, { error: status === 404 ? "not_found" : "workroom_unavailable" });
+    }
     return;
   }
   if (humanTaskNextEndpoint || humanTaskAnswerEndpoint) {

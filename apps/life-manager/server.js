@@ -48,6 +48,7 @@ const {
 } = require("./lib/late-approval.js");
 const { sendPanelLink, handlePanelRequest, panelDeviceCodeFromCommand, confirmPanelDeviceCode } = require("./lib/panel-auth.js");
 const { handlePanelApiRequest, handlePanelOAuthCallback, composioCalendarStart, composioCalendarDisconnect } = require("./lib/panel-api.js");
+const { createMoneyPrinterSource } = require("./lib/money-printer-source.js");
 const { createSupabaseCommandStore } = require("./lib/panel-api.js");
 const { handleCalendarOnboardRequest } = require("./lib/calendar-onboard.js");
 const { parseUserCommand, dispatchParsedControl, executeUserCommand } = require("./lib/user-command.js");
@@ -77,6 +78,13 @@ const { recordCost } = require("./lib/ledger.js");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY || "sk_test_placeholder"); // apiKey unused by constructEvent
 const SUPA_URL = process.env.SUPABASE_URL, SUPA_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const COMPOSIO_KEY = process.env.COMPOSIO_API_KEY;
+let moneyPrinterSource;
+function getMoneyPrinterSource(scope) {
+  if (!moneyPrinterSource) {
+    moneyPrinterSource = createMoneyPrinterSource({ supaUrl: SUPA_URL, supaKey: SUPA_KEY, fetchImpl: fetch });
+  }
+  return moneyPrinterSource(scope);
+}
 const LM_INBOUND_SECRET = process.env.LM_INBOUND_SECRET || ""; // shared secret in the Resend inbound webhook URL
 
 const LM_TG_TOKEN = process.env.LM_TELEGRAM_BOT_TOKEN || "";
@@ -265,6 +273,7 @@ const server = http.createServer((req, res) => {
       panelBaseUrl: LM_PANEL_BASE,
       composioKey: COMPOSIO_KEY,
       composioAuthConfig: process.env.COMPOSIO_GCAL_AUTH_CONFIG,
+      moneyPrinterSource: getMoneyPrinterSource,
     }).catch((error) => {
       console.error("[panel-api] request failed", error.message);
       if (!res.headersSent) res.writeHead(500, { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" });
