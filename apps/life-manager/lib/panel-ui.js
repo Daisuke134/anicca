@@ -335,6 +335,15 @@ function renderPanelPage(options = {}) {
     .panel-section:nth-child(4) { grid-column: span 5; animation-delay: 270ms; }
     .panel-section:nth-child(5) { grid-column: span 12; animation-delay: 320ms; }
     .panel-section:nth-child(6) { grid-column: span 12; animation-delay: 360ms; }
+    .panel-section[data-panel-section="money-printer"] { grid-column: span 12; }
+    .money-metrics, .money-board { display: grid; gap: 10px; }
+    .money-metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-bottom: 18px; }
+    .money-board { grid-template-columns: repeat(6, minmax(9rem, 1fr)); overflow-x: auto; }
+    .money-metric, .money-lane { min-width: 0; padding: 12px; border: 1px solid var(--line); }
+    .money-metric strong { display: block; margin-top: 7px; font-family: "Iowan Old Style", serif; font-size: 1.45rem; }
+    .money-lane h3 { margin: 0 0 10px; font-size: .72rem; letter-spacing: .05em; }
+    .money-card { margin: 8px 0 0; padding: 10px; background: var(--paper-bright); border-left: 3px solid var(--accent); }
+    .money-card p { margin: 4px 0 0; color: var(--ink-soft); font-size: .7rem; }
 
     .section-head {
       display: flex;
@@ -675,6 +684,10 @@ function renderPanelPage(options = {}) {
     <p class="mirror-note"><strong>あなたの状態と接続だけを表示しています。</strong><span>対応している設定はここでも Telegram でも同じように変更できます。</span></p>
 
     <main class="panel-grid">
+      <section class="panel-section" data-panel-section="money-printer" data-state="loading" aria-labelledby="money-printer-title">
+        <header class="section-head"><h2 id="money-printer-title">Money Printer</h2><span class="section-kicker">24/7 earning work</span></header>
+        <div class="section-body" data-panel-body aria-live="polite"><p class="loading">Money Printerの状態を確認しています。</p></div>
+      </section>
       <section class="panel-section" data-panel-section="timeline" data-state="loading" aria-labelledby="timeline-title">
         <header class="section-head"><h2 id="timeline-title">今日の timeline</h2><span class="section-kicker">Today</span></header>
         <div class="section-body" data-panel-body aria-live="polite"><p class="loading">今日の予定を確認しています。</p></div>
@@ -711,6 +724,7 @@ function renderPanelPage(options = {}) {
     "use strict";
 
     const panelEndpoints = Object.freeze({
+      "money-printer": "/api/panel/money-printer",
       timeline: "/api/panel/timeline",
       scores: "/api/panel/scores",
       ledger: "/api/panel/ledger",
@@ -1096,7 +1110,45 @@ function renderPanelPage(options = {}) {
       return '<p><strong>' + escapeHtml((data.identity || {}).name || "Life Manager user") + '</strong></p><div class="control-grid" id="connection-cards">' + cards + '</div><div class="settings-controls" id="settings-controls">' + switches + '</div><p class="action-status" id="action-status" aria-live="polite"></p>';
     }
 
-    const renderers = Object.freeze({ timeline: renderTimeline, scores: renderScores, ledger: renderLedger, gates: renderGates, settings: renderSettings, "control-center": renderControlCenter });
+    const moneyLaneLabels = Object.freeze({ found: "Found", working: "Working", needs_you: "Needs You", waiting: "Waiting", done: "Done", paid: "Paid" });
+
+    function validMoneyCard(card) {
+      return displayExactKeys(card, ["opportunity_ref", "title", "status", "value_minor", "currency", "source_url"])
+        && displaySafeText(card.opportunity_ref, false)
+        && displaySafeText(card.title, false)
+        && displaySafeText(card.status, false)
+        && /^\\d+$/.test(card.value_minor)
+        && (card.currency === null || displaySafeText(card.currency, false))
+        && (card.source_url === null || (function () { try { const url = new URL(card.source_url); return url.protocol === "https:" && !url.username && !url.password; } catch { return false; } })());
+    }
+
+    function validateMoneyPrinterData(data) {
+      const lanes = Object.keys(moneyLaneLabels);
+      if (!displayExactKeys(data, ["observed_at", "metrics", "columns", "activity"])
+        || !displayExactKeys(data.metrics, ["agents_working", "needs_you", "opportunity_value", "paid_verified"])
+        || !displayExactKeys(data.columns, lanes)
+        || !Number.isInteger(data.metrics.agents_working) || data.metrics.agents_working < 0
+        || !Number.isInteger(data.metrics.needs_you) || data.metrics.needs_you < 0
+        || !/^\\d+$/.test(data.metrics.opportunity_value) || !/^\\d+$/.test(data.metrics.paid_verified)
+        || !Array.isArray(data.activity)
+        || lanes.some(function (lane) { return !Array.isArray(data.columns[lane]) || data.columns[lane].some(function (card) { return !validMoneyCard(card); }); })) {
+        throw new Error("invalid money printer payload");
+      }
+      return data;
+    }
+
+    function renderMoneyPrinter(data) {
+      validateMoneyPrinterData(data);
+      const metrics = [["Paid & verified", data.metrics.paid_verified], ["Agents working", data.metrics.agents_working], ["Needs You", data.metrics.needs_you], ["Opportunity value", data.metrics.opportunity_value]]
+        .map(function (item) { return '<article class="money-metric"><span>' + escapeHtml(item[0]) + '</span><strong>' + escapeHtml(item[1]) + '</strong></article>'; }).join("");
+      const lanes = Object.keys(moneyLaneLabels).map(function (lane) {
+        const cards = data.columns[lane].map(function (card) { return '<article class="money-card"><strong>' + escapeHtml(card.title) + '</strong><p>' + escapeHtml(card.currency || "") + ' ' + escapeHtml(card.value_minor) + '</p></article>'; }).join("");
+        return '<section class="money-lane"><h3>' + escapeHtml(moneyLaneLabels[lane]) + '</h3>' + (cards || '<p class="empty">No work</p>') + '</section>';
+      }).join("");
+      return '<div class="money-metrics">' + metrics + '</div><div class="money-board">' + lanes + '</div>';
+    }
+
+    const renderers = Object.freeze({ "money-printer": renderMoneyPrinter, timeline: renderTimeline, scores: renderScores, ledger: renderLedger, gates: renderGates, settings: renderSettings, "control-center": renderControlCenter });
 
     async function loadPanelSection(name) {
       const response = await fetch(panelEndpoints[name], { credentials: "same-origin", headers: { Accept: "application/json" } });

@@ -13,8 +13,9 @@ const { presentPanelSection } = require("./panel-presentation.js");
 const { normalizePhone } = require("./telegram-onboard.js");
 const { paymentLink } = require("./payment-link.js");
 const { isHelperBlock } = require("./wake-filter.js");
+const { projectMoneyPrinter } = require("./money-printer-projection.js");
 
-const ENDPOINTS = new Set(["timeline", "scores", "ledger", "gates", "settings"]);
+const ENDPOINTS = new Set(["money-printer", "timeline", "scores", "ledger", "gates", "settings"]);
 const ONBOARDING_ACTIONS = new Set(["name.save", "home.save", "notifications.enable", "phone.save", "phone.skip", "call.enable", "call.skip", "payment.skip"]);
 const CALL_MINUTES_BEFORE = Object.freeze([10, 5]);
 const SCORE_ORGANS = Object.freeze(["daily", "physical", "mental", "financial"]);
@@ -298,6 +299,15 @@ async function settings(uid, opts) {
       telegram: Boolean(user && user.telegram_chat_id),
     },
   };
+}
+
+async function moneyPrinter(scope, opts) {
+  if (!scope || !scope.uid || typeof opts.moneyPrinterSource !== "function") {
+    throw new Error("money printer source unavailable");
+  }
+  const input = await opts.moneyPrinterSource(scope);
+  if (!input || input.tenantId !== scope.uid) throw new Error("money printer scope mismatch");
+  return projectMoneyPrinter(input);
 }
 
 function sendJson(res, status, body, extraHeaders = {}) {
@@ -720,6 +730,10 @@ async function handlePanelApiRequest(req, res, opts = {}) {
     const store = commandStore;
     const model = await buildControlCenter(scope, { ...opts, store, nowMs, calendarStatus: opts.calendarStatus || ((value) => composioCalendarStatus(value, { ...opts, composioKey: opts.composioKey || process.env.COMPOSIO_API_KEY })) });
     sendPanelSection(res, endpoint, { ...model, csrf: scope.csrf || csrfToken(session) }, opts);
+    return;
+  }
+  if (endpoint === "money-printer") {
+    sendJson(res, 200, await moneyPrinter(scope, { ...opts, nowMs }));
     return;
   }
   const readers = { timeline, scores, ledger, gates, settings };

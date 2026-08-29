@@ -265,6 +265,15 @@ test("LM-33c: panel renders the five mirror sections in spec order", () => {
   }
 });
 
+test("Money Printer panel renders one six-lane control room", () => {
+  const html = renderPanelPage();
+  assert.match(html, /data-panel-section="money-printer"/);
+  assert.match(html, /\/api\/panel\/money-printer/);
+  for (const label of ["Paid & verified", "Agents working", "Needs You", "Opportunity value", "Found", "Working", "Waiting", "Done", "Paid"]) {
+    assert.match(html, new RegExp(label));
+  }
+});
+
 test("PANEL-0: panel includes a real control center and keeps read APIs same-origin", () => {
   assert.equal(typeof renderPanelPage, "function");
   const html = renderPanelPage();

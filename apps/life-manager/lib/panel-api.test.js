@@ -144,7 +144,7 @@ function makeFixture() {
   return { calls, calendarUids, fetchImpl, calendar, byUid };
 }
 
-async function withApiServer(fixture, run) {
+async function withApiServer(fixture, run, overrides = {}) {
   const server = http.createServer((req, res) => {
     Promise.resolve(handlePanelApiRequest(req, res, {
       supaUrl: "https://db.example",
@@ -153,6 +153,7 @@ async function withApiServer(fixture, run) {
       calendar: fixture.calendar,
       nowMs: NOW,
       timeZone: "UTC",
+      ...overrides,
     })).catch((error) => {
       res.writeHead(500, { "content-type": "application/json" });
       res.end(JSON.stringify({ error: error.message }));
@@ -165,6 +166,31 @@ async function withApiServer(fixture, run) {
     await new Promise((resolve) => server.close(resolve));
   }
 }
+
+test("Money Printer GET is tenant-bound and rejects mutation methods", async () => {
+  const fixture = makeFixture();
+  const seen = [];
+  await withApiServer(fixture, async (base) => {
+    const get = await getJson(base, "money-printer?uid=u2");
+    assert.equal(get.response.status, 200);
+    assert.equal(get.body.metrics.opportunity_value, "50000");
+    assert.equal(get.body.metrics.paid_verified, "0");
+    assert.equal(get.body.columns.found[0].title, "Public opportunity");
+    const post = await getJson(base, "money-printer", { method: "POST" });
+    assert.equal(post.response.status, 405);
+  }, {
+    moneyPrinterSource: async (scope) => {
+      seen.push(scope.uid);
+      return {
+        tenantId: scope.uid,
+        observedAt: "2026-08-29T00:00:00.000Z",
+        opportunities: [{ tenant_id: scope.uid, id: "op-1", title: "Public opportunity", status: "DISCOVERED", amount_minor: "50000", currency: "JPY", url: "https://example.test/op-1" }],
+        runtimeJobs: [], generalReceipts: [], applicationReceipts: [], humanTasks: [], earnings: [],
+      };
+    },
+  });
+  assert.deepEqual(seen, ["u1"]);
+});
 
 async function getJson(base, endpoint, init = {}) {
   const response = await fetch(`${base}/api/panel/${endpoint}${init.query || ""}`, {
