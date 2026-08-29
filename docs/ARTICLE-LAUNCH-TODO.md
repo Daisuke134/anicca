@@ -56,6 +56,10 @@
       release `f8600ca9`をclaim ownerへapplyしたproduction wakeでは有効なSELECTが返り、空object問題は解消した。
       次のblockerは、選択済み価格receiptをbindingが参照したのに上位observation_idsへ重複記載せず
       `DEMAND_CARD_INVALID`となることだった。選択済みimmutable IDだけをdeterministicに集合へ補完する最小修正を進める。
+      PR #3120をmainへmergeし、sparse immutable release `c38659a4`をclaim ownerだけへapplyした結果、
+      production receiptは`FILLED`、queue 0→1、topic card hash-bound、exit 0となった。article-dailyは未発火で、
+      run `20260828-195017`のartifactは依然2 receiptsだけ、外部作用0である。空きが約1.0〜1.3GiBのため、
+      article-run capacity floor未達としてgenerationを開始しない。別ownerのscheduled workを触らず自然終了後に再測定する。
 - [ ] W3 W2のNote JAだけをprovider-native readbackし、title、body、owner、headline、paywall、URLを確認する。
 - [ ] W4 W2のSubstack JAだけを同じ項目でprovider-native readbackする。
 - [ ] W5 W2のSubstack ENだけを同じ項目でprovider-native readbackする。
