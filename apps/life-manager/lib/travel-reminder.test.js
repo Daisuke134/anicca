@@ -131,6 +131,10 @@ test("Telegram receipt RPC rejects invalid input and never fetches or leaks raw 
   assert.deepEqual(malformed, { ok: false, matched: 0, error: "invalid_result" });
   const failed = await recordTravelTelegramReceipt(...base, { fetchImpl: async () => ({ ok: false, status: 503, json: async () => ({ secret: "raw-secret" }) }) });
   assert.deepEqual(failed, { ok: false, matched: 0, error: "http_error" });
+  const contradictoryStatus = await recordTravelTelegramReceipt(...base, {
+    fetchImpl: async () => ({ ok: true, status: 500, json: async () => 1 }),
+  });
+  assert.deepEqual(contradictoryStatus, { ok: false, matched: 0, error: "http_error" });
   const thrown = await recordTravelTelegramReceipt(...base, { fetchImpl: async () => { throw new Error("raw-secret"); } });
   assert.deepEqual(thrown, { ok: false, matched: 0, error: "network_error" });
   const noFetch = await recordTravelTelegramReceipt(...base, { fetchImpl: null });

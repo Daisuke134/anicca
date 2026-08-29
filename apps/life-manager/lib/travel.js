@@ -433,7 +433,9 @@ async function recordTravelTelegramReceipt(uid, eventKey, leg, messageId, supaUr
     return { ok: false, matched: 0, error: "network_error" };
   }
   if (!response || response.ok === false
-    || (response.ok !== true && (!Number.isInteger(response.status) || response.status < 200 || response.status >= 300))) {
+    || (Number.isInteger(response.status)
+      ? response.status < 200 || response.status >= 300
+      : response.ok !== true)) {
     return { ok: false, matched: 0, error: "http_error" };
   }
   let matched;
