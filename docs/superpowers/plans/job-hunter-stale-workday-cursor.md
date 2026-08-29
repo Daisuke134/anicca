@@ -14,7 +14,7 @@
 - `submit_unknown` is never retried or clicked again.
 - A listing, Telegram message, screenshot, or Ledger row is not an application receipt.
 - Deterministic code owns listing identity, failure evidence, wake-local cursor, and dedupe; the model owns fit judgment.
-- Production changes stay within two files and 100 production LOC where possible; no new dependency or service.
+- Production changes stay within three files and 140 production LOC where possible; no new dependency or service.
 
 ---
 
@@ -23,7 +23,9 @@
 **Files:**
 - Modify: `apps/job-search-loop/job_search_loop/workday_search_loop.py`
 - Modify: `apps/job-search-loop/job_search_loop/workday_qualification.py`
+- Modify: `apps/job-search-loop/job_search_loop/workday_discovery.py`
 - Test: `apps/job-search-loop/tests/test_workday_qualification.py`
+- Test: `apps/job-search-loop/tests/test_workday_discovery.py`
 
 **Interfaces:**
 - Consumes: successful per-source job snapshots already stored in `jobs_by_source`, `Ledger.pending_materials_ready_applications()`, and the existing `fetch_official_description()` callable.
@@ -105,6 +107,15 @@ def test_http_failure_receipt_skips_row_and_next_live_row_qualifies_same_wake():
         )
         self.assertEqual(success["application_id"], second)
         self.assertEqual(success["decision"], "qualified")
+
+def test_incomplete_cxs_page_fails_instead_of_authorizing_stale_rejection():
+    # A CXS response reports total=21 but returns an empty second page at offset=20.
+    # Assert _fetch_jobs raises and the source never enters jobs_by_source.
+
+def test_same_host_failed_site_and_requisition_url_change_are_preserved():
+    # SiteA has a complete non-empty snapshot. SiteB has no successful snapshot.
+    # Preserve SiteB. Preserve a SiteA row whose slug/location changed while its
+    # Workday requisition suffix remains equal under same_application_surface().
 ```
 
 - [ ] **Step 2: Run RED**
@@ -115,7 +126,8 @@ Run:
 cd apps/job-search-loop
 python3 -m unittest \
   tests.test_workday_qualification.WorkdayQualificationTests.test_fresh_snapshot_rejects_only_absent_pre_submit_workday_row \
-  tests.test_workday_qualification.WorkdayQualificationTests.test_http_failure_receipt_skips_row_and_next_live_row_qualifies_same_wake -v
+  tests.test_workday_qualification.WorkdayQualificationTests.test_http_failure_receipt_skips_row_and_next_live_row_qualifies_same_wake \
+  tests.test_workday_discovery.WorkdayDiscoveryTests.test_incomplete_cxs_page_fails_instead_of_authorizing_stale_rejection -v
 ```
 
 Expected: FAIL because stale snapshot reconciliation, excluded application IDs, and structured HTTP failure receipts do not exist.
@@ -128,9 +140,13 @@ stale_rows = reject_stale_workday_rows(args.ledger, jobs_by_source)
 wake_failed_ids: set[str] = set()
 
 # workday_qualification.py
-# Exclude wake_failed_ids during deterministic queue selection. Catch HTTPError
-# around description fetch, parse only fixed Workday JSON fields, and return a
-# structured failure receipt. Do not call the model and do not create Submit intent.
+# Exclude wake_failed_ids during deterministic queue selection. Catch fetch-layer
+# HTTP/network/parse failures, parse only fixed Workday JSON fields, and return a
+# bounded structured failure receipt. Do not call the model or create Submit intent.
+
+# workday_discovery.py
+# Reject malformed CXS payloads and any pagination sequence that ends before the
+# authoritative `total`; incomplete data never authorizes stale reconciliation.
 ```
 
 - [ ] **Step 4: Run GREEN and the focused package tests**
