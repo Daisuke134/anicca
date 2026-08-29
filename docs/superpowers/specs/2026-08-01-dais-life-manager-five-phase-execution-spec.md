@@ -157,6 +157,35 @@ flowchart TD
     CLOUD["Hosted multi-tenant runtime"] --> MANAGER
 ```
 
+#### General Agentの開始点・現在地・理想像
+
+Lancersから直接作り始めたわけではない。最初にprovider非依存kernelを作り、Lancersを最初の実marketplace canaryにした。
+Lancersでは応募receiptとreplay-zeroまで実証したが、受注・納品・入金はまだ0である。公式への許可確認メール・問い合わせ・追跡は行わない。
+Upworkは停止、Coconalaはこのtrackの対象外とする。
+
+```mermaid
+flowchart LR
+    F["GA-01〜05<br/>共通kernel<br/>DONE"] --> L["GA-10 Lancers<br/>実応募1件 + replay-zero<br/>DONE"]
+    L --> H["GA-11 Hosted tenant<br/>queue → worker → receipt<br/>DONE"]
+    H --> O["GA-12 OSS clean install<br/>DONE"]
+    O --> R1["GA-13A tier2依存退役<br/>production natural pass<br/>DONE"]
+    R1 --> NOW["現在: GA-13B以降<br/>旧checkout/Hermes依存退役"]
+    NOW --> D["GA-14 常時案件発見・応募<br/>Money loop"]
+    D --> W["GA-15 受注・制作・QA・納品"]
+    W --> B["GA-16 payment → payout → banked"]
+    B --> I["GA-17 receiptから自己改善"]
+    I --> S["GA-18 failureから自己修復"]
+    S --> X["GA-19 新marketplaceをmanifestだけで追加"]
+    X --> LIFE["GA-20 Financial → Daily/Body/Mind<br/>Life Manager全体"]
+    LIFE --> D
+```
+
+理想像は、同じmanagerが`Goal → Opportunity → WorkItem → Effect → Receipt → EconomicReceipt`を回し、
+成功・失敗・利益・時間・costを次の判断へ戻すことである。provider別scriptを増やさず、未知siteは公開manifest、
+browser observation、private authorization、official state readbackだけを差し替える。自己改善はprompt/skill/graph候補をmodelが作り、
+offline eval、canary、rollbackを通った変更だけを採用する。自己修復はunknown effectを再送せずreconcileし、source/runtime/session/providerの
+失敗箇所を特定して最小修復し、同じreceipt contractで復帰を証明する。
+
 Coreが所有する最小entityは`Goal`、`Opportunity`、`CapabilityManifest`、`AuthorizationReceipt`、`WorkItem`、
 `EffectIntent`、`OutcomeReceipt`、`EconomicReceipt`である。provider固有codeはdiscovery/transport/readback selectorだけを持ち、
 goal選択、price/margin、state transition、retry、dedupe、receipt判定を持たない。
@@ -246,17 +275,23 @@ authorization、dedupe、公式receipt、money truthを置き換えない。
 | 22 | GA-04 shared effect and receipt kernel | DONE | commits `99398fca0` / `42d233ae5`。Goal WorkItem、capability/opportunity/intent/private-authorization refsを一つのimmutable publish effectへ固定し、pre-readback → single execution → verified post-readback → replay-zeroを実証。unknown pre/post stateは再送せず`unknownEffect=true`。focused/adjacent Node tests 22/22 PASS |
 | 23 | GA-05 bounded specialist runtime | DONE | commits `e768d1833` / `d005e828c` / `04dc0cd55`。既存browser step loopとagent-runnerを共通境界化し、最大10 step、既定120秒job deadline、各model decision 30秒・24,576 token、step heartbeat、親cancelのPython/provider child伝播、applicationを含むstructured readbackを実装。focused/adjacent Node tests 238/238 PASS |
 | 24 | GA-10 first authorized-site canary | DONE | `USER_DIRECTED_APPROVED`。general agentがAI使用可・オンライン完結のLancers `5593059`を選択し、JPY 600 / due `2026-09-01` / content `06bf3fa2…8000`をseal。effect `7314f1ed…c53a`を一度だけ実行し、official Proposal ID `27861812`をfinish/direct/mypage/own-cardの4 readbackで確認、canonical ledger 32→33。same WorkItem replayはpre-readback=`present`、execute 0、ledger insert false、count 33不変。private evidenceは`~/.local/state/anicca/lancers/general-agent/ga10/` mode 600、公式への許可確認・追跡0 |
-| 25 | GA-06 allocator across organs | DEFERRED | 最初のApplicationReceipt後までmargin、cross-site配分、body/mind/money allocatorを作らない |
-| 26 | GA-07 local/cloud adapter parity | DEFERRED | 最初のApplicationReceipt後までlocal/cloud共通化を作らない |
-| 27 | GA-08 self-funding economic loop | DEFERRED | 最初のApplicationReceipt後までcost attributionと`compute_paid`を作らない |
+| 25 | GA-06 allocator across organs | DEFERRED_UNTIL_GA13 | 最初のApplicationReceipt条件はGA-10で達成。旧runtime依存退役後、GA-14のmoney allocatorとして再開 |
+| 26 | GA-07 local/cloud adapter parity | DEFERRED_UNTIL_GA13 | GA-11でhosted contractは実証済み。GA-13後、GA-19の同一manifest local/cloud acceptanceへ統合 |
+| 27 | GA-08 self-funding economic loop | DEFERRED_UNTIL_BANKED | GA-16で新規外部収益がbankedになった後だけcost attributionと`compute_paid`を有効化 |
 | 28 | GA-09 Coconala migration | OUT_OF_SCOPE | このtrackではCoconalaのcode、state、browser、ownerを変更しない |
 | 29 | GA-11 hosted product slice | DONE | commits `212dadf68` / `f7b6853ea`。authenticated+paid同一tenantだけをcloud vault health→reference-only Goal WorkItem→既存queue/worker→bounded specialist→安全な7-field receiptへ通し、同一goal replayはcreated=false・worker再実行0。focused hosted/billing/secret/onboarding 39/39、tenant isolation 9/9。fresh productionはhealth HTTP 200、canonical panel query 0、stable identity hash `e892f219…e98`、paid/phone/call/notifications true、Telegram認証済み。Calendar=`action_required`、email=`unavailable`を維持し、新規tenant/payment/connector/provider連絡/契約/納品/入金0 |
 | 30 | GA-12 OSS clean-install release | DONE | commits `1d87e401f` / `f108b591d`。未知site用5-reference manifest、`secret://`例、local/cloud quick start、MIT LICENSE、DeepAgentsJS/browser-use/OpenClaw/Steel noticeを公開。provider名/DOM selector/credential/PII/human-loop field/vendor source 0。focused manifest 17/17、clean archive 1/1、変更path OSS/PII違反0。remote一致 `f108b591d9744f203873cc3a07e594dfac0146fa`を別dirへ展開し`GA12_PUSHED_ARCHIVE=PASS` |
-| 31 | GA-13 dependency retirement | IN_PROGRESS | GA-13A sourceはrepo内canonical `runtime/agent-runner`へ移行しdeveloper-checkout参照0。PR #3018→main `cc94f70eb`、Security Scan 8/8 SUCCESS。sparse immutable `20260829T000118-cc94f70e`をcutし`tier2-agent-diagnose`一件だけapply、loaded argv/SHA/state path一致。旧`d9021490…`とmode-600 prior/current plistを含むprivate rollback bundle保持。target SHAのnatural terminalはpendingでinstall passを代用しない。`citizens-diff-monitor`は`.hermes/citizens.json`正本かつlatest=`entrypoint_exit_143`のため未適格 |
+| 31 | GA-13 dependency retirement | IN_PROGRESS | GA-13A DONE。repo内canonical runnerへ移行、main `cc94f70eb`、Security Scan 8/8、targeted release/apply、loaded argv/SHA/state path一致、developer-checkout参照0、mode-600 rollback bundle保持。target SHAのnatural report/passを4回取得、latest=`2026-08-29T00:47:20Z` / event `27061202342aa7734c09be88`。残りはGA-13B1 bounty healthcheck、B2 bounty daily、B3 writer/reddit direct refs、B4 `.hermes` state owner移行。`citizens-diff-monitor`はreplacement natural pass前に移動しない |
+| 32 | GA-14 continuous money opportunity loop | TODO | 許可済みprovider群を同じmodel判断で常時discover→profit/risk/capability評価→sealed intent→exactly-once応募。provider問い合わせ0、site固有brain/DOM script 0、日次application receiptsとreplay-zeroを取得 |
+| 33 | GA-15 contract and fulfillment loop | TODO | reply/offer/contractを同じcommerce stateへ接続し、短命specialistが制作→QA→納品→revisionを完了。fake/dry completion 0、official delivery/acceptance receipt取得 |
+| 34 | GA-16 banked revenue loop | TODO | payment→platform balance→payout→受領口座を照合し、新規外部buyer由来の`banked`を一件取得。application/pending/click/self-payを売上に数えない |
+| 35 | GA-17 self-improving money maximizer | TODO | application/contract/delivery/banked/cost/timeのreceiptからmodelが次のstrategy・skill・graph変更を提案し、offline eval→bounded canary→rollback gateを通過した改善だけを採用 |
+| 36 | GA-18 self-healing runtime | TODO | source/runtime/browser/session/provider/readback failureを同じfailure envelopeで分類。unknown effectは再送せずreconcileし、最小修復→natural E2E→receipt/replay-zeroで復帰を証明 |
+| 37 | GA-19 manifest-only marketplace expansion | TODO | Lancersの後、CloudWorks/Fiverr/Freelancer/Mercari/bug bounty等を一件ずつpublic manifest＋private refs＋readback adapterだけで追加。公式への許可確認連絡とUpwork再開0 |
+| 38 | GA-20 full Life Manager and YC proof | TODO | Financialでbanked/self-fundingを閉じた後、同じGoal/WorkItem/Receipt kernelをDaily・Body・Mindへ拡張。実利用・収益・reliability evidenceからYC application/demoを生成 |
 
-Upworkは`API_INELIGIBLE / UI_AUTOMATION_DENIED / SUPPORT_SCOPE_PENDING`でclean terminalへ入った。
-Support返信待ちは#7以降を止めない。後日API approvalまたはaction-level scope変更を受けた時だけ、exact evidence hashとexpiryを持つ
-private receiptを追加し、GA-03のmanifest更新として同じshared kernelへ再参加させる。
+Upworkは`API_INELIGIBLE / UI_AUTOMATION_DENIED`でclean terminalへ入り、API/UI loopを恒久OFFとする。
+既存support caseの監視・返信・follow-up・再問い合わせは行わず、収益計画へ再参加させない。
 
 #### First implementation test matrix — all OK required
 
