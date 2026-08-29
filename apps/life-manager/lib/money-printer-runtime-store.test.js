@@ -61,3 +61,58 @@ test("runtime store rejects unavailable query and foreign or ambiguous readback"
   const store = createMoneyPrinterRuntimeStore({ query: async () => ({ rows: [{ ...opportunity(), uid: "tenant-b" }, opportunity()] }) });
   await assert.rejects(store.createOpportunity(opportunity()), /readback/);
 });
+
+test("runtime store reads and idempotently qualifies one exact opportunity", async () => {
+  const calls = [];
+  const qualified = { ...opportunity(), status: "QUALIFIED" };
+  const expected = {
+    tenant_id: TENANT,
+    opportunity_id: ID,
+    goal_ref: `intent-entry://${TENANT}/${ID}`,
+  };
+  const store = createMoneyPrinterRuntimeStore({
+    query: async (sql, values) => {
+      calls.push({ sql, values });
+      if (sql.includes("WITH updated AS")) return { rows: [qualified] };
+      if (sql.includes("FROM public.lm_money_opportunities")) return { rows: [opportunity()] };
+      throw new Error("unexpected query");
+    },
+  });
+
+  assert.deepEqual(await store.readOpportunity(expected), opportunity());
+  assert.deepEqual(await store.updateOpportunity(expected, "QUALIFIED"), qualified);
+  assert.deepEqual(await store.updateOpportunity(expected, "QUALIFIED"), qualified);
+
+  assert.match(calls[0].sql, /SELECT uid, opportunity_id, source_url, title, goal_statement, value_minor, currency, status, goal_ref, observed_at\s+FROM public\.lm_money_opportunities/i);
+  assert.match(calls[0].sql, /WHERE uid = \$1 AND opportunity_id = \$2 AND goal_ref = \$3/i);
+  assert.deepEqual(calls[0].values, [TENANT, ID, expected.goal_ref]);
+  for (const call of calls.slice(1)) {
+    assert.match(call.sql, /UPDATE public\.lm_money_opportunities/i);
+    assert.match(call.sql, /status IN \('DISCOVERED', 'QUALIFYING'\)/i);
+    assert.match(call.sql, /status = 'QUALIFIED'/i);
+    assert.match(call.sql, /NOT EXISTS \(SELECT 1 FROM updated\)/i);
+    assert.deepEqual(call.values, [TENANT, ID, expected.goal_ref, "QUALIFIED"]);
+  }
+});
+
+test("runtime store rejects non-QUALIFIED or non-exact opportunity qualification", async () => {
+  const expected = {
+    tenant_id: TENANT,
+    opportunity_id: ID,
+    goal_ref: `intent-entry://${TENANT}/${ID}`,
+  };
+  const rejectedRows = [
+    [],
+    [opportunity(), opportunity()],
+    [{ ...opportunity(), uid: "tenant-b" }],
+    [{ ...opportunity(), opportunity_id: "b".repeat(64) }],
+    [{ ...opportunity(), goal_ref: `intent-entry://${TENANT}/${"b".repeat(64)}` }],
+  ];
+  for (const rows of rejectedRows) {
+    const store = createMoneyPrinterRuntimeStore({ query: async () => ({ rows }) });
+    await assert.rejects(store.readOpportunity(expected), /readback/);
+    await assert.rejects(store.updateOpportunity(expected, "QUALIFIED"), /readback/);
+  }
+  const store = createMoneyPrinterRuntimeStore({ query: async () => ({ rows: [opportunity()] }) });
+  await assert.rejects(store.updateOpportunity(expected, "DISCOVERED"), /status/);
+});

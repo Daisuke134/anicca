@@ -1,6 +1,7 @@
 "use strict";
 
 const TENANT_ID = /^[a-z0-9][a-z0-9._-]{0,199}$/;
+const OPPORTUNITY_ID = /^[0-9a-f]{64}$/;
 
 function unavailable() { throw new Error("money printer runtime store unavailable"); }
 
@@ -29,6 +30,31 @@ function scopedRows(result, uid, label) {
   return rows;
 }
 
+function expectedOpportunity(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("money printer runtime store opportunity expected invalid");
+  }
+  const uid = tenant(value.uid == null ? value.tenant_id : value.uid);
+  if (value.uid != null && value.tenant_id != null && String(value.tenant_id).trim() !== uid) {
+    throw new Error("money printer runtime store opportunity expected invalid");
+  }
+  const opportunityId = String(value.opportunity_id || "").trim();
+  const goalRef = String(value.goal_ref || "").trim();
+  if (!OPPORTUNITY_ID.test(opportunityId) || goalRef !== `intent-entry://${uid}/${opportunityId}`) {
+    throw new Error("money printer runtime store opportunity expected invalid");
+  }
+  return Object.freeze({ uid, opportunityId, goalRef });
+}
+
+function opportunityRow(result, expected, label) {
+  const row = oneRow(result, label, expected.uid);
+  if (
+    String(row.opportunity_id || "") !== expected.opportunityId
+    || String(row.goal_ref || "") !== expected.goalRef
+  ) throw new Error(`money printer runtime store ${label} readback invalid`);
+  return row;
+}
+
 function createMoneyPrinterRuntimeStore({ query } = {}) {
   if (typeof query !== "function") unavailable();
 
@@ -42,6 +68,37 @@ function createMoneyPrinterRuntimeStore({ query } = {}) {
         canonical.value_minor, canonical.currency, canonical.observed_at, canonical.goal_ref,
       ]), "opportunity", uid);
       if (row.opportunity_id !== canonical.opportunity_id) throw new Error("money printer runtime store opportunity readback invalid");
+      return row;
+    },
+    async readOpportunity(value) {
+      const expected = expectedOpportunity(value);
+      return opportunityRow(await query(`
+        SELECT uid, opportunity_id, source_url, title, goal_statement, value_minor, currency, status, goal_ref, observed_at
+        FROM public.lm_money_opportunities
+        WHERE uid = $1 AND opportunity_id = $2 AND goal_ref = $3
+        LIMIT 2
+      `, [expected.uid, expected.opportunityId, expected.goalRef]), expected, "opportunity");
+    },
+    async updateOpportunity(value, status) {
+      const expected = expectedOpportunity(value);
+      if (status !== "QUALIFIED") throw new Error("money printer runtime store opportunity status invalid");
+      const row = opportunityRow(await query(`
+        WITH updated AS (
+          UPDATE public.lm_money_opportunities
+          SET status = $4, updated_at = clock_timestamp()
+          WHERE uid = $1 AND opportunity_id = $2 AND goal_ref = $3
+            AND status IN ('DISCOVERED', 'QUALIFYING')
+          RETURNING uid, opportunity_id, source_url, title, goal_statement, value_minor, currency, status, goal_ref, observed_at
+        )
+        SELECT * FROM updated
+        UNION ALL
+        SELECT uid, opportunity_id, source_url, title, goal_statement, value_minor, currency, status, goal_ref, observed_at
+        FROM public.lm_money_opportunities
+        WHERE uid = $1 AND opportunity_id = $2 AND goal_ref = $3
+          AND status = 'QUALIFIED'
+          AND NOT EXISTS (SELECT 1 FROM updated)
+      `, [expected.uid, expected.opportunityId, expected.goalRef, status]), expected, "opportunity");
+      if (row.status !== status) throw new Error("money printer runtime store opportunity readback invalid");
       return row;
     },
     async readNext(scope) {

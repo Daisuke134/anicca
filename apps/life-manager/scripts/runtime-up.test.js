@@ -229,7 +229,7 @@ test("general money worker wires its injected bounded specialist through the reg
   });
 });
 
-test("general money worker passes the cloud Gemini key to its production specialist", async () => {
+test("production general money worker injects Railway opportunity functions without Supabase", async () => {
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "lm-runtime-money-cloud-"));
   const geminiKey = "gemini-secret-key";
   let options;
@@ -243,11 +243,23 @@ test("general money worker passes the cloud Gemini key to its production special
     next_job_refs: [],
   });
   const handlers = createWorkerHandlers({
-    SUPABASE_URL: "https://supa.example",
-    SUPABASE_SERVICE_ROLE_KEY: "service-secret",
     LM_DATA_DIR: dataDir,
     GEMINI_API_KEY: geminiKey,
   }, ["general-agent.work"], {
+    async query(sql) {
+      if (sql.includes("WITH updated AS")) {
+        return { rows: [{
+          uid: MONEY_TENANT, opportunity_id: MONEY_OPPORTUNITY_ID, goal_ref: MONEY_GOAL_REF,
+          source_url: "https://public.example/opportunity", title: "Public opportunity",
+          goal_statement: "Complete it.", value_minor: "50000", currency: "JPY", status: "QUALIFIED",
+        }] };
+      }
+      return { rows: [{
+        uid: MONEY_TENANT, opportunity_id: MONEY_OPPORTUNITY_ID, goal_ref: MONEY_GOAL_REF,
+        source_url: "https://public.example/opportunity", title: "Public opportunity",
+        goal_statement: "Complete it.", value_minor: "50000", currency: "JPY", status: "DISCOVERED",
+      }] };
+    },
     createMoneyPrinterSpecialist(input) {
       options = input;
       return specialist;
@@ -270,6 +282,16 @@ test("general money worker passes the cloud Gemini key to its production special
   });
 
   assert.equal(options.geminiKey, geminiKey);
+  assert.equal(options.supaUrl, undefined);
+  assert.equal(options.supaKey, undefined);
+  assert.equal(typeof options.readOpportunity, "function");
+  assert.equal(typeof options.updateOpportunity, "function");
+  assert.equal((await options.readOpportunity({
+    tenant_id: MONEY_TENANT, opportunity_id: MONEY_OPPORTUNITY_ID, goal_ref: MONEY_GOAL_REF,
+  })).status, "DISCOVERED");
+  assert.equal((await options.updateOpportunity({
+    tenant_id: MONEY_TENANT, opportunity_id: MONEY_OPPORTUNITY_ID, goal_ref: MONEY_GOAL_REF,
+  }, "QUALIFIED")).status, "QUALIFIED");
   assert.doesNotMatch(JSON.stringify(await handlers["general-agent.work"]({
     tenant_id: MONEY_TENANT,
     job_id: MONEY_JOB_ID,
