@@ -391,22 +391,23 @@ recreator. Completed items are not part of the remaining queue.
 
 Current registry has 166 managed rows and unmanaged labels 0. Account auto is
 present in all 78 shared-runner consumers with installed SHA missing 0. Current
-runtime has 59 loaded-idle and 19 loaded-running shared-runner consumers, and
-all four installed release SHAs contain Account auto merge `3d69c74b`. The
+runtime has 61 loaded-idle, 16 loaded-running, and 1 unloaded shared-runner
+consumer. Every installed release SHA contains Account auto merge `3d69c74b`. The
 controlled proof remains Account 1 success plus Account 1 quota/auth failure to
 real Account 2 success with external effect 0. Clean-user launchd E2E is not an
 Account auto acceptance gate.
 
-The global release invariant has regressed after the earlier recovery. Active
-`current` is sparse `6aceea13` with paths limited to Job Search, loop/runner
-control, shared/browser code, and one Gig guard. `lm-loop doctor` is red with
-120 missing entrypoints, unmanaged 0, and retired-installed 0. Existing loops
+The global release invariant remains red after the earlier recovery. Active
+`current` is sparse `c38659a4` with paths limited to control/runtime, shared
+browser, Gig, and Writer code. `lm-loop doctor` reports 107 missing
+entrypoints, unmanaged 0, and retired-installed 0. Existing loops
 continue from their installed immutable releases, so this does not remove
 Account auto, but new fleet-wide operations cannot use `current` as a complete
-release. A local uncommitted candidate changes two files so sparse cuts leave
-global `current` unchanged and only target-specific apply may use an explicit
-sparse release; the existing focused suites pass 15/15. This is not completion
-evidence until committed, merged, deployed, and read back.
+release. The two-file invariant fix is committed and pushed as `dc8d165b` in
+PR #3108. Its merge-result checks are all green, including Loop control, OSS
+self-contained, PII shape, Python, shell, gitleaks, and TruffleHog. This is not
+production completion until PR #3108 is merged, a full release is deployed,
+and live readback stays green after a later sparse cut.
 
 Full-fleet OSS startup is partially implemented by PR #3047. The existing
 `scripts/local-up.sh` now provides `loops-up <id>...`, `loops-status`, and
@@ -420,11 +421,16 @@ clean HOME proves parent mode 700, file mode 600, and byte-identical replay.
 The clean-user natural-run E2E remains and is required only for the public
 full-fleet OSS claim. Production labels are not reused for this proof.
 
-| Order | Remaining TODO | Done evidence |
-|---:|---|---|
-| 1 | Close the global `current` invariant. Commit and merge the candidate; a sparse cut must leave `current` byte-identical, target-specific apply may use its explicit immutable release, and all-label apply must still require the full current release. Then cut/deploy one full main release through the owner without restarting running loops. | `current/RELEASE.json` is `ALL`; sparse-cut replay leaves its symlink unchanged; `lm-loop doctor` is green with missing 0, unmanaged 0, and retired-installed 0; every installed argv points to an existing immutable release; running loops were not restarted. |
-| 2 | Finish full-fleet OSS startup by running the clean-user natural E2E for the implemented profile, credential initialization, and launchd supervisor commands. This is not required to re-prove Account auto. Never reuse a production label, bundle Dais credentials, or claim private provider loops work without user-owned setup. | From an isolated macOS user/domain: documented few-command setup, user-owned secret initialization, selected effect-none loop starts, initiating shell exits, supervisor retains it, a natural terminal event carries the installed SHA, and the resolver separates liveness, blocker, terminal result, and effect status; test-only state is removed afterward. |
-| 3 | Close the separate OSS/security backlog without blanket allowlisting or `npm audit fix --force`. Start with production personal-email defaults, then source-root portability/inventory, then transitive dependency upgrades. | PII shape 0, OSS self-contained boundary 0, Python syntax 0, dependency audit critical 0 and high 0, with focused compatibility readback for affected runtime routes. |
+Security gates on PR #3108 already prove OSS self-contained, PII shape, Python
+syntax, shell syntax, and secret scans green for its merge result. The remaining
+security acceptance is the production dependency audit: critical and high must
+both read 0 without `npm audit fix --force` or compatibility regression.
+
+| Order | Remaining TODO | Done evidence | Working-time estimate |
+|---:|---|---|---|
+| 1 | Close the global `current` invariant. Merge PR #3108; a sparse cut must leave `current` byte-identical, target-specific apply may use its explicit immutable release, and all-label apply must still require the full current release. Then cut/deploy one full main release through the owner without restarting running loops. | `current/RELEASE.json` is `ALL`; sparse-cut replay leaves its symlink unchanged; `lm-loop doctor` is green with missing 0, unmanaged 0, and retired-installed 0; every installed argv points to an existing immutable release; running loops were not restarted. | 30–90 minutes, including full release build and live readbacks. |
+| 2 | Finish full-fleet OSS startup by running the clean-user natural E2E for the implemented profile, credential initialization, and launchd supervisor commands. This is not required to re-prove Account auto. Never reuse a production label, bundle Dais credentials, or claim private provider loops work without user-owned setup. | From an isolated macOS user/domain: documented few-command setup, user-owned secret initialization, selected effect-none loop starts, initiating shell exits, supervisor retains it, a natural terminal event carries the installed SHA, and the resolver separates liveness, blocker, terminal result, and effect status; test-only state is removed afterward. | 30–60 minutes after an isolated macOS user/domain is available. |
+| 3 | Close the remaining security backlog without blanket allowlisting or `npm audit fix --force`: remeasure production dependencies, then upgrade only the parent packages responsible for critical/high findings. | Current merge-result OSS/PII/Python/shell/secret gates stay green; dependency audit critical 0 and high 0; focused runtime compatibility checks pass. | 1–3 hours, depending on transitive upgrade compatibility. |
 
 ### TODO 1 execution state
 
