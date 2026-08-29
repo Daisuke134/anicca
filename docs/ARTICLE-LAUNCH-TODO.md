@@ -53,6 +53,9 @@
       agent resultが空object `{}` となり、`MODEL_UNAVAILABLE`、queue 0、外部作用0を再現した。根因はshared runnerの
       汎用schema `{}` がCodex側で`additionalProperties:false`の空object schemaへ変換されることだった。
       `fix/writer-w2-resume`で空schema時だけprovider-side structured outputを外し、具体schemaと後段JSON validationは維持する。
+      release `f8600ca9`をclaim ownerへapplyしたproduction wakeでは有効なSELECTが返り、空object問題は解消した。
+      次のblockerは、選択済み価格receiptをbindingが参照したのに上位observation_idsへ重複記載せず
+      `DEMAND_CARD_INVALID`となることだった。選択済みimmutable IDだけをdeterministicに集合へ補完する最小修正を進める。
 - [ ] W3 W2のNote JAだけをprovider-native readbackし、title、body、owner、headline、paywall、URLを確認する。
 - [ ] W4 W2のSubstack JAだけを同じ項目でprovider-native readbackする。
 - [ ] W5 W2のSubstack ENだけを同じ項目でprovider-native readbackする。
