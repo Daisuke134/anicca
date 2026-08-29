@@ -138,13 +138,14 @@ async function postSignedAmdEvent({
   clientState, result, supabase, telnyx,
   eventId = "fixture-webhook-id", callControlId = "v2:fixture-ccid",
   callSessionId, callLegId, signatureValue,
+  eventType = "call.machine.detection.ended",
 } = {}) {
   supabaseHandler = supabase || (() => response(200, [{ event_key: WAKE_EVENT_KEY }]));
   telnyxHandler = telnyx || (() => response(200, { data: { result: "ok" } }));
   const payload = { result, call_control_id: callControlId, client_state: clientState };
   if (callSessionId !== undefined) payload.call_session_id = callSessionId;
   if (callLegId !== undefined) payload.call_leg_id = callLegId;
-  const data = { event_type: "call.machine.detection.ended", payload };
+  const data = { event_type: eventType, payload };
   if (eventId !== undefined) data.id = eventId;
   const body = JSON.stringify({
     data,
@@ -181,6 +182,122 @@ function claimReceiptBody({
     p_amd_result: amdResult,
   };
 }
+
+test("a signed call.hangup writes one exact wake receipt without an outbound call", async () => {
+  upstreamCalls.length = 0;
+  const rpcBodies = [];
+  const supabase = (url, init) => {
+    const parsed = new URL(url);
+    if (parsed.pathname !== "/rest/v1/rpc/record_lm_wake_telnyx_receipt") {
+      throw new Error(`unexpected supabase write ${init.method} ${parsed.pathname}`);
+    }
+    rpcBodies.push(JSON.parse(init.body));
+    return response(200, 1);
+  };
+  const res = await postSignedAmdEvent({
+    eventType: "call.hangup", clientState: claimClientState, result: undefined,
+    eventId: "hangup-webhook-id", callControlId: "hangup-control-id",
+    callSessionId: "hangup-session-id", callLegId: "hangup-leg-id", supabase,
+  });
+  assert.equal(res.status, 200);
+  assert.deepEqual(rpcBodies, [claimReceiptBody({
+    callControlId: "hangup-control-id", callSessionId: "hangup-session-id",
+    callLegId: "hangup-leg-id", webhookEventId: "hangup-webhook-id", amdResult: null,
+  })]);
+  assert.equal(upstreamCalls.filter((call) => pathOf(call) === "/rest/v1/lm_wake_log").length, 0);
+  assert.equal(upstreamCalls.filter((call) => pathOf(call).endsWith("/actions/hangup")).length, 0);
+  assert.equal(upstreamCalls.filter((call) => pathOf(call) === "/v2/calls").length, 0);
+});
+
+test("call.hangup receipt failure returns 5xx and matched zero stays effect-free 200", async () => {
+  for (const [supabase, expectedStatus] of [
+    [() => response(503, { secret: "provider-body" }), 503],
+    [() => { throw new Error("provider-network-error"); }, 503],
+    [() => response(200, 0), 200],
+  ]) {
+    upstreamCalls.length = 0;
+    let rpcCalls = 0;
+    const guardedSupabase = (url, init) => {
+      rpcCalls += 1;
+      const parsed = new URL(url);
+      assert.equal(parsed.pathname, "/rest/v1/rpc/record_lm_wake_telnyx_receipt", "wrong receipt route");
+      return supabase(url, init);
+    };
+    const res = await postSignedAmdEvent({
+      eventType: "call.hangup", clientState: claimClientState, result: undefined,
+      eventId: "hangup-webhook-id", callControlId: "hangup-control-id",
+      callSessionId: "hangup-session-id", callLegId: "hangup-leg-id", supabase: guardedSupabase,
+    });
+    assert.equal(res.status >= 500 && res.status < 600, expectedStatus === 503);
+    assert.equal(res.status, expectedStatus);
+    assert.equal(rpcCalls, 1);
+    assert.equal(upstreamCalls.filter((call) => pathOf(call) === "/rest/v1/lm_wake_log").length, 0);
+    assert.equal(upstreamCalls.filter((call) => pathOf(call).endsWith("/actions/hangup")).length, 0);
+  }
+});
+
+test("exact call.hangup replay preserves receipt identity and creates no call effect", async () => {
+  upstreamCalls.length = 0;
+  const rpcBodies = [];
+  const supabase = (url, init) => {
+    const parsed = new URL(url);
+    assert.equal(parsed.pathname, "/rest/v1/rpc/record_lm_wake_telnyx_receipt");
+    rpcBodies.push(JSON.parse(init.body));
+    return response(200, 1);
+  };
+  const input = {
+    eventType: "call.hangup", clientState: claimClientState, result: undefined,
+    eventId: "hangup-replay-id", callControlId: "hangup-control-id",
+    callSessionId: "hangup-session-id", callLegId: "hangup-leg-id", supabase,
+  };
+  assert.equal((await postSignedAmdEvent(input)).status, 200);
+  assert.equal((await postSignedAmdEvent(input)).status, 200);
+  assert.deepEqual(rpcBodies, [
+    claimReceiptBody({ callControlId: "hangup-control-id", callSessionId: "hangup-session-id", callLegId: "hangup-leg-id", webhookEventId: "hangup-replay-id", amdResult: null }),
+    claimReceiptBody({ callControlId: "hangup-control-id", callSessionId: "hangup-session-id", callLegId: "hangup-leg-id", webhookEventId: "hangup-replay-id", amdResult: null }),
+  ]);
+  assert.equal(upstreamCalls.filter((call) => pathOf(call) === "/v2/calls").length, 0);
+});
+
+test("call.hangup missing event or call-control identity returns 5xx without receipt fetch", async () => {
+  for (const input of [
+    { eventId: null, callControlId: "hangup-control-id" },
+    { eventId: "hangup-webhook-id", callControlId: null },
+  ]) {
+    upstreamCalls.length = 0;
+    let fetches = 0;
+    const supabase = () => { fetches += 1; throw new Error("receipt must not fetch"); };
+    const res = await postSignedAmdEvent({
+      eventType: "call.hangup", clientState: claimClientState, result: undefined,
+      callSessionId: "hangup-session-id", callLegId: "hangup-leg-id", supabase, ...input,
+    });
+    assert.equal(res.status >= 500 && res.status < 600, true);
+    assert.equal(fetches, 0);
+    assert.equal(upstreamCalls.filter((call) => pathOf(call).includes("/rest/v1/")).length, 0);
+  }
+});
+
+test("non-terminal, test-call, legacy, and unreadable hangup states do not write a wake receipt", async () => {
+  const states = [
+    { eventType: "call.initiated", clientState: claimClientState },
+    { eventType: "call.answered", clientState: claimClientState },
+    { eventType: "call.hangup", clientState: testClientState },
+    { eventType: "call.hangup", clientState: wakeClientState },
+    { eventType: "call.hangup", clientState: Buffer.from(JSON.stringify({ other: "foreign" }), "utf8").toString("base64") },
+  ];
+  for (const state of states) {
+    upstreamCalls.length = 0;
+    let fetches = 0;
+    const supabase = () => { fetches += 1; throw new Error("unexpected wake receipt"); };
+    const res = await postSignedAmdEvent({
+      ...state, result: undefined, eventId: "ignored-webhook-id", callControlId: "ignored-control-id", supabase,
+    });
+    assert.equal(res.status, 200);
+    assert.equal(fetches, 0);
+    assert.equal(upstreamCalls.filter((call) => pathOf(call).includes("/rest/v1/")).length, 0);
+    assert.equal(upstreamCalls.filter((call) => pathOf(call).endsWith("/actions/hangup")).length, 0);
+  }
+});
 
 test("a signed claim-bound machine event writes one exact receipt before the existing hangup", async () => {
   upstreamCalls.length = 0;
