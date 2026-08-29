@@ -70,7 +70,8 @@
 - [ ] W7 W2修復後canaryのinstalled loopを2回目wakeし、article、payment row、notificationのduplicate effect=0を証明する。
 - [ ] W7a HubPages Earnings ProgramとKompasiana K-Rewardsについて、Dais所有accountのsignup/eligibility、対象国、
       payout identity、税務・本人確認、現行AI/originality規則を公式画面でreadbackする。HubPagesは広告/Amazon、Kompasianaは
-      GoPay rewardを直接収益lane候補とする。現在、Substackはaccount/session/公開実績あり、HubPagesとKompasianaは
+      GoPay rewardを直接収益lane候補とする。現在、Substackはaccount、session設定、公開実績あり。ただしfreshな公式
+      logged-in画面のreadbackは未取得なのでW3〜W5で再確認する。HubPagesとKompasianaは
       credential SSOT、login session、公式account receiptがなく未作成である。W7aで両accountを作成し、credential SSOT保存、
       新規session login、profile/eligibility/payout identity readbackまで完了する。未適格または受取不能ならdiscovery laneへ降格する。
 - [ ] W7b HubPages ENとKompasiana IDのplatform adapter、native readback、money receipt joinを追加する。各記事は別topic、
