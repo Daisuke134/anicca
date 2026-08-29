@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import inspect
 import json
 import io
 import tempfile
@@ -7,6 +8,7 @@ import unittest
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 
+import job_search_loop.workday_search_loop as workday_search_loop
 from job_search_loop.ledger import Ledger
 from job_search_loop.workday_search_loop import (
     cached_source_fetcher,
@@ -28,6 +30,27 @@ from job_search_loop.workday_qualification import qualify_one
 
 
 class WorkdayQualificationTests(unittest.TestCase):
+    def test_shortlist_prompt_prioritizes_japan_feasibility_scope_then_compensation(self):
+        prompt_source = inspect.getsource(workday_search_loop.main)
+
+        self.assertIn("Japan employment feasibility first", prompt_source)
+        self.assertIn("demonstrated current career scope second", prompt_source)
+        self.assertIn("compensation ambition third", prompt_source)
+        japan = prompt_source.index("Japan employment feasibility first")
+        scope = prompt_source.index("demonstrated current career scope second")
+        compensation = prompt_source.index("compensation ambition third")
+
+        self.assertLess(japan, scope)
+        self.assertLess(scope, compensation)
+        self.assertIn(
+            "Do not consume the bounded shortlist with Principal, Lead, or Senior",
+            prompt_source,
+        )
+        self.assertIn(
+            "foreign-location work while closer Japan-feasible roles exist",
+            prompt_source,
+        )
+
     def test_candidate_windows_interleave_companies_instead_of_source_volume(self):
         rows = [
             {"company": "Rakuten", "url": f"r-{index}"}
