@@ -827,14 +827,15 @@ Current atomic run order:
 - [x] merge Task 16AC as PR #3096 at `cd3a83647a8f6db01abef938c0fe555d9b9d7b06`; Railway deployment `f654d570-528a-4b46-9141-24124d09f90b` is SUCCESS and public `/health.build` matches, while the Railway-created GitHub Deployment for the same SHA reports failure and remains a separate exact-readback discrepancy;
 - [x] create post-16AC event `icqi2rhh24g1sf8q0hodja0i2s`, private, attendee zero, `渋谷駅`, confirmed, 00:05–00:15 JST; natural 60-second reminder and 30-minute travel loops are active;
 - [x] TDD the measured late-hour provider boundary: `0a671c27c` changes only the existing constants to 25-second Transit and 35-second per-tenant reminder budgets; RED 71/73, GREEN and primary 73/73, fresh Sol `SHIP` with zero findings;
-- [ ] require one `provider=transit` Telegram route message for `icqi2rhh24g1sf8q0hodja0i2s` with durable positive message ID;
-- [ ] require one outbound `[Travel]` block with provider event ID; the current previous-event Tokyo→Shinjuku route probe is null and needs separate boundary readback after the Telegram proof;
+- [x] require one `provider=transit` Telegram route message for `icqi2rhh24g1sf8q0hodja0i2s`: Railway logs exact `tg_message_id=981`, and Supabase `telegram-t5` stores the same positive ID/time;
+- [x] require one outbound `[Travel]` block with provider event ID: Google confirms outbound `na4a3iqdpq4vbb9npmdbt64o4c` and return `14sg8l0muaao62sutibvci3ap8`; durable `go`/`return` claims exist;
+- [x] replay the next 60-second reminder tick: event-hash send log remains one, ledger remains three rows with message ID 981, and both Travel event IDs/updated timestamps are unchanged;
 - [ ] no-location T-10 row has one call-control ID, one signed webhook ID, and one durable claim;
 - [ ] no-location T-5 row has one call-control ID, one signed webhook ID, and one durable claim;
 - [ ] physical event has one outbound `[Travel]` Calendar block with provider event ID;
 - [ ] physical T-10 row has one call-control ID, one signed webhook ID, and one durable claim;
 - [ ] physical T-5 row has one call-control ID, one signed webhook ID, and one durable claim;
-- [ ] physical departure reminder has one Telegram message ID plus `lm_travel_log.telegram-t5` receipt;
+- [x] physical departure reminder has Telegram message ID `981` plus matching `lm_travel_log.telegram-t5` receipt and `provider=transit` Railway log;
 - [ ] Telnyx provider delivery/call readback hashes match the Supabase receipt hashes;
 - [ ] natural replay adds Calendar block 0, call 0, Telegram message 0;
 - [ ] controlled events are deleted with `send-updates=none` and read back `cancelled`.
