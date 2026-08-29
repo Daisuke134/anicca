@@ -723,6 +723,7 @@ Focused reuse suiteはruntime/browser jobs、ask/reply、reconciliation、panel�
 | Task 7 measured gap | `general-agent-work` contract/registry testsは22/22 passするが、production `runBoundedSpecialist` service、durable opportunity/goal body、Dashboard live sourceが存在しない。Current workerはserviceなしでadapterを呼ぶため実jobを完了できない | Task 7Aでatomic opportunity/job store＋source、7Bでreal API/WebMCP/worker specialistを接続する。Fixtureをgenerality proofにしない |
 | Task 7A | Provider-neutral opportunity identity/table、atomic runtime job RPC、tenant-scoped live sourceを実装。Optional walletと`record_type=application_receipt`修正後、Luna/parent 7/7、commits `610a39d7a` + `ee63a7569` | DB applyは未実施。Task 7BでPanel/WebMCP create/readとproduction specialistを接続する |
 | Task 7B1 | Authenticated opportunity create、tenant workroom GET、`add_opportunity`、`inspect_workroom`、server live sourceを実装。Luna/parent 70/70、commit `75db2fa17` | Task 7B2でproduction specialistをwire。`inspect_receipt`はLancers real receipt source後だけ登録する |
+| Task 7B2 | `general-agent.work`をexisting agent-runnerへwireし、stored public goalをbounded research/qualification/planningへ渡す。Read-only runのfalse deliveryを除去後、Luna/parent 36/36、commits `bf4733775` + `8eb7506d6` | Migration/deploy後にlive planned receiptを取得。Delivery/applicationは専用effect laneのofficial readbackだけが設定する |
 
 ### 10.5 One product, one mode
 
@@ -1130,7 +1131,7 @@ One active item at a time。各itemは実物readbackを閉じてから次へ進�
 | U14 | Guest judgeとprivate production stateが混ざる | open | tenant-bound fixture-free guest identity、zero private credentials/PII、same build/domain functions、effect authority denied | private owner receiptはredacted read-only projectionだけ許可 |
 | U15 | Mercorが期限内proofになるか | bounded | public inventoryとapplication-step state、human interview taskまでを実測 | 2–4週のselection/cashをDoneに含めない。AI interview代答禁止 |
 | U16 | X discovery sessionが使えるか | blocked | existing daily-driverのlogged-in X tab readback、read-only search receipt | duplicate browserを起動せずWeb/GitHub/mail discoveryで継続 |
-| U17 | Unknown marketplaceでeffect adapterがない | contract code-verified / production specialist open | Provider-neutral adapter 22/22 pass。ただしdurable goal bodyとproduction specialist serviceが未接続。Task 7でarbitrary URL→stored goal→model plan→missing mechanical adapter E2Eを閉じる | adapter/auth/readbackがなければeffectだけfail closed、research/workは継続 |
+| U17 | Unknown marketplaceでeffect adapterがない | production path code-verified / live-open | Durable goal、API/WebMCP、live source、agent-runner specialistを実装。Read-only specialistは`planned→QUALIFIED`だけ。次にarbitrary URL live E2E | adapter/auth/readbackがなければeffectだけfail closed、research/planningは継続 |
 | U18 | Multiple agentsでcontext/effectが交差する | open | two workrooms、different effect keys、isolated refs、bounded concurrency、sibling checkpoint preservation | shared mutable customer stateを検出したらparallel effectを止める |
 | U19 | Revenueを盛って表示する | code-verified / UI live-open | earnings/TaskMarket/x402 31/31 tests、UIがapplications/pending/paidを分離、official receipt link | cash receiptなしならverified money 0を表示 |
 | U20 | Real external receiptが締切までに得られない | open | Lancers official application IDを最低証拠とし、acceptance/delivery/cashは得られたterminalだけ表示 | candidate不在ならsafe blocked receiptを見せ、fake effectを作らない |

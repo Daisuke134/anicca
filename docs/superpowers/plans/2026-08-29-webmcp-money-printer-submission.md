@@ -383,7 +383,7 @@ same-intent replay external effects=0
 - Produces: `planned|completed|blocked` specialist receipt and reference-only next jobs, without provider routing.
 
 - [x] **Task 7A:** Add one tenant-scoped opportunity table and atomic create RPC that persists the public URL/goal and inserts exactly one existing `general-agent.work` runtime job. Same URL/input replays; conflicting identity fails. Add a real `moneyPrinterSource(scope)` that reads opportunities, runtime jobs, human tasks, receipts, and verified earnings into the existing projection input. Focused suite 7/7 after optional-wallet/application-receipt fix; commits `610a39d7a` + `ee63a7569`. DB apply remains Task 8.
-- [ ] **Task 7B:** `add_opportunity`と`inspect_workroom`、server live sourceはcommit `75db2fa17`でcode-complete、focused 70/70。次にproduction specialistをwireする。`inspect_receipt`はLancers real receipt source後だけ登録し、registryを`runtime_noop`または`bounded specialist unavailable`へ落とさない。
+- [x] **Task 7B:** `add_opportunity`、`inspect_workroom`、server live source、production agent-runner specialistをcode-complete。Focused 70/70 + 36/36、commits `75db2fa17`、`bf4733775`、`8eb7506d6`。Read-only specialistはplanned/QUALIFIEDだけでfalse deliveryを禁止。`inspect_receipt`はLancers real receipt source後だけ登録する。
 
 - [ ] Add a focused generality test:
 
