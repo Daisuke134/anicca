@@ -229,6 +229,52 @@ test("general money worker wires its injected bounded specialist through the reg
   });
 });
 
+test("money scout worker requires its cloud/runtime boundary and routes only runScout through the registry", async () => {
+  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "lm-runtime-money-scout-"));
+  assert.throws(() => createWorkerHandlers({ LM_DATA_DIR: dataDir }, ["money-printer.scout"], {
+    createRegistry() { return { hasCapability: () => false }; },
+  }), /GEMINI_API_KEY is required/);
+  let options;
+  let services;
+  const scout = async (expected) => ({
+    kind: "money_printer_scout", status: "completed", tenant_id: expected.tenant_id,
+    job_id: expected.job_id, cycle_ref: expected.cycle_ref,
+    discovered_count: 0, created_count: 0, deduped_count: 0, opportunity_refs: [],
+  });
+  const handlers = createWorkerHandlers({
+    GEMINI_API_KEY: "gemini-secret-key", LM_DATA_DIR: dataDir,
+    LM_REPO_ROOT: "/app", LM_MONEY_SCOUT_TENANT_ID: MONEY_TENANT,
+  }, ["money-printer.scout"], {
+    query: async () => ({ rows: [] }),
+    createMoneyPrinterScout(input) { options = input; return scout; },
+    createRegistry({ servicesByAdapter }) {
+      services = servicesByAdapter["money-printer-scout"];
+      return {
+        hasCapability: (capability) => capability === "money-printer.scout",
+        getByCapability: () => ({
+          execute: async (job) => ({ receipt: await services.runScout({
+            tenant_id: job.tenant_id, job_id: job.job_id, cycle_ref: job.input_refs.cycle_ref,
+          }) }),
+        }),
+      };
+    },
+  });
+  const job = {
+    tenant_id: MONEY_TENANT, job_id: `money-printer-scout:${"a".repeat(64)}`,
+    loop_id: "life-manager.manager", capability: "money-printer.scout",
+    effect_class: "none", effect_key: null, max_attempts: 2,
+    input_refs: { cycle_ref: `money-printer-scout://${MONEY_TENANT}/0` },
+  };
+  assert.equal(options.apiKey, "gemini-secret-key");
+  assert.equal(options.tenantId, MONEY_TENANT);
+  assert.equal(typeof options.readOpportunityBySource, "function");
+  assert.equal(typeof options.createOpportunity, "function");
+  assert.equal(services.runScout, scout);
+  assert.deepEqual(await handlers["money-printer.scout"](job), { receipt: await scout({
+    tenant_id: MONEY_TENANT, job_id: job.job_id, cycle_ref: job.input_refs.cycle_ref,
+  }) });
+});
+
 test("production general money worker fails before query, factory, registry, or effects without Gemini", () => {
   const calls = [];
   assert.throws(() => createWorkerHandlers({
