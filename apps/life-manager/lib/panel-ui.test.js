@@ -242,6 +242,21 @@ function emittedScoreRenderer() {
   return sandbox.__renderScores;
 }
 
+function emittedMoneyPrinterRenderer() {
+  const script = renderPanelPage().match(/<script>\s*([\s\S]*?)\s*<\/script>/)[1];
+  const start = script.indexOf("const moneyLaneLabels");
+  const end = script.indexOf("const renderers = Object.freeze");
+  const sandbox = { Object, Array, Number, String, BigInt, Set, Math, URL };
+  sandbox.escapeHtml = (value) => String(value == null ? "" : value).replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[character]));
+  sandbox.displayRecord = (value) => Boolean(value && typeof value === "object" && !Array.isArray(value));
+  sandbox.displayExactKeys = (value, expected) => sandbox.displayRecord(value)
+    && Object.keys(value).sort().join(",") === expected.slice().sort().join(",");
+  sandbox.displayContainsSensitiveValue = () => false;
+  sandbox.displaySafeText = (value, allowEmpty) => typeof value === "string" && (allowEmpty || value.trim().length > 0);
+  vm.runInNewContext(`${script.slice(start, end)}\nglobalThis.__renderMoneyPrinter = renderMoneyPrinter;\nglobalThis.__validateMoneyPrinterData = validateMoneyPrinterData;`, sandbox);
+  return { render: sandbox.__renderMoneyPrinter, validate: sandbox.__validateMoneyPrinterData };
+}
+
 test("PANEL-8h: panel shell identifies the product only as Life Manager", () => {
   const html = renderPanelPage();
   assert.equal(html.match(/<title>([^<]+)<\/title>/)?.[1], "Life Manager");
@@ -263,6 +278,45 @@ test("LM-33c: panel renders the five mirror sections in spec order", () => {
     assert.ok(position > previous, `${section} must exist after the previous section`);
     previous = position;
   }
+});
+
+test("Money Printer panel renders one six-lane control room", () => {
+  const html = renderPanelPage();
+  assert.match(html, /data-panel-section="money-printer"/);
+  assert.match(html, /\/api\/panel\/money-printer/);
+  for (const label of ["Paid & verified", "Agents working", "Needs You", "Opportunity value", "Found", "Working", "Waiting", "Done", "Paid"]) {
+    assert.match(html, new RegExp(label));
+  }
+});
+
+test("Money Printer renderer validates currency maps and sorts their display", () => {
+  const { render, validate } = emittedMoneyPrinterRenderer();
+  const card = { opportunity_ref: "opportunity://tenant-a/op-1", title: "Opportunity", status: "DISCOVERED", value_minor: "50000", currency: "JPY", source_url: null };
+  const data = {
+    observed_at: "2026-08-29T00:00:00.000Z",
+    metrics: { agents_working: 1, needs_you: 0, opportunity_value: { USD: "1000", JPY: "50000" }, paid_verified: { USD: "1000", JPY: "50000" } },
+    columns: { found: [card], working: [], needs_you: [], waiting: [], done: [], paid: [] },
+    activity: [],
+  };
+  assert.doesNotThrow(() => validate(data));
+  assert.match(render(data), /JPY 50000 \+ USD 1000/);
+  assert.match(render({ ...data, metrics: { ...data.metrics, opportunity_value: {}, paid_verified: {} } }), /<strong>0<\/strong>/);
+  assert.throws(() => render({ ...data, metrics: { ...data.metrics, opportunity_value: { JPY: 50000 } } }), /invalid money printer payload/);
+});
+
+test("Money Printer panel embeds focused WebMCP tools with only page CSRF for the write header", () => {
+  const html = renderPanelPage({ csrf: "csrf-value" });
+  const scripts = [...html.matchAll(/<script>\s*([\s\S]*?)\s*<\/script>/g)].map((match) => match[1]);
+  const webmcp = scripts.find((script) => script.includes("inspect_money_printer"));
+  assert.ok(webmcp);
+  assert.match(webmcp, /document\.modelContext\.registerTool\(/);
+  assert.match(webmcp, /\/api\/panel\/money-printer/);
+  assert.match(webmcp, /add_opportunity/);
+  assert.match(webmcp, /inspect_workroom/);
+  assert.match(webmcp, /csrf-value/);
+  assert.match(webmcp, /x-lm-csrf/);
+  assert.match(webmcp, /idempotency-key/);
+  assert.doesNotMatch(webmcp, /authorization|bearer/i);
 });
 
 test("PANEL-0: panel includes a real control center and keeps read APIs same-origin", () => {
@@ -305,7 +359,57 @@ test("PANEL-8h: emitted loader applies closed validators and shared secret patte
   assert.match(html, /displaySecretPatterns/);
   assert.match(html, /displayContainsSensitiveValue\(data\)/);
   assert.match(html, /if \(!response\.ok\) throw new Error\(name \+ " unavailable"\)/);
+  assert.match(html, /money-printer:refresh/);
+  assert.match(html, /loadPanelSection\("money-printer"\)/);
   assert.doesNotMatch(html, /response\.statusText|response\.text\(\)|JSON\.stringify\(data\)/);
+});
+
+test("PANEL-8h: money-printer refresh rejects failed reloads and recovers on the next refresh", async () => {
+  const html = renderPanelPage();
+  const script = html.match(/<script>\s*([\s\S]*?)\s*<\/script>/)[1];
+  const start = script.indexOf("let moneyPrinterRefresh = Promise.resolve();");
+  const end = script.indexOf("\n    function commandForAction", start);
+  assert.ok(start >= 0 && end > start);
+
+  let listener = null;
+  let phase = "success";
+  let loads = 0;
+  const errors = [];
+  vm.runInNewContext(script.slice(start, end), {
+    Promise,
+    console: { error() {} },
+    document: {
+      addEventListener(name, callback) {
+        assert.equal(name, "money-printer:refresh");
+        listener = callback;
+      },
+    },
+    loadPanelSection: async (name) => {
+      assert.equal(name, "money-printer");
+      loads += 1;
+      if (phase === "fail") throw new Error("reload failed");
+    },
+    markError: (name) => errors.push(name),
+  });
+  assert.equal(typeof listener, "function");
+
+  const first = { detail: {} };
+  listener(first);
+  await first.detail.promise;
+  assert.equal(loads, 1);
+
+  phase = "fail";
+  const failed = { detail: {} };
+  listener(failed);
+  await assert.rejects(failed.detail.promise, /reload failed/);
+  assert.equal(loads, 2);
+  assert.deepEqual(errors, ["money-printer"]);
+
+  phase = "success";
+  const recovered = { detail: {} };
+  listener(recovered);
+  await recovered.detail.promise;
+  assert.equal(loads, 3);
 });
 
 test("PANEL-0: visible actions have semantic delegated handlers", () => {

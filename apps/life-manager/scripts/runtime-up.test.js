@@ -39,6 +39,10 @@ const {
 
 const ROOT = path.join(__dirname, "../../..");
 const COMPOSE_PATH = path.join(ROOT, "deploy/local/compose.yaml");
+const MONEY_TENANT = "tenant-a";
+const MONEY_OPPORTUNITY_ID = "a".repeat(64);
+const MONEY_GOAL_REF = `intent-entry://${MONEY_TENANT}/${MONEY_OPPORTUNITY_ID}`;
+const MONEY_JOB_ID = `goal:${MONEY_OPPORTUNITY_ID}`;
 const LEASE_MIGRATION = path.join(
   __dirname,
   "../migrations/20260729_runtime_scheduler_lease.sql",
@@ -160,6 +164,110 @@ test("coverage worker capability receives the assembled Connector refresh servic
   assert.equal(typeof handlers["connector.coverage.refresh"], "function");
 });
 
+test("general money worker wires its injected bounded specialist through the registry", async () => {
+  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "lm-runtime-money-specialist-"));
+  const specialist = async (expected) => ({
+    kind: "general_agent_work",
+    status: "completed",
+    tenant_id: expected.tenant_id,
+    job_id: expected.job_id,
+    goal_ref: expected.goal_ref,
+    execution_id: "execution-runtime-1",
+    next_job_refs: [],
+  });
+  let services;
+  const handlers = createWorkerHandlers({
+    SUPABASE_URL: "https://supa.example",
+    SUPABASE_SERVICE_ROLE_KEY: "service-secret",
+    LM_DATA_DIR: dataDir,
+  }, ["general-agent.work"], {
+    moneyPrinterSpecialist: specialist,
+    createRegistry({ servicesByAdapter }) {
+      services = servicesByAdapter["general-agent-work"];
+      return {
+        hasCapability: (capability) => capability === "general-agent.work",
+        getByCapability: () => ({
+          execute: async (job) => ({
+            receipt: await services.runBoundedSpecialist({
+              tenant_id: job.tenant_id,
+              job_id: job.job_id,
+              goal_ref: job.input_refs.goal_ref,
+            }),
+          }),
+        }),
+      };
+    },
+  });
+  const job = {
+    tenant_id: MONEY_TENANT,
+    job_id: MONEY_JOB_ID,
+    loop_id: "life-manager.manager",
+    capability: "general-agent.work",
+    effect_class: "none",
+    effect_key: null,
+    input_refs: { goal_ref: MONEY_GOAL_REF },
+    max_attempts: 1,
+  };
+
+  assert.equal(services.runBoundedSpecialist, specialist);
+  assert.deepEqual(await handlers["general-agent.work"](job), {
+    receipt: await specialist({
+      tenant_id: MONEY_TENANT,
+      job_id: MONEY_JOB_ID,
+      goal_ref: MONEY_GOAL_REF,
+    }),
+  });
+});
+
+test("general money worker passes the cloud Gemini key to its production specialist", async () => {
+  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "lm-runtime-money-cloud-"));
+  const geminiKey = "gemini-secret-key";
+  let options;
+  const specialist = async () => ({
+    kind: "general_agent_work",
+    status: "completed",
+    tenant_id: MONEY_TENANT,
+    job_id: MONEY_JOB_ID,
+    goal_ref: MONEY_GOAL_REF,
+    execution_id: "execution-runtime-cloud-1",
+    next_job_refs: [],
+  });
+  const handlers = createWorkerHandlers({
+    SUPABASE_URL: "https://supa.example",
+    SUPABASE_SERVICE_ROLE_KEY: "service-secret",
+    LM_DATA_DIR: dataDir,
+    GEMINI_API_KEY: geminiKey,
+  }, ["general-agent.work"], {
+    createMoneyPrinterSpecialist(input) {
+      options = input;
+      return specialist;
+    },
+    createRegistry({ servicesByAdapter }) {
+      const services = servicesByAdapter["general-agent-work"];
+      return {
+        hasCapability: (capability) => capability === "general-agent.work",
+        getByCapability: () => ({
+          execute: async (job) => ({
+            receipt: await services.runBoundedSpecialist({
+              tenant_id: job.tenant_id,
+              job_id: job.job_id,
+              goal_ref: job.input_refs.goal_ref,
+            }),
+          }),
+        }),
+      };
+    },
+  });
+
+  assert.equal(options.geminiKey, geminiKey);
+  assert.doesNotMatch(JSON.stringify(await handlers["general-agent.work"]({
+    tenant_id: MONEY_TENANT,
+    job_id: MONEY_JOB_ID,
+    capability: "general-agent.work",
+    input_refs: { goal_ref: MONEY_GOAL_REF },
+  })), new RegExp(geminiKey));
+});
+
 test("coverage worker assembles production services from its query and connect boundaries", () => {
   const query = async () => {};
   const connect = async () => {};
@@ -254,7 +362,7 @@ test("committed local compose is self-contained and never references a legacy ru
   );
   assert.match(
     compose,
-    /LM_WORKER_CAPABILITIES: \$\{LM_WORKER_CAPABILITIES:-runtime\.noop,marketing\.liveness\.telegram\}/,
+    /LM_WORKER_CAPABILITIES: \$\{LM_WORKER_CAPABILITIES:-runtime\.noop,marketing\.liveness\.telegram,general-agent\.work\}/,
   );
   assert.match(compose, /command: \["node", "scripts\/runtime-up\.js", "internal-liveness"\]/);
   assert.match(compose, /LM_MARKETING_LIVENESS_LANES_JSON: \$\{LM_MARKETING_LIVENESS_LANES_JSON:-\[\]\}/);

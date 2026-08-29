@@ -15,8 +15,9 @@ let handlePanelOAuthCallback = async (_req, res) => {
   res.writeHead(501, { "content-type": "application/json" });
   res.end(JSON.stringify({ error: "panel callback not implemented" }));
 };
+let createSupabaseCommandStore = null;
 try {
-  ({ handlePanelApiRequest, handlePanelOAuthCallback } = require("./panel-api.js"));
+  ({ handlePanelApiRequest, handlePanelOAuthCallback, createSupabaseCommandStore } = require("./panel-api.js"));
 } catch (error) {
   if (error.code !== "MODULE_NOT_FOUND") throw error;
 }
@@ -144,7 +145,7 @@ function makeFixture() {
   return { calls, calendarUids, fetchImpl, calendar, byUid };
 }
 
-async function withApiServer(fixture, run) {
+async function withApiServer(fixture, run, overrides = {}) {
   const server = http.createServer((req, res) => {
     Promise.resolve(handlePanelApiRequest(req, res, {
       supaUrl: "https://db.example",
@@ -153,6 +154,7 @@ async function withApiServer(fixture, run) {
       calendar: fixture.calendar,
       nowMs: NOW,
       timeZone: "UTC",
+      ...overrides,
     })).catch((error) => {
       res.writeHead(500, { "content-type": "application/json" });
       res.end(JSON.stringify({ error: error.message }));
@@ -166,6 +168,31 @@ async function withApiServer(fixture, run) {
   }
 }
 
+test("Money Printer GET is tenant-bound and rejects mutation methods", async () => {
+  const fixture = makeFixture();
+  const seen = [];
+  await withApiServer(fixture, async (base) => {
+    const get = await getJson(base, "money-printer?uid=u2");
+    assert.equal(get.response.status, 200);
+    assert.deepEqual(get.body.metrics.opportunity_value, { JPY: "50000" });
+    assert.deepEqual(get.body.metrics.paid_verified, {});
+    assert.equal(get.body.columns.found[0].title, "Public opportunity");
+    const post = await getJson(base, "money-printer", { method: "POST" });
+    assert.equal(post.response.status, 405);
+  }, {
+    moneyPrinterSource: async (scope) => {
+      seen.push(scope.uid);
+      return {
+        tenantId: scope.uid,
+        observedAt: "2026-08-29T00:00:00.000Z",
+        opportunities: [{ tenant_id: scope.uid, id: "op-1", title: "Public opportunity", status: "DISCOVERED", amount_minor: "50000", currency: "JPY", url: "https://example.test/op-1" }],
+        runtimeJobs: [], generalReceipts: [], applicationReceipts: [], humanTasks: [], earnings: [],
+      };
+    },
+  });
+  assert.deepEqual(seen, ["u1"]);
+});
+
 async function getJson(base, endpoint, init = {}) {
   const response = await fetch(`${base}/api/panel/${endpoint}${init.query || ""}`, {
     method: init.method || "GET",
@@ -173,6 +200,379 @@ async function getJson(base, endpoint, init = {}) {
   });
   return { response, body: await response.json() };
 }
+
+async function humanTaskRequest(base, endpoint, { method = "POST", body, headers = {} } = {}) {
+  const response = await fetch(`${base}/api/panel/${endpoint}`, {
+    method,
+    headers: {
+      Cookie: `lm_panel_session=${SESSION}`,
+      origin: "https://panel.example",
+      "content-type": "application/json",
+      "x-lm-csrf": "csrf-a",
+      "idempotency-key": "human-task-01",
+      ...headers,
+    },
+    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+  });
+  return { response, body: await response.json() };
+}
+
+async function opportunityRequest(base, endpoint, { method = "POST", body, headers = {} } = {}) {
+  const response = await fetch(`${base}/api/panel/${endpoint}`, {
+    method,
+    headers: {
+      Cookie: `lm_panel_session=${SESSION}`,
+      origin: "https://panel.example",
+      "content-type": "application/json",
+      "x-lm-csrf": "csrf-a",
+      "idempotency-key": "opportunity-01",
+      ...headers,
+    },
+    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+  });
+  return { response, body: await response.json() };
+}
+
+function panelMutationHash(action, body) {
+  return crypto.createHash("sha256").update(JSON.stringify({ action, body })).digest("hex");
+}
+
+function receiptCommandStore() {
+  const receipts = new Map();
+  return {
+    receipts,
+    async readReceipt(_scope, key) { return receipts.get(String(key)) || null; },
+    async claimReceipt(_scope, key, value) {
+      const normalized = String(key);
+      if (receipts.has(normalized)) return false;
+      receipts.set(normalized, { requestHash: value.requestHash, status: value.status, result: null });
+      return true;
+    },
+    async finishReceipt(_scope, key, value) {
+      const receipt = receipts.get(String(key));
+      if (!receipt) throw new Error("receipt_missing");
+      receipt.status = value.status;
+      receipt.result = value.result || null;
+    },
+  };
+}
+
+test("Task 7B1 opportunity API creates one tenant-scoped workroom and returns only its public handle", async () => {
+  const fixture = makeFixture();
+  const calls = [];
+  const commandStore = receiptCommandStore();
+  const opportunityStore = {
+    async create(opportunity) {
+      calls.push(opportunity);
+      return { ...opportunity, created_at: "2026-08-29T00:00:01.000Z" };
+    },
+  };
+  const input = {
+    source_url: "https://public.example/opportunity#tracking",
+    title: "Public opportunity",
+    goal_statement: "Complete the public opportunity and leave a verified receipt.",
+    value_minor: "50000",
+    currency: "JPY",
+  };
+
+  await withApiServer(fixture, async (base) => {
+    const result = await opportunityRequest(base, "money-printer/opportunity", { body: input });
+    assert.equal(result.response.status, 200);
+    assert.deepEqual(Object.keys(result.body).sort(), ["job_ref", "opportunity_id", "status"]);
+    assert.match(result.body.opportunity_id, /^[0-9a-f]{64}$/);
+    assert.equal(result.body.job_ref, `runtime-job://tenant-a/goal%3A${result.body.opportunity_id}`);
+    assert.equal(result.body.status, "DISCOVERED");
+    const replay = await opportunityRequest(base, "money-printer/opportunity", { body: input });
+    assert.equal(replay.response.status, 200);
+    assert.deepEqual(replay.body, result.body);
+    const conflict = await opportunityRequest(base, "money-printer/opportunity", { body: { ...input, title: "Different" } });
+    assert.equal(conflict.response.status, 409);
+    assert.deepEqual(conflict.body, { error: "idempotency_conflict" });
+    for (const [status, error] of [["pending", "idempotency_in_progress"], ["failed", "idempotency_failed"]]) {
+      const key = `opportunity-${status}`;
+      commandStore.receipts.set(key, { requestHash: panelMutationHash("money-printer.opportunity.create", input), status, result: null });
+      const blocked = await opportunityRequest(base, "money-printer/opportunity", { body: input, headers: { "idempotency-key": key } });
+      assert.equal(blocked.response.status, 409);
+      assert.deepEqual(blocked.body, { error });
+    }
+  }, {
+    panelOrigin: "https://panel.example",
+    sessionScopeImpl: async () => ({ uid: "tenant-a", chatId: "101", csrf: "csrf-a" }),
+    commandStore,
+    opportunityStore,
+  });
+
+  assert.equal(calls.length, 1);
+  assert.deepEqual(calls[0], {
+    uid: "tenant-a",
+    opportunity_id: calls[0].opportunity_id,
+    source_url: "https://public.example/opportunity",
+    title: input.title,
+    goal_statement: input.goal_statement,
+    value_minor: input.value_minor,
+    currency: input.currency,
+    status: "DISCOVERED",
+    goal_ref: `intent-entry://tenant-a/${calls[0].opportunity_id}`,
+    job_id: `goal:${calls[0].opportunity_id}`,
+    observed_at: "2026-07-21T12:00:00.000Z",
+  });
+});
+
+test("Task 7B1 opportunity API rejects invalid write fences and body shape before the store", async () => {
+  const fixture = makeFixture();
+  let writes = 0;
+  const opportunityStore = { async create() { writes += 1; throw new Error("must not create"); } };
+  const input = {
+    source_url: "https://public.example/opportunity",
+    title: "Public opportunity",
+    goal_statement: "Complete it.",
+    value_minor: "50000",
+    currency: "JPY",
+  };
+  await withApiServer(fixture, async (base) => {
+    for (const headers of [
+      { origin: "https://evil.example" },
+      { "x-lm-csrf": "wrong-csrf" },
+      { "content-type": "text/plain" },
+      { "idempotency-key": "" },
+    ]) {
+      const result = await opportunityRequest(base, "money-printer/opportunity", { body: input, headers });
+      assert.notEqual(result.response.status, 200);
+    }
+    const malformed = await opportunityRequest(base, "money-printer/opportunity", { body: { ...input, private_ref: "must-not-pass" } });
+    assert.equal(malformed.response.status, 400);
+  }, {
+    panelOrigin: "https://panel.example",
+    sessionScopeImpl: async () => ({ uid: "tenant-a", chatId: "101", csrf: "csrf-a" }),
+    opportunityStore,
+  });
+  assert.equal(writes, 0);
+});
+
+test("Task 7B1 workroom API returns the exact tenant opportunity, matching job, and activity only", async () => {
+  const fixture = makeFixture();
+  const opportunityId = "a".repeat(64);
+  const otherId = "b".repeat(64);
+  const sourceCalls = [];
+  const moneyPrinterSource = async (scope) => {
+    sourceCalls.push(scope);
+    return {
+      tenantId: scope.uid,
+      observedAt: "2026-08-29T00:00:00.000Z",
+      opportunities: [
+        {
+          tenant_id: scope.uid, opportunity_id: opportunityId,
+          source_url: "https://public.example/opportunity", title: "Selected opportunity",
+          value_minor: "50000", currency: "JPY", status: "WORKING",
+          goal_ref: "private-goal-ref", observed_at: "2026-08-29T00:00:00.000Z",
+          goal_statement: "must not leak",
+        },
+        {
+          tenant_id: scope.uid, opportunity_id: otherId,
+          source_url: "https://public.example/other", title: "Other opportunity",
+          value_minor: "90000", currency: "JPY", status: "DISCOVERED",
+          goal_ref: "private-other-goal-ref", observed_at: "2026-08-29T00:00:00.000Z",
+        },
+      ],
+      runtimeJobs: [
+        { tenant_id: scope.uid, job_id: `goal:${opportunityId}`, status: "running", created_at: "2026-08-29T00:00:00.000Z", updated_at: "2026-08-29T00:01:00.000Z", input_refs: { goal_ref: "private-input-ref" } },
+        { tenant_id: scope.uid, job_id: `goal:${otherId}`, status: "queued", created_at: "2026-08-29T00:00:00.000Z", updated_at: "2026-08-29T00:01:00.000Z" },
+      ],
+      generalReceipts: [], applicationReceipts: [], humanTasks: [], earnings: [],
+    };
+  };
+
+  await withApiServer(fixture, async (base) => {
+    const result = await opportunityRequest(base, `money-printer/workroom?opportunity_id=${opportunityId}`, { method: "GET" });
+    assert.equal(result.response.status, 200);
+    assert.deepEqual(result.body, {
+      opportunity_id: opportunityId,
+      title: "Selected opportunity",
+      value_minor: "50000",
+      currency: "JPY",
+      source_url: "https://public.example/opportunity",
+      status: "WORKING",
+      job_ref: `runtime-job://tenant-a/goal%3A${opportunityId}`,
+      activity: [
+        { kind: "opportunity", ref: `opportunity://tenant-a/${opportunityId}`, status: "WORKING", observed_at: "2026-08-29T00:00:00.000Z" },
+        { kind: "work", ref: `runtime-job://tenant-a/goal%3A${opportunityId}`, status: "running", observed_at: "2026-08-29T00:01:00.000Z" },
+      ],
+    });
+    assert.doesNotMatch(JSON.stringify(result.body), /goal_statement|private|input_refs|other/);
+
+    const unknown = await opportunityRequest(base, `money-printer/workroom?opportunity_id=${"c".repeat(64)}`, { method: "GET" });
+    assert.equal(unknown.response.status, 404);
+    assert.deepEqual(unknown.body, { error: "not_found" });
+  }, {
+    panelOrigin: "https://panel.example",
+    sessionScopeImpl: async () => ({ uid: "tenant-a", chatId: "101", csrf: "csrf-a" }),
+    moneyPrinterSource,
+  });
+  assert.deepEqual(sourceCalls.map((scope) => scope.uid), ["tenant-a", "tenant-a"]);
+});
+
+test("Task 7B1 server source wiring is lazy and has no fake Money Printer fallback", () => {
+  const server = fs.readFileSync(path.join(__dirname, "../server.js"), "utf8");
+  assert.match(server, /createMoneyPrinterSource/);
+  assert.match(server, /createMoneyPrinterRuntimeStore/);
+  assert.match(server, /LM_RUNTIME_DATABASE_URL\s*\|\|\s*process\.env\.LM_FEEDBACK_DATABASE_URL/);
+  assert.match(server, /runtimeStore,\s*opportunityStore:\s*runtimeStore,\s*humanTaskStore:\s*runtimeStore/s);
+  assert.match(server, /moneyPrinterSource\s*:/);
+  assert.match(server, /supaUrl:\s*SUPA_URL/);
+  assert.match(server, /supaKey:\s*SUPA_KEY/);
+  assert.doesNotMatch(server, /moneyPrinterSource:\s*(?:async\s*)?\(?.*=>\s*\(\{\s*tenantId/);
+});
+
+test("Task 8A server only resolves runtime storage for Money Printer paths", () => {
+  const { panelApiOptions } = require("../server.js");
+  const base = { supaUrl: "https://db.example", supaKey: "service-key" };
+  let calls = 0;
+  const getRuntimeStore = () => { calls += 1; return { name: "runtime" }; };
+
+  assert.equal(panelApiOptions("/api/panel/timeline", base, getRuntimeStore), base);
+  assert.equal(calls, 0);
+  const money = panelApiOptions("/api/panel/money-printer/workroom", base, getRuntimeStore);
+  assert.equal(calls, 1);
+  assert.equal(money.runtimeStore.name, "runtime");
+  assert.equal(money.opportunityStore, money.runtimeStore);
+  assert.equal(money.humanTaskStore, money.runtimeStore);
+  assert.equal(typeof money.moneyPrinterSource, "function");
+});
+
+test("Task 8A Panel routes opportunity and human domain actions through runtimeStore", async () => {
+  const fixture = makeFixture();
+  const task = {
+    uid: "tenant-a", task_id: "a".repeat(64), version: 1, question: "Approve?", required_format: "approval",
+    reason_code: "model_boundary", resume_ref: "runtime-job://tenant-a/job-1", status: "open",
+  };
+  const calls = [];
+  const runtimeStore = {
+    async createOpportunity(canonical) { calls.push(["opportunity", canonical.uid]); return { ...canonical, created_at: "2026-08-29T00:00:00.000Z" }; },
+    async readNext(scope) { calls.push(["next", scope.uid]); return task; },
+    async answerOnce(answer) { calls.push(["answer", answer.uid]); return { ...task, status: "answered", answer_ref: answer.answerRef }; },
+  };
+  await withApiServer(fixture, async (base) => {
+    const created = await opportunityRequest(base, "money-printer/opportunity", { body: {
+      source_url: "https://public.example/opportunity", title: "Public opportunity", goal_statement: "Complete it.", value_minor: "50000", currency: "JPY",
+    } });
+    assert.equal(created.response.status, 200);
+    assert.equal((await humanTaskRequest(base, "money-printer/human-task/next", { method: "GET" })).response.status, 200);
+    assert.equal((await humanTaskRequest(base, "money-printer/human-task/answer", { body: {
+      task_id: task.task_id, version: 1, answer_ref: "vault-answer://tenant-a/answer-1",
+    }, headers: { "idempotency-key": "runtime-answer-01" } })).response.status, 200);
+  }, {
+    panelOrigin: "https://panel.example", runtimeStore, commandStore: receiptCommandStore(),
+    sessionScopeImpl: async () => ({ uid: "tenant-a", chatId: "101", csrf: "csrf-a" }),
+  });
+  assert.deepEqual(calls.map(([kind]) => kind), ["opportunity", "next", "answer"]);
+});
+
+test("Task 5B human-task API returns one safe tenant task and replays one answer", async () => {
+  const fixture = makeFixture();
+  const task = {
+    uid: "tenant-a",
+    task_id: "a".repeat(64),
+    version: 1,
+    question: "Approve the prepared delivery.",
+    required_format: { kind: "approval", values: ["approve", "request_changes"] },
+    reason_code: "model_boundary",
+    resume_ref: "runtime-job://tenant-a/job-1",
+    status: "open",
+  };
+  const calls = [];
+  let state = { ...task };
+  const humanTaskStore = {
+    async readNext(scope) {
+      calls.push({ type: "read", scope });
+      return state.status === "open" ? { ...state } : null;
+    },
+    async answerOnce(answer) {
+      calls.push({ type: "answer", answer });
+      if (answer.uid !== "tenant-a") throw new Error("human task scope mismatch");
+      if (state.status === "answered") {
+        if (state.answer_ref !== answer.answerRef) throw new Error("human task answer conflict");
+        return { ...state };
+      }
+      if (answer.version !== state.version) throw new Error("human task version conflict");
+      state = { ...state, status: "answered", version: 2, answer_ref: answer.answerRef, answered_at: "2026-08-29T00:00:00.000Z" };
+      return { ...state };
+    },
+  };
+  const commandStore = receiptCommandStore();
+  await withApiServer(fixture, async (base) => {
+    const next = await humanTaskRequest(base, "money-printer/human-task/next", { method: "GET" });
+    assert.equal(next.response.status, 200);
+    assert.deepEqual(next.body, {
+      task: {
+        task_id: task.task_id,
+        version: 1,
+        question: task.question,
+        required_format: task.required_format,
+        reason_code: task.reason_code,
+      },
+    });
+    assert.equal(Object.hasOwn(next.body.task, "uid"), false);
+    assert.equal(Object.hasOwn(next.body.task, "resume_ref"), false);
+
+    const answer = { task_id: task.task_id, version: 1, answer_ref: "vault-answer://tenant-a/answer-1" };
+    const first = await humanTaskRequest(base, "money-printer/human-task/answer", { body: answer });
+    assert.equal(first.response.status, 200);
+    assert.deepEqual(first.body, { task_id: task.task_id, resume_ref: task.resume_ref });
+    const replay = await humanTaskRequest(base, "money-printer/human-task/answer", { body: answer });
+    assert.equal(replay.response.status, 200);
+    assert.deepEqual(replay.body, first.body);
+
+    const conflict = await humanTaskRequest(base, "money-printer/human-task/answer", {
+      body: { ...answer, answer_ref: "vault-answer://tenant-a/answer-2" },
+      headers: { "idempotency-key": "human-task-01" },
+    });
+    assert.equal(conflict.response.status, 409);
+    assert.deepEqual(conflict.body, { error: "idempotency_conflict" });
+    for (const [status, error] of [["pending", "idempotency_in_progress"], ["failed", "idempotency_failed"]]) {
+      const key = `human-task-${status}`;
+      commandStore.receipts.set(key, { requestHash: panelMutationHash("money-printer.human-task.answer", answer), status, result: null });
+      const blocked = await humanTaskRequest(base, "money-printer/human-task/answer", { body: answer, headers: { "idempotency-key": key } });
+      assert.equal(blocked.response.status, 409);
+      assert.deepEqual(blocked.body, { error });
+    }
+  }, { panelOrigin: "https://panel.example", commandStore, humanTaskStore, sessionScopeImpl: async () => ({ uid: "tenant-a", chatId: "101", csrf: "csrf-a" }) });
+  assert.equal(calls[0].type, "read");
+  assert.deepEqual(calls[0].scope, { uid: "tenant-a", chatId: "101", csrf: "csrf-a" });
+  assert.deepEqual(calls.slice(1).map((call) => call.answer), [
+    { uid: "tenant-a", taskId: task.task_id, version: 1, answerRef: "vault-answer://tenant-a/answer-1" },
+  ]);
+});
+
+test("Task 5B human-task answer rejects missing origin, CSRF, content type, and idempotency before the store", async () => {
+  const fixture = makeFixture();
+  let writes = 0;
+  const humanTaskStore = {
+    async readNext() { return null; },
+    async answerOnce() { writes += 1; throw new Error("must not answer"); },
+  };
+  await withApiServer(fixture, async (base) => {
+    for (const headers of [
+      { Origin: "https://evil.example" },
+      { "x-lm-csrf": "wrong-csrf" },
+      { "content-type": "text/plain" },
+      { "idempotency-key": "" },
+    ]) {
+      const result = await humanTaskRequest(base, "money-printer/human-task/answer", {
+        body: { task_id: "a".repeat(64), version: 1, answer_ref: "vault-answer://tenant-a/a" },
+        headers,
+      });
+      assert.notEqual(result.response.status, 200);
+    }
+  }, { panelOrigin: "https://panel.example", humanTaskStore, sessionScopeImpl: async () => ({ uid: "tenant-a", chatId: "101", csrf: "csrf-a" }) });
+  assert.equal(writes, 0);
+});
+
+test("Task 8A command receipts stay in Supabase while human work is not", () => {
+  const store = createSupabaseCommandStore({ supaUrl: "https://db.example", supaKey: "service-key" });
+  assert.equal(typeof store.readNext, "undefined");
+  assert.equal(typeof store.answerOnce, "undefined");
+  assert.equal(typeof store.claimReceipt, "function");
+});
 
 test("LM-33b timeline returns today's interpreted calendar and call telemetry", async () => {
   const fixture = makeFixture();
