@@ -873,3 +873,17 @@ Expected final status: `cancelled`. Never delete the recurring real `MUIT 出社
 - [ ] **Step 7: Close the product contract**
 
 Update the on-time core spec to COMPLETE only when AC-01–38 each points to official evidence and replay-zero. Update progress, commit/push the docs, send one `Codex:::` Telegram completion report with provider message ID readback, and start friend beta. Free conversation/OpenClawMU remains the next separate spec.
+
+---
+
+### Task 9: Restore exact GitHub Deployment aggregation
+
+**Ownership:** Luna owns only `services/x402-endpoint/Dockerfile` and `services/x402-endpoint/migration-contract.test.mjs`. Primary owns plan/progress, review, merge, and provider readback.
+
+Railway currently auto-selects the legacy TypeScript/pnpm Dockerfile even though the canonical service is `src/server.js` + Prisma + `package-lock.json` and `railway.toml` names the same start command. The stale lock causes every monorepo deploy to mark the GitHub Deployment aggregate failed while life-call itself succeeds.
+
+- [ ] RED: extend the existing migration contract to reject the legacy pnpm/server.ts/tsx Docker path and require package-lock/npm, Prisma generation, canonical `src`, non-root runtime, `/health`, and `node src/server.js`.
+- [ ] GREEN: update only the existing Dockerfile to install the current package lock, copy current Prisma/source, generate the current client, and start the canonical server. Do not alter dependencies, x402 behavior, paid routes, wallet/network settings, or Railway service settings.
+- [ ] Run focused migration/runtime tests, current x402 service tests, syntax/diff/secret/dependency checks, and a container build when local disk permits.
+- [ ] Fresh exact-range Sol review requires Critical/Important zero and Ponytail minimality.
+- [ ] Merge one PR; require x402 Railway SUCCESS, life-call SUCCESS, GitHub Deployment `success`, and public life-call `/health.build` all correlated to the same exact merge SHA.
