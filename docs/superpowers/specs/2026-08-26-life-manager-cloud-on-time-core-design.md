@@ -71,7 +71,7 @@ flowchart LR
 | AC-07 | timed non-helper eventは`all-events`で対象になる。`[Travel]`、`[PENDING]`、`[APPLIED]`は電話対象にしない。 |
 | AC-08 | physical eventは計算済み出発時刻のT-10とT-5に最大1回ずつ電話する。場所なし、online、起床、就寝eventはevent開始のT-10とT-5に最大1回ずつ電話する。 |
 | AC-09 | Telnyx呼び出し失敗時はclaimをreleaseし、期限内の次tickでretryする。balance不足はowner Telegramへdedupe alertを送る。 |
-| AC-10 | controlled E2E callはTelnyx call ID、webhook署名検証、`lm_wake_log` event key、human/machine判定の結果をcorrelateできる。 |
+| AC-10 | controlled E2E callはTelnyx call ID、webhook署名検証、`lm_wake_log` event keyをcorrelateできる。応答したcallは`call.machine.detection.ended`のhuman/machine結果を保存する。未応答でAMD eventが無いcallは、exact client state/call IDを持つ署名済みterminal `call.hangup` event IDを同じwake rowへ保存し、人間が電話に出ることをacceptance前提にしない。webhookの到着順に依存せず、同じclaimでhangup先着後にAMDが届けばAMD ID/resultがterminal receiptを置換し、AMD先着後のhangupはAMDを置換しない。異なるAMD ID同士とcross-row provider IDは引き続き0行とする。 |
 
 ### 2.3 Event-anchored route contract
 
