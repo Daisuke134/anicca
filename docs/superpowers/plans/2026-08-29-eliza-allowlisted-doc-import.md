@@ -202,7 +202,7 @@ Expected: all hashes match; file counts are exact; all three post-import scans p
 cd /Users/anicca/Projects/life-manager-eliza-migration
 JOIN_SHA=152ad359358fa1456ff92e84ecef3bae91122862
 git add -f docs/legacy-life-manager
-git diff --cached --check
+git -c core.whitespace=-trailing-space diff --cached --check
 test "$(git diff --cached --name-only | wc -l | tr -d ' ')" = 22
 ! git diff --cached --name-only | rg -v '^docs/legacy-life-manager/'
 git commit -m "docs: import allowlisted Life Manager history"
@@ -215,7 +215,7 @@ test "$(git ls-remote origin refs/heads/migration/eliza-history | awk '{print $1
 test -z "$(git status --porcelain=v1)"
 ```
 
-Expected: only the new branch is pushed; both prior remote refs remain unchanged; working tree is clean.
+Expected: the source-preserving cached check ignores only the two audited legacy trailing-space lines; only the new branch is pushed; both prior remote refs remain unchanged; working tree is clean.
 
 - [ ] **Step 7: Write the private receipt and remove only the temporary staging directory**
 
