@@ -36930,3 +36930,12 @@
 {"ts":1787981025,"wake_id":"00MTDXQL5K52A0DB0C190D4487","kind":"wake_error","sleep_s":60,"model":"auto"}
 {"ts":1787981098,"wake_id":"00MTDXS4XB65B7794C20B8428F","kind":"narrate","sleep_s":120,"model":"auto"}
 {"ts":1787981232,"wake_id":"00MTDXV092974CFFEE0FC54255","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787981368,"wake_id":"00MTDXXXPT728D898F9D874F55","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787981508,"wake_id":"00MTDY0XHDA1F6A577A1FC465F","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787981642,"wake_id":"00MTDY3SOE38EAA879E27642F2","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1787981712,"wake_id":"00MTDY5B613AF138D29A3C4CB5","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1787981785,"wake_id":"00MTDY6V3K51A692464F654E12","kind":"wake","sleep_s":120,"model":"auto","slot":"report","profitable":false,"exit_code":0,"result":"shell-init: error retrieving current directory: getcwd: cannot access parent directories: No such file or directory chdir: error retrieving current directory: getcwd: cannot access parent directories:"}
+{"ts":1787981932,"wake_id":"00MTDYA0O83BC44AD551284344","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1787982003,"wake_id":"00MTDYBJ4Q774EF9EEDD1940EC","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1787982075,"wake_id":"00MTDYD31O9B6C5AC03DE744C7","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1787982217,"wake_id":"00MTDYG4DF4B069452F0DE42F5","kind":"narrate","sleep_s":120,"model":"auto"}
