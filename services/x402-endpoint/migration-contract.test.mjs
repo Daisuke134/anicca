@@ -77,3 +77,9 @@ test('Railway healthcheck allows facilitator startup time', async () => {
   assert.match(deploy, /^healthcheckPath = "\/health"$/m);
   assert.match(deploy, /^healthcheckTimeout = 60$/m);
 });
+
+test('Railway limits x402 deploys to the x402 service subtree', async () => {
+  const railway = await readFile(new URL('./railway.toml', import.meta.url), 'utf8');
+
+  assert.match(railway, /^watchPatterns = \["\/services\/x402-endpoint\/\*\*"\]$/m);
+});
