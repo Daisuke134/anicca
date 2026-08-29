@@ -5,6 +5,7 @@ import json
 import io
 import tempfile
 import unittest
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 
@@ -16,6 +17,7 @@ from job_search_loop.workday_search_loop import (
     qualified_queue_ids,
     rank_candidates,
     rotated_sources,
+    rolling_submission_metrics,
     search_until_qualified,
     snapshot_candidates,
     company_submit_attempt_exposure,
@@ -223,7 +225,11 @@ class WorkdayQualificationTests(unittest.TestCase):
             attempts += 1
             if attempts == 1:
                 raise RuntimeError("model at capacity")
-            return {"status": "decided", "decision": "qualified"}
+            return {
+                "status": "decided",
+                "decision": "qualified",
+                "application_id": "A",
+            }
 
         result = search_until_qualified(
             discover=lambda: {"status": "queue_present", "discovered": []},
@@ -233,6 +239,97 @@ class WorkdayQualificationTests(unittest.TestCase):
 
         self.assertEqual(result["status"], "qualified")
         self.assertEqual(attempts, 2)
+
+    def test_search_fills_multiple_distinct_qualified_rows_to_target(self):
+        discoveries = []
+        decisions = iter(
+            (
+                {"status": "decided", "decision": "qualified", "application_id": "A"},
+                {"status": "decided", "decision": "qualified", "application_id": "B"},
+                {"status": "decided", "decision": "qualified", "application_id": "B"},
+                {"status": "decided", "decision": "qualified", "application_id": "C"},
+            )
+        )
+
+        result = search_until_qualified(
+            discover=lambda: discoveries.append(len(discoveries) + 1)
+            or {"status": "discovered", "discovered": []},
+            qualify=lambda: next(decisions),
+            max_candidates=4,
+            target_qualified=3,
+        )
+
+        self.assertEqual(len(discoveries), 4)
+        self.assertEqual(result["status"], "qualified")
+        self.assertEqual(result["qualified_application_ids"], ["A", "B", "C"])
+
+    def test_zero_rolling_target_does_not_discover_or_qualify(self):
+        calls = []
+        result = search_until_qualified(
+            discover=lambda: calls.append("discover"),
+            qualify=lambda: calls.append("qualify"),
+            max_candidates=24,
+            target_qualified=0,
+        )
+
+        self.assertEqual(result["status"], "deficit_satisfied")
+        self.assertEqual(result["qualified_application_ids"], [])
+        self.assertEqual(calls, [])
+
+    def test_rolling_submission_metrics_uses_recent_confirmation_receipts(self):
+        with tempfile.TemporaryDirectory() as directory:
+            ledger_path = Path(directory) / "ledger.sqlite3"
+            now = datetime(2026, 8, 30, 12, tzinfo=timezone.utc)
+            ledger = Ledger(ledger_path)
+            rows = (
+                ("recent", now - timedelta(hours=1)),
+                ("old", now - timedelta(hours=25)),
+                ("future", now + timedelta(hours=1)),
+            )
+            for index, (label, received_at) in enumerate(rows):
+                application_id = ledger.add_application(
+                    label,
+                    f"Role {label}",
+                    f"https://{label}.wd1.myworkdayjobs.com/Careers/job/{index}",
+                )
+                intent_id = f"intent-{label}"
+                ledger.connection.execute(
+                    """
+                    INSERT INTO submit_intents
+                      (intent_id, application_id, fence, payload_hash, japan_day,
+                       slot, status, created_at)
+                    VALUES (?, ?, 1, ?, '2026-08-30', ?, 'submitted', ?)
+                    """,
+                    (
+                        intent_id,
+                        application_id,
+                        "a" * 64,
+                        index + 1,
+                        (received_at - timedelta(minutes=1)).isoformat(),
+                    ),
+                )
+                ledger.connection.execute(
+                    """
+                    INSERT INTO submission_confirmations
+                      (message_id, thread_id, intent_id, evidence_sha256,
+                       received_at, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        f"message-{label}",
+                        f"thread-{label}",
+                        intent_id,
+                        "b" * 64,
+                        received_at.isoformat(),
+                        now.isoformat(),
+                    ),
+                )
+            ledger.close()
+
+            self.assertEqual(
+                rolling_submission_metrics(ledger_path, now=now),
+                {"target": 48, "confirmed_count": 1, "deficit": 47},
+            )
 
     def test_qualified_queue_is_detected_before_snapshot_search(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -352,7 +449,11 @@ class WorkdayQualificationTests(unittest.TestCase):
             return {"status": "discovered", "discovered": [{"id": number}]}
 
         def qualify():
-            return {"status": "decided", "decision": next(decisions)}
+            return {
+                "status": "decided",
+                "decision": next(decisions),
+                "application_id": str(len(discovered)),
+            }
 
         result = search_until_qualified(
             discover=discover,

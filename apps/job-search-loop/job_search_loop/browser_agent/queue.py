@@ -20,6 +20,17 @@ _STATUSES = frozenset(
         "submitted",
     }
 )
+
+
+def _application_limit() -> int | None:
+    raw = os.environ.get("JOB_SEARCH_APPLICATION_LIMIT")
+    if raw is None:
+        return None
+    if not raw or raw.strip() != raw or any(char not in "0123456789" for char in raw):
+        return 0
+    return int(raw)
+
+
 class RowQueueSupervisor:
     """Run every unique queued row; one row failure never ends the wake."""
 
@@ -55,9 +66,11 @@ class RowQueueSupervisor:
         preferred = os.environ.get("JOB_SEARCH_PREFERRED_APPLICATION_ID", "").strip()
         if preferred:
             rows.sort(key=lambda row: str(row["application_id"]) != preferred)
-            if provider == "workday" and rows:
-                if str(rows[0]["application_id"]) == preferred:
-                    return (rows[0],)
+        limit = _application_limit()
+        if limit == 0:
+            return ()
+        if limit is not None:
+            rows = rows[:limit]
         return tuple(rows)
 
     @staticmethod

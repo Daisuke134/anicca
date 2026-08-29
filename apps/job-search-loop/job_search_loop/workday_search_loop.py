@@ -6,6 +6,7 @@ import os
 import uuid
 from collections import Counter, deque
 from collections.abc import Callable
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
@@ -18,10 +19,44 @@ from .workday_discovery import _fetch_jobs, discover_one
 from .workday_qualification import fetch_official_description, qualify_one
 
 SHORTLIST_SIZE = 24
+ROLLING_APPLICATION_TARGET = 48
 
 
 def normalize_company_name(value: str) -> str:
     return str(value).strip().casefold()
+
+
+def rolling_submission_metrics(
+    ledger_path: Path,
+    *,
+    now: datetime | None = None,
+) -> dict[str, int]:
+    current = now or datetime.now(timezone.utc)
+    if current.tzinfo is None:
+        raise ValueError("now must include a timezone")
+    current = current.astimezone(timezone.utc)
+    cutoff = (current - timedelta(hours=24)).isoformat()
+    ledger = Ledger(ledger_path)
+    try:
+        row = ledger.connection.execute(
+            """
+            SELECT COUNT(DISTINCT submission_confirmations.intent_id)
+            FROM submission_confirmations
+            JOIN submit_intents
+              ON submit_intents.intent_id = submission_confirmations.intent_id
+            WHERE datetime(submission_confirmations.received_at) >= datetime(?)
+              AND datetime(submission_confirmations.received_at) <= datetime(?)
+            """,
+            (cutoff, current.isoformat()),
+        ).fetchone()
+    finally:
+        ledger.close()
+    confirmed_count = int(row[0] or 0)
+    return {
+        "target": ROLLING_APPLICATION_TARGET,
+        "confirmed_count": confirmed_count,
+        "deficit": max(0, ROLLING_APPLICATION_TARGET - confirmed_count),
+    }
 
 
 def rotated_sources(
@@ -354,11 +389,25 @@ def search_until_qualified(
     discover: Callable[[], dict[str, Any]],
     qualify: Callable[[], dict[str, Any]],
     max_candidates: int,
+    target_qualified: int | None = None,
 ) -> dict[str, Any]:
     if max_candidates < 1:
         raise ValueError("max_candidates must be positive")
+    target = 1 if target_qualified is None else int(target_qualified)
+    if target < 0:
+        raise ValueError("target_qualified must be nonnegative")
+    target = min(target, max_candidates)
     discoveries = []
     decisions = []
+    qualified_application_ids: list[str] = []
+    qualified_seen: set[str] = set()
+    if target == 0:
+        return {
+            "status": "deficit_satisfied",
+            "discoveries": discoveries,
+            "decisions": decisions,
+            "qualified_application_ids": qualified_application_ids,
+        }
     for _ in range(max_candidates):
         discovery = discover()
         discoveries.append(discovery)
@@ -367,6 +416,7 @@ def search_until_qualified(
                 "status": "sources_exhausted",
                 "discoveries": discoveries,
                 "decisions": decisions,
+                "qualified_application_ids": qualified_application_ids,
             }
         try:
             decision = qualify()
@@ -380,21 +430,31 @@ def search_until_qualified(
             continue
         decisions.append(decision)
         if decision.get("decision") == "qualified":
-            return {
-                "status": "qualified",
-                "discoveries": discoveries,
-                "decisions": decisions,
-            }
+            application_id = decision.get("application_id")
+            if application_id:
+                application_id = str(application_id)
+                if application_id not in qualified_seen:
+                    qualified_seen.add(application_id)
+                    qualified_application_ids.append(application_id)
+            if len(qualified_application_ids) >= target:
+                return {
+                    "status": "qualified",
+                    "discoveries": discoveries,
+                    "decisions": decisions,
+                    "qualified_application_ids": qualified_application_ids,
+                }
         if decision.get("status") == "no_pending_workday_fit":
             return {
                 "status": "sources_exhausted",
                 "discoveries": discoveries,
                 "decisions": decisions,
+                "qualified_application_ids": qualified_application_ids,
             }
     return {
         "status": "budget_exhausted",
         "discoveries": discoveries,
         "decisions": decisions,
+        "qualified_application_ids": qualified_application_ids,
     }
 
 
@@ -549,10 +609,12 @@ def main() -> int:
                 decision["telegram_error"] = type(error).__name__
         return decision
 
+    rolling = rolling_submission_metrics(args.ledger)
     result = search_until_qualified(
         discover=discover_next,
         qualify=qualify_next,
         max_candidates=args.max_candidates,
+        target_qualified=min(rolling["deficit"], args.max_candidates),
     )
     result["stale_rows"] = list(stale_rows)
     result["discovered"] = [
@@ -561,18 +623,12 @@ def main() -> int:
         for row in discovery.get("discovered", [])
     ]
     result["shortlist"] = list(preferred_urls)
-    newly_qualified = next(
-        (
-            str(decision["application_id"])
-            for decision in reversed(result["decisions"])
-            if decision.get("decision") == "qualified"
-            and decision.get("application_id")
-        ),
-        None,
-    )
+    newly_qualified = list(result.get("qualified_application_ids") or [])
     result["queued_application_ids"] = list(
-        dict.fromkeys(([newly_qualified] if newly_qualified else []) + list(queued_ids))
+        dict.fromkeys(newly_qualified + list(queued_ids))
     )
+    result.update(rolling)
+    result["remaining_deficit"] = rolling["deficit"]
     args.output.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     args.output.write_text(
         json.dumps(result, ensure_ascii=False, sort_keys=True) + "\n",
