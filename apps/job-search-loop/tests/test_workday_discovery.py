@@ -123,11 +123,11 @@ class WorkdayDiscoveryTests(unittest.TestCase):
                 {"title": f"Role {index}", "externalPath": f"/job/R{index}"}
                 for index in range(20)
             ]},
-            {"total": 0, "jobPostings": [
+            {"total": 41, "jobPostings": [
                 {"title": f"Role {index}", "externalPath": f"/job/R{index}"}
                 for index in range(20, 40)
             ]},
-            {"total": 0, "jobPostings": [
+            {"total": 41, "jobPostings": [
                 {"title": "Role 40", "externalPath": "/job/R40"}
             ]},
         ]
@@ -151,6 +151,54 @@ class WorkdayDiscoveryTests(unittest.TestCase):
         self.assertEqual(len(rows), 41)
         self.assertEqual([request["offset"] for request in requests], [0, 20, 40])
         self.assertEqual({request["searchText"] for request in requests}, {""})
+
+    def test_cxs_fetch_raises_when_page_ends_before_official_total(self):
+        payloads = [
+            {"total": 21, "jobPostings": [
+                {"title": f"Role {index}", "externalPath": f"/job/R{index}"}
+                for index in range(20)
+            ]},
+            {"total": 21, "jobPostings": []},
+        ]
+        requests = []
+
+        class Response:
+            def __init__(self, payload): self.payload = payload
+            def __enter__(self): return self
+            def __exit__(self, *_args): return False
+
+        def fake_urlopen(request, timeout):
+            requests.append(json.loads(request.data))
+            return Response(payloads[len(requests) - 1])
+
+        with patch("job_search_loop.workday_discovery.urlopen", fake_urlopen), patch(
+            "job_search_loop.workday_discovery.json.load",
+            side_effect=lambda response: response.payload,
+        ):
+            with self.assertRaisesRegex(ValueError, "total"):
+                _fetch_jobs(TEST_SOURCES[0])
+
+        self.assertEqual([request["offset"] for request in requests], [0, 20])
+
+    def test_cxs_fetch_rejects_page_with_invalid_posting_identity(self):
+        payload = {
+            "total": 2,
+            "jobPostings": [
+                {"title": "Valid Role", "externalPath": "/job/Valid_R1"},
+                {},
+            ],
+        }
+
+        class Response:
+            def __enter__(self): return self
+            def __exit__(self, *_args): return False
+
+        with patch("job_search_loop.workday_discovery.urlopen", lambda *_args, **_kwargs: Response()), patch(
+            "job_search_loop.workday_discovery.json.load",
+            return_value=payload,
+        ):
+            with self.assertRaisesRegex(ValueError, "posting"):
+                _fetch_jobs(TEST_SOURCES[0])
 
     def test_model_sources_accept_arbitrary_company_and_reject_explicit_exclusion(self):
         sources = validate_sources(

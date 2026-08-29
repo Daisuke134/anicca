@@ -44,16 +44,40 @@ def _fetch_jobs(source: dict[str, str]) -> list[dict[str, Any]]:
         )
         with urlopen(request, timeout=20) as response:
             value = json.load(response)
-        postings = value.get("jobPostings") if isinstance(value, dict) else None
-        page = [row for row in (postings or []) if isinstance(row, dict)]
+        if not isinstance(value, dict):
+            raise ValueError("Workday jobs payload must be an object")
+        reported_total = value.get("total")
+        if (
+            not isinstance(reported_total, int)
+            or isinstance(reported_total, bool)
+            or reported_total < 0
+        ):
+            raise ValueError("Workday jobs total must be a nonnegative integer")
+        if official_total is None:
+            official_total = reported_total
+        elif reported_total != official_total:
+            raise ValueError("Workday jobs total is inconsistent across pages")
+        postings = value.get("jobPostings")
+        if not isinstance(postings, list) or not all(
+            isinstance(row, dict) for row in postings
+        ):
+            raise ValueError("Workday jobPostings must be a list of objects")
+        if not all(
+            isinstance(row.get("title"), str)
+            and bool(" ".join(row["title"].split()))
+            and isinstance(row.get("externalPath"), str)
+            and row["externalPath"].startswith("/job/")
+            for row in postings
+        ):
+            raise ValueError("Workday posting identity is invalid")
+        page = postings
         rows.extend(page)
-        if official_total is None and isinstance(value, dict):
-            reported_total = int(value.get("total") or 0)
-            official_total = reported_total if reported_total > 0 else None
         offset += len(page)
-        if not page or (
-            official_total is not None and offset >= official_total
-        ) or (official_total is None and len(page) < limit):
+        if offset > official_total:
+            raise ValueError("Workday jobs page exceeds reported total")
+        if not page and offset < official_total:
+            raise ValueError("Workday jobs page ended before reported total")
+        if offset >= official_total:
             return rows
 
 

@@ -4,10 +4,12 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import uuid
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
+from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
 from urllib.request import Request, urlopen
 
@@ -27,6 +29,63 @@ _REQUIRED = {
     "resume_variant",
 }
 POLICY_VERSION = "interview-chance-v2"
+EMAIL_RE = re.compile(r"\b[^\s@]+@[^\s@]+\.[^\s@]+\b")
+LONG_DIGIT_RE = re.compile(r"\d{7,}")
+SENSITIVE_ASSIGNMENT_RE = re.compile(
+    r"(?i)\b(?:token|api[_-]key|secret|password)\s*[:=]\s*\S+"
+)
+SK_TOKEN_RE = re.compile(r"(?i)\bsk-\S+")
+
+
+def _safe_provider_text(
+    value: Any, maximum: int, *, redact_sensitive: bool = True
+) -> str | None:
+    if not isinstance(value, str):
+        return None
+    text = " ".join(value.split())
+    if not text:
+        return None
+    if redact_sensitive and (
+        EMAIL_RE.search(text)
+        or LONG_DIGIT_RE.search(text)
+        or SENSITIVE_ASSIGNMENT_RE.search(text)
+        or SK_TOKEN_RE.search(text)
+    ):
+        return "[redacted]"
+    return text[:maximum]
+
+
+def _http_failure_receipt(row: dict[str, Any], error: Exception) -> dict[str, Any]:
+    payload: dict[str, Any] = {}
+    if isinstance(error, HTTPError):
+        try:
+            parsed = json.loads(error.read(32_768))
+            if isinstance(parsed, dict):
+                payload = parsed
+        except (OSError, TypeError, json.JSONDecodeError, UnicodeDecodeError):
+            pass
+        finally:
+            error.close()
+    provider_error_code = _safe_provider_text(payload.get("errorCode"), 80)
+    provider_message = _safe_provider_text(payload.get("message"), 240)
+    if provider_message is None and isinstance(error, ValueError):
+        provider_message = _safe_provider_text(str(error), 240)
+    return {
+        "status": "qualification_retryable_failure",
+        "application_id": str(row["application_id"]),
+        "company": _safe_provider_text(row.get("company"), 240) or "",
+        "title": _safe_provider_text(row.get("title"), 240) or "",
+        "canonical_url": (
+            _safe_provider_text(
+                row.get("canonical_url"), 2048, redact_sensitive=False
+            )
+            or ""
+        ),
+        "error": type(error).__name__,
+        "http_status": error.code if isinstance(error, HTTPError) else None,
+        "provider_error_code": provider_error_code,
+        "provider_message": provider_message,
+    }
 
 
 def fetch_official_description(
@@ -94,11 +153,14 @@ def qualify_one(
     fetch_description: Callable[[str], str],
     run_model: Callable[[str], dict[str, Any]],
     allowed_hosts: set[str] | None = None,
+    excluded_application_ids: frozenset[str] = frozenset(),
 ) -> dict[str, Any]:
     ledger = Ledger(ledger_path)
     try:
         candidates = []
         for row in ledger.pending_materials_ready_applications():
+            if str(row["application_id"]) in excluded_application_ids:
+                continue
             if detect_provider(str(row["canonical_url"])) != "workday":
                 continue
             host = (urlsplit(str(row["canonical_url"])).hostname or "").casefold()
@@ -120,9 +182,12 @@ def qualify_one(
         if not candidates:
             return {"status": "no_pending_workday_fit"}
         row = candidates[0]
-        description = fetch_description(str(row["canonical_url"])).strip()
-        if not description:
-            raise ValueError("official Workday description is empty")
+        try:
+            description = fetch_description(str(row["canonical_url"])).strip()
+            if not description:
+                raise ValueError("official Workday description is empty")
+        except (HTTPError, URLError, TimeoutError, ValueError) as error:
+            return _http_failure_receipt(row, error)
         candidate_memory = candidate_memory_path.read_text(encoding="utf-8")
         prompt = (
             "Evaluate exactly one Workday job for realistic interview fit. "

@@ -13,7 +13,7 @@ from urllib.parse import urlsplit
 from .agent_runner import AgentRunner, wrap_untrusted
 from .application_reporting import deliver_fit_decision
 from .ledger import Ledger
-from .state import canonical_url, is_excluded_employer
+from .state import canonical_url, is_excluded_employer, same_application_surface
 from .workday_discovery import _fetch_jobs, discover_one
 from .workday_qualification import fetch_official_description, qualify_one
 
@@ -76,6 +76,91 @@ def cached_source_fetcher(
         return values[key]
 
     return cached
+
+
+def reject_stale_workday_rows(
+    ledger_path: Path,
+    jobs_by_source: dict[str, list[dict[str, Any]]],
+) -> tuple[dict[str, str], ...]:
+    current_urls_by_source: dict[tuple[str, str, str], set[str]] = {}
+    for key, jobs in jobs_by_source.items():
+        try:
+            source = json.loads(key)
+        except (TypeError, ValueError):
+            continue
+        if not isinstance(source, dict):
+            continue
+        host = str(source.get("host") or "").strip().casefold()
+        tenant = str(source.get("tenant") or "").strip().casefold()
+        site = str(source.get("site") or "").strip("/")
+        if not host or not tenant or not site or not isinstance(jobs, list) or not jobs:
+            continue
+        source_key = (host, tenant, site.casefold())
+        urls: set[str] = set()
+        for job in jobs:
+            if not isinstance(job, dict):
+                continue
+            path = str(job.get("externalPath") or "")
+            if not path.startswith("/job/"):
+                continue
+            urls.add(canonical_url(f"https://{host}/{site}{path}"))
+        if urls:
+            current_urls_by_source.setdefault(source_key, set()).update(urls)
+
+    receipt: list[dict[str, str]] = []
+    ledger = Ledger(ledger_path)
+    try:
+        for row in ledger.pending_materials_ready_applications():
+            url = canonical_url(str(row["canonical_url"]))
+            parsed = urlsplit(url)
+            host = (parsed.hostname or "").casefold()
+            segments = tuple(part for part in parsed.path.split("/") if part)
+            job_index = next(
+                (index for index, part in enumerate(segments) if part.casefold() == "job"),
+                -1,
+            )
+            if job_index < 1:
+                continue
+            site = segments[job_index - 1].casefold()
+            matching_sources = [
+                urls
+                for (source_host, _tenant, source_site), urls in current_urls_by_source.items()
+                if source_host == host and source_site == site
+            ]
+            if len(matching_sources) != 1 or any(
+                same_application_surface(url, current_url)
+                for current_url in matching_sources[0]
+            ):
+                continue
+            ledger.transition(
+                str(row["application_id"]),
+                "rejected",
+                {"reason": "official_listing_absent"},
+            )
+            receipt.append(
+                {
+                    "application_id": str(row["application_id"]),
+                    "company": str(row["company"]),
+                    "title": str(row["title"]),
+                    "canonical_url": url,
+                    "reason": "official_listing_absent",
+                }
+            )
+    finally:
+        ledger.close()
+    return tuple(receipt)
+
+
+def qualify_with_wake_cursor(
+    qualify: Callable[[frozenset[str]], dict[str, Any]],
+    failed_ids: set[str],
+) -> dict[str, Any]:
+    decision = qualify(frozenset(failed_ids))
+    if decision.get("status") == "qualification_retryable_failure":
+        application_id = decision.get("application_id")
+        if application_id:
+            failed_ids.add(str(application_id))
+    return decision
 
 
 def snapshot_candidates(
@@ -342,7 +427,6 @@ def main() -> int:
         if not is_excluded_employer(source["company"], employer_exclusions)
     )
     allowed_hosts = {str(row["host"]).casefold() for row in sources}
-    queued_ids = qualified_queue_ids(args.ledger, allowed_hosts)
     source_cursor = 0
     jobs_by_source: dict[str, list[dict[str, Any]]] = {}
     fetch_jobs = cached_source_fetcher(_fetch_jobs, jobs_by_source)
@@ -365,6 +449,8 @@ def main() -> int:
         encoding="utf-8",
     )
     os.chmod(args.snapshot, 0o600)
+    stale_rows = reject_stale_workday_rows(args.ledger, jobs_by_source)
+    queued_ids = qualified_queue_ids(args.ledger, allowed_hosts)
     preferred_urls: tuple[str, ...] = ()
     if candidates:
         candidate_memory = args.candidate_memory.read_text(encoding="utf-8")
@@ -425,19 +511,25 @@ def main() -> int:
             prefer_fresh=True,
         )
 
+    wake_failed_ids: set[str] = set()
+
     def qualify_next() -> dict[str, Any]:
-        decision = qualify_one(
-            ledger_path=args.ledger,
-            candidate_memory_path=args.candidate_memory,
-            fetch_description=lambda url: fetch_official_description(url, sources),
-            run_model=lambda prompt: runner.run(
-                task="improve",
-                prompt=prompt,
-                schema_path=args.schema,
-                workdir=args.workdir,
-                run_id=f"workday-fit-{uuid.uuid4().hex}",
+        decision = qualify_with_wake_cursor(
+            lambda excluded_application_ids: qualify_one(
+                ledger_path=args.ledger,
+                candidate_memory_path=args.candidate_memory,
+                fetch_description=lambda url: fetch_official_description(url, sources),
+                run_model=lambda prompt: runner.run(
+                    task="improve",
+                    prompt=prompt,
+                    schema_path=args.schema,
+                    workdir=args.workdir,
+                    run_id=f"workday-fit-{uuid.uuid4().hex}",
+                ),
+                allowed_hosts=allowed_hosts,
+                excluded_application_ids=excluded_application_ids,
             ),
-            allowed_hosts=allowed_hosts,
+            wake_failed_ids,
         )
         if decision.get("status") == "decided":
             try:
@@ -457,6 +549,7 @@ def main() -> int:
         qualify=qualify_next,
         max_candidates=args.max_candidates,
     )
+    result["stale_rows"] = list(stale_rows)
     result["discovered"] = [
         row
         for discovery in result["discoveries"]
