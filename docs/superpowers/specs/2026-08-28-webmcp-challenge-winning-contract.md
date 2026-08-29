@@ -971,14 +971,14 @@ The initial product is a general entrepreneur agent that continuously searches X
 
 | Surface | Verified state | Next gate |
 |---|---|---|
-| Life Manager code | Money Printer本体PR #3081とguest follow-up PR #3085をmainへmerge済み。focused tests、owner HTML不変、fresh adversarial reviewを通過 | public canonical URL上のWebMCP E2Eとruntime worker evidenceを閉じる |
-| Railway API | `life-call` deployment `f4bbbbdf-edbf-4e75-b47a-7fb6c90f1c06`はmerge SHA `85f988149dd165dfe3957db7ad5121ce70f0ef8c`でSUCCESS。direct guest page 200、required headers、guest cookie後API 200、private columns 0をreadback。runtime migrations/RPC/rolesも適用済み | live API mutation、same-job resume、restart recoveryを実測する |
+| Life Manager code | Money Printer本体、judge guest、Railway worker、cross-store、Gemini schema、failed-receipt projection、Postgres Date readbackをmainへmerge済み。focused testsと各production boundaryのfresh Sol adversarial reviewを通過 | recurring scout、human resume、browser WebMCP E2Eを閉じる |
+| Railway API | `life-call`と専用`money-printer-worker`はmain SHA `721c788f785265519355fe13784e399bf8c4fb06`でSUCCESS。canonical API create 200、same-key replay 200、DB Opportunity/Job/Receipt各1、Gemini qualification `QUALIFIED/completed/general_agent_work`をreadback | 8時間window recurring scout、restart recovery、same-job human resumeを実測する |
 | Judge guest | 固定guest tenant、external-effect deny、owner UIを変えずMoney Printerだけを描画・fetchするcodeは93/93 pass | clean browserでzero-login、private data 0、same domain functions、resetを証明する |
-| Netlify | PR #399はroot configだけを変更したためdeploy後も404でfailure。CIが`apps/landing`から実行される実deploy config差を特定し、root-cause fix PR #400をmerge済み | redeploy run `33252472220`完了後に`https://aniccaai.com/money-printer`のstatus/header/body/API/tool discoveryをreadback |
-| Worker | same codebaseのcloud qualification pathは実装・focused検証済み | Railwayで`money-printer-worker`を起動し、pageを閉じた状態のnatural cyclesとrestart recoveryを証明する |
+| Netlify | PR #400/401、deploy run `33254381157`はSUCCESS。`https://aniccaai.com/money-printer` page/API 200、`Origin-Agent-Cluster:?1`、`Permissions-Policy:tools=(self)`、no-store、zero-login sessionをreadback | ChatGPT/Chromeで実tool discoveryとvisible mutationを証明する |
+| Worker | dedicated Railway service `money-printer-worker`をGitHub mainから稼働。Pageを閉じたまま公開Lancers URLをGemini Google Searchでqualificationし、safe receiptを生成。API replayとDB source/job/receipt countはいずれも1 | recurring scoutの3 natural cycles、restart、two concurrent workroomsを証明する |
 | External proof | Lancers/Mercor/arbitrary URLのprovider-neutral contractは設計・codeへ接続済み | Lancers auth/inventory blockerを解消し、最低一件のofficial application/handoff receiptとreplay-zeroを得る |
 | Devpost | project `1404362`、draft URL `https://devpost.com/software/life-manager-uny729`、English draftあり。plugin stateは`prepare-submission`、submissionは`drafting` | live URL、repo/tag、screenshots、public YouTubeを埋め、official formを再readbackして明示承認後にsubmitする |
-| Local capacity | Data volume freeは1 GiB未満 | 8 GiB以上へ安全に回復するまでinstall、Netlify build、browser E2E、videoを開始しない |
+| Local capacity | Data volume freeは5.6 GiB | 8 GiB以上へ安全に回復するまでclean install、browser E2E、videoを開始しない |
 
 ### Official eligibility/compliance — PASS/FAIL
 
@@ -991,8 +991,8 @@ The initial product is a general entrepreneur agent that continuously searches X
 | original work / sole ownership | repository history + contributor declaration | pending |
 | third-party SDK/API/dataの利用権 | dependency/data source license ledger | pending |
 | 既存部分とAugust 25以降のWebMCP拡張を区別 | dated commits + README section | pending |
-| live appがvideo/textどおり動く | immutable deploy SHA + E2E receipt | partial pass: Railway guest/API live; canonical Netlify redeploy pending |
-| judging終了まで無料・無制限にaccess可能 | zero-login URL readback、またはjudge credentials | pending |
+| live appがvideo/textどおり動く | immutable deploy SHA + E2E receipt | partial pass: canonical page/APIとworker live、browser/WebMCP/recurring scout pending |
+| judging終了まで無料・無制限にaccess可能 | zero-login URL readback、またはjudge credentials | server pass: fresh zero-login session; clean browser pending |
 | public repoにsource/assets/instructions/licenseが揃う | public URL + clean-clone verification | pending |
 | public YouTube videoが3分未満でaudio付き | public URL + duration/readback | pending |
 | video/materialの商標・音楽・素材に権利がある | asset/license ledger | pending |
@@ -1002,12 +1002,12 @@ The initial product is a general entrepreneur agent that continuously searches X
 
 ### Product
 
-- [ ] public live URL
-- [ ] zero-login guest account
+- [x] public live URL
+- [x] zero-login guest account
 - [ ] guest/actual runが同一build SHA、agent entrypoint、domain transition function、workroom schemaを使う。外部credential/submit authorityだけが異なる
 - [ ] X/Web/GitHub/mail discovery + Lancers/Mercor + arbitrary marketplace URL intakeを24/7運用する
 - [ ] same deployed releaseから24時間・3回以上のnatural scout cycle receipt
-- [ ] multiple real opportunities + source-level dedupe readback
+- [x] multiple real opportunities + source-level dedupe readback
 - [ ] multiple concurrent workrooms + restart recovery
 - [ ] normal browser human UI
 - [ ] ChatGPT built-in browser WebMCP E2E
@@ -1018,7 +1018,7 @@ The initial product is a general entrepreneur agent that continuously searches X
 - [ ] intentional failure/recovery
 - [ ] hosted runtime restart後に同じworkroom/revisionを復元し、duplicate 0でcontinue
 - [ ] real submission receipt or clearly scoped official handoff receipt
-- [ ] replay duplicate 0
+- [x] replay duplicate 0
 - [ ] reset
 
 ### Repository
@@ -1133,21 +1133,21 @@ One active item at a time。各itemは実物readbackを閉じてから次へ進�
 |---|---|---|---|---|
 | U01 | General agentがprovider listに縮退する | design-closed | X/Web/GitHub/mail/任意URLを同じgoal→job→tool loopへ入れるcontract test | provider keyword routingを検出したらmergeしない |
 | U02 | Opireがprimary proofに使えるか | rejected | API 56 records→33 closed、7 missing/deleted、16 open。低競争候補も22 competing PRsとpayout uncertainty | Opire固有実装を作らない |
-| U03 | Current branchが最新mainと乖離 | resolved | PR #3085 merge SHA `85f98814`とRailway deployment SHAが一致 | stale docs/shared checkoutからproduction codeを編集しない |
-| U04 | Disk不足でinstall/build/videoが失敗 | blocked | Data volume freeは1 GiB未満。保護対象を触らず8 GiB以上へ回復し、直後に`df` readback | free <8 GiBの間はinstall/build/browser E2E/videoを実行しない |
+| U03 | Current branchが最新mainと乖離 | resolved through worker release | life-call/worker main SHA `721c788f`とproduction deployment SHAが一致。scout branchはそのmainから作成 | stale docs/shared checkoutからproduction codeを編集しない |
+| U04 | Disk不足でinstall/build/videoが失敗 | improving / gate still blocked | Data volume free 5.6 GiB。保護対象を触らず8 GiB以上へ回復し、直後に`df` readback | free <8 GiBの間はclean install/browser E2E/videoを実行しない |
 | U05 | Lancers installed ownerがfail中 | blocked | application owner natural pass、loaded argv、release SHA、CDP owner、latest log、exact entrypointを照合 | root causeがauthならmutationせずNeeds Youへ出す |
 | U06 | Lancers login/sessionが有効か | blocked | exact browser profile/CDPのofficial authenticated inventory、effect count 0、two-read stable identity。`about:blank`やcookie存在は不可 | login unavailableならguest UIはlive Lancers effectを主張しない |
 | U07 | 応募可能なLancers案件があるか | blocked by U06 | current complete detail、buyer/order rate、budget、deadline、eligibility、competitionをModelが判断。public result countだけは不可 | suitable candidateがなければapplicationを送らず別market discoveryを継続 |
 | U08 | Lancers proposal effect/readbackが現在のDOMで動くか | blocked | code kernelではなく実siteでimmutable intent、presend absent、effect 1、official proposal ID、replay effect 0 | post-effect unknownは再送せずreconciliation |
-| U09 | General projectionが既存receiptを正しく表示できるか | projection + Panel code-verified / live source open | projection 2/2、tenant-bound GETと六列UIを含むfocused suite 58/58。次にruntime/application/general receiptsをserver sourceへ接続 | raw provider stateやempty fake sourceをUIへ渡さない |
+| U09 | General projectionが既存receiptを正しく表示できるか | live-resolved | canonical API 200で4 opportunities、completed/dead-letter jobs、safe failed/completed receipts、JPY 55,000、paid 0をreadback。raw errorは非表示 | 新receipt kindはstrict testを通すまで表示しない |
 | U10 | Minimal human判定が丸投げになる | domain/API code-verified / live-open | Model-selected `human_boundary_ref`、stable task/open dedupe、vault answer、pause attempt preservation、same-job resume focused pass。次にlive model caseとAPI E2E | agentが実行可能なworkをhuman taskにしたらfail |
 | U11 | WebMCP toolsがChatGPTで発見・実行されるか | read/write registration code-verified / browser live-open | top-level inspect toolsとstate-dependent answer toolを含むfocused suite 65/65。次にSol/Terra tool list、recent call、visible resume | ChatGPT rollout不可ならChrome 149+ evidenceでStage Oneを守る |
-| U12 | Netlify/Browser security headersがWebMCPを許すか | root cause fixed / redeploy running | PR #399のroot-only configはproduction 404。effective `apps/landing/netlify.toml`へ直したPR #400 merge SHA `d74a5d9a`のrun `33252472220`後、origin isolation、Permissions Policy、no iframe registration、clean-browser tool discoveryをreadback | headerが通るまでdeployをworking扱いしない |
-| U13 | Page close後も24/7 workが続くか | open | page closed状態で3 natural cycles、restart recovery、same workroom state | page-local toolをscheduler代わりにしない |
+| U12 | Netlify/Browser security headersがWebMCPを許すか | HTTP resolved / client discovery open | run `33254381157` SUCCESS、canonical page/API 200、origin isolation、Permissions Policy、no iframe registrationをreadback。次にChatGPT/Chrome tool discovery | header/tool discoveryが両方通るまでbrowser gateを閉じない |
+| U13 | Page close後も24/7 workが続くか | worker live / recurring scout implementation in progress | Pageを閉じたworker qualification receiptはpass。次に8時間windowの3 natural scout cycles、restart recovery、same workroom state | page-local toolをscheduler代わりにしない |
 | U14 | Guest judgeとprivate production stateが混ざる | code-verified / live-open | fixed guest tenant、external-effect deny、guest-only UI focused 93/93 pass。次にclean production sessionでzero private credentials/PII、same build/domain functionsをreadback | private owner receiptはredacted read-only projectionだけ許可 |
 | U15 | Mercorが期限内proofになるか | bounded | public inventoryとapplication-step state、human interview taskまでを実測 | 2–4週のselection/cashをDoneに含めない。AI interview代答禁止 |
 | U16 | X discovery sessionが使えるか | blocked | existing daily-driverのlogged-in X tab readback、read-only search receipt | duplicate browserを起動せずWeb/GitHub/mail discoveryで継続 |
-| U17 | Unknown marketplaceでeffect adapterがない | production path code-verified / live-open | Durable goal、API/WebMCP、live source、agent-runner specialistを実装。Read-only specialistは`planned→QUALIFIED`だけ。次にarbitrary URL live E2E | adapter/auth/readbackがなければeffectだけfail closed、research/planningは継続 |
+| U17 | Unknown marketplaceでeffect adapterがない | read-only qualification live / effect blocked | Lancers public URLsをcanonical APIへ入れ、provider routeなしでGemini qualificationとreceiptをlive readback。Effect adapter/auth/readbackは未実証 | adapter/auth/readbackがなければeffectだけfail closed、research/planningは継続 |
 | U18 | Multiple agentsでcontext/effectが交差する | open | two workrooms、different effect keys、isolated refs、bounded concurrency、sibling checkpoint preservation | shared mutable customer stateを検出したらparallel effectを止める |
 | U19 | Revenueを盛って表示する | code-verified / UI live-open | Verified external incomeだけを通貨別mapで集計し、JPY/USD等を混算しない。Application/Paymentは別receiptのまま | cash receiptなしならverified money empty/0を表示 |
 | U20 | Real external receiptが締切までに得られない | open | Lancers official application IDを最低証拠とし、acceptance/delivery/cashは得られたterminalだけ表示 | candidate不在ならsafe blocked receiptを見せ、fake effectを作らない |
