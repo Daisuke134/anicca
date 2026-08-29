@@ -9,10 +9,17 @@ The owner continues natural wakes, but the latest measured wake exits `2` after
 fresh official listing and its detail endpoint returns Workday `403 / S22 /
 permission denied`. The loop records only `HTTPError`, leaves that stale row at the
 front, and spends the wake budget without reaching later live rows whose detail
-endpoints return `200`. No browser submission starts and no new authoritative Gmail
-receipt is created. The latest accepted application receipt remains the existing
-Salesforce message `1a042891b3e71650`; newer `materials_ready`, discovery, Telegram,
-standalone screenshot, or Ledger rows do not count as applications.
+endpoints return `200`. Main commit `6aceea138` fixes that failure class by preserving
+row-scoped fetch evidence and advancing a wake-local cursor; its immutable direct
+wake proves 24 distinct application IDs rather than one repeated row. The current
+execution context has no DNS or Aqua launchd control plane, so that direct wake
+records bounded `URLError` receipts and cannot submit, while installed launchd plists
+remain on the prior release. Three authoritative Mastercard messages in one Gmail
+thread are now reconciled to their exact intents and Ledger `submitted`: Customer
+Technical Services Analyst (`1a042e6f08496632`), Digital Marketing Specialist
+(`1a0431c6d46fa056`), and Manager, Account Management (`1a043c242c8b11cc`). Newer
+`materials_ready`, discovery, Telegram, standalone screenshot, or Ledger rows do not
+count as applications.
 
 The application Ledger remains the state SSOT and `summary.v2` is rebuilt from its
 event stream on every wake. Every-wake and application-result Telegram delivery uses
