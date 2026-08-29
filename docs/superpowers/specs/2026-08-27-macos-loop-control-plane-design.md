@@ -409,14 +409,16 @@ Full-fleet OSS startup is partially implemented by PR #3047. The existing
 mode-600 profile, and supervised by existing launchd/`lm-loop`; unknown IDs and
 missing or mis-permissioned user credential stores fail before release or
 launchd mutation. Docker behavior is unchanged. Completion remains unproven:
-the clean-user natural-run E2E has not run because the target host lacks enough
-free space for another full release, and the machine credential SSOT still has
-incompatible `credentials` and Workday `accounts` schemas that need one
-portable provisioning contract before effectful loops can be called supported.
+PR #3049 adds `loops-init`, which atomically creates or validates the canonical
+version-1 `credentials` list without adding or printing values. An isolated
+clean HOME proves parent mode 700, file mode 600, and byte-identical replay.
+The clean-user natural-run E2E remains: the target host has insufficient free
+space for another full release and has no isolated macOS launchd user/domain;
+production labels are not reused for this proof.
 
 | Order | Remaining TODO | Done evidence |
 |---:|---|---|
-| 1 | Finish full-fleet OSS startup. Keep the implemented explicit profile and launchd supervisor commands, unify the user-owned credential schema/provisioning boundary, then run the clean-user natural E2E. Never bundle Dais credentials or claim private provider loops work without user-owned setup. | From a clean user: documented few-command setup, user-owned secret provisioning, selected loops start in parallel, initiating shell exits, supervisor retains them, and the resolver reports each selected loop's liveness, capability/auth blocker, terminal result, and official effect status. |
+| 1 | Finish full-fleet OSS startup by running the clean-user natural E2E for the implemented profile, credential initialization, and launchd supervisor commands. Never reuse a production label for proof, bundle Dais credentials, or claim private provider loops work without user-owned setup. | From a clean user: documented few-command setup, user-owned secret provisioning, selected loops start in parallel, initiating shell exits, supervisor retains them, and the resolver reports each selected loop's liveness, capability/auth blocker, terminal result, and official effect status. |
 | 2 | Close the separate OSS/security backlog without blanket allowlisting or `npm audit fix --force`. Start with production personal-email defaults, then source-root portability/inventory, then transitive dependency upgrades. | PII shape 0, OSS self-contained boundary 0, Python syntax 0, dependency audit critical 0 and high 0, with focused compatibility readback for affected runtime routes. |
 
 ### TODO 1 execution state
