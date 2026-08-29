@@ -8,6 +8,19 @@ from agent_runner import command_for
 
 
 class CodexSchemaCompatibilityTest(unittest.TestCase):
+    def test_empty_schema_does_not_force_codex_to_return_empty_object(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            args = argparse.Namespace(task_class="composition-agent", workdir=root)
+            command = command_for(
+                "codex", "/opt/homebrew/bin/codex", {},
+                {"model": "gpt-5.6-terra", "effort": "medium"}, args,
+                "Return the requested JSON object.", {}, root / "result.json", 60,
+                None, prompt_via_stdin=True,
+            )
+            self.assertNotIn("--output-schema", command)
+            self.assertIn("-o", command)
+
     def test_codex_receives_supported_schema_copy_while_local_schema_stays_strict(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

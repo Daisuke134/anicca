@@ -49,6 +49,10 @@
       article、headline、publication state、public ledger rowは0である。公開ledgerと外部公開面の最新は
       Note JA / Substack JA / Substack ENが8月21日、X Article JAが8月20日で、8月22日以降の新規live articleは0である。
       schedule設定や過去のlive記事を「毎日公開verified」と呼ばない。
+      再開readbackではowner不在を確認してclaim-loopを1回kickしたが、provider rc=0/schema validにもかかわらず
+      agent resultが空object `{}` となり、`MODEL_UNAVAILABLE`、queue 0、外部作用0を再現した。根因はshared runnerの
+      汎用schema `{}` がCodex側で`additionalProperties:false`の空object schemaへ変換されることだった。
+      `fix/writer-w2-resume`で空schema時だけprovider-side structured outputを外し、具体schemaと後段JSON validationは維持する。
 - [ ] W3 W2のNote JAだけをprovider-native readbackし、title、body、owner、headline、paywall、URLを確認する。
 - [ ] W4 W2のSubstack JAだけを同じ項目でprovider-native readbackする。
 - [ ] W5 W2のSubstack ENだけを同じ項目でprovider-native readbackする。
