@@ -13,6 +13,9 @@ const PANEL_CHALLENGE_COOKIE = "__Host-lm_panel_challenge";
 const OPAQUE_TOKEN_RE = /^[A-Za-z0-9_-]{43}$/;
 const DEVICE_CODE_ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
 const DEVICE_CODE_RE = /^[2-9A-HJ-NP-Z]{8}$/;
+const MONEY_PRINTER_GUEST_UID = "webmcp-judge";
+const MONEY_PRINTER_GUEST_NAME = "WebMCP Judge Guest";
+const MONEY_PRINTER_GUEST_CSP = "default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; img-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'self'";
 
 function sha256(value) {
   return crypto.createHash("sha256").update(String(value)).digest("hex");
@@ -146,6 +149,75 @@ async function sessionUid(session, opts = {}) {
 
 function csrfToken(session) {
   return OPAQUE_TOKEN_RE.test(String(session || "")) ? sha256(`${session}:panel-csrf`) : "";
+}
+
+function moneyPrinterGuestHeaders(extra = {}) {
+  return {
+    "content-type": "text/html; charset=utf-8",
+    "cache-control": "no-store",
+    "referrer-policy": "no-referrer",
+    "x-content-type-options": "nosniff",
+    "origin-agent-cluster": "?1",
+    "permissions-policy": "tools=(self)",
+    "content-security-policy": MONEY_PRINTER_GUEST_CSP,
+    ...extra,
+  };
+}
+
+function moneyPrinterGuestIdentity(opts = {}) {
+  const uid = String(opts.guestUid || MONEY_PRINTER_GUEST_UID);
+  const chatId = String(opts.guestChatId || uid);
+  if (!uid || !chatId) throw new Error("money printer guest identity unavailable");
+  return { uid, chatId };
+}
+
+async function upsertMoneyPrinterGuest(identity, opts = {}) {
+  const base = String(opts.supaUrl || "").replace(/\/$/, "");
+  if (!base || !opts.supaKey) throw new Error("money printer guest storage unavailable");
+  const response = await (opts.fetchImpl || fetch)(`${base}/rest/v1/lm_users?on_conflict=uid`, {
+    method: "POST",
+    headers: supabaseHeaders(opts.supaKey, "resolution=merge-duplicates,return=minimal"),
+    body: JSON.stringify({
+      uid: identity.uid,
+      name: MONEY_PRINTER_GUEST_NAME,
+      telegram_chat_id: identity.chatId,
+      paid: false,
+    }),
+  });
+  if (!response.ok) throw new Error(`money printer guest upsert failed (${response.status})`);
+}
+
+async function handleMoneyPrinterGuestRequest(req, res, opts = {}) {
+  const requestUrl = new URL(req.url || "/money-printer", "http://panel.local");
+  if (req.method !== "GET") {
+    res.writeHead(405, moneyPrinterGuestHeaders({ Allow: "GET" }));
+    res.end("method not allowed");
+    return;
+  }
+  if (requestUrl.pathname !== "/money-printer") {
+    res.writeHead(404, moneyPrinterGuestHeaders());
+    res.end("not found");
+    return;
+  }
+  if (requestUrl.search) {
+    res.writeHead(400, moneyPrinterGuestHeaders());
+    res.end("query not allowed");
+    return;
+  }
+
+  const identity = moneyPrinterGuestIdentity(opts);
+  const current = cookieValue(req.headers.cookie, PANEL_COOKIE) || cookieValue(req.headers.cookie, "lm_panel_session");
+  const scope = current ? await sessionScope(current, opts) : null;
+  if (scope && scope.uid === identity.uid && scope.chatId === identity.chatId) {
+    res.writeHead(200, moneyPrinterGuestHeaders(panelScopeCookie(scope) ? { "Set-Cookie": panelScopeCookie(scope) } : {}));
+    res.end(renderPanelPage({ csrf: scope.csrf || csrfToken(current), guest: true }));
+    return;
+  }
+
+  await upsertMoneyPrinterGuest(identity, opts);
+  const session = await createPanelSession({ uid: identity.uid, chatId: identity.chatId }, opts);
+  res.writeHead(200, moneyPrinterGuestHeaders({ "Set-Cookie": panelSessionCookie(session) }));
+  res.end(renderPanelPage({ csrf: csrfToken(session), guest: true }));
 }
 
 function jsonResponse(res, status, body, headers = {}) {
@@ -433,6 +505,7 @@ module.exports = {
   csrfToken,
   sessionScope,
   sessionUid,
+  handleMoneyPrinterGuestRequest,
   verifyTelegramInitData,
   createPanelDeviceChallenge,
   panelDeviceCodeFromCommand,

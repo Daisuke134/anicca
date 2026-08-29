@@ -319,6 +319,16 @@ test("Money Printer panel embeds focused WebMCP tools with only page CSRF for th
   assert.doesNotMatch(webmcp, /authorization|bearer/i);
 });
 
+test("WebMCP judge guest uses the same Money Printer section without owner controls", () => {
+  const html = renderPanelPage({ csrf: "csrf-value", guest: true });
+  assert.match(html, /data-guest-mode/);
+  assert.match(html, /Judge guest — external effects disabled/);
+  assert.match(html, /data-panel-section="money-printer"/);
+  assert.match(html, /\/api\/panel\/money-printer/);
+  assert.doesNotMatch(html, /action="\/panel\/logout"|>Logout</);
+  assert.doesNotMatch(html, /PERSONAL CONTROL CENTER|あなたの状態と接続だけを表示しています/);
+});
+
 test("PANEL-0: panel includes a real control center and keeps read APIs same-origin", () => {
   assert.equal(typeof renderPanelPage, "function");
   const html = renderPanelPage();

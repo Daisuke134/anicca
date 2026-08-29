@@ -194,6 +194,18 @@ function renderPanelOnboardingPage(options = {}) {
 }
 
 function renderPanelPage(options = {}) {
+  const guest = options.guest === true;
+  const guestBanner = guest ? '<p class="guest-banner" data-guest-banner role="status">Judge guest — external effects disabled</p>' : "";
+  const mastheadNote = guest
+    ? "This isolated judge view shows the same Money Printer state without external effects."
+    : "今日はここまで整っています。予定、電話、つながっている context を、ひと目で確認できます。";
+  const statusLabel = guest ? "JUDGE GUEST / EFFECTS DISABLED" : "PERSONAL CONTROL CENTER";
+  const mirrorNote = guest
+    ? '<p class="mirror-note"><strong>Judge view</strong><span>Money Printer state is isolated; external effects are disabled.</span></p>'
+    : '<p class="mirror-note"><strong>あなたの状態と接続だけを表示しています。</strong><span>対応している設定はここでも Telegram でも同じように変更できます。</span></p>';
+  const logoutMarkup = guest ? "" : '<form action="/panel/logout" method="post"><button class="control-action" type="submit">Logout</button></form>';
+  const logoutScript = guest ? "" : `    const logout = document.querySelector('form[action="/panel/logout"]');
+    if (logout) logout.addEventListener("submit", function (event) { event.preventDefault(); fetch("/panel/logout", { method: "POST", credentials: "same-origin", headers: { "x-lm-csrf": controlCsrf || "${String(options.csrf || "")}" } }).then(function () { window.location.href = "/panel"; }); });`;
   return `<!doctype html>
 <html lang="ja">
 <head>
@@ -314,6 +326,7 @@ function renderPanelPage(options = {}) {
     }
 
     .mirror-note strong { color: var(--ink); }
+    .guest-banner { margin: 18px 0 0; padding: 12px 14px; border: 1px solid var(--accent); background: var(--accent-soft); color: var(--ink); font-weight: 800; line-height: 1.5; }
 
     .panel-grid {
       display: grid;
@@ -668,7 +681,7 @@ function renderPanelPage(options = {}) {
     }
   </style>
 </head>
-<body>
+<body${guest ? ' data-guest-mode="true"' : ""}>
   <div class="page">
     <header class="masthead">
       <div>
@@ -676,13 +689,14 @@ function renderPanelPage(options = {}) {
         <h1>Life Manager</h1>
       </div>
       <div>
-        <p class="masthead-note">今日はここまで整っています。予定、電話、つながっている context を、ひと目で確認できます。</p>
-        <div class="status-line"><span class="status-dot" aria-hidden="true"></span>PERSONAL CONTROL CENTER</div>
-        <form action="/panel/logout" method="post"><button class="control-action" type="submit">Logout</button></form>
+        <p class="masthead-note">${mastheadNote}</p>
+        <div class="status-line"><span class="status-dot" aria-hidden="true"></span>${statusLabel}</div>
+        ${logoutMarkup}
       </div>
     </header>
 
-    <p class="mirror-note"><strong>あなたの状態と接続だけを表示しています。</strong><span>対応している設定はここでも Telegram でも同じように変更できます。</span></p>
+    ${guestBanner}
+    ${mirrorNote}
 
     <main class="panel-grid">
       <section class="panel-section" data-panel-section="money-printer" data-state="loading" aria-labelledby="money-printer-title">
@@ -714,10 +728,10 @@ function renderPanelPage(options = {}) {
         <div class="section-body" data-panel-body aria-live="polite"><p class="loading">設定を確認しています。</p></div>
       </section>
 
-      <section class="panel-section" data-panel-section="control-center" data-state="loading" aria-labelledby="control-center-title">
+      ${guest ? "" : `<section class="panel-section" data-panel-section="control-center" data-state="loading" aria-labelledby="control-center-title">
         <header class="section-head"><h2 id="control-center-title">接続と automation</h2><span class="section-kicker">Control</span></header>
         <div class="section-body" data-panel-body aria-live="polite"><p class="loading">あなたの接続と設定を確認しています。</p></div>
-      </section>
+      </section>`}
     </main>
   </div>
 
@@ -731,7 +745,7 @@ function renderPanelPage(options = {}) {
       ledger: "/api/panel/ledger",
       gates: "/api/panel/gates",
       settings: "/api/panel/settings",
-      "control-center": "/api/panel/control-center",
+      ${guest ? "" : '"control-center": "/api/panel/control-center",'}
     });
     const displaySecretPatterns = Object.freeze(${JSON.stringify(DISPLAY_SECRET_PATTERNS)}.map(function (pattern) {
       return new RegExp(pattern.source, pattern.flags);
@@ -1228,8 +1242,7 @@ function renderPanelPage(options = {}) {
       const button = event.target.closest("button[data-action]");
       if (button) runControlAction(button);
     });
-    const logout = document.querySelector('form[action="/panel/logout"]');
-    if (logout) logout.addEventListener("submit", function (event) { event.preventDefault(); fetch("/panel/logout", { method: "POST", credentials: "same-origin", headers: { "x-lm-csrf": controlCsrf || "${String(options.csrf || "")}" } }).then(function () { window.location.href = "/panel"; }); });
+${logoutScript}
     document.addEventListener("change", function (event) {
       const select = event.target.closest('select[data-action]');
       if (select) runControlAction(select);

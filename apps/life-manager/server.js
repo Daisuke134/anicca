@@ -47,7 +47,7 @@ const {
   createSupabaseLateApprovalStore,
   handleLateApprovalCallback,
 } = require("./lib/late-approval.js");
-const { sendPanelLink, handlePanelRequest, panelDeviceCodeFromCommand, confirmPanelDeviceCode } = require("./lib/panel-auth.js");
+const { sendPanelLink, handlePanelRequest, handleMoneyPrinterGuestRequest, panelDeviceCodeFromCommand, confirmPanelDeviceCode } = require("./lib/panel-auth.js");
 const { handlePanelApiRequest, handlePanelOAuthCallback, composioCalendarStart, composioCalendarDisconnect } = require("./lib/panel-api.js");
 const { createMoneyPrinterSource } = require("./lib/money-printer-source.js");
 const { createMoneyPrinterRuntimeStore } = require("./lib/money-printer-runtime-store.js");
@@ -121,6 +121,10 @@ const PUBLIC_BASE = process.env.PUBLIC_BASE || "https://aniccaai.com";
 // Railway supplies RAILWAY_PUBLIC_DOMAIN; LM_PANEL_BASE_URL is the explicit override for custom domains.
 const LM_PANEL_BASE = process.env.LM_PANEL_BASE_URL ||
   (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : "");
+
+function panelOriginForPath(path) {
+  return String(path).startsWith("/api/panel/money-printer") ? PUBLIC_BASE : LM_PANEL_BASE;
+}
 
 // inngestServeAllowed: pure helper — returns true when the /api/inngest route may serve requests.
 // In dev (INNGEST_DEV=1) it always returns true; in prod it requires INNGEST_SIGNING_KEY.
@@ -260,6 +264,20 @@ function ctxFromReq(req) {
 
 const server = http.createServer((req, res) => {
   const path = (req.url || "").split("?")[0];
+  if (path === "/money-printer") {
+    const guestUid = process.env.LM_WEBMCP_GUEST_UID || "webmcp-judge";
+    handleMoneyPrinterGuestRequest(req, res, {
+      supaUrl: SUPA_URL,
+      supaKey: SUPA_KEY,
+      guestUid,
+      guestChatId: process.env.LM_WEBMCP_GUEST_CHAT_ID || guestUid,
+    }).catch((error) => {
+      console.error("[money-printer-guest] request failed", error.message);
+      if (!res.headersSent) res.writeHead(500, { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store", "referrer-policy": "no-referrer", "x-content-type-options": "nosniff" });
+      res.end("money printer unavailable");
+    });
+    return;
+  }
   if (path === "/api/panel/session/telegram" || path === "/api/panel/session/device") {
     handlePanelRequest(req, res, {
       supaUrl: SUPA_URL, supaKey: SUPA_KEY, token: LM_TG_TOKEN,
@@ -292,7 +310,7 @@ const server = http.createServer((req, res) => {
       supaUrl: SUPA_URL,
       supaKey: SUPA_KEY,
       timeZone: process.env.LM_TIME_ZONE || "Asia/Tokyo",
-      panelOrigin: LM_PANEL_BASE,
+      panelOrigin: panelOriginForPath(path),
       panelBaseUrl: LM_PANEL_BASE,
       composioKey: COMPOSIO_KEY,
       composioAuthConfig: process.env.COMPOSIO_GCAL_AUTH_CONFIG,
@@ -1128,4 +1146,4 @@ if (require.main === module) {
 // redeploy trigger 010026
 
 // Export pure helpers for unit tests (FIND-005).
-module.exports = { buildTag, inngestServeAllowed, panelApiOptions, testCallAllowed, TEST_CALL_COOLDOWN_MS, TEST_CALL_DAILY_MAX };
+module.exports = { buildTag, inngestServeAllowed, panelApiOptions, panelOriginForPath, testCallAllowed, TEST_CALL_COOLDOWN_MS, TEST_CALL_DAILY_MAX };
