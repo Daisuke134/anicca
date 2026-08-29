@@ -59,7 +59,7 @@ const TICK_MS = 60 * 1000;
 // Reminder routing/Telegram work is independent of the call and of the other organs. Keep a
 // bounded default for a provider that never settles; tests and operators may inject a smaller
 // value without changing the global organ budget.
-const REMINDER_TIMEOUT_MS = Number(process.env.LIFE_REMINDER_TIMEOUT_MS) || 25_000;
+const REMINDER_TIMEOUT_MS = Number(process.env.LIFE_REMINDER_TIMEOUT_MS) || 35_000;
 
 function withTimeout(work, timeoutMs, label) {
   const duration = Number(timeoutMs);
