@@ -195,8 +195,8 @@ function projectMoneyPrinter(input = {}) {
 - Consumes: `projectMoneyPrinter()` and injected tenant-bound `moneyPrinterSource(scope)`.
 - Produces: `GET /api/panel/money-printer` and `data-panel-section="money-printer"`.
 
-- [ ] Add API tests for session scope, exact keys, ignored request UID, foreign-tenant refusal, POST 405, and no private refs.
-- [ ] Add UI tests:
+- [x] Add focused API coverage for session scope, ignored request UID, tenant-bound source, POST 405, and no raw private fields.
+- [x] Add UI tests:
 
 ```js
 test("panel renders the Money Printer board", () => {
@@ -207,8 +207,8 @@ test("panel renders the Money Printer board", () => {
 });
 ```
 
-- [ ] Run Panel tests for RED.
-- [ ] Add the smallest API/UI section, reuse auth/session/CSRF, validate exact keys before rendering, and never copy static mock values.
+- [x] Run focused Panel tests and observe RED: API 404 and missing UI section.
+- [x] Add the smallest API/UI section, reuse auth/session/CSRF, validate exact keys before rendering, and never copy static mock values.
 
 ```js
 async function moneyPrinter(scope, opts = {}) {
@@ -222,7 +222,9 @@ async function moneyPrinter(scope, opts = {}) {
 ```
 
 Route `GET /api/panel/money-printer` through the same `sessionScope` and `sendPanelSection` boundary used by the existing sections.
-- [ ] Run Panel, privacy, and projection tests; commit `feat(life-manager): show Money Printer`; push.
+- [x] Run projection and changed Panel tests 58/58; commit `7b82045eb` as `feat(life-manager): show Money Printer`; push.
+
+Measured ruling: do not wire `server.js` to an empty fixture-like source. Task 5/7 must inject the real durable human-task/opportunity/runtime/receipt source before live deployment.
 
 ---
 
