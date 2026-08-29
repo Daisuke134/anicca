@@ -4,96 +4,105 @@ Life Manager
 
 ## One-line Summary
 
-An open-source, 24/7 AI money printer that finds paid opportunities, does the work, and asks you only for the human 1%.
+An open-source, 24/7 AI money printer that finds paid opportunities, performs bounded work, and asks only for the human 1%.
 
 ## Problem
 
-People share many isolated ways to use Claude, Codex, and other AI systems to make money through bounties, gigs, apps, content, and online work. What is missing is a public, reproducible end-to-end agent system that continuously discovers those opportunities, evaluates them, performs the work, pauses only at a genuine human boundary, resumes after the answer, submits or delivers once, and follows the result to an official receipt.
+People share many isolated ways to use Claude, Codex, and other AI systems to make money through bounties, gigs, apps, content, and online work. What is missing is a public, reproducible end-to-end agent system that continuously discovers opportunities, evaluates them, performs bounded work, pauses only at a genuine human boundary, resumes after an answer, submits or delivers once, and follows the result to an official receipt.
 
 ## Solution
 
-Life Manager turns paid opportunities into persistent, isolated workrooms. A 24/7 entrepreneur agent searches X, the Web, GitHub, mail, and marketplaces, discovers freelance projects on Lancers and high-value AI roles on Mercor, and accepts any public bounty or marketplace URL. A bounded fleet of earning agents qualifies them, performs the work, recovers from transient failures, and continues until there is an externally verifiable outcome.
+Life Manager turns paid opportunities into persistent, isolated workrooms. Its provider-neutral architecture can expand across the public Web, X, GitHub, mail, Lancers, Mercor, and other marketplace URLs; the currently verified scout path is the public Web. Citation-backed public URLs enter a durable Railway Postgres queue, where the dedicated `money-printer-worker` qualifies them.
 
-The person does not supervise agent turns. When identity, authority, private payment information, judgment, or a real-world action is genuinely required, Life Manager creates one prepared `Needs You` task. The person answers in the same WebMCP-enabled Dashboard, and the same workroom resumes automatically.
+The person does not supervise ordinary agent turns. When identity, authority, private payment information, judgment, or a real-world action is genuinely required, the workroom contract defines one prepared `Needs You` task. The intended flow is a versioned answer in the same Dashboard followed by continuation from that workroom; live creation/answer/resume E2E is pending.
+
+The currently verified Lancers evidence is an application receipt for project `5593484` / proposal `27863414`, not revenue. `Paid & verified` remains zero until an independently verified payment receipt exists.
 
 ## Why This Matters
 
-AI earning advice is easy to publish but difficult to reproduce. Life Manager makes the process inspectable and open source: opportunity source, requirements, agent work, human handoff, external effect, cost, and provider receipt are all visible in one system. Applications, offers, and model claims are not counted as revenue; only official payment evidence is.
+AI earning advice is easy to publish but difficult to reproduce. Life Manager makes the process inspectable and open source: opportunity source, requirements, agent work, human handoff, external effect, cost, and provider receipt are visible in one system. Applications, offers, opportunity value, and model claims are not counted as revenue; only official payment evidence is.
 
 ## Official WebMCP Questions
 
 ### Why this use case is a strong fit for WebMCP
 
-Money Printer runs autonomously across many turns, but real earning work still contains moments when a person and an agent must share exact context: approving a consequential public delivery, providing identity-bound or payout information, making a genuine judgment, or performing a physical action. WebMCP turns Life Manager's live Dashboard into a shared control surface. A compatible agent can inspect opportunities, open a workroom, revise a visible artifact, record one human answer, resume the work, and verify provider receipts through typed site tools instead of guessing at dashboard controls.
+Money Printer is a strong WebMCP fit because earning work spans many turns while still containing moments when a person and an agent must share exact context: approving a consequential public delivery, providing identity-bound or payout information, making a genuine judgment, or performing a physical action. WebMCP turns the live Dashboard into a shared control surface for that work.
 
-Every WebMCP action updates the same versioned state that the person sees. The page becomes the shared control plane for an autonomous earning system rather than a passive monitoring dashboard.
+The page exposes typed tools for the current board and workrooms: `inspect_money_printer`, `add_opportunity`, `inspect_workroom`, `inspect_next_human_task`, and the state-dependent `record_human_answer`. These tools complement the 24/7 Railway worker; they do not replace the backend runtime. The same durable state is rendered for the person and read or updated by the site tools.
 
 ### How it creates a better user experience
 
-Without WebMCP, an agent must infer Life Manager's interface from pixels and DOM controls, while the person has to translate state between a dashboard, chat, and external opportunity sites. With WebMCP, the agent uses typed tools to read and update the same visible workroom the person sees. The person receives one prepared `Needs You` card instead of supervising every turn, supplies the missing approval, identity, payout detail, or real-world action, and the earning agent resumes from the exact same state. This removes repeated navigation and context reconstruction, makes every handoff visible, and lets both sides verify the same delivery and payment evidence.
+Without WebMCP, an agent must infer Life Manager's interface from pixels and DOM controls, while the person has to translate state between a dashboard, chat, and external opportunity sites. With WebMCP, the intended flow is a typed read of the board, a visible workroom inspection, and a versioned human answer only when a genuine boundary is open. The person can inspect the same state and evidence instead of supervising every ordinary turn.
+
+The deployed judge tenant is isolated and blocks external application, delivery, payment, and money effects. Its current Lancers receipt is read-only, and an application is never presented as payment. Live ChatGPT/Chrome discovery and live creation/answer/resume E2E are pending rather than being implied by the UI contract.
 
 ### What people and agents can do together that was difficult before
 
-Life Manager lets people and agents divide real earning work according to what each does best. The agent handles discovery, qualification, research, planning, creation, execution, recovery, submission, and receipt reconciliation. The person contributes only identity, authority, judgment, payment information, or physical action when one of those is truly required. Both work from the same visible workroom, so the handoff is not a context-losing message; it is part of the durable work state.
+Life Manager divides real earning work according to what each side does best. The agent handles discovery, qualification, research, planning, creation, execution, recovery, submission, and receipt reconciliation when the relevant capability and authority are available. The person contributes identity, authority, judgment, payment information, or physical action when one of those is genuinely required.
 
-Together they can pursue paid opportunities continuously with minimal human involvement while keeping human control at the moments that must remain human.
+Both sides work from the same durable workroom state. In the verified current slice, a cited Web scout cycle completed on retry, state survived a worker restart, and the system preserves a read-only Lancers application receipt with replay duplicate count zero. The broader external-submit and human-resume path remains evidence to collect.
 
 ### How WebMCP was implemented
 
-The top-level page registers focused tools with `document.modelContext.registerTool()`. The planned tool surface lets a compatible agent inspect the Money Printer, add an opportunity, inspect a workroom, revise an artifact, inspect the next human task, record an exact human answer, continue or pause work, and inspect the final receipt. Each tool calls the same server-validated domain functions as the visible UI, so every successful agent action immediately appears on the Dashboard. Server-side revision checks, spend limits, effect fences, and idempotency prevent stale updates, unauthorized effects, and duplicate submissions.
+The top-level `/money-printer` page registers focused tools with `document.modelContext.registerTool()`. The currently registered set is:
 
-Final submission copy will name only tools and behavior verified in the deployed app.
+- `inspect_money_printer` — read metrics, board columns, and safe recent activity
+- `add_opportunity` — add one public HTTPS opportunity to the durable queue with an idempotency fence
+- `inspect_workroom` — read the selected opportunity, job, and receipt timeline
+- `inspect_next_human_task` — read the oldest exact open human task
+- `record_human_answer` — record a versioned answer and resume the same job when a task is open
+
+Each tool uses the same server-validated state as the visible UI. Revision checks, tenant boundaries, idempotency, and effect fences protect internal writes; the zero-login judge tenant has no external-effect authority. No separate receipt-writing tool is registered; receipt evidence is read through the workroom projection.
 
 ## How We Used AI
 
-- Model-led opportunity qualification based on reward, deadline, eligibility, required work, cost, and risk
-- Tool-using earning agents that choose browser, web, GitHub, code, file, and media actions from environmental feedback
-- Persistent continuation across multiple turns without human supervision
-- Minimal-human task generation only at genuine identity, authority, private-fact, or real-world boundaries
+- Model-led opportunity qualification using reward, deadline, eligibility, required work, cost, and risk
+- A provider-neutral capability worker that selects browser, web, GitHub, code, file, and media actions from environmental feedback
+- Durable state and worker restart recovery for continuation across turns; live creation/answer/resume E2E and three-cycle proof remain pending
+- Minimal-human task generation at genuine identity, authority, private-fact, judgment, or real-world boundaries
 - Failure recovery and receipt reconciliation without blindly repeating uncertain external effects
 
 ## How We Used Codex
 
-Codex is used to research WebMCP and the official challenge contract, inspect and extend the existing Life Manager codebase, design the WebMCP tool surface, implement the Dashboard and runtime integration, test the deployed app in ChatGPT's in-app browser and Chrome, and prepare the public repository, demo, and submission materials. The final write-up will retain only build and test claims supported by repository history and runtime evidence.
+Codex was used to research WebMCP and the official challenge contract, inspect and extend the existing Life Manager codebase, design the WebMCP tool surface, implement the Dashboard and runtime integration, and prepare the public repository and submission materials. ChatGPT and Chrome client-discovery E2E tests are still pending, so this draft does not claim that those tests are complete.
 
 ## Key Features
 
-- 24/7 general opportunity discovery across X, Web, GitHub, mail, Lancers, Mercor, and arbitrary marketplace URLs
-- Bounded concurrent agent workrooms inspired by OpenAI Symphony
-- One durable board for agents, people, artifacts, human tasks, effects, and receipts
-- `Needs You` questions issued one at a time and only when human input is genuinely required
-- Automatic continuation from the same workroom after an answer
+- Citation-grounded public-Web scouting and a durable opportunity queue (verified current path)
+- Provider-neutral expansion path for X, GitHub, mail, Lancers, Mercor, and other public marketplace URLs (architecture, not current live-discovery proof)
+- Bounded agent workrooms and one durable board for opportunities, agents, artifacts, human tasks, effects, and receipts
+- `Needs You` questions issued one at a time at genuine human boundaries; live creation/answer/resume E2E is pending
 - Effect fences, idempotency, uncertain-effect quarantine, and official readback
-- Verified-money ledger that distinguishes activity from received money
-- WebMCP tools backed by the same domain functions as the human UI
+- Verified-money ledger that distinguishes activity, applications, and opportunity value from received money
+- Five top-level WebMCP tools backed by the same domain state as the human UI
 
 ## Architecture
 
-- Netlify: responsive Life Manager Dashboard and top-level WebMCP registration
-- Existing Railway Node service: 24/7 scout, orchestration, claims, continuation, retry, and reconciliation
+- Netlify: responsive Life Manager Dashboard at `/money-printer` and top-level WebMCP registration
+- Railway `money-printer-worker`: running cloud scout/worker process with durable queue and restart-stable state
 - Durable state: opportunities, workrooms, agent events, human tasks, effects, and receipts
 - Existing agent runner: provider-neutral model execution with browser, web, GitHub, code, file, and media tools
-- Provider adapters: Lancers application readback, Mercor application-step/human-interview state, and thin mechanical adapters for unfamiliar marketplaces when required
+- Provider adapters: read-only Lancers application receipt readback; Mercor and additional marketplace adapters are expansion paths, not current live-discovery proof
 
 ## Testing Instructions
 
-Current target flow; replace each item with verified final instructions before submission:
+This is the safe judge path for the live guest tenant; no login, payment, API key, or private Life Manager account is required.
 
-1. Open `https://aniccaai.com/money-printer` in the latest ChatGPT desktop in-app browser.
-2. Use GPT-5.6 Sol or Terra with Site tools enabled.
-3. Ask: `Turn on my Money Printer. Do everything you can autonomously and ask me only when you genuinely need human input.`
-4. Inspect the available Site tools and recent calls.
-5. Follow one opportunity from discovery to workroom execution.
-6. Answer one real `Needs You` task and verify automatic continuation.
-7. Inspect the external-effect receipt and duplicate count.
+1. Open `https://aniccaai.com/money-printer` in ChatGPT's desktop in-app browser.
+2. Confirm the banner says `Judge guest — external effects disabled`.
+3. Ask: `List the Site tools exposed by this page. Call inspect_money_printer, summarize the board and money truth, then inspect one qualified workroom. Do not perform an external application, delivery, payment, or money effect.`
+4. Confirm the structured response matches the visible board. `Paid & verified` may be empty even when the read-only Lancers application receipt exists.
+5. Optional internal write: ask the agent to use `add_opportunity` for one public paid-opportunity URL, then inspect its workroom and show the visible state change. Stop at qualification.
 
-Secondary test: Chrome 149+ with `chrome://flags/#enable-webmcp-testing` enabled.
+Chrome fallback: use Chrome 149 or newer, enable `chrome://flags/#enable-webmcp-testing`, relaunch Chrome, and open the same URL. The implementation is top-level imperative `document.modelContext.registerTool()` and does not depend on an iframe or declarative markup.
+
+Evidence status: ChatGPT tool discovery E2E: pending; Chrome tool discovery E2E: pending; live creation/answer/resume E2E: pending.
 
 ## Public Demo Link
 
 `https://aniccaai.com/money-printer`
 
-Status: reachable existing Life Manager landing page. TODO: deploy the WebMCP Money Printer Dashboard and record immutable deploy SHA.
+Status: the Netlify page is live and this is the canonical URL. Railway `money-printer-worker` is running. One manual cited Web scout cycle completed on retry, and a worker restart preserved jobs, opportunities, and receipts. Immutable final tag/deploy binding remains pending.
 
 ## Public Repository Link
 
@@ -105,51 +114,56 @@ License: MIT, visible in the public repository.
 
 Title: `Life Manager — The 24/7 AI Money Printer`
 
-Public YouTube URL: TODO after verified recording and upload.
+Public YouTube URL: Pending — no public video URL exists yet.
 
-Outline, under three minutes:
+Recording status: pending. The video must be under three minutes, use English audio or captions, and show the live product rather than the static mockup.
 
-1. Show the non-reproducible AI-money problem and running Dashboard.
-2. Show ChatGPT discovering Life Manager's WebMCP Site tools.
-3. Trace one real Lancers project from its public listing inside the recurring 24/7 product.
-4. Show the earning agent complete the work.
-5. Complete one genuine `Needs You` task.
-6. Show automatic continuation, one fenced application, and official readback.
-7. Show provider readback, duplicate zero, and verified-money truth.
+Planned proof sequence (not yet recorded):
+
+1. Show the problem and the running Money Printer Dashboard.
+2. Show a compatible client inspecting the page's registered WebMCP tools.
+3. Show the cited Web scout and one workroom with durable state.
+4. Show the safe internal opportunity mutation and visible state change.
+5. Show one genuine `Needs You` task and, once live E2E is verified, the same workroom continuing after the answer.
+6. Show the read-only Lancers application receipt for project `5593484` / proposal `27863414`, replay duplicate count zero, and `Paid & verified = 0`.
 
 ## Screenshot Shot List
 
+All five real screenshots are pending; the static mockup is not evidence:
+
 1. Full Money Printer Dashboard with multiple workrooms in different states
-2. ChatGPT Site tools and recent-call activity
+2. Compatible client's WebMCP Site tools and recent-call activity
 3. Selected workroom with agent events and a real artifact
 4. `Needs You` task with prepared context and one exact action
 5. Provider receipt, duplicate count, cost, and verified-money view
 
 ## Submission Readiness Notes
 
-Current status: existing Life Manager project, registered for The WebMCP Challenge, with the WebMCP winning contract and submission draft prepared. Product implementation, final deployment, WebMCP E2E evidence, screenshots, and video remain incomplete. The final Devpost copy must be reconciled to the behavior of the submitted release.
+Current status: the existing Life Manager project is registered for the WebMCP Challenge. The canonical Netlify page is live, Railway `money-printer-worker` is running, the five-tool WebMCP registration is present, one manual cited Web scout cycle completed on retry, and restart preserved jobs, opportunities, and receipts. The verified provider evidence is Lancers project `5593484` / proposal `27863414` with replay duplicate count zero; it is an application, not revenue, and `Paid & verified` remains zero.
 
-Devpost draft project: `https://devpost.com/software/life-manager-uny729` (project ID `1404362`). Live readback confirms `submitted_at: null`; the final Hackathon submission has not been sent.
+The four official criteria are WebMCP Leverage, Execution, Potential Impact, and Creativity & Ambition. Remaining evidence gaps are ChatGPT/Chrome tool discovery E2E, live creation/answer/resume E2E, two concurrent workrooms, three natural scout cycles, five real screenshots, a public under-three-minute video, and immutable final tag/deploy binding.
+
+Devpost draft project: `https://devpost.com/software/life-manager-uny729` (project ID `1404362`). Live readback: registered for `webmcp`, `submitted_at: null`, `video_url: null`; the final Hackathon submission has not been sent.
 
 ## Known Limitations
 
-- The deployed `/lm` route does not yet contain the WebMCP Money Printer Dashboard.
-- No final ChatGPT or Chrome WebMCP E2E receipt exists yet.
-- No public demo video exists yet.
-- No external earning result may be claimed until an official provider readback exists.
-- WebMCP Site tools are page-local; the hosted Life Manager runtime provides 24/7 continuation after the page closes.
+- The `/money-printer` page is live, but ChatGPT and Chrome tool-discovery evidence has not been recorded.
+- Live creation/answer/resume E2E, two concurrent workrooms, and three natural scout cycles remain unverified.
+- The judge tenant cannot perform external application, delivery, payment, or money effects. The Lancers application receipt is read-only; `Paid & verified` remains zero without an independent payment receipt.
+- No public demo video or screenshot packet exists yet, and immutable final tag/deploy binding is not verified.
+- WebMCP tools are page/session-local; the hosted Life Manager worker provides 24/7 continuation after the page closes.
 
 ## TODO Official Form Fields
 
-- Submitter Type: Individual
-- Country: Japan
-- App Status: Existing
-- Existing update: TODO final verified summary of WebMCP work added during the challenge period
-- Live URL: `https://aniccaai.com/money-printer` after verified WebMCP deployment
-- Judge testing instructions: TODO final clean-browser steps and any credentials
-- Public repo: `https://github.com/Daisuke134/life-manager`
-- Tested clients: TODO final verified ChatGPT in-app browser and Chrome entries
-- AI tools used: Codex and ChatGPT; add only other tools actually used
-- Learning level: Significant
-- Career AI value: Yes
-- Public YouTube URL: TODO
+- `28249` Submitter Type: Individual
+- `28250` Country of residence: Japan
+- `28252` App Status: Existing
+- Existing update: Added the `/money-printer` guest route, provider-neutral projection, five top-level imperative WebMCP tools, durable workroom and human-task contracts, Railway worker/scout path, safe receipt projection, and tenant isolation during the challenge period. Current evidence is one cited Web scout cycle, restart-stable state, and a read-only Lancers application receipt; client, screenshot, video, and longer-run evidence remain pending.
+- `28254` Live URL: `https://aniccaai.com/money-printer`
+- Judge testing instructions: use the no-login read-only prompt in the Testing Instructions section; do not request external effects.
+- `28256` Public Code Repo: `https://github.com/Daisuke134/life-manager`
+- `28257` Tested WebMCP agents/clients: Pending — ChatGPT in-app browser E2E and Chrome WebMCP E2E.
+- `28258` AI tools used: Codex and ChatGPT.
+- `28259` Level of learning: Significant
+- `28260` Career AI value: Yes
+- Public YouTube URL: Pending — no public video URL exists yet.
