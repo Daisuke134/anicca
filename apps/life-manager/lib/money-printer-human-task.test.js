@@ -10,6 +10,10 @@ const MIGRATION = fs.readFileSync(path.join(
   __dirname,
   "../migrations/2026-08-29-lm-money-printer-human-tasks.sql",
 ), "utf8");
+const SECURITY_MIGRATION = fs.readFileSync(path.join(
+  __dirname,
+  "../migrations/2026-08-29-lm-runtime-security-roles.sql",
+), "utf8");
 
 function input(overrides = {}) {
   return {
@@ -97,4 +101,16 @@ test("migration adds tenant-safe tasks and requeues the same runtime job atomica
   const answerRpc = MIGRATION.slice(MIGRATION.indexOf("CREATE OR REPLACE FUNCTION public.answer_lm_human_task"));
   assert.doesNotMatch(answerRpc, /INSERT INTO public\.lm_runtime_jobs/i);
   assert.match(MIGRATION, /answer_ref[^\n]*vault-answer:\/\//i);
+});
+
+test("runtime security preflight creates only missing NOLOGIN roles and pgcrypto", () => {
+  assert.match(SECURITY_MIGRATION, /CREATE EXTENSION IF NOT EXISTS pgcrypto/i);
+  for (const role of ["anon", "authenticated", "service_role"]) {
+    assert.match(SECURITY_MIGRATION, new RegExp(
+      `IF NOT EXISTS[\\s\\S]*pg_roles[\\s\\S]*rolname = '${role}'[\\s\\S]*CREATE ROLE ${role} NOLOGIN`,
+      "i",
+    ));
+  }
+  assert.match(SECURITY_MIGRATION, /pg_roles|duplicate_object/i);
+  assert.doesNotMatch(SECURITY_MIGRATION, /\\b(?:GRANT|PASSWORD|SUPERUSER|ALTER ROLE)\\b/i);
 });
