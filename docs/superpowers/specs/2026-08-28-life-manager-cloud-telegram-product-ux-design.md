@@ -182,7 +182,6 @@ flowchart LR
   QR --> TG
   TG --> EDGE
   MINI --> EDGE
-  WEB --> EDGE
   EDGE --> ID --> DB
   DB --> CORE
   CORE --> GC

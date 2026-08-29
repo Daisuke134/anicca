@@ -6,15 +6,28 @@
 
 const DEPLOYMENT_ROLES = new Set(["api", "scheduler", "worker"]);
 
+function inngestConfigured(env) {
+  const value = env || {};
+  return String(value.INNGEST_DEV || "").trim() === "1"
+    || (typeof value.INNGEST_SIGNING_KEY === "string" && value.INNGEST_SIGNING_KEY.trim() !== "");
+}
+
+function inProcessLoopsOn(env) {
+  const value = env || {};
+  const flag = String(value.LIFE_RUN_LOOPS || "").trim().toLowerCase();
+  const off = flag === "false" || flag === "0" || flag === "off";
+  const role = String(value.LM_DEPLOYMENT_ROLE || "").trim().toLowerCase();
+  return !off || (!role && !inngestConfigured(value));
+}
+
 function maybeStartLoops(env, starters) {
   const flag = String((env && env.LIFE_RUN_LOOPS) || "").trim().toLowerCase();
   const role = String((env && env.LM_DEPLOYMENT_ROLE) || "").trim().toLowerCase();
   const owner = String((env && env.LM_SCHEDULER_OWNER) || "").trim();
-  const inngestConfigured = String((env && env.INNGEST_DEV) || "").trim() === "1"
-    || (typeof (env && env.INNGEST_SIGNING_KEY) === "string" && env.INNGEST_SIGNING_KEY.trim() !== "");
-  const standaloneFallback = (flag === "false" || flag === "0" || flag === "off") && !role && !inngestConfigured;
+  const off = flag === "false" || flag === "0" || flag === "off";
+  const standaloneFallback = off && !role && !inngestConfigured(env);
 
-  if ((flag === "false" || flag === "0" || flag === "off") && !standaloneFallback) {
+  if (off && !standaloneFallback) {
     return {
       started: false,
       reason: `scheduler loops disabled by deployment flag LIFE_RUN_LOOPS=${flag}`,
@@ -48,4 +61,4 @@ function maybeStartLoops(env, starters) {
   };
 }
 
-module.exports = { maybeStartLoops };
+module.exports = { maybeStartLoops, inngestConfigured, inProcessLoopsOn };
