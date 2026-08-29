@@ -10,7 +10,7 @@ demand evidence    : This is the existing Capafy Agent `7686597754`; this revisi
 |---|---:|---:|---|
 | day | $1.99 | 10 | No Free Trial |
 | week | $4.99 | 25 | No Free Trial |
-| month | $9.99 | 60 | 72h / 10 messages |
+| month | $9.99 | 60 | No Free Trial |
 
 ## Title
 YouTube Script Writer — Keep Viewers Watching

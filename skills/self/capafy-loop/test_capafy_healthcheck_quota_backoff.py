@@ -13,6 +13,60 @@ HEALTHCHECK = ROOT / "skills" / "self" / "capafy-loop" / "capafy-loop-healthchec
 
 
 class CapafyHealthcheckQuotaBackoffTest(unittest.TestCase):
+    def install_test_release(self, root, lifecycle_returncode=0):
+        release_root = root / "release"
+        healthcheck = release_root / "skills" / "self" / "capafy-loop" / "capafy-loop-healthcheck.sh"
+        healthcheck.parent.mkdir(parents=True)
+        healthcheck.write_text(HEALTHCHECK.read_text(encoding="utf-8"), encoding="utf-8")
+        lifecycle_calls = root / "lm-loop-calls"
+        control = release_root / "bin" / "lm-loop"
+        control.parent.mkdir(parents=True)
+        control.write_text(
+            "#!/bin/sh\n"
+            "printf '%s\\n' \"$*\" >> \"$CAPAFY_TEST_LM_LOOP_CALLS\"\n"
+            "exit \"$CAPAFY_TEST_LM_LOOP_RC\"\n",
+            encoding="utf-8",
+        )
+        control.chmod(0o755)
+        return healthcheck, lifecycle_calls, lifecycle_returncode
+
+    def run_stale_owner_healthcheck(self, lifecycle_returncode=0):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            state_home = root / "state-home"
+            marker = state_home / "state" / "capafy-autopublish" / ".capafy-healthy-pass"
+            marker.parent.mkdir(parents=True)
+            marker.touch()
+            stale = time.time() - (31 * 60 * 60)
+            os.utime(marker, (stale, stale))
+
+            healthcheck, lifecycle_calls, lifecycle_returncode = self.install_test_release(
+                root, lifecycle_returncode)
+            calls = root / "launchctl-calls"
+            fake_bin = root / "bin"
+            fake_bin.mkdir()
+            launchctl = fake_bin / "launchctl"
+            launchctl.write_text(
+                "#!/bin/sh\nprintf '%s\\n' \"$*\" >> \"$CAPAFY_TEST_CALLS\"\nexit 0\n",
+                encoding="utf-8",
+            )
+            launchctl.chmod(0o755)
+
+            env = os.environ | {
+                "LIFE_MANAGER_STATE_HOME": str(state_home),
+                "PATH": f"{fake_bin}:{os.environ['PATH']}",
+                "CAPAFY_TEST_CALLS": str(calls),
+                "CAPAFY_TEST_LM_LOOP_CALLS": str(lifecycle_calls),
+                "CAPAFY_TEST_LM_LOOP_RC": str(lifecycle_returncode),
+            }
+            result = subprocess.run(
+                ["bash", str(healthcheck)], env=env, text=True, capture_output=True, check=False
+            )
+            recorded = calls.read_text(encoding="utf-8").splitlines()
+            lifecycle = lifecycle_calls.read_text(encoding="utf-8").splitlines() if lifecycle_calls.exists() else []
+            log = (state_home / "logs" / "capafy-loop-healthcheck.log").read_text(encoding="utf-8")
+            return result, recorded, lifecycle, log
+
     def run_healthcheck(self, error_class, incomplete_name, expected_return=0):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -35,6 +89,7 @@ class CapafyHealthcheckQuotaBackoffTest(unittest.TestCase):
             )
             (evidence.parent / incomplete_name).mkdir()
 
+            healthcheck, lifecycle_calls, _ = self.install_test_release(root)
             calls = root / "launchctl-calls"
             fake_bin = root / "bin"
             fake_bin.mkdir()
@@ -49,31 +104,52 @@ class CapafyHealthcheckQuotaBackoffTest(unittest.TestCase):
                 "LIFE_MANAGER_STATE_HOME": str(state_home),
                 "PATH": f"{fake_bin}:{os.environ['PATH']}",
                 "CAPAFY_TEST_CALLS": str(calls),
+                "CAPAFY_TEST_LM_LOOP_CALLS": str(lifecycle_calls),
+                "CAPAFY_TEST_LM_LOOP_RC": "0",
             }
             result = subprocess.run(
-                ["bash", str(HEALTHCHECK)], env=env, text=True, capture_output=True, check=False
+                ["bash", str(healthcheck)], env=env, text=True, capture_output=True, check=False
             )
 
             self.assertEqual(result.returncode, expected_return, result.stderr)
             recorded = calls.read_text(encoding="utf-8")
+            lifecycle = lifecycle_calls.read_text(encoding="utf-8").splitlines() if lifecycle_calls.exists() else []
             receipt_path = state_home / "state" / "capafy-provider-backoff.json"
             receipt = json.loads(receipt_path.read_text(encoding="utf-8")) if receipt_path.exists() else None
-            return recorded, receipt
+            return recorded, receipt, lifecycle
 
     def test_stale_marker_with_quota_does_not_kickstart(self):
-            recorded, receipt = self.run_healthcheck("transient_quota", "101-2")
+            recorded, receipt, lifecycle = self.run_healthcheck("transient_quota", "101-2")
             self.assertNotIn("kickstart", recorded)
+            self.assertEqual(lifecycle, [])
             self.assertEqual(receipt["error_class"], "transient_quota")
             self.assertGreater(receipt["next_eligible_at_epoch"], int(time.time()))
 
     def test_recent_incomplete_attempt_gets_grace_without_kickstart(self):
-            recorded, _ = self.run_healthcheck("transient_unavailable", f"{int(time.time())}-2")
+            recorded, _, lifecycle = self.run_healthcheck("transient_unavailable", f"{int(time.time())}-2")
             self.assertNotIn("kickstart", recorded)
+            self.assertEqual(lifecycle, [])
 
-    def test_stale_nonquota_receipt_is_reported_without_kickstart(self):
-            recorded, _ = self.run_healthcheck(
-                "transient_unavailable", "101-2", expected_return=1)
+    def test_stale_nonquota_receipt_restarts_once_via_lm_loop(self):
+            recorded, _, lifecycle = self.run_healthcheck(
+                "transient_unavailable", "101-2", expected_return=0)
             self.assertNotIn("kickstart", recorded)
+            self.assertEqual(lifecycle, ["restart capafy-loop-daily"])
+
+    def test_stale_owner_without_attempt_or_quota_restarts_once_and_records_success(self):
+            result, recorded, lifecycle, log = self.run_stale_owner_healthcheck()
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertNotIn("kickstart", recorded)
+            self.assertEqual(lifecycle, ["restart capafy-loop-daily"])
+            self.assertIn("restarted ai.anicca.capafy-loop-daily", log)
+
+    def test_stale_owner_does_not_record_success_when_lm_loop_restart_fails(self):
+            result, recorded, lifecycle, log = self.run_stale_owner_healthcheck(lifecycle_returncode=17)
+            self.assertEqual(result.returncode, 1, result.stderr)
+            self.assertNotIn("kickstart", recorded)
+            self.assertEqual(lifecycle, ["restart capafy-loop-daily"])
+            self.assertNotIn("restarted ai.anicca.capafy-loop-daily", log)
+            self.assertIn("failed to restart ai.anicca.capafy-loop-daily", log)
 
 
 if __name__ == "__main__":

@@ -9,14 +9,14 @@ Every step has a VERIFY gate. Never trust a "shipped"/toast alone — confirm wi
 - Direct Anthropic FAILS (no /responses). OpenRouter speaks /responses + serves Claude. Verified.
 
 ## Flow (one listing)
-1. **Research winner live**: `capafy-user` GET `/agent/agent/agents/<id>` with `X-Access-Token` header → copy billings (cycle/price/cap/trial) + categoryId + structure. Words = original (anti-plagiarism), facts = verbatim.
+1. **Research winner live**: `capafy-user` GET `/agent/agent/agents/<id>` with `X-Access-Token` header → copy pricing (cycle/price/cap) + categoryId + structure. Words = original (anti-plagiarism), facts = verbatim. The paid-only policy below overrides any winner free-trial field.
 2. **Build skill**: pure-LLM, self-contained, NO local deps/secrets. Add `test/case1.md`. grep-verify clean.
 3. **Write LISTING.md**: title ≤50 chars, shortDescription, **welcomeMessage**, detailedDescription (emoji sections + table).
 4. **Copy skill to clean-WS** `$LIFE_MANAGER_STATE_HOME/work/capafy/skills/<skill>` (LEAK GUARD — never publish from live $LIFE_MANAGER_STATE_HOME/work).
 5. **publish-init** `--runtime-dir $LIFE_MANAGER_STATE_HOME/work/capafy --skill-dir <...> --selections-file .temp/confirmed-selections.json`. Over 5-draft cap → put a junk draft's `agent_id` in selections to reuse it. ★ NOTE: re-init does NOT set the card from selections — the CARD MUST be filled in CP1 web form. ★
 6. **CP1 (CloakBrowser)** — fill ALL of these or "提出を確認" silently fails:
    - 基本情報: title (real-type), shortDescription (textarea[0]), detailedDescription (textarea[1]), **welcomeMessage (the "初回実行前にユーザーへ表示" textarea — REQUIRED, easy to miss)**, tags, privacy URL, category dropdown.
-   - 価格設定: "Capafy で実行" → "Subscription" → set Plan 1 cycle + Add Plan ×2 → fill price/cap per cycle (placeholders: day 0.07/50, week 0.5/200, month 2/500) → **Primary Model = Claude Sonnet 4.6** → **test input (the "例：『たくさん買って…』" textarea — REQUIRED)** → **AI service provider field** → **per-plan trial radio: select Enable OR No Free Trial on EVERY plan (an unselected trial radio silently blocks save).** If Enable: fill Free Days + Free Request Limit (>0). Reliable valid state when trial config fights you = **No Free Trial on all plans**.
+   - 価格設定: "Capafy で実行" → "Subscription" → set Plan 1 cycle + Add Plan ×2 → fill price/cap per cycle (placeholders: day 0.07/50, week 0.5/200, month 2/500) → **Primary Model = Claude Sonnet 4.6** → **test input (the "例：『たくさん買って…』" textarea — REQUIRED)** → **AI service provider field** → **select No Free Trial on EVERY plan (an unselected trial radio silently blocks save; enabled free trials are forbidden).**
    - Click **提出を確認**. ★ VERIFY GATE: page must reach `page=card-done` / "カードを保存しました". If still `page=edit`, a required field is empty/invalid — find the red error or empty input and fix; do NOT proceed. ★
 7. **publish-configure --deep-scan** → leak check (`.temp/staging/agent.workspace_documents.json` must NOT exist) → submit `{"generic":[],"env_var":[]}` findings → status must be **configured** (not "ready" — "ready" w/ 0 keys = card never saved, go back to CP1).
 8. **CP2 (drive_checkpoint2.py <CP2url>)** — auto: expand 検出されたキー → click Edit pencil if card in summary mode → set Base URL/Model/Key (OpenRouter recipe) → delete blockrun(127.0.0.1) card → "キーを確認して保存". ★ VERIFY: "キー確認済み" toast / page=credential-done. ★
@@ -70,11 +70,14 @@ A brand-new run_online agent (NOT a junk-draft reuse) has CP1 traps the reused-d
 7. Plans: "Add Plan" button label is "Add Plan (1/3)" etc. — match loosely.
 8. ★ AI service provider field (placeholder "例: OpenAI、Anthropic、MiniMax") is REQUIRED ★ → `.type("openrouter.ai")`.
 9. Container mode (On-Demand US$0.07/day vs Cron+On-Demand) — select On-Demand.
-10. ★★ THE FINAL BLOCKER: EVERY plan must have a TRIAL CHOICE selected (Enable Free Trial OR No Free Trial). An unselected trial radio on ANY plan = price-tab red ✗ = 提出を確認 no-ops, with NO red text (only a tab-icon goes red). ★★
+10. ★★ THE FINAL BLOCKER: EVERY plan must select No Free Trial. An unselected trial radio on ANY plan = price-tab red ✗ = 提出を確認 no-ops, with NO red text (only a tab-icon goes red). An enabled free trial is forbidden. ★★
 11. ★ Validate via the TAB ICON COLOR: find the 価格設定 tab <button>, read its <svg> color — green rgb(61,220,132)=✓ valid, red rgb(229,83,75)=✗ invalid. This is the ONLY reliable "is the tab complete" signal. ★
 12. Success = toast "カードを保存しました" OR url=card-done/credential — never trust the absence of red text.
 
-### TRIAL config = COPY THE WINNER (Unscore 4097802482 for Humanizer): day=No Free Trial, week=Enable 24h, month=Enable 72h. (Do NOT set all-No — that's original; follow the winner.)
+### Historical winner evidence (not current policy)
+Unscore 4097802482 for Humanizer historically used day=No Free Trial, week=24h, and month=72h
+free trials. The current paid-only policy overrides that historical configuration: use No Free Trial
+on every plan.
 
 ## drive_cp1.py — 2 MORE gotchas found on O2 (2026-06-27), now baked in:
 13. ★ The React form fields LAZY-MOUNT only after a Playwright LOCATOR click on the 基本情報 tab (`pg.get_by_text("基本情報",exact=True).first.click()`). On a fresh new_page goto, inputs count = 0 until that locator click fires the render. evaluate/coords clicks do NOT mount it. (drive_cp1 uses tab_click()).

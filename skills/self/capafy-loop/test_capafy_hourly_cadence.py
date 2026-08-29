@@ -3,6 +3,7 @@ from pathlib import Path
 
 
 PLIST = Path(__file__).parent / "launchd" / "ai.anicca.capafy-loop-daily.plist"
+DAILY = Path(__file__).parent / "capafy-loop-daily.sh"
 
 
 def test_capafy_supply_owner_wakes_hourly_without_duplicate_schedule() -> None:
@@ -12,3 +13,21 @@ def test_capafy_supply_owner_wakes_hourly_without_duplicate_schedule() -> None:
     assert config["ThrottleInterval"] == 60
     assert "StartCalendarInterval" not in config
     assert config["Label"] == "ai.anicca.capafy-loop-daily"
+
+
+def test_daily_separates_immutable_execution_from_writable_public_source() -> None:
+    script = DAILY.read_text(encoding="utf-8")
+
+    assert 'LIFE_MANAGER_RELEASE_ROOT=' in script
+    assert 'LIFE_MANAGER_SOURCE_REPO=' in script
+    assert '[ -w "$LIFE_MANAGER_SOURCE_REPO" ]' in script
+    assert 'CAPAFY_CATALOG_DIR="$LIFE_MANAGER_SOURCE_REPO/skills/capafy/catalog"' in script
+    assert 'python3 "$LIFE_MANAGER_RELEASE_ROOT/skills/capafy-autopublish/scripts/inventory_status.py"' in script
+    assert 'inside $LIFE_MANAGER_SOURCE_REPO/skills/capafy/catalog/<new-slug>/' in script
+
+
+def test_every_healthy_terminal_refreshes_the_healthcheck_marker() -> None:
+    script = DAILY.read_text(encoding="utf-8")
+
+    assert 'HEALTHY_MARKER="$HOME/.local/state/life-manager/state/capafy-autopublish/.capafy-healthy-pass"' in script
+    assert script.count("mark_healthy || exit 2") == 3

@@ -144,6 +144,37 @@ class LoopCleanupTest(unittest.TestCase):
         self.assertEqual(event["effect_status"], "not_applicable")
         self.assertTrue(event["evidence_refs"][0].startswith("lm-loop://job/"))
 
+    def test_loop_run_passes_release_root_to_entrypoint_without_git(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); home = root / "home"; home.mkdir()
+            entry = root / "bin/job.sh"; entry.parent.mkdir()
+            observed = home / "release-root.txt"
+            entry.write_text(
+                f'#!/bin/sh\nprintf "%s\\n%s" "$LIFE_MANAGER_RELEASE_ROOT" '
+                f'"$LIFE_MANAGER_REPO" > "{observed}"\n')
+            entry.chmod(0o755)
+            registry = {"schema_version": 2, "loops": {"job": {
+                "label": "ai.anicca.job", "domain": "system", "entrypoint": "bin/job.sh",
+                "cadence": {"run_at_load": True}, "effect_class": "none",
+                "state_root": "~/state", "log_root": "~/state/logs",
+                "cleanup": {"max_runs": 1, "max_age_days": 1},
+                "provider_route": "deterministic"}}}
+            (root / "config").mkdir()
+            (root / "config/loop-registry.json").write_text(json.dumps(registry))
+            (root / "RELEASE.json").write_text(json.dumps({"sha": "a" * 40}))
+            environment = {
+                **os.environ,
+                "HOME": str(home),
+                "LIFE_MANAGER_RELEASE_ROOT": "",
+                "LIFE_MANAGER_REPO": "source-sentinel",
+            }
+            result = subprocess.run(
+                [sys.executable, "-m", "runtime.loop.lm_loop_run", "job", str(root)],
+                cwd=Path(__file__).parents[3], env=environment, check=False)
+
+            self.assertEqual(result.returncode, 0)
+            self.assertEqual(observed.read_text().splitlines(), [str(root.resolve()), "source-sentinel"])
+
     def test_loop_run_records_failed_terminal_event(self):
         event = self._run_terminal_event(7)
         self.assertEqual((event["status"], event["blocker"]),
