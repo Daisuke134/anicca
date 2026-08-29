@@ -810,7 +810,9 @@ Current atomic run order:
 - [x] observe its natural 19:25 T-10 and 19:30 T-5 calls: two durable claims contain distinct call-control/session/leg IDs, official Telnyx retrieve returns HTTP 200 with exact matching hashes and `is_alive=false`, and six signed-route POSTs return 200; both calls are unanswered so AMD/webhook identity remains null;
 - [x] TDD signed terminal `call.hangup` receipt for unanswered wake calls: `b77db8bbd` wires the signed HTTP route; focused/combined HTTP is 20/20 and 21/21;
 - [x] fix round 1 `61908cd4e`: function-only precedence migration plus real PostgreSQL regression proves hangup→AMD, AMD→hangup, replay, distinct AMD/cross-row conflicts, and both concurrent lock orders; scoped Sol re-review `ship`, Critical addressed, new Critical/Important zero;
-- [ ] deploy/read back the hangup receipt fix, then create a new no-location event because the current call identities cannot be retroactively linked to ignored webhook IDs;
+- [x] fix round 2 `98523b230`: rename the function migration after the base in lexical order; primary PostgreSQL PASS and scoped re-review `ship`, no new breakage;
+- [x] rollback-preflight and apply the function-only production migration SHA-256 `304c40a330baf3e03f38a6d2a91d5731af7ba3d7f556497ba10b623983b32df6`; post-readback function hash `7ccc1d1b6d6f42a6ff207909083af725`, wake rows 496, fixture zero, indexes two, RLS true, service execute true, browser execute false;
+- [ ] merge/deploy/read back the hangup HTTP route, then create a new no-location event because the current call identities cannot be retroactively linked to ignored webhook IDs;
 - [ ] after no-location liveness is proven, create one fresh physical controlled event and require the Travel block plus route/Telegram/call receipts;
 - [ ] no-location T-10 row has one call-control ID, one signed webhook ID, and one durable claim;
 - [ ] no-location T-5 row has one call-control ID, one signed webhook ID, and one durable claim;
