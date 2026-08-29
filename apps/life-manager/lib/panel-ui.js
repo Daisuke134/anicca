@@ -703,30 +703,30 @@ function renderPanelPage(options = {}) {
         <header class="section-head"><h2 id="money-printer-title">Money Printer</h2><span class="section-kicker">24/7 earning work</span></header>
         <div class="section-body" data-panel-body aria-live="polite"><p class="loading">Money Printerの状態を確認しています。</p></div>
       </section>
-      <section class="panel-section" data-panel-section="timeline" data-state="loading" aria-labelledby="timeline-title">
+      ${guest ? "" : `<section class="panel-section" data-panel-section="timeline" data-state="loading" aria-labelledby="timeline-title">
         <header class="section-head"><h2 id="timeline-title">今日の timeline</h2><span class="section-kicker">Today</span></header>
         <div class="section-body" data-panel-body aria-live="polite"><p class="loading">今日の予定を確認しています。</p></div>
-      </section>
+      </section>`}
 
-      <section class="panel-section" data-panel-section="scores" data-state="loading" aria-labelledby="scores-title">
+      ${guest ? "" : `<section class="panel-section" data-panel-section="scores" data-state="loading" aria-labelledby="scores-title">
         <header class="section-head"><h2 id="scores-title">4 organ スコア</h2><span class="section-kicker">Outcomes</span></header>
         <div class="section-body" data-panel-body aria-live="polite"><p class="loading">記録を確認しています。</p></div>
-      </section>
+      </section>`}
 
-      <section class="panel-section" data-panel-section="ledger" data-state="loading" aria-labelledby="ledger-title">
+      ${guest ? "" : `<section class="panel-section" data-panel-section="ledger" data-state="loading" aria-labelledby="ledger-title">
         <header class="section-head"><h2 id="ledger-title">FINANCIAL 台帳</h2><span class="section-kicker">Ledger</span></header>
         <div class="section-body" data-panel-body aria-live="polite"><p class="loading">台帳を確認しています。</p></div>
-      </section>
+      </section>`}
 
-      <section class="panel-section" data-panel-section="gates" data-state="loading" aria-labelledby="gates-title">
+      ${guest ? "" : `<section class="panel-section" data-panel-section="gates" data-state="loading" aria-labelledby="gates-title">
         <header class="section-head"><h2 id="gates-title">gates 状態</h2><span class="section-kicker">Context</span></header>
         <div class="section-body" data-panel-body aria-live="polite"><p class="loading">つながっている context を確認しています。</p></div>
-      </section>
+      </section>`}
 
-      <section class="panel-section" data-panel-section="settings" data-state="loading" aria-labelledby="settings-title">
+      ${guest ? "" : `<section class="panel-section" data-panel-section="settings" data-state="loading" aria-labelledby="settings-title">
         <header class="section-head"><h2 id="settings-title">設定</h2><span class="section-kicker">Read only</span></header>
         <div class="section-body" data-panel-body aria-live="polite"><p class="loading">設定を確認しています。</p></div>
-      </section>
+      </section>`}
 
       ${guest ? "" : `<section class="panel-section" data-panel-section="control-center" data-state="loading" aria-labelledby="control-center-title">
         <header class="section-head"><h2 id="control-center-title">接続と automation</h2><span class="section-kicker">Control</span></header>
@@ -740,11 +740,11 @@ function renderPanelPage(options = {}) {
 
     const panelEndpoints = Object.freeze({
       "money-printer": "/api/panel/money-printer",
-      timeline: "/api/panel/timeline",
-      scores: "/api/panel/scores",
-      ledger: "/api/panel/ledger",
-      gates: "/api/panel/gates",
-      settings: "/api/panel/settings",
+      ${guest ? "" : 'timeline: "/api/panel/timeline",'}
+      ${guest ? "" : 'scores: "/api/panel/scores",'}
+      ${guest ? "" : 'ledger: "/api/panel/ledger",'}
+      ${guest ? "" : 'gates: "/api/panel/gates",'}
+      ${guest ? "" : 'settings: "/api/panel/settings",'}
       ${guest ? "" : '"control-center": "/api/panel/control-center",'}
     });
     const displaySecretPatterns = Object.freeze(${JSON.stringify(DISPLAY_SECRET_PATTERNS)}.map(function (pattern) {

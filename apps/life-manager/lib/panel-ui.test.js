@@ -325,6 +325,14 @@ test("WebMCP judge guest uses the same Money Printer section without owner contr
   assert.match(html, /Judge guest — external effects disabled/);
   assert.match(html, /data-panel-section="money-printer"/);
   assert.match(html, /\/api\/panel\/money-printer/);
+  const main = html.match(/<main class="panel-grid">[\s\S]*?<\/main>/)?.[0] || "";
+  const endpointBlock = html.match(/const panelEndpoints = Object\.freeze\(\{[\s\S]*?\}\);/)?.[0] || "";
+  for (const section of ["timeline", "scores", "ledger", "gates", "settings", "control-center"]) {
+    assert.doesNotMatch(main, new RegExp(`data-panel-section="${section}"`));
+  }
+  for (const endpoint of ["timeline", "scores", "ledger", "gates", "settings", "control-center"]) {
+    assert.doesNotMatch(endpointBlock, new RegExp(`/api/panel/${endpoint}`));
+  }
   assert.doesNotMatch(html, /action="\/panel\/logout"|>Logout</);
   assert.doesNotMatch(html, /PERSONAL CONTROL CENTER|あなたの状態と接続だけを表示しています/);
 });
