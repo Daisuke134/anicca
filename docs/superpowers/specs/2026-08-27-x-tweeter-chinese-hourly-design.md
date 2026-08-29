@@ -1,27 +1,27 @@
 # X成長ループ3本 実験仕様・運用状況
 
-## 6 jobは同じmain releaseで稼働し、3レーンの実投稿は成立した
+## 3レーンは自然wakeでpassし、実投稿とreplay-zeroが成立した
 
 3種類の投稿経路は、実際のX投稿と公式URLの読み戻しまで成功している。したがって、
 「日本語リポスト」「英語リポスト」「中国語圏の情報を使った英語オリジナル投稿」が
 技術的に成立することは確認できた。
 
-6 jobはGitHub main祖先の同じimmutable release `3f668d6a…` を参照する。loaded
-ProgramArgumentsと実ファイルをreadback済みで、worktreeやbranchを本番実行先にしていない。
-release切替とregistry applyは同じhost-wide lockを使い、stale releaseと同時applyを変更前に
-拒否する。
+pass 3本はGitHub main祖先のimmutable release `d9021490…`、healthcheck 3本は同じくmain祖先の
+`6ab86c33…`を参照する。rolling deployのためexact SHAは2種類だが、loaded ProgramArgumentsと
+実ファイルは一致し、worktreeやbranchを本番実行先にしていない。release切替とregistry applyは
+同じhost-wide lockを使い、stale releaseと同時applyを変更前に拒否する。
 
 最新のruntime snapshotは次のとおり。`last event SHA`がinstalled SHAと違う行は、配置成功を
 自然wake成功で代用しない。
 
 | owner | installed SHA | launchd | last terminal | last event SHA | 最新公式投稿 | 残確認 |
 |---|---|---|---|---|---|---|
-| English Repost | `3f668d6a…` | loaded-idle | pass | `23ca4d6c…` | https://x.com/selawmqt/status/2093179411780805094 | current SHAの自然terminal |
-| Dice Repost | `3f668d6a…` | loaded-idle | pass | `8efb1840…` | https://x.com/diceai0/status/2093272506090283071 | current SHAの自然terminal |
-| Chinese-source Tweeter | `3f668d6a…` | loaded-idle | pass | `8efb1840…` | https://x.com/selawmqt/status/2093028734823768073 | current SHAの自然terminal |
+| English Repost | `d9021490…` | loaded-idle | pass | `d9021490…` | https://x.com/selawmqt/status/2093315448389705916 | なし |
+| Dice Repost | `d9021490…` | loaded-idle | pass | `d9021490…` | https://x.com/diceai0/status/2093491646977753331 | なし |
+| Chinese-source Tweeter | `d9021490…` | loaded-idle | pass | `d9021490…` | https://x.com/selawmqt/status/2093028734823768073 | なし |
 
-healthcheck 3本は`3f668d6a…`からterminal passを出している。ただし、**実験基盤の復旧と、実験の
-勝敗確定は別**である。60分後viewsの比較sampleはまだ不足している。
+healthcheck 3本も`6ab86c33…`からterminal passを出している。X実験のruntime/effect基盤は完了し、
+次は60分後viewsをstrategyへ反映する段階である。
 
 ## コードはmain 1本、worktreeは作業中だけ使う
 
@@ -121,7 +121,7 @@ AI・開発ツール・オープンソース・自動化などの英語投稿を
 - 投稿: https://x.com/selawmqt/status/2093017798494838886
 - source: https://x.com/ClementDelangue/status/2092931447644442635
 
-最新のruntime復旧後投稿は https://x.com/selawmqt/status/2093179411780805094 である。
+最新のruntime復旧後投稿は https://x.com/selawmqt/status/2093315448389705916 である。
 affiliate revisionは共有model schemaの空フィールドを安全に受理するよう修正し、POSTED terminal
 receiptとprovider submission IDを保存した。
 
@@ -131,12 +131,14 @@ AI・プロダクト・深層技術・crypto・finance・build in public・お�
 sourceは日本語でも英語でもよいが、投稿本文は日本語に統一する。文体はprimary、empathy、
 funnyの3案を作り、そのwakeの指定toneを優先する。
 
-最新の実投稿例:
+実投稿例:
 
 > 音声エージェントを採用するかどうかは、典型業務で待ち時間が3分の1、費用が18分の1になるという比較から判断を始めるとよい。性能表だけで決めず、同じ台本で指示追従、ツール実行、聞き返しを記録する。どれか一つでも崩れるなら、本番には出さない。
 
 - 投稿: https://x.com/diceai0/status/2093136603065790831
 - source: https://x.com/kwindla/status/2093014818647339026
+
+最新の投稿は https://x.com/diceai0/status/2093491646977753331 である。
 
 ### Chinese-source Tweeter
 
@@ -184,8 +186,23 @@ Xの投稿を引用せず、中国語圏の公開ページからsource固有の�
 少なくとも2つのarmで各3投稿の計測がそろうまで設定を変えない。条件を満たした場合だけ、
 tone weightは0.5、original比率は0.05ずつ動かす。1回の結果で全振りせず、比較対象を残す。
 
-現時点では、投稿経路の成立は証明できたが、どのtone・形式が勝つかを決めるだけのsampleは
-そろっていない。したがって、実験の勝者はまだ決めない。
+60分以上経過した最初のviews sampleは次のとおりである。
+
+| lane | arm | n | views中央値 |
+|---|---|---:|---:|
+| English | original / empathy | 4 | 19.5 |
+| English | quote / funny | 7 | 15 |
+| English | quote / empathy | 20 | 14 |
+| English | quote / primary | 6 | 13 |
+| Dice | quote / empathy | 6 | 28 |
+| Dice | quote / funny | 8 | 24 |
+| Dice | quote / primary | 9 | 23 |
+| Tweeter | original / funny | 20 | 7 |
+| Tweeter | original / primary | 15 | 7 |
+| Tweeter | original / empathy | 16 | 6 |
+
+Diceはempathy、Englishは計測済みarmではoriginal/empathyが最高である。Tweeterはfunnyとprimaryが
+同率であり、1つへ全振りしない。English original/primaryはn=1なので比較対象から外す。
 
 ## 3レーンの実投稿までは確認できた
 
@@ -198,16 +215,17 @@ tone weightは0.5、original比率は0.05ずつ動かす。1回の結果で全�
 - 同じslotの再wakeでledger行数が増えないことを確認した
 - Life Managerの公開mainへ実装、テスト、READMEを統合した
 
-## release削除事故は修正し、同じmain releaseへ統一した
+## release削除事故は修正し、rolling main releaseへ統一した
 
 事故原因はrelease作成scriptと中央cleanupが別々にGCを持ち、前者がloaded plistのexact pathを
 保護しなかったことである。release作成scriptを中央GCへ一本化し、currentとloaded plistを
 保護する回帰テストを追加した。実際に旧loaded release `defa620c…` を残したまま次releaseを
 作成できた。
 
-installed・loadedの6 jobはexact release SHA `3f668d6a…` で一致する。production plistの
-worktree参照は0である。Life Manager全体もregistry 167、loaded 167、installed release SHA
-1種類、unmanaged 0、missing entrypoint 0である。
+pass 3本は`d9021490…`、healthcheck 3本は`6ab86c33…`で、各installed SHAとevent SHAが一致する。
+production plistのworktree参照は0である。一方、現在の`~/loops/current`はsparse releaseであり、
+Life Manager全体の`lm-loop doctor`は未収録entrypointをmissingとして報告する。loaded X jobには
+影響しないが、全体control-planeのcanonical currentとしては別途修復が必要である。
 
 ## 残TODO — この順番で閉じる
 
@@ -236,11 +254,11 @@ merge状態をread-onlyで確認し、安全な対象だけを整理する。同
 - `loops/x-tweeter/loop.toml`、`config/loop-registry.json`、loaded plistの3つを照合する
 - English Repostの0分・30分、Diceの5分・35分と重ならないことを確認する
 
-### P0: 最新releaseの自然terminalを閉じる
+### 完了: 最新releaseの自然terminalとreplay-zeroを閉じる
 
-- English Repost: `3f668d6a…`の自然terminalを取得する
-- Dice Repost: `3f668d6a…`の自然terminalを取得する
-- Chinese-source Tweeter: `3f668d6a…`の自然terminalを取得する
+- English Repost: `d9021490…`の自然terminal pass
+- Dice Repost: `d9021490…`の自然terminal pass
+- Chinese-source Tweeter: `d9021490…`の自然terminal pass
 
 3レーンのsecond wakeとledgerを照合し、最新effectの重複作用0を確認した。Englishはjob receipt
 3行中POSTED 1、Dice sourceはposted 1、Tweeter sourceはposted 1である。English Repostの
@@ -261,29 +279,37 @@ Diceは106候補のcritic棄却、Tweeterは7媒体候補0で、どちらも安�
 - CIはmacOSでregistry、release、apply fence、clean installを検証する
 - `skills/loop-development/SKILL.md`をClaude/Codex共通ルールから必読にする
 
-### P1: 計測をためて最初の比較を閉じる
+### P0 platform: full currentとdoctorを復旧する
 
-- 各tone・形式で60分後viewsを各3件以上集める
-- 中央値を比較し、`insufficient-data`のままなら設定を変えない
-- 条件を満たした比較だけ`strategy.json`へ反映する
+- `~/loops/current`を全registry entrypointを含むmain由来releaseへ戻す
+- `lm-loop doctor`のmissing entrypointを0へ戻す
+- loaded exact release、state、receiptを変更・削除せずに復旧する
+- release build前に必要空き容量を保証し、ENOSPCのpartial releaseを残さない
+
+### P1: 計測結果をstrategyへ反映する
+
+- Diceはempathyを0.5増やし、他toneを残して比較を継続する
+- Englishはoriginal/empathyを優先するが、n=1のoriginal/primaryは変更判断に使わない
+- Tweeterはfunny/primaryを同率維持し、empathyも探索枠として残す
+- 上記の最小変更だけ`strategy.json`へ反映する
 - 日次digestで投稿数、計測coverage、中央値、最良・最低投稿を報告する
 
 ### P1: merge済みbranchとworktreeを整理する
 
 - 全worktreeを`使用中`、`dirty`、`未merge`、`merge済みclean`に分類する
 - 実行中agentが所有するworktreeと、dirty・未mergeのworktreeは保護する
-- 現在30 worktree、dirty 16、未mergeまたはdetached 25、merge済みclean 4である
+- 現在29 worktree、dirty 15、未mergeまたはdetached 24、merge済みclean 4である
 - 全worktreeがlock中なので、ownerと実行processを確認した対象だけunlock・削除する
 - 対応するlocal・remote feature branchを削除する
 - 永続branchが`main`だけになっていることを確認する
 - 新しいPRがmergeされたらbranch/worktreeを片付ける手順をrelease workflowへ組み込む
 
-## 配置復旧は完了、公開E2Eとreplay-zeroで運用完了とする
+## X運用基盤は完了し、platform currentとstrategy反映を残す
 
 次のすべてを満たした時点で、実験基盤と現在の本番運用を完了とする。
 
-1. 6 jobが存在する同一exact releaseを参照する
-2. 3 passと3 healthcheckのcurrent SHA terminalが0である
+1. 6 jobが存在するmain祖先のexact releaseを参照する
+2. 3 passと3 healthcheckのinstalled SHA terminalが0である
 3. 3レーンでruntime復旧後の実投稿URLをreadbackできる
 4. 3レーンのsecond wakeで重複作用が0である
 5. cleanup後もloaded releaseが残る
@@ -291,5 +317,4 @@ Diceは106候補のcritic棄却、Tweeterは7媒体候補0で、どちらも安�
 7. 本番plistがbranch・worktree・mutable checkoutを参照しない
 8. merge済みcleanなworktreeとfeature branchが残っていない
 
-toneや投稿形式の勝者決定は、この基盤完了とは別である。各armのsampleが3件未満なら、
-「実験は動いているが、勝敗は未確定」と報告する。
+X固有の1〜7は満たした。8のworktree整理、platform current復旧、計測結果のstrategy反映を残す。
