@@ -693,7 +693,7 @@ gh pr create \
 
 Re-run Step 4 after rebase if the merge base changes. Leave the approved PR unmerged until Step 7.
 
-- [ ] **Step 7: Apply the migration, merge immediately, and read back exact deploy**
+- [x] **Step 7: Apply the migration, merge immediately, and read back exact deploy**
 
 Pause new friend invitations for this controlled release window. Apply `2026-08-28-lm-trial-first.sql` and `2026-08-28-lm-travel-log-legs.sql` in one production transaction. Read back the trial column/function bodies/ACL/unchanged existing null rows and the validated four-leg CHECK with existing travel rows/unique/RLS/other CHECKs preserved. Then merge the already-approved PR immediately:
 
@@ -741,7 +741,7 @@ Continue the existing two-minute onboarding owner until it sends one upgrade Tel
 
 **Ownership:** Primary only. This task creates and later deletes one controlled private Calendar event.
 
-- [ ] **Step 0: Persist the signed Telnyx provider receipt before creating replacement events**
+- [x] **Step 0: Persist the signed Telnyx provider receipt before creating replacement events**
 
 The existing wake ledger stores `amd_result` but drops the Telnyx call identifiers carried by the dial response and signed `call.machine.detection.ended` webhook. Add only the provider receipt fields needed for acceptance to the existing `lm_wake_log`; do not create another call ledger or provider abstraction. Bind every write to the exact `(uid,event_key,claim_token)`, latch one `call_control_id`, accept only the same ID on webhook replay, store the signed webhook event ID/session/leg IDs, and never release a wake claim after Telnyx accepted the call. A conflicting call ID must write zero rows. Verify with real PostgreSQL plus the real signed-webhook HTTP path before production apply.
 
@@ -752,7 +752,7 @@ The existing wake ledger stores `amd_result` but drops the Telnyx call identifie
 - [x] 8C: rollback-preflight, apply, deploy, and read back the exact production SHA before replacement events.
 - [x] 8D1: add a service-only Telegram message receipt RPC to the existing `lm_travel_log`; preserve its claim key, rows, RLS, policies, and four-leg constraint.
 - [x] 8D2: after an accepted T-5 send, record the exact positive Telegram `message_id`; receipt mismatch/failure retains the claim and never resends, while provider rejection alone releases it.
-- [ ] 8D3: apply the additive migration, merge/deploy the wiring, and read back the exact production SHA before creating replacement events.
+- [x] 8D3: apply the additive migration, merge/deploy the wiring, and read back the exact production SHA before creating replacement events.
 
 Expected: the replacement event can be read back as one exact Telnyx call ID + one signed webhook event ID + one wake row for each level, while webhook replay changes no identity and creates no call.
 
