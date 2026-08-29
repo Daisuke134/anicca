@@ -11,7 +11,7 @@ from job_search_loop.outbox import Outbox
 
 
 class ApplicationReportingTests(unittest.TestCase):
-    def test_terminal_report_is_run_scoped_idempotent_and_records_unknown_delivery(self):
+    def test_terminal_report_suppresses_routine_inbox_message(self):
         reporting = importlib.import_module("job_search_loop.application_reporting")
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -54,13 +54,13 @@ class ApplicationReportingTests(unittest.TestCase):
                 sender=lambda **_: (_ for _ in ()).throw(RuntimeError("offline")),
             )
 
-            self.assertEqual(first["delivery"], "ack")
+            self.assertEqual(first["delivery"], "suppressed")
             self.assertEqual(replay["event_key"], "job-search-inbox:inbox-test-1")
-            self.assertEqual(len(requests), 1)
-            self.assertEqual(unknown["delivery"], "delivery_unknown")
+            self.assertEqual(len(requests), 0)
+            self.assertEqual(unknown["delivery"], "suppressed")
             self.assertEqual(oct((root / "terminal.json").stat().st_mode & 0o777), "0o600")
 
-    def test_application_progress_reuses_fit_reason_and_is_run_scoped(self):
+    def test_application_progress_is_suppressed_before_submission(self):
         reporting = importlib.import_module("job_search_loop.application_reporting")
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -85,7 +85,7 @@ class ApplicationReportingTests(unittest.TestCase):
             outbox = Outbox(outbox_path)
             fit_key = f"workday-fit:{application_id}:{evidence}"
             fit_message = (
-                "Codex::: [Job Hunter][応募判断]\n"
+                "[Job Hunting] 応募判断\n"
                 "理由: Resume evidence matches the complete JD.\n"
                 "給与: Published salary meets the floor."
             )
@@ -107,13 +107,11 @@ class ApplicationReportingTests(unittest.TestCase):
                 run_id="daily-1",
                 sender=sender,
             )
-            self.assertEqual(receipt["message_id"], "progress-101")
-            self.assertIn("Dream AI", calls[0]["message"])
-            self.assertIn("Product Manager", calls[0]["message"])
-            self.assertIn("Resume evidence matches", calls[0]["message"])
-            self.assertIn("Published salary meets", calls[0]["message"])
+            self.assertEqual(receipt["status"], "suppressed")
+            self.assertIsNone(receipt["message_id"])
+            self.assertEqual(calls, [])
             self.assertEqual(
-                calls[0]["event_key"],
+                receipt["event_key"],
                 f"workday-application-progress:{application_id}:daily-1",
             )
 
@@ -185,8 +183,52 @@ class ApplicationReportingTests(unittest.TestCase):
                 receipt["reason"],
                 "transport_failed_without_command_failure",
             )
-            self.assertIn("Workday処理を完了できませんでした", calls[0]["message"])
-            self.assertIn("transport_failed_without_command_failure", calls[0]["message"])
+            self.assertIn("今回の処理を完了できませんでした", calls[0]["message"])
+            self.assertNotIn("transport_failed_without_command_failure", calls[0]["message"])
+
+    def test_fit_decisions_are_suppressed_before_submission(self):
+        reporting = importlib.import_module("job_search_loop.application_reporting")
+        calls = []
+
+        with tempfile.TemporaryDirectory() as directory:
+            outbox = Path(directory) / "outbox.sqlite3"
+            for status in ("rejected", "hold", "qualified"):
+                with self.subTest(status=status):
+                    application_id = f"application-{status}"
+                    result = reporting.deliver_fit_decision(
+                        decision={
+                            "decision": status,
+                            "application_id": application_id,
+                            "evidence_sha256": "a" * 64,
+                        },
+                        outbox_path=outbox,
+                        sender=lambda **kwargs: calls.append(kwargs),
+                    )
+                    self.assertEqual(result["status"], "suppressed")
+                    self.assertIsNone(result["message_id"])
+                    self.assertEqual(
+                        result["event_key"],
+                        f"workday-fit:{application_id}:{'a' * 64}",
+                    )
+
+        self.assertEqual(calls, [])
+
+    def test_ineligible_outcome_is_suppressed_without_telegram(self):
+        from job_search_loop.browser_agent.contracts import QueueRowReceiptV1
+        from job_search_loop.browser_agent.outcome_reporting import send_hourly_outcomes
+
+        calls = []
+        with tempfile.TemporaryDirectory() as directory:
+            result = send_hourly_outcomes(
+                database=Path(directory) / "outbox.sqlite3",
+                wake_id="wake-ineligible",
+                receipts=(QueueRowReceiptV1("application-1", "Example", "Role", "ineligible"),),
+                evidence_classes={},
+                sender=lambda **kwargs: calls.append(kwargs),
+            )
+
+        self.assertEqual(result, {"status": "suppressed", "message_id": None})
+        self.assertEqual(calls, [])
     def test_quota_failed_wake_reports_queued_company_role_and_next_action(self):
         reporting = importlib.import_module("job_search_loop.application_reporting")
         deliver = getattr(reporting, "deliver_wake_report", None)
@@ -254,12 +296,13 @@ class ApplicationReportingTests(unittest.TestCase):
             )
 
             message = calls[0]["message"]
-            self.assertIn("Codex:::", message)
+            self.assertTrue(message.startswith("[Job Hunting] 24時間レポート"))
+            self.assertNotIn(":::", message)
             self.assertIn("会社: NVIDIA", message)
             self.assertIn("求人: Senior AI Partner Manager", message)
-            self.assertIn("Workday処理を完了できませんでした", message)
-            self.assertIn("transient_quota", message)
-            self.assertIn("利用可能なモデル容量", message)
+            self.assertIn("今回の処理を完了できませんでした", message)
+            self.assertIn("応募完了: 0件", message)
+            self.assertNotIn("transient_quota", message)
             self.assertIn("ユーザーの操作は必要ありません", message)
             self.assertEqual(receipt["message_id"], "wake-901")
             self.assertEqual(receipt, json.loads(output.read_text(encoding="utf-8")))
@@ -340,6 +383,8 @@ class ApplicationReportingTests(unittest.TestCase):
                 calls[0]["event_key"],
                 f"application-submitted:{application_id}:gmail-1",
             )
+            self.assertTrue(calls[0]["message"].startswith("[Job Hunting] 応募完了"))
+            self.assertNotIn(":::", calls[0]["message"])
             self.assertIn("会社: Dream AI", calls[0]["message"])
             self.assertIn("求人: Agent Engineer", calls[0]["message"])
             self.assertIn("確認: authoritative_receipt_email", calls[0]["message"])
