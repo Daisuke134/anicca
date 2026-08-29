@@ -42,6 +42,10 @@
       到達せず、Note/Substack/Xの新規live URLは0、received writing revenueは0である。headlineはImageMagick生成のため
       GPT Image 2 receipt要件を満たさない。次は5GiB以上の安定headroomでmain由来releaseを作り、orphan cardをqueueへ
       hash-bound復旧して新runを1回wakeする。
+      最新readback: `article-daily`はloaded-idle、毎朝06:00にscheduleされ、`ARTICLE_AUTOPUBLISH=1`であるが、
+      installed release `def55ccd`の直近terminalはFAIL `entrypoint_exit_75`である。公開ledgerと外部公開面の最新は
+      Note JA / Substack JA / Substack ENが8月21日、X Article JAが8月20日で、8月22日以降の新規live articleは0である。
+      schedule設定や過去のlive記事を「毎日公開verified」と呼ばない。
 - [ ] W3 W2のNote JAだけをprovider-native readbackし、title、body、owner、headline、paywall、URLを確認する。
 - [ ] W4 W2のSubstack JAだけを同じ項目でprovider-native readbackする。
 - [ ] W5 W2のSubstack ENだけを同じ項目でprovider-native readbackする。
@@ -58,7 +62,8 @@
 - [ ] W15 editorial/self-owned purchase/fee/refund/payoutをartifact/runへjoinする。
 - [ ] W16 最初のreceived writing paymentを公式readbackする。view、like、pending、availableはrevenue 0/unknownのままにする。
 - [ ] W17 1日1本を7 terminal runs連続観測する。headline readback、payment attribution、Telegram receipt、
-      duplicate=0を各runで保持する。
+      duplicate=0を各runで保持する。この7連続receiptが揃うまで「Life Managerは毎日記事を公開することがverified」と
+      宣言しない。
 - [ ] W18 W17と最初のreceived payment後だけ、06:00/14:00/22:00の3独立slotを追加する。各slotは異なるtopic、
       unique run、同じ品質・money gateを持ち、記事当たりexpected net revenueが下がれば1日1本へ戻す。
 - [ ] W19 OSS packageを別tenantへinstallし、credential/state/receipt交差0を証明する。
