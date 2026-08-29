@@ -677,7 +677,7 @@ Expected: exit 0 for every command; dependency diff empty; secret findings zero.
 
 Fresh read-only Sol reviews `origin/main..HEAD` against AC-01–38, with emphasis on money loss, duplicate effects, tenant crossing, client-written truth, secret/PII logs, trial extension, and OpenClawMU/local scope creep. Critical/High must be zero.
 
-- [ ] **Step 6: Rebase safely, push, and create the PR**
+- [x] **Step 6: Rebase safely, push, and create the PR**
 
 ```bash
 git fetch origin

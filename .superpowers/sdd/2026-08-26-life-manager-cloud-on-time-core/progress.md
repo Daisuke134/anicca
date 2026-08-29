@@ -240,7 +240,7 @@ Baseline: focused Life Manager suite 175/175 PASS.
 - TDD/readback: missing-migration RED; local PostgreSQL `grant_once=1 trial_active=1 tenant_scope=1 acl=1 paid_writes=0`; unchanged Node panel/onboarding contracts 34/34.
 - Review R0 found two Important evidence gaps (exact three-day window and actual paid-column write tripwire) plus one Minor pre-grant JSON gap. Fix round 1 added server clock bounds, `BEFORE UPDATE OF paid` rejection, and null/false state. Scoped fresh Sol re-review: all addressed, new breakage none, ship.
 - Production Supabase rollback-only preflight: exact transaction-timestamp + 3 days, repeat deadline unchanged, tenant/chat isolation, service-role ACL, paid false. Post-rollback official readback is `trial_column_count=0`, `fixture_count=0`, `trial_body_present=false`.
-- Task 13A code/preflight status: complete at `d8974760d`. Production migration apply remains intentionally deferred to finish-plan Task 6 immediately before exact-SHA deploy.
+- Task 13A code status: complete. The trial migration committed with the travel-leg migration in one production transaction; readback is nullable `timestamptz`, existing non-null trial rows 0, grant-once body true, service-role execute true, browser execute false.
 
 ## Task 13B value-first panel
 
@@ -254,7 +254,7 @@ Baseline: focused Life Manager suite 175/175 PASS.
 - Implementation: `4ea06aefb` replaces standalone `paid=is.true` with exact PostgREST `paid OR trial_expires_at > server clock`, preserving providers, phone independence, global comp, and one selector SSOT. Plan ruling `df3692ecb` assigns the stale daily-preflight consumer assertion to the slice; `11a6cc993` updates only that test.
 - TDD: selector RED 7/11 then GREEN 11/11; `.gt→.gte` mutation detected. Consumer RED 79/80 exposed the retired `paid` query assertion; exact `or` fix produced combined 80/80.
 - Fresh Sol review: ship, spec compliant, Critical/Important/Minor zero; PostgREST grammar, exact expiry, comp boundary, Date.now/process.env restoration, two scheduler selectors, and daily-preflight URL were verified.
-- Primary verification: selector/daily/wake/reminder suite 80/80 plus syntax/diff PASS. Task 13C: complete at `11a6cc993`; production column/code deploy remains deferred to Task 6.
+- Primary verification: selector/daily/wake/reminder suite 80/80 plus syntax/diff PASS. Task 13C code/column are merged and the production column is applied; exact Railway health SHA remains the release gate.
 
 ## Task 13D durable trial upgrade and travel-ledger repair
 
@@ -263,11 +263,21 @@ Baseline: focused Life Manager suite 175/175 PASS.
 - Fix round 1 `34187a389`: 4-leg idempotent migration/integration test, verified release boolean, positive-integer receipt, generic reconciliation. PostgreSQL PASS, Node 117/117. Re-review closed Critical/Important findings but required exact-expiry/send-throw regressions.
 - Fix round 2 `cd6669dee`: test-only exact millisecond expiry claim→send and send-throw claim→send→unclaim. Focused 7/7, full Task 5 Node matrix 119/119, PostgreSQL PASS. Scoped fresh Sol re-review: both addressed, new breakage none, ship.
 - Production Supabase rollback-only leg preflight: existing rows/unique/RLS/other CHECK preserved; four allowed, unknown/duplicate rejected, constraint validated. Post-rollback official readback: fixture 0 and `telegram_t5_allowed=false` restored.
-- Task 13D code/preflight status: complete at `cd6669dee`. Both trial and leg migrations remain unapplied until controlled Task 6 release.
+- Task 13D code status: complete. The four-leg migration is applied; production readback preserves 250 travel rows, the unique contract and RLS, and reports one validated constraint hash for `go|return|telegram-t5|trial-upgrade`.
 
 ## Task 13E integrated verification and final review
 
 - Clean lock install completed with 452 packages and `viem@2.55.10` read back. Focused route/reminder/call is 154/154; focused onboarding/trial/billing is 181/181; both disposable PostgreSQL migrations pass with grant-once/ACL/paid-write and four-leg/row/unique/RLS preservation evidence.
 - Full `npm test`, `git diff --check`, dependency diff, and gitleaks all pass. Existing lock warnings remain unchanged; no dependency or secret change was introduced.
 - Whole-slice review found Telegram unknown-delivery replay risk, previous-event outbound misclassification, and legacy phone/pay truth gaps. Five TDD fix rounds closed them with durable claim retention, exact target-go/previous-return association, fail-closed read errors, core-ready legacy suppression, and truthful optional-phone `/start` copy.
-- Final scoped review at `19dc013b9` is ship with Critical/High zero and no findings. Primary focused readback is 84/84. Production migrations remain unapplied; rebase/PR and exact-SHA release are Task 6 Steps 6–7.
+- Final scoped review at `19dc013b9` is ship with Critical/High zero and no findings. Primary post-rebase matrix is 349/349; GitHub Security Scan is 8/8.
+- PR `#3031` merged the launch core as `954b3787071116f879e2a36c01044bb840a400db`; both migrations committed in one transaction before merge. The target life-call service status succeeded for that SHA, while the aggregate Deployment failed only because the unrelated x402 service failed.
+- Static health tags could not prove an immutable deploy, so a reviewed native `RAILWAY_GIT_COMMIT_SHA` health fix merged in PR `#3033` as `81b813c4df08a955f769b1f0658d97e5f79d65e6`. Railway officially reports a deployment-initialization backlog incident; the exact Deployment remains queued and `/health.build` still reports the old fallback. Task 6 Step 7 stays open until exact SHA readback.
+
+## Task 14 launch acceptance
+
+- Public QR source remains `https://t.me/LifeManagerBotbot?start=lp`; no uid, chat ID, email, or secret is encoded. A real Dais-external Telegram account on a clean device is still required; prior synthetic actor E2E cannot close Task 7.
+- Google official readback keeps controlled no-location events `lnpffie7md7fp0qp5j9hrudkq4` and `ah40e31tqlstvk2qvo1e0jt82c` confirmed.
+- Supabase reconciliation now proves exactly one T-10 and one T-5 wake row for each old no-location event. The 20:03 event has `amd_result=human` at both levels; the 21:55 event has `amd_result=machine` at both levels. No travel rows exist in the event window, as expected for no-location events.
+- The wake schema does not retain Telnyx call IDs, and no local Telnyx API credential or authenticated portal session is available. Therefore old calls alone do not close the required Telnyx call/webhook/ledger triple. Do not delete the old events; use a replacement no-location event after provider-ID evidence is durable.
+- New future physical route/Telegram receipt, real actor natural three-day expiry, replay-zero, and controlled cleanup remain open.

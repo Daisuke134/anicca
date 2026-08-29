@@ -1,6 +1,6 @@
 # Life Manager Cloud Telegram-First Product UX Design
 
-状態: APPROVED — on-time coreを先に完成させ、自由会話は後続phaseとして追加する
+状態: APPROVED — launch coreとtrialはmerged/schema適用済み。exact deploy、別actor、自然event、replay-zeroが揃うまでfriend betaは開始しない
 
 正本範囲: public QRから始まる初回体験、日常のTelegram体験、cloud/self-host共通境界、将来の会話runtime
 
@@ -203,6 +203,57 @@ Phase 2で行うのは、固定SHAのOpenClawMUまたはHermesを隔離sidecar�
 3. 全effectがLife Managerのintent/claim/readback/receiptを通る。
 4. sidecar停止中もon-time coreが通常どおり動く。
 
+### 4.2 車輪を作らない — 借りる層とLife Manager固有の薄い層
+
+新しく作るのは「遅刻しないための判断と証拠のつなぎ方」だけである。chat app、login、OAuth、DB、決済、agent loop、cloud runtimeは作らない。
+
+```mermaid
+flowchart LR
+  subgraph REUSE[そのまま借りる既存の車輪]
+    MSG[Telegram Bot API / Mini Apps]
+    UX[Poke / Townのmessaging-first UX]
+    OAUTH[Composio + Google Calendar OAuth]
+    RUN[Railway + Inngest]
+    DATA[Supabase Postgres]
+    PAY[Stripe Checkout + webhook]
+    ROUTE[Transit / Google Routes]
+    VOICE[Telnyx]
+    CHAT[Phase 2: OpenClawMU または Hermes]
+  end
+
+  subgraph OWN[Life Managerだけが持つ薄いproduct logic]
+    POLICY[次予定・出発時刻・T-10/T-5 policy]
+    UXSTATE[4-step onboardingとtrial UX]
+    FENCE[intent → claim → effect → readback]
+    PROOF[provider ID + replay-zero]
+  end
+
+  MSG --> UXSTATE
+  UX --> UXSTATE
+  OAUTH --> POLICY
+  RUN --> POLICY
+  DATA --> FENCE
+  PAY --> UXSTATE
+  ROUTE --> POLICY
+  VOICE --> FENCE
+  CHAT -. launch後だけ .-> POLICY
+  POLICY --> FENCE --> PROOF
+```
+
+| 層 | 再利用するもの | Life Managerが薄く足すもの | 作らないもの |
+|---|---|---|---|
+| 会話画面 | Telegramの1対1 chat、Mini App、`initData` | `/start`、通知本文、4-step setup | 独自messenger、mobile app、chat protocol |
+| UXパターン | Pokeの「既存text内で先回り」、Townの「同じthreadで依頼と承認」 | 遅刻防止に必要な三つの先回りだけ | 万能assistant UI、常用dashboard |
+| identity | Telegram署名actor | actor→tenant UIDの固定binding | password account、Supabase Google login、raw `?tg=` identity |
+| Calendar接続 | ComposioのGoogle consent/provider status | ACTIVEだけを受理するstate machine | OAuth broker、Calendar clone |
+| runtime | Railway deploy、Inngest schedule | bounded scheduler owner | VM orchestrator、独自queue、独自cron platform |
+| durable state | Supabase/Postgres、unique constraint、RLS | effect key、claim、trial deadline | agent独自DB、client deadline、memoryをauthority化 |
+| 課金 | Stripe hosted Checkout、signed webhook | value-first 3-day trialとentitlement filter | card form、billing engine、`paid`の別writer |
+| route/call | provider response、Telnyx signed webhook | provider factsの整形と最大1回policy | 乗換engine、電話carrier、推測route |
+| 自由会話 | OpenClaw/Hermesのgateway・tools・memory・cron | tenant-scoped tool request sidecar | agent loop、skill system、sandboxの再実装 |
+
+OpenClawの固定READMEはsingle operator用Gatewayと明記し、host toolはsandbox設定なしではhost上で動く。したがって、そのままmulti-tenant cloud authorityにはしない。OpenClawMUはtenant token、session、memory、sandbox directoryを既に実装しているのでPhase 2 spikeでは再利用候補だが、固定commitのregistryはlocal JSON file正本である。Life Manager CloudのTelegram identity、Stripe billing、Supabase ledgerを置き換えない。Hermesはcloud VM、Telegram gateway、memory、tools、cron、sandbox backendを既に持つため、会話loopを自作する代わりの比較候補である。
+
 ## 5. cloudとself-hostはdomain toolだけを共有する
 
 cloudとlocalを一つのprocessへ統合しない。予定選択、出発時刻、route整形、effect keyの作り方を共通domain toolとして共有する。保存先と実行ownerは製品ごとに分ける。
@@ -288,6 +339,31 @@ flowchart TD
 
 Active TODOの測定済み状態と最新の一手はprogress.mdだけに置く。Phase 2はActive 1–6がprovider evidence付きで完了するまでproduction codeへ入れない。
 
+### 8.1 友達が使えるまでの残TODO — ユーザー体験順
+
+```mermaid
+flowchart LR
+  NOW[現在\ncode + schema merged] --> DEPLOY[1. exact deploy]
+  DEPLOY --> QR[2. 友達がQR scan]
+  QR --> VALUE[3. 3分setup + 最初の価値]
+  VALUE --> EVENT[4. 自然eventで通知/電話]
+  EVENT --> EXPIRY[5. 3日後の境界]
+  EXPIRY --> ZERO[6. replay-zero + cleanup]
+  ZERO --> BETA[friend beta]
+  BETA --> CHAT[Phase 2\nPoke/Town型の自由会話]
+```
+
+| 順番 | 友達から見える状態 | 残作業とDone証拠 | 現在 |
+|---|---|---|---|
+| 1 | botが常時cloudで動く | GitHub DeploymentとRailway `/health.build`が同じexact SHA | Railway deployment backlog incidentの解消待ち。code/schema/health fixはmerged |
+| 2 | QR→Telegram→`準備する` | 実在するDais以外のTelegram actorがscan。uid/chat/secretをQRに含めず、Google/Supabase loginなし | public payloadは`https://t.me/LifeManagerBotbot?start=lp`まで証明済み。clean-device real actorが未完 |
+| 3 | Calendar→home→通知→phone任意→Ready | distinct tenant、Calendar ACTIVE、trial期限、次予定preview、cross-actor read/write 0 | server flow実装済み。real actor provider E2Eが未完 |
+| 4 | 移動block、T-10/T-5電話、T-5 Telegram乗換 | 新しいfuture physical eventとno-location eventでGoogle event ID、Telnyx call/signed webhook、Telegram message ID、Supabase ledger | 旧no-location eventsは両call level/AMD ledgerあり。新physical route/message receiptとprovider call IDsが未完 |
+| 5 | 期限までは価値、期限後は1回だけupgrade | 同じactorの自然な3日deadlineでcohort除外、paid=false、upgrade message最大1、期限延長0 | schema/logic適用済み。自然時間のproduction readbackが未完 |
+| 6 | 同じ予定を再評価しても二重に来ない | 新Travel 0、新call 0、新Telegram 0、claims不変。controlled eventsを`send-updates=none`で削除しcancelled | 未完。receipt取得前は旧eventを削除しない |
+
+UI polishでlaunchを遅らせない。QR landing、Telegram `/start`、4-step Mini App、Ready card、日常の乗換message、期限切れupgradeの六画面だけをbeta対象にする。自由入力chat、voice、photo、email作業、agent memory UIはbeta後である。
+
 ## 9. Superpowersを毎回同じ順序で使う
 
 ```mermaid
@@ -330,7 +406,7 @@ primaryだけがspec、plan、progress、完了判定を更新する。workerは
 ## 12. 一次資料
 
 - Poke: https://poke.com/ — messagingを主画面にし、接続serviceとmemoryから先回りする製品例。
-- Town WhatsApp: https://www.town.com/features/whatsapp — text、photo、voiceから質問、research、routineを実行する製品例。
+- Town Telegram: https://www.town.com/features/telegram と https://www.town.com/integrations/telegram — text、photo、voiceを同じthreadへ入れ、effectをapprovalへ戻す製品例。
 - OpenClaw fixed README: https://github.com/openclaw/openclaw/blob/90a9622a6cf5740ab4b9f6f65d9081d47ffbc4e4/README.md — single-operator Gateway境界。
 - Hermes fixed README: https://github.com/NousResearch/hermes-agent/blob/a619db663374ab31f3c3e3c9197247e0636c4069/README.md — cloud VMとTelegram gateway境界。
 - OpenClawMU multi-tenancy: https://docs.neullabs.com/openclawmu/multi-tenancy/ — tenant別session、memory、sandbox、cron。
