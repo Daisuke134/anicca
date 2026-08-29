@@ -436,6 +436,15 @@ official contract, fee, payout, and bank receipts advance it.
    concise results handoff to Coconala with formal delivery OFF, and the immediate natural replay
    completed with `effect=0`, `failed=0`, `deduplicated=true` for talkroom `18180857`.
 
+   The continuing 300-pair campaign is now active without another Coconala progress message.
+   Public Paid owner release `89f2b4933` invalidates the old reported-answer checkpoint when a
+   newer account-owner policy requires external work. Its first resumed natural cycle discovered
+   fresh candidate `@riko_t5p307`, sent one qualification DM from `@anicca.jp`, obtained exact
+   official Sent readback at 12:10, repaired and read back the two-cell `@riko_t5p307 / 8/29`
+   Sheet row, and checkpointed the unique effect. Current verified total is 4/300 with 296
+   remaining. The blocked result is a one-hour paced continuation checkpoint, not completion;
+   future wakes continue discovery while suppressing incremental buyer messages.
+
    The buyer-visible initial-review package is already sent: v7
    `CKprotect_TikTok_initial_review_v7.zip`, SHA256
    `d0c16a537ebf5ea3329ce2e724b21e5675ccad2f34f224c397df44528c53d057`, contains ten qualified
@@ -4553,7 +4562,7 @@ Current buyer-level readback:
 
 | Buyer | Talkroom | Project root | Current artifact / action | Official state | Exact blocker |
 |---|---|---|---|---|---|
-| Chii【CK protect】 | `18180857` | `~/gig/projects/18180857` | v7 review package plus three verified live DM/Sheet pairs and a 10/10 attempt receipt | `@_yayoisan`, `@arichan_make`, and `@tare_tanu` each have exact TikTok readback and one Sheet row; Coconala results handoff is official, formal off, and immediate replay is effect 0/deduplicated | Buyer item is closed for this recovery; continue the monthly campaign only through fresh bounded owner cycles, never replay these three effects |
+| Chii【CK protect】 | `18180857` | `~/gig/projects/18180857` | v7 review package, four verified live DM/Sheet pairs, and a 10/10 attempt receipt | The original three pairs remain replay-zero; fresh `@riko_t5p307 / 8/29` is exact-readback/checkpointed. Formal delivery remains off | Active campaign checkpoint: 4/300 verified, 296 remaining; continue hourly natural owner cycles and suppress incremental Coconala messages |
 | 貴ㅤㅤ | `18197848` | `~/gig/projects/5231240` | `硝子色の恋_review_v1.zip`, SHA256 `e041c39e10cff1bb2e3fd3febca172ff32fc4ed21bc40b1a6978228a5c85c15e` | Official talkroom contains the exact ZIP and review message; buyer-visible artifact is true and formal delivery is off | Closed: exact English outro was independently transcribed, the artifact was sent once, and replay is `awaiting_buyer`, effect 0, deduplicated true |
 | ユウ ブログ | `18202085` | `~/gig/projects/18202085` | `cinematic_suspense_bgm_v1.zip`, SHA256 `d5403a67e0e270d08f62c41b1a66407ac376c6f371d11c455ff98e5456d26424` | Official talkroom readback contains the exact ZIP and buyer-review message; formal delivery is off | Closed: replay is `satisfied_noop`, effect 0, deduplicated true |
 | ITフランチャイズ経営 | `18184558` | `~/gig/projects/18184558` | No artifact or reply required | Buyer explicitly requested no reply while Coconala cancellation is pending; replay is `satisfied_noop`, effect 0 | Observe official cancellation only |
