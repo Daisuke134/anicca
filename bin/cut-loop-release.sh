@@ -128,12 +128,19 @@ mkdir -p "$DEST/state/effective-cron"
 chmod -R a-w "$DEST" 2>/dev/null || true
 chmod -R u+w "$DEST/state" 2>/dev/null || true
 
-# Use the same host-wide owner lock as `lm-loop apply` while replacing `current` atomically.
-PYTHONPATH="$SCRIPT_ROOT${PYTHONPATH:+:$PYTHONPATH}" \
-  python3 -c 'import sys; from pathlib import Path; from runtime.loop.lm_loop import activate_current; activate_current(Path(sys.argv[1]), Path(sys.argv[2]), Path(sys.argv[3]))' \
-  "$CURRENT" "$DEST" "$LOOPS_ROOT/.apply.lock" || die "could not activate current release"
+# Only a complete release may become the fleet-wide current generation. Sparse
+# releases are target-specific artifacts and never move the global selector.
+if [ "${#ARCHIVE_PATHS[@]}" -eq 0 ]; then
+  PYTHONPATH="$SCRIPT_ROOT${PYTHONPATH:+:$PYTHONPATH}" \
+    python3 -c 'import sys; from pathlib import Path; from runtime.loop.lm_loop import activate_current; activate_current(Path(sys.argv[1]), Path(sys.argv[2]), Path(sys.argv[3]))' \
+    "$CURRENT" "$DEST" "$LOOPS_ROOT/.apply.lock" || die "could not activate current release"
+fi
 
 # Keep a few older releases so rollback is a symlink move rather than a rebuild.
 prune_releases_after "$KEEP"
 
-echo "current -> $(readlink "$CURRENT")  ($PROVENANCE)"
+if [ "${#ARCHIVE_PATHS[@]}" -eq 0 ]; then
+  echo "current -> $(readlink "$CURRENT")  ($PROVENANCE)"
+else
+  echo "release -> $DEST  (sparse; current unchanged; $PROVENANCE)"
+fi
