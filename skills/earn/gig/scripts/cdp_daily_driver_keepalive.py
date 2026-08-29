@@ -94,6 +94,7 @@ def main(argv: list[str] | None = None) -> int:
             f"--remote-debugging-port={port}",
             "--remote-debugging-address=127.0.0.1",
             "--remote-allow-origins=*",
+            "--disable-features=MacAppCodeSignClone",
         ],
     )
     stopping = False
