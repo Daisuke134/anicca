@@ -1,5 +1,6 @@
 [build]
 builder = "nixpacks"
+watchPatterns = ["/services/x402-endpoint/**"]
 
 [deploy]
 startCommand = "npx prisma generate && node src/server.js"
