@@ -27,7 +27,7 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 この節は、後段の「現在TODO」「次の一件」「local-only」「self-funded agentは別product」という相反する記述を
 上書きする最新の実行順序SSOTである。後段は実装履歴・organ別acceptanceとして保持するが、次作業の選択には使わない。
 Upworkのterminal evidence、startup context、public claim、GA-01〜13Aは完了または履歴として保持する。
-次の一件はAtomic program ledger Seq 15 `ELZ-C02`のsubstep `C02-16`で、C02 evidenceをadversarial reviewへ一回渡す。
+次の一件はAtomic program ledger Seq 15 `ELZ-C02`のreview finding `C02-16-F1`で、initialized adapterを持つ同じruntime contractから`runtime.useModel()`のstructured returnを成立させる。
 
 #### 0.0.1 最新基盤決定 — ElizaOSを完全forkし、Life Managerをlocal OSSからmulti-tenant SaaSへ育てる
 
@@ -570,7 +570,8 @@ OpenAI API key、ClawRouter、Hermes、別model router、独自Codex adapterは�
 - [x] **C02-13** `gpt-5.6-luna`の`ACTION_PLANNER` callを一回実行する — private `c02/luna-planner-call-evidence.json` mode 0600。Codex session/turn/model=`gpt-5.6-luna`/effort=`medium`とraw assistant response hash一致、call exactly 1、retry 0、marketplace effect 0。handler result後の`AgentRuntime.logModelCall`でadapter未初期化TypeErrorを記録し、再送せずC02-14のsession reconcileへ進む
 - [x] **C02-14** native structured `{action,params}` resultを一回再読出しする — private `c02/structured-action-readback-evidence.json` mode 0600。同一session/turnのraw responseをplugin自身の`CodexSdkSession.normalizeRoute`で`{action:"LIFE_MANAGER_HEALTH",params:{}}`へ正規化しhash readback一致。追加model call 0、marketplace effect 0、次はC02-15
 - [x] **C02-15** provider/backend/model/effort/exitを`model-provider-receipt.json`へ保存する — canonical private receipt v2 mode 0600、status=`pending_review`。Codex SDK `0.144.4`/system Codex `0.151.0`/Luna medium、call 1/retry 0、structured result、process exit 1のpost-call DB log failure、API key/GPT-OSS/ClawRouter/marketplace effect 0を保存。旧GPT-OSS receiptはprivate rejected evidenceへ保全、次はC02-16
-- [ ] **C02-16** C02差分をadversarial reviewへ一回渡す
+- [x] **C02-16** C02差分をadversarial reviewへ一回渡す — private `c02/adversarial-review.json` mode 0600、fresh review exactly 1、verdict=`FIX_FIRST`。Codex SDK/Luna/medium/同一session result/retry 0/effect 0は反証されず、P1はprovider result後の`AgentRuntime.logModelCall`が未初期化adapterへ同期accessし`runtime.useModel()`がreturnしない一点
+- [ ] **C02-16-F1** initialized adapterを持つruntimeで`runtime.useModel()`のstructured returnを成立させ、既発生callとfinal callの総数をreceiptへ正直に記録する
 - [ ] **C02-17** C02 receiptをPASSへ更新する
 - [ ] **C02-18** ELZ-C02をDONEへ更新する
 - [ ] **C02-19** ELZ-C03をNEXTへ更新する
