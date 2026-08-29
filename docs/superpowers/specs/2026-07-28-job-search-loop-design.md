@@ -2616,7 +2616,7 @@ Remaining work, in strict order:
    decision; do not force Senior/Lead/Principal applications merely to make a count.
 2. Remove every Job Hunting `:::` harness prefix. Use `[Job Hunting]` headings,
    stop per-row reject/skip notifications, and send only confirmed applications,
-   selection changes, human-only blockers, and the rolling 24-hour report.
+   employer selection-stage changes, human-only blockers, and the rolling 24-hour report.
 3. Replace the one-application-per-wake capacity rule with a rolling-24-hour
    minimum of 48 authoritative `submitted` applications. Each wake calculates the
    remaining deficit and may submit multiple distinct eligible rows; an unfinished

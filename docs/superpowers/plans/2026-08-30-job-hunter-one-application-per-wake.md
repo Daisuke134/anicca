@@ -1,67 +1,81 @@
-# Job Hunter One Application Per Wake Implementation Plan
+# Job Hunting 48-per-Rolling-Day Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+**Goal:** Keep the existing 30-minute Job Hunting owner continuously filling a rolling minimum of 48 authoritative applications while selecting Japan-feasible, current-scope work and keeping rejected candidates private.
 
-**Goal:** Make each 30-minute Workday wake pursue one truthful, legally feasible application instead of accepting an all-rejected shortlist.
+**Architecture:** Reuse the existing Workday discovery, model qualification, browser row queue, Ledger, Gmail reconciliation and Telegram outbox. The search loop computes the rolling deficit from `submission_confirmations.received_at`, qualifies multiple rows when behind, and passes all qualified rows to the existing sequential browser queue. No second scheduler, browser owner, dependency, provider-specific fast path, or deterministic job-fit classifier is added.
 
-**Architecture:** Keep the existing model-owned fit decision, browser owner, effect fence, Ledger, receipts, and replay protection. Change only the shortlist ranking instruction: Japan employment feasibility first, demonstrated current scope second, compensation ambition third. Deterministic code continues to validate schemas, state, and duplicate effects without judging job fit.
-
-**Tech Stack:** Python 3.14, `unittest`, existing Job Hunter agent runner and launchd control plane.
+**Tech Stack:** Python 3.14, SQLite, existing Workday model lane, browser-agent queue, launchd `StartInterval=1800`.
 
 ## Global Constraints
 
-- One real submitted application is the acquisition target for every `StartInterval=1800` wake.
-- Preserve truthful qualification. Do not force an application when the official description is unsupported.
-- Do not spend the 24-row wake budget on Principal/Lead/Senior or foreign-location roles while the same snapshot contains Japan-feasible roles closer to demonstrated current scope.
-- Never weaken submit fences, authoritative receipt truth, Telegram ACK, or replay-zero.
-- Do not add regex, keyword judgment, a second scheduler, provider-specific fallback, dependency, or schema.
+- Count only distinct authoritative Gmail-confirmed `submitted` applications received inside the preceding rolling 24 hours.
+- Target at least 48; a deficit remains visible and carries into the next wake.
+- Preserve truthful qualification, one-shot submit fences, `submit_unknown` reconciliation and replay zero.
+- Prioritize Japan employment feasibility, demonstrated current career scope, then compensation ambition.
+- Reject/hold decisions remain private evidence and send no Telegram message.
+- Visible messages use `[Job Hunting]`; no harness prefix or `:::` is allowed.
+- Existing five LaunchAgents remain the only owners; daily cadence stays 1,800 seconds.
 
 ---
 
-### Task 1: Align Workday shortlist with the acquisition objective
+### Task 1: Rank feasible roles before senior foreign roles — completed in PR #3132
+
+**Files:**
+- `apps/job-search-loop/job_search_loop/workday_search_loop.py`
+- `apps/job-search-loop/tests/test_workday_qualification.py`
+
+The merged shortlist prompt orders Japan employment feasibility, demonstrated current scope and compensation ambition. Qualification and every effect fence remain unchanged.
+
+---
+
+### Task 2: Make Job Hunting notifications quiet and product-owned
+
+**Files:**
+- Modify: `apps/job-search-loop/job_search_loop/application_reporting.py`
+- Modify: `apps/job-search-loop/job_search_loop/browser_agent/outcome_reporting.py`
+- Modify focused expectations in: `apps/job-search-loop/tests/test_application_reporting.py`
+
+**Required behavior:**
+
+1. `deliver_fit_decision()` returns a durable suppressed result for `rejected`, `hold`, and pre-submit `qualified` decisions without calling Telegram.
+2. Authoritative submitted outcomes begin `[Job Hunting] 応募完了` and include company, role and evidence class.
+3. The daily outbox message begins `[Job Hunting] 24時間レポート` and reports authoritative rolling submissions, distinct companies, interviews, human-only blockers and duplicate effects without model/provider/harness labels.
+4. Existing event keys and send uncertainty fencing remain unchanged.
+5. Run only the focused application-reporting module and `git diff --check`; commit and push.
+
+---
+
+### Task 3: Fill the rolling 48-application deficit
 
 **Files:**
 - Modify: `apps/job-search-loop/job_search_loop/workday_search_loop.py`
-- Test: `apps/job-search-loop/tests/test_workday_qualification.py`
+- Modify: `apps/job-search-loop/job_search_loop/browser_agent/queue.py`
+- Modify focused checks in: `apps/job-search-loop/tests/test_workday_qualification.py`
+- Modify focused checks in: `apps/job-search-loop/tests/test_browser_agent_queue.py`
 
-**Interfaces:**
-- Consumes: `qualify_one(..., run_model: Callable[[str], dict])` and `rank_candidates(..., rank_chunk)`.
-- Produces: unchanged fit-decision and shortlist schemas; only their natural-language objective changes.
+**Required behavior:**
 
-- [ ] **Step 1: Write the failing prompt-contract test**
+1. Query distinct `submission_confirmations.intent_id` joined to `submit_intents` where `received_at` is within `now - 24 hours`; compute `deficit = max(0, 48 - confirmed_count)`.
+2. `search_until_qualified()` continues until it has qualified `min(deficit, max_candidates)` distinct rows or exhausts the bounded candidate budget. It returns every newly qualified application ID in stable order.
+3. `queued_application_ids` contains all newly qualified IDs followed by previously qualified queued IDs, deduplicated in stable order.
+4. `RowQueueSupervisor.collect()` may sort the preferred ID first but never truncates the remaining qualified Workday rows.
+5. A zero deficit performs no new application effect; an unfinished deficit is persisted in the run receipt and retried by the next existing wake.
+6. Run the two focused modules and `git diff --check`; commit and push.
 
-Assert that the shortlist prompt orders Japan employment feasibility before demonstrated current scope and compensation ambition, and explicitly avoids consuming the bounded shortlist with senior foreign roles when closer Japan-feasible work exists. Do not change the qualification prompt.
+---
 
-- [ ] **Step 2: Run the focused test and verify RED**
+### Task 4: Merge, release and verify production
 
-Run:
+1. Fetch, rebase, push, create/update the focused PR and run `gh pr merge --admin`; if the server rejects it, record the exact required check and retry only after it passes.
+2. Build an immutable release from merged `origin/main`; never release from the worktree branch.
+3. Require `launchctl-safe preflight` status `pass` and `mutation_allowed=true`, then apply the release to the existing browser, daily, inbox, learning and health labels.
+4. Read back exact `ProgramArguments`, release SHA and daily `StartInterval=1800` for all owners.
+5. Kickstart only `ai.anicca.job-search-daily` and watch the real launchd-owned run.
+6. Verify shortlist ordering, multiple queued rows when deficit is greater than one, no per-reject Telegram sends, approved `[Job Hunting]` messages, row-local failure continuation and replay zero.
+7. Keep 10P3 open until a rolling 24-hour window contains at least 48 distinct Gmail-confirmed applications with matching completion evidence, Ledger `submitted`, Telegram ACK and duplicate effects zero.
 
-```bash
-cd apps/job-search-loop
-python3 -m unittest tests.test_workday_qualification.WorkdayQualificationTests.test_fit_and_shortlist_prompts_require_one_feasible_application_per_wake -v
-```
+---
 
-Expected: `FAIL` because the current shortlist leads with interview chance plus salary ambition but does not state the required feasibility/scope ordering.
+### Task 5: Publish the proven Job Hunting experience
 
-- [ ] **Step 3: Apply the minimum prompt change**
-
-In `workday_search_loop.py`, rank Japan-feasible roles first, demonstrated current scope second, and compensation ambition third, while retaining fewer prior submit attempts and company diversity. Preserve evidence grounding and prohibit invented candidate facts. Leave `workday_qualification.py` unchanged.
-
-- [ ] **Step 4: Verify GREEN and the existing row-safety regression**
-
-Run:
-
-```bash
-cd apps/job-search-loop
-python3 -m unittest \
-  tests.test_workday_qualification.WorkdayQualificationTests.test_fit_and_shortlist_prompts_require_one_feasible_application_per_wake \
-  tests.test_workday_qualification.WorkdayQualificationTests.test_http_failure_receipt_skips_row_and_next_live_row_qualifies_same_wake \
-  tests.test_workday_qualification.WorkdayQualificationTests.test_rejected_model_decision_never_enters_browser_queue -v
-git diff --check
-```
-
-Expected: three tests pass and `git diff --check` is clean.
-
-- [ ] **Step 5: Merge, release, and prove the production outcome**
-
-Commit and push the branch, open and admin-merge the PR, cut an immutable release from merged `origin/main`, then targeted-apply it to the five Job Hunter owners after `launchctl-safe preflight` returns `status=pass` and `mutation_allowed=true`. Read back exact argv and daily `StartInterval=1800`; kickstart only `ai.anicca.job-search-daily`. Completion requires a different-company Workday completion screenshot, Gmail receipt, Ledger `submitted`, company/role Telegram ACK, and immediate replay with zero duplicate external effect.
+Start only after Task 4 is live-proven. Update the public README with the resident-loop list, Job Hunting lifecycle from resume onboarding through confirmed start, and a source-cited comparison against relevant open-source job-search repositories. Claims must match current production evidence; incomplete ATS lanes remain visibly incomplete.
