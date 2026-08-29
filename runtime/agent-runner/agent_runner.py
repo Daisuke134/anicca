@@ -1063,7 +1063,6 @@ def command_for(provider: str, executable: str, provider_config: dict[str, Any],
     model = candidate["model"]
     effort = candidate.get("effort", "medium")
     if provider == "codex":
-        provider_schema_path = codex_output_schema(schema, result_path)
         resume_session_id = getattr(args, "codex_resume_session_id", None)
         command = [executable, "exec"]
         if not resume_session_id:
@@ -1112,10 +1111,12 @@ def command_for(provider: str, executable: str, provider_config: dict[str, Any],
                 f"limit_tokens={rollout_budget_tokens},"
                 "reminder_at_remaining_tokens=[],"
                 "sampling_token_weight=1.0,prefill_token_weight=1.0}")])
-        command.extend([
-            "--ignore-user-config", "--json",
-            "--output-schema", str(provider_schema_path), "-o", str(result_path),
-        ])
+        command.extend(["--ignore-user-config", "--json"])
+        if schema:
+            command.extend([
+                "--output-schema", str(codex_output_schema(schema, result_path)),
+            ])
+        command.extend(["-o", str(result_path)])
         for image in getattr(args, "image", []) or []:
             command.extend(["--image", str(image)])
         if args.task_class == "writer-repair-agent":
