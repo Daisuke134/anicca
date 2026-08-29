@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 MIGRATION="$ROOT_DIR/migrations/2026-08-29-lm-wake-telnyx-receipt.sql"
-FIX_MIGRATION="$ROOT_DIR/migrations/2026-08-29-lm-wake-telnyx-receipt-amd-precedence.sql"
+FIX_MIGRATION="$ROOT_DIR/migrations/2026-08-29-z-lm-wake-telnyx-receipt-amd-precedence.sql"
 if [[ ! -f "$MIGRATION" ]]; then
   printf '%s\n' 'missing Telnyx receipt migration' >&2
   exit 1
