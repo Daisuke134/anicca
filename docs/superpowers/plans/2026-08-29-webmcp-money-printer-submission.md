@@ -422,6 +422,9 @@ Add a Mercor case producing a provider interview human task, and a URL case wher
 **Interfaces:**
 - Produces free judge URL, immutable deploy SHA, ChatGPT/Chrome evidence, three natural cycles, restart recovery, and resettable guest state.
 
+- [ ] Refactor live data access to the measured boundary: Supabase for session/identity/verified earnings; Railway Postgres `runtimeQuery` for runtime jobs/opportunities/human tasks/receipts and their RPCs. Apply base runtime migrations plus Task 5A/7A migrations transactionally to Railway Postgres and read back constraints/RPCs. Do not create runtime tables in Supabase.
+- [ ] Deploy a dedicated `money-printer-worker` from the same pushed SHA with `general-agent.work`, Railway Postgres, and the cloud model route. It must emit a real qualification receipt; no `runtime_noop`, missing specialist, local Codex auth dependency, or private checkout source.
+
 - [ ] Deploy `/money-printer` and Railway from one pushed main SHA while preserving existing `/lm`. Preserve origin isolation and `tools` Permissions Policy; register tools at top level.
 - [ ] Run clean-browser normal UI E2E: zero-login guest, no owner state, one Needs You flow, reset, mobile layout.
 - [ ] Run ChatGPT in-app browser E2E with Sol/Terra: tool list, read call, write call, visible state change, recent activity, answer, same-work continuation, receipt.

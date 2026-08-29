@@ -725,6 +725,7 @@ Focused reuse suiteはruntime/browser jobs、ask/reply、reconciliation、panel�
 | Task 7B1 | Authenticated opportunity create、tenant workroom GET、`add_opportunity`、`inspect_workroom`、server live sourceを実装。Luna/parent 70/70、commit `75db2fa17` | Task 7B2でproduction specialistをwire。`inspect_receipt`はLancers real receipt source後だけ登録する |
 | Task 7B2 | `general-agent.work`をexisting agent-runnerへwireし、stored public goalをbounded research/qualificationへ渡す。Internal receiptは`completed`、Opportunityは`QUALIFIED`で、deliveryは主張しない。Luna/parent 36/36、commits `bf4733775`、`8eb7506d6`、`e5826d59d`、`1088ce939` | Migration/deploy後にlive qualification receiptを取得。Delivery/applicationは専用effect laneのofficial readbackだけが設定する |
 | Production adversary gate | Fresh Sol reviewはattempt resume、qualification terminal、write idempotency、currency、untrusted content、visible refresh、worker capabilityの7件を`fix-first`。修正後scoped reviewでprompt boundary/refresh propagationの2件を追加修正し、fresh final scoped review=`ship` | Code gate closed。DB apply、deploy、live E2Eは別証拠として続行 |
+| Production data audit | Supabaseは`lm_users`等Panel identity/sessionを持つがruntime/opportunity/human tablesは404。Railway Postgresもruntime tablesは未適用。Life-callにはSupabase credentialsとRailway private `LM_FEEDBACK_DATABASE_URL`がある | Identity/session/verified earningsはSupabase、runtime queue/opportunities/human tasks/receiptsはRailway Postgresへ固定。Life-call APIが両方をtenant-bound joinし、runtime migrationsはRailway Postgresへapplyする |
 
 ### 10.5 One product, one mode
 
@@ -772,7 +773,8 @@ Testing clients:
 flowchart LR
     H[Human / WebMCP client] --> UI[Netlify: Life Manager Dashboard]
     UI --> API[Existing Railway Node API / Orchestrator]
-    API --> DB[(Durable opportunity, workroom, task, effect, receipt state)]
+    API --> ID[(Supabase identity, session, verified earnings)]
+    API --> DB[(Railway Postgres opportunity, runtime job, human task, receipt)]
     API --> AR[Existing agent-runner]
     AR --> T[Browser / Web / GitHub / Code / Files / Media tools]
     T --> P[Opportunity and payment providers]
@@ -784,7 +786,7 @@ flowchart LR
 - **Netlify:** 既存`/lm`を保全し、`/money-printer`にresponsive Dashboardとtop-level `document.modelContext.registerTool()`を配信する
 - **Browser security:** Netlifyは`Origin-Agent-Cluster: ?1`と`Permissions-Policy: tools=(self)`を返す。iframe/declarative registrationへ依存せず、clean browserのresponse headersとtool discoveryをreadbackする
 - **Railway:** 既存Life Manager Node serviceをAPI、claim、continuation、retry、reconciliationのorchestratorとして再利用する
-- **Durable store:** opportunity、workroom、agent event、human task、effect fence、receiptをrestart後も保持する。UI用stateとruntime stateを別の真実にしない
+- **Durable stores:** Supabaseは既存identity/session/verified earnings、Railway Postgresはopportunity、runtime job、human task、effect fence、receiptを持つ。Life-call APIだけがtenant identityでjoinし、同じbusiness stateを二重保存しない
 - **Agent runner:** provider-neutralなtaskを受け、modelがenvironment feedbackから次のtoolを選ぶ。provider別hardcoded workflowをcoreへ作らない
 - **Tools/adapters:** 既存browser ownership、GitHub/Web/code/media、effect fence、official readback、earnings ledgerを再利用する
 - **WebMCP:** background agentそのものではなく、同じdomain functionsとversioned stateを人と対応agentへ公開するcontrol surfaceである
