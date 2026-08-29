@@ -741,6 +741,12 @@ Continue the existing two-minute onboarding owner until it sends one upgrade Tel
 
 **Ownership:** Primary only. This task creates and later deletes one controlled private Calendar event.
 
+- [ ] **Step 0: Persist the signed Telnyx provider receipt before creating replacement events**
+
+The existing wake ledger stores `amd_result` but drops the Telnyx call identifiers carried by the dial response and signed `call.machine.detection.ended` webhook. Add only the provider receipt fields needed for acceptance to the existing `lm_wake_log`; do not create another call ledger or provider abstraction. Bind every write to the exact `(uid,event_key,claim_token)`, latch one `call_control_id`, accept only the same ID on webhook replay, store the signed webhook event ID/session/leg IDs, and never release a wake claim after Telnyx accepted the call. A conflicting call ID must write zero rows. Verify with real PostgreSQL plus the real signed-webhook HTTP path before production apply.
+
+Expected: the replacement event can be read back as one exact Telnyx call ID + one signed webhook event ID + one wake row for each level, while webhook replay changes no identity and creates no call.
+
 - [ ] **Step 1: Reconcile old controlled events**
 
 Read Google status for `lnpffie7md7fp0qp5j9hrudkq4` and `ah40e31tqlstvk2qvo1e0jt82c`, plus Supabase/Telnyx/Telegram receipts. Do not resend. Count the old no-location event as accepted only if both T-10 and T-5 Telnyx call/webhook/ledger triples and replay-zero are present. If effect outcome is unknown, leave the event confirmed until reconciliation is complete and schedule the replacement in Step 3.
