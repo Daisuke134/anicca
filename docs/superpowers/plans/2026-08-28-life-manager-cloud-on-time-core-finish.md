@@ -797,8 +797,16 @@ Current atomic run order:
 - [x] replacement no-location event `cspe20kgthj5qj4130n9q24c3s` confirmed for 15:10 JST;
 - [x] physical event `1it7jaacjfuaelalljim6nk6qs` confirmed for 15:41 JST with a private provider-routable destination;
 - [x] implement a shared scheduler-owner fallback: standalone `LIFE_RUN_LOOPS=false` with no Inngest key selects in-process loops, while explicit roles/Inngest remain unchanged;
-- [ ] prove exactly one scheduler owner in production with a fresh natural ledger write after the shared predicate deploy;
-- [ ] deploy/read back the scheduler-owner fix at one exact SHA, then create fresh controlled events because the two IDs above missed their natural windows;
+- [x] deploy/read back the corrected shared scheduler-owner fix at exact SHA `05988c7170bba91df7d375437cf61679e9e45f75`;
+- [x] adversarial production-gate review: code/deploy may ship and no new code is justified before the due window; runtime success still requires a natural ledger receipt and replay-zero;
+- [x] observe through 18:19 JST and reject the false due-event premise: provider raw readback has no 18:00-start real event; 17:06–18:00 is a helper `[Travel]` block, so wake/travel row `0` is expected rather than a scheduler failure;
+- [x] read the corrected deployment's boot evidence: exact release `05988c717...`, `node server.js`, role/loop flag/Inngest unset, standalone transition owner, and all seven scheduler loop `started` lines;
+- [x] read the exact tenant/event boundary without external effects: one paid tenant, Calendar read success, all call/notification/automation/home/phone gates true, but the candidate window contains only past controlled events plus helper blocks and therefore no wake-eligible future event;
+- [x] create fresh no-location controlled event `ceepnjmqc11udi99pq2nbesdso`; Google readback is private, location absent, `confirmed`, 19:03–19:13 JST, and private property `cloud-core-no-location-v2`;
+- [x] observe its natural T-10 window: provider event is visible and wake-eligible, but production `listPaidUsers()` returns zero because Composio reports `status=ACTIVE`, `is_disabled=false`, omits non-schema `enabled`, and Life Manager misclassifies that exact active account as DISABLED, leaving `calendar_provider=NULL`;
+- [x] TDD the provider-schema fix in `panel-api.js`/existing tests: `2f584d9ab` accepts missing `enabled` only with exact owner/toolkit + ACTIVE + not-disabled, explicit false/null/nonboolean and disabled contradictions reject; fresh Sol review `ship`, findings zero, Ponytail minimal;
+- [ ] deploy/read back the minimal fix, sync the same tenant through the existing provider-status RPC, then create a new no-location event because `ceepnjmqc11udi99pq2nbesdso` missed its acceptance windows;
+- [ ] after no-location liveness is proven, create one fresh physical controlled event and require the Travel block plus route/Telegram/call receipts;
 - [ ] no-location T-10 row has one call-control ID, one signed webhook ID, and one durable claim;
 - [ ] no-location T-5 row has one call-control ID, one signed webhook ID, and one durable claim;
 - [ ] physical event has one outbound `[Travel]` Calendar block with provider event ID;

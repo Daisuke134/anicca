@@ -171,7 +171,7 @@ Telegram本文の固定形:
 |---|---|
 | AC-27 | public QRはLife Manager Telegram botの`/start` deep linkだけをencodeする。uid、chat ID、secret、emailをQRへ入れない。 |
 | AC-28 | botはRailway `/panel/onboarding`を開くTelegram Mini App `web_app` buttonを返し、Telegram `initData`のHMAC、5分age、private actorを既存`panel-auth.js`で検証してtenantを確定する。生の`?tg=`をidentityやbinding authorityに使わない。 |
-| AC-29 | Supabase Google Sign-in stepを削除する。Google画面はRailwayのtenant-scoped Calendar connectorが開始するGoogle Calendar consentの1回だけ開く。Calendar consent結果は検証済みTelegram tenantへbindする。 |
+| AC-29 | Supabase Google Sign-in stepを削除する。Google画面はRailwayのtenant-scoped Calendar connectorが開始するGoogle Calendar consentの1回だけ開く。Calendar consent結果は検証済みTelegram tenantへbindする。Composio v3 connected-account truthはexact owner/toolkit、`status=ACTIVE`、`is_disabled!=true`で判定する。現行公式schemaに無い`enabled`は欠落を許容するが、legacy responseが明示`enabled=false`ならfail closedする。 |
 | AC-30 | onboarding順はCalendar consent → home address → Telegram notifications ON → phone入力または「電話なしで続ける」→ phone入力時だけcall opt-in → dashboardとする。Stripe checkoutをonboardingの必須stepにしない（2026-08-27 Dais改訂: 課金前に価値を体験させる）。nameはTelegram profileを使い、空の場合だけ入力させる。 |
 | AC-31 | home addressなしではtravel autofillをreadyと表示しない。live location共有中は現在地routeを使い、共有終了後はhome/previous-event fallbackへ戻ることを説明する。 |
 | AC-32 | phoneなしのpaid userはCalendar autofillとTelegram reminderを受ける。phoneありかつcall opt-inのpaid userだけがTelnyx callを受ける。 |
@@ -374,6 +374,8 @@ AC-37/38の根拠:
 - [x] 既存`lm_wake_log`へTelnyx call-control/session/leg/webhook IDをatomicに保存し、schedulerと署名webhookを同じclaimへ配線する。
 - [x] 既存`lm_travel_log`へTelegram `message_id`をatomicに保存し、accepted send後のreceipt失敗でclaimを解放・再送しない。
 - [x] 両migrationをproductionへ適用し、Railway life-call `/health.build`、commit status、GitHub Deploymentをexact merge SHA `0303507584458fc55cfe1d8f27db9ff1e9fedce9`でreadbackする。
+- [x] standalone/Inngestのowner判定をstartup・sweeper・HTTPで1つの正規化済みpredicateへ統一し、exact release `05988c7170bba91df7d375437cf61679e9e45f75`を本番readbackする。
+- [ ] corrected releaseは`node server.js`で起動し、role/loop flag/Inngest未設定のstandalone transition ownerがscheduler/wake/reminder/travel/ask/onboard/discoveryの7 loopを起動することをRailway公式logでreadback済み。18:19 JSTのwake/travel新規行0は、同windowのComposio raw readbackに18:00開始の本予定がなく、17:06–18:00はhelper `[Travel]` blockだったためruntime failureを証明しない。AC-25のproduction acceptanceは新しいfuture controlled eventの自然effectで判定する。
 - [ ] future physical eventとreplacement no-location eventをnatural schedulerで実行し、Calendar/Telnyx/Telegram/Supabase receiptをcorrelateする。
 - [ ] 同じeventをreplayして追加block/call/message 0を確認し、controlled eventを`send-updates=none`で削除して`cancelled`をreadbackする。
 
