@@ -4,6 +4,7 @@ const { canonicalOpportunityInput } = require("./money-printer-opportunity.js");
 
 const TENANT_ID = /^[a-z0-9][a-z0-9._-]{0,199}$/;
 const OPPORTUNITY_ID = /^[0-9a-f]{64}$/;
+const JOB_ID = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,199}$/;
 
 function unavailable() { throw new Error("money printer runtime store unavailable"); }
 
@@ -67,6 +68,16 @@ function expectedOpportunitySource(value) {
     observedAt: "2026-01-01T00:00:00.000Z",
   });
   return Object.freeze({ uid, sourceUrl: canonical.source_url });
+}
+
+function expectedHumanJob(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("money printer runtime store human job expected invalid");
+  }
+  const uid = tenant(value.uid == null ? value.tenant_id : value.uid);
+  const jobId = String(value.job_id || "").trim();
+  if (!JOB_ID.test(jobId)) throw new Error("money printer runtime store human job expected invalid");
+  return Object.freeze({ uid, jobId });
 }
 
 function opportunityRow(result, expected, label) {
@@ -168,6 +179,42 @@ function createMoneyPrinterRuntimeStore({ query } = {}) {
       `, [expected.uid, expected.opportunityId, expected.goalRef, status]), expected, "opportunity");
       if (row.status !== status) throw new Error("money printer runtime store opportunity readback invalid");
       return row;
+    },
+    async createOnce(task) {
+      const uid = tenant(task && task.uid);
+      const row = oneRow(await query(`
+        SELECT * FROM public.create_lm_human_task($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      `, [
+        uid, task.task_id, task.job_id, task.reason_code, task.question,
+        task.required_format, task.resume_ref, task.context_refs, task.human_boundary_ref,
+      ]), "human task", uid);
+      if (row.task_id !== task.task_id || row.job_id !== task.job_id || row.status !== "open") {
+        throw new Error("money printer runtime store human task readback invalid");
+      }
+      return row;
+    },
+    async readAnsweredForJob(value) {
+      const expected = expectedHumanJob(value);
+      const rows = scopedRows(await query(`
+        SELECT uid, job_id, reason_code, answer_ref, human_boundary_ref, version, updated_at
+        FROM public.lm_human_tasks
+        WHERE uid = $1 AND job_id = $2 AND status = 'answered'
+        ORDER BY updated_at ASC, task_id ASC
+      `, [expected.uid, expected.jobId]), expected.uid, "answered human tasks");
+      return rows.map((row) => {
+        if (row.job_id !== expected.jobId
+          || !JOB_ID.test(String(row.reason_code || ""))
+          || !String(row.answer_ref || "").startsWith(`vault-answer://${expected.uid}/`)
+          || !/^human-boundary:\/\/sha256\/[0-9a-f]{64}$/.test(String(row.human_boundary_ref || ""))
+          || !Number.isInteger(row.version) || !Number.isFinite(Date.parse(row.updated_at))) {
+          throw new Error("money printer runtime store answered human tasks readback invalid");
+        }
+        return Object.freeze({
+          uid: expected.uid, job_id: expected.jobId, reason_code: row.reason_code,
+          answer_ref: row.answer_ref, human_boundary_ref: row.human_boundary_ref,
+          version: row.version, updated_at: row.updated_at,
+        });
+      });
     },
     async readNext(scope) {
       const uid = tenant(scope);

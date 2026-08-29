@@ -69,6 +69,47 @@ test("runtime store normalizes a Postgres Date observed_at without changing othe
   assert.deepEqual(await store.createOpportunity(opportunity()), { ...persisted, observed_at: NOW });
 });
 
+test("runtime store creates one human task through the atomic pause RPC", async () => {
+  const calls = [];
+  const task = {
+    uid: TENANT, task_id: "b".repeat(64), job_id: `goal:${ID}`, version: 1,
+    question: "Complete the assessment.", required_format: { type: "confirmation" },
+    reason_code: "identity_assessment", resume_ref: `runtime-job://${TENANT}/goal%3A${ID}`,
+    context_refs: { goal_ref: `intent-entry://${TENANT}/${ID}` },
+    human_boundary_ref: `human-boundary://sha256/${"c".repeat(64)}`,
+    status: "open", created_at: NOW, updated_at: NOW,
+  };
+  const store = createMoneyPrinterRuntimeStore({ query: async (sql, values) => {
+    calls.push({ sql, values });
+    return { rows: [task] };
+  } });
+
+  assert.deepEqual(await store.createOnce(task), task);
+  assert.match(calls[0].sql, /^\s*SELECT \* FROM public\.create_lm_human_task\(\$1, \$2, \$3, \$4, \$5, \$6, \$7, \$8, \$9\)/i);
+  assert.deepEqual(calls[0].values, [
+    task.uid, task.task_id, task.job_id, task.reason_code, task.question,
+    task.required_format, task.resume_ref, task.context_refs, task.human_boundary_ref,
+  ]);
+});
+
+test("runtime store reads answered references only for the same tenant job", async () => {
+  const answered = {
+    uid: TENANT, job_id: `goal:${ID}`, reason_code: "identity_assessment",
+    answer_ref: `vault-answer://${TENANT}/answer-1`,
+    human_boundary_ref: `human-boundary://sha256/${"c".repeat(64)}`,
+    version: 1, updated_at: NOW,
+  };
+  const calls = [];
+  const store = createMoneyPrinterRuntimeStore({ query: async (sql, values) => {
+    calls.push({ sql, values });
+    return { rows: [answered] };
+  } });
+
+  assert.deepEqual(await store.readAnsweredForJob({ tenant_id: TENANT, job_id: `goal:${ID}` }), [answered]);
+  assert.match(calls[0].sql, /FROM public\.lm_human_tasks[\s\S]*status = 'answered'/i);
+  assert.deepEqual(calls[0].values, [TENANT, `goal:${ID}`]);
+});
+
 test("runtime store rejects an invalid create opportunity timestamp", async () => {
   const store = createMoneyPrinterRuntimeStore({
     query: async (sql) => {
