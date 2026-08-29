@@ -2,7 +2,7 @@
 "use strict";
 
 const crypto = require("node:crypto");
-const { directionsRoute, claimTravel, unclaimTravel } = require("./travel.js");
+const { directionsRoute, claimTravel, unclaimTravel, recordTravelTelegramReceipt } = require("./travel.js");
 const { isHelperBlock } = require("./wake-filter.js");
 const { sendMessage } = require("./telegram.js");
 
@@ -352,6 +352,18 @@ async function travelReminderOnce(user, nowMs = Date.now(), deps = {}) {
     try { released = await (deps.unclaimTravel || unclaimTravel)(user.uid, key, "telegram-t5", supaUrl, supaKey); } catch { /* retry next tick */ }
     if (released !== true) logReconciliation(deps, "[travel-reminder] reconciliation required");
     return { status: "send_failed", eventKey: key };
+  }
+  let receipt;
+  try {
+    receipt = await (deps.recordTravelTelegramReceipt || recordTravelTelegramReceipt)(
+      user.uid, key, "telegram-t5", messageId, supaUrl, supaKey, { fetchImpl: deps.fetchImpl },
+    );
+  } catch {
+    receipt = null;
+  }
+  if (!receipt || receipt.ok !== true || receipt.matched !== 1) {
+    logReconciliation(deps, "[travel-reminder] delivery receipt reconciliation required");
+    return { status: "delivery_unknown" };
   }
   const provider = route && route.provider ? String(route.provider) : "none";
   (deps.log || console.log)(`[travel-reminder] uid=${String(user.uid).slice(0, 12)} event_key_hash=${crypto.createHash("sha256").update(key).digest("hex")} provider=${provider} tg_message_id=${messageId}`);

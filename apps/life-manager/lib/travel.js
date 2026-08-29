@@ -404,6 +404,44 @@ async function unclaimTravel(uid, eventKey, leg, supaUrl, supaKey) {
   return !!response && Number.isInteger(response.status) && response.status >= 200 && response.status < 300;
 }
 
+function receiptText(value, maxLength) {
+  return typeof value === "string" && value.trim().length > 0 && value.length <= maxLength;
+}
+
+async function recordTravelTelegramReceipt(uid, eventKey, leg, messageId, supaUrl, supaKey, opts = {}) {
+  const fetchImpl = opts && opts.fetchImpl !== undefined ? opts.fetchImpl : globalThis.fetch;
+  if (!receiptText(uid, 256) || !receiptText(eventKey, 512)
+    || (leg !== "telegram-t5" && leg !== "trial-upgrade")
+    || !Number.isSafeInteger(messageId) || messageId <= 0) {
+    return { ok: false, matched: 0, error: "invalid_args" };
+  }
+  const baseUrl = typeof supaUrl === "string" ? supaUrl.replace(/\/+$/, "") : "";
+  if (!baseUrl.trim() || typeof supaKey !== "string" || !supaKey.trim()) {
+    return { ok: false, matched: 0, error: "missing_config" };
+  }
+  if (typeof fetchImpl !== "function") return { ok: false, matched: 0, error: "network_error" };
+  let response;
+  try {
+    response = await fetchImpl(`${baseUrl}/rest/v1/rpc/record_lm_travel_telegram_receipt`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: supaKey, Authorization: `Bearer ${supaKey}` },
+      body: JSON.stringify({
+        p_uid: uid, p_event_key: eventKey, p_leg: leg, p_telegram_message_id: messageId,
+      }),
+    });
+  } catch {
+    return { ok: false, matched: 0, error: "network_error" };
+  }
+  if (!response || response.ok === false
+    || (response.ok !== true && (!Number.isInteger(response.status) || response.status < 200 || response.status >= 300))) {
+    return { ok: false, matched: 0, error: "http_error" };
+  }
+  let matched;
+  try { matched = await response.json(); } catch { return { ok: false, matched: 0, error: "unreadable_response" }; }
+  if (!Number.isInteger(matched) || matched < 0) return { ok: false, matched: 0, error: "invalid_result" };
+  return { ok: true, matched };
+}
+
 async function fillTravel(uid, { apiKey, mapsKey, geminiKey, home, timezone, nowMs = Date.now(), bufferMin = 5, calendar, supaUrl, supaKey, _directionsMinutes, gmailAccountId } = {}) {
   const directionsFn = _directionsMinutes || directionsMinutes;
   const cal = calendar || getCalendar({ apiKey, gmailAccountId });
@@ -577,6 +615,7 @@ function returnDecision(ev, next, home) {
 
 module.exports = {
   fillTravel, directionsRoute, directionsMinutes, isTravel, travelDecision, returnDecision, claimTravel, unclaimTravel,
+  recordTravelTelegramReceipt,
   // #71 pure helpers (unit-tested)
   parseDurationSeconds, minutesFromSeconds, buildDriveBody, clampDepartIso, acceptRouteResults,
   transitFetchPlan, wallAnchor,
