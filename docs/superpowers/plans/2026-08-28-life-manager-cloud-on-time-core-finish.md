@@ -821,7 +821,9 @@ Current atomic run order:
 - [x] merge/deploy route fixes: PR #3086 passes 9/9, merges as `d37714dd08756b5f835452786da10a0b3ee07b56`, Railway deployment `48ca9cc3-2826-44fa-872a-ac6dda2ef3f1` is SUCCESS, public health matches;
 - [x] create post-fix physical event `udo8jkpls9u250ji2u853str9g`, private, `東京駅`, confirmed, 22:39–22:49 JST; live geo Transit route has buffered departure 22:00:06, Telegram due 21:55:06, three steps and one service/headsign;
 - [x] TDD the measured provider latency boundary: `d69b16db9` sets Transit 15 seconds and reminder 25 seconds; RED 40/42, GREEN 42/42 plus related 47/47, fresh Sol `ship`, cadence/isolation unchanged;
-- [ ] require one outbound `[Travel]` block for `udo8jkpls9u250ji2u853str9g` before 22:00:06 and one `provider=transit` Telegram route message at natural due 21:55:06 with durable positive message ID;
+- [x] create latest physical event `pf0cbjkrqkhmj8ihmot4fmmf2k`, private, `新宿駅`, confirmed, 23:14–23:24 JST; fresh live Transit returns two steps, one rail service/headsign, buffered departure 22:52:57 and Telegram due 22:47:57;
+- [ ] require one `provider=transit` Telegram route message for `pf0cbjkrqkhmj8ihmot4fmmf2k` at natural due 22:47:57 with durable positive message ID;
+- [ ] require one outbound `[Travel]` block with provider event ID; the current previous-event Tokyo→Shinjuku route probe is null and needs separate boundary readback after the Telegram proof;
 - [ ] no-location T-10 row has one call-control ID, one signed webhook ID, and one durable claim;
 - [ ] no-location T-5 row has one call-control ID, one signed webhook ID, and one durable claim;
 - [ ] physical event has one outbound `[Travel]` Calendar block with provider event ID;
