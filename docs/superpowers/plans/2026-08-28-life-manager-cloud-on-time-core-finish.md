@@ -747,7 +747,7 @@ The existing wake ledger stores `amd_result` but drops the Telnyx call identifie
 
 - [x] 8A: add the additive receipt migration and bounded RPC client, including cross-row provider-ID uniqueness and real PostgreSQL concurrency coverage.
 - [x] 8B1a: carry the optional claim token in backward-compatible Telnyx client state and return exact call-control/session/leg IDs from one accepted dial.
-- [ ] 8B1b: wire scheduler order `claim → dial → receipt`; an accepted dial retains its claim even when receipt reconciliation fails, while a rejected dial alone releases it.
+- [x] 8B1b: wire scheduler order `claim → dial → receipt`; an accepted dial retains its claim even when receipt reconciliation fails, while a rejected dial alone releases it.
 - [ ] 8B2: wire the signature-verified webhook to the same receipt RPC and prove replay/conflict behavior through the real HTTP route.
 - [ ] 8C: rollback-preflight, apply, deploy, and read back the exact production SHA before replacement events.
 
