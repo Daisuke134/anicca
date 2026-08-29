@@ -27,7 +27,7 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 この節は、後段の「現在TODO」「次の一件」「local-only」「self-funded agentは別product」という相反する記述を
 上書きする最新の実行順序SSOTである。後段は実装履歴・organ別acceptanceとして保持するが、次作業の選択には使わない。
 Upworkのterminal evidence、startup context、public claim、GA-01〜13Aは完了または履歴として保持する。
-次の一件はAtomic program ledger Seq 15 `ELZ-C02`のsubstep `C02-01`で、現行loopが実際に使うCodex runner argvを読む。
+次の一件はAtomic program ledger Seq 15 `ELZ-C02`のsubstep `C02-01`で、Eliza fixed sourceの既存Codex SDK model-provider evidenceを保存する。
 
 #### 0.0.1 最新基盤決定 — ElizaOSを完全forkし、Life Managerをlocal OSSからmulti-tenant SaaSへ育てる
 
@@ -224,7 +224,7 @@ membership、role、invite、RLS、tenant FK、per-tenant secret、per-tenant co
 | cloud order | stable local OSS後にidentity、tenant DB/vault/browser/wallet/queue/billing隔離を実装し、最後にWeb SaaSを公開 |
 | local DB | PGlite。`PGLITE_DATA_DIR`を明示し、同じpathのstop/restart readbackを必須にする |
 | cloud identity | Supabase Auth user + organization membershipがtenant root。Telegramは署名済みchannel bindingでありtenant rootではない |
-| first model transport | 現行Life Manager loopのsubscription-backed `codex exec --ephemeral --json --output-schema`をそのまま再利用。通常判断は`gpt-5.6-luna` medium、重い判断・修復は後続atomで`gpt-5.6-terra`へ明示昇格。OpenAI API key、open model、ClawRouter、Capafy credential、新規有料API利用は0 |
+| first model transport | Eliza既存`@elizaos/plugin-cli-inference`の`codex-sdk` backendを変更せず採用。warm Codex SDK thread、Eliza `models` map、native `outputSchema` planner、subscription auth/self-healを再利用する。通常判断は`gpt-5.6-luna` medium、重い判断・修復は既存task classの`gpt-5.6-terra`。独自runner/model adapter、OpenAI API key、open model、ClawRouter、Capafy credential、新規有料API利用は0 |
 | browser | localは既存authenticated CloakBrowserをEliza tool境界から利用。cloudはper-tenant profile/container/networkを分離 |
 | judgment | goal分解、候補選択、profit/risk、未知UI、proposal、graph変更はmodelが判断。regex/keyword/provider branchに判断権を持たせない |
 | deterministic core | arithmetic、tenant boundary、immutable intent、dedupe、lease、receipt、ledger、billing、secret redactionだけ |
@@ -241,7 +241,7 @@ membership、role、invite、RLS、tenant FK、per-tenant secret、per-tenant co
 | Bun 1.3.14 / Node 24.15.0、submodule、network、実行時に測ったdisk headroomでfixed treeをbuildできるか | `ELZ-F04`〜`ELZ-F06` |
 | modelなしでserver/PGliteが起動し、`/api/health`がready/runtime/database=`ok`になるか | `ELZ-F08` |
 | 同じPGlite pathでSIGTERM→restart後もDB healthとlock releaseが成立するか | `ELZ-F09`〜`ELZ-F10` |
-| Life Manager pluginが現行loopと同じCodex subscription runnerで`gpt-5.6-luna`のbounded structured callを扱えるか | `ELZ-C02` |
+| Eliza既存`plugin-cli-inference`の`codex-sdk` backendがsystem Codex binaryで`gpt-5.6-luna`のbounded `ACTION_PLANNER` structured callを扱えるか | `ELZ-C02` |
 | Eliza fork上でfresh Lancers Proposal IDとreplay-zeroを取得できるか | `ELZ-L04`〜`ELZ-L05` |
 | 外部buyerが契約・検収・支払いまで進むか | `ELZ-L13`〜`ELZ-L23`。待機中もread-only discoveryと他独立atomは継続 |
 | self-healがack loss、lease expiry、browser/provider failureから副作用0で復帰するか | `ELZ-H01`〜`ELZ-H06` |
@@ -548,23 +548,32 @@ Lancersはgeneral-agent基盤完成後の最初の実環境であり、C02〜C09
 大順序の正本として維持し、現在activeなatomだけをここで単一行動へ分解する。atom完了時に次atomを同じ粒度へ分解し、
 将来atomを勝手に並べ替えない。model providerとroutingは現行Life Manager loopから変更しない。通常のloopと一般判断は
 Codex subscriptionの`gpt-5.6-luna` medium、高難度判断・修復・browser escalationは既存task classどおりCodex subscriptionの
-`gpt-5.6-terra`を使う。実行経路は既存の`codex exec --ephemeral --json --output-schema`だけである。変えるのはElizaOSベースの
-harnessであり、modelとroutingではない。GPT-OSS、local open-weight model、OpenAI API key、ClawRouter、Hermes、別model routerは追加しない。
+`gpt-5.6-terra`を使う。Eliza fixed source `bd24601e…`には既に`@elizaos/plugin-cli-inference`があり、`ELIZA_CHAT_VIA_CLI=codex-sdk`で
+warm `@openai/codex-sdk` threadをEliza `models` mapへ登録する。`ELIZA_PLANNER_NATIVE_TOOLS=0`では`ACTION_PLANNER`をCodex native
+`outputSchema`で構造化し、`ELIZA_CLI_CLAUDE_ALL_TIERS=1`では名前はupstream互換のまま全text tierを同じCodex backendへ登録する。
+system Codex `0.151.0`を`ELIZA_CLI_CODEX_BIN=/Users/anicca/.local/bin/codex`で使い、`CODEX_HOME`からsubscription authをCLI/SDK自身が読む。
+変えるのはElizaOS harnessの設定とLife Manager plugin/tool群であり、modelとroutingではない。GPT-OSS、local open-weight model、
+OpenAI API key、ClawRouter、Hermes、別model router、独自Codex adapterは追加しない。
 
-- [ ] **C02-01** 現行loopの実`codex exec` argvを読む
-- [ ] **C02-02** 現行runnerのprovider/model/effort pinを読む
-- [ ] **C02-03** C02 structured output schemaを一つ保存する
-- [ ] **C02-04** Codex runner境界のfocused testを一つ追加する
-- [ ] **C02-05** focused testの失敗を一回確認する
-- [ ] **C02-06** `plugin-life-manager`へ現行Codex runner境界を最小接続する
-- [ ] **C02-07** focused testの成功を一回確認する
-- [ ] **C02-08** `gpt-5.6-luna` structured callを一回実行する
-- [ ] **C02-09** schema-valid resultを一回再読出しする
-- [ ] **C02-10** provider/model/effort/exit/usageを`model-provider-receipt.json`へ保存する
-- [ ] **C02-11** C02差分をadversarial reviewへ一回渡す
-- [ ] **C02-12** C02 receiptをPASSへ更新する
-- [ ] **C02-13** ELZ-C02をDONEへ更新する
-- [ ] **C02-14** ELZ-C03をNEXTへ更新する
+- [ ] **C02-01** fixed sourceの`plugin-cli-inference` Codex SDK code pathをevidenceへ保存する
+- [ ] **C02-02** fixed sourceの`plugin-cli-inference` host inclusionをevidenceへ保存する
+- [ ] **C02-03** `ELIZA_CHAT_VIA_CLI=codex-sdk`をisolated runtimeへ設定する
+- [ ] **C02-04** `ELIZA_CLI_CODEX_MODEL=gpt-5.6-luna`をisolated runtimeへ設定する
+- [ ] **C02-05** `ELIZA_CLI_CODEX_PLANNER_MODEL=gpt-5.6-luna`をisolated runtimeへ設定する
+- [ ] **C02-06** `ELIZA_CLI_CODEX_REASONING_EFFORT=medium`をisolated runtimeへ設定する
+- [ ] **C02-07** `ELIZA_CLI_CODEX_BIN=/Users/anicca/.local/bin/codex`をisolated runtimeへ設定する
+- [ ] **C02-08** `ELIZA_PLANNER_NATIVE_TOOLS=0`をisolated runtimeへ設定する
+- [ ] **C02-09** `ELIZA_CLI_CLAUDE_ALL_TIERS=1`をisolated runtimeへ設定する
+- [ ] **C02-10** `plugin-cli-inference`が全text tierを登録したことを読む
+- [ ] **C02-11** `plugin-cli-inference`が`ACTION_PLANNER`を登録したことを読む
+- [ ] **C02-12** `plugin-life-manager`と`plugin-cli-inference`を同じruntimeで一回起動する
+- [ ] **C02-13** `gpt-5.6-luna`の`ACTION_PLANNER` callを一回実行する
+- [ ] **C02-14** native structured `{action,params}` resultを一回再読出しする
+- [ ] **C02-15** provider/backend/model/effort/exitを`model-provider-receipt.json`へ保存する
+- [ ] **C02-16** C02差分をadversarial reviewへ一回渡す
+- [ ] **C02-17** C02 receiptをPASSへ更新する
+- [ ] **C02-18** ELZ-C02をDONEへ更新する
+- [ ] **C02-19** ELZ-C03をNEXTへ更新する
 
 Lancersでまだ新しい収益がないことは、この順序を飛ばす理由にしない。現時点はC02未完であり、新forkのgeneral-agent基盤が
 Lancers実環境へ到達していない。Lancersでの新規応募・契約・受領金・銀行着金はPhase C完了後のPhase Lで一つずつ実証する。
@@ -592,7 +601,7 @@ Lancers実環境へ到達していない。Lancersでの新規応募・契約・
 | Seq | Atom | 状態 | 原子的完了条件 / named receipt |
 |---:|---|---|---|
 | 14 | ELZ-C01 exactly-one plugin registration | DONE | private `plugin-registration-receipt.json` mode 0600。fork PR #1 canonical merge `bd24601e…`。`@elizaos/plugin-life-manager`一つがaction `LIFE_MANAGER_HEALTH`、provider `lifeManagerHealth`、stateless service `LIFE_MANAGER`を各1件登録し、host manifestでenabled/requiredForReady=true。同名二重register後も各1件、second runtime/scheduler/DB/external effect 0 |
-| 15 | ELZ-C02 first model transport preflight | **IN_PROGRESS — NEXT** | 現行loopと同じsubscription-backed `codex exec`で`gpt-5.6-luna` mediumをexactly 1回実行し、`--output-schema`結果をreadback。OpenAI API key/open model/ClawRouter/Capafy key/外部effect 0、provider=`codex`・model・effort・exit・usageを固定した`model-provider-receipt.json` |
+| 15 | ELZ-C02 first model transport preflight | **IN_PROGRESS — NEXT** | Eliza既存`@elizaos/plugin-cli-inference`の`codex-sdk` backendをall-tiers＋planner modeで起動し、system Codex `0.151.0`から`gpt-5.6-luna` medium `ACTION_PLANNER`をexactly 1回実行。native structured `{action,params}`をreadbackし、独自adapter/OpenAI API key/open model/ClawRouter/Capafy key/外部effect 0、provider/backend/model/effort/exitを固定した`model-provider-receipt.json` |
 | 16 | ELZ-C03 domain schema and migration | TODO | Goal/PlanGraph/WorkItem/EffectIntent/OutcomeReceipt/EconomicReceiptの型とmigrationが一つの`domain-schema-receipt.json` |
 | 17 | ELZ-C04 legacy provider bridge contract | TODO | JS/Python既存toolをopaque refとstructured resultだけで呼び、判断権0の`provider-bridge-receipt.json` |
 | 18 | ELZ-C05 Goal to reference-only WorkItem | TODO | private goal本文をjobへ複製せず、一Goal→一WorkItemの`goal-workitem-receipt.json` |
