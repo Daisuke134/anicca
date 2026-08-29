@@ -813,7 +813,8 @@ Current atomic run order:
 - [x] fix round 2 `98523b230`: rename the function migration after the base in lexical order; primary PostgreSQL PASS and scoped re-review `ship`, no new breakage;
 - [x] rollback-preflight and apply the function-only production migration SHA-256 `304c40a330baf3e03f38a6d2a91d5731af7ba3d7f556497ba10b623983b32df6`; post-readback function hash `7ccc1d1b6d6f42a6ff207909083af725`, wake rows 496, fixture zero, indexes two, RLS true, service execute true, browser execute false;
 - [x] merge/deploy/read back the hangup HTTP route: PR #3072 passes 9/9, merges as `d37cba22d26eb2a6686b5ef94e78b46cf1ac4b69`, Railway deployment `d0050aac-fe29-46ad-a073-a2243f72c11b` is SUCCESS, and public health matches;
-- [ ] create a new no-location event because the prior call identities cannot be retroactively linked to ignored webhook IDs;
+- [x] create post-hangup-release no-location event `or3855rnheueg91q5u5vu8tkqk`; Google/Composio agree on private, no location, `confirmed`, 20:50–21:00 JST, wake-eligible, cohort one;
+- [ ] observe natural 20:40 T-10 and 20:45 T-5 and require call/session/leg plus signed terminal or AMD webhook IDs in both durable rows;
 - [ ] after no-location liveness is proven, create one fresh physical controlled event and require the Travel block plus route/Telegram/call receipts;
 - [ ] no-location T-10 row has one call-control ID, one signed webhook ID, and one durable claim;
 - [ ] no-location T-5 row has one call-control ID, one signed webhook ID, and one durable claim;
