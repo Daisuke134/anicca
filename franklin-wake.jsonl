@@ -37020,3 +37020,11 @@
 {"ts":1788003450,"wake_id":"00MTEB386WAEF2C858174C41C7","kind":"wake_error","sleep_s":60,"model":"auto"}
 {"ts":1788003531,"wake_id":"00MTEB4YVE9F70934DE65B472C","kind":"wake_error","sleep_s":60,"model":"auto"}
 {"ts":1788003608,"wake_id":"00MTEB6LTP78D7019338864A52","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1788003751,"wake_id":"00MTEB9OGKDD00BB7BA18848FF","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1788003885,"wake_id":"00MTEBCJTWEB4EF830AB244E46","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1788004020,"wake_id":"00MTEBFFTI3932A40C86704326","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1788004166,"wake_id":"00MTEBIKEYCB0543029A0A4A85","kind":"narrate","sleep_s":120,"model":"auto"}
+{"ts":1788004300,"wake_id":"00MTEBLFO624E8560FE2E748FE","kind":"wake","sleep_s":120,"model":"auto","slot":"cook","profitable":false,"exit_code":0,"result":"[cook] exploring: solana paid API microservices [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded explore wake (candidates surfaced for the model to t"}
+{"ts":1788004445,"wake_id":"00MTEBOJJN32E81675549545A1","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1788004523,"wake_id":"00MTEBQ7RU72ABCE1E89A54C89","kind":"wake_error","sleep_s":60,"model":"auto"}
+{"ts":1788004607,"wake_id":"00MTEBS0HR339DF5BDC445454A","kind":"narrate","sleep_s":120,"model":"auto"}
