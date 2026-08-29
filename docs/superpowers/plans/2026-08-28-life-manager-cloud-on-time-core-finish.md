@@ -807,7 +807,9 @@ Current atomic run order:
 - [x] TDD the provider-schema fix in `panel-api.js`/existing tests: `2f584d9ab` accepts missing `enabled` only with exact owner/toolkit + ACTIVE + not-disabled, explicit false/null/nonboolean and disabled contradictions reject; fresh Sol review `ship`, findings zero, Ponytail minimal;
 - [x] deploy/read back the minimal fix: PR #3063 merges as `0c6bbd6fc895ce123ca48f28f84b84bec7e36bdb`, Railway deployment `19a195eb-3edf-4c89-8853-5fec167150ae` is SUCCESS, public health matches, canonical provider-status RPC stores `composio_gcal`, and production scheduler cohort changes from zero to one;
 - [x] create post-repair no-location event `0gevo7mkpbce7up75v45k2pnjk`; Google and production Composio readbacks agree on `confirmed`, private, no location, 19:35–19:45 JST, wake-eligible under `all-events`, with scheduler cohort one;
-- [ ] observe its natural 19:25 T-10 and 19:30 T-5 windows and require the two receipt triples;
+- [x] observe its natural 19:25 T-10 and 19:30 T-5 calls: two durable claims contain distinct call-control/session/leg IDs, official Telnyx retrieve returns HTTP 200 with exact matching hashes and `is_alive=false`, and six signed-route POSTs return 200; both calls are unanswered so AMD/webhook identity remains null;
+- [ ] TDD signed terminal `call.hangup` receipt for unanswered wake calls: exact wake client state and call-control/session/leg IDs write the existing generic webhook ID field with null AMD; initiated/answered/foreign/test events stay ignored; replay/conflict/provider-write failure retain current idempotent/retry semantics;
+- [ ] deploy/read back the hangup receipt fix, then create a new no-location event because the current call identities cannot be retroactively linked to ignored webhook IDs;
 - [ ] after no-location liveness is proven, create one fresh physical controlled event and require the Travel block plus route/Telegram/call receipts;
 - [ ] no-location T-10 row has one call-control ID, one signed webhook ID, and one durable claim;
 - [ ] no-location T-5 row has one call-control ID, one signed webhook ID, and one durable claim;
