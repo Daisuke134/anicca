@@ -32,7 +32,7 @@ function checkRequiredEnv() {
   }
 }
 
-export async function createApp() {
+export async function createApp({ x402InitializeTimeoutMs = 15000 } = {}) {
   const app = express();
 
   app.set('trust proxy', 1);
@@ -111,7 +111,19 @@ export async function createApp() {
       });
 
       try {
-        await server.initialize();
+        let initializeTimer;
+        try {
+          await Promise.race([
+            server.initialize(),
+            new Promise((_, reject) => {
+              initializeTimer = setTimeout(() => {
+                reject(new Error(`x402 server.initialize() timed out after ${x402InitializeTimeoutMs}ms`));
+              }, x402InitializeTimeoutMs);
+            }),
+          ]);
+        } finally {
+          clearTimeout(initializeTimer);
+        }
         isX402Ready = true;
         console.log('x402 server initialized successfully');
       } catch (initErr) {
