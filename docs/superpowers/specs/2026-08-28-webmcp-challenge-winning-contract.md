@@ -978,7 +978,7 @@ The initial product is a general entrepreneur agent that continuously searches X
 | Worker | dedicated Railway service `money-printer-worker`をGitHub mainから稼働。16:00Z natural scout `be9cb0c3…`はattempt 1 failed→attempt 2 completed。Pageを閉じたまま新opportunitiesを3件作成 | same releaseの00:00Z、08:00Z cyclesをreadbackし3/3へする。scout downstream general-agent jobsのdead-letterはHumanTask blockerと分けて扱う |
 | External proof | Lancers project `5593484`のofficial application receipt `27863414`をread-only importし、official log + append-only ledgerでcontent hashを照合。applicationとして表示し、revenueへは算入せず、replay duplicate 0 | browser demoでreceiptとverified money 0を同時に見せる |
 | Devpost | project `1404362`をfresh Sol review済みEnglish draftへversion 3同期。`website_url=https://aniccaai.com/money-printer`、public repo、MIT license、README、judge guideをlive readback。`submitted_at=null`、`video_url=null` | screenshots、immutable tag、public YouTube、required custom answersを埋め、official formを再readbackして明示承認後にsubmitする |
-| Local capacity | Mac restartなしのowner-aware browser recovery手順は確立済みだが、別sessionのbuild後にfree 2.7 GiB、swap 10 GiBへ再低下 | 新model/browser/buildを増やす前に同じowner-aware cleanupを再実行し8 GiB以上をreadbackする。Mac restartは最後の手段 |
+| Local capacity | owner-aware browser recovery手順は確立済み。free容量は診断値でありproduct gateではない | 固定GB thresholdを置かない。実commandがENOSPCで失敗した時、または必要な一時容量を実測できる時だけ、最小のowner-aware cleanupを行う。Mac restartは最後の手段 |
 
 ### Submission critical path — one active item
 
@@ -1118,7 +1118,7 @@ Judgesがeconomic autonomyより安全で楽しいcreative collaborationを好�
 
 1. [completed] judge story + interactive one-screen HTML
 2. [completed] current rules/formでeligibility、ownership、conflict、deadline、required fieldsを再確認し、正規Netlify build入口を固定する
-3. [partial] fresh `origin/main` worktreeでfocused reused-contract testsを通す。clean installはdisk gate再openのため未完
+3. [partial] fresh `origin/main` worktreeでfocused reused-contract testsを通す。clean installは必要な実commandを走らせる時だけ行う
 4. [completed] Lancers browser/application current failureをroot-cause repairし、public inventoryをofficial readbackする
 5. [code-completed] `X / Web / GitHub / mail / Lancers / Mercor / arbitrary URL → Opportunity / Workroom / HumanTask / Receipt`のgeneric read-only projection
 6. [code-completed] existing Panel auth/APIへMoney Printer Dashboard sectionを追加
@@ -1147,7 +1147,7 @@ One active item at a time。各itemは実物readbackを閉じてから次へ進�
 | U01 | General agentがprovider listに縮退する | design-closed | X/Web/GitHub/mail/任意URLを同じgoal→job→tool loopへ入れるcontract test | provider keyword routingを検出したらmergeしない |
 | U02 | Opireがprimary proofに使えるか | rejected | API 56 records→33 closed、7 missing/deleted、16 open。低競争候補も22 competing PRsとpayout uncertainty | Opire固有実装を作らない |
 | U03 | Current branchが最新mainと乖離 | resolved through worker release | worker deployment、public main、handover worktreeはいずれもSHA `cb8c3917`。共有WebMCP worktreeはmerged/deleted branch `fix/webmcp-human-sql-regex`に残るため書き込み禁止 | fresh handover worktreeからspecだけ更新し、implementationは新branch/worktreeを作る |
-| U04 | Disk不足でinstall/build/videoが失敗 | recovery known / gate currently closed | owner-aware browser recoveryで一度free 8.3 GiBを証明したが、21:23Z時点でfree 2.7 GiB、swap 10 GiB。再起動不要の手順は確立済み | free <8 GiBなら新model/browser/buildを開始せず、idle owner restart、一時build volume終了、bounded cleanupを行う |
+| U04 | Disk不足でinstall/build/videoが失敗 | recovery known / no fixed gate | owner-aware idle browser restart、一時build volume終了、bounded cleanupでMac restartなしに回復可能と実証 | 固定GB値で作業を止めない。実際のENOSPCまたは次commandの必要容量不足だけをblockerにする |
 | U05 | Lancers installed ownerがfail中 | resolved | application ownerのauthenticated inventory、official readback、append-only ledger、replay skipを照合 | 再びauth failureならmutationせずNeeds Youへ出す |
 | U06 | Lancers login/sessionが有効か | resolved for receipt proof | exact owned sessionからproposal `27863414`をofficial readbackし、ledger sequence 37とcontent hash一致 | guest UIへcredentialを渡さずredacted receiptだけ投影する |
 | U07 | 応募可能なLancers案件があるか | resolved for primary proof | project `5593484`をmodel判断し、official application receiptまで閉じた | 次候補がなければapplicationを送らず別market discoveryを継続 |
@@ -1165,7 +1165,7 @@ One active item at a time。各itemは実物readbackを閉じてから次へ進�
 | U19 | Revenueを盛って表示する | code-verified / UI live-open | Verified external incomeだけを通貨別mapで集計し、JPY/USD等を混算しない。Application/Paymentは別receiptのまま | cash receiptなしならverified money empty/0を表示 |
 | U20 | Real external receiptが締切までに得られない | resolved for application proof | Lancers official application ID `27863414`、official log、append-only ledger sequence 37、matching content hash | acceptance/delivery/cashは得られたterminalだけ表示し、applicationを売上にしない |
 | U21 | Existing projectの新規WebMCP差分が不明 | partial pass | README `Hackathon changes`とdated commitsは公開済み。次にsubmitted tag diffを固定 | prior Life Manager機能をHackathon成果として数えない |
-| U22 | Public repoがclean installできない | repo/license/docs pass / clean clone blocked by disk gate | public MIT repo、README quick start、judge guide、architecture/tool tableをreadback。次に8 GiB回復後clean clone、locked install、focused tests、secret/PII scan | scan/import failureならsubmit readinessは`not ready` |
+| U22 | Public repoがclean installできない | repo/license/docs pass / clean clone pending | public MIT repo、README quick start、judge guide、architecture/tool tableをreadback。次にclean clone、locked install、focused tests、secret/PII scan | scan/import failureならsubmit readinessは`not ready` |
 | U23 | Videoで四基準が伝わらない | open | under 3:00、audio、first working action <15s、tool call、Needs You、resume、receipt | 未実装claimをscriptから削る |
 | U24 | Devpost最終送信漏れ | draft exists / not submitted | project 1404362、live URL、repo、video、custom fields、explicit `yes, submit`、`submitted_at` readback | internal deadline September 3 12:00 JST、official deadline September 4 05:00 JST |
 | U25 | Eligibility、ownership、conflictが未確認 | live-open | Japan residency、representative、rules/terms acknowledgement、Sponsor conflict absence、sole ownershipを最終formとrulesでreadback | 一項目でも不適格または不明ならsubmitしない |
