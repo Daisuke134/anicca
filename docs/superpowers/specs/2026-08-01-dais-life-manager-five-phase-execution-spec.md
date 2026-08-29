@@ -27,7 +27,7 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 この節は、後段の「現在TODO」「次の一件」「local-only」「self-funded agentは別product」という相反する記述を
 上書きする最新の実行順序SSOTである。後段は実装履歴・organ別acceptanceとして保持するが、次作業の選択には使わない。
 Upworkのterminal evidence、startup context、public claim、GA-01〜13Aは完了または履歴として保持する。
-次の一件はAtomic program ledger Seq 4 `ELZ-F04`で、project-local Node `24.15.0`とBun `1.3.14`をsystem toolchainへ影響せず固定する。
+次の一件はAtomic program ledger Seq 5 `ELZ-F05`で、fixed treeのsubmoduleをcommitted SHAへ初期化し、uninitialized entry 0をreadbackする。
 
 #### 0.0.1 最新基盤決定 — ElizaOSを完全forkし、Life Managerをlocal OSSからmulti-tenant SaaSへ育てる
 
@@ -548,8 +548,8 @@ reviewはfocused verification後のfresh adversarial P0/P1 review一回だけと
 | 1 | ELZ-F01 legacy baseline inventory | DONE | private receipt=`~/.local/state/life-manager/migration/elz-f/fork-baseline-receipt.json` mode 0600。legacy HEAD `d71d6360…`、origin snapshot `2be59f28…`、dirty/refs/worktrees SHA-256、free `6003720` KiB、Node `v25.6.1`、Bun `1.3.9`、mutations 0。採取後のrefs前進はsnapshot concernとして保持 |
 | 2 | ELZ-F02 official GitHub fork | DONE | `Daisuke134/life-manager-eliza`はparent=`elizaOS/eliza`のpublic fork。local clone=`/Users/anicca/Projects/life-manager-eliza-migration`、branch=`migration/eliza-pinned`、HEAD=`29bed1bb3…`、origin/eliza-upstream exact、submodule 2件未初期化、legacy dirty hash不変。private `fork-source-receipt.json` mode 0600、mutationsはfork/cloneのみ。disk free約2.1GiB concernはF04/F05へ継承 |
 | 3 | ELZ-F03 target topology and keep/retire map | DONE | private `fork-topology-receipt.json` mode 0600。current=`life-manager`、migration=`life-manager-eliza`、final=`life-manager`、archive=`life-manager-legacy`、upstream=`eliza-upstream`、gate=`ELZ-O05+ELZ-T11`。old repo untouched until gate=true、repo delete/force-push main/bulk restart=0。disk concernはF04/F06へ継承 |
-| 4 | ELZ-F04 pinned runtime toolchain | **IN_PROGRESS — NEXT** | project-local Node `24.15.0` / Bun `1.3.14`をversion readbackし、system tool上書き0の`toolchain-receipt.json` |
-| 5 | ELZ-F05 recursive submodule | TODO | `plugin-local-inference/native/llama.cpp`を含むsubmoduleがfixed commitへ揃い、uninitialized entry 0の`submodule-receipt.json` |
+| 4 | ELZ-F04 pinned runtime toolchain | DONE | private `toolchain-receipt.json` mode 0600。official Node/Bun checksum OK、project-local Node `v24.15.0` / Bun `1.3.14`、system Node `v25.6.1` / Bun `1.3.9`前後同一、profile/cleanup mutation 0。free `2268928→1954692` KiB、低disk concernはF05/F06へ継承 |
+| 5 | ELZ-F05 recursive submodule | **IN_PROGRESS — NEXT** | `plugin-local-inference/native/llama.cpp`を含むsubmoduleがfixed commitへ揃い、uninitialized entry 0の`submodule-receipt.json` |
 | 6 | ELZ-F06 frozen install and server build | TODO | `bun install --frozen-lockfile`と`bun run build:server`がexit 0、ENOSPC/network unresolved 0の`toolchain-build-receipt.json` |
 | 7 | ELZ-F07 license and notice inventory | TODO | root/package MIT、copyright、submodule/dependency noticeを列挙し、欠落0の`license-notice-receipt.json` |
 | 8 | ELZ-F08 model-free local boot | TODO | isolated state/DB/portで`bun run start`、`/api/health`が200・ready/runtime/database=`true/ok/ok`の`local-boot-receipt.json` |
