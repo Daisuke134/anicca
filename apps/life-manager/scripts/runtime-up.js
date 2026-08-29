@@ -480,21 +480,38 @@ function createWorkerHandlers(env, capabilities, dependencies = {}) {
   const servicesByAdapter = {};
   if (capabilities.includes("general-agent.work")) {
     const {
+      createMoneyPrinterRuntimeStore,
+    } = require("../lib/money-printer-runtime-store.js");
+    const {
       createMoneyPrinterSpecialist,
     } = require("../lib/money-printer-specialist.js");
-    const specialist = dependencies.moneyPrinterSpecialist || dependencies.runBoundedSpecialist || (
-      dependencies.createMoneyPrinterSpecialist || createMoneyPrinterSpecialist
-    )({
-      supaUrl: requiredEnv(env, "SUPABASE_URL"),
-      supaKey: requiredEnv(env, "SUPABASE_SERVICE_ROLE_KEY"),
-      dataDir: path.resolve(requiredEnv(env, "LM_DATA_DIR")),
-      repoRoot: dependencies.repoRoot || path.resolve(__dirname, "../../.."),
-      fetchImpl: dependencies.fetchImpl || globalThis.fetch,
-      geminiKey: env.GEMINI_API_KEY,
-      runAgentRunner: dependencies.runAgentRunner || dependencies.runLocalAgentRunner,
-      readOpportunity: dependencies.readOpportunity,
-      updateOpportunity: dependencies.updateOpportunity,
-    });
+    let specialist = dependencies.moneyPrinterSpecialist || dependencies.runBoundedSpecialist;
+    if (!specialist) {
+      const runAgentRunner = typeof dependencies.runAgentRunner === "function"
+        ? dependencies.runAgentRunner
+        : typeof dependencies.runLocalAgentRunner === "function"
+          ? dependencies.runLocalAgentRunner
+          : null;
+      const geminiKey = String(env.GEMINI_API_KEY || "").trim();
+      if (!geminiKey && !runAgentRunner) throw new Error("GEMINI_API_KEY is required");
+      const runtimeStore = typeof dependencies.query === "function"
+        ? createMoneyPrinterRuntimeStore({ query: dependencies.query })
+        : null;
+      const readOpportunity = dependencies.readOpportunity || (runtimeStore && runtimeStore.readOpportunity);
+      const updateOpportunity = dependencies.updateOpportunity || (runtimeStore && runtimeStore.updateOpportunity);
+      if (typeof readOpportunity !== "function" || typeof updateOpportunity !== "function") {
+        throw new Error("money printer runtime opportunity store unavailable");
+      }
+      specialist = (dependencies.createMoneyPrinterSpecialist || createMoneyPrinterSpecialist)({
+        dataDir: path.resolve(requiredEnv(env, "LM_DATA_DIR")),
+        repoRoot: dependencies.repoRoot || path.resolve(__dirname, "../../.."),
+        fetchImpl: dependencies.fetchImpl || globalThis.fetch,
+        geminiKey,
+        runAgentRunner,
+        readOpportunity,
+        updateOpportunity,
+      });
+    }
     if (typeof specialist !== "function") {
       throw new Error("money printer specialist unavailable");
     }
