@@ -971,14 +971,14 @@ The initial product is a general entrepreneur agent that continuously searches X
 
 | Surface | Verified state | Next gate |
 |---|---|---|
-| Life Manager code | Money Printer projection、six-lane board、durable Opportunity/HumanTask/runtime store、cloud qualification、WebMCP read/write toolsはfocused testsとfresh adversarial reviewを通過。PR #3081をmainへmerge済み | guest-only follow-up `a748ecb7f`をfollow-up PRでmainへmergeする |
+| Life Manager code | Money Printer projection、six-lane board、durable Opportunity/HumanTask/runtime store、cloud qualification、WebMCP read/write toolsはfocused testsとfresh adversarial reviewを通過。PR #3081をmainへmerge済み | guest-only follow-up PR #3085をchecks後にmainへmergeする |
 | Railway API | `life-call` deployment `b8808ed6-4ea3-4023-b1cf-61973f9ecc03`はmerge SHA `142a9bc666af2e6dfe848c083e777045c255f7c4`でSUCCESS。runtime migrations/RPC/rolesはproduction Railway Postgresへ適用・readback済み | 現在direct `GET /money-printer`は404。guest routeを含むfollow-up deploy後にhealth、HTML、API、DB mutationを再実測する |
 | Judge guest | 固定guest tenant、external-effect deny、owner UIを変えずMoney Printerだけを描画・fetchするcodeは93/93 pass | clean browserでzero-login、private data 0、same domain functions、resetを証明する |
-| Netlify | `anicca-products` branch `feat/webmcp-money-printer-site` commit `3ee75210e`に`/money-printer`とAPI proxy、required headersを実装・push済み | PR merge、Netlify production deploy、`https://aniccaai.com/money-printer`のstatus/header/body/tool discovery readback |
+| Netlify | `anicca-products` PR #399、commit `3ee75210e`に`/money-printer`とAPI proxy、required headersを実装・push済み | PR merge、Netlify production deploy、`https://aniccaai.com/money-printer`のstatus/header/body/tool discovery readback |
 | Worker | same codebaseのcloud qualification pathは実装・focused検証済み | Railwayで`money-printer-worker`を起動し、pageを閉じた状態のnatural cyclesとrestart recoveryを証明する |
 | External proof | Lancers/Mercor/arbitrary URLのprovider-neutral contractは設計・codeへ接続済み | Lancers auth/inventory blockerを解消し、最低一件のofficial application/handoff receiptとreplay-zeroを得る |
 | Devpost | project `1404362`、draft URL `https://devpost.com/software/life-manager-uny729`、English draftあり。plugin stateは`prepare-submission`、submissionは`drafting` | live URL、repo/tag、screenshots、public YouTubeを埋め、official formを再readbackして明示承認後にsubmitする |
-| Local capacity | Data volume freeは810 MiB | 8 GiB以上へ安全に回復するまでinstall、Netlify build、browser E2E、videoを開始しない |
+| Local capacity | Data volume freeは1 GiB未満 | 8 GiB以上へ安全に回復するまでinstall、Netlify build、browser E2E、videoを開始しない |
 
 ### Official eligibility/compliance — PASS/FAIL
 
@@ -1133,8 +1133,8 @@ One active item at a time。各itemは実物readbackを閉じてから次へ進�
 |---|---|---|---|---|
 | U01 | General agentがprovider listに縮退する | design-closed | X/Web/GitHub/mail/任意URLを同じgoal→job→tool loopへ入れるcontract test | provider keyword routingを検出したらmergeしない |
 | U02 | Opireがprimary proofに使えるか | rejected | API 56 records→33 closed、7 missing/deleted、16 open。低競争候補も22 competing PRsとpayout uncertainty | Opire固有実装を作らない |
-| U03 | Current branchが最新mainと乖離 | implementation merged / guest follow-up open | PR #3081 merge SHA `142a9bc6`はRailway deploymentと一致。guest follow-up `a748ecb7f`をcurrent mainへPR mergeし、deployed commitを再束縛 | stale docs/shared checkoutからproduction codeを編集しない |
-| U04 | Disk不足でinstall/build/videoが失敗 | blocked | Data volume free 810 MiB。保護対象を触らず8 GiB以上へ回復し、直後に`df` readback | free <8 GiBの間はinstall/build/browser E2E/videoを実行しない |
+| U03 | Current branchが最新mainと乖離 | implementation merged / guest follow-up PR open | PR #3081 merge SHA `142a9bc6`はRailway deploymentと一致。PR #3085をcurrent mainへmergeし、deployed commitを再束縛 | stale docs/shared checkoutからproduction codeを編集しない |
+| U04 | Disk不足でinstall/build/videoが失敗 | blocked | Data volume freeは1 GiB未満。保護対象を触らず8 GiB以上へ回復し、直後に`df` readback | free <8 GiBの間はinstall/build/browser E2E/videoを実行しない |
 | U05 | Lancers installed ownerがfail中 | blocked | application owner natural pass、loaded argv、release SHA、CDP owner、latest log、exact entrypointを照合 | root causeがauthならmutationせずNeeds Youへ出す |
 | U06 | Lancers login/sessionが有効か | blocked | exact browser profile/CDPのofficial authenticated inventory、effect count 0、two-read stable identity。`about:blank`やcookie存在は不可 | login unavailableならguest UIはlive Lancers effectを主張しない |
 | U07 | 応募可能なLancers案件があるか | blocked by U06 | current complete detail、buyer/order rate、budget、deadline、eligibility、competitionをModelが判断。public result countだけは不可 | suitable candidateがなければapplicationを送らず別market discoveryを継続 |
@@ -1142,7 +1142,7 @@ One active item at a time。各itemは実物readbackを閉じてから次へ進�
 | U09 | General projectionが既存receiptを正しく表示できるか | projection + Panel code-verified / live source open | projection 2/2、tenant-bound GETと六列UIを含むfocused suite 58/58。次にruntime/application/general receiptsをserver sourceへ接続 | raw provider stateやempty fake sourceをUIへ渡さない |
 | U10 | Minimal human判定が丸投げになる | domain/API code-verified / live-open | Model-selected `human_boundary_ref`、stable task/open dedupe、vault answer、pause attempt preservation、same-job resume focused pass。次にlive model caseとAPI E2E | agentが実行可能なworkをhuman taskにしたらfail |
 | U11 | WebMCP toolsがChatGPTで発見・実行されるか | read/write registration code-verified / browser live-open | top-level inspect toolsとstate-dependent answer toolを含むfocused suite 65/65。次にSol/Terra tool list、recent call、visible resume | ChatGPT rollout不可ならChrome 149+ evidenceでStage Oneを守る |
-| U12 | Netlify/Browser security headersがWebMCPを許すか | code-ready / deploy-open | Netlify commit `3ee75210e`をproductionへmergeし、origin isolation、Permissions Policy、no iframe registration、clean-browser tool discoveryをreadback | headerが通るまでdeployをworking扱いしない |
+| U12 | Netlify/Browser security headersがWebMCPを許すか | PR #399 open / deploy-open | Netlify commit `3ee75210e`をproductionへmergeし、origin isolation、Permissions Policy、no iframe registration、clean-browser tool discoveryをreadback | headerが通るまでdeployをworking扱いしない |
 | U13 | Page close後も24/7 workが続くか | open | page closed状態で3 natural cycles、restart recovery、same workroom state | page-local toolをscheduler代わりにしない |
 | U14 | Guest judgeとprivate production stateが混ざる | code-verified / live-open | fixed guest tenant、external-effect deny、guest-only UI focused 93/93 pass。次にclean production sessionでzero private credentials/PII、same build/domain functionsをreadback | private owner receiptはredacted read-only projectionだけ許可 |
 | U15 | Mercorが期限内proofになるか | bounded | public inventoryとapplication-step state、human interview taskまでを実測 | 2–4週のselection/cashをDoneに含めない。AI interview代答禁止 |
