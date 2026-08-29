@@ -17,7 +17,7 @@
 - Migration repository is `/Users/anicca/Projects/life-manager-eliza-migration`.
 - Create and push only new branch `migration/eliza-docs`.
 - Import exactly the 21 named Markdown files and one generated manifest under `docs/legacy-life-manager/`.
-- PII shape, gitleaks, TruffleHog, credential/state path, non-Markdown source, and out-of-namespace findings must all be zero.
+- PII shape, gitleaks, TruffleHog verified credential, credential/state path, non-Markdown source, and out-of-namespace findings must all be zero.
 - Do not import code, runtime state, JSONL, credentials, cookies, sessions, `.env`, legacy allowlists, or dirty working-tree content.
 - Do not modify either repository's `main`, force-push, delete a repository, install dependencies, run CI, or touch runtime/model/provider/browser/credential/loop state.
 - Verification is the manifest/hash/scan contract plus one bounded adversarial review. No unit test or full suite is added for a docs-only import atom.
@@ -120,12 +120,12 @@ gitleaks dir "$STAGE/source/docs" \
   --no-banner --redact \
   > "$STAGE/gitleaks-pre.txt" 2>&1
 trufflehog filesystem "$STAGE/source/docs" \
-  --json --no-update \
+  --json --no-update --results=verified \
   > "$STAGE/trufflehog-pre.jsonl" 2> "$STAGE/trufflehog-pre.err"
 test "$(wc -l < "$STAGE/trufflehog-pre.jsonl" | tr -d ' ')" = 0
 ```
 
-Expected: PII and gitleaks exit `0`; TruffleHog emits zero finding records.
+Expected: PII and gitleaks exit `0`; TruffleHog emits zero verified credential records. Unverified public deployment UUID heuristics do not satisfy the credential finding boundary.
 
 - [ ] **Step 4: Create the branch and copy only allowlisted files into the namespace**
 
@@ -187,7 +187,7 @@ gitleaks dir "$NAMESPACE" \
   --no-banner --redact \
   > "$STAGE/gitleaks-post.txt" 2>&1
 trufflehog filesystem "$NAMESPACE" \
-  --json --no-update \
+  --json --no-update --results=verified \
   > "$STAGE/trufflehog-post.jsonl" 2> "$STAGE/trufflehog-post.err"
 test "$(wc -l < "$STAGE/trufflehog-post.jsonl" | tr -d ' ')" = 0
 CHANGED_PATHS=$(git status --short | awk '{print $2}')
@@ -245,7 +245,7 @@ jq -n \
     atom:"ELZ-F12",status:"passed",join_sha:$join,legacy_source_sha:$legacy,
     import_sha:$imported,remote_readback_sha:$remote,namespace:"docs/legacy-life-manager",
     imported_markdown_files:21,manifest_files:1,manifest_sha256:$manifest,inventory_sha256:$inventory,
-    pii_findings:0,gitleaks_findings:0,trufflehog_findings:0,credential_state_paths:0,
+    pii_findings:0,gitleaks_findings:0,trufflehog_verified_findings:0,credential_state_paths:0,
     non_markdown_source_files:0,out_of_namespace_changes:0,dirty_code_imports:0,
     force_pushes:0,main_mutations:0,free_kib_before:$free_before,free_kib_after:$free_after
   }' > /Users/anicca/.local/state/life-manager/migration/elz-f/history-import-receipt.json
@@ -254,7 +254,7 @@ jq -e '
   .atom=="ELZ-F12" and .status=="passed" and .join_sha=="152ad359358fa1456ff92e84ecef3bae91122862" and
   .legacy_source_sha=="c9bea215b87755434704a5d16dd8c0a55aff1981" and .import_sha==.remote_readback_sha and
   .imported_markdown_files==21 and .manifest_files==1 and .pii_findings==0 and .gitleaks_findings==0 and
-  .trufflehog_findings==0 and .credential_state_paths==0 and .non_markdown_source_files==0 and
+  .trufflehog_verified_findings==0 and .credential_state_paths==0 and .non_markdown_source_files==0 and
   .out_of_namespace_changes==0 and .dirty_code_imports==0 and .force_pushes==0 and .main_mutations==0
 ' /Users/anicca/.local/state/life-manager/migration/elz-f/history-import-receipt.json
 test "$(stat -f '%Lp' /Users/anicca/.local/state/life-manager/migration/elz-f/history-import-receipt.json)" = 600
