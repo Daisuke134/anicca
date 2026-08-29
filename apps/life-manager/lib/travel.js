@@ -317,6 +317,8 @@ async function directionsRoute(src, dst, mapsKey, anchorAtMs = null, nowMs = Dat
   if (!mapsKey || !src || !dst) return null;
   const srcLiteral = parseGeoLiteral(src);
   const dstLiteral = parseGeoLiteral(dst);
+  const googleSrc = srcLiteral ? `${srcLiteral.lat},${srcLiteral.lon}` : src;
+  const googleDst = dstLiteral ? `${dstLiteral.lat},${dstLiteral.lon}` : dst;
   const [srcGeo, dstGeo] = await Promise.all([
     srcLiteral || geocode(src, mapsKey), dstLiteral || geocode(dst, mapsKey),
   ]);
@@ -325,12 +327,12 @@ async function directionsRoute(src, dst, mapsKey, anchorAtMs = null, nowMs = Dat
   const google = async () => {
     try {
       const value = googleRouteFn
-        ? await googleRouteFn(src, dst, mapsKey, query.anchorAtMs, call.nowMs, call.departureMode)
+        ? await googleRouteFn(googleSrc, googleDst, mapsKey, query.anchorAtMs, call.nowMs, call.departureMode)
         : options._directionsMinutesGoogle
-          ? await googleMinutesFn(src, dst, mapsKey, query.anchorAtMs, call.nowMs, call.departureMode)
+          ? await googleMinutesFn(googleSrc, googleDst, mapsKey, query.anchorAtMs, call.nowMs, call.departureMode)
           : await (call.departureMode
-            ? legacyTransitMinutes(src, dst, mapsKey, null, call.nowMs, query.anchorAtMs)
-            : legacyTransitMinutes(src, dst, mapsKey, query.anchorAtMs, call.nowMs));
+            ? legacyTransitMinutes(googleSrc, googleDst, mapsKey, null, call.nowMs, query.anchorAtMs)
+            : legacyTransitMinutes(googleSrc, googleDst, mapsKey, query.anchorAtMs, call.nowMs));
       return googleRoute(value);
     } catch { return null; }
   };

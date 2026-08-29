@@ -95,6 +95,41 @@ test("directionsRoute: valid live geo origin bypasses geocoding while the addres
   assert.equal(route.durationSeconds, 1029);
 });
 
+test("directionsRoute: non-JP live geo selects Google with a provider-safe coordinate", async () => {
+  const geocoded = [];
+  const googleArgs = [];
+  const route = await travel.directionsRoute("geo:40.730,-73.930", "NYC place", "mapsKey", EVENT_START, NOW, false, {
+    _geocode: async (address) => {
+      geocoded.push(address);
+      return { lat: 40.7128, lon: -74.0060 };
+    },
+    _directionsMinutesGoogle: async (...args) => { googleArgs.push(args); return 45; },
+    _routeCache: freshCache(),
+  });
+  assert.deepEqual(geocoded, ["NYC place"]);
+  assert.equal(googleArgs.length, 1);
+  assert.deepEqual(googleArgs[0].slice(0, 2), ["40.73,-73.93", "NYC place"]);
+  assert.equal(route.provider, "google");
+  assert.equal(route.durationSeconds, 45 * 60);
+});
+
+test("directionsRoute: unusable JP Transit falls back once with a provider-safe geo coordinate", async () => {
+  let transitCalls = 0;
+  const googleArgs = [];
+  const route = await travel.directionsRoute("geo:35.681,139.767", "渋谷区B", "mapsKey", EVENT_START, NOW, false, {
+    timezone: "Asia/Tokyo",
+    _geocode: async () => ({ lat: 35.659, lon: 139.700 }),
+    _transitFetch: async () => { transitCalls++; return { date: "20260827", timezone: "Asia/Tokyo", journeys: [] }; },
+    _directionsMinutesGoogle: async (...args) => { googleArgs.push(args); return 30; },
+    _routeCache: freshCache(),
+  });
+  assert.equal(transitCalls, 1);
+  assert.equal(googleArgs.length, 1);
+  assert.deepEqual(googleArgs[0].slice(0, 2), ["35.681,139.767", "渋谷区B"]);
+  assert.equal(route.provider, "google");
+  assert.equal(route.durationSeconds, 30 * 60);
+});
+
 test("directionsRoute: return query uses event end wall time and departure type", async () => {
   const originalFetch = global.fetch;
   let transitUrl = "";
