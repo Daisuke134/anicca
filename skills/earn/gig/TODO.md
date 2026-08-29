@@ -424,9 +424,9 @@ official contract, fee, payout, and bank receipts advance it.
    account/date row to `2026年8月`, read it back through the authenticated Sheets API, and replayed
    the same effect key at zero. Receipt
    `~/gig/projects/18180857/delivery/tiktok-dm-intent-_yayoisan.json` is the reconciliation
-   authority. Do not resend it. The next selected candidate is `@kaho__1204`; its recipient route
-   and composer preflight passed, but no second DM or Sheet row exists. Resume there only after the
-   host disk block is officially cleared. A draft or preflight is not a campaign result.
+   authority. Do not resend it. The historical `@kaho__1204` preflight remained qualification-only
+   and did not become a send; the later bounded recovery supersedes it with the three verified
+   DM/Sheet pairs and 10/10 attempt receipt below. A draft or preflight is not a campaign result.
 
    The live recovery now has three verified DM/Sheet pairs: `@_yayoisan` at 15:49,
    `@arichan_make` at 20:17, and `@tare_tanu` at 21:11. The latter two were reconciled from exact
@@ -4549,12 +4549,11 @@ of that merge. Merge it when that clears.
 - [x] Obtain natural official readback for `18197848`, then rerun once and prove replay-zero. Public release `7223d9802286917e4f2a803595aa36f985af3414` sent `硝子色の恋_review_v1.zip` once with SHA256 `e041c39e10cff1bb2e3fd3febca172ff32fc4ed21bc40b1a6978228a5c85c15e`; official DOM binds the exact message and attachment with formal delivery off. The next natural wake returned `awaiting_buyer`, `effect=0`, `deduplicated=true`, and the official room contains exactly one matching attachment message.
 - [x] Resolve `18202085` without weakening buyer-visible quality. Public loop release `ed16da8631cc746ee5e0ea8ee383ac9529384080` sent `cinematic_suspense_bgm_v1.zip` once as progress with SHA256 `d5403a67e0e270d08f62c41b1a66407ac376c6f371d11c455ff98e5456d26424`; official talkroom readback contains the exact attachment/message and formal delivery is off. The next natural wake returned `satisfied_noop`, `effect=0`, `deduplicated=true`, formal off; Telegram messageId `38896`.
 
-Current buyer-level readback after the public `88baabdb368abb7d0510bb807bd7daf6d05b7f9f`
-release:
+Current buyer-level readback:
 
 | Buyer | Talkroom | Project root | Current artifact / action | Official state | Exact blocker |
 |---|---|---|---|---|---|
-| Chii【CK protect】 | `18180857` | `~/gig/projects/18180857` | v7 review package plus one verified live DM/Sheet pair; bounded campaign remains required | `@_yayoisan` has official TikTok Sent readback, one matching `2026年8月` Sheet row and replay-zero; formal delivery remains off | `@kaho__1204` is selected and preflighted but not sent. Clear the official disk block, then resume through the installed Paid owner; do not send another progress-only Coconala message |
+| Chii【CK protect】 | `18180857` | `~/gig/projects/18180857` | v7 review package plus three verified live DM/Sheet pairs and a 10/10 attempt receipt | `@_yayoisan`, `@arichan_make`, and `@tare_tanu` each have exact TikTok readback and one Sheet row; Coconala results handoff is official, formal off, and immediate replay is effect 0/deduplicated | Buyer item is closed for this recovery; continue the monthly campaign only through fresh bounded owner cycles, never replay these three effects |
 | 貴ㅤㅤ | `18197848` | `~/gig/projects/5231240` | `硝子色の恋_review_v1.zip`, SHA256 `e041c39e10cff1bb2e3fd3febca172ff32fc4ed21bc40b1a6978228a5c85c15e` | Official talkroom contains the exact ZIP and review message; buyer-visible artifact is true and formal delivery is off | Closed: exact English outro was independently transcribed, the artifact was sent once, and replay is `awaiting_buyer`, effect 0, deduplicated true |
 | ユウ ブログ | `18202085` | `~/gig/projects/18202085` | `cinematic_suspense_bgm_v1.zip`, SHA256 `d5403a67e0e270d08f62c41b1a66407ac376c6f371d11c455ff98e5456d26424` | Official talkroom readback contains the exact ZIP and buyer-review message; formal delivery is off | Closed: replay is `satisfied_noop`, effect 0, deduplicated true |
 | ITフランチャイズ経営 | `18184558` | `~/gig/projects/18184558` | No artifact or reply required | Buyer explicitly requested no reply while Coconala cancellation is pending; replay is `satisfied_noop`, effect 0 | Observe official cancellation only |
@@ -4562,9 +4561,9 @@ release:
 
 `18169985` (Manledge) and the account-owner excluded Kitty lane receive no additional
 message in this recovery.  The host cleanup owner is reinstalled from stable `current`, exits 0,
-and release GC now preserves its loaded immutable release while idle. Regenerable Whisper and
-Codex runtime caches were reclaimed only after open-file checks; free space recovered to about
-2.0 GiB and `disk-pressure.block` is absent. Codex session databases and `.cloak` stay
+and release GC now preserves its loaded immutable release while idle. Regenerable caches were
+reclaimed only after open-file checks; current free space is about 8.1 GiB and
+`disk-pressure.block` is absent. Codex session databases and `.cloak` stay
 protected and are not cleanup candidates.
 
 ### Host disk and Account 2 runtime verification
@@ -4599,16 +4598,24 @@ protected and are not cleanup candidates.
   `MacAppCodeSignClone` prevention and regenerated about 700 MiB. Patch that runtime's canonical
   launcher, deploy its own public immutable release, restart only those two owners, and prove the
   Chromium clone root is flat before calling host-wide cleanup complete.
-- [ ] Repair the latest Storefront compact release contract: its natural pass fails because
-  `skills/registry.json` is absent from the sparse release. Include that exact runtime dependency,
-  rerun official 14-service readback and replay-zero, then verify the newest Apply/Reply/Paid/
+- [ ] Repair the current Storefront official contract. The earlier sparse-release
+  `skills/registry.json` omission is superseded; the newest natural pass now fails closed with
+  `official_service_contract_invalid`, effect 0. Trace the exact service/contract mismatch from
+  its current official evidence, restore official 14-service readback and replay-zero, then verify the newest Apply/Reply/Paid/
   Storefront runner receipts all use Account 2; the latest observed Paid semantic receipt reported
   `profile_alias=acct1`, so Account 2 is not currently proven for all four lanes.
-- [ ] After free space is at least 1 GiB, let the existing cleanup owner remove the stale
-  `disk-pressure.block`, activate Apply/Reply/Paid/Storefront from public main-derived immutable
-  releases, and verify each natural pass with Account 2 receipt. Then resume Chii at the unsent
-  `@kaho__1204` effect; require official TikTok Sent, one matching Sheet row, Coconala formal OFF,
-  and immediate replay-zero before advancing.
+- [x] Recover host headroom and remove the stale disk marker through the cleanup owner. Current
+  readback is about 8.1 GiB free and `disk-pressure.block` absent; Chii remains replay-zero with
+  formal delivery OFF.
+- [ ] Restore truthful four-lane health from public-main immutable releases. Apply last exits 0 and
+  Reply is continuous, but Paid's aggregate latest is failed because another item failed even
+  though Chii is deduplicated/effect 0; Storefront is failed as above. Resolve each current
+  buyer-level failure, then require a fresh aggregate Paid pass with `failed=0` and fresh official
+  Storefront pass.
+- [ ] Restore the explicit Job Hunter pause boundary. Current process readback again shows
+  `job-search-daily` and Mercor browser roots alive without `MacAppCodeSignClone`; stop the owners,
+  prevent release reconciliation from re-enabling user-paused labels, and verify they stay absent
+  across the next release watch cycle.
 
 - [x] Verify Account 2 at the actual model boundary: the four Coconala plists intentionally omit `CODEX_HOME`, while the immutable runner config binds Codex to `~/.codex-acct2/auth.json`; its isolated automation-home auth symlink resolves to that exact file.
 - [x] Verify Reply/Paid fixes and Account 2 failover are all ancestors of public `origin/main`; they are not stranded on private feature branches.
