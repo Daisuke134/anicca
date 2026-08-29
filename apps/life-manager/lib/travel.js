@@ -208,7 +208,7 @@ async function transitFetchPlan(srcGeo, dstGeo, query = {}) {
 }
 
 const DEFAULT_ROUTE_TIMEZONE = "Asia/Tokyo";
-const DEFAULT_TRANSIT_TIMEOUT_MS = 8_000;
+const DEFAULT_TRANSIT_TIMEOUT_MS = 15_000;
 
 function validRouteTimezone(value) {
   const zone = String(value || "").trim();
@@ -639,6 +639,6 @@ module.exports = {
   recordTravelTelegramReceipt,
   // #71 pure helpers (unit-tested)
   parseDurationSeconds, minutesFromSeconds, buildDriveBody, clampDepartIso, acceptRouteResults,
-  transitFetchPlan, wallAnchor,
+  transitFetchPlan, wallAnchor, DEFAULT_TRANSIT_TIMEOUT_MS,
   parseGeoLiteral,
 };
