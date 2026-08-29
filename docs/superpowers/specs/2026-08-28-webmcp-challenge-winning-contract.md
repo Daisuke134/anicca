@@ -687,11 +687,11 @@ Current `lm-loop status all`、現行entrypoints、focused tests、既存gig ker
 
 Focused reuse suiteはruntime/browser jobs、ask/reply、reconciliation、panelで38/38 pass。Earnings、TaskMarket、x402はlocked `@noble/hashes` / `@noble/curves`だけを隔離tempへinstallして31/31 passし、合計69/69 pass。最初のfull `npm ci`はdisk headroom不足で中断したため、生成されたworktree node_modulesだけを削除した。Ledger logicの不確実性は解消したが、submission releaseのclean install前にdisk headroom確保とexact runtime import smokeを必須とする。
 
-#### 10.4B Resolved uncertainties
+#### 10.4B Code-verified primitives — live proofとは別
 
 - **Agent fleet:** existing generic gig kernelでprojectごとのisolated ownerとdifferent-key parallelismが既にある。Symphony相当のwork ownershipをゼロから発明しない
 - **Durable orchestration:** runtime job store、browser job store、leases、heartbeat、retry/reconciliationが既にある
-- **Minimal human loop:** model-led resolve、semantic dedupe、question、reply acknowledgementの既存contractがある
+- **Minimal human loop:** model-led resolve、semantic dedupe、question、reply acknowledgementの既存contractがある。ただし現行実装はcalendar系に限定され、generic `HumanTask`とoriginal job resumeは未実装
 - **External-effect safety:** application fence、effect keys、official readback、unknown quarantine、replay-zero patternsがある
 - **Money truth:** earnings、TaskMarket、x402でapplication/activityとverified receiptを分けるledger contractがある
 - **UI/auth base:** existing Life Manager Panelのsession、tenant、financial projection、control actionを拡張できる
@@ -706,12 +706,14 @@ Focused reuse suiteはruntime/browser jobs、ask/reply、reconciliation、panel�
 6. **Dependency/disk headroom:** focused reused-contract testsは69/69 pass。残るのはcode uncertaintyではなくdisk空き約630MiBで、clean installとexact submission runtime import smokeに不足する可能性である
 7. **Current production failures:** Lancers current ownersはfail中なので、repair→read-only inventory→one fenced application→official readbackの順で復旧する。Affiliate browser、x402 sellers等のfailをMoney Printer全体の失敗と混同しない
 8. **Real outcome timing:** Lancers acceptance、Mercor selection、cash settlementは外部依存。Primary proofはLancers official application readbackまでを必須とし、提出copyでは実際に得たterminalだけを主張する
+9. **Current live proof:** Lancers application ownerとMercor hourly ownerは停止中で、保持browser pageも`about:blank`である。process、CDP、cookie、過去rowはauthenticated inventory、current application、24/7 cycleの証拠にしない
+10. **Deployment source:** `https://aniccaai.com/lm`は現時点で旧landingを返し、`registerTool()`、`Origin-Agent-Cluster`、`Permissions-Policy: tools=(self)`を持たない。正規Netlify build入口とdeployed SHAを先に固定する
 
 ### 10.5 One product, one mode
 
-Hackathonで提供するmodeは一つだけである。Primary experienceは、UserがChatGPT desktopのin-app browserで無料の`https://aniccaai.com/lm`を開き、「Turn on my Money Printer」と頼むflowである。ChatGPT WorkまたはCodexがpageのsite toolsを発見し、同じDashboard上でconstraints設定、opportunity確認、`Needs You`回答、continuation、receipt確認を行う。別product、別judge system、別local/cloud modeを作らない。
+Hackathonで提供するmodeは一つだけである。Primary experienceは、Userが`https://aniccaai.com/lm`を開き、「Turn on my Money Printer」と頼むflowである。Site tools accessがある場合はChatGPT desktopのin-app browserがpage toolsを発見し、同じDashboard上でconstraints設定、opportunity確認、`Needs You`回答、continuation、receipt確認を行う。WebMCP自体にLife Manager API keyは不要だが、ChatGPT Site toolsのavailabilityはrollout、account、plan、model、workspaceに依存する。通常browser UIはChatGPT/Codex契約なしで使える。別product、別judge system、別local/cloud modeを作らない。
 
-Life Managerのagent runtimeは同じcloud productの一部としてworkroomを24/7進める。Pageを閉じるとWebMCP toolsは一時的に利用不能になるが、workroomとscoutは同じdurable state上で継続する。Userがpageを再び開くと、対応agentは最新stateと未回答`Needs You`を再発見する。Judgeはlogin、支払い、Life Manager API keyなしでguest accountを試せる。Normal browser UIはfallbackとして同じ機能を持つが、primary demoとproduct storyはChatGPT in-app browserに置く。
+Life Managerのagent runtimeは同じcloud productの一部としてworkroomを24/7進める。Pageを閉じるとWebMCP toolsは一時的に利用不能になるが、workroomとscoutは同じdurable state上で継続する。Userがpageを再び開くと、対応agentは最新stateと未回答`Needs You`を再発見する。Judgeは支払い、Life Manager API key、private owner credentialなしのisolated guest tenantで試せる。Guest sessionの生成方式は実装とclean-browser E2Eで固定し、zero-loginという語はその実証前に使わない。Normal browser UIはfallbackとして同じ機能を持つが、primary demoとproduct storyはChatGPT in-app browserに置く。
 
 Canonical first-use UX:
 
@@ -748,6 +750,7 @@ flowchart LR
 ```
 
 - **Netlify:** `/lm`のresponsive Dashboardとtop-level `document.modelContext.registerTool()`を配信する
+- **Browser security:** Netlifyは`Origin-Agent-Cluster: ?1`と`Permissions-Policy: tools=(self)`を返す。iframe/declarative registrationへ依存せず、clean browserのresponse headersとtool discoveryをreadbackする
 - **Railway:** 既存Life Manager Node serviceをAPI、claim、continuation、retry、reconciliationのorchestratorとして再利用する
 - **Durable store:** opportunity、workroom、agent event、human task、effect fence、receiptをrestart後も保持する。UI用stateとruntime stateを別の真実にしない
 - **Agent runner:** provider-neutralなtaskを受け、modelがenvironment feedbackから次のtoolを選ぶ。provider別hardcoded workflowをcoreへ作らない
@@ -1054,21 +1057,22 @@ Judgesがeconomic autonomyより安全で楽しいcreative collaborationを好�
 このspec承認後に`writing-plans`で実装planへ分解する。順序は次を超えない。
 
 1. [completed] judge story + interactive one-screen HTML
-2. Lancers browser/application current failureをroot-cause repairし、public inventoryをofficial readbackする
-3. `X / Web / GitHub / mail / Lancers / Mercor / arbitrary URL → Opportunity / Workroom / HumanTask / Receipt`のgeneric read-only projection
-4. existing Panel auth/APIへMoney Printer Dashboard sectionを追加
-5. projectionと既存domain functionsを呼ぶinspect/control/artifact WebMCP tools
-6. existing ask/reply contractをgeneric `Needs You`へ接続し、answer後にsame ownerをresume
-7. Lancers inventory→proposal preparation→one fenced application→official receipt→replay-zeroを閉じる
-8. Mercor public inventory/application stepsを投影し、provider-required interviewをhuman taskへ出す
-9. X/Web discoveryと任意URL ingestを接続し、Modelが未知marketplaceのrequirements、available tools、missing mechanical adapterを説明できることを実証する
-10. existing runtime job store/reconcilerでretry/backoff、controlled failure、restart recoveryを見せる
-11. state-dependent tool registration + visible activity log
-12. clean dependency install/import smoke + focused reused-contract tests
-13. ChatGPT/Chrome E2E、polish/accessibility/zero-login guest/reset
-14. public repo/license/judge guide/post-August-25 diff
-15. English submission copy/screenshots/thumbnail + under-3-minute video
-16. four-criteria self-check、immutable deploy/repo/submission receipts、freeze
+2. current rules/formでeligibility、ownership、conflict、deadline、required fieldsを再確認し、正規Netlify build入口を固定する
+3. fresh `origin/main` worktreeでclean dependency install/import smoke + focused reused-contract tests
+4. Lancers browser/application current failureをroot-cause repairし、public inventoryをofficial readbackする
+5. `X / Web / GitHub / mail / Lancers / Mercor / arbitrary URL → Opportunity / Workroom / HumanTask / Receipt`のgeneric read-only projection
+6. existing Panel auth/APIへMoney Printer Dashboard sectionを追加
+7. projectionと既存domain functionsを呼ぶinspect/control/artifact WebMCP tools
+8. existing ask/reply contractをgeneric `Needs You`へ接続し、answer後にsame ownerをresume
+9. Lancers inventory→proposal preparation→one fenced application→official receipt→replay-zeroを閉じる
+10. Mercor public inventory/application stepsを投影し、provider-required interviewをhuman taskへ出す
+11. X/Web discoveryと任意URL ingestを接続し、Modelが未知marketplaceのrequirements、available tools、missing mechanical adapterを説明できることを実証する
+12. existing runtime job store/reconcilerでretry/backoff、controlled failure、restart recoveryを見せる
+13. state-dependent tool registration + visible activity log
+14. ChatGPT/Chrome E2E、polish/accessibility、isolated guest/reset、clean judge replay
+15. public repo/license/judge guide/post-August-25 diff、deploy/repo SHA一致
+16. English submission copy/screenshots/thumbnail + under-3-minute video
+17. four-criteria self-check、immutable deploy/repo/submission receipts、freeze
 
 One active item at a time。各itemは実物readbackを閉じてから次へ進む。
 
@@ -1076,18 +1080,18 @@ One active item at a time。各itemは実物readbackを閉じてから次へ進�
 
 ## 17. Exhaustive uncertainty register
 
-不確実性は「心配」ではなく、解消証拠が未取得のcontractとして管理する。各行のgateを閉じるまで、対応するsubmission claimを`verified`へ昇格させない。
+不確実性は「心配」ではなく、解消証拠が未取得のcontractとして管理する。状態は設計確定、コード検証、live未検証、外部block、棄却を明示し、`design-closed`と`code-verified`はlive claimを許可しない。各行のgateを閉じるまで、対応するsubmission claimを`verified`へ昇格させない。
 
 | ID | Uncertainty | Current state | Required resolution evidence | Fallback / stop condition |
 |---|---|---|---|---|
-| U01 | General agentがprovider listに縮退する | resolved in design | X/Web/GitHub/mail/任意URLを同じgoal→job→tool loopへ入れるcontract test | provider keyword routingを検出したらmergeしない |
+| U01 | General agentがprovider listに縮退する | design-closed | X/Web/GitHub/mail/任意URLを同じgoal→job→tool loopへ入れるcontract test | provider keyword routingを検出したらmergeしない |
 | U02 | Opireがprimary proofに使えるか | rejected | API 56 records→33 closed、7 missing/deleted、16 open。低競争候補も22 competing PRsとpayout uncertainty | Opire固有実装を作らない |
-| U03 | Current branchが最新mainと乖離 | open | execution worktreeをfresh `origin/main`から作り、existing general-agent/marketplace testsをbaseline pass | stale spec branchからproduction codeを編集しない |
-| U04 | Disk不足でinstall/build/videoが失敗 | blocked | Data volume free >= 8 GiB、`npm ci`、exact interpreter import smoke | safe cleanup対象が確定するまでbuildを開始しない |
-| U05 | Lancers installed ownerがfail中 | open | loaded argv、release SHA、CDP owner、latest log、exact entrypointを照合し、read-only natural pass | root causeがauthならmutationせずNeeds Youへ出す |
-| U06 | Lancers login/sessionが有効か | open | exact browser profile/CDPのofficial authenticated inventory、effect count 0、two-read stable identity | login unavailableならguest UIはlive Lancers effectを主張しない |
-| U07 | 応募可能なLancers案件があるか | open | current public inventory、complete detail、buyer/order rate、budget、deadline、eligibility、competitionをModelが判断 | suitable candidateがなければapplicationを送らず別market discoveryを継続 |
-| U08 | Lancers proposal effect/readbackが現在のDOMで動くか | open | immutable intent、presend absent、effect 1、official proposal ID、replay effect 0 | post-effect unknownは再送せずreconciliation |
+| U03 | Current branchが最新mainと乖離 | live-open | execution worktreeをfresh `origin/main`の直接子として作り、existing general-agent/marketplace testsをbaseline pass | stale spec branchからproduction codeを編集しない |
+| U04 | Disk不足でinstall/build/videoが失敗 | disk gate passed / install live-open | Data volume free 11 GiBをreadback。次に`npm ci`とexact interpreter import smoke | free <8 GiBへ戻ったらbuildを止める |
+| U05 | Lancers installed ownerがfail中 | blocked | application owner natural pass、loaded argv、release SHA、CDP owner、latest log、exact entrypointを照合 | root causeがauthならmutationせずNeeds Youへ出す |
+| U06 | Lancers login/sessionが有効か | blocked | exact browser profile/CDPのofficial authenticated inventory、effect count 0、two-read stable identity。`about:blank`やcookie存在は不可 | login unavailableならguest UIはlive Lancers effectを主張しない |
+| U07 | 応募可能なLancers案件があるか | blocked by U06 | current complete detail、buyer/order rate、budget、deadline、eligibility、competitionをModelが判断。public result countだけは不可 | suitable candidateがなければapplicationを送らず別market discoveryを継続 |
+| U08 | Lancers proposal effect/readbackが現在のDOMで動くか | blocked | code kernelではなく実siteでimmutable intent、presend absent、effect 1、official proposal ID、replay effect 0 | post-effect unknownは再送せずreconciliation |
 | U09 | General projectionが既存receiptを正しく表示できるか | open | exact-key schema、tenant isolation、verified-money-only tests、runtime/application/general receiptsのfixture-free projection | raw provider stateをUIへ直接渡さない |
 | U10 | Minimal human判定が丸投げになる | open | known context/tool researchを先に使うmodel cases、one exact task、semantic dedupe、answer後same owner resume | agentが実行可能なworkをhuman taskにしたらfail |
 | U11 | WebMCP toolsがChatGPTで発見・実行されるか | open | top-level imperative registration、Sol/Terra in-app browser tool list、recent call、visible state change | ChatGPT rollout不可ならChrome 149+ evidenceでStage Oneを守る |
@@ -1098,9 +1102,14 @@ One active item at a time。各itemは実物readbackを閉じてから次へ進�
 | U16 | X discovery sessionが使えるか | blocked | existing daily-driverのlogged-in X tab readback、read-only search receipt | duplicate browserを起動せずWeb/GitHub/mail discoveryで継続 |
 | U17 | Unknown marketplaceでeffect adapterがない | open | arbitrary URLをModelが解釈し、tool planとmissing mechanical adapterを説明するE2E | adapter/auth/readbackがなければeffectだけfail closed、research/workは継続 |
 | U18 | Multiple agentsでcontext/effectが交差する | open | two workrooms、different effect keys、isolated refs、bounded concurrency、sibling checkpoint preservation | shared mutable customer stateを検出したらparallel effectを止める |
-| U19 | Revenueを盛って表示する | resolved in primitives / open in UI | earnings/TaskMarket/x402 31/31 tests、UIがapplications/pending/paidを分離、official receipt link | cash receiptなしならverified money 0を表示 |
+| U19 | Revenueを盛って表示する | code-verified / UI live-open | earnings/TaskMarket/x402 31/31 tests、UIがapplications/pending/paidを分離、official receipt link | cash receiptなしならverified money 0を表示 |
 | U20 | Real external receiptが締切までに得られない | open | Lancers official application IDを最低証拠とし、acceptance/delivery/cashは得られたterminalだけ表示 | candidate不在ならsafe blocked receiptを見せ、fake effectを作らない |
 | U21 | Existing projectの新規WebMCP差分が不明 | open | August 25以降のcommit list、README `Hackathon changes`、submitted tag diff | prior Life Manager機能をHackathon成果として数えない |
 | U22 | Public repoがclean installできない | open | clean clone、locked install、focused tests、secret/PII scan、license detection | scan/import failureならsubmit readinessは`not ready` |
 | U23 | Videoで四基準が伝わらない | open | under 3:00、audio、first working action <15s、tool call、Needs You、resume、receipt | 未実装claimをscriptから削る |
 | U24 | Devpost最終送信漏れ | open | live URL、repo、video、custom fields、explicit `yes, submit`、`submitted_at` readback | internal deadline September 3 12:00 JST、official deadline September 4 05:00 JST |
+| U25 | Eligibility、ownership、conflictが未確認 | live-open | Japan residency、representative、rules/terms acknowledgement、Sponsor conflict absence、sole ownershipを最終formとrulesでreadback | 一項目でも不適格または不明ならsubmitしない |
+| U26 | Rulesやsubmission fieldsが調査後に変わる | live-open | 提出直前にofficial rulesとproject formを再取得し、deadline、required fields、testing accessをdiff | 古いdraftをそのまま送らない |
+| U27 | Live URL、deploy SHA、repo SHAが一致しない | live-open | response/header/build metadata、submitted commit、public repo tagが同じimmutable releaseを指し、judging中無料・無制限に到達可能 | SHA不一致またはauth wallならnot ready |
+| U28 | Application receiptを売上と誤認する | design-closed / UI live-open | `ApplicationReceipt`、`ContractReceipt`、`DeliveryReceipt`、`PaymentReceipt`を別型・別columnで表示し、cash receipt不在時はverified money 0 | application/proposal/pendingをrevenueへ昇格しない |
+| U29 | Judgeがclean environmentで再現できない | live-open | fresh browserからone URL、one prompt、tool discovery、reset、visible state、Chrome fallbackを60秒以内に再現 | private credentialや既存sessionが必要ならnot ready |
