@@ -7,7 +7,7 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 
-const { sendPanelLink, handlePanelRequest } = require("./panel-auth.js");
+const { sendPanelLink, handlePanelRequest, handleMoneyPrinterGuestRequest } = require("./panel-auth.js");
 const { isPanelCommand } = require("./telegram.js");
 const PANEL_NOW = new Date("2026-08-27T00:00:00.000Z");
 const PANEL_AUTH_DATE = Math.floor(PANEL_NOW.getTime() / 1000);
@@ -256,6 +256,126 @@ async function withPanelServer(opts, run) {
     await new Promise((resolve) => server.close(resolve));
   }
 }
+
+async function withMoneyPrinterGuestServer(opts, run) {
+  const server = http.createServer((req, res) => {
+    Promise.resolve().then(() => handleMoneyPrinterGuestRequest(req, res, opts)).catch((error) => {
+      if (!res.headersSent) res.writeHead(500, { "content-type": "text/plain; charset=utf-8" });
+      res.end(error.message);
+    });
+  });
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  try {
+    const { port } = server.address();
+    return await run(`http://127.0.0.1:${port}`);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+}
+
+test("WebMCP judge guest first GET upserts only the fixed guest and renders one session", async () => {
+  const calls = [];
+  await withMoneyPrinterGuestServer({
+    supaUrl: "https://db.example",
+    supaKey: "service-key",
+    randomBytes: () => Buffer.alloc(32, 0x61),
+    fetchImpl: async (url, init) => {
+      calls.push({ url: String(url), init });
+      const parsed = new URL(String(url));
+      if (parsed.pathname.endsWith("/lm_users")) return { ok: true, status: 201 };
+      if (parsed.pathname.endsWith("/lm_panel_sessions")) return { ok: true, status: 201 };
+      throw new Error(`unexpected guest fetch ${init.method || "GET"} ${url}`);
+    },
+  }, async (base) => {
+    const response = await fetch(`${base}/money-printer`);
+    assert.equal(response.status, 200, await response.clone().text());
+    assert.equal(response.headers.get("cache-control"), "no-store");
+    assert.equal(response.headers.get("x-content-type-options"), "nosniff");
+    assert.equal(response.headers.get("referrer-policy"), "no-referrer");
+    assert.equal(response.headers.get("origin-agent-cluster"), "?1");
+    assert.equal(response.headers.get("permissions-policy"), "tools=(self)");
+    assert.match(response.headers.get("content-security-policy") || "", /script-src 'self'/);
+    assert.match(response.headers.get("content-security-policy") || "", /connect-src 'self'/);
+    assert.match(response.headers.get("set-cookie") || "", /__Host-lm_panel_session=/);
+    const html = await response.text();
+    assert.match(html, /data-guest-mode/);
+    assert.match(html, /Judge guest — external effects disabled/);
+    assert.match(html, /data-panel-section="money-printer"/);
+  });
+  const userCalls = calls.filter(({ url }) => new URL(url).pathname.endsWith("/lm_users"));
+  assert.equal(userCalls.length, 1);
+  const userCall = userCalls[0];
+  assert.equal(new URL(userCall.url).search, "?on_conflict=uid");
+  assert.equal(userCall.init.method, "POST");
+  assert.match(userCall.init.headers.Prefer, /resolution=merge-duplicates/);
+  assert.deepEqual(JSON.parse(userCall.init.body), {
+    uid: "webmcp-judge", name: "WebMCP Judge Guest", telegram_chat_id: "webmcp-judge", paid: false,
+  });
+  assert.equal(calls.filter(({ url }) => new URL(url).pathname.endsWith("/lm_panel_sessions")).length, 1);
+});
+
+test("WebMCP judge guest repeat reuses a valid guest session without another user upsert", async () => {
+  const session = Buffer.alloc(32, 0x62).toString("base64url");
+  const calls = [];
+  await withMoneyPrinterGuestServer({
+    supaUrl: "https://db.example",
+    supaKey: "service-key",
+    randomBytes: () => Buffer.alloc(32, 0x63),
+    fetchImpl: async (url, init) => {
+      calls.push({ url: String(url), init });
+      const parsed = new URL(String(url));
+      if (parsed.pathname.endsWith("/rpc/resolve_lm_panel_session")) return { ok: true, status: 200, json: async () => [{ uid: "webmcp-judge", chat_id: "webmcp-judge", rotated: false }] };
+      if (parsed.pathname.endsWith("/lm_users")) return { ok: true, status: 201 };
+      if (parsed.pathname.endsWith("/lm_panel_sessions")) return { ok: true, status: 201 };
+      throw new Error(`unexpected guest fetch ${init.method || "GET"} ${url}`);
+    },
+  }, async (base) => {
+    const response = await fetch(`${base}/money-printer`, { headers: { Cookie: `__Host-lm_panel_session=${session}` } });
+    assert.equal(response.status, 200, await response.clone().text());
+    assert.match(await response.text(), /Judge guest — external effects disabled/);
+  });
+  assert.equal(calls.filter(({ url }) => new URL(url).pathname.endsWith("/rpc/resolve_lm_panel_session")).length, 1);
+  assert.equal(calls.filter(({ url }) => new URL(url).pathname.endsWith("/lm_users")).length, 0);
+  assert.equal(calls.filter(({ url }) => new URL(url).pathname.endsWith("/lm_panel_sessions")).length, 0);
+});
+
+test("WebMCP judge guest never adopts an owner session and rejects wrong request shape", async () => {
+  const owner = Buffer.alloc(32, 0x64).toString("base64url");
+  const calls = [];
+  const opts = {
+    supaUrl: "https://db.example",
+    supaKey: "service-key",
+    randomBytes: () => Buffer.alloc(32, 0x65),
+    fetchImpl: async (url, init) => {
+      calls.push({ url: String(url), init });
+      const parsed = new URL(String(url));
+      if (parsed.pathname.endsWith("/rpc/resolve_lm_panel_session")) return { ok: true, status: 200, json: async () => [{ uid: "owner-uid", chat_id: "owner-chat", rotated: false }] };
+      if (parsed.pathname.endsWith("/lm_users") || parsed.pathname.endsWith("/lm_panel_sessions")) return { ok: true, status: 201 };
+      throw new Error(`unexpected guest fetch ${init.method || "GET"} ${url}`);
+    },
+  };
+  await withMoneyPrinterGuestServer(opts, async (base) => {
+    const ownerResponse = await fetch(`${base}/money-printer`, { headers: { Cookie: `__Host-lm_panel_session=${owner}` } });
+    assert.equal(ownerResponse.status, 200);
+    const ownerHtml = await ownerResponse.text();
+    assert.match(ownerHtml, /Judge guest — external effects disabled/);
+    assert.doesNotMatch(ownerHtml, /owner-uid|owner-chat/);
+
+    for (const request of [
+      { url: `${base}/money-printer`, init: { method: "POST" }, status: 405 },
+      { url: `${base}/money-printer/`, init: {}, status: 404 },
+      { url: `${base}/money-printer?judge=1`, init: {}, status: 400 },
+    ]) {
+      const response = await fetch(request.url, { ...request.init, redirect: "manual" });
+      assert.equal(response.status, request.status, request.url);
+    }
+  });
+  assert.equal(calls.filter(({ url }) => new URL(url).pathname.endsWith("/lm_users")).length, 1);
+  assert.equal(calls.filter(({ url }) => new URL(url).pathname.endsWith("/lm_panel_sessions")).length, 1);
+  const sessionBody = JSON.parse(calls.find(({ url }) => new URL(url).pathname.endsWith("/lm_panel_sessions")).init.body);
+  assert.equal(sessionBody.uid, "webmcp-judge");
+  assert.equal(sessionBody.chat_id, "webmcp-judge");
+});
 
 test("PANEL-1: a legacy ?t= URL is stripped without claiming or creating a session", async () => {
   const rawToken = Buffer.alloc(32, 0x11).toString("base64url");

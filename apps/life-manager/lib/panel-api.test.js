@@ -424,7 +424,7 @@ test("Task 7B1 server source wiring is lazy and has no fake Money Printer fallba
 });
 
 test("Task 8A server only resolves runtime storage for Money Printer paths", () => {
-  const { panelApiOptions } = require("../server.js");
+  const { panelApiOptions, panelOriginForPath } = require("../server.js");
   const base = { supaUrl: "https://db.example", supaKey: "service-key" };
   let calls = 0;
   const getRuntimeStore = () => { calls += 1; return { name: "runtime" }; };
@@ -437,6 +437,16 @@ test("Task 8A server only resolves runtime storage for Money Printer paths", () 
   assert.equal(money.opportunityStore, money.runtimeStore);
   assert.equal(money.humanTaskStore, money.runtimeStore);
   assert.equal(typeof money.moneyPrinterSource, "function");
+});
+
+test("Task 8A server uses public origin only for proxied Money Printer APIs", () => {
+  const { panelOriginForPath } = require("../server.js");
+  const source = fs.readFileSync(path.join(__dirname, "../server.js"), "utf8");
+  assert.match(source, /path === "\/money-printer"/);
+  assert.match(source, /handleMoneyPrinterGuestRequest\(req, res/);
+  assert.equal(panelOriginForPath("/api/panel/money-printer"), "https://aniccaai.com");
+  assert.equal(panelOriginForPath("/api/panel/money-printer/workroom"), "https://aniccaai.com");
+  assert.equal(panelOriginForPath("/api/panel/timeline"), "");
 });
 
 test("Task 8A Panel routes opportunity and human domain actions through runtimeStore", async () => {
