@@ -27,7 +27,7 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 この節は、後段の「現在TODO」「次の一件」「local-only」「self-funded agentは別product」という相反する記述を
 上書きする最新の実行順序SSOTである。後段は実装履歴・organ別acceptanceとして保持するが、次作業の選択には使わない。
 Upworkのterminal evidence、startup context、public claim、GA-01〜13Aは完了または履歴として保持する。
-次の一件はAtomic program ledger Seq 8 `ELZ-F08`で、model/providerなしのisolated local serverを起動し、health readbackを閉じる。
+次の一件はAtomic program ledger Seq 9 `ELZ-F09`で、稼働中serverの明示PGlite path・DB identity・lock・health livenessを固定する。
 
 #### 0.0.1 最新基盤決定 — ElizaOSを完全forkし、Life Managerをlocal OSSからmulti-tenant SaaSへ育てる
 
@@ -552,8 +552,8 @@ reviewはfocused verification後のfresh adversarial P0/P1 review一回だけと
 | 5 | ELZ-F05 recursive submodule | DONE | private `submodule-receipt.json` mode 0600。`llama.cpp`=`6543d907…`、`electrobun`=`f1f38ce5…`、2件ともshallow exact SHA、uninitialized/tracked diff 0、legacy dirty hash不変。free `1734716→1475560` KiB、cleanup 0。disk concernはF06へ継承 |
 | 6 | ELZ-F06 frozen install and server build | DONE | private `toolchain-build-receipt.json` mode 0600。fixed source `29bed1bb3…`、lock SHA `1976283d…`不変、tracked diff 0。`build:server` 55/55、focused upstream 4 files・32/32 tests、各exit 0。先行ENOSPC/install不足は最終成功で解消し、full suite/CI/runtime effect 0 |
 | 7 | ELZ-F07 license and notice inventory | DONE | private `license-notice-receipt.json` mode 0600。fixed source `29bed1bb3…`、root/core license hash、tracked license/notice 28件、copyright inventory、exact submodule 2件を固定。agent/plugin-sql manifestはMIT、notice mutation 0、tracked diff 0 |
-| 8 | ELZ-F08 model-free local boot | **IN_PROGRESS — NEXT** | isolated state/DB/portで`bun run start`、`/api/health`が200・ready/runtime/database=`true/ok/ok`の`local-boot-receipt.json` |
-| 9 | ELZ-F09 persistent PGlite readback | TODO | 明示`PGLITE_DATA_DIR`がmode 0700、DB/lock identityとhealth livenessを固定した`local-persistence-receipt.json` |
+| 8 | ELZ-F08 model-free local boot | DONE | private `local-boot-receipt.json` mode 0600。`env -i` allowlist、isolated `127.0.0.1:2138` / state / PGliteで起動。health ready/runtime/database=`true/ok/ok`、DB liveness OK、model credential 0、marketplace effect 0、fixed source clean。local embedding取得とwallet address生成はcredential注入/broadcastなし |
+| 9 | ELZ-F09 persistent PGlite readback | **IN_PROGRESS — NEXT** | 明示`PGLITE_DATA_DIR`がmode 0700、DB/lock identityとhealth livenessを固定した`local-persistence-receipt.json` |
 | 10 | ELZ-F10 clean stop and same-DB restart | TODO | SIGTERM exit 0、lock release、同一DB path再起動、health再PASSの`local-health-receipt.json` |
 | 11 | ELZ-F11 history DAG join | TODO | Eliza root treeを変えず、旧Life Manager remote mainがsecond-parent ancestryへ入る`history-join-receipt.json` |
 | 12 | ELZ-F12 specs/evidence allowlisted import | TODO | public specs/evidence manifestをnamespace付きで取込み、credential/state/PII/dirty code混入0の`history-import-receipt.json` |
