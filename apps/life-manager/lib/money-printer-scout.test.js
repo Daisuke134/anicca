@@ -46,12 +46,16 @@ function geminiResponse(value) {
   return { ok: true, text: async () => JSON.stringify(value) };
 }
 
-function researchResponse(urls, text = "Grounded public listings.") {
+function interactionResponse(urls, text = "Grounded public listings.", steps = []) {
   return geminiResponse({
-    candidates: [{
-      content: { parts: [{ text }] },
-      groundingMetadata: { groundingChunks: urls.map((uri) => ({ web: { uri } })) },
-    }],
+    status: "completed",
+    steps: steps.length ? steps : [
+      { type: "google_search_call", id: "search-1", arguments: { query: "paid agent work" } },
+      { type: "model_output", content: [{
+        type: "text", text,
+        annotations: urls.map((url) => ({ type: "url_citation", url })),
+      }] },
+    ],
   });
 }
 
@@ -101,11 +105,12 @@ test("scout uses two Gemini stages, canonical URL dedupe, and safe durable recei
   const requests = [];
   const runScout = createMoneyPrinterScout({
     apiKey: "test-gemini-key",
-    fetchImpl: async (_url, options) => {
-      requests.push(JSON.parse(options.body));
-      if (requests.length === 1) return researchResponse([
+    fetchImpl: async (url, options) => {
+      const body = JSON.parse(options.body);
+      requests.push({ url, body });
+      if (requests.length === 1) return interactionResponse([
         "https://example.com/work", "https://fresh.example/paid-work",
-      ], "Grounded public listings with metadata.");
+      ], "Grounded public listings with citations.");
       return geminiResponse({
         candidates: [{ content: { parts: [{ text: JSON.stringify({ candidates: [
           candidate("https://Example.com:443/work#tracking"),
@@ -128,10 +133,15 @@ test("scout uses two Gemini stages, canonical URL dedupe, and safe durable recei
   const receipt = await runScout(jobFor());
 
   assert.equal(requests.length, 2);
-  assert.deepEqual(requests[0].tools, [{ google_search: {} }]);
-  assert.equal(requests[1].generationConfig.responseMimeType, "application/json");
-  assert.deepEqual(requests[1].generationConfig.thinkingConfig, { thinkingBudget: 0 });
-  assert.match(requests[1].contents[0].parts[0].text, /https:\/\/example\.com\/work/);
+  assert.equal(requests[0].url, "https://generativelanguage.googleapis.com/v1beta/interactions");
+  assert.deepEqual(requests[0].body, {
+    model: "gemini-3.7-flash", input: requests[0].body.input, tools: [{ type: "google_search" }],
+  });
+  assert.match(requests[0].body.input, /Tenant cycle:/);
+  assert.equal(requests[1].url, "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent");
+  assert.equal(requests[1].body.generationConfig.responseMimeType, "application/json");
+  assert.deepEqual(requests[1].body.generationConfig.thinkingConfig, { thinkingBudget: 0 });
+  assert.match(requests[1].body.contents[0].parts[0].text, /https:\/\/example\.com\/work/);
   assert.equal(reads.length, 2);
   assert.equal(created.length, 1);
   assert.equal(created[0].source_url, "https://fresh.example/paid-work");
@@ -144,7 +154,7 @@ test("scout uses two Gemini stages, canonical URL dedupe, and safe durable recei
     discovered_count: 2, created_count: 1, deduped_count: 1,
     opportunity_refs: [`opportunity://${TENANT}/${created[0].opportunity_id}`],
   });
-  assert.doesNotMatch(JSON.stringify(receipt), /Grounded public listings|groundingMetadata|test-gemini-key/i);
+  assert.doesNotMatch(JSON.stringify(receipt), /Grounded public listings|url_citation|test-gemini-key/i);
 });
 
 test("scout rejects model-shaped data before durable writes and adapter verifies exact scope", async () => {
@@ -153,7 +163,7 @@ test("scout rejects model-shaped data before durable writes and adapter verifies
     apiKey: "test-gemini-key",
     fetchImpl: async (_url, options) => {
       const body = JSON.parse(options.body);
-      return body.tools ? researchResponse(["https://bad.example/work"], "Research")
+      return body.tools ? interactionResponse(["https://bad.example/work"], "Research")
         : geminiResponse({ candidates: [{ content: { parts: [{ text: JSON.stringify({ candidates: [{
           ...candidate("https://bad.example/work"), extra: "no",
         }] }) }] } }] });
@@ -202,7 +212,7 @@ test("scout bounds both Gemini requests with its configured shared deadline", as
     },
     fetchImpl: async (_url, options) => {
       return budgets.length === 1
-        ? researchResponse(["https://allowed.example/work"], "Research")
+        ? interactionResponse(["https://allowed.example/work"], "Research")
         : geminiResponse({ candidates: [{ content: { parts: [{ text: '{"candidates":[]}' }] } }] });
     },
     readOpportunityBySource: async () => null,
@@ -230,7 +240,7 @@ test("scout resolves Gemini grounding redirects and permits only the resolved pu
         return { status: 302, headers: new Headers({ location: "https://openai.com/careers/search/" }) };
       }
       return calls.filter((call) => !call.options.redirect).length === 1
-        ? researchResponse([groundingRedirect], "Redirect-backed listing")
+        ? interactionResponse([groundingRedirect], "Redirect-backed listing")
         : geminiResponse({ candidates: [{ content: { parts: [{ text: JSON.stringify({ candidates: [
           candidate("https://openai.com/careers/search/"),
         ] }) }] } }] });
@@ -253,7 +263,7 @@ test("scout rejects missing or ungrounded sources before runtime writes", async 
   const runScout = createMoneyPrinterScout({
     apiKey: "test-gemini-key",
     fetchImpl: async (_url, options) => JSON.parse(options.body).tools
-      ? researchResponse(["https://allowed.example/work"], "Grounded")
+      ? interactionResponse(["https://allowed.example/work"], "Grounded")
       : geminiResponse({ candidates: [{ content: { parts: [{ text: JSON.stringify({ candidates: [
         candidate("https://ungrounded.example/work"),
       ] }) }] } }] }),
@@ -262,12 +272,20 @@ test("scout rejects missing or ungrounded sources before runtime writes", async 
   });
   await assert.rejects(runScout(jobFor()), /source|candidate|invalid/i);
   assert.equal(writes, 0);
-  const noGrounding = createMoneyPrinterScout({
-    apiKey: "test-gemini-key",
-    fetchImpl: async () => geminiResponse({ candidates: [{ content: { parts: [{ text: "No chunks" }] } }] }),
-    readOpportunityBySource: async () => { writes += 1; return null; },
-    createOpportunity: async () => { writes += 1; },
-  });
-  await assert.rejects(noGrounding(jobFor()), /ground|research|invalid/i);
-  assert.equal(writes, 0);
+  for (const invalidResearch of [
+    interactionResponse(["https://allowed.example/work"], "No search call", [{ type: "model_output", content: [{
+      type: "text", text: "No search call", annotations: [{ type: "url_citation", url: "https://allowed.example/work" }],
+    }] }]),
+    interactionResponse([], "No citations", [{ type: "google_search_call", id: "search-1", arguments: { query: "paid work" } }, {
+      type: "model_output", content: [{ type: "text", text: "No citations", annotations: [] }],
+    }]),
+  ]) {
+    const invalid = createMoneyPrinterScout({
+      apiKey: "test-gemini-key", fetchImpl: async () => invalidResearch,
+      readOpportunityBySource: async () => { writes += 1; return null; },
+      createOpportunity: async () => { writes += 1; },
+    });
+    await assert.rejects(invalid(jobFor()), /search|citation|research|invalid/i);
+    assert.equal(writes, 0);
+  }
 });
