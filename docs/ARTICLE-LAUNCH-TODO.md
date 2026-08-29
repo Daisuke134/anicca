@@ -3,6 +3,9 @@
 ## Current Writer money order
 
 この順序がWriterの現在の実行cursorである。後続項目は前項のreceiptなしに開始しない。
+これは新規Writer loopの構築計画ではない。既に記事生成・Note/Substack/X等への公開実績を持つproduction Writerの
+修復計画である。`canary`は「最初の記事」ではなく「今回の修復を反映した最初のproduction検証記事」を意味する。
+過去記事を初回扱いせず、既存topic/publication ledgerとの重複0を必須にする。
 
 - [x] W0 stale publication lock互換を修復する。`owner.pid`だけの旧lockについて、実PID不在、start token取得不能、
       directory identity不変を確認した場合だけquarantineし、新lockを取得する。`identity unavailable`を成功扱いの
@@ -33,7 +36,7 @@
       release/run/error classをterminal failure eventへ記録し、launchd process resultとbusiness effectを分離する。
       完了: PR #2985で末尾を`exit "$RC"`へ変更し、productionの非zero wakeが`entrypoint_exit_75/78`を持つ
       terminal FAILになることをreadbackした。process successをpublication successとして数えない。
-- [ ] W2 installed loopの1回のwakeで新しいsource articleと記事固有のheadlineを生成する。OpenAI Image APIの
+- [ ] W2 修復済みinstalled loopの1回のcanary wakeで、既存記事と重複しない次のsource articleと記事固有のheadlineを生成する。OpenAI Image APIの
       `model=gpt-image-2-2026-04-21`、x-request-id、request model、prompt/response/file SHA、dimensions、alt、rights receiptを保存する。
       現在: restart/rebootは不要かつ禁止された復旧案である。browser/processの自然終了と公式cache/release GCで
       capacityを回復する。PR #2990/#2993/#2998/#3003/#3007/#3009/#3011/#3016/#3020/#3023で、empty resume、
@@ -60,14 +63,16 @@
       production receiptは`FILLED`、queue 0→1、topic card hash-bound、exit 0となった。article-dailyは未発火で、
       run `20260828-195017`のartifactは依然2 receiptsだけ、外部作用0である。空きが約1.0〜1.3GiBのため、
       article-run capacity floor未達としてgenerationを開始しない。別ownerのscheduled workを触らず自然終了後に再測定する。
-- [ ] W3 W2のNote JAだけをprovider-native readbackし、title、body、owner、headline、paywall、URLを確認する。
-- [ ] W4 W2のSubstack JAだけを同じ項目でprovider-native readbackする。
-- [ ] W5 W2のSubstack ENだけを同じ項目でprovider-native readbackする。
-- [ ] W6 W2のX Article JAだけを同じ項目でprovider-native readbackする。
-- [ ] W7 W2のinstalled loopを2回目wakeし、article、payment row、notificationのduplicate effect=0を証明する。
+- [ ] W3 W2修復後canaryのNote JAだけをprovider-native readbackし、title、body、owner、headline、paywall、URLを確認する。
+- [ ] W4 W2修復後canaryのSubstack JAだけを同じ項目でprovider-native readbackする。
+- [ ] W5 W2修復後canaryのSubstack ENだけを同じ項目でprovider-native readbackする。
+- [ ] W6 W2修復後canaryのX Article JAだけを同じ項目でprovider-native readbackする。
+- [ ] W7 W2修復後canaryのinstalled loopを2回目wakeし、article、payment row、notificationのduplicate effect=0を証明する。
 - [ ] W7a HubPages Earnings ProgramとKompasiana K-Rewardsについて、Dais所有accountのsignup/eligibility、対象国、
       payout identity、税務・本人確認、現行AI/originality規則を公式画面でreadbackする。HubPagesは広告/Amazon、Kompasianaは
-      GoPay rewardを直接収益lane候補とする。未適格または受取不能ならdiscovery laneへ降格する。
+      GoPay rewardを直接収益lane候補とする。現在、Substackはaccount/session/公開実績あり、HubPagesとKompasianaは
+      credential SSOT、login session、公式account receiptがなく未作成である。W7aで両accountを作成し、credential SSOT保存、
+      新規session login、profile/eligibility/payout identity readbackまで完了する。未適格または受取不能ならdiscovery laneへ降格する。
 - [ ] W7b HubPages ENとKompasiana IDのplatform adapter、native readback、money receipt joinを追加する。各記事は別topic、
       別reader job、各言語native執筆とし、自動翻訳・近似複製だけの配信を禁止する。Mediumはprimarily AI-generated記事を
       paywall不可とする公式規則があるため、AI開示付きdiscovery-onlyに固定する。
