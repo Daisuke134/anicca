@@ -878,7 +878,7 @@ Update the on-time core spec to COMPLETE only when AC-01–38 each points to off
 
 ### Task 9: Restore exact GitHub Deployment aggregation
 
-**Ownership:** Luna owns only `services/x402-endpoint/Dockerfile` and `services/x402-endpoint/migration-contract.test.mjs`. Primary owns plan/progress, review, merge, and provider readback.
+**Ownership:** Luna owns only `services/x402-endpoint/Dockerfile`, `services/x402-endpoint/railway.toml`, and `services/x402-endpoint/migration-contract.test.mjs`. Primary owns plan/progress, review, merge, and provider readback.
 
 Railway currently auto-selects the legacy TypeScript/pnpm Dockerfile even though the canonical service is `src/server.js` + Prisma + `package-lock.json` and `railway.toml` names the same start command. The stale lock causes every monorepo deploy to mark the GitHub Deployment aggregate failed while life-call itself succeeds.
 
