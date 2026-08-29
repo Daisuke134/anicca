@@ -10,11 +10,13 @@
 - atomic implementation order → `../plans/2026-08-28-life-manager-cloud-on-time-core-finish.md`
 - 測定済みstatusとreceipt → `.superpowers/sdd/2026-08-26-life-manager-cloud-on-time-core/progress.md`
 
-## 1. Telegramが製品で、Webは3分の設定画面に限定する
+## 1. Telegramが製品で、public WebはQRだけに限定する
 
 Telegramが製品である。
 
-Life Manager Cloudは、ユーザーが予定表や乗換アプリを何度も開かなくても、次の予定へ時間どおり動ける状態を作る。日常の主画面はTelegramと電話で、Webは初回設定、接続状態、課金確認にだけ使う。
+Life Manager Cloudは、ユーザーが予定表や乗換アプリを何度も開かなくても、次の予定へ時間どおり動ける状態を作る。日常の主画面はTelegramと電話である。public websiteはQRまたはTelegram deep linkを表示するだけで、account、onboarding、dashboard、日常操作を持たない。
+
+初回設定、接続状態、課金確認はTelegramから開くTelegram Mini Appの中だけで行う。Mini Appは配信技術としてWebを使うが、ユーザーにとって独立したWeb Appではない。通常browserで使うstandalone dashboard、Supabase login、新しいpassword accountはlaunch scopeに含めない。
 
 MVPではGoogle Calendarを予定の保存先として1回接続する。ユーザーはGoogle Calendarを毎日開く必要はない。Calendarそのものを不要にするには、後続phaseでTelegramから予定を作成・変更する会話機能を追加する。
 
@@ -155,9 +157,9 @@ on-time coreは決められた時刻に同じ結果を出す必要がある。LL
 ```mermaid
 flowchart LR
   subgraph CHANNELS[ユーザーが触る場所]
+    QR[public QR / deep linkだけ]
     TG[Telegram]
     MINI[Telegram Mini App]
-    WEB[Web dashboard]
   end
 
   subgraph CLOUD[Life Manager Cloud]
@@ -177,6 +179,7 @@ flowchart LR
     STRIPE[Stripe]
   end
 
+  QR --> TG
   TG --> EDGE
   MINI --> EDGE
   WEB --> EDGE
