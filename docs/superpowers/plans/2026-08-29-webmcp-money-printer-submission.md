@@ -382,7 +382,7 @@ same-intent replay external effects=0
 - Consumes: explicit goal containing a public opportunity URL and existing `general-agent.work` capability.
 - Produces: `planned|completed|blocked` specialist receipt and reference-only next jobs, without provider routing.
 
-- [ ] **Task 7A:** Add one tenant-scoped opportunity table and atomic create RPC that persists the public URL/goal and inserts exactly one existing `general-agent.work` runtime job. Same URL/input replays; conflicting identity fails. Add a real `moneyPrinterSource(scope)` that reads opportunities, runtime jobs, human tasks, receipts, and verified earnings into the existing projection input. No fixture/default rows.
+- [x] **Task 7A:** Add one tenant-scoped opportunity table and atomic create RPC that persists the public URL/goal and inserts exactly one existing `general-agent.work` runtime job. Same URL/input replays; conflicting identity fails. Add a real `moneyPrinterSource(scope)` that reads opportunities, runtime jobs, human tasks, receipts, and verified earnings into the existing projection input. Focused suite 7/7 after optional-wallet/application-receipt fix; commits `610a39d7a` + `ee63a7569`. DB apply remains Task 8.
 - [ ] **Task 7B:** Connect `add_opportunity`, `inspect_workroom`, and `inspect_receipt` to those real domain functions, then register the three WebMCP tools. Wire `general-agent-work` worker services to a bounded existing agent-runner specialist that dereferences the stored goal; never let the registry fall through to `runtime_noop` or `bounded specialist unavailable`.
 
 - [ ] Add a focused generality test:

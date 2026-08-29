@@ -721,6 +721,7 @@ Focused reuse suiteはruntime/browser jobs、ask/reply、reconciliation、panel�
 | Task 5A | Model judgment refに束縛したstable HumanTask、vault-answer ref、tenant/open dedupe、`waiting_human`、atomic same-job requeue SQLを実装。RED module missing、Luna/parent 4/4、commit `3f4ef9bdb` | DB applyは未実施。Task 5Bでauthenticated APIとstate-dependent WebMCP toolsへ接続する |
 | Task 5B | Tenant-bound next/answer API、CSRF/origin/idempotency、Supabase RPC store、state-dependent inspect/answer toolsを実装。registration Promise raceを修正後、Luna/parent 65/65、commits `4f01d717d` + `78b03fe56` | Migration apply、same-job live resume、visible UI transitionはTask 8 E2Eで閉じる |
 | Task 7 measured gap | `general-agent-work` contract/registry testsは22/22 passするが、production `runBoundedSpecialist` service、durable opportunity/goal body、Dashboard live sourceが存在しない。Current workerはserviceなしでadapterを呼ぶため実jobを完了できない | Task 7Aでatomic opportunity/job store＋source、7Bでreal API/WebMCP/worker specialistを接続する。Fixtureをgenerality proofにしない |
+| Task 7A | Provider-neutral opportunity identity/table、atomic runtime job RPC、tenant-scoped live sourceを実装。Optional walletと`record_type=application_receipt`修正後、Luna/parent 7/7、commits `610a39d7a` + `ee63a7569` | DB applyは未実施。Task 7BでPanel/WebMCP create/readとproduction specialistを接続する |
 
 ### 10.5 One product, one mode
 
