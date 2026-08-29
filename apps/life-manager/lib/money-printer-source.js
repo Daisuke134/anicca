@@ -84,6 +84,11 @@ function requiredTime(value, label) {
   return new Date(Date.parse(raw)).toISOString();
 }
 
+function safeApplicationId(value) {
+  const raw = String(value == null ? "" : value).trim();
+  return /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,255}$/.test(raw) ? raw : null;
+}
+
 function publicUrl(value) {
   if (value == null) invalid("public URL");
   let url;
@@ -134,13 +139,16 @@ function mapHumanTask(row, uid) {
 function mapReceipt(row, uid) {
   tenantValue(row, uid);
   if (!row.receipt || typeof row.receipt !== "object" || Array.isArray(row.receipt)) invalid("runtime receipt");
-  const kind = requiredText(row.receipt.kind, "runtime receipt kind", 128);
+  const kind = requiredText(row.receipt.kind || row.receipt.record_type, "runtime receipt kind", 128);
   if (!Number.isInteger(row.attempt) || row.attempt < 1) invalid("runtime receipt attempt");
+  const fallbackId = `${requiredText(row.job_id, "runtime receipt job", 200)}:${row.attempt}`;
   const receipt = {
     tenant_id: uid,
-    receipt_id: `${requiredText(row.job_id, "runtime receipt job", 200)}:${row.attempt}`,
-    status: requiredText(row.outcome || row.receipt.status || "observed", "runtime receipt status", 128),
-    created_at: requiredTime(row.created_at, "runtime receipt time"),
+    receipt_id: APPLICATION_RECEIPT_KINDS.has(kind)
+      ? (safeApplicationId(row.receipt.application_external_id) || fallbackId)
+      : fallbackId,
+    status: requiredText(row.receipt.status || row.outcome || "observed", "runtime receipt status", 128),
+    observed_at: requiredTime(row.receipt.observed_at || row.created_at, "runtime receipt time"),
     kind,
   };
   return receipt;
@@ -189,8 +197,7 @@ function createMoneyPrinterSource(options = {}) {
     const baseParams = { select: "uid,agent_wallet_address", uid: `eq.${uid}`, limit: "1" };
     const users = await readRows(fetchImpl, tableUrl(supaUrl, "lm_users", baseParams), supaKey, "tenant");
     if (users.length !== 1 || String(users[0].uid || "") !== uid) invalid("tenant readback");
-    const wallet = String(users[0].agent_wallet_address || users[0].wallet_address || "").trim();
-    if (!wallet) invalid("tenant wallet");
+    const wallet = String(users[0].agent_wallet_address || "").trim();
 
     const opportunities = (await readRows(fetchImpl, tableUrl(supaUrl, "lm_money_opportunities", {
       uid: `eq.${uid}`,
@@ -212,12 +219,14 @@ function createMoneyPrinterSource(options = {}) {
       select: "tenant_id,job_id,attempt,outcome,created_at,receipt",
       order: "created_at.desc",
     }), supaKey, "runtime receipts")).map((row) => mapReceipt(row, uid));
-    const earnings = (await readRows(fetchImpl, tableUrl(supaUrl, "lm_agent_earnings", {
-      wallet_address: `eq.${wallet}`,
-      kind: "eq.financial_external_income",
-      select: "public_ref,entry_key,amount_minor,currency,occurred_at,kind",
-      order: "occurred_at.desc",
-    }), supaKey, "earnings")).map((row) => mapEarning(row, uid));
+    const earnings = wallet
+      ? (await readRows(fetchImpl, tableUrl(supaUrl, "lm_agent_earnings", {
+        wallet_address: `eq.${wallet}`,
+        kind: "eq.financial_external_income",
+        select: "public_ref,entry_key,amount_minor,currency,occurred_at,kind",
+        order: "occurred_at.desc",
+      }), supaKey, "earnings")).map((row) => mapEarning(row, uid))
+      : [];
 
     return freezeInput({
       tenantId: uid,

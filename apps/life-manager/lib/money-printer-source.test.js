@@ -45,7 +45,11 @@ function rowsFor(url) {
       attempt: 1,
       outcome: "completed",
       created_at: NOW,
-      receipt: { kind: "application_receipt", application_external_id: "private-provider-state" },
+      receipt: {
+        record_type: "application_receipt",
+        application_external_id: "application-public-1",
+        provider_secret: "private-provider-state",
+      },
     }];
   }
   if (parsed.pathname.endsWith("/lm_agent_earnings")) {
@@ -70,12 +74,29 @@ test("source reads tenant-scoped live rows and returns only projection-safe fiel
   assert.equal(input.opportunities[0].tenant_id, TENANT);
   assert.equal(input.earnings[0].verified, true);
   assert.equal(input.applicationReceipts.length, 1);
+  assert.equal(input.applicationReceipts[0].receipt_id, "application-public-1");
+  assert.equal(input.applicationReceipts[0].status, "completed");
+  assert.equal(input.applicationReceipts[0].observed_at, NOW);
   assert.equal(input.generalReceipts.length, 0);
   assert.doesNotMatch(JSON.stringify(input), /goal_statement|service-secret|answer_ref|lease_owner|private-provider-state/i);
   for (const call of calls) {
     assert.match(call.url, /(?:uid|tenant_id|wallet_address)=eq\./);
     assert.equal(call.init.headers.Authorization, "Bearer service-secret");
   }
+
+  let guestEarningsReads = 0;
+  const guestSource = createMoneyPrinterSource({
+    ...SUPA,
+    fetchImpl: async (url, init) => {
+      const parsed = new URL(url);
+      if (parsed.pathname.endsWith("/lm_users")) return response([{ uid: TENANT, agent_wallet_address: null }]);
+      if (parsed.pathname.endsWith("/lm_agent_earnings")) guestEarningsReads += 1;
+      return response(rowsFor(url, init));
+    },
+  });
+  const guestInput = await guestSource({ uid: TENANT });
+  assert.deepEqual(guestInput.earnings, []);
+  assert.equal(guestEarningsReads, 0);
 });
 
 test("source refuses missing rows, malformed responses, and foreign-tenant rows", async () => {
