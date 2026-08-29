@@ -14,8 +14,11 @@ const { normalizePhone } = require("./telegram-onboard.js");
 const { paymentLink } = require("./payment-link.js");
 const { isHelperBlock } = require("./wake-filter.js");
 const { projectMoneyPrinter } = require("./money-printer-projection.js");
+const { answerHumanTask } = require("./money-printer-human-task.js");
 
 const ENDPOINTS = new Set(["money-printer", "timeline", "scores", "ledger", "gates", "settings"]);
+const HUMAN_TASK_NEXT_ENDPOINT = "money-printer/human-task/next";
+const HUMAN_TASK_ANSWER_ENDPOINT = "money-printer/human-task/answer";
 const ONBOARDING_ACTIONS = new Set(["name.save", "home.save", "notifications.enable", "phone.save", "phone.skip", "call.enable", "call.skip", "payment.skip"]);
 const CALL_MINUTES_BEFORE = Object.freeze([10, 5]);
 const SCORE_ORGANS = Object.freeze(["daily", "physical", "mental", "financial"]);
@@ -310,6 +313,51 @@ async function moneyPrinter(scope, opts) {
   return projectMoneyPrinter(input);
 }
 
+function humanTaskError(message, status) { const error = new Error(message); error.status = status; return error; }
+
+function safeHumanTask(task, scope) {
+  if (task == null) return null;
+  if (!task || typeof task !== "object" || Array.isArray(task)
+    || (task.uid != null && String(task.uid) !== String(scope.uid))
+    || !/^[0-9a-f]{64}$/.test(String(task.task_id || ""))
+    || !Number.isInteger(task.version) || task.version < 1 || task.version > 1_000_000
+    || typeof task.question !== "string" || !task.question.trim()
+    || !(typeof task.required_format === "string"
+      || (task.required_format && typeof task.required_format === "object"))
+    || typeof task.reason_code !== "string" || !task.reason_code.trim()) {
+    throw humanTaskError("human_task_unavailable", 502);
+  }
+  return {
+    task_id: task.task_id,
+    version: task.version,
+    question: task.question,
+    required_format: task.required_format,
+    reason_code: task.reason_code,
+  };
+}
+
+async function readNextHumanTask(scope, store) {
+  const reader = store && (store.readNext || store.next || store.readNextHumanTask);
+  if (typeof reader !== "function") throw humanTaskError("human_task_unavailable", 502);
+  return safeHumanTask(await reader.call(store, scope), scope);
+}
+
+function humanTaskErrorResponse(error) {
+  const message = String(error && error.message || "");
+  if (message === "invalid_json") return { status: 400, body: { error: "invalid_json" } };
+  if (message === "body_too_large") return { status: 413, body: { error: "body_too_large" } };
+  if (message === "human task scope mismatch") return { status: 401, body: { error: "unauthorized" } };
+  if (message === "human task answer conflict" || message === "human task version conflict") {
+    return { status: 409, body: { error: "human_task_conflict" } };
+  }
+  if (message === "human task store unavailable" || message === "human task answer not read back"
+    || message === "human_task_unavailable" || message === "panel_store_read_failed") {
+    return { status: 502, body: { error: "human_task_unavailable" } };
+  }
+  if (message.startsWith("human task ")) return { status: 400, body: { error: "human_task_invalid" } };
+  return { status: 502, body: { error: "human_task_unavailable" } };
+}
+
 function sendJson(res, status, body, extraHeaders = {}) {
   res.writeHead(status, {
     "content-type": "application/json; charset=utf-8",
@@ -506,6 +554,20 @@ function createSupabaseCommandStore(opts = {}) {
     async readUser(scope) { return (await rows("lm_users", new URLSearchParams({ uid: `eq.${scope.uid}`, telegram_chat_id: `eq.${scope.chatId}`, select: "uid,name,telegram_chat_id,phone,call_language,wake_policy,calendar_provider,gmail_account_id,payout_destination", limit: "1" })))[0] || null; },
     async readPreferences(scope) { return (await rows("lm_panel_preferences", new URLSearchParams({ uid: `eq.${scope.uid}`, select: "call_enabled,notifications_enabled,daily_automation_enabled,delegation_enabled,call_time_zone", limit: "1" })))[0] || {}; },
     async readLocation(scope) { return (await rows("lm_user_locations", new URLSearchParams({ uid: `eq.${scope.uid}`, select: "observed_at,expires_at", limit: "1" })))[0] || null; },
+    async readNext(scope) { return (await rows("lm_human_tasks", new URLSearchParams({ uid: `eq.${scope.uid}`, status: "eq.open", select: "task_id,version,question,required_format,reason_code", order: "created_at.asc,task_id.asc", limit: "1" })))[0] || null; },
+    async answerOnce(answer) {
+      const response = await fetchImpl(`${base}/rest/v1/rpc/answer_lm_human_task`, {
+        method: "POST",
+        headers: { ...headers(opts.supaKey), "content-type": "application/json" },
+        body: JSON.stringify({ p_uid: answer.uid, p_task_id: answer.taskId, p_version: answer.version, p_answer_ref: answer.answerRef }),
+      });
+      if (!response.ok) {
+        if ([400, 409, 422].includes(response.status)) throw humanTaskError("human task answer conflict", 409);
+        throw humanTaskError("human_task_unavailable", 502);
+      }
+      const value = await jsonOr(response, []);
+      return Array.isArray(value) ? value[0] || null : value;
+    },
     async readReceipt(scope, key) { const row = (await rows("lm_panel_command_receipts", new URLSearchParams({ uid: `eq.${scope.uid}`, chat_id: `eq.${scope.chatId}`, idempotency_key: `eq.${key}`, select: "request_hash,status,result", limit: "1" })))[0]; return row ? { requestHash: row.request_hash, status: row.status, result: row.result } : null; },
     async claimReceipt(scope, key, value) { const response = await fetchImpl(`${base}/rest/v1/lm_panel_command_receipts`, { method: "POST", headers: { ...headers(opts.supaKey), "content-type": "application/json", Prefer: "return=minimal" }, body: JSON.stringify({ uid: scope.uid, chat_id: scope.chatId, idempotency_key: key, request_hash: value.requestHash, command_type: value.commandType, status: value.status }) }); if (response.status === 409) return false; if (!response.ok) throw new Error("panel_receipt_failed"); return true; },
     async finishReceipt(scope, key, value) { const response = await fetchImpl(`${base}/rest/v1/lm_panel_command_receipts?uid=eq.${encodeURIComponent(scope.uid)}&chat_id=eq.${encodeURIComponent(scope.chatId)}&idempotency_key=eq.${encodeURIComponent(key)}`, { method: "PATCH", headers: { ...headers(opts.supaKey), "content-type": "application/json", Prefer: "return=minimal" }, body: JSON.stringify({ status: value.status, result: value.result, updated_at: new Date().toISOString() }) }); if (!response.ok) throw new Error("panel_receipt_failed"); },
@@ -630,7 +692,10 @@ async function handlePanelApiRequest(req, res, opts = {}) {
   const path = new URL(req.url || "/", "http://panel.local").pathname;
   const endpoint = path.startsWith("/api/panel/") ? path.slice("/api/panel/".length) : "";
   const onboardingEndpoint = endpoint === "onboarding" || endpoint.startsWith("onboarding/");
-  if (!ENDPOINTS.has(endpoint) && endpoint !== "control-center" && endpoint !== "commands" && !onboardingEndpoint) {
+  const humanTaskNextEndpoint = endpoint === HUMAN_TASK_NEXT_ENDPOINT;
+  const humanTaskAnswerEndpoint = endpoint === HUMAN_TASK_ANSWER_ENDPOINT;
+  if (!ENDPOINTS.has(endpoint) && endpoint !== "control-center" && endpoint !== "commands"
+    && !onboardingEndpoint && !humanTaskNextEndpoint && !humanTaskAnswerEndpoint) {
     sendJson(res, 404, { error: "not_found" });
     return;
   }
@@ -655,6 +720,44 @@ async function handlePanelApiRequest(req, res, opts = {}) {
   const commandStore = opts.commandStore || createSupabaseCommandStore(opts);
   if (!opts.sessionScopeImpl && !await commandStore.assertCurrentScope(scope)) {
     sendJson(res, 401, { error: "unauthorized" });
+    return;
+  }
+  if (humanTaskNextEndpoint || humanTaskAnswerEndpoint) {
+    const humanTaskStore = opts.humanTaskStore || commandStore;
+    if (humanTaskNextEndpoint) {
+      if (req.method !== "GET") { sendJson(res, 405, { error: "method_not_allowed" }, { Allow: "GET" }); return; }
+      try {
+        sendJson(res, 200, { task: await readNextHumanTask(scope, humanTaskStore) });
+      } catch (error) {
+        const failure = humanTaskErrorResponse(error);
+        sendJson(res, failure.status, failure.body);
+      }
+      return;
+    }
+    if (req.method !== "POST") { sendJson(res, 405, { error: "method_not_allowed" }, { Allow: "POST" }); return; }
+    if (!/^application\/json(?:;|$)/i.test(String(req.headers["content-type"] || ""))) { sendJson(res, 415, { error: "json_required" }); return; }
+    const expectedOrigin = String(opts.panelOrigin || opts.panelBaseUrl || "").replace(/\/$/, "");
+    if (!expectedOrigin || String(req.headers.origin || "") !== expectedOrigin) { sendJson(res, 403, { error: "origin_rejected" }); return; }
+    if (!timingEqual(req.headers["x-lm-csrf"], scope.csrf || csrfToken(session))) { sendJson(res, 403, { error: "csrf_rejected" }); return; }
+    const key = String(req.headers["idempotency-key"] || "");
+    if (!/^[A-Za-z0-9._:-]{8,128}$/.test(key)) { sendJson(res, 400, { error: "idempotency_required" }); return; }
+    try {
+      const body = await readJson(req);
+      if (!body || typeof body !== "object" || Array.isArray(body)
+        || Object.keys(body).some((name) => !["task_id", "version", "answer_ref"].includes(name))) {
+        throw humanTaskError("invalid_json", 400);
+      }
+      const result = await answerHumanTask({
+        scope,
+        taskId: body.task_id,
+        version: body.version,
+        answerRef: body.answer_ref,
+      }, humanTaskStore);
+      sendJson(res, 200, result);
+    } catch (error) {
+      const failure = humanTaskErrorResponse(error);
+      sendJson(res, failure.status, failure.body);
+    }
     return;
   }
   if (onboardingEndpoint) {

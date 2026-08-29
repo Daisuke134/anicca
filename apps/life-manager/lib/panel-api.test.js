@@ -15,8 +15,9 @@ let handlePanelOAuthCallback = async (_req, res) => {
   res.writeHead(501, { "content-type": "application/json" });
   res.end(JSON.stringify({ error: "panel callback not implemented" }));
 };
+let createSupabaseCommandStore = null;
 try {
-  ({ handlePanelApiRequest, handlePanelOAuthCallback } = require("./panel-api.js"));
+  ({ handlePanelApiRequest, handlePanelOAuthCallback, createSupabaseCommandStore } = require("./panel-api.js"));
 } catch (error) {
   if (error.code !== "MODULE_NOT_FOUND") throw error;
 }
@@ -199,6 +200,149 @@ async function getJson(base, endpoint, init = {}) {
   });
   return { response, body: await response.json() };
 }
+
+async function humanTaskRequest(base, endpoint, { method = "POST", body, headers = {} } = {}) {
+  const response = await fetch(`${base}/api/panel/${endpoint}`, {
+    method,
+    headers: {
+      Cookie: `lm_panel_session=${SESSION}`,
+      origin: "https://panel.example",
+      "content-type": "application/json",
+      "x-lm-csrf": "csrf-a",
+      "idempotency-key": "human-task-01",
+      ...headers,
+    },
+    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+  });
+  return { response, body: await response.json() };
+}
+
+test("Task 5B human-task API returns one safe tenant task and replays one answer", async () => {
+  const fixture = makeFixture();
+  const task = {
+    uid: "tenant-a",
+    task_id: "a".repeat(64),
+    version: 1,
+    question: "Approve the prepared delivery.",
+    required_format: { kind: "approval", values: ["approve", "request_changes"] },
+    reason_code: "model_boundary",
+    resume_ref: "runtime-job://tenant-a/job-1",
+    status: "open",
+  };
+  const calls = [];
+  let state = { ...task };
+  const humanTaskStore = {
+    async readNext(scope) {
+      calls.push({ type: "read", scope });
+      return state.status === "open" ? { ...state } : null;
+    },
+    async answerOnce(answer) {
+      calls.push({ type: "answer", answer });
+      if (answer.uid !== "tenant-a") throw new Error("human task scope mismatch");
+      if (state.status === "answered") {
+        if (state.answer_ref !== answer.answerRef) throw new Error("human task answer conflict");
+        return { ...state };
+      }
+      if (answer.version !== state.version) throw new Error("human task version conflict");
+      state = { ...state, status: "answered", version: 2, answer_ref: answer.answerRef, answered_at: "2026-08-29T00:00:00.000Z" };
+      return { ...state };
+    },
+  };
+  await withApiServer(fixture, async (base) => {
+    const next = await humanTaskRequest(base, "money-printer/human-task/next", { method: "GET" });
+    assert.equal(next.response.status, 200);
+    assert.deepEqual(next.body, {
+      task: {
+        task_id: task.task_id,
+        version: 1,
+        question: task.question,
+        required_format: task.required_format,
+        reason_code: task.reason_code,
+      },
+    });
+    assert.equal(Object.hasOwn(next.body.task, "uid"), false);
+    assert.equal(Object.hasOwn(next.body.task, "resume_ref"), false);
+
+    const answer = { task_id: task.task_id, version: 1, answer_ref: "vault-answer://tenant-a/answer-1" };
+    const first = await humanTaskRequest(base, "money-printer/human-task/answer", { body: answer });
+    assert.equal(first.response.status, 200);
+    assert.deepEqual(first.body, { task_id: task.task_id, resume_ref: task.resume_ref });
+    const replay = await humanTaskRequest(base, "money-printer/human-task/answer", { body: answer });
+    assert.equal(replay.response.status, 200);
+    assert.deepEqual(replay.body, first.body);
+
+    const conflict = await humanTaskRequest(base, "money-printer/human-task/answer", {
+      body: { ...answer, answer_ref: "vault-answer://tenant-a/answer-2" },
+      headers: { "idempotency-key": "human-task-02" },
+    });
+    assert.equal(conflict.response.status, 409);
+    assert.deepEqual(conflict.body, { error: "human_task_conflict" });
+  }, { panelOrigin: "https://panel.example", humanTaskStore, sessionScopeImpl: async () => ({ uid: "tenant-a", chatId: "101", csrf: "csrf-a" }) });
+  assert.equal(calls[0].type, "read");
+  assert.deepEqual(calls[0].scope, { uid: "tenant-a", chatId: "101", csrf: "csrf-a" });
+  assert.deepEqual(calls.slice(1).map((call) => call.answer), [
+    { uid: "tenant-a", taskId: task.task_id, version: 1, answerRef: "vault-answer://tenant-a/answer-1" },
+    { uid: "tenant-a", taskId: task.task_id, version: 1, answerRef: "vault-answer://tenant-a/answer-1" },
+    { uid: "tenant-a", taskId: task.task_id, version: 1, answerRef: "vault-answer://tenant-a/answer-2" },
+  ]);
+});
+
+test("Task 5B human-task answer rejects missing origin, CSRF, content type, and idempotency before the store", async () => {
+  const fixture = makeFixture();
+  let writes = 0;
+  const humanTaskStore = {
+    async readNext() { return null; },
+    async answerOnce() { writes += 1; throw new Error("must not answer"); },
+  };
+  await withApiServer(fixture, async (base) => {
+    for (const headers of [
+      { Origin: "https://evil.example" },
+      { "x-lm-csrf": "wrong-csrf" },
+      { "content-type": "text/plain" },
+      { "idempotency-key": "" },
+    ]) {
+      const result = await humanTaskRequest(base, "money-printer/human-task/answer", {
+        body: { task_id: "a".repeat(64), version: 1, answer_ref: "vault-answer://tenant-a/a" },
+        headers,
+      });
+      assert.notEqual(result.response.status, 200);
+    }
+  }, { panelOrigin: "https://panel.example", humanTaskStore, sessionScopeImpl: async () => ({ uid: "tenant-a", chatId: "101", csrf: "csrf-a" }) });
+  assert.equal(writes, 0);
+});
+
+test("Task 5B Supabase human-task store scopes the read and calls the answer RPC", async () => {
+  const task = {
+    task_id: "b".repeat(64), version: 1, question: "Approve?",
+    required_format: "approval", reason_code: "model_boundary",
+  };
+  const calls = [];
+  const store = createSupabaseCommandStore({
+    supaUrl: "https://db.example",
+    supaKey: "service-key",
+    fetchImpl: async (input, init = {}) => {
+      const url = new URL(input);
+      calls.push({ url, init });
+      if (url.pathname.endsWith("/lm_human_tasks")) return jsonResponse([task]);
+      if (url.pathname.endsWith("/rpc/answer_lm_human_task")) return jsonResponse([{ ...task, uid: "tenant-a", status: "answered", answer_ref: "vault-answer://tenant-a/answer-1", resume_ref: "runtime-job://tenant-a/job-1" }]);
+      throw new Error(`unexpected human-task URL ${url}`);
+    },
+  });
+  assert.deepEqual(await store.readNext({ uid: "tenant-a", chatId: "101" }), task);
+  const answer = { uid: "tenant-a", taskId: task.task_id, version: 1, answerRef: "vault-answer://tenant-a/answer-1" };
+  assert.equal((await store.answerOnce(answer)).answer_ref, answer.answerRef);
+  assert.equal(calls[0].init.method, undefined);
+  assert.equal(calls[0].url.searchParams.get("uid"), "eq.tenant-a");
+  assert.equal(calls[0].url.searchParams.get("status"), "eq.open");
+  assert.equal(calls[0].url.searchParams.get("select"), "task_id,version,question,required_format,reason_code");
+  assert.equal(calls[1].init.method, "POST");
+  assert.deepEqual(JSON.parse(calls[1].init.body), {
+    p_uid: answer.uid,
+    p_task_id: answer.taskId,
+    p_version: answer.version,
+    p_answer_ref: answer.answerRef,
+  });
+});
 
 test("LM-33b timeline returns today's interpreted calendar and call telemetry", async () => {
   const fixture = makeFixture();
