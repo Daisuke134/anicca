@@ -476,7 +476,9 @@ async function fillTravel(uid, { apiKey, mapsKey, geminiKey, home, timezone, now
       const origin = decision.origin;
       // Dedup: a [Travel] block already sitting in the gap right before this event?
       const dup = events.some((e) => isTravel(e.summary) && e.endMs
-        && e.endMs >= ev.startMs - 2 * 60000 && e.endMs <= ev.startMs + 60000);
+        && e.endMs >= ev.startMs - 2 * 60000 && e.endMs <= ev.startMs + 60000
+        && String(e.location || "").replace(/\s+/g, "").toLowerCase()
+          === String(ev.location || "").replace(/\s+/g, "").toLowerCase());
       if (dup) {
         skipped++;
         // outbound block already exists — fall through to return-leg so it can backfill a missing return block

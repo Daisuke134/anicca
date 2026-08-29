@@ -192,7 +192,7 @@ test("[INTEGRATION][16T] a helper ending in the current-event window still dedup
   const s = stubClaimLedger();
   const target = rawEvId("ev-16t-current", "Physical appointment", "Shibuya Hikarie, Tokyo",
     "2026-06-20T14:00:00+09:00", "2026-06-20T15:00:00+09:00");
-  const current = rawEvId("helper-16t-current", "[Travel] 🚆 current", "Old venue",
+  const current = rawEvId("helper-16t-current", "[Travel] 🚆 current", " shibuya  hikarie, tokyo ",
     "2026-06-20T13:00:00+09:00", "2026-06-20T13:59:00+09:00");
   const cal = makeFakeCalendar([current, target]);
   await fillTravel("uid-16t-current", {
@@ -202,6 +202,23 @@ test("[INTEGRATION][16T] a helper ending in the current-event window still dedup
   });
   assert.equal(cal._created.some((block) => block.location === target.location), false,
     "the current-event helper suppresses a duplicate outbound block");
+  s.restore();
+});
+
+test("[INTEGRATION][16T] a near-time helper for another location does not suppress event B", async () => {
+  const s = stubClaimLedger();
+  const target = rawEvId("ev-16t-other-location", "Physical appointment B", "Shibuya Hikarie, Tokyo",
+    "2026-06-20T14:00:00+09:00", "2026-06-20T15:00:00+09:00");
+  const otherLocation = rawEvId("helper-16t-other-location", "[Travel] 🚆 event A", "Roppongi Hills, Tokyo",
+    "2026-06-20T13:00:00+09:00", "2026-06-20T13:59:00+09:00");
+  const cal = makeFakeCalendar([otherLocation, target]);
+  await fillTravel("uid-16t-other-location", {
+    apiKey: "x", mapsKey: "x", home: "Setagaya, Tokyo",
+    nowMs: Date.parse("2026-06-20T08:00:00+09:00"), calendar: cal,
+    supaUrl: "http://s", supaKey: "k", _directionsMinutes: async () => 30,
+  });
+  assert.ok(cal._created.some((block) => block.location === target.location),
+    "a helper for event A cannot suppress event B's outbound block");
   s.restore();
 });
 
