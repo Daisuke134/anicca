@@ -10,7 +10,7 @@
 # is "up" but not healthy is the failure this script exists to catch -- printing URLs the
 # moment `compose up` returns would report success before anything can serve a request.
 #
-# Subcommands: up (default) | down | status | logs
+# Subcommands: up (default) | down | status | logs | loops-up | loops-status | loops-down
 #
 # Overrides, mainly for testing an isolated copy next to a running one:
 #   LM_LOCAL_PROJECT   compose project name       (default: life-manager-local)
@@ -26,6 +26,8 @@ ENV_FILE="$REPO/deploy/local/.env"
 ENV_EXAMPLE="$REPO/deploy/local/.env.example"
 PROJECT="${LM_LOCAL_PROJECT:-life-manager-local}"
 READY_TIMEOUT_SECONDS="${LM_LOCAL_READY_TIMEOUT:-300}"
+LOOP_PROFILE_FILE="${LM_LOCAL_LOOP_PROFILE_FILE:-$HOME/.config/life-manager/loops}"
+CREDENTIALS_FILE="${LM_CREDENTIALS_FILE:-$HOME/.local/share/anicca/credentials.json}"
 
 say() { printf '%s\n' "$*"; }
 die() { printf 'error: %s\n' "$*" >&2; exit 1; }
@@ -38,6 +40,50 @@ require_docker() {
   command -v docker >/dev/null 2>&1 || die "docker is not installed. Install Docker Desktop, colima, or another Docker engine, then run this again."
   docker compose version >/dev/null 2>&1 || die "this Docker has no 'compose' subcommand. Update Docker, or install the compose plugin."
   docker info >/dev/null 2>&1 || die "the Docker daemon is not running. Start it (Docker Desktop, or 'colima start'), then run this again."
+}
+
+require_macos_loops() {
+  [ "$(uname -s)" = "Darwin" ] || die "macOS loops require launchd. Use 'up' for the portable Docker runtime."
+  command -v git >/dev/null 2>&1 || die "git is required."
+  command -v python3 >/dev/null 2>&1 || die "python3 is required."
+}
+
+validate_loop_selection() {
+  python3 - "$REPO/config/loop-registry.json" "$@" <<'PY'
+import json, sys
+registry = json.load(open(sys.argv[1]))["loops"]
+selected = sys.argv[2:]
+unknown = [loop for loop in selected if loop not in registry]
+if unknown:
+    print("unknown loop id(s): " + ", ".join(unknown))
+    raise SystemExit(1)
+needs_credentials = any(
+    registry[loop]["effect_class"] != "none"
+    or registry[loop]["provider_route"] == "shared-agent-runner"
+    for loop in selected
+)
+print("credentials" if needs_credentials else "no-credentials")
+PY
+}
+
+selected_loops() {
+  if [ "$#" -eq 0 ]; then
+    [ -s "$LOOP_PROFILE_FILE" ] || die "no saved loop profile. Run: ./scripts/local-up.sh loops-up <loop-id>..."
+    while IFS= read -r loop; do [ -z "$loop" ] || printf '%s\n' "$loop"; done < "$LOOP_PROFILE_FILE"
+  else
+    printf '%s\n' "$@"
+  fi
+}
+
+ensure_full_loop_release() {
+  git -C "$REPO" fetch --quiet origin main
+  local main_sha current_sha current_paths
+  main_sha="$(git -C "$REPO" rev-parse origin/main)"
+  current_sha="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("sha", ""))' "$HOME/loops/current/RELEASE.json" 2>/dev/null || true)"
+  current_paths="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("release_paths") or "")' "$HOME/loops/current/RELEASE.json" 2>/dev/null || true)"
+  if [ "$current_sha" != "$main_sha" ] || { [ -n "$current_paths" ] && [ "$current_paths" != "ALL" ]; }; then
+    LIFE_MANAGER_SOURCE_REPO="$REPO" LOOPS_RELEASE_PATHS= bash "$REPO/bin/cut-loop-release.sh" origin/main
+  fi
 }
 
 # A password that never leaves this machine, but is still not a value someone can guess
@@ -141,11 +187,53 @@ cmd_logs() {
   compose logs -f --tail 100
 }
 
+cmd_loops_up() {
+  require_macos_loops
+  [ "$#" -gt 0 ] || die "loops-up requires at least one explicit loop id."
+  local credential_need mode directory_mode loop
+  credential_need="$(validate_loop_selection "$@")" || die "$credential_need"
+  if [ "$credential_need" = "credentials" ]; then
+    [ -f "$CREDENTIALS_FILE" ] || die "selected loops need user-owned credentials at $CREDENTIALS_FILE (mode 600)."
+    mode="$(stat -f '%Lp' "$CREDENTIALS_FILE")"
+    [ "$mode" = "600" ] || die "$CREDENTIALS_FILE must have mode 600, found $mode."
+    directory_mode="$(stat -f '%Lp' "$(dirname "$CREDENTIALS_FILE")")"
+    [ "$directory_mode" = "700" ] || die "$(dirname "$CREDENTIALS_FILE") must have mode 700, found $directory_mode."
+  fi
+  ensure_full_loop_release
+  for loop in "$@"; do
+    LIFE_MANAGER_APPLY_TARGET="$loop" "$HOME/loops/current/bin/lm-loop" apply
+    "$HOME/loops/current/bin/lm-loop" start "$loop"
+  done
+  mkdir -p "$(dirname "$LOOP_PROFILE_FILE")"
+  chmod 700 "$(dirname "$LOOP_PROFILE_FILE")"
+  (umask 077; printf '%s\n' "$@" > "$LOOP_PROFILE_FILE")
+  cmd_loops_status "$@"
+}
+
+cmd_loops_status() {
+  require_macos_loops
+  local loop
+  selected_loops "$@" | while IFS= read -r loop; do
+    "$HOME/loops/current/bin/lm-loop" status "$loop"
+  done
+}
+
+cmd_loops_down() {
+  require_macos_loops
+  local loop
+  selected_loops "$@" | while IFS= read -r loop; do
+    "$HOME/loops/current/bin/lm-loop" stop "$loop"
+  done
+}
+
 case "${1:-up}" in
   up) cmd_up ;;
   down) cmd_down ;;
   status) cmd_status ;;
   logs) cmd_logs ;;
+  loops-up) shift; cmd_loops_up "$@" ;;
+  loops-status) shift; cmd_loops_status "$@" ;;
+  loops-down) shift; cmd_loops_down "$@" ;;
   -h|--help|help) sed -n '2,20p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' ;;
-  *) die "unknown command '${1}'. Use: up | down | status | logs" ;;
+  *) die "unknown command '${1}'. Use: up | down | status | logs | loops-up | loops-status | loops-down" ;;
 esac

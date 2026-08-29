@@ -69,6 +69,21 @@ git clone https://github.com/Daisuke134/life-manager ~/life-manager && cd ~/life
 ./scripts/local-up.sh down      止める（dataは残る）
 ```
 
+macOSでは、launchdで常駐させるrepository loopを明示選択します。cloneした
+だけでprivate providerや外部作用のあるloopを起動しないため、default選択は0件です。
+
+```bash
+./scripts/local-up.sh loops-up <loop-id> [<loop-id> ...]
+./scripts/local-up.sh loops-status
+./scripts/local-up.sh loops-down
+```
+
+選択は`~/.config/life-manager/loops`へ保存します。model利用または外部作用の
+あるloopは、ユーザー自身の`~/.local/share/anicca/credentials.json`が存在し、
+親directoryがmode `700`、fileがmode `600`でなければinstall前に停止します。
+`loops-status`は`lm-loop status`と同じlaunchd、release、provider、blocker、
+terminal result、effectを表示し、process稼働をbusiness成功として扱いません。
+
 API は `http://localhost:18788`、worker の health は `:18790`（どちらも `deploy/local/.env` で変更可）。data はローカルの Postgres と object store に置かれ、**これを動かすだけでは何もどこにも送信されません**。
 
 **secret は参照であって直書きではありません。** job は `secret://…` の参照だけを持ち、実体はローカルの keychain か tenant vault から解決します。形式は [`apps/life-manager/.env.example`](apps/life-manager/.env.example) を参照（`TELEGRAM_BOT_TOKEN_REF` / `POSTIZ_ACCESS_TOKEN_REF` / `REVENUECAT_API_KEY_REF` など）。ローカル個体と話すには、自分の Telegram bot token をこの形で繋ぎます。
