@@ -84,6 +84,72 @@ test("source reads tenant-scoped live rows and returns only projection-safe fiel
   assert.equal(guestEarningsReads, 0);
 });
 
+test("source projects kindless failures and reconciliations without leaking raw receipts", async () => {
+  const snapshot = {
+    ...runtimeSnapshot(),
+    receipts: [
+      {
+        tenant_id: TENANT,
+        job_id: "goal:failed",
+        attempt: 1,
+        outcome: "failed",
+        created_at: NOW,
+        receipt: { error_code: "CAPABILITY_EXECUTION_FAILED", raw_detail: "private failure" },
+      },
+      {
+        tenant_id: TENANT,
+        job_id: "goal:present",
+        attempt: 2,
+        outcome: "reconciled_present",
+        created_at: NOW,
+        receipt: { status: "wrong-status", error_code: "PRIVATE_PRESENT_ERROR" },
+      },
+      {
+        tenant_id: TENANT,
+        job_id: "goal:absent",
+        attempt: 3,
+        outcome: "reconciled_absent",
+        created_at: NOW,
+        receipt: { status: "wrong-status", error_code: "PRIVATE_ABSENT_ERROR" },
+      },
+    ],
+  };
+  const source = createMoneyPrinterSource({
+    ...SUPA,
+    runtimeStore: { readRuntimeSnapshot: async () => snapshot },
+    fetchImpl: async (url) => response(rowsFor(url)),
+  });
+  const input = await source({ uid: TENANT });
+
+  assert.deepEqual(input.generalReceipts, [
+    { tenant_id: TENANT, receipt_id: "goal:failed:1", status: "failed", observed_at: NOW },
+    { tenant_id: TENANT, receipt_id: "goal:present:2", status: "reconciled_present", observed_at: NOW },
+    { tenant_id: TENANT, receipt_id: "goal:absent:3", status: "reconciled_absent", observed_at: NOW },
+  ]);
+  assert.doesNotMatch(JSON.stringify(input), /CAPABILITY_EXECUTION_FAILED|PRIVATE_PRESENT_ERROR|PRIVATE_ABSENT_ERROR|private failure/);
+});
+
+test("source still rejects a kindless completed runtime receipt", async () => {
+  const source = createMoneyPrinterSource({
+    ...SUPA,
+    runtimeStore: {
+      readRuntimeSnapshot: async () => ({
+        ...runtimeSnapshot(),
+        receipts: [{
+          tenant_id: TENANT,
+          job_id: "goal:completed",
+          attempt: 1,
+          outcome: "completed",
+          created_at: NOW,
+          receipt: { application_external_id: "must-not-pass" },
+        }],
+      }),
+    },
+    fetchImpl: async (url) => response(rowsFor(url)),
+  });
+  await assert.rejects(source({ uid: TENANT }), /runtime receipt kind/i);
+});
+
 test("source refuses missing rows, malformed responses, and foreign-tenant rows", async () => {
   const source = createMoneyPrinterSource({
     ...SUPA,
