@@ -826,7 +826,7 @@ Current atomic run order:
 - [ ] require one `provider=transit` Telegram route message for `pf0cbjkrqkhmj8ihmot4fmmf2k` at natural due 22:47:57 with durable positive message ID;
 - [x] merge Task 16AC as PR #3096 at `cd3a83647a8f6db01abef938c0fe555d9b9d7b06`; Railway deployment `f654d570-528a-4b46-9141-24124d09f90b` is SUCCESS and public `/health.build` matches, while the Railway-created GitHub Deployment for the same SHA reports failure and remains a separate exact-readback discrepancy;
 - [x] create post-16AC event `icqi2rhh24g1sf8q0hodja0i2s`, private, attendee zero, `渋谷駅`, confirmed, 00:05–00:15 JST; natural 60-second reminder and 30-minute travel loops are active;
-- [ ] TDD the measured late-hour provider boundary: accepted HTTP 200 Transit plan with four journeys takes 21.68 seconds, so reuse only the existing constants at 25-second Transit and 35-second per-tenant reminder budgets;
+- [x] TDD the measured late-hour provider boundary: `0a671c27c` changes only the existing constants to 25-second Transit and 35-second per-tenant reminder budgets; RED 71/73, GREEN and primary 73/73, fresh Sol `SHIP` with zero findings;
 - [ ] require one `provider=transit` Telegram route message for `icqi2rhh24g1sf8q0hodja0i2s` with durable positive message ID;
 - [ ] require one outbound `[Travel]` block with provider event ID; the current previous-event Tokyo→Shinjuku route probe is null and needs separate boundary readback after the Telegram proof;
 - [ ] no-location T-10 row has one call-control ID, one signed webhook ID, and one durable claim;
