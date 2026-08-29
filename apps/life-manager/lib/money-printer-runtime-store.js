@@ -1,5 +1,7 @@
 "use strict";
 
+const { canonicalOpportunityInput } = require("./money-printer-opportunity.js");
+
 const TENANT_ID = /^[a-z0-9][a-z0-9._-]{0,199}$/;
 const OPPORTUNITY_ID = /^[0-9a-f]{64}$/;
 
@@ -46,6 +48,27 @@ function expectedOpportunity(value) {
   return Object.freeze({ uid, opportunityId, goalRef });
 }
 
+function expectedOpportunitySource(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("money printer runtime store opportunity source expected invalid");
+  }
+  const uid = tenant(value.uid == null ? value.tenant_id : value.uid);
+  if (value.uid != null && value.tenant_id != null && String(value.tenant_id).trim() !== uid) {
+    throw new Error("money printer runtime store opportunity source expected invalid");
+  }
+  const sourceUrl = String(value.source_url == null ? "" : value.source_url).trim();
+  const canonical = canonicalOpportunityInput({
+    tenantId: uid,
+    sourceUrl,
+    title: "source lookup",
+    goalStatement: "source lookup",
+    valueMinor: "0",
+    currency: "USD",
+    observedAt: "2026-01-01T00:00:00.000Z",
+  });
+  return Object.freeze({ uid, sourceUrl: canonical.source_url });
+}
+
 function opportunityRow(result, expected, label) {
   const row = oneRow(result, label, expected.uid);
   if (
@@ -63,6 +86,31 @@ function normalizeOpportunityReadback(row) {
   if (typeof row.observed_at !== "string" || !Number.isFinite(Date.parse(row.observed_at))) {
     throw new Error("money printer runtime store opportunity readback invalid");
   }
+  return row;
+}
+
+function sourceOpportunityRow(result, expected) {
+  const rows = result && Array.isArray(result.rows) ? result.rows : [];
+  if (rows.length === 0) return null;
+  if (rows.length !== 1 || !rows[0] || typeof rows[0] !== "object" || Array.isArray(rows[0])) {
+    throw new Error("money printer runtime store opportunity source readback invalid");
+  }
+  const row = normalizeOpportunityReadback(rows[0]);
+  const actual = canonicalOpportunityInput({
+    tenantId: row.uid == null ? row.tenant_id : row.uid,
+    sourceUrl: row.source_url,
+    title: row.title,
+    goalStatement: row.goal_statement,
+    valueMinor: row.value_minor,
+    currency: row.currency,
+    observedAt: row.observed_at,
+  });
+  if (
+    actual.uid !== expected.uid || actual.source_url !== expected.sourceUrl
+    || String(row.opportunity_id || "") !== actual.opportunity_id
+    || String(row.goal_ref || "") !== actual.goal_ref
+    || typeof row.status !== "string" || !row.status.trim()
+  ) throw new Error("money printer runtime store opportunity source readback invalid");
   return row;
 }
 
@@ -89,6 +137,15 @@ function createMoneyPrinterRuntimeStore({ query } = {}) {
         WHERE uid = $1 AND opportunity_id = $2 AND goal_ref = $3
         LIMIT 2
       `, [expected.uid, expected.opportunityId, expected.goalRef]), expected, "opportunity");
+    },
+    async readOpportunityBySource(value) {
+      const expected = expectedOpportunitySource(value);
+      return sourceOpportunityRow(await query(`
+        SELECT uid, opportunity_id, source_url, title, goal_statement, value_minor, currency, status, goal_ref, observed_at
+        FROM public.lm_money_opportunities
+        WHERE uid = $1 AND source_url = $2
+        LIMIT 2
+      `, [expected.uid, expected.sourceUrl]), expected);
     },
     async updateOpportunity(value, status) {
       const expected = expectedOpportunity(value);

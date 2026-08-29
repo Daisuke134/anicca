@@ -4,6 +4,7 @@ const assert = require("node:assert/strict");
 const test = require("node:test");
 
 const { createMoneyPrinterRuntimeStore } = require("./money-printer-runtime-store.js");
+const { buildOpportunity } = require("./money-printer-opportunity.js");
 
 const TENANT = "tenant-a";
 const ID = "a".repeat(64);
@@ -140,4 +141,48 @@ test("runtime store rejects non-QUALIFIED or non-exact opportunity qualification
   }
   const store = createMoneyPrinterRuntimeStore({ query: async () => ({ rows: [opportunity()] }) });
   await assert.rejects(store.updateOpportunity(expected, "DISCOVERED"), /status/);
+});
+
+test("runtime store reads at most one full opportunity by tenant-scoped canonical source URL", async () => {
+  const calls = [];
+  const persisted = buildOpportunity({
+    tenantId: TENANT, sourceUrl: "https://public.example/opportunity", title: "Public opportunity",
+    goalStatement: "Complete it.", valueMinor: "50000", currency: "JPY", observedAt: NOW,
+  });
+  const store = createMoneyPrinterRuntimeStore({
+    query: async (sql, values) => {
+      calls.push({ sql, values });
+      return { rows: [persisted] };
+    },
+  });
+  assert.deepEqual(await store.readOpportunityBySource({
+    tenant_id: TENANT, source_url: "https://public.example/opportunity",
+  }), persisted);
+  assert.match(calls[0].sql, /SELECT uid, opportunity_id, source_url, title, goal_statement, value_minor, currency, status, goal_ref, observed_at/i);
+  assert.match(calls[0].sql, /WHERE uid = \$1 AND source_url = \$2/i);
+  assert.deepEqual(calls[0].values, [TENANT, "https://public.example/opportunity"]);
+
+  for (const rows of [[persisted, persisted], [{ ...persisted, uid: "tenant-b" }], [{ ...persisted, status: null }]]) {
+    const invalid = createMoneyPrinterRuntimeStore({ query: async () => ({ rows }) });
+    await assert.rejects(invalid.readOpportunityBySource({ tenant_id: TENANT, source_url: "https://public.example/opportunity" }), /readback/);
+  }
+});
+
+test("runtime store source lookup normalizes a Postgres Date and rejects an invalid timestamp", async () => {
+  const persisted = buildOpportunity({
+    tenantId: TENANT, sourceUrl: "https://public.example/date", title: "Public opportunity",
+    goalStatement: "Complete it.", valueMinor: "50000", currency: "JPY", observedAt: NOW,
+  });
+  const store = createMoneyPrinterRuntimeStore({
+    query: async () => ({ rows: [{ ...persisted, observed_at: new Date(NOW) }] }),
+  });
+  assert.deepEqual(await store.readOpportunityBySource({
+    tenant_id: TENANT, source_url: "https://public.example/date",
+  }), persisted);
+  const invalid = createMoneyPrinterRuntimeStore({
+    query: async () => ({ rows: [{ ...persisted, observed_at: new Date("invalid") }] }),
+  });
+  await assert.rejects(invalid.readOpportunityBySource({
+    tenant_id: TENANT, source_url: "https://public.example/date",
+  }), /readback|observed|time/i);
 });

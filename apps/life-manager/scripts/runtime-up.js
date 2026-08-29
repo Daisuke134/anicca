@@ -522,6 +522,34 @@ function createWorkerHandlers(env, capabilities, dependencies = {}) {
       runBoundedSpecialist: specialist,
     };
   }
+  if (capabilities.includes("money-printer.scout")) {
+    const {
+      createMoneyPrinterRuntimeStore,
+    } = require("../lib/money-printer-runtime-store.js");
+    const {
+      createMoneyPrinterScout,
+    } = require("../lib/money-printer-scout.js");
+    const geminiKey = requiredEnv(env, "GEMINI_API_KEY");
+    const tenantId = requiredEnv(env, "LM_MONEY_SCOUT_TENANT_ID");
+    if (typeof dependencies.query !== "function") {
+      throw new Error("money printer scout runtime store unavailable");
+    }
+    const runtimeStore = createMoneyPrinterRuntimeStore({ query: dependencies.query });
+    const configuredRepoRoot = String(env.LM_REPO_ROOT || "").trim();
+    const scout = (dependencies.createMoneyPrinterScout || createMoneyPrinterScout)({
+      apiKey: geminiKey,
+      tenantId,
+      dataDir: path.resolve(requiredEnv(env, "LM_DATA_DIR")),
+      repoRoot: configuredRepoRoot
+        ? path.resolve(configuredRepoRoot)
+        : dependencies.repoRoot || path.resolve(__dirname, "../../.."),
+      fetchImpl: dependencies.fetchImpl || globalThis.fetch,
+      readOpportunityBySource: runtimeStore.readOpportunityBySource,
+      createOpportunity: runtimeStore.createOpportunity,
+    });
+    if (typeof scout !== "function") throw new Error("money printer scout unavailable");
+    servicesByAdapter["money-printer-scout"] = { runScout: scout };
+  }
   if (capabilities.includes("connector.coverage.refresh")) {
     const factory = dependencies.createConnectorCoverageRuntimeServices || (
       require("../lib/connector-coverage-runtime-services.js")
@@ -888,6 +916,14 @@ async function runCapabilityWorker(env = process.env) {
     query: opts.query,
     connect: pool.connect.bind(pool),
   });
+  const scoutCycle = capabilities.includes("money-printer.scout")
+    ? {
+      enqueue: require("../lib/money-printer-scout.js").enqueueMoneyPrinterScoutCycle,
+      tenantId: requiredEnv(env, "LM_MONEY_SCOUT_TENANT_ID"),
+      intervalMs: env.LM_MONEY_SCOUT_INTERVAL_MS == null || env.LM_MONEY_SCOUT_INTERVAL_MS === ""
+        ? undefined : Number(env.LM_MONEY_SCOUT_INTERVAL_MS),
+    }
+    : null;
   const state = {
     role: "worker",
     workerId,
@@ -905,6 +941,11 @@ async function runCapabilityWorker(env = process.env) {
     active = true;
     try {
       await pool.query("SELECT 1");
+      if (scoutCycle) {
+        await scoutCycle.enqueue({
+          query: opts.query, tenantId: scoutCycle.tenantId, nowMs: Date.now(), intervalMs: scoutCycle.intervalMs,
+        });
+      }
       const jobs = await claimJobs({
         workerId,
         capabilities,

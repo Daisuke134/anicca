@@ -92,6 +92,16 @@
       "factory_export": "createGeneralAgentWorkLoopAdapter"
     },
     {
+      "adapter_id": "money-printer-scout",
+      "loop_id": "money-printer-scout",
+      "capability": "money-printer.scout",
+      "effect_classes": [
+        "none"
+      ],
+      "module_ref": "lib/money-printer-scout.js",
+      "factory_export": "createMoneyPrinterScoutLoopAdapter"
+    },
+    {
       "adapter_id": "marketplace-application",
       "loop_id": "life-manager.manager",
       "capability": "marketplace.application",

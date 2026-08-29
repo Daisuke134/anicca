@@ -39,6 +39,9 @@ const {
 const {
   CAPABILITY: GENERAL_AGENT_WORK_CAPABILITY,
 } = require("./general-agent-work-adapter.js");
+const {
+  CAPABILITY: MONEY_PRINTER_SCOUT_CAPABILITY,
+} = require("./money-printer-scout.js");
 
 const MANIFEST_PATH = path.join(
   __dirname,
@@ -158,7 +161,7 @@ test("registry rejects duplicate routing, absolute paths, and credential-shaped 
 test("committed manifest is portable and registers financial report first and Connector coverage last", () => {
   const manifest = loadLoopAdapterManifest(MANIFEST_PATH);
   assert.equal(manifest.schema_version, 1);
-  assert.equal(manifest.adapters.length, 11);
+  assert.equal(manifest.adapters.length, 12);
   assert.equal(
     manifest.adapters[0].capability,
     FINANCIAL_REPORT_CAPABILITY,
@@ -192,10 +195,12 @@ test("committed manifest is portable and registers financial report first and Co
   assert.equal(manifest.adapters[7].adapter_id, "outbound-luma-rsvp");
   assert.equal(manifest.adapters[8].capability, GENERAL_AGENT_WORK_CAPABILITY);
   assert.equal(manifest.adapters[8].adapter_id, "general-agent-work");
-  assert.equal(manifest.adapters[9].capability, MARKETPLACE_APPLICATION_CAPABILITY);
-  assert.equal(manifest.adapters[9].adapter_id, "marketplace-application");
-  assert.equal(manifest.adapters[10].capability, CONNECTOR_COVERAGE_CAPABILITY);
-  assert.equal(manifest.adapters[10].adapter_id, "connector-coverage-refresh");
+  assert.equal(manifest.adapters[9].capability, MONEY_PRINTER_SCOUT_CAPABILITY);
+  assert.equal(manifest.adapters[9].adapter_id, "money-printer-scout");
+  assert.equal(manifest.adapters[10].capability, MARKETPLACE_APPLICATION_CAPABILITY);
+  assert.equal(manifest.adapters[10].adapter_id, "marketplace-application");
+  assert.equal(manifest.adapters[11].capability, CONNECTOR_COVERAGE_CAPABILITY);
+  assert.equal(manifest.adapters[11].adapter_id, "connector-coverage-refresh");
   assert.doesNotMatch(
     fs.readFileSync(MANIFEST_PATH, "utf8"),
     /\.openclaw|profitable-claude|life-manager-v0|\/Users\/|api[_-]?key|password|token\s*":/i,
