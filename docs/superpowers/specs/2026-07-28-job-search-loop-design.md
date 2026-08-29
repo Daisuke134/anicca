@@ -737,7 +737,7 @@ This is the remaining implementation-order SSOT. Only the first
 | 48ea | Discover receipts phrased as `received your application` | `live_proven_dedupe_pending` | Daily run `151814` submits Salesforce Lead/Senior Solution Engineer (都市銀行担当) once with exact completion UI, Ledger `submit_unknown`, Telegram `31680`, and Gog receipt `1a0327d87457f64a`. Inbox prepass `154044` misses it because Gmail query contains `application received`, while Salesforce reverses the words as `We've Received Your Application`. The first fix adds generic query phrase `received your application`; direct Gog readback proves the thread is returned. Inbox run `154306` still drops it at the local summary filter because folded curly-apostrophe text is `wevereceivedyourapplication`, while vocabulary has only `wehavereceived...`. The generic folded contraction form fixes that without a company or role hardcode. Release `c2d19271f`, inbox run `154559`, binds receipt `1a0327d87457f64a`, promotes Ledger to `submitted`, sends Telegram `31691`, and exits zero. Focused reconciliation tests pass 7/7. Remaining: next-wake Salesforce duplicate zero. |
 | 48eb | Continue beyond the first eight rejected jobs in one wake | `live_proven` | Expanded-registry run `154750` snapshots 3,969 jobs and ranks all chunks, but after eight exact-JD model rejections it returns `budget_exhausted` with no useful application. The shortlist contract, prompt and wake evaluation budget now require up to 24 official candidate IDs, so one owner evaluates three former batches before returning. Release `6c0cae0d5`, launchd run `155944`, reaches a ninth exact-JD decision after the former boundary before a capacity error. Release `a7dd7ee01`, launchd run `163951`, completes all ten chunks plus finalist ranking, evaluates all 24 official JDs in the same wake, records 24 justified rejections, sends every decision to Telegram, and exits zero with no browser/Submit effects. Ledger dedupe and exact official-JD qualification remain unchanged; no company/title/keyword rule is added. Full regression passes 298/298 and shell syntax passes. |
 | 48ec | Retry transient fit-model capacity inside the same wake | `implementation_done_release_gate` | In 24-row run `155944`, nine fit decisions complete, then the tenth model call exits with `Selected model is at capacity` and aborts the search before the remaining official candidates. Qualification failures before any browser/submit effect now append a retryable receipt and retry the same durable queued row within the existing 24-attempt wake budget. They never mark fit, skip the row, or create a browser effect. Full regression passes 299/299. Remaining: release and production proof that one transient failure is retried without ending the wake. |
-| 48ed | Report every job decision and application outcome to Telegram in natural language | `live_proven` | Generic end-of-wake lines do not let the user follow the autonomous hunter. Every Workday fit decision immediately sends a deduplicated Japanese message with company, role, apply/reject/hold judgment, model reason, compensation evidence and the next autonomous action. Browser completion, checkpoint, unknown status and provider verification use the same natural `状態 / 確認 / 次に自動で行うこと` structure; authoritative Gog reconciliation sends the final submitted message. All messages begin `Codex:::` and use durable event keys, while Telegram transport failure is recorded without stopping the application queue. Existing resume-document delivery remains separate. Release `a7dd7ee01`, launchd run `163951`, sends all 24 rejection decisions in realtime with acknowledged Telegram IDs from `31765` through `31797` while continuing the same wake. Release `ac0b64a9d`, launchd run `165819`, sends Japanese qualified-decision message `31810` for Rakuten Product Manager - Recommendation Department, post-submit receipt-wait message `31829`, and after Gog message `1a032d8e88695fce` is bound by inbox run `171925`, final authoritative submitted message `31835`. Each message includes the next autonomous action and states that user operation is unnecessary. Full regression passes 299/299; focused prompt tests pass 15/15. |
+| 48ed | Report every job decision and application outcome to Telegram in natural language | `historical_live_proven_superseded_by_10P3` | Historical release `a7dd7ee01` proved realtime per-decision reporting by sending 24 rejection decisions with Telegram ACKs `31765`–`31797`; release `ac0b64a9d` then proved qualified, receipt-wait and authoritative submitted reporting through ACK `31835`. That evidence remains valid for transport/idempotency only. Its `Codex:::` prefix and per-reject user notifications are superseded by 10P3: visible messages now use `[Job Hunting]`, and rejected/skipped rows remain private evidence with zero Telegram sends. |
 | 48ee | Search across companies and report every browser application start from the loop | `implementation_done_live_capacity_gate` | Production run `daily-20260824-190540` exposed two connected defects. Eleven Workday sources were registered, but one existing qualified Rakuten row caused `workday_search_loop` to return before refreshing/ranking the other companies, and the browser lane resumed it without a new Telegram progress event. Rakuten had already accumulated multiple submitted and pending rows. The row was a different canonical job, so URL dedupe worked, but company-wide hunting did not. The pre-submit wake was stopped with the row still `materials_ready`. Manual Telegram `32063` is diagnostic only and does not count as loop proof. Release `9cb1d4c10`, run `daily-20260824-191814`, then proved 11-source/3,971-job snapshot ranking and finalists across Rakuten, Salesforce, Autodesk and o9; the parent loop itself sent progress Telegram `32093`. That run still failed company selection because a second early return inside `discover_one` preferred the old qualified checkpoint before admitting a fresh finalist, so it was stopped pre-submit. Release `b00f07dc0` removes that nested return, admits and fit-evaluates a fresh finalist first, falls back only when no fresh candidate remains, interleaves companies, passes submitted-company portfolio to the model, and prioritizes the selected application ID. Focused checks pass 47/47. Its first production run `daily-20260824-192852` did not reach ranking or browser: host free space fell after the start gate and writing the 3,971-job snapshot raised `OSError: [Errno 28] No space left on device`; the runner then could not create its heredoc/report or open Ledger. Launchd remains installed at 1,800 seconds, CloakBrowser is unchanged, and this is not a browser regression. No loop-owned job/reason Telegram can exist for that run because no candidate was selected. Remaining: make disk headroom remain stable through the full snapshot, rerun the same release, and prove a fresh cross-company selection plus positive loop-owned Telegram ID. Same-company selection remains allowed when it wins the complete comparison. |
 | 48ef | Keep company discovery dynamic and candidate exclusions private | `implementation_done_release_gate` | The measured 11 Workday sources are the current accumulated private registry count, not a code list, cap or target. Production contains no literals for those 11 companies. The model source-discovery pass uses internet/search tools, validates official Workday/CXS identities, runs every 24 hours, merges unseen sources into the prior registry and is explicitly told not to limit results to companies seen previously. Public code previously carried eleven maintainer employer exclusions plus one fixed Salesforce job URL; those are removed. The default public exclusion set is empty. Candidate Memory supplies `candidate.employer_exclusions` to source validation and snapshot filtering, so Dais's same eleven exclusions remain active only in his mode-0600 profile while another OSS user supplies their own. Ledger/canonical URL and submit fences own duplicate prevention. Focused state/source/search/browser checks pass 49/49. Remaining: release and prove a source-maintenance pass may grow beyond the current count without code change while Dais's private exclusions remain absent from discovery. |
 | 48eg | Render the final 30-minute wake report as descriptive natural language | `live_proven` | The end-of-wake report still used terse English `outcome=...; reason=...; next_action=...` fields even though fit, browser and reconciliation messages were natural Japanese. It now uses the same Coconala-style structure for success, no new application, quota, capacity, transport or pre-selection failure: `[Job Hunter][30分確認]`, human-readable state, official Workday candidate count, company, job, reason, and the next autonomous action, always stating whether user operation is needed. It remains content-addressed and fenced; changed state sends one correction while identical replay sends zero. Installed run `daily-20260824-202347` sends provider message ID `32213` with 24 checked candidates, exact company/job and autonomous next action. |
@@ -2171,8 +2171,9 @@ Telegram is the phase-1 proactive interface:
 
 | Moment | Message contract |
 |---|---|
-| Confirmed application | company, role, official URL, confirmed state, fit thesis, selected resume name/hash; send that exact PDF as a document |
-| Daily completion | best verified dream-job lead, discovered/qualified/submitted/unknown counts, blockers, fallbacks used, selected model route and next scheduled action |
+| Confirmed application | Send `[Job Hunting] 応募完了` with company, role, location, fit thesis, authoritative confirmed state, rolling-24-hour progress such as `17 / 48件`, and the matching completion/Gmail/Ledger evidence; send the exact submitted PDF as a document |
+| Rejected or skipped candidate | Send nothing. Preserve the row-scoped reason and evidence privately; do not make the user read repetitive non-application decisions |
+| Rolling 24-hour completion | Send `[Job Hunting] 24時間レポート` with receipt-backed submissions, distinct companies, confirmation receipts, interviews, human-only blockers and duplicate effects. Do not expose internal model/provider/harness labels |
 | Recruiter or assessment event | classification, durable action taken, deadline/rules evidence and only the remaining human-only action |
 | Interview scheduled | company/role, Calendar time/timezone, source message, confirmation state and preparation schedule |
 | 3-day / 1-day / immediate prep | cited company thesis, likely interests, exactly five grounded stories, likely questions, questions to ask and logistics |
@@ -2183,6 +2184,29 @@ Telegram is the phase-1 proactive interface:
 Every event uses a stable content-addressed outbox key. A changed same-day result may
 send one correction; an identical run remains silent. Life Manager consumes the same
 event stream and `summary.v2`, so Telegram and the local dashboard cannot disagree.
+
+Job Hunting messages have no harness prefix. `Codex:::`, `Claude:::`,
+`Life Manager:::`, and every other triple-colon prefix are prohibited on this
+product surface. The visible first line is the feature identity, for example:
+
+```text
+[Job Hunting] 応募完了
+
+会社: Example Japan
+求人: AI Product Specialist
+勤務地: 東京
+応募理由: AIエージェント導入と顧客支援の経験が職務内容に合っています。
+応募状態: 提出確認済み
+証拠: Workday完了画面・確認メール・Ledger一致
+直近24時間の応募: 17 / 48件
+
+次の求人を自動で探しています。
+```
+
+Interview, human-only blocker, and rolling report headings are respectively
+`[Job Hunting] 面接案内`, `[Job Hunting] 確認が必要です`, and
+`[Job Hunting] 24時間レポート`. Provider/model/run IDs remain private evidence
+unless they are needed to diagnose a user-actionable failure.
 
 ## 6. Model-owned evidence ranking
 
@@ -2522,7 +2546,7 @@ must accumulate in the live loop:
 | 10P | `JOB-WORKDAY-E2E-MODEL-10P`: full framework plus Workday E2E | `completed` | JR2008507 closes with exact UI, receipt `1a02ff31ecb7353d`, Ledger `submitted`, Telegram `30852`/`30853`, v2 agreement, immediate dedupe 0, and unseen JR2020208-1 continuation through the one existing owner. |
 | 10P1 | `JOB-WORKDAY-ONLY-10P1` | `completed` | Release `374c2c744`, launchd-owned run `094943`, non-Workday evidence/navigation/intent/fence/Submit effects 0 |
 | 10P2 | `JOB-WORKDAY-FIT-QUALIFICATION-10P2` | `completed` | Rakuten Product & Growth Specialist is model-qualified, exact-UI submitted, Gog-confirmed, Ledger submitted, Telegram `31463/31464`, and next-wake duplicate 0 |
-| 10P3 | `JOB-WORKDAY-CONTINUOUS-SEARCH-10P3` | `shortlist_and_reporting_repair_pending_e2e` | PR #3052 / merge `6aceea1388ba9206fa5ce7a31cc1b69f187cae74` validates complete Workday CXS sources, records row-scoped fetch failures, advances past a failed row within the same wake, and reconciles stale rows only from a successful unambiguous source. Release `20260829T161416-6aceea13` is loaded by the five production LaunchAgents with exact argv readback and daily `StartInterval=1800`. Launchd wakes repeatedly exhaust 24 decisions without an application. Wake `daily-20260830-070543` proves the source snapshot contains lower-scope and Japan-based roles, but shortlist ranking still selects Principal/Lead/Senior and foreign-location roles because compensation/specialty prestige outranks legal location and demonstrated career scope. Qualification correctly rejects Genesys `AI Solution Architect Senior Manager` and then Worldpay `Senior ML Software Engineer`; this is repeated evidence that the wrong rows enter the bounded shortlist. The active repair changes shortlist ranking only: Japan-feasible and demonstrated-scope roles precede compensation ambition; qualification truth, effect fences, receipt truth, and replay-zero remain unchanged. Job Hunter reports also incorrectly begin `Codex:::` because `application_reporting.py` hardcodes the harness label; the loop-owned user surface must begin `Life Manager:::` instead. |
+| 10P3 | `JOB-WORKDAY-CONTINUOUS-SEARCH-10P3` | `shortlist_throughput_reporting_repair_pending_e2e` | PR #3052 / merge `6aceea1388ba9206fa5ce7a31cc1b69f187cae74` validates complete Workday CXS sources, records row-scoped fetch failures, advances past a failed row within the same wake, and reconciles stale rows only from a successful unambiguous source. Release `20260829T161416-6aceea13` is loaded by the five production LaunchAgents with exact argv readback and daily `StartInterval=1800`. Launchd wakes repeatedly exhaust 24 decisions without an application. Wake `daily-20260830-070543` proves the source snapshot contains lower-scope and Japan-based roles, but shortlist ranking still selects Principal/Lead/Senior and foreign-location roles because compensation/specialty prestige outranks legal location and demonstrated career scope. Qualification correctly rejects Genesys `AI Solution Architect Senior Manager` and Worldpay `Senior ML Software Engineer`; this proves the wrong rows enter the bounded shortlist. The active repair ranks Japan-feasible and demonstrated-scope roles first, keeps truth/effect fences unchanged, removes per-reject Telegram noise and every `:::` harness prefix, and changes capacity from one application per wake to a rolling-24-hour minimum of 48 authoritative submissions with deficit catch-up. |
 | 10Q | `JOB-ASHBY-E2E-MODEL-10Q` | `broken_unverified_pending_after_workday` | Historical `submit_unknown` evidence is not accepted; rebuild from zero only after Workday is complete |
 | 10R | `JOB-GREENHOUSE-E2E-MODEL-10R` | `broken_unverified_pending_after_10Q` | Historical form interaction and `submit_unknown` evidence are not accepted; rebuild from zero after Ashby |
 | 10S | `JOB-LEVER-E2E-MODEL-10S` | `broken_unverified_pending_after_10R` | Discovery without an authoritative completed application is zero progress; rebuild from zero after Greenhouse |
@@ -2548,7 +2572,7 @@ not start merely because their design is already written:
 | `JOB-WORKDAY-E2E-MODEL-10P` | `completed` | JR2008507 exact UI, authoritative receipt, Ledger, Telegram and immediate dedupe/next-row evidence agree. |
 | `JOB-WORKDAY-ONLY-10P1` | `completed` | Existing-owner run `094943` uses release `374c2c744`, writes no non-Workday evidence, performs only `observe → queue_complete`, and creates zero non-Workday effects. |
 | `JOB-WORKDAY-FIT-QUALIFICATION-10P2` | `completed` | Rakuten Product & Growth Specialist closes with grounded fit decision, exact Review/Submit UI, Gog receipt `1a031c8ef3be0dbd`, Ledger submitted, Telegram `31463/31464`, and next-wake duplicate 0. |
-| `JOB-WORKDAY-CONTINUOUS-SEARCH-10P3` | `shortlist_and_reporting_repair_pending_e2e` | PR #3052 / merge `6aceea1388ba9206fa5ce7a31cc1b69f187cae74` closes stale-source validation, row-scoped observability, and same-wake failed-row continuation. Release `20260829T161416-6aceea13` is applied and read back on all five production LaunchAgents; daily remains `StartInterval=1800`. Wake `daily-20260830-070543` contains feasible-looking lower-scope/Japan rows in the official snapshot but ranks senior foreign roles into the 24-row qualification budget; Genesys and Worldpay are current examples. The smallest behavioral repair changes only shortlist instructions to prioritize Japan employment feasibility first, demonstrated current scope second, and compensation ambition third; it must not weaken truthful qualification or force submission to an unsupported role. The same slice replaces the hardcoded Job Hunter Telegram prefix `Codex:::` with product identity `Life Manager:::`. Completion requires a launchd wake with one fresh application to a different company, provider completion screenshot, Gmail receipt, Ledger `submitted`, Telegram ACK, and immediate replay duplicate 0. |
+| `JOB-WORKDAY-CONTINUOUS-SEARCH-10P3` | `shortlist_throughput_reporting_repair_pending_e2e` | PR #3052 / merge `6aceea1388ba9206fa5ce7a31cc1b69f187cae74` closes stale-source validation, row-scoped observability, and same-wake failed-row continuation. Release `20260829T161416-6aceea13` is applied and read back on all five production LaunchAgents; daily remains `StartInterval=1800`. Wake `daily-20260830-070543` contains lower-scope/Japan rows but ranks senior foreign roles into the qualification budget; Genesys and Worldpay are current examples. Rank Japan employment feasibility first, demonstrated current scope second, and compensation ambition third without weakening qualification. Each wake computes the deficit against 48 authoritative `submitted` applications in the preceding rolling 24 hours and continues through multiple distinct eligible rows until the deficit is zero or a durable external blocker is recorded; the next wake resumes the remaining deficit. Completion requires 48 receipt-backed submissions across the rolling window, distinct-company progress, no repetitive reject notifications, `[Job Hunting]` product messages, and replay duplicate 0. |
 | `JOB-ASHBY-E2E-MODEL-10Q` | `broken_unverified_pending_after_workday` | Prior evidence is diagnostic only. Start from zero after Workday and require a fit-qualified job, authoritative provider completion, Ledger, Telegram, and next-wake duplicate 0. |
 | `JOB-GREENHOUSE-E2E-MODEL-10R` | `broken_unverified_pending_after_10Q` | Prior evidence is diagnostic only. Start from zero after Ashby under the same authoritative gate. |
 | `JOB-LEVER-E2E-MODEL-10S` | `broken_unverified_pending_after_10R` | Prior discovery is diagnostic only. Start from zero after Greenhouse under the same authoritative gate. |
@@ -2590,43 +2614,34 @@ Remaining work, in strict order:
    employment feasibility first, demonstrated current career scope second, and
    compensation ambition third. Preserve the existing truthful qualification
    decision; do not force Senior/Lead/Principal applications merely to make a count.
-2. Replace the hardcoded Job Hunter Telegram sender prefix `Codex:::` with
-   `Life Manager:::` in the loop-owned application reporting surfaces.
-3. Merge the focused repair, cut a main-derived immutable release, apply it to the
+2. Remove every Job Hunting `:::` harness prefix. Use `[Job Hunting]` headings,
+   stop per-row reject/skip notifications, and send only confirmed applications,
+   selection changes, human-only blockers, and the rolling 24-hour report.
+3. Replace the one-application-per-wake capacity rule with a rolling-24-hour
+   minimum of 48 authoritative `submitted` applications. Each wake calculates the
+   remaining deficit and may submit multiple distinct eligible rows; an unfinished
+   deficit persists into the next wake without weakening qualification or receipts.
+4. Merge the focused repair, cut a main-derived immutable release, apply it to the
    five existing owners, and retain daily `StartInterval=1800`.
-4. Kickstart the existing daily label once through `launchctl-safe`, then watch
+5. Kickstart the existing daily label once through `launchctl-safe`, then watch
    the launchd-owned run. Do not count a direct CLI wake as scheduler evidence.
-5. Confirm that a failed Workday row produces a row-scoped receipt and that the
+6. Confirm that a failed Workday row produces a row-scoped receipt and that the
    same wake advances to a different application ID/company instead of retrying
    the queue head.
-6. Accept 10P3 only after a fresh fit-qualified application to a new company has
-   all three authoritative artifacts: provider completion screen screenshot,
-   Gmail confirmation receipt, and matching Ledger `submitted`. Confirm the
-   company/role Telegram ACK and an immediate replay with zero duplicate effect.
-7. Continue natural 30-minute wakes and require one submitted application per wake;
-   a zero-application wake remains failed and must expand discovery on its next run.
+7. Accept 10P3 only after a rolling 24-hour window contains at least 48 distinct
+   receipt-backed submissions. Every counted row has provider completion evidence,
+   Gmail confirmation, matching Ledger `submitted`, Telegram ACK, and replay zero.
+8. Continue natural 30-minute wakes and preserve the 48-row rolling minimum;
+   a deficit is visible failure state and triggers catch-up in the next wake.
    Only after Workday has this live evidence begin Ashby; Greenhouse, Lever, and
    generic ATS remain later tasks.
 
-Handover prompt:
-
-> Continue `JOB-WORKDAY-CONTINUOUS-SEARCH-10P3` from the canonical spec. Source
-> fix PR #3052 is live in immutable release
-> `/Users/anicca/loops/releases/20260829T161416-6aceea13`, but current launchd
-> wake `daily-20260830-070543` still spends its bounded shortlist on senior and
-> foreign-location jobs. The official snapshot contains lower-scope and
-> Japan-based alternatives. Genesys `AI Solution Architect Senior Manager` and
-> Worldpay `Senior ML Software Engineer` were correctly rejected after the wrong
-> shortlist selected them. Continue PR #3132 from branch
-> `fix/job-hunter-continuous-apply`. Keep qualification and every submit/evidence
-> fence unchanged; repair shortlist ranking so Japan employment feasibility is
-> first, demonstrated current scope second, and compensation ambition third.
-> Also replace the hardcoded Job Hunter Telegram prefix `Codex:::` with product
-> identity `Life Manager:::`. Merge with `--admin` after required checks pass,
-> cut a main-derived immutable release, apply it to the five existing owners,
-> read back daily `StartInterval=1800`, and kickstart only the existing daily
-> label. Do not claim an application without Workday completion screenshot,
-> Gmail receipt, Ledger `submitted`, Telegram ACK, and replay duplicate 0.
+After 10P3 is live-proven, update the public README from measured behavior: list
+all resident loops, describe Job Hunting from resume onboarding through application,
+interviews, offers and confirmed start, and compare relevant open-source job-search
+repositories by authoritative submit, receipt reconciliation, lifecycle follow-up,
+human-only boundaries and continuous local ownership. Do not publish a comparison
+claim before its source and the matching Life Manager production evidence exist.
 
 ## 12. Verification
 
@@ -2669,6 +2684,9 @@ Completion requires:
     product-imposed daily count cap, exact URL deduplication, ATS/provider
     throttling, continued queue processing after each success, and no duplicate
     external side effect across scheduled wakes or immediate development kickstarts.
+    For 10P3, the rolling 24-hour count includes only authoritative `submitted`
+    rows, remains at least 48, and causes later wakes to catch up any visible deficit
+    by processing multiple distinct eligible rows without relaxing truth or safety.
 16. Telegram delivery uses the OpenClaw CLI, records a real `messageId` ACK in the
     outbox, and leaves no raw bot token in LaunchAgent environment or evidence.
 17. `JOB-WORKDAY-E2E-MODEL-10P` proves, in one immutable hourly release, that every
@@ -2691,3 +2709,7 @@ Completion requires:
     The receipt stores original currency/period, FX source/date, annualization and
     start date; bonus, commission and equity are displayed separately and cannot pass
     the base-salary gate.
+20. Job Hunting Telegram acceptance proves that no visible message contains a
+    harness prefix or `:::`; rejected/skipped rows create zero Telegram sends; and
+    confirmed application, interview, human-only blocker, and rolling report messages
+    begin with the approved `[Job Hunting]` headings and bind their durable evidence.
