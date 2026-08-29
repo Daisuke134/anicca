@@ -116,13 +116,11 @@ function renderMoneyPrinterWebMcpScript({ csrf } = {}) {
   const refreshMoneyPrinter = async () => {
     if (!document || typeof document.dispatchEvent !== "function") return;
     const detail = {};
-    try {
-      const event = typeof CustomEvent === "function"
-        ? new CustomEvent("money-printer:refresh", { detail })
-        : { type: "money-printer:refresh", detail };
-      document.dispatchEvent(event);
-      if (detail.promise && typeof detail.promise.then === "function") await detail.promise;
-    } catch {}
+    const event = typeof CustomEvent === "function"
+      ? new CustomEvent("money-printer:refresh", { detail })
+      : { type: "money-printer:refresh", detail };
+    document.dispatchEvent(event);
+    if (detail.promise && typeof detail.promise.then === "function") await detail.promise;
   };
   const request = () => getJson("/api/panel/money-printer", "inspect_money_printer unavailable");
   const opportunityKeys = ["source_url", "title", "goal_statement", "value_minor", "currency"];

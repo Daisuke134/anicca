@@ -364,6 +364,54 @@ test("PANEL-8h: emitted loader applies closed validators and shared secret patte
   assert.doesNotMatch(html, /response\.statusText|response\.text\(\)|JSON\.stringify\(data\)/);
 });
 
+test("PANEL-8h: money-printer refresh rejects failed reloads and recovers on the next refresh", async () => {
+  const html = renderPanelPage();
+  const script = html.match(/<script>\s*([\s\S]*?)\s*<\/script>/)[1];
+  const start = script.indexOf("let moneyPrinterRefresh = Promise.resolve();");
+  const end = script.indexOf("\n    function commandForAction", start);
+  assert.ok(start >= 0 && end > start);
+
+  let listener = null;
+  let phase = "success";
+  let loads = 0;
+  const errors = [];
+  vm.runInNewContext(script.slice(start, end), {
+    Promise,
+    console: { error() {} },
+    document: {
+      addEventListener(name, callback) {
+        assert.equal(name, "money-printer:refresh");
+        listener = callback;
+      },
+    },
+    loadPanelSection: async (name) => {
+      assert.equal(name, "money-printer");
+      loads += 1;
+      if (phase === "fail") throw new Error("reload failed");
+    },
+    markError: (name) => errors.push(name),
+  });
+  assert.equal(typeof listener, "function");
+
+  const first = { detail: {} };
+  listener(first);
+  await first.detail.promise;
+  assert.equal(loads, 1);
+
+  phase = "fail";
+  const failed = { detail: {} };
+  listener(failed);
+  await assert.rejects(failed.detail.promise, /reload failed/);
+  assert.equal(loads, 2);
+  assert.deepEqual(errors, ["money-printer"]);
+
+  phase = "success";
+  const recovered = { detail: {} };
+  listener(recovered);
+  await recovered.detail.promise;
+  assert.equal(loads, 3);
+});
+
 test("PANEL-0: visible actions have semantic delegated handlers", () => {
   const html = renderPanelPage();
   assert.match(html, /addEventListener\("click"/);

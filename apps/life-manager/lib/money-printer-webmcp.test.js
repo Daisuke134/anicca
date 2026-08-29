@@ -18,6 +18,7 @@ test("Money Printer registers inspection and state-dependent human answer tools"
   const refreshEvents = [];
   let releaseRefresh;
   const refreshGate = new Promise((resolve) => { releaseRefresh = resolve; });
+  let nextRefresh = refreshGate;
   const body = { observed_at: "2026-08-29T00:00:00.000Z", metrics: { paid_verified: "0" } };
   const task = {
     task_id: "a".repeat(64), version: 1,
@@ -44,7 +45,7 @@ test("Money Printer registers inspection and state-dependent human answer tools"
       },
       dispatchEvent(event) {
         refreshEvents.push(event);
-        if (event.detail && typeof event.detail === "object") event.detail.promise = refreshGate;
+        if (event.detail && typeof event.detail === "object") event.detail.promise = nextRefresh;
         return true;
       },
     },
@@ -192,11 +193,17 @@ test("Money Printer registers inspection and state-dependent human answer tools"
   assert.equal(refreshEvents.length, 2);
   assert.deepEqual(refreshEvents.map((event) => event.type), ["money-printer:refresh", "money-printer:refresh"]);
 
+  let rejectRefresh;
+  nextRefresh = new Promise((_resolve, reject) => { rejectRefresh = reject; });
+  const failedRefresh = addOpportunity.execute(opportunityInput);
+  rejectRefresh(new Error("money printer reload failed"));
+  await assert.rejects(failedRefresh, /money printer reload failed/);
+
   const workroom = { opportunity_id: "c".repeat(64), job_ref: created.job_ref, status: "DISCOVERED", activity: [] };
   const inspectResult = await inspectWorkroom.execute({ opportunity_id: workroom.opportunity_id });
   assert.deepEqual(inspectResult, workroom);
-  assert.equal(requests[5].url, "/api/panel/money-printer/workroom?opportunity_id=" + encodeURIComponent(workroom.opportunity_id));
-  assert.deepEqual(requests[5].init, {
+  assert.equal(requests[6].url, "/api/panel/money-printer/workroom?opportunity_id=" + encodeURIComponent(workroom.opportunity_id));
+  assert.deepEqual(requests[6].init, {
     method: "GET",
     credentials: "same-origin",
     headers: { Accept: "application/json" },

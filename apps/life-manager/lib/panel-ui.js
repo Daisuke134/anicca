@@ -1175,11 +1175,12 @@ function renderPanelPage(options = {}) {
 
     let moneyPrinterRefresh = Promise.resolve();
     document.addEventListener("money-printer:refresh", function (event) {
-      moneyPrinterRefresh = moneyPrinterRefresh.then(async function () {
+      moneyPrinterRefresh = moneyPrinterRefresh.catch(function () {}).then(async function () {
         await loadPanelSection("money-printer");
       }).catch(function (error) {
         console.error("[panel] money-printer", error.message);
         markError("money-printer");
+        throw error;
       });
       if (event && event.detail && typeof event.detail === "object") event.detail.promise = moneyPrinterRefresh;
     });
