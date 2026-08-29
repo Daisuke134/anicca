@@ -11,6 +11,7 @@ const DEFAULT_INTERVAL_MS = 8 * 60 * 60 * 1000;
 const MIN_INTERVAL_MS = 5 * 60 * 1000;
 const MAX_INTERVAL_MS = 24 * 60 * 60 * 1000;
 const GEMINI = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
+const INTERACTIONS = "https://generativelanguage.googleapis.com/v1beta/interactions";
 const TENANT_ID = /^[a-z0-9][a-z0-9._-]{0,199}$/;
 const JOB_ID = /^money-printer-scout:([0-9a-f]{64})$/;
 const OPPORTUNITY_REF = /^opportunity:\/\/([a-z0-9][a-z0-9._-]{0,199})\/([0-9a-f]{64})$/;
@@ -183,13 +184,31 @@ function isGroundingRedirect(value) {
   } catch { return false; }
 }
 
-async function groundedSources(body, expected, options) {
-  const chunks = body?.candidates?.[0]?.groundingMetadata?.groundingChunks;
-  if (!Array.isArray(chunks) || chunks.length < 1) invalid("cloud grounding");
+function interactionResearch(body) {
+  if (!body || typeof body !== "object" || Array.isArray(body) || body.status !== "completed" || !Array.isArray(body.steps)) {
+    invalid("cloud research");
+  }
+  if (!body.steps.some((step) => step && step.type === "google_search_call")) invalid("cloud research");
+  const output = body.steps.find((step) => step && step.type === "model_output");
+  if (!output || !Array.isArray(output.content)) invalid("cloud research");
+  const text = output.content
+    .filter((part) => part && part.type === "text" && typeof part.text === "string")
+    .map((part) => part.text)
+    .join("\n")
+    .trim();
+  const urls = output.content.flatMap((part) => (
+    Array.isArray(part?.annotations) ? part.annotations : []
+  )).filter((annotation) => annotation && annotation.type === "url_citation" && typeof annotation.url === "string")
+    .map((annotation) => annotation.url.trim())
+    .filter(Boolean);
+  if (!text || urls.length < 1) invalid("cloud research");
+  return { text, urls };
+}
+
+async function groundedSources(uris, expected, options) {
+  if (!Array.isArray(uris) || uris.length < 1) invalid("cloud grounding");
   const sources = new Set();
-  for (const chunk of chunks) {
-    const uri = String(chunk?.web?.uri || "").trim();
-    if (!uri) continue;
+  for (const uri of uris) {
     if (!isGroundingRedirect(uri)) {
       sources.add(canonicalSource(uri, expected.tenant_id));
       continue;
@@ -209,10 +228,10 @@ async function groundedSources(body, expected, options) {
 }
 
 async function discover(expected, options) {
-  const request = async (body) => {
+  const request = async (url, body) => {
     let response;
     try {
-      response = await options.fetchImpl(GEMINI, {
+      response = await options.fetchImpl(url, {
         method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": options.apiKey }, body: JSON.stringify(body),
         signal: options.nextSignal(),
       });
@@ -220,15 +239,12 @@ async function discover(expected, options) {
     if (!response || response.ok !== true) invalid("cloud");
     return geminiBody(response);
   };
-  const researched = await request({
-    contents: [{ role: "user", parts: [{ text: scoutPrompt(expected) }] }], tools: [{ google_search: {} }],
-    generationConfig: { temperature: 0, maxOutputTokens: 2048 },
-  });
-  const allowedSources = await groundedSources(researched, expected, options);
-  const research = responseText(researched);
-  if (!research) invalid("cloud research");
-  const extracted = responseText(await request({
-    contents: [{ role: "user", parts: [{ text: extractionPrompt(research, allowedSources) }] }],
+  const research = interactionResearch(await request(INTERACTIONS, {
+    model: "gemini-3.7-flash", input: scoutPrompt(expected), tools: [{ type: "google_search" }],
+  }));
+  const allowedSources = await groundedSources(research.urls, expected, options);
+  const extracted = responseText(await request(GEMINI, {
+    contents: [{ role: "user", parts: [{ text: extractionPrompt(research.text, allowedSources) }] }],
     generationConfig: { responseMimeType: "application/json", responseSchema: EXTRACTION_SCHEMA, temperature: 0, maxOutputTokens: 1024, thinkingConfig: { thinkingBudget: 0 } },
   }));
   try { return { value: JSON.parse(extracted), allowedSources }; } catch { invalid("cloud extraction"); }
