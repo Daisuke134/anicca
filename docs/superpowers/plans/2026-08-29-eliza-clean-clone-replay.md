@@ -138,6 +138,68 @@ test -z "$(git status --porcelain=v1 --untracked-files=no)"
 
 Expected: both frozen installs exit `0`; `build:server` exits `0` with the server graph complete; lock hash and tracked tree remain unchanged.
 
+- [ ] **Step 4A: Resume the measured ENOSPC attempt using only regenerable capacity**
+
+This step applies to the recorded attempt where the first filtered install left 5,305 packages in ignored `node_modules`, 41 packages failed with `ENOSPC`, the tracked tree stayed clean, and ports 2138/2139 stayed free. Preserve those completed packages.
+
+```bash
+set -e
+CLONE=/Users/anicca/Projects/life-manager-eliza-migration
+test "$(git -C "$CLONE" rev-parse HEAD)" = 52eefdac597b70f3cb769b007cc4209f0f55cc34
+test -z "$(git -C "$CLONE" status --porcelain=v1 --untracked-files=no)"
+test -d "$CLONE/node_modules/.bun"
+test -z "$(lsof -nP -iTCP:2138 -sTCP:LISTEN 2>/dev/null)"
+test -z "$(lsof -nP -iTCP:2139 -sTCP:LISTEN 2>/dev/null)"
+git -C /Users/anicca/Projects/life-manager-main fetch origin --prune
+git -C /Users/anicca/Projects/life-manager-main merge-base --is-ancestor \
+  e339aeab4c2267e8671e8191e7bb02478085795c origin/main
+test -z "$(git -C /Users/anicca/Projects/life-manager-main/.worktrees/eliza-atomic-roadmap-20260829 status --short)"
+git -C /Users/anicca/Projects/life-manager-main worktree remove \
+  /Users/anicca/Projects/life-manager-main/.worktrees/eliza-atomic-roadmap-20260829
+
+for cache_path in \
+  /Users/anicca/.npm/_npx \
+  /Users/anicca/.npm/_cacache \
+  /Users/anicca/Library/Caches/bun \
+  /Users/anicca/Library/Caches/node-gyp \
+  /Users/anicca/Library/Caches/Homebrew \
+  /Users/anicca/Library/Caches/ffmpeg-static-nodejs \
+  /Users/anicca/Library/Caches/CodexBar \
+  /Users/anicca/Library/Caches/Adobe
+do
+  if [ -e "$cache_path" ]; then
+    test -d "$cache_path"
+    test ! -L "$cache_path"
+    find "$cache_path" -mindepth 1 -depth -delete
+    rmdir "$cache_path"
+  fi
+done
+
+RESUME_FREE_KIB=$(df -Pk /Users/anicca | awk 'END {print $4}')
+test "$RESUME_FREE_KIB" -ge 950000
+printf '%s\n' "$RESUME_FREE_KIB" > \
+  /Users/anicca/.local/state/life-manager/migration/elz-f/replay/resume-free-kib.txt
+```
+
+Resume with the exact commands:
+
+```bash
+set -e
+export PATH=/Users/anicca/.local/share/life-manager/toolchains/elz-f/bun-1.3.14/bin:/Users/anicca/.local/share/life-manager/toolchains/elz-f/node-v24.15.0-darwin-arm64/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
+cd /Users/anicca/Projects/life-manager-eliza-migration
+bun install --frozen-lockfile --no-cache --filter @elizaos/agent
+bun install --frozen-lockfile --no-cache --filter eliza
+bun run build:server 2>&1 | tee /Users/anicca/.local/state/life-manager/migration/elz-f/replay/build-server.log
+test "${pipestatus[1]}" = 0
+rg -q '55 successful, 55 total' /Users/anicca/.local/state/life-manager/migration/elz-f/replay/build-server.log
+test "$(shasum -a 256 bun.lock | awk '{print $1}')" = 1976283db890a36ae945cd1256e9388ca84c067608df9628570bb6fce3ad7eb4
+test -z "$(git status --porcelain=v1 --untracked-files=no)"
+```
+
+Bun must reuse the 5,305 present packages, install the missing graph, preserve the lock hash, produce `55 successful, 55 total`, and leave the tracked tree clean. Do not delete the partial install or any additional path.
+
+Expected: only the merged roadmap worktree and enumerated caches are removed; free space is at least 950,000 KiB before the resume; the resumed build passes.
+
 - [ ] **Step 5: Start a fresh model-credential-free replay runtime**
 
 Create the isolated state first:
@@ -302,6 +364,7 @@ test "$WRITERS" = 0
 test "$LOCK_HANDLES" = 0
 FREE_KIB_BEFORE=$(tr -d ' ' < "$STATE/free-before-kib.txt")
 OLD_CLONE_KIB=$(tr -d ' ' < "$STATE/old-clone-kib.txt")
+RESUME_FREE_KIB=$(tr -d ' ' < "$STATE/resume-free-kib.txt")
 INITIAL_EXIT=$(tr -d ' ' < "$STATE/initial-exit.txt")
 RESTART_EXIT=$(tr -d ' ' < "$STATE/restart-exit.txt")
 test "$INITIAL_EXIT" = 0
@@ -319,6 +382,7 @@ jq -n \
   --argjson free_before "$FREE_KIB_BEFORE" \
   --argjson old_clone_kib "$OLD_CLONE_KIB" \
   --argjson free_after "$FREE_KIB_AFTER" \
+  --argjson resume_free "$RESUME_FREE_KIB" \
   --argjson writers "$WRITERS" \
   --argjson lock_handles "$LOCK_HANDLES" \
   --argjson initial_exit "$INITIAL_EXIT" \
@@ -331,6 +395,7 @@ jq -n \
     initial_sigterm_exit:$initial_exit,restart_sigterm_exit:$restart_exit,listener_count_after_stop:0,
     writer_processes:$writers,lock_open_handles:$lock_handles,working_tree_clean:true,
     model_credentials:0,external_effects:0,old_clone_removed_after_remote_readback:true,
+    capacity_recovery:{merged_roadmap_worktree_removed:true,regenerable_cache_paths_removed:8,resume_free_kib:$resume_free},
     free_kib_before:$free_before,old_clone_kib:$old_clone_kib,free_kib_after:$free_after
   }' > /Users/anicca/.local/state/life-manager/migration/elz-f/foundation-replay-receipt.json
 chmod 600 /Users/anicca/.local/state/life-manager/migration/elz-f/foundation-replay-receipt.json
@@ -341,7 +406,9 @@ jq -e '
   .focused_tests==32 and .initial_health=="passed" and .restart_health=="passed" and
   .marker_value=="52eefdac" and .initial_sigterm_exit==0 and .restart_sigterm_exit==0 and
   .listener_count_after_stop==0 and .writer_processes==0 and .lock_open_handles==0 and
-  .working_tree_clean and .model_credentials==0 and .external_effects==0
+  .working_tree_clean and .model_credentials==0 and .external_effects==0 and
+  .capacity_recovery.merged_roadmap_worktree_removed and .capacity_recovery.regenerable_cache_paths_removed==8 and
+  .capacity_recovery.resume_free_kib>=950000
 ' /Users/anicca/.local/state/life-manager/migration/elz-f/foundation-replay-receipt.json
 test "$(stat -f '%Lp' /Users/anicca/.local/state/life-manager/migration/elz-f/foundation-replay-receipt.json)" = 600
 ```
