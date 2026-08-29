@@ -1007,7 +1007,7 @@ The initial product is a general entrepreneur agent that continuously searches X
 
 1. [pass] 実際に不足した作業容量をowner-aware cleanupで回復し、Mac restartなしで`df`、swap、owner argv、browser identityをreadbackする。固定GB thresholdは今後使わない
 2. clean browserでzero-login、private data 0、WebMCP tool discovery、visible mutationを実測する
-3. 一つのsame-jobで`Needs You`作成→human answer→resume→receiptを閉じ、stale revisionとsafe recoveryも同じ画面で示す
+3. 一つのsame-jobをLife Managerからprivate GitHub IssueへmirrorしてSymphonyへdispatchし、同じworkroomへのresult callback、`Needs You`作成→human answer→resume→receiptを閉じ、stale revisionとsafe recoveryも同じ画面で示す
 4. [pass: workroom isolation] two live workroomsを同時readし、各activity refが自分のopportunity IDだけを含みcross-contamination 0を確認。次にreset後にjudgeが60秒以内で再現できることを示す
 5. 同一production releaseから16:00Z、00:00Z、08:00Zの3 natural scout cyclesをreadbackし、source duplicate最大1を確認する
 6. public repoをclean cloneし、locked install、focused tests、secret/PII scanを通してimmutable release tagとdeploy SHAを固定する
