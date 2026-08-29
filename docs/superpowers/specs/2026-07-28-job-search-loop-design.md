@@ -2522,7 +2522,7 @@ must accumulate in the live loop:
 | 10P | `JOB-WORKDAY-E2E-MODEL-10P`: full framework plus Workday E2E | `completed` | JR2008507 closes with exact UI, receipt `1a02ff31ecb7353d`, Ledger `submitted`, Telegram `30852`/`30853`, v2 agreement, immediate dedupe 0, and unseen JR2020208-1 continuation through the one existing owner. |
 | 10P1 | `JOB-WORKDAY-ONLY-10P1` | `completed` | Release `374c2c744`, launchd-owned run `094943`, non-Workday evidence/navigation/intent/fence/Submit effects 0 |
 | 10P2 | `JOB-WORKDAY-FIT-QUALIFICATION-10P2` | `completed` | Rakuten Product & Growth Specialist is model-qualified, exact-UI submitted, Gog-confirmed, Ledger submitted, Telegram `31463/31464`, and next-wake duplicate 0 |
-| 10P3 | `JOB-WORKDAY-CONTINUOUS-SEARCH-10P3` | `shortlist_policy_repair_pending_e2e` | PR #3052 / merge `6aceea1388ba9206fa5ce7a31cc1b69f187cae74` validates complete Workday CXS sources, records row-scoped fetch failures, advances past a failed row within the same wake, and reconciles stale rows only from a successful unambiguous source. Release `20260829T161416-6aceea13` is loaded by the five production LaunchAgents with exact argv readback and daily `StartInterval=1800`. Launchd wakes repeatedly exhaust 24 decisions without an application. Wake `daily-20260830-070543` proves the source snapshot contains lower-scope and Japan-based roles, but shortlist ranking still selects Principal/Lead/Senior and foreign-location roles because compensation/specialty prestige outranks legal location and demonstrated career scope. Qualification then correctly rejects them, including Genesys `AI Solution Architect Senior Manager` for unsupported 10-year/5-year management requirements. The active repair changes shortlist ranking only: Japan-feasible and demonstrated-scope roles precede compensation ambition; qualification truth, effect fences, receipt truth, and replay-zero remain unchanged. |
+| 10P3 | `JOB-WORKDAY-CONTINUOUS-SEARCH-10P3` | `shortlist_and_reporting_repair_pending_e2e` | PR #3052 / merge `6aceea1388ba9206fa5ce7a31cc1b69f187cae74` validates complete Workday CXS sources, records row-scoped fetch failures, advances past a failed row within the same wake, and reconciles stale rows only from a successful unambiguous source. Release `20260829T161416-6aceea13` is loaded by the five production LaunchAgents with exact argv readback and daily `StartInterval=1800`. Launchd wakes repeatedly exhaust 24 decisions without an application. Wake `daily-20260830-070543` proves the source snapshot contains lower-scope and Japan-based roles, but shortlist ranking still selects Principal/Lead/Senior and foreign-location roles because compensation/specialty prestige outranks legal location and demonstrated career scope. Qualification correctly rejects Genesys `AI Solution Architect Senior Manager` and then Worldpay `Senior ML Software Engineer`; this is repeated evidence that the wrong rows enter the bounded shortlist. The active repair changes shortlist ranking only: Japan-feasible and demonstrated-scope roles precede compensation ambition; qualification truth, effect fences, receipt truth, and replay-zero remain unchanged. Job Hunter reports also incorrectly begin `Codex:::` because `application_reporting.py` hardcodes the harness label; the loop-owned user surface must begin `Life Manager:::` instead. |
 | 10Q | `JOB-ASHBY-E2E-MODEL-10Q` | `broken_unverified_pending_after_workday` | Historical `submit_unknown` evidence is not accepted; rebuild from zero only after Workday is complete |
 | 10R | `JOB-GREENHOUSE-E2E-MODEL-10R` | `broken_unverified_pending_after_10Q` | Historical form interaction and `submit_unknown` evidence are not accepted; rebuild from zero after Ashby |
 | 10S | `JOB-LEVER-E2E-MODEL-10S` | `broken_unverified_pending_after_10R` | Discovery without an authoritative completed application is zero progress; rebuild from zero after Greenhouse |
@@ -2548,7 +2548,7 @@ not start merely because their design is already written:
 | `JOB-WORKDAY-E2E-MODEL-10P` | `completed` | JR2008507 exact UI, authoritative receipt, Ledger, Telegram and immediate dedupe/next-row evidence agree. |
 | `JOB-WORKDAY-ONLY-10P1` | `completed` | Existing-owner run `094943` uses release `374c2c744`, writes no non-Workday evidence, performs only `observe → queue_complete`, and creates zero non-Workday effects. |
 | `JOB-WORKDAY-FIT-QUALIFICATION-10P2` | `completed` | Rakuten Product & Growth Specialist closes with grounded fit decision, exact Review/Submit UI, Gog receipt `1a031c8ef3be0dbd`, Ledger submitted, Telegram `31463/31464`, and next-wake duplicate 0. |
-| `JOB-WORKDAY-CONTINUOUS-SEARCH-10P3` | `shortlist_policy_repair_pending_e2e` | PR #3052 / merge `6aceea1388ba9206fa5ce7a31cc1b69f187cae74` closes stale-source validation, row-scoped observability, and same-wake failed-row continuation. Release `20260829T161416-6aceea13` is applied and read back on all five production LaunchAgents; daily remains `StartInterval=1800`. Wake `daily-20260830-070543` contains feasible-looking lower-scope/Japan rows in the official snapshot but ranks senior foreign roles into the 24-row qualification budget. The smallest repair changes only shortlist instructions to prioritize Japan employment feasibility first, demonstrated current scope second, and compensation ambition third; it must not weaken truthful qualification or force submission to an unsupported role. Completion requires a launchd wake with one fresh application to a different company, provider completion screenshot, Gmail receipt, Ledger `submitted`, Telegram ACK, and immediate replay duplicate 0. |
+| `JOB-WORKDAY-CONTINUOUS-SEARCH-10P3` | `shortlist_and_reporting_repair_pending_e2e` | PR #3052 / merge `6aceea1388ba9206fa5ce7a31cc1b69f187cae74` closes stale-source validation, row-scoped observability, and same-wake failed-row continuation. Release `20260829T161416-6aceea13` is applied and read back on all five production LaunchAgents; daily remains `StartInterval=1800`. Wake `daily-20260830-070543` contains feasible-looking lower-scope/Japan rows in the official snapshot but ranks senior foreign roles into the 24-row qualification budget; Genesys and Worldpay are current examples. The smallest behavioral repair changes only shortlist instructions to prioritize Japan employment feasibility first, demonstrated current scope second, and compensation ambition third; it must not weaken truthful qualification or force submission to an unsupported role. The same slice replaces the hardcoded Job Hunter Telegram prefix `Codex:::` with product identity `Life Manager:::`. Completion requires a launchd wake with one fresh application to a different company, provider completion screenshot, Gmail receipt, Ledger `submitted`, Telegram ACK, and immediate replay duplicate 0. |
 | `JOB-ASHBY-E2E-MODEL-10Q` | `broken_unverified_pending_after_workday` | Prior evidence is diagnostic only. Start from zero after Workday and require a fit-qualified job, authoritative provider completion, Ledger, Telegram, and next-wake duplicate 0. |
 | `JOB-GREENHOUSE-E2E-MODEL-10R` | `broken_unverified_pending_after_10Q` | Prior evidence is diagnostic only. Start from zero after Ashby under the same authoritative gate. |
 | `JOB-LEVER-E2E-MODEL-10S` | `broken_unverified_pending_after_10R` | Prior discovery is diagnostic only. Start from zero after Greenhouse under the same authoritative gate. |
@@ -2590,18 +2590,20 @@ Remaining work, in strict order:
    employment feasibility first, demonstrated current career scope second, and
    compensation ambition third. Preserve the existing truthful qualification
    decision; do not force Senior/Lead/Principal applications merely to make a count.
-2. Merge the focused repair, cut a main-derived immutable release, apply it to the
+2. Replace the hardcoded Job Hunter Telegram sender prefix `Codex:::` with
+   `Life Manager:::` in the loop-owned application reporting surfaces.
+3. Merge the focused repair, cut a main-derived immutable release, apply it to the
    five existing owners, and retain daily `StartInterval=1800`.
-3. Kickstart the existing daily label once through `launchctl-safe`, then watch
+4. Kickstart the existing daily label once through `launchctl-safe`, then watch
    the launchd-owned run. Do not count a direct CLI wake as scheduler evidence.
-4. Confirm that a failed Workday row produces a row-scoped receipt and that the
+5. Confirm that a failed Workday row produces a row-scoped receipt and that the
    same wake advances to a different application ID/company instead of retrying
    the queue head.
-5. Accept 10P3 only after a fresh fit-qualified application to a new company has
+6. Accept 10P3 only after a fresh fit-qualified application to a new company has
    all three authoritative artifacts: provider completion screen screenshot,
    Gmail confirmation receipt, and matching Ledger `submitted`. Confirm the
    company/role Telegram ACK and an immediate replay with zero duplicate effect.
-6. Continue natural 30-minute wakes and require one submitted application per wake;
+7. Continue natural 30-minute wakes and require one submitted application per wake;
    a zero-application wake remains failed and must expand discovery on its next run.
    Only after Workday has this live evidence begin Ashby; Greenhouse, Lever, and
    generic ATS remain later tasks.
@@ -2609,18 +2611,22 @@ Remaining work, in strict order:
 Handover prompt:
 
 > Continue `JOB-WORKDAY-CONTINUOUS-SEARCH-10P3` from the canonical spec. Source
-> fix PR #3052 is merged at `6aceea1388ba9206fa5ce7a31cc1b69f187cae74` and
-> immutable release `/Users/anicca/loops/releases/20260829T161416-6aceea13`
-> exists. The Codex app-server bootstrap incident is recovered: require a fresh
-> same-context `launchctl-safe preflight` pass before mutation. Apply that exact
-> release to the five existing Job Hunter LaunchAgents, read back exact loaded
-> argv/release/cadence, and kickstart the existing daily owner; never spawn a
-> replacement executor. Watch the real launchd-owned wake until it skips any
-> failed row and advances to a different application ID/company. Do not call a
-> job applied without a matching Workday completion screenshot, Gmail receipt,
-> Ledger `submitted`, Telegram ACK, and replay duplicate 0. Update this spec with
-> measured truth, commit, and push. Keep review/testing proportional and focus on
-> the live application outcome.
+> fix PR #3052 is live in immutable release
+> `/Users/anicca/loops/releases/20260829T161416-6aceea13`, but current launchd
+> wake `daily-20260830-070543` still spends its bounded shortlist on senior and
+> foreign-location jobs. The official snapshot contains lower-scope and
+> Japan-based alternatives. Genesys `AI Solution Architect Senior Manager` and
+> Worldpay `Senior ML Software Engineer` were correctly rejected after the wrong
+> shortlist selected them. Continue PR #3132 from branch
+> `fix/job-hunter-continuous-apply`. Keep qualification and every submit/evidence
+> fence unchanged; repair shortlist ranking so Japan employment feasibility is
+> first, demonstrated current scope second, and compensation ambition third.
+> Also replace the hardcoded Job Hunter Telegram prefix `Codex:::` with product
+> identity `Life Manager:::`. Merge with `--admin` after required checks pass,
+> cut a main-derived immutable release, apply it to the five existing owners,
+> read back daily `StartInterval=1800`, and kickstart only the existing daily
+> label. Do not claim an application without Workday completion screenshot,
+> Gmail receipt, Ledger `submitted`, Telegram ACK, and replay duplicate 0.
 
 ## 12. Verification
 
