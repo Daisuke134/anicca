@@ -10,7 +10,7 @@
 # is "up" but not healthy is the failure this script exists to catch -- printing URLs the
 # moment `compose up` returns would report success before anything can serve a request.
 #
-# Subcommands: up (default) | down | status | logs | loops-up | loops-status | loops-down
+# Subcommands: up (default) | down | status | logs | loops-init | loops-up | loops-status | loops-down
 #
 # Overrides, mainly for testing an isolated copy next to a running one:
 #   LM_LOCAL_PROJECT   compose project name       (default: life-manager-local)
@@ -210,6 +210,29 @@ cmd_loops_up() {
   cmd_loops_status "$@"
 }
 
+cmd_loops_init() {
+  require_macos_loops
+  python3 - "$CREDENTIALS_FILE" <<'PY'
+import json, os, sys
+from pathlib import Path
+path = Path(sys.argv[1])
+path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+os.chmod(path.parent, 0o700)
+if path.exists():
+    value = json.loads(path.read_text(encoding="utf-8"))
+    if value.get("version") != 1 or not isinstance(value.get("credentials"), list):
+        raise SystemExit("existing credential store does not use version 1 credentials-list schema")
+else:
+    temporary = path.with_name(f".{path.name}.tmp-{os.getpid()}")
+    temporary.write_text('{"version":1,"credentials":[]}\n', encoding="utf-8")
+    os.chmod(temporary, 0o600)
+    temporary.replace(path)
+os.chmod(path, 0o600)
+print(path)
+PY
+  say "credential store ready; add values only through each selected loop's official setup."
+}
+
 cmd_loops_status() {
   require_macos_loops
   local loop
@@ -231,9 +254,10 @@ case "${1:-up}" in
   down) cmd_down ;;
   status) cmd_status ;;
   logs) cmd_logs ;;
+  loops-init) shift; cmd_loops_init "$@" ;;
   loops-up) shift; cmd_loops_up "$@" ;;
   loops-status) shift; cmd_loops_status "$@" ;;
   loops-down) shift; cmd_loops_down "$@" ;;
   -h|--help|help) sed -n '2,20p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' ;;
-  *) die "unknown command '${1}'. Use: up | down | status | logs | loops-up | loops-status | loops-down" ;;
+  *) die "unknown command '${1}'. Use: up | down | status | logs | loops-init | loops-up | loops-status | loops-down" ;;
 esac
