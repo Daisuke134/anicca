@@ -878,7 +878,7 @@ Update the on-time core spec to COMPLETE only when AC-01–38 each points to off
 
 ### Task 9: Restore exact GitHub Deployment aggregation
 
-**Ownership:** Luna owns only `services/x402-endpoint/Dockerfile`, `services/x402-endpoint/railway.toml`, and `services/x402-endpoint/migration-contract.test.mjs`. Primary owns plan/progress, review, merge, and provider readback.
+**Ownership:** Luna owns only `services/x402-endpoint/Dockerfile`, `services/x402-endpoint/railway.toml`, `services/x402-endpoint/migration-contract.test.mjs`, `services/x402-endpoint/src/server.js`, and `services/x402-endpoint/src/__tests__/server.test.js`. Primary owns plan/progress, merge, and provider readback.
 
 Railway currently auto-selects the legacy TypeScript/pnpm Dockerfile even though the canonical service is `src/server.js` + Prisma + `package-lock.json` and `railway.toml` names the same start command. The stale lock causes every monorepo deploy to mark the GitHub Deployment aggregate failed while life-call itself succeeds.
 
@@ -887,3 +887,4 @@ Railway currently auto-selects the legacy TypeScript/pnpm Dockerfile even though
 - [x] Run focused contract 4/4, Prisma generation, current x402 service tests 68/68, syntax/diff/secret/dependency checks. Local container build reaches successful Prisma generation but stops at the disk safety floor; remote Railway build remains the acceptance gate.
 - [x] Fresh exact-range Sol review and scoped re-review return `SHIP`, Critical/Important zero, new findings zero, and Ponytail minimality.
 - [ ] Merge one PR; require x402 Railway SUCCESS, life-call SUCCESS, GitHub Deployment `success`, and public life-call `/health.build` all correlated to the same exact merge SHA.
+- [ ] Bound external facilitator initialization to 15 seconds. On timeout, keep every paid route fail-closed at 503 while allowing the existing DB-verifying `/health` server to listen; a hung provider must not block deployment health forever.
