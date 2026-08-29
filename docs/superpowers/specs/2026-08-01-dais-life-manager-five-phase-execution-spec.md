@@ -27,7 +27,7 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 この節は、後段の「現在TODO」「次の一件」「local-only」「self-funded agentは別product」という相反する記述を
 上書きする最新の実行順序SSOTである。後段は実装履歴・organ別acceptanceとして保持するが、次作業の選択には使わない。
 Upworkのterminal evidence、startup context、public claim、GA-01〜13Aは完了または履歴として保持する。
-次の一件はAtomic program ledger Seq 15 `ELZ-C02`のsubstep `C02-03`で、isolated runtimeへ`ELIZA_CHAT_VIA_CLI=codex-sdk`を設定する。
+次の一件はAtomic program ledger Seq 15 `ELZ-C02`のsubstep `C02-04`で、isolated runtimeへ`ELIZA_CLI_CODEX_MODEL=gpt-5.6-luna`を設定する。
 
 #### 0.0.1 最新基盤決定 — ElizaOSを完全forkし、Life Managerをlocal OSSからmulti-tenant SaaSへ育てる
 
@@ -557,7 +557,7 @@ OpenAI API key、ClawRouter、Hermes、別model router、独自Codex adapterは�
 
 - [x] **C02-01** fixed sourceの`plugin-cli-inference` Codex SDK code pathをevidenceへ保存する — private `c02/codex-sdk-code-path-evidence.json` mode 0600。fixed source `bd24601e…`、`index.ts`/`codex-sdk-session.ts` SHA-256再計算一致。`codex-sdk` backend、warm/serialized session、ACTION_PLANNER route、native `outputSchema`、system binary override、effort、error disposeを実コードで確認。host inclusion/model call/marketplace effectは未実行、次はC02-02
 - [x] **C02-02** fixed sourceの`plugin-cli-inference` host inclusionをevidenceへ保存する — private `c02/codex-sdk-host-inclusion-evidence.json` mode 0600。fixed source `bd24601e…`の6 file SHA-256再計算一致。Local Nodeはmanifest discovery→`auto-enable.ts`、Cloud provisioned non-lean hostはcollector明示追加、lean-chat/mobile除外を実コードで確認。runtime/model/effectは未実行、次はC02-03
-- [ ] **C02-03** `ELIZA_CHAT_VIA_CLI=codex-sdk`をisolated runtimeへ設定する
+- [x] **C02-03** `ELIZA_CHAT_VIA_CLI=codex-sdk`をisolated runtimeへ設定する — private `c02/isolated-runtime.env`と`codex-sdk-backend-setting-evidence.json` mode 0600。env exact 1行、SHA-256 readback一致。model/runtime/effectは未実行、次はC02-04
 - [ ] **C02-04** `ELIZA_CLI_CODEX_MODEL=gpt-5.6-luna`をisolated runtimeへ設定する
 - [ ] **C02-05** `ELIZA_CLI_CODEX_PLANNER_MODEL=gpt-5.6-luna`をisolated runtimeへ設定する
 - [ ] **C02-06** `ELIZA_CLI_CODEX_REASONING_EFFORT=medium`をisolated runtimeへ設定する
