@@ -13,6 +13,15 @@ const NOW = Date.parse("2026-08-26T00:00:00Z");
 const EVENT_START = Date.parse("2026-08-27T18:30:00+09:00");
 const EVENT_END = Date.parse("2026-08-27T20:00:00+09:00");
 
+test("parseGeoLiteral accepts only finite in-range coordinate literals", () => {
+  assert.deepEqual(travel.parseGeoLiteral("geo:35.681,139.767"), { lat: 35.681, lon: 139.767 });
+  for (const value of [
+    " geo:35.681,139.767", "geo:35.681, 139.767", "geo:35.681,139.767 ",
+    "geo:35.681", "geo:35.681,", "geo:NaN,139.767", "geo:Infinity,139.767",
+    "geo:91,139.767", "geo:-91,139.767", "geo:35.681,181", "geo:35.681,-181", "geo:0x10,139.767",
+  ]) assert.equal(travel.parseGeoLiteral(value), null, `untrusted literal: ${value}`);
+});
+
 // A fake geocoder: JP addresses → JP geo; "NYC" → non-JP geo; "" → null.
 const fakeGeocode = async (addr) => {
   if (!addr) return null;
@@ -62,6 +71,63 @@ test("directionsRoute: JP query is anchored to event wall time and accepted tran
     assert.equal(route.durationSeconds, 1029);
     assert.equal(googleCalled, false);
   } finally { global.fetch = originalFetch; }
+});
+
+test("directionsRoute: valid live geo origin bypasses geocoding while the address destination is geocoded once", async () => {
+  const geocoded = [];
+  let transitEndpoints = null;
+  const route = await travel.directionsRoute("geo:35.681,139.767", "渋谷区B", "mapsKey", EVENT_START, NOW, false, {
+    timezone: "Asia/Tokyo",
+    _geocode: async (address) => {
+      geocoded.push(address);
+      return { lat: 35.659, lon: 139.700 };
+    },
+    _transitFetch: async (from, to, query) => {
+      transitEndpoints = { from, to, query };
+      return fakeTransitFetch(from, to, query);
+    },
+    _routeCache: freshCache(),
+  });
+  assert.deepEqual(geocoded, ["渋谷区B"]);
+  assert.deepEqual(transitEndpoints.from, { lat: 35.681, lon: 139.767 });
+  assert.deepEqual(transitEndpoints.to, { lat: 35.659, lon: 139.700 });
+  assert.equal(route.provider, "transit");
+  assert.equal(route.durationSeconds, 1029);
+});
+
+test("directionsRoute: non-JP live geo selects Google with a provider-safe coordinate", async () => {
+  const geocoded = [];
+  const googleArgs = [];
+  const route = await travel.directionsRoute("geo:40.730,-73.930", "NYC place", "mapsKey", EVENT_START, NOW, false, {
+    _geocode: async (address) => {
+      geocoded.push(address);
+      return { lat: 40.7128, lon: -74.0060 };
+    },
+    _directionsMinutesGoogle: async (...args) => { googleArgs.push(args); return 45; },
+    _routeCache: freshCache(),
+  });
+  assert.deepEqual(geocoded, ["NYC place"]);
+  assert.equal(googleArgs.length, 1);
+  assert.deepEqual(googleArgs[0].slice(0, 2), ["40.73,-73.93", "NYC place"]);
+  assert.equal(route.provider, "google");
+  assert.equal(route.durationSeconds, 45 * 60);
+});
+
+test("directionsRoute: unusable JP Transit falls back once with a provider-safe geo coordinate", async () => {
+  let transitCalls = 0;
+  const googleArgs = [];
+  const route = await travel.directionsRoute("geo:35.681,139.767", "渋谷区B", "mapsKey", EVENT_START, NOW, false, {
+    timezone: "Asia/Tokyo",
+    _geocode: async () => ({ lat: 35.659, lon: 139.700 }),
+    _transitFetch: async () => { transitCalls++; return { date: "20260827", timezone: "Asia/Tokyo", journeys: [] }; },
+    _directionsMinutesGoogle: async (...args) => { googleArgs.push(args); return 30; },
+    _routeCache: freshCache(),
+  });
+  assert.equal(transitCalls, 1);
+  assert.equal(googleArgs.length, 1);
+  assert.deepEqual(googleArgs[0].slice(0, 2), ["35.681,139.767", "渋谷区B"]);
+  assert.equal(route.provider, "google");
+  assert.equal(route.durationSeconds, 30 * 60);
 });
 
 test("directionsRoute: return query uses event end wall time and departure type", async () => {

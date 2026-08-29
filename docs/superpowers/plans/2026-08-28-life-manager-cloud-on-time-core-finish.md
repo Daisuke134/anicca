@@ -812,8 +812,13 @@ Current atomic run order:
 - [x] fix round 1 `61908cd4e`: function-only precedence migration plus real PostgreSQL regression proves hangup→AMD, AMD→hangup, replay, distinct AMD/cross-row conflicts, and both concurrent lock orders; scoped Sol re-review `ship`, Critical addressed, new Critical/Important zero;
 - [x] fix round 2 `98523b230`: rename the function migration after the base in lexical order; primary PostgreSQL PASS and scoped re-review `ship`, no new breakage;
 - [x] rollback-preflight and apply the function-only production migration SHA-256 `304c40a330baf3e03f38a6d2a91d5731af7ba3d7f556497ba10b623983b32df6`; post-readback function hash `7ccc1d1b6d6f42a6ff207909083af725`, wake rows 496, fixture zero, indexes two, RLS true, service execute true, browser execute false;
-- [ ] merge/deploy/read back the hangup HTTP route, then create a new no-location event because the current call identities cannot be retroactively linked to ignored webhook IDs;
-- [ ] after no-location liveness is proven, create one fresh physical controlled event and require the Travel block plus route/Telegram/call receipts;
+- [x] merge/deploy/read back the hangup HTTP route: PR #3072 passes 9/9, merges as `d37cba22d26eb2a6686b5ef94e78b46cf1ac4b69`, Railway deployment `d0050aac-fe29-46ad-a073-a2243f72c11b` is SUCCESS, and public health matches;
+- [x] create post-hangup-release no-location event `or3855rnheueg91q5u5vu8tkqk`; Google/Composio agree on private, no location, `confirmed`, 20:50–21:00 JST, wake-eligible, cohort one;
+- [ ] observe natural 20:40 T-10 and 20:45 T-5 and require call/session/leg plus signed terminal or AMD webhook IDs in both durable rows;
+- [x] create physical event `7bmv7s4d2p8vh3rlnknhsekt2o`, private, location `東京駅`, `confirmed`, 21:45–21:55 JST; production Composio matches it and live Transit returns buffered departure 21:09:40, arrival 21:45, four steps, two rail legs with line/headsign, one transfer, platform data, and no station-exit field;
+- [x] TDD the measured Travel-block suppression: `ea1f295fa` requires adjacency plus normalized destination; 16T 3/3, Travel/return 32/32, ch1 19/19, scoped Sol `ship`;
+- [x] TDD the measured live-origin failure: `317c7a78c` parses valid geo directly and `649578220` normalizes every Google fallback to `lat,lon`; primary 61/61, scoped Sol `ship`;
+- [ ] require one outbound `[Travel]` block before 21:09:40 and one Telegram route message at natural due 21:04:40 with durable positive message ID;
 - [ ] no-location T-10 row has one call-control ID, one signed webhook ID, and one durable claim;
 - [ ] no-location T-5 row has one call-control ID, one signed webhook ID, and one durable claim;
 - [ ] physical event has one outbound `[Travel]` Calendar block with provider event ID;

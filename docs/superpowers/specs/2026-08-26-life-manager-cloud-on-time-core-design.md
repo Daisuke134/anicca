@@ -128,6 +128,7 @@ Transit APIの公式契約は次を使う。
 | AC-15 | route cache keyはtenant、origin、destination、timezone、service date、anchor time bucket、anchor type、provider modeを含む。`_shared` identityを使わない。 |
 | AC-16 | 既存`directionsMinutes` callersはstructured routeの`durationSeconds`から分数を得るadapterを通し、Calendar autofillの現行契約を壊さない。 |
 | AC-17 | exact station exit、best car、crowdingを推測・生成しない。source factがないfieldをTelegram本文へ出さない。 |
+| AC-39 | outbound `[Travel]` blockのCalendar fallback dedupeは、current event開始へ2分以内で隣接する対応blockだけを候補とする。別eventのhelper blockが過去3時間に存在するだけでcurrent eventをskipしない。durable `lm_travel_log(uid,event_key,go)`を新規eventのprimary dedupeとし、同一event replayは追加block 0を維持する。 |
 
 ### 2.4 T-5 Telegram next-event and transit reminder
 
@@ -135,7 +136,7 @@ Transit APIの公式契約は次を使う。
 |---|---|
 | AC-18 | `notifications_enabled!==false`かつTelegram boundの全ユーザーへ、次のtimed non-helper eventを1 eventにつき最大1回通知する。call設定とは独立する。 |
 | AC-19 | physical eventは出発時刻のT-5、場所なし・online eventはevent開始のT-5を通知時刻にする。60秒tickはthreshold通過後15分までcatch upする。 |
-| AC-20 | originはfresh Telegram live location、90分以内に終わる前eventのlocation、home addressの順で決める。fresh locationが無ければ「現在地を把握している」と表示しない。 |
+| AC-20 | originはfresh Telegram live location、90分以内に終わる前eventのlocation、home addressの順で決める。fresh locationが無ければ「現在地を把握している」と表示しない。live locationの`geo:lat,lon`は有限かつ有効範囲を検証してprovider座標へ直接渡し、住所Geocodingへ再投入しない。 |
 | AC-21 | route取得成功時の本文は、次予定、開始時刻、出発時刻、目的地、徒歩、各乗車の時刻・路線・種別・行先・乗降駅、存在するplatform、乗換、到着、存在する運賃をこの順で表示する。 |
 | AC-22 | route取得失敗時も、次予定、開始時刻、目的地、基準出発時刻を送る。経路取得失敗を明記し、通知全体を失敗にしない。 |
 | AC-23 | HTML escapingを全Calendar由来textへ適用する。Telegram本文にuid、email、phone、raw provider payload、credentialを含めない。 |

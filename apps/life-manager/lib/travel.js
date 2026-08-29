@@ -247,6 +247,16 @@ function routeCallArgs(anchorAtMs, nowMs, departureMode, opts) {
   };
 }
 
+function parseGeoLiteral(value) {
+  if (typeof value !== "string") return null;
+  const match = /^geo:([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?),([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)$/.exec(value);
+  if (!match) return null;
+  const lat = Number(match[1]), lon = Number(match[2]);
+  return Number.isFinite(lat) && lat >= -90 && lat <= 90
+    && Number.isFinite(lon) && lon >= -180 && lon <= 180
+    ? { lat, lon } : null;
+}
+
 function wallAnchor(epochMs, timezone, nowMs, departureMode) {
   // AC-11: an event in the past (or with no timestamp) is queried at the current wall time; future
   // events remain anchored to their own calendar instant.
@@ -305,18 +315,24 @@ async function directionsRoute(src, dst, mapsKey, anchorAtMs = null, nowMs = Dat
   const transitTimeoutMs = Number.isFinite(Number(timeoutOption)) && Number(timeoutOption) >= 0
     ? Number(timeoutOption) : DEFAULT_TRANSIT_TIMEOUT_MS;
   if (!mapsKey || !src || !dst) return null;
-  const [srcGeo, dstGeo] = await Promise.all([geocode(src, mapsKey), geocode(dst, mapsKey)]);
+  const srcLiteral = parseGeoLiteral(src);
+  const dstLiteral = parseGeoLiteral(dst);
+  const googleSrc = srcLiteral ? `${srcLiteral.lat},${srcLiteral.lon}` : src;
+  const googleDst = dstLiteral ? `${dstLiteral.lat},${dstLiteral.lon}` : dst;
+  const [srcGeo, dstGeo] = await Promise.all([
+    srcLiteral || geocode(src, mapsKey), dstLiteral || geocode(dst, mapsKey),
+  ]);
   const routeMode = srcGeo && dstGeo && chooseRouter(srcGeo, dstGeo) === "transit" ? "transit" : "google";
   const query = wallAnchor(call.anchorAtMs, call.timezone, call.nowMs, call.departureMode);
   const google = async () => {
     try {
       const value = googleRouteFn
-        ? await googleRouteFn(src, dst, mapsKey, query.anchorAtMs, call.nowMs, call.departureMode)
+        ? await googleRouteFn(googleSrc, googleDst, mapsKey, query.anchorAtMs, call.nowMs, call.departureMode)
         : options._directionsMinutesGoogle
-          ? await googleMinutesFn(src, dst, mapsKey, query.anchorAtMs, call.nowMs, call.departureMode)
+          ? await googleMinutesFn(googleSrc, googleDst, mapsKey, query.anchorAtMs, call.nowMs, call.departureMode)
           : await (call.departureMode
-            ? legacyTransitMinutes(src, dst, mapsKey, null, call.nowMs, query.anchorAtMs)
-            : legacyTransitMinutes(src, dst, mapsKey, query.anchorAtMs, call.nowMs));
+            ? legacyTransitMinutes(googleSrc, googleDst, mapsKey, null, call.nowMs, query.anchorAtMs)
+            : legacyTransitMinutes(googleSrc, googleDst, mapsKey, query.anchorAtMs, call.nowMs));
       return googleRoute(value);
     } catch { return null; }
   };
@@ -475,7 +491,10 @@ async function fillTravel(uid, { apiKey, mapsKey, geminiKey, home, timezone, now
     } else {
       const origin = decision.origin;
       // Dedup: a [Travel] block already sitting in the gap right before this event?
-      const dup = events.some((e) => isTravel(e.summary) && e.endMs && e.endMs <= ev.startMs && e.endMs > ev.startMs - 3 * 3600000);
+      const dup = events.some((e) => isTravel(e.summary) && e.endMs
+        && e.endMs >= ev.startMs - 2 * 60000 && e.endMs <= ev.startMs + 60000
+        && String(e.location || "").replace(/\s+/g, "").toLowerCase()
+          === String(ev.location || "").replace(/\s+/g, "").toLowerCase());
       if (dup) {
         skipped++;
         // outbound block already exists — fall through to return-leg so it can backfill a missing return block
@@ -621,4 +640,5 @@ module.exports = {
   // #71 pure helpers (unit-tested)
   parseDurationSeconds, minutesFromSeconds, buildDriveBody, clampDepartIso, acceptRouteResults,
   transitFetchPlan, wallAnchor,
+  parseGeoLiteral,
 };
