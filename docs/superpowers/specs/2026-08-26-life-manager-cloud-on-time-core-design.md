@@ -375,7 +375,7 @@ AC-37/38の根拠:
 - [x] 既存`lm_travel_log`へTelegram `message_id`をatomicに保存し、accepted send後のreceipt失敗でclaimを解放・再送しない。
 - [x] 両migrationをproductionへ適用し、Railway life-call `/health.build`、commit status、GitHub Deploymentをexact merge SHA `0303507584458fc55cfe1d8f27db9ff1e9fedce9`でreadbackする。
 - [x] standalone/Inngestのowner判定をstartup・sweeper・HTTPで1つの正規化済みpredicateへ統一し、exact release `05988c7170bba91df7d375437cf61679e9e45f75`を本番readbackする。
-- [ ] corrected release後も、18:19 JSTの公式Supabase readbackではwake/travel新規行が0で、最新行はそれぞれ`2026-08-28T10:54:47.863352Z` / `2026-08-28T13:53:18.684914Z`のまま。AC-25は実装済みだがproduction runtime acceptanceは未達として扱い、boot owner→event fetch/eligibility→provider effectの順で切り分ける。
+- [ ] corrected releaseは`node server.js`で起動し、role/loop flag/Inngest未設定のstandalone transition ownerがscheduler/wake/reminder/travel/ask/onboard/discoveryの7 loopを起動することをRailway公式logでreadback済み。18:19 JSTのwake/travel新規行0は、同windowのComposio raw readbackに18:00開始の本予定がなく、17:06–18:00はhelper `[Travel]` blockだったためruntime failureを証明しない。AC-25のproduction acceptanceは新しいfuture controlled eventの自然effectで判定する。
 - [ ] future physical eventとreplacement no-location eventをnatural schedulerで実行し、Calendar/Telnyx/Telegram/Supabase receiptをcorrelateする。
 - [ ] 同じeventをreplayして追加block/call/message 0を確認し、controlled eventを`send-updates=none`で削除して`cancelled`をreadbackする。
 

@@ -799,11 +799,11 @@ Current atomic run order:
 - [x] implement a shared scheduler-owner fallback: standalone `LIFE_RUN_LOOPS=false` with no Inngest key selects in-process loops, while explicit roles/Inngest remain unchanged;
 - [x] deploy/read back the corrected shared scheduler-owner fix at exact SHA `05988c7170bba91df7d375437cf61679e9e45f75`;
 - [x] adversarial production-gate review: code/deploy may ship and no new code is justified before the due window; runtime success still requires a natural ledger receipt and replay-zero;
-- [x] observe the next existing due event through 18:19 JST: deploy-after wake rows `0`, travel rows `0`; latest durable timestamps remain from the prior day, so scheduler runtime is not accepted;
-- [ ] read the corrected deployment's boot evidence and environment shape without printing secrets: exact release, role, boolean Inngest configured state, fallback decision/owner, and all seven loop-start lines;
-- [ ] localize the first broken boundary: if fallback did not start, compare Railway start command/role/config with the working local startup contract; if it started, correlate the exact real Calendar event through cohort selection, Composio fetch, eligibility/departure, claim, and provider error logs;
-- [ ] only after one root cause is proven, return one minimal failing regression to the same Luna lane, deploy one fix, and require a fresh natural ledger write plus a following-cycle duplicate count of zero;
-- [ ] create fresh controlled physical and no-location events because the two confirmed replacement IDs missed their windows before the corrected deploy;
+- [x] observe through 18:19 JST and reject the false due-event premise: provider raw readback has no 18:00-start real event; 17:06–18:00 is a helper `[Travel]` block, so wake/travel row `0` is expected rather than a scheduler failure;
+- [x] read the corrected deployment's boot evidence: exact release `05988c717...`, `node server.js`, role/loop flag/Inngest unset, standalone transition owner, and all seven scheduler loop `started` lines;
+- [x] read the exact tenant/event boundary without external effects: one paid tenant, Calendar read success, all call/notification/automation/home/phone gates true, but the candidate window contains only past controlled events plus helper blocks and therefore no wake-eligible future event;
+- [ ] create one fresh no-location controlled event 20–30 minutes in the future and require natural T-10/T-5 Telnyx call/webhook/Supabase receipts before any new code change;
+- [ ] after no-location liveness is proven, create one fresh physical controlled event and require the Travel block plus route/Telegram/call receipts;
 - [ ] no-location T-10 row has one call-control ID, one signed webhook ID, and one durable claim;
 - [ ] no-location T-5 row has one call-control ID, one signed webhook ID, and one durable claim;
 - [ ] physical event has one outbound `[Travel]` Calendar block with provider event ID;
