@@ -22,6 +22,10 @@ test("Money Printer registers inspection and state-dependent human answer tools"
     required_format: { kind: "approval" }, reason_code: "model_boundary",
   };
   let next = { task };
+  let resolveAnswerRegistration;
+  let resolveRegistrationStarted;
+  const answerRegistration = new Promise((resolve) => { resolveAnswerRegistration = resolve; });
+  const registrationStarted = new Promise((resolve) => { resolveRegistrationStarted = resolve; });
   class FakeAbortController {
     constructor() { this.signal = { aborted: false }; }
     abort() { this.signal.aborted = true; }
@@ -31,7 +35,8 @@ test("Money Printer registers inspection and state-dependent human answer tools"
       modelContext: {
         registerTool(tool, options) {
           registrations.push({ tool, options });
-          return Promise.resolve();
+          if (tool.name === "record_human_answer") resolveRegistrationStarted();
+          return tool.name === "record_human_answer" ? answerRegistration : Promise.resolve();
         },
       },
     },
@@ -71,7 +76,14 @@ test("Money Printer registers inspection and state-dependent human answer tools"
     url: "/api/panel/money-printer",
     init: { method: "GET", credentials: "same-origin", headers: { Accept: "application/json" } },
   });
-  assert.deepEqual(await inspectNextTask.execute({}), { task });
+  const inspected = inspectNextTask.execute({});
+  await registrationStarted;
+  let inspectedResolved = false;
+  const inspectedResult = inspected.then((result) => { inspectedResolved = true; return result; });
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(inspectedResolved, false);
+  resolveAnswerRegistration();
+  assert.deepEqual(await inspectedResult, { task });
   assert.deepEqual(requests[1], {
     url: "/api/panel/money-printer/human-task/next",
     init: { method: "GET", credentials: "same-origin", headers: { Accept: "application/json" } },

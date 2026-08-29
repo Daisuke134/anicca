@@ -60,7 +60,7 @@ function renderMoneyPrinterWebMcpScript({ csrf } = {}) {
     }
     return { task_id: value.task_id, resume_ref: value.resume_ref };
   };
-  const registerAnswerTool = (task) => {
+  const registerAnswerTool = async (task) => {
     abortAnswerTool();
     const controller = new AbortController();
     answerController = controller;
@@ -101,7 +101,7 @@ function renderMoneyPrinterWebMcpScript({ csrf } = {}) {
         return result;
       },
     };
-    void document.modelContext.registerTool(tool, { signal: controller.signal });
+    await document.modelContext.registerTool(tool, { signal: controller.signal });
   };
   const getJson = async (path, failure) => {
     const response = await fetch(path, {
@@ -121,7 +121,7 @@ function renderMoneyPrinterWebMcpScript({ csrf } = {}) {
     }
     const task = exactTask(value && value.task);
     if (!task) throw new Error("inspect_next_human_task unavailable");
-    if (!sameTask(answerTask, task)) registerAnswerTool(task);
+    if (!sameTask(answerTask, task)) await registerAnswerTool(task);
     return { task };
   };
 
