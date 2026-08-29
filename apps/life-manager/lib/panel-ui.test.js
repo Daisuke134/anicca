@@ -242,6 +242,21 @@ function emittedScoreRenderer() {
   return sandbox.__renderScores;
 }
 
+function emittedMoneyPrinterRenderer() {
+  const script = renderPanelPage().match(/<script>\s*([\s\S]*?)\s*<\/script>/)[1];
+  const start = script.indexOf("const moneyLaneLabels");
+  const end = script.indexOf("const renderers = Object.freeze");
+  const sandbox = { Object, Array, Number, String, BigInt, Set, Math, URL };
+  sandbox.escapeHtml = (value) => String(value == null ? "" : value).replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[character]));
+  sandbox.displayRecord = (value) => Boolean(value && typeof value === "object" && !Array.isArray(value));
+  sandbox.displayExactKeys = (value, expected) => sandbox.displayRecord(value)
+    && Object.keys(value).sort().join(",") === expected.slice().sort().join(",");
+  sandbox.displayContainsSensitiveValue = () => false;
+  sandbox.displaySafeText = (value, allowEmpty) => typeof value === "string" && (allowEmpty || value.trim().length > 0);
+  vm.runInNewContext(`${script.slice(start, end)}\nglobalThis.__renderMoneyPrinter = renderMoneyPrinter;\nglobalThis.__validateMoneyPrinterData = validateMoneyPrinterData;`, sandbox);
+  return { render: sandbox.__renderMoneyPrinter, validate: sandbox.__validateMoneyPrinterData };
+}
+
 test("PANEL-8h: panel shell identifies the product only as Life Manager", () => {
   const html = renderPanelPage();
   assert.equal(html.match(/<title>([^<]+)<\/title>/)?.[1], "Life Manager");
@@ -272,6 +287,21 @@ test("Money Printer panel renders one six-lane control room", () => {
   for (const label of ["Paid & verified", "Agents working", "Needs You", "Opportunity value", "Found", "Working", "Waiting", "Done", "Paid"]) {
     assert.match(html, new RegExp(label));
   }
+});
+
+test("Money Printer renderer validates currency maps and sorts their display", () => {
+  const { render, validate } = emittedMoneyPrinterRenderer();
+  const card = { opportunity_ref: "opportunity://tenant-a/op-1", title: "Opportunity", status: "DISCOVERED", value_minor: "50000", currency: "JPY", source_url: null };
+  const data = {
+    observed_at: "2026-08-29T00:00:00.000Z",
+    metrics: { agents_working: 1, needs_you: 0, opportunity_value: { USD: "1000", JPY: "50000" }, paid_verified: { USD: "1000", JPY: "50000" } },
+    columns: { found: [card], working: [], needs_you: [], waiting: [], done: [], paid: [] },
+    activity: [],
+  };
+  assert.doesNotThrow(() => validate(data));
+  assert.match(render(data), /JPY 50000 \+ USD 1000/);
+  assert.match(render({ ...data, metrics: { ...data.metrics, opportunity_value: {}, paid_verified: {} } }), /<strong>0<\/strong>/);
+  assert.throws(() => render({ ...data, metrics: { ...data.metrics, opportunity_value: { JPY: 50000 } } }), /invalid money printer payload/);
 });
 
 test("Money Printer panel embeds focused WebMCP tools with only page CSRF for the write header", () => {

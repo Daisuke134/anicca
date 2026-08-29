@@ -47,11 +47,43 @@ function fixture(overrides = {}) {
 
 test("projection separates opportunity value from verified cash", () => {
   const view = projectMoneyPrinter(fixture());
-  assert.equal(view.metrics.opportunity_value, "50000");
-  assert.equal(view.metrics.paid_verified, "0");
+  assert.deepEqual(view.metrics.opportunity_value, { JPY: "50000" });
+  assert.deepEqual(view.metrics.paid_verified, {});
 });
 
 test("projection rejects cross-tenant and unverified money", () => {
   assert.throws(() => projectMoneyPrinter(fixture({ foreignTenant: true })), /tenant/);
   assert.throws(() => projectMoneyPrinter(fixture({ unverifiedCash: true })), /verified/);
+});
+
+test("projection keeps mixed currency values separate", () => {
+  const base = fixture();
+  const view = projectMoneyPrinter({
+    ...base,
+    opportunities: [
+      ...base.opportunities,
+      { ...base.opportunities[0], opportunity_id: "opportunity-2", amount_minor: "1000", currency: "USD" },
+    ],
+    earnings: [
+      { tenant_id: TENANT, entry_key: "earning-jpy", amount_minor: "100", currency: "JPY", verified: true, occurred_at: OBSERVED_AT },
+      { tenant_id: TENANT, entry_key: "earning-usd", amount_minor: "1000", currency: "USD", verified: true, occurred_at: OBSERVED_AT },
+    ],
+  });
+  assert.deepEqual(view.metrics.opportunity_value, { JPY: "50000", USD: "1000" });
+  assert.deepEqual(view.metrics.paid_verified, { JPY: "100", USD: "1000" });
+  assert.deepEqual(Object.keys(view.metrics.opportunity_value), ["JPY", "USD"]);
+  assert.equal(Object.isFrozen(view.metrics.opportunity_value), true);
+  assert.equal(Object.isFrozen(view.metrics.paid_verified), true);
+});
+
+test("projection rejects missing or invalid currency for valued rows", () => {
+  const base = fixture();
+  assert.throws(() => projectMoneyPrinter({
+    ...base,
+    opportunities: [{ ...base.opportunities[0], currency: null }],
+  }), /currency/);
+  assert.throws(() => projectMoneyPrinter({
+    ...base,
+    earnings: [{ tenant_id: TENANT, entry_key: "earning-1", amount_minor: "100", currency: "jpy", verified: true, occurred_at: OBSERVED_AT }],
+  }), /currency/);
 });

@@ -24,6 +24,20 @@ function money(value, label, optional = false) {
   return BigInt(raw).toString();
 }
 
+function currency(value, label) {
+  const code = typeof value === "string" ? value : "";
+  if (!/^[A-Z]{3}$/.test(code)) fail(`${label} currency invalid`);
+  return code;
+}
+
+function addMoney(total, code, amount) {
+  total[code] = (BigInt(total[code] || "0") + BigInt(amount)).toString();
+}
+
+function moneyMap(total) {
+  return Object.freeze(Object.fromEntries(Object.keys(total).sort().map((code) => [code, total[code]])));
+}
+
 function ref(value, prefix, tenantId, label) {
   const raw = String(value == null ? "" : value).trim();
   if (!raw || /\s/.test(raw) || raw.length > 1024) fail(`${label} reference invalid`);
@@ -60,15 +74,18 @@ function projectMoneyPrinter(input = {}) {
   };
   const columns = Object.fromEntries(NAMES.map((name) => [name, []]));
   const activity = [];
-  let opportunityValue = 0n; let paid = 0n; let running = 0; let working = 0; let needsHuman = 0; let openTasks = 0;
+  const opportunityValue = {}; const paid = {};
+  let running = 0; let working = 0; let needsHuman = 0; let openTasks = 0;
 
   for (const row of data.opportunities) {
     const status = String(row.status == null ? row.state || "" : row.status).trim().toUpperCase();
     const column = NAMES.find((name) => COLUMNS[name].has(status));
     if (!column) fail("money printer opportunity state invalid");
-    const valueMinor = money(row.value_minor ?? row.reward_minor ?? row.amount_minor ?? row.budget_max_minor, "opportunity value", true);
-    const card = Object.freeze({ opportunity_ref: ref(row.opportunity_ref || row.opportunity_id || row.external_id || row.id, "opportunity", tenantId, "opportunity"), title: String(row.title || "Opportunity").trim() || "Opportunity", status, value_minor: valueMinor, currency: row.currency == null ? null : String(row.currency), source_url: link(row.source_url ?? row.url, "opportunity source") });
-    columns[column].push(card); opportunityValue += BigInt(valueMinor);
+    const rawValue = row.value_minor ?? row.reward_minor ?? row.amount_minor ?? row.budget_max_minor;
+    const valueMinor = money(rawValue, "opportunity value", true);
+    const code = rawValue == null ? null : currency(row.currency, "opportunity");
+    const card = Object.freeze({ opportunity_ref: ref(row.opportunity_ref || row.opportunity_id || row.external_id || row.id, "opportunity", tenantId, "opportunity"), title: String(row.title || "Opportunity").trim() || "Opportunity", status, value_minor: valueMinor, currency: code, source_url: link(row.source_url ?? row.url, "opportunity source") });
+    columns[column].push(card); if (code) addMoney(opportunityValue, code, valueMinor);
     if (status === "NEEDS_HUMAN") needsHuman += 1;
     if (["WORKING", "READY_FOR_EFFECT", "QA_ACCEPTED"].includes(status)) working += 1;
     activity.push(Object.freeze({ kind: "opportunity", ref: card.opportunity_ref, status, observed_at: observed(row, observedAt) }));
@@ -93,14 +110,15 @@ function projectMoneyPrinter(input = {}) {
   }
   for (const row of data.earnings) {
     if (row.verified !== true) fail("money printer earnings must be verified exact money");
+    const code = currency(row.currency, "earning");
     const amount = money(row.amount_minor, "earning amount");
     let canonicalAmount = amount;
     if (row.wallet_address != null && row.kind != null && row.currency != null && row.occurred_at != null) canonicalAmount = (usdMicrosForEntry(normaliseEntry({ ...row, amount_minor: amount })) / 10000n).toString();
-    if (!EXCLUDED_KINDS.has(row.kind) && (!row.kind || row.kind === "financial_external_income")) paid += BigInt(canonicalAmount);
+    if (!EXCLUDED_KINDS.has(row.kind) && (!row.kind || row.kind === "financial_external_income")) addMoney(paid, code, canonicalAmount);
     const receiptUrl = link(row.receipt_url || row.receiptUrl || row.url, "earning receipt link");
     activity.push(Object.freeze({ kind: "earning", ref: ref(row.entry_ref || row.entry_key || row.id, "earning", tenantId, "earning"), status: "verified", amount_minor: canonicalAmount, observed_at: observed(row, observedAt), ...(receiptUrl ? { receipt_url: receiptUrl } : {}) }));
   }
-  return Object.freeze({ observed_at: observedAt, metrics: Object.freeze({ agents_working: running || working, needs_you: openTasks || needsHuman, opportunity_value: opportunityValue.toString(), paid_verified: paid.toString() }), columns: Object.freeze(Object.fromEntries(NAMES.map((name) => [name, Object.freeze(columns[name])]))), activity: Object.freeze(activity) });
+  return Object.freeze({ observed_at: observedAt, metrics: Object.freeze({ agents_working: running || working, needs_you: openTasks || needsHuman, opportunity_value: moneyMap(opportunityValue), paid_verified: moneyMap(paid) }), columns: Object.freeze(Object.fromEntries(NAMES.map((name) => [name, Object.freeze(columns[name])]))), activity: Object.freeze(activity) });
 }
 
 module.exports = { projectMoneyPrinter };

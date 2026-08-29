@@ -174,8 +174,8 @@ test("Money Printer GET is tenant-bound and rejects mutation methods", async () 
   await withApiServer(fixture, async (base) => {
     const get = await getJson(base, "money-printer?uid=u2");
     assert.equal(get.response.status, 200);
-    assert.equal(get.body.metrics.opportunity_value, "50000");
-    assert.equal(get.body.metrics.paid_verified, "0");
+    assert.deepEqual(get.body.metrics.opportunity_value, { JPY: "50000" });
+    assert.deepEqual(get.body.metrics.paid_verified, {});
     assert.equal(get.body.columns.found[0].title, "Public opportunity");
     const post = await getJson(base, "money-printer", { method: "POST" });
     assert.equal(post.response.status, 405);

@@ -1113,13 +1113,23 @@ function renderPanelPage(options = {}) {
 
     const moneyLaneLabels = Object.freeze({ found: "Found", working: "Working", needs_you: "Needs You", waiting: "Waiting", done: "Done", paid: "Paid" });
 
+    function validMoneyMap(value) {
+      return displayRecord(value)
+        && Object.keys(value).every(function (key) { return /^[A-Z]{3}$/.test(key) && typeof value[key] === "string" && /^\\d+$/.test(value[key]); });
+    }
+
+    function formatMoneyMap(value) {
+      const keys = Object.keys(value).sort();
+      return keys.length ? keys.map(function (key) { return key + " " + value[key]; }).join(" + ") : "0";
+    }
+
     function validMoneyCard(card) {
       return displayExactKeys(card, ["opportunity_ref", "title", "status", "value_minor", "currency", "source_url"])
         && displaySafeText(card.opportunity_ref, false)
         && displaySafeText(card.title, false)
         && displaySafeText(card.status, false)
         && /^\\d+$/.test(card.value_minor)
-        && (card.currency === null || displaySafeText(card.currency, false))
+        && (card.currency === null || /^[A-Z]{3}$/.test(card.currency))
         && (card.source_url === null || (function () { try { const url = new URL(card.source_url); return url.protocol === "https:" && !url.username && !url.password; } catch { return false; } })());
     }
 
@@ -1130,7 +1140,7 @@ function renderPanelPage(options = {}) {
         || !displayExactKeys(data.columns, lanes)
         || !Number.isInteger(data.metrics.agents_working) || data.metrics.agents_working < 0
         || !Number.isInteger(data.metrics.needs_you) || data.metrics.needs_you < 0
-        || !/^\\d+$/.test(data.metrics.opportunity_value) || !/^\\d+$/.test(data.metrics.paid_verified)
+        || !validMoneyMap(data.metrics.opportunity_value) || !validMoneyMap(data.metrics.paid_verified)
         || !Array.isArray(data.activity)
         || lanes.some(function (lane) { return !Array.isArray(data.columns[lane]) || data.columns[lane].some(function (card) { return !validMoneyCard(card); }); })) {
         throw new Error("invalid money printer payload");
@@ -1140,7 +1150,7 @@ function renderPanelPage(options = {}) {
 
     function renderMoneyPrinter(data) {
       validateMoneyPrinterData(data);
-      const metrics = [["Paid & verified", data.metrics.paid_verified], ["Agents working", data.metrics.agents_working], ["Needs You", data.metrics.needs_you], ["Opportunity value", data.metrics.opportunity_value]]
+      const metrics = [["Paid & verified", formatMoneyMap(data.metrics.paid_verified)], ["Agents working", data.metrics.agents_working], ["Needs You", data.metrics.needs_you], ["Opportunity value", formatMoneyMap(data.metrics.opportunity_value)]]
         .map(function (item) { return '<article class="money-metric"><span>' + escapeHtml(item[0]) + '</span><strong>' + escapeHtml(item[1]) + '</strong></article>'; }).join("");
       const lanes = Object.keys(moneyLaneLabels).map(function (lane) {
         const cards = data.columns[lane].map(function (card) { return '<article class="money-card"><strong>' + escapeHtml(card.title) + '</strong><p>' + escapeHtml(card.currency || "") + ' ' + escapeHtml(card.value_minor) + '</p></article>'; }).join("");
