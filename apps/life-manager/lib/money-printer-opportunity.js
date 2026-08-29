@@ -113,9 +113,10 @@ function assertReadback(result, expected) {
   if (!OPPORTUNITY_STATUSES.has(String(row.status || "").toUpperCase())) {
     throw new Error("money printer opportunity readback mismatch");
   }
-  if (row.observed_at == null || observedAt(String(row.observed_at)) !== expected.observed_at) {
+  if (row.observed_at == null) {
     throw new Error("money printer opportunity readback mismatch");
   }
+  try { observedAt(String(row.observed_at)); } catch { throw new Error("money printer opportunity readback mismatch"); }
   if (row.job_id != null && row.job_id !== expected.job_id) {
     throw new Error("money printer opportunity readback mismatch");
   }

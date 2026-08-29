@@ -111,8 +111,7 @@ BEGIN
       OR v_opportunity.goal_statement IS DISTINCT FROM p_goal_statement
       OR v_opportunity.value_minor IS DISTINCT FROM p_value_minor
       OR v_opportunity.currency IS DISTINCT FROM p_currency
-      OR v_opportunity.goal_ref IS DISTINCT FROM p_goal_ref
-      OR v_opportunity.observed_at IS DISTINCT FROM p_observed_at THEN
+      OR v_opportunity.goal_ref IS DISTINCT FROM p_goal_ref THEN
       RAISE EXCEPTION 'money printer opportunity conflict';
     END IF;
   END IF;

@@ -53,12 +53,17 @@ test("atomic create readback is called once and rejects a conflicting row", asyn
 
   const stored = await createOpportunity(INPUT, store);
   persisted.set(canonical.opportunity_id, { ...stored, status: "WORKING" });
-  const replay = await createOpportunity({ ...INPUT, sourceUrl: "https://example.com/opportunity" }, store);
+  const replay = await createOpportunity({
+    ...INPUT,
+    sourceUrl: "https://example.com/opportunity",
+    observedAt: "2026-08-30T00:00:00.000Z",
+  }, store);
   assert.equal(calls.length, 2);
   assert.equal(calls[0].opportunity_id, canonical.opportunity_id);
   assert.equal(stored.opportunity_id, canonical.opportunity_id);
   assert.equal(replay.opportunity_id, stored.opportunity_id);
   assert.equal(replay.status, "WORKING");
+  assert.equal(replay.observed_at, stored.observed_at);
 
   await assert.rejects(
     createOpportunity(INPUT, {
@@ -81,5 +86,6 @@ test("migration is additive and atomically verifies the matching runtime job", (
   assert.match(sql, /INSERT INTO public\.lm_runtime_jobs/i);
   assert.match(sql, /general-agent\.work/i);
   assert.match(sql, /input_refs[\s\S]+goal_ref/i);
+  assert.doesNotMatch(sql, /v_opportunity\.observed_at\s+IS DISTINCT FROM\s+p_observed_at/i);
   assert.doesNotMatch(sql, /provider/i);
 });
