@@ -11,6 +11,7 @@ const DEFAULT_INTERVAL_MS = 8 * 60 * 60 * 1000;
 const MIN_INTERVAL_MS = 5 * 60 * 1000;
 const MAX_INTERVAL_MS = 24 * 60 * 60 * 1000;
 const GEMINI = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
+const INTERACTIONS = "https://generativelanguage.googleapis.com/v1beta/interactions";
 const TENANT_ID = /^[a-z0-9][a-z0-9._-]{0,199}$/;
 const JOB_ID = /^money-printer-scout:([0-9a-f]{64})$/;
 const OPPORTUNITY_REF = /^opportunity:\/\/([a-z0-9][a-z0-9._-]{0,199})\/([0-9a-f]{64})$/;
@@ -183,13 +184,31 @@ function isGroundingRedirect(value) {
   } catch { return false; }
 }
 
-async function groundedSources(body, expected, options) {
-  const chunks = body?.candidates?.[0]?.groundingMetadata?.groundingChunks;
-  if (!Array.isArray(chunks) || chunks.length < 1) invalid("cloud grounding");
+function interactionResearch(body) {
+  if (!body || typeof body !== "object" || Array.isArray(body) || body.status !== "completed" || !Array.isArray(body.steps)) {
+    invalid("cloud research");
+  }
+  if (!body.steps.some((step) => step && step.type === "google_search_call")) invalid("cloud research");
+  const output = body.steps.find((step) => step && step.type === "model_output");
+  if (!output || !Array.isArray(output.content)) invalid("cloud research");
+  const text = output.content
+    .filter((part) => part && part.type === "text" && typeof part.text === "string")
+    .map((part) => part.text)
+    .join("\n")
+    .trim();
+  const urls = output.content.flatMap((part) => (
+    Array.isArray(part?.annotations) ? part.annotations : []
+  )).filter((annotation) => annotation && annotation.type === "url_citation" && typeof annotation.url === "string")
+    .map((annotation) => annotation.url.trim())
+    .filter(Boolean);
+  if (!text || urls.length < 1) invalid("cloud research");
+  return { text, urls };
+}
+
+async function groundedSources(uris, expected, options) {
+  if (!Array.isArray(uris) || uris.length < 1) invalid("cloud grounding");
   const sources = new Set();
-  for (const chunk of chunks) {
-    const uri = String(chunk?.web?.uri || "").trim();
-    if (!uri) continue;
+  for (const uri of uris) {
     if (!isGroundingRedirect(uri)) {
       sources.add(canonicalSource(uri, expected.tenant_id));
       continue;
@@ -209,10 +228,10 @@ async function groundedSources(body, expected, options) {
 }
 
 async function discover(expected, options) {
-  const request = async (body) => {
+  const request = async (url, body) => {
     let response;
     try {
-      response = await options.fetchImpl(GEMINI, {
+      response = await options.fetchImpl(url, {
         method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": options.apiKey }, body: JSON.stringify(body),
         signal: options.nextSignal(),
       });
@@ -220,15 +239,12 @@ async function discover(expected, options) {
     if (!response || response.ok !== true) invalid("cloud");
     return geminiBody(response);
   };
-  const researched = await request({
-    contents: [{ role: "user", parts: [{ text: scoutPrompt(expected) }] }], tools: [{ google_search: {} }],
-    generationConfig: { temperature: 0, maxOutputTokens: 2048 },
-  });
-  const allowedSources = await groundedSources(researched, expected, options);
-  const research = responseText(researched);
-  if (!research) invalid("cloud research");
-  const extracted = responseText(await request({
-    contents: [{ role: "user", parts: [{ text: extractionPrompt(research, allowedSources) }] }],
+  const research = interactionResearch(await request(INTERACTIONS, {
+    model: "gemini-3.7-flash", input: scoutPrompt(expected), tools: [{ type: "google_search" }],
+  }));
+  const allowedSources = await groundedSources(research.urls, expected, options);
+  const extracted = responseText(await request(GEMINI, {
+    contents: [{ role: "user", parts: [{ text: extractionPrompt(research.text, allowedSources) }] }],
     generationConfig: { responseMimeType: "application/json", responseSchema: EXTRACTION_SCHEMA, temperature: 0, maxOutputTokens: 1024, thinkingConfig: { thinkingBudget: 0 } },
   }));
   try { return { value: JSON.parse(extracted), allowedSources }; } catch { invalid("cloud extraction"); }
@@ -267,6 +283,39 @@ function receipt(value, expected) {
   return value;
 }
 
+function createScoutDeadline(clock, timeoutMs, abortSignalTimeout) {
+  const startedAt = Number(clock());
+  if (!Number.isFinite(startedAt)) invalid("timeout");
+  const deadline = startedAt + timeoutMs;
+  const remaining = () => {
+    const value = Math.floor(deadline - Number(clock()));
+    if (!Number.isSafeInteger(value) || value < 1 || value > timeoutMs) invalid("timeout");
+    return value;
+  };
+  return Object.freeze({
+    check: remaining,
+    nextSignal: () => abortSignalTimeout(remaining()),
+    async run(operation) {
+      const timeout = {};
+      let timer;
+      try {
+        const value = await Promise.race([
+          Promise.resolve().then(operation),
+          new Promise((_, reject) => { timer = setTimeout(() => reject(timeout), remaining()); }),
+        ]);
+        remaining();
+        return value;
+      } catch (error) {
+        if (error === timeout) invalid("timeout");
+        remaining();
+        throw error;
+      } finally {
+        clearTimeout(timer);
+      }
+    },
+  });
+}
+
 function createMoneyPrinterScout(options = {}) {
   const apiKey = String(options.apiKey || options.geminiKey || "").trim();
   const fetchImpl = options.fetchImpl || globalThis.fetch;
@@ -289,26 +338,22 @@ function createMoneyPrinterScout(options = {}) {
     const expected = expectedScout(input);
     const observedAt = String(now());
     if (!Number.isFinite(Date.parse(observedAt))) invalid("observed time");
-    const startedAt = Number(clock());
-    if (!Number.isFinite(startedAt)) invalid("timeout");
-    const deadline = startedAt + timeoutMs;
-    const nextSignal = () => {
-      const remaining = Math.floor(deadline - Number(clock()));
-      if (!Number.isSafeInteger(remaining) || remaining < 1 || remaining > timeoutMs) invalid("timeout");
-      return abortSignalTimeout(remaining);
-    };
-    const discovered = await discover(expected, { apiKey, fetchImpl, nextSignal });
+    const deadline = createScoutDeadline(clock, timeoutMs, abortSignalTimeout);
+    const discovered = await discover(expected, { apiKey, fetchImpl, nextSignal: deadline.nextSignal });
+    deadline.check();
     const found = candidates(discovered.value, observedAt, expected.tenant_id, discovered.allowedSources);
     const opportunityRefs = [];
     let dedupedCount = 0;
     for (const item of found) {
-      const current = await readOpportunityBySource({ tenant_id: expected.tenant_id, source_url: item.canonical.source_url });
+      const current = await deadline.run(() => readOpportunityBySource({
+        tenant_id: expected.tenant_id, source_url: item.canonical.source_url,
+      }));
       if (current !== null) { dedupedCount += 1; continue; }
-      const saved = await createOpportunity({
+      const saved = await deadline.run(() => createOpportunity({
         tenantId: expected.tenant_id, sourceUrl: item.canonical.source_url, title: item.candidate.title,
         goalStatement: item.candidate.goal_statement, valueMinor: item.candidate.value_minor,
         currency: item.candidate.currency, observedAt,
-      }, { createOpportunity: create });
+      }, { createOpportunity: create }));
       opportunityRefs.push(`opportunity://${expected.tenant_id}/${saved.opportunity_id}`);
     }
     return receipt({
