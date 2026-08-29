@@ -887,4 +887,4 @@ Railway currently auto-selects the legacy TypeScript/pnpm Dockerfile even though
 - [x] Run focused contract 4/4, Prisma generation, current x402 service tests 68/68, syntax/diff/secret/dependency checks. Local container build reaches successful Prisma generation but stops at the disk safety floor; remote Railway build remains the acceptance gate.
 - [x] Fresh exact-range Sol review and scoped re-review return `SHIP`, Critical/Important zero, new findings zero, and Ponytail minimality.
 - [ ] Merge one PR; require x402 Railway SUCCESS, life-call SUCCESS, GitHub Deployment `success`, and public life-call `/health.build` all correlated to the same exact merge SHA.
-- [ ] Bound external facilitator initialization to 15 seconds. On timeout, keep every paid route fail-closed at 503 while allowing the existing DB-verifying `/health` server to listen; a hung provider must not block deployment health forever.
+- [x] Bound external facilitator initialization to 15 seconds in `6eca30bc7`. RED watchdog exits 124 on the never-settling initializer; GREEN returns health 200 with mocked DB, keeps paid route 503, and full x402 is 69/69.
