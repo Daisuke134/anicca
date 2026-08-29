@@ -247,6 +247,16 @@ function routeCallArgs(anchorAtMs, nowMs, departureMode, opts) {
   };
 }
 
+function parseGeoLiteral(value) {
+  if (typeof value !== "string") return null;
+  const match = /^geo:([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?),([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)$/.exec(value);
+  if (!match) return null;
+  const lat = Number(match[1]), lon = Number(match[2]);
+  return Number.isFinite(lat) && lat >= -90 && lat <= 90
+    && Number.isFinite(lon) && lon >= -180 && lon <= 180
+    ? { lat, lon } : null;
+}
+
 function wallAnchor(epochMs, timezone, nowMs, departureMode) {
   // AC-11: an event in the past (or with no timestamp) is queried at the current wall time; future
   // events remain anchored to their own calendar instant.
@@ -305,7 +315,11 @@ async function directionsRoute(src, dst, mapsKey, anchorAtMs = null, nowMs = Dat
   const transitTimeoutMs = Number.isFinite(Number(timeoutOption)) && Number(timeoutOption) >= 0
     ? Number(timeoutOption) : DEFAULT_TRANSIT_TIMEOUT_MS;
   if (!mapsKey || !src || !dst) return null;
-  const [srcGeo, dstGeo] = await Promise.all([geocode(src, mapsKey), geocode(dst, mapsKey)]);
+  const srcLiteral = parseGeoLiteral(src);
+  const dstLiteral = parseGeoLiteral(dst);
+  const [srcGeo, dstGeo] = await Promise.all([
+    srcLiteral || geocode(src, mapsKey), dstLiteral || geocode(dst, mapsKey),
+  ]);
   const routeMode = srcGeo && dstGeo && chooseRouter(srcGeo, dstGeo) === "transit" ? "transit" : "google";
   const query = wallAnchor(call.anchorAtMs, call.timezone, call.nowMs, call.departureMode);
   const google = async () => {
@@ -624,4 +638,5 @@ module.exports = {
   // #71 pure helpers (unit-tested)
   parseDurationSeconds, minutesFromSeconds, buildDriveBody, clampDepartIso, acceptRouteResults,
   transitFetchPlan, wallAnchor,
+  parseGeoLiteral,
 };
