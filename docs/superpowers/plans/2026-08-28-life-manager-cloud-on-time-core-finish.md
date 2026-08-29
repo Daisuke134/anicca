@@ -709,9 +709,11 @@ Read the merged SHA from GitHub, then require a successful GitHub Deployment for
 
 **Ownership:** Primary coordinates and records official evidence. No synthetic actor can close this task.
 
-- [ ] **Step 1: Decode the public QR**
+- [x] **Step 1: Decode the public QR**
 
 Require the payload to equal the public Telegram `/start` deep link and contain no uid, chat ID, email, or secret.
+
+Current official readback: `https://aniccaai.com/life-manager` renders one QR through `QRCodeSVG(value=TG_DEEPLINK)`; the fixed source value and adjacent live link are exactly `https://t.me/LifeManagerBotbot?start=lp`. The payload contains no tenant, actor, email, or secret. `/lm` is a separate general-product page and is not the QR surface.
 
 - [ ] **Step 2: A real Telegram account different from Dais scans and starts**
 
