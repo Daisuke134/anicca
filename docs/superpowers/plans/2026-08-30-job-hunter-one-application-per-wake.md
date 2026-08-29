@@ -26,6 +26,15 @@
 
 The merged shortlist prompt orders Japan employment feasibility, demonstrated current scope and compensation ambition. Qualification and every effect fence remain unchanged.
 
+#### Task 1B: Carry model shortlist order into qualification — active production repair
+
+**Files:**
+- Modify: `apps/job-search-loop/job_search_loop/workday_qualification.py`
+- Modify: `apps/job-search-loop/job_search_loop/workday_search_loop.py`
+- Modify focused checks in: `apps/job-search-loop/tests/test_workday_qualification.py`
+
+`qualify_one()` accepts the ordered model-selected canonical URLs and orders pending eligible Workday rows by that list before choosing one. Rows absent from the current shortlist remain behind every preferred row; failed preferred IDs still use the existing wake-local skip cursor. This is deterministic ordering of model output, not a title/location/skill classifier. Run `daily-20260830-082055` is the failing production example: the shortlist exists, but six initial qualification calls consume old Principal/Director/foreign backlog because current `qualify_one()` uses Ledger insertion order.
+
 ---
 
 ### Task 2: Make Job Hunting notifications quiet and product-owned
