@@ -38,7 +38,7 @@
 - [x] `C02-05` isolated runtimeへLuna planner modelを設定する — private env exact 3行、planner=`gpt-5.6-luna`、mode 0600、SHA readback一致、effort/runtime/model call/effect 0
 - [x] `C02-06` isolated runtimeへmedium effortを設定する — private env exact 4行、effort=`medium`、mode 0600、SHA readback一致、binary/runtime/model call/effect 0
 - [x] `C02-07` isolated runtimeへsystem Codex binaryを設定する — private env exact 5行、system Codex `0.151.0` path/SHA固定、mode 0600、planner mode/runtime/model call/effect 0
-- [ ] `C02-08` isolated runtimeへplanner modeを設定する
+- [x] `C02-08` isolated runtimeへplanner modeを設定する — private env exact 6行、`ELIZA_PLANNER_NATIVE_TOOLS=0`、mode 0600、SHA readback一致、all-tiers/runtime/model call/effect 0
 - [ ] `C02-09` isolated runtimeへall-tiers modeを設定する
 - [ ] `C02-10` 全text tier registrationを読む
 - [ ] `C02-11` ACTION_PLANNER registrationを読む
