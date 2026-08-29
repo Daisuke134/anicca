@@ -370,16 +370,22 @@ same-intent replay external effects=0
 ### Task 7: Prove Mercor and Unknown-Market Generality Without New Brains
 
 **Files:**
-- Modify only if a measured gap exists: `apps/life-manager/lib/general-agent-work-adapter.js`
-- Test: `apps/life-manager/lib/general-agent-work-adapter.test.js`
-- Reuse: `apps/life-manager/lib/hosted-goal-ingress.js`
+- Create: `apps/life-manager/migrations/2026-08-29-lm-money-printer-opportunities.sql`
+- Create: `apps/life-manager/lib/money-printer-opportunity.js`
+- Create: `apps/life-manager/lib/money-printer-opportunity.test.js`
+- Create: `apps/life-manager/lib/money-printer-source.js`
+- Create: `apps/life-manager/lib/money-printer-source.test.js`
+- Modify only measured integration points: `apps/life-manager/lib/hosted-goal-ingress.js`, `apps/life-manager/lib/general-agent-work-adapter.js`, `apps/life-manager/scripts/runtime-up.js`, Panel API/WebMCP files
 - Reuse: `skills/_shared/marketplace-core/tests/fixtures/mercor-full-chain.json`
 
 **Interfaces:**
 - Consumes: explicit goal containing a public opportunity URL and existing `general-agent.work` capability.
 - Produces: `planned|completed|blocked` specialist receipt and reference-only next jobs, without provider routing.
 
-- [ ] Add a generality test:
+- [ ] **Task 7A:** Add one tenant-scoped opportunity table and atomic create RPC that persists the public URL/goal and inserts exactly one existing `general-agent.work` runtime job. Same URL/input replays; conflicting identity fails. Add a real `moneyPrinterSource(scope)` that reads opportunities, runtime jobs, human tasks, receipts, and verified earnings into the existing projection input. No fixture/default rows.
+- [ ] **Task 7B:** Connect `add_opportunity`, `inspect_workroom`, and `inspect_receipt` to those real domain functions, then register the three WebMCP tools. Wire `general-agent-work` worker services to a bounded existing agent-runner specialist that dereferences the stored goal; never let the registry fall through to `runtime_noop` or `bounded specialist unavailable`.
+
+- [ ] Add a focused generality test:
 
 ```js
 test("unknown marketplace plans work instead of provider rejection", async () => {
