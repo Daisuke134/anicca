@@ -274,6 +274,16 @@ test("Money Printer panel renders one six-lane control room", () => {
   }
 });
 
+test("Money Printer panel embeds the focused WebMCP read tool without credentials", () => {
+  const html = renderPanelPage({ csrf: "csrf-value" });
+  const scripts = [...html.matchAll(/<script>\s*([\s\S]*?)\s*<\/script>/g)].map((match) => match[1]);
+  const webmcp = scripts.find((script) => script.includes("inspect_money_printer"));
+  assert.ok(webmcp);
+  assert.match(webmcp, /document\.modelContext\.registerTool\(/);
+  assert.match(webmcp, /\/api\/panel\/money-printer/);
+  assert.doesNotMatch(webmcp, /csrf-value|x-lm-csrf|authorization|bearer|idempotency-key/i);
+});
+
 test("PANEL-0: panel includes a real control center and keeps read APIs same-origin", () => {
   assert.equal(typeof renderPanelPage, "function");
   const html = renderPanelPage();

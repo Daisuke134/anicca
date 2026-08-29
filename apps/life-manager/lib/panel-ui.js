@@ -2,6 +2,7 @@
 "use strict";
 
 const { SECRET_PATTERNS } = require("./panel-display-policy.js");
+const { renderMoneyPrinterWebMcpScript } = require("./money-printer-webmcp.js");
 const { roundedScoreValue } = require("./panel-score-semantics.js");
 const {
   SCORE_COMPONENT_KEYS,
@@ -1219,6 +1220,7 @@ function renderPanelPage(options = {}) {
       });
     }));
   </script>
+  <script>${renderMoneyPrinterWebMcpScript({ csrf: options.csrf })}</script>
 </body>
 </html>`;
 }
