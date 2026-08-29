@@ -128,6 +128,11 @@ GPT Image 2 receipt契約を満たさない。received writing revenueは0であ
 main由来immutable release、orphan paid-demand cardのhash-bound queue復旧、新runのGPT Image 2 headlineとactive-four native
 readbackである。
 
+現在のschedule contractは毎朝06:00の`article-daily`で、autopublishはarmedである。しかしinstalled release `def55ccd`の
+直近terminalはFAIL `entrypoint_exit_75`である。公開ledgerと外部公開面の最新はNote JA / Substack JA / Substack ENが
+8月21日、X Article JAが8月20日で、8月22日以降の新規live articleは0である。schedule liveness、過去のpublication、
+毎日publication SLOを分離する。W17の7連続terminal publication receiptが揃うまで、毎日公開をverifiedと宣言しない。
+
 W1iはPR #2962/#2965で一度完了し、14 Writer labelをsparse immutable release `40065a10`へ揃えた。general
 `current`は元のfull releaseへ復元した。W1g production canary `20260828-083954`はprovider rc=1後もrun、prompt、
 generation stateを保持し、prunerは古いterminal runだけを削除したためW1gは完了である。
