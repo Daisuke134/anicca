@@ -519,8 +519,13 @@ def main() -> int:
                 task="improve",
                 prompt=(
                 "Rank the Workday jobs for this candidate in this order: Japan employment feasibility first; "
-                "demonstrated current career scope second; compensation ambition third. Prefer roles that "
-                "can employ someone based in Japan, then roles whose actual work is supported by the candidate's "
+                "demonstrated current career scope second; compensation ambition third. "
+                "Every row that explicitly supports employment from Japan must rank before any row tied to another country. "
+                "Remote work or an "
+                "EOR for another country is not Japan employment unless the posting explicitly supports employing "
+                "from Japan. Canonical examples: an imperfect-fit Japan role ranks before a strong-fit foreign role; "
+                "Korea-remote/EOR is non-Japan unless Japan employment is explicit. Then use roles whose actual work "
+                "is supported by the candidate's "
                 "current evidence, "
                 "then credible paths to at least JPY 7M, prioritizing JPY 10M-30M. "
                 "Do not consume the bounded shortlist with Principal, Lead, or Senior roles "

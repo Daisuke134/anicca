@@ -52,6 +52,18 @@ class WorkdayQualificationTests(unittest.TestCase):
             "foreign-location work while closer Japan-feasible roles exist",
             prompt_source,
         )
+        self.assertIn(
+            "Every row that explicitly supports employment from Japan must rank before any row tied to another country",
+            prompt_source,
+        )
+        self.assertIn(
+            "an imperfect-fit Japan role ranks before a strong-fit foreign role",
+            prompt_source,
+        )
+        self.assertIn(
+            "Korea-remote/EOR is non-Japan unless Japan employment is explicit",
+            prompt_source,
+        )
 
     def test_candidate_windows_interleave_companies_instead_of_source_volume(self):
         rows = [
