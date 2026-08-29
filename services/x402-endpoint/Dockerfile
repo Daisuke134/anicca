@@ -5,6 +5,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=8403
 
+RUN apk add --no-cache openssl
 RUN addgroup -S anicca && adduser -S anicca -G anicca
 
 COPY package.json package-lock.json ./
@@ -13,7 +14,7 @@ RUN npm ci --omit=dev
 COPY prisma ./prisma
 COPY src ./src
 RUN npx prisma generate
-RUN chown -R anicca:anicca /app/src/generated
+RUN chown -R anicca:anicca /app/src/generated /app/node_modules/@prisma/engines
 
 USER anicca
 EXPOSE 8403
