@@ -44,7 +44,7 @@
 - [x] `C02-11` ACTION_PLANNER registrationを読む — fixed 2-file SHA一致、planner宣言/gate/Codex SDK route/native outputSchemaをprivate evidenceへ保存、runtime/model call/effect 0
 - [x] `C02-12` Life ManagerとCLI inferenceを同じruntimeで起動する — RAM closureで2 plugin各1・7 model types登録、private evidence mode 0600、model call/effect 0
 - [x] `C02-13` Luna planner callを一回実行する — session/turn/model/effort/raw response hash一致、call 1/retry 0/effect 0。post-call DB log failureを記録し、同一session readbackへ進む
-- [ ] `C02-14` structured action resultを読む
+- [x] `C02-14` structured action resultを読む — 同一session/turnをplugin自身のnormalizeRouteで`LIFE_MANAGER_HEALTH/{}`へ再読出し、hash一致、追加model call/effect 0
 - [ ] `C02-15` private receiptを保存する
 - [ ] `C02-16` adversarial reviewを一回行う
 - [ ] `C02-17` receiptをPASSへ更新する
