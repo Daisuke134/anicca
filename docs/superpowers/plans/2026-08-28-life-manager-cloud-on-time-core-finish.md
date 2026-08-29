@@ -820,6 +820,7 @@ Current atomic run order:
 - [x] TDD the measured live-origin failure: `317c7a78c` parses valid geo directly and `649578220` normalizes every Google fallback to `lat,lon`; primary 61/61, scoped Sol `ship`;
 - [x] merge/deploy route fixes: PR #3086 passes 9/9, merges as `d37714dd08756b5f835452786da10a0b3ee07b56`, Railway deployment `48ca9cc3-2826-44fa-872a-ac6dda2ef3f1` is SUCCESS, public health matches;
 - [x] create post-fix physical event `udo8jkpls9u250ji2u853str9g`, private, `東京駅`, confirmed, 22:39–22:49 JST; live geo Transit route has buffered departure 22:00:06, Telegram due 21:55:06, three steps and one service/headsign;
+- [ ] TDD the measured provider latency boundary: the same live route is null at 8 seconds and accepted at 13.43 seconds; use 15-second Transit timeout inside a 25-second per-tenant reminder timeout without changing the 60-second cadence;
 - [ ] require one outbound `[Travel]` block for `udo8jkpls9u250ji2u853str9g` before 22:00:06 and one `provider=transit` Telegram route message at natural due 21:55:06 with durable positive message ID;
 - [ ] no-location T-10 row has one call-control ID, one signed webhook ID, and one durable claim;
 - [ ] no-location T-5 row has one call-control ID, one signed webhook ID, and one durable claim;
