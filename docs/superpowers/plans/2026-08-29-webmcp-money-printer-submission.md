@@ -240,9 +240,9 @@ Measured ruling: do not wire `server.js` to an empty fixture-like source. Task 5
 - Produces `renderMoneyPrinterWebMcpScript({ csrf }) -> string`.
 - Registers only `inspect_money_printer` in this task. Task 5 adds the two human-task tools; Task 7 adds opportunity/workroom/receipt tools after their server actions exist.
 
-- [ ] Add one focused test proving top-level imperative registration, exact `inspect_money_printer`, empty narrow schema, `readOnlyHint: true`, same-origin GET, and no credential-shaped strings.
-- [ ] Run `node --test apps/life-manager/lib/money-printer-webmcp.test.js`; expect RED.
-- [ ] Implement generated browser script using `document.modelContext.registerTool()`, same-origin Panel APIs, structured results, and `AbortController` for state-dependent tools.
+- [x] Add one focused test proving top-level imperative registration, exact `inspect_money_printer`, empty narrow schema, `readOnlyHint: true`, same-origin GET, and no credential-shaped strings.
+- [x] Run `node --test apps/life-manager/lib/money-printer-webmcp.test.js`; observed module-not-found RED.
+- [x] Implement generated browser script using `document.modelContext.registerTool()`, the same-origin Panel API, and structured results.
 
 ```js
 const TOOL_SPECS = Object.freeze([
@@ -263,7 +263,7 @@ async function registerMoneyPrinterTools(modelContext, request) {
 ```
 
 `toolDescription` and `toolInputSchema` use an exact object keyed by the registered names; unknown names throw. Never register a tool before its same-origin endpoint and server domain action exist.
-- [ ] Run WebMCP and Panel UI tests; commit `feat(webmcp): expose Money Printer tools`; push.
+- [x] Run WebMCP and Panel UI tests 27/27; commit `9a68c5f9d` as `feat(webmcp): expose Money Printer tools`; push.
 
 ---
 
