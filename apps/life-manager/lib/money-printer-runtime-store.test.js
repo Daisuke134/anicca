@@ -56,6 +56,31 @@ test("runtime store uses parameterized RPCs and tenant-bound reads", async () =>
   for (const call of calls) assert.ok(Array.isArray(call.values));
 });
 
+test("runtime store normalizes a Postgres Date observed_at without changing other fields", async () => {
+  const persisted = { ...opportunity(), observed_at: new Date(NOW) };
+  const store = createMoneyPrinterRuntimeStore({
+    query: async (sql) => {
+      if (sql.includes("create_lm_money_opportunity")) return { rows: [persisted] };
+      throw new Error("unexpected query");
+    },
+  });
+
+  assert.deepEqual(await store.createOpportunity(opportunity()), { ...persisted, observed_at: NOW });
+});
+
+test("runtime store rejects an invalid create opportunity timestamp", async () => {
+  const store = createMoneyPrinterRuntimeStore({
+    query: async (sql) => {
+      if (sql.includes("create_lm_money_opportunity")) {
+        return { rows: [{ ...opportunity(), observed_at: new Date("invalid") }] };
+      }
+      throw new Error("unexpected query");
+    },
+  });
+
+  await assert.rejects(store.createOpportunity(opportunity()), /observed|time|readback/i);
+});
+
 test("runtime store rejects unavailable query and foreign or ambiguous readback", async () => {
   assert.throws(() => createMoneyPrinterRuntimeStore({}), /runtime store unavailable/);
   const store = createMoneyPrinterRuntimeStore({ query: async () => ({ rows: [{ ...opportunity(), uid: "tenant-b" }, opportunity()] }) });

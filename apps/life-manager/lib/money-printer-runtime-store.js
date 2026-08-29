@@ -55,6 +55,17 @@ function opportunityRow(result, expected, label) {
   return row;
 }
 
+function normalizeOpportunityReadback(row) {
+  if (row.observed_at instanceof Date) {
+    if (!Number.isFinite(row.observed_at.getTime())) throw new Error("money printer runtime store opportunity readback invalid");
+    return { ...row, observed_at: row.observed_at.toISOString() };
+  }
+  if (typeof row.observed_at !== "string" || !Number.isFinite(Date.parse(row.observed_at))) {
+    throw new Error("money printer runtime store opportunity readback invalid");
+  }
+  return row;
+}
+
 function createMoneyPrinterRuntimeStore({ query } = {}) {
   if (typeof query !== "function") unavailable();
 
@@ -68,7 +79,7 @@ function createMoneyPrinterRuntimeStore({ query } = {}) {
         canonical.value_minor, canonical.currency, canonical.observed_at, canonical.goal_ref,
       ]), "opportunity", uid);
       if (row.opportunity_id !== canonical.opportunity_id) throw new Error("money printer runtime store opportunity readback invalid");
-      return row;
+      return normalizeOpportunityReadback(row);
     },
     async readOpportunity(value) {
       const expected = expectedOpportunity(value);
