@@ -256,6 +256,33 @@ test("general money worker permits an explicit runner without Gemini", () => {
   assert.equal(options.runAgentRunner, runner);
 });
 
+test("production general money worker resolves LM_REPO_ROOT and rejects filesystem root", () => {
+  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "lm-runtime-money-repo-root-"));
+  let options;
+  const dependencies = {
+    readOpportunity: async () => ({}),
+    updateOpportunity: async () => ({}),
+    createMoneyPrinterSpecialist(input) { options = input; return async () => {}; },
+    createRegistry() { return { hasCapability: () => false }; },
+  };
+  createWorkerHandlers({
+    LM_DATA_DIR: dataDir,
+    GEMINI_API_KEY: "gemini-secret-key",
+    LM_REPO_ROOT: "/app",
+  }, ["general-agent.work"], dependencies);
+  assert.equal(options.repoRoot, "/app");
+
+  assert.throws(() => createWorkerHandlers({
+    LM_DATA_DIR: dataDir,
+    GEMINI_API_KEY: "gemini-secret-key",
+    LM_REPO_ROOT: "/",
+  }, ["general-agent.work"], {
+    readOpportunity: async () => ({}),
+    updateOpportunity: async () => ({}),
+    createRegistry() { return { hasCapability: () => false }; },
+  }), /repo root invalid/);
+});
+
 test("production general money worker injects Railway opportunity functions without Supabase", async () => {
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "lm-runtime-money-cloud-"));
   const geminiKey = "gemini-secret-key";
