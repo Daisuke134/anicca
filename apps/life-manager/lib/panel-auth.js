@@ -216,8 +216,12 @@ async function handleMoneyPrinterGuestRequest(req, res, opts = {}) {
 
   await upsertMoneyPrinterGuest(identity, opts);
   const session = await createPanelSession({ uid: identity.uid, chatId: identity.chatId }, opts);
-  res.writeHead(200, moneyPrinterGuestHeaders({ "Set-Cookie": panelSessionCookie(session) }));
-  res.end(renderPanelPage({ csrf: csrfToken(session), guest: true }));
+  const createdScope = await sessionScope(session, opts);
+  if (!createdScope || createdScope.uid !== identity.uid || createdScope.chatId !== identity.chatId) {
+    throw new Error("money printer guest session unavailable");
+  }
+  res.writeHead(200, moneyPrinterGuestHeaders({ "Set-Cookie": panelScopeCookie(createdScope) || panelSessionCookie(session) }));
+  res.end(renderPanelPage({ csrf: createdScope.csrf || csrfToken(session), guest: true }));
 }
 
 function jsonResponse(res, status, body, headers = {}) {
