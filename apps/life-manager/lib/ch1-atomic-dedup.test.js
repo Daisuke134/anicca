@@ -171,6 +171,40 @@ test("[INTEGRATION] re-running fillTravel does NOT double-create — 2nd run's c
   s.restore();
 });
 
+test("[INTEGRATION][16T] an unrelated helper 26 minutes before an event does not suppress its outbound block", async () => {
+  const s = stubClaimLedger();
+  const target = rawEvId("ev-16t-unrelated", "Physical appointment", "Shibuya Hikarie, Tokyo",
+    "2026-06-20T14:00:00+09:00", "2026-06-20T15:00:00+09:00");
+  const unrelated = rawEvId("helper-16t-unrelated", "[Travel] 🚆 unrelated", "Old venue",
+    "2026-06-20T13:00:00+09:00", "2026-06-20T13:34:00+09:00");
+  const cal = makeFakeCalendar([unrelated, target]);
+  await fillTravel("uid-16t-unrelated", {
+    apiKey: "x", mapsKey: "x", home: "Setagaya, Tokyo",
+    nowMs: Date.parse("2026-06-20T08:00:00+09:00"), calendar: cal,
+    supaUrl: "http://s", supaKey: "k", _directionsMinutes: async () => 30,
+  });
+  const outbound = cal._created.find((block) => block.location === target.location);
+  assert.ok(outbound, "the target event still receives an outbound block");
+  s.restore();
+});
+
+test("[INTEGRATION][16T] a helper ending in the current-event window still dedupes outbound creation", async () => {
+  const s = stubClaimLedger();
+  const target = rawEvId("ev-16t-current", "Physical appointment", "Shibuya Hikarie, Tokyo",
+    "2026-06-20T14:00:00+09:00", "2026-06-20T15:00:00+09:00");
+  const current = rawEvId("helper-16t-current", "[Travel] 🚆 current", "Old venue",
+    "2026-06-20T13:00:00+09:00", "2026-06-20T13:59:00+09:00");
+  const cal = makeFakeCalendar([current, target]);
+  await fillTravel("uid-16t-current", {
+    apiKey: "x", mapsKey: "x", home: "Setagaya, Tokyo",
+    nowMs: Date.parse("2026-06-20T08:00:00+09:00"), calendar: cal,
+    supaUrl: "http://s", supaKey: "k", _directionsMinutes: async () => 30,
+  });
+  assert.equal(cal._created.some((block) => block.location === target.location), false,
+    "the current-event helper suppresses a duplicate outbound block");
+  s.restore();
+});
+
 // ── issue#10: releaseWake — a dial failure must not permanently burn the (uid,event,level) slot ──
 // 201 now hands back the CLAIM TOKEN rather than a bare `true` (see test/wake-claim-token.test.js
 // for why: a release must prove it owns the row it deletes, or it can erase a later tick's
