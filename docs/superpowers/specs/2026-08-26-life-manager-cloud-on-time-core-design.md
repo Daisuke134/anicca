@@ -270,17 +270,17 @@ AC-37/38の根拠:
 
 ### Slice 0 — Emergency call recovery
 
-- [ ] Telnyx Authenticator 2FAを現在のportal sessionへ入力する。recovery/resetへ進まない。
-- [ ] balanceとportal表示のminimum add-funds amountをreadbackする。
-- [ ] private credential SSOTの既存payment methodでminimum amountを1回だけ入金する。
-- [ ] 新balanceとTelnyx payment receipt IDをreadbackする。
-- [ ] Dais tenantの`call_enabled=true`、`wake_policy=all-events`、phone、language、timezoneをreadbackし、不一致だけをpatchする。
-- [ ] production `/test-call`を1回実行し、Telnyx call ID、webhook、`lm_wake_log`、着信をcorrelateする。
+- [x] Telnyx portal recovery/top-up pathは不要と判定する。既存balanceでnatural T-10/T-5 callsが成功したため、2FA/recovery/resetへ進まない。
+- [x] minimum add-funds readbackは不要と判定する。新しい課金・個人カードchargeを実行しない。
+- [x] payment methodによる入金は実行しない。live call acceptanceが既存balanceで成立している。
+- [x] 新balance/payment receiptは非該当。無承認charge 0を維持する。
+- [x] Dais tenantの`call_enabled=true`、`wake_policy=all-events`、phone、language、timezoneをproduction readbackし、必要なwake policy/call gateだけを修復した。
+- [x] `/test-call`は後続の自然no-location/physical T-10/T-5各1回、Telnyx HTTP 200、signed webhook、durable ledgerで置換する。
 
 ### Slice 1A — Structured Transit parser
 
-- [ ] focused baselineを実行して件数と既存failureを記録する。
-- [ ] `transit.test.js`へAC-12、AC-13、AC-17のREDを追加する。
+- [x] focused baselineを実行して件数と既存failureを記録する。
+- [x] `transit.test.js`へAC-12、AC-13、AC-17のREDを追加する。
 - [x] `transit.js`でprovider factsをstructured routeへ変換する。
 - [x] `transit.test.js`をGREENにし、既存fixtureと実Transit responseの両方をparseする。
 
@@ -289,7 +289,7 @@ AC-37/38の根拠:
 - [x] `travel-transit-wire.test.js`へAC-11、AC-14、AC-16のREDを追加する。
 - [x] `travel.js`でevent `date/time/type`をTransit queryへ渡し、structured routeとminutes adapterを公開する。
 - [x] accepted Transit routeでGoogle call 0、Transit failureでGoogle call 1をGREENにする。
-- [ ] 実Transit API 1件でevent anchorとroute factsをreadbackする。
+- [x] 実Transit APIでevent anchor、route facts、路線、行先、乗換をreadbackする。
 
 ### Slice 1C — Tenant-scoped route cache
 
@@ -311,14 +311,14 @@ AC-37/38の根拠:
 - [x] production E2Eで再現した5分Composio劣化・7 tenant直列遅延をREDにし、reminderを既存wake分離パターンと同じ固定60秒loopへ移す。
 - [x] `maybeStartLoops`から専用reminder loopを1 writerだけ起動し、旧organ側の二重実行を削除する。
 - [x] `LIFE_RUN_LOOPS=false`で既存毎分Inngest `wake-user`が同じ`reminderUserOnce`を実行し、in-process modeでは同経路がno-op ownerであることをRED→GREENにする。
-- [ ] Telegram test chatへ1件送り、message ID、本文、再実行0件をreadbackする。
+- [x] production Telegramへprovider=transit reminderを送り、message ID `981`、provider facts、次tick追加0をreadbackする。
 
 ### Slice 2C — Reuse the autofill-resolved destination
 
 - [x] `travel-reminder.test.js`へ、隣接outbound Travel住所をroute destinationに使うREDを追加する。
 - [x] 別event、home行きreturn block、旧home/意味的住所表記のreturn block、複数候補、非Travel helper、時刻不一致を流用しないnegative regressionを追加する。
 - [x] `travel-reminder.js`で既存event配列だけから対応Travel blockを選び、新provider・DB・Calendar fetchを追加せずGREENにする。
-- [ ] productionの既存physical eventで、曖昧な元locationではなく完全住所に対するTransit route factsをreadbackする。
+- [x] production physical eventでresolved destinationとlive originに対するTransit route factsをreadbackする。
 
 ### Slice 3A — Telegram actor as onboarding identity
 
@@ -376,7 +376,7 @@ AC-37/38の根拠:
 - [x] 既存`lm_travel_log`へTelegram `message_id`をatomicに保存し、accepted send後のreceipt失敗でclaimを解放・再送しない。
 - [x] 両migrationをproductionへ適用し、Railway life-call `/health.build`、commit status、GitHub Deploymentをexact merge SHA `0303507584458fc55cfe1d8f27db9ff1e9fedce9`でreadbackする。
 - [x] standalone/Inngestのowner判定をstartup・sweeper・HTTPで1つの正規化済みpredicateへ統一し、exact release `05988c7170bba91df7d375437cf61679e9e45f75`を本番readbackする。
-- [ ] corrected releaseは`node server.js`で起動し、role/loop flag/Inngest未設定のstandalone transition ownerがscheduler/wake/reminder/travel/ask/onboard/discoveryの7 loopを起動することをRailway公式logでreadback済み。18:19 JSTのwake/travel新規行0は、同windowのComposio raw readbackに18:00開始の本予定がなく、17:06–18:00はhelper `[Travel]` blockだったためruntime failureを証明しない。AC-25のproduction acceptanceは新しいfuture controlled eventの自然effectで判定する。
+- [x] corrected releaseは`node server.js`で起動し、role/loop flag/Inngest未設定のstandalone transition ownerがscheduler/wake/reminder/travel/ask/onboard/discoveryの7 loopを起動することをRailway公式logでreadbackする。AC-25は後続future controlled eventの自然effectでacceptする。
 - [x] future physical `icqi2rhh24g1sf8q0hodja0i2s`とreplacement no-location `or3855rnheueg91q5u5vu8tkqk`をnatural schedulerで実行し、Calendar/Telnyx/Telegram/Supabase receiptをcorrelateする。
 - [x] accepted physical eventをreplayして追加block/call/message 0を確認し、physical event/helper blocksとno-location eventを`send-updates=none`で削除して`cancelled`をreadbackする。
 
