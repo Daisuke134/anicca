@@ -1,6 +1,6 @@
 # Life Manager Cloud Telegram-First Product UX Design
 
-状態: APPROVED — launch coreとtrialはmerged/schema適用済み。exact deploy、別actor、自然event、replay-zeroが揃うまでfriend betaは開始しない
+状態: APPROVED — agent harnessはlocal/cloudともupstream OpenClaw一択。launch coreのprovider acceptance後に同じLife Manager Skill Packへ移す
 
 正本範囲: public QRから始まる初回体験、日常のTelegram体験、cloud/self-host共通境界、将来の会話runtime
 
@@ -146,7 +146,7 @@ sequenceDiagram
 
 表示するのはproviderが返した事実だけである。出口、最適車両、混雑を推測しない。元eventのtitle/locationは表示とclaim identityに残し、経路計算だけにautofill済み住所を使う。
 
-## 4. 既存coreを守り、自由会話はsidecarとして足す
+## 4. 既存coreを守り、upstream OpenClawを唯一のagent harnessとして足す
 
 置き換えない。
 
@@ -165,7 +165,7 @@ flowchart LR
     ID[Telegram署名 → tenant UID]
     DB[(Supabase\n設定・trial・ledger)]
     CORE[Deterministic on-time core]
-    CHAT[将来: conversation sidecar]
+    CHAT[Phase 2: upstream OpenClaw Gateway]
     TOOLS[許可されたLife Manager tools]
   end
 
@@ -192,16 +192,50 @@ flowchart LR
   CHAT -. DB/providerへ直接書かない .-> DB
 ```
 
-### 4.1 OpenClawMU/Hermesの採用境界
+### 4.1 唯一の選択: upstream OpenClaw
 
-OpenClaw本体はsingle-operator Gatewayである。Hermesはcloud VMからTelegramへ返答できる。OpenClawMUはtenant別session、memory、sandbox、cronを追加する。いずれも会話runtimeの候補だが、Life Managerのtenant、billing、effect ledgerの正本にはしない。
+agent runtimeを比較し続けない。localとcloudの両方で固定commitのupstream OpenClawを使う。HermesとOpenClawMUは採用しない。OpenClawをforkして独自agent loopを作らず、Life Managerはupstreamへinstallできるskill/plugin/toolだけを所有する。
 
-Phase 2で行うのは、固定SHAのOpenClawMUまたはHermesを隔離sidecarとして1 tenantで比較するspikeである。採用条件は次の四つに限定する。
+cloneした固定commitのproduction codeから、次を確認した。
 
-1. Telegram actorから渡されたLife Manager UID以外を選べない。
-2. Calendar、電話、Telegram送信、課金を直接実行できない。
-3. 全effectがLife Managerのintent/claim/readback/receiptを通る。
-4. sidecar停止中もon-time coreが通常どおり動く。
+1. Telegram ingressはaccount別disk spoolへupdateをdurable採用してからoffsetを進める。
+2. Telegram dispatchは`bot_id/chat_id/message_id`をkeyにSQLite replay guardを持ち、commit失敗時はclaim rollbackを試みる。
+3. channel/account/peer bindingからagentとsession keyを一意に解決する。
+4. cron state、next-run、run receiptはSQLite transactionへ保存する。
+5. local tool、memory、session、cron、Telegram gatewayを一つのupstream runtimeで提供する。
+
+したがって、Telegram consumer、agent loop、session routing、memory、skills、tool execution、cron、replay guardをLife Manager側で再実装しない。
+
+```mermaid
+flowchart TB
+  PACK[同一Life Manager Skill Pack]
+
+  subgraph LOCAL[Local product]
+    LG[upstream OpenClaw Gateway\n1 operator]
+    LS[(OpenClaw local state)]
+    LG --> LS
+  end
+
+  subgraph CLOUD[Cloud product]
+    ROUTER[Telegram actor → tenant instance]
+    A[upstream OpenClaw\ntenant A]
+    B[upstream OpenClaw\ntenant B]
+    APVC[(A PVC)]
+    BPVC[(B PVC)]
+    ROUTER --> A --> APVC
+    ROUTER --> B --> BPVC
+  end
+
+  PACK --> LG
+  PACK --> A
+  PACK --> B
+```
+
+cloudはAWS公式sampleのdeployment codeをcopy/tweakする。採用するのは、tenantごとのnamespace、SandboxClaim、OpenClaw container、PVC、ServiceAccount、NetworkPolicy、ResourceQuota、ArgoCD ApplicationSetである。Cognito identity、Bedrock固定、独自auth UIは採用せず、既にproductionで証明したTelegram署名actor、Supabase tenant、Stripe webhookを入口に使う。
+
+AWS sample固定commitは完成品SaaSではない。現在のApplicationSetはSandboxをalways-onにし、scale-to-zeroを無効にしている。tenant provisioningもPod Identity、Secrets Manager、Cognito、ApplicationSet、Kubernetes Secret、health待ちの複数effectでatomicではない。よって「そのままdeployすれば完成」とは扱わない。agent architectureはcopyし、identity/billing/effect authorityは既存のprovider-backed Life Manager control planeへ接続する。
+
+OpenClawMUを棄却する理由は、固定commitが単一Gateway process内でtenantごとのdirectoryとCronServiceをMap管理し、registryを`tenants.json`へ直接writeするためである。registry読込例外がempty registryになる実装もcloud authorityには使わない。Hermesを棄却する理由は、別のPython agent/session/cron runtimeを追加するとsole harnessが二つになり、local/cloudで同じSkill Packを動かす決定に反するためである。
 
 ### 4.2 車輪を作らない — 借りる層とLife Manager固有の薄い層
 
@@ -218,7 +252,7 @@ flowchart LR
     PAY[Stripe Checkout + webhook]
     ROUTE[Transit / Google Routes]
     VOICE[Telnyx]
-    CHAT[Phase 2: OpenClawMU または Hermes]
+    CHAT[Phase 2: upstream OpenClaw]
   end
 
   subgraph OWN[Life Managerだけが持つ薄いproduct logic]
@@ -250,35 +284,35 @@ flowchart LR
 | durable state | Supabase/Postgres、unique constraint、RLS | effect key、claim、trial deadline | agent独自DB、client deadline、memoryをauthority化 |
 | 課金 | Stripe hosted Checkout、signed webhook | value-first 3-day trialとentitlement filter | card form、billing engine、`paid`の別writer |
 | route/call | provider response、Telnyx signed webhook | provider factsの整形と最大1回policy | 乗換engine、電話carrier、推測route |
-| 自由会話 | OpenClaw/Hermesのgateway・tools・memory・cron | tenant-scoped tool request sidecar | agent loop、skill system、sandboxの再実装 |
+| 自由会話 | upstream OpenClawのgateway・Telegram spool・tools・memory・cron | Life Manager Skill Packとtenant instance binding | agent loop、skill system、session DB、sandboxの再実装 |
 
-OpenClawの固定READMEはsingle operator用Gatewayと明記し、host toolはsandbox設定なしではhost上で動く。したがって、そのままmulti-tenant cloud authorityにはしない。OpenClawMUはtenant token、session、memory、sandbox directoryを既に実装しているのでPhase 2 spikeでは再利用候補だが、固定commitのregistryはlocal JSON file正本である。Life Manager CloudのTelegram identity、Stripe billing、Supabase ledgerを置き換えない。Hermesはcloud VM、Telegram gateway、memory、tools、cron、sandbox backendを既に持つため、会話loopを自作する代わりの比較候補である。
+## 5. cloudとself-hostは同じOpenClaw harnessとSkill Packを使う
 
-## 5. cloudとself-hostはdomain toolだけを共有する
-
-cloudとlocalを一つのprocessへ統合しない。予定選択、出発時刻、route整形、effect keyの作り方を共通domain toolとして共有する。保存先と実行ownerは製品ごとに分ける。
+同じsource artifactを使うが、全ユーザーを一つのprocessへ詰め込まない。localは一人につき一つのOpenClaw Gateway、cloudも一tenantにつき一つの隔離OpenClaw instanceとする。予定選択、出発時刻、route整形、effect keyを同じLife Manager Skill Packとして両方へinstallする。
 
 ```mermaid
 flowchart TB
-  SHARED[共有domain tools\n予定選択・時刻・route・effect key]
+  SHARED[同一Life Manager Skill Pack\n予定選択・時刻・route・effect key]
 
   subgraph HOSTED[Cloud product]
-    RAIL[Railway]
-    SUPA[(Supabase)]
-    MULTI[複数tenant]
+    ROUTER[tenant router]
+    PODS[tenant別 upstream OpenClaw]
+    SUPA[(Supabase control plane)]
   end
 
   subgraph LOCAL[Self-host product]
-    DAEMON[local daemon]
-    LSTATE[(local state)]
+    DAEMON[upstream OpenClaw Gateway]
+    LSTATE[(OpenClaw local state)]
     ONE[一人のowner]
   end
 
-  SHARED --> RAIL --> SUPA --> MULTI
+  SHARED --> PODS
+  ROUTER --> PODS
+  SUPA --> ROUTER
   SHARED --> DAEMON --> LSTATE --> ONE
 ```
 
-local loopを一括移植しない。ユーザー価値が確認された機能を一つずつtool contractへ切り出し、cloud adapterを追加する。
+local loopを別architectureのままcloudへ複製しない。ユーザー価値が確認された機能を一つずつOpenClaw skill/tool contractへ切り出し、同じpackageをlocal/cloudへinstallする。現行launch coreはprovider acceptanceを取り終えるまで挙動を変えず、その後の移行で既存receipt/replay testをそのままport gateにする。
 
 ## 6. trialは価値を体験した後に1回だけ課金を求める
 
@@ -333,8 +367,9 @@ flowchart TD
   D --> E[Active 5\n新しいfuture eventでprovider E2E]
   E --> F[Active 6\nreplay-zero + controlled event cleanup]
   F --> LAUNCH[友達betaを開始]
-  LAUNCH --> SPIKE[Phase 2\nOpenClawMU/Hermes sidecar spike]
-  SPIKE --> CHAT[自由会話を1 toolずつ追加]
+  LAUNCH --> PACKAGE[Phase 2\nLife Manager Skill Pack化]
+  PACKAGE --> CLOUD[tenant別 upstream OpenClaw cloud]
+  CLOUD --> CHAT[自由会話を1 toolずつ追加]
 ```
 
 Active TODOの測定済み状態と最新の一手はprogress.mdだけに置く。Phase 2はActive 1–6がprovider evidence付きで完了するまでproduction codeへ入れない。
@@ -390,14 +425,14 @@ primaryだけがspec、plan、progress、完了判定を更新する。workerは
 | Calendar | consent 1回、以後background | 毎日のCalendar操作 |
 | 電話 | phone任意、別の明示opt-in | phone入力を同意扱い |
 | trial | server-owned 3日、1回だけ | localStorage、再登録延長、usage meter新設 |
-| 会話runtime | launch後のsidecar | on-time coreの置換、provider直接write |
-| cloud/local共有 | domain tool contract | process/state/credentialの一体化 |
+| 会話runtime | upstream OpenClawだけ | Hermes、OpenClawMU、独自agent loop |
+| cloud/local共有 | 同じOpenClaw + 同じLife Manager Skill Pack | 別harness、単一shared multi-tenant process |
 | 完了判定 | provider ID + durable ledger + replay-zero | local test、log文、process liveness |
 
 ## 11. Current launchの範囲外
 
 - 自由会話、voice note、画像理解、email作業、browser作業。
-- OpenClawMU/Hermesのproduction導入。
+- upstream OpenClawへのSkill Pack移行とtenant別cloud cutover。これはlaunch acceptance後のPhase 2で行う。
 - Gmail connector、native event store、Google Calendar不要化。
 - local loopの一括cloud移植。
 - 新しいroute provider、agent memory DB、sandbox、quota service。
@@ -407,7 +442,11 @@ primaryだけがspec、plan、progress、完了判定を更新する。workerは
 
 - Poke: https://poke.com/ — messagingを主画面にし、接続serviceとmemoryから先回りする製品例。
 - Town Telegram: https://www.town.com/features/telegram と https://www.town.com/integrations/telegram — text、photo、voiceを同じthreadへ入れ、effectをapprovalへ戻す製品例。
-- OpenClaw fixed README: https://github.com/openclaw/openclaw/blob/90a9622a6cf5740ab4b9f6f65d9081d47ffbc4e4/README.md — single-operator Gateway境界。
-- Hermes fixed README: https://github.com/NousResearch/hermes-agent/blob/a619db663374ab31f3c3e3c9197247e0636c4069/README.md — cloud VMとTelegram gateway境界。
-- OpenClawMU multi-tenancy: https://docs.neullabs.com/openclawmu/multi-tenancy/ — tenant別session、memory、sandbox、cron。
-- OpenClawMU fixed tenant registry: https://github.com/neul-labs/openclawMU/blob/f874b00ebf30b668ed7819f5ede2e0595433155d/src/tenants/registry.ts — file-backed tenant registry実装。
+- OpenClaw Telegram spool: https://github.com/openclaw/openclaw/blob/90a9622a6cf5740ab4b9f6f65d9081d47ffbc4e4/extensions/telegram/src/telegram-ingress-spool.ts — account別durable ingress queue。
+- OpenClaw Telegram replay guard: https://github.com/openclaw/openclaw/blob/90a9622a6cf5740ab4b9f6f65d9081d47ffbc4e4/extensions/telegram/src/message-dispatch-dedupe.ts — bot/chat/message ID claimとSQLite commit/rollback。
+- OpenClaw route/session: https://github.com/openclaw/openclaw/blob/90a9622a6cf5740ab4b9f6f65d9081d47ffbc4e4/src/routing/resolve-route.ts — channel/account/peerからagent/session keyを決定。
+- OpenClaw cron store: https://github.com/openclaw/openclaw/blob/90a9622a6cf5740ab4b9f6f65d9081d47ffbc4e4/src/cron/service/store.ts — SQLite transactionとrun receipt conflict。
+- AWS tenant Sandbox: https://github.com/aws-samples/sample-openclaw-multi-tenant-platform/blob/2cb44f7f0a359ef8054cac8be02f07c035e88f4d/helm/charts/openclaw-platform/templates/sandboxtemplate.yaml — tenant別OpenClaw container、PVC、ServiceAccount。
+- AWS tenant isolation: https://github.com/aws-samples/sample-openclaw-multi-tenant-platform/blob/2cb44f7f0a359ef8054cac8be02f07c035e88f4d/helm/charts/openclaw-platform/templates/networkpolicy.yaml と https://github.com/aws-samples/sample-openclaw-multi-tenant-platform/blob/2cb44f7f0a359ef8054cac8be02f07c035e88f4d/helm/charts/openclaw-platform/templates/resourcequota.yaml。
+- AWS tenant provisioning: https://github.com/aws-samples/sample-openclaw-multi-tenant-platform/blob/2cb44f7f0a359ef8054cac8be02f07c035e88f4d/scripts/provision-tenant.sh — multi-effect provisioningとhealth待ち。
+- OpenClawMU rejected registry: https://github.com/neul-labs/openclawMU/blob/f874b00ebf30b668ed7819f5ede2e0595433155d/src/tenants/registry.ts — single-process file registryの棄却根拠。
