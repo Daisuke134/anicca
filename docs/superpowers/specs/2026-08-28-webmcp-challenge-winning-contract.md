@@ -977,8 +977,8 @@ The initial product is a general entrepreneur agent that continuously searches X
 | Netlify | PR #400/401、deploy run `33254381157`はSUCCESS。`https://aniccaai.com/money-printer` page/API 200、`Origin-Agent-Cluster:?1`、`Permissions-Policy:tools=(self)`、no-store、zero-login sessionをreadback | ChatGPT/Chromeで実tool discoveryとvisible mutationを証明する |
 | Worker | dedicated Railway service `money-printer-worker`をGitHub mainから稼働。Pageを閉じたまま公開WebをGemini Interactions APIのGoogle Search citationsで調査し、抽出・dedupe・qualificationを既存runtime queueで実行する。新実装のmanual cycleはattempt 2でcompleted、旧実装の最初のnatural cycleは証拠を残してdead-letter | 16:00Zから同一releaseの3 natural cyclesを観測し、two concurrent workroomsを証明する |
 | External proof | Lancers project `5593484`のofficial application receipt `27863414`をread-only importし、official log + append-only ledgerでcontent hashを照合。applicationとして表示し、revenueへは算入せず、replay duplicate 0 | browser demoでreceiptとverified money 0を同時に見せる |
-| Devpost | project `1404362`、draft URL `https://devpost.com/software/life-manager-uny729`、public repo、MIT license、README、60-second judge guide、English draftあり。submissionは`drafting` | screenshots、immutable tag、public YouTubeを埋め、official formを再readbackして明示承認後にsubmitする |
-| Local capacity | Data volume freeは2.4 GiB | 8 GiB以上へ安全に回復するまでclean install、browser E2E、videoを開始しない |
+| Devpost | project `1404362`をfresh Sol review済みEnglish draftへversion 3同期。`website_url=https://aniccaai.com/money-printer`、public repo、MIT license、README、judge guideをlive readback。`submitted_at=null`、`video_url=null` | screenshots、immutable tag、public YouTube、required custom answersを埋め、official formを再readbackして明示承認後にsubmitする |
+| Local capacity | Data volume freeは2.4 GiB前後まで回復するが、macOS swapが12–14 GiBへ再成長して8 GiB gateを維持できない | DaisがChromeのSupabase SQL Editorを保存後、Mac restartを明示承認する。再起動後ただちに8 GiB以上をreadbackする |
 
 ### Submission critical path — one active item
 
@@ -987,7 +987,7 @@ The initial product is a general entrepreneur agent that continuously searches X
 1. 保護対象と稼働browserを壊さずData volume freeを8 GiB以上へ戻し、`df`でreadbackする
 2. clean browserでzero-login、private data 0、WebMCP tool discovery、visible mutationを実測する
 3. 一つのsame-jobで`Needs You`作成→human answer→resume→receiptを閉じ、stale revisionとsafe recoveryも同じ画面で示す
-4. two concurrent workroomsのrefs/effect keysが交差せず、reset後にjudgeが60秒以内で再現できることを示す
+4. [pass: workroom isolation] two live workroomsを同時readし、各activity refが自分のopportunity IDだけを含みcross-contamination 0を確認。次にreset後にjudgeが60秒以内で再現できることを示す
 5. 同一production releaseから16:00Z、00:00Z、08:00Zの3 natural scout cyclesをreadbackし、source duplicate最大1を確認する
 6. public repoをclean cloneし、locked install、focused tests、secret/PII scanを通してimmutable release tagとdeploy SHAを固定する
 7. judge E2Eのscreenshotsとclean MP4を作り、Daisの英語narration付き3分未満public YouTubeへ仕上げる
@@ -1021,7 +1021,7 @@ The initial product is a general entrepreneur agent that continuously searches X
 - [ ] X/Web/GitHub/mail discovery + Lancers/Mercor + arbitrary marketplace URL intakeを24/7運用する
 - [ ] same deployed releaseから24時間・3回以上のnatural scout cycle receipt
 - [x] multiple real opportunities + source-level dedupe readback
-- [ ] multiple concurrent workrooms
+- [x] multiple concurrent workrooms with isolated refs and cross-contamination 0
 - [ ] normal browser human UI
 - [ ] ChatGPT built-in browser WebMCP E2E
 - [ ] Chrome WebMCP E2E
@@ -1147,13 +1147,13 @@ One active item at a time。各itemは実物readbackを閉じてから次へ進�
 | U01 | General agentがprovider listに縮退する | design-closed | X/Web/GitHub/mail/任意URLを同じgoal→job→tool loopへ入れるcontract test | provider keyword routingを検出したらmergeしない |
 | U02 | Opireがprimary proofに使えるか | rejected | API 56 records→33 closed、7 missing/deleted、16 open。低競争候補も22 competing PRsとpayout uncertainty | Opire固有実装を作らない |
 | U03 | Current branchが最新mainと乖離 | resolved through worker release | life-call/worker main SHA `43fd11c4`とproduction deployment SHAが一致し、PR #3097のInteractions scoutを含む | stale docs/shared checkoutからproduction codeを編集しない |
-| U04 | Disk不足でinstall/build/videoが失敗 | gate blocked | Data volume free 2.4 GiB。保護対象を触らず8 GiB以上へ回復し、直後に`df` readback | free <8 GiBの間はclean install/browser E2E/videoを実行しない |
+| U04 | Disk不足でinstall/build/videoが失敗 | gate blocked / restart authority pending | 再生成cache、closed session compression、clean remote checkout/worktreeを安全回収してもswapが12–14 GiBへ再成長し、freeは2.4 GiB前後。ChromeにはSupabase SQL Editorが開いているため無断restart/quitしない | Daisの`restart ok`後にMac restart。free <8 GiBの間はclean install/browser E2E/videoを実行しない |
 | U05 | Lancers installed ownerがfail中 | resolved | application ownerのauthenticated inventory、official readback、append-only ledger、replay skipを照合 | 再びauth failureならmutationせずNeeds Youへ出す |
 | U06 | Lancers login/sessionが有効か | resolved for receipt proof | exact owned sessionからproposal `27863414`をofficial readbackし、ledger sequence 37とcontent hash一致 | guest UIへcredentialを渡さずredacted receiptだけ投影する |
 | U07 | 応募可能なLancers案件があるか | resolved for primary proof | project `5593484`をmodel判断し、official application receiptまで閉じた | 次候補がなければapplicationを送らず別market discoveryを継続 |
 | U08 | Lancers proposal effect/readbackが現在のDOMで動くか | resolved | proposal `27863414`をofficial readbackし、同じ案件への後続wakeはduplicate skip | post-effect unknownは再送せずreconciliation |
 | U09 | General projectionが既存receiptを正しく表示できるか | live-resolved | canonical APIで7 opportunities、11 receipts、completed/dead-letter jobs、verified application receipt、paid 0をreadback。raw errorは非表示 | 新receipt kindはstrict testを通すまで表示しない |
-| U10 | Minimal human判定が丸投げになる | domain/API code-verified / live-open | Model-selected `human_boundary_ref`、stable task/open dedupe、vault answer、pause attempt preservation、same-job resume focused pass。次にlive model caseとAPI E2E | agentが実行可能なworkをhuman taskにしたらfail |
+| U10 | Minimal human判定が丸投げになる | root cause found / Task 5C pending | HumanTask schema/RPC、answer API、state-dependent WebMCP toolはcode-verifiedだが、production callerが`create_lm_human_task`を呼ばずspecialistはcompleted固定、workerは全successをcompleteする。Task 5Cでmodel blocked result→existing atomic RPC→explicit worker pauseをTDD接続し、live creation/answer/resumeを実測する | agentが実行可能なworkをhuman taskにしたらfail。新table/service/tool/provider branchは作らない |
 | U11 | WebMCP toolsがChatGPTで発見・実行されるか | read/write registration code-verified / browser live-open | top-level inspect toolsとstate-dependent answer toolを含むfocused suite 65/65。次にSol/Terra tool list、recent call、visible resume | ChatGPT rollout不可ならChrome 149+ evidenceでStage Oneを守る |
 | U12 | Netlify/Browser security headersがWebMCPを許すか | HTTP resolved / client discovery open | run `33254381157` SUCCESS、canonical page/API 200、origin isolation、Permissions Policy、no iframe registrationをreadback。次にChatGPT/Chrome tool discovery | header/tool discoveryが両方通るまでbrowser gateを閉じない |
 | U13 | Page close後も24/7 workが続くか | worker live / natural proof in progress | Interactions API citations版がproduction main SHA `43fd11c4`でRUNNING。manual cycleはattempt 2でcompleted、restart前後state一致。旧実装のnatural cycleはdead-letterのまま保存。次に16:00Z、00:00Z、08:00Zの3 natural cyclesをreadback | page-local toolをscheduler代わりにしない |
@@ -1161,7 +1161,7 @@ One active item at a time。各itemは実物readbackを閉じてから次へ進�
 | U15 | Mercorが期限内proofになるか | bounded | public inventoryとapplication-step state、human interview taskまでを実測 | 2–4週のselection/cashをDoneに含めない。AI interview代答禁止 |
 | U16 | X discovery sessionが使えるか | blocked | existing daily-driverのlogged-in X tab readback、read-only search receipt | duplicate browserを起動せずWeb/GitHub/mail discoveryで継続 |
 | U17 | Unknown marketplaceでeffect adapterがない | read-only qualification live / effect blocked | Lancers public URLsをcanonical APIへ入れ、provider routeなしでGemini qualificationとreceiptをlive readback。Effect adapter/auth/readbackは未実証 | adapter/auth/readbackがなければeffectだけfail closed、research/planningは継続 |
-| U18 | Multiple agentsでcontext/effectが交差する | open | two workrooms、different effect keys、isolated refs、bounded concurrency、sibling checkpoint preservation | shared mutable customer stateを検出したらparallel effectを止める |
+| U18 | Multiple agentsでcontext/effectが交差する | live-resolved for workroom projection | two production workroomsを同じguest sessionから同時GETし、各2 activity refsが自分のopportunity IDだけを含み、cross-contamination falseをreadback。external effect concurrencyはjudge tenantでdeny | shared mutable customer stateを検出したらparallel effectを止める |
 | U19 | Revenueを盛って表示する | code-verified / UI live-open | Verified external incomeだけを通貨別mapで集計し、JPY/USD等を混算しない。Application/Paymentは別receiptのまま | cash receiptなしならverified money empty/0を表示 |
 | U20 | Real external receiptが締切までに得られない | resolved for application proof | Lancers official application ID `27863414`、official log、append-only ledger sequence 37、matching content hash | acceptance/delivery/cashは得られたterminalだけ表示し、applicationを売上にしない |
 | U21 | Existing projectの新規WebMCP差分が不明 | partial pass | README `Hackathon changes`とdated commitsは公開済み。次にsubmitted tag diffを固定 | prior Life Manager機能をHackathon成果として数えない |
