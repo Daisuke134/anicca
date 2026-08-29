@@ -300,7 +300,7 @@ Also test cross-tenant refusal, stale version conflict, replay no-op, secret rej
 
 - [x] **Task 5A:** Add the domain module and migration constraints: `(uid, task_id)` primary key, status enum, version check, unique open `(uid, job_id, reason_code)`, RLS/service-role boundary, `waiting_human` runtime state, and atomic create/answer RPCs. Answer requeues the same `(uid, job_id)` and never creates another runtime job.
 - [x] Run human-task test for module-not-found RED, then GREEN 4/4; commit `3f4ef9bdb`; DB apply remains Task 8 deployment work.
-- [ ] **Task 5B:** Implement task/answer functions, authenticated endpoints, and the two state-dependent WebMCP tools:
+- [x] **Task 5B:** Implement task/answer functions, authenticated endpoints, and the two state-dependent WebMCP tools:
 
 ```text
 GET  /api/panel/money-printer/human-task/next
@@ -326,7 +326,7 @@ async function answerHumanTask(input, store) {
 }
 ```
 
-- [ ] Run human-task, Panel API, and marketplace effect tests; commit `feat(life-manager): resume after human input`; push.
+- [x] Run human-task, WebMCP, Panel API/UI focused tests 65/65 after fixing the registration Promise race; commits `4f01d717d` and `78b03fe56`; push. Migration apply/live resume remain Task 8.
 
 ---
 

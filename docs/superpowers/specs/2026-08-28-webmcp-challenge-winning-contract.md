@@ -719,6 +719,7 @@ Focused reuse suiteはruntime/browser jobs、ask/reply、reconciliation、panel�
 | Task 3 | Tenant-bound `GET /api/panel/money-printer`と六列Panel sectionをfocused TDDで実装。RED 2 failures、GREEN projection+Panel 58/58、commit `7b82045eb` | Empty/fake server sourceは作らない。Task 5/7でdurable human task/opportunity sourceを実dataへ接続する |
 | Task 4 | Top-level `inspect_money_printer` Site toolを実装。RED module missing、Luna GREEN 27/27、parent rerun 27/27、credential/CSRFなし、commit `9a68c5f9d` | Task 5で実human-task endpointが完成した後だけread/write toolsを追加する |
 | Task 5A | Model judgment refに束縛したstable HumanTask、vault-answer ref、tenant/open dedupe、`waiting_human`、atomic same-job requeue SQLを実装。RED module missing、Luna/parent 4/4、commit `3f4ef9bdb` | DB applyは未実施。Task 5Bでauthenticated APIとstate-dependent WebMCP toolsへ接続する |
+| Task 5B | Tenant-bound next/answer API、CSRF/origin/idempotency、Supabase RPC store、state-dependent inspect/answer toolsを実装。registration Promise raceを修正後、Luna/parent 65/65、commits `4f01d717d` + `78b03fe56` | Migration apply、same-job live resume、visible UI transitionはTask 8 E2Eで閉じる |
 
 ### 10.5 One product, one mode
 
@@ -1120,7 +1121,7 @@ One active item at a time。各itemは実物readbackを閉じてから次へ進�
 | U08 | Lancers proposal effect/readbackが現在のDOMで動くか | blocked | code kernelではなく実siteでimmutable intent、presend absent、effect 1、official proposal ID、replay effect 0 | post-effect unknownは再送せずreconciliation |
 | U09 | General projectionが既存receiptを正しく表示できるか | projection + Panel code-verified / live source open | projection 2/2、tenant-bound GETと六列UIを含むfocused suite 58/58。次にruntime/application/general receiptsをserver sourceへ接続 | raw provider stateやempty fake sourceをUIへ渡さない |
 | U10 | Minimal human判定が丸投げになる | domain code-verified / live-open | Model-selected `human_boundary_ref`、stable task/open dedupe、vault answer、same-job resume 4/4。次にlive model caseとAPI E2E | agentが実行可能なworkをhuman taskにしたらfail |
-| U11 | WebMCP toolsがChatGPTで発見・実行されるか | registration code-verified / browser live-open | top-level imperative `inspect_money_printer` 27/27 pass。次にSol/Terra in-app browser tool list、recent call、visible state change | ChatGPT rollout不可ならChrome 149+ evidenceでStage Oneを守る |
+| U11 | WebMCP toolsがChatGPTで発見・実行されるか | read/write registration code-verified / browser live-open | top-level inspect toolsとstate-dependent answer toolを含むfocused suite 65/65。次にSol/Terra tool list、recent call、visible resume | ChatGPT rollout不可ならChrome 149+ evidenceでStage Oneを守る |
 | U12 | Netlify/Browser security headersがWebMCPを許すか | open | origin isolation、Permissions Policy、no iframe registration、clean-browser tool discovery | headerが通るまでdeployをworking扱いしない |
 | U13 | Page close後も24/7 workが続くか | open | page closed状態で3 natural cycles、restart recovery、same workroom state | page-local toolをscheduler代わりにしない |
 | U14 | Guest judgeとprivate production stateが混ざる | open | tenant-bound fixture-free guest identity、zero private credentials/PII、same build/domain functions、effect authority denied | private owner receiptはredacted read-only projectionだけ許可 |
