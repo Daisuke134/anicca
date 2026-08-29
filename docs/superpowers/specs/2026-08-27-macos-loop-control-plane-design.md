@@ -1,6 +1,6 @@
 # macOS Life Manager Loop Control Plane
 
-**Status:** Control plane implemented — stale ownership cleanup remains active
+**Status:** Control plane source implemented — production release completeness and full-fleet OSS startup remain
 **TODO ID:** `MACOS-LOOP-CONTROL-PLANE-1`  
 **Canonical registry:** `config/loop-registry.json`  
 **Scope:** macOS launchd only
@@ -338,7 +338,7 @@ actionable repair count.
    the one repaired loop, official effect evidence, remaining cursor, and any
    fail-closed blocker.
 
-Ordered operational TODO (this is the only active order):
+Completed implementation history:
 
 Completed evidence: `affiliate-browser` is repaired by PRs #2946, #2947, and
 #2949. Account 1 primary/Account 2 pre-effect fallback is merged by PR #2983
@@ -355,12 +355,11 @@ recreator. Completed items are not part of the remaining queue.
    `shared-agent-runner` rows that are `loaded-idle`; `loaded-running` rows are
    reported and untouched. PRs #3010, #3012, and #3015 are merged. A real owner
    pass completed `eligible=63`, `failed=0`, and `skipped_running=12`. The final
-   capability audit covers all 78 consumers: installed SHA missing 0; the three
-   installed releases (`6ab86c33`, `d9021490`, `def55ccd`) are all descendants
-   of Account auto merge `3d69c74b`. Runtime state is 61 loaded-idle, 14
-   loaded-running, and 3 intentionally unloaded; exact equality with mutable
-   `current` is not a capability gate while main continues to advance.
-3. ✅ Make OSS startup truthful: a few commands provision local-only state,
+   capability audit covers all 78 consumers: installed SHA missing 0 and every
+   installed release is a descendant of Account auto merge `3d69c74b`. Current
+   runtime state is 61 loaded-idle, 16 loaded-running, and 1 unloaded; exact
+   equality with mutable `current` is not a capability gate while main advances.
+3. ✅ Make the portable OSS subset startup truthful: a few commands provision local-only state,
    secrets, choose supported loops, start local scheduler/workers, install the
    platform-appropriate supervisor, and show runtime ownership. PR #3024 makes
    `scripts/local-up.sh` build the shared runtime image once, then starts the
@@ -368,7 +367,7 @@ recreator. Completed items are not part of the remaining queue.
    --help` fail before mutation. A clean Colima run created the local-only
    password and brought API, scheduler, worker, liveness, Postgres, and object
    store to healthy from one command.
-4. ✅ Prove the OSS supervisor owns parallel work after the initiating shell
+4. ✅ Prove the portable OSS supervisor owns parallel work after the initiating shell
    exits. PR #3025 extends `local-up.sh status` with scheduler owner,
    `loops_enabled`, effect scheduler flags, worker capabilities, and liveness
    last-poll readback. After the start shell exited, all six services remained
@@ -387,6 +386,21 @@ recreator. Completed items are not part of the remaining queue.
    security/consolidation backlog; they do not change Account auto, local
    supervisor health, or external-effect receipts, and are not silenced with a
    blanket allowlist or breaking `npm audit fix --force`.
+
+#### Current measured state and remaining TODO — execute only in this order
+
+Current registry has 166 managed rows and unmanaged labels 0. Account auto is
+present in all 78 shared-runner consumers with installed SHA missing 0. The
+active `current` release is `cc94f70e` and contains only `bin`, `config`,
+`runtime/loop`, `runtime/agent-runner`, `skills/anicca-core/scripts`, and
+`skills/_shared`. Consequently `lm-loop doctor` is red with 125 missing
+entrypoints even though retired-installed and unmanaged counts are both 0.
+
+| Order | Remaining TODO | Done evidence |
+|---:|---|---|
+| 1 | Restore one complete immutable production release without restarting all loops. The release owner cuts pushed `main` with every registry entrypoint and locked dependency, then applies only idle labels; running labels move only when naturally idle. | `current/RELEASE.json` says `release_paths=ALL`; `lm-loop doctor` reports `ok=true`, missing entrypoints 0, unmanaged 0, retired-installed 0; loaded argv readback points only to existing immutable releases. |
+| 2 | Finish full-fleet OSS startup. Keep the proven Docker API/scheduler/worker subset, but add an explicit supported-loop profile and platform supervisor path so a clean user can start selected Life Manager loops rather than only render plists. Never bundle Dais credentials or claim private provider loops work without user-owned setup. | From a clean user: documented few-command setup, user-owned secret provisioning, selected loops start in parallel, initiating shell exits, supervisor retains them, and the resolver reports each selected loop's liveness, capability/auth blocker, terminal result, and official effect status. |
+| 3 | Close the separate OSS/security backlog without blanket allowlisting or `npm audit fix --force`. Start with production personal-email defaults, then source-root portability/inventory, then transitive dependency upgrades. | PII shape 0, OSS self-contained boundary 0, Python syntax 0, dependency audit critical 0 and high 0, with focused compatibility readback for affected runtime routes. |
 
 ### TODO 1 execution state
 
