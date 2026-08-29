@@ -27,8 +27,7 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 この節は、後段の「現在TODO」「次の一件」「local-only」「self-funded agentは別product」という相反する記述を
 上書きする最新の実行順序SSOTである。後段は実装履歴・organ別acceptanceとして保持するが、次作業の選択には使わない。
 Upworkのterminal evidence、startup context、public claim、GA-01〜13Aは完了または履歴として保持する。
-次の一件はAtomic program ledger Seq 15 `ELZ-C02`で、Life Manager pluginから既存loopと同じCodex subscription transportへ
-`gpt-5.6-luna`のstructured callを一回通す。
+次の一件はAtomic program ledger Seq 15 `ELZ-C02`のsubstep `C02-01`で、現行loopが実際に使うCodex runner argvを読む。
 
 #### 0.0.1 最新基盤決定 — ElizaOSを完全forkし、Life Managerをlocal OSSからmulti-tenant SaaSへ育てる
 
@@ -541,6 +540,34 @@ TDDとreviewは必要最小限にする。code behaviorを変えるatomは正常
 実際に触るriskだけをfocused RED→GREENで固定する。docs/read-only/既存upstream実行atomに人工的なunit testを追加しない。
 reviewはfocused verification後のfresh adversarial P0/P1 review一回だけとし、findingがあれば同じimplementerが直し、そのfindingだけを再確認する。
 無関係な全suite、複数reviewer、同じdiffの反復full review、内部object組合せ網羅へ拡張しない。
+
+##### 現在のAtomic TODO — 基盤完成後にLancersへ進む
+
+実行順序は`ELZ-C02 → C03 → C04 → C05 → C06 → C07 → C08 → C09 → ELZ-L01以降`で固定する。
+Lancersはgeneral-agent基盤完成後の最初の実環境であり、C02〜C09を飛ばして先行しない。後段のPhase C/L/H/I/R/O/T/W表を
+大順序の正本として維持し、現在activeなatomだけをここで単一行動へ分解する。atom完了時に次atomを同じ粒度へ分解し、
+将来atomを勝手に並べ替えない。model providerとroutingは現行Life Manager loopから変更しない。通常のloopと一般判断は
+Codex subscriptionの`gpt-5.6-luna` medium、高難度判断・修復・browser escalationは既存task classどおりCodex subscriptionの
+`gpt-5.6-terra`を使う。実行経路は既存の`codex exec --ephemeral --json --output-schema`だけである。変えるのはElizaOSベースの
+harnessであり、modelとroutingではない。GPT-OSS、local open-weight model、OpenAI API key、ClawRouter、Hermes、別model routerは追加しない。
+
+- [ ] **C02-01** 現行loopの実`codex exec` argvを読む
+- [ ] **C02-02** 現行runnerのprovider/model/effort pinを読む
+- [ ] **C02-03** C02 structured output schemaを一つ保存する
+- [ ] **C02-04** Codex runner境界のfocused testを一つ追加する
+- [ ] **C02-05** focused testの失敗を一回確認する
+- [ ] **C02-06** `plugin-life-manager`へ現行Codex runner境界を最小接続する
+- [ ] **C02-07** focused testの成功を一回確認する
+- [ ] **C02-08** `gpt-5.6-luna` structured callを一回実行する
+- [ ] **C02-09** schema-valid resultを一回再読出しする
+- [ ] **C02-10** provider/model/effort/exit/usageを`model-provider-receipt.json`へ保存する
+- [ ] **C02-11** C02差分をadversarial reviewへ一回渡す
+- [ ] **C02-12** C02 receiptをPASSへ更新する
+- [ ] **C02-13** ELZ-C02をDONEへ更新する
+- [ ] **C02-14** ELZ-C03をNEXTへ更新する
+
+Lancersでまだ新しい収益がないことは、この順序を飛ばす理由にしない。現時点はC02未完であり、新forkのgeneral-agent基盤が
+Lancers実環境へ到達していない。Lancersでの新規応募・契約・受領金・銀行着金はPhase C完了後のPhase Lで一つずつ実証する。
 
 ##### Phase F — Eliza fixed treeを未変更でlocal起動する
 
