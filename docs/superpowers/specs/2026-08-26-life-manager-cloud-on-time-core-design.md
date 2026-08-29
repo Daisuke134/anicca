@@ -125,7 +125,7 @@ Transit APIの公式契約は次を使う。
 | AC-12 | `type=arrival`はanchor以前へ到着するjourneyのうちdepartureが最も遅い1件、`type=departure`はanchor以後に出発するjourneyのうちarrivalが最も早い1件を選ぶ。条件を満たすjourney 0件はTransit failureとしてGoogleへfallbackする。 |
 | AC-13 | routeはheadsign、routeName、trainType、乗降駅、departure/arrival、platformCode、fare、徒歩秒数を欠落させない。service dateとtimezoneからseconds-since-midnightをRFC3339へ変換し、86400以上は翌日として保持する。providerが返さないfieldは`null`または`false`にする。 |
 | AC-14 | 日本国内でaccepted Transit routeがある時、Google route callは0回である。Transit timeout、非2xx、invalid schema、journey 0件の時だけGoogleを1回呼ぶ。 |
-| AC-15 | route cache keyはtenant、origin、destination、timezone、service date、anchor time bucket、anchor type、provider modeを含む。`_shared` identityを使わない。 |
+| AC-15 | route cache keyはtenant、origin、destination、timezone、service date、anchor time bucket、anchor type、provider modeを含む。`_shared` identityを使わない。accepted non-null routeだけをcacheし、timeout/provider failureの`null`は保存せず次tickで再試行する。 |
 | AC-16 | 既存`directionsMinutes` callersはstructured routeの`durationSeconds`から分数を得るadapterを通し、Calendar autofillの現行契約を壊さない。 |
 | AC-17 | exact station exit、best car、crowdingを推測・生成しない。source factがないfieldをTelegram本文へ出さない。 |
 | AC-39 | outbound `[Travel]` blockのCalendar fallback dedupeは、current event開始へ2分以内で隣接する対応blockだけを候補とする。別eventのhelper blockが過去3時間に存在するだけでcurrent eventをskipしない。durable `lm_travel_log(uid,event_key,go)`を新規eventのprimary dedupeとし、同一event replayは追加block 0を維持する。 |
