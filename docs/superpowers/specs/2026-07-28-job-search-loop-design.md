@@ -2510,7 +2510,7 @@ must accumulate in the live loop:
 | 10P | `JOB-WORKDAY-E2E-MODEL-10P`: full framework plus Workday E2E | `completed` | JR2008507 closes with exact UI, receipt `1a02ff31ecb7353d`, Ledger `submitted`, Telegram `30852`/`30853`, v2 agreement, immediate dedupe 0, and unseen JR2020208-1 continuation through the one existing owner. |
 | 10P1 | `JOB-WORKDAY-ONLY-10P1` | `completed` | Release `374c2c744`, launchd-owned run `094943`, non-Workday evidence/navigation/intent/fence/Submit effects 0 |
 | 10P2 | `JOB-WORKDAY-FIT-QUALIFICATION-10P2` | `completed` | Rakuten Product & Growth Specialist is model-qualified, exact-UI submitted, Gog-confirmed, Ledger submitted, Telegram `31463/31464`, and next-wake duplicate 0 |
-| 10P3 | `JOB-WORKDAY-CONTINUOUS-SEARCH-10P3` | `in_progress` | Regex/fixed-company discovery is removed; model searches dynamic companies and queries and continues across rejects. Rakuten plus cross-company production evidence is live; recurring Gog-backed submissions, cursor persistence and soak remain |
+| 10P3 | `JOB-WORKDAY-CONTINUOUS-SEARCH-10P3` | `implemented_pending_production_e2e` | PR #3052 / merge `6aceea1388ba9206fa5ce7a31cc1b69f187cae74` validates complete Workday CXS sources, records row-scoped fetch failures, advances past a failed row within the same wake, and reconciles stale rows only from a successful unambiguous source. The 381-test Job Hunter suite and all CI checks pass. Release `20260829T161416-6aceea13` exists, but the five installed LaunchAgents still require exact-release apply/readback followed by a fresh different-company Gmail + completion-screen screenshot + Ledger receipt triplet. |
 | 10Q | `JOB-ASHBY-E2E-MODEL-10Q` | `broken_unverified_pending_after_workday` | Historical `submit_unknown` evidence is not accepted; rebuild from zero only after Workday is complete |
 | 10R | `JOB-GREENHOUSE-E2E-MODEL-10R` | `broken_unverified_pending_after_10Q` | Historical form interaction and `submit_unknown` evidence are not accepted; rebuild from zero after Ashby |
 | 10S | `JOB-LEVER-E2E-MODEL-10S` | `broken_unverified_pending_after_10R` | Discovery without an authoritative completed application is zero progress; rebuild from zero after Greenhouse |
@@ -2536,7 +2536,7 @@ not start merely because their design is already written:
 | `JOB-WORKDAY-E2E-MODEL-10P` | `completed` | JR2008507 exact UI, authoritative receipt, Ledger, Telegram and immediate dedupe/next-row evidence agree. |
 | `JOB-WORKDAY-ONLY-10P1` | `completed` | Existing-owner run `094943` uses release `374c2c744`, writes no non-Workday evidence, performs only `observe → queue_complete`, and creates zero non-Workday effects. |
 | `JOB-WORKDAY-FIT-QUALIFICATION-10P2` | `completed` | Rakuten Product & Growth Specialist closes with grounded fit decision, exact Review/Submit UI, Gog receipt `1a031c8ef3be0dbd`, Ledger submitted, Telegram `31463/31464`, and next-wake duplicate 0. |
-| `JOB-WORKDAY-CONTINUOUS-SEARCH-10P3` | `pending_after_10P2` | Remove regex, fixed scoring, and company/tenant rotation. The model controls searches and ranking across all non-excluded companies; tools validate official Workday data and dedupe. Same-wake reject/continue, matched submit, Gog receipt, Telegram, and next-wake duplicate 0 are mandatory. |
+| `JOB-WORKDAY-CONTINUOUS-SEARCH-10P3` | `implemented_pending_production_e2e` | PR #3052 / merge `6aceea1388ba9206fa5ce7a31cc1b69f187cae74` closes stale-source validation, row-scoped observability, and same-wake failed-row continuation. Release `20260829T161416-6aceea13` must still be applied to the five production LaunchAgents and read back. Completion remains blocked on one fresh fit-qualified application to a different company with matching provider completion screenshot, Gmail receipt, Ledger `submitted`, Telegram ACK, and immediate replay duplicate 0. |
 | `JOB-ASHBY-E2E-MODEL-10Q` | `broken_unverified_pending_after_workday` | Prior evidence is diagnostic only. Start from zero after Workday and require a fit-qualified job, authoritative provider completion, Ledger, Telegram, and next-wake duplicate 0. |
 | `JOB-GREENHOUSE-E2E-MODEL-10R` | `broken_unverified_pending_after_10Q` | Prior evidence is diagnostic only. Start from zero after Ashby under the same authoritative gate. |
 | `JOB-LEVER-E2E-MODEL-10S` | `broken_unverified_pending_after_10R` | Prior discovery is diagnostic only. Start from zero after Greenhouse under the same authoritative gate. |
@@ -2549,6 +2549,64 @@ not start merely because their design is already written:
 | `LIFE-CAREER-LOCAL-13A` | `pending_after_11G` | The local Life Manager Career surface reads `summary.v2`, shows the full timeline and provides pause/resume/goal controls without browser ownership |
 | `LIFE-CAREER-CLOUD-13B` | `pending_after_local_e2e` | Per-tenant queues, encrypted state/materials, scoped OAuth, budgets and export/revocation reproduce the verified local semantics |
 | `LIFE-WHOLE-HEALTH-13C` | `pending_after_13B` | Career evidence informs Financial, Physical and Mental planning with explicit consent, visible unknowns and no medical or employment guarantee |
+
+### 11.3 Current production handover
+
+The application defect is fixed in source but is not yet accepted in production.
+The previous queue repeatedly selected one stale Visa row because a Workday CXS
+`403 permission denied` lost its row identity and returned control to the queue
+head. The current implementation preserves application/company/title/URL plus
+bounded provider error details, skips that failed application ID for the rest of
+the wake, and continues to the next row. A failed, empty, partial, malformed, or
+ambiguous Workday source cannot delete stored candidates.
+
+The launchd control plane was independently broken by an account-2 Codex
+app-server that had remained attached to an obsolete bootstrap namespace. The
+observed failure was `id -un=501`, Directory Services `eServerError`, manager rc
+`153`, and `gui/501` rc `141 Reentrancy avoided`. The official account-2 daemon
+stop hung beneath the stale app-server, so targeted `TERM` was sent only after
+PID, start time, executable, and direct code-mode-host lineage all matched. The
+thread reconnected to account-2 app-server PID `62054`. The same-context readback
+is now `id -un=anicca`, `managername=Aqua`, manager UID `501`, manager PID `1`,
+`gui/501` rc `0`, and `launchctl-safe preflight` status `pass` with
+`mutation_allowed=true`. No OS service, loginwindow, Directory Services daemon,
+or browser was restarted.
+
+Remaining work, in strict order:
+
+1. Apply immutable release `20260829T161416-6aceea13` to the five existing Job
+   Hunter LaunchAgents using the canonical installer; do not create a second
+   scheduler or run a replacement executor.
+2. Read back each loaded label's exact `ProgramArguments`, release path, cadence,
+   and state. The daily owner must retain `StartInterval=1800`.
+3. Kickstart the existing daily label once through `launchctl-safe`, then watch
+   the launchd-owned run. Do not count a direct CLI wake as scheduler evidence.
+4. Confirm that a failed Workday row produces a row-scoped receipt and that the
+   same wake advances to a different application ID/company instead of retrying
+   the queue head.
+5. Accept 10P3 only after a fresh fit-qualified application to a new company has
+   all three authoritative artifacts: provider completion screen screenshot,
+   Gmail confirmation receipt, and matching Ledger `submitted`. Confirm the
+   company/role Telegram ACK and an immediate replay with zero duplicate effect.
+6. Continue natural 30-minute wakes and measure recurring cross-company progress.
+   Only after Workday has this live evidence begin Ashby; Greenhouse, Lever, and
+   generic ATS remain later tasks.
+
+Handover prompt:
+
+> Continue `JOB-WORKDAY-CONTINUOUS-SEARCH-10P3` from the canonical spec. Source
+> fix PR #3052 is merged at `6aceea1388ba9206fa5ce7a31cc1b69f187cae74` and
+> immutable release `/Users/anicca/loops/releases/20260829T161416-6aceea13`
+> exists. The Codex app-server bootstrap incident is recovered: require a fresh
+> same-context `launchctl-safe preflight` pass before mutation. Apply that exact
+> release to the five existing Job Hunter LaunchAgents, read back exact loaded
+> argv/release/cadence, and kickstart the existing daily owner; never spawn a
+> replacement executor. Watch the real launchd-owned wake until it skips any
+> failed row and advances to a different application ID/company. Do not call a
+> job applied without a matching Workday completion screenshot, Gmail receipt,
+> Ledger `submitted`, Telegram ACK, and replay duplicate 0. Update this spec with
+> measured truth, commit, and push. Keep review/testing proportional and focus on
+> the live application outcome.
 
 ## 12. Verification
 
