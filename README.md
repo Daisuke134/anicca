@@ -39,6 +39,50 @@ The architecture is converging by copying and adapting proven boundaries from
 `EffectIntent` and `ConnectorOutbox` rails remain the only path for irreversible money actions. The completion
 signal is an official `banked` receipt—not an application, click, model claim, contract, or pending balance.
 
+## Money Printer — WebMCP control room
+
+[Open the live Money Printer](https://aniccaai.com/money-printer) · [60-second judge guide](docs/webmcp-judge-guide.md)
+
+Money Printer is Life Manager's general earning-work surface. Its cloud scout searches the public Web for
+current paid opportunities, admits only citation-backed public URLs, deduplicates them in Railway Postgres,
+and hands each one to the same durable capability worker. The person sees one six-column board and is asked
+only when identity, authority, judgment, payment information, or a physical action is genuinely required.
+The zero-login judge tenant cannot perform external application, delivery, payment, or money effects.
+
+```mermaid
+flowchart LR
+    S["8-hour cloud scout<br/>Gemini + Google Search citations"] --> Q[("Railway runtime queue")]
+    Q --> W["Capability worker<br/>qualify / research / continue"]
+    W --> H{"Genuine human boundary?"}
+    H -->|No| W
+    H -->|Yes| N["Needs You card"]
+    N --> W
+    W --> R["Typed receipt + replay-safe state"]
+    R --> D["Netlify Dashboard + WebMCP tools"]
+```
+
+| WebMCP tool | What it does | External effect |
+|---|---|---|
+| `inspect_money_printer` | Reads metrics, six board columns, and safe recent activity | None |
+| `add_opportunity` | Adds one public HTTPS opportunity to the durable queue with an idempotency fence | Internal state only |
+| `inspect_workroom` | Reads the selected opportunity, job, and receipt timeline | None |
+| `inspect_next_human_task` | Reads the oldest exact open human task | None |
+| `record_human_answer` | Records a versioned answer and resumes the same job; registered only when a task is open | Internal state only |
+
+### Challenge-period changes
+
+The WebMCP work added after August 25 includes the `/money-printer` guest route, provider-neutral projection,
+responsive board, top-level imperative WebMCP registration, durable Opportunity and HumanTask contracts,
+Railway runtime-store separation, dedicated capability worker, citation-grounded recurring scout, safe failed
+receipt projection, Netlify proxy/security headers, and adversarially tested idempotency and tenant boundaries.
+Earlier Life Manager scheduling, marketplace, Telegram, billing, and evidence systems remain pre-existing work.
+
+Current live proof includes a zero-login page/API, replay-zero internal writes, a page-independent worker,
+multiple public opportunities, completed qualification and scout receipts, restart-stable counts, and a
+read-only verified Lancers application receipt (`project 5593484`, `proposal 27863414`). An application is not
+revenue: `Paid & verified` remains empty until an independently verified payment receipt exists. The required
+24-hour three-natural-cycle record and ChatGPT/Chrome client recordings are still being accumulated.
+
 The founder attests that Life Manager has generated approximately $1,000 in revenue. This is not MRR or ARR, and
 it is not proof that a provider-independent autonomous commerce loop is closed. That loop remains proven only by
 official receipts through `banked` and, eventually, `compute_paid`.
