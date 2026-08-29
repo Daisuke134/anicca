@@ -3,18 +3,20 @@
 **Owner:** Daisuke Narita
 **Current verified status:** `ai.anicca.job-search-daily` is installed with
 `StartInterval=1800`; this is a 30-minute loop, not an hourly loop. The loaded
-immutable runtime is release `6ab86c333829a6aa0d7888b6a51485a5f7b34f6c`.
-The owner continues natural wakes, but the latest measured wake exits `2` after
-`budget_exhausted`. Its oldest pending Visa row `REF079283W` is absent from the
-fresh official listing and its detail endpoint returns Workday `403 / S22 /
-permission denied`. The loop records only `HTTPError`, leaves that stale row at the
-front, and spends the wake budget without reaching later live rows whose detail
-endpoints return `200`. Main commit `6aceea138` fixes that failure class by preserving
-row-scoped fetch evidence and advancing a wake-local cursor; its immutable direct
-wake proves 24 distinct application IDs rather than one repeated row. The current
-execution context has no DNS or Aqua launchd control plane, so that direct wake
-records bounded `URLError` receipts and cannot submit, while installed launchd plists
-remain on the prior release. Three authoritative Mastercard messages in one Gmail
+immutable runtime for the five existing Job Hunter owners is release
+`20260829T161416-6aceea13`, source SHA
+`6aceea1388ba9206fa5ce7a31cc1b69f187cae74`. A same-context preflight returned
+`status=pass`, `mutation_allowed=true`, Aqua, and UID `501` before mutation.
+Targeted `lm-loop apply` and independent loaded-domain readback prove exact-release
+`ProgramArguments` for `job-search-browser`, `job-search-daily`,
+`job-search-health`, `job-search-inbox`, and `job-search-mercor`; their cadences are
+KeepAlive, 1800, 300, 900, and 3600 seconds respectively. The apply-owned RunAtLoad
+wake `daily-20260830-002813` ran through launchd, evaluated 24 Workday rows, and
+terminated `budget_exhausted`. Its wake report keeps Cloudera application
+`5330c927f08fb3408205bab2b0a7d7916d0a0e578c0a79b79d5086ed73b17a1d` at
+`resume_same_row_next_wake`. Therefore production has not yet proved the required
+failed-row receipt followed by a different application ID/company in the same wake,
+and this wake produced no accepted application. Three authoritative Mastercard messages in one Gmail
 thread are now reconciled to their exact intents and Ledger `submitted`: Customer
 Technical Services Analyst (`1a042e6f08496632`), Digital Marketing Specialist
 (`1a0431c6d46fa056`), and Manager, Account Management (`1a043c242c8b11cc`). Newer
@@ -27,6 +29,16 @@ the direct fenced Bot API transport; OpenClaw is not in the daily reporting path
 The active engineering gate is continuous Workday search 10P3. Workday form
 operation, submission fencing, authoritative verification, Ledger recording,
 Telegram reporting, and exact-URL repeated-wake dedupe are live-proven in 10P.
+The acquisition objective is now one real application per 30-minute wake. The
+model must choose the best available role that the candidate can truthfully and
+legally pursue; experience gaps, seniority, competition, or an imperfect match are
+positioning inputs, not reasons for a wake to reject every role. Only a hard blocker
+may prevent qualification: the role no longer exists, the candidate cannot legally
+work in the required location and no supported employment path exists, mandatory
+physical presence is impossible, or submission would require a materially false
+answer. If the current shortlist contains only hard-blocked roles, the owner expands
+discovery within the same bounded wake. Zero submitted applications is a failed wake,
+not useful acquisition progress and not a successful terminal result.
 Discovery snapshots every posting from the persisted Workday company registry,
 model-ranks unseen rows, and compares selected official job descriptions to
 Candidate Memory before browser access. Deterministic bookkeeping excludes a
@@ -2510,7 +2522,7 @@ must accumulate in the live loop:
 | 10P | `JOB-WORKDAY-E2E-MODEL-10P`: full framework plus Workday E2E | `completed` | JR2008507 closes with exact UI, receipt `1a02ff31ecb7353d`, Ledger `submitted`, Telegram `30852`/`30853`, v2 agreement, immediate dedupe 0, and unseen JR2020208-1 continuation through the one existing owner. |
 | 10P1 | `JOB-WORKDAY-ONLY-10P1` | `completed` | Release `374c2c744`, launchd-owned run `094943`, non-Workday evidence/navigation/intent/fence/Submit effects 0 |
 | 10P2 | `JOB-WORKDAY-FIT-QUALIFICATION-10P2` | `completed` | Rakuten Product & Growth Specialist is model-qualified, exact-UI submitted, Gog-confirmed, Ledger submitted, Telegram `31463/31464`, and next-wake duplicate 0 |
-| 10P3 | `JOB-WORKDAY-CONTINUOUS-SEARCH-10P3` | `implemented_pending_production_e2e` | PR #3052 / merge `6aceea1388ba9206fa5ce7a31cc1b69f187cae74` validates complete Workday CXS sources, records row-scoped fetch failures, advances past a failed row within the same wake, and reconciles stale rows only from a successful unambiguous source. The 381-test Job Hunter suite and all CI checks pass. Release `20260829T161416-6aceea13` exists, but the five installed LaunchAgents still require exact-release apply/readback followed by a fresh different-company Gmail + completion-screen screenshot + Ledger receipt triplet. |
+| 10P3 | `JOB-WORKDAY-CONTINUOUS-SEARCH-10P3` | `deployed_policy_repair_pending_e2e` | PR #3052 / merge `6aceea1388ba9206fa5ce7a31cc1b69f187cae74` validates complete Workday CXS sources, records row-scoped fetch failures, advances past a failed row within the same wake, and reconciles stale rows only from a successful unambiguous source. Release `20260829T161416-6aceea13` is loaded by the five production LaunchAgents with exact argv readback and daily `StartInterval=1800`. Launchd wake `daily-20260830-002813` ended `budget_exhausted` after 24 decisions and retained the Cloudera row as `resume_same_row_next_wake`; this proves the current fit policy still optimizes rejection instead of acquisition. The next repair makes one truthful, legally feasible application per wake the objective while preserving hard blockers, effect fences, receipt truth, and replay-zero. Same-wake failed-row continuation and the fresh five-part application receipt remain unproven. |
 | 10Q | `JOB-ASHBY-E2E-MODEL-10Q` | `broken_unverified_pending_after_workday` | Historical `submit_unknown` evidence is not accepted; rebuild from zero only after Workday is complete |
 | 10R | `JOB-GREENHOUSE-E2E-MODEL-10R` | `broken_unverified_pending_after_10Q` | Historical form interaction and `submit_unknown` evidence are not accepted; rebuild from zero after Ashby |
 | 10S | `JOB-LEVER-E2E-MODEL-10S` | `broken_unverified_pending_after_10R` | Discovery without an authoritative completed application is zero progress; rebuild from zero after Greenhouse |
@@ -2536,7 +2548,7 @@ not start merely because their design is already written:
 | `JOB-WORKDAY-E2E-MODEL-10P` | `completed` | JR2008507 exact UI, authoritative receipt, Ledger, Telegram and immediate dedupe/next-row evidence agree. |
 | `JOB-WORKDAY-ONLY-10P1` | `completed` | Existing-owner run `094943` uses release `374c2c744`, writes no non-Workday evidence, performs only `observe → queue_complete`, and creates zero non-Workday effects. |
 | `JOB-WORKDAY-FIT-QUALIFICATION-10P2` | `completed` | Rakuten Product & Growth Specialist closes with grounded fit decision, exact Review/Submit UI, Gog receipt `1a031c8ef3be0dbd`, Ledger submitted, Telegram `31463/31464`, and next-wake duplicate 0. |
-| `JOB-WORKDAY-CONTINUOUS-SEARCH-10P3` | `implemented_pending_production_e2e` | PR #3052 / merge `6aceea1388ba9206fa5ce7a31cc1b69f187cae74` closes stale-source validation, row-scoped observability, and same-wake failed-row continuation. Release `20260829T161416-6aceea13` must still be applied to the five production LaunchAgents and read back. Completion remains blocked on one fresh fit-qualified application to a different company with matching provider completion screenshot, Gmail receipt, Ledger `submitted`, Telegram ACK, and immediate replay duplicate 0. |
+| `JOB-WORKDAY-CONTINUOUS-SEARCH-10P3` | `deployed_policy_repair_pending_e2e` | PR #3052 / merge `6aceea1388ba9206fa5ce7a31cc1b69f187cae74` closes stale-source validation, row-scoped observability, and same-wake failed-row continuation. Release `20260829T161416-6aceea13` is applied and read back on all five production LaunchAgents; daily remains `StartInterval=1800`. Launchd wake `daily-20260830-002813` evaluated 24 rows but ended `budget_exhausted` with the same Cloudera row queued for the next wake. The active repair changes the model objective to qualify the best truthfully and legally feasible candidate in every wake; only a missing role, unsatisfied legal/physical location requirement, or materially false required answer may block it. Experience gaps and imperfect fit guide positioning but cannot justify 24 rejections and zero applications. Completion requires a launchd wake with one fresh application to a different company, provider completion screenshot, Gmail receipt, Ledger `submitted`, Telegram ACK, and immediate replay duplicate 0. |
 | `JOB-ASHBY-E2E-MODEL-10Q` | `broken_unverified_pending_after_workday` | Prior evidence is diagnostic only. Start from zero after Workday and require a fit-qualified job, authoritative provider completion, Ledger, Telegram, and next-wake duplicate 0. |
 | `JOB-GREENHOUSE-E2E-MODEL-10R` | `broken_unverified_pending_after_10Q` | Prior evidence is diagnostic only. Start from zero after Ashby under the same authoritative gate. |
 | `JOB-LEVER-E2E-MODEL-10S` | `broken_unverified_pending_after_10R` | Prior discovery is diagnostic only. Start from zero after Greenhouse under the same authoritative gate. |
@@ -2574,11 +2586,11 @@ or browser was restarted.
 
 Remaining work, in strict order:
 
-1. Apply immutable release `20260829T161416-6aceea13` to the five existing Job
-   Hunter LaunchAgents using the canonical installer; do not create a second
-   scheduler or run a replacement executor.
-2. Read back each loaded label's exact `ProgramArguments`, release path, cadence,
-   and state. The daily owner must retain `StartInterval=1800`.
+1. Repair the Workday fit prompt and its focused contract so each bounded wake
+   qualifies the best truthfully and legally feasible candidate instead of
+   treating experience gaps or imperfect fit as permission for zero applications.
+2. Merge the focused repair, cut a main-derived immutable release, apply it to the
+   five existing owners, and retain daily `StartInterval=1800`.
 3. Kickstart the existing daily label once through `launchctl-safe`, then watch
    the launchd-owned run. Do not count a direct CLI wake as scheduler evidence.
 4. Confirm that a failed Workday row produces a row-scoped receipt and that the
@@ -2588,7 +2600,8 @@ Remaining work, in strict order:
    all three authoritative artifacts: provider completion screen screenshot,
    Gmail confirmation receipt, and matching Ledger `submitted`. Confirm the
    company/role Telegram ACK and an immediate replay with zero duplicate effect.
-6. Continue natural 30-minute wakes and measure recurring cross-company progress.
+6. Continue natural 30-minute wakes and require one submitted application per wake;
+   a zero-application wake remains failed and must expand discovery on its next run.
    Only after Workday has this live evidence begin Ashby; Greenhouse, Lever, and
    generic ATS remain later tasks.
 
