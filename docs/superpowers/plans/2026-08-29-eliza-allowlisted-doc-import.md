@@ -190,19 +190,18 @@ trufflehog filesystem "$NAMESPACE" \
   --json --no-update --results=verified \
   > "$STAGE/trufflehog-post.jsonl" 2> "$STAGE/trufflehog-post.err"
 test "$(wc -l < "$STAGE/trufflehog-post.jsonl" | tr -d ' ')" = 0
-CHANGED_PATHS=$(git status --short | awk '{print $2}')
-test -n "$CHANGED_PATHS"
-! printf '%s\n' "$CHANGED_PATHS" | rg -v '^docs/legacy-life-manager/'
+git check-ignore -q "$NAMESPACE/import-manifest.json"
+test -z "$(git ls-files "$NAMESPACE")"
 ```
 
-Expected: all hashes match; file counts are exact; all three post-import scans pass; every changed path is namespaced docs.
+Expected: all hashes match; file counts are exact; all three post-import scans pass; the existing `docs/*` ignore rule is confirmed before the exact force-add gate.
 
 - [ ] **Step 6: Commit, push the new branch, and verify remote readback**
 
 ```bash
 cd /Users/anicca/Projects/life-manager-eliza-migration
 JOIN_SHA=152ad359358fa1456ff92e84ecef3bae91122862
-git add docs/legacy-life-manager
+git add -f docs/legacy-life-manager
 git diff --cached --check
 test "$(git diff --cached --name-only | wc -l | tr -d ' ')" = 22
 ! git diff --cached --name-only | rg -v '^docs/legacy-life-manager/'
