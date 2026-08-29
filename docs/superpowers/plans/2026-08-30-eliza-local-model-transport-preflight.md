@@ -1,29 +1,56 @@
-# Codex Subscription Transport Preflight Plan
+# Eliza Native Codex SDK Transport Preflight Plan
 
-**Goal:** Life Manager forkから、現行loopと同じCodex subscription transportで`gpt-5.6-luna`のstructured callを一回通す。
+**Goal:** Eliza既存`@elizaos/plugin-cli-inference`を使い、Life Manager runtimeからCodex subscriptionの`gpt-5.6-luna` structured planner callを一回通す。
 
-**Copy source:** legacy Life Managerの`skills/earn/gig/agent-runner/agent_runner.py`と`config.json`。新しいprovider、router、model adapterは作らない。
+**Architecture:** Eliza fixed source `bd24601e…`の`plugin-cli-inference` / `codex-sdk` backendをそのまま使う。新しいrunner、model provider、adapterは作らない。
 
-## 固定条件
+**Tech Stack:** Eliza AgentRuntime、`@elizaos/plugin-cli-inference`、`@openai/codex-sdk`、system Codex CLI `0.151.0`、`@elizaos/plugin-life-manager`。
 
-- transport: `codex exec --ephemeral --json --output-schema`
-- provider/model/effort: `codex` / `gpt-5.6-luna` / `medium`
-- auth: 既存Codex subscription profileを既存runnerと同じ方法で利用する。credential値は読出し・複製・receipt保存しない
-- exactly one model call。retry/fallback/Terra escalationはC02では0
-- OpenAI API key、open model、GPT OSS、ClawRouter、Capafy key、external marketplace effect、CIは0
-- output: `{ "ok": true, "agent": "life-manager", "transport": "codex-subscription" }`
-- receipt: private mode 0600 `~/.local/state/life-manager/migration/elz-c/model-provider-receipt.json`
+**Spec:** `docs/superpowers/specs/2026-08-01-dais-life-manager-five-phase-execution-spec.md`
+
+## Upstream evidence
+
+- `plugins/plugin-cli-inference/index.ts`: Eliza `models` map、all-tiers registration、Codex model/effort settings、planner handler
+- `plugins/plugin-cli-inference/src/codex-sdk-session.ts`: warm thread、system Codex override、native `outputSchema`、error時thread reset
+- `packages/agent/src/runtime/core-plugins.ts`: `@elizaos/plugin-cli-inference`をcore pluginとして収録
+- `packages/agent/src/runtime/plugin-collector.ts`: runtimeのplugin解決へ収録
+- `plugins/plugin-cli-inference/__tests__/cli-inference.test.ts`: `codex-sdk` backendとall-tiers registration contract
+
+## 固定設定
+
+- `ELIZA_CHAT_VIA_CLI=codex-sdk`
+- `ELIZA_CLI_CODEX_MODEL=gpt-5.6-luna`
+- `ELIZA_CLI_CODEX_PLANNER_MODEL=gpt-5.6-luna`
+- `ELIZA_CLI_CODEX_REASONING_EFFORT=medium`
+- `ELIZA_CLI_CODEX_BIN=/Users/anicca/.local/bin/codex`
+- `ELIZA_PLANNER_NATIVE_TOOLS=0`
+- `ELIZA_CLI_CLAUDE_ALL_TIERS=1`。名称はupstream互換のまま使い、独自renameしない
+- `CODEX_HOME`は現行Life Managerのsubscription profileを指す。credential値は読出し、複製、log、receipt保存しない
+- C02のmodel callはexactly 1回。retry、fallback、Terra escalation、marketplace effectは0
+- GPT-OSS、local open-weight model、OpenAI API key、ClawRouter、Hermes、独自Codex adapterは0
 
 ## Atomic TODO
 
-- [ ] 1. legacy runnerの実argvとmodel pinをreadbackし、`codex` / `gpt-5.6-luna` / `medium`を固定する
-- [ ] 2. forkのLife Manager pluginから既存runner contractを呼べる最小境界だけを接続する
-- [ ] 3. `--output-schema`でexactly one real subscription callを実行する
-- [ ] 4. result、JSONL、exit 0、provider/model/effort/usageをreadbackする
-- [ ] 5. private receiptへcall count 1、marginal API spend 0、external effect 0を保存する
-- [ ] 6. focused check一つとbounded adversarial review一回だけ行う。full suite/CI/nitpick reviewはしない
-- [ ] 7. receipt PASS後だけspecのC02をDONE、C03をNEXTへ進める
+- [ ] `C02-01` upstream Codex SDK code pathをprivate evidenceへ保存する
+- [ ] `C02-02` upstream host inclusionをprivate evidenceへ保存する
+- [ ] `C02-03` isolated runtimeへ`ELIZA_CHAT_VIA_CLI`を設定する
+- [ ] `C02-04` isolated runtimeへLuna modelを設定する
+- [ ] `C02-05` isolated runtimeへLuna planner modelを設定する
+- [ ] `C02-06` isolated runtimeへmedium effortを設定する
+- [ ] `C02-07` isolated runtimeへsystem Codex binaryを設定する
+- [ ] `C02-08` isolated runtimeへplanner modeを設定する
+- [ ] `C02-09` isolated runtimeへall-tiers modeを設定する
+- [ ] `C02-10` 全text tier registrationを読む
+- [ ] `C02-11` ACTION_PLANNER registrationを読む
+- [ ] `C02-12` Life ManagerとCLI inferenceを同じruntimeで起動する
+- [ ] `C02-13` Luna planner callを一回実行する
+- [ ] `C02-14` structured action resultを読む
+- [ ] `C02-15` private receiptを保存する
+- [ ] `C02-16` adversarial reviewを一回行う
+- [ ] `C02-17` receiptをPASSへ更新する
+- [ ] `C02-18` C02をDONEへ更新する
+- [ ] `C02-19` C03をNEXTへ更新する
 
 ## 完了条件
 
-実際のCodex model callが1回成功し、schema-valid outputとreceiptを再読出しできること。CLIが存在する、auth fileが存在する、またはdry runだけでは完了にしない。
+同じEliza runtimeに`plugin-life-manager`と既存`plugin-cli-inference`が各一つあり、`runtime.useModel(ModelType.ACTION_PLANNER, ...)`がsystem Codex経由のLuna structured resultを一回返す。pluginの存在、auth fileの存在、mock、dry runだけでは完了にしない。
