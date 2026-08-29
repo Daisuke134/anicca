@@ -256,6 +256,58 @@ test -z "$(git status --porcelain=v1 --untracked-files=no)"
 
 Expected: only the 11 enumerated cache directories are removed; free space is at least 900,000 KiB before resume; the same frozen dependency/build contract passes.
 
+- [ ] **Step 4C: Shallow only the replay clone's local history and serialize the final five packages**
+
+This step applies to the recorded Step 4B result: 224 packages installed, only five packages failed with `ENOSPC`, build did not start, tracked tree stayed clean, and current free space is about 300 MiB. Remote F11/F12 history is already verified and remains authoritative.
+
+```bash
+set -e
+CLONE=/Users/anicca/Projects/life-manager-eliza-migration
+REPLAY_SHA=52eefdac597b70f3cb769b007cc4209f0f55cc34
+test "$(git -C "$CLONE" rev-parse HEAD)" = "$REPLAY_SHA"
+test -z "$(git -C "$CLONE" status --porcelain=v1 --untracked-files=no)"
+test -d "$CLONE/node_modules/.bun"
+test "$(git ls-remote https://github.com/Daisuke134/life-manager-eliza.git refs/heads/migration/eliza-docs | awk '{print $1}')" = "$REPLAY_SHA"
+GIT_KIB_BEFORE=$(du -sk "$CLONE/.git" | awk '{print $1}')
+TAG_COUNT=$(git -C "$CLONE" tag -l | wc -l | tr -d ' ')
+test "$TAG_COUNT" -gt 0
+printf '%s\n' "$GIT_KIB_BEFORE" > /Users/anicca/.local/state/life-manager/migration/elz-f/replay/git-kib-before.txt
+printf '%s\n' "$TAG_COUNT" > /Users/anicca/.local/state/life-manager/migration/elz-f/replay/local-tags-removed.txt
+git -C "$CLONE" tag -l | while IFS= read -r tag_name; do
+  git -C "$CLONE" tag -d "$tag_name" >/dev/null
+done
+git -C "$CLONE" fetch --depth=1 --no-tags origin \
+  refs/heads/migration/eliza-docs:refs/remotes/origin/migration/eliza-docs
+test "$(git -C "$CLONE" rev-parse --is-shallow-repository)" = true
+git -C "$CLONE" reflog expire --expire=now --all
+git -C "$CLONE" gc --prune=now
+GIT_KIB_AFTER=$(du -sk "$CLONE/.git" | awk '{print $1}')
+test "$GIT_KIB_AFTER" -lt "$GIT_KIB_BEFORE"
+printf '%s\n' "$GIT_KIB_AFTER" > /Users/anicca/.local/state/life-manager/migration/elz-f/replay/git-kib-after.txt
+test "$(git -C "$CLONE" rev-parse HEAD)" = "$REPLAY_SHA"
+test -z "$(git -C "$CLONE" status --porcelain=v1 --untracked-files=no)"
+SERIAL_FREE_KIB=$(df -Pk /Users/anicca | awk 'END {print $4}')
+test "$SERIAL_FREE_KIB" -ge 500000
+printf '%s\n' "$SERIAL_FREE_KIB" > /Users/anicca/.local/state/life-manager/migration/elz-f/replay/serial-free-kib.txt
+```
+
+Resume the exact graph with serialized network and lifecycle concurrency:
+
+```bash
+set -e
+export PATH=/Users/anicca/.local/share/life-manager/toolchains/elz-f/bun-1.3.14/bin:/Users/anicca/.local/share/life-manager/toolchains/elz-f/node-v24.15.0-darwin-arm64/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
+cd /Users/anicca/Projects/life-manager-eliza-migration
+bun install --frozen-lockfile --no-cache --network-concurrency=1 --concurrent-scripts=1 --filter @elizaos/agent
+bun install --frozen-lockfile --no-cache --network-concurrency=1 --concurrent-scripts=1 --filter eliza
+bun run build:server 2>&1 | tee /Users/anicca/.local/state/life-manager/migration/elz-f/replay/build-server.log
+test "${pipestatus[1]}" = 0
+rg -q '55 successful, 55 total' /Users/anicca/.local/state/life-manager/migration/elz-f/replay/build-server.log
+test "$(shasum -a 256 bun.lock | awk '{print $1}')" = 1976283db890a36ae945cd1256e9388ca84c067608df9628570bb6fce3ad7eb4
+test -z "$(git status --porcelain=v1 --untracked-files=no)"
+```
+
+Expected: local `.git` shrinks, remote refs remain untouched, the same locked dependency graph completes at concurrency 1, and build reaches 55/55.
+
 - [ ] **Step 5: Start a fresh model-credential-free replay runtime**
 
 Create the isolated state first:
@@ -421,6 +473,10 @@ test "$LOCK_HANDLES" = 0
 FREE_KIB_BEFORE=$(tr -d ' ' < "$STATE/free-before-kib.txt")
 OLD_CLONE_KIB=$(tr -d ' ' < "$STATE/old-clone-kib.txt")
 RESUME_FREE_KIB=$(tr -d ' ' < "$STATE/resume-free-kib.txt")
+SERIAL_FREE_KIB=$(tr -d ' ' < "$STATE/serial-free-kib.txt")
+GIT_KIB_BEFORE=$(tr -d ' ' < "$STATE/git-kib-before.txt")
+GIT_KIB_AFTER=$(tr -d ' ' < "$STATE/git-kib-after.txt")
+LOCAL_TAGS_REMOVED=$(tr -d ' ' < "$STATE/local-tags-removed.txt")
 INITIAL_EXIT=$(tr -d ' ' < "$STATE/initial-exit.txt")
 RESTART_EXIT=$(tr -d ' ' < "$STATE/restart-exit.txt")
 test "$INITIAL_EXIT" = 0
@@ -439,6 +495,10 @@ jq -n \
   --argjson old_clone_kib "$OLD_CLONE_KIB" \
   --argjson free_after "$FREE_KIB_AFTER" \
   --argjson resume_free "$RESUME_FREE_KIB" \
+  --argjson serial_free "$SERIAL_FREE_KIB" \
+  --argjson git_before "$GIT_KIB_BEFORE" \
+  --argjson git_after "$GIT_KIB_AFTER" \
+  --argjson tags_removed "$LOCAL_TAGS_REMOVED" \
   --argjson writers "$WRITERS" \
   --argjson lock_handles "$LOCK_HANDLES" \
   --argjson initial_exit "$INITIAL_EXIT" \
@@ -451,7 +511,7 @@ jq -n \
     initial_sigterm_exit:$initial_exit,restart_sigterm_exit:$restart_exit,listener_count_after_stop:0,
     writer_processes:$writers,lock_open_handles:$lock_handles,working_tree_clean:true,
     model_credentials:0,external_effects:0,old_clone_removed_after_remote_readback:true,
-    capacity_recovery:{merged_roadmap_worktree_removed:true,initial_cache_paths_removed:8,additional_cache_paths_removed:11,resume_free_kib:$resume_free},
+    capacity_recovery:{merged_roadmap_worktree_removed:true,initial_cache_paths_removed:8,additional_cache_paths_removed:11,resume_free_kib:$resume_free,local_git_history_shallowed:true,local_tags_removed:$tags_removed,git_kib_before:$git_before,git_kib_after:$git_after,serialized_install_free_kib:$serial_free},
     free_kib_before:$free_before,old_clone_kib:$old_clone_kib,free_kib_after:$free_after
   }' > /Users/anicca/.local/state/life-manager/migration/elz-f/foundation-replay-receipt.json
 chmod 600 /Users/anicca/.local/state/life-manager/migration/elz-f/foundation-replay-receipt.json
@@ -464,7 +524,9 @@ jq -e '
   .listener_count_after_stop==0 and .writer_processes==0 and .lock_open_handles==0 and
   .working_tree_clean and .model_credentials==0 and .external_effects==0 and
   .capacity_recovery.merged_roadmap_worktree_removed and .capacity_recovery.initial_cache_paths_removed==8 and
-  .capacity_recovery.additional_cache_paths_removed==11 and .capacity_recovery.resume_free_kib>=900000
+  .capacity_recovery.additional_cache_paths_removed==11 and .capacity_recovery.resume_free_kib>=900000 and
+  .capacity_recovery.local_git_history_shallowed and .capacity_recovery.local_tags_removed>0 and
+  .capacity_recovery.git_kib_after<.capacity_recovery.git_kib_before and .capacity_recovery.serialized_install_free_kib>=500000
 ' /Users/anicca/.local/state/life-manager/migration/elz-f/foundation-replay-receipt.json
 test "$(stat -f '%Lp' /Users/anicca/.local/state/life-manager/migration/elz-f/foundation-replay-receipt.json)" = 600
 ```
