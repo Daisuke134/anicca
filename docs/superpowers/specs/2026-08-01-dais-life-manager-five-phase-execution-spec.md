@@ -27,7 +27,7 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 この節は、後段の「現在TODO」「次の一件」「local-only」「self-funded agentは別product」という相反する記述を
 上書きする最新の実行順序SSOTである。後段は実装履歴・organ別acceptanceとして保持するが、次作業の選択には使わない。
 Upworkのterminal evidence、startup context、public claim、GA-01〜13Aは完了または履歴として保持する。
-次の一件はAtomic program ledger Seq 15 `ELZ-C02`のsubstep `C02-01`で、Eliza fixed sourceの既存Codex SDK model-provider evidenceを保存する。
+次の一件はAtomic program ledger Seq 15 `ELZ-C02`のsubstep `C02-02`で、Eliza fixed sourceの既存Codex SDK model-provider host inclusionを保存する。
 
 #### 0.0.1 最新基盤決定 — ElizaOSを完全forkし、Life Managerをlocal OSSからmulti-tenant SaaSへ育てる
 
@@ -555,7 +555,7 @@ system Codex `0.151.0`を`ELIZA_CLI_CODEX_BIN=/Users/anicca/.local/bin/codex`で
 変えるのはElizaOS harnessの設定とLife Manager plugin/tool群であり、modelとroutingではない。GPT-OSS、local open-weight model、
 OpenAI API key、ClawRouter、Hermes、別model router、独自Codex adapterは追加しない。
 
-- [ ] **C02-01** fixed sourceの`plugin-cli-inference` Codex SDK code pathをevidenceへ保存する
+- [x] **C02-01** fixed sourceの`plugin-cli-inference` Codex SDK code pathをevidenceへ保存する — private `c02/codex-sdk-code-path-evidence.json` mode 0600。fixed source `bd24601e…`、`index.ts`/`codex-sdk-session.ts` SHA-256再計算一致。`codex-sdk` backend、warm/serialized session、ACTION_PLANNER route、native `outputSchema`、system binary override、effort、error disposeを実コードで確認。host inclusion/model call/marketplace effectは未実行、次はC02-02
 - [ ] **C02-02** fixed sourceの`plugin-cli-inference` host inclusionをevidenceへ保存する
 - [ ] **C02-03** `ELIZA_CHAT_VIA_CLI=codex-sdk`をisolated runtimeへ設定する
 - [ ] **C02-04** `ELIZA_CLI_CODEX_MODEL=gpt-5.6-luna`をisolated runtimeへ設定する
