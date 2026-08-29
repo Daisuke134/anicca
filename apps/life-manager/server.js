@@ -98,6 +98,17 @@ function getMoneyPrinterSource(scope) {
   }
   return moneyPrinterSource(scope);
 }
+function panelApiOptions(path, options, getRuntimeStore = getMoneyPrinterRuntimeStore) {
+  if (!path.startsWith("/api/panel/money-printer")) return options;
+  const runtimeStore = getRuntimeStore();
+  return {
+    ...options,
+    runtimeStore,
+    opportunityStore: runtimeStore,
+    humanTaskStore: runtimeStore,
+    moneyPrinterSource: getMoneyPrinterSource,
+  };
+}
 const LM_INBOUND_SECRET = process.env.LM_INBOUND_SECRET || ""; // shared secret in the Resend inbound webhook URL
 
 const LM_TG_TOKEN = process.env.LM_TELEGRAM_BOT_TOKEN || "";
@@ -278,8 +289,7 @@ const server = http.createServer((req, res) => {
     return;
   }
   if (path.startsWith("/api/panel/")) {
-    const runtimeStore = getMoneyPrinterRuntimeStore();
-    handlePanelApiRequest(req, res, {
+    handlePanelApiRequest(req, res, panelApiOptions(path, {
       supaUrl: SUPA_URL,
       supaKey: SUPA_KEY,
       timeZone: process.env.LM_TIME_ZONE || "Asia/Tokyo",
@@ -287,11 +297,7 @@ const server = http.createServer((req, res) => {
       panelBaseUrl: LM_PANEL_BASE,
       composioKey: COMPOSIO_KEY,
       composioAuthConfig: process.env.COMPOSIO_GCAL_AUTH_CONFIG,
-      runtimeStore,
-      opportunityStore: runtimeStore,
-      humanTaskStore: runtimeStore,
-      moneyPrinterSource: getMoneyPrinterSource,
-    }).catch((error) => {
+    })).catch((error) => {
       console.error("[panel-api] request failed", error.message);
       if (!res.headersSent) res.writeHead(500, { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" });
       res.end(JSON.stringify({ error: "panel_unavailable" }));
@@ -1088,4 +1094,4 @@ if (require.main === module) {
 // redeploy trigger 010026
 
 // Export pure helpers for unit tests (FIND-005).
-module.exports = { buildTag, inngestServeAllowed, testCallAllowed, TEST_CALL_COOLDOWN_MS, TEST_CALL_DAILY_MAX };
+module.exports = { buildTag, inngestServeAllowed, panelApiOptions, testCallAllowed, TEST_CALL_COOLDOWN_MS, TEST_CALL_DAILY_MAX };

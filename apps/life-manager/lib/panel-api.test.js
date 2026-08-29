@@ -423,6 +423,22 @@ test("Task 7B1 server source wiring is lazy and has no fake Money Printer fallba
   assert.doesNotMatch(server, /moneyPrinterSource:\s*(?:async\s*)?\(?.*=>\s*\(\{\s*tenantId/);
 });
 
+test("Task 8A server only resolves runtime storage for Money Printer paths", () => {
+  const { panelApiOptions } = require("../server.js");
+  const base = { supaUrl: "https://db.example", supaKey: "service-key" };
+  let calls = 0;
+  const getRuntimeStore = () => { calls += 1; return { name: "runtime" }; };
+
+  assert.equal(panelApiOptions("/api/panel/timeline", base, getRuntimeStore), base);
+  assert.equal(calls, 0);
+  const money = panelApiOptions("/api/panel/money-printer/workroom", base, getRuntimeStore);
+  assert.equal(calls, 1);
+  assert.equal(money.runtimeStore.name, "runtime");
+  assert.equal(money.opportunityStore, money.runtimeStore);
+  assert.equal(money.humanTaskStore, money.runtimeStore);
+  assert.equal(typeof money.moneyPrinterSource, "function");
+});
+
 test("Task 8A Panel routes opportunity and human domain actions through runtimeStore", async () => {
   const fixture = makeFixture();
   const task = {
