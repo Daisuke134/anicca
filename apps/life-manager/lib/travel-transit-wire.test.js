@@ -13,6 +13,10 @@ const NOW = Date.parse("2026-08-26T00:00:00Z");
 const EVENT_START = Date.parse("2026-08-27T18:30:00+09:00");
 const EVENT_END = Date.parse("2026-08-27T20:00:00+09:00");
 
+test("directionsRoute keeps the measured 15-second default Transit budget", () => {
+  assert.equal(travel.DEFAULT_TRANSIT_TIMEOUT_MS, 15_000);
+});
+
 test("parseGeoLiteral accepts only finite in-range coordinate literals", () => {
   assert.deepEqual(travel.parseGeoLiteral("geo:35.681,139.767"), { lat: 35.681, lon: 139.767 });
   for (const value of [

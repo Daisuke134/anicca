@@ -15,7 +15,7 @@ process.env.PUBLIC_WSS = "wss://life-call.invalid";
 
 const {
   wakeCallOnce, wakeUserOnce, reminderUserOnce, organsUserOnce, reminderTick, startReminderLoop,
-  WAKE_USER_TIMEOUT_MS, forEachUserSafe,
+  WAKE_USER_TIMEOUT_MS, REMINDER_TIMEOUT_MS, forEachUserSafe,
 } = require("../scheduler.js");
 const { travelReminderOnce } = require("../lib/travel-reminder.js");
 const { clearEvents, getEvents } = require("../lib/event-cache.js");
@@ -124,6 +124,10 @@ test("a failing daily-poll ledger is logged, not swallowed, and never crashes th
 test("the wake loop's per-user budget is its own, and far below the organ budget", () => {
   assert.equal(WAKE_USER_TIMEOUT_MS, 20000);
   assert.ok(WAKE_USER_TIMEOUT_MS < 90000, "the shared 90s budget was sized for the care organ, not the dial");
+});
+
+test("the reminder loop's default per-tenant budget is 25 seconds", () => {
+  assert.equal(REMINDER_TIMEOUT_MS, 25_000);
 });
 
 test("the dial publishes the calendar so the organ tick does not fetch it again", async () => {
