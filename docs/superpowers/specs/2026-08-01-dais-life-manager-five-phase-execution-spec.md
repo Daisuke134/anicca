@@ -27,7 +27,7 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 この節は、後段の「現在TODO」「次の一件」「local-only」「self-funded agentは別product」という相反する記述を
 上書きする最新の実行順序SSOTである。後段は実装履歴・organ別acceptanceとして保持するが、次作業の選択には使わない。
 Upworkのterminal evidence、startup context、public claim、GA-01〜13Aは完了または履歴として保持する。
-次の一件はAtomic program ledger Seq 6 `ELZ-F06`で、fixed lockfileからdependencyをinstallし、server buildとfocused upstream foundation testを閉じる。
+次の一件はAtomic program ledger Seq 7 `ELZ-F07`で、root/package/submodule/dependencyのlicenseとnoticeを列挙し、OSS配布境界を閉じる。
 
 #### 0.0.1 最新基盤決定 — ElizaOSを完全forkし、Life Managerをlocal OSSからmulti-tenant SaaSへ育てる
 
@@ -550,8 +550,8 @@ reviewはfocused verification後のfresh adversarial P0/P1 review一回だけと
 | 3 | ELZ-F03 target topology and keep/retire map | DONE | private `fork-topology-receipt.json` mode 0600。current=`life-manager`、migration=`life-manager-eliza`、final=`life-manager`、archive=`life-manager-legacy`、upstream=`eliza-upstream`、gate=`ELZ-O05+ELZ-T11`。old repo untouched until gate=true、repo delete/force-push main/bulk restart=0。disk concernはF04/F06へ継承 |
 | 4 | ELZ-F04 pinned runtime toolchain | DONE | private `toolchain-receipt.json` mode 0600。official Node/Bun checksum OK、project-local Node `v24.15.0` / Bun `1.3.14`、system Node `v25.6.1` / Bun `1.3.9`前後同一、profile/cleanup mutation 0。free `2268928→1954692` KiB、低disk concernはF05/F06へ継承 |
 | 5 | ELZ-F05 recursive submodule | DONE | private `submodule-receipt.json` mode 0600。`llama.cpp`=`6543d907…`、`electrobun`=`f1f38ce5…`、2件ともshallow exact SHA、uninitialized/tracked diff 0、legacy dirty hash不変。free `1734716→1475560` KiB、cleanup 0。disk concernはF06へ継承 |
-| 6 | ELZ-F06 frozen install and server build | **IN_PROGRESS — NEXT** | `bun install --frozen-lockfile`と`bun run build:server`がexit 0、ENOSPC/network unresolved 0の`toolchain-build-receipt.json` |
-| 7 | ELZ-F07 license and notice inventory | TODO | root/package MIT、copyright、submodule/dependency noticeを列挙し、欠落0の`license-notice-receipt.json` |
+| 6 | ELZ-F06 frozen install and server build | DONE | private `toolchain-build-receipt.json` mode 0600。fixed source `29bed1bb3…`、lock SHA `1976283d…`不変、tracked diff 0。`build:server` 55/55、focused upstream 4 files・32/32 tests、各exit 0。先行ENOSPC/install不足は最終成功で解消し、full suite/CI/runtime effect 0 |
+| 7 | ELZ-F07 license and notice inventory | **IN_PROGRESS — NEXT** | root/package MIT、copyright、submodule/dependency noticeを列挙し、欠落0の`license-notice-receipt.json` |
 | 8 | ELZ-F08 model-free local boot | TODO | isolated state/DB/portで`bun run start`、`/api/health`が200・ready/runtime/database=`true/ok/ok`の`local-boot-receipt.json` |
 | 9 | ELZ-F09 persistent PGlite readback | TODO | 明示`PGLITE_DATA_DIR`がmode 0700、DB/lock identityとhealth livenessを固定した`local-persistence-receipt.json` |
 | 10 | ELZ-F10 clean stop and same-DB restart | TODO | SIGTERM exit 0、lock release、同一DB path再起動、health再PASSの`local-health-receipt.json` |
