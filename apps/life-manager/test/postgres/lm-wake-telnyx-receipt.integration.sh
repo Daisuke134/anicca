@@ -3,6 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 MIGRATION="$ROOT_DIR/migrations/2026-08-29-lm-wake-telnyx-receipt.sql"
+FIX_MIGRATION="$ROOT_DIR/migrations/2026-08-29-lm-wake-telnyx-receipt-amd-precedence.sql"
 if [[ ! -f "$MIGRATION" ]]; then
   printf '%s\n' 'missing Telnyx receipt migration' >&2
   exit 1
@@ -82,6 +83,10 @@ POLICY_BEFORE="$(${PSQL[@]} -Atqc "SELECT policyname || '|' || coalesce(qual::te
 
 "${PSQL[@]}" -f "$MIGRATION" >/dev/null
 "${PSQL[@]}" -f "$MIGRATION" >/dev/null
+if [[ -f "$FIX_MIGRATION" ]]; then
+  "${PSQL[@]}" -f "$FIX_MIGRATION" >/dev/null
+  "${PSQL[@]}" -f "$FIX_MIGRATION" >/dev/null
+fi
 
 POLICY_AFTER="$(${PSQL[@]} -Atqc "SELECT policyname || '|' || coalesce(qual::text, '') || '|' || coalesce(with_check::text, '') FROM pg_policies WHERE schemaname='public' AND tablename='lm_wake_log' ORDER BY policyname;")"
 assert_eq "$POLICY_AFTER" "$POLICY_BEFORE" "policies preserved"
@@ -91,7 +96,11 @@ INSERT INTO public.lm_wake_log(uid, event_key, claim_token, called_at, answered_
 VALUES
   ('tenant-a', 'event-a', 'claim-a', '2026-08-29T00:00:00Z', '2026-08-29T00:01:00Z'),
   ('tenant-a', 'event-b', 'claim-b', '2026-08-29T00:00:00Z', NULL),
-  ('tenant-b', 'event-a', 'claim-other', '2026-08-29T00:00:00Z', NULL);
+  ('tenant-b', 'event-a', 'claim-other', '2026-08-29T00:00:00Z', NULL),
+  ('tenant-a', 'event-hangup-first', 'claim-hangup-first', NULL, NULL),
+  ('tenant-a', 'event-amd-first', 'claim-amd-first', NULL, NULL),
+  ('tenant-a', 'event-concurrent-hangup-first', 'claim-concurrent-hangup-first', NULL, NULL),
+  ('tenant-a', 'event-concurrent-amd-first', 'claim-concurrent-amd-first', NULL, NULL);
 SQL
 
 FIRST="$(${PSQL[@]} -Atqc "SET ROLE service_role; SELECT public.record_lm_wake_telnyx_receipt('tenant-a', 'event-a', 'claim-a', 'ccid-a');")"
@@ -104,6 +113,42 @@ assert_eq "$SECOND" "1" "signed webhook enrichment"
 ENRICHED="$(${PSQL[@]} -Atqc "SELECT telnyx_call_control_id, telnyx_call_session_id, telnyx_call_leg_id, telnyx_webhook_event_id, amd_result, telnyx_webhook_received_at IS NOT NULL FROM public.lm_wake_log WHERE uid='tenant-a' AND event_key='event-a';")"
 assert_eq "$ENRICHED" $'ccid-a|session-a|leg-a|webhook-a|machine|t' "receipt fields"
 RECEIVED_AT="$(${PSQL[@]} -Atqc "SELECT telnyx_webhook_received_at::text FROM public.lm_wake_log WHERE uid='tenant-a' AND event_key='event-a';")"
+
+HANGUP_FIRST="$(${PSQL[@]} -Atqc "SET ROLE service_role; SELECT public.record_lm_wake_telnyx_receipt('tenant-a', 'event-hangup-first', 'claim-hangup-first', 'ccid-hangup-first', 'session-hangup-first', 'leg-hangup-first', 'webhook-hangup-first');")"
+assert_eq "$HANGUP_FIRST" "1" "hangup-first receipt"
+HANGUP_FIRST_AT="$(${PSQL[@]} -Atqc "SELECT telnyx_webhook_received_at::text FROM public.lm_wake_log WHERE uid='tenant-a' AND event_key='event-hangup-first';")"
+HANGUP_FIRST_REPLAY="$(${PSQL[@]} -Atqc "SET ROLE service_role; SELECT public.record_lm_wake_telnyx_receipt('tenant-a', 'event-hangup-first', 'claim-hangup-first', 'ccid-hangup-first', 'session-hangup-first', 'leg-hangup-first', 'webhook-hangup-first');")"
+assert_eq "$HANGUP_FIRST_REPLAY" "1" "hangup-first replay"
+assert_eq "$(${PSQL[@]} -Atqc "SELECT telnyx_webhook_event_id, telnyx_webhook_received_at::text = '$HANGUP_FIRST_AT' FROM public.lm_wake_log WHERE uid='tenant-a' AND event_key='event-hangup-first';")" $'webhook-hangup-first|t' "hangup replay preserves receipt"
+sleep 0.1
+AMD_AFTER_HANGUP="$(${PSQL[@]} -Atqc "SET ROLE service_role; SELECT public.record_lm_wake_telnyx_receipt('tenant-a', 'event-hangup-first', 'claim-hangup-first', 'ccid-hangup-first', 'session-hangup-first', 'leg-hangup-first', 'webhook-amd-after-hangup', 'human');")"
+assert_eq "$AMD_AFTER_HANGUP" "1" "AMD after hangup"
+HANGUP_FIRST_STATE="$(${PSQL[@]} -Atqc "SELECT telnyx_webhook_event_id, amd_result FROM public.lm_wake_log WHERE uid='tenant-a' AND event_key='event-hangup-first';")"
+assert_eq "$HANGUP_FIRST_STATE" "webhook-amd-after-hangup|human" "AMD wins after hangup"
+AMD_AFTER_HANGUP_AT="$(${PSQL[@]} -Atqc "SELECT telnyx_webhook_received_at::text FROM public.lm_wake_log WHERE uid='tenant-a' AND event_key='event-hangup-first';")"
+if [[ "$HANGUP_FIRST_AT" == "$AMD_AFTER_HANGUP_AT" ]]; then
+  printf '%s\n' 'FAIL AMD receipt timestamp did not replace hangup timestamp' >&2
+  exit 1
+fi
+AMD_REPLAY_AFTER_HANGUP="$(${PSQL[@]} -Atqc "SET ROLE service_role; SELECT public.record_lm_wake_telnyx_receipt('tenant-a', 'event-hangup-first', 'claim-hangup-first', 'ccid-hangup-first', 'session-hangup-first', 'leg-hangup-first', 'webhook-amd-after-hangup', 'human');")"
+assert_eq "$AMD_REPLAY_AFTER_HANGUP" "1" "AMD replay after hangup"
+assert_eq "$(${PSQL[@]} -Atqc "SELECT telnyx_webhook_event_id, amd_result, telnyx_webhook_received_at::text = '$AMD_AFTER_HANGUP_AT' FROM public.lm_wake_log WHERE uid='tenant-a' AND event_key='event-hangup-first';")" $'webhook-amd-after-hangup|human|t' "AMD replay preserves receipt"
+LATE_HANGUP_AFTER_AMD="$(${PSQL[@]} -Atqc "SET ROLE service_role; SELECT public.record_lm_wake_telnyx_receipt('tenant-a', 'event-hangup-first', 'claim-hangup-first', 'ccid-hangup-first', 'session-hangup-first', 'leg-hangup-first', 'webhook-hangup-first');")"
+assert_eq "$LATE_HANGUP_AFTER_AMD" "0" "late hangup after AMD"
+assert_eq "$(${PSQL[@]} -Atqc "SELECT telnyx_webhook_event_id, amd_result, telnyx_webhook_received_at::text = '$AMD_AFTER_HANGUP_AT' FROM public.lm_wake_log WHERE uid='tenant-a' AND event_key='event-hangup-first';")" $'webhook-amd-after-hangup|human|t' "late hangup preserves AMD"
+
+AMD_FIRST="$(${PSQL[@]} -Atqc "SET ROLE service_role; SELECT public.record_lm_wake_telnyx_receipt('tenant-a', 'event-amd-first', 'claim-amd-first', 'ccid-amd-first', 'session-amd-first', 'leg-amd-first', 'webhook-amd-first', 'human');")"
+assert_eq "$AMD_FIRST" "1" "AMD-first receipt"
+AMD_FIRST_AT="$(${PSQL[@]} -Atqc "SELECT telnyx_webhook_received_at::text FROM public.lm_wake_log WHERE uid='tenant-a' AND event_key='event-amd-first';")"
+sleep 0.1
+LATE_HANGUP="$(${PSQL[@]} -Atqc "SET ROLE service_role; SELECT public.record_lm_wake_telnyx_receipt('tenant-a', 'event-amd-first', 'claim-amd-first', 'ccid-amd-first', 'session-amd-first', 'leg-amd-first', 'webhook-hangup-after-amd');")"
+assert_eq "$LATE_HANGUP" "0" "hangup after AMD"
+assert_eq "$(${PSQL[@]} -Atqc "SELECT telnyx_webhook_event_id, amd_result, telnyx_webhook_received_at::text = '$AMD_FIRST_AT' FROM public.lm_wake_log WHERE uid='tenant-a' AND event_key='event-amd-first';")" $'webhook-amd-first|human|t' "AMD wins before hangup"
+AMD_FIRST_REPLAY="$(${PSQL[@]} -Atqc "SET ROLE service_role; SELECT public.record_lm_wake_telnyx_receipt('tenant-a', 'event-amd-first', 'claim-amd-first', 'ccid-amd-first', 'session-amd-first', 'leg-amd-first', 'webhook-amd-first', 'human');")"
+assert_eq "$AMD_FIRST_REPLAY" "1" "AMD-first replay"
+DIFFERENT_AMD="$(${PSQL[@]} -Atqc "SET ROLE service_role; SELECT public.record_lm_wake_telnyx_receipt('tenant-a', 'event-amd-first', 'claim-amd-first', 'ccid-amd-first', 'session-amd-first', 'leg-amd-first', 'webhook-amd-different', 'machine');")"
+assert_eq "$DIFFERENT_AMD" "0" "different AMD identity"
+assert_eq "$(${PSQL[@]} -Atqc "SELECT telnyx_webhook_event_id, amd_result, telnyx_webhook_received_at::text = '$AMD_FIRST_AT' FROM public.lm_wake_log WHERE uid='tenant-a' AND event_key='event-amd-first';")" $'webhook-amd-first|human|t' "different AMD leaves row unchanged"
 
 LATER_AMD="$(${PSQL[@]} -Atqc "SET ROLE service_role; SELECT public.record_lm_wake_telnyx_receipt('tenant-a', 'event-a', 'claim-a', 'ccid-a', 'session-a', 'leg-a', 'webhook-a', 'human');")"
 assert_eq "$LATER_AMD" "1" "later AMD human"
@@ -156,6 +201,43 @@ if ! { [[ "$CONCURRENT_RESULT_ONE" == "1" && "$CONCURRENT_RESULT_TWO" == "0" ]] 
   exit 1
 fi
 assert_eq "$(${PSQL[@]} -Atqc "SELECT count(*) FROM public.lm_wake_log WHERE telnyx_call_control_id='ccid-concurrent';")" "1" "one concurrent winner"
+
+CONCURRENT_HANGUP_FIRST_H="$TEST_TMP/concurrent-hangup-first-h.out"
+CONCURRENT_HANGUP_FIRST_A="$TEST_TMP/concurrent-hangup-first-a.out"
+(
+  "${PSQL[@]}" -Atqc "BEGIN; SET ROLE service_role; SELECT public.record_lm_wake_telnyx_receipt('tenant-a', 'event-concurrent-hangup-first', 'claim-concurrent-hangup-first', 'ccid-concurrent-hangup-first', 'session-concurrent-hangup-first', 'leg-concurrent-hangup-first', 'webhook-concurrent-hangup-first'); SELECT pg_sleep(1); COMMIT;" >"$CONCURRENT_HANGUP_FIRST_H"
+) &
+PID_HANGUP_FIRST_H=$!
+sleep 0.1
+(
+  "${PSQL[@]}" -Atqc "BEGIN; SET ROLE service_role; SELECT public.record_lm_wake_telnyx_receipt('tenant-a', 'event-concurrent-hangup-first', 'claim-concurrent-hangup-first', 'ccid-concurrent-hangup-first', 'session-concurrent-hangup-first', 'leg-concurrent-hangup-first', 'webhook-concurrent-hangup-first-amd', 'human'); COMMIT;" >"$CONCURRENT_HANGUP_FIRST_A"
+) &
+PID_HANGUP_FIRST_A=$!
+wait "$PID_HANGUP_FIRST_H"
+wait "$PID_HANGUP_FIRST_A"
+CONCURRENT_HANGUP_FIRST_H_RESULT="$(awk '/^(0|1)$/{print; exit}' "$CONCURRENT_HANGUP_FIRST_H")"
+CONCURRENT_HANGUP_FIRST_A_RESULT="$(awk '/^(0|1)$/{print; exit}' "$CONCURRENT_HANGUP_FIRST_A")"
+assert_eq "$CONCURRENT_HANGUP_FIRST_H_RESULT|$CONCURRENT_HANGUP_FIRST_A_RESULT" "1|1" "hangup-first concurrent receipts"
+assert_eq "$(${PSQL[@]} -Atqc "SELECT telnyx_webhook_event_id, amd_result FROM public.lm_wake_log WHERE uid='tenant-a' AND event_key='event-concurrent-hangup-first';")" "webhook-concurrent-hangup-first-amd|human" "hangup-first concurrent AMD precedence"
+
+CONCURRENT_AMD_FIRST_A="$TEST_TMP/concurrent-amd-first-a.out"
+CONCURRENT_AMD_FIRST_H="$TEST_TMP/concurrent-amd-first-h.out"
+(
+  "${PSQL[@]}" -Atqc "BEGIN; SET ROLE service_role; SELECT public.record_lm_wake_telnyx_receipt('tenant-a', 'event-concurrent-amd-first', 'claim-concurrent-amd-first', 'ccid-concurrent-amd-first', 'session-concurrent-amd-first', 'leg-concurrent-amd-first', 'webhook-concurrent-amd-first-amd', 'machine'); SELECT pg_sleep(1); COMMIT;" >"$CONCURRENT_AMD_FIRST_A"
+) &
+PID_AMD_FIRST_A=$!
+sleep 0.1
+(
+  "${PSQL[@]}" -Atqc "BEGIN; SET ROLE service_role; SELECT public.record_lm_wake_telnyx_receipt('tenant-a', 'event-concurrent-amd-first', 'claim-concurrent-amd-first', 'ccid-concurrent-amd-first', 'session-concurrent-amd-first', 'leg-concurrent-amd-first', 'webhook-concurrent-amd-first-hangup'); COMMIT;" >"$CONCURRENT_AMD_FIRST_H"
+) &
+PID_AMD_FIRST_H=$!
+wait "$PID_AMD_FIRST_A"
+wait "$PID_AMD_FIRST_H"
+CONCURRENT_AMD_FIRST_A_RESULT="$(awk '/^(0|1)$/{print; exit}' "$CONCURRENT_AMD_FIRST_A")"
+CONCURRENT_AMD_FIRST_H_RESULT="$(awk '/^(0|1)$/{print; exit}' "$CONCURRENT_AMD_FIRST_H")"
+assert_eq "$CONCURRENT_AMD_FIRST_A_RESULT|$CONCURRENT_AMD_FIRST_H_RESULT" "1|0" "AMD-first concurrent receipts"
+assert_eq "$(${PSQL[@]} -Atqc "SELECT telnyx_webhook_event_id, amd_result FROM public.lm_wake_log WHERE uid='tenant-a' AND event_key='event-concurrent-amd-first';")" "webhook-concurrent-amd-first-amd|machine" "AMD-first concurrent precedence"
+
 ORIGINAL_AFTER_CONCURRENT="$(${PSQL[@]} -Atqc "SELECT telnyx_call_control_id, telnyx_webhook_event_id, amd_result FROM public.lm_wake_log WHERE uid='tenant-a' AND event_key='event-a';")"
 assert_eq "$ORIGINAL_AFTER_CONCURRENT" $'ccid-a|webhook-a|not_sure' "original row after concurrent collision"
 
@@ -192,7 +274,7 @@ assert_eq "$PROVIDER_INDEX_COUNT" "2" "provider unique indexes"
 RLS="$(${PSQL[@]} -Atqc "SELECT relrowsecurity FROM pg_class WHERE oid='public.lm_wake_log'::regclass;")"
 assert_eq "$RLS" "t" "RLS preserved"
 ROWS="$(${PSQL[@]} -Atqc "SELECT count(*) FROM public.lm_wake_log;")"
-assert_eq "$ROWS" "5" "rows preserved"
+assert_eq "$ROWS" "9" "rows preserved"
 
 "${PSQL[@]}" >/dev/null <<'SQL'
 DO $$
@@ -212,4 +294,4 @@ if "${PSQL[@]}" -c "SET ROLE anon; SELECT public.record_lm_wake_telnyx_receipt('
   exit 1
 fi
 
-printf '%s\n' 'lm-wake-telnyx-receipt-postgres: PASS latch=1 enrich=1 amd_last_observation=1 replay=1 conflicts=7 cross_row=1 concurrent_unique=1 zero=1 row_preserve=1 unique=1 provider_indexes=2 policies=1 rls=1 acl=1 rerun=1'
+printf '%s\n' 'lm-wake-telnyx-receipt-postgres: PASS latch=1 enrich=1 amd_precedence=1 replay=1 conflicts=7 cross_row=1 concurrent_unique=1 concurrent_precedence=2 zero=1 row_preserve=1 unique=1 provider_indexes=2 policies=1 rls=1 acl=1 rerun=1'
