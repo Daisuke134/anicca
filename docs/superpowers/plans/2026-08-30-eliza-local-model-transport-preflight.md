@@ -42,7 +42,7 @@
 - [x] `C02-09` isolated runtimeへall-tiers modeを設定する — private env exact 7行、upstream all-tiers flag、mode 0600、SHA readback一致、registration/runtime/model call/effect 0
 - [x] `C02-10` 全text tier registrationを読む — fixed source SHA一致、6 text tier宣言/all-tiers配線をprivate evidenceへ保存、ACTION_PLANNER/runtime/model call/effect 0
 - [x] `C02-11` ACTION_PLANNER registrationを読む — fixed 2-file SHA一致、planner宣言/gate/Codex SDK route/native outputSchemaをprivate evidenceへ保存、runtime/model call/effect 0
-- [ ] `C02-12` Life ManagerとCLI inferenceを同じruntimeで起動する
+- [x] `C02-12` Life ManagerとCLI inferenceを同じruntimeで起動する — RAM closureで2 plugin各1・7 model types登録、private evidence mode 0600、model call/effect 0
 - [ ] `C02-13` Luna planner callを一回実行する
 - [ ] `C02-14` structured action resultを読む
 - [ ] `C02-15` private receiptを保存する
