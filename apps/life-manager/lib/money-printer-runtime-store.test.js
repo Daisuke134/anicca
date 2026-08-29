@@ -92,6 +92,24 @@ test("runtime store creates one human task through the atomic pause RPC", async 
   ]);
 });
 
+test("runtime store reads answered references only for the same tenant job", async () => {
+  const answered = {
+    uid: TENANT, job_id: `goal:${ID}`, reason_code: "identity_assessment",
+    answer_ref: `vault-answer://${TENANT}/answer-1`,
+    human_boundary_ref: `human-boundary://sha256/${"c".repeat(64)}`,
+    version: 1, updated_at: NOW,
+  };
+  const calls = [];
+  const store = createMoneyPrinterRuntimeStore({ query: async (sql, values) => {
+    calls.push({ sql, values });
+    return { rows: [answered] };
+  } });
+
+  assert.deepEqual(await store.readAnsweredForJob({ tenant_id: TENANT, job_id: `goal:${ID}` }), [answered]);
+  assert.match(calls[0].sql, /FROM public\.lm_human_tasks[\s\S]*status = 'answered'/i);
+  assert.deepEqual(calls[0].values, [TENANT, `goal:${ID}`]);
+});
+
 test("runtime store rejects an invalid create opportunity timestamp", async () => {
   const store = createMoneyPrinterRuntimeStore({
     query: async (sql) => {

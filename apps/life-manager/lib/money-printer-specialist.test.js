@@ -167,6 +167,38 @@ test("specialist turns a model-selected human boundary into one paused task", as
   });
 });
 
+test("specialist resumes the same job from answered references without private answer text", async () => {
+  let runnerInput;
+  const specialist = createMoneyPrinterSpecialist({
+    dataDir: fs.mkdtempSync(path.join(os.tmpdir(), "lm-money-specialist-resume-")),
+    repoRoot: "/repo",
+    readOpportunity: async () => opportunity(),
+    updateOpportunity: async (_expected, status) => opportunity({ status }),
+    humanTaskStore: {
+      async readAnsweredForJob() {
+        return [{
+          uid: TENANT, job_id: JOB_ID, reason_code: "identity_assessment",
+          answer_ref: `vault-answer://${TENANT}/answer-1`,
+          human_boundary_ref: `human-boundary://sha256/${"c".repeat(64)}`,
+          version: 1, updated_at: "2026-08-29T00:00:00.000Z",
+          private_answer: "must never reach the prompt",
+        }];
+      },
+    },
+    runAgentRunner: async (input) => {
+      runnerInput = input;
+      return { value: { status: "completed", execution_id: "execution-resumed-1" } };
+    },
+  });
+
+  const result = await specialist(expected());
+
+  assert.equal(result.status, "completed");
+  assert.match(runnerInput.prompt, new RegExp(`vault-answer://${TENANT}/answer-1`));
+  assert.match(runnerInput.prompt, /identity_assessment/);
+  assert.doesNotMatch(runnerInput.prompt, /private_answer|must never reach/);
+});
+
 test("specialist rejects scope, malformed model output, and failed opportunity readback", async () => {
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "lm-money-specialist-invalid-"));
   const base = {
