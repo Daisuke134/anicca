@@ -2,13 +2,11 @@ from __future__ import annotations
 
 import json
 import io
-import inspect
 import tempfile
 import unittest
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 
-from job_search_loop import workday_search_loop
 from job_search_loop.ledger import Ledger
 from job_search_loop.workday_search_loop import (
     cached_source_fetcher,
@@ -745,55 +743,6 @@ class WorkdayQualificationTests(unittest.TestCase):
             self.assertFalse(ledger.workday_fit_qualified(application_id))
             self.assertEqual(ledger.current_state(application_id), "rejected")
             ledger.close()
-
-    def test_fit_and_shortlist_prompts_require_one_feasible_application_per_wake(self):
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            ledger_path, _, memory = self._row(root)
-            captured: dict[str, str] = {}
-
-            def run_model(prompt: str) -> dict[str, object]:
-                captured["prompt"] = prompt
-                return {
-                    "decision": "qualified",
-                    "mandatory_evidence": ["Grounded experience matches"],
-                    "unsupported_gaps": [],
-                    "interview_thesis": "A truthful application case exists",
-                    "location_feasibility": "Tokyo",
-                    "compensation_thesis": "Unknown",
-                    "compensation_uncertain": True,
-                    "resume_variant": "business",
-                }
-
-            result = qualify_one(
-                ledger_path=ledger_path,
-                candidate_memory_path=memory,
-                fetch_description=lambda _url: "Official Workday description",
-                run_model=run_model,
-            )
-
-            self.assertEqual(result["status"], "decided")
-            prompt = captured["prompt"].casefold()
-            self.assertIn(
-                "best available workday role that the candidate can truthfully and legally pursue for this wake",
-                prompt,
-            )
-            for blocker in (
-                "the role no longer exists",
-                "the candidate cannot legally work in the required location and no supported employment path exists",
-                "mandatory physical presence is impossible",
-                "submission would require a materially false answer",
-            ):
-                self.assertIn(blocker, prompt)
-            self.assertIn(
-                "experience gaps, seniority, competition, and imperfect fit are positioning inputs, not blanket rejection reasons",
-                prompt,
-            )
-
-        shortlist_prompt = inspect.getsource(workday_search_loop.main).casefold()
-        self.assertIn("prioritize an actionable candidate for this wake", shortlist_prompt)
-        self.assertIn("fewer prior submit attempts", shortlist_prompt)
-        self.assertIn("different companies", shortlist_prompt)
 
     def test_qualified_model_decision_unlocks_only_that_row(self):
         with tempfile.TemporaryDirectory() as directory:

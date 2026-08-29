@@ -458,14 +458,13 @@ def main() -> int:
             return runner.run(
                 task="improve",
                 prompt=(
-                "Rank the Workday jobs by actionability for this wake. Prioritize an actionable candidate for this wake. "
-                "Choose the best truthful and legally feasible application while targeting at least JPY 7M, "
-                "prioritizing JPY 10M-30M. "
+                "Rank the Workday jobs for this candidate's realistic chance of winning "
+                "an interview and reaching at least JPY 7M, prioritizing JPY 10M-30M. "
                 "Use the whole supplied snapshot, not company prestige or source order. "
                 "Prefer roles whose actual work is supported by demonstrated experience. "
                 "This is a company-wide portfolio search, not a single-company campaign. "
-                "When interview fit is comparable, prefer employers with fewer prior submit attempts "
-                "and keep credible finalists across different companies. "
+                "When interview fit is comparable, prefer employers with fewer prior "
+                "submit attempts and keep credible finalists across different companies. "
                 "Company submit-attempt exposure below counts each application with a "
                 "submit attempt once; materials_ready and rejected are not counted. Do "
                 "not repeatedly choose one employer merely because it has "
