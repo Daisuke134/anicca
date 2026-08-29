@@ -796,7 +796,7 @@ Current atomic run order:
 - [x] exact receipt-bearing release deployed and read back as `0303507584458fc55cfe1d8f27db9ff1e9fedce9`;
 - [x] replacement no-location event `cspe20kgthj5qj4130n9q24c3s` confirmed for 15:10 JST;
 - [x] physical event `1it7jaacjfuaelalljim6nk6qs` confirmed for 15:41 JST with a private provider-routable destination;
-- [ ] restore exactly one scheduler owner: standalone `LIFE_RUN_LOOPS=false` with no Inngest key fails over to in-process loops, while explicit roles/Inngest remain unchanged;
+- [x] restore exactly one scheduler owner: standalone `LIFE_RUN_LOOPS=false` with no Inngest key fails over to in-process loops, while explicit roles/Inngest remain unchanged;
 - [ ] deploy/read back the scheduler-owner fix at one exact SHA, then create fresh controlled events because the two IDs above missed their natural windows;
 - [ ] no-location T-10 row has one call-control ID, one signed webhook ID, and one durable claim;
 - [ ] no-location T-5 row has one call-control ID, one signed webhook ID, and one durable claim;
