@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 const EXPECTED_PAID_ROUTES = Object.freeze({
@@ -29,4 +30,18 @@ test('canonical endpoint owns the complete production paid-route catalog', async
     .sort();
 
   assert.deepEqual(documentedRoutes, Object.keys(EXPECTED_PAID_ROUTES).sort());
+});
+
+test('canonical Docker deployment uses the npm Prisma Node runtime', async () => {
+  const dockerfile = await readFile(new URL('./Dockerfile', import.meta.url), 'utf8');
+
+  assert.doesNotMatch(dockerfile, /pnpm|server\.ts|tsx/);
+  assert.match(dockerfile, /COPY package\.json package-lock\.json/);
+  assert.match(dockerfile, /RUN npm ci\b/);
+  assert.match(dockerfile, /COPY .*prisma/);
+  assert.match(dockerfile, /COPY .*src/);
+  assert.match(dockerfile, /RUN npx prisma generate/);
+  assert.match(dockerfile, /USER (?!root\b)[a-z][a-z0-9_-]*/i);
+  assert.match(dockerfile, /HEALTHCHECK[\s\S]*\/health/);
+  assert.match(dockerfile, /CMD \["node", "src\/server\.js"\]/);
 });
