@@ -92,6 +92,10 @@ EXISTING_BEFORE="$(${PSQL[@]} -Atqc "SELECT uid || '|' || event_key || '|' || le
 "${PSQL[@]}" -f "$MIGRATION" >/dev/null
 
 assert_eq "$(${PSQL[@]} -Atqc "SELECT count(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='lm_travel_log' AND column_name IN ('telegram_message_id','telegram_sent_at');")" "2" "receipt columns"
+MESSAGE_COLUMN="$(${PSQL[@]} -Atqc "SELECT data_type || '|' || is_nullable FROM information_schema.columns WHERE table_schema='public' AND table_name='lm_travel_log' AND column_name='telegram_message_id';")"
+assert_eq "$MESSAGE_COLUMN" "bigint|YES" "telegram message catalog type"
+SENT_AT_COLUMN="$(${PSQL[@]} -Atqc "SELECT data_type || '|' || is_nullable FROM information_schema.columns WHERE table_schema='public' AND table_name='lm_travel_log' AND column_name='telegram_sent_at';")"
+assert_eq "$SENT_AT_COLUMN" "timestamp with time zone|YES" "telegram sent-at catalog type"
 assert_eq "$(${PSQL[@]} -Atqc "SELECT count(*) FROM pg_constraint WHERE conname='lm_travel_log_telegram_message_id_check' AND convalidated;")" "1" "validated message check"
 assert_eq "$(${PSQL[@]} -Atqc "SELECT count(*) FROM pg_indexes WHERE schemaname='public' AND tablename='lm_travel_log' AND indexname='lm_travel_log_uid_telegram_message_id_key';")" "1" "receipt partial index"
 assert_eq "$(${PSQL[@]} -Atqc "SELECT count(*) FROM pg_proc AS p JOIN pg_namespace AS n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.oid = 'public.record_lm_travel_telegram_receipt(text,text,text,bigint)'::regprocedure;")" "1" "receipt function signature"
@@ -131,6 +135,8 @@ SAME_UID="$(${PSQL[@]} -Atqc "SET ROLE service_role; SELECT public.record_lm_tra
 assert_eq "$SAME_UID" "0" "same uid cross-row ID"
 SAME_UID_LEG="$(${PSQL[@]} -Atqc "SET ROLE service_role; SELECT public.record_lm_travel_telegram_receipt('tenant-a', 'event-upgrade', 'trial-upgrade', 101);")"
 assert_eq "$SAME_UID_LEG" "0" "same uid cross-leg ID"
+CONFLICT_TARGETS="$(${PSQL[@]} -Atqc "SELECT coalesce(telegram_message_id::text, 'NULL') || '|' || coalesce(telegram_sent_at::text, 'NULL') FROM public.lm_travel_log WHERE uid='tenant-a' AND event_key IN ('event-b', 'event-upgrade') ORDER BY event_key;")"
+assert_eq "$CONFLICT_TARGETS" $'NULL|NULL\nNULL|NULL' "conflict targets unchanged"
 CROSS_TENANT="$(${PSQL[@]} -Atqc "SET ROLE service_role; SELECT public.record_lm_travel_telegram_receipt('tenant-b', 'event-a', 'telegram-t5', 101);")"
 assert_eq "$CROSS_TENANT" "1" "same numeric ID across tenants"
 TRIAL="$(${PSQL[@]} -Atqc "SET ROLE service_role; SELECT public.record_lm_travel_telegram_receipt('tenant-a', 'event-upgrade', 'trial-upgrade', 303);")"
@@ -138,8 +144,10 @@ assert_eq "$TRIAL" "1" "trial-upgrade leg"
 
 for QUERY in \
   "SELECT public.record_lm_travel_telegram_receipt('', 'event-a', 'telegram-t5', 401)" \
+  "SELECT public.record_lm_travel_telegram_receipt(E'\\t\\n', 'event-a', 'telegram-t5', 401)" \
   "SELECT public.record_lm_travel_telegram_receipt(repeat('u', 257), 'event-a', 'telegram-t5', 402)" \
   "SELECT public.record_lm_travel_telegram_receipt('tenant-a', '', 'telegram-t5', 403)" \
+  "SELECT public.record_lm_travel_telegram_receipt('tenant-a', E'\\t\\n', 'telegram-t5', 403)" \
   "SELECT public.record_lm_travel_telegram_receipt('tenant-a', repeat('e', 513), 'telegram-t5', 404)" \
   "SELECT public.record_lm_travel_telegram_receipt('tenant-a', 'event-a', 'go', 405)" \
   "SELECT public.record_lm_travel_telegram_receipt('tenant-a', 'event-a', 'return', 406)" \

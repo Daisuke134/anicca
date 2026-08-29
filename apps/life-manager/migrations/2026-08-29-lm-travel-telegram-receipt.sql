@@ -42,10 +42,10 @@ AS $function$
 DECLARE
   matched integer;
 BEGIN
-  IF p_uid IS NULL OR btrim(p_uid) = '' OR char_length(p_uid) > 256 THEN
+  IF p_uid IS NULL OR p_uid ~ '^[[:space:]]*$' OR char_length(p_uid) > 256 THEN
     RAISE EXCEPTION 'invalid uid';
   END IF;
-  IF p_event_key IS NULL OR btrim(p_event_key) = '' OR char_length(p_event_key) > 512 THEN
+  IF p_event_key IS NULL OR p_event_key ~ '^[[:space:]]*$' OR char_length(p_event_key) > 512 THEN
     RAISE EXCEPTION 'invalid event key';
   END IF;
   IF p_leg IS NULL OR p_leg NOT IN ('telegram-t5', 'trial-upgrade') THEN
