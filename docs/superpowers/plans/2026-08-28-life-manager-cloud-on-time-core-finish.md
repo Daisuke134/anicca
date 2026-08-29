@@ -745,6 +745,12 @@ Continue the existing two-minute onboarding owner until it sends one upgrade Tel
 
 The existing wake ledger stores `amd_result` but drops the Telnyx call identifiers carried by the dial response and signed `call.machine.detection.ended` webhook. Add only the provider receipt fields needed for acceptance to the existing `lm_wake_log`; do not create another call ledger or provider abstraction. Bind every write to the exact `(uid,event_key,claim_token)`, latch one `call_control_id`, accept only the same ID on webhook replay, store the signed webhook event ID/session/leg IDs, and never release a wake claim after Telnyx accepted the call. A conflicting call ID must write zero rows. Verify with real PostgreSQL plus the real signed-webhook HTTP path before production apply.
 
+- [x] 8A: add the additive receipt migration and bounded RPC client, including cross-row provider-ID uniqueness and real PostgreSQL concurrency coverage.
+- [x] 8B1a: carry the optional claim token in backward-compatible Telnyx client state and return exact call-control/session/leg IDs from one accepted dial.
+- [ ] 8B1b: wire scheduler order `claim → dial → receipt`; an accepted dial retains its claim even when receipt reconciliation fails, while a rejected dial alone releases it.
+- [ ] 8B2: wire the signature-verified webhook to the same receipt RPC and prove replay/conflict behavior through the real HTTP route.
+- [ ] 8C: rollback-preflight, apply, deploy, and read back the exact production SHA before replacement events.
+
 Expected: the replacement event can be read back as one exact Telnyx call ID + one signed webhook event ID + one wake row for each level, while webhook replay changes no identity and creates no call.
 
 - [ ] **Step 1: Reconcile old controlled events**
