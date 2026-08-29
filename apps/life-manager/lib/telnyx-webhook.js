@@ -4,10 +4,17 @@ const crypto = require("node:crypto");
 
 const ED25519_SPKI_PREFIX = Buffer.from("302a300506032b6570032100", "hex");
 const MAX_WEBHOOK_AGE_SECONDS = 5 * 60;
+const MAX_WAKE_CLAIM_TOKEN_LENGTH = 512;
 
-function encodeWakeClientState({ wakeUid, wakeEventKey } = {}) {
+function isValidOptionalText(value, maxLength) {
+  return typeof value === "string" && value.trim() !== "" && value.length <= maxLength;
+}
+
+function encodeWakeClientState({ wakeUid, wakeEventKey, wakeClaimToken } = {}) {
   if (!wakeUid || !wakeEventKey) return "";
-  return Buffer.from(JSON.stringify({ wakeUid, wakeEventKey }), "utf8").toString("base64");
+  const state = { wakeUid, wakeEventKey };
+  if (isValidOptionalText(wakeClaimToken, MAX_WAKE_CLAIM_TOKEN_LENGTH)) state.wakeClaimToken = wakeClaimToken;
+  return Buffer.from(JSON.stringify(state), "utf8").toString("base64");
 }
 
 function decodeWakeClientState(value) {
@@ -16,10 +23,14 @@ function decodeWakeClientState(value) {
     const parsed = JSON.parse(Buffer.from(String(value), "base64").toString("utf8"));
     if (!parsed || typeof parsed.wakeUid !== "string" || typeof parsed.wakeEventKey !== "string") return null;
     if (!parsed.wakeUid || !parsed.wakeEventKey) return null;
-    return {
+    const state = {
       wakeUid: parsed.wakeUid.slice(0, 100),
       wakeEventKey: parsed.wakeEventKey.slice(0, 300),
     };
+    if (isValidOptionalText(parsed.wakeClaimToken, MAX_WAKE_CLAIM_TOKEN_LENGTH)) {
+      state.wakeClaimToken = parsed.wakeClaimToken;
+    }
+    return state;
   } catch {
     return null;
   }

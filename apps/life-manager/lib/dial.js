@@ -9,6 +9,12 @@ const { amdEnabled } = require("./answered.js");
 const { encodeWakeClientState } = require("./telnyx-webhook.js");
 
 const TELNYX = "https://api.telnyx.com/v2";
+const MAX_PROVIDER_ID_LENGTH = 512;
+
+function normalizeProviderId(value) {
+  if (typeof value !== "string" || value.trim() === "" || value.length > MAX_PROVIDER_ID_LENGTH) return null;
+  return value;
+}
 
 function authHeaders(apiKey) {
   return { Authorization: `Bearer ${apiKey || process.env.TELNYX_API_KEY}`, "Content-Type": "application/json" };
@@ -77,13 +83,18 @@ async function placeCall({ to, streamUrl, clientState }) {
   } catch (e) {
     return { ok: false, error: String(e.message || e) };
   }
-  const ccid = call && call.data && call.data.call_control_id;
+  const ccid = normalizeProviderId(call && call.data && call.data.call_control_id);
   if (!ccid) return { ok: false, error: "no call_control_id" };
 
   // NOTE: do NOT record_start here — the call is still RINGING (not answered), so Telnyx rejects
   // record_start ("call is not in a valid state"). Recording is started by the bridge the moment the
   // media `start` frame arrives (= call answered). See startRecording() + the server.js start handler.
-  return { ok: true, ccid };
+  return {
+    ok: true,
+    ccid,
+    callSessionId: normalizeProviderId(call && call.data && call.data.call_session_id),
+    callLegId: normalizeProviderId(call && call.data && call.data.call_leg_id),
+  };
 }
 
 // Start mp3 recording on an ANSWERED call. Telnyx record_start requires the call to be active
