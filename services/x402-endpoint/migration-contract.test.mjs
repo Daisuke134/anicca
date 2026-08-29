@@ -45,3 +45,17 @@ test('canonical Docker deployment uses the npm Prisma Node runtime', async () =>
   assert.match(dockerfile, /HEALTHCHECK[\s\S]*\/health/);
   assert.match(dockerfile, /CMD \["node", "src\/server\.js"\]/);
 });
+
+test('canonical Docker healthcheck follows the runtime PORT fallback', async () => {
+  const dockerfile = await readFile(new URL('./Dockerfile', import.meta.url), 'utf8');
+
+  assert.doesNotMatch(dockerfile, /http:\/\/localhost:8403\/health/);
+  assert.match(dockerfile, /http:\/\/localhost:\$\{PORT:-8403\}\/health/);
+});
+
+test('canonical Docker limits ownership changes to Prisma generated output', async () => {
+  const dockerfile = await readFile(new URL('./Dockerfile', import.meta.url), 'utf8');
+
+  assert.doesNotMatch(dockerfile, /chown[^\n]*\/app(?:\s|$)/m);
+  assert.match(dockerfile, /^RUN chown -R anicca:anicca \/app\/src\/generated$/m);
+});
