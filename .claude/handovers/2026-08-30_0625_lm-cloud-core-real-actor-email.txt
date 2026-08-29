@@ -1,0 +1,28 @@
+HANDOVER_MARKER: LM_CLOUD_REAL_ACTOR_20260830_0625
+
+Life Manager Cloud on-time core handover
+
+Handover:
+/Users/anicca/Projects/life-manager-main/.worktrees/lm-cloud-core-spec/.claude/handovers/2026-08-30_0625_lm-cloud-core-real-actor-finish.md
+
+Spec:
+/Users/anicca/Projects/life-manager-main/.worktrees/lm-cloud-core-spec/docs/superpowers/specs/2026-08-26-life-manager-cloud-on-time-core-design.md
+
+Remaining-TODO SSOT:
+/Users/anicca/Projects/life-manager-main/.worktrees/lm-cloud-core-spec/docs/superpowers/plans/2026-08-28-life-manager-cloud-on-time-core-finish.md — Task 7 Steps 2–6 and Task 8 Step 7.
+
+Verified handover body:
+- Worktree `/Users/anicca/Projects/life-manager-main/.worktrees/lm-cloud-core-spec`, branch/upstream `codex/lm-cloud-core-spec` / `origin/codex/lm-cloud-core-spec`.
+- Code/spec authority before handover: `cdb6afe4c07a7218e566ac90487ed330209d2d95`; handover artifact remote commit: `ebf903c4743408834475d2969a031b18a832755e`.
+- Natural physical/no-location calls, Travel blocks, Telegram route ID 981, durable receipts, replay-zero, cleanup, public QR, and exact cloud deployment are complete.
+- Current production main `cb8c391779c120ba3c8dabe6e80ff5aa96e6bb6d`: life-call SUCCESS, x402 SKIPPED, GitHub Deployment 6157599199 success, public health exact.
+- Production actor summary: Telegram-bound 4, core-ready 1, non-null trials 0, latest update 2026-08-29T12:22:12.035622Z.
+- Only remaining action begins when a genuinely different person completes Telegram Calendar/home/notifications onboarding. No synthetic actor, new charge, deadline manipulation, or repeated call/transit E2E.
+
+Exact user-sendable goal (the user must send this line in the new Codex session; it is not auto-activated):
+
+/goal Read `/Users/anicca/Projects/life-manager-main/.worktrees/lm-cloud-core-spec/.claude/handovers/2026-08-30_0625_lm-cloud-core-real-actor-finish.md` and `/Users/anicca/Projects/life-manager-main/.worktrees/lm-cloud-core-spec/docs/superpowers/specs/2026-08-26-life-manager-cloud-on-time-core-design.md` completely first, then inspect only adjacent plan/progress/tests needed to finish Life Manager Cloud on-time core. Write only in `/Users/anicca/Projects/life-manager-main/.worktrees/lm-cloud-core-spec`, branch `codex/lm-cloud-core-spec`, upstream `origin/codex/lm-cloud-core-spec`, verified authority `cdb6afe4c07a7218e566ac90487ed330209d2d95`; never touch `/Users/anicca/Projects/life-manager-main` or `/Users/anicca/anicca-project`. Before edits run `git fetch` and verify HEAD/upstream/dirty; do not switch a shared checkout. Done requires one genuinely Dais-external Telegram user to enter via the public QR/deep link without Supabase Google login, complete Calendar consent, home and notifications (phone skip valid), receive one non-extended three-day trial, and be a tenant distinct from Dais. Prove with official Telegram binding/message IDs, Composio Calendar ACTIVE account, Supabase user/preferences/session/trial/ledger rows, hostile cross-actor read/write zero, same-actor resume, initData replay rejection, one real eligible trial-time external effect, exact natural deadline cohort removal while `paid=false`, one upgrade Telegram message ID, and replay additional effects zero. Keep existing completed evidence authoritative: natural physical/no-location calls, Travel blocks, Telegram route ID 981, replay-zero, cleanup, Railway/GitHub exact deployment. Do not recreate controlled events, calls, charges, accounts, or reviews unless a new measured correctness finding makes them necessary. Use Ponytail first and Superpowers TDD only for a real code defect; no excessive DDD/review. Primary alone updates spec/progress/Done, commits and pushes each meaningful state. Never alter trial time or claim completion from synthetic actors, mocks, tests, logs without provider readback, or pending/unknown effects. Continue through natural expiry rather than stopping at a plan. Stop only when no real second actor exists or their own Telegram/Google consent is still required, after verifying production state; leave the exact link `https://t.me/LifeManagerBotbot?start=lp` as the smallest next action. Final completion requires every remaining unchecked spec/plan item closed, exact current deployment readback, spec marked COMPLETE, and a Japanese evidence-first report.
+
+Fallback start prompt — read-only, then wait:
+
+Read the handover and spec paths above first. Fetch and compare HEAD/upstream/dirty without editing. List the remaining unchecked TODOs, draw the TO-BE flow as compact ASCII from public QR through Telegram onboarding, trial effect, natural expiry, upgrade receipt, and replay-zero, then wait for Dais. Do not implement, send, charge, create an actor, or change production in this fallback mode.
