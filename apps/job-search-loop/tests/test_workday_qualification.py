@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import json
+import io
 import tempfile
 import unittest
 from pathlib import Path
+from urllib.error import HTTPError, URLError
 
 from job_search_loop.ledger import Ledger
 from job_search_loop.workday_search_loop import (
@@ -16,6 +18,8 @@ from job_search_loop.workday_search_loop import (
     snapshot_candidates,
     company_submit_attempt_exposure,
     filter_submit_attempt_sources,
+    qualify_with_wake_cursor,
+    reject_stale_workday_rows,
     submit_attempt_hosts,
     validate_shortlist,
     unique_sources,
@@ -364,6 +368,354 @@ class WorkdayQualificationTests(unittest.TestCase):
         memory = root / "candidate-memory.json"
         memory.write_text(json.dumps({"facts": [{"claim": "Grounded experience"}]}))
         return ledger_path, application_id, memory
+
+    def test_fresh_snapshot_rejects_only_absent_pre_submit_workday_row(self):
+        with tempfile.TemporaryDirectory() as directory:
+            ledger_path = Path(directory) / "ledger.sqlite3"
+            ledger = Ledger(ledger_path)
+            stale = ledger.add_application(
+                "Example", "Expired", "https://example.wd1.myworkdayjobs.com/Careers/job/Japan/Expired_R1"
+            )
+            current = ledger.add_application(
+                "Example", "Current", "https://example.wd1.myworkdayjobs.com/Careers/job/Japan/Current_R2"
+            )
+            for application_id in (stale, current):
+                ledger.transition(application_id, "qualified")
+                ledger.transition(application_id, "materials_ready")
+            ledger.close()
+            source = {
+                "company": "Example", "host": "example.wd1.myworkdayjobs.com",
+                "tenant": "example", "site": "Careers",
+            }
+            jobs = {
+                json.dumps(source, sort_keys=True): [
+                    {"title": "Current", "externalPath": "/job/Japan/Current_R2"}
+                ]
+            }
+            receipt = reject_stale_workday_rows(ledger_path, jobs)
+            ledger = Ledger(ledger_path)
+            self.assertEqual(receipt[0]["application_id"], stale)
+            self.assertEqual(receipt[0]["reason"], "official_listing_absent")
+            self.assertEqual(ledger.current_state(stale), "rejected")
+            self.assertEqual(ledger.current_state(current), "materials_ready")
+            ledger.close()
+
+    def test_failed_source_host_is_not_reconciled_as_stale(self):
+        with tempfile.TemporaryDirectory() as directory:
+            ledger_path = Path(directory) / "ledger.sqlite3"
+            ledger = Ledger(ledger_path)
+            application_id = ledger.add_application(
+                "Unavailable", "Live", "https://unavailable.wd1.myworkdayjobs.com/Careers/job/Japan/Live_R1"
+            )
+            ledger.transition(application_id, "qualified")
+            ledger.transition(application_id, "materials_ready")
+            ledger.close()
+            source = {
+                "company": "Unavailable", "host": "unavailable.wd1.myworkdayjobs.com",
+                "tenant": "unavailable", "site": "Careers",
+            }
+            jobs_by_source = {}
+            rows = snapshot_candidates(
+                ledger_path=ledger_path,
+                sources=(source,),
+                fetch_jobs=lambda _source: (_ for _ in ()).throw(TimeoutError()),
+            )
+            receipt = reject_stale_workday_rows(ledger_path, jobs_by_source)
+            ledger = Ledger(ledger_path)
+            self.assertEqual(rows, [])
+            self.assertEqual(receipt, ())
+            self.assertEqual(ledger.current_state(application_id), "materials_ready")
+            ledger.close()
+
+    def test_source_site_is_part_of_stale_identity(self):
+        with tempfile.TemporaryDirectory() as directory:
+            ledger_path = Path(directory) / "ledger.sqlite3"
+            ledger = Ledger(ledger_path)
+            application_id = ledger.add_application(
+                "Example", "Site B Role", "https://example.wd1.myworkdayjobs.com/SiteB/job/Japan/Role_R1"
+            )
+            ledger.transition(application_id, "qualified")
+            ledger.transition(application_id, "materials_ready")
+            ledger.close()
+            source_a = {
+                "company": "Example", "host": "example.wd1.myworkdayjobs.com",
+                "tenant": "example", "site": "SiteA",
+            }
+            jobs_by_source = {
+                json.dumps(source_a, sort_keys=True): [
+                    {"title": "Site A Role", "externalPath": "/job/Japan/Role_A1"}
+                ]
+            }
+            receipt = reject_stale_workday_rows(ledger_path, jobs_by_source)
+            ledger = Ledger(ledger_path)
+            self.assertEqual(receipt, ())
+            self.assertEqual(ledger.current_state(application_id), "materials_ready")
+            ledger.close()
+
+    def test_changed_workday_slug_and_location_with_same_requisition_stays_live(self):
+        with tempfile.TemporaryDirectory() as directory:
+            ledger_path = Path(directory) / "ledger.sqlite3"
+            ledger = Ledger(ledger_path)
+            application_id = ledger.add_application(
+                "Example", "Old Role", "https://example.wd1.myworkdayjobs.com/Careers/job/Tokyo/Old_R1"
+            )
+            ledger.transition(application_id, "qualified")
+            ledger.transition(application_id, "materials_ready")
+            ledger.close()
+            source = {
+                "company": "Example", "host": "example.wd1.myworkdayjobs.com",
+                "tenant": "example", "site": "Careers",
+            }
+            jobs_by_source = {
+                json.dumps(source, sort_keys=True): [
+                    {"title": "New Role", "externalPath": "/job/Osaka/New_Title_R1"}
+                ]
+            }
+            receipt = reject_stale_workday_rows(ledger_path, jobs_by_source)
+            ledger = Ledger(ledger_path)
+            self.assertEqual(receipt, ())
+            self.assertEqual(ledger.current_state(application_id), "materials_ready")
+            ledger.close()
+
+    def test_empty_successful_snapshot_does_not_reject_workday_row(self):
+        with tempfile.TemporaryDirectory() as directory:
+            ledger_path = Path(directory) / "ledger.sqlite3"
+            ledger = Ledger(ledger_path)
+            application_id = ledger.add_application(
+                "Example", "Role", "https://example.wd1.myworkdayjobs.com/Careers/job/Japan/Role_R1"
+            )
+            ledger.transition(application_id, "qualified")
+            ledger.transition(application_id, "materials_ready")
+            ledger.close()
+            source = {
+                "company": "Example", "host": "example.wd1.myworkdayjobs.com",
+                "tenant": "example", "site": "Careers",
+            }
+            jobs_by_source = {json.dumps(source, sort_keys=True): []}
+            receipt = reject_stale_workday_rows(ledger_path, jobs_by_source)
+            ledger = Ledger(ledger_path)
+            self.assertEqual(receipt, ())
+            self.assertEqual(ledger.current_state(application_id), "materials_ready")
+            ledger.close()
+
+    def test_http_failure_receipt_skips_row_and_next_live_row_qualifies_same_wake(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            ledger_path, first, memory = self._row(root)
+            ledger = Ledger(ledger_path)
+            second = ledger.add_application(
+                "Second", "Live", "https://second.wd1.myworkdayjobs.com/Careers/job/Japan/Live_R2"
+            )
+            ledger.transition(second, "qualified")
+            ledger.transition(second, "materials_ready")
+            ledger.close()
+            code = "\tS22\n" + "c" * 200
+            message = "  token=abc\n  " + "z" * 400
+            body = io.BytesIO(json.dumps({"errorCode": code, "message": message}).encode())
+            error = HTTPError(
+                "https://example.invalid", 403, "Forbidden", {},
+                body,
+            )
+            self.addCleanup(error.close)
+            failure = qualify_one(
+                ledger_path=ledger_path,
+                candidate_memory_path=memory,
+                fetch_description=lambda _url: (_ for _ in ()).throw(error),
+                run_model=lambda _prompt: self.fail("model must not run for failed fetch"),
+            )
+            self.assertEqual(failure["application_id"], first)
+            self.assertEqual(failure["http_status"], 403)
+            self.assertEqual(failure["provider_error_code"][:3], "S22")
+            self.assertEqual(len(failure["provider_error_code"]), 80)
+            self.assertEqual(failure["provider_message"], "[redacted]")
+            self.assertTrue(body.closed)
+            success = qualify_one(
+                ledger_path=ledger_path,
+                candidate_memory_path=memory,
+                excluded_application_ids=frozenset({first}),
+                fetch_description=lambda _url: "Applied AI customer role in Tokyo",
+                run_model=lambda _prompt: {
+                    "decision": "qualified",
+                    "mandatory_evidence": ["Grounded experience matches"],
+                    "unsupported_gaps": [],
+                    "interview_thesis": "Credible applied AI interview case",
+                    "location_feasibility": "Tokyo onsite is feasible",
+                    "compensation_thesis": "Unpublished and uncertain",
+                    "compensation_uncertain": True,
+                    "resume_variant": "business",
+                },
+            )
+            self.assertEqual(success["application_id"], second)
+            self.assertEqual(success["decision"], "qualified")
+
+    def test_urlerror_failure_receipt_skips_row_and_next_live_row_qualifies_same_wake(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            ledger_path, first, memory = self._row(root)
+            ledger = Ledger(ledger_path)
+            second = ledger.add_application(
+                "Second", "Live", "https://second.wd1.myworkdayjobs.com/Careers/job/Japan/Live_R2"
+            )
+            ledger.transition(second, "qualified")
+            ledger.transition(second, "materials_ready")
+            ledger.close()
+            failure = qualify_one(
+                ledger_path=ledger_path,
+                candidate_memory_path=memory,
+                fetch_description=lambda _url: (_ for _ in ()).throw(
+                    URLError("temporary network failure")
+                ),
+                run_model=lambda _prompt: self.fail("model must not run for failed fetch"),
+            )
+            self.assertEqual(failure["status"], "qualification_retryable_failure")
+            self.assertEqual(failure["application_id"], first)
+            self.assertEqual(failure["error"], "URLError")
+            self.assertIsNone(failure["http_status"])
+            self.assertIsNone(failure["provider_error_code"])
+            self.assertIsNone(failure["provider_message"])
+            success = qualify_one(
+                ledger_path=ledger_path,
+                candidate_memory_path=memory,
+                excluded_application_ids=frozenset({first}),
+                fetch_description=lambda _url: "Applied AI customer role in Tokyo",
+                run_model=lambda _prompt: {
+                    "decision": "qualified",
+                    "mandatory_evidence": ["Grounded experience matches"],
+                    "unsupported_gaps": [],
+                    "interview_thesis": "Credible applied AI interview case",
+                    "location_feasibility": "Tokyo onsite is feasible",
+                    "compensation_thesis": "Unpublished and uncertain",
+                    "compensation_uncertain": True,
+                    "resume_variant": "business",
+                },
+            )
+            self.assertEqual(success["application_id"], second)
+            self.assertEqual(success["decision"], "qualified")
+
+    def test_malformed_http_error_body_returns_receipt_and_closes_body(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            ledger_path, first, memory = self._row(root)
+            body = io.BytesIO(b"{")
+            error = HTTPError(
+                "https://example.invalid", 403, "Forbidden", {}, body
+            )
+            self.addCleanup(error.close)
+
+            failure = qualify_one(
+                ledger_path=ledger_path,
+                candidate_memory_path=memory,
+                fetch_description=lambda _url: (_ for _ in ()).throw(error),
+                run_model=lambda _prompt: self.fail("model must not run for failed fetch"),
+            )
+
+            self.assertEqual(failure["status"], "qualification_retryable_failure")
+            self.assertEqual(failure["application_id"], first)
+            self.assertEqual(failure["error"], "HTTPError")
+            self.assertEqual(failure["http_status"], 403)
+            self.assertIsNone(failure["provider_error_code"])
+            self.assertIsNone(failure["provider_message"])
+            self.assertTrue(body.closed)
+
+    def test_unicode_http_error_body_returns_receipt_and_closes_body(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            ledger_path, first, memory = self._row(root)
+            body = io.BytesIO(b"\xff")
+            error = HTTPError(
+                "https://example.invalid", 403, "Forbidden", {}, body
+            )
+            self.addCleanup(error.close)
+
+            failure = qualify_one(
+                ledger_path=ledger_path,
+                candidate_memory_path=memory,
+                fetch_description=lambda _url: (_ for _ in ()).throw(error),
+                run_model=lambda _prompt: self.fail("model must not run for failed fetch"),
+            )
+
+            self.assertEqual(failure["status"], "qualification_retryable_failure")
+            self.assertEqual(failure["application_id"], first)
+            self.assertEqual(failure["error"], "HTTPError")
+            self.assertEqual(failure["http_status"], 403)
+            self.assertIsNone(failure["provider_error_code"])
+            self.assertIsNone(failure["provider_message"])
+            self.assertTrue(body.closed)
+
+    def test_valueerror_failure_receipt_is_row_scoped_and_bounded(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            ledger_path, first, memory = self._row(root)
+            failure = qualify_one(
+                ledger_path=ledger_path,
+                candidate_memory_path=memory,
+                fetch_description=lambda _url: (_ for _ in ()).throw(
+                    ValueError("  permission\n denied  ")
+                ),
+                run_model=lambda _prompt: self.fail("model must not run for failed fetch"),
+            )
+            self.assertEqual(failure["status"], "qualification_retryable_failure")
+            self.assertEqual(failure["application_id"], first)
+            self.assertEqual(failure["error"], "ValueError")
+            self.assertIsNone(failure["http_status"])
+            self.assertIsNone(failure["provider_error_code"])
+            self.assertEqual(failure["provider_message"], "permission denied")
+
+    def test_failure_receipt_identity_fields_are_compact_and_non_null(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            ledger_path = root / "ledger.sqlite3"
+            ledger = Ledger(ledger_path)
+            company = "Company " * 100
+            title = "Role " * 100
+            url = "https://example.wd1.myworkdayjobs.com/Careers/job/" + "x" * 2100
+            application_id = ledger.add_application(company, title, url)
+            ledger.transition(application_id, "qualified")
+            ledger.transition(application_id, "materials_ready")
+            ledger.close()
+            memory = root / "candidate-memory.json"
+            memory.write_text(json.dumps({"facts": [{"claim": "Grounded experience"}]}))
+
+            failure = qualify_one(
+                ledger_path=ledger_path,
+                candidate_memory_path=memory,
+                fetch_description=lambda _url: (_ for _ in ()).throw(
+                    URLError("temporary network failure")
+                ),
+                run_model=lambda _prompt: self.fail("model must not run for failed fetch"),
+            )
+
+            self.assertIsNotNone(failure["company"])
+            self.assertIsNotNone(failure["title"])
+            self.assertIsNotNone(failure["canonical_url"])
+            self.assertLessEqual(len(failure["company"]), 240)
+            self.assertLessEqual(len(failure["title"]), 240)
+            self.assertLessEqual(len(failure["canonical_url"]), 2048)
+
+    def test_wake_cursor_passes_and_records_failed_ids_for_next_qualification(self):
+        failed_ids: set[str] = set()
+        observed: list[frozenset[str]] = []
+        decisions = iter(
+            (
+                {
+                    "status": "qualification_retryable_failure",
+                    "application_id": "A",
+                },
+                {"status": "decided", "decision": "qualified", "application_id": "B"},
+            )
+        )
+
+        def qualify(excluded_ids: frozenset[str]) -> dict[str, object]:
+            observed.append(excluded_ids)
+            return next(decisions)
+
+        result = search_until_qualified(
+            discover=lambda: {"status": "queue_present", "discovered": []},
+            qualify=lambda: qualify_with_wake_cursor(qualify, failed_ids),
+            max_candidates=2,
+        )
+        self.assertEqual(result["status"], "qualified")
+        self.assertEqual(observed, [frozenset(), frozenset({"A"})])
 
     def test_rejected_model_decision_never_enters_browser_queue(self):
         with tempfile.TemporaryDirectory() as directory:

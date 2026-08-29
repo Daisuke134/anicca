@@ -5,11 +5,14 @@
 `StartInterval=1800`; this is a 30-minute loop, not an hourly loop. The loaded
 immutable runtime is release `6ab86c333829a6aa0d7888b6a51485a5f7b34f6c`.
 The owner continues natural wakes, but the latest measured wake exits `2` after
-`budget_exhausted`: all 24 fit checks fail with retryable official-source
-`HTTPError`, so no browser submission starts and no new authoritative Gmail receipt
-is created. The latest accepted application receipt remains the existing Salesforce
-message `1a042891b3e71650`; newer `materials_ready`, discovery, Telegram, standalone
-screenshot, or Ledger rows do not count as applications.
+`budget_exhausted`. Its oldest pending Visa row `REF079283W` is absent from the
+fresh official listing and its detail endpoint returns Workday `403 / S22 /
+permission denied`. The loop records only `HTTPError`, leaves that stale row at the
+front, and spends the wake budget without reaching later live rows whose detail
+endpoints return `200`. No browser submission starts and no new authoritative Gmail
+receipt is created. The latest accepted application receipt remains the existing
+Salesforce message `1a042891b3e71650`; newer `materials_ready`, discovery, Telegram,
+standalone screenshot, or Ledger rows do not count as applications.
 
 The application Ledger remains the state SSOT and `summary.v2` is rebuilt from its
 event stream on every wake. Every-wake and application-result Telegram delivery uses
@@ -60,7 +63,7 @@ bound Gog receipt promotes it to `submitted`.
 
 | Order | Atomic outcome | Done evidence |
 |---:|---|---|
-| 1 | Recover official-description qualification | One natural wake completes at least one fit decision without the current repeated `HTTPError` |
+| 1 | Advance past stale and transient qualification failures | Fresh-listing absence durably rejects only the stale pre-submit row; every failure receipt includes application ID, canonical URL, error type, HTTP status, and provider code; the same wake reaches the next live row |
 | 2 | Submit one new-company Workday row | One preferred row enters the browser, creates at most one Submit intent, and captures post-submit UI evidence |
 | 3 | Verify the application | Authoritative Gmail receipt binds to the exact intent; Ledger becomes `submitted`; Telegram reports the receipt |
 | 4 | Prove next-wake duplicate zero | The same tenant and canonical job create no new intent, fence, click, or receipt |
