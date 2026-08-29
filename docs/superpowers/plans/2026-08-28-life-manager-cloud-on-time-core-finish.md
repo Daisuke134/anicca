@@ -791,6 +791,21 @@ If Step 1 does not prove both no-location call levels, create a second private c
 
 - [ ] **Step 4: Observe natural provider effects without manual trigger**
 
+Current atomic run order:
+
+- [x] exact receipt-bearing release deployed and read back as `0303507584458fc55cfe1d8f27db9ff1e9fedce9`;
+- [x] replacement no-location event `cspe20kgthj5qj4130n9q24c3s` confirmed for 15:10 JST;
+- [x] physical event `1it7jaacjfuaelalljim6nk6qs` confirmed for 15:41 JST with a private provider-routable destination;
+- [ ] no-location T-10 row has one call-control ID, one signed webhook ID, and one durable claim;
+- [ ] no-location T-5 row has one call-control ID, one signed webhook ID, and one durable claim;
+- [ ] physical event has one outbound `[Travel]` Calendar block with provider event ID;
+- [ ] physical T-10 row has one call-control ID, one signed webhook ID, and one durable claim;
+- [ ] physical T-5 row has one call-control ID, one signed webhook ID, and one durable claim;
+- [ ] physical departure reminder has one Telegram message ID plus `lm_travel_log.telegram-t5` receipt;
+- [ ] Telnyx provider delivery/call readback hashes match the Supabase receipt hashes;
+- [ ] natural replay adds Calendar block 0, call 0, Telegram message 0;
+- [ ] controlled events are deleted with `send-updates=none` and read back `cancelled`.
+
 Require all of the following correlated to the exact event:
 
 - outbound `[Travel]` Google event ID/status/location;
