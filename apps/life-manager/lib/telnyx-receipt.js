@@ -27,6 +27,8 @@ function failure(error) {
  * retries: callers can reconcile an unknown response without risking a second provider effect.
  */
 async function recordTelnyxWakeReceipt(input = {}, deps = {}) {
+  input = input || {};
+  deps = deps || {};
   const uid = input.uid;
   const eventKey = input.eventKey;
   const claimToken = input.claimToken;

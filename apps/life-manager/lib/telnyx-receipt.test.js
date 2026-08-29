@@ -83,6 +83,19 @@ test("the RPC latches provider identity and first-write webhook time without cha
   assert.doesNotMatch(SQL, /SET\s+[^;]*(?:called_at|answered_at)\s*=/i);
 });
 
+test("provider call and webhook identities are unique across wake rows with a unique-violation backstop", () => {
+  assert.match(SQL, /CREATE UNIQUE INDEX IF NOT EXISTS lm_wake_log_telnyx_call_control_id_key[\s\S]*ON public\.lm_wake_log\s*\(telnyx_call_control_id\)[\s\S]*WHERE telnyx_call_control_id IS NOT NULL/i);
+  assert.match(SQL, /CREATE UNIQUE INDEX IF NOT EXISTS lm_wake_log_telnyx_webhook_event_id_key[\s\S]*ON public\.lm_wake_log\s*\(telnyx_webhook_event_id\)[\s\S]*WHERE telnyx_webhook_event_id IS NOT NULL/i);
+  const body = SQL.match(/CREATE OR REPLACE FUNCTION public\.record_lm_wake_telnyx_receipt[\s\S]*?\$\$;/i)?.[0] || "";
+  assert.match(body, /NOT EXISTS\s*\([\s\S]*telnyx_call_control_id\s*=\s*p_telnyx_call_control_id/i);
+  assert.match(body, /NOT EXISTS\s*\([\s\S]*telnyx_webhook_event_id\s*=\s*p_telnyx_webhook_event_id/i);
+  assert.match(body, /EXCEPTION\s+WHEN\s+unique_violation[\s\S]*RETURN\s+0/i);
+});
+
+test("a later valid AMD observation replaces the earlier one while null preserves it", () => {
+  assert.match(SQL, /amd_result\s*=\s*CASE[\s\S]*p_amd_result IS NULL[\s\S]*ELSE p_amd_result/i);
+});
+
 test("the client posts the exact RPC body with service headers and returns matched=1", async () => {
   const calls = [];
   const result = await recordTelnyxWakeReceipt(BASE_INPUT, {
@@ -155,6 +168,18 @@ test("omitted optional provider fields are explicit nulls in the RPC body", asyn
     p_telnyx_call_session_id: null, p_telnyx_call_leg_id: null,
     p_telnyx_webhook_event_id: null, p_amd_result: null,
   });
+});
+
+test("null input and null dependencies fail closed without fetching", async () => {
+  let fetches = 0;
+  const fetchImpl = async () => { fetches += 1; throw new Error("must not fetch"); };
+  assert.deepEqual(await recordTelnyxWakeReceipt(null, { ...DEPS, fetchImpl }), {
+    ok: false, matched: 0, error: "missing_args",
+  });
+  assert.deepEqual(await recordTelnyxWakeReceipt(BASE_INPUT, null), {
+    ok: false, matched: 0, error: "missing_config",
+  });
+  assert.equal(fetches, 0);
 });
 
 test("malformed result, HTTP failure, unreadable response, and thrown fetch fail closed generically", async () => {
