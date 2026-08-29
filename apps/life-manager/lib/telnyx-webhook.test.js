@@ -13,6 +13,49 @@ test("a wake client_state decodes as kind=wake", () => {
   });
 });
 
+test("a wake claim token round-trips without changing the legacy fields", () => {
+  const encoded = encodeWakeClientState({
+    wakeUid: "lm_abc",
+    wakeEventKey: "event-key",
+    wakeClaimToken: "claim-token-exact",
+  });
+  assert.deepEqual(decodeWakeClientState(encoded), {
+    wakeUid: "lm_abc",
+    wakeEventKey: "event-key",
+    wakeClaimToken: "claim-token-exact",
+  });
+  assert.deepEqual(decodeCallClientState(encoded), {
+    kind: "wake",
+    wakeUid: "lm_abc",
+    wakeEventKey: "event-key",
+    wakeClaimToken: "claim-token-exact",
+  });
+});
+
+test("a two-field wake blob keeps its exact legacy bytes and decoded shape", () => {
+  const legacyBytes = Buffer.from(JSON.stringify({
+    wakeUid: "lm_abc",
+    wakeEventKey: "event-key",
+  }), "utf8").toString("base64");
+  assert.equal(encodeWakeClientState({ wakeUid: "lm_abc", wakeEventKey: "event-key" }), legacyBytes);
+  assert.deepEqual(decodeWakeClientState(legacyBytes), {
+    wakeUid: "lm_abc",
+    wakeEventKey: "event-key",
+  });
+});
+
+test("invalid wake claim tokens are omitted instead of guessed", () => {
+  const base = { wakeUid: "lm_abc", wakeEventKey: "event-key" };
+  const invalidTokens = [null, 42, "", " \t\n", "x".repeat(513)];
+  for (const wakeClaimToken of invalidTokens) {
+    const encoded = Buffer.from(JSON.stringify({ ...base, wakeClaimToken }), "utf8").toString("base64");
+    assert.deepEqual(decodeWakeClientState(encoded), base, `decoder accepted ${String(wakeClaimToken)}`);
+    assert.deepEqual(decodeWakeClientState(encodeWakeClientState({ ...base, wakeClaimToken })), base,
+      `encoder retained ${String(wakeClaimToken)}`);
+  }
+  assert.deepEqual(decodeWakeClientState(Buffer.from(JSON.stringify(base), "utf8").toString("base64")), base);
+});
+
 test("a test-call client_state decodes as kind=test", () => {
   const encoded = encodeTestCallClientState({ testUid: "lm_abc" });
   assert.deepEqual(decodeCallClientState(encoded), { kind: "test", testUid: "lm_abc" });

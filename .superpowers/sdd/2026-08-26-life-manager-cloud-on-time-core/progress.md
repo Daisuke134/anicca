@@ -231,7 +231,10 @@ Baseline: focused Life Manager suite 175/175 PASS.
 - Dais approved the launch order: finish the existing on-time core first; add Poke/Town-style free conversation only after friend beta is receipt-bearing.
 - Visual product and architecture SSOT: `docs/superpowers/specs/2026-08-28-life-manager-cloud-telegram-product-ux-design.md`.
 - Sole active checklist: `docs/superpowers/plans/2026-08-28-life-manager-cloud-on-time-core-finish.md` — structural return guard → server-owned trial → cohort/UI/upgrade → PR/deploy → real actor/event E2E → replay-zero/cleanup.
-- OpenClawMU/Hermes is a post-launch conversation sidecar candidate, not the tenant/billing/ledger owner and not an active implementation item.
+- Agent harness decision after fixed-code comparison: ElizaOS only, for both local and cloud. Finish/release the existing on-time core first; then move the same Life Manager behavior into one Eliza plugin incrementally. OpenClaw, Hermes, OpenClawMU, and a custom agent loop are rejected.
+- Eliza audit `29bed1bb3`: one AgentRuntime owns actions/providers/services/model/memory/database/message loop; cloud already implements org/user tenancy, shared and dedicated-lazy tiers, Durable Object turn ordering, Telegram provider-message delivery receipts, Postgres scheduler claims/CAS/apply receipts, billing/quota, local Docker and remote container providers.
+- OpenClaw audit `90a9622a6` confirms strong local Gateway/Telegram spool/replay/cron, but upstream lacks the SaaS tenant/billing/shared-dedicated control plane. AWS sample `2cb44f7f0` supplies per-tenant containers but requires a separate Cognito/EKS provisioning architecture. Choosing it would leave more Life Manager-owned cloud architecture than Eliza.
+- Migration ruling: no pre-launch rewrite. Provider acceptance and friend beta close first. Phase 2 ports one effect-free tool at a time into a Life Manager Eliza plugin, proves parity/replay, pilots local then one dedicated-lazy cloud tenant, and retires each old owner only after exact evidence.
 
 ## Task 13A server-owned trial persistence
 
@@ -240,7 +243,7 @@ Baseline: focused Life Manager suite 175/175 PASS.
 - TDD/readback: missing-migration RED; local PostgreSQL `grant_once=1 trial_active=1 tenant_scope=1 acl=1 paid_writes=0`; unchanged Node panel/onboarding contracts 34/34.
 - Review R0 found two Important evidence gaps (exact three-day window and actual paid-column write tripwire) plus one Minor pre-grant JSON gap. Fix round 1 added server clock bounds, `BEFORE UPDATE OF paid` rejection, and null/false state. Scoped fresh Sol re-review: all addressed, new breakage none, ship.
 - Production Supabase rollback-only preflight: exact transaction-timestamp + 3 days, repeat deadline unchanged, tenant/chat isolation, service-role ACL, paid false. Post-rollback official readback is `trial_column_count=0`, `fixture_count=0`, `trial_body_present=false`.
-- Task 13A code/preflight status: complete at `d8974760d`. Production migration apply remains intentionally deferred to finish-plan Task 6 immediately before exact-SHA deploy.
+- Task 13A code status: complete. The trial migration committed with the travel-leg migration in one production transaction; readback is nullable `timestamptz`, existing non-null trial rows 0, grant-once body true, service-role execute true, browser execute false.
 
 ## Task 13B value-first panel
 
@@ -254,7 +257,7 @@ Baseline: focused Life Manager suite 175/175 PASS.
 - Implementation: `4ea06aefb` replaces standalone `paid=is.true` with exact PostgREST `paid OR trial_expires_at > server clock`, preserving providers, phone independence, global comp, and one selector SSOT. Plan ruling `df3692ecb` assigns the stale daily-preflight consumer assertion to the slice; `11a6cc993` updates only that test.
 - TDD: selector RED 7/11 then GREEN 11/11; `.gt→.gte` mutation detected. Consumer RED 79/80 exposed the retired `paid` query assertion; exact `or` fix produced combined 80/80.
 - Fresh Sol review: ship, spec compliant, Critical/Important/Minor zero; PostgREST grammar, exact expiry, comp boundary, Date.now/process.env restoration, two scheduler selectors, and daily-preflight URL were verified.
-- Primary verification: selector/daily/wake/reminder suite 80/80 plus syntax/diff PASS. Task 13C: complete at `11a6cc993`; production column/code deploy remains deferred to Task 6.
+- Primary verification: selector/daily/wake/reminder suite 80/80 plus syntax/diff PASS. Task 13C code/column are merged and the production column is applied; exact Railway health SHA remains the release gate.
 
 ## Task 13D durable trial upgrade and travel-ledger repair
 
@@ -263,11 +266,29 @@ Baseline: focused Life Manager suite 175/175 PASS.
 - Fix round 1 `34187a389`: 4-leg idempotent migration/integration test, verified release boolean, positive-integer receipt, generic reconciliation. PostgreSQL PASS, Node 117/117. Re-review closed Critical/Important findings but required exact-expiry/send-throw regressions.
 - Fix round 2 `cd6669dee`: test-only exact millisecond expiry claim→send and send-throw claim→send→unclaim. Focused 7/7, full Task 5 Node matrix 119/119, PostgreSQL PASS. Scoped fresh Sol re-review: both addressed, new breakage none, ship.
 - Production Supabase rollback-only leg preflight: existing rows/unique/RLS/other CHECK preserved; four allowed, unknown/duplicate rejected, constraint validated. Post-rollback official readback: fixture 0 and `telegram_t5_allowed=false` restored.
-- Task 13D code/preflight status: complete at `cd6669dee`. Both trial and leg migrations remain unapplied until controlled Task 6 release.
+- Task 13D code status: complete. The four-leg migration is applied; production readback preserves 250 travel rows, the unique contract and RLS, and reports one validated constraint hash for `go|return|telegram-t5|trial-upgrade`.
 
 ## Task 13E integrated verification and final review
 
 - Clean lock install completed with 452 packages and `viem@2.55.10` read back. Focused route/reminder/call is 154/154; focused onboarding/trial/billing is 181/181; both disposable PostgreSQL migrations pass with grant-once/ACL/paid-write and four-leg/row/unique/RLS preservation evidence.
 - Full `npm test`, `git diff --check`, dependency diff, and gitleaks all pass. Existing lock warnings remain unchanged; no dependency or secret change was introduced.
 - Whole-slice review found Telegram unknown-delivery replay risk, previous-event outbound misclassification, and legacy phone/pay truth gaps. Five TDD fix rounds closed them with durable claim retention, exact target-go/previous-return association, fail-closed read errors, core-ready legacy suppression, and truthful optional-phone `/start` copy.
-- Final scoped review at `19dc013b9` is ship with Critical/High zero and no findings. Primary focused readback is 84/84. Production migrations remain unapplied; rebase/PR and exact-SHA release are Task 6 Steps 6–7.
+- Final scoped review at `19dc013b9` is ship with Critical/High zero and no findings. Primary post-rebase matrix is 349/349; GitHub Security Scan is 8/8.
+- PR `#3031` merged the launch core as `954b3787071116f879e2a36c01044bb840a400db`; both migrations committed in one transaction before merge. The target life-call service status succeeded for that SHA, while the aggregate Deployment failed only because the unrelated x402 service failed.
+- Static health tags could not prove an immutable deploy, so a reviewed native `RAILWAY_GIT_COMMIT_SHA` health fix merged in PR `#3033` as `81b813c4df08a955f769b1f0658d97e5f79d65e6`. Railway officially reports a deployment-initialization backlog incident; the exact Deployment remains queued and `/health.build` still reports the old fallback. Task 6 Step 7 stays open until exact SHA readback.
+
+## Task 14 launch acceptance
+
+- Public QR source remains `https://t.me/LifeManagerBotbot?start=lp`; no uid, chat ID, email, or secret is encoded. A real Dais-external Telegram account on a clean device is still required; prior synthetic actor E2E cannot close Task 7.
+- Google official readback keeps controlled no-location events `lnpffie7md7fp0qp5j9hrudkq4` and `ah40e31tqlstvk2qvo1e0jt82c` confirmed.
+- Supabase reconciliation now proves exactly one T-10 and one T-5 wake row for each old no-location event. The 20:03 event has `amd_result=human` at both levels; the 21:55 event has `amd_result=machine` at both levels. No travel rows exist in the event window, as expected for no-location events.
+- The wake schema does not retain Telnyx call IDs, and no local Telnyx API credential or authenticated portal session is available. Therefore old calls alone do not close the required Telnyx call/webhook/ledger triple. Do not delete the old events; use a replacement no-location event after provider-ID evidence is durable.
+- Task 14 ruling: reuse `lm_wake_log` and its claim token. Add an atomic service-role receipt write that latches the first Telnyx `call_control_id`, accepts only the same ID on signed webhook replay, and stores call session/leg plus webhook event ID. Do not add a second call table, queue, provider, or manual resend path.
+- Task 14A receipt contract: `a67f126c6` added the wake-row RPC/client and `0d367452c` closed cross-row provider-ID reuse, AMD last-observation drift, and null-input failure. Primary verification is Node 55/55 plus real PostgreSQL `latch=1 enrich=1 amd_last_observation=1 replay=1 conflicts=7 cross_row=1 concurrent_unique=1 zero=1 row_preserve=1 unique=1 provider_indexes=2 policies=1 rls=1 acl=1 rerun=1`. Production apply and runtime wiring remain open.
+- Task 14B1a dial identity contract: `e2bdad123` adds optional bounded `wakeClaimToken` encoding/decoding without changing legacy two-field bytes and returns exact Telnyx call-control/session/leg IDs from one accepted dial. Primary verification is the focused identity/dial/HTTP set 24/24; scheduler receipt and signed-webhook receipt wiring remain open.
+- Task 14B1b scheduler receipt checkpoint: `3a2e13881` wires exact `claim → dial → receipt`; accepted-call receipt mismatch/failure/throw retains the claim with one fixed reconciliation line, while dial rejection alone releases the exact token. `93cc4e892` strengthens the privacy regression with an observed UID-leak mutation failure. Primary verification is focused 10/10 and combined 82/82; fresh scoped Sol review is `ship`. Signed-webhook receipt wiring remains open.
+- Task 14B2 signed-webhook receipt: `c55efd488` routes signature-verified claim-bound AMD events into the same atomic receipt RPC with top-level webhook ID and call-control/session/leg IDs, preserves legacy PATCH/test-call behavior, and returns 503 on record failure versus 200 on matched-zero conflict. `50139a108` bounds answered-at network errors to `network_error`. Primary verification is signed HTTP 15/15 and combined 84/84; fresh scoped Sol review is `ship`. Production migration apply, deploy, and live provider readback remain open.
+- Task 14C production receipt schema: rollback-only preflight PASS on migration SHA-256 `d1db578e31091c6be51973a107e6b1dd6f64b8619a68347103ba181eb79d105c`, then production COMMIT and management readback prove wake rows 494 preserved, receipt columns 5, validated checks 4, provider unique indexes 2, RPC 1, RLS true, service execute true, browser execute zero, fixture zero. Exact code deploy/live call-webhook readback remain open.
+- Task 14C merge gates: full `npm test` reaches only the unchanged legacy-path scan failure reproduced on `origin/main` with target diff zero; local/CI gitleaks, TruffleHog, dependency integrity, Python/shell/loop/startup checks pass. CI PII found four new `+1` test fixtures; `f8333fc5f` replaces only those literals with established impossible `+99900000000`, primary PII clean/dial 7/7/receipt 84/84, fresh Sol `ship`. Final PR check/readback, merge, and deploy remain open.
+- Exact life-call release readback: GitHub commit status for `81b813c4df08a955f769b1f0658d97e5f79d65e6` is service context `Anicca - life-call: success`, and public `/health` returns the same full SHA in `build`. The aggregate `Anicca / production` Deployment object is still stale `in_progress` while the unrelated x402 service status is failure; keep those facts separate.
+- New future physical route/Telegram receipt, real actor natural three-day expiry, replay-zero, and controlled cleanup remain open.

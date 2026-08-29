@@ -24,6 +24,8 @@ const { readMentalSendState, recordMentalSend } = require("./lib/mental-send-log
 // 12c: TROUGH_AFTER_MS (30 min) plus margin — how far back the tick looks for ended events.
 const MENTAL_LOOKBACK_MS = 35 * 60000;
 const { placeCall } = require("./lib/dial.js");
+const { encodeWakeClientState } = require("./lib/telnyx-webhook.js");
+const { recordTelnyxWakeReceipt } = require("./lib/telnyx-receipt.js");
 const {
   WAKE_MISS_REASONS, recordWakeMiss, claimWakeMissNotice, wakeMissNotice,
 } = require("./lib/wake-miss.js");
@@ -495,12 +497,38 @@ async function wakeCallOnce(u, nowMs, deps = {}) {
         const streamUrl = buildStreamUrl({ ...ev, wakeUid: u.uid, wakeEventKey: eventKey }, lvl.urgency, langForUser(u), u.name);
         let res;
         try {
-          res = await (deps.placeCall || placeCall)({ to: u.phone, streamUrl });
+          res = await (deps.placeCall || placeCall)({
+            to: u.phone,
+            streamUrl,
+            clientState: encodeWakeClientState({
+              wakeUid: u.uid, wakeEventKey: eventKey, wakeClaimToken: fresh,
+            }),
+          });
         } catch (e) {
           res = { ok: false, error: String((e && e.message) || e) };
         }
         if (res.ok) {
-          console.log(`[scheduler] WAKE T-${lvl.min} uid=${u.uid.slice(0, 12)} ccid=${res.ccid}`);
+          let receipt;
+          try {
+            const { url: supaUrl, key: supaKey } = SUPA();
+            receipt = await (deps.recordTelnyxWakeReceipt || recordTelnyxWakeReceipt)({
+              uid: u.uid,
+              eventKey,
+              claimToken: fresh,
+              callControlId: res.ccid,
+              callSessionId: res.callSessionId ?? null,
+              callLegId: res.callLegId ?? null,
+              webhookEventId: null,
+              amdResult: null,
+            }, { supaUrl, supaKey, fetchImpl: deps.fetchImpl });
+          } catch {
+            receipt = null;
+          }
+          if (receipt && receipt.ok === true && receipt.matched === 1) {
+            console.log(`[scheduler] WAKE T-${lvl.min} uid=${u.uid.slice(0, 12)} ccid=${res.ccid}`);
+          } else {
+            console.error("[scheduler] accepted wake requires Telnyx receipt reconciliation");
+          }
         } else {
           console.error(`[scheduler] dial failed T-${lvl.min} uid=${u.uid.slice(0, 12)}: ${res.error}`);
           // 1b: record BEFORE releasing, because releasing is what erases the evidence. Wrapped so a
