@@ -27,7 +27,7 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 この節は、後段の「現在TODO」「次の一件」「local-only」「self-funded agentは別product」という相反する記述を
 上書きする最新の実行順序SSOTである。後段は実装履歴・organ別acceptanceとして保持するが、次作業の選択には使わない。
 Upworkのterminal evidence、startup context、public claim、GA-01〜13Aは完了または履歴として保持する。
-次の一件はAtomic program ledger Seq 15 `ELZ-C02`のsubstep `C02-17`で、canonical `model-provider-receipt.json`をPASSへ更新する。
+次の一件はAtomic program ledger Seq 15 `ELZ-C02`のsubstep `C02-18`で、ELZ-C02をDONEへ更新する。
 
 #### 0.0.1 最新基盤決定 — ElizaOSを完全forkし、Life Managerをlocal OSSからmulti-tenant SaaSへ育てる
 
@@ -573,7 +573,7 @@ OpenAI API key、ClawRouter、Hermes、別model router、独自Codex adapterは�
 - [x] **C02-16** C02差分をadversarial reviewへ一回渡す — private `c02/adversarial-review.json` mode 0600、fresh review exactly 1、verdict=`FIX_FIRST`。Codex SDK/Luna/medium/同一session result/retry 0/effect 0は反証されず、P1はprovider result後の`AgentRuntime.logModelCall`が未初期化adapterへ同期accessし`runtime.useModel()`がreturnしない一点
 - [x] **C02-16-F1** initialized adapterを持つruntimeで`runtime.useModel()`のstructured returnを成立させ、既発生callとfinal callの総数をreceiptへ正直に記録する — `InMemoryDatabaseAdapter`＋`runtime.initialize()`でfinal Luna callが`LIFE_MANAGER_HEALTH/{}`をreturnしexit 0。historical 1＋final 1＝total 2、automatic retry 0、effect 0をprivate evidence/receiptへ記録
 - [x] **C02-16-F1-R1** 同じreview findingだけを再確認する — same fresh reviewerがfinal session SHA、turn/task各1、tool call 0、initialized adapter、useModel return、exit 0を独立確認し`P1_RESOLVED`。private `c02/adversarial-finding-recheck.json` mode 0600、次はC02-17
-- [ ] **C02-17** C02 receiptをPASSへ更新する
+- [x] **C02-17** C02 receiptをPASSへ更新する — canonical private `model-provider-receipt.json` v2 mode 0600。Codex SDK/Luna medium、historical＋final total calls 2、automatic retry 0、final useModel return/exit 0、structured result、review P1 resolved/open 0、marketplace effect 0、owned RAM detached/mount absentをreadback。次はC02-18
 - [ ] **C02-18** ELZ-C02をDONEへ更新する
 - [ ] **C02-19** ELZ-C03をNEXTへ更新する
 
