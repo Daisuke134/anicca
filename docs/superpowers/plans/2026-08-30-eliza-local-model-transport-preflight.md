@@ -32,7 +32,7 @@
 ## Atomic TODO
 
 - [x] `C02-01` upstream Codex SDK code pathをprivate evidenceへ保存する — `~/.local/state/life-manager/migration/elz-c/c02/codex-sdk-code-path-evidence.json` mode 0600、source/file SHA再計算一致、model/effect 0
-- [ ] `C02-02` upstream host inclusionをprivate evidenceへ保存する
+- [x] `C02-02` upstream host inclusionをprivate evidenceへ保存する — `~/.local/state/life-manager/migration/elz-c/c02/codex-sdk-host-inclusion-evidence.json` mode 0600、6 file SHA再計算一致、Local Node auto-enable/Cloud inclusion PASS、runtime/model/effect 0
 - [ ] `C02-03` isolated runtimeへ`ELIZA_CHAT_VIA_CLI`を設定する
 - [ ] `C02-04` isolated runtimeへLuna modelを設定する
 - [ ] `C02-05` isolated runtimeへLuna planner modelを設定する
