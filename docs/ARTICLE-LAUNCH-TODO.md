@@ -43,8 +43,10 @@
       GPT Image 2 receipt要件を満たさない。固定5GiBは標準でも収益条件でもないため廃止する。release buildとarticle runを
       同時実行せず、`max(実測release-build peak, 実測article-run peak) + atomic-write reserve`をcapacity receiptへ保存し、
       その実測floorを満たしてmain由来releaseを作る。次にorphan cardをqueueへhash-bound復旧して新runを1回wakeする。
-      最新readback: `article-daily`はloaded-idle、毎朝06:00にscheduleされ、`ARTICLE_AUTOPUBLISH=1`であるが、
-      installed release `def55ccd`の直近terminalはFAIL `entrypoint_exit_75`である。公開ledgerと外部公開面の最新は
+      最新readback: `article-daily`はloaded-idle、毎朝06:00にscheduleされ、`ARTICLE_AUTOPUBLISH=1`である。
+      installed release `f7214aac`のwakeは空き約7.37GBでdisk gateを通るが、claim-loop receiptが
+      `MODEL_UNAVAILABLE`のためgeneration前にexit 75となる。run `20260828-195017`はgit hashとbaseline strategy receiptだけで、
+      article、headline、publication state、public ledger rowは0である。公開ledgerと外部公開面の最新は
       Note JA / Substack JA / Substack ENが8月21日、X Article JAが8月20日で、8月22日以降の新規live articleは0である。
       schedule設定や過去のlive記事を「毎日公開verified」と呼ばない。
 - [ ] W3 W2のNote JAだけをprovider-native readbackし、title、body、owner、headline、paywall、URLを確認する。
