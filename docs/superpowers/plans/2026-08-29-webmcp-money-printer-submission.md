@@ -281,7 +281,7 @@ async function registerMoneyPrinterTools(modelContext, request) {
 - `answerHumanTask({ scope, taskId, version, answerRef }, store)` atomically closes one task and returns the original `resume_ref`.
 - Private answers live in the vault; the table stores only references.
 
-- [ ] Write contract tests:
+- [x] Write focused Task 5A contract tests:
 
 ```js
 test("one logical blocker creates one task and resumes one job", async () => {
@@ -298,8 +298,8 @@ test("one logical blocker creates one task and resumes one job", async () => {
 
 Also test cross-tenant refusal, stale version conflict, replay no-op, secret rejection, and missing/noncanonical `humanBoundaryRef`. The model decides whether work is human-only; code requires the bound judgment receipt and performs only bookkeeping.
 
-- [ ] **Task 5A:** Add the domain module and migration constraints: `(uid, task_id)` primary key, status enum, version check, unique open `(uid, job_id, reason_code)`, RLS/service-role boundary, `waiting_human` runtime state, and atomic create/answer RPCs. Answer must requeue the same `(uid, job_id)`; it never creates another runtime job.
-- [ ] Run human-task test for RED.
+- [x] **Task 5A:** Add the domain module and migration constraints: `(uid, task_id)` primary key, status enum, version check, unique open `(uid, job_id, reason_code)`, RLS/service-role boundary, `waiting_human` runtime state, and atomic create/answer RPCs. Answer requeues the same `(uid, job_id)` and never creates another runtime job.
+- [x] Run human-task test for module-not-found RED, then GREEN 4/4; commit `3f4ef9bdb`; DB apply remains Task 8 deployment work.
 - [ ] **Task 5B:** Implement task/answer functions, authenticated endpoints, and the two state-dependent WebMCP tools:
 
 ```text
