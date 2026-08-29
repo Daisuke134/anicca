@@ -830,6 +830,7 @@ Current atomic run order:
 - [x] require one `provider=transit` Telegram route message for `icqi2rhh24g1sf8q0hodja0i2s`: Railway logs exact `tg_message_id=981`, and Supabase `telegram-t5` stores the same positive ID/time;
 - [x] require one outbound `[Travel]` block with provider event ID: Google confirms outbound `na4a3iqdpq4vbb9npmdbt64o4c` and return `14sg8l0muaao62sutibvci3ap8`; durable `go`/`return` claims exist;
 - [x] replay the next 60-second reminder tick: event-hash send log remains one, ledger remains three rows with message ID 981, and both Travel event IDs/updated timestamps are unchanged;
+- [x] delete controlled transit event `icqi2rhh24g1sf8q0hodja0i2s` and its exact outbound/return helper IDs with `send-updates none`; Google reads all three as `cancelled`;
 - [ ] no-location T-10 row has one call-control ID, one signed webhook ID, and one durable claim;
 - [ ] no-location T-5 row has one call-control ID, one signed webhook ID, and one durable claim;
 - [ ] physical event has one outbound `[Travel]` Calendar block with provider event ID;
