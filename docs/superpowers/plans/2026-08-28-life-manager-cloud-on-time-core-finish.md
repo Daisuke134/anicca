@@ -797,9 +797,13 @@ Current atomic run order:
 - [x] replacement no-location event `cspe20kgthj5qj4130n9q24c3s` confirmed for 15:10 JST;
 - [x] physical event `1it7jaacjfuaelalljim6nk6qs` confirmed for 15:41 JST with a private provider-routable destination;
 - [x] implement a shared scheduler-owner fallback: standalone `LIFE_RUN_LOOPS=false` with no Inngest key selects in-process loops, while explicit roles/Inngest remain unchanged;
-- [ ] prove exactly one scheduler owner in production with a fresh natural ledger write after the shared predicate deploy;
 - [x] deploy/read back the corrected shared scheduler-owner fix at exact SHA `05988c7170bba91df7d375437cf61679e9e45f75`;
-- [ ] prove natural ledger liveness on the next existing due event, then create fresh controlled events because the two IDs above missed their windows;
+- [x] adversarial production-gate review: code/deploy may ship and no new code is justified before the due window; runtime success still requires a natural ledger receipt and replay-zero;
+- [x] observe the next existing due event through 18:19 JST: deploy-after wake rows `0`, travel rows `0`; latest durable timestamps remain from the prior day, so scheduler runtime is not accepted;
+- [ ] read the corrected deployment's boot evidence and environment shape without printing secrets: exact release, role, boolean Inngest configured state, fallback decision/owner, and all seven loop-start lines;
+- [ ] localize the first broken boundary: if fallback did not start, compare Railway start command/role/config with the working local startup contract; if it started, correlate the exact real Calendar event through cohort selection, Composio fetch, eligibility/departure, claim, and provider error logs;
+- [ ] only after one root cause is proven, return one minimal failing regression to the same Luna lane, deploy one fix, and require a fresh natural ledger write plus a following-cycle duplicate count of zero;
+- [ ] create fresh controlled physical and no-location events because the two confirmed replacement IDs missed their windows before the corrected deploy;
 - [ ] no-location T-10 row has one call-control ID, one signed webhook ID, and one durable claim;
 - [ ] no-location T-5 row has one call-control ID, one signed webhook ID, and one durable claim;
 - [ ] physical event has one outbound `[Travel]` Calendar block with provider event ID;
