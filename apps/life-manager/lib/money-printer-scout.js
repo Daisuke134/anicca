@@ -283,6 +283,39 @@ function receipt(value, expected) {
   return value;
 }
 
+function createScoutDeadline(clock, timeoutMs, abortSignalTimeout) {
+  const startedAt = Number(clock());
+  if (!Number.isFinite(startedAt)) invalid("timeout");
+  const deadline = startedAt + timeoutMs;
+  const remaining = () => {
+    const value = Math.floor(deadline - Number(clock()));
+    if (!Number.isSafeInteger(value) || value < 1 || value > timeoutMs) invalid("timeout");
+    return value;
+  };
+  return Object.freeze({
+    check: remaining,
+    nextSignal: () => abortSignalTimeout(remaining()),
+    async run(operation) {
+      const timeout = {};
+      let timer;
+      try {
+        const value = await Promise.race([
+          Promise.resolve().then(operation),
+          new Promise((_, reject) => { timer = setTimeout(() => reject(timeout), remaining()); }),
+        ]);
+        remaining();
+        return value;
+      } catch (error) {
+        if (error === timeout) invalid("timeout");
+        remaining();
+        throw error;
+      } finally {
+        clearTimeout(timer);
+      }
+    },
+  });
+}
+
 function createMoneyPrinterScout(options = {}) {
   const apiKey = String(options.apiKey || options.geminiKey || "").trim();
   const fetchImpl = options.fetchImpl || globalThis.fetch;
@@ -305,26 +338,22 @@ function createMoneyPrinterScout(options = {}) {
     const expected = expectedScout(input);
     const observedAt = String(now());
     if (!Number.isFinite(Date.parse(observedAt))) invalid("observed time");
-    const startedAt = Number(clock());
-    if (!Number.isFinite(startedAt)) invalid("timeout");
-    const deadline = startedAt + timeoutMs;
-    const nextSignal = () => {
-      const remaining = Math.floor(deadline - Number(clock()));
-      if (!Number.isSafeInteger(remaining) || remaining < 1 || remaining > timeoutMs) invalid("timeout");
-      return abortSignalTimeout(remaining);
-    };
-    const discovered = await discover(expected, { apiKey, fetchImpl, nextSignal });
+    const deadline = createScoutDeadline(clock, timeoutMs, abortSignalTimeout);
+    const discovered = await discover(expected, { apiKey, fetchImpl, nextSignal: deadline.nextSignal });
+    deadline.check();
     const found = candidates(discovered.value, observedAt, expected.tenant_id, discovered.allowedSources);
     const opportunityRefs = [];
     let dedupedCount = 0;
     for (const item of found) {
-      const current = await readOpportunityBySource({ tenant_id: expected.tenant_id, source_url: item.canonical.source_url });
+      const current = await deadline.run(() => readOpportunityBySource({
+        tenant_id: expected.tenant_id, source_url: item.canonical.source_url,
+      }));
       if (current !== null) { dedupedCount += 1; continue; }
-      const saved = await createOpportunity({
+      const saved = await deadline.run(() => createOpportunity({
         tenantId: expected.tenant_id, sourceUrl: item.canonical.source_url, title: item.candidate.title,
         goalStatement: item.candidate.goal_statement, valueMinor: item.candidate.value_minor,
         currency: item.candidate.currency, observedAt,
-      }, { createOpportunity: create });
+      }, { createOpportunity: create }));
       opportunityRefs.push(`opportunity://${expected.tenant_id}/${saved.opportunity_id}`);
     }
     return receipt({

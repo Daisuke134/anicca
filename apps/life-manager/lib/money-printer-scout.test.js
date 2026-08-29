@@ -289,3 +289,22 @@ test("scout rejects missing or ungrounded sources before runtime writes", async 
     assert.equal(writes, 0);
   }
 });
+
+test("scout deadline expires before a slow runtime read can create an opportunity", async () => {
+  let readSettled = false;
+  let creates = 0;
+  const runScout = createMoneyPrinterScout({
+    apiKey: "test-gemini-key", timeoutMs: 1_000,
+    fetchImpl: async (_url, options) => JSON.parse(options.body).tools
+      ? interactionResponse(["https://allowed.example/work"], "Grounded")
+      : geminiResponse({ candidates: [{ content: { parts: [{ text: '{"candidates":[{"source_url":"https://allowed.example/work","title":"Work","goal_statement":"Build it.","value_minor":"0","currency":"USD"}]}' }] } }] }),
+    readOpportunityBySource: async () => new Promise((resolve) => setTimeout(() => {
+      readSettled = true;
+      resolve(null);
+    }, 1_100)),
+    createOpportunity: async () => { creates += 1; },
+  });
+  await assert.rejects(runScout(jobFor()), /timeout/i);
+  assert.equal(readSettled, false);
+  assert.equal(creates, 0);
+});
