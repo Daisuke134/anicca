@@ -31,7 +31,7 @@
 - Consumes: successful per-source job snapshots already stored in `jobs_by_source`, `Ledger.pending_materials_ready_applications()`, and the existing `fetch_official_description()` callable.
 - Produces: `reject_stale_workday_rows(ledger_path, jobs_by_source) -> tuple[dict[str, str], ...]`; `qualify_one(..., excluded_application_ids: frozenset[str] = frozenset()) -> dict[str, Any]`; structured `qualification_retryable_failure` rows with `application_id`, `company`, `title`, `canonical_url`, `error`, `http_status`, `provider_error_code`, and `provider_message`.
 
-- [ ] **Step 1: Write the stale-row and same-wake-advance regressions**
+- [x] **Step 1: Write the stale-row and same-wake-advance regressions**
 
 ```python
 def test_fresh_snapshot_rejects_only_absent_pre_submit_workday_row():
@@ -118,7 +118,7 @@ def test_same_host_failed_site_and_requisition_url_change_are_preserved():
     # Workday requisition suffix remains equal under same_application_surface().
 ```
 
-- [ ] **Step 2: Run RED**
+- [x] **Step 2: Run RED**
 
 Run:
 
@@ -132,7 +132,7 @@ python3 -m unittest \
 
 Expected: FAIL because stale snapshot reconciliation, excluded application IDs, and structured HTTP failure receipts do not exist.
 
-- [ ] **Step 3: Implement the minimum bookkeeping boundary**
+- [x] **Step 3: Implement the minimum bookkeeping boundary**
 
 ```python
 # workday_search_loop.py
@@ -149,7 +149,7 @@ wake_failed_ids: set[str] = set()
 # authoritative `total`; incomplete data never authorizes stale reconciliation.
 ```
 
-- [ ] **Step 4: Run GREEN and the focused package tests**
+- [x] **Step 4: Run GREEN and the focused package tests**
 
 Run:
 
