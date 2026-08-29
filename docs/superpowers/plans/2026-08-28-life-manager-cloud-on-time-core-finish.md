@@ -818,7 +818,9 @@ Current atomic run order:
 - [x] create physical event `7bmv7s4d2p8vh3rlnknhsekt2o`, private, location `東京駅`, `confirmed`, 21:45–21:55 JST; production Composio matches it and live Transit returns buffered departure 21:09:40, arrival 21:45, four steps, two rail legs with line/headsign, one transfer, platform data, and no station-exit field;
 - [x] TDD the measured Travel-block suppression: `ea1f295fa` requires adjacency plus normalized destination; 16T 3/3, Travel/return 32/32, ch1 19/19, scoped Sol `ship`;
 - [x] TDD the measured live-origin failure: `317c7a78c` parses valid geo directly and `649578220` normalizes every Google fallback to `lat,lon`; primary 61/61, scoped Sol `ship`;
-- [ ] require one outbound `[Travel]` block before 21:09:40 and one Telegram route message at natural due 21:04:40 with durable positive message ID;
+- [x] merge/deploy route fixes: PR #3086 passes 9/9, merges as `d37714dd08756b5f835452786da10a0b3ee07b56`, Railway deployment `48ca9cc3-2826-44fa-872a-ac6dda2ef3f1` is SUCCESS, public health matches;
+- [x] create post-fix physical event `udo8jkpls9u250ji2u853str9g`, private, `東京駅`, confirmed, 22:39–22:49 JST; live geo Transit route has buffered departure 22:00:06, Telegram due 21:55:06, three steps and one service/headsign;
+- [ ] require one outbound `[Travel]` block for `udo8jkpls9u250ji2u853str9g` before 22:00:06 and one `provider=transit` Telegram route message at natural due 21:55:06 with durable positive message ID;
 - [ ] no-location T-10 row has one call-control ID, one signed webhook ID, and one durable claim;
 - [ ] no-location T-5 row has one call-control ID, one signed webhook ID, and one durable claim;
 - [ ] physical event has one outbound `[Travel]` Calendar block with provider event ID;
