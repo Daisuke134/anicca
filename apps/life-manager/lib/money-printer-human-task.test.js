@@ -101,6 +101,9 @@ test("migration adds tenant-safe tasks and requeues the same runtime job atomica
   const answerRpc = MIGRATION.slice(MIGRATION.indexOf("CREATE OR REPLACE FUNCTION public.answer_lm_human_task"));
   assert.doesNotMatch(answerRpc, /INSERT INTO public\.lm_runtime_jobs/i);
   assert.match(MIGRATION, /answer_ref[^\n]*vault-answer:\/\//i);
+  assert.doesNotMatch(MIGRATION, /\{[01],999\}/, "Postgres regex repetition counts cannot exceed 255");
+  assert.match(MIGRATION, /DROP CONSTRAINT IF EXISTS lm_human_tasks_resume_ref_check/i);
+  assert.match(MIGRATION, /char_length\(resume_ref\) <= 1000/i);
 });
 
 test("runtime security preflight creates only missing NOLOGIN roles and pgcrypto", () => {
