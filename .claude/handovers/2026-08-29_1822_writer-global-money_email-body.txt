@@ -1,0 +1,24 @@
+WRITER_HANDOVER_MARKER=20260829-1822-ccf473a0
+
+Writer global money handover
+
+Handover: /Users/anicca/Projects/life-manager-main/.worktrees/writer-w0-lock-recovery/.claude/handovers/2026-08-29_1822_writer-global-money.md
+Spec: /Users/anicca/Projects/life-manager-main/docs/ARTICLE-LAUNCH-TODO.md
+Remaining TODO SSOT: Current Writer money order, W2 first
+
+Current verified state:
+- main spec commit: b2c0f94cfd64d189d00e4b1ccace5a3f24a5c337
+- handover branch: handover/writer-global-money-20260829
+- handover commit: ccf473a046b0a238d3e82af3e9b0beca2d7196e5
+- installed Writer release: f7214aac85304eef09fb930d36418f85d6fb23c6
+- latest article-daily: exit 75 before generation because claim-loop receipt is MODEL_UNAVAILABLE
+- run 20260828-195017: prepublication, article/headline/publication state/public ledger row 0
+- new external publication: 0; received writing revenue: 0
+- first safe action: read current owner/claim/run/ledger again; if MODEL_UNAVAILABLE remains and owner is idle, kickstart the existing writer-claim-loop once and watch. Only after FILLED or SUFFICIENT may the existing article-daily be triggered.
+
+Exact user-sendable goal:
+
+/goal Life Manager Writerを、実在する需要から各言語native記事を作り、記事固有のGPT Image 2 headlineを付け、公式媒体へ重複なく公開し、受取収益までartifactへ結合するOSS収益loopとして完成させる。最終Doneは、`/Users/anicca/Projects/life-manager-main/docs/ARTICLE-LAUNCH-TODO.md`のW2〜W21が一次証拠で完了し、(1)最初のactive-four canaryがNote JA・Substack JA/EN・X Article JAでtitle/body/owner/headline/paywall/URLのprovider-native PASS、(2)2回目wakeでarticle/payment/notification duplicate 0、(3)HubPages ENとKompasiana IDの公式eligibility・payout identity・native adapter・money receiptが成立、(4)06:00 JA、14:00 EN、22:00 IDの3独立slotが7日連続21 source runsでterminal publication、さらに14日42本を観測、(5)received revenue・fee・refund・payoutを記事へjoin、(6)別tenant OSS installでcredential/state/receipt交差0とreplay-zero、(7)完全なcalendar monthのunique net received writing payoutsが公式receiptとECB FX receiptでUSD 10,000以上、と確認できること。最初に `/Users/anicca/Projects/life-manager-main/.worktrees/writer-w0-lock-recovery/.claude/handovers/2026-08-29_1822_writer-global-money.md` と上記specを読み、fresh fetch後にgit HEAD/upstream/dirty state、loaded release、launchd owner、claim receipt、run state、public ledger、native URLsを再検証する。Routing: 書込repoは`/Users/anicca/Projects/life-manager-main`、実装/spec worktreeは`/Users/anicca/Projects/life-manager-main/.worktrees/writer-w0-lock-recovery`。handover branch `handover/writer-global-money-20260829`は保存専用で編集せず、fresh `origin/main`（handover時base `b2c0f94cfd64d189d00e4b1ccace5a3f24a5c337`）から`fix/writer-w2-resume`を作りoriginへpushする。`/Users/anicca/Projects/life-manager-main`共有main checkout、他worktree、他loop、credential/profile/state ownerは触らない。no subagent、no reviewer、no TDD。Ponytail最小差分で先頭未完TODOを一件ずつ実装し、main merge→immutable release→Writer対象labelだけapply→公式readbackで閉じる。既存launchd loopがeffect ownerであり、別executorをspawnしない。Mac restart禁止。外部作用はintent/fence→公式readback→receipt→replay-zero、unknownは再送せずreconcileする。固定5GiBを使わず、release buildとarticle runを重ねずcapacity receiptを使う。各記事は別topic/reader jobのnative JA/EN/IDで、自動翻訳・近似複製は禁止。MediumはAI開示付きdiscovery-only。進捗・失敗・blocker・完了ごとにspecとexecution notesを実測状態へ更新し、意味ある編集はcommit/pushする。現在の先頭はW2で、installed release `f7214aac`、run `20260828-195017`はprepublication、最新blockerはclaim-loop `MODEL_UNAVAILABLE`、外部作用0。まずowner不在とcurrent receiptを再確認し、同じblockerなら既存`writer-claim-loop`を1回kickstartしてwatch、supplyが`FILLED|SUFFICIENT`の時だけ既存`article-daily`を発火する。Done未達で安全に進める限り計画報告だけで止まらない。同じblockerが3つの異なる安全な経路で再現する、必要credential/approvalがない、またはproductionの不確実な外部作用が残る時だけ、証拠・試行・最小の次行動を残して停止する。
+
+Fallback start prompt (read-only):
+Read the handover and canonical spec, fresh-fetch the repository, list the remaining W2-W21 TODOs, draw a compact ASCII TO-BE for the three daily native-language lanes, report current git/runtime/publication truth, and wait. Do not edit, trigger loops, publish, send, or change production.
