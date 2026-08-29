@@ -574,6 +574,14 @@ def _normalize_model_demand_observation_ids(
     if not set(raw_ids) <= set(by_id):
         raise DemandCardError("model demand_card references an unsupported observation_id")
     chosen_ids = list(raw_ids)
+    supporting = selected_card.get("binding_observation_ids")
+    if isinstance(supporting, Mapping):
+        for values in supporting.values():
+            if not isinstance(values, list):
+                continue
+            for value in values:
+                if isinstance(value, str) and value in by_id and value not in chosen_ids:
+                    chosen_ids.append(value)
     chosen = [by_id[value] for value in chosen_ids]
 
     def is_full_body(row: Mapping[str, Any]) -> bool:

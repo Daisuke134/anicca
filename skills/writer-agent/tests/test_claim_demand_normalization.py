@@ -42,3 +42,18 @@ def test_full_body_normalization_preserves_model_bindings() -> None:
     assert normalized["buyer"] == "technical editors"
     assert normalized["deliverable"] == "one article"
     assert normalized["observation_ids"] == ["publisher-1", "publisher-2"]
+
+
+def test_normalization_includes_selected_binding_receipts() -> None:
+    observations = [
+        _row("publisher-1", "https://techi.com/authors", "publisher_opportunity"),
+        _row("price-1", "https://example.com/rate", "paid_market"),
+    ]
+    card = {
+        "observation_ids": ["publisher-1"],
+        "binding_observation_ids": {"price_hypothesis": ["price-1"]},
+    }
+
+    normalized = MODULE._normalize_model_demand_observation_ids(card, observations)
+
+    assert normalized["observation_ids"] == ["publisher-1", "price-1"]
