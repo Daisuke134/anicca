@@ -126,8 +126,8 @@ test("the wake loop's per-user budget is its own, and far below the organ budget
   assert.ok(WAKE_USER_TIMEOUT_MS < 90000, "the shared 90s budget was sized for the care organ, not the dial");
 });
 
-test("the reminder loop's default per-tenant budget is 25 seconds", () => {
-  assert.equal(REMINDER_TIMEOUT_MS, 25_000);
+test("the reminder loop's default per-tenant budget is 35 seconds", () => {
+  assert.equal(REMINDER_TIMEOUT_MS, 35_000);
 });
 
 test("the dial publishes the calendar so the organ tick does not fetch it again", async () => {

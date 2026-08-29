@@ -208,7 +208,7 @@ async function transitFetchPlan(srcGeo, dstGeo, query = {}) {
 }
 
 const DEFAULT_ROUTE_TIMEZONE = "Asia/Tokyo";
-const DEFAULT_TRANSIT_TIMEOUT_MS = 15_000;
+const DEFAULT_TRANSIT_TIMEOUT_MS = 25_000;
 
 function validRouteTimezone(value) {
   const zone = String(value || "").trim();
