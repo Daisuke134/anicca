@@ -238,23 +238,15 @@ Measured ruling: do not wire `server.js` to an empty fixture-like source. Task 5
 
 **Interfaces:**
 - Produces `renderMoneyPrinterWebMcpScript({ csrf }) -> string`.
-- Registers `inspect_money_printer`, `inspect_workroom`, `add_opportunity`, `set_constraints`, `inspect_next_human_task`, `record_human_answer`, `continue_work`, `pause_work`, `inspect_receipt`.
+- Registers only `inspect_money_printer` in this task. Task 5 adds the two human-task tools; Task 7 adds opportunity/workroom/receipt tools after their server actions exist.
 
-- [ ] Add tests proving top-level imperative registration, all exact names, narrow JSON Schemas, read-only annotations, side-effect descriptions, and no credential-shaped strings.
+- [ ] Add one focused test proving top-level imperative registration, exact `inspect_money_printer`, empty narrow schema, `readOnlyHint: true`, same-origin GET, and no credential-shaped strings.
 - [ ] Run `node --test apps/life-manager/lib/money-printer-webmcp.test.js`; expect RED.
 - [ ] Implement generated browser script using `document.modelContext.registerTool()`, same-origin Panel APIs, structured results, and `AbortController` for state-dependent tools.
 
 ```js
 const TOOL_SPECS = Object.freeze([
   ["inspect_money_printer", "GET", "/api/panel/money-printer", true],
-  ["inspect_workroom", "GET", "/api/panel/money-printer/workroom", true],
-  ["add_opportunity", "POST", "/api/panel/money-printer/opportunity", false],
-  ["set_constraints", "POST", "/api/panel/money-printer/constraints", false],
-  ["inspect_next_human_task", "GET", "/api/panel/money-printer/human-task/next", true],
-  ["record_human_answer", "POST", "/api/panel/money-printer/human-task/answer", false],
-  ["continue_work", "POST", "/api/panel/money-printer/continue", false],
-  ["pause_work", "POST", "/api/panel/money-printer/pause", false],
-  ["inspect_receipt", "GET", "/api/panel/money-printer/receipt", true],
 ]);
 
 async function registerMoneyPrinterTools(modelContext, request) {
@@ -270,8 +262,7 @@ async function registerMoneyPrinterTools(modelContext, request) {
 }
 ```
 
-`toolDescription` and `toolInputSchema` use an exact object keyed by the nine names; unknown names throw.
-- [ ] Register `record_human_answer` only while one exact open task exists; abort it after answer.
+`toolDescription` and `toolInputSchema` use an exact object keyed by the registered names; unknown names throw. Never register a tool before its same-origin endpoint and server domain action exist.
 - [ ] Run WebMCP and Panel UI tests; commit `feat(webmcp): expose Money Printer tools`; push.
 
 ---

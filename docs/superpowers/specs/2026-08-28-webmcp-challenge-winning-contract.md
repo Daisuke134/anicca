@@ -545,18 +545,12 @@ Minimal-human invariant:
 
 WebMCPはbackground runtimeではないが、Life Manager全体のagent-native control surfaceである。人間と対応agentが同じboard、workroom、artifact、human taskを読み書きし、background runtimeの全状態とeffectもこのsurfaceへ投影する。
 
-- `inspect_money_printer` — opportunities、running、blocked、human tasks、cost、verified moneyを読む
-- `inspect_workroom` — goal、plan、history、artifacts、last agent event、proofを読む
-- `add_opportunity` — URLまたは自然言語から新しいwork itemを作る
-- `set_constraints` — time、spend cap、risk、forbidden actions、human availabilityを更新する
-- `revise_work_artifact` — base revisionを指定し、visible artifactへpatchとrationaleを記録する
-- `continue_work` — eligibleなworkroomをagentへ再開させる
-- `inspect_next_human_task` — Userが今答えるべき一件と、なぜ必要か、prepared context、required format、return pathを読む
-- `record_human_answer` — UIが発行したhuman-confirmation tokenと本人の明示入力だけをexact taskへ記録する。Agent自身の生成値でidentity/authority boundaryを閉じない
-- `pause_work` — future agent turnsを停止する
-- `inspect_receipt` — application、delivery、paymentのofficial readbackを読む
+- **Task 4:** `inspect_money_printer` — opportunities、running、blocked、human tasks、verified moneyを読む。現時点で実在するtenant-bound GETだけを最初に登録する
+- **Task 5:** `inspect_next_human_task`、`record_human_answer` — exact human taskを読み、本人の明示入力refを一度だけ記録してsame workroomをresumeする
+- **Task 7:** `add_opportunity`、`inspect_workroom`、`inspect_receipt` — hosted goal ingress、workroom readback、typed receipt sourceへ接続してから登録する
+- **Deferred until a real domain action exists:** `set_constraints`、`continue_work`、`pause_work`、`revise_work_artifact`。未実装endpointをtoolとして公開しない
 
-ToolsはUIと同じdomain functionsを呼ぶ。AgentがWebMCP toolを使うたび、Dashboardの同じstateが更新される。Tool countはscoreではないため、overlapが見つかったtoolは統合する。
+ToolsはUIと同じdomain functionsを呼ぶ。AgentがWebMCP toolを使うたび、Dashboardの同じstateが更新される。Tool countはscoreではないため、実在domain actionのないtool、overlapするtool、動画で使わないtoolは登録しない。
 
 ---
 
