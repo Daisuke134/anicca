@@ -469,6 +469,7 @@ async function executeCapabilityJob(job, services) {
     }, storeOptions);
     return;
   }
+  if (execution.receipt.status === "blocked") return;
   await completeJob({
     ...identity,
     receipt: execution.receipt,
@@ -513,6 +514,7 @@ function createWorkerHandlers(env, capabilities, dependencies = {}) {
         runAgentRunner,
         readOpportunity,
         updateOpportunity,
+        humanTaskStore: runtimeStore,
       });
     }
     if (typeof specialist !== "function") {

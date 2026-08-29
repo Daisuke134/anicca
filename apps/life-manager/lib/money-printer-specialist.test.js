@@ -110,8 +110,11 @@ test("specialist reads one tenant goal, runs bounded work, updates status, and r
     additionalProperties: false,
     required: ["status", "execution_id"],
     properties: {
-      status: { type: "string", const: "completed" },
+      status: { type: "string", enum: ["completed", "blocked"] },
       execution_id: { type: "string", minLength: 1, maxLength: 200 },
+      reason_code: { type: "string", minLength: 1, maxLength: 200 },
+      question: { type: "string", minLength: 1, maxLength: 2000 },
+      required_format: { type: "string", minLength: 1, maxLength: 2000 },
     },
   });
   assert.match(runnerInput.prompt, /Public bounded opportunity/);
@@ -125,6 +128,43 @@ test("specialist reads one tenant goal, runs bounded work, updates status, and r
   assert.ok(guardIndex >= 0 && guardIndex < payloadStart);
   assert.ok(payloadStart >= 0 && payloadStart < maliciousPayload && maliciousPayload < payloadEnd);
   assert.doesNotMatch(runnerInput.prompt, /private_state|must not reach/);
+});
+
+test("specialist turns a model-selected human boundary into one paused task", async () => {
+  const created = [];
+  let updates = 0;
+  const specialist = createMoneyPrinterSpecialist({
+    dataDir: fs.mkdtempSync(path.join(os.tmpdir(), "lm-money-specialist-human-")),
+    repoRoot: "/repo",
+    readOpportunity: async () => opportunity(),
+    updateOpportunity: async () => { updates += 1; return opportunity({ status: "QUALIFIED" }); },
+    humanTaskStore: {
+      async createOnce(task) { created.push(task); return task; },
+    },
+    runAgentRunner: async () => ({ value: {
+      status: "blocked",
+      execution_id: "execution-human-1",
+      reason_code: "identity_assessment",
+      question: "Complete the identity-bound assessment, then confirm completion.",
+      required_format: "confirmation",
+    } }),
+  });
+
+  const result = await specialist(expected());
+
+  assert.equal(result.status, "blocked");
+  assert.equal(result.execution_id, "execution-human-1");
+  assert.deepEqual(result.next_job_refs, [`runtime-job://${TENANT}/${encodeURIComponent(JOB_ID)}`]);
+  assert.equal(updates, 0);
+  assert.equal(created.length, 1);
+  assert.equal(created[0].uid, TENANT);
+  assert.equal(created[0].job_id, JOB_ID);
+  assert.equal(created[0].reason_code, "identity_assessment");
+  assert.match(created[0].human_boundary_ref, /^human-boundary:\/\/sha256\/[0-9a-f]{64}$/);
+  assert.deepEqual(created[0].context_refs, {
+    goal_ref: GOAL_REF,
+    opportunity_ref: `opportunity://${TENANT}/${OPPORTUNITY_ID}`,
+  });
 });
 
 test("specialist rejects scope, malformed model output, and failed opportunity readback", async () => {
@@ -204,7 +244,12 @@ test("cloud qualification grounds research, then extracts a completed qualificat
   assert.deepEqual(extraction.generationConfig.responseSchema, {
     type: "object",
     required: ["status"],
-    properties: { status: { type: "string", enum: ["completed"] } },
+    properties: {
+      status: { type: "string", enum: ["completed", "blocked"] },
+      reason_code: { type: "string" },
+      question: { type: "string" },
+      required_format: { type: "string" },
+    },
   });
   assert.doesNotMatch(JSON.stringify(extraction.generationConfig.responseSchema), /additionalProperties|const/);
   assert.deepEqual(extraction.generationConfig.thinkingConfig, { thinkingBudget: 0 });

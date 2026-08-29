@@ -386,6 +386,7 @@ test("production general money worker injects Railway opportunity functions with
   assert.equal(options.supaKey, undefined);
   assert.equal(typeof options.readOpportunity, "function");
   assert.equal(typeof options.updateOpportunity, "function");
+  assert.equal(typeof options.humanTaskStore.createOnce, "function");
   assert.equal((await options.readOpportunity({
     tenant_id: MONEY_TENANT, opportunity_id: MONEY_OPPORTUNITY_ID, goal_ref: MONEY_GOAL_REF,
   })).status, "DISCOVERED");
@@ -732,6 +733,30 @@ test("capability worker completes a registered financial report with only its sa
     message_id: 44,
     snapshot_hash: "a".repeat(64),
   });
+});
+
+test("capability worker preserves a specialist-created waiting-human pause", async () => {
+  const calls = [];
+  await executeCapabilityJob({
+    tenant_id: MONEY_TENANT,
+    job_id: MONEY_JOB_ID,
+    attempt: 1,
+    capability: "general-agent.work",
+    effect_class: "none",
+  }, {
+    workerId: "worker-a",
+    handlers: {
+      "general-agent.work": async () => ({ receipt: {
+        kind: "general_agent_work", status: "blocked", tenant_id: MONEY_TENANT,
+        job_id: MONEY_JOB_ID, goal_ref: MONEY_GOAL_REF, execution_id: "execution-human-1",
+        next_job_refs: [`runtime-job://${MONEY_TENANT}/${encodeURIComponent(MONEY_JOB_ID)}`],
+      } }),
+    },
+    completeJob: async (input) => calls.push({ kind: "complete", input }),
+    failJob: async (input) => calls.push({ kind: "fail", input }),
+  });
+
+  assert.deepEqual(calls, []);
 });
 
 test("marketing liveness worker resolves only Life Manager Telegram refs and uses fake transport", async () => {
