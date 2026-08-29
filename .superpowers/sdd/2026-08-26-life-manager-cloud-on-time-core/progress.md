@@ -280,6 +280,7 @@ Baseline: focused Life Manager suite 175/175 PASS.
 ## Task 14 launch acceptance
 
 - Public QR source remains `https://t.me/LifeManagerBotbot?start=lp`; no uid, chat ID, email, or secret is encoded. A real Dais-external Telegram account on a clean device is still required; prior synthetic actor E2E cannot close Task 7.
+- Task 7 actor availability readback: Telegram-domain cookies are absent from all Cloak/Chrome profiles, Telegram Desktop/Apple containers and live processes are absent, and no Telethon/Pyrogram/MTProto session file exists in the allowed local stores. The only credential entry is the production bot, which cannot act as a user. No synthetic/bot actor is substituted; Task 7 remains waiting for a genuinely different human Telegram account while Task 8 proceeds.
 - Google official readback keeps controlled no-location events `lnpffie7md7fp0qp5j9hrudkq4` and `ah40e31tqlstvk2qvo1e0jt82c` confirmed.
 - Supabase reconciliation now proves exactly one T-10 and one T-5 wake row for each old no-location event. The 20:03 event has `amd_result=human` at both levels; the 21:55 event has `amd_result=machine` at both levels. No travel rows exist in the event window, as expected for no-location events.
 - The wake schema does not retain Telnyx call IDs, and no local Telnyx API credential or authenticated portal session is available. Therefore old calls alone do not close the required Telnyx call/webhook/ledger triple. Do not delete the old events; use a replacement no-location event after provider-ID evidence is durable.
