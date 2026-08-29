@@ -27,7 +27,7 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 この節は、後段の「現在TODO」「次の一件」「local-only」「self-funded agentは別product」という相反する記述を
 上書きする最新の実行順序SSOTである。後段は実装履歴・organ別acceptanceとして保持するが、次作業の選択には使わない。
 Upworkのterminal evidence、startup context、public claim、GA-01〜13Aは完了または履歴として保持する。
-次の一件はAtomic program ledger Seq 13 `ELZ-F13`で、公開forkのfresh cloneからPhase F foundationを再現しclean状態を固定する。
+次の一件はAtomic program ledger Seq 14 `ELZ-C01`で、ElizaOS内にLife Manager pluginを一つだけ登録し、第二runtime/scheduler/DBを作らない境界を固定する。
 
 #### 0.0.1 最新基盤決定 — ElizaOSを完全forkし、Life Managerをlocal OSSからmulti-tenant SaaSへ育てる
 
@@ -557,13 +557,13 @@ reviewはfocused verification後のfresh adversarial P0/P1 review一回だけと
 | 10 | ELZ-F10 clean stop and same-DB restart | DONE | private `local-health-receipt.json` / `restart-process-identity.json` mode 0600。同じargv SHA・state・PGlite pathで別PIDへrestartし、health ready/runtime/database/livenessとF09 markerを再確認。focused 4 files・32/32 tests、SIGTERM/PTY exit 0、旧PID消滅、port/listener/lock 0、fixed source clean、external effect 0 |
 | 11 | ELZ-F11 history DAG join | DONE | private `history-join-receipt.json` mode 0600。remote join `152ad359…`のdirect parentsはEliza `29bed1bb…`→legacy Phase F closeout `c9bea215…`。before/after root treeは同じ`ffcaf67d…`、GitHub公式readback・legacy 8,262 entries/blob/archive解決PASS。origin main不変、force/main/delete/file-import 0 |
 | 12 | ELZ-F12 specs/evidence allowlisted import | DONE | private `history-import-receipt.json` mode 0600。remote import `52eefdac…`はjoin `152ad359…`の直系で、`docs/legacy-life-manager/`内だけにlegacy `c9bea215…`とbyte/hash一致する21 Markdown＋manifest 1件。PII/gitleaks/TruffleHog verified/credential-state/non-Markdown/out-of-namespace/dirty-code 0。remote main/history不変 |
-| 13 | ELZ-F13 clean-clone foundation replay | **IN_PROGRESS — NEXT** | forkのfresh cloneでF04〜F10を再現し、working tree cleanの`foundation-replay-receipt.json` |
+| 13 | ELZ-F13 clean-clone foundation replay | DONE | private `foundation-replay-receipt.json` mode 0600。public branch `52eefdac…`をfresh depth-1 cloneし、canonical lock `1976283d…`、submodule 2、license 28、tracked cleanを再確認。APFS RAM上のTurbo-pruned agent closureはbuild 55/55・focused 4 files/32 tests、初回/restart health・marker close/reopen・PTY exit 0×2、port/writer/lock 0、model credential/external effect 0。RAM 7GiBはdetach済み |
 
 ##### Phase C — 一つのgeneral-agent pluginへ既存receipt契約を移す
 
 | Seq | Atom | 状態 | 原子的完了条件 / named receipt |
 |---:|---|---|---|
-| 14 | ELZ-C01 exactly-one plugin registration | TODO | `plugin-life-manager`一つだけがaction/provider/serviceを登録し、第二runtime/scheduler/DB 0の`plugin-registration-receipt.json` |
+| 14 | ELZ-C01 exactly-one plugin registration | **IN_PROGRESS — NEXT** | `plugin-life-manager`一つだけがaction/provider/serviceを登録し、第二runtime/scheduler/DB 0の`plugin-registration-receipt.json` |
 | 15 | ELZ-C02 first model transport preflight | TODO | `@elizaos/plugin-openai`→local proxy `:8402/v1`のbounded zero-spend structured call。Capafy key流用0の`model-provider-receipt.json` |
 | 16 | ELZ-C03 domain schema and migration | TODO | Goal/PlanGraph/WorkItem/EffectIntent/OutcomeReceipt/EconomicReceiptの型とmigrationが一つの`domain-schema-receipt.json` |
 | 17 | ELZ-C04 legacy provider bridge contract | TODO | JS/Python既存toolをopaque refとstructured resultだけで呼び、判断権0の`provider-bridge-receipt.json` |
