@@ -496,22 +496,24 @@ Primary sources:
 ### 8.4 Visual surface
 
 ```text
-┌──────────────────────── Life Manager ────────────────────────────┐
-│ Backlog │ Ready │ Working │ Needs You │ Review │ Waiting │ Done │ Paid │
-├─────────┴───────┴─────────┴───────────┴────────┴──────┴─────────┤
-│ Lancers project  live reward  Needs You: approve proposal        │
-│ Public bounty URL live reward Working                             │
-│ Mercor role       $85/hr       Needs You: take interview          │
-│                                                                    │
-│ Selected workroom: goal / plan / artifact / agent events / proof │
-│ Human task: prepared context + one exact action                   │
-│ Receipt: application / delivery / payment readback                │
-└───────────────────────────────────────────────────────────────────┘
+┌──────────────────── Life Manager / Money Printer ────────────────────┐
+│ Paid & verified │ Agents working │ Needs You │ Opportunity value     │
+├─────────────────┴────────────────┴───────────┴───────────────────────┤
+│ Found │ Working │ Needs You │ Waiting │ Done │ Paid                  │
+├───────┴─────────┴───────────┴─────────┴──────┴───────────────────────┤
+│ Lancers project  live reward  Needs You: approve proposal           │
+│ Public bounty URL live reward Working                                │
+│ Mercor role       $85/hr       Needs You: take interview             │
+├───────────────────────────────────────┬──────────────────────────────┤
+│ Selected workroom                    │ Live activity                 │
+│ goal / plan / artifact / next action │ agent + WebMCP calls + proof │
+│ one exact human action when required │ official receipt / duplicate │
+└───────────────────────────────────────┴──────────────────────────────┘
 ```
 
 Telegramは重要なstate changeをpushする。Web pageは全体状況、workroom、人間task、proof、moneyを確認・操作する。両者は同じstate、action、ledgerを参照する。
 
-Life Manager workerはWebMCP toolsと同じdomain state-transition functionsを使い、cardを`Backlog → Ready → Working → Needs You → Review → Waiting → Done / Paid`へ動かす。Background workerのcall自体はpage-local WebMCP invocationではないが、WebMCP-visible stateを通らないhidden work、hidden task、hidden effectを禁止する。WebMCP agent、人間UI、background workerの全操作が同じboard、workroom、artifact、human task、receiptへ収束する。
+Life Manager workerはWebMCP toolsと同じdomain state-transition functionsを使う。内部の細かな`READY_FOR_EFFECT`、`QA_ACCEPTED`、`SUBMITTED`等は保持するが、人間UIでは`Found → Working → Needs You → Waiting → Done → Paid`の六列へ投影する。Background workerのcall自体はpage-local WebMCP invocationではないが、WebMCP-visible stateを通らないhidden work、hidden task、hidden effectを禁止する。WebMCP agent、人間UI、background workerの全操作が同じboard、workroom、artifact、human task、receiptへ収束する。
 
 人間は全列をreadできる。通常のwrite操作はChatGPT conversationまたは`Needs You` cardから、一件の回答、選択、file upload、本人操作完了を返すことに限定する。回答後はcardをagentへ戻し、同じworkroomを自動再開する。緊急停止のため全体`Pause`だけは常時表示する。
 
@@ -737,6 +739,21 @@ Canonical first-use UX:
 6. Agentは自律実行し、human-only boundaryでのみ質問する
 7. UserがChatGPT conversationまたはcardで答えると、同じworkroomが自動再開する
 8. Userは後から「What is working, what needs me, and how much is verified?」と聞き、同じlive stateを確認する
+
+#### 10.5A Exact screen experience
+
+別wizard、別admin、複数modeは作らない。Desktop、mobile、ChatGPT in-app browserは同じDashboardを使う。
+
+1. **Arrival:** `/money-printer`を開くと、上段に`Paid & verified / Agents working / Needs You / Opportunity value`、中央に六列board、下または右にselected workroomを表示する。Guestなら`Judge guest — external effects disabled`を明示する
+2. **Start:** Userは通常UIの`Start Money Printer`、またはChatGPTの一文promptを使う。WebMCP clientが利用可能ならcurrent toolsと最初のcallを`How WebMCP works` drawerへ表示する
+3. **Autonomous work:** New opportunitiesとagent eventsが同じboardへ追加される。Userは各agent turnを承認せず、selected workroomでgoal、plan、artifact、last event、next action、proofをreadする
+4. **Needs You:** Human-only boundaryが発生した時だけ一枚のmodal/cardを開く。`Why you / Agent prepared / Required action / Resume after answer`を表示し、一問、一選択、または一file uploadだけを受ける
+5. **Resume:** 回答後はmodalが閉じ、同じcardが`Working`へ戻る。新しいworkroomやchatを作らず、activityにhuman answer refとresumed job refを並べる
+6. **Truthful result:** `Application / Contract / Delivery / Payment`を別receiptとして表示する。Payment receiptがなければ`Paid & verified`は0のままにする
+7. **Return visit:** Pageを閉じてもhosted runtimeは継続し、再訪時に最新boardと未回答`Needs You`を復元する。WebMCP toolsはpageを開いている間だけ利用可能と説明する
+8. **Mobile:** 四metricsは横scroll、boardは一列ずつswipe、`Needs You` countをsticky buttonにする。Desktopと異なる機能やstateは持たない
+
+Human write surfaceは`Needs You`回答とglobal `Pause`だけである。Opportunity追加、constraint変更、workroom continuationはWebMCP clientまたは同じserver-validated domain actionを使い、UIだけの隠れ状態を作らない。
 
 将来のpricing、自前model接続、self-hostingは今回のsubmission scope外とする。Consumer ChatGPT subscriptionを第三者SaaSのbackground APIとして流用できるとは主張しない。
 
