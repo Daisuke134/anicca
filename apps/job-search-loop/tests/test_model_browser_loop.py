@@ -109,7 +109,7 @@ class ModelBrowserLoopContractTests(unittest.TestCase):
             RowQueueSupervisor.collect(ledger, active_provider="workday"), ()
         )
 
-    def test_model_selected_application_is_the_only_workday_row_for_this_wake(self):
+    def test_model_selected_application_is_first_workday_row_for_this_wake(self):
         from job_search_loop.browser_agent.queue import RowQueueSupervisor
 
         rows = [
@@ -127,13 +127,63 @@ class ModelBrowserLoopContractTests(unittest.TestCase):
         ledger.workday_fit_qualified.return_value = True
         with patch.dict(
             os.environ,
-            {"JOB_SEARCH_PREFERRED_APPLICATION_ID": "new-company"},
+            {
+                "JOB_SEARCH_PREFERRED_APPLICATION_ID": "new-company",
+                "JOB_SEARCH_APPLICATION_LIMIT": "2",
+            },
         ):
             collected = RowQueueSupervisor.collect(ledger, active_provider="workday")
         self.assertEqual(
             [row["application_id"] for row in collected],
-            ["new-company"],
+            ["new-company", "old-rakuten"],
         )
+
+    def test_application_limit_is_applied_after_preferred_order(self):
+        from job_search_loop.browser_agent.queue import RowQueueSupervisor
+
+        rows = [
+            {
+                "application_id": value,
+                "company": value,
+                "title": "AI Role",
+                "canonical_url": f"https://{value}.wd1.myworkdayjobs.com/job/role",
+            }
+            for value in ("old-rakuten", "new-company")
+        ]
+        ledger = Mock()
+        ledger.pending_materials_ready_applications.return_value = rows
+        ledger.retryable_applications.return_value = []
+        ledger.workday_fit_qualified.return_value = True
+        with patch.dict(
+            os.environ,
+            {
+                "JOB_SEARCH_PREFERRED_APPLICATION_ID": "new-company",
+                "JOB_SEARCH_APPLICATION_LIMIT": "1",
+            },
+        ):
+            collected = RowQueueSupervisor.collect(ledger, active_provider="workday")
+        self.assertEqual([row["application_id"] for row in collected], ["new-company"])
+
+    def test_zero_or_malformed_application_limit_closes_queue(self):
+        from job_search_loop.browser_agent.queue import RowQueueSupervisor
+
+        row = {
+            "application_id": "workday",
+            "company": "Workday Co",
+            "title": "AI Role",
+            "canonical_url": "https://example.wd5.myworkdayjobs.com/job/role",
+        }
+        ledger = Mock()
+        ledger.pending_materials_ready_applications.return_value = [row]
+        ledger.retryable_applications.return_value = []
+        ledger.workday_fit_qualified.return_value = True
+        for value in ("0", "invalid", "-1", "1.5"):
+            with self.subTest(value=value), patch.dict(
+                os.environ, {"JOB_SEARCH_APPLICATION_LIMIT": value}
+            ):
+                self.assertEqual(
+                    RowQueueSupervisor.collect(ledger, active_provider="workday"), ()
+                )
 
     def test_missing_preferred_workday_application_keeps_existing_queue(self):
         from job_search_loop.browser_agent.queue import RowQueueSupervisor
@@ -521,6 +571,11 @@ class ModelBrowserLoopContractTests(unittest.TestCase):
         self.assertNotIn("Never open Ashby", prompt)
         self.assertIn("Process every eligible ATS row", prompt)
         self.assertIn("Workday and Ashby use this same agent loop", prompt)
+
+    def test_daily_exports_the_validated_rolling_deficit_to_queue(self):
+        daily = (APP_ROOT / "scripts" / "run-daily.sh").read_text(encoding="utf-8")
+        self.assertIn(".deficit", daily)
+        self.assertIn("JOB_SEARCH_APPLICATION_LIMIT", daily)
 
 
 if __name__ == "__main__":

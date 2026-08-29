@@ -191,9 +191,25 @@ os.chmod(path, 0o600)
 PY
 export JOB_SEARCH_WORKDAY_FAST_PATH_RESULT="$WORKDAY_FAST_PATH_RESULT"
 APPLICATION_ID=""
+APPLICATION_LIMIT=""
 if [[ -f "$WORKDAY_DISCOVERY_RESULT" ]]; then
   APPLICATION_ID=$("$JOB_SEARCH_JQ" -r '.queued_application_ids[0] // empty' "$WORKDAY_DISCOVERY_RESULT")
+  if ! APPLICATION_LIMIT=$("$JOB_SEARCH_JQ" -er '
+    if (.deficit | type) == "number"
+       and (.deficit >= 0)
+       and ((.deficit | floor) == .deficit)
+    then (.deficit | tostring)
+    else error("invalid deficit")
+    end
+  ' "$WORKDAY_DISCOVERY_RESULT"); then
+    print -u2 "job-search daily: malformed rolling deficit; queue closed"
+    APPLICATION_LIMIT=0
+  fi
+else
+  print -u2 "job-search daily: missing rolling deficit; queue closed"
+  APPLICATION_LIMIT=0
 fi
+export JOB_SEARCH_APPLICATION_LIMIT="$APPLICATION_LIMIT"
 if [[ -n "$APPLICATION_ID" ]]; then
   export JOB_SEARCH_PREFERRED_APPLICATION_ID="$APPLICATION_ID"
   set +e
