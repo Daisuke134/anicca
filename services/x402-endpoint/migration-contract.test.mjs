@@ -57,5 +57,14 @@ test('canonical Docker limits ownership changes to Prisma generated output', asy
   const dockerfile = await readFile(new URL('./Dockerfile', import.meta.url), 'utf8');
 
   assert.doesNotMatch(dockerfile, /chown[^\n]*\/app(?:\s|$)/m);
-  assert.match(dockerfile, /^RUN chown -R anicca:anicca \/app\/src\/generated$/m);
+  assert.match(
+    dockerfile,
+    /^RUN chown -R anicca:anicca \/app\/src\/generated \/app\/node_modules\/@prisma\/engines$/m,
+  );
+});
+
+test('canonical Alpine runtime installs OpenSSL for Prisma engines', async () => {
+  const dockerfile = await readFile(new URL('./Dockerfile', import.meta.url), 'utf8');
+
+  assert.match(dockerfile, /^RUN apk add --no-cache openssl$/m);
 });
