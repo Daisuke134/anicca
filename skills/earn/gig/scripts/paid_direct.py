@@ -405,8 +405,11 @@ def _reported_remote_cycle(args, item: dict[str, Any]) -> Path | None:
             live = _load(evidence_path)
             if _text(live.get("talkroom_id")) == _text(item.get("talkroom_id")):
                 observed = {**item, **live}
-        answer = _load(root / "delivery" / "paid-answer.json")
+        answer_path = root / "delivery" / "paid-answer.json"
+        answer = _load(answer_path)
         intent = _load(root / "delivery" / "paid-remote-intent.json")
+        if _operator_policy_newer_than(root, item, answer_path):
+            return None
         try:
             current_decision = _current_paid_decision(root, item)
         except (AttributeError, KeyError, OSError, ValueError, TypeError, json.JSONDecodeError):
@@ -4073,16 +4076,21 @@ def _remote_wait_before_decision(root: Path, item: dict[str, Any],
     _, semantic_sha256 = _semantic_effect_contract(root)
     if _require_semantic_effect_binding(root, intent, result) != semantic_sha256:
         return False
-    requirements_sha256 = paid_remote_result.requirements_digest(root, feedback)
-    policy_path, _policy, _policy_sha256 = _file_operator_policy(
-        root, feedback, requirements_sha256,
-    )
-    if (policy_path is not None
-            and policy_path.stat().st_mtime_ns > result_path.stat().st_mtime_ns):
+    if _operator_policy_newer_than(root, item, result_path):
         return False
     return _remote_wait_is_fresh(
         root, feedback, _text(intent.get("desired_state_sha256")), now=now,
     )
+
+
+def _operator_policy_newer_than(root: Path, item: dict[str, Any], checkpoint: Path) -> bool:
+    feedback = _text(item.get("buyer_feedback_sha256"))
+    requirements_sha256 = paid_remote_result.requirements_digest(root, feedback)
+    policy_path, _policy, _policy_sha256 = _file_operator_policy(
+        root, feedback, requirements_sha256,
+    )
+    return (policy_path is not None
+            and policy_path.stat().st_mtime_ns > checkpoint.stat().st_mtime_ns)
 
 
 def _run_remote_repair(args, item_path: Path, root: Path, feedback: str, base: Path) -> Path:

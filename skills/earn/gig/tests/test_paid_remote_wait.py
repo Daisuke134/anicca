@@ -568,6 +568,23 @@ def test_newer_exact_cycle_operator_policy_invalidates_remote_wait(tmp_path):
     ) is False
 
 
+def test_newer_operator_policy_invalidates_reported_answer_checkpoint(tmp_path):
+    paid = load("paid_direct")
+    root, feedback, _digest = blocked_project(tmp_path)
+    answer = root / "delivery" / "paid-answer.json"
+    write_json(answer, {"status": "answer", "message": "old result"})
+    requirements_sha = paid.paid_remote_result.requirements_digest(root, feedback)
+    policy = root / "context" / "paid-file-operator-policy.json"
+    write_json(policy, {"version": 1, "authorized_by": "account_owner",
+        "request_id": root.name, "buyer_feedback_sha256": feedback,
+        "requirements_sha256": requirements_sha, "directives": ["Continue external work."]})
+    answer.touch(); policy.touch()
+
+    assert paid._operator_policy_newer_than(
+        root, {"buyer_feedback_sha256": feedback}, answer,
+    ) is True
+
+
 def test_normalizer_restores_feedback_alias_and_canonical_digest(tmp_path):
     paid = load("paid_direct")
     root, feedback, _digest = blocked_project(tmp_path)
