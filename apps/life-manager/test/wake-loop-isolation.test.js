@@ -17,6 +17,7 @@ const {
   wakeCallOnce, wakeUserOnce, reminderUserOnce, organsUserOnce, reminderTick, startReminderLoop,
   WAKE_USER_TIMEOUT_MS, forEachUserSafe,
 } = require("../scheduler.js");
+const { travelReminderOnce } = require("../lib/travel-reminder.js");
 const { clearEvents, getEvents } = require("../lib/event-cache.js");
 
 const MINUTE = 60_000;
@@ -456,8 +457,19 @@ test("the scheduler leaves one canonical travel-reminder receipt with hash/provi
   h.deps.supaKey = "key";
   h.deps.claimTravel = async () => true;
   h.deps.sendMessage = async () => ({ ok: true, result: { message_id: 703 } });
+  const receiptArgs = [];
+  h.deps.recordTravelTelegramReceipt = async (...args) => {
+    receiptArgs.push(args);
+    return { ok: true, matched: 1 };
+  };
+  h.deps.travelReminder = (user, reminderNow, forwarded) => travelReminderOnce(user, reminderNow, {
+    ...forwarded,
+    recordTravelTelegramReceipt: h.deps.recordTravelTelegramReceipt,
+  });
   h.deps.log = (line) => lines.push(String(line));
   await reminderUserOnce(reminderUser(), now, h.deps);
+  assert.equal(receiptArgs.length, 1);
+  assert.deepEqual(receiptArgs[0].slice(0, 6), ["iso-reminder", "iso-receipt", "telegram-t5", 703, "supa", "key"]);
   const receipts = lines.filter((line) => line.startsWith("[travel-reminder] "));
   assert.equal(receipts.length, 1, `one canonical receipt expected, got ${JSON.stringify(receipts)}`);
   assert.match(receipts[0], /event_key_hash=[0-9a-f]{64}/);
