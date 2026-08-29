@@ -882,8 +882,8 @@ Update the on-time core spec to COMPLETE only when AC-01–38 each points to off
 
 Railway currently auto-selects the legacy TypeScript/pnpm Dockerfile even though the canonical service is `src/server.js` + Prisma + `package-lock.json` and `railway.toml` names the same start command. The stale lock causes every monorepo deploy to mark the GitHub Deployment aggregate failed while life-call itself succeeds.
 
-- [ ] RED: extend the existing migration contract to reject the legacy pnpm/server.ts/tsx Docker path and require package-lock/npm, Prisma generation, canonical `src`, non-root runtime, `/health`, and `node src/server.js`.
-- [ ] GREEN: update only the existing Dockerfile to install the current package lock, copy current Prisma/source, generate the current client, and start the canonical server. Do not alter dependencies, x402 behavior, paid routes, wallet/network settings, or Railway service settings.
-- [ ] Run focused migration/runtime tests, current x402 service tests, syntax/diff/secret/dependency checks, and a container build when local disk permits.
-- [ ] Fresh exact-range Sol review requires Critical/Important zero and Ponytail minimality.
+- [x] RED: extend the existing migration contract to reject the legacy pnpm/server.ts/tsx Docker path and require package-lock/npm, Prisma generation, canonical `src`, non-root runtime, dynamic runtime PORT `/health`, limited generated-output ownership, and `node src/server.js`.
+- [x] GREEN: `89f5fa6dc` updates only the existing Dockerfile and contract; review fix `5ba0c94cc` follows `${PORT:-8403}` and limits chown to `/app/src/generated`. Dependencies, x402 behavior, paid routes, wallet/network settings, and Railway settings are unchanged.
+- [x] Run focused contract 4/4, Prisma generation, current x402 service tests 68/68, syntax/diff/secret/dependency checks. Local container build reaches successful Prisma generation but stops at the disk safety floor; remote Railway build remains the acceptance gate.
+- [x] Fresh exact-range Sol review and scoped re-review return `SHIP`, Critical/Important zero, new findings zero, and Ponytail minimality.
 - [ ] Merge one PR; require x402 Railway SUCCESS, life-call SUCCESS, GitHub Deployment `success`, and public life-call `/health.build` all correlated to the same exact merge SHA.
