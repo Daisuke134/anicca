@@ -27,7 +27,7 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 この節は、後段の「現在TODO」「次の一件」「local-only」「self-funded agentは別product」という相反する記述を
 上書きする最新の実行順序SSOTである。後段は実装履歴・organ別acceptanceとして保持するが、次作業の選択には使わない。
 Upworkのterminal evidence、startup context、public claim、GA-01〜13Aは完了または履歴として保持する。
-次の一件はAtomic program ledger Seq 15 `ELZ-C02`のsubstep `C02-12`で、`plugin-life-manager`と`plugin-cli-inference`を同じisolated runtimeで一回起動する。
+次の一件はAtomic program ledger Seq 15 `ELZ-C02`のsubstep `C02-13`で、同じplugin構成から`gpt-5.6-luna`の`ACTION_PLANNER` callを一回実行する。
 
 #### 0.0.1 最新基盤決定 — ElizaOSを完全forkし、Life Managerをlocal OSSからmulti-tenant SaaSへ育てる
 
@@ -566,7 +566,7 @@ OpenAI API key、ClawRouter、Hermes、別model router、独自Codex adapterは�
 - [x] **C02-09** `ELIZA_CLI_CLAUDE_ALL_TIERS=1`をisolated runtimeへ設定する — private `c02/isolated-runtime.env` exact 7行と`all-tiers-setting-evidence.json` mode 0600、SHA readback一致。upstream名を維持しcodex-sdkにも適用。model registration/runtime/model call/effectは0、次はC02-10
 - [x] **C02-10** `plugin-cli-inference`が全text tierを登録したことを読む — private `c02/text-tier-registration-evidence.json` mode 0600。fixed `index.ts` SHA一致、TEXT_LARGE/MEGA/RESPONSE_HANDLER/SMALL/NANO/MEDIUMの6宣言とall-tiers配線をreadback。ACTION_PLANNER/runtime/model call/effectは未実行、次はC02-11
 - [x] **C02-11** `plugin-cli-inference`が`ACTION_PLANNER`を登録したことを読む — private `c02/action-planner-registration-evidence.json` mode 0600。fixed `index.ts`/`codex-sdk-session.ts` SHA一致、ACTION_PLANNER宣言、planner gate、Codex SDK route、native `outputSchema`をreadback。runtime/model call/effectは0、次はC02-12
-- [ ] **C02-12** `plugin-life-manager`と`plugin-cli-inference`を同じruntimeで一回起動する
+- [x] **C02-12** `plugin-life-manager`と`plugin-cli-inference`を同じruntimeで一回起動する — private `c02/shared-runtime-start-evidence.json` mode 0600。RAM closureで2 plugin各1、ACTION_PLANNER＋6 text tierを登録。model call 0、external effect 0。owned RAM volumeはC02-13へ保持、次はC02-13
 - [ ] **C02-13** `gpt-5.6-luna`の`ACTION_PLANNER` callを一回実行する
 - [ ] **C02-14** native structured `{action,params}` resultを一回再読出しする
 - [ ] **C02-15** provider/backend/model/effort/exitを`model-provider-receipt.json`へ保存する
