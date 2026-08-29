@@ -157,15 +157,19 @@ test("PANEL-0 Composio reconnect enables the scoped inactive account and require
   assert.match(requests[2].url, /user_ids=u-a/);
 });
 
-test("PANEL-0 Calendar ACTIVE requires an explicit enabled=true readback", async () => {
+test("PANEL-0 Calendar ACTIVE follows Composio status and disabled fields, not a legacy enabled field", async () => {
   const response = (items) => ({ ok: true, json: async () => ({ items }) });
   const base = { id: "ca-user-a", user_id: "u-a", toolkit: { slug: "googlecalendar" }, status: "ACTIVE", is_disabled: false };
-  for (const account of [base, { ...base, enabled: false }]) {
-    assert.equal(await composioCalendarStatus({ uid: "u-a", chatId: "101" }, { composioKey: "test-key", fetchImpl: async () => response([account]) }), "DISABLED");
-  }
+  assert.equal(await composioCalendarStatus({ uid: "u-a", chatId: "101" }, { composioKey: "test-key", fetchImpl: async () => response([base]) }), "ACTIVE");
+  assert.equal(await composioCalendarStatus({ uid: "u-a", chatId: "101" }, { composioKey: "test-key", fetchImpl: async () => response([{ ...base, enabled: false }]) }), "DISABLED");
+  assert.equal(await composioCalendarStatus({ uid: "u-a", chatId: "101" }, { composioKey: "test-key", fetchImpl: async () => response([{ ...base, enabled: true }]) }), "ACTIVE");
+  assert.equal(await composioCalendarStatus({ uid: "u-a", chatId: "101" }, { composioKey: "test-key", fetchImpl: async () => response([{ ...base, enabled: null }]) }), "DISABLED");
+  assert.equal(await composioCalendarStatus({ uid: "u-a", chatId: "101" }, { composioKey: "test-key", fetchImpl: async () => response([{ ...base, enabled: 1 }]) }), "DISABLED");
+  assert.equal(await composioCalendarStatus({ uid: "u-a", chatId: "101" }, { composioKey: "test-key", fetchImpl: async () => response([{ ...base, is_disabled: true, enabled: true }]) }), "DISABLED");
   const calls = [];
   const sequence = [response([{ ...base, status: "INACTIVE", is_disabled: true, enabled: false }]), { ok: true, json: async () => ({}) }, response([{ ...base }])];
-  await assert.rejects(composioCalendarStart({ uid: "u-a", chatId: "101" }, { composioKey: "test-key", fetchImpl: async (url, init = {}) => { calls.push({ url: String(url), init }); return sequence.shift(); } }), /provider_readback_failed/);
+  const result = await composioCalendarStart({ uid: "u-a", chatId: "101" }, { composioKey: "test-key", fetchImpl: async (url, init = {}) => { calls.push({ url: String(url), init }); return sequence.shift(); } });
+  assert.deepEqual(result, { provider: "calendar", state: "connected" });
   assert.equal(calls.filter((call) => call.init.method === "PATCH").length, 1);
 });
 

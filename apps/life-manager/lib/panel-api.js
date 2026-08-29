@@ -705,11 +705,13 @@ function exactCalendarAccount(scope, item) {
 }
 
 function sameEnabledCalendarAccount(item, id) {
-  return Boolean(item && item.id === id && item.status === "ACTIVE" && item.is_disabled !== true && item.enabled === true);
+  return Boolean(item && item.id === id && item.status === "ACTIVE" && item.is_disabled !== true
+    && (item.enabled === undefined || item.enabled === true));
 }
 
 function sameDisabledCalendarAccount(item, id) {
-  return Boolean(item && item.id === id && item.status !== "ACTIVE" && item.is_disabled === true && item.enabled === false);
+  return Boolean(item && item.id === id && item.status !== "ACTIVE" && item.is_disabled === true
+    && (item.enabled === undefined || item.enabled === false));
 }
 
 async function composioCalendarStatus(scope, opts = {}) {
@@ -721,7 +723,8 @@ async function composioCalendarStatus(scope, opts = {}) {
   if (items.length > 1) throw new Error("provider_ambiguous");
   if (items.length === 0) return "MISSING";
   if (!exactCalendarAccount(scope, items[0])) throw new Error("provider_ownership");
-  return items[0].status === "ACTIVE" && items[0].is_disabled !== true && items[0].enabled === true ? "ACTIVE" : "DISABLED";
+  return items[0].status === "ACTIVE" && items[0].is_disabled !== true
+    && (items[0].enabled === undefined || items[0].enabled === true) ? "ACTIVE" : "DISABLED";
 }
 
 async function composioCalendarAccounts(scope, opts = {}) {
@@ -763,7 +766,8 @@ async function composioCalendarStart(scope, opts = {}) {
   if (accounts.length === 0) return null;
   if (accounts.length !== 1 || !accounts[0].id) throw new Error("provider_ambiguous");
   const account = accounts[0];
-  if (account.status === "ACTIVE" && account.is_disabled !== true && account.enabled === true) return { provider: "calendar", state: "connected" };
+  if (account.status === "ACTIVE" && account.is_disabled !== true
+    && (account.enabled === undefined || account.enabled === true)) return { provider: "calendar", state: "connected" };
   const response = await (opts.fetchImpl || fetch)(`https://backend.composio.dev/api/v3/connected_accounts/${encodeURIComponent(account.id)}/status`, {
     method: "PATCH",
     headers: { "x-api-key": opts.composioKey, "content-type": "application/json" },

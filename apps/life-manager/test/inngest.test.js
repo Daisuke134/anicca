@@ -142,7 +142,7 @@ test("sweep-wake handler fans out when LIFE_RUN_LOOPS=false — FIND-003", async
   ];
   const handler = makeSweepWakeHandler(
     async () => fakeUsers,
-    { getEnv: () => ({ LIFE_RUN_LOOPS: "false" }) }
+    { getEnv: () => ({ LIFE_RUN_LOOPS: "false", INNGEST_SIGNING_KEY: "test-signing-key" }) }
   );
   const { step, calls } = fakeStep();
 
@@ -168,7 +168,7 @@ test("sweep-wake fans out ONLY { uid } not full user row — FIND-004", async ()
   ];
   const handler = makeSweepWakeHandler(
     async () => fakeUsers,
-    { getEnv: () => ({ LIFE_RUN_LOOPS: "false" }) }
+    { getEnv: () => ({ LIFE_RUN_LOOPS: "false", INNGEST_SIGNING_KEY: "test-signing-key" }) }
   );
   const { step, calls } = fakeStep();
 
@@ -190,7 +190,7 @@ test("sweep-travel fans out ONLY { uid } — FIND-004", async () => {
   ];
   const handler = makeSweepTravelHandler(
     async () => fakeUsers,
-    { getEnv: () => ({ LIFE_RUN_LOOPS: "false" }) }
+    { getEnv: () => ({ LIFE_RUN_LOOPS: "false", INNGEST_SIGNING_KEY: "test-signing-key" }) }
   );
   const { step, calls } = fakeStep();
 
@@ -208,7 +208,7 @@ test("sweep-ask fans out ONLY { uid } — FIND-004", async () => {
   ];
   const handler = makeSweepAskHandler(
     async () => fakeUsers,
-    { getEnv: () => ({ LIFE_RUN_LOOPS: "false" }) }
+    { getEnv: () => ({ LIFE_RUN_LOOPS: "false", INNGEST_SIGNING_KEY: "test-signing-key" }) }
   );
   const { step, calls } = fakeStep();
 
@@ -225,7 +225,7 @@ test("sweep-wake with empty user list → 0 sendEvent calls — FIND-002", async
 
   const handler = makeSweepWakeHandler(
     async () => [],
-    { getEnv: () => ({ LIFE_RUN_LOOPS: "false" }) }
+    { getEnv: () => ({ LIFE_RUN_LOOPS: "false", INNGEST_SIGNING_KEY: "test-signing-key" }) }
   );
   const { step, calls } = fakeStep();
 
@@ -234,6 +234,30 @@ test("sweep-wake with empty user list → 0 sendEvent calls — FIND-002", async
   // FIND-103: the sweeper guards `if (!users || !users.length) return;` BEFORE step.sendEvent,
   // so an empty user list fans out NOTHING — sendEvent is never called (not even with []).
   assert.strictEqual(calls.sendEvent.length, 0, "empty user list → no sendEvent at all");
+});
+
+const { makeSweepWakeHandler, makeSweepTravelHandler, makeSweepAskHandler } = require("../inngest/functions.js");
+for (const makeHandler of [makeSweepWakeHandler, makeSweepTravelHandler, makeSweepAskHandler]) {
+  test(`${makeHandler.name} is a no-op for the standalone missing-Inngest fallback`, async () => {
+    const handler = makeHandler(async () => [{ uid: "fallback-user" }], {
+      getEnv: () => ({ LIFE_RUN_LOOPS: "off", LM_DEPLOYMENT_ROLE: "", INNGEST_SIGNING_KEY: " \t\n" }),
+    });
+    const { step, calls } = fakeStep();
+    await handler({ step });
+    assert.equal(calls.sendEvent.length, 0);
+    assert.equal(calls.run.length, 0);
+  });
+}
+
+test("sweep-wake fans out in trimmed Inngest dev mode while standalone loops stay off", async () => {
+  const { makeSweepWakeHandler } = require("../inngest/functions.js");
+  const handler = makeSweepWakeHandler(async () => [{ uid: "dev-user" }], {
+    getEnv: () => ({ LIFE_RUN_LOOPS: "off", INNGEST_DEV: " 1 " }),
+  });
+  const { step, calls } = fakeStep();
+  await handler({ step });
+  assert.equal(calls.sendEvent.length, 1);
+  assert.deepStrictEqual(calls.sendEvent[0].events[0].data, { uid: "dev-user" });
 });
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -431,6 +455,11 @@ test("inngestServeAllowed returns true in dev (INNGEST_DEV=1) even without signi
   assert.strictEqual(result, true, "dev mode must always allow serving");
 });
 
+test("inngestServeAllowed accepts trimmed INNGEST_DEV=1 via the shared predicate", () => {
+  const { inngestServeAllowed } = require("../server.js");
+  assert.strictEqual(inngestServeAllowed({ INNGEST_DEV: " 1 " }), true);
+});
+
 test("inngestServeAllowed returns true in dev with INNGEST_DEV=1 and signing key present — FIND-005", () => {
   const { inngestServeAllowed } = require("../server.js");
   const result = inngestServeAllowed({ INNGEST_DEV: "1", INNGEST_SIGNING_KEY: "sk-abc" });
@@ -441,6 +470,11 @@ test("inngestServeAllowed returns false in prod (no INNGEST_DEV) when signing ke
   const { inngestServeAllowed } = require("../server.js");
   const result = inngestServeAllowed({}); // no INNGEST_DEV, no INNGEST_SIGNING_KEY
   assert.strictEqual(result, false, "prod without signing key must fail closed");
+});
+
+test("inngestServeAllowed rejects a whitespace-only signing key — shared predicate", () => {
+  const { inngestServeAllowed } = require("../server.js");
+  assert.strictEqual(inngestServeAllowed({ INNGEST_SIGNING_KEY: " \t\n" }), false);
 });
 
 test("inngestServeAllowed returns false when INNGEST_DEV is not '1' and key is missing — FIND-005", () => {

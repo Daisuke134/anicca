@@ -30,7 +30,7 @@ const {
 } = require("./lib/call-logic.js");
 const { startScheduler, startWakeLoop, startReminderLoop, startTravelLoop, startAskLoop, startOnboardLoop, startDiscoveryLoop, buildStreamUrl, langForPhone } = require("./scheduler.js");
 const { openingTurnForLang, resolveCallLang } = require("./lib/call-language.js");
-const { maybeStartLoops } = require("./lib/maybe-start-loops.js");
+const { maybeStartLoops, inngestConfigured } = require("./lib/maybe-start-loops.js");
 const { compBootLog } = require("./lib/comp-window.js");
 const { selfHealWebhook } = require("./lib/webhook-selfheal.js");
 const { serve: inngestServe } = require("inngest/node"); // raw Node http server (NOT express) → use the node adapter
@@ -38,6 +38,7 @@ const { inngest } = require("./inngest/client.js");
 const { functions: inngestFunctions } = require("./inngest/functions.js");
 const inngestHandler = inngestServe({ client: inngest, functions: inngestFunctions });
 const { placeCall, startRecording } = require("./lib/dial.js");
+const { recordTelnyxWakeReceipt } = require("./lib/telnyx-receipt.js");
 const { amdEnabled, shouldMarkAnswered } = require("./lib/answered.js");
 const { decodeCallClientState, encodeTestCallClientState, verifyTelnyxSignature } = require("./lib/telnyx-webhook.js");
 const { parseUpdate, sendMessage, editMessageText, answerCallbackQuery, isPanelCommand, isPanelDeepLink, routeCallbackData, startReply } = require("./lib/telegram.js");
@@ -125,9 +126,7 @@ const LM_PANEL_BASE = process.env.LM_PANEL_BASE_URL ||
 // In dev (INNGEST_DEV=1) it always returns true; in prod it requires INNGEST_SIGNING_KEY.
 // Exported for testing (FIND-005).
 function inngestServeAllowed(env) {
-  const isDev = String((env || {}).INNGEST_DEV || "").trim() === "1";
-  if (isDev) return true;
-  return Boolean((env || {}).INNGEST_SIGNING_KEY);
+  return inngestConfigured(env);
 }
 
 // stripeWebhookAllowed: mirrors inngestServeAllowed — dev (STRIPE_DEV=1) serves without a secret; prod
@@ -346,10 +345,45 @@ const server = http.createServer((req, res) => {
       catch { res.writeHead(400); res.end("invalid json"); return; }
       const data = event && event.data;
       const payload = data && data.payload;
-      if (!data || data.event_type !== "call.machine.detection.ended" || !payload) {
+      const amdEvent = data && data.event_type === "call.machine.detection.ended";
+      const hangupEvent = data && data.event_type === "call.hangup";
+      if (!data || (!amdEvent && !hangupEvent) || !payload) {
         res.writeHead(200); res.end("ignored"); return;
       }
       const call = decodeCallClientState(payload.client_state);
+      if (hangupEvent) {
+        const wake = call && call.kind === "wake" && call.wakeClaimToken ? call : null;
+        if (!wake) { res.writeHead(200); res.end("ignored"); return; }
+        const eventId = data.id;
+        let receipt;
+        if (typeof eventId !== "string" || eventId.trim() === "" || eventId.length > 512) {
+          receipt = { ok: false, matched: 0, error: "missing_event_id" };
+        } else {
+          try {
+            receipt = await recordTelnyxWakeReceipt({
+              uid: wake.wakeUid,
+              eventKey: wake.wakeEventKey,
+              claimToken: wake.wakeClaimToken,
+              callControlId: payload.call_control_id,
+              callSessionId: payload.call_session_id ?? null,
+              callLegId: payload.call_leg_id ?? null,
+              webhookEventId: eventId,
+              amdResult: null,
+            }, { supaUrl: SUPA_URL, supaKey: SUPA_KEY });
+          } catch {
+            receipt = { ok: false, matched: 0, error: "network_error" };
+          }
+        }
+        if (!receipt || receipt.ok !== true) {
+          console.error("[telnyx-events] call.hangup receipt failed");
+          res.writeHead(503, { "content-type": "text/plain" });
+          res.end("receipt failed; send it again");
+          return;
+        }
+        res.writeHead(200);
+        res.end(receipt.matched === 1 ? "recorded" : "receipt unmatched");
+        return;
+      }
       // spec §3 row 2d: a /test-call detection arrives here too, and it is handled BEFORE the wake
       // path because it has no lm_wake_log row to write on — the code below would PATCH nothing and
       // report matched=0 forever. It still costs the same money on a voicemail, so it still hangs up.

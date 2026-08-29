@@ -1,6 +1,6 @@
 # macOS Life Manager Loop Control Plane
 
-**Status:** Control plane and production release complete — full-fleet OSS startup and security backlog remain
+**Status:** Account auto complete — global current invariant, full-fleet OSS E2E, and security backlog remain
 **TODO ID:** `MACOS-LOOP-CONTROL-PLANE-1`  
 **Canonical registry:** `config/loop-registry.json`  
 **Scope:** macOS launchd only
@@ -390,18 +390,23 @@ recreator. Completed items are not part of the remaining queue.
 #### Current measured state and remaining TODO — execute only in this order
 
 Current registry has 166 managed rows and unmanaged labels 0. Account auto is
-present in all 78 shared-runner consumers with installed SHA missing 0. TODO 1
-is complete: PR #3040 prevents sparse owner rollout, PR #3041 executes release
-cut and cleanup code from the immutable owner while using the checkout only as
-the Git object source, and PR #3042 classifies the running TikTok provision
-browser without stopping it. The active `current` release is full `f7214aac`.
-The real owner pass completed `eligible=63`, `failed=0`, and skipped 14 running
-consumers. `lm-loop doctor` is green with missing entrypoints 0, unmanaged 0,
-and retired-installed 0. A 166-row plist audit finds missing release roots 0
-and mutable argv 0 across five protected immutable releases. The exact
-`6ab86c33` release removed by the earlier stale-checkout cleanup was rebuilt
-from its pushed commit; current immutable cleanup readback protects all five
-installed release roots.
+present in all 78 shared-runner consumers with installed SHA missing 0. Current
+runtime has 59 loaded-idle and 19 loaded-running shared-runner consumers, and
+all four installed release SHAs contain Account auto merge `3d69c74b`. The
+controlled proof remains Account 1 success plus Account 1 quota/auth failure to
+real Account 2 success with external effect 0. Clean-user launchd E2E is not an
+Account auto acceptance gate.
+
+The global release invariant has regressed after the earlier recovery. Active
+`current` is sparse `6aceea13` with paths limited to Job Search, loop/runner
+control, shared/browser code, and one Gig guard. `lm-loop doctor` is red with
+120 missing entrypoints, unmanaged 0, and retired-installed 0. Existing loops
+continue from their installed immutable releases, so this does not remove
+Account auto, but new fleet-wide operations cannot use `current` as a complete
+release. A local uncommitted candidate changes two files so sparse cuts leave
+global `current` unchanged and only target-specific apply may use an explicit
+sparse release; the existing focused suites pass 15/15. This is not completion
+evidence until committed, merged, deployed, and read back.
 
 Full-fleet OSS startup is partially implemented by PR #3047. The existing
 `scripts/local-up.sh` now provides `loops-up <id>...`, `loops-status`, and
@@ -409,15 +414,17 @@ Full-fleet OSS startup is partially implemented by PR #3047. The existing
 mode-600 profile, and supervised by existing launchd/`lm-loop`; unknown IDs and
 missing or mis-permissioned user credential stores fail before release or
 launchd mutation. Docker behavior is unchanged. Completion remains unproven:
-the clean-user natural-run E2E has not run because the target host lacks enough
-free space for another full release, and the machine credential SSOT still has
-incompatible `credentials` and Workday `accounts` schemas that need one
-portable provisioning contract before effectful loops can be called supported.
+PR #3049 adds `loops-init`, which atomically creates or validates the canonical
+version-1 `credentials` list without adding or printing values. An isolated
+clean HOME proves parent mode 700, file mode 600, and byte-identical replay.
+The clean-user natural-run E2E remains and is required only for the public
+full-fleet OSS claim. Production labels are not reused for this proof.
 
 | Order | Remaining TODO | Done evidence |
 |---:|---|---|
-| 1 | Finish full-fleet OSS startup. Keep the implemented explicit profile and launchd supervisor commands, unify the user-owned credential schema/provisioning boundary, then run the clean-user natural E2E. Never bundle Dais credentials or claim private provider loops work without user-owned setup. | From a clean user: documented few-command setup, user-owned secret provisioning, selected loops start in parallel, initiating shell exits, supervisor retains them, and the resolver reports each selected loop's liveness, capability/auth blocker, terminal result, and official effect status. |
-| 2 | Close the separate OSS/security backlog without blanket allowlisting or `npm audit fix --force`. Start with production personal-email defaults, then source-root portability/inventory, then transitive dependency upgrades. | PII shape 0, OSS self-contained boundary 0, Python syntax 0, dependency audit critical 0 and high 0, with focused compatibility readback for affected runtime routes. |
+| 1 | Close the global `current` invariant. Commit and merge the candidate; a sparse cut must leave `current` byte-identical, target-specific apply may use its explicit immutable release, and all-label apply must still require the full current release. Then cut/deploy one full main release through the owner without restarting running loops. | `current/RELEASE.json` is `ALL`; sparse-cut replay leaves its symlink unchanged; `lm-loop doctor` is green with missing 0, unmanaged 0, and retired-installed 0; every installed argv points to an existing immutable release; running loops were not restarted. |
+| 2 | Finish full-fleet OSS startup by running the clean-user natural E2E for the implemented profile, credential initialization, and launchd supervisor commands. This is not required to re-prove Account auto. Never reuse a production label, bundle Dais credentials, or claim private provider loops work without user-owned setup. | From an isolated macOS user/domain: documented few-command setup, user-owned secret initialization, selected effect-none loop starts, initiating shell exits, supervisor retains it, a natural terminal event carries the installed SHA, and the resolver separates liveness, blocker, terminal result, and effect status; test-only state is removed afterward. |
+| 3 | Close the separate OSS/security backlog without blanket allowlisting or `npm audit fix --force`. Start with production personal-email defaults, then source-root portability/inventory, then transitive dependency upgrades. | PII shape 0, OSS self-contained boundary 0, Python syntax 0, dependency audit critical 0 and high 0, with focused compatibility readback for affected runtime routes. |
 
 ### TODO 1 execution state
 

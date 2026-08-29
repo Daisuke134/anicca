@@ -27,7 +27,7 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 この節は、後段の「現在TODO」「次の一件」「local-only」「self-funded agentは別product」という相反する記述を
 上書きする最新の実行順序SSOTである。後段は実装履歴・organ別acceptanceとして保持するが、次作業の選択には使わない。
 Upworkのterminal evidence、startup context、public claim、GA-01〜13Aは完了または履歴として保持する。
-次の一件は`ELZ-01`で、ElizaOS固定commitを隔離forkし、未変更local runtimeのbuild、persistent DB、health、restart readbackを閉じる。
+次の一件はAtomic program ledger Seq 13 `ELZ-F13`で、公開forkのfresh cloneからPhase F foundationを再現しclean状態を固定する。
 
 #### 0.0.1 最新基盤決定 — ElizaOSを完全forkし、Life Managerをlocal OSSからmulti-tenant SaaSへ育てる
 
@@ -213,6 +213,54 @@ Eliza Cloudから再利用するのはorganization/user、auth middleware、cred
 限定的tenant scope checker、共有agent networkである。Life Managerは既存Supabase Auth/Postgresをself-owned identity/data planeとして再利用し、
 membership、role、invite、RLS、tenant FK、per-tenant secret、per-tenant container/networkを追加する。
 
+##### 設計上の未決定は0、未実証事実はnamed receiptで閉じる
+
+| 論点 | 固定した決定 |
+|---|---|
+| product / repo | **Life Manager**。最終公開正本は`Daisuke134/life-manager`一つ |
+| foundation | ElizaOS `29bed1bb394a2c0c7c0df6dc12babbe28667efbe`を完全fork。`AgentRuntime`を唯一の中核loopにする |
+| repo transition | `life-manager-eliza` forkを隔離検証し、acceptance後に旧repoを`life-manager-legacy`へrename/archive、新forkを`life-manager`へrename。repo削除0 |
+| local order | upstream boot → general plugin → Lancers application → contract/delivery/banked → self-heal → self-improve → stable OSS |
+| cloud order | stable local OSS後にidentity、tenant DB/vault/browser/wallet/queue/billing隔離を実装し、最後にWeb SaaSを公開 |
+| local DB | PGlite。`PGLITE_DATA_DIR`を明示し、同じpathのstop/restart readbackを必須にする |
+| cloud identity | Supabase Auth user + organization membershipがtenant root。Telegramは署名済みchannel bindingでありtenant rootではない |
+| first model transport | Eliza標準`@elizaos/plugin-openai`をOpenAI互換local proxyへ接続してpreflight。Capafy credentialを流用せず、新規有料API利用は支出境界前に0 |
+| browser | localは既存authenticated CloakBrowserをEliza tool境界から利用。cloudはper-tenant profile/container/networkを分離 |
+| judgment | goal分解、候補選択、profit/risk、未知UI、proposal、graph変更はmodelが判断。regex/keyword/provider branchに判断権を持たせない |
+| deterministic core | arithmetic、tenant boundary、immutable intent、dedupe、lease、receipt、ledger、billing、secret redactionだけ |
+| effect safety | authorization → immutable intent → presend reconcile → at most one effect → official readback → canonical receipt。unknownは再送0 |
+| learning | user-private、tenant-private、redacted global candidateを分離し、offline eval→canary→promotion→rollbackで昇格 |
+| legacy | credential、browser profile、ledger、receipt、customer project、dirty worktree、稼働ownerをreplacement natural pass前に削除・移動しない |
+| excluded | Upwork再開0、Coconala変更0、公式への許可確認メール/問い合わせ/follow-up 0 |
+
+次は未決定事項ではなく、実行して初めて分かる事実である。各行はPASS/FAILをnamed receiptへ保存し、FAILなら同じatom内で
+原因を直す。別atomへ進んで曖昧さを持ち越さない。
+
+| 未実証事実 | 閉じるatom |
+|---|---|
+| Bun 1.3.14 / Node 24.15.0、submodule、network、実行時に測ったdisk headroomでfixed treeをbuildできるか | `ELZ-F04`〜`ELZ-F06` |
+| modelなしでserver/PGliteが起動し、`/api/health`がready/runtime/database=`ok`になるか | `ELZ-F08` |
+| 同じPGlite pathでSIGTERM→restart後もDB healthとlock releaseが成立するか | `ELZ-F09`〜`ELZ-F10` |
+| `plugin-openai`がlocal proxy `http://127.0.0.1:8402/v1`のbounded zero-spend callを扱えるか | `ELZ-C02` |
+| Eliza fork上でfresh Lancers Proposal IDとreplay-zeroを取得できるか | `ELZ-L04`〜`ELZ-L05` |
+| 外部buyerが契約・検収・支払いまで進むか | `ELZ-L13`〜`ELZ-L23`。待機中もread-only discoveryと他独立atomは継続 |
+| self-healがack loss、lease expiry、browser/provider failureから副作用0で復帰するか | `ELZ-H01`〜`ELZ-H06` |
+| 自己改善候補が実指標を改善し、悪化時に自動rollbackできるか | `ELZ-I01`〜`ELZ-I07` |
+| tenant A/B間の全read/writeが0になるか | `ELZ-T01`〜`ELZ-T12` |
+| signup→provisioning→dashboard→billing→deletionが一つのcontrol planeで閉じるか | `ELZ-W01`〜`ELZ-W09` |
+| YC admission | Life Managerはapplication、proof、interview、official outcomeをreceipt化する。合否は外部decisionであり、入会済みと先取りしない |
+
+```mermaid
+flowchart LR
+    OLD["Current life-manager<br/>untouched legacy source"] --> FORK["life-manager-eliza<br/>official ElizaOS fork"]
+    FORK --> LOCALPASS["Local general-money OSS acceptance"]
+    LOCALPASS --> TENANTPASS["Two-tenant isolation acceptance"]
+    TENANTPASS --> ARCHIVE["old repo → life-manager-legacy<br/>archive + successor readback"]
+    ARCHIVE --> FINAL["fork → life-manager<br/>public default main"]
+    FINAL --> CUTOVER["one owner at a time<br/>shadow → canary → cutover"]
+    CUTOVER -- regression --> ROLLBACK["exact legacy release rollback"]
+```
+
 #### Overview / Why
 
 Life Managerは、助言を返すassistantでも、marketplaceごとのbot集合でもない。人の身体・心・お金に関するgoalを継続的に管理し、
@@ -353,14 +401,14 @@ flowchart LR
     L --> H["GA-11 Hosted tenant<br/>queue → worker → receipt<br/>DONE"]
     H --> O["GA-12 OSS clean install<br/>DONE"]
     O --> R1["GA-13A tier2依存退役<br/>production natural pass<br/>DONE"]
-    R1 --> NOW["現在: ELZ-01<br/>Eliza fork local boot"]
-    NOW --> CORE2["ELZ-02 general core<br/>plugin-life-manager"]
-    CORE2 --> D["ELZ-03 / GA-14<br/>Lancersで常時Money loop"]
+    R1 --> NOW["現在: ELZ-F01<br/>legacy baseline inventory"]
+    NOW --> CORE2["ELZ-F02〜C09<br/>fork → local boot → general core"]
+    CORE2 --> D["ELZ-L01〜L25<br/>Lancersで常時Money loop"]
     D --> W["GA-15 / GA-16<br/>受注 → 納品 → banked"]
     W --> S["GA-18<br/>failureから自己修復"]
     S --> I["GA-17<br/>receiptから自己改善"]
-    I --> OSS2["ELZ-04<br/>Local OSS stable"]
-    OSS2 --> CLOUD2["ELZ-05 / 06<br/>tenant isolation → Web SaaS"]
+    I --> OSS2["ELZ-R/O<br/>legacy cutover → Local OSS stable"]
+    OSS2 --> CLOUD2["ELZ-T/W<br/>tenant isolation → Web SaaS"]
     CLOUD2 --> X["GA-19<br/>新marketplaceをmanifestだけで追加"]
     X --> LIFE["GA-20 Financial → Daily/Body/Mind<br/>Life Manager全体"]
     LIFE --> D
@@ -436,13 +484,14 @@ authorization、dedupe、公式receipt、money truthを置き換えない。
 8. tenant A/BのDB、memory、credential、browser、wallet、receipt、billingに加え、queue payload/result/error、claim/lease、artifact/log、worker/admin APIがcross-tenant read/write 0である。
 9. Web signupからtenant agent provisioning、login、dashboard、billing、account deletionまで同じcontrol planeで閉じる。
 
-現行の最初のslice `ELZ-01`は、exact SHA/license/notice、未変更local boot、persistent DB、health、restart readbackだけで受け入れる。
-`ELZ-03`は3、4、7、local OSS releaseは3〜7、multi-tenant cloudは5、8、9を追加で満たす。
+`ELZ-F01`はread-only baseline receiptだけで受け入れる。未変更upstream runtimeは`ELZ-F04`〜`F10`、
+fresh Lancers applicationは`ELZ-L01`〜`L05`、local OSS releaseは`ELZ-O01`〜`O05`、multi-tenant cloudは`ELZ-T01`〜`W07`で
+上記acceptanceを順に追加する。
 
-#### Atomic remaining TODO — row 32以降だけを現在cursorとして、この順序で進める
+#### Historical ledger — row 1〜31は次taskを選ばない
 
 row 1〜31は完了履歴、別track停止、またはreplacement後の退役作業であり、次taskを選ばない。
-現在の先頭未完了はrow 32 `ELZ-01`である。
+現在の実行順と先頭未完了は直後の`ELZ Atomic program ledger`だけが所有する。
 
 | # | ID | 状態 | 原子的完了条件 |
 |---:|---|---|---|
@@ -477,22 +526,184 @@ row 1〜31は完了履歴、別track停止、またはreplacement後の退役作
 | 29 | GA-11 hosted product slice | DONE | commits `212dadf68` / `f7b6853ea`。authenticated+paid同一tenantだけをcloud vault health→reference-only Goal WorkItem→既存queue/worker→bounded specialist→安全な7-field receiptへ通し、同一goal replayはcreated=false・worker再実行0。focused hosted/billing/secret/onboarding 39/39、tenant isolation 9/9。fresh productionはhealth HTTP 200、canonical panel query 0、stable identity hash `e892f219…e98`、paid/phone/call/notifications true、Telegram認証済み。Calendar=`action_required`、email=`unavailable`を維持し、新規tenant/payment/connector/provider連絡/契約/納品/入金0 |
 | 30 | GA-12 OSS clean-install release | DONE | commits `1d87e401f` / `f108b591d`。未知site用5-reference manifest、`secret://`例、local/cloud quick start、MIT LICENSE、DeepAgentsJS/browser-use/OpenClaw/Steel noticeを公開。provider名/DOM selector/credential/PII/human-loop field/vendor source 0。focused manifest 17/17、clean archive 1/1、変更path OSS/PII違反0。remote一致 `f108b591d9744f203873cc3a07e594dfac0146fa`を別dirへ展開し`GA12_PUSHED_ARCHIVE=PASS` |
 | 31 | GA-13 legacy dependency retirement | PARTIAL_DEFERRED | GA-13A DONEのevidenceとrollback bundleを保持。B1〜B4は新基盤のreplacement natural pass前に進めず、legacy code/state/ownerを先に削除しない |
-| 32 | ELZ-01 pin fork and unmodified local boot | **IN_PROGRESS — NEXT** | ElizaOS exact SHA/license/noticeを固定し、隔離forkをLife Managerとしてbuild。未変更local `AgentRuntime`、persistent DB、healthを再起動込みでreadback |
-| 33 | ELZ-02 one general Life Manager plugin | TODO | `plugin-life-manager`一つだけを登録し、provider非依存`Goal → Plan/Graph → Tool → Effect → Receipt → Reflect`をlocalで完走。別scheduler/DB/runtime 0 |
-| 34 | ELZ-03 Lancers application parity | TODO | 既存GA-10 WorkItemをEliza fork上で再現し、fresh inventory→model判断→一effect→official ApplicationReceipt→same-intent replay effect 0。Coconala変更0、公式問い合わせ0 |
-| 35 | GA-14 continuous local money discovery | TODO | local general agentが許可済みproviderを常時discoverし、profit/risk/capabilityをmodel判断してsealed intentへ変換。Lancers固有brain/DOM script 0 |
-| 36 | GA-15 contract and fulfillment loop | TODO | Lancersのreply/offer/contractを同じcommerce stateへ接続し、general specialistが制作→QA→納品→revisionを完了。official delivery/acceptance receiptを取得 |
-| 37 | GA-16 banked revenue loop | TODO | payment→platform balance→payout→受領口座を照合し、新規外部buyer由来の`banked`を一件取得。application/pending/click/self-payを売上に数えない |
-| 38 | GA-18 self-healing local runtime | TODO | process/task/browser/provider/effect failureをcheckpoint→reconcile→alternate path→natural E2Eで修復。unknown effect再送0、失敗task以外への副作用0 |
-| 39 | GA-17 self-improving local money maximizer | TODO | receiptからmodelがstrategy/skill/graph候補を作り、private/global分離、offline replay、bounded canary、automatic rollbackを通った改善だけを昇格 |
-| 40 | ELZ-04 stable local OSS release | TODO | clean Mac/Linuxが公開Life Manager repoだけから同じLancers receipt/replay/restart recoveryを再現。別checkout/symlink、生credential、Dais固有path 0 |
-| 41 | ELZ-05 two-tenant isolation proof | TODO | 同じcommitからtenant A/Bを並行起動し、DB、memory、credential、browser、wallet、receipt、billing、queue payload/result/error、claim/lease、artifact/log、worker/admin APIのcross-tenant read/write 0を攻撃的E2Eで証明 |
-| 42 | ELZ-06 multi-tenant Web SaaS | TODO | Supabase Auth、organization membership/RBAC/RLS、tenant provisioning、vault、quota、Stripe、Web signup/login/dashboard/account deletionを同じAgent Coreへ接続 |
-| 43 | GA-19 manifest-only marketplace expansion | TODO | local/cloud同じcoreでCloudWorks/Fiverr/Freelancer/Mercari/bug bounty等を一件ずつmanifest＋private refs＋readback glueだけで追加。Upwork再開0 |
-| 44 | GA-20 full Life Manager and YC proof | TODO | Financialでbanked/self-fundingを閉じ、同じGoal/WorkItem/Receipt kernelをDaily・Body・Mindへ拡張。実利用・収益・reliability evidenceからYC application/demoを生成 |
 
 Upworkは`API_INELIGIBLE / UI_AUTOMATION_DENIED`でclean terminalへ入り、API/UI loopを恒久OFFとする。
 既存support caseの監視・返信・follow-up・再問い合わせは行わず、収益計画へ再参加させない。
+
+#### ELZ Atomic program ledger — Seq 1だけが現在cursor、完了receipt順に一件ずつ進める
+
+このledgerがLife Manager foundationからYC outcome readbackまでの唯一の残TODO正本である。各atomはnamed receipt一件で閉じ、
+同じatomのfocused verification、fresh review、spec state、commit/pushを完了してから次へ進む。buyer、provider、審査結果を待つatomは
+`WAITING_EXTERNAL`にし、外部effectを増やさない独立read-only atomだけを進める。`TODO`を推測で`DONE`へ変えない。
+
+TDDとreviewは必要最小限にする。code behaviorを変えるatomは正常系1本と、money誤り・data loss・duplicate external effect・secret leakのうち
+実際に触るriskだけをfocused RED→GREENで固定する。docs/read-only/既存upstream実行atomに人工的なunit testを追加しない。
+reviewはfocused verification後のfresh adversarial P0/P1 review一回だけとし、findingがあれば同じimplementerが直し、そのfindingだけを再確認する。
+無関係な全suite、複数reviewer、同じdiffの反復full review、内部object組合せ網羅へ拡張しない。
+
+##### Phase F — Eliza fixed treeを未変更でlocal起動する
+
+| Seq | Atom | 状態 | 原子的完了条件 / named receipt |
+|---:|---|---|---|
+| 1 | ELZ-F01 legacy baseline inventory | DONE | private receipt=`~/.local/state/life-manager/migration/elz-f/fork-baseline-receipt.json` mode 0600。legacy HEAD `d71d6360…`、origin snapshot `2be59f28…`、dirty/refs/worktrees SHA-256、free `6003720` KiB、Node `v25.6.1`、Bun `1.3.9`、mutations 0。採取後のrefs前進はsnapshot concernとして保持 |
+| 2 | ELZ-F02 official GitHub fork | DONE | `Daisuke134/life-manager-eliza`はparent=`elizaOS/eliza`のpublic fork。local clone=`/Users/anicca/Projects/life-manager-eliza-migration`、branch=`migration/eliza-pinned`、HEAD=`29bed1bb3…`、origin/eliza-upstream exact、submodule 2件未初期化、legacy dirty hash不変。private `fork-source-receipt.json` mode 0600、mutationsはfork/cloneのみ。disk free約2.1GiB concernはF04/F05へ継承 |
+| 3 | ELZ-F03 target topology and keep/retire map | DONE | private `fork-topology-receipt.json` mode 0600。current=`life-manager`、migration=`life-manager-eliza`、final=`life-manager`、archive=`life-manager-legacy`、upstream=`eliza-upstream`、gate=`ELZ-O05+ELZ-T11`。old repo untouched until gate=true、repo delete/force-push main/bulk restart=0。disk concernはF04/F06へ継承 |
+| 4 | ELZ-F04 pinned runtime toolchain | DONE | private `toolchain-receipt.json` mode 0600。official Node/Bun checksum OK、project-local Node `v24.15.0` / Bun `1.3.14`、system Node `v25.6.1` / Bun `1.3.9`前後同一、profile/cleanup mutation 0。free `2268928→1954692` KiB、低disk concernはF05/F06へ継承 |
+| 5 | ELZ-F05 recursive submodule | DONE | private `submodule-receipt.json` mode 0600。`llama.cpp`=`6543d907…`、`electrobun`=`f1f38ce5…`、2件ともshallow exact SHA、uninitialized/tracked diff 0、legacy dirty hash不変。free `1734716→1475560` KiB、cleanup 0。disk concernはF06へ継承 |
+| 6 | ELZ-F06 frozen install and server build | DONE | private `toolchain-build-receipt.json` mode 0600。fixed source `29bed1bb3…`、lock SHA `1976283d…`不変、tracked diff 0。`build:server` 55/55、focused upstream 4 files・32/32 tests、各exit 0。先行ENOSPC/install不足は最終成功で解消し、full suite/CI/runtime effect 0 |
+| 7 | ELZ-F07 license and notice inventory | DONE | private `license-notice-receipt.json` mode 0600。fixed source `29bed1bb3…`、root/core license hash、tracked license/notice 28件、copyright inventory、exact submodule 2件を固定。agent/plugin-sql manifestはMIT、notice mutation 0、tracked diff 0 |
+| 8 | ELZ-F08 model-free local boot | DONE | private `local-boot-receipt.json` mode 0600。`env -i` allowlist、isolated `127.0.0.1:2138` / state / PGliteで起動。health ready/runtime/database=`true/ok/ok`、DB liveness OK、model credential 0、marketplace effect 0、fixed source clean。local embedding取得とwallet address生成はcredential注入/broadcastなし |
+| 9 | ELZ-F09 persistent PGlite readback | DONE | private `local-persistence-receipt.json` mode 0600。F08 exact PID/executable/argv/start identity一致後にTERM、旧PID消滅・port 2138解放。private PGliteへexact markerを書き、close/reopen後も同値read。DB mode 0700、writer process 0、lock handle 0、fixed source clean |
+| 10 | ELZ-F10 clean stop and same-DB restart | DONE | private `local-health-receipt.json` / `restart-process-identity.json` mode 0600。同じargv SHA・state・PGlite pathで別PIDへrestartし、health ready/runtime/database/livenessとF09 markerを再確認。focused 4 files・32/32 tests、SIGTERM/PTY exit 0、旧PID消滅、port/listener/lock 0、fixed source clean、external effect 0 |
+| 11 | ELZ-F11 history DAG join | DONE | private `history-join-receipt.json` mode 0600。remote join `152ad359…`のdirect parentsはEliza `29bed1bb…`→legacy Phase F closeout `c9bea215…`。before/after root treeは同じ`ffcaf67d…`、GitHub公式readback・legacy 8,262 entries/blob/archive解決PASS。origin main不変、force/main/delete/file-import 0 |
+| 12 | ELZ-F12 specs/evidence allowlisted import | DONE | private `history-import-receipt.json` mode 0600。remote import `52eefdac…`はjoin `152ad359…`の直系で、`docs/legacy-life-manager/`内だけにlegacy `c9bea215…`とbyte/hash一致する21 Markdown＋manifest 1件。PII/gitleaks/TruffleHog verified/credential-state/non-Markdown/out-of-namespace/dirty-code 0。remote main/history不変 |
+| 13 | ELZ-F13 clean-clone foundation replay | **IN_PROGRESS — NEXT** | forkのfresh cloneでF04〜F10を再現し、working tree cleanの`foundation-replay-receipt.json` |
+
+##### Phase C — 一つのgeneral-agent pluginへ既存receipt契約を移す
+
+| Seq | Atom | 状態 | 原子的完了条件 / named receipt |
+|---:|---|---|---|
+| 14 | ELZ-C01 exactly-one plugin registration | TODO | `plugin-life-manager`一つだけがaction/provider/serviceを登録し、第二runtime/scheduler/DB 0の`plugin-registration-receipt.json` |
+| 15 | ELZ-C02 first model transport preflight | TODO | `@elizaos/plugin-openai`→local proxy `:8402/v1`のbounded zero-spend structured call。Capafy key流用0の`model-provider-receipt.json` |
+| 16 | ELZ-C03 domain schema and migration | TODO | Goal/PlanGraph/WorkItem/EffectIntent/OutcomeReceipt/EconomicReceiptの型とmigrationが一つの`domain-schema-receipt.json` |
+| 17 | ELZ-C04 legacy provider bridge contract | TODO | JS/Python既存toolをopaque refとstructured resultだけで呼び、判断権0の`provider-bridge-receipt.json` |
+| 18 | ELZ-C05 Goal to reference-only WorkItem | TODO | private goal本文をjobへ複製せず、一Goal→一WorkItemの`goal-workitem-receipt.json` |
+| 19 | ELZ-C06 capability and authorization | TODO | manifest、private authorization ref、human-only境界、expiryを固定した`capability-auth-receipt.json` |
+| 20 | ELZ-C07 bounded model decision | TODO | modelが候補/tool/next graphをstructured判断し、regex/keyword/provider judgment 0の`specialist-decision-receipt.json` |
+| 21 | ELZ-C08 effect/readback/replay kernel | TODO | presend reconcile→at most one effect→official readback→unknown reconcile→replay-zeroの`effect-receipt-kernel.json` |
+| 22 | ELZ-C09 Reflect and plugin restart | TODO | outcome/cost/time/failureをGoalへ帰属し、plugin restart後も同じstateを読む`reflect-restart-receipt.json` |
+
+##### Phase L — Lancersを最初の実環境としてbankedまで閉じる
+
+| Seq | Atom | 状態 | 原子的完了条件 / named receipt |
+|---:|---|---|---|
+| 23 | ELZ-L01 fresh auth and read-only inventory | TODO | current account/login/opportunity/message/application/contract/financeを二回同値read、provider effect 0の`lancers-preflight-receipt.json` |
+| 24 | ELZ-L02 Opportunity/ApplicationIntent adapter | TODO | transport、stable entity、fee/currency、readbackだけを持ち、subjective judgment 0の`lancers-adapter-receipt.json` |
+| 25 | ELZ-L03 historical GA-10 fixture parity | TODO | Proposal `27861812`のfixtureをprovider call 0で同じterminal stateへ再生する`lancers-fixture-receipt.json` |
+| 26 | ELZ-L04 fresh authorized application | TODO | fresh candidate/authorization/intentから新Proposal ID一件をofficial readbackする`application-receipt.json` |
+| 27 | ELZ-L05 application replay and ack-loss reconcile | TODO | same intentのexecute 0、ledger insert 0、unknown時blind retry 0の`application-replay-receipt.json` |
+| 28 | ELZ-L06 provider admission boundary | TODO | Lancersだけをactive money providerにし、Upwork/Coconala/unknown provider effect 0の`provider-admission-receipt.json` |
+| 29 | ELZ-L07 one money wake owner | TODO | 一wake/一lease/heartbeat/next tick/clean releaseを一ownerで証明する`money-wake-receipt.json` |
+| 30 | ELZ-L08 source-complete opportunity snapshot | TODO | source completenessとfresh timestampを持つread-only`opportunity-snapshot-receipt.json` |
+| 31 | ELZ-L09 profit/risk/capability decision | TODO | model理由、expected net、cost、capacity、truthful feasibilityを持つ`opportunity-decision-receipt.json` |
+| 32 | ELZ-L10 sealed intent cap and expiry | TODO | immutable content hash、effect key、spend/capacity ceiling、expiry、duplicate fenceの`sealed-intent-receipt.json` |
+| 33 | ELZ-L11 buyer inbox completeness | TODO | reply/offer/contract sourceを重複なしで読み、missing sourceを明示する`buyer-source-receipt.json` |
+| 34 | ELZ-L12 negotiation decision | TODO | modelがaccept/counter/decline/replyをterms evidenceから判断し、一message intentだけを作る`negotiation-receipt.json` |
+| 35 | ELZ-L13 client-originated approval | TODO | buyer offer/selection/approvalのofficial IDとterms hashを読む`offer-approval-receipt.json` |
+| 36 | ELZ-L14 funded contract | TODO | 仮払い/funded state、scope、price、deadline、counterpartyをofficial readbackする`contract-receipt.json` |
+| 37 | ELZ-L15 contract-scoped artifact | TODO | contract requirementから一deliverableを作り、source/input/output hashを束ねる`artifact-receipt.json` |
+| 38 | ELZ-L16 QA | TODO | acceptance criteria、test/readback、secret/PII、scope一致を検証する`qa-receipt.json` |
+| 39 | ELZ-L17 delivery intent and official delivery | TODO | QA hashへ束縛した一DeliveryIntentを一度だけ送り、official IDを読む`delivery-receipt.json` |
+| 40 | ELZ-L18 acceptance or bounded revision | TODO | accepted、revision-required、cancelledの一terminal stateとrevision capを持つ`acceptance-receipt.json` |
+| 41 | ELZ-L19 waiting/resume state | TODO | `waiting_for`/`next_tick_at`からrestart後に同じcommerce itemを再開する`commerce-resume-receipt.json` |
+| 42 | ELZ-L20 revenue mode ontology | TODO | one-off、recurring、MRR、refund、fee、adjustmentを混同しない`revenue-mode-receipt.json` |
+| 43 | ELZ-L21 received payment | TODO | platform上の実受領金、fee、currency、external buyerを読む`payment-receipt.json` |
+| 44 | ELZ-L22 payout batch | TODO | payout ID、gross、fee/refund/adjustment、net、target、statusの`payout-batch-receipt.json` |
+| 45 | ELZ-L23 owned bank transaction | TODO | payoutと一意にjoinする実口座transactionの`bank-readback-receipt.json` |
+| 46 | ELZ-L24 banked economic truth | TODO | payoutとbank delta=0、self-pay/top-up除外、新規外部buyerのみの`banked-economic-receipt.json` |
+| 47 | ELZ-L25 banked to compute-paid | TODO | received-cash cap内の実compute costと残高を束ねる`compute-paid-receipt.json` |
+
+##### Phase H — failureを失敗層ごとに修復する
+
+| Seq | Atom | 状態 | 原子的完了条件 / named receipt |
+|---:|---|---|---|
+| 48 | ELZ-H01 failure/checkpoint/quarantine contract | TODO | process/task/browser/provider/effectの所有層と復帰条件を固定した`recovery-contract-receipt.json` |
+| 49 | ELZ-H02 pre-effect crash | TODO | crash→checkpoint resume、external effect 0の`pre-effect-recovery-receipt.json` |
+| 50 | ELZ-H03 post-effect ack loss | TODO | official reconcileでreceipt回収、blind retry 0の`ack-loss-receipt.json` |
+| 51 | ELZ-H04 process/task lease expiry | TODO | dead-owner reclaim、同じWorkItem resume、duplicate 0の`task-recovery-receipt.json` |
+| 52 | ELZ-H05 browser/provider alternate path | TODO | semantic re-observation→model replan→official readbackの`provider-recovery-receipt.json` |
+| 53 | ELZ-H06 tenant/task bulkhead E2E | TODO | failed taskだけquarantineし、他task/state/effect不変の`self-heal-e2e-receipt.json` |
+
+##### Phase I — receiptから改善候補を作り、測定後だけ昇格する
+
+| Seq | Atom | 状態 | 原子的完了条件 / named receipt |
+|---:|---|---|---|
+| 54 | ELZ-I01 economic attribution | TODO | application/contract/delivery/banked/cost/timeをGoal/Skill/Providerへjoinする`learning-attribution-receipt.json` |
+| 55 | ELZ-I02 tenant-private candidate | TODO | private evidenceをtenant外へ出さないstrategy/skill/graph候補の`private-candidate-receipt.json` |
+| 56 | ELZ-I03 redacted global candidate | TODO | secret/PII/private provider data 0の`global-candidate-receipt.json` |
+| 57 | ELZ-I04 offline replay thresholds | TODO | success、duplicate、leak、cost、latencyのbefore/afterを固定した`offline-eval-receipt.json` |
+| 58 | ELZ-I05 no-effect canary | TODO | provider mutation 0で候補versionの判断改善を測る`no-effect-canary-receipt.json` |
+| 59 | ELZ-I06 bounded live canary | TODO | immutable effect fence下の一canaryだけを実行する`live-canary-receipt.json` |
+| 60 | ELZ-I07 promotion monitor and rollback | TODO | versioned promotion、natural monitor、悪化時automatic rollbackの`promotion-rollback-receipt.json` |
+
+##### Phase R/O — legacy mapとshadow後、Local OSSを公開する
+
+| Seq | Atom | 状態 | 原子的完了条件 / named receipt |
+|---:|---|---|---|
+| 61 | ELZ-R01 legacy owner/state/source map | TODO | 全owner、release、state、credential ref、rollbackを列挙した`legacy-map-receipt.json` |
+| 62 | ELZ-R02 old/new shadow parity | TODO | external effect 0で同じinput→decision/readback差分を測る`shadow-parity-receipt.json` |
+| 63 | ELZ-O01 portable public config | TODO | Dais/absolute/private path、external checkout/symlink、生credential 0の`portable-config-receipt.json` |
+| 64 | ELZ-O02 clean Mac/Linux install | TODO | public repoだけからinstall/build/bootする`oss-install-receipt.json` |
+| 65 | ELZ-O03 secret-free fixture replay | TODO | private accountなしでGoal→receipt→restart replayを再現する`oss-fixture-receipt.json` |
+| 66 | ELZ-O04 published-SHA live proof | TODO | Dais所有authをprivateに注入し、published SHAからfresh Lancers receipt/replay-zeroを得る`oss-live-provider-receipt.json` |
+| 67 | ELZ-O05 public release readback | TODO | release SHA、LICENSE/notice、README、install command、artifact digestを読む`oss-release-receipt.json` |
+
+##### Phase T — tenant隔離を下から作る
+
+| Seq | Atom | 状態 | 原子的完了条件 / named receipt |
+|---:|---|---|---|
+| 68 | ELZ-T01 tenant identity | TODO | Supabase user/orgがroot、Telegramはchannel binding、active-org/role/inviteを固定した`tenant-identity-receipt.json` |
+| 69 | ELZ-T02 isolated cloud substrate | TODO | per-tenant runtime/container/network、resource ceiling、lifecycleを持つ`cloud-substrate-receipt.json` |
+| 70 | ELZ-T03 membership and RBAC | TODO | owner/admin/memberとinvite/active-orgのallow/deny matrixを持つ`tenant-membership-receipt.json` |
+| 71 | ELZ-T04 tenant FK and RLS | TODO | 全state tableのorganization FK/RLS、wrong-tenant SQL/API denialの`tenant-db-receipt.json` |
+| 72 | ELZ-T05 vault and AAD | TODO | per-tenant encryption/AAD、wrong-tenant decrypt 0の`tenant-vault-receipt.json` |
+| 73 | ELZ-T06 browser/profile/network | TODO | cookie/profile/session/egressをtenant分離しcross-read 0の`tenant-browser-receipt.json` |
+| 74 | ELZ-T07 wallet and signer | TODO | wallet/key/signer/spend capをtenant分離しcross-sign 0の`tenant-wallet-receipt.json` |
+| 75 | ELZ-T08 queue and lease | TODO | payload/result/error、claim/lease/idempotencyをtenant分離する`tenant-queue-receipt.json` |
+| 76 | ELZ-T09 artifact/log/worker/admin API | TODO | evidence/log/export/worker/admin surfaceのcross-tenant denialを持つ`tenant-observability-receipt.json` |
+| 77 | ELZ-T10 billing and quota | TODO | Stripe customer/event、credit reserve/debit/refund、quotaをtenant分離する`tenant-billing-receipt.json` |
+| 78 | ELZ-T11 adversarial A/B isolation | TODO | DBからadmin APIまでcross-tenant read/write 0の`tenant-isolation-final.json` |
+| 79 | ELZ-T12 admin-fixture provisioning | TODO | admin fixture tenantのprovision→ready→stop→delete/rollbackを持つ`tenant-provisioning-receipt.json` |
+
+##### Phase G/R — tenant proof後にGitHub正本を切替え、一ownerだけcanaryする
+
+| Seq | Atom | 状態 | 原子的完了条件 / named receipt |
+|---:|---|---|---|
+| 80 | ELZ-G01 legacy repo backup and metadata | TODO | bundle/refs/worktrees/dirty manifestとGitHub issue/PR/release inventoryの`legacy-repo-receipt.json` |
+| 81 | ELZ-G02 repository rename/archive transaction | TODO | gate=`ELZ-O05+ELZ-T11`。old→`life-manager-legacy` archived、新fork→`life-manager` public/unarchived、successor URLの`repo-transition-receipt.json` |
+| 82 | ELZ-G03 final remotes and fork lineage | TODO | `origin`=final Life Manager、`eliza-upstream`=elizaOS、default main、fork indicator、redirectの`repo-lineage-receipt.json` |
+| 83 | ELZ-R03 one-owner canary | TODO | 一ownerだけ新releaseへ切替え、official receipt/replay-zeroの`legacy-canary-receipt.json` |
+| 84 | ELZ-R04 old owner cutover | TODO | replacement natural pass後にexact旧ownerだけ退役する`legacy-cutover-receipt.json` |
+| 85 | ELZ-R05 rollback proof | TODO | exact旧releaseへ戻しreadback後、新releaseへ復帰する`legacy-rollback-receipt.json` |
+
+##### Phase W — Web SaaSを公開しscaleを測る
+
+| Seq | Atom | 状態 | 原子的完了条件 / named receipt |
+|---:|---|---|---|
+| 86 | ELZ-W01 Web signup/login | TODO | session fixation/replay/wrong-orgを拒否しWeb sessionをtenantへ束縛する`web-auth-receipt.json` |
+| 87 | ELZ-W02 onboarding and connectors | TODO | account connectionをsecret refだけで完了し、raw credential response 0の`web-onboarding-receipt.json` |
+| 88 | ELZ-W03 dashboard and money truth | TODO | Goal/Work/Receipt/Banked/Plan/Quota/Billingをtenant-scoped表示する`web-dashboard-receipt.json` |
+| 89 | ELZ-W04 retention and verified export | TODO | export対象、retention、legal/audit receipt境界を固定し、download hashを読む`account-export-receipt.json` |
+| 90 | ELZ-W05 quiesce/cancel/revoke | TODO | new effect fence、job cancel、session/token/credential revokeを完了する`account-quiesce-receipt.json` |
+| 91 | ELZ-W06 purge/tombstone/readback | TODO | tenant data purge、retained receipt tombstone、wrong-tenant/old-session read 0の`account-deletion-receipt.json` |
+| 92 | ELZ-W07 local/cloud same-core parity | TODO | same fixture/inputのdecision/receipt schema一致、cloud-only差分を列挙する`cloud-core-parity-receipt.json` |
+| 93 | ELZ-W08 ten-tenant canary | TODO | 10 tenant並行provision/work/restartでcross-leak 0、quota/latency/costを測る`ten-tenant-receipt.json` |
+| 94 | ELZ-W09 thousand-tenant load proof | TODO | synthetic 1,000 tenantのadmission/queue/resource/cleanup capacityを測る`thousand-tenant-receipt.json` |
+
+##### Phase M/L/Y — marketplace、全Life Manager、YCへ拡張する
+
+| Seq | Atom | 状態 | 原子的完了条件 / named receipt |
+|---:|---|---|---|
+| 95 | ELZ-M01 provider admission template | TODO | policy inquiry 0でmanifest/auth/discovery/effect/readback/replay/human-onlyを判定する`marketplace-admission-receipt.json` |
+| 96 | ELZ-M02 CloudWorks | TODO | templateから一fresh official receipt/replay-zeroを得る`cloudworks-provider-receipt.json` |
+| 97 | ELZ-M03 Fiverr | TODO | templateから一fresh official receipt/replay-zeroを得る`fiverr-provider-receipt.json` |
+| 98 | ELZ-M04 Freelancer | TODO | templateから一fresh official receipt/replay-zeroを得る`freelancer-provider-receipt.json` |
+| 99 | ELZ-M05 Mercari | TODO | templateから一fresh official receipt/replay-zeroを得る`mercari-provider-receipt.json` |
+| 100 | ELZ-M06 bug bounty | TODO | authorized scope内のfinding→report→official acceptanceを一件閉じる`bounty-provider-receipt.json` |
+| 101 | ELZ-LIFE01 cross-organ allocator | TODO | Financial/Daily/Body/Mindのurgency/utility/capacity/riskをmodel判断する`allocator-receipt.json` |
+| 102 | ELZ-LIFE02 Financial continuity | TODO | banked/self-funding/budget/portfolioを同じGoal chainで閉じる`financial-continuity-receipt.json` |
+| 103 | ELZ-LIFE03 Daily | TODO | schedule/event/communication一件をcommon kernelで閉じる`daily-organ-receipt.json` |
+| 104 | ELZ-LIFE04 Body | TODO | safe bounded health action一件をevidence付きで閉じる`body-organ-receipt.json` |
+| 105 | ELZ-LIFE05 Mind | TODO | safe bounded mental-wellbeing action一件をevidence付きで閉じる`mind-organ-receipt.json` |
+| 106 | ELZ-LIFE06 integrated life chain | TODO | 一Goalから複数organを配分し、effect/receipt/economic truthを統合する`full-life-receipt.json` |
+| 107 | ELZ-Y01 proof window contract | TODO | real users、banked revenue、success、duplicate、recovery、cost、retentionの期間/分母/出典を固定する`proof-window-receipt.json` |
+| 108 | ELZ-Y02 measured product proof | TODO | proof windowを実測しunsupported claim 0の`life-proof-receipt.json` |
+| 109 | ELZ-Y03 public demo and OSS proof | TODO | clean install、live general-money loop、self-heal/self-improve、Web tenantを一demoへ束縛する`demo-proof-receipt.json` |
+| 110 | ELZ-Y04 YC application artifact | TODO | startup-context digestへ全回答/deck/demo/evidence hashを束縛する`yc-proof-pack-receipt.json` |
+| 111 | ELZ-Y05 immutable YC submission intent | TODO | official form field/value/attachment hash、application digest、effect keyをsealし、provider effect 0の`yc-submit-intent-receipt.json` |
+| 112 | ELZ-Y06 exactly-once YC submit/readback/replay | TODO | intentを一度だけ送信し、同atom内でapplication ID/status/confirmationをreadback、unknown reconcile、replay effect 0の`yc-application-receipt.json` |
+| 113 | ELZ-Y07 interview loop | TODO | interview invite時だけofficial questions→truthful evidence-bound answers→scheduleを閉じる`yc-interview-receipt.json` |
+| 114 | ELZ-Y08 official outcome | TODO | `admitted|rejected|waitlisted|pending`を公式sourceから読み、先取りclaim 0の`yc-outcome-receipt.json` |
 
 #### First implementation test matrix — all OK required
 
@@ -526,6 +737,7 @@ Upworkは`API_INELIGIBLE / UI_AUTOMATION_DENIED`でclean terminalへ入り、API
 各行を一つのsliceとして、spec/TODO更新→既存code reuse監査→必要最小変更→focused live verification→receipt→commit/pushの順で閉じる。
 通常sliceはproduction 1〜2 files、test 1 file、合計100 LOC以内をsoft targetとし、超える場合は同じID内でeffect境界ごとに分割する。
 正常系1本に加え、重複外部作用、金額誤り、data loss、secret漏洩を防ぐ最小regressionだけを持つ。内部objectの組合せ網羅は作らない。
+code変更0のdocs/read-only/運用sliceは新規TDDを作らず、既存focused commandと実readbackだけで閉じる。fresh adversarial reviewは一回を上限とする。
 
 #### E2E judgment
 
@@ -536,7 +748,7 @@ GA-10は実provider・実receipt・自然owner wake・replay-zeroが必須で、
 ### Connector independent track contract — current foundation cursorには使わない
 
 このsectionはConnectorを明示的に再開した時だけ、同track内のcontract、実装順、完了条件を選ぶ。
-Life Manager foundationの先頭TODOはrow 32 `ELZ-01`であり、Connectorの未完了項目はそのcursorを上書きしない。後段の14日窓、daily/8-hour schedule、
+Life Manager foundationの先頭TODOはAtomic program ledger Seq 1 `ELZ-F01`であり、Connectorの未完了項目はそのcursorを上書きしない。後段の14日窓、daily/8-hour schedule、
 AI・cryptoをsoft preferenceとして全分野を残す記述、旧rolling coverage、fallback provider拡張、C-CORE-01〜07は
 完了済みbaselineまたは履歴であり、現在の実装判断を上書きしない。
 
