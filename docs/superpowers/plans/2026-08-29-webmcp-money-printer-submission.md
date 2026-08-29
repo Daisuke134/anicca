@@ -44,12 +44,12 @@
 
 ## Execution Preflight
 
-- [ ] Read the winning spec, this plan, `.devpost-hackathon-state.json`, and `devpost-submission.md`.
-- [ ] Run `df -h /Users/anicca`; stop until free space is at least 8 GiB.
-- [ ] Run `git fetch origin`; create and lock a worktree from current `origin/main` with `superpowers:using-git-worktrees`.
-- [ ] Verify docs commit `01c63546c` or its merge descendant is present.
-- [ ] Re-read current official rules and draft form; verify eligibility, ownership, conflicts, deadline, required fields, free/unlimited judging access, and video constraints.
-- [ ] Identify the actual Netlify source/build pipeline for `aniccaai.com`; preserve existing `/lm`, and record `/money-printer` headers and deployed SHA before changing code.
+- [x] Read the winning spec, this plan, `.devpost-hackathon-state.json`, and `devpost-submission.md`.
+- [x] Run `df -h /Users/anicca`; current free space is 11 GiB.
+- [x] Run `git fetch origin`; create and lock `feat/webmcp-money-printer` from current `origin/main`.
+- [x] Integrate the WebMCP docs commits, including `01c63546c`, into the implementation branch.
+- [x] Re-read current official rules and draft form through the Devpost plugin; required fields, four criteria, deadline, free judging access, and video constraints match the spec.
+- [x] Identify the Netlify source: `anicca-products`, site ID `d67537f0-21bd-477e-ac1a-323f7ec6d5cd`. Preserve `/lm`; `/money-printer` headers and deployed SHA remain Task 8 evidence.
 - [ ] Run `~/loops/current/bin/lm-loop doctor` and `~/loops/current/bin/lm-loop status all`.
 - [ ] Run baseline tests:
 
@@ -66,6 +66,8 @@ PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 -m pytest -q \
 ```
 
 Expected: all pass. Any failure becomes Task 1 evidence and is not waived.
+
+Measured preflight: general-agent Node baseline is 27/27 pass using an existing locked dependency runtime. Clean `npm ci` is pending network recovery. Lancers baseline is 2 pass / 1 fail from a budget-enrichment expectation drift and remains Task 1 evidence. `lm-loop` launchctl readback is unavailable from the isolated Codex app-server, so no live owner status is inferred from that failure.
 
 ---
 

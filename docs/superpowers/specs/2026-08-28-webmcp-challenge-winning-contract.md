@@ -709,6 +709,18 @@ Focused reuse suiteはruntime/browser jobs、ask/reply、reconciliation、panel�
 9. **Current live proof:** Lancers application ownerとMercor hourly ownerは停止中で、保持browser pageも`about:blank`である。process、CDP、cookie、過去rowはauthenticated inventory、current application、24/7 cycleの証拠にしない
 10. **Deployment source:** `https://aniccaai.com/lm`は既存Life Manager onboarding、Telegram連携、Google認証の正規routeなので上書きしない。Hackathon control roomは`https://aniccaai.com/money-printer`へ配備する。現時点では未deployなので、正規Netlify build入口、required headers、deployed SHAを先に固定する
 
+#### 10.4D Current execution checkpoint
+
+| Gate | Measured state | Next action |
+|---|---|---|
+| Implementation branch | `feat/webmcp-money-printer`をcurrent `origin/main`からlocked worktreeとして作成し、WebMCP spec/plan/draft/mockupを統合、remoteへpush済み | Production editsはこのworktreeだけで行う |
+| Official challenge | Devpost pluginでrules、required fields、4 criteria、deadlineをlive取得。Project `1404362`は存在し、Hackathon entryの`submitted_at`はnull | Final deploy/video後にfieldsを更新し、explicit final confirmation後だけsubmit |
+| Public route | `/lm`は既存onboardingとして保全。Money Printer canonical URLは`https://aniccaai.com/money-printer` | Devpost live URLは実deploy readback後だけ更新 |
+| Dependencies | Data volume free 11 GiB。Life Manager clean `npm ci`はnetwork待ちで進展せず中断。既存locked dependency runtimeでgeneral-agent focused baseline 27/27 pass | Network回復後にclean installを再実行。未installをfeature failureと数えない |
+| Lancers | Focused suiteは2 pass / 1 fail。Failureは現実装が全card detailをenrichするのに、testが旧budget-qualified-only期待を保持するdrift。別locked Lancers application ownerが存在し、isolated Codex app-serverではlaunchctl readback不可 | 別ownerを侵害せず、current product contractとowner resultを照合してからtest/codeを一方だけ修正。live auth/application claimはblockedのまま |
+| Netlify source | `aniccaai.com` production sourceは`/Users/anicca/anicca-project`の`anicca-products` remoteとsite ID `d67537f0-21bd-477e-ac1a-323f7ec6d5cd`。shared checkoutはdirty | Dedicated website worktreeを作り、Life Manager public sourceと同じ `/money-printer` pageを同期する |
+| Task 2 | Projection filesは未作成、diff 0 | Provider-neutral projectionをfocused TDDで開始する |
+
 ### 10.5 One product, one mode
 
 Hackathonで提供するmodeは一つだけである。Primary experienceは、Userが`https://aniccaai.com/money-printer`を開き、「Turn on my Money Printer」と頼むflowである。Site tools accessがある場合はChatGPT desktopのin-app browserがpage toolsを発見し、同じDashboard上でconstraints設定、opportunity確認、`Needs You`回答、continuation、receipt確認を行う。WebMCP自体にLife Manager API keyは不要だが、ChatGPT Site toolsのavailabilityはrollout、account、plan、model、workspaceに依存する。通常browser UIはChatGPT/Codex契約なしで使える。別product、別judge system、別local/cloud modeを作らない。
@@ -1086,7 +1098,7 @@ One active item at a time。各itemは実物readbackを閉じてから次へ進�
 |---|---|---|---|---|
 | U01 | General agentがprovider listに縮退する | design-closed | X/Web/GitHub/mail/任意URLを同じgoal→job→tool loopへ入れるcontract test | provider keyword routingを検出したらmergeしない |
 | U02 | Opireがprimary proofに使えるか | rejected | API 56 records→33 closed、7 missing/deleted、16 open。低競争候補も22 competing PRsとpayout uncertainty | Opire固有実装を作らない |
-| U03 | Current branchが最新mainと乖離 | live-open | execution worktreeをfresh `origin/main`の直接子として作り、existing general-agent/marketplace testsをbaseline pass | stale spec branchからproduction codeを編集しない |
+| U03 | Current branchが最新mainと乖離 | resolved | `feat/webmcp-money-printer` locked worktreeをcurrent `origin/main`から作成し、general-agent baseline 27/27 pass | stale docs/shared checkoutからproduction codeを編集しない |
 | U04 | Disk不足でinstall/build/videoが失敗 | disk gate passed / install live-open | Data volume free 11 GiBをreadback。次に`npm ci`とexact interpreter import smoke | free <8 GiBへ戻ったらbuildを止める |
 | U05 | Lancers installed ownerがfail中 | blocked | application owner natural pass、loaded argv、release SHA、CDP owner、latest log、exact entrypointを照合 | root causeがauthならmutationせずNeeds Youへ出す |
 | U06 | Lancers login/sessionが有効か | blocked | exact browser profile/CDPのofficial authenticated inventory、effect count 0、two-read stable identity。`about:blank`やcookie存在は不可 | login unavailableならguest UIはlive Lancers effectを主張しない |
@@ -1110,6 +1122,6 @@ One active item at a time。各itemは実物readbackを閉じてから次へ進�
 | U24 | Devpost最終送信漏れ | open | live URL、repo、video、custom fields、explicit `yes, submit`、`submitted_at` readback | internal deadline September 3 12:00 JST、official deadline September 4 05:00 JST |
 | U25 | Eligibility、ownership、conflictが未確認 | live-open | Japan residency、representative、rules/terms acknowledgement、Sponsor conflict absence、sole ownershipを最終formとrulesでreadback | 一項目でも不適格または不明ならsubmitしない |
 | U26 | Rulesやsubmission fieldsが調査後に変わる | live-open | 提出直前にofficial rulesとproject formを再取得し、deadline、required fields、testing accessをdiff | 古いdraftをそのまま送らない |
-| U27 | Live URL、deploy SHA、repo SHAが一致しない | live-open | response/header/build metadata、submitted commit、public repo tagが同じimmutable releaseを指し、judging中無料・無制限に到達可能 | SHA不一致またはauth wallならnot ready |
+| U27 | Live URL、deploy SHA、repo SHAが一致しない | source identified / deploy live-open | Netlify site IDと`anicca-products` sourceを特定。次にresponse/header/build metadata、submitted commit、public repo tagを同一releaseへ束縛 | SHA不一致またはauth wallならnot ready |
 | U28 | Application receiptを売上と誤認する | design-closed / UI live-open | `ApplicationReceipt`、`ContractReceipt`、`DeliveryReceipt`、`PaymentReceipt`を別型・別columnで表示し、cash receipt不在時はverified money 0 | application/proposal/pendingをrevenueへ昇格しない |
 | U29 | Judgeがclean environmentで再現できない | live-open | fresh browserからone URL、one prompt、tool discovery、reset、visible state、Chrome fallbackを60秒以内に再現 | private credentialや既存sessionが必要ならnot ready |
