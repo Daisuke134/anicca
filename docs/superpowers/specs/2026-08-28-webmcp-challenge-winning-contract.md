@@ -590,7 +590,7 @@ ToolsはUIと同じdomain functionsを呼ぶ。AgentがWebMCP toolを使うた�
 
 Agent promptは目的、証拠基準、authority boundary、canonical examplesを伝える。全providerの画面分岐、職種keyword、応募文patternを列挙しない。
 
-### 9.4 Symphonyから採用するarchitecture
+### 9.4 Official Symphony runtimeの採用
 
 OpenAI Symphony commit `8001b52e3062495a16e520e4ceaf8f9de868c4d0`のSPECとreference implementationを比較した。Symphonyはissue trackerをpollし、issueごとのisolated workspaceを作り、repo-owned `WORKFLOW.md`をprompt/config contractとしてCodexを継続実行する。Orchestratorはsingle authoritative runtime state、claim、bounded concurrency、retry、reconciliationを持つ。Agent turnが正常終了してもissueがactiveなら同じworkspace/threadでcontinuationする。一時失敗はexponential backoffする。Human handoffはworkflow/agentが`Human Review`等のstateへ移し、orchestratorがeligibilityとstateを再照合する。Dashboardはrunning、retrying、blocked、last event、tokens、workspace、runtimeを表示する。
 
@@ -607,7 +607,27 @@ Life Managerはこの構造を次のようにadaptする。
 | Human Review | Exact human task |
 | Done | Verified terminal outcome |
 
-採用するのはpoll、isolated workroom、continuation、retry、reconciliation、observabilityである。Symphonyのcoding-only assumption、特定tracker、PR-centric completionは採用しない。
+Symphonyはarchitecture referenceだけで終わらせず、公式repoを実際にinstallしてLife Managerのagent orchestratorとして使う。ただし、Symphonyのcoding-only assumption、tracker、PR-centric completionをMoney Printerのbusiness truthへ昇格させない。
+
+#### 9.4A Install spikeの実測
+
+- Official repoを`/Users/anicca/Projects/openai-symphony`へcloneし、commit `8001b52e3062495a16e520e4ceaf8f9de868c4d0`へ固定した
+- `mise 2026.8.14`、Erlang/OTP 28、Elixir `1.19.5-otp-28`をinstallし、`mix setup`と`mix build`を完了した
+- Official `make all`は296 tests中294 pass、6 skipped、2 timing-sensitive failuresだった。focused rerunではretry timing testはpass、stream-update timeout testはこのhostで再現した
+- Private GitHub fixture `Daisuke134/symphony-spike#1`をtrackerとして、最大2 agents、isolated workspace、Codex app-server、retry/backoff、dashboard/APIを実起動した
+- SymphonyがCodex sessionを開始し、`RESULT.txt`をexact `SYMPHONY_OK`で作成、commit `4e1c346fc1c5899cbd679c4ef3c881ef9f3c66d3`をpush、proof commentを投稿し、Issueをcloseした。tracker close後はworkspaceがcleanupされ、dashboardはrunning 0 / retrying 0へ収束した
+- 初回の`codex.command`はenv assignmentを実行ファイル名として解釈してexit 126になった。`env CODEX_HOME=... codex app-server`へ1行修正すると、restartなしのworkflow reloadで成功した
+- 公式referenceはengineering previewで、guardrail acknowledgementを要求する。dependency installには複数のsecurity advisoryがあるため、現状のdashboardをpublic Internetへ直接公開しない
+
+#### 9.4B Life Managerでの責任分界
+
+| Owner | 正本にするもの |
+|---|---|
+| Symphony | bounded parallel Codex sessions、per-work-item workspace、continuation、retry/backoff、runtime observability |
+| Life Manager | opportunity、qualification、tenant、HumanTask、authority、effect fence、official receipt、verified received money |
+| WebMCP Dashboard | 人とagentが共有する上記Life Manager stateの表示・操作。Symphonyの内部trackerを直接編集するUIにはしない |
+
+Hackathon中の最小接続は、Life Manager work itemをprivate GitHub Issueへmirrorし、official GitHub tracker adapterでSymphonyへdispatchする。Agentの結果はLife Manager API/toolを通して同じworkroomへ戻す。GitHub Issueのcloseだけでは`Done`や収益にしない。公式receiptをLife Managerが照合した時だけterminal outcomeまたはverified moneyへ進める。直接Postgres tracker adapter、public Symphony dashboard、multi-tenant control planeはspike後の実需要が出るまで作らない。
 
 ---
 
@@ -699,7 +719,7 @@ Focused reuse suiteはruntime/browser jobs、ask/reply、reconciliation、panel�
 3. **Unknown marketplaces:** provider inventoryをadmission whitelistにしない。X、Web、GitHub、mail、search、任意URLをgeneric opportunityとして受け、Modelがrequirementsとavailable toolsから実行可否・次actionを判断する。Mechanical effect/readbackが不足する場合だけthin adapterを追加する
 4. **Unified projection:** existing loopsは別state rootsを持つ。新しいbusiness executorを作らず、各loopのreadbackをgeneric `Opportunity / Workroom / HumanTask / Receipt`へ投影するadapterが必要
 5. **WebMCP layer:** existing loopsはWebMCPを公開していない。既存domain functionsとprojectionを呼ぶtop-level toolsは新規実装である
-6. **Dependency/disk headroom:** focused reused-contract testsは69/69 pass。残るのはcode uncertaintyではなくdisk空き約630MiBで、clean installとexact submission runtime import smokeに不足する可能性である
+6. **Dependency/runtime headroom:** 固定GB thresholdは置かない。実commandがENOSPCになった時、または次commandの必要一時容量が実測で不足する時だけ最小cleanupを行う。Official Symphonyはinstall/build/E2E済みだが、reference dependencyのsecurity advisoryと1件の再現可能なtiming test failureをproduction hardening課題として残す
 7. **Current production failures:** Lancers current ownersはfail中なので、repair→read-only inventory→one fenced application→official readbackの順で復旧する。Affiliate browser、x402 sellers等のfailをMoney Printer全体の失敗と混同しない
 8. **Real outcome timing:** Lancers acceptance、Mercor selection、cash settlementは外部依存。Primary proofはLancers official application readbackまでを必須とし、提出copyでは実際に得たterminalだけを主張する
 9. **Current live proof:** Lancers application ownerとMercor hourly ownerは停止中で、保持browser pageも`about:blank`である。process、CDP、cookie、過去rowはauthenticated inventory、current application、24/7 cycleの証拠にしない
@@ -979,12 +999,13 @@ The initial product is a general entrepreneur agent that continuously searches X
 | External proof | Lancers project `5593484`のofficial application receipt `27863414`をread-only importし、official log + append-only ledgerでcontent hashを照合。applicationとして表示し、revenueへは算入せず、replay duplicate 0 | browser demoでreceiptとverified money 0を同時に見せる |
 | Devpost | project `1404362`をfresh Sol review済みEnglish draftへversion 3同期。`website_url=https://aniccaai.com/money-printer`、public repo、MIT license、README、judge guideをlive readback。`submitted_at=null`、`video_url=null` | screenshots、immutable tag、public YouTube、required custom answersを埋め、official formを再readbackして明示承認後にsubmitする |
 | Local capacity | owner-aware browser recovery手順は確立済み。free容量は診断値でありproduct gateではない | 固定GB thresholdを置かない。実commandがENOSPCで失敗した時、または必要な一時容量を実測できる時だけ、最小のowner-aware cleanupを行う。Mac restartは最後の手段 |
+| Official Symphony | commit `8001b52e...`をlocal install/buildし、private GitHub Issueからisolated Codex agent→artifact commit/push→proof comment→issue close→workspace cleanupを実E2E。Result commit `4e1c346f...` | Life Manager work item mirrorとresult callbackを接続する。preview dashboardはpublic exposeせず、receipt/effect/money truthはLife Managerに残す |
 
 ### Submission critical path — one active item
 
 自動scoutは8時間windowのnatural cycleを待ちながら、次の手動itemを一件ずつ閉じる。順序を増やさず、未検証claimをvideoまたはDevpostへ入れない。
 
-1. [pass] 保護対象を壊さずData volume freeを8.3 GiBへ戻し、Mac restartなしで`df`、swap、owner argv、browser identityをreadbackする
+1. [pass] 実際に不足した作業容量をowner-aware cleanupで回復し、Mac restartなしで`df`、swap、owner argv、browser identityをreadbackする。固定GB thresholdは今後使わない
 2. clean browserでzero-login、private data 0、WebMCP tool discovery、visible mutationを実測する
 3. 一つのsame-jobで`Needs You`作成→human answer→resume→receiptを閉じ、stale revisionとsafe recoveryも同じ画面で示す
 4. [pass: workroom isolation] two live workroomsを同時readし、各activity refが自分のopportunity IDだけを含みcross-contamination 0を確認。次にreset後にjudgeが60秒以内で再現できることを示す
@@ -1128,6 +1149,7 @@ Judgesがeconomic autonomyより安全で楽しいcreative collaborationを好�
 10. Mercor public inventory/application stepsを投影し、provider-required interviewをhuman taskへ出す
 11. [code-completed/live-open] X/Web discoveryと任意URL ingestを接続し、Modelが未知marketplaceのrequirements、available tools、missing mechanical adapterを説明できることを実証する
 12. [completed] existing runtime job store/reconcilerでretry/backoff、controlled failure、restart recoveryを実測する
+    - [spike-completed / product-open] Official Symphonyをinstallしprivate GitHub fixtureでisolated Codex E2Eを完了。Life Manager work item mirrorとresult callbackは未接続
 13. [code-completed/live-open] state-dependent tool registration + visible activity log
 14. ChatGPT/Chrome E2E、polish/accessibility、isolated guest/reset、clean judge replay
 15. public repo/license/judge guide/post-August-25 diff、deploy/repo SHA一致
@@ -1173,4 +1195,6 @@ One active item at a time。各itemは実物readbackを閉じてから次へ進�
 | U27 | Live URL、deploy SHA、repo SHAが一致しない | source identified / deploy live-open | Netlify site IDと`anicca-products` sourceを特定。次にresponse/header/build metadata、submitted commit、public repo tagを同一releaseへ束縛 | SHA不一致またはauth wallならnot ready |
 | U28 | Application receiptを売上と誤認する | design-closed / UI live-open | `ApplicationReceipt`、`ContractReceipt`、`DeliveryReceipt`、`PaymentReceipt`を別型・別columnで表示し、cash receipt不在時はverified money 0 | application/proposal/pendingをrevenueへ昇格しない |
 | U29 | Judgeがclean environmentで再現できない | live-open | fresh browserからone URL、one prompt、tool discovery、reset、visible state、Chrome fallbackを60秒以内に再現 | private credentialや既存sessionが必要ならnot ready |
+| U31 | Symphonyを読んだだけで実runtimeに使っていない | spike-resolved / product-open | official commitをinstall/buildしprivate Issue→isolated Codex→commit/push→comment→closeを実E2E。次にLife Manager work item mirrorとresult callbackをproduction workerへ接続する | Symphony内部stateをmoney truthにせず、接続がhackathon critical pathを壊す場合も既存Life Manager orchestratorをfallbackとして残す |
+| U32 | Official Symphony previewをそのまま公開運用できるか | rejected for public exposure | engineering-preview warning、dependency advisories、1 timing test failureを記録 | trusted local/private orchestratorとして使い、public WebMCP UI/APIはLife Managerだけを公開する |
 | U30 | Judge guestの初回WebMCP writeがCSRFで拒否される | root cause fixed / deploy pending | 初回GET後の`add_opportunity`がfamily-bound CSRFで200、同じidempotency keyのreplayも同じ200、write 1をproduction readback | 新session作成後にfamilyをresolveできなければbroken tokenを描画せずfail closed |
