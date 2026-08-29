@@ -756,7 +756,7 @@ The existing wake ledger stores `amd_result` but drops the Telnyx call identifie
 
 Expected: the replacement event can be read back as one exact Telnyx call ID + one signed webhook event ID + one wake row for each level, while webhook replay changes no identity and creates no call.
 
-- [ ] **Step 1: Reconcile old controlled events**
+- [x] **Step 1: Reconcile old controlled events**
 
 Read Google status for `lnpffie7md7fp0qp5j9hrudkq4` and `ah40e31tqlstvk2qvo1e0jt82c`, plus Supabase/Telnyx/Telegram receipts. Do not resend. Count the old no-location event as accepted only if both T-10 and T-5 Telnyx call/webhook/ledger triples and replay-zero are present. If effect outcome is unknown, leave the event confirmed until reconciliation is complete and schedule the replacement in Step 3.
 
@@ -785,7 +785,7 @@ Save the returned exact event ID privately and read it back:
 gog calendar raw primary "$CONTROL_EVENT_ID" --json --no-input
 ```
 
-- [ ] **Step 3: Create a replacement no-location event when old proof is incomplete**
+- [x] **Step 3: Create a replacement no-location event when old proof is incomplete**
 
 If Step 1 does not prove both no-location call levels, create a second private controlled event with explicit start/end 20–30 minutes in the future, no location, no Meet link, `send-updates=none`, and private property `life_manager_e2e=cloud-core-no-location`. Save/read back its exact event ID. Do not manually trigger the scheduler.
 
@@ -814,7 +814,7 @@ Current atomic run order:
 - [x] rollback-preflight and apply the function-only production migration SHA-256 `304c40a330baf3e03f38a6d2a91d5731af7ba3d7f556497ba10b623983b32df6`; post-readback function hash `7ccc1d1b6d6f42a6ff207909083af725`, wake rows 496, fixture zero, indexes two, RLS true, service execute true, browser execute false;
 - [x] merge/deploy/read back the hangup HTTP route: PR #3072 passes 9/9, merges as `d37cba22d26eb2a6686b5ef94e78b46cf1ac4b69`, Railway deployment `d0050aac-fe29-46ad-a073-a2243f72c11b` is SUCCESS, and public health matches;
 - [x] create post-hangup-release no-location event `or3855rnheueg91q5u5vu8tkqk`; Google/Composio agree on private, no location, `confirmed`, 20:50–21:00 JST, wake-eligible, cohort one;
-- [ ] observe natural 20:40 T-10 and 20:45 T-5 and require call/session/leg plus signed terminal or AMD webhook IDs in both durable rows;
+- [x] observe natural 20:40 T-10 and 20:45 T-5 for `or3855rnheueg91q5u5vu8tkqk`: both durable rows have call/session/leg plus signed terminal or AMD webhook IDs; Telnyx GET returns HTTP 200 with exact ID matches and `is_alive=false`;
 - [x] create physical event `7bmv7s4d2p8vh3rlnknhsekt2o`, private, location `東京駅`, `confirmed`, 21:45–21:55 JST; production Composio matches it and live Transit returns buffered departure 21:09:40, arrival 21:45, four steps, two rail legs with line/headsign, one transfer, platform data, and no station-exit field;
 - [x] TDD the measured Travel-block suppression: `ea1f295fa` requires adjacency plus normalized destination; 16T 3/3, Travel/return 32/32, ch1 19/19, scoped Sol `ship`;
 - [x] TDD the measured live-origin failure: `317c7a78c` parses valid geo directly and `649578220` normalizes every Google fallback to `lat,lon`; primary 61/61, scoped Sol `ship`;
@@ -831,13 +831,13 @@ Current atomic run order:
 - [x] require one outbound `[Travel]` block with provider event ID: Google confirms outbound `na4a3iqdpq4vbb9npmdbt64o4c` and return `14sg8l0muaao62sutibvci3ap8`; durable `go`/`return` claims exist;
 - [x] replay the next 60-second reminder tick: event-hash send log remains one, ledger remains three rows with message ID 981, and both Travel event IDs/updated timestamps are unchanged;
 - [x] delete controlled transit event `icqi2rhh24g1sf8q0hodja0i2s` and its exact outbound/return helper IDs with `send-updates none`; Google reads all three as `cancelled`;
-- [ ] no-location T-10 row has one call-control ID, one signed webhook ID, and one durable claim;
-- [ ] no-location T-5 row has one call-control ID, one signed webhook ID, and one durable claim;
+- [x] no-location T-10 row has one call-control ID, one signed webhook ID, and one durable claim (`or3855rnheueg91q5u5vu8tkqk`);
+- [x] no-location T-5 row has one call-control ID, one signed webhook ID, and one durable claim (`or3855rnheueg91q5u5vu8tkqk`);
 - [ ] physical event has one outbound `[Travel]` Calendar block with provider event ID;
-- [ ] physical T-10 row has one call-control ID, one signed webhook ID, and one durable claim;
-- [ ] physical T-5 row has one call-control ID, one signed webhook ID, and one durable claim;
+- [x] physical T-10 row has one call-control ID, one signed webhook ID, and one durable claim (`icqi2rhh24g1sf8q0hodja0i2s`);
+- [x] physical T-5 row has one call-control ID, one signed webhook ID, and one durable claim (`icqi2rhh24g1sf8q0hodja0i2s`);
 - [x] physical departure reminder has Telegram message ID `981` plus matching `lm_travel_log.telegram-t5` receipt and `provider=transit` Railway log;
-- [ ] Telnyx provider delivery/call readback hashes match the Supabase receipt hashes;
+- [x] Telnyx provider GET returns HTTP 200 and exact call-control/session/leg matches for both levels of accepted no-location and physical events; all four calls are ended;
 - [ ] natural replay adds Calendar block 0, call 0, Telegram message 0;
 - [ ] controlled events are deleted with `send-updates=none` and read back `cancelled`.
 

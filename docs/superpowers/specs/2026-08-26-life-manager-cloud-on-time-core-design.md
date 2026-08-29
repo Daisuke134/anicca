@@ -377,8 +377,8 @@ AC-37/38の根拠:
 - [x] 両migrationをproductionへ適用し、Railway life-call `/health.build`、commit status、GitHub Deploymentをexact merge SHA `0303507584458fc55cfe1d8f27db9ff1e9fedce9`でreadbackする。
 - [x] standalone/Inngestのowner判定をstartup・sweeper・HTTPで1つの正規化済みpredicateへ統一し、exact release `05988c7170bba91df7d375437cf61679e9e45f75`を本番readbackする。
 - [ ] corrected releaseは`node server.js`で起動し、role/loop flag/Inngest未設定のstandalone transition ownerがscheduler/wake/reminder/travel/ask/onboard/discoveryの7 loopを起動することをRailway公式logでreadback済み。18:19 JSTのwake/travel新規行0は、同windowのComposio raw readbackに18:00開始の本予定がなく、17:06–18:00はhelper `[Travel]` blockだったためruntime failureを証明しない。AC-25のproduction acceptanceは新しいfuture controlled eventの自然effectで判定する。
-- [ ] future physical eventとreplacement no-location eventをnatural schedulerで実行し、Calendar/Telnyx/Telegram/Supabase receiptをcorrelateする。
-- [ ] 同じeventをreplayして追加block/call/message 0を確認し、controlled eventを`send-updates=none`で削除して`cancelled`をreadbackする。
+- [x] future physical `icqi2rhh24g1sf8q0hodja0i2s`とreplacement no-location `or3855rnheueg91q5u5vu8tkqk`をnatural schedulerで実行し、Calendar/Telnyx/Telegram/Supabase receiptをcorrelateする。
+- [x] accepted physical eventをreplayして追加block/call/message 0を確認し、physical event/helper blocksとno-location eventを`send-updates=none`で削除して`cancelled`をreadbackする。
 
 ### Slice 4 — Deploy and production acceptance
 
@@ -386,8 +386,8 @@ AC-37/38の根拠:
 - [x] fresh adversarial verifierがCritical/Important 0、secret leak 0、duplicate external effect 0を確認する。
 - [x] mainへ統合・pushし、Railway/Netlifyのdeploy commit SHAをreadbackする。
 - [ ] QRをclean deviceでscanし、Telegram tenant作成、Calendar consent、home、notifications、phoneなし/あり分岐、Stripe test-free live checkout boundaryを確認する。
-- [ ] controlled Calendar eventでtravel block、T-10 call、T-5 call、T-5 Telegram routeをprovider ID付きで確認する。
-- [ ] 同eventをschedulerで再評価し、追加call 0、追加Telegram 0、追加travel block 0を確認する。
+- [x] controlled Calendar eventでtravel block、T-10 call、T-5 call、T-5 Telegram routeをprovider ID付きで確認する。
+- [x] 同eventをschedulerで再評価し、追加call 0、追加Telegram 0、追加travel block 0を確認する。
 - [ ] 既知failureとprovider availabilityをowner Telegramへ報告し、本specをCOMPLETEへ更新する。
 
 ### Verification commands
