@@ -143,6 +143,16 @@ test("runtime command accepts only the explicit local up contract", () => {
   assert.throws(() => parseRuntimeCommand(["up"]), /usage/i);
 });
 
+test("Railway start command routes the worker role to internal-worker", () => {
+  const railway = fs.readFileSync(path.join(ROOT, "apps/life-manager/railway.toml"), "utf8");
+  const match = railway.match(/^startCommand = "((?:\\.|[^"])*)"$/m);
+  assert.ok(match, "railway.toml must define a startCommand");
+  assert.equal(
+    match[1].replace(/\\"/g, '"'),
+    'if [ "$LM_DEPLOYMENT_ROLE" = "worker" ]; then exec node scripts/runtime-up.js internal-worker; else exec node server.js; fi',
+  );
+});
+
 test("coverage worker capability receives the assembled Connector refresh services", () => {
   const connectorCoverageServices = Object.freeze({
     coverageStore: { read: async () => {}, save: async () => {} },
