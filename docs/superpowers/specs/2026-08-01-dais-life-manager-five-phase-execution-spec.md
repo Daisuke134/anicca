@@ -27,7 +27,7 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 この節は、後段の「現在TODO」「次の一件」「local-only」「self-funded agentは別product」という相反する記述を
 上書きする最新の実行順序SSOTである。後段は実装履歴・organ別acceptanceとして保持するが、次作業の選択には使わない。
 Upworkのterminal evidence、startup context、public claim、GA-01〜13Aは完了または履歴として保持する。
-次の一件はAtomic program ledger Seq 15 `ELZ-C02`のsubstep `C02-15`で、provider/backend/model/effort/exitを`model-provider-receipt.json`へ保存する。
+次の一件はAtomic program ledger Seq 15 `ELZ-C02`のsubstep `C02-16`で、C02 evidenceをadversarial reviewへ一回渡す。
 
 #### 0.0.1 最新基盤決定 — ElizaOSを完全forkし、Life Managerをlocal OSSからmulti-tenant SaaSへ育てる
 
@@ -569,7 +569,7 @@ OpenAI API key、ClawRouter、Hermes、別model router、独自Codex adapterは�
 - [x] **C02-12** `plugin-life-manager`と`plugin-cli-inference`を同じruntimeで一回起動する — private `c02/shared-runtime-start-evidence.json` mode 0600。RAM closureで2 plugin各1、ACTION_PLANNER＋6 text tierを登録。model call 0、external effect 0。owned RAM volumeはC02-13へ保持、次はC02-13
 - [x] **C02-13** `gpt-5.6-luna`の`ACTION_PLANNER` callを一回実行する — private `c02/luna-planner-call-evidence.json` mode 0600。Codex session/turn/model=`gpt-5.6-luna`/effort=`medium`とraw assistant response hash一致、call exactly 1、retry 0、marketplace effect 0。handler result後の`AgentRuntime.logModelCall`でadapter未初期化TypeErrorを記録し、再送せずC02-14のsession reconcileへ進む
 - [x] **C02-14** native structured `{action,params}` resultを一回再読出しする — private `c02/structured-action-readback-evidence.json` mode 0600。同一session/turnのraw responseをplugin自身の`CodexSdkSession.normalizeRoute`で`{action:"LIFE_MANAGER_HEALTH",params:{}}`へ正規化しhash readback一致。追加model call 0、marketplace effect 0、次はC02-15
-- [ ] **C02-15** provider/backend/model/effort/exitを`model-provider-receipt.json`へ保存する
+- [x] **C02-15** provider/backend/model/effort/exitを`model-provider-receipt.json`へ保存する — canonical private receipt v2 mode 0600、status=`pending_review`。Codex SDK `0.144.4`/system Codex `0.151.0`/Luna medium、call 1/retry 0、structured result、process exit 1のpost-call DB log failure、API key/GPT-OSS/ClawRouter/marketplace effect 0を保存。旧GPT-OSS receiptはprivate rejected evidenceへ保全、次はC02-16
 - [ ] **C02-16** C02差分をadversarial reviewへ一回渡す
 - [ ] **C02-17** C02 receiptをPASSへ更新する
 - [ ] **C02-18** ELZ-C02をDONEへ更新する
