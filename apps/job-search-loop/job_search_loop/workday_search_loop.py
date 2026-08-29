@@ -593,6 +593,7 @@ def main() -> int:
                 ),
                 allowed_hosts=allowed_hosts,
                 excluded_application_ids=excluded_application_ids,
+                preferred_urls=preferred_urls,
             ),
             wake_failed_ids,
         )

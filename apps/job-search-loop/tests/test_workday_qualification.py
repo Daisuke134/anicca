@@ -66,6 +66,41 @@ class WorkdayQualificationTests(unittest.TestCase):
             ["r-0", "s-1", "z-1", "r-1", "r-2", "r-3"],
         )
 
+    def test_qualification_uses_model_shortlist_before_ledger_order(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            ledger_path, oldest, memory = self._row(root)
+            ledger = Ledger(ledger_path)
+            preferred = ledger.add_application(
+                "Preferred", "Current Scope", "https://preferred.wd1.myworkdayjobs.com/Careers/job/Japan/Role_R2"
+            )
+            ledger.transition(preferred, "qualified")
+            ledger.transition(preferred, "materials_ready")
+            ledger.close()
+            preferred_url = "https://preferred.wd1.myworkdayjobs.com/Careers/job/Japan/Role_R2"
+            fetched = []
+
+            result = qualify_one(
+                ledger_path=ledger_path,
+                candidate_memory_path=memory,
+                preferred_urls=(preferred_url,),
+                fetch_description=lambda url: fetched.append(url) or "Current scope in Japan",
+                run_model=lambda _prompt: {
+                    "decision": "qualified",
+                    "mandatory_evidence": ["Grounded experience matches"],
+                    "unsupported_gaps": [],
+                    "interview_thesis": "Credible interview case",
+                    "location_feasibility": "Japan is feasible",
+                    "compensation_thesis": "Unpublished and uncertain",
+                    "compensation_uncertain": True,
+                    "resume_variant": "business",
+                },
+            )
+
+            self.assertEqual(result["application_id"], preferred)
+            self.assertEqual(fetched, [preferred_url])
+            self.assertNotEqual(result["application_id"], oldest)
+
     def test_submit_attempt_sources_match_workday_host_case_insensitively(self):
         sources = (
             {

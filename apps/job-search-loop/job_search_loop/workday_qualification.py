@@ -16,6 +16,7 @@ from urllib.request import Request, urlopen
 from .agent_runner import AgentRunner, wrap_untrusted
 from .ats import detect_provider
 from .ledger import Ledger
+from .state import canonical_url
 
 
 _REQUIRED = {
@@ -154,9 +155,13 @@ def qualify_one(
     run_model: Callable[[str], dict[str, Any]],
     allowed_hosts: set[str] | None = None,
     excluded_application_ids: frozenset[str] = frozenset(),
+    preferred_urls: tuple[str, ...] = (),
 ) -> dict[str, Any]:
     ledger = Ledger(ledger_path)
     try:
+        preferred_rank: dict[str, int] = {}
+        for index, url in enumerate(preferred_urls):
+            preferred_rank.setdefault(canonical_url(str(url)).casefold(), index)
         candidates = []
         for row in ledger.pending_materials_ready_applications():
             if str(row["application_id"]) in excluded_application_ids:
@@ -181,6 +186,12 @@ def qualify_one(
                 candidates.append(row)
         if not candidates:
             return {"status": "no_pending_workday_fit"}
+        candidates.sort(
+            key=lambda row: preferred_rank.get(
+                canonical_url(str(row["canonical_url"])).casefold(),
+                len(preferred_urls),
+            )
+        )
         row = candidates[0]
         try:
             description = fetch_description(str(row["canonical_url"])).strip()
