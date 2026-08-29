@@ -478,6 +478,29 @@ async function executeCapabilityJob(job, services) {
 function createWorkerHandlers(env, capabilities, dependencies = {}) {
   const handlers = {};
   const servicesByAdapter = {};
+  if (capabilities.includes("general-agent.work")) {
+    const {
+      createMoneyPrinterSpecialist,
+    } = require("../lib/money-printer-specialist.js");
+    const specialist = dependencies.moneyPrinterSpecialist || dependencies.runBoundedSpecialist || (
+      dependencies.createMoneyPrinterSpecialist || createMoneyPrinterSpecialist
+    )({
+      supaUrl: requiredEnv(env, "SUPABASE_URL"),
+      supaKey: requiredEnv(env, "SUPABASE_SERVICE_ROLE_KEY"),
+      dataDir: path.resolve(requiredEnv(env, "LM_DATA_DIR")),
+      repoRoot: dependencies.repoRoot || path.resolve(__dirname, "../../.."),
+      fetchImpl: dependencies.fetchImpl || globalThis.fetch,
+      runAgentRunner: dependencies.runAgentRunner || dependencies.runLocalAgentRunner,
+      readOpportunity: dependencies.readOpportunity,
+      updateOpportunity: dependencies.updateOpportunity,
+    });
+    if (typeof specialist !== "function") {
+      throw new Error("money printer specialist unavailable");
+    }
+    servicesByAdapter["general-agent-work"] = {
+      runBoundedSpecialist: specialist,
+    };
+  }
   if (capabilities.includes("connector.coverage.refresh")) {
     const factory = dependencies.createConnectorCoverageRuntimeServices || (
       require("../lib/connector-coverage-runtime-services.js")
