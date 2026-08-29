@@ -824,6 +824,9 @@ Current atomic run order:
 - [x] TDD the measured failure-cache boundary: first provider timeout returns null, next tick calls the provider again and caches only the later accepted route; accepted-route replay remains one provider call. Implementation `160235a60`, review-comment correction `aadf8ceb9`; fresh Sol finds no functional defect, primary focused verification 25/25;
 - [x] create latest physical event `pf0cbjkrqkhmj8ihmot4fmmf2k`, private, `新宿駅`, confirmed, 23:14–23:24 JST; fresh live Transit returns two steps, one rail service/headsign, buffered departure 22:52:57 and Telegram due 22:47:57;
 - [ ] require one `provider=transit` Telegram route message for `pf0cbjkrqkhmj8ihmot4fmmf2k` at natural due 22:47:57 with durable positive message ID;
+- [x] merge Task 16AC as PR #3096 at `cd3a83647a8f6db01abef938c0fe555d9b9d7b06`; Railway deployment `f654d570-528a-4b46-9141-24124d09f90b` is SUCCESS and public `/health.build` matches, while the Railway-created GitHub Deployment for the same SHA reports failure and remains a separate exact-readback discrepancy;
+- [x] create post-16AC event `icqi2rhh24g1sf8q0hodja0i2s`, private, attendee zero, `渋谷駅`, confirmed, 00:05–00:15 JST; natural 60-second reminder and 30-minute travel loops are active;
+- [ ] require one `provider=transit` Telegram route message for `icqi2rhh24g1sf8q0hodja0i2s` with durable positive message ID;
 - [ ] require one outbound `[Travel]` block with provider event ID; the current previous-event Tokyo→Shinjuku route probe is null and needs separate boundary readback after the Telegram proof;
 - [ ] no-location T-10 row has one call-control ID, one signed webhook ID, and one durable claim;
 - [ ] no-location T-5 row has one call-control ID, one signed webhook ID, and one durable claim;
