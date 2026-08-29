@@ -21,6 +21,8 @@ vi.mock('../lib/prisma.js', () => ({
 }));
 
 import { prisma } from '../lib/prisma.js';
+import { paymentMiddleware } from '@x402/express';
+import { x402ResourceServer } from '@x402/core/server';
 
 // Mock route files with simple routers
 function makeMockRouter() {
@@ -99,6 +101,27 @@ describe('x402-agents server', () => {
     const res = await request(app).get('/health');
     expect(res.status).toBe(503);
     expect(res.body.status).toBe('error');
+  });
+
+  it('fails closed when x402 initialization never settles', async () => {
+    x402ResourceServer.mockImplementationOnce(function NeverReadyResourceServer() {
+      this.register = vi.fn();
+      this.initialize = vi.fn(() => new Promise(() => {}));
+      this.onAfterSettle = vi.fn();
+    });
+
+    const { createApp } = await import('../server.js');
+    const app = await createApp({ x402InitializeTimeoutMs: 10 });
+
+    const health = await request(app).get('/health');
+    expect(health.status).toBe(200);
+    expect(health.body.status).toBe('ok');
+
+    const paid = await request(app)
+      .post('/context-compressor')
+      .send({ text: 'test' });
+    expect(paid.status).toBe(503);
+    expect(paymentMiddleware).not.toHaveBeenCalled();
   });
 
   it('GET /settlements exposes a bounded public feed', async () => {
