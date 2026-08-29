@@ -72,6 +72,8 @@
       topicは`SUFFICIENT`、article ownerはloaded-idleだが、実測article-run peak＋atomic reserve receiptがないため発火しない。
       過去run `20260828-111213`にはENOSPCと生成artifact receiptはあるが開始free/時系列sampleがなく、peakを復元できない。
       current freeは約346MiBまで再低下し最低512MiB reserve未満。公式inventoryの大容量pathはunknown/protectedで手動削除しない。
+      残るplist参照0・open file 0のsparse release 2件もsafe GCし7,061,841 bytesを回収した。全release candidateを
+      使い切った後もfreeは約328MiB、protected deletion 0、article wake 0。capacity blockerが3 goal turns連続で再現しblocked。
 - [ ] W3 W2修復後canaryのNote JAだけをprovider-native readbackし、title、body、owner、headline、paywall、URLを確認する。
 - [ ] W4 W2修復後canaryのSubstack JAだけを同じ項目でprovider-native readbackする。
 - [ ] W5 W2修復後canaryのSubstack ENだけを同じ項目でprovider-native readbackする。
