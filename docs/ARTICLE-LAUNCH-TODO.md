@@ -6,6 +6,10 @@
 これは新規Writer loopの構築計画ではない。既に記事生成・Note/Substack/X等への公開実績を持つproduction Writerの
 修復計画である。`canary`は「最初の記事」ではなく「今回の修復を反映した最初のproduction検証記事」を意味する。
 過去記事を初回扱いせず、既存topic/publication ledgerとの重複0を必須にする。
+新規媒体ごとのplatform adapter、固定selector、XPath、DOM script、API wrapper、固定step workflowは作らない。
+各device上のLife Manager自身がprovider-neutral Browser ACIで公式画面を毎step observeし、見えているcontrolをモデルが
+判断してsignup、login、profile、publish、earnings、payout readbackまで操作する。UI変更時は再observeして判断し直す。
+決定論コードはcredential SSOT、browser lease、intent/effect fence、receipt、dedupe、金額計算だけを担う。
 
 - [x] W0 stale publication lock互換を修復する。`owner.pid`だけの旧lockについて、実PID不在、start token取得不能、
       directory identity不変を確認した場合だけquarantineし、新lockを取得する。`identity unavailable`を成功扱いの
@@ -72,9 +76,12 @@
       payout identity、税務・本人確認、現行AI/originality規則を公式画面でreadbackする。HubPagesは広告/Amazon、Kompasianaは
       GoPay rewardを直接収益lane候補とする。現在、Substackはaccount、session設定、公開実績あり。ただしfreshな公式
       logged-in画面のreadbackは未取得なのでW3〜W5で再確認する。HubPagesとKompasianaは
-      credential SSOT、login session、公式account receiptがなく未作成である。W7aで両accountを作成し、credential SSOT保存、
-      新規session login、profile/eligibility/payout identity readbackまで完了する。未適格または受取不能ならdiscovery laneへ降格する。
-- [ ] W7b HubPages ENとKompasiana IDのplatform adapter、native readback、money receipt joinを追加する。各記事は別topic、
+      credential SSOT、login session、公式account receiptがなく未作成である。W7aで各deviceのLife ManagerがBrowser ACIを使い、
+      公式UIを目で見て両accountを作成し、credential SSOT保存、新規session login、profile/eligibility/payout identityの
+      公式画面readbackまで完了する。未適格または受取不能ならdiscovery laneへ降格する。
+- [ ] W7b HubPages ENとKompasiana IDを、platform固有adapterなしでLife Manager Browser ACIへ接続する。モデル自身が
+      毎action後の公式UIを再observeし、native記事の投稿、live URL、owner、headline、earnings、payoutを目視判断する。
+      deterministic boundaryはeffect fence、receipt、replay-zero、money joinだけに限定する。各記事は別topic、
       別reader job、各言語native執筆とし、自動翻訳・近似複製だけの配信を禁止する。Mediumはprimarily AI-generated記事を
       paywall不可とする公式規則があるため、AI開示付きdiscovery-onlyに固定する。
 - [ ] W7c W2〜W7とW7a〜W7bのreceipt後、入金を待たず06:00 JA（Note paid + X）、14:00 EN（HubPages、
@@ -83,7 +90,7 @@
 - [ ] W8 `WinnerObservation` schemaを実装し、source、observed_at、evidence excerpt/hash、fact/inference、
       transfer hypothesisの欠落を拒否する。
 - [ ] W9 winner researcher promptを既存research境界へ接続する。
-- [ ] W10 mechanism adapter promptを接続し、1変数experimentだけを許可する。
+- [ ] W10 mechanism transfer promptを接続し、1変数experimentだけを許可する。platform固有adapterは作らない。
 - [ ] W11 article builderとrevenue reviewer promptを既存generation/review境界へ接続する。本文・画像・brand copyを拒否する。
 - [ ] W12 learning reviewer promptを既存learning境界へ接続し、losing experimentを保存する。
 - [ ] W13 note purchase/fee/refund/payoutをartifact/runへjoinする。
@@ -95,8 +102,10 @@
 - [ ] W18 14日42本の言語・媒体別received revenue、conversion、engagement、refund、制作costを比較する。入金0でも実験を
       開始するが、継続判断はreceived moneyを最優先する。品質または記事当たりexpected net revenueが悪化したlaneだけを
       停止し、勝っているlaneの頻度は維持または次の一変数実験で増やす。
-- [ ] W19 OSS packageを別tenantへinstallし、credential/state/receipt交差0を証明する。
-- [ ] W20 W19 tenantの実provider draft、headline、money ledgerをreadbackし、2回目wakeでreplay-zeroを証明する。
+- [ ] W19 OSS packageを別tenant・別deviceへinstallし、platform adapterや事前accountに依存せず、device-local Life Managerが
+      Browser ACIでsignupから開始できることと、credential/state/receipt交差0を証明する。
+- [ ] W20 W19 tenantのLife Managerが公式UIをobserveし、account signup/login、実provider draft、headline、publication、
+      earnings/payout、money ledgerまでを同じagent loopで完了する。2回目wakeでreplay-zeroを証明する。
       「誰でも必ず儲かる」とは表示しない。
 - [ ] W21 完全なcalendar monthのunique net received writing payoutsを受領日ECB rateのFX receiptでUSD換算し、
       $10,000以上であることをreadbackする。rate欠落はunknownで加算しない。

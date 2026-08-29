@@ -101,7 +101,7 @@ modelの比較対象として使う。参照: https://github.com/TryGhost/Ghost
 
 初回active-four packageは1 source articleでgeneration、GPT Image 2、Note JA、Substack JA/EN、X Article JA、
 provider-native readback、2回目wakeのreplay-zeroを証明するcanaryである。最初のreceived paymentや7日連続完了を
-3本/日の開始条件にはしない。canaryとHubPages/Kompasianaのaccount・payout・adapter receiptが揃い次第、14日間の
+3本/日の開始条件にはしない。canaryとHubPages/Kompasianaのaccount・payout・Browser ACI receiptが揃い次第、14日間の
 3 source articles/day実験を開始する。
 
 | Slot | Native language | Direct-revenue destination | Distribution |
@@ -184,7 +184,7 @@ canonical promptsは`skills/writer-agent/reference/proven-writer-money-playbook.
 headline imageが存在し本文と一致するまで公開完了としない。画像は長文、捏造数値、第三者logoを含めない。
 
 収益面は`skills/writer-agent/config/revenue-surfaces.json`を正本とする。現在の直接writing revenueはnote paid article、
-Substack subscription、editorial fee、self-owned publicationである。W7a〜W7bの公式eligibility、payout、adapter readback後に
+Substack subscription、editorial fee、self-owned publicationである。W7a〜W7bの公式eligibility、payout、Browser ACI readback後に
 HubPages広告/AmazonとKompasiana K-Rewardsを追加する。view、like、draft、subscriber projection、pending、
 availableはreceived cashではない。OSS版は同じresearch→write→image→publish→readback→money→learn契約を
 利用できる。credential、account、state、receiptはrepo外に置き、利用者ごとに完全分離する。OSSは収益機会を
@@ -1157,20 +1157,25 @@ Writerは独自Supervisorを持たない。Coconalaで実稼働している次�
 flowchart LR
   D[Demand cards] --> C[Life Manager Writer creator]
   C --> A[Immutable JA/EN artifacts]
-  A --> P[Publisher adapters]
-  P --> R[Publisher-native readback]
+  A --> P[Device-local Life Manager Browser ACI]
+  P --> R[Official UI observe and readback]
   R --> M[Money receipt join]
   M --> T[Neutral Telegram renderer]
   T --> S[Durable state and same-run resume]
   S --> C
 ```
 
+Browser ACIの契約はdevice共通の`observe → model decision → one visible action → re-observe → official readback`である。
+各deviceは利用可能なlocal browserまたはcomputer-use toolを提供するだけで、媒体別selectorや固定navigationを移植しない。
+credentialはdevice-local SSOTに保存し、prompt、command、receipt、repoへ値を出さない。既存のNote/Substack/X fast pathは
+最適化として残せるが、signup・publish・earn capabilityの許可条件にはせず、UI drift時はBrowser ACIへ戻る。
+
 ```text
 life-manager-main/
-  skills/writer-agent/             # 唯一のWriter codeとadapter
+  skills/writer-agent/             # 唯一のWriter codeとBrowser ACI/effect tools
     runtime/                       # model boundary、prompt、judge broker
     demand/                        # claim loop、demand cards
-    publishers/                    # note、Substack JA/EN、X、free distribution
+    publishers/                    # 既存fast path。新規媒体のcapability authorityにはしない
     receipts/                      # public readback、payment/publisher receipt
     reports/                       # natural-language Telegram renderer
     launchd/                       # creator/resume plist templatesとmanifest
@@ -1214,7 +1219,7 @@ publication identity、読者、payout、ledgerを分ける。
 | 1 | stale loaded定義をdrainし、launchd実行コンテキストを復旧してcreator/resumeを一度だけ起動 | 旧14定義＋retired 5 CLI labelのbootout/drain、loaded ProgramArguments/envの照合、Life Manager 14 labelのload/readback、pause下bounded wake、旧rootログの1 schedule interval再発0、実行receiptを取得 | ブロッカー（公開停止） |
 | 2 | DNSまたは承認済みnetwork transportを復旧 | 通常DNSは失敗。1.1.1.1解決＋`curl --resolve`ではNote／Substack／XがHTTP 200。publisher実行経路の再読戻しは未確認 | 一部完了 |
 | 3 | Writer runtimeを`skills/writer-agent`へ移しmanifestを生成 | SHA付きpath census、Life Manager current release、実行時の旧root read=0 | 完了（launchd readbackは別TODO。履歴・互換文字列のcensus 0ではない） |
-| 4 | demand→artifact→publisher adapterを同じstate schemaへ接続 | TECHi本文のtransport-success/interstitialを7日以内のhash検証済み外部receiptへbounded reuseするfocused checkはPASS。実時刻claim receiptは`READY_WITH_SOURCE_OUTAGE`、queue `0→1`、有効なpaid-demand cardを確認 | 完了（artifact消費は次の未完run） |
+| 4 | demand→artifact→publisher effect/readback境界を同じstate schemaへ接続 | TECHi本文のtransport-success/interstitialを7日以内のhash検証済み外部receiptへbounded reuseするfocused checkはPASS。実時刻claim receiptは`READY_WITH_SOURCE_OUTAGE`、queue `0→1`、有効なpaid-demand cardを確認 | 完了（artifact消費は次の未完run） |
 | 5 | Note/Substack/Xの実公開とreadbackを同一runで完了 | `daily-2026-08-21`はNote JA、Substack JA、X Article JAのnative live receiptを確認済み。Substack ENは同一host混載を避けて`unavailable` quarantine。別publicationの実host/credentialと新EN draftが未設定。identity衝突は既知runbookへルーティング済み。旧`daily-2026-08-20`のXはimmutable画像欠落で安全拒否され、quarantine未実装 | 一部完了（EN identity＋旧X quarantine待ち） |
 | 6 | payment/publisher receipt collectorとmoney ledgerを接続 | artifact-level receipt | 未着手 |
 | 7 | neutral Telegram rendererを日次・失敗・完了へ接続 | pending outboxを直接Bot APIで再送し、message ID `26606`と`status=sent`を確認。outbox lockで同時送信を直列化 | 一部完了（クラッシュ後のprovider重複はat-least-once境界として観測） |
