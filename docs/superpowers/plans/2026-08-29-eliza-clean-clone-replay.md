@@ -200,6 +200,62 @@ Bun must reuse the 5,305 present packages, install the missing graph, preserve t
 
 Expected: only the merged roadmap worktree and enumerated caches are removed; free space is at least 950,000 KiB before the resume; the resumed build passes.
 
+- [ ] **Step 4B: Add the measured 131 MiB cache-only margin**
+
+This step applies to the recorded Step 4A result where the nine specified paths were removed, free space was `819700` KiB, and no install/build command resumed.
+
+```bash
+set -e
+CLONE=/Users/anicca/Projects/life-manager-eliza-migration
+test "$(git -C "$CLONE" rev-parse HEAD)" = 52eefdac597b70f3cb769b007cc4209f0f55cc34
+test -z "$(git -C "$CLONE" status --porcelain=v1 --untracked-files=no)"
+test -d "$CLONE/node_modules/.bun"
+test ! -e /Users/anicca/Projects/life-manager-main/.worktrees/eliza-atomic-roadmap-20260829
+
+for cache_path in \
+  /Users/anicca/Library/Caches/Google \
+  /Users/anicca/Library/Caches/GeoServices \
+  /Users/anicca/Library/Caches/com.apple.helpd \
+  /Users/anicca/Library/Caches/com.apple.parsecd \
+  /Users/anicca/Library/Caches/CloudKit \
+  /Users/anicca/Library/Caches/PassKit \
+  /Users/anicca/Library/Caches/com.apple.passd \
+  /Users/anicca/Library/Caches/com.apple.python \
+  /Users/anicca/Library/Caches/claude-cli-nodejs \
+  /Users/anicca/Library/Caches/Codex \
+  /Users/anicca/Library/Caches/com.openai.sky.CUAService
+do
+  if [ -e "$cache_path" ]; then
+    test -d "$cache_path"
+    test ! -L "$cache_path"
+    find "$cache_path" -mindepth 1 -depth -delete
+    rmdir "$cache_path"
+  fi
+done
+
+RESUME_FREE_KIB=$(df -Pk /Users/anicca | awk 'END {print $4}')
+test "$RESUME_FREE_KIB" -ge 900000
+printf '%s\n' "$RESUME_FREE_KIB" > \
+  /Users/anicca/.local/state/life-manager/migration/elz-f/replay/resume-free-kib.txt
+```
+
+Resume with the exact commands:
+
+```bash
+set -e
+export PATH=/Users/anicca/.local/share/life-manager/toolchains/elz-f/bun-1.3.14/bin:/Users/anicca/.local/share/life-manager/toolchains/elz-f/node-v24.15.0-darwin-arm64/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
+cd /Users/anicca/Projects/life-manager-eliza-migration
+bun install --frozen-lockfile --no-cache --filter @elizaos/agent
+bun install --frozen-lockfile --no-cache --filter eliza
+bun run build:server 2>&1 | tee /Users/anicca/.local/state/life-manager/migration/elz-f/replay/build-server.log
+test "${pipestatus[1]}" = 0
+rg -q '55 successful, 55 total' /Users/anicca/.local/state/life-manager/migration/elz-f/replay/build-server.log
+test "$(shasum -a 256 bun.lock | awk '{print $1}')" = 1976283db890a36ae945cd1256e9388ca84c067608df9628570bb6fce3ad7eb4
+test -z "$(git status --porcelain=v1 --untracked-files=no)"
+```
+
+Expected: only the 11 enumerated cache directories are removed; free space is at least 900,000 KiB before resume; the same frozen dependency/build contract passes.
+
 - [ ] **Step 5: Start a fresh model-credential-free replay runtime**
 
 Create the isolated state first:
@@ -395,7 +451,7 @@ jq -n \
     initial_sigterm_exit:$initial_exit,restart_sigterm_exit:$restart_exit,listener_count_after_stop:0,
     writer_processes:$writers,lock_open_handles:$lock_handles,working_tree_clean:true,
     model_credentials:0,external_effects:0,old_clone_removed_after_remote_readback:true,
-    capacity_recovery:{merged_roadmap_worktree_removed:true,regenerable_cache_paths_removed:8,resume_free_kib:$resume_free},
+    capacity_recovery:{merged_roadmap_worktree_removed:true,initial_cache_paths_removed:8,additional_cache_paths_removed:11,resume_free_kib:$resume_free},
     free_kib_before:$free_before,old_clone_kib:$old_clone_kib,free_kib_after:$free_after
   }' > /Users/anicca/.local/state/life-manager/migration/elz-f/foundation-replay-receipt.json
 chmod 600 /Users/anicca/.local/state/life-manager/migration/elz-f/foundation-replay-receipt.json
@@ -407,8 +463,8 @@ jq -e '
   .marker_value=="52eefdac" and .initial_sigterm_exit==0 and .restart_sigterm_exit==0 and
   .listener_count_after_stop==0 and .writer_processes==0 and .lock_open_handles==0 and
   .working_tree_clean and .model_credentials==0 and .external_effects==0 and
-  .capacity_recovery.merged_roadmap_worktree_removed and .capacity_recovery.regenerable_cache_paths_removed==8 and
-  .capacity_recovery.resume_free_kib>=950000
+  .capacity_recovery.merged_roadmap_worktree_removed and .capacity_recovery.initial_cache_paths_removed==8 and
+  .capacity_recovery.additional_cache_paths_removed==11 and .capacity_recovery.resume_free_kib>=900000
 ' /Users/anicca/.local/state/life-manager/migration/elz-f/foundation-replay-receipt.json
 test "$(stat -f '%Lp' /Users/anicca/.local/state/life-manager/migration/elz-f/foundation-replay-receipt.json)" = 600
 ```
