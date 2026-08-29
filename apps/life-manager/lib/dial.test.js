@@ -24,7 +24,7 @@ async function withDialTransport(callPayload, run) {
   const requests = [];
   process.env.TELNYX_API_KEY = "test-api-key";
   process.env.TELNYX_CONNECTION_ID = "test-connection";
-  process.env.TELNYX_PHONE_NUMBER = "+15555550100";
+  process.env.TELNYX_PHONE_NUMBER = "+99900000000";
   global.fetch = async (url, options) => {
     requests.push({ url, options });
     if (url.endsWith("/balance")) return jsonResponse({ data: { balance: "1.00" } });
@@ -79,7 +79,7 @@ test("placeCall returns all exact Telnyx call identities from one successful res
     call_leg_id: "leg:opaque+id",
   };
   const result = await withDialTransport({ data: ids }, () => placeCall({
-    to: "+15555550123", streamUrl: CALL_URL,
+    to: "+99900000000", streamUrl: CALL_URL,
   }));
   assert.deepEqual(result, {
     ok: true,
@@ -97,7 +97,7 @@ test("placeCall maps absent or invalid optional Telnyx identities to null", asyn
   ];
   for (const payload of responses) {
     const result = await withDialTransport(payload, () => placeCall({
-      to: "+15555550123", streamUrl: CALL_URL,
+      to: "+99900000000", streamUrl: CALL_URL,
     }));
     assert.equal(result.ok, true);
     assert.equal(result.callSessionId, null);
@@ -109,7 +109,7 @@ test("placeCall rejects blank, non-string, and oversized mandatory call-control 
   const invalidIds = ["", " \t", 7, "x".repeat(513)];
   for (const call_control_id of invalidIds) {
     const result = await withDialTransport({ data: { call_control_id } }, () => placeCall({
-      to: "+15555550123", streamUrl: CALL_URL,
+      to: "+99900000000", streamUrl: CALL_URL,
     }));
     assert.equal(result.ok, false, `accepted ${String(call_control_id)}`);
     assert.equal("ccid" in result, false);
