@@ -140,7 +140,7 @@ projectMoneyPrinter({
 }
 ```
 
-- [ ] Write RED tests:
+- [x] Write RED tests:
 
 ```js
 test("projection separates opportunity value from verified cash", () => {
@@ -154,8 +154,8 @@ test("projection rejects cross-tenant and unverified money", () => {
 });
 ```
 
-- [ ] Run `node --test apps/life-manager/lib/money-printer-projection.test.js`; expect module-not-found RED.
-- [ ] Implement only a pure immutable exact-key adapter over existing runtime and earnings ledgers. Reuse their arithmetic and receipt validation; do not create a second ledger. Use reference-only IDs, integer money strings, HTTPS receipt links, and no provider-name branches.
+- [x] Run `node --test apps/life-manager/lib/money-printer-projection.test.js`; observed module-not-found RED.
+- [x] Implement only a pure immutable exact-key adapter over existing runtime and earnings ledgers. Reuse their arithmetic and receipt validation; do not create a second ledger. Use reference-only IDs, integer money strings, HTTPS receipt links, and no provider-name branches.
 
 ```js
 function projectMoneyPrinter(input = {}) {
@@ -178,7 +178,7 @@ function projectMoneyPrinter(input = {}) {
 ```
 
 `buildMoneyPrinterView` is private to this file and maps canonical statuses only; it never reads provider names.
-- [ ] Run the test, commit `feat(life-manager): project money work`, and push.
+- [x] Run the focused test 2/2, commit `ec321cd1b` as `feat(life-manager): project money work`, and push.
 
 ---
 

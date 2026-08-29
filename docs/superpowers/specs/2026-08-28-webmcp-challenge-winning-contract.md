@@ -719,7 +719,7 @@ Focused reuse suiteはruntime/browser jobs、ask/reply、reconciliation、panel�
 | Dependencies | Data volume free 11 GiB。Life Manager clean `npm ci`はnetwork待ちで進展せず中断。既存locked dependency runtimeでgeneral-agent focused baseline 27/27 pass | Network回復後にclean installを再実行。未installをfeature failureと数えない |
 | Lancers | Focused suiteは2 pass / 1 fail。Failureは現実装が全card detailをenrichするのに、testが旧budget-qualified-only期待を保持するdrift。別locked Lancers application ownerが存在し、isolated Codex app-serverではlaunchctl readback不可 | 別ownerを侵害せず、current product contractとowner resultを照合してからtest/codeを一方だけ修正。live auth/application claimはblockedのまま |
 | Netlify source | `aniccaai.com` production sourceは`/Users/anicca/anicca-project`の`anicca-products` remoteとsite ID `d67537f0-21bd-477e-ac1a-323f7ec6d5cd`。shared checkoutはdirty | Dedicated website worktreeを作り、Life Manager public sourceと同じ `/money-printer` pageを同期する |
-| Task 2 | Projection filesは未作成、diff 0 | Provider-neutral projectionをfocused TDDで開始する |
+| Task 2 | `money-printer-projection.js`をfocused TDDで実装。RED `MODULE_NOT_FOUND`、GREEN 2/2、parent rerun 2/2、commit `ec321cd1b` | Task 3で同じprojectionをtenant-bound Panel API/UIへ接続する |
 
 ### 10.5 One product, one mode
 
@@ -1104,7 +1104,7 @@ One active item at a time。各itemは実物readbackを閉じてから次へ進�
 | U06 | Lancers login/sessionが有効か | blocked | exact browser profile/CDPのofficial authenticated inventory、effect count 0、two-read stable identity。`about:blank`やcookie存在は不可 | login unavailableならguest UIはlive Lancers effectを主張しない |
 | U07 | 応募可能なLancers案件があるか | blocked by U06 | current complete detail、buyer/order rate、budget、deadline、eligibility、competitionをModelが判断。public result countだけは不可 | suitable candidateがなければapplicationを送らず別market discoveryを継続 |
 | U08 | Lancers proposal effect/readbackが現在のDOMで動くか | blocked | code kernelではなく実siteでimmutable intent、presend absent、effect 1、official proposal ID、replay effect 0 | post-effect unknownは再送せずreconciliation |
-| U09 | General projectionが既存receiptを正しく表示できるか | open | exact-key schema、tenant isolation、verified-money-only tests、runtime/application/general receiptsのfixture-free projection | raw provider stateをUIへ直接渡さない |
+| U09 | General projectionが既存receiptを正しく表示できるか | projection code-verified / UI live-open | tenant isolation、unverified-money rejection、opportunity/cash separation 2/2 pass。次にruntime/application/general receiptsをPanelへ接続 | raw provider stateをUIへ直接渡さない |
 | U10 | Minimal human判定が丸投げになる | open | known context/tool researchを先に使うmodel cases、one exact task、semantic dedupe、answer後same owner resume | agentが実行可能なworkをhuman taskにしたらfail |
 | U11 | WebMCP toolsがChatGPTで発見・実行されるか | open | top-level imperative registration、Sol/Terra in-app browser tool list、recent call、visible state change | ChatGPT rollout不可ならChrome 149+ evidenceでStage Oneを守る |
 | U12 | Netlify/Browser security headersがWebMCPを許すか | open | origin isolation、Permissions Policy、no iframe registration、clean-browser tool discovery | headerが通るまでdeployをworking扱いしない |
