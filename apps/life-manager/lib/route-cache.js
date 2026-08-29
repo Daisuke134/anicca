@@ -82,7 +82,7 @@ function makeRouteCache({ store = new Map(), ttlMs = BUCKET_MS, now = Date.now }
     const run = (async () => {
       const value = await provider();
       const computedAt = now();
-      if (store && typeof store.set === "function") store.set(key, { value, computedAt });
+      if (value != null && store && typeof store.set === "function") store.set(key, { value, computedAt });
       return value;
     })();
     inFlight.set(key, run);
