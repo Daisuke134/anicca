@@ -27,6 +27,7 @@ process.env.SUPABASE_URL = process.env.SUPABASE_URL || "http://supa.invalid";
 process.env.SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "service-role-key";
 
 const { claimWake, releaseWake, wakeCallOnce } = require("../scheduler.js");
+const { decodeCallClientState } = require("../lib/telnyx-webhook.js");
 
 // An injected fetchImpl rather than a global stub: these two functions are the only ones in
 // scheduler.js that call fetch for the claim ledger, and monkey-patching globalThis.fetch leaks
@@ -130,6 +131,7 @@ const EVENT = {
 
 test("a failed dial releases with the token it claimed with, not a bare key", async () => {
   const released = [];
+  const receipts = [];
   await wakeCallOnce(USER, DEPARTURE_MS - 5 * MINUTE, {
     recordDailyPoll: async () => true,
     fetchUpcomingEvents: async () => [{ ...EVENT }],
@@ -138,6 +140,7 @@ test("a failed dial releases with the token it claimed with, not a bare key", as
     claimWake: async () => "claim-token-xyz",
     placeCall: async () => ({ ok: false, error: "balance too low" }),
     releaseWake: async (uid, key, claimToken) => released.push({ uid, key, claimToken }),
+    recordTelnyxWakeReceipt: async (...args) => receipts.push(args),
     recordWakeMiss: async () => ({ ok: true }),
     alertLowBalance: async () => {},
   });
@@ -146,4 +149,144 @@ test("a failed dial releases with the token it claimed with, not a bare key", as
   assert.equal(released[0].key, `${USER.uid}|${EVENT_START_ISO}|5`);
   assert.equal(released[0].claimToken, "claim-token-xyz",
     "the token travels from claim to release — a release that cannot name its claim can delete someone else's");
+  assert.equal(receipts.length, 0, "a rejected dial has no provider receipt to write");
+});
+
+function wakeReceiptDeps({ receipt, placeResult = async () => ({ ok: true, ccid: "provider-ccid" }) } = {}) {
+  const order = [];
+  const released = [];
+  const misses = [];
+  let alerts = 0;
+  let claims = 0;
+  const receiptFetch = async () => { throw new Error("receipt fetch must not run"); };
+  const deps = {
+    recordDailyPoll: async () => true,
+    fetchUpcomingEvents: async () => [{ ...EVENT }],
+    mapsKey: "sentinel-maps-key",
+    directionsMinutes: async () => 35,
+    claimWake: async () => {
+      order.push("claim");
+      claims += 1;
+      return claims === 1 ? "sentinel-claim-token" : false;
+    },
+    placeCall: async (input) => {
+      order.push("dial");
+      return placeResult(input);
+    },
+    recordTelnyxWakeReceipt: async (input, config) => {
+      order.push("receipt");
+      return receipt(input, config);
+    },
+    releaseWake: async (...args) => { order.push("release"); released.push(args); },
+    recordWakeMiss: async (...args) => { order.push("miss"); misses.push(args); },
+    alertLowBalance: async () => { order.push("alert"); alerts += 1; },
+    fetchImpl: receiptFetch,
+  };
+  return { deps, order, released, misses, get alerts() { return alerts; }, receiptFetch };
+}
+
+test("an accepted dial passes exact claim state and writes its receipt after the dial", async () => {
+  const h = wakeReceiptDeps({
+    placeResult: async ({ clientState }) => {
+      assert.deepEqual(decodeCallClientState(clientState), {
+        kind: "wake",
+        wakeUid: USER.uid,
+        wakeEventKey: `${USER.uid}|${EVENT_START_ISO}|5`,
+        wakeClaimToken: "sentinel-claim-token",
+      });
+      return {
+        ok: true,
+        ccid: "provider-control-sentinel",
+        callSessionId: "provider-session-sentinel",
+        callLegId: "provider-leg-sentinel",
+      };
+    },
+    receipt: async (input, config) => {
+      assert.deepEqual(input, {
+        uid: USER.uid,
+        eventKey: `${USER.uid}|${EVENT_START_ISO}|5`,
+        claimToken: "sentinel-claim-token",
+        callControlId: "provider-control-sentinel",
+        callSessionId: "provider-session-sentinel",
+        callLegId: "provider-leg-sentinel",
+        webhookEventId: null,
+        amdResult: null,
+      });
+      assert.equal(config.fetchImpl, h.receiptFetch);
+      assert.equal(config.supaUrl, process.env.SUPABASE_URL);
+      assert.equal(config.supaKey, process.env.SUPABASE_SERVICE_ROLE_KEY);
+      return { ok: true, matched: 1 };
+    },
+  });
+  await wakeCallOnce(USER, DEPARTURE_MS - 5 * MINUTE, h.deps);
+
+  assert.deepEqual(h.order, ["claim", "dial", "receipt", "claim"],
+    "the winning due level is claim → dial → receipt before the superseded level claim");
+  assert.deepEqual(h.released, []);
+  assert.deepEqual(h.misses, []);
+  assert.equal(h.alerts, 0);
+});
+
+test("an accepted dial with missing session and leg IDs records explicit nulls", async () => {
+  const h = wakeReceiptDeps({
+    placeResult: async () => ({ ok: true, ccid: "provider-control-only" }),
+    receipt: async (input) => {
+      assert.equal(input.callSessionId, null);
+      assert.equal(input.callLegId, null);
+      return { ok: true, matched: 1 };
+    },
+  });
+  await wakeCallOnce(USER, DEPARTURE_MS - 5 * MINUTE, h.deps);
+  assert.equal(h.order.filter((step) => step === "receipt").length, 1);
+});
+
+test("receipt mismatch, bounded failure, and throw retain the accepted claim without leaking data", async () => {
+  const cases = [
+    { result: { ok: true, matched: 0 } },
+    { result: { ok: false, matched: 0, error: "provider-secret-error" } },
+    { throws: true },
+  ];
+  for (const scenario of cases) {
+    const h = wakeReceiptDeps({
+      receipt: async () => {
+        if (scenario.throws) throw new Error("raw-provider-secret-error");
+        return scenario.result;
+      },
+      placeResult: async () => ({
+        ok: true,
+        ccid: "provider-id-secret",
+        callSessionId: "session-id-secret",
+        callLegId: "leg-id-secret",
+      }),
+    });
+    const errors = [];
+    const originalError = console.error;
+    console.error = (...args) => errors.push(args.join(" "));
+    try {
+      await wakeCallOnce({ ...USER, phone: "+99900000000" }, DEPARTURE_MS - 5 * MINUTE, h.deps);
+    } finally {
+      console.error = originalError;
+    }
+    assert.equal(h.order.filter((step) => step === "dial").length, 1);
+    assert.equal(h.order.filter((step) => step === "receipt").length, 1);
+    assert.deepEqual(h.released, [], "an accepted provider call is never released");
+    assert.deepEqual(h.misses, [], "an uncertain receipt is not a dial miss");
+    assert.equal(h.alerts, 0, "an accepted provider call is not a low-balance failure");
+    assert.equal(errors.length, 1, "one generic reconciliation line is emitted");
+    assert.match(errors[0], /reconciliation/i);
+    assert.doesNotMatch(errors[0], /provider-id-secret|session-id-secret|leg-id-secret|sentinel-claim-token|99900000000|新宿で打ち合わせ|provider-secret-error|raw-provider-secret-error/);
+  }
+});
+
+test("a duplicate claim performs neither a dial nor a receipt write", async () => {
+  const h = wakeReceiptDeps({
+    receipt: async () => assert.fail("duplicate claims must not write receipts"),
+    placeResult: async () => assert.fail("duplicate claims must not dial"),
+  });
+  h.deps.claimWake = async () => { h.order.push("claim"); return false; };
+  await wakeCallOnce(USER, DEPARTURE_MS - 5 * MINUTE, h.deps);
+  assert.deepEqual(h.order, ["claim", "claim"]);
+  assert.deepEqual(h.released, []);
+  assert.deepEqual(h.misses, []);
+  assert.equal(h.alerts, 0);
 });
