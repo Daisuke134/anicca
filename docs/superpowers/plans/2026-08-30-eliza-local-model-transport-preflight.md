@@ -35,7 +35,7 @@
 - [x] `C02-02` upstream host inclusionをprivate evidenceへ保存する — `~/.local/state/life-manager/migration/elz-c/c02/codex-sdk-host-inclusion-evidence.json` mode 0600、6 file SHA再計算一致、Local Node auto-enable/Cloud inclusion PASS、runtime/model/effect 0
 - [x] `C02-03` isolated runtimeへ`ELIZA_CHAT_VIA_CLI`を設定する — private env exact 1行、backend=`codex-sdk`、mode 0600、SHA readback一致、model/runtime/effect 0
 - [x] `C02-04` isolated runtimeへLuna modelを設定する — private env exact 2行、`ELIZA_CLI_CODEX_MODEL=gpt-5.6-luna`、mode 0600、SHA readback一致、planner/runtime/model call/effect 0
-- [ ] `C02-05` isolated runtimeへLuna planner modelを設定する
+- [x] `C02-05` isolated runtimeへLuna planner modelを設定する — private env exact 3行、planner=`gpt-5.6-luna`、mode 0600、SHA readback一致、effort/runtime/model call/effect 0
 - [ ] `C02-06` isolated runtimeへmedium effortを設定する
 - [ ] `C02-07` isolated runtimeへsystem Codex binaryを設定する
 - [ ] `C02-08` isolated runtimeへplanner modeを設定する
