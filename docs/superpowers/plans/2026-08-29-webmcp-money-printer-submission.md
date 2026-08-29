@@ -30,6 +30,8 @@
 | Gate | Closed by | Pass evidence | Failure action |
 |---|---|---|---|
 | Disk/current main | Preflight | >=8 GiB; execution HEAD descends from current origin/main | Stop before build |
+| Eligibility/rules | Preflight + Task 9 | current official rules/form readback; ownership/conflict fields pass | Do not rely on cached draft |
+| Deploy provenance | Tasks 4 and 8 | Netlify source fixed; deployed SHA = public repo SHA; required headers | Do not record live URL |
 | Lancers runtime truth | Task 1 | loaded argv/release/CDP/login inventory, effect 0 | Repair root cause or create auth human task |
 | Board truth | Task 2 | exact-key tenant/money projection tests | Never expose raw provider state |
 | UI/API | Task 3 | authenticated API and responsive board tests | Never deploy mockup as product |
@@ -46,6 +48,8 @@
 - [ ] Run `df -h /Users/anicca`; stop until free space is at least 8 GiB.
 - [ ] Run `git fetch origin`; create and lock a worktree from current `origin/main` with `superpowers:using-git-worktrees`.
 - [ ] Verify docs commit `01c63546c` or its merge descendant is present.
+- [ ] Re-read current official rules and draft form; verify eligibility, ownership, conflicts, deadline, required fields, free/unlimited judging access, and video constraints.
+- [ ] Identify the actual Netlify source/build pipeline for `aniccaai.com/lm`; record current headers and deployed SHA before changing code.
 - [ ] Run `~/loops/current/bin/lm-loop doctor` and `~/loops/current/bin/lm-loop status all`.
 - [ ] Run baseline tests:
 
@@ -149,7 +153,7 @@ test("projection rejects cross-tenant and unverified money", () => {
 ```
 
 - [ ] Run `node --test apps/life-manager/lib/money-printer-projection.test.js`; expect module-not-found RED.
-- [ ] Implement a pure immutable exact-key projection. Use reference-only IDs, integer money strings, HTTPS receipt links, and no provider-name branches.
+- [ ] Implement only a pure immutable exact-key adapter over existing runtime and earnings ledgers. Reuse their arithmetic and receipt validation; do not create a second ledger. Use reference-only IDs, integer money strings, HTTPS receipt links, and no provider-name branches.
 
 ```js
 function projectMoneyPrinter(input = {}) {
