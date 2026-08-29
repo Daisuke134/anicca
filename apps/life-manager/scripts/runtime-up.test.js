@@ -229,6 +229,33 @@ test("general money worker wires its injected bounded specialist through the reg
   });
 });
 
+test("production general money worker fails before query, factory, registry, or effects without Gemini", () => {
+  const calls = [];
+  assert.throws(() => createWorkerHandlers({
+    LM_DATA_DIR: fs.mkdtempSync(path.join(os.tmpdir(), "lm-runtime-money-missing-gemini-")),
+  }, ["general-agent.work"], {
+    async query() { calls.push("query"); return { rows: [] }; },
+    createMoneyPrinterSpecialist() { calls.push("factory"); return async () => {}; },
+    createRegistry() { calls.push("registry"); return { hasCapability: () => false }; },
+  }), /GEMINI_API_KEY is required/);
+  assert.deepEqual(calls, []);
+});
+
+test("general money worker permits an explicit runner without Gemini", () => {
+  const runner = async () => ({ value: { status: "completed", execution_id: "test-runner" } });
+  let options;
+  createWorkerHandlers({
+    LM_DATA_DIR: fs.mkdtempSync(path.join(os.tmpdir(), "lm-runtime-money-explicit-runner-")),
+  }, ["general-agent.work"], {
+    readOpportunity: async () => ({}),
+    updateOpportunity: async () => ({}),
+    runAgentRunner: runner,
+    createMoneyPrinterSpecialist(input) { options = input; return async () => {}; },
+    createRegistry() { return { hasCapability: () => false }; },
+  });
+  assert.equal(options.runAgentRunner, runner);
+});
+
 test("production general money worker injects Railway opportunity functions without Supabase", async () => {
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "lm-runtime-money-cloud-"));
   const geminiKey = "gemini-secret-key";

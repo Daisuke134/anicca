@@ -487,6 +487,13 @@ function createWorkerHandlers(env, capabilities, dependencies = {}) {
     } = require("../lib/money-printer-specialist.js");
     let specialist = dependencies.moneyPrinterSpecialist || dependencies.runBoundedSpecialist;
     if (!specialist) {
+      const runAgentRunner = typeof dependencies.runAgentRunner === "function"
+        ? dependencies.runAgentRunner
+        : typeof dependencies.runLocalAgentRunner === "function"
+          ? dependencies.runLocalAgentRunner
+          : null;
+      const geminiKey = String(env.GEMINI_API_KEY || "").trim();
+      if (!geminiKey && !runAgentRunner) throw new Error("GEMINI_API_KEY is required");
       const runtimeStore = typeof dependencies.query === "function"
         ? createMoneyPrinterRuntimeStore({ query: dependencies.query })
         : null;
@@ -499,8 +506,8 @@ function createWorkerHandlers(env, capabilities, dependencies = {}) {
         dataDir: path.resolve(requiredEnv(env, "LM_DATA_DIR")),
         repoRoot: dependencies.repoRoot || path.resolve(__dirname, "../../.."),
         fetchImpl: dependencies.fetchImpl || globalThis.fetch,
-        geminiKey: env.GEMINI_API_KEY,
-        runAgentRunner: dependencies.runAgentRunner || dependencies.runLocalAgentRunner,
+        geminiKey,
+        runAgentRunner,
         readOpportunity,
         updateOpportunity,
       });
