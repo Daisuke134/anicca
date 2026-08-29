@@ -70,6 +70,8 @@
       追加のcapacity recoveryでは、plist参照0の再生成可能full release `f8600ca9`だけをsafe GCで回収し約1.19GiBを解放した。
       公式disk governorはprotected deletion 0でfail-closed exit 78、続く90秒観測は空き約1.50〜1.52GiBで安定した。
       topicは`SUFFICIENT`、article ownerはloaded-idleだが、実測article-run peak＋atomic reserve receiptがないため発火しない。
+      過去run `20260828-111213`にはENOSPCと生成artifact receiptはあるが開始free/時系列sampleがなく、peakを復元できない。
+      current freeは約346MiBまで再低下し最低512MiB reserve未満。公式inventoryの大容量pathはunknown/protectedで手動削除しない。
 - [ ] W3 W2修復後canaryのNote JAだけをprovider-native readbackし、title、body、owner、headline、paywall、URLを確認する。
 - [ ] W4 W2修復後canaryのSubstack JAだけを同じ項目でprovider-native readbackする。
 - [ ] W5 W2修復後canaryのSubstack ENだけを同じ項目でprovider-native readbackする。
