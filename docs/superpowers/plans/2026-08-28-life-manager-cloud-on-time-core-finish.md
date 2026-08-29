@@ -812,7 +812,8 @@ Current atomic run order:
 - [x] fix round 1 `61908cd4e`: function-only precedence migration plus real PostgreSQL regression proves hangup→AMD, AMD→hangup, replay, distinct AMD/cross-row conflicts, and both concurrent lock orders; scoped Sol re-review `ship`, Critical addressed, new Critical/Important zero;
 - [x] fix round 2 `98523b230`: rename the function migration after the base in lexical order; primary PostgreSQL PASS and scoped re-review `ship`, no new breakage;
 - [x] rollback-preflight and apply the function-only production migration SHA-256 `304c40a330baf3e03f38a6d2a91d5731af7ba3d7f556497ba10b623983b32df6`; post-readback function hash `7ccc1d1b6d6f42a6ff207909083af725`, wake rows 496, fixture zero, indexes two, RLS true, service execute true, browser execute false;
-- [ ] merge/deploy/read back the hangup HTTP route, then create a new no-location event because the current call identities cannot be retroactively linked to ignored webhook IDs;
+- [x] merge/deploy/read back the hangup HTTP route: PR #3072 passes 9/9, merges as `d37cba22d26eb2a6686b5ef94e78b46cf1ac4b69`, Railway deployment `d0050aac-fe29-46ad-a073-a2243f72c11b` is SUCCESS, and public health matches;
+- [ ] create a new no-location event because the prior call identities cannot be retroactively linked to ignored webhook IDs;
 - [ ] after no-location liveness is proven, create one fresh physical controlled event and require the Travel block plus route/Telegram/call receipts;
 - [ ] no-location T-10 row has one call-control ID, one signed webhook ID, and one durable claim;
 - [ ] no-location T-5 row has one call-control ID, one signed webhook ID, and one durable claim;
