@@ -27,7 +27,7 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 この節は、後段の「現在TODO」「次の一件」「local-only」「self-funded agentは別product」という相反する記述を
 上書きする最新の実行順序SSOTである。後段は実装履歴・organ別acceptanceとして保持するが、次作業の選択には使わない。
 Upworkのterminal evidence、startup context、public claim、GA-01〜13Aは完了または履歴として保持する。
-次の一件はAtomic program ledger Seq 15 `ELZ-C02`のsubstep `C02-18`で、ELZ-C02をDONEへ更新する。
+次の一件はAtomic program ledger Seq 15 `ELZ-C02`のsubstep `C02-19`で、ELZ-C03をNEXTへ更新する。
 
 #### 0.0.1 最新基盤決定 — ElizaOSを完全forkし、Life Managerをlocal OSSからmulti-tenant SaaSへ育てる
 
@@ -574,7 +574,7 @@ OpenAI API key、ClawRouter、Hermes、別model router、独自Codex adapterは�
 - [x] **C02-16-F1** initialized adapterを持つruntimeで`runtime.useModel()`のstructured returnを成立させ、既発生callとfinal callの総数をreceiptへ正直に記録する — `InMemoryDatabaseAdapter`＋`runtime.initialize()`でfinal Luna callが`LIFE_MANAGER_HEALTH/{}`をreturnしexit 0。historical 1＋final 1＝total 2、automatic retry 0、effect 0をprivate evidence/receiptへ記録
 - [x] **C02-16-F1-R1** 同じreview findingだけを再確認する — same fresh reviewerがfinal session SHA、turn/task各1、tool call 0、initialized adapter、useModel return、exit 0を独立確認し`P1_RESOLVED`。private `c02/adversarial-finding-recheck.json` mode 0600、次はC02-17
 - [x] **C02-17** C02 receiptをPASSへ更新する — canonical private `model-provider-receipt.json` v2 mode 0600。Codex SDK/Luna medium、historical＋final total calls 2、automatic retry 0、final useModel return/exit 0、structured result、review P1 resolved/open 0、marketplace effect 0、owned RAM detached/mount absentをreadback。次はC02-18
-- [ ] **C02-18** ELZ-C02をDONEへ更新する
+- [x] **C02-18** ELZ-C02をDONEへ更新する — canonical receipt PASS、open finding 0、owned RAM cleanup完了。次はC02-19
 - [ ] **C02-19** ELZ-C03をNEXTへ更新する
 
 Lancersでまだ新しい収益がないことは、この順序を飛ばす理由にしない。現時点はC02未完であり、新forkのgeneral-agent基盤が
@@ -603,7 +603,7 @@ Lancers実環境へ到達していない。Lancersでの新規応募・契約・
 | Seq | Atom | 状態 | 原子的完了条件 / named receipt |
 |---:|---|---|---|
 | 14 | ELZ-C01 exactly-one plugin registration | DONE | private `plugin-registration-receipt.json` mode 0600。fork PR #1 canonical merge `bd24601e…`。`@elizaos/plugin-life-manager`一つがaction `LIFE_MANAGER_HEALTH`、provider `lifeManagerHealth`、stateless service `LIFE_MANAGER`を各1件登録し、host manifestでenabled/requiredForReady=true。同名二重register後も各1件、second runtime/scheduler/DB/external effect 0 |
-| 15 | ELZ-C02 first model transport preflight | **IN_PROGRESS — NEXT** | Eliza既存`@elizaos/plugin-cli-inference`の`codex-sdk` backendをall-tiers＋planner modeで起動し、system Codex `0.151.0`から`gpt-5.6-luna` medium `ACTION_PLANNER`をexactly 1回実行。native structured `{action,params}`をreadbackし、独自adapter/OpenAI API key/open model/ClawRouter/Capafy key/外部effect 0、provider/backend/model/effort/exitを固定した`model-provider-receipt.json` |
+| 15 | ELZ-C02 first model transport preflight | **DONE** | canonical private `model-provider-receipt.json` v2 mode 0600。Eliza既存`@elizaos/plugin-cli-inference` `codex-sdk`＋system Codex `0.151.0`＋Luna medium。初回post-call adapter log failureを同一session readbackし、initialized adapter final callで`runtime.useModel()`が`LIFE_MANAGER_HEALTH/{}`をreturn・exit 0。historical 1＋final 1＝total calls 2、automatic retry 0、fresh review P1 resolved/open 0、API key/GPT-OSS/ClawRouter/marketplace effect 0、owned RAM detached |
 | 16 | ELZ-C03 domain schema and migration | TODO | Goal/PlanGraph/WorkItem/EffectIntent/OutcomeReceipt/EconomicReceiptの型とmigrationが一つの`domain-schema-receipt.json` |
 | 17 | ELZ-C04 legacy provider bridge contract | TODO | JS/Python既存toolをopaque refとstructured resultだけで呼び、判断権0の`provider-bridge-receipt.json` |
 | 18 | ELZ-C05 Goal to reference-only WorkItem | TODO | private goal本文をjobへ複製せず、一Goal→一WorkItemの`goal-workitem-receipt.json` |

@@ -50,7 +50,7 @@
 - [x] `C02-16-F1` initialized adapterで`runtime.useModel()` returnを成立させ、全call countをreceiptへ記録する — final return/exit 0、historical 1＋final 1、retry/effect 0
 - [x] `C02-16-F1-R1` 同じfindingだけを再確認する — same reviewer `P1_RESOLVED`、session/return/exit evidence一致
 - [x] `C02-17` receiptをPASSへ更新する — canonical v2 mode 0600、review resolved、final return/exit 0、total calls 2/retry 0/effect 0、RAM detached
-- [ ] `C02-18` C02をDONEへ更新する
+- [x] `C02-18` C02をDONEへ更新する — receipt PASS、open finding 0、RAM cleanup完了
 - [ ] `C02-19` C03をNEXTへ更新する
 
 ## 完了条件
