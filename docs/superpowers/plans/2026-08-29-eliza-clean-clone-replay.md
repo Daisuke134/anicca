@@ -368,6 +368,52 @@ test -z "$(git status --porcelain=v1 --untracked-files=no)"
 
 Expected: the new physical `.git` is smaller, the partial package bytes remain, the final locked graph completes, and build reaches 55/55.
 
+- [ ] **Step 4E: Install only Turbo's pruned agent closure**
+
+The failed ignored root `node_modules` was removed after exact source/process gates, restoring 3,411,432 KiB. Generate a dependency closure from the still-clean fresh clone:
+
+```bash
+set -e
+CLONE=/Users/anicca/Projects/life-manager-eliza-migration
+PRUNE=/Users/anicca/.local/state/life-manager/migration/elz-f/replay/pruned
+test "$(git -C "$CLONE" rev-parse HEAD)" = 52eefdac597b70f3cb769b007cc4209f0f55cc34
+test -z "$(git -C "$CLONE" status --porcelain=v1 --untracked-files=no)"
+test ! -e "$CLONE/node_modules"
+test ! -e "$PRUNE"
+printf '333376\n' > /Users/anicca/.local/state/life-manager/migration/elz-f/replay/physical-free-kib.txt
+printf '3411432\n' > /Users/anicca/.local/state/life-manager/migration/elz-f/replay/prune-free-before-kib.txt
+export PATH=/Users/anicca/.local/share/life-manager/toolchains/elz-f/node-v24.15.0-darwin-arm64/bin:/Users/anicca/.local/share/life-manager/toolchains/elz-f/bun-1.3.14/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
+cd "$CLONE"
+npx --yes turbo@2.10.10 prune @elizaos/agent --out-dir="$PRUNE"
+test -f "$PRUNE/package.json"
+test -f "$PRUNE/bun.lock"
+test -f "$PRUNE/packages/agent/package.json"
+test "$(jq -r .name "$PRUNE/packages/agent/package.json")" = @elizaos/agent
+test -z "$(git status --porcelain=v1 --untracked-files=no)"
+PRUNE_KIB=$(du -sk "$PRUNE" | awk '{print $1}')
+printf '%s\n' "$PRUNE_KIB" > /Users/anicca/.local/state/life-manager/migration/elz-f/replay/prune-kib.txt
+```
+
+Install and build only that generated closure:
+
+```bash
+set -e
+export PATH=/Users/anicca/.local/share/life-manager/toolchains/elz-f/bun-1.3.14/bin:/Users/anicca/.local/share/life-manager/toolchains/elz-f/node-v24.15.0-darwin-arm64/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
+BUILD_ROOT=/Users/anicca/.local/state/life-manager/migration/elz-f/replay/pruned
+cd "$BUILD_ROOT"
+PRUNED_LOCK_SHA=$(shasum -a 256 bun.lock | awk '{print $1}')
+printf '%s\n' "$PRUNED_LOCK_SHA" > /Users/anicca/.local/state/life-manager/migration/elz-f/replay/pruned-lock-sha.txt
+bun install --frozen-lockfile --no-cache --network-concurrency=1 --concurrent-scripts=1
+bun run build:server 2>&1 | tee /Users/anicca/.local/state/life-manager/migration/elz-f/replay/build-server.log
+test "${pipestatus[1]}" = 0
+rg -q '55 successful, 55 total' /Users/anicca/.local/state/life-manager/migration/elz-f/replay/build-server.log
+test "$(shasum -a 256 bun.lock | awk '{print $1}')" = "$PRUNED_LOCK_SHA"
+test "$(shasum -a 256 /Users/anicca/Projects/life-manager-eliza-migration/bun.lock | awk '{print $1}')" = 1976283db890a36ae945cd1256e9388ca84c067608df9628570bb6fce3ad7eb4
+test -z "$(git -C /Users/anicca/Projects/life-manager-eliza-migration status --porcelain=v1 --untracked-files=no)"
+```
+
+Expected: the pruned frozen graph installs, build reaches 55/55, and the canonical clone stays clean.
+
 - [ ] **Step 5: Start a fresh model-credential-free replay runtime**
 
 Create the isolated state first:
@@ -378,11 +424,11 @@ RUNTIME=/Users/anicca/.local/state/life-manager/migration/elz-f/replay/runtime
 test ! -e "$RUNTIME"
 mkdir -p -m 700 "$RUNTIME/db"
 test ! -L "$RUNTIME"
-test ! -f /Users/anicca/Projects/life-manager-eliza-migration/.env
+test ! -f /Users/anicca/.local/state/life-manager/migration/elz-f/replay/pruned/.env
 test -z "$(lsof -nP -iTCP:2139 -sTCP:LISTEN 2>/dev/null)"
 ```
 
-Then start one PTY-owned session in `/Users/anicca/Projects/life-manager-eliza-migration`:
+Then start one PTY-owned session in `/Users/anicca/.local/state/life-manager/migration/elz-f/replay/pruned`:
 
 ```bash
 LM_TMPDIR=$(/usr/bin/getconf DARWIN_USER_TEMP_DIR)
@@ -423,7 +469,7 @@ Wait on the PTY session and require exact exit code `0`, then record the observe
 set -e
 printf '0\n' > /Users/anicca/.local/state/life-manager/migration/elz-f/replay/initial-exit.txt
 test -z "$(lsof -nP -iTCP:2139 -sTCP:LISTEN 2>/dev/null)"
-cd /Users/anicca/Projects/life-manager-eliza-migration
+cd /Users/anicca/.local/state/life-manager/migration/elz-f/replay/pruned
 PGLITE_DATA_DIR=/Users/anicca/.local/state/life-manager/migration/elz-f/replay/runtime/db \
   /Users/anicca/.local/share/life-manager/toolchains/elz-f/bun-1.3.14/bin/bun -e '
   import { PGlite } from "@electric-sql/pglite";
@@ -446,7 +492,7 @@ Expected: health passes, the exact owned process exits `0`, port is free, and ma
 
 - [ ] **Step 7: Restart the identical runtime, verify health/marker, and stop cleanly**
 
-Start a second PTY session in `/Users/anicca/Projects/life-manager-eliza-migration`; the existing runtime skips first-run setup:
+Start a second PTY session in `/Users/anicca/.local/state/life-manager/migration/elz-f/replay/pruned`; the existing runtime skips first-run setup:
 
 ```bash
 LM_TMPDIR=$(/usr/bin/getconf DARWIN_USER_TEMP_DIR)
@@ -479,7 +525,7 @@ Wait on the second PTY session and require exact exit code `0`, then run:
 set -e
 printf '0\n' > /Users/anicca/.local/state/life-manager/migration/elz-f/replay/restart-exit.txt
 test -z "$(lsof -nP -iTCP:2139 -sTCP:LISTEN 2>/dev/null)"
-cd /Users/anicca/Projects/life-manager-eliza-migration
+cd /Users/anicca/.local/state/life-manager/migration/elz-f/replay/pruned
 PGLITE_DATA_DIR=/Users/anicca/.local/state/life-manager/migration/elz-f/replay/runtime/db \
   /Users/anicca/.local/share/life-manager/toolchains/elz-f/bun-1.3.14/bin/bun -e '
   import { PGlite } from "@electric-sql/pglite";
@@ -500,7 +546,8 @@ Expected: the second process exits `0`, the exact marker survives, port `2139` i
 ```bash
 set -e
 export PATH=/Users/anicca/.local/share/life-manager/toolchains/elz-f/bun-1.3.14/bin:/Users/anicca/.local/share/life-manager/toolchains/elz-f/node-v24.15.0-darwin-arm64/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
-cd /Users/anicca/Projects/life-manager-eliza-migration
+BUILD_ROOT=/Users/anicca/.local/state/life-manager/migration/elz-f/replay/pruned
+cd "$BUILD_ROOT"
 bunx vitest run --config packages/agent/vitest.config.ts \
   packages/agent/src/runtime/eliza-database-config.test.ts \
   packages/agent/src/api/health-routes.test.ts \
@@ -510,9 +557,9 @@ bunx vitest run --config packages/agent/vitest.config.ts \
 test "${pipestatus[1]}" = 0
 rg -q 'Test Files.*4 passed' /Users/anicca/.local/state/life-manager/migration/elz-f/replay/focused-tests.log
 rg -q 'Tests.*32 passed' /Users/anicca/.local/state/life-manager/migration/elz-f/replay/focused-tests.log
-test "$(shasum -a 256 bun.lock | awk '{print $1}')" = 1976283db890a36ae945cd1256e9388ca84c067608df9628570bb6fce3ad7eb4
-test "$(git rev-parse HEAD)" = 52eefdac597b70f3cb769b007cc4209f0f55cc34
-test -z "$(git status --porcelain=v1 --untracked-files=no)"
+test "$(shasum -a 256 bun.lock | awk '{print $1}')" = "$(tr -d ' ' < /Users/anicca/.local/state/life-manager/migration/elz-f/replay/pruned-lock-sha.txt)"
+test "$(git -C /Users/anicca/Projects/life-manager-eliza-migration rev-parse HEAD)" = 52eefdac597b70f3cb769b007cc4209f0f55cc34
+test -z "$(git -C /Users/anicca/Projects/life-manager-eliza-migration status --porcelain=v1 --untracked-files=no)"
 test -z "$(lsof -nP -iTCP:2139 -sTCP:LISTEN 2>/dev/null)"
 test "$(stat -f '%Lp' /Users/anicca/.local/state/life-manager/migration/elz-f/replay/runtime/db)" = 700
 ```
@@ -540,12 +587,16 @@ LOCAL_TAGS_REMOVED=$(tr -d ' ' < "$STATE/local-tags-removed.txt")
 PHYSICAL_GIT_KIB_BEFORE=$(tr -d ' ' < "$STATE/physical-git-kib-before.txt")
 PHYSICAL_GIT_KIB_AFTER=$(tr -d ' ' < "$STATE/physical-git-kib-after.txt")
 PHYSICAL_FREE_KIB=$(tr -d ' ' < "$STATE/physical-free-kib.txt")
+FAILED_NODE_MODULES_KIB=$(tr -d ' ' < "$STATE/failed-node-modules-kib.txt")
+PRUNE_FREE_BEFORE=$(tr -d ' ' < "$STATE/prune-free-before-kib.txt")
+PRUNE_KIB=$(tr -d ' ' < "$STATE/prune-kib.txt")
+PRUNED_LOCK_SHA=$(tr -d ' ' < "$STATE/pruned-lock-sha.txt")
 INITIAL_EXIT=$(tr -d ' ' < "$STATE/initial-exit.txt")
 RESTART_EXIT=$(tr -d ' ' < "$STATE/restart-exit.txt")
 test "$INITIAL_EXIT" = 0
 test "$RESTART_EXIT" = 0
 FREE_KIB_AFTER=$(df -Pk /Users/anicca | awk 'END {print $4}')
-REMOTE_REPLAY_SHA=$(git ls-remote origin refs/heads/migration/eliza-docs | awk '{print $1}')
+REMOTE_REPLAY_SHA=$(git -C "$CLONE" ls-remote origin refs/heads/migration/eliza-docs | awk '{print $1}')
 test "$REMOTE_REPLAY_SHA" = 52eefdac597b70f3cb769b007cc4209f0f55cc34
 jq -n \
   --arg clone "$CLONE" \
@@ -565,6 +616,10 @@ jq -n \
   --argjson physical_git_before "$PHYSICAL_GIT_KIB_BEFORE" \
   --argjson physical_git_after "$PHYSICAL_GIT_KIB_AFTER" \
   --argjson physical_free "$PHYSICAL_FREE_KIB" \
+  --argjson failed_node_modules "$FAILED_NODE_MODULES_KIB" \
+  --argjson prune_free_before "$PRUNE_FREE_BEFORE" \
+  --argjson prune_kib "$PRUNE_KIB" \
+  --arg pruned_lock "$PRUNED_LOCK_SHA" \
   --argjson writers "$WRITERS" \
   --argjson lock_handles "$LOCK_HANDLES" \
   --argjson initial_exit "$INITIAL_EXIT" \
@@ -572,18 +627,20 @@ jq -n \
   '{
     atom:"ELZ-F13",status:"passed",fresh_clone:true,clone_path:$clone,source_sha:$source,remote_readback_sha:$remote,
     node:$node,bun:$bun,lock_sha256:$lock,submodule_count:2,license_count:28,
+    build_root:"turbo-pruned-agent-closure",pruned_lock_sha256:$pruned_lock,
     frozen_install:"passed",server_build:"55/55",focused_test_files:4,focused_tests:32,
     initial_health:"passed",restart_health:"passed",marker_id:"foundation-replay",marker_value:"52eefdac",
     initial_sigterm_exit:$initial_exit,restart_sigterm_exit:$restart_exit,listener_count_after_stop:0,
     writer_processes:$writers,lock_open_handles:$lock_handles,working_tree_clean:true,
     model_credentials:0,external_effects:0,old_clone_removed_after_remote_readback:true,
-    capacity_recovery:{merged_roadmap_worktree_removed:true,initial_cache_paths_removed:8,additional_cache_paths_removed:11,resume_free_kib:$resume_free,local_git_history_shallowed:true,local_tags_removed:$tags_removed,git_kib_before:$git_before,git_kib_after:$git_after,serialized_install_free_kib:$serial_free,physical_depth_one_reclone:true,physical_git_kib_before:$physical_git_before,physical_git_kib_after:$physical_git_after,physical_reclone_free_kib:$physical_free},
+    capacity_recovery:{merged_roadmap_worktree_removed:true,initial_cache_paths_removed:8,additional_cache_paths_removed:11,resume_free_kib:$resume_free,local_git_history_shallowed:true,local_tags_removed:$tags_removed,git_kib_before:$git_before,git_kib_after:$git_after,serialized_install_free_kib:$serial_free,physical_depth_one_reclone:true,physical_git_kib_before:$physical_git_before,physical_git_kib_after:$physical_git_after,physical_reclone_free_kib:$physical_free,failed_node_modules_removed:true,failed_node_modules_kib:$failed_node_modules,pruned_agent_closure:true,prune_free_before_kib:$prune_free_before,prune_kib:$prune_kib},
     free_kib_before:$free_before,old_clone_kib:$old_clone_kib,free_kib_after:$free_after
   }' > /Users/anicca/.local/state/life-manager/migration/elz-f/foundation-replay-receipt.json
 chmod 600 /Users/anicca/.local/state/life-manager/migration/elz-f/foundation-replay-receipt.json
 jq -e '
   .atom=="ELZ-F13" and .status=="passed" and .fresh_clone and
   .source_sha=="52eefdac597b70f3cb769b007cc4209f0f55cc34" and .source_sha==.remote_readback_sha and .node=="v24.15.0" and .bun=="1.3.14" and
+  .build_root=="turbo-pruned-agent-closure" and (.pruned_lock_sha256|test("^[0-9a-f]{64}$")) and
   .submodule_count==2 and .license_count==28 and .server_build=="55/55" and .focused_test_files==4 and
   .focused_tests==32 and .initial_health=="passed" and .restart_health=="passed" and
   .marker_value=="52eefdac" and .initial_sigterm_exit==0 and .restart_sigterm_exit==0 and
@@ -594,7 +651,9 @@ jq -e '
   .capacity_recovery.local_git_history_shallowed and .capacity_recovery.local_tags_removed>0 and
   .capacity_recovery.git_kib_after<.capacity_recovery.git_kib_before and .capacity_recovery.serialized_install_free_kib>=500000 and
   .capacity_recovery.physical_depth_one_reclone and .capacity_recovery.physical_git_kib_after<.capacity_recovery.physical_git_kib_before and
-  .capacity_recovery.physical_reclone_free_kib>=550000
+  .capacity_recovery.physical_reclone_free_kib==333376 and .capacity_recovery.failed_node_modules_removed and
+  .capacity_recovery.failed_node_modules_kib>0 and .capacity_recovery.pruned_agent_closure and
+  .capacity_recovery.prune_free_before_kib>=2500000 and .capacity_recovery.prune_kib>0
 ' /Users/anicca/.local/state/life-manager/migration/elz-f/foundation-replay-receipt.json
 test "$(stat -f '%Lp' /Users/anicca/.local/state/life-manager/migration/elz-f/foundation-replay-receipt.json)" = 600
 ```
