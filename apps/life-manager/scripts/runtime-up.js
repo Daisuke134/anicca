@@ -502,9 +502,12 @@ function createWorkerHandlers(env, capabilities, dependencies = {}) {
       if (typeof readOpportunity !== "function" || typeof updateOpportunity !== "function") {
         throw new Error("money printer runtime opportunity store unavailable");
       }
+      const configuredRepoRoot = String(env.LM_REPO_ROOT || "").trim();
       specialist = (dependencies.createMoneyPrinterSpecialist || createMoneyPrinterSpecialist)({
         dataDir: path.resolve(requiredEnv(env, "LM_DATA_DIR")),
-        repoRoot: dependencies.repoRoot || path.resolve(__dirname, "../../.."),
+        repoRoot: configuredRepoRoot
+          ? path.resolve(configuredRepoRoot)
+          : dependencies.repoRoot || path.resolve(__dirname, "../../.."),
         fetchImpl: dependencies.fetchImpl || globalThis.fetch,
         geminiKey,
         runAgentRunner,
