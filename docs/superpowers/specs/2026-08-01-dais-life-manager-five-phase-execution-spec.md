@@ -27,7 +27,7 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 この節は、後段の「現在TODO」「次の一件」「local-only」「self-funded agentは別product」という相反する記述を
 上書きする最新の実行順序SSOTである。後段は実装履歴・organ別acceptanceとして保持するが、次作業の選択には使わない。
 Upworkのterminal evidence、startup context、public claim、GA-01〜13Aは完了または履歴として保持する。
-次の一件はAtomic program ledger Seq 16 `ELZ-C03`で、Goal/PlanGraph/WorkItem/EffectIntent/OutcomeReceipt/EconomicReceiptのdomain schemaとmigrationを一つずつ固定する。
+次の一件はAtomic program ledger Seq 16 `ELZ-C03`のsubstep `C03-01`で、Eliza fixed sourceのDrizzle schema登録contractをprivate evidenceへ保存する。
 
 #### 0.0.1 最新基盤決定 — ElizaOSを完全forkし、Life Managerをlocal OSSからmulti-tenant SaaSへ育てる
 
@@ -577,7 +577,43 @@ OpenAI API key、ClawRouter、Hermes、別model router、独自Codex adapterは�
 - [x] **C02-18** ELZ-C02をDONEへ更新する — canonical receipt PASS、open finding 0、owned RAM cleanup完了。次はC02-19
 - [x] **C02-19** ELZ-C03をNEXTへ更新する
 
-Lancersでまだ新しい収益がないことは、この順序を飛ばす理由にしない。現時点はC02未完であり、新forkのgeneral-agent基盤が
+##### C03 Atomic TODO — domain schema and migration
+
+C03はEliza fixed sourceの`plugin-todos` Drizzle schema＋plugin `schema`登録、`plugin-reminders`のmarker付き非破壊migration serviceを
+copy+tweakする。legacy Life Managerからは`intent-graph.js`のprovenance/correction/expiryと`20260729_runtime_jobs.sql`のtenant、reference-only input、
+effect key、lease、immutable receipt contractだけを移植する。新DB framework、新queue、新event-sourcing基盤は作らない。判断はschemaへ入れず、
+Goal分解とgraph生成は後続C07のCodexへ残す。現在activeなC03だけを次の単一行動へ分解し、C04以降の順序は変更しない。
+
+- [ ] **C03-01** Eliza `plugin-todos`のDrizzle schema登録contractをprivate evidenceへ保存する
+- [ ] **C03-02** Eliza `plugin-reminders`の非破壊migration contractをprivate evidenceへ保存する
+- [ ] **C03-03** legacy `intent-graph.js`のprovenance/correction/expiry contractをprivate evidenceへ保存する
+- [ ] **C03-04** legacy runtime job/receiptのreference/effect/immutability contractをprivate evidenceへ保存する
+- [ ] **C03-05** upstream/legacyの採用・棄却mapを`domain-reuse-map.json`へ保存する
+- [ ] **C03-06** schema contractのfocused failing testを一つ追加する
+- [ ] **C03-07** schema contract testの失敗を一回確認する
+- [ ] **C03-08** `life_manager` Drizzle schema namespaceを定義する
+- [ ] **C03-09** Goal row/insert typeを定義する
+- [ ] **C03-10** PlanGraph row/insert typeを定義する
+- [ ] **C03-11** WorkItem row/insert typeを定義する
+- [ ] **C03-12** EffectIntent row/insert typeを定義する
+- [ ] **C03-13** OutcomeReceipt row/insert typeを定義する
+- [ ] **C03-14** EconomicReceipt row/insert typeを定義する
+- [ ] **C03-15** tenant/reference/idempotency/immutable-receipt constraintsを定義する
+- [ ] **C03-16** `plugin-life-manager`へ`@elizaos/plugin-sql` dependencyとschema登録を接続する
+- [ ] **C03-17** schema contract testの成功を一回確認する
+- [ ] **C03-18** migration contractのfocused failing testを一つ追加する
+- [ ] **C03-19** migration contract testの失敗を一回確認する
+- [ ] **C03-20** marker付き非破壊migration serviceを実装する
+- [ ] **C03-21** migration contract testの成功を一回確認する
+- [ ] **C03-22** isolated PGliteへmigrationを一回適用する
+- [ ] **C03-23** 同じPGliteをrestartして6 entity schemaを再読出しする
+- [ ] **C03-24** schema/migration/result hashを`domain-schema-receipt.json`へ保存する
+- [ ] **C03-25** C03差分をadversarial reviewへ一回渡す
+- [ ] **C03-26** C03 receiptをPASSへ更新する
+- [ ] **C03-27** ELZ-C03をDONEへ更新する
+- [ ] **C03-28** ELZ-C04をNEXTへ更新する
+
+Lancersでまだ新しい収益がないことは、この順序を飛ばす理由にしない。現時点はC03がactiveであり、新forkのgeneral-agent基盤が
 Lancers実環境へ到達していない。Lancersでの新規応募・契約・受領金・銀行着金はPhase C完了後のPhase Lで一つずつ実証する。
 
 ##### Phase F — Eliza fixed treeを未変更でlocal起動する
