@@ -40,14 +40,39 @@ test("the scheduler deployment starts all loops only with an explicit owner", ()
 });
 
 for (const off of ["false", "FALSE", " False ", "0", "off"]) {
-  test(`LIFE_RUN_LOOPS=${JSON.stringify(off)} remains a safe transition stop`, () => {
+  test(`LIFE_RUN_LOOPS=${JSON.stringify(off)} falls back to one standalone owner without Inngest`, () => {
     const { c, starters } = counters();
     const r = maybeStartLoops({ LIFE_RUN_LOOPS: off }, starters);
-    assert.strictEqual(r.started, false, "started=false");
-    assert.match(r.reason, /disabled|deployment/i);
-    assert.doesNotMatch(r.reason, /openclaw/i);
-    assert.deepStrictEqual(c, { startScheduler: 0, startWakeLoop: 0, startReminderLoop: 0, startTravelLoop: 0, startAskLoop: 0, startOnboardLoop: 0, startDiscoveryLoop: 0 },
-      "ZERO loops started when off — single writer");
+    assert.strictEqual(r.started, true);
+    assert.strictEqual(r.owner, "standalone-inngest-missing-fallback");
+    assert.match(r.reason, /standalone|fallback/i);
+    assert.doesNotMatch(r.reason, /openclaw|INNGEST|secret|key/i);
+    assert.deepStrictEqual(c, { startScheduler: 1, startWakeLoop: 1, startReminderLoop: 1, startTravelLoop: 1, startAskLoop: 1, startOnboardLoop: 1, startDiscoveryLoop: 1 },
+      "all seven existing loops start exactly once");
+  });
+}
+
+test("off plus an Inngest signing key keeps the in-process owner off", () => {
+  const { c, starters } = counters();
+  const r = maybeStartLoops({ LIFE_RUN_LOOPS: "off", INNGEST_SIGNING_KEY: "signing-secret" }, starters);
+  assert.strictEqual(r.started, false);
+  assert.match(r.reason, /disabled|deployment/i);
+  assert.deepStrictEqual(c, counters().c);
+});
+
+test("off plus Inngest dev mode keeps the in-process owner off", () => {
+  const { c, starters } = counters();
+  const r = maybeStartLoops({ LIFE_RUN_LOOPS: "0", INNGEST_DEV: " 1 " }, starters);
+  assert.strictEqual(r.started, false);
+  assert.deepStrictEqual(c, counters().c);
+});
+
+for (const role of ["api", "worker", "scheduler"]) {
+  test(`off plus explicit ${role} role never starts the standalone fallback`, () => {
+    const { c, starters } = counters();
+    const r = maybeStartLoops({ LIFE_RUN_LOOPS: "false", LM_DEPLOYMENT_ROLE: role, LM_SCHEDULER_OWNER: "owner" }, starters);
+    assert.strictEqual(r.started, false);
+    assert.deepStrictEqual(c, counters().c);
   });
 }
 

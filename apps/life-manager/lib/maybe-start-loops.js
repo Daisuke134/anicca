@@ -10,8 +10,11 @@ function maybeStartLoops(env, starters) {
   const flag = String((env && env.LIFE_RUN_LOOPS) || "").trim().toLowerCase();
   const role = String((env && env.LM_DEPLOYMENT_ROLE) || "").trim().toLowerCase();
   const owner = String((env && env.LM_SCHEDULER_OWNER) || "").trim();
+  const inngestConfigured = String((env && env.INNGEST_DEV) || "").trim() === "1"
+    || (typeof (env && env.INNGEST_SIGNING_KEY) === "string" && env.INNGEST_SIGNING_KEY.trim() !== "");
+  const standaloneFallback = (flag === "false" || flag === "0" || flag === "off") && !role && !inngestConfigured;
 
-  if (flag === "false" || flag === "0" || flag === "off") {
+  if ((flag === "false" || flag === "0" || flag === "off") && !standaloneFallback) {
     return {
       started: false,
       reason: `scheduler loops disabled by deployment flag LIFE_RUN_LOOPS=${flag}`,
@@ -38,10 +41,10 @@ function maybeStartLoops(env, starters) {
   starters.startDiscoveryLoop();
   return {
     started: true,
-    owner: role === "scheduler" ? owner : "standalone-transition",
+    owner: role === "scheduler" ? owner : standaloneFallback ? "standalone-inngest-missing-fallback" : "standalone-transition",
     reason: role === "scheduler"
       ? `scheduler deployment loops started for owner ${owner}`
-      : "standalone transition loops started",
+      : standaloneFallback ? "standalone fallback loops started" : "standalone transition loops started",
   };
 }
 
