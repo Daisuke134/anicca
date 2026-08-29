@@ -132,51 +132,8 @@ function storeMethod(store) {
 
 async function createOpportunity(input, store) {
   const expected = canonicalOpportunityInput(input);
-  const target = store || createSupabaseOpportunityStore();
+  const target = store;
   return assertReadback(await storeMethod(target)(expected), expected);
-}
-
-function credentials(options = {}) {
-  const supaUrl = String(options.supaUrl || process.env.SUPABASE_URL || "").replace(/\/$/, "");
-  const supaKey = options.supaKey || process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const fetchImpl = options.fetchImpl || globalThis.fetch;
-  if (!supaUrl || !supaKey || typeof fetchImpl !== "function") {
-    throw new Error("money printer opportunity store unavailable");
-  }
-  return { supaUrl, supaKey, fetchImpl };
-}
-
-function headers(key) {
-  return { apikey: key, Authorization: `Bearer ${key}`, "Content-Type": "application/json" };
-}
-
-function createSupabaseOpportunityStore(options = {}) {
-  const { supaUrl, supaKey, fetchImpl } = credentials(options);
-  async function create(opportunity) {
-    const response = await fetchImpl(`${supaUrl}/rest/v1/rpc/create_lm_money_opportunity`, {
-      method: "POST",
-      headers: headers(supaKey),
-      body: JSON.stringify({
-        p_uid: opportunity.uid,
-        p_opportunity_id: opportunity.opportunity_id,
-        p_source_url: opportunity.source_url,
-        p_title: opportunity.title,
-        p_goal_statement: opportunity.goal_statement,
-        p_value_minor: opportunity.value_minor,
-        p_currency: opportunity.currency,
-        p_observed_at: opportunity.observed_at,
-        p_goal_ref: opportunity.goal_ref,
-      }),
-    });
-    if (!response || !response.ok) {
-      throw new Error(`money printer opportunity RPC failed (${response ? response.status : "no response"})`);
-    }
-    const body = await response.json();
-    const rows = Array.isArray(body) ? body : body && typeof body === "object" ? [body] : [];
-    if (rows.length !== 1) throw new Error("money printer opportunity RPC returned no row");
-    return rows[0];
-  }
-  return Object.freeze({ createOpportunity: create, createAtomic: create, create });
 }
 
 module.exports = {
@@ -186,6 +143,5 @@ module.exports = {
   buildOpportunity,
   canonicalOpportunityInput,
   createOpportunity,
-  createSupabaseOpportunityStore,
   opportunityIdFor(input) { return canonicalOpportunityInput(input).opportunity_id; },
 };

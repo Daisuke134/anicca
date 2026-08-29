@@ -49,6 +49,7 @@ const {
 const { sendPanelLink, handlePanelRequest, panelDeviceCodeFromCommand, confirmPanelDeviceCode } = require("./lib/panel-auth.js");
 const { handlePanelApiRequest, handlePanelOAuthCallback, composioCalendarStart, composioCalendarDisconnect } = require("./lib/panel-api.js");
 const { createMoneyPrinterSource } = require("./lib/money-printer-source.js");
+const { createMoneyPrinterRuntimeStore } = require("./lib/money-printer-runtime-store.js");
 const { createSupabaseCommandStore } = require("./lib/panel-api.js");
 const { handleCalendarOnboardRequest } = require("./lib/calendar-onboard.js");
 const { parseUserCommand, dispatchParsedControl, executeUserCommand } = require("./lib/user-command.js");
@@ -78,10 +79,22 @@ const { recordCost } = require("./lib/ledger.js");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY || "sk_test_placeholder"); // apiKey unused by constructEvent
 const SUPA_URL = process.env.SUPABASE_URL, SUPA_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const COMPOSIO_KEY = process.env.COMPOSIO_API_KEY;
-let moneyPrinterSource;
+let moneyPrinterSource, moneyPrinterRuntimePool, moneyPrinterRuntimeStore;
+function getMoneyPrinterRuntimeStore() {
+  if (!moneyPrinterRuntimeStore) {
+    const connectionString = String(process.env.LM_RUNTIME_DATABASE_URL || process.env.LM_FEEDBACK_DATABASE_URL || "").trim();
+    if (!connectionString) throw new Error("money printer runtime store unavailable");
+    moneyPrinterRuntimePool = new (require("pg").Pool)({ connectionString, max: 4 });
+    moneyPrinterRuntimeStore = createMoneyPrinterRuntimeStore({ query: moneyPrinterRuntimePool.query.bind(moneyPrinterRuntimePool) });
+  }
+  return moneyPrinterRuntimeStore;
+}
 function getMoneyPrinterSource(scope) {
   if (!moneyPrinterSource) {
-    moneyPrinterSource = createMoneyPrinterSource({ supaUrl: SUPA_URL, supaKey: SUPA_KEY, fetchImpl: fetch });
+    moneyPrinterSource = createMoneyPrinterSource({
+      supaUrl: SUPA_URL, supaKey: SUPA_KEY, fetchImpl: fetch,
+      runtimeStore: getMoneyPrinterRuntimeStore(),
+    });
   }
   return moneyPrinterSource(scope);
 }
@@ -265,6 +278,7 @@ const server = http.createServer((req, res) => {
     return;
   }
   if (path.startsWith("/api/panel/")) {
+    const runtimeStore = getMoneyPrinterRuntimeStore();
     handlePanelApiRequest(req, res, {
       supaUrl: SUPA_URL,
       supaKey: SUPA_KEY,
@@ -273,6 +287,9 @@ const server = http.createServer((req, res) => {
       panelBaseUrl: LM_PANEL_BASE,
       composioKey: COMPOSIO_KEY,
       composioAuthConfig: process.env.COMPOSIO_GCAL_AUTH_CONFIG,
+      runtimeStore,
+      opportunityStore: runtimeStore,
+      humanTaskStore: runtimeStore,
       moneyPrinterSource: getMoneyPrinterSource,
     }).catch((error) => {
       console.error("[panel-api] request failed", error.message);

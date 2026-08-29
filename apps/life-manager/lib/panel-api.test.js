@@ -414,10 +414,41 @@ test("Task 7B1 workroom API returns the exact tenant opportunity, matching job, 
 test("Task 7B1 server source wiring is lazy and has no fake Money Printer fallback", () => {
   const server = fs.readFileSync(path.join(__dirname, "../server.js"), "utf8");
   assert.match(server, /createMoneyPrinterSource/);
+  assert.match(server, /createMoneyPrinterRuntimeStore/);
+  assert.match(server, /LM_RUNTIME_DATABASE_URL\s*\|\|\s*process\.env\.LM_FEEDBACK_DATABASE_URL/);
+  assert.match(server, /runtimeStore,\s*opportunityStore:\s*runtimeStore,\s*humanTaskStore:\s*runtimeStore/s);
   assert.match(server, /moneyPrinterSource\s*:/);
   assert.match(server, /supaUrl:\s*SUPA_URL/);
   assert.match(server, /supaKey:\s*SUPA_KEY/);
   assert.doesNotMatch(server, /moneyPrinterSource:\s*(?:async\s*)?\(?.*=>\s*\(\{\s*tenantId/);
+});
+
+test("Task 8A Panel routes opportunity and human domain actions through runtimeStore", async () => {
+  const fixture = makeFixture();
+  const task = {
+    uid: "tenant-a", task_id: "a".repeat(64), version: 1, question: "Approve?", required_format: "approval",
+    reason_code: "model_boundary", resume_ref: "runtime-job://tenant-a/job-1", status: "open",
+  };
+  const calls = [];
+  const runtimeStore = {
+    async createOpportunity(canonical) { calls.push(["opportunity", canonical.uid]); return { ...canonical, created_at: "2026-08-29T00:00:00.000Z" }; },
+    async readNext(scope) { calls.push(["next", scope.uid]); return task; },
+    async answerOnce(answer) { calls.push(["answer", answer.uid]); return { ...task, status: "answered", answer_ref: answer.answerRef }; },
+  };
+  await withApiServer(fixture, async (base) => {
+    const created = await opportunityRequest(base, "money-printer/opportunity", { body: {
+      source_url: "https://public.example/opportunity", title: "Public opportunity", goal_statement: "Complete it.", value_minor: "50000", currency: "JPY",
+    } });
+    assert.equal(created.response.status, 200);
+    assert.equal((await humanTaskRequest(base, "money-printer/human-task/next", { method: "GET" })).response.status, 200);
+    assert.equal((await humanTaskRequest(base, "money-printer/human-task/answer", { body: {
+      task_id: task.task_id, version: 1, answer_ref: "vault-answer://tenant-a/answer-1",
+    }, headers: { "idempotency-key": "runtime-answer-01" } })).response.status, 200);
+  }, {
+    panelOrigin: "https://panel.example", runtimeStore, commandStore: receiptCommandStore(),
+    sessionScopeImpl: async () => ({ uid: "tenant-a", chatId: "101", csrf: "csrf-a" }),
+  });
+  assert.deepEqual(calls.map(([kind]) => kind), ["opportunity", "next", "answer"]);
 });
 
 test("Task 5B human-task API returns one safe tenant task and replays one answer", async () => {
@@ -520,37 +551,11 @@ test("Task 5B human-task answer rejects missing origin, CSRF, content type, and 
   assert.equal(writes, 0);
 });
 
-test("Task 5B Supabase human-task store scopes the read and calls the answer RPC", async () => {
-  const task = {
-    task_id: "b".repeat(64), version: 1, question: "Approve?",
-    required_format: "approval", reason_code: "model_boundary",
-  };
-  const calls = [];
-  const store = createSupabaseCommandStore({
-    supaUrl: "https://db.example",
-    supaKey: "service-key",
-    fetchImpl: async (input, init = {}) => {
-      const url = new URL(input);
-      calls.push({ url, init });
-      if (url.pathname.endsWith("/lm_human_tasks")) return jsonResponse([task]);
-      if (url.pathname.endsWith("/rpc/answer_lm_human_task")) return jsonResponse([{ ...task, uid: "tenant-a", status: "answered", answer_ref: "vault-answer://tenant-a/answer-1", resume_ref: "runtime-job://tenant-a/job-1" }]);
-      throw new Error(`unexpected human-task URL ${url}`);
-    },
-  });
-  assert.deepEqual(await store.readNext({ uid: "tenant-a", chatId: "101" }), task);
-  const answer = { uid: "tenant-a", taskId: task.task_id, version: 1, answerRef: "vault-answer://tenant-a/answer-1" };
-  assert.equal((await store.answerOnce(answer)).answer_ref, answer.answerRef);
-  assert.equal(calls[0].init.method, undefined);
-  assert.equal(calls[0].url.searchParams.get("uid"), "eq.tenant-a");
-  assert.equal(calls[0].url.searchParams.get("status"), "eq.open");
-  assert.equal(calls[0].url.searchParams.get("select"), "task_id,version,question,required_format,reason_code");
-  assert.equal(calls[1].init.method, "POST");
-  assert.deepEqual(JSON.parse(calls[1].init.body), {
-    p_uid: answer.uid,
-    p_task_id: answer.taskId,
-    p_version: answer.version,
-    p_answer_ref: answer.answerRef,
-  });
+test("Task 8A command receipts stay in Supabase while human work is not", () => {
+  const store = createSupabaseCommandStore({ supaUrl: "https://db.example", supaKey: "service-key" });
+  assert.equal(typeof store.readNext, "undefined");
+  assert.equal(typeof store.answerOnce, "undefined");
+  assert.equal(typeof store.claimReceipt, "function");
 });
 
 test("LM-33b timeline returns today's interpreted calendar and call telemetry", async () => {

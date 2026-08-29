@@ -1,6 +1,7 @@
 "use strict";
 
 const { isIP } = require("node:net");
+const { createMoneyPrinterRuntimeStore } = require("./money-printer-runtime-store.js");
 
 const TENANT_ID = /^[a-z0-9][a-z0-9._-]{0,199}$/;
 const HASH = /^[0-9a-f]{64}$/;
@@ -190,8 +191,15 @@ function freezeInput(input) {
   return Object.freeze(input);
 }
 
+function runtimeStore(options = {}) {
+  if (options.runtimeStore && typeof options.runtimeStore.readRuntimeSnapshot === "function") return options.runtimeStore;
+  if (typeof options.runtimeQuery === "function") return createMoneyPrinterRuntimeStore({ query: options.runtimeQuery });
+  throw new Error("money printer source runtime unavailable");
+}
+
 function createMoneyPrinterSource(options = {}) {
   const { supaUrl, supaKey, fetchImpl } = credentials(options);
+  const runtime = runtimeStore(options);
   return async function moneyPrinterSource(scope) {
     const uid = tenantFromScope(scope);
     const baseParams = { select: "uid,agent_wallet_address", uid: `eq.${uid}`, limit: "1" };
@@ -199,26 +207,12 @@ function createMoneyPrinterSource(options = {}) {
     if (users.length !== 1 || String(users[0].uid || "") !== uid) invalid("tenant readback");
     const wallet = String(users[0].agent_wallet_address || "").trim();
 
-    const opportunities = (await readRows(fetchImpl, tableUrl(supaUrl, "lm_money_opportunities", {
-      uid: `eq.${uid}`,
-      select: "uid,opportunity_id,source_url,title,value_minor,currency,status,goal_ref,observed_at",
-      order: "updated_at.desc",
-    }), supaKey, "opportunities")).map((row) => mapOpportunity(row, uid));
-    const runtimeJobs = (await readRows(fetchImpl, tableUrl(supaUrl, "lm_runtime_jobs", {
-      tenant_id: `eq.${uid}`,
-      select: "tenant_id,job_id,status,created_at,updated_at",
-      order: "updated_at.desc",
-    }), supaKey, "runtime jobs")).map((row) => mapRuntimeJob(row, uid));
-    const humanTasks = (await readRows(fetchImpl, tableUrl(supaUrl, "lm_human_tasks", {
-      uid: `eq.${uid}`,
-      select: "uid,task_id,status,created_at,updated_at",
-      order: "updated_at.desc",
-    }), supaKey, "human tasks")).map((row) => mapHumanTask(row, uid));
-    const receipts = (await readRows(fetchImpl, tableUrl(supaUrl, "lm_runtime_job_receipts", {
-      tenant_id: `eq.${uid}`,
-      select: "tenant_id,job_id,attempt,outcome,created_at,receipt",
-      order: "created_at.desc",
-    }), supaKey, "runtime receipts")).map((row) => mapReceipt(row, uid));
+    const snapshot = await runtime.readRuntimeSnapshot(uid);
+    if (!snapshot || typeof snapshot !== "object" || ["opportunities", "runtimeJobs", "humanTasks", "receipts"].some((key) => !Array.isArray(snapshot[key]))) invalid("runtime snapshot");
+    const opportunities = snapshot.opportunities.map((row) => mapOpportunity(row, uid));
+    const runtimeJobs = snapshot.runtimeJobs.map((row) => mapRuntimeJob(row, uid));
+    const humanTasks = snapshot.humanTasks.map((row) => mapHumanTask(row, uid));
+    const receipts = snapshot.receipts.map((row) => mapReceipt(row, uid));
     const earnings = wallet
       ? (await readRows(fetchImpl, tableUrl(supaUrl, "lm_agent_earnings", {
         wallet_address: `eq.${wallet}`,

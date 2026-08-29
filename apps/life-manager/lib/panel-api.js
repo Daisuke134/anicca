@@ -15,7 +15,7 @@ const { paymentLink } = require("./payment-link.js");
 const { isHelperBlock } = require("./wake-filter.js");
 const { projectMoneyPrinter } = require("./money-printer-projection.js");
 const { answerHumanTask } = require("./money-printer-human-task.js");
-const { createOpportunity, createSupabaseOpportunityStore } = require("./money-printer-opportunity.js");
+const { createOpportunity } = require("./money-printer-opportunity.js");
 
 const ENDPOINTS = new Set(["money-printer", "timeline", "scores", "ledger", "gates", "settings"]);
 const HUMAN_TASK_NEXT_ENDPOINT = "money-printer/human-task/next";
@@ -347,11 +347,7 @@ async function createMoneyPrinterOpportunity(scope, body, opts) {
       valueMinor: body.value_minor,
       currency: body.currency,
       observedAt: new Date(opts.nowMs == null ? Date.now() : opts.nowMs).toISOString(),
-    }, opts.opportunityStore || createSupabaseOpportunityStore({
-      supaUrl: opts.supaUrl,
-      supaKey: opts.supaKey,
-      fetchImpl: opts.fetchImpl,
-    }));
+    }, opts.opportunityStore || opts.runtimeStore);
   } catch (error) {
     if (error && /^money printer opportunity (?:input|source URL|title|goal statement|value|currency|observed time) invalid$/.test(error.message)) {
       throw workroomError("invalid_opportunity", 400);
@@ -659,20 +655,6 @@ function createSupabaseCommandStore(opts = {}) {
     async readUser(scope) { return (await rows("lm_users", new URLSearchParams({ uid: `eq.${scope.uid}`, telegram_chat_id: `eq.${scope.chatId}`, select: "uid,name,telegram_chat_id,phone,call_language,wake_policy,calendar_provider,gmail_account_id,payout_destination", limit: "1" })))[0] || null; },
     async readPreferences(scope) { return (await rows("lm_panel_preferences", new URLSearchParams({ uid: `eq.${scope.uid}`, select: "call_enabled,notifications_enabled,daily_automation_enabled,delegation_enabled,call_time_zone", limit: "1" })))[0] || {}; },
     async readLocation(scope) { return (await rows("lm_user_locations", new URLSearchParams({ uid: `eq.${scope.uid}`, select: "observed_at,expires_at", limit: "1" })))[0] || null; },
-    async readNext(scope) { return (await rows("lm_human_tasks", new URLSearchParams({ uid: `eq.${scope.uid}`, status: "eq.open", select: "task_id,version,question,required_format,reason_code", order: "created_at.asc,task_id.asc", limit: "1" })))[0] || null; },
-    async answerOnce(answer) {
-      const response = await fetchImpl(`${base}/rest/v1/rpc/answer_lm_human_task`, {
-        method: "POST",
-        headers: { ...headers(opts.supaKey), "content-type": "application/json" },
-        body: JSON.stringify({ p_uid: answer.uid, p_task_id: answer.taskId, p_version: answer.version, p_answer_ref: answer.answerRef }),
-      });
-      if (!response.ok) {
-        if ([400, 409, 422].includes(response.status)) throw humanTaskError("human task answer conflict", 409);
-        throw humanTaskError("human_task_unavailable", 502);
-      }
-      const value = await jsonOr(response, []);
-      return Array.isArray(value) ? value[0] || null : value;
-    },
     async readReceipt(scope, key) { const row = (await rows("lm_panel_command_receipts", new URLSearchParams({ uid: `eq.${scope.uid}`, chat_id: `eq.${scope.chatId}`, idempotency_key: `eq.${key}`, select: "request_hash,status,result", limit: "1" })))[0]; return row ? { requestHash: row.request_hash, status: row.status, result: row.result } : null; },
     async claimReceipt(scope, key, value) { const response = await fetchImpl(`${base}/rest/v1/lm_panel_command_receipts`, { method: "POST", headers: { ...headers(opts.supaKey), "content-type": "application/json", Prefer: "return=minimal" }, body: JSON.stringify({ uid: scope.uid, chat_id: scope.chatId, idempotency_key: key, request_hash: value.requestHash, command_type: value.commandType, status: value.status }) }); if (response.status === 409) return false; if (!response.ok) throw new Error("panel_receipt_failed"); return true; },
     async finishReceipt(scope, key, value) { const response = await fetchImpl(`${base}/rest/v1/lm_panel_command_receipts?uid=eq.${encodeURIComponent(scope.uid)}&chat_id=eq.${encodeURIComponent(scope.chatId)}&idempotency_key=eq.${encodeURIComponent(key)}`, { method: "PATCH", headers: { ...headers(opts.supaKey), "content-type": "application/json", Prefer: "return=minimal" }, body: JSON.stringify({ status: value.status, result: value.result, updated_at: new Date().toISOString() }) }); if (!response.ok) throw new Error("panel_receipt_failed"); },
@@ -876,7 +858,7 @@ async function handlePanelApiRequest(req, res, opts = {}) {
     return;
   }
   if (humanTaskNextEndpoint || humanTaskAnswerEndpoint) {
-    const humanTaskStore = opts.humanTaskStore || commandStore;
+    const humanTaskStore = opts.humanTaskStore || opts.runtimeStore;
     if (humanTaskNextEndpoint) {
       if (req.method !== "GET") { sendJson(res, 405, { error: "method_not_allowed" }, { Allow: "GET" }); return; }
       try {

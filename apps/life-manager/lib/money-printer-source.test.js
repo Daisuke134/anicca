@@ -18,50 +18,33 @@ function rowsFor(url) {
   if (parsed.pathname.endsWith("/lm_users")) {
     return [{ uid: TENANT, agent_wallet_address: "0x1111111111111111111111111111111111111111" }];
   }
-  if (parsed.pathname.endsWith("/lm_money_opportunities")) {
-    return [{
-      uid: TENANT,
-      opportunity_id: "a".repeat(64),
-      source_url: "https://public.example/opportunity",
-      title: "Public opportunity",
-      value_minor: "50000",
-      currency: "JPY",
-      status: "DISCOVERED",
-      goal_ref: `intent-entry://${TENANT}/a${"a".repeat(63)}`,
-      observed_at: NOW,
-      goal_statement: "must not enter projection input",
-    }];
-  }
-  if (parsed.pathname.endsWith("/lm_runtime_jobs")) {
-    return [{ tenant_id: TENANT, job_id: "goal:a", status: "queued", created_at: NOW, updated_at: NOW, lease_owner: "must-not-leak" }];
-  }
-  if (parsed.pathname.endsWith("/lm_human_tasks")) {
-    return [{ uid: TENANT, task_id: "b".repeat(64), status: "open", created_at: NOW, updated_at: NOW, answer_ref: "must-not-leak" }];
-  }
-  if (parsed.pathname.endsWith("/lm_runtime_job_receipts")) {
-    return [{
-      tenant_id: TENANT,
-      job_id: "goal:a",
-      attempt: 1,
-      outcome: "completed",
-      created_at: NOW,
-      receipt: {
-        record_type: "application_receipt",
-        application_external_id: "application-public-1",
-        provider_secret: "private-provider-state",
-      },
-    }];
-  }
   if (parsed.pathname.endsWith("/lm_agent_earnings")) {
     return [{ entry_key: "earning-1", kind: "financial_external_income", amount_minor: "1200", currency: "JPY", occurred_at: NOW }];
   }
   throw new Error(`unexpected source URL ${url}`);
 }
 
+function runtimeSnapshot() {
+  return {
+    opportunities: [{
+      uid: TENANT, opportunity_id: "a".repeat(64), source_url: "https://public.example/opportunity",
+      title: "Public opportunity", value_minor: "50000", currency: "JPY", status: "DISCOVERED",
+      goal_ref: `intent-entry://${TENANT}/a${"a".repeat(63)}`, observed_at: NOW, goal_statement: "must not enter projection input",
+    }],
+    runtimeJobs: [{ tenant_id: TENANT, job_id: "goal:a", status: "queued", created_at: NOW, updated_at: NOW, lease_owner: "must-not-leak" }],
+    humanTasks: [{ uid: TENANT, task_id: "b".repeat(64), status: "open", created_at: NOW, updated_at: NOW, answer_ref: "must-not-leak" }],
+    receipts: [{
+      tenant_id: TENANT, job_id: "goal:a", attempt: 1, outcome: "completed", created_at: NOW,
+      receipt: { record_type: "application_receipt", application_external_id: "application-public-1", provider_secret: "private-provider-state" },
+    }],
+  };
+}
+
 test("source reads tenant-scoped live rows and returns only projection-safe fields", async () => {
   const calls = [];
   const source = createMoneyPrinterSource({
     ...SUPA,
+    runtimeStore: { readRuntimeSnapshot: async (uid) => { assert.equal(uid, TENANT); return runtimeSnapshot(); } },
     fetchImpl: async (url, init) => {
       calls.push({ url, init });
       return response(rowsFor(url));
@@ -82,11 +65,13 @@ test("source reads tenant-scoped live rows and returns only projection-safe fiel
   for (const call of calls) {
     assert.match(call.url, /(?:uid|tenant_id|wallet_address)=eq\./);
     assert.equal(call.init.headers.Authorization, "Bearer service-secret");
+    assert.doesNotMatch(call.url, /lm_(?:money_opportunities|runtime_jobs|human_tasks|runtime_job_receipts)/);
   }
 
   let guestEarningsReads = 0;
   const guestSource = createMoneyPrinterSource({
     ...SUPA,
+    runtimeStore: { readRuntimeSnapshot: async () => runtimeSnapshot() },
     fetchImpl: async (url, init) => {
       const parsed = new URL(url);
       if (parsed.pathname.endsWith("/lm_users")) return response([{ uid: TENANT, agent_wallet_address: null }]);
@@ -102,20 +87,18 @@ test("source reads tenant-scoped live rows and returns only projection-safe fiel
 test("source refuses missing rows, malformed responses, and foreign-tenant rows", async () => {
   const source = createMoneyPrinterSource({
     ...SUPA,
+    runtimeStore: { readRuntimeSnapshot: async () => ({ ...runtimeSnapshot(), opportunities: [{}] }) },
     fetchImpl: async (url) => {
-      const rows = rowsFor(url);
-      if (new URL(url).pathname.endsWith("/lm_money_opportunities")) return response({});
-      return response(rows);
+      return response(rowsFor(url));
     },
   });
-  await assert.rejects(source({ uid: TENANT }), /opportun|exactly|empty|unavailable/i);
+  await assert.rejects(source({ uid: TENANT }), /opportun|tenant|unavailable/i);
 
   const foreign = createMoneyPrinterSource({
     ...SUPA,
+    runtimeStore: { readRuntimeSnapshot: async () => ({ ...runtimeSnapshot(), runtimeJobs: [{ ...runtimeSnapshot().runtimeJobs[0], tenant_id: "tenant-b" }] }) },
     fetchImpl: async (url) => {
-      const rows = rowsFor(url);
-      if (new URL(url).pathname.endsWith("/lm_runtime_jobs")) rows[0].tenant_id = "tenant-b";
-      return response(rows);
+      return response(rowsFor(url));
     },
   });
   await assert.rejects(foreign({ uid: TENANT }), /tenant/i);
