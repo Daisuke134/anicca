@@ -490,6 +490,7 @@ function createWorkerHandlers(env, capabilities, dependencies = {}) {
       dataDir: path.resolve(requiredEnv(env, "LM_DATA_DIR")),
       repoRoot: dependencies.repoRoot || path.resolve(__dirname, "../../.."),
       fetchImpl: dependencies.fetchImpl || globalThis.fetch,
+      geminiKey: env.GEMINI_API_KEY,
       runAgentRunner: dependencies.runAgentRunner || dependencies.runLocalAgentRunner,
       readOpportunity: dependencies.readOpportunity,
       updateOpportunity: dependencies.updateOpportunity,

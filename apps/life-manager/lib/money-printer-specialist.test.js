@@ -167,3 +167,96 @@ test("specialist rejects scope, malformed model output, and failed opportunity r
     /readback|status/i,
   );
 });
+
+test("cloud qualification grounds research, then extracts a completed qualification receipt", async () => {
+  const calls = [];
+  const updates = [];
+  const geminiKey = "gemini-secret-key";
+  const specialist = createMoneyPrinterSpecialist({
+    geminiKey,
+    dataDir: fs.mkdtempSync(path.join(os.tmpdir(), "lm-money-specialist-cloud-")),
+    repoRoot: "/repo",
+    readOpportunity: async () => opportunity(),
+    updateOpportunity: async (_expected, status) => {
+      updates.push(status);
+      return opportunity({ status });
+    },
+    fetchImpl: async (url, init = {}) => {
+      calls.push({ url: String(url), init });
+      assert.equal(init.headers["x-goog-api-key"], geminiKey);
+      if (calls.length === 1) {
+        return response({ candidates: [{ content: { parts: [{ text: "Grounded public research." }] } }] });
+      }
+      return response({ candidates: [{ content: { parts: [{ text: '{"status":"completed"}' }] } }] });
+    },
+  });
+
+  const result = await specialist(expected());
+
+  assert.equal(result.status, "completed");
+  assert.match(result.execution_id, /^gemini-qualification-[a-f0-9]{64}$/);
+  assert.deepEqual(updates, ["QUALIFIED"]);
+  assert.equal(calls.length, 2);
+  assert.match(calls[0].url, /gemini-2\.5-flash:generateContent$/);
+  assert.deepEqual(JSON.parse(calls[0].init.body).tools, [{ google_search: {} }]);
+  const extraction = JSON.parse(calls[1].init.body);
+  assert.equal(extraction.generationConfig.responseMimeType, "application/json");
+  assert.equal(extraction.generationConfig.responseSchema.properties.status.const, "completed");
+  assert.match(extraction.contents[0].parts[0].text, /Grounded public research/);
+  assert.doesNotMatch(JSON.stringify(result), /Grounded public research|private_state|gemini-secret-key/);
+});
+
+test("cloud qualification rejects empty or failed Gemini responses without updating status", async () => {
+  for (const mode of ["empty", "transport"]) {
+    let calls = 0;
+    let updates = 0;
+    const specialist = createMoneyPrinterSpecialist({
+      geminiKey: "gemini-secret-key",
+      dataDir: fs.mkdtempSync(path.join(os.tmpdir(), `lm-money-specialist-cloud-${mode}-`)),
+      repoRoot: "/repo",
+      readOpportunity: async () => opportunity(),
+      updateOpportunity: async () => { updates += 1; return opportunity({ status: "QUALIFIED" }); },
+      fetchImpl: async () => {
+        calls += 1;
+        if (mode === "transport") throw new Error("transport body must stay private");
+        return response({ candidates: [{ content: { parts: [{ text: "" }] } }] });
+      },
+    });
+    await assert.rejects(specialist(expected()), /cloud|qualification|unavailable/i);
+    assert.equal(calls, 1);
+    assert.equal(updates, 0);
+  }
+});
+
+test("explicit runner wins over cloud and injected local runner remains the fallback", async () => {
+  let explicitCalls = 0;
+  const explicit = createMoneyPrinterSpecialist({
+    geminiKey: "gemini-secret-key",
+    dataDir: fs.mkdtempSync(path.join(os.tmpdir(), "lm-money-specialist-explicit-")),
+    repoRoot: "/repo",
+    readOpportunity: async () => opportunity(),
+    updateOpportunity: async (_expected, status) => opportunity({ status }),
+    runAgentRunner: async () => {
+      explicitCalls += 1;
+      return { value: { status: "completed", execution_id: "execution-runAgentRunner" } };
+    },
+    fetchImpl: async () => { throw new Error("cloud runner must not be selected"); },
+  });
+  assert.equal((await explicit(expected())).execution_id, "execution-runAgentRunner");
+  assert.equal(explicitCalls, 1);
+
+  let localCalls = 0;
+  const local = createMoneyPrinterSpecialist({
+    dataDir: fs.mkdtempSync(path.join(os.tmpdir(), "lm-money-specialist-local-")),
+    repoRoot: "/repo",
+    readOpportunity: async () => opportunity(),
+    updateOpportunity: async (_expected, status) => opportunity({ status }),
+    runLocalAgentRunner: async () => {
+      localCalls += 1;
+      return { value: { status: "completed", execution_id: "execution-runLocalAgentRunner" } };
+    },
+    fetchImpl: async () => { throw new Error("cloud runner must not be selected"); },
+  });
+  assert.equal((await local(expected())).execution_id, "execution-runLocalAgentRunner");
+  assert.equal(localCalls, 1);
+});
