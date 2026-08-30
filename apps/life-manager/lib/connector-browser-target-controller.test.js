@@ -10,6 +10,8 @@ function fixture() {
   const baseline = { targetId: "BASELINE", async evaluate() { return 1; } };
   const owned = { targetId: "OWNED123", async evaluate() { calls.push(["evaluate", "OWNED123"]); return 1; } };
   const pages = [baseline];
+  const liveTargetIds = new Set(["BASELINE"]);
+  let targetInfosOverride;
   const context = {
     pages() { calls.push(["pages"]); return [...pages]; },
     async newCDPSession(page) {
@@ -32,16 +34,33 @@ function fixture() {
           calls.push(["browser-send", method, params]);
           if (method === "Target.createTarget") {
             pages.push(owned);
+            liveTargetIds.add("OWNED123");
             return { targetId: "OWNED123" };
           }
-          if (method === "Target.closeTarget") return { success: true };
+          if (method === "Target.getTargets") {
+            return {
+              targetInfos: targetInfosOverride === undefined
+                ? [...liveTargetIds].map((targetId) => ({ targetId })) : targetInfosOverride,
+            };
+          }
+          if (method === "Target.closeTarget") {
+            liveTargetIds.delete(params.targetId);
+            return { success: true };
+          }
           throw new Error(`unexpected ${method}`);
         },
         async detach() { calls.push(["browser-detach"]); },
       };
     },
   };
-  return { baseline, browser, calls, owned };
+  return {
+    baseline,
+    browser,
+    calls,
+    owned,
+    removeOwnedTarget() { liveTargetIds.delete("OWNED123"); },
+    setTargetInventory(value) { targetInfosOverride = value; },
+  };
 }
 
 test("creates exactly one default-context target and binds only its exact Playwright page", async () => {
@@ -73,6 +92,35 @@ test("probes and closes only the exact Connector target", async () => {
     [["browser-send", "Target.closeTarget", { targetId: "OWNED123" }]],
   );
 });
+
+test("closing an already-disappeared exact target is idempotent", async () => {
+  const fx = fixture();
+  const controller = createConnectorBrowserTargetController({ browser: fx.browser });
+  const target = await controller.create();
+  fx.removeOwnedTarget();
+
+  assert.equal(await controller.close(target.target_id), true);
+  assert.deepEqual(
+    fx.calls.filter(([name, method]) => name === "browser-send" && method === "Target.closeTarget"),
+    [],
+  );
+});
+
+test("closing with a malformed target inventory rejects before Target.closeTarget", async () => {
+  const fx = fixture();
+  const controller = createConnectorBrowserTargetController({ browser: fx.browser });
+  const target = await controller.create();
+
+  for (const targetInfos of [[null], [{}], [{ targetId: "invalid target id" }]]) {
+    fx.setTargetInventory(targetInfos);
+    await assert.rejects(() => controller.close(target.target_id), /Connector target ID invalid/);
+  }
+  assert.deepEqual(
+    fx.calls.filter(([name, method]) => name === "browser-send" && method === "Target.closeTarget"),
+    [],
+  );
+});
+
 test("refuses another port, malformed target IDs, and ambiguous browser contexts", async () => {
   const fx = fixture();
   assert.throws(

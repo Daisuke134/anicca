@@ -1184,6 +1184,7 @@ test("production browser rail owns exactly one :9222 target without closing the 
     async probe() { return true; },
   };
   const owner = {
+    async reapStale(input) { calls.push(["reap-stale", input]); return { reaped_target_ids: [], retained_target_ids: [] }; },
     async claimExact(input) {
       calls.push(["claim", input]);
       return Object.freeze({
@@ -1214,6 +1215,7 @@ test("production browser rail owns exactly one :9222 target without closing the 
       },
       createTargetOwnership: ({ ownerToken }) => {
         assert.equal(ownerToken, "owner-token-production-rail");
+        calls.push(["ownership"]);
         return owner;
       },
       makeSessionId: () => "session-production-rail-1",
@@ -1226,12 +1228,53 @@ test("production browser rail owns exactly one :9222 target without closing the 
     assert.equal(owned.page, page);
     assert.equal(owned.target_id, "OWNEDTARGET1");
     assert.equal(calls.filter(([name]) => name === "connect").length, 1);
+    assert.equal(calls.filter(([name]) => name === "reap-stale").length, 1);
     assert.equal(calls.filter(([name]) => name === "target-create").length, 1);
     assert.equal(calls.filter(([name]) => name === "claim").length, 1);
     assert.equal(calls.filter(([name]) => name === "goto").length, 1);
     assert.equal(calls.filter(([name]) => name === "release").length, 1);
     assert.equal(calls.filter(([name]) => name === "target-close").length, 0);
     assert.equal(calls.filter(([name]) => name === "browser-close").length, 0);
+    const ownershipIndex = calls.findIndex(([name]) => name === "ownership");
+    const reapIndex = calls.findIndex(([name]) => name === "reap-stale");
+    const createIndex = calls.findIndex(([name]) => name === "target-create");
+    assert.ok(ownershipIndex < reapIndex && reapIndex < createIndex);
+    assert.deepEqual(calls[reapIndex], ["reap-stale", { maxIdleMs: 660_000 }]);
+  } finally {
+    fs.rmSync(stateDir, { recursive: true, force: true });
+  }
+});
+
+test("production browser rail does not create a target until stale reap succeeds", async () => {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-production-rail-reap-failure-"));
+  const calls = [];
+  const page = { async goto() {} };
+  const controller = {
+    async create() {
+      calls.push(["target-create"]);
+      return { target_id: "OWNEDTARGET2", page_websocket: "ws://127.0.0.1:9222/devtools/page/OWNEDTARGET2", page };
+    },
+    async close(targetId) { calls.push(["target-close", targetId]); return true; },
+  };
+  const owner = {
+    async reapStale() { calls.push(["reap-stale"]); throw new Error("stale reap failed"); },
+    async claimExact() { throw new Error("claim must not run"); },
+    async probe() { throw new Error("probe must not run"); },
+    async heartbeat() { throw new Error("heartbeat must not run"); },
+    async release() { throw new Error("release must not run"); },
+  };
+
+  try {
+    const rail = createProductionBrowserRail({
+      stateDir,
+      connectOverCDP: async () => { calls.push(["connect"]); return {}; },
+      createTargetController: () => controller,
+      createTargetOwnership: () => { calls.push(["ownership"]); return owner; },
+      makeSessionId: () => "session-production-rail-reap-failure",
+    });
+
+    await assert.rejects(() => rail.open({ ownerToken: "owner-token-production-rail-reap-failure" }), /stale reap failed/);
+    assert.deepEqual(calls.map(([name]) => name), ["connect", "ownership", "reap-stale"]);
   } finally {
     fs.rmSync(stateDir, { recursive: true, force: true });
   }
