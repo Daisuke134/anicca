@@ -16,6 +16,7 @@ AUTO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PUB="$AUTO/vendor/capafy-publisher"
 LIFE_MANAGER_STATE_HOME="${LIFE_MANAGER_STATE_HOME:-$HOME/.local/state/life-manager}"
 CAPAFY_PUBLISH_HOME="${CAPAFY_PUBLISH_HOME:-$LIFE_MANAGER_STATE_HOME/runtime/capafy-publisher-home}"
+CAPAFY_PUBLISHER_STATE_HOME="${CAPAFY_PUBLISHER_STATE_HOME:-$LIFE_MANAGER_STATE_HOME/runtime/capafy-publisher}"
 VENV="${CAPAFY_BROWSER_PYTHON:-python3}"
 
 # Keep configure/ship bound to the selected agent even when a previous retry
@@ -24,7 +25,7 @@ VENV="${CAPAFY_BROWSER_PYTHON:-python3}"
 # The selected remote agent is the isolation boundary.  Do not preserve an
 # inherited work directory: a launcher can carry one over from a different
 # candidate, making configure/ship silently operate on that other manifest.
-export CAPAFY_PUBLISH_WORK_DIR="$LIFE_MANAGER_STATE_HOME/runtime/capafy-publisher-work/agents/$ID"
+export CAPAFY_PUBLISH_WORK_DIR="$CAPAFY_PUBLISHER_STATE_HOME/work/agents/$ID"
 
 # Direct recovery and launchd must resolve credentials from the same repo-external
 # SSOT. Load them before the key-health gate; values stay process-local.
@@ -35,6 +36,7 @@ for ENV_FILE in "$LIFE_MANAGER_STATE_HOME/.env"; do
 done
 
 export HOME="$CAPAFY_PUBLISH_HOME"
+export CAPAFY_PUBLISHER_STATE_HOME
 cd "$PUB" || { echo "❌ cd PUB"; exit 1; }
 
 step(){ echo ""; echo "━━━ $* ━━━"; }
@@ -70,10 +72,19 @@ if [ "$(rstat isConfirmedConfigKeys)" = "1" ]; then
   echo "isConfirmedConfigKeys=1 already ✓ — skip configure+CP2"
 else
   step "[3] configure (deep-scan, empty findings)"
-  chmod -R u+w "$PUB/.temp/staging" 2>/dev/null; rm -rf "$PUB/.temp/staging" 2>/dev/null
+  if [ -e "$CAPAFY_PUBLISH_WORK_DIR/staging" ]; then
+    chmod -R u+w "$CAPAFY_PUBLISH_WORK_DIR/staging" 2>/dev/null || true
+    rm -rf "$CAPAFY_PUBLISH_WORK_DIR/staging" 2>/dev/null \
+      || die "could not remove prior staging: $CAPAFY_PUBLISH_WORK_DIR/staging"
+  fi
   python3 packager.py publish-configure --agent-id "$ID" --deep-scan >/dev/null 2>&1
-  python3 -c "import json;json.dump({'generic':[],'env_var':[]},open('.temp/dsf.json','w'))"
-  python3 packager.py publish-configure --agent-id "$ID" --deep-scan-findings-file "$PUB/.temp/dsf.json" >/dev/null 2>&1
+  DSF="$CAPAFY_PUBLISH_WORK_DIR/dsf.json"
+  mkdir -p "$CAPAFY_PUBLISH_WORK_DIR"
+  python3 - "$DSF" <<'PY'
+import json, sys
+json.dump({'generic': [], 'env_var': []}, open(sys.argv[1], 'w'))
+PY
+  python3 packager.py publish-configure --agent-id "$ID" --deep-scan-findings-file "$DSF" >/dev/null 2>&1
   echo "configured"
 
   step "[4] CP2 key host (drive_checkpoint2.py)"

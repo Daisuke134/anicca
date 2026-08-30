@@ -31,17 +31,18 @@ AUTO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PUB="$AUTO/vendor/capafy-publisher"
 LIFE_MANAGER_STATE_HOME="${LIFE_MANAGER_STATE_HOME:-$HOME/.local/state/life-manager}"
 VENV="${CAPAFY_BROWSER_PYTHON:-python3}"
-# OpenClaw resolves provider config from $HOME/.openclaw/openclaw.json, not from
-# runtime_dir. Give the publisher an isolated HOME so it cannot package the
+# OpenClaw resolves provider config from the isolated publisher HOME's
+# .openclaw/openclaw.json, not from runtime_dir. Give the publisher an isolated HOME so it cannot package the
 # operator's live OpenClaw providers. Canonical skill source remains in this repo.
 CAPAFY_PUBLISH_HOME="${CAPAFY_PUBLISH_HOME:-$LIFE_MANAGER_STATE_HOME/runtime/capafy-publisher-home}"
+CAPAFY_PUBLISHER_STATE_HOME="${CAPAFY_PUBLISHER_STATE_HOME:-$LIFE_MANAGER_STATE_HOME/runtime/capafy-publisher}"
 WS="${CAPAFY_WORKSPACE:-$CAPAFY_PUBLISH_HOME/.openclaw/workspace}"
 SKILL_NAME="$(basename "$SKILL_DIR")"
 SEL_FILE="$LIFE_MANAGER_STATE_HOME/state/capafy-autopublish/sel_one.json"
 
 # launchd and direct recovery runs must use the same private credential SSOT.
 # Load names into the process only; never copy values into the repo or output.
-for ENV_FILE in "$LIFE_MANAGER_STATE_HOME/.env" "$HOME/.openclaw/.env"; do
+for ENV_FILE in "$LIFE_MANAGER_STATE_HOME/.env"; do
   if [ -f "$ENV_FILE" ]; then
     set -a; . "$ENV_FILE" 2>/dev/null; set +a
   fi
@@ -63,6 +64,10 @@ step "[0b] KEY-HEALTH GATE (fail-closed) — never publish into an under-funded 
 
 step "clean-WS copy"
 mkdir -p "$WS/skills"
+# A clean workspace can contain a previous release-derived copy whose files
+# inherited the release's read-only mode. It is runtime state, so make just
+# that disposable copy writable before replacing it.
+chmod -R u+w "$WS/skills/$SKILL_NAME" 2>/dev/null || true
 rm -rf "$WS/skills/$SKILL_NAME" 2>/dev/null
 cp -R "$SKILL_DIR" "$WS/skills/$SKILL_NAME" || die "clean-WS copy failed"
 
@@ -85,6 +90,7 @@ PY
 
 step "[1] publish-init"
 export HOME="$CAPAFY_PUBLISH_HOME"
+export CAPAFY_PUBLISHER_STATE_HOME
 cd "$PUB" || die "cd PUB"
 TITLE="$(grep -A1 '^## Title' "$LISTING" | tail -1)"
 # write selections via python (heredoc redirects can be blocked by the sandbox)
@@ -133,9 +139,9 @@ if [ -n "$ID" ]; then
   # publish-init so this retry cannot reset or ship a previous agent's state.
   # A scheduler/agent-runner may inherit this from an unrelated prior attempt.
   # Never let that ambient value redirect a resume into another agent's manifest.
-  export CAPAFY_PUBLISH_WORK_DIR="$PUB/.temp/agents/$ID"
+  export CAPAFY_PUBLISH_WORK_DIR="$CAPAFY_PUBLISHER_STATE_HOME/work/agents/$ID"
   # BUG FIX 2026-07-17: this branch used to skip publish-init entirely, leaving the
-  # LOCAL publish work-state (.temp/publish-work-state.json) pointed at whatever
+  # LOCAL publish work-state manifest pointed at whatever
   # agent_id a PRIOR run last touched. publish-ship then failed closed with
   # "agent_id does not match local publish work-state" — but publish_finish.sh's ship
   # fallback (now also fixed) treated that failure as benign and resubmitted STALE
@@ -153,23 +159,38 @@ except Exception: print('')")"
     || die "publish-init rebound unexpected agent_id=$REBOUND_ID (selected $ID): $REBIND_OUT"
   echo "local publish work-state rebound and verified for agent_id=$ID"
 else
-  ID="$(python3 packager.py publish-init --env openclaw --runtime-dir "$WS" --skill-dir "$WS/skills/$SKILL_NAME" --selections-file "$SEL_FILE" 2>&1 | python3 -c "import json,sys
+  BOOTSTRAP_ROOT="$CAPAFY_PUBLISHER_STATE_HOME/work/bootstrap"
+  mkdir -p "$BOOTSTRAP_ROOT"
+  BOOTSTRAP_WORK_DIR="$(mktemp -d "$BOOTSTRAP_ROOT/capafy.XXXXXX")"
+  export CAPAFY_PUBLISH_WORK_DIR="$BOOTSTRAP_WORK_DIR"
+  INIT_OUT="$(python3 packager.py publish-init --env openclaw --runtime-dir "$WS" --skill-dir "$WS/skills/$SKILL_NAME" --selections-file "$SEL_FILE" 2>&1)" \
+    || die "publish-init failed: $INIT_OUT"
+  ID="$(printf '%s' "$INIT_OUT" | python3 -c "import json,sys
 try: print(json.loads(sys.stdin.read()).get('agent_id',''))
 except: print('')")"
   [ -n "$ID" ] || die "publish-init returned no agent_id (dup title? cap full = 5 unlisted max? see publish-list)"
+  AGENT_WORK_DIR="$CAPAFY_PUBLISHER_STATE_HOME/work/agents/$ID"
+  mkdir -p "$(dirname "$AGENT_WORK_DIR")"
+  [ ! -e "$AGENT_WORK_DIR" ] || die "publisher work-state already exists for new agent_id=$ID"
+  mv "$BOOTSTRAP_WORK_DIR" "$AGENT_WORK_DIR" \
+    || die "could not bind publish work-state to agent_id=$ID"
+  export CAPAFY_PUBLISH_WORK_DIR="$AGENT_WORK_DIR"
 fi
 
 RAW="$(python3 packager.py publish-refresh-url --agent-id "$ID" --step init 2>/dev/null)"
 TOK="$(echo "$RAW" | python3 -c "import json,sys;print(json.load(sys.stdin).get('review_url',''))" | grep -oE '[0-9]{15,}' | head -1)"
 EDIT="https://capafy.ai/developer/createAgent?source=temp-link&token=${TOK}&page=edit"
-python3 "$AUTO/scripts/build_config.py" "$LISTING" "$ICON" "$EDIT" "$PUB/.temp/cfg_one.json" >/dev/null 2>&1 || die "build_config failed"
+CFG_ONE="$CAPAFY_PUBLISHER_STATE_HOME/cfg_one.json"
+mkdir -p "$CAPAFY_PUBLISHER_STATE_HOME"
+python3 "$AUTO/scripts/build_config.py" "$LISTING" "$ICON" "$EDIT" "$CFG_ONE" >/dev/null 2>&1 || die "build_config failed"
 
 step "PREPARE DONE — hand off to agentic CP1"
 echo "AGENT_ID=$ID"
 echo "EDIT_URL=$EDIT"
+echo "CONFIG_PATH=$CFG_ONE"
 echo ""
 echo "TARGET PRICING (drive each plan card to these EXACT values on the 価格設定 tab):"
-python3 - "$PUB/.temp/cfg_one.json" <<'PY'
+python3 - "$CFG_ONE" <<'PY'
 import json,sys
 c=json.load(open(sys.argv[1]))
 for p in c["plans"]:

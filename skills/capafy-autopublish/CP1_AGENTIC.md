@@ -35,7 +35,7 @@ A green price tab alone is NOT done — you must still 提出を確認 and confi
 ## The card has THREE tabs (top): verify each is green ✓
 | tab | usually | what to do |
 |---|---|---|
-| 基本情報 | may still be red after init | fill every value from `.temp/cfg_one.json`: title, short/detailed descriptions, tags, category, icon, privacy URL, support email |
+| 基本情報 | may still be red after init | fill every value from `<CONFIG_PATH>` (the path emitted by `publish_prepare.sh`): title, short/detailed descriptions, tags, category, icon, privacy URL, support email |
 | Skill / プラグイン | auto-confirmed ✓ green (your skill shows 確認済み) | glance; leave |
 | 価格設定 | often **red ✗** — the real work | fix the plan cards until GREEN |
 
@@ -56,7 +56,7 @@ A green price tab alone is NOT done — you must still 提出を確認 and confi
    default** (Enable Free Trial reveals extra required fields). Only set trials if the
    target explicitly asks and the tab stays green after.
 6. Continue below the plan cards and fill the remaining required card fields from
-   `.temp/cfg_one.json`: model, estimated runtime, **test input**, **welcomeMessage**,
+   `<CONFIG_PATH>`: model, estimated runtime, **test input**, **welcomeMessage**,
    and AI provider. Leave **other third-party** data sharing unchecked unless the
    listing truly uses an additional service; when checked, its service name and purpose
    become required. Check the final **DPA** agreement checkbox.
