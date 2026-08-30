@@ -667,21 +667,15 @@ def _official_message_rows(root: Path, talkroom_id: str) -> list[dict[str, Any]]
     path = root / "source" / "talkroom" / "messages.jsonl"
     if path.is_symlink() or not _regular_file(path):
         raise Failure("paid_work_decision")
-    for attempt in range(3):
-        try:
-            lock_path = path.with_suffix(path.suffix + ".lock")
-            with lock_path.open("a+b") as lock:
-                fcntl.flock(lock.fileno(), fcntl.LOCK_SH)
-                content = path.read_text(encoding="utf-8")
-            lines = [line.strip() for line in content.splitlines() if line.strip()]
-            rows = [json.loads(line) for line in lines]
-            break
-        except json.JSONDecodeError as error:
-            if attempt == 2:
-                raise Failure("paid_work_decision") from error
-            time.sleep(0.05)
-        except OSError as error:
-            raise Failure("paid_work_decision") from error
+    try:
+        lock_path = path.with_suffix(path.suffix + ".lock")
+        with lock_path.open("a+b") as lock:
+            fcntl.flock(lock.fileno(), fcntl.LOCK_SH)
+            content = path.read_text(encoding="utf-8")
+        lines = [line.strip() for line in content.split("\n") if line.strip()]
+        rows = [json.loads(line) for line in lines]
+    except (OSError, json.JSONDecodeError) as error:
+        raise Failure("paid_work_decision") from error
     if not rows or any(not isinstance(row, dict) for row in rows):
         raise Failure("paid_work_decision")
     state = _load(root / "state.json")
