@@ -100,7 +100,7 @@ test("JA main TikTok lane is the exact recovered Larry sunset carousel", () => {
   }), /lane identity/i);
 });
 
-test("EN slideshow TikTok lane accepts exact Postiz API photo proof without inventing a URL", () => {
+test("EN slideshow TikTok lane accepts exact Postiz API photo proof without inventing a URL", async () => {
   const lane = EN_SLIDESHOW_TIKTOK_LANE;
   const value = buildMarketingNativeCarouselPublicationJob({
     tenantId: "dais-local", productId: lane.productId, formatId: lane.formatId, form: lane.form,
@@ -123,7 +123,7 @@ test("EN slideshow TikTok lane accepts exact Postiz API photo proof without inve
     provider_reconciled: true, public_url: "https://www.tiktok.com/@anicca_slideshow/video/7777777777777777777",
     published_at: "2026-08-26T06:01:00.000Z",
   };
-  assert.equal(verifyMarketingNativeCarouselPublicationReceipt(receipt), true);
+  assert.equal(verifyMarketingNativeCarouselPublicationReceipt(receipt), false);
   assert.equal(verifyMarketingNativeCarouselPublicationReceipt({ ...receipt, public_url: "https://www.tiktok.com/@wrong/video/7777777777777777777" }), false);
   const apiReceipt = {
     ...receipt,
@@ -139,6 +139,24 @@ test("EN slideshow TikTok lane accepts exact Postiz API photo proof without inve
   assert.equal(verifyMarketingNativeCarouselPublicationReceipt({ ...apiReceipt, provider_state: "QUEUE" }), false);
   assert.equal(verifyMarketingNativeCarouselPublicationReceipt({ ...apiReceipt, provider_content_sha256: "f".repeat(64) }), false);
   assert.equal(verifyMarketingNativeCarouselPublicationReceipt({ ...apiReceipt, provider_release_id: "p_pub_url~garbage" }), false);
+
+  const objectRoot = path.join(os.homedir(), ".local/state/life-manager/objects/sha256");
+  const ledgerPath = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "lm-tiktok-direct-reject-")), "distribution.jsonl");
+  await assert.rejects(
+    executeMarketingNativeCarouselPublicationJob(value, {
+      objectStore: { resolve: (ref) => path.join(objectRoot, ref.slice(-64)) },
+      secretProvider: { get: async () => "provider-token" },
+      ledgerPath,
+      runDistribution: async () => ({
+        state: "PUBLISHED",
+        reconciled: true,
+        post_id: "postiz-tiktok-direct-1",
+        post_url: "https://www.tiktok.com/@anicca_slideshow/video/7777777777777777777",
+      }),
+      now: () => "2026-08-26T06:01:00.000Z",
+    }),
+    (error) => error && error.unknownEffect === true && /contract mismatch/i.test(error.message),
+  );
 });
 
 test("production carousel effects are scoped by exact schedule slot", () => {
@@ -171,7 +189,12 @@ test("EN slideshow TikTok exact pack executes through six ordered JPEGs only", a
   const result = await executeMarketingNativeCarouselPublicationJob(value, {
     objectStore: { resolve: (ref) => path.join(objectRoot, ref.slice(-64)) },
     secretProvider: { get: async () => "postiz-secret" }, ledgerPath: ledger,
-    runDistribution: async (input) => { calls.push(input); return { state: "PUBLISHED", reconciled: true, post_id: "postiz-tiktok-carousel-1", post_url: "https://www.tiktok.com/@anicca_slideshow/video/7777777777777777777" }; },
+    runDistribution: async (input) => { calls.push(input); return {
+      state: "PUBLISHED", reconciled: true, post_id: "postiz-tiktok-carousel-1", post_url: null,
+      integration_id: lane.integrationId, content_sha256: lane.captionRef.slice(-64),
+      title: "PROCRASTINATION ISN'T LAZINESS.", posting_method: "DIRECT_POST",
+      release_id: "p_pub_url~v2.7679813128503363591",
+    }; },
     now: () => "2026-08-26T06:01:00.000Z",
   });
   assert.equal(calls.length, 1);

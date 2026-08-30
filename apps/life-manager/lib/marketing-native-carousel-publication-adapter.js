@@ -369,7 +369,7 @@ function provider(result, lane) {
   const postId = result && (result.provider_post_id || result.post_id);
   const url = result && (result.public_url || result.post_url);
   const reconciled = result && (result.reconciled === true || result.provider_reconciled === true);
-  const direct = directPostPattern(lane).test(String(url || ""));
+  const direct = lane.platform === "instagram" && directPostPattern(lane).test(String(url || ""));
   const photoProof = lane.platform === "tiktok" && url == null
     && result.integration_id === lane.integrationId && result.content_sha256 === lane.captionRef.slice(-64)
     && result.title === lane.title && result.posting_method === "DIRECT_POST"
@@ -402,7 +402,7 @@ function verifyMarketingNativeCarouselPublicationReceipt(receipt) {
   if (!receipt || typeof receipt !== "object" || Array.isArray(receipt) || receipt.schema_version !== 1 || receipt.kind !== "marketing_native_carousel_distribution" || receipt.status !== "published" || !ID.test(String(receipt.creative_id || "")) || !HASH.test(String(receipt.pack_sha256 || "")) || !Array.isArray(receipt.media_sha256) || receipt.media_sha256.length !== SLIDE_COUNT || receipt.media_sha256.some((hash) => !HASH.test(String(hash || ""))) || !HASH.test(String(receipt.media_order_sha256 || "")) || receipt.media_order_sha256 !== mediaOrderHash(receipt.media_sha256) || !HASH.test(String(receipt.caption_sha256 || "")) || !PROVIDER_ID.test(String(receipt.provider_post_id || "")) || receipt.provider_reconciled !== true) return false;
   const lane = laneForReceipt(receipt);
   if (!lane || receipt.product_id !== lane.productId || receipt.format_id !== lane.formatId || receipt.form !== lane.form || receipt.locale !== lane.locale || receipt.account_id !== lane.accountId || receipt.integration_ref !== lane.integrationRef) return false;
-  const direct = directPostPattern(lane).test(String(receipt.public_url || ""));
+  const direct = lane.platform === "instagram" && directPostPattern(lane).test(String(receipt.public_url || ""));
   const photoApiProof = lane.platform === "tiktok"
     && receipt.public_url == null
     && receipt.provider_state === "PUBLISHED"
