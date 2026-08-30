@@ -3357,6 +3357,26 @@ test("KokuchPro harness uses the exact two-form entry control natively and requi
   assert.equal(fixture.clicks.length, 1); assert.equal(agentCalls, 0); assert.equal(readbacks, 2);
 });
 
+test("KokuchPro occurrence binding keeps an exact token and submits once", async () => {
+  const occurrence = "1901";
+  const candidate = kokuchProCandidate({
+    event_ref: `kokuchpro-event://event/${KOKUCHPRO_EVENT_KEY}/${occurrence}`,
+    canonical_url: `${KOKUCHPRO_CANONICAL_URL}${occurrence}/`,
+  });
+  const fixture = makeKokuchProEntryPage({ candidate });
+  const controls = await inspectPageControls({ provider: "kokuchpro", candidate, page: fixture.page });
+  const expectedToken = `kokuchpro_entry_${KOKUCHPRO_EVENT_KEY}_o_1gt`;
+  assert.equal(controls.length, 1);
+  assert.equal(controls[0].control, expectedToken);
+  assert.notEqual(controls[0].control, KOKUCHPRO_ENTRY_TOKEN);
+  const result = await operatePageControl({
+    provider: "kokuchpro", candidate, page: fixture.page, control: controls[0],
+    action: { purpose: "submit", method: "ax_click", control: expectedToken },
+  });
+  assert.deepEqual(result, { status: "success" });
+  assert.equal(fixture.clicks.length, 1);
+});
+
 test("KokuchPro exact entry control fails closed for semantic ambiguity and binding drift", async () => {
   const candidate = kokuchProCandidate(); const control = { control: KOKUCHPRO_ENTRY_TOKEN, kind: "button", label: "申込む", required: false, completed: false, submittable: true }; const action = { purpose: "submit", method: "ax_click", control: KOKUCHPRO_ENTRY_TOKEN };
   const operate = (fixture, selectedCandidate = candidate, selectedControl = control) => operatePageControl({ provider: "kokuchpro", candidate: selectedCandidate, page: fixture.page, control: selectedControl, action });
