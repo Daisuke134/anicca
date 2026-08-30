@@ -81,11 +81,22 @@ PR #3210 merges this repair. Release `f3921299` is loaded by all five Job Huntin
 
 #### Task 1H: Retrieve broad Japan-feasible work and guarantee one truthful stretch handoff — active
 
-**Files:** determine from the existing source-query prompt and fit-qualification prompt after tracing their current owners; do not add a new service or scheduler.
+**Files:**
+- Modify: `apps/job-search-loop/job_search_loop/workday_source_discovery.py`
+- Modify: `apps/job-search-loop/job_search_loop/workday_search_loop.py`
+- Modify: `apps/job-search-loop/job_search_loop/workday_qualification.py`
+- Modify: `apps/job-search-loop/job_search_loop/ledger.py`
+- Modify focused checks: `apps/job-search-loop/tests/test_workday_qualification.py`
 
 Use concise Workday-native source queries rather than long sentence-like keyword bundles that collapse a verified 27-result Japan-AI source into three unrelated senior results. Rank evidence-supported roles first, but do not treat missing preferred years, title seniority, or an imperfect stack match as an automatic veto. If a wake contains any posting that is legal to work from Japan, geographically feasible, truthful to apply to, and lacks an objective hard blocker, at least one best stretch candidate must become qualified and enter the existing browser queue. Hard blockers remain false attestation, impossible work authorization/location, an explicit credential the candidate does not hold, or compensation below the configured floor when the posting states it. Never fabricate experience. Verify with one natural existing-owner wake and the full screenshot + Gmail + Ledger + Telegram + replay-zero receipt chain.
 
 PRs #3221/#3224/#3229/#3236 close query length, stretch fit, old-policy rejection reopening, invalid escalation metadata, queued-row latency and routine health Telegram spam. Kyndryl is now v3-qualified and the browser reaches its official URL. The active blocker is transport durability under host disk exhaustion: the next browser wait fails before any submit intent with SQLite disk I/O. Do not call its navigation screenshot an application. Resume the same row only with stable headroom and require both the Workday completion screenshot and Gmail employer receipt before marking this task completed.
+
+**No-voluntary-skip v4 design:** Applying is free, so interview-likelihood pessimism is not an application veto. The source model searches for Japan-feasible early/mid-career individual-contributor work and avoids senior leadership scope. The ranking model places every adequate non-senior role before senior or foreign work. The fit model must qualify a Japan-feasible role when every form answer can be truthful and the candidate has adjacent grounded evidence for any core work; missing preferred years, exact stack, perfect title match or published compensation remains an honest gap, never a reject/hold reason. Reject is reserved for an objective hard blocker or user-excluded senior/leadership scope, and the same wake immediately evaluates the next row. No deterministic title regex, keyword score or job-fit gate is permitted.
+
+Policy changes from `interview-chance-v3` to `no-voluntary-skip-v4`. A no-intent decision under an older policy, including `qualified`, is reconsidered exactly once. `qualified_queue_ids` admits only the current policy so Kyndryl cannot bypass v4 merely because v3 qualified it. When the rolling deficit is positive, `search_until_qualified` targets exactly one qualification per wake; after it finds that row, the existing browser lane starts immediately. Existing qualified queue work still targets zero new qualifications and is processed first. Twenty-four attempts remain the bounded same-wake search ceiling, but exhausting them without a qualified row is a failed wake and the durable cursor continues next wake; it is never reported as a successful skip-only pass.
+
+**Focused verification:** one test proves an old-policy qualified no-intent row is reconsidered and can become rejected; one test proves only current-policy qualified rows enter the browser queue; existing zero-target and same-wake reject/hold/qualified continuation checks remain unchanged. Run only those focused tests plus `git diff --check`.
 
 **New-company Workday tenant contract (part of Task 1H):** Account setup is inside the same autonomous loop. Workday identity is tenant-scoped, not company-name-scoped. For a new tenant, the runtime first creates and stores one private tenant credential, attempts visible Sign In once, follows visible Create Account only after exact account-not-found/wrong-credential evidence, fills the account/profile fields, and records `create_submitted`. If Workday requires activation or password recovery, the existing inbox owner consumes the authoritative tenant email once and the next daily wake resumes the same application ID. The daily owner then uploads the routed resume, fills every required and employer-specific field from grounded candidate facts, reaches Review, and invokes the one-shot Submit fence. A reused tenant signs in with the existing credential/session and skips account creation. Neither credential creation nor account creation counts as an application.
 
@@ -95,7 +106,7 @@ The current Kyndryl tenant is `credential_only`: the private tenant credential e
 
 1. Restore the removed stable Rust toolchain, then retain enough measured disk headroom for browser/SQLite evidence writes.
 2. Reload the sole `ai.anicca.job-search-daily` owner and read back release `305d0ffa`, `RunAtLoad`, and `StartInterval=1800`; do not create another executor.
-3. Resume the existing Kyndryl application ID before discovering or qualifying another row.
+3. Reconsider the existing Kyndryl application ID under v4 before any browser effect; because it is a Senior role, continue to the next adequate non-senior row unless the full posting proves otherwise.
 4. Attempt tenant Sign In once. If the visible provider proves the account absent, complete Create Account with the stored tenant credential; never create a second account.
 5. If activation/reset email is required, checkpoint the same row, let `job-search-inbox` consume the exact authoritative one-time email, then resume that same row on the next daily wake.
 6. Fill and re-read the complete Workday application, including resume, profile, work history, source, employer questions, legal attestations and validation errors; continue until final Review.
