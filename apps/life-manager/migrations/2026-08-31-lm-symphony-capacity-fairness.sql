@@ -20,11 +20,9 @@ BEGIN
     RAISE EXCEPTION 'symphony tenant invalid';
   END IF;
 
-  PERFORM 1
-  FROM public.lm_users AS tenants
-  WHERE tenants.uid = p_tenant_id
-  FOR UPDATE SKIP LOCKED;
-  IF NOT FOUND THEN RETURN; END IF;
+  IF NOT pg_try_advisory_xact_lock((('x' || substr(
+    encode(digest('lm-symphony-claim:' || p_tenant_id, 'sha256'), 'hex'), 1, 16
+  ))::bit(64)::bigint)) THEN RETURN; END IF;
 
   SELECT * INTO v_dispatch
   FROM public.lm_symphony_dispatches AS dispatches

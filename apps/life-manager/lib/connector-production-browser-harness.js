@@ -58,8 +58,8 @@ const EVENTBRITE_MARKETING_OPERATION = Symbol("eventbriteMarketingOperation");
 const EVENTBRITE_FINAL_OPERATION = Symbol("eventbriteFinalOperation");
 const EVENTBRITE_FINAL_ATTEMPTED = Symbol("eventbriteFinalAttempted");
 const KOKUCHPRO_ENTRY_SELECTOR = "form, form input, form button";
-const KOKUCHPRO_ENTRY_READY_SELECTOR = 'button[type="submit"]';
 const KOKUCHPRO_ENTRY_READY_TIMEOUT_MS = 2_000;
+const KOKUCHPRO_ENTRY_POLL_INTERVAL_MS = 50;
 const KOKUCHPRO_ENTRY_TOKEN = /^kokuchpro_entry_[0-9a-f]{32}(?:_o_[0-9a-z]{1,13})?$/;
 
 function invalid() {
@@ -872,19 +872,57 @@ function inspectKokuchProEntry(elements, context = {}) {
   return [{ control: token, kind: "button", label: "申込む", required: false, completed: false, submittable: true }];
 }
 
-async function inspectKokuchProEntryWhenReady(target, formsLocator, context) {
+async function inspectKokuchProEntryWhenReady(target, formsLocator, context, { signal, sleep } = {}) {
+  const wait = typeof sleep === "function" ? sleep
+    : typeof target?.waitForTimeout === "function" ? (milliseconds) => target.waitForTimeout(milliseconds)
+      : (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
+  const aborted = () => Boolean(signal && signal.aborted === true);
   const inspect = async () => {
+    if (aborted()) return [];
     try { return await formsLocator.evaluateAll(inspectKokuchProEntry, context); }
     catch { return []; }
   };
   const first = await inspect();
+  if (aborted()) return [];
   if (Array.isArray(first) && first.length === 1) return first;
-  try {
-    const ready = target.locator(KOKUCHPRO_ENTRY_READY_SELECTOR)?.first?.();
-    if (!ready || typeof ready.waitFor !== "function") return first;
-    await ready.waitFor({ state: "visible", timeout: KOKUCHPRO_ENTRY_READY_TIMEOUT_MS });
-  } catch { return first; }
-  return inspect();
+  const deadline = Date.now() + KOKUCHPRO_ENTRY_READY_TIMEOUT_MS;
+  const maxPolls = Math.ceil(KOKUCHPRO_ENTRY_READY_TIMEOUT_MS / KOKUCHPRO_ENTRY_POLL_INTERVAL_MS);
+  const waitWithAbort = async (milliseconds) => {
+    if (aborted()) return false;
+    if (!signal || typeof signal.addEventListener !== "function") {
+      await wait(milliseconds);
+      return true;
+    }
+    return new Promise((resolve, reject) => {
+      let settled = false;
+      const cleanup = () => {
+        try { signal.removeEventListener?.("abort", onAbort); } catch {}
+      };
+      const finish = (value, error) => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        if (error) reject(error); else resolve(value);
+      };
+      const onAbort = () => finish(false);
+      try { signal.addEventListener("abort", onAbort, { once: true }); }
+      catch (error) { finish(false, error); return; }
+      Promise.resolve().then(() => wait(milliseconds)).then(() => finish(true), (error) => finish(false, error));
+    });
+  };
+  for (let poll = 0; poll < maxPolls; poll += 1) {
+    if (aborted()) return [];
+    const remaining = deadline - Date.now();
+    if (remaining <= 0) return [];
+    let waited;
+    try { waited = await waitWithAbort(Math.min(KOKUCHPRO_ENTRY_POLL_INTERVAL_MS, remaining)); }
+    catch { return []; }
+    if (!waited || aborted()) return [];
+    const current = await inspect();
+    if (aborted()) return [];
+    if (Array.isArray(current) && current.length === 1) return current;
+  }
+  return [];
 }
 
 async function inspectPageControls(input = {}) {
@@ -921,7 +959,7 @@ async function inspectPageControls(input = {}) {
     if (!binding || href !== binding.canonicalUrl
       || (input.canonical_url != null && String(input.canonical_url) !== binding.canonicalUrl)
       || (input.ticket_id != null && String(input.ticket_id) !== binding.ticketId)) return Object.freeze([]);
-    const observed = await inspectKokuchProEntryWhenReady(page, locator, { canonicalUrl: binding.canonicalUrl, eventRef: binding.eventRef, eventKey: binding.eventKey, ticketId: binding.ticketId, token: kokuchProEntryToken(binding) });
+    const observed = await inspectKokuchProEntryWhenReady(page, locator, { canonicalUrl: binding.canonicalUrl, eventRef: binding.eventRef, eventKey: binding.eventKey, ticketId: binding.ticketId, token: kokuchProEntryToken(binding) }, { signal: input.signal, sleep: input.sleep });
     const afterHref = (() => { try { return String(typeof page.url === "function" ? page.url() : ""); } catch { return ""; } })();
     return href === afterHref && Array.isArray(observed) ? Object.freeze(observed.map(safeControl)) : Object.freeze([]);
   }
@@ -1278,7 +1316,7 @@ async function operateKokuchProEntry(input, target, token, beforeDispatch) {
   let formsLocator;
   try { formsLocator = target.locator(KOKUCHPRO_ENTRY_SELECTOR); } catch { return Object.freeze({ status: "failed" }); }
   if (!formsLocator || typeof formsLocator.evaluateAll !== "function") return Object.freeze({ status: "failed" });
-  const controls = await inspectKokuchProEntryWhenReady(target, formsLocator, { canonicalUrl: binding.canonicalUrl, eventRef: binding.eventRef, eventKey: binding.eventKey, ticketId: binding.ticketId, token });
+  const controls = await inspectKokuchProEntryWhenReady(target, formsLocator, { canonicalUrl: binding.canonicalUrl, eventRef: binding.eventRef, eventKey: binding.eventKey, ticketId: binding.ticketId, token }, { signal: input.signal, sleep: input.sleep });
   const entry = Array.isArray(controls) && controls.length === 1 ? controls[0] : null;
   if (!entry || entry.control !== token || entry.kind !== "button" || entry.label !== "申込む" || entry.required !== false || entry.completed !== false || entry.submittable !== true || href() !== binding.canonicalUrl || !sameCandidate()) return Object.freeze({ status: "failed" });
   let locator, count;
@@ -1669,13 +1707,13 @@ function createProductionBrowserHarness(options = {}) {
   const supportsProvider = (provider) => PROVIDERS.has(provider) || provider === extensionProvider;
   const registry = new WeakMap();
 
-  async function observed(page, provider, candidate = null, allowEmpty = false) {
+  async function observed(page, provider, candidate = null, allowEmpty = false, runtime = {}) {
     const eventbriteBinding = provider === "eventbrite" ? candidateEventbriteBinding(candidate) : null;
     const techplayBinding = provider === "techplay" ? candidateTechPlayBinding(candidate) : null;
     const eventId = candidatePeatixEventId(candidate) || candidateMeetupEventId(candidate) || candidateDoorkeeperEventId(candidate) || eventbriteBinding?.eventId || techplayBinding?.eventId || "";
     const href = (() => { try { return String(typeof page.url === "function" ? page.url() : ""); } catch { return ""; } })();
     const connpassJoin = isConnpassJoin(provider, href);
-    const values = await inspectControls({ page, provider, candidate: provider === "techplay" || provider === extensionProvider ? candidate : undefined, event_id: eventId || undefined, canonical_url: eventbriteBinding?.canonicalUrl || techplayBinding?.canonicalUrl, ticket_id: techplayBinding?.ticketId, connpass_join: connpassJoin });
+    const values = await inspectControls({ page, provider, candidate: provider === "techplay" || provider === extensionProvider ? candidate : undefined, event_id: eventId || undefined, canonical_url: eventbriteBinding?.canonicalUrl || techplayBinding?.canonicalUrl, ticket_id: techplayBinding?.ticketId, connpass_join: connpassJoin, signal: runtime.signal, sleep });
     if (!Array.isArray(values) || values.length > 100 || (values.length < 1 && provider !== "eventbrite" && !allowEmpty)) invalid();
     const controls = values.map(safeControl);
     if (new Set(controls.map((item) => item.control)).size !== controls.length) invalid();
@@ -1845,6 +1883,7 @@ function createProductionBrowserHarness(options = {}) {
         action,
         value,
         signal: input.signal,
+        sleep,
         ...(typeof input.beforeDispatch === "function" ? { beforeDispatch: input.beforeDispatch } : {}),
       });
     } catch {
@@ -2032,7 +2071,7 @@ function createProductionBrowserHarness(options = {}) {
     let extensionAuthRequired = false;
     let extensionSubmitAttempted = false;
     const adapter = createBrowserHarnessAdapter({
-      async observePage({ page }) {
+      async observePage({ page, signal }) {
         if (input.provider === extensionProvider && !extensionAuthPreflightDone) {
           extensionAuthPreflightDone = true;
           try {
@@ -2045,7 +2084,7 @@ function createProductionBrowserHarness(options = {}) {
         }
         return extensionAuthRequired
           ? Object.freeze({ state: "registration_page", controls: Object.freeze([]) })
-          : observed(page, input.provider, input.candidate);
+          : observed(page, input.provider, input.candidate, false, { signal });
       },
       async proposeAction(input) { if (extensionAuthRequired) return null; const proposal = await proposeAction(input); const token = String(proposal && typeof proposal === "object" ? proposal.control || "" : ""); const control = input.observation.controls.find((item) => item.control === token); return CONTROL.test(token) && control ? actionForControl(control) : null; },
       async performAction(action) {
@@ -2087,6 +2126,7 @@ function createProductionBrowserHarness(options = {}) {
           ...action,
           provider: input.provider,
           candidate: input.candidate,
+          sleep,
           ...(beforeDispatch ? { beforeDispatch } : {}),
         });
         if (result && result.safe_reason === "effect_unknown") ambiguousEffect = true;

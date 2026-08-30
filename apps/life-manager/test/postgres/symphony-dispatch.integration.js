@@ -120,10 +120,6 @@ async function main() {
     thirdContender = new Client({ connectionString: isolated });
     await Promise.all([primary.connect(), contender.connect(), thirdContender.connect()]);
     await primary.query("CREATE EXTENSION IF NOT EXISTS pgcrypto");
-    await primary.query("CREATE TABLE public.lm_users (uid text PRIMARY KEY)");
-    await primary.query(
-      "INSERT INTO public.lm_users (uid) VALUES ('tenant-a'), ('tenant-race'), ('tenant-capacity'), ('tenant-insert-race')",
-    );
     for (const item of MIGRATIONS) await primary.query(migration(item));
 
     const tenant = "tenant-a";
