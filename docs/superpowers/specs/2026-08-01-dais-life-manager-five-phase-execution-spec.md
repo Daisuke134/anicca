@@ -27,7 +27,7 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 この節は、後段の「現在TODO」「次の一件」「local-only」「self-funded agentは別product」という相反する記述を
 上書きする最新の実行順序SSOTである。後段は実装履歴・organ別acceptanceとして保持するが、次作業の選択には使わない。
 Upworkのterminal evidence、startup context、public claim、GA-01〜13Aは完了または履歴として保持する。
-次の一件はAtomic program ledger Seq 19 `ELZ-C06`のsubstep `C06-09`で、injected private authorization ref resolverを定義する。
+次の一件はAtomic program ledger Seq 19 `ELZ-C06`のsubstep `C06-10`で、Eliza core consume-once authorizationへthin delegationする。
 
 #### 0.0.1 最新基盤決定 — ElizaOSを完全forkし、Life Managerをlocal OSSからmulti-tenant SaaSへ育てる
 
@@ -692,7 +692,7 @@ admission whitelistにせず、capability選択とfeasibility判断はC07のCode
 - [x] **C06-06** manifest＋opaque authorization ref contractのfocused failing testを一つ追加する — Eliza fork PR #29、merge `dca5fa5e…`。新規focused test 1 file/230 LOC、production変更0。provider-neutral frozen manifest、default unknown、`marketplace.application`一件、auth required、closed human kinds、application receipt、provider/account/credential/Skill authority非公開、public inputとresolver inputをcapabilityId＋opaque refだけに限定、実Eliza core bound request/policy/coordinator/consume-once、branded frozen authority、same replay拒否、confirmation-required typed human boundaryを固定。test実行はC06-07へ保持。次はC06-07
 - [x] **C06-07** focused testの期待どおりのREDを一回確認する — canonical fork `dca5fa5e…`、Vitest 4.1.10で対象1 fileを実行しexit 1。test fileは発見され、`Cannot find module './capability-authorization.ts'`で期待どおり未実装feature境界へ到達。dependency/test discovery/syntax failureではない。private log/`capability-auth-red-receipt.json` mode 0600、receipt SHA256 `a16ffc48…`、production/DB/model/provider/marketplace/payment effect 0。次はC06-08
 - [x] **C06-08** provider-neutral public capability manifest contractを定義する — Eliza fork PR #30、merge `79b009e0…`。新規production 1 file/20 LOCだけでopaque `LifeManagerAuthorizationRef`型とdeep-frozen manifestを定義。version 1、default unknown、`marketplace.application`一件、auth required、closed human kinds 4、application receipt readback。source typecheck exit 0。resolver/auth engine/core delegation/human boundary/service/model判断0、provider/account/credential/Skill authority公開0。次はC06-09
-- [ ] **C06-09** injected private authorization ref resolverを定義する
+- [x] **C06-09** injected private authorization ref resolverを定義する — Eliza fork PR #31、merge `34e256c2…`。既存moduleへ84 LOCでpublic requestをcapabilityId＋opaque authorizationRefのexact 2 keysに限定し、manifest存在確認、512字/controlなし/exact scheme、frozen request、Eliza core BoundRequest/Policy/Consumer/optional Grantを持つprivate envelope、injected resolver seamを追加。dispatch/human boundary/service/provider branch/model判断0。RAM公開npm coreはfork新export未収録、fork source typecheckは生成物未展開のため最終workspace typecheckをC06-13へ保持し、diff checkのみPASS。次はC06-10
 - [ ] **C06-10** Eliza core consume-once authorizationへthin delegationする
 - [ ] **C06-11** human-only ceremonyをexecution不能なtyped boundaryとして定義する
 - [ ] **C06-12** 既存`LifeManagerService`へcapability authorization operationを接続する
