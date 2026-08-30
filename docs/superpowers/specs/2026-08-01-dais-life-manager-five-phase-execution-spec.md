@@ -27,7 +27,7 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 この節は、後段の「現在TODO」「次の一件」「local-only」「self-funded agentは別product」という相反する記述を
 上書きする最新の実行順序SSOTである。後段は実装履歴・organ別acceptanceとして保持するが、次作業の選択には使わない。
 Upworkのterminal evidence、startup context、public claim、GA-01〜13Aは完了または履歴として保持する。
-次の一件はAtomic program ledger Seq 16 `ELZ-C03`のsubstep `C03-20`で、marker付き非破壊migration serviceを実装する。
+次の一件はAtomic program ledger Seq 16 `ELZ-C03`のsubstep `C03-21`で、focused migration contract testのGREENを一回確認する。
 
 #### 0.0.1 最新基盤決定 — ElizaOSを完全forkし、Life Managerをlocal OSSからmulti-tenant SaaSへ育てる
 
@@ -603,7 +603,7 @@ Goal分解とgraph生成は後続C07のCodexへ残す。現在activeなC03だけ
 - [x] **C03-17** schema contract testの成功を一回確認する — fork head `f0165e61…`、Vitest 4.1.10、実`@elizaos/core@2.0.3-beta.7`、Drizzle 0.45.2でfocused 1 file/2 tests PASS、exit 0、797ms。6 tables、tenant/reference/effect/lease、constraints、Row/Insert型、plugin-sql dependency、schema登録を確認。private `schema-green-receipt.json` mode 0600、DB/external effect 0。次はC03-18
 - [x] **C03-18** migration contractのfocused failing testを一つ追加する — Eliza fork PR #12、merge `5dcf0742d70232cfed1c1923b730990605d23ade`。upstream reminders testを1本へcopy+tweakし、one-shot marker、Outcome/Economic receipt UPDATE/DELETE trigger各1、restart idempotency、旧`public.lm_runtime_*` table mutation 0を固定。production変更0。次はC03-19
 - [x] **C03-19** migration contract testの失敗を一回確認する — fork head `5dcf0742…`、Vitest 4.1.10でfocused 1 file、exit 1。runner/test fileは起動し、`Cannot find module './migration.ts'`で期待どおり未実装feature境界に到達。dependency不足・test未発見・syntax errorではない。private `migration-red-receipt.json` mode 0600、production/DB/external effect 0。次はC03-20
-- [ ] **C03-20** marker付き非破壊migration serviceを実装する
+- [x] **C03-20** marker付き非破壊migration serviceを実装する — Eliza fork PR #13、merge `97287b3c8396586bc3798aa629d0c7e256d832ac`。upstream reminders serviceをcopy+tweakし、one-shot marker、共有reject function、Outcome/Economic receipt UPDATE/DELETE trigger各1、Eliza Service登録だけを実装。旧table copy/DROP/ALTER、新DB/queue/adapter/retry 0。次はC03-21
 - [ ] **C03-21** migration contract testの成功を一回確認する
 - [ ] **C03-22** isolated PGliteへmigrationを一回適用する
 - [ ] **C03-23** 同じPGliteをrestartして6 entity schemaを再読出しする
