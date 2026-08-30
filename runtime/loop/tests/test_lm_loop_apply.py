@@ -122,6 +122,12 @@ class LmLoopApplyTest(unittest.TestCase):
         self.assertEqual(value["StartInterval"], 60)
         self.assertEqual(value["EnvironmentVariables"]["LIFE_MANAGER_RELEASE_SHA"], SHA)
 
+    def test_sub_ten_second_interval_sets_matching_launchd_throttle(self):
+        value = registry()
+        value["loops"]["example"]["cadence"] = {"start_interval_seconds": 5}
+        plist = plistlib.loads(build_apply_plan(value, self.root, SHA)[0]["plist_bytes"])
+        self.assertEqual((plist["StartInterval"], plist.get("ThrottleInterval")), (5, 5))
+
     def test_invalid_generation_causes_zero_installer_calls(self):
         calls = []
         with self.assertRaisesRegex(ValueError, "missing entrypoint"):
