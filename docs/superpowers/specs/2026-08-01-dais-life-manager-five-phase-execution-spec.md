@@ -27,7 +27,7 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 この節は、後段の「現在TODO」「次の一件」「local-only」「self-funded agentは別product」という相反する記述を
 上書きする最新の実行順序SSOTである。後段は実装履歴・organ別acceptanceとして保持するが、次作業の選択には使わない。
 Upworkのterminal evidence、startup context、public claim、GA-01〜13Aは完了または履歴として保持する。
-次の一件はAtomic program ledger Seq 17 `ELZ-C04`のsubstep `C04-07`で、provider bridgeのopaque ref/result型だけを定義する。
+次の一件はAtomic program ledger Seq 17 `ELZ-C04`のsubstep `C04-08`で、injected private descriptor resolverを実装する。
 
 #### 0.0.1 最新基盤決定 — ElizaOSを完全forkし、Life Managerをlocal OSSからmulti-tenant SaaSへ育てる
 
@@ -637,7 +637,7 @@ flowchart LR
 - [x] **C04-04** upstream/legacyの採用・棄却mapを`provider-bridge-reuse-map.json`へ保存する — C04-01〜03 receipt hashを固定。Omarchyのno-shell/fixed descriptor/bounds/injected runner、Python/JSのsingle JSON/read-only/completenessを採用。requestはopaque `toolRef/inputRef`だけ、private resolver、judgment/provider routing 0。任意shell/model-controlled command/raw output/secret env/healthy-empty/provider別brain・scheduler・DB・adapterを棄却。private receipt mode 0600。次はC04-05
 - [x] **C04-05** opaque ref→structured result bridgeのfocused failing testを一つ追加する — Eliza fork PR #16、merge `e8dcbe402354846799c45839041f21baab7b03d5`。opaque refs→private descriptor/runner、success single JSON＋SHA、nonzero typed failure、multi-line invalid、公開resultへexecutable/argv/cwd/env/raw stdout/stderr/secret 0を一つのtestで固定。production変更0。次はC04-06
 - [x] **C04-06** provider bridge testの失敗を一回確認する — fork test `15fad189…`、Vitest 4.1.10でfocused 1 file、exit 1。runner/test fileは起動し、`Cannot find module './provider-bridge.ts'`で期待どおり未実装feature境界に到達。dependency不足・test未発見・syntax errorではない。private `provider-bridge-red-receipt.json` mode 0600、production/process/external effect 0。次はC04-07
-- [ ] **C04-07** `ProviderToolRef`/`ProviderInputRef`/`ProviderBridgeResult`型を定義する
+- [x] **C04-07** `ProviderToolRef`/`ProviderInputRef`/`ProviderBridgeResult`型を定義する — Eliza fork PR #17、merge `bc548d0cd43719764d6f75d9ddbc15f4463d8305`。public requestはtoolRef/inputRefだけ、public resultはstructured success/failureだけ。executable/args/cwd/env/boundsとraw process resultはprivate dependency型へ分離。resolver/runner/parser/service behavior 0。次はC04-08
 - [ ] **C04-08** injected private descriptor resolverを実装する
 - [ ] **C04-09** bounded `execFile` no-shell runnerを実装する
 - [ ] **C04-10** single JSON object、exit/ok整合、raw output抑制を実装する
