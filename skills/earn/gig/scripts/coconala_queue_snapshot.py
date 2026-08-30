@@ -1315,7 +1315,7 @@ def _persist_talkroom_history_locked(
 ) -> dict[str, Any]:
     known: set[str] = set()
     try:
-        for line in ledger.read_text(encoding="utf-8").splitlines():
+        for line in ledger.read_text(encoding="utf-8").split("\n"):
             row = json.loads(line)
             if isinstance(row, dict) and isinstance(row.get("content_sha256"), str):
                 known.add(row["content_sha256"])
