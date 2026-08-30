@@ -27,7 +27,7 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 この節は、後段の「現在TODO」「次の一件」「local-only」「self-funded agentは別product」という相反する記述を
 上書きする最新の実行順序SSOTである。後段は実装履歴・organ別acceptanceとして保持するが、次作業の選択には使わない。
 Upworkのterminal evidence、startup context、public claim、GA-01〜13Aは完了または履歴として保持する。
-次の一件はAtomic program ledger Seq 16 `ELZ-C03`のsubstep `C03-12`で、EffectIntent tableとRow/Insert型だけを定義する。
+次の一件はAtomic program ledger Seq 16 `ELZ-C03`のsubstep `C03-13`で、OutcomeReceipt tableとRow/Insert型だけを定義する。
 
 #### 0.0.1 最新基盤決定 — ElizaOSを完全forkし、Life Managerをlocal OSSからmulti-tenant SaaSへ育てる
 
@@ -595,7 +595,7 @@ Goal分解とgraph生成は後続C07のCodexへ残す。現在activeなC03だけ
 - [x] **C03-09** Goal row/insert typeを定義する — Eliza fork PR #4、merge `6e15b5aa753a0b9d109bd1676cdea4fa91f86e50`。tenant-scoped `goals` tableへstatement、provenance、status、expiresAt、supersedes、timestampsを定義し、GoalRow/GoalInsertをexport。taxonomy/confidence/model判断0。次はC03-10
 - [x] **C03-10** PlanGraph row/insert typeを定義する — Eliza fork PR #5、merge `86890c80aeddcc12d1d847ab51667733ab8b998b`。tenant-scoped `plan_graphs` tableへGoal参照、graph JSON、status、timestampsを定義し、PlanGraphRow/PlanGraphInsertをexport。planner/model判断0。次はC03-11
 - [x] **C03-11** WorkItem row/insert typeを定義する — Eliza fork PR #6、merge `282c749b42cbe969e6b1a08678f3f3bdd523cb52`。tenant-scoped `work_items` tableへPlanGraph参照、capability、inputRefs、status、timestampsを定義し、WorkItemRow/WorkItemInsertをexport。queue/lease/effect処理0。次はC03-12
-- [ ] **C03-12** EffectIntent row/insert typeを定義する
+- [x] **C03-12** EffectIntent row/insert typeを定義する — Eliza fork PR #7、merge `13a65e4084aa4d9225bc7b3db0837b84ad879ad7`。tenant-scoped `effect_intents` tableへWorkItem参照、effectClass/effectKey、inputRefs、attempt、status、lease owner/expiry、timestampsを定義し、EffectIntentRow/EffectIntentInsertをexport。executor/retry logic 0。次はC03-13
 - [ ] **C03-13** OutcomeReceipt row/insert typeを定義する
 - [ ] **C03-14** EconomicReceipt row/insert typeを定義する
 - [ ] **C03-15** tenant/reference/idempotency/immutable-receipt constraintsを定義する
