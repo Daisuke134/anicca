@@ -56,6 +56,21 @@ test("EN slideshow TikTok lane accepts exact Postiz API photo proof without inve
   assert.equal(verifyMarketingNativeCarouselPublicationReceipt({ ...apiReceipt, provider_content_sha256: "f".repeat(64) }), false);
 });
 
+test("production carousel effects are scoped by exact schedule slot", () => {
+  const lane = EN_SLIDESHOW_TIKTOK_LANE;
+  const input = {
+    tenantId: "dais-local", productId: lane.productId, formatId: lane.formatId, form: lane.form,
+    locale: lane.locale, creativeId: lane.creativeId, accountId: lane.accountId,
+    integrationRef: lane.integrationRef, packRef: lane.packRef, mediaRefs: lane.mediaRefs,
+    captionRef: lane.captionRef, approvalRef: lane.approvalRef, postizTokenRef: lane.tokenRef,
+    slotScopedEffect: true,
+  };
+  const first = buildMarketingNativeCarouselPublicationJob({ ...input, slot: "2026-08-30T06:00:00.000Z" });
+  const second = buildMarketingNativeCarouselPublicationJob({ ...input, slot: "2026-08-30T12:00:00.000Z" });
+  assert.notEqual(first.effect_key, second.effect_key);
+  assert.notEqual(first.job_id, second.job_id);
+});
+
 test("EN slideshow TikTok exact pack executes through six ordered JPEGs only", async () => {
   const lane = EN_SLIDESHOW_TIKTOK_LANE;
   const value = buildMarketingNativeCarouselPublicationJob({
