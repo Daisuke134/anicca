@@ -27,7 +27,7 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 この節は、後段の「現在TODO」「次の一件」「local-only」「self-funded agentは別product」という相反する記述を
 上書きする最新の実行順序SSOTである。後段は実装履歴・organ別acceptanceとして保持するが、次作業の選択には使わない。
 Upworkのterminal evidence、startup context、public claim、GA-01〜13Aは完了または履歴として保持する。
-次の一件はAtomic program ledger Seq 18 `ELZ-C05`のsubstep `C05-03`で、採用・棄却mapを`goal-workitem-reuse-map.json`へ保存する。
+次の一件はAtomic program ledger Seq 18 `ELZ-C05`のsubstep `C05-04`で、一Goal→一reference-only WorkItemのfocused failing testを一つ追加する。
 
 #### 0.0.1 最新基盤決定 — ElizaOSを完全forkし、Life Managerをlocal OSSからmulti-tenant SaaSへ育てる
 
@@ -661,7 +661,7 @@ C07のCodexへ残す。新queue、新DB、provider adapter、model adapter、mar
 
 - [x] **C05-01** legacy GA-02 Goal→WorkItem contractをprivate evidenceへ保存する — legacy commit `31323bd43…`のproduction/test 2 fileをSHA256固定。一active explicit Goal→一stable WorkItem、opaque `goal_ref`だけ、本文/provenance非複製、effect class `none`、max attempts 1、immutable resultを採用。旧intent graph/runtime queue、provider判断、C07前のsemantic graph生成を棄却。private `legacy-goal-workitem-contract-evidence.json` mode 0600、SHA256 `93d8fb51…`、DB/model/marketplace/payment effect 0。次はC05-02
 - [x] **C05-02** Eliza Drizzle transaction/service lifecycle contractをprivate evidenceへ保存する — fork `5ff9d9a…`の`plugin-todos` service/sql-store/store 3 fileをSHA256固定。既存runtime.db注入、plugin-sql必須、Service start/stop、storage-neutral interface、Drizzle transaction、same request replay/different request conflict、tenant scopeを採用。Todo CRUD/hierarchy/wire format、raw SQL複製、新DB/queue、storage内semantic判断を棄却。private `eliza-drizzle-service-contract-evidence.json` mode 0600、SHA256 `e1e797e1…`、DB/model/marketplace/payment effect 0。次はC05-03
-- [ ] **C05-03** 採用・棄却mapを`goal-workitem-reuse-map.json`へ保存する
+- [x] **C05-03** 採用・棄却mapを`goal-workitem-reuse-map.json`へ保存する — legacy GA-02の一Goal/opaque ref/effect-free、Eliza Todosのruntime.db/Service/transaction/replay、C03の既存Goal/PlanGraph/WorkItem schemaとtenant FK/input-ref制約を採用。旧intent graph/runtime queue、Todo固有wire、新DB/queue/model adapter、本文/provenance/credential複製、hardcoded judgment、C07前のsemantic graph生成を棄却。private map mode 0600、SHA256 `9bc522db…`、production 2 file＋focused test 1 fileを上限、model/provider/external effect 0。次はC05-04
 - [ ] **C05-04** 一Goal→一reference-only WorkItemのfocused failing testを一つ追加する
 - [ ] **C05-05** focused testの期待どおりのREDを一回確認する
 - [ ] **C05-06** Goal ref、WorkItem result、typed failureの最小contractを定義する
