@@ -27,7 +27,7 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 この節は、後段の「現在TODO」「次の一件」「local-only」「self-funded agentは別product」という相反する記述を
 上書きする最新の実行順序SSOTである。後段は実装履歴・organ別acceptanceとして保持するが、次作業の選択には使わない。
 Upworkのterminal evidence、startup context、public claim、GA-01〜13Aは完了または履歴として保持する。
-次の一件はAtomic program ledger Seq 19 `ELZ-C06`のsubstep `C06-17`で、C06 receiptをPASSへ更新する。
+次の一件はAtomic program ledger Seq 19 `ELZ-C06`のsubstep `C06-18`で、ELZ-C06をDONEへ更新する。
 
 #### 0.0.1 最新基盤決定 — ElizaOSを完全forkし、Life Managerをlocal OSSからmulti-tenant SaaSへ育てる
 
@@ -700,7 +700,7 @@ admission whitelistにせず、capability選択とfeasibility判断はC07のCode
 - [x] **C06-14** private auth refでunexpired consume-once、expired/misbound/replay拒否を実行する — canonical fork `83cf5e57…`のC06 production module＋実core sourceを使用。private directory mode 0700、valid/expired/misbound JSON各0600をopaque ref resolverで読み、valid authorityは一回だけfrozen authorization成功、same replay=`STALE_CAPABILITY_AUTHORIZATION`、expired/misbound=`UNTRUSTED_CAPABILITY_POLICY_DECISION`、public resultへprivate provider/account 0。minimal core shimのhost Service未export preflight 1回はauthorization evidenceから除外し、production module直接実行へ修正。private log/`private-authorization-run-receipt.json` mode 0600、receipt SHA256 `951fe42a…`、DB/model/provider/marketplace/payment effect 0。次はC06-15
 - [x] **C06-15** source/result hashを`capability-auth-receipt.json`へ保存する — canonical fork `83cf5e57…`のC06 module/test/index＋実core 4 source、manifest/private/core/human/reuse/RED/GREEN/real private auth 8 evidenceを全SHA256再計算。provider-neutral manifest、default unknown、one capability、public exact 2 keys、opaque private ref、0600 exact scope/expiry、core再実装0、real consume-once、replay/expired/misbound拒否、closed human kinds、ordinary error humanize 0、private leak 0、既存service、provider branch 0、Skill authority false、focused 2/2、external effect 0、revenue falseをprivate canonical receiptへ固定。mode 0600、SHA256 `b4a6dc0d…`、status=`pending_review`、open findings null。次はC06-16
 - [x] **C06-16** C06差分をfresh adversarial reviewへ一回だけ渡す — fresh Sol verifierはCritical 0/Important 1で、allowed-policy consumerの同名errorまでhuman ceremony化するover-mapを反証。同じLunaがpolicy=`confirmation_required`＋grantなし＋exact core codeの3条件へproduction 2 LOCで限定し、allowed consumer error同一object rethrow regressionを追加。fork PR #36 merge `2a115b9e…`、focused RED→3/3 GREEN、typecheck exit 0。限定recheckでhistorical 2/2 logとreview-fix 3/3 logの名前が曖昧な一点をexact pathで解消し、final `ship`、Critical/Important/open 0。private review/fix receipts mode 0600、canonical status=`review_passed`、SHA256 `20fdf323…`。次はC06-17
-- [ ] **C06-17** C06 receiptをPASSへ更新する
+- [x] **C06-17** C06 receiptをPASSへ更新する — final source 4/evidence 10 hash、全private mode 0600、private authority dir 0700/files 0600、provider-neutral/opaque ref/core consume-once/replay-expired-misbound拒否/exact human boundary/ordinary error保持、focused 3/3、typecheck、review Critical/Important/open 0、model/provider/marketplace/payment 0を再監査。C06専用RAM volume detachとnode_modules symlink cleanupも確認。canonical `capability-auth-receipt.json` status=`PASS`、SHA256 `5df6f3ee…`。次はC06-18
 - [ ] **C06-18** ELZ-C06をDONEへ更新する
 - [ ] **C06-19** ELZ-C07をNEXTへ更新する
 
