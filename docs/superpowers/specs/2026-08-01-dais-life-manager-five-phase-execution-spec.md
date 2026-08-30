@@ -27,7 +27,7 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 この節は、後段の「現在TODO」「次の一件」「local-only」「self-funded agentは別product」という相反する記述を
 上書きする最新の実行順序SSOTである。後段は実装履歴・organ別acceptanceとして保持するが、次作業の選択には使わない。
 Upworkのterminal evidence、startup context、public claim、GA-01〜13Aは完了または履歴として保持する。
-次の一件はAtomic program ledger Seq 16 `ELZ-C03`のsubstep `C03-10`で、PlanGraph tableとRow/Insert型だけを定義する。
+次の一件はAtomic program ledger Seq 16 `ELZ-C03`のsubstep `C03-11`で、WorkItem tableとRow/Insert型だけを定義する。
 
 #### 0.0.1 最新基盤決定 — ElizaOSを完全forkし、Life Managerをlocal OSSからmulti-tenant SaaSへ育てる
 
@@ -593,7 +593,7 @@ Goal分解とgraph生成は後続C07のCodexへ残す。現在activeなC03だけ
 - [x] **C03-07** schema contract testの失敗を一回確認する — Vitest 4.1.10で対象1 fileを実行しexit 1。runner/test fileは起動し、`Cannot find module './db/schema'`で期待どおり未実装feature境界に到達。依存不足・test未発見・syntax errorではない。private `schema-red-receipt.json` mode 0600、production変更0。次はC03-08
 - [x] **C03-08** `life_manager` Drizzle schema namespaceを定義する — Eliza fork PR #3、merge `4b1ee76562d8cf04910005d311b3c81bd5a28aa7`。upstream `plugin-todos`と同じ`pgSchema` patternをcopy+tweakし、`lifeManagerSchema = pgSchema("life_manager")`だけを追加。table/type/dependency/plugin登録は未追加。次はC03-09
 - [x] **C03-09** Goal row/insert typeを定義する — Eliza fork PR #4、merge `6e15b5aa753a0b9d109bd1676cdea4fa91f86e50`。tenant-scoped `goals` tableへstatement、provenance、status、expiresAt、supersedes、timestampsを定義し、GoalRow/GoalInsertをexport。taxonomy/confidence/model判断0。次はC03-10
-- [ ] **C03-10** PlanGraph row/insert typeを定義する
+- [x] **C03-10** PlanGraph row/insert typeを定義する — Eliza fork PR #5、merge `86890c80aeddcc12d1d847ab51667733ab8b998b`。tenant-scoped `plan_graphs` tableへGoal参照、graph JSON、status、timestampsを定義し、PlanGraphRow/PlanGraphInsertをexport。planner/model判断0。次はC03-11
 - [ ] **C03-11** WorkItem row/insert typeを定義する
 - [ ] **C03-12** EffectIntent row/insert typeを定義する
 - [ ] **C03-13** OutcomeReceipt row/insert typeを定義する
