@@ -216,3 +216,28 @@ test("bounded specialist deadline aborts an in-flight dependency", async () => {
     repaired_actions: [],
   });
 });
+
+test("bounded specialist marks a submit timeout after dispatch begins as effect_unknown", async () => {
+  let observedSignal;
+  let dispatches = 0;
+  const adapter = createBrowserHarnessAdapter({
+    async observePage() { return Object.freeze({ state: "form", controls: ["submit"] }); },
+    async proposeAction() { return Object.freeze({ purpose: "submit", method: "ax_click", control: "submit" }); },
+    async performAction(input) {
+      observedSignal = input.signal;
+      input.beforeDispatch();
+      dispatches += 1;
+      return new Promise((resolve) => setTimeout(() => resolve({ status: "failed" }), 30));
+    },
+    async readExpectedState() { throw new Error("readback must not run"); },
+  });
+
+  const result = await adapter.runFallback({
+    provider: "luma", page: {}, pageWebsocket: PAGE_WS,
+    expectedState: "registered_or_pending", maxSteps: 2, maxDurationMs: 10,
+  });
+
+  assert.deepEqual(result, { status: "failed", safe_reason: "effect_unknown", repaired_actions: [] });
+  assert.equal(dispatches, 1);
+  assert.equal(observedSignal.aborted, true);
+});

@@ -1877,15 +1877,24 @@ function makeEventbriteFinalHandle(element, click) {
   };
 }
 
-function eventbriteFallbackFixture(readProviderState) {
+function eventbriteFallbackFixture(readProviderState, { elementDelayMs = 0, clickDelayMs = 0 } = {}) {
   const candidate = { provider: "eventbrite", event_ref: "eventbrite-event://event/1901", canonical_url: "https://www.eventbrite.com/e/tokyo-free-event-tickets-1901" };
   const field = (name, type = "text") => makeEventbriteTicketElement({ tagName: "INPUT", type, name, required: true, value: "complete" });
   const fields = [field("buyer.N-first_name"), field("buyer.N-last_name"), field("buyer.N-email", "email"), field("buyer.confirmEmailAddress", "email")];
   const primary = makeEventbriteTicketElement({ tagName: "BUTTON", type: "button", testId: "eds-modal__primary-button", innerText: "Register" });
   const elements = [...fields, primary]; const stats = { proposals: 0, operations: 0, clicks: 0, readbacks: 0, luma: 0 };
-  const handle = makeEventbriteFinalHandle(primary, () => { stats.clicks += 1; });
+  const handle = makeEventbriteFinalHandle(primary, async () => {
+    stats.clicks += 1;
+    if (clickDelayMs > 0) await new Promise((resolve) => setTimeout(resolve, clickDelayMs));
+  });
   const frame = { url() { return "https://www.eventbrite.com/checkout-external?eid=1901"; }, parentFrame() { return {}; }, locator(selector) {
-    if (String(selector).includes("data-lm-connector-control") && String(selector).includes("eds-modal__primary-button")) return { async count() { return 1; }, async elementHandles() { return [handle]; } };
+    if (String(selector).includes("data-lm-connector-control") && String(selector).includes("eds-modal__primary-button")) return {
+      async count() { return 1; },
+      async elementHandles() {
+        if (elementDelayMs > 0) await new Promise((resolve) => setTimeout(resolve, elementDelayMs));
+        return [handle];
+      },
+    };
     return { async evaluateAll(callback, context) { return callback(elements, context); } };
   } };
   const page = { url() { return candidate.canonical_url; }, frames() { return [frame]; }, locator() { return { async evaluateAll(callback, context) { return callback([], context); } }; } };
@@ -1918,6 +1927,31 @@ test("Eventbrite runFallback stops after one final effect_unknown without retry"
     assert.deepEqual(await resultPromise, { status: "failed", safe_reason: "effect_unknown", repaired_actions: [] });
   } finally { mock.timers.reset(); }
   assert.equal(fixture.stats.proposals, 1); assert.equal(fixture.stats.operations, 1); assert.equal(fixture.stats.clicks, 1); assert.equal(fixture.stats.luma, 0); assert.ok(fixture.stats.readbacks > 0);
+});
+
+test("Eventbrite final timeout before handle dispatch has zero clicks, while dispatch-start timeout is effect_unknown", async () => {
+  const before = eventbriteFallbackFixture(async () => ({ status: "absent" }), { elementDelayMs: 30 });
+  const beforeResult = await before.harness.runFallback({
+    provider: "eventbrite", candidate: before.candidate, page: before.page,
+    pageWebsocket: "ws://127.0.0.1:9222/devtools/page/EVENTBRITE-PRE-DISPATCH",
+    maxSteps: 2, maxDurationMs: 5, expectedState: "registered_or_pending",
+  });
+  assert.deepEqual(beforeResult, { status: "failed", safe_reason: "time_limit", repaired_actions: [] });
+  assert.equal(before.stats.clicks, 0);
+  await new Promise((resolve) => setTimeout(resolve, 40));
+  assert.equal(before.stats.clicks, 0);
+
+  const after = eventbriteFallbackFixture(async () => ({ status: "registered" }), { clickDelayMs: 30 });
+  const afterResult = await after.harness.runFallback({
+    provider: "eventbrite", candidate: after.candidate, page: after.page,
+    pageWebsocket: "ws://127.0.0.1:9222/devtools/page/EVENTBRITE-AFTER-DISPATCH",
+    maxSteps: 2, maxDurationMs: 5, expectedState: "registered_or_pending",
+  });
+  assert.deepEqual(afterResult, { status: "failed", safe_reason: "effect_unknown", repaired_actions: [] });
+  assert.equal(after.stats.clicks, 1);
+  await new Promise((resolve) => setTimeout(resolve, 40));
+  assert.equal(after.stats.clicks, 1);
+  assert.equal(after.stats.proposals, 1);
 });
 
 test("Eventbrite inspector exposes the exact free ticket Register control from the matching checkout child frame", async () => {
@@ -3319,6 +3353,7 @@ test("configured extension provider reuses the generic fallback for its exact to
     },
     async operateControl(input) {
       assert.equal(input.page, page);
+      input.beforeDispatch?.();
       operated += 1;
       return { status: "success" };
     },
@@ -3378,7 +3413,7 @@ test("extension fallback requires independent workflow readback despite action p
         extensionWorkflow: { async readProviderState(input) { reads += 1; return read(input); } },
         async inspectControls() { return [{ control: "register_button", kind: "button", label: "Register", required: false, completed: false, submittable: true }]; },
         async proposeAction() { return { control: "register_button" }; },
-        async operateControl() { operations += 1; return { status: "success", provider_state: { status: claimedStatus } }; },
+        async operateControl(input) { operations += 1; input.beforeDispatch?.(); return { status: "success", provider_state: { status: claimedStatus } }; },
         async resolveValue() { return null; },
       });
       const result = await harness.runFallback({ provider: "extension-proof", candidate: { event_ref: "extension-proof://event/1" }, page: { url() { return "https://extension-proof.example/event/1"; } }, pageWebsocket: `ws://127.0.0.1:9222/devtools/page/EXTENSION-PROOF-${claimedStatus}-${name}`, maxSteps: 1, expectedState: "registered_or_pending" });
@@ -3439,7 +3474,7 @@ test("extension auth preflight cannot bypass adapter scope validation", async ()
   assert.deepEqual(calls, { readback: 0, inspect: 0, propose: 0, operate: 0, resolve: 0 });
 });
 
-test("extension auth after one action latches terminal failure without retry", async () => {
+test("extension auth after one submit effect becomes effect_unknown without retry", async () => {
   const calls = { readback: 0, inspect: 0, propose: 0, operate: 0, resolve: 0 };
   const action = { purpose: "submit", method: "ax_click", control: "register_button" };
   const page = { url() { return "https://extension-auth-after.example/event/1"; } };
@@ -3449,7 +3484,7 @@ test("extension auth after one action latches terminal failure without retry", a
     extensionWorkflow: { async readProviderState() { calls.readback += 1; return { status: calls.readback === 1 ? "absent" : "auth_required" }; } },
     async inspectControls() { calls.inspect += 1; return [{ control: "register_button", kind: "button", label: "Register", required: false, completed: false, submittable: true }]; },
     async proposeAction() { calls.propose += 1; return { control: "register_button" }; },
-    async operateControl() { calls.operate += 1; return { status: "success" }; },
+    async operateControl(input) { calls.operate += 1; input.beforeDispatch?.(); return { status: "success" }; },
     async resolveValue() { calls.resolve += 1; return "must-not-read"; },
   });
   const result = await harness.runFallback({
@@ -3457,8 +3492,177 @@ test("extension auth after one action latches terminal failure without retry", a
     pageWebsocket: "ws://127.0.0.1:9222/devtools/page/EXTENSION-AUTH-AFTER",
     maxSteps: 2, expectedState: "registered_or_pending",
   });
-  assert.deepEqual(result, { status: "failed", safe_reason: "auth_required", repaired_actions: [action] });
+  assert.deepEqual(result, { status: "failed", safe_reason: "effect_unknown", repaired_actions: [action] });
   assert.deepEqual(calls, { readback: 2, inspect: 1, propose: 1, operate: 1, resolve: 0 });
+});
+
+test("extension submit success followed by step-limit or unavailable readback becomes effect_unknown", async () => {
+  for (const [name, readback] of [
+    ["step-limit", async () => ({ status: "unavailable" })],
+    ["unavailable", async () => ({ status: "unavailable" })],
+  ]) {
+    let operated = 0;
+    const action = { purpose: "submit", method: "ax_click", control: "register_button" };
+    const harness = createProductionBrowserHarness({
+      lumaWorkflow: { async readProviderState() { throw new Error("wrong provider"); } },
+      extensionProvider: `extension-effect-${name}`,
+      extensionWorkflow: { async readProviderState() { return readback(); } },
+      async inspectControls() { return [{ control: "register_button", kind: "button", label: "Register", required: false, completed: false, submittable: true }]; },
+      async proposeAction() { return { control: "register_button" }; },
+      async operateControl(input) { operated += 1; assert.deepEqual(input.action, action); input.beforeDispatch?.(); return { status: "success" }; },
+      async resolveValue() { return null; },
+    });
+    const result = await harness.runFallback({
+      provider: `extension-effect-${name}`,
+      candidate: { event_ref: `extension-effect-${name}://event/1` },
+      page: { url() { return `https://extension-effect-${name}.example/event/1`; } },
+      pageWebsocket: `ws://127.0.0.1:9222/devtools/page/EXTENSION-EFFECT-${name.toUpperCase()}`,
+      maxSteps: 1,
+      expectedState: "registered_or_pending",
+    });
+    assert.deepEqual(result, { status: "failed", safe_reason: "effect_unknown", repaired_actions: [action] }, name);
+    assert.equal(operated, 1, name);
+  }
+});
+
+test("extension submit attempt latches effect_unknown on dispatch failure but not pre-dispatch validation", async () => {
+  for (const [name, operate] of [
+    ["click-throw", async () => { throw new Error("locator click timeout"); }],
+    ["non-success", async () => ({ status: "failed" })],
+  ]) {
+    let operated = 0;
+    const harness = createProductionBrowserHarness({
+      lumaWorkflow: { async readProviderState() { throw new Error("wrong provider"); } },
+      extensionProvider: `extension-attempt-${name}`,
+      extensionWorkflow: { async readProviderState() { return { status: "absent" }; } },
+      async inspectControls() { return [{ control: "register_button", kind: "button", label: "Register", required: false, completed: false, submittable: true }]; },
+      async proposeAction() { return { control: "register_button" }; },
+      async operateControl(input) {
+        operated += 1;
+        assert.deepEqual(input.action, { purpose: "submit", method: "ax_click", control: "register_button" });
+        input.beforeDispatch?.();
+        return operate();
+      },
+      async resolveValue() { return null; },
+    });
+    const result = await harness.runFallback({
+      provider: `extension-attempt-${name}`,
+      candidate: { event_ref: `extension-attempt-${name}://event/1` },
+      page: { url() { return `https://extension-attempt-${name}.example/event/1`; } },
+      pageWebsocket: `ws://127.0.0.1:9222/devtools/page/EXTENSION-ATTEMPT-${name.toUpperCase()}`,
+      maxSteps: 1,
+      expectedState: "registered_or_pending",
+    });
+    assert.deepEqual(result, { status: "failed", safe_reason: "effect_unknown", repaired_actions: [] }, name);
+    assert.equal(operated, 1, name);
+  }
+
+  for (const locatorCount of [0, 2]) {
+    let operated = 0;
+    const page = {
+      url() { return `https://extension-validation-${locatorCount}.example/event/1`; },
+      locator() { return { async count() { return locatorCount; } }; },
+    };
+    const harness = createProductionBrowserHarness({
+      lumaWorkflow: { async readProviderState() { throw new Error("wrong provider"); } },
+      extensionProvider: `extension-validation-${locatorCount}`,
+      extensionWorkflow: { async readProviderState() { return { status: "absent" }; } },
+      async inspectControls() { return [{ control: "register_button", kind: "button", label: "Register", required: false, completed: false, submittable: true }]; },
+      async proposeAction() { return { control: "register_button" }; },
+      async operateControl(input) { operated += 1; return operatePageControl(input); },
+      async resolveValue() { return null; },
+    });
+    const validationResult = await harness.runFallback({
+      provider: `extension-validation-${locatorCount}`,
+      candidate: { event_ref: `extension-validation-${locatorCount}://event/1` },
+      page,
+      pageWebsocket: `ws://127.0.0.1:9222/devtools/page/EXTENSION-VALIDATION-${locatorCount}`,
+      maxSteps: 1,
+      expectedState: "registered_or_pending",
+    });
+    assert.deepEqual(validationResult, { status: "failed", safe_reason: "agent_action_failed", repaired_actions: [] }, `locator-${locatorCount}`);
+    assert.equal(operated, 1, `locator-${locatorCount}`);
+  }
+});
+
+test("production harness timeout before locator dispatch prevents immediate and delayed clicks", async () => {
+  let clicks = 0;
+  let proposals = 0;
+  const page = {
+    url() { return "https://luma.com/timeout-before-dispatch"; },
+    locator() {
+      return {
+        async count() {
+          await new Promise((resolve) => setTimeout(resolve, 30));
+          return 1;
+        },
+        async click() { clicks += 1; },
+      };
+    },
+  };
+  const harness = createProductionBrowserHarness({
+    lumaWorkflow: { async readProviderState() { return { status: "absent" }; } },
+    async inspectControls() { return [{ control: "register_button", kind: "button", label: "Register", required: false, completed: false, submittable: true }]; },
+    async proposeAction() { proposals += 1; return { control: "register_button" }; },
+    operateControl: operatePageControl,
+    async resolveValue() { return null; },
+  });
+
+  const result = await harness.runFallback({
+    provider: "luma",
+    candidate: { event_ref: "luma-event://event/timeout-before-dispatch" },
+    page,
+    pageWebsocket: "ws://127.0.0.1:9222/devtools/page/TIMEOUT-BEFORE-DISPATCH",
+    maxSteps: 2,
+    maxDurationMs: 5,
+    expectedState: "registered_or_pending",
+  });
+
+  assert.deepEqual(result, { status: "failed", safe_reason: "time_limit", repaired_actions: [] });
+  assert.equal(clicks, 0);
+  await new Promise((resolve) => setTimeout(resolve, 40));
+  assert.equal(clicks, 0);
+  assert.equal(proposals, 1);
+});
+
+test("production harness timeout after submit dispatch is effect_unknown and does not start another step", async () => {
+  let clicks = 0;
+  let proposals = 0;
+  const page = {
+    url() { return "https://luma.com/timeout-after-dispatch"; },
+    locator() {
+      return {
+        async count() { return 1; },
+        async click() {
+          clicks += 1;
+          await new Promise((resolve) => setTimeout(resolve, 30));
+        },
+      };
+    },
+  };
+  const harness = createProductionBrowserHarness({
+    lumaWorkflow: { async readProviderState() { return { status: "absent" }; } },
+    async inspectControls() { return [{ control: "register_button", kind: "button", label: "Register", required: false, completed: false, submittable: true }]; },
+    async proposeAction() { proposals += 1; return { control: "register_button" }; },
+    operateControl: operatePageControl,
+    async resolveValue() { return null; },
+  });
+
+  const result = await harness.runFallback({
+    provider: "luma",
+    candidate: { event_ref: "luma-event://event/timeout-after-dispatch" },
+    page,
+    pageWebsocket: "ws://127.0.0.1:9222/devtools/page/TIMEOUT-AFTER-DISPATCH",
+    maxSteps: 2,
+    maxDurationMs: 5,
+    expectedState: "registered_or_pending",
+  });
+
+  assert.deepEqual(result, { status: "failed", safe_reason: "effect_unknown", repaired_actions: [] });
+  assert.equal(clicks, 1);
+  await new Promise((resolve) => setTimeout(resolve, 40));
+  assert.equal(clicks, 1);
+  assert.equal(proposals, 1);
 });
 
 test("TECH PLAY parent operation rejects radio ambiguity, drift, failed postcondition, and review/final clicks", async () => {

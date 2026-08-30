@@ -150,4 +150,13 @@ function createTechPlayEvidenceStore(options = {}) {
   });
 }
 
-module.exports = { createConnpassEvidenceStore, createMeetupEvidenceStore, createDoorkeeperEvidenceStore, createEventbriteEvidenceStore, createTechPlayEvidenceStore };
+function createKokuchProEvidenceStore(options = {}) {
+  return createBrowserProviderEvidenceStore({
+    ...options, provider: "kokuchpro",
+    eventRef: /^kokuchpro-event:\/\/event\/[0-9a-f]{32}(?:\/[1-9][0-9]*)?$/,
+    receiptRef: /^provider-receipt:\/\/kokuchpro\/([0-9a-f]{64})$/,
+    collisionMessage: "KokuchPro evidence collision",
+  });
+}
+
+module.exports = { createConnpassEvidenceStore, createMeetupEvidenceStore, createDoorkeeperEvidenceStore, createEventbriteEvidenceStore, createTechPlayEvidenceStore, createKokuchProEvidenceStore };

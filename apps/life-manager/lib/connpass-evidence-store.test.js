@@ -12,6 +12,7 @@ const {
   createDoorkeeperEvidenceStore,
   createEventbriteEvidenceStore,
   createTechPlayEvidenceStore,
+  createKokuchProEvidenceStore,
 } = require("./connpass-evidence-store.js");
 
 test("atomically stores and reads one Connpass PNG receipt without identity data", async (t) => {
@@ -264,4 +265,31 @@ test("TECH PLAY wrapper rejects invalid refs, collisions, and receipt or artifac
   fs.writeFileSync(objectFile, Buffer.concat([png, Buffer.from("tamper")]));
   await assert.rejects(store.readArtifact("techplay-test", refs.artifact_ref));
   await assert.rejects(store.record(input), /Tech Play evidence collision/);
+});
+
+test("KokuchPro wrapper stores occurrence evidence and rejects wrong event identity", async (t) => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "kokuchpro-evidence-"));
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
+  const png = Buffer.alloc(5_000, 0x6b);
+  Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).copy(png);
+  const store = createKokuchProEvidenceStore({ dataDir: directory });
+  const input = {
+    tenantId: "kokuchpro-test",
+    eventRef: "kokuchpro-event://event/89a92aac6c9a221ec337481b51c1bbef/3847918",
+    observedAt: "2026-08-13T01:02:03.000Z",
+    screenshot: png,
+  };
+  const refs = await store.record(input);
+  assert.match(refs.external_receipt_ref, /^provider-receipt:\/\/kokuchpro\/[0-9a-f]{64}$/);
+  assert.deepEqual(await store.readExternalReceipt("kokuchpro-test", refs.external_receipt_ref), {
+    kind: "provider_response",
+    provider_id: refs.external_receipt_ref.split("/").at(-1),
+    observed_at: input.observedAt,
+    event_ref: input.eventRef,
+    artifact_sha256: refs.artifact_ref.split("/").at(-1),
+  });
+  assert.deepEqual(await store.readArtifact("kokuchpro-test", refs.artifact_ref), png);
+  await assert.rejects(store.record({ ...input, eventRef: "kokuchpro-event://event/89a92aac6c9a221ec337481b51c1bbeF/3847918" }));
+  await assert.rejects(store.record({ ...input, eventRef: "kokuchpro-event://event/89a92aac6c9a221ec337481b51c1bbef/0" }));
+  assert.equal(JSON.stringify(refs).includes("kokuchpro-test"), false);
 });

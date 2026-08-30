@@ -100,6 +100,33 @@ test("KokuchPro normalizes one public free Tokyo offline occurrence", () => {
   assert.equal(Object.isFrozen(row), true);
 });
 
+test("KokuchPro accepts a colonless timezone offset as the same instant", () => {
+  const compact = normalizeKokuchProDetail({
+    binding: binding(),
+    detail: detail({
+      starts_at: "2026-08-31T18:00:00+0900",
+      ends_at: "2026-08-31T20:30:00+0900",
+    }),
+    now: new Date("2026-08-20T00:30:00.000Z"),
+  });
+  const colon = normalizeKokuchProDetail({
+    binding: binding(),
+    detail: detail({
+      starts_at: "2026-08-31T18:00:00+09:00",
+      ends_at: "2026-08-31T20:30:00+09:00",
+    }),
+    now: new Date("2026-08-20T00:30:00.000Z"),
+  });
+
+  assert.ok(compact);
+  assert.ok(colon);
+  assert.deepEqual([compact.starts_at, compact.ends_at], [colon.starts_at, colon.ends_at]);
+  assert.deepEqual([compact.starts_at, compact.ends_at], [
+    "2026-08-31T09:00:00.000Z",
+    "2026-08-31T11:30:00.000Z",
+  ]);
+});
+
 test("KokuchPro identity drift throws generic invalid while eligibility failures return null", () => {
   assert.throws(() => normalizeKokuchProDetail({
     binding: binding(),
@@ -520,6 +547,64 @@ test("KokuchPro readback classifies exact absent and auth-required boundaries", 
     login_forms: [{ action: LOGIN_URL, method: "POST" }],
   });
   assert.deepEqual(await workflow.readProviderState({ page: loginPage, candidate }), { status: "auth_required" });
+});
+
+test("KokuchPro readback accepts canonical registration evidence and a same-event detail page", async () => {
+  const candidate = normalizeKokuchProDetail({ binding: binding(), detail: detail(), now: NOW });
+  const canonicalPage = readbackPage(ROOT, {
+    entry_forms: [],
+    password_count: 0,
+    login_forms: [],
+    registration_links: [{ href: ENTRY_URL, text: "申込情報を確認する", visible: true }],
+  });
+  const detailUrl = `${ROOT}entry/detail/`;
+  const detailPage = readbackPage(detailUrl, {
+    entry_forms: [],
+    password_count: 0,
+    login_forms: [],
+    detail_headings: [{ text: "申込詳細", visible: true }],
+    canonical_links: [{ href: ROOT, text: "イベント", visible: true }],
+  });
+  const workflow = createKokuchProDiscoveryWorkflow();
+
+  assert.deepEqual(await workflow.readProviderState({ page: canonicalPage, candidate }), { status: "registered" });
+  assert.deepEqual(await workflow.readProviderState({ page: detailPage, candidate }), { status: "registered" });
+});
+
+test("KokuchPro readback rejects ambiguous or foreign registration evidence", async () => {
+  const candidate = normalizeKokuchProDetail({ binding: binding(), detail: detail(), now: NOW });
+  const workflow = createKokuchProDiscoveryWorkflow();
+  const cases = [
+    [ROOT, {
+      entry_forms: [], password_count: 0, login_forms: [],
+      registration_links: [
+        { href: ENTRY_URL, text: "申込情報を確認する", visible: true },
+        { href: ENTRY_URL, text: "申込情報を確認する", visible: true },
+      ],
+    }],
+    [ROOT, {
+      entry_forms: [], password_count: 0, login_forms: [],
+      registration_links: [{ href: "https://evil.example/event/entry/", text: "申込情報を確認する", visible: true }],
+    }],
+    [`${ROOT}entry/detail/`, {
+      entry_forms: [], password_count: 0, login_forms: [],
+      detail_headings: [{ text: "申込詳細", visible: true }],
+      canonical_links: [{ href: `${ROOT}?foreign=1`, text: "イベント", visible: true }],
+    }],
+    [`${ROOT}entry/detail/`, {
+      entry_forms: [], password_count: 0, login_forms: [],
+      detail_headings: [{ text: "申込詳細", visible: true }, { text: "申込詳細", visible: true }],
+      canonical_links: [{ href: ROOT, text: "イベント", visible: true }],
+    }],
+    [`${ROOT}entry/detail/?query=1`, {
+      entry_forms: [], password_count: 0, login_forms: [],
+      detail_headings: [{ text: "申込詳細", visible: true }],
+      canonical_links: [{ href: ROOT, text: "イベント", visible: true }],
+    }],
+  ];
+  for (const [url, facts] of cases) {
+    assert.deepEqual(await workflow.readProviderState({ page: readbackPage(url, facts), candidate }), { status: "unavailable" }, url);
+  }
 });
 
 test("KokuchPro readback fails closed for URL, candidate, DOM, and evaluation ambiguity", async () => {

@@ -78,10 +78,11 @@ function createBrowserHarnessAdapter(options = {}) {
   async function execute(bounded) {
     const repaired = [];
     const controller = new AbortController();
+    let dispatchAttempted = false;
     let stopReason = "time_limit";
     const stop = () => Object.freeze({
       status: "failed",
-      safe_reason: stopReason,
+      safe_reason: dispatchAttempted ? "effect_unknown" : stopReason,
       repaired_actions: Object.freeze([...repaired]),
     });
     const parentAbort = () => {
@@ -116,8 +117,17 @@ function createBrowserHarnessAdapter(options = {}) {
         if (!action) return Object.freeze({ status: "failed", safe_reason: "unsafe_agent_action", repaired_actions: Object.freeze([...repaired]) });
         const effect = await call(deps.performAction, {
           page: bounded.page, target_id: bounded.target_id, action,
+          ...(action.purpose === "submit" ? {
+            beforeDispatch: () => {
+              if (!controller.signal.aborted) dispatchAttempted = true;
+            },
+          } : {}),
         });
-        if (!effect || effect.status !== "success") return Object.freeze({ status: "failed", safe_reason: "agent_action_failed", repaired_actions: Object.freeze([...repaired]) });
+        if (!effect || effect.status !== "success") return Object.freeze({
+          status: "failed",
+          safe_reason: dispatchAttempted ? "effect_unknown" : "agent_action_failed",
+          repaired_actions: Object.freeze([...repaired]),
+        });
         repaired.push(action);
         const providerState = await call(deps.readExpectedState, {
           page: bounded.page, target_id: bounded.target_id, provider: bounded.provider,
