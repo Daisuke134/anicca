@@ -49,7 +49,7 @@ flowchart LR
 
 | atom | exact file / anchor | patch-level change | focused verification | size target |
 |---|---|---|---|---|
-| R0.1 release root | `skills/self/capafy-loop/capafy-loop-daily.sh:14` `LIFE_MANAGER_REPO=`、`:26` `SCRIPT_DIR=` | `SCRIPT_DIR`をrepo解決前へ移し、`.git`依存の`git rev-parse`を削除する。実行rootを`LIFE_MANAGER_RELEASE_ROOT=$(cd "$SCRIPT_DIR/../../.." && pwd)`、書込sourceを`LIFE_MANAGER_SOURCE_REPO`へ分離し、releaseの`bin/lm-loop`とsourceのcanonical remote/writableを起動時に検証する。child実行はrelease、candidate作成だけsourceを使う | `skills/capafy-autopublish/test/test_provider_agnostic_runner.py`、immutable archiveからdirect run、loaded argv/readback | 1 prod + 1 test / 45 LOC |
+| R0.1 release root — **completed** | `skills/self/capafy-loop/capafy-loop-daily.sh:14` `LIFE_MANAGER_RELEASE_ROOT`、`LIFE_MANAGER_SOURCE_REPO` | 実行rootと書込sourceを分離済み。child/inventoryはimmutable release、candidate作成だけcanonical writable sourceを使い、releaseの`.git`へ依存しない | focused境界test 2件PASS。loaded release `5302a48e3`のdaily scriptはmainとSHA-256 `69d8fc44…`で一致し、launchd argvは同releaseの`bin/lm-loop-run`とrelease rootを渡す | completed |
 | R0.2 private publisher state | `skills/capafy-autopublish/scripts/publish_prepare.sh:35` `CAPAFY_PUBLISH_HOME`、`:133` `CAPAFY_PUBLISH_WORK_DIR`、`publish_finish.sh:19,27` | repo内`vendor/.../.temp`をstate rootに使う経路を削除し、`CAPAFY_PUBLISHER_STATE_HOME=$LIFE_MANAGER_STATE_HOME/runtime/capafy-publisher`、`work/agents/<agent_id>`、`cfg_one.json`へ統一する。init/configure/shipは同じagent manifestだけを読む | existing work-state isolation tests、read-only releaseでsame-Agent prepare→finish、repo diff 0 | 2 prod + existing tests / 55 LOC |
 | R0.3 self-heal truth | `skills/self/capafy-loop/capafy-loop-healthcheck.sh:8-13` state constants、`:29-56` attempt/quota fence、`:86-90` stale branch | staleだけでblind kickstartしない。recent attemptとprovider backoff中はno-op。実owner missing/nonzero/stale terminal時だけrelease-local `bin/lm-loop restart capafy-loop`を1回呼び、restart receiptを保存する。successはdaily/healthcheck双方のfresh markerとterminal rc 0が揃った時だけ | `skills/self/capafy-loop/test_capafy_healthcheck_quota_backoff.py`へrestart-once、backoff-no-restart、fresh-no-restartを追加。自然hourly wakeでlast exit 0 | 1 prod + 1 test / 60 LOC |
 | R1.1 paid economics contract | `skills/capafy-autopublish/references/pricing.md:8-16`、`BEST_PRACTICES.md`のtrial/copy-winner段落 | `Free Trial必須`と`人が最終承認`を削除し、approved policy内の自動paid publishへ変更する。固定sandbox `$0.07/day`を削除し、publish時console readback値を使う式 `publisher_net=(cycle_price-sandbox_fee)*0.80` と `contribution=publisher_net-hosted_cost`を唯一のgateにする。勝者はcustomer job/pricing/proof structureだけ模倣し、文面・identity・codeはcopyしない | reference grepで`trial必須`、固定sandbox、human final approval、verbatim copy 0 | 2 docs / 25 LOC |
@@ -97,7 +97,7 @@ P1は最初のcreative quality barを確定する一回限りのhuman gateであ
 | canonical source | `Daisuke134/life-manager` mainはpublic canonical repo。Capafy sourceは`skills/capafy-autopublish`、`skills/self/capafy-loop`、`skills/earn/capafy-marketing`に存在 | sourceは移植済み |
 | launchd cutover | loaded 8件すべての`ProgramArguments`と`WorkingDirectory`が`/Users/anicca/Projects/life-manager-main`を指す。旧repo path 0件、duplicate label 0件 | **PASS: runtimeはLife Manager** |
 | scheduler | `ai.anicca.capafy-loop-daily`はhourly、healthcheckは300秒でloaded。installed releaseは`/Users/anicca/loops/releases/20260830T220903-5302a48e` | **定義は存在するが、loadedだけではhealthyでない** |
-| process health | installed dailyの最新terminalはfailure。healthcheck自体はexit 0でもhealthy markerがstaleであり、runtime-state修正`01e66350f`とself-heal修正`e14caee35`はmain由来の同一installed releaseとして未検証 | **R0 ACTIVE: 自然wakeのofficial terminal rc 0まで未完** |
+| process health | R0.1のrelease/source分離はloaded releaseで検証済み。installed dailyの最新terminalは下流failureでlast exit 1。healthcheck自体はexit 0でもhealthy markerがstaleであり、publisher-state修正とself-heal修正はmain由来の同一installed releaseとして未検証 | **R0.2 ACTIVE: 自然wakeのofficial terminal rc 0まで未完** |
 | event ledger | live ledger 471行でduplicate `event_id` 0件、`verified`後の`unresolved` 0件。exact replayはidempotent、新しいretry/occurrenceだけが新IDを得る | **PASS: identityとphaseは単調** |
 | last money snapshot | live GET 5 sourceはfresh。5 orders、gross `$19.98`、pending `$8.00`、realized `$0.00`、refund `$0.00`。order billing mixとseller active subscription identityは取得不能 | one-timeとMRRは`unknown`、grossから推定しない |
 | marketing snapshot | 承認済みO13 ReelとDecision Debate Reelのnative URL/readbackあり。owner sessionによるcurrent playsは`1`と`8`、likes/commentsは`0/0`、2 sampleはbaseline-only。次のread-only rotation候補はData Analyst `7785270416` | posting railとtruthful metrics railは復旧。第3 evidence-backed Reelと同一window metricsが次のactive action |
@@ -517,7 +517,7 @@ Current production truth:
 
 このsectionは冒頭R0–O2 queueの短縮readbackである。実装diffは`Patch-level implementation cursor`を正本とし、常に最上段の未完了atomだけをactiveにする。
 
-1. **R0 NOW:** R0.1→R0.2→R0.3。分散branchの修正をmain由来immutable releaseへ統合し、installed daily/healthcheckの自然wake、fresh terminal rc 0、platform write 0を確認する。
+1. **R0 NOW:** R0.1 completed → **R0.2 active** → R0.3。publisher stateとself-heal修正を順番にmain由来immutable releaseへ統合し、installed daily/healthcheckの自然wake、fresh terminal rc 0、platform write 0を確認する。
 2. **R1:** R1.1→R1.2。trial、固定sandbox、human approval、verbatim copyを契約から削除し、paid recurring・renewal・positive contributionをlint/backlogで強制する。
 3. **M0:** M0.1。fresh official evidenceからhighest contribution EVのrecurring customer jobを1件だけ選ぶ。
 4. **M1:** M1.1。same-Agent retry優先でCP1→CP2→CP3を1件だけ閉じ、subscription/trial0/remote statusをreadbackする。
