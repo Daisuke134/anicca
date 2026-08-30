@@ -136,3 +136,57 @@ $$;
 
 REVOKE ALL ON FUNCTION public.claim_lm_symphony_job(text) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.claim_lm_symphony_job(text) TO service_role;
+
+CREATE OR REPLACE FUNCTION public.record_lm_symphony_issue(
+  p_tenant_id text,
+  p_dispatch_id text,
+  p_issue_ref text
+) RETURNS SETOF public.lm_symphony_dispatches
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_dispatch public.lm_symphony_dispatches%ROWTYPE;
+BEGIN
+  IF p_tenant_id IS NULL OR p_tenant_id !~ '^[a-z0-9][a-z0-9._-]{0,199}$'
+    OR p_dispatch_id IS NULL OR p_dispatch_id !~ '^[0-9a-f]{64}$'
+    OR p_issue_ref IS NULL
+    OR p_issue_ref !~ '^github-issue://Daisuke134/life-manager-workrooms/[1-9][0-9]*$' THEN
+    RAISE EXCEPTION 'symphony issue input invalid';
+  END IF;
+
+  SELECT * INTO v_dispatch
+  FROM public.lm_symphony_dispatches
+  WHERE tenant_id = p_tenant_id AND dispatch_id = p_dispatch_id
+  FOR UPDATE;
+  IF NOT FOUND THEN RETURN; END IF;
+  IF v_dispatch.status = 'mirrored' AND v_dispatch.issue_ref = p_issue_ref THEN
+    RETURN NEXT v_dispatch;
+    RETURN;
+  END IF;
+  IF v_dispatch.status <> 'claimed' OR v_dispatch.issue_ref IS NOT NULL THEN
+    RAISE EXCEPTION 'symphony issue conflict';
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM public.lm_runtime_jobs
+    WHERE tenant_id = p_tenant_id AND job_id = v_dispatch.job_id AND status = 'waiting_agent'
+  ) THEN
+    RAISE EXCEPTION 'symphony issue runtime job unavailable';
+  END IF;
+
+  UPDATE public.lm_symphony_dispatches
+  SET status = 'mirrored',
+      issue_ref = p_issue_ref,
+      mirrored_at = clock_timestamp(),
+      updated_at = clock_timestamp()
+  WHERE tenant_id = p_tenant_id AND dispatch_id = p_dispatch_id
+    AND status = 'claimed' AND issue_ref IS NULL
+  RETURNING * INTO v_dispatch;
+  IF NOT FOUND THEN RAISE EXCEPTION 'symphony issue conflict'; END IF;
+  RETURN NEXT v_dispatch;
+END
+$$;
+
+REVOKE ALL ON FUNCTION public.record_lm_symphony_issue(text,text,text) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.record_lm_symphony_issue(text,text,text) TO service_role;

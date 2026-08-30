@@ -5,6 +5,7 @@ const { canonicalOpportunityInput } = require("./money-printer-opportunity.js");
 const TENANT_ID = /^[a-z0-9][a-z0-9._-]{0,199}$/;
 const OPPORTUNITY_ID = /^[0-9a-f]{64}$/;
 const JOB_ID = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,199}$/;
+const GITHUB_ISSUE_REF = /^github-issue:\/\/Daisuke134\/life-manager-workrooms\/[1-9][0-9]*$/;
 
 function unavailable() { throw new Error("money printer runtime store unavailable"); }
 
@@ -44,6 +45,20 @@ function claimedSymphonyDispatch(result, uid) {
     || row.status !== "claimed" || row.issue_ref != null || row.result_ref != null
     || row.result_hash != null || row.result_payload != null || row.failure_code != null) {
     throw new Error("money printer runtime store Symphony claim readback invalid");
+  }
+  return row;
+}
+
+function mirroredSymphonyDispatch(result, expected) {
+  const rows = result && Array.isArray(result.rows) ? result.rows : [];
+  const row = rows.length === 1 ? rows[0] : null;
+  if (!row || rows.length !== 1 || typeof row !== "object" || Array.isArray(row)
+    || row.tenant_id !== expected.uid || row.dispatch_id !== expected.dispatchId
+    || !JOB_ID.test(String(row.job_id || "")) || !Number.isInteger(row.round) || row.round < 1
+    || row.status !== "mirrored" || row.issue_ref !== expected.issueRef
+    || row.result_ref != null || row.result_hash != null || row.result_payload != null
+    || row.failure_code != null) {
+    throw new Error("money printer runtime store Symphony issue readback invalid");
   }
   return row;
 }
@@ -149,6 +164,17 @@ function createMoneyPrinterRuntimeStore({ query } = {}) {
       return claimedSymphonyDispatch(await query(`
         SELECT * FROM public.claim_lm_symphony_job($1)
       `, [uid]), uid);
+    },
+    async recordSymphonyIssue(value) {
+      const uid = tenant(value && value.uid);
+      const dispatchId = String(value && value.dispatchId || "").trim();
+      const issueRef = String(value && value.issueRef || "").trim();
+      if (!OPPORTUNITY_ID.test(dispatchId) || !GITHUB_ISSUE_REF.test(issueRef)) {
+        throw new Error("money printer runtime store Symphony issue invalid");
+      }
+      return mirroredSymphonyDispatch(await query(`
+        SELECT * FROM public.record_lm_symphony_issue($1, $2, $3)
+      `, [uid, dispatchId, issueRef]), { uid, dispatchId, issueRef });
     },
     async createOpportunity(canonical) {
       const uid = tenant(canonical && canonical.uid);

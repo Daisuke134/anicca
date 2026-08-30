@@ -64,6 +64,32 @@ test("R03 Symphony claim atomically moves one queued general-agent job", async (
   await assert.rejects(foreign.claimSymphony({ uid: TENANT }), /readback/i);
 });
 
+test("R04 Symphony issue readback is idempotent and conflict-fenced", async () => {
+  const migration = fs.readFileSync(SYMPHONY_MIGRATION, "utf8");
+  assert.match(migration, /CREATE OR REPLACE FUNCTION public\.record_lm_symphony_issue\(\s*p_tenant_id text,\s*p_dispatch_id text,\s*p_issue_ref text\s*\)/i);
+  assert.match(migration, /status = 'mirrored'[\s\S]*issue_ref = p_issue_ref[\s\S]*mirrored_at = clock_timestamp\(\)/i);
+  assert.match(migration, /symphony issue conflict/i);
+
+  const issueRef = "github-issue://Daisuke134/life-manager-workrooms/1";
+  const dispatch = {
+    tenant_id: TENANT, dispatch_id: "d".repeat(64), job_id: `goal:${ID}`,
+    round: 1, status: "mirrored", issue_ref: issueRef, result_ref: null,
+    result_hash: null, result_payload: null, failure_code: null,
+  };
+  const calls = [];
+  const store = createMoneyPrinterRuntimeStore({ query: async (sql, values) => {
+    calls.push({ sql, values });
+    return { rows: [dispatch] };
+  } });
+  const input = { uid: TENANT, dispatchId: dispatch.dispatch_id, issueRef };
+  assert.deepEqual(await store.recordSymphonyIssue(input), dispatch);
+  assert.match(calls[0].sql, /^\s*SELECT \* FROM public\.record_lm_symphony_issue\(\$1, \$2, \$3\)/i);
+  assert.deepEqual(calls[0].values, [TENANT, dispatch.dispatch_id, issueRef]);
+  await assert.rejects(store.recordSymphonyIssue({ ...input, issueRef: "https://github.com/Daisuke134/life-manager-workrooms/issues/1" }), /issue/i);
+  const foreign = createMoneyPrinterRuntimeStore({ query: async () => ({ rows: [{ ...dispatch, tenant_id: "tenant-b" }] }) });
+  await assert.rejects(foreign.recordSymphonyIssue(input), /readback/i);
+});
+
 function opportunity() {
   return {
     uid: TENANT, opportunity_id: ID, source_url: "https://public.example/opportunity",
