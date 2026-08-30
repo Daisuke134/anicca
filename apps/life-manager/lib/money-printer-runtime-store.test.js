@@ -90,6 +90,36 @@ test("R04 Symphony issue readback is idempotent and conflict-fenced", async () =
   await assert.rejects(foreign.recordSymphonyIssue(input), /readback/i);
 });
 
+test("R05 Symphony result is stored once while the same job remains waiting_agent", async () => {
+  const migration = fs.readFileSync(SYMPHONY_MIGRATION, "utf8");
+  assert.match(migration, /CREATE OR REPLACE FUNCTION public\.record_lm_symphony_result\(/i);
+  assert.match(migration, /status = 'result_ready'[\s\S]*result_ref = p_result_ref[\s\S]*result_hash = p_result_hash[\s\S]*result_payload = p_result_payload/i);
+  assert.match(migration, /status = 'waiting_agent'/i);
+  assert.match(migration, /symphony result conflict/i);
+
+  const resultRef = "github-comment://Daisuke134/life-manager-workrooms/1/2";
+  const payload = {
+    protocol: "LM_RESULT_V1", tenant_id: TENANT, dispatch_id: "d".repeat(64),
+    job_id: `goal:${ID}`, status: "completed", execution_id: "codex-round-1", artifact_refs: [],
+  };
+  const dispatch = {
+    tenant_id: TENANT, dispatch_id: payload.dispatch_id, job_id: payload.job_id,
+    round: 1, status: "result_ready",
+    issue_ref: "github-issue://Daisuke134/life-manager-workrooms/1",
+    result_ref: resultRef, result_hash: "e".repeat(64), result_payload: payload, failure_code: null,
+  };
+  const calls = [];
+  const store = createMoneyPrinterRuntimeStore({ query: async (sql, values) => {
+    calls.push({ sql, values });
+    return { rows: [dispatch] };
+  } });
+  const input = { uid: TENANT, dispatchId: dispatch.dispatch_id, resultRef, resultHash: dispatch.result_hash, payload };
+  assert.deepEqual(await store.recordSymphonyResult(input), dispatch);
+  assert.match(calls[0].sql, /^\s*SELECT \* FROM public\.record_lm_symphony_result\(\$1, \$2, \$3, \$4, \$5\)/i);
+  assert.deepEqual(calls[0].values, [TENANT, dispatch.dispatch_id, resultRef, dispatch.result_hash, JSON.stringify(payload)]);
+  await assert.rejects(store.recordSymphonyResult({ ...input, payload: { ...payload, status: "unknown" } }), /result/i);
+});
+
 function opportunity() {
   return {
     uid: TENANT, opportunity_id: ID, source_url: "https://public.example/opportunity",

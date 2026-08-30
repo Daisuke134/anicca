@@ -6,6 +6,9 @@ const TENANT_ID = /^[a-z0-9][a-z0-9._-]{0,199}$/;
 const OPPORTUNITY_ID = /^[0-9a-f]{64}$/;
 const JOB_ID = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,199}$/;
 const GITHUB_ISSUE_REF = /^github-issue:\/\/Daisuke134\/life-manager-workrooms\/[1-9][0-9]*$/;
+const GITHUB_COMMENT_REF = /^github-comment:\/\/Daisuke134\/life-manager-workrooms\/[1-9][0-9]*\/[1-9][0-9]*$/;
+const URI_REF = /^[a-z][a-z0-9+.-]{1,31}:\/\/[A-Za-z0-9][A-Za-z0-9._~:/?#@!$&'()*+,;=%-]{0,999}$/;
+const EXECUTION_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/;
 
 function unavailable() { throw new Error("money printer runtime store unavailable"); }
 
@@ -61,6 +64,56 @@ function mirroredSymphonyDispatch(result, expected) {
     throw new Error("money printer runtime store Symphony issue readback invalid");
   }
   return row;
+}
+
+function stableJson(value) {
+  if (Array.isArray(value)) return `[${value.map(stableJson).join(",")}]`;
+  if (value && typeof value === "object") {
+    return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableJson(value[key])}`).join(",")}}`;
+  }
+  return JSON.stringify(value);
+}
+
+function resultReadySymphonyDispatch(result, expected) {
+  const rows = result && Array.isArray(result.rows) ? result.rows : [];
+  const row = rows.length === 1 ? rows[0] : null;
+  if (!row || rows.length !== 1 || typeof row !== "object" || Array.isArray(row)
+    || row.tenant_id !== expected.uid || row.dispatch_id !== expected.dispatchId
+    || row.job_id !== expected.payload.job_id || row.status !== "result_ready"
+    || row.result_ref !== expected.resultRef || row.result_hash !== expected.resultHash
+    || stableJson(row.result_payload) !== stableJson(expected.payload) || row.failure_code != null) {
+    throw new Error("money printer runtime store Symphony result readback invalid");
+  }
+  return row;
+}
+
+function symphonyResultInput(value) {
+  const uid = tenant(value && value.uid);
+  const dispatchId = String(value && value.dispatchId || "").trim();
+  const resultRef = String(value && value.resultRef || "").trim();
+  const resultHash = String(value && value.resultHash || "").trim();
+  const payload = value && value.payload;
+  const base = ["artifact_refs", "dispatch_id", "execution_id", "job_id", "protocol", "status", "tenant_id"];
+  const human = [...base, "question", "reason_code", "required_format"].sort();
+  const keys = payload && typeof payload === "object" && !Array.isArray(payload) ? Object.keys(payload).sort() : [];
+  if (!OPPORTUNITY_ID.test(dispatchId) || !GITHUB_COMMENT_REF.test(resultRef)
+    || !OPPORTUNITY_ID.test(resultHash) || !payload || Array.isArray(payload)
+    || payload.protocol !== "LM_RESULT_V1" || payload.tenant_id !== uid
+    || payload.dispatch_id !== dispatchId || !JOB_ID.test(String(payload.job_id || ""))
+    || !new Set(["completed", "needs_human"]).has(payload.status)
+    || !EXECUTION_ID.test(String(payload.execution_id || ""))
+    || !Array.isArray(payload.artifact_refs) || payload.artifact_refs.length > 100
+    || payload.artifact_refs.some((ref) => typeof ref !== "string" || !URI_REF.test(ref))
+    || (payload.status === "completed" && stableJson(keys) !== stableJson(base.sort()))
+    || (payload.status === "needs_human" && (
+      stableJson(keys) !== stableJson(human)
+      || !JOB_ID.test(String(payload.reason_code || ""))
+      || typeof payload.question !== "string" || !payload.question.trim() || payload.question.length > 2000
+      || !["string", "object"].includes(typeof payload.required_format) || payload.required_format == null
+    ))) {
+    throw new Error("money printer runtime store Symphony result invalid");
+  }
+  return Object.freeze({ uid, dispatchId, resultRef, resultHash, payload });
 }
 
 function expectedOpportunity(value) {
@@ -175,6 +228,12 @@ function createMoneyPrinterRuntimeStore({ query } = {}) {
       return mirroredSymphonyDispatch(await query(`
         SELECT * FROM public.record_lm_symphony_issue($1, $2, $3)
       `, [uid, dispatchId, issueRef]), { uid, dispatchId, issueRef });
+    },
+    async recordSymphonyResult(value) {
+      const expected = symphonyResultInput(value);
+      return resultReadySymphonyDispatch(await query(`
+        SELECT * FROM public.record_lm_symphony_result($1, $2, $3, $4, $5)
+      `, [expected.uid, expected.dispatchId, expected.resultRef, expected.resultHash, JSON.stringify(expected.payload)]), expected);
     },
     async createOpportunity(canonical) {
       const uid = tenant(canonical && canonical.uid);

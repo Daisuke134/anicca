@@ -190,3 +190,102 @@ $$;
 
 REVOKE ALL ON FUNCTION public.record_lm_symphony_issue(text,text,text) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.record_lm_symphony_issue(text,text,text) TO service_role;
+
+CREATE OR REPLACE FUNCTION public.record_lm_symphony_result(
+  p_tenant_id text,
+  p_dispatch_id text,
+  p_result_ref text,
+  p_result_hash text,
+  p_result_payload jsonb
+) RETURNS SETOF public.lm_symphony_dispatches
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_dispatch public.lm_symphony_dispatches%ROWTYPE;
+  v_artifact jsonb;
+  v_key_count integer;
+BEGIN
+  IF p_tenant_id IS NULL OR p_tenant_id !~ '^[a-z0-9][a-z0-9._-]{0,199}$'
+    OR p_dispatch_id IS NULL OR p_dispatch_id !~ '^[0-9a-f]{64}$'
+    OR p_result_ref IS NULL
+    OR p_result_ref !~ '^github-comment://Daisuke134/life-manager-workrooms/[1-9][0-9]*/[1-9][0-9]*$'
+    OR p_result_hash IS NULL OR p_result_hash !~ '^[0-9a-f]{64}$'
+    OR jsonb_typeof(p_result_payload) <> 'object'
+    OR octet_length(p_result_payload::text) > 16384 THEN
+    RAISE EXCEPTION 'symphony result input invalid';
+  END IF;
+
+  SELECT * INTO v_dispatch
+  FROM public.lm_symphony_dispatches
+  WHERE tenant_id = p_tenant_id AND dispatch_id = p_dispatch_id
+  FOR UPDATE;
+  IF NOT FOUND THEN RETURN; END IF;
+  IF v_dispatch.status = 'result_ready'
+    AND v_dispatch.result_ref = p_result_ref
+    AND v_dispatch.result_hash = p_result_hash
+    AND v_dispatch.result_payload = p_result_payload THEN
+    RETURN NEXT v_dispatch;
+    RETURN;
+  END IF;
+  IF v_dispatch.status <> 'mirrored'
+    OR p_result_ref NOT LIKE replace(v_dispatch.issue_ref, 'github-issue://', 'github-comment://') || '/%' THEN
+    RAISE EXCEPTION 'symphony result conflict';
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM public.lm_runtime_jobs
+    WHERE tenant_id = p_tenant_id AND job_id = v_dispatch.job_id AND status = 'waiting_agent'
+  ) THEN
+    RAISE EXCEPTION 'symphony result runtime job unavailable';
+  END IF;
+
+  SELECT count(*) INTO v_key_count FROM jsonb_object_keys(p_result_payload);
+  IF NOT (p_result_payload ?& ARRAY[
+      'protocol', 'tenant_id', 'dispatch_id', 'job_id', 'status', 'execution_id', 'artifact_refs'
+    ])
+    OR p_result_payload->>'protocol' <> 'LM_RESULT_V1'
+    OR p_result_payload->>'tenant_id' <> p_tenant_id
+    OR p_result_payload->>'dispatch_id' <> p_dispatch_id
+    OR p_result_payload->>'job_id' <> v_dispatch.job_id
+    OR p_result_payload->>'status' NOT IN ('completed', 'needs_human')
+    OR p_result_payload->>'execution_id' !~ '^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$'
+    OR jsonb_typeof(p_result_payload->'artifact_refs') <> 'array'
+    OR jsonb_array_length(p_result_payload->'artifact_refs') > 100 THEN
+    RAISE EXCEPTION 'symphony result payload invalid';
+  END IF;
+  FOR v_artifact IN SELECT value FROM jsonb_array_elements(p_result_payload->'artifact_refs') LOOP
+    IF jsonb_typeof(v_artifact) <> 'string'
+      OR v_artifact #>> '{}' !~ '^[a-z][a-z0-9+.-]{1,31}://[A-Za-z0-9][A-Za-z0-9._~:/?#@!$&''()*+,;=%-]{0,999}$' THEN
+      RAISE EXCEPTION 'symphony result artifact invalid';
+    END IF;
+  END LOOP;
+  IF p_result_payload->>'status' = 'completed' AND v_key_count <> 7 THEN
+    RAISE EXCEPTION 'symphony result payload invalid';
+  END IF;
+  IF p_result_payload->>'status' = 'needs_human' AND (
+    NOT (p_result_payload ?& ARRAY['reason_code', 'question', 'required_format'])
+    OR v_key_count <> 10
+    OR p_result_payload->>'reason_code' !~ '^[A-Za-z0-9][A-Za-z0-9._:/-]{0,199}$'
+    OR char_length(p_result_payload->>'question') NOT BETWEEN 1 AND 2000
+    OR jsonb_typeof(p_result_payload->'required_format') NOT IN ('object', 'array', 'string')
+  ) THEN
+    RAISE EXCEPTION 'symphony result payload invalid';
+  END IF;
+
+  UPDATE public.lm_symphony_dispatches
+  SET status = 'result_ready',
+      result_ref = p_result_ref,
+      result_hash = p_result_hash,
+      result_payload = p_result_payload,
+      result_ready_at = clock_timestamp(),
+      updated_at = clock_timestamp()
+  WHERE tenant_id = p_tenant_id AND dispatch_id = p_dispatch_id AND status = 'mirrored'
+  RETURNING * INTO v_dispatch;
+  IF NOT FOUND THEN RAISE EXCEPTION 'symphony result conflict'; END IF;
+  RETURN NEXT v_dispatch;
+END
+$$;
+
+REVOKE ALL ON FUNCTION public.record_lm_symphony_result(text,text,text,text,jsonb) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.record_lm_symphony_result(text,text,text,text,jsonb) TO service_role;
