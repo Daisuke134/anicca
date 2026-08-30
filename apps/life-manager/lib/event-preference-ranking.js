@@ -108,6 +108,12 @@ function publicText(value, max, required = true) {
   return text;
 }
 
+function optionalPublicText(value, max) {
+  if (value == null) return "";
+  if (typeof value !== "string") invalid();
+  return publicText(value, max, false);
+}
+
 function normalizeProviderInput(input = {}) {
   if (!input || typeof input !== "object" || Array.isArray(input)) invalid();
   if (!Array.isArray(input.candidates) || input.candidates.length > 500) invalid();
@@ -119,11 +125,23 @@ function normalizeProviderInput(input = {}) {
     const canonicalUrl = publicText(candidate.canonical_url, 2_000);
     const title = publicText(candidate.title, 500);
     const body = publicText(String(candidate.body || candidate.description || "").slice(0, 8_000), 8_000, false);
+    const venueName = optionalPublicText(candidate.venue_name, 500);
+    const venueAddress = optionalPublicText(candidate.venue_address, 1_000);
+    const attendanceMode = optionalPublicText(candidate.attendance_mode, 64);
     let parsed;
     try { parsed = new URL(canonicalUrl); } catch { invalid(); }
     if (!/^[a-z][a-z0-9_-]{1,31}$/.test(provider) || parsed.protocol !== "https:" || seen.has(eventRef)) invalid();
     seen.add(eventRef);
-    return Object.freeze({ provider, event_ref: eventRef, canonical_url: canonicalUrl, title, body });
+    return Object.freeze({
+      provider,
+      event_ref: eventRef,
+      canonical_url: canonicalUrl,
+      title,
+      body,
+      ...(venueName ? { venue_name: venueName } : {}),
+      ...(venueAddress ? { venue_address: venueAddress } : {}),
+      ...(attendanceMode ? { attendance_mode: attendanceMode } : {}),
+    });
   });
   return Object.freeze({ candidates: Object.freeze(candidates), preferences: safeText(input.preferences, 2_000) });
 }

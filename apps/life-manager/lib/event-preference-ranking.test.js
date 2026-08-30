@@ -75,6 +75,68 @@ test("provider-neutral ranking preserves weak and unknown rows but never returns
   ]);
 });
 
+test("provider ranking preserves public onsite location context when title and body omit Tokyo", async () => {
+  const candidate = Object.freeze({
+    provider: "luma",
+    event_ref: "luma-event://event/location-context",
+    canonical_url: "https://luma.com/location-context",
+    title: "AI Builders Evening",
+    body: "A practical meetup for agent builders.",
+    venue_name: "Shibuya AI Hub",
+    venue_address: "Tokyo, Shibuya",
+    attendance_mode: "in_person",
+  });
+  let transported;
+  const ranking = await inferProviderCandidateRanking({
+    candidates: [candidate],
+    preferences: "Tokyo in-person AI events",
+  }, {
+    generateDecision: async ({ prompt }) => {
+      transported = JSON.parse(prompt.match(/EVENT_DATA_START\n([\s\S]+)\nEVENT_DATA_END/)[1]);
+      return { ranked_events: [{
+        event_ref: candidate.event_ref,
+        priority_class: "ai",
+        preference_fit: "strong",
+        preference_reason: "Verified in-person Tokyo AI event.",
+      }] };
+    },
+  });
+
+  assert.deepEqual(transported, [candidate]);
+  assert.deepEqual(eligibleRankedCandidates(ranking).map((row) => row.event_ref), [candidate.event_ref]);
+  assert.equal(ranking.ranked_events[0].venue_name, candidate.venue_name);
+  assert.equal(ranking.ranked_events[0].venue_address, candidate.venue_address);
+  assert.equal(ranking.ranked_events[0].attendance_mode, candidate.attendance_mode);
+});
+
+test("provider ranking fails closed on malformed optional location context", async () => {
+  const base = {
+    provider: "luma",
+    event_ref: "luma-event://event/location-invalid",
+    canonical_url: "https://luma.com/location-invalid",
+    title: "AI Builders Evening",
+    body: "A practical meetup for agent builders.",
+  };
+  const modelDecision = {
+    ranked_events: [{
+      event_ref: base.event_ref,
+      priority_class: "ai",
+      preference_fit: "strong",
+      preference_reason: "Verified AI event.",
+    }],
+  };
+  for (const [field, value] of [
+    ["venue_name", { private: true }],
+    ["venue_address", "x".repeat(1_001)],
+    ["attendance_mode", "bad\u0000mode"],
+  ]) {
+    await assert.rejects(() => inferProviderCandidateRanking({
+      candidates: [{ ...base, [field]: value }],
+      preferences: "Tokyo in-person AI events",
+    }, { generateDecision: async () => modelDecision }), /event preference ranking invalid/i);
+  }
+});
+
 test("Gemini provider ranking strips unsupported schema keywords only from the transport payload", async () => {
   let request;
   const ranking = await inferProviderCandidateRanking({
