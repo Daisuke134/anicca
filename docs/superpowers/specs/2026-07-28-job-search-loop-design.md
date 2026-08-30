@@ -2,26 +2,31 @@
 
 **Owner:** Daisuke Narita
 **Current verified status:** `ai.anicca.job-search-daily` is installed with
-`StartInterval=1800`; this is a 30-minute loop, not an hourly loop. The loaded
-immutable runtime for the five existing Job Hunter owners is release
-`20260829T161416-6aceea13`, source SHA
-`6aceea1388ba9206fa5ce7a31cc1b69f187cae74`. A same-context preflight returned
-`status=pass`, `mutation_allowed=true`, Aqua, and UID `501` before mutation.
-Targeted `lm-loop apply` and independent loaded-domain readback prove exact-release
-`ProgramArguments` for `job-search-browser`, `job-search-daily`,
-`job-search-health`, `job-search-inbox`, and `job-search-mercor`; their cadences are
-KeepAlive, 1800, 300, 900, and 3600 seconds respectively. The apply-owned RunAtLoad
-wake `daily-20260830-002813` ran through launchd, evaluated 24 Workday rows, and
-terminated `budget_exhausted`. Its wake report keeps Cloudera application
-`5330c927f08fb3408205bab2b0a7d7916d0a0e578c0a79b79d5086ed73b17a1d` at
-`resume_same_row_next_wake`. Therefore production has not yet proved the required
-failed-row receipt followed by a different application ID/company in the same wake,
-and this wake produced no accepted application. Three authoritative Mastercard messages in one Gmail
-thread are now reconciled to their exact intents and Ledger `submitted`: Customer
-Technical Services Analyst (`1a042e6f08496632`), Digital Marketing Specialist
-(`1a0431c6d46fa056`), and Manager, Account Management (`1a043c242c8b11cc`). Newer
-`materials_ready`, discovery, Telegram, standalone screenshot, or Ledger rows do not
-count as applications.
+`StartInterval=1800`; this is a 30-minute loop, not an hourly loop. The five existing
+Job Hunter owners load main-derived immutable release
+`20260831T000638-16d0cdfc`, source SHA
+`16d0cdfca5d02f574a014f9aeb8e385bf281a59a`: browser, daily, inbox, learning and
+health. Same-context preflight returned `status=pass` and
+`mutation_allowed=true`, and loaded-domain readback proves exact-release
+`ProgramArguments`. The HPE `Thank you for your online submission` message now
+reconciles exactly once to its submit intent and Ledger `submitted`; immediate replay
+reconciles zero additional confirmations. Telegram sent the exact application
+outcome and receipt acknowledgements.
+
+The first release-owned wake, `daily-20260831-000827`, proves the rolling deficit no
+longer collapses qualification to one row: with deficit 47 it evaluates 24 candidates,
+qualifies Regeneron application
+`b357a31ce4dbbb3612cfc1fd939021a04f4a40550117194c4e11e552553b5317`, and queues it
+with the existing Cloudera row. It also exposes the next active 10P3 defect. The
+browser runner executes `runtime observe` twice and receives an eligible `observed`
+row both times, but returns `queue_complete` with empty `submitted`,
+`submit_unknown`, and `blocked` arrays. No row checkpoint, submit intent, or Gmail
+confirmation is created. `validate_pass_result()` currently accepts that false empty
+success, so the wake exits without the required application. The owner must reject
+an empty `queue_complete` whenever its successful runtime transcript contains an
+unclosed `observed` row, retry once from the durable row, and fail visibly after the
+bounded retry rather than report success. Newer `materials_ready`, discovery,
+Telegram, standalone screenshot, or Ledger rows do not count as applications.
 
 The application Ledger remains the state SSOT and `summary.v2` is rebuilt from its
 event stream on every wake. Every-wake and application-result Telegram delivery uses
