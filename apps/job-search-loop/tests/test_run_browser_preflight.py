@@ -12,6 +12,106 @@ TEXT = SCRIPT.read_text(encoding="utf-8")
 
 
 class RunBrowserPreflightTests(unittest.TestCase):
+    def test_loop_id_only_reconstructs_mercor_browser_defaults(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            home = root / "home"
+            home.mkdir()
+            resume_profile = home / "mercor-resume-profile"
+            resume_state = home / ".local" / "state" / "anicca" / "job-search" / "mercor" / "resume-state.json"
+            resume_state.parent.mkdir(parents=True)
+            resume_state.write_text(
+                json.dumps({"browser": {"profile": str(resume_profile)}}),
+                encoding="utf-8",
+            )
+            wrapper = root / "apps" / "job-search-loop" / "scripts" / "run-browser.sh"
+            wrapper.parent.mkdir(parents=True)
+            script = TEXT
+            start = script.index("if ! CANONICAL_HOME=")
+            end = script.index('export HOME="$CANONICAL_HOME"', start) + len(
+                'export HOME="$CANONICAL_HOME"'
+            )
+            wrapper.write_text(
+                script[:start]
+                + 'CANONICAL_HOME="$TEST_CANONICAL_HOME"\nexport HOME="$CANONICAL_HOME"'
+                + script[end:],
+                encoding="utf-8",
+            )
+            guard = root / "skills" / "earn" / "gig" / "scripts" / "gig_disk_guard.py"
+            guard.parent.mkdir(parents=True)
+            guard_capture = root / "guard.json"
+            guard.write_text(
+                """
+import json
+import os
+from pathlib import Path
+
+Path(os.environ["GUARD_CAPTURE"]).write_text(
+    json.dumps({
+        "state": os.environ.get("GIG_STATE_DIR"),
+        "pressure": os.environ.get("GIG_IGNORE_DISK_PRESSURE_BLOCK"),
+        "headroom": os.environ.get("GIG_DISK_HEADROOM_KIB"),
+    }),
+    encoding="utf-8",
+)
+""",
+                encoding="utf-8",
+            )
+            chromium = (
+                home
+                / ".cloakbrowser"
+                / "chromium-1"
+                / "Chromium.app"
+                / "Contents"
+                / "MacOS"
+                / "Chromium"
+            )
+            chromium.parent.mkdir(parents=True)
+            chromium_capture = root / "chromium-args.txt"
+            chromium.write_text(
+                '#!/bin/zsh\nprint -rl -- "$@" > "$CHROMIUM_CAPTURE"\n',
+                encoding="utf-8",
+            )
+            chromium.chmod(0o700)
+
+            environment = os.environ.copy()
+            for name in (
+                "JOB_SEARCH_BROWSER_STATE_NAME",
+                "JOB_SEARCH_BROWSER_PORT",
+                "JOB_SEARCH_BROWSER_FINGERPRINT",
+                "JOB_SEARCH_BROWSER_PROFILE",
+            ):
+                environment.pop(name, None)
+            environment.update(
+                {
+                    "TEST_CANONICAL_HOME": str(home),
+                    "GUARD_CAPTURE": str(guard_capture),
+                    "CHROMIUM_CAPTURE": str(chromium_capture),
+                    "LIFE_MANAGER_LOOP_ID": "job-search-mercor-browser",
+                }
+            )
+            completed = subprocess.run(
+                ["/bin/zsh", str(wrapper)],
+                env=environment,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            self.assertEqual(
+                json.loads(guard_capture.read_text(encoding="utf-8")),
+                {
+                    "state": str(home / ".local" / "state" / "life-manager" / "mercor-browser"),
+                    "pressure": "1",
+                    "headroom": "524288",
+                },
+            )
+            args = chromium_capture.read_text(encoding="utf-8").splitlines()
+            self.assertIn("--remote-debugging-port=9334", args)
+            self.assertIn("--fingerprint=81234", args)
+            self.assertIn(f"--user-data-dir={resume_profile}", args)
+
     def test_state_name_controls_pressure_override_at_guard_boundary(self) -> None:
         fake_guard = """
 import json
@@ -106,7 +206,7 @@ raise SystemExit(1)
 
     def test_existing_profile_and_chromium_lifecycle_stays_intact(self) -> None:
         self.assertIn(
-            'PROFILE="${JOB_SEARCH_BROWSER_PROFILE:-$HOME/.cloak/profiles/job-search-daily}"',
+            'PROFILE="${JOB_SEARCH_BROWSER_PROFILE-$HOME/.cloak/profiles/job-search-daily}"',
             TEXT,
         )
         self.assertIn(

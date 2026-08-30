@@ -32,7 +32,13 @@ unset GIG_IGNORE_DISK_PRESSURE_BLOCK \
   DISK_CONTROL_STATE_DIR \
   OPENCLAW_STATE_DIR \
   LIFE_MANAGER_HOST_STATE_DIR
-BROWSER_STATE_NAME="${JOB_SEARCH_BROWSER_STATE_NAME:-job-search-browser}"
+if [[ -n "${JOB_SEARCH_BROWSER_STATE_NAME+x}" ]]; then
+  BROWSER_STATE_NAME="$JOB_SEARCH_BROWSER_STATE_NAME"
+elif [[ "${LIFE_MANAGER_LOOP_ID:-}" == "job-search-mercor-browser" ]]; then
+  BROWSER_STATE_NAME="mercor-browser"
+else
+  BROWSER_STATE_NAME="job-search-browser"
+fi
 if [[ ! "$BROWSER_STATE_NAME" =~ '^[A-Za-z0-9][A-Za-z0-9._-]*$' ]]; then
   print -u2 "job-search browser: invalid browser state name"
   exit 2
@@ -54,7 +60,13 @@ if ! /usr/bin/python3 -I "$DISK_GUARD" /usr/bin/true; then
   exit 1
 fi
 
-BROWSER_PORT="${JOB_SEARCH_BROWSER_PORT:-9222}"
+if [[ "$BROWSER_STATE_NAME" == "mercor-browser" ]]; then
+  BROWSER_PORT="${JOB_SEARCH_BROWSER_PORT-9334}"
+  BROWSER_FINGERPRINT="${JOB_SEARCH_BROWSER_FINGERPRINT-81234}"
+else
+  BROWSER_PORT="${JOB_SEARCH_BROWSER_PORT-9222}"
+  BROWSER_FINGERPRINT="${JOB_SEARCH_BROWSER_FINGERPRINT-80137}"
+fi
 if [[ ! "$BROWSER_PORT" =~ '^[0-9]+$' ]]; then
   print -u2 "job-search browser: invalid browser port"
   exit 2
@@ -63,12 +75,30 @@ if (( 10#$BROWSER_PORT < 1 || 10#$BROWSER_PORT > 65535 )); then
   print -u2 "job-search browser: invalid browser port"
   exit 2
 fi
-BROWSER_FINGERPRINT="${JOB_SEARCH_BROWSER_FINGERPRINT:-80137}"
 if [[ ! "$BROWSER_FINGERPRINT" =~ '^[0-9]+$' ]]; then
   print -u2 "job-search browser: invalid browser fingerprint"
   exit 2
 fi
-PROFILE="${JOB_SEARCH_BROWSER_PROFILE:-$HOME/.cloak/profiles/job-search-daily}"
+if [[ "$BROWSER_STATE_NAME" == "mercor-browser" && -z "${JOB_SEARCH_BROWSER_PROFILE+x}" ]]; then
+  PROFILE="$(
+    /usr/bin/python3 -I - "$HOME/.local/state/anicca/job-search/mercor/resume-state.json" <<'PY'
+import json, os, sys
+
+try:
+    profile = json.load(open(sys.argv[1], encoding="utf-8"))["browser"]["profile"]
+except (KeyError, OSError, TypeError, UnicodeError, ValueError):
+    raise SystemExit(1)
+if not isinstance(profile, str) or not profile or not os.path.isabs(profile):
+    raise SystemExit(1)
+print(profile, end="")
+PY
+  )" || PROFILE=""
+  if [[ -z "$PROFILE" ]]; then
+    PROFILE="$HOME/.cloak/profiles/job-search-mercor"
+  fi
+else
+  PROFILE="${JOB_SEARCH_BROWSER_PROFILE-$HOME/.cloak/profiles/job-search-daily}"
+fi
 if [[ "$PROFILE" != /* ]]; then
   print -u2 "job-search browser: browser profile must be absolute"
   exit 2
