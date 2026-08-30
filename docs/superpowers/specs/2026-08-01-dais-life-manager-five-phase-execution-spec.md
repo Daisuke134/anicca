@@ -27,7 +27,7 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 この節は、後段の「現在TODO」「次の一件」「local-only」「self-funded agentは別product」という相反する記述を
 上書きする最新の実行順序SSOTである。後段は実装履歴・organ別acceptanceとして保持するが、次作業の選択には使わない。
 Upworkのterminal evidence、startup context、public claim、GA-01〜13Aは完了または履歴として保持する。
-次の一件はAtomic program ledger Seq 18 `ELZ-C05`のsubstep `C05-14`で、C05 receiptをPASSへ更新する。
+次の一件はAtomic program ledger Seq 18 `ELZ-C05`のsubstep `C05-15`で、ELZ-C05をDONEへ更新する。
 
 #### 0.0.1 最新基盤決定 — ElizaOSを完全forkし、Life Managerをlocal OSSからmulti-tenant SaaSへ育てる
 
@@ -672,7 +672,7 @@ C07のCodexへ残す。新queue、新DB、provider adapter、model adapter、mar
 - [x] **C05-11** separate process restart後に同じGoal/WorkItemを再読出しする — C05-10 process close後、新しいBun processで同じprivate PGlite 0.4.6 DBをreopen。read-only selectだけでGoal/PlanGraph/WorkItem各1行、stable ID、opaque goal ref、本文/provenance複製0を再確認。schema reapply/DB write/service/model/provider/marketplace/payment 0、writer残存0、exit 0。private log/`pglite-goal-workitem-restart-receipt.json` mode 0600、receipt SHA256 `e62a0141…`。次はC05-12
 - [x] **C05-12** source/result hashを`goal-workitem-receipt.json`へ保存する — canonical fork `7bc1b9d5…`のsource 3 fileと、legacy/Eliza/reuse/RED/GREEN/PGlite apply/restart 7 evidenceを全SHA256再計算。one active Goal→one reference-only WorkItem、tenant scope、一transaction、stable identity、active superseder拒否、same replay/different conflict、focused 1/1、real PGlite 2 service calls、3 rows、duplicate 0、separate-process restart、writer 0、model/provider/marketplace/payment 0をprivate canonical receiptへ固定。mode 0600、SHA256 `eb6c5b89…`、status=`pending_review`、open findings null、revenue false。次はC05-13
 - [x] **C05-13** C05差分をfresh adversarial reviewへ一回だけ渡す — fresh Sol verifierはCritical 0/Important 3で、superseder同時write race、relation-level unique/conflict不足、restart process identity不足を反証。同じLunaがGoal table SHARE lock、PlanGraph scope-goal unique、WorkItem scope-plan unique、relation-key readback、dependent insert前typed conflictを実装しfork PR #28 merge `f3c79685…`。focused regression RED→2/2 GREEN、typecheck、実PGliteでconstraint 2、lock service calls 2、same replay、different PlanGraph typed conflict＋WorkItem 0、active superseder rejection＋PlanGraph 0を確認。restart PID/PPID/start/executable/argv/parentも再取得。限定recheck中に空typecheck log SHA誤記1件を訂正後、final `ship`、Critical/Important/open 0。private review/fix receipts mode 0600、canonical status=`review_passed`、SHA256 `0407c9d0…`。次はC05-14
-- [ ] **C05-14** C05 receiptをPASSへ更新する
+- [x] **C05-14** C05 receiptをPASSへ更新する — final source 4/evidence 9 hash、全private mode 0600、PGlite DB mode 0700、focused 2/2、relation constraints 2、lock/replay/typed conflict/superseder rejection/restart process identity、writer 0、review Critical/Important/open 0、model/provider/marketplace/payment 0を再監査。C05専用RAM volume detachとnode_modules symlink cleanupも確認。canonical `goal-workitem-receipt.json` status=`PASS`、SHA256 `a1da21f2…`。次はC05-15
 - [ ] **C05-15** ELZ-C05をDONEへ更新する
 - [ ] **C05-16** ELZ-C06をNEXTへ更新する
 
