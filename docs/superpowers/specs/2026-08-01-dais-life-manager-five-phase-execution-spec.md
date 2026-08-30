@@ -743,7 +743,18 @@ model/provider/browser判断、DB/scheduler、新engineは追加しない。Dais
 - [x] **C08-04** canonical `effect-receipt-kernel.json`をPASSへ固定する — final source 2 file、reuse/run evidence hash、fresh applied execute 1、replay additional execute 0、unknown-pre execute 0、ack-loss execute 1/blind retry 0、runtime/typecheck exit 0を再読出し。review/additional test/model/DB/browser/marketplace/payment/duplicate effect/secret leak 0、open finding 0、revenue false。canonical receipt mode 0600、status=`PASS`、SHA256 `decea1cb…`。次はC08-05
 - [x] **C08-05** ELZ-C08をDONEにしELZ-C09だけをNEXTへ更新する — canonical `effect-receipt-kernel.json` status=`PASS`、SHA256 `decea1cb…`、fresh/replay/unknown/ack-lossとeffect/secret leak 0を再読出し。Atomic program ledger Seq 21をDONE、Seq 22だけを`IN_PROGRESS — NEXT`へ更新。Phase L順序は不変。次はELZ-C09
 
-Lancersでまだ新しい収益がないことは、この順序を飛ばす理由にしない。現時点はC08がactiveであり、新forkのgeneral-agent基盤が
+##### C09 Atomic TODO — Goal reflection and plugin restart
+
+C09は既存tenant-scoped Goal→PlanGraph→WorkItem→EffectIntent→OutcomeReceipt→EconomicReceipt chainとPGlite restart contractをcopy+tweakする。
+新reflection table、event store、queue、scheduler、model judgmentは作らない。raw receiptを返さず、outcome/failure ref、cost/currency、created/occurred timeを
+Goalへread-only帰属し、同じPGlite pathを別processで開いてbyte-stable reflection hashを再読出しする。新RED/review/全suiteは行わず4項目で閉じる。
+
+- [x] **C09-01** Goal reflection/restart reuse mapを固定する — canonical fork `1e386bd7…`のschema/Goal persistence/migration/PGlite restart sourceとC05 apply/restart evidenceをSHA256固定。tenant chain、reference-only projection、outcome/failure、cost/currency、time、same PGlite new-process readbackを採用。新table/event store/queue/raw receipt/provider branch/model persistence/restart write/review/TDDを棄却。private `reflect-restart-reuse-map.json` mode 0600、SHA256 `670f51e5…`、model/DB/provider/external effect 0。次はC09-02
+- [ ] **C09-02** read-only Goal reflectionと既存service thin接続を実装する — new `goal-reflection.ts`＋`index.ts`だけ。tenant-scoped existing relationを読み、Goal ref、OutcomeReceipt ref/outcome/failure code/time、EconomicReceipt ref/kind/amount/currency/verification/timeをstable順で返す。raw receipt/statement/provenance/secret、write、新table/dependency/service/action/provider 0。次はC09-03
+- [ ] **C09-03** same PGliteを別processで再openしreflection同一hashを実証する — process 1でexisting schemaへone Goal chain＋success/failure/cost/time fixtureをwriteしてservice read、close。process 2はwrite 0で同じDB/serviceをreadし、same hash/count/ref、writer/lock 0を確認。typecheck、model/provider/browser/marketplace/payment effect 0。canonical `reflect-restart-receipt.json` status=`PASS`をprivate保存する。次はC09-04
+- [ ] **C09-04** ELZ-C09をDONEにしPhase LのELZ-L01だけをNEXTへ更新する — Atomic program ledger Seq 22をDONE、Seq 23 L01だけを`IN_PROGRESS — NEXT`へ更新。以後Lancers L01→L25順序は不変。次はELZ-L01
+
+Lancersでまだ新しい収益がないことは、この順序を飛ばす理由にしない。現時点はC09がactiveであり、新forkのgeneral-agent基盤が
 Lancers実環境へ到達していない。Lancersでの新規応募・契約・受領金・銀行着金はPhase C完了後のPhase Lで一つずつ実証する。
 
 ##### Phase F — Eliza fixed treeを未変更でlocal起動する
