@@ -1256,7 +1256,7 @@ One active item at a time。各itemは実物readbackを閉じてから次へ進�
 
 | Atom | One action | Exact completion evidence |
 |---|---|---|
-| B01 | private evidence rootを作る | directory exists、mode 700 |
+| B01 | private evidence rootを作る | pass: `/Users/anicca/.local/state/life-manager/evidence/webmcp-challenge`、mode 700、evidence `B01.json` |
 | B02 | fresh ChatGPT desktop in-app browserでcanonical URLを開く | one screenshotにURL、Judge guest、boardが表示 |
 | B03 | clientのSite tools一覧を開く | HumanTaskなしではexact four: `inspect_money_printer`、`add_opportunity`、`inspect_workroom`、`inspect_next_human_task`。`record_human_answer`は未登録 |
 | B04 | `inspect_money_printer`を一回callする | structured resultのmetricsが同時刻のvisible boardと一致 |
@@ -1395,4 +1395,4 @@ One active item at a time。各itemは実物readbackを閉じてから次へ進�
 
 ### 18.13 Immediate next atom
 
-`B01`だけを次に実行する。B01–B08が揃うまでmigration、Symphony bridge、provider applicationへ進まない。各atom完了時にこのSectionのstateとSection 17の対応uncertaintyを同じcommitで更新する。
+`B02`だけを次に実行する。B02–B08が揃うまでmigration、Symphony bridge、provider applicationへ進まない。各atom完了時にこのSectionのstateとSection 17の対応uncertaintyを同じcommitで更新する。
