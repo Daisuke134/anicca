@@ -91,9 +91,13 @@ class EntryDispatchTest(unittest.TestCase):
             private.mkdir(parents=True, mode=0o700)
             credentials = private / 'credentials.json'
             token = 'a' * 64
+            github_token = 'ghp_' + 'b' * 36
             credentials.write_text(json.dumps({
                 'version': 1,
-                'credentials': [{'service': 'life-manager-symphony-bridge', 'token': token}],
+                'credentials': [
+                    {'service': 'life-manager-symphony-bridge', 'token': token},
+                    {'service': 'openai-symphony-github', 'token': github_token},
+                ],
             }))
             credentials.chmod(0o600)
 
@@ -107,13 +111,28 @@ class EntryDispatchTest(unittest.TestCase):
             ])
             environment_for = getattr(entry_dispatch, 'environment_for', None)
             self.assertTrue(callable(environment_for), 'secure bridge environment loader is missing')
-            base = {'PATH': '/usr/bin'}
+            base = {
+                'PATH': '/usr/bin',
+                'GH_TOKEN': 'alias',
+                'GH_ENTERPRISE_TOKEN': 'alias',
+                'GITHUB_ENTERPRISE_TOKEN': 'alias',
+            }
             environment = environment_for('money-printer-symphony-bridge', home, base)
-            self.assertEqual(base, {'PATH': '/usr/bin'})
+            self.assertEqual(base, {
+                'PATH': '/usr/bin',
+                'GH_TOKEN': 'alias',
+                'GH_ENTERPRISE_TOKEN': 'alias',
+                'GITHUB_ENTERPRISE_TOKEN': 'alias',
+            })
             self.assertEqual(environment['LM_SYMPHONY_API_BASE_URL'],
                              'https://life-call-production.up.railway.app')
             self.assertEqual(environment['LM_RUNTIME_TENANT_ID'], 'webmcp-judge')
             self.assertEqual(environment['LM_SYMPHONY_BRIDGE_SECRET'], token)
+            self.assertEqual(environment['GITHUB_TOKEN'], github_token)
+            self.assertEqual(environment['PATH'], '/opt/homebrew/bin:/usr/bin:/bin')
+            self.assertNotIn('GH_TOKEN', environment)
+            self.assertNotIn('GH_ENTERPRISE_TOKEN', environment)
+            self.assertNotIn('GITHUB_ENTERPRISE_TOKEN', environment)
 
     def test_affiliate_browsers_use_installed_cloakbrowser_python(self):
         root=Path('/release'); home=Path('/home')

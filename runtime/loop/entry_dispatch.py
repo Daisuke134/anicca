@@ -212,16 +212,27 @@ def environment_for(loop_id: str, home: Path, base: dict[str, str]) -> dict[str,
         if credentials.stat().st_uid != os.getuid() or stat.S_IMODE(credentials.stat().st_mode) != 0o600:
             raise ValueError
         payload = json.loads(credentials.read_text(encoding="utf-8"))
-        rows = [row for row in payload.get("credentials", [])
-                if isinstance(row, dict) and row.get("service") == "life-manager-symphony-bridge"]
-        if len(rows) != 1 or not re.fullmatch(r"[A-Za-z0-9_-]{32,256}", rows[0].get("token", "")):
+        bridge_rows = [row for row in payload.get("credentials", [])
+                       if isinstance(row, dict)
+                       and row.get("service") == "life-manager-symphony-bridge"]
+        github_rows = [row for row in payload.get("credentials", [])
+                       if isinstance(row, dict)
+                       and row.get("service") == "openai-symphony-github"]
+        if (len(bridge_rows) != 1
+                or not re.fullmatch(r"[A-Za-z0-9_-]{32,256}", bridge_rows[0].get("token", ""))
+                or len(github_rows) != 1
+                or not _GITHUB_TOKEN.fullmatch(github_rows[0].get("token", ""))):
             raise ValueError
     except (OSError, AttributeError, TypeError, json.JSONDecodeError, ValueError):
         raise ValueError("money printer bridge credential unavailable") from None
+    for alias in ("GH_TOKEN", "GH_ENTERPRISE_TOKEN", "GITHUB_ENTERPRISE_TOKEN"):
+        environment.pop(alias, None)
     environment.update({
         "LM_SYMPHONY_API_BASE_URL": "https://life-call-production.up.railway.app",
-        "LM_SYMPHONY_BRIDGE_SECRET": rows[0]["token"],
+        "LM_SYMPHONY_BRIDGE_SECRET": bridge_rows[0]["token"],
         "LM_RUNTIME_TENANT_ID": "webmcp-judge",
+        "GITHUB_TOKEN": github_rows[0]["token"],
+        "PATH": "/opt/homebrew/bin:/usr/bin:/bin",
     })
     return environment
 
