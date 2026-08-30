@@ -2357,7 +2357,7 @@ MKT-09R3-01..13 → MKT-09R4..R9 → MKT-10 → MKT-11 → MKT-12 → MKT-13`.
 No later row starts early.
 
 Current TODO state: **incident recovery is reopened inside Order 25 MKT-10 at
-MKT-10R0, one destination at a time.** MKT-09R0 through the selected Postiz canary
+MKT-10R3, one destination at a time.** MKT-09R0 through the selected Postiz canary
 portfolio are terminal: capacity is safe, the shared publication fence remains closed,
 the JP4 false completion is quarantined, and the 13-effect set is 12 `present`
 plus one truthful `absent`. The full publication ledger is 43 `completed`,
@@ -2377,9 +2377,9 @@ blocked until MKT-10R7 closes.
 
 | Subcursor | One-at-a-time work | Done evidence |
 |---:|---|---|
-| MKT-10R0 | Freeze the current provider/manifest/native contradiction without publishing | immutable evidence records all 7 screenshot handles, live Postiz platform/profile/integration IDs, current lane-manifest hash/mode, loaded release, and zero provider writes |
-| MKT-10R1 | Make one machine-readable destination contract the SSOT | every retained account has exact product, locale, platform, native handle, integration ID, renderer, media form, approved pack, cadence, and explicit hold/missing reason; duplicate handles across platforms are rejected |
-| MKT-10R2 | Close account presence before content work | `@anicca.videojp`, TikTok `@anicca.jp1`, and `@anicca_girl` remain 0/day until an exact live TikTok integration exists; enabled Postiz connections not in the retained contract remain holds |
+| MKT-10R0 | **done —** freeze the current provider/manifest/native contradiction without publishing | immutable evidence `d2ca4981…303b8` records all 7 screenshot hashes/handles, all 30 live Postiz integrations with the exact matching rows, lane-manifest hash `a67070b1…8b00`, loaded release `557f1b59`, and provider writes 0. It proves `@anicca.videojp` and `@anicca_girl` are absent from Postiz while `@anicca.jp1` is an enabled Instagram integration, not TikTok |
+| MKT-10R1 | **done —** make one machine-readable destination contract the SSOT | `config/marketing-destinations.json` fixes 13 retained targets to exact product/job-product, locale, platform, Postiz profile, native handle, integration, renderer, job format, media form, approved pack name/ref, three JST slots, loop name, label, and entrypoint. Its fail-closed loader rejects duplicate retained handles across platforms and incomplete routes; contract and registry tests pass 4/4 |
+| MKT-10R2 | **done —** close account presence before content work | current provider audit covers all 30 live Postiz integrations exactly once as 13 targets plus 17 integration holds, with three additional absent/platform-collision holds. `@anicca.videojp`, TikTok `@anicca.jp1`, and `@anicca.girl` are explicit 0/day; `@aniccaaffirmation` and `@anicca_buddha` are explicit 0/day holds; uncovered live integrations and route errors are 0 |
 | MKT-10R3 | Repair the control-plane drift fail-closed | spec, lane manifest, registry schedule, loaded launchd argv, and immutable release agree on armed count and cadence; stale `canary-verified` cannot silently arm a lane |
 | MKT-10R4 | Revalidate Larry assets and account routing | one sunset/native-photo Larry pack has ordered image hashes, visible first frame, exact locale/caption, one destination integration, and rejects every ReelClaw/person-video asset before provider access |
 | MKT-10R5 | Revalidate ReelClaw/Honne/Anicca video routing | each approved video family is bound to one product/persona/locale/account contract; cross-account media reuse fails before enqueue and every mixed historical feed remains quarantined evidence |
