@@ -18,6 +18,7 @@ _IMMUTABLE_RELEASE_WORKING_DIRECTORY = re.compile(
     r"(?:^|/)loops/(?:releases|[^/]+/releases)/"
     r"[0-9]{8}T[0-9]{6}-[0-9a-f]{8,40}(?:/|$)"
 )
+_PRIVATE_LOG_LOOP_IDS = frozenset({"money-printer-symphony-bridge"})
 
 
 def _is_immutable_release_working_directory(value: object) -> bool:
@@ -40,6 +41,8 @@ def _plist(loop_id: str, entry: dict, release_root: Path, release_sha: str) -> b
         "StandardOutPath": str(Path(log_root) / "launchd.out.log"),
         "StandardErrorPath": str(Path(log_root) / "launchd.err.log"),
     }
+    if loop_id in _PRIVATE_LOG_LOOP_IDS:
+        value["Umask"] = 0o077
     key, cadence = next(iter(entry["cadence"].items()))
     if key == "start_interval_seconds":
         value["StartInterval"] = cadence
@@ -139,6 +142,17 @@ def _preserve_operational_attributes(new_bytes: bytes, old_bytes: bytes | None) 
     return plistlib.dumps(new, fmt=plistlib.FMT_XML, sort_keys=True)
 
 
+def _secure_log_paths(plist_bytes: bytes) -> None:
+    plist = plistlib.loads(plist_bytes)
+    paths = {plist["StandardOutPath"], plist["StandardErrorPath"]}
+    for raw_path in paths:
+        path = Path(raw_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.parent.chmod(0o700)
+        path.touch(mode=0o600, exist_ok=True)
+        path.chmod(0o600)
+
+
 def _loaded_arguments(text: str) -> list[str]:
     arguments, inside = [], False
     for raw in text.splitlines():
@@ -158,6 +172,8 @@ def install_one(item: dict, target: Path,
     label = item["label"]
     domain = f"gui/{os.getuid()}"
     service = f"{domain}/{label}"
+    if plistlib.loads(item["plist_bytes"]).get("Umask") == 0o077:
+        _secure_log_paths(item["plist_bytes"])
     old_bytes = target.read_bytes() if target.is_file() else None
     initial_rc, _ = launchctl(["print", service])
     was_loaded = initial_rc == 0
