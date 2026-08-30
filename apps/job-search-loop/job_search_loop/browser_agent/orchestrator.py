@@ -61,12 +61,26 @@ def validate_pass_result(evidence_dir: Path) -> str | None:
         and result.get("submitted") == []
         and result.get("submit_unknown") == []
     )
-    if status != "transport_failed" and not retry_in_progress:
+    retry_queue_complete = (
+        status == "queue_complete"
+        and result.get("submitted") == []
+        and result.get("submit_unknown") == []
+        and result.get("blocked") == []
+    )
+    if (
+        status != "transport_failed"
+        and not retry_in_progress
+        and not retry_queue_complete
+    ):
         return None
     retry_reason = (
         "in_progress_without_terminal_outcome"
         if retry_in_progress
-        else "transport_failed_without_command_failure"
+        else (
+            "observed_row_without_terminal_outcome"
+            if retry_queue_complete
+            else "transport_failed_without_command_failure"
+        )
     )
     try:
         attempt = json.loads(attempts_path.read_text(encoding="utf-8").splitlines()[-1])
@@ -75,12 +89,49 @@ def validate_pass_result(evidence_dir: Path) -> str | None:
         return retry_reason if status == "transport_failed" else None
     if stdout_path.parent != evidence_dir or not stdout_path.is_file():
         return retry_reason if status == "transport_failed" else None
+    latest_observe_status: str | None = None
     for line in stdout_path.read_text(encoding="utf-8").splitlines():
         try:
             event = json.loads(line)
         except json.JSONDecodeError:
             continue
         item = event.get("item") if isinstance(event, dict) else None
+        if (
+            event.get("type") == "item.completed"
+            and isinstance(item, dict)
+            and item.get("type") == "command_execution"
+            and isinstance(item.get("exit_code"), int)
+            and not isinstance(item.get("exit_code"), bool)
+            and item["exit_code"] == 0
+        ):
+            command = str(item.get("command") or "")
+            try:
+                command_parts = shlex.split(command)
+            except ValueError:
+                command_parts = []
+            if command_parts[:2] == ["/bin/zsh", "-lc"] and len(command_parts) == 3:
+                try:
+                    command_parts = shlex.split(command_parts[2])
+                except ValueError:
+                    command_parts = []
+            if (
+                len(command_parts) == 4
+                and Path(command_parts[0]).name
+                in {"python", "python3", "python3.14"}
+                and command_parts[1:]
+                == ["-m", "job_search_loop.browser_agent.runtime", "observe"]
+            ):
+                output = item.get("aggregated_output")
+                if isinstance(output, str):
+                    try:
+                        observe_result = json.loads(output)
+                    except json.JSONDecodeError:
+                        pass
+                    else:
+                        if isinstance(observe_result, dict) and isinstance(
+                            observe_result.get("status"), str
+                        ):
+                            latest_observe_status = observe_result["status"]
         if (
             event.get("type") == "item.completed"
             and isinstance(item, dict)
@@ -104,6 +155,8 @@ def validate_pass_result(evidence_dir: Path) -> str | None:
             ):
                 continue
             return None
+    if retry_queue_complete and latest_observe_status != "observed":
+        return None
     return retry_reason
 
 
