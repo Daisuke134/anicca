@@ -16,6 +16,8 @@ test("Money Printer registers inspection and state-dependent human answer tools"
   const registrations = [];
   const requests = [];
   const refreshEvents = [];
+  const webmcpEvents = [];
+  let fetchFailure = null;
   let releaseRefresh;
   const refreshGate = new Promise((resolve) => { releaseRefresh = resolve; });
   let nextRefresh = refreshGate;
@@ -44,12 +46,21 @@ test("Money Printer registers inspection and state-dependent human answer tools"
         },
       },
       dispatchEvent(event) {
+        if (event.type === "money-printer:webmcp-call") {
+          webmcpEvents.push(event);
+          return true;
+        }
         refreshEvents.push(event);
         if (event.detail && typeof event.detail === "object") event.detail.promise = nextRefresh;
         return true;
       },
     },
     fetch: async (url, init) => {
+      if (fetchFailure) {
+        const error = fetchFailure;
+        fetchFailure = null;
+        throw error;
+      }
       requests.push({ url, init });
       if (url.endsWith("/money-printer")) return { ok: true, status: 200, json: async () => body };
       if (url.endsWith("/human-task/next")) return { ok: true, status: 200, json: async () => next };
@@ -208,6 +219,36 @@ test("Money Printer registers inspection and state-dependent human answer tools"
     credentials: "same-origin",
     headers: { Accept: "application/json" },
   });
+
+  const backendError = new Error("network failed");
+  fetchFailure = backendError;
+  await assert.rejects(tool.execute({}), (error) => {
+    assert.strictEqual(error, backendError);
+    return true;
+  });
+
+  assert.deepEqual(webmcpEvents.map((event) => event.detail), [
+    { tool: "inspect_money_printer", status: "running" },
+    { tool: "inspect_money_printer", status: "succeeded" },
+    { tool: "inspect_next_human_task", status: "running" },
+    { tool: "inspect_next_human_task", status: "succeeded" },
+    { tool: "record_human_answer", status: "running" },
+    { tool: "record_human_answer", status: "succeeded" },
+    { tool: "inspect_next_human_task", status: "running" },
+    { tool: "inspect_next_human_task", status: "succeeded" },
+    { tool: "add_opportunity", status: "running" },
+    { tool: "add_opportunity", status: "succeeded" },
+    { tool: "add_opportunity", status: "running" },
+    { tool: "add_opportunity", status: "failed" },
+    { tool: "inspect_workroom", status: "running" },
+    { tool: "inspect_workroom", status: "succeeded" },
+    { tool: "inspect_money_printer", status: "running" },
+    { tool: "inspect_money_printer", status: "failed" },
+  ]);
+  for (const event of webmcpEvents) {
+    assert.equal(event.type, "money-printer:webmcp-call");
+    assert.deepEqual(Object.keys(event.detail).sort(), ["status", "tool"]);
+  }
 
   assert.doesNotThrow(() => vm.runInNewContext(script, { document: {} }));
 });
