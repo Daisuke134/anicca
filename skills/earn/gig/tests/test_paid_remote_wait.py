@@ -274,6 +274,34 @@ def test_concurrent_talkroom_history_persistence_does_not_duplicate_rows(tmp_pat
     assert len(ledger.read_text(encoding="utf-8").splitlines()) == 1
 
 
+def test_paid_reader_retries_legacy_partial_talkroom_append(tmp_path):
+    paid = load("paid_direct")
+    root = tmp_path / "18214856"
+    ledger = root / "source/talkroom/messages.jsonl"
+    ledger.parent.mkdir(parents=True)
+    row = {
+        "version": 1, "source": "coconala_live_talkroom", "talkroom_id": "18214856",
+        "message_id": "m1", "observed_at": "2026-08-30T00:00:00Z",
+        "content_sha256": "0" * 64, "side": "buyer", "sent_at": None,
+        "text": "hello", "attachments": [],
+    }
+    encoded = json.dumps(row, separators=(",", ":")) + "\n"
+    ledger.write_text(encoded[:100], encoding="utf-8")
+    write_json(root / "state.json", {"talkroom_id": "18214856"})
+
+    def finish_legacy_write():
+        time.sleep(0.02)
+        with ledger.open("a", encoding="utf-8") as handle:
+            handle.write(encoded[100:])
+
+    writer = threading.Thread(target=finish_legacy_write)
+    writer.start()
+    rows = paid._official_message_rows(root, "18214856")
+    writer.join()
+
+    assert rows[0]["message_id"] == "m1"
+
+
 def test_prior_artifact_candidates_include_only_project_receipt_linked_zips(tmp_path):
     paid = load("paid_direct")
     root = tmp_path / "project"
