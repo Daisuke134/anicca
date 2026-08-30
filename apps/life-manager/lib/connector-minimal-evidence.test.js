@@ -1598,3 +1598,199 @@ test("TECH PLAY wrong receipt or tampered artifact fails before Calendar and del
     } finally { fixture.cleanup(); }
   }
 });
+
+function kokuchproCandidate(extra = {}) {
+  return {
+    provider: "kokuchpro",
+    event_ref: "kokuchpro-event://event/89a92aac6c9a221ec337481b51c1bbef/3847918",
+    canonical_url: "https://www.kokuchpro.com/event/89a92aac6c9a221ec337481b51c1bbef/3847918/",
+    title: "KokuchPro Community Event",
+    starts_at: "2026-08-20T10:00:00.000Z",
+    ends_at: "2026-08-20T11:00:00.000Z",
+    venue_name: "Tokyo",
+    venue: "KokuchPro Hall",
+    address: "東京都豊島区池袋1-2-3",
+    registration_status: "available",
+    ticket_id: "ticket-3847918",
+    ticket_price_status: "free",
+    ticket_price_minor: 0,
+    ...extra,
+  };
+}
+
+function kokuchproFixture(options = {}) {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-minimal-kokuchpro-evidence-"));
+  const candidate = kokuchproCandidate(options.candidate);
+  const png = options.png || Buffer.concat([PNG_SIGNATURE, Buffer.alloc(6_000, 23)]);
+  const pngSha = createHash("sha256").update(png).digest("hex");
+  const calls = [];
+  const calendarReceipt = { id: "google-kokuchpro-1", htmlLink: "https://www.google.com/calendar/event?eid=kokuchpro-one" };
+  let calendarReads = 0;
+  let recordedAt;
+  const calendar = options.calendar || {
+    async findConnectorEvents(input) {
+      calls.push(["calendar-read", input]);
+      return calendarReads++ === 0 ? [] : [calendarReceipt];
+    },
+    async createConnectorEvent(input) { calls.push(["calendar-create", input]); return calendarReceipt; },
+  };
+  const evidenceStore = options.evidenceStore || {
+    async record(input) {
+      calls.push(["evidence-record", input]);
+      recordedAt = input.observedAt;
+      const receiptId = createHash("sha256").update(`${input.tenantId}\n${input.eventRef}\n${input.observedAt}\n${pngSha}`).digest("hex");
+      return { external_receipt_ref: `provider-receipt://kokuchpro/${receiptId}`, artifact_ref: `object://sha256/${pngSha}` };
+    },
+    async readExternalReceipt(tenant, ref) {
+      calls.push(["evidence-read-receipt", tenant, ref]);
+      return { kind: "provider_response", provider_id: ref.split("/").at(-1), observed_at: recordedAt, event_ref: candidate.event_ref, artifact_sha256: pngSha };
+    },
+    async readArtifact(tenant, ref) { calls.push(["evidence-read-artifact", tenant, ref]); return png; },
+  };
+  const chain = createMinimalEvidenceChain({
+    stateDir,
+    tenantId: "kokuchpro-test",
+    calendar,
+    calendarId: "primary",
+    telegramTarget: "test-target",
+    kokuchproEvidenceStore: evidenceStore,
+    now: () => new Date("2026-08-13T08:30:00.000Z"),
+    sendMessage: options.sendMessage || (async (message, telegram) => { calls.push(["telegram-message", message, telegram]); return { messageId: 9901 }; }),
+    sendPhoto: options.sendPhoto || (async (bytes, telegram) => { calls.push(["telegram-photo", bytes, telegram]); return { messageId: 9902 }; }),
+  });
+  const pageUrl = { value: options.pageUrl || `${candidate.canonical_url}entry/` };
+  const readbackFacts = options.readbackFacts || {
+    entry_forms: [],
+    password_count: 0,
+    login_forms: [],
+    detail_headings: [{ text: "申込詳細", visible: true }],
+    canonical_links: [{ href: candidate.canonical_url, text: "イベント", visible: true }],
+  };
+  const page = {
+    async setContent() { calls.push(["set-content"]); throw new Error("KokuchPro page replacement forbidden"); },
+    async goto() { calls.push(["goto"]); throw new Error("KokuchPro evidence navigation forbidden"); },
+    async evaluate(_script, input) { calls.push(["evaluate", input]); if (options.evaluateError) throw new Error("KokuchPro readback failed"); return readbackFacts; },
+    url() { calls.push(["url"]); return pageUrl.value; },
+    async screenshot(input) { calls.push(["screenshot", input]); if (options.afterScreenshotPageUrl) pageUrl.value = options.afterScreenshotPageUrl; return png; },
+  };
+  return { stateDir, candidate, png, pngSha, calls, chain, page, pageUrl, evidenceStore, cleanup: () => fs.rmSync(stateDir, { recursive: true, force: true }) };
+}
+
+function assertKokuchProNoDownstream(fixture, label) {
+  for (const name of ["screenshot", "evidence-record", "evidence-read-receipt", "evidence-read-artifact", "calendar-read", "calendar-create", "telegram-message", "telegram-photo"]) {
+    assert.equal(fixture.calls.filter(([callName]) => callName === name).length, 0, `${label}:${name}`);
+  }
+}
+
+test("KokuchPro constructor rejects an incomplete injected evidence store", () => {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-minimal-kokuchpro-store-validation-"));
+  try {
+    assert.throws(() => createMinimalEvidenceChain({
+      stateDir,
+      tenantId: "kokuchpro-test",
+      calendar: { async findConnectorEvents() { return []; }, async createConnectorEvent() { return { id: "id", htmlLink: "https://www.google.com/calendar/event?eid=id" }; } },
+      calendarId: "primary",
+      telegramTarget: "test-target",
+      kokuchproEvidenceStore: {},
+    }));
+  } finally { fs.rmSync(stateDir, { recursive: true, force: true }); }
+});
+
+test("KokuchPro registered descendant captures one evidence bundle and reuses it without navigation", async () => {
+  const fixture = kokuchproFixture();
+  try {
+    const input = { provider: "kokuchpro", candidate: fixture.candidate, page: fixture.page, providerState: { status: "registered" } };
+    const first = await fixture.chain.completeEvidence(input);
+    assert.equal(first.provider, "kokuchpro");
+    assert.equal(first.completion_disposition, "created");
+    assert.match(first.event_ref, /^kokuchpro-event:\/\/event\/[0-9a-f]{32}\/[1-9][0-9]*$/);
+    assert.match(first.provider_receipt_ref, /^provider-receipt:\/\/kokuchpro\/[0-9a-f]{64}$/);
+    assert.equal(fixture.calls.filter(([name]) => name === "screenshot").length, 1);
+    assert.deepEqual(fixture.calls.find(([name]) => name === "screenshot")[1], { type: "png", fullPage: true });
+    assert.equal(fixture.calls.filter(([name]) => ["set-content", "goto"].includes(name)).length, 0);
+    assert.ok(fixture.calls.some(([name, input]) => name === "evaluate" && input && input.mode === "detail"));
+    const receiptRead = fixture.calls.findIndex(([name]) => name === "evidence-read-receipt");
+    const artifactRead = fixture.calls.findIndex(([name]) => name === "evidence-read-artifact");
+    const calendarRead = fixture.calls.findIndex(([name]) => name === "calendar-read");
+    assert.ok(receiptRead >= 0 && artifactRead > receiptRead && calendarRead > artifactRead);
+    assert.equal(fixture.calls.find(([name]) => name === "calendar-create")[1].canonicalUrl, fixture.candidate.canonical_url);
+    assert.equal(fixture.calls.find(([name]) => name === "calendar-create")[1].location, "東京都豊島区池袋1-2-3");
+    assert.equal(fixture.calls.filter(([name]) => name === "telegram-message").length, 1);
+    assert.equal(fixture.calls.filter(([name]) => name === "telegram-photo").length, 1);
+    const effects = new Map(["screenshot", "evidence-record", "calendar-create", "telegram-message", "telegram-photo"].map((name) => [name, fixture.calls.filter(([entry]) => entry === name).length]));
+    const second = await fixture.chain.completeEvidence(input);
+    assert.equal(second.completion_disposition, "reused");
+    assert.equal(second.bundle_id, first.bundle_id);
+    for (const [name, count] of effects) assert.equal(fixture.calls.filter(([entry]) => entry === name).length, count, name);
+  } finally { fixture.cleanup(); }
+});
+
+test("KokuchPro refuses an unverified registration form before taking evidence", async () => {
+  const fixture = kokuchproFixture({ readbackFacts: {
+    entry_forms: [{ action: "https://www.kokuchpro.com/event/89a92aac6c9a221ec337481b51c1bbef/3847918/entry/", method: "POST" }],
+    password_count: 0,
+    login_forms: [],
+    detail_headings: [],
+    canonical_links: [],
+  } });
+  try {
+    await assert.rejects(fixture.chain.completeEvidence({ provider: "kokuchpro", candidate: fixture.candidate, page: fixture.page, providerState: { status: "registered" } }));
+    assertKokuchProNoDownstream(fixture, "unverified-registration-form");
+  } finally { fixture.cleanup(); }
+});
+
+test("KokuchPro refuses a screenshot when the official page URL changes during capture", async () => {
+  const fixture = kokuchproFixture({ afterScreenshotPageUrl: `${kokuchproCandidate().canonical_url}entry/detail/` });
+  try {
+    await assert.rejects(fixture.chain.completeEvidence({ provider: "kokuchpro", candidate: fixture.candidate, page: fixture.page, providerState: { status: "registered" } }));
+    assert.equal(fixture.calls.filter(([name]) => name === "screenshot").length, 1);
+    for (const name of ["evidence-record", "evidence-read-receipt", "evidence-read-artifact", "calendar-read", "calendar-create", "telegram-message", "telegram-photo"]) {
+      assert.equal(fixture.calls.filter(([callName]) => callName === name).length, 0, `${name}: URL changed during capture`);
+    }
+    assert.equal(bundleFiles(fixture.stateDir).length, 0);
+  } finally { fixture.cleanup(); }
+});
+
+test("KokuchPro identity, canonical/page URL, and registered-only state fail closed before downstream effects", async () => {
+  const eventKeyMatch = /^kokuchpro-event:\/\/event\/([0-9a-f]{32})(?:\/[1-9][0-9]*)?$/.exec(kokuchproCandidate().event_ref);
+  assert.ok(eventKeyMatch);
+  const eventKey = eventKeyMatch[1];
+  const canonical = `https://www.kokuchpro.com/event/${eventKey}/3847918/`;
+  const validFixture = kokuchproFixture();
+  try {
+    await assert.doesNotReject(validFixture.chain.completeEvidence({ provider: "kokuchpro", candidate: validFixture.candidate, page: validFixture.page, providerState: { status: "registered" } }));
+  } finally { validFixture.cleanup(); }
+  const invalidUrls = [
+    `http://www.kokuchpro.com/event/${eventKey}/3847918/`,
+    `https://WWW.kokuchpro.com/event/${eventKey}/3847918/`,
+    `https://www.kokuchpro.com:443/event/${eventKey}/3847918/`,
+    `https://user:pass@www.kokuchpro.com/event/${eventKey}/3847918/`,
+    `https://www.kokuchpro.com/event/${eventKey}/3847918`,
+    `${canonical}?source=test`, `${canonical}#details`,
+    `https://www.kokuchpro.com/event/${eventKey}/3847919/`,
+    `https://www.kokuchpro.com/event/${eventKey}/`,
+    "https://www.kokuchpro.com/",
+  ];
+  const cases = invalidUrls.map((canonical_url) => ({ candidate: { canonical_url } }));
+  cases.push(
+    { candidate: { event_ref: `kokuchpro-event://event/${eventKey.toUpperCase()}/3847918` } },
+    { candidate: { event_ref: `kokuchpro-event://event/${eventKey.slice(0, 31)}/3847918` } },
+    { candidate: { event_ref: `kokuchpro-event://event/${eventKey}/0` } },
+    { candidate: { event_ref: `kokuchpro-event://event/${eventKey}/03847918` } },
+    { status: "pending" }, { status: "absent" },
+  );
+  for (const pageUrl of [
+    `https://www.kokuchpro.com/event/${eventKey.slice(0, 31)}0/3847918/entry/`,
+    `https://www.kokuchpro.com/event/${eventKey}/3847918/?next=other`,
+    `https://www.kokuchpro.com/event/${eventKey}/3847918/#other`,
+    `${canonical}entry/ `,
+    `https://www.kokuchpro.com/event/${eventKey}/`, "https://www.kokuchpro.com/", "about:blank",
+  ]) cases.push({ pageUrl });
+  for (const value of cases) {
+    const fixture = kokuchproFixture(value);
+    try {
+      await assert.rejects(fixture.chain.completeEvidence({ provider: "kokuchpro", candidate: kokuchproCandidate(value.candidate), page: fixture.page, providerState: { status: value.status || "registered" } }));
+      assertKokuchProNoDownstream(fixture, value.pageUrl || value.status || value.candidate?.event_ref || value.candidate?.canonical_url);
+    } finally { fixture.cleanup(); }
+  }
+});

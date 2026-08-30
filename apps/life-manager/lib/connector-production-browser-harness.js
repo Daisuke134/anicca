@@ -1087,7 +1087,7 @@ function validTechPlayFinalHandleState(state, { token, id } = {}) {
   return Boolean(state && state.tag === "button" && state.type === "button" && state.text === TECHPLAY_FINAL_LABEL
     && state.id === id && state.token === token && state.visible === true && state.enabled === true && state.connected === true);
 }
-async function operateEventbriteFinal(target, token, page, { eventId, canonicalUrl } = {}) {
+async function operateEventbriteFinal(target, token, page, { eventId, canonicalUrl, signal, beforeDispatch } = {}) {
   if (!target || !page || !EVENTBRITE_ATTENDEE_REGISTER_CONTROL.test(String(token || "")) || typeof target.locator !== "function") return null;
   if (eventId && canonicalUrl && eventbriteTicketFrame(page, eventId, canonicalUrl) !== target) return null;
   const testId = "eds-modal__primary-button";
@@ -1099,15 +1099,22 @@ async function operateEventbriteFinal(target, token, page, { eventId, canonicalU
     if (typeof locator.elementHandles === "function") handles = await locator.elementHandles();
     else { const handle = await locator.elementHandle(); handles = handle ? [handle] : []; }
   } catch { return null; }
+  if (signal && signal.aborted) return null;
   if (!Array.isArray(handles) || handles.length !== 1) return null;
   const handle = handles[0];
   const initial = await readEventbriteMarketingHandle(handle, { token });
+  if (signal && signal.aborted) return null;
   if (!validEventbriteFinalHandleState(initial, { token, testId })) return null;
   try { if (await locator.count() !== 1) return null; } catch { return null; }
+  if (signal && signal.aborted) return null;
   const rebound = await readEventbriteMarketingHandle(handle, { token });
+  if (signal && signal.aborted) return null;
   if (!validEventbriteFinalHandleState(rebound, { token, testId })) return null;
   if (typeof handle.click !== "function") return null;
   if (eventId && canonicalUrl && eventbriteTicketFrame(page, eventId, canonicalUrl) !== target) return null;
+  if (signal && signal.aborted) return null;
+  if (typeof beforeDispatch === "function") beforeDispatch();
+  if (signal && signal.aborted) return null;
   try { await handle.click(); } catch { return { attempted: true }; }
   return Object.freeze({ page, frame: target, handle, eventId: EVENTBRITE_ATTENDEE_REGISTER_CONTROL.exec(token)[1], token, testId });
 }
@@ -1117,6 +1124,12 @@ async function operatePageControl(input = {}) {
   if (!input.page || !target || typeof target.locator !== "function" || !input.control || !input.action) invalid();
   const token = String(input.control.control || "");
   if (!CONTROL.test(token) || input.action.control !== token) invalid();
+  const beforeDispatch = () => {
+    if (input.signal && input.signal.aborted) return false;
+    if (input.action.purpose === "submit" && typeof input.beforeDispatch === "function") input.beforeDispatch();
+    return !(input.signal && input.signal.aborted);
+  };
+  if (input.signal && input.signal.aborted) return Object.freeze({ status: "failed", safe_reason: "time_limit" });
   if (input.provider === "techplay") {
     const binding = candidateTechPlayBinding(input.candidate); let href = "";
     try { href = String(typeof input.page.url === "function" ? input.page.url() : ""); } catch { href = ""; }
@@ -1154,14 +1167,18 @@ async function operatePageControl(input = {}) {
         if (currentHref !== confirmHref || !bindingMatches()) return Object.freeze({ status: "failed" });
         const rebound = await readEventbriteMarketingHandle(handle, { token });
         if (!rebound || !validTechPlayFinalHandleState(rebound, { token, id: initial.id }) || typeof handle.click !== "function") return Object.freeze({ status: "failed" });
+        if (!beforeDispatch()) return Object.freeze({ status: "failed", safe_reason: "time_limit" });
         try { await handle.click(); } catch { return Object.freeze({ status: "failed", attempted: true }); }
       } else if (review) {
         if (await locator.count() !== 1) return Object.freeze({ status: "failed" });
+        if (input.signal && input.signal.aborted) return Object.freeze({ status: "failed", safe_reason: "time_limit" });
         let currentHref = ""; try { currentHref = String(typeof input.page.url === "function" ? input.page.url() : ""); } catch { return Object.freeze({ status: "failed" }); }
         if (currentHref !== joinHref || typeof locator.click !== "function") return Object.freeze({ status: "failed" });
+        if (!beforeDispatch()) return Object.freeze({ status: "failed", safe_reason: "time_limit" });
         try { await locator.click(); } catch { return Object.freeze({ status: "failed", attempted: true }); }
       } else {
         if (await locator.count() !== 1) return Object.freeze({ status: "failed" });
+        if (input.signal && input.signal.aborted) return Object.freeze({ status: "failed", safe_reason: "time_limit" });
         if (scalar) { if (typeof input.value !== "string" || typeof locator.fill !== "function") return Object.freeze({ status: "failed" }); await locator.fill(input.value); }
         else if (radio) { if (typeof locator.check !== "function") return Object.freeze({ status: "failed" }); await locator.check(); }
         else if (typeof locator.press === "function") await locator.press("Space");
@@ -1177,7 +1194,12 @@ async function operatePageControl(input = {}) {
     return operation ? Object.freeze({ status: "success", [EVENTBRITE_MARKETING_OPERATION]: operation }) : Object.freeze({ status: "failed" });
   }
   if (input.action.method === "ax_click" && eventbriteFinalControlMeaning(input.control)) {
-    const operation = await operateEventbriteFinal(target, token, input.page, { eventId: input.eventId, canonicalUrl: input.canonicalUrl });
+    const operation = await operateEventbriteFinal(target, token, input.page, {
+      eventId: input.eventId,
+      canonicalUrl: input.canonicalUrl,
+      signal: input.signal,
+      beforeDispatch: input.beforeDispatch,
+    });
     return operation?.attempted ? Object.freeze({ status: "failed", [EVENTBRITE_FINAL_ATTEMPTED]: true })
       : operation ? Object.freeze({ status: "success", [EVENTBRITE_FINAL_OPERATION]: operation }) : Object.freeze({ status: "failed", [EVENTBRITE_FINAL_ATTEMPTED]: false });
   }
@@ -1185,6 +1207,7 @@ async function operatePageControl(input = {}) {
   if (!locator || typeof locator.count !== "function" || await locator.count() !== 1) {
     return Object.freeze({ status: "failed" });
   }
+  if (input.signal && input.signal.aborted) return Object.freeze({ status: "failed", safe_reason: "time_limit" });
   switch (input.action.method) {
     case "ax_fill":
     case "dom_fill":
@@ -1202,10 +1225,12 @@ async function operatePageControl(input = {}) {
     case "ax_click":
     case "coordinate_click":
       if (typeof locator.click !== "function") return Object.freeze({ status: "failed" });
+      if (!beforeDispatch()) return Object.freeze({ status: "failed", safe_reason: "time_limit" });
       await locator.click();
       break;
     case "keyboard_submit":
       if (!input.page.keyboard || typeof input.page.keyboard.press !== "function") return Object.freeze({ status: "failed" });
+      if (!beforeDispatch()) return Object.freeze({ status: "failed", safe_reason: "time_limit" });
       await input.page.keyboard.press("Enter");
       break;
     case "ax_inspect":
@@ -1489,7 +1514,7 @@ function createProductionBrowserHarness(options = {}) {
     let current; try { current = await observed(input.page, "techplay", input.candidate); } catch { return Object.freeze({ status: "failed" }); }
     const rebound = current.controls.find((control) => control.control === token);
     if (!rebound || rebound.kind !== selected.kind || rebound.label !== selected.label || rebound.question !== selected.question || rebound.required !== true || rebound.completed !== false || rebound.submittable !== false) return Object.freeze({ status: "failed" });
-    let result; try { result = await operateControl({ page: input.page, provider: "techplay", candidate: input.candidate, control: rebound, action, value }); } catch { return Object.freeze({ status: "failed" }); }
+    let result; try { result = await operateControl({ page: input.page, provider: "techplay", candidate: input.candidate, control: rebound, action, value, signal: input.signal, ...(typeof input.beforeDispatch === "function" ? { beforeDispatch: input.beforeDispatch } : {}) }); } catch { return Object.freeze({ status: "failed" }); }
     if (!result || result.status !== "success" || !bindingMatches() || readHref() !== joinUrl) return Object.freeze({ status: "failed" });
     const completed = (observation) => { const control = observation?.controls?.find((item) => item.control === token); return Boolean(control && control.kind === rebound.kind && control.label === rebound.label && control.question === rebound.question && control.required === true && control.completed === true && control.submittable === false); };
     for (let attempt = 0; attempt < TECHPLAY_POSTCHECK_ATTEMPTS; attempt += 1) {
@@ -1505,6 +1530,7 @@ function createProductionBrowserHarness(options = {}) {
     if (!input.page || !input.action || !CONTROL.test(String(input.action.control || ""))) invalid();
     const provider = input.provider == null ? "luma" : String(input.provider);
     if (!supportsProvider(provider)) invalid();
+    if (input.signal && input.signal.aborted) return Object.freeze({ status: "failed", safe_reason: "time_limit" });
     if (provider === "techplay") {
       const binding = candidateTechPlayBinding(input.candidate);
       if (!binding) return Object.freeze({ status: "failed" });
@@ -1608,6 +1634,10 @@ function createProductionBrowserHarness(options = {}) {
       if (!ticket || ticket.control !== control.control) return Object.freeze({ status: "failed" });
       if (eventbriteTicketFrame(input.page, eventbriteBinding.eventId, eventbriteBinding.canonicalUrl) !== ticketFrame) return Object.freeze({ status: "failed" });
     }
+    if (input.signal && input.signal.aborted) {
+      if (finalEffectWait) finalEffectWait.cancel();
+      return Object.freeze({ status: "failed", safe_reason: "time_limit" });
+    }
     try {
       result = await operateControl({
         page: input.page,
@@ -1616,6 +1646,8 @@ function createProductionBrowserHarness(options = {}) {
         control,
         action,
         value,
+        signal: input.signal,
+        ...(typeof input.beforeDispatch === "function" ? { beforeDispatch: input.beforeDispatch } : {}),
       });
     } catch {
       if (finalEffectWait) return settleFinalEffect(finalEffectWait, finalEffectStatuses);
@@ -1702,7 +1734,7 @@ function createProductionBrowserHarness(options = {}) {
     }
     finalEffectWait.markClicked();
     let result; let thrown = false;
-    try { result = await operateControl({ page: input.page, provider: "techplay", candidate: input.candidate, control, action }); }
+    try { result = await operateControl({ page: input.page, provider: "techplay", candidate: input.candidate, control, action, signal: input.signal, ...(typeof input.beforeDispatch === "function" ? { beforeDispatch: input.beforeDispatch } : {}) }); }
     catch { thrown = true; result = null; }
     const attempted = thrown || Boolean(result && result.attempted === true) || Boolean(result && result.status === "success");
     if (!attempted) {
@@ -1724,7 +1756,7 @@ function createProductionBrowserHarness(options = {}) {
     const navigationWait = startPeatixConfirmWait(input.page, "techplay", review, input.candidate, observation.controls);
     if (!navigationWait || navigationWait.unavailable) return Object.freeze({ status: "failed" });
     const beforeClick = candidateTechPlayBinding(input.candidate); if (!beforeClick || beforeClick.eventId !== binding.eventId || beforeClick.canonicalUrl !== binding.canonicalUrl || beforeClick.ticketId !== binding.ticketId) return Object.freeze({ status: "failed" });
-    let result; try { result = await operateControl({ page: input.page, provider: "techplay", candidate: input.candidate, control: review, action }); } catch { result = null; }
+    let result; try { result = await operateControl({ page: input.page, provider: "techplay", candidate: input.candidate, control: review, action, signal: input.signal, ...(typeof input.beforeDispatch === "function" ? { beforeDispatch: input.beforeDispatch } : {}) }); } catch { result = null; }
     if (!result || (result.status !== "success" && result.attempted !== true)) return Object.freeze({ status: "failed" });
     if (!(await navigationWait.promise)) return Object.freeze({ status: "failed", attempted: true, safe_reason: "effect_unknown" });
     const confirmUrl = `https://techplay.jp/event/join/${binding.eventId}/confirm`;
@@ -1798,14 +1830,19 @@ function createProductionBrowserHarness(options = {}) {
     let ambiguousEffect = false;
     let finalEffectProviderState = null;
     let extensionAuthPreflightDone = false;
+    let extensionAuthPreflightRequired = false;
     let extensionAuthRequired = false;
+    let extensionSubmitAttempted = false;
     const adapter = createBrowserHarnessAdapter({
       async observePage({ page }) {
         if (input.provider === extensionProvider && !extensionAuthPreflightDone) {
           extensionAuthPreflightDone = true;
           try {
             const preflight = await workflow.readProviderState({ page, candidate: input.candidate });
-            if (preflight && typeof preflight === "object" && !Array.isArray(preflight) && preflight.status === "auth_required") extensionAuthRequired = true;
+            if (preflight && typeof preflight === "object" && !Array.isArray(preflight) && preflight.status === "auth_required") {
+              extensionAuthPreflightRequired = true;
+              extensionAuthRequired = true;
+            }
           } catch { /* non-auth readback remains on the existing fallback path */ }
         }
         return extensionAuthRequired
@@ -1840,7 +1877,20 @@ function createProductionBrowserHarness(options = {}) {
           doorkeeperSubmitAttempted = true;
         }
         if (signature && seenMutations.has(signature)) return Object.freeze({ status: "failed" });
-        const result = await performAction({ ...action, provider: input.provider, candidate: input.candidate });
+        const inheritedBeforeDispatch = typeof action.beforeDispatch === "function" ? action.beforeDispatch : null;
+        const extensionBeforeDispatch = input.provider === extensionProvider && selected.purpose === "submit"
+          ? () => { extensionSubmitAttempted = true; } : null;
+        const beforeDispatch = inheritedBeforeDispatch || extensionBeforeDispatch
+          ? () => {
+            inheritedBeforeDispatch?.();
+            extensionBeforeDispatch?.();
+          } : null;
+        const result = await performAction({
+          ...action,
+          provider: input.provider,
+          candidate: input.candidate,
+          ...(beforeDispatch ? { beforeDispatch } : {}),
+        });
         if (result && result.safe_reason === "effect_unknown") ambiguousEffect = true;
         if (input.provider !== extensionProvider && result && result.status === "success" && result.provider_state && ["registered", "pending"].includes(result.provider_state.status)) {
           finalEffectProviderState = result.provider_state;
@@ -1874,7 +1924,12 @@ function createProductionBrowserHarness(options = {}) {
       },
     });
     const result = await adapter.runFallback(input);
-    if (extensionAuthRequired) return Object.freeze({ status: "failed", safe_reason: "auth_required", repaired_actions: Object.freeze([...(result?.repaired_actions || [])]) });
+    if (extensionAuthPreflightRequired && !extensionSubmitAttempted) {
+      return Object.freeze({ status: "failed", safe_reason: "auth_required", repaired_actions: Object.freeze([...(result?.repaired_actions || [])]) });
+    }
+    if (extensionSubmitAttempted && result && result.status === "failed") {
+      return Object.freeze({ ...result, safe_reason: "effect_unknown" });
+    }
     return ambiguousEffect && result && result.status === "failed"
       ? Object.freeze({ ...result, safe_reason: "effect_unknown" })
       : result;

@@ -8,7 +8,7 @@ const LISTING_BASE = "https://www.kokuchpro.com/s/area-%E6%9D%B1%E4%BA%AC%E9%83%
 const EVENT_URL = /^https:\/\/www\.kokuchpro\.com\/event\/([0-9a-f]{32})(?:\/([1-9][0-9]{0,19}))?\/$/;
 const EVENT_RAW_PER_CARD = 100;
 const EVENT_RAW_TOTAL = 4_000;
-const ISO_TIME = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?(Z|[+-]\d{2}:\d{2})$/;
+const ISO_TIME = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?(Z|[+-]\d{2}:?\d{2})$/;
 const JSONLD_NODE_LIMIT = 256;
 const LOGIN_URL = "https://www.kokuchpro.com/auth/login/";
 const READBACK_FORM_LIMIT = 32;
@@ -92,7 +92,7 @@ function parseIso(value) {
   if (month < 1 || month > 12 || day < 1 || day > days[month - 1] || hour > 23 || minute > 59 || second > 59) return NaN;
   const base = new Date(0); base.setUTCFullYear(year, month - 1, day); base.setUTCHours(hour, minute, second, Number((match[7] || "").padEnd(3, "0")) || 0);
   if (!Number.isFinite(base.getTime())) return NaN;
-  const zone = match[8];
+  const zone = match[8].length === 5 ? `${match[8].slice(0, 3)}:${match[8].slice(3)}` : match[8];
   if (zone === "Z") return base.getTime();
   const zoneHour = Number(zone.slice(1, 3)); const zoneMinute = Number(zone.slice(4, 6));
   if (zoneHour > 23 || zoneMinute > 59) return NaN;
@@ -219,8 +219,8 @@ function exactLoginUrl(value, entryPath) {
   try { return decodeURIComponent(parts[0].slice(separator + 1).replace(/\+/g, " ")) === entryPath; } catch { return false; }
 }
 
-async function readProviderStateFacts(page, mode, entryUrl) {
-  return page.evaluate(({ mode: expectedMode, entryUrl: expectedEntry, loginUrl, formLimit, passwordLimit }) => {
+async function readProviderStateFacts(page, mode, entryUrl, canonicalUrl) {
+  return page.evaluate(({ mode: expectedMode, entryUrl: expectedEntry, canonicalUrl: expectedCanonical, loginUrl, formLimit, passwordLimit }) => {
     const forms = [...document.querySelectorAll("form")];
     if (forms.length > formLimit) return null;
     const facts = forms.map((form) => ({
@@ -230,22 +230,104 @@ async function readProviderStateFacts(page, mode, entryUrl) {
     if (expectedMode === "entry") return { entry_forms: facts.filter((form) => form.action === expectedEntry) };
     const passwords = [...document.querySelectorAll('input[type="password"]')];
     if (passwords.length > passwordLimit) return null;
-    return { password_count: passwords.length, login_forms: facts.filter((form) => form.action === loginUrl) };
-  }, { mode, entryUrl, loginUrl: LOGIN_URL, formLimit: READBACK_FORM_LIMIT, passwordLimit: READBACK_PASSWORD_LIMIT });
+    const visible = (node) => {
+      if (!node || node.hidden === true || node.isConnected === false || String(node.getAttribute("aria-hidden") || "").toLowerCase() === "true") return false;
+      let current = node;
+      while (current) {
+        if (current.hidden === true || String(current.getAttribute("aria-hidden") || "").toLowerCase() === "true") return false;
+        const view = current.ownerDocument && current.ownerDocument.defaultView;
+        const style = view && typeof view.getComputedStyle === "function" ? view.getComputedStyle(current) : current.style;
+        if (style && [style.display, style.visibility, style.contentVisibility].some((value) => ["none", "hidden", "collapse"].includes(String(value || "").toLowerCase()))) return false;
+        current = current.parentElement;
+      }
+      if (typeof node.getBoundingClientRect !== "function") return false;
+      const rect = node.getBoundingClientRect();
+      return Number(rect.width) > 0 && Number(rect.height) > 0;
+    };
+    const text = (node) => String(node && (node.innerText || node.textContent) || "").replace(/\s+/g, " ").trim();
+    const href = (node) => {
+      try {
+        const raw = node.getAttribute("href") || node.getAttribute("data-href") || "";
+        return new URL(raw, typeof location === "undefined" ? expectedCanonical : location.href).href;
+      } catch { return ""; }
+    };
+    const links = [...document.querySelectorAll("a[href], [role='link'][href], [data-href]")].map((node) => ({
+      href: href(node), text: text(node), visible: visible(node),
+    }));
+    const headings = [...document.querySelectorAll("h1,h2,h3,h4,h5,h6,[role='heading']")].map((node) => ({
+      text: text(node), visible: visible(node),
+    }));
+    const common = {
+      password_count: passwords.length,
+      login_forms: facts.filter((form) => form.action === loginUrl),
+      entry_forms: facts.filter((form) => form.action === expectedEntry),
+    };
+    if (expectedMode === "canonical") {
+      return {
+        ...common,
+        registration_links: links.filter((link) => link.text === "申込情報を確認する"),
+      };
+    }
+    return {
+      ...common,
+      detail_headings: headings.filter((heading) => heading.text === "申込詳細"),
+      canonical_links: links.filter((link) => link.href === expectedCanonical),
+    };
+  }, { mode, entryUrl, canonicalUrl, loginUrl: LOGIN_URL, formLimit: READBACK_FORM_LIMIT, passwordLimit: READBACK_PASSWORD_LIMIT });
+}
+
+function sameEventDescendantUrl(value, canonicalUrl) {
+  let current;
+  let canonical;
+  try {
+    current = new URL(value);
+    canonical = new URL(canonicalUrl);
+  } catch { return false; }
+  if (
+    current.protocol !== "https:" || current.hostname !== "www.kokuchpro.com"
+    || current.port || current.username || current.password || current.search || current.hash
+  ) return false;
+  return current.pathname.startsWith(canonical.pathname) && current.pathname !== canonical.pathname;
 }
 
 async function defaultReadProviderState(page, selected) {
   if (!page || typeof page.url !== "function" || typeof page.evaluate !== "function") return null;
   const entryUrl = `${selected.canonical_url}entry/`; const entryPath = new URL(entryUrl).pathname;
   const current = String(page.url());
-  const mode = current === selected.canonical_url ? "entry" : exactLoginUrl(current, entryPath) ? "login" : null;
+  const mode = current === selected.canonical_url ? "canonical"
+    : sameEventDescendantUrl(current, selected.canonical_url) ? "detail"
+      : exactLoginUrl(current, entryPath) ? "login" : null;
   if (!mode) return null;
-  const facts = await readProviderStateFacts(page, mode, entryUrl);
+  const facts = await readProviderStateFacts(page, mode, entryUrl, selected.canonical_url);
   if (String(page.url()) !== current || !facts || typeof facts !== "object" || Array.isArray(facts)) return null;
   if (mode === "entry") {
     const forms = facts.entry_forms;
     return Array.isArray(forms) && (forms.length === 1 || forms.length === 2)
       && forms.every((form) => form && typeof form === "object" && !Array.isArray(form) && form.action === entryUrl && form.method === "POST") ? "absent" : null;
+  }
+  if (mode === "canonical") {
+    const links = facts.registration_links;
+    const forms = facts.entry_forms;
+    const loginForms = facts.login_forms;
+    const registered = Array.isArray(links) && links.filter((link) => (
+      link && link.href === entryUrl && link.text === "申込情報を確認する" && link.visible === true
+    )).length === 1
+      && Array.isArray(forms) && !forms.some((form) => form && form.method === "POST")
+      && facts.password_count === 0 && Array.isArray(loginForms) && loginForms.length === 0;
+    if (registered) return "registered";
+    const hasRegistrationSignal = Array.isArray(links) && links.length > 0;
+    return !hasRegistrationSignal && Array.isArray(forms)
+      && (forms.length === 1 || forms.length === 2)
+      && forms.every((form) => form && form.action === entryUrl && form.method === "POST") ? "absent" : null;
+  }
+  if (mode === "detail") {
+    const headings = facts.detail_headings;
+    const links = facts.canonical_links;
+    const forms = facts.entry_forms;
+    return Array.isArray(headings) && headings.filter((heading) => heading && heading.text === "申込詳細" && heading.visible === true).length === 1
+      && Array.isArray(links) && links.filter((link) => link && link.href === selected.canonical_url && link.visible === true).length === 1
+      && Array.isArray(forms) && !forms.some((form) => form && form.method === "POST")
+      && facts.password_count === 0 && Array.isArray(facts.login_forms) && facts.login_forms.length === 0 ? "registered" : null;
   }
   const forms = facts.login_forms;
   return facts.password_count === 1 && Array.isArray(forms) && forms.length === 1

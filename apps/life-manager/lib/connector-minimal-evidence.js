@@ -6,7 +6,8 @@ const path = require("node:path");
 
 const { createLumaEvidenceStore } = require("./luma-evidence-store.js");
 const { createPeatixEvidenceStore } = require("./peatix-evidence-store.js");
-const { createConnpassEvidenceStore, createMeetupEvidenceStore, createDoorkeeperEvidenceStore, createEventbriteEvidenceStore, createTechPlayEvidenceStore } = require("./connpass-evidence-store.js");
+const { createKokuchProDiscoveryWorkflow } = require("./connector-kokuchpro-workflow.js");
+const { createConnpassEvidenceStore, createMeetupEvidenceStore, createDoorkeeperEvidenceStore, createEventbriteEvidenceStore, createTechPlayEvidenceStore, createKokuchProEvidenceStore } = require("./connpass-evidence-store.js");
 
 const EVENT_REF = /^luma-event:\/\/event\/[A-Za-z0-9_-]+$/;
 const RECEIPT_REF = /^provider-receipt:\/\/luma\/([0-9a-f]{64})$/;
@@ -23,6 +24,8 @@ const EVENTBRITE_RECEIPT_REF = /^provider-receipt:\/\/eventbrite\/([0-9a-f]{64})
 const EVENTBRITE_EVENT_PATH = /^\/e\/(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)-tickets-([1-9][0-9]*)|([1-9][0-9]*))$/i;
 const TECHPLAY_EVENT_REF = /^techplay-event:\/\/event\/([1-9][0-9]*)$/;
 const TECHPLAY_RECEIPT_REF = /^provider-receipt:\/\/techplay\/([0-9a-f]{64})$/;
+const KOKUCHPRO_EVENT_REF = /^kokuchpro-event:\/\/event\/([0-9a-f]{32})(?:\/([1-9][0-9]*))?$/;
+const KOKUCHPRO_RECEIPT_REF = /^provider-receipt:\/\/kokuchpro\/([0-9a-f]{64})$/;
 const ARTIFACT_REF = /^object:\/\/sha256\/([0-9a-f]{64})$/;
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 const RECEIPT_ESCAPE = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
@@ -210,6 +213,46 @@ function techplayUrl(value, eventRef) {
   const expected = eventMatch ? `https://techplay.jp/event/${eventMatch[1]}` : "";
   if (!eventMatch || value !== expected) invalid();
   return expected;
+}
+
+function kokuchproUrl(value, eventRef) {
+  if (typeof eventRef !== "string" || typeof value !== "string") invalid();
+  const eventMatch = KOKUCHPRO_EVENT_REF.exec(eventRef);
+  const eventPath = eventMatch ? `/event/${eventMatch[1]}${eventMatch[2] ? `/${eventMatch[2]}` : ""}/` : "";
+  const expected = eventMatch ? `https://www.kokuchpro.com${eventPath}` : "";
+  let url;
+  try { url = new URL(value); } catch { invalid(); }
+  if (!eventMatch || url.protocol !== "https:" || url.hostname !== "www.kokuchpro.com"
+    || url.username || url.password || url.port || url.search || url.hash
+    || url.pathname !== eventPath || value !== expected) invalid();
+  return expected;
+}
+
+function kokuchproPageUrl(value, eventUrl) {
+  if (typeof value !== "string" || typeof eventUrl !== "string") invalid();
+  if (value === eventUrl) return eventUrl;
+  let url;
+  try { url = new URL(value); } catch { invalid(); }
+  const canonicalPath = new URL(eventUrl).pathname;
+  if (!value.startsWith("https://www.kokuchpro.com/") || url.protocol !== "https:"
+    || url.hostname !== "www.kokuchpro.com" || url.username || url.password || url.port || url.search || url.hash
+    || url.toString() !== value || !url.pathname.startsWith(canonicalPath) || url.pathname.length <= canonicalPath.length) invalid();
+  return value;
+}
+
+async function verifyKokuchProPage({ provider, page, candidate, eventUrl }) {
+  if (!provider || typeof provider.readProviderState !== "function" || !page || typeof page.url !== "function") invalid();
+  let beforeUrl;
+  try { beforeUrl = String(page.url()); } catch { invalid(); }
+  kokuchproPageUrl(beforeUrl, eventUrl);
+  let providerState;
+  try { providerState = await provider.readProviderState({ page, candidate }); } catch { invalid(); }
+  if (!providerState || typeof providerState !== "object" || Array.isArray(providerState) || providerState.status !== "registered") invalid();
+  let afterReadbackUrl;
+  try { afterReadbackUrl = String(page.url()); } catch { invalid(); }
+  if (afterReadbackUrl !== beforeUrl) invalid();
+  kokuchproPageUrl(afterReadbackUrl, eventUrl);
+  return beforeUrl;
 }
 
 function calendarReceipt(value) {
@@ -402,7 +445,7 @@ async function validateCheckpointEvidence(provider, checkpoint, tenantId) {
   let receipt;
   try { receipt = await store.readExternalReceipt(tenantId, checkpoint.receiptRef); } catch { invalid(); }
   if (!receipt || typeof receipt !== "object" || Array.isArray(receipt) || receipt.kind !== "provider_response") invalid();
-  if (["connpass", "meetup", "doorkeeper", "eventbrite", "techplay"].includes(provider.name) && (
+  if (["connpass", "meetup", "doorkeeper", "eventbrite", "techplay", "kokuchpro"].includes(provider.name) && (
     Object.keys(receipt).sort().join(",") !== "artifact_sha256,event_ref,kind,observed_at,provider_id"
     || typeof receipt.observed_at !== "string" || typeof receipt.event_ref !== "string" || typeof receipt.artifact_sha256 !== "string"
   )) invalid();
@@ -653,18 +696,18 @@ async function validateExistingCheckpoints(stateDir, provider, candidate, identi
   return checkpoint;
 }
 
-async function captureProviderEvidence({ provider, providerName, page, candidate, providerStatus, tenantId, now, canonicalUrlSha256 }) {
+async function captureProviderEvidence({ provider, providerName, page, candidate, providerStatus, tenantId, now, eventUrl, canonicalUrlSha256 }) {
   const observedAt = exactInstant(now());
   // Luma and Peatix are the only two providers left once connpass/meetup/doorkeeper/eventbrite/techplay
   // are excluded, and they now render the receipt with the identical about:blank + document.write
   // technique (see below) because page.setContent() hangs on the live CloakBrowser daily-driver over
   // CDP (verified 2026-08-16). One shared branch, one shared capability requirement.
-  if (providerName === "connpass" || providerName === "meetup" || providerName === "doorkeeper" || providerName === "eventbrite" || providerName === "techplay"
+  if (providerName === "connpass" || providerName === "meetup" || providerName === "doorkeeper" || providerName === "eventbrite" || providerName === "techplay" || providerName === "kokuchpro"
     ? typeof page.screenshot !== "function"
     : typeof page.goto !== "function" || typeof page.url !== "function" || typeof page.evaluate !== "function") invalid();
   if (typeof page.screenshot !== "function") invalid();
-  const receipt = providerName === "meetup" ? null : receiptHtml(providerName, providerStatus, candidate.event_ref);
-  if (providerName !== "connpass" && providerName !== "meetup" && providerName !== "doorkeeper" && providerName !== "eventbrite" && providerName !== "techplay") {
+  const receipt = providerName === "meetup" || providerName === "kokuchpro" ? null : receiptHtml(providerName, providerStatus, candidate.event_ref);
+  if (providerName !== "connpass" && providerName !== "meetup" && providerName !== "doorkeeper" && providerName !== "eventbrite" && providerName !== "techplay" && providerName !== "kokuchpro") {
     try {
       await page.goto("about:blank", { waitUntil: "domcontentloaded", timeout: 30_000 });
       if (String(page.url()) !== "about:blank") invalid();
@@ -672,8 +715,16 @@ async function captureProviderEvidence({ provider, providerName, page, candidate
       if (rendered !== true) invalid();
     } catch { invalid(); }
   }
+  let captureUrl;
+  if (providerName === "kokuchpro") captureUrl = await verifyKokuchProPage({ provider, page, candidate, eventUrl });
   const screenshot = await page.screenshot({ type: "png", fullPage: true });
   if (!Buffer.isBuffer(screenshot) || screenshot.length < 5_000 || !screenshot.subarray(0, PNG_SIGNATURE.length).equals(PNG_SIGNATURE)) invalid();
+  if (providerName === "kokuchpro") {
+    let afterCaptureUrl;
+    try { afterCaptureUrl = String(page.url()); } catch { invalid(); }
+    if (afterCaptureUrl !== captureUrl) invalid();
+    kokuchproPageUrl(afterCaptureUrl, eventUrl);
+  }
   const artifactSha = sha256(screenshot);
   const evidence = await provider.store.record({ tenantId, eventRef: candidate.event_ref, observedAt, screenshot });
   const artifactMatch = ARTIFACT_REF.exec(String(evidence && evidence.artifact_ref || ""));
@@ -710,6 +761,10 @@ function createMinimalEvidenceChain(options = {}) {
   const techplayEvidenceStore = options.techplayEvidenceStore || createTechPlayEvidenceStore({
     dataDir: path.join(stateDir, "evidence"),
   });
+  const kokuchproEvidenceStore = options.kokuchproEvidenceStore || createKokuchProEvidenceStore({
+    dataDir: path.join(stateDir, "evidence"),
+  });
+  const kokuchproWorkflow = createKokuchProDiscoveryWorkflow();
   const providers = {
     luma: { name: "luma", eventRef: EVENT_REF, receiptRef: RECEIPT_REF, url: lumaUrl, states: ["registered", "pending"], store: lumaEvidenceStore },
     peatix: { name: "peatix", eventRef: PEATIX_EVENT_REF, receiptRef: PEATIX_RECEIPT_REF, url: peatixUrl, states: ["registered"], store: peatixEvidenceStore },
@@ -718,6 +773,7 @@ function createMinimalEvidenceChain(options = {}) {
     doorkeeper: { name: "doorkeeper", eventRef: DOORKEEPER_EVENT_REF, receiptRef: DOORKEEPER_RECEIPT_REF, url: doorkeeperUrl, states: ["registered"], store: doorkeeperEvidenceStore },
     eventbrite: { name: "eventbrite", eventRef: EVENTBRITE_EVENT_REF, receiptRef: EVENTBRITE_RECEIPT_REF, url: eventbriteUrl, states: ["registered"], store: eventbriteEvidenceStore },
     techplay: { name: "techplay", eventRef: TECHPLAY_EVENT_REF, receiptRef: TECHPLAY_RECEIPT_REF, url: techplayUrl, states: ["registered"], store: techplayEvidenceStore },
+    kokuchpro: { name: "kokuchpro", eventRef: KOKUCHPRO_EVENT_REF, receiptRef: KOKUCHPRO_RECEIPT_REF, url: kokuchproUrl, states: ["registered"], store: kokuchproEvidenceStore, readProviderState: kokuchproWorkflow.readProviderState },
   };
   const now = options.now || (() => new Date());
   const sendMessage = options.sendMessage;
@@ -732,6 +788,7 @@ function createMinimalEvidenceChain(options = {}) {
     || !doorkeeperEvidenceStore || typeof doorkeeperEvidenceStore.record !== "function"
     || !eventbriteEvidenceStore || typeof eventbriteEvidenceStore.record !== "function"
     || !techplayEvidenceStore || typeof techplayEvidenceStore.record !== "function"
+    || !kokuchproEvidenceStore || typeof kokuchproEvidenceStore.record !== "function"
     || typeof now !== "function" || typeof sendMessage !== "function" || typeof sendPhoto !== "function"
   ) invalid();
 
@@ -764,9 +821,14 @@ function createMinimalEvidenceChain(options = {}) {
       const startsAt = exactInstant(candidate.starts_at);
       const endsAt = exactInstant(candidate.ends_at);
       if (Date.parse(endsAt) <= Date.parse(startsAt)) invalid();
-      const venue = text(candidate.venue_address || candidate.venue_name || "See event page", 2_000);
+      const venue = text(candidate.venue_address || candidate.address || candidate.venue || candidate.venue_name || "See event page", 2_000);
       const identity = checkpointPath(stateDir, input.provider, candidate.event_ref, eventUrl);
-      if (input.provider === "connpass" || input.provider === "meetup" || input.provider === "doorkeeper" || input.provider === "eventbrite" || input.provider === "techplay") {
+      if (input.provider === "kokuchpro") {
+        if (typeof input.page.url !== "function") invalid();
+        let currentUrl;
+        try { currentUrl = String(input.page.url()); } catch { invalid(); }
+        kokuchproPageUrl(currentUrl, eventUrl);
+      } else if (input.provider === "connpass" || input.provider === "meetup" || input.provider === "doorkeeper" || input.provider === "eventbrite" || input.provider === "techplay") {
         if (typeof input.page.url !== "function") invalid();
         let currentUrl;
         try { currentUrl = String(input.page.url()); } catch { invalid(); }
@@ -794,12 +856,12 @@ function createMinimalEvidenceChain(options = {}) {
           if (checkpoint.status !== input.providerState.status) invalid();
           screenshot = await validateCheckpointEvidence(provider, checkpoint, tenantId);
         } else {
-          const captured = await captureProviderEvidence({ provider, providerName: input.provider, page: input.page, candidate, providerStatus: input.providerState.status, tenantId, now, canonicalUrlSha256: identity.canonicalUrlSha256 });
+          const captured = await captureProviderEvidence({ provider, providerName: input.provider, page: input.page, candidate, providerStatus: input.providerState.status, tenantId, now, eventUrl, canonicalUrlSha256: identity.canonicalUrlSha256 });
           assertNoSymlinkPath(stateDir, identity.file);
           immutableJson(stateDir, identity.file, captured.checkpointValue);
           checkpoint = readCheckpoint(stateDir, identity.file, provider, candidate, identity.canonicalUrlSha256);
           screenshot = captured.screenshot;
-          if (input.provider === "meetup" || input.provider === "doorkeeper" || input.provider === "eventbrite" || input.provider === "techplay") screenshot = await validateCheckpointEvidence(provider, checkpoint, tenantId);
+          if (input.provider === "meetup" || input.provider === "doorkeeper" || input.provider === "eventbrite" || input.provider === "techplay" || input.provider === "kokuchpro") screenshot = await validateCheckpointEvidence(provider, checkpoint, tenantId);
         }
       } catch (error) { throw preserveSafe(error, "EVIDENCE_SCREENSHOT_CAPTURE_FAILED"); }
 
