@@ -1,5 +1,7 @@
 # execution-notes — Phase L 最大応募マシン (Lancers / Mercor / CrowdWorks)
 
+> 旧 sprint-4 (2026-07) の notes は `docs/archive/execution-notes-sprint-4-2026-07.md` へ退避済み。
+
 Goal 受領 2026-08-31。Phase C（Eliza 基盤 C01–C09）は完了済み。
 
 ## 確認した証拠
