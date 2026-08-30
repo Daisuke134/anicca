@@ -356,7 +356,8 @@ function renderPanelPage(options = {}) {
     .money-metric, .money-lane { min-width: 0; padding: 12px; border: 1px solid var(--line); }
     .money-metric strong { display: block; margin-top: 7px; font-family: "Iowan Old Style", serif; font-size: 1.45rem; }
     .money-lane h3 { margin: 0 0 10px; font-size: .72rem; letter-spacing: .05em; }
-    .money-card { margin: 8px 0 0; padding: 10px; background: var(--paper-bright); border-left: 3px solid var(--accent); }
+    .money-card { width: 100%; margin: 8px 0 0; padding: 10px; border: 1px solid transparent; border-left: 3px solid var(--accent); background: var(--paper-bright); color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+    .money-card:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     .money-card p { margin: 4px 0 0; color: var(--ink-soft); font-size: .7rem; }
 
     .section-head {
@@ -1137,14 +1138,104 @@ function renderPanelPage(options = {}) {
       return keys.length ? keys.map(function (key) { return key + " " + value[key]; }).join(" + ") : "0";
     }
 
+    function moneyOpportunityParts(value) {
+      const match = /^opportunity:\\/\\/([a-z0-9][a-z0-9._-]{0,199})\\/([0-9a-f]{64})$/.exec(String(value == null ? "" : value));
+      return match ? { tenantId: match[1], opportunityId: match[2] } : null;
+    }
+
+    function moneyRuntimeJobRef(tenantId, opportunityId) {
+      return "runtime-job://" + encodeURIComponent(tenantId) + "/goal%3A" + opportunityId;
+    }
+
     function validMoneyCard(card) {
       return displayExactKeys(card, ["opportunity_ref", "title", "status", "value_minor", "currency", "source_url"])
         && displaySafeText(card.opportunity_ref, false)
+        && Boolean(moneyOpportunityParts(card.opportunity_ref))
         && displaySafeText(card.title, false)
         && displaySafeText(card.status, false)
         && /^\\d+$/.test(card.value_minor)
         && (card.currency === null || /^[A-Z]{3}$/.test(card.currency))
         && (card.source_url === null || (function () { try { const url = new URL(card.source_url); return url.protocol === "https:" && !url.username && !url.password; } catch { return false; } })());
+    }
+
+    function validMoneyWorkroomActivity(item, selectedRef, expectedJobRef, tenantId) {
+      const base = displayExactKeys(item, ["kind", "ref", "status", "observed_at"]);
+      if (item.kind === "opportunity") return base && item.ref === selectedRef;
+      if (item.kind === "work") return base && item.ref === expectedJobRef;
+      const prefix = "human-task://" + encodeURIComponent(tenantId) + "/";
+      return item.kind === "human_task" && displayExactKeys(item, ["kind", "ref", "status", "observed_at", "job_ref"])
+        && item.job_ref === expectedJobRef && typeof item.ref === "string" && item.ref.startsWith(prefix)
+        && /^[0-9a-f]{64}$/.test(item.ref.slice(prefix.length));
+    }
+
+    function validMoneyWorkroomTime(value) { if (typeof value !== "string") return false; const milliseconds = Date.parse(value); return Number.isFinite(milliseconds) && new Date(milliseconds).toISOString() === value; }
+
+    function validMoneyWorkroomUrl(value) {
+      if (!displaySafeText(value, false)) return false;
+      try {
+        const url = new URL(value);
+        return url.protocol === "https:" && Boolean(url.hostname) && !url.username && !url.password;
+      } catch {
+        return false;
+      }
+    }
+
+    function validateMoneyWorkroom(data, selectedOpportunityRef) {
+      const selected = moneyOpportunityParts(selectedOpportunityRef);
+      const expectedKeys = ["opportunity_id", "title", "value_minor", "currency", "source_url", "status", "job_ref", "activity"];
+      const expectedJobRef = selected && moneyRuntimeJobRef(selected.tenantId, selected.opportunityId);
+      if (!selected
+        || !displayExactKeys(data, expectedKeys)
+        || displayContainsSensitiveValue(data)
+        || data.opportunity_id !== selected.opportunityId
+        || !displaySafeText(data.title, false)
+        || !/^\\d+$/.test(data.value_minor)
+        || (data.currency !== null && !/^[A-Z]{3}$/.test(data.currency))
+        || (data.source_url !== null && !validMoneyWorkroomUrl(data.source_url))
+        || !displaySafeText(data.status, false)
+        || data.job_ref !== expectedJobRef
+        || !Array.isArray(data.activity) || data.activity.length === 0
+        || data.activity.some(function (item) {
+          return !displaySafeText(item.kind, false)
+            || !displaySafeText(item.status, false)
+            || !validMoneyWorkroomActivity(item, selectedOpportunityRef, expectedJobRef, selected.tenantId)
+            || !validMoneyWorkroomTime(item.observed_at)
+        })) {
+        throw new Error("invalid workroom payload");
+      }
+      return data;
+    }
+
+    function renderMoneyWorkroom(data) {
+      const activity = data.activity.map(function (item) {
+        return '<li class="money-activity-item"><strong>' + escapeHtml(item.kind) + '</strong><span>' + escapeHtml(item.status) + '</span><code>' + escapeHtml(item.ref) + '</code></li>';
+      }).join("");
+      return '<div class="money-workroom" data-money-workroom-content><p class="section-kicker">Selected workroom</p><h3>' + escapeHtml(data.title) + '</h3><p class="money-workroom-status">' + escapeHtml(data.status) + '</p><ul class="money-activity">' + activity + '</ul></div>';
+    }
+
+    let moneyWorkroomRequestSequence = 0;
+    async function loadMoneyWorkroom(button) {
+      const requestSequence = ++moneyWorkroomRequestSequence;
+      const section = button && typeof button.closest === "function" ? button.closest('[data-panel-section="money-printer"]') : null;
+      const workroom = section && section.querySelector("[data-money-workroom]");
+      const selectedRef = button && button.dataset ? button.dataset.moneyOpportunityRef : "";
+      const selected = moneyOpportunityParts(selectedRef);
+      if (!workroom || !selected || !button.dataset.moneyOpportunityId || button.dataset.moneyOpportunityId !== selected.opportunityId) {
+        if (workroom && requestSequence === moneyWorkroomRequestSequence) workroom.innerHTML = '<p class="error">Workroom unavailable</p>';
+        return;
+      }
+      workroom.innerHTML = '<p class="loading">Loading workroom…</p>';
+      try {
+        const response = await fetch("/api/panel/money-printer/workroom?opportunity_id=" + encodeURIComponent(selected.opportunityId), {
+          method: "GET", credentials: "same-origin", headers: { Accept: "application/json" },
+        });
+        if (!response.ok) throw new Error("workroom unavailable");
+        const data = await response.json();
+        validateMoneyWorkroom(data, selectedRef);
+        if (requestSequence === moneyWorkroomRequestSequence) workroom.innerHTML = renderMoneyWorkroom(data);
+      } catch {
+        if (requestSequence === moneyWorkroomRequestSequence) workroom.innerHTML = '<p class="error">Workroom unavailable</p>';
+      }
     }
 
     function validateMoneyPrinterData(data) {
@@ -1167,10 +1258,13 @@ function renderPanelPage(options = {}) {
       const metrics = [["Paid & verified", formatMoneyMap(data.metrics.paid_verified)], ["Agents working", data.metrics.agents_working], ["Needs You", data.metrics.needs_you], ["Opportunity value", formatMoneyMap(data.metrics.opportunity_value)]]
         .map(function (item) { return '<article class="money-metric"><span>' + escapeHtml(item[0]) + '</span><strong>' + escapeHtml(item[1]) + '</strong></article>'; }).join("");
       const lanes = Object.keys(moneyLaneLabels).map(function (lane) {
-        const cards = data.columns[lane].map(function (card) { return '<article class="money-card"><strong>' + escapeHtml(card.title) + '</strong><p>' + escapeHtml(card.currency || "") + ' ' + escapeHtml(card.value_minor) + '</p></article>'; }).join("");
+        const cards = data.columns[lane].map(function (card) {
+          const opportunity = moneyOpportunityParts(card.opportunity_ref);
+          return '<button class="money-card" type="button" data-money-opportunity-ref="' + escapeHtml(card.opportunity_ref) + '" data-money-opportunity-id="' + escapeHtml(opportunity.opportunityId) + '"><strong>' + escapeHtml(card.title) + '</strong><p>' + escapeHtml(card.currency || "") + ' ' + escapeHtml(card.value_minor) + '</p></button>';
+        }).join("");
         return '<section class="money-lane"><h3>' + escapeHtml(moneyLaneLabels[lane]) + '</h3>' + (cards || '<p class="empty">No work</p>') + '</section>';
       }).join("");
-      return '<div class="money-metrics">' + metrics + '</div><div class="money-board">' + lanes + '</div>';
+      return '<div class="money-metrics">' + metrics + '</div><div class="money-board">' + lanes + '</div><div class="money-workroom" data-money-workroom><p class="empty">Select an opportunity to inspect its workroom.</p></div>';
     }
 
     const renderers = Object.freeze({ "money-printer": renderMoneyPrinter, timeline: renderTimeline, scores: renderScores, ledger: renderLedger, gates: renderGates, settings: renderSettings, "control-center": renderControlCenter });
@@ -1239,6 +1333,8 @@ function renderPanelPage(options = {}) {
     }
 
     document.addEventListener("click", function (event) {
+      const moneyCard = event.target.closest("button[data-money-opportunity-id]");
+      if (moneyCard) { loadMoneyWorkroom(moneyCard); return; }
       const button = event.target.closest("button[data-action]");
       if (button) runControlAction(button);
     });
