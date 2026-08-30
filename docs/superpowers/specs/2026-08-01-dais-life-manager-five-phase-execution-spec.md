@@ -791,6 +791,23 @@ Lancers実環境へ到達していない。Lancersでの新規応募・契約・
 
 ##### Phase L — Lancersを最初の実環境としてbankedまで閉じる
 
+**再利用の出所はCoconalaだけとする。** 実際に金を証明したlaneはCoconala（観測 ¥126,438）のみであり、
+`report_envelope.render_human_ja`（provider中立の報告）、`TelegramOutbox`（送信・dedupe・再送）、
+Paid並列（親1+子6、immutable release `a81ec3b6…`、回帰37/37）、`storefront_*`（profile/出品）、
+「延べ35件を確認し4件に応募」と分母を必ず出す報告思想を、そのままcopy+tweakで持ち込む。
+★Upworkは8 proposalでoffer 0/contract 0/入金 0の失敗laneであり、雛形・参照実装・比較対象にしない。★
+code量は成果ではない。稼いでいない実装の構造を写すと失敗の構造ごと複製する。
+
+**各providerは同じ25段を1本ずつ閉じる。** 開発は逐次、運用は並列。
+順序は`L01認証 → L03B profile → L04初応募 → L10B最大応募 → 返信待ち → L12交渉 → L21入金 → L23銀行着金`。
+返信は応募当日には来ない。L10Bまで閉じたproviderは待機しながら、次providerのL01〜L10Bを並行して進める。
+返信が来たproviderからL11以降へ入る。これはCoconalaが実際に辿った順序である。
+
+**USD 10,000/月はgig work内で閉じる想定とする。** Coconala単体で¥126,438を観測しており、
+L03B profile・L10B最大応募・L07B並列を足したproviderを5本並べた合計が根拠である。新規の発明を必要としない。
+JPY 10,000,000/月はこの積み上げでは届かず、経路確定は`ELZ-Y01 proof window contract`で行う。
+現時点で10Mの達成経路を確定済みとして扱わない。
+
 | Seq | Atom | 状態 | 原子的完了条件 / named receipt |
 |---:|---|---|---|
 | 23 | ELZ-L01 fresh auth and read-only inventory | TODO | current account/login/opportunity/message/application/contract/financeを二回同値read、provider effect 0の`lancers-preflight-receipt.json` |
