@@ -85,17 +85,30 @@ def test_cross_day_adoption_precedes_both_quality_plans_and_never_starts_daily(
     _write(repair_prompt, "repair")
     _write(
         scripts / "quality_repair_control.py",
-        "import json, os\n"
-        "open(os.environ['CALLS'], 'a').write('quality-repair\\n')\n"
-        f"print(json.dumps({{'status':'READY','reason':'quality-repair-ready',"
-        f"'run_id':{target_id!r},'prompt_path':{str(repair_prompt)!r}}}))\n",
+        "import json, os, sys\n"
+        "command = sys.argv[1]\n"
+        "if command == 'plan': open(os.environ['CALLS'], 'a').write('quality-plan\\n'); "
+        f"print(json.dumps({{'status':'READY','reason':'tracked-reader-terminal-receipt-source-defect','run_id':{target_id!r}}}))\n"
+        "elif command == 'begin': open(os.environ['CALLS'], 'a').write('quality-begin\\n'); "
+        f"print(json.dumps({{'status':'prepared','run_id':{target_id!r},'prompt_path':{str(repair_prompt)!r}}}))\n"
+        "else: "
+        f"print(json.dumps({{'status':'ok','prompt_path':{str(repair_prompt)!r}}}))\n",
     )
     _write(
         scripts / "writer_capacity_floor.py",
         "print(536870912)\n",
     )
-    _write(runtime / "model-runner-support.py", "raise SystemExit(1)\n")
-    _write(runtime / "model-runner.sh", "#!/usr/bin/env bash\nexit 97\n", executable=True)
+    _write(runtime / "model-runner-support.py", "raise SystemExit(0)\n")
+    _write(
+        runtime / "judge-broker.sh",
+        "#!/usr/bin/env bash\nexit 0\n",
+        executable=True,
+    )
+    _write(
+        runtime / "model-runner.sh",
+        "#!/usr/bin/env bash\nprintf 'model-runner\\n' >> \"$CALLS\"\nexit 97\n",
+        executable=True,
+    )
     daily = fake_root / "article-daily.sh"
     _write(
         daily,
@@ -131,7 +144,9 @@ def test_cross_day_adoption_precedes_both_quality_plans_and_never_starts_daily(
     assert calls.read_text().splitlines() == [
         f"adopt {target_id}",
         "quality-feedback",
-        "quality-repair",
+        "quality-plan",
+        "quality-begin",
+        "model-runner",
     ]
     assert not (tmp_path / "daily-started").exists()
     assert json.loads((target / "gates/generation-state.json").read_text())["status"] == (

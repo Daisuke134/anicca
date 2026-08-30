@@ -556,6 +556,7 @@ if [ "$PRIORITY_PUBLICATION_READY" -ne 1 ] \
   elif [ "$QUALITY_REASON" = "legacy-stale-quality-block" ] \
     || [ "$QUALITY_REASON" = "tracked-bookmark-source-defect" ] \
     || [ "$QUALITY_REASON" = "tracked-reader-terminal-source-defect" ] \
+    || [ "$QUALITY_REASON" = "tracked-reader-terminal-receipt-source-defect" ] \
     || [ "$QUALITY_REASON" = "tracked-editorial-hash-scope-source-defect" ] \
     || [ "$QUALITY_REASON" = "tracked-topic-router-reroute-source-defect" ]; then
     QUALITY_READY="$(python3 "$QUALITY_REPAIR_CONTROL" begin \
