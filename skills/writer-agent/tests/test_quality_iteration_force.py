@@ -211,6 +211,82 @@ def test_orphan_quality_snapshot_collision_preserves_evidence(tmp_path, monkeypa
     assert marker.read_bytes() == b"existing archive\n"
 
 
+def test_orphan_quality_snapshot_same_digest_gets_next_occurrence(tmp_path, monkeypatch):
+    run, drafts, partial = _orphan_fixture(tmp_path, monkeypatch)
+    old_bytes = b"repeatable orphan evidence\n"
+    (partial / "editorial-ja.json").write_bytes(old_bytes)
+    orphan_digest = _orphan_digest("editorial-ja.json", old_bytes)
+    archive_root = run / "gates" / "quality-attempt-orphans"
+    existing = archive_root / f"attempt-1-{orphan_digest}"
+    existing.mkdir(parents=True)
+    (existing / "editorial-ja.json").write_bytes(old_bytes)
+
+    result = QUALITY.assess(run, drafts)
+
+    second = archive_root / f"attempt-1-{orphan_digest}-2"
+    assert result["attempt"] == 1
+    assert (existing / "editorial-ja.json").read_bytes() == old_bytes
+    assert (second / "editorial-ja.json").read_bytes() == old_bytes
+    assert (run / "gates" / "quality-attempt-1").is_dir()
+    assert (run / "gates" / "quality-self-heal-attempt-1.json").is_file()
+
+
+def test_orphan_snapshot_no_replace_race_advances_occurrence(tmp_path, monkeypatch):
+    run, drafts, partial = _orphan_fixture(tmp_path, monkeypatch)
+    old_bytes = b"raced orphan evidence\n"
+    (partial / "editorial-ja.json").write_bytes(old_bytes)
+    orphan_digest = _orphan_digest("editorial-ja.json", old_bytes)
+    archive_root = run / "gates" / "quality-attempt-orphans"
+    raced = archive_root / f"attempt-1-{orphan_digest}"
+    calls = 0
+    real_rename = getattr(QUALITY, "_rename_no_replace", None)
+
+    def compete(source, target):
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            raced.mkdir(parents=True)
+            (raced / "editorial-ja.json").write_bytes(old_bytes)
+            raise FileExistsError(target)
+        assert real_rename is not None
+        return real_rename(source, target)
+
+    monkeypatch.setattr(QUALITY, "_rename_no_replace", compete, raising=False)
+
+    result = QUALITY.assess(run, drafts)
+
+    second = archive_root / f"attempt-1-{orphan_digest}-2"
+    assert calls == 2
+    assert result["attempt"] == 1
+    assert (raced / "editorial-ja.json").read_bytes() == old_bytes
+    assert (second / "editorial-ja.json").read_bytes() == old_bytes
+    assert partial.is_dir()
+    assert (partial / "editorial-en.json").is_file()
+
+
+def test_orphan_snapshot_no_replace_race_with_different_digest_fails_closed(
+    tmp_path, monkeypatch
+):
+    run, drafts, partial = _orphan_fixture(tmp_path, monkeypatch)
+    old_bytes = b"raced source evidence\n"
+    (partial / "editorial-ja.json").write_bytes(old_bytes)
+    orphan_digest = _orphan_digest("editorial-ja.json", old_bytes)
+    archive_root = run / "gates" / "quality-attempt-orphans"
+    raced = archive_root / f"attempt-1-{orphan_digest}"
+
+    def compete(_source, target):
+        raced.mkdir(parents=True)
+        (raced / "different").write_bytes(b"not the same archive\n")
+        raise FileExistsError(target)
+
+    monkeypatch.setattr(QUALITY, "_rename_no_replace", compete, raising=False)
+
+    with pytest.raises(QUALITY.QualitySelfHealError, match="collision"):
+        QUALITY.assess(run, drafts)
+    assert (partial / "editorial-ja.json").read_bytes() == old_bytes
+    assert (raced / "different").read_bytes() == b"not the same archive\n"
+
+
 def test_orphan_quality_snapshot_scan_error_fails_closed(tmp_path, monkeypatch):
     run, drafts, partial = _orphan_fixture(tmp_path, monkeypatch)
     (partial / "editorial-ja.json").write_bytes(b"unreadable\n")

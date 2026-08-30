@@ -4,6 +4,9 @@
 from __future__ import annotations
 
 import argparse
+import ctypes
+import errno
+import fcntl
 import hashlib
 import json
 import os
@@ -132,6 +135,41 @@ def _orphan_snapshot_digest(directory: Path) -> str:
         raise QualitySelfHealError("quality orphan snapshot path is not encodable") from exc
 
 
+def _rename_no_replace(source: Path, target: Path) -> None:
+    """Atomically rename a directory without replacing an existing path."""
+    source_bytes = os.fsencode(source)
+    target_bytes = os.fsencode(target)
+    libc = ctypes.CDLL(None, use_errno=True)
+    if sys.platform == "darwin":
+        function = getattr(libc, "renamex_np", None)
+        if function is None:
+            raise QualitySelfHealError("quality orphan no-replace rename unsupported")
+        function.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_uint]
+        function.restype = ctypes.c_int
+        result = function(source_bytes, target_bytes, 0x00000004)
+    elif sys.platform.startswith("linux"):
+        function = getattr(libc, "renameat2", None)
+        if function is None:
+            raise QualitySelfHealError("quality orphan no-replace rename unsupported")
+        function.argtypes = [
+            ctypes.c_int,
+            ctypes.c_char_p,
+            ctypes.c_int,
+            ctypes.c_char_p,
+            ctypes.c_uint,
+        ]
+        function.restype = ctypes.c_int
+        result = function(-100, source_bytes, -100, target_bytes, 1)
+    else:
+        raise QualitySelfHealError("quality orphan no-replace rename unsupported")
+    if result == 0:
+        return
+    error = ctypes.get_errno()
+    if error == errno.EEXIST:
+        raise FileExistsError(error, os.strerror(error), str(target))
+    raise OSError(error, os.strerror(error), str(target))
+
+
 def _archive_orphan_snapshot(gates: Path, directory: Path, attempt: int) -> None:
     """Move an incomplete snapshot aside before creating the canonical one."""
     digest = _orphan_snapshot_digest(directory)
@@ -141,15 +179,49 @@ def _archive_orphan_snapshot(gates: Path, directory: Path, attempt: int) -> None
     ):
         raise QualitySelfHealError("quality orphan archive is not a directory")
     archive_root.mkdir(parents=True, exist_ok=True)
-    target = archive_root / f"attempt-{attempt}-{digest}"
-    if target.exists() or target.is_symlink():
-        raise QualitySelfHealError("quality orphan snapshot archive collision")
+    lock_path = archive_root / f".attempt-{attempt}-{digest}.lock"
     try:
-        os.rename(directory, target)
+        with lock_path.open("a+") as lock:
+            fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+            for occurrence in range(1, 101):
+                name = f"attempt-{attempt}-{digest}"
+                if occurrence > 1:
+                    name += f"-{occurrence}"
+                target = archive_root / name
+                if target.is_symlink():
+                    raise QualitySelfHealError(
+                        "quality orphan snapshot archive collision"
+                    )
+                if target.exists():
+                    if not target.is_dir() or _orphan_snapshot_digest(target) != digest:
+                        raise QualitySelfHealError(
+                            "quality orphan snapshot archive collision"
+                        )
+                    continue
+                try:
+                    _rename_no_replace(directory, target)
+                except FileExistsError:
+                    if (
+                        target.is_symlink()
+                        or not target.is_dir()
+                        or _orphan_snapshot_digest(target) != digest
+                    ):
+                        raise QualitySelfHealError(
+                            "quality orphan snapshot archive collision"
+                        )
+                    continue
+                except OSError as exc:
+                    raise QualitySelfHealError(
+                        "quality orphan snapshot archive failed"
+                    ) from exc
+                if _orphan_snapshot_digest(target) != digest:
+                    raise QualitySelfHealError(
+                        "quality orphan snapshot archive digest mismatch"
+                    )
+                return
     except OSError as exc:
         raise QualitySelfHealError("quality orphan snapshot archive failed") from exc
-    if _orphan_snapshot_digest(target) != digest:
-        raise QualitySelfHealError("quality orphan snapshot archive digest mismatch")
+    raise QualitySelfHealError("quality orphan snapshot archive occurrence limit")
 
 
 def _hex_digest(value: Any) -> bool:
