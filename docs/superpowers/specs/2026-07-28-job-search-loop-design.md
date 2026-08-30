@@ -4,8 +4,8 @@
 **Current verified status:** `ai.anicca.job-search-daily` is installed with
 `StartInterval=1800`; this is a 30-minute loop, not an hourly loop. The five existing
 Job Hunter owners load main-derived immutable release
-`20260831T004335-01dc472e`, source SHA
-`01dc472e45687480b807627f4141bb97bcc1056a`: browser, daily, inbox, learning and
+`20260831T014127-fcb9e691`, source SHA
+`fcb9e69146fa499bfd1697d372c58ac0f6313622`: browser, daily, inbox, learning and
 health. Same-context preflight returned `status=pass` and
 `mutation_allowed=true`, and loaded-domain readback proves exact-release
 `ProgramArguments`. The HPE `Thank you for your online submission` message now
@@ -51,6 +51,25 @@ queue to `workday-discovery.json` and enter the browser lane without running sho
 or per-row fit model calls. Fresh qualification runs only when that eligible queue is
 empty. This is queue priority inside the existing owner, not a second scheduler or
 parallel submitter.
+
+Release `20260831T014127-fcb9e691` implements that queue priority. Its first real
+owner wake, `daily-20260831-014238`, writes `status=queued_existing` with two queued
+application IDs, zero new fit decisions, and reaches the browser lane in under one
+minute. The first row, Cloudera Applied AI Specialist, reaches an authoritative
+password-reset acknowledgement and closes as `email_recovery` checkpoint with
+Telegram message ID `45090`; it is not an application. The same wake then observes
+the second queued row, but the agent starts a `wait` and another `observe` before the
+first command completes. `wait` exits 1 because the post-action browser context no
+longer exposes an absolute HTTPS page. Despite the prompt's immediate-stop rule, the
+agent issues two more `observe` commands and a `navigate`; the latter exits 0. This
+proves prompt text alone does not enforce sequential runtime ownership or stop after
+a transport failure. The next patch must fail closed in code: a wake may have at most
+one runtime command in flight, the first nonzero started runtime command terminalizes
+that model attempt, and any later command makes the pass invalid without consuming a
+Submit fence. Focused tests must reproduce both transcript orders. The 1--3 real-wake
+application proof remains open until a distinct Gmail confirmation increases the
+rolling count, Ledger is `submitted`, Telegram acknowledges it, and immediate replay
+adds zero.
 
 The application Ledger remains the state SSOT and `summary.v2` is rebuilt from its
 event stream on every wake. Every-wake and application-result Telegram delivery uses
