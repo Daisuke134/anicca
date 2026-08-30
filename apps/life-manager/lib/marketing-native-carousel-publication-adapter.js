@@ -30,7 +30,7 @@ const DIRECT_POSTS = Object.freeze({
 });
 const PROVIDER_ID = /^[A-Za-z0-9._:-]{1,200}$/;
 const BASE_REF_KEYS = ["account_ref", "approval_ref", "caption_ref", "creative_ref", "form_ref", "format_ref", "locale_ref", "media_refs", "pack_ref", "platform_ref", "postiz_token_ref", "product_ref", "slot_ref"];
-const EFFECT = /^marketing:carousel:anicca-ios:([A-Za-z0-9][A-Za-z0-9._-]{0,127}):([0-9a-f]{64}):([0-9a-f]{64}):([0-9a-f]{64})$/;
+const EFFECT = /^marketing:carousel:anicca-ios:([A-Za-z0-9][A-Za-z0-9._-]{0,127}):([0-9a-f]{64}):([0-9a-f]{64}):([0-9a-f]{64})(?::([0-9a-f]{64}))?$/;
 
 const fail = (message) => { throw new Error(message); };
 const text = (value, label) => { const v = String(value == null ? "" : value).trim(); return v || fail(`${label} is required`); };
@@ -199,7 +199,8 @@ function buildMarketingNativeCarouselPublicationJob(input = {}) {
   const packHash = objectHash(packRef, "pack");
   const mediaHashes = media.map((ref) => objectHash(ref, "media"));
   const captionHash = objectHash(captionRef, "caption");
-  const effectKey = `marketing:carousel:${PRODUCT_ID}:${creativeId}:${packHash}:${mediaOrderHash(mediaHashes)}:${captionHash}`;
+  const slotScope = input.slotScopedEffect === true ? `:${crypto.createHash("sha256").update(slot).digest("hex")}` : "";
+  const effectKey = `marketing:carousel:${PRODUCT_ID}:${creativeId}:${packHash}:${mediaOrderHash(mediaHashes)}:${captionHash}${slotScope}`;
   const inputRefs = {
     product_ref: `product://${lane.productId}`,
     format_ref: `format://${lane.formatId}`,
@@ -235,7 +236,8 @@ function normalizeJob(job) {
   const account = platform && new RegExp(`^account://${platform[1]}/(.+)$`).exec(String(refs.account_ref || ""));
   if (!product || !format || !form || !locale || !slot || !creative || !account || creative[1] !== product[1]
     || !platform || integrationKeys[0] !== `${platform[1]}_integration_ref`) fail("marketing native carousel publication job contract is invalid");
-  const input = { tenantId: job.tenant_id, productId: product[1], formatId: format[1], form: form[1], locale: locale[1], slot: slot[1], creativeId: creative[2], accountId: account[1], accountRef: refs.account_ref, integrationRef: refs[integrationKeys[0]], packRef: refs.pack_ref, mediaRefs: refs.media_refs, captionRef: refs.caption_ref, approvalRef: refs.approval_ref, postizTokenRef: refs.postiz_token_ref };
+  const effect = EFFECT.exec(String(job.effect_key || ""));
+  const input = { tenantId: job.tenant_id, productId: product[1], formatId: format[1], form: form[1], locale: locale[1], slot: slot[1], creativeId: creative[2], accountId: account[1], accountRef: refs.account_ref, integrationRef: refs[integrationKeys[0]], packRef: refs.pack_ref, mediaRefs: refs.media_refs, captionRef: refs.caption_ref, approvalRef: refs.approval_ref, postizTokenRef: refs.postiz_token_ref, ...(effect?.[5] ? { slotScopedEffect: true } : {}) };
   const lane = selectMarketingNativeCarouselLane(input);
   let expected;
   try { expected = buildMarketingNativeCarouselPublicationJob(input); } catch { fail("marketing native carousel publication job contract is invalid"); }
@@ -299,8 +301,13 @@ function provider(result, lane) {
   const postId = result && (result.provider_post_id || result.post_id);
   const url = result && (result.public_url || result.post_url);
   const reconciled = result && (result.reconciled === true || result.provider_reconciled === true);
-  if (!result || state !== "PUBLISHED" || reconciled !== true || !PROVIDER_ID.test(String(postId || "")) || !DIRECT_POSTS[lane.platform]?.test(String(url || ""))) { const error = new Error("marketing native carousel provider result contract mismatch"); error.unknownEffect = true; throw error; }
-  return { postId: String(postId), url: String(url) };
+  const direct = DIRECT_POSTS[lane.platform]?.test(String(url || ""));
+  const photoProof = lane === EN_SLIDESHOW_TIKTOK_LANE && url == null
+    && result.integration_id === lane.integrationId && result.content_sha256 === lane.captionRef.slice(-64)
+    && result.title === lane.title && result.posting_method === "DIRECT_POST"
+    && /^p_pub_url~[A-Za-z0-9._~-]+$/.test(String(result.release_id || ""));
+  if (!result || state !== "PUBLISHED" || reconciled !== true || !PROVIDER_ID.test(String(postId || "")) || (!direct && !photoProof)) { const error = new Error("marketing native carousel provider result contract mismatch"); error.unknownEffect = true; throw error; }
+  return { postId: String(postId), url: direct ? String(url) : null, ...(photoProof ? { state, integrationId: result.integration_id, contentSha256: result.content_sha256, title: result.title, postingMethod: result.posting_method, releaseId: result.release_id } : {}) };
 }
 function laneForReceipt(receipt) {
   try {
@@ -379,7 +386,7 @@ async function executeMarketingNativeCarouselPublicationJob(job, deps = {}) {
   let result;
   try { result = await s.runDistribution({ tenantId: job.tenant_id, productId: lane.productId, formatId: lane.formatId, form: lane.form, locale: lane.locale, platform: lane.platform, title: pack.slides[0].text, creativeId: contract.creativeId, accountId: lane.accountId, integrationRef: contract.integrationRef, integrationId: lane.integrationId, packPath, mediaPaths: [...mediaPaths], captionPath, token }); } catch (cause) { const error = new Error(cause && cause.message ? cause.message : String(cause)); error.unknownEffect = true; throw error; }
   const published = provider(result, lane);
-  const receipt = { schema_version: 1, kind: "marketing_native_carousel_distribution", status: "published", product_id: lane.productId, format_id: lane.formatId, form: lane.form, locale: lane.locale, platform: lane.platform, account_id: lane.accountId, integration_ref: contract.integrationRef, creative_id: contract.creativeId, pack_sha256: contract.packHash, media_sha256: [...contract.mediaHashes], media_order_sha256: mediaOrderHash(contract.mediaHashes), caption_sha256: contract.captionHash, provider_post_id: published.postId, provider_reconciled: true, public_url: published.url, published_at: instant(s.now(), "marketing native carousel publication time") };
+  const receipt = { schema_version: 1, kind: "marketing_native_carousel_distribution", status: "published", product_id: lane.productId, format_id: lane.formatId, form: lane.form, locale: lane.locale, platform: lane.platform, account_id: lane.accountId, integration_ref: contract.integrationRef, creative_id: contract.creativeId, pack_sha256: contract.packHash, media_sha256: [...contract.mediaHashes], media_order_sha256: mediaOrderHash(contract.mediaHashes), caption_sha256: contract.captionHash, provider_post_id: published.postId, provider_reconciled: true, public_url: published.url, ...(published.url == null ? { provider_state: published.state, provider_integration_id: published.integrationId, provider_content_sha256: published.contentSha256, provider_title: published.title, provider_posting_method: published.postingMethod, provider_release_id: published.releaseId } : {}), published_at: instant(s.now(), "marketing native carousel publication time") };
   if (!verifyMarketingNativeCarouselPublicationReceipt(receipt)) { const error = new Error("marketing native carousel publication receipt verification failed"); error.unknownEffect = true; throw error; }
   appendRow(ledgerFor(s, job.tenant_id, lane.productId), job, receipt);
   return { receipt, result };
