@@ -48,7 +48,7 @@ def open_release_roots(releases_root: Path) -> set[Path]:
     """Return release roots referenced by any open file or process cwd."""
     completed = subprocess.run(
         ["lsof", "-Fn"],
-        capture_output=True, text=True, timeout=30,
+        capture_output=True, text=True, timeout=120,
     )
     if completed.returncode not in (0, 1):
         raise OSError(f"release lsof failed: {completed.returncode}")
