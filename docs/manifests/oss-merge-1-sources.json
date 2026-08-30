@@ -73,7 +73,7 @@
       },
       "absorbed_files": [
         {"source": "skills/agent-runner/agent_runner.py", "target": "runtime/agent-runner/agent_runner.py", "sha256": "e74be251d0ec4b4f37870b80fb23efc2f81534f7a8387319658d444dcb8476c1"},
-        {"source": "skills/agent-runner/config.json", "target": "runtime/agent-runner/config.json", "sha256": "26aca0cc1aa4545bff4ad21075efbc91dcacee98c32ec435c358ca56a39e2ffb"},
+        {"source": "skills/agent-runner/config.json", "target": "runtime/agent-runner/config.json", "sha256": "5970615f3f4d3b0a103ca453eb6ace9d6dc5c0cde8f6de35e7641253b195a2f5"},
         {"source": "skills/agent-runner/context_packet.py", "target": "runtime/agent-runner/context_packet.py", "sha256": "4e2c17ac3b29eb6d7428f1006f30c5e7b6261de347ec913508b8e292cd6a0d0e"},
         {"source": "skills/agent-runner/usage_report.py", "target": "runtime/agent-runner/usage_report.py", "sha256": "a58e26ef7f8c53bfacac4c276dca5afc7d479fdeb14d10cd03389eb0e77ea0a1"},
         {"source": "skills/agent-runner/tests/test_prompt_fail_closed.py", "target": "runtime/agent-runner/tests/test_prompt_fail_closed.py", "sha256": "175961a8f6dee55de540cbb5691b0da4746f09bebc8226d56acaf788e2811209"},
