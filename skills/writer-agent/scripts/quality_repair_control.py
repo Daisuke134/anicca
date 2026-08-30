@@ -14,6 +14,8 @@ import subprocess
 import sys
 from typing import Any
 
+from article_generation_state import ledger_has_public_effect
+
 
 CURRENT_QUALITY_VERSION = 2
 REPAIR_EPOCH = 1
@@ -106,23 +108,6 @@ def _is_quality_block_audit(value: dict[str, Any]) -> bool:
     return legacy or current
 
 
-def _ledger_has_delivery_row(ledger: Path, run_id: str) -> bool:
-    if not ledger.exists():
-        return False
-    for line in ledger.read_text(encoding="utf-8").splitlines():
-        try:
-            value = json.loads(line)
-        except (json.JSONDecodeError, TypeError):
-            continue
-        if (
-            isinstance(value, dict)
-            and value.get("run_id") == run_id
-            and not _is_quality_block_audit(value)
-        ):
-            return True
-    return False
-
-
 def _quality_audit_topic_id(ledger: Path, run_id: str) -> str | None:
     if not ledger.exists():
         return None
@@ -149,7 +134,7 @@ def _terminal_quality_block(
 ) -> dict[str, Any] | None:
     """Build a hash-bound rejection only for the known exhausted gate shape."""
     gates = run_dir / "gates"
-    if (gates / "publication-state.json").exists() or _ledger_has_delivery_row(
+    if (gates / "publication-state.json").exists() or ledger_has_public_effect(
         ledger, run_dir.name
     ):
         return None
@@ -472,7 +457,7 @@ def plan(run_dir: Path | str, ledger: Path | str) -> dict[str, Any]:
         return _refused("run-directory-missing")
     if (gates / "publication-state.json").exists():
         return _refused("publication-state-exists")
-    if _ledger_has_delivery_row(ledger, run_id):
+    if ledger_has_public_effect(ledger, run_id):
         return _refused("ledger-row-exists")
     repair_state = _read_json(gates / "quality-repair-state.json")
     if repair_state:
@@ -990,7 +975,7 @@ def record_result(
         status = "terminal-quality-blocked"
     elif (gates / "publication-state.json").is_file():
         status = "handed-to-publication"
-    elif _ledger_has_delivery_row(ledger, run_dir.name):
+    elif ledger_has_public_effect(ledger, run_dir.name):
         status = "terminal-ambiguous-ledger-without-publication-state"
     elif quality and quality.get("action") == "block_freeze":
         status = "terminal-blocked"
