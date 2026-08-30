@@ -170,7 +170,7 @@ Primary sources:
 | 28252 | App Status | Existing |
 | 28254 | Live URL | final Netlify `/money-printer` URL |
 | 28256 | Public Code Repo | `https://github.com/Daisuke134/life-manager` |
-| 28257 | Tested WebMCP agents/clients | ChatGPT in-app browser and Chrome WebMCP testing; final実測だけ記載 |
+| 28257 | Tested WebMCP agents/clients | final録画で実測した一つのWebMCP clientだけを記載。targetは既存CloakBrowser sessionから使うChatGPT in-app browser経路で、Chromeとの二重実行はしない |
 | 28258 | AI tools used | Codex、ChatGPT等、実際に使ったtoolsだけ記載 |
 | 28259 | Level of learning | Significant |
 | 28260 | Career AI value | Yes |
@@ -209,6 +209,8 @@ Primary sources:
 - `https://webmcp.devpost.com/rules`
 - `https://webmcp.devpost.com/resources`
 
+Current official readbackはdeadline、Top 10、live URL、public repo、audio付き3分未満YouTube、4つの同率criteriaに変更なし。公式はChatGPT in-app browserまたはChrome 149+のどちらかでtest可能としており、両方の実測を要求していない。
+
 ### 3.6 Known submission fields and link gates
 
 | Field | Final value / creation gate | Current status | Final gate |
@@ -221,7 +223,7 @@ Primary sources:
 | Demo video title | `Life Manager — The Agent That Finishes Work With You` | reserved copy | final E2E edit complete |
 | Public YouTube URL | created by the final verified upload | not created | public URL + duration/audio readback |
 | Devpost entry URL | `https://devpost.com/software/life-manager-uny729` | public draft、not submitted | every required field + `submitted_at` readback |
-| Testing instructions | isolated guest `https://aniccaai.com/money-printer` + one WebMCP prompt + Chrome 149 steps | planned | clean-browser judge replay |
+| Testing instructions | isolated guest `https://aniccaai.com/money-printer` + one WebMCP prompt + final録画で通した一つのclient経路 | planned | single clean-browser judge replay |
 
 Devpost pluginから実提出fieldsを取得済みである。正本はSection 3.3Aとし、authenticated draft作成後は送信前に同じfieldsをread backする。
 
@@ -343,7 +345,7 @@ Devpost galleryは調査時点で未公開。GitHub exact phrase searchでは公
 - responsive、accessible、normal browserでもhuman UIが動く
 - server-side validation、rate limit、safe error messages
 - guest accountで同じpublic opportunityとhuman-task flowを再現
-- Chrome/ChatGPT real E2E receipt
+- final録画で使う一つのWebMCP clientのreal E2E receipt
 - public repo、license、setup、judge guide、tests
 - video、description、screenshotsがlive behaviorと一致
 
@@ -399,7 +401,7 @@ Ambitionはfeature数ではない。「open Web上の仕事を、人とagentが�
 
 | Criterion | Claim | Required artifact | Verification / E2E | Video timestamp | Status |
 |---|---|---|---|---|---|
-| Leverage | stateに応じてtoolsが変わる | registered-tools before/after snapshot | ChatGPT + Chrome readback | final-cut gate | planned |
+| Leverage | stateに応じてtoolsが変わる | registered-tools before/after snapshot | single recorded client readback | final-cut gate | planned |
 | Leverage | 対応agentがlive artifactを共同編集する | visible revision diff + actor trace | inspect → revise → human review | final-cut gate | planned |
 | Leverage | human task回答後に同じagent runが続く | task + thread/workroom trace | blocked → answer → continuation | final-cut gate | planned |
 | Leverage | replayで新規effect 0 | original receipt + duplicate count | same idempotency key twice | final-cut gate | planned |
@@ -487,7 +489,7 @@ Primary sources:
 | Official criterion | 5/5 target evidence from this source mix |
 |---|---|
 | WebMCP Leverage | ChatGPTがX/Webで発見した任意opportunity、Lancers、Mercorを同じtyped toolsでinspect/qualify/claimし、Mercorのartifact、human interview taskを同じvisible workroomで扱う。`Needs You`回答後のsame-job continuationとreceipt確認までWebMCPを使う |
-| Execution | Zero-login live Dashboard、24/7 multi-source scout、multiple concurrent workrooms、Lancersのreal application receipt、Mercorのlive same-job human boundary、generic bounty intake、ChatGPT/Chrome E2Eを実物で見せる。単なるfixture/POCにしない |
+| Execution | Zero-login live Dashboard、24/7 multi-source scout、multiple concurrent workrooms、Lancersのreal application receipt、Mercorのlive same-job human boundary、generic bounty intake、single-client WebMCP E2Eを実物で見せる。単なるfixture/POCにしない |
 | Potential Impact | Mercorの$70–250/hr級AI roles、Lancersの多数のlive freelance projects、X/Web上の新しい機会を対象にする。特定marketplaceに閉じず、任意URLから新しい収益機会を処理する。Human minutes、agent steps、applications、deliveries、official moneyを別々に測る |
 | Creativity & Ambition | Symphonyのper-work-item agent orchestrationをcoding repo内からopen Web上のeconomic opportunitiesへ拡張する。人はhuman-only 1%だけを行い、未知marketplaceでも同じworkroom contractとmoney-truth ledgerで閉じる |
 
@@ -899,7 +901,7 @@ Effect開始後に結果が不明なら`EFFECT_UNCERTAIN`へ進み、別account�
 - ChatGPT in-app browserで`Try Life Manager`を開き、同じproduction productのguest accountへ入る
 - Life Manager側のAPI key、wallet、private credentialは不要
 - primary judge pathはzero-login live URL + video + README
-- WebMCP E2Eは主催者の対応環境とChrome 149+の両経路を記載する
+- WebMCP E2Eは最終録画で通した一つの主催者対応clientだけを記載する
 - copyable prompt 1つ: `Turn on my Money Printer. Do everything you can autonomously and ask me only when you genuinely need human input.`
 - reset button 1つ
 - `How WebMCP works` drawerにcurrent toolsとrecent calls
@@ -926,13 +928,13 @@ JudgeはDashboardを直接確認でき、対応WebMCP clientからの操作も�
 
 ### 12.3 Exact recording plan — one 16:9 video
 
-最終deliverableは16:9のYouTube video一つにする。Codexが実E2Eを最初から最後までMac上でcaptureし、Daisへclean MP4を渡す。DaisはそのMP4をZoomで画面共有しながら英語でnarrateし、Zoomのlocal recordingを最終videoにする。顔出しは不要で、条件はclear demo、audio、3分未満、public YouTubeである。WebMCP interactionはChatGPT desktopまたはChrome 149+でcaptureし、人間が`Needs You`を完了する場面だけiPhone captureを挿入する。Phone-only recordingはWebMCP tool discoveryを証明できないため採用しない。
+最終deliverableは16:9のYouTube video一つにする。Codexが一回の実E2Eを最初から最後まで既存CloakBrowser session上の対応clientでcaptureし、同じrunへ英語audioを付けたclean MP4をDaisへ渡す。顔出しとiPhone差し込みは不要で、条件はclear demo、audio、3分未満、主要5場面が読めることである。別browserでの再演はWebMCP proofを増やさずstateを汚すため行わない。
 
 | Time | Recorded screen | Narration |
 |---:|---|---|
 | 0:00–0:15 | Title + scattered posts/prompts about earning with AI | “People share countless ways to make money with Claude, Codex, and AI through bounties, gigs, apps, and online work. What is missing is a public, reproducible agent system that actually runs the whole process.” |
 | 0:15–0:30 | Full Money Printer Dashboard | “Life Manager is that system. It finds paid opportunities, does the work, submits or delivers it, and tracks the result on one board.” |
-| 0:30–0:45 | ChatGPT/Chrome Site tools drawer | “The page exposes WebMCP tools, so my WebMCP agent reads and changes the same state I see instead of guessing at buttons.” |
+| 0:30–0:45 | recorded WebMCP Site tools drawer | “The page exposes WebMCP tools, so my WebMCP agent reads and changes the same state I see instead of guessing at buttons.” |
 | 0:45–1:00 | WebMCP agent adds one live public bounty/gig | “I add one real paid opportunity. Life Manager checks its reward, deadline, eligibility, required work, cost, and risk, then opens an isolated workroom.” |
 | 1:00–1:20 | Worker events and real artifact appear | “The earning agent uses its browser and work tools to complete the task without me supervising every turn.” |
 | 1:20–1:40 | Card moves to Needs You with completed packet | “Only when it reaches a boundary that genuinely requires my authority does it create one prepared human task.” |
@@ -995,7 +997,7 @@ The initial product is a general entrepreneur agent that continuously searches X
 | Life Manager code | Money Printer本体、judge guest、Railway worker、recurring scout、HumanTask pause/resume contract、WebMCP initial four + dynamic fifthをpublic mainへmerge済み。Current mainは`f592bc31b2d6730143f46ba9d1e7e82c69fcd324`、Money Printer/Panel/server pathsはproduction build `5c9a8f9f3bc80550e040da560cbc2cd8703d3c50`との差分0。後続marketing-only app changesは未deploy | live answer/resume、browser WebMCP E2E、Symphony product integrationを閉じる |
 | Railway API | `life-call`と`money-printer-worker`はbuild `5c9a8f9f3bc80550e040da560cbc2cd8703d3c50`でSUCCESS、`/health` 200。fresh guest sessionのnext-human-taskは200でopen task一件 | task answer、stale version、same-key replay、same-job resume、official receiptを閉じる |
 | Judge guest | zero-login boardはFound 19、Working 0、metric `Needs You=1`、Paid 0、verified cash 0。initial WebMCP tools four、open task取得後のdynamic fifth実装あり | **known defect:** `Needs You` columnが0件でmetric 1と不一致。projection/source/workroom/UIをB09–B12で直し、clean browserでprivate data 0とsame domain functionsを証明する |
-| Netlify | PR #400/401、deploy run `33254381157`はSUCCESS。`https://aniccaai.com/money-printer` page/API 200、`Origin-Agent-Cluster:?1`、`Permissions-Policy:tools=(self)`、no-store、zero-login sessionをreadback | 先にChatGPT/Chromeでtool discoveryを証明し、race-free Symphony接続後にvisible write/resumeを証明する |
+| Netlify | PR #400/401、deploy run `33254381157`はSUCCESS。`https://aniccaai.com/money-printer` page/API 200、`Origin-Agent-Cluster:?1`、`Permissions-Policy:tools=(self)`、no-store、zero-login sessionをreadback | race-free Symphony接続後、final single recordingでtool discoveryとvisible write/resumeを証明する |
 | Worker | dedicated Railway service `money-printer-worker`をGitHub mainから稼働。Board activityには16:00Z、00:00Z、08:00Zの三つのnatural-window opportunity groupが存在し、page-independent persistenceを確認 | 三windowを同一releaseのscheduler receiptsへ束縛し、source duplicate最大1をreadbackする。Board timestampだけで3/3完了にはしない |
 | External proof | Lancers project `5593484`のofficial application receipt `27863414`をread-only importし、official log + append-only ledgerでcontent hashを照合。applicationとして表示し、revenueへは算入せず、replay duplicate 0 | browser demoでreceiptとverified money 0を同時に見せる |
 | Devpost | project `1404362`をfresh Sol review済みEnglish draftへversion 3同期。`website_url=https://aniccaai.com/money-printer`、public repo、MIT license、README、judge guideをlive readback。`submitted_at=null`、`video_url=null` | screenshots、immutable tag、public YouTube、required custom answersを埋め、official formを再readbackして明示承認後にsubmitする |
@@ -1006,7 +1008,7 @@ The initial product is a general entrepreneur agent that continuously searches X
 
 | Official criterion | Current evidence estimate | Why it is not 5/5 yet | Exact closing atoms |
 |---|---:|---|---|
-| WebMCP Leverage | 3/5 | non-trivial initial four + dynamic fifthは実装済みだが、actual ChatGPT/Chrome invocation、visible call log、same-state task answerが未証明 | B01–B12、H07–H12 |
+| WebMCP Leverage | 3/5 | non-trivial initial four + dynamic fifthは実装済みだが、actual single-client invocation、visible call log、same-state task answerが未証明 | B01–B12、H07–H12 |
 | Execution | 2/5 | live URL、worker、durable boardはあるが、Needs You metric/column divergence、selected workroom UI不足、Symphony bridge未実装、complete E2E未成立 | B09–B12、R01–R10、A01–A08、S01–S12、H01–H12 |
 | Potential Impact | 4/5 | paid opportunity inventoryとofficial application receiptはあるが、artifact→human boundary→resume→delivery/payment truthの一周が未成立 | H01–H12、G03–G09 |
 | Creativity & Ambition | 4/5 | 24/7 money-work agent + human 1%のconceptとprivate Symphony spikeは強いが、public productへ統合された証拠がない | R→A→S→H、V01–V12 |
@@ -1056,8 +1058,7 @@ The initial product is a general entrepreneur agent that continuously searches X
 - [x] multiple real opportunities + source-level dedupe readback
 - [x] multiple concurrent workrooms with isolated refs and cross-contamination 0
 - [ ] normal browser human UI
-- [ ] ChatGPT built-in browser WebMCP E2E
-- [ ] Chrome WebMCP E2E
+- [ ] final録画で一つの対応clientによるWebMCP E2E
 - [ ] visible tool activity
 - [ ] state-dependent registration
 - [ ] stale revision demo
@@ -1163,7 +1164,7 @@ Judgesがeconomic autonomyより安全で楽しいcreative collaborationを好�
 12. [completed] existing runtime job store/reconcilerでretry/backoff、controlled failure、restart recoveryを実測する
     - [spike-completed / product-open] Official Symphonyをinstallしprivate GitHub fixtureでisolated Codex E2Eを完了。Life Manager work item mirrorとresult callbackは未接続
 13. [code-completed/live-open] state-dependent tool registration + visible activity log
-14. ChatGPT/Chrome E2E、polish/accessibility、isolated guest/reset、clean judge replay
+14. single-client recorded WebMCP E2E、polish/accessibility、isolated guest/reset、clean judge replay
 15. public repo/license/judge guide/post-August-25 diff、deploy/repo SHA一致
 16. English submission copy/screenshots/thumbnail + under-3-minute video
 17. four-criteria self-check、immutable deploy/repo/submission receipts、freeze
@@ -1389,7 +1390,7 @@ A01–A09はcomplete。新依存/endpoint 0。A09はrelated 120/120、fresh adve
 | S01 | private repo `Daisuke134/life-manager-workrooms`を作る | complete: `gh repo view`でPRIVATE、issues enabled、empty repo |
 | S02 | labels `money-printer`と`needs-human`を作る | complete: exact name/color/description readback、duplicate create 0 |
 | S03 | bridgeにinternal claim callを実装する | complete: claim→zero-login guest cookie→same-tenant workroomの3 requestだけでfrozen `LM_DISPATCH_V1` packetを返す。idle追加GET 0、secret/cookie/activity出力0、focused 6/6、related 78/78、fresh adversarial `ship` |
-| S04 | bridgeにGitHub Issue create/readbackを実装する | titleにstable dispatch ID、bodyにpublic refs/job ID/result protocol、credential/PII 0 |
+| S04 | bridgeにGitHub Issue create/readbackを実装する | complete: fixed private repo/labelへfull dispatch ID title、exactly-one hidden marker、13-field public bodyを作り、strict HTTPS URLをcanonical `github-issue://` refへ変換。configured tenant必須、foreign packet/marker injection/client errorはeffect前fail、secret/raw leak 0、focused 13/13、related 106/106、fresh re-review `ship`。S05前のmain activationと実Issue作成は0 |
 | S05 | create unknown時のreconciliationを実装する | exact dispatch marker search→presentならreuse、absentだけcreate、unknownなら停止 |
 | S06 | bridgeに`LM_RESULT_V1` comment parserを実装する | expected repo、issue、author `Daisuke134`、dispatch/job IDs、allowed keysだけaccept |
 | S07 | bridgeにinternal result callbackを実装する | callback 200 + DB result hash readback後だけIssue closeをterminal扱い |
@@ -1478,4 +1479,4 @@ A01–A09はcomplete。新依存/endpoint 0。A09はrelated 120/120、fresh adve
 
 ### 18.13 Immediate next atom
 
-次はS04だけを実行する。S03のsecret-free public work packetを、private `Daisuke134/life-manager-workrooms` Issueへstable dispatch marker付きでmirrorし、credential/PIIをbodyへ入れない。create-unknown reconciliation、result parse/callback、Symphony workflowはS05以降まで前倒ししない。R01–R12、A01–A09、S01–S03は完了済み。full browser production E2Eはbridge完成後のB12唯一のrecording runへ予約し、Chrome/ChatGPT内蔵browserの二重実行はしない。
+次はS05だけを実行する。private repoの最新100 Issuesをstable dispatch markerでreconcileし、exact oneならreuse、0件かつ100未満だけcreate、0件かつ100件またはduplicate markerならunknown/conflictで停止する。exact Issue refをexisting private `/issue` APIへ記録し、同一ref replayはeffect 0で同じ`mirrored` readbackを要求する。result parse/callbackとSymphony workflowはS06以降まで前倒ししない。R01–R12、A01–A09、S01–S04は完了済み。full browser production E2Eはbridge完成後のB12唯一のrecording runへ予約し、Chrome/ChatGPT内蔵browserの二重実行はしない。
