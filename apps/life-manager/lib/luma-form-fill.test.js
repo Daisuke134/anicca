@@ -11,6 +11,7 @@ function dropdownFillFixture(optionCount = 1) {
   let selected = "";
   const control = {
     async count() { return 1; },
+    async evaluate() { return { required: true, has_name: false }; },
     async getAttribute(name) {
       if (name === "name") return null;
       if (name === "aria-required") return "true";
@@ -69,6 +70,55 @@ test("fails closed when a synthetic Luma dropdown has ambiguous matching options
   }), /Luma registration form fill unavailable/);
   assert.equal(fixture.roleLookups(), 1);
   assert.deepEqual(fixture.calls, ["dropdown-click"]);
+});
+
+test("matches synthetic dropdown ordinal through a wrapper-required control", async () => {
+  const calls = [];
+  let selectedControl = "";
+  const controls = ["wrapper-required", "later-required"].map((name) => ({
+    async count() { return 1; },
+    async getAttribute(attribute) {
+      if (attribute === "name") return null;
+      return attribute === "aria-required" && name === "later-required" ? "true" : null;
+    },
+    async evaluate() {
+      return {
+        required: true,
+        has_name: false,
+      };
+    },
+    async click() { selectedControl = name; calls.push(["dropdown-click", name]); },
+    async inputValue() { return selectedControl === name ? "Yes" : ""; },
+  }));
+  const collection = {
+    async count() { return controls.length; },
+    nth(index) { return controls[index]; },
+  };
+  const option = {
+    async count() { return 1; },
+    async isVisible() { return true; },
+    async click() { calls.push(["option-click", selectedControl]); },
+  };
+  const scope = {
+    locator(selector) {
+      assert.equal(selector, "[role='combobox'][aria-haspopup='listbox']");
+      return collection;
+    },
+    getByRole(role, options) {
+      assert.equal(role, "option");
+      assert.deepEqual(options, { name: "Yes", exact: true });
+      return option;
+    },
+  };
+
+  const result = await fillLumaRegistrationForm(scope, {
+    status: "ready",
+    unresolved: [],
+    answers: [{ key: "luma_dropdown_1", control: "dropdown", value: "Yes" }],
+  });
+
+  assert.deepEqual(result, { status: "filled", field_count: 1 });
+  assert.deepEqual(calls, [["dropdown-click", "later-required"], ["option-click", "later-required"]]);
 });
 
 test("fills only exact planned controls and verifies every effect", async () => {

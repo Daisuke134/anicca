@@ -433,6 +433,41 @@ test("resolved direct and browser harness failures record truthful provider cont
   );
 });
 
+test("resolved provider_cache failure records truthful provider context", async () => {
+  const state = fixture({
+    async discoverCandidates() { return [candidate("luma", "cache-resolved-failure")]; },
+    async runCachedAction({ candidate: selected, page: suppliedPage }) {
+      assert.equal(suppliedPage, state.page);
+      state.calls.push(["cache", selected.event_ref, suppliedPage.page_id]);
+      return Object.freeze({ status: "failed", safe_reason: "luma_cache_unavailable" });
+    },
+  });
+
+  await runMinimalConnectorWake({
+    ownerToken: "owner-token-connector-cache-resolved",
+    providers: ["luma"],
+  }, state.dependencies);
+
+  const cacheFailure = state.calls
+    .filter(([name]) => name === "history")
+    .map(([, row]) => row)
+    .find((row) => row.purpose === "submit" && row.method === "provider_cache");
+  assert.deepEqual(
+    cacheFailure && {
+      result: cacheFailure.result,
+      provider: cacheFailure.provider,
+      safe_reason: cacheFailure.safe_reason,
+      has_error_class: Object.hasOwn(cacheFailure, "error_class"),
+    },
+    {
+      result: "failed",
+      provider: "luma",
+      safe_reason: "luma_cache_unavailable",
+      has_error_class: false,
+    },
+  );
+});
+
 test("a failed provider_cache submit records the provider and a different mapped connpass code", async () => {
   const state = fixture({
     async runCachedAction({ provider, candidate: selected, page: suppliedPage }) {
