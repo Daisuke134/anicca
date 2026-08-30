@@ -16,6 +16,7 @@ TRANSITIONS = {
     "discovered": frozenset({"qualified", "rejected"}),
     "qualified": frozenset({"materials_ready", "rejected"}),
     "materials_ready": frozenset({"submit_claimed", "rejected"}),
+    "rejected": frozenset({"materials_ready"}),
     "submit_claimed": frozenset(
         {"submitted", "submit_unknown", "not_submitted"}
     ),

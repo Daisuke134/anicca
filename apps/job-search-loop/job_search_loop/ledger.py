@@ -1430,6 +1430,29 @@ class Ledger:
             for row in rows
         ]
 
+    def superseded_workday_fit_rejections(
+        self, policy_version: str
+    ) -> list[dict[str, Any]]:
+        rows = self.connection.execute(
+            """
+            SELECT applications.id AS application_id, applications.company,
+                   applications.title, applications.canonical_url
+            FROM applications
+            JOIN workday_fit_decisions
+              ON workday_fit_decisions.application_id = applications.id
+            WHERE applications.current_state = 'rejected'
+              AND workday_fit_decisions.decision = 'rejected'
+              AND COALESCE(workday_fit_decisions.policy_version, '') != ?
+              AND NOT EXISTS (
+                SELECT 1 FROM submit_intents
+                WHERE submit_intents.application_id = applications.id
+              )
+            ORDER BY applications.created_at, applications.rowid
+            """,
+            (policy_version,),
+        ).fetchall()
+        return [dict(row) for row in rows]
+
     def workday_fit_qualified(self, application_id: str) -> bool:
         row = self.connection.execute(
             """
@@ -1464,17 +1487,28 @@ class Ledger:
                   evidence_sha256 = excluded.evidence_sha256,
                   policy_version = excluded.policy_version,
                   created_at = excluded.created_at
-                WHERE workday_fit_decisions.decision = 'hold'
+                WHERE workday_fit_decisions.decision IN ('hold', 'rejected')
                   AND COALESCE(workday_fit_decisions.policy_version, '') != excluded.policy_version
                 """,
                 (application_id, decision, evidence_sha256, policy_version, _now()),
             )
             if decision == "rejected":
+                if self.current_state(application_id) != "rejected":
+                    self._transition_in_transaction(
+                        application_id,
+                        "rejected",
+                        {
+                            "reason": "model_workday_fit_rejected",
+                            "evidence_sha256": evidence_sha256,
+                        },
+                    )
+            elif decision == "qualified" and self.current_state(application_id) == "rejected":
                 self._transition_in_transaction(
                     application_id,
-                    "rejected",
+                    "materials_ready",
                     {
-                        "reason": "model_workday_fit_rejected",
+                        "reason": "workday_fit_policy_superseded",
+                        "policy_version": policy_version,
                         "evidence_sha256": evidence_sha256,
                     },
                 )

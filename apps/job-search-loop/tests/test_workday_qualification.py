@@ -1111,13 +1111,13 @@ class WorkdayQualificationTests(unittest.TestCase):
             self.assertEqual(ledger.current_state(application_id), "materials_ready")
             ledger.close()
 
-    def test_old_hold_is_re_evaluated_once_by_new_policy(self):
+    def test_old_rejection_is_re_evaluated_once_by_new_policy(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             ledger_path, application_id, memory = self._row(root)
             ledger = Ledger(ledger_path)
             ledger.record_workday_fit_decision(
-                application_id, "hold", "a" * 64, policy_version="old-policy"
+                application_id, "rejected", "a" * 64, policy_version="old-policy"
             )
             ledger.close()
 

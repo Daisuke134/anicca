@@ -29,7 +29,7 @@ _REQUIRED = {
     "compensation_uncertain",
     "resume_variant",
 }
-POLICY_VERSION = "interview-chance-v2"
+POLICY_VERSION = "interview-chance-v3"
 EMAIL_RE = re.compile(r"\b[^\s@]+@[^\s@]+\.[^\s@]+\b")
 LONG_DIGIT_RE = re.compile(r"\d{7,}")
 SENSITIVE_ASSIGNMENT_RE = re.compile(
@@ -163,7 +163,11 @@ def qualify_one(
         for index, url in enumerate(preferred_urls):
             preferred_rank.setdefault(canonical_url(str(url)).casefold(), index)
         candidates = []
-        for row in ledger.pending_materials_ready_applications():
+        fit_rows = [
+            *ledger.pending_materials_ready_applications(),
+            *ledger.superseded_workday_fit_rejections(POLICY_VERSION),
+        ]
+        for row in fit_rows:
             if str(row["application_id"]) in excluded_application_ids:
                 continue
             if detect_provider(str(row["canonical_url"])) != "workday":
@@ -180,7 +184,7 @@ def qualify_one(
                 (row["application_id"],),
             ).fetchone()
             if fit is None or (
-                str(fit["decision"]) == "hold"
+                str(fit["decision"]) in {"hold", "rejected"}
                 and str(fit["policy_version"] or "") != POLICY_VERSION
             ):
                 candidates.append(row)
