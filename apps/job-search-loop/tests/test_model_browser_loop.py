@@ -481,6 +481,8 @@ class ModelBrowserLoopContractTests(unittest.TestCase):
         self.assertIn("select the exact visible", prompt)
         self.assertIn("month-year matching the grounded date", prompt)
         self.assertIn("Never click Next Year or Previous Year", prompt)
+        self.assertIn("Never target the\ndrop-zone wrapper", prompt)
+        self.assertIn("exact `Select file` control", prompt)
         self.assertNotIn("workday_job", prompt)
         self.assertNotIn("workday-accounts.json", prompt)
         self.assertNotIn("click_filter", prompt)
