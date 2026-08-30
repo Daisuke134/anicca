@@ -94,6 +94,9 @@
       両入口とpublication guardが同じreceiptを使用、壊れた算術はfail-closed、環境変数で測定floorを下げられないよう修復した。
       `capacity/article-run-floor.json`はsample SHA `996cf6a784fc2c85d3d5f7fdf656eba6a4dfcf650c93c6511d161258b17b4455`、
       consumption 604,404KiB＋reserve 524,288KiB＝required 1,128,692KiBをmode 600で保存し、helper readbackは1,155,780,608 bytes。
+      PR #3209/main `bc87aeb86`、Writer sparse release `20260830T105811-bc87aeb8`をdaily/resumeへtarget applyした。
+      production dailyはfree 253,648,896 bytesに対しrequired 1,155,780,608 bytesをreadbackしてrun作成前に拒否。両ownerをbootoutし、
+      旧子PID、GPT API intent/receipt、publication state、external effectは0。次回cadenceが汎用512MiBで誤発火する経路は閉じた。
       W2 canaryはfreeが1,128,692KiB以上へ戻るまで再発火しない。
 - [ ] W3 W2修復後canaryのNote JAだけをprovider-native readbackし、title、body、owner、headline、paywall、URLを確認する。
 - [ ] W4 W2修復後canaryのSubstack JAだけを同じ項目でprovider-native readbackする。
