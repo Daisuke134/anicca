@@ -27,7 +27,7 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 この節は、後段の「現在TODO」「次の一件」「local-only」「self-funded agentは別product」という相反する記述を
 上書きする最新の実行順序SSOTである。後段は実装履歴・organ別acceptanceとして保持するが、次作業の選択には使わない。
 Upworkのterminal evidence、startup context、public claim、GA-01〜13Aは完了または履歴として保持する。
-次の一件はAtomic program ledger Seq 16 `ELZ-C03`のsubstep `C03-05`で、upstream/legacy contractの採用・棄却mapをprivate evidenceへ保存する。
+次の一件はAtomic program ledger Seq 16 `ELZ-C03`のsubstep `C03-06`で、domain schema contractのfocused failing testを一つ追加する。
 
 #### 0.0.1 最新基盤決定 — ElizaOSを完全forkし、Life Managerをlocal OSSからmulti-tenant SaaSへ育てる
 
@@ -588,7 +588,7 @@ Goal分解とgraph生成は後続C07のCodexへ残す。現在activeなC03だけ
 - [x] **C03-02** Eliza `plugin-reminders`の非破壊migration contractをprivate evidenceへ保存する — fixed source `bd24601e…`の3表独立migration、durable marker、source有無、target空判定、`NOT EXISTS`＋`ON CONFLICT` copy、全first-run terminal outcomeのmarker、source DROP/ALTER 0、plugin service/schema登録をSHA256付きprivate receiptへ保存。DB mutation 0、外部effect 0。次はC03-03
 - [x] **C03-03** legacy `intent-graph.js`のprovenance/correction/expiry contractをprivate evidenceへ保存する — clean fileのSHA256、closed entry schema、`source/evidence/observedAt`、confidence順、`expiresAt`、`supersedes`による履歴保持correction、corrected/expired除外pure read、duplicate id拒否をprivate receiptへ保存。採用はprovenance/correction/expiryだけ、taxonomy・固定confidence・graph判断はC07まで不採用。次はC03-04
 - [x] **C03-04** legacy runtime job/receiptのreference/effect/immutability contractをprivate evidenceへ保存する — clean SQL/storeのSHA256、`*_ref(s)`だけのinput、tenant scope、external effect key、lease ownership、expired/unknown effectのreconciliation隔離、provider absent証明前retry 0、receipt UPDATE/DELETE拒否、same replay返却・different replay conflictをprivate receiptへ保存。DB mutation 0、外部effect 0。次はC03-05
-- [ ] **C03-05** upstream/legacyの採用・棄却mapを`domain-reuse-map.json`へ保存する
+- [x] **C03-05** upstream/legacyの採用・棄却mapを`domain-reuse-map.json`へ保存する — C03-01〜04 receipt hashを固定し、ElizaのDrizzle/plugin-sql/schema登録＋marker migration、legacyのprovenance/correction/expiry＋reference/tenant/effect/lease/immutable receiptを採用。旧domain/table名、raw `pg` store、legacy queue、固定taxonomy/confidence、hardcoded graph判断、新DB/queue/event sourcing/model adapterを棄却。次はC03-06
 - [ ] **C03-06** schema contractのfocused failing testを一つ追加する
 - [ ] **C03-07** schema contract testの失敗を一回確認する
 - [ ] **C03-08** `life_manager` Drizzle schema namespaceを定義する
