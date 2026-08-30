@@ -796,13 +796,16 @@ Lancers実環境へ到達していない。Lancersでの新規応募・契約・
 | 23 | ELZ-L01 fresh auth and read-only inventory | TODO | current account/login/opportunity/message/application/contract/financeを二回同値read、provider effect 0の`lancers-preflight-receipt.json` |
 | 24 | ELZ-L02 Opportunity/ApplicationIntent adapter | TODO | transport、stable entity、fee/currency、readbackだけを持ち、subjective judgment 0の`lancers-adapter-receipt.json` |
 | 25 | ELZ-L03 historical GA-10 fixture parity | TODO | Proposal `27861812`のfixtureをprovider call 0で同じterminal stateへ再生する`lancers-fixture-receipt.json` |
+| 25b | ELZ-L03B truthful profile and credibility surface | TODO | Coconalaで実証済みのprofile実践をprovider中立の`gig-credibility` skillへ抽出し、Lancers公式profile（表示名、icon、自己紹介、スキル、実績、稼働条件）をtruthfulに満たしてofficial readbackする`profile-credibility-receipt.json`。空profileのまま応募へ進まない。虚偽経歴0、secret/PII 0、他provider effect 0 |
 | 26 | ELZ-L04 fresh authorized application | TODO | fresh candidate/authorization/intentから新Proposal ID一件をofficial readbackする`application-receipt.json` |
 | 27 | ELZ-L05 application replay and ack-loss reconcile | TODO | same intentのexecute 0、ledger insert 0、unknown時blind retry 0の`application-replay-receipt.json` |
 | 28 | ELZ-L06 provider admission boundary | TODO | Lancersだけをactive money providerにし、Upwork/Coconala/unknown provider effect 0の`provider-admission-receipt.json` |
 | 29 | ELZ-L07 one money wake owner | TODO | 一wake/一lease/heartbeat/next tick/clean releaseを一ownerで証明する`money-wake-receipt.json` |
+| 29b | ELZ-L07B parallel money owners | TODO | provider別ownerを同時起動し、tab/target/state/evidence rootの混線0、同一effect keyの二重execute 0、一owner失敗時も他ownerが継続することを実証する`parallel-owner-receipt.json`。既存Paid並列（immutable release `a81ec3b6…`、親1+子6並走、Paid回帰37/37）をcopy+tweakし、新scheduler/queue/global lockを作らない |
 | 30 | ELZ-L08 source-complete opportunity snapshot | TODO | source completenessとfresh timestampを持つread-only`opportunity-snapshot-receipt.json` |
 | 31 | ELZ-L09 profit/risk/capability decision | TODO | model理由、expected net、cost、capacity、truthful feasibilityを持つ`opportunity-decision-receipt.json` |
 | 32 | ELZ-L10 sealed intent cap and expiry | TODO | immutable content hash、effect key、spend/capacity ceiling、expiry、duplicate fenceの`sealed-intent-receipt.json` |
+| 32b | ELZ-L10B maximal authorized application | TODO | 一wakeでsource-complete snapshotの適格候補すべてへsealed intent capの範囲内で応募し、確認件数・応募件数・見送り件数と各見送り理由を突合する`maximal-application-receipt.json`。重複応募0、cap超過0。候補枯渇・満席・一件の失敗をpass終了条件にしない |
 | 33 | ELZ-L11 buyer inbox completeness | TODO | reply/offer/contract sourceを重複なしで読み、missing sourceを明示する`buyer-source-receipt.json` |
 | 34 | ELZ-L12 negotiation decision | TODO | modelがaccept/counter/decline/replyをterms evidenceから判断し、一message intentだけを作る`negotiation-receipt.json` |
 | 35 | ELZ-L13 client-originated approval | TODO | buyer offer/selection/approvalのofficial IDとterms hashを読む`offer-approval-receipt.json` |
@@ -813,6 +816,7 @@ Lancers実環境へ到達していない。Lancersでの新規応募・契約・
 | 40 | ELZ-L18 acceptance or bounded revision | TODO | accepted、revision-required、cancelledの一terminal stateとrevision capを持つ`acceptance-receipt.json` |
 | 41 | ELZ-L19 waiting/resume state | TODO | `waiting_for`/`next_tick_at`からrestart後に同じcommerce itemを再開する`commerce-resume-receipt.json` |
 | 42 | ELZ-L20 revenue mode ontology | TODO | one-off、recurring、MRR、refund、fee、adjustmentを混同しない`revenue-mode-receipt.json` |
+| 42b | ELZ-L20B per-provider money reporting | TODO | provider別EconomicReceiptから確認/応募/返信/契約/着金を機械集計し、金額をmodelに生成させずTelegramへ一通で送る`provider-breakdown-receipt.json`。見送り理由の散文だけmodelが書く。着金と売上を別行にする。既存provider中立の`report_envelope.render_human_ja`と`TelegramOutbox`を再利用し、新通知基盤を作らない |
 | 43 | ELZ-L21 received payment | TODO | platform上の実受領金、fee、currency、external buyerを読む`payment-receipt.json` |
 | 44 | ELZ-L22 payout batch | TODO | payout ID、gross、fee/refund/adjustment、net、target、statusの`payout-batch-receipt.json` |
 | 45 | ELZ-L23 owned bank transaction | TODO | payoutと一意にjoinする実口座transactionの`bank-readback-receipt.json` |
