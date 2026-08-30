@@ -1,0 +1,285 @@
+"use strict";
+
+const { timingSafeEqual } = require("node:crypto");
+
+const MAX_BODY_BYTES = 32 * 1024;
+const SECRET_RE = /^[A-Za-z0-9_-]{32,256}$/;
+const TENANT_RE = /^[a-z0-9][a-z0-9._-]{0,199}$/;
+const DISPATCH_RE = /^[0-9a-f]{64}$/;
+const JOB_RE = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,199}$/;
+const ISSUE_RE = /^github-issue:\/\/Daisuke134\/life-manager-workrooms\/[1-9][0-9]*$/;
+const COMMENT_RE = /^github-comment:\/\/Daisuke134\/life-manager-workrooms\/[1-9][0-9]*\/[1-9][0-9]*$/;
+const ROUTES = new Map([
+  ["/api/internal/money-printer/symphony/claim", "claim"],
+  ["/api/internal/money-printer/symphony/issue", "issue"],
+  ["/api/internal/money-printer/symphony/result", "result"],
+]);
+const EXPECTED_REPO = "Daisuke134/life-manager-workrooms";
+const EXPECTED_AUTHOR = "Daisuke134";
+
+class RequestError extends Error {
+  constructor(status, error) {
+    super(error);
+    this.status = status;
+  }
+}
+
+function invalid() { throw new RequestError(400, "invalid_request"); }
+function conflict() { throw new RequestError(409, "conflict"); }
+
+function exactObject(value, keys) {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value)
+    && Object.keys(value).sort().join(",") === keys.slice().sort().join(","));
+}
+
+function jsonResponse(res, status, body, extra = {}) {
+  if (res.headersSent || res.writableEnded) return;
+  res.writeHead(status, {
+    "content-type": "application/json; charset=utf-8",
+    "cache-control": "no-store",
+    "x-content-type-options": "nosniff",
+    ...extra,
+  });
+  res.end(JSON.stringify(body));
+}
+
+function configuredSecret(secret) {
+  return typeof secret === "string" && SECRET_RE.test(secret);
+}
+
+function authorized(req, expected) {
+  const headers = req && req.headers;
+  const supplied = headers && (headers.authorization || headers.Authorization);
+  if (typeof supplied !== "string" || !supplied.startsWith("Bearer ")) return false;
+  const actual = Buffer.from(supplied.slice("Bearer ".length), "utf8");
+  const wanted = Buffer.from(expected, "utf8");
+  return actual.length === wanted.length && timingSafeEqual(actual, wanted);
+}
+
+function readJson(req) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    let length = 0;
+    let settled = false;
+    const noop = () => {};
+    const cleanup = () => {
+      req.removeListener("data", onData);
+      req.removeListener("end", onEnd);
+      req.removeListener("error", onError);
+      req.removeListener("aborted", onAborted);
+      req.on("error", noop);
+    };
+    const fail = (error) => {
+      if (settled) return;
+      settled = true;
+      chunks.length = 0;
+      cleanup();
+      reject(error);
+    };
+    const onData = (chunk) => {
+      if (settled) return;
+      const bytes = Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk));
+      length += bytes.length;
+      if (length > MAX_BODY_BYTES) {
+        fail(new RequestError(413, "payload_too_large"));
+        return;
+      }
+      chunks.push(bytes);
+    };
+    const onEnd = () => {
+      if (settled) return;
+      settled = true;
+      const raw = Buffer.concat(chunks);
+      chunks.length = 0;
+      cleanup();
+      try { resolve(JSON.parse(raw.toString("utf8"))); } catch { reject(new RequestError(400, "invalid_request")); }
+    };
+    const onError = () => fail(new RequestError(400, "invalid_request"));
+    const onAborted = () => fail(new RequestError(400, "invalid_request"));
+    req.on("data", onData);
+    req.on("end", onEnd);
+    req.on("error", onError);
+    req.on("aborted", onAborted);
+  });
+}
+
+function contentType(req) {
+  const headers = req && req.headers;
+  const value = headers && (headers["content-type"] || headers["Content-Type"]);
+  return typeof value === "string" && /^application\/json(?:\s*;|$)/i.test(value.trim());
+}
+
+function validateClaim(body) {
+  if (!exactObject(body, ["tenant_id"]) || typeof body.tenant_id !== "string" || !TENANT_RE.test(body.tenant_id)) invalid();
+  return { uid: body.tenant_id };
+}
+
+function validateIssue(body) {
+  if (!exactObject(body, ["tenant_id", "dispatch_id", "issue_ref"])
+    || typeof body.tenant_id !== "string" || !TENANT_RE.test(body.tenant_id)
+    || typeof body.dispatch_id !== "string" || !DISPATCH_RE.test(body.dispatch_id)
+    || typeof body.issue_ref !== "string" || !ISSUE_RE.test(body.issue_ref)) invalid();
+  return { uid: body.tenant_id, dispatchId: body.dispatch_id, issueRef: body.issue_ref };
+}
+
+function validateResult(body) {
+  if (!exactObject(body, ["tenant_id", "dispatch_id", "repo", "author", "result_ref", "result_hash", "payload"])
+    || typeof body.tenant_id !== "string" || !TENANT_RE.test(body.tenant_id)
+    || typeof body.dispatch_id !== "string" || !DISPATCH_RE.test(body.dispatch_id)
+    || body.repo !== EXPECTED_REPO || body.author !== EXPECTED_AUTHOR
+    || typeof body.result_ref !== "string" || !COMMENT_RE.test(body.result_ref)
+    || typeof body.result_hash !== "string" || !DISPATCH_RE.test(body.result_hash)
+    || !body.payload || typeof body.payload !== "object" || Array.isArray(body.payload)
+    || typeof body.payload.status !== "string" || !["completed", "needs_human"].includes(body.payload.status)) invalid();
+  return {
+    uid: body.tenant_id,
+    dispatchId: body.dispatch_id,
+    resultRef: body.result_ref,
+    resultHash: body.result_hash,
+    payload: body.payload,
+  };
+}
+
+function safeDispatch(row, expected, statuses) {
+  if (!row || typeof row !== "object" || Array.isArray(row)
+    || row.tenant_id !== expected.uid || typeof row.dispatch_id !== "string" || !DISPATCH_RE.test(row.dispatch_id)
+    || row.dispatch_id !== expected.dispatchId || typeof row.job_id !== "string" || !JOB_RE.test(row.job_id)
+    || !Number.isInteger(row.round) || row.round < 1 || !statuses.includes(row.status)) conflict();
+  return row;
+}
+
+function safeClaim(row, uid) {
+  if (row === null) return null;
+  const valid = safeDispatch(row, { uid, dispatchId: row && row.dispatch_id }, ["claimed"]);
+  if (valid.issue_ref != null || valid.result_ref != null || valid.result_hash != null) conflict();
+  return {
+    tenant_id: valid.tenant_id,
+    dispatch_id: valid.dispatch_id,
+    job_id: valid.job_id,
+    round: valid.round,
+    status: valid.status,
+  };
+}
+
+function safeIssue(row, input) {
+  const valid = safeDispatch(row, { uid: input.uid, dispatchId: input.dispatchId }, ["mirrored"]);
+  if (valid.issue_ref !== input.issueRef || valid.result_ref != null || valid.result_hash != null) conflict();
+  return {
+    tenant_id: valid.tenant_id,
+    dispatch_id: valid.dispatch_id,
+    job_id: valid.job_id,
+    round: valid.round,
+    status: valid.status,
+    issue_ref: valid.issue_ref,
+  };
+}
+
+function safeResult(row, input, status) {
+  const valid = safeDispatch(row, { uid: input.uid, dispatchId: input.dispatchId }, [status]);
+  if (valid.result_ref !== input.resultRef || valid.result_hash !== input.resultHash
+    || !valid.result_payload || valid.result_payload.status !== input.payload.status) conflict();
+  return valid;
+}
+
+function safeTask(task, expected) {
+  if (!task || typeof task !== "object" || Array.isArray(task)
+    || task.uid !== expected.uid || task.job_id !== expected.jobId
+    || typeof task.task_id !== "string" || !DISPATCH_RE.test(task.task_id)
+    || task.status !== "open" || !Number.isInteger(task.version) || task.version < 1) conflict();
+  return task;
+}
+
+function storeFor(getRuntimeStore) {
+  if (typeof getRuntimeStore !== "function") throw new Error("runtime store unavailable");
+  const store = getRuntimeStore();
+  if (!store || typeof store !== "object") throw new Error("runtime store unavailable");
+  return store;
+}
+
+function classify(error) {
+  if (error instanceof RequestError) return error.status;
+  const message = String(error && error.message || "");
+  if (/readback|conflict|stale|foreign|symphony.*unavailable/i.test(message)) return 409;
+  if (/invalid/i.test(message)) return 400;
+  return 500;
+}
+
+async function processRequest(action, req, res, dependencies) {
+  const secret = dependencies && dependencies.secret;
+  if (!configuredSecret(secret)) {
+    jsonResponse(res, 503, { error: "service_unavailable" });
+    return;
+  }
+  if (!authorized(req, secret)) {
+    jsonResponse(res, 401, { error: "unauthorized" });
+    return;
+  }
+  if (req.method !== "POST") {
+    jsonResponse(res, 405, { error: "method_not_allowed" }, { allow: "POST" });
+    return;
+  }
+  if (!contentType(req)) {
+    jsonResponse(res, 415, { error: "unsupported_media_type" });
+    return;
+  }
+  try {
+    const body = await readJson(req);
+    const input = action === "claim" ? validateClaim(body)
+      : action === "issue" ? validateIssue(body) : validateResult(body);
+    const store = storeFor(dependencies && dependencies.getRuntimeStore);
+    if (action === "claim") {
+      const row = await store.claimSymphony(input);
+      jsonResponse(res, 200, { dispatch: safeClaim(row, input.uid) });
+      return;
+    }
+    if (action === "issue") {
+      const row = await store.recordSymphonyIssue(input);
+      jsonResponse(res, 200, safeIssue(row, input));
+      return;
+    }
+    const row = await store.recordSymphonyResult(input);
+    const ready = safeResult(row, input, "result_ready");
+    if (input.payload.status === "completed") {
+      const consumed = await store.consumeSymphonyCompleted({ uid: input.uid, dispatchId: input.dispatchId });
+      const finalRow = safeResult(consumed, input, "consumed");
+      jsonResponse(res, 200, {
+        tenant_id: finalRow.tenant_id,
+        dispatch_id: finalRow.dispatch_id,
+        job_id: finalRow.job_id,
+        status: finalRow.status,
+        result_ref: ready.result_ref,
+        result_hash: ready.result_hash,
+      });
+      return;
+    }
+    const task = safeTask(await store.consumeSymphonyHumanTask({ uid: input.uid, dispatchId: input.dispatchId }), {
+      uid: input.uid, jobId: ready.job_id,
+    });
+    jsonResponse(res, 200, {
+      tenant_id: ready.tenant_id,
+      dispatch_id: ready.dispatch_id,
+      job_id: ready.job_id,
+      status: "consumed",
+      result_ref: ready.result_ref,
+      result_hash: ready.result_hash,
+      task_id: task.task_id,
+      task_status: task.status,
+      version: task.version,
+    });
+  } catch (error) {
+    const status = classify(error);
+    jsonResponse(res, status, {
+      error: status === 400 ? "invalid_request" : status === 409 ? "conflict"
+        : status === 413 ? "payload_too_large" : "internal_error",
+    });
+  }
+}
+
+function handleMoneyPrinterSymphonyApiRequest(req, res, dependencies = {}) {
+  const path = String(req && req.url || "").split("?", 1)[0];
+  const action = ROUTES.get(path);
+  if (!action) return false;
+  return processRequest(action, req, res, dependencies);
+}
+
+module.exports = { handleMoneyPrinterSymphonyApiRequest };
