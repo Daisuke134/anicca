@@ -3,7 +3,12 @@
 const assert = require("node:assert/strict");
 const test = require("node:test");
 
-const { claimMoneyPrinterWorkPacket } = require("./money-printer-symphony-bridge.js");
+const {
+  claimMoneyPrinterWorkPacket,
+  buildMoneyPrinterIssue,
+  createGhIssueClient,
+  createIssueForPacket,
+} = require("./money-printer-symphony-bridge.js");
 
 const SECRET = "s".repeat(64);
 const TENANT = "tenant-a";
@@ -14,6 +19,27 @@ const DISPATCH_ID = "d".repeat(64);
 const JOB_ID = `goal:${OPPORTUNITY_ID}`;
 const COOKIE = "__Host-lm_panel_session=session-secret";
 const BASE = "https://life-call.example.test";
+const ISSUE_URL = "https://github.com/Daisuke134/life-manager-workrooms/issues/42";
+const ISSUE_REF = "github-issue://Daisuke134/life-manager-workrooms/42";
+
+function packet(overrides = {}) {
+  return Object.freeze({
+    protocol: "LM_DISPATCH_V1",
+    tenant_id: TENANT,
+    dispatch_id: DISPATCH_ID,
+    job_id: JOB_ID,
+    round: 1,
+    opportunity_ref: `opportunity://${encodeURIComponent(TENANT)}/${encodeURIComponent(OPPORTUNITY_ID)}`,
+    job_ref: `runtime-job://${encodeURIComponent(TENANT)}/${encodeURIComponent(JOB_ID)}`,
+    title: "A bounded opportunity",
+    source_url: "https://example.test/opportunity",
+    value_minor: "2500",
+    currency: "USD",
+    workroom_status: "WORKING",
+    result_protocol: "LM_RESULT_V1",
+    ...overrides,
+  });
+}
 
 function response(status, body, headers = {}) {
   const values = new Map(Object.entries(headers).map(([key, value]) => [key.toLowerCase(), value]));
@@ -201,4 +227,149 @@ test("invalid config fails before network and exported function emits no stdout 
   assert.equal(stdout, "");
   assert.equal(stderr, "");
   assert.doesNotMatch(JSON.stringify({ result: null, stdout, stderr }), new RegExp(SECRET));
+});
+
+test("issue builder includes only the frozen public packet, full marker, and one-result instruction", () => {
+  const issue = buildMoneyPrinterIssue(packet());
+
+  assert.equal(Object.isFrozen(issue), true);
+  assert.equal(Object.isFrozen(issue.labels), true);
+  assert.equal(issue.labels.length, 1);
+  assert.equal(issue.labels[0], "money-printer");
+  assert.match(issue.title, new RegExp(DISPATCH_ID));
+  assert.ok(issue.title.length <= 220);
+  assert.match(issue.body, new RegExp(`^<!-- lm-dispatch:${DISPATCH_ID} -->$`, "m"));
+  assert.deepEqual(issue.body.match(/<!-- lm-dispatch:[0-9a-f]{64} -->/g), [
+    `<!-- lm-dispatch:${DISPATCH_ID} -->`,
+  ]);
+  assert.match(issue.body, /exactly one comment.*LM_RESULT_V1/i);
+
+  const bodyFields = [...issue.body.matchAll(/^- ([a-z_]+): /gm)].map((match) => match[1]);
+  assert.deepEqual(bodyFields, [
+    "protocol", "tenant_id", "dispatch_id", "job_id", "round", "opportunity_ref",
+    "job_ref", "title", "source_url", "value_minor", "currency", "workroom_status",
+    "result_protocol",
+  ]);
+  assert.doesNotMatch(issue.body, /bearer|cookie|private|activity|pii|raw error|authorization|token|secret/i);
+  assert.doesNotMatch(issue.body, new RegExp(SECRET));
+});
+
+test("create adapter uses the fixed repo and label, and result returns only the canonical internal issue ref", () => {
+  const calls = [];
+  const issueClient = createGhIssueClient({
+    execFileSync(command, args, options) {
+      calls.push({ command, args, options });
+      return `${ISSUE_URL}\n`;
+    },
+  });
+  const result = createIssueForPacket(packet(), { issueClient, tenantId: TENANT });
+
+  assert.deepEqual(result, { status: "created", dispatch_id: DISPATCH_ID, issue_ref: ISSUE_REF });
+  assert.equal(Object.isFrozen(result), true);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].command, "gh");
+  assert.deepEqual(calls[0].args.slice(0, 4), ["issue", "create", "-R", "Daisuke134/life-manager-workrooms"]);
+  assert.deepEqual(calls[0].args.slice(-2), ["--label", "money-printer"]);
+  assert.equal(calls[0].options.encoding, "utf8");
+  assert.deepEqual(calls[0].options.stdio, ["ignore", "pipe", "pipe"]);
+  assert.equal(calls[0].args[calls[0].args.indexOf("--title") + 1], buildMoneyPrinterIssue(packet()).title);
+  assert.equal(calls[0].args[calls[0].args.indexOf("--body") + 1], buildMoneyPrinterIssue(packet()).body);
+  assert.doesNotMatch(result.issue_ref, /https?:/i);
+});
+
+test("malformed or foreign packet fails before the injected issue client is called", () => {
+  const valid = packet();
+  const invalidPackets = [
+    { ...valid },
+    Object.freeze({ ...valid, unexpected: "extra" }),
+    Object.freeze({ ...valid, tenant_id: FOREIGN_TENANT }),
+    Object.freeze({ ...valid, opportunity_ref: "opportunity://other/id" }),
+    Object.freeze({ ...valid, protocol: "LM_DISPATCH_V0" }),
+  ];
+  let calls = 0;
+  const issueClient = { create() { calls += 1; return ISSUE_URL; } };
+
+  for (const invalidPacket of invalidPackets) {
+    assert.throws(
+      () => createIssueForPacket(invalidPacket, { issueClient }),
+      /issue|packet|scope|invalid/i,
+    );
+  }
+  assert.equal(calls, 0);
+});
+
+test("reserved hidden marker injection is rejected before issue creation", () => {
+  const foreignMarker = `<!-- lm-dispatch:${"e".repeat(64)} -->`;
+  const invalidPacket = packet({ title: `A bounded opportunity ${foreignMarker}` });
+  let calls = 0;
+
+  assert.throws(
+    () => createIssueForPacket(invalidPacket, {
+      tenantId: TENANT,
+      issueClient: { create: () => { calls += 1; return ISSUE_URL; } },
+    }),
+    /issue|packet|marker|invalid/i,
+  );
+  assert.equal(calls, 0);
+});
+
+test("issue creation requires a matching configured tenant before calling the client", () => {
+  const foreignTenantPacket = packet({
+    tenant_id: FOREIGN_TENANT,
+    opportunity_ref: `opportunity://${encodeURIComponent(FOREIGN_TENANT)}/${encodeURIComponent(OPPORTUNITY_ID)}`,
+    job_ref: `runtime-job://${encodeURIComponent(FOREIGN_TENANT)}/${encodeURIComponent(JOB_ID)}`,
+  });
+  let calls = 0;
+  const issueClient = { create: () => { calls += 1; return ISSUE_URL; } };
+
+  for (const dependencies of [
+    { issueClient },
+    { issueClient, tenantId: "" },
+    { issueClient, tenantId: "Tenant-A" },
+    { issueClient, tenantId: FOREIGN_TENANT },
+  ]) {
+    assert.throws(
+      () => createIssueForPacket(packet(), dependencies),
+      /tenant|scope|invalid/i,
+    );
+  }
+  assert.throws(
+    () => createIssueForPacket(foreignTenantPacket, { issueClient, tenantId: TENANT }),
+    /tenant|scope|invalid/i,
+  );
+  assert.equal(calls, 0);
+});
+
+test("foreign, noncanonical, and malformed issue URLs are rejected with a generic error", () => {
+  for (const invalidUrl of [
+    "https://github.com/other/repo/issues/42",
+    "http://github.com/Daisuke134/life-manager-workrooms/issues/42",
+    "https://github.com/Daisuke134/life-manager-workrooms/issues/0",
+    "https://github.com/Daisuke134/life-manager-workrooms/issues/42?x=1",
+    "github-issue://Daisuke134/life-manager-workrooms/42",
+  ]) {
+    assert.throws(
+      () => createIssueForPacket(packet(), { tenantId: TENANT, issueClient: { create: () => invalidUrl } }),
+      (error) => error instanceof Error && error.message === "issue create failed",
+    );
+  }
+});
+
+test("client failures never surface the raw error or secret", () => {
+  assert.throws(
+    () => createIssueForPacket(packet(), {
+      tenantId: TENANT,
+      issueClient: { create: () => { throw new Error(`gh failed ${SECRET}`); } },
+    }),
+    (error) => error instanceof Error && error.message === "issue create failed" && !error.message.includes(SECRET),
+  );
+
+  const issue = buildMoneyPrinterIssue(packet());
+  const issueClient = createGhIssueClient({
+    execFileSync() { throw new Error(`exec failed ${SECRET}`); },
+  });
+  assert.throws(
+    () => issueClient.create(issue),
+    (error) => error instanceof Error && error.message === "issue create failed" && !error.message.includes(SECRET),
+  );
 });
