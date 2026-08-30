@@ -7,6 +7,7 @@ const test = require("node:test");
 
 const {
   auditMarketingDestinationRegistry,
+  findMarketingDestinationTarget,
   loadMarketingDestinationContract,
   validateMarketingDestinationContract,
 } = require("./marketing-destination-contract.js");
@@ -47,4 +48,20 @@ test("the loop registry exactly matches the destination SSOT labels, entrypoints
   const candidate = structuredClone(registry);
   candidate.loops[contract.targets[0].loop_name].cadence.calendar_interval[0].Minute = 1;
   assert.throws(() => auditMarketingDestinationRegistry(contract, candidate), /cadence/i);
+});
+
+test("publication identity selects exactly one route and rejects cross-family content", () => {
+  const contract = loadMarketingDestinationContract(CONTRACT);
+  const input = {
+    jobProductId: "honne-ai",
+    locale: "en",
+    platform: "tiktok",
+    integrationId: "cmoig11ew001zlv0yk6vqo1us",
+    jobFormatId: "reelclaw",
+    mediaForm: "relationship-confession",
+  };
+  assert.equal(findMarketingDestinationTarget(contract, input).lane_id, "honne-en");
+  assert.equal(findMarketingDestinationTarget(contract, { ...input, jobFormatId: "reelclaw-card" }), null);
+  assert.equal(findMarketingDestinationTarget(contract, { ...input, mediaForm: "nudge-card" }), null);
+  assert.equal(findMarketingDestinationTarget(contract, { ...input, integrationId: "cmp9sdev5012voh0y58qs45xc" }), null);
 });

@@ -98,6 +98,19 @@ function auditMarketingDestinationRegistry(contractInput, registry) {
   return Object.freeze({ targets: contract.targets.length });
 }
 
+function findMarketingDestinationTarget(contractInput, input = {}) {
+  const contract = validateMarketingDestinationContract(contractInput);
+  const matches = contract.targets.filter((target) => (
+    target.job_product_id === input.jobProductId
+    && target.locale === input.locale
+    && target.platform === input.platform
+    && target.integration_id === input.integrationId
+    && target.job_format_id === input.jobFormatId
+    && target.media_form === input.mediaForm
+  ));
+  return matches.length === 1 ? matches[0] : null;
+}
+
 function loadMarketingDestinationContract(file = path.resolve(__dirname, "../../../config/marketing-destinations.json")) {
   let value;
   try { value = JSON.parse(fs.readFileSync(file, "utf8")); } catch { invalid("file"); }
@@ -106,6 +119,7 @@ function loadMarketingDestinationContract(file = path.resolve(__dirname, "../../
 
 module.exports = {
   auditMarketingDestinationRegistry,
+  findMarketingDestinationTarget,
   loadMarketingDestinationContract,
   validateMarketingDestinationContract,
 };
