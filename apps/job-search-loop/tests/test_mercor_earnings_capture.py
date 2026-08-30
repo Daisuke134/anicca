@@ -1,9 +1,24 @@
 import unittest
 
-from job_search_loop.mercor_earnings_capture import parse_earnings_text
+from job_search_loop.mercor_earnings_capture import earnings_surface_ready, parse_earnings_text
 
 
 class MercorEarningsCaptureTests(unittest.TestCase):
+    def test_loading_shell_is_not_a_ready_earnings_surface(self):
+        self.assertFalse(earnings_surface_ready(""))
+        self.assertFalse(earnings_surface_ready("Earnings\nLoading..."))
+        self.assertFalse(earnings_surface_ready("Payments\nPayout date\nStatus\nEarned"))
+        self.assertTrue(
+            earnings_surface_ready(
+                "Your total earnings to date are $125.00.\nPayments\nPayout date\nStatus\nEarned"
+            )
+        )
+        self.assertTrue(
+            earnings_surface_ready(
+                "Your total earnings to date are $0.00.\nNo payment history yet"
+            )
+        )
+
     def test_no_payment_history_becomes_empty_snapshot(self):
         snapshot = parse_earnings_text(
             "Your total earnings to date are $0.00.\nNo payment history yet\nOnce you receive your first payout, it will appear here",
