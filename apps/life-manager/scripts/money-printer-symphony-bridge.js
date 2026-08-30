@@ -11,6 +11,8 @@ const MONEY_RE = /^[0-9]+$/;
 const COOKIE_NAMES = new Set(["lm_panel_scope", "lm_panel_session", "__Host-lm_panel_session"]);
 const CLAIM_PATH = "/api/internal/money-printer/symphony/claim";
 const ISSUE_PATH = "/api/internal/money-printer/symphony/issue";
+const RESULT_PATH = "/api/internal/money-printer/symphony/result";
+const CLOSE_PATH = "/api/internal/money-printer/symphony/close";
 const GUEST_PATH = "/money-printer";
 const WORKROOM_PATH = "/api/panel/money-printer/workroom";
 const ISSUE_REPO = "Daisuke134/life-manager-workrooms";
@@ -31,8 +33,15 @@ const DISPATCH_PACKET_KEYS = [
   "protocol", "tenant_id", "dispatch_id", "job_id", "round", "opportunity_ref", "job_ref",
   "title", "source_url", "value_minor", "currency", "workroom_status", "result_protocol",
 ];
+const ISSUE_STATE_KEYS = ["number", "url", "state"];
+const RESULT_READBACK_KEYS = ["tenant_id", "dispatch_id", "job_id", "status", "result_ref", "result_hash"];
+const HUMAN_RESULT_READBACK_KEYS = [...RESULT_READBACK_KEYS, "task_id", "task_status", "version"];
 const PUBLIC_TEXT_RE = /^[^\u0000-\u001f\u007f]+$/;
 const ISSUE_REF_RE = /^github-issue:\/\/Daisuke134\/life-manager-workrooms\/[1-9][0-9]*$/;
+const CLAIM_BASE_KEYS = ["tenant_id", "dispatch_id", "job_id", "round", "status"];
+const CLAIM_RECOVERY_KEYS = [...CLAIM_BASE_KEYS, "issue_ref"];
+const CLOSE_READBACK_KEYS = ["tenant_id", "dispatch_id", "job_id", "status", "issue_ref", "result_ref", "result_hash"];
+const RECOVERY_STATUSES = new Set(["mirrored", "result_ready", "consumed"]);
 
 function fail(message) {
   throw new Error(message);
@@ -197,7 +206,46 @@ function createGhIssueClient(options = {}) {
       try { parsed = JSON.parse(String(stdout || "")); } catch { fail("issue comments failed"); }
       return projectCommentRows(parsed, issueRef);
     },
+    state(issueRef) {
+      let issueNumber;
+      const match = typeof issueRef === "string" ? issueRef.match(ISSUE_REF_RE) : null;
+      if (!match) fail("issue state failed");
+      issueNumber = match[0].slice(`github-issue://${ISSUE_REPO}/`.length);
+      const stdout = run([
+        "issue", "view", issueNumber,
+        "-R", ISSUE_REPO,
+        "--json", "number,url,state",
+      ], "issue state failed");
+      let parsed;
+      try { parsed = JSON.parse(String(stdout || "")); } catch { fail("issue state failed"); }
+      try { return validateIssueState(parsed, issueRef); } catch { fail("issue state failed"); }
+    },
+    close(issueRef) {
+      const match = typeof issueRef === "string" ? issueRef.match(ISSUE_REF_RE) : null;
+      if (!match) fail("issue close failed");
+      const issueNumber = match[0].slice(`github-issue://${ISSUE_REPO}/`.length);
+      run([
+        "issue", "close", issueNumber,
+        "-R", ISSUE_REPO,
+        "--reason", "completed",
+      ], "issue close failed");
+    },
   };
+}
+
+function validateIssueState(value, issueRef) {
+  const match = typeof issueRef === "string" ? issueRef.match(ISSUE_REF_RE) : null;
+  if (!match) fail("issue state invalid");
+  const issueNumber = match[0].slice(`github-issue://${ISSUE_REPO}/`.length);
+  if (!exactObject(value, ISSUE_STATE_KEYS)
+    || !Number.isSafeInteger(value.number) || value.number < 1
+    || String(value.number) !== issueNumber
+    || typeof value.url !== "string"
+    || value.url !== `https://github.com/${ISSUE_REPO}/issues/${issueNumber}`
+    || !["OPEN", "CLOSED"].includes(value.state)) {
+    fail("issue state invalid");
+  }
+  return Object.freeze({ number: value.number, url: value.url, state: value.state });
 }
 
 function issueNumberFromRef(issueRef) {
@@ -611,25 +659,211 @@ async function reconcileIssueForPacket(config, packet, deps = {}) {
   return Object.freeze({ ...readback, created });
 }
 
+function resultReadback(value, packet, ready) {
+  const isHuman = ready.payload.status === "needs_human";
+  const hasBaseShape = exactObject(value, RESULT_READBACK_KEYS);
+  const hasHumanShape = isHuman && exactObject(value, HUMAN_RESULT_READBACK_KEYS);
+  if (!hasBaseShape && !hasHumanShape) fail("result readback invalid");
+  if (value.tenant_id !== packet.tenant_id
+    || value.dispatch_id !== packet.dispatch_id
+    || value.job_id !== packet.job_id
+    || value.status !== "consumed"
+    || value.result_ref !== ready.result_ref
+    || value.result_hash !== ready.result_hash) {
+    fail("result readback invalid");
+  }
+  if (hasHumanShape && (
+    typeof value.task_id !== "string" || !HEX64_RE.test(value.task_id)
+    || value.task_status !== "open"
+    || !Number.isSafeInteger(value.version) || value.version < 1
+  )) {
+    fail("result readback invalid");
+  }
+  const safe = {
+    tenant_id: value.tenant_id,
+    dispatch_id: value.dispatch_id,
+    job_id: value.job_id,
+    result_ref: value.result_ref,
+    result_hash: value.result_hash,
+  };
+  if (hasHumanShape) {
+    safe.task_id = value.task_id;
+    safe.task_status = value.task_status;
+    safe.version = value.version;
+  }
+  return Object.freeze(safe);
+}
+
+function closedResult(packet, readback) {
+  const result = {
+    status: "closed",
+    tenant_id: packet.tenant_id,
+    dispatch_id: packet.dispatch_id,
+    job_id: packet.job_id,
+    result_ref: readback.result_ref,
+    result_hash: readback.result_hash,
+  };
+  if (Object.prototype.hasOwnProperty.call(readback, "task_id")) {
+    result.task_id = readback.task_id;
+    result.task_status = readback.task_status;
+    result.version = readback.version;
+  }
+  return Object.freeze(result);
+}
+
+function closeReadback(value, packet, issueRef, result) {
+  if (!exactObject(value, CLOSE_READBACK_KEYS)
+    || value.tenant_id !== packet.tenant_id
+    || value.dispatch_id !== packet.dispatch_id
+    || value.job_id !== packet.job_id
+    || value.status !== "closed"
+    || value.issue_ref !== issueRef
+    || value.result_ref !== result.result_ref
+    || value.result_hash !== result.result_hash) {
+    fail("issue close ack invalid");
+  }
+  return Object.freeze({
+    tenant_id: value.tenant_id,
+    dispatch_id: value.dispatch_id,
+    job_id: value.job_id,
+    status: value.status,
+    issue_ref: value.issue_ref,
+    result_ref: value.result_ref,
+    result_hash: value.result_hash,
+  });
+}
+
+async function reconcileResultForIssue(config, packet, issueRef, deps = {}) {
+  const validated = validateConfig(config);
+  const validPacket = validateDispatchPacket(packet);
+  if (validPacket.tenant_id !== validated.tenantId) fail("issue packet tenant scope invalid");
+  const issueMatch = typeof issueRef === "string" ? issueRef.match(ISSUE_REF_RE) : null;
+  if (!issueMatch) fail("issue result scope invalid");
+  const issueClient = deps && deps.issueClient;
+  if (!issueClient || typeof issueClient.comments !== "function"
+    || typeof issueClient.state !== "function" || typeof issueClient.close !== "function") {
+    fail("issue client unavailable");
+  }
+
+  let comments;
+  try {
+    comments = await issueClient.comments(issueRef);
+  } catch {
+    fail("issue comments failed");
+  }
+  let parsed;
+  try {
+    parsed = parseResultComments(validPacket, issueRef, comments);
+  } catch {
+    fail("result comment conflict");
+  }
+  if (parsed.status === "pending") {
+    return Object.freeze({ status: "pending" });
+  }
+  if (!parsed || parsed.status !== "ready") fail("result comment conflict");
+
+  const fetchImpl = deps.fetchImpl || globalThis.fetch;
+  if (typeof fetchImpl !== "function") fail("bridge fetch unavailable");
+  const signal = deps.signal || (typeof AbortSignal !== "undefined" && typeof AbortSignal.timeout === "function" ? AbortSignal.timeout(10_000) : undefined);
+  const callback = await request(fetchImpl, `${validated.apiBaseUrl}${RESULT_PATH}`, {
+    method: "POST",
+    headers: {
+      accept: "application/json",
+      authorization: `Bearer ${validated.secret}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      tenant_id: validated.tenantId,
+      dispatch_id: validPacket.dispatch_id,
+      repo: ISSUE_REPO,
+      author: EXPECTED_RESULT_AUTHOR,
+      result_ref: parsed.result_ref,
+      result_hash: parsed.result_hash,
+      payload: parsed.payload,
+    }),
+  }, signal);
+  responseStatus(callback);
+  let readback;
+  try {
+    readback = resultReadback(await json(callback), validPacket, parsed);
+  } catch {
+    fail("result readback invalid");
+  }
+
+  let current;
+  try {
+    current = validateIssueState(await issueClient.state(issueRef), issueRef);
+  } catch {
+    fail("issue state failed");
+  }
+  if (current.state === "OPEN") {
+    try {
+      await issueClient.close(issueRef);
+    } catch {
+      fail("issue close failed");
+    }
+    try {
+      current = validateIssueState(await issueClient.state(issueRef), issueRef);
+    } catch {
+      fail("issue state failed");
+    }
+    if (current.state !== "CLOSED") fail("issue close readback failed");
+  } else if (current.state !== "CLOSED") {
+    fail("issue state failed");
+  }
+
+  const closed = await request(fetchImpl, `${validated.apiBaseUrl}${CLOSE_PATH}`, {
+    method: "POST",
+    headers: {
+      accept: "application/json",
+      authorization: `Bearer ${validated.secret}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      tenant_id: validated.tenantId,
+      dispatch_id: validPacket.dispatch_id,
+      issue_ref: issueRef,
+      result_ref: readback.result_ref,
+      result_hash: readback.result_hash,
+    }),
+  }, signal);
+  responseStatus(closed);
+  try {
+    closeReadback(await json(closed), validPacket, issueRef, readback);
+  } catch {
+    fail("issue close ack invalid");
+  }
+  return closedResult(validPacket, readback);
+}
+
 function claimedDispatch(body, config) {
   if (!exactObject(body, ["dispatch"])) fail("bridge response invalid");
   if (body.dispatch === null) return null;
   const row = body.dispatch;
+  const status = row && typeof row === "object" && !Array.isArray(row) ? row.status : null;
+  if (status !== "claimed" && !RECOVERY_STATUSES.has(status)) {
+    fail("bridge dispatch scope invalid");
+  }
+  if (!exactObject(row, status === "claimed" ? CLAIM_BASE_KEYS : CLAIM_RECOVERY_KEYS)) {
+    fail("bridge dispatch scope invalid");
+  }
   if (!row || typeof row !== "object" || Array.isArray(row)
     || row.tenant_id !== config.tenantId
     || typeof row.dispatch_id !== "string" || !HEX64_RE.test(row.dispatch_id)
     || typeof row.job_id !== "string" || !/^goal:[0-9a-f]{64}$/.test(row.job_id)
     || !Number.isSafeInteger(row.round) || row.round < 1
-    || row.status !== "claimed") {
+    || (status !== "claimed" && (typeof row.issue_ref !== "string" || !ISSUE_REF_RE.test(row.issue_ref)))) {
     fail("bridge dispatch scope invalid");
   }
-  return {
+  const dispatch = {
     tenant_id: row.tenant_id,
     dispatch_id: row.dispatch_id,
     job_id: row.job_id,
     round: row.round,
     status: row.status,
   };
+  if (status !== "claimed") dispatch.issue_ref = row.issue_ref;
+  return dispatch;
 }
 
 function cookieFrom(response) {
@@ -717,7 +951,12 @@ async function claimMoneyPrinterWorkPacket(config, deps = {}) {
     method: "GET", headers: { accept: "application/json", Cookie: cookie },
   }, signal);
   responseStatus(workroom);
-  return Object.freeze({ status: "claimed", packet: workroomPacket(await json(workroom), validated, dispatch) });
+  const result = {
+    status: dispatch.status,
+    packet: workroomPacket(await json(workroom), validated, dispatch),
+  };
+  if (dispatch.status !== "claimed") result.issue_ref = dispatch.issue_ref;
+  return Object.freeze(result);
 }
 
 function cliConfig(env = process.env) {
@@ -729,7 +968,26 @@ function cliConfig(env = process.env) {
 }
 
 async function main(env = process.env, deps = {}) {
-  return claimMoneyPrinterWorkPacket(cliConfig(env), deps);
+  const config = cliConfig(env);
+  const claimed = await claimMoneyPrinterWorkPacket(config, deps);
+  if (!claimed || typeof claimed !== "object") fail("bridge dispatch invalid");
+  if (claimed.status === "idle") return claimed;
+  if (!claimed.packet || (claimed.status !== "claimed" && !RECOVERY_STATUSES.has(claimed.status))) {
+    fail("bridge dispatch invalid");
+  }
+  const issueClient = deps.issueClient || createGhIssueClient();
+  const issueDeps = { ...deps, issueClient };
+  let issueRef;
+  if (claimed.status === "claimed") {
+    const issue = await reconcileIssueForPacket(config, claimed.packet, issueDeps);
+    issueRef = issue.issue_ref;
+  } else if (RECOVERY_STATUSES.has(claimed.status)
+    && typeof claimed.issue_ref === "string" && ISSUE_REF_RE.test(claimed.issue_ref)) {
+    issueRef = claimed.issue_ref;
+  } else {
+    fail("bridge dispatch invalid");
+  }
+  return reconcileResultForIssue(config, claimed.packet, issueRef, issueDeps);
 }
 
 if (require.main === module) {
@@ -747,6 +1005,7 @@ module.exports = {
   createGhIssueClient,
   createIssueForPacket,
   reconcileIssueForPacket,
+  reconcileResultForIssue,
   formatResultComment,
   parseResultComments,
   main,

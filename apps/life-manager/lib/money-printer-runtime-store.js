@@ -37,6 +37,66 @@ function scopedRows(result, uid, label) {
   return rows;
 }
 
+function validTimestamp(value) {
+  if (value instanceof Date) return Number.isFinite(value.getTime());
+  return typeof value === "string" && Number.isFinite(Date.parse(value));
+}
+
+function optionalTimestamp(value) {
+  return value == null || validTimestamp(value);
+}
+
+function requiredTimestamp(value) {
+  return validTimestamp(value);
+}
+
+function coherentSymphonyDispatch(row, { allowClosedTimestamp = false } = {}) {
+  const issue = row.issue_ref;
+  const result = row.result_ref;
+  const hash = row.result_hash;
+  const payload = row.result_payload;
+  const failure = row.failure_code;
+  const claimed = row.status === "claimed";
+  const mirrored = row.status === "mirrored";
+  const ready = row.status === "result_ready";
+  const consumed = row.status === "consumed";
+  if (![claimed, mirrored, ready, consumed].some(Boolean)
+    || !requiredTimestamp(row.claimed_at)
+    || !optionalTimestamp(row.mirrored_at)
+    || !optionalTimestamp(row.result_ready_at)
+    || !optionalTimestamp(row.consumed_at)
+    || !optionalTimestamp(row.failed_at)
+    || !optionalTimestamp(row.issue_closed_at)) return false;
+  if (claimed) {
+    return issue == null && result == null && hash == null && payload == null && failure == null
+      && row.mirrored_at == null && row.result_ready_at == null
+      && row.consumed_at == null && row.failed_at == null && row.issue_closed_at == null;
+  }
+  if (mirrored) {
+    return typeof issue === "string" && GITHUB_ISSUE_REF.test(issue)
+      && result == null && hash == null && payload == null && failure == null
+      && requiredTimestamp(row.mirrored_at) && row.result_ready_at == null
+      && row.consumed_at == null && row.failed_at == null && row.issue_closed_at == null;
+  }
+  const resultPayloadValid = payload && typeof payload === "object" && !Array.isArray(payload)
+    && ["completed", "needs_human"].includes(payload.status);
+  if (ready) {
+    return typeof issue === "string" && GITHUB_ISSUE_REF.test(issue)
+      && typeof result === "string" && GITHUB_COMMENT_REF.test(result)
+      && typeof hash === "string" && OPPORTUNITY_ID.test(hash)
+      && resultPayloadValid && failure == null
+      && requiredTimestamp(row.mirrored_at) && requiredTimestamp(row.result_ready_at)
+      && row.consumed_at == null && row.failed_at == null && row.issue_closed_at == null;
+  }
+  return typeof issue === "string" && GITHUB_ISSUE_REF.test(issue)
+    && typeof result === "string" && GITHUB_COMMENT_REF.test(result)
+    && typeof hash === "string" && OPPORTUNITY_ID.test(hash)
+    && resultPayloadValid && failure == null
+    && requiredTimestamp(row.mirrored_at) && requiredTimestamp(row.result_ready_at)
+    && requiredTimestamp(row.consumed_at) && row.failed_at == null
+    && (allowClosedTimestamp || row.issue_closed_at == null);
+}
+
 function claimedSymphonyDispatch(result, uid) {
   const rows = result && Array.isArray(result.rows) ? result.rows : [];
   if (rows.length === 0) return null;
@@ -45,9 +105,36 @@ function claimedSymphonyDispatch(result, uid) {
   if (!row || typeof row !== "object" || Array.isArray(row)
     || row.tenant_id !== uid || !OPPORTUNITY_ID.test(String(row.dispatch_id || ""))
     || !JOB_ID.test(String(row.job_id || "")) || !Number.isInteger(row.round) || row.round < 1
-    || row.status !== "claimed" || row.issue_ref != null || row.result_ref != null
-    || row.result_hash != null || row.result_payload != null || row.failure_code != null) {
+    || !coherentSymphonyDispatch(row)) {
     throw new Error("money printer runtime store Symphony claim readback invalid");
+  }
+  return row;
+}
+
+function symphonyCloseInput(value) {
+  const uid = tenant(value && value.uid);
+  const dispatchId = String(value && value.dispatchId || "").trim();
+  const issueRef = String(value && value.issueRef || "").trim();
+  const resultRef = String(value && value.resultRef || "").trim();
+  const resultHash = String(value && value.resultHash || "").trim();
+  if (!OPPORTUNITY_ID.test(dispatchId) || !GITHUB_ISSUE_REF.test(issueRef)
+    || !GITHUB_COMMENT_REF.test(resultRef) || !OPPORTUNITY_ID.test(resultHash)) {
+    throw new Error("money printer runtime store Symphony issue close invalid");
+  }
+  return Object.freeze({ uid, dispatchId, issueRef, resultRef, resultHash });
+}
+
+function closedSymphonyDispatch(result, expected) {
+  const rows = result && Array.isArray(result.rows) ? result.rows : [];
+  const row = rows.length === 1 ? rows[0] : null;
+  if (!row || rows.length !== 1 || typeof row !== "object" || Array.isArray(row)
+    || row.tenant_id !== expected.uid || row.dispatch_id !== expected.dispatchId
+    || !JOB_ID.test(String(row.job_id || "")) || row.status !== "consumed"
+    || row.issue_ref !== expected.issueRef || row.result_ref !== expected.resultRef
+    || row.result_hash !== expected.resultHash || !row.result_payload
+    || Array.isArray(row.result_payload) || row.failure_code != null
+    || !validTimestamp(row.issue_closed_at) || !coherentSymphonyDispatch(row, { allowClosedTimestamp: true })) {
+    throw new Error("money printer runtime store Symphony issue close readback invalid");
   }
   return row;
 }
@@ -242,6 +329,12 @@ function createMoneyPrinterRuntimeStore({ query } = {}) {
       return claimedSymphonyDispatch(await query(`
         SELECT * FROM public.claim_lm_symphony_job($1)
       `, [uid]), uid);
+    },
+    async acknowledgeSymphonyIssueClosed(value) {
+      const expected = symphonyCloseInput(value);
+      return closedSymphonyDispatch(await query(`
+        SELECT * FROM public.ack_lm_symphony_issue_closed($1, $2, $3, $4, $5)
+      `, [expected.uid, expected.dispatchId, expected.issueRef, expected.resultRef, expected.resultHash]), expected);
     },
     async recordSymphonyIssue(value) {
       const uid = tenant(value && value.uid);
