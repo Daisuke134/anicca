@@ -1,6 +1,7 @@
 "use strict";
 
 const assert = require("node:assert/strict");
+const { createHash } = require("node:crypto");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
@@ -126,6 +127,62 @@ test("official production factory injects the direct Telegram adapter for the ma
     assert.equal(fs.readFileSync(claimFile, "utf8").trim().split("\n").length, 1);
     assert.equal(fs.readFileSync(deliveryFile, "utf8").trim().split("\n").length, 1);
     assert.equal(fs.existsSync(path.join(stateDir, "connpass-action-boundary-uncertain.jsonl")), false);
+  } finally {
+    globalThis.fetch = originalFetch;
+    fs.rmSync(stateDir, { recursive: true, force: true });
+  }
+});
+
+test("official production factory injects direct Telegram message and photo adapters into evidence", async () => {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-production-evidence-direct-telegram-"));
+  const originalFetch = globalThis.fetch;
+  const png = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(6_000, 3)]);
+  const artifactSha = createHash("sha256").update(png).digest("hex");
+  const requests = [];
+  const calendarReceipt = { id: "google-evidence-direct", htmlLink: "https://www.google.com/calendar/event?eid=evidence-direct" };
+  let calendarReads = 0;
+  globalThis.fetch = async (url, options) => {
+    requests.push({ url, options });
+    const messageId = requests.length === 1 ? 9011 : 9012;
+    return { async json() { return { ok: true, result: {
+      message_id: messageId, chat: { id: 123456789, type: "private" }, date: 1_756_000_000, text: "fixture",
+    } }; } };
+  };
+  const evidenceStore = {
+    async record(input) {
+      const receiptId = createHash("sha256").update(`${input.tenantId}\n${input.eventRef}\n${input.observedAt}\n${artifactSha}`).digest("hex");
+      return { external_receipt_ref: `provider-receipt://luma/${receiptId}`, artifact_ref: `object://sha256/${artifactSha}` };
+    },
+    async readExternalReceipt() { throw new Error("not needed"); },
+    async readArtifact() { return png; },
+  };
+  const candidate = {
+    provider: "luma", event_ref: "luma-event://event/evidence-direct", canonical_url: "https://luma.com/evidence-direct",
+    title: "Evidence Direct", starts_at: "2026-08-10T10:00:00.000Z", ends_at: "2026-08-10T11:00:00.000Z", venue_name: "Tokyo",
+  };
+  const page = {
+    async goto() {}, url() { return "about:blank"; }, async evaluate() { return true; }, async screenshot() { return png; },
+  };
+  try {
+    const dependencies = createMinimalProductionDependencies({
+      repoRoot: "/private/repo", stateDir, wakeId: "wake-production-evidence-direct-1",
+      calendarAccount: "private-account", gogKeyring: "private-keyring", telegramTarget: "123456789",
+      telegramToken: "fixture-telegram-token", lumaFormProfilePath: "/private/form-profile.json",
+      lunaEvidenceDir: "/private/luna-evidence", calendar: {
+        async findConnectorEvents() { return calendarReads++ === 0 ? [] : [calendarReceipt]; },
+        async createConnectorEvent() { return calendarReceipt; },
+      },
+      calendarReader: { async readCalendarGaps() { return []; } }, browserRail: {}, evidenceStore,
+      providerRouter: { discoverCandidates() {}, runCachedAction() {}, runDirectAction() {}, runAgentFallback() {}, readProviderState() {}, saveRepairedActions() {} },
+    });
+    const bundle = await dependencies.completeEvidence({ provider: "luma", candidate, page, providerState: { status: "registered" } });
+    assert.deepEqual([bundle.telegram_message_provider_id, bundle.telegram_photo_provider_id], ["9011", "9012"]);
+    assert.deepEqual(requests.map(({ url }) => url), [
+      "https://api.telegram.org/botfixture-telegram-token/sendMessage",
+      "https://api.telegram.org/botfixture-telegram-token/sendPhoto",
+    ]);
+    assert.equal(fs.readdirSync(path.join(stateDir, "evidence", "delivery-claims")).filter((name) => name.endsWith(".claim")).length, 2);
+    assert.equal(JSON.stringify(dependencies).includes("fixture-telegram-token"), false);
   } finally {
     globalThis.fetch = originalFetch;
     fs.rmSync(stateDir, { recursive: true, force: true });

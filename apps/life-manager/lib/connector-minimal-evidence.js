@@ -7,11 +7,6 @@ const path = require("node:path");
 const { createLumaEvidenceStore } = require("./luma-evidence-store.js");
 const { createPeatixEvidenceStore } = require("./peatix-evidence-store.js");
 const { createConnpassEvidenceStore, createMeetupEvidenceStore, createDoorkeeperEvidenceStore, createEventbriteEvidenceStore, createTechPlayEvidenceStore } = require("./connpass-evidence-store.js");
-const {
-  notifyOpenClawGateway,
-  notifyOpenClawPhoto,
-  parseOpenClawMessageId,
-} = require("./outbound-guardian.js");
 
 const EVENT_REF = /^luma-event:\/\/event\/[A-Za-z0-9_-]+$/;
 const RECEIPT_REF = /^provider-receipt:\/\/luma\/([0-9a-f]{64})$/;
@@ -31,6 +26,8 @@ const TECHPLAY_RECEIPT_REF = /^provider-receipt:\/\/techplay\/([0-9a-f]{64})$/;
 const ARTIFACT_REF = /^object:\/\/sha256\/([0-9a-f]{64})$/;
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 const RECEIPT_ESCAPE = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+const NO_FOLLOW = fs.constants.O_NOFOLLOW || 0;
+const DELIVERY_CLAIM_DIR = "delivery-claims";
 
 function invalid() {
   throw new Error("Connector minimal evidence invalid");
@@ -66,6 +63,8 @@ function receiptHtml(provider, status, eventRef) {
   return `<!doctype html><html><body><dl><dt>provider</dt><dd>${safe(provider)}</dd><dt>status</dt><dd>${safe(status)}</dd><dt>event reference</dt><dd>${safe(eventRef)}</dd></dl></body></html>`;
 }
 
+function escapeHtml(value) { return String(value).replace(/[&<>"']/g, (char) => RECEIPT_ESCAPE[char]); }
+
 function text(value, max = 2_000) {
   const result = String(value == null ? "" : value).replace(/\s+/g, " ").trim();
   if (!result || result.length > max || /[\x00-\x1f\x7f]/.test(result)) invalid();
@@ -76,6 +75,18 @@ function exactInstant(value) {
   const instant = value instanceof Date ? value.toISOString() : String(value || "");
   if (!Number.isFinite(Date.parse(instant)) || new Date(Date.parse(instant)).toISOString() !== instant) invalid();
   return instant;
+}
+
+function providerMessageId(value) {
+  const raw = value && typeof value === "object" && !Array.isArray(value)
+    ? Object.prototype.hasOwnProperty.call(value, "messageId")
+      ? value.messageId
+      : value.ok === true && value.result && typeof value.result === "object" && !Array.isArray(value.result)
+        ? value.result.message_id : null
+    : null;
+  if (typeof raw === "number" && Number.isSafeInteger(raw) && raw > 0) return String(raw);
+  if (typeof raw === "string" && /^[1-9][0-9]*$/.test(raw) && Number.isSafeInteger(Number(raw))) return raw;
+  invalid();
 }
 
 // The only timezone connector-minimal-production.js verifies for a live run (its PRODUCTION_TIME_ZONE
@@ -215,26 +226,144 @@ function calendarReceipt(value) {
 function privateStateDir(value) {
   const directory = path.resolve(String(value || ""));
   if (!path.isAbsolute(directory) || directory === path.parse(directory).root) invalid();
-  try { if (fs.lstatSync(directory).isSymbolicLink()) invalid(); } catch (error) { if (error && error.code !== "ENOENT") invalid(); }
-  fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
-  fs.chmodSync(directory, 0o700);
+  assertNoSymlinkPath(path.dirname(directory), directory);
+  let existing;
+  try { existing = fs.lstatSync(directory); } catch (error) {
+    if (!error || error.code !== "ENOENT") invalid();
+  }
+  if (!existing) {
+    try { fs.mkdirSync(directory, { recursive: true, mode: 0o700 }); } catch { invalid(); }
+    try { existing = fs.lstatSync(directory); } catch { invalid(); }
+  }
+  if (!existing.isDirectory() || existing.isSymbolicLink() || (existing.mode & 0o777) !== 0o700) invalid();
   return directory;
 }
 
-function immutableJson(file, value) {
+function sameIdentity(left, right) { return left.dev === right.dev && left.ino === right.ino; }
+
+function assertPrivateDirectoryStat(stat, expectedMode) {
+  if (!stat || !stat.isDirectory() || stat.isSymbolicLink() || (expectedMode != null && (stat.mode & 0o777) !== expectedMode)) invalid();
+}
+
+function openDirectoryIdentity(directory, expectedMode) {
+  let expected;
+  try { expected = fs.lstatSync(directory); } catch { invalid(); }
+  assertPrivateDirectoryStat(expected, expectedMode);
+  let descriptor;
+  try {
+    descriptor = fs.openSync(directory, fs.constants.O_RDONLY | NO_FOLLOW);
+    const opened = fs.fstatSync(descriptor);
+    assertPrivateDirectoryStat(opened, expectedMode);
+    if (!sameIdentity(expected, opened)) invalid();
+    const current = fs.lstatSync(directory);
+    assertPrivateDirectoryStat(current, expectedMode);
+    if (!sameIdentity(opened, current)) invalid();
+    return { directory, descriptor, dev: opened.dev, ino: opened.ino, expectedMode };
+  } catch (error) {
+    if (descriptor !== undefined) {
+      try { fs.closeSync(descriptor); } catch { /* preserve the identity error */ }
+    }
+    throw error;
+  }
+}
+
+function verifyDirectoryIdentity(identity) {
+  const opened = fs.fstatSync(identity.descriptor);
+  assertPrivateDirectoryStat(opened, identity.expectedMode);
+  if (opened.dev !== identity.dev || opened.ino !== identity.ino) invalid();
+  let current;
+  try { current = fs.lstatSync(identity.directory); } catch { invalid(); }
+  assertPrivateDirectoryStat(current, identity.expectedMode);
+  if (!sameIdentity(opened, current)) invalid();
+}
+
+function syncDirectoryIdentity(identity) {
+  verifyDirectoryIdentity(identity);
+  fs.fsyncSync(identity.descriptor);
+  verifyDirectoryIdentity(identity);
+}
+
+function syncDirectory(directory, expectedMode) {
+  const identity = openDirectoryIdentity(directory, expectedMode);
+  try { syncDirectoryIdentity(identity); }
+  finally { fs.closeSync(identity.descriptor); }
+}
+
+function ensurePrivateDirectory(directory) {
+  let created = false;
+  let existing;
+  try { existing = fs.lstatSync(directory); } catch (error) {
+    if (!error || error.code !== "ENOENT") invalid();
+  }
+  if (!existing) {
+    try { fs.mkdirSync(directory, { recursive: true, mode: 0o700 }); } catch { invalid(); }
+    try { existing = fs.lstatSync(directory); } catch { invalid(); }
+    syncDirectory(path.dirname(directory));
+    created = true;
+  }
+  if (!existing.isDirectory() || existing.isSymbolicLink() || (existing.mode & 0o777) !== 0o700) invalid();
+  let parent;
+  try { parent = fs.lstatSync(path.dirname(directory)); } catch { invalid(); }
+  if (!parent.isDirectory() || parent.isSymbolicLink() || (parent.mode & 0o777) !== 0o700) invalid();
+  return created;
+}
+
+function readPrivateBytes(root, file, maxSize) {
+  assertNoSymlinkPath(root, file);
+  let expected;
+  try { expected = fs.lstatSync(file); } catch (error) {
+    if (error && error.code === "ENOENT") return undefined;
+    invalid();
+  }
+  if (!expected.isFile() || (expected.mode & 0o777) !== 0o600 || expected.size > maxSize) invalid();
+  let descriptor;
+  try {
+    descriptor = fs.openSync(file, fs.constants.O_RDONLY | NO_FOLLOW);
+    const stat = fs.fstatSync(descriptor);
+    if (!stat.isFile() || (stat.mode & 0o777) !== 0o600 || stat.size > maxSize
+      || stat.dev !== expected.dev || stat.ino !== expected.ino) invalid();
+    return fs.readFileSync(descriptor);
+  } catch { invalid(); }
+  finally { if (descriptor !== undefined) fs.closeSync(descriptor); }
+}
+
+function readPrivateJson(root, file, maxSize) {
+  const bytes = readPrivateBytes(root, file, maxSize);
+  if (bytes === undefined) return undefined;
+  try { return JSON.parse(bytes.toString("utf8")); } catch { invalid(); }
+}
+
+function immutableJson(root, file, value) {
   const bytes = Buffer.from(`${JSON.stringify(value, null, 2)}\n`, "utf8");
-  fs.mkdirSync(path.dirname(file), { recursive: true, mode: 0o700 });
-  if (fs.existsSync(file)) {
-    if (!fs.readFileSync(file).equals(bytes)) invalid();
+  const directory = path.dirname(file);
+  assertNoSymlinkPath(root, file);
+  ensurePrivateDirectory(directory);
+  const existing = readPrivateBytes(root, file, 16_384);
+  if (existing !== undefined) {
+    if (!existing.equals(bytes)) invalid();
     return;
   }
   const temporary = `${file}.${process.pid}.${randomUUID()}.tmp`;
+  assertNoSymlinkPath(root, temporary);
+  let descriptor;
   try {
-    fs.writeFileSync(temporary, bytes, { flag: "wx", mode: 0o600 });
-    fs.renameSync(temporary, file);
-    fs.chmodSync(file, 0o600);
+    descriptor = fs.openSync(temporary, fs.constants.O_WRONLY | fs.constants.O_CREAT | fs.constants.O_EXCL | NO_FOLLOW, 0o600);
+    const stat = fs.fstatSync(descriptor);
+    if (!stat.isFile() || (stat.mode & 0o777) !== 0o600) invalid();
+    fs.fchmodSync(descriptor, 0o600);
+    let offset = 0;
+    while (offset < bytes.length) offset += fs.writeSync(descriptor, bytes, offset, bytes.length - offset, null);
+    fs.fsyncSync(descriptor);
   } finally {
-    if (fs.existsSync(temporary)) fs.unlinkSync(temporary);
+    if (descriptor !== undefined) fs.closeSync(descriptor);
+  }
+  try {
+    fs.renameSync(temporary, file);
+    const written = fs.lstatSync(file);
+    if (!written.isFile() || (written.mode & 0o777) !== 0o600) invalid();
+    syncDirectory(directory, 0o700);
+  } finally {
+    try { fs.unlinkSync(temporary); } catch (error) { if (!error || error.code !== "ENOENT") throw error; }
   }
 }
 
@@ -255,10 +384,8 @@ const MESSAGE_DELIVERY_KEYS = "artifact_ref,artifact_sha256,calendar_event_id,ca
 const PHOTO_DELIVERY_KEYS = "artifact_ref,artifact_sha256,calendar_event_id,calendar_event_url,calendar_readback_at,canonical_url_sha256,event_ref,message_checkpoint_sha256,provider,provider_receipt_ref,schema_version,stage,telegram_message_provider_id,telegram_photo_provider_id";
 
 function readCheckpoint(stateDir, file, provider, candidate, canonicalUrlSha256) {
-  assertNoSymlinkPath(stateDir, file);
-  if (!fs.existsSync(file)) return null;
-  let value;
-  try { const stat = fs.statSync(file); if (!stat.isFile() || (stat.mode & 0o777) !== 0o600 || stat.size > 16_384) invalid(); value = JSON.parse(fs.readFileSync(file, "utf8")); } catch { invalid(); }
+  const value = readPrivateJson(stateDir, file, 16_384);
+  if (value === undefined) return null;
   if (!value || typeof value !== "object" || Array.isArray(value)) invalid();
   if (value.stage !== "evidence" || Object.keys(value).sort().join(",") !== CHECKPOINT_KEYS || value.schema_version !== 1
     || value.provider !== provider.name || value.event_ref !== candidate.event_ref || value.canonical_url_sha256 !== canonicalUrlSha256 || !provider.states.includes(value.provider_status)) invalid();
@@ -291,31 +418,90 @@ async function validateCheckpointEvidence(provider, checkpoint, tenantId) {
 function deliveryPaths(stateDir, provider, candidate, identity, checkpoint) {
   const deliveryIdentity = sha256(`${provider.name}\n${candidate.event_ref}\n${identity.canonicalUrlSha256}\n${checkpoint.receiptRef}\n${checkpoint.artifactSha256}`);
   const root = path.join(stateDir, "evidence", "checkpoints");
+  const claimRoot = path.join(stateDir, "evidence", DELIVERY_CLAIM_DIR);
   const message = path.join(root, `${deliveryIdentity}.message.json`);
   const photo = path.join(root, `${deliveryIdentity}.photo.json`);
+  const messageClaim = path.join(claimRoot, `${deliveryIdentity}.message.claim`);
+  const photoClaim = path.join(claimRoot, `${deliveryIdentity}.photo.claim`);
   assertNoSymlinkPath(stateDir, message); assertNoSymlinkPath(stateDir, photo);
-  return { message, photo };
+  assertNoSymlinkPath(stateDir, messageClaim); assertNoSymlinkPath(stateDir, photoClaim);
+  return { message, photo, messageClaim, photoClaim };
 }
 
 function deliveryKeys(stage) { return stage === "telegram_message" ? MESSAGE_DELIVERY_KEYS : PHOTO_DELIVERY_KEYS; }
 
-function deliveryId(value, field) {
-  if (typeof value !== "string" || !/^[1-9][0-9]*$/.test(value)) invalid();
-  let parsed;
-  try { parsed = parseOpenClawMessageId({ messageId: value }); } catch { invalid(); }
-  if (parsed !== value) invalid();
-  return value;
+function deliveryId(value) { return providerMessageId({ messageId: value }); }
+
+function acquireDeliveryClaim(file, stage, stateDir) {
+  const directory = path.dirname(file);
+  if (ensurePrivateDirectory(directory)) syncDirectory(stateDir, 0o700);
+  const parent = openDirectoryIdentity(directory, 0o700);
+  let descriptor;
+  try {
+    verifyDirectoryIdentity(parent);
+    try {
+      descriptor = fs.openSync(file, fs.constants.O_WRONLY | fs.constants.O_CREAT | fs.constants.O_EXCL | NO_FOLLOW, 0o600);
+    } catch (error) {
+      if (error && error.code === "EEXIST") return false;
+      throw error;
+    }
+    const opened = fs.fstatSync(descriptor);
+    if (!opened.isFile() || opened.isSymbolicLink() || (opened.mode & 0o777) !== 0o600) invalid();
+    const current = fs.lstatSync(file);
+    if (!current.isFile() || current.isSymbolicLink() || (current.mode & 0o777) !== 0o600 || !sameIdentity(opened, current)) invalid();
+    const bytes = Buffer.from(`${JSON.stringify({ schema_version: 1, stage })}\n`, "utf8");
+    fs.fchmodSync(descriptor, 0o600);
+    let offset = 0;
+    while (offset < bytes.length) offset += fs.writeSync(descriptor, bytes, offset, bytes.length - offset, null);
+    fs.fsyncSync(descriptor);
+    const written = fs.fstatSync(descriptor);
+    const writtenPath = fs.lstatSync(file);
+    if (!written.isFile() || (written.mode & 0o777) !== 0o600 || !sameIdentity(written, writtenPath)) invalid();
+    syncDirectoryIdentity(parent);
+    return true;
+  } finally {
+    if (descriptor !== undefined) fs.closeSync(descriptor);
+    fs.closeSync(parent.descriptor);
+  }
+}
+
+function releaseDeliveryClaim(file, stage) {
+  const directory = path.dirname(file);
+  ensurePrivateDirectory(directory);
+  const parent = openDirectoryIdentity(directory, 0o700);
+  let descriptor;
+  try {
+    verifyDirectoryIdentity(parent);
+    let stat;
+    try { stat = fs.lstatSync(file); } catch (error) { if (error && error.code === "ENOENT") throw new Error("delivery claim disappeared"); throw error; }
+    if (!stat.isFile() || stat.isSymbolicLink() || (stat.mode & 0o777) !== 0o600) invalid();
+    descriptor = fs.openSync(file, fs.constants.O_RDONLY | NO_FOLLOW);
+    const opened = fs.fstatSync(descriptor);
+    if (!opened.isFile() || opened.isSymbolicLink() || (opened.mode & 0o777) !== 0o600 || !sameIdentity(stat, opened)) invalid();
+    verifyDirectoryIdentity(parent);
+    fs.unlinkSync(file);
+    verifyDirectoryIdentity(parent);
+    fs.fsyncSync(parent.descriptor);
+    verifyDirectoryIdentity(parent);
+    try { fs.lstatSync(file); throw new Error("delivery claim remained"); }
+    catch (error) { if (!error || error.code !== "ENOENT") throw error; }
+  } catch (error) {
+    try { acquireDeliveryClaim(file, stage, path.dirname(path.dirname(directory))); } catch { /* caller records a stable unknown result */ }
+    throw error;
+  } finally {
+    if (descriptor !== undefined) fs.closeSync(descriptor);
+    fs.closeSync(parent.descriptor);
+  }
+}
+
+function knownProviderRejection(value) {
+  return value && typeof value === "object" && !Array.isArray(value)
+    && value.ok === false && value.delivery_unknown !== true;
 }
 
 function readDeliveryCheckpoint(stateDir, file, stage, provider, candidate, identity, checkpoint) {
-  assertNoSymlinkPath(stateDir, file);
-  if (!fs.existsSync(file)) return null;
-  let value;
-  try {
-    const stat = fs.lstatSync(file);
-    if (!stat.isFile() || stat.isSymbolicLink() || (stat.mode & 0o777) !== 0o600 || stat.size > 16_384) invalid();
-    value = JSON.parse(fs.readFileSync(file, "utf8"));
-  } catch { invalid(); }
+  const value = readPrivateJson(stateDir, file, 16_384);
+  if (value === undefined) return null;
   if (!value || typeof value !== "object" || Array.isArray(value) || Object.keys(value).sort().join(",") !== deliveryKeys(stage)) invalid();
   if (value.schema_version !== 1 || value.stage !== stage || value.provider !== provider.name || value.event_ref !== candidate.event_ref
     || value.canonical_url_sha256 !== identity.canonicalUrlSha256 || value.provider_receipt_ref !== checkpoint.receiptRef
@@ -534,8 +720,8 @@ function createMinimalEvidenceChain(options = {}) {
     techplay: { name: "techplay", eventRef: TECHPLAY_EVENT_REF, receiptRef: TECHPLAY_RECEIPT_REF, url: techplayUrl, states: ["registered"], store: techplayEvidenceStore },
   };
   const now = options.now || (() => new Date());
-  const sendMessage = options.sendMessage || notifyOpenClawGateway;
-  const sendPhoto = options.sendPhoto || notifyOpenClawPhoto;
+  const sendMessage = options.sendMessage;
+  const sendPhoto = options.sendPhoto;
   if (
     !calendar || typeof calendar.findConnectorEvents !== "function"
     || typeof calendar.createConnectorEvent !== "function"
@@ -610,7 +796,7 @@ function createMinimalEvidenceChain(options = {}) {
         } else {
           const captured = await captureProviderEvidence({ provider, providerName: input.provider, page: input.page, candidate, providerStatus: input.providerState.status, tenantId, now, canonicalUrlSha256: identity.canonicalUrlSha256 });
           assertNoSymlinkPath(stateDir, identity.file);
-          immutableJson(identity.file, captured.checkpointValue);
+          immutableJson(stateDir, identity.file, captured.checkpointValue);
           checkpoint = readCheckpoint(stateDir, identity.file, provider, candidate, identity.canonicalUrlSha256);
           screenshot = captured.screenshot;
           if (input.provider === "meetup" || input.provider === "doorkeeper" || input.provider === "eventbrite" || input.provider === "techplay") screenshot = await validateCheckpointEvidence(provider, checkpoint, tenantId);
@@ -660,7 +846,7 @@ function createMinimalEvidenceChain(options = {}) {
       let messageId = messageCheckpoint && messageCheckpoint.telegramMessageProviderId;
       try {
         if (!messageCheckpoint) {
-          const message = [
+          const messageText = [
             "Connector::: イベント申込を確認しました",
             `event: ${title}`,
             `starts at: ${localizedStartsAt(startsAt, timeZone)}`,
@@ -670,13 +856,26 @@ function createMinimalEvidenceChain(options = {}) {
             `event url: ${eventUrl}`,
             `calendar: ${verifiedCalendar.htmlLink}`,
           ].join("\n");
-          messageId = parseOpenClawMessageId(await sendMessage(message, {
-            telegramTarget,
-            idempotencyKey: `connector-evidence:${idempotencyValue}`,
-          }));
+          if (messageText.length > 4_096) throw stageError("EVIDENCE_TELEGRAM_MESSAGE_FAILED");
+          if (!acquireDeliveryClaim(deliveries.messageClaim, "telegram_message", stateDir)) throw stageError("EVIDENCE_TELEGRAM_MESSAGE_FAILED");
+          let response;
+          try { response = await sendMessage(escapeHtml(messageText), { telegramTarget, idempotencyKey: `connector-evidence:${idempotencyValue}` }); }
+          catch (error) {
+            if (error && error.knownNoEffect === true) {
+              try { releaseDeliveryClaim(deliveries.messageClaim, "telegram_message"); }
+              catch { throw stageError("EVIDENCE_TELEGRAM_MESSAGE_FAILED"); }
+            }
+            throw error;
+          }
+          if (knownProviderRejection(response)) {
+            try { releaseDeliveryClaim(deliveries.messageClaim, "telegram_message"); }
+            catch { throw stageError("EVIDENCE_TELEGRAM_MESSAGE_FAILED"); }
+            throw stageError("EVIDENCE_TELEGRAM_MESSAGE_FAILED");
+          }
+          messageId = providerMessageId(response);
           const value = deliveryValue({ stage: "telegram_message", provider, candidate, identity, checkpoint, calendar: verifiedCalendar, calendarReadbackAt, messageId });
           assertNoSymlinkPath(stateDir, deliveries.message);
-          immutableJson(deliveries.message, value);
+          immutableJson(stateDir, deliveries.message, value);
           messageCheckpoint = readDeliveryCheckpoint(stateDir, deliveries.message, "telegram_message", provider, candidate, identity, checkpoint);
           if (!messageCheckpoint) invalid();
         }
@@ -684,18 +883,34 @@ function createMinimalEvidenceChain(options = {}) {
       let photoId = photoCheckpoint && photoCheckpoint.telegramPhotoProviderId;
       try {
         if (!photoCheckpoint) {
-          photoId = parseOpenClawMessageId(await sendPhoto(screenshot, {
+          if (!acquireDeliveryClaim(deliveries.photoClaim, "telegram_photo", stateDir)) throw stageError("EVIDENCE_TELEGRAM_PHOTO_FAILED");
+          const photoOptions = {
             telegramTarget,
             idempotencyKey: `connector-evidence-photo:${identity.canonicalUrlSha256}`,
             caption: input.provider === "luma" ? `Connector::: ${title} / ${status}` : `Connector::: ${input.provider} / ${title} / ${status}`,
-          }));
+          };
+          let response;
+          try { response = await sendPhoto(screenshot, photoOptions); }
+          catch (error) {
+            if (error && error.knownNoEffect === true) {
+              try { releaseDeliveryClaim(deliveries.photoClaim, "telegram_photo"); }
+              catch { throw stageError("EVIDENCE_TELEGRAM_PHOTO_FAILED"); }
+            }
+            throw error;
+          }
+          if (knownProviderRejection(response)) {
+            try { releaseDeliveryClaim(deliveries.photoClaim, "telegram_photo"); }
+            catch { throw stageError("EVIDENCE_TELEGRAM_PHOTO_FAILED"); }
+            throw stageError("EVIDENCE_TELEGRAM_PHOTO_FAILED");
+          }
+          photoId = providerMessageId(response);
           const value = deliveryValue({
             stage: "telegram_photo", provider, candidate, identity, checkpoint, calendar: verifiedCalendar,
             calendarReadbackAt: messageCheckpoint.calendarReadbackAt,
             messageId, photoId, messageCheckpointSha256: messageCheckpoint.checkpointSha256,
           });
           assertNoSymlinkPath(stateDir, deliveries.photo);
-          immutableJson(deliveries.photo, value);
+          immutableJson(stateDir, deliveries.photo, value);
           photoCheckpoint = readDeliveryCheckpoint(stateDir, deliveries.photo, "telegram_photo", provider, candidate, identity, checkpoint);
           if (!photoCheckpoint || photoCheckpoint.messageCheckpointSha256 !== messageCheckpoint.checkpointSha256) invalid();
         }
@@ -722,7 +937,7 @@ function createMinimalEvidenceChain(options = {}) {
         const bundle = Object.freeze({ bundle_id: `applied-bundle:${digest}`, ...core });
         const bundleFile = path.join(stateDir, "applied-bundles", `${digest}.json`);
         assertNoSymlinkPath(stateDir, bundleFile);
-        immutableJson(bundleFile, bundle);
+        immutableJson(stateDir, bundleFile, bundle);
         return Object.freeze({ ...bundle, completion_disposition: "created" });
       } catch (error) { throw preserveSafe(error, "EVIDENCE_BUNDLE_WRITE_FAILED"); }
     },

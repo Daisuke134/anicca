@@ -43,7 +43,7 @@ const {
 } = require("./google-calendar-busy-inventory.js");
 const { zonedSlotInstant } = require("./honne-ja-shadow-schedule.js");
 const { makeGogCalendar } = require("./transport/calendar-gog.js");
-const { sendMessage: sendTelegramMessage } = require("./telegram.js");
+const { sendMessage: sendTelegramMessage, sendPhoto: sendTelegramPhoto } = require("./telegram.js");
 
 const LUMA_DISCOVERY_URL = "https://luma.com/tokyo?k=p";
 const PRODUCTION_TIME_ZONE = "Asia/Tokyo";
@@ -130,6 +130,43 @@ function createUnavailableConnpassActionSender() {
     const error = new Error("Connpass action Telegram transport unavailable");
     error.safeReason = "transport";
     throw error;
+  };
+}
+
+function directEvidenceReceipt(response, telegramTarget) {
+  const messageId = response && response.result && response.result.message_id;
+  const messageDate = response && response.result && response.result.date;
+  const chatId = response && response.result && response.result.chat && response.result.chat.id;
+  const knownNoEffect = response && typeof response === "object" && !Array.isArray(response)
+    && response.ok === false && response.delivery_unknown !== true;
+  if (!response || typeof response !== "object" || Array.isArray(response) || response.ok !== true
+    || !response.result || typeof response.result !== "object" || Array.isArray(response.result)
+    || !Object.prototype.hasOwnProperty.call(response.result, "message_id")
+    || !Number.isSafeInteger(messageId) || messageId <= 0
+    || !Number.isSafeInteger(messageDate) || messageDate <= 0
+    || !response.result.chat || typeof response.result.chat !== "object" || Array.isArray(response.result.chat)
+    || !Object.prototype.hasOwnProperty.call(response.result.chat, "id")
+    || String(chatId) !== String(telegramTarget)) {
+      const error = new Error("Evidence Telegram provider receipt unavailable");
+      if (knownNoEffect) error.knownNoEffect = true;
+      throw error;
+    }
+  return { messageId: String(messageId) };
+}
+
+function createDirectEvidenceMessageSender(token) {
+  const telegramToken = requiredText(token, 2_000);
+  return async (message, options = {}) => {
+    const telegramTarget = requiredText(options.telegramTarget, 200);
+    return directEvidenceReceipt(await sendTelegramMessage(telegramToken, telegramTarget, message), telegramTarget);
+  };
+}
+
+function createDirectEvidencePhotoSender(token) {
+  const telegramToken = requiredText(token, 2_000);
+  return async (bytes, options = {}) => {
+    const telegramTarget = requiredText(options.telegramTarget, 200);
+    return directEvidenceReceipt(await sendTelegramPhoto(telegramToken, telegramTarget, bytes, options.caption), telegramTarget);
   };
 }
 
@@ -524,6 +561,19 @@ function createMinimalProductionDependencies(options = {}) {
     calendar,
     calendarId,
     telegramTarget,
+    evidenceStore: options.evidenceStore,
+    peatixEvidenceStore: options.peatixEvidenceStore,
+    connpassEvidenceStore: options.connpassEvidenceStore,
+    meetupEvidenceStore: options.meetupEvidenceStore,
+    doorkeeperEvidenceStore: options.doorkeeperEvidenceStore,
+    eventbriteEvidenceStore: options.eventbriteEvidenceStore,
+    techplayEvidenceStore: options.techplayEvidenceStore,
+    sendMessage: options.evidenceSendMessage || (telegramToken
+      ? createDirectEvidenceMessageSender(telegramToken)
+      : createUnavailableConnpassActionSender()),
+    sendPhoto: options.evidenceSendPhoto || (telegramToken
+      ? createDirectEvidencePhotoSender(telegramToken)
+      : createUnavailableConnpassActionSender()),
     timeZone: PRODUCTION_TIME_ZONE,
     now,
   });

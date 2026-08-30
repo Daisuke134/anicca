@@ -49,10 +49,13 @@ async function sendPhoto(token, chatId, bytes, caption) {
     const response = await fetch(`${TG(token)}/sendPhoto`, {
       method: "POST",
       body: form,
+      signal: AbortSignal.timeout(TELEGRAM_SEND_TIMEOUT_MS),
     });
-    return await response.json();
-  } catch (error) {
-    return { ok: false, error: String(error) };
+    const result = await response.json();
+    return result && typeof result === "object" && !Array.isArray(result) && typeof result.ok === "boolean"
+      ? result : { ok: false, delivery_unknown: true };
+  } catch {
+    return { ok: false, delivery_unknown: true };
   }
 }
 
