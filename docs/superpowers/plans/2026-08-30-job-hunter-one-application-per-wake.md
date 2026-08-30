@@ -51,13 +51,15 @@ Run `daily-20260830-083836` has 44 Tokyo/Japan jobs in an 874-job snapshot but r
 
 Run `daily-20260830-085920` proves ranking input has zero Japan rows although the official snapshot has 44. Ledger has all 44 URLs: 25 are unfinished `materials_ready` rows with absent fit and no submit intent; 19 are rejected. `snapshot_candidates()` must include official rows when the matching Ledger application is `materials_ready` and its fit is absent or hold, while continuing to exclude rejected, qualified, attempted and submitted rows. Do not reopen rejected history in this atom.
 
-#### Task 1E: Drain unfinished rows before ranking fresh rows — active
+#### Task 1E: Drain unfinished rows before ranking fresh rows — completed in PR #3178
 
 **Files:**
 - Modify: `apps/job-search-loop/job_search_loop/workday_search_loop.py`
 - Modify focused checks in: `apps/job-search-loop/tests/test_workday_qualification.py`
 
 Run `daily-20260830-091914` ranks 188 unfinished official rows plus roughly 646 fresh rows, requiring four model calls and exhausting disk before first fit. When the current official snapshot contains any unfinished rankable Ledger rows, return only that unfinished pool from `snapshot_candidates()`; return fresh unseen rows only when the unfinished pool is empty. Preserve official snapshot validation and all rejected/attempted/submitted exclusions. This is deterministic durable-work ordering, not job-fit judgment.
+
+Deployment state: main-derived sparse release `bd274627` is staged under `/Users/anicca/loops/job-hunting-staging`. Production `~/loops/current` was concurrently changed by another session to `b27815d9`; do not overwrite the shared symlink without explicit coordination. After approval, atomically activate the staged release, apply the five existing Job Hunting labels, read back argv/SHA/cadence, and kick only the existing daily owner.
 
 ---
 
