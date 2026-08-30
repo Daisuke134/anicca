@@ -304,6 +304,19 @@ def test_policy_report_identity_is_unique_and_contains_no_counterparty_data():
     )
 
 
+def test_busy_reply_wake_reports_lock_contention_without_unknown_metrics():
+    _event_key, message = telegram.reply_wake_message({
+        "run_id": "busy-1", "status": "busy",
+        "observed": None, "actionable": None, "effect": None,
+    })
+
+    assert "前回の確認処理が継続中" in message
+    assert "重複起動せず" in message
+    assert "この確認では返信・見積りを送信していません" in message
+    assert "未確認" not in message
+    assert "通常返信の処理対象" not in message
+
+
 def test_same_policy_event_is_replay_zero_after_first_closure(tmp_path):
     outbox = FakeOutbox()
     rows = [{
