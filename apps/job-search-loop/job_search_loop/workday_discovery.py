@@ -32,7 +32,7 @@ def _fetch_jobs(source: dict[str, str]) -> list[dict[str, Any]]:
                     "appliedFacets": {},
                     "limit": limit,
                     "offset": offset,
-                    "searchText": "",
+                    "searchText": source["search_text"],
                 }
             ).encode(),
             headers={
