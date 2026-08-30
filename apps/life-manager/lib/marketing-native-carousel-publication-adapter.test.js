@@ -18,20 +18,62 @@ const {
   verifyMarketingNativeCarouselPublicationReceipt,
 } = require("./marketing-native-carousel-publication-adapter.js");
 
-test("TikTok carousel JPEG width above 1080 fails before provider access", () => {
+const jpeg = (width, height) => Buffer.from([
+  0xff, 0xd8, 0xff, 0xc0, 0x00, 0x11, 0x08,
+  (height >> 8) & 0xff, height & 0xff, (width >> 8) & 0xff, width & 0xff,
+  0x03, 0x01, 0x11, 0x00, 0x02, 0x11, 0x00, 0x03, 0x11, 0x00,
+  0xff, 0xd9,
+]);
+
+test("TikTok carousel JPEG dimensions stay within the provider gate", () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "lm-carousel-size-"));
-  const jpeg = (width, height) => Buffer.from([
-    0xff, 0xd8, 0xff, 0xc0, 0x00, 0x11, 0x08,
-    (height >> 8) & 0xff, height & 0xff, (width >> 8) & 0xff, width & 0xff,
-    0x03, 0x01, 0x11, 0x00, 0x02, 0x11, 0x00, 0x03, 0x11, 0x00,
-    0xff, 0xd9,
-  ]);
-  const oversized = path.join(root, "oversized.jpg");
+  const oversizedWidth = path.join(root, "oversized-width.jpg");
+  const oversizedHeight = path.join(root, "oversized-height.jpg");
+  const zeroWidth = path.join(root, "zero-width.jpg");
+  const zeroHeight = path.join(root, "zero-height.jpg");
   const accepted = path.join(root, "accepted.jpg");
-  fs.writeFileSync(oversized, jpeg(1125, 1202));
+  fs.writeFileSync(oversizedWidth, jpeg(1125, 1202));
+  fs.writeFileSync(oversizedHeight, jpeg(1080, 1921));
+  fs.writeFileSync(zeroWidth, jpeg(0, 1920));
+  fs.writeFileSync(zeroHeight, jpeg(1080, 0));
   fs.writeFileSync(accepted, jpeg(1080, 1920));
-  assert.throws(() => assertMarketingCarouselJpeg(oversized, "oversized", { maxWidth: 1080 }), /width/i);
-  assert.doesNotThrow(() => assertMarketingCarouselJpeg(accepted, "accepted", { maxWidth: 1080 }));
+  assert.throws(() => assertMarketingCarouselJpeg(oversizedWidth, "oversized-width", { maxWidth: 1080, maxHeight: 1920 }), /width/i);
+  assert.throws(() => assertMarketingCarouselJpeg(oversizedHeight, "oversized-height", { maxWidth: 1080, maxHeight: 1920 }), /height/i);
+  assert.throws(() => assertMarketingCarouselJpeg(zeroWidth, "zero-width", { maxWidth: 1080, maxHeight: 1920 }), /positive|width/i);
+  assert.throws(() => assertMarketingCarouselJpeg(zeroHeight, "zero-height", { maxWidth: 1080, maxHeight: 1920 }), /positive|height/i);
+  assert.doesNotThrow(() => assertMarketingCarouselJpeg(accepted, "accepted", { maxWidth: 1080, maxHeight: 1920 }));
+});
+
+test("TikTok carousel height gate fails before secret or distribution access", async () => {
+  const lane = EN_SLIDESHOW_TIKTOK_LANE;
+  const value = buildMarketingNativeCarouselPublicationJob({
+    tenantId: "dais-local", productId: lane.productId, formatId: lane.formatId, form: lane.form,
+    locale: lane.locale, slot: "2026-08-31T00:00:00.000Z", creativeId: lane.creativeId,
+    accountId: lane.accountId, integrationRef: lane.integrationRef, packRef: lane.packRef,
+    mediaRefs: lane.mediaRefs, captionRef: lane.captionRef, approvalRef: lane.approvalRef,
+    postizTokenRef: lane.tokenRef,
+  });
+  const objectRoot = path.join(os.homedir(), ".local/state/life-manager/objects/sha256");
+  const firstMediaPath = path.join(objectRoot, lane.mediaRefs[0].slice(-64));
+  const originalReadFileSync = fs.readFileSync;
+  fs.readFileSync = function patchedReadFileSync(file, ...args) {
+    if (file === firstMediaPath) return jpeg(1080, 1921);
+    return originalReadFileSync.call(this, file, ...args);
+  };
+  let secretCalls = 0;
+  let distributionCalls = 0;
+  const ledgerPath = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "lm-carousel-height-")), "distribution.jsonl");
+  const execution = executeMarketingNativeCarouselPublicationJob(value, {
+    objectStore: { resolve: (ref) => path.join(objectRoot, ref.slice(-64)) },
+    secretProvider: { get: async () => { secretCalls += 1; return "provider-token"; } },
+    ledgerPath,
+    runDistribution: async () => { distributionCalls += 1; return { state: "PUBLISHED", reconciled: true, post_id: "postiz-height-1", post_url: "https://www.tiktok.com/@anicca_slideshow/video/1" }; },
+    now: () => "2026-08-31T00:01:00.000Z",
+  });
+  fs.readFileSync = originalReadFileSync;
+  await assert.rejects(execution, /height/i);
+  assert.equal(secretCalls, 0);
+  assert.equal(distributionCalls, 0);
 });
 
 test("JA main TikTok lane is the exact recovered Larry sunset carousel", () => {

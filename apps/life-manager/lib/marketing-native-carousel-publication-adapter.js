@@ -338,9 +338,11 @@ function jpegDimensions(bytes, label) {
 function assertMarketingCarouselJpeg(file, label, limits = {}) {
   const bytes = fs.readFileSync(file);
   if (bytes.length < 3 || bytes[0] !== 0xff || bytes[1] !== 0xd8 || bytes[2] !== 0xff) fail(`${label} is not JPEG`);
-  if (!limits.maxWidth) return null;
+  if (limits.maxWidth === undefined && limits.maxHeight === undefined) return null;
   const dimensions = jpegDimensions(bytes, label);
-  if (dimensions.width > limits.maxWidth) fail(`${label} JPEG width exceeds ${limits.maxWidth}`);
+  if (dimensions.width <= 0 || dimensions.height <= 0) fail(`${label} JPEG dimensions must be positive`);
+  if (limits.maxWidth !== undefined && dimensions.width > limits.maxWidth) fail(`${label} JPEG width exceeds ${limits.maxWidth}`);
+  if (limits.maxHeight !== undefined && dimensions.height > limits.maxHeight) fail(`${label} JPEG height exceeds ${limits.maxHeight}`);
   return dimensions;
 }
 
@@ -440,7 +442,7 @@ async function executeMarketingNativeCarouselPublicationJob(job, deps = {}) {
   const captionPath = s.objectStore.resolve(contract.captionRef);
   const approvalPath = s.objectStore.resolve(contract.approvalRef);
   assertIntegrity(packPath, contract.packHash, "marketing native carousel pack");
-  mediaPaths.forEach((file, i) => { assertIntegrity(file, contract.mediaHashes[i], `marketing native carousel media ${i + 1}`); assertMarketingCarouselJpeg(file, `marketing native carousel media ${i + 1}`, lane.platform === "tiktok" ? { maxWidth: 1080 } : {}); });
+  mediaPaths.forEach((file, i) => { assertIntegrity(file, contract.mediaHashes[i], `marketing native carousel media ${i + 1}`); assertMarketingCarouselJpeg(file, `marketing native carousel media ${i + 1}`, lane.platform === "tiktok" ? { maxWidth: 1080, maxHeight: 1920 } : {}); });
   assertIntegrity(captionPath, contract.captionHash, "marketing native carousel caption");
   assertIntegrity(approvalPath, objectHash(contract.approvalRef, "approval"), "marketing native carousel approval");
   const caption = fs.readFileSync(captionPath, "utf8");
