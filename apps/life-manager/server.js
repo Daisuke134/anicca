@@ -51,6 +51,7 @@ const { sendPanelLink, handlePanelRequest, handleMoneyPrinterGuestRequest, panel
 const { handlePanelApiRequest, handlePanelOAuthCallback, composioCalendarStart, composioCalendarDisconnect } = require("./lib/panel-api.js");
 const { createMoneyPrinterSource } = require("./lib/money-printer-source.js");
 const { createMoneyPrinterRuntimeStore } = require("./lib/money-printer-runtime-store.js");
+const { handleMoneyPrinterSymphonyApiRequest } = require("./lib/money-printer-symphony-api.js");
 const { createSupabaseCommandStore } = require("./lib/panel-api.js");
 const { handleCalendarOnboardRequest } = require("./lib/calendar-onboard.js");
 const { parseUserCommand, dispatchParsedControl, executeUserCommand } = require("./lib/user-command.js");
@@ -277,6 +278,21 @@ const server = http.createServer((req, res) => {
       res.end("money printer unavailable");
     });
     return;
+  }
+  if (path.startsWith("/api/internal/money-printer/symphony/")) {
+    const handled = handleMoneyPrinterSymphonyApiRequest(req, res, {
+      secret: process.env.LM_SYMPHONY_BRIDGE_SECRET,
+      getRuntimeStore: getMoneyPrinterRuntimeStore,
+    });
+    if (handled !== false) {
+      Promise.resolve(handled).catch(() => {
+        if (!res.headersSent) {
+          res.writeHead(500, { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" });
+          res.end(JSON.stringify({ error: "internal_error" }));
+        }
+      });
+      return;
+    }
   }
   if (path === "/api/panel/session/telegram" || path === "/api/panel/session/device") {
     handlePanelRequest(req, res, {
