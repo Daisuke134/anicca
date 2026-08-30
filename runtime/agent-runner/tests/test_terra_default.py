@@ -59,6 +59,13 @@ class TerraDefaultTest(unittest.TestCase):
             with self.subTest(task_class=name):
                 self.assertTrue(task_class.get("requires_explicit_escalation"))
 
+    def test_browser_lane_accepts_an_explicit_1800_second_timeout(self):
+        config_path = Path(__file__).resolve().parents[1] / "config.json"
+        config = json.loads(config_path.read_text(encoding="utf-8"))
+
+        configured = config["task_classes"]["browser-lane-agent"]["timeout_seconds"]
+        self.assertEqual(min(configured, 1800), 1800)
+
 
 if __name__ == "__main__":
     unittest.main()

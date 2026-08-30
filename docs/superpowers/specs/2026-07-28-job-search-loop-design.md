@@ -71,6 +71,22 @@ application proof remains open until a distinct Gmail confirmation increases the
 rolling count, Ledger is `submitted`, Telegram acknowledges it, and immediate replay
 adds zero.
 
+Task 3E implements the fail-closed boundary in
+`browser_agent/runtime.py` and `browser_agent/orchestrator.py`. A navigation-only
+observation is compact and exposes `needs_navigation` plus `recovery_url` before any
+candidate facts; normal form observations retain candidate concepts and grounding
+facts. Each runtime process claims a mode-0600 per-wake active-command lease before
+argument parsing and clears it only after successful JSON output. A collision,
+exception, parser exit, stale lease from timeout/kill, or recorded terminal marker
+blocks every later command. Terminal-marker creation and the irreversible final
+Submit fence/click share one lock, so their order is unambiguous and no effect can
+begin after a recorded terminal failure. The orchestrator independently rejects
+overlapping transcript items and commands started after a real nonzero completion,
+including passes that claim `submitted` or `submit_unknown`. Focused browser tests
+pass 41/41, runner config tests pass 3/3, `git diff --check` passes, and fresh
+read-only review returns `ship`. Immutable release and real-wake application proof
+remain the active gate.
+
 The same wake also proves the loaded runner still has the wrong effective timeout.
 The outer orchestrator requests 1,800 seconds, but `attempts.jsonl` records
 `timed_out=true` from `01:43:24` to `01:58:25`, `summary.json` has
@@ -78,9 +94,9 @@ The outer orchestrator requests 1,800 seconds, but `attempts.jsonl` records
 `transient_timeout` as Telegram message ID `45093`. The source mismatch is exact:
 `apps/job-search-loop/agent-runner/config.json` sets `browser-lane-agent` to 1,800
 seconds, while the production runner copied from `runtime/agent-runner/config.json`
-still sets it to 900 seconds. The production config must use 1,800 seconds and a
-focused runner test must prove an explicit 1,800-second Job Hunter request is not
-clamped to 900. This does not change the 1,800-second launchd cadence or permit
+set it to 900 seconds. Task 3E aligns the production config and its explanatory note
+to 1,800 seconds; a focused runner test proves an explicit 1,800-second Job Hunter
+request is not clamped to 900. This does not change the 1,800-second launchd cadence or permit
 overlapping owner wakes.
 
 The application Ledger remains the state SSOT and `summary.v2` is rebuilt from its
