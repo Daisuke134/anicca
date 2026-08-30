@@ -23,6 +23,19 @@ test("R01 Symphony migration adds waiting_agent without dropping runtime states"
   }
 });
 
+test("R02 Symphony migration adds one tenant-job scoped dispatch ledger", () => {
+  const migration = fs.readFileSync(SYMPHONY_MIGRATION, "utf8");
+  assert.match(migration, /CREATE TABLE IF NOT EXISTS public\.lm_symphony_dispatches/i);
+  assert.match(migration, /PRIMARY KEY \(tenant_id, dispatch_id\)/i);
+  assert.match(migration, /FOREIGN KEY \(job_id, tenant_id\)[\s\S]*REFERENCES public\.lm_runtime_jobs \(job_id, tenant_id\)/i);
+  for (const status of ["claimed", "mirrored", "result_ready", "failed"]) {
+    assert.match(migration, new RegExp(`'${status}'`));
+  }
+  assert.match(migration, /CREATE UNIQUE INDEX IF NOT EXISTS lm_symphony_dispatches_open_job_idx[\s\S]*ON public\.lm_symphony_dispatches \(tenant_id, job_id\)[\s\S]*WHERE status IN \('claimed', 'mirrored', 'result_ready'\)/i);
+  assert.match(migration, /ENABLE ROW LEVEL SECURITY/i);
+  assert.match(migration, /REVOKE ALL ON TABLE public\.lm_symphony_dispatches FROM PUBLIC, anon, authenticated/i);
+});
+
 function opportunity() {
   return {
     uid: TENANT, opportunity_id: ID, source_url: "https://public.example/opportunity",
