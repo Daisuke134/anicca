@@ -256,7 +256,13 @@ def reply_wake_message(state: dict[str, Any], route: str = "") -> tuple[str, str
             "これは交渉処理の失敗ではありません。約3分後に安全停止状態を再確認します。",
         ])
         return f"gig:telegram:reply-wake:v1:{run_id}", "\n".join(lines)
-    if status in {"busy", "skipped_browser_restart", "restart_defer"}:
+    if status == "busy":
+        lines.extend([
+            "前回の確認処理が継続中のため、今回は重複起動せず見送りました。",
+            "この確認では返信・見積りを送信していません。前回処理の完了後に再確認します。",
+        ])
+        return f"gig:telegram:reply-wake:v1:{run_id}", "\n".join(lines)
+    if status in {"skipped_browser_restart", "restart_defer"}:
         lines.append("今回は安全確認のため処理を見送りました。")
     def raw_count(key: str, *, missing: int | None = None) -> int | None:
         value = state.get(key, missing)
