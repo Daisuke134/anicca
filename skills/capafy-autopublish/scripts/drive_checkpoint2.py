@@ -396,7 +396,7 @@ def _detected_keys_button_expression():
 
 
 def _configured_proxy_form_expression():
-    """Recognize the editable proxy card emitted by publish-configure.
+    """Recognize the editable proxy card on the final review page emitted by continue_upload.
 
     Capafy currently expands a freshly configured OpenRouter pair as a generic
     ``proxy_env`` card.  It has no provider-path text yet, so treating the

@@ -10,11 +10,14 @@ import urllib.error
 import urllib.request
 from urllib.parse import urlsplit
 
-from capafy_platform.defaults import DEFAULT_HTTP_TIMEOUT_SECONDS, DEFAULT_PLATFORM_BASE_URL
+from capafy_platform.defaults import (
+    DEFAULT_HTTP_TIMEOUT_SECONDS,
+    DEFAULT_PLATFORM_BASE_URL,
+    PLATFORM_BASE_URL_ENV,
+)
 from capafy_platform import runtime_context
 from capafy_platform.token_store import load_persisted_access_token
 
-PLATFORM_BASE_URL_ENV = "CAPAFY_PLATFORM_BASE_URL"
 PLATFORM_ACCESS_TOKEN_ENV = "CAPAFY_ACCESS_TOKEN"
 EXPLICIT_AUTH_HEADER_KEYS = {"authorization", "x-access-token"}
 SKILL_VERSION_STATUS_HEADER = "X-Skill-Version-Status"
@@ -26,10 +29,6 @@ REQUEST_ID_HEADER_NAMES = (
     "x-correlation-id",
     "request-id",
 )
-
-
-def platform_context_headers() -> dict[str, str]:
-    return runtime_context.platform_context_headers()
 
 
 def _maybe_inject_platform_context_headers(
@@ -361,6 +360,7 @@ def _request_platform_json(
     require_auth: bool = False,
     unauthorized_message: Optional[str] = None,
     allow_raw_dict_without_code: bool = False,
+    max_attempts: int = 3,
 ) -> dict:
     headers = None
     if require_auth:
@@ -374,6 +374,7 @@ def _request_platform_json(
         url,
         json_body=payload,
         headers=headers,
+        max_attempts=max_attempts,
         **request_kwargs,
     )
     if status == 0:
@@ -397,6 +398,7 @@ def post_platform_json(
     access_token: Optional[str] = None,
     require_auth: bool = False,
     unauthorized_message: Optional[str] = None,
+    max_attempts: int = 3,
 ) -> dict:
     return _request_platform_json(
         "POST",
@@ -406,6 +408,7 @@ def post_platform_json(
         access_token=access_token,
         require_auth=require_auth,
         unauthorized_message=unauthorized_message,
+        max_attempts=max_attempts,
     )
 
 
@@ -417,6 +420,7 @@ def get_platform_json(
     require_auth: bool = False,
     unauthorized_message: Optional[str] = None,
     allow_raw_dict_without_code: bool = False,
+    max_attempts: int = 3,
 ) -> dict:
     return _request_platform_json(
         "GET",
@@ -426,6 +430,7 @@ def get_platform_json(
         require_auth=require_auth,
         unauthorized_message=unauthorized_message,
         allow_raw_dict_without_code=allow_raw_dict_without_code,
+        max_attempts=max_attempts,
     )
 
 

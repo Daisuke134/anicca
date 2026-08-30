@@ -1,18 +1,19 @@
 #!/usr/bin/env bash
 # publish_prepare.sh — DETERMINISTIC first half of a Capafy publish.
-#   lint -> clean-WS copy -> publish-init -> build edit URL -> print target pricing.
+#   lint -> clean-WS copy -> publish-init Phase A -> confirmed publish-init ->
+#   persist exact edit URL file -> print target pricing.
 # After this, the AGENT drives CP1 (Agent-Card save) AGENTICALLY via cp1_agent.py
 # (look at screenshots, fix the pricing plan cards, save) until the server shows
-# isConfirmedSkills=1 — see CP1_AGENTIC.md. Then run publish_finish.sh <agent-id>.
+# is_confirmed_skills=true — see CP1_AGENTIC.md. Then run publish_finish.sh <agent-id>.
 #
 # WHY split: the old monolithic drive_cp1.py hardcoded DOM coordinates/positions and
 # silently broke when Capafy changed the pricing widget (plan cards re-sort on period
 # change -> positional price/cap writes get scrambled -> price tab red -> card never
-# saves -> isConfirmedSkills=0 -> loop STOP). Per "build agents, don't hardcode", the
+# saves -> is_confirmed_skills=false -> loop STOP). Per "build agents, don't hardcode", the
 # card-save step is now agent-driven, not a brittle script.
 #
 # Usage: publish_prepare.sh <skill-dir> <LISTING.md> <icon.png> [draft-agent-id]
-# Prints (machine-greppable):  AGENT_ID=<id>  EDIT_URL=<url>  then the target pricing.
+# Prints (machine-greppable):  AGENT_ID=<id>  EDIT_URL_FILE=<path>  then the target pricing.
 set -euo pipefail
 
 SKILL_DIR="${1:?skill-dir required}"
@@ -38,7 +39,6 @@ CAPAFY_PUBLISH_HOME="${CAPAFY_PUBLISH_HOME:-$LIFE_MANAGER_STATE_HOME/runtime/cap
 CAPAFY_PUBLISHER_STATE_HOME="${CAPAFY_PUBLISHER_STATE_HOME:-$LIFE_MANAGER_STATE_HOME/runtime/capafy-publisher}"
 WS="${CAPAFY_WORKSPACE:-$CAPAFY_PUBLISH_HOME/.openclaw/workspace}"
 SKILL_NAME="$(basename "$SKILL_DIR")"
-SEL_FILE="$LIFE_MANAGER_STATE_HOME/state/capafy-autopublish/sel_one.json"
 
 # launchd and direct recovery runs must use the same private credential SSOT.
 # Load names into the process only; never copy values into the repo or output.
@@ -88,46 +88,25 @@ json.dump({
 }, open(sys.argv[1], "w"), ensure_ascii=False, indent=2)
 PY
 
-step "[1] publish-init"
+step "[1] publish-init Phase A discovery"
 export HOME="$CAPAFY_PUBLISH_HOME"
 export CAPAFY_PUBLISHER_STATE_HOME
 cd "$PUB" || die "cd PUB"
 TITLE="$(grep -A1 '^## Title' "$LISTING" | tail -1)"
-# write selections via python (heredoc redirects can be blocked by the sandbox)
-mkdir -p "$(dirname "$SEL_FILE")"
-"$VENV" - "$TITLE" "$SKILL_NAME" "$SEL_FILE" <<'PY'
-import json,sys,os
-title,sn,out=sys.argv[1],sys.argv[2],sys.argv[3]
-json.dump({"title":title,"description":title,
-  "skills":[{"path":f".openclaw/skills/{sn}","name":sn,"purpose":sn}],
-  "plugins":[],"crons":[]}, open(out,"w"), ensure_ascii=False)
-PY
 # RESUME GUARD: every failed run used to publish-init a NEW draft, so failures piled
 # up orphan drafts that eat the 5-slot cap until the loop hard-blocks. Reuse an
 # EXACT-title agent that already exists (the "(LM generated…)" auto-stub has a suffix
-# so it is NOT matched). draft -> resume its CP1; under_review/online -> already done.
-ID="$(python3 packager.py publish-list 2>/dev/null | TITLE="$TITLE" REUSE_AGENT_ID="$REUSE_AGENT_ID" python3 -c "
-import json,os,sys
-want=os.environ['TITLE'].strip()
-reuse=os.environ.get('REUSE_AGENT_ID','').strip()
-try: lst=json.loads(sys.stdin.read(),strict=False)['agents']['list']
-except Exception: sys.exit(0)
-if reuse:
-  rows=[a for a in lst if str(a.get('agentId') or '')==reuse]
-  # A rejected version must be retried in place: publish-init creates its next
-  # version and writes a work-state bound to this same agent.  Do not fall back to
-  # creating an unrelated agent merely because the prior version was rejected.
-  if len(rows)!=1 or rows[0].get('agentStatus') not in {'draft','review_rejected'}: sys.exit(2)
-  print(reuse); sys.exit(0)
-rank={'online':3,'approved':3,'under_review':2,'draft':1}; best=None
-for a in lst:
-  if (a.get('name') or '').strip()==want:
-    r=rank.get(a.get('agentStatus'),0)
-    if not best or r>best[0]: best=(r,a.get('agentId'),a.get('agentStatus'))
-if best: print(best[1])
-")"
+# so it is NOT matched). The selector consumes only the official 0.9.11 snake_case
+# top-level agents array and fails closed on duplicate/invalid rows.
+LIST_OUT="$(python3 packager.py publish-list 2>/dev/null)" \
+  || die "publish-list failed; cannot select an Agent safely"
+SELECTOR_ARGS=(--title "$TITLE")
+[ -z "$REUSE_AGENT_ID" ] || SELECTOR_ARGS+=(--reuse-agent-id "$REUSE_AGENT_ID")
+if ! ID="$(printf '%s' "$LIST_OUT" | python3 "$AUTO/scripts/select_publish_agent.py" "${SELECTOR_ARGS[@]}")"; then
+  die "publish-list Agent selection failed closed (duplicate or invalid official shape)"
+fi
 if [ -n "$REUSE_AGENT_ID" ] && [ "$ID" != "$REUSE_AGENT_ID" ]; then
-  die "explicit reuse target is missing or is not a draft: $REUSE_AGENT_ID"
+  die "explicit reuse target is missing or is not draft/review_rejected: $REUSE_AGENT_ID"
 fi
 if [ -n "$ID" ]; then
   if [ -n "$REUSE_AGENT_ID" ]; then
@@ -142,29 +121,55 @@ if [ -n "$ID" ]; then
   export CAPAFY_PUBLISH_WORK_DIR="$CAPAFY_PUBLISHER_STATE_HOME/work/agents/$ID"
   # BUG FIX 2026-07-17: this branch used to skip publish-init entirely, leaving the
   # LOCAL publish work-state manifest pointed at whatever
-  # agent_id a PRIOR run last touched. publish-ship then failed closed with
-  # "agent_id does not match local publish work-state" — but publish_finish.sh's ship
-  # fallback (now also fixed) treated that failure as benign and resubmitted STALE
+  # agent_id a PRIOR run last touched. the final submit then failed closed with
+  # "agent_id does not match local publish work-state" — but the old finish
+  # fallback treated that failure as benign and resubmitted STALE
   # content unchanged. Rebind local state to THIS agent_id now. If the agent is
   # A previous agent's manifest is deliberately discarded here: publish-init is the
   # boundary that creates this retry's new version and its matching local manifest.
-  # Never suppress an init failure.  Doing so used to let publish_finish reach ship
+  # Never suppress an init failure. Doing so used to let publish_finish reach submit
   # with a different agent's work-state and fail only after CP1/CP2 work had run.
+  DISCOVERY_OUT="$(python3 packager.py publish-init --env openclaw --runtime-dir "$WS" --skill-dir "$WS/skills/$SKILL_NAME" --agent-id "$ID" 2>&1)" \
+    || die "Phase A publish-init discovery failed for selected agent_id=$ID"
+  DISCOVERY_STATUS="$(printf '%s' "$DISCOVERY_OUT" | python3 -c "import json,sys
+try: print(str(json.loads(sys.stdin.read(),strict=False).get('status','')).strip())
+except Exception: print('')")"
+  [ "$DISCOVERY_STATUS" = "needs_selection" ] \
+    || die "Phase A publish-init did not return needs_selection for agent_id=$ID"
+  echo "Phase A discovery complete for agent_id=$ID"
+  SEL_FILE="$LIFE_MANAGER_STATE_HOME/state/capafy-autopublish/sel_one.json"
+  SELECTION_RESULT="$(printf '%s' "$DISCOVERY_OUT" | python3 "$AUTO/scripts/build_publish_selection.py" --skill-dir "$WS/skills/$SKILL_NAME" --title "$TITLE" --agent-id "$ID" --output "$SEL_FILE")" \
+    || die "Phase A candidate did not map uniquely to the explicit skill; no init effect attempted"
+  SELECTION_FILE="$(printf '%s' "$SELECTION_RESULT" | sed -n 's/^SELECTION_FILE=//p' | tail -1)"
+  [ "$SELECTION_FILE" = "$SEL_FILE" ] || die "Phase A selection file path was not returned as expected"
   REBIND_OUT="$(python3 packager.py publish-init --reset-local-state --env openclaw --runtime-dir "$WS" --skill-dir "$WS/skills/$SKILL_NAME" --agent-id "$ID" --selections-file "$SEL_FILE" 2>&1)" \
-    || die "could not rebind local publish work-state to selected agent_id=$ID: $REBIND_OUT"
+    || die "could not rebind local publish work-state to selected agent_id=$ID"
   REBOUND_ID="$(printf '%s' "$REBIND_OUT" | python3 -c "import json,sys
 try: print(str(json.loads(sys.stdin.read(),strict=False).get('agent_id','')).strip())
 except Exception: print('')")"
   [ "$REBOUND_ID" = "$ID" ] \
-    || die "publish-init rebound unexpected agent_id=$REBOUND_ID (selected $ID): $REBIND_OUT"
+    || die "publish-init rebound unexpected agent_id=$REBOUND_ID (selected $ID)"
   echo "local publish work-state rebound and verified for agent_id=$ID"
 else
   BOOTSTRAP_ROOT="$CAPAFY_PUBLISHER_STATE_HOME/work/bootstrap"
   mkdir -p "$BOOTSTRAP_ROOT"
   BOOTSTRAP_WORK_DIR="$(mktemp -d "$BOOTSTRAP_ROOT/capafy.XXXXXX")"
   export CAPAFY_PUBLISH_WORK_DIR="$BOOTSTRAP_WORK_DIR"
+  DISCOVERY_OUT="$(python3 packager.py publish-init --env openclaw --runtime-dir "$WS" --skill-dir "$WS/skills/$SKILL_NAME" 2>&1)" \
+    || die "Phase A publish-init discovery failed for new agent"
+  DISCOVERY_STATUS="$(printf '%s' "$DISCOVERY_OUT" | python3 -c "import json,sys
+try: print(str(json.loads(sys.stdin.read(),strict=False).get('status','')).strip())
+except Exception: print('')")"
+  [ "$DISCOVERY_STATUS" = "needs_selection" ] \
+    || die "Phase A publish-init did not return needs_selection for new agent"
+  echo "Phase A discovery complete for new agent"
+  SEL_FILE="$LIFE_MANAGER_STATE_HOME/state/capafy-autopublish/sel_one.json"
+  SELECTION_RESULT="$(printf '%s' "$DISCOVERY_OUT" | python3 "$AUTO/scripts/build_publish_selection.py" --skill-dir "$WS/skills/$SKILL_NAME" --title "$TITLE" --output "$SEL_FILE")" \
+    || die "Phase A candidate did not map uniquely to the explicit skill; no init effect attempted"
+  SELECTION_FILE="$(printf '%s' "$SELECTION_RESULT" | sed -n 's/^SELECTION_FILE=//p' | tail -1)"
+  [ "$SELECTION_FILE" = "$SEL_FILE" ] || die "Phase A selection file path was not returned as expected"
   INIT_OUT="$(python3 packager.py publish-init --env openclaw --runtime-dir "$WS" --skill-dir "$WS/skills/$SKILL_NAME" --selections-file "$SEL_FILE" 2>&1)" \
-    || die "publish-init failed: $INIT_OUT"
+    || die "publish-init failed for new agent"
   ID="$(printf '%s' "$INIT_OUT" | python3 -c "import json,sys
 try: print(json.loads(sys.stdin.read()).get('agent_id',''))
 except: print('')")"
@@ -177,16 +182,21 @@ except: print('')")"
   export CAPAFY_PUBLISH_WORK_DIR="$AGENT_WORK_DIR"
 fi
 
-RAW="$(python3 packager.py publish-refresh-url --agent-id "$ID" --step init 2>/dev/null)"
-TOK="$(echo "$RAW" | python3 -c "import json,sys;print(json.load(sys.stdin).get('review_url',''))" | grep -oE '[0-9]{15,}' | head -1)"
-EDIT="https://capafy.ai/developer/createAgent?source=temp-link&token=${TOK}&page=edit"
+REFRESH_RC=0
+RAW="$(python3 packager.py publish-refresh-url --agent-id "$ID" --step init 2>/dev/null)" || REFRESH_RC=$?
+[ "$REFRESH_RC" -eq 0 ] || die "publish-refresh-url failed; no edit URL was stored"
+EDIT_URL_PATH="$CAPAFY_PUBLISHER_STATE_HOME/review-urls/$ID/init.url"
+EDIT_URL_RESULT="$(printf '%s' "$RAW" | python3 "$AUTO/scripts/save_review_url.py" --agent-id "$ID" --output "$EDIT_URL_PATH")" \
+  || die "publish-refresh-url response failed strict Agent-ID/URL validation"
+EDIT_URL_FILE="$(printf '%s' "$EDIT_URL_RESULT" | sed -n 's/^EDIT_URL_FILE=//p' | tail -1)"
+[ "$EDIT_URL_FILE" = "$EDIT_URL_PATH" ] || die "review URL file path was not returned as expected"
 CFG_ONE="$CAPAFY_PUBLISHER_STATE_HOME/cfg_one.json"
 mkdir -p "$CAPAFY_PUBLISHER_STATE_HOME"
-python3 "$AUTO/scripts/build_config.py" "$LISTING" "$ICON" "$EDIT" "$CFG_ONE" >/dev/null 2>&1 || die "build_config failed"
+python3 "$AUTO/scripts/build_config.py" "$LISTING" "$ICON" "$CFG_ONE" >/dev/null 2>&1 || die "build_config failed"
 
 step "PREPARE DONE — hand off to agentic CP1"
 echo "AGENT_ID=$ID"
-echo "EDIT_URL=$EDIT"
+echo "EDIT_URL_FILE=$EDIT_URL_FILE"
 echo "CONFIG_PATH=$CFG_ONE"
 echo ""
 echo "TARGET PRICING (drive each plan card to these EXACT values on the 価格設定 tab):"

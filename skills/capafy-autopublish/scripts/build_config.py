@@ -1,24 +1,33 @@
 #!/usr/bin/env python3
 """
-build_config.py — parse a LISTING.md (+ icon + edit_url) into the JSON config that
-drive_cp1.py consumes. Reads everything from the LISTING so publish_one.sh stays generic.
+build_config.py — parse a LISTING.md (+ icon) into the JSON config that
+cp1_agent.py consumes. Reads everything from the LISTING so the browser URL remains
+in its separate protected file.
 
-Usage: build_config.py <LISTING.md> <icon_path> <edit_url> [out.json]
+Usage: build_config.py <LISTING.md> <icon_path> [out.json]
 LISTING.md must contain:
   header line with "Primary Model: <model>" and "category: <cat> ... tags: a, b, c"
   a pricing table:  | cycle | price | cap | trial |  rows (trial = "No Free Trial" only)
   ## Title / ## shortDescription / ## welcomeMessage / ## detailedDescription
 test_input is extracted from the welcomeMessage "Example:" line.
 """
-import json, re, sys
+import json
+import os
+import re
+import sys
+import tempfile
+from pathlib import Path
 
 
 NO_FREE_TRIAL = re.compile(r"no[\s_-]+free[\s_-]+trial", re.I)
 
 
 def main():
-    listing, icon, edit_url = sys.argv[1], sys.argv[2], sys.argv[3]
-    out = sys.argv[4] if len(sys.argv) > 4 else None
+    if len(sys.argv) not in (3, 4):
+        print(__doc__.split("LISTING.md must contain:", 1)[0].strip(), file=sys.stderr)
+        return 2
+    listing, icon = sys.argv[1], sys.argv[2]
+    out = sys.argv[3] if len(sys.argv) > 3 else None
     L = open(listing, encoding="utf-8").read()
 
     title = re.search(r"## Title\n(.+)", L).group(1).strip()
@@ -52,7 +61,7 @@ def main():
     test_input = ex.group(1).strip() if ex else "test input"
 
     cfg = {
-        "edit_url": edit_url, "title": title, "short": short, "welcome": welcome,
+        "title": title, "short": short, "welcome": welcome,
         "detailed": detailed, "privacy_url": "https://aniccaai.com/privacy",
         "support_email": "contact@aniccaai.com", "tags": tags, "category": category,
         "icon": icon, "model": model, "provider": "openrouter.ai",
@@ -60,11 +69,34 @@ def main():
     }
     js = json.dumps(cfg, ensure_ascii=False)
     if out:
-        open(out, "w", encoding="utf-8").write(js)
+        output = Path(out).expanduser()
+        output.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+        os.chmod(output.parent, 0o700)
+        fd, temp_name = tempfile.mkstemp(prefix=f".{output.name}.", dir=output.parent)
+        temp_path = Path(temp_name)
+        try:
+            os.fchmod(fd, 0o600)
+            with os.fdopen(fd, "w", encoding="utf-8") as handle:
+                handle.write(js)
+                handle.flush()
+                os.fsync(handle.fileno())
+            os.replace(temp_path, output)
+            os.chmod(output, 0o600)
+            dir_fd = os.open(output.parent, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
+            try:
+                os.fsync(dir_fd)
+            finally:
+                os.close(dir_fd)
+        except BaseException:
+            try:
+                temp_path.unlink()
+            except FileNotFoundError:
+                pass
+            raise
         print(f"config → {out} | title={len(title)} short={len(short)} plans={len(plans)} cat={category} model={model}")
     else:
         print(js)
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

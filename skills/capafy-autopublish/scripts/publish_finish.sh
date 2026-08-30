@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # publish_finish.sh — DETERMINISTIC second half of a Capafy publish, run AFTER the
-# agent has driven CP1 (Agent-Card save) to isConfirmedSkills=1.
-#   verify-CP1 -> configure -> CP2(key host) -> ship -> CP3(submit) -> verify -> ledger
-# Fail-closed: refuses to start unless isConfirmedSkills=1; exits 0 only if the final
-# remote-status is status=1 (under review) AND isConfirmedConfigKeys=1.
+# agent has driven CP1 (Agent-Card save) to is_confirmed_skills=true.
+#   verify-CP1 -> prepare -> continue_upload -> CP2(key host) -> CP3(submit) ->
+#   verify -> ledger
+# Fail-closed: refuses to start unless is_confirmed_skills=true; exits 0 only if the final
+# remote-status is platform_status=1 (under review) AND is_confirmed_config_keys=true.
 #
 # Usage: publish_finish.sh <agent-id> <skill-name> [LISTING.md]
 set -euo pipefail
@@ -19,12 +20,12 @@ CAPAFY_PUBLISH_HOME="${CAPAFY_PUBLISH_HOME:-$LIFE_MANAGER_STATE_HOME/runtime/cap
 CAPAFY_PUBLISHER_STATE_HOME="${CAPAFY_PUBLISHER_STATE_HOME:-$LIFE_MANAGER_STATE_HOME/runtime/capafy-publisher}"
 VENV="${CAPAFY_BROWSER_PYTHON:-python3}"
 
-# Keep configure/ship bound to the selected agent even when a previous retry
+# Keep package state bound to the selected agent even when a previous retry
 # left a recoverable manifest behind.  The publisher reads this before parsing
 # its command, so it must be exported before the first Python invocation.
 # The selected remote agent is the isolation boundary.  Do not preserve an
 # inherited work directory: a launcher can carry one over from a different
-# candidate, making configure/ship silently operate on that other manifest.
+# candidate, making submission silently operate on that other manifest.
 export CAPAFY_PUBLISH_WORK_DIR="$CAPAFY_PUBLISHER_STATE_HOME/work/agents/$ID"
 
 # Direct recovery and launchd must resolve credentials from the same repo-external
@@ -42,17 +43,23 @@ cd "$PUB" || { echo "❌ cd PUB"; exit 1; }
 step(){ echo ""; echo "━━━ $* ━━━"; }
 die(){ echo "❌ $*"; exit 1; }
 
-# 2026-07-18 A1: fail-closed key-health gate. A submit/resubmit into an under-funded
-# OpenRouter account is what triggered the "billing error" review rejections. Refuse to
-# proceed unless the host key has balance AND a live sonnet-4.6 probe returns 200.
-"$AUTO/scripts/key_health_gate.sh" 2.00 || die "KEY-HEALTH gate FAIL — top up OpenRouter (>= \$2 remaining) before (re)submitting; see state/lessons.md"
 # strict=False: remote-status JSON embeds raw newlines in the description field
 # ("Invalid control character" would otherwise crash json.load -> empty gate -> false die).
-rstat(){ python3 packager.py publish-remote-status --agent-id "$ID" 2>/dev/null | python3 -c "import json,sys
-try: print(json.loads(sys.stdin.read(),strict=False).get('latest_version',{}).get('$1'))
+rstat(){ local field="$1"; python3 packager.py publish-remote-status --agent-id "$ID" 2>/dev/null | python3 -c "import json,sys
+try:
+ value=json.loads(sys.stdin.read(),strict=False).get('latest_version',{}).get('$field')
+ if isinstance(value,bool): print('1' if value else '0')
+ elif value is None: print('')
+ else: print(str(value))
 except Exception: print('')"; }
-refresh(){ python3 packager.py publish-refresh-url --agent-id "$ID" --step "$1" 2>/dev/null | python3 -c "import json,sys
-try: print(json.loads(sys.stdin.read(),strict=False).get('review_url',''))
+refresh(){ python3 packager.py publish-refresh-url --agent-id "$ID" --step "$1" 2>/dev/null | EXPECTED_AGENT_ID="$ID" python3 -c "import json,os,sys
+try:
+ payload=json.loads(sys.stdin.read(),strict=False)
+ if str(payload.get('agent_id','') or '').strip() != os.environ.get('EXPECTED_AGENT_ID',''):
+  raise ValueError('agent_id mismatch')
+ url=str(payload.get('review_url','') or '').strip()
+ if not url: raise ValueError('missing review_url')
+ print(url)
 except Exception: print('')"; }
 # poll a remote-status field until it reaches <want> (server is eventually-consistent:
 # a browser save lands a few seconds AFTER the toast/URL flips, so a ONE-SHOT read of a
@@ -61,87 +68,185 @@ poll(){ local field="$1" want="$2" tries="${3:-15}" slp="${4:-5}" i v
   for ((i=0;i<tries;i++)); do v="$(rstat "$field")"; [ "$v" = "$want" ] && { echo "$field=$v (${i}x)"; return 0; }; sleep "$slp"; done
   echo "$field=$v (want $want, gave up ${tries}x${slp}s)"; return 1; }
 
-step "[2b] verify CP1 (fail-closed, polled)"
-# Short poll (not one-shot): the agentic CP1 save may still be registering server-side.
-poll isConfirmedSkills 1 6 5 || die "CP1 not confirmed (isConfirmedSkills!=1) — drive CP1 agentically first (CP1_AGENTIC.md)"
-echo "isConfirmedSkills=1 ✓"
+INITIAL_PLATFORM_STATUS="$(rstat platform_status)"
+case "$INITIAL_PLATFORM_STATUS" in
+  0)
+    # 2026-07-18 A1: fail-closed key-health gate. A submit into an under-funded
+    # OpenRouter account triggered billing-error review rejections.
+    "$AUTO/scripts/key_health_gate.sh" 2.00 || die "KEY-HEALTH gate FAIL — top up OpenRouter (>= \$2 remaining) before submitting; see state/lessons.md"
+    ;;
+  1)
+    [ "$(rstat is_confirmed_skills)" = "1" ] || die "platform_status=1 but is_confirmed_skills is not confirmed; verify only"
+    [ "$(rstat is_confirmed_config_keys)" = "1" ] || die "platform_status=1 but is_confirmed_config_keys is not confirmed; verify only"
+    [ "$(rstat package_uploaded)" = "1" ] || die "platform_status=1 but package_uploaded is not true; verify only"
+    echo "platform_status=1 with skills/config confirmed ✓ — idempotent verify/skip"
+    ;;
+  2)
+    die "platform_status=2 review_rejected — rerun publish_prepare/publish-init for a new version under the same Agent ID; no submit retry"
+    ;;
+  *)
+    die "unsupported or unreadable initial platform_status=${INITIAL_PLATFORM_STATUS:-empty}; no external effect"
+    ;;
+esac
 
-# configure + CP2 are idempotent-skippable: if the key is already hosted (cfg=1),
-# re-running drive_checkpoint2 risks dirtying a good card — skip straight through.
-if [ "$(rstat isConfirmedConfigKeys)" = "1" ]; then
-  echo "isConfirmedConfigKeys=1 already ✓ — skip configure+CP2"
-else
-  step "[3] configure (deep-scan, empty findings)"
-  if [ -e "$CAPAFY_PUBLISH_WORK_DIR/staging" ]; then
-    chmod -R u+w "$CAPAFY_PUBLISH_WORK_DIR/staging" 2>/dev/null || true
-    rm -rf "$CAPAFY_PUBLISH_WORK_DIR/staging" 2>/dev/null \
-      || die "could not remove prior staging: $CAPAFY_PUBLISH_WORK_DIR/staging"
+if [ "$INITIAL_PLATFORM_STATUS" = "0" ]; then
+  step "[2b] verify CP1 (fail-closed, polled)"
+  # Short poll (not one-shot): the agentic CP1 save may still be registering server-side.
+  poll is_confirmed_skills 1 6 5 || die "CP1 not confirmed (is_confirmed_skills!=1) — drive CP1 agentically first (CP1_AGENTIC.md)"
+  echo "is_confirmed_skills=1 ✓"
+
+  PUBLISH_REVIEW_URL=""
+
+# prepare/upload + CP2 are idempotent-skippable only after both the config and
+# package-upload readbacks are true. If upload is needed, continue_upload is
+# intentionally invoked exactly once: a timeout or persistence error is never an
+  # automatic upload retry.
+  CONFIG_STATE="$(rstat is_confirmed_config_keys)"
+  case "$CONFIG_STATE" in
+    0|1) ;;
+    *) die "is_confirmed_config_keys readback is missing or unknown; no external effect" ;;
+  esac
+  if [ "$CONFIG_STATE" = "1" ]; then
+    [ "$(rstat package_uploaded)" = "1" ] || die "is_confirmed_config_keys=1 but package_uploaded is not true; no upload retry"
+    echo "is_confirmed_config_keys=1 and package_uploaded=1 already ✓ — skip prepare/upload+CP2"
+  else
+    case "$(rstat package_uploaded)" in
+      0)
+        step "[3] publish-submit prepare"
+        if [ -e "$CAPAFY_PUBLISH_WORK_DIR/staging" ]; then
+          chmod -R u+w "$CAPAFY_PUBLISH_WORK_DIR/staging" 2>/dev/null || true
+          rm -rf "$CAPAFY_PUBLISH_WORK_DIR/staging" 2>/dev/null \
+            || die "could not remove prior staging: $CAPAFY_PUBLISH_WORK_DIR/staging"
+        fi
+        PREPARE_RC=0
+        PREPARE_OUT="$(python3 packager.py publish-submit --agent-id "$ID" --action prepare 2>&1)" || PREPARE_RC=$?
+        [ "$PREPARE_RC" -eq 0 ] || die "publish-submit prepare failed (rc=$PREPARE_RC)"
+        PREPARE_VALID="$(printf '%s' "$PREPARE_OUT" | python3 -c "import json,sys
+try:
+ p=json.loads(sys.stdin.read(),strict=False)
+ print('true' if isinstance(p,dict) else 'false')
+except Exception:
+ print('false')")"
+        PREPARE_AGENT_ID="$(printf '%s' "$PREPARE_OUT" | python3 -c "import json,sys
+try: print(str(json.loads(sys.stdin.read(),strict=False).get('agent_id','') or '').strip())
+except Exception: print('')")"
+        PREPARE_STATUS="$(printf '%s' "$PREPARE_OUT" | python3 -c "import json,sys
+try: print(str(json.loads(sys.stdin.read(),strict=False).get('status','') or '').strip())
+except Exception: print('')")"
+        [ "$PREPARE_VALID" = "true" ] && [ "$PREPARE_AGENT_ID" = "$ID" ] \
+          && [ "$PREPARE_STATUS" = "security_ready" ] \
+          || die "publish-submit prepare response is not security_ready; no upload attempted"
+        PREPARE_SECURITY_READY="$(printf '%s' "$PREPARE_OUT" | python3 -c "import json,sys
+try: print('true' if json.loads(sys.stdin.read(),strict=False).get('security_ready') is True else 'false')
+except Exception: print('false')")"
+        [ "$PREPARE_SECURITY_READY" = "true" ] \
+          || die "publish-submit prepare did not confirm security_ready; no upload attempted"
+        echo "security preparation complete"
+
+        step "[4] publish-submit continue_upload (exactly once)"
+        CONTINUE_RC=0
+        CONTINUE_OUT="$(python3 packager.py publish-submit --agent-id "$ID" --action continue_upload 2>&1)" || CONTINUE_RC=$?
+        CONTINUE_VALID="$(printf '%s' "$CONTINUE_OUT" | python3 -c "import json,sys
+try:
+ p=json.loads(sys.stdin.read(),strict=False)
+ print('true' if isinstance(p,dict) else 'false')
+except Exception:
+ print('false')")"
+        CONTINUE_OK="$(printf '%s' "$CONTINUE_OUT" | python3 -c "import json,sys
+try: print('true' if json.loads(sys.stdin.read(),strict=False).get('ok') is True else 'false')
+except Exception: print('false')")"
+        CONTINUE_AGENT_ID="$(printf '%s' "$CONTINUE_OUT" | python3 -c "import json,sys
+try: print(str(json.loads(sys.stdin.read(),strict=False).get('agent_id','') or '').strip())
+except Exception: print('')")"
+        PUBLISH_REVIEW_URL="$(printf '%s' "$CONTINUE_OUT" | python3 -c "import json,sys
+try: print(str(json.loads(sys.stdin.read(),strict=False).get('review_url','') or '').strip())
+except Exception: print('')")"
+        CONTINUE_BLOCKING="$(printf '%s' "$CONTINUE_OUT" | python3 -c "import json,sys
+try: print(str(json.loads(sys.stdin.read(),strict=False).get('blocking_category','') or '').strip())
+except Exception: print('')")"
+        if [ "$CONTINUE_RC" -ne 0 ]; then
+          if [ "$CONTINUE_BLOCKING" = "persist_package_uploaded_state_failed" ] && [ -n "$PUBLISH_REVIEW_URL" ]; then
+            die "continue_upload returned a review_url but local package state persistence failed; upload may have occurred — do not retry continue_upload; open the review URL and check official status"
+          fi
+          die "continue_upload failed (rc=$CONTINUE_RC, blocking_category=${CONTINUE_BLOCKING:-unknown}); no automatic retry"
+        fi
+        [ "$CONTINUE_VALID" = "true" ] && [ "$CONTINUE_OK" = "true" ] \
+          || die "continue_upload returned an invalid/non-success JSON result; no automatic retry"
+        [ "$CONTINUE_AGENT_ID" = "$ID" ] || die "continue_upload returned agent_id=$CONTINUE_AGENT_ID, expected $ID; no automatic retry"
+        [ -n "$PUBLISH_REVIEW_URL" ] || die "continue_upload succeeded without review_url; no automatic retry"
+        echo "package uploaded and final review URL received for agent_id=$ID"
+        ;;
+      1)
+      PUBLISH_REVIEW_URL="$(refresh publish)"
+      [ -n "$PUBLISH_REVIEW_URL" ] || die "remote package is already uploaded but publish-refresh-url returned no review URL; upload is not retried"
+      echo "remote package already uploaded ✓ — skip prepare+continue_upload; use existing final review URL"
+        ;;
+      *)
+        die "package_uploaded readback is missing or unknown; no upload effect is allowed"
+        ;;
+      esac
   fi
-  python3 packager.py publish-configure --agent-id "$ID" --deep-scan >/dev/null 2>&1
-  DSF="$CAPAFY_PUBLISH_WORK_DIR/dsf.json"
-  mkdir -p "$CAPAFY_PUBLISH_WORK_DIR"
-  python3 - "$DSF" <<'PY'
-import json, sys
-json.dump({'generic': [], 'env_var': []}, open(sys.argv[1], 'w'))
-PY
-  python3 packager.py publish-configure --agent-id "$ID" --deep-scan-findings-file "$DSF" >/dev/null 2>&1
-  echo "configured"
 
-  step "[4] CP2 key host (drive_checkpoint2.py)"
-  export CAPAFY_HOST_OPENROUTER_KEY="${CAPAFY_HOST_OPENROUTER_KEY:-$(grep '^CAPAFY_HOST_OPENROUTER_KEY=' "$LIFE_MANAGER_STATE_HOME/.env" 2>/dev/null | cut -d= -f2-)}"
-  CP2="$(refresh configure)"
-  timeout 150 "$VENV" "$AUTO/scripts/drive_checkpoint2.py" "$CP2" 2>&1 | grep -vE "Deprecation|warnings.warn" | tail -4
-  # AUTHORITATIVE gate = server isConfirmedConfigKeys, POLLED. drive_checkpoint2 can
-  # exit just before the server registers the hosted key -> a one-shot read false-dies.
-  poll isConfirmedConfigKeys 1 12 5 || die "CP2 key host NOT confirmed (isConfirmedConfigKeys!=1) — drive CP2 agentically (PUBLISHING_RUNBOOK.md)"
-  echo "isConfirmedConfigKeys=1 ✓"
+  if [ "$CONFIG_STATE" = "0" ]; then
+    step "[5] CP2 key host (drive_checkpoint2.py, final review page)"
+    export CAPAFY_HOST_OPENROUTER_KEY="${CAPAFY_HOST_OPENROUTER_KEY:-$(grep '^CAPAFY_HOST_OPENROUTER_KEY=' "$LIFE_MANAGER_STATE_HOME/.env" 2>/dev/null | cut -d= -f2-)}"
+    CP2="$PUBLISH_REVIEW_URL"
+    timeout 150 "$VENV" "$AUTO/scripts/drive_checkpoint2.py" "$CP2" 2>&1 | grep -vE "Deprecation|warnings.warn" | tail -4
+    # AUTHORITATIVE gate = server is_confirmed_config_keys, POLLED. drive_checkpoint2 can
+    # exit just before the server registers the hosted key -> a one-shot read false-dies.
+    poll is_confirmed_config_keys 1 12 5 || die "CP2 key host NOT confirmed (is_confirmed_config_keys!=1) — drive CP2 agentically (PUBLISHING_RUNBOOK.md)"
+    echo "is_confirmed_config_keys=1 ✓"
+  fi
 fi
 
-# ship + CP3 are skipped if the agent is ALREADY submitted (status=1) — makes a
+# CP3 is skipped if the agent is ALREADY submitted (platform_status=1) — makes a
 # re-run idempotent (resume a half-done agent without double-submitting).
-if [ "$(rstat status)" = "1" ]; then
-  echo "status=1 already ✓ — already submitted, skip ship+CP3"
-else
-  step "[5] ship"
-  SHIP_OUT="$(python3 packager.py publish-ship --agent-id "$ID" 2>&1 || true)"
-  if echo "$SHIP_OUT" | grep -q '"ok": true\|shipped'; then echo "shipped"; else
-    # ONLY the specific "already uploaded for this local publish work-state" error is
-    # benign (idempotent re-run of a ship that already matched this agent_id). Any
-    # other error (e.g. "agent_id does not match local publish work-state") means the
-    # local work-state points at a DIFFERENT agent and this ship was a silent no-op —
-    # treating it as benign resubmits STALE content under a false "shipped" status
-    # (bit us 2026-07-17: resubmitted a rejected package unchanged). Fail closed.
-    if echo "$SHIP_OUT" | grep -q "already uploaded the package for this local publish work-state"; then
-      PKG="$(rstat packageUrl)"
-      [ -n "$PKG" ] && [ "$PKG" != "None" ] && echo "ship: package already present ($PKG)" || die "ship failed: $SHIP_OUT"
-    else
-      die "ship failed: $SHIP_OUT"
-    fi
+POST_CP2_STATUS="$(rstat platform_status)"
+case "$POST_CP2_STATUS" in
+1)
+  echo "platform_status=1 already ✓ — already submitted, skip CP3"
+  ;;
+0)
+  step "[6] CP3 submit (審査に提出, final review page) — exactly once"
+  if [ -z "$PUBLISH_REVIEW_URL" ]; then
+    PUBLISH_REVIEW_URL="$(refresh publish)"
   fi
-
-  step "[6] CP3 submit (審査に提出) — retry until server status=1"
-  for attempt in 1 2 3; do
-    [ "$(rstat status)" = "1" ] && break
-    echo "CP3 submit attempt $attempt"
-    CP3="$(refresh ship)"
-    VERSION_UPDATE_INFO="Updated the Agent package and workflow for this review submission."
-    CP3_OUT="$(timeout 30 "$VENV" "$AUTO/scripts/drive_checkpoint3.py" "$CP3" "$VERSION_UPDATE_INFO" 2>&1)" || {
-      printf '%s\n' "$CP3_OUT" | tail -3
-      die "CP3 raw submit failed"
-    }
-    printf '%s\n' "$CP3_OUT" | tail -3
-    poll status 1 6 5 && break
-  done
-fi
+  [ -n "$PUBLISH_REVIEW_URL" ] || die "publish-refresh-url --step publish returned no final review URL"
+  # Prefer a fresh final review URL after CP2. If refresh is unavailable, the
+  # exact URL returned by the one and only continue_upload is safe to reuse before
+  # the one CP3 attempt.
+  CP3="$(refresh publish)"
+  if [ -z "$CP3" ]; then
+    CP3="$PUBLISH_REVIEW_URL"
+    echo "publish-refresh-url unavailable; reusing the exact final review URL before CP3"
+  else
+    PUBLISH_REVIEW_URL="$CP3"
+  fi
+  echo "CP3 submit attempt 1"
+  VERSION_UPDATE_INFO="Updated the Agent package and workflow for this review submission."
+  CP3_OUT="$(timeout 30 "$VENV" "$AUTO/scripts/drive_checkpoint3.py" "$CP3" "$VERSION_UPDATE_INFO" 2>&1)" || {
+    die "CP3 raw submit failed; do not retry an uncertain external effect"
+  }
+  echo "CP3 driver completed; polling official status"
+  poll platform_status 1 6 5 || die "CP3 official platform_status did not reach 1; do not retry an uncertain external effect"
+  ;;
+*)
+  die "unsupported or unreadable post-CP2 platform_status=${POST_CP2_STATUS:-empty}; do not retry an uncertain external effect"
+  ;;
+esac
 
 step "[7] FINAL VERIFY (remote-status, polled)"
-poll status 1 6 5 >/dev/null || true
+poll platform_status 1 6 5 >/dev/null || true
 python3 packager.py publish-remote-status --agent-id "$ID" 2>/dev/null | python3 -c "
 import json,sys
 v=json.loads(sys.stdin.read(),strict=False).get('latest_version',{})
-st=v.get('status'); cfg=v.get('isConfirmedConfigKeys'); sk=v.get('isConfirmedSkills'); au=v.get('auditStatus')
-print(f'status={st} skills={sk} cfg={cfg} audit={au} title={str(v.get(\"title\"))[:42]}')
-sys.exit(0 if (st==1 and cfg==1) else 1)
+def number(value):
+    if isinstance(value,bool): return int(value)
+    try: return int(value)
+    except (TypeError,ValueError): return None
+st=number(v.get('platform_status')); cfg=number(v.get('is_confirmed_config_keys')); sk=number(v.get('is_confirmed_skills')); au=number(v.get('audit_status')); pkg=number(v.get('package_uploaded'))
+print(f'platform_status={st} skills={sk} cfg={cfg} package_uploaded={pkg} audit={au} title={str(v.get(\"title\"))[:42]}')
+sys.exit(0 if (st==1 and cfg==1 and sk==1 and pkg==1) else 1)
 " || die "FINAL VERIFY failed (status/cfg not 1) for agent $ID"
 
 step "[8] ledger"

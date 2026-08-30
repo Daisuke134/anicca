@@ -31,15 +31,33 @@ Capafy has two agent types:
 We publish **run_online subscription** skills that are sandbox-complete and copy a
 proven winner's pricing/structure verbatim.
 
-## The one command (verification-baked)
+## Canonical publish flow (verification-baked)
+Use the split, 0.9.11-compatible flow:
+
 ```
-scripts/publish_one.sh <skill-dir> <LISTING.md> <icon.png>
+scripts/publish_prepare.sh <skill-dir> <LISTING.md> <icon.png>
+→ `AGENT_ID` + `EDIT_URL_FILE` / CP1_AGENTIC.md + cp1_agent.py (agentic card confirmation)
+→ scripts/publish_finish.sh <agent-id> <skill-name> <LISTING.md>
 ```
-Runs: **[0] lint → [1] init → [2] CP1 → [3] configure → [4] CP2 → [5] ship →
-[6] CP3 → [7] remote verify → [8] ledger**. Fail-closed at every step (dies unless
-skills=1, CP2=VERIFIED, and final status=1 ∧ isConfirmedConfigKeys=1).
-After it prints ✅, **you still do the browser render check yourself** (HARD 0.31/0.38),
-then commit+push the ledger.
+
+The sequence is **Phase A discovery → confirmed selection/init → CP1 →
+ordinary `publish-submit --action prepare` → strict same-Agent `security_ready`
+readback → `publish-submit --action continue_upload` exactly once → final review
+page CP2 → the same or refreshed `publish` review page CP3 exactly once → official
+remote verify → ledger**. Fail closed at every step:
+the finish wrapper requires `is_confirmed_skills=true`, validates the same Agent ID and
+final review URL, polls CP2 config readback, and exits 0 only on
+`platform_status=1 ∧ is_confirmed_config_keys=true`.
+
+The deterministic wrapper never invents deep-scan findings or retries an uncertain
+upload; a creator-approved agentic deep scan is outside this wrapper and must
+complete before returning to ordinary prepare.
+
+`scripts/publish_one.sh` is a legacy unsupported/reference-only no-op shim. Do not
+invoke it; use the split flow above.
+The browser opens only the exact URL read from `EDIT_URL_FILE`; do not reconstruct or
+print it. After the split flow prints ✅, **you still do the browser render check yourself**
+(HARD 0.31/0.38), then commit+push the ledger.
 
 ## Verification policy (verification is mandatory — anything unverified is slop)
 1. **lint_listing.py** (embedded, every publish, fail-closed) — rejection-proof:
@@ -66,7 +84,9 @@ then commit+push the ledger.
 4. **Icon**: OpenAI image_generation (`CAPAFY_HOST_OPENAI_KEY`) → 512px PNG.
 5. **Lint**: `scripts/lint_listing.py <LISTING.md>` until PASS.
 6. **(risky only)** spawn VCSDD adversary → require PASS.
-7. **Publish**: `scripts/publish_one.sh <skill-dir> <LISTING.md> <icon>` → status=1.
+7. **Publish**: run `scripts/publish_prepare.sh <skill-dir> <LISTING.md> <icon>`,
+   complete CP1 from `CP1_AGENTIC.md`/`cp1_agent.py`, then run
+   `scripts/publish_finish.sh <agent-id> <skill-name> <LISTING.md>` → status=1.
 8. **Browser-verify** + record in `state/published.jsonl` + commit+push.
 
 ## Hard-won rules (full detail in PUBLISHING_RUNBOOK.md)
@@ -74,7 +94,7 @@ then commit+push the ledger.
 - **LEAK GUARD**: publish from clean WS `$LIFE_MANAGER_STATE_HOME/work/capafy` (skill only), never LIVE.
 - **LLM host (CP2)**: OpenRouter `anthropic/claude-sonnet-4.6`, format `openai-responses`,
   key `CAPAFY_HOST_OPENROUTER_KEY`; delete any blockrun/localhost card.
-- **CP1 15 gotchas** baked into `drive_cp1.py` (RHF element.fill, real mouse clicks,
+- **CP1 15 gotchas** baked into `cp1_agent.py` (RHF element.fill, real mouse clicks,
   unique title, 下書き persist, monetization heading-click, Subscription scroll, provider
   field, per-plan trial = No Free Trial, On-Demand, DPA checkbox, price-tab SVG green,
   get_by_text form-mount, anchored Add Plan). See RUNBOOK §"NEW-AGENT CP1".
@@ -85,8 +105,12 @@ then commit+push the ledger.
 ```
 capafy-autopublish/
 ├── SKILL.md (this) · BEST_PRACTICES.md · PUBLISHING_RUNBOOK.md
-├── scripts/ publish_one.sh · lint_listing.py · build_config.py · drive_cp1.py
-│            · drive_checkpoint2.py · niche_picker.py · logo_gen.js
+├── scripts/ publish_prepare.sh · publish_finish.sh · daily_loop.sh
+│            · select_publish_agent.py · build_publish_selection.py
+│            · save_review_url.py
+│            · lint_listing.py
+│            · build_config.py · cp1_agent.py
+│            · drive_checkpoint2.py · drive_checkpoint3.py · niche_picker.py · logo_gen.js
 ├── vendor/  capafy-publisher/ (packager.py = Capafy seller CLI, self-updating)
 │            capafy-user/      (capafy_http.py = market search CLI)
 └── state/   published.jsonl (ledger)

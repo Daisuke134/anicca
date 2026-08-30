@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # daily_loop.sh — fire a provider-agnostic tool agent to drain ONE inventory listing to Capafy.
 # Scheduled by launchd (com.anicca.capafy-daily). No human in the loop.
-# Verification: lint (deterministic) + agent sanity re-read + publish_one.sh fail-closed gates.
+# Verification: lint (deterministic) + agent sanity re-read + split prepare/CP1/finish
+# fail-closed gates, including official remote readback.
 set -uo pipefail
 
 AUTO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
