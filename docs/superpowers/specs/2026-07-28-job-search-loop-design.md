@@ -71,6 +71,18 @@ application proof remains open until a distinct Gmail confirmation increases the
 rolling count, Ledger is `submitted`, Telegram acknowledges it, and immediate replay
 adds zero.
 
+The same wake also proves the loaded runner still has the wrong effective timeout.
+The outer orchestrator requests 1,800 seconds, but `attempts.jsonl` records
+`timed_out=true` from `01:43:24` to `01:58:25`, `summary.json` has
+`status=failed` and no result path, launchd exits 1, and the fenced wake report sends
+`transient_timeout` as Telegram message ID `45093`. The source mismatch is exact:
+`apps/job-search-loop/agent-runner/config.json` sets `browser-lane-agent` to 1,800
+seconds, while the production runner copied from `runtime/agent-runner/config.json`
+still sets it to 900 seconds. The production config must use 1,800 seconds and a
+focused runner test must prove an explicit 1,800-second Job Hunter request is not
+clamped to 900. This does not change the 1,800-second launchd cadence or permit
+overlapping owner wakes.
+
 The application Ledger remains the state SSOT and `summary.v2` is rebuilt from its
 event stream on every wake. Every-wake and application-result Telegram delivery uses
 the direct fenced Bot API transport; OpenClaw is not in the daily reporting path.
