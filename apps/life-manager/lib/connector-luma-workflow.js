@@ -74,7 +74,8 @@ function exactEvent(input) {
 }
 
 function isFreeOpen(candidate) {
-  return candidate.event_status === "scheduled"
+  return candidate.attendance_mode === "in_person"
+    && candidate.event_status === "scheduled"
     && ["available", "approval_required"].includes(candidate.rsvp_status)
     && candidate.ticket_price_status === "free"
     && candidate.ticket_price_minor === 0;

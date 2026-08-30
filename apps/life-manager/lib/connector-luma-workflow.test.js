@@ -13,6 +13,7 @@ function event(slug, overrides = {}) {
     title: `Event ${slug}`,
     starts_at: "2026-08-10T10:00:00.000Z",
     ends_at: "2026-08-10T11:00:00.000Z",
+    attendance_mode: "in_person",
     event_status: "scheduled",
     rsvp_status: "available",
     ticket_price_status: "free",
@@ -155,6 +156,25 @@ test("Luma discovery returns the first free open non-conflicting candidates in p
     "luma-event://event/free-first",
     "luma-event://event/free-second",
   ]);
+});
+
+test("Luma discovery excludes online and hybrid events from automatic application", async () => {
+  const workflow = createLumaScriptFirstWorkflow({
+    now: () => new Date("2026-08-07T08:30:00.000Z"),
+    async discoverOnPage() {
+      return [
+        event("online", { attendance_mode: "online" }),
+        event("hybrid", { attendance_mode: "hybrid" }),
+        event("onsite"),
+      ];
+    },
+    async submitOnPage() { return { status: "registered" }; },
+    async readProviderStateOnPage() { return { status: "absent" }; },
+  });
+
+  const result = await workflow.discoverCandidates({ page: {}, calendar: [] });
+
+  assert.deepEqual(result.map((candidate) => candidate.event_ref), ["luma-event://event/onsite"]);
 });
 
 test("Luma default conflict filter consumes the minimal runner busy interval array", async () => {
