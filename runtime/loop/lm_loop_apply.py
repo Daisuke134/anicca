@@ -147,6 +147,9 @@ def _preserve_operational_attributes(new_bytes: bytes, old_bytes: bytes | None) 
 
 def _secure_log_paths(plist_bytes: bytes) -> None:
     plist = plistlib.loads(plist_bytes)
+    state_root = Path(plist["EnvironmentVariables"]["LIFE_MANAGER_STATE_ROOT"])
+    state_root.mkdir(parents=True, exist_ok=True, mode=0o700)
+    state_root.chmod(0o700)
     paths = {plist["StandardOutPath"], plist["StandardErrorPath"]}
     for raw_path in paths:
         path = Path(raw_path)
