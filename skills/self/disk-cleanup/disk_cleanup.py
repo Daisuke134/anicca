@@ -630,7 +630,9 @@ class HostDiskGovernor:
                 result["errors"] += state == "probe-error"
                 preserve(state)
                 continue
-            exact_cache = item.get("owner") in {"codex-runtime-cache", "whisper-model-cache"}
+            exact_cache = item.get("owner") in {
+                "browser", "codex-runtime-cache", "whisper-model-cache",
+            }
             descendant_state = None if exact_cache else self._protected_descendant(path, deadline=deadline)
             if descendant_state is not None:
                 result["errors"] += descendant_state == "descendant_probe_error"

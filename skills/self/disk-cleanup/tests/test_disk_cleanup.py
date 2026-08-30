@@ -441,6 +441,33 @@ def test_closed_exact_runtime_cache_with_source_named_dependency_is_reclaimed(tm
     assert result["reclaimed"] == 32
 
 
+def test_closed_browser_clone_with_source_named_dependency_is_reclaimed(
+    tmp_path: Path, monkeypatch
+) -> None:
+    temporary = tmp_path / "T"
+    temporary.mkdir()
+    clone = (
+        tmp_path / "X/com.google.Chrome.code_sign_clone/code_sign_clone.abc123"
+    )
+    clone.mkdir(parents=True)
+    (clone / "runtime.js").write_bytes(b"x" * 32)
+    monkeypatch.setattr(disk_cleanup.tempfile, "gettempdir", lambda: str(temporary))
+    governor = HostDiskGovernor(
+        home=tmp_path,
+        state_dir=tmp_path / "state",
+        lsof=lambda _path: "confirmed-closed",
+        usage=lambda: (0, 1),
+    )
+
+    candidates = [
+        item for item in governor.discover_candidates() if item["owner"] == "browser"
+    ]
+    result = governor.sweep(candidates)
+
+    assert not clone.exists()
+    assert result["reclaimed"] == 32
+
+
 def test_lsof_stderr_is_probe_error(monkeypatch) -> None:
     class Result:
         returncode = 1
