@@ -27,7 +27,7 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 この節は、後段の「現在TODO」「次の一件」「local-only」「self-funded agentは別product」という相反する記述を
 上書きする最新の実行順序SSOTである。後段は実装履歴・organ別acceptanceとして保持するが、次作業の選択には使わない。
 Upworkのterminal evidence、startup context、public claim、GA-01〜13Aは完了または履歴として保持する。
-次の一件はAtomic program ledger Seq 16 `ELZ-C03`のsubstep `C03-26`で、canonical domain schema receiptを最終PASSへ更新する。
+次の一件はAtomic program ledger Seq 16 `ELZ-C03`のsubstep `C03-27`で、ELZ-C03をDONEへ更新する。
 
 #### 0.0.1 最新基盤決定 — ElizaOSを完全forkし、Life Managerをlocal OSSからmulti-tenant SaaSへ育てる
 
@@ -609,7 +609,7 @@ Goal分解とgraph生成は後続C07のCodexへ残す。現在activeなC03だけ
 - [x] **C03-23** 同じPGliteをrestartして6 entity schemaを再読出しする — 完全な別Node process/PGlite clientでprivate data dirを再openし、6 domain tables・62 columns、2 immutable triggers、marker key、tracked plugin、schema hash `28315086…`をread-only取得。schema/migration reapply 0、DB write 0、external effect 0。private `pglite-restart-receipt.json` mode 0600、DB dir 0700。次はC03-24
 - [x] **C03-24** schema/migration/result hashを`domain-schema-receipt.json`へ保存する — fork commit `621e1b7b…`のschema/migration/tests/index/package/lock 7 file hash、reuse/schema GREEN/migration GREEN/PGlite apply/restart 5 receipt hash、6 tables、62 columns、schema hash、2 triggers、marker、apply count 1をprivate receiptへ固定。mode 0600、status `pending_review`、open findings nullでPASS未先取り。次はC03-25
 - [x] **C03-25** C03差分をadversarial reviewへ一回渡す — fresh Sol verifierはCritical 0/Important 1でid-only FKによるcross-tenant relationshipを反証。schema regression RED後、親6 scope unique、Goal.supersedes含む6 composite tenant FKへ修正しfork PR #15 merge `7acbf831…`。focused 3/3、PGlite 15 scope constraints、cross-tenant PlanGraph/Supersedes SQLSTATE `23503`、fixture rows 0、separate-process restart hash `ac501566…`を実証。同reviewer限定recheck `RESOLVED`、final Critical 0/Important 0/open 0。private review/fix receipts mode 0600。次はC03-26
-- [ ] **C03-26** C03 receiptをPASSへ更新する
+- [x] **C03-26** C03 receiptをPASSへ更新する — canonical private `domain-schema-receipt.json` mode 0600、SHA256 `99eea2ba…`。final fork `7acbf831…`、source 7/7 hash、evidence 7/7 hash、schema/migration tests 3/3、PGlite apply＋restart、6 tables/62 columns/15 scope constraints/2 immutable triggers、cross-tenant SQLSTATE `23503`、review Critical/Important/open 0、secret leak 0、duplicate external effect 0を固定。次はC03-27
 - [ ] **C03-27** ELZ-C03をDONEへ更新する
 - [ ] **C03-28** ELZ-C04をNEXTへ更新する
 
