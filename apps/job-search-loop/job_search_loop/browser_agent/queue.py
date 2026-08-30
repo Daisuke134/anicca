@@ -5,6 +5,7 @@ from collections.abc import Awaitable, Callable, Iterable
 from typing import Any
 
 from ..ats import detect_provider
+from ..ledger import WORKDAY_FIT_POLICY_VERSION
 from ..state import canonical_url
 from .contracts import QueueRowReceiptV1
 
@@ -53,7 +54,9 @@ class RowQueueSupervisor:
                 continue
             if (
                 detect_provider(identity) == "workday"
-                and not ledger.workday_fit_qualified(str(row["application_id"]))
+                and not ledger.workday_fit_qualified(
+                    str(row["application_id"]), WORKDAY_FIT_POLICY_VERSION
+                )
             ):
                 continue
             if identity in seen:

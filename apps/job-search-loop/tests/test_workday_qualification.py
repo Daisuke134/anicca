@@ -28,28 +28,30 @@ from job_search_loop.workday_search_loop import (
     validate_shortlist,
     unique_sources,
 )
-from job_search_loop.workday_qualification import qualify_one
+from job_search_loop.workday_qualification import POLICY_VERSION, qualify_one
 
 
 class WorkdayQualificationTests(unittest.TestCase):
     def test_shortlist_prompt_prioritizes_japan_feasibility_scope_then_compensation(self):
         prompt_source = inspect.getsource(workday_search_loop.main)
 
-        self.assertIn("Japan employment feasibility first", prompt_source)
-        self.assertIn("demonstrated current career scope second", prompt_source)
+        self.assertIn("adequate non-senior", prompt_source)
+        self.assertIn("Japan employment first", prompt_source)
+        self.assertIn("demonstrated adjacent current career scope second", prompt_source)
         self.assertIn("compensation ambition third", prompt_source)
-        japan = prompt_source.index("Japan employment feasibility first")
-        scope = prompt_source.index("demonstrated current career scope second")
+        japan = prompt_source.index("Japan employment first")
+        scope = prompt_source.index("demonstrated adjacent current career scope second")
         compensation = prompt_source.index("compensation ambition third")
 
         self.assertLess(japan, scope)
         self.assertLess(scope, compensation)
+        self.assertIn("one qualified row", prompt_source)
         self.assertIn(
-            "Do not consume the bounded shortlist with Principal, Lead, or Senior",
+            "Every adequate non-senior Japan role must rank before Senior, Lead, Principal",
             prompt_source,
         )
         self.assertIn(
-            "foreign-location work while closer Japan-feasible roles exist",
+            "non-senior Japan-feasible role exists",
             prompt_source,
         )
         self.assertIn(
@@ -394,9 +396,20 @@ class WorkdayQualificationTests(unittest.TestCase):
 
             self.assertEqual(
                 qualified_queue_ids(
-                    ledger_path, {"example.wd1.myworkdayjobs.com"}
+                    ledger_path,
+                    {"example.wd1.myworkdayjobs.com"},
+                    policy_version="test",
                 ),
                 (application_id,),
+            )
+
+            self.assertEqual(
+                qualified_queue_ids(
+                    ledger_path,
+                    {"example.wd1.myworkdayjobs.com"},
+                    policy_version="new-policy",
+                ),
+                (),
             )
 
     def test_duplicate_registry_source_is_fetched_once(self):
@@ -1140,6 +1153,38 @@ class WorkdayQualificationTests(unittest.TestCase):
             ledger = Ledger(ledger_path)
             self.assertEqual(result["decision"], "qualified")
             self.assertTrue(ledger.workday_fit_qualified(application_id))
+            ledger.close()
+
+    def test_old_qualified_is_re_evaluated_once_by_new_policy(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            ledger_path, application_id, memory = self._row(root)
+            ledger = Ledger(ledger_path)
+            ledger.record_workday_fit_decision(
+                application_id, "qualified", "a" * 64, policy_version="old-policy"
+            )
+            ledger.close()
+
+            result = qualify_one(
+                ledger_path=ledger_path,
+                candidate_memory_path=memory,
+                fetch_description=lambda _url: "Senior people-management role in Tokyo",
+                run_model=lambda _prompt: {
+                    "decision": "rejected",
+                    "mandatory_evidence": ["Japan employment is feasible"],
+                    "unsupported_gaps": ["Senior leadership scope is outside target"],
+                    "interview_thesis": "Continue to an adequate non-senior role",
+                    "location_feasibility": "Tokyo",
+                    "compensation_thesis": "Unpublished",
+                    "compensation_uncertain": True,
+                    "resume_variant": "business",
+                },
+            )
+
+            ledger = Ledger(ledger_path)
+            self.assertEqual(result["decision"], "rejected")
+            self.assertEqual(ledger.current_state(application_id), "rejected")
+            self.assertFalse(ledger.workday_fit_qualified(application_id))
             ledger.close()
 
     def test_old_hold_from_unavailable_source_does_not_block_search(self):

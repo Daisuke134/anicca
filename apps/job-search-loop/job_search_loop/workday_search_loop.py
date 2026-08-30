@@ -16,7 +16,7 @@ from .application_reporting import deliver_fit_decision
 from .ledger import Ledger
 from .state import canonical_url, is_excluded_employer, same_application_surface
 from .workday_discovery import _fetch_jobs, discover_one
-from .workday_qualification import fetch_official_description, qualify_one
+from .workday_qualification import POLICY_VERSION, fetch_official_description, qualify_one
 
 SHORTLIST_SIZE = 24
 ROLLING_APPLICATION_TARGET = 48
@@ -83,7 +83,10 @@ def unique_sources(
 
 
 def qualified_queue_ids(
-    ledger_path: Path, allowed_hosts: set[str]
+    ledger_path: Path,
+    allowed_hosts: set[str],
+    *,
+    policy_version: str = POLICY_VERSION,
 ) -> tuple[str, ...]:
     ledger = Ledger(ledger_path)
     try:
@@ -92,7 +95,9 @@ def qualified_queue_ids(
             for row in ledger.pending_materials_ready_applications()
             if (urlsplit(str(row["canonical_url"])).hostname or "").casefold()
             in allowed_hosts
-            and ledger.workday_fit_qualified(str(row["application_id"]))
+            and ledger.workday_fit_qualified(
+                str(row["application_id"]), policy_version
+            )
         )
     finally:
         ledger.close()
@@ -544,7 +549,9 @@ def main() -> int:
     )
     os.chmod(args.snapshot, 0o600)
     stale_rows = reject_stale_workday_rows(args.ledger, jobs_by_source)
-    queued_ids = qualified_queue_ids(args.ledger, allowed_hosts)
+    queued_ids = qualified_queue_ids(
+        args.ledger, allowed_hosts, policy_version=POLICY_VERSION
+    )
     preferred_urls: tuple[str, ...] = ()
     if candidates:
         candidate_memory = args.candidate_memory.read_text(encoding="utf-8")
@@ -552,8 +559,10 @@ def main() -> int:
             return runner.run(
                 task="improve",
                 prompt=(
-                "Rank the Workday jobs for this candidate in this order: Japan employment feasibility first; "
-                "demonstrated current career scope second; compensation ambition third. "
+                "Rank the Workday jobs for this candidate in this order: adequate non-senior "
+                "Japan employment first; demonstrated adjacent current career scope second; "
+                "compensation ambition third. The goal is one qualified row followed by an "
+                "immediate truthful application in this wake, not a list of reasons to skip. "
                 "Every row that explicitly supports employment from Japan must rank before any row tied to another country. "
                 "Remote work or an "
                 "EOR for another country is not Japan employment unless the posting explicitly supports employing "
@@ -562,8 +571,11 @@ def main() -> int:
                 "is supported by the candidate's "
                 "current evidence, "
                 "then credible paths to at least JPY 7M, prioritizing JPY 10M-30M. "
-                "Do not consume the bounded shortlist with Principal, Lead, or Senior roles "
-                "or foreign-location work while closer Japan-feasible roles exist. "
+                "Every adequate non-senior Japan role must rank before Senior, Lead, Principal, "
+                "Director, executive, people-management, or foreign-location work. Judge the "
+                "complete responsibilities rather than title words alone. Do not consume the "
+                "bounded shortlist with excluded senior/leadership scope while any adequate "
+                "non-senior Japan-feasible role exists. "
                 "Treat title seniority, company prestige, and source order as weak "
                 "signals rather than fit proxies. Use the whole supplied snapshot. "
                 "This is a company-wide portfolio search, not a single-company campaign. "
@@ -654,9 +666,7 @@ def main() -> int:
         discover=discover_next,
         qualify=qualify_next,
         max_candidates=args.max_candidates,
-        target_qualified=(
-            0 if queued_ids else min(rolling["deficit"], args.max_candidates)
-        ),
+        target_qualified=(0 if queued_ids or rolling["deficit"] == 0 else 1),
     )
     result["stale_rows"] = list(stale_rows)
     result["discovered"] = [
