@@ -33,6 +33,21 @@ function scopedRows(result, uid, label) {
   return rows;
 }
 
+function claimedSymphonyDispatch(result, uid) {
+  const rows = result && Array.isArray(result.rows) ? result.rows : [];
+  if (rows.length === 0) return null;
+  if (rows.length !== 1) throw new Error("money printer runtime store Symphony claim readback invalid");
+  const row = rows[0];
+  if (!row || typeof row !== "object" || Array.isArray(row)
+    || row.tenant_id !== uid || !OPPORTUNITY_ID.test(String(row.dispatch_id || ""))
+    || !JOB_ID.test(String(row.job_id || "")) || !Number.isInteger(row.round) || row.round < 1
+    || row.status !== "claimed" || row.issue_ref != null || row.result_ref != null
+    || row.result_hash != null || row.result_payload != null || row.failure_code != null) {
+    throw new Error("money printer runtime store Symphony claim readback invalid");
+  }
+  return row;
+}
+
 function expectedOpportunity(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("money printer runtime store opportunity expected invalid");
@@ -129,6 +144,12 @@ function createMoneyPrinterRuntimeStore({ query } = {}) {
   if (typeof query !== "function") unavailable();
 
   return Object.freeze({
+    async claimSymphony(value) {
+      const uid = tenant(value);
+      return claimedSymphonyDispatch(await query(`
+        SELECT * FROM public.claim_lm_symphony_job($1)
+      `, [uid]), uid);
+    },
     async createOpportunity(canonical) {
       const uid = tenant(canonical && canonical.uid);
       const row = oneRow(await query(`

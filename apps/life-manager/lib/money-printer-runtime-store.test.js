@@ -28,12 +28,40 @@ test("R02 Symphony migration adds one tenant-job scoped dispatch ledger", () => 
   assert.match(migration, /CREATE TABLE IF NOT EXISTS public\.lm_symphony_dispatches/i);
   assert.match(migration, /PRIMARY KEY \(tenant_id, dispatch_id\)/i);
   assert.match(migration, /FOREIGN KEY \(job_id, tenant_id\)[\s\S]*REFERENCES public\.lm_runtime_jobs \(job_id, tenant_id\)/i);
-  for (const status of ["claimed", "mirrored", "result_ready", "failed"]) {
+  for (const status of ["claimed", "mirrored", "result_ready", "consumed", "failed"]) {
     assert.match(migration, new RegExp(`'${status}'`));
   }
+  assert.match(migration, /consumed_at timestamptz/i);
   assert.match(migration, /CREATE UNIQUE INDEX IF NOT EXISTS lm_symphony_dispatches_open_job_idx[\s\S]*ON public\.lm_symphony_dispatches \(tenant_id, job_id\)[\s\S]*WHERE status IN \('claimed', 'mirrored', 'result_ready'\)/i);
   assert.match(migration, /ENABLE ROW LEVEL SECURITY/i);
   assert.match(migration, /REVOKE ALL ON TABLE public\.lm_symphony_dispatches FROM PUBLIC, anon, authenticated/i);
+});
+
+test("R03 Symphony claim atomically moves one queued general-agent job", async () => {
+  const migration = fs.readFileSync(SYMPHONY_MIGRATION, "utf8");
+  assert.match(migration, /CREATE OR REPLACE FUNCTION public\.claim_lm_symphony_job\(p_tenant_id text\)/i);
+  assert.match(migration, /capability = 'general-agent\.work'[\s\S]*effect_class = 'none'[\s\S]*status = 'queued'[\s\S]*FOR UPDATE SKIP LOCKED/i);
+  assert.match(migration, /SET status = 'waiting_agent'[\s\S]*lease_owner = NULL[\s\S]*lease_expires_at = NULL/i);
+  assert.match(migration, /INSERT INTO public\.lm_symphony_dispatches[\s\S]*'claimed'/i);
+
+  const dispatch = {
+    tenant_id: TENANT, dispatch_id: "d".repeat(64), job_id: `goal:${ID}`,
+    round: 1, status: "claimed", issue_ref: null, result_ref: null,
+    result_hash: null, result_payload: null, failure_code: null,
+  };
+  const calls = [];
+  const store = createMoneyPrinterRuntimeStore({ query: async (sql, values) => {
+    calls.push({ sql, values });
+    return { rows: [dispatch] };
+  } });
+  assert.deepEqual(await store.claimSymphony({ uid: TENANT }), dispatch);
+  assert.match(calls[0].sql, /^\s*SELECT \* FROM public\.claim_lm_symphony_job\(\$1\)/i);
+  assert.deepEqual(calls[0].values, [TENANT]);
+
+  const empty = createMoneyPrinterRuntimeStore({ query: async () => ({ rows: [] }) });
+  assert.equal(await empty.claimSymphony({ uid: TENANT }), null);
+  const foreign = createMoneyPrinterRuntimeStore({ query: async () => ({ rows: [{ ...dispatch, tenant_id: "tenant-b" }] }) });
+  await assert.rejects(foreign.claimSymphony({ uid: TENANT }), /readback/i);
 });
 
 function opportunity() {
