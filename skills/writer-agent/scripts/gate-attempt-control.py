@@ -8,7 +8,9 @@ import fcntl
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
+import stat
 from typing import Any
 
 
@@ -73,6 +75,97 @@ def matches_article(payload: dict[str, Any], current_hash: str) -> bool:
     return isinstance(saved_hash, str) and saved_hash == current_hash
 
 
+def bounded_attempts(payload: dict[str, Any], label: str, minimum: int) -> int:
+    value = payload.get("attempts")
+    if (
+        isinstance(value, bool)
+        or not isinstance(value, int)
+        or value < minimum
+        or value > MAX_ATTEMPTS
+    ):
+        raise ValueError(f"{label} attempts evidence is outside the bounded range")
+    return value
+
+
+VALID_TERMINAL_STATUSES = {"revision-required", "advisory", "pass"}
+
+
+def read_evidence(path: Path, label: str) -> dict[str, Any] | None:
+    try:
+        mode = path.lstat().st_mode
+    except FileNotFoundError:
+        return None
+    except OSError as exc:
+        raise ValueError(f"{label} is unreadable") from exc
+    if stat.S_ISLNK(mode):
+        raise ValueError(f"{label} is a symlink")
+    if not stat.S_ISREG(mode):
+        raise ValueError(f"{label} is not a regular file")
+    value = read_json(path)
+    if value is None:
+        raise ValueError(f"{label} is malformed")
+    return value
+
+
+def state_attempts(
+    path: Path, args: argparse.Namespace, current_hash: str
+) -> int:
+    state = read_evidence(path, "attempt state")
+    if state is None:
+        return 0
+    state_hash = state.get("article_sha256")
+    if (
+        state.get("gate") != args.gate
+        or state.get("lang") != args.lang
+        or not isinstance(state_hash, str)
+        or re.fullmatch(r"[0-9a-f]{64}", state_hash) is None
+    ):
+        raise ValueError("attempt state identity is malformed")
+    attempts = bounded_attempts(state, "attempt state", 0)
+    return attempts if state_hash == current_hash else 0
+
+
+def terminal_record(
+    path: Path, args: argparse.Namespace
+) -> tuple[dict[str, Any], int] | None:
+    terminal = read_evidence(path, "terminal attempt evidence")
+    if terminal is None:
+        return None
+    article_hash = terminal.get("article_sha256")
+    status = terminal.get("status")
+    if (
+        terminal.get("gate") != args.gate
+        or terminal.get("lang") != args.lang
+        or status not in VALID_TERMINAL_STATUSES
+        or not isinstance(article_hash, str)
+        or re.fullmatch(r"[0-9a-f]{64}", article_hash) is None
+    ):
+        raise ValueError("terminal attempt evidence identity is malformed")
+    attempts = bounded_attempts(terminal, "terminal", 1)
+    exit_code = terminal.get("exit_code")
+    non_bool_exit = isinstance(exit_code, int) and not isinstance(exit_code, bool)
+    if status == "pass":
+        payload = terminal.get("payload")
+        if exit_code != 0 or not non_bool_exit or not isinstance(payload, dict) or payload.get("verdict") != "PASS":
+            raise ValueError("terminal PASS evidence is contradictory")
+    elif status == "revision-required":
+        if args.gate != "reader-testing-gate" or not non_bool_exit or exit_code == 0:
+            raise ValueError("terminal revision evidence is contradictory")
+    elif attempts != MAX_ATTEMPTS or (
+        terminal.get("reason") == "max-attempts-reached"
+        and "exit_code" in terminal
+    ) or (
+        terminal.get("reason") != "max-attempts-reached"
+        and (
+            "reason" in terminal
+            or not non_bool_exit
+            or exit_code == 0
+        )
+    ):
+        raise ValueError("terminal advisory evidence is contradictory")
+    return terminal, attempts
+
+
 def begin(args: argparse.Namespace) -> int:
     run_dir = Path(args.run_dir)
     current_hash = article_sha256(args.markdown_file)
@@ -81,47 +174,59 @@ def begin(args: argparse.Namespace) -> int:
     with lock_path.open("a+") as lock:
         fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
 
-        legacy = read_json(legacy_path)
+        state_count = state_attempts(state_path, args, current_hash)
+        terminal_info = terminal_record(terminal_path, args)
+        legacy = read_evidence(legacy_path, "legacy gate evidence")
         status = legacy_status(args.gate, legacy) if legacy else None
-        if status and matches_article(legacy, current_hash):
-            print(json.dumps({"action": f"skip-{status}", "attempts": 0, "payload": legacy}, ensure_ascii=False))
-            return 0
-
-        terminal = read_json(terminal_path)
-        if (
-            terminal
-            and terminal.get("status") == "revision-required"
-            and terminal.get("article_sha256") == current_hash
-        ):
+        legacy_current_pass = bool(status and matches_article(legacy, current_hash))
+        terminal = terminal_info[0] if terminal_info else None
+        terminal_count = terminal_info[1] if terminal_info else None
+        current_terminal = bool(
+            terminal and terminal.get("article_sha256") == current_hash
+        )
+        if current_terminal and terminal.get("status") in {"pass", "advisory"}:
+            if state_count > 0 and state_count != terminal_count:
+                raise ValueError("current terminal and attempt state disagree")
+        if legacy_current_pass and current_terminal:
+            if terminal.get("status") != "pass":
+                raise ValueError("legacy PASS conflicts with current terminal")
             print(json.dumps({
-                "action": "skip-revision-required",
-                "attempts": int(terminal.get("attempts", 1)),
+                "action": "skip-pass",
+                "attempts": terminal_count,
                 "payload": terminal.get("payload"),
             }, ensure_ascii=False))
             return 0
+        if legacy_current_pass:
+            if state_count > 0:
+                raise ValueError("legacy PASS conflicts with current attempt state")
+            print(json.dumps({"action": "skip-pass", "attempts": 0, "payload": legacy}, ensure_ascii=False))
+            return 0
+
+        attempt_floor: int | None = None
+        if current_terminal and terminal.get("status") == "revision-required":
+            attempt_floor = max(state_count, terminal_count or 0)
         if (
-            terminal
+            current_terminal
             and terminal.get("status") == "advisory"
-            and terminal.get("article_sha256") == current_hash
         ):
             print(json.dumps({
                 "action": "skip-advisory",
-                "attempts": int(terminal.get("attempts", MAX_ATTEMPTS)),
+                "attempts": terminal_count,
                 "payload": terminal.get("payload"),
             }, ensure_ascii=False))
             return 0
-        if terminal and terminal.get("status") == "pass" and matches_article(terminal, current_hash):
+        if current_terminal and terminal.get("status") == "pass":
             print(json.dumps({
                 "action": f"skip-{terminal['status']}",
-                "attempts": int(terminal.get("attempts", MAX_ATTEMPTS)),
+                "attempts": terminal_count,
                 "payload": terminal.get("payload"),
             }, ensure_ascii=False))
             return 0
 
-        state = read_json(state_path) or {}
-        if state.get("article_sha256") != current_hash:
-            state = {}
-        attempts = int(state.get("attempts", 0))
+        if attempt_floor is None:
+            attempts = state_count
+        else:
+            attempts = attempt_floor
         if attempts >= MAX_ATTEMPTS:
             terminal = {
                 "gate": args.gate,
@@ -150,6 +255,7 @@ def begin(args: argparse.Namespace) -> int:
 
 
 def finish(args: argparse.Namespace) -> int:
+    bounded_attempts({"attempts": args.attempt}, "finish", 1)
     run_dir = Path(args.run_dir)
     _, terminal_path, _, lock_path = paths(run_dir, args.gate, args.lang)
     lock_path.parent.mkdir(parents=True, exist_ok=True)
@@ -164,6 +270,17 @@ def finish(args: argparse.Namespace) -> int:
             else ("advisory" if args.attempt >= MAX_ATTEMPTS else None)
         )
     )
+    effective_payload = payload
+    if args.gate == "reader-testing-gate" and isinstance(payload, dict):
+        effective_payload = payload.get("payload", payload)
+    if (
+        status == "pass"
+        and (
+            not isinstance(effective_payload, dict)
+            or effective_payload.get("verdict") != "PASS"
+        )
+    ):
+        raise ValueError("finish PASS requires a PASS payload")
     if status is None:
         return 0
     terminal = {
@@ -174,12 +291,8 @@ def finish(args: argparse.Namespace) -> int:
         "exit_code": args.exit_code,
         "article_sha256": article_sha256(args.markdown_file),
     }
-    if payload is not None:
-        terminal["payload"] = (
-            payload.get("payload", payload)
-            if args.gate == "reader-testing-gate"
-            else payload
-        )
+    if effective_payload is not None:
+        terminal["payload"] = effective_payload
     if output_path and output_path.is_file():
         terminal["output_sha256"] = hashlib.sha256(output_path.read_bytes()).hexdigest()
     with lock_path.open("a+") as lock:
@@ -198,7 +311,9 @@ def main() -> int:
     common.add_argument("--markdown-file", required=True)
     sub.add_parser("begin", parents=[common])
     finish_parser = sub.add_parser("finish", parents=[common])
-    finish_parser.add_argument("--attempt", required=True, type=int)
+    finish_parser.add_argument(
+        "--attempt", required=True, type=int, choices=range(1, MAX_ATTEMPTS + 1)
+    )
     finish_parser.add_argument("--exit-code", required=True, type=int)
     finish_parser.add_argument("--output-file")
     args = parser.parse_args()

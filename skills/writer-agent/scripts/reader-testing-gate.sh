@@ -67,16 +67,26 @@ finish_gate_attempt() {
   rc=$?
   trap - EXIT
   if [ "$GATE_CONTROL_ACTIVE" -eq 1 ]; then
+    finish_rc=0
     python3 "$GATE_CONTROL" finish --run-dir "$ARTICLE_RUN_DIR" --gate reader-testing-gate --lang "$LANG_A" \
       --attempt "$GATE_ATTEMPT" --exit-code "$rc" --output-file "$GATE_OUTPUT_FILE" \
-      --markdown-file "$MD" >/dev/null 2>&1 || true
+      --markdown-file "$MD" >/dev/null 2>&1 || finish_rc=$?
     rm -f "$GATE_OUTPUT_FILE"
+    if [ "$finish_rc" -ne 0 ]; then
+      exit 3
+    fi
   fi
   exit "$rc"
 }
 trap finish_gate_attempt EXIT
 
-GATES_LOG="${ARTICLE_GATES_LOG:-$HOME/.openclaw/logs/article-gates.log}"
+if [ -n "${ARTICLE_GATES_LOG:-}" ]; then
+  GATES_LOG="$ARTICLE_GATES_LOG"
+elif [ -n "${ARTICLE_RUN_DIR:-}" ]; then
+  GATES_LOG="$ARTICLE_RUN_DIR/gates/article-gates.log"
+else
+  GATES_LOG="${ARTICLE_STATE_DIR:-$HOME/.local/state/life-manager/writer}/logs/article-gates.log"
+fi
 log_gate_verdict() {
   mkdir -p "$(dirname "$GATES_LOG")" 2>/dev/null || return 0
   printf '%s script=reader-testing-gate.sh md=%s lang=%s verdict=%s\n' \
