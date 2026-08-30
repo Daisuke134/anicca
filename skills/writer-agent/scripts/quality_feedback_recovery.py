@@ -14,6 +14,8 @@ import shutil
 import sys
 from typing import Any
 
+from article_generation_state import ledger_has_public_effect
+
 
 # Provider/research retries are separate from the five quality assessments.
 # A transient transport outage must not consume the quality iteration budget.
@@ -254,23 +256,6 @@ def _is_quality_audit(row: dict[str, Any]) -> bool:
     )
 
 
-def _ledger_has_delivery_row(ledger: Path, run_id: str) -> bool:
-    if not ledger.exists():
-        return False
-    for line in ledger.read_text(encoding="utf-8").splitlines():
-        try:
-            row = json.loads(line)
-        except (json.JSONDecodeError, TypeError):
-            continue
-        if (
-            isinstance(row, dict)
-            and row.get("run_id") == run_id
-            and not _is_quality_audit(row)
-        ):
-            return True
-    return False
-
-
 def _feedback_for_terminal(gates: Path, run_id: str) -> dict[str, Any] | None:
     quality = _read_json(gates / "quality-self-heal.json")
     if (
@@ -380,7 +365,7 @@ def plan(run_dir: Path | str, ledger: Path | str) -> dict[str, Any]:
     publication_state = gates / "publication-state.json"
     if publication_state.exists() or publication_state.is_symlink():
         return _refused("publication-state-exists")
-    if _ledger_has_delivery_row(ledger, run_dir.name):
+    if ledger_has_public_effect(ledger, run_dir.name):
         return _refused("ledger-row-exists")
     replacement = _read_json(gates / "quality-replacement.json")
     quality = _read_json(gates / "quality-self-heal.json")
@@ -877,7 +862,7 @@ def record_result(
     quality = _read_json(gates / "quality-self-heal.json")
     if (gates / "publication-state.json").is_file():
         status = "handed-to-publication"
-    elif _ledger_has_delivery_row(ledger, run_dir.name):
+    elif ledger_has_public_effect(ledger, run_dir.name):
         status = "terminal-ambiguous-ledger-without-publication-state"
     elif publication_phase and int(state.get("publication_attempts", 0)) < MAX_PUBLICATION_HANDOFFS:
         status = "publication-retryable-incomplete"

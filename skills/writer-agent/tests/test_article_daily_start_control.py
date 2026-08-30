@@ -34,6 +34,14 @@ GENERATION = load(
     "article_generation_state",
     ROOT / "skills/writer-agent/scripts/article_generation_state.py",
 )
+QUALITY_REPAIR = load(
+    "quality_repair_control",
+    ROOT / "skills/writer-agent/scripts/quality_repair_control.py",
+)
+QUALITY_FEEDBACK = load(
+    "quality_feedback_recovery",
+    ROOT / "skills/writer-agent/scripts/quality_feedback_recovery.py",
+)
 RESUME = load(
     "publication_resume",
     ROOT / "skills/writer-agent/scripts/publication_resume.py",
@@ -49,6 +57,88 @@ QUARANTINE = load(
 
 
 class ArticleStartPolicyTest(unittest.TestCase):
+    def test_public_effect_predicate_ignores_pending_rows_across_quality_controls(self):
+        def predicate(module):
+            public = getattr(module, "ledger_has_public_effect", None)
+            if public is not None:
+                return public
+            return getattr(
+                module,
+                "_ledger_has_public_row",
+                getattr(module, "_ledger_has_delivery_row", None),
+            )
+
+        with tempfile.TemporaryDirectory() as tmp:
+            ledger = Path(tmp) / "articles.jsonl"
+            run_id = "20260829-165022"
+            pending_rows = [
+                {
+                    "run_id": run_id,
+                    "platform": platform,
+                    "lang": lang,
+                    "published": False,
+                    "live_url": None,
+                    "state": state,
+                    "reality_gate": None,
+                }
+                for platform, lang, state in (
+                    ("note", "ja", "pending:required-media-generator-script-missing"),
+                    (
+                        "substack",
+                        "ja",
+                        "pending:required-media-generator-script-missing; browser unavailable",
+                    ),
+                    (
+                        "substack",
+                        "en",
+                        "pending:required-media-generator-script-missing; browser unavailable",
+                    ),
+                    (
+                        "x-article",
+                        "ja",
+                        "pending:required-media-generator-script-missing; browser unavailable",
+                    ),
+                )
+            ]
+            ledger.write_text(
+                "not-json\n"
+                + "\n".join(json.dumps(row) for row in pending_rows)
+                + "\n"
+                + json.dumps(
+                    {
+                        "run_id": run_id,
+                        "published": "true",
+                        "live_url": 123,
+                        "state": ["live"],
+                        "reality_gate": True,
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            for module in (GENERATION, QUALITY_REPAIR, QUALITY_FEEDBACK):
+                self.assertFalse(predicate(module)(ledger, run_id))
+            self.assertIs(
+                QUALITY_REPAIR.ledger_has_public_effect,
+                QUALITY_FEEDBACK.ledger_has_public_effect,
+            )
+
+            public_shapes = (
+                {"published": True},
+                {"live_url": "https://publisher.example/post"},
+                {"state": "live"},
+                {"reality_gate": "PASS"},
+            )
+            for shape in public_shapes:
+                with self.subTest(shape=shape):
+                    ledger.write_text(
+                        json.dumps({"run_id": run_id, **shape}) + "\n",
+                        encoding="utf-8",
+                    )
+                    for module in (GENERATION, QUALITY_REPAIR, QUALITY_FEEDBACK):
+                        self.assertTrue(predicate(module)(ledger, run_id))
+
     def test_capacity_drain_archives_partial_provider_and_keeps_resume_identity(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

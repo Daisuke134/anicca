@@ -188,7 +188,7 @@ def _ledger_has_run(ledger: Path, run_id: str) -> bool:
     return False
 
 
-def _ledger_has_public_row(ledger: Path, run_id: str) -> bool:
+def ledger_has_public_effect(ledger: Path, run_id: str) -> bool:
     """A draft-stage bookkeeping row (published false, no live URL) is not a
     public side effect; only published/live rows block a same-prompt resume."""
     if not ledger.exists():
@@ -200,9 +200,10 @@ def _ledger_has_public_row(ledger: Path, run_id: str) -> bool:
             continue
         if not isinstance(row, dict) or row.get("run_id") != run_id:
             continue
+        live_url = row.get("live_url")
         if (
             row.get("published") is True
-            or bool(row.get("live_url"))
+            or (isinstance(live_url, str) and bool(live_url.strip()))
             or row.get("state") == "live"
             or row.get("reality_gate") == "PASS"
         ):
@@ -213,7 +214,7 @@ def _ledger_has_public_row(ledger: Path, run_id: str) -> bool:
 def prepublication_empty(run_dir: Path, run_id: str, ledger: Path) -> tuple[bool, str]:
     if (run_dir / "gates" / "publication-state.json").exists():
         return False, "publication-state-exists"
-    if _ledger_has_public_row(ledger, run_id):
+    if ledger_has_public_effect(ledger, run_id):
         return False, "ledger-row-exists"
     observed = {
         str(path.relative_to(run_dir))
@@ -371,7 +372,7 @@ def _quality_reroute_pending(
 ) -> bool:
     if (run_dir / "gates" / "publication-state.json").exists():
         return False
-    if _ledger_has_public_row(ledger, run_id):
+    if ledger_has_public_effect(ledger, run_id):
         return False
     quality_path = run_dir / "gates" / "quality-self-heal.json"
     try:
@@ -529,7 +530,7 @@ def archive_interrupted(
             raise GenerationInvariant("generation interruption has no active attempt")
         if (resolved / "gates/publication-state.json").exists():
             raise GenerationInvariant("publication-state-exists")
-        if _ledger_has_public_row(ledger, run_id):
+        if ledger_has_public_effect(ledger, run_id):
             raise GenerationInvariant("ledger-row-exists")
 
         attempt = attempts[-1]
