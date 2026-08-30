@@ -184,6 +184,29 @@ test("failed connpass action-boundary delivery skips every connpass submit path"
   );
 });
 
+test("new Connpass action-boundary stage codes remain visible in the safe action history", async () => {
+  for (const code of [
+    "CONNPASS_ACTION_BOUNDARY_CLAIM_FAILED",
+    "CONNPASS_ACTION_BOUNDARY_LEDGER_FAILED",
+    "CONNPASS_ACTION_BOUNDARY_DELIVERY_UNCERTAIN",
+  ]) {
+    let state = fixture({
+      async discoverCandidates(provider) {
+        return provider === "connpass" ? [candidate("connpass", `boundary-${code}`)] : [];
+      },
+      async reportConnpassActionBoundary() {
+        const error = new Error("private boundary detail");
+        error.code = code;
+        throw error;
+      },
+    });
+    await runMinimalConnectorWake({ ownerToken: `owner-token-${code.toLowerCase()}`, providers: ["connpass"] }, state.dependencies);
+    const failed = state.calls.find(([name, action]) => name === "history" && action.method === "connpass_action_boundary")[1];
+    assert.equal(failed.safe_reason, code.toLowerCase());
+    assert.equal(JSON.stringify(failed).includes("private boundary detail"), false);
+  }
+});
+
 test("a failed provider reset records failure, skips discovery, and closes the owned page", async () => {
   let state = fixture({
     async discoverCandidates(provider) {

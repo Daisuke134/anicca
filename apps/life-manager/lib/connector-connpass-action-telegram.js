@@ -4,14 +4,20 @@ const { createHash } = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
 
-const { notifyOpenClawGateway, parseOpenClawMessageId } = require("./outbound-guardian.js");
-
 const EVENT_REF = /^connpass-event:\/\/event\/[1-9][0-9]*$/;
 const URL = /^https:\/\/(?:[a-z0-9-]+\.)?connpass\.com\/event\/[1-9][0-9]*\/$/i;
 const SLOT = new Set(["available", "waitlist", "closed"]);
 const TALK = new Set(["unknown", "not_offered", "open", "submitted", "provider_verified", "closed"]);
 const PRIORITY = new Set(["yc_hackathon", "open_talk", "ai", "crypto", "startup", "other"]);
 const CREDENTIAL_VALUE = /(?:password|cookie|api[ _-]?key|secret|(?:access|auth|refresh)[ _-]?token)\s*[:=]\s*\S{8,}|\bbearer\s+\S{16,}/i;
+const HASH = /^[a-f0-9]{64}$/;
+const POSITIVE_PROVIDER_ID = /^[1-9][0-9]*$/;
+const UNCERTAIN_REASONS = new Set(["delivery_unknown", "missing_message_id", "provider_rejection", "transport"]);
+const CLAIM_KEYS = "candidate_snapshot_sha256,claimed_at,schema_version,wake_id";
+const DELIVERY_KEYS = "candidate_snapshot_sha256,observed_at,schema_version,telegram_provider_id,wake_id";
+const UNCERTAIN_KEYS = "candidate_snapshot_sha256,quarantined_at,reason,schema_version,wake_id";
+const CLAIM_DIR_NAME = "connpass-action-boundary-claims";
+const NO_FOLLOW = fs.constants.O_NOFOLLOW || 0;
 
 function invalid() { throw new Error("Connpass action Telegram invalid"); }
 function stageError(code) {
@@ -51,15 +57,180 @@ function normalize(candidate) {
   });
 }
 function digest(value) { return createHash("sha256").update(JSON.stringify(value), "utf8").digest("hex"); }
+function escapeHtml(value) {
+  return String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
 
+function exactInstant(value) { const date = value instanceof Date ? value : new Date(value); if (!Number.isFinite(date.getTime())) invalid(); return date.toISOString(); }
+function positiveProviderId(receipt) {
+  if (!receipt || typeof receipt !== "object" || Array.isArray(receipt)
+    || Object.keys(receipt).sort().join(",") !== "messageId") invalid();
+  const raw = receipt.messageId;
+  if (typeof raw === "number") {
+    if (!Number.isSafeInteger(raw) || raw <= 0) invalid();
+    return String(raw);
+  }
+  if (typeof raw !== "string" || !POSITIVE_PROVIDER_ID.test(raw) || !Number.isSafeInteger(Number(raw))) invalid();
+  return raw;
+}
+function ledgerIdentity(row) { return `${row.wake_id}\u0000${row.candidate_snapshot_sha256}`; }
+function validateLedger(row, kind) {
+  if (!row || typeof row !== "object" || Array.isArray(row)
+    || typeof row.wake_id !== "string" || !row.wake_id || row.wake_id.length > 160
+    || /[\x00-\x1f\x7f]/.test(row.wake_id)
+    || typeof row.candidate_snapshot_sha256 !== "string" || !HASH.test(row.candidate_snapshot_sha256)) invalid();
+  if (safe(row.wake_id, 160) !== row.wake_id) invalid();
+  if (row.schema_version !== 1) invalid();
+  if (kind === "delivery" && (typeof row.telegram_provider_id !== "string"
+    || !POSITIVE_PROVIDER_ID.test(row.telegram_provider_id) || !Number.isSafeInteger(Number(row.telegram_provider_id)))) invalid();
+  if (kind === "uncertain" && (typeof row.reason !== "string" || !UNCERTAIN_REASONS.has(row.reason))) invalid();
+  const timestamp = kind === "claim" ? row.claimed_at : kind === "delivery" ? row.observed_at : row.quarantined_at;
+  if (typeof timestamp !== "string" || exactInstant(timestamp) !== timestamp) invalid();
+}
+function readLedger(file, keys, kind) {
+  let source = "";
+  let descriptor;
+  let expected = null;
+  try { expected = fs.lstatSync(file); }
+  catch (error) {
+    if (!error || error.code !== "ENOENT") throw error;
+  }
+  if (expected && (!expected.isFile() || (expected.mode & 0o777) !== 0o600 || expected.size > 5_000_000)) invalid();
+  try {
+    descriptor = fs.openSync(file, fs.constants.O_RDONLY | NO_FOLLOW);
+    const stat = fs.fstatSync(descriptor);
+    if (!stat.isFile() || (stat.mode & 0o777) !== 0o600 || stat.size > 5_000_000
+      || (expected && (stat.dev !== expected.dev || stat.ino !== expected.ino))) invalid();
+    source = fs.readFileSync(descriptor, "utf8");
+  } catch (error) {
+    if (!expected && error && error.code === "ENOENT") return [];
+    throw error;
+  } finally {
+    if (descriptor !== undefined) fs.closeSync(descriptor);
+  }
+  const seen = new Set();
+  return source.split(/\r?\n/).filter(Boolean).map((line) => {
+    let row;
+    try { row = JSON.parse(line); } catch { invalid(); }
+    if (!row || typeof row !== "object" || Array.isArray(row)
+      || Object.keys(row).sort().join(",") !== keys) invalid();
+    validateLedger(row, kind);
+    const identity = ledgerIdentity(row);
+    if (seen.has(identity)) invalid();
+    seen.add(identity);
+    return Object.freeze(row);
+  });
+}
+function appendDurable(file, value) {
+  const bytes = Buffer.from(`${JSON.stringify(value)}\n`, "utf8");
+  let existing;
+  try { existing = fs.lstatSync(file); } catch (error) { if (!error || error.code !== "ENOENT") throw error; }
+  if (existing && (!existing.isFile() || (existing.mode & 0o777) !== 0o600)) invalid();
+  const descriptor = fs.openSync(file, fs.constants.O_WRONLY | fs.constants.O_APPEND | fs.constants.O_CREAT | NO_FOLLOW, 0o600);
+  try {
+    const opened = fs.fstatSync(descriptor);
+    if (!opened.isFile() || (opened.mode & 0o777) !== 0o600) invalid();
+    fs.fchmodSync(descriptor, 0o600);
+    let offset = 0;
+    while (offset < bytes.length) offset += fs.writeSync(descriptor, bytes, offset, bytes.length - offset, null);
+    fs.fsyncSync(descriptor);
+  } finally {
+    fs.closeSync(descriptor);
+  }
+  if (!existing) syncDirectory(path.dirname(file));
+}
+function ensurePrivateDirectory(directory) {
+  let existed = true;
+  try { fs.lstatSync(directory); } catch (error) {
+    if (!error || error.code !== "ENOENT") invalid();
+    existed = false;
+  }
+  try { fs.mkdirSync(directory, { recursive: true, mode: 0o700 }); } catch { invalid(); }
+  let stat;
+  try { stat = fs.lstatSync(directory); } catch { invalid(); }
+  if (!stat.isDirectory() || (stat.mode & 0o777) !== 0o700) invalid();
+  if (!existed) syncDirectory(path.dirname(directory));
+}
+function syncDirectory(directory, expectedMode) {
+  let descriptor;
+  try {
+    descriptor = fs.openSync(directory, fs.constants.O_RDONLY | NO_FOLLOW);
+    const stat = fs.fstatSync(descriptor);
+    if (!stat.isDirectory() || (expectedMode != null && (stat.mode & 0o777) !== expectedMode)) invalid();
+    fs.fsyncSync(descriptor);
+  } finally {
+    if (descriptor !== undefined) fs.closeSync(descriptor);
+  }
+}
+function claimMarkerPath(stateDir, wakeId, snapshot) {
+  return path.join(stateDir, CLAIM_DIR_NAME, `${digest({ wake_id: wakeId, candidate_snapshot_sha256: snapshot })}.claim`);
+}
+function acquireClaimMarker(stateDir, wakeId, snapshot) {
+  const directory = path.join(stateDir, CLAIM_DIR_NAME);
+  ensurePrivateDirectory(directory);
+  const marker = claimMarkerPath(stateDir, wakeId, snapshot);
+  let descriptor;
+  try {
+    descriptor = fs.openSync(marker, fs.constants.O_WRONLY | fs.constants.O_CREAT | fs.constants.O_EXCL | NO_FOLLOW, 0o600);
+  } catch (error) {
+    if (error && error.code === "EEXIST") return false;
+    throw error;
+  }
+  try {
+    const value = Buffer.from(`${JSON.stringify({ schema_version: 1, wake_id: wakeId, candidate_snapshot_sha256: snapshot })}\n`, "utf8");
+    fs.fchmodSync(descriptor, 0o600);
+    let offset = 0;
+    while (offset < value.length) offset += fs.writeSync(descriptor, value, offset, value.length - offset, null);
+    fs.fsyncSync(descriptor);
+    syncDirectory(directory, 0o700);
+  } catch (error) {
+    error.markerCreated = true;
+    throw error;
+  } finally { fs.closeSync(descriptor); }
+  return true;
+}
+function removeClaimMarker(stateDir, wakeId, snapshot) {
+  const directory = path.join(stateDir, CLAIM_DIR_NAME);
+  ensurePrivateDirectory(directory);
+  const marker = claimMarkerPath(stateDir, wakeId, snapshot);
+  let stat;
+  try { stat = fs.lstatSync(marker); } catch (error) {
+    if (error && error.code === "ENOENT") throw new Error("claim marker disappeared");
+    throw error;
+  }
+  if (!stat.isFile() || (stat.mode & 0o777) !== 0o600) invalid();
+  fs.unlinkSync(marker);
+  try {
+    syncDirectory(directory, 0o700);
+    try { fs.lstatSync(marker); throw new Error("claim marker remained"); }
+    catch (error) { if (!error || error.code !== "ENOENT") throw error; }
+  } catch (error) {
+    // Recreate the marker best-effort before surfacing uncertainty. If the
+    // directory fsync failed, an in-process replay fence still remains.
+    try { acquireClaimMarker(stateDir, wakeId, snapshot); } catch { /* uncertainty is recorded by the caller */ }
+    throw error;
+  }
+}
+function quarantine(file, wakeId, snapshot, reason, now) {
+  appendDurable(file, Object.freeze({
+    schema_version: 1,
+    wake_id: wakeId,
+    candidate_snapshot_sha256: snapshot,
+    reason,
+    quarantined_at: exactInstant(now()),
+  }));
+}
 function createConnpassActionTelegram(options = {}) {
   const stateDir = path.resolve(String(options.stateDir || ""));
   const wakeId = safe(options.wakeId, 160);
   const telegramTarget = safe(options.telegramTarget, 200);
   const now = options.now || (() => new Date());
-  const send = options.send || notifyOpenClawGateway;
+  const send = options.send;
   if (!path.isAbsolute(stateDir) || stateDir === path.parse(stateDir).root || typeof now !== "function" || typeof send !== "function") invalid();
   const file = path.join(stateDir, "connpass-action-boundary-deliveries.jsonl");
+  const claimFile = path.join(stateDir, "connpass-action-boundary-send-claims.jsonl");
+  const uncertainFile = path.join(stateDir, "connpass-action-boundary-uncertain.jsonl");
   return Object.freeze({
     async report(input = {}) {
       if (!Array.isArray(input.candidates) || input.candidates.length < 1 || input.candidates.length > 10_000) {
@@ -88,29 +259,82 @@ function createConnpassActionTelegram(options = {}) {
       }
       if (candidates.length < 1) invalid();
       const snapshot = digest(candidates);
-      if (fs.existsSync(file)) {
-        const rows = fs.readFileSync(file, "utf8").split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line));
-        const existing = rows.find((row) => row.wake_id === wakeId && row.candidate_snapshot_sha256 === snapshot);
-        if (existing && /^[1-9][0-9]*$/.test(existing.telegram_provider_id)) {
-          return Object.freeze({ telegram_provider_id: existing.telegram_provider_id, completion_disposition: "reused" });
-        }
+      try { ensurePrivateDirectory(stateDir); } catch { throw stageError("CONNPASS_ACTION_BOUNDARY_LEDGER_FAILED"); }
+      let deliveries;
+      let claims;
+      let uncertain;
+      try {
+        deliveries = readLedger(file, DELIVERY_KEYS, "delivery");
+        claims = readLedger(claimFile, CLAIM_KEYS, "claim");
+        uncertain = readLedger(uncertainFile, UNCERTAIN_KEYS, "uncertain");
+      } catch {
+        throw stageError("CONNPASS_ACTION_BOUNDARY_LEDGER_FAILED");
       }
-      const message = lines.join("\n").trim();
+      const identity = `${wakeId}\u0000${snapshot}`;
+      const existing = deliveries.find((row) => ledgerIdentity(row) === identity);
+      if (existing) {
+        return Object.freeze({ telegram_provider_id: existing.telegram_provider_id, completion_disposition: "reused" });
+      }
+      if (uncertain.some((row) => ledgerIdentity(row) === identity) || claims.some((row) => ledgerIdentity(row) === identity)) {
+        throw stageError("CONNPASS_ACTION_BOUNDARY_DELIVERY_UNCERTAIN");
+      }
+      const claim = Object.freeze({
+        schema_version: 1,
+        wake_id: wakeId,
+        candidate_snapshot_sha256: snapshot,
+        claimed_at: exactInstant(now()),
+      });
+      let claimed;
+      try { claimed = acquireClaimMarker(stateDir, wakeId, snapshot); }
+      catch (error) {
+        throw stageError(error && error.markerCreated
+          ? "CONNPASS_ACTION_BOUNDARY_DELIVERY_UNCERTAIN" : "CONNPASS_ACTION_BOUNDARY_CLAIM_FAILED");
+      }
+      if (!claimed) throw stageError("CONNPASS_ACTION_BOUNDARY_DELIVERY_UNCERTAIN");
+      try {
+        appendDurable(claimFile, claim);
+      } catch {
+        try { removeClaimMarker(stateDir, wakeId, snapshot); }
+        catch {
+          try { quarantine(uncertainFile, wakeId, snapshot, "delivery_unknown", now); } catch { /* preserve the stable stage boundary below */ }
+          throw stageError("CONNPASS_ACTION_BOUNDARY_DELIVERY_UNCERTAIN");
+        }
+        throw stageError("CONNPASS_ACTION_BOUNDARY_CLAIM_FAILED");
+      }
+      const message = escapeHtml(lines.join("\n").trim());
       let response;
       try {
         response = await send(message, { telegramTarget, idempotencyKey: `connpass-action-boundary:${wakeId}:${snapshot}` });
-      } catch {
-        throw stageError("CONNPASS_ACTION_BOUNDARY_SEND_FAILED");
+      } catch (error) {
+        const reason = error && UNCERTAIN_REASONS.has(error.safeReason) ? error.safeReason : "transport";
+        try { quarantine(uncertainFile, wakeId, snapshot, reason, now); } catch { /* preserve the stable stage boundary below */ }
+        throw stageError(reason === "transport"
+          ? "CONNPASS_ACTION_BOUNDARY_SEND_FAILED" : "CONNPASS_ACTION_BOUNDARY_PROVIDER_ID_FAILED");
       }
       let providerId;
-      try { providerId = parseOpenClawMessageId(response); }
-      catch { throw stageError("CONNPASS_ACTION_BOUNDARY_PROVIDER_ID_FAILED"); }
-      const observed = now();
-      if (!(observed instanceof Date) || !Number.isFinite(observed.getTime())) invalid();
-      const receipt = Object.freeze({ schema_version: 1, wake_id: wakeId, candidate_snapshot_sha256: snapshot, telegram_provider_id: providerId, observed_at: observed.toISOString() });
-      fs.mkdirSync(stateDir, { recursive: true, mode: 0o700 });
-      fs.appendFileSync(file, `${JSON.stringify(receipt)}\n`, { encoding: "utf8", mode: 0o600 });
-      fs.chmodSync(file, 0o600);
+      let reason = null;
+      if (response && response.delivery_unknown === true) reason = "delivery_unknown";
+      else if (response && response.ok === false) reason = "provider_rejection";
+      if (!reason) {
+        try { providerId = positiveProviderId(response); }
+        catch { reason = "missing_message_id"; }
+      }
+      if (reason) {
+        try { quarantine(uncertainFile, wakeId, snapshot, reason, now); } catch { /* preserve the stable stage boundary below */ }
+        throw stageError("CONNPASS_ACTION_BOUNDARY_PROVIDER_ID_FAILED");
+      }
+      try {
+        appendDurable(file, Object.freeze({
+          schema_version: 1,
+          wake_id: wakeId,
+          candidate_snapshot_sha256: snapshot,
+          telegram_provider_id: providerId,
+          observed_at: exactInstant(now()),
+        }));
+      } catch {
+        try { quarantine(uncertainFile, wakeId, snapshot, "delivery_unknown", now); } catch { /* preserve the stable stage boundary below */ }
+        throw stageError("CONNPASS_ACTION_BOUNDARY_DELIVERY_UNCERTAIN");
+      }
       return Object.freeze({ telegram_provider_id: providerId, completion_disposition: "created" });
     },
   });

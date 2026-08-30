@@ -76,6 +76,62 @@ test("production factory injects direct raw Telegram Bot API sending for wake re
   }
 });
 
+test("official production factory injects the direct Telegram adapter for the manual Connpass boundary", async () => {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-production-connpass-direct-telegram-"));
+  const originalFetch = globalThis.fetch;
+  const requests = [];
+  globalThis.fetch = async (url, options) => {
+    requests.push({ url, options });
+    return { async json() { return { ok: true, result: {
+      message_id: 7002, chat: { id: 123456789, type: "private" }, date: 1_756_000_000, text: "fixture",
+    } }; } };
+  };
+  const candidate = {
+    provider: "connpass",
+    event_ref: "connpass-event://event/401002",
+    canonical_url: "https://tokyo.connpass.com/event/401002/",
+    title: "Tokyo AI Builders LT",
+    participation_slot_status: "available",
+    lightning_talk_status: "unknown",
+    participant_limit: 100,
+    accepted_count: 20,
+    waiting_count: 0,
+    application_deadline_at: null,
+    priority_class: "ai",
+    preference_reason: "AI buildersとの接点に合います。",
+  };
+  try {
+    const dependencies = createMinimalProductionDependencies({
+      repoRoot: "/private/repo", stateDir, wakeId: "wake-production-connpass-direct-1",
+      calendarAccount: "private-account", gogKeyring: "private-keyring", telegramTarget: "123456789",
+      telegramToken: "fixture-telegram-token", lumaFormProfilePath: "/private/form-profile.json",
+      lunaEvidenceDir: "/private/luna-evidence", calendar: {},
+      calendarReader: { async readCalendarGaps() { return []; } },
+      browserRail: {}, providerRouter: { discoverCandidates() {}, runCachedAction() {}, runDirectAction() {}, runAgentFallback() {}, readProviderState() {}, saveRepairedActions() {} },
+      evidenceChain: { async completeEvidence() {} },
+    });
+    assert.deepEqual(await dependencies.reportConnpassActionBoundary({ candidates: [candidate] }), {
+      telegram_provider_id: "7002", completion_disposition: "created",
+    });
+    assert.equal(requests.length, 1);
+    assert.equal(requests[0].url, "https://api.telegram.org/botfixture-telegram-token/sendMessage");
+    assert.deepEqual(JSON.parse(requests[0].options.body), {
+      chat_id: "123456789",
+      text: "Connector::: connpass候補（手動action boundary）\n自動申込: 0件\n\n1. Tokyo AI Builders LT\n優先度: ai\n理由: AI buildersとの接点に合います。\n参加枠: available / 参加 20人 / 定員 100人\nLT: unknown / 補欠: 0人\n締切: provider未提供\nhttps://tokyo.connpass.com/event/401002/",
+      parse_mode: "HTML",
+      disable_web_page_preview: true,
+    });
+    const claimFile = path.join(stateDir, "connpass-action-boundary-send-claims.jsonl");
+    const deliveryFile = path.join(stateDir, "connpass-action-boundary-deliveries.jsonl");
+    assert.equal(fs.readFileSync(claimFile, "utf8").trim().split("\n").length, 1);
+    assert.equal(fs.readFileSync(deliveryFile, "utf8").trim().split("\n").length, 1);
+    assert.equal(fs.existsSync(path.join(stateDir, "connpass-action-boundary-uncertain.jsonl")), false);
+  } finally {
+    globalThis.fetch = originalFetch;
+    fs.rmSync(stateDir, { recursive: true, force: true });
+  }
+});
+
 test("official production factory exposes the complete minimal wake dependency contract", async () => {
   const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-production-deps-"));
   try {

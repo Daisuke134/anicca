@@ -93,6 +93,46 @@ function createDirectReportSender(token) {
   );
 }
 
+function createDirectConnpassActionSender(token) {
+  const telegramToken = requiredText(token, 2_000);
+  return async (message, options = {}) => {
+    let response;
+    try {
+      response = await sendTelegramMessage(
+        telegramToken,
+        requiredText(options.telegramTarget, 200),
+        message,
+      );
+    } catch {
+      const error = new Error("Connpass action Telegram transport failed");
+      error.safeReason = "transport";
+      throw error;
+    }
+    if (!response || typeof response !== "object" || Array.isArray(response) || response.ok !== true
+      || !response.result || typeof response.result !== "object" || Array.isArray(response.result)
+      || !Object.prototype.hasOwnProperty.call(response.result, "message_id")) {
+      const error = new Error("Connpass action Telegram provider result unavailable");
+      error.safeReason = response && response.delivery_unknown === true ? "delivery_unknown" : "provider_rejection";
+      throw error;
+    }
+    const messageId = response.result && response.result.message_id;
+    if (!Number.isSafeInteger(messageId) || messageId <= 0) {
+      const error = new Error("Connpass action Telegram provider message ID unavailable");
+      error.safeReason = "missing_message_id";
+      throw error;
+    }
+    return { messageId: String(messageId) };
+  };
+}
+
+function createUnavailableConnpassActionSender() {
+  return async () => {
+    const error = new Error("Connpass action Telegram transport unavailable");
+    error.safeReason = "transport";
+    throw error;
+  };
+}
+
 function exactNow(value) {
   const date = value instanceof Date ? value : new Date(value);
   if (!Number.isFinite(date.getTime())) invalid();
@@ -443,7 +483,13 @@ function createMinimalProductionDependencies(options = {}) {
   const talkApplicationWorkflow = options.talkApplicationWorkflow || createTalkApplicationWorkflow(talkBrowserProvider);
   const talkEvidenceChain = options.talkEvidenceChain || createTalkEvidenceChain({ stateDir, now });
   const connpassActionTelegram = options.connpassActionTelegram || createConnpassActionTelegram({
-    stateDir, wakeId, telegramTarget, now, send: options.sendMessage,
+    stateDir,
+    wakeId,
+    telegramTarget,
+    now,
+    send: options.sendMessage || (telegramToken
+      ? createDirectConnpassActionSender(telegramToken)
+      : createUnavailableConnpassActionSender()),
   });
 
   const calendar = options.calendar || makeGogCalendar({
