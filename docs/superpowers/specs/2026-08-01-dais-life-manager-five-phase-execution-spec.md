@@ -27,7 +27,7 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 この節は、後段の「現在TODO」「次の一件」「local-only」「self-funded agentは別product」という相反する記述を
 上書きする最新の実行順序SSOTである。後段は実装履歴・organ別acceptanceとして保持するが、次作業の選択には使わない。
 Upworkのterminal evidence、startup context、public claim、GA-01〜13Aは完了または履歴として保持する。
-次の一件はAtomic program ledger Seq 19 `ELZ-C06`のsubstep `C06-15`で、source/result hashを`capability-auth-receipt.json`へ保存する。
+次の一件はAtomic program ledger Seq 19 `ELZ-C06`のsubstep `C06-16`で、C06差分をfresh adversarial reviewへ一回だけ渡す。
 
 #### 0.0.1 最新基盤決定 — ElizaOSを完全forkし、Life Managerをlocal OSSからmulti-tenant SaaSへ育てる
 
@@ -698,7 +698,7 @@ admission whitelistにせず、capability選択とfeasibility判断はC07のCode
 - [x] **C06-12** 既存`LifeManagerService`へcapability authorization operationを接続する — Eliza fork PR #34、merge `ea3a2c6a…`。既存`LifeManagerService`へ12 LOCのthin methodだけを追加し、unknown input、private resolver dependency、optional nowをC06 moduleへ委譲し、Eliza core AuthorizedCapabilityRequestを返す。initial import先誤りをcommit前diff確認で修正。新service/action/provider/state/model/provider branch 0。次はC06-13
 - [x] **C06-13** focused testのGREENを一回確認する — canonical fork `83cf5e57…`と実core source `provider-integrations.ts`を`eliza-source`条件のRAM closureで実行し、Vitest 4.1.10、対象1 file/2 tests PASS、test/typecheck各exit 0。provider-neutral manifest、public exact 2 keys、opaque resolver、real Eliza core consume-once、same authority replay拒否、branded frozen authority、typed human boundary、private provider/account/credential公開0を確認。初回GREENはtestが12:00:40 receiptを12:00:30 clockで検証してcore chronologyに正しく拒否されたため、production 0のtest-only PR #35でclockを修正した事実も記録。private log/`capability-auth-green-receipt.json` mode 0600、receipt SHA256 `b52b33ae…`、DB/model/provider/marketplace/payment effect 0。次はC06-14
 - [x] **C06-14** private auth refでunexpired consume-once、expired/misbound/replay拒否を実行する — canonical fork `83cf5e57…`のC06 production module＋実core sourceを使用。private directory mode 0700、valid/expired/misbound JSON各0600をopaque ref resolverで読み、valid authorityは一回だけfrozen authorization成功、same replay=`STALE_CAPABILITY_AUTHORIZATION`、expired/misbound=`UNTRUSTED_CAPABILITY_POLICY_DECISION`、public resultへprivate provider/account 0。minimal core shimのhost Service未export preflight 1回はauthorization evidenceから除外し、production module直接実行へ修正。private log/`private-authorization-run-receipt.json` mode 0600、receipt SHA256 `951fe42a…`、DB/model/provider/marketplace/payment effect 0。次はC06-15
-- [ ] **C06-15** source/result hashを`capability-auth-receipt.json`へ保存する
+- [x] **C06-15** source/result hashを`capability-auth-receipt.json`へ保存する — canonical fork `83cf5e57…`のC06 module/test/index＋実core 4 source、manifest/private/core/human/reuse/RED/GREEN/real private auth 8 evidenceを全SHA256再計算。provider-neutral manifest、default unknown、one capability、public exact 2 keys、opaque private ref、0600 exact scope/expiry、core再実装0、real consume-once、replay/expired/misbound拒否、closed human kinds、ordinary error humanize 0、private leak 0、既存service、provider branch 0、Skill authority false、focused 2/2、external effect 0、revenue falseをprivate canonical receiptへ固定。mode 0600、SHA256 `b4a6dc0d…`、status=`pending_review`、open findings null。次はC06-16
 - [ ] **C06-16** C06差分をfresh adversarial reviewへ一回だけ渡す
 - [ ] **C06-17** C06 receiptをPASSへ更新する
 - [ ] **C06-18** ELZ-C06をDONEへ更新する
