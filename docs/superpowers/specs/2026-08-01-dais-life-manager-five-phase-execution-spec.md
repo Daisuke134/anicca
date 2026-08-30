@@ -27,7 +27,7 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 この節は、後段の「現在TODO」「次の一件」「local-only」「self-funded agentは別product」という相反する記述を
 上書きする最新の実行順序SSOTである。後段は実装履歴・organ別acceptanceとして保持するが、次作業の選択には使わない。
 Upworkのterminal evidence、startup context、public claim、GA-01〜13Aは完了または履歴として保持する。
-次の一件はAtomic program ledger Seq 20 `ELZ-C07`で、bounded model decisionとmodel-authored graphの既存Eliza contractを調査し、現在activeなC07だけを単一行動へ分解する。
+次の一件はAtomic program ledger Seq 21 `ELZ-C08`で、effect/readback/replay kernelの既存Eliza/Life Manager contractを調査し、現在activeなC08だけを単一行動へ分解する。
 
 #### 0.0.1 最新基盤決定 — ElizaOSを完全forkし、Life Managerをlocal OSSからmulti-tenant SaaSへ育てる
 
@@ -729,7 +729,7 @@ focused test 1 fileとし、正常系＋unlisted ref / private field / invalid s
 - [x] **C07-13** C07差分をfresh adversarial reviewへ一回だけ渡す — Daisの最新明示指示「no more review / no more excessive TDD / TODO順序は維持」を上位指示として採用し、このatomを削除・reorderせずowner waiverで閉じた。reviewer dispatch/model/review/additional test各0、findings raised/open 0、external effect 0。private `review-waiver-receipt.json` mode 0600、SHA256 `85adafc3…`。canonical receipt status=`review_waived`、SHA256 `6e7f0149…`。次はC07-14
 - [x] **C07-14** C07 receiptをPASSへ更新する — final source 3 file hash一致、evidence 8件、focused 3/3、typecheck、実Codex runtime final exit 0、owner review waiver、open findings 0、DB/auth/bridge/browser/marketplace/payment/duplicate effect/secret leak 0をreadback。canonical `specialist-decision-receipt.json` status=`PASS`、mode 0600、SHA256 `dd8142a8…`。次はC07-15
 - [x] **C07-15** ELZ-C07をDONEへ更新する — canonical `specialist-decision-receipt.json` status=`PASS`、SHA256 `dd8142a8…`、実Codex final exit 0、open findings/effect/secret leak 0を再読出しし、Atomic program ledger Seq 20だけをDONEへ更新。次はC07-16
-- [ ] **C07-16** ELZ-C08をNEXTへ更新する — C02〜C07のgeneral-agent基盤完了を保持し、Seq 21だけを`IN_PROGRESS — NEXT`へ更新する。C09以降とPhase Lの順序は不変。次はELZ-C08
+- [x] **C07-16** ELZ-C08をNEXTへ更新する — C02〜C07のgeneral-agent基盤完了を保持し、Atomic program ledger Seq 21 `ELZ-C08`だけを`IN_PROGRESS — NEXT`へ更新。C09以降とPhase Lの順序は不変。次はELZ-C08
 
 Lancersでまだ新しい収益がないことは、この順序を飛ばす理由にしない。現時点はC07がactiveであり、新forkのgeneral-agent基盤が
 Lancers実環境へ到達していない。Lancersでの新規応募・契約・受領金・銀行着金はPhase C完了後のPhase Lで一つずつ実証する。
@@ -763,7 +763,7 @@ Lancers実環境へ到達していない。Lancersでの新規応募・契約・
 | 18 | ELZ-C05 Goal to reference-only WorkItem | **DONE** | canonical private `goal-workitem-receipt.json` mode 0600、SHA256 `a1da21f2…`。fork `f3c79685…`、one scoped active Goal→one PlanGraph/WorkItem、relation unique 2、Goal writer serialization、same replay、typed conflict、separate-process restart、review open 0、model/provider/marketplace/payment 0 |
 | 19 | ELZ-C06 capability and authorization | **DONE** | canonical private `capability-auth-receipt.json` mode 0600、SHA256 `5df6f3ee…`。fork `2a115b9e…`、provider-neutral manifest、opaque ref、real core consume-once、replay/expired/misbound拒否、exact human boundary、ordinary error保持、review open 0、model/provider/marketplace/payment 0 |
 | 20 | ELZ-C07 bounded model decision | **DONE** | canonical private `specialist-decision-receipt.json` mode 0600、SHA256 `dd8142a8…`。fork `934b6fc8…`、Codex SDK/Luna medium、model-authored candidate/tool/next graph、focused 3/3、typecheck、real runtime final exit 0、owner review waiver、open finding/effect/secret leak 0 |
-| 21 | ELZ-C08 effect/readback/replay kernel | TODO | presend reconcile→at most one effect→official readback→unknown reconcile→replay-zeroの`effect-receipt-kernel.json` |
+| 21 | ELZ-C08 effect/readback/replay kernel | **IN_PROGRESS — NEXT** | presend reconcile→at most one effect→official readback→unknown reconcile→replay-zeroの`effect-receipt-kernel.json` |
 | 22 | ELZ-C09 Reflect and plugin restart | TODO | outcome/cost/time/failureをGoalへ帰属し、plugin restart後も同じstateを読む`reflect-restart-receipt.json` |
 
 ##### Phase L — Lancersを最初の実環境としてbankedまで閉じる
