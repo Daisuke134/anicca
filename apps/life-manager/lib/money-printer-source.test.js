@@ -8,6 +8,7 @@ const { createMoneyPrinterSource } = require("./money-printer-source.js");
 const SUPA = Object.freeze({ supaUrl: "https://supa.example/", supaKey: "service-secret" });
 const TENANT = "tenant-a";
 const NOW = "2026-08-29T00:00:00.000Z";
+const OPPORTUNITY_ID = "a".repeat(64);
 
 function response(body, status = 200) {
   return { ok: status >= 200 && status < 300, status, async json() { return body; } };
@@ -29,12 +30,16 @@ function runtimeSnapshot() {
     opportunities: [{
       uid: TENANT, opportunity_id: "a".repeat(64), source_url: "https://public.example/opportunity",
       title: "Public opportunity", value_minor: "50000", currency: "JPY", status: "DISCOVERED",
-      goal_ref: `intent-entry://${TENANT}/a${"a".repeat(63)}`, observed_at: NOW, goal_statement: "must not enter projection input",
+      goal_ref: `intent-entry://${TENANT}/${OPPORTUNITY_ID}`, observed_at: NOW, goal_statement: "must not enter projection input",
     }],
-    runtimeJobs: [{ tenant_id: TENANT, job_id: "goal:a", status: "queued", created_at: NOW, updated_at: NOW, lease_owner: "must-not-leak" }],
-    humanTasks: [{ uid: TENANT, task_id: "b".repeat(64), status: "open", created_at: NOW, updated_at: NOW, answer_ref: "must-not-leak" }],
+    runtimeJobs: [{ tenant_id: TENANT, job_id: `goal:${OPPORTUNITY_ID}`, status: "queued", created_at: NOW, updated_at: NOW, lease_owner: "must-not-leak" }],
+    humanTasks: [{
+      uid: TENANT, task_id: "b".repeat(64), job_id: `goal:${OPPORTUNITY_ID}`, reason_code: "identity_assessment", version: 1,
+      status: "open", created_at: NOW, updated_at: NOW, answer_ref: "must-not-leak",
+      question: "must-not-leak", context_refs: { private_ref: "must-not-leak" },
+    }],
     receipts: [{
-      tenant_id: TENANT, job_id: "goal:a", attempt: 1, outcome: "completed", created_at: NOW,
+      tenant_id: TENANT, job_id: `goal:${OPPORTUNITY_ID}`, attempt: 1, outcome: "completed", created_at: NOW,
       receipt: { record_type: "application_receipt", application_external_id: "application-public-1", provider_secret: "private-provider-state" },
     }],
   };
@@ -61,6 +66,10 @@ test("source reads tenant-scoped live rows and returns only projection-safe fiel
   assert.equal(input.applicationReceipts[0].status, "completed");
   assert.equal(input.applicationReceipts[0].observed_at, NOW);
   assert.equal(input.generalReceipts.length, 0);
+  assert.deepEqual(input.humanTasks[0], {
+    tenant_id: TENANT, task_id: "b".repeat(64), job_id: `goal:${OPPORTUNITY_ID}`, reason_code: "identity_assessment", version: 1,
+    status: "open", created_at: NOW, updated_at: NOW,
+  });
   assert.doesNotMatch(JSON.stringify(input), /goal_statement|service-secret|answer_ref|lease_owner|private-provider-state/i);
   for (const call of calls) {
     assert.match(call.url, /(?:uid|tenant_id|wallet_address)=eq\./);

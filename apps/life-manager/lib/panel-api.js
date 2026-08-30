@@ -378,15 +378,18 @@ async function workroom(scope, opportunityId, opts) {
     runtimeJobs: [job],
     generalReceipts: [],
     applicationReceipts: [],
-    humanTasks: [],
+    humanTasks: input.humanTasks.filter((row) => row && row.tenant_id === scope.uid && row.job_id === jobId),
     earnings: [],
   });
   const card = Object.values(projected.columns).flat().find((candidate) => candidate.opportunity_ref === opportunityRef(scope.uid, opportunityId));
   if (!card) throw workroomError("workroom unavailable");
   const jobRef = runtimeJobRef(scope.uid, jobId);
   const activity = projected.activity
-    .filter((item) => item.ref === card.opportunity_ref || item.ref === jobRef)
-    .map((item) => ({ kind: item.kind, ref: item.ref, status: item.status, observed_at: item.observed_at }));
+    .filter((item) => item.ref === card.opportunity_ref || item.ref === jobRef || item.job_ref === jobRef)
+    .map((item) => ({
+      kind: item.kind, ref: item.ref, ...(item.job_ref ? { job_ref: item.job_ref } : {}),
+      status: item.status, observed_at: item.observed_at,
+    }));
   if (activity.length === 0) throw workroomError("workroom unavailable");
   return {
     opportunity_id: opportunityId,

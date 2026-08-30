@@ -378,7 +378,20 @@ test("Task 7B1 workroom API returns the exact tenant opportunity, matching job, 
         { tenant_id: scope.uid, job_id: `goal:${opportunityId}`, status: "running", created_at: "2026-08-29T00:00:00.000Z", updated_at: "2026-08-29T00:01:00.000Z", input_refs: { goal_ref: "private-input-ref" } },
         { tenant_id: scope.uid, job_id: `goal:${otherId}`, status: "queued", created_at: "2026-08-29T00:00:00.000Z", updated_at: "2026-08-29T00:01:00.000Z" },
       ],
-      generalReceipts: [], applicationReceipts: [], humanTasks: [], earnings: [],
+      generalReceipts: [], applicationReceipts: [], humanTasks: [
+        {
+          tenant_id: scope.uid, task_id: "c".repeat(64), job_id: `goal:${opportunityId}`,
+          reason_code: "identity_assessment", version: 1, status: "open",
+          created_at: "2026-08-29T00:00:00.000Z", updated_at: "2026-08-29T00:02:00.000Z",
+          question: "private question must not leak", answer_ref: "private-answer-ref", context_refs: { secret: "private" },
+        },
+        {
+          tenant_id: scope.uid, task_id: "d".repeat(64), job_id: `goal:${otherId}`,
+          reason_code: "identity_assessment", version: 1, status: "open",
+          created_at: "2026-08-29T00:00:00.000Z", updated_at: "2026-08-29T00:02:00.000Z",
+          question: "foreign job must not leak", answer_ref: "foreign-answer-ref", context_refs: { secret: "foreign" },
+        },
+      ], earnings: [],
     };
   };
 
@@ -396,9 +409,14 @@ test("Task 7B1 workroom API returns the exact tenant opportunity, matching job, 
       activity: [
         { kind: "opportunity", ref: `opportunity://tenant-a/${opportunityId}`, status: "WORKING", observed_at: "2026-08-29T00:00:00.000Z" },
         { kind: "work", ref: `runtime-job://tenant-a/goal%3A${opportunityId}`, status: "running", observed_at: "2026-08-29T00:01:00.000Z" },
+        {
+          kind: "human_task", ref: `human-task://tenant-a/${"c".repeat(64)}`,
+          job_ref: `runtime-job://tenant-a/goal%3A${opportunityId}`,
+          status: "open", observed_at: "2026-08-29T00:02:00.000Z",
+        },
       ],
     });
-    assert.doesNotMatch(JSON.stringify(result.body), /goal_statement|private|input_refs|other/);
+    assert.doesNotMatch(JSON.stringify(result.body), /goal_statement|private|foreign|input_refs|answer_ref|question|context_refs|other/);
 
     const unknown = await opportunityRequest(base, `money-printer/workroom?opportunity_id=${"c".repeat(64)}`, { method: "GET" });
     assert.equal(unknown.response.status, 404);
