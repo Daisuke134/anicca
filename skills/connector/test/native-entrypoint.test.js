@@ -85,7 +85,7 @@ test("official native pass builds the production dependency boundary from allowl
       ownerToken: "native-pass-minimal-owner-123456",
       env: {
         HOME: directory,
-        CONNPASS_API_KEY: "fixture-connpass-api-key-0000",
+        CONNPASS_API_KEY: BASE_ENV.CONNPASS_API_KEY,
         GOG_ACCOUNT: "private@example.com",
         DAIS_LEGAL_NAME_ROMAJI: "Dais Example",
         GEMINI_API_KEY: "fixture-ranking-key",
@@ -113,7 +113,7 @@ test("official native pass builds the production dependency boundary from allowl
     assert.equal(observed[0][1].telegramToken, "fixture-telegram-token");
     assert.match(observed[0][1].eventPreferences, /YC.*Lightning Talk.*AI.*crypto.*startup/i);
     assert.equal(observed[0][1].geminiApiKey, "fixture-ranking-key");
-    assert.equal(observed[0][1].connpassApiKey, "fixture-connpass-api-key-0000");
+    assert.equal(observed[0][1].connpassApiKey, BASE_ENV.CONNPASS_API_KEY);
     assert.match(observed[0][1].wakeId, /^wake-[0-9a-f]{24}$/);
     assert.equal(observed[0][1].wakeId.includes("native-pass-minimal-owner"), false);
     assert.deepEqual(observed[1][1].providers, ["luma", "connpass", "peatix"]);
