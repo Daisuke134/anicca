@@ -69,6 +69,14 @@ Deployment state: main-derived sparse release `bd274627` is loaded explicitly by
 
 Red Hat official CXS adds 27 Japan-AI results, but unfinished-only batching would hide every fresh source until all 188 backlog rows drain. Build a maximum 400-row ranking batch: keep every unfinished official row first, then fill remaining slots with fresh rows after company interleaving. If unfinished rows already reach 400, rank them in the existing chunk contract; never discard unfinished work. This is context-capacity bookkeeping, not job-fit judgment.
 
+#### Task 1G: Send the model's focused source query to Workday CXS — active
+
+**Files:**
+- Modify: `apps/job-search-loop/job_search_loop/workday_discovery.py`
+- Modify focused checks in: `apps/job-search-loop/tests/test_workday_discovery.py`
+
+Every validated source includes `search_text`, but `_fetch_jobs()` currently sends an empty Workday search. Use the exact source `search_text` in every paginated CXS request. Preserve payload validation, total consistency, pagination, URL identity and source-level fail-closed behavior. Verify Red Hat-style source requests carry `Tokyo Japan AI ...` rather than an empty query.
+
 ---
 
 ### Task 2: Make Job Hunting notifications quiet and product-owned

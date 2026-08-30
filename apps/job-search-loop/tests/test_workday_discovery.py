@@ -117,7 +117,7 @@ class WorkdayDiscoveryTests(unittest.TestCase):
 
             self.assertEqual(result["discovered"][0]["title"], "Best")
 
-    def test_cxs_fetch_paginates_empty_search_until_official_total(self):
+    def test_cxs_fetch_paginates_exact_source_search_text_until_official_total(self):
         payloads = [
             {"total": 41, "jobPostings": [
                 {"title": f"Role {index}", "externalPath": f"/job/R{index}"}
@@ -142,15 +142,19 @@ class WorkdayDiscoveryTests(unittest.TestCase):
             requests.append(json.loads(request.data))
             return Response(payloads[len(requests) - 1])
 
+        source = {**TEST_SOURCES[0], "search_text": "Tokyo Japan AI"}
         with patch("job_search_loop.workday_discovery.urlopen", fake_urlopen), patch(
             "job_search_loop.workday_discovery.json.load",
             side_effect=lambda response: response.payload,
         ):
-            rows = _fetch_jobs(TEST_SOURCES[0])
+            rows = _fetch_jobs(source)
 
         self.assertEqual(len(rows), 41)
         self.assertEqual([request["offset"] for request in requests], [0, 20, 40])
-        self.assertEqual({request["searchText"] for request in requests}, {""})
+        self.assertEqual(
+            [request["searchText"] for request in requests],
+            ["Tokyo Japan AI", "Tokyo Japan AI", "Tokyo Japan AI"],
+        )
 
     def test_cxs_fetch_raises_when_page_ends_before_official_total(self):
         payloads = [
