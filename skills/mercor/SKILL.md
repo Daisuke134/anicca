@@ -33,7 +33,7 @@ Mercor is a global provider lane of Life Manager's existing Job Hunter system. I
 
 ## Ready-to-submit automation
 
-When a new listing page shows `3 of 3 steps completed`, `100%`, completed Domain Expert Interview reuse, and a visible `Submit application`, the existing hourly Job Hunter loop may submit exactly one new listing in that wake. It must deduplicate against the private ledger, read back the submitted state, and never resubmit an existing pending application.
+When a new listing page shows `3 of 3 steps completed`, `100%`, completed Domain Expert Interview reuse, and a visible `Submit application`, the existing 30-minute Job Hunter loop submits every grounded ready listing within the bounded candidate scan. Before each click it must durably claim the listing, then read back the submitted state; an existing claim, pending application, or ambiguous prior click is never retried.
 
 ## Reusable open-source macro loop
 
@@ -41,7 +41,7 @@ Treat this as a provider module for any operator, not as a shared account or a g
 
 The loop owns recurring discovery, ready-form submission, Gmail/Calendar reconciliation, reminders, evidence, duplicate protection, and settled-earnings accounting. It does not impersonate interviews, assessments, or paid work where Mercor prohibits AI/automation. `$10K verified` means three consecutive cycles of actual settled payouts, not an offer or an estimated capacity.
 
-The execution style is model-led: observe the live page, reason about the next action, and adapt to page drift. Keep deterministic code small and boundary-focused—owned browser session, domain allowlist, lease, dedupe, one guarded submit, read-back, evidence, and ledger. Do not turn every possible UI branch into a brittle script.
+The execution style is model-led: observe the live page, reason about the next action, and adapt to page drift. Keep deterministic code small and boundary-focused—owned browser session, domain allowlist, lease, pre-effect claim, read-back, evidence, and ledger. Do not turn every possible UI branch into a brittle script.
 
 ## Calendar policy
 
@@ -51,4 +51,4 @@ The execution style is model-led: observe the live page, reason about the next a
 
 ## Loop contract
 
-The existing hourly `job-hunter` acquisition loop is the only loop. Do not create a second Mercor executor. The provider adapter must acquire the existing pass lease, deduplicate listings, submit at most the bounded per-wake quota, record evidence, and release the lease in a finally path.
+The existing 30-minute `job-hunter` acquisition loop is the only loop. Do not create a second Mercor executor. The provider adapter must acquire the existing pass lease, deduplicate listings, submit every grounded ready listing within the bounded per-wake scan, record evidence, and release the lease in a finally path.

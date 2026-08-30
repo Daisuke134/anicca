@@ -11,9 +11,16 @@ fi
 if [ -n "${LM_TELEGRAM_ALERT_CHAT_ID:-}" ] && [ -z "${TELEGRAM_ALERT_CHAT_ID:-}" ]; then
   export TELEGRAM_ALERT_CHAT_ID="$LM_TELEGRAM_ALERT_CHAT_ID"
 fi
-LIFE_MANAGER_REPO="${LIFE_MANAGER_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}"
-[ -n "$LIFE_MANAGER_REPO" ] || { echo "LIFE_MANAGER_REPO could not be resolved" >&2; exit 2; }
-export LIFE_MANAGER_REPO
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+LIFE_MANAGER_RELEASE_ROOT="${LIFE_MANAGER_RELEASE_ROOT:-$(cd "$SCRIPT_DIR/../../.." && pwd)}"
+LIFE_MANAGER_SOURCE_REPO="${LIFE_MANAGER_SOURCE_REPO:-$(git -C "$PWD" rev-parse --show-toplevel 2>/dev/null)}"
+[ -x "$LIFE_MANAGER_RELEASE_ROOT/bin/lm-loop" ] || { echo "LIFE_MANAGER_RELEASE_ROOT invalid" >&2; exit 2; }
+[ -n "$LIFE_MANAGER_SOURCE_REPO" ] && [ -w "$LIFE_MANAGER_SOURCE_REPO" ] \
+  && git -C "$LIFE_MANAGER_SOURCE_REPO" remote get-url origin 2>/dev/null \
+  | grep -Eq '(^|[:/])Daisuke134/life-manager(\.git)?$' \
+  || { echo "LIFE_MANAGER_SOURCE_REPO invalid" >&2; exit 2; }
+export LIFE_MANAGER_RELEASE_ROOT LIFE_MANAGER_SOURCE_REPO
+export LIFE_MANAGER_REPO="$LIFE_MANAGER_RELEASE_ROOT"
 # capafy-loop-daily.sh — deterministic hourly wake for the Capafy money loop:
 # found via live audit that the tmux STARTUP prompt's self-registered `CronCreate "0 9 * * *"` never
 # actually persisted anywhere on this machine — no cron store, no second daily run, tmux session sat
@@ -23,19 +30,25 @@ export LIFE_MANAGER_REPO
 # slot is acted on within one hour without relying on an LLM to schedule itself.
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/bin:$PATH"
 set -uo pipefail
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 RUN_AGENT="$SCRIPT_DIR/../../earn/marketing-engine/run_agent.sh"
 LOG="$HOME/.local/state/life-manager/logs/capafy-loop-daily.log"
 LAST_PASS_MARKER="$HOME/.local/state/life-manager/state/.capafy-loop-last-pass"
+HEALTHY_MARKER="$HOME/.local/state/life-manager/state/capafy-autopublish/.capafy-healthy-pass"
 TERMINAL_LEDGER="$HOME/.local/state/life-manager/state/capafy-daily-terminals.jsonl"
 TERMINAL_TOOL="$SCRIPT_DIR/capafy_daily_terminal.py"
 PASS_SCHEMA="$SCRIPT_DIR/capafy-loop-pass.schema.json"
 OFFLINE_CADENCE_TOOL="$SCRIPT_DIR/capafy_offline_cadence.py"
 OFFLINE_CADENCE_STATE="$HOME/.local/state/life-manager/state/capafy-offline-build-cadence.json"
+SELFHEAL_REQUEST="$HOME/.local/state/life-manager/state/capafy-loop-selfheal-request.json"
 EXECUTION_ID="$(date -u +%Y%m%dT%H%M%SZ)-$$"
 TERMINAL_RECORDED=0
 mkdir -p "$(dirname "$LOG")"
 echo "=== capafy-loop-daily run $(date '+%F %T %Z') ===" >>"$LOG"
+
+mark_healthy() {
+  mkdir -p "$(dirname "$LAST_PASS_MARKER")" "$(dirname "$HEALTHY_MARKER")"
+  touch "$LAST_PASS_MARKER" "$HEALTHY_MARKER"
+}
 
 record_terminal() {
   local rc="$1" verdict="${2:-UNCLASSIFIED}"
@@ -54,24 +67,25 @@ python3 "$TERMINAL_TOOL" start --ledger "$TERMINAL_LEDGER" \
 
 # Enforce the five simultaneous-submission cap before spending an agent turn.
 # CAP_FULL permits one offline-only candidate build per local calendar day. It never writes to Capafy.
-INVENTORY="$(python3 "$LIFE_MANAGER_REPO/skills/capafy-autopublish/scripts/inventory_status.py" 2>>"$LOG")"
+INVENTORY="$(CAPAFY_CATALOG_DIR="$LIFE_MANAGER_SOURCE_REPO/skills/capafy/catalog" \
+  python3 "$LIFE_MANAGER_RELEASE_ROOT/skills/capafy-autopublish/scripts/inventory_status.py" 2>>"$LOG")"
 VERDICT="$(printf '%s\n' "$INVENTORY" | sed -n 's/^VERDICT=//p' | head -1)"
 printf '%s\n' "$INVENTORY" | tail -n 1 | python3 \
-  "$LIFE_MANAGER_REPO/skills/capafy-autopublish/scripts/candidate_backlog.py" refresh \
+  "$LIFE_MANAGER_RELEASE_ROOT/skills/capafy-autopublish/scripts/candidate_backlog.py" refresh \
+  --catalog "$LIFE_MANAGER_SOURCE_REPO/skills/capafy/catalog" \
   --inventory-stdin >>"$LOG" 2>&1 || exit 1
-if [ "$VERDICT" = "CAP_FULL" ]; then
+if [ "$VERDICT" = "CAP_FULL" ] && [ ! -f "$SELFHEAL_REQUEST" ]; then
   if ! python3 "$OFFLINE_CADENCE_TOOL" claim --state "$OFFLINE_CADENCE_STATE" \
       --day "$(date +%F)" --execution-id "$EXECUTION_ID" >>"$LOG" 2>&1; then
     echo "=== capafy-loop-daily done rc=0 (HEALTHY-IDLE: CAP_FULL; offline build already claimed today; agent spend=0; platform write=0) $(date '+%F %T %Z') ===" >>"$LOG"
-    mkdir -p "$(dirname "$LAST_PASS_MARKER")"
-    touch "$LAST_PASS_MARKER" || exit 2
+    mark_healthy || exit 2
     exit 0
   fi
 
   BACKLOG="$HOME/.local/state/life-manager/state/capafy-candidate-backlog.json"
   READY_BEFORE="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("counts",{}).get("ready",0))' "$BACKLOG")"
   EVIDENCE_DIR="$HOME/.local/state/life-manager/state/agent-runner-evidence/capafy-offline-build/$(date +%s)-$$"
-  OFFLINE_PROMPT='Build exactly ONE differentiated, honest Capafy skill candidate OFFLINE inside $LIFE_MANAGER_REPO/skills/capafy/catalog/<new-slug>/. This is a CAP_FULL pass: NEVER call Capafy create/publish/configure/ship/submit APIs or UI, and never modify any remote platform state. Use sales_selector.py plus current inventory and existing catalog to avoid duplicates. Produce SKILL.md, LISTING.md, icon.svg, and evidence/verified-demonstration.md containing a concrete input, actual output, and verification notes. Follow the repository skill-creator quality contract, keep claims within what the skill can actually do, and run the existing listing lint. Return status=success only after all four repo-owned artifacts exist and lint passes; otherwise status=failure. Include the created path and lint evidence.'
+  OFFLINE_PROMPT='Build exactly ONE differentiated, honest Capafy skill candidate OFFLINE inside $LIFE_MANAGER_SOURCE_REPO/skills/capafy/catalog/<new-slug>/. Use only executables from $LIFE_MANAGER_RELEASE_ROOT. This is a CAP_FULL pass: NEVER call Capafy create/publish/configure/ship/submit APIs or UI, and never modify any remote platform state. Use sales_selector.py plus current inventory and existing catalog to avoid duplicates. Produce SKILL.md, LISTING.md, icon.svg, and evidence/verified-demonstration.md containing a concrete input, actual output, and verification notes. Follow the repository skill-creator quality contract, keep claims within what the skill can actually do, require No Free Trial in every plan, and run the release-owned listing lint. Commit, push, merge through a PR, and verify origin/main contains the completed source change. Return status=success only after all four repo-owned artifacts exist, lint passes, and the commit is an ancestor of origin/main; otherwise status=failure. Include the created path, commit, merged-main readback, and lint evidence.'
   printf '%s\n' "$OFFLINE_PROMPT" | AGENT_RUNNER_EVIDENCE_MIN_FREE_BYTES=67108864 "$RUN_AGENT" \
     --task-class browser-lane-agent --schema "$PASS_SCHEMA" --evidence-dir "$EVIDENCE_DIR" \
     --task-label capafy-offline-daily --loop capafy >>"$LOG" 2>&1
@@ -79,14 +93,14 @@ if [ "$VERDICT" = "CAP_FULL" ]; then
   [ "$RC" -eq 0 ] || exit "$RC"
   python3 "$TERMINAL_TOOL" result --summary "$EVIDENCE_DIR/summary.json" >>"$LOG" 2>&1 || exit $?
   printf '%s\n' "$INVENTORY" | tail -n 1 | python3 \
-    "$LIFE_MANAGER_REPO/skills/capafy-autopublish/scripts/candidate_backlog.py" refresh \
+    "$LIFE_MANAGER_RELEASE_ROOT/skills/capafy-autopublish/scripts/candidate_backlog.py" refresh \
+    --catalog "$LIFE_MANAGER_SOURCE_REPO/skills/capafy/catalog" \
     --inventory-stdin >>"$LOG" 2>&1 || exit 1
   READY_AFTER="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("counts",{}).get("ready",0))' "$BACKLOG")"
   [ "$READY_AFTER" -gt "$READY_BEFORE" ] || { echo "offline build produced no new ready candidate" >>"$LOG"; exit 1; }
   VERDICT="CAP_FULL_OFFLINE_BUILT"
   echo "=== capafy-loop-daily done rc=0 (CAP_FULL_OFFLINE_BUILT; ready=$READY_BEFORE->$READY_AFTER; platform write=0) $(date '+%F %T %Z') ===" >>"$LOG"
-  mkdir -p "$(dirname "$LAST_PASS_MARKER")"
-  touch "$LAST_PASS_MARKER" || exit 2
+  mark_healthy || exit 2
   exit 0
 fi
 if [ "$VERDICT" = "SERVER_UNREADABLE" ]; then
@@ -98,6 +112,7 @@ PROMPT='You are the Anicca Capafy money-loop core (claude-p, self-improving + se
 
 EVIDENCE_DIR="$HOME/.local/state/life-manager/state/agent-runner-evidence/capafy-marketplace/$(date +%s)-$$"
 PROMPT="$PROMPT RUNTIME FACT: this unique launchd owner now wakes hourly; do not create another scheduler. INITIAL WRAPPER INVENTORY VERDICT: $VERDICT. Historical log lines before this execution are not current failures; use only commands and terminal records produced at or after execution $EXECUTION_ID when diagnosing this pass. DRAINED requires designing and fully submitting one new skill; a successful DRAINED drainer is not an ENOSPC failure and is not the terminal action while a submission slot remains. SALES SIGNAL OVERRIDE: if sales_selector.py returns signal=unattributed_sales, company orders are real but no Agent winner is observable. Do not fabricate a winner, do not claim a winning category, and do not create a clone on that basis. Use tracked marketing rotation across existing online listings to create attribution; CAP_FULL remains a legitimate no-write terminal. TERMINAL STATUS RULE: return status=failure if any required action, Telegram report, or official readback failed; status=success only when required work and official effect are complete; status=no_op only for a legitimate external no-write terminal. Include at least one concrete evidence item."
+PROMPT="$PROMPT RUNTIME BOUNDARY: execute code only from LIFE_MANAGER_RELEASE_ROOT; create/edit/commit/push public source only in LIFE_MANAGER_SOURCE_REPO and never write the read-only release."
 # task-class browser-lane-agent (900s), not tool-agent (180s): a capafy pass
 # drives the Capafy CP1/CP2/CP3 browser UI. Measured 2026-07-27 against this
 # exact prompt, a READ-ONLY dry run already took 21 turns / 229s, and a real
@@ -122,6 +137,5 @@ RESULT_STATUS="$(printf '%s' "$RESULT_JSON" | python3 -c 'import json,sys; print
 VERDICT="RESULT_${RESULT_STATUS}"
 echo "=== capafy-loop-daily result status=$RESULT_STATUS mapped_rc=$RESULT_RC ===" >>"$LOG"
 [ "$RESULT_RC" -eq 0 ] || exit "$RESULT_RC"
-mkdir -p "$(dirname "$LAST_PASS_MARKER")"
-touch "$LAST_PASS_MARKER" || exit 2
+mark_healthy || exit 2
 exit 0

@@ -112,8 +112,13 @@ def _preserve_operational_attributes(new_bytes: bytes, old_bytes: bytes | None) 
     for key in ("WorkingDirectory", "ProcessType", "RunAtLoad", "ThrottleInterval", "Umask", "Nice"):
         if key in old:
             new[key] = old[key]
+    preserved_env = {
+        key: value
+        for key, value in (old.get("EnvironmentVariables") or {}).items()
+        if key != "CODEX_HOME"
+    }
     new["EnvironmentVariables"] = {
-        **(old.get("EnvironmentVariables") or {}),
+        **preserved_env,
         **(new.get("EnvironmentVariables") or {}),
     }
     return plistlib.dumps(new, fmt=plistlib.FMT_XML, sort_keys=True)

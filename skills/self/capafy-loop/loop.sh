@@ -31,7 +31,10 @@ fetch(){ local name="$1" url="$2"; shift 2
   if [ "${CAPAFY_TEST:-}" = "1" ] && [ -n "${CAPAFY_FIXTURE:-}" ]; then cat "$CAPAFY_FIXTURE/$name.json" 2>/dev/null || echo '{}'; return 0; fi
   curl -s --max-time 20 "$@" "$url" 2>/dev/null; }
 HEAL=""; add_heal(){ HEAL="$HEAL$1; "; }
-CAP_TOK="$(python3 -c "import json;print(json.load(open('$LIFE_MANAGER_REPO/skills/capafy-autopublish/vendor/capafy-publisher/config.json'))['access_token'])" 2>/dev/null || echo)"
+CAP_TOK="${CAPAFY_ACCESS_TOKEN:-}"
+if [ -z "$CAP_TOK" ]; then
+  CAP_TOK="$(python3 -c "import json;print(json.load(open('$LIFE_MANAGER_REPO/skills/capafy-autopublish/vendor/capafy-publisher/config.json'))['access_token'])" 2>/dev/null || echo)"
+fi
 
 # auth
 if [ "${CAPAFY_TEST:-}" = "1" ]; then

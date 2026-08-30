@@ -8,7 +8,7 @@
 価格:
 - B2B生産性(deck/research/resume/data/SEO/金融) → $19.99-24.99/月
 - コンテンツ量産(台本/SNS/poster/画像)          → $1.99-7.99/日 or 週
-- Free Trial を必ず front door に付ける（trial quota 3程度）
+- Free Trialは禁止。全プランをNo Free Trialにして、最初の利用から有料にする
 
 黒字条件(実数): 週$5.99 × cap8/週 → 手残り $5.99×0.8=$4.79 vs 総コスト(API $0.12/回×8=$0.96 + sandbox $0.07/日×7=$0.49 = $1.45) ＝ **約3.3:1**。`(API/回×cap)+(sandbox$0.07×日数) ≤ cyclePrice×0.8/2` を満たすこと。cap40は赤字。
 手数料: Capafy 20% / 初回$0.99認証 / Sandbox Fee $0.07/日(subscriptionのみ)。

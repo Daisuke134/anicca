@@ -76,3 +76,37 @@ test("all four launchd boot scripts load the shared guarded env loader", () => {
     assert.ok(source.includes("lm_load_env_file"), `${script} must call lm_load_env_file`);
   }
 });
+
+test("every marketing publication boot script loads the private marketing env", () => {
+  for (const script of [
+    "anicca-en-affirmation-instagram-production-boot.sh",
+    "anicca-en-card-instagram-production-boot.sh",
+    "anicca-en-slideshow-tiktok-production-boot.sh",
+    "anicca-en-widget-instagram-production-boot.sh",
+    "anicca-he-production-boot.sh",
+    "anicca-ja-widget-instagram-production-boot.sh",
+    "anicca-jp4-production-boot.sh",
+    "anicca-larry-ja-instagram-production-boot.sh",
+    "anicca-main-instagram-production-boot.sh",
+    "anicca-main-tiktok-production-boot.sh",
+    "anicca-obou-instagram-production-boot.sh",
+    "honne-en-production-boot.sh",
+    "honne-ja-production-boot.sh",
+  ]) {
+    const source = fs.readFileSync(path.join(__dirname, script), "utf8");
+    assert.ok(
+      source.includes("LIFE_MANAGER_MARKETING_ENV_FILE"),
+      `${script} must use the private marketing env override`,
+    );
+    assert.ok(
+      source.includes(".local/state/life-manager/private/marketing.env"),
+      `${script} must default to the private marketing env`,
+    );
+  }
+});
+
+test("JA main TikTok boot executes the Larry carousel owner", () => {
+  const source = fs.readFileSync(path.join(__dirname, "anicca-main-tiktok-production-boot.sh"), "utf8");
+  assert.match(source, /anicca-larry-ja-canary\.js" run-ja-main-tiktok-production/);
+  assert.doesNotMatch(source, /honne-ja-cycle|run-anicca-main/);
+});

@@ -8,9 +8,10 @@
 #   Publishing into an under-funded account
 #   guarantees a re-reject. This gate stops the loop BEFORE it wastes a publish.
 #
-# It does two REAL checks against OpenRouter (no dry-run):
-#   1. GET /credits  -> remaining = total_credits - total_usage  (must be >= threshold)
-#   2. POST /chat/completions anthropic/claude-sonnet-4.6 max_tokens=5 -> must return 200 + content
+# It does three REAL checks against OpenRouter (no dry-run):
+#   1. GET /key -> per-key limit_remaining must be null (unlimited) or > 0
+#   2. GET /credits -> remaining = total_credits - total_usage (must be >= threshold)
+#   3. POST /chat/completions anthropic/claude-sonnet-4.6 max_tokens=5 -> must return 200 + content
 # NEVER prints the key. Exits 0 = healthy (publish may proceed), 1 = block (fail-closed).
 #
 # Usage: key_health_gate.sh [min_remaining_usd]   (default 2.00)
@@ -48,6 +49,36 @@ fi
 if [ -z "$KEY" ]; then
   echo "KEY_HEALTH=FAIL reason=CAPAFY_HOST_OPENROUTER_KEY missing"; exit 1
 fi
+
+KEY_LIMIT_STATUS="$(curl -s --max-time 20 https://openrouter.ai/api/v1/key \
+  -H "Authorization: Bearer $KEY" | python3 -c '
+import json, math, sys
+try:
+    data = json.load(sys.stdin).get("data")
+    if not isinstance(data, dict) or "limit_remaining" not in data:
+        print("ERR")
+    else:
+        remaining = data["limit_remaining"]
+        if remaining is None:
+            print("UNLIMITED")
+        elif isinstance(remaining, bool) or not isinstance(remaining, (int, float)) \
+                or not math.isfinite(remaining):
+            print("ERR")
+        elif remaining <= 0:
+            print("EXHAUSTED")
+        else:
+            print("AVAILABLE")
+except Exception:
+    print("ERR")
+' 2>/dev/null)"
+
+case "$KEY_LIMIT_STATUS" in
+  EXHAUSTED)
+    alert_user "unknown" "BLOCKED (per-key limit exhausted)"
+    echo "KEY_HEALTH=FAIL reason=key_limit_exhausted"; exit 1 ;;
+  AVAILABLE|UNLIMITED) ;;
+  *) echo "KEY_HEALTH=FAIL reason=key_read_failed"; exit 1 ;;
+esac
 
 REMAIN="$(curl -s --max-time 20 https://openrouter.ai/api/v1/credits \
   -H "Authorization: Bearer $KEY" | python3 -c "

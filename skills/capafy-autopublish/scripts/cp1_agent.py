@@ -36,6 +36,7 @@ so the (x,y) in the state readout map directly to `click <x> <y>`.
 """
 import fcntl
 import json, os, signal, sys, time, urllib.request
+from urllib.parse import quote
 from playwright.sync_api import sync_playwright
 
 SHOT = os.environ.get("CP1_SHOT", "/tmp/cp1_shot.png")
@@ -220,6 +221,8 @@ def _raw_capafy_page(cdp, target_hint=""):
     # healthy.  Probe each page with a short Runtime.evaluate instead of treating
     # "newest target" as an availability guarantee.
     targets = _capafy_page_targets(cdp)
+    if not targets:
+        raise RuntimeError("no existing Capafy createAgent page target")
     if target_hint:
         exact = [t for t in targets if target_hint in str(t.get("url", ""))]
         if exact:
@@ -238,6 +241,54 @@ def _raw_capafy_page(cdp, target_hint=""):
                 except Exception:
                     pass
     raise RuntimeError("no responsive Capafy CDP page: " + "; ".join(failures[-3:]))
+
+
+def _raw_create_capafy_target(cdp, url):
+    """Create a dedicated, safe createAgent target through Chrome's HTTP CDP API.
+
+    Raw page CDP can only attach to an already-existing page websocket.  CP1
+    `open` is also the operation that establishes that page, so a browser with
+    no Capafy tab used to fail before it could navigate.  `/json/new` creates a
+    separate tab instead of repurposing one of the daily driver's tabs.
+    """
+    from drive_checkpoint2 import _is_capafy_target_url, _validate_cdp_base
+    cdp = _validate_cdp_base(cdp)
+    if not _is_capafy_target_url(url):
+        raise RuntimeError("CP1 raw open requires a Capafy createAgent URL")
+    request = urllib.request.Request(
+        f"{cdp}/json/new?{quote(url, safe='')}", method="PUT"
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=8) as response:
+            target = json.loads(response.read())
+    except Exception as exc:
+        raise RuntimeError("unable to create safe Capafy CDP target") from exc
+    if not isinstance(target, dict) or not target.get("webSocketDebuggerUrl"):
+        raise RuntimeError("Chrome did not return a page websocket for safe Capafy target")
+    return target
+
+
+def _raw_page_from_target(target):
+    from drive_checkpoint2 import _RawPage
+    page = _RawPage(target["webSocketDebuggerUrl"], call_timeout=4, connect_timeout=4)
+    try:
+        page.evaluate("document.readyState")
+        return page
+    except Exception:
+        page.close()
+        raise
+
+
+def _raw_open_page(cdp, url):
+    """Return a Capafy page for `open`, creating a dedicated one if required."""
+    try:
+        return _raw_capafy_page(cdp, url)
+    except RuntimeError as exc:
+        # Do not mask a frozen/failed existing Capafy renderer.  Creation is
+        # only the recovery for the precise no-target condition.
+        if "no existing Capafy createAgent page target" not in str(exc):
+            raise
+    return _raw_page_from_target(_raw_create_capafy_target(cdp, url))
 
 
 def _raw_click(pg, coords):
@@ -321,7 +372,7 @@ def _raw_upload(pg, idx, path):
 def raw_main(cmd):
     """Bounded raw-CDP fallback for every CP1 primitive except file upload."""
     target_hint = sys.argv[2] if cmd == "open" else os.environ.get("CP1_TARGET_TOKEN", "")
-    pg = _raw_capafy_page(CDP, target_hint)
+    pg = _raw_open_page(CDP, target_hint) if cmd == "open" else _raw_capafy_page(CDP, target_hint)
     try:
         if cmd == "open":
             url = sys.argv[2]

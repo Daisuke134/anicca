@@ -53,8 +53,8 @@ def _atomic_json(path: Path, value: dict) -> None:
         except FileNotFoundError: pass
 
 
-def _run_entrypoint(command: list[str]) -> int:
-    process = subprocess.Popen(command, start_new_session=True)
+def _run_entrypoint(command: list[str], env: dict[str, str] | None = None) -> int:
+    process = subprocess.Popen(command, start_new_session=True, env=env)
     previous = {}
 
     def forward(signum, _frame):
@@ -104,7 +104,8 @@ def main(argv: list[str] | None = None) -> int:
         ))
     except (OSError, ValueError) as error:
         print(f"lm-loop-run: start event failed: {error}", file=sys.stderr)
-    return_code = _run_entrypoint(command)
+    return_code = _run_entrypoint(
+        command, env={**os.environ, "LIFE_MANAGER_RELEASE_ROOT": str(release_root)})
     try:
         event = build_runtime_event(
             loop_id=loop_id, domain=entry["domain"], run_id=run_id,

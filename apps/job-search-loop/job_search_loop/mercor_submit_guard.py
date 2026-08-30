@@ -1,7 +1,12 @@
 from __future__ import annotations
 
+import argparse
+import fcntl
 import hashlib
+import json
+import os
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 
 from .mercor_provider import MercorListing, is_approved_mercor_url, ready_for_submit
@@ -18,6 +23,67 @@ class MercorSubmitClaim:
     url: str
     claim_token: str
     pre_submit_evidence_sha256: str
+
+
+def fenced_listing_ids(path: Path) -> set[str]:
+    if not path.is_file():
+        return set()
+    identifiers: set[str] = set()
+    for line in path.read_text(encoding="utf-8").splitlines():
+        try:
+            value = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        listing_id = value.get("listing_id") if isinstance(value, dict) else None
+        if isinstance(listing_id, str) and listing_id.strip():
+            identifiers.add(listing_id.strip())
+    return identifiers
+
+
+def claim_submission_once(
+    *,
+    fence_ledger: Path,
+    listing_id: str,
+    title: str,
+    url: str,
+    pre_submit_evidence: Path,
+    run_id: str,
+) -> bool:
+    """Durably fence one listing before the browser click."""
+    listing_id = listing_id.strip()
+    if not listing_id or not is_approved_mercor_url(url):
+        raise MercorSubmitGuardError("invalid Mercor submission identity")
+    evidence = pre_submit_evidence.expanduser().resolve()
+    if not evidence.is_file():
+        raise MercorSubmitGuardError("pre-submit evidence is missing")
+    ledger = fence_ledger.expanduser().resolve()
+    ledger.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    lock_path = ledger.with_name(f"{ledger.name}.lock")
+    with lock_path.open("a+", encoding="utf-8") as lock:
+        os.chmod(lock_path, 0o600)
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        if listing_id in fenced_listing_ids(ledger):
+            return False
+        evidence_sha256 = hashlib.sha256(evidence.read_bytes()).hexdigest()
+        claim_token = hashlib.sha256(
+            f"{listing_id}\n{url}\n{evidence_sha256}".encode("utf-8")
+        ).hexdigest()
+        event = {
+            "listing_id": listing_id,
+            "title": title,
+            "url": url,
+            "status": "submit_claimed",
+            "run_id": run_id,
+            "claim_token": claim_token,
+            "pre_submit_evidence_sha256": evidence_sha256,
+            "observed_at": datetime.now(timezone.utc).isoformat(),
+        }
+        with ledger.open("a", encoding="utf-8") as output:
+            output.write(json.dumps(event, ensure_ascii=False, sort_keys=True) + "\n")
+            output.flush()
+            os.fsync(output.fileno())
+        os.chmod(ledger, 0o600)
+        return True
 
 
 def claim_ready_submission(
@@ -59,3 +125,28 @@ def classify_submit_readback(*, page_url: str, visible_text: str) -> str:
     ):
         return "submitted_pending_review"
     return "submit_unknown"
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--fence-ledger", required=True, type=Path)
+    parser.add_argument("--listing-id", required=True)
+    parser.add_argument("--title", required=True)
+    parser.add_argument("--url", required=True)
+    parser.add_argument("--pre-submit-evidence", required=True, type=Path)
+    parser.add_argument("--run-id", required=True)
+    args = parser.parse_args(argv)
+    claimed = claim_submission_once(
+        fence_ledger=args.fence_ledger,
+        listing_id=args.listing_id,
+        title=args.title,
+        url=args.url,
+        pre_submit_evidence=args.pre_submit_evidence,
+        run_id=args.run_id,
+    )
+    print(json.dumps({"claimed": claimed, "listing_id": args.listing_id}))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

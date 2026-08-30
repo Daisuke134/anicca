@@ -6,11 +6,14 @@ drive_cp1.py consumes. Reads everything from the LISTING so publish_one.sh stays
 Usage: build_config.py <LISTING.md> <icon_path> <edit_url> [out.json]
 LISTING.md must contain:
   header line with "Primary Model: <model>" and "category: <cat> ... tags: a, b, c"
-  a pricing table:  | cycle | price | cap | trial |  rows (trial = "No Free Trial" or "<N>h")
+  a pricing table:  | cycle | price | cap | trial |  rows (trial = "No Free Trial" only)
   ## Title / ## shortDescription / ## welcomeMessage / ## detailedDescription
 test_input is extracted from the welcomeMessage "Example:" line.
 """
 import json, re, sys
+
+
+NO_FREE_TRIAL = re.compile(r"no[\s_-]+free[\s_-]+trial", re.I)
 
 
 def main():
@@ -34,9 +37,14 @@ def main():
     plans = []
     for row in re.findall(r"\|\s*(day|week|month)\s*\|\s*\$?([0-9.]+)\s*\|\s*([0-9]+)\s*\|\s*([^|]+)\|", L, re.I):
         cyc, price, cap, trial = row
-        tnum = re.search(r"(\d+)", trial)
+        if not NO_FREE_TRIAL.fullmatch(trial.strip()):
+            print(
+                f"ERROR: free trials are disabled; {cyc} plan trial must be No Free Trial",
+                file=sys.stderr,
+            )
+            sys.exit(2)
         plans.append({"cycle": cyc.lower(), "price": price, "cap": cap,
-                      "trial": int(tnum.group(1)) if tnum else None})
+                      "trial": None})
     if not plans:
         print("ERROR: no pricing rows parsed from LISTING", file=sys.stderr); sys.exit(2)
 

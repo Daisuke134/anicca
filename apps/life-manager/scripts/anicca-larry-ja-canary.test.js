@@ -8,15 +8,18 @@ const path = require("node:path");
 const test = require("node:test");
 
 const { createContentObjectStore, importContentObject } = require("../lib/content-object-store.js");
+const { createMarketingLaneManifest, writeMarketingLaneManifest } = require("../lib/marketing-lane-manifest.js");
 const {
   ACCOUNT_ID,
   EN_AFFIRMATION_LANE,
   EN_SLIDESHOW_TIKTOK_LANE,
+  JA_MAIN_TIKTOK_LANE,
   INTEGRATION_REF,
 } = require("../lib/marketing-native-carousel-publication-adapter.js");
 const {
   EN_AFFIRMATION_LANE: EN_RUNNER_LANE,
   EN_SLIDESHOW_TIKTOK_LANE: TIKTOK_SLIDESHOW_RUNNER_LANE,
+  JA_MAIN_TIKTOK_LANE: JA_MAIN_TIKTOK_RUNNER_LANE,
   parseArgs,
   runAniccaEnAffirmationInstagramCanary,
   runAniccaEnSlideshowTikTokCanary,
@@ -125,6 +128,17 @@ function enFixture() {
     fs.copyFileSync(path.join(liveMarketingDir, name), path.join(testMarketingDir, name));
     fs.chmodSync(path.join(testMarketingDir, name), 0o600);
   }
+  const liveManifest = JSON.parse(fs.readFileSync(path.join(testMarketingDir, "lane-manifest.json"), "utf8"));
+  const defaultOffRows = liveManifest.lanes.map((row) => ({
+    ...row,
+    verified: true,
+    ...(row.production_armed === true ? { lane_state: "default-off", production_armed: false } : {}),
+  }));
+  writeMarketingLaneManifest(createMarketingLaneManifest({
+    tenant_id: liveManifest.tenant_id,
+    integrations: defaultOffRows,
+    holds: liveManifest.holds.map((row) => ({ ...row, verified: true })),
+  }, { tenantId: liveManifest.tenant_id, assignments: defaultOffRows.map((row) => ({ ...row })) }), { dataDir });
   return {
     dataDir,
     objectStore,
@@ -324,16 +338,28 @@ test("a provider result without a direct /p receipt never sends Telegram", async
 test("EN affirmation CLI selects its frozen lane while JA run remains unchanged", () => {
   assert.deepEqual(parseArgs(["run", "--slot", SLOT]), { command: "run", slot: SLOT });
   assert.deepEqual(parseArgs(["run-en-affirmation", "--slot", SLOT]), { command: "run-en-affirmation", slot: SLOT });
+  assert.deepEqual(parseArgs(["run-ja-larry-production"]), { command: "run-ja-larry-production", slot: null });
+  assert.deepEqual(parseArgs(["run-en-affirmation-production"]), { command: "run-en-affirmation-production", slot: null });
   assert.equal(EN_RUNNER_LANE.accountId, "@anicca.affirmation");
   assert.equal(EN_RUNNER_LANE.nativeOwner, "@anicca.ios");
 });
 
 test("EN slideshow TikTok command selects only its immutable lane", () => {
   assert.deepEqual(parseArgs(["run-en-slideshow-tiktok", "--slot", SLOT]), { command: "run-en-slideshow-tiktok", slot: SLOT });
+  assert.deepEqual(parseArgs(["run-en-slideshow-tiktok-production"]), { command: "run-en-slideshow-tiktok-production", slot: null });
   assert.equal(TIKTOK_SLIDESHOW_RUNNER_LANE, EN_SLIDESHOW_TIKTOK_LANE);
   assert.equal(TIKTOK_SLIDESHOW_RUNNER_LANE.accountId, "@anicca_slideshow");
   assert.equal(TIKTOK_SLIDESHOW_RUNNER_LANE.integrationId, "cmnenjkff01j1pa0ysufmzhfr");
   assert.throws(() => runAniccaEnSlideshowTikTokCanary(["run-en-affirmation", "--slot", SLOT], {}), /accepts only/i);
+});
+
+test("JA main TikTok production command selects the recovered Larry sunset lane", () => {
+  assert.deepEqual(parseArgs(["run-ja-main-tiktok", "--slot", SLOT]), { command: "run-ja-main-tiktok", slot: SLOT });
+  assert.deepEqual(parseArgs(["run-ja-main-tiktok-production"]), { command: "run-ja-main-tiktok-production", slot: null });
+  assert.equal(JA_MAIN_TIKTOK_RUNNER_LANE, JA_MAIN_TIKTOK_LANE);
+  assert.equal(JA_MAIN_TIKTOK_RUNNER_LANE.accountId, "@anicca.jp");
+  assert.equal(JA_MAIN_TIKTOK_RUNNER_LANE.integrationId, "cmp9sdev5012voh0y58qs45xc");
+  assert.equal(JA_MAIN_TIKTOK_RUNNER_LANE.renderer, "larry");
 });
 
 test("EN affirmation alternate self-consistent pack and approval stop before secret/provider", async () => {
