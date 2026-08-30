@@ -11,7 +11,7 @@ const { nativeExitCode, runNativePass } = require("../native-pass.js");
 const REPO_ROOT = path.resolve(__dirname, "../../..");
 const VALID_KANA = Object.freeze({ family: "サクラ", given: "テスト" });
 const VALID_NAME_JA = "桜 太郎";
-const BASE_ENV = Object.freeze({ CONNPASS_API_KEY: "fixture-connpass-api-key-0000", GOG_ACCOUNT: "private@example.com", DAIS_LEGAL_NAME_ROMAJI: "Dais Example", GEMINI_API_KEY: "fixture-ranking-key", GOG_KEYRING_PASSWORD: "private-keyring", LM_CONNECTOR_TELEGRAM_TARGET: "private-target" });
+const BASE_ENV = Object.freeze({ CONNPASS_API_KEY: "fixture-connpass-api-key-0000", GOG_ACCOUNT: "private@example.com", DAIS_LEGAL_NAME_ROMAJI: "Dais Example", GEMINI_API_KEY: "fixture-ranking-key", GOG_KEYRING_PASSWORD: "private-keyring", LM_CONNECTOR_TELEGRAM_TARGET: "private-target", TELEGRAM_BOT_TOKEN: "fixture-telegram-token" });
 
 function writeKanaProfile(home, value = VALID_KANA, mode = 0o600, nameJa, identity = { name: BASE_ENV.DAIS_LEGAL_NAME_ROMAJI, preferred_name: "Dais" }) {
   const file = path.join(home, ".config", "anicca", "job-search", "profile.json");
@@ -20,6 +20,13 @@ function writeKanaProfile(home, value = VALID_KANA, mode = 0o600, nameJa, identi
   const raw = typeof value === "string" ? value : JSON.stringify({ candidate });
   fs.writeFileSync(file, `${raw}\n`, { mode });
   fs.chmodSync(file, mode);
+}
+
+function writeSharedConnectorEnv(home, token = BASE_ENV.TELEGRAM_BOT_TOKEN) {
+  const file = path.join(home, "connector.env");
+  fs.writeFileSync(file, `TELEGRAM_BOT_TOKEN=${token}\n`, { mode: 0o600 });
+  fs.chmodSync(file, 0o600);
+  return file;
 }
 test("official foreground entrypoint is directly executable", () => {
   const mode = fs.statSync(path.join(REPO_ROOT, "skills", "connector", "run.sh")).mode;
@@ -71,18 +78,21 @@ test("official native pass builds the production dependency boundary from allowl
   const observed = [];
   try {
     writeKanaProfile(directory);
+    const sharedEnvFile = writeSharedConnectorEnv(directory);
     const result = await runNativePass({
       repoRoot: REPO_ROOT,
       stateDir: path.join(directory, "state"),
       ownerToken: "native-pass-minimal-owner-123456",
       env: {
         HOME: directory,
-        CONNPASS_API_KEY: "fixture-connpass-api-key-0000",
+        CONNPASS_API_KEY: BASE_ENV.CONNPASS_API_KEY,
         GOG_ACCOUNT: "private@example.com",
         DAIS_LEGAL_NAME_ROMAJI: "Dais Example",
         GEMINI_API_KEY: "fixture-ranking-key",
         GOG_KEYRING_PASSWORD: "private-keyring",
         LM_CONNECTOR_TELEGRAM_TARGET: "private-target",
+        TELEGRAM_BOT_TOKEN: "inline-token-must-not-override-shared",
+        LM_CONNECTOR_SHARED_ENV_FILE: sharedEnvFile,
         LM_CONNECTOR_TENANT_ID: "dais-local",
         LM_CONNECTOR_CALENDAR_ID: "primary",
       },
@@ -100,9 +110,10 @@ test("official native pass builds the production dependency boundary from allowl
     assert.equal(observed[0][1].calendarAccount, "private@example.com");
     assert.equal(observed[0][1].gogKeyring, "private-keyring");
     assert.equal(observed[0][1].telegramTarget, "private-target");
+    assert.equal(observed[0][1].telegramToken, "fixture-telegram-token");
     assert.match(observed[0][1].eventPreferences, /YC.*Lightning Talk.*AI.*crypto.*startup/i);
     assert.equal(observed[0][1].geminiApiKey, "fixture-ranking-key");
-    assert.equal(observed[0][1].connpassApiKey, "fixture-connpass-api-key-0000");
+    assert.equal(observed[0][1].connpassApiKey, BASE_ENV.CONNPASS_API_KEY);
     assert.match(observed[0][1].wakeId, /^wake-[0-9a-f]{24}$/);
     assert.equal(observed[0][1].wakeId.includes("native-pass-minimal-owner"), false);
     assert.deepEqual(observed[1][1].providers, ["luma", "connpass", "peatix"]);
@@ -111,6 +122,44 @@ test("official native pass builds the production dependency boundary from allowl
   } finally {
     fs.rmSync(directory, { recursive: true, force: true });
   }
+});
+
+test("native production config fails closed when Telegram bot token is missing", async () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "connector-native-no-telegram-token-"));
+  let factoryCalls = 0;
+  try {
+    writeKanaProfile(directory);
+    const { TELEGRAM_BOT_TOKEN: _token, ...env } = BASE_ENV;
+    await assert.rejects(runNativePass({
+      repoRoot: REPO_ROOT,
+      stateDir: path.join(directory, "state"),
+      ownerToken: "native-pass-no-telegram-token-123456",
+      env: { ...env, HOME: directory },
+      createDependencies() { factoryCalls += 1; return {}; },
+      async runWake() { return { status: "unexpected" }; },
+    }), /Connector minimal pass unavailable/);
+    assert.equal(factoryCalls, 0);
+  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
+});
+
+test("native production config ignores an inline Telegram token when the shared env omits it", async () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "connector-native-inline-telegram-token-"));
+  let factoryCalls = 0;
+  try {
+    writeKanaProfile(directory);
+    const sharedEnvFile = path.join(directory, "connector.env");
+    fs.writeFileSync(sharedEnvFile, "\n", { mode: 0o600 });
+    const env = { ...BASE_ENV, HOME: directory, LM_CONNECTOR_SHARED_ENV_FILE: sharedEnvFile };
+    await assert.rejects(runNativePass({
+      repoRoot: REPO_ROOT,
+      stateDir: path.join(directory, "state"),
+      ownerToken: "native-pass-inline-telegram-token-123456",
+      env,
+      createDependencies() { factoryCalls += 1; return {}; },
+      async runWake() { return { status: "unexpected" }; },
+    }), /Connector minimal pass unavailable/);
+    assert.equal(factoryCalls, 0);
+  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
 });
 
 test("native Peatix profile is frozen at the factory boundary and invalid identity never reaches it", async () => {
@@ -186,6 +235,7 @@ test("native config resolves the existing Telegram owner without an inline shell
         DAIS_LEGAL_NAME_ROMAJI: "Dais Example",
         GEMINI_API_KEY: "fixture-ranking-key",
         GOG_KEYRING_PASSWORD: "private-keyring",
+        TELEGRAM_BOT_TOKEN: "fixture-telegram-token",
       },
       createDependencies(input) {
         factoryInput = input;

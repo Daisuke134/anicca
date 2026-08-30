@@ -6,6 +6,7 @@
 const { createHash } = require("node:crypto");
 
 const TG = (token) => `https://api.telegram.org/bot${token}`;
+const TELEGRAM_SEND_TIMEOUT_MS = 20_000;
 
 function hashChatId(chatId) {
   const value = String(chatId == null ? "" : chatId).trim();
@@ -13,12 +14,14 @@ function hashChatId(chatId) {
   return createHash("sha256").update(value, "utf8").digest("hex");
 }
 
-async function tgCall(token, method, body) {
+async function tgCall(token, method, body, requestOptions = {}) {
   let response;
   try {
     response = await fetch(`${TG(token)}/${method}`, {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body || {}),
+      ...(Number.isSafeInteger(requestOptions.timeoutMs) && requestOptions.timeoutMs > 0
+        ? { signal: AbortSignal.timeout(requestOptions.timeoutMs) } : {}),
     });
   } catch { return { ok: false, delivery_unknown: true }; }
   try {
@@ -29,7 +32,7 @@ async function tgCall(token, method, body) {
 }
 
 const sendMessage = (token, chatId, text, extra) =>
-  tgCall(token, "sendMessage", { chat_id: chatId, text, parse_mode: "HTML", disable_web_page_preview: true, ...(extra || {}) });
+  tgCall(token, "sendMessage", { chat_id: chatId, text, parse_mode: "HTML", disable_web_page_preview: true, ...(extra || {}) }, { timeoutMs: TELEGRAM_SEND_TIMEOUT_MS });
 
 const editMessageText = (token, chatId, messageId, text, extra) =>
   tgCall(token, "editMessageText", {
