@@ -15,7 +15,7 @@ from urllib.request import Request, urlopen
 
 from .agent_runner import AgentRunner, wrap_untrusted
 from .ats import detect_provider
-from .ledger import Ledger
+from .ledger import Ledger, WORKDAY_FIT_POLICY_VERSION
 from .state import canonical_url
 
 
@@ -29,7 +29,7 @@ _REQUIRED = {
     "compensation_uncertain",
     "resume_variant",
 }
-POLICY_VERSION = "interview-chance-v3"
+POLICY_VERSION = WORKDAY_FIT_POLICY_VERSION
 EMAIL_RE = re.compile(r"\b[^\s@]+@[^\s@]+\.[^\s@]+\b")
 LONG_DIGIT_RE = re.compile(r"\d{7,}")
 SENSITIVE_ASSIGNMENT_RE = re.compile(
@@ -184,7 +184,7 @@ def qualify_one(
                 (row["application_id"],),
             ).fetchone()
             if fit is None or (
-                str(fit["decision"]) in {"hold", "rejected"}
+                str(fit["decision"]) in {"hold", "rejected", "qualified"}
                 and str(fit["policy_version"] or "") != POLICY_VERSION
             ):
                 candidates.append(row)
@@ -205,22 +205,27 @@ def qualify_one(
             return _http_failure_receipt(row, error)
         candidate_memory = candidate_memory_path.read_text(encoding="utf-8")
         prompt = (
-            "Evaluate exactly one Workday job for realistic interview fit. "
+            "Evaluate exactly one Workday job under the no-voluntary-skip policy. "
             "Use only evidence in the candidate memory and official job description. "
             "Do not infer missing skills, years, management scope, credentials, salary, "
             "or work authorization. Judge mandatory requirements, Tokyo/Japan feasibility, "
             "and a credible path to USD 120,000 annual gross base. If compensation is "
             "unpublished, state uncertainty and never invent a range, but do not reject or "
-            "hold for unpublished compensation alone. Judge whether the candidate has a "
-            "realistic chance of winning an interview now. This decision prioritizes truthful "
-            "applications; it is not a demand for perfect requirement coverage. Missing preferred "
-            "years, title seniority, management tenure, or part of the listed stack is never by "
-            "itself a rejection reason. Qualify a stretch role when Japan employment and location "
-            "are feasible, no answer would be false, and grounded evidence connects to any core "
-            "part of the work. Reject only for an objective hard blocker: impossible work "
-            "authorization or location, an explicit required credential the candidate lacks, "
-            "stated compensation below the configured floor, or no grounded connection to the "
-            "core work at all. Hold only for one resolvable material unknown. Write "
+            "hold for unpublished compensation alone. Applying is free: pessimism about interview "
+            "odds is not permission to skip. Qualify every adequate non-senior role when Japan "
+            "employment and location are feasible, every form answer can be truthful, and grounded "
+            "evidence is adjacent to any core part of the work. Missing preferred years, exact "
+            "stack, perfect title match, management tenure, or published compensation must remain "
+            "an honest gap and can never cause reject or hold. Canonical example: a Tokyo customer "
+            "implementation role that asks for five years is qualified when the candidate has "
+            "grounded production AI implementation evidence, even with fewer stated years. Reject "
+            "only for an objective hard blocker or user-excluded senior/leadership scope: impossible "
+            "work authorization or location, an explicit required credential the candidate lacks, "
+            "a required false attestation, a closed posting, stated compensation below the configured "
+            "floor, no grounded connection to the core work at all, or work whose full responsibilities "
+            "are genuinely Senior, Lead, Principal, Director, executive, or people-management scope. "
+            "Do not classify from title words alone; read the complete responsibilities. Hold only "
+            "for one unknown that prevents a truthful application, never for ordinary uncertainty. Write "
             "interview_thesis, location_feasibility, and "
             "compensation_thesis in concise natural Japanese for the user's realtime "
             "Telegram report. Return only the schema.\n\n"

@@ -47,6 +47,7 @@ FUNNEL_DISPOSITIONS = frozenset({"positive", "negative"})
 AUTHORITATIVE_EVIDENCE_SOURCES = frozenset(
     {"ats", "gmail", "calendar", "employer_portal", "signed_document"}
 )
+WORKDAY_FIT_POLICY_VERSION = "no-voluntary-skip-v4"
 
 
 class FenceError(RuntimeError):
@@ -1453,16 +1454,27 @@ class Ledger:
         ).fetchall()
         return [dict(row) for row in rows]
 
-    def workday_fit_qualified(self, application_id: str) -> bool:
+    def workday_fit_qualified(
+        self,
+        application_id: str,
+        policy_version: str | None = None,
+    ) -> bool:
         row = self.connection.execute(
             """
-            SELECT decision
+            SELECT decision, policy_version
             FROM workday_fit_decisions
             WHERE application_id = ?
             """,
             (application_id,),
         ).fetchone()
-        return row is not None and str(row["decision"]) == "qualified"
+        return (
+            row is not None
+            and str(row["decision"]) == "qualified"
+            and (
+                policy_version is None
+                or str(row["policy_version"] or "") == policy_version
+            )
+        )
 
     def record_workday_fit_decision(
         self,
@@ -1487,7 +1499,7 @@ class Ledger:
                   evidence_sha256 = excluded.evidence_sha256,
                   policy_version = excluded.policy_version,
                   created_at = excluded.created_at
-                WHERE workday_fit_decisions.decision IN ('hold', 'rejected')
+                WHERE workday_fit_decisions.decision IN ('hold', 'rejected', 'qualified')
                   AND COALESCE(workday_fit_decisions.policy_version, '') != excluded.policy_version
                 """,
                 (application_id, decision, evidence_sha256, policy_version, _now()),
