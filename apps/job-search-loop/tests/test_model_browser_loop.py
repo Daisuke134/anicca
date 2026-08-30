@@ -265,6 +265,7 @@ class ModelBrowserLoopContractTests(unittest.TestCase):
                 validator(root),
                 "transport_failed_without_command_failure",
             )
+
             stdout.write_text(
                 json.dumps(
                     {
@@ -376,6 +377,65 @@ class ModelBrowserLoopContractTests(unittest.TestCase):
             self.assertEqual(
                 validator(root),
                 "transport_failed_without_command_failure",
+            )
+
+    def test_in_progress_without_terminal_outcome_retries_after_successful_commands(self):
+        from job_search_loop.browser_agent import orchestrator
+
+        validator = getattr(orchestrator, "validate_pass_result", None)
+        self.assertIsNotNone(validator)
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            result = root / "result.json"
+            stdout = root / "stdout.log"
+            attempts = root / "attempts.jsonl"
+            summary = root / "summary.json"
+            result.write_text(
+                json.dumps(
+                    {
+                        "status": "in_progress",
+                        "submitted": [],
+                        "submit_unknown": [],
+                        "blocked": [],
+                        "report_message_id": None,
+                    }
+                ),
+                encoding="utf-8",
+            )
+            stdout.write_text(
+                "".join(
+                    json.dumps(
+                        {
+                            "type": "item.completed",
+                            "item": {
+                                "type": "command_execution",
+                                "exit_code": 0,
+                                "command": "runtime observe",
+                            },
+                        }
+                    )
+                    + "\n"
+                    for _ in range(37)
+                ),
+                encoding="utf-8",
+            )
+            attempts.write_text(
+                json.dumps({"stdout_path": str(stdout)}) + "\n",
+                encoding="utf-8",
+            )
+            summary.write_text(
+                json.dumps(
+                    {
+                        "result_path": str(result),
+                        "attempts_path": str(attempts),
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            self.assertEqual(
+                validator(root),
+                "in_progress_without_terminal_outcome",
             )
 
     @classmethod

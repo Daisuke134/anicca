@@ -114,6 +114,17 @@ browser action because the evidence file had frozen the first refused connection
 The focused repair preserves immediate `probe_cdp()` for diagnostics and makes the
 daily CLI wait up to 30 seconds at 0.5-second intervals for `ready`.
 
+**Long-form continuation contract:** A model pass ending `in_progress` is not a
+successful wake when both `submitted` and `submit_unknown` are empty. If every
+runtime command completed successfully, the existing bounded orchestrator must
+invoke one continuation from the durable row checkpoint in the same wake. It must
+not retry after a real nonzero runtime command, a recorded submission, or an
+uncertain submit effect. Production run `daily-20260830-181801` reached a new HPE
+non-senior application, signed in, uploaded the resume, completed personal details,
+education, and 37 sequential form actions, then returned `in_progress` on required
+screening questions with no submit intent. That is resumable execution-budget
+exhaustion, not a skip, rejection, provider blocker, or application receipt.
+
 **Remaining execution order (fixed):**
 
 1. Restore the removed stable Rust toolchain, then retain enough measured disk headroom for browser/SQLite evidence writes.
