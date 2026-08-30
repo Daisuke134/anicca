@@ -87,6 +87,23 @@ Use concise Workday-native source queries rather than long sentence-like keyword
 
 PRs #3221/#3224/#3229/#3236 close query length, stretch fit, old-policy rejection reopening, invalid escalation metadata, queued-row latency and routine health Telegram spam. Kyndryl is now v3-qualified and the browser reaches its official URL. The active blocker is transport durability under host disk exhaustion: the next browser wait fails before any submit intent with SQLite disk I/O. Do not call its navigation screenshot an application. Resume the same row only with stable headroom and require both the Workday completion screenshot and Gmail employer receipt before marking this task completed.
 
+**New-company Workday tenant contract (part of Task 1H):** Account setup is inside the same autonomous loop. Workday identity is tenant-scoped, not company-name-scoped. For a new tenant, the runtime first creates and stores one private tenant credential, attempts visible Sign In once, follows visible Create Account only after exact account-not-found/wrong-credential evidence, fills the account/profile fields, and records `create_submitted`. If Workday requires activation or password recovery, the existing inbox owner consumes the authoritative tenant email once and the next daily wake resumes the same application ID. The daily owner then uploads the routed resume, fills every required and employer-specific field from grounded candidate facts, reaches Review, and invokes the one-shot Submit fence. A reused tenant signs in with the existing credential/session and skips account creation. Neither credential creation nor account creation counts as an application.
+
+The current Kyndryl tenant is `credential_only`: the private tenant credential exists, but the candidate account has not yet been proved created. Its blank navigation screenshot, `materials_ready` state, and absent submit intent are not progress beyond queue handoff.
+
+**Remaining execution order (fixed):**
+
+1. Restore the removed stable Rust toolchain, then retain enough measured disk headroom for browser/SQLite evidence writes.
+2. Reload the sole `ai.anicca.job-search-daily` owner and read back release `305d0ffa`, `RunAtLoad`, and `StartInterval=1800`; do not create another executor.
+3. Resume the existing Kyndryl application ID before discovering or qualifying another row.
+4. Attempt tenant Sign In once. If the visible provider proves the account absent, complete Create Account with the stored tenant credential; never create a second account.
+5. If activation/reset email is required, checkpoint the same row, let `job-search-inbox` consume the exact authoritative one-time email, then resume that same row on the next daily wake.
+6. Fill and re-read the complete Workday application, including resume, profile, work history, source, employer questions, legal attestations and validation errors; continue until final Review.
+7. Invoke the one-shot Submit fence once. After an ambiguous effect, reconcile first and never click Submit again.
+8. Accept completion only when the post-submit Workday screenshot and authoritative Gmail employer receipt bind the same tenant, company, role, application ID and post-submit time; then require Ledger `submitted`, Telegram ACK and immediate replay duplicate 0.
+9. Observe the next natural 30-minute wake select a different eligible application/company and repeat the tenant create-or-reuse path without human intervention.
+10. Accumulate at least 48 distinct Gmail-confirmed applications in the rolling 24-hour window. Only then start Ashby, followed by Greenhouse, Lever and generic ATS in the existing fixed spec order; README loop/competitor documentation remains after live proof.
+
 ---
 
 ### Task 2: Make Job Hunting notifications quiet and product-owned
