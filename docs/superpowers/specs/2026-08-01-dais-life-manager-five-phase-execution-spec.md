@@ -27,7 +27,7 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 この節は、後段の「現在TODO」「次の一件」「local-only」「self-funded agentは別product」という相反する記述を
 上書きする最新の実行順序SSOTである。後段は実装履歴・organ別acceptanceとして保持するが、次作業の選択には使わない。
 Upworkのterminal evidence、startup context、public claim、GA-01〜13Aは完了または履歴として保持する。
-次の一件はAtomic program ledger Seq 18 `ELZ-C05`で、Goal本文をjobへ複製しない一Goal→一WorkItem contractを既存実装から調査し、現在activeなC05だけを単一行動へ分解する。
+次の一件はAtomic program ledger Seq 18 `ELZ-C05`のsubstep `C05-01`で、legacy GA-02のGoal→WorkItem contractをprivate evidenceへ保存する。
 
 #### 0.0.1 最新基盤決定 — ElizaOSを完全forkし、Life Managerをlocal OSSからmulti-tenant SaaSへ育てる
 
@@ -651,7 +651,32 @@ flowchart LR
 - [x] **C04-18** ELZ-C04をDONEへ更新する — canonical `provider-bridge-receipt.json` status=`PASS`、SHA256 `091935cf…`、review open finding 0、remaining process 0、provider business effect/payment 0を再読出しし、Atomic program ledger Seq 17をDONEへ更新。次はC04-19
 - [x] **C04-19** ELZ-C05をNEXTへ更新する — C02〜C04のgeneral-agent基盤完了を保持し、Atomic program ledger Seq 18 `ELZ-C05`だけを`IN_PROGRESS — NEXT`へ更新。C06以降とPhase Lの順序は不変。次はELZ-C05
 
-Lancersでまだ新しい収益がないことは、この順序を飛ばす理由にしない。現時点はC04がactiveであり、新forkのgeneral-agent基盤が
+##### C05 Atomic TODO — 一Goal→一reference-only WorkItem
+
+C05はlegacy GA-02 `goal-work-item.js`のactive Goal、reference-only、effect-free、本文/provenance非複製contractと、Eliza
+`plugin-todos`のDrizzle transaction/service lifecycleをcopy+tweakする。C03のGoal/PlanGraph/WorkItem schemaをそのまま使い、一Goalから
+一つのreference envelopeと一WorkItemだけを同一transactionで作る。Goal分解、capability選択、provider判断、PlanGraphのsemantic生成は
+C07のCodexへ残す。新queue、新DB、provider adapter、model adapter、marketplace固有分岐は作らない。productionは新規contract/store 1 fileと
+既存service registration 1 file、focused test 1 fileをsoft targetにする。
+
+- [ ] **C05-01** legacy GA-02 Goal→WorkItem contractをprivate evidenceへ保存する
+- [ ] **C05-02** Eliza Drizzle transaction/service lifecycle contractをprivate evidenceへ保存する
+- [ ] **C05-03** 採用・棄却mapを`goal-workitem-reuse-map.json`へ保存する
+- [ ] **C05-04** 一Goal→一reference-only WorkItemのfocused failing testを一つ追加する
+- [ ] **C05-05** focused testの期待どおりのREDを一回確認する
+- [ ] **C05-06** Goal ref、WorkItem result、typed failureの最小contractを定義する
+- [ ] **C05-07** scoped active Goalからreference envelopeとWorkItemを同一transactionで作る
+- [ ] **C05-08** 既存`LifeManagerService`へGoal→WorkItem operationを接続する
+- [ ] **C05-09** focused testのGREENを一回確認する
+- [ ] **C05-10** isolated PGliteで一Goal→一WorkItemと同一入力replayを実行する
+- [ ] **C05-11** separate process restart後に同じGoal/WorkItemを再読出しする
+- [ ] **C05-12** source/result hashを`goal-workitem-receipt.json`へ保存する
+- [ ] **C05-13** C05差分をfresh adversarial reviewへ一回だけ渡す
+- [ ] **C05-14** C05 receiptをPASSへ更新する
+- [ ] **C05-15** ELZ-C05をDONEへ更新する
+- [ ] **C05-16** ELZ-C06をNEXTへ更新する
+
+Lancersでまだ新しい収益がないことは、この順序を飛ばす理由にしない。現時点はC05がactiveであり、新forkのgeneral-agent基盤が
 Lancers実環境へ到達していない。Lancersでの新規応募・契約・受領金・銀行着金はPhase C完了後のPhase Lで一つずつ実証する。
 
 ##### Phase F — Eliza fixed treeを未変更でlocal起動する
