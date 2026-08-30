@@ -57,6 +57,19 @@ log_gate_verdict() {
     "$(date '+%F %T')" "$MD" "$LANG_A" "$1" >>"$GATES_LOG" 2>/dev/null || true
 }
 
+owner_is_ancestor() {
+  local child="$1" target="$2" parent n
+  for ((n = 0; n < 64; n++)); do
+    [ "$child" = "$target" ] && return 0
+    [ "$child" = 1 ] && return 1
+    parent="$(ps -p "$child" -o ppid= 2>/dev/null | tr -d '[:space:]')"
+    [[ "$parent" =~ ^[1-9][0-9]*$ ]] || return 1
+    [ "$parent" = "$child" ] && return 1
+    child="$parent"
+  done
+  return 1
+}
+
 ARTICLE="$(cat "$MD")"
 ARTICLE_HASH=$(shasum -a 256 "$MD" | awk '{print $1}')
 REQUESTED_REASONING_EFFORT="medium"
@@ -85,11 +98,45 @@ if [ -n "${ARTICLE_RUN_DIR:-}" ]; then
     if [ "$PREVIOUS_HASH" != "$ARTICLE_HASH" ] && [ "$PREVIOUS_EFFORT" = "high" ]; then
       REROUTE_RECEIPT="$ARTICLE_RUN_DIR/gates/quality-self-heal.json"
       AUTHORIZED_REROUTE=0
-      if [ -f "$REROUTE_RECEIPT" ] && jq -e \
+      EXPECTED_MD="$ARTICLE_RUN_DIR/article-$LANG_A.md"
+      REPAIR_RUN_PHYSICAL=""
+      if [ ! -L "$ARTICLE_RUN_DIR" ] && [ -d "$ARTICLE_RUN_DIR" ]; then
+        REPAIR_RUN_PHYSICAL="$(cd "$ARTICLE_RUN_DIR" 2>/dev/null && pwd -P)" || REPAIR_RUN_PHYSICAL=""
+      fi
+      REPAIR_MD_PHYSICAL=""
+      if [ -f "$MD" ] && [ ! -L "$MD" ]; then
+        REPAIR_MD_DIR="$(cd "$(dirname "$MD")" 2>/dev/null && pwd -P)" || REPAIR_MD_DIR=""
+        [ -n "$REPAIR_MD_DIR" ] && REPAIR_MD_PHYSICAL="$REPAIR_MD_DIR/$(basename "$MD")"
+      fi
+      if [ "$REPAIR_RUN_PHYSICAL" = "$ARTICLE_RUN_DIR" ] \
+        && [ -f "$REROUTE_RECEIPT" ] && [ ! -L "$REROUTE_RECEIPT" ] && jq -e \
         --arg lang "$LANG_A" --arg hash "$ARTICLE_HASH" \
-        '.version == 2 and .attempt == 2 and .action == "evaluate_reroute"
+        --arg run_id "$(basename "$ARTICLE_RUN_DIR")" \
+        'type == "object" and .version == 2 and .run_id == $run_id
+         and .attempt == 2 and .action == "evaluate_reroute"
+         and (.quality | type) == "object"
          and .quality[$lang].article_sha256 == $hash' \
         "$REROUTE_RECEIPT" >/dev/null 2>&1; then
+        AUTHORIZED_REROUTE=1
+      fi
+      if [ "$AUTHORIZED_REROUTE" -ne 1 ] \
+        && [ ! -e "$REROUTE_RECEIPT" ] && [ ! -L "$REROUTE_RECEIPT" ] \
+        && [ "${ARTICLE_QUALITY_REPAIR_ACTIVE:-0}" = "1" ] \
+        && [[ "${ARTICLE_QUALITY_REPAIR_OWNER_PID:-}" =~ ^[1-9][0-9]*$ ]] \
+        && [ "$REPAIR_RUN_PHYSICAL" = "$ARTICLE_RUN_DIR" ] \
+        && [ "$REPAIR_MD_PHYSICAL" = "$EXPECTED_MD" ] \
+        && [ -f "$ARTICLE_RUN_DIR/gates/quality-repair-state.json" ] \
+        && [ ! -L "$ARTICLE_RUN_DIR/gates/quality-repair-state.json" ] \
+        && jq -e \
+          --arg run_id "$(basename "$ARTICLE_RUN_DIR")" \
+          --argjson owner "${ARTICLE_QUALITY_REPAIR_OWNER_PID}" \
+          'type == "object" and .version == 1 and .status == "invoking"
+           and .run_id == $run_id and .quality_action == "evaluate_reroute"
+           and (.owner_pid | type) == "number"
+           and (.owner_pid | floor) == .owner_pid and .owner_pid == $owner' \
+          "$ARTICLE_RUN_DIR/gates/quality-repair-state.json" >/dev/null 2>&1 \
+        && kill -0 "$ARTICLE_QUALITY_REPAIR_OWNER_PID" 2>/dev/null \
+        && owner_is_ancestor "$$" "$ARTICLE_QUALITY_REPAIR_OWNER_PID"; then
         AUTHORIZED_REROUTE=1
       fi
       if [ "$AUTHORIZED_REROUTE" -ne 1 ]; then
