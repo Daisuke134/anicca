@@ -704,7 +704,34 @@ admission whitelistにせず、capability選択とfeasibility判断はC07のCode
 - [x] **C06-18** ELZ-C06をDONEへ更新する — canonical `capability-auth-receipt.json` status=`PASS`、SHA256 `5df6f3ee…`、review open 0、external effect 0を再読出しし、Atomic program ledger Seq 19をDONEへ更新。次はC06-19
 - [x] **C06-19** ELZ-C07をNEXTへ更新する — C02〜C06のgeneral-agent基盤完了を保持し、Atomic program ledger Seq 20 `ELZ-C07`だけを`IN_PROGRESS — NEXT`へ更新。C08以降とPhase Lの順序は不変。次はELZ-C07
 
-Lancersでまだ新しい収益がないことは、この順序を飛ばす理由にしない。現時点はC06がactiveであり、新forkのgeneral-agent基盤が
+##### C07 Atomic TODO — Codexがcandidate / tool / next graphを構造化判断する
+
+C07はEliza coreの`ACTION_PLANNER`、public `callModelWithValidation`、`plugin-cli-inference`の既存Codex SDK structured routeを
+copy+tweakする。C05のreference-only WorkItem/PlanGraph、C04のopaque tool/input ref、C06のprovider-neutral capabilityを入力境界にし、
+modelが候補・tool・次graphを一回のstructured decisionとして選ぶ。deterministic codeはclosed schema、提示済みref membership、size、
+attempt数だけを検証し、model判断をregex・keyword・provider分岐・Skill whitelistで上書きしない。C07は判断を返すだけでDB更新、
+authorization consume、provider bridge実行、browser操作、external effect、official success判定を行わず、それらはC08以降へ残す。
+新planner loop、Python runner、model adapter、provider router、scheduler、DB/schemaは追加しない。実装soft targetはproduction 2 files / 100 LOC以内、
+focused test 1 fileとし、正常系＋unlisted ref / private field / invalid shapeのfail-closedだけを固定する。
+
+- [ ] **C07-01** Eliza core bounded plannerとstrict structured model-call contractをprivate evidenceへ保存する — canonical fork `2a115b9e…`の`planner-loop.ts`、`planner.ts`、`planner-types.ts`、`limits.ts`、`validated-model-call.ts`、public exportをSHA256固定し、既存loop/budget/cancel/schema validation/attempt countと非公開planner内部を採用・棄却する。model/provider/external effect 0。次はC07-02
+- [ ] **C07-02** 既存Codex SDK `ACTION_PLANNER` routeをprivate evidenceへ保存する — `plugin-cli-inference`のmodel resolution、warm serialized route、system Codex binary、native `outputSchema`、`{action,params}` normalization、error時session resetをSHA256固定し、model/routing変更0を確認する。model call/external effect 0。次はC07-03
+- [ ] **C07-03** legacy GA-05 bounded specialist contractをprivate evidenceへ保存する — commits `e768d1833` / `d005e828c` / `04dc0cd55`のstep/deadline/cancel/heartbeat/closed schema/fail-closedを採用し、Python runner、provider/DOM分岐、label regex、hardcoded model、browser実行を棄却する。model/provider/external effect 0。次はC07-04
+- [ ] **C07-04** C03〜C06 plugin contractをprivate evidenceへ保存する — one scoped Goal→PlanGraph→WorkItem、opaque tool/input/auth ref、private descriptor、consume-once authorization、existing service seamをSHA256固定し、C07がDB row/cardinality/authorization/effectを変更しないことを確認する。model/provider/external effect 0。次はC07-05
+- [ ] **C07-05** 採用・棄却mapを`specialist-decision-reuse-map.json`へ保存する — C07-01〜04 hashを固定し、Eliza public strict call＋Codex route＋legacy bounds＋current opaque refsを採用、新loop/runner/adapter/DB/provider判断/Skill authorityを棄却する。次はC07-06
+- [ ] **C07-06** focused failing testを一つ追加する — one `ACTION_PLANNER` callが提示済みcandidateRef/toolRefとmodel-authored nextGraphを返し、unlisted ref、private field、追加key、invalid shapeをfail-closedにするcontractを固定する。production変更0。次はC07-07
+- [ ] **C07-07** focused testの期待どおりのREDを一回確認する — runner/test discoveryを通し、未実装C07 module境界だけで失敗したlog/receiptをprivate保存する。次はC07-08
+- [ ] **C07-08** effect-free specialist decision contractを最小実装する — `callModelWithValidation(runtime, ACTION_PLANNER, ...)`へone provider-neutral decision tool、right-altitude prompt、closed top-level schema、max one reroll、AbortSignalを渡し、frozen structured resultとattempt数だけを返す。nextGraphはrefsだけで、DB/auth/provider effect 0。次はC07-09
+- [ ] **C07-09** 既存`LifeManagerService`へspecialist decision operationをthin接続する — 新service/action/providerを作らずC07 moduleへ委譲する。次はC07-10
+- [ ] **C07-10** focused testのGREENを一回確認する — modelがcandidate/tool/next graphを決め、deterministic codeはschema/ref/boundsだけを検証し、regex/keyword/provider judgment 0、model/provider business effect 0を確認する。次はC07-11
+- [ ] **C07-11** 既存Codex subscription runtimeでstructured decisionを一回実行する — C02と同じ`codex-sdk` / `gpt-5.6-luna` medium / system Codex routeを使い、one WorkItem、複数opaque candidate/toolからone decisionを得る。call/attempt/model/backend/exit、raw/result hash、external effect 0をprivate receiptへ保存する。次はC07-12
+- [ ] **C07-12** source/result hashを`specialist-decision-receipt.json`へ保存する — candidate/tool/next graph、bounded attempt、reference membership、private leak 0、DB/auth/provider/external effect 0、focused test、typecheckをcanonical private receiptへ固定しstatus=`pending_review`にする。次はC07-13
+- [ ] **C07-13** C07差分をfresh adversarial reviewへ一回だけ渡す — Critical/Importantだけを反証し、findingがあれば同じimplementerが最小修正して該当findingだけを再確認する。複数reviewer、nitpick、反復full reviewへ拡張しない。次はC07-14
+- [ ] **C07-14** C07 receiptをPASSへ更新する — final source/evidence hash、focused test/typecheck、review open 0、duplicate/model/provider/marketplace/payment effect 0を再監査する。次はC07-15
+- [ ] **C07-15** ELZ-C07をDONEへ更新する — canonical receipt PASSを再読出しし、Atomic program ledger Seq 20だけをDONEへ更新する。次はC07-16
+- [ ] **C07-16** ELZ-C08をNEXTへ更新する — C02〜C07のgeneral-agent基盤完了を保持し、Seq 21だけを`IN_PROGRESS — NEXT`へ更新する。C09以降とPhase Lの順序は不変。次はELZ-C08
+
+Lancersでまだ新しい収益がないことは、この順序を飛ばす理由にしない。現時点はC07がactiveであり、新forkのgeneral-agent基盤が
 Lancers実環境へ到達していない。Lancersでの新規応募・契約・受領金・銀行着金はPhase C完了後のPhase Lで一つずつ実証する。
 
 ##### Phase F — Eliza fixed treeを未変更でlocal起動する
