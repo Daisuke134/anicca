@@ -1623,7 +1623,7 @@ TODO in this file.
 
 ### 10.0.1 CODEX-ACCOUNT-FAILOVER-1 — account 1 primary / account 2 fallback
 
-**状態: spec approved / implementation pending。**
+**状態: implemented / merged / current release deployed。**
 
 Life Managerの共有Codex execution boundaryは、account 1をprimary、account 2をfallbackとする。
 各accountは独立した`CODEX_HOME`、auth、session、quota stateを持つ。account 1のquotaが回復した後に人が
@@ -1643,11 +1643,18 @@ flowchart LR
 
 #### 現状の実測
 
-- canonical runnerの`runtime/agent-runner/config.json`と
-  `skills/earn/gig/agent-runner/config.json`は一つの`auth_file`だけを持ち、現在はaccount 2を固定参照する。
-  これは緊急切替であり、account 1→2 failoverではない。
-- runnerにはquota/auth/timeout/unavailableをtransient failureとして次candidateへ移す既存契約があるが、
-  同じCodex provider内の複数ChatGPT accountはcandidateとして表現されていない。
+- canonical runnerは独立した`acct1`と`acct2` profileを持ち、同じCodex
+  candidateを`acct1`、`acct2`の順に解決する。global auth symlinkや
+  `launchctl setenv`は変更しない。
+- Account 1がquota/authで失敗し、fresh result、agent message、tool itemが
+  すべて無い場合だけAccount 2へ進む。timeout、通常task failure、schema
+  failure、または実作業開始後はaccount retry 0でfail closedする。
+- merged main `3d69c74b97ac4dca4f486187050325435279ed6e`をsparse current
+  releaseへdeploy済み。real controlled generationはAccount 1正常時に
+  `acct1`一回だけ成功し、controlled Account 1 quotaではattempt順
+  `acct1 transient_quota -> acct2 success`、selected profile `acct2`、effect 0。
+- production lifecycle readbackは`tier2-agent-diagnose`一件だけを同releaseへ
+  apply/kickstartし、runs 1、exit 0、他loop mutation 0。
 
 #### Routing contract
 
@@ -1688,20 +1695,16 @@ flowchart LR
 8. exact main commitをrelease deployし、共有runnerを使う対象jobの次回実行でaccount routingをreadbackする。
    isolated app-serverの`launchctl 141`をsuccess扱いしない。
 
-#### Remaining TODO
+#### Completion evidence
 
 | Order | TODO | Done evidence |
 |---:|---|---|
-| 1 | account alias別に独立`CODEX_HOME`と`auth_file`を解決するfailing testを1件追加する | named REDがauth混線を再現 |
-| 2 | account alias別env/auth解決だけを実装する | TODO 1 GREEN、既存provider tests PASS |
-| 3 | account 1のeffect前quota failureからaccount 2へ進むfailing testを1件追加する | named REDがfallback欠落を再現 |
-| 4 | effect前のmachine-readable quota/auth failureだけを次accountへ渡す | TODO 3 GREEN、invalid task fallback 0 |
-| 5 | effect開始後のfailureでaccount 2を呼ばないfailing testを1件追加する | named REDがduplicate riskを再現 |
-| 6 | 既存effect evidenceをaccount retry gateへ接続する | TODO 5 GREEN、account 2 call 0 |
-| 7 | canonical configへaccount 1→account 2のcandidate orderを追加する | config parse PASS、order readback |
-| 8 | account 2 failure後だけ既存Claude/Hermes candidateへ進む回帰を追加する | provider order focused test PASS |
-| 9 | exact main commitをLife Manager releaseへdeployする | deployed SHA readback |
-| 10 | account 1 quota→account 2 real responseのcontrolled E2Eを1回実行する | account alias/exit readback、duplicate effect 0 |
+| 1 | ✅ Account alias別の独立`CODEX_HOME`と`auth_file` | file mode 600、route readback `acct1 -> acct2` |
+| 2 | ✅ effect前quota/authだけAccount 2へ渡す | error-only false、agent message/tool item true、通常failure retry 0 |
+| 3 | ✅ Account 1正常時 | real response、selected `acct1`、attempt 1 |
+| 4 | ✅ Account 1 quota時 | controlled quota、real Account 2 response、attempt 2、selected `acct2` |
+| 5 | ✅ main mergeとrelease | PR #2983、main/current SHA `3d69c74b...` |
+| 6 | ✅ production lifecycle | `tier2-agent-diagnose`だけapply、runs 1、exit 0、effect none |
 
 
 
