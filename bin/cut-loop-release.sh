@@ -88,6 +88,14 @@ ln -sfn "$DEST" "$CURRENT.swap" && mv -fh "$CURRENT.swap" "$CURRENT" || die "cou
 # Keep a few older releases so rollback is a symlink move rather than a rebuild.
 ls -1dt "$RELEASES"/*/ 2>/dev/null | tail -n +$((KEEP + 1)) | while IFS= read -r old; do
   [ "$(readlink "$CURRENT")" = "${old%/}" ] && continue
+  # An installed launchd job pins its release by absolute path, so deleting one still referenced
+  # turns every one of its lanes into exit 78 EX_CONFIG. Measured 2026-08-31: pruning stranded 132
+  # of 182 agents, including all seven Coconala lanes. Keep the release; `lm-loop apply` is what
+  # moves the pins forward, and until it runs the pin is the only thing keeping the lane runnable.
+  if grep -qls -- "${old%/}/" "$HOME/Library/LaunchAgents"/*.plist 2>/dev/null; then
+    echo "cut-loop-release: kept $(basename "${old%/}") (an installed launchd job still pins it)"
+    continue
+  fi
   chmod -R u+w "$old" 2>/dev/null || true
   rm -rf "$old"
   echo "cut-loop-release: pruned $(basename "${old%/}")"
