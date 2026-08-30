@@ -85,6 +85,8 @@ PR #3210 merges this repair. Release `f3921299` is loaded by all five Job Huntin
 
 Use concise Workday-native source queries rather than long sentence-like keyword bundles that collapse a verified 27-result Japan-AI source into three unrelated senior results. Rank evidence-supported roles first, but do not treat missing preferred years, title seniority, or an imperfect stack match as an automatic veto. If a wake contains any posting that is legal to work from Japan, geographically feasible, truthful to apply to, and lacks an objective hard blocker, at least one best stretch candidate must become qualified and enter the existing browser queue. Hard blockers remain false attestation, impossible work authorization/location, an explicit credential the candidate does not hold, or compensation below the configured floor when the posting states it. Never fabricate experience. Verify with one natural existing-owner wake and the full screenshot + Gmail + Ledger + Telegram + replay-zero receipt chain.
 
+PRs #3221/#3224/#3229/#3236 close query length, stretch fit, old-policy rejection reopening, invalid escalation metadata, queued-row latency and routine health Telegram spam. Kyndryl is now v3-qualified and the browser reaches its official URL. The active blocker is transport durability under host disk exhaustion: the next browser wait fails before any submit intent with SQLite disk I/O. Do not call its navigation screenshot an application. Resume the same row only with stable headroom and require both the Workday completion screenshot and Gmail employer receipt before marking this task completed.
+
 ---
 
 ### Task 2: Make Job Hunting notifications quiet and product-owned
