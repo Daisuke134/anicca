@@ -1,0 +1,141 @@
+import errno
+import fcntl
+import json
+import os
+import signal
+import subprocess
+import sys
+import tempfile
+import time
+import unittest
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[1]
+RUNNER = ROOT / "agent_runner.py"
+
+
+class ProviderLeaseTest(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name)
+
+    def _wait_for(self, path: Path, process: subprocess.Popen[str] | None = None) -> None:
+        deadline = time.monotonic() + 5
+        while time.monotonic() < deadline:
+            if path.exists():
+                return
+            if process is not None and process.poll() is not None:
+                self.fail(f"intermediate runtime exited rc={process.returncode}")
+            time.sleep(0.02)
+        self.fail(f"timed out waiting for {path}")
+
+    def _lease_is_busy(self, lock_path: Path) -> bool:
+        descriptor = os.open(lock_path, os.O_RDWR | os.O_CREAT, 0o600)
+        try:
+            try:
+                fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except OSError as error:
+                if error.errno in (errno.EACCES, errno.EAGAIN):
+                    return True
+                raise
+            return False
+        finally:
+            os.close(descriptor)
+
+    def test_provider_retains_lease_after_intermediate_runtime_is_killed(self):
+        """Removing pass_fds must fail after the intermediate runtime is SIGKILLed."""
+        lock_path = self.root / "mercor.lock"
+        provider_started = self.root / "provider-started"
+        provider_pid = self.root / "provider-pid"
+        release = self.root / "release-provider"
+        provider = self.root / "provider.py"
+        provider.write_text(
+            "import os, sys, time\n"
+            "from pathlib import Path\n"
+            "Path(sys.argv[1]).write_text(str(os.getpid()))\n"
+            "Path(sys.argv[2]).touch()\n"
+            "while not Path(sys.argv[3]).exists():\n"
+            "    time.sleep(0.02)\n",
+            encoding="utf-8",
+        )
+        runtime = self.root / "intermediate_runtime.py"
+        runtime.write_text(
+            "import fcntl, os, subprocess, sys\n"
+            "from pathlib import Path\n"
+            f"sys.path.insert(0, {str(ROOT)!r})\n"
+            "from agent_runner import run_provider_process\n"
+            "lock, provider, started, pid, release = map(Path, sys.argv[1:])\n"
+            "fd = os.open(lock, os.O_RDWR | os.O_CREAT, 0o600)\n"
+            "fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)\n"
+            "run_provider_process([sys.executable, str(provider), str(pid), str(started), str(release)], "
+            "stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=30, cwd=str(lock.parent), "
+            "input_bytes=None, stdin=subprocess.DEVNULL, env=os.environ.copy(), lease_fd=fd)\n",
+            encoding="utf-8",
+        )
+        process = subprocess.Popen(
+            [sys.executable, str(runtime), str(lock_path), str(provider), str(provider_started), str(provider_pid), str(release)],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        self.addCleanup(lambda: process.poll() is None and process.kill())
+        self._wait_for(provider_started, process)
+        self.assertTrue(self._lease_is_busy(lock_path), "provider holder was not exclusive")
+        process.send_signal(signal.SIGKILL)
+        process.wait(timeout=5)
+        self.assertTrue(self._lease_is_busy(lock_path), "lease escaped when runtime was killed")
+        release.touch()
+        deadline = time.monotonic() + 5
+        while time.monotonic() < deadline and self._lease_is_busy(lock_path):
+            time.sleep(0.02)
+        self.assertFalse(self._lease_is_busy(lock_path), "lease remained busy after provider exit")
+
+    def test_contended_provider_lease_returns_75_without_launching_provider(self):
+        """Removing the rc 75 boundary must launch the stub provider and fail this test."""
+        lock_path = self.root / "mercor.lock"
+        holder = os.open(lock_path, os.O_RDWR | os.O_CREAT, 0o600)
+        self.addCleanup(lambda: os.close(holder))
+        fcntl.flock(holder, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        marker = self.root / "provider-launched"
+        provider = self.root / "claude"
+        provider.write_text(
+            "#!/usr/bin/env python3\n"
+            "from pathlib import Path\n"
+            f"Path({str(marker)!r}).touch()\n"
+            "print('{\"result\": \"{\\\"status\\\":\\\"ok\\\"}\"}')\n",
+            encoding="utf-8",
+        )
+        provider.chmod(0o755)
+        schema = self.root / "schema.json"
+        schema.write_text('{"type":"object","required":["status"]}', encoding="utf-8")
+        prompt = self.root / "prompt.txt"
+        prompt.write_text("Return the bounded contract JSON only.\n", encoding="utf-8")
+        config = self.root / "config.json"
+        config.write_text(json.dumps({
+            "version": 1,
+            "timeout_seconds": 5,
+            "providers": {"claude-direct": {"executable": str(provider)}},
+            "task_classes": {"tool-agent": {"candidates": [
+                {"provider": "claude-direct", "model": "sonnet"}
+            ]}},
+        }), encoding="utf-8")
+        env = {
+            **os.environ,
+            "AGENT_RUNNER_CONFIG": str(config),
+            "ANICCA_USAGE_LEDGER": str(self.root / "usage.jsonl"),
+            "LIFE_MANAGER_PROVIDER_LEASE_PATH": str(lock_path),
+        }
+        result = subprocess.run([
+            sys.executable, str(RUNNER), "--task-class", "tool-agent",
+            "--prompt-file", str(prompt), "--schema", str(schema),
+            "--evidence-dir", str(self.root / "evidence"), "--task-label", "mercor",
+            "--loop", "job-search", "--workdir", str(self.root),
+        ], env=env, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 75, result.stderr)
+        self.assertEqual(result.stderr, "LIFE_MANAGER_PROVIDER_LEASE_BUSY\n")
+        self.assertFalse(marker.exists(), "contended lease launched a provider")
+
+
+if __name__ == "__main__":
+    unittest.main()

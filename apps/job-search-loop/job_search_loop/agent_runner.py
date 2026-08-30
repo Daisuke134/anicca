@@ -22,6 +22,10 @@ class ContractError(RuntimeError):
     pass
 
 
+class PassAlreadyRunning(RuntimeError):
+    pass
+
+
 def wrap_untrusted(name: str, text: str) -> str:
     safe_name = "".join(character for character in name if character.isalnum() or character in "_-")
     encoded = base64.b64encode(text.encode("utf-8")).decode("ascii")
@@ -104,6 +108,11 @@ class AgentRunner:
             text=True,
             timeout=1_000,
         )
+        if (
+            completed.returncode == 75
+            and "LIFE_MANAGER_PROVIDER_LEASE_BUSY" in completed.stderr.splitlines()
+        ):
+            raise PassAlreadyRunning()
         if completed.returncode != 0:
             raise ContractError(
                 f"agent runner failed rc={completed.returncode}: {completed.stderr[-500:]}"

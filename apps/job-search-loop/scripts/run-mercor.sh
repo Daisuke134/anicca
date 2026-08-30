@@ -7,7 +7,6 @@ source "$SCRIPT_DIR/runtime-paths.sh"
 RUN_ID="mercor-$(date +%Y%m%d-%H%M%S)-$$"
 MERCOR_STATE_ROOT="${JOB_SEARCH_STATE_ROOT}/mercor"
 EVIDENCE="$JOB_SEARCH_STATE_ROOT/evidence/$RUN_ID"
-LOCK="$MERCOR_STATE_ROOT/.pass.lock"
 CDP_URL="${MERCOR_CDP_BASE_URL:-http://127.0.0.1:9334}"
 MERCOR_PROFILE="${MERCOR_PROFILE:-$JOB_SEARCH_PROFILE}"
 if [[ -z "${MERCOR_RESUME:-}" && -f "$MERCOR_STATE_ROOT/resume-state.json" ]]; then
@@ -18,13 +17,14 @@ if [[ -z "${MERCOR_RESUME:-}" && -f "$MERCOR_STATE_ROOT/resume-state.json" ]]; t
 fi
 MERCOR_RESUME="${MERCOR_RESUME:-${XDG_DATA_HOME:-$HOME/.local/share}/anicca/job-search/mercor-resume.pdf}"
 RESULT="$EVIDENCE/agent/mercor-pass-summary.json"
+PASS_STDERR="$EVIDENCE/mercor-pass.stderr.log"
 TERMINAL="$EVIDENCE/mercor-pass-terminal.json"
 REPORT="$EVIDENCE/telegram-report.json"
 FINAL_REASON="mercor_result_missing"
-LOCK_HELD=0
 
 mkdir -p "$MERCOR_STATE_ROOT" "$JOB_SEARCH_STATE_ROOT/evidence" "$JOB_SEARCH_STATE_ROOT/logs" "$EVIDENCE"
 chmod 700 "$JOB_SEARCH_STATE_ROOT" "$MERCOR_STATE_ROOT" "$JOB_SEARCH_STATE_ROOT/evidence" "$JOB_SEARCH_STATE_ROOT/logs" "$EVIDENCE"
+export LIFE_MANAGER_PROVIDER_LEASE_PATH="$MERCOR_STATE_ROOT/.pass.lock"
 export PYTHONPATH="$JOB_SEARCH_APP_ROOT"
 
 finalize() {
@@ -50,18 +50,9 @@ finalize() {
   fi
   find "$EVIDENCE" -type d -exec chmod 700 {} +
   find "$EVIDENCE" -type f -exec chmod 600 {} +
-  if [[ "$LOCK_HELD" == "1" ]]; then
-    rmdir "$LOCK" 2>/dev/null || true
-  fi
   exit "$original_rc"
 }
 trap 'finalize $?' EXIT
-
-if ! mkdir "$LOCK" 2>/dev/null; then
-  FINAL_REASON="mercor_pass_already_running"
-  exit 0
-fi
-LOCK_HELD=1
 
 PASS_PROMPT="$EVIDENCE/mercor-pass.md"
 PASS_SCHEMA="$EVIDENCE/mercor-pass-result.v1.schema.json"
@@ -90,9 +81,13 @@ set +e
   --schema "$PASS_SCHEMA" \
   --evidence-dir "$EVIDENCE/agent" \
   --workdir "$JOB_SEARCH_REPO_ROOT" \
-  --run-id "$RUN_ID"
+  --run-id "$RUN_ID" 2>"$PASS_STDERR"
 PASS_RC=$?
 set -e
+if [[ "$PASS_RC" -eq 75 ]] && grep -Fqx "LIFE_MANAGER_PROVIDER_LEASE_BUSY" "$PASS_STDERR"; then
+  FINAL_REASON="mercor_pass_already_running"
+  exit 0
+fi
 if [[ "$PASS_RC" -ne 0 ]]; then
   FINAL_REASON="mercor_runner_failed"
   exit "$PASS_RC"

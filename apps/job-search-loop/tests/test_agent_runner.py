@@ -4,7 +4,12 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from job_search_loop.agent_runner import AgentRunner, ContractError, TASK_CLASSES
+from job_search_loop.agent_runner import (
+    AgentRunner,
+    ContractError,
+    PassAlreadyRunning,
+    TASK_CLASSES,
+)
 
 
 class AgentRunnerTests(unittest.TestCase):
@@ -70,6 +75,46 @@ class AgentRunnerTests(unittest.TestCase):
     def test_missing_required_result_field_fails_closed(self):
         with self.assertRaises(ContractError):
             AgentRunner.validate({"other": True}, {"required": ["answer"]})
+
+    def test_identified_busy_runner_is_not_a_contract_failure(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            runner = AgentRunner(
+                runner_path=Path("/opt/agent_runner.py"),
+                evidence_root=root / "evidence",
+            )
+            schema = root / "schema.json"
+            schema.write_text('{"type":"object"}', encoding="utf-8")
+            completed = type("Completed", (), {
+                "returncode": 75,
+                "stdout": "",
+                "stderr": "LIFE_MANAGER_PROVIDER_LEASE_BUSY\nprovider lease busy\n",
+            })()
+            with patch("subprocess.run", return_value=completed):
+                with self.assertRaises(PassAlreadyRunning):
+                    runner.run(
+                        task="mercor_pass", prompt="Grounded task",
+                        schema_path=schema, workdir=root, run_id="busy",
+                    )
+
+    def test_unidentified_rc75_remains_a_contract_failure(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            runner = AgentRunner(
+                runner_path=Path("/opt/agent_runner.py"),
+                evidence_root=root / "evidence",
+            )
+            schema = root / "schema.json"
+            schema.write_text('{"type":"object"}', encoding="utf-8")
+            completed = type("Completed", (), {
+                "returncode": 75, "stdout": "", "stderr": "budget blocked\n",
+            })()
+            with patch("subprocess.run", return_value=completed):
+                with self.assertRaises(ContractError):
+                    runner.run(
+                        task="mercor_pass", prompt="Grounded task",
+                        schema_path=schema, workdir=root, run_id="budget-blocked",
+                    )
 
 
 if __name__ == "__main__":

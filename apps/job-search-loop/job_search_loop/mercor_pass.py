@@ -3,10 +3,11 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import sys
 from pathlib import Path
 from typing import Any
 
-from .agent_runner import AgentRunner
+from .agent_runner import AgentRunner, PassAlreadyRunning
 from .mercor_provider import run_pass
 
 
@@ -137,20 +138,24 @@ def main(argv: list[str] | None = None) -> int:
     args.evidence_dir.mkdir(parents=True, exist_ok=False, mode=0o700)
     os.chmod(args.evidence_dir, 0o700)
     runner = AgentRunner(evidence_root=args.evidence_dir.parent)
-    result = run_pass(
-        runner=runner,
-        prompt_path=args.prompt,
-        schema_path=args.schema,
-        context=build_context(
-            state_root=args.state_root,
-            profile_path=args.profile,
-            resume_path=args.resume,
-            cdp_url=args.cdp_url,
-            evidence_dir=args.evidence_dir.parent / args.run_id,
-        ),
-        workdir=args.workdir,
-        run_id=args.run_id,
-    )
+    try:
+        result = run_pass(
+            runner=runner,
+            prompt_path=args.prompt,
+            schema_path=args.schema,
+            context=build_context(
+                state_root=args.state_root,
+                profile_path=args.profile,
+                resume_path=args.resume,
+                cdp_url=args.cdp_url,
+                evidence_dir=args.evidence_dir.parent / args.run_id,
+            ),
+            workdir=args.workdir,
+            run_id=args.run_id,
+        )
+    except PassAlreadyRunning:
+        print("LIFE_MANAGER_PROVIDER_LEASE_BUSY", file=sys.stderr)
+        return 75
     try:
         validate_evidence_paths(result, args.evidence_dir.parent)
     except ValueError as error:
