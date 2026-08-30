@@ -994,7 +994,7 @@ The initial product is a general entrepreneur agent that continuously searches X
 | Life Manager code | Money Printer本体、judge guest、Railway worker、recurring scout、HumanTask pause/resume contract、JSONB encoding、bounded SQL reference regexをmain SHA `cb8c391779c120ba3c8dabe6e80ff5aa96e6bb6d`へmerge済み | live HumanTask creation/answer/resume、残り2 natural cycles、browser WebMCP E2Eを閉じる |
 | Railway API | 専用`money-printer-worker`はmain SHA `cb8c391779c120ba3c8dabe6e80ff5aa96e6bb6d`でSUCCESS/RUNNING、`/health` 200。16:00Z natural scout cycleはattempt 2でcompleted | HumanTaskは0件。20:56Zの最新Mercor boundary jobも同SHA上でdead-letterのため、次sessionはこの一件をroot-causeしsame-job resumeを実測する |
 | Judge guest | 固定guest tenant、external-effect deny、owner UIを変えずMoney Printerだけを描画・fetchするcodeは93/93 pass | clean browserでzero-login、private data 0、same domain functions、resetを証明する |
-| Netlify | PR #400/401、deploy run `33254381157`はSUCCESS。`https://aniccaai.com/money-printer` page/API 200、`Origin-Agent-Cluster:?1`、`Permissions-Policy:tools=(self)`、no-store、zero-login sessionをreadback | 先にChatGPT/Chromeでtool discoveryを証明し、race-free Symphony接続後にvisible write/resumeを証明する |
+| Netlify | PR #400/401、deploy run `33254381157`はSUCCESS。`https://aniccaai.com/money-printer` page/API 200、`Origin-Agent-Cluster:?1`、`Permissions-Policy:tools=(self)`、no-store、zero-login sessionをreadback。Chrome 151 built-in WebMCPでinitial four toolsと`inspect_money_printer` Completedをlive実証 | race-free Symphony接続後にvisible write、state-dependent fifth tool、same-job resumeを証明する |
 | Worker | dedicated Railway service `money-printer-worker`をGitHub mainから稼働。16:00Z natural scout `be9cb0c3…`はattempt 1 failed→attempt 2 completed。Pageを閉じたまま新opportunitiesを3件作成 | same releaseの00:00Z、08:00Z cyclesをreadbackし3/3へする。scout downstream general-agent jobsのdead-letterはHumanTask blockerと分けて扱う |
 | External proof | Lancers project `5593484`のofficial application receipt `27863414`をread-only importし、official log + append-only ledgerでcontent hashを照合。applicationとして表示し、revenueへは算入せず、replay duplicate 0 | browser demoでreceiptとverified money 0を同時に見せる |
 | Devpost | project `1404362`をfresh Sol review済みEnglish draftへversion 3同期。`website_url=https://aniccaai.com/money-printer`、public repo、MIT license、README、judge guideをlive readback。`submitted_at=null`、`video_url=null` | screenshots、immutable tag、public YouTube、required custom answersを埋め、official formを再readbackして明示承認後にsubmitする |
@@ -1043,10 +1043,10 @@ The initial product is a general entrepreneur agent that continuously searches X
 - [ ] same deployed releaseから24時間・3回以上のnatural scout cycle receipt
 - [x] multiple real opportunities + source-level dedupe readback
 - [x] multiple concurrent workrooms with isolated refs and cross-contamination 0
-- [ ] normal browser human UI
+- [x] normal browser human UI
 - [ ] ChatGPT built-in browser WebMCP E2E
-- [ ] Chrome WebMCP E2E
-- [ ] visible tool activity
+- [x] Chrome WebMCP read-only E2E
+- [x] visible read-only tool activity
 - [ ] state-dependent registration
 - [ ] stale revision demo
 - [x] retry failure/recovery receipt
@@ -1176,8 +1176,8 @@ One active item at a time。各itemは実物readbackを閉じてから次へ進�
 | U08 | Lancers proposal effect/readbackが現在のDOMで動くか | resolved | proposal `27863414`をofficial readbackし、同じ案件への後続wakeはduplicate skip | post-effect unknownは再送せずreconciliation |
 | U09 | General projectionが既存receiptを正しく表示できるか | live-resolved / empty active columns | canonical APIでFound 14、Working/Needs You/Waiting/Done/Paid 0、verified cash 0をreadback。DBにはcompleted/dead-letter receiptsとLancers application receiptがあるがactive boardへ昇格していない | Symphony result kindはstrict projection checkとsame-job readbackを通すまで表示しない。applicationをrevenueへ昇格しない |
 | U10 | Minimal human判定が丸投げになる | mechanism resolved / prior demo goal rejected | 本番transaction rollback診断で`blocked`→open HumanTask→`waiting_human`が成功し、SQL/validationは正常。live Gemini rerunも同pathを通した。旧Mercor goalは「demoへ含める許可」を人為的に要求し、案件自体もJapan-ineligibleなので再利用しない。新しいcurrent eligible listingで、agentはprofile/sessionを先に使いprovider-required interview等のhuman-only stepだけをtask化する | agentが実行可能なresearch、form fill、artifact作成、既知profile入力をhumanへ渡したらfail。旧dead-letterはblind retryしない |
-| U11 | WebMCP toolsがChatGPTで発見・実行されるか | read/write registration code-verified / browser live-open | top-level inspect toolsとstate-dependent answer toolを含むfocused suite 65/65。次にSol/Terra tool list、recent call、visible resume | ChatGPT rollout不可ならChrome 149+ evidenceでStage Oneを守る |
-| U12 | Netlify/Browser security headersがWebMCPを許すか | HTTP resolved / client discovery open | run `33254381157` SUCCESS、canonical page/API 200、origin isolation、Permissions Policy、no iframe registrationをreadback。次にChatGPT/Chrome tool discovery | header/tool discoveryが両方通るまでbrowser gateを閉じない |
+| U11 | WebMCP toolsがcompatible clientで発見・実行されるか | Chrome read-only live-resolved / state-dependent write open | Chrome 151 built-in feature `WebMCP`からCDP `WebMCP.toolsAdded`でinitial four toolsを取得し、`inspect_money_printer`をinvoke、status Completed。ChatGPT in-app browserはcurrent Codex sessionへattachされていない | HumanTask open時のfifth toolとwrite/resumeはH07–H10で閉じる。ChatGPT captureが可能になれば追加するがChrome proofを無効化しない |
+| U12 | Netlify/Browser security headersがWebMCPを許すか | live-resolved in Chrome | canonical page/API 200、origin isolation、`Permissions-Policy: tools=(self)`、top-level registration、Chrome 151 tool discovery/invocationをreadback | release SHA bindingだけF05で閉じる |
 | U13 | Page close後も24/7 workが続くか | worker live / natural proof 1 of 3 | 16:00Z natural cycle `be9cb0c3…`はsame deployed lineageでcompleted、3 opportunities created。次に00:00Z、08:00Zの2 cyclesとsource duplicate最大1をreadback | page-local toolをscheduler代わりにしない |
 | U14 | Guest judgeとprivate production stateが混ざる | code-verified / live-open | fixed guest tenant、external-effect deny、guest-only UI focused 93/93 pass。次にclean production sessionでzero private credentials/PII、same build/domain functionsをreadback | private owner receiptはredacted read-only projectionだけ許可 |
 | U15 | Mercorが期限内proofになるか | candidate fixed / live eligibility gate open | `Business Development Contractor`はofficial public pageで2026-08-30現在Apply now、$35–50/hr、remote、business development経験、one interviewをreadback。Owner E2Eではhidden eligibility→existing profile/session→application steps→provider interview taskまでを実測する | hidden eligibility mismatchまたはlisting closureならexternal effect前に棄却し、current public Mercor ExploreからDaisに適合する一件だけを同じrubricで差し替える。selection/cashはDoneに含めずAI interview代答は禁止 |
@@ -1194,7 +1194,7 @@ One active item at a time。各itemは実物readbackを閉じてから次へ進�
 | U26 | Rulesやsubmission fieldsが調査後に変わる | live-open | 提出直前にofficial rulesとproject formを再取得し、deadline、required fields、testing accessをdiff | 古いdraftをそのまま送らない |
 | U27 | Live URL、deploy SHA、repo SHAが一致しない | source identified / deploy live-open | Netlify site IDと`anicca-products` sourceを特定。次にresponse/header/build metadata、submitted commit、public repo tagを同一releaseへ束縛 | SHA不一致またはauth wallならnot ready |
 | U28 | Application receiptを売上と誤認する | design-closed / UI live-open | `ApplicationReceipt`、`ContractReceipt`、`DeliveryReceipt`、`PaymentReceipt`を別型・別columnで表示し、cash receipt不在時はverified money 0 | application/proposal/pendingをrevenueへ昇格しない |
-| U29 | Judgeがclean environmentで再現できない | live-open | fresh browserからone URL、one prompt、tool discovery、reset、visible state、Chrome fallbackを60秒以内に再現 | private credentialや既存sessionが必要ならnot ready |
+| U29 | Judgeがclean environmentで再現できない | Chrome read-only resolved / full replay open | isolated Chrome profileからcanonical URL、Judge guest、initial four tools、direct inspect call、visible board match、privacy leak 0を取得。次にguest reset/write/Symphony/HumanTaskを60秒以内で再現 | private credentialや既存sessionがguest read/writeに必要ならnot ready |
 | U31 | Symphonyを読んだだけで実runtimeに使っていない | spike-resolved / integration design-closed | official commitをinstall/buildしprivate Issue→isolated Codex→commit/push→comment→closeを実E2E。Production接続はMac mini bridgeがinternal bearer APIからsame jobをatomic claimし、private `Daisuke134/life-manager-workrooms` Issueへmirror、official Symphonyが実行、bridgeがauthor-bound result commentを同じjobへcallbackする。Cloud workerの`general-agent.work` claimはcutover時に外しraceを防ぐ | Symphony内部state、Issue close、agent claimをmoney truthにしない。callback/receipt readbackがなければjobをterminalにしない |
 | U32 | Official Symphony previewをそのまま公開運用できるか | rejected for public exposure | engineering-preview warning、dependency advisories、1 timing test failureを記録 | trusted local/private orchestratorとして使い、public WebMCP UI/APIはLife Managerだけを公開する |
 | U30 | Judge guestの初回WebMCP writeがCSRFで拒否される | root cause fixed / deploy pending | 初回GET後の`add_opportunity`がfamily-bound CSRFで200、同じidempotency keyのreplayも同じ200、write 1をproduction readback | 新session作成後にfamilyをresolveできなければbroken tokenを描画せずfail closed |
@@ -1257,13 +1257,13 @@ One active item at a time。各itemは実物readbackを閉じてから次へ進�
 | Atom | One action | Exact completion evidence |
 |---|---|---|
 | B01 | private evidence rootを作る | pass: `/Users/anicca/.local/state/life-manager/evidence/webmcp-challenge`、mode 700、evidence `B01.json` |
-| B02 | current Codex sessionでprimary/fallback client availabilityを一回診断する | observed: in-app backendなし。Chrome 151、native host pass、ChatGPT extension missing。fallback Chromeを選択、evidence `B02.json` |
-| B03 | ChromeへChatGPT extension `hehggadaopoacecdllhhajmbjkdcmajg`をinstall/enabledにする | Chrome Web Storeの通常installをDaisが承認し、bundled diagnosticがinstalled=true/enabled=true。policy overrideやmanual native-host repairは禁止 |
-| B04 | connected Chrome 151でtesting flagをenableしcanonical URLを開く | `chrome://version` 151+、enabled flag、URL、Judge guest、boardのone screenshot |
-| B05 | clientのSite tools一覧を開く | HumanTaskなしではexact four: `inspect_money_printer`、`add_opportunity`、`inspect_workroom`、`inspect_next_human_task`。`record_human_answer`は未登録 |
-| B06 | `inspect_money_printer`を一回callする | structured resultのmetricsが同時刻のvisible boardと一致 |
-| B07 | fresh session responseをprivacy scanする | cookie/token/email/private profile/raw receipt payloadの露出0 |
-| B08 | B02–B07を`browser-client-evidence.json`へ束縛する | client、version、URL、observed_at、initial four tool list、screenshot refs。B06不一致なら実装へ進まずclient/API差分を直す |
+| B02 | official Devpost/Chrome/specでclient requirementを確認する | pass: ChatGPT in-appはbuilt-in、Chrome 149+は`enable-webmcp-testing`またはfeature `WebMCP`。ChatGPT Chrome control extensionはWebMCP要件ではない。evidence `B02.json` |
+| B03 | isolated Chrome 151をbuilt-in feature `WebMCP`で起動する | pass: Chrome `151.0.7922.175`、CDP port 9339、private profile mode 700、canonical target。evidence `B03.json` |
+| B04 | canonical URLを開きJudge guest boardをcaptureする | pass: URL、Judge guest、effects disabled、Paid & verified 0、board screenshot `B04.png` |
+| B05 | CDP `WebMCP.toolsAdded`でSite tools一覧を読む | pass: initial exact four `add_opportunity`、`inspect_money_printer`、`inspect_next_human_task`、`inspect_workroom`; answer tool未登録。evidence `B05.json` |
+| B06 | CDP `WebMCP.invokeTool`で`inspect_money_printer`を一回callする | pass: status Completed、Found 17、other columns 0、metricsがvisible boardと一致。evidence `B06.json` |
+| B07 | structured responseをprivacy scanする | pass: credential/cookie/token/email/private key/value matches 0。evidence `B07.json` |
+| B08 | B02–B07をone evidence bundleへ束縛する | pass: Chrome version、URL、four tools、Completed invocation、visible match、privacy 0、screenshot refsを`B08.json`へ保存 |
 
 ### 18.5 R — race-free Symphony persistence（Section 14 item 3, slice 1）
 
@@ -1395,4 +1395,4 @@ One active item at a time。各itemは実物readbackを閉じてから次へ進�
 
 ### 18.13 Immediate next atom
 
-`B03`だけを次に実行する。B03–B08が揃うまでmigration、Symphony bridge、provider applicationへ進まない。各atom完了時にこのSectionのstateとSection 17の対応uncertaintyを同じcommitで更新する。
+`R01`だけを次に実行する。R01–R10が揃うまでbridge API、Symphony production connection、provider applicationへ進まない。各atom完了時にこのSectionのstateとSection 17の対応uncertaintyを同じcommitで更新する。
