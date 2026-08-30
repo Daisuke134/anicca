@@ -517,8 +517,6 @@ class ModelBrowserLoopContractTests(unittest.TestCase):
                 "/runtime/agent_runner.py",
                 "--task-class",
                 "browser-lane-agent",
-                "--escalation-reason",
-                "mandatory-model-browser-loop",
                 "--timeout-seconds",
                 "900",
                 "--prompt-file",

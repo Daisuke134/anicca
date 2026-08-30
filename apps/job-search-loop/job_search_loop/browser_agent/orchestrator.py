@@ -8,9 +8,6 @@ import subprocess
 from pathlib import Path
 
 
-ESCALATION_REASON = "mandatory-model-browser-loop"
-
-
 def _is_duplicate_runtime_module_typo(command: str) -> bool:
     if any(
         marker in command
@@ -114,8 +111,6 @@ def invoke_runner(
         str(runner),
         "--task-class",
         "browser-lane-agent",
-        "--escalation-reason",
-        ESCALATION_REASON,
         "--timeout-seconds",
         str(timeout_seconds),
         "--prompt-file",
