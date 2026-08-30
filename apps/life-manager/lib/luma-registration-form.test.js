@@ -8,6 +8,72 @@ const {
   readLumaRegistrationForm,
 } = require("./luma-registration-form.js");
 
+test("observes required name-less Luma comboboxes as synthetic dropdown fields", async () => {
+  let observerSource = "";
+  const options = ["Yes", "No"].map((value) => ({
+    textContent: value,
+    getAttribute(attribute) { return attribute === "aria-label" ? value : null; },
+  }));
+  const combo = {
+    tagName: "INPUT",
+    labels: [],
+    parentElement: null,
+    getAttribute(attribute) {
+      return {
+        role: "combobox",
+        "aria-haspopup": "listbox",
+        "aria-required": "true",
+        "aria-label": "Would you like to attend? *",
+      }[attribute] || null;
+    },
+    hasAttribute() { return false; },
+    matches() { return false; },
+    querySelector() { return null; },
+    querySelectorAll(selector) { return selector.includes("[role='option']") ? options : []; },
+    contains() { return false; },
+    ownerDocument: { getElementById() { return null; } },
+  };
+  const scopeRoot = {
+    parentElement: null,
+    querySelectorAll(selector) {
+      if (selector.includes("input[aria-required='true']")) return [combo];
+      if (selector.includes("[role='combobox'][aria-haspopup='listbox']")) return [combo];
+      return [];
+    },
+    querySelector() { return null; },
+    matches() { return false; },
+    contains(node) { return node === combo; },
+  };
+
+  const hadDocument = Object.hasOwn(global, "document");
+  const previousDocument = global.document;
+  global.document = {};
+  let schema;
+  try {
+    schema = await readLumaRegistrationForm({
+      async evaluate(observer) {
+        observerSource = String(observer);
+        return observer(scopeRoot);
+      },
+    });
+  } finally {
+    if (hadDocument) global.document = previousDocument;
+    else delete global.document;
+  }
+
+  assert.deepEqual(schema, {
+    kind: "luma_registration_form",
+    fields: [{
+      key: "luma_dropdown_0",
+      label: "Would you like to attend?",
+      control: "dropdown",
+      required: true,
+      options: ["Yes", "No"],
+    }],
+  });
+  assert.doesNotMatch(observerSource, /\.value\b|inputValue|outerHTML|document\.body/i);
+});
+
 test("normalizes the live Luma golden trace including app-required custom controls", () => {
   const schema = normalizeLumaRegistrationForm([
     {
