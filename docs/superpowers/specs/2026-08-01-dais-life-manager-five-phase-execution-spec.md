@@ -27,7 +27,7 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 この節は、後段の「現在TODO」「次の一件」「local-only」「self-funded agentは別product」という相反する記述を
 上書きする最新の実行順序SSOTである。後段は実装履歴・organ別acceptanceとして保持するが、次作業の選択には使わない。
 Upworkのterminal evidence、startup context、public claim、GA-01〜13Aは完了または履歴として保持する。
-次の一件はAtomic program ledger Seq 16 `ELZ-C03`のsubstep `C03-28`で、ELZ-C04をNEXTへ更新する。
+次の一件はAtomic program ledger Seq 17 `ELZ-C04`で、legacy provider bridge contractを既存実装から固定する。
 
 #### 0.0.1 最新基盤決定 — ElizaOSを完全forkし、Life Managerをlocal OSSからmulti-tenant SaaSへ育てる
 
@@ -611,9 +611,9 @@ Goal分解とgraph生成は後続C07のCodexへ残す。現在activeなC03だけ
 - [x] **C03-25** C03差分をadversarial reviewへ一回渡す — fresh Sol verifierはCritical 0/Important 1でid-only FKによるcross-tenant relationshipを反証。schema regression RED後、親6 scope unique、Goal.supersedes含む6 composite tenant FKへ修正しfork PR #15 merge `7acbf831…`。focused 3/3、PGlite 15 scope constraints、cross-tenant PlanGraph/Supersedes SQLSTATE `23503`、fixture rows 0、separate-process restart hash `ac501566…`を実証。同reviewer限定recheck `RESOLVED`、final Critical 0/Important 0/open 0。private review/fix receipts mode 0600。次はC03-26
 - [x] **C03-26** C03 receiptをPASSへ更新する — canonical private `domain-schema-receipt.json` mode 0600、SHA256 `99eea2ba…`。final fork `7acbf831…`、source 7/7 hash、evidence 7/7 hash、schema/migration tests 3/3、PGlite apply＋restart、6 tables/62 columns/15 scope constraints/2 immutable triggers、cross-tenant SQLSTATE `23503`、review Critical/Important/open 0、secret leak 0、duplicate external effect 0を固定。次はC03-27
 - [x] **C03-27** ELZ-C03をDONEへ更新する — canonical `domain-schema-receipt.json` PASS、fork final `7acbf831…`、PGlite final hash `ac501566…`、6 entity/62 columns/15 tenant-scope constraints/2 immutable triggers、separate-process restart、tests 3/3、review open 0、secret leak 0、duplicate external effect 0。次はC03-28
-- [ ] **C03-28** ELZ-C04をNEXTへ更新する
+- [x] **C03-28** ELZ-C04をNEXTへ更新する
 
-Lancersでまだ新しい収益がないことは、この順序を飛ばす理由にしない。現時点はC03がactiveであり、新forkのgeneral-agent基盤が
+Lancersでまだ新しい収益がないことは、この順序を飛ばす理由にしない。現時点はC04がactiveであり、新forkのgeneral-agent基盤が
 Lancers実環境へ到達していない。Lancersでの新規応募・契約・受領金・銀行着金はPhase C完了後のPhase Lで一つずつ実証する。
 
 ##### Phase F — Eliza fixed treeを未変更でlocal起動する
@@ -641,7 +641,7 @@ Lancers実環境へ到達していない。Lancersでの新規応募・契約・
 | 14 | ELZ-C01 exactly-one plugin registration | DONE | private `plugin-registration-receipt.json` mode 0600。fork PR #1 canonical merge `bd24601e…`。`@elizaos/plugin-life-manager`一つがaction `LIFE_MANAGER_HEALTH`、provider `lifeManagerHealth`、stateless service `LIFE_MANAGER`を各1件登録し、host manifestでenabled/requiredForReady=true。同名二重register後も各1件、second runtime/scheduler/DB/external effect 0 |
 | 15 | ELZ-C02 first model transport preflight | **DONE** | canonical private `model-provider-receipt.json` v2 mode 0600。Eliza既存`@elizaos/plugin-cli-inference` `codex-sdk`＋system Codex `0.151.0`＋Luna medium。初回post-call adapter log failureを同一session readbackし、initialized adapter final callで`runtime.useModel()`が`LIFE_MANAGER_HEALTH/{}`をreturn・exit 0。historical 1＋final 1＝total calls 2、automatic retry 0、fresh review P1 resolved/open 0、API key/GPT-OSS/ClawRouter/marketplace effect 0、owned RAM detached |
 | 16 | ELZ-C03 domain schema and migration | **DONE** | canonical private `domain-schema-receipt.json` mode 0600、SHA256 `99eea2ba…`。fork `7acbf831…`、6 entity/62 columns、15 tenant-scope constraints、2 immutable triggers、PGlite apply＋restart、tests 3/3、review Critical/Important/open 0 |
-| 17 | ELZ-C04 legacy provider bridge contract | TODO | JS/Python既存toolをopaque refとstructured resultだけで呼び、判断権0の`provider-bridge-receipt.json` |
+| 17 | ELZ-C04 legacy provider bridge contract | **IN_PROGRESS — NEXT** | JS/Python既存toolをopaque refとstructured resultだけで呼び、判断権0の`provider-bridge-receipt.json` |
 | 18 | ELZ-C05 Goal to reference-only WorkItem | TODO | private goal本文をjobへ複製せず、一Goal→一WorkItemの`goal-workitem-receipt.json` |
 | 19 | ELZ-C06 capability and authorization | TODO | manifest、private authorization ref、human-only境界、expiryを固定した`capability-auth-receipt.json` |
 | 20 | ELZ-C07 bounded model decision | TODO | modelが候補/tool/next graphをstructured判断し、regex/keyword/provider judgment 0の`specialist-decision-receipt.json` |
