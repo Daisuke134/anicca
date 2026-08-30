@@ -29,6 +29,23 @@ REQUIRED_ASSETS: list[dict[str, str]] = [
 X_RENDER_WIDTH = 587
 X_BODY_MIN_HEIGHT = 110
 X_BODY_MAX_HEIGHT = 650
+HEADLINE_API_CANDIDATE = "gates/media-candidates/headline-gpt-image-2.png"
+HEADLINE_API_RECEIPT = "gates/headline-image-api-receipt.json"
+
+
+def _marker(version: int = 2) -> dict[str, object]:
+    value: dict[str, object] = {
+        "version": version,
+        "status": "required",
+        "assets": REQUIRED_ASSETS,
+    }
+    if version == 2:
+        value["headline_api"] = {
+            "candidate": HEADLINE_API_CANDIDATE,
+            "receipt": HEADLINE_API_RECEIPT,
+            "request_model": "gpt-image-2-2026-04-21",
+        }
+    return value
 
 
 def _body_projection(descriptor: dict[str, object]) -> float:
@@ -76,11 +93,7 @@ def arm(run_dir: Path) -> dict[str, object]:
     run = run_dir.resolve(strict=True)
     gates = (run / "gates").resolve(strict=True)
     marker = gates / "media-create-required.json"
-    payload: dict[str, object] = {
-        "version": 1,
-        "status": "required",
-        "assets": REQUIRED_ASSETS,
-    }
+    payload = _marker()
     if marker.exists():
         try:
             recorded = json.loads(marker.read_text(encoding="utf-8"))
@@ -109,13 +122,10 @@ def verify(run_dir: Path) -> dict[str, object]:
         run / "gates/media-create-required.json",
         "media-create-marker-invalid",
     )
-    expected_marker: dict[str, object] = {
-        "version": 1,
-        "status": "required",
-        "assets": REQUIRED_ASSETS,
-    }
-    if marker != expected_marker:
+    legacy = marker == _marker(1)
+    if marker != _marker() and not legacy:
         raise MediaCreateRefused("media-create-marker-mismatch")
+    headline_descriptor: dict[str, object] | None = None
     for asset in REQUIRED_ASSETS:
         destination = run / asset["destination"]
         receipt = _read_json(run / asset["receipt"], "media-create-receipt-invalid")
@@ -148,7 +158,32 @@ def verify(run_dir: Path) -> dict[str, object]:
         }
         if receipt != expected_receipt:
             raise MediaCreateRefused(f"media-create-receipt-mismatch:{asset['kind']}")
-    return {"version": 1, "status": "verified", "assets_verified": 2}
+        if asset["kind"] == "headline":
+            headline_descriptor = descriptor
+    if not legacy:
+        candidate = run / HEADLINE_API_CANDIDATE
+        api_receipt = _read_json(run / HEADLINE_API_RECEIPT, "headline-api-receipt-invalid")
+        candidate_descriptor = _descriptor_from_file(candidate)
+        required = {
+            "schema": "writer.gpt-image-headline-receipt",
+            "version": 1,
+            "status": "committed",
+            "candidate": str(candidate),
+            "request_model": "gpt-image-2-2026-04-21",
+            "file_sha256": candidate_descriptor.get("sha256"),
+            "byte_length": candidate_descriptor.get("byte_length"),
+            "width": candidate_descriptor.get("width"),
+            "height": candidate_descriptor.get("height"),
+        }
+        if any(api_receipt.get(key) != value for key, value in required.items()):
+            raise MediaCreateRefused("headline-api-receipt-mismatch")
+        for key in ("x_request_id", "prompt_sha256", "response_sha256", "alt", "rights_provenance"):
+            if not isinstance(api_receipt.get(key), str) or not str(api_receipt[key]).strip():
+                raise MediaCreateRefused(f"headline-api-receipt-missing:{key}")
+        if headline_descriptor is None or candidate_descriptor.get("sha256") != headline_descriptor.get("sha256"):
+            raise MediaCreateRefused("headline-api-canonical-sha-mismatch")
+    return {"version": 1, "status": "verified", "assets_verified": 2,
+            "headline_api_verified": not legacy}
 
 
 def commit(candidate: Path, destination: Path, receipt: Path, kind: str) -> dict[str, object]:
