@@ -256,7 +256,8 @@ BEGIN
   END IF;
   FOR v_artifact IN SELECT value FROM jsonb_array_elements(p_result_payload->'artifact_refs') LOOP
     IF jsonb_typeof(v_artifact) <> 'string'
-      OR v_artifact #>> '{}' !~ '^[a-z][a-z0-9+.-]{1,31}://[A-Za-z0-9][A-Za-z0-9._~:/?#@!$&''()*+,;=%-]{0,999}$' THEN
+      OR char_length(v_artifact #>> '{}') > 1000
+      OR v_artifact #>> '{}' !~ '^[a-z][a-z0-9+.-]{1,31}://[A-Za-z0-9][A-Za-z0-9._~:/?#@!$&''()*+,;=%-]*$' THEN
       RAISE EXCEPTION 'symphony result artifact invalid';
     END IF;
   END LOOP;
@@ -426,7 +427,7 @@ BEGIN
   v_opportunity_id := substring(v_job.job_id from 6);
   v_task_id := encode(digest(
     p_tenant_id || E'\n' || v_job.job_id || E'\n' || p_dispatch_id || E'\n'
-      || v_dispatch.result_payload->>'reason_code',
+      || (v_dispatch.result_payload->>'reason_code'),
     'sha256'
   ), 'hex');
   v_human_boundary_ref := 'human-boundary://sha256/' || encode(digest(
