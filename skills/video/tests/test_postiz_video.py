@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import importlib.util
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -134,7 +135,7 @@ class PostizVideoTests(unittest.TestCase):
         self.assertEqual(post["settings"]["content_posting_method"], "DIRECT_POST")
         self.assertEqual(post["settings"]["autoAddMusic"], "yes")
 
-    def test_tiktok_photo_carousel_publish_uses_exact_platform_title_and_direct_url(self):
+    def test_tiktok_photo_carousel_rejects_direct_video_url_without_photo_proof(self):
         with tempfile.TemporaryDirectory() as directory:
             images = []
             for index in range(1, 7):
@@ -147,8 +148,14 @@ class PostizVideoTests(unittest.TestCase):
                 with patch.object(postiz_video, "create_post", side_effect=lambda payload, _key: payloads.append(payload) or "postiz-1"):
                     with patch.object(postiz_video, "read_publish_state", return_value={"state": "PUBLISHED", "post_url": "https://www.tiktok.com/@anicca_slideshow/video/7777777777777777777"}):
                         with patch.object(postiz_video.time, "sleep"):
-                            with patch("builtins.print"):
-                                self.assertEqual(postiz_video._publish(args, "token", "Exact caption"), 0)
+                            with patch.object(postiz_video, "resolve_profile_release_url") as resolver:
+                                with patch("builtins.print") as output:
+                                    with self.assertRaisesRegex(postiz_video.PostizError, "terminal state"):
+                                        postiz_video._publish(args, "token", "Exact caption")
+            resolver.assert_not_called()
+            result = json.loads(output.call_args.args[0])
+            self.assertFalse(result["reconciled"])
+            self.assertEqual(result["post_url"], "https://www.tiktok.com/@anicca_slideshow/video/7777777777777777777")
             self.assertEqual(payloads[0]["posts"][0]["settings"]["title"], "Exact hook")
             self.assertEqual(len(payloads[0]["posts"][0]["value"][0]["image"]), 6)
 
@@ -210,6 +217,118 @@ class PostizVideoTests(unittest.TestCase):
         )
         self.assertEqual(postiz_video.find_post(rows, "p1"), {"state": "QUEUE", "post_url": None})
 
+    def test_find_post_reconciles_exact_tiktok_photo_proof_without_inventing_video_url(self):
+        caption = "Exact caption\n#line"
+        row = {
+            "id": "photo-1",
+            "state": "PUBLISHED",
+            "releaseURL": "https://www.tiktok.com/@anicca_slideshow",
+            "releaseId": "p_pub_url~v2.7679813128503363591",
+            "integration": {"id": "cmnenjkff01j1pa0ysufmzhfr"},
+            "content": caption,
+            "settings": json.dumps({
+                "__type": "tiktok",
+                "title": "Exact hook",
+                "content_posting_method": "DIRECT_POST",
+            }),
+        }
+        self.assertEqual(
+            postiz_video.find_post([row], "photo-1", "tiktok"),
+            {
+                "state": "PUBLISHED",
+                "post_url": None,
+                "integration_id": "cmnenjkff01j1pa0ysufmzhfr",
+                "content_sha256": hashlib.sha256(caption.encode("utf-8")).hexdigest(),
+                "title": "Exact hook",
+                "posting_method": "DIRECT_POST",
+                "release_id": "p_pub_url~v2.7679813128503363591",
+            },
+        )
+
+    def test_find_post_rejects_incomplete_tiktok_photo_proof(self):
+        base = {
+            "id": "photo-invalid",
+            "state": "PUBLISHED",
+            "releaseURL": "https://www.tiktok.com/@anicca_slideshow",
+            "releaseId": "p_pub_url~v2.7679813128503363591",
+            "integration": {"id": "cmnenjkff01j1pa0ysufmzhfr"},
+            "content": "Exact caption",
+            "settings": {
+                "__type": "tiktok",
+                "title": "Exact hook",
+                "content_posting_method": "DIRECT_POST",
+            },
+        }
+        invalid_rows = (
+            {**base, "releaseURL": ""},
+            {**base, "releaseId": "p_pub_url~v2.7679813128503363591-extra"},
+            {**base, "settings": {**base["settings"], "__type": "instagram"}},
+            {**base, "settings": {**base["settings"], "title": "  "}},
+            {**base, "settings": {**base["settings"], "content_posting_method": "UPLOAD"}},
+            {**base, "integration": {"id": ""}},
+            {**base, "content": None},
+        )
+        for row in invalid_rows:
+            with self.subTest(row=row):
+                with self.assertRaises(postiz_video.PostizError):
+                    postiz_video.find_post([row], row["id"], "tiktok")
+
+    def test_tiktok_photo_carousel_publish_accepts_exact_postiz_api_proof_without_url(self):
+        with tempfile.TemporaryDirectory() as directory:
+            images = []
+            for index in range(1, 7):
+                image = Path(directory) / f"{index}.jpg"
+                image.write_bytes(b"\xff\xd8\xff" + bytes([index]))
+                images.append(image)
+            args = SimpleNamespace(
+                image=images,
+                platform="tiktok",
+                integration="cmnenjkff01j1pa0ysufmzhfr",
+                title="Exact hook",
+                video=None,
+            )
+            caption = "Exact caption"
+            row = {
+                "id": "photo-1",
+                "state": "PUBLISHED",
+                "releaseURL": "https://www.tiktok.com/@anicca_slideshow",
+                "releaseId": "p_pub_url~v2.7679813128503363591",
+                "integration": {"id": args.integration},
+                "content": caption,
+                "settings": json.dumps({
+                    "__type": "tiktok",
+                    "title": args.title,
+                    "content_posting_method": "DIRECT_POST",
+                }),
+            }
+            with patch.object(
+                postiz_video,
+                "upload_image",
+                side_effect=lambda image, _key: (image.stem, f"https://uploads.example/{image.name}"),
+            ):
+                with patch.object(postiz_video, "create_post", return_value="postiz-photo-1"):
+                    with patch.object(
+                        postiz_video,
+                        "read_publish_state",
+                        side_effect=lambda post_id, _key, platform: postiz_video.find_post(
+                            {"posts": [{**row, "id": post_id}]}, post_id, platform,
+                        ),
+                    ):
+                        with patch.object(postiz_video.time, "sleep"):
+                            with patch.object(postiz_video, "resolve_profile_release_url") as resolver:
+                                with patch("builtins.print") as output:
+                                    self.assertEqual(postiz_video._publish(args, "token", caption), 0)
+            resolver.assert_not_called()
+            result = json.loads(output.call_args.args[0])
+            self.assertEqual(result["state"], "PUBLISHED")
+            self.assertIsNone(result["post_url"])
+            self.assertTrue(result["reconciled"])
+            self.assertEqual(result["integration_id"], args.integration)
+            self.assertEqual(result["content_sha256"], hashlib.sha256(caption.encode("utf-8")).hexdigest())
+            self.assertEqual(result["title"], args.title)
+            self.assertEqual(result["posting_method"], "DIRECT_POST")
+            self.assertEqual(result["release_id"], row["releaseId"])
+
     def test_published_exact_video_state_is_provider_reconciled(self):
         self.assertTrue(postiz_video.is_reconciled_state({
             "state": "PUBLISHED",
@@ -218,6 +337,24 @@ class PostizVideoTests(unittest.TestCase):
         self.assertFalse(postiz_video.is_reconciled_state({
             "state": "PUBLISHED",
             "post_url": "https://www.tiktok.com/@life",
+        }))
+        self.assertTrue(postiz_video.is_reconciled_state({
+            "state": "PUBLISHED",
+            "post_url": None,
+            "integration_id": "integration-1",
+            "content_sha256": "a" * 64,
+            "title": "Exact hook",
+            "posting_method": "DIRECT_POST",
+            "release_id": "p_pub_url~v2.7679813128503363591",
+        }))
+        self.assertFalse(postiz_video.is_reconciled_state({
+            "state": "PUBLISHED",
+            "post_url": None,
+            "integration_id": "integration-1",
+            "content_sha256": "a" * 64,
+            "title": "Exact hook",
+            "posting_method": "DIRECT_POST",
+            "release_id": "p_pub_url~v2.7679813128503363591-extra",
         }))
 
     def test_find_post_rejects_published_without_public_url(self):
