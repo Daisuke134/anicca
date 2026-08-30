@@ -450,6 +450,70 @@ class WorkdayQualificationTests(unittest.TestCase):
 
             self.assertEqual([row["company"] for row in rows], ["Good"])
 
+    def test_snapshot_requeues_unfinished_seen_rows_only(self):
+        with tempfile.TemporaryDirectory() as directory:
+            ledger_path = Path(directory) / "ledger.sqlite3"
+            ledger = Ledger(ledger_path)
+
+            def add(label):
+                application_id = ledger.add_application(
+                    "Example",
+                    label,
+                    f"https://example.wd1.myworkdayjobs.com/Careers/job/{label}",
+                )
+                ledger.transition(application_id, "qualified")
+                ledger.transition(application_id, "materials_ready")
+                return application_id
+
+            unfinished = add("Unfinished")
+            held = add("Held")
+            ledger.record_workday_fit_decision(
+                held, "hold", "a" * 64, policy_version="test"
+            )
+            rejected = add("Rejected")
+            ledger.record_workday_fit_decision(
+                rejected, "rejected", "b" * 64, policy_version="test"
+            )
+            qualified = add("Qualified")
+            ledger.record_workday_fit_decision(
+                qualified, "qualified", "c" * 64, policy_version="test"
+            )
+            attempted = add("Attempted")
+            ledger.connection.execute(
+                """
+                INSERT INTO submit_intents
+                  (intent_id, application_id, fence, payload_hash, japan_day,
+                   slot, status, created_at)
+                VALUES (?, ?, 1, ?, '2026-08-30', 1, 'submit_claimed',
+                        '2026-08-30T00:00:00+00:00')
+                """,
+                ("intent-attempted", attempted, "d" * 64),
+            )
+            ledger.close()
+
+            source = {
+                "company": "Example",
+                "host": "example.wd1.myworkdayjobs.com",
+                "site": "Careers",
+            }
+            rows = snapshot_candidates(
+                ledger_path=ledger_path,
+                sources=(source,),
+                fetch_jobs=lambda _source: [
+                    {
+                        "title": label,
+                        "locationsText": "Tokyo",
+                        "externalPath": f"/job/{label}",
+                    }
+                    for label in ("Unfinished", "Held", "Rejected", "Qualified", "Attempted")
+                ],
+            )
+
+            self.assertEqual(
+                {row["title"] for row in rows},
+                {"Unfinished", "Held"},
+            )
+
     def test_shortlist_drops_model_invented_url_and_keeps_official_rows(self):
         official = "https://a.wd1.myworkdayjobs.com/Careers/job/A"
         candidates = [{"candidate_id": "candidate-1", "url": official}]

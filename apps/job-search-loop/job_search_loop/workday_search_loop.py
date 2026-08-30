@@ -208,8 +208,25 @@ def snapshot_candidates(
     ledger = Ledger(ledger_path)
     try:
         seen = {
-            canonical_url(str(row[0])).casefold()
-            for row in ledger.connection.execute("SELECT canonical_url FROM applications")
+            canonical_url(str(row["canonical_url"])).casefold()
+            for row in ledger.connection.execute(
+                """
+                SELECT applications.canonical_url
+                FROM applications
+                LEFT JOIN submit_intents
+                  ON submit_intents.application_id = applications.id
+                LEFT JOIN workday_fit_decisions
+                  ON workday_fit_decisions.application_id = applications.id
+                WHERE NOT (
+                  applications.current_state = 'materials_ready'
+                  AND submit_intents.application_id IS NULL
+                  AND (
+                    workday_fit_decisions.application_id IS NULL
+                    OR workday_fit_decisions.decision = 'hold'
+                  )
+                )
+                """
+            )
         }
     finally:
         ledger.close()
