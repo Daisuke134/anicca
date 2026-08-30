@@ -4,8 +4,8 @@
 **Current verified status:** `ai.anicca.job-search-daily` is installed with
 `StartInterval=1800`; this is a 30-minute loop, not an hourly loop. The five existing
 Job Hunter owners load main-derived immutable release
-`20260831T000638-16d0cdfc`, source SHA
-`16d0cdfca5d02f574a014f9aeb8e385bf281a59a`: browser, daily, inbox, learning and
+`20260831T004335-01dc472e`, source SHA
+`01dc472e45687480b807627f4141bb97bcc1056a`: browser, daily, inbox, learning and
 health. Same-context preflight returned `status=pass` and
 `mutation_allowed=true`, and loaded-domain readback proves exact-release
 `ProgramArguments`. The HPE `Thank you for your online submission` message now
@@ -21,12 +21,22 @@ with the existing Cloudera row. It also exposes the next active 10P3 defect. The
 browser runner executes `runtime observe` twice and receives an eligible `observed`
 row both times, but returns `queue_complete` with empty `submitted`,
 `submit_unknown`, and `blocked` arrays. No row checkpoint, submit intent, or Gmail
-confirmation is created. `validate_pass_result()` currently accepts that false empty
-success, so the wake exits without the required application. The owner must reject
-an empty `queue_complete` whenever its successful runtime transcript contains an
-unclosed `observed` row, retry once from the durable row, and fail visibly after the
-bounded retry rather than report success. Newer `materials_ready`, discovery,
+confirmation is created. PR #3341 makes `validate_pass_result()` reject that false
+empty success when its successful runtime transcript contains an unclosed `observed`
+row, retry once from the durable row, and fail visibly after the bounded retry rather
+than report success. The focused module passes 20 tests, the real failing transcript
+now returns `observed_row_without_terminal_outcome`, and fresh read-only review
+returns `ship`. Newer `materials_ready`, discovery,
 Telegram, standalone screenshot, or Ledger rows do not count as applications.
+
+The first post-fix release-owned wake, `daily-20260831-004617`, does not reach the
+browser gate. It persists 19 successful fit decisions, starts a twentieth model turn,
+then terminates without `workday-discovery.json`, `wake-report.json`, or any submit
+intent. A new sole-owner wake, `daily-20260831-005753`, starts afterward and is still
+inside qualification. No error receipt proves why the prior process ended, so do not
+attribute it to health, launchd, provider quota, or the validator. This is a failed
+production proof with zero accepted applications; the bounded 1–3 wake release gate
+remains open.
 
 The application Ledger remains the state SSOT and `summary.v2` is rebuilt from its
 event stream on every wake. Every-wake and application-result Telegram delivery uses
