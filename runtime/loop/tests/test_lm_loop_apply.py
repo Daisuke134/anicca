@@ -182,7 +182,11 @@ class LmLoopApplyTest(unittest.TestCase):
         target.write_bytes(plistlib.dumps({
             "Label": "ai.anicca.example",
             "ProgramArguments": ["/old/run.sh"],
-            "EnvironmentVariables": {"CUSTOM": "kept", "LIFE_MANAGER_RELEASE_SHA": "old"},
+            "EnvironmentVariables": {
+                "CUSTOM": "kept",
+                "CODEX_HOME": "/Users/runner/.codex-acct2",
+                "LIFE_MANAGER_RELEASE_SHA": "old",
+            },
             "WorkingDirectory": "/var/tmp/example",
             "ProcessType": "Interactive",
             "RunAtLoad": True,
@@ -200,6 +204,7 @@ class LmLoopApplyTest(unittest.TestCase):
         installed = plistlib.loads(target.read_bytes())
         self.assertTrue(result["ok"])
         self.assertEqual(installed["EnvironmentVariables"]["CUSTOM"], "kept")
+        self.assertNotIn("CODEX_HOME", installed["EnvironmentVariables"])
         self.assertEqual(installed["EnvironmentVariables"]["LIFE_MANAGER_RELEASE_SHA"], SHA)
         self.assertEqual(installed["WorkingDirectory"], "/var/tmp/example")
         self.assertEqual(installed["ProcessType"], "Interactive")
