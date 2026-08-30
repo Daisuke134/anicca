@@ -78,10 +78,6 @@ class AgentRunner:
             "--task-class",
             task_class,
         ]
-        if task_class == "browser-lane-agent":
-            argv.extend(
-                ["--escalation-reason", "mandatory-model-browser-loop"]
-            )
         prompt_input = None
         if task_class in {"composition-agent", "diagnostic-agent"}:
             argv.append("--prompt-stdin")
