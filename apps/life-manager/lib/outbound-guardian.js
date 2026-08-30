@@ -12,6 +12,7 @@ const REPORT_FAILURE = "Telegram report delivery failed";
 const PHOTO_FAILURE = "Telegram photo delivery failed";
 const DEFAULT_HEALTH_URL = "http://127.0.0.1:18790/health";
 const DEFAULT_MAX_POLL_AGE_MS = 120_000;
+const OPENCLAW_GATEWAY_TIMEOUT_MS = 65_000;
 // The worker can run in a Colima/Docker VM whose clock is a few seconds ahead
 // of the host running Guardian. Treat that bounded transport clock skew as a
 // fresh poll, while still rejecting genuinely impossible future timestamps.
@@ -153,7 +154,7 @@ async function notifyOpenClawGateway(message, options = {}) {
     const result = spawn("openclaw", [
       "gateway", "call", "send", "--timeout", "60000", "--params",
       JSON.stringify({ channel: "telegram", to: target, message, idempotencyKey }), "--json",
-    ], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+    ], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout: OPENCLAW_GATEWAY_TIMEOUT_MS });
     if (!result || result.status !== 0) throw new Error(REPORT_FAILURE);
     return { messageId: parseOpenClawMessageId(String(result.stdout || "")) };
   } catch {

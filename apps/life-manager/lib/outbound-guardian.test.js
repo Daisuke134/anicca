@@ -40,9 +40,10 @@ test("report text delivery uses Gateway send with the caller wake id", async () 
   const receipt = await notifyOpenClawGateway("wake report", {
     telegramTarget: "123456789",
     idempotencyKey: "wake-20260810-001",
-    spawnSync(command, args) {
+    spawnSync(command, args, options) {
       assert.equal(command, "openclaw");
       assert.deepEqual(args.slice(0, 5), ["gateway", "call", "send", "--timeout", "60000"]);
+      assert.equal(options.timeout, 65_000);
       assert.equal(args[5], "--params");
       assert.deepEqual(JSON.parse(args[6]), {
         channel: "telegram", to: "123456789", message: "wake report", idempotencyKey: "wake-20260810-001",
@@ -52,6 +53,24 @@ test("report text delivery uses Gateway send with the caller wake id", async () 
     },
   });
   assert.deepEqual(receipt, { messageId: "322" });
+});
+
+test("report Gateway child-process timeout folds to the existing safe failure", async () => {
+  const privateMessage = "private gateway timeout";
+  const privateStderr = "private gateway stderr";
+  await assert.rejects(() => notifyOpenClawGateway("wake report", {
+    telegramTarget: "123456789",
+    idempotencyKey: "wake-test-timeout",
+    spawnSync() {
+      const error = new Error(privateMessage);
+      error.code = "ETIMEDOUT";
+      return { status: null, stdout: "", stderr: privateStderr, error };
+    },
+  }), (error) => {
+    assert.equal(error.message, "Telegram report delivery failed");
+    assert.doesNotMatch(error.message, /private gateway timeout|private gateway stderr/);
+    return true;
+  });
 });
 
 test("report Gateway delivery rejects malformed target or wake ID before spawn", async () => {
