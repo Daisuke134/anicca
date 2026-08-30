@@ -250,6 +250,56 @@ def test_file_prepare_creates_missing_project_delivery_directory(tmp_path, monke
         )
 
 
+def test_paid_decision_retries_once_when_runner_returns_truncated_json(tmp_path, monkeypatch):
+    paid = load("paid_direct")
+    evidence = tmp_path / "agent-PAID_WORK_DECISION"
+    calls = []
+
+    def run(_command, _step):
+        calls.append(1)
+        evidence.mkdir(parents=True, exist_ok=True)
+        if len(calls) == 1:
+            write_json(evidence / "attempts.jsonl", {
+                "rc": 0,
+                "result_present": True,
+                "schema_valid": False,
+                "schema_errors": [
+                    "result parse failed: Unterminated string starting at: line 1 column 287",
+                ],
+            })
+            raise paid.Failure("paid_work_decision")
+
+    monkeypatch.setattr(paid, "_run", run)
+
+    paid._run_paid_decision_agent(["agent-runner"], evidence)
+
+    assert len(calls) == 2
+
+
+def test_paid_decision_does_not_retry_semantically_invalid_json(tmp_path, monkeypatch):
+    paid = load("paid_direct")
+    evidence = tmp_path / "agent-PAID_WORK_DECISION"
+    calls = []
+
+    def run(_command, _step):
+        calls.append(1)
+        evidence.mkdir(parents=True, exist_ok=True)
+        write_json(evidence / "attempts.jsonl", {
+            "rc": 0,
+            "result_present": True,
+            "schema_valid": False,
+            "schema_errors": ["$.mode: 'other' is not one of ['file', 'remote', 'answer']"],
+        })
+        raise paid.Failure("paid_work_decision")
+
+    monkeypatch.setattr(paid, "_run", run)
+
+    with pytest.raises(paid.Failure, match="paid_work_decision"):
+        paid._run_paid_decision_agent(["agent-runner"], evidence)
+
+    assert len(calls) == 1
+
+
 def test_prior_artifact_candidates_include_only_project_receipt_linked_zips(tmp_path):
     paid = load("paid_direct")
     root = tmp_path / "project"

@@ -1372,6 +1372,33 @@ def _cached_paid_decision(root: Path, receipt: Any, prompt: Path,
     return validated
 
 
+def _run_paid_decision_agent(command: list[str], evidence: Path) -> None:
+    """Retry once only when a side-effect-free decision result was truncated."""
+    for attempt in range(2):
+        try:
+            _run(command, "paid_work_decision")
+            return
+        except Failure:
+            if attempt or not _paid_decision_result_was_truncated(evidence):
+                raise
+
+
+def _paid_decision_result_was_truncated(evidence: Path) -> bool:
+    try:
+        rows = [json.loads(line) for line in
+                (evidence / "attempts.jsonl").read_text(encoding="utf-8").splitlines()
+                if line.strip()]
+        row = rows[-1]
+        errors = row.get("schema_errors")
+        return (row.get("rc") == 0 and row.get("result_present") is True
+                and row.get("schema_valid") is False and isinstance(errors, list)
+                and bool(errors) and all(
+                    isinstance(error, str) and error.startswith("result parse failed:")
+                    for error in errors))
+    except (IndexError, OSError, TypeError, ValueError, json.JSONDecodeError):
+        return False
+
+
 def _paid_decision(args, item_path: Path, root: Path, base: Path) -> dict[str, Any]:
     item_snapshot = _file_snapshot(item_path)
     feedback = _text(_load(item_path).get("buyer_feedback_sha256"))
@@ -1441,8 +1468,8 @@ def _paid_decision(args, item_path: Path, root: Path, base: Path) -> dict[str, A
               "--task-label", "paid-work-decision", "--escalation-reason",
               "Paid delivery routing must use an authorized escalation semantic model.",
               "--loop", _runner_loop_id(), "--workdir", str(root), "--timeout-seconds", "1800", "--read-only"]
-        _run(_private_model_runner(root, decision_command, "paid-work-decision"),
-             "paid_work_decision")
+        _run_paid_decision_agent(
+            _private_model_runner(root, decision_command, "paid-work-decision"), evidence)
         try:
             value = _consultation_runner_result(
                 evidence, task_label="paid-work-decision", task_class="escalation-agent",
