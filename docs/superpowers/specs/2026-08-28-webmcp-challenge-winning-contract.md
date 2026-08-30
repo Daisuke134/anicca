@@ -1357,10 +1357,10 @@ Soft targetは一sliceあたりproduction 3 files以下 / 100 LOC以下である
 | R08 | `answer_lm_human_task`がold dispatch result refをclearしsame jobをqueuedへ戻す | task version+1、same job ID、new dispatch可能、old result replay不可 |
 | R09 | focused unit+Postgres transaction checkを一回通す | claim race winner 1、duplicate issue 0、duplicate result 0、cross-tenant 0、receipt mutation 0 |
 | R10 | migrationをRailway Postgresへ一回applyする | complete: initial object 0をreconcile後にtransaction apply。table 1、RPC 5、`waiting_agent` true、service execute true、anon/auth false、Money Printer-only claim true、strict JSON type true、dispatch row 0をofficial readback |
-| R11 | claim後・Issue callback前のcrashをreconcile可能にする | code-complete: same tenantのoldest `claimed` dispatchを同一rowで返し、新dispatch 0。`mirrored`後は別queued Money jobをclaim。cross-tenant/non-Money 0 |
-| R12 | result callback後・Issue close前のcrashをreconcile可能にする | code-complete: exact ref/hash/payloadの`consumed` resultはeffect 0の同一row readback。different replayとdirect consume replayはreject、receipt 1 |
+| R11 | claim後・Issue callback前のcrashをreconcile可能にする | complete: same tenantのoldest `claimed` dispatchを同一rowで返し、新dispatch 0。`mirrored`後は別queued Money jobをclaim。production function body/grant readback pass |
+| R12 | result callback後・Issue close前のcrashをreconcile可能にする | complete: exact ref/hash/payloadの`consumed` resultはeffect 0の同一row readback。different/direct consume replay reject、receipt 1、production function body/grant readback pass |
 
-R01–R10はcomplete。R11–R12はcode-complete、unit 21/21、isolated PostgreSQL 18、fresh adversarial `ship`。readbackはsame claim dispatch count 1、mirrored後の別job claim、non-Money/cross-tenant 0、exact consumed result replay effect 0、different/direct consume replay reject、completed receipt 1、answered task + same job round 2を旧result replayが変更しない。R11–R12のproduction function apply/readbackはmerge後に閉じる。
+R01–R12はcomplete。R11–R12はunit 21/21、isolated PostgreSQL 18、fresh adversarial `ship`、GitHub checks 9/9。Productionは変更2 functionだけをSHA `6f28b9ee985b28252590ceaa69cf765f1af5e11e9246dfcdb20bdfea46916af5`でtransaction applyし、claim recovery order true、consumed replay true、dispatch/claimed 0、service execute true、anon/auth execute falseをreadbackした。
 
 ### 18.6 A — authenticated internal bridge API（Section 14 item 3, slice 2）
 
@@ -1376,7 +1376,7 @@ R01–R10はcomplete。R11–R12はcode-complete、unit 21/21、isolated Postgre
 | A06 | result `needs_human`をexisting HumanTaskへ変換する | code-verified: existing atomic consumeを一回だけ呼び、responseはtask ID/status/versionとpublic result refsだけ、question/context露出0 |
 | A07 | result `completed`をOpportunity/receiptへ変換する | code-verified: existing single-use completed consumeだけを呼び、application/delivery/payment/cash claim 0 |
 | A08 | focused API checkを通す | code-complete: relevant regression 117/117、oversizeはend待ち0でexact 413、401、tenant mismatch、stale dispatch、duplicate callback effect 0、secret/raw error echo 0、fresh adversarial `ship` |
-| A09 | consumed resultのsame-payload callbackをreconcileする | pending: DBが`consumed`を返した時はconsumeを再実行せず200 safe readback。different replayは409、effect 0 |
+| A09 | consumed resultのsame-payload callbackをreconcileする | code-complete: DBが`consumed`を返した時はconsume再実行0で200 safe six-field readback。completed/needs_human両方、different replay 409、focused 35/35、fresh adversarial `ship`。production pending |
 
 A01–A08はcomplete。変更はAPI module、focused test、server wiringの三fileだけ、新依存0。relevant regression 117/117、fresh adversarial `ship`、GitHub checks 9/9。Productionは`life-call`と`money-printer-worker`がmain SHA `ec5cd6c58a38a9e4f0a465ff2cef34f4150dd15e`でSUCCESS、health 200、unauthorized 401、authorized empty-tenant claim 200 `dispatch:null`、same tenant DB jobs 0/dispatches 0/effect 0をnon-browserでreadbackした。secret valueの出力0。
 
@@ -1478,4 +1478,4 @@ A01–A08はcomplete。変更はAPI module、focused test、server wiringの三f
 
 ### 18.13 Immediate next atom
 
-次はR11–R12 diffとstateをcommit/push/mergeし、productionの2 functionをtransaction apply + body readbackする。その後A09だけを実行し、consumed same-payload callbackをconsume再実行0の200 readbackにする。これはS03をrestart-safeにする細分化であり、TODO順序は変更しない。A01–A08、R01–R10、S01–S02は完了済み。full browser production E2Eはbridge完成後のB12唯一のrecording runへ予約し、Chrome/ChatGPT内蔵browserの二重実行はしない。
+次はA09の2 file diffとstateをcommit/push/mergeし、Railway同一main SHA、unauthorized 401、empty unique tenant 200 `dispatch:null`でroute regressionをnon-browser readbackする。その後S03へ進む。これはS03をrestart-safeにする細分化であり、TODO順序は変更しない。R01–R12、A01–A08、S01–S02は完了済み。full browser production E2Eはbridge完成後のB12唯一のrecording runへ予約し、Chrome/ChatGPT内蔵browserの二重実行はしない。
