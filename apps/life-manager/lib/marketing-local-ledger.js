@@ -6,6 +6,10 @@ const path = require("node:path");
 const { isDeepStrictEqual } = require("node:util");
 const { resolveDataRoot } = require("./runtime-paths.js");
 const { isMarketingLaneManifest } = require("./marketing-lane-manifest.js");
+const {
+  findMarketingDestinationTarget,
+  loadMarketingDestinationContract,
+} = require("./marketing-destination-contract.js");
 
 const SHADOW_HOLD_AVAILABLE_AT = "9999-12-31T23:59:59.000Z";
 const EFFECT_CLASSES = new Set(["none", "publish", "message", "money"]);
@@ -117,6 +121,7 @@ function keyFor(tenantId, jobId) {
 
 function createMarketingLocalLedger(options = {}) {
   const root = dataRoot(options);
+  const destinationContract = options.destinationContract || loadMarketingDestinationContract();
   const directory = path.join(root, "marketing");
   const jobsFile = path.join(directory, "jobs.jsonl");
   const receiptsFile = path.join(directory, "receipts.jsonl");
@@ -162,7 +167,7 @@ function createMarketingLocalLedger(options = {}) {
     const fence = publicationFence();
     let closedProductionLane = false;
     if (fence?.state === "closed") {
-      try { closedProductionLane = Boolean(publicationLane(job, laneManifest(true))); } catch {}
+      try { closedProductionLane = Boolean(publicationLane(job, laneManifest(true), true)); } catch {}
     }
     if (fence && !(fence.state === "open" && fence.allowed_effect_key === job.effect_key) && !closedProductionLane) {
       const observedAt = nowInstant(now);
@@ -181,7 +186,7 @@ function createMarketingLocalLedger(options = {}) {
       error.code = "MARKETING_PUBLICATION_EFFECT_FENCED";
       throw error;
     }
-    assertPublicationLaneAllowed(job, phase, fence !== null);
+    assertPublicationLaneAllowed(job, phase, fence !== null, fence?.state !== "open");
   }
 
   function laneManifest(requiredByFence) {
@@ -200,23 +205,39 @@ function createMarketingLocalLedger(options = {}) {
     return value;
   }
 
-  function publicationLane(job, manifest) {
+  function publicationLane(job, manifest, requireVerifiedCanary = true) {
     const refs = job.input_refs || {};
     const productMatch = /^product:\/\/([A-Za-z0-9._-]+)$/.exec(String(refs.product_ref || ""));
+    const formatMatch = /^format:\/\/([A-Za-z0-9._-]+)$/.exec(String(refs.format_ref || ""));
+    const formMatch = /^form:\/\/([A-Za-z0-9._-]+)$/.exec(String(refs.form_ref || ""));
     const localeMatch = /^locale:\/\/([a-z]{2}(?:-[A-Z]{2})?)$/.exec(String(refs.locale_ref || ""));
     const platformMatch = /^platform:\/\/(instagram|tiktok|youtube)$/.exec(String(refs.platform_ref || ""));
-    if (!productMatch || !localeMatch || !platformMatch) return null;
+    if (!productMatch || !formatMatch || !formMatch || !localeMatch || !platformMatch) return null;
     const platform = platformMatch[1];
     const integrationMatch = new RegExp(`^integration://postiz/${platform}/([A-Za-z0-9._:-]+)$`)
       .exec(String(refs[`${platform}_integration_ref`] || ""));
     if (!integrationMatch) return null;
     const product = productMatch[1] === "anicca-ios" ? "anicca" : productMatch[1];
+    const destination = findMarketingDestinationTarget(destinationContract, {
+      jobProductId: productMatch[1],
+      locale: localeMatch[1],
+      platform,
+      integrationId: integrationMatch[1],
+      jobFormatId: formatMatch[1],
+      mediaForm: formMatch[1],
+    });
+    if (!destination || (refs.pack_ref && refs.pack_ref !== destination.approved_pack_ref)) return null;
     return manifest.lanes.find((lane) => (
       lane.tenant_id === job.tenant_id
       && lane.product_id === product
       && lane.locale === localeMatch[1]
       && lane.platform === platform
       && lane.integration_id === integrationMatch[1]
+      && lane.account === destination.lane_id
+      && lane.profile === destination.postiz_profile
+      && lane.renderer === destination.renderer_id
+      && lane.approved_pack === destination.approved_pack
+      && (!requireVerifiedCanary || typeof lane.canary_state === "string")
       && lane.owner === "life-manager"
       && lane.disposition === "target"
       && lane.disabled === false
@@ -226,9 +247,9 @@ function createMarketingLocalLedger(options = {}) {
     )) || null;
   }
 
-  function assertPublicationLaneAllowed(job, phase, requiredByFence) {
+  function assertPublicationLaneAllowed(job, phase, requiredByFence, requireVerifiedCanary = true) {
     const manifest = laneManifest(requiredByFence);
-    if (!manifest || publicationLane(job, manifest)) return;
+    if (!manifest || publicationLane(job, manifest, requireVerifiedCanary)) return;
     append(lanePolicyRefusalsFile, {
       schema_version: 1,
       kind: "marketing_publication_lane_refusal",

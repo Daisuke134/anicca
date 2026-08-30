@@ -42,11 +42,11 @@ function tempDataDir() {
 
 function writeLanePolicy(dataDir, laneState) {
   const lane = {
-    id: "live-tt-honne-en",
+    id: "cmoig11ew001zlv0yk6vqo1us",
     provider: "postiz",
     platform: "tiktok",
     profile: "@honne_reveal",
-    account: "@honne_reveal",
+    account: "honne-en",
     product_id: "honne-ai",
     locale: "en",
     disabled: false,
@@ -155,7 +155,9 @@ test("closed canary fence allows an exact production-armed lane", async () => {
     available_at: "2026-08-26T01:31:00.000Z",
     input_refs: {
       ...job().input_refs,
-      tiktok_integration_ref: "integration://postiz/tiktok/live-tt-honne-en",
+      format_ref: "format://reelclaw",
+      form_ref: "form://relationship-confession",
+      tiktok_integration_ref: "integration://postiz/tiktok/cmoig11ew001zlv0yk6vqo1us",
     },
   });
   const ledger = createMarketingLocalLedger({ dataDir, now: () => "2026-08-26T01:31:00.000Z" });
@@ -168,6 +170,33 @@ test("closed canary fence allows an exact production-armed lane", async () => {
     workerId: "production-worker",
     leaseSeconds: 30,
   })).status, "running");
+});
+
+test("an armed integration rejects content from the wrong product format family", async () => {
+  const dataDir = tempDataDir();
+  const marketingDir = path.join(dataDir, "marketing");
+  fs.mkdirSync(marketingDir, { recursive: true, mode: 0o700 });
+  fs.writeFileSync(path.join(marketingDir, "publication-effect-fence.json"), `${JSON.stringify({
+    schema_version: 1,
+    state: "closed",
+    reason: "production manifest owns cadence",
+  })}\n`, { mode: 0o600 });
+  writeLanePolicy(dataDir, "production-armed");
+  const ledger = createMarketingLocalLedger({ dataDir, now: () => "2026-08-26T01:31:00.000Z" });
+  const wrongFamily = job({
+    available_at: "2026-08-26T01:31:00.000Z",
+    input_refs: {
+      ...job().input_refs,
+      format_ref: "format://reelclaw-card",
+      form_ref: "form://nudge-card",
+      tiktok_integration_ref: "integration://postiz/tiktok/cmoig11ew001zlv0yk6vqo1us",
+    },
+  });
+  await assert.rejects(
+    ledger.enqueueJob(wrongFamily),
+    (error) => error.code === "MARKETING_PUBLICATION_EFFECT_FENCED",
+  );
+  assert.equal(await ledger.readJob({ tenantId: "dais-local", jobId: "publication-job" }), null);
 });
 
 test("open publication fence still requires the exact armed Life Manager lane at enqueue and claim", async () => {
@@ -184,7 +213,9 @@ test("open publication fence still requires the exact armed Life Manager lane at
     available_at: "2026-08-26T01:31:00.000Z",
     input_refs: {
       ...job().input_refs,
-      tiktok_integration_ref: "integration://postiz/tiktok/live-tt-honne-en",
+      format_ref: "format://reelclaw",
+      form_ref: "form://relationship-confession",
+      tiktok_integration_ref: "integration://postiz/tiktok/cmoig11ew001zlv0yk6vqo1us",
     },
   });
   const ledger = createMarketingLocalLedger({ dataDir, now: () => "2026-08-26T01:31:00.000Z" });

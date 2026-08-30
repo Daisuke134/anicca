@@ -13,11 +13,13 @@ const {
   ACCOUNT_ID,
   EN_AFFIRMATION_LANE,
   EN_SLIDESHOW_TIKTOK_LANE,
+  JA_MAIN_TIKTOK_LANE,
   INTEGRATION_REF,
 } = require("../lib/marketing-native-carousel-publication-adapter.js");
 const {
   EN_AFFIRMATION_LANE: EN_RUNNER_LANE,
   EN_SLIDESHOW_TIKTOK_LANE: TIKTOK_SLIDESHOW_RUNNER_LANE,
+  JA_MAIN_TIKTOK_LANE: JA_MAIN_TIKTOK_RUNNER_LANE,
   parseArgs,
   runAniccaEnAffirmationInstagramCanary,
   runAniccaEnSlideshowTikTokCanary,
@@ -349,6 +351,15 @@ test("EN slideshow TikTok command selects only its immutable lane", () => {
   assert.equal(TIKTOK_SLIDESHOW_RUNNER_LANE.accountId, "@anicca_slideshow");
   assert.equal(TIKTOK_SLIDESHOW_RUNNER_LANE.integrationId, "cmnenjkff01j1pa0ysufmzhfr");
   assert.throws(() => runAniccaEnSlideshowTikTokCanary(["run-en-affirmation", "--slot", SLOT], {}), /accepts only/i);
+});
+
+test("JA main TikTok production command selects the recovered Larry sunset lane", () => {
+  assert.deepEqual(parseArgs(["run-ja-main-tiktok", "--slot", SLOT]), { command: "run-ja-main-tiktok", slot: SLOT });
+  assert.deepEqual(parseArgs(["run-ja-main-tiktok-production"]), { command: "run-ja-main-tiktok-production", slot: null });
+  assert.equal(JA_MAIN_TIKTOK_RUNNER_LANE, JA_MAIN_TIKTOK_LANE);
+  assert.equal(JA_MAIN_TIKTOK_RUNNER_LANE.accountId, "@anicca.jp");
+  assert.equal(JA_MAIN_TIKTOK_RUNNER_LANE.integrationId, "cmp9sdev5012voh0y58qs45xc");
+  assert.equal(JA_MAIN_TIKTOK_RUNNER_LANE.renderer, "larry");
 });
 
 test("EN affirmation alternate self-consistent pack and approval stop before secret/provider", async () => {
