@@ -394,6 +394,69 @@ class WorkdayQualificationTests(unittest.TestCase):
             self.assertEqual(discover.call_count, 3)
             self.assertEqual(qualify.call_count, 3)
 
+    def test_main_returns_existing_current_policy_queue_before_new_qualification(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            ledger_path = root / "ledger.sqlite3"
+            ledger = Ledger(ledger_path)
+            ledger.close()
+            candidate_memory = root / "candidate-memory.json"
+            candidate_memory.write_text(json.dumps({"concepts": []}), encoding="utf-8")
+            sources = root / "sources.json"
+            sources.write_text(json.dumps({"sources": []}), encoding="utf-8")
+            output = root / "search-result.json"
+            snapshot = root / "snapshot.json"
+            base_args = ["workday_search_loop"]
+            for flag, path in (
+                ("--ledger", ledger_path),
+                ("--candidate-memory", candidate_memory),
+                ("--sources", sources),
+                ("--runner", root / "agent-runner.py"),
+                ("--schema", root / "schema.json"),
+                ("--shortlist-schema", root / "shortlist-schema.json"),
+                ("--workdir", root / "workdir"),
+                ("--evidence-root", root / "evidence"),
+                ("--output", output),
+                ("--snapshot", snapshot),
+            ):
+                base_args.extend((flag, str(path)))
+
+            with patch.object(
+                workday_search_loop, "snapshot_candidates", return_value=[]
+            ), patch.object(
+                workday_search_loop,
+                "reject_stale_workday_rows",
+                return_value=[],
+            ), patch.object(
+                workday_search_loop,
+                "qualified_queue_ids",
+                return_value=("existing-application",),
+            ), patch.object(
+                workday_search_loop,
+                "discover_one",
+                return_value={"status": "no_fresh_workday", "discovered": []},
+            ) as discover, patch.object(
+                workday_search_loop, "qualify_with_wake_cursor"
+            ) as qualify, patch.object(
+                workday_search_loop.AgentRunner, "run"
+            ) as agent_run, patch.object(
+                workday_search_loop,
+                "rolling_submission_metrics",
+                return_value={"target": 48, "confirmed_count": 0, "deficit": 48},
+            ), patch("sys.argv", base_args):
+                self.assertEqual(workday_search_loop.main(), 0)
+
+            result = json.loads(output.read_text(encoding="utf-8"))
+            self.assertEqual(result["status"], "queued_existing")
+            self.assertEqual(
+                result["queued_application_ids"], ["existing-application"]
+            )
+            self.assertEqual(result["decisions"], [])
+            self.assertEqual(result["qualified_application_ids"], [])
+            discover.assert_not_called()
+            qualify.assert_not_called()
+            agent_run.assert_not_called()
+
     def test_zero_rolling_target_does_not_discover_or_qualify(self):
         calls = []
         result = search_until_qualified(
