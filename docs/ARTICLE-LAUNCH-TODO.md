@@ -79,6 +79,11 @@
       repair passはclosed clone 3件をlogical 5,937,120,978 bytes回収しactive clone 1件を保存、replayはeffect 0。
       さらにclosed ignored node_modules、Chromium一時download、MediaCrawler venv、npm/clang/node cache、肥大logを回収し、
       current freeは約1.48GiBへ回復したためcapacity blockedを解除する。次のcursorはGPT Image 2 API receipt契約の修復である。
+      PR #3194/main `c310f609`でexact `gpt-image-2-2026-04-21` Image APIをintent-fenced exactly-once化し、
+      x-request-id、request/prompt/response/file SHA、1536x1024、alt、rights provenance receiptを新runのmandatory media gateへ接続した。
+      release `c310f609`をarticle-dailyだけへapplyしたcanary `20260829-165022`はmax free 913,412KiB、min 309,008KiB、
+      観測消費604,404KiB。次回floorは消費＋reserveで1,128,692KiBと確定した。reserve割れで`lm-loop stop`し、
+      generationは`interrupted-safe`、GPT API intent 0、publication state/ledger/native URL/effect 0。article-dailyはbootout中。
 - [ ] W3 W2修復後canaryのNote JAだけをprovider-native readbackし、title、body、owner、headline、paywall、URLを確認する。
 - [ ] W4 W2修復後canaryのSubstack JAだけを同じ項目でprovider-native readbackする。
 - [ ] W5 W2修復後canaryのSubstack ENだけを同じ項目でprovider-native readbackする。
