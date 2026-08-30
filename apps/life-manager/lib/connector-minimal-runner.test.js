@@ -1356,7 +1356,7 @@ test("evidence completion error uses real production operations for one durable 
   const operations = createMinimalProductionOperations({
     stateDir, wakeId: "wake-connector-13c-error-operations", telegramTarget: "private-target",
     now: () => new Date("2026-08-11T08:30:00.000Z"),
-    async sendMessage(message, options) { sent.push({ message, options }); return { messageId: 7315 }; },
+    async sendMessage(message, options) { sent.push({ message, options }); return { ok: true, result: { message_id: 7315 } }; },
   });
   let state = fixture({
     async readCalendarGaps() { return []; },
@@ -1388,7 +1388,7 @@ test("real runner production operations persist one positive wake delivery and d
     wakeId: "wake-connector-13b-operations",
     telegramTarget: "private-target",
     now: () => new Date("2026-08-11T08:30:00.000Z"),
-    async sendMessage(message, options) { sent.push({ message, options }); return { messageId: 7311 }; },
+    async sendMessage(message, options) { sent.push({ message, options }); return { ok: true, result: { message_id: 7311 } }; },
   });
   let state = fixture({
     async readCalendarGaps() { return []; },

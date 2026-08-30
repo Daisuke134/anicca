@@ -116,7 +116,13 @@ function resolveEnv(options) {
     ? options.env : process.env;
   const sharedFile = String(supplied.LM_CONNECTOR_SHARED_ENV_FILE || "").trim();
   const loaded = sharedFile && fs.existsSync(sharedFile) ? loadConnectorEnv(sharedFile) : {};
-  return { ...loaded, ...supplied };
+  const sharedToken = sharedFile ? loaded.TELEGRAM_BOT_TOKEN : undefined;
+  // The official entrypoint always supplies the shared state .env; never let an inline token override it.
+  return {
+    ...loaded,
+    ...supplied,
+    ...(sharedFile ? (sharedToken ? { TELEGRAM_BOT_TOKEN: sharedToken } : { TELEGRAM_BOT_TOKEN: undefined }) : {}),
+  };
 }
 
 function reportConfig(options, stateDir, ownerToken) {
@@ -148,6 +154,7 @@ function productionConfig(options, stateDir, ownerToken) {
   });
   return Object.freeze({
     ...report,
+    telegramToken: requiredText(env.TELEGRAM_BOT_TOKEN),
     calendarAccount,
     peatixAttendeeProfile,
     gogKeyring: requiredText(env.GOG_KEYRING_PASSWORD),

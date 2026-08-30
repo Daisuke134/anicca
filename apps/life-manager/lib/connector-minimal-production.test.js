@@ -30,6 +30,52 @@ function rankingCandidate(slug, startsAt, overrides = {}) {
   });
 }
 
+test("production factory injects direct raw Telegram Bot API sending for wake reports", async () => {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-production-direct-telegram-"));
+  const originalFetch = globalThis.fetch;
+  const originalTimeout = AbortSignal.timeout;
+  const timeoutCalls = [];
+  const requests = [];
+  AbortSignal.timeout = (milliseconds) => {
+    timeoutCalls.push(milliseconds);
+    return originalTimeout(milliseconds);
+  };
+  globalThis.fetch = async (url, options) => {
+    requests.push({ url, options });
+    return { async json() { return { ok: true, result: { message_id: 7001 } }; } };
+  };
+  try {
+    const dependencies = createMinimalProductionDependencies({
+      repoRoot: "/private/repo", stateDir, wakeId: "wake-production-direct-telegram-1",
+      calendarAccount: "private-account", gogKeyring: "private-keyring", telegramTarget: "123456789",
+      telegramToken: "fixture-telegram-token", lumaFormProfilePath: "/private/form-profile.json",
+      lunaEvidenceDir: "/private/luna-evidence",
+      calendar: {}, calendarReader: { async readCalendarGaps() { return []; } },
+      browserRail: {}, providerRouter: { discoverCandidates() {}, runCachedAction() {}, runDirectAction() {}, runAgentFallback() {}, readProviderState() {}, saveRepairedActions() {} },
+      evidenceChain: { async completeEvidence() {} },
+    });
+
+    assert.deepEqual(await dependencies.reportWake({
+      status: "completed_no_effect", safe_reason: "providers_exhausted", consecutive_failure_count: 0,
+    }), { telegram_provider_id: "7001" });
+    assert.equal(requests.length, 1);
+    assert.equal(requests[0].options.signal instanceof AbortSignal, true);
+    assert.deepEqual(timeoutCalls, [20_000]);
+    assert.equal(requests[0].url, "https://api.telegram.org/botfixture-telegram-token/sendMessage");
+    assert.deepEqual(JSON.parse(requests[0].options.body), {
+      chat_id: "123456789",
+      text: "Connector::: 今回の新規申込なし\nstatus: completed_no_effect\nsafe reason: providers_exhausted\nconsecutive failures: 0",
+      parse_mode: "HTML",
+      disable_web_page_preview: true,
+    });
+    assert.equal(JSON.stringify(dependencies).includes("fixture-telegram-token"), false);
+  } finally {
+    globalThis.fetch = originalFetch;
+    AbortSignal.timeout = originalTimeout;
+    fs.rmSync(stateDir, { recursive: true, force: true });
+  }
+});
+
 test("official production factory exposes the complete minimal wake dependency contract", async () => {
   const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-production-deps-"));
   try {

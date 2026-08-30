@@ -18,10 +18,10 @@ function fixture(source) {
   return { dir, file };
 }
 
-test("loads the private attendee name with existing Calendar config only", () => {
-  const f = fixture("GOG_ACCOUNT=private-account\nDAIS_LEGAL_NAME_ROMAJI=Daisuke Example\nUNKNOWN_SECRET=hidden\u000bvalue\nUNKNOWN_DEL=hidden\u007fvalue\n");
+test("loads the private attendee name and Telegram bot token through the allowlist", () => {
+  const f = fixture("GOG_ACCOUNT=private-account\nDAIS_LEGAL_NAME_ROMAJI=Daisuke Example\nTELEGRAM_BOT_TOKEN=fixture-telegram-token\nUNKNOWN_SECRET=hidden\u000bvalue\nUNKNOWN_DEL=hidden\u007fvalue\n");
   try {
-    assert.deepEqual(loadConnectorEnv(f.file), { GOG_ACCOUNT: "private-account", DAIS_LEGAL_NAME_ROMAJI: "Daisuke Example" });
+    assert.deepEqual(loadConnectorEnv(f.file), { GOG_ACCOUNT: "private-account", DAIS_LEGAL_NAME_ROMAJI: "Daisuke Example", TELEGRAM_BOT_TOKEN: "fixture-telegram-token" });
     assert.equal(fs.statSync(f.file).mode & 0o777, 0o600);
   } finally { fs.rmSync(f.dir, { recursive: true, force: true }); }
 });

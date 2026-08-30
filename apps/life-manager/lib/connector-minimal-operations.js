@@ -3,7 +3,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 
-const { notifyOpenClawGateway, parseOpenClawMessageId } = require("./outbound-guardian.js");
+const { sendMessage: sendTelegramMessage } = require("./telegram.js");
 
 const SAFE_ID = /^[A-Za-z0-9][A-Za-z0-9:._-]{2,159}$/;
 const SAFE_REASON = /^[a-z0-9][a-z0-9_:-]{1,99}$/;
@@ -20,7 +20,10 @@ const ACTION_FAILURE_CONTEXT_KEYS = "duration_ms,method,provider,purpose,result,
 const ACTION_FAILURE_CONTEXT_WITH_CLASS_KEYS = "duration_ms,error_class,method,provider,purpose,result,safe_reason,timestamp";
 const REPORT_KEYS = "consecutive_failure_count,created_at,safe_reason,schema_version,status,wake_id";
 const DELIVERY_KEYS = "delivered_at,schema_version,telegram_provider_id,wake_id";
+const CLAIM_KEYS = "claimed_at,schema_version,wake_id";
+const UNCERTAIN_KEYS = "quarantined_at,reason,schema_version,wake_id";
 const POSITIVE_PROVIDER_ID = /^[1-9][0-9]*$/;
+const UNCERTAIN_REASONS = new Set(["delivery_unknown", "missing_message_id", "provider_rejection", "transport"]);
 const STATUSES = new Set(["applied_bundle", "completed_no_effect", "circuit_open"]);
 // Ceiling for observed/normalized/window/free_open/calendar_free counts: matches the
 // `rows.length > 5_000` per-page guard in connector-connpass-workflow.js, the real limit
@@ -67,6 +70,19 @@ function readRows(file) {
 
 function append(file, value) {
   fs.appendFileSync(file, `${JSON.stringify(value)}\n`, { encoding: "utf8", mode: 0o600 });
+  fs.chmodSync(file, 0o600);
+}
+
+function appendDurable(file, value) {
+  const bytes = Buffer.from(`${JSON.stringify(value)}\n`, "utf8");
+  const fd = fs.openSync(file, "a", 0o600);
+  try {
+    let offset = 0;
+    while (offset < bytes.length) offset += fs.writeSync(fd, bytes, offset, bytes.length - offset, null);
+    fs.fsyncSync(fd);
+  } finally {
+    fs.closeSync(fd);
+  }
   fs.chmodSync(file, 0o600);
 }
 
@@ -128,6 +144,56 @@ function safeDelivery(input) {
     || typeof input.delivered_at !== "string" || exactInstant(input.delivered_at) !== input.delivered_at
   ) invalid();
   return Object.freeze({ ...input });
+}
+
+function safeClaim(input) {
+  if (
+    !input || typeof input !== "object" || Array.isArray(input)
+    || Object.keys(input).sort().join(",") !== CLAIM_KEYS
+    || input.schema_version !== 1
+    || typeof input.wake_id !== "string" || !SAFE_ID.test(input.wake_id)
+    || typeof input.claimed_at !== "string" || exactInstant(input.claimed_at) !== input.claimed_at
+  ) invalid();
+  return Object.freeze({ ...input });
+}
+
+function safeUncertain(input) {
+  if (
+    !input || typeof input !== "object" || Array.isArray(input)
+    || Object.keys(input).sort().join(",") !== UNCERTAIN_KEYS
+    || input.schema_version !== 1
+    || typeof input.wake_id !== "string" || !SAFE_ID.test(input.wake_id)
+    || typeof input.reason !== "string" || !UNCERTAIN_REASONS.has(input.reason)
+    || typeof input.quarantined_at !== "string" || exactInstant(input.quarantined_at) !== input.quarantined_at
+  ) invalid();
+  return Object.freeze({ ...input });
+}
+
+function positiveTelegramProviderId(response) {
+  if (!response || typeof response !== "object" || Array.isArray(response)
+    || response.ok !== true || !response.result || typeof response.result !== "object"
+    || Array.isArray(response.result)) throw new Error("Telegram delivery needs a positive message ID");
+  const raw = response.result.message_id;
+  if (!Number.isSafeInteger(raw) || raw <= 0) throw new Error("Telegram delivery needs a positive message ID");
+  return String(raw);
+}
+
+function safeStoredReport(input) {
+  if (!input || typeof input !== "object" || Array.isArray(input)
+    || Object.keys(input).sort().join(",") !== REPORT_KEYS
+    || input.schema_version !== 1
+    || typeof input.wake_id !== "string" || !SAFE_ID.test(input.wake_id)
+    || typeof input.created_at !== "string") invalid();
+  return safeReport(input, input.wake_id, exactInstant(input.created_at));
+}
+
+function uniqueByWake(rows) {
+  const seen = new Set();
+  return rows.map((row) => {
+    if (seen.has(row.wake_id)) invalid();
+    seen.add(row.wake_id);
+    return row;
+  });
 }
 
 function safeDiscoveryAudit(input, wakeId, recordedAt) {
@@ -207,7 +273,10 @@ function createMinimalProductionOperations(options = {}) {
   const wakeId = String(options.wakeId || "");
   const telegramTarget = String(options.telegramTarget || "").trim();
   const now = options.now || (() => new Date());
-  const sendMessage = options.sendMessage || notifyOpenClawGateway;
+  const telegramToken = String(options.telegramToken || "").trim();
+  const sendMessage = options.sendMessage || (telegramToken
+    ? (message, deliveryOptions) => sendTelegramMessage(telegramToken, deliveryOptions.telegramTarget, message)
+    : null);
   if (
     !SAFE_ID.test(wakeId) || !telegramTarget || telegramTarget.length > 200
     || typeof now !== "function" || typeof sendMessage !== "function"
@@ -215,6 +284,8 @@ function createMinimalProductionOperations(options = {}) {
   const historyFile = path.join(stateDir, "action-history.jsonl");
   const reportFile = path.join(stateDir, "wake-reports.jsonl");
   const deliveryFile = path.join(stateDir, "wake-report-deliveries.jsonl");
+  const claimFile = path.join(stateDir, "wake-report-send-claims.jsonl");
+  const uncertainFile = path.join(stateDir, "wake-report-uncertain.jsonl");
   const discoveryAuditFile = path.join(stateDir, "luma-discovery-audits.jsonl");
   const connpassDiscoveryAuditFile = path.join(stateDir, "connpass-discovery-audits.jsonl");
   const rankingAuditFile = path.join(stateDir, "ranking-audits.jsonl");
@@ -265,7 +336,7 @@ function createMinimalProductionOperations(options = {}) {
 
   async function reportWake(input) {
     let report = safeReport(input, wakeId, exactInstant(now()));
-    const reports = readRows(reportFile);
+    const reports = uniqueByWake(readRows(reportFile).map(safeStoredReport));
     const existing = reports.find((row) => row && row.wake_id === wakeId);
     if (existing) {
       const createdAt = exactInstant(existing.created_at);
@@ -273,41 +344,65 @@ function createMinimalProductionOperations(options = {}) {
       if (Object.keys(existing).sort().join(",") !== REPORT_KEYS
         || REPORT_KEYS.split(",").some((key) => existing[key] !== canonical[key])) invalid();
       report = canonical;
-    } else {
+    }
+    const deliveries = uniqueByWake(readRows(deliveryFile).map(safeDelivery));
+    const byWake = new Map(deliveries.map((delivery) => [delivery.wake_id, delivery]));
+    const claims = uniqueByWake(readRows(claimFile).map(safeClaim));
+    const claimedByWake = new Map(claims.map((claim) => [claim.wake_id, claim]));
+    const uncertain = uniqueByWake(readRows(uncertainFile).map(safeUncertain));
+    const uncertainByWake = new Map(uncertain.map((quarantine) => [quarantine.wake_id, quarantine]));
+    if (!existing) {
       append(reportFile, report);
       reports.push(report);
     }
-    const deliveries = readRows(deliveryFile);
-    const byWake = new Map(deliveries.map((row) => {
-      const delivery = safeDelivery(row);
-      return [delivery.wake_id, delivery];
-    }));
-    async function deliver(pending) {
-      if (!pending || !SAFE_ID.test(String(pending.wake_id || ""))) invalid();
-      const response = await sendMessage(reportMessage(pending), { telegramTarget, idempotencyKey: pending.wake_id });
-      const providerId = parseOpenClawMessageId(response);
+    async function deliver(current) {
+      if (!current || !SAFE_ID.test(String(current.wake_id || ""))) invalid();
+      if (uncertainByWake.has(current.wake_id)) throw new Error("Telegram report delivery uncertain");
+      let response;
+      let reason;
+      try {
+        response = await sendMessage(reportMessage(current), { telegramTarget, idempotencyKey: current.wake_id });
+      } catch {
+        reason = "transport";
+      }
+      if (!reason && response && response.ok === false) {
+        reason = response.delivery_unknown === true ? "delivery_unknown" : "provider_rejection";
+      }
+      let providerId;
+      if (!reason) {
+        try { providerId = positiveTelegramProviderId(response); }
+        catch { reason = "missing_message_id"; }
+      }
+      if (reason) {
+        const quarantine = safeUncertain({
+          schema_version: 1,
+          wake_id: current.wake_id,
+          reason,
+          quarantined_at: exactInstant(now()),
+        });
+        append(uncertainFile, quarantine);
+        uncertainByWake.set(current.wake_id, quarantine);
+        throw new Error("Telegram report delivery uncertain");
+      }
       const delivery = safeDelivery({
         schema_version: 1,
-        wake_id: pending.wake_id,
+        wake_id: current.wake_id,
         telegram_provider_id: providerId,
         delivered_at: exactInstant(now()),
       });
       append(deliveryFile, delivery);
-      byWake.set(pending.wake_id, delivery);
+      byWake.set(current.wake_id, delivery);
     }
     const current = reports.find((row) => row && row.wake_id === wakeId);
     if (!current) invalid();
-    if (!byWake.has(wakeId)) await deliver(current);
-    let historical;
-    for (const pending of reports) {
-      if (!pending || !SAFE_ID.test(String(pending.wake_id || ""))) invalid();
-      if (pending.wake_id !== wakeId && !byWake.has(pending.wake_id)) {
-        historical = pending;
-        break;
-      }
-    }
-    if (historical) {
-      try { await deliver(historical); } catch {}
+    // A later wake reports only itself; replaying an older unknown effect can duplicate a visible report.
+    if (uncertainByWake.has(wakeId)) throw new Error("Telegram report delivery uncertain");
+    if (!byWake.has(wakeId)) {
+      if (claimedByWake.has(wakeId)) throw new Error("Telegram report delivery uncertain");
+      const claim = safeClaim({ schema_version: 1, wake_id: wakeId, claimed_at: exactInstant(now()) });
+      appendDurable(claimFile, claim);
+      claimedByWake.set(wakeId, claim);
+      await deliver(current);
     }
     const currentDelivery = byWake.get(wakeId);
     if (!currentDelivery) invalid();

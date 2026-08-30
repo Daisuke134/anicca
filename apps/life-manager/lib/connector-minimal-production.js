@@ -43,6 +43,7 @@ const {
 } = require("./google-calendar-busy-inventory.js");
 const { zonedSlotInstant } = require("./honne-ja-shadow-schedule.js");
 const { makeGogCalendar } = require("./transport/calendar-gog.js");
+const { sendMessage: sendTelegramMessage } = require("./telegram.js");
 
 const LUMA_DISCOVERY_URL = "https://luma.com/tokyo?k=p";
 const PRODUCTION_TIME_ZONE = "Asia/Tokyo";
@@ -80,6 +81,15 @@ function requiredText(value, max = 2_000) {
   const result = String(value == null ? "" : value).trim();
   if (!result || result.length > max || /[\x00-\x1f\x7f]/.test(result)) invalid();
   return result;
+}
+
+function createDirectReportSender(token) {
+  const telegramToken = requiredText(token, 2_000);
+  return (message, options = {}) => sendTelegramMessage(
+    telegramToken,
+    String(options.telegramTarget || "").trim(),
+    message,
+  );
 }
 
 function exactNow(value) {
@@ -391,6 +401,7 @@ function createMinimalProductionDependencies(options = {}) {
   const calendarAccount = requiredText(options.calendarAccount, 1_024);
   const gogKeyring = requiredText(options.gogKeyring, 2_000);
   const telegramTarget = requiredText(options.telegramTarget, 200);
+  const telegramToken = options.operations ? String(options.telegramToken || "").trim() : requiredText(options.telegramToken, 2_000);
   const tenantId = requiredText(options.tenantId || "dais-local", 128);
   const calendarId = requiredText(options.calendarId || "primary", 1_024);
   const lumaFormProfilePath = path.resolve(requiredText(options.lumaFormProfilePath, 2_000));
@@ -451,6 +462,8 @@ function createMinimalProductionDependencies(options = {}) {
     stateDir,
     wakeId,
     telegramTarget,
+    telegramToken,
+    sendMessage: options.reportSendMessage || createDirectReportSender(telegramToken),
     now,
   });
   // Created before the workflows (moved up from its original spot below the
