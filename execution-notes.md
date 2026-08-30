@@ -56,6 +56,27 @@ Goal 受領 2026-08-31。Phase C（Eliza 基盤 C01–C09）は完了済み。
   構造的に不適合な provider**（米国中心・資格ゲート型）。
 - **戦略上の含意: 最大応募の主戦場は Lancers と CrowdWorks（日本語・日本在住・タスク型）である。**
 
+### 本番 fleet 停止と復旧 2026-08-31
+- `~/Library/LaunchAgents/ai.anicca.*.plist` 182本中 132本が、削除済み release を
+  ProgramArguments に固定していた（今夜のディスク回収で release が消え、plist が未更新）
+- Coconala/gig の7レーン全部が該当し、唯一の収益源が停止していた
+- `lancers-revenue-telegram-report` の exit 78 EX_CONFIG も同一原因
+- ★`lm-loop doctor` は ok:true を返す。registry しか見ず installed plist の program 実在を
+  検査しないため、この故障クラスを検知できない。doctor 側の欠陥（未修正、要 atom 化）★
+- `bin/lm-loop apply` で復旧。DEAD 132→67、alive 34→99。
+  money-critical（gig 7本 + Lancers 5本 + job-search-mercor）は全て ALIVE
+- 残 67 は marketing/fundraiser/taskmarket 等の二次系（未対応）
+- 再実行後: hf-gig-apply-direct running、telegram-report は 78→exit 1、
+  hf-gig-paid-direct exit 1（いずれも原因未特定）
+
+### Lancers セッション復旧 2026-08-31
+- `/mypage` が `/user/login` へリダイレクトし `#login_form`=1 → セッション失効が lane 崩壊の真因
+- lane には状態判定しかなく、自分で再確立する経路が無い（人間前提の設計上の穴、要 atom 化）
+- SSOT の資格情報と `gog gmail` の通知読み取りで自動復旧。人間の操作なし
+- 結果 `/mypage` で loginForm:0。`work_sync.run_tick()` が
+  ok:True / logged_in:True / source_complete:True / board_count:2 / unread_count:1
+- storefront と application lane が exit 1 → exit 0
+
 ## 未解決項目（次にやる順）
 1. Mercor: capture blocked ↔ sync 契約不一致を repo 正本で修正（release は immutable なので repo → 新 release）
 2. Lancers: ディスク回復後に storefront lane を再実行し、ENOSPC 以外の失敗が残るか実測
