@@ -87,6 +87,19 @@ function resultReadySymphonyDispatch(result, expected) {
   return row;
 }
 
+function consumedSymphonyDispatch(result, uid, dispatchId) {
+  const rows = result && Array.isArray(result.rows) ? result.rows : [];
+  const row = rows.length === 1 ? rows[0] : null;
+  if (!row || rows.length !== 1 || typeof row !== "object" || Array.isArray(row)
+    || row.tenant_id !== uid || row.dispatch_id !== dispatchId
+    || !JOB_ID.test(String(row.job_id || "")) || row.status !== "consumed"
+    || !row.result_payload || row.result_payload.status !== "completed"
+    || row.failure_code != null) {
+    throw new Error("money printer runtime store Symphony completion readback invalid");
+  }
+  return row;
+}
+
 function symphonyResultInput(value) {
   const uid = tenant(value && value.uid);
   const dispatchId = String(value && value.dispatchId || "").trim();
@@ -234,6 +247,16 @@ function createMoneyPrinterRuntimeStore({ query } = {}) {
       return resultReadySymphonyDispatch(await query(`
         SELECT * FROM public.record_lm_symphony_result($1, $2, $3, $4, $5)
       `, [expected.uid, expected.dispatchId, expected.resultRef, expected.resultHash, JSON.stringify(expected.payload)]), expected);
+    },
+    async consumeSymphonyCompleted(value) {
+      const uid = tenant(value && value.uid);
+      const dispatchId = String(value && value.dispatchId || "").trim();
+      if (!OPPORTUNITY_ID.test(dispatchId)) {
+        throw new Error("money printer runtime store Symphony completion invalid");
+      }
+      return consumedSymphonyDispatch(await query(`
+        SELECT * FROM public.consume_lm_symphony_completed($1, $2)
+      `, [uid, dispatchId]), uid, dispatchId);
     },
     async createOpportunity(canonical) {
       const uid = tenant(canonical && canonical.uid);

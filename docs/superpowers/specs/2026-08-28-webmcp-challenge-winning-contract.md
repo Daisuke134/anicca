@@ -1276,7 +1276,7 @@ One active item at a time。各itemは実物readbackを閉じてから次へ進�
 | R03 | `claim_lm_symphony_job` RPCを追加する | code-pass: tenant-bound queued `general-agent.work`一件を`FOR UPDATE SKIP LOCKED`でclaim、attempt非消費で`waiting_agent`、deterministic dispatch/roundを返す。store validates zero-or-one row。focused 13/13 pass |
 | R04 | `record_lm_symphony_issue` RPCを追加する | code-pass: strict private repo issue ref、claimed→mirrored、same ref idempotent、different/status/job mismatch conflict。store tenant/dispatch/ref readback。focused 14/14 pass |
 | R05 | `record_lm_symphony_result` RPCを追加する | code-pass: strict `LM_RESULT_V1` completed/needs_human schema、artifact refs、same issue comment、result hash/payloadを一度だけ保存。jobはrace防止のため`waiting_agent`のままR06/R07を待つ。focused 15/15 pass |
-| R06 | completed resultのterminal RPCを追加する | waiting-agent/same dispatchだけOpportunity `QUALIFIED` + immutable completed receipt。Issue closeだけでは拒否 |
+| R06 | completed resultのterminal RPCを追加する | code-pass: same result_ready dispatch + waiting_agent jobだけOpportunity `QUALIFIED`、runtime completed/attempt 1、exact immutable receipt、dispatch consumed。Issue close/needs_humanだけでは拒否。focused 16/16 pass |
 | R07 | blocked resultが既存`create_lm_human_task`へ入れるようwaiting-agent transitionを許可する | open HumanTask、job waiting_human、attempt消費なし |
 | R08 | `answer_lm_human_task`がold dispatch result refをclearしsame jobをqueuedへ戻す | task version+1、same job ID、new dispatch可能、old result replay不可 |
 | R09 | focused unit+Postgres transaction checkを一回通す | claim race winner 1、duplicate issue 0、duplicate result 0、cross-tenant 0、receipt mutation 0 |
@@ -1395,4 +1395,4 @@ One active item at a time。各itemは実物readbackを閉じてから次へ進�
 
 ### 18.13 Immediate next atom
 
-`R06`だけを次に実行する。R06–R10が揃うまでbridge API、Symphony production connection、provider applicationへ進まない。各atom完了時にこのSectionのstateとSection 17の対応uncertaintyを同じcommitで更新する。
+`R07`だけを次に実行する。R07–R10が揃うまでbridge API、Symphony production connection、provider applicationへ進まない。各atom完了時にこのSectionのstateとSection 17の対応uncertaintyを同じcommitで更新する。

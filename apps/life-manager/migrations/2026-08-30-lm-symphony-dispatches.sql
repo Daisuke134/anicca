@@ -289,3 +289,95 @@ $$;
 
 REVOKE ALL ON FUNCTION public.record_lm_symphony_result(text,text,text,text,jsonb) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.record_lm_symphony_result(text,text,text,text,jsonb) TO service_role;
+
+CREATE OR REPLACE FUNCTION public.consume_lm_symphony_completed(
+  p_tenant_id text,
+  p_dispatch_id text
+) RETURNS SETOF public.lm_symphony_dispatches
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_dispatch public.lm_symphony_dispatches%ROWTYPE;
+  v_job public.lm_runtime_jobs%ROWTYPE;
+  v_opportunity_id text;
+BEGIN
+  IF p_tenant_id IS NULL OR p_tenant_id !~ '^[a-z0-9][a-z0-9._-]{0,199}$'
+    OR p_dispatch_id IS NULL OR p_dispatch_id !~ '^[0-9a-f]{64}$' THEN
+    RAISE EXCEPTION 'symphony completion input invalid';
+  END IF;
+
+  SELECT * INTO v_dispatch
+  FROM public.lm_symphony_dispatches
+  WHERE tenant_id = p_tenant_id AND dispatch_id = p_dispatch_id
+  FOR UPDATE;
+  IF NOT FOUND THEN RETURN; END IF;
+  IF v_dispatch.status = 'consumed' THEN
+    RETURN NEXT v_dispatch;
+    RETURN;
+  END IF;
+  IF v_dispatch.status <> 'result_ready' OR v_dispatch.result_payload->>'status' <> 'completed' THEN
+    RAISE EXCEPTION 'symphony completion conflict';
+  END IF;
+
+  SELECT * INTO v_job
+  FROM public.lm_runtime_jobs
+  WHERE tenant_id = p_tenant_id AND job_id = v_dispatch.job_id
+  FOR UPDATE;
+  IF NOT FOUND OR v_job.status <> 'waiting_agent' OR v_job.job_id !~ '^goal:[0-9a-f]{64}$'
+    OR v_job.input_refs->>'goal_ref' IS NULL THEN
+    RAISE EXCEPTION 'symphony completion runtime job unavailable';
+  END IF;
+  v_opportunity_id := substring(v_job.job_id from 6);
+
+  UPDATE public.lm_money_opportunities
+  SET status = 'QUALIFIED', updated_at = clock_timestamp()
+  WHERE uid = p_tenant_id AND opportunity_id = v_opportunity_id
+    AND goal_ref = v_job.input_refs->>'goal_ref'
+    AND status IN ('DISCOVERED', 'QUALIFYING', 'QUALIFIED');
+  IF NOT FOUND THEN RAISE EXCEPTION 'symphony completion opportunity unavailable'; END IF;
+
+  UPDATE public.lm_runtime_jobs
+  SET status = 'completed',
+      attempt = GREATEST(attempt, 1),
+      lease_owner = NULL,
+      lease_expires_at = NULL,
+      last_error_code = NULL,
+      completed_at = clock_timestamp(),
+      updated_at = clock_timestamp()
+  WHERE tenant_id = p_tenant_id AND job_id = v_dispatch.job_id AND status = 'waiting_agent';
+  IF NOT FOUND THEN RAISE EXCEPTION 'symphony completion runtime job unavailable'; END IF;
+
+  INSERT INTO public.lm_runtime_job_receipts (
+    job_id, tenant_id, attempt, outcome, effect_key, receipt
+  ) VALUES (
+    v_dispatch.job_id,
+    p_tenant_id,
+    1,
+    'completed',
+    NULL,
+    jsonb_build_object(
+      'kind', 'general_agent_work',
+      'status', 'completed',
+      'tenant_id', p_tenant_id,
+      'job_id', v_dispatch.job_id,
+      'goal_ref', v_job.input_refs->>'goal_ref',
+      'execution_id', v_dispatch.result_payload->>'execution_id',
+      'next_job_refs', jsonb_build_array()
+    )
+  );
+
+  UPDATE public.lm_symphony_dispatches
+  SET status = 'consumed',
+      consumed_at = clock_timestamp(),
+      updated_at = clock_timestamp()
+  WHERE tenant_id = p_tenant_id AND dispatch_id = p_dispatch_id AND status = 'result_ready'
+  RETURNING * INTO v_dispatch;
+  IF NOT FOUND THEN RAISE EXCEPTION 'symphony completion conflict'; END IF;
+  RETURN NEXT v_dispatch;
+END
+$$;
+
+REVOKE ALL ON FUNCTION public.consume_lm_symphony_completed(text,text) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.consume_lm_symphony_completed(text,text) TO service_role;

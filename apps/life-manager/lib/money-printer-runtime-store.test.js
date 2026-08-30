@@ -120,6 +120,37 @@ test("R05 Symphony result is stored once while the same job remains waiting_agen
   await assert.rejects(store.recordSymphonyResult({ ...input, payload: { ...payload, status: "unknown" } }), /result/i);
 });
 
+test("R06 only a completed result can consume the dispatch and write the terminal receipt", async () => {
+  const migration = fs.readFileSync(SYMPHONY_MIGRATION, "utf8");
+  assert.match(migration, /CREATE OR REPLACE FUNCTION public\.consume_lm_symphony_completed\(/i);
+  assert.match(migration, /result_payload->>'status' <> 'completed'/i);
+  assert.match(migration, /UPDATE public\.lm_money_opportunities[\s\S]*SET status = 'QUALIFIED'/i);
+  assert.match(migration, /UPDATE public\.lm_runtime_jobs[\s\S]*SET status = 'completed'[\s\S]*attempt = GREATEST\(attempt, 1\)/i);
+  assert.match(migration, /INSERT INTO public\.lm_runtime_job_receipts[\s\S]*'completed'/i);
+  assert.match(migration, /SET status = 'consumed'[\s\S]*consumed_at = clock_timestamp\(\)/i);
+
+  const dispatch = {
+    tenant_id: TENANT, dispatch_id: "d".repeat(64), job_id: `goal:${ID}`,
+    round: 1, status: "consumed",
+    issue_ref: "github-issue://Daisuke134/life-manager-workrooms/1",
+    result_ref: "github-comment://Daisuke134/life-manager-workrooms/1/2",
+    result_hash: "e".repeat(64),
+    result_payload: {
+      protocol: "LM_RESULT_V1", tenant_id: TENANT, dispatch_id: "d".repeat(64),
+      job_id: `goal:${ID}`, status: "completed", execution_id: "codex-round-1", artifact_refs: [],
+    },
+    failure_code: null,
+  };
+  const calls = [];
+  const store = createMoneyPrinterRuntimeStore({ query: async (sql, values) => {
+    calls.push({ sql, values });
+    return { rows: [dispatch] };
+  } });
+  assert.deepEqual(await store.consumeSymphonyCompleted({ uid: TENANT, dispatchId: dispatch.dispatch_id }), dispatch);
+  assert.match(calls[0].sql, /^\s*SELECT \* FROM public\.consume_lm_symphony_completed\(\$1, \$2\)/i);
+  assert.deepEqual(calls[0].values, [TENANT, dispatch.dispatch_id]);
+});
+
 function opportunity() {
   return {
     uid: TENANT, opportunity_id: ID, source_url: "https://public.example/opportunity",
