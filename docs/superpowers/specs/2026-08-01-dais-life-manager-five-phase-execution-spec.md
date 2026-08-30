@@ -27,7 +27,7 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 この節は、後段の「現在TODO」「次の一件」「local-only」「self-funded agentは別product」という相反する記述を
 上書きする最新の実行順序SSOTである。後段は実装履歴・organ別acceptanceとして保持するが、次作業の選択には使わない。
 Upworkのterminal evidence、startup context、public claim、GA-01〜13Aは完了または履歴として保持する。
-次の一件はAtomic program ledger Seq 16 `ELZ-C03`のsubstep `C03-24`で、schema/migration/result hashを`domain-schema-receipt.json`へ保存する。
+次の一件はAtomic program ledger Seq 16 `ELZ-C03`のsubstep `C03-25`で、C03差分をfresh adversarial reviewへ一回だけ渡す。
 
 #### 0.0.1 最新基盤決定 — ElizaOSを完全forkし、Life Managerをlocal OSSからmulti-tenant SaaSへ育てる
 
@@ -607,7 +607,7 @@ Goal分解とgraph生成は後続C07のCodexへ残す。現在activeなC03だけ
 - [x] **C03-21** migration contract testの成功を一回確認する — implementation `0843b580…`、merged `97287b3c…`、Vitest 4.1.10＋実core/Drizzleでfocused 1 file/1 test PASS、exit 0、417ms。one-shot marker、Outcome/Economic immutable trigger、restart idempotency、legacy table mutation 0を確認。private `migration-green-receipt.json` mode 0600、DB/external effect 0。次はC03-22
 - [x] **C03-22** isolated PGliteへmigrationを一回適用する — private PGlite `0.4.6`へRuntimeMigrator schemaを一回適用。実PGliteが複数command prepared statementを拒否したroot causeをregression RED→GREEN、fork PR #14 merge `621e1b7b…`でDROP/CREATEを分割。再実行はschema hash `28315086…`をno-change skipし、marker migrationだけinstalled。6 tables＋marker、2 immutable triggers、tracked pluginをreadback。private `pglite-apply-receipt.json` mode 0600、DB dir 0700、production/external effect 0。次はC03-23
 - [x] **C03-23** 同じPGliteをrestartして6 entity schemaを再読出しする — 完全な別Node process/PGlite clientでprivate data dirを再openし、6 domain tables・62 columns、2 immutable triggers、marker key、tracked plugin、schema hash `28315086…`をread-only取得。schema/migration reapply 0、DB write 0、external effect 0。private `pglite-restart-receipt.json` mode 0600、DB dir 0700。次はC03-24
-- [ ] **C03-24** schema/migration/result hashを`domain-schema-receipt.json`へ保存する
+- [x] **C03-24** schema/migration/result hashを`domain-schema-receipt.json`へ保存する — fork commit `621e1b7b…`のschema/migration/tests/index/package/lock 7 file hash、reuse/schema GREEN/migration GREEN/PGlite apply/restart 5 receipt hash、6 tables、62 columns、schema hash、2 triggers、marker、apply count 1をprivate receiptへ固定。mode 0600、status `pending_review`、open findings nullでPASS未先取り。次はC03-25
 - [ ] **C03-25** C03差分をadversarial reviewへ一回渡す
 - [ ] **C03-26** C03 receiptをPASSへ更新する
 - [ ] **C03-27** ELZ-C03をDONEへ更新する
