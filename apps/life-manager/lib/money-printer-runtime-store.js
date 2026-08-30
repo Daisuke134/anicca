@@ -79,7 +79,7 @@ function resultReadySymphonyDispatch(result, expected) {
   const row = rows.length === 1 ? rows[0] : null;
   if (!row || rows.length !== 1 || typeof row !== "object" || Array.isArray(row)
     || row.tenant_id !== expected.uid || row.dispatch_id !== expected.dispatchId
-    || row.job_id !== expected.payload.job_id || row.status !== "result_ready"
+    || row.job_id !== expected.payload.job_id || !["result_ready", "consumed"].includes(row.status)
     || row.result_ref !== expected.resultRef || row.result_hash !== expected.resultHash
     || stableJson(row.result_payload) !== stableJson(expected.payload) || row.failure_code != null) {
     throw new Error("money printer runtime store Symphony result readback invalid");

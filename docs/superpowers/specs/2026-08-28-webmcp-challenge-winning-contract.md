@@ -1207,7 +1207,7 @@ One active item at a time。各itemは実物readbackを閉じてから次へ進�
 | U27 | Live URL、deploy SHA、repo SHAが一致しない | live source/build identified / final binding open | Netlify canonical URLとRailway build `5c9a8f9...`をreadback。Current mainには後続marketing-only changesがあるため、F05–F07でsubmission candidateを新規one SHAへ再deploy/tagする | SHA不一致またはauth wallならnot ready |
 | U28 | Application receiptを売上と誤認する | design-closed / UI live-open | `ApplicationReceipt`、`ContractReceipt`、`DeliveryReceipt`、`PaymentReceipt`を別型・別columnで表示し、cash receipt不在時はverified money 0 | application/proposal/pendingをrevenueへ昇格しない |
 | U29 | Judgeがclean environmentで再現できない | live-open | fresh browserからone URL、one prompt、tool discovery、reset、visible state、Chrome fallbackを60秒以内に再現 | private credentialや既存sessionが必要ならnot ready |
-| U31 | Symphonyを読んだだけで実runtimeに使っていない | spike-resolved / R01–R10 complete / API and bridge open | official commitをinstall/buildしprivate Issue→isolated Codex→commit/push→comment→closeを実E2E。R01–R09はexisting branchを再利用し、Money Printer-only atomic claim、dispatch ledger、issue/result replay fence、completed qualification receipt、HumanTask→same-job round 2をunit 108/108、isolated PostgreSQL 18、fresh adversarial `ship`で確認。R10はproduction table、5 RPC、role grants、Money Printer-only claim、strict JSON typeをofficial readback。internal API/bridge/cutoverは未完 | Symphony内部state、Issue close、agent claimをmoney truthにしない。callback/receipt readbackがなければjobをterminalにしない |
+| U31 | Symphonyを読んだだけで実runtimeに使っていない | spike-resolved / R01–R10 and A01–A08 complete / bridge open | official commitをinstall/buildしprivate Issue→isolated Codex→commit/push→comment→closeを実E2E。R01–R10はrace-safe persistenceとproduction schema、A01–A08はprivate bearer API、本番SHA/401/null claim/effect 0まで確認。S設計前のcall graphでclaim後・result callback後のcrash recovery gapを発見し、R11–R12/A09へ登録 | Symphony内部state、Issue close、agent claimをmoney truthにしない。callback/receipt readbackがなければjobをterminalにしない |
 | U32 | Official Symphony previewをそのまま公開運用できるか | rejected for public exposure | engineering-preview warning、dependency advisories、1 timing test failureを記録 | trusted local/private orchestratorとして使い、public WebMCP UI/APIはLife Managerだけを公開する |
 | U30 | Judge guestの初回WebMCP writeがCSRFで拒否される | root cause fixed / deploy pending | 初回GET後の`add_opportunity`がfamily-bound CSRFで200、同じidempotency keyのreplayも同じ200、write 1をproduction readback | 新session作成後にfamilyをresolveできなければbroken tokenを描画せずfail closed |
 
@@ -1343,7 +1343,7 @@ Soft targetは一sliceあたりproduction 3 files以下 / 100 LOC以下である
 
 ### 18.5 R — race-free Symphony persistence（Section 14 item 3, slice 1）
 
-**Files:** create `apps/life-manager/migrations/2026-08-30-lm-symphony-dispatches.sql`; modify `apps/life-manager/lib/money-printer-runtime-store.js`; focused tests `apps/life-manager/lib/money-printer-runtime-store.test.js` and `apps/life-manager/test/postgres/runtime-job-protocol.integration.sh` only。
+**Files:** create `apps/life-manager/migrations/2026-08-30-lm-symphony-dispatches.sql`; modify `apps/life-manager/lib/money-printer-runtime-store.js`; focused tests `apps/life-manager/lib/money-printer-runtime-store.test.js` and `apps/life-manager/test/postgres/symphony-dispatch.integration.js` only。
 
 | Atom | One action | Exact completion evidence |
 |---|---|---|
@@ -1357,8 +1357,10 @@ Soft targetは一sliceあたりproduction 3 files以下 / 100 LOC以下である
 | R08 | `answer_lm_human_task`がold dispatch result refをclearしsame jobをqueuedへ戻す | task version+1、same job ID、new dispatch可能、old result replay不可 |
 | R09 | focused unit+Postgres transaction checkを一回通す | claim race winner 1、duplicate issue 0、duplicate result 0、cross-tenant 0、receipt mutation 0 |
 | R10 | migrationをRailway Postgresへ一回applyする | complete: initial object 0をreconcile後にtransaction apply。table 1、RPC 5、`waiting_agent` true、service execute true、anon/auth false、Money Printer-only claim true、strict JSON type true、dispatch row 0をofficial readback |
+| R11 | claim後・Issue callback前のcrashをreconcile可能にする | code-complete: same tenantのoldest `claimed` dispatchを同一rowで返し、新dispatch 0。`mirrored`後は別queued Money jobをclaim。cross-tenant/non-Money 0 |
+| R12 | result callback後・Issue close前のcrashをreconcile可能にする | code-complete: exact ref/hash/payloadの`consumed` resultはeffect 0の同一row readback。different replayとdirect consume replayはreject、receipt 1 |
 
-R01–R10はcomplete。isolated PostgreSQL 18 readbackはclaim winner 1、non-Money claim 0、cloud workerとのrace winner合計1、foreign mutation 0、issue/result duplicate 0、completed receipt 1、receipt mutation/consume replay/old-result replay rejected、same job round 2。B09 safe HumanTask snapshot列は維持し、private field 0。Productionはtable/RPC/constraint/grant/function bodyをreadbackし、migration後のdispatch row 0。
+R01–R10はcomplete。R11–R12はcode-complete、unit 21/21、isolated PostgreSQL 18、fresh adversarial `ship`。readbackはsame claim dispatch count 1、mirrored後の別job claim、non-Money/cross-tenant 0、exact consumed result replay effect 0、different/direct consume replay reject、completed receipt 1、answered task + same job round 2を旧result replayが変更しない。R11–R12のproduction function apply/readbackはmerge後に閉じる。
 
 ### 18.6 A — authenticated internal bridge API（Section 14 item 3, slice 2）
 
@@ -1374,17 +1376,18 @@ R01–R10はcomplete。isolated PostgreSQL 18 readbackはclaim winner 1、non-Mo
 | A06 | result `needs_human`をexisting HumanTaskへ変換する | code-verified: existing atomic consumeを一回だけ呼び、responseはtask ID/status/versionとpublic result refsだけ、question/context露出0 |
 | A07 | result `completed`をOpportunity/receiptへ変換する | code-verified: existing single-use completed consumeだけを呼び、application/delivery/payment/cash claim 0 |
 | A08 | focused API checkを通す | code-complete: relevant regression 117/117、oversizeはend待ち0でexact 413、401、tenant mismatch、stale dispatch、duplicate callback effect 0、secret/raw error echo 0、fresh adversarial `ship` |
+| A09 | consumed resultのsame-payload callbackをreconcileする | pending: DBが`consumed`を返した時はconsumeを再実行せず200 safe readback。different replayは409、effect 0 |
 
 A01–A08はcomplete。変更はAPI module、focused test、server wiringの三fileだけ、新依存0。relevant regression 117/117、fresh adversarial `ship`、GitHub checks 9/9。Productionは`life-call`と`money-printer-worker`がmain SHA `ec5cd6c58a38a9e4f0a465ff2cef34f4150dd15e`でSUCCESS、health 200、unauthorized 401、authorized empty-tenant claim 200 `dispatch:null`、same tenant DB jobs 0/dispatches 0/effect 0をnon-browserでreadbackした。secret valueの出力0。
 
 ### 18.7 S — local bridge + official Symphony（Section 14 item 3, slice 3）
 
-**Files:** create `apps/life-manager/scripts/money-printer-symphony-bridge.js` and focused test; create `ops/symphony/WORKFLOW.money-printer.md`; create one launchd plist/install entry by following `skills/loop-development/SKILL.md` at execution time。Official Symphony source itselfはforkしない。
+**Files:** create `apps/life-manager/scripts/money-printer-symphony-bridge.js` and focused test; create `ops/symphony/WORKFLOW.money-printer.md`; register bridge and Symphony through `config/loop-registry.json` + `bin/lm-loop` only if S03–S08 prove both resident processes are required。Raw plist/installerは禁止。Official Symphony source itselfはforkしない。
 
 | Atom | One action | Exact completion evidence |
 |---|---|---|
-| S01 | private repo `Daisuke134/life-manager-workrooms`を作る | `gh repo view`でPRIVATE、issue enabled |
-| S02 | labels `money-printer`と`needs-human`を作る | exact label readback、duplicate create 0 |
+| S01 | private repo `Daisuke134/life-manager-workrooms`を作る | complete: `gh repo view`でPRIVATE、issues enabled、empty repo |
+| S02 | labels `money-printer`と`needs-human`を作る | complete: exact name/color/description readback、duplicate create 0 |
 | S03 | bridgeにinternal claim callを実装する | one dispatch packet、bearerをstdout/stderrへ出さない |
 | S04 | bridgeにGitHub Issue create/readbackを実装する | titleにstable dispatch ID、bodyにpublic refs/job ID/result protocol、credential/PII 0 |
 | S05 | create unknown時のreconciliationを実装する | exact dispatch marker search→presentならreuse、absentだけcreate、unknownなら停止 |
@@ -1475,4 +1478,4 @@ A01–A08はcomplete。変更はAPI module、focused test、server wiringの三f
 
 ### 18.13 Immediate next atom
 
-次はS01だけを実行する。private repo `Daisuke134/life-manager-workrooms`をreadbackし、存在しなければ作成してPRIVATE + issues enabledを確認する。A01–A08とR01–R10はproduction official readbackとfresh adversarial `ship`まで完了済み。full browser production E2Eはbridge完成後のB12唯一のrecording runへ予約し、Chrome/ChatGPT内蔵browserの二重実行はしない。
+次はR11–R12 diffとstateをcommit/push/mergeし、productionの2 functionをtransaction apply + body readbackする。その後A09だけを実行し、consumed same-payload callbackをconsume再実行0の200 readbackにする。これはS03をrestart-safeにする細分化であり、TODO順序は変更しない。A01–A08、R01–R10、S01–S02は完了済み。full browser production E2Eはbridge完成後のB12唯一のrecording runへ予約し、Chrome/ChatGPT内蔵browserの二重実行はしない。
