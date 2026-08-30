@@ -102,10 +102,22 @@ Policy changes from `interview-chance-v3` through the live-corrected `no-volunta
 
 The current Kyndryl tenant is `credential_only`: the private tenant credential exists, but the candidate account has not yet been proved created. Its blank navigation screenshot, `materials_ready` state, and absent submit intent are not progress beyond queue handoff.
 
+**Browser-owner readiness contract:** A loaded/running browser LaunchAgent is not yet
+proof that CDP `:9222` accepts connections. The daily owner must boundedly poll the
+existing CDP owner before writing `browser-owner.json` and starting the browser agent.
+A first-probe `connection refused` is startup latency, not a row outcome and not a
+reason to emit `transport_failed`, reject, skip, or consume the application. If the
+bounded wait expires, the wake fails visibly with the row still `materials_ready`; it
+never records exit 0 as an application. Production run `daily-20260830-180908`
+qualified a new row but reproduced this race: its one `observe` failed before any
+browser action because the evidence file had frozen the first refused connection.
+The focused repair preserves immediate `probe_cdp()` for diagnostics and makes the
+daily CLI wait up to 30 seconds at 0.5-second intervals for `ready`.
+
 **Remaining execution order (fixed):**
 
 1. Restore the removed stable Rust toolchain, then retain enough measured disk headroom for browser/SQLite evidence writes.
-2. Reload the sole `ai.anicca.job-search-daily` owner and read back release `305d0ffa`, `RunAtLoad`, and `StartInterval=1800`; do not create another executor.
+2. Reload the sole `ai.anicca.job-search-daily` owner, read back its main-derived release, `RunAtLoad`, and `StartInterval=1800`, and boundedly confirm CDP `:9222` is ready before the browser agent starts; do not create another executor.
 3. Reconsider the existing Kyndryl application ID under v4 before any browser effect; because it is a Senior role, continue to the next adequate non-senior row unless the full posting proves otherwise.
 4. Attempt tenant Sign In once. If the visible provider proves the account absent, complete Create Account with the stored tenant credential; never create a second account.
 5. If activation/reset email is required, checkpoint the same row, let `job-search-inbox` consume the exact authoritative one-time email, then resume that same row on the next daily wake.
