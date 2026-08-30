@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import sys
 from pathlib import Path
 from types import SimpleNamespace
@@ -28,6 +29,34 @@ def test_publication_guard_allows_at_floor(monkeypatch: pytest.MonkeyPatch) -> N
     monkeypatch.setenv("ARTICLE_PUBLICATION_STATE", "/var/lib/life-manager/writer/state.json")
     monkeypatch.setattr(GUARD.shutil, "disk_usage", lambda _path: SimpleNamespace(free=FLOOR_BYTES))
     GUARD.assert_disk_headroom()
+
+
+def test_capacity_receipt_raises_host_floor(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    receipt = tmp_path / "capacity" / "article-run-floor.json"
+    receipt.parent.mkdir()
+    receipt.write_text(json.dumps({
+        "schema": "writer.capacity-receipt",
+        "version": 1,
+        "observed_consumption_kib": 604_404,
+        "atomic_reserve_kib": 524_288,
+        "required_free_kib": 1_128_692,
+    }), encoding="utf-8")
+    monkeypatch.delenv("ARTICLE_DISK_MIN_FREE_BYTES", raising=False)
+    assert GUARD.resolve_disk_floor_bytes(tmp_path) == 1_128_692 * 1024
+
+
+def test_capacity_receipt_rejects_unbound_arithmetic(tmp_path: Path) -> None:
+    receipt = tmp_path / "capacity" / "article-run-floor.json"
+    receipt.parent.mkdir()
+    receipt.write_text(json.dumps({
+        "schema": "writer.capacity-receipt",
+        "version": 1,
+        "observed_consumption_kib": 604_404,
+        "atomic_reserve_kib": 524_288,
+        "required_free_kib": 524_288,
+    }), encoding="utf-8")
+    with pytest.raises(GUARD.CapacityFloorError, match="capacity_receipt_invalid"):
+        GUARD.resolve_disk_floor_bytes(tmp_path)
 
 
 def test_publication_guard_checks_publication_state_filesystem(
