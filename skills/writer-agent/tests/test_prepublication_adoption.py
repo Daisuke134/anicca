@@ -4,12 +4,14 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "skills/writer-agent/scripts"))
 
 import article_generation_state as generation
+import quality_repair_control as repair
 
 
 class PrepublicationAdoptionTest(unittest.TestCase):
@@ -196,6 +198,189 @@ class PrepublicationAdoptionTest(unittest.TestCase):
                 json.loads(state_path.read_text(encoding="utf-8"))["status"],
                 "quality-repair-ready",
             )
+
+    def test_quality_repair_plan_accepts_traceback_bound_adoption_and_begin_prepares_reader_first(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            run, run_id, prompt, ledger = self.fixture(Path(tmp))
+            gates, traceback, quality_path = self.add_reader_traceback(run)
+            generation.adopt_prepublication(run, run_id, prompt, ledger)
+            adoption = json.loads(
+                (gates / "prepublication-adoption.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(
+                {
+                    item["path"]: item["sha256"]
+                    for item in adoption["artifact_manifest"]
+                }["gates/quality-self-heal.json"],
+                generation.file_sha256(quality_path),
+            )
+
+            decision = repair.plan(run, ledger)
+
+            self.assertEqual(decision["status"], "READY")
+            self.assertEqual(decision["run_id"], run_id)
+            self.assertEqual(decision["source_defect"], "reader-terminal-receipt")
+            self.assertEqual(
+                decision["drafts"],
+                {
+                    "ja": generation.file_sha256(run / "article-ja.md"),
+                    "en": generation.file_sha256(run / "article-en.md"),
+                },
+            )
+
+            with patch.object(
+                repair, "_quality_module", side_effect=AssertionError("must not assess")
+            ):
+                prepared = repair.begin(run, ledger)
+            repair_state = json.loads(
+                (gates / "quality-repair-state.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(
+                repair_state["qrr_lineage"], decision["qrr_lineage"]
+            )
+
+            self.assertEqual(prepared["status"], "prepared")
+            self.assertEqual(prepared["quality_action"], "evaluate_reroute")
+            prompt_text = Path(prepared["prompt_path"]).read_text(encoding="utf-8")
+            self.assertIn("Run reader-testing-gate.sh for BOTH languages first", prompt_text)
+            self.assertIn("editorial-gate.sh, identity-gate.sh, and reader-testing-gate.sh", prompt_text)
+            self.assertIn("canonical media and CTA invariants", prompt_text)
+            self.assertIn("quality_self_heal.py returns action=ready_to_freeze", prompt_text)
+            archived = (
+                run
+                / "gates/quality-repair/epoch-1/original/quality-self-heal.json"
+            )
+            self.assertTrue(archived.is_file())
+            self.assertEqual(archived.read_text(encoding="utf-8"), traceback)
+            self.assertFalse((gates / "quality-self-heal.json").exists())
+            self.assertFalse((run / "gates/publication-state.json").exists())
+            self.assertFalse(generation.ledger_has_public_effect(ledger, run_id))
+
+    def test_quality_repair_plan_refuses_missing_or_drifted_adoption_evidence(self):
+        cases = {
+            "missing receipt": lambda run, _prompt: (
+                run / "gates/prepublication-adoption.json"
+            ).unlink(),
+            "traceback hash drift": lambda run, _prompt: (
+                run / "gates/quality-self-heal.json"
+            ).write_text(
+                (run / "gates/quality-self-heal.json")
+                .read_text(encoding="utf-8")
+                .replace("line 132", "line 133"),
+                encoding="utf-8",
+            ),
+        }
+        for name, mutate in cases.items():
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as tmp:
+                run, run_id, prompt, ledger = self.fixture(Path(tmp))
+                self.add_reader_traceback(run)
+                generation.adopt_prepublication(run, run_id, prompt, ledger)
+                mutate(run, prompt)
+
+                decision = repair.plan(run, ledger)
+
+                self.assertEqual(decision["status"], "REFUSED")
+                self.assertEqual(decision["run_id"] if "run_id" in decision else None, None)
+                self.assertFalse((run / "gates/quality-repair-state.json").exists())
+
+    def test_provider_failed_plan_never_creates_adoption(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            run, run_id, prompt, ledger = self.fixture(Path(tmp))
+            self.add_reader_traceback(run)
+            with patch.object(
+                repair.generation_state,
+                "adopt_prepublication",
+                side_effect=AssertionError("provider-failed state must not adopt"),
+            ):
+                decision = repair.plan(run, ledger)
+
+            self.assertEqual(decision["status"], "REFUSED")
+            self.assertFalse((run / "gates/prepublication-adoption.json").exists())
+
+    def test_reader_receipt_defect_requires_exact_trace_and_missing_terminal(self):
+        cases = {
+            "normal JSON": lambda gates: (gates / "quality-self-heal.json").write_text(
+                '{"version":2,"action":"block_freeze"}\n', encoding="utf-8"
+            ),
+            "different traceback": lambda gates: (gates / "quality-self-heal.json").write_text(
+                "Traceback (most recent call last):\n"
+                "QualitySelfHealError: another quality error\n",
+                encoding="utf-8",
+            ),
+            "terminal exists": lambda gates: (
+                gates / "reader-testing-gate-ja.terminal.json"
+            ).write_text("{}\n", encoding="utf-8"),
+        }
+        for name, mutate in cases.items():
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as tmp:
+                run, run_id, prompt, ledger = self.fixture(Path(tmp))
+                gates, _traceback, _quality_path = self.add_reader_traceback(run)
+                mutate(gates)
+                generation.adopt_prepublication(run, run_id, prompt, ledger)
+
+                decision = repair.plan(run, ledger)
+
+                self.assertEqual(decision["status"], "REFUSED")
+                self.assertNotEqual(
+                    decision.get("reason"),
+                    "tracked-reader-terminal-receipt-source-defect",
+                )
+
+    def test_prepared_quality_repair_refuses_post_begin_evidence_drift(self):
+        cases = {
+            "receipt deletion": lambda run: (
+                run / "gates/prepublication-adoption.json"
+            ).unlink(),
+            "receipt tamper": lambda run: (
+                run / "gates/prepublication-adoption.json"
+            ).write_text("[]\n", encoding="utf-8"),
+            "generation status": self.hand_edit_generation_status,
+            "original prompt drift": self.hand_edit_original_prompt,
+        }
+        for name, mutate in cases.items():
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as tmp:
+                run, run_id, prompt, ledger = self.fixture(Path(tmp))
+                self.add_reader_traceback(run)
+                generation.adopt_prepublication(run, run_id, prompt, ledger)
+                repair.begin(run, ledger)
+                mutate(run)
+
+                decision = repair.plan(run, ledger)
+
+                self.assertEqual(
+                    decision,
+                    {"status": "REFUSED", "reason": "quality-repair-evidence-invalid"},
+                )
+
+    @staticmethod
+    def hand_edit_generation_status(run: Path):
+        state_path = run / "gates/generation-state.json"
+        state = json.loads(state_path.read_text(encoding="utf-8"))
+        state["status"] = "provider-failed-ambiguous"
+        state_path.write_text(json.dumps(state) + "\n", encoding="utf-8")
+
+    @staticmethod
+    def hand_edit_original_prompt(run: Path):
+        (run / "article-daily-prompt.txt").write_text(
+            "changed original prompt\n", encoding="utf-8"
+        )
+
+    @staticmethod
+    def add_reader_traceback(run: Path):
+        gates = run / "gates"
+        (gates / "topic-route.json").write_text(
+            '{"topic_id":"writer-a4-reader-receipt","editorial_form":"explainer"}\n',
+            encoding="utf-8",
+        )
+        traceback = (
+            "Traceback (most recent call last):\n"
+            "  File \"quality_self_heal.py\", line 132, in _snapshot_receipts\n"
+            "    raise QualitySelfHealError(...)\n"
+            "QualitySelfHealError: quality reader receipt is missing for ja\n"
+        )
+        quality_path = gates / "quality-self-heal.json"
+        quality_path.write_text(traceback, encoding="utf-8")
+        return gates, traceback, quality_path
 
     @staticmethod
     def replace_ja_with_symlink(run: Path, prompt: Path, ledger: Path):

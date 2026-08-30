@@ -14,12 +14,17 @@ import subprocess
 import sys
 from typing import Any
 
+import article_generation_state as generation_state
 from article_generation_state import ledger_has_public_effect
 
 
 CURRENT_QUALITY_VERSION = 2
 REPAIR_EPOCH = 1
 MAX_REPAIR_ATTEMPTS = 2
+QUALITY_REPAIR_EVIDENCE_INVALID = "quality-repair-evidence-invalid"
+READER_TRACEBACK_SUFFIX = (
+    "QualitySelfHealError: quality reader receipt is missing for ja"
+)
 
 
 class QualityRepairError(ValueError):
@@ -313,6 +318,95 @@ def _tracked_reader_terminal_source_defect(
     return True
 
 
+def _quality_traceback(path: Path) -> bool:
+    if path.is_symlink() or not path.is_file():
+        return False
+    try:
+        text = path.read_text(encoding="utf-8").rstrip("\n")
+    except OSError:
+        return False
+    if not text.startswith("Traceback (most recent call last):"):
+        return False
+    if not (
+        text.endswith(READER_TRACEBACK_SUFFIX)
+        and text.splitlines()[-1]
+        in {READER_TRACEBACK_SUFFIX, f"quality_self_heal.{READER_TRACEBACK_SUFFIX}"}
+    ):
+        return False
+    return True
+
+
+def _tracked_reader_terminal_receipt_source_defect(gates: Path) -> bool:
+    terminal = gates / "reader-testing-gate-ja.terminal.json"
+    return _quality_traceback(gates / "quality-self-heal.json") and not (
+        terminal.exists() or terminal.is_symlink()
+    )
+
+
+def _qrr_lineage(
+    run_dir: Path, ledger: Path, *, adopt: bool
+) -> dict[str, Any] | None:
+    prompt = run_dir / "article-daily-prompt.txt"
+    generation = _read_json(run_dir / "gates/generation-state.json")
+    if (
+        prompt.is_symlink()
+        or not prompt.is_file()
+        or not generation
+        or generation.get("run_id") != run_dir.name
+        or generation.get("run_dir") != str(run_dir)
+        or generation.get("prompt_path") != str(prompt)
+    ):
+        return None
+    try:
+        prompt_sha256 = _sha256(prompt)
+    except OSError:
+        return None
+    if generation.get("prompt_sha256") != prompt_sha256:
+        return None
+    status = generation.get("status")
+    if status not in {"quality-repair-ready", "provider-returned"}:
+        return None
+    if status == "provider-returned":
+        return {"status": status, "prompt": prompt}
+    if adopt:
+        try:
+            result = generation_state.adopt_prepublication(
+                run_dir, run_dir.name, prompt, ledger
+            )
+        except (generation_state.GenerationInvariant, OSError, ValueError, TypeError):
+            return None
+        if result != {"action": "unchanged", "status": "quality-repair-ready"}:
+            return None
+    gates = run_dir / "gates"
+    receipt_path = gates / "prepublication-adoption.json"
+    receipt = _read_json(receipt_path)
+    if receipt_path.is_symlink() or not receipt:
+        return None
+    transitions = generation.get("transitions")
+    transition = transitions[-1] if isinstance(transitions, list) and transitions else None
+    if not isinstance(transition, dict) or transition.get("action") != "adopt-prepublication":
+        return None
+    if (
+        receipt.get("receipt_sha256") != generation_state._adoption_receipt_hash(receipt)
+        or transition.get("receipt_sha256") != receipt.get("receipt_sha256")
+    ):
+        return None
+    try:
+        receipt_file_sha256 = _sha256(receipt_path)
+    except OSError:
+        return None
+    return {
+        "status": status,
+        "prompt": prompt,
+        "qrr_lineage": {
+            "adoption_receipt_sha256": receipt["receipt_sha256"],
+            "adoption_receipt_file_sha256": receipt_file_sha256,
+            "transition_receipt_sha256": transition["receipt_sha256"],
+            "prompt_sha256": prompt_sha256,
+        },
+    }
+
+
 def _tracked_editorial_hash_scope_source_defect(
     run_dir: Path, gates: Path, canonical: dict[str, Any]
 ) -> bool:
@@ -461,6 +555,26 @@ def plan(run_dir: Path | str, ledger: Path | str) -> dict[str, Any]:
         return _refused("ledger-row-exists")
     repair_state = _read_json(gates / "quality-repair-state.json")
     if repair_state:
+        lineage = _qrr_lineage(run_dir, ledger, adopt=False)
+        if lineage is None:
+            return _refused(QUALITY_REPAIR_EVIDENCE_INVALID)
+        generation_status = lineage["status"]
+        qrr_lineage = lineage.get("qrr_lineage")
+        if generation_status == "quality-repair-ready":
+            if repair_state.get("qrr_lineage") != qrr_lineage:
+                return _refused(QUALITY_REPAIR_EVIDENCE_INVALID)
+        elif repair_state.get("qrr_lineage") is not None:
+            return _refused(QUALITY_REPAIR_EVIDENCE_INVALID)
+        prompt_path = Path(str(repair_state.get("prompt_path", "")))
+        if (
+            not prompt_path.is_file()
+            or repair_state.get("prompt_sha256") != _sha256(prompt_path)
+        ):
+            return _refused(QUALITY_REPAIR_EVIDENCE_INVALID)
+        try:
+            attempts = int(repair_state.get("attempts", 0))
+        except (TypeError, ValueError):
+            return _refused(QUALITY_REPAIR_EVIDENCE_INVALID)
         if _terminal_quality_block(run_dir, ledger) is not None:
             return {
                 "status": "READY",
@@ -468,16 +582,12 @@ def plan(run_dir: Path | str, ledger: Path | str) -> dict[str, Any]:
                 "run_id": run_id,
                 "run_dir": str(run_dir),
                 "repair_epoch": REPAIR_EPOCH,
-                "attempts": int(repair_state.get("attempts", 0)),
+                "attempts": attempts,
             }
-        prompt_path = Path(str(repair_state.get("prompt_path", "")))
-        attempts = int(repair_state.get("attempts", 0))
         if (
             repair_state.get("status")
             in {"prepared", "retryable-incomplete"}
             and attempts < MAX_REPAIR_ATTEMPTS
-            and prompt_path.is_file()
-            and repair_state.get("prompt_sha256") == _sha256(prompt_path)
         ):
             return {
                 "status": "READY",
@@ -496,8 +606,6 @@ def plan(run_dir: Path | str, ledger: Path | str) -> dict[str, Any]:
             and not _owner_is_alive(repair_state.get("owner_pid"))
             and age is not None
             and age >= 60
-            and prompt_path.is_file()
-            and repair_state.get("prompt_sha256") == _sha256(prompt_path)
         ):
             return {
                 "status": "READY",
@@ -513,18 +621,12 @@ def plan(run_dir: Path | str, ledger: Path | str) -> dict[str, Any]:
         return _refused(
             f"quality-repair-already-{repair_state.get('status', 'unknown')}"
         )
-    prompt = run_dir / "article-daily-prompt.txt"
-    generation = _read_json(gates / "generation-state.json")
-    if (
-        not prompt.is_file()
-        or not generation
-        or generation.get("run_id") != run_id
-        or generation.get("run_dir") != str(run_dir)
-        or generation.get("prompt_path") != str(prompt)
-        or generation.get("prompt_sha256") != _sha256(prompt)
-        or generation.get("status") != "provider-returned"
-    ):
+    lineage = _qrr_lineage(run_dir, ledger, adopt=True)
+    if lineage is None:
         return _refused("generation-state-not-provider-returned")
+    generation_status = lineage["status"]
+    qrr_lineage = lineage.get("qrr_lineage")
+    prompt = lineage["prompt"]
     canonical = _read_json(gates / "quality-self-heal.json")
     legacy = bool(
         canonical
@@ -540,6 +642,11 @@ def plan(run_dir: Path | str, ledger: Path | str) -> dict[str, Any]:
     reader_source_defect = bool(
         canonical
         and _tracked_reader_terminal_source_defect(run_dir, gates, canonical)
+    )
+    reader_receipt_source_defect = (
+        _tracked_reader_terminal_receipt_source_defect(gates)
+        if generation_status == "quality-repair-ready"
+        else None
     )
     editorial_source_defect = bool(
         canonical
@@ -557,6 +664,7 @@ def plan(run_dir: Path | str, ledger: Path | str) -> dict[str, Any]:
         not legacy
         and not source_defect
         and not reader_source_defect
+        and not reader_receipt_source_defect
         and not editorial_source_defect
         and not topic_router_source_defect
     ):
@@ -595,6 +703,24 @@ def plan(run_dir: Path | str, ledger: Path | str) -> dict[str, Any]:
             "run_dir": str(run_dir),
             "repair_epoch": REPAIR_EPOCH,
             "source_defect": "reader-terminal-hash",
+            "drafts": {
+                lang: _sha256(run_dir / f"article-{lang}.md")
+                for lang in ("ja", "en")
+            },
+        }
+    if reader_receipt_source_defect:
+        return {
+            "status": "READY",
+            "reason": "tracked-reader-terminal-receipt-source-defect",
+            "run_id": run_id,
+            "run_dir": str(run_dir),
+            "repair_epoch": REPAIR_EPOCH,
+            "source_defect": "reader-terminal-receipt",
+            "quality_traceback_sha256": _sha256(
+                gates / "quality-self-heal.json"
+            ),
+            "reader_terminal": "gates/reader-testing-gate-ja.terminal.json",
+            "qrr_lineage": qrr_lineage,
             "drafts": {
                 lang: _sha256(run_dir / f"article-{lang}.md")
                 for lang in ("ja", "en")
@@ -710,7 +836,7 @@ The canonical quality receipt is the restored attempt-1 action=reroute. Read it 
 
 No staging or publication is allowed until every current-hash editorial, identity, reader, media, CTA, and quality gate passes and quality_self_heal.py returns action=ready_to_freeze. The archived receipts are immutable. If any gate returns block_freeze, preserve evidence, publish nothing, and stop. On ready_to_freeze, continue only STEP 4.8 through STEP 20 of ORIGINAL_PROMPT for this same run, with real remote readback and no local-only publication claim.
 """
-    if source_defect == "reader-terminal-hash":
+    if source_defect in {"reader-terminal-hash", "reader-terminal-receipt"}:
         first_gate = (
             "Run reader-testing-gate.sh for BOTH languages first and verify "
             "each terminal carries the current article SHA-256."
@@ -782,7 +908,10 @@ def begin(run_dir: Path | str, ledger: Path | str) -> dict[str, Any]:
         "topic_id": _read_json(gates / "topic-route.json").get("topic_id"),
         "entries": entries,
     }
-    _atomic_write(gates / "quality-repair-state.json", state)
+    if decision.get("qrr_lineage") is not None:
+        state["qrr_lineage"] = decision["qrr_lineage"]
+    state_path = gates / "quality-repair-state.json"
+    _atomic_write(state_path, state)
     archive.mkdir(parents=True)
     for row, source in zip(entries, active, strict=True):
         destination = archive / row["path"]
@@ -811,6 +940,14 @@ def begin(run_dir: Path | str, ledger: Path | str) -> dict[str, Any]:
         if not current:
             raise QualityRepairError("quality-reroute-attempt-one-missing")
         _atomic_write(gates / "quality-self-heal.json", current)
+    elif decision.get("source_defect") == "reader-terminal-receipt":
+        source_receipt = archive / "quality-self-heal.json"
+        if not source_receipt.is_file() or source_receipt.is_symlink():
+            raise QualityRepairError("reader-quality-traceback-not-archived")
+        current = {
+            "version": CURRENT_QUALITY_VERSION,
+            "action": "evaluate_reroute",
+        }
     else:
         quality = _quality_module()
         current = quality.assess(
