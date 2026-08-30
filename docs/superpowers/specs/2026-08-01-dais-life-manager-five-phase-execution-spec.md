@@ -27,7 +27,7 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 この節は、後段の「現在TODO」「次の一件」「local-only」「self-funded agentは別product」という相反する記述を
 上書きする最新の実行順序SSOTである。後段は実装履歴・organ別acceptanceとして保持するが、次作業の選択には使わない。
 Upworkのterminal evidence、startup context、public claim、GA-01〜13Aは完了または履歴として保持する。
-次の一件はAtomic program ledger Seq 16 `ELZ-C03`のsubstep `C03-17`で、focused schema contract testのGREENを一回確認する。
+次の一件はAtomic program ledger Seq 16 `ELZ-C03`のsubstep `C03-18`で、marker付き非破壊migration contractのfocused failing testを一つ追加する。
 
 #### 0.0.1 最新基盤決定 — ElizaOSを完全forkし、Life Managerをlocal OSSからmulti-tenant SaaSへ育てる
 
@@ -600,7 +600,7 @@ Goal分解とgraph生成は後続C07のCodexへ残す。現在activeなC03だけ
 - [x] **C03-14** EconomicReceipt row/insert typeを定義する — Eliza fork PR #9、merge `33b3e9442d6d8d7047cd5a552b2cfa3a9fb3fda9`。tenant-scoped append-only-shaped `economic_receipts` tableへOutcomeReceipt参照、kind、minorまたはatomic＋decimals金額、currency、verificationStatus、occurredAt/createdAtを定義し、EconomicReceiptRow/EconomicReceiptInsertをexport。制約はC03-15へ保持。次はC03-15
 - [x] **C03-15** tenant/reference/idempotency/immutable-receipt constraintsを定義する — Eliza fork PR #10、merge `82c3531a508dfa15e35d6de05a0fbfea11109d51`。inputRefs object/16KB、tenant effectKey一意、attempt非負、lease coherence、OutcomeReceipt effect-attempt一意＋receipt object/16KB、EconomicReceipt entryKey一意・minor/atomic非負整数＋排他表現・currency形式をDrizzle constraintへcopy。receipt UPDATE/DELETE triggerはC03-20へ保持。次はC03-16
 - [x] **C03-16** `plugin-life-manager`へ`@elizaos/plugin-sql` dependencyとschema登録を接続する — Eliza fork PR #11、merge `f0165e61f53e73d7cd12af0380571e7da0ec2a73`。upstream `plugin-todos`と同じmanifest dependency、Drizzle `0.45.2` package dependency、6 table `lifeManagerDbSchema`、plugin `schema`登録だけを接続。新adapter/DB framework 0。次はC03-17
-- [ ] **C03-17** schema contract testの成功を一回確認する
+- [x] **C03-17** schema contract testの成功を一回確認する — fork head `f0165e61…`、Vitest 4.1.10、実`@elizaos/core@2.0.3-beta.7`、Drizzle 0.45.2でfocused 1 file/2 tests PASS、exit 0、797ms。6 tables、tenant/reference/effect/lease、constraints、Row/Insert型、plugin-sql dependency、schema登録を確認。private `schema-green-receipt.json` mode 0600、DB/external effect 0。次はC03-18
 - [ ] **C03-18** migration contractのfocused failing testを一つ追加する
 - [ ] **C03-19** migration contract testの失敗を一回確認する
 - [ ] **C03-20** marker付き非破壊migration serviceを実装する
