@@ -271,9 +271,12 @@ def test_paid_decision_retries_once_when_runner_returns_truncated_json(tmp_path,
 
     monkeypatch.setattr(paid, "_run", run)
 
-    paid._run_paid_decision_agent(["agent-runner"], evidence)
+    monkeypatch.setattr(paid, "_consultation_runner_result", lambda *_args, **_kwargs: {"ok": True})
+
+    result, _started_ns = paid._run_paid_decision_agent(["agent-runner"], evidence)
 
     assert len(calls) == 2
+    assert result == {"ok": True}
 
 
 def test_paid_decision_does_not_retry_semantically_invalid_json(tmp_path, monkeypatch):
@@ -298,6 +301,27 @@ def test_paid_decision_does_not_retry_semantically_invalid_json(tmp_path, monkey
         paid._run_paid_decision_agent(["agent-runner"], evidence)
 
     assert len(calls) == 1
+
+
+def test_paid_decision_retries_once_when_saved_runner_result_is_truncated(tmp_path, monkeypatch):
+    paid = load("paid_direct")
+    calls = []
+
+    monkeypatch.setattr(paid, "_run", lambda *_args: None)
+
+    def load_result(*_args, **_kwargs):
+        calls.append(1)
+        if len(calls) == 1:
+            raise json.JSONDecodeError("Unterminated string", '{"decision":"act', 12)
+        return {"decision": "actionable"}
+
+    monkeypatch.setattr(paid, "_consultation_runner_result", load_result)
+
+    result, _started_ns = paid._run_paid_decision_agent(
+        ["agent-runner"], tmp_path / "agent-PAID_WORK_DECISION")
+
+    assert len(calls) == 2
+    assert result == {"decision": "actionable"}
 
 
 def test_prior_artifact_candidates_include_only_project_receipt_linked_zips(tmp_path):
