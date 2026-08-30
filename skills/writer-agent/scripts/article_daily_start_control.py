@@ -454,6 +454,27 @@ def generation_resume_plan(run_dir: Path, ledger_path: Path) -> dict[str, Any]:
     )
 
 
+def quality_repair_ready_owner(run_dir: Path, ledger_path: Path) -> bool:
+    state = _regular_json(run_dir / "gates" / "generation-state.json")
+    if not state or state.get("status") != "quality-repair-ready":
+        return False
+    scripts = Path(__file__).resolve().parent
+    if str(scripts) not in sys.path:
+        sys.path.insert(0, str(scripts))
+    from article_generation_state import adopt_prepublication  # pylint: disable=import-outside-toplevel
+
+    try:
+        result = adopt_prepublication(
+            run_dir,
+            run_dir.name,
+            run_dir / "article-daily-prompt.txt",
+            ledger_path,
+        )
+    except Exception:
+        return False
+    return result == {"action": "unchanged", "status": "quality-repair-ready"}
+
+
 def _regular_json(path: Path) -> dict[str, Any] | None:
     if path.is_symlink() or not path.is_file():
         return None
@@ -1102,6 +1123,12 @@ def decide(state_dir: Path | str, local_date: str) -> dict[str, str]:
             "action": "resume-generation",
             "run_id": run_id,
             "reason": reason,
+        }
+    if quality_repair_ready_owner(run_dir, ledger):
+        return {
+            "action": "skip-pending-worker",
+            "run_id": run_id,
+            "reason": "same-jst-day-owned-by-quality-repair",
         }
     if _exhausted_prepublication_archive(state_dir, run_dir, run_id, rows):
         return {
