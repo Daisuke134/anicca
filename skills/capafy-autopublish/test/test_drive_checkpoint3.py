@@ -29,6 +29,13 @@ def test_resolve_short_review_url_requires_one_exact_redirect(monkeypatch) -> No
     assert module._resolve_review_url("https://api.capafy.ai/R123") == final
 
 
+def test_full_review_url_accepts_current_draft_key() -> None:
+    module = load_module()
+    url = "https://capafy.ai/developer/createAgent?draftKey=draft-abc&page=review"
+
+    assert module._validate_review_url(url) == url
+
+
 @pytest.mark.parametrize(
     "raw,location",
     (
@@ -58,6 +65,10 @@ def test_resolve_review_url_rejects_cross_domain_location(monkeypatch) -> None:
         "https://capafy.ai/developer/createAgent?source=temp-link&token=123&page=review&extra=1",
         "https://capafy.ai/developer/createAgent?source=temp-link&source=temp-link&token=123&page=review",
         "https://capafy.ai/developer/createAgent?source=temp-link&token=abc&page=review",
+        "https://capafy.ai/developer/createAgent?draftKey=draft-abc&page=review&extra=1",
+        "https://capafy.ai/developer/createAgent?draftKey=draft-abc&draftKey=second&page=review",
+        "https://capafy.ai/developer/createAgent?draftKey=&page=review",
+        "https://capafy.ai/developer/createAgent?draftKey=draft-abc&page=review#fragment",
     ),
 )
 def test_full_review_url_requires_exact_query_multimap(url) -> None:

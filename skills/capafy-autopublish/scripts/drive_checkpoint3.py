@@ -34,18 +34,37 @@ CP3_POLL_S = 0.25
 
 def _is_review_url(url: str) -> bool:
     parts = urlsplit(str(url or ""))
-    query = parse_qsl(parts.query, keep_blank_values=True)
-    token_values = [value for key, value in query if key == "token"]
-    return (
-        parts.scheme == "https"
-        and parts.netloc.lower() == CP3_HOST
-        and parts.path == CP3_PATH
-        and not parts.fragment
-        and len(query) == 3
-        and sorted(query) == sorted([("page", "review"), ("source", "temp-link"), ("token", token_values[0] if len(token_values) == 1 else "")])
-        and len(token_values) == 1
-        and re.fullmatch(r"[0-9]+", token_values[0]) is not None
-    )
+    if (
+        parts.scheme != "https"
+        or parts.netloc.lower() != CP3_HOST
+        or parts.path != CP3_PATH
+        or parts.fragment
+    ):
+        return False
+    try:
+        query = parse_qsl(parts.query, keep_blank_values=True, strict_parsing=True)
+    except ValueError:
+        return False
+    keys = [key for key, _value in query]
+    if len(set(keys)) != len(keys):
+        return False
+    values = dict(query)
+    if set(keys) == {"page", "source", "token"}:
+        token = values.get("token", "")
+        return (
+            len(query) == 3
+            and values.get("page") == "review"
+            and values.get("source") == "temp-link"
+            and re.fullmatch(r"[0-9]+", token) is not None
+        )
+    if set(keys) == {"draftKey", "page"}:
+        draft_key = values.get("draftKey", "")
+        return (
+            len(query) == 2
+            and values.get("page") == "review"
+            and bool(draft_key.strip())
+        )
+    return False
 
 
 def _validate_review_url(url: str) -> str:

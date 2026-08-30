@@ -1,7 +1,8 @@
-# Capafy Publishing Runbook (proven on C1 + C2, 2026-06-25) — so failures NEVER repeat
+# Capafy Publishing Runbook — 0.9.11 canonical flow
 
-The ONE proven path to publish a run_online subscription listing with REAL Claude Sonnet 4.6.
-Every step has a VERIFY gate. Never trust a "shipped"/toast alone — confirm with publish-remote-status.
+The canonical path publishes a run_online subscription listing with REAL Claude Sonnet 4.6.
+Every step has a VERIFY gate. Never trust a local success/toast alone — confirm with
+publish-remote-status.
 
 ## Canonical LLM config (copy the winners = Claude Sonnet 4.6)
 - CP1 Primary Model (display) = **Claude Sonnet 4.6**
@@ -12,20 +13,55 @@ Every step has a VERIFY gate. Never trust a "shipped"/toast alone — confirm wi
 1. **Research winner live**: `capafy-user` GET `/agent/agent/agents/<id>` with `X-Access-Token` header → copy pricing (cycle/price/cap) + categoryId + structure. Words = original (anti-plagiarism), facts = verbatim. The paid-only policy below overrides any winner free-trial field.
 2. **Build skill**: pure-LLM, self-contained, NO local deps/secrets. Add `test/case1.md`. grep-verify clean.
 3. **Write LISTING.md**: title ≤50 chars, shortDescription, **welcomeMessage**, detailedDescription (emoji sections + table).
-4. **Copy skill to clean-WS** `$LIFE_MANAGER_STATE_HOME/work/capafy/skills/<skill>` (LEAK GUARD — never publish from live $LIFE_MANAGER_STATE_HOME/work).
-5. **publish-init** `--runtime-dir $LIFE_MANAGER_STATE_HOME/work/capafy --skill-dir <...> --selections-file .temp/confirmed-selections.json`. Over 5-draft cap → put a junk draft's `agent_id` in selections to reuse it. ★ NOTE: re-init does NOT set the card from selections — the CARD MUST be filled in CP1 web form. ★
+4. **Copy skill to clean-WS** `$LIFE_MANAGER_STATE_HOME/work/capafy/skills/<skill>` (LEAK GUARD — never publish from live `$LIFE_MANAGER_STATE_HOME/work`).
+5. **Prepare and initialize** with `scripts/publish_prepare.sh <skill-dir> <LISTING.md> <icon>`.
+   The wrapper runs lint and clean-WS copy, then mandatory Phase A
+   `publish-init` **without selections** using the same `--env`, `--runtime-dir`,
+   and `--skill-dir` that will be used for selection submission. It then runs
+   `publish-init --selections-file "$LIFE_MANAGER_STATE_HOME/state/capafy-autopublish/sel_one.json"`.
+   Existing-Agent retries preserve the selected `agent_id`; new Agents are created
+   in a bootstrap directory and then moved to repo-external
+   `.../runtime/capafy-publisher/work/agents/<agent-id>`. Never create a duplicate Agent.
+   The wrapper emits `AGENT_ID=`, `EDIT_URL_FILE=`, and `CONFIG_PATH=`. Read the exact
+   URL bytes from `EDIT_URL_FILE` for CP1; never reconstruct, append parameters, or
+   print the URL. ★ NOTE: init selections do NOT set the card — the CARD MUST be filled in CP1. ★
 6. **CP1 (CloakBrowser)** — fill ALL of these or "提出を確認" silently fails:
    - 基本情報: title (real-type), shortDescription (textarea[0]), detailedDescription (textarea[1]), **welcomeMessage (the "初回実行前にユーザーへ表示" textarea — REQUIRED, easy to miss)**, tags, privacy URL, category dropdown.
    - 価格設定: "Capafy で実行" → "Subscription" → set Plan 1 cycle + Add Plan ×2 → fill price/cap per cycle (placeholders: day 0.07/50, week 0.5/200, month 2/500) → **Primary Model = Claude Sonnet 4.6** → **test input (the "例：『たくさん買って…』" textarea — REQUIRED)** → **AI service provider field** → **select No Free Trial on EVERY plan (an unselected trial radio silently blocks save; enabled free trials are forbidden).**
    - Click **提出を確認**. ★ VERIFY GATE: page must reach `page=card-done` / "カードを保存しました". If still `page=edit`, a required field is empty/invalid — find the red error or empty input and fix; do NOT proceed. ★
-7. **publish-configure --deep-scan** → leak check (`.temp/staging/agent.workspace_documents.json` must NOT exist) → submit `{"generic":[],"env_var":[]}` findings → status must be **configured** (not "ready" — "ready" w/ 0 keys = card never saved, go back to CP1).
-8. **CP2 (drive_checkpoint2.py <CP2url>)** — auto: expand 検出されたキー → click Edit pencil if card in summary mode → set Base URL/Model/Key (OpenRouter recipe) → delete blockrun(127.0.0.1) card → "キーを確認して保存". ★ VERIFY: "キー確認済み" toast / page=credential-done. ★
-9. **publish-ship** → CP3 url.
-10. **CP3 (CloakBrowser)**: click "審査に提出" → modal "提出を確認".
-11. ★★ FINAL VERIFY (truth source) ★★ `publish-remote-status --agent-id <id>` → MUST show: **status=1** (審査中) · **isConfirmedConfigKeys=1** · **agentType=run_online** · title=<our title> · model="Claude Sonnet 4.6". If status=0 or agentType=download or title=old → the chain operated on the wrong/old draft; DO NOT claim done — redo from the failed gate. Then append to `state/published.jsonl`.
+7. **Finish through the 0.9.11 submit flow** with
+   `scripts/publish_finish.sh <agent-id> <skill-name> <LISTING.md>`.
+   It first verifies CP1, then runs ordinary `publish-submit --action prepare`.
+   Require a parsed `security_ready` result for the same `agent_id` before
+   uploading. The deterministic wrapper does not synthesize findings or invoke
+   the deep-scan/findings-file branch; a creator-approved agentic deep scan must
+   be completed separately before returning to ordinary prepare.
+8. **Upload exactly once** with `publish-submit --action continue_upload`.
+   Require parsed success for the same Agent ID and a non-empty final `review_url`.
+   If the public `package_uploaded` boolean is already true, do not run upload again;
+   refresh the existing publish review URL and resume from the confirmation gate. If the command reports a review URL together
+   with a post-effect persistence error, stop with no retry and inspect official
+   status.
+9. **CP2 (drive_checkpoint2.py, final `page=review`)** — use the final review URL:
+   expand 検出されたキー → click Edit pencil if card is in summary mode → set
+   Base URL/Model/Key (OpenRouter recipe) → delete blockrun(127.0.0.1) card →
+   "キーを確認して保存". ★ VERIFY by polling official remote status until
+   `is_confirmed_config_keys=true`; the success toast alone is not sufficient. ★
+10. **CP3 (CloakBrowser, final publish review page)**: prefer one refreshed
+    `publish-refresh-url --agent-id <id> --step publish`; if unavailable before
+    the attempt, reuse the exact final review URL returned by `continue_upload`.
+    Click "審査に提出" → modal "提出を確認" exactly once, then poll official
+    status. Do not retry an uncertain external effect.
+11. ★★ FINAL VERIFY (truth source) ★★ `publish-remote-status --agent-id <id>` →
+    MUST show: **platform_status=1** (審査中) · **is_confirmed_config_keys=true** ·
+    **agent_type=run_online** · title=<our title> · model="Claude Sonnet 4.6".
+    If platform_status=0 or agent_type=download or title=old → the chain operated on the
+    wrong/old draft; DO NOT claim done. Then append to `state/published.jsonl`.
 
 ## Hard lessons (why this runbook exists)
-- "shipped" can be a lie: it shipped the OLD junk draft when CP1 never saved. ALWAYS verify remote-status fields (status/isConfirmedConfigKeys/agentType/title/model), not the local "shipped".
+- A local success can refer to the wrong draft when CP1 never saved. ALWAYS verify
+  remote-status fields (platform_status/is_confirmed_config_keys/agent_type/title/model), not
+  local output.
 - CP1 silent-block causes: empty welcomeMessage, empty test input, an unselected per-plan trial radio, empty provider field. Fill all, then confirm `page=card-done`.
 - CP2 card defaults to SUMMARY mode → must click Edit before fields exist. drive_checkpoint2.py now does this.
 - Direct Anthropic never passes CP2 (openai-responses /responses 404) → OpenRouter only.
@@ -40,15 +76,15 @@ Cost: ~$0.01–0.17/image; cap (e.g. month cap80) bounds it << revenue.
 
 ## UPGRADING a LISTED download agent → run_online (O1 deep findings 2026-06-25)
 Mechanism (api-docs 00_overview §166-167, SKILL.md:127/278):
-- agentType (download/run_online) is set on CP1 web "収益化モデル" card (Capafy で実行 = run_online, distribution_mode=cloud_hosted).
+- agent_type (download/run_online) is set on CP1 web "収益化モデル" card (Capafy で実行 = run_online, distribution_mode=cloud_hosted).
 - run_online default billing = **Hourly**; must click the **Subscription** card under "Billing Method" to get day/week/month plans. (hourly billing mode IS real on Capafy.)
-- ★ Toggling mode download↔run_online ROLLS the version back to draft AND CLEARS the confirmed skill selection → you MUST re-confirm the skill on the Skill/プラグイン tab, then re-run publish-configure under the new agentType (SKILL.md:127). ★
+- ★ Toggling mode download↔run_online ROLLS the version back to draft AND CLEARS the confirmed skill selection → you MUST re-confirm the skill on the Skill/プラグイン tab, then re-run `publish-submit --action prepare` under the new agent_type. ★
 - download mode hosts NO keys (no CP2). run_online needs the LLM Config (CP2).
-BLOCKER (unsolved): converting an ALREADY-LISTED (status=4) download agent (e.g. 3332784488 jp-humanizer) to run_online did NOT persist — UI showed run_online + advanced to page=credential, but remote-status stayed agentType=download / isConfirmedConfigKeys=0 / billings empty across ~25 attempts. The clk() helpers were also hitting inner spans not the radio CARD (fix: climb to the card container before clicking).
+BLOCKER (unsolved): converting an ALREADY-LISTED (platform_status=4) download agent (e.g. 3332784488 jp-humanizer) to run_online did NOT persist — UI showed run_online + advanced to page=credential, but remote-status stayed agent_type=download / is_confirmed_config_keys=false / billings empty across ~25 attempts. The clk() helpers were also hitting inner spans not the radio CARD (fix: climb to the card container before clicking).
 RELIABLE ALTERNATIVE: create the skill as a FRESH run_online agent (proven 5/5 on C1-C5) instead of in-place converting a listed download agent. Needs a free unlisted slot (max 5 unlisted; C1-C5 fill it until reviewed). So: wait for C1-C5 review → free slots → create O1/O2 fresh as run_online.
 
 ## LOGO/ICON upload (verified 2026-06-25) — the working recipe
-1. Build edit URL: refresh-url --step init → extract token → `https://capafy.ai/developer/createAgent?source=temp-link&token=<TOK>&page=edit`
+1. Read the exact URL from the `EDIT_URL_FILE` emitted by `publish_prepare.sh`; do not extract, rebuild, or append a token/query parameter.
 2. goto (wait_until networkidle + sleep). Click 基本情報 tab. ★ file inputs are mounted only after the tab+page fully load — query `input[type=file]` returns 2 (logo + detail-image). If 0, the page/tab wasn't fully loaded — re-goto.
 3. set_input_files(icon) on BOTH file inputs (one is the logo) → a **"ロゴを切り抜く" (crop) MODAL opens** showing the icon.
 4. Click the modal's **保存** button (width<200) → crop confirmed, logo set (left ロゴ box + right preview card both show the icon).

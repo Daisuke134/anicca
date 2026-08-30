@@ -2,9 +2,14 @@
 import importlib.util
 import json
 from pathlib import Path
+import pytest
+import sys
 
 
-SCRIPT = Path(__file__).parents[1] / "scripts" / "cp1_agent.py"
+SCRIPTS = Path(__file__).parents[1] / "scripts"
+if str(SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS))
+SCRIPT = SCRIPTS / "cp1_agent.py"
 SPEC = importlib.util.spec_from_file_location("cp1_agent_under_test", SCRIPT)
 cp1 = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(cp1)
@@ -59,3 +64,33 @@ def test_raw_open_does_not_create_a_tab_for_an_unrelated_renderer_failure(monkey
         assert str(exc) == "CDP call timeout"
     else:
         raise AssertionError("expected original renderer error")
+
+
+@pytest.mark.parametrize(
+    "url",
+    (
+        "https://capafy.ai/developer/createAgent?draftKey=secret-draft&page=edit#secret-fragment",
+        "https://capafy.ai/developer/createAgent?source=temp-link&token=123456789&page=review",
+    ),
+)
+def test_state_dump_and_toast_redact_query_and_fragment(url, capsys):
+    state = {
+        "url": url,
+        "toastOK": True,
+        "cardDone": False,
+        "priceSvg": "",
+    }
+
+    class _Page:
+        def evaluate(self, _expression):
+            return state
+
+    page = _Page()
+    cp1.dump(page, shot=False)
+    cp1._raw_dump(page, shot=False)
+    print(json.dumps(cp1._toast_for_output(state), ensure_ascii=False))
+    output = capsys.readouterr().out
+    assert "secret-draft" not in output
+    assert "secret-fragment" not in output
+    assert "token=123456789" not in output
+    assert "?page=edit" in output or "?page=review" in output

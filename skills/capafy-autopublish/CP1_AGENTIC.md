@@ -10,7 +10,7 @@ they change. Read the state/screenshot each step and decide.**
 Why this exists: the old `drive_cp1.py` hardcoded DOM positions and silently broke
 when Capafy changed the pricing widget (plan cards re-sort on period change → a
 positional price/cap script scrambles values → price tab red → card never saves →
-`isConfirmedSkills=0` → the daily loop STOPs). This procedure is robust to UI drift
+`is_confirmed_skills=false` → the daily loop STOPs). This procedure is robust to UI drift
 because a human-like agent verifies each step by looking.
 
 ## The tool (run with the resolved browser Python)
@@ -29,7 +29,7 @@ the `fields`/`buttons`/`markers` coords (viewport-relative, map 1:1 to `click`).
 
 ## Success signal (the ONLY thing that means done)
 - toast **「カードを保存しました」** (`toastOK:true`) or url→`cardDone:true`, AND
-- server `publish-remote-status … isConfirmedSkills == 1`.
+- server `publish-remote-status … latest_version.is_confirmed_skills == true`.
 A green price tab alone is NOT done — you must still 提出を確認 and confirm the save.
 
 ## The card has THREE tabs (top): verify each is green ✓
@@ -40,8 +40,10 @@ A green price tab alone is NOT done — you must still 提出を確認 and confi
 | 価格設定 | often **red ✗** — the real work | fix the plan cards until GREEN |
 
 ## Fixing 価格設定 (the common breakage)
-1. `open <EDIT_URL>` (from publish_prepare.sh), Read shot. Click the 価格設定 tab
-   (find it in `buttons`/`markers`, click its coords).
+1. Read the exact URL bytes from `EDIT_URL_FILE` emitted by `publish_prepare.sh` and
+   open that value. Do not reconstruct, append query parameters, or print the URL.
+   Read the shot, then click the 価格設定 tab (find it in `buttons`/`markers`, click
+   its coords).
 2. Confirm 収益化モデル = **Capafy で実行** and Billing = **Subscription** and
    container mode = **On-Demand** are selected (orange). If not, click them.
 3. `scroll` down to reveal the plan cards. Each subscription plan card = a Period
@@ -67,7 +69,8 @@ A green price tab alone is NOT done — you must still 提出を確認 and confi
 8. Click **下書きを保存** (save draft) → then **提出を確認** (confirm). Read the shot:
    you want the 「カードを保存しました」 card-done page.
 9. Verify server-side: `packager.py publish-remote-status --agent-id <ID>` →
-   `isConfirmedSkills == 1`. Only then is CP1 done; hand off to `publish_finish.sh`.
+   `latest_version.is_confirmed_skills == true`. Only then is CP1 done; hand off to
+   `publish_finish.sh`.
 
 ## Guardrails
 - One capafy tab: `cp1_agent.py` reuses an existing capafy tab or opens a NEW one.

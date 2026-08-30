@@ -21,13 +21,14 @@ from pathlib import Path
 
 from capafy_platform import runtime_context
 from capafy_platform.defaults import DEFAULT_PLATFORM_BASE_URL
+from packaging.common.constants import PUBLISHER_STATE_DIR, SKILL_CONFIG_PATH
 
 
 VERSION_MANIFEST_PATH = "/public/client-agent-version/publisher"
 PLATFORM_BASE_URL_ENV = "CAPAFY_PLATFORM_BASE_URL"
-STATE_RELATIVE_PATH = Path(".temp") / "self-update-state.json"
-PENDING_RELATIVE_PATH = Path(".temp") / "self-update-pending.json"
-LOCK_RELATIVE_PATH = Path(".temp") / "self-update.lock"
+STATE_RELATIVE_PATH = Path("self-update-state.json")
+PENDING_RELATIVE_PATH = Path("self-update-pending.json")
+LOCK_RELATIVE_PATH = Path("self-update.lock")
 SELF_UPDATE_PIP_ARGS_ENV = "CAPAFY_SELF_UPDATE_PIP_ARGS"
 SELF_UPDATE_SKILL_DIR_ENV = "CAPAFY_SELF_UPDATE_SKILL_DIR"
 STAGING_DIR_SUFFIX = ".staging"
@@ -109,15 +110,15 @@ def _detect_skill_dir() -> Path:
 
 
 def _state_path(skill_dir: Path) -> Path:
-    return skill_dir / STATE_RELATIVE_PATH
+    return PUBLISHER_STATE_DIR / STATE_RELATIVE_PATH
 
 
 def _pending_path(skill_dir: Path) -> Path:
-    return skill_dir / PENDING_RELATIVE_PATH
+    return PUBLISHER_STATE_DIR / PENDING_RELATIVE_PATH
 
 
 def _lock_path(skill_dir: Path) -> Path:
-    return skill_dir / LOCK_RELATIVE_PATH
+    return PUBLISHER_STATE_DIR / LOCK_RELATIVE_PATH
 
 
 @contextlib.contextmanager
@@ -177,7 +178,7 @@ def _exclusive_lock(skill_dir: Path):
 
 
 def _persisted_platform_base_url() -> str:
-    config_path = _detect_skill_dir() / "config.json"
+    config_path = SKILL_CONFIG_PATH
     if not config_path.is_file():
         return ""
     try:
@@ -892,7 +893,7 @@ def _migrate_legacy_state(root: Path) -> None:
 
 
 def _secure_local_config_if_present(root: Path) -> None:
-    config_path = root / "config.json"
+    config_path = SKILL_CONFIG_PATH
     if config_path.is_file():
         _safe_chmod(config_path, 0o600)
 

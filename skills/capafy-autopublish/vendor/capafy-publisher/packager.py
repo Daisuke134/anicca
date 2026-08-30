@@ -26,13 +26,12 @@ def _ensure_local_packaging_not_shadowed() -> None:
 
 _ensure_local_packaging_not_shadowed()
 
-from packaging._shared.common.cli import fail
-from packaging.init.publish_init import publish_init
-from packaging.configure.publish_configure import publish_configure
-from packaging.ship.publish_ship import publish_ship
-from packaging.ship.remote_status import publish_list, publish_remote_status
-from packaging.ship.review_url import publish_refresh_url
-from packaging.ship.status import publish_status
+from packaging.common.cli import fail
+from packaging.publish.init.command import publish_init
+from packaging.publish.submit.command import PUBLISH_SUBMIT_ACTIONS, publish_submit
+from packaging.publish.platform.remote_status import publish_list, publish_remote_status
+from packaging.publish.platform.remote_status import publish_refresh_url
+from packaging.publish.platform.status import publish_status
 from capafy_platform.login_commands import (
     command_platform_login_init,
     command_platform_login_token,
@@ -40,7 +39,10 @@ from capafy_platform.login_commands import (
 )
 
 def _build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Publisher skill packaging helper")
+    parser = argparse.ArgumentParser(
+        description="Publisher skill packaging helper",
+        allow_abbrev=False,
+    )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     login_init_parser = subparsers.add_parser("login-init")
@@ -56,7 +58,7 @@ def _build_parser() -> argparse.ArgumentParser:
     login_token_parser.add_argument("--access-token", required=True)
     login_token_parser.add_argument("--base-url")
 
-    publish_init_parser = subparsers.add_parser("publish-init")
+    publish_init_parser = subparsers.add_parser("publish-init", allow_abbrev=False)
     publish_init_parser.add_argument("--env", required=True)
     publish_init_parser.add_argument("--runtime-dir", required=True)
     publish_init_parser.add_argument("--skill-dir")
@@ -64,26 +66,27 @@ def _build_parser() -> argparse.ArgumentParser:
     publish_init_parser.add_argument("--brief", action="store_true")
     publish_init_parser.add_argument("--title")
     publish_init_parser.add_argument("--description")
-    selections_group = publish_init_parser.add_mutually_exclusive_group()
-    selections_group.add_argument("--selections")
-    selections_group.add_argument("--selections-file")
+    publish_init_parser.add_argument("--selections-file")
     publish_init_parser.add_argument("--reset-local-state", action="store_true")
 
-    publish_configure_parser = subparsers.add_parser("publish-configure")
-    publish_configure_parser.add_argument("--agent-id", required=True)
-    publish_configure_parser.add_argument("--dispositions-file")
-    publish_configure_parser.add_argument("--deep-scan", action="store_true")
-    publish_configure_parser.add_argument("--deep-scan-findings-file")
-
-    ship_parser = subparsers.add_parser("publish-ship")
-    ship_parser.add_argument("--agent-id", required=True)
+    publish_submit_parser = subparsers.add_parser("publish-submit")
+    publish_submit_parser.add_argument("--agent-id", required=True)
+    publish_submit_parser.add_argument(
+        "--action",
+        choices=PUBLISH_SUBMIT_ACTIONS,
+        required=True,
+    )
+    publish_submit_parser.add_argument("--dispositions-file")
+    publish_submit_parser.add_argument("--deep-scan", action="store_true")
+    publish_submit_parser.add_argument("--deep-scan-findings-file")
+    publish_submit_parser.add_argument("--environment-selection-file")
 
     remote_status_parser = subparsers.add_parser("publish-remote-status")
     remote_status_parser.add_argument("--agent-id", required=True)
 
     refresh_url_parser = subparsers.add_parser("publish-refresh-url")
     refresh_url_parser.add_argument("--agent-id", required=True)
-    refresh_url_parser.add_argument("--step", choices=("init", "configure", "ship"))
+    refresh_url_parser.add_argument("--step", choices=("init", "publish"))
 
     subparsers.add_parser("publish-list")
 
@@ -115,7 +118,7 @@ def main(argv: Optional[list[str]] = None) -> int:
             )
 
         if args.command == "publish-init":
-            selections_json = args.selections
+            selections_json = None
             if args.selections_file:
                 selections_json = Path(args.selections_file).read_text(encoding="utf-8")
             return publish_init(
@@ -129,15 +132,15 @@ def main(argv: Optional[list[str]] = None) -> int:
                 title=args.title,
                 description=args.description,
             )
-        if args.command == "publish-configure":
-            return publish_configure(
+        if args.command == "publish-submit":
+            return publish_submit(
                 agent_id=args.agent_id,
+                action=args.action,
                 dispositions_file=args.dispositions_file,
                 deep_scan=args.deep_scan,
                 deep_scan_findings_file=args.deep_scan_findings_file,
+                environment_selection_file=args.environment_selection_file,
             )
-        if args.command == "publish-ship":
-            return publish_ship(agent_id=args.agent_id)
         if args.command == "publish-remote-status":
             return publish_remote_status(agent_id=args.agent_id)
         if args.command == "publish-refresh-url":

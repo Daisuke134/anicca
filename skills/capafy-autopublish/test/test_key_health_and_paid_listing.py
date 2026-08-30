@@ -147,7 +147,6 @@ Structured script output from your brief.
                     str(BUILD_CONFIG),
                     str(listing),
                     "/tmp/icon.png",
-                    "https://capafy.ai/edit",
                 ],
                 text=True,
                 capture_output=True,
@@ -167,6 +166,40 @@ Structured script output from your brief.
         self.assertEqual(build.returncode, 0, build.stdout + build.stderr)
         config = json.loads(build.stdout)
         self.assertEqual(config["plans"], [{"cycle": "week", "price": "9.99", "cap": "20", "trial": None}])
+        self.assertNotIn("edit_url", config)
+        serialized = json.dumps(config, ensure_ascii=False)
+        self.assertNotIn("draftKey", serialized)
+        self.assertNotIn("token=", serialized)
+
+    def test_config_file_is_private_and_contains_no_browser_url(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            listing = root / "LISTING.md"
+            listing.write_text(self.listing("No Free Trial"), encoding="utf-8")
+            private_dir = root / "private"
+            private_dir.mkdir(mode=0o755)
+            output = private_dir / "cfg_one.json"
+            build = subprocess.run(
+                [sys.executable, str(BUILD_CONFIG), str(listing), "/tmp/icon.png", str(output)],
+                text=True,
+                capture_output=True,
+            )
+            self.assertEqual(build.returncode, 0, build.stdout + build.stderr)
+            self.assertEqual(stat.S_IMODE(output.stat().st_mode), 0o600)
+            self.assertEqual(stat.S_IMODE(private_dir.stat().st_mode), 0o700)
+            config = json.loads(output.read_text(encoding="utf-8"))
+            self.assertNotIn("edit_url", config)
+            serialized = json.dumps(config, ensure_ascii=False)
+            self.assertNotIn("draftKey", serialized)
+            self.assertNotIn("token=", serialized)
+
+    def test_config_builder_rejects_wrong_arity(self):
+        build = subprocess.run(
+            [sys.executable, str(BUILD_CONFIG)],
+            text=True,
+            capture_output=True,
+        )
+        self.assertNotEqual(build.returncode, 0)
 
     def test_canonical_paid_only_docs_have_no_enabled_free_trial_guidance(self):
         normative_patterns = (

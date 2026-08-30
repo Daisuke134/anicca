@@ -16,7 +16,8 @@ monitoring/deferred work.
 
 ## Guardrails
 - NEVER publish a listing that fails `lint_listing.py` (fail-closed).
-- NEVER claim success without `publish-remote-status` showing status=1 ∧ isConfirmedConfigKeys=1.
+- NEVER claim success without `publish-remote-status` showing `platform_status=1` ∧
+  `is_confirmed_config_keys=true`.
 - Do NOT spawn the Opus vcsdd-adversary (cost). Inventory was already adversary-verified when built.
   Your verification = lint (deterministic) + your own careful re-read against BEST_PRACTICES.md +
   the in-pipeline checks (price-tab GREEN, CP2 VERIFIED) + remote-status.
@@ -38,18 +39,12 @@ monitoring/deferred work.
    a. If reconcile flagged a `REVIEW_REJECTED` inventory item (e.g. O9 youtube) whose skill
       dir + icon + LISTING still exist → RE-PUBLISH it. **First check remote-status**
       (`vendor/capafy-publisher/packager.py publish-remote-status --agent-id <ID>` →
-      `.latest_version.isConfirmedSkills`/`.isConfirmedConfigKeys`): review_rejected almost
-      always means the CARD (price tab etc.) is already confirmed from the original submit —
-      Capafy's audit rejects on CONTENT/policy grounds, not on your card setup. **If both are
-      already `1`, do NOT run the agentic CP1 screenshot loop (step 5a/5b) at all** — it is
-      redundant, expensive (20-40+ tool calls), and is what blew run 2026-07-17 past
-      `--max-turns 40` with zero progress. Instead: re-read the LISTING against
-      BEST_PRACTICES.md §6 for any overclaim that may have caused the rejection, fix it if
-      needed, then go STRAIGHT to `scripts/publish_finish.sh <AGENT_ID> <skill-name>
-      <LISTING.md>` (step 5c) — it is deterministic, idempotent, and does ship+resubmit
-      (審査に提出) in ~10 tool calls (verified live 2026-07-17: agent 4014388606 went
-      review_rejected → status=1/auditStatus=1 this way, no browser screenshot loop needed).
-      Only fall back to the full a→b→c agentic CP1 flow if `isConfirmedSkills` is NOT `1`.
+      `.latest_version.platform_status`/`.is_confirmed_skills`/`.is_confirmed_config_keys`).
+      A rejected version is not eligible for direct resubmission: invoke
+      `scripts/publish_prepare.sh <skill-dir> <LISTING.md> <icon> <ID>` so Phase A and
+      `publish-init --selections-file` create a new version under the same Agent ID.
+      Then complete CP1 if `is_confirmed_skills` is not already true, and continue with
+      `publish_finish.sh`. Never point CP3 at the stale rejected package.
    b. Else the next canonical `skills/capafy/catalog/*/{SKILL.md,LISTING.md,icon.svg}` (legacy
       `$LIFE_MANAGER_STATE_HOME/features/capafy-*` remains readable during migration) whose title
       is not online, in-flight, or rejected under an existing Agent ID.
@@ -61,18 +56,27 @@ monitoring/deferred work.
    an overclaim the linter missed → STOP, report it. (This is your cheap adversary pass.)
 5. **Publish** (agentic CP1 — the card-save step needs YOUR eyes, not a brittle script):
    a. `scripts/publish_prepare.sh <skill-dir> <LISTING.md> <icon>` → prints `AGENT_ID=`,
-      `EDIT_URL=`, and the TARGET pricing. Deterministic, fail-closed on lint.
+      `EDIT_URL_FILE=`, and the TARGET pricing. Deterministic, fail-closed on lint.
    b. **Drive CP1 agentically** per `CP1_AGENTIC.md`: with `scripts/cp1_agent.py`, open the
-      EDIT_URL, LOOK at each screenshot, fix the 価格設定 plan cards to the target values
+      exact URL read from `EDIT_URL_FILE`, LOOK at each screenshot, fix the 価格設定 plan cards to the target values
       until the price tab is GREEN, then 下書きを保存 → 提出を確認. Loop until server
-      `publish-remote-status --agent-id <AGENT_ID>` shows `isConfirmedSkills=1`.
+      `publish-remote-status --agent-id <AGENT_ID>` shows
+      `latest_version.is_confirmed_skills=true`.
       Do NOT re-tune coordinates blindly — read the screenshot and decide each click.
-   c. `scripts/publish_finish.sh <AGENT_ID> <skill-name> <LISTING.md>` → configure → CP2
-      (key host) → ship → CP3 (審査に提出) → verify → ledger. Fail-closed: refuses unless
-      isConfirmedSkills=1, exits 0 only on status=1 ∧ isConfirmedConfigKeys=1.
-   (Legacy `publish_one.sh` uses the old monolithic drive_cp1.py — kept for reference only;
-   it breaks on pricing-UI changes. Use the a→b→c agentic flow.)
-6. **Verify**: confirm remote-status status=1 ∧ cfg=1 ∧ run_online. Screenshot the
+   c. `scripts/publish_finish.sh <AGENT_ID> <skill-name> <LISTING.md>` → verify CP1 →
+      ordinary `publish-submit --action prepare` and require strict same-Agent
+      `security_ready` →
+      `publish-submit --action continue_upload` exactly once → use the final review
+      page for CP2 key hosting → refresh (or reuse) the `publish` review page for CP3
+      exactly once → poll official status → ledger. The wrapper does not synthesize
+      deep-scan findings or retry an uncertain upload.
+      Fail-closed: refuses unless `is_confirmed_skills=true`, exits 0 only on
+      `platform_status=1 ∧ is_confirmed_config_keys=true`. If `package_uploaded` is already true, never
+      repeat the upload effect.
+   (Legacy `publish_one.sh` is an unsupported no-op shim kept only as a migration
+   reference. Use the a→b→c agentic flow.)
+6. **Verify**: confirm remote-status `platform_status=1` ∧
+   `is_confirmed_config_keys=true` ∧ `agent_type=run_online`. Screenshot the
    card-done / review-submitted page via CloakBrowser (:9222) as fresh evidence.
 7. **Record + report**: append to `state/published.jsonl`, `git add -A && commit && push` (main-internal),
    and send a Telegram summary (1 listing published OR why it stopped).

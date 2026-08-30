@@ -36,11 +36,12 @@ so the (x,y) in the state readout map directly to `click <x> <y>`.
 """
 import fcntl
 import json, os, signal, sys, time, urllib.request
-from urllib.parse import quote
+from urllib.parse import parse_qsl, quote, urlsplit
 from playwright.sync_api import sync_playwright
 
 SHOT = os.environ.get("CP1_SHOT", "/tmp/cp1_shot.png")
 CONNECT_TIMEOUT_MS = int(os.environ.get("CP1_CONNECT_TIMEOUT_MS", "15000"))
+SAFE_PAGE_VALUES = frozenset({"edit", "review", "credential", "card-done", "credential-done"})
 # CP1 is a sequence of small, agent-directed commands, but all of those commands
 # still share one Chromium CDP endpoint.  Serialise the *individual* CDP session:
 # a second command gets a bounded wait instead of opening another Playwright driver
@@ -161,9 +162,15 @@ STATE_JS = r"""
   const pt = [...document.querySelectorAll('button')].find(e => (e.textContent||'').trim() === '価格設定');
   if (pt) priceSvg = [...pt.querySelectorAll('svg')].map(s => getComputedStyle(s).color).join(',');
 
-  return { url: location.href, scrollY: Math.round(scrollY), vh: innerHeight,
+  const current = new URL(location.href);
+  const rawPage = current.searchParams.get('page') || '';
+  const safePages = new Set(['edit','review','credential','card-done','credential-done']);
+  const page = safePages.has(rawPage) ? rawPage : '';
+  const safeUrl = current.origin + current.pathname + (page ? '?page=' + encodeURIComponent(page) : '');
+  const cardDone = /card-done|credential/.test(current.pathname) || /credential(-done)?/.test(rawPage);
+  return { url: safeUrl, page, scrollY: Math.round(scrollY), vh: innerHeight,
            fields, buttons: buttons.slice(0, 60), markers: found,
-           toastOK, priceSvg, cardDone: /card-done|credential/.test(location.href) };
+           toastOK, priceSvg, cardDone };
 }
 """
 
@@ -173,6 +180,47 @@ def all_pages(br):
     for c in br.contexts:
         out.extend(c.pages)
     return out
+
+
+def _redact_url_for_output(value):
+    """Keep only a safe origin/path and allowlisted page enum in output state."""
+    try:
+        parts = urlsplit(str(value or ""))
+        host = str(parts.hostname or "").lower()
+        if parts.scheme not in {"http", "https"} or not host:
+            return "<redacted-url>"
+        authority = host
+        if parts.port is not None and not (
+            (parts.scheme == "http" and parts.port == 80)
+            or (parts.scheme == "https" and parts.port == 443)
+        ):
+            authority = f"{authority}:{parts.port}"
+        page = next(
+            (item for key, item in parse_qsl(parts.query, keep_blank_values=True) if key == "page" and item in SAFE_PAGE_VALUES),
+            "",
+        )
+        return f"{parts.scheme}://{authority}{parts.path}" + (f"?page={page}" if page else "")
+    except (TypeError, ValueError):
+        return "<redacted-url>"
+
+
+def _state_for_output(state):
+    if not isinstance(state, dict):
+        return state
+    redacted = dict(state)
+    if "url" in redacted:
+        redacted["url"] = _redact_url_for_output(redacted["url"])
+    return redacted
+
+
+def _toast_for_output(state):
+    safe_state = _state_for_output(state)
+    return {
+        "toastOK": safe_state.get("toastOK"),
+        "cardDone": safe_state.get("cardDone"),
+        "priceSvg": safe_state.get("priceSvg"),
+        "url": safe_state.get("url"),
+    }
 
 
 def get_page(br, prefer_capafy=True, create_ctx=None):
@@ -188,7 +236,7 @@ def get_page(br, prefer_capafy=True, create_ctx=None):
 
 
 def dump(pg, shot=True):
-    st = pg.evaluate(STATE_JS)
+    st = _state_for_output(pg.evaluate(STATE_JS))
     if shot:
         try:
             pg.screenshot(path=SHOT)
@@ -300,7 +348,7 @@ def _raw_click(pg, coords):
 
 
 def _raw_dump(pg, shot=True):
-    st = pg.evaluate("(" + STATE_JS + ")()")
+    st = _state_for_output(pg.evaluate("(" + STATE_JS + ")()"))
     if shot:
         try:
             import base64
@@ -417,8 +465,8 @@ def raw_main(cmd):
             text = sys.argv[2]; nth = int(sys.argv[3]) if len(sys.argv) > 3 else 0
             pg.evaluate("(" + """(a)=>{const[t,n]=a,els=[...document.querySelectorAll('*')].filter(e=>{const s=(e.textContent||'').replace(/\\s+/g,' ').trim(),r=e.getBoundingClientRect();return s===t&&r.height<60&&r.height>5});if(els[n])els[n].scrollIntoView({block:'center'})}""" + ")(" + json.dumps([text, nth]) + ")")
         elif cmd == "toast":
-            st = pg.evaluate("(" + STATE_JS + ")()")
-            print(json.dumps({"toastOK": st["toastOK"], "cardDone": st["cardDone"], "priceSvg": st["priceSvg"], "url": st["url"]}, ensure_ascii=False)); return
+            st = _state_for_output(pg.evaluate("(" + STATE_JS + ")()"))
+            print(json.dumps(_toast_for_output(st), ensure_ascii=False)); return
         elif cmd == "upload":
             _raw_upload(pg, int(sys.argv[2]), sys.argv[3])
         else:
@@ -553,9 +601,8 @@ def main():
             """(a)=>{const[t,n]=a;const els=[...document.querySelectorAll('*')].filter(e=>{const s=(e.textContent||'').replace(/\\s+/g,' ').trim();const r=e.getBoundingClientRect();return s===t&&r.height<60&&r.height>5;});if(els[n])els[n].scrollIntoView({block:'center'});}""",
                 [text, nth]); time.sleep(0.6); dump(pg)
         elif cmd == "toast":
-            st = pg.evaluate(STATE_JS)
-            print(json.dumps({"toastOK": st["toastOK"], "cardDone": st["cardDone"],
-                              "priceSvg": st["priceSvg"], "url": st["url"]}, ensure_ascii=False))
+            st = _state_for_output(pg.evaluate(STATE_JS))
+            print(json.dumps(_toast_for_output(st), ensure_ascii=False))
         else:
             print(f"unknown cmd: {cmd}"); sys.exit(2)
     finally:
