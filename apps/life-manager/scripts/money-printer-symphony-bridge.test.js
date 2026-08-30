@@ -8,6 +8,7 @@ const {
   buildMoneyPrinterIssue,
   createGhIssueClient,
   createIssueForPacket,
+  reconcileIssueForPacket,
 } = require("./money-printer-symphony-bridge.js");
 
 const SECRET = "s".repeat(64);
@@ -94,6 +95,27 @@ function fakeFetch(steps, calls = []) {
 
 function config(overrides = {}) {
   return { apiBaseUrl: BASE, secret: SECRET, tenantId: TENANT, ...overrides };
+}
+
+function issueRow(number, body = buildMoneyPrinterIssue(packet()).body, overrides = {}) {
+  return {
+    number,
+    url: `https://github.com/Daisuke134/life-manager-workrooms/issues/${number}`,
+    body,
+    ...overrides,
+  };
+}
+
+function mirroredIssue(issueRef = ISSUE_REF, overrides = {}) {
+  return {
+    tenant_id: TENANT,
+    dispatch_id: DISPATCH_ID,
+    job_id: JOB_ID,
+    round: 1,
+    status: "mirrored",
+    issue_ref: issueRef,
+    ...overrides,
+  };
 }
 
 test("idle claim returns frozen idle state and makes no guest request", async () => {
@@ -372,4 +394,263 @@ test("client failures never surface the raw error or secret", () => {
     () => issueClient.create(issue),
     (error) => error instanceof Error && error.message === "issue create failed" && !error.message.includes(SECRET),
   );
+});
+
+test("issue list adapter uses the fixed all-state bounded JSON query and returns safe rows", () => {
+  const calls = [];
+  const issueClient = createGhIssueClient({
+    execFileSync(command, args, options) {
+      calls.push({ command, args, options });
+      return JSON.stringify([issueRow(42, "existing")]);
+    },
+  });
+
+  assert.deepEqual(issueClient.list(), [issueRow(42, "existing")]);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].command, "gh");
+  assert.deepEqual(calls[0].args, [
+    "issue", "list", "-R", "Daisuke134/life-manager-workrooms",
+    "--state", "all", "--limit", "100", "--json", "number,url,body",
+  ]);
+  assert.equal(calls[0].options.encoding, "utf8");
+  assert.deepEqual(calls[0].options.stdio, ["ignore", "pipe", "pipe"]);
+});
+
+test("empty issue list creates once and posts the exact mirrored callback", async () => {
+  const calls = [];
+  let creates = 0;
+  const issueClient = {
+    list: () => [],
+    create(issue) {
+      creates += 1;
+      assert.equal(issue.body, buildMoneyPrinterIssue(packet()).body);
+      return ISSUE_URL;
+    },
+  };
+  const result = await reconcileIssueForPacket(config(), packet(), {
+    issueClient,
+    fetchImpl: fakeFetch([response(200, mirroredIssue())], calls),
+  });
+
+  assert.deepEqual(result, {
+    tenant_id: TENANT,
+    dispatch_id: DISPATCH_ID,
+    job_id: JOB_ID,
+    round: 1,
+    status: "mirrored",
+    issue_ref: ISSUE_REF,
+    created: true,
+  });
+  assert.equal(Object.isFrozen(result), true);
+  assert.equal(creates, 1);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].url, `${BASE}/api/internal/money-printer/symphony/issue`);
+  assert.equal(calls[0].init.method, "POST");
+  assert.deepEqual(JSON.parse(calls[0].init.body), {
+    tenant_id: TENANT,
+    dispatch_id: DISPATCH_ID,
+    issue_ref: ISSUE_REF,
+  });
+  assert.equal(calls[0].init.headers.authorization, `Bearer ${SECRET}`);
+});
+
+test("an existing exact marker reuses its canonical issue and never creates", async () => {
+  const calls = [];
+  let creates = 0;
+  const existingRef = "github-issue://Daisuke134/life-manager-workrooms/77";
+  const issueClient = {
+    list: () => [issueRow(77)],
+    create: () => { creates += 1; return ISSUE_URL; },
+  };
+  const result = await reconcileIssueForPacket(config(), packet(), {
+    issueClient,
+    fetchImpl: fakeFetch([response(200, mirroredIssue(existingRef))], calls),
+  });
+
+  assert.equal(result.issue_ref, existingRef);
+  assert.equal(result.created, false);
+  assert.equal(creates, 0);
+  assert.deepEqual(JSON.parse(calls[0].init.body), {
+    tenant_id: TENANT,
+    dispatch_id: DISPATCH_ID,
+    issue_ref: existingRef,
+  });
+});
+
+test("a single marker in a corrupt body stops before reuse, creation, or callback", async () => {
+  let creates = 0;
+  let callbacks = 0;
+  const corruptBody = [
+    "unrelated body",
+    `<!-- lm-dispatch:${DISPATCH_ID} -->`,
+    "corrupt payload",
+  ].join("\n");
+  const issueClient = {
+    list: () => [issueRow(42, corruptBody)],
+    create: () => { creates += 1; return ISSUE_URL; },
+  };
+  await assert.rejects(
+    reconcileIssueForPacket(config(), packet(), {
+      issueClient,
+      fetchImpl: async () => { callbacks += 1; return response(200, mirroredIssue()); },
+    }),
+    /conflict/i,
+  );
+  assert.equal(creates, 0);
+  assert.equal(callbacks, 0);
+});
+
+test("an exact callback replay remains safe and creates zero issues", async () => {
+  const calls = [];
+  let creates = 0;
+  const issueClient = {
+    list: () => [issueRow(42)],
+    create: () => { creates += 1; return ISSUE_URL; },
+  };
+  const fetchImpl = fakeFetch([
+    response(200, mirroredIssue()),
+    response(200, mirroredIssue()),
+  ], calls);
+
+  const first = await reconcileIssueForPacket(config(), packet(), { issueClient, fetchImpl });
+  const second = await reconcileIssueForPacket(config(), packet(), { issueClient, fetchImpl });
+  assert.equal(first.created, false);
+  assert.equal(second.created, false);
+  assert.equal(creates, 0);
+  assert.equal(calls.length, 2);
+});
+
+test("duplicate exact markers stop before callback or creation", async () => {
+  let creates = 0;
+  let callbacks = 0;
+  const issueClient = {
+    list: () => [issueRow(41), issueRow(42)],
+    create: () => { creates += 1; return ISSUE_URL; },
+  };
+  await assert.rejects(
+    reconcileIssueForPacket(config(), packet(), {
+      issueClient,
+      fetchImpl: async () => { callbacks += 1; return response(200, mirroredIssue()); },
+    }),
+    /conflict|duplicate/i,
+  );
+  assert.equal(creates, 0);
+  assert.equal(callbacks, 0);
+});
+
+test("a full list without the marker is unknown and stops without creation", async () => {
+  let creates = 0;
+  let callbacks = 0;
+  const rows = Array.from({ length: 100 }, (_, index) => issueRow(index + 1, "unrelated"));
+  const issueClient = {
+    list: () => rows,
+    create: () => { creates += 1; return ISSUE_URL; },
+  };
+  await assert.rejects(
+    reconcileIssueForPacket(config(), packet(), {
+      issueClient,
+      fetchImpl: async () => { callbacks += 1; return response(200, mirroredIssue()); },
+    }),
+    /uncertain|unknown/i,
+  );
+  assert.equal(creates, 0);
+  assert.equal(callbacks, 0);
+});
+
+test("malformed or foreign list rows stop all downstream effects", async () => {
+  for (const invalidRow of [
+    { ...issueRow(42), extra: SECRET },
+    issueRow(42, "body", { url: "https://github.com/other/repo/issues/42" }),
+    issueRow(0, "body"),
+  ]) {
+    let creates = 0;
+    let callbacks = 0;
+    const issueClient = {
+      list: () => [invalidRow],
+      create: () => { creates += 1; return ISSUE_URL; },
+    };
+    await assert.rejects(
+      reconcileIssueForPacket(config(), packet(), {
+        issueClient,
+        fetchImpl: async () => { callbacks += 1; return response(200, mirroredIssue()); },
+      }),
+      /issue list failed|invalid/i,
+    );
+    assert.equal(creates, 0);
+    assert.equal(callbacks, 0);
+  }
+});
+
+test("list transport and JSON failures stay generic with zero effects", async () => {
+  const failureClients = [
+    { list: () => { throw new Error(`gh output ${SECRET}`); }, create: () => { throw new Error("must not create"); } },
+    createGhIssueClient({ execFileSync: () => "not-json" }),
+  ];
+  for (const issueClient of failureClients) {
+    let callbacks = 0;
+    await assert.rejects(
+      reconcileIssueForPacket(config(), packet(), {
+        issueClient,
+        fetchImpl: async () => { callbacks += 1; return response(200, mirroredIssue()); },
+      }),
+      (error) => error instanceof Error && error.message === "issue list failed" && !error.message.includes(SECRET),
+    );
+    assert.equal(callbacks, 0);
+  }
+});
+
+test("successful create followed by callback failure is recovered by marker reuse", async () => {
+  const calls = [];
+  const rows = [];
+  let creates = 0;
+  const issueClient = {
+    list: () => rows,
+    create(issue) {
+      creates += 1;
+      rows.push(issueRow(42, issue.body));
+      return ISSUE_URL;
+    },
+  };
+  await assert.rejects(
+    reconcileIssueForPacket(config(), packet(), {
+      issueClient,
+      fetchImpl: fakeFetch([response(503, { error: SECRET })], calls),
+    }),
+    /bridge request failed/,
+  );
+  const result = await reconcileIssueForPacket(config(), packet(), {
+    issueClient,
+    fetchImpl: fakeFetch([response(200, mirroredIssue())], calls),
+  });
+  assert.equal(result.created, false);
+  assert.equal(creates, 1);
+  assert.equal(calls.length, 2);
+});
+
+test("foreign or stale callback readback is rejected without leaking private data", async () => {
+  for (const invalidReadback of [
+    mirroredIssue(ISSUE_REF, { tenant_id: FOREIGN_TENANT }),
+    mirroredIssue(ISSUE_REF, { dispatch_id: "e".repeat(64) }),
+    mirroredIssue(ISSUE_REF, { job_id: `goal:${FOREIGN_OPPORTUNITY_ID}` }),
+    mirroredIssue(ISSUE_REF, { round: 2 }),
+    mirroredIssue(ISSUE_REF, { status: "result_ready" }),
+    mirroredIssue("github-issue://Daisuke134/life-manager-workrooms/43"),
+    { ...mirroredIssue(), private_payload: SECRET },
+  ]) {
+    let creates = 0;
+    const issueClient = {
+      list: () => [issueRow(42)],
+      create: () => { creates += 1; return ISSUE_URL; },
+    };
+    await assert.rejects(
+      reconcileIssueForPacket(config(), packet(), {
+        issueClient,
+        fetchImpl: fakeFetch([response(200, invalidReadback)]),
+      }),
+      (error) => error instanceof Error
+        && error.message === "issue readback invalid"
+        && !error.message.includes(SECRET),
+    );
+    assert.equal(creates, 0);
+  }
 });
