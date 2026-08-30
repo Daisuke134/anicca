@@ -5,6 +5,72 @@ const test = require("node:test");
 
 const { fillLumaRegistrationForm } = require("./luma-form-fill.js");
 
+function dropdownFillFixture(optionCount = 1) {
+  const calls = [];
+  let roleLookups = 0;
+  let selected = "";
+  const control = {
+    async count() { return 1; },
+    async getAttribute(name) {
+      if (name === "name") return null;
+      if (name === "aria-required") return "true";
+      return null;
+    },
+    async click() { calls.push("dropdown-click"); },
+    async inputValue() { return selected; },
+  };
+  const controls = {
+    async count() { return 1; },
+    nth(index) { assert.equal(index, 0); return control; },
+  };
+  const option = {
+    async count() { return optionCount; },
+    async isVisible() { return true; },
+    async click() { calls.push("option-click"); selected = "Yes"; },
+  };
+  return {
+    calls,
+    roleLookups: () => roleLookups,
+    scope: {
+      locator(selector) {
+        assert.equal(selector, "[role='combobox'][aria-haspopup='listbox']");
+        return controls;
+      },
+      getByRole(role, options) {
+        roleLookups += 1;
+        assert.equal(role, "option");
+        assert.deepEqual(options, { name: "Yes", exact: true });
+        return option;
+      },
+    },
+  };
+}
+
+test("fills a synthetic Luma dropdown by exact visible option and inputValue readback", async () => {
+  const fixture = dropdownFillFixture();
+
+  const result = await fillLumaRegistrationForm(fixture.scope, {
+    status: "ready",
+    unresolved: [],
+    answers: [{ key: "luma_dropdown_0", control: "dropdown", value: "Yes" }],
+  });
+
+  assert.deepEqual(result, { status: "filled", field_count: 1 });
+  assert.deepEqual(fixture.calls, ["dropdown-click", "option-click"]);
+});
+
+test("fails closed when a synthetic Luma dropdown has ambiguous matching options", async () => {
+  const fixture = dropdownFillFixture(2);
+
+  await assert.rejects(() => fillLumaRegistrationForm(fixture.scope, {
+    status: "ready",
+    unresolved: [],
+    answers: [{ key: "luma_dropdown_0", control: "dropdown", value: "Yes" }],
+  }), /Luma registration form fill unavailable/);
+  assert.equal(fixture.roleLookups(), 1);
+  assert.deepEqual(fixture.calls, ["dropdown-click"]);
+});
+
 test("fills only exact planned controls and verifies every effect", async () => {
   const calls = [];
   const values = new Map();

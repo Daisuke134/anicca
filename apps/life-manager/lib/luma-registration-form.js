@@ -118,10 +118,14 @@ async function readLumaRegistrationForm(scope) {
         const required = appRequired(node);
         if (tag === "input" && ["hidden", "submit", "button", "image", "reset", "file"].includes(type)) continue;
         if (!required && !node.getAttribute("name")) continue;
+        const customDropdown = String(node.getAttribute("role") || "").trim().toLowerCase() === "combobox"
+          && String(node.getAttribute("aria-haspopup") || "").trim().toLowerCase() === "listbox";
+        const name = exactName(node);
+        if (customDropdown && required && !name) continue;
         const root = rootFor(node);
         add(node, {
           label: labelledText(node, root),
-          name: exactName(node),
+          name,
           tag,
           type: oneTimeCode ? "otp" : type,
           html_required: htmlRequired(node),
@@ -173,6 +177,24 @@ async function readLumaRegistrationForm(scope) {
           options: [],
         });
       }
+      const dropdowns = query("[role='combobox'][aria-haspopup='listbox']");
+      let dropdownOrdinal = 0;
+      for (const node of dropdowns) {
+        const required = appRequired(node);
+        const name = exactName(node, true);
+        if (!required || name) continue;
+        const root = rootFor(node);
+        add(node, {
+          label: labelledText(node, root),
+          name: `luma_dropdown_${dropdownOrdinal}`,
+          tag: node.tagName.toLowerCase(),
+          type: "dropdown",
+          html_required: htmlRequired(node),
+          app_required: required,
+          options: optionText(root.querySelectorAll("[role='option']")),
+        });
+        dropdownOrdinal += 1;
+      }
       const requiredControls = query(
         "[required], [aria-required='true'], [data-required], [data-app-required]",
       );
@@ -202,6 +224,7 @@ function controlFor(field) {
   const type = String(field.type || "").trim().toLowerCase();
   const tag = String(field.tag || "").trim().toLowerCase();
   if (type === "tel") return "phone";
+  if (type === "dropdown") return "dropdown";
   if (type === "multi-select") return "multi_select";
   if (type === "checkbox") return "checkbox";
   if (type === "radio") return "radio";
