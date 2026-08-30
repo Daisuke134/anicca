@@ -11,11 +11,28 @@ const {
   EN_AFFIRMATION_LANE,
   EN_SLIDESHOW_TIKTOK_LANE,
   JA_MAIN_TIKTOK_LANE,
+  assertMarketingCarouselJpeg,
   buildMarketingNativeCarouselPublicationJob,
   createMarketingNativeCarouselPublicationLoopAdapter,
   executeMarketingNativeCarouselPublicationJob,
   verifyMarketingNativeCarouselPublicationReceipt,
 } = require("./marketing-native-carousel-publication-adapter.js");
+
+test("TikTok carousel JPEG width above 1080 fails before provider access", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "lm-carousel-size-"));
+  const jpeg = (width, height) => Buffer.from([
+    0xff, 0xd8, 0xff, 0xc0, 0x00, 0x11, 0x08,
+    (height >> 8) & 0xff, height & 0xff, (width >> 8) & 0xff, width & 0xff,
+    0x03, 0x01, 0x11, 0x00, 0x02, 0x11, 0x00, 0x03, 0x11, 0x00,
+    0xff, 0xd9,
+  ]);
+  const oversized = path.join(root, "oversized.jpg");
+  const accepted = path.join(root, "accepted.jpg");
+  fs.writeFileSync(oversized, jpeg(1125, 1202));
+  fs.writeFileSync(accepted, jpeg(1080, 1920));
+  assert.throws(() => assertMarketingCarouselJpeg(oversized, "oversized", { maxWidth: 1080 }), /width/i);
+  assert.doesNotThrow(() => assertMarketingCarouselJpeg(accepted, "accepted", { maxWidth: 1080 }));
+});
 
 test("JA main TikTok lane is the exact recovered Larry sunset carousel", () => {
   const lane = JA_MAIN_TIKTOK_LANE;
@@ -30,7 +47,7 @@ test("JA main TikTok lane is the exact recovered Larry sunset carousel", () => {
   assert.equal(lane.renderer, "larry");
   assert.equal(lane.formatId, "larry");
   assert.equal(lane.form, "affirmation-carousel");
-  assert.equal(lane.mediaRefs[0], "object://sha256/16a21cd861d535504bb966a65de5f25f067cb106dc7ad7bc5e9bd89413e4dc57");
+  assert.equal(lane.mediaRefs[0], "object://sha256/20d53f17ebcfa33d0952dc69c026c4580f9c1552e1b7329acbe4e17c33b83c97");
   assert.equal(value.input_refs.tiktok_integration_ref, "integration://postiz/tiktok/cmp9sdev5012voh0y58qs45xc");
   assert.throws(() => buildMarketingNativeCarouselPublicationJob({
     tenantId: "dais-local", productId: lane.productId, formatId: "reelclaw-card", form: "nudge-card",
