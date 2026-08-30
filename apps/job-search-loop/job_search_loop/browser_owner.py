@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import time
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -41,12 +42,26 @@ def probe_cdp(endpoint: str) -> dict[str, str]:
     }
 
 
+def wait_for_cdp(
+    endpoint: str, *, timeout_seconds: float = 30.0, retry_interval_seconds: float = 0.5
+) -> dict[str, str]:
+    deadline = time.monotonic() + timeout_seconds
+    result = probe_cdp(endpoint)
+    while result["status"] != "ready":
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            return result
+        time.sleep(min(retry_interval_seconds, remaining))
+        result = probe_cdp(endpoint)
+    return result
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--endpoint", default="http://127.0.0.1:9222")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
-    result = probe_cdp(args.endpoint)
+    result = wait_for_cdp(args.endpoint)
     args.output.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     args.output.write_text(
         json.dumps(result, ensure_ascii=False, indent=2) + "\n",
