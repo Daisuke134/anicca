@@ -11,6 +11,8 @@ const MIGRATIONS = [
   ["OPPORTUNITY_MIGRATION_B64", "migrations/2026-08-29-lm-money-printer-opportunities.sql"],
   ["HUMAN_MIGRATION_B64", "migrations/2026-08-29-lm-money-printer-human-tasks.sql"],
   ["SYMPHONY_MIGRATION_B64", "migrations/2026-08-30-lm-symphony-dispatches.sql"],
+  ["CLOSE_RECOVERY_MIGRATION_B64", "migrations/2026-08-31-lm-symphony-close-recovery.sql"],
+  ["SYMPHONY_CAPACITY_MIGRATION_B64", "migrations/2026-08-31-lm-symphony-capacity-fairness.sql"],
 ];
 
 function migration([envName, relativePath]) {
@@ -35,12 +37,40 @@ function opportunity(tenantId, sourceUrl, title) {
   };
 }
 
+function insertRacePair(tenantId) {
+  for (let index = 0; index < 256; index += 1) {
+    const left = opportunity(tenantId, `https://public.example/symphony-insert-race-a-${index}`, "Insert race A");
+    const right = opportunity(tenantId, `https://public.example/symphony-insert-race-b-${index}`, "Insert race B");
+    if (left.opportunityId !== right.opportunityId) {
+      return left.opportunityId < right.opportunityId
+        ? { low: left, high: right }
+        : { low: right, high: left };
+    }
+  }
+  throw new Error("could not generate ordered insert-race opportunity IDs");
+}
+
 function stableJson(value) {
   if (Array.isArray(value)) return `[${value.map(stableJson).join(",")}]`;
   if (value && typeof value === "object") {
     return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableJson(value[key])}`).join(",")}}`;
   }
   return JSON.stringify(value);
+}
+
+async function concurrentClaimRows(clients, tenantId) {
+  let committed = false;
+  try {
+    await Promise.all(clients.map((client) => client.query("BEGIN")));
+    const results = await Promise.all(clients.map((client) => (
+      client.query("SELECT * FROM public.claim_lm_symphony_job($1)", [tenantId])
+    )));
+    await Promise.all(clients.map((client) => client.query("COMMIT")));
+    committed = true;
+    return results.flatMap((result) => result.rows);
+  } finally {
+    if (!committed) await Promise.allSettled(clients.map((client) => client.query("ROLLBACK")));
+  }
 }
 
 async function createOpportunity(client, value) {
@@ -80,14 +110,20 @@ async function main() {
   const admin = new Client({ connectionString: source });
   let primary;
   let contender;
+  let thirdContender;
   await admin.connect();
   try {
     await admin.query(`CREATE DATABASE ${database}`);
     const isolated = databaseUrl(source, database);
     primary = new Client({ connectionString: isolated });
     contender = new Client({ connectionString: isolated });
-    await Promise.all([primary.connect(), contender.connect()]);
+    thirdContender = new Client({ connectionString: isolated });
+    await Promise.all([primary.connect(), contender.connect(), thirdContender.connect()]);
     await primary.query("CREATE EXTENSION IF NOT EXISTS pgcrypto");
+    await primary.query("CREATE TABLE public.lm_users (uid text PRIMARY KEY)");
+    await primary.query(
+      "INSERT INTO public.lm_users (uid) VALUES ('tenant-a'), ('tenant-race'), ('tenant-capacity'), ('tenant-insert-race')",
+    );
     for (const item of MIGRATIONS) await primary.query(migration(item));
 
     const tenant = "tenant-a";
@@ -96,11 +132,7 @@ async function main() {
     const completed = opportunity(tenant, "https://public.example/symphony-completed", "Completed work");
     await createOpportunity(primary, completed);
 
-    const claims = await Promise.all([
-      primary.query("SELECT * FROM public.claim_lm_symphony_job($1)", [tenant]),
-      contender.query("SELECT * FROM public.claim_lm_symphony_job($1)", [tenant]),
-    ]);
-    const claimedRows = claims.flatMap((result) => result.rows);
+    const claimedRows = await concurrentClaimRows([primary, contender], tenant);
     if (claimedRows.length !== 1) throw new Error(`claim winner count ${claimedRows.length}`);
     const first = claimedRows[0];
     if (first.job_id !== completed.jobId || first.round !== 1 || first.status !== "claimed") {
@@ -219,6 +251,20 @@ async function main() {
       || stableJson(completedResultReplayAfterConsume.rows[0].result_payload) !== stableJson(completedPayload)) {
       throw new Error(`consumed result replay readback mismatch ${JSON.stringify(completedResultReplayAfterConsume.rows[0])}`);
     }
+    const consumedRecovery = (await primary.query(
+      "SELECT * FROM public.claim_lm_symphony_job($1)", [tenant],
+    )).rows[0];
+    if (!consumedRecovery || consumedRecovery.dispatch_id !== first.dispatch_id
+      || consumedRecovery.status !== "consumed") {
+      throw new Error("unclosed consumed dispatch recovery mismatch");
+    }
+    const closedFirst = (await primary.query(
+      "SELECT * FROM public.ack_lm_symphony_issue_closed($1,$2,$3,$4,$5)",
+      [tenant, first.dispatch_id, issue1, resultRef1, completedHash],
+    )).rows[0];
+    if (!closedFirst || closedFirst.status !== "consumed" || !closedFirst.issue_closed_at) {
+      throw new Error("completed dispatch close ack mismatch");
+    }
     await expectReject(
       () => primary.query("SELECT * FROM public.consume_lm_symphony_completed($1,$2)", [tenant, first.dispatch_id]),
       /symphony completion conflict/i,
@@ -265,7 +311,141 @@ async function main() {
       /immutable/i,
     );
 
-    await primary.query("SELECT * FROM public.record_lm_symphony_issue($1,$2,$3)", [tenant, second.dispatch_id, "github-issue://Daisuke134/life-manager-workrooms/3"]);
+    const capacityTenant = "tenant-capacity";
+    const capacityFirst = opportunity(capacityTenant, "https://public.example/symphony-capacity-first", "Capacity first");
+    const capacitySecond = opportunity(capacityTenant, "https://public.example/symphony-capacity-second", "Capacity second");
+    const capacityThird = opportunity(capacityTenant, "https://public.example/symphony-capacity-third", "Capacity third");
+    await createOpportunity(primary, capacityFirst);
+    await createOpportunity(primary, capacitySecond);
+    await createOpportunity(primary, capacityThird);
+    const capacityInitialRows = await concurrentClaimRows(
+      [primary, contender, thirdContender], capacityTenant,
+    );
+    if (capacityInitialRows.length !== 1
+      || new Set(capacityInitialRows.map((row) => row.dispatch_id)).size !== 1
+      || capacityInitialRows[0].status !== "claimed") {
+      throw new Error(`capacity concurrent claim winner count ${capacityInitialRows.length}`);
+    }
+    const capacityFirstDispatch = capacityInitialRows[0];
+    const capacityInitialState = (await primary.query(`
+      SELECT
+        (SELECT count(*)::int FROM public.lm_symphony_dispatches WHERE tenant_id=$1) AS dispatch_count,
+        (SELECT count(*)::int FROM public.lm_runtime_jobs WHERE tenant_id=$1 AND status='queued') AS queued_count
+    `, [capacityTenant])).rows[0];
+    if (JSON.stringify(capacityInitialState) !== JSON.stringify({ dispatch_count: 1, queued_count: 2 })) {
+      throw new Error(`capacity initial state mismatch ${JSON.stringify(capacityInitialState)}`);
+    }
+    const capacityRecoveryRows = await concurrentClaimRows(
+      [primary, contender, thirdContender], capacityTenant,
+    );
+    if (capacityRecoveryRows.length !== 1
+      || capacityRecoveryRows[0].dispatch_id !== capacityFirstDispatch.dispatch_id) {
+      throw new Error(`capacity claimed recovery count ${capacityRecoveryRows.length}`);
+    }
+    const capacityIssue1 = "github-issue://Daisuke134/life-manager-workrooms/11";
+    const capacityMirrored1 = (await primary.query(
+      "SELECT * FROM public.record_lm_symphony_issue($1,$2,$3)",
+      [capacityTenant, capacityFirstDispatch.dispatch_id, capacityIssue1],
+    )).rows[0];
+    if (!capacityMirrored1 || capacityMirrored1.status !== "mirrored") {
+      throw new Error("capacity first mirror mismatch");
+    }
+    const capacitySecondDispatch = (await primary.query(
+      "SELECT * FROM public.claim_lm_symphony_job($1)", [capacityTenant],
+    )).rows[0];
+    if (!capacitySecondDispatch || capacitySecondDispatch.job_id !== capacitySecond.jobId
+      || capacitySecondDispatch.dispatch_id === capacityFirstDispatch.dispatch_id
+      || capacitySecondDispatch.status !== "claimed") {
+      throw new Error("queued job was not claimed below capacity");
+    }
+    const capacityIssue2 = "github-issue://Daisuke134/life-manager-workrooms/12";
+    const capacityMirrored2 = (await primary.query(
+      "SELECT * FROM public.record_lm_symphony_issue($1,$2,$3)",
+      [capacityTenant, capacitySecondDispatch.dispatch_id, capacityIssue2],
+    )).rows[0];
+    if (!capacityMirrored2 || capacityMirrored2.status !== "mirrored") {
+      throw new Error("capacity second mirror mismatch");
+    }
+    const capacityMirroredRows = await concurrentClaimRows(
+      [primary, contender, thirdContender], capacityTenant,
+    );
+    if (capacityMirroredRows.length !== 1
+      || capacityMirroredRows[0].status !== "mirrored"
+      || !capacityMirroredRows[0].last_polled_at) {
+      throw new Error(`mirrored concurrent poll count ${capacityMirroredRows.length}`);
+    }
+    const capacityOtherPoll = (await primary.query(
+      "SELECT * FROM public.claim_lm_symphony_job($1)", [capacityTenant],
+    )).rows[0];
+    if (!capacityOtherPoll || capacityOtherPoll.status !== "mirrored"
+      || capacityOtherPoll.dispatch_id === capacityMirroredRows[0].dispatch_id
+      || !capacityOtherPoll.last_polled_at) {
+      throw new Error("mirrored sequential poll did not return the other dispatch");
+    }
+    const capacityAtLimit = (await primary.query(
+      "SELECT * FROM public.claim_lm_symphony_job($1)", [capacityTenant],
+    )).rows[0];
+    if (!capacityAtLimit || capacityAtLimit.job_id === capacityThird.jobId) {
+      throw new Error("third queued job bypassed open dispatch capacity");
+    }
+    const capacityState = (await primary.query(`
+      SELECT
+        (SELECT count(*)::int FROM public.lm_symphony_dispatches
+         WHERE tenant_id=$1 AND status IN ('claimed','mirrored','result_ready','consumed')
+           AND issue_closed_at IS NULL) AS open_count,
+        (SELECT status FROM public.lm_runtime_jobs WHERE tenant_id=$1 AND job_id=$2) AS third_job_status,
+        (SELECT count(*)::int FROM public.lm_symphony_dispatches
+         WHERE tenant_id=$1 AND job_id=$2) AS third_dispatch_count
+    `, [capacityTenant, capacityThird.jobId])).rows[0];
+    if (JSON.stringify(capacityState) !== JSON.stringify({
+      open_count: 2, third_job_status: "queued", third_dispatch_count: 0,
+    })) {
+      throw new Error(`capacity state mismatch ${JSON.stringify(capacityState)}`);
+    }
+
+    const insertRaceTenant = "tenant-insert-race";
+    const insertRace = insertRacePair(insertRaceTenant);
+    await createOpportunity(primary, insertRace.high);
+    await primary.query("BEGIN");
+    try {
+      const firstInsertClaim = (await primary.query(
+        "SELECT * FROM public.claim_lm_symphony_job($1)", [insertRaceTenant],
+      )).rows[0];
+      if (!firstInsertClaim || firstInsertClaim.job_id !== insertRace.high.jobId) {
+        throw new Error("insert-race high opportunity was not first claim");
+      }
+      await createOpportunity(contender, insertRace.low);
+      const blockedInsertClaim = await contender.query(
+        "SELECT * FROM public.claim_lm_symphony_job($1)", [insertRaceTenant],
+      );
+      if (blockedInsertClaim.rowCount !== 0) {
+        throw new Error(`insert-race claim bypassed tenant mutex: ${blockedInsertClaim.rowCount}`);
+      }
+    } finally {
+      await primary.query("COMMIT");
+    }
+    const resumedInsertClaim = (await contender.query(
+      "SELECT * FROM public.claim_lm_symphony_job($1)", [insertRaceTenant],
+    )).rows[0];
+    if (!resumedInsertClaim || resumedInsertClaim.dispatch_id === undefined
+      || resumedInsertClaim.job_id !== insertRace.high.jobId
+      || resumedInsertClaim.status !== "claimed") {
+      throw new Error("insert-race recovery mismatch");
+    }
+    const insertRaceState = (await primary.query(`
+      SELECT
+        (SELECT count(*)::int FROM public.lm_symphony_dispatches WHERE tenant_id=$1) AS dispatch_count,
+        (SELECT status FROM public.lm_runtime_jobs WHERE tenant_id=$1 AND job_id=$2) AS low_job_status,
+        (SELECT count(*)::int FROM public.lm_symphony_dispatches WHERE tenant_id=$1 AND job_id=$2) AS low_dispatch_count
+    `, [insertRaceTenant, insertRace.low.jobId])).rows[0];
+    if (JSON.stringify(insertRaceState) !== JSON.stringify({
+      dispatch_count: 1, low_job_status: "queued", low_dispatch_count: 0,
+    })) {
+      throw new Error(`insert-race state mismatch ${JSON.stringify(insertRaceState)}`);
+    }
+
+    const humanIssue = "github-issue://Daisuke134/life-manager-workrooms/3";
+    await primary.query("SELECT * FROM public.record_lm_symphony_issue($1,$2,$3)", [tenant, second.dispatch_id, humanIssue]);
     const humanPayload = {
       protocol: "LM_RESULT_V1", tenant_id: tenant, dispatch_id: second.dispatch_id,
       job_id: second.job_id, status: "needs_human", execution_id: "codex-human-1",
@@ -274,11 +454,19 @@ async function main() {
       required_format: { type: "confirmation" },
     };
     const humanHash = createHash("sha256").update(JSON.stringify(humanPayload), "utf8").digest("hex");
-    await primary.query("SELECT * FROM public.record_lm_symphony_result($1,$2,$3,$4,$5::jsonb)", [tenant, second.dispatch_id, "github-comment://Daisuke134/life-manager-workrooms/3/4", humanHash, humanPayload]);
+    const humanResultRef = "github-comment://Daisuke134/life-manager-workrooms/3/4";
+    await primary.query("SELECT * FROM public.record_lm_symphony_result($1,$2,$3,$4,$5::jsonb)", [tenant, second.dispatch_id, humanResultRef, humanHash, humanPayload]);
     const task = (await primary.query("SELECT * FROM public.consume_lm_symphony_human_task($1,$2)", [tenant, second.dispatch_id])).rows[0];
     if (task.status !== "open" || task.job_id !== second.job_id) throw new Error("human task missing");
     const waiting = (await primary.query("SELECT status,attempt FROM public.lm_runtime_jobs WHERE tenant_id=$1 AND job_id=$2", [tenant, second.job_id])).rows[0];
     if (waiting.status !== "waiting_human" || waiting.attempt !== 0) throw new Error("human wait state mismatch");
+    const closedHuman = (await primary.query(
+      "SELECT * FROM public.ack_lm_symphony_issue_closed($1,$2,$3,$4,$5)",
+      [tenant, second.dispatch_id, humanIssue, humanResultRef, humanHash],
+    )).rows[0];
+    if (!closedHuman || closedHuman.status !== "consumed" || !closedHuman.issue_closed_at) {
+      throw new Error("human dispatch close ack mismatch");
+    }
     await primary.query("SELECT * FROM public.answer_lm_human_task($1,$2,$3,$4)", [tenant, task.task_id, task.version, "vault-answer://tenant-a/interview-complete"]);
     const nextRound = (await primary.query("SELECT * FROM public.claim_lm_symphony_job($1)", [tenant])).rows[0];
     if (nextRound.job_id !== second.job_id || nextRound.round !== 2) throw new Error("same-job next round mismatch");
@@ -293,7 +481,7 @@ async function main() {
     `, [tenant, second.job_id])).rows[0];
     const humanResultReplay = await primary.query(
       "SELECT * FROM public.record_lm_symphony_result($1,$2,$3,$4,$5::jsonb)",
-      [tenant, second.dispatch_id, "github-comment://Daisuke134/life-manager-workrooms/3/4", humanHash, humanPayload],
+      [tenant, second.dispatch_id, humanResultRef, humanHash, humanPayload],
     );
     if (humanResultReplay.rowCount !== 1 || humanResultReplay.rows[0].status !== "consumed"
       || humanResultReplay.rows[0].result_hash !== humanHash
@@ -333,10 +521,12 @@ async function main() {
       issue_replay_duplicates: 0, result_replay_duplicates: 0,
       completed_receipts: 1, receipt_mutation: "rejected", consume_replay: "rejected",
       old_result_replay: "consumed_readback",
+      capacity_open_count: capacityState.open_count, capacity_third_job: capacityState.third_job_status,
+      mirrored_fair_poll_distinct: 2,
       human_task_status: "answered", same_job_round: 2,
     }));
   } finally {
-    await Promise.allSettled([primary?.end(), contender?.end()]);
+    await Promise.allSettled([primary?.end(), contender?.end(), thirdContender?.end()]);
     await admin.query("SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname=$1", [database]).catch(() => {});
     await admin.query(`DROP DATABASE IF EXISTS ${database}`).catch(() => {});
     await admin.end();
