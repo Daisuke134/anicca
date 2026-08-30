@@ -1337,7 +1337,7 @@ Soft targetは一sliceあたりproduction 3 files以下 / 100 LOC以下である
 | B07 | DevTools専用の別demo経路を作らない | superseded by single-browser scope。最終録画と同じbrowser pathだけを使用 |
 | B08 | browser evidenceを最終recording runへ束縛する | client、version、URL、observed_at、tool list、video/frame refsを一つのevidence recordへ残す |
 | B09 | open HumanTaskとOpportunityのprojection relationをpatch map B09a–B09dどおり直す | code-verified: focused 61/61、adversarial `ship`。live evidenceはB12でmetric 1、column card 1、Found same card 0、workroom task 1、private fields 0を確認 |
-| B10 | selected workroomをnormal browser UIへ追加する | one card clickでtitle/status/activity/artifact/receipt safe refs。cross-workroom 0 |
+| B10 | selected workroomをnormal browser UIへ追加する | code-verified: card button→same-origin existing GET→title/status/current safe activity、mixed workroom/private field 0、stale response overwrite 0、focused 82/82、fresh adversarial `ship`。live evidenceはB12 |
 | B11 | WebMCP call activityをvisible UIへ追加する | tool name + running/succeeded/failedだけを表示しinput/result/secret 0 |
 | B12 | 既存browser pathで唯一のfull production E2Eを録画しながら実行する | initial four、open task時five、visible board/workroom/call logとstructured result一致。別browserで再実行しない |
 
@@ -1471,4 +1471,4 @@ Soft targetは一sliceあたりproduction 3 files以下 / 100 LOC以下である
 
 ### 18.13 Immediate next atom
 
-`B10`だけを次に実行する。B09はfocused 61/61とfresh adversarial `ship`まで完了し、production readbackはB12の唯一のrecording runへ予約する。B10–B11が揃うまでfull browser E2Eを実行せず、新browser harnessを作らない。各atom完了時にこのSectionのstateとSection 17の対応uncertaintyを同じcommitで更新する。
+`B11`だけを次に実行する。B09–B10はfocused checksとfresh adversarial `ship`まで完了し、production readbackはB12の唯一のrecording runへ予約する。B11が揃うまでfull browser E2Eを実行せず、新browser harnessを作らない。各atom完了時にこのSectionのstateとSection 17の対応uncertaintyを同じcommitで更新する。
