@@ -290,19 +290,122 @@ PY
   echo "article-resume: prepublication adoption selection failed closed" >>"$LOG"
   exit 1
 }
+PREVALIDATED_QUALITY_PLAN=""
 if [ -n "$ADOPTION_RUN_ID" ]; then
   ADOPTION_RUN_DIR="$STATE_DIR/runs/$ADOPTION_RUN_ID"
-  ADOPTION_RESULT="$(python3 "$GENERATION_STATE_CONTROL" \
-    --run-dir "$ADOPTION_RUN_DIR" --run-id "$ADOPTION_RUN_ID" \
-    --prompt-file "$ADOPTION_RUN_DIR/article-daily-prompt.txt" \
-    --ledger "$QUALITY_LEDGER" adopt-prepublication 2>/dev/null)" || {
-    echo "article-resume: prepublication adoption failed closed run=$ADOPTION_RUN_ID" >>"$LOG"
+  QUALITY_REPAIR_STATE_PATH="$ADOPTION_RUN_DIR/gates/quality-repair-state.json"
+  GENERATION_STATUS="$(jq -r '.status // empty' \
+    "$ADOPTION_RUN_DIR/gates/generation-state.json" 2>/dev/null || true)"
+  QUALITY_REPAIR_STATE_PRESENT=0
+  if [ -e "$QUALITY_REPAIR_STATE_PATH" ] || [ -L "$QUALITY_REPAIR_STATE_PATH" ]; then
+    QUALITY_REPAIR_STATE_PRESENT=1
+  fi
+  if [ "$QUALITY_REPAIR_STATE_PRESENT" -eq 1 ] \
+    && [ "$GENERATION_STATUS" != "quality-repair-ready" ]; then
+    echo "article-resume: quality repair state conflicts with generation status run=$ADOPTION_RUN_ID" >>"$LOG"
     exit 1
-  }
-  ADOPTION_ACTION="$(printf '%s' "$ADOPTION_RESULT" | jq -r '.action // empty')"
-  ADOPTION_STATUS="$(printf '%s' "$ADOPTION_RESULT" | jq -r '.status // empty')"
+  fi
+  if [ "$GENERATION_STATUS" = "quality-repair-ready" ] \
+    && [ "$QUALITY_REPAIR_STATE_PRESENT" -eq 1 ]; then
+    if [ -L "$QUALITY_REPAIR_STATE_PATH" ] \
+      || [ ! -f "$QUALITY_REPAIR_STATE_PATH" ] \
+      || ! jq -e 'type == "object" and length > 0' \
+        "$QUALITY_REPAIR_STATE_PATH" >/dev/null 2>>"$LOG"; then
+      echo "article-resume: quality repair state invalid; adoption blocked run=$ADOPTION_RUN_ID" >>"$LOG"
+      exit 1
+    fi
+    ADOPTION_ACTION="quality-repair-state-present"
+    ADOPTION_STATUS="quality-repair-ready"
+    PREVALIDATED_QUALITY_PLAN_RC=0
+    PREVALIDATED_QUALITY_PLAN="$(python3 "$QUALITY_REPAIR_CONTROL" plan \
+      --run-dir "$ADOPTION_RUN_DIR" --ledger "$QUALITY_LEDGER" 2>>"$LOG")" \
+      || PREVALIDATED_QUALITY_PLAN_RC=$?
+    if ! PREVALIDATED_STATUS="$(printf '%s' "$PREVALIDATED_QUALITY_PLAN" | jq -r '.status // empty' 2>/dev/null)" \
+      || ! PREVALIDATED_REASON="$(printf '%s' "$PREVALIDATED_QUALITY_PLAN" | jq -r '.reason // empty' 2>/dev/null)"; then
+      echo "article-resume: quality repair prevalidation result malformed run=$ADOPTION_RUN_ID" >>"$LOG"
+      exit 1
+    fi
+    if [ "$PREVALIDATED_QUALITY_PLAN_RC" -eq 0 ] \
+      && [ "$PREVALIDATED_STATUS" = "READY" ]; then
+      if ! jq -e \
+        --arg run_id "$ADOPTION_RUN_ID" --arg run_dir "$ADOPTION_RUN_DIR" \
+        --slurpfile repair_state "$QUALITY_REPAIR_STATE_PATH" \
+        '(.status == "READY")
+         and (.run_id == $run_id)
+         and (.run_dir == $run_dir)
+         and ($repair_state | length == 1)
+         and ($repair_state[0] | type == "object")
+         and ((.repair_epoch | type) == "number")
+         and ((.repair_epoch | floor) == .repair_epoch)
+         and (.repair_epoch >= 0)
+         and ((.attempts | type) == "number")
+         and ((.attempts | floor) == .attempts)
+         and (.attempts >= 0)
+         and (($repair_state[0].repair_epoch | type) == "number")
+         and (($repair_state[0].repair_epoch | floor) == $repair_state[0].repair_epoch)
+         and (($repair_state[0].repair_epoch) >= 0)
+         and (($repair_state[0].attempts | type) == "number")
+         and (($repair_state[0].attempts | floor) == $repair_state[0].attempts)
+         and (($repair_state[0].attempts) >= 0)
+         and (.repair_epoch == $repair_state[0].repair_epoch)
+         and (.attempts == $repair_state[0].attempts)
+         and (
+           (.reason == "structurally-exhausted-quality-evaluations"
+            and ((keys | sort) == ["attempts","reason","repair_epoch","run_dir","run_id","status"])
+            and (($repair_state[0].status | type) == "string"))
+           or
+           (.reason == "prepared-quality-repair"
+            and ((keys | sort) == ["attempts","prompt_path","prompt_sha256","reason","repair_epoch","run_dir","run_id","status"])
+            and (($repair_state[0].prompt_path | type) == "string")
+            and (($repair_state[0].prompt_sha256 | type) == "string")
+            and (($repair_state[0].prompt_sha256 | test("^[0-9a-f]{64}$")))
+            and ((.prompt_path | type) == "string")
+            and ((.prompt_sha256 | type) == "string")
+            and ((.prompt_sha256 | test("^[0-9a-f]{64}$")))
+            and (.prompt_path == $repair_state[0].prompt_path)
+            and (.prompt_sha256 == $repair_state[0].prompt_sha256))
+           or
+           (.reason == "orphaned-quality-repair"
+            and ((keys | sort) == ["attempts","orphaned_owner_pid","prompt_path","prompt_sha256","reason","repair_epoch","run_dir","run_id","status"])
+            and (($repair_state[0].prompt_path | type) == "string")
+            and (($repair_state[0].prompt_sha256 | type) == "string")
+            and (($repair_state[0].prompt_sha256 | test("^[0-9a-f]{64}$")))
+            and ((.prompt_path | type) == "string")
+            and ((.prompt_sha256 | type) == "string")
+            and ((.prompt_sha256 | test("^[0-9a-f]{64}$")))
+            and (.prompt_path == $repair_state[0].prompt_path)
+            and (.prompt_sha256 == $repair_state[0].prompt_sha256)
+            and ((.orphaned_owner_pid | type) == "number")
+            and ((.orphaned_owner_pid | floor) == .orphaned_owner_pid)
+            and (.orphaned_owner_pid > 0))
+         )' \
+        <<<"$PREVALIDATED_QUALITY_PLAN" >/dev/null; then
+        echo "article-resume: quality repair prevalidation identity invalid run=$ADOPTION_RUN_ID" >>"$LOG"
+        exit 1
+      fi
+    elif [ "$PREVALIDATED_QUALITY_PLAN_RC" -eq 1 ] \
+      && [ "$PREVALIDATED_STATUS" = "REFUSED" ] \
+      && [ "$PREVALIDATED_REASON" = "quality-repair-already-terminal-blocked" ] \
+      && jq -e '((keys | sort) == ["reason","status"])' \
+        <<<"$PREVALIDATED_QUALITY_PLAN" >/dev/null 2>&1; then
+      :
+    else
+      echo "article-resume: quality repair prevalidation refused run=$ADOPTION_RUN_ID reason=$PREVALIDATED_REASON rc=$PREVALIDATED_QUALITY_PLAN_RC" >>"$LOG"
+      exit 1
+    fi
+  else
+    ADOPTION_RESULT="$(python3 "$GENERATION_STATE_CONTROL" \
+      --run-dir "$ADOPTION_RUN_DIR" --run-id "$ADOPTION_RUN_ID" \
+      --prompt-file "$ADOPTION_RUN_DIR/article-daily-prompt.txt" \
+      --ledger "$QUALITY_LEDGER" adopt-prepublication 2>/dev/null)" || {
+      echo "article-resume: prepublication adoption failed closed run=$ADOPTION_RUN_ID" >>"$LOG"
+      exit 1
+    }
+    ADOPTION_ACTION="$(printf '%s' "$ADOPTION_RESULT" | jq -r '.action // empty')"
+    ADOPTION_STATUS="$(printf '%s' "$ADOPTION_RESULT" | jq -r '.status // empty')"
+  fi
   case "$ADOPTION_ACTION/$ADOPTION_STATUS" in
-    adopted/quality-repair-ready|recovered/quality-repair-ready|unchanged/quality-repair-ready) ;;
+    adopted/quality-repair-ready|recovered/quality-repair-ready|unchanged/quality-repair-ready|quality-repair-state-present/quality-repair-ready) ;;
     *)
       echo "article-resume: prepublication adoption result invalid run=$ADOPTION_RUN_ID" >>"$LOG"
       exit 1
@@ -540,8 +643,12 @@ fi
 # defect whose fixed gate now passes. The start controller selects the newest
 # same-day run, including timestamp replacement IDs. This runs before the
 # generic publication planner so older backlog cannot starve today's article.
-QUALITY_PLAN="$(python3 "$QUALITY_REPAIR_CONTROL" plan \
-  --run-dir "$GENERATION_RUN_DIR" --ledger "$QUALITY_LEDGER" 2>>"$LOG" || true)"
+if [ -n "$PREVALIDATED_QUALITY_PLAN" ]; then
+  QUALITY_PLAN="$PREVALIDATED_QUALITY_PLAN"
+else
+  QUALITY_PLAN="$(python3 "$QUALITY_REPAIR_CONTROL" plan \
+    --run-dir "$GENERATION_RUN_DIR" --ledger "$QUALITY_LEDGER" 2>>"$LOG" || true)"
+fi
 if [ "$PRIORITY_PUBLICATION_READY" -ne 1 ] \
   && [ "$(printf '%s' "$QUALITY_PLAN" | jq -r '.status // empty')" = "READY" ]; then
   QUALITY_REASON="$(printf '%s' "$QUALITY_PLAN" | jq -r '.reason // empty')"
@@ -617,7 +724,7 @@ if [ "$PRIORITY_PUBLICATION_READY" -ne 1 ] \
   exit 0
 fi
 
-if [ "$ADOPTION_ACTIVE" -eq 1 ]; then
+if [ "$ADOPTION_ACTIVE" -eq 1 ] && [ "$PRIORITY_PUBLICATION_READY" -ne 1 ]; then
   echo "article-resume: adopted run remains owned by quality repair run=$GENERATION_RUN_ID" >>"$LOG"
   exit 0
 fi

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import shutil
@@ -60,7 +61,19 @@ def test_cross_day_adoption_precedes_both_quality_plans_and_never_starts_daily(
         scripts / "article_daily_start_control.py",
         'print(\'{"action":"new","reason":"no-same-jst-day-run"}\')\n',
     )
-    _write(scripts / "article_pending.py", 'print(\'{"status":"BLOCKED"}\')\n')
+    _write(
+        scripts / "article_pending.py",
+        "import json, os\n"
+        "if os.environ.get('PRIORITY_READY') == '1':\n"
+        f" open(os.environ['CALLS'], 'a').write('publication-plan\\n')\n"
+        f" print(json.dumps({{'status':'READY','run_id':{target_id!r},"
+        f"'run_dir':{str(target)!r},"
+        f"'state_path':{str(target / 'gates/generation-state.json')!r},"
+        f"'ledger_path':{str(state / 'articles.jsonl')!r},"
+        "'initialization_pairs':[],'eligible_pairs':['note/ja'],'recovery_pairs':[]}))\n"
+        "else:\n"
+        " print('{\"status\":\"BLOCKED\"}')\n",
+    )
     _write(
         scripts / "article_generation_state.py",
         "import json, os, pathlib, sys\n"
@@ -79,7 +92,10 @@ def test_cross_day_adoption_precedes_both_quality_plans_and_never_starts_daily(
         "def plan(*_args): return {'status':'NONE'}\n"
         "if __name__ == '__main__':\n"
         " open(os.environ['CALLS'], 'a').write('quality-feedback\\n')\n"
-        " print(json.dumps({'status':'NONE'}))\n",
+        " if os.environ.get('FEEDBACK_READY') == '1':\n"
+        "  print(json.dumps({'status':'READY','reason':'terminal-quality-feedback'}))\n"
+        " else:\n"
+        "  print(json.dumps({'status':'NONE'}))\n",
     )
     repair_prompt = target / "quality-repair-prompt.txt"
     _write(repair_prompt, "repair")
@@ -87,16 +103,51 @@ def test_cross_day_adoption_precedes_both_quality_plans_and_never_starts_daily(
         scripts / "quality_repair_control.py",
         "import json, os, sys\n"
         "command = sys.argv[1]\n"
-        "if command == 'plan': open(os.environ['CALLS'], 'a').write('quality-plan\\n'); "
-        f"print(json.dumps({{'status':'READY','reason':'tracked-reader-terminal-receipt-source-defect','run_id':{target_id!r}}}))\n"
+        "if command == 'plan':\n"
+        " open(os.environ['CALLS'], 'a').write('quality-plan\\n')\n"
+        " if os.environ.get('QUALITY_PLAN_REFUSE') == '1':\n"
+        "  print(json.dumps({'status':'REFUSED','reason':'quality-repair-evidence-invalid'}))\n"
+        " elif os.environ.get('QUALITY_PLAN_REFUSE') == 'terminal':\n"
+        "  print(json.dumps({'status':'REFUSED','reason':'quality-repair-already-terminal-blocked'}))\n"
+        " else:\n"
+        "  shape = os.environ.get('QUALITY_PLAN_SHAPE')\n"
+        "  if shape == 'wrong-run':\n"
+        f"   print(json.dumps({{'status':'READY','reason':'prepared-quality-repair','run_id':'other-run','run_dir':{str(target)!r},'repair_epoch':1,'attempts':1,'prompt_path':{str(repair_prompt)!r},'prompt_sha256':{hashlib.sha256(repair_prompt.read_bytes()).hexdigest()!r}}}))\n"
+        "  elif shape == 'malformed':\n"
+        f"   print(json.dumps({{'status':'READY','reason':'prepared-quality-repair','run_id':{target_id!r}}}))\n"
+        "  elif shape == 'structurally-exhausted':\n"
+        f"   print(json.dumps({{'status':'READY','reason':'structurally-exhausted-quality-evaluations','run_id':{target_id!r},'run_dir':{str(target)!r},'repair_epoch':1,'attempts':1}}))\n"
+        "  elif shape == 'orphaned':\n"
+        f"   print(json.dumps({{'status':'READY','reason':'orphaned-quality-repair','run_id':{target_id!r},'run_dir':{str(target)!r},'repair_epoch':1,'attempts':1,'prompt_path':{str(repair_prompt)!r},'prompt_sha256':{hashlib.sha256(repair_prompt.read_bytes()).hexdigest()!r},'orphaned_owner_pid':1234}}))\n"
+        "  elif shape == 'mismatch':\n"
+        f"   print(json.dumps({{'status':'READY','reason':'prepared-quality-repair','run_id':{target_id!r},'run_dir':{str(target)!r},'repair_epoch':2,'attempts':1,'prompt_path':{str(repair_prompt)!r},'prompt_sha256':'bad'}}))\n"
+        "  elif shape == 'unknown':\n"
+        f"   print(json.dumps({{'status':'READY','reason':'unsupported-quality-repair','run_id':{target_id!r},'run_dir':{str(target)!r},'repair_epoch':1,'attempts':1,'prompt_path':{str(repair_prompt)!r},'prompt_sha256':{hashlib.sha256(repair_prompt.read_bytes()).hexdigest()!r}}}))\n"
+        "  elif shape == 'no-output':\n"
+        "   pass\n"
+        "  else:\n"
+        f"   reason = 'prepared-quality-repair' if os.path.exists({str(target / 'gates/quality-repair-state.json')!r}) else 'tracked-reader-terminal-receipt-source-defect'\n"
+        f"   print(json.dumps({{'status':'READY','reason':reason,'run_id':{target_id!r},'run_dir':{str(target)!r},'repair_epoch':1,'attempts':1,'prompt_path':{str(repair_prompt)!r},'prompt_sha256':{hashlib.sha256(repair_prompt.read_bytes()).hexdigest()!r}}}))\n"
+        " if os.environ.get('QUALITY_PLAN_RC') is not None:\n"
+        "  raise SystemExit(int(os.environ['QUALITY_PLAN_RC']))\n"
         "elif command == 'begin': open(os.environ['CALLS'], 'a').write('quality-begin\\n'); "
         f"print(json.dumps({{'status':'prepared','run_id':{target_id!r},'prompt_path':{str(repair_prompt)!r}}}))\n"
+        "elif command == 'invoke': open(os.environ['CALLS'], 'a').write('quality-invoke\\n'); "
+        f"print(json.dumps({{'status':'invoking','run_id':{target_id!r},'prompt_path':{str(repair_prompt)!r}}}))\n"
+        "elif command == 'terminalize': open(os.environ['CALLS'], 'a').write('quality-terminalize\\n'); "
+        "print(json.dumps({'status':'ok'}))\n"
         "else: "
         f"print(json.dumps({{'status':'ok','prompt_path':{str(repair_prompt)!r}}}))\n",
     )
     _write(
         scripts / "writer_capacity_floor.py",
         "print(536870912)\n",
+    )
+    _write(
+        scripts / "publication_contract_resolver.py",
+        "import os\n"
+        "open(os.environ['CALLS'], 'a').write('publication-foreground\\n')\n"
+        "raise SystemExit(9)\n",
     )
     _write(runtime / "model-runner-support.py", "raise SystemExit(0)\n")
     _write(
@@ -146,12 +197,211 @@ def test_cross_day_adoption_precedes_both_quality_plans_and_never_starts_daily(
         "quality-feedback",
         "quality-plan",
         "quality-begin",
+        "quality-invoke",
         "model-runner",
     ]
     assert not (tmp_path / "daily-started").exists()
     assert json.loads((target / "gates/generation-state.json").read_text())["status"] == (
         "quality-repair-ready"
     )
+
+    # Once quality repair has been prepared, the next wake must not re-adopt
+    # the same run. The fake adopter records and rejects any redundant call.
+    repair_state = target / "gates/quality-repair-state.json"
+    _write(
+        repair_state,
+        json.dumps(
+            {
+                "version": 1,
+                "status": "prepared",
+                "run_id": target_id,
+                "repair_epoch": 1,
+                "attempts": 1,
+                "prompt_path": str(repair_prompt),
+                "prompt_sha256": hashlib.sha256(repair_prompt.read_bytes()).hexdigest(),
+                "qrr_lineage": {
+                    "adoption_receipt_sha256": "a" * 64,
+                    "adoption_receipt_file_sha256": "b" * 64,
+                    "transition_receipt_sha256": "c" * 64,
+                    "prompt_sha256": hashlib.sha256(repair_prompt.read_bytes()).hexdigest(),
+                },
+            }
+        ),
+    )
+    # A repair-state file may not coexist with a non-ready generation status.
+    _write(
+        target / "gates/generation-state.json",
+        json.dumps({"run_id": target_id, "status": "provider-failed-ambiguous"}),
+    )
+    calls.unlink()
+    wrong_generation = subprocess.run(
+        command,
+        env={**env, "ADOPTION_FAIL": "1"},
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert wrong_generation.returncode == 1
+    assert not calls.exists()
+    _write(
+        target / "gates/generation-state.json",
+        json.dumps({"run_id": target_id, "status": "quality-repair-ready"}),
+    )
+
+    calls.unlink(missing_ok=True)
+    repair_retry = subprocess.run(
+        command,
+        env={**env, "ADOPTION_FAIL": "1"},
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert repair_retry.returncode == 0, repair_retry.stderr
+    assert calls.read_text().splitlines() == [
+        "quality-plan",
+        "quality-feedback",
+        "quality-invoke",
+        "model-runner",
+    ]
+    assert not (tmp_path / "daily-started").exists()
+
+    # A terminal-blocked refusal is allowed only with controller rc=1.
+    calls.unlink()
+    terminal_refusal = subprocess.run(
+        command,
+        env={
+            **env,
+            "ADOPTION_FAIL": "1",
+            "QUALITY_PLAN_REFUSE": "terminal",
+            "QUALITY_PLAN_RC": "1",
+        },
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert terminal_refusal.returncode == 0, terminal_refusal.stderr
+    assert calls.read_text().splitlines() == ["quality-plan", "quality-feedback"]
+
+    # Other controller refusals remain before feedback/model/daily.
+    calls.unlink()
+    refused = subprocess.run(
+        command,
+        env={
+            **env,
+            "ADOPTION_FAIL": "1",
+            "FEEDBACK_READY": "1",
+            "QUALITY_PLAN_REFUSE": "1",
+            "QUALITY_PLAN_RC": "1",
+        },
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert refused.returncode == 1
+    assert calls.read_text().splitlines() == ["quality-plan"]
+
+    # The structural terminal-ready shape and orphaned shape are valid plans.
+    for shape, expected in (
+        (
+            "structurally-exhausted",
+            ["quality-plan", "quality-feedback", "quality-terminalize"],
+        ),
+        ("orphaned", ["quality-plan", "quality-feedback", "quality-invoke", "model-runner"]),
+    ):
+        calls.unlink()
+        valid_plan = subprocess.run(
+            command,
+            env={**env, "ADOPTION_FAIL": "1", "QUALITY_PLAN_SHAPE": shape},
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert valid_plan.returncode == 0, valid_plan.stderr
+        assert calls.read_text().splitlines() == expected
+
+    for shape in ("wrong-run", "malformed", "mismatch", "unknown", "no-output"):
+        calls.unlink()
+        invalid_plan = subprocess.run(
+            command,
+            env={**env, "ADOPTION_FAIL": "1", "QUALITY_PLAN_SHAPE": shape},
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert invalid_plan.returncode == 1
+        assert calls.read_text().splitlines() == ["quality-plan"]
+
+    # Repair-state links and non-regular paths fail before any planner/model.
+    repair_state_bytes = repair_state.read_bytes()
+    repair_state.unlink()
+    repair_state.symlink_to(repair_prompt)
+    calls.unlink()
+    symlink_state = subprocess.run(
+        command,
+        env={**env, "ADOPTION_FAIL": "1"},
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert symlink_state.returncode == 1
+    assert not calls.exists()
+    repair_state.unlink()
+    repair_state.write_bytes(repair_state_bytes)
+
+    repair_state.unlink()
+    repair_state.mkdir()
+    calls.unlink(missing_ok=True)
+    nonregular_state = subprocess.run(
+        command,
+        env={**env, "ADOPTION_FAIL": "1"},
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert nonregular_state.returncode == 1
+    assert not calls.exists()
+    repair_state.rmdir()
+    repair_state.write_bytes(repair_state_bytes)
+
+    # A priority publication backlog must not be suppressed by the adopted-run guard.
+    calls.unlink(missing_ok=True)
+    priority = subprocess.run(
+        command,
+        env={
+            **env,
+            "ADOPTION_FAIL": "1",
+            "PRIORITY_READY": "1",
+            "ARTICLE_LOCAL_DATE": "2026-08-29",
+        },
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert priority.returncode == 1
+    priority_calls = calls.read_text().splitlines()
+    assert "publication-plan" in priority_calls
+    assert "publication-foreground" in priority_calls
+    assert "model-runner" not in priority_calls
+    assert not (tmp_path / "daily-started").exists()
+
+    # A feedback-ready state cannot bypass the repair planner's lineage refusal.
+    calls.unlink()
+    refused = subprocess.run(
+        command,
+        env={
+            **env,
+            "ADOPTION_FAIL": "1",
+            "FEEDBACK_READY": "1",
+            "QUALITY_PLAN_REFUSE": "1",
+        },
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert refused.returncode == 1
+    assert calls.read_text().splitlines() == ["quality-plan"]
+    assert not (tmp_path / "daily-started").exists()
+    repair_state.unlink()
 
     # Invalid adoption evidence is fail-closed before either quality planner.
     _write(
