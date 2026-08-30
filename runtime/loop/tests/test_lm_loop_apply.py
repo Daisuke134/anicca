@@ -141,11 +141,14 @@ class LmLoopApplyTest(unittest.TestCase):
     def test_generic_install_does_not_secure_launchd_log_files(self):
         log_root = self.root / ".local/state/test-log-root"
         log_root.mkdir(mode=0o755, parents=True)
+        state_root = self.root / ".local/state/test-state-root"
+        state_root.mkdir(mode=0o755, parents=True)
         existing_stdout = log_root / "launchd.out.log"
         existing_stdout.write_text("old\n")
         existing_stdout.chmod(0o644)
         value = registry()
         value["loops"]["example"]["log_root"] = "~/.local/state/test-log-root"
+        value["loops"]["example"]["state_root"] = "~/.local/state/test-state-root"
         target = self.root / "installed.plist"
 
         def launchctl(args):
@@ -166,6 +169,7 @@ class LmLoopApplyTest(unittest.TestCase):
         self.assertEqual(stat.S_IMODE(log_root.stat().st_mode), 0o755)
         self.assertEqual(stat.S_IMODE(existing_stdout.stat().st_mode), 0o644)
         self.assertFalse((log_root / "launchd.err.log").exists())
+        self.assertEqual(stat.S_IMODE(state_root.stat().st_mode), 0o755)
 
     def test_money_printer_install_secures_existing_and_new_launchd_log_files(self):
         cases = (
@@ -186,12 +190,17 @@ class LmLoopApplyTest(unittest.TestCase):
             with self.subTest(loop_id=loop_id):
                 log_root = self.root / ".local/state" / log_name
                 log_root.mkdir(mode=0o755, parents=True)
+                state_root = self.root / ".local/state" / f"{log_name}-state-root"
+                state_root.mkdir(mode=0o755, parents=True)
                 existing_stdout = log_root / "launchd.out.log"
                 existing_stdout.write_text("old\n")
                 existing_stdout.chmod(0o644)
                 value = money_printer_registry(loop_id=loop_id, label=label)
                 value["loops"][loop_id]["log_root"] = (
                     f"~/.local/state/{log_name}"
+                )
+                value["loops"][loop_id]["state_root"] = (
+                    f"~/.local/state/{log_name}-state-root"
                 )
                 target = self.root / target_name
 
@@ -219,6 +228,7 @@ class LmLoopApplyTest(unittest.TestCase):
                 self.assertEqual(
                     stat.S_IMODE((log_root / "launchd.err.log").stat().st_mode), 0o600
                 )
+                self.assertEqual(stat.S_IMODE(state_root.stat().st_mode), 0o700)
 
     def test_sub_ten_second_interval_sets_matching_launchd_throttle(self):
         value = registry()
