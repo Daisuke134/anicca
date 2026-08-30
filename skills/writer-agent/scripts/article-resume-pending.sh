@@ -354,7 +354,8 @@ if [ -n "$ADOPTION_RUN_ID" ]; then
             and ((keys | sort) == ["attempts","reason","repair_epoch","run_dir","run_id","status"])
             and (($repair_state[0].status | type) == "string"))
            or
-           (.reason == "prepared-quality-repair"
+           ((.reason == "prepared-quality-repair"
+             or .reason == "tracked-active-editorial-repair-source-defect")
             and ((keys | sort) == ["attempts","prompt_path","prompt_sha256","reason","repair_epoch","run_dir","run_id","status"])
             and (($repair_state[0].prompt_path | type) == "string")
             and (($repair_state[0].prompt_sha256 | type) == "string")
@@ -363,7 +364,16 @@ if [ -n "$ADOPTION_RUN_ID" ]; then
             and ((.prompt_sha256 | type) == "string")
             and ((.prompt_sha256 | test("^[0-9a-f]{64}$")))
             and (.prompt_path == $repair_state[0].prompt_path)
-            and (.prompt_sha256 == $repair_state[0].prompt_sha256))
+            and (.prompt_sha256 == $repair_state[0].prompt_sha256)
+            and (
+              .reason != "tracked-active-editorial-repair-source-defect"
+              or (
+                $repair_state[0].status == "terminal-incomplete"
+                and $repair_state[0].attempts == 2
+                and $repair_state[0].quality_action == "evaluate_reroute"
+                and $repair_state[0].source_defect == "reader-terminal-receipt"
+              )
+            ))
            or
            (.reason == "orphaned-quality-repair"
             and ((keys | sort) == ["attempts","orphaned_owner_pid","prompt_path","prompt_sha256","reason","repair_epoch","run_dir","run_id","status"])

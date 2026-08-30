@@ -111,7 +111,17 @@ def test_cross_day_adoption_precedes_both_quality_plans_and_never_starts_daily(
         "  print(json.dumps({'status':'REFUSED','reason':'quality-repair-already-terminal-blocked'}))\n"
         " else:\n"
         "  shape = os.environ.get('QUALITY_PLAN_SHAPE')\n"
-        "  if shape == 'wrong-run':\n"
+        "  if shape == 'source-recovery':\n"
+        f"   print(json.dumps({{'status':'READY','reason':'tracked-active-editorial-repair-source-defect','run_id':{target_id!r},'run_dir':{str(target)!r},'repair_epoch':1,'attempts':2,'prompt_path':{str(repair_prompt)!r},'prompt_sha256':{hashlib.sha256(repair_prompt.read_bytes()).hexdigest()!r}}}))\n"
+        "  elif shape == 'source-recovery-attempt-one':\n"
+        f"   print(json.dumps({{'status':'READY','reason':'tracked-active-editorial-repair-source-defect','run_id':{target_id!r},'run_dir':{str(target)!r},'repair_epoch':1,'attempts':1,'prompt_path':{str(repair_prompt)!r},'prompt_sha256':{hashlib.sha256(repair_prompt.read_bytes()).hexdigest()!r}}}))\n"
+        "  elif shape == 'source-recovery-wrong-state':\n"
+        f"   print(json.dumps({{'status':'READY','reason':'tracked-active-editorial-repair-source-defect','run_id':{target_id!r},'run_dir':{str(target)!r},'repair_epoch':1,'attempts':2,'prompt_path':{str(repair_prompt)!r},'prompt_sha256':{hashlib.sha256(repair_prompt.read_bytes()).hexdigest()!r}}}))\n"
+        "  elif shape == 'source-recovery-wrong-run':\n"
+        f"   print(json.dumps({{'status':'READY','reason':'tracked-active-editorial-repair-source-defect','run_id':'other-run','run_dir':{str(target)!r},'repair_epoch':1,'attempts':1,'prompt_path':{str(repair_prompt)!r},'prompt_sha256':{hashlib.sha256(repair_prompt.read_bytes()).hexdigest()!r}}}))\n"
+        "  elif shape == 'source-recovery-malformed':\n"
+        f"   print(json.dumps({{'status':'READY','reason':'tracked-active-editorial-repair-source-defect','run_id':{target_id!r},'run_dir':{str(target)!r},'repair_epoch':1,'attempts':1}}))\n"
+        "  elif shape == 'wrong-run':\n"
         f"   print(json.dumps({{'status':'READY','reason':'prepared-quality-repair','run_id':'other-run','run_dir':{str(target)!r},'repair_epoch':1,'attempts':1,'prompt_path':{str(repair_prompt)!r},'prompt_sha256':{hashlib.sha256(repair_prompt.read_bytes()).hexdigest()!r}}}))\n"
         "  elif shape == 'malformed':\n"
         f"   print(json.dumps({{'status':'READY','reason':'prepared-quality-repair','run_id':{target_id!r}}}))\n"
@@ -264,6 +274,78 @@ def test_cross_day_adoption_precedes_both_quality_plans_and_never_starts_daily(
         "model-runner",
     ]
     assert not (tmp_path / "daily-started").exists()
+
+    # The same-attempt source recovery is a ready repair plan, not a new begin.
+    prepared_state = json.loads(repair_state.read_text())
+    source_recovery_state = dict(prepared_state)
+    source_recovery_state.update(
+        {
+            "status": "terminal-incomplete",
+            "attempts": 2,
+            "quality_action": "evaluate_reroute",
+            "source_defect": "reader-terminal-receipt",
+        }
+    )
+    _write(repair_state, json.dumps(source_recovery_state))
+    calls.unlink()
+    source_recovery = subprocess.run(
+        command,
+        env={
+            **env,
+            "ADOPTION_FAIL": "1",
+            "QUALITY_PLAN_SHAPE": "source-recovery",
+        },
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert source_recovery.returncode == 0, source_recovery.stderr
+    assert calls.read_text().splitlines() == [
+        "quality-plan",
+        "quality-feedback",
+        "quality-invoke",
+        "model-runner",
+    ]
+    assert not (tmp_path / "daily-started").exists()
+
+    for shape in (
+        "source-recovery-wrong-run",
+        "source-recovery-malformed",
+        "source-recovery-attempt-one",
+    ):
+        calls.unlink()
+        invalid_source_recovery = subprocess.run(
+            command,
+            env={
+                **env,
+                "ADOPTION_FAIL": "1",
+                "QUALITY_PLAN_SHAPE": shape,
+            },
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert invalid_source_recovery.returncode == 1
+        assert calls.read_text().splitlines() == ["quality-plan"]
+
+    wrong_state = dict(source_recovery_state)
+    wrong_state["status"] = "prepared"
+    _write(repair_state, json.dumps(wrong_state))
+    calls.unlink()
+    invalid_source_recovery_state = subprocess.run(
+        command,
+        env={
+            **env,
+            "ADOPTION_FAIL": "1",
+            "QUALITY_PLAN_SHAPE": "source-recovery-wrong-state",
+        },
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert invalid_source_recovery_state.returncode == 1
+    assert calls.read_text().splitlines() == ["quality-plan"]
+    _write(repair_state, json.dumps(prepared_state))
 
     # A terminal-blocked refusal is allowed only with controller rc=1.
     calls.unlink()

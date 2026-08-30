@@ -1,4 +1,6 @@
+import hashlib
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -401,6 +403,7 @@ class PrepublicationAdoptionTest(unittest.TestCase):
                 run / "gates/prepublication-adoption.json"
             ).write_text("[]\n", encoding="utf-8"),
             "generation status": self.hand_edit_generation_status,
+            "generation state symlink": self.make_generation_state_symlink,
             "original prompt drift": self.hand_edit_original_prompt,
         }
         for name, mutate in cases.items():
@@ -418,12 +421,291 @@ class PrepublicationAdoptionTest(unittest.TestCase):
                     {"status": "REFUSED", "reason": "quality-repair-evidence-invalid"},
                 )
 
+    def test_terminal_incomplete_rearms_same_attempt_once_from_editorial_source_defect(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            run, run_id, prompt, ledger = self.fixture(Path(tmp))
+            self.add_reader_traceback(run)
+            generation.adopt_prepublication(run, run_id, prompt, ledger)
+            prepared = repair.begin(run, ledger)
+            evidence = self.make_active_editorial_repair_evidence(run, prepared)
+
+            decision = repair.plan(run, ledger)
+
+            self.assertEqual(decision["status"], "READY")
+            self.assertEqual(
+                {
+                    key: decision[key]
+                    for key in (
+                        "reason",
+                        "run_id",
+                        "run_dir",
+                        "repair_epoch",
+                        "attempts",
+                        "prompt_path",
+                        "prompt_sha256",
+                    )
+                },
+                {
+                    "reason": "tracked-active-editorial-repair-source-defect",
+                    "run_id": run_id,
+                    "run_dir": str(run.resolve()),
+                    "repair_epoch": 1,
+                    "attempts": 2,
+                    "prompt_path": prepared["prompt_path"],
+                    "prompt_sha256": prepared["prompt_sha256"],
+                },
+            )
+
+            state_path = run / "gates/quality-repair-state.json"
+            prior_state = state_path.read_bytes()
+            invoking = repair.mark_invoking(run, ledger, owner_pid=os.getpid())
+            self.assertEqual(invoking["attempts"], 2)
+            self.assertEqual(invoking["status"], "invoking")
+            recovery_path = run / "gates/quality-repair-source-recovery.json"
+            recovery = json.loads(recovery_path.read_text(encoding="utf-8"))
+            self.assertEqual(recovery["schema"], "writer.quality-repair-source-recovery")
+            self.assertEqual(recovery["version"], 1)
+            self.assertEqual(recovery["run_id"], run_id)
+            self.assertEqual(
+                recovery["reason"], "tracked-active-editorial-repair-source-defect"
+            )
+            self.assertEqual(recovery["recovery_attempt"], 1)
+            self.assertEqual(
+                recovery["prior_state_sha256"], hashlib.sha256(prior_state).hexdigest()
+            )
+            self.assertEqual(recovery["error_sha256"], evidence["error_sha256"])
+            self.assertEqual(
+                recovery["editorial_source_sha256"], evidence["editorial_source_sha256"]
+            )
+            self.assertEqual(recovery["drafts"], evidence["drafts"])
+            self.assertEqual(recovery["owner_pid"], os.getpid())
+            unsigned = {
+                key: value
+                for key, value in recovery.items()
+                if key != "receipt_sha256"
+            }
+            self.assertEqual(
+                recovery["receipt_sha256"],
+                hashlib.sha256(
+                    json.dumps(
+                        unsigned,
+                        ensure_ascii=False,
+                        sort_keys=True,
+                        separators=(",", ":"),
+                    ).encode("utf-8")
+                ).hexdigest(),
+            )
+            self.assertEqual(
+                invoking["source_recovery_receipt_sha256"],
+                hashlib.sha256(recovery_path.read_bytes()).hexdigest(),
+            )
+            recovery_bytes = recovery_path.read_bytes()
+
+            result = repair.record_result(run, ledger, return_code=1)
+            self.assertEqual(result["status"], "terminal-incomplete")
+            self.assertEqual(
+                repair.plan(run, ledger),
+                {
+                    "status": "REFUSED",
+                    "reason": "quality-repair-source-recovery-already-recorded",
+                },
+            )
+            with self.assertRaisesRegex(
+                repair.QualityRepairError,
+                "quality-repair-source-recovery-already-recorded",
+            ):
+                repair.mark_invoking(run, ledger, owner_pid=os.getpid())
+            self.assertEqual(recovery_path.read_bytes(), recovery_bytes)
+
+    def test_terminal_incomplete_editorial_repair_source_evidence_is_fail_closed(self):
+        cases = {
+            "wrong error": lambda run, evidence: (
+                run / "gates/quality-self-heal-repair.err"
+            ).write_text("QualitySelfHealError: another error\n", encoding="utf-8"),
+            "current editorial hash": self.make_current_editorial_hash,
+            "stale identity": self.make_stale_identity,
+            "stale reader": self.make_stale_reader,
+            "alternate repair prompt": self.make_alternate_repair_prompt,
+            "symlink recovery receipt": self.make_symlink_recovery_receipt,
+            "symlink repair error": self.make_symlink_repair_error,
+        }
+        for name, mutate in cases.items():
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as tmp:
+                run, run_id, prompt, ledger = self.fixture(Path(tmp))
+                self.add_reader_traceback(run)
+                generation.adopt_prepublication(run, run_id, prompt, ledger)
+                prepared = repair.begin(run, ledger)
+                evidence = self.make_active_editorial_repair_evidence(run, prepared)
+                mutate(run, evidence)
+
+                decision = repair.plan(run, ledger)
+
+                self.assertEqual(decision["status"], "REFUSED")
+                self.assertNotEqual(
+                    decision.get("reason"),
+                    "tracked-active-editorial-repair-source-defect",
+                )
+
+        with tempfile.TemporaryDirectory() as tmp:
+            run, run_id, prompt, ledger = self.fixture(Path(tmp))
+            self.add_reader_traceback(run)
+            generation.adopt_prepublication(run, run_id, prompt, ledger)
+            prepared = repair.begin(run, ledger)
+            self.make_active_editorial_repair_evidence(run, prepared)
+            with patch.object(
+                repair,
+                "_editorial_source_has_active_repair_authorization",
+                return_value=False,
+                create=True,
+            ):
+                decision = repair.plan(run, ledger)
+            self.assertEqual(decision["status"], "REFUSED")
+
+    @staticmethod
+    def make_active_editorial_repair_evidence(run: Path, prepared: dict):
+        gates = run / "gates"
+        state_path = gates / "quality-repair-state.json"
+        state = json.loads(state_path.read_text(encoding="utf-8"))
+        state.update(
+            {
+                "status": "terminal-incomplete",
+                "attempts": 2,
+                "quality_action": "evaluate_reroute",
+                "source_defect": "reader-terminal-receipt",
+            }
+        )
+        state_path.write_text(json.dumps(state) + "\n", encoding="utf-8")
+        error_path = gates / "quality-self-heal-repair.err"
+        error_path.write_text(
+            "Traceback (most recent call last):\n"
+            "QualitySelfHealError: quality receipt snapshot hash binding failed\n",
+            encoding="utf-8",
+        )
+        drafts = {}
+        for lang in ("ja", "en"):
+            article = run / f"article-{lang}.md"
+            digest = hashlib.sha256(article.read_bytes()).hexdigest()
+            drafts[lang] = digest
+            (gates / f"identity-{lang}.json").write_text(
+                json.dumps(
+                    {"verdict": "PASS", "article_sha256": digest, "violations": []}
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            (gates / f"editorial-{lang}.json").write_text(
+                json.dumps(
+                    {
+                        "verdict": "FAIL",
+                        "article_sha256": "0" * 64,
+                        "requested_reasoning_effort": "high",
+                        "fixes": ["revise the current draft"],
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+        (gates / "reader-testing-gate-ja.terminal.json").write_text(
+            json.dumps(
+                {
+                    "gate": "reader-testing-gate",
+                    "lang": "ja",
+                    "status": "revision-required",
+                    "attempts": 2,
+                    "exit_code": 75,
+                    "article_sha256": drafts["ja"],
+                    "payload": {
+                        "verdict": "FAIL",
+                        "unanswered_questions": ["q"],
+                    },
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        (gates / "reader-testing-gate-en.terminal.json").write_text(
+            json.dumps(
+                {
+                    "gate": "reader-testing-gate",
+                    "lang": "en",
+                    "status": "advisory",
+                    "attempts": 3,
+                    "reason": "max-attempts-reached",
+                    "article_sha256": drafts["en"],
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        return {
+            "drafts": drafts,
+            "error_sha256": hashlib.sha256(error_path.read_bytes()).hexdigest(),
+            "editorial_source_sha256": hashlib.sha256(
+                (Path(__file__).resolve().parents[1] / "scripts/editorial-gate.sh").read_bytes()
+            ).hexdigest(),
+        }
+
+    @staticmethod
+    def make_current_editorial_hash(run: Path, evidence: dict):
+        path = run / "gates/editorial-ja.json"
+        value = json.loads(path.read_text(encoding="utf-8"))
+        value["article_sha256"] = evidence["drafts"]["ja"]
+        path.write_text(json.dumps(value) + "\n", encoding="utf-8")
+
+    @staticmethod
+    def make_stale_identity(run: Path, _evidence: dict):
+        path = run / "gates/identity-ja.json"
+        value = json.loads(path.read_text(encoding="utf-8"))
+        value["article_sha256"] = "0" * 64
+        path.write_text(json.dumps(value) + "\n", encoding="utf-8")
+
+    @staticmethod
+    def make_stale_reader(run: Path, _evidence: dict):
+        path = run / "gates/reader-testing-gate-ja.terminal.json"
+        value = json.loads(path.read_text(encoding="utf-8"))
+        value["article_sha256"] = "0" * 64
+        path.write_text(json.dumps(value) + "\n", encoding="utf-8")
+
+    @staticmethod
+    def make_alternate_repair_prompt(run: Path, _evidence: dict):
+        state_path = run / "gates/quality-repair-state.json"
+        state = json.loads(state_path.read_text(encoding="utf-8"))
+        original = Path(state["prompt_path"])
+        alternate = run / "alternate-repair-prompt.txt"
+        alternate.write_bytes(original.read_bytes())
+        state["prompt_path"] = str(alternate)
+        state["prompt_sha256"] = hashlib.sha256(alternate.read_bytes()).hexdigest()
+        state_path.write_text(json.dumps(state) + "\n", encoding="utf-8")
+
+    @staticmethod
+    def make_symlink_recovery_receipt(run: Path, _evidence: dict):
+        path = run / "gates/quality-repair-source-recovery.json"
+        target = run.parent / "source-recovery-target.json"
+        target.write_text("{}\n", encoding="utf-8")
+        path.symlink_to(target)
+
+    @staticmethod
+    def make_symlink_repair_error(run: Path, evidence: dict):
+        path = run / "gates/quality-self-heal-repair.err"
+        target = run.parent / "repair-error-target.err"
+        target.write_bytes(path.read_bytes())
+        path.unlink()
+        path.symlink_to(target)
+
     @staticmethod
     def hand_edit_generation_status(run: Path):
         state_path = run / "gates/generation-state.json"
         state = json.loads(state_path.read_text(encoding="utf-8"))
         state["status"] = "provider-failed-ambiguous"
         state_path.write_text(json.dumps(state) + "\n", encoding="utf-8")
+
+    @staticmethod
+    def make_generation_state_symlink(run: Path):
+        state_path = run / "gates/generation-state.json"
+        target = run.parent / "generation-state-target.json"
+        target.write_bytes(state_path.read_bytes())
+        state_path.unlink()
+        state_path.symlink_to(target)
 
     @staticmethod
     def hand_edit_original_prompt(run: Path):
