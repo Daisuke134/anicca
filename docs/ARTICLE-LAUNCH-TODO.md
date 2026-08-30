@@ -89,6 +89,7 @@
       closed cacheだけを追加回収し、Codex runtime一時展開528MiBはowner完了後の自動消去、bun/tsx/CodexBar、SiriTTS 268,096KiB、
       mediaanalysisd/CUA cache 142,956KiBを削除した。一時freeは1,330,800KiBでfloorを超えたが、直後にmacOS swapが1GiB増え、
       swap total 15,360MiB/used 14,680MiB、free 456,104KiBへ低下した。swapfileは直接削除せず、他ownerのbrowser/sessionも停止しない。
+      target apply後の`article-resume` run 1もfree 630,160KiBで開始したため即bootoutし、GPT API intent/publication/effectは0。
       W2 canaryはfreeが1,128,692KiB以上へ戻るまで再発火しない。
 - [ ] W3 W2修復後canaryのNote JAだけをprovider-native readbackし、title、body、owner、headline、paywall、URLを確認する。
 - [ ] W4 W2修復後canaryのSubstack JAだけを同じ項目でprovider-native readbackする。
