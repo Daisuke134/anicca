@@ -348,6 +348,18 @@ raise SystemExit(0)
             )
 
             self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(
+                sorted(path.name for path in agents.iterdir()),
+                [
+                    "ai.anicca.job-search-browser.plist",
+                    "ai.anicca.job-search-daily.plist",
+                    "ai.anicca.job-search-health.plist",
+                    "ai.anicca.job-search-inbox.plist",
+                    "ai.anicca.job-search-learning.plist",
+                    "ai.anicca.job-search-mercor-browser.plist",
+                    "ai.anicca.job-search-mercor.plist",
+                ],
+            )
             daily = plistlib.loads(
                 (agents / "ai.anicca.job-search-daily.plist").read_bytes()
             )
@@ -356,6 +368,20 @@ raise SystemExit(0)
             )
             learning = plistlib.loads(
                 (agents / "ai.anicca.job-search-learning.plist").read_bytes()
+            )
+            mercor_browser = plistlib.loads(
+                (agents / "ai.anicca.job-search-mercor-browser.plist").read_bytes()
+            )
+            self.assertEqual(
+                mercor_browser["EnvironmentVariables"],
+                {
+                    "JOB_SEARCH_BROWSER_PROFILE": str(
+                        private_root / "home" / ".cloak" / "profiles" / "job-search-mercor"
+                    ),
+                    "JOB_SEARCH_BROWSER_PORT": "9334",
+                    "JOB_SEARCH_BROWSER_FINGERPRINT": "81234",
+                    "JOB_SEARCH_BROWSER_STATE_NAME": "mercor-browser",
+                },
             )
             self.assertEqual(
                 daily["ProgramArguments"][0],
