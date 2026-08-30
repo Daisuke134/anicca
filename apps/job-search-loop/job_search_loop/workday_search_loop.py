@@ -654,7 +654,9 @@ def main() -> int:
         discover=discover_next,
         qualify=qualify_next,
         max_candidates=args.max_candidates,
-        target_qualified=min(rolling["deficit"], args.max_candidates),
+        target_qualified=(
+            0 if queued_ids else min(rolling["deficit"], args.max_candidates)
+        ),
     )
     result["stale_rows"] = list(stale_rows)
     result["discovered"] = [
