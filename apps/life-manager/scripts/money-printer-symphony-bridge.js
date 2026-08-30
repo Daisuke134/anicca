@@ -9,6 +9,7 @@ const SECRET_RE = /^[A-Za-z0-9_-]{32,256}$/;
 const MONEY_RE = /^[0-9]+$/;
 const COOKIE_NAMES = new Set(["lm_panel_scope", "lm_panel_session", "__Host-lm_panel_session"]);
 const CLAIM_PATH = "/api/internal/money-printer/symphony/claim";
+const ISSUE_PATH = "/api/internal/money-printer/symphony/issue";
 const GUEST_PATH = "/money-printer";
 const WORKROOM_PATH = "/api/panel/money-printer/workroom";
 const ISSUE_REPO = "Daisuke134/life-manager-workrooms";
@@ -20,6 +21,7 @@ const DISPATCH_PACKET_KEYS = [
   "title", "source_url", "value_minor", "currency", "workroom_status", "result_protocol",
 ];
 const PUBLIC_TEXT_RE = /^[^\u0000-\u001f\u007f]+$/;
+const ISSUE_REF_RE = /^github-issue:\/\/Daisuke134\/life-manager-workrooms\/[1-9][0-9]*$/;
 
 function fail(message) {
   throw new Error(message);
@@ -130,28 +132,62 @@ function buildMoneyPrinterIssue(packet) {
 
 function createGhIssueClient(options = {}) {
   const exec = options && options.execFileSync || execFileSync;
+  const run = (args, errorMessage) => {
+    let stdout;
+    try {
+      stdout = exec("gh", args, {
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "pipe"],
+      });
+    } catch {
+      fail(errorMessage);
+    }
+    return stdout;
+  };
   return {
     create(issue) {
-      let stdout;
-      try {
-        stdout = exec("gh", [
-          "issue", "create",
-          "-R", ISSUE_REPO,
-          "--title", issue.title,
-          "--body", issue.body,
-          "--label", ISSUE_LABEL,
-        ], {
-          encoding: "utf8",
-          stdio: ["ignore", "pipe", "pipe"],
-        });
-      } catch {
-        fail("issue create failed");
-      }
+      const stdout = run([
+        "issue", "create",
+        "-R", ISSUE_REPO,
+        "--title", issue.title,
+        "--body", issue.body,
+        "--label", ISSUE_LABEL,
+      ], "issue create failed");
       const url = String(stdout || "").trim();
       if (!ISSUE_URL_RE.test(url)) fail("issue create failed");
       return url;
     },
+    list() {
+      const stdout = run([
+        "issue", "list",
+        "-R", ISSUE_REPO,
+        "--state", "all",
+        "--limit", "100",
+        "--json", "number,url,body",
+      ], "issue list failed");
+      let parsed;
+      try { parsed = JSON.parse(String(stdout || "")); } catch { fail("issue list failed"); }
+      return validateIssueRows(parsed);
+    },
   };
+}
+
+function validateIssueRow(row) {
+  const urlMatch = row && typeof row === "object" && typeof row.url === "string"
+    ? row.url.match(ISSUE_URL_RE) : null;
+  if (!exactObject(row, ["number", "url", "body"])
+    || Object.getPrototypeOf(row) !== Object.prototype
+    || !Number.isSafeInteger(row.number) || row.number < 1
+    || !urlMatch || urlMatch[1] !== String(row.number)
+    || typeof row.body !== "string") {
+    fail("issue list failed");
+  }
+  return Object.freeze({ number: row.number, url: row.url, body: row.body });
+}
+
+function validateIssueRows(rows) {
+  if (!Array.isArray(rows) || rows.length > 100) fail("issue list failed");
+  return Object.freeze(rows.map(validateIssueRow));
 }
 
 function createIssueForPacket(packet, dependencies = {}) {
@@ -177,6 +213,113 @@ function createIssueForPacket(packet, dependencies = {}) {
     dispatch_id: valid.dispatch_id,
     issue_ref: `github-issue://${ISSUE_REPO}/${match[1]}`,
   });
+}
+
+function issueRefFromUrl(url) {
+  const match = typeof url === "string" ? url.match(ISSUE_URL_RE) : null;
+  if (!match) fail("issue list failed");
+  return `github-issue://${ISSUE_REPO}/${match[1]}`;
+}
+
+function issueMarker(dispatchId) {
+  return `<!-- lm-dispatch:${dispatchId} -->`;
+}
+
+function issueRowsForMarker(rows, marker) {
+  const matches = [];
+  for (const row of rows) {
+    const lines = row.body.split(/\r\n|\n|\r/);
+    for (const line of lines) {
+      if (line === marker) matches.push(row);
+    }
+  }
+  return matches;
+}
+
+function mirroredIssueReadback(body, packet, issueRef) {
+  const keys = ["tenant_id", "dispatch_id", "job_id", "round", "status", "issue_ref"];
+  if (!exactObject(body, keys) || Object.getPrototypeOf(body) !== Object.prototype
+    || body.tenant_id !== packet.tenant_id
+    || body.dispatch_id !== packet.dispatch_id
+    || body.job_id !== packet.job_id
+    || body.round !== packet.round
+    || body.status !== "mirrored"
+    || body.issue_ref !== issueRef) {
+    fail("issue readback invalid");
+  }
+  return {
+    tenant_id: body.tenant_id,
+    dispatch_id: body.dispatch_id,
+    job_id: body.job_id,
+    round: body.round,
+    status: body.status,
+    issue_ref: body.issue_ref,
+  };
+}
+
+async function reconcileIssueForPacket(config, packet, deps = {}) {
+  const validated = validateConfig(config);
+  const validPacket = validateDispatchPacket(packet);
+  if (validPacket.tenant_id !== validated.tenantId) fail("issue packet tenant scope invalid");
+  const issueClient = deps && deps.issueClient;
+  if (!issueClient || typeof issueClient.list !== "function" || typeof issueClient.create !== "function") {
+    fail("issue client unavailable");
+  }
+  const fetchImpl = deps.fetchImpl || globalThis.fetch;
+  if (typeof fetchImpl !== "function") fail("bridge fetch unavailable");
+  const signal = deps.signal || (typeof AbortSignal !== "undefined" && typeof AbortSignal.timeout === "function" ? AbortSignal.timeout(10_000) : undefined);
+
+  let rows;
+  try {
+    rows = issueClient.list();
+  } catch {
+    fail("issue list failed");
+  }
+  try {
+    rows = validateIssueRows(rows);
+  } catch {
+    fail("issue list failed");
+  }
+
+  const matches = issueRowsForMarker(rows, issueMarker(validPacket.dispatch_id));
+  if (matches.length > 1) fail("issue reconciliation conflict");
+
+  let issueRef;
+  let created = false;
+  if (matches.length === 1) {
+    if (matches[0].body !== buildMoneyPrinterIssue(validPacket).body) {
+      fail("issue reconciliation conflict");
+    }
+    issueRef = issueRefFromUrl(matches[0].url);
+  } else if (rows.length < 100) {
+    const result = createIssueForPacket(validPacket, { issueClient, tenantId: validated.tenantId });
+    if (!result || result.status !== "created" || result.dispatch_id !== validPacket.dispatch_id
+      || typeof result.issue_ref !== "string" || !ISSUE_REF_RE.test(result.issue_ref)) {
+      fail("issue create failed");
+    }
+    issueRef = result.issue_ref;
+    created = true;
+  } else {
+    fail("issue list uncertain");
+  }
+
+  const authHeaders = {
+    accept: "application/json",
+    authorization: `Bearer ${validated.secret}`,
+    "content-type": "application/json",
+  };
+  const callback = await request(fetchImpl, `${validated.apiBaseUrl}${ISSUE_PATH}`, {
+    method: "POST",
+    headers: authHeaders,
+    body: JSON.stringify({
+      tenant_id: validated.tenantId,
+      dispatch_id: validPacket.dispatch_id,
+      issue_ref: issueRef,
+    }),
+  }, signal);
+  responseStatus(callback);
+  const readback = mirroredIssueReadback(await json(callback), validPacket, issueRef);
+  return Object.freeze({ ...readback, created });
 }
 
 function claimedDispatch(body, config) {
@@ -314,5 +457,6 @@ module.exports = {
   buildMoneyPrinterIssue,
   createGhIssueClient,
   createIssueForPacket,
+  reconcileIssueForPacket,
   main,
 };

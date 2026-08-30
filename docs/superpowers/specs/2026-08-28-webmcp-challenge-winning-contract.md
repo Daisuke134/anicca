@@ -1391,7 +1391,7 @@ A01–A09はcomplete。新依存/endpoint 0。A09はrelated 120/120、fresh adve
 | S02 | labels `money-printer`と`needs-human`を作る | complete: exact name/color/description readback、duplicate create 0 |
 | S03 | bridgeにinternal claim callを実装する | complete: claim→zero-login guest cookie→same-tenant workroomの3 requestだけでfrozen `LM_DISPATCH_V1` packetを返す。idle追加GET 0、secret/cookie/activity出力0、focused 6/6、related 78/78、fresh adversarial `ship` |
 | S04 | bridgeにGitHub Issue create/readbackを実装する | complete: fixed private repo/labelへfull dispatch ID title、exactly-one hidden marker、13-field public bodyを作り、strict HTTPS URLをcanonical `github-issue://` refへ変換。configured tenant必須、foreign packet/marker injection/client errorはeffect前fail、secret/raw leak 0、focused 13/13、related 106/106、fresh re-review `ship`。S05前のmain activationと実Issue作成は0 |
-| S05 | create unknown時のreconciliationを実装する | exact dispatch marker search→presentならreuse、absentだけcreate、unknownなら停止 |
+| S05 | create unknown時のreconciliationを実装する | complete: all-state latest 100を一回listし、exact marker + canonical body byte match一件だけreuse、0件かつ100未満だけcreate、duplicate/corrupt/100件/transport unknownはcreate/callback 0。canonical `/issue` callbackのsix-field `mirrored` readbackを厳密照合し、create後callback crashは次回reuseでtotal create 1。focused 24/24、related 118/118、fresh re-review `ship`、main activation/実Issue 0 |
 | S06 | bridgeに`LM_RESULT_V1` comment parserを実装する | expected repo、issue、author `Daisuke134`、dispatch/job IDs、allowed keysだけaccept |
 | S07 | bridgeにinternal result callbackを実装する | callback 200 + DB result hash readback後だけIssue closeをterminal扱い |
 | S08 | Symphony workflowを固定する | tracker repo/label、max agents 2、isolated workspace、Codex command、result JSON schema、human-only rule |
@@ -1479,4 +1479,4 @@ A01–A09はcomplete。新依存/endpoint 0。A09はrelated 120/120、fresh adve
 
 ### 18.13 Immediate next atom
 
-次はS05だけを実行する。private repoの最新100 Issuesをstable dispatch markerでreconcileし、exact oneならreuse、0件かつ100未満だけcreate、0件かつ100件またはduplicate markerならunknown/conflictで停止する。exact Issue refをexisting private `/issue` APIへ記録し、同一ref replayはeffect 0で同じ`mirrored` readbackを要求する。result parse/callbackとSymphony workflowはS06以降まで前倒ししない。R01–R12、A01–A09、S01–S04は完了済み。full browser production E2Eはbridge完成後のB12唯一のrecording runへ予約し、Chrome/ChatGPT内蔵browserの二重実行はしない。
+次はS06だけを実行する。mirrored Issueのcommentsを一回readし、expected repo/issue/author `Daisuke134`に限定し、exactly one canonical `LM_RESULT_V1` JSONだけをstrict schemaでparseする。completedとneeds_humanのallowed keysを分け、stable JSON SHA-256とcanonical `github-comment://` refを作る。wrong author、duplicate valid result、foreign IDs、malformed/extra keysはcallback 0で停止する。internal result callback/Issue closeとSymphony workflowはS07以降まで前倒ししない。R01–R12、A01–A09、S01–S05は完了済み。full browser production E2Eはbridge完成後のB12唯一のrecording runへ予約し、Chrome/ChatGPT内蔵browserの二重実行はしない。
