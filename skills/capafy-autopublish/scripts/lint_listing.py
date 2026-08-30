@@ -11,10 +11,12 @@ Checks:
   2. OVERCLAIM phrases (browse/scrape/fetch/live/real-time/retrieval/posts/sends/
      .pptx/guaranteed/undetectable...) — FAIL unless the same line negates them
      (no/not/never/without/doesn't) i.e. a disclaimer is fine.
-  3. A pricing table must exist (|cycle|price|cap|trial|).
+  3. A pricing table must exist and every plan must say "No Free Trial".
 Prints PASS / FAIL with the offending lines.
 """
 import re, sys
+
+NO_FREE_TRIAL = re.compile(r"no[\s_-]+free[\s_-]+trial", re.I)
 
 # Phrases a pure-LLM run_online skill cannot truthfully claim (the C4 trap family).
 OVERCLAIM = [
@@ -79,8 +81,18 @@ def main():
                 fails.append(f"OVERCLAIM '{m.group(0)}' (pure-LLM can't deliver) → {line[:90]!r}")
 
     # 3. pricing table present
+    pricing_rows = re.findall(
+        r"\|\s*(day|week|month)\s*\|\s*\$?[0-9.]+\s*\|\s*[0-9]+\s*\|\s*([^|]+)\|",
+        md,
+        re.I,
+    )
     if not re.search(r"\|\s*cycle\s*\|\s*price\s*\|", md, re.I):
         fails.append("no pricing table (| cycle | price | cap | trial |) found")
+    for cycle, trial in pricing_rows:
+        if not NO_FREE_TRIAL.fullmatch(trial.strip()):
+            fails.append(
+                f"free trials are disabled: {cycle} plan trial must be No Free Trial"
+            )
 
     print("=== lint_listing.py ===")
     print(f"title={len(title)}/50  short={len(short)}/500")

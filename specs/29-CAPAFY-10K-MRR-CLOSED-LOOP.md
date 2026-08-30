@@ -12,7 +12,8 @@ Life Manager public repositoryだけをsourceとして、Capafy skillの発見�
 
 ```mermaid
 flowchart LR
-  NOW["NOW P2<br/>loopがCloakBrowserで同じReelを修復"] --> NEXT3["P3<br/>同じReelのreceiptを完結"]
+  NOW["NOW P-1<br/>schedulerとpaid customer 403を復旧"] --> NEXT2["P2<br/>loopがCloakBrowserで同じReelを修復"]
+  NEXT2 --> NEXT3["P3<br/>同じReelのreceiptを完結"]
   NEXT3 --> LEARN["P4<br/>view→click→paid subscriptionを計測"]
   LEARN --> SUPPLY["P5<br/>same-Agent review repair"]
   SUPPLY --> OSS["P6<br/>OSS one-time onboardingを完成"]
@@ -22,6 +23,7 @@ flowchart LR
 
 | order | state | atomic TODO | 完了の公式証拠 |
 |---|---|---|---|
+| P-1 | **ACTIVE: customer outage recovery** | immutable release entrypointへrelease rootを渡し、stale healthcheckがrecent attempt/quota fence後だけrelease-local `lm-loop restart`を1回実行する。OpenRouter key単位の`limit_remaining`をpublish前に検査し、全listingをNo Free Trialへ固定する。YouTube Script Writer `7686597754` v1.0.1のhost keyをCapafy loopだけが新しい専用keyへ更新し、月額72時間trialを削除する | GitHub main由来immutable release、loaded argv/readback、daily/healthcheck exit 0、Agent status=4・run_online・subscription day/week/month・全plan `supportFreeTrial=0`、同じversionまたはsame-Agent revisionのlive chat 200、旧障害keyへの新規利用0、replay update 0 |
 | P0 | completed | provider quota/auth availabilityをscheduler healthから分離し、quota時は5分healthcheck kickstartを行わずdurable backoffへ収束させる。external side effect後は別providerへretryしない | account 2 direct `ACCOUNT2_OK`、production Capafy auth HTTP 200、tests 2件、manual 3回とinstalled scheduled `0→1→2→3`の全期間でsupply runs `162→162`、追加kickstart 0、public write 0 |
 | P1 | completed | TelegramでData Analyst MP4を本人が承認またはrejectする。承認前はInstagram write 0 | user response `Quality superb continue`、再送Telegram `31823`、Agent `7785270416`、SHA-256 `1d52fd0ce772cfa678a85e6ad5be5bc9ff3d5502c474325ca879054e1eeca7dc`、private approval receipt `approved` / `approved_at=2026-08-24T08:16:42Z` |
 | P2 | **ACTIVE: loop-owned CloakBrowser repair** | installed marketing loopだけがCloakBrowserで同じReel `DcaoB6uMTZm`のdescriptionへData Analyst campaign URLを追加し、reload readbackする。main agentはInstagram mutationを実行しない | future wrapperはcommercial captionへexact selected Agent URLを必須化済み。current Reelのprivate API editは`ChallengeRequired` / mutation 0。loopへ`API challenge → dedicated CloakBrowser web edit` fallbackをTDD追加し、同じReel URL・post count不変・caption URL readback・replay edit 0を証明する |
@@ -34,7 +36,7 @@ flowchart LR
 
 ### Remember / Never
 
-- **Remember:** 現在の公式seller truthはpaid order `1`、one-time `$9.99`、subscription MRR `$0`、paid payout `$0`。MRRへone-time売上、views、clicks、pending balanceを加算しない。
+- **Remember:** 現在の公式seller truthはpaid order `1`、one-time `$9.99`、subscription MRR `$0`、paid payout `$0`。YouTube Script Writer `7686597754`は日額`$1.99`、週額`$4.99`、月額`$9.99`のsubscriptionだが、v1.0.1はOpenRouter key daily capのHTTP 403を発生し、月額planに72時間trialが残る。MRRへone-time売上、views、clicks、pending balanceを加算しない。
 - **Remember:** Capafy sourceとruntimeはすでにLife Manager public repoへ移植済み。新しいrepoや重複schedulerを作らない。
 - **Never:** quota failureを5分ごとに再発火しない。承認前creativeを公開しない。slot fullで第6 Agentを作らない。rejected Agentを捨てて別Agentを作らない。generic landing pageを個別listing attributionの代用にしない。main agentがInstagram/Capafyのpublish、caption edit、profile editを直接実行しない。
 
@@ -55,8 +57,8 @@ P1は最初のcreative quality barを確定する一回限りのhuman gateであ
 |---|---|---|
 | canonical source | `Daisuke134/life-manager` mainはpublic canonical repo。Capafy sourceは`skills/capafy-autopublish`、`skills/self/capafy-loop`、`skills/earn/capafy-marketing`に存在 | sourceは移植済み |
 | launchd cutover | loaded 8件すべての`ProgramArguments`と`WorkingDirectory`が`/Users/anicca/Projects/life-manager-main`を指す。旧repo path 0件、duplicate label 0件 | **PASS: runtimeはLife Manager** |
-| scheduler | `ai.anicca.capafy-loop-daily`、IG daily、hourly/daily-close monitorはloaded | schedule定義は存在 |
-| process health | quota stormの原因はaccount 2 authではなくCodexの`local_proxy`強制routeだった。account 2 direct probeは`ACCOUNT2_OK`、production CodexはCapafy auth HTTP 200とinventory/sales readへ到達。healthcheckは最新completed quotaと直近incomplete attemptを分離し、2時間grace中はhourly ownerを再kickしない。manual 3回とinstalled scheduled `0→1→2→3`の全期間でsupply runsは`162→162` | **P0 PASS: 5分再kick 0。P1がactive。strict 7日証明は`0/7`** |
+| scheduler | `ai.anicca.capafy-loop-daily`と`ai.anicca.capafy-loop-healthcheck`はloadedだが、loaded release `6ab86c33…`でdailyはruns 5 / last exit 2、healthcheckはruns 60 / last exit 1。dailyの最終healthy terminalは2026-08-28 02:47 JST | **FAIL: schedule定義だけで24/7を名乗らない。P-1で復旧中** |
+| process health | immutable releaseには`.git`がないのにdaily entrypointが自分のdirectoryへ`git rev-parse`し、`LIFE_MANAGER_REPO`未解決でexit 2。healthcheckは5分ごとにstaleを記録するだけでlifecycle repairを実行していなかった。OpenRouter key gateもaccount残高だけを見てper-key daily capを見ていなかった | **P-1 root cause fixed in worktree; main/release/live readback pending** |
 | event ledger | live ledger 471行でduplicate `event_id` 0件、`verified`後の`unresolved` 0件。exact replayはidempotent、新しいretry/occurrenceだけが新IDを得る | **PASS: identityとphaseは単調** |
 | last money snapshot | live GET 5 sourceはfresh。5 orders、gross `$19.98`、pending `$8.00`、realized `$0.00`、refund `$0.00`。order billing mixとseller active subscription identityは取得不能 | one-timeとMRRは`unknown`、grossから推定しない |
 | marketing snapshot | 承認済みO13 ReelとDecision Debate Reelのnative URL/readbackあり。owner sessionによるcurrent playsは`1`と`8`、likes/commentsは`0/0`、2 sampleはbaseline-only。次のread-only rotation候補はData Analyst `7785270416` | posting railとtruthful metrics railは復旧。第3 evidence-backed Reelと同一window metricsが次のactive action |

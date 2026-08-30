@@ -6,9 +6,10 @@ backed by real winner data (read via `vendor/capafy-user`) or a real publish/rej
 
 ## 0. The ONE rule above all — WE COPY A WINNER VERBATIM
 Originality = lost sales + rejection risk. For each new listing: search a proven seller, read its live
-data (`GET /agent/agent/agents/<id>`), and **copy its pricing / trial / category / structure verbatim**.
-Write original *words* (avoid plagiarism), copy the *facts/structure*. NEVER invent a price, cap, or
-trial number "to be safe" — the winner already proved the numbers convert and the cap keeps cost < revenue.
+data (`GET /agent/agent/agents/<id>`), and **copy its price / cap / category / structure verbatim**.
+Write original *words* (avoid plagiarism), copy the *facts/structure*. NEVER invent a price or cap
+"to be safe" — the winner already proved the numbers convert and the cap keeps cost < revenue.
+Our paid-only policy in §3 overrides any winner's free-trial field; never copy a free-trial setting.
 
 ## 1. SELLABLE TEST (decide before building)
 - **run_online** (what we sell): buyer chats in a sandbox = model + pasted input only. No web/tool/
@@ -30,13 +31,9 @@ Common shapes that sell (pick the one your winner uses; don't blend two):
 - Cheap impulse niches (cold email) run low (week $1.99 / month $5.99). Pro/analyst niches run high
   (month $24.99–27.99). Match the niche's proven band.
 
-## 3. TRIAL config — copy the winner per-plan (this was a real CP1 blocker)
-Each plan needs a trial CHOICE or the price tab stays invalid (red ✗) and submit no-ops.
-Typical winning pattern (copy your winner's exactly):
-- **day** plan → No Free Trial
-- **week** plan → Enable Free Trial 24h or 72h
-- **month** plan → Enable Free Trial 72h or 168h
-(Unbot: day No / wk 72h / mo 168h. Unscore: day No / wk 24h / mo 72h. Copyvert: wk 24h / mo 168h.)
+## 3. TRIAL config — paid-only
+Every plan must select **No Free Trial**. `lint_listing.py` and `build_config.py` reject
+every other trial value, so no generated listing can expose a free offering.
 
 ## 4. CATEGORY (use the winner's; JP labels in the CP1 dropdown)
 writing→ライティング · research→リサーチ · marketing→マーケティング · social→ソーシャルメディア ·
@@ -70,15 +67,15 @@ Honest reframes that PASS: "from your input + model knowledge", "outputs self-co
 ## 8. LISTING FILE SHAPE (so build_config.py can parse it)
 `$LIFE_MANAGER_STATE_HOME/features/capafy-<name>/LISTING.md`:
 - header line: `Primary Model: Claude Sonnet 4.6 · category: <JP> ... tags: a, b, c`
-- a pricing table: `| cycle | price | cap | trial |` rows (trial = "No Free Trial" or "<N>h")
+- a pricing table: `| cycle | price | cap | trial |` rows (trial = "No Free Trial" only)
 - `## Title` / `## shortDescription` / `## welcomeMessage` / `## detailedDescription`
 (internal notes above `## Title` are NOT submitted — only the labeled sections are.)
 
 ## 9. REFERENCE — winners we cloned (verified live)
 | ours | winner cloned | proof |
 |---|---|---|
-| O1 JP Humanizer | Unscore 4097802482 (19 sales) | day No / wk24 / mo72 trial |
-| O2 Academic Humanizer | Unbot 2098780796 (9) | wk72 / mo168 |
+| O1 JP Humanizer | Unscore 4097802482 (19 sales) | historical: day No / wk24 / mo72 trial |
+| O2 Academic Humanizer | Unbot 2098780796 (9) | historical: wk72 / mo168 trial |
 | O3 Conversion Copywriter | Copyvert 4497373524 (5) | wk$2.99 / mo$6.99 |
 | O4 Slide Maker | Slides maker 9991086787 (22) | wk$9.99 / mo$24.99 |
 | O5 Data Analyst | Best Data analysis 8356434477 (18) | wk$7.99 / mo$27.99 |

@@ -4,7 +4,10 @@
 set -uo pipefail
 
 LABEL="ai.anicca.capafy-loop-daily"
+LOOP_ID="capafy-loop-daily"
 DOMAIN="gui/$(id -u)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+RELEASE_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 LIFE_MANAGER_STATE_HOME="${LIFE_MANAGER_STATE_HOME:-$HOME/.local/state/life-manager}"
 MARK="$LIFE_MANAGER_STATE_HOME/state/capafy-autopublish/.capafy-healthy-pass"
 LOG="$LIFE_MANAGER_STATE_HOME/logs/capafy-loop-healthcheck.log"
@@ -83,5 +86,13 @@ PY
   exit 0
 fi
 
-echo "$(date '+%F %T') stale healthy-pass (${age}s); lifecycle repair required via lm-loop for $LABEL" >>"$LOG"
+# A stale/missing terminal receipt means the real launchd loop needs a pass.
+# Delegate lifecycle mutation to the release-local control plane; never spawn a
+# parallel executor or mutate launchd directly here.
+if "$RELEASE_ROOT/bin/lm-loop" restart "$LOOP_ID"; then
+  echo "$(date '+%F %T') stale healthy-pass (${age}s); restarted $LABEL" >>"$LOG"
+  exit 0
+fi
+
+echo "$(date '+%F %T') failed to restart $LABEL" >>"$LOG"
 exit 1
