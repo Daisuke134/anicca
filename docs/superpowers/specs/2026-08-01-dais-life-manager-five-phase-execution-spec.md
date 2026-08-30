@@ -27,7 +27,7 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 この節は、後段の「現在TODO」「次の一件」「local-only」「self-funded agentは別product」という相反する記述を
 上書きする最新の実行順序SSOTである。後段は実装履歴・organ別acceptanceとして保持するが、次作業の選択には使わない。
 Upworkのterminal evidence、startup context、public claim、GA-01〜13Aは完了または履歴として保持する。
-次の一件はAtomic program ledger Seq 16 `ELZ-C03`のsubstep `C03-15`で、6 entity schemaへtenant/reference/idempotency/immutable-receipt constraintsを定義する。
+次の一件はAtomic program ledger Seq 16 `ELZ-C03`のsubstep `C03-16`で、`plugin-life-manager`へ既存`plugin-sql` dependencyとdomain schema登録を接続する。
 
 #### 0.0.1 最新基盤決定 — ElizaOSを完全forkし、Life Managerをlocal OSSからmulti-tenant SaaSへ育てる
 
@@ -598,7 +598,7 @@ Goal分解とgraph生成は後続C07のCodexへ残す。現在activeなC03だけ
 - [x] **C03-12** EffectIntent row/insert typeを定義する — Eliza fork PR #7、merge `13a65e4084aa4d9225bc7b3db0837b84ad879ad7`。tenant-scoped `effect_intents` tableへWorkItem参照、effectClass/effectKey、inputRefs、attempt、status、lease owner/expiry、timestampsを定義し、EffectIntentRow/EffectIntentInsertをexport。executor/retry logic 0。次はC03-13
 - [x] **C03-13** OutcomeReceipt row/insert typeを定義する — Eliza fork PR #8、merge `50ffd09594017d6d1eb6d83d86b74867715ccc4b`。tenant-scoped append-only-shaped `outcome_receipts` tableへEffectIntent参照、attempt、outcome、effectKey、receipt JSON、createdAtを定義し、OutcomeReceiptRow/OutcomeReceiptInsertをexport。mutation rejectionはC03-15/C03-20へ保持。次はC03-14
 - [x] **C03-14** EconomicReceipt row/insert typeを定義する — Eliza fork PR #9、merge `33b3e9442d6d8d7047cd5a552b2cfa3a9fb3fda9`。tenant-scoped append-only-shaped `economic_receipts` tableへOutcomeReceipt参照、kind、minorまたはatomic＋decimals金額、currency、verificationStatus、occurredAt/createdAtを定義し、EconomicReceiptRow/EconomicReceiptInsertをexport。制約はC03-15へ保持。次はC03-15
-- [ ] **C03-15** tenant/reference/idempotency/immutable-receipt constraintsを定義する
+- [x] **C03-15** tenant/reference/idempotency/immutable-receipt constraintsを定義する — Eliza fork PR #10、merge `82c3531a508dfa15e35d6de05a0fbfea11109d51`。inputRefs object/16KB、tenant effectKey一意、attempt非負、lease coherence、OutcomeReceipt effect-attempt一意＋receipt object/16KB、EconomicReceipt entryKey一意・minor/atomic非負整数＋排他表現・currency形式をDrizzle constraintへcopy。receipt UPDATE/DELETE triggerはC03-20へ保持。次はC03-16
 - [ ] **C03-16** `plugin-life-manager`へ`@elizaos/plugin-sql` dependencyとschema登録を接続する
 - [ ] **C03-17** schema contract testの成功を一回確認する
 - [ ] **C03-18** migration contractのfocused failing testを一つ追加する
