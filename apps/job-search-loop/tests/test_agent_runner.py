@@ -28,6 +28,40 @@ class AgentRunnerTests(unittest.TestCase):
         self.assertEqual(TASK_CLASSES["submit"], "browser-lane-agent")
         self.assertEqual(TASK_CLASSES["improve"], "high-value-agent")
 
+    def test_mercor_pass_does_not_supply_escalation_reason(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            runner = AgentRunner(
+                runner_path=Path("/opt/agent_runner.py"),
+                evidence_root=root / "evidence",
+            )
+            completed = type(
+                "Completed",
+                (),
+                {
+                    "returncode": 0,
+                    "stdout": json.dumps(
+                        {
+                            "status": "success",
+                            "result_path": str(root / "result.json"),
+                        }
+                    ),
+                    "stderr": "",
+                },
+            )()
+            (root / "result.json").write_text('{"answer":"ok"}', encoding="utf-8")
+            schema = root / "schema.json"
+            schema.write_text('{"type":"object","required":["answer"]}', encoding="utf-8")
+            with patch("subprocess.run", return_value=completed) as call:
+                runner.run(
+                    task="mercor_pass",
+                    prompt="Grounded task",
+                    schema_path=schema,
+                    workdir=root,
+                    run_id="mercor-pass",
+                )
+            self.assertNotIn("--escalation-reason", call.call_args.args[0])
+
     def test_composition_prompt_uses_stdin_and_retains_private_evidence(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
