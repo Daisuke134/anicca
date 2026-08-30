@@ -160,11 +160,29 @@ def allocate_action(normalized, retries, publishable, resumable_drafts=None):
 def server_agents():
     """Return list of server agents, or None on read failure."""
     try:
-        out = subprocess.run(
+        result = subprocess.run(
             [sys.executable, "packager.py", "publish-list"],
             cwd=PUB, capture_output=True, text=True, timeout=90,
-        ).stdout
-        return json.loads(out, strict=False)["agents"]["list"]
+        )
+        if result.returncode != 0:
+            raise RuntimeError(f"publish-list exited with {result.returncode}")
+        payload = json.loads(result.stdout, strict=False)
+        if not isinstance(payload, dict) or not isinstance(payload.get("agents"), list):
+            raise ValueError("publish-list response has no top-level agents list")
+        rows = []
+        for index, agent in enumerate(payload["agents"]):
+            if not isinstance(agent, dict):
+                raise ValueError(f"publish-list agents[{index}] is not an object")
+            rows.append({
+                "agentId": agent.get("agent_id"),
+                "name": agent.get("name"),
+                "description": agent.get("description"),
+                "agentType": agent.get("agent_type"),
+                "agentStatus": agent.get("agent_status"),
+                "latestAgentVersionId": agent.get("latest_agent_version_id"),
+                "updatedAt": agent.get("updated_at"),
+            })
+        return rows
     except Exception as e:
         print(f"[inventory_status] server read FAILED: {e}", file=sys.stderr)
         return None

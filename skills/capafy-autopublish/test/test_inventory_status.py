@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import importlib.util
+import json
+from types import SimpleNamespace
 from pathlib import Path
 
 
@@ -105,6 +107,64 @@ def test_missing_identity_fails_closed() -> None:
 
     assert result["readable"] is False
     assert result["counts"]["free"] is None
+
+
+def test_server_agents_adapts_official_0911_snake_case_shape(monkeypatch) -> None:
+    module = load_module()
+    payload = {
+        "agents": [
+            {
+                "agent_id": "agent-1",
+                "name": "Skill agent-1",
+                "description": "A published skill",
+                "agent_type": "run_online",
+                "agent_status": "online",
+                "latest_agent_version_id": "version-1",
+                "updated_at": 1735689600000,
+            }
+        ]
+    }
+
+    def fake_run(*args, **kwargs):
+        return SimpleNamespace(stdout=json.dumps(payload), returncode=0)
+
+    monkeypatch.setattr(module.subprocess, "run", fake_run)
+
+    rows = module.server_agents()
+
+    assert rows == [
+        {
+            "agentId": "agent-1",
+            "name": "Skill agent-1",
+            "description": "A published skill",
+            "agentType": "run_online",
+            "agentStatus": "online",
+            "latestAgentVersionId": "version-1",
+            "updatedAt": 1735689600000,
+        }
+    ]
+    assert module.normalize_agents(rows)["readable"] is True
+
+
+def test_server_agents_malformed_shape_or_nonzero_is_unreadable(monkeypatch) -> None:
+    module = load_module()
+
+    cases = [
+        ("not-json", 0),
+        (json.dumps({"agents": {"list": []}}), 0),
+        (json.dumps({"agents": ["not-an-object"]}), 0),
+        (json.dumps({"agents": []}), 1),
+    ]
+
+    for stdout, returncode in cases:
+        monkeypatch.setattr(
+            module.subprocess,
+            "run",
+            lambda *args, _stdout=stdout, _returncode=returncode, **kwargs: SimpleNamespace(
+                stdout=_stdout, returncode=_returncode
+            ),
+        )
+        assert module.server_agents() is None
 
 
 def test_allocator_contract_is_bounded_and_replay_stable() -> None:
