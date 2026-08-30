@@ -5,13 +5,15 @@ set -uo pipefail
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/bin:$PATH"
 # Load runtime credentials exactly like article-daily.sh so remote reconciles
 # (e.g. publication_remote.devto) never fail closed on a missing API key.
-set -a; . "$HOME/.openclaw/.env" 2>/dev/null; set +a
+WRITER_RUNTIME_HOME="${LIFE_MANAGER_STATE_ROOT:-${LIFE_MANAGER_HOME:-$HOME/.local/state/life-manager}}"
+set -a; . "$WRITER_RUNTIME_HOME/.env" 2>/dev/null; set +a
 
 ARTICLE_ROOT="${ARTICLE_ROOT:-${ARTICLE_SKILL_DIR:-$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)}}"
 STATE_DIR="${ARTICLE_STATE_DIR:-$ARTICLE_ROOT/state}"
 ARTICLE_PROVIDER="codex"
 ARTICLE_PROVIDER_COOLDOWN_SECONDS="300"
-LOG="${ARTICLE_RESUME_LOG:-$HOME/.openclaw/logs/article-resume.log}"
+LOG="${ARTICLE_RESUME_LOG:-$WRITER_RUNTIME_HOME/logs/article-resume.log}"
+TELEGRAM_TARGET="${TELEGRAM_TARGET_ID:-${GIG_REPORT_CHAT:-${TELEGRAM_CHAT_ID:-}}}"
 MODEL_RUNNER="${ARTICLE_MODEL_RUNNER:-$ARTICLE_ROOT/runtime/model-runner.sh}"
 MODEL_SUPPORT="${ARTICLE_MODEL_SUPPORT:-$ARTICLE_ROOT/runtime/model-runner-support.py}"
 REPAIR_DISPATCH="$ARTICLE_ROOT/scripts/writer_repair_dispatch.py"
@@ -769,7 +771,7 @@ fi
 notify_pending() {
   python3 "$ARTICLE_ROOT/scripts/article-completion-notify.py" \
     --state "$STATE_PATH" --ledger "$LEDGER_PATH" \
-    --target "${TELEGRAM_TARGET_ID:-8547730585}" \
+    --target "$TELEGRAM_TARGET" \
     --pending --reason "$1" >>"$LOG" 2>&1 || \
     echo "article-resume: pending Telegram report remains queued reason=$1" >>"$LOG"
 }
@@ -919,7 +921,7 @@ if [ "$INITIALIZATION_COUNT" -eq 0 ] \
   NOTE_STATUS="$(jq -r '.pairs["note/ja"].status // empty' "$STATE_PATH")"
   NOTE_CODE_ARGS=()
   if [ "$NOTE_STATUS" = "repair-required" ]; then
-    NOTE_MCP_DIR="${NOTE_MCP_DIR:-$HOME/.openclaw/external/note-mcp}"
+    NOTE_MCP_DIR="${NOTE_MCP_DIR:-$WRITER_RUNTIME_HOME/external/note-mcp}"
     bash "$ARTICLE_ROOT/scripts/ensure-note-mcp-runtime.sh" \
       "$NOTE_MCP_DIR" >>"$LOG" 2>&1 || {
       echo "article-resume: note-mcp runtime restore failed closed" >>"$LOG"
@@ -959,7 +961,7 @@ if [ "$INITIALIZATION_COUNT" -eq 0 ] \
   RC=$?
   python3 "$ARTICLE_ROOT/scripts/article-completion-notify.py" \
     --state "$STATE_PATH" --ledger "$LEDGER_PATH" \
-    --target "${TELEGRAM_TARGET_ID:-8547730585}" >>"$LOG" 2>&1 || \
+    --target "$TELEGRAM_TARGET" >>"$LOG" 2>&1 || \
     echo "article-resume: $PUBLICATION_CONTRACT completion notification remains pending" >>"$LOG"
   notify_pending "Noteの公開と読み戻しが未完了です"
   echo "article-resume: run=$RUN_ID rc=$RC deterministic=note/ja" >>"$LOG"
@@ -997,7 +999,7 @@ if [ "$INITIALIZATION_COUNT" -eq 0 ] \
   RC=$?
   python3 "$ARTICLE_ROOT/scripts/article-completion-notify.py" \
     --state "$STATE_PATH" --ledger "$LEDGER_PATH" \
-    --target "${TELEGRAM_TARGET_ID:-8547730585}" >>"$LOG" 2>&1 || \
+    --target "$TELEGRAM_TARGET" >>"$LOG" 2>&1 || \
     echo "article-resume: $PUBLICATION_CONTRACT completion notification remains pending" >>"$LOG"
   notify_pending "Substackの公開と読み戻しが未完了です"
   echo "article-resume: run=$RUN_ID rc=$RC deterministic=$FIRST_ELIGIBLE" >>"$LOG"
@@ -1022,7 +1024,7 @@ if [ "$INITIALIZATION_COUNT" -eq 0 ] \
   RC=$?
   python3 "$ARTICLE_ROOT/scripts/article-completion-notify.py" \
     --state "$STATE_PATH" --ledger "$LEDGER_PATH" \
-    --target "${TELEGRAM_TARGET_ID:-8547730585}" >>"$LOG" 2>&1 || \
+    --target "$TELEGRAM_TARGET" >>"$LOG" 2>&1 || \
     echo "article-resume: $PUBLICATION_CONTRACT completion notification remains pending" >>"$LOG"
   notify_pending "X記事の公開と読み戻しが未完了です"
   echo "article-resume: run=$RUN_ID rc=$RC deterministic=$FIRST_ELIGIBLE" >>"$LOG"
@@ -1049,7 +1051,7 @@ if [ "$INITIALIZATION_COUNT" -eq 0 ] \
   RC=$?
   python3 "$ARTICLE_ROOT/scripts/article-completion-notify.py" \
     --state "$STATE_PATH" --ledger "$LEDGER_PATH" \
-    --target "${TELEGRAM_TARGET_ID:-8547730585}" >>"$LOG" 2>&1 || \
+    --target "$TELEGRAM_TARGET" >>"$LOG" 2>&1 || \
     echo "article-resume: $PUBLICATION_CONTRACT completion notification remains pending" >>"$LOG"
   notify_pending "Dev.toの公開と読み戻しが未完了です"
   echo "article-resume: run=$RUN_ID rc=$RC deterministic=devto/en" >>"$LOG"
@@ -1071,7 +1073,7 @@ if [ "$INITIALIZATION_COUNT" -eq 0 ] \
   RC=$?
   python3 "$ARTICLE_ROOT/scripts/article-completion-notify.py" \
     --state "$STATE_PATH" --ledger "$LEDGER_PATH" \
-    --target "${TELEGRAM_TARGET_ID:-8547730585}" >>"$LOG" 2>&1 || \
+    --target "$TELEGRAM_TARGET" >>"$LOG" 2>&1 || \
     echo "article-resume: $PUBLICATION_CONTRACT completion notification remains pending" >>"$LOG"
   notify_pending "X短文の公開と読み戻しが未完了です"
   echo "article-resume: run=$RUN_ID rc=$RC deterministic=x-post/ja" >>"$LOG"
@@ -1106,7 +1108,7 @@ RC=$?
 kill "$JUDGE_BROKER_PID" 2>/dev/null || true
 python3 "$ARTICLE_ROOT/scripts/article-completion-notify.py" \
   --state "$STATE_PATH" --ledger "$LEDGER_PATH" \
-  --target "${TELEGRAM_TARGET_ID:-8547730585}" >>"$LOG" 2>&1 || \
+  --target "$TELEGRAM_TARGET" >>"$LOG" 2>&1 || \
   echo "article-resume: $PUBLICATION_CONTRACT completion notification remains pending" >>"$LOG"
 notify_pending "公開処理が未完了です"
 echo "article-resume: run=$RUN_ID rc=$RC eligible=$(printf '%s' "$PLAN" | jq -c '.eligible_pairs')" >>"$LOG"
