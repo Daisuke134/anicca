@@ -3328,6 +3328,73 @@ test("TECH PLAY harness rejects an invalid injected postcondition sleep", () => 
   }), /Connector production Browser Harness invalid/);
 });
 
+const KOKUCHPRO_EVENT_KEY = "33301feefecb914218e7c2318d9de99e", KOKUCHPRO_CANONICAL_URL = `https://www.kokuchpro.com/event/${KOKUCHPRO_EVENT_KEY}/`, KOKUCHPRO_ENTRY_URL = `${KOKUCHPRO_CANONICAL_URL}entry/`, KOKUCHPRO_TICKET_ID = "1", KOKUCHPRO_ENTRY_TOKEN = `kokuchpro_entry_${KOKUCHPRO_EVENT_KEY}`;
+function kokuchProCandidate(overrides = {}) { return { provider: "kokuchpro", event_ref: `kokuchpro-event://event/${KOKUCHPRO_EVENT_KEY}`, canonical_url: KOKUCHPRO_CANONICAL_URL, ticket_id: KOKUCHPRO_TICKET_ID, ...overrides }; }
+
+function makeKokuchProEntryPage({ formSpecs = [{}, {}], candidate = kokuchProCandidate() } = {}) {
+  let href = candidate.canonical_url; const clicks = [];
+  const document = { defaultView: { getComputedStyle() { return {}; } } };
+  const makeElement = (tagName, properties = {}) => { const element = { tagName, ownerDocument: document, parentElement: null, isConnected: true, hidden: false, disabled: false, style: {}, dataset: {}, getBoundingClientRect() { return { width: 100, height: 20 }; }, ...properties }; element.getAttribute = (name) => element[name] == null ? "" : element[name]; return element; };
+  const forms = formSpecs.map((spec = {}) => {
+    const form = makeElement("FORM", {
+      action: spec.action == null ? `${candidate.canonical_url}entry/` : spec.action,
+      method: spec.method == null ? "POST" : spec.method,
+    });
+    const methodInput = makeElement("INPUT", { type: "hidden", name: "_method", value: spec.methodValue == null ? "POST" : spec.methodValue }); const hidden = Array.from({ length: spec.hiddenCount == null ? 1 : spec.hiddenCount }, () => makeElement("INPUT", { type: "hidden", id: spec.hiddenId == null ? "FormEntryAvailability" : spec.hiddenId, name: spec.hiddenName == null ? "data[Form][entry_availability]" : spec.hiddenName, value: spec.ticketId == null ? candidate.ticket_id : spec.ticketId }));
+    const buttons = (spec.buttonSpecs == null ? [{}] : spec.buttonSpecs).map((button = {}) => makeElement("BUTTON", { type: button.type == null ? "submit" : button.type, innerText: button.label == null ? "申込む" : button.label, textContent: button.label == null ? "申込む" : button.label, disabled: button.disabled === true, ...(button.visible === false ? { getBoundingClientRect() { return { width: 0, height: 0 }; } } : {}) }));
+    const descendants = [methodInput, ...hidden, ...buttons]; form.elements = descendants; descendants.forEach((element) => { element.form = form; element.parentElement = form; }); return form;
+  });
+  const page = { url() { return href; }, locator(selector) { const token = /^\[data-lm-connector-control="([^"]+)"\]$/.exec(selector)?.[1]; if (!token) return { async evaluateAll(callback, context) { return callback(forms, context); } }; const matching = () => forms.flatMap((form) => form.elements).filter((element) => element.dataset?.lmConnectorControl === token); return { async count() { return matching().length; }, async elementHandles() { const elements = matching(); if (elements.length !== 1) return []; const [element] = elements; return [{ async evaluate(callback, context) { return callback(element, context); }, async click() { element.clicked = true; clicks.push(element); } }]; }, async click() { const elements = matching(); if (elements.length !== 1) throw new Error("ambiguous KokuchPro control"); elements[0].clicked = true; clicks.push(elements[0]); } }; } };
+  return { page, forms, clicks, setHref(value) { href = value; } };
+}
+
+test("KokuchPro harness uses the exact two-form entry control natively and requires registered readback", async () => {
+  const fixture = makeKokuchProEntryPage(); const candidate = kokuchProCandidate(); let agentCalls = 0; let readbacks = 0;
+  const proposer = createBoundedActionProposer({ repoRoot: "/private/repo", evidenceDir: "/private/evidence", extensionProvider: "kokuchpro", async runAgentRunner() { agentCalls += 1; throw new Error("KokuchPro exact entry must not use agent proposer"); } });
+  const harness = createProductionBrowserHarness({ lumaWorkflow: { async readProviderState() { throw new Error("wrong provider"); } }, extensionProvider: "kokuchpro", extensionWorkflow: { async readProviderState() { readbacks += 1; return fixture.clicks.length === 1 ? { status: "registered", receipt_id: "kokuchpro-receipt-1" } : { status: "absent" }; } }, inspectControls: inspectPageControls, proposeAction: proposer, operateControl: operatePageControl, async resolveValue() { throw new Error("KokuchPro entry must not resolve a private value"); } });
+  const result = await harness.runFallback({ provider: "kokuchpro", candidate, page: fixture.page, pageWebsocket: "ws://127.0.0.1:9222/devtools/page/KOKUCHPROENTRY1", maxSteps: 1, expectedState: "registered_or_pending" });
+  assert.deepEqual(result, { status: "completed", provider_state: { status: "registered", receipt_id: "kokuchpro-receipt-1" }, repaired_actions: [{ purpose: "submit", method: "ax_click", control: KOKUCHPRO_ENTRY_TOKEN }] });
+  assert.equal(fixture.clicks.length, 1); assert.equal(agentCalls, 0); assert.equal(readbacks, 2);
+});
+
+test("KokuchPro exact entry control fails closed for semantic ambiguity and binding drift", async () => {
+  const candidate = kokuchProCandidate(); const control = { control: KOKUCHPRO_ENTRY_TOKEN, kind: "button", label: "申込む", required: false, completed: false, submittable: true }; const action = { purpose: "submit", method: "ax_click", control: KOKUCHPRO_ENTRY_TOKEN };
+  const operate = (fixture, selectedCandidate = candidate, selectedControl = control) => operatePageControl({ provider: "kokuchpro", candidate: selectedCandidate, page: fixture.page, control: selectedControl, action });
+  const invalidCases = [["wrong action", [{ action: "https://www.kokuchpro.com/event/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/entry/" }, {}]], ["wrong method", [{ method: "GET" }, {}]], ["wrong hidden method", [{ methodValue: "GET" }, {}]], ["wrong ticket", [{ ticketId: "999999" }, {}]], ["button type missing", [{ buttonSpecs: [{ type: "" }] }, {}]], ["zero forms", []], ["more than two equivalent forms", [{}, {}, {}]], ["ambiguous submit controls", [{ buttonSpecs: [{}, {}] }, {}]]];
+  for (const [name, formSpecs] of invalidCases) {
+    const fixture = makeKokuchProEntryPage({ formSpecs }); assert.deepEqual(await inspectPageControls({ provider: "kokuchpro", candidate, page: fixture.page }), [], name); assert.equal((await operate(fixture)).status, "failed", name); assert.equal(fixture.clicks.length, 0, name);
+  }
+  const pageDrift = makeKokuchProEntryPage(); const observed = await inspectPageControls({ provider: "kokuchpro", candidate, page: pageDrift.page }); pageDrift.setHref("https://www.kokuchpro.com/event/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/"); assert.equal((await operate(pageDrift, candidate, observed[0])).status, "failed", "page drift"); assert.equal(pageDrift.clicks.length, 0, "page drift");
+  const candidateDrift = makeKokuchProEntryPage(); const candidateControl = (await inspectPageControls({ provider: "kokuchpro", candidate, page: candidateDrift.page }))[0]; assert.equal((await operate(candidateDrift, { ...candidate, ticket_id: "999999" }, candidateControl)).status, "failed", "candidate drift"); assert.equal(candidateDrift.clicks.length, 0, "candidate drift");
+});
+
+test("KokuchPro pinned entry handle rejects every pre-dispatch DOM drift without clicking", async () => {
+  const candidate = kokuchProCandidate();
+  const control = { control: KOKUCHPRO_ENTRY_TOKEN, kind: "button", label: "申込む", required: false, completed: false, submittable: true };
+  const action = { purpose: "submit", method: "ax_click", control: KOKUCHPRO_ENTRY_TOKEN };
+  const driftCases = [
+    ["button", (fixture) => { fixture.forms[0].elements[2].type = "button"; }],
+    ["form", (fixture) => { fixture.forms[0].action = `${KOKUCHPRO_CANONICAL_URL}other/`; }],
+    ["hidden method", (fixture) => { fixture.forms[0].elements[0].value = "GET"; }],
+    ["availability ticket", (fixture) => { fixture.forms[0].elements[1].value = "999999"; }],
+    ["token", (fixture) => { fixture.forms[0].elements[2].dataset.lmConnectorControl = "stale"; }],
+    ["visible", (fixture) => { fixture.forms[0].elements[2].hidden = true; }],
+    ["enabled", (fixture) => { fixture.forms[0].elements[2].disabled = true; }],
+    ["aria enabled", (fixture) => { fixture.forms[0].elements[2]["aria-enabled"] = "false"; }],
+    ["connected", (fixture) => { fixture.forms[0].elements[2].isConnected = false; }],
+  ];
+  for (const [name, drift] of driftCases) {
+    const fixture = makeKokuchProEntryPage();
+    const observed = await inspectPageControls({ provider: "kokuchpro", candidate, page: fixture.page });
+    const result = await operatePageControl({
+      provider: "kokuchpro", candidate, page: fixture.page, control: observed[0], action,
+      beforeDispatch: () => drift(fixture),
+    });
+    assert.equal(result.status, "failed", name);
+    assert.equal(fixture.clicks.length, 0, name);
+  }
+});
+
 test("configured extension provider reuses the generic fallback for its exact token", async () => {
   const page = { url() { return "https://extension.example.test/event/1"; } };
   const candidate = { event_ref: "extension-event://event/1" };
