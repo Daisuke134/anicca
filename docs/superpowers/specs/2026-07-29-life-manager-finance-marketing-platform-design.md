@@ -2372,10 +2372,16 @@ yet exist.
 **Current incident correction:** the native screenshots and live integration
 readback reopen Order 25 MKT-10 before MKT-11. The fixed program order is not
 reordered; MKT-10 is incomplete. R0 through R5 are now terminal. The accepted
-Larry correction merged as `01dc472e…`, current points to immutable release
-`20260831T004335-01dc472e`, and all thirteen loaded marketing labels execute
-that exact release. The first unchecked subcursor is therefore MKT-10R6,
-followed strictly by R7.
+Larry correction merged as `01dc472e…`, and all thirteen loaded marketing
+labels intentionally pin the immutable main-derived release
+`20260831T004335-01dc472e`. The host-wide `/Users/anicca/loops/current`
+selector read back at `2026-08-31 00:52 JST` as the unrelated main-derived
+release `20260831T005035-fc39c2a6`; it is the source for a future `lm-loop apply`, not a
+requirement that installed labels continuously chase unrelated main commits.
+Per-label loaded argv plus sealed release metadata is the execution SSOT. The
+marketing labels therefore are not in source drift: their pinned SHA is an
+ancestor of current `origin/main` and contains the accepted R4 implementation.
+The first unchecked subcursor remains MKT-10R6, followed strictly by R7.
 MKT-11, MKT-12, and MKT-13 stay blocked until MKT-10R7 closes.
 
 | Subcursor | One-at-a-time work | Done evidence |
@@ -2383,7 +2389,7 @@ MKT-11, MKT-12, and MKT-13 stay blocked until MKT-10R7 closes.
 | MKT-10R0 | **done —** freeze the current provider/manifest/native contradiction without publishing | immutable evidence `d2ca4981…303b8` records all 7 screenshot hashes/handles, all 30 live Postiz integrations with the exact matching rows, lane-manifest hash `a67070b1…8b00`, loaded release `557f1b59`, and provider writes 0. It proves `@anicca.videojp` and `@anicca_girl` are absent from Postiz while `@anicca.jp1` is an enabled Instagram integration, not TikTok |
 | MKT-10R1 | **done —** make one machine-readable destination contract the SSOT | `config/marketing-destinations.json` fixes 13 retained targets to exact product/job-product, locale, platform, Postiz profile, native handle, integration, renderer, job format, media form, approved pack name/ref, three JST slots, loop name, label, and entrypoint. Its fail-closed loader rejects duplicate retained handles across platforms and incomplete routes; contract and registry tests pass 4/4 |
 | MKT-10R2 | **done —** close account presence before content work | current provider audit covers all 30 live Postiz integrations exactly once as 13 targets plus 17 integration holds, with three additional absent/platform-collision holds. `@anicca.videojp`, TikTok `@anicca.jp1`, and `@anicca_girl` are explicit 0/day; `@aniccaaffirmation` and `@anicca_buddha` are explicit 0/day holds; uncovered live integrations and route errors are 0 |
-| MKT-10R3 | **done again after release drift —** repair the control-plane drift fail-closed | PR `#3332` merged at `01dc472e…`; current immutable release is `20260831T004335-01dc472e`. All 13 exact destination labels were reapplied and loaded argv is the same release/loop id for every row. Install events are present for all 13 and created no publication. Manifest `4992c334…fc33` is 13/13 `default-off`, armed 0, with 17 holds; fence is closed |
+| MKT-10R3 | **done —** repair the control-plane drift fail-closed | PR `#3332` merged at `01dc472e…`; all 13 exact destination labels were reapplied and their loaded argv pins immutable main-derived release `20260831T004335-01dc472e` with the exact loop id for every row. The moving host-wide `current` selector read back at `2026-08-31 00:52 JST` as `20260831T005035-fc39c2a6`; that does not invalidate an installed immutable label. Install events are present for all 13 and created no publication. Manifest `4992c334…fc33` is 13/13 `default-off`, armed 0, with 17 holds; fence is closed |
 | MKT-10R4 | **done implementation/review/release; live proof belongs to R6 —** revalidate Larry assets and account routing | `@anicca.jp` is fixed to Postiz TikTok `cmp9sdev5012voh0y58qs45xc`, renderer/job format `larry`, form `affirmation-carousel`, and immutable pack `63e2b1b8…3664`. Six ordered 1010×1080 sunset JPEGs contain no person/ReelClaw media. The released adapter rejects invalid dimensions before secret/provider access; both Python transport and JS provider/receipt/reconcile paths reject a bare TikTok `/video/` URL and accept only exact `PUBLISHED` photo proof with matching integration, caption SHA, title, `DIRECT_POST`, and strict `p_pub_url~v2.<digits>`. Ordinary TikTok video and Instagram `/p/` routes remain intact. Focused Node 51/51 and transport 24/24 pass; fresh read-only verdict is `ship`; all eight CI checks pass. Native publication, Telegram, metrics registration, and replay-zero remain R6, so this is not yet a working-loop claim |
 | MKT-10R5 | **done read-only routing closure —** Revalidate ReelClaw/Honne/Anicca video routing | all 13 approved pack objects exist at their exact SHA refs. Every video pack readback matches its destination product, locale, format/form family; destination selection binds job-product + locale + platform + integration + format + form and rejects Honne/Card/integration cross-family substitutions. Focused destination/manifest/ledger suite passes 45/45 with provider writes 0. Mixed historical feeds remain quarantined |
 | MKT-10R6 | **active; next natural slot `2026-08-31 08:00 JST` —** Run canaries one destination at a time through the natural owner | first target is loaded owner `ai.anicca.life-manager-anicca-main-tiktok`; before 08:00 its production scheduler has no due slot, so no off-schedule executor is substituted. At/after the slot, require exact integration plus native handle/form/content/caption/slot readback, natural Telegram, metrics-owner registration, and replay-zero; provider-only success is insufficient. Parallel work continues on account failover and other failed loops |
@@ -2435,13 +2441,14 @@ profile URL or numeric release suffix without that exact row and lineage is not
 success. A caption-matching native URL and browser/login readback are optional
 diagnostics, not publication gates. No Google login is part of this recovery.
 
-An external observation clock is not an active implementation item. It remains
-`time-gated pending` only when it has an exact due time, a durable LM owner, and
-terminal acceptance evidence. Exactly one executable atomic item remains active;
-when the clock fires, its readback is reconciled before any dependent account arm.
+**Historical pre-incident execution snapshot — superseded by the current
+§12.2 MKT-10R0-R7 cursor above.** At that time an external observation clock was
+not an active implementation item. It remained `time-gated pending` only when
+it had an exact due time, a durable LM owner, and terminal acceptance evidence.
+The then-active atomic item was reconciled before any dependent account arm.
 
-**Active executable atomic item:** MKT-09R9-15 / Order 24F10 reconciles the
-existing `@anicca_slideshow` API canary; it creates no new publication. For this
+**Historical executable atomic item:** MKT-09R9-15 / Order 24F10 reconciled the
+existing `@anicca_slideshow` API canary; it created no new publication. For this
 TikTok **native photo carousel** lane only, publication acceptance is the exact
 Postiz API/DB row in `PUBLISHED` state with matching integration, caption, title,
 slot, and DIRECT_POST settings plus the LM-local SHA-verified pack, six ordered
