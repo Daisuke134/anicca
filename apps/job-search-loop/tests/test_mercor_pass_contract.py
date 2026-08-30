@@ -8,7 +8,12 @@ import unittest
 from unittest.mock import patch
 
 from job_search_loop.agent_runner import AgentRunner, PassAlreadyRunning, TASK_CLASSES
-from job_search_loop.mercor_pass import build_context, main, validate_evidence_paths
+from job_search_loop.mercor_pass import (
+    build_context,
+    main,
+    record_verified_submissions,
+    validate_evidence_paths,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -96,6 +101,9 @@ class MercorPassContractTests(unittest.TestCase):
             "Submit every ready distinct listing",
             "continue to the next distinct listing after each verified submission",
             "current-pass submitted set",
+            "python3 -m job_search_loop.mercor_submit_guard",
+            '"claimed": true',
+            '"claimed": false',
         ):
             self.assertIn(required, prompt)
         self.assertNotIn("Choose at most one new listing", prompt)
@@ -105,6 +113,22 @@ class MercorPassContractTests(unittest.TestCase):
             (ROOT / "schemas" / "mercor-pass-result.v1.schema.json").read_text(encoding="utf-8")
         )
         self.assertEqual(schema["properties"]["submitted"]["maxItems"], 12)
+
+    def test_current_skill_and_spec_match_continuous_application_policy(self):
+        skill = (ROOT.parents[1] / "skills" / "mercor" / "SKILL.md").read_text()
+        self.assertIn("30-minute", skill)
+        self.assertIn("every grounded ready listing", skill)
+        self.assertNotIn("existing hourly Job Hunter loop", skill)
+        self.assertNotIn("submit exactly one new listing", skill)
+        spec = (
+            ROOT.parents[1]
+            / "docs"
+            / "superpowers"
+            / "specs"
+            / "2026-08-22-mercor-life-manager-consolidation.md"
+        ).read_text()
+        self.assertIn("existing 30-minute Job Hunter acquisition loop", spec)
+        self.assertIn("submit every grounded ready listing", spec)
 
     def test_success_result_contract_validates(self):
         schema = json.loads(
@@ -248,6 +272,57 @@ class MercorPassContractTests(unittest.TestCase):
                 context["evidence_dir"],
                 str((root / "evidence" / "current-pass").resolve()),
             )
+
+    def test_context_deduplicates_persistent_pre_effect_claim_after_crash(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            state = root / "state"
+            state.mkdir()
+            (state / "submission-fences.jsonl").write_text(
+                '{"listing_id":"list-claimed","status":"submit_claimed"}\n',
+                encoding="utf-8",
+            )
+            context = build_context(
+                state_root=state,
+                profile_path=root / "profile.json",
+                resume_path=root / "resume.pdf",
+                cdp_url="http://127.0.0.1:9334",
+            )
+            self.assertIn("list-claimed", context["submitted_listing_ids"])
+            self.assertEqual(
+                context["submission_fence_ledger"],
+                str((state / "submission-fences.jsonl").resolve()),
+            )
+
+    def test_verified_submissions_are_recorded_once_for_next_wake(self):
+        with tempfile.TemporaryDirectory() as directory:
+            state = Path(directory)
+            result = {
+                "status": "submitted",
+                "submitted": [
+                    {
+                        "listing_id": "list-one",
+                        "title": "Software Evaluator",
+                        "url": "https://work.mercor.com/jobs/list-one/software-evaluator",
+                        "status": "submitted_pending_review",
+                        "evidence_url": "https://work.mercor.com/jobs/apply/candidate-one",
+                        "evidence_path": "/tmp/evidence-one.json",
+                    },
+                    {
+                        "listing_id": "list-two",
+                        "title": "Data Evaluator",
+                        "url": "https://work.mercor.com/jobs/list-two/data-evaluator",
+                        "status": "submitted_pending_review",
+                        "evidence_url": "https://work.mercor.com/jobs/apply/candidate-two",
+                        "evidence_path": "/tmp/evidence-two.json",
+                    },
+                ],
+            }
+            record_verified_submissions(state, result, run_id="run-1")
+            record_verified_submissions(state, result, run_id="run-replay")
+            ledger = state / "applications.jsonl"
+            rows = [json.loads(line) for line in ledger.read_text().splitlines()]
+            self.assertEqual([row["listing_id"] for row in rows], ["list-one", "list-two"])
 
 
 if __name__ == "__main__":

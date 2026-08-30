@@ -6,7 +6,9 @@ from job_search_loop.mercor_provider import MercorListing
 from job_search_loop.mercor_submit_guard import (
     MercorSubmitGuardError,
     claim_ready_submission,
+    claim_submission_once,
     classify_submit_readback,
+    fenced_listing_ids,
 )
 
 
@@ -65,6 +67,35 @@ class MercorSubmitGuardTests(unittest.TestCase):
             ),
             "submit_unknown",
         )
+
+    def test_persistent_claim_survives_crash_and_duplicate_is_noop(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            evidence = root / "pre.json"
+            evidence.write_text('{"observed":true}\n', encoding="utf-8")
+            fences = root / "submission-fences.jsonl"
+
+            first = claim_submission_once(
+                fence_ledger=fences,
+                listing_id="list-new",
+                title="Software Evaluator",
+                url="https://work.mercor.com/jobs/list-new/software-evaluator",
+                pre_submit_evidence=evidence,
+                run_id="run-1",
+            )
+            replay = claim_submission_once(
+                fence_ledger=fences,
+                listing_id="list-new",
+                title="Software Evaluator",
+                url="https://work.mercor.com/jobs/list-new/software-evaluator",
+                pre_submit_evidence=evidence,
+                run_id="run-2",
+            )
+
+            self.assertTrue(first)
+            self.assertFalse(replay)
+            self.assertEqual(fenced_listing_ids(fences), {"list-new"})
+            self.assertEqual(len(fences.read_text(encoding="utf-8").splitlines()), 1)
 
 
 if __name__ == "__main__":

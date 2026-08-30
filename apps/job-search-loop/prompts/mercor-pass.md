@@ -28,7 +28,11 @@ Pass order:
    detail pages per wake. Never stop after the first Explore page solely because its
    candidates fail a fact gate; record the exact page/listing evidence and continue.
 4. For a ready listing, save fresh pre-action screenshot and bounded DOM evidence.
-   Submit exactly once, then reopen the application result and require the visible
+   Before clicking, run `python3 -m job_search_loop.mercor_submit_guard` with
+   `--fence-ledger`, `--listing-id`, `--title`, `--url`, `--pre-submit-evidence`,
+   and `--run-id` from the bounded context. Click only when its JSON says
+   `"claimed": true`; when it says `"claimed": false`, treat the listing as an
+   existing attempt and do not click. Submit exactly once, then reopen the application result and require the visible
    success/read-back. Add it to `submitted` and the current-pass submitted set, then
    continue to the next distinct listing after each verified submission. If the
    outcome is ambiguous after the click, return `blocked` with `submit_unknown`;
