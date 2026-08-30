@@ -217,7 +217,7 @@ test("native Eventbrite attendee identity fails closed for mismatch and ambiguou
   }
 });
 
-test("native config resolves the existing Telegram owner without an inline shell parser", async () => {
+test("native config requires the shared Telegram target instead of an OpenClaw owner file", async () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "connector-native-owner-"));
   const ownerFile = path.join(directory, ".openclaw", "credentials", "telegram-default-allowFrom.json");
   fs.mkdirSync(path.dirname(ownerFile), { recursive: true, mode: 0o700 });
@@ -235,6 +235,7 @@ test("native config resolves the existing Telegram owner without an inline shell
         DAIS_LEGAL_NAME_ROMAJI: "Dais Example",
         GEMINI_API_KEY: "fixture-ranking-key",
         GOG_KEYRING_PASSWORD: "private-keyring",
+        LM_CONNECTOR_TELEGRAM_TARGET: "987654321",
         TELEGRAM_BOT_TOKEN: "fixture-telegram-token",
       },
       createDependencies(input) {
@@ -243,10 +244,28 @@ test("native config resolves the existing Telegram owner without an inline shell
       },
       async runWake() { return { status: "completed_no_effect" }; },
     });
-    assert.equal(factoryInput.telegramTarget, "123456789");
+    assert.equal(factoryInput.telegramTarget, "987654321");
   } finally {
     fs.rmSync(directory, { recursive: true, force: true });
   }
+});
+
+test("native config fails closed when the shared Telegram target is missing even if an OpenClaw owner file exists", async () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "connector-native-owner-fallback-forbidden-"));
+  const ownerFile = path.join(directory, ".openclaw", "credentials", "telegram-default-allowFrom.json");
+  fs.mkdirSync(path.dirname(ownerFile), { recursive: true, mode: 0o700 });
+  fs.writeFileSync(ownerFile, `${JSON.stringify({ allowFrom: ["123456789"] })}\n`, { mode: 0o600 });
+  writeKanaProfile(directory);
+  let factoryCalls = 0;
+  try {
+    await assert.rejects(runNativePass({
+      repoRoot: REPO_ROOT, stateDir: path.join(directory, "state"), ownerToken: "native-pass-owner-fallback-forbidden-123456",
+      env: { ...BASE_ENV, HOME: directory, LM_CONNECTOR_TELEGRAM_TARGET: undefined },
+      createDependencies() { factoryCalls += 1; return {}; },
+      async runWake() { return { status: "unexpected" }; },
+    }), /Connector minimal pass unavailable/);
+    assert.equal(factoryCalls, 0);
+  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
 });
 
 test("native Kana identity fails closed before dependency or wake creation", async () => {

@@ -96,19 +96,7 @@ function readKanaIdentity(env) {
 
 function resolvedTelegramTarget(env) {
   const configured = String(env.LM_CONNECTOR_TELEGRAM_TARGET || "").trim();
-  if (configured) return requiredText(configured);
-  const home = absoluteDirectory(env.HOME);
-  const file = path.join(home, ".openclaw", "credentials", "telegram-default-allowFrom.json");
-  let value;
-  try {
-    const stat = fs.statSync(file);
-    if (!stat.isFile() || stat.size < 2 || stat.size > 64 * 1024 || (stat.mode & 0o077) !== 0) unavailable();
-    value = JSON.parse(fs.readFileSync(file, "utf8"));
-  } catch { unavailable(); }
-  const candidates = Array.isArray(value) ? value : value && value.allowFrom;
-  const target = Array.isArray(candidates) ? String(candidates[0] || "").trim() : "";
-  if (!/^-?[0-9]{5,20}$/.test(target)) unavailable();
-  return target;
+  return requiredText(configured);
 }
 
 function resolveEnv(options) {
