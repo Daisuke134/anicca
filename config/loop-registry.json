@@ -2069,6 +2069,22 @@
       "provider_route": "shared-agent-runner",
       "state_root": "~/.local/state/life-manager/monkey-watchdog"
     },
+    "money-printer-symphony-bridge": {
+      "cadence": {
+        "start_interval_seconds": 5
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "earn",
+      "effect_class": "none",
+      "entrypoint": "runtime/loop/entry_dispatch.py",
+      "label": "ai.anicca.life-manager-money-printer-symphony-bridge",
+      "log_root": "~/.local/state/life-manager/money-printer-symphony-bridge/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.local/state/life-manager/money-printer-symphony-bridge"
+    },
     "openclaw-conformity-monkey": {
       "cadence": {
         "calendar_interval": [

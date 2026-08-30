@@ -3,7 +3,10 @@
 
 from __future__ import annotations
 
+import json
 import os
+import re
+import stat
 import sys
 from pathlib import Path
 
@@ -19,6 +22,10 @@ def command_for(loop_id: str, root: Path, home: Path) -> list[str]:
     python = sys.executable
     cloak_python = str(home / ".openclaw/skills/_shared/venv-cloak/bin/python")
     fixed = {
+        "money-printer-symphony-bridge": [
+            "/opt/homebrew/bin/node",
+            str(root / "apps/life-manager/scripts/money-printer-symphony-bridge.js"),
+        ],
         "affiliate-browser": [cloak_python, str(affiliate_browser)],
         "affiliate-impact-browser": [cloak_python, str(affiliate_browser)],
         "affiliate-x-browser": [cloak_python, str(affiliate_browser)],
@@ -120,14 +127,44 @@ def command_for(loop_id: str, root: Path, home: Path) -> list[str]:
     return fixed[loop_id]
 
 
+def environment_for(loop_id: str, home: Path, base: dict[str, str]) -> dict[str, str]:
+    environment = dict(base)
+    if loop_id != "money-printer-symphony-bridge":
+        return environment
+    private = home / ".local/share/anicca"
+    credentials = private / "credentials.json"
+    try:
+        if private.is_symlink() or credentials.is_symlink():
+            raise ValueError
+        if private.stat().st_uid != os.getuid() or stat.S_IMODE(private.stat().st_mode) != 0o700:
+            raise ValueError
+        if credentials.stat().st_uid != os.getuid() or stat.S_IMODE(credentials.stat().st_mode) != 0o600:
+            raise ValueError
+        payload = json.loads(credentials.read_text(encoding="utf-8"))
+        rows = [row for row in payload.get("credentials", [])
+                if isinstance(row, dict) and row.get("service") == "life-manager-symphony-bridge"]
+        if len(rows) != 1 or not re.fullmatch(r"[A-Za-z0-9_-]{32,256}", rows[0].get("token", "")):
+            raise ValueError
+    except (OSError, AttributeError, TypeError, json.JSONDecodeError, ValueError):
+        raise ValueError("money printer bridge credential unavailable") from None
+    environment.update({
+        "LM_SYMPHONY_API_BASE_URL": "https://life-call-production.up.railway.app",
+        "LM_SYMPHONY_BRIDGE_SECRET": rows[0]["token"],
+        "LM_RUNTIME_TENANT_ID": "webmcp-judge",
+    })
+    return environment
+
+
 def main() -> int:
     loop_id = os.environ.get("LIFE_MANAGER_LOOP_ID", "")
     root = Path(__file__).resolve().parents[2]
     try:
-        command = command_for(loop_id, root, Path.home())
+        home = Path.home()
+        command = command_for(loop_id, root, home)
+        environment = environment_for(loop_id, home, os.environ)
     except ValueError as error:
         print(f"entry-dispatch: {error}", file=sys.stderr); return 78
-    os.execv(command[0], command)
+    os.execve(command[0], command, environment)
     return 70
 
 

@@ -43,6 +43,8 @@ def _plist(loop_id: str, entry: dict, release_root: Path, release_sha: str) -> b
     key, cadence = next(iter(entry["cadence"].items()))
     if key == "start_interval_seconds":
         value["StartInterval"] = cadence
+        if cadence < 10:
+            value["ThrottleInterval"] = cadence
     elif key == "calendar_interval":
         value["StartCalendarInterval"] = cadence
     elif key == "run_at_load":

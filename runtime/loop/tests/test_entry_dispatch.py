@@ -1,11 +1,46 @@
+import json
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
+from runtime.loop import entry_dispatch
 from runtime.loop.entry_dispatch import command_for
 
 
 class EntryDispatchTest(unittest.TestCase):
+    def test_money_printer_bridge_uses_release_code_and_private_ssot_env(self):
+        root = Path('/release')
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary)
+            private = home / '.local/share/anicca'
+            private.mkdir(parents=True, mode=0o700)
+            credentials = private / 'credentials.json'
+            token = 'a' * 64
+            credentials.write_text(json.dumps({
+                'version': 1,
+                'credentials': [{'service': 'life-manager-symphony-bridge', 'token': token}],
+            }))
+            credentials.chmod(0o600)
+
+            try:
+                command = command_for('money-printer-symphony-bridge', root, home)
+            except ValueError:
+                self.fail('money printer bridge dispatch is missing')
+            self.assertEqual(command, [
+                '/opt/homebrew/bin/node',
+                '/release/apps/life-manager/scripts/money-printer-symphony-bridge.js',
+            ])
+            environment_for = getattr(entry_dispatch, 'environment_for', None)
+            self.assertTrue(callable(environment_for), 'secure bridge environment loader is missing')
+            base = {'PATH': '/usr/bin'}
+            environment = environment_for('money-printer-symphony-bridge', home, base)
+            self.assertEqual(base, {'PATH': '/usr/bin'})
+            self.assertEqual(environment['LM_SYMPHONY_API_BASE_URL'],
+                             'https://life-call-production.up.railway.app')
+            self.assertEqual(environment['LM_RUNTIME_TENANT_ID'], 'webmcp-judge')
+            self.assertEqual(environment['LM_SYMPHONY_BRIDGE_SECRET'], token)
+
     def test_affiliate_browsers_use_installed_cloakbrowser_python(self):
         root=Path('/release'); home=Path('/home')
         expected=home/'.openclaw/skills/_shared/venv-cloak/bin/python'
