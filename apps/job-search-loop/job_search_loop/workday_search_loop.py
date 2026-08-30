@@ -668,7 +668,7 @@ def main() -> int:
         discover=discover_next,
         qualify=qualify_next,
         max_candidates=args.max_candidates,
-        target_qualified=(0 if rolling["deficit"] == 0 else 1),
+        target_qualified=min(rolling["deficit"], args.max_candidates),
     )
     result["stale_rows"] = list(stale_rows)
     result["discovered"] = [
