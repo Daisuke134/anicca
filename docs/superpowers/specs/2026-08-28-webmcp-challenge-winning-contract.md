@@ -1271,7 +1271,7 @@ One active item at a time。各itemは実物readbackを閉じてから次へ進�
 
 | Atom | One action | Exact completion evidence |
 |---|---|---|
-| R01 | migrationにruntime status `waiting_agent`を追加する | existing statesを保ちconstraint readbackに`waiting_agent`が一件 |
+| R01 | migrationにruntime status `waiting_agent`を追加する | code-pass: existing statesを全て保ち`waiting_agent`を追加。focused `money-printer-runtime-store.test.js` 11/11 pass。DB applyはR10 |
 | R02 | `lm_symphony_dispatches`を追加する | PK `(tenant_id, dispatch_id)`、unique open `(tenant_id,job_id)`、issue/result refs、status `claimed|mirrored|result_ready|failed` |
 | R03 | `claim_lm_symphony_job` RPCを追加する | one queued `general-agent.work`だけを`waiting_agent`へatomic transitionしdispatch rowを返す |
 | R04 | `record_lm_symphony_issue` RPCを追加する | same dispatch+same issue refはidempotent、different refはconflict |
@@ -1395,4 +1395,4 @@ One active item at a time。各itemは実物readbackを閉じてから次へ進�
 
 ### 18.13 Immediate next atom
 
-`R01`だけを次に実行する。R01–R10が揃うまでbridge API、Symphony production connection、provider applicationへ進まない。各atom完了時にこのSectionのstateとSection 17の対応uncertaintyを同じcommitで更新する。
+`R02`だけを次に実行する。R02–R10が揃うまでbridge API、Symphony production connection、provider applicationへ進まない。各atom完了時にこのSectionのstateとSection 17の対応uncertaintyを同じcommitで更新する。

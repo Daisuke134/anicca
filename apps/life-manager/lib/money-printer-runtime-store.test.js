@@ -1,6 +1,8 @@
 "use strict";
 
 const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
 const test = require("node:test");
 
 const { createMoneyPrinterRuntimeStore } = require("./money-printer-runtime-store.js");
@@ -9,6 +11,17 @@ const { buildOpportunity } = require("./money-printer-opportunity.js");
 const TENANT = "tenant-a";
 const ID = "a".repeat(64);
 const NOW = "2026-08-29T00:00:00.000Z";
+const SYMPHONY_MIGRATION = path.join(__dirname, "../migrations/2026-08-30-lm-symphony-dispatches.sql");
+
+test("R01 Symphony migration adds waiting_agent without dropping runtime states", () => {
+  const migration = fs.readFileSync(SYMPHONY_MIGRATION, "utf8");
+  assert.match(migration, /DROP CONSTRAINT IF EXISTS lm_runtime_jobs_status_check/i);
+  const statusConstraint = migration.match(/ADD CONSTRAINT lm_runtime_jobs_status_check CHECK \([\s\S]*?status IN \(([^)]+)\)/i);
+  assert.ok(statusConstraint);
+  for (const status of ["queued", "running", "waiting_agent", "waiting_human", "reconciling", "completed", "dead_letter"]) {
+    assert.match(statusConstraint[1], new RegExp(`'${status}'`));
+  }
+});
 
 function opportunity() {
   return {
