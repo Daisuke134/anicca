@@ -12,6 +12,7 @@ LIFE_MANAGER_STATE_HOME="${LIFE_MANAGER_STATE_HOME:-$HOME/.local/state/life-mana
 MARK="$LIFE_MANAGER_STATE_HOME/state/capafy-autopublish/.capafy-healthy-pass"
 LOG="$LIFE_MANAGER_STATE_HOME/logs/capafy-loop-healthcheck.log"
 EVIDENCE_ROOT="$LIFE_MANAGER_STATE_HOME/state/agent-runner-evidence/capafy-marketplace"
+OFFLINE_EVIDENCE_ROOT="$LIFE_MANAGER_STATE_HOME/state/agent-runner-evidence/capafy-offline-build"
 BACKOFF="$LIFE_MANAGER_STATE_HOME/state/capafy-provider-backoff.json"
 STALE_SECONDS=$((30 * 60 * 60))
 ATTEMPT_GRACE_SECONDS=$((2 * 60 * 60))
@@ -31,8 +32,10 @@ fi
 
 # A recent attempt proves launchd is scheduling the owner. Let the hourly
 # cadence retry it; the five-minute monitor must not overlap or amplify it.
-LATEST_ATTEMPT="$(find "$EVIDENCE_ROOT" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort | tail -1)"
-LATEST_START="$(basename "$LATEST_ATTEMPT" 2>/dev/null | cut -d- -f1)"
+LATEST_START="$({
+  find "$EVIDENCE_ROOT" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; 2>/dev/null
+  find "$OFFLINE_EVIDENCE_ROOT" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; 2>/dev/null
+} | cut -d- -f1 | sort -n | tail -1)"
 case "$LATEST_START" in
   ''|*[!0-9]*) ;;
   *)

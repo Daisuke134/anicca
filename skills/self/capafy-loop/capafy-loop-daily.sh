@@ -39,6 +39,7 @@ TERMINAL_TOOL="$SCRIPT_DIR/capafy_daily_terminal.py"
 PASS_SCHEMA="$SCRIPT_DIR/capafy-loop-pass.schema.json"
 OFFLINE_CADENCE_TOOL="$SCRIPT_DIR/capafy_offline_cadence.py"
 OFFLINE_CADENCE_STATE="$HOME/.local/state/life-manager/state/capafy-offline-build-cadence.json"
+SELFHEAL_REQUEST="$HOME/.local/state/life-manager/state/capafy-loop-selfheal-request.json"
 EXECUTION_ID="$(date -u +%Y%m%dT%H%M%SZ)-$$"
 TERMINAL_RECORDED=0
 mkdir -p "$(dirname "$LOG")"
@@ -73,7 +74,7 @@ printf '%s\n' "$INVENTORY" | tail -n 1 | python3 \
   "$LIFE_MANAGER_RELEASE_ROOT/skills/capafy-autopublish/scripts/candidate_backlog.py" refresh \
   --catalog "$LIFE_MANAGER_SOURCE_REPO/skills/capafy/catalog" \
   --inventory-stdin >>"$LOG" 2>&1 || exit 1
-if [ "$VERDICT" = "CAP_FULL" ]; then
+if [ "$VERDICT" = "CAP_FULL" ] && [ ! -f "$SELFHEAL_REQUEST" ]; then
   if ! python3 "$OFFLINE_CADENCE_TOOL" claim --state "$OFFLINE_CADENCE_STATE" \
       --day "$(date +%F)" --execution-id "$EXECUTION_ID" >>"$LOG" 2>&1; then
     echo "=== capafy-loop-daily done rc=0 (HEALTHY-IDLE: CAP_FULL; offline build already claimed today; agent spend=0; platform write=0) $(date '+%F %T %Z') ===" >>"$LOG"
