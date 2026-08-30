@@ -220,6 +220,8 @@ def _raw_capafy_page(cdp, target_hint=""):
     # healthy.  Probe each page with a short Runtime.evaluate instead of treating
     # "newest target" as an availability guarantee.
     targets = _capafy_page_targets(cdp)
+    if not targets:
+        raise RuntimeError("no existing Capafy createAgent page target")
     if target_hint:
         exact = [t for t in targets if target_hint in str(t.get("url", ""))]
         if exact:
