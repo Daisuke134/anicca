@@ -6,11 +6,17 @@ PUB="$ROOT/vendor/capafy-publisher"
 STATE_HOME="$(mktemp -d)"
 cleanup(){ rm -rf "$STATE_HOME"; }
 trap cleanup EXIT
+OPERATOR_HOME_TOKEN='$HOME'
+OPENCLAW_PATH_SUFFIX='/.openclaw'
 
 for script in "$ROOT/scripts/publish_prepare.sh" "$ROOT/scripts/publish_finish.sh"; do
   rg -q '^CAPAFY_PUBLISHER_STATE_HOME="\$\{CAPAFY_PUBLISHER_STATE_HOME:-\$LIFE_MANAGER_STATE_HOME/runtime/capafy-publisher\}"$' "$script"
   rg -q '^export CAPAFY_PUBLISHER_STATE_HOME$' "$script"
 done
+if rg -qF "${OPERATOR_HOME_TOKEN}${OPENCLAW_PATH_SUFFIX}" "$ROOT/scripts/publish_prepare.sh" "$ROOT/scripts/publish_finish.sh"; then
+  echo "FAIL: publisher entrypoints read operator OpenClaw state" >&2
+  exit 1
+fi
 
 for id in 1037238583 7631594519; do
   got="$(cd "$PUB" && LIFE_MANAGER_STATE_HOME="$STATE_HOME" CAPAFY_PUBLISH_WORK_DIR="$STATE_HOME/runtime/capafy-publisher/work/agents/$id" python3 - <<'PY'

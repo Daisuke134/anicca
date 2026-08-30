@@ -31,8 +31,8 @@ AUTO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PUB="$AUTO/vendor/capafy-publisher"
 LIFE_MANAGER_STATE_HOME="${LIFE_MANAGER_STATE_HOME:-$HOME/.local/state/life-manager}"
 VENV="${CAPAFY_BROWSER_PYTHON:-python3}"
-# OpenClaw resolves provider config from $HOME/.openclaw/openclaw.json, not from
-# runtime_dir. Give the publisher an isolated HOME so it cannot package the
+# OpenClaw resolves provider config from the isolated publisher HOME's
+# .openclaw/openclaw.json, not from runtime_dir. Give the publisher an isolated HOME so it cannot package the
 # operator's live OpenClaw providers. Canonical skill source remains in this repo.
 CAPAFY_PUBLISH_HOME="${CAPAFY_PUBLISH_HOME:-$LIFE_MANAGER_STATE_HOME/runtime/capafy-publisher-home}"
 CAPAFY_PUBLISHER_STATE_HOME="${CAPAFY_PUBLISHER_STATE_HOME:-$LIFE_MANAGER_STATE_HOME/runtime/capafy-publisher}"
@@ -42,7 +42,7 @@ SEL_FILE="$LIFE_MANAGER_STATE_HOME/state/capafy-autopublish/sel_one.json"
 
 # launchd and direct recovery runs must use the same private credential SSOT.
 # Load names into the process only; never copy values into the repo or output.
-for ENV_FILE in "$LIFE_MANAGER_STATE_HOME/.env" "$HOME/.openclaw/.env"; do
+for ENV_FILE in "$LIFE_MANAGER_STATE_HOME/.env"; do
   if [ -f "$ENV_FILE" ]; then
     set -a; . "$ENV_FILE" 2>/dev/null; set +a
   fi
