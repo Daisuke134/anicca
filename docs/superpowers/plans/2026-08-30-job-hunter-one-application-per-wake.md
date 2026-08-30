@@ -1,6 +1,6 @@
 # Job Hunting 48-per-Rolling-Day Implementation Plan
 
-**Goal:** Keep the existing 30-minute Job Hunting owner continuously filling a rolling minimum of 48 authoritative applications while selecting Japan-feasible, current-scope work and keeping rejected candidates private.
+**Goal:** Make every eligible 30-minute Job Hunting wake produce at least one new authoritative Gmail-confirmed application and keep filling toward 48 distinct confirmations in the rolling 24-hour window, while selecting Japan-feasible, current-scope work and keeping rejected candidates private.
 
 **Architecture:** Reuse the existing Workday discovery, model qualification, browser row queue, Ledger, Gmail reconciliation and Telegram outbox. The search loop computes the rolling deficit from `submission_confirmations.received_at`, qualifies multiple rows when behind, and passes all qualified rows to the existing sequential browser queue. No second scheduler, browser owner, dependency, provider-specific fast path, or deterministic job-fit classifier is added.
 
@@ -10,6 +10,7 @@
 
 - Count only distinct authoritative Gmail-confirmed `submitted` applications received inside the preceding rolling 24 hours.
 - Target at least 48; a deficit remains visible and carries into the next wake.
+- Close the implementation release gate with one to three real launchd-owned wakes that each increase the authoritative confirmation count when eligible work exists, followed by immediate replay zero. Do not wait 24 hours merely to validate the repair.
 - Preserve truthful qualification, one-shot submit fences, `submit_unknown` reconciliation and replay zero.
 - Prioritize Japan employment feasibility, demonstrated current career scope, then compensation ambition.
 - Reject/hold decisions remain private evidence and send no Telegram message.
@@ -94,7 +95,7 @@ PRs #3221/#3224/#3229/#3236 close query length, stretch fit, old-policy rejectio
 
 **No-voluntary-skip v5 design:** Applying is free, so interview-likelihood pessimism is not an application veto. The source model searches for Japan-feasible early/mid-career individual-contributor work and avoids senior leadership scope. The ranking model places every adequate non-senior role before senior or foreign work. The fit model must qualify a Japan-feasible role when every form answer can be truthful and the candidate has adjacent grounded evidence for any core work; missing preferred years, exact stack, perfect title match or published compensation remains an honest gap, never a reject/hold reason. The user's title boundary is explicit: a posting titled Senior/Lead/Principal/Director/Head/VP/Chief or an equivalent unambiguous senior-level title is outside target even when adjacent IC responsibilities exist; continue same-wake. Ambiguous titles are judged from full responsibilities. Reject is otherwise reserved for an objective hard blocker. No deterministic title regex, keyword score or job-fit gate is permitted.
 
-Policy changes from `interview-chance-v3` through the live-corrected `no-voluntary-skip-v5`. A no-intent decision under an older policy, including `qualified`, is reconsidered exactly once. `qualified_queue_ids` admits only the current policy so Kyndryl cannot bypass v5 merely because v4 qualified it. When the rolling deficit is positive, `search_until_qualified` targets exactly one new qualification per wake even when another qualified row is waiting for account email, CAPTCHA or other checkpoint recovery. Existing queue work remains first in browser order, but an external wait cannot stop discovery and admission of a new adequate row behind it. Twenty-four attempts remain the bounded same-wake search ceiling, but exhausting them without a qualified row is a failed wake and the durable cursor continues next wake; it is never reported as a successful skip-only pass.
+Policy changes from `interview-chance-v3` through the live-corrected `no-voluntary-skip-v5`. A no-intent decision under an older policy, including `qualified`, is reconsidered exactly once. `qualified_queue_ids` admits only the current policy so Kyndryl cannot bypass v5 merely because v4 qualified it. When the rolling deficit is positive, `search_until_qualified` targets `min(deficit, max_candidates)` distinct new qualifications per wake even when another qualified row is waiting for account email, CAPTCHA or other checkpoint recovery. Existing queue work remains first in browser order, but an external wait cannot stop discovery and admission of adequate rows behind it. The bounded candidate ceiling remains the same-wake safety limit, but exhausting it without a qualified row is a failed wake and the durable cursor continues next wake; it is never reported as a successful skip-only pass.
 
 **Focused verification:** one test proves an old-policy qualified no-intent row is reconsidered and can become rejected; one test proves only current-policy qualified rows enter the browser queue; existing zero-target and same-wake reject/hold/qualified continuation checks remain unchanged. Run only those focused tests plus `git diff --check`.
 
@@ -114,6 +115,17 @@ browser action because the evidence file had frozen the first refused connection
 The focused repair preserves immediate `probe_cdp()` for diagnostics and makes the
 daily CLI wait up to 30 seconds at 0.5-second intervals for `ready`.
 
+**Long-form continuation contract:** A model pass ending `in_progress` is not a
+successful wake when both `submitted` and `submit_unknown` are empty. If every
+runtime command completed successfully, the existing bounded orchestrator must
+invoke one continuation from the durable row checkpoint in the same wake. It must
+not retry after a real nonzero runtime command, a recorded submission, or an
+uncertain submit effect. Production run `daily-20260830-181801` reached a new HPE
+non-senior application, signed in, uploaded the resume, completed personal details,
+education, and 37 sequential form actions, then returned `in_progress` on required
+screening questions with no submit intent. That is resumable execution-budget
+exhaustion, not a skip, rejection, provider blocker, or application receipt.
+
 **Remaining execution order (fixed):**
 
 1. Restore the removed stable Rust toolchain, then retain enough measured disk headroom for browser/SQLite evidence writes.
@@ -124,8 +136,8 @@ daily CLI wait up to 30 seconds at 0.5-second intervals for `ready`.
 6. Fill and re-read the complete Workday application, including resume, profile, work history, source, employer questions, legal attestations and validation errors; continue until final Review.
 7. Invoke the one-shot Submit fence once. After an ambiguous effect, reconcile first and never click Submit again.
 8. Accept completion only when the post-submit Workday screenshot and authoritative Gmail employer receipt bind the same tenant, company, role, application ID and post-submit time; then require Ledger `submitted`, Telegram ACK and immediate replay duplicate 0.
-9. Observe the next natural 30-minute wake select a different eligible application/company and repeat the tenant create-or-reuse path without human intervention.
-10. Accumulate at least 48 distinct Gmail-confirmed applications in the rolling 24-hour window. Only then start Ashby, followed by Greenhouse, Lever and generic ATS in the existing fixed spec order; README loop/competitor documentation remains after live proof.
+9. Observe one to three real launchd-owned wakes. When eligible work exists, each observed wake must add at least one new distinct Gmail-confirmed application, advance its Ledger row to `submitted`, acknowledge Telegram, and produce immediate replay duplicate 0. This bounded proof closes the repair; do not wait for a full 24-hour observation.
+10. Continue operating toward at least 48 distinct Gmail-confirmed applications in the rolling 24-hour window as a production KPI. Start Ashby, followed by Greenhouse, Lever and generic ATS, only after the Workday bounded proof passes in the existing fixed spec order; README loop/competitor documentation remains after live proof.
 
 ---
 
@@ -163,6 +175,19 @@ daily CLI wait up to 30 seconds at 0.5-second intervals for `ready`.
 5. A zero deficit performs no new application effect; an unfinished deficit is persisted in the run receipt and retried by the next existing wake.
 6. Run the two focused modules and `git diff --check`; commit and push.
 
+#### Task 3B: Reconcile provider-neutral online-submission receipts
+
+**Files:**
+- Modify: `apps/job-search-loop/job_search_loop/submission_confirmation.py`
+- Modify focused checks in: `apps/job-search-loop/tests/test_submission_confirmation.py`
+
+**Required behavior:**
+
+1. Gmail search and normalized confirmation matching recognize `Thank you for your online submission` without adding an HPE-specific exception.
+2. The real HPE Service Engineer `submit_unknown` receipt reconciles once to Ledger `submitted` with its message/evidence receipt.
+3. Immediate replay inserts zero additional confirmations and never retries Submit.
+4. Run the focused confirmation module and `git diff --check`; commit and push.
+
 ---
 
 ### Task 4: Merge, release and verify production
@@ -173,7 +198,7 @@ daily CLI wait up to 30 seconds at 0.5-second intervals for `ready`.
 4. Read back exact `ProgramArguments`, release SHA and daily `StartInterval=1800` for all owners.
 5. Kickstart only `ai.anicca.job-search-daily` and watch the real launchd-owned run.
 6. Verify shortlist ordering, multiple queued rows when deficit is greater than one, no per-reject Telegram sends, approved `[Job Hunting]` messages, row-local failure continuation and replay zero.
-7. Keep 10P3 open until a rolling 24-hour window contains at least 48 distinct Gmail-confirmed applications with matching completion evidence, Ledger `submitted`, Telegram ACK and duplicate effects zero.
+7. Close the repair after one to three real launchd-owned wakes each add at least one distinct Gmail-confirmed application when eligible work exists, with matching completion evidence, Ledger `submitted`, Telegram ACK and duplicate effects zero. Keep 48 distinct confirmations in a rolling 24-hour window as the ongoing production KPI, not a mandatory 24-hour release wait.
 
 ---
 

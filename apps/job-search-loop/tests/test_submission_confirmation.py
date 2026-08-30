@@ -4,10 +4,14 @@ import tempfile
 import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from unittest.mock import Mock, patch
 
 from job_search_loop.ledger import Ledger
 from job_search_loop.state import InvalidTransition
-from job_search_loop.submission_confirmation import reconcile_confirmation_threads
+from job_search_loop.submission_confirmation import (
+    _gmail_confirmation_threads,
+    reconcile_confirmation_threads,
+)
 
 
 class SubmissionConfirmationTests(unittest.TestCase):
@@ -177,6 +181,113 @@ class SubmissionConfirmationTests(unittest.TestCase):
                 },
             )
             ledger.close()
+
+    def test_hpe_online_submission_confirmation_reconciles_once(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            ledger, application_id, _ = self._unknown_submission(
+                root,
+                company="Hewlett Packard Enterprise",
+                title="Service Engineer",
+                url=(
+                    "https://hpe.wd1.myworkdayjobs.com/External/job/"
+                    "Service_Engineer"
+                ),
+            )
+            ledger.close()
+            received = datetime.now(timezone.utc) + timedelta(minutes=1)
+            payload = {
+                "thread": {
+                    "id": "gmail-hpe-thread",
+                    "messages": [
+                        {
+                            "id": "gmail-hpe-message",
+                            "threadId": "gmail-hpe-thread",
+                            "internalDate": int(received.timestamp() * 1000),
+                            "headers": {
+                                "from": "Hewlett Packard Enterprise <hpe@myworkday.com>",
+                                "to": "candidate@example.com",
+                                "subject": "Thank you for your online submission",
+                            },
+                            "body": (
+                                "Hewlett Packard Enterprise has received your "
+                                "application for Service Engineer."
+                            ),
+                        }
+                    ],
+                }
+            }
+            thread = {
+                "id": "gmail-hpe-thread",
+                "subject": "Thank you for your online submission",
+                "snippet": "Hewlett Packard Enterprise Service Engineer",
+            }
+
+            first = reconcile_confirmation_threads(
+                ledger_path=root / "ledger.sqlite3",
+                threads=[thread],
+                thread_loader=lambda _thread_id: payload,
+                seen_state=root / "inbox-seen.json",
+                expected_recipient="candidate@example.com",
+            )
+
+            self.assertEqual(
+                first["reconciled"],
+                [
+                    {
+                        "application_id": application_id,
+                        "message_id": "gmail-hpe-message",
+                        "thread_id": "gmail-hpe-thread",
+                        "status": "reconciled",
+                    }
+                ],
+            )
+            reopened = Ledger(root / "ledger.sqlite3")
+            self.assertEqual(
+                reopened.connection.execute(
+                    "SELECT current_state FROM applications WHERE id = ?",
+                    (application_id,),
+                ).fetchone()[0],
+                "submitted",
+            )
+            self.assertEqual(
+                reopened.connection.execute(
+                    "SELECT COUNT(*) FROM submission_confirmations"
+                ).fetchone()[0],
+                1,
+            )
+            reopened.close()
+
+            replay = reconcile_confirmation_threads(
+                ledger_path=root / "ledger.sqlite3",
+                threads=[thread],
+                thread_loader=lambda _thread_id: payload,
+                seen_state=root / "inbox-seen.json",
+                expected_recipient="candidate@example.com",
+            )
+
+            self.assertEqual(replay["reconciled"], [])
+            reopened = Ledger(root / "ledger.sqlite3")
+            self.assertEqual(
+                reopened.connection.execute(
+                    "SELECT COUNT(*) FROM submission_confirmations"
+                ).fetchone()[0],
+                1,
+            )
+            reopened.close()
+
+    def test_gmail_confirmation_search_includes_online_submission_phrase(self):
+        completed = Mock(stdout=json.dumps({"threads": []}))
+        with patch(
+            "job_search_loop.submission_confirmation.subprocess.run",
+            return_value=completed,
+        ) as run:
+            self.assertEqual(
+                _gmail_confirmation_threads("candidate@example.com", "gog"), []
+            )
+
+        query = run.call_args.args[0][-1]
+        self.assertIn('"thank you for your online submission"', query)
 
     def test_generic_transition_cannot_bypass_confirmation_receipt(self):
         with tempfile.TemporaryDirectory() as directory:

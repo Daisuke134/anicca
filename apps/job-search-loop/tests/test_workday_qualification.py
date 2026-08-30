@@ -7,6 +7,7 @@ import tempfile
 import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from unittest.mock import patch
 from urllib.error import HTTPError, URLError
 
 import job_search_loop.workday_search_loop as workday_search_loop
@@ -46,11 +47,6 @@ class WorkdayQualificationTests(unittest.TestCase):
 
         self.assertLess(japan, scope)
         self.assertLess(scope, compensation)
-        self.assertIn("one qualified row", prompt_source)
-        self.assertIn(
-            'target_qualified=(0 if rolling["deficit"] == 0 else 1)',
-            prompt_source,
-        )
         self.assertIn(
             "Every adequate non-senior Japan role must rank before Senior, Lead, Principal",
             prompt_source,
@@ -319,6 +315,84 @@ class WorkdayQualificationTests(unittest.TestCase):
         self.assertEqual(len(discoveries), 4)
         self.assertEqual(result["status"], "qualified")
         self.assertEqual(result["qualified_application_ids"], ["A", "B", "C"])
+
+    def test_main_qualifies_up_to_max_candidates_for_positive_rolling_deficit(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            ledger_path = root / "ledger.sqlite3"
+            ledger = Ledger(ledger_path)
+            ledger.close()
+
+            candidate_memory = root / "candidate-memory.json"
+            candidate_memory.write_text(
+                json.dumps({"concepts": []}), encoding="utf-8"
+            )
+            sources = root / "sources.json"
+            sources.write_text(json.dumps({"sources": []}), encoding="utf-8")
+            output = root / "search-result.json"
+            snapshot = root / "snapshot.json"
+            decisions = iter(
+                {
+                    "status": "decided",
+                    "decision": "qualified",
+                    "application_id": f"application-{index}",
+                }
+                for index in range(3)
+            )
+            argv = [
+                "workday_search_loop",
+                "--ledger",
+                str(ledger_path),
+                "--candidate-memory",
+                str(candidate_memory),
+                "--sources",
+                str(sources),
+                "--runner",
+                str(root / "agent-runner.py"),
+                "--schema",
+                str(root / "schema.json"),
+                "--shortlist-schema",
+                str(root / "shortlist-schema.json"),
+                "--workdir",
+                str(root / "workdir"),
+                "--evidence-root",
+                str(root / "evidence"),
+                "--output",
+                str(output),
+                "--snapshot",
+                str(snapshot),
+                "--max-candidates",
+                "3",
+            ]
+
+            with patch.object(
+                workday_search_loop, "snapshot_candidates", return_value=[]
+            ), patch.object(
+                workday_search_loop, "reject_stale_workday_rows", return_value=[]
+            ), patch.object(
+                workday_search_loop, "qualified_queue_ids", return_value=()
+            ), patch.object(
+                workday_search_loop,
+                "discover_one",
+                return_value={"status": "discovered", "discovered": []},
+            ) as discover, patch.object(
+                workday_search_loop,
+                "qualify_with_wake_cursor",
+                side_effect=lambda *_args, **_kwargs: next(decisions),
+            ) as qualify, patch.object(
+                workday_search_loop,
+                "deliver_fit_decision",
+                return_value={"message_id": "telegram-1", "status": "sent"},
+            ), patch("sys.argv", argv):
+                self.assertEqual(workday_search_loop.main(), 0)
+
+            result = json.loads(output.read_text(encoding="utf-8"))
+            self.assertEqual(
+                result["qualified_application_ids"],
+                ["application-0", "application-1", "application-2"],
+            )
+            self.assertEqual(discover.call_count, 3)
+            self.assertEqual(qualify.call_count, 3)
 
     def test_zero_rolling_target_does_not_discover_or_qualify(self):
         calls = []
