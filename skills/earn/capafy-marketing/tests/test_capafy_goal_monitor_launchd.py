@@ -11,6 +11,79 @@ ROOT = Path(__file__).resolve().parents[4]
 MONITOR = ROOT / "skills/earn/capafy-marketing/capafy-goal-monitor.sh"
 
 
+def test_probe_resolves_release_root_without_git(tmp_path: Path) -> None:
+    release_root = tmp_path / "release"
+    marketing = release_root / "skills/earn/capafy-marketing"
+    marketing.mkdir(parents=True)
+    shutil.copy2(MONITOR, marketing / MONITOR.name)
+    (marketing / "account_state.sh").write_text(
+        "capafy_ig_accounts_file(){ printf '%s\\n' \"$CAPAFY_FIXTURE_ACCOUNTS\"; }\n"
+        "resolve_capafy_ig_handle(){ printf fixture; }\n"
+        "resolve_capafy_ig_port(){ printf 9332; }\n"
+        "resolve_capafy_ig_session_owner(){ printf browser; }\n"
+        "resolve_capafy_ig_started_warming(){ printf 2020-01-01; }\n"
+        "capafy_ig_warming_day(){ printf 3; }\n",
+        encoding="utf-8",
+    )
+    accounts = tmp_path / "accounts.json"
+    accounts.write_text("[]\n", encoding="utf-8")
+    home = tmp_path / "home"
+    home.mkdir()
+
+    env = os.environ.copy()
+    env.update(
+        {
+            "HOME": str(home),
+            "CAPAFY_FIXTURE_ACCOUNTS": str(accounts),
+            "CAPAFY_GOAL_MONITOR_PROBE_ONLY": "1",
+        }
+    )
+    env.pop("LIFE_MANAGER_REPO", None)
+    result = subprocess.run(
+        ["bash", str(marketing / MONITOR.name)],
+        env=env,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert not (release_root / ".git").exists()
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.strip() == (
+        f"active_handle=fixture active_port=9332 accounts_path={accounts}"
+    )
+
+
+def test_probe_fails_closed_when_release_root_lacks_account_state_helper(tmp_path: Path) -> None:
+    release_root = tmp_path / "release"
+    marketing = release_root / "skills/earn/capafy-marketing"
+    marketing.mkdir(parents=True)
+    shutil.copy2(MONITOR, marketing / MONITOR.name)
+    home = tmp_path / "home"
+    home.mkdir()
+
+    env = os.environ.copy()
+    env.update(
+        {
+            "HOME": str(home),
+            "CAPAFY_GOAL_MONITOR_PROBE_ONLY": "1",
+        }
+    )
+    env.pop("LIFE_MANAGER_REPO", None)
+    env.pop("CAPAFY_ACCOUNT_STATE_HELPER", None)
+    result = subprocess.run(
+        ["bash", str(marketing / MONITOR.name)],
+        env=env,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 2
+    assert "active_handle=" not in result.stdout
+    assert "CAPAFY_ACCOUNT_STATE_HELPER" in result.stderr
+
+
 def run_monitor(
     tmp_path: Path,
     print_output: str,

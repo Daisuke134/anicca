@@ -1,6 +1,17 @@
 #!/usr/bin/env bash
-LIFE_MANAGER_REPO="${LIFE_MANAGER_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}"
-[ -n "$LIFE_MANAGER_REPO" ] || { echo "LIFE_MANAGER_REPO could not be resolved" >&2; exit 2; }
+# Sealed releases do not contain .git; derive the root from this script and validate
+# the repository files this entrypoint needs before continuing.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd -P)" || SCRIPT_DIR=""
+DEFAULT_LIFE_MANAGER_REPO=""
+if [ -n "$SCRIPT_DIR" ]; then
+  DEFAULT_LIFE_MANAGER_REPO="$(cd "$SCRIPT_DIR/../../.." 2>/dev/null && pwd -P)" || DEFAULT_LIFE_MANAGER_REPO=""
+fi
+LIFE_MANAGER_REPO="${LIFE_MANAGER_REPO:-$DEFAULT_LIFE_MANAGER_REPO}"
+if [ -z "$LIFE_MANAGER_REPO" ] || [ ! -d "$LIFE_MANAGER_REPO" ] \
+  || [ ! -f "$LIFE_MANAGER_REPO/skills/earn/capafy-marketing/capafy-goal-monitor.sh" ]; then
+  echo "LIFE_MANAGER_REPO could not be resolved" >&2
+  exit 2
+fi
 export LIFE_MANAGER_REPO
 # capafy-goal-monitor.sh — daily AUTONOMOUS audit of goal (a)-(d) + idempotent auto go-live.
 #
@@ -16,7 +27,7 @@ export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOM
 set -uo pipefail
 PY=/opt/homebrew/bin/python3
 LIFE_MANAGER_STATE_HOME="${LIFE_MANAGER_STATE_HOME:-$HOME/.local/state/life-manager}"
-for ENV_FILE in "$LIFE_MANAGER_STATE_HOME/.env" "$HOME/.openclaw/.env"; do
+for ENV_FILE in "$LIFE_MANAGER_STATE_HOME/.env"; do
   [ -f "$ENV_FILE" ] || continue
   set -a; . "$ENV_FILE" 2>/dev/null; set +a
 done
@@ -29,8 +40,27 @@ EARN_LEDGER="$LIFE_MANAGER_STATE_HOME/state/capafy-hourly-reconcile.json"
 KEY_GATE="$LIFE_MANAGER_REPO/skills/capafy-autopublish/scripts/key_health_gate.sh"
 IG_SCRIPT="$LIFE_MANAGER_REPO/skills/earn/capafy-marketing/capafy-ig-marketing-daily.sh"
 ACCOUNT_STATE_HELPER="${CAPAFY_ACCOUNT_STATE_HELPER:-$LIFE_MANAGER_REPO/skills/earn/capafy-marketing/account_state.sh}"
+if [ ! -f "$ACCOUNT_STATE_HELPER" ]; then
+  echo "CAPAFY_ACCOUNT_STATE_HELPER could not be resolved: $ACCOUNT_STATE_HELPER" >&2
+  exit 2
+fi
 # shellcheck source=account_state.sh
-. "$ACCOUNT_STATE_HELPER"
+if ! . "$ACCOUNT_STATE_HELPER" 2>/dev/null; then
+  echo "CAPAFY_ACCOUNT_STATE_HELPER could not be sourced: $ACCOUNT_STATE_HELPER" >&2
+  exit 2
+fi
+for REQUIRED_ACCOUNT_HELPER in \
+  capafy_ig_accounts_file \
+  resolve_capafy_ig_handle \
+  resolve_capafy_ig_port \
+  resolve_capafy_ig_session_owner \
+  resolve_capafy_ig_started_warming \
+  capafy_ig_warming_day; do
+  if ! declare -F "$REQUIRED_ACCOUNT_HELPER" >/dev/null 2>&1; then
+    echo "CAPAFY_ACCOUNT_STATE_HELPER missing required function: $REQUIRED_ACCOUNT_HELPER" >&2
+    exit 2
+  fi
+done
 ACCOUNTS_FILE="$(capafy_ig_accounts_file)"
 IG_HANDLE="$(resolve_capafy_ig_handle "$ACCOUNTS_FILE")"
 IG_PORT="$(resolve_capafy_ig_port "$ACCOUNTS_FILE")"
