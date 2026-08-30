@@ -27,7 +27,7 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 この節は、後段の「現在TODO」「次の一件」「local-only」「self-funded agentは別product」という相反する記述を
 上書きする最新の実行順序SSOTである。後段は実装履歴・organ別acceptanceとして保持するが、次作業の選択には使わない。
 Upworkのterminal evidence、startup context、public claim、GA-01〜13Aは完了または履歴として保持する。
-次の一件はAtomic program ledger Seq 18 `ELZ-C05`のsubstep `C05-06`で、Goal ref、WorkItem result、typed failureの最小contractを定義する。
+次の一件はAtomic program ledger Seq 18 `ELZ-C05`のsubstep `C05-07`で、scoped active Goalからreference envelopeとWorkItemを同一transactionで作る。
 
 #### 0.0.1 最新基盤決定 — ElizaOSを完全forkし、Life Managerをlocal OSSからmulti-tenant SaaSへ育てる
 
@@ -664,7 +664,7 @@ C07のCodexへ残す。新queue、新DB、provider adapter、model adapter、mar
 - [x] **C05-03** 採用・棄却mapを`goal-workitem-reuse-map.json`へ保存する — legacy GA-02の一Goal/opaque ref/effect-free、Eliza Todosのruntime.db/Service/transaction/replay、C03の既存Goal/PlanGraph/WorkItem schemaとtenant FK/input-ref制約を採用。旧intent graph/runtime queue、Todo固有wire、新DB/queue/model adapter、本文/provenance/credential複製、hardcoded judgment、C07前のsemantic graph生成を棄却。private map mode 0600、SHA256 `9bc522db…`、production 2 file＋focused test 1 fileを上限、model/provider/external effect 0。次はC05-04
 - [x] **C05-04** 一Goal→一reference-only WorkItemのfocused failing testを一つ追加する — Eliza fork PR #24、merge `fb98681d…`。新規test 1 file/70 LOC、production変更0。active Goalからstable Goal/PlanGraph/WorkItem ID、`life-manager-goal://` refだけのreference envelope、capability `general-agent.work`、本文/provenance非複製、inactive/expired拒否を一testへ固定。DB/replay実証はC05-10、test実行はC05-05へ保持。次はC05-05
 - [x] **C05-05** focused testの期待どおりのREDを一回確認する — fork `fb98681d…`、Vitest 4.1.10で対象1 fileをplugin cwdから実行しexit 1。test fileは発見され、`Cannot find module './goal-work-item.ts'`で期待どおり未実装feature境界へ到達。repo-root filterによるtest未発見preflight 1回はRED evidenceから除外して明記。private log/`goal-workitem-red-receipt.json` mode 0600、receipt SHA256 `f1a501fd…`、production/DB/model/marketplace/payment effect 0。次はC05-06
-- [ ] **C05-06** Goal ref、WorkItem result、typed failureの最小contractを定義する
+- [x] **C05-06** Goal ref、WorkItem result、typed failureの最小contractを定義する — Eliza fork PR #25、merge `f5a4199a…`。新規production 1 file/58 LOCだけで、typed `GOAL_NOT_ACTIVE`、active/unexpired Goal validation、stable Goal/PlanGraph/WorkItem ID、opaque `life-manager-goal://` ref、reference-only graph envelope、`general-agent.work`、frozen resultを定義。statement/provenance、DB/service、model/provider/marketplace判断0。test実行はC05-09へ保持。次はC05-07
 - [ ] **C05-07** scoped active Goalからreference envelopeとWorkItemを同一transactionで作る
 - [ ] **C05-08** 既存`LifeManagerService`へGoal→WorkItem operationを接続する
 - [ ] **C05-09** focused testのGREENを一回確認する
