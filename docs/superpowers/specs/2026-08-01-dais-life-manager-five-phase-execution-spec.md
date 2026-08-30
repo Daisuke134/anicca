@@ -27,7 +27,7 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 この節は、後段の「現在TODO」「次の一件」「local-only」「self-funded agentは別product」という相反する記述を
 上書きする最新の実行順序SSOTである。後段は実装履歴・organ別acceptanceとして保持するが、次作業の選択には使わない。
 Upworkのterminal evidence、startup context、public claim、GA-01〜13Aは完了または履歴として保持する。
-次の一件はAtomic program ledger Seq 17 `ELZ-C04`で、legacy provider bridge contractを既存実装から固定する。
+次の一件はAtomic program ledger Seq 17 `ELZ-C04`のsubstep `C04-01`で、Eliza bounded `execFile` bridge contractをprivate evidenceへ保存する。
 
 #### 0.0.1 最新基盤決定 — ElizaOSを完全forkし、Life Managerをlocal OSSからmulti-tenant SaaSへ育てる
 
@@ -612,6 +612,44 @@ Goal分解とgraph生成は後続C07のCodexへ残す。現在activeなC03だけ
 - [x] **C03-26** C03 receiptをPASSへ更新する — canonical private `domain-schema-receipt.json` mode 0600、SHA256 `99eea2ba…`。final fork `7acbf831…`、source 7/7 hash、evidence 7/7 hash、schema/migration tests 3/3、PGlite apply＋restart、6 tables/62 columns/15 scope constraints/2 immutable triggers、cross-tenant SQLSTATE `23503`、review Critical/Important/open 0、secret leak 0、duplicate external effect 0を固定。次はC03-27
 - [x] **C03-27** ELZ-C03をDONEへ更新する — canonical `domain-schema-receipt.json` PASS、fork final `7acbf831…`、PGlite final hash `ac501566…`、6 entity/62 columns/15 tenant-scope constraints/2 immutable triggers、separate-process restart、tests 3/3、review open 0、secret leak 0、duplicate external effect 0。次はC03-28
 - [x] **C03-28** ELZ-C04をNEXTへ更新する
+
+##### C04 Atomic TODO — opaque provider bridge、判断権0
+
+C04はEliza `plugin-omarchy/src/bridge.ts`のfixed executable＋`execFile` no-shell＋timeout/maxBuffer＋injected runnerをcopyし、legacyの
+Lancers Python `status.py`とConnector JS `connector-events-pack-readonly.js`が持つsingle JSON result contractをtweakする。model/runtimeへ
+executable、argv、cwd、env、raw stdout/stderr、credentialを公開しない。modelが渡すのはopaque `toolRef`/`inputRef`だけで、private resolverが
+固定descriptorへ解決する。bridgeは判断・ranking・provider routingを行わず、判断はC07のCodexへ残す。任意shell、provider別branch、別scheduler、
+新queue/DB、raw command actionは作らない。
+
+```mermaid
+flowchart LR
+  MODEL["Codex decision<br/>C07"] -->|opaque toolRef/inputRef| BRIDGE["ProviderBridgeService<br/>deterministic only"]
+  BRIDGE --> RESOLVER["private descriptor resolver<br/>fixed executable/argv/cwd/env"]
+  RESOLVER --> EXEC["execFile<br/>shell=false / timeout / maxBuffer"]
+  EXEC --> LEGACY["existing JS/Python CLI"]
+  LEGACY -->|one JSON object| RESULT["bounded structured result"]
+  RESULT --> MODEL
+```
+
+- [ ] **C04-01** Eliza Omarchyのbounded `execFile`/injected runner contractをprivate evidenceへ保存する
+- [ ] **C04-02** legacy Lancers Python CLIのsingle JSON/exit contractをprivate evidenceへ保存する
+- [ ] **C04-03** legacy Connector JS CLIのread-only single JSON contractをprivate evidenceへ保存する
+- [ ] **C04-04** upstream/legacyの採用・棄却mapを`provider-bridge-reuse-map.json`へ保存する
+- [ ] **C04-05** opaque ref→structured result bridgeのfocused failing testを一つ追加する
+- [ ] **C04-06** provider bridge testの失敗を一回確認する
+- [ ] **C04-07** `ProviderToolRef`/`ProviderInputRef`/`ProviderBridgeResult`型を定義する
+- [ ] **C04-08** injected private descriptor resolverを実装する
+- [ ] **C04-09** bounded `execFile` no-shell runnerを実装する
+- [ ] **C04-10** single JSON object、exit/ok整合、raw output抑制を実装する
+- [ ] **C04-11** `ProviderBridgeService`を`plugin-life-manager`へ登録する
+- [ ] **C04-12** focused provider bridge testの成功を一回確認する
+- [ ] **C04-13** 既存Connector JS read-only toolをopaque ref経由で一回実行する
+- [ ] **C04-14** 既存Lancers Python read-only toolをopaque ref経由で一回実行する
+- [ ] **C04-15** source/result hashを`provider-bridge-receipt.json`へ保存する
+- [ ] **C04-16** C04差分をfresh adversarial reviewへ一回だけ渡す
+- [ ] **C04-17** C04 receiptをPASSへ更新する
+- [ ] **C04-18** ELZ-C04をDONEへ更新する
+- [ ] **C04-19** ELZ-C05をNEXTへ更新する
 
 Lancersでまだ新しい収益がないことは、この順序を飛ばす理由にしない。現時点はC04がactiveであり、新forkのgeneral-agent基盤が
 Lancers実環境へ到達していない。Lancersでの新規応募・契約・受領金・銀行着金はPhase C完了後のPhase Lで一つずつ実証する。
