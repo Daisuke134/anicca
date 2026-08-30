@@ -48,6 +48,10 @@ class WorkdayQualificationTests(unittest.TestCase):
         self.assertLess(scope, compensation)
         self.assertIn("one qualified row", prompt_source)
         self.assertIn(
+            'target_qualified=(0 if rolling["deficit"] == 0 else 1)',
+            prompt_source,
+        )
+        self.assertIn(
             "Every adequate non-senior Japan role must rank before Senior, Lead, Principal",
             prompt_source,
         )
