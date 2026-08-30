@@ -86,6 +86,15 @@ class MercorPassContractTests(unittest.TestCase):
         self.assertIn('find "$EVIDENCE" -type d -exec chmod 700 {} +', script)
         self.assertIn('find "$EVIDENCE" -type f -exec chmod 600 {} +', script)
 
+    def test_runner_uses_process_owned_os_pass_lock(self):
+        script = (ROOT / "scripts" / "run-mercor.sh").read_text(encoding="utf-8")
+        self.assertIn("zmodload zsh/system", script)
+        self.assertIn('[[ -e "$LOCK" ]] || : > "$LOCK"', script)
+        self.assertIn('if ! zsystem flock -t 0 -f LOCK_FD "$LOCK"; then', script)
+        self.assertNotIn("LOCK_HELD", script)
+        self.assertNotIn('mkdir "$LOCK"', script)
+        self.assertNotIn('rmdir "$LOCK"', script)
+
     def test_evidence_paths_must_stay_inside_current_private_pass(self):
         with self.subTest("stale evidence path is rejected"):
             with self.assertRaises(ValueError):

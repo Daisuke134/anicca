@@ -21,10 +21,11 @@ RESULT="$EVIDENCE/agent/mercor-pass-summary.json"
 TERMINAL="$EVIDENCE/mercor-pass-terminal.json"
 REPORT="$EVIDENCE/telegram-report.json"
 FINAL_REASON="mercor_result_missing"
-LOCK_HELD=0
 
 mkdir -p "$MERCOR_STATE_ROOT" "$JOB_SEARCH_STATE_ROOT/evidence" "$JOB_SEARCH_STATE_ROOT/logs" "$EVIDENCE"
 chmod 700 "$JOB_SEARCH_STATE_ROOT" "$MERCOR_STATE_ROOT" "$JOB_SEARCH_STATE_ROOT/evidence" "$JOB_SEARCH_STATE_ROOT/logs" "$EVIDENCE"
+zmodload zsh/system
+[[ -e "$LOCK" ]] || : > "$LOCK"
 export PYTHONPATH="$JOB_SEARCH_APP_ROOT"
 
 finalize() {
@@ -50,18 +51,14 @@ finalize() {
   fi
   find "$EVIDENCE" -type d -exec chmod 700 {} +
   find "$EVIDENCE" -type f -exec chmod 600 {} +
-  if [[ "$LOCK_HELD" == "1" ]]; then
-    rmdir "$LOCK" 2>/dev/null || true
-  fi
   exit "$original_rc"
 }
 trap 'finalize $?' EXIT
 
-if ! mkdir "$LOCK" 2>/dev/null; then
+if ! zsystem flock -t 0 -f LOCK_FD "$LOCK"; then
   FINAL_REASON="mercor_pass_already_running"
   exit 0
 fi
-LOCK_HELD=1
 
 PASS_PROMPT="$EVIDENCE/mercor-pass.md"
 PASS_SCHEMA="$EVIDENCE/mercor-pass-result.v1.schema.json"
