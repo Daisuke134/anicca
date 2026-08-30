@@ -798,6 +798,17 @@ Paid並列（親1+子6、immutable release `a81ec3b6…`、回帰37/37）、`sto
 ★Upworkは8 proposalでoffer 0/contract 0/入金 0の失敗laneであり、雛形・参照実装・比較対象にしない。★
 code量は成果ではない。稼いでいない実装の構造を写すと失敗の構造ごと複製する。
 
+**★Dais明示の順序変更（2026-08-31）★** 対象providerをLancers単独から**Lancers / CrowdWorks / Mercorの3本**へ拡張する。
+3本とも`L01〜L10B`（認証 → profile → 初応募 → 最大応募）まで到達させることを当面の到達点とし、
+`L11`以降（交渉・契約・納品・入金）は返信が来たproviderから順に入る。Fiverr/Freelancer/Mercari/bountyは従来どおりPhase Mに残す。
+
+既存資産の実測（2026-08-31）: Lancersは`lancers_adapter.py` 306行だけでなく**launchd laneが既に存在する** —
+`ai.anicca.lancers-revenue-browser`（稼働中）、`lancers-revenue-application`／`lancers-revenue-telegram-report`（exit 0）、
+`lancers-revenue-storefront`（**exit 1 = 破損**）。Mercorは`ai.anicca.job-search-mercor`が**exit 1 = 破損**。
+`ai.anicca.hf-gig-storefront-direct`も**exit 1**。CrowdWorksは実装0。
+したがって本phaseの実作業は「新規構築」ではなく**破損laneの修復＋profile整備＋最大応募化**が主である。
+新laneを増やす前に、既存laneの失敗原因を一次証拠で特定して直す。
+
 **各providerは同じ25段を1本ずつ閉じる。** 開発は逐次、運用は並列。
 順序は`L01認証 → L03B profile → L04初応募 → L10B最大応募 → 返信待ち → L12交渉 → L21入金 → L23銀行着金`。
 返信は応募当日には来ない。L10Bまで閉じたproviderは待機しながら、次providerのL01〜L10Bを並行して進める。
