@@ -324,6 +324,104 @@ class LmLoopApplyTest(unittest.TestCase):
         self.assertEqual((events[0][1]["loop_id"], events[0][1]["phase"]),
                          ("example", "plan"))
 
+    def test_reapply_same_release_with_preserved_attributes_is_noop(self):
+        release = self._release("release-a").resolve()
+        current = self.root / "current"
+        current.symlink_to(release)
+        expected_arguments = [str(release / "bin/lm-loop-run"), "example", str(release)]
+        values = self._apply_kwargs(
+            current,
+            self.root / "apply.lock",
+            expected_arguments,
+        )
+        target = values["agents_dir"] / "ai.anicca.example.plist"
+        target.write_bytes(plistlib.dumps({
+            "Label": "ai.anicca.example",
+            "ProgramArguments": ["/old/run.sh"],
+            "EnvironmentVariables": {"CUSTOM": "kept"},
+            "WorkingDirectory": "/var/tmp/example",
+        }, fmt=plistlib.FMT_XML, sort_keys=True))
+        (self.root / "launchctl.state").touch()
+        events = []
+
+        first = apply_live(
+            release,
+            values["agents_dir"],
+            values["launchctl_safe"],
+            current=current,
+            lock_path=values["lock_path"],
+            event_writer=lambda path, event: events.append((path, event)),
+        )
+        self.assertTrue(first[0]["changed"])
+        installed = plistlib.loads(target.read_bytes())
+        self.assertEqual(installed["EnvironmentVariables"]["CUSTOM"], "kept")
+        self.assertEqual(installed["WorkingDirectory"], "/var/tmp/example")
+        self.assertEqual(installed["ProgramArguments"], expected_arguments)
+        self.assertTrue((self.root / "launchctl.state").is_file())
+        self.assertIn(
+            f"bootstrap gui/{os.getuid()} {target}",
+            values["calls"].read_text().splitlines(),
+        )
+        values["calls"].write_text("")
+
+        second = apply_live(
+            release,
+            values["agents_dir"],
+            values["launchctl_safe"],
+            current=current,
+            lock_path=values["lock_path"],
+            event_writer=lambda path, event: events.append((path, event)),
+        )
+
+        self.assertFalse(second[0]["changed"])
+        self.assertEqual(values["calls"].read_text().splitlines(), [
+            "preflight",
+            f"print gui/{os.getuid()}/ai.anicca.example",
+        ])
+        installed = plistlib.loads(target.read_bytes())
+        self.assertEqual(installed["EnvironmentVariables"]["CUSTOM"], "kept")
+        self.assertEqual(installed["WorkingDirectory"], "/var/tmp/example")
+
+    def test_equal_effective_plist_still_installs_when_service_is_unloaded(self):
+        release = self._release("release-a").resolve()
+        current = self.root / "current"
+        current.symlink_to(release)
+        expected_arguments = [str(release / "bin/lm-loop-run"), "example", str(release)]
+        values = self._apply_kwargs(
+            current,
+            self.root / "apply.lock",
+            expected_arguments,
+        )
+        rendered = build_apply_plan(registry(), release, SHA)[0]
+        target = values["agents_dir"] / "ai.anicca.example.plist"
+        installed = plistlib.loads(rendered["plist_bytes"])
+        installed["EnvironmentVariables"]["CUSTOM"] = "kept"
+        installed["WorkingDirectory"] = "/var/tmp/example"
+        target.write_bytes(plistlib.dumps(installed, fmt=plistlib.FMT_XML, sort_keys=True))
+        existing_bytes = target.read_bytes()
+        self.assertEqual(
+            existing_bytes,
+            lm_loop._preserve_operational_attributes(rendered["plist_bytes"], existing_bytes),
+        )
+        events = []
+
+        result = apply_live(
+            release,
+            values["agents_dir"],
+            values["launchctl_safe"],
+            current=current,
+            lock_path=values["lock_path"],
+            event_writer=lambda path, event: events.append((path, event)),
+        )
+
+        self.assertTrue(result[0]["changed"])
+        calls = values["calls"].read_text().splitlines()
+        self.assertIn(f"bootout gui/{os.getuid()}/ai.anicca.example", calls)
+        self.assertIn(f"bootstrap gui/{os.getuid()} {target}", calls)
+        installed = plistlib.loads(target.read_bytes())
+        self.assertEqual(installed["EnvironmentVariables"]["CUSTOM"], "kept")
+        self.assertEqual(installed["WorkingDirectory"], "/var/tmp/example")
+
     def test_launchctl_recorder_rejects_wrong_service(self):
         launchctl_safe, _ = self._launchctl_recorder(["/release/bin/lm-loop-run", "example", "/release"])
 

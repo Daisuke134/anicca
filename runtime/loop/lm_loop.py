@@ -16,7 +16,11 @@ from pathlib import Path
 
 from runtime.loop.macos_launchd_inventory import extract_release, parse_disabled, parse_loaded
 from runtime.loop.macos_loop_registry import validate_registry
-from runtime.loop.lm_loop_apply import apply_registry, install_one
+from runtime.loop.lm_loop_apply import (
+    _preserve_operational_attributes,
+    apply_registry,
+    install_one,
+)
 from runtime.loop.lm_loop_lifecycle import lifecycle, lifecycle_one
 from runtime.loop.runtime_event import append_runtime_event, build_install_event, validate_runtime_event
 
@@ -300,7 +304,10 @@ def apply_live(release_root: Path, agents_dir: Path, launchctl_safe: Path,
             assert_current()
             target = agents_dir / f"{item['label']}.plist"
             result = None
-            if target.is_file() and target.read_bytes() == item["plist_bytes"]:
+            existing_bytes = target.read_bytes() if target.is_file() else None
+            desired_bytes = _preserve_operational_attributes(
+                item["plist_bytes"], existing_bytes)
+            if existing_bytes is not None and existing_bytes == desired_bytes:
                 rc, printed = _safe_launchctl(
                     launchctl_safe, ["print", f"gui/{os.getuid()}/{item['label']}"])
                 from runtime.loop.lm_loop_apply import _loaded_arguments
