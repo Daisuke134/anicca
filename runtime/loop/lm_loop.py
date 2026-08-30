@@ -282,25 +282,28 @@ def apply_live(release_root: Path, agents_dir: Path, launchctl_safe: Path,
                event_writer=append_runtime_event) -> list[dict]:
     release_root = release_root.resolve()
     current = Path(current or "~/loops/current").expanduser()
+    apply_target = target
     with _apply_lock(current, lock_path):
-        def assert_current() -> None:
-            if current.resolve(strict=True) != release_root:
+        def assert_release() -> None:
+            if not release_root.is_dir():
+                raise RuntimeError("apply release disappeared")
+            if apply_target is None and current.resolve(strict=True) != release_root:
                 raise RuntimeError("apply release is not current")
 
-        assert_current()
+        assert_release()
         registry = json.loads((release_root / "config/loop-registry.json").read_text())
         manifest = json.loads((release_root / "RELEASE.json").read_text())
         release_sha = manifest.get("sha")
-        plan = apply_registry(registry, release_root, release_sha, lambda item: item, target=target)
+        plan = apply_registry(registry, release_root, release_sha, lambda item: item, target=apply_target)
         preflight_rc, detail = _safe_launchctl(launchctl_safe, ["preflight"])
         if preflight_rc:
             raise RuntimeError(f"launchctl-safe preflight failed: {detail.strip()}")
         results = []
         for item in plan:
-            assert_current()
-            target = agents_dir / f"{item['label']}.plist"
+            assert_release()
+            plist_target = agents_dir / f"{item['label']}.plist"
             result = None
-            if target.is_file() and target.read_bytes() == item["plist_bytes"]:
+            if plist_target.is_file() and plist_target.read_bytes() == item["plist_bytes"]:
                 rc, printed = _safe_launchctl(
                     launchctl_safe, ["print", f"gui/{os.getuid()}/{item['label']}"])
                 from runtime.loop.lm_loop_apply import _loaded_arguments
@@ -310,9 +313,9 @@ def apply_live(release_root: Path, agents_dir: Path, launchctl_safe: Path,
                               "loaded_arguments": loaded, "release_sha": release_sha,
                               "changed": False}
             if result is None:
-                assert_current()
+                assert_release()
                 result = install_one(
-                    item, target, lambda args: _safe_launchctl(launchctl_safe, args))
+                    item, plist_target, lambda args: _safe_launchctl(launchctl_safe, args))
                 result["changed"] = True
             entry = registry["loops"][item["loop_id"]]
             event = build_install_event(

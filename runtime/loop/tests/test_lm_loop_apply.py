@@ -281,6 +281,31 @@ class LmLoopApplyTest(unittest.TestCase):
         self.assertEqual(list(values["agents_dir"].iterdir()), [])
         self.assertFalse(values["calls"].exists())
 
+    def test_targeted_apply_accepts_explicit_immutable_release(self):
+        release_a = self._release("release-a").resolve()
+        release_b = self._release("release-b").resolve()
+        current = self.root / "current"
+        current.symlink_to(release_b)
+        expected_arguments = [str(release_a / "bin/lm-loop-run"), "example", str(release_a)]
+        values = self._apply_kwargs(
+            current,
+            self.root / "apply.lock",
+            expected_arguments,
+        )
+
+        result = apply_live(
+            release_a,
+            values["agents_dir"],
+            values["launchctl_safe"],
+            target="example",
+            current=current,
+            lock_path=values["lock_path"],
+            event_writer=lambda *_: None,
+        )
+
+        self.assertEqual([item["label"] for item in result], ["ai.anicca.example"])
+        self.assertEqual(result[0]["loaded_arguments"], expected_arguments)
+
     def test_apply_current_release_records_real_launchctl_calls(self):
         release = self._release("release-a").resolve()
         current = self.root / "current"

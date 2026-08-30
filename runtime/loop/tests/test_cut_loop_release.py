@@ -9,6 +9,34 @@ ROOT = Path(__file__).resolve().parents[3]
 
 
 class CutLoopReleaseTest(unittest.TestCase):
+    def test_sparse_release_leaves_global_current_unchanged(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            loops = root / "loops"
+            sentinel = root / "full-release"
+            sentinel.mkdir()
+            loops.mkdir()
+            current = loops / "current"
+            current.symlink_to(sentinel)
+
+            result = subprocess.run(
+                ["/bin/bash", str(ROOT / "bin/cut-loop-release.sh"), "origin/main"],
+                cwd=ROOT,
+                env={
+                    **os.environ,
+                    "LOOPS_ROOT": str(loops),
+                    "LOOPS_KEEP_RELEASES": "1",
+                    "LOOPS_RELEASE_PATHS": "bin runtime/loop config/loop-registry.json",
+                },
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(current.resolve(), sentinel.resolve())
+            self.assertIn("current unchanged", result.stdout)
+
     def test_release_builds_locked_root_and_agentmail_dependencies(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
