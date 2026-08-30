@@ -16,6 +16,7 @@ AUTO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PUB="$AUTO/vendor/capafy-publisher"
 LIFE_MANAGER_STATE_HOME="${LIFE_MANAGER_STATE_HOME:-$HOME/.local/state/life-manager}"
 CAPAFY_PUBLISH_HOME="${CAPAFY_PUBLISH_HOME:-$LIFE_MANAGER_STATE_HOME/runtime/capafy-publisher-home}"
+CAPAFY_PUBLISHER_STATE_HOME="${CAPAFY_PUBLISHER_STATE_HOME:-$LIFE_MANAGER_STATE_HOME/runtime/capafy-publisher}"
 VENV="${CAPAFY_BROWSER_PYTHON:-python3}"
 
 # Keep configure/ship bound to the selected agent even when a previous retry
@@ -24,7 +25,7 @@ VENV="${CAPAFY_BROWSER_PYTHON:-python3}"
 # The selected remote agent is the isolation boundary.  Do not preserve an
 # inherited work directory: a launcher can carry one over from a different
 # candidate, making configure/ship silently operate on that other manifest.
-export CAPAFY_PUBLISH_WORK_DIR="$LIFE_MANAGER_STATE_HOME/runtime/capafy-publisher-work/agents/$ID"
+export CAPAFY_PUBLISH_WORK_DIR="$CAPAFY_PUBLISHER_STATE_HOME/work/agents/$ID"
 
 # Direct recovery and launchd must resolve credentials from the same repo-external
 # SSOT. Load them before the key-health gate; values stay process-local.
@@ -35,6 +36,7 @@ for ENV_FILE in "$LIFE_MANAGER_STATE_HOME/.env"; do
 done
 
 export HOME="$CAPAFY_PUBLISH_HOME"
+export CAPAFY_PUBLISHER_STATE_HOME
 cd "$PUB" || { echo "❌ cd PUB"; exit 1; }
 
 step(){ echo ""; echo "━━━ $* ━━━"; }
@@ -70,14 +72,33 @@ if [ "$(rstat isConfirmedConfigKeys)" = "1" ]; then
   echo "isConfirmedConfigKeys=1 already ✓ — skip configure+CP2"
 else
   step "[3] configure (deep-scan, empty findings)"
-  chmod -R u+w "$PUB/.temp/staging" 2>/dev/null; rm -rf "$PUB/.temp/staging" 2>/dev/null
-  python3 packager.py publish-configure --agent-id "$ID" --deep-scan >/dev/null 2>&1
-  python3 -c "import json;json.dump({'generic':[],'env_var':[]},open('.temp/dsf.json','w'))"
-  python3 packager.py publish-configure --agent-id "$ID" --deep-scan-findings-file "$PUB/.temp/dsf.json" >/dev/null 2>&1
+  # The clean workspace deliberately contains only a placeholder.  Make the
+  # private host key available before configure so its URL-proxy review is
+  # built instead of failing closed for missing provider entries.
+  export CAPAFY_HOST_OPENROUTER_KEY="${CAPAFY_HOST_OPENROUTER_KEY:-$(grep '^CAPAFY_HOST_OPENROUTER_KEY=' "$LIFE_MANAGER_STATE_HOME/.env" 2>/dev/null | cut -d= -f2-)}"
+  chmod -R u+w "$CAPAFY_PUBLISH_WORK_DIR/staging" 2>/dev/null; rm -rf "$CAPAFY_PUBLISH_WORK_DIR/staging" 2>/dev/null
+  # A successful deep-scan preparation intentionally exits non-zero with
+  # status=needs_deep_scan. Capture and validate that expected hand-off rather
+  # than letting `set -e` abort before its findings are supplied.
+  DEEP_SCAN_OUT="$(python3 packager.py publish-configure --agent-id "$ID" --deep-scan 2>&1 || true)"
+  printf '%s' "$DEEP_SCAN_OUT" | python3 -c 'import json,sys
+try:
+    payload=json.loads(sys.stdin.read())
+except Exception as exc:
+    raise SystemExit(f"deep-scan did not return JSON: {exc}")
+if payload.get("status") != "needs_deep_scan":
+    raise SystemExit("unexpected deep-scan status: " + str(payload.get("status")))
+' || die "deep-scan preparation failed: $DEEP_SCAN_OUT"
+  DSF="$CAPAFY_PUBLISH_WORK_DIR/dsf.json"
+  mkdir -p "$CAPAFY_PUBLISH_WORK_DIR"
+  python3 - "$DSF" <<'PY'
+import json, sys
+json.dump({"generic": [], "env_var": []}, open(sys.argv[1], "w"))
+PY
+  python3 packager.py publish-configure --agent-id "$ID" --deep-scan-findings-file "$DSF" >/dev/null 2>&1
   echo "configured"
 
   step "[4] CP2 key host (drive_checkpoint2.py)"
-  export CAPAFY_HOST_OPENROUTER_KEY="${CAPAFY_HOST_OPENROUTER_KEY:-$(grep '^CAPAFY_HOST_OPENROUTER_KEY=' "$LIFE_MANAGER_STATE_HOME/.env" 2>/dev/null | cut -d= -f2-)}"
   CP2="$(refresh configure)"
   timeout 150 "$VENV" "$AUTO/scripts/drive_checkpoint2.py" "$CP2" 2>&1 | grep -vE "Deprecation|warnings.warn" | tail -4
   # AUTHORITATIVE gate = server isConfirmedConfigKeys, POLLED. drive_checkpoint2 can

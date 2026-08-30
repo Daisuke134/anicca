@@ -16,12 +16,20 @@ def _find_skill_root(start: Path) -> Path:
 
 
 _SKILL_ROOT = _find_skill_root(Path(__file__).resolve())
-SKILL_CONFIG_PATH = _SKILL_ROOT / "config.json"
-# A shared .temp directory lets an earlier retry's manifest be consumed by a
-# later agent.  The Capafy entrypoints bind this to .temp/agents/<agent-id>.
+_LIFE_MANAGER_STATE_HOME = Path(os.environ.get(
+    "LIFE_MANAGER_STATE_HOME", Path.home() / ".local" / "state" / "life-manager",
+)).expanduser()
+# This package is executed from an immutable loop release. Keep its credentials
+# and work artifacts in private runtime state, never alongside the executable.
+PUBLISHER_STATE_DIR = Path(os.environ.get(
+    "CAPAFY_PUBLISHER_STATE_HOME", _LIFE_MANAGER_STATE_HOME / "runtime" / "capafy-publisher",
+)).expanduser()
+SKILL_CONFIG_PATH = PUBLISHER_STATE_DIR / "config.json"
+# A shared work directory lets an earlier retry's manifest be consumed by a
+# later agent. The Capafy entrypoints bind this to work/agents/<agent-id>.
 _work_dir_override = os.environ.get("CAPAFY_PUBLISH_WORK_DIR", "").strip()
-DEVELOPER_WORK_DIR_PATH = Path(_work_dir_override).expanduser() if _work_dir_override else _SKILL_ROOT / ".temp"
-DEVELOPER_FALLBACK_DIR_PATH = _SKILL_ROOT / ".temp-fallback"
+DEVELOPER_WORK_DIR_PATH = Path(_work_dir_override).expanduser() if _work_dir_override else PUBLISHER_STATE_DIR / "work"
+DEVELOPER_FALLBACK_DIR_PATH = PUBLISHER_STATE_DIR / "fallback"
 DEFAULT_STAGING_PATH = str(DEVELOPER_WORK_DIR_PATH / "staging")
 DEFAULT_BUNDLE_PATH = str(DEVELOPER_WORK_DIR_PATH / "bundle.zip")
 OPENAI_OFFICIAL_URL_V1 = "https://api.openai.com/v1"
@@ -218,6 +226,7 @@ __all__ = [
     "OPENAI_OFFICIAL_URL_V1",
     "PII_PATTERNS",
     "PLACEHOLDER",
+    "PUBLISHER_STATE_DIR",
     "SKILL_CONFIG_PATH",
     "SSH_PUBLIC_KEY_PATTERN",
     "STRUCTURED_ASSIGNMENT_PATTERNS",
