@@ -16,6 +16,14 @@ import websockets
 TOTAL_RE = re.compile(r"total earnings to date are\s*\$([0-9,]+(?:\.[0-9]{2})?)", re.I)
 
 
+def earnings_surface_ready(text: str) -> bool:
+    value = text.casefold()
+    return TOTAL_RE.search(text) is not None and (
+        "no payment history yet" in value
+        or all(label in value for label in ("payments", "payout date", "earned"))
+    )
+
+
 def parse_earnings_text(text: str, *, observed_at: str, page_url: str) -> dict[str, Any]:
     total_match = TOTAL_RE.search(text)
     total = (total_match.group(1) if total_match else "0.00").replace(",", "")
@@ -59,9 +67,19 @@ async def capture(*, cdp_url: str, evidence_dir: Path, output: Path) -> dict[str
         counter = [0]
         await _call(ws, counter, "Page.enable")
         await _call(ws, counter, "Page.navigate", {"url": "https://work.mercor.com/earnings"})
-        for _ in range(80):
+        for _ in range(240):
             state = await _call(ws, counter, "Runtime.evaluate", {"expression": "location.pathname === '/earnings' && document.readyState === 'complete'", "returnByValue": True})
             if state.get("result", {}).get("value") is True:
+                break
+            await asyncio.sleep(0.25)
+        for _ in range(80):
+            surface = await _call(
+                ws,
+                counter,
+                "Runtime.evaluate",
+                {"expression": "(document.body&&document.body.innerText)||''", "returnByValue": True},
+            )
+            if earnings_surface_ready(str(surface.get("result", {}).get("value", ""))):
                 break
             await asyncio.sleep(0.25)
         observed_at = datetime.now(timezone.utc).isoformat()
