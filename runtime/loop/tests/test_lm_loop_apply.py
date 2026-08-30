@@ -35,12 +35,16 @@ def two_loop_registry():
     return value
 
 
-def money_printer_registry(entrypoint="bin/example.sh"):
+def money_printer_registry(
+    entrypoint="bin/example.sh",
+    loop_id="money-printer-symphony-bridge",
+    label="ai.anicca.life-manager-money-printer-symphony-bridge",
+):
     value = registry(entrypoint)
-    value["loops"]["money-printer-symphony-bridge"] = value["loops"].pop("example")
-    value["loops"]["money-printer-symphony-bridge"]["label"] = (
-        "ai.anicca.life-manager-money-printer-symphony-bridge"
-    )
+    value["loops"][loop_id] = value["loops"].pop("example")
+    value["loops"][loop_id]["label"] = label
+    if loop_id == "money-printer-symphony":
+        value["loops"][loop_id]["cadence"] = {"keep_alive": True}
     return value
 
 
@@ -164,39 +168,57 @@ class LmLoopApplyTest(unittest.TestCase):
         self.assertFalse((log_root / "launchd.err.log").exists())
 
     def test_money_printer_install_secures_existing_and_new_launchd_log_files(self):
-        log_root = self.root / ".local/state/money-printer-log-root"
-        log_root.mkdir(mode=0o755, parents=True)
-        existing_stdout = log_root / "launchd.out.log"
-        existing_stdout.write_text("old\n")
-        existing_stdout.chmod(0o644)
-        value = money_printer_registry()
-        value["loops"]["money-printer-symphony-bridge"]["log_root"] = (
-            "~/.local/state/money-printer-log-root"
+        cases = (
+            (
+                "money-printer-symphony-bridge",
+                "ai.anicca.life-manager-money-printer-symphony-bridge",
+                "money-printer-log-root",
+                "installed-money-printer.plist",
+            ),
+            (
+                "money-printer-symphony",
+                "ai.anicca.life-manager-money-printer-symphony",
+                "money-printer-symphony-log-root",
+                "installed-money-printer-symphony.plist",
+            ),
         )
-        target = self.root / "installed-money-printer.plist"
+        for loop_id, label, log_name, target_name in cases:
+            with self.subTest(loop_id=loop_id):
+                log_root = self.root / ".local/state" / log_name
+                log_root.mkdir(mode=0o755, parents=True)
+                existing_stdout = log_root / "launchd.out.log"
+                existing_stdout.write_text("old\n")
+                existing_stdout.chmod(0o644)
+                value = money_printer_registry(loop_id=loop_id, label=label)
+                value["loops"][loop_id]["log_root"] = (
+                    f"~/.local/state/{log_name}"
+                )
+                target = self.root / target_name
 
-        def launchctl(args):
-            if args[0] == "print":
-                if not target.is_file():
-                    return 1, ""
-                current = plistlib.loads(target.read_bytes())
-                return 0, "arguments = {\n" + "\n".join(
-                    current["ProgramArguments"]
-                ) + "\n}\n"
-            return 0, ""
+                def launchctl(args):
+                    if args[0] == "print":
+                        if not target.is_file():
+                            return 1, ""
+                        current = plistlib.loads(target.read_bytes())
+                        return 0, "arguments = {\n" + "\n".join(
+                            current["ProgramArguments"]
+                        ) + "\n}\n"
+                    return 0, ""
 
-        with patch.dict(os.environ, {"HOME": str(self.root)}):
-            rendered = build_apply_plan(value, self.root, SHA)[0]
-            plist = plistlib.loads(rendered["plist_bytes"])
-            result = install_one(rendered, target, launchctl, attempts=1, sleeper=lambda _: None)
+                with patch.dict(os.environ, {"HOME": str(self.root)}):
+                    rendered = build_apply_plan(value, self.root, SHA)[0]
+                    plist = plistlib.loads(rendered["plist_bytes"])
+                    result = install_one(
+                        rendered, target, launchctl, attempts=1, sleeper=lambda _: None
+                    )
 
-        self.assertEqual(plist["Umask"], 0o077)
-        self.assertTrue(result["ok"])
-        self.assertEqual(stat.S_IMODE(log_root.stat().st_mode), 0o700)
-        self.assertEqual(stat.S_IMODE(existing_stdout.stat().st_mode), 0o600)
-        self.assertEqual(
-            stat.S_IMODE((log_root / "launchd.err.log").stat().st_mode), 0o600
-        )
+                self.assertEqual(plist["Umask"], 0o077)
+                self.assertTrue(result["ok"])
+                self.assertEqual(stat.S_IMODE(log_root.stat().st_mode), 0o700)
+                self.assertEqual(stat.S_IMODE(existing_stdout.stat().st_mode), 0o600)
+                self.assertEqual(
+                    stat.S_IMODE((log_root / "launchd.err.log").stat().st_mode), 0o600
+                )
 
     def test_sub_ten_second_interval_sets_matching_launchd_throttle(self):
         value = registry()

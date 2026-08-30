@@ -1,14 +1,88 @@
+import hashlib
 import json
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from runtime.loop import entry_dispatch
 from runtime.loop.entry_dispatch import command_for
 
 
 class EntryDispatchTest(unittest.TestCase):
+    def _symphony_fixture(self, home: Path, content: bytes = b"symphony fixture") -> Path:
+        artifact_dir = (
+            home / '.local/libexec/openai-symphony/'
+            '8001b52e3062495a16e520e4ceaf8f9de868c4d0'
+        )
+        artifact_dir.mkdir(parents=True, mode=0o700)
+        artifact = artifact_dir / 'symphony'
+        artifact.write_bytes(content)
+        artifact.chmod(0o500)
+        return artifact
+
+    def test_money_printer_symphony_uses_pinned_artifact_and_workflow_argv(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary)
+            home = base / 'home'
+            root = base / 'release'
+            root.mkdir()
+            workflow = root / 'ops/symphony/WORKFLOW.money-printer.md'
+            workflow.parent.mkdir(parents=True)
+            workflow.write_text('workflow')
+            artifact = self._symphony_fixture(home)
+            digest = hashlib.sha256(artifact.read_bytes()).hexdigest()
+            with patch.object(entry_dispatch, '_SYMPHONY_ARTIFACT_SHA256', digest):
+                self.assertEqual(command_for('money-printer-symphony', root, home), [
+                    str(home / '.local/share/mise/installs/erlang/28.5/bin/escript'),
+                    str(artifact),
+                    '--i-understand-that-this-will-be-running-without-the-usual-guardrails',
+                    '--logs-root', str(home / '.local/state/life-manager/money-printer-symphony/runtime-logs'),
+                    '--port', '4000',
+                    str(workflow),
+                ])
+
+    def test_money_printer_symphony_rejects_invalid_artifact_before_exec(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary)
+            home = base / 'home'
+            root = base / 'release'
+            root.mkdir()
+            self._symphony_fixture(home)
+            with patch.object(entry_dispatch, '_SYMPHONY_ARTIFACT_SHA256', 'b' * 64):
+                with self.assertRaisesRegex(ValueError, 'official Symphony artifact unavailable'):
+                    command_for('money-printer-symphony', root, home)
+
+    def test_money_printer_symphony_reads_one_github_credential_and_sanitizes_env(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary)
+            private = home / '.local/share/anicca'
+            private.mkdir(parents=True, mode=0o700)
+            credentials = private / 'credentials.json'
+            token = 'ghp_' + 'a' * 36
+            credentials.write_text(json.dumps({
+                'version': 1,
+                'credentials': [{'service': 'openai-symphony-github', 'token': token}],
+            }))
+            credentials.chmod(0o600)
+            base = {
+                'PATH': '/tmp/untrusted',
+                'GH_TOKEN': 'alias',
+                'GH_ENTERPRISE_TOKEN': 'alias',
+                'GITHUB_ENTERPRISE_TOKEN': 'alias',
+                'KEEP': 'value',
+            }
+
+            environment = entry_dispatch.environment_for('money-printer-symphony', home, base)
+
+            self.assertEqual(environment['GITHUB_TOKEN'], token)
+            self.assertEqual(environment['PATH'], '/opt/homebrew/bin:/usr/bin:/bin')
+            self.assertEqual(environment['KEEP'], 'value')
+            self.assertNotIn('GH_TOKEN', environment)
+            self.assertNotIn('GH_ENTERPRISE_TOKEN', environment)
+            self.assertNotIn('GITHUB_ENTERPRISE_TOKEN', environment)
+
     def test_money_printer_bridge_uses_release_code_and_private_ssot_env(self):
         root = Path('/release')
         with tempfile.TemporaryDirectory() as temporary:
