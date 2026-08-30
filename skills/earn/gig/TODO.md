@@ -4567,6 +4567,8 @@ Current buyer-level readback:
 | ユウ ブログ | `18202085` | `~/gig/projects/18202085` | `cinematic_suspense_bgm_v1.zip`, SHA256 `d5403a67e0e270d08f62c41b1a66407ac376c6f371d11c455ff98e5456d26424` | Official talkroom readback contains the exact ZIP and buyer-review message; formal delivery is off | Closed: replay is `satisfied_noop`, effect 0, deduplicated true |
 | ITフランチャイズ経営 | `18184558` | `~/gig/projects/18184558` | No artifact or reply required | Buyer explicitly requested no reply while Coconala cancellation is pending; replay is `satisfied_noop`, effect 0 | Observe official cancellation only |
 | 厚木 | `18171850` | `~/gig/projects/18171850` | Existing review artifact already handled | Natural replay is completed/deduplicated with effect 0 and formal delivery off | No additional send |
+| usaさん | `18214856` | `~/gig/projects/18214856` | Sent the required qualification question `記事テーマをご指定いただけますか？` once | Official talkroom readback binds message SHA256 `b3a937813a16987304b90ec42b42cd79cc209b0a9bb3e8498860de4803f79dae`; effect 1, readback 1, formal delivery off | Buyer must specify the omitted article theme before the requested article/account workflow can be completed. Natural replay-zero is pending behind the currently running Chii remote worker; do not resend while waiting |
+| Ryu0820119 | `18211957` | `~/gig/projects/18211957` | No additional reply or delivery from this Paid pass | Latest prepare failed closed at `remote_resume`, effect 0; no new seller message was sent | Reserved for the separate account-owner workflow; Paid must continue effect zero |
 
 `18169985` (Manledge) and the account-owner excluded Kitty lane receive no additional
 message in this recovery.  The host cleanup owner is reinstalled from stable `current`, exits 0,
