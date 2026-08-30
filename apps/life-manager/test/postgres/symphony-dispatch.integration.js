@@ -35,6 +35,14 @@ function opportunity(tenantId, sourceUrl, title) {
   };
 }
 
+function stableJson(value) {
+  if (Array.isArray(value)) return `[${value.map(stableJson).join(",")}]`;
+  if (value && typeof value === "object") {
+    return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableJson(value[key])}`).join(",")}}`;
+  }
+  return JSON.stringify(value);
+}
+
 async function createOpportunity(client, value) {
   await client.query(`
     SELECT * FROM public.create_lm_money_opportunity($1,$2,$3,$4,$5,$6,$7,$8,$9)
@@ -98,6 +106,22 @@ async function main() {
     if (first.job_id !== completed.jobId || first.round !== 1 || first.status !== "claimed") {
       throw new Error("first claim readback mismatch");
     }
+    const recovered = await primary.query("SELECT * FROM public.claim_lm_symphony_job($1)", [tenant]);
+    if (recovered.rowCount !== 1 || recovered.rows[0].dispatch_id !== first.dispatch_id
+      || recovered.rows[0].job_id !== first.job_id || recovered.rows[0].round !== first.round
+      || recovered.rows[0].status !== "claimed") {
+      throw new Error("claimed dispatch recovery mismatch");
+    }
+    const recoveryState = (await primary.query(`
+      SELECT jobs.status AS job_status,
+        (SELECT count(*)::int FROM public.lm_symphony_dispatches
+         WHERE tenant_id=$1 AND job_id=$2) AS dispatch_count
+      FROM public.lm_runtime_jobs jobs
+      WHERE jobs.tenant_id=$1 AND jobs.job_id=$2
+    `, [tenant, first.job_id])).rows[0];
+    if (JSON.stringify(recoveryState) !== JSON.stringify({ job_status: "waiting_agent", dispatch_count: 1 })) {
+      throw new Error(`claimed dispatch recovery state mismatch ${JSON.stringify(recoveryState)}`);
+    }
     const hostedState = (await primary.query(
       "SELECT status FROM public.lm_runtime_jobs WHERE tenant_id=$1 AND job_id=$2",
       [tenant, hostedJobId],
@@ -148,6 +172,14 @@ async function main() {
       /symphony issue conflict/i,
     );
 
+    const human = opportunity(tenant, "https://public.example/symphony-human", "Human boundary work");
+    await createOpportunity(primary, human);
+    const second = (await primary.query("SELECT * FROM public.claim_lm_symphony_job($1)", [tenant])).rows[0];
+    if (!second || second.dispatch_id === first.dispatch_id || second.job_id !== human.jobId
+      || second.round !== 1 || second.status !== "claimed") {
+      throw new Error("queued Money Printer claim after mirrored mismatch");
+    }
+
     const completedPayload = {
       protocol: "LM_RESULT_V1", tenant_id: tenant, dispatch_id: first.dispatch_id,
       job_id: first.job_id, status: "completed", execution_id: "codex-completed-1",
@@ -176,6 +208,17 @@ async function main() {
     }
     const consumed = await primary.query("SELECT * FROM public.consume_lm_symphony_completed($1,$2)", [tenant, first.dispatch_id]);
     if (consumed.rows[0].status !== "consumed") throw new Error("completed dispatch not consumed");
+    const completedResultReplayAfterConsume = await primary.query(
+      "SELECT * FROM public.record_lm_symphony_result($1,$2,$3,$4,$5::jsonb)",
+      [tenant, first.dispatch_id, resultRef1, completedHash, completedPayload],
+    );
+    if (completedResultReplayAfterConsume.rowCount !== 1
+      || completedResultReplayAfterConsume.rows[0].status !== "consumed"
+      || completedResultReplayAfterConsume.rows[0].result_ref !== resultRef1
+      || completedResultReplayAfterConsume.rows[0].result_hash !== completedHash
+      || stableJson(completedResultReplayAfterConsume.rows[0].result_payload) !== stableJson(completedPayload)) {
+      throw new Error(`consumed result replay readback mismatch ${JSON.stringify(completedResultReplayAfterConsume.rows[0])}`);
+    }
     await expectReject(
       () => primary.query("SELECT * FROM public.consume_lm_symphony_completed($1,$2)", [tenant, first.dispatch_id]),
       /symphony completion conflict/i,
@@ -222,9 +265,6 @@ async function main() {
       /immutable/i,
     );
 
-    const human = opportunity(tenant, "https://public.example/symphony-human", "Human boundary work");
-    await createOpportunity(primary, human);
-    const second = (await primary.query("SELECT * FROM public.claim_lm_symphony_job($1)", [tenant])).rows[0];
     await primary.query("SELECT * FROM public.record_lm_symphony_issue($1,$2,$3)", [tenant, second.dispatch_id, "github-issue://Daisuke134/life-manager-workrooms/3"]);
     const humanPayload = {
       protocol: "LM_RESULT_V1", tenant_id: tenant, dispatch_id: second.dispatch_id,
@@ -242,13 +282,36 @@ async function main() {
     await primary.query("SELECT * FROM public.answer_lm_human_task($1,$2,$3,$4)", [tenant, task.task_id, task.version, "vault-answer://tenant-a/interview-complete"]);
     const nextRound = (await primary.query("SELECT * FROM public.claim_lm_symphony_job($1)", [tenant])).rows[0];
     if (nextRound.job_id !== second.job_id || nextRound.round !== 2) throw new Error("same-job next round mismatch");
-    await expectReject(
-      () => primary.query(
-        "SELECT * FROM public.record_lm_symphony_result($1,$2,$3,$4,$5::jsonb)",
-        [tenant, second.dispatch_id, "github-comment://Daisuke134/life-manager-workrooms/3/4", humanHash, humanPayload],
-      ),
-      /symphony result conflict/i,
+    const humanReplayBefore = (await primary.query(`
+      SELECT jobs.status AS job_status, jobs.attempt,
+        (SELECT count(*)::int FROM public.lm_symphony_dispatches
+         WHERE tenant_id=$1 AND job_id=$2) AS dispatch_count,
+        (SELECT count(*)::int FROM public.lm_human_tasks
+         WHERE uid=$1 AND job_id=$2) AS task_count
+      FROM public.lm_runtime_jobs jobs
+      WHERE jobs.tenant_id=$1 AND jobs.job_id=$2
+    `, [tenant, second.job_id])).rows[0];
+    const humanResultReplay = await primary.query(
+      "SELECT * FROM public.record_lm_symphony_result($1,$2,$3,$4,$5::jsonb)",
+      [tenant, second.dispatch_id, "github-comment://Daisuke134/life-manager-workrooms/3/4", humanHash, humanPayload],
     );
+    if (humanResultReplay.rowCount !== 1 || humanResultReplay.rows[0].status !== "consumed"
+      || humanResultReplay.rows[0].result_hash !== humanHash
+      || stableJson(humanResultReplay.rows[0].result_payload) !== stableJson(humanPayload)) {
+      throw new Error("old human result replay readback mismatch");
+    }
+    const humanReplayAfter = (await primary.query(`
+      SELECT jobs.status AS job_status, jobs.attempt,
+        (SELECT count(*)::int FROM public.lm_symphony_dispatches
+         WHERE tenant_id=$1 AND job_id=$2) AS dispatch_count,
+        (SELECT count(*)::int FROM public.lm_human_tasks
+         WHERE uid=$1 AND job_id=$2) AS task_count
+      FROM public.lm_runtime_jobs jobs
+      WHERE jobs.tenant_id=$1 AND jobs.job_id=$2
+    `, [tenant, second.job_id])).rows[0];
+    if (JSON.stringify(humanReplayAfter) !== JSON.stringify(humanReplayBefore)) {
+      throw new Error(`old human result replay mutated state ${JSON.stringify({ before: humanReplayBefore, after: humanReplayAfter })}`);
+    }
     const humanRounds = (await primary.query(
       "SELECT round, status FROM public.lm_symphony_dispatches WHERE tenant_id=$1 AND job_id=$2 ORDER BY round",
       [tenant, second.job_id],
@@ -269,7 +332,7 @@ async function main() {
       non_money_claims: 0, claim_race_winners: 1, foreign_mutations: 0,
       issue_replay_duplicates: 0, result_replay_duplicates: 0,
       completed_receipts: 1, receipt_mutation: "rejected", consume_replay: "rejected",
-      old_result_replay: "rejected",
+      old_result_replay: "consumed_readback",
       human_task_status: "answered", same_job_round: 2,
     }));
   } finally {

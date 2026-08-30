@@ -88,6 +88,18 @@ BEGIN
     RAISE EXCEPTION 'symphony tenant invalid';
   END IF;
 
+  SELECT * INTO v_dispatch
+  FROM public.lm_symphony_dispatches AS dispatches
+  WHERE dispatches.tenant_id = p_tenant_id
+    AND dispatches.status = 'claimed'
+  ORDER BY dispatches.claimed_at, dispatches.dispatch_id
+  FOR UPDATE
+  LIMIT 1;
+  IF FOUND THEN
+    RETURN NEXT v_dispatch;
+    RETURN;
+  END IF;
+
   SELECT * INTO v_job
   FROM public.lm_runtime_jobs AS jobs
   WHERE jobs.tenant_id = p_tenant_id
@@ -228,7 +240,7 @@ BEGIN
   WHERE tenant_id = p_tenant_id AND dispatch_id = p_dispatch_id
   FOR UPDATE;
   IF NOT FOUND THEN RETURN; END IF;
-  IF v_dispatch.status = 'result_ready'
+  IF v_dispatch.status IN ('result_ready', 'consumed')
     AND v_dispatch.result_ref = p_result_ref
     AND v_dispatch.result_hash = p_result_hash
     AND v_dispatch.result_payload = p_result_payload THEN

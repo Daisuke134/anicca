@@ -66,6 +66,19 @@ test("R03 Symphony claim atomically moves one queued general-agent job", async (
   await assert.rejects(foreign.claimSymphony({ uid: TENANT }), /readback/i);
 });
 
+test("R11 Symphony claim recovers the oldest claimed dispatch before selecting queued work", () => {
+  const migration = fs.readFileSync(SYMPHONY_MIGRATION, "utf8");
+  const start = migration.indexOf("CREATE OR REPLACE FUNCTION public.claim_lm_symphony_job");
+  const end = migration.indexOf("REVOKE ALL ON FUNCTION public.claim_lm_symphony_job", start);
+  assert.ok(start >= 0 && end > start);
+  const functionBody = migration.slice(start, end);
+  const claimedRecovery = functionBody.search(/FROM public\.lm_symphony_dispatches[\s\S]*?status = 'claimed'/i);
+  const queuedClaim = functionBody.search(/FROM public\.lm_runtime_jobs[\s\S]*?status = 'queued'/i);
+  assert.ok(claimedRecovery >= 0 && queuedClaim > claimedRecovery, "claimed recovery must precede queued claim");
+  assert.match(functionBody.slice(claimedRecovery), /ORDER BY dispatches\.claimed_at, dispatches\.dispatch_id[\s\S]*FOR UPDATE/i);
+  assert.match(functionBody.slice(claimedRecovery, queuedClaim), /IF FOUND THEN[\s\S]*RETURN NEXT v_dispatch;[\s\S]*RETURN;/i);
+});
+
 test("R04 Symphony issue readback is idempotent and conflict-fenced", async () => {
   const migration = fs.readFileSync(SYMPHONY_MIGRATION, "utf8");
   assert.match(migration, /CREATE OR REPLACE FUNCTION public\.record_lm_symphony_issue\(\s*p_tenant_id text,\s*p_dispatch_id text,\s*p_issue_ref text\s*\)/i);
@@ -123,6 +136,33 @@ test("R05 Symphony result is stored once while the same job remains waiting_agen
   assert.match(calls[0].sql, /^\s*SELECT \* FROM public\.record_lm_symphony_result\(\$1, \$2, \$3, \$4, \$5\)/i);
   assert.deepEqual(calls[0].values, [TENANT, dispatch.dispatch_id, resultRef, dispatch.result_hash, JSON.stringify(payload)]);
   await assert.rejects(store.recordSymphonyResult({ ...input, payload: { ...payload, status: "unknown" } }), /result/i);
+});
+
+test("R12 runtime store accepts exact result readback at result_ready or consumed only", async () => {
+  const migration = fs.readFileSync(SYMPHONY_MIGRATION, "utf8");
+  assert.match(migration, /IF v_dispatch\.status IN \('result_ready', 'consumed'\)[\s\S]*result_ref = p_result_ref[\s\S]*result_hash = p_result_hash[\s\S]*result_payload = p_result_payload/i);
+  const resultRef = "github-comment://Daisuke134/life-manager-workrooms/1/2";
+  const payload = {
+    protocol: "LM_RESULT_V1", tenant_id: TENANT, dispatch_id: "d".repeat(64),
+    job_id: `goal:${ID}`, status: "completed", execution_id: "codex-round-1", artifact_refs: [],
+  };
+  const input = { uid: TENANT, dispatchId: payload.dispatch_id, resultRef, resultHash: "e".repeat(64), payload };
+  for (const status of ["result_ready", "consumed"]) {
+    const row = {
+      tenant_id: TENANT, dispatch_id: input.dispatchId, job_id: payload.job_id, round: 1, status,
+      issue_ref: "github-issue://Daisuke134/life-manager-workrooms/1", result_ref: resultRef,
+      result_hash: input.resultHash, result_payload: payload, failure_code: null,
+    };
+    const store = createMoneyPrinterRuntimeStore({ query: async () => ({ rows: [row] }) });
+    assert.deepEqual(await store.recordSymphonyResult(input), row);
+  }
+  const invalid = {
+    tenant_id: TENANT, dispatch_id: input.dispatchId, job_id: payload.job_id, round: 1, status: "mirrored",
+    issue_ref: "github-issue://Daisuke134/life-manager-workrooms/1", result_ref: resultRef,
+    result_hash: input.resultHash, result_payload: payload, failure_code: null,
+  };
+  const store = createMoneyPrinterRuntimeStore({ query: async () => ({ rows: [invalid] }) });
+  await assert.rejects(store.recordSymphonyResult(input), /readback/i);
 });
 
 test("Symphony result input rejects numeric identity fields before the query", async () => {
