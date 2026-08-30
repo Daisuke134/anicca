@@ -27,7 +27,7 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 この節は、後段の「現在TODO」「次の一件」「local-only」「self-funded agentは別product」という相反する記述を
 上書きする最新の実行順序SSOTである。後段は実装履歴・organ別acceptanceとして保持するが、次作業の選択には使わない。
 Upworkのterminal evidence、startup context、public claim、GA-01〜13Aは完了または履歴として保持する。
-次の一件はAtomic program ledger Seq 19 `ELZ-C06`で、capability manifest、private authorization ref、human-only境界、expiryの既存contractを調査し、現在activeなC06だけを単一行動へ分解する。
+次の一件はAtomic program ledger Seq 19 `ELZ-C06`のsubstep `C06-01`で、legacy GA-03 public capability manifest contractをprivate evidenceへ保存する。
 
 #### 0.0.1 最新基盤決定 — ElizaOSを完全forkし、Life Managerをlocal OSSからmulti-tenant SaaSへ育てる
 
@@ -676,7 +676,35 @@ C07のCodexへ残す。新queue、新DB、provider adapter、model adapter、mar
 - [x] **C05-15** ELZ-C05をDONEへ更新する — canonical `goal-workitem-receipt.json` status=`PASS`、SHA256 `a1da21f2…`、review open 0、duplicate/external effect 0を再読出しし、Atomic program ledger Seq 18をDONEへ更新。次はC05-16
 - [x] **C05-16** ELZ-C06をNEXTへ更新する — C02〜C05のgeneral-agent基盤完了を保持し、Atomic program ledger Seq 19 `ELZ-C06`だけを`IN_PROGRESS — NEXT`へ更新。C07以降とPhase Lの順序は不変。次はELZ-C06
 
-Lancersでまだ新しい収益がないことは、この順序を飛ばす理由にしない。現時点はC05がactiveであり、新forkのgeneral-agent基盤が
+##### C06 Atomic TODO — capability manifestとopaque consume-once authorization
+
+C06はlegacy GA-03のpublic manifest、`provider_authorization.py`のprivate mode 0600 exact scope/expiry、`human_ceremony.py`の
+provider-scoped ceremony boundary、Eliza core `provider-integrations.ts`のversioned request/digest/policy/confirmation/atomic consume-onceを
+copy+tweakする。Life ManagerはEliza core authorizationを再実装せず、provider非依存public capability manifestとopaque private
+`authorizationRef` resolverだけを一つのcontractへ追加する。Skill inventory、provider名、marketplace名、installed experienceを能力の
+admission whitelistにせず、capability選択とfeasibility判断はC07のCodexへ残す。新authorization engine、credential store、queue、model adapterは作らない。
+
+- [ ] **C06-01** legacy GA-03 public capability manifest contractをprivate evidenceへ保存する
+- [ ] **C06-02** legacy private authorization receipt scope/mode/expiry contractをprivate evidenceへ保存する
+- [ ] **C06-03** Eliza core digest/expiry/confirmation/consume-once contractをprivate evidenceへ保存する
+- [ ] **C06-04** legacy provider-scoped human ceremony contractをprivate evidenceへ保存する
+- [ ] **C06-05** 採用・棄却mapを`capability-auth-reuse-map.json`へ保存する
+- [ ] **C06-06** manifest＋opaque authorization ref contractのfocused failing testを一つ追加する
+- [ ] **C06-07** focused testの期待どおりのREDを一回確認する
+- [ ] **C06-08** provider-neutral public capability manifest contractを定義する
+- [ ] **C06-09** injected private authorization ref resolverを定義する
+- [ ] **C06-10** Eliza core consume-once authorizationへthin delegationする
+- [ ] **C06-11** human-only ceremonyをexecution不能なtyped boundaryとして定義する
+- [ ] **C06-12** 既存`LifeManagerService`へcapability authorization operationを接続する
+- [ ] **C06-13** focused testのGREENを一回確認する
+- [ ] **C06-14** private auth refでunexpired consume-once、expired/misbound/replay拒否を実行する
+- [ ] **C06-15** source/result hashを`capability-auth-receipt.json`へ保存する
+- [ ] **C06-16** C06差分をfresh adversarial reviewへ一回だけ渡す
+- [ ] **C06-17** C06 receiptをPASSへ更新する
+- [ ] **C06-18** ELZ-C06をDONEへ更新する
+- [ ] **C06-19** ELZ-C07をNEXTへ更新する
+
+Lancersでまだ新しい収益がないことは、この順序を飛ばす理由にしない。現時点はC06がactiveであり、新forkのgeneral-agent基盤が
 Lancers実環境へ到達していない。Lancersでの新規応募・契約・受領金・銀行着金はPhase C完了後のPhase Lで一つずつ実証する。
 
 ##### Phase F — Eliza fixed treeを未変更でlocal起動する
