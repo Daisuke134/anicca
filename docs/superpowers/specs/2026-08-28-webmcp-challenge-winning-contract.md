@@ -1367,15 +1367,15 @@ R01–R10はcomplete。isolated PostgreSQL 18 readbackはclaim winner 1、non-Mo
 | Atom | One action | Exact completion evidence |
 |---|---|---|
 | A01 | bridge bearer secretを生成しprivate credential SSOTへ保存する | complete: directory mode 700、file mode 600、64-character credential entry readback、repo/log/chatへのvalue露出0 |
-| A02 | same secretをRailway `life-call`と`money-printer-worker` envへ設定する | complete: canonical key `LM_SYMPHONY_BRIDGE_SECRET`が両serviceに存在、誤key absent、value非表示、deployはcode mergeまで保留 |
-| A03 | `POST /api/internal/money-printer/symphony/claim`を追加する | code-verified: valid bearerでsafe one dispatch/null、no bearer 401、auth前store acquisition 0、responseにPII/credential 0。production readback pending |
-| A04 | `POST /api/internal/money-printer/symphony/issue`を追加する | code-verified: exact tenant/dispatch/GitHub issue refだけをidempotent storeへ渡し、private dispatch fields 0。production readback pending |
-| A05 | `POST /api/internal/money-printer/symphony/result`を追加する | code-verified: strict outer schema + store `LM_RESULT_V1`、expected GitHub author/repo、hash、same tenant/job/dispatch scope。production readback pending |
+| A02 | same secretをRailway `life-call`と`money-printer-worker` envへ設定する | complete: canonical key `LM_SYMPHONY_BRIDGE_SECRET`が両serviceに存在、誤key absent、value非表示、両serviceがmain SHA `ec5cd6c58a38a9e4f0a465ff2cef34f4150dd15e`でSUCCESS |
+| A03 | `POST /api/internal/money-printer/symphony/claim`を追加する | complete: no bearer 401、private bearer + empty unique tenantは200 `dispatch:null`、auth前store acquisition 0、DB jobs 0/dispatches 0/effect 0、responseにPII/credential 0 |
+| A04 | `POST /api/internal/money-printer/symphony/issue`を追加する | complete: exact tenant/dispatch/GitHub issue refだけをidempotent storeへ渡し、private dispatch fields 0。live effect pathはS bridge E2Eへ束縛 |
+| A05 | `POST /api/internal/money-printer/symphony/result`を追加する | complete: strict outer schema + store `LM_RESULT_V1`、expected GitHub author/repo、hash、same tenant/job/dispatch scope。live effect pathはS bridge E2Eへ束縛 |
 | A06 | result `needs_human`をexisting HumanTaskへ変換する | code-verified: existing atomic consumeを一回だけ呼び、responseはtask ID/status/versionとpublic result refsだけ、question/context露出0 |
 | A07 | result `completed`をOpportunity/receiptへ変換する | code-verified: existing single-use completed consumeだけを呼び、application/delivery/payment/cash claim 0 |
 | A08 | focused API checkを通す | code-complete: relevant regression 117/117、oversizeはend待ち0でexact 413、401、tenant mismatch、stale dispatch、duplicate callback effect 0、secret/raw error echo 0、fresh adversarial `ship` |
 
-A01–A02はcomplete。A03–A08はcode-completeで、変更はAPI module、focused test、server wiringの三fileだけ、新依存0。production deploy SHA、health 200、unauthorized 401、authorized empty-tenant claim `dispatch:null`はmerge後のnon-browser readbackで閉じる。
+A01–A08はcomplete。変更はAPI module、focused test、server wiringの三fileだけ、新依存0。relevant regression 117/117、fresh adversarial `ship`、GitHub checks 9/9。Productionは`life-call`と`money-printer-worker`がmain SHA `ec5cd6c58a38a9e4f0a465ff2cef34f4150dd15e`でSUCCESS、health 200、unauthorized 401、authorized empty-tenant claim 200 `dispatch:null`、same tenant DB jobs 0/dispatches 0/effect 0をnon-browserでreadbackした。secret valueの出力0。
 
 ### 18.7 S — local bridge + official Symphony（Section 14 item 3, slice 3）
 
@@ -1475,4 +1475,4 @@ A01–A02はcomplete。A03–A08はcode-completeで、変更はAPI module、focu
 
 ### 18.13 Immediate next atom
 
-次はA03–A08の三file diffとこのstate更新をcommit/push/mergeし、Railway `life-call`のmain SHA、health 200、unauthorized 401、authorized empty-tenant claim `dispatch:null`をnon-browserでreadbackする。そこでA sliceをcompleteにしてからS01へ進む。R01–R10はfocused checks、isolated PostgreSQL、production official readback、fresh adversarial `ship`まで完了済み。full browser production E2EはAPI/bridge完成後のB12唯一のrecording runへ予約し、Chrome/ChatGPT内蔵browserの二重実行はしない。
+次はS01だけを実行する。private repo `Daisuke134/life-manager-workrooms`をreadbackし、存在しなければ作成してPRIVATE + issues enabledを確認する。A01–A08とR01–R10はproduction official readbackとfresh adversarial `ship`まで完了済み。full browser production E2Eはbridge完成後のB12唯一のrecording runへ予約し、Chrome/ChatGPT内蔵browserの二重実行はしない。
