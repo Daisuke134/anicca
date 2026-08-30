@@ -27,7 +27,7 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 この節は、後段の「現在TODO」「次の一件」「local-only」「self-funded agentは別product」という相反する記述を
 上書きする最新の実行順序SSOTである。後段は実装履歴・organ別acceptanceとして保持するが、次作業の選択には使わない。
 Upworkのterminal evidence、startup context、public claim、GA-01〜13Aは完了または履歴として保持する。
-次の一件はAtomic program ledger Seq 19 `ELZ-C06`のsubstep `C06-19`で、ELZ-C07をNEXTへ更新する。
+次の一件はAtomic program ledger Seq 20 `ELZ-C07`で、bounded model decisionとmodel-authored graphの既存Eliza contractを調査し、現在activeなC07だけを単一行動へ分解する。
 
 #### 0.0.1 最新基盤決定 — ElizaOSを完全forkし、Life Managerをlocal OSSからmulti-tenant SaaSへ育てる
 
@@ -702,7 +702,7 @@ admission whitelistにせず、capability選択とfeasibility判断はC07のCode
 - [x] **C06-16** C06差分をfresh adversarial reviewへ一回だけ渡す — fresh Sol verifierはCritical 0/Important 1で、allowed-policy consumerの同名errorまでhuman ceremony化するover-mapを反証。同じLunaがpolicy=`confirmation_required`＋grantなし＋exact core codeの3条件へproduction 2 LOCで限定し、allowed consumer error同一object rethrow regressionを追加。fork PR #36 merge `2a115b9e…`、focused RED→3/3 GREEN、typecheck exit 0。限定recheckでhistorical 2/2 logとreview-fix 3/3 logの名前が曖昧な一点をexact pathで解消し、final `ship`、Critical/Important/open 0。private review/fix receipts mode 0600、canonical status=`review_passed`、SHA256 `20fdf323…`。次はC06-17
 - [x] **C06-17** C06 receiptをPASSへ更新する — final source 4/evidence 10 hash、全private mode 0600、private authority dir 0700/files 0600、provider-neutral/opaque ref/core consume-once/replay-expired-misbound拒否/exact human boundary/ordinary error保持、focused 3/3、typecheck、review Critical/Important/open 0、model/provider/marketplace/payment 0を再監査。C06専用RAM volume detachとnode_modules symlink cleanupも確認。canonical `capability-auth-receipt.json` status=`PASS`、SHA256 `5df6f3ee…`。次はC06-18
 - [x] **C06-18** ELZ-C06をDONEへ更新する — canonical `capability-auth-receipt.json` status=`PASS`、SHA256 `5df6f3ee…`、review open 0、external effect 0を再読出しし、Atomic program ledger Seq 19をDONEへ更新。次はC06-19
-- [ ] **C06-19** ELZ-C07をNEXTへ更新する
+- [x] **C06-19** ELZ-C07をNEXTへ更新する — C02〜C06のgeneral-agent基盤完了を保持し、Atomic program ledger Seq 20 `ELZ-C07`だけを`IN_PROGRESS — NEXT`へ更新。C08以降とPhase Lの順序は不変。次はELZ-C07
 
 Lancersでまだ新しい収益がないことは、この順序を飛ばす理由にしない。現時点はC06がactiveであり、新forkのgeneral-agent基盤が
 Lancers実環境へ到達していない。Lancersでの新規応募・契約・受領金・銀行着金はPhase C完了後のPhase Lで一つずつ実証する。
@@ -735,7 +735,7 @@ Lancers実環境へ到達していない。Lancersでの新規応募・契約・
 | 17 | ELZ-C04 legacy provider bridge contract | **DONE** | canonical private `provider-bridge-receipt.json` mode 0600、SHA256 `091935cf…`。fork `5ff9d9a…`、opaque ref/private resolver、bounded no-shell execFile、structured-only JS/Python live success 2、review Critical/Important/open 0、remaining process/provider business effect/payment 0 |
 | 18 | ELZ-C05 Goal to reference-only WorkItem | **DONE** | canonical private `goal-workitem-receipt.json` mode 0600、SHA256 `a1da21f2…`。fork `f3c79685…`、one scoped active Goal→one PlanGraph/WorkItem、relation unique 2、Goal writer serialization、same replay、typed conflict、separate-process restart、review open 0、model/provider/marketplace/payment 0 |
 | 19 | ELZ-C06 capability and authorization | **DONE** | canonical private `capability-auth-receipt.json` mode 0600、SHA256 `5df6f3ee…`。fork `2a115b9e…`、provider-neutral manifest、opaque ref、real core consume-once、replay/expired/misbound拒否、exact human boundary、ordinary error保持、review open 0、model/provider/marketplace/payment 0 |
-| 20 | ELZ-C07 bounded model decision | TODO | modelが候補/tool/next graphをstructured判断し、regex/keyword/provider judgment 0の`specialist-decision-receipt.json` |
+| 20 | ELZ-C07 bounded model decision | **IN_PROGRESS — NEXT** | modelが候補/tool/next graphをstructured判断し、regex/keyword/provider judgment 0の`specialist-decision-receipt.json` |
 | 21 | ELZ-C08 effect/readback/replay kernel | TODO | presend reconcile→at most one effect→official readback→unknown reconcile→replay-zeroの`effect-receipt-kernel.json` |
 | 22 | ELZ-C09 Reflect and plugin restart | TODO | outcome/cost/time/failureをGoalへ帰属し、plugin restart後も同じstateを読む`reflect-restart-receipt.json` |
 
