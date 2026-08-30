@@ -1,12 +1,12 @@
 import unittest
 import inspect
+import json
 import tempfile
 import fcntl
 import os
-import threading
 import time
 from pathlib import Path
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 from job_search_loop.browser_agent.direct_cdp import DirectCDPPage
 from job_search_loop.browser_agent.observation import ObservationBuilder
@@ -18,7 +18,7 @@ from job_search_loop.runtime import main as compatibility_runtime_main
 
 
 class DirectCDPTypeTests(unittest.IsolatedAsyncioTestCase):
-    def test_command_lock_waits_for_the_active_runtime_command(self):
+    def test_command_lock_rejects_the_active_runtime_command_immediately(self):
         from job_search_loop.browser_agent import runtime
 
         with tempfile.TemporaryDirectory() as directory, patch.object(
@@ -27,19 +27,72 @@ class DirectCDPTypeTests(unittest.IsolatedAsyncioTestCase):
             path = Path(directory) / "command.lock"
             descriptor = os.open(path, os.O_RDWR | os.O_CREAT, 0o600)
             lock = os.fdopen(descriptor, "r+")
+            self.addCleanup(lock.close)
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-            released = threading.Event()
+            started = time.monotonic()
+            with self.assertRaisesRegex(
+                RuntimeError,
+                "another browser runtime command is already in progress",
+            ):
+                with runtime._exclusive_command():
+                    pass
+            self.assertLess(time.monotonic() - started, 0.1)
 
-            def release():
-                time.sleep(0.05)
-                lock.close()
-                released.set()
+    async def test_observe_compacts_navigation_receipt_but_keeps_normal_context(self):
+        from job_search_loop.browser_agent import runtime
 
-            thread = threading.Thread(target=release)
-            thread.start()
-            with runtime._exclusive_command():
-                self.assertTrue(released.is_set())
-            thread.join()
+        row = {"application_id": "application:observe", "company": "Example", "title": "Example Role", "canonical_url": "https://jobs.ashbyhq.com/example/role"}
+        cursor = Mock(handle=Mock(), checkpoint=None, needs_navigation=True, recovery_url=row["canonical_url"])
+        memory = Mock(concepts=Mock(return_value=("candidate.name",)), grounding_facts=Mock(return_value=({"concept": "fact.role"},)))
+        context = (row, Mock(), Mock(), Mock(), cursor, Mock(build=AsyncMock()))
+
+        with patch.object(runtime, "_context", new=AsyncMock(return_value=context)), patch.object(runtime, "_path_env", return_value=Path("/tmp/candidate-memory.json")), patch.object(runtime.CandidateMemoryView, "load", return_value=memory), patch.object(runtime, "_safe_observation", return_value={"url": "about:blank"}), patch.object(runtime, "_wake_budget", return_value=99):
+            navigation = await runtime.observe()
+            self.assertEqual(set(navigation), {"status", "row", "needs_navigation", "recovery_url", "observation"})
+            self.assertEqual((navigation["status"], navigation["needs_navigation"], navigation["recovery_url"]), ("observed", True, row["canonical_url"]))
+            self.assertNotIn("candidate_concepts", navigation)
+            self.assertNotIn("grounding_facts", navigation)
+
+            cursor.needs_navigation = False
+            normal = await runtime.observe()
+            self.assertEqual(normal["candidate_concepts"], ("candidate.name", "policy.prefer_not_to_say"))
+            self.assertEqual(normal["grounding_facts"], ({"concept": "fact.role"},))
+
+    def test_terminal_marker_lifecycle_blocks_stale_wake_and_allows_next_wake(self):
+        from job_search_loop.browser_agent import runtime
+
+        with tempfile.TemporaryDirectory() as directory:
+            scratch = Path(directory)
+            active = scratch / "active-command.json"
+            active.write_text('{"reason":"command_active","status":"active"}\n')
+            active.chmod(0o600)
+            finalize = AsyncMock(return_value={"status": "submitted"})
+            with patch.object(runtime, "_path_env", return_value=scratch), patch.object(
+                runtime, "finalize", new=finalize
+            ):
+                with self.assertRaisesRegex(RuntimeError, "terminal runtime failure"):
+                    runtime.main(["finalize"])
+                marker = scratch / "terminal-failure.json"
+                self.assertTrue(active.exists())
+                self.assertEqual(
+                    json.loads(marker.read_text()),
+                    {"reason": "runtime_failure", "status": "terminal"},
+                )
+                self.assertEqual(oct(marker.stat().st_mode & 0o777), "0o600")
+                with self.assertRaisesRegex(RuntimeError, "terminal runtime failure"):
+                    runtime.main(["finalize"])
+                finalize.assert_not_called()
+
+        with tempfile.TemporaryDirectory() as directory, patch.object(
+            runtime, "_path_env", return_value=Path(directory)
+        ), patch.object(
+            runtime, "observe", new=AsyncMock(return_value={"status": "observed"})
+        ) as observe:
+            runtime.main(["observe"])
+            self.assertFalse((Path(directory) / "active-command.json").exists())
+            self.assertFalse((Path(directory) / "terminal-failure.json").exists())
+            runtime.main(["observe"])
+            self.assertEqual(observe.await_count, 2)
 
     async def test_auth_rejects_html_input_type_as_a_role_before_secret_action(self):
         from job_search_loop.browser_agent import runtime

@@ -515,6 +515,64 @@ class ModelBrowserLoopContractTests(unittest.TestCase):
 
             self.assertIsNone(orchestrator.validate_pass_result(root))
 
+    def test_validator_scans_runtime_causality_before_terminal_result_fields(self):
+        from job_search_loop.browser_agent import orchestrator
+
+        command = "/bin/zsh -lc '/opt/homebrew/bin/python3 -m job_search_loop.browser_agent.runtime "
+        event = lambda kind, item_id, command, **fields: {"type": f"item.{kind}", "item": {"id": item_id, "type": "command_execution", "command": command, **fields}}
+        events = [
+            event("started", "wait-1", command + "wait --milliseconds 6000'"),
+            event("started", "observe-1", command + "observe'"),
+            event("completed", "wait-1", command + "wait --milliseconds 6000'", exit_code=1, aggregated_output="runtime failure"),
+            event("started", "observe-2", command + "observe'"),
+            event("completed", "observe-2", command + "observe'", exit_code=0, aggregated_output=json.dumps({"status": "observed"})),
+        ]
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self._write_queue_complete_observe_fixture(root, ())
+            (root / "stdout.log").write_text(
+                "".join(json.dumps(event) + "\n" for event in events), encoding="utf-8"
+            )
+            outcomes = []
+            for terminal_field in ("submitted", "submit_unknown"):
+                result = {"status": "queue_complete", "submitted": [], "submit_unknown": [], "blocked": []}
+                result[terminal_field] = ["row"]
+                (root / "result.json").write_text(json.dumps(result), encoding="utf-8")
+                outcomes.append(orchestrator.validate_pass_result(root))
+            self.assertEqual(
+                outcomes,
+                ["overlapping_runtime_commands", "overlapping_runtime_commands"],
+            )
+
+    def test_validator_rejects_runtime_start_after_nonzero_completion(self):
+        from job_search_loop.browser_agent import orchestrator
+
+        command = "/bin/zsh -lc '/opt/homebrew/bin/python3 -m job_search_loop.browser_agent.runtime "
+        event = lambda kind, item_id, command, **fields: {"type": f"item.{kind}", "item": {"id": item_id, "type": "command_execution", "command": command, **fields}}
+        wait = command + "wait --milliseconds 6000'"
+        observe = command + "observe'"
+        events = [
+            event("started", "wait-1", wait),
+            event("completed", "wait-1", wait, exit_code=1, aggregated_output="runtime failure"),
+            event("started", "observe-1", observe),
+            event("completed", "observe-1", observe, exit_code=0, aggregated_output=json.dumps({"status": "observed"})),
+        ]
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self._write_queue_complete_observe_fixture(root, ())
+            (root / "result.json").write_text(
+                json.dumps({"status": "transport_failed", "submitted": [], "submit_unknown": [], "blocked": []}),
+                encoding="utf-8",
+            )
+            (root / "stdout.log").write_text(
+                "".join(json.dumps(item) + "\n" for item in events), encoding="utf-8"
+            )
+
+            self.assertEqual(
+                orchestrator.validate_pass_result(root),
+                "runtime_command_after_nonzero_completion",
+            )
+
     @classmethod
     def setUpClass(cls) -> None:
         schema = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))

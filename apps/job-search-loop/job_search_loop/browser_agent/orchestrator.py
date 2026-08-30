@@ -32,6 +32,18 @@ def _is_duplicate_runtime_module_typo(command: str) -> bool:
     )
 
 
+def _runtime_command_parts(command: str) -> list[str]:
+    if any(marker in command for marker in ("$(", "`", ";", "&&", "||", "|", ">", "<", "\n")):
+        return []
+    try:
+        parts = shlex.split(command)
+        if parts[:2] == ["/bin/zsh", "-lc"] and len(parts) == 3:
+            parts = shlex.split(parts[2])
+        return parts
+    except ValueError:
+        return []
+
+
 def validate_pass_result(evidence_dir: Path) -> str | None:
     summary_path = evidence_dir / "summary.json"
     if not summary_path.is_file():
@@ -54,8 +66,6 @@ def validate_pass_result(evidence_dir: Path) -> str | None:
     except (OSError, json.JSONDecodeError):
         return None
     status = result.get("status")
-    if result.get("submitted") or result.get("submit_unknown"):
-        return None
     retry_in_progress = (
         status == "in_progress"
         and result.get("submitted") == []
@@ -67,12 +77,6 @@ def validate_pass_result(evidence_dir: Path) -> str | None:
         and result.get("submit_unknown") == []
         and result.get("blocked") == []
     )
-    if (
-        status != "transport_failed"
-        and not retry_in_progress
-        and not retry_queue_complete
-    ):
-        return None
     retry_reason = (
         "in_progress_without_terminal_outcome"
         if retry_in_progress
@@ -90,37 +94,41 @@ def validate_pass_result(evidence_dir: Path) -> str | None:
     if stdout_path.parent != evidence_dir or not stdout_path.is_file():
         return retry_reason if status == "transport_failed" else None
     latest_observe_status: str | None = None
+    active_runtime_ids: set[str] = set()
+    real_nonzero_runtime_completion = False
     for line in stdout_path.read_text(encoding="utf-8").splitlines():
         try:
             event = json.loads(line)
         except json.JSONDecodeError:
             continue
-        item = event.get("item") if isinstance(event, dict) else None
+        if not isinstance(event, dict):
+            continue
+        event_type = event.get("type")
+        item = event.get("item")
+        if not isinstance(item, dict) or item.get("type") != "command_execution":
+            continue
+        item_id = item.get("id")
+        item_id = item_id if isinstance(item_id, str) and item_id else None
+        command = str(item.get("command") or "")
+        command_parts = _runtime_command_parts(command)
+        canonical_runtime = (len(command_parts) >= 4 and Path(command_parts[0]).name in {"python", "python3", "python3.14"} and command_parts[1:3] == ["-m", "job_search_loop.browser_agent.runtime"])
+        if event_type == "item.started" and canonical_runtime and item_id:
+            if active_runtime_ids:
+                return "overlapping_runtime_commands"
+            if real_nonzero_runtime_completion:
+                return "runtime_command_after_nonzero_completion"
+            active_runtime_ids.add(item_id)
+        matched_runtime = bool(item_id and item_id in active_runtime_ids)
+        if matched_runtime and event_type == "item.completed":
+            active_runtime_ids.remove(item_id)
         if (
-            event.get("type") == "item.completed"
-            and isinstance(item, dict)
-            and item.get("type") == "command_execution"
+            event_type == "item.completed"
+            and canonical_runtime
             and isinstance(item.get("exit_code"), int)
             and not isinstance(item.get("exit_code"), bool)
             and item["exit_code"] == 0
         ):
-            command = str(item.get("command") or "")
-            try:
-                command_parts = shlex.split(command)
-            except ValueError:
-                command_parts = []
-            if command_parts[:2] == ["/bin/zsh", "-lc"] and len(command_parts) == 3:
-                try:
-                    command_parts = shlex.split(command_parts[2])
-                except ValueError:
-                    command_parts = []
-            if (
-                len(command_parts) == 4
-                and Path(command_parts[0]).name
-                in {"python", "python3", "python3.14"}
-                and command_parts[1:]
-                == ["-m", "job_search_loop.browser_agent.runtime", "observe"]
-            ):
+            if command_parts[3:] == ["observe"]:
                 output = item.get("aggregated_output")
                 if isinstance(output, str):
                     try:
@@ -133,16 +141,13 @@ def validate_pass_result(evidence_dir: Path) -> str | None:
                         ):
                             latest_observe_status = observe_result["status"]
         if (
-            event.get("type") == "item.completed"
-            and isinstance(item, dict)
-            and item.get("type") == "command_execution"
+            event_type == "item.completed"
             and isinstance(item.get("exit_code"), int)
             and item["exit_code"] != 0
         ):
             output = str(item.get("aggregated_output") or "")
             if output.startswith("zsh:") and "unmatched" in output:
                 continue
-            command = str(item.get("command") or "")
             if (
                 "job_search_loop.runtime" in command
                 and "job_search_loop.browser_agent.runtime" not in command
@@ -154,7 +159,20 @@ def validate_pass_result(evidence_dir: Path) -> str | None:
                 and "ModuleNotFoundError" in output
             ):
                 continue
+            if canonical_runtime and matched_runtime:
+                real_nonzero_runtime_completion = True
+                continue
             return None
+    if real_nonzero_runtime_completion:
+        return None
+    if result.get("submitted") or result.get("submit_unknown"):
+        return None
+    if (
+        status != "transport_failed"
+        and not retry_in_progress
+        and not retry_queue_complete
+    ):
+        return None
     if retry_queue_complete and latest_observe_status != "observed":
         return None
     return retry_reason

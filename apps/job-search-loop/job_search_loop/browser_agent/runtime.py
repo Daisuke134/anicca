@@ -7,7 +7,6 @@ import hashlib
 import json
 import os
 import re
-import time
 from contextlib import contextmanager
 from datetime import datetime
 from dataclasses import asdict
@@ -55,6 +54,72 @@ def _path_env(name: str) -> Path:
     return Path(value)
 
 
+@contextmanager
+def _exclusive_terminal_effect():
+    path = _path_env("JOB_SEARCH_BROWSER_SCRATCH") / "terminal-effect.lock"
+    descriptor = os.open(path, os.O_RDWR | os.O_CREAT, 0o600)
+    with os.fdopen(descriptor, "r+") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        yield
+
+
+def _terminal_failure_path() -> Path:
+    return _path_env("JOB_SEARCH_BROWSER_SCRATCH") / "terminal-failure.json"
+
+
+def _active_command_path() -> Path:
+    return _path_env("JOB_SEARCH_BROWSER_SCRATCH") / "active-command.json"
+
+
+def _write_terminal_failure_marker_locked() -> None:
+    path = _terminal_failure_path()
+    payload = b'{"reason":"runtime_failure","status":"terminal"}\n'
+    try:
+        descriptor = os.open(
+            path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600
+        )
+    except FileExistsError:
+        return
+    with os.fdopen(descriptor, "wb") as marker:
+        marker.write(payload)
+        marker.flush()
+        os.fsync(marker.fileno())
+
+
+def _write_terminal_failure_marker() -> None:
+    with _exclusive_terminal_effect():
+        _write_terminal_failure_marker_locked()
+
+
+def _claim_active_command() -> None:
+    with _exclusive_terminal_effect():
+        if _terminal_failure_path().exists():
+            raise RuntimeError("terminal runtime failure already recorded")
+        active = _active_command_path()
+        if active.exists():
+            _write_terminal_failure_marker_locked()
+            raise RuntimeError("terminal runtime failure already recorded")
+        descriptor = os.open(
+            active, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600
+        )
+        with os.fdopen(descriptor, "wb") as marker:
+            marker.write(b'{"reason":"command_active","status":"active"}\n')
+            marker.flush()
+            os.fsync(marker.fileno())
+
+
+def _clear_active_command() -> None:
+    with _exclusive_terminal_effect():
+        if _terminal_failure_path().exists():
+            return
+        _active_command_path().unlink(missing_ok=True)
+
+
+def _check_terminal_failure_marker() -> None:
+    if _terminal_failure_path().exists():
+        raise RuntimeError("terminal runtime failure already recorded")
+
+
 def _redact(value: str) -> str:
     return _PHONE.sub("[phone]", _EMAIL.sub("[email]", value))
 
@@ -92,17 +157,12 @@ def _exclusive_command():
     path = _path_env("JOB_SEARCH_BROWSER_SCRATCH") / "command.lock"
     descriptor = os.open(path, os.O_RDWR | os.O_CREAT, 0o600)
     with os.fdopen(descriptor, "r+") as lock:
-        deadline = time.monotonic() + 30
-        while True:
-            try:
-                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-                break
-            except BlockingIOError as error:
-                if time.monotonic() >= deadline:
-                    raise RuntimeError(
-                        "a browser runtime command is already in progress after 30 seconds"
-                    ) from error
-                time.sleep(0.05)
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError as error:
+            raise RuntimeError(
+                "another browser runtime command is already in progress"
+            ) from error
         yield
 
 
@@ -309,7 +369,7 @@ async def observe() -> dict[str, Any]:
         *(concept for concept in candidate_memory.concepts() if concept.startswith("candidate.")),
         "policy.prefer_not_to_say",
     )
-    return {
+    result = {
         "status": "observed",
         "row": {
             "application_id": row["application_id"],
@@ -321,10 +381,10 @@ async def observe() -> dict[str, Any]:
         },
         "needs_navigation": cursor.needs_navigation,
         "recovery_url": cursor.recovery_url if cursor.needs_navigation else None,
-        "candidate_concepts": candidate_concepts,
-        "grounding_facts": candidate_memory.grounding_facts(),
         "observation": _safe_observation(observation, cursor.checkpoint, _wake_budget()),
+        **({} if cursor.needs_navigation else {"candidate_concepts": candidate_concepts, "grounding_facts": candidate_memory.grounding_facts()}),
     }
+    return result
 
 
 def _private_action(path: Path) -> dict[str, Any]:
@@ -990,27 +1050,29 @@ async def finalize() -> dict[str, Any]:
     ).hexdigest()
     ledger = Ledger(_path_env("JOB_SEARCH_STATE_ROOT") / "ledger.sqlite3")
     try:
-        intent = ledger.claim_submission(
-            row["application_id"],
-            datetime.now(ZoneInfo("Asia/Tokyo")).strftime("%Y-%m-%d"),
-            payload_hash,
-            resume_path=resume_path,
-            resume_sha256=routed["resume_sha256"],
-            ats_snapshot_path=snapshot_path,
-            ats_snapshot_sha256=snapshot_sha,
-            final_review_receipt_sha256=review.receipt_sha256,
-        )
-        if intent is None:
-            raise RuntimeError("submission intent is already claimed or row is not ready")
-        fence = SubmissionFence(ledger, _path_env("JOB_SEARCH_BROWSER_STATE_ROOT"))
-        lease = fence.acquire(intent.intent_id, intent.fence, review)
-        try:
-            action_receipt = await ActionExecutor(session).execute_final(
-                cursor.handle, final_action, fence, lease, before.content_sha256
+        with _exclusive_terminal_effect():
+            _check_terminal_failure_marker()
+            intent = ledger.claim_submission(
+                row["application_id"],
+                datetime.now(ZoneInfo("Asia/Tokyo")).strftime("%Y-%m-%d"),
+                payload_hash,
+                resume_path=resume_path,
+                resume_sha256=routed["resume_sha256"],
+                ats_snapshot_path=snapshot_path,
+                ats_snapshot_sha256=snapshot_sha,
+                final_review_receipt_sha256=review.receipt_sha256,
             )
-        except Exception:
-            ledger.complete_submission(intent.intent_id, intent.fence, "not_submitted")
-            raise
+            if intent is None:
+                raise RuntimeError("submission intent is already claimed or row is not ready")
+            fence = SubmissionFence(ledger, _path_env("JOB_SEARCH_BROWSER_STATE_ROOT"))
+            lease = fence.acquire(intent.intent_id, intent.fence, review)
+            try:
+                action_receipt = await ActionExecutor(session).execute_final(
+                    cursor.handle, final_action, fence, lease, before.content_sha256
+                )
+            except Exception:
+                ledger.complete_submission(intent.intent_id, intent.fence, "not_submitted")
+                raise
         page = session.page(cursor.handle)
         await page.wait_for_timeout(6_500)
         after = await builder.build(cursor.handle)
@@ -1101,7 +1163,7 @@ def report(status: str) -> dict[str, Any]:
     }
 
 
-def main(argv: list[str] | None = None) -> int:
+def _run_main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers(dest="command", required=True)
     subparsers.add_parser("observe")
@@ -1162,18 +1224,18 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
     if args.command == "observe":
-        operation = observe()
+        operation = observe
     elif args.command == "finalize":
-        operation = finalize()
+        operation = finalize
     elif args.command == "navigate":
-        operation = navigate(args.url)
+        operation = lambda: navigate(args.url)
     elif args.command == "click":
-        operation = click(
+        operation = lambda: click(
             label=args.label, role=args.role, stable_id=args.stable_id,
             ordinal=args.ordinal,
         )
     elif args.command == "choose":
-        operation = choose(
+        operation = lambda: choose(
             field_label=args.field_label,
             field_role=args.field_role,
             field_stable_id=args.field_stable_id,
@@ -1182,29 +1244,29 @@ def main(argv: list[str] | None = None) -> int:
             option_stable_id=args.option_stable_id,
         )
     elif args.command == "type":
-        operation = type_candidate(
+        operation = lambda: type_candidate(
             label=args.label,
             role=args.role,
             stable_id=args.stable_id,
             candidate_concept=args.candidate_concept,
         )
     elif args.command == "type-text":
-        operation = type_text(
+        operation = lambda: type_text(
             label=args.label,
             role=args.role,
             stable_id=args.stable_id,
             text=args.text,
         )
     elif args.command == "upload":
-        operation = upload_resume(
+        operation = lambda: upload_resume(
             label=args.label, role=args.role, stable_id=args.stable_id
         )
     elif args.command == "wait":
-        operation = wait(args.milliseconds)
+        operation = lambda: wait(args.milliseconds)
     elif args.command == "act":
-        operation = act(args.action_file)
+        operation = lambda: act(args.action_file)
     elif args.command == "auth":
-        operation = auth(
+        operation = lambda: auth(
             mode=args.mode,
             field=args.field,
             label=args.label,
@@ -1212,15 +1274,35 @@ def main(argv: list[str] | None = None) -> int:
             stable_id=args.stable_id,
         )
     elif args.command == "checkpoint":
-        operation = checkpoint(args.reason)
+        operation = lambda: checkpoint(args.reason)
     elif args.command == "ineligible":
-        operation = ineligible(args.reason)
+        operation = lambda: ineligible(args.reason)
     else:
         operation = None
-    with _exclusive_command():
-        result = report(args.status) if operation is None else asyncio.run(operation)
+    try:
+        with _exclusive_command():
+            _check_terminal_failure_marker()
+            result = report(args.status) if operation is None else asyncio.run(operation())
+    except Exception:
+        _write_terminal_failure_marker()
+        raise
     print(json.dumps(result, ensure_ascii=False, sort_keys=True))
     return 0
+
+
+def main(argv: list[str] | None = None) -> int:
+    active_claimed = False
+    try:
+        _claim_active_command()
+        active_claimed = True
+        result = _run_main(argv)
+        _clear_active_command()
+        active_claimed = False
+        return result
+    except BaseException:
+        if active_claimed:
+            _write_terminal_failure_marker()
+        raise
 
 
 if __name__ == "__main__":

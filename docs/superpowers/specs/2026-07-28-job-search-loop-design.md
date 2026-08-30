@@ -4,8 +4,8 @@
 **Current verified status:** `ai.anicca.job-search-daily` is installed with
 `StartInterval=1800`; this is a 30-minute loop, not an hourly loop. The five existing
 Job Hunter owners load main-derived immutable release
-`20260831T004335-01dc472e`, source SHA
-`01dc472e45687480b807627f4141bb97bcc1056a`: browser, daily, inbox, learning and
+`20260831T014127-fcb9e691`, source SHA
+`fcb9e69146fa499bfd1697d372c58ac0f6313622`: browser, daily, inbox, learning and
 health. Same-context preflight returned `status=pass` and
 `mutation_allowed=true`, and loaded-domain readback proves exact-release
 `ProgramArguments`. The HPE `Thank you for your online submission` message now
@@ -51,6 +51,53 @@ queue to `workday-discovery.json` and enter the browser lane without running sho
 or per-row fit model calls. Fresh qualification runs only when that eligible queue is
 empty. This is queue priority inside the existing owner, not a second scheduler or
 parallel submitter.
+
+Release `20260831T014127-fcb9e691` implements that queue priority. Its first real
+owner wake, `daily-20260831-014238`, writes `status=queued_existing` with two queued
+application IDs, zero new fit decisions, and reaches the browser lane in under one
+minute. The first row, Cloudera Applied AI Specialist, reaches an authoritative
+password-reset acknowledgement and closes as `email_recovery` checkpoint with
+Telegram message ID `45090`; it is not an application. The same wake then observes
+the second queued row, but the agent starts a `wait` and another `observe` before the
+first command completes. `wait` exits 1 because the post-action browser context no
+longer exposes an absolute HTTPS page. Despite the prompt's immediate-stop rule, the
+agent issues two more `observe` commands and a `navigate`; the latter exits 0. This
+proves prompt text alone does not enforce sequential runtime ownership or stop after
+a transport failure. The next patch must fail closed in code: a wake may have at most
+one runtime command in flight, the first nonzero started runtime command terminalizes
+that model attempt, and any later command makes the pass invalid without consuming a
+Submit fence. Focused tests must reproduce both transcript orders. The 1--3 real-wake
+application proof remains open until a distinct Gmail confirmation increases the
+rolling count, Ledger is `submitted`, Telegram acknowledges it, and immediate replay
+adds zero.
+
+Task 3E implements the fail-closed boundary in
+`browser_agent/runtime.py` and `browser_agent/orchestrator.py`. A navigation-only
+observation is compact and exposes `needs_navigation` plus `recovery_url` before any
+candidate facts; normal form observations retain candidate concepts and grounding
+facts. Each runtime process claims a mode-0600 per-wake active-command lease before
+argument parsing and clears it only after successful JSON output. A collision,
+exception, parser exit, stale lease from timeout/kill, or recorded terminal marker
+blocks every later command. Terminal-marker creation and the irreversible final
+Submit fence/click share one lock, so their order is unambiguous and no effect can
+begin after a recorded terminal failure. The orchestrator independently rejects
+overlapping transcript items and commands started after a real nonzero completion,
+including passes that claim `submitted` or `submit_unknown`. Focused browser tests
+pass 41/41, runner config tests pass 3/3, `git diff --check` passes, and fresh
+read-only review returns `ship`. Immutable release and real-wake application proof
+remain the active gate.
+
+The same wake also proves the loaded runner still has the wrong effective timeout.
+The outer orchestrator requests 1,800 seconds, but `attempts.jsonl` records
+`timed_out=true` from `01:43:24` to `01:58:25`, `summary.json` has
+`status=failed` and no result path, launchd exits 1, and the fenced wake report sends
+`transient_timeout` as Telegram message ID `45093`. The source mismatch is exact:
+`apps/job-search-loop/agent-runner/config.json` sets `browser-lane-agent` to 1,800
+seconds, while the production runner copied from `runtime/agent-runner/config.json`
+set it to 900 seconds. Task 3E aligns the production config and its explanatory note
+to 1,800 seconds; a focused runner test proves an explicit 1,800-second Job Hunter
+request is not clamped to 900. This does not change the 1,800-second launchd cadence or permit
+overlapping owner wakes.
 
 The application Ledger remains the state SSOT and `summary.v2` is rebuilt from its
 event stream on every wake. Every-wake and application-result Telegram delivery uses
