@@ -103,6 +103,17 @@ if [[ "$PROFILE" != /* ]]; then
   print -u2 "job-search browser: browser profile must be absolute"
   exit 2
 fi
+if [[ "$BROWSER_STATE_NAME" == "mercor-browser" ]]; then
+  if (( 10#$BROWSER_PORT == 9222 )); then
+    print -u2 "job-search browser: Mercor browser port cannot be 9222"
+    exit 2
+  fi
+  DAILY_PROFILE="$HOME/.cloak/profiles/job-search-daily"
+  if [[ "${PROFILE:A}" == "${DAILY_PROFILE:A}" ]]; then
+    print -u2 "job-search browser: Mercor browser profile cannot be the daily browser profile"
+    exit 2
+  fi
+fi
 if ! /usr/bin/pgrep -f -- "--user-data-dir=$PROFILE" >/dev/null 2>&1; then
   /bin/rm -f "$PROFILE/SingletonLock" "$PROFILE/SingletonSocket" "$PROFILE/SingletonCookie" 2>/dev/null || true
 fi

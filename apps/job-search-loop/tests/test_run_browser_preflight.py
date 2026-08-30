@@ -12,6 +12,97 @@ TEXT = SCRIPT.read_text(encoding="utf-8")
 
 
 class RunBrowserPreflightTests(unittest.TestCase):
+    def _assert_mercor_rejects_before_profile_mutation(
+        self, profile_kind: str, port: str | None = None
+    ) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            home = root / "home"
+            profile_root = home / ".cloak" / "profiles"
+            daily_profile = profile_root / "job-search-daily"
+            profile_root.mkdir(parents=True)
+            daily_profile.mkdir()
+            sentinel = daily_profile / "SingletonLock"
+            sentinel.write_text("keep", encoding="utf-8")
+            if profile_kind == "symlink":
+                selected_profile = profile_root / "daily-alias"
+                selected_profile.symlink_to(daily_profile, target_is_directory=True)
+            elif profile_kind == "port":
+                selected_profile = profile_root / "mercor-profile"
+            else:
+                selected_profile = daily_profile
+
+            wrapper = root / "apps" / "job-search-loop" / "scripts" / "run-browser.sh"
+            wrapper.parent.mkdir(parents=True)
+            script = TEXT
+            start = script.index("if ! CANONICAL_HOME=")
+            end = script.index('export HOME="$CANONICAL_HOME"', start) + len(
+                'export HOME="$CANONICAL_HOME"'
+            )
+            wrapper.write_text(
+                script[:start]
+                + 'CANONICAL_HOME="$TEST_CANONICAL_HOME"\nexport HOME="$CANONICAL_HOME"'
+                + script[end:],
+                encoding="utf-8",
+            )
+            guard = root / "skills" / "earn" / "gig" / "scripts" / "gig_disk_guard.py"
+            guard.parent.mkdir(parents=True)
+            guard.write_text("raise SystemExit(0)\n", encoding="utf-8")
+            chromium = (
+                home
+                / ".cloakbrowser"
+                / "chromium-1"
+                / "Chromium.app"
+                / "Contents"
+                / "MacOS"
+                / "Chromium"
+            )
+            chromium.parent.mkdir(parents=True)
+            chromium.write_text("#!/bin/zsh\nexit 0\n", encoding="utf-8")
+            chromium.chmod(0o700)
+
+            environment = os.environ.copy()
+            for name in (
+                "JOB_SEARCH_BROWSER_STATE_NAME",
+                "JOB_SEARCH_BROWSER_PORT",
+                "JOB_SEARCH_BROWSER_FINGERPRINT",
+                "JOB_SEARCH_BROWSER_PROFILE",
+            ):
+                environment.pop(name, None)
+            environment.update(
+                {
+                    "TEST_CANONICAL_HOME": str(home),
+                    "LIFE_MANAGER_LOOP_ID": "job-search-mercor-browser",
+                    "JOB_SEARCH_BROWSER_PROFILE": str(selected_profile),
+                }
+            )
+            if port is not None:
+                environment["JOB_SEARCH_BROWSER_PORT"] = port
+            completed = subprocess.run(
+                ["/bin/zsh", str(wrapper)],
+                env=environment,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+
+            self.assertEqual(completed.returncode, 2, completed.stderr)
+            self.assertEqual(sentinel.read_text(encoding="utf-8"), "keep")
+            self.assertTrue(daily_profile.is_dir())
+            if profile_kind == "symlink":
+                self.assertTrue(selected_profile.is_symlink())
+            elif profile_kind == "port":
+                self.assertFalse(selected_profile.exists())
+
+    def test_mercor_rejects_direct_daily_profile_before_profile_mutation(self) -> None:
+        self._assert_mercor_rejects_before_profile_mutation("direct")
+
+    def test_mercor_rejects_daily_profile_symlink_alias_before_profile_mutation(self) -> None:
+        self._assert_mercor_rejects_before_profile_mutation("symlink")
+
+    def test_mercor_rejects_port_9222_before_profile_mutation(self) -> None:
+        self._assert_mercor_rejects_before_profile_mutation("port", port="9222")
+
     def test_loop_id_only_reconstructs_mercor_browser_defaults(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
