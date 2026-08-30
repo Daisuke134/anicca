@@ -1,3 +1,8 @@
+import json
+import os
+import shutil
+import subprocess
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -7,6 +12,59 @@ TEXT = SCRIPT.read_text(encoding="utf-8")
 
 
 class RunBrowserPreflightTests(unittest.TestCase):
+    def test_state_name_controls_pressure_override_at_guard_boundary(self) -> None:
+        fake_guard = """
+import json
+import os
+from pathlib import Path
+
+Path(os.environ["GUARD_CAPTURE"]).write_text(
+    json.dumps({
+        "pressure": os.environ.get("GIG_IGNORE_DISK_PRESSURE_BLOCK"),
+        "writers": os.environ.get("GIG_IGNORE_DISK_WRITERS_STOP"),
+        "headroom": os.environ.get("GIG_DISK_HEADROOM_KIB"),
+    }),
+    encoding="utf-8",
+)
+raise SystemExit(1)
+"""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            wrapper = root / "apps" / "job-search-loop" / "scripts" / "run-browser.sh"
+            wrapper.parent.mkdir(parents=True)
+            shutil.copy2(SCRIPT, wrapper)
+            guard = root / "skills" / "earn" / "gig" / "scripts" / "gig_disk_guard.py"
+            guard.parent.mkdir(parents=True)
+            guard.write_text(fake_guard, encoding="utf-8")
+
+            def capture(state_name: str) -> dict[str, str | None]:
+                output = root / f"{state_name}.json"
+                environment = os.environ.copy()
+                environment.update(
+                    {
+                        "GUARD_CAPTURE": str(output),
+                        "GIG_IGNORE_DISK_PRESSURE_BLOCK": "inherited",
+                        "GIG_IGNORE_DISK_WRITERS_STOP": "inherited",
+                        "JOB_SEARCH_BROWSER_PROFILE": str(root / "profile"),
+                        "JOB_SEARCH_BROWSER_STATE_NAME": state_name,
+                    }
+                )
+                completed = subprocess.run(
+                    ["/bin/zsh", str(wrapper)],
+                    env=environment,
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                )
+                self.assertEqual(completed.returncode, 1, completed.stderr)
+                return json.loads(output.read_text(encoding="utf-8"))
+
+            mercor = capture("mercor-browser")
+            default = capture("job-search-browser")
+
+        self.assertEqual(mercor, {"pressure": "1", "writers": None, "headroom": "524288"})
+        self.assertEqual(default, {"pressure": None, "writers": None, "headroom": "524288"})
+
     def test_uses_canonical_guard_and_fenced_child_environment(self) -> None:
         self.assertIn(
             '${SCRIPT_DIR:h:h:h}/skills/earn/gig/scripts/gig_disk_guard.py',
