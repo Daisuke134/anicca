@@ -380,6 +380,59 @@ test("a failed provider_direct submit records the provider and its mapped connpa
   assert.equal(JSON.stringify(directFailure).includes("participation tier unavailable"), false);
 });
 
+test("resolved direct and browser harness failures record truthful provider context", async () => {
+  const state = fixture({
+    async discoverCandidates() { return [candidate("luma", "resolved-failure")]; },
+    async runDirectAction({ candidate: selected, page: suppliedPage }) {
+      assert.equal(suppliedPage, state.page);
+      state.calls.push(["direct", selected.event_ref, suppliedPage.page_id]);
+      return Object.freeze({ status: "failed", safe_reason: "luma_required_field_unknown" });
+    },
+    async runAgentFallback({ candidate: selected, page: suppliedPage, maxSteps }) {
+      assert.equal(suppliedPage, state.page);
+      assert.equal(maxSteps, 10);
+      state.calls.push(["agent", selected.event_ref, suppliedPage.page_id, maxSteps]);
+      return Object.freeze({ status: "failed", safe_reason: "luma_harness_unavailable" });
+    },
+  });
+
+  await runMinimalConnectorWake({
+    ownerToken: "owner-token-connector-resolved-failure",
+    providers: ["luma"],
+  }, state.dependencies);
+
+  const history = state.calls
+    .filter(([name]) => name === "history")
+    .map(([, row]) => row);
+  assert.deepEqual(
+    history
+      .filter((row) => row.purpose === "submit" && ["provider_direct", "browser_harness"].includes(row.method))
+      .map((row) => ({
+        method: row.method,
+        result: row.result,
+        provider: row.provider,
+        safe_reason: row.safe_reason,
+        has_error_class: Object.hasOwn(row, "error_class"),
+      })),
+    [
+      {
+        method: "provider_direct",
+        result: "failed",
+        provider: "luma",
+        safe_reason: "luma_required_field_unknown",
+        has_error_class: false,
+      },
+      {
+        method: "browser_harness",
+        result: "failed",
+        provider: "luma",
+        safe_reason: "luma_harness_unavailable",
+        has_error_class: false,
+      },
+    ],
+  );
+});
+
 test("a failed provider_cache submit records the provider and a different mapped connpass code", async () => {
   const state = fixture({
     async runCachedAction({ provider, candidate: selected, page: suppliedPage }) {
@@ -1117,13 +1170,23 @@ test("every recorded action contains only the safe audit fields", async () => {
 
   const history = state.calls.filter(([name]) => name === "history").map(([, row]) => row);
   assert.ok(history.length > 0);
+  const baseKeys = ["duration_ms", "method", "purpose", "result", "timestamp"];
+  const failureKeys = ["duration_ms", "method", "provider", "purpose", "result", "safe_reason", "timestamp"];
+  const failureKeysWithClass = ["duration_ms", "error_class", "method", "provider", "purpose", "result", "safe_reason", "timestamp"];
   for (const row of history) {
-    assert.deepEqual(Object.keys(row).sort(), [
-      "duration_ms", "method", "purpose", "result", "timestamp",
-    ]);
+    const hasFailureContext = Object.hasOwn(row, "provider") || Object.hasOwn(row, "safe_reason") || Object.hasOwn(row, "error_class");
+    assert.deepEqual(Object.keys(row).sort(), hasFailureContext
+      ? (Object.hasOwn(row, "error_class") ? failureKeysWithClass : failureKeys)
+      : baseKeys);
     assert.match(row.purpose, /^(navigate|observe|fill|submit|readback)$/);
     assert.match(row.method, /^[a-z][a-z0-9_]{1,63}$/);
     assert.match(row.result, /^(success|failed)$/);
+    if (hasFailureContext) {
+      assert.equal(row.result, "failed");
+      assert.match(row.provider, /^[a-z][a-z0-9_-]{1,31}$/);
+      assert.match(row.safe_reason, /^[a-z0-9][a-z0-9_:-]{1,99}$/);
+      if (Object.hasOwn(row, "error_class")) assert.match(row.error_class, /^[A-Za-z][A-Za-z0-9]{0,63}$/);
+    }
     assert.equal(new Date(Date.parse(row.timestamp)).toISOString(), row.timestamp);
     assert.equal(Number.isInteger(row.duration_ms) && row.duration_ms >= 0, true);
     assert.equal(JSON.stringify(row).includes("owner-token"), false);

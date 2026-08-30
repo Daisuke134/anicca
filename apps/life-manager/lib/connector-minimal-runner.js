@@ -99,6 +99,14 @@ function operationSafeReason(value, fallback) {
   return SAFE_REASON.test(reason) ? reason : fallback;
 }
 
+function resolvedSubmitFailureContext(provider, value, fallback) {
+  if (!value || typeof value !== "object" || Array.isArray(value) || value.status !== "failed") return null;
+  return Object.freeze({
+    provider,
+    safe_reason: operationSafeReason(value, fallback),
+  });
+}
+
 function safeDiscoveryReason(error) {
   const code = String(error && error.code || "");
   if (code === "PROVIDER_CANDIDATE_CONTRACT_FAILED") return "provider_candidate_contract_failed";
@@ -194,18 +202,23 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
   const elapsed = () => Date.parse(exactInstant(deps.now())) - startedAt;
   const deadlineReached = () => elapsed() >= settings.maxWakeMs;
 
-  async function action(purpose, method, task, onFailure) {
+  async function action(purpose, method, task, onFailure, onResolvedFailure) {
     if (!PURPOSE.test(purpose) || !METHOD.test(method)) invalid();
     const timestamp = exactInstant(deps.now());
     const actionStartedAt = Date.parse(timestamp);
     try {
       const value = await task();
+      const resolvedFailure = typeof onResolvedFailure === "function" ? onResolvedFailure(value) : null;
+      const hasFailureContext = Boolean(
+        resolvedFailure && typeof resolvedFailure === "object" && !Array.isArray(resolvedFailure),
+      );
       await deps.recordAction(Object.freeze({
         purpose,
         method,
         timestamp,
-        result: "success",
+        result: hasFailureContext ? "failed" : "success",
         duration_ms: Math.max(0, Date.parse(exactInstant(deps.now())) - actionStartedAt),
+        ...(hasFailureContext ? resolvedFailure : {}),
       }));
       return value;
     } catch (error) {
@@ -394,6 +407,7 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
             "submit", "provider_direct",
             () => deps.runDirectAction({ provider, candidate: selected, page: owned.page }),
             (error) => submitFailureContext(provider, error, "direct_action_failed"),
+            (value) => resolvedSubmitFailureContext(provider, value, "direct_action_unverified"),
           );
         } catch {
           operation = Object.freeze({ status: "failed", safe_reason: "direct_action_failed" });
@@ -418,6 +432,7 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
                 expectedState: "registered_or_pending",
               }),
               (error) => submitFailureContext(provider, error, "agent_action_failed"),
+              (value) => resolvedSubmitFailureContext(provider, value, "agent_action_failed"),
             );
             usedFallback = operation && operation.status === "completed";
             ambiguousAgentEffect = Boolean(operation && operation.status === "failed" && operation.safe_reason === "effect_unknown");
