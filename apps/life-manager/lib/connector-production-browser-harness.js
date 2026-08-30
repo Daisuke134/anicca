@@ -58,6 +58,8 @@ const EVENTBRITE_MARKETING_OPERATION = Symbol("eventbriteMarketingOperation");
 const EVENTBRITE_FINAL_OPERATION = Symbol("eventbriteFinalOperation");
 const EVENTBRITE_FINAL_ATTEMPTED = Symbol("eventbriteFinalAttempted");
 const KOKUCHPRO_ENTRY_SELECTOR = "form, form input, form button";
+const KOKUCHPRO_ENTRY_READY_SELECTOR = 'button[type="submit"]';
+const KOKUCHPRO_ENTRY_READY_TIMEOUT_MS = 2_000;
 const KOKUCHPRO_ENTRY_TOKEN = /^kokuchpro_entry_[0-9a-f]{32}(?:_o_[0-9a-z]{1,13})?$/;
 
 function invalid() {
@@ -869,6 +871,22 @@ function inspectKokuchProEntry(elements, context = {}) {
   try { selected[0].dataset.lmConnectorControl = token; } catch { return []; }
   return [{ control: token, kind: "button", label: "申込む", required: false, completed: false, submittable: true }];
 }
+
+async function inspectKokuchProEntryWhenReady(target, formsLocator, context) {
+  const inspect = async () => {
+    try { return await formsLocator.evaluateAll(inspectKokuchProEntry, context); }
+    catch { return []; }
+  };
+  const first = await inspect();
+  if (Array.isArray(first) && first.length === 1) return first;
+  try {
+    const ready = target.locator(KOKUCHPRO_ENTRY_READY_SELECTOR)?.first?.();
+    if (!ready || typeof ready.waitFor !== "function") return first;
+    await ready.waitFor({ state: "visible", timeout: KOKUCHPRO_ENTRY_READY_TIMEOUT_MS });
+  } catch { return first; }
+  return inspect();
+}
+
 async function inspectPageControls(input = {}) {
   const page = input.page;
   if (!page || typeof page.locator !== "function") invalid();
@@ -903,9 +921,7 @@ async function inspectPageControls(input = {}) {
     if (!binding || href !== binding.canonicalUrl
       || (input.canonical_url != null && String(input.canonical_url) !== binding.canonicalUrl)
       || (input.ticket_id != null && String(input.ticket_id) !== binding.ticketId)) return Object.freeze([]);
-    let observed;
-    try { observed = await locator.evaluateAll(inspectKokuchProEntry, { canonicalUrl: binding.canonicalUrl, eventRef: binding.eventRef, eventKey: binding.eventKey, ticketId: binding.ticketId, token: kokuchProEntryToken(binding) }); }
-    catch { return Object.freeze([]); }
+    const observed = await inspectKokuchProEntryWhenReady(page, locator, { canonicalUrl: binding.canonicalUrl, eventRef: binding.eventRef, eventKey: binding.eventKey, ticketId: binding.ticketId, token: kokuchProEntryToken(binding) });
     const afterHref = (() => { try { return String(typeof page.url === "function" ? page.url() : ""); } catch { return ""; } })();
     return href === afterHref && Array.isArray(observed) ? Object.freeze(observed.map(safeControl)) : Object.freeze([]);
   }
@@ -1259,8 +1275,10 @@ async function operateKokuchProEntry(input, target, token, beforeDispatch) {
   const sameCandidate = () => { const current = candidateKokuchProBinding(input.candidate); return Boolean(current && current.eventRef === binding.eventRef && current.canonicalUrl === binding.canonicalUrl && current.eventKey === binding.eventKey && current.occurrenceId === binding.occurrenceId && current.ticketId === binding.ticketId); };
   if (input.signal && input.signal.aborted) return Object.freeze({ status: "failed", safe_reason: "time_limit" });
   if (href() !== binding.canonicalUrl || !sameCandidate()) return Object.freeze({ status: "failed" });
-  let formsLocator, controls;
-  try { formsLocator = target.locator(KOKUCHPRO_ENTRY_SELECTOR); if (!formsLocator || typeof formsLocator.evaluateAll !== "function") return Object.freeze({ status: "failed" }); controls = await formsLocator.evaluateAll(inspectKokuchProEntry, { canonicalUrl: binding.canonicalUrl, eventRef: binding.eventRef, eventKey: binding.eventKey, ticketId: binding.ticketId, token }); } catch { return Object.freeze({ status: "failed" }); }
+  let formsLocator;
+  try { formsLocator = target.locator(KOKUCHPRO_ENTRY_SELECTOR); } catch { return Object.freeze({ status: "failed" }); }
+  if (!formsLocator || typeof formsLocator.evaluateAll !== "function") return Object.freeze({ status: "failed" });
+  const controls = await inspectKokuchProEntryWhenReady(target, formsLocator, { canonicalUrl: binding.canonicalUrl, eventRef: binding.eventRef, eventKey: binding.eventKey, ticketId: binding.ticketId, token });
   const entry = Array.isArray(controls) && controls.length === 1 ? controls[0] : null;
   if (!entry || entry.control !== token || entry.kind !== "button" || entry.label !== "申込む" || entry.required !== false || entry.completed !== false || entry.submittable !== true || href() !== binding.canonicalUrl || !sameCandidate()) return Object.freeze({ status: "failed" });
   let locator, count;
