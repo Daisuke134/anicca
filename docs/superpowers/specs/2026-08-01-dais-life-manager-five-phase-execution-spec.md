@@ -27,7 +27,7 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 この節は、後段の「現在TODO」「次の一件」「local-only」「self-funded agentは別product」という相反する記述を
 上書きする最新の実行順序SSOTである。後段は実装履歴・organ別acceptanceとして保持するが、次作業の選択には使わない。
 Upworkのterminal evidence、startup context、public claim、GA-01〜13Aは完了または履歴として保持する。
-次の一件はAtomic program ledger Seq 18 `ELZ-C05`のsubstep `C05-09`で、focused testのGREENを一回確認する。
+次の一件はAtomic program ledger Seq 18 `ELZ-C05`のsubstep `C05-10`で、isolated PGliteで一Goal→一WorkItemと同一入力replayを実行する。
 
 #### 0.0.1 最新基盤決定 — ElizaOSを完全forkし、Life Managerをlocal OSSからmulti-tenant SaaSへ育てる
 
@@ -667,7 +667,7 @@ C07のCodexへ残す。新queue、新DB、provider adapter、model adapter、mar
 - [x] **C05-06** Goal ref、WorkItem result、typed failureの最小contractを定義する — Eliza fork PR #25、merge `f5a4199a…`。新規production 1 file/58 LOCだけで、typed `GOAL_NOT_ACTIVE`、active/unexpired Goal validation、stable Goal/PlanGraph/WorkItem ID、opaque `life-manager-goal://` ref、reference-only graph envelope、`general-agent.work`、frozen resultを定義。statement/provenance、DB/service、model/provider/marketplace判断0。test実行はC05-09へ保持。次はC05-07
 - [x] **C05-07** scoped active Goalからreference envelopeとWorkItemを同一transactionで作る — Context7 quota超過を隠さず、Drizzle公式transaction/insert docs、固定0.45.2型、既存Todos storeを確認。Eliza fork PR #26、merge `4ebf9be2…`。同一Drizzle transaction内でtenant-scoped Goal lookup、active/unexpired、active superseder 0を確認し、stable IDのPlanGraph→WorkItemをexplicit primary-key conflict targetでinsert。scoped readbackはJSONB key順非依存のstdlib deep equalityでsame replayを許可し、異内容はtyped conflict。fresh source compile exit 0、diff check 0。新table/queue/service/test/model/provider/marketplace effect 0。次はC05-08
 - [x] **C05-08** 既存`LifeManagerService`へGoal→WorkItem operationを接続する — Eliza fork PR #27、merge `7bc1b9d5…`。既存`LifeManagerService`へ15 LOCのthin methodだけを追加し、runtime.db transaction存在確認後にC05-07 persistenceへ委譲。fresh source compile exit 0、diff check 0。新service/action/provider/schema/dependency/test、model/provider/marketplace effect 0。次はC05-09
-- [ ] **C05-09** focused testのGREENを一回確認する
+- [x] **C05-09** focused testのGREENを一回確認する — canonical fork `7bc1b9d5…`、Vitest 4.1.10、対象1 file/1 test PASS、exit 0、364ms。stable Goal/PlanGraph/WorkItem identity、opaque goal refだけ、本文/provenance非複製、inactive/expired拒否を確認。private log/`goal-workitem-green-receipt.json` mode 0600、receipt SHA256 `6a528663…`。DB write/model/provider/marketplace/payment 0。transaction/restart E2Eは未証明としてC05-10/11へ保持。次はC05-10
 - [ ] **C05-10** isolated PGliteで一Goal→一WorkItemと同一入力replayを実行する
 - [ ] **C05-11** separate process restart後に同じGoal/WorkItemを再読出しする
 - [ ] **C05-12** source/result hashを`goal-workitem-receipt.json`へ保存する
