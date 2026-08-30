@@ -1205,7 +1205,9 @@ test("production browser rail owns exactly one :9222 target without closing the 
   try {
     const rail = createProductionBrowserRail({
       stateDir,
-      connectOverCDP: async (endpoint) => {
+      connectOverCDP: async (endpoint, options) => {
+        assert.equal(endpoint, "http://127.0.0.1:9222");
+        assert.deepEqual(options, { timeout: 120_000 });
         calls.push(["connect", endpoint]);
         return browser;
       },
