@@ -38,6 +38,20 @@ attribute it to health, launchd, provider quota, or the validator. This is a fai
 production proof with zero accepted applications; the bounded 1–3 wake release gate
 remains open.
 
+Wake `daily-20260831-005753` also disproves the assumption that
+`StartInterval=1800` alone yields 48 wakes per day. At `01:28:03 JST`, 30 minutes and
+10 seconds after its `00:57:53` start, the same sole daily PID is still running: eight
+fit decisions are complete, all rejected, a ninth is active, and the existing
+Regeneron/Cloudera browser queue has not run. launchd does not overlap another
+instance of the same running job. The active throughput defect is therefore ordering:
+fresh bounded qualification runs before durable current-policy queue work. When the
+rolling deficit is positive and `qualified_queue_ids()` already returns at least one
+row after the official snapshot/stale-row pass, the owner must write that existing
+queue to `workday-discovery.json` and enter the browser lane without running shortlist
+or per-row fit model calls. Fresh qualification runs only when that eligible queue is
+empty. This is queue priority inside the existing owner, not a second scheduler or
+parallel submitter.
+
 The application Ledger remains the state SSOT and `summary.v2` is rebuilt from its
 event stream on every wake. Every-wake and application-result Telegram delivery uses
 the direct fenced Bot API transport; OpenClaw is not in the daily reporting path.

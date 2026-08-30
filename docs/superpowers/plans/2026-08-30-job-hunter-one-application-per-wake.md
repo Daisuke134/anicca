@@ -225,6 +225,37 @@ confirmed application. Wake `daily-20260831-005753` is the sole active continuat
 Task 4 remains open until a bounded real wake reaches the browser and closes the full
 Gmail/Ledger/Telegram/replay-zero chain.
 
+#### Task 3D: Drain the durable application queue before fresh qualification — active
+
+**Files:**
+- Modify: `apps/job-search-loop/job_search_loop/workday_search_loop.py`
+- Modify focused checks in: `apps/job-search-loop/tests/test_workday_qualification.py`
+
+**Failing production receipt:** Wake `daily-20260831-005753` remains the sole running
+daily job for more than its 1,800-second interval. At 30 minutes 10 seconds it has
+completed eight rejected fit calls and started a ninth, while the two existing
+current-policy queued applications have not entered the browser lane. Therefore a
+30-minute schedule cannot produce 48 daily effects while each wake blocks on fresh
+qualification ahead of durable queue work.
+
+**Required behavior:**
+
+1. Keep official snapshot fetch and stale-row rejection first so an unavailable job
+   does not enter the browser merely because it was queued earlier.
+2. Compute rolling Gmail-confirmed deficit and current-policy `qualified_queue_ids()`
+   immediately after that stale-row pass.
+3. When the deficit is positive and the durable queue is nonempty, write a typed
+   `queued_existing` discovery result with those stable IDs, rolling metrics, no new
+   qualification decisions, and no shortlist/model call; return success so the
+   existing sequential browser queue runs immediately.
+4. When the durable queue is empty, preserve the Task 3 behavior that targets
+   `min(deficit, max_candidates)` new distinct qualifications.
+5. Preserve deficit zero, current-policy fit gates, stale rejection, submission
+   fences, row-local continuation and all external-effect ownership.
+6. Add one behavior test through `main()` proving an existing current-policy queue
+   row reaches `queued_application_ids` while the model runner is never called; run
+   the focused qualification module and `git diff --check`.
+
 ---
 
 ### Task 4: Merge, release and verify production
