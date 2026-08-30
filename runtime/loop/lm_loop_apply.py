@@ -18,7 +18,10 @@ _IMMUTABLE_RELEASE_WORKING_DIRECTORY = re.compile(
     r"(?:^|/)loops/(?:releases|[^/]+/releases)/"
     r"[0-9]{8}T[0-9]{6}-[0-9a-f]{8,40}(?:/|$)"
 )
-_PRIVATE_LOG_LOOP_IDS = frozenset({"money-printer-symphony-bridge"})
+_PRIVATE_LOG_LOOP_IDS = frozenset({
+    "money-printer-symphony-bridge",
+    "money-printer-symphony",
+})
 
 
 def _is_immutable_release_working_directory(value: object) -> bool:

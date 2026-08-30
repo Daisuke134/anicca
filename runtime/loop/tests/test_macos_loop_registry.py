@@ -27,6 +27,20 @@ def entry(label="ai.anicca.example"):
 
 
 class MacosLoopRegistryTest(unittest.TestCase):
+    def test_money_printer_symphony_is_one_managed_keepalive_loop(self):
+        registry = json.loads((ROOT / "config/loop-registry.json").read_text())
+        self.assertEqual(registry["loops"].get("money-printer-symphony"), {
+            "label": "ai.anicca.life-manager-money-printer-symphony",
+            "domain": "earn",
+            "entrypoint": "runtime/loop/entry_dispatch.py",
+            "cadence": {"keep_alive": True},
+            "effect_class": "none",
+            "state_root": "~/.local/state/life-manager/money-printer-symphony",
+            "log_root": "~/.local/state/life-manager/money-printer-symphony/logs",
+            "cleanup": {"max_runs": 100, "max_age_days": 14},
+            "provider_route": "deterministic",
+        })
+
     def test_money_printer_symphony_bridge_is_one_managed_interval_loop(self):
         registry = json.loads((ROOT / "config/loop-registry.json").read_text())
         self.assertEqual(registry["loops"].get("money-printer-symphony-bridge"), {

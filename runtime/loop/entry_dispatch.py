@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
@@ -11,7 +12,53 @@ import sys
 from pathlib import Path
 
 
+_SYMPHONY_COMMIT = "8001b52e3062495a16e520e4ceaf8f9de868c4d0"
+_SYMPHONY_ARTIFACT_SHA256 = "a7c24792744eee5ab44188723267a9f11206ee834474028eda07c05a46867437"
+_GITHUB_TOKEN = re.compile(
+    r"(?:gh[pousr]_[A-Za-z0-9]{36}|github_pat_[A-Za-z0-9_]{82})"
+)
+
+
+def _validated_symphony_artifact(home: Path) -> Path:
+    artifact_dir = home / ".local/libexec/openai-symphony" / _SYMPHONY_COMMIT
+    artifact = artifact_dir / "symphony"
+    try:
+        if artifact_dir.is_symlink() or artifact.is_symlink():
+            raise ValueError
+        directory_stat = artifact_dir.stat()
+        artifact_stat = artifact.stat()
+        if (
+            not artifact_dir.is_dir()
+            or directory_stat.st_uid != os.getuid()
+            or stat.S_IMODE(directory_stat.st_mode) != 0o700
+            or not stat.S_ISREG(artifact_stat.st_mode)
+            or artifact_stat.st_uid != os.getuid()
+            or stat.S_IMODE(artifact_stat.st_mode) != 0o500
+        ):
+            raise ValueError
+        digest = hashlib.sha256()
+        with artifact.open("rb") as handle:
+            for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                digest.update(chunk)
+        if digest.hexdigest() != _SYMPHONY_ARTIFACT_SHA256:
+            raise ValueError
+    except (OSError, ValueError):
+        raise ValueError("official Symphony artifact unavailable") from None
+    return artifact
+
+
 def command_for(loop_id: str, root: Path, home: Path) -> list[str]:
+    if loop_id == "money-printer-symphony":
+        artifact = _validated_symphony_artifact(home)
+        return [
+            str(home / ".local/share/mise/installs/erlang/28.5/bin/escript"),
+            str(artifact),
+            "--i-understand-that-this-will-be-running-without-the-usual-guardrails",
+            "--logs-root",
+            str(home / ".local/state/life-manager/money-printer-symphony/runtime-logs"),
+            "--port", "4000",
+            str(root / "ops/symphony/WORKFLOW.money-printer.md"),
+        ]
     affiliate = root / "skills/affiliate/affiliate"
     affiliate_browser = root / "skills/affiliate/scripts/local_browser.py"
     scheduled = root / "skills/earn/marketing-engine/report/scheduled_runner.py"
@@ -129,6 +176,30 @@ def command_for(loop_id: str, root: Path, home: Path) -> list[str]:
 
 def environment_for(loop_id: str, home: Path, base: dict[str, str]) -> dict[str, str]:
     environment = dict(base)
+    if loop_id == "money-printer-symphony":
+        private = home / ".local/share/anicca"
+        credentials = private / "credentials.json"
+        try:
+            if private.is_symlink() or credentials.is_symlink():
+                raise ValueError
+            if private.stat().st_uid != os.getuid() or stat.S_IMODE(private.stat().st_mode) != 0o700:
+                raise ValueError
+            if credentials.stat().st_uid != os.getuid() or stat.S_IMODE(credentials.stat().st_mode) != 0o600:
+                raise ValueError
+            payload = json.loads(credentials.read_text(encoding="utf-8"))
+            rows = [row for row in payload.get("credentials", [])
+                    if isinstance(row, dict) and row.get("service") == "openai-symphony-github"]
+            if len(rows) != 1 or not _GITHUB_TOKEN.fullmatch(rows[0].get("token", "")):
+                raise ValueError
+        except (OSError, AttributeError, TypeError, json.JSONDecodeError, ValueError):
+            raise ValueError("Symphony GitHub credential unavailable") from None
+        for alias in ("GH_TOKEN", "GH_ENTERPRISE_TOKEN", "GITHUB_ENTERPRISE_TOKEN"):
+            environment.pop(alias, None)
+        environment.update({
+            "GITHUB_TOKEN": rows[0]["token"],
+            "PATH": "/opt/homebrew/bin:/usr/bin:/bin",
+        })
+        return environment
     if loop_id != "money-printer-symphony-bridge":
         return environment
     private = home / ".local/share/anicca"

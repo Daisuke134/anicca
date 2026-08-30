@@ -2085,6 +2085,22 @@
       "provider_route": "deterministic",
       "state_root": "~/.local/state/life-manager/money-printer-symphony-bridge"
     },
+    "money-printer-symphony": {
+      "cadence": {
+        "keep_alive": true
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "earn",
+      "effect_class": "none",
+      "entrypoint": "runtime/loop/entry_dispatch.py",
+      "label": "ai.anicca.life-manager-money-printer-symphony",
+      "log_root": "~/.local/state/life-manager/money-printer-symphony/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.local/state/life-manager/money-printer-symphony"
+    },
     "openclaw-conformity-monkey": {
       "cadence": {
         "calendar_interval": [
