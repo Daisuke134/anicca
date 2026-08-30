@@ -1,4 +1,5 @@
 import importlib.util
+import json
 from pathlib import Path
 
 import pytest
@@ -38,3 +39,46 @@ def test_body_candidate_at_x_readability_floor_commits(tmp_path):
         "body",
     )
     assert receipt["height"] == 244
+
+
+def test_new_run_requires_matching_gpt_image_receipt(tmp_path):
+    run = tmp_path / "run"
+    (run / "gates/media-candidates").mkdir(parents=True)
+    media.arm(run)
+    headline_candidate = run / media.HEADLINE_API_CANDIDATE
+    body_candidate = run / "gates/media-candidates/body.png"
+    _png(headline_candidate, 800)
+    _png(body_candidate, 400)
+    headline = media.commit(headline_candidate, run / "headline-image.png",
+                            run / "gates/headline-image-create.json", "headline")
+    media.commit(body_candidate, run / "body-diagram.png",
+                 run / "gates/body-diagram-create.json", "body")
+    api_receipt = {
+        "schema": "writer.gpt-image-headline-receipt", "version": 1,
+        "status": "committed", "candidate": str(headline_candidate),
+        "request_model": "gpt-image-2-2026-04-21",
+        "file_sha256": headline["sha256"], "byte_length": headline["byte_length"],
+        "width": headline["width"], "height": headline["height"],
+        "x_request_id": "req_123", "prompt_sha256": "a" * 64,
+        "response_sha256": "b" * 64, "alt": "article-specific alt",
+        "rights_provenance": "OpenAI terms",
+    }
+    (run / media.HEADLINE_API_RECEIPT).write_text(json.dumps(api_receipt))
+
+    assert media.verify(run)["headline_api_verified"] is True
+
+
+def test_new_run_without_gpt_image_receipt_is_refused(tmp_path):
+    run = tmp_path / "run"
+    (run / "gates/media-candidates").mkdir(parents=True)
+    media.arm(run)
+    headline_candidate = run / media.HEADLINE_API_CANDIDATE
+    body_candidate = run / "gates/media-candidates/body.png"
+    _png(headline_candidate, 800)
+    _png(body_candidate, 400)
+    media.commit(headline_candidate, run / "headline-image.png",
+                 run / "gates/headline-image-create.json", "headline")
+    media.commit(body_candidate, run / "body-diagram.png",
+                 run / "gates/body-diagram-create.json", "body")
+    with pytest.raises(media.MediaCreateRefused, match="headline-api-receipt-invalid"):
+        media.verify(run)
