@@ -881,7 +881,14 @@ terminate or bypass the model loop.
 
 The traced production path is concrete. The launchd plist owns the only 30-minute
 process and resolves its installed immutable-release program at install time. Its
-`StartInterval` is 1800 seconds. That program is `scripts/run-daily.sh`; it probes
+`StartInterval` is 1800 seconds. Each firing is an opportunity to run, not proof of
+an application: a still-running prior job can consume the next interval, and local
+process success cannot replace Gmail/Ledger effect readback. The implementation
+release gate therefore requires one to three real owner wakes to each add at least
+one new distinct Gmail-confirmed application when an eligible row exists, with
+immediate replay adding zero. The rolling 48-confirmation window remains the live
+operating KPI and does not require a 24-hour observation before shipping the repair.
+That program is `scripts/run-daily.sh`; it probes
 the shared CDP browser, admits/dedupes rows, and hands eligible Workday forms to the
 mandatory Luna/xhigh browser agent. Deterministic code owns only safety, evidence,
 Ledger, discovery, and final-effect fencing:
@@ -893,8 +900,8 @@ flowchart TD
     P --> R0["deliver pending reports"]
     R0 --> B["browser_owner probe<br/>existing CDP :9222"]
     B --> Q["Workday discovery + canonical dedupe"]
-    Q --> AR["mandatory Luna/xhigh<br/>browser-lane-agent"]
-    AR --> F["one fenced final effect"]
+    Q --> AR["mandatory Luna/xhigh<br/>sequential browser row queue"]
+    AR --> F["at most one fenced final effect per row<br/>then continue queue"]
     F --> R1["completion UI evidence + Telegram outcome"]
     I["separate run-inbox.sh"] --> GC["submission_confirmation reconcile Gmail"]
     GC --> LR["Ledger receipt reconciliation"]
@@ -2546,7 +2553,7 @@ must accumulate in the live loop:
 | 10P | `JOB-WORKDAY-E2E-MODEL-10P`: full framework plus Workday E2E | `completed` | JR2008507 closes with exact UI, receipt `1a02ff31ecb7353d`, Ledger `submitted`, Telegram `30852`/`30853`, v2 agreement, immediate dedupe 0, and unseen JR2020208-1 continuation through the one existing owner. |
 | 10P1 | `JOB-WORKDAY-ONLY-10P1` | `completed` | Release `374c2c744`, launchd-owned run `094943`, non-Workday evidence/navigation/intent/fence/Submit effects 0 |
 | 10P2 | `JOB-WORKDAY-FIT-QUALIFICATION-10P2` | `completed` | Rakuten Product & Growth Specialist is model-qualified, exact-UI submitted, Gog-confirmed, Ledger submitted, Telegram `31463/31464`, and next-wake duplicate 0 |
-| 10P3 | `JOB-WORKDAY-CONTINUOUS-SEARCH-10P3` | `qualified_handoff_transport_blocked` | PRs #3210/#3221/#3224/#3229/#3236 merge focused CXS queries, truthful stretch qualification, one-time old-policy reject reconsideration, the normal browser runner route, queue-first handoff and quiet health evidence. Release `305d0ffa` is loaded by all five Job Hunting owners. Run `daily-20260830-112321` changes Kyndryl `Senior Modernization Engineer - Forward Deployed Engineer` from old-policy rejected to v3 qualified and audited `materials_ready`; the remaining 23 checks do not stop the wake. Run `daily-20260830-115336` skips additional fit work, starts `browser-lane-agent` on the normal route and navigates to the exact Kyndryl Workday URL, but the following wait fails with `sqlite3.OperationalError: disk I/O error` after concurrent Paid loops consume host free space. Its screenshot is a blank navigation frame, not a completion receipt. Submit intent, Submit click, Workday completion screenshot, Gmail receipt and Ledger `submitted` all remain 0. Completion requires resuming this same row with stable free space and accepting only the paired Workday completion screenshot plus authoritative Gmail receipt, then Ledger/Telegram/replay-zero agreement. |
+| 10P3 | `JOB-WORKDAY-CONTINUOUS-SEARCH-10P3` | `live_application_receipt_reconciliation_broken` | Production run `daily-20260830-214230` reaches a real HPE Service Engineer final effect at 21:57 JST and records `submit_unknown`; Gmail contains the authoritative `hpe@myworkday.com` receipt with subject `Thank you for your online submission`, but the reconciler excludes that phrase from both its Gmail query and normalized confirmation terms, so Ledger remains unconfirmed. Separately, `workday_search_loop.py` collapses every positive rolling deficit to one new qualification even though the queue already supports multiple sequential rows. Repair both root causes without changing the 1,800-second owner: qualify up to `min(deficit, max_candidates)`, recognize the provider-neutral receipt phrase, and prove in one to three real launchd-owned wakes that each eligible wake adds at least one distinct Gmail-confirmed application, Ledger `submitted`, Telegram ACK, and immediate replay duplicate 0. This bounded live proof closes the implementation gate; 48 distinct confirmations in a rolling 24-hour window remains the continuing production KPI and is not a mandatory 24-hour release wait. |
 | 10Q | `JOB-ASHBY-E2E-MODEL-10Q` | `broken_unverified_pending_after_workday` | Historical `submit_unknown` evidence is not accepted; rebuild from zero only after Workday is complete |
 | 10R | `JOB-GREENHOUSE-E2E-MODEL-10R` | `broken_unverified_pending_after_10Q` | Historical form interaction and `submit_unknown` evidence are not accepted; rebuild from zero after Ashby |
 | 10S | `JOB-LEVER-E2E-MODEL-10S` | `broken_unverified_pending_after_10R` | Discovery without an authoritative completed application is zero progress; rebuild from zero after Greenhouse |
