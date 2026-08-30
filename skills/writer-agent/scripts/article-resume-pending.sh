@@ -5,18 +5,21 @@ set -uo pipefail
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/bin:$PATH"
 # Load runtime credentials exactly like article-daily.sh so remote reconciles
 # (e.g. publication_remote.devto) never fail closed on a missing API key.
-set -a; . "$HOME/.openclaw/.env" 2>/dev/null; set +a
+WRITER_RUNTIME_HOME="${LIFE_MANAGER_STATE_ROOT:-${LIFE_MANAGER_HOME:-$HOME/.local/state/life-manager}}"
+set -a; . "$WRITER_RUNTIME_HOME/.env" 2>/dev/null; set +a
 
 ARTICLE_ROOT="${ARTICLE_ROOT:-${ARTICLE_SKILL_DIR:-$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)}}"
 STATE_DIR="${ARTICLE_STATE_DIR:-$ARTICLE_ROOT/state}"
 ARTICLE_PROVIDER="codex"
 ARTICLE_PROVIDER_COOLDOWN_SECONDS="300"
-LOG="${ARTICLE_RESUME_LOG:-$HOME/.openclaw/logs/article-resume.log}"
+LOG="${ARTICLE_RESUME_LOG:-$WRITER_RUNTIME_HOME/logs/article-resume.log}"
+TELEGRAM_TARGET="${TELEGRAM_TARGET_ID:-${GIG_REPORT_CHAT:-${TELEGRAM_CHAT_ID:-}}}"
 MODEL_RUNNER="${ARTICLE_MODEL_RUNNER:-$ARTICLE_ROOT/runtime/model-runner.sh}"
 MODEL_SUPPORT="${ARTICLE_MODEL_SUPPORT:-$ARTICLE_ROOT/runtime/model-runner-support.py}"
 REPAIR_DISPATCH="$ARTICLE_ROOT/scripts/writer_repair_dispatch.py"
 QUALITY_REPAIR_CONTROL="${ARTICLE_QUALITY_REPAIR_CONTROL:-$ARTICLE_ROOT/scripts/quality_repair_control.py}"
 QUALITY_FEEDBACK_CONTROL="${ARTICLE_QUALITY_FEEDBACK_CONTROL:-$ARTICLE_ROOT/scripts/quality_feedback_recovery.py}"
+GENERATION_STATE_CONTROL="$ARTICLE_ROOT/scripts/article_generation_state.py"
 PLANNER="$ARTICLE_ROOT/scripts/article_pending.py"
 LOCK_DIR="$STATE_DIR/.article-daily.lockdir"
 LOCK_OWNER_FILE="$LOCK_DIR/owner.pid"
@@ -232,12 +235,93 @@ PRE_START_DECISION="$(python3 "$START_CONTROL" \
   printf '%s' '{"action":"block-incomplete","reason":"start-control-error"}')"
 PRE_START_ACTION="$(printf '%s' "$PRE_START_DECISION" | jq -r '.action // empty')"
 PRE_START_REASON="$(printf '%s' "$PRE_START_DECISION" | jq -r '.reason // empty')"
+ADOPTION_ACTIVE=0
+# A calendar rollover must not strand the exact unpublished run that already
+# has durable pending ledger rows. Prefer the start controller's selected run;
+# otherwise adopt only one ledger-backed candidate. Multiple candidates are
+# ambiguous and fail closed instead of silently choosing or creating a run.
+ADOPTION_RUN_ID="$(python3 - "$STATE_DIR" "$QUALITY_LEDGER" "$PRE_START_DECISION" <<'PY'
+import json
+from pathlib import Path
+import re
+import sys
+
+state_root = Path(sys.argv[1]).resolve()
+ledger = Path(sys.argv[2]).resolve()
+decision = json.loads(sys.argv[3])
+runs = state_root / "runs"
+allowed = {"provider-failed-ambiguous", "quality-repair-ready"}
+
+def status(run_id):
+    if not re.fullmatch(r"(?:daily-\d{4}-\d{2}-\d{2}|\d{8}-\d{6})", run_id):
+        return None
+    run_dir = runs / run_id
+    state_path = run_dir / "gates/generation-state.json"
+    prompt = run_dir / "article-daily-prompt.txt"
+    if state_path.is_symlink() or prompt.is_symlink():
+        raise ValueError("adoption evidence is not regular")
+    if not state_path.is_file() or not prompt.is_file():
+        return None
+    value = json.loads(state_path.read_text(encoding="utf-8"))
+    return value.get("status")
+
+selected = decision.get("run_id")
+if isinstance(selected, str) and status(selected) in allowed:
+    print(selected)
+    raise SystemExit(0)
+
+ledger_ids = set()
+if ledger.is_file() and not ledger.is_symlink():
+    for line in ledger.read_text(encoding="utf-8").splitlines():
+        try:
+            row = json.loads(line)
+        except (json.JSONDecodeError, TypeError):
+            continue
+        run_id = row.get("run_id") if isinstance(row, dict) else None
+        if isinstance(run_id, str) and run_id:
+            ledger_ids.add(run_id)
+candidates = sorted(run_id for run_id in ledger_ids if status(run_id) in allowed)
+if len(candidates) > 1:
+    raise ValueError("multiple ledger-backed adoption candidates")
+if candidates:
+    print(candidates[0])
+PY
+)" || {
+  echo "article-resume: prepublication adoption selection failed closed" >>"$LOG"
+  exit 1
+}
+if [ -n "$ADOPTION_RUN_ID" ]; then
+  ADOPTION_RUN_DIR="$STATE_DIR/runs/$ADOPTION_RUN_ID"
+  ADOPTION_RESULT="$(python3 "$GENERATION_STATE_CONTROL" \
+    --run-dir "$ADOPTION_RUN_DIR" --run-id "$ADOPTION_RUN_ID" \
+    --prompt-file "$ADOPTION_RUN_DIR/article-daily-prompt.txt" \
+    --ledger "$QUALITY_LEDGER" adopt-prepublication 2>/dev/null)" || {
+    echo "article-resume: prepublication adoption failed closed run=$ADOPTION_RUN_ID" >>"$LOG"
+    exit 1
+  }
+  ADOPTION_ACTION="$(printf '%s' "$ADOPTION_RESULT" | jq -r '.action // empty')"
+  ADOPTION_STATUS="$(printf '%s' "$ADOPTION_RESULT" | jq -r '.status // empty')"
+  case "$ADOPTION_ACTION/$ADOPTION_STATUS" in
+    adopted/quality-repair-ready|recovered/quality-repair-ready|unchanged/quality-repair-ready) ;;
+    *)
+      echo "article-resume: prepublication adoption result invalid run=$ADOPTION_RUN_ID" >>"$LOG"
+      exit 1
+      ;;
+  esac
+  ADOPTION_ACTIVE=1
+  PRE_START_DECISION="$(jq -cn --arg run_id "$ADOPTION_RUN_ID" \
+    '{action:"resume-prepublication-adoption",run_id:$run_id,reason:"quality-repair-ready"}')"
+  PRE_START_ACTION="resume-prepublication-adoption"
+  PRE_START_REASON="quality-repair-ready"
+  echo "article-resume: prepublication adoption run=$ADOPTION_RUN_ID action=$ADOPTION_ACTION status=$ADOPTION_STATUS" >>"$LOG"
+fi
 # A quality recovery is an unpublished obligation, not a same-day article. At
 # midnight, do not let the calendar selector hide a prior-day run whose Codex
 # feedback budget is still live. The controller is read-only here; the normal
 # owner fence and quality recovery state machine still own every side effect.
 PENDING_QUALITY_RUN_ID=""
-if [ "$PRE_START_ACTION" != "skip-pending-worker" ]; then
+if [ "$PRE_START_ACTION" != "skip-pending-worker" ] \
+  && [ "$ADOPTION_ACTIVE" -ne 1 ]; then
   PENDING_QUALITY_RUN_ID="$(python3 - "$STATE_DIR" "$QUALITY_LEDGER" "$QUALITY_FEEDBACK_CONTROL" <<'PY'
 import importlib.util
 from pathlib import Path
@@ -532,6 +616,11 @@ if [ "$PRIORITY_PUBLICATION_READY" -ne 1 ] \
   exit 0
 fi
 
+if [ "$ADOPTION_ACTIVE" -eq 1 ]; then
+  echo "article-resume: adopted run remains owned by quality repair run=$GENERATION_RUN_ID" >>"$LOG"
+  exit 0
+fi
+
 if [ -f "$GENERATION_STATE_PATH" ] \
   && [ ! -f "$GENERATION_RUN_DIR/gates/publication-state.json" ] \
   && [ "$(jq -r '.status // empty' "$GENERATION_STATE_PATH")" = "invoking" ]; then
@@ -682,7 +771,7 @@ fi
 notify_pending() {
   python3 "$ARTICLE_ROOT/scripts/article-completion-notify.py" \
     --state "$STATE_PATH" --ledger "$LEDGER_PATH" \
-    --target "${TELEGRAM_TARGET_ID:-8547730585}" \
+    --target "$TELEGRAM_TARGET" \
     --pending --reason "$1" >>"$LOG" 2>&1 || \
     echo "article-resume: pending Telegram report remains queued reason=$1" >>"$LOG"
 }
@@ -832,7 +921,7 @@ if [ "$INITIALIZATION_COUNT" -eq 0 ] \
   NOTE_STATUS="$(jq -r '.pairs["note/ja"].status // empty' "$STATE_PATH")"
   NOTE_CODE_ARGS=()
   if [ "$NOTE_STATUS" = "repair-required" ]; then
-    NOTE_MCP_DIR="${NOTE_MCP_DIR:-$HOME/.openclaw/external/note-mcp}"
+    NOTE_MCP_DIR="${NOTE_MCP_DIR:-$WRITER_RUNTIME_HOME/external/note-mcp}"
     bash "$ARTICLE_ROOT/scripts/ensure-note-mcp-runtime.sh" \
       "$NOTE_MCP_DIR" >>"$LOG" 2>&1 || {
       echo "article-resume: note-mcp runtime restore failed closed" >>"$LOG"
@@ -872,7 +961,7 @@ if [ "$INITIALIZATION_COUNT" -eq 0 ] \
   RC=$?
   python3 "$ARTICLE_ROOT/scripts/article-completion-notify.py" \
     --state "$STATE_PATH" --ledger "$LEDGER_PATH" \
-    --target "${TELEGRAM_TARGET_ID:-8547730585}" >>"$LOG" 2>&1 || \
+    --target "$TELEGRAM_TARGET" >>"$LOG" 2>&1 || \
     echo "article-resume: $PUBLICATION_CONTRACT completion notification remains pending" >>"$LOG"
   notify_pending "Noteの公開と読み戻しが未完了です"
   echo "article-resume: run=$RUN_ID rc=$RC deterministic=note/ja" >>"$LOG"
@@ -910,7 +999,7 @@ if [ "$INITIALIZATION_COUNT" -eq 0 ] \
   RC=$?
   python3 "$ARTICLE_ROOT/scripts/article-completion-notify.py" \
     --state "$STATE_PATH" --ledger "$LEDGER_PATH" \
-    --target "${TELEGRAM_TARGET_ID:-8547730585}" >>"$LOG" 2>&1 || \
+    --target "$TELEGRAM_TARGET" >>"$LOG" 2>&1 || \
     echo "article-resume: $PUBLICATION_CONTRACT completion notification remains pending" >>"$LOG"
   notify_pending "Substackの公開と読み戻しが未完了です"
   echo "article-resume: run=$RUN_ID rc=$RC deterministic=$FIRST_ELIGIBLE" >>"$LOG"
@@ -935,7 +1024,7 @@ if [ "$INITIALIZATION_COUNT" -eq 0 ] \
   RC=$?
   python3 "$ARTICLE_ROOT/scripts/article-completion-notify.py" \
     --state "$STATE_PATH" --ledger "$LEDGER_PATH" \
-    --target "${TELEGRAM_TARGET_ID:-8547730585}" >>"$LOG" 2>&1 || \
+    --target "$TELEGRAM_TARGET" >>"$LOG" 2>&1 || \
     echo "article-resume: $PUBLICATION_CONTRACT completion notification remains pending" >>"$LOG"
   notify_pending "X記事の公開と読み戻しが未完了です"
   echo "article-resume: run=$RUN_ID rc=$RC deterministic=$FIRST_ELIGIBLE" >>"$LOG"
@@ -962,7 +1051,7 @@ if [ "$INITIALIZATION_COUNT" -eq 0 ] \
   RC=$?
   python3 "$ARTICLE_ROOT/scripts/article-completion-notify.py" \
     --state "$STATE_PATH" --ledger "$LEDGER_PATH" \
-    --target "${TELEGRAM_TARGET_ID:-8547730585}" >>"$LOG" 2>&1 || \
+    --target "$TELEGRAM_TARGET" >>"$LOG" 2>&1 || \
     echo "article-resume: $PUBLICATION_CONTRACT completion notification remains pending" >>"$LOG"
   notify_pending "Dev.toの公開と読み戻しが未完了です"
   echo "article-resume: run=$RUN_ID rc=$RC deterministic=devto/en" >>"$LOG"
@@ -984,7 +1073,7 @@ if [ "$INITIALIZATION_COUNT" -eq 0 ] \
   RC=$?
   python3 "$ARTICLE_ROOT/scripts/article-completion-notify.py" \
     --state "$STATE_PATH" --ledger "$LEDGER_PATH" \
-    --target "${TELEGRAM_TARGET_ID:-8547730585}" >>"$LOG" 2>&1 || \
+    --target "$TELEGRAM_TARGET" >>"$LOG" 2>&1 || \
     echo "article-resume: $PUBLICATION_CONTRACT completion notification remains pending" >>"$LOG"
   notify_pending "X短文の公開と読み戻しが未完了です"
   echo "article-resume: run=$RUN_ID rc=$RC deterministic=x-post/ja" >>"$LOG"
@@ -1019,7 +1108,7 @@ RC=$?
 kill "$JUDGE_BROKER_PID" 2>/dev/null || true
 python3 "$ARTICLE_ROOT/scripts/article-completion-notify.py" \
   --state "$STATE_PATH" --ledger "$LEDGER_PATH" \
-  --target "${TELEGRAM_TARGET_ID:-8547730585}" >>"$LOG" 2>&1 || \
+  --target "$TELEGRAM_TARGET" >>"$LOG" 2>&1 || \
   echo "article-resume: $PUBLICATION_CONTRACT completion notification remains pending" >>"$LOG"
 notify_pending "公開処理が未完了です"
 echo "article-resume: run=$RUN_ID rc=$RC eligible=$(printf '%s' "$PLAN" | jq -c '.eligible_pairs')" >>"$LOG"
