@@ -1623,6 +1623,58 @@ Postiz remains the publishing control plane for the recovery. The old
 the live registry is authoritative and must be refreshed by MKT-02. Life
 Manager must never read the OpenClaw map, credentials, or assets at runtime.
 
+**Current incident override.** Owner-supplied native TikTok profile screenshots
+at 23:10-23:11 invalidate the earlier fleet-level success conclusion. They do
+not expose post dates, so they cannot independently prove the reported
+one-month duration. They do prove that account/product/locale/form separation
+is not healthy: sunset photo-carousel history is mixed with unrelated Japanese
+person-video content on `@anicca.jp`, and the same person-video families appear
+across Anicca, Honne, affirmation, Buddha, and girl-branded profiles. A Postiz
+`PUBLISHED` row, provider analytics, HTTP 200, or a correct canary on one row no
+longer closes a destination. Each lane returns to unverified until a current
+native-profile readback binds exact platform, native handle, media form, first
+frame/media hashes, caption, locale, product, public URL when available, and
+slot time.
+
+The live Postiz integration readback and the screenshots currently disagree:
+
+| Native screenshot | Live Postiz integration readback | Current disposition |
+|---|---|---|
+| TikTok `@anicca.jp` | TikTok `cmp9sdev5012voh0y58qs45xc`, enabled | connected, but routing/form contract failed by visible mixed feed |
+| TikTok `@anicca.videojp` | no matching live integration | missing integration; 0/day |
+| TikTok `@honne_reveal` | TikTok `cmoig11ew001zlv0yk6vqo1us`, enabled | connected, but visible cross-persona history requires fresh native audit |
+| TikTok `@aniccaaffirmation` | TikTok `cmp93bkpu01uvoh0yd3aj560g`, enabled; LM manifest hold | connected hold; 0/day; never borrow another Anicca lane |
+| TikTok `@anicca_buddha` | TikTok `cmp9txjdp01c8oh0yb6dhlarr`, enabled; LM manifest hold | connected hold; 0/day; visible Buddha/person content remains a separate product contract |
+| TikTok `@anicca.jp1` | no TikTok integration; the same Postiz profile string is Instagram `cmn8ycvtn02djqx0ytuisn9mw` | platform mismatch; TikTok 0/day; Instagram row cannot prove this TikTok account |
+| TikTok `@anicca_girl` | no matching live integration | missing integration; 0/day |
+
+The live mode-0600 lane manifest also contradicts the prose and earlier canary
+state: it contains thirteen `production-armed=true` lanes at three/day while
+this section still says default-off/zero/day. This is a control-plane drift,
+not permission to post. Until MKT-10R0 through MKT-10R7 close, the intended
+state is fail-closed: no new lane may be armed from the stale canary labels,
+and MKT-11 attribution or MKT-12 learning may not treat these lanes as healthy.
+
+External implementation references establish the boundary, not runtime
+ownership:
+
+- Source: [Postiz TikTok automation](https://postiz.com/codex/tiktok). Core
+  quote: “List your connected accounts and grab your TikTok integration ID.”
+  Therefore integration identity is platform-specific and must be inventoried
+  before publication.
+- Source: [Postiz TikTok scheduler](https://postiz.com/channels/tiktok). Core
+  quote: “Postiz supports TikTok videos, single images, and multi-image photo
+  carousels.” Therefore video and native photo carousel are distinct forms and
+  cannot share a success assertion.
+- Source: [Upload-Post Larry marketing skill](https://github.com/Upload-Post/upload-post-larry-marketing-skill).
+  Core quote: “generate → overlay → post → track → iterate.” Life Manager keeps
+  this loop shape but retains Postiz as its current provider adapter; the skill
+  is design evidence, not a runtime checkout dependency.
+- Source: [LarryBrain-Skill](https://github.com/OllieWazza/LarryBrain-Skill).
+  Core quote: “Skills are plain markdown files that any agent can read and
+  follow.” It is a marketplace/bootstrap skill, not the missing Larry publisher
+  and not a reason to restore OpenClaw ownership.
+
 | Product/channel | TikTok | Instagram | YouTube | Current truth |
 |---|---|---|---|---|
 | Honne EN | `@honne_reveal` (`cmoig11ew001zlv0yk6vqo1us`) | **unassigned** — no live Honne Instagram profile in the 2026-08-21 registry | **not used** | TikTok only until an explicit live Instagram assignment exists |
@@ -2304,8 +2356,8 @@ order is the §12.3 recovery checklist: `MKT-09R0 → MKT-09R1 → MKT-09R2 →
 MKT-09R3-01..13 → MKT-09R4..R9 → MKT-10 → MKT-11 → MKT-12 → MKT-13`.
 No later row starts early.
 
-Current TODO state: **incident recovery remains open at MKT-11 cadence Order 8,
-one destination at a time.** MKT-09R0 through the selected Postiz canary
+Current TODO state: **incident recovery is reopened inside Order 25 MKT-10 at
+MKT-10R0, one destination at a time.** MKT-09R0 through the selected Postiz canary
 portfolio are terminal: capacity is safe, the shared publication fence remains closed,
 the JP4 false completion is quarantined, and the 13-effect set is 12 `present`
 plus one truthful `absent`. The full publication ledger is 43 `completed`,
@@ -2316,6 +2368,54 @@ only 32 of 64 expected provider rows, most accounts remain unclassified at
 MKT-12A0 remains blocked until cadence and attribution are healthy. Honne still has TikTok
 destinations only; dedicated Honne Instagram and YouTube integrations do not
 yet exist.
+
+**Current incident correction:** the native screenshots and live integration
+readback reopen Order 25 MKT-10 before MKT-11. The fixed program order is not
+reordered; MKT-10 is incomplete. The first unchecked subcursor is MKT-10R0,
+followed strictly by MKT-10R1 through MKT-10R7. MKT-11, MKT-12, and MKT-13 stay
+blocked until MKT-10R7 closes.
+
+| Subcursor | One-at-a-time work | Done evidence |
+|---:|---|---|
+| MKT-10R0 | Freeze the current provider/manifest/native contradiction without publishing | immutable evidence records all 7 screenshot handles, live Postiz platform/profile/integration IDs, current lane-manifest hash/mode, loaded release, and zero provider writes |
+| MKT-10R1 | Make one machine-readable destination contract the SSOT | every retained account has exact product, locale, platform, native handle, integration ID, renderer, media form, approved pack, cadence, and explicit hold/missing reason; duplicate handles across platforms are rejected |
+| MKT-10R2 | Close account presence before content work | `@anicca.videojp`, TikTok `@anicca.jp1`, and `@anicca_girl` remain 0/day until an exact live TikTok integration exists; enabled Postiz connections not in the retained contract remain holds |
+| MKT-10R3 | Repair the control-plane drift fail-closed | spec, lane manifest, registry schedule, loaded launchd argv, and immutable release agree on armed count and cadence; stale `canary-verified` cannot silently arm a lane |
+| MKT-10R4 | Revalidate Larry assets and account routing | one sunset/native-photo Larry pack has ordered image hashes, visible first frame, exact locale/caption, one destination integration, and rejects every ReelClaw/person-video asset before provider access |
+| MKT-10R5 | Revalidate ReelClaw/Honne/Anicca video routing | each approved video family is bound to one product/persona/locale/account contract; cross-account media reuse fails before enqueue and every mixed historical feed remains quarantined evidence |
+| MKT-10R6 | Run canaries one destination at a time through the natural owner | exact integration plus native handle/form/content/caption/slot readback, natural Telegram, metrics-owner registration, and replay-zero; provider-only success is insufficient |
+| MKT-10R7 | Restore target cadence and prove liveness | every retained TikTok and Instagram destination produces its exact expected slots with correct native content; missing/wrong/duplicate posts alert naturally; only then MKT-11 resumes |
+
+### 12.2.1 Local folder and deletion boundary
+
+The local repository folder is `/Users/anicca/Projects/life-manager-main`.
+Production does not execute that mutable checkout directly; launchd points to
+an immutable Life Manager release selected through `/Users/anicca/loops/current`,
+and mutable state/credentials/ledgers live under
+`/Users/anicca/.local/state/life-manager`.
+
+```text
+/Users/anicca/
+├── Projects/life-manager-main/       canonical Git checkout; source and spec
+├── loops/current -> immutable release production selector
+├── .local/state/life-manager/        private state, objects, ledgers, receipts
+├── .openclaw/                        still-live gateway/ask/peer runtime owner
+├── anicca-project/                   still-live Codex progress reporter owner
+├── profitable-claude/                legacy source/evidence still named by scan
+├── gig/                              separate large legacy/evidence checkout
+└── lm-loops-core/                    separate development worktree
+```
+
+Deletion is not authorized or safe. Current loaded LaunchAgents still execute
+`.openclaw` for `ai.openclaw.anicca-ask`, `ai.openclaw.gateway`, and
+`com.anicca.peer-api`, and execute `anicca-project` for
+`com.anicca.codex-progress-reporter`. The production legacy-path scanner also
+reports 52 violations, including active marketing defaults that read
+`.openclaw` state/env and a Profitable Claude marketing command. The deletion
+gate is: loaded references zero, production dependency scan zero, clean-user
+install pass, immutable-release natural cycles pass, official effects and
+replay-zero pass, and protected state/session/evidence backup readback passes.
+Until every gate is true, no listed folder is disposable as a set.
 
 For every selected Postiz video/Reel/carousel lane, publication success now
 requires the exact Postiz API row in `PUBLISHED` state plus the exact LM
