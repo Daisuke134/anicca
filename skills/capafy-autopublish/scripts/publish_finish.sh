@@ -34,6 +34,28 @@ for ENV_FILE in "$LIFE_MANAGER_STATE_HOME/.env"; do
   fi
 done
 
+# Some earlier isolated runs stored an absolute temporary OpenClaw workspace in
+# the same-agent manifest.  Keep using that isolated OpenClaw home while
+# resuming it; forcing CAPAFY_PUBLISH_HOME makes the publisher reject the valid
+# manifest before it can save config keys.  Normal runs retain the standard
+# isolated publisher home.
+MANIFEST="$CAPAFY_PUBLISH_WORK_DIR/publish-work-state.json"
+if [ -f "$MANIFEST" ]; then
+  MANIFEST_HOME="$(python3 - "$MANIFEST" <<'PY'
+import json,sys
+try:
+    runtime_dir=str(json.load(open(sys.argv[1])).get('extra',{}).get('runtime_dir','')).strip()
+    marker='/.openclaw/workspace'
+    if marker in runtime_dir:
+        print(runtime_dir.split(marker, 1)[0])
+except Exception:
+    pass
+PY
+)"
+  if [ -n "$MANIFEST_HOME" ] && [ -f "$MANIFEST_HOME/.openclaw/openclaw.json" ]; then
+    CAPAFY_PUBLISH_HOME="$MANIFEST_HOME"
+  fi
+fi
 export HOME="$CAPAFY_PUBLISH_HOME"
 cd "$PUB" || { echo "❌ cd PUB"; exit 1; }
 
@@ -70,15 +92,24 @@ if [ "$(rstat isConfirmedConfigKeys)" = "1" ]; then
   echo "isConfirmedConfigKeys=1 already ✓ — skip configure+CP2"
 else
   step "[3] configure (deep-scan, empty findings)"
-  chmod -R u+w "$PUB/.temp/staging" 2>/dev/null; rm -rf "$PUB/.temp/staging" 2>/dev/null
-  python3 packager.py publish-configure --agent-id "$ID" --deep-scan >/dev/null 2>&1
-  python3 -c "import json;json.dump({'generic':[],'env_var':[]},open('.temp/dsf.json','w'))"
-  python3 packager.py publish-configure --agent-id "$ID" --deep-scan-findings-file "$PUB/.temp/dsf.json" >/dev/null 2>&1
+  # A new agent's staging directory lives under its isolated work-state path and
+  # may not exist yet.  Its absence is not a configure failure; the publisher
+  # creates staging during the deep scan below.
+  chmod -R u+w "$PUB/.temp/staging" 2>/dev/null || true
+  rm -rf "$PUB/.temp/staging" 2>/dev/null || true
+  DEEP_OUT="$(python3 packager.py publish-configure --agent-id "$ID" --deep-scan 2>&1)" \
+    || die "configure deep-scan failed: $DEEP_OUT"
+  DSF="$CAPAFY_PUBLISH_WORK_DIR/dsf.json"
+  python3 -c "import json;json.dump({'generic':[],'env_var':[]},open('$DSF','w'))" \
+    || die "could not write empty deep-scan findings"
+  CONFIG_OUT="$(python3 packager.py publish-configure --agent-id "$ID" --deep-scan-findings-file "$DSF" 2>&1)" \
+    || die "configure failed: $CONFIG_OUT"
+  CP2="$(printf '%s' "$CONFIG_OUT" | python3 "$AUTO/scripts/extract_cp2_review_url.py")" \
+    || die "configure returned no usable CP2 URL: $CONFIG_OUT"
   echo "configured"
 
   step "[4] CP2 key host (drive_checkpoint2.py)"
   export CAPAFY_HOST_OPENROUTER_KEY="${CAPAFY_HOST_OPENROUTER_KEY:-$(grep '^CAPAFY_HOST_OPENROUTER_KEY=' "$LIFE_MANAGER_STATE_HOME/.env" 2>/dev/null | cut -d= -f2-)}"
-  CP2="$(refresh configure)"
   timeout 150 "$VENV" "$AUTO/scripts/drive_checkpoint2.py" "$CP2" 2>&1 | grep -vE "Deprecation|warnings.warn" | tail -4
   # AUTHORITATIVE gate = server isConfirmedConfigKeys, POLLED. drive_checkpoint2 can
   # exit just before the server registers the hosted key -> a one-shot read false-dies.
