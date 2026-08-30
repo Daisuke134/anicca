@@ -27,7 +27,7 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 この節は、後段の「現在TODO」「次の一件」「local-only」「self-funded agentは別product」という相反する記述を
 上書きする最新の実行順序SSOTである。後段は実装履歴・organ別acceptanceとして保持するが、次作業の選択には使わない。
 Upworkのterminal evidence、startup context、public claim、GA-01〜13Aは完了または履歴として保持する。
-次の一件はAtomic program ledger Seq 17 `ELZ-C04`のsubstep `C04-04`で、upstream/legacy provider bridgeの採用・棄却mapをprivate evidenceへ保存する。
+次の一件はAtomic program ledger Seq 17 `ELZ-C04`のsubstep `C04-05`で、opaque refからstructured resultだけを返すfocused failing testを一つ追加する。
 
 #### 0.0.1 最新基盤決定 — ElizaOSを完全forkし、Life Managerをlocal OSSからmulti-tenant SaaSへ育てる
 
@@ -634,7 +634,7 @@ flowchart LR
 - [x] **C04-01** Eliza Omarchyのbounded `execFile`/injected runner contractをprivate evidenceへ保存する — fork `7acbf831…`の`plugin-omarchy/src/bridge.ts`をSHA256固定。`execFile` no-shell、timeout 5秒、maxBuffer 256KiB、injected runner、descriptor側fixed executable/argv、dynamic値validation、failure時raw stderr非公開、JSON shape validationを採用。private receipt mode 0600、process/external effect 0。次はC04-02
 - [x] **C04-02** legacy Lancers Python CLIのsingle JSON/exit contractをprivate evidenceへ保存する — clean `status.py`をSHA256固定。public read-only/no-cookie/no-persistence、query 200文字、limit 1–100、timeout最大60秒、body 8MiB、valid call stdout 1 JSON object、`ok`とexit 0/1整合、invalid 2、stable redacted error codeを採用。private receipt mode 0600、process/network/external effect 0。次はC04-03
 - [x] **C04-03** legacy Connector JS CLIのread-only single JSON contractをprivate evidenceへ保存する — clean `connector-events-pack-readonly.js`をSHA256固定。authenticated read-only inventory、RSVP evidence write throw、21日source completeness、dependency injection、成功stdout 1 JSON＋exit 0を採用。失敗はJSONなし固定stderr＋exit 1なのでbridgeでtyped failure化しraw stderr/healthy-empty扱いを棄却。private receipt mode 0600、process/browser/network/external effect 0。次はC04-04
-- [ ] **C04-04** upstream/legacyの採用・棄却mapを`provider-bridge-reuse-map.json`へ保存する
+- [x] **C04-04** upstream/legacyの採用・棄却mapを`provider-bridge-reuse-map.json`へ保存する — C04-01〜03 receipt hashを固定。Omarchyのno-shell/fixed descriptor/bounds/injected runner、Python/JSのsingle JSON/read-only/completenessを採用。requestはopaque `toolRef/inputRef`だけ、private resolver、judgment/provider routing 0。任意shell/model-controlled command/raw output/secret env/healthy-empty/provider別brain・scheduler・DB・adapterを棄却。private receipt mode 0600。次はC04-05
 - [ ] **C04-05** opaque ref→structured result bridgeのfocused failing testを一つ追加する
 - [ ] **C04-06** provider bridge testの失敗を一回確認する
 - [ ] **C04-07** `ProviderToolRef`/`ProviderInputRef`/`ProviderBridgeResult`型を定義する
