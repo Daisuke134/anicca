@@ -24,11 +24,11 @@ VENV="${CAPAFY_BROWSER_PYTHON:-python3}"
 # The selected remote agent is the isolation boundary.  Do not preserve an
 # inherited work directory: a launcher can carry one over from a different
 # candidate, making configure/ship silently operate on that other manifest.
-export CAPAFY_PUBLISH_WORK_DIR="$PUB/.temp/agents/$ID"
+export CAPAFY_PUBLISH_WORK_DIR="$LIFE_MANAGER_STATE_HOME/runtime/capafy-publisher-work/agents/$ID"
 
 # Direct recovery and launchd must resolve credentials from the same repo-external
 # SSOT. Load them before the key-health gate; values stay process-local.
-for ENV_FILE in "$LIFE_MANAGER_STATE_HOME/.env" "$HOME/.openclaw/.env"; do
+for ENV_FILE in "$LIFE_MANAGER_STATE_HOME/.env"; do
   if [ -f "$ENV_FILE" ]; then
     set -a; . "$ENV_FILE" 2>/dev/null; set +a
   fi
