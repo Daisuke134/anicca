@@ -58,7 +58,7 @@ const EVENTBRITE_MARKETING_OPERATION = Symbol("eventbriteMarketingOperation");
 const EVENTBRITE_FINAL_OPERATION = Symbol("eventbriteFinalOperation");
 const EVENTBRITE_FINAL_ATTEMPTED = Symbol("eventbriteFinalAttempted");
 const KOKUCHPRO_ENTRY_SELECTOR = "form, form input, form button";
-const KOKUCHPRO_ENTRY_TOKEN = /^kokuchpro_entry_[0-9a-f]{32}$/;
+const KOKUCHPRO_ENTRY_TOKEN = /^kokuchpro_entry_[0-9a-f]{32}(?:_o_[0-9a-z]{1,13})?$/;
 
 function invalid() {
   throw new Error("Connector production Browser Harness invalid");
@@ -97,11 +97,13 @@ function candidateKokuchProBinding(candidate) {
   if (!candidate || typeof candidate !== "object" || Array.isArray(candidate) || candidate.provider !== "kokuchpro"
     || typeof candidate.ticket_id !== "string" || !/^[1-9][0-9]*$/.test(candidate.ticket_id)) return null;
   const binding = canonicalKokuchProBinding(candidate);
-  const ref = /^kokuchpro-event:\/\/event\/([0-9a-f]{32})$/.exec(String(binding?.event_ref || ""));
-  return ref ? Object.freeze({ eventRef: binding.event_ref, canonicalUrl: binding.canonical_url, eventKey: ref[1], ticketId: candidate.ticket_id }) : null;
+  const ref = /^kokuchpro-event:\/\/event\/([0-9a-f]{32})(?:\/([1-9][0-9]{0,19}))?$/.exec(String(binding?.event_ref || ""));
+  return ref ? Object.freeze({ eventRef: binding.event_ref, canonicalUrl: binding.canonical_url, eventKey: ref[1], occurrenceId: ref[2] || "", ticketId: candidate.ticket_id }) : null;
 }
 function kokuchProEntryToken(binding) {
-  const token = binding ? `kokuchpro_entry_${binding.eventKey}` : "";
+  let suffix = "";
+  try { suffix = binding?.occurrenceId ? `_o_${BigInt(binding.occurrenceId).toString(36)}` : ""; } catch { return ""; }
+  const token = binding ? `kokuchpro_entry_${binding.eventKey}${suffix}` : "";
   return KOKUCHPRO_ENTRY_TOKEN.test(token) ? token : "";
 }
 function isEventbriteTriggerMeaning(control) {
@@ -822,9 +824,9 @@ function inspectKokuchProEntry(elements, context = {}) {
   if (!Array.isArray(elements) || elements.length > 100) return [];
   const canonicalUrl = String(context.canonicalUrl || ""), eventRef = String(context.eventRef || "");
   const ticketId = String(context.ticketId || ""), eventKey = String(context.eventKey || ""), token = String(context.token || "");
-  const url = /^https:\/\/www\.kokuchpro\.com\/event\/([0-9a-f]{32})\/$/.exec(canonicalUrl);
-  const ref = /^kokuchpro-event:\/\/event\/([0-9a-f]{32})$/.exec(eventRef);
-  if (!url || !ref || url[1] !== eventKey || ref[1] !== eventKey
+  const url = /^https:\/\/www\.kokuchpro\.com\/event\/([0-9a-f]{32})(?:\/([1-9][0-9]{0,19}))?\/$/.exec(canonicalUrl);
+  const ref = /^kokuchpro-event:\/\/event\/([0-9a-f]{32})(?:\/([1-9][0-9]{0,19}))?$/.exec(eventRef);
+  if (!url || !ref || url[1] !== eventKey || ref[1] !== eventKey || (url[2] || "") !== (ref[2] || "")
     || !/^[1-9][0-9]*$/.test(ticketId) || !KOKUCHPRO_ENTRY_TOKEN.test(token)) return [];
   const tag = (element) => String(element && element.tagName || "").toLowerCase();
   const attr = (element, name) => { try { const property = element && element[name]; if (property != null && String(property) !== "") return String(property); const value = element?.getAttribute?.(name); return value == null ? "" : String(value); } catch { return ""; } };
@@ -1254,7 +1256,7 @@ async function operateKokuchProEntry(input, target, token, beforeDispatch) {
   if (!binding || kokuchProEntryToken(binding) !== token || action.purpose !== "submit" || action.method !== "ax_click"
     || !control || control.control !== token || control.kind !== "button" || control.label !== "申込む" || control.required !== false || control.completed !== false || control.submittable !== true) return Object.freeze({ status: "failed" });
   const href = () => { try { return String(input.page && typeof input.page.url === "function" ? input.page.url() : ""); } catch { return ""; } };
-  const sameCandidate = () => { const current = candidateKokuchProBinding(input.candidate); return Boolean(current && current.eventRef === binding.eventRef && current.canonicalUrl === binding.canonicalUrl && current.eventKey === binding.eventKey && current.ticketId === binding.ticketId); };
+  const sameCandidate = () => { const current = candidateKokuchProBinding(input.candidate); return Boolean(current && current.eventRef === binding.eventRef && current.canonicalUrl === binding.canonicalUrl && current.eventKey === binding.eventKey && current.occurrenceId === binding.occurrenceId && current.ticketId === binding.ticketId); };
   if (input.signal && input.signal.aborted) return Object.freeze({ status: "failed", safe_reason: "time_limit" });
   if (href() !== binding.canonicalUrl || !sameCandidate()) return Object.freeze({ status: "failed" });
   let formsLocator, controls;
