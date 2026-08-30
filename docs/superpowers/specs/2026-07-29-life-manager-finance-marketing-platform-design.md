@@ -2371,17 +2371,17 @@ yet exist.
 
 **Current incident correction:** the native screenshots and live integration
 readback reopen Order 25 MKT-10 before MKT-11. The fixed program order is not
-reordered; MKT-10 is incomplete. The first unchecked subcursor is MKT-10R0,
-followed strictly by MKT-10R1 through MKT-10R7. MKT-11, MKT-12, and MKT-13 stay
-blocked until MKT-10R7 closes.
+reordered; MKT-10 is incomplete. R0 through R4 are implementation-terminal and
+the first unchecked subcursor is MKT-10R5, followed strictly by MKT-10R6 and
+MKT-10R7. MKT-11, MKT-12, and MKT-13 stay blocked until MKT-10R7 closes.
 
 | Subcursor | One-at-a-time work | Done evidence |
 |---:|---|---|
 | MKT-10R0 | **done —** freeze the current provider/manifest/native contradiction without publishing | immutable evidence `d2ca4981…303b8` records all 7 screenshot hashes/handles, all 30 live Postiz integrations with the exact matching rows, lane-manifest hash `a67070b1…8b00`, loaded release `557f1b59`, and provider writes 0. It proves `@anicca.videojp` and `@anicca_girl` are absent from Postiz while `@anicca.jp1` is an enabled Instagram integration, not TikTok |
 | MKT-10R1 | **done —** make one machine-readable destination contract the SSOT | `config/marketing-destinations.json` fixes 13 retained targets to exact product/job-product, locale, platform, Postiz profile, native handle, integration, renderer, job format, media form, approved pack name/ref, three JST slots, loop name, label, and entrypoint. Its fail-closed loader rejects duplicate retained handles across platforms and incomplete routes; contract and registry tests pass 4/4 |
 | MKT-10R2 | **done —** close account presence before content work | current provider audit covers all 30 live Postiz integrations exactly once as 13 targets plus 17 integration holds, with three additional absent/platform-collision holds. `@anicca.videojp`, TikTok `@anicca.jp1`, and `@anicca_girl` are explicit 0/day; `@aniccaaffirmation` and `@anicca_buddha` are explicit 0/day holds; uncovered live integrations and route errors are 0 |
-| MKT-10R3 | Repair the control-plane drift fail-closed | spec, lane manifest, registry schedule, loaded launchd argv, and immutable release agree on armed count and cadence; stale `canary-verified` cannot silently arm a lane |
-| MKT-10R4 | **implementation done; live proof belongs to R6 —** revalidate Larry assets and account routing | `@anicca.jp` is fixed to Postiz TikTok `cmp9sdev5012voh0y58qs45xc`, renderer/job format `larry`, form `affirmation-carousel`, and immutable pack `63e2b1b8…3664`. The six ordered JPEG hashes begin `20d53f17…`; they reproduce the owner-supplied sunset first frame at provider-safe 1010×1080. Caption `04757a25…f856` is recovered from a real Postiz publication row. A first natural canary correctly failed provider-side with `picture_size_check_failed` because the legacy 1125px width exceeded TikTok's 1080px limit; the adapter now rejects over-1080 JPEG width before provider access. The boot owner is `anicca-larry-ja-canary.js run-ja-main-tiktok-production`; ReelClaw/person-video identity is rejected before enqueue/provider access. Native publication and replay-zero remain R6, so this is not yet a working-loop claim |
+| MKT-10R3 | **done —** repair the control-plane drift fail-closed | all 13 destination labels are loaded with exact argv from immutable main release `efe75bfc…fc20b`; the registry and `config/marketing-destinations.json` agree on every label, entrypoint, and JST cadence. Manifest `b8f6ad70…99de3` remains 13/13 `default-off`, armed 0, with 17 holds; the manifest contract rejects any disabled/default-off/shadow route that claims `production_armed=true`, so stale `canary-verified` state cannot arm a lane. Applying the labels created only install events and no natural publication run |
+| MKT-10R4 | **implementation done; live proof belongs to R6 —** revalidate Larry assets and account routing | `@anicca.jp` is fixed to Postiz TikTok `cmp9sdev5012voh0y58qs45xc`, renderer/job format `larry`, form `affirmation-carousel`, and immutable pack `63e2b1b8…3664`. The six ordered JPEG hashes begin `20d53f17…`; they reproduce the owner-supplied sunset first frame at provider-safe 1010×1080. Caption `04757a25…f856` is recovered from a real Postiz publication row. A first natural canary correctly failed provider-side with `picture_size_check_failed` because the legacy 1125px width exceeded TikTok's 1080px limit. The adapter now rejects non-positive dimensions, width above 1080, or height above 1920 before secret/provider access. The shared transport accepts a URL-free TikTok photo result only from the exact `PUBLISHED` row with matching integration, caption SHA, title, `DIRECT_POST`, and `p_pub_url~v2.<digits>` release ID; it never invents a video URL and keeps video/Instagram direct-URL gates unchanged. The boot owner is `anicca-larry-ja-canary.js run-ja-main-tiktok-production`; ReelClaw/person-video identity is rejected before enqueue/provider access. Focused route/adapter/canary tests pass 50/50 and transport tests pass 24/24. Native publication, Telegram, metrics registration, and replay-zero remain R6, so this is not yet a working-loop claim |
 | MKT-10R5 | Revalidate ReelClaw/Honne/Anicca video routing | each approved video family is bound to one product/persona/locale/account contract; cross-account media reuse fails before enqueue and every mixed historical feed remains quarantined evidence |
 | MKT-10R6 | Run canaries one destination at a time through the natural owner | exact integration plus native handle/form/content/caption/slot readback, natural Telegram, metrics-owner registration, and replay-zero; provider-only success is insufficient |
 | MKT-10R7 | Restore target cadence and prove liveness | every retained TikTok and Instagram destination produces its exact expected slots with correct native content; missing/wrong/duplicate posts alert naturally; only then MKT-11 resumes |
@@ -2416,6 +2416,14 @@ gate is: loaded references zero, production dependency scan zero, clean-user
 install pass, immutable-release natural cycles pass, official effects and
 replay-zero pass, and protected state/session/evidence backup readback passes.
 Until every gate is true, no listed folder is disposable as a set.
+
+The recovery baseline from immutable release `efe75bfc…fc20b` reports 232
+inventory rows: 166 managed, 44 retired, 81 managed rows whose latest terminal
+event is `fail`, three managed rows unloaded, and 62 managed effects still
+`unknown`. Only 27 managed labels were installed from that current release at
+the readback boundary. These are direct blockers to an “all loops are working”
+or “the legacy folders are deletable” claim; loaded/running state alone does not
+override a failed terminal event or unknown official effect.
 
 For every selected Postiz video/Reel/carousel lane, publication success now
 requires the exact Postiz API row in `PUBLISHED` state plus the exact LM
