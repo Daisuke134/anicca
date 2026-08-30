@@ -1278,7 +1278,7 @@ One active item at a time。各itemは実物readbackを閉じてから次へ進�
 | R05 | `record_lm_symphony_result` RPCを追加する | code-pass: strict `LM_RESULT_V1` completed/needs_human schema、artifact refs、same issue comment、result hash/payloadを一度だけ保存。jobはrace防止のため`waiting_agent`のままR06/R07を待つ。focused 15/15 pass |
 | R06 | completed resultのterminal RPCを追加する | code-pass: same result_ready dispatch + waiting_agent jobだけOpportunity `QUALIFIED`、runtime completed/attempt 1、exact immutable receipt、dispatch consumed。Issue close/needs_humanだけでは拒否。focused 16/16 pass |
 | R07 | needs_human resultを既存`create_lm_human_task`へ接続する | code-pass: job row lock中だけwaiting_agent→queued→existing atomic HumanTaskを呼び、commit時はwaiting_human。deterministic task/boundary/context refs、attempt非消費、dispatch consumed、idempotent readback。focused 17/17 pass |
-| R08 | `answer_lm_human_task`がold dispatch result refをclearしsame jobをqueuedへ戻す | task version+1、same job ID、new dispatch可能、old result replay不可 |
+| R08 | `answer_lm_human_task`後にsame jobのnext Symphony roundを許可する | code-pass: result refはjobへ複製せずconsumed dispatchに保持。existing answer RPCがsame jobをqueued、claim RPCはconsumedをopen扱いせず`MAX(round)+1`。focused 18/18 pass |
 | R09 | focused unit+Postgres transaction checkを一回通す | claim race winner 1、duplicate issue 0、duplicate result 0、cross-tenant 0、receipt mutation 0 |
 | R10 | migrationをRailway Postgresへ一回applyする | schema/RPC official readback。失敗時は再applyせずmigration historyとpartial objectsをreconcile |
 
@@ -1395,4 +1395,4 @@ One active item at a time。各itemは実物readbackを閉じてから次へ進�
 
 ### 18.13 Immediate next atom
 
-`R08`だけを次に実行する。R08–R10が揃うまでbridge API、Symphony production connection、provider applicationへ進まない。各atom完了時にこのSectionのstateとSection 17の対応uncertaintyを同じcommitで更新する。
+`R09`だけを次に実行する。R09–R10が揃うまでbridge API、Symphony production connection、provider applicationへ進まない。各atom完了時にこのSectionのstateとSection 17の対応uncertaintyを同じcommitで更新する。

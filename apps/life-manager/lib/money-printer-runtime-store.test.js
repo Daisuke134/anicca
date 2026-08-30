@@ -12,6 +12,7 @@ const TENANT = "tenant-a";
 const ID = "a".repeat(64);
 const NOW = "2026-08-29T00:00:00.000Z";
 const SYMPHONY_MIGRATION = path.join(__dirname, "../migrations/2026-08-30-lm-symphony-dispatches.sql");
+const HUMAN_TASK_MIGRATION = path.join(__dirname, "../migrations/2026-08-29-lm-money-printer-human-tasks.sql");
 
 test("R01 Symphony migration adds waiting_agent without dropping runtime states", () => {
   const migration = fs.readFileSync(SYMPHONY_MIGRATION, "utf8");
@@ -175,6 +176,15 @@ test("R07 a needs_human result reuses the existing atomic HumanTask transition",
   assert.deepEqual(await store.consumeSymphonyHumanTask({ uid: TENANT, dispatchId: "d".repeat(64) }), task);
   assert.match(calls[0].sql, /^\s*SELECT \* FROM public\.consume_lm_symphony_human_task\(\$1, \$2\)/i);
   assert.deepEqual(calls[0].values, [TENANT, "d".repeat(64)]);
+});
+
+test("R08 answering a HumanTask requeues the same job for the next Symphony round", () => {
+  const human = fs.readFileSync(HUMAN_TASK_MIGRATION, "utf8");
+  const symphony = fs.readFileSync(SYMPHONY_MIGRATION, "utf8");
+  assert.match(human, /UPDATE public\.lm_runtime_jobs[\s\S]*SET status = 'queued'[\s\S]*WHERE tenant_id = p_uid[\s\S]*job_id = v_task\.job_id[\s\S]*status = 'waiting_human'/i);
+  assert.match(symphony, /COALESCE\(MAX\(dispatches\.round\), 0\) \+ 1/i);
+  assert.match(symphony, /dispatches\.status IN \('claimed', 'mirrored', 'result_ready'\)/i);
+  assert.doesNotMatch(symphony, /dispatches\.status IN \('claimed', 'mirrored', 'result_ready', 'consumed'\)/i);
 });
 
 function opportunity() {
