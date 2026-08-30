@@ -74,7 +74,10 @@ case "$GIG_DISK_HEADROOM_KIB" in
     exit 1
     ;;
 esac
-DISK_LOW_THRESHOLD_BYTES="${ARTICLE_DISK_MIN_FREE_BYTES:-$((GIG_DISK_HEADROOM_KIB * 1024))}"
+DISK_LOW_THRESHOLD_BYTES="$(python3 "$ARTICLE_ROOT/scripts/writer_capacity_floor.py" --state-dir "$STATE_DIR")" || {
+  echo "=== article-daily capacity receipt invalid ===" >>"$LOG"
+  exit 1
+}
 case "$DISK_LOW_THRESHOLD_BYTES" in
   ''|*[!0-9]*|0)
     echo "=== article-daily disk floor configuration invalid ===" >>"$LOG"
@@ -986,7 +989,7 @@ export ARTICLE_RUN_DIR="$RUN_DIR"
 
 writer_capacity_preflight() {
   local free_kib flag control_dir="$HOME/.openclaw/state"
-  local required_kib="${GIG_DISK_HEADROOM_KIB:-524288}"
+  local required_kib="$(( (DISK_LOW_THRESHOLD_BYTES + 1023) / 1024 ))"
   free_kib="$(df -Pk / 2>/dev/null | awk 'NR==2{print $4}')"
   case "$free_kib" in
     ''|*[!0-9]*)

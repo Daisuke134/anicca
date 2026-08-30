@@ -17,9 +17,10 @@ from publication_resume import (
     PublicationStore,
 SUPPORTED_PAIRS,
 )
-
-CANONICAL_DISK_HEADROOM_KIB = 524_288
-CANONICAL_DISK_HEADROOM_BYTES = CANONICAL_DISK_HEADROOM_KIB * 1024
+from writer_capacity_floor import (
+    CapacityFloorError,
+    resolve_disk_floor_bytes,
+)
 
 
 def assert_disk_headroom() -> None:
@@ -37,23 +38,9 @@ def assert_disk_headroom() -> None:
     except OSError as error:
         raise InvariantError("disk_headroom_unavailable") from error
     try:
-        configured_kib = int(
-            os.environ.get("GIG_DISK_HEADROOM_KIB", str(CANONICAL_DISK_HEADROOM_KIB))
-        )
-    except ValueError as error:
-        raise InvariantError("disk_headroom_configuration_invalid") from error
-    if configured_kib < CANONICAL_DISK_HEADROOM_KIB:
-        raise InvariantError("disk_headroom_configuration_invalid")
-    configured_bytes = os.environ.get("ARTICLE_DISK_MIN_FREE_BYTES", "")
-    if configured_bytes:
-        try:
-            required = int(configured_bytes)
-        except ValueError as error:
-            raise InvariantError("disk_headroom_configuration_invalid") from error
-    else:
-        required = configured_kib * 1024
-    if required < CANONICAL_DISK_HEADROOM_BYTES:
-        raise InvariantError("disk_headroom_configuration_invalid")
+        required = resolve_disk_floor_bytes(Path(state_dir) if state_dir else state_root)
+    except CapacityFloorError as error:
+        raise InvariantError(str(error)) from error
     if available < required:
         raise InvariantError(
             f"disk_headroom_low available={available} required={required}"

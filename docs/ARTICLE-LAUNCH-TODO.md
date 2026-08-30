@@ -90,6 +90,10 @@
       mediaanalysisd/CUA cache 142,956KiBを削除した。一時freeは1,330,800KiBでfloorを超えたが、直後にmacOS swapが1GiB増え、
       swap total 15,360MiB/used 14,680MiB、free 456,104KiBへ低下した。swapfileは直接削除せず、他ownerのbrowser/sessionも停止しない。
       target apply後の`article-resume` run 1もfree 630,160KiBで開始したため即bootoutし、GPT API intent/publication/effectは0。
+      根因はdaily/resumeがhost実測receiptではなく汎用524,288KiBだけを読んでいたこと。stdlib-only `writer_capacity_floor.py`を正本にし、
+      両入口とpublication guardが同じreceiptを使用、壊れた算術はfail-closed、環境変数で測定floorを下げられないよう修復した。
+      `capacity/article-run-floor.json`はsample SHA `996cf6a784fc2c85d3d5f7fdf656eba6a4dfcf650c93c6511d161258b17b4455`、
+      consumption 604,404KiB＋reserve 524,288KiB＝required 1,128,692KiBをmode 600で保存し、helper readbackは1,155,780,608 bytes。
       W2 canaryはfreeが1,128,692KiB以上へ戻るまで再発火しない。
 - [ ] W3 W2修復後canaryのNote JAだけをprovider-native readbackし、title、body、owner、headline、paywall、URLを確認する。
 - [ ] W4 W2修復後canaryのSubstack JAだけを同じ項目でprovider-native readbackする。

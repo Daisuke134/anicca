@@ -81,7 +81,14 @@ case "$GIG_DISK_HEADROOM_KIB" in
     exit 1
     ;;
 esac
-DISK_MIN_FREE_BYTES="${ARTICLE_RESUME_MIN_FREE_BYTES:-${ARTICLE_DISK_MIN_FREE_BYTES:-$((GIG_DISK_HEADROOM_KIB * 1024))}}"
+if [ -n "${ARTICLE_RESUME_MIN_FREE_BYTES:-}" ]; then
+  ARTICLE_DISK_MIN_FREE_BYTES="$ARTICLE_RESUME_MIN_FREE_BYTES"
+  export ARTICLE_DISK_MIN_FREE_BYTES
+fi
+DISK_MIN_FREE_BYTES="$(python3 "$ARTICLE_ROOT/scripts/writer_capacity_floor.py" --state-dir "$STATE_DIR")" || {
+  echo "article-resume: capacity receipt invalid" >>"$LOG"
+  exit 1
+}
 case "$DISK_MIN_FREE_BYTES" in
   ''|*[!0-9]*|0)
     echo "article-resume: disk floor configuration invalid" >>"$LOG"
