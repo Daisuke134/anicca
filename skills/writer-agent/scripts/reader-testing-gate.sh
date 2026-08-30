@@ -67,10 +67,14 @@ finish_gate_attempt() {
   rc=$?
   trap - EXIT
   if [ "$GATE_CONTROL_ACTIVE" -eq 1 ]; then
+    finish_rc=0
     python3 "$GATE_CONTROL" finish --run-dir "$ARTICLE_RUN_DIR" --gate reader-testing-gate --lang "$LANG_A" \
       --attempt "$GATE_ATTEMPT" --exit-code "$rc" --output-file "$GATE_OUTPUT_FILE" \
-      --markdown-file "$MD" >/dev/null 2>&1 || true
+      --markdown-file "$MD" >/dev/null 2>&1 || finish_rc=$?
     rm -f "$GATE_OUTPUT_FILE"
+    if [ "$finish_rc" -ne 0 ]; then
+      exit 3
+    fi
   fi
   exit "$rc"
 }

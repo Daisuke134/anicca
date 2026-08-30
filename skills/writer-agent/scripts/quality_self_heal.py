@@ -10,6 +10,7 @@ import os
 from pathlib import Path
 import re
 import shutil
+import stat
 import sys
 from typing import Any
 
@@ -65,6 +66,92 @@ def _receipt_hash(payload: dict[str, Any]) -> str:
     ).hexdigest()
 
 
+def _orphan_snapshot_files(directory: Path) -> list[tuple[str, str]]:
+    """Collect regular files using fail-closed, no-follow directory scans."""
+    try:
+        root_stat = os.stat(directory, follow_symlinks=False)
+    except OSError as exc:
+        raise QualitySelfHealError("quality orphan snapshot is not readable") from exc
+    if stat.S_ISLNK(root_stat.st_mode):
+        raise QualitySelfHealError("quality orphan snapshot contains a symlink")
+    if not stat.S_ISDIR(root_stat.st_mode):
+        raise QualitySelfHealError("quality orphan snapshot is not a directory")
+
+    files: list[tuple[str, str]] = []
+
+    def visit(current: Path, prefix: str) -> None:
+        try:
+            with os.scandir(current) as entries:
+                children = sorted(entries, key=lambda item: item.name)
+            for entry in children:
+                relative = f"{prefix}/{entry.name}" if prefix else entry.name
+                mode = entry.stat(follow_symlinks=False).st_mode
+                if stat.S_ISLNK(mode):
+                    raise QualitySelfHealError("quality orphan snapshot contains a symlink")
+                if stat.S_ISDIR(mode):
+                    visit(Path(entry.path), relative)
+                elif stat.S_ISREG(mode):
+                    files.append((relative, entry.path))
+                else:
+                    raise QualitySelfHealError(
+                        "quality orphan snapshot contains a non-regular file"
+                    )
+        except OSError as exc:
+            raise QualitySelfHealError("quality orphan snapshot is not readable") from exc
+
+    visit(directory, "")
+    return sorted(files, key=lambda item: item[0])
+
+
+def _orphan_snapshot_digest(directory: Path) -> str:
+    """Hash regular files by sorted POSIX path, NUL, bytes, NUL."""
+    try:
+        files = _orphan_snapshot_files(directory)
+        digest = hashlib.sha256()
+        for relative_path, path in files:
+            digest.update(relative_path.encode("utf-8"))
+            digest.update(b"\0")
+            fd = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
+            try:
+                if not stat.S_ISREG(os.fstat(fd).st_mode):
+                    raise QualitySelfHealError(
+                        "quality orphan snapshot contains a non-regular file"
+                    )
+                with os.fdopen(fd, "rb") as stream:
+                    fd = -1
+                    while chunk := stream.read(1024 * 1024):
+                        digest.update(chunk)
+            finally:
+                if fd >= 0:
+                    os.close(fd)
+            digest.update(b"\0")
+        return digest.hexdigest()
+    except OSError as exc:
+        raise QualitySelfHealError("quality orphan snapshot is not readable") from exc
+    except UnicodeError as exc:
+        raise QualitySelfHealError("quality orphan snapshot path is not encodable") from exc
+
+
+def _archive_orphan_snapshot(gates: Path, directory: Path, attempt: int) -> None:
+    """Move an incomplete snapshot aside before creating the canonical one."""
+    digest = _orphan_snapshot_digest(directory)
+    archive_root = gates / "quality-attempt-orphans"
+    if archive_root.is_symlink() or (
+        archive_root.exists() and not archive_root.is_dir()
+    ):
+        raise QualitySelfHealError("quality orphan archive is not a directory")
+    archive_root.mkdir(parents=True, exist_ok=True)
+    target = archive_root / f"attempt-{attempt}-{digest}"
+    if target.exists() or target.is_symlink():
+        raise QualitySelfHealError("quality orphan snapshot archive collision")
+    try:
+        os.rename(directory, target)
+    except OSError as exc:
+        raise QualitySelfHealError("quality orphan snapshot archive failed") from exc
+    if _orphan_snapshot_digest(target) != digest:
+        raise QualitySelfHealError("quality orphan snapshot archive digest mismatch")
+
+
 def _hex_digest(value: Any) -> bool:
     return isinstance(value, str) and re.fullmatch(r"[0-9a-f]{64}", value) is not None
 
@@ -109,10 +196,16 @@ def _snapshot_receipts(
     """Copy each gate receipt into an immutable, attempt-scoped evidence set."""
     gates = run_dir / "gates"
     destination = gates / f"quality-attempt-{attempt}"
-    if destination.exists():
+    decision_path = gates / f"quality-self-heal-attempt-{attempt}.json"
+    destination_present = destination.exists() or destination.is_symlink()
+    if destination_present:
         if destination.is_symlink() or not destination.is_dir():
             raise QualitySelfHealError("quality attempt snapshot is not a directory")
-    else:
+        decision_present = decision_path.exists() or decision_path.is_symlink()
+        if not decision_present:
+            _archive_orphan_snapshot(gates, destination, attempt)
+            destination_present = False
+    if not destination_present:
         destination.mkdir()
     snapshots: dict[str, dict[str, str]] = {}
     names = {

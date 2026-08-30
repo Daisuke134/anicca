@@ -1,6 +1,7 @@
 import hashlib
 import importlib.util
 import json
+import os
 from pathlib import Path
 
 import pytest
@@ -91,6 +92,19 @@ def _quality_fixture(tmp_path: Path):
     return run
 
 
+def _orphan_fixture(tmp_path, monkeypatch):
+    run = _quality_fixture(tmp_path)
+    monkeypatch.setenv("ARTICLE_PUBLICATION_POLICY", "continuous")
+    drafts = _set_quality_gates(run, 1)
+    partial = run / "gates" / "quality-attempt-1"
+    partial.mkdir()
+    return run, drafts, partial
+
+
+def _orphan_digest(filename: str, content: bytes) -> str:
+    return hashlib.sha256(filename.encode() + b"\0" + content + b"\0").hexdigest()
+
+
 def _advance_to_force(run: Path, monkeypatch) -> dict:
     monkeypatch.setenv("ARTICLE_PUBLICATION_POLICY", "continuous")
     drafts = _set_quality_gates(run, 1)
@@ -127,6 +141,90 @@ def test_fifth_quality_iteration_emits_force_publish_advisory(tmp_path, monkeypa
     assert result["force_publish_after_iterations"] == 5
     assert result["quality_advisory"] is True
     assert QUALITY.validate_force_receipt(run, state["drafts"])
+
+
+def test_orphan_quality_snapshot_is_archived_before_fresh_snapshot(tmp_path, monkeypatch):
+    run, drafts, partial = _orphan_fixture(tmp_path, monkeypatch)
+    old_bytes = b"orphan evidence that must remain unchanged\n"
+    (partial / "editorial-ja.json").write_bytes(old_bytes)
+    orphan_digest = _orphan_digest("editorial-ja.json", old_bytes)
+
+    result = QUALITY.assess(run, drafts)
+
+    archive = (
+        run / "gates" / "quality-attempt-orphans" / f"attempt-1-{orphan_digest}"
+    )
+    assert result["attempt"] == 1
+    assert archive.is_dir()
+    assert (archive / "editorial-ja.json").read_bytes() == old_bytes
+    decision = json.loads(
+        (run / "gates" / "quality-self-heal-attempt-1.json").read_text()
+    )
+    assert decision["attempt"] == 1
+    snapshot = run / "gates" / "quality-attempt-1"
+    assert {
+        path.name for path in snapshot.iterdir()
+    } == {
+        "editorial-ja.json",
+        "editorial-en.json",
+        "reader-testing-gate-ja.terminal.json",
+        "reader-testing-gate-en.terminal.json",
+        "identity-ja.json",
+        "identity-en.json",
+    }
+
+
+def test_orphan_quality_snapshot_rejects_symlink(tmp_path, monkeypatch):
+    run, drafts, partial = _orphan_fixture(tmp_path, monkeypatch)
+    outside = tmp_path / "outside.json"
+    outside.write_bytes(b"outside\n")
+    (partial / "editorial-ja.json").symlink_to(outside)
+
+    with pytest.raises(QUALITY.QualitySelfHealError, match="symlink"):
+        QUALITY.assess(run, drafts)
+    assert (partial / "editorial-ja.json").is_symlink()
+    assert not (run / "gates" / "quality-self-heal-attempt-1.json").exists()
+
+
+def test_orphan_quality_snapshot_rejects_nonregular_file(tmp_path, monkeypatch):
+    run, drafts, partial = _orphan_fixture(tmp_path, monkeypatch)
+    os.mkfifo(partial / "receipt.pipe")
+
+    with pytest.raises(QUALITY.QualitySelfHealError, match="non-regular"):
+        QUALITY.assess(run, drafts)
+    assert (partial / "receipt.pipe").exists()
+
+
+def test_orphan_quality_snapshot_collision_preserves_evidence(tmp_path, monkeypatch):
+    run, drafts, partial = _orphan_fixture(tmp_path, monkeypatch)
+    old_bytes = b"collision evidence\n"
+    (partial / "editorial-ja.json").write_bytes(old_bytes)
+    orphan_digest = _orphan_digest("editorial-ja.json", old_bytes)
+    target = run / "gates" / "quality-attempt-orphans" / f"attempt-1-{orphan_digest}"
+    target.mkdir(parents=True)
+    marker = target / "marker"
+    marker.write_bytes(b"existing archive\n")
+
+    with pytest.raises(QUALITY.QualitySelfHealError, match="collision"):
+        QUALITY.assess(run, drafts)
+    assert (partial / "editorial-ja.json").read_bytes() == old_bytes
+    assert marker.read_bytes() == b"existing archive\n"
+
+
+def test_orphan_quality_snapshot_scan_error_fails_closed(tmp_path, monkeypatch):
+    run, drafts, partial = _orphan_fixture(tmp_path, monkeypatch)
+    (partial / "editorial-ja.json").write_bytes(b"unreadable\n")
+    real_scandir = QUALITY.os.scandir
+
+    def fail_scan(path):
+        if Path(path) == partial:
+            raise PermissionError("scan denied")
+        return real_scandir(path)
+
+    monkeypatch.setattr(QUALITY.os, "scandir", fail_scan)
+    with pytest.raises(QUALITY.QualitySelfHealError, match="not readable"):
+        QUALITY.assess(run, drafts)
+    assert (partial / "editorial-ja.json").read_bytes() == b"unreadable\n"
 
 
 def test_advisory_quality_requires_force_marker_before_init(tmp_path, monkeypatch):
