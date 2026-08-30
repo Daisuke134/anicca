@@ -827,7 +827,7 @@ function inspectKokuchProEntry(elements, context = {}) {
   const url = /^https:\/\/www\.kokuchpro\.com\/event\/([0-9a-f]{32})(?:\/([1-9][0-9]{0,19}))?\/$/.exec(canonicalUrl);
   const ref = /^kokuchpro-event:\/\/event\/([0-9a-f]{32})(?:\/([1-9][0-9]{0,19}))?$/.exec(eventRef);
   if (!url || !ref || url[1] !== eventKey || ref[1] !== eventKey || (url[2] || "") !== (ref[2] || "")
-    || !/^[1-9][0-9]*$/.test(ticketId) || !KOKUCHPRO_ENTRY_TOKEN.test(token)) return [];
+    || !/^[1-9][0-9]*$/.test(ticketId) || !/^kokuchpro_entry_[0-9a-f]{32}(?:_o_[0-9a-z]{1,13})?$/.test(token)) return [];
   const tag = (element) => String(element && element.tagName || "").toLowerCase();
   const attr = (element, name) => { try { const property = element && element[name]; if (property != null && String(property) !== "") return String(property); const value = element?.getAttribute?.(name); return value == null ? "" : String(value); } catch { return ""; } };
   const text = (element) => String(element && (element.innerText || element.textContent || element.value) || "").replace(/\s+/g, " ").trim();
