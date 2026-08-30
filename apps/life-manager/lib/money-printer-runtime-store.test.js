@@ -22,9 +22,13 @@ function opportunity() {
 test("runtime store uses parameterized RPCs and tenant-bound reads", async () => {
   const calls = [];
   const task = {
-    uid: TENANT, task_id: "b".repeat(64), version: 1, question: "Approve?",
+    uid: TENANT, task_id: "b".repeat(64), job_id: `goal:${ID}`, version: 1, question: "Approve?",
     required_format: "approval", reason_code: "model_boundary", resume_ref: `runtime-job://${TENANT}/job-1`,
     status: "open", created_at: NOW, updated_at: NOW,
+  };
+  const snapshotTask = {
+    uid: TENANT, task_id: task.task_id, job_id: task.job_id, reason_code: task.reason_code,
+    version: task.version, status: task.status, created_at: task.created_at, updated_at: task.updated_at,
   };
   const store = createMoneyPrinterRuntimeStore({
     query: async (sql, values) => {
@@ -33,7 +37,9 @@ test("runtime store uses parameterized RPCs and tenant-bound reads", async () =>
       if (sql.includes("answer_lm_human_task")) return { rows: [{ ...task, status: "answered", answer_ref: "vault-answer://tenant-a/answer-1" }] };
       if (sql.includes("FROM public.lm_money_opportunities")) return { rows: [opportunity()] };
       if (sql.includes("FROM public.lm_runtime_jobs")) return { rows: [{ tenant_id: TENANT, job_id: `goal:${ID}`, status: "queued", created_at: NOW, updated_at: NOW }] };
-      if (sql.includes("FROM public.lm_human_tasks")) return { rows: [task] };
+      if (sql.includes("FROM public.lm_human_tasks")) {
+        return { rows: [/ORDER BY updated_at DESC/.test(sql) ? snapshotTask : task] };
+      }
       if (sql.includes("FROM public.lm_runtime_job_receipts")) return { rows: [{ tenant_id: TENANT, job_id: `goal:${ID}`, attempt: 1, outcome: "completed", created_at: NOW, receipt: { record_type: "application_receipt" } }] };
       throw new Error("unexpected query");
     },
@@ -45,8 +51,22 @@ test("runtime store uses parameterized RPCs and tenant-bound reads", async () =>
   const snapshot = await store.readRuntimeSnapshot(TENANT);
   assert.equal(snapshot.opportunities.length, 1);
   assert.equal(snapshot.runtimeJobs.length, 1);
-  assert.equal(snapshot.humanTasks.length, 1);
+  assert.deepEqual(snapshot.humanTasks, [snapshotTask]);
+  assert.equal(snapshot.humanTasks[0].question, undefined);
+  assert.equal(snapshot.humanTasks[0].required_format, undefined);
+  assert.equal(snapshot.humanTasks[0].answer_ref, undefined);
+  assert.equal(snapshot.humanTasks[0].context_refs, undefined);
   assert.equal(snapshot.receipts.length, 1);
+  const humanTaskSnapshotQuery = calls.find((call) => /FROM public\.lm_human_tasks/.test(call.sql) && /ORDER BY updated_at DESC/.test(call.sql));
+  assert.ok(humanTaskSnapshotQuery);
+  const selectedHumanTaskColumns = humanTaskSnapshotQuery.sql
+    .match(/SELECT([\s\S]*?)FROM public\.lm_human_tasks/i)[1]
+    .replace(/\s+/g, " ")
+    .trim();
+  assert.equal(selectedHumanTaskColumns, "uid, task_id, job_id, reason_code, version, status, created_at, updated_at");
+  for (const privateColumn of ["question", "required_format", "answer_ref", "context_refs", "resume_ref", "human_boundary_ref"]) {
+    assert.doesNotMatch(selectedHumanTaskColumns, new RegExp(`\\b${privateColumn}\\b`, "i"));
+  }
 
   assert.match(calls[0].sql, /^\s*SELECT \* FROM public\.create_lm_money_opportunity\(\$1, \$2, \$3, \$4, \$5, \$6, \$7, \$8, \$9\)/i);
   assert.deepEqual(calls[0].values, [TENANT, ID, "https://public.example/opportunity", "Public opportunity", "Complete it.", "50000", "JPY", NOW, `intent-entry://${TENANT}/${ID}`]);

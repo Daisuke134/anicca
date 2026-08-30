@@ -252,7 +252,7 @@ function createMoneyPrinterRuntimeStore({ query } = {}) {
           ORDER BY updated_at DESC, job_id ASC
         `, [uid]),
         query(`
-          SELECT uid, task_id, status, created_at, updated_at
+          SELECT uid, task_id, job_id, reason_code, version, status, created_at, updated_at
           FROM public.lm_human_tasks WHERE uid = $1
           ORDER BY updated_at DESC, task_id ASC
         `, [uid]),

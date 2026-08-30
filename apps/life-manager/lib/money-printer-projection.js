@@ -75,7 +75,32 @@ function projectMoneyPrinter(input = {}) {
   const columns = Object.fromEntries(NAMES.map((name) => [name, []]));
   const activity = [];
   const opportunityValue = {}; const paid = {};
-  let running = 0; let working = 0; let needsHuman = 0; let openTasks = 0;
+  let running = 0; let working = 0;
+  const openTasksByJob = new Map();
+  const opportunitiesById = new Map();
+  for (const row of data.opportunities) {
+    const opportunityId = String(row.opportunity_id == null ? "" : row.opportunity_id).trim();
+    if (opportunityId) {
+      if (opportunitiesById.has(opportunityId)) fail("money printer human task opportunity relation invalid");
+      opportunitiesById.set(opportunityId, row);
+    }
+  }
+  for (const row of data.humanTasks) {
+    const status = String(row.status || "").trim().toLowerCase();
+    if (!status) fail("money printer human task status invalid");
+    const rawJobId = row.job_id;
+    const jobId = typeof rawJobId === "string" ? rawJobId.trim() : "";
+    if (rawJobId !== jobId || !/^goal:[A-Za-z0-9][A-Za-z0-9._-]{0,199}$/.test(jobId)
+      || !opportunitiesById.has(jobId.slice(5))) {
+      fail("money printer human task opportunity relation invalid");
+    }
+    if (["open", "waiting_for_human", "needs_you", "pending"].includes(status)) {
+      if (openTasksByJob.has(jobId)) {
+        fail("money printer human task opportunity relation invalid");
+      }
+      openTasksByJob.set(jobId, row);
+    }
+  }
 
   for (const row of data.opportunities) {
     const status = String(row.status == null ? row.state || "" : row.status).trim().toUpperCase();
@@ -85,8 +110,9 @@ function projectMoneyPrinter(input = {}) {
     const valueMinor = money(rawValue, "opportunity value", true);
     const code = rawValue == null ? null : currency(row.currency, "opportunity");
     const card = Object.freeze({ opportunity_ref: ref(row.opportunity_ref || row.opportunity_id || row.external_id || row.id, "opportunity", tenantId, "opportunity"), title: String(row.title || "Opportunity").trim() || "Opportunity", status, value_minor: valueMinor, currency: code, source_url: link(row.source_url ?? row.url, "opportunity source") });
-    columns[column].push(card); if (code) addMoney(opportunityValue, code, valueMinor);
-    if (status === "NEEDS_HUMAN") needsHuman += 1;
+    const ownerTask = openTasksByJob.get(`goal:${String(row.opportunity_id == null ? "" : row.opportunity_id).trim()}`);
+    columns[ownerTask ? "needs_you" : column].push(card);
+    if (code) addMoney(opportunityValue, code, valueMinor);
     if (["WORKING", "READY_FOR_EFFECT", "QA_ACCEPTED"].includes(status)) working += 1;
     activity.push(Object.freeze({ kind: "opportunity", ref: card.opportunity_ref, status, observed_at: observed(row, observedAt) }));
   }
@@ -97,9 +123,10 @@ function projectMoneyPrinter(input = {}) {
   }
   for (const row of data.humanTasks) {
     const status = String(row.status || "").trim().toLowerCase();
-    if (!status) fail("money printer human task status invalid");
-    if (["open", "waiting_for_human", "needs_you", "pending"].includes(status)) openTasks += 1;
-    activity.push(Object.freeze({ kind: "human_task", ref: ref(row.task_ref || row.task_id || row.id, "human-task", tenantId, "human task"), status, observed_at: observed(row, observedAt) }));
+    activity.push(Object.freeze({
+      kind: "human_task", ref: ref(row.task_ref || row.task_id || row.id, "human-task", tenantId, "human task"),
+      job_ref: ref(row.job_id, "runtime-job", tenantId, "human task job"), status, observed_at: observed(row, observedAt),
+    }));
   }
   for (const [kind, receiptRows] of [["work_receipt", data.generalReceipts], ["application_receipt", data.applicationReceipts]]) {
     for (const row of receiptRows) {
@@ -118,7 +145,7 @@ function projectMoneyPrinter(input = {}) {
     const receiptUrl = link(row.receipt_url || row.receiptUrl || row.url, "earning receipt link");
     activity.push(Object.freeze({ kind: "earning", ref: ref(row.entry_ref || row.entry_key || row.id, "earning", tenantId, "earning"), status: "verified", amount_minor: canonicalAmount, observed_at: observed(row, observedAt), ...(receiptUrl ? { receipt_url: receiptUrl } : {}) }));
   }
-  return Object.freeze({ observed_at: observedAt, metrics: Object.freeze({ agents_working: running || working, needs_you: openTasks || needsHuman, opportunity_value: moneyMap(opportunityValue), paid_verified: moneyMap(paid) }), columns: Object.freeze(Object.fromEntries(NAMES.map((name) => [name, Object.freeze(columns[name])]))), activity: Object.freeze(activity) });
+  return Object.freeze({ observed_at: observedAt, metrics: Object.freeze({ agents_working: running || working, needs_you: columns.needs_you.length, opportunity_value: moneyMap(opportunityValue), paid_verified: moneyMap(paid) }), columns: Object.freeze(Object.fromEntries(NAMES.map((name) => [name, Object.freeze(columns[name])]))), activity: Object.freeze(activity) });
 }
 
 module.exports = { projectMoneyPrinter };

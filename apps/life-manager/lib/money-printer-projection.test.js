@@ -51,6 +51,39 @@ test("projection separates opportunity value from verified cash", () => {
   assert.deepEqual(view.metrics.paid_verified, {});
 });
 
+test("projection routes one open human task to its opportunity card", () => {
+  const view = projectMoneyPrinter(fixture({
+    humanTasks: [{
+      tenant_id: TENANT, task_id: "task-1", job_id: "goal:opportunity-1", reason_code: "identity_assessment", version: 1,
+      status: "open", updated_at: OBSERVED_AT,
+    }],
+  }));
+
+  assert.equal(view.columns.found.length, 0);
+  assert.equal(view.columns.needs_you.length, 1);
+  assert.equal(view.metrics.needs_you, 1);
+  assert.equal(view.metrics.needs_you, view.columns.needs_you.length);
+  assert.equal(view.columns.needs_you[0].opportunity_ref, `opportunity://${TENANT}/opportunity-1`);
+  assert.deepEqual(view.activity.find((item) => item.kind === "human_task"), {
+    kind: "human_task",
+    ref: `human-task://${TENANT}/task-1`,
+    job_ref: `runtime-job://${TENANT}/goal%3Aopportunity-1`,
+    status: "open",
+    observed_at: OBSERVED_AT,
+  });
+});
+
+test("projection rejects every human task without a same-opportunity goal relation", () => {
+  for (const jobId of ["goal:missing-opportunity", "https://public.example/job"]) {
+    assert.throws(() => projectMoneyPrinter(fixture({
+      humanTasks: [{
+        tenant_id: TENANT, task_id: "task-1", job_id: jobId, reason_code: "identity_assessment", version: 1,
+        status: "answered", updated_at: OBSERVED_AT,
+      }],
+    })), /relation|job|opportunity/i);
+  }
+});
+
 test("projection rejects cross-tenant and unverified money", () => {
   assert.throws(() => projectMoneyPrinter(fixture({ foreignTenant: true })), /tenant/);
   assert.throws(() => projectMoneyPrinter(fixture({ unverifiedCash: true })), /verified/);

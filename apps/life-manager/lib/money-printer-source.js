@@ -4,6 +4,8 @@ const { isIP } = require("node:net");
 const { createMoneyPrinterRuntimeStore } = require("./money-printer-runtime-store.js");
 
 const TENANT_ID = /^[a-z0-9][a-z0-9._-]{0,199}$/;
+const MACHINE_ID = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,199}$/;
+const OPPORTUNITY_JOB_ID = /^goal:[0-9a-f]{64}$/;
 const HASH = /^[0-9a-f]{64}$/;
 const MONEY = /^\d+$/;
 const CURRENCY = /^[A-Z]{3}$/;
@@ -128,9 +130,16 @@ function mapRuntimeJob(row, uid) {
 
 function mapHumanTask(row, uid) {
   tenantValue(row, uid, "uid");
+  const jobId = requiredText(row.job_id, "human task job", 200);
+  const reasonCode = requiredText(row.reason_code, "human task reason", 200);
+  if (!OPPORTUNITY_JOB_ID.test(jobId) || !MACHINE_ID.test(reasonCode)
+    || !Number.isInteger(row.version) || row.version < 1 || row.version > 1_000_000) invalid("human task relation");
   return {
     tenant_id: uid,
     task_id: requiredText(row.task_id, "human task id", 64),
+    job_id: jobId,
+    reason_code: reasonCode,
+    version: row.version,
     status: requiredText(row.status, "human task status", 64),
     created_at: requiredTime(row.created_at, "human task created time"),
     updated_at: requiredTime(row.updated_at || row.created_at, "human task updated time"),
