@@ -82,13 +82,15 @@ class LaunchdTests(unittest.TestCase):
         self.assertNotIn("ashby-fast-path-combined.json", script)
         self.assertNotIn("cat /Users/anicca/.openclaw/.env", script)
 
-    def test_health_alert_uses_direct_fenced_telegram(self):
+    def test_health_failure_stays_in_private_evidence(self):
         root = Path(__file__).parents[1]
         script = (root / "scripts" / "run-health.sh").read_text(encoding="utf-8")
-        self.assertIn("job_search_loop.telegram import send_once", script)
-        self.assertIn("job-search-health:", script)
+        self.assertIn('"delivery": "suppressed"', script)
+        self.assertNotIn("job_search_loop.telegram import send_once", script)
+        self.assertNotIn("job-search-health:", script)
         self.assertNotIn("openclaw message send", script)
-        self.assertNotIn("Ashby healthcheck", script)
+        self.assertNotIn("Codex:::", script)
+        self.assertNotIn("[Job Hunter]", script)
 
 
 if __name__ == "__main__":
