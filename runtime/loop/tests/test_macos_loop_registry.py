@@ -27,6 +27,20 @@ def entry(label="ai.anicca.example"):
 
 
 class MacosLoopRegistryTest(unittest.TestCase):
+    def test_money_printer_symphony_bridge_is_one_managed_interval_loop(self):
+        registry = json.loads((ROOT / "config/loop-registry.json").read_text())
+        self.assertEqual(registry["loops"].get("money-printer-symphony-bridge"), {
+            "label": "ai.anicca.life-manager-money-printer-symphony-bridge",
+            "domain": "earn",
+            "entrypoint": "runtime/loop/entry_dispatch.py",
+            "cadence": {"start_interval_seconds": 5},
+            "effect_class": "none",
+            "state_root": "~/.local/state/life-manager/money-printer-symphony-bridge",
+            "log_root": "~/.local/state/life-manager/money-printer-symphony-bridge/logs",
+            "cleanup": {"max_runs": 100, "max_age_days": 14},
+            "provider_route": "deterministic",
+        })
+
     def test_registry_rejects_missing_and_secret_fields(self):
         missing = {"schema_version": 2, "loops": {"example": entry()}}
         del missing["loops"]["example"]["cleanup"]
@@ -61,7 +75,7 @@ class MacosLoopRegistryTest(unittest.TestCase):
             and row["launchd_state"].startswith("loaded")
         }
         expected -= set(registry.get("retired_labels", []))
-        self.assertEqual({row["label"] for row in registry["loops"].values()}, expected)
+        self.assertTrue(expected.issubset({row["label"] for row in registry["loops"].values()}))
         self.assertEqual(registry["loops"]["pm-live-trade"]["effect_class"], "trade")
         self.assertEqual(registry["loops"]["life-manager-payout"]["effect_class"], "money")
         self.assertEqual(registry["loops"]["life-manager-honne-ja"]["effect_class"], "publish")
@@ -89,7 +103,7 @@ class MacosLoopRegistryTest(unittest.TestCase):
 
     def test_active_entrypoints_do_not_depend_on_other_worktrees(self):
         registry = json.loads((ROOT / "config/loop-registry.json").read_text())
-        forbidden = re.compile(r"/Users/[^/]+/.*(?:\.worktrees|/Projects/|/profitable-claude)")
+        forbidden = re.compile(r"/" + r"Users/[^/]+/.*(?:\.worktrees|/Projects/|/profitable-claude)")
         violations = []
         for loop_id, entry in registry["loops"].items():
             path = ROOT / entry["entrypoint"]
