@@ -27,7 +27,7 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 この節は、後段の「現在TODO」「次の一件」「local-only」「self-funded agentは別product」という相反する記述を
 上書きする最新の実行順序SSOTである。後段は実装履歴・organ別acceptanceとして保持するが、次作業の選択には使わない。
 Upworkのterminal evidence、startup context、public claim、GA-01〜13Aは完了または履歴として保持する。
-次の一件はAtomic program ledger Seq 16 `ELZ-C03`のsubstep `C03-08`で、Eliza Drizzle patternをcopy+tweakして`life_manager` schema namespaceを定義する。
+次の一件はAtomic program ledger Seq 16 `ELZ-C03`のsubstep `C03-09`で、Goal tableとRow/Insert型だけを定義する。
 
 #### 0.0.1 最新基盤決定 — ElizaOSを完全forkし、Life Managerをlocal OSSからmulti-tenant SaaSへ育てる
 
@@ -591,7 +591,7 @@ Goal分解とgraph生成は後続C07のCodexへ残す。現在activeなC03だけ
 - [x] **C03-05** upstream/legacyの採用・棄却mapを`domain-reuse-map.json`へ保存する — C03-01〜04 receipt hashを固定し、ElizaのDrizzle/plugin-sql/schema登録＋marker migration、legacyのprovenance/correction/expiry＋reference/tenant/effect/lease/immutable receiptを採用。旧domain/table名、raw `pg` store、legacy queue、固定taxonomy/confidence、hardcoded graph判断、新DB/queue/event sourcing/model adapterを棄却。次はC03-06
 - [x] **C03-06** schema contractのfocused failing testを一つ追加する — Eliza fork PR #2、merge `3ed92dffd36700d560c3de0f7f2ae934ccfbc832`。`life_manager` namespace、6 tenant-scoped table、WorkItem/EffectIntent reference列、effect key/lease列、全Row/Insert型、plugin schema登録を一つのtestで固定。production変更0、test実行は次のC03-07
 - [x] **C03-07** schema contract testの失敗を一回確認する — Vitest 4.1.10で対象1 fileを実行しexit 1。runner/test fileは起動し、`Cannot find module './db/schema'`で期待どおり未実装feature境界に到達。依存不足・test未発見・syntax errorではない。private `schema-red-receipt.json` mode 0600、production変更0。次はC03-08
-- [ ] **C03-08** `life_manager` Drizzle schema namespaceを定義する
+- [x] **C03-08** `life_manager` Drizzle schema namespaceを定義する — Eliza fork PR #3、merge `4b1ee76562d8cf04910005d311b3c81bd5a28aa7`。upstream `plugin-todos`と同じ`pgSchema` patternをcopy+tweakし、`lifeManagerSchema = pgSchema("life_manager")`だけを追加。table/type/dependency/plugin登録は未追加。次はC03-09
 - [ ] **C03-09** Goal row/insert typeを定義する
 - [ ] **C03-10** PlanGraph row/insert typeを定義する
 - [ ] **C03-11** WorkItem row/insert typeを定義する
