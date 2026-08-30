@@ -43,6 +43,14 @@ The merged shortlist prompt orders Japan employment feasibility, demonstrated cu
 
 Run `daily-20260830-083836` has 44 Tokyo/Japan jobs in an 874-job snapshot but ranks Omnissa Korea first. Strengthen the model instruction, not deterministic code: when any posting supports employment in Japan, all such rows precede roles tied to another country; `remote` or an EOR for another country does not establish employment from Japan. Include two canonical examples showing Japan imperfect fit before foreign strong fit and Korea-remote/EOR as non-Japan. Compensation remains third after location feasibility and demonstrated scope.
 
+#### Task 1D: Include unfinished Ledger rows in the ranking pool — active
+
+**Files:**
+- Modify: `apps/job-search-loop/job_search_loop/workday_search_loop.py`
+- Modify focused checks in: `apps/job-search-loop/tests/test_workday_qualification.py`
+
+Run `daily-20260830-085920` proves ranking input has zero Japan rows although the official snapshot has 44. Ledger has all 44 URLs: 25 are unfinished `materials_ready` rows with absent fit and no submit intent; 19 are rejected. `snapshot_candidates()` must include official rows when the matching Ledger application is `materials_ready` and its fit is absent or hold, while continuing to exclude rejected, qualified, attempted and submitted rows. Do not reopen rejected history in this atom.
+
 ---
 
 ### Task 2: Make Job Hunting notifications quiet and product-owned
