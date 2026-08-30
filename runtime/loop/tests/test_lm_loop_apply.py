@@ -212,6 +212,29 @@ class LmLoopApplyTest(unittest.TestCase):
         self.assertEqual(installed["ThrottleInterval"], 30)
         self.assertEqual(installed["ProgramArguments"], rendered["expected_arguments"])
 
+    def test_swap_drops_stale_legacy_release_working_directory(self):
+        target = self.root / "installed.plist"
+        target.write_bytes(plistlib.dumps({
+            "Label": "ai.anicca.example",
+            "ProgramArguments": ["/old/run.sh"],
+            "WorkingDirectory": str(
+                Path.home() / "loops" / "connector" / "releases" / "20260827T171500-57ed7c000"
+            ),
+        }))
+        rendered = build_apply_plan(registry(), self.root, SHA)[0]
+
+        def launchctl(args):
+            if args[0] == "print":
+                current = plistlib.loads(target.read_bytes())
+                return 0, "arguments = {\n" + "\n".join(current["ProgramArguments"]) + "\n}\n"
+            return 0, ""
+
+        result = install_one(rendered, target, launchctl, attempts=1)
+        installed = plistlib.loads(target.read_bytes())
+        self.assertTrue(result["ok"])
+        self.assertNotIn("WorkingDirectory", installed)
+        self.assertEqual(installed["ProgramArguments"], rendered["expected_arguments"])
+
     def test_swap_waits_for_launchd_to_settle_after_bootout(self):
         target = self.root / "installed.plist"
         target.write_bytes(plistlib.dumps({
