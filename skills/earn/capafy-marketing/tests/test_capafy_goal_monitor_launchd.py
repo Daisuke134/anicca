@@ -54,6 +54,36 @@ def test_probe_resolves_release_root_without_git(tmp_path: Path) -> None:
     )
 
 
+def test_probe_fails_closed_when_release_root_lacks_account_state_helper(tmp_path: Path) -> None:
+    release_root = tmp_path / "release"
+    marketing = release_root / "skills/earn/capafy-marketing"
+    marketing.mkdir(parents=True)
+    shutil.copy2(MONITOR, marketing / MONITOR.name)
+    home = tmp_path / "home"
+    home.mkdir()
+
+    env = os.environ.copy()
+    env.update(
+        {
+            "HOME": str(home),
+            "CAPAFY_GOAL_MONITOR_PROBE_ONLY": "1",
+        }
+    )
+    env.pop("LIFE_MANAGER_REPO", None)
+    env.pop("CAPAFY_ACCOUNT_STATE_HELPER", None)
+    result = subprocess.run(
+        ["bash", str(marketing / MONITOR.name)],
+        env=env,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 2
+    assert "active_handle=" not in result.stdout
+    assert "CAPAFY_ACCOUNT_STATE_HELPER" in result.stderr
+
+
 def run_monitor(
     tmp_path: Path,
     print_output: str,
