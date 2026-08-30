@@ -32,6 +32,19 @@ function dispatch(status = "claimed", tenantId = TENANT) {
   };
 }
 
+function recoveryDispatch(status = "mirrored", overrides = {}) {
+  const row = dispatch(status);
+  if (status === "mirrored") {
+    return { ...row, issue_closed_at: null, ...overrides };
+  }
+  return {
+    ...row,
+    result_payload: payload("completed"),
+    issue_closed_at: status === "consumed" ? null : null,
+    ...overrides,
+  };
+}
+
 function payload(status = "completed", tenantId = TENANT) {
   return status === "completed"
     ? {
@@ -131,6 +144,51 @@ test("valid claim returns a safe dispatch and calls the tenant-scoped store once
   assert.deepEqual(calls, [["claim", { uid: TENANT }]]);
   assert.equal(result.body.dispatch.result_payload, undefined);
   assert.equal(result.body.dispatch.failure_code, undefined);
+});
+
+test("claim recovery projects only base identifiers and durable issue ref", async () => {
+  for (const status of ["mirrored", "result_ready", "consumed"]) {
+    const row = recoveryDispatch(status);
+    const result = await call("/api/internal/money-printer/symphony/claim", { tenant_id: TENANT }, {}, {
+      async claimSymphony() { return row; },
+    });
+    assert.equal(result.status, 200);
+    assert.deepEqual(result.body.dispatch, {
+      tenant_id: TENANT,
+      dispatch_id: DISPATCH_ID,
+      job_id: JOB_ID,
+      round: 1,
+      status,
+      issue_ref: ISSUE_REF,
+    });
+    assert.equal(result.body.result_ref, undefined);
+    assert.equal(result.body.result_hash, undefined);
+    assert.equal(result.body.result_payload, undefined);
+    assert.equal(result.body.issue_closed_at, undefined);
+  }
+});
+
+test("claim recovery rejects incoherent or foreign rows without exposing private fields", async () => {
+  for (const row of [
+    recoveryDispatch("mirrored", { tenant_id: FOREIGN_TENANT }),
+    recoveryDispatch("mirrored", { result_ref: RESULT_REF }),
+    recoveryDispatch("result_ready", { result_payload: null }),
+    recoveryDispatch("result_ready", { issue_closed_at: "2026-08-31T00:00:00.000Z" }),
+    recoveryDispatch("consumed", { issue_closed_at: "2026-08-31T00:00:00.000Z" }),
+  ]) {
+    const result = await call("/api/internal/money-printer/symphony/claim", { tenant_id: TENANT }, {}, {
+      async claimSymphony() { return row; },
+    });
+    assert.equal(result.status, 409);
+    assert.deepEqual(result.body, { error: "conflict" });
+    assert.doesNotMatch(JSON.stringify(result.body), /private|secret/i);
+  }
+
+  const safeExtra = await call("/api/internal/money-printer/symphony/claim", { tenant_id: TENANT }, {}, {
+    async claimSymphony() { return { ...recoveryDispatch("consumed"), private_payload: SECRET }; },
+  });
+  assert.equal(safeExtra.status, 200);
+  assert.doesNotMatch(JSON.stringify(safeExtra.body), new RegExp(SECRET));
 });
 
 test("missing or wrong bearer is rejected before runtime store acquisition", async () => {
@@ -253,6 +311,75 @@ test("issue accepts only the exact body and returns no private dispatch fields",
   });
   assert.deepEqual(calls, [{ uid: TENANT, dispatchId: DISPATCH_ID, issueRef: ISSUE_REF }]);
   assert.equal(result.body.result_payload, undefined);
+});
+
+test("close acknowledges one exact consumed dispatch and projects a closed result", async () => {
+  const calls = [];
+  const consumed = {
+    ...recoveryDispatch("consumed"),
+    issue_closed_at: "2026-08-31T00:00:00.000Z",
+  };
+  const result = await call("/api/internal/money-printer/symphony/close", {
+    tenant_id: TENANT,
+    dispatch_id: DISPATCH_ID,
+    issue_ref: ISSUE_REF,
+    result_ref: RESULT_REF,
+    result_hash: RESULT_HASH,
+  }, {}, {
+    async acknowledgeSymphonyIssueClosed(input) { calls.push(input); return consumed; },
+  });
+  assert.equal(result.status, 200);
+  assert.deepEqual(result.body, {
+    tenant_id: TENANT,
+    dispatch_id: DISPATCH_ID,
+    job_id: JOB_ID,
+    status: "closed",
+    issue_ref: ISSUE_REF,
+    result_ref: RESULT_REF,
+    result_hash: RESULT_HASH,
+  });
+  assert.deepEqual(calls, [{
+    uid: TENANT,
+    dispatchId: DISPATCH_ID,
+    issueRef: ISSUE_REF,
+    resultRef: RESULT_REF,
+    resultHash: RESULT_HASH,
+  }]);
+  assert.equal(result.body.result_payload, undefined);
+  assert.equal(result.body.issue_closed_at, undefined);
+});
+
+test("close requires exact body and a consumed row with a closed timestamp", async () => {
+  const validBody = {
+    tenant_id: TENANT,
+    dispatch_id: DISPATCH_ID,
+    issue_ref: ISSUE_REF,
+    result_ref: RESULT_REF,
+    result_hash: RESULT_HASH,
+  };
+  for (const body of [
+    { ...validBody, extra: SECRET },
+    { ...validBody, tenant_id: "Tenant-A" },
+    { ...validBody, issue_ref: "github-issue://other/repo/2" },
+  ]) {
+    const result = await call("/api/internal/money-printer/symphony/close", body, {}, {
+      acknowledgeSymphonyIssueClosed: async () => { throw new Error("must not be called"); },
+    });
+    assert.equal(result.status, 400);
+    assert.deepEqual(result.body, { error: "invalid_request" });
+  }
+  for (const row of [
+    { ...recoveryDispatch("consumed"), issue_closed_at: null },
+    { ...recoveryDispatch("result_ready"), issue_closed_at: "2026-08-31T00:00:00.000Z" },
+    { ...recoveryDispatch("consumed"), result_ref: "github-comment://Daisuke134/life-manager-workrooms/2/3", issue_closed_at: "2026-08-31T00:00:00.000Z" },
+  ]) {
+    const result = await call("/api/internal/money-printer/symphony/close", validBody, {}, {
+      acknowledgeSymphonyIssueClosed: async () => row,
+    });
+    assert.equal(result.status, 409);
+    assert.deepEqual(result.body, { error: "conflict" });
+    assert.doesNotMatch(JSON.stringify(result.body), /secret|private/i);
+  }
 });
 
 test("result completed records then consumes exactly once and returns a qualification-safe receipt", async () => {

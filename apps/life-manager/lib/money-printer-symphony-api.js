@@ -13,6 +13,7 @@ const ROUTES = new Map([
   ["/api/internal/money-printer/symphony/claim", "claim"],
   ["/api/internal/money-printer/symphony/issue", "issue"],
   ["/api/internal/money-printer/symphony/result", "result"],
+  ["/api/internal/money-printer/symphony/close", "close"],
 ]);
 const EXPECTED_REPO = "Daisuke134/life-manager-workrooms";
 const EXPECTED_AUTHOR = "Daisuke134";
@@ -140,25 +141,61 @@ function validateResult(body) {
   };
 }
 
+function validateClose(body) {
+  if (!exactObject(body, ["tenant_id", "dispatch_id", "issue_ref", "result_ref", "result_hash"])
+    || typeof body.tenant_id !== "string" || !TENANT_RE.test(body.tenant_id)
+    || typeof body.dispatch_id !== "string" || !DISPATCH_RE.test(body.dispatch_id)
+    || typeof body.issue_ref !== "string" || !ISSUE_RE.test(body.issue_ref)
+    || typeof body.result_ref !== "string" || !COMMENT_RE.test(body.result_ref)
+    || typeof body.result_hash !== "string" || !DISPATCH_RE.test(body.result_hash)) invalid();
+  return {
+    uid: body.tenant_id,
+    dispatchId: body.dispatch_id,
+    issueRef: body.issue_ref,
+    resultRef: body.result_ref,
+    resultHash: body.result_hash,
+  };
+}
+
 function safeDispatch(row, expected, statuses) {
+  const allowedStatuses = Array.isArray(statuses) ? statuses : [statuses];
   if (!row || typeof row !== "object" || Array.isArray(row)
     || row.tenant_id !== expected.uid || typeof row.dispatch_id !== "string" || !DISPATCH_RE.test(row.dispatch_id)
     || row.dispatch_id !== expected.dispatchId || typeof row.job_id !== "string" || !JOB_RE.test(row.job_id)
-    || !Number.isInteger(row.round) || row.round < 1 || !statuses.includes(row.status)) conflict();
+    || !Number.isInteger(row.round) || row.round < 1 || !allowedStatuses.includes(row.status)) conflict();
   return row;
 }
 
 function safeClaim(row, uid) {
   if (row === null) return null;
-  const valid = safeDispatch(row, { uid, dispatchId: row && row.dispatch_id }, ["claimed"]);
-  if (valid.issue_ref != null || valid.result_ref != null || valid.result_hash != null) conflict();
-  return {
+  const valid = safeDispatch(row, { uid, dispatchId: row && row.dispatch_id }, [
+    "claimed", "mirrored", "result_ready", "consumed",
+  ]);
+  if (valid.failure_code != null) conflict();
+  if (valid.status === "claimed") {
+    if (valid.issue_ref != null || valid.result_ref != null || valid.result_hash != null
+      || valid.result_payload != null || valid.issue_closed_at != null) conflict();
+  } else {
+    if (typeof valid.issue_ref !== "string" || !ISSUE_RE.test(valid.issue_ref)) conflict();
+    if (valid.status === "mirrored") {
+      if (valid.result_ref != null || valid.result_hash != null || valid.result_payload != null
+        || valid.issue_closed_at != null) conflict();
+    } else if (typeof valid.result_ref !== "string" || !COMMENT_RE.test(valid.result_ref)
+      || typeof valid.result_hash !== "string" || !DISPATCH_RE.test(valid.result_hash)
+      || !valid.result_payload || typeof valid.result_payload !== "object"
+      || Array.isArray(valid.result_payload)
+      || !["completed", "needs_human"].includes(valid.result_payload.status)
+      || valid.issue_closed_at != null) conflict();
+  }
+  const safe = {
     tenant_id: valid.tenant_id,
     dispatch_id: valid.dispatch_id,
     job_id: valid.job_id,
     round: valid.round,
     status: valid.status,
   };
+  if (valid.status !== "claimed") safe.issue_ref = valid.issue_ref;
+  return safe;
 }
 
 function safeIssue(row, input) {
@@ -179,6 +216,24 @@ function safeResult(row, input, statuses) {
   if (valid.result_ref !== input.resultRef || valid.result_hash !== input.resultHash
     || !valid.result_payload || valid.result_payload.status !== input.payload.status) conflict();
   return valid;
+}
+
+function safeClosed(row, input) {
+  const valid = safeDispatch(row, { uid: input.uid, dispatchId: input.dispatchId }, ["consumed"]);
+  if (valid.issue_ref !== input.issueRef || valid.result_ref !== input.resultRef
+    || valid.result_hash !== input.resultHash || valid.failure_code != null
+    || valid.issue_closed_at == null || !valid.result_payload
+    || typeof valid.result_payload !== "object" || Array.isArray(valid.result_payload)
+    || !["completed", "needs_human"].includes(valid.result_payload.status)) conflict();
+  return {
+    tenant_id: valid.tenant_id,
+    dispatch_id: valid.dispatch_id,
+    job_id: valid.job_id,
+    status: "closed",
+    issue_ref: valid.issue_ref,
+    result_ref: valid.result_ref,
+    result_hash: valid.result_hash,
+  };
 }
 
 function safeTask(task, expected) {
@@ -225,7 +280,8 @@ async function processRequest(action, req, res, dependencies) {
   try {
     const body = await readJson(req);
     const input = action === "claim" ? validateClaim(body)
-      : action === "issue" ? validateIssue(body) : validateResult(body);
+      : action === "issue" ? validateIssue(body)
+        : action === "result" ? validateResult(body) : validateClose(body);
     const store = storeFor(dependencies && dependencies.getRuntimeStore);
     if (action === "claim") {
       const row = await store.claimSymphony(input);
@@ -235,6 +291,11 @@ async function processRequest(action, req, res, dependencies) {
     if (action === "issue") {
       const row = await store.recordSymphonyIssue(input);
       jsonResponse(res, 200, safeIssue(row, input));
+      return;
+    }
+    if (action === "close") {
+      const row = await store.acknowledgeSymphonyIssueClosed(input);
+      jsonResponse(res, 200, safeClosed(row, input));
       return;
     }
     const row = await store.recordSymphonyResult(input);

@@ -12,6 +12,7 @@ const TENANT = "tenant-a";
 const ID = "a".repeat(64);
 const NOW = "2026-08-29T00:00:00.000Z";
 const SYMPHONY_MIGRATION = path.join(__dirname, "../migrations/2026-08-30-lm-symphony-dispatches.sql");
+const CLOSE_RECOVERY_MIGRATION = path.join(__dirname, "../migrations/2026-08-31-lm-symphony-close-recovery.sql");
 const HUMAN_TASK_MIGRATION = path.join(__dirname, "../migrations/2026-08-29-lm-money-printer-human-tasks.sql");
 
 test("R01 Symphony migration adds waiting_agent without dropping runtime states", () => {
@@ -50,6 +51,8 @@ test("R03 Symphony claim atomically moves one queued general-agent job", async (
     tenant_id: TENANT, dispatch_id: "d".repeat(64), job_id: `goal:${ID}`,
     round: 1, status: "claimed", issue_ref: null, result_ref: null,
     result_hash: null, result_payload: null, failure_code: null,
+    claimed_at: NOW, mirrored_at: null, result_ready_at: null, consumed_at: null,
+    failed_at: null, issue_closed_at: null,
   };
   const calls = [];
   const store = createMoneyPrinterRuntimeStore({ query: async (sql, values) => {
@@ -79,6 +82,23 @@ test("R11 Symphony claim recovers the oldest claimed dispatch before selecting q
   assert.match(functionBody.slice(claimedRecovery, queuedClaim), /IF FOUND THEN[\s\S]*RETURN NEXT v_dispatch;[\s\S]*RETURN;/i);
 });
 
+test("S07 additive migration fences issue closure and recovers every unclosed durable status", () => {
+  const migration = fs.readFileSync(CLOSE_RECOVERY_MIGRATION, "utf8");
+  assert.match(migration, /ALTER TABLE public\.lm_symphony_dispatches[\s\S]*ADD COLUMN IF NOT EXISTS issue_closed_at timestamptz/i);
+  assert.match(migration, /CHECK \(issue_closed_at IS NULL OR status = 'consumed'\)/i);
+  const start = migration.indexOf("CREATE OR REPLACE FUNCTION public.claim_lm_symphony_job");
+  const end = migration.indexOf("REVOKE ALL ON FUNCTION public.claim_lm_symphony_job", start);
+  assert.ok(start >= 0 && end > start);
+  const claim = migration.slice(start, end);
+  assert.match(claim, /status IN \('claimed', 'mirrored', 'result_ready', 'consumed'\)/i);
+  assert.match(claim, /issue_closed_at IS NULL[\s\S]*ORDER BY dispatches\.claimed_at/i);
+  assert.match(migration, /CREATE OR REPLACE FUNCTION public\.ack_lm_symphony_issue_closed\(/i);
+  assert.match(migration, /status = 'consumed'[\s\S]*issue_ref = p_issue_ref[\s\S]*result_ref = p_result_ref[\s\S]*result_hash = p_result_hash/i);
+  assert.match(migration, /issue_closed_at = clock_timestamp\(\)/i);
+  assert.match(migration, /REVOKE ALL ON FUNCTION public\.ack_lm_symphony_issue_closed\(text,text,text,text,text\) FROM PUBLIC, anon, authenticated/i);
+  assert.match(migration, /GRANT EXECUTE ON FUNCTION public\.ack_lm_symphony_issue_closed\(text,text,text,text,text\) TO service_role/i);
+});
+
 test("R04 Symphony issue readback is idempotent and conflict-fenced", async () => {
   const migration = fs.readFileSync(SYMPHONY_MIGRATION, "utf8");
   assert.match(migration, /CREATE OR REPLACE FUNCTION public\.record_lm_symphony_issue\(\s*p_tenant_id text,\s*p_dispatch_id text,\s*p_issue_ref text\s*\)/i);
@@ -90,6 +110,8 @@ test("R04 Symphony issue readback is idempotent and conflict-fenced", async () =
     tenant_id: TENANT, dispatch_id: "d".repeat(64), job_id: `goal:${ID}`,
     round: 1, status: "mirrored", issue_ref: issueRef, result_ref: null,
     result_hash: null, result_payload: null, failure_code: null,
+    claimed_at: NOW, mirrored_at: NOW, result_ready_at: null, consumed_at: null,
+    failed_at: null, issue_closed_at: null,
   };
   const calls = [];
   const store = createMoneyPrinterRuntimeStore({ query: async (sql, values) => {
@@ -125,6 +147,8 @@ test("R05 Symphony result is stored once while the same job remains waiting_agen
     round: 1, status: "result_ready",
     issue_ref: "github-issue://Daisuke134/life-manager-workrooms/1",
     result_ref: resultRef, result_hash: "e".repeat(64), result_payload: payload, failure_code: null,
+    claimed_at: NOW, mirrored_at: NOW, result_ready_at: NOW, consumed_at: null,
+    failed_at: null, issue_closed_at: null,
   };
   const calls = [];
   const store = createMoneyPrinterRuntimeStore({ query: async (sql, values) => {
@@ -152,6 +176,8 @@ test("R12 runtime store accepts exact result readback at result_ready or consume
       tenant_id: TENANT, dispatch_id: input.dispatchId, job_id: payload.job_id, round: 1, status,
       issue_ref: "github-issue://Daisuke134/life-manager-workrooms/1", result_ref: resultRef,
       result_hash: input.resultHash, result_payload: payload, failure_code: null,
+      claimed_at: NOW, mirrored_at: NOW, result_ready_at: NOW, consumed_at: status === "consumed" ? NOW : null,
+      failed_at: null, issue_closed_at: null,
     };
     const store = createMoneyPrinterRuntimeStore({ query: async () => ({ rows: [row] }) });
     assert.deepEqual(await store.recordSymphonyResult(input), row);
@@ -163,6 +189,82 @@ test("R12 runtime store accepts exact result readback at result_ready or consume
   };
   const store = createMoneyPrinterRuntimeStore({ query: async () => ({ rows: [invalid] }) });
   await assert.rejects(store.recordSymphonyResult(input), /readback/i);
+});
+
+test("S07 claim accepts coherent durable recovery rows and rejects incoherent fields", async () => {
+  const issueRef = "github-issue://Daisuke134/life-manager-workrooms/1";
+  const resultRef = "github-comment://Daisuke134/life-manager-workrooms/1/2";
+  const payload = {
+    protocol: "LM_RESULT_V1", tenant_id: TENANT, dispatch_id: "d".repeat(64),
+    job_id: `goal:${ID}`, status: "completed", execution_id: "codex-1", artifact_refs: [],
+  };
+  const common = {
+    tenant_id: TENANT, dispatch_id: "d".repeat(64), job_id: `goal:${ID}`, round: 1,
+    issue_ref: issueRef, result_ref: resultRef, result_hash: "e".repeat(64),
+    result_payload: payload, failure_code: null,
+    claimed_at: NOW, mirrored_at: NOW, result_ready_at: NOW, consumed_at: NOW, failed_at: null,
+    issue_closed_at: null,
+  };
+  for (const status of ["claimed", "mirrored", "result_ready", "consumed"]) {
+    const row = status === "claimed"
+      ? { ...common, status, issue_ref: null, result_ref: null, result_hash: null, result_payload: null, mirrored_at: null, result_ready_at: null, consumed_at: null }
+      : status === "mirrored"
+        ? { ...common, status, result_ref: null, result_hash: null, result_payload: null, result_ready_at: null, consumed_at: null }
+        : { ...common, status, consumed_at: status === "consumed" ? NOW : null, issue_closed_at: null };
+    const store = createMoneyPrinterRuntimeStore({ query: async () => ({ rows: [row] }) });
+    assert.deepEqual(await store.claimSymphony({ uid: TENANT }), row);
+  }
+  for (const row of [
+    { ...common, status: "mirrored", result_ref: resultRef },
+    { ...common, status: "result_ready", result_payload: null },
+    { ...common, status: "result_ready", issue_closed_at: NOW },
+    { ...common, status: "consumed", issue_closed_at: NOW },
+    { ...common, status: "consumed", consumed_at: null },
+    { ...common, status: "failed", issue_ref: null, result_ref: null, result_hash: null, result_payload: null },
+  ]) {
+    const store = createMoneyPrinterRuntimeStore({ query: async () => ({ rows: [row] }) });
+    await assert.rejects(store.claimSymphony({ uid: TENANT }), /claim readback/i);
+  }
+});
+
+test("S07 runtime store acknowledges one exact closed dispatch with strict readback", async () => {
+  const input = {
+    uid: TENANT,
+    dispatchId: "d".repeat(64),
+    issueRef: "github-issue://Daisuke134/life-manager-workrooms/1",
+    resultRef: "github-comment://Daisuke134/life-manager-workrooms/1/2",
+    resultHash: "e".repeat(64),
+  };
+  const row = {
+    tenant_id: TENANT, dispatch_id: input.dispatchId, job_id: `goal:${ID}`, round: 1,
+    status: "consumed", issue_ref: input.issueRef, result_ref: input.resultRef,
+    result_hash: input.resultHash,
+    result_payload: { protocol: "LM_RESULT_V1", status: "completed" },
+    failure_code: null, claimed_at: NOW, mirrored_at: NOW, result_ready_at: NOW,
+    consumed_at: NOW, failed_at: null, issue_closed_at: NOW,
+  };
+  const calls = [];
+  const store = createMoneyPrinterRuntimeStore({
+    query: async (sql, values) => { calls.push({ sql, values }); return { rows: [row] }; },
+  });
+  assert.deepEqual(await store.acknowledgeSymphonyIssueClosed(input), row);
+  assert.match(calls[0].sql, /^\s*SELECT \* FROM public\.ack_lm_symphony_issue_closed\(\$1, \$2, \$3, \$4, \$5\)/i);
+  assert.deepEqual(calls[0].values, [TENANT, input.dispatchId, input.issueRef, input.resultRef, input.resultHash]);
+  for (const invalid of [
+    { ...input, issueRef: "github-issue://other/repo/1" },
+    { ...input, resultRef: "not-a-comment" },
+    { ...input, resultHash: "x".repeat(64) },
+  ]) {
+    await assert.rejects(store.acknowledgeSymphonyIssueClosed(invalid), /close invalid/i);
+  }
+  for (const invalidRow of [
+    { ...row, issue_closed_at: null },
+    { ...row, status: "result_ready" },
+    { ...row, issue_ref: "github-issue://Daisuke134/life-manager-workrooms/2" },
+  ]) {
+    const invalidStore = createMoneyPrinterRuntimeStore({ query: async () => ({ rows: [invalidRow] }) });
+    await assert.rejects(invalidStore.acknowledgeSymphonyIssueClosed(input), /close readback/i);
+  }
 });
 
 test("Symphony result input rejects numeric identity fields before the query", async () => {
