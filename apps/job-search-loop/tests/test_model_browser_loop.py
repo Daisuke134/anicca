@@ -438,6 +438,83 @@ class ModelBrowserLoopContractTests(unittest.TestCase):
                 "in_progress_without_terminal_outcome",
             )
 
+    def _write_queue_complete_observe_fixture(
+        self, root: Path, statuses: tuple[str, ...]
+    ) -> None:
+        result = root / "result.json"
+        stdout = root / "stdout.log"
+        attempts = root / "attempts.jsonl"
+        summary = root / "summary.json"
+        result.write_text(
+            json.dumps(
+                {
+                    "status": "queue_complete",
+                    "submitted": [],
+                    "submit_unknown": [],
+                    "blocked": [],
+                    "report_message_id": None,
+                }
+            ),
+            encoding="utf-8",
+        )
+        stdout.write_text(
+            "".join(
+                json.dumps(
+                    {
+                        "type": "item.completed",
+                        "item": {
+                            "type": "command_execution",
+                            "exit_code": 0,
+                            "command": (
+                                "/bin/zsh -lc '/opt/homebrew/bin/python3 -m "
+                                "job_search_loop.browser_agent.runtime observe'"
+                            ),
+                            "aggregated_output": json.dumps({"status": status}),
+                        },
+                    }
+                )
+                + "\n"
+                for status in statuses
+            ),
+            encoding="utf-8",
+        )
+        attempts.write_text(
+            json.dumps({"stdout_path": str(stdout)}) + "\n",
+            encoding="utf-8",
+        )
+        summary.write_text(
+            json.dumps(
+                {
+                    "result_path": str(result),
+                    "attempts_path": str(attempts),
+                }
+            ),
+            encoding="utf-8",
+        )
+
+    def test_queue_complete_after_observed_row_requires_semantic_retry(self):
+        from job_search_loop.browser_agent import orchestrator
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self._write_queue_complete_observe_fixture(root, ("observed", "observed"))
+
+            self.assertEqual(
+                orchestrator.validate_pass_result(root),
+                "observed_row_without_terminal_outcome",
+            )
+
+    def test_latest_successful_queue_complete_observe_remains_accepted(self):
+        from job_search_loop.browser_agent import orchestrator
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self._write_queue_complete_observe_fixture(
+                root, ("observed", "queue_complete")
+            )
+
+            self.assertIsNone(orchestrator.validate_pass_result(root))
+
     @classmethod
     def setUpClass(cls) -> None:
         schema = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))

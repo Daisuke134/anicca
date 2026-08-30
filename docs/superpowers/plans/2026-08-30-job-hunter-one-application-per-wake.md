@@ -188,6 +188,34 @@ exhaustion, not a skip, rejection, provider blocker, or application receipt.
 3. Immediate replay inserts zero additional confirmations and never retries Submit.
 4. Run the focused confirmation module and `git diff --check`; commit and push.
 
+#### Task 3C: Reject observed-row empty success — active
+
+**Files:**
+- Modify: `apps/job-search-loop/job_search_loop/browser_agent/orchestrator.py`
+- Modify focused checks in: `apps/job-search-loop/tests/test_model_browser_loop.py`
+
+**Failing production receipt:** Release-owned wake `daily-20260831-000827` queues
+two eligible Workday rows. Its browser transcript runs `runtime observe` twice; both
+commands exit zero and return `status=observed`. The model nevertheless returns
+`queue_complete` with empty `submitted`, `submit_unknown`, and `blocked` arrays. No
+checkpoint or submit intent is created, yet the owner exits success.
+
+**Required behavior:**
+
+1. Parse only successful canonical `browser_agent.runtime observe` command receipts
+   from the bounded runner transcript.
+2. If the final pass claims empty `queue_complete` after any such receipt returned
+   `status=observed`, treat it as `observed_row_without_terminal_outcome`.
+3. Reuse the existing one-continuation semantic retry. If the continuation repeats
+   the violation, write `semantic-validation.json` and return nonzero; never convert
+   the row into `submitted`, `submit_unknown`, `blocked`, or a Telegram outcome.
+4. Preserve real `queue_complete` when the latest successful observe receipt itself
+   returns `status=queue_complete`, and preserve all existing nonzero-command and
+   one-shot submit handling.
+5. Add one focused regression that replays the production receipt shape and one
+   focused control for authoritative runtime `queue_complete`; run the existing
+   model-browser focused module and `git diff --check`.
+
 ---
 
 ### Task 4: Merge, release and verify production
