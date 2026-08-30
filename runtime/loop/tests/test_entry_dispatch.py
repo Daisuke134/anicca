@@ -14,6 +14,15 @@ class EntryDispatchTest(unittest.TestCase):
             self.assertEqual(Path(command[0]),expected)
             self.assertEqual(command[1],str(root/'skills/affiliate/scripts/local_browser.py'))
 
+    def test_life_manager_daily_driver_uses_release_dispatch_with_exact_argv(self):
+        command = command_for('life-manager-daily-driver', Path('/release'), Path('/home'))
+        self.assertEqual(command, [
+            '/home/.openclaw/skills/_shared/venv-cloak/bin/python',
+            '/release/skills/browser/cdp_persistent_context.py',
+            '--profile', '/home/.cloak/profiles/daily-driver',
+            '--port', '9222',
+        ])
+
     def test_affiliate_subcommand_is_preserved_inside_release(self):
         root=Path('/release'); command=command_for('affiliate-composition',root,Path('/home'))
         self.assertEqual(command,[str(root/'skills/affiliate/affiliate'),'compose','wake'])
