@@ -31,3 +31,10 @@ def test_every_healthy_terminal_refreshes_the_healthcheck_marker() -> None:
 
     assert 'HEALTHY_MARKER="$HOME/.local/state/life-manager/state/capafy-autopublish/.capafy-healthy-pass"' in script
     assert script.count("mark_healthy || exit 2") == 3
+
+
+def test_selfheal_request_preempts_cap_full_offline_build() -> None:
+    script = DAILY.read_text(encoding="utf-8")
+
+    assert 'SELFHEAL_REQUEST="$HOME/.local/state/life-manager/state/capafy-loop-selfheal-request.json"' in script
+    assert 'if [ "$VERDICT" = "CAP_FULL" ] && [ ! -f "$SELFHEAL_REQUEST" ]; then' in script
