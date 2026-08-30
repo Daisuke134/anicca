@@ -9,6 +9,8 @@ const {
   createGhIssueClient,
   createIssueForPacket,
   reconcileIssueForPacket,
+  formatResultComment,
+  parseResultComments,
 } = require("./money-printer-symphony-bridge.js");
 
 const SECRET = "s".repeat(64);
@@ -102,6 +104,54 @@ function issueRow(number, body = buildMoneyPrinterIssue(packet()).body, override
     number,
     url: `https://github.com/Daisuke134/life-manager-workrooms/issues/${number}`,
     body,
+    ...overrides,
+  };
+}
+
+function resultPayload(status = "completed", overrides = {}) {
+  const base = {
+    protocol: "LM_RESULT_V1",
+    tenant_id: TENANT,
+    dispatch_id: DISPATCH_ID,
+    job_id: JOB_ID,
+    status,
+    execution_id: "codex-round-1",
+    artifact_refs: ["artifact://tenant-a/result-1"],
+  };
+  if (status === "needs_human") {
+    Object.assign(base, {
+      reason_code: "provider_interview",
+      question: "Complete the provider interview.",
+      required_format: { type: "confirmation", values: ["approve", "request_changes"] },
+    });
+  }
+  return { ...base, ...overrides };
+}
+
+function resultBody(payload = resultPayload()) {
+  return formatResultComment(payload);
+}
+
+function rawResultBody(payload) {
+  return `LM_RESULT_V1\n${JSON.stringify(payload)}`;
+}
+
+function commentRow(id, body = resultBody(), author = "Daisuke134", issueNumber = 42) {
+  return {
+    id,
+    author,
+    body,
+    url: `https://github.com/Daisuke134/life-manager-workrooms/issues/${issueNumber}#issuecomment-${id}`,
+  };
+}
+
+function rawCommentRow(id, body = resultBody(), author = "Daisuke134", issueNumber = 42, overrides = {}) {
+  return {
+    id,
+    user: { login: author, id: 9001, node_id: "user-node" },
+    body,
+    html_url: `https://github.com/Daisuke134/life-manager-workrooms/issues/${issueNumber}#issuecomment-${id}`,
+    created_at: "2026-08-31T00:00:00Z",
     ...overrides,
   };
 }
@@ -653,4 +703,217 @@ test("foreign or stale callback readback is rejected without leaking private dat
     );
     assert.equal(creates, 0);
   }
+});
+
+test("comments adapter uses the fixed issue endpoint, pagination, projection, and safe flattened rows", () => {
+  const calls = [];
+  const issueClient = createGhIssueClient({
+    execFileSync(command, args, options) {
+      calls.push({ command, args, options });
+      return JSON.stringify([[rawCommentRow(7)], [rawCommentRow(8, "status update", "octocat")]]);
+    },
+  });
+
+  assert.deepEqual(issueClient.comments(ISSUE_REF), [
+    commentRow(7),
+    commentRow(8, "", ""),
+  ]);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].command, "gh");
+  assert.deepEqual(calls[0].args, [
+    "api",
+    "repos/Daisuke134/life-manager-workrooms/issues/42/comments?per_page=100",
+    "--paginate",
+    "--slurp",
+  ]);
+  assert.equal(calls[0].args.includes("-R"), false);
+  assert.equal(calls[0].args.includes("--repo"), false);
+  assert.equal(calls[0].args.includes("--jq"), false);
+  assert.equal(calls[0].args.includes("--template"), false);
+  assert.equal(calls[0].options.encoding, "utf8");
+  assert.deepEqual(calls[0].options.stdio, ["ignore", "pipe", "pipe"]);
+  assert.equal(Object.isFrozen(issueClient.comments(ISSUE_REF)), true);
+});
+
+test("comments adapter rejects foreign issue refs, malformed rows, oversized output, and transport errors generically", () => {
+  const invalidRefs = [
+    "github-issue://other/repo/42",
+    "https://github.com/Daisuke134/life-manager-workrooms/issues/42",
+    "github-issue://Daisuke134/life-manager-workrooms/0",
+  ];
+  for (const invalidRef of invalidRefs) {
+    let calls = 0;
+    const issueClient = createGhIssueClient({ execFileSync() { calls += 1; return "[]"; } });
+    assert.throws(() => issueClient.comments(invalidRef), (error) => error.message === "issue comments failed");
+    assert.equal(calls, 0);
+  }
+
+  for (const output of [
+    JSON.stringify([[rawCommentRow(7, "body", "octocat", 43)]]),
+    JSON.stringify([Array.from({ length: 501 }, (_, index) => rawCommentRow(index + 1, "body", "octocat"))]),
+    JSON.stringify([[rawCommentRow(7, "body", "octocat", 42, { id: 0 })]]),
+    JSON.stringify([[rawCommentRow(7, "body", "octocat", 42, { html_url: "https://github.com/other/repo/issues/42#issuecomment-7" })]]),
+    JSON.stringify([[rawCommentRow(7, "body", "octocat", 42, { body: null })]]),
+    JSON.stringify([[rawCommentRow(7, "body", "x".repeat(101))]]),
+    JSON.stringify({ error: SECRET }),
+    "not-json",
+  ]) {
+    const issueClient = createGhIssueClient({ execFileSync() { return output; } });
+    assert.throws(() => issueClient.comments(ISSUE_REF), (error) => (
+      error.message === "issue comments failed" && !error.message.includes(SECRET)
+    ));
+  }
+  const issueClient = createGhIssueClient({ execFileSync() { throw new Error(`gh ${SECRET}`); } });
+  assert.throws(() => issueClient.comments(ISSUE_REF), (error) => (
+    error.message === "issue comments failed" && !error.message.includes(SECRET)
+  ));
+});
+
+test("bot, weird, and deleted users are ignored without retaining oversized or control bodies", () => {
+  const rows = [
+    rawCommentRow(9, `${"x".repeat(32 * 1024 + 1)}\u0000`, "github-actions[bot]"),
+    rawCommentRow(10, "looks strange\u0000", "not a login"),
+    rawCommentRow(11, "deleted body", "octocat", 42, { user: null }),
+    rawCommentRow(12, "missing user body", "octocat", 42, { user: { id: 1 } }),
+  ];
+  const issueClient = createGhIssueClient({
+    execFileSync() { return JSON.stringify([rows]); },
+  });
+
+  assert.deepEqual(issueClient.comments(ISSUE_REF), [
+    commentRow(9, "", ""),
+    commentRow(10, "", ""),
+    commentRow(11, "", ""),
+    commentRow(12, "", ""),
+  ]);
+});
+
+test("completed result comment is strictly scoped, canonical, hashed, and deeply frozen", () => {
+  const result = parseResultComments(packet(), ISSUE_REF, [commentRow(101)]);
+
+  assert.equal(result.status, "ready");
+  assert.equal(result.result_ref, "github-comment://Daisuke134/life-manager-workrooms/42/101");
+  assert.match(result.result_hash, /^[0-9a-f]{64}$/);
+  assert.deepEqual(result.payload, resultPayload());
+  assert.equal(Object.isFrozen(result), true);
+  assert.equal(Object.isFrozen(result.payload), true);
+  assert.equal(Object.isFrozen(result.payload.artifact_refs), true);
+  assert.doesNotMatch(JSON.stringify(result), /private|secret|session|author|body/i);
+});
+
+test("canonical result payload stays below the database byte limit", () => {
+  const largePayload = resultPayload("completed", {
+    artifact_refs: Array.from({ length: 20 }, (_, index) => (
+      `artifact://tenant-a/${index}-${"x".repeat(950)}`
+    )),
+  });
+  assert.ok(largePayload.artifact_refs.every((ref) => ref.length <= 1000));
+  assert.ok(JSON.stringify(largePayload).length > 12 * 1024);
+  assert.throws(
+    () => formatResultComment(largePayload),
+    (error) => error.message === "result comment invalid",
+  );
+  assert.throws(
+    () => parseResultComments(packet(), ISSUE_REF, [commentRow(111, rawResultBody(largePayload))]),
+    (error) => error.message === "result comment conflict",
+  );
+});
+
+test("needs_human result preserves nested data but hashes key-order variants identically", () => {
+  const firstPayload = resultPayload("needs_human", {
+    required_format: { z: ["last", { b: true, a: "first" }], a: "first-key" },
+  });
+  const secondPayload = {
+    required_format: { a: "first-key", z: ["last", { a: "first", b: true }] },
+    artifact_refs: firstPayload.artifact_refs,
+    execution_id: firstPayload.execution_id,
+    status: firstPayload.status,
+    question: firstPayload.question,
+    reason_code: firstPayload.reason_code,
+    job_id: firstPayload.job_id,
+    dispatch_id: firstPayload.dispatch_id,
+    tenant_id: firstPayload.tenant_id,
+    protocol: firstPayload.protocol,
+  };
+  const first = parseResultComments(packet(), ISSUE_REF, [commentRow(102, resultBody(firstPayload))]);
+  const second = parseResultComments(packet(), ISSUE_REF, [commentRow(103, resultBody(secondPayload))]);
+
+  assert.equal(first.status, "ready");
+  assert.equal(second.status, "ready");
+  assert.equal(first.result_hash, second.result_hash);
+  assert.deepEqual(first.payload, second.payload);
+  assert.equal(Object.isFrozen(first.payload.required_format), true);
+  assert.equal(Object.isFrozen(first.payload.required_format.z), true);
+  assert.equal(Object.isFrozen(first.payload.required_format.z[1]), true);
+});
+
+test("wrong authors and non-result comments are ignored, leaving a frozen pending result", () => {
+  const comments = [
+    commentRow(104, resultBody(resultPayload("completed", { dispatch_id: "e".repeat(64) })), "octocat"),
+    commentRow(105, "ordinary progress update", "Daisuke134"),
+  ];
+  const result = parseResultComments(packet(), ISSUE_REF, comments);
+
+  assert.deepEqual(result, { status: "pending" });
+  assert.equal(Object.isFrozen(result), true);
+});
+
+test("wrong-author oversized/control bodies are discarded, while expected-author bodies remain bounded", () => {
+  const pending = parseResultComments(packet(), ISSUE_REF, [
+    commentRow(112, `${"x".repeat(32 * 1024 + 1)}\u0000`, "github-actions[bot]"),
+  ]);
+  assert.deepEqual(pending, { status: "pending" });
+  assert.equal(Object.isFrozen(pending), true);
+  assert.throws(
+    () => parseResultComments(packet(), ISSUE_REF, [
+      commentRow(113, `${"x".repeat(32 * 1024 + 1)}\u0000`, "Daisuke134"),
+    ]),
+    (error) => error.message === "issue comments failed",
+  );
+});
+
+test("zero comments is pending and duplicate valid results are a conflict", () => {
+  assert.deepEqual(parseResultComments(packet(), ISSUE_REF, []), { status: "pending" });
+  assert.throws(
+    () => parseResultComments(packet(), ISSUE_REF, [commentRow(106), commentRow(107)]),
+    (error) => error.message === "result comment conflict",
+  );
+});
+
+test("expected-author malformed, foreign, extra, and trailing result payloads fail before readiness", () => {
+  const invalidBodies = [
+    "LM_RESULT_V1",
+    "LM_RESULT_V1x\n{}",
+    "LM_RESULT_V1\nnot-json",
+    `${resultBody(resultPayload())}\n`,
+    rawResultBody(resultPayload("completed", { dispatch_id: "e".repeat(64) })),
+    rawResultBody(resultPayload("completed", { unexpected: "extra" })),
+    rawResultBody(resultPayload("completed", { artifact_refs: ["not-a-uri"] })),
+    rawResultBody(resultPayload("needs_human", { required_format: "x".repeat(4097) })),
+  ];
+  for (const body of invalidBodies) {
+    assert.throws(
+      () => parseResultComments(packet(), ISSUE_REF, [commentRow(108, body)]),
+      (error) => error.message === "result comment conflict" && !error.message.includes(SECRET),
+    );
+  }
+  assert.throws(
+    () => parseResultComments(packet(), ISSUE_REF, [commentRow(109, resultBody(resultPayload()), "Daisuke134", 43)]),
+    (error) => error.message === "issue comments failed",
+  );
+});
+
+test("formatter emits the exact anchored result wire format and rejects non-JSON required formats", () => {
+  const body = formatResultComment(resultPayload("needs_human"));
+  assert.match(body, /^LM_RESULT_V1\n\{/);
+  assert.equal(body.endsWith("\n"), false);
+  assert.equal(body, resultBody(resultPayload("needs_human")));
+  assert.throws(
+    () => formatResultComment(resultPayload("needs_human", { required_format: null })),
+    /result comment invalid/,
+  );
+  assert.throws(
+    () => formatResultComment(resultPayload("needs_human", { required_format: Object.create(null) })),
+    /result comment invalid/,
+  );
 });

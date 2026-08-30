@@ -2,6 +2,7 @@
 "use strict";
 
 const { execFileSync } = require("node:child_process");
+const { createHash } = require("node:crypto");
 
 const TENANT_RE = /^[a-z0-9][a-z0-9._-]{0,199}$/;
 const HEX64_RE = /^[0-9a-f]{64}$/;
@@ -16,6 +17,16 @@ const ISSUE_REPO = "Daisuke134/life-manager-workrooms";
 const ISSUE_LABEL = "money-printer";
 const ISSUE_URL_RE = /^https:\/\/github\.com\/Daisuke134\/life-manager-workrooms\/issues\/([1-9][0-9]*)$/;
 const RESERVED_MARKER_PREFIX = "<!-- lm-dispatch:";
+const RESULT_PREFIX = "LM_RESULT_V1\n";
+const EXPECTED_RESULT_AUTHOR = "Daisuke134";
+const MAX_COMMENT_AUTHOR_LENGTH = 100;
+const JOB_ID_RE = /^[A-Za-z0-9][A-Za-z0-9._:\/-]{0,199}$/;
+const EXECUTION_ID_RE = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/;
+const URI_REF_RE = /^[a-z][a-z0-9+.-]{1,31}:\/\/[A-Za-z0-9][A-Za-z0-9._~:/?#@!$&'()*+,;=%-]{0,999}$/;
+const MAX_COMMENT_ROWS = 500;
+const MAX_COMMENT_BODY_BYTES = 32 * 1024;
+const MAX_REQUIRED_FORMAT_BYTES = 4096;
+const MAX_RESULT_PAYLOAD_BYTES = 12 * 1024;
 const DISPATCH_PACKET_KEYS = [
   "protocol", "tenant_id", "dispatch_id", "job_id", "round", "opportunity_ref", "job_ref",
   "title", "source_url", "value_minor", "currency", "workroom_status", "result_protocol",
@@ -66,7 +77,9 @@ async function json(response) {
 
 function exactObject(value, keys) {
   return Boolean(value && typeof value === "object" && !Array.isArray(value)
-    && Object.keys(value).sort().join(",") === keys.slice().sort().join(","));
+    && Object.getPrototypeOf(value) === Object.prototype
+    && Object.getOwnPropertySymbols(value).length === 0
+    && Object.getOwnPropertyNames(value).sort().join(",") === keys.slice().sort().join(","));
 }
 
 function validateDispatchPacket(packet) {
@@ -169,7 +182,283 @@ function createGhIssueClient(options = {}) {
       try { parsed = JSON.parse(String(stdout || "")); } catch { fail("issue list failed"); }
       return validateIssueRows(parsed);
     },
+    comments(issueRef) {
+      let issueNumber;
+      const match = typeof issueRef === "string" ? issueRef.match(ISSUE_REF_RE) : null;
+      if (!match) fail("issue comments failed");
+      issueNumber = match[0].slice(`github-issue://${ISSUE_REPO}/`.length);
+      const stdout = run([
+        "api",
+        `repos/${ISSUE_REPO}/issues/${issueNumber}/comments?per_page=100`,
+        "--paginate",
+        "--slurp",
+      ], "issue comments failed");
+      let parsed;
+      try { parsed = JSON.parse(String(stdout || "")); } catch { fail("issue comments failed"); }
+      return projectCommentRows(parsed, issueRef);
+    },
   };
+}
+
+function issueNumberFromRef(issueRef) {
+  const match = typeof issueRef === "string" ? issueRef.match(ISSUE_REF_RE) : null;
+  if (!match) fail("result comment scope invalid");
+  return match[0].slice(`github-issue://${ISSUE_REPO}/`.length);
+}
+
+function commentUrlFor(issueNumber, id) {
+  return `https://github.com/${ISSUE_REPO}/issues/${issueNumber}#issuecomment-${id}`;
+}
+
+function safeCommentBody(value) {
+  return typeof value === "string"
+    && Buffer.byteLength(value, "utf8") <= MAX_COMMENT_BODY_BYTES
+    && !/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f\u0080-\u009f]/.test(value);
+}
+
+function validateCommentRow(row, issueRef) {
+  const issueNumber = issueNumberFromRef(issueRef);
+  const author = typeof row?.author === "string" ? row.author : "";
+  if (!exactObject(row, ["id", "author", "body", "url"])
+    || !Number.isSafeInteger(row.id) || row.id < 1
+    || author.length > MAX_COMMENT_AUTHOR_LENGTH
+    || typeof row.body !== "string"
+    || row.url !== commentUrlFor(issueNumber, row.id)) {
+    fail("issue comments failed");
+  }
+  if (author === EXPECTED_RESULT_AUTHOR && !safeCommentBody(row.body)) {
+    fail("issue comments failed");
+  }
+  return Object.freeze({
+    id: row.id,
+    author: author === EXPECTED_RESULT_AUTHOR ? author : "",
+    body: author === EXPECTED_RESULT_AUTHOR ? row.body : "",
+    url: row.url,
+  });
+}
+
+function flattenProjectedComments(value) {
+  if (!Array.isArray(value)) fail("issue comments failed");
+  if (value.some((entry) => Array.isArray(entry))) {
+    if (value.length > MAX_COMMENT_ROWS || value.some((entry) => !Array.isArray(entry))) fail("issue comments failed");
+    const flattened = [];
+    for (const page of value) {
+      if (page.length > MAX_COMMENT_ROWS || flattened.length + page.length > MAX_COMMENT_ROWS) {
+        fail("issue comments failed");
+      }
+      flattened.push(...page);
+    }
+    return flattened;
+  }
+  if (value.length > MAX_COMMENT_ROWS) fail("issue comments failed");
+  return value;
+}
+
+function projectCommentRows(rawRows, issueRef) {
+  const rows = flattenProjectedComments(rawRows);
+  return Object.freeze(rows.map((row) => {
+    if (!row || typeof row !== "object" || Array.isArray(row)
+      || Object.getPrototypeOf(row) !== Object.prototype
+      || Object.getOwnPropertySymbols(row).length !== 0) {
+      fail("issue comments failed");
+    }
+    const user = row.user;
+    const author = user && typeof user === "object" && !Array.isArray(user)
+      && Object.getPrototypeOf(user) === Object.prototype
+      && Object.getOwnPropertySymbols(user).length === 0
+      && typeof user.login === "string" ? user.login : "";
+    return validateCommentRow({
+      id: row.id,
+      author,
+      body: row.body,
+      url: row.html_url,
+    }, issueRef);
+  }));
+}
+
+function validateCommentRows(rows, issueRef) {
+  issueNumberFromRef(issueRef);
+  return Object.freeze(flattenProjectedComments(rows).map((row) => validateCommentRow(row, issueRef)));
+}
+
+function safeJsonText(value) {
+  return typeof value === "string" && !/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f\u0080-\u009f]/.test(value);
+}
+
+function canonicalJson(value) {
+  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
+  if (value && typeof value === "object") {
+    return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${canonicalJson(value[key])}`).join(",")}}`;
+  }
+  return JSON.stringify(value);
+}
+
+function canonicalValue(value) {
+  if (Array.isArray(value)) {
+    if (Object.getPrototypeOf(value) !== Array.prototype || Object.getOwnPropertySymbols(value).length !== 0
+      || Object.keys(value).length !== value.length
+      || Object.keys(value).some((key) => !/^(0|[1-9][0-9]*)$/.test(key) || Number(key) >= value.length)) {
+      fail("result comment invalid");
+    }
+    return value.map(canonicalValue);
+  }
+  if (value && typeof value === "object") {
+    if (Object.getPrototypeOf(value) !== Object.prototype || Object.getOwnPropertySymbols(value).length !== 0) {
+      fail("result comment invalid");
+    }
+    const output = {};
+    if (Object.getOwnPropertyNames(value).length !== Object.keys(value).length) fail("result comment invalid");
+    for (const key of Object.keys(value).sort()) {
+      Object.defineProperty(output, key, {
+        configurable: true,
+        enumerable: true,
+        value: canonicalValue(value[key]),
+        writable: true,
+      });
+    }
+    return output;
+  }
+  return value;
+}
+
+function deepFreeze(value) {
+  if (!value || typeof value !== "object" || Object.isFrozen(value)) return value;
+  for (const child of Object.values(value)) deepFreeze(child);
+  return Object.freeze(value);
+}
+
+function validateRequiredFormat(value) {
+  if (typeof value === "string") {
+    if (!safeJsonText(value)) fail("result comment invalid");
+  } else if (Array.isArray(value)) {
+    if (Object.getPrototypeOf(value) !== Array.prototype || Object.getOwnPropertySymbols(value).length !== 0
+      || Object.keys(value).length !== value.length
+      || Object.keys(value).some((key) => !/^(0|[1-9][0-9]*)$/.test(key) || Number(key) >= value.length)) {
+      fail("result comment invalid");
+    }
+    for (const child of value) validateRequiredFormat(child);
+  } else if (value && typeof value === "object") {
+    if (Object.getPrototypeOf(value) !== Object.prototype || Object.getOwnPropertySymbols(value).length !== 0) {
+      fail("result comment invalid");
+    }
+    if (Object.getOwnPropertyNames(value).length !== Object.keys(value).length) fail("result comment invalid");
+    for (const [key, child] of Object.entries(value)) {
+      if (!safeJsonText(key)) fail("result comment invalid");
+      validateRequiredFormat(child);
+    }
+  } else if (typeof value === "number") {
+    if (!Number.isFinite(value)) fail("result comment invalid");
+  } else if (typeof value !== "boolean" && value !== null) {
+    fail("result comment invalid");
+  }
+  let serialized;
+  try { serialized = canonicalJson(value); } catch { fail("result comment invalid"); }
+  if (Buffer.byteLength(serialized, "utf8") > MAX_REQUIRED_FORMAT_BYTES) fail("result comment invalid");
+}
+
+function validateResultPayload(payload, packet) {
+  if (!payload || !exactObject(payload, [
+    "protocol", "tenant_id", "dispatch_id", "job_id", "status", "execution_id", "artifact_refs",
+  ]) && !exactObject(payload, [
+    "protocol", "tenant_id", "dispatch_id", "job_id", "status", "execution_id", "artifact_refs",
+    "reason_code", "question", "required_format",
+  ])) {
+    fail("result comment invalid");
+  }
+  const isHuman = payload.status === "needs_human";
+  const expectedKeys = isHuman
+    ? ["artifact_refs", "dispatch_id", "execution_id", "job_id", "protocol", "question", "reason_code", "required_format", "status", "tenant_id"]
+    : ["artifact_refs", "dispatch_id", "execution_id", "job_id", "protocol", "status", "tenant_id"];
+  if (Object.keys(payload).sort().join(",") !== expectedKeys.join(",")
+    || payload.protocol !== "LM_RESULT_V1"
+    || typeof payload.tenant_id !== "string" || !TENANT_RE.test(payload.tenant_id)
+    || typeof payload.dispatch_id !== "string" || !HEX64_RE.test(payload.dispatch_id)
+    || typeof payload.job_id !== "string" || !JOB_ID_RE.test(payload.job_id)
+    || !["completed", "needs_human"].includes(payload.status)
+    || typeof payload.execution_id !== "string" || !EXECUTION_ID_RE.test(payload.execution_id)
+    || !Array.isArray(payload.artifact_refs) || payload.artifact_refs.length > 100
+    || payload.artifact_refs.some((ref) => typeof ref !== "string" || Buffer.byteLength(ref, "utf8") > 1000 || !URI_REF_RE.test(ref))) {
+    fail("result comment invalid");
+  }
+  if (packet && (payload.tenant_id !== packet.tenant_id
+    || payload.dispatch_id !== packet.dispatch_id || payload.job_id !== packet.job_id)) {
+    fail("result comment scope invalid");
+  }
+  if (isHuman) {
+    if (typeof payload.reason_code !== "string" || !JOB_ID_RE.test(payload.reason_code)
+      || typeof payload.question !== "string" || !payload.question.trim()
+      || payload.question.length < 1 || payload.question.length > 2000 || !safeJsonText(payload.question)
+      || (!Array.isArray(payload.required_format) && typeof payload.required_format !== "object"
+        && typeof payload.required_format !== "string")
+      || payload.required_format === null) {
+      fail("result comment invalid");
+    }
+    validateRequiredFormat(payload.required_format);
+    let requiredFormatJson;
+    try { requiredFormatJson = canonicalJson(payload.required_format); } catch { fail("result comment invalid"); }
+    if (Buffer.byteLength(requiredFormatJson, "utf8") > MAX_REQUIRED_FORMAT_BYTES) {
+      fail("result comment invalid");
+    }
+  }
+  return payload;
+}
+
+function canonicalResultPayload(payload) {
+  const canonical = canonicalValue(payload);
+  const serialized = canonicalJson(canonical);
+  if (Buffer.byteLength(serialized, "utf8") > MAX_RESULT_PAYLOAD_BYTES) {
+    fail("result comment invalid");
+  }
+  return { canonical, serialized };
+}
+
+function formatResultComment(payload) {
+  const validated = validateResultPayload(payload);
+  const { serialized } = canonicalResultPayload(validated);
+  return `${RESULT_PREFIX}${serialized}`;
+}
+
+function parseResultBody(body, packet) {
+  if (typeof body !== "string" || !body.startsWith("LM_RESULT_V1")) return null;
+  if (!body.startsWith(RESULT_PREFIX)) fail("result comment conflict");
+  const serialized = body.slice(RESULT_PREFIX.length);
+  if (!serialized || serialized.trim() !== serialized || serialized[0] !== "{") {
+    fail("result comment conflict");
+  }
+  let payload;
+  try { payload = JSON.parse(serialized); } catch { fail("result comment conflict"); }
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) fail("result comment conflict");
+  try {
+    validateResultPayload(payload, packet);
+    return canonicalResultPayload(payload).canonical;
+  } catch {
+    fail("result comment conflict");
+  }
+}
+
+function parseResultComments(packet, issueRef, comments) {
+  const validPacket = validateDispatchPacket(packet);
+  const issueNumber = issueNumberFromRef(issueRef);
+  const rows = validateCommentRows(comments, issueRef);
+  const validResults = [];
+  for (const row of rows) {
+    if (row.author !== EXPECTED_RESULT_AUTHOR) continue;
+    const payload = parseResultBody(row.body, validPacket);
+    if (payload === null) continue;
+    validResults.push({ row, payload });
+  }
+  if (validResults.length === 0) return Object.freeze({ status: "pending" });
+  if (validResults.length !== 1) fail("result comment conflict");
+  const [{ row, payload }] = validResults;
+  const canonical = canonicalValue(payload);
+  const serialized = canonicalJson(canonical);
+  const resultHash = createHash("sha256").update(serialized, "utf8").digest("hex");
+  return deepFreeze({
+    status: "ready",
+    result_ref: `github-comment://${ISSUE_REPO}/${issueNumber}/${row.id}`,
+    result_hash: resultHash,
+    payload: canonical,
+  });
 }
 
 function validateIssueRow(row) {
@@ -458,5 +747,7 @@ module.exports = {
   createGhIssueClient,
   createIssueForPacket,
   reconcileIssueForPacket,
+  formatResultComment,
+  parseResultComments,
   main,
 };
