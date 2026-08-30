@@ -263,7 +263,16 @@ def snapshot_candidates(
     unfinished_candidates = [
         row for row in candidates if row["url"].casefold() in unfinished_urls
     ]
-    return unfinished_candidates or candidates
+    if not unfinished_candidates:
+        return candidates
+    if len(unfinished_candidates) >= 400:
+        return unfinished_candidates
+    fresh_candidates = [
+        row for row in candidates if row["url"].casefold() not in unfinished_urls
+    ]
+    return unfinished_candidates + interleave_companies(fresh_candidates)[
+        : 400 - len(unfinished_candidates)
+    ]
 
 
 def interleave_companies(

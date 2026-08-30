@@ -542,7 +542,7 @@ class WorkdayQualificationTests(unittest.TestCase):
                 fetch_jobs=lambda _source: jobs,
             )
 
-        self.assertEqual([row["title"] for row in rows], ["Unfinished"])
+        self.assertEqual([row["title"] for row in rows], ["Unfinished", "Fresh"])
 
         with tempfile.TemporaryDirectory() as directory:
             rows = snapshot_candidates(
@@ -552,6 +552,72 @@ class WorkdayQualificationTests(unittest.TestCase):
             )
 
         self.assertEqual([row["title"] for row in rows], ["Fresh", "Unfinished"])
+
+    def test_snapshot_keeps_unfinished_first_then_interleaves_fresh_companies_to_400(self):
+        with tempfile.TemporaryDirectory() as directory:
+            ledger_path = Path(directory) / "ledger.sqlite3"
+            ledger = Ledger(ledger_path)
+            application_id = ledger.add_application(
+                "Example",
+                "Unfinished",
+                "https://example.wd1.myworkdayjobs.com/Careers/job/Unfinished",
+            )
+            ledger.transition(application_id, "qualified")
+            ledger.transition(application_id, "materials_ready")
+            ledger.close()
+
+            sources = (
+                {
+                    "company": "Example",
+                    "host": "example.wd1.myworkdayjobs.com",
+                    "site": "Careers",
+                },
+                {
+                    "company": "Red Hat",
+                    "host": "redhat.wd1.myworkdayjobs.com",
+                    "site": "Careers",
+                },
+                {
+                    "company": "Razer",
+                    "host": "razer.wd1.myworkdayjobs.com",
+                    "site": "Careers",
+                },
+            )
+            jobs = {
+                "example.wd1.myworkdayjobs.com": [
+                    {"title": "Unfinished", "locationsText": "Tokyo", "externalPath": "/job/Unfinished"},
+                    *[
+                        {"title": f"Fresh Example {index}", "locationsText": "Tokyo", "externalPath": f"/job/Fresh_Example_{index}"}
+                        for index in range(1, 201)
+                    ],
+                ],
+                "redhat.wd1.myworkdayjobs.com": [
+                    {"title": f"Fresh Red Hat {index}", "locationsText": "Tokyo", "externalPath": f"/job/Fresh_Red_Hat_{index}"}
+                    for index in range(1, 201)
+                ],
+                "razer.wd1.myworkdayjobs.com": [
+                    {"title": f"Fresh Razer {index}", "locationsText": "Tokyo", "externalPath": f"/job/Fresh_Razer_{index}"}
+                    for index in range(1, 101)
+                ],
+            }
+            rows = snapshot_candidates(
+                ledger_path=ledger_path,
+                sources=sources,
+                fetch_jobs=lambda source: jobs[source["host"]],
+            )
+
+        self.assertEqual(len(rows), 400)
+        self.assertEqual(
+            [row["title"] for row in rows[:6]],
+            [
+                "Unfinished",
+                "Fresh Example 1",
+                "Fresh Red Hat 1",
+                "Fresh Razer 1",
+                "Fresh Example 2",
+                "Fresh Red Hat 2",
+            ],
+        )
 
     def test_shortlist_drops_model_invented_url_and_keeps_official_rows(self):
         official = "https://a.wd1.myworkdayjobs.com/Careers/job/A"
