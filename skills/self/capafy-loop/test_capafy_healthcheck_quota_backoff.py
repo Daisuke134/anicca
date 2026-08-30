@@ -67,7 +67,8 @@ class CapafyHealthcheckQuotaBackoffTest(unittest.TestCase):
             log = (state_home / "logs" / "capafy-loop-healthcheck.log").read_text(encoding="utf-8")
             return result, recorded, lifecycle, log
 
-    def run_healthcheck(self, error_class, incomplete_name, expected_return=0):
+    def run_healthcheck(self, error_class, incomplete_name, expected_return=0,
+                        incomplete_lane="capafy-marketplace"):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             state_home = root / "state-home"
@@ -87,7 +88,8 @@ class CapafyHealthcheckQuotaBackoffTest(unittest.TestCase):
                 json.dumps({"provider": "codex", "error_class": error_class}) + "\n",
                 encoding="utf-8",
             )
-            (evidence.parent / incomplete_name).mkdir()
+            incomplete = state_home / "state" / "agent-runner-evidence" / incomplete_lane / incomplete_name
+            incomplete.mkdir(parents=True)
 
             healthcheck, lifecycle_calls, _ = self.install_test_release(root)
             calls = root / "launchctl-calls"
@@ -127,6 +129,13 @@ class CapafyHealthcheckQuotaBackoffTest(unittest.TestCase):
 
     def test_recent_incomplete_attempt_gets_grace_without_kickstart(self):
             recorded, _, lifecycle = self.run_healthcheck("transient_unavailable", f"{int(time.time())}-2")
+            self.assertNotIn("kickstart", recorded)
+            self.assertEqual(lifecycle, [])
+
+    def test_recent_offline_build_gets_grace_without_restart(self):
+            recorded, _, lifecycle = self.run_healthcheck(
+                "transient_unavailable", f"{int(time.time())}-2",
+                incomplete_lane="capafy-offline-build")
             self.assertNotIn("kickstart", recorded)
             self.assertEqual(lifecycle, [])
 
