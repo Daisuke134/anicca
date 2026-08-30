@@ -108,7 +108,10 @@ class AgentRunner:
             text=True,
             timeout=1_000,
         )
-        if completed.returncode == 75:
+        if (
+            completed.returncode == 75
+            and "LIFE_MANAGER_PROVIDER_LEASE_BUSY" in completed.stderr.splitlines()
+        ):
             raise PassAlreadyRunning()
         if completed.returncode != 0:
             raise ContractError(

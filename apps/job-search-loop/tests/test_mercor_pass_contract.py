@@ -1,5 +1,7 @@
 import json
+import os
 from pathlib import Path
+import subprocess
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -12,6 +14,48 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class MercorPassContractTests(unittest.TestCase):
+    def _run_shell_with_pass_rc(self, *, pass_rc: int, pass_stderr: str):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        root = Path(temporary.name)
+        calls = root / "reporting-call.json"
+        fake_python = root / "python"
+        fake_python.write_text(
+            "#!/usr/bin/env python3\n"
+            "import json, os, pathlib, sys\n"
+            "argv = sys.argv[1:]\n"
+            "if argv[:2] == ['-m', 'job_search_loop.browser_owner']:\n"
+            "    pathlib.Path(argv[argv.index('--output') + 1]).write_text('{}\\n')\n"
+            "    raise SystemExit(0)\n"
+            "if argv[:2] == ['-m', 'job_search_loop.mercor_pass']:\n"
+            "    print(os.environ['MERCOR_TEST_PASS_STDERR'], file=sys.stderr, end='')\n"
+            "    raise SystemExit(int(os.environ['MERCOR_TEST_PASS_RC']))\n"
+            "if argv[:2] == ['-m', 'job_search_loop.mercor_reporting']:\n"
+            "    pathlib.Path(os.environ['MERCOR_TEST_REPORTING_CALL']).write_text(json.dumps(argv))\n"
+            "    raise SystemExit(0)\n"
+            "raise SystemExit(0)\n",
+            encoding="utf-8",
+        )
+        fake_python.chmod(0o700)
+        result = subprocess.run(
+            ["/bin/zsh", str(ROOT / "scripts" / "run-mercor.sh")],
+            check=False,
+            capture_output=True,
+            text=True,
+            env={
+                **os.environ,
+                "HOME": str(root / "home"),
+                "XDG_DATA_HOME": str(root / "data"),
+                "JOB_SEARCH_STATE_ROOT": str(root / "state"),
+                "JOB_SEARCH_PYTHON": str(fake_python),
+                "MERCOR_TEST_PASS_RC": str(pass_rc),
+                "MERCOR_TEST_PASS_STDERR": pass_stderr,
+                "MERCOR_TEST_REPORTING_CALL": str(calls),
+            },
+        )
+        reporting_call = json.loads(calls.read_text(encoding="utf-8"))
+        return result, reporting_call
+
     def test_task_class_is_modelled_browser_lane(self):
         self.assertEqual(TASK_CLASSES["mercor_pass"], "browser-lane-agent")
 
@@ -107,6 +151,26 @@ class MercorPassContractTests(unittest.TestCase):
                     "--run-id", "busy",
                 ]), 75)
             self.assertFalse((evidence / "mercor-pass-summary.json").exists())
+
+    def test_shell_maps_only_identified_busy_to_already_running(self):
+        busy, busy_call = self._run_shell_with_pass_rc(
+            pass_rc=75,
+            pass_stderr="LIFE_MANAGER_PROVIDER_LEASE_BUSY\n",
+        )
+        self.assertEqual(busy.returncode, 0, busy.stderr)
+        self.assertEqual(
+            busy_call[busy_call.index("--reason") + 1],
+            "mercor_pass_already_running",
+        )
+        budget, budget_call = self._run_shell_with_pass_rc(
+            pass_rc=75,
+            pass_stderr="budget blocked\n",
+        )
+        self.assertEqual(budget.returncode, 75, budget.stderr)
+        self.assertEqual(
+            budget_call[budget_call.index("--reason") + 1],
+            "mercor_runner_failed",
+        )
 
     def test_evidence_paths_must_stay_inside_current_private_pass(self):
         with self.subTest("stale evidence path is rejected"):

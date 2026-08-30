@@ -17,6 +17,7 @@ if [[ -z "${MERCOR_RESUME:-}" && -f "$MERCOR_STATE_ROOT/resume-state.json" ]]; t
 fi
 MERCOR_RESUME="${MERCOR_RESUME:-${XDG_DATA_HOME:-$HOME/.local/share}/anicca/job-search/mercor-resume.pdf}"
 RESULT="$EVIDENCE/agent/mercor-pass-summary.json"
+PASS_STDERR="$EVIDENCE/mercor-pass.stderr.log"
 TERMINAL="$EVIDENCE/mercor-pass-terminal.json"
 REPORT="$EVIDENCE/telegram-report.json"
 FINAL_REASON="mercor_result_missing"
@@ -80,10 +81,10 @@ set +e
   --schema "$PASS_SCHEMA" \
   --evidence-dir "$EVIDENCE/agent" \
   --workdir "$JOB_SEARCH_REPO_ROOT" \
-  --run-id "$RUN_ID"
+  --run-id "$RUN_ID" 2>"$PASS_STDERR"
 PASS_RC=$?
 set -e
-if [[ "$PASS_RC" -eq 75 ]]; then
+if [[ "$PASS_RC" -eq 75 ]] && grep -Fqx "LIFE_MANAGER_PROVIDER_LEASE_BUSY" "$PASS_STDERR"; then
   FINAL_REASON="mercor_pass_already_running"
   exit 0
 fi

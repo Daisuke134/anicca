@@ -133,6 +133,7 @@ class ProviderLeaseTest(unittest.TestCase):
             "--loop", "job-search", "--workdir", str(self.root),
         ], env=env, capture_output=True, text=True)
         self.assertEqual(result.returncode, 75, result.stderr)
+        self.assertEqual(result.stderr, "LIFE_MANAGER_PROVIDER_LEASE_BUSY\n")
         self.assertFalse(marker.exists(), "contended lease launched a provider")
 
 

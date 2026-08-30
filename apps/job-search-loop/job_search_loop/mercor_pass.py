@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -153,6 +154,7 @@ def main(argv: list[str] | None = None) -> int:
             run_id=args.run_id,
         )
     except PassAlreadyRunning:
+        print("LIFE_MANAGER_PROVIDER_LEASE_BUSY", file=sys.stderr)
         return 75
     try:
         validate_evidence_paths(result, args.evidence_dir.parent)

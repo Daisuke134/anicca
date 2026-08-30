@@ -56,6 +56,7 @@ DEFAULT_HISTORY_GENERATIONS = 3
 DEFAULT_EVIDENCE_MIN_FREE_BYTES = 512 * 1024 * 1024
 DEFAULT_EVIDENCE_MAX_BYTES = 256 * 1024 * 1024
 PROVIDER_LEASE_BUSY = 75
+PROVIDER_LEASE_BUSY_LINE = "LIFE_MANAGER_PROVIDER_LEASE_BUSY"
 
 # OpenAI Standard tier, short context, USD per 1M tokens: (input, cached_input, output).
 # Source: https://developers.openai.com/api/docs/pricing (fetched 2026-07-25).
@@ -1380,7 +1381,7 @@ def run() -> int:
             os.environ.get("LIFE_MANAGER_PROVIDER_LEASE_PATH", "").strip()
         )
     except ProviderLeaseBusy:
-        print("agent-runner: provider lease busy", file=sys.stderr)
+        print(PROVIDER_LEASE_BUSY_LINE, file=sys.stderr)
         return PROVIDER_LEASE_BUSY
     except (OSError, ValueError) as error:
         print(f"agent-runner: provider lease failed: {error}", file=sys.stderr)
