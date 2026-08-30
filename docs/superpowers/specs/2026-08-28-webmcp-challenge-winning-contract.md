@@ -1388,7 +1388,7 @@ A01–A09はcomplete。新依存/endpoint 0。A09はrelated 120/120、fresh adve
 |---|---|---|
 | S01 | private repo `Daisuke134/life-manager-workrooms`を作る | complete: `gh repo view`でPRIVATE、issues enabled、empty repo |
 | S02 | labels `money-printer`と`needs-human`を作る | complete: exact name/color/description readback、duplicate create 0 |
-| S03 | bridgeにinternal claim callを実装する | one dispatch packet、bearerをstdout/stderrへ出さない |
+| S03 | bridgeにinternal claim callを実装する | complete: claim→zero-login guest cookie→same-tenant workroomの3 requestだけでfrozen `LM_DISPATCH_V1` packetを返す。idle追加GET 0、secret/cookie/activity出力0、focused 6/6、related 78/78、fresh adversarial `ship` |
 | S04 | bridgeにGitHub Issue create/readbackを実装する | titleにstable dispatch ID、bodyにpublic refs/job ID/result protocol、credential/PII 0 |
 | S05 | create unknown時のreconciliationを実装する | exact dispatch marker search→presentならreuse、absentだけcreate、unknownなら停止 |
 | S06 | bridgeに`LM_RESULT_V1` comment parserを実装する | expected repo、issue、author `Daisuke134`、dispatch/job IDs、allowed keysだけaccept |
@@ -1478,4 +1478,4 @@ A01–A09はcomplete。新依存/endpoint 0。A09はrelated 120/120、fresh adve
 
 ### 18.13 Immediate next atom
 
-次はS03だけを実行する。existing private APIとzero-login workroom GETを再利用し、one claimed dispatchからsecret-free public work packetを作る。S04以降のGitHub effectはS03 packet test後だけ進める。R01–R12、A01–A09、S01–S02は完了済み。full browser production E2Eはbridge完成後のB12唯一のrecording runへ予約し、Chrome/ChatGPT内蔵browserの二重実行はしない。
+次はS04だけを実行する。S03のsecret-free public work packetを、private `Daisuke134/life-manager-workrooms` Issueへstable dispatch marker付きでmirrorし、credential/PIIをbodyへ入れない。create-unknown reconciliation、result parse/callback、Symphony workflowはS05以降まで前倒ししない。R01–R12、A01–A09、S01–S03は完了済み。full browser production E2Eはbridge完成後のB12唯一のrecording runへ予約し、Chrome/ChatGPT内蔵browserの二重実行はしない。
