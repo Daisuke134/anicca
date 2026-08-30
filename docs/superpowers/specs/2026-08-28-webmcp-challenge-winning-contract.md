@@ -1257,13 +1257,13 @@ One active item at a time。各itemは実物readbackを閉じてから次へ進�
 | Atom | One action | Exact completion evidence |
 |---|---|---|
 | B01 | private evidence rootを作る | pass: `/Users/anicca/.local/state/life-manager/evidence/webmcp-challenge`、mode 700、evidence `B01.json` |
-| B02 | fresh ChatGPT desktop in-app browserでcanonical URLを開く | one screenshotにURL、Judge guest、boardが表示 |
-| B03 | clientのSite tools一覧を開く | HumanTaskなしではexact four: `inspect_money_printer`、`add_opportunity`、`inspect_workroom`、`inspect_next_human_task`。`record_human_answer`は未登録 |
-| B04 | `inspect_money_printer`を一回callする | structured resultのmetricsが同時刻のvisible boardと一致 |
-| B05 | fresh session responseをprivacy scanする | cookie/token/email/private profile/raw receipt payloadの露出0 |
-| B06 | ChatGPT discoveryが利用不可ならChrome 151をfresh profileで開きtesting flagをenableする | fallback-only。`chrome://version` 151+とenabled flag screenshot |
-| B07 | Chrome DevTools WebMCP panelでinitial four toolsを読む | fallback-only。tool names/input schemas screenshot |
-| B08 | B02–B05と、primary ChatGPTまたはfallback B06–B07を`browser-client-evidence.json`へ束縛する | client、version、URL、observed_at、initial four tool list、screenshot refs。B04不一致なら実装へ進まずclient/API差分を直す |
+| B02 | current Codex sessionでprimary/fallback client availabilityを一回診断する | observed: in-app backendなし。Chrome 151、native host pass、ChatGPT extension missing。fallback Chromeを選択、evidence `B02.json` |
+| B03 | ChromeへChatGPT extension `hehggadaopoacecdllhhajmbjkdcmajg`をinstall/enabledにする | Chrome Web Storeの通常installをDaisが承認し、bundled diagnosticがinstalled=true/enabled=true。policy overrideやmanual native-host repairは禁止 |
+| B04 | connected Chrome 151でtesting flagをenableしcanonical URLを開く | `chrome://version` 151+、enabled flag、URL、Judge guest、boardのone screenshot |
+| B05 | clientのSite tools一覧を開く | HumanTaskなしではexact four: `inspect_money_printer`、`add_opportunity`、`inspect_workroom`、`inspect_next_human_task`。`record_human_answer`は未登録 |
+| B06 | `inspect_money_printer`を一回callする | structured resultのmetricsが同時刻のvisible boardと一致 |
+| B07 | fresh session responseをprivacy scanする | cookie/token/email/private profile/raw receipt payloadの露出0 |
+| B08 | B02–B07を`browser-client-evidence.json`へ束縛する | client、version、URL、observed_at、initial four tool list、screenshot refs。B06不一致なら実装へ進まずclient/API差分を直す |
 
 ### 18.5 R — race-free Symphony persistence（Section 14 item 3, slice 1）
 
@@ -1395,4 +1395,4 @@ One active item at a time。各itemは実物readbackを閉じてから次へ進�
 
 ### 18.13 Immediate next atom
 
-`B02`だけを次に実行する。B02–B08が揃うまでmigration、Symphony bridge、provider applicationへ進まない。各atom完了時にこのSectionのstateとSection 17の対応uncertaintyを同じcommitで更新する。
+`B03`だけを次に実行する。B03–B08が揃うまでmigration、Symphony bridge、provider applicationへ進まない。各atom完了時にこのSectionのstateとSection 17の対応uncertaintyを同じcommitで更新する。
