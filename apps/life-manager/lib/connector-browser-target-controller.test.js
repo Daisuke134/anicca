@@ -5,15 +5,33 @@ const test = require("node:test");
 
 const { createConnectorBrowserTargetController } = require("./connector-browser-target-controller.js");
 
-function fixture() {
+function fixture({ baselineCount = 1, delayedOwnedInsertion = false } = {}) {
   const calls = [];
-  const baseline = { targetId: "BASELINE", async evaluate() { return 1; } };
+  const baselinePages = Array.from({ length: baselineCount }, (_, index) => ({
+    targetId: index === 0 ? "BASELINE" : `BASELINE_${index}`,
+    async evaluate() { return 1; },
+  }));
+  const baseline = baselinePages[0];
   const owned = { targetId: "OWNED123", async evaluate() { calls.push(["evaluate", "OWNED123"]); return 1; } };
-  const pages = [baseline];
-  const liveTargetIds = new Set(["BASELINE"]);
+  const pages = [...baselinePages];
+  const liveTargetIds = new Set(baselinePages.map((page) => page.targetId));
+  let targetCreated = false;
+  let pagesAfterCreate = 0;
   let targetInfosOverride;
+  function addOwnedPage() {
+    if (liveTargetIds.has("OWNED123")) return;
+    pages.push(owned);
+    liveTargetIds.add("OWNED123");
+  }
   const context = {
-    pages() { calls.push(["pages"]); return [...pages]; },
+    pages() {
+      calls.push(["pages"]);
+      if (targetCreated && delayedOwnedInsertion) {
+        pagesAfterCreate += 1;
+        if (pagesAfterCreate === 2) addOwnedPage();
+      }
+      return [...pages];
+    },
     async newCDPSession(page) {
       calls.push(["page-session", page.targetId]);
       return {
@@ -33,8 +51,8 @@ function fixture() {
         async send(method, params) {
           calls.push(["browser-send", method, params]);
           if (method === "Target.createTarget") {
-            pages.push(owned);
-            liveTargetIds.add("OWNED123");
+            targetCreated = true;
+            if (!delayedOwnedInsertion) addOwnedPage();
             return { targetId: "OWNED123" };
           }
           if (method === "Target.getTargets") {
@@ -78,6 +96,19 @@ test("creates exactly one default-context target and binds only its exact Playwr
     ["browser-send", "Target.createTarget", { url: "about:blank" }],
   );
   assert.equal(fx.calls.some(([name]) => name === "new-page"), false);
+});
+
+test("binds a delayed owned page without scanning the baseline page set", async () => {
+  const fx = fixture({ baselineCount: 463, delayedOwnedInsertion: true });
+  const controller = createConnectorBrowserTargetController({ browser: fx.browser });
+
+  const result = await controller.create();
+
+  assert.equal(result.page, fx.owned);
+  assert.deepEqual(
+    fx.calls.filter(([name]) => name === "page-session").map(([, targetId]) => targetId),
+    ["OWNED123"],
+  );
 });
 
 test("probes and closes only the exact Connector target", async () => {
