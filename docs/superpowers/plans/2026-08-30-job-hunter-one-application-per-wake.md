@@ -69,13 +69,21 @@ Deployment state: main-derived sparse release `bd274627` is loaded explicitly by
 
 Red Hat official CXS adds 27 Japan-AI results, but unfinished-only batching would hide every fresh source until all 188 backlog rows drain. Build a maximum 400-row ranking batch: keep every unfinished official row first, then fill remaining slots with fresh rows after company interleaving. If unfinished rows already reach 400, rank them in the existing chunk contract; never discard unfinished work. This is context-capacity bookkeeping, not job-fit judgment.
 
-#### Task 1G: Send the model's focused source query to Workday CXS — active
+#### Task 1G: Send the model's focused source query to Workday CXS — completed
 
 **Files:**
 - Modify: `apps/job-search-loop/job_search_loop/workday_discovery.py`
 - Modify focused checks in: `apps/job-search-loop/tests/test_workday_discovery.py`
 
 Every validated source includes `search_text`, but `_fetch_jobs()` currently sends an empty Workday search. Use the exact source `search_text` in every paginated CXS request. Preserve payload validation, total consistency, pagination, URL identity and source-level fail-closed behavior. Verify Red Hat-style source requests carry `Tokyo Japan AI ...` rather than an empty query.
+
+PR #3210 merges this repair. Release `f3921299` is loaded by all five Job Hunting owners. Production run `daily-20260830-105938` proves Red Hat and Guidewire now enter the official snapshot and that a rejected fit advances to the next candidate in the same wake. It does not prove an application: 15 fit decisions reject, one is interrupted during an intentional provider-conflict stop, and qualified/submitted/Gmail receipt remain zero.
+
+#### Task 1H: Retrieve broad Japan-feasible work and guarantee one truthful stretch handoff — active
+
+**Files:** determine from the existing source-query prompt and fit-qualification prompt after tracing their current owners; do not add a new service or scheduler.
+
+Use concise Workday-native source queries rather than long sentence-like keyword bundles that collapse a verified 27-result Japan-AI source into three unrelated senior results. Rank evidence-supported roles first, but do not treat missing preferred years, title seniority, or an imperfect stack match as an automatic veto. If a wake contains any posting that is legal to work from Japan, geographically feasible, truthful to apply to, and lacks an objective hard blocker, at least one best stretch candidate must become qualified and enter the existing browser queue. Hard blockers remain false attestation, impossible work authorization/location, an explicit credential the candidate does not hold, or compensation below the configured floor when the posting states it. Never fabricate experience. Verify with one natural existing-owner wake and the full screenshot + Gmail + Ledger + Telegram + replay-zero receipt chain.
 
 ---
 
