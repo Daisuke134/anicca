@@ -56,6 +56,8 @@ const TECHPLAY_WORKFLOW_VERSION = "techplay_registration_v1";
 const KOKUCHPRO_WORKFLOW_VERSION = "kokuchpro_registration_v1";
 const LUMA_PAGE_STATE = "registration_page_v1";
 const EXPECTED_REGISTRATION_EFFECT = "registered_or_pending";
+const PROVIDER_RANK_MAX_DATES = 2;
+const PROVIDER_RANK_MAX_CANDIDATES = 12;
 
 function invalid() {
   throw new Error("Connector minimal production unavailable");
@@ -104,6 +106,48 @@ function addCalendarDays(day, count) {
     month: shifted.getUTCMonth() + 1,
     day: shifted.getUTCDate(),
   });
+}
+
+function candidateTokyoDateKey(candidate) {
+  const startsAt = candidate && typeof candidate.starts_at === "string" ? candidate.starts_at : "";
+  const timestamp = Date.parse(startsAt);
+  if (!Number.isFinite(timestamp)) return null;
+  const day = localDay(new Date(timestamp), PRODUCTION_TIME_ZONE);
+  return [day.year, day.month, day.day].map((part, index) => String(part).padStart(index === 0 ? 4 : 2, "0")).join("-");
+}
+
+function boundedPendingCandidates(candidates) {
+  if (candidates.length <= PROVIDER_RANK_MAX_CANDIDATES) return candidates;
+  const byDate = new Map();
+  const invalidDates = [];
+  for (const candidate of candidates) {
+    const date = candidateTokyoDateKey(candidate);
+    if (!date) {
+      invalidDates.push(candidate);
+      continue;
+    }
+    const group = byDate.get(date) || [];
+    group.push(candidate);
+    byDate.set(date, group);
+  }
+  const dates = [...byDate.keys()].sort().slice(0, PROVIDER_RANK_MAX_DATES);
+  const selected = [];
+  for (let index = 0; selected.length < PROVIDER_RANK_MAX_CANDIDATES; index += 1) {
+    let added = false;
+    for (const date of dates) {
+      const group = byDate.get(date);
+      if (index >= group.length) continue;
+      selected.push(group[index]);
+      added = true;
+      if (selected.length >= PROVIDER_RANK_MAX_CANDIDATES) break;
+    }
+    if (!added) break;
+  }
+  for (const candidate of invalidDates) {
+    if (selected.length >= PROVIDER_RANK_MAX_CANDIDATES) break;
+    selected.push(candidate);
+  }
+  return Object.freeze(selected);
 }
 
 function createProductionCalendarReader(options = {}) {
@@ -229,8 +273,9 @@ function createProductionProviderRouter(options = {}) {
         ));
         const pending = candidates.filter((candidate) => !reconcile.includes(candidate));
         if (pending.length === 0) return candidates;
-        const ranking = await rankCandidates({ candidates: pending, preferences: eventPreferences });
-        const sourceByRef = new Map(pending.map((candidate) => [candidate.event_ref, candidate]));
+        const rankingCandidates = boundedPendingCandidates(pending);
+        const ranking = await rankCandidates({ candidates: rankingCandidates, preferences: eventPreferences });
+        const sourceByRef = new Map(rankingCandidates.map((candidate) => [candidate.event_ref, candidate]));
         const eligible = eligibleRankedCandidates(ranking).map((ranked) => Object.freeze({
           ...sourceByRef.get(ranked.event_ref),
           priority_class: ranked.priority_class,

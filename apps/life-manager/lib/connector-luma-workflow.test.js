@@ -21,6 +21,114 @@ function event(slug, overrides = {}) {
   });
 }
 
+function lumaDetail(slug) {
+  return {
+    canonicalUrl: `https://luma.com/${slug}`,
+    jsonLd: [{
+      "@type": "Event",
+      name: `Event ${slug}`,
+      startDate: "2026-08-10T10:00:00.000Z",
+      endDate: "2026-08-10T11:00:00.000Z",
+      eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
+      eventStatus: "https://schema.org/EventScheduled",
+      location: { name: "Tokyo", address: "Tokyo" },
+      offers: [{
+        name: "Free",
+        price: "0",
+        priceCurrency: "JPY",
+        availability: "https://schema.org/InStock",
+      }],
+    }],
+    controls: ["参加登録"],
+  };
+}
+
+function defaultDiscoveryPage(slugs, detailFor = () => ({})) {
+  const discoveryUrl = "https://luma.com/tokyo?k=p";
+  const snapshot = slugs.map((slug) => ({
+    href: `https://luma.com/${slug}`,
+    title: `Event ${slug}`,
+    cardText: "10:00",
+    timelineText: "8月10日 月曜日",
+  }));
+  let currentUrl = "";
+  const gotoCalls = [];
+  const page = {
+    async goto(url) {
+      currentUrl = url;
+      gotoCalls.push(url);
+      const behavior = detailFor(url);
+      if (behavior.type === "goto-throw") throw behavior.error;
+    },
+    async waitForTimeout() {},
+    async evaluate(callback) {
+      if (currentUrl === discoveryUrl) {
+        const source = String(callback);
+        if (source.includes("querySelectorAll")) return snapshot;
+        if (source.includes("root.scrollTo(")) return undefined;
+        return { atEnd: true, scrollHeight: 100 };
+      }
+      const behavior = detailFor(currentUrl);
+      if (behavior.type === "read-throw") throw behavior.error;
+      return behavior.raw || lumaDetail(currentUrl.split("/").at(-1));
+    },
+  };
+  return { page, gotoCalls };
+}
+
+test("Luma default detail walk is bounded to twelve candidates while observed_count stays full", async () => {
+  const slugs = Array.from({ length: 13 }, (_, index) => `bounded-${index + 1}`);
+  const { page, gotoCalls } = defaultDiscoveryPage(slugs);
+  const audits = [];
+  const workflow = createLumaScriptFirstWorkflow({
+    now: () => new Date("2026-08-07T08:30:00.000Z"),
+    async onDiscoveryAudit(value) { audits.push(value); },
+  });
+
+  const result = await workflow.discoverCandidates({ page, calendar: [] });
+
+  assert.equal(result.length, 12);
+  assert.equal(audits[0].observed_count, 13);
+  assert.equal(gotoCalls.length, 13);
+  assert.equal(gotoCalls.includes("https://luma.com/bounded-13"), false);
+});
+
+test("Luma default detail navigation, read, and normalize failures skip one candidate and continue", async () => {
+  const slugs = ["detail-ok-1", "detail-nav-fail", "detail-read-fail", "detail-normalize-fail", "detail-ok-2"];
+  const privateNavigationMessage = "private detail navigation";
+  const privateReadMessage = "private detail read";
+  const privateNormalizeMessage = "private detail normalize";
+  const detailFor = (url) => {
+    if (url.endsWith("detail-nav-fail")) {
+      return { type: "goto-throw", error: new Error(privateNavigationMessage) };
+    }
+    if (url.endsWith("detail-read-fail")) {
+      return { type: "read-throw", error: new Error(privateReadMessage) };
+    }
+    if (url.endsWith("detail-normalize-fail")) {
+      const throwingEvent = new Proxy({}, { get() { throw new Error(privateNormalizeMessage); } });
+      return { raw: { canonicalUrl: url, jsonLd: [throwingEvent], controls: [] } };
+    }
+    return {};
+  };
+  const { page, gotoCalls } = defaultDiscoveryPage(slugs, detailFor);
+  const workflow = createLumaScriptFirstWorkflow({
+    now: () => new Date("2026-08-07T08:30:00.000Z"),
+  });
+
+  const result = await workflow.discoverCandidates({ page, calendar: [] });
+
+  assert.deepEqual(result.map((candidate) => candidate.event_ref), [
+    "luma-event://event/detail-ok-1",
+    "luma-event://event/detail-ok-2",
+  ]);
+  assert.deepEqual(gotoCalls.slice(1), slugs.map((slug) => `https://luma.com/${slug}`));
+  const serialized = JSON.stringify(result);
+  for (const privateText of [privateNavigationMessage, privateReadMessage, privateNormalizeMessage]) {
+    assert.equal(serialized.includes(privateText), false);
+  }
+});
+
 test("Luma discovery returns the first free open non-conflicting candidates in provider order", async () => {
   const page = Object.freeze({ page_id: "owned-page" });
   const inspected = [

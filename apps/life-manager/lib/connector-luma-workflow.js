@@ -16,6 +16,7 @@ const TOKYO_DISCOVER_URL = "https://luma.com/tokyo?k=p";
 const PRODUCTION_TIME_ZONE = "Asia/Tokyo";
 const EVENT_REF = /^luma-event:\/\/event\/[A-Za-z0-9_-]+$/;
 const CANONICAL_URL = /^https:\/\/luma\.com\/[A-Za-z0-9_-]+$/;
+const LUMA_DETAIL_WALK_LIMIT = 12;
 const DIRECT_ACTION_FAILURE_REASONS = new Map([
   ["LUMA_REQUIRED_PROFILE_FIELD_UNAVAILABLE", "luma_required_profile_field_unavailable"],
   ["LUMA_FORM_PROFILE_UNAVAILABLE", "luma_form_profile_unavailable"],
@@ -103,12 +104,16 @@ async function defaultDiscoverOnPage({ page }) {
     advance: () => advanceLumaTimeline(page),
   });
   const details = [];
-  for (const candidate of inventory.candidates) {
-    await page.goto(candidate.canonical_url, { waitUntil: "domcontentloaded", timeout: 30_000 });
-    const detail = normalizeLumaEventDetail(
-      await readRawLumaEventDetail(page, candidate.canonical_url),
-    );
-    if (detail) details.push(Object.freeze({ provider: "luma", ...detail }));
+  for (const candidate of inventory.candidates.slice(0, LUMA_DETAIL_WALK_LIMIT)) {
+    try {
+      await page.goto(candidate.canonical_url, { waitUntil: "domcontentloaded", timeout: 30_000 });
+      const detail = normalizeLumaEventDetail(
+        await readRawLumaEventDetail(page, candidate.canonical_url),
+      );
+      if (detail) details.push(Object.freeze({ provider: "luma", ...detail }));
+    } catch {
+      // One malformed or unavailable detail must not discard the rest of the listing.
+    }
   }
   return Object.freeze({
     observed_count: inventory.candidates.length,
