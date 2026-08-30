@@ -646,6 +646,8 @@ def codex_attempt_started_work(stdout: str) -> bool:
             event = json.loads(line)
         except json.JSONDecodeError:
             continue
+        if not isinstance(event, dict):
+            continue
         if event.get("type") not in {"item.started", "item.completed"}:
             continue
         item = event.get("item")
@@ -1210,10 +1212,106 @@ def command_for(provider: str, executable: str, provider_config: dict[str, Any],
     raise ValueError(f"unsupported provider adapter: {provider}")
 
 
-def classify_provider_error(rc: int, timed_out: bool, stdout: str, stderr: str, launch_error: str) -> str:
+CODEX_QUOTA_CODES = frozenset((
+    "insufficient_quota", "quota_exceeded", "usage_limit_reached", "usage_limit_exceeded",
+    "usage_not_included", "rate_limit_exceeded", "rate_limit_reached",
+    "billing_hard_limit_reached", "workspace_owner_credits_depleted",
+    "workspace_member_credits_depleted", "workspace_owner_usage_limit_reached",
+    "workspace_member_usage_limit_reached",
+))
+CODEX_AUTH_CODES = frozenset((
+    "authentication_error", "authentication_failed", "invalid_api_key", "invalid_token",
+    "oauth_token_expired", "authentication_session_expired", "token_expired", "refresh_token_expired",
+    "refresh_token_reused", "refresh_token_revoked", "unauthorized",
+))
+CODEX_UNAVAILABLE_CODES = frozenset((
+    "server_overloaded", "internal_server_error", "connection_failed",
+    "http_connection_failed", "response_stream_connection_failed", "response_stream_disconnected",
+))
+CODEX_QUOTA_STATUS = frozenset((402, 429))
+CODEX_UNAVAILABLE_STATUS = frozenset((408, 500, 502, 503, 504, 529))
+CODEX_AUTH_STATUS = frozenset((401, 403))
+CODEX_QUOTA_MESSAGE_PREFIXES = (
+    "quota exceeded", "insufficient quota", "usage limit reached", "you've hit your usage limit",
+    "rate limit exceeded", "rate limit reached for ", "your workspace is out of credits",
+    "you hit your spend cap",
+)
+CODEX_AUTH_MESSAGE_PREFIXES = (
+    "authentication failed", "authentication error", "invalid api key", "invalid token",
+    "unauthorized", "session expired", "your access token could not be refreshed because",
+)
+
+
+def _codex_error_envelopes(text: str):
+    for line in text.splitlines():
+        try:
+            event = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(event, dict):
+            continue
+        event_type = event.get("type")
+        if event_type in {"turn.failed", "error"}:
+            error = event.get("error") if isinstance(event.get("error"), dict) else event
+            if isinstance(error, dict):
+                yield error
+        elif event_type == "response.failed":
+            response = event.get("response")
+            error = response.get("error") if isinstance(response, dict) else None
+            if isinstance(error, dict):
+                yield error
+        elif event_type in {"item.started", "item.updated", "item.completed"}:
+            item = event.get("item")
+            if isinstance(item, dict) and item.get("type") == "error":
+                yield item
+
+
+def _codex_structured_error_class(stdout: str, stderr: str) -> str | None:
+    for error in (*_codex_error_envelopes(stdout), *_codex_error_envelopes(stderr)):
+        codes = {
+            str(error.get(key)).strip().casefold()
+            for key in ("code", "error_code", "errorCode", "codex_error_info", "error_type", "type")
+            if isinstance(error.get(key), str) and error.get(key).strip() and error.get(key) != "error"
+        }
+        status = next((int(error[key]) for key in ("status", "status_code", "statusCode", "http_status")
+                       if str(error.get(key, "")).isdigit()), None)
+        message = " ".join(error.get("message", "").split()).casefold() if isinstance(error.get("message"), str) else ""
+        if codes & CODEX_UNAVAILABLE_CODES or status in CODEX_UNAVAILABLE_STATUS:
+            return "transient_unavailable"
+        if codes & CODEX_AUTH_CODES or status in CODEX_AUTH_STATUS or any(
+            message.startswith(prefix) for prefix in CODEX_AUTH_MESSAGE_PREFIXES
+        ):
+            return "transient_auth"
+        if codes & CODEX_QUOTA_CODES or status in CODEX_QUOTA_STATUS or any(
+            message.startswith(prefix) for prefix in CODEX_QUOTA_MESSAGE_PREFIXES
+        ):
+            return "transient_quota"
+    return None
+
+
+def classify_provider_error(
+    rc: int,
+    timed_out: bool,
+    stdout: str,
+    stderr: str,
+    launch_error: str,
+    provider: str | None = None,
+) -> str:
     """Classify failures for safe fallback. Only transient provider failures retry."""
     if timed_out or rc == 124:
         return "transient_timeout"
+    if provider == "codex":
+        structured = _codex_structured_error_class(stdout, stderr)
+        if structured:
+            return structured
+        text = f"{stderr}\n{launch_error}".lower()
+        if any(token in text for token in (
+            "failed to lookup address information", "could not resolve host",
+            "nodename nor servname", "name or service not known", "connection refused",
+            "connection reset", "network is unreachable", "stream disconnected before completion",
+        )) or rc == 127 or launch_error:
+            return "transient_unavailable"
+        return "validation_or_task_failure"
     # Claude prints quota/weekly-limit notices to stdout (with an empty
     # stderr), so both provider streams are part of the transient signal.
     text = f"{stdout}\n{stderr}\n{launch_error}".lower()
@@ -1249,6 +1347,30 @@ def classify_provider_error(rc: int, timed_out: bool, stdout: str, stderr: str, 
     if rc == 127 or launch_error:
         return "transient_unavailable"
     return "validation_or_task_failure"
+
+
+def codex_failover_action(
+    candidate: dict[str, Any],
+    error_class: str | None,
+    result_fresh: bool,
+    attempt_started_work: bool,
+) -> str:
+    """Choose the only safe next step after a failed Codex account attempt."""
+    if candidate.get("provider") != "codex":
+        return "not_applicable"
+    if result_fresh or attempt_started_work:
+        return "stop"
+    if candidate.get("account_fallback_next"):
+        if error_class in {"transient_quota", "transient_auth"}:
+            return "retry_next_account"
+        if error_class in {"transient_timeout", "transient_unavailable"}:
+            return "continue_next_non_codex"
+        return "stop"
+    if error_class in {
+        "transient_timeout", "transient_quota", "transient_unavailable", "transient_auth",
+    }:
+        return "continue_next_non_codex"
+    return "stop"
 
 
 def run() -> int:
@@ -1412,15 +1534,18 @@ def run() -> int:
     budget_blocked: dict[str, Any] | None = None
     last_budget: dict[str, Any] = {"status": "disabled"}
     total_deadline = time.monotonic() + timeout_seconds
+    skip_codex_profiles = False
     for index, candidate in enumerate(candidates, 1):
         remaining_timeout_seconds = math.floor(total_deadline - time.monotonic())
         if remaining_timeout_seconds < 1:
             break
         effective_candidate = dict(candidate)
+        provider = effective_candidate["provider"]
+        if skip_codex_profiles and provider == "codex":
+            continue
         attempt_timeout_seconds = min(
             remaining_timeout_seconds,
             effective_candidate.get("timeout_seconds", remaining_timeout_seconds))
-        provider = effective_candidate["provider"]
         provider_config = dict(config.get("providers", {}).get(provider, {}))
         for key in ("profile_alias", "automation_home", "auth_file"):
             if key in effective_candidate:
@@ -1556,7 +1681,7 @@ def run() -> int:
                 "daily_consumed_after_tokens": settlement["daily_consumed_after_tokens"],
             }
         error_class = None if (rc == 0 and schema_valid) else classify_provider_error(
-            rc, timed_out, stdout_text, stderr_text, launch_error,
+            rc, timed_out, stdout_text, stderr_text, launch_error, provider=provider,
         )
 
         row = {
@@ -1659,14 +1784,19 @@ def run() -> int:
         # timeout, expired provider auth, provider availability, or quota failures.
         if rc == 0 and result_fresh and not schema_valid:
             break
-        if effective_candidate.get("account_fallback_next"):
-            if (
-                error_class not in ("transient_quota", "transient_auth")
-                or result_fresh
-                or codex_attempt_started_work(stdout_text)
-            ):
-                break
-            continue
+        if provider == "codex":
+            action = codex_failover_action(
+                effective_candidate,
+                error_class,
+                result_fresh,
+                codex_attempt_started_work(stdout_text),
+            )
+            if action == "retry_next_account":
+                continue
+            if action == "continue_next_non_codex":
+                skip_codex_profiles = True
+                continue
+            break
         if error_class not in (
             "transient_timeout", "transient_quota", "transient_unavailable", "transient_auth",
         ):
