@@ -7,6 +7,7 @@ const path = require("node:path");
 
 const { createContentObjectStore } = require("../lib/content-object-store.js");
 const { createMarketingLocalLedger } = require("../lib/marketing-local-ledger.js");
+const { isMarketingLaneManifest } = require("../lib/marketing-lane-manifest.js");
 const {
   ACCOUNT_ID,
   EN_AFFIRMATION_LANE,
@@ -23,6 +24,7 @@ const {
 } = require("../lib/marketing-liveness-adapter.js");
 const { executeCapabilityJob } = require("./runtime-up.js");
 const { armControls, restoreControls } = require("./anicca-en-widget-canary.js");
+const { marketingVideoDueSlot } = require("../lib/honne-ja-shadow-schedule.js");
 
 const TENANT = "dais-local";
 const PRODUCT = "anicca-ios";
@@ -35,11 +37,15 @@ const TELEGRAM_TOKEN_REF = "secret://telegram/bot-token";
 const CHAT_REF = "telegram-chat://owner";
 const OBJECT_REF = /^object:\/\/sha256\/[0-9a-f]{64}$/;
 const ACCOUNT_REF = "account://instagram/@ani.cca1234";
+const JA_LARRY_PRODUCTION_SLOTS = Object.freeze(["10:30", "16:30", "22:30"]);
+const EN_AFFIRMATION_PRODUCTION_SLOTS = Object.freeze(["10:00", "15:00", "20:00"]);
+const EN_SLIDESHOW_PRODUCTION_SLOTS = Object.freeze(["09:00", "15:00", "21:00"]);
 
 const JA_RUNNER_LANE = JA_LANE;
 const EN_RUNNER_LANE = EN_AFFIRMATION_LANE;
 const TIKTOK_SLIDESHOW_RUNNER_LANE = EN_SLIDESHOW_TIKTOK_LANE;
-const COMMAND_LANES = Object.freeze({ run: JA_RUNNER_LANE, "run-en-affirmation": EN_RUNNER_LANE, "run-en-slideshow-tiktok": TIKTOK_SLIDESHOW_RUNNER_LANE });
+const COMMAND_LANES = Object.freeze({ run: JA_RUNNER_LANE, "run-ja-larry-production": JA_RUNNER_LANE, "run-en-affirmation": EN_RUNNER_LANE, "run-en-affirmation-production": EN_RUNNER_LANE, "run-en-slideshow-tiktok": TIKTOK_SLIDESHOW_RUNNER_LANE, "run-en-slideshow-tiktok-production": TIKTOK_SLIDESHOW_RUNNER_LANE });
+const PRODUCTION_SLOTS = Object.freeze({ "run-ja-larry-production": JA_LARRY_PRODUCTION_SLOTS, "run-en-affirmation-production": EN_AFFIRMATION_PRODUCTION_SLOTS, "run-en-slideshow-tiktok-production": EN_SLIDESHOW_PRODUCTION_SLOTS });
 
 function required(value, label) {
   const text = String(value == null ? "" : value).trim();
@@ -57,11 +63,12 @@ function exactInstant(value, label) {
 }
 
 function parseArgs(argv = []) {
+  if (argv.length === 1 && PRODUCTION_SLOTS[argv[0]]) return { command: argv[0], slot: null };
   const lane = argv.length === 3 && argv[1] === "--slot" ? COMMAND_LANES[argv[0]] : null;
   if (lane) {
     return { command: argv[0], slot: exactInstant(argv[2], `${lane.name || "Larry"} canary slot`) };
   }
-  throw new Error("usage: anicca-larry-ja-canary.js run|run-en-affirmation|run-en-slideshow-tiktok --slot <exact ISO instant>");
+  throw new Error("usage: anicca-larry-ja-canary.js run|run-ja-larry-production|run-en-affirmation|run-en-affirmation-production|run-en-slideshow-tiktok|run-en-slideshow-tiktok-production --slot <exact ISO instant>");
 }
 
 function parseMediaRefs(value, lane = JA_RUNNER_LANE) {
@@ -193,12 +200,40 @@ function publicationLedgerPath(dataDir, tenantId, lane = JA_RUNNER_LANE) {
   return path.join(dataDir, "tenants", encodeURIComponent(tenantId), "marketing", "native-carousel-publication", lane.productId, "distribution.jsonl");
 }
 
+function enAffirmationProductionSlot(nowMs) {
+  return marketingVideoDueSlot(nowMs, "Asia/Tokyo", EN_AFFIRMATION_PRODUCTION_SLOTS);
+}
+
+function jaLarryProductionSlot(nowMs) {
+  return marketingVideoDueSlot(nowMs, "Asia/Tokyo", JA_LARRY_PRODUCTION_SLOTS);
+}
+
+function enSlideshowProductionSlot(nowMs) {
+  return marketingVideoDueSlot(nowMs, "Asia/Tokyo", EN_SLIDESHOW_PRODUCTION_SLOTS);
+}
+
+function assertProductionControls(config, lane) {
+  const manifest = JSON.parse(fs.readFileSync(path.join(config.dataDir, "marketing", "lane-manifest.json"), "utf8"));
+  const fence = JSON.parse(fs.readFileSync(path.join(config.dataDir, "marketing", "publication-effect-fence.json"), "utf8"));
+  const targets = manifest.lanes.filter((row) => row.integration_id === lane.integrationId && row.profile === lane.accountId);
+  if (!isMarketingLaneManifest(manifest) || fence.state !== "closed" || targets.length !== 1
+    || targets[0].lane_state !== "production-armed" || targets[0].production_armed !== true || targets[0].target_daily_limit !== 3) {
+    throw new Error(`${lane.name} production controls are invalid`);
+  }
+}
+
 async function runAniccaCarouselCanary(argv = [], deps = {}) {
-  const parsed = parseArgs(argv);
+  let parsed = parseArgs(argv);
   const lane = COMMAND_LANES[parsed.command];
+  const production = Boolean(PRODUCTION_SLOTS[parsed.command]);
   const env = deps.env || process.env;
   const now = deps.now || (() => new Date().toISOString());
   const trustedNow = exactInstant(now(), `${lane.name} canary clock`);
+  if (production && !parsed.slot) {
+    const slot = marketingVideoDueSlot(Date.parse(trustedNow), "Asia/Tokyo", PRODUCTION_SLOTS[parsed.command]);
+    if (!slot) throw new Error(`${lane.name} production has no due slot yet`);
+    parsed = { ...parsed, slot };
+  }
   const clock = () => trustedNow;
   const config = laneConfig(env, parsed, clock, lane);
   const objectStore = deps.objectStore || createContentObjectStore({ objectDir: path.join(config.dataDir, "objects") });
@@ -219,6 +254,7 @@ async function runAniccaCarouselCanary(argv = [], deps = {}) {
     captionRef: config.captionRef,
     approvalRef: config.approvalRef,
     postizTokenRef: lane.tokenRef,
+    slotScopedEffect: production,
   });
   const publicationAdapter = createMarketingNativeCarouselPublicationLoopAdapter({
     objectStore,
@@ -236,7 +272,8 @@ async function runAniccaCarouselCanary(argv = [], deps = {}) {
     format: lane.formatId,
     enforceApprovedPack: true,
   };
-  const controls = lane.manifestAccount && !existingPublication
+  if (production) assertProductionControls(config, lane);
+  const controls = !production && lane.manifestAccount && !existingPublication
     ? armControls(config, publicationJob, controlLane)
     : null;
   let queued;
@@ -272,7 +309,8 @@ async function runAniccaCarouselCanary(argv = [], deps = {}) {
     && publication.provider_state === "PUBLISHED"
     && publication.provider_posting_method === "DIRECT_POST"
     && publication.provider_content_sha256 === publication.caption_sha256;
-  if (!postizPhotoVerified && !verifyNativeObject(config.verificationRef, objectStore, publication, trustedNow, lane)) {
+  const postizProductionVerified = production && publication.status === "published" && publication.provider_reconciled === true;
+  if (!postizPhotoVerified && !postizProductionVerified && !verifyNativeObject(config.verificationRef, objectStore, publication, trustedNow, lane)) {
     return { slot: config.slot, publication: publicationResult, telegram: { created: false, held: true, message_id: null } };
   }
   const telegramJob = buildMarketingLivenessJob({
@@ -305,4 +343,4 @@ if (require.main === module) {
   runAniccaCarouselCanary(process.argv.slice(2)).then((result) => process.stdout.write(`${JSON.stringify(result)}\n`)).catch((error) => { process.stderr.write(`${error.message}\n`); process.exitCode = 1; });
 }
 
-module.exports = { ACCOUNT_ID, EN_AFFIRMATION_LANE, EN_SLIDESHOW_TIKTOK_LANE, INTEGRATION_REF, LANE, parseArgs, runAniccaCarouselCanary, runAniccaEnAffirmationInstagramCanary, runAniccaEnSlideshowTikTokCanary, runAniccaLarryJaCanary, verifyNativeObject };
+module.exports = { ACCOUNT_ID, EN_AFFIRMATION_LANE, EN_AFFIRMATION_PRODUCTION_SLOTS, EN_SLIDESHOW_PRODUCTION_SLOTS, EN_SLIDESHOW_TIKTOK_LANE, INTEGRATION_REF, JA_LARRY_PRODUCTION_SLOTS, LANE, enAffirmationProductionSlot, enSlideshowProductionSlot, jaLarryProductionSlot, parseArgs, runAniccaCarouselCanary, runAniccaEnAffirmationInstagramCanary, runAniccaEnSlideshowTikTokCanary, runAniccaLarryJaCanary, verifyNativeObject };
