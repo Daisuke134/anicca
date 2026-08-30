@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 import hashlib
 import importlib.util
 import json
+import os
 from pathlib import Path
 import re
 import subprocess
@@ -26,7 +27,7 @@ STATE = Path.home() / ".local/state/anicca/lancers/application.json"
 DATABASE = STATE.with_name("telegram.sqlite3")
 LEDGER_DATABASE = STATE.with_name("marketplace-ledger.sqlite3")
 STOREFRONT_LOG = STATE.parent / "logs/storefront.stdout.log"
-TARGET = "0000000000"
+TARGET = os.environ.get("LANCERS_REPORT_CHAT") or os.environ.get("GIG_REPORT_CHAT", "")
 TOKYO = ZoneInfo("Asia/Tokyo")
 _LABELS = (("published", "受付中", "/myplan"), ("paused", "受付休止中", "/myplan/paused"), ("hidden", "非表示", "/myplan/archived"), ("draft", "下書き", "/myplan/draft"))
 _DEMAND_LABELS = (("search_impressions", "検索表示"), ("detail_views", "詳細閲覧"), ("favorites", "お気に入り"), ("inquiries", "相談"), ("orders", "注文"))
