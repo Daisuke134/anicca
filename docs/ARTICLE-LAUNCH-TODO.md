@@ -84,6 +84,12 @@
       release `c310f609`をarticle-dailyだけへapplyしたcanary `20260829-165022`はmax free 913,412KiB、min 309,008KiB、
       観測消費604,404KiB。次回floorは消費＋reserveで1,128,692KiBと確定した。reserve割れで`lm-loop stop`し、
       generationは`interrupted-safe`、GPT API intent 0、publication state/ledger/native URL/effect 0。article-dailyはbootout中。
+      旧full release `cb8c3917`を指す5分cadenceの`article-resume`が同じrunを再開したため正規stopし、残留Writer gate子PIDだけをTERMした。
+      GPT API intent/publication/ledger/native URLは引き続き0。`article-resume`はtarget applyでrelease `c310f609`へ置換し、installed argvをreadbackした。
+      closed cacheだけを追加回収し、Codex runtime一時展開528MiBはowner完了後の自動消去、bun/tsx/CodexBar、SiriTTS 268,096KiB、
+      mediaanalysisd/CUA cache 142,956KiBを削除した。一時freeは1,330,800KiBでfloorを超えたが、直後にmacOS swapが1GiB増え、
+      swap total 15,360MiB/used 14,680MiB、free 456,104KiBへ低下した。swapfileは直接削除せず、他ownerのbrowser/sessionも停止しない。
+      W2 canaryはfreeが1,128,692KiB以上へ戻るまで再発火しない。
 - [ ] W3 W2修復後canaryのNote JAだけをprovider-native readbackし、title、body、owner、headline、paywall、URLを確認する。
 - [ ] W4 W2修復後canaryのSubstack JAだけを同じ項目でprovider-native readbackする。
 - [ ] W5 W2修復後canaryのSubstack ENだけを同じ項目でprovider-native readbackする。
