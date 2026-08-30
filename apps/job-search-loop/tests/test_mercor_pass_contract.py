@@ -3,17 +3,35 @@ import os
 from pathlib import Path
 import subprocess
 import tempfile
+import tomllib
 import unittest
 from unittest.mock import patch
 
 from job_search_loop.agent_runner import AgentRunner, PassAlreadyRunning, TASK_CLASSES
-from job_search_loop.mercor_pass import build_context, main, validate_evidence_paths
+from job_search_loop.mercor_pass import (
+    build_context,
+    main,
+    record_verified_submissions,
+    validate_evidence_paths,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
 class MercorPassContractTests(unittest.TestCase):
+    def test_mercor_runs_every_thirty_minutes_in_all_scheduler_declarations(self):
+        registry = json.loads((ROOT.parents[1] / "config" / "loop-registry.json").read_text())
+        self.assertEqual(
+            registry["loops"]["job-search-mercor"]["cadence"]["start_interval_seconds"],
+            1800,
+        )
+        loop = tomllib.loads((ROOT.parents[1] / "loops" / "job-hunter" / "loop.toml").read_text())
+        self.assertEqual(loop["jobs"]["mercor"]["interval_seconds"], 1800)
+        provider_registry = (ROOT.parents[1] / "loops" / "job-hunter" / "registry.yaml").read_text()
+        mercor = provider_registry.split("  - id: mercor\n", 1)[1]
+        self.assertIn("interval_seconds: 1800", mercor)
+
     def _run_shell_with_pass_rc(self, *, pass_rc: int, pass_stderr: str):
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
@@ -80,8 +98,37 @@ class MercorPassContractTests(unittest.TestCase):
             "with a bounded maximum of twelve candidate",
             "detail pages per wake",
             "Never stop after the first Explore page",
+            "Submit every ready distinct listing",
+            "continue to the next distinct listing after each verified submission",
+            "current-pass submitted set",
+            "python3 -m job_search_loop.mercor_submit_guard",
+            '"claimed": true',
+            '"claimed": false',
         ):
             self.assertIn(required, prompt)
+        self.assertNotIn("Choose at most one new listing", prompt)
+
+    def test_result_contract_allows_every_bounded_candidate_to_be_submitted(self):
+        schema = json.loads(
+            (ROOT / "schemas" / "mercor-pass-result.v1.schema.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual(schema["properties"]["submitted"]["maxItems"], 12)
+
+    def test_current_skill_and_spec_match_continuous_application_policy(self):
+        skill = (ROOT.parents[1] / "skills" / "mercor" / "SKILL.md").read_text()
+        self.assertIn("30-minute", skill)
+        self.assertIn("every grounded ready listing", skill)
+        self.assertNotIn("existing hourly Job Hunter loop", skill)
+        self.assertNotIn("submit exactly one new listing", skill)
+        spec = (
+            ROOT.parents[1]
+            / "docs"
+            / "superpowers"
+            / "specs"
+            / "2026-08-22-mercor-life-manager-consolidation.md"
+        ).read_text()
+        self.assertIn("existing 30-minute Job Hunter acquisition loop", spec)
+        self.assertIn("submit every grounded ready listing", spec)
 
     def test_success_result_contract_validates(self):
         schema = json.loads(
@@ -225,6 +272,57 @@ class MercorPassContractTests(unittest.TestCase):
                 context["evidence_dir"],
                 str((root / "evidence" / "current-pass").resolve()),
             )
+
+    def test_context_deduplicates_persistent_pre_effect_claim_after_crash(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            state = root / "state"
+            state.mkdir()
+            (state / "submission-fences.jsonl").write_text(
+                '{"listing_id":"list-claimed","status":"submit_claimed"}\n',
+                encoding="utf-8",
+            )
+            context = build_context(
+                state_root=state,
+                profile_path=root / "profile.json",
+                resume_path=root / "resume.pdf",
+                cdp_url="http://127.0.0.1:9334",
+            )
+            self.assertIn("list-claimed", context["submitted_listing_ids"])
+            self.assertEqual(
+                context["submission_fence_ledger"],
+                str((state / "submission-fences.jsonl").resolve()),
+            )
+
+    def test_verified_submissions_are_recorded_once_for_next_wake(self):
+        with tempfile.TemporaryDirectory() as directory:
+            state = Path(directory)
+            result = {
+                "status": "submitted",
+                "submitted": [
+                    {
+                        "listing_id": "list-one",
+                        "title": "Software Evaluator",
+                        "url": "https://work.mercor.com/jobs/list-one/software-evaluator",
+                        "status": "submitted_pending_review",
+                        "evidence_url": "https://work.mercor.com/jobs/apply/candidate-one",
+                        "evidence_path": "/tmp/evidence-one.json",
+                    },
+                    {
+                        "listing_id": "list-two",
+                        "title": "Data Evaluator",
+                        "url": "https://work.mercor.com/jobs/list-two/data-evaluator",
+                        "status": "submitted_pending_review",
+                        "evidence_url": "https://work.mercor.com/jobs/apply/candidate-two",
+                        "evidence_path": "/tmp/evidence-two.json",
+                    },
+                ],
+            }
+            record_verified_submissions(state, result, run_id="run-1")
+            record_verified_submissions(state, result, run_id="run-replay")
+            ledger = state / "applications.jsonl"
+            rows = [json.loads(line) for line in ledger.read_text().splitlines()]
+            self.assertEqual([row["listing_id"] for row in rows], ["list-one", "list-two"])
 
 
 if __name__ == "__main__":

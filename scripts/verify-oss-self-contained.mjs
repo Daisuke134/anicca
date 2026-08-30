@@ -79,6 +79,7 @@ function isVerifiedVendorPath(path) {
 const LEGACY_LITERAL_FIXTURES = new Set([
   "apps/life-manager/lib/runtime-paths.test.js",
   "apps/life-manager/scripts/inventory-legacy-jobs.test.js",
+  "runtime/loop/tests/fixtures/macos-loop-jobs.json",
   "skills/earn/hl-trade/tests/test_reconcile.py",
 ]);
 

@@ -68,7 +68,7 @@ Mercor is not a Japanese-only lane. The provider must route every supported loca
 
 ## 6. Loop behavior
 
-The existing hourly Job Hunter acquisition loop becomes the single Mercor-capable loop. It must:
+The existing 30-minute Job Hunter acquisition loop becomes the single Mercor-capable loop. It must:
 
 1. Reconcile the oldest in-progress Mercor application before discovering new work.
 2. Deduplicate by stable Mercor listing/application identifier.
@@ -106,9 +106,9 @@ The loop may submit a new listing without human intervention when the live appli
 - `Submit application` is visible;
 - the listing/application identifier is not already in the private application ledger.
 
-For each wake, select at most one new ready-to-submit listing, submit it once, reopen the application result, and append one evidence row. Never resubmit `submitted_pending_review`, click `Start` on a new interview, or infer readiness from a title alone.
+For each wake, submit every grounded ready listing within the bounded candidate scan. Durably claim each listing before its single click, reopen the application result, and append one evidence row after authoritative readback. Never resubmit `submitted_pending_review` or `submit_unknown`, click `Start` on a new interview, or infer readiness from a title alone.
 
-An ungrounded or human-gated candidate is not a reason to end the wake. The model must continue through distinct candidates until it finds one grounded submit-ready listing, reaches an irreversible submit/unknown boundary, or exhausts the verified queue. The one-submit-per-wake cap remains unchanged.
+An ungrounded or human-gated candidate is not a reason to end the wake. The model must continue through distinct candidates until it reaches an ambiguous irreversible boundary or exhausts the bounded verified queue. Every authoritative submission readback is recorded before continuing.
 
 Current ready queue observed in Mercor before the resident pass:
 
@@ -162,7 +162,7 @@ The Mercor lane is a reusable open-source macro loop for any operator, not a pro
 
 ### Resident loop (minimal human runtime)
 
-- `acquisition`: hourly discovery, dedupe, fact matching, ready-to-submit queue, one bounded submit.
+- `acquisition`: 30-minute discovery, dedupe, fact matching, and every grounded ready submission within the bounded queue.
 - `inbox`: 15-minute Gmail/Mercor reconciliation, selection/contract/rejection transitions.
 - `calendar`: FreeBusy, idempotent interview event, reminders, prep pack delivery.
 - `work`: track only authorized human/approved work; never impersonate an interview or violate task AI-use rules.
@@ -265,7 +265,7 @@ Do not delete or archive the migration source until all are true:
   application-side browser-owner logic alone does not satisfy this gate.
 - The repo includes a redacted portable Mercor browser transport template/installer, and clean-home
   installation proves the operator-specific profile/CDP owner without credentials or Dais paths.
-- `loops/job-hunter` has one canonical hourly route; no second executor exists.
+- `loops/job-hunter` has one canonical 30-minute route; no second executor exists.
 - A real read-only pass and one authorized form submission have fresh evidence and no duplicate application.
 - Private runtime state is copied to `~/.local/state/anicca/job-search/mercor/` with mode `700/600`, and no secret or private resume is committed.
 - A repository-wide reference scan shows no production Mercor path still depends on `profitable-claude`.
@@ -277,7 +277,7 @@ Do not delete or archive the migration source until all are true:
 |---|---|---|
 | Portable browser owner | Clean non-Dais HOME installs and reads back the tracked template with isolated configured CDP and no credential/profile data; live CDP readiness remains Resident cadence | Passed |
 | Terminal real-time reporting | Success, no-action, human-gate, runner failure, CDP failure, and malformed Earnings fixtures each produce exactly one terminal receipt and one deduplicated Telegram outbox event; a live connector records ACK or `delivery_unknown` without blocking provider work | Implementation/release replay passed; live read-back remains Resident cadence |
-| Resident cadence | Two scheduled hourly Mercor wakes plus one 15-minute Inbox wake use canonical release paths and create zero duplicate applications | Required |
+| Resident cadence | Two scheduled 30-minute Mercor wakes plus one 15-minute Inbox wake use canonical release paths and create zero duplicate applications | Required |
 | Human-gate identity | Twenty-three append-only rows currently project to twenty pending gate IDs; each terminal receipt lists a reused gate ID once, while stale auth/resume rows and broader wording drift still require canonical projection | Required |
 | Money receipts | Application → Contract → Authorization → QA → Delivery → net Payment → Stripe/bank match rejects every missing or pending stage | Required |
 | First paid E2E | One real selected contract reaches authorized work, independent QA, delivery, acceptance, settled payout, and verified net once | Required |
@@ -324,7 +324,7 @@ These are runtime milestones, not additional submit clicks:
 
 1. **Restore the resident owner:** keep the now-passing disk preflight, obtain GUI-capable launchd read-back, bootstrap only proven-absent daily/inbox/learning/Mercor/Mercor-browser labels from the current release, and prove two consecutive scheduled Mercor wakes plus one Inbox wake with live ACK or durable `delivery_unknown`.
 2. **Canonicalize human gates:** complete. Deployed release `a7c58a3627caf15907642446ea95c58a267f3fe1` retains the append-only history, projects stable identities, and live run `mercor-20260826-154311-13590` proves 32 events / 10 current ceremonies. Distinct interviews, assessments, and recordings remain separate.
-3. **Resume truthful acquisition:** on each hourly wake, model-rank every visible executable role, exclude only unsupported legal/location/physical/policy/capacity requirements, submit at most one deduplicated application, and report the complete inspected set.
+3. **Resume truthful acquisition:** on each 30-minute wake, model-rank every visible executable role, exclude only unsupported legal/location/physical/policy/capacity requirements, submit every grounded deduplicated application within the bounded scan, and report the complete inspected set.
 4. **Implement the shared money receipts:** the shared receipt models and Mercor full-chain fixture pass; next migrate Coconala, Lancers, CrowdWorks, and Upwork through the same Contract, Authorization, QA, Delivery, net Payment, and bank/payout-match evidence gate before revenue or allocation.
 5. **Selection/inbox reconciliation:** let the 15-minute inbox lane classify Mercor selection, rejection, and contract messages; persist each transition and evidence.
 6. **Contract/calendar handoff:** for an explicit interview offer, use FreeBusy and the existing idempotent Calendar/prep flow; the user attends any human-bound interview, assessment, or physical recording.

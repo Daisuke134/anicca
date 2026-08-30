@@ -16,26 +16,35 @@ Pass order:
 3. Maintain a queue of distinct new listings and inspect candidates in order. A
    candidate that is ready in the UI but fails a verified-fact requirement is not a terminal pass result:
    record its exact missing fact in `inspected_listings` and
-   continue to the next distinct listing. Choose at most one new listing. A listing is ready for submission only when the
+   continue to the next distinct listing. Submit every ready distinct listing
+   encountered within the bounded candidate scan. A listing is ready for submission only when the
    live application page shows `3 of 3 steps completed`, `100%`, the completed
    Domain Expert Interview is reused, and a visible `Submit application` control.
-   The listing/application identifier must not already exist in the ledger.
+   The listing/application identifier must not already exist in the ledger or the
+   current-pass submitted set.
    If the current Explore page is exhausted without a grounded candidate, use the
    visible pagination controls (for example a button titled `Page N` or `Next`) to
    inspect up to four additional pages, with a bounded maximum of twelve candidate
    detail pages per wake. Never stop after the first Explore page solely because its
    candidates fail a fact gate; record the exact page/listing evidence and continue.
 4. For a ready listing, save fresh pre-action screenshot and bounded DOM evidence.
-   Submit exactly once, then reopen the application result and require the visible
-   success/read-back before returning `submitted`. If the outcome is ambiguous after
-   the click, return `blocked` with `submit_unknown`; never retry the click.
+   Before clicking, run `python3 -m job_search_loop.mercor_submit_guard` with
+   `--fence-ledger`, `--listing-id`, `--title`, `--url`, `--pre-submit-evidence`,
+   and `--run-id` from the bounded context. Click only when its JSON says
+   `"claimed": true`; when it says `"claimed": false`, treat the listing as an
+   existing attempt and do not click. Submit exactly once, then reopen the application result and require the visible
+   success/read-back. Add it to `submitted` and the current-pass submitted set, then
+   continue to the next distinct listing after each verified submission. If the
+   outcome is ambiguous after the click, return `blocked` with `submit_unknown`;
+   never retry the click or continue to another listing.
 5. If a candidate's next step is an interview, assessment, CAPTCHA, recovery/reset screen,
-   unsupported free-response question, or human-only work, return `needs_human` and
-   do not click Start, impersonate the operator, or submit guessed answers; continue
-   to another distinct listing only when the current candidate has not produced an
+   unsupported free-response question, or human-only work, record it in `needs_human`.
+   Do not click Start, impersonate the operator, or submit guessed answers; continue
+   to another distinct listing when the current candidate has not produced an
    irreversible effect.
-6. If no eligible new listing remains, return `observed_no_action` with the exact
-   inspected evidence. A transient browser/model failure is `blocked`, not success.
+6. When the bounded scan ends, return `submitted` if at least one submission has a
+   verified readback; otherwise return `needs_human` or `observed_no_action` with the
+   exact inspected evidence. A transient browser/model failure is `blocked`, not success.
 
 Authentication hard stops: never click a browser Google 2FA button named `はい`;
 the user alone approves `はい` in the Gmail iOS app. Never use account recovery,
