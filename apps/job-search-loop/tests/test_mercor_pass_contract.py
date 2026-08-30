@@ -93,8 +93,18 @@ class MercorPassContractTests(unittest.TestCase):
             "with a bounded maximum of twelve candidate",
             "detail pages per wake",
             "Never stop after the first Explore page",
+            "Submit every ready distinct listing",
+            "continue to the next distinct listing after each verified submission",
+            "current-pass submitted set",
         ):
             self.assertIn(required, prompt)
+        self.assertNotIn("Choose at most one new listing", prompt)
+
+    def test_result_contract_allows_every_bounded_candidate_to_be_submitted(self):
+        schema = json.loads(
+            (ROOT / "schemas" / "mercor-pass-result.v1.schema.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual(schema["properties"]["submitted"]["maxItems"], 12)
 
     def test_success_result_contract_validates(self):
         schema = json.loads(
