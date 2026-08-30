@@ -131,12 +131,16 @@ def invoke_runner(
         environment.pop("JOB_SEARCH_ACTIVE_APPLICATION_PROVIDER", None)
     else:
         environment["JOB_SEARCH_ACTIVE_APPLICATION_PROVIDER"] = active_provider
-    returncode = subprocess.run(command, check=False, env=environment).returncode
-    if returncode != 0:
-        return returncode
-    reason = validate_pass_result(evidence_dir)
-    if reason is None:
-        return 0
+    reason = None
+    for semantic_attempt in range(2):
+        returncode = subprocess.run(command, check=False, env=environment).returncode
+        if returncode != 0:
+            return returncode
+        reason = validate_pass_result(evidence_dir)
+        if reason is None:
+            return 0
+        if semantic_attempt == 0:
+            continue
     receipt = evidence_dir / "semantic-validation.json"
     receipt.write_text(
         json.dumps({"status": "failed", "reason": reason}, sort_keys=True) + "\n",

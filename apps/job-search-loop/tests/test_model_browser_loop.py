@@ -540,6 +540,32 @@ class ModelBrowserLoopContractTests(unittest.TestCase):
             kwargs["env"]["JOB_SEARCH_ACTIVE_APPLICATION_PROVIDER"], "workday"
         )
 
+    def test_orchestrator_retries_once_after_false_transport_failure(self):
+        from job_search_loop.browser_agent import orchestrator
+
+        completed = Mock(returncode=0)
+        with tempfile.TemporaryDirectory() as directory, patch(
+            "job_search_loop.browser_agent.orchestrator.subprocess.run",
+            side_effect=(completed, completed),
+        ) as run, patch(
+            "job_search_loop.browser_agent.orchestrator.validate_pass_result",
+            side_effect=("transport_failed_without_command_failure", None),
+        ) as validate:
+            returncode = orchestrator.invoke_runner(
+                runner=Path("/runtime/agent_runner.py"),
+                prompt=Path("/app/prompts/daily-pass.md"),
+                schema=Path("/app/schemas/pass-result.v1.schema.json"),
+                evidence_dir=Path(directory),
+                workdir=Path("/repo"),
+                timeout_seconds=900,
+                python="/python3",
+                active_provider="workday",
+            )
+
+        self.assertEqual(returncode, 0)
+        self.assertEqual(run.call_count, 2)
+        self.assertEqual(validate.call_count, 2)
+
     def test_every_eligible_workday_row_reaches_the_mandatory_model_lane(self):
         daily = (APP_ROOT / "scripts" / "run-daily.sh").read_text(encoding="utf-8")
         prompt = (APP_ROOT / "prompts" / "daily-pass.md").read_text(encoding="utf-8")
