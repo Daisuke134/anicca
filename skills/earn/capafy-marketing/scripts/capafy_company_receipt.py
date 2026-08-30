@@ -18,8 +18,11 @@ from typing import Any, Callable
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
 OUTBOX_MODULES = REPO_ROOT / "skills/_shared/marketplace-core/scripts"
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 sys.path.insert(0, str(OUTBOX_MODULES))
 from telegram_outbox import enqueue, claim_next, list_items, mark_delivered, mark_delivery_uncertain  # noqa: E402
+from skills._shared.telegram import TelegramClient, TelegramDeliveryUnknown, TelegramError  # noqa: E402
 
 
 STATE_HOME = Path(os.environ.get("LIFE_MANAGER_STATE_HOME", Path.home() / ".local/state/life-manager")).expanduser()
@@ -201,28 +204,39 @@ def _find_message_id(value: Any) -> str | None:
     return None
 
 
-def _openclaw_sender(message: str) -> str:
+def _telegram_sender(message: str) -> str:
+    """Send one receipt through the shared direct Telegram Bot API client."""
     target = (os.environ.get("CAPAFY_TELEGRAM_TARGET") or os.environ.get("TELEGRAM_ALERT_CHAT_ID")
               or os.environ.get("LM_TELEGRAM_ALERT_CHAT_ID"))
     if not target:
         raise DeliveryUncertain("telegram_target_missing")
     try:
-        result = subprocess.run(
-            ["openclaw", "message", "send", "--channel", "telegram", "--target", target, "--message", message, "--json"],
-            capture_output=True,
-            text=True,
-            timeout=30,
+        env_file = STATE_HOME / ".env"
+        client_environment = dict(os.environ)
+        client_environment["TELEGRAM_CHAT_ID"] = target
+        telegram = TelegramClient.from_env(
+            environ=client_environment,
+            env_file=env_file,
         )
-    except subprocess.TimeoutExpired as exc:
-        raise DeliveryUncertain("sender_timeout") from exc
-    try:
-        payload = json.loads(result.stdout[result.stdout.find("{"):])
-    except (json.JSONDecodeError, ValueError):
-        raise DeliveryUncertain(f"sender_invalid_json_rc_{result.returncode}") from None
-    message_id = _find_message_id(payload)
-    if result.returncode != 0 or not message_id:
-        raise DeliveryUncertain(f"sender_unconfirmed_rc_{result.returncode}")
-    return message_id
+        response = telegram.send_text(message, chat_id=target)
+    except TelegramDeliveryUnknown as exc:
+        raise DeliveryUncertain("sender_delivery_unknown") from exc
+    except TelegramError as exc:
+        suffix = f"_{exc.error_code}" if exc.error_code is not None else ""
+        raise DeliveryUncertain(f"sender_provider_error{suffix}") from exc
+
+    if not isinstance(response, dict):
+        raise DeliveryUncertain("message_id_missing")
+    message_ids = response.get("message_ids")
+    if not isinstance(message_ids, list):
+        raise DeliveryUncertain("message_id_missing")
+    for candidate in message_ids:
+        if isinstance(candidate, bool) or not isinstance(candidate, (str, int)):
+            continue
+        message_id = str(candidate).strip()
+        if message_id and "\x00" not in message_id:
+            return message_id
+    raise DeliveryUncertain("message_id_missing")
 
 
 def _load(path: Path) -> dict:
@@ -265,7 +279,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     observed_at = args.observed_at or dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
     receipt = build_receipt(_live_sources(), observed_at)
-    delivered = deliver_receipt(receipt, args.outbox, args.receipts, _openclaw_sender)
+    delivered = deliver_receipt(receipt, args.outbox, args.receipts, _telegram_sender)
     print(json.dumps(delivered, ensure_ascii=False, separators=(",", ":"), sort_keys=True))
     return 0 if delivered["telegram"]["status"] == "delivered" else 1
 

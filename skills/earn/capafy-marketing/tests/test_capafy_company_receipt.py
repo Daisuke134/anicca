@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import inspect
 import json
 import sqlite3
 from pathlib import Path
@@ -126,29 +127,83 @@ def test_provider_without_message_id_is_quarantined_and_not_retried(tmp_path: Pa
     assert replay == first
 
 
-def test_openclaw_sender_timeout_quarantines_once_and_replay_does_not_retry(tmp_path: Path, monkeypatch) -> None:
+def test_direct_sender_returns_message_id_once_and_uses_life_manager_env(tmp_path: Path, monkeypatch) -> None:
+    state_home = tmp_path / "life-manager"
+    state_home.mkdir()
+    (state_home / ".env").write_text("TELEGRAM_BOT_TOKEN=fixture-token\n", encoding="utf-8")
+    monkeypatch.setenv("LIFE_MANAGER_STATE_HOME", str(state_home))
+    monkeypatch.setenv("CAPAFY_TELEGRAM_TARGET", "fixture-chat")
+    module = load_module()
+    calls = []
+
+    class StubTelegramClient:
+        @classmethod
+        def from_env(cls, *, environ, env_file):
+            calls.append(("from_env", environ, env_file))
+            return cls()
+
+        def send_text(self, text, *, chat_id):
+            calls.append(("send_text", text, chat_id))
+            return {"status": "delivered", "message_ids": [9001]}
+
+    monkeypatch.setattr(module, "TelegramClient", StubTelegramClient)
+    assert module._telegram_sender("fixture report") == "9001"
+    assert calls[0][0] == "from_env"
+    assert calls[0][1]["TELEGRAM_CHAT_ID"] == "fixture-chat"
+    assert calls[0][2] == state_home / ".env"
+    assert calls[1:] == [
+        ("send_text", "fixture report", "fixture-chat"),
+    ]
+
+
+@pytest.mark.parametrize("error_kind", ("transport_unknown", "provider_error"))
+def test_direct_transport_or_provider_error_quarantines_once_and_replay_does_not_retry(
+    tmp_path: Path, monkeypatch, error_kind: str
+) -> None:
+    state_home = tmp_path / "life-manager"
+    state_home.mkdir()
+    monkeypatch.setenv("LIFE_MANAGER_STATE_HOME", str(state_home))
+    monkeypatch.setenv("TELEGRAM_ALERT_CHAT_ID", "fixture-chat")
     module = load_module()
     calls = 0
 
-    def timeout(_args, **_kwargs):
-        nonlocal calls
-        calls += 1
-        raise subprocess.TimeoutExpired("openclaw", 30)
+    class StubTelegramClient:
+        @classmethod
+        def from_env(cls, *, environ, env_file):
+            assert environ["TELEGRAM_CHAT_ID"] == "fixture-chat"
+            assert env_file == state_home / ".env"
+            return cls()
 
-    import subprocess
-    monkeypatch.setattr(module.subprocess, "run", timeout)
-    monkeypatch.setenv("CAPAFY_TELEGRAM_TARGET", "fixture-chat")
+        def send_text(self, _text, *, chat_id):
+            nonlocal calls
+            assert chat_id == "fixture-chat"
+            calls += 1
+            if error_kind == "transport_unknown":
+                raise module.TelegramDeliveryUnknown("transport lost")
+            raise module.TelegramError("provider rejected", error_code=400)
+
+    monkeypatch.setattr(module, "TelegramClient", StubTelegramClient)
     receipt = module.build_receipt(sources(), "2026-08-22T11:00:00Z")
     outbox = tmp_path / "outbox.sqlite"
-    first = module.deliver_receipt(receipt, outbox, tmp_path / "receipts", module._openclaw_sender)
-    replay = module.deliver_receipt(receipt, outbox, tmp_path / "receipts", module._openclaw_sender)
+    receipts = tmp_path / "receipts"
+    first = module.deliver_receipt(receipt, outbox, receipts, module._telegram_sender)
+    replay = module.deliver_receipt(receipt, outbox, receipts, module._telegram_sender)
 
     assert calls == 1
     assert first["telegram"] == {"status": "delivery_uncertain", "message_id": None}
     assert replay == first
     with sqlite3.connect(outbox) as db:
         row = db.execute("SELECT status, attempt_count, provider_message_id, last_error_code FROM telegram_outbox").fetchone()
-    assert row == ("delivery_uncertain", 1, None, "sender_timeout")
+    expected_error = "sender_delivery_unknown" if error_kind == "transport_unknown" else "sender_provider_error_400"
+    assert row == ("delivery_uncertain", 1, None, expected_error)
+
+
+def test_direct_sender_has_no_openclaw_call_or_subprocess() -> None:
+    module = load_module()
+    source = inspect.getsource(module._telegram_sender).lower()
+
+    assert "openclaw message send" not in source
+    assert "subprocess" not in source
 
 
 @pytest.mark.parametrize("outbox_status", ("delivery_uncertain", "delivered"))
