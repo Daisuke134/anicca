@@ -235,7 +235,7 @@ test("Luma direct action reports a login-wall candidate as a session problem wit
   assert.equal(submitCalls, 0);
 });
 
-test("a closed/full candidate without a login-wall control is never reported as a session problem", async () => {
+test("a closed/full candidate without a login-wall control reports its specific control reason", async () => {
   const selected = event("closed-not-logged-out", { auth_status: "unknown" });
   const workflow = createLumaScriptFirstWorkflow({
     async discoverOnPage() { return [selected]; },
@@ -250,16 +250,20 @@ test("a closed/full candidate without a login-wall control is never reported as 
 
   const result = await workflow.runDirectAction({ page: {}, candidate: selected });
 
-  assert.deepEqual(result, { status: "failed", safe_reason: "direct_action_requires_fallback" });
+  assert.deepEqual(result, { status: "failed", safe_reason: "luma_control_unavailable" });
 });
 
-test("unknown required fields and changed controls request bounded fallback without claiming success", async () => {
-  for (const code of [
-    "LUMA_REQUIRED_PROFILE_FIELD_UNAVAILABLE",
-    "LUMA_FORM_SCHEMA_UNAVAILABLE",
-    "LUMA_FORM_FILL_UNAVAILABLE",
-    "LUMA_CONTROL_UNAVAILABLE",
-    "LUMA_CONFIRM_UNAVAILABLE",
+test("known Luma submit guards report their specific bounded literal reason", async () => {
+  for (const [code, safeReason] of [
+    ["LUMA_REQUIRED_PROFILE_FIELD_UNAVAILABLE", "luma_required_profile_field_unavailable"],
+    ["LUMA_FORM_PROFILE_UNAVAILABLE", "luma_form_profile_unavailable"],
+    ["LUMA_FORM_SCHEMA_UNAVAILABLE", "luma_form_schema_unavailable"],
+    ["LUMA_FORM_PLAN_UNAVAILABLE", "luma_form_plan_unavailable"],
+    ["LUMA_FORM_FILL_UNAVAILABLE", "luma_form_fill_unavailable"],
+    ["LUMA_PAGE_UNAVAILABLE", "luma_page_unavailable"],
+    ["LUMA_CONTROL_UNAVAILABLE", "luma_control_unavailable"],
+    ["LUMA_CONFIRM_UNAVAILABLE", "luma_confirm_unavailable"],
+    ["LUMA_BROWSER_ACTION_FAILED", "luma_browser_action_failed"],
   ]) {
     const workflow = createLumaScriptFirstWorkflow({
       async discoverOnPage() { return [event("fallback")]; },
@@ -274,9 +278,31 @@ test("unknown required fields and changed controls request bounded fallback with
 
     assert.deepEqual(await workflow.runDirectAction({ page: {}, candidate: event("fallback") }), {
       status: "failed",
-      safe_reason: "direct_action_requires_fallback",
+      safe_reason: safeReason,
     });
   }
+});
+
+test("unknown Luma errors expose only the generic safe reason", async () => {
+  const privateMessage = "private Luma page text";
+  const privateCode = "LUMA_UNKNOWN_PRIVATE_CODE";
+  const workflow = createLumaScriptFirstWorkflow({
+    async discoverOnPage() { return [event("unknown-error")]; },
+    isCalendarFree() { return true; },
+    async submitOnPage() {
+      const error = new Error(privateMessage);
+      error.code = privateCode;
+      throw error;
+    },
+    async readProviderStateOnPage() { return { status: "absent" }; },
+  });
+
+  const result = await workflow.runDirectAction({ page: {}, candidate: event("unknown-error") });
+
+  assert.deepEqual(result, { status: "failed", safe_reason: "direct_action_failed" });
+  const serialized = JSON.stringify(result);
+  assert.equal(serialized.includes(privateMessage), false);
+  assert.equal(serialized.includes(privateCode), false);
 });
 
 test("parent readback normalizes only registered, pending, absent, and unavailable states", async () => {

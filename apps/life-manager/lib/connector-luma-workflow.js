@@ -16,14 +16,16 @@ const TOKYO_DISCOVER_URL = "https://luma.com/tokyo?k=p";
 const PRODUCTION_TIME_ZONE = "Asia/Tokyo";
 const EVENT_REF = /^luma-event:\/\/event\/[A-Za-z0-9_-]+$/;
 const CANONICAL_URL = /^https:\/\/luma\.com\/[A-Za-z0-9_-]+$/;
-const FALLBACK_CODES = new Set([
-  "LUMA_REQUIRED_PROFILE_FIELD_UNAVAILABLE",
-  "LUMA_FORM_SCHEMA_UNAVAILABLE",
-  "LUMA_FORM_PLAN_UNAVAILABLE",
-  "LUMA_FORM_FILL_UNAVAILABLE",
-  "LUMA_CONTROL_UNAVAILABLE",
-  "LUMA_CONFIRM_UNAVAILABLE",
-  "LUMA_BROWSER_ACTION_FAILED",
+const DIRECT_ACTION_FAILURE_REASONS = new Map([
+  ["LUMA_REQUIRED_PROFILE_FIELD_UNAVAILABLE", "luma_required_profile_field_unavailable"],
+  ["LUMA_FORM_PROFILE_UNAVAILABLE", "luma_form_profile_unavailable"],
+  ["LUMA_FORM_SCHEMA_UNAVAILABLE", "luma_form_schema_unavailable"],
+  ["LUMA_FORM_PLAN_UNAVAILABLE", "luma_form_plan_unavailable"],
+  ["LUMA_FORM_FILL_UNAVAILABLE", "luma_form_fill_unavailable"],
+  ["LUMA_PAGE_UNAVAILABLE", "luma_page_unavailable"],
+  ["LUMA_CONTROL_UNAVAILABLE", "luma_control_unavailable"],
+  ["LUMA_CONFIRM_UNAVAILABLE", "luma_confirm_unavailable"],
+  ["LUMA_BROWSER_ACTION_FAILED", "luma_browser_action_failed"],
 ]);
 // A wake must stay bounded: reconcile (readback -> evidence chain, never
 // re-submit) at most this many already-registered-but-unbundled events per
@@ -219,10 +221,10 @@ function createLumaScriptFirstWorkflow(options = {}) {
           ? Object.freeze({ status: "completed", method: "luma_direct_submit" })
           : Object.freeze({ status: "failed", safe_reason: "direct_action_unverified" });
       } catch (error) {
+        const code = String(error && error.code || "");
         return Object.freeze({
           status: "failed",
-          safe_reason: FALLBACK_CODES.has(String(error && error.code || ""))
-            ? "direct_action_requires_fallback" : "direct_action_failed",
+          safe_reason: DIRECT_ACTION_FAILURE_REASONS.get(code) || "direct_action_failed",
         });
       }
     },
