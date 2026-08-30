@@ -184,7 +184,7 @@ class LmLoopApplyTest(unittest.TestCase):
             "ProgramArguments": ["/old/run.sh"],
             "EnvironmentVariables": {
                 "CUSTOM": "kept",
-                "CODEX_HOME": "/Users/runner/.codex-acct2",
+                "CODEX_HOME": "/tmp/legacy-codex-home",
                 "LIFE_MANAGER_RELEASE_SHA": "old",
             },
             "WorkingDirectory": "/var/tmp/example",
