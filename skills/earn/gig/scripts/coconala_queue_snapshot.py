@@ -7,6 +7,7 @@ import argparse
 import asyncio
 import base64
 import binascii
+import fcntl
 import hashlib
 import importlib.util
 import json
@@ -1301,6 +1302,17 @@ def persist_talkroom_history(
     root = projects_root.expanduser().resolve() / str(project_id)
     ledger = root / "source" / "talkroom" / "messages.jsonl"
     ledger.parent.mkdir(parents=True, exist_ok=True)
+    lock_path = ledger.with_suffix(ledger.suffix + ".lock")
+    with lock_path.open("a+b") as lock:
+        fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+        return _persist_talkroom_history_locked(
+            talkroom, ledger, talkroom_id, observed_at, messages)
+
+
+def _persist_talkroom_history_locked(
+    talkroom: dict[str, Any], ledger: Path, talkroom_id: str,
+    observed_at: str, messages: list[Any],
+) -> dict[str, Any]:
     known: set[str] = set()
     try:
         for line in ledger.read_text(encoding="utf-8").splitlines():
