@@ -18,6 +18,18 @@ const {
   createProductionProviderRouter,
 } = require("./connector-minimal-production.js");
 
+function rankingCandidate(slug, startsAt, overrides = {}) {
+  return Object.freeze({
+    provider: "connpass",
+    event_ref: `connpass-event://event/${slug}`,
+    canonical_url: `https://tokyo-builders.connpass.com/event/${slug}/`,
+    title: `Tokyo event ${slug}`,
+    body: "Public AI event for builders.",
+    ...(startsAt == null ? {} : { starts_at: startsAt }),
+    ...overrides,
+  });
+}
+
 test("official production factory exposes the complete minimal wake dependency contract", async () => {
   const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "connector-production-deps-"));
   try {
@@ -144,6 +156,103 @@ test("official production factory persists one safe audit for its default Gemini
     globalThis.fetch = originalFetch;
     fs.rmSync(stateDir, { recursive: true, force: true });
   }
+});
+
+test("production provider router ranks only twelve candidates round-robin across the earliest two Tokyo dates and retains every reconciliation candidate", async () => {
+  const reconcile = [
+    rankingCandidate("reconcile-one", null, { registration_status: "registered" }),
+    rankingCandidate("reconcile-two", "not-a-date", { rsvp_status: "registered" }),
+  ];
+  const august = Array.from({ length: 13 }, (_, index) => rankingCandidate(
+    `august-${index}`, "2026-08-31T09:00:00.000+09:00",
+  ));
+  const september = Array.from({ length: 3 }, (_, index) => rankingCandidate(
+    `september-${index}`, "2026-09-01T09:00:00.000+09:00",
+  ));
+  const candidates = [...reconcile, ...august, ...september];
+  const rankingInputs = [];
+  const emptyWorkflow = {
+    async discoverCandidates() { return []; },
+    async runDirectAction() {},
+    async readProviderState() { return { status: "absent" }; },
+  };
+  const connpassWorkflow = { ...emptyWorkflow, async discoverCandidates() { return candidates; } };
+  const router = createProductionProviderRouter({
+    lumaWorkflow: emptyWorkflow,
+    connpassWorkflow,
+    eventPreferences: "Tokyo AI events",
+    async rankCandidates(input) {
+      rankingInputs.push(input.candidates);
+      return validateProviderCandidateRanking({ ranked_events: input.candidates.map((candidate) => ({
+        event_ref: candidate.event_ref,
+        priority_class: "ai",
+        preference_fit: "strong",
+        preference_reason: "Direct AI fit.",
+      })) }, input);
+    },
+    actionCache: { async replay() {}, async saveVerifiedRepair() {} },
+    browserHarness: { async runFallback() {} },
+    async performAction() {},
+  });
+
+  const result = await router.discoverCandidates("connpass", [], {});
+
+  assert.equal(rankingInputs.length, 1);
+  assert.equal(rankingInputs[0].length, 12);
+  assert.deepEqual(rankingInputs[0].slice(0, 6).map((candidate) => candidate.event_ref), [
+    "connpass-event://event/august-0",
+    "connpass-event://event/september-0",
+    "connpass-event://event/august-1",
+    "connpass-event://event/september-1",
+    "connpass-event://event/august-2",
+    "connpass-event://event/september-2",
+  ]);
+  assert.equal(rankingInputs[0].some((candidate) => candidate.event_ref.endsWith("august-12")), false);
+  assert.deepEqual(result.slice(0, 2).map((candidate) => candidate.event_ref), reconcile.map((candidate) => candidate.event_ref));
+  assert.equal(result.slice(2).length, 12);
+});
+
+test("production provider router places invalid and missing starts_at candidates at the bounded selection tail", async () => {
+  const dated = [
+    ...Array.from({ length: 5 }, (_, index) => rankingCandidate(`dated-august-${index}`, "2026-08-31T09:00:00.000+09:00")),
+    ...Array.from({ length: 3 }, (_, index) => rankingCandidate(`dated-september-${index}`, "2026-09-01T09:00:00.000+09:00")),
+  ];
+  const late = rankingCandidate("later-date", "2026-09-02T09:00:00.000+09:00");
+  const invalid = [
+    rankingCandidate("missing-date", null),
+    rankingCandidate("invalid-date", "not-a-date"),
+    rankingCandidate("empty-date", ""),
+    rankingCandidate("second-invalid-date", "still-not-a-date"),
+    rankingCandidate("third-invalid-date", "also-not-a-date"),
+  ];
+  const rankingInputs = [];
+  const emptyWorkflow = {
+    async discoverCandidates() { return []; },
+    async runDirectAction() {},
+    async readProviderState() { return { status: "absent" }; },
+  };
+  const router = createProductionProviderRouter({
+    lumaWorkflow: emptyWorkflow,
+    connpassWorkflow: { ...emptyWorkflow, async discoverCandidates() { return [...dated, late, ...invalid]; } },
+    eventPreferences: "Tokyo AI events",
+    async rankCandidates(input) {
+      rankingInputs.push(input.candidates);
+      return validateProviderCandidateRanking({ ranked_events: input.candidates.map((candidate) => ({
+        event_ref: candidate.event_ref,
+        priority_class: "ai",
+        preference_fit: "strong",
+        preference_reason: "Direct AI fit.",
+      })) }, input);
+    },
+    actionCache: { async replay() {}, async saveVerifiedRepair() {} },
+    browserHarness: { async runFallback() {} },
+    async performAction() {},
+  });
+
+  await router.discoverCandidates("connpass", [], {});
+  assert.equal(rankingInputs[0].length, 12);
+  assert.deepEqual(rankingInputs[0].slice(-4).map((candidate) => candidate.event_ref), invalid.slice(0, 4).map((candidate) => candidate.event_ref));
+  assert.equal(rankingInputs[0].some((candidate) => candidate.event_ref === late.event_ref), false);
 });
 
 // Fake Connpass join page, shaped exactly like joinFlowFixture in
