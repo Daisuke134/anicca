@@ -27,7 +27,7 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 この節は、後段の「現在TODO」「次の一件」「local-only」「self-funded agentは別product」という相反する記述を
 上書きする最新の実行順序SSOTである。後段は実装履歴・organ別acceptanceとして保持するが、次作業の選択には使わない。
 Upworkのterminal evidence、startup context、public claim、GA-01〜13Aは完了または履歴として保持する。
-次の一件はAtomic program ledger Seq 17 `ELZ-C04`のsubstep `C04-15`で、source/result hashを`provider-bridge-receipt.json`へ保存する。
+次の一件はAtomic program ledger Seq 17 `ELZ-C04`のsubstep `C04-16`で、C04差分をfresh adversarial reviewへ一回だけ渡す。
 
 #### 0.0.1 最新基盤決定 — ElizaOSを完全forkし、Life Managerをlocal OSSからmulti-tenant SaaSへ育てる
 
@@ -645,7 +645,7 @@ flowchart LR
 - [x] **C04-12** focused provider bridge testの成功を一回確認する — implementation `b7a44be0…`、merged `bc0dcae0…`、Vitest 4.1.10＋実coreでfocused 1 file/1 test PASS、exit 0、340ms。opaque refs/private descriptor、single JSON＋SHA、nonzero/invalid typed failure、raw process detail/secret 0、provider routing/judgment 0を確認。private `provider-bridge-green-receipt.json` mode 0600。次はC04-13
 - [x] **C04-13** 既存Connector JS read-only toolをopaque ref経由で一回実行する — fork PR #22 merge `03cbae0b…`でexit-0 JSONのoptional `ok` contractをRED→GREEN修復後、opaque JS refをprivate descriptorへ解決してreal `connector-events-pack-readonly.js`をno-shell実行。exit 0、result SHA `630471f3…`、inventory 37/37、21日complete、raw stderr 0。dependency/alias preflight failure各1を隠さず記録し、最終success 1。既存Luma auth recovery 1、RSVP/application/evidence/Calendar/Telegram/payment effect 0、process 0。private `js-bridge-readonly-receipt.json` mode 0600。次はC04-14
 - [x] **C04-14** 既存Lancers Python read-only toolをopaque ref経由で一回実行する — opaque Python refをprivate descriptorへ解決し、real `status.py discovery --json --limit 1 --timeout 20`をno-shell一回実行。exit 0、result SHA `09e731bf…`、public_html provider 1、normalized 1、detail enriched 1、rejected/detail failure 0、raw stderr 0。credential/browser/login/state write/application/message/payment 0、process 0。private `python-bridge-readonly-receipt.json` mode 0600。次はC04-15
-- [ ] **C04-15** source/result hashを`provider-bridge-receipt.json`へ保存する
+- [x] **C04-15** source/result hashを`provider-bridge-receipt.json`へ保存する — final fork `03cbae0b…`のbridge/test/index 3 file hash、Omarchy/Python/JS/reuse/RED/GREEN/live JS/live Python 8 evidence hash、opaque contract、JS/Python 2 success、process attempts 4、auth recovery 1、provider registration/application/RSVP/business-state/evidence/Calendar/Telegram/payment 0をprivate receiptへ固定。mode 0600、status `pending_review`、open findings nullでPASS未先取り。次はC04-16
 - [ ] **C04-16** C04差分をfresh adversarial reviewへ一回だけ渡す
 - [ ] **C04-17** C04 receiptをPASSへ更新する
 - [ ] **C04-18** ELZ-C04をDONEへ更新する
