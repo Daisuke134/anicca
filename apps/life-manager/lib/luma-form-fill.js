@@ -40,10 +40,54 @@ async function fillMultiSelect(scope, answer) {
   }
 }
 
-function requiredAttribute(value) {
-  return value !== null && ["", "1", "true", "required", "yes"].includes(
-    String(value).trim().toLowerCase(),
-  );
+async function dropdownMetadata(control) {
+  if (!control || typeof control.evaluate !== "function") unavailable();
+  let metadata;
+  try {
+    metadata = await control.evaluate((node) => {
+      const clean = (value) => String(value == null ? "" : value).replace(/\s+/g, " ").trim();
+      const flag = (value) => value !== null && ["", "1", "true", "required", "yes"].includes(
+        String(value).trim().toLowerCase(),
+      );
+      const rootFor = (value) => {
+        let current = value;
+        while (current) {
+          if (
+            typeof current.matches === "function"
+            && current.matches("[data-luma-form-field], [data-registration-field], [data-field-name], [data-name], fieldset, [role='group']")
+          ) return current;
+          current = current.parentElement;
+        }
+        return value;
+      };
+      const root = rootFor(node);
+      const htmlRequired = (value) => Boolean(value && (
+        value.hasAttribute("required") || flag(value.getAttribute("aria-required"))
+      ));
+      const required = htmlRequired(node)
+        || flag(node.getAttribute("data-required"))
+        || flag(node.getAttribute("data-app-required"))
+        || flag(root.getAttribute("data-required"))
+        || flag(root.getAttribute("data-app-required"))
+        || flag(root.getAttribute("aria-required"));
+      const hidden = root.querySelector("input[type='hidden'][name]");
+      const names = new Set([
+        node.getAttribute("name"),
+        root.getAttribute("name"),
+        root.getAttribute("data-field-name"),
+        root.getAttribute("data-name"),
+        hidden && hidden.getAttribute("name"),
+      ].map(clean).filter(Boolean));
+      return { required, has_name: names.size === 1 };
+    });
+  } catch {
+    unavailable();
+  }
+  if (
+    !metadata || typeof metadata !== "object" || Array.isArray(metadata)
+    || typeof metadata.required !== "boolean" || typeof metadata.has_name !== "boolean"
+  ) unavailable();
+  return metadata;
 }
 
 async function exactDropdown(scope, key) {
@@ -57,13 +101,8 @@ async function exactDropdown(scope, key) {
   let customOrdinal = 0;
   for (let index = 0; index < count; index += 1) {
     const control = controls.nth(index);
-    if (!control || typeof control.getAttribute !== "function") unavailable();
-    if (String(await control.getAttribute("name") || "").trim()) continue;
-    const required = requiredAttribute(await control.getAttribute("required"))
-      || requiredAttribute(await control.getAttribute("aria-required"))
-      || requiredAttribute(await control.getAttribute("data-required"))
-      || requiredAttribute(await control.getAttribute("data-app-required"));
-    if (!required) continue;
+    const metadata = await dropdownMetadata(control);
+    if (!metadata.required || metadata.has_name) continue;
     if (customOrdinal !== ordinal) {
       customOrdinal += 1;
       continue;

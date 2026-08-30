@@ -392,6 +392,7 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
             "submit", "provider_cache",
             () => deps.runCachedAction({ provider, candidate: selected, page: owned.page }),
             (error) => submitFailureContext(provider, error, "cached_action_failed"),
+            (value) => resolvedSubmitFailureContext(provider, value, "cached_action_unverified"),
           );
         } catch {
           operation = Object.freeze({ status: "failed", safe_reason: "cached_action_failed" });
