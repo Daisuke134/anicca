@@ -84,7 +84,13 @@ if [ -z "$LANE" ]; then
   LANE=$(printf '%s' "${FM_LANE:-b}" | tr '[:upper:]' '[:lower:]')
 fi
 
-GATES_LOG="${ARTICLE_GATES_LOG:-$HOME/.openclaw/logs/article-gates.log}"
+if [ -n "${ARTICLE_GATES_LOG:-}" ]; then
+  GATES_LOG="$ARTICLE_GATES_LOG"
+elif [ -n "${ARTICLE_RUN_DIR:-}" ]; then
+  GATES_LOG="$ARTICLE_RUN_DIR/gates/article-gates.log"
+else
+  GATES_LOG="${ARTICLE_STATE_DIR:-$HOME/.local/state/life-manager/writer}/logs/article-gates.log"
+fi
 log_gate_verdict() {
   mkdir -p "$(dirname "$GATES_LOG")" 2>/dev/null || return 0
   printf '%s script=rubric-judge.sh md=%s lang=%s verdict=%s\n' \
