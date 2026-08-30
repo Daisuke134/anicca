@@ -97,6 +97,9 @@
       PR #3209/main `bc87aeb86`、Writer sparse release `20260830T105811-bc87aeb8`をdaily/resumeへtarget applyした。
       production dailyはfree 253,648,896 bytesに対しrequired 1,155,780,608 bytesをreadbackしてrun作成前に拒否。両ownerをbootoutし、
       旧子PID、GPT API intent/receipt、publication state、external effectは0。次回cadenceが汎用512MiBで誤発火する経路は閉じた。
+      最新claim supplyは`FILLED`、queue 1、topic `paid-demand:a594587f90506f1392fee3718065c99e6501abaf66d55b23c213f3605e6ca320`。
+      公式cleanup run 20はerrors/protected deletion 0、orphan/shared-cache candidate 0。再生成cacheも0、swap used約14.3GiBでfree 444,076KiB。
+      同じfloor未達がresume後3 goal turns以上継続し、他owner停止・swapfile直接削除・Mac restartなしには安全な回復経路がないためblocked。
       W2 canaryはfreeが1,128,692KiB以上へ戻るまで再発火しない。
 - [ ] W3 W2修復後canaryのNote JAだけをprovider-native readbackし、title、body、owner、headline、paywall、URLを確認する。
 - [ ] W4 W2修復後canaryのSubstack JAだけを同じ項目でprovider-native readbackする。
