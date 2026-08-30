@@ -14,6 +14,15 @@ try {
   if (error.code !== "MODULE_NOT_FOUND") throw error;
 }
 
+const MONEY_OPPORTUNITY_ID = "a".repeat(64);
+const MONEY_OPPORTUNITY_REF = `opportunity://tenant-a/${MONEY_OPPORTUNITY_ID}`;
+const MONEY_JOB_REF = `runtime-job://tenant-a/goal%3A${MONEY_OPPORTUNITY_ID}`;
+const OTHER_OPPORTUNITY_ID = "b".repeat(64);
+const OTHER_OPPORTUNITY_REF = `opportunity://tenant-a/${OTHER_OPPORTUNITY_ID}`;
+const OTHER_JOB_REF = `runtime-job://tenant-a/goal%3A${OTHER_OPPORTUNITY_ID}`;
+const HUMAN_TASK_REF = `human-task://tenant-a/${"c".repeat(64)}`;
+const MONEY_OBSERVED_AT = "2026-08-29T00:00:00.000Z";
+
 test("Task 7B: Telegram-native onboarding page is server-state driven and safe at 375px", () => {
   assert.equal(typeof renderPanelOnboardingPage, "function");
   const html = renderPanelOnboardingPage({ csrf: 'csrf-<>&"\'' });
@@ -257,6 +266,40 @@ function emittedMoneyPrinterRenderer() {
   return { render: sandbox.__renderMoneyPrinter, validate: sandbox.__validateMoneyPrinterData };
 }
 
+function emittedMoneyPrinterWorkroom() {
+  const script = renderPanelPage().match(/<script>\s*([\s\S]*?)\s*<\/script>/)[1];
+  const start = script.indexOf("const moneyLaneLabels");
+  const end = script.indexOf("const renderers = Object.freeze");
+  const sandbox = { Object, Array, Number, String, BigInt, Set, Math, URL, Date, Promise, encodeURIComponent };
+  sandbox.escapeHtml = (value) => String(value == null ? "" : value).replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[character]));
+  sandbox.displayRecord = (value) => Boolean(value && typeof value === "object" && !Array.isArray(value));
+  sandbox.displayExactKeys = (value, expected) => sandbox.displayRecord(value)
+    && Object.keys(value).sort().join(",") === expected.slice().sort().join(",");
+  sandbox.displayContainsSensitiveValue = () => false;
+  sandbox.displaySafeText = (value, allowEmpty) => typeof value === "string" && (allowEmpty || value.trim().length > 0);
+  vm.runInNewContext(`${script.slice(start, end)}
+    globalThis.__validateMoneyWorkroom = typeof validateMoneyWorkroom === "function" ? validateMoneyWorkroom : null;
+    globalThis.__loadMoneyWorkroom = typeof loadMoneyWorkroom === "function" ? loadMoneyWorkroom : null;`, sandbox);
+  return { validate: sandbox.__validateMoneyWorkroom, load: sandbox.__loadMoneyWorkroom, sandbox };
+}
+
+function moneyWorkroomData(overrides = {}) {
+  return {
+    opportunity_id: MONEY_OPPORTUNITY_ID,
+    title: "Selected workroom",
+    value_minor: "50000",
+    currency: "JPY",
+    source_url: "https://public.example/opportunity",
+    status: "WORKING",
+    job_ref: MONEY_JOB_REF,
+    activity: [
+      { kind: "opportunity", ref: MONEY_OPPORTUNITY_REF, status: "WORKING", observed_at: MONEY_OBSERVED_AT },
+      { kind: "work", ref: MONEY_JOB_REF, status: "running", observed_at: MONEY_OBSERVED_AT },
+    ],
+    ...overrides,
+  };
+}
+
 test("PANEL-8h: panel shell identifies the product only as Life Manager", () => {
   const html = renderPanelPage();
   assert.equal(html.match(/<title>([^<]+)<\/title>/)?.[1], "Life Manager");
@@ -291,7 +334,7 @@ test("Money Printer panel renders one six-lane control room", () => {
 
 test("Money Printer renderer validates currency maps and sorts their display", () => {
   const { render, validate } = emittedMoneyPrinterRenderer();
-  const card = { opportunity_ref: "opportunity://tenant-a/op-1", title: "Opportunity", status: "DISCOVERED", value_minor: "50000", currency: "JPY", source_url: null };
+  const card = { opportunity_ref: MONEY_OPPORTUNITY_REF, title: "Opportunity", status: "DISCOVERED", value_minor: "50000", currency: "JPY", source_url: null };
   const data = {
     observed_at: "2026-08-29T00:00:00.000Z",
     metrics: { agents_working: 1, needs_you: 0, opportunity_value: { USD: "1000", JPY: "50000" }, paid_verified: { USD: "1000", JPY: "50000" } },
@@ -302,6 +345,112 @@ test("Money Printer renderer validates currency maps and sorts their display", (
   assert.match(render(data), /JPY 50000 \+ USD 1000/);
   assert.match(render({ ...data, metrics: { ...data.metrics, opportunity_value: {}, paid_verified: {} } }), /<strong>0<\/strong>/);
   assert.throws(() => render({ ...data, metrics: { ...data.metrics, opportunity_value: { JPY: 50000 } } }), /invalid money printer payload/);
+});
+
+test("Money Printer cards emit escaped buttons and retain a workroom placeholder", () => {
+  const { render } = emittedMoneyPrinterRenderer();
+  const data = {
+    observed_at: MONEY_OBSERVED_AT,
+    metrics: { agents_working: 0, needs_you: 0, opportunity_value: {}, paid_verified: {} },
+    columns: { found: [{ opportunity_ref: MONEY_OPPORTUNITY_REF, title: "<img src=x onerror=alert(1)>", status: "DISCOVERED", value_minor: "50000", currency: "JPY", source_url: null }], working: [], needs_you: [], waiting: [], done: [], paid: [] },
+    activity: [],
+  };
+  const html = render(data);
+  assert.match(html, /<button class="money-card" type="button"/);
+  assert.match(html, new RegExp(`data-money-opportunity-id="${MONEY_OPPORTUNITY_ID}"`));
+  assert.match(html, /data-money-workroom/);
+  assert.match(html, /&lt;img src=x onerror=alert\(1\)&gt;/);
+  assert.doesNotMatch(html, /<img src=x onerror=alert/);
+});
+
+test("Money Printer workroom validator rejects foreign or invalid payloads", () => {
+  const { validate } = emittedMoneyPrinterWorkroom();
+  assert.equal(typeof validate, "function");
+  assert.doesNotThrow(() => validate(moneyWorkroomData(), MONEY_OPPORTUNITY_REF));
+  for (const invalid of [
+    { ...moneyWorkroomData(), opportunity_id: "b".repeat(64) },
+    { ...moneyWorkroomData(), job_ref: `runtime-job://tenant-b/goal%3A${MONEY_OPPORTUNITY_ID}` },
+    { ...moneyWorkroomData(), activity: [{ ...moneyWorkroomData().activity[0], private_ref: "must-not-pass" }] },
+  ]) {
+    assert.throws(() => validate(invalid, MONEY_OPPORTUNITY_REF), /invalid workroom payload/);
+  }
+});
+
+test("Money Printer workroom validator accepts nullable currency and source URL", () => {
+  const { validate } = emittedMoneyPrinterWorkroom();
+  assert.doesNotThrow(() => validate({ ...moneyWorkroomData(), currency: null, source_url: null }, MONEY_OPPORTUNITY_REF));
+});
+
+test("Money Printer workroom validator rejects mixed workrooms and malformed activity refs", () => {
+  const { validate } = emittedMoneyPrinterWorkroom();
+  const activity = (kind, ref, extra = {}) => ({ kind, ref, status: "running", observed_at: MONEY_OBSERVED_AT, ...extra });
+  for (const invalid of [
+    { ...moneyWorkroomData(), activity: [activity("opportunity", OTHER_OPPORTUNITY_REF)] },
+    { ...moneyWorkroomData(), activity: [activity("work", OTHER_JOB_REF)] },
+    { ...moneyWorkroomData(), activity: [activity("human_task", HUMAN_TASK_REF)] },
+    { ...moneyWorkroomData(), activity: [activity("work", "runtime-job://tenant-a/goal%GG")] },
+    { ...moneyWorkroomData(), activity: [activity("artifact", "artifact://tenant-a/artifact-1")] },
+  ]) {
+    assert.throws(() => validate(invalid, MONEY_OPPORTUNITY_REF), /invalid workroom payload/);
+  }
+});
+
+test("Money Printer card loader fetches one same-origin workroom and renders safe activity", async () => {
+  const { load, sandbox } = emittedMoneyPrinterWorkroom();
+  assert.equal(typeof load, "function");
+  const workroom = { innerHTML: "", querySelector: () => null };
+  const section = { querySelector: (selector) => { assert.equal(selector, "[data-money-workroom]"); return workroom; } };
+  const button = {
+    dataset: { moneyOpportunityId: MONEY_OPPORTUNITY_ID, moneyOpportunityRef: MONEY_OPPORTUNITY_REF },
+    closest: (selector) => { assert.equal(selector, '[data-panel-section="money-printer"]'); return section; },
+  };
+  const calls = [];
+  sandbox.fetch = async (path, init) => {
+    calls.push({ path, init });
+    return { ok: true, status: 200, json: async () => moneyWorkroomData() };
+  };
+
+  await load(button);
+
+  assert.deepEqual(calls, [{
+    path: `/api/panel/money-printer/workroom?opportunity_id=${MONEY_OPPORTUNITY_ID}`,
+    init: { method: "GET", credentials: "same-origin", headers: { Accept: "application/json" } },
+  }]);
+  assert.match(workroom.innerHTML, /Selected workroom/);
+  assert.match(workroom.innerHTML, /WORKING/);
+  assert.match(workroom.innerHTML, /opportunity/);
+  assert.match(workroom.innerHTML, /runtime-job:\/\/tenant-a\/goal%3A/);
+});
+
+test("Money Printer card loader keeps the latest workroom response when an older request resolves late", async () => {
+  const { load, sandbox } = emittedMoneyPrinterWorkroom();
+  assert.equal(typeof load, "function");
+  const workroom = { innerHTML: "", querySelector: () => null };
+  const section = { querySelector: (selector) => { assert.equal(selector, "[data-money-workroom]"); return workroom; } };
+  const button = (opportunityRef, opportunityId) => ({
+    dataset: { moneyOpportunityId: opportunityId, moneyOpportunityRef: opportunityRef },
+    closest: (selector) => { assert.equal(selector, '[data-panel-section="money-printer"]'); return section; },
+  });
+  const pending = [];
+  sandbox.fetch = async (path, init) => new Promise((resolve) => pending.push({ path, init, resolve }));
+  const first = load(button(MONEY_OPPORTUNITY_REF, MONEY_OPPORTUNITY_ID));
+  const second = load(button(OTHER_OPPORTUNITY_REF, OTHER_OPPORTUNITY_ID));
+  assert.equal(pending.length, 2);
+  pending[1].resolve({ ok: true, status: 200, json: async () => moneyWorkroomData({
+    opportunity_id: OTHER_OPPORTUNITY_ID,
+    job_ref: OTHER_JOB_REF,
+    title: "B workroom",
+    activity: [
+      { kind: "opportunity", ref: OTHER_OPPORTUNITY_REF, status: "WORKING", observed_at: MONEY_OBSERVED_AT },
+      { kind: "work", ref: OTHER_JOB_REF, status: "running", observed_at: MONEY_OBSERVED_AT },
+    ],
+  }) });
+  await second;
+  assert.match(workroom.innerHTML, /B workroom/);
+  pending[0].resolve({ ok: true, status: 200, json: async () => moneyWorkroomData() });
+  await first;
+  assert.match(workroom.innerHTML, /B workroom/);
+  assert.doesNotMatch(workroom.innerHTML, /<h3>Selected workroom<\/h3>/);
 });
 
 test("Money Printer panel embeds focused WebMCP tools with only page CSRF for the write header", () => {
