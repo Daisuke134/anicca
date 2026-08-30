@@ -644,7 +644,6 @@ def _publish(args, api_key: str, caption: str) -> int:
             upload_id, upload_path = upload_image(image, api_key)
             upload_ids.append(upload_id)
             upload_paths.append(upload_path)
-        posted_after = int(time.time())
         expected_title = args.title[:100]
         payload = build_payload(
             integration=args.integration,
@@ -668,12 +667,6 @@ def _publish(args, api_key: str, caption: str) -> int:
                 if args.platform == "tiktok":
                     if is_tiktok_photo_proof(state, args.integration, caption, expected_title):
                         break
-                    if _valid_public_url("tiktok", state.get("post_url")):
-                        break
-                    resolved = resolve_profile_release_url(state.get("post_url"), caption, posted_after=posted_after) if state.get("post_url") else None
-                    if resolved:
-                        state["post_url"] = resolved
-                        break
             if state["state"] == "ERROR":
                 break
         photo_proof = args.platform == "tiktok" and is_tiktok_photo_proof(
@@ -684,12 +677,12 @@ def _publish(args, api_key: str, caption: str) -> int:
             **state,
             "reconciled": state.get("state") == "PUBLISHED" and (
                 _valid_instagram_carousel_url(state.get("post_url")) if args.platform == "instagram"
-                else _valid_public_url("tiktok", state.get("post_url")) or photo_proof
+                else photo_proof
             ),
         }
         print(json.dumps(result, ensure_ascii=False, separators=(",", ":")))
-        valid_url = _valid_instagram_carousel_url(state.get("post_url")) if args.platform == "instagram" else _valid_public_url("tiktok", state.get("post_url"))
-        if state["state"] != "PUBLISHED" or (not valid_url and not photo_proof):
+        valid_url = _valid_instagram_carousel_url(state.get("post_url")) if args.platform == "instagram" else photo_proof
+        if state["state"] != "PUBLISHED" or not valid_url:
             reason = state.get("error")
             suffix = f": {reason}" if isinstance(reason, str) and reason else ""
             raise PostizError(f"Postiz terminal state is {state['state']}{suffix}")

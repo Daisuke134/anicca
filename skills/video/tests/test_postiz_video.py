@@ -135,7 +135,7 @@ class PostizVideoTests(unittest.TestCase):
         self.assertEqual(post["settings"]["content_posting_method"], "DIRECT_POST")
         self.assertEqual(post["settings"]["autoAddMusic"], "yes")
 
-    def test_tiktok_photo_carousel_publish_uses_exact_platform_title_and_direct_url(self):
+    def test_tiktok_photo_carousel_rejects_direct_video_url_without_photo_proof(self):
         with tempfile.TemporaryDirectory() as directory:
             images = []
             for index in range(1, 7):
@@ -148,8 +148,14 @@ class PostizVideoTests(unittest.TestCase):
                 with patch.object(postiz_video, "create_post", side_effect=lambda payload, _key: payloads.append(payload) or "postiz-1"):
                     with patch.object(postiz_video, "read_publish_state", return_value={"state": "PUBLISHED", "post_url": "https://www.tiktok.com/@anicca_slideshow/video/7777777777777777777"}):
                         with patch.object(postiz_video.time, "sleep"):
-                            with patch("builtins.print"):
-                                self.assertEqual(postiz_video._publish(args, "token", "Exact caption"), 0)
+                            with patch.object(postiz_video, "resolve_profile_release_url") as resolver:
+                                with patch("builtins.print") as output:
+                                    with self.assertRaisesRegex(postiz_video.PostizError, "terminal state"):
+                                        postiz_video._publish(args, "token", "Exact caption")
+            resolver.assert_not_called()
+            result = json.loads(output.call_args.args[0])
+            self.assertFalse(result["reconciled"])
+            self.assertEqual(result["post_url"], "https://www.tiktok.com/@anicca_slideshow/video/7777777777777777777")
             self.assertEqual(payloads[0]["posts"][0]["settings"]["title"], "Exact hook")
             self.assertEqual(len(payloads[0]["posts"][0]["value"][0]["image"]), 6)
 

@@ -373,7 +373,7 @@ function provider(result, lane) {
   const photoProof = lane.platform === "tiktok" && url == null
     && result.integration_id === lane.integrationId && result.content_sha256 === lane.captionRef.slice(-64)
     && result.title === lane.title && result.posting_method === "DIRECT_POST"
-    && /^p_pub_url~[A-Za-z0-9._~-]+$/.test(String(result.release_id || ""));
+    && /^p_pub_url~v2\.[0-9]+$/.test(String(result.release_id || ""));
   if (!result || state !== "PUBLISHED" || reconciled !== true || !PROVIDER_ID.test(String(postId || "")) || (!direct && !photoProof)) { const error = new Error("marketing native carousel provider result contract mismatch"); error.unknownEffect = true; throw error; }
   return { postId: String(postId), url: direct ? String(url) : null, ...(photoProof ? { state, integrationId: result.integration_id, contentSha256: result.content_sha256, title: result.title, postingMethod: result.posting_method, releaseId: result.release_id } : {}) };
 }
@@ -410,7 +410,7 @@ function verifyMarketingNativeCarouselPublicationReceipt(receipt) {
     && receipt.provider_content_sha256 === receipt.caption_sha256
     && receipt.provider_title === lane.title
     && receipt.provider_posting_method === "DIRECT_POST"
-    && /^p_pub_url~[A-Za-z0-9._~-]+$/.test(String(receipt.provider_release_id || ""));
+    && /^p_pub_url~v2\.[0-9]+$/.test(String(receipt.provider_release_id || ""));
   if (!direct && !photoApiProof) return false;
   try { instant(receipt.published_at, "marketing native carousel receipt published_at"); return true; } catch { return false; }
 }

@@ -138,6 +138,7 @@ test("EN slideshow TikTok lane accepts exact Postiz API photo proof without inve
   assert.equal(verifyMarketingNativeCarouselPublicationReceipt(apiReceipt), true);
   assert.equal(verifyMarketingNativeCarouselPublicationReceipt({ ...apiReceipt, provider_state: "QUEUE" }), false);
   assert.equal(verifyMarketingNativeCarouselPublicationReceipt({ ...apiReceipt, provider_content_sha256: "f".repeat(64) }), false);
+  assert.equal(verifyMarketingNativeCarouselPublicationReceipt({ ...apiReceipt, provider_release_id: "p_pub_url~garbage" }), false);
 });
 
 test("production carousel effects are scoped by exact schedule slot", () => {
