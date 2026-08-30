@@ -5,6 +5,10 @@ const { canonicalOpportunityInput } = require("./money-printer-opportunity.js");
 const TENANT_ID = /^[a-z0-9][a-z0-9._-]{0,199}$/;
 const OPPORTUNITY_ID = /^[0-9a-f]{64}$/;
 const JOB_ID = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,199}$/;
+const GITHUB_ISSUE_REF = /^github-issue:\/\/Daisuke134\/life-manager-workrooms\/[1-9][0-9]*$/;
+const GITHUB_COMMENT_REF = /^github-comment:\/\/Daisuke134\/life-manager-workrooms\/[1-9][0-9]*\/[1-9][0-9]*$/;
+const URI_REF = /^[a-z][a-z0-9+.-]{1,31}:\/\/[A-Za-z0-9][A-Za-z0-9._~:/?#@!$&'()*+,;=%-]{0,999}$/;
+const EXECUTION_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/;
 
 function unavailable() { throw new Error("money printer runtime store unavailable"); }
 
@@ -31,6 +35,110 @@ function scopedRows(result, uid, label) {
     throw new Error(`money printer runtime store ${label} readback invalid`);
   }
   return rows;
+}
+
+function claimedSymphonyDispatch(result, uid) {
+  const rows = result && Array.isArray(result.rows) ? result.rows : [];
+  if (rows.length === 0) return null;
+  if (rows.length !== 1) throw new Error("money printer runtime store Symphony claim readback invalid");
+  const row = rows[0];
+  if (!row || typeof row !== "object" || Array.isArray(row)
+    || row.tenant_id !== uid || !OPPORTUNITY_ID.test(String(row.dispatch_id || ""))
+    || !JOB_ID.test(String(row.job_id || "")) || !Number.isInteger(row.round) || row.round < 1
+    || row.status !== "claimed" || row.issue_ref != null || row.result_ref != null
+    || row.result_hash != null || row.result_payload != null || row.failure_code != null) {
+    throw new Error("money printer runtime store Symphony claim readback invalid");
+  }
+  return row;
+}
+
+function mirroredSymphonyDispatch(result, expected) {
+  const rows = result && Array.isArray(result.rows) ? result.rows : [];
+  const row = rows.length === 1 ? rows[0] : null;
+  if (!row || rows.length !== 1 || typeof row !== "object" || Array.isArray(row)
+    || row.tenant_id !== expected.uid || row.dispatch_id !== expected.dispatchId
+    || !JOB_ID.test(String(row.job_id || "")) || !Number.isInteger(row.round) || row.round < 1
+    || row.status !== "mirrored" || row.issue_ref !== expected.issueRef
+    || row.result_ref != null || row.result_hash != null || row.result_payload != null
+    || row.failure_code != null) {
+    throw new Error("money printer runtime store Symphony issue readback invalid");
+  }
+  return row;
+}
+
+function stableJson(value) {
+  if (Array.isArray(value)) return `[${value.map(stableJson).join(",")}]`;
+  if (value && typeof value === "object") {
+    return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableJson(value[key])}`).join(",")}}`;
+  }
+  return JSON.stringify(value);
+}
+
+function resultReadySymphonyDispatch(result, expected) {
+  const rows = result && Array.isArray(result.rows) ? result.rows : [];
+  const row = rows.length === 1 ? rows[0] : null;
+  if (!row || rows.length !== 1 || typeof row !== "object" || Array.isArray(row)
+    || row.tenant_id !== expected.uid || row.dispatch_id !== expected.dispatchId
+    || row.job_id !== expected.payload.job_id || row.status !== "result_ready"
+    || row.result_ref !== expected.resultRef || row.result_hash !== expected.resultHash
+    || stableJson(row.result_payload) !== stableJson(expected.payload) || row.failure_code != null) {
+    throw new Error("money printer runtime store Symphony result readback invalid");
+  }
+  return row;
+}
+
+function consumedSymphonyDispatch(result, uid, dispatchId) {
+  const rows = result && Array.isArray(result.rows) ? result.rows : [];
+  const row = rows.length === 1 ? rows[0] : null;
+  if (!row || rows.length !== 1 || typeof row !== "object" || Array.isArray(row)
+    || row.tenant_id !== uid || row.dispatch_id !== dispatchId
+    || !JOB_ID.test(String(row.job_id || "")) || row.status !== "consumed"
+    || !row.result_payload || row.result_payload.status !== "completed"
+    || row.failure_code != null) {
+    throw new Error("money printer runtime store Symphony completion readback invalid");
+  }
+  return row;
+}
+
+function symphonyHumanTask(result, uid) {
+  const row = oneRow(result, "Symphony human task", uid);
+  if (!OPPORTUNITY_ID.test(String(row.task_id || ""))
+    || !JOB_ID.test(String(row.job_id || "")) || row.status !== "open"
+    || !Number.isInteger(row.version) || row.version < 1
+    || typeof row.resume_ref !== "string" || !URI_REF.test(row.resume_ref)
+    || !/^human-boundary:\/\/sha256\/[0-9a-f]{64}$/.test(String(row.human_boundary_ref || ""))) {
+    throw new Error("money printer runtime store Symphony human task readback invalid");
+  }
+  return row;
+}
+
+function symphonyResultInput(value) {
+  const uid = tenant(value && value.uid);
+  const dispatchId = String(value && value.dispatchId || "").trim();
+  const resultRef = String(value && value.resultRef || "").trim();
+  const resultHash = String(value && value.resultHash || "").trim();
+  const payload = value && value.payload;
+  const base = ["artifact_refs", "dispatch_id", "execution_id", "job_id", "protocol", "status", "tenant_id"];
+  const human = [...base, "question", "reason_code", "required_format"].sort();
+  const keys = payload && typeof payload === "object" && !Array.isArray(payload) ? Object.keys(payload).sort() : [];
+  if (!OPPORTUNITY_ID.test(dispatchId) || !GITHUB_COMMENT_REF.test(resultRef)
+    || !OPPORTUNITY_ID.test(resultHash) || !payload || Array.isArray(payload)
+    || payload.protocol !== "LM_RESULT_V1" || payload.tenant_id !== uid
+    || payload.dispatch_id !== dispatchId || typeof payload.job_id !== "string" || !JOB_ID.test(payload.job_id)
+    || !new Set(["completed", "needs_human"]).has(payload.status)
+    || typeof payload.execution_id !== "string" || !EXECUTION_ID.test(payload.execution_id)
+    || !Array.isArray(payload.artifact_refs) || payload.artifact_refs.length > 100
+    || payload.artifact_refs.some((ref) => typeof ref !== "string" || !URI_REF.test(ref))
+    || (payload.status === "completed" && stableJson(keys) !== stableJson(base.sort()))
+    || (payload.status === "needs_human" && (
+      stableJson(keys) !== stableJson(human)
+      || typeof payload.reason_code !== "string" || !JOB_ID.test(payload.reason_code)
+      || typeof payload.question !== "string" || !payload.question.trim() || payload.question.length > 2000
+      || !["string", "object"].includes(typeof payload.required_format) || payload.required_format == null
+    ))) {
+    throw new Error("money printer runtime store Symphony result invalid");
+  }
+  return Object.freeze({ uid, dispatchId, resultRef, resultHash, payload });
 }
 
 function expectedOpportunity(value) {
@@ -129,6 +237,49 @@ function createMoneyPrinterRuntimeStore({ query } = {}) {
   if (typeof query !== "function") unavailable();
 
   return Object.freeze({
+    async claimSymphony(value) {
+      const uid = tenant(value);
+      return claimedSymphonyDispatch(await query(`
+        SELECT * FROM public.claim_lm_symphony_job($1)
+      `, [uid]), uid);
+    },
+    async recordSymphonyIssue(value) {
+      const uid = tenant(value && value.uid);
+      const dispatchId = String(value && value.dispatchId || "").trim();
+      const issueRef = String(value && value.issueRef || "").trim();
+      if (!OPPORTUNITY_ID.test(dispatchId) || !GITHUB_ISSUE_REF.test(issueRef)) {
+        throw new Error("money printer runtime store Symphony issue invalid");
+      }
+      return mirroredSymphonyDispatch(await query(`
+        SELECT * FROM public.record_lm_symphony_issue($1, $2, $3)
+      `, [uid, dispatchId, issueRef]), { uid, dispatchId, issueRef });
+    },
+    async recordSymphonyResult(value) {
+      const expected = symphonyResultInput(value);
+      return resultReadySymphonyDispatch(await query(`
+        SELECT * FROM public.record_lm_symphony_result($1, $2, $3, $4, $5)
+      `, [expected.uid, expected.dispatchId, expected.resultRef, expected.resultHash, JSON.stringify(expected.payload)]), expected);
+    },
+    async consumeSymphonyCompleted(value) {
+      const uid = tenant(value && value.uid);
+      const dispatchId = String(value && value.dispatchId || "").trim();
+      if (!OPPORTUNITY_ID.test(dispatchId)) {
+        throw new Error("money printer runtime store Symphony completion invalid");
+      }
+      return consumedSymphonyDispatch(await query(`
+        SELECT * FROM public.consume_lm_symphony_completed($1, $2)
+      `, [uid, dispatchId]), uid, dispatchId);
+    },
+    async consumeSymphonyHumanTask(value) {
+      const uid = tenant(value && value.uid);
+      const dispatchId = String(value && value.dispatchId || "").trim();
+      if (!OPPORTUNITY_ID.test(dispatchId)) {
+        throw new Error("money printer runtime store Symphony human task invalid");
+      }
+      return symphonyHumanTask(await query(`
+        SELECT * FROM public.consume_lm_symphony_human_task($1, $2)
+      `, [uid, dispatchId]), uid);
+    },
     async createOpportunity(canonical) {
       const uid = tenant(canonical && canonical.uid);
       const row = oneRow(await query(`
