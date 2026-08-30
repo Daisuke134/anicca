@@ -10,6 +10,7 @@ from pathlib import Path
 from urllib.error import HTTPError, URLError
 
 import job_search_loop.workday_search_loop as workday_search_loop
+import job_search_loop.workday_qualification as workday_qualification
 from job_search_loop.ledger import Ledger
 from job_search_loop.workday_search_loop import (
     cached_source_fetcher,
@@ -62,6 +63,9 @@ class WorkdayQualificationTests(unittest.TestCase):
             "an imperfect-fit Japan role ranks before a strong-fit foreign role",
             prompt_source,
         )
+
+        fit_source = inspect.getsource(workday_qualification.qualify_one)
+        self.assertIn("posting whose title says Senior", fit_source)
         self.assertIn(
             "Korea-remote/EOR is non-Japan unless Japan employment is explicit",
             prompt_source,
