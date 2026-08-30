@@ -188,7 +188,7 @@ exhaustion, not a skip, rejection, provider blocker, or application receipt.
 3. Immediate replay inserts zero additional confirmations and never retries Submit.
 4. Run the focused confirmation module and `git diff --check`; commit and push.
 
-#### Task 3C: Reject observed-row empty success — active
+#### Task 3C: Reject observed-row empty success — implemented, production gate active
 
 **Files:**
 - Modify: `apps/job-search-loop/job_search_loop/browser_agent/orchestrator.py`
@@ -215,6 +215,15 @@ checkpoint or submit intent is created, yet the owner exits success.
 5. Add one focused regression that replays the production receipt shape and one
    focused control for authoritative runtime `queue_complete`; run the existing
    model-browser focused module and `git diff --check`.
+
+PR #3341 merges this repair. Main-derived release
+`20260831T004335-01dc472e` is loaded by the five existing Job Hunter owners and daily
+cadence reads back as 1,800 seconds. Post-fix wake `daily-20260831-004617` terminates
+after 19 successful fit decisions and the start of a twentieth model turn, before it
+writes the top-level discovery or wake receipt. It creates no submit intent and no
+confirmed application. Wake `daily-20260831-005753` is the sole active continuation;
+Task 4 remains open until a bounded real wake reaches the browser and closes the full
+Gmail/Ledger/Telegram/replay-zero chain.
 
 ---
 
