@@ -217,7 +217,9 @@ class LmLoopApplyTest(unittest.TestCase):
         target.write_bytes(plistlib.dumps({
             "Label": "ai.anicca.example",
             "ProgramArguments": ["/old/run.sh"],
-            "WorkingDirectory": "/Users/anicca/loops/connector/releases/20260827T171500-57ed7c000",
+            "WorkingDirectory": str(
+                Path.home() / "loops" / "connector" / "releases" / "20260827T171500-57ed7c000"
+            ),
         }))
         rendered = build_apply_plan(registry(), self.root, SHA)[0]
 
