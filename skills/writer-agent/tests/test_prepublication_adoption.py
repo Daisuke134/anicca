@@ -517,6 +517,69 @@ class PrepublicationAdoptionTest(unittest.TestCase):
                 repair.mark_invoking(run, ledger, owner_pid=os.getpid())
             self.assertEqual(recovery_path.read_bytes(), recovery_bytes)
 
+    def test_owner_prompt_recovery_evidence_fails_closed(self):
+        cases = {
+            "live prior owner": self.make_owner_recovery_live_owner,
+            "missing first receipt": self.remove_first_source_recovery_receipt,
+            "tampered first receipt": self.tamper_first_source_recovery_receipt,
+            "missing orphan source authorization": self.disable_orphan_source_authorization,
+            "alternate old prompt": self.make_owner_recovery_alternate_prompt,
+            "existing owner receipt": self.make_existing_owner_recovery_receipt,
+            "existing owner prompt": self.make_existing_owner_recovery_prompt,
+        }
+        for name, mutate in cases.items():
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as tmp:
+                run, run_id, prompt, ledger, _old_prompt = self.owner_recovery_fixture(
+                    Path(tmp)
+                )
+                if name == "missing orphan source authorization":
+                    with patch.object(
+                        repair,
+                        "_quality_self_heal_orphan_occurrence_source",
+                        return_value=None,
+                    ):
+                        decision = repair.plan(run, ledger)
+                else:
+                    mutate(run)
+                    decision = repair.plan(run, ledger)
+                self.assertEqual(decision["status"], "REFUSED")
+                self.assertNotEqual(
+                    decision.get("reason"),
+                    "tracked-repair-owner-prompt-source-defect",
+                )
+
+    def test_owner_prompt_recovery_crash_boundaries_resume_without_rewrite(self):
+        for checkpoint in (
+            "after-prompt-create",
+            "after-receipt-create",
+            "after-state-bind",
+        ):
+            with self.subTest(checkpoint=checkpoint), tempfile.TemporaryDirectory() as tmp:
+                run, _run_id, _prompt, ledger, _old = self.owner_recovery_fixture(Path(tmp))
+                state_path = run / "gates/quality-repair-state.json"
+                prompt_path = run / "gates/quality-repair/epoch-1/prompts/owner-recovery-1.txt"
+                receipt_path = run / "gates/quality-repair-owner-recovery.json"
+                with patch.object(
+                    repair,
+                    "_owner_recovery_checkpoint",
+                    side_effect=lambda phase: (
+                        (_ for _ in ()).throw(RuntimeError(phase))
+                        if phase == checkpoint else None
+                    ),
+                ):
+                    with self.assertRaisesRegex(RuntimeError, checkpoint):
+                        repair.mark_invoking(run, ledger, owner_pid=os.getpid())
+                before = {
+                    path: (path.read_bytes(), path.stat().st_ino)
+                    for path in (prompt_path, receipt_path)
+                    if path.exists()
+                }
+                resumed = repair.mark_invoking(run, ledger, owner_pid=os.getpid())
+                self.assertEqual(resumed["status"], "invoking")
+                self.assertEqual(resumed["attempts"], 2)
+                for path, (bytes_before, inode_before) in before.items():
+                    self.assertEqual(path.read_bytes(), bytes_before)
+                    self.assertEqual(path.stat().st_ino, inode_before)
     def test_terminal_incomplete_editorial_repair_source_evidence_is_fail_closed(self):
         cases = {
             "wrong error": lambda run, evidence: (
@@ -560,6 +623,60 @@ class PrepublicationAdoptionTest(unittest.TestCase):
             ):
                 decision = repair.plan(run, ledger)
             self.assertEqual(decision["status"], "REFUSED")
+
+    def test_terminal_incomplete_owner_prompt_recovery_rearms_once(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            run, run_id, prompt, ledger = self.fixture(Path(tmp))
+            self.add_reader_traceback(run)
+            generation.adopt_prepublication(run, run_id, prompt, ledger)
+            prepared = repair.begin(run, ledger)
+            self.make_active_editorial_repair_evidence(run, prepared)
+            first = repair.mark_invoking(run, ledger, owner_pid=999999)
+            repair.record_result(run, ledger, return_code=1)
+
+            old_prompt = Path(first["prompt_path"])
+            old_prompt.write_text(
+                old_prompt.read_text(encoding="utf-8").replace(
+                    repair.OWNER_PROMPT_PROHIBITION + "\n", ""
+                ),
+                encoding="utf-8",
+            )
+            state_path = run / "gates/quality-repair-state.json"
+            state = json.loads(state_path.read_text(encoding="utf-8"))
+            state["prompt_sha256"] = hashlib.sha256(old_prompt.read_bytes()).hexdigest()
+            state_path.write_text(json.dumps(state) + "\n", encoding="utf-8")
+
+            decision = repair.plan(run, ledger)
+            self.assertEqual(decision["status"], "READY")
+            self.assertEqual(decision["reason"], "tracked-repair-owner-prompt-source-defect")
+            self.assertEqual(decision["attempts"], 2)
+            self.assertEqual(decision["prompt_path"], str(old_prompt))
+            old_prompt_bytes = old_prompt.read_bytes()
+            prior_state = state_path.read_bytes()
+            invoking = repair.mark_invoking(run, ledger, owner_pid=os.getpid())
+            self.assertEqual(invoking["status"], "invoking")
+            self.assertEqual(invoking["attempts"], 2)
+            self.assertEqual(old_prompt.read_bytes(), old_prompt_bytes)
+            new_prompt = run / "gates/quality-repair/epoch-1/prompts/owner-recovery-1.txt"
+            self.assertEqual(
+                new_prompt.read_bytes(),
+                old_prompt_bytes.rstrip(b"\n") + b"\n\n"
+                + repair.OWNER_PROMPT_PROHIBITION.encode("utf-8") + b"\n",
+            )
+            owner_receipt_path = run / "gates/quality-repair-owner-recovery.json"
+            owner_receipt_bytes = owner_receipt_path.read_bytes()
+            owner_receipt = json.loads(owner_receipt_bytes)
+            self.assertEqual(owner_receipt["schema"], "writer.quality-repair-owner-recovery")
+            self.assertEqual(owner_receipt["recovery_attempt"], 1)
+            self.assertEqual(owner_receipt["prior_state_sha256"], hashlib.sha256(prior_state).hexdigest())
+            self.assertEqual(owner_receipt["new_prompt_sha256"], hashlib.sha256(new_prompt.read_bytes()).hexdigest())
+            self.assertEqual(owner_receipt["receipt_sha256"], repair._receipt_hash(owner_receipt))
+            self.assertEqual(invoking["owner_recovery_receipt_sha256"], hashlib.sha256(owner_receipt_bytes).hexdigest())
+            repair.record_result(run, ledger, return_code=1)
+            self.assertEqual(repair.plan(run, ledger), {"status": "REFUSED", "reason": "quality-repair-owner-recovery-already-recorded"})
+            with self.assertRaisesRegex(repair.QualityRepairError, "quality-repair-owner-recovery-already-recorded"):
+                repair.mark_invoking(run, ledger, owner_pid=os.getpid())
+            self.assertEqual(owner_receipt_path.read_bytes(), owner_receipt_bytes)
 
     @staticmethod
     def make_active_editorial_repair_evidence(run: Path, prepared: dict):
@@ -644,6 +761,71 @@ class PrepublicationAdoptionTest(unittest.TestCase):
                 (Path(__file__).resolve().parents[1] / "scripts/editorial-gate.sh").read_bytes()
             ).hexdigest(),
         }
+
+    def owner_recovery_fixture(self, root: Path):
+        run, run_id, prompt, ledger = self.fixture(root)
+        self.add_reader_traceback(run)
+        generation.adopt_prepublication(run, run_id, prompt, ledger)
+        prepared = repair.begin(run, ledger)
+        self.make_active_editorial_repair_evidence(run, prepared)
+        first = repair.mark_invoking(run, ledger, owner_pid=999999)
+        repair.record_result(run, ledger, return_code=1)
+        old_prompt = Path(first["prompt_path"])
+        old_prompt.write_text(
+            old_prompt.read_text(encoding="utf-8").replace(
+                repair.OWNER_PROMPT_PROHIBITION + "\n", ""
+            ),
+            encoding="utf-8",
+        )
+        state_path = run / "gates/quality-repair-state.json"
+        state = json.loads(state_path.read_text(encoding="utf-8"))
+        state["prompt_sha256"] = hashlib.sha256(old_prompt.read_bytes()).hexdigest()
+        state_path.write_text(json.dumps(state) + "\n", encoding="utf-8")
+        return run, run_id, prompt, ledger, old_prompt
+
+    @staticmethod
+    def make_owner_recovery_live_owner(run: Path):
+        state_path = run / "gates/quality-repair-state.json"
+        state = json.loads(state_path.read_text(encoding="utf-8"))
+        state["owner_pid"] = os.getpid()
+        state_path.write_text(json.dumps(state) + "\n", encoding="utf-8")
+
+    @staticmethod
+    def remove_first_source_recovery_receipt(run: Path):
+        (run / "gates/quality-repair-source-recovery.json").unlink()
+
+    @staticmethod
+    def tamper_first_source_recovery_receipt(run: Path):
+        path = run / "gates/quality-repair-source-recovery.json"
+        value = json.loads(path.read_text(encoding="utf-8"))
+        value["owner_pid"] = 123
+        path.write_text(json.dumps(value) + "\n", encoding="utf-8")
+
+    @staticmethod
+    def disable_orphan_source_authorization(_run: Path):
+        return None
+
+    @staticmethod
+    def make_owner_recovery_alternate_prompt(run: Path):
+        state_path = run / "gates/quality-repair-state.json"
+        state = json.loads(state_path.read_text(encoding="utf-8"))
+        alternate = run / "other-repair-prompt.txt"
+        alternate.write_bytes(Path(state["prompt_path"]).read_bytes())
+        state["prompt_path"] = str(alternate)
+        state["prompt_sha256"] = hashlib.sha256(alternate.read_bytes()).hexdigest()
+        state_path.write_text(json.dumps(state) + "\n", encoding="utf-8")
+
+    @staticmethod
+    def make_existing_owner_recovery_receipt(run: Path):
+        (run / "gates/quality-repair-owner-recovery.json").write_text(
+            "{}\n", encoding="utf-8"
+        )
+
+    @staticmethod
+    def make_existing_owner_recovery_prompt(run: Path):
+        path = run / "gates/quality-repair/epoch-1/prompts/owner-recovery-1.txt"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("existing\n", encoding="utf-8")
 
     @staticmethod
     def make_current_editorial_hash(run: Path, evidence: dict):
