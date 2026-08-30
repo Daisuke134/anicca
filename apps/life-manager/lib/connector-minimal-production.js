@@ -57,6 +57,7 @@ const KOKUCHPRO_WORKFLOW_VERSION = "kokuchpro_registration_v1";
 const LUMA_PAGE_STATE = "registration_page_v1";
 const EXPECTED_REGISTRATION_EFFECT = "registered_or_pending";
 const STALE_TARGET_MAX_IDLE_MS = 660_000;
+const CONNECTOR_CDP_CONNECT_TIMEOUT_MS = 120_000;
 const PROVIDER_RANK_MAX_DATES = 2;
 const PROVIDER_RANK_MAX_CANDIDATES = 12;
 
@@ -601,7 +602,7 @@ function createProductionBrowserRail(options = {}) {
   const stateDir = absoluteDirectory(options.stateDir);
   const connectOverCDP = options.connectOverCDP || ((endpoint) => {
     const { chromium } = require("playwright-core");
-    return chromium.connectOverCDP(endpoint);
+    return chromium.connectOverCDP(endpoint, { timeout: CONNECTOR_CDP_CONNECT_TIMEOUT_MS });
   });
   const createTargetController = options.createTargetController
     || ((input) => createConnectorBrowserTargetController(input));
@@ -628,7 +629,10 @@ function createProductionBrowserRail(options = {}) {
   return Object.freeze({
     async open(input = {}) {
       const exactOwnerToken = ownerToken(input.ownerToken);
-      const browser = await connectOverCDP(CONNECTOR_CDP_ENDPOINT);
+      const browser = await connectOverCDP(
+        CONNECTOR_CDP_ENDPOINT,
+        { timeout: CONNECTOR_CDP_CONNECT_TIMEOUT_MS },
+      );
       const controller = createTargetController({ browser, endpoint: CONNECTOR_CDP_ENDPOINT });
       if (!controller || typeof controller.create !== "function" || typeof controller.close !== "function") invalid();
       let ownership = null;
