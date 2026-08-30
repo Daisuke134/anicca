@@ -27,7 +27,7 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 この節は、後段の「現在TODO」「次の一件」「local-only」「self-funded agentは別product」という相反する記述を
 上書きする最新の実行順序SSOTである。後段は実装履歴・organ別acceptanceとして保持するが、次作業の選択には使わない。
 Upworkのterminal evidence、startup context、public claim、GA-01〜13Aは完了または履歴として保持する。
-次の一件はAtomic program ledger Seq 16 `ELZ-C03`のsubstep `C03-02`で、Eliza fixed sourceの非破壊migration contractをprivate evidenceへ保存する。
+次の一件はAtomic program ledger Seq 16 `ELZ-C03`のsubstep `C03-03`で、legacy intent graphのprovenance/correction/expiry contractをprivate evidenceへ保存する。
 
 #### 0.0.1 最新基盤決定 — ElizaOSを完全forkし、Life Managerをlocal OSSからmulti-tenant SaaSへ育てる
 
@@ -585,7 +585,7 @@ effect key、lease、immutable receipt contractだけを移植する。新DB fra
 Goal分解とgraph生成は後続C07のCodexへ残す。現在activeなC03だけを次の単一行動へ分解し、C04以降の順序は変更しない。
 
 - [x] **C03-01** Eliza `plugin-todos`のDrizzle schema登録contractをprivate evidenceへ保存する — fixed source `bd24601e…`の`pgSchema("todos")`、`todos`/`todo_mutations`、row/insert型、`agentId`/`entityId` scope、3列idempotency unique、lookup index、`@elizaos/plugin-sql` dependency、plugin `schema`登録、host-owned migrationをSHA256付きprivate receiptへ保存。DB mutation 0、外部effect 0。次はC03-02
-- [ ] **C03-02** Eliza `plugin-reminders`の非破壊migration contractをprivate evidenceへ保存する
+- [x] **C03-02** Eliza `plugin-reminders`の非破壊migration contractをprivate evidenceへ保存する — fixed source `bd24601e…`の3表独立migration、durable marker、source有無、target空判定、`NOT EXISTS`＋`ON CONFLICT` copy、全first-run terminal outcomeのmarker、source DROP/ALTER 0、plugin service/schema登録をSHA256付きprivate receiptへ保存。DB mutation 0、外部effect 0。次はC03-03
 - [ ] **C03-03** legacy `intent-graph.js`のprovenance/correction/expiry contractをprivate evidenceへ保存する
 - [ ] **C03-04** legacy runtime job/receiptのreference/effect/immutability contractをprivate evidenceへ保存する
 - [ ] **C03-05** upstream/legacyの採用・棄却mapを`domain-reuse-map.json`へ保存する
