@@ -18,6 +18,25 @@ function renderMoneyPrinterWebMcpScript({ csrf } = {}) {
     || typeof document.modelContext.registerTool !== "function") return;
 
   const pageCsrf = ${pageCsrf};
+  const emitCall = (tool, status) => {
+    if (typeof document.dispatchEvent !== "function") return;
+    const detail = { tool, status };
+    const event = typeof CustomEvent === "function"
+      ? new CustomEvent("money-printer:webmcp-call", { detail })
+      : { type: "money-printer:webmcp-call", detail };
+    document.dispatchEvent(event);
+  };
+  const wrapExecute = (tool, execute) => async function wrappedExecute(...args) {
+    emitCall(tool, "running");
+    try {
+      const result = await execute.apply(this, args);
+      emitCall(tool, "succeeded");
+      return result;
+    } catch (error) {
+      emitCall(tool, "failed");
+      throw error;
+    }
+  };
   const taskKeys = ["task_id", "version", "question", "required_format", "reason_code"];
   let answerController = null;
   let answerTask = null;
@@ -75,7 +94,7 @@ function renderMoneyPrinterWebMcpScript({ csrf } = {}) {
         additionalProperties: false,
       },
       annotations: { readOnlyHint: false },
-      execute: async (input = {}) => {
+      execute: wrapExecute("record_human_answer", async (input = {}) => {
         if (!input || typeof input !== "object" || Array.isArray(input)
           || typeof input.answer_ref !== "string") throw new Error("record_human_answer invalid");
         const response = await fetch("/api/panel/money-printer/human-task/answer", {
@@ -100,7 +119,7 @@ function renderMoneyPrinterWebMcpScript({ csrf } = {}) {
         }
         await refreshMoneyPrinter();
         return result;
-      },
+      }),
     };
     await document.modelContext.registerTool(tool, { signal: controller.signal });
   };
@@ -194,7 +213,7 @@ function renderMoneyPrinterWebMcpScript({ csrf } = {}) {
       additionalProperties: false,
     },
     annotations: { readOnlyHint: true, untrustedContentHint: true },
-    execute: () => request(),
+    execute: wrapExecute("inspect_money_printer", request),
     }),
     document.modelContext.registerTool({
     name: "inspect_next_human_task",
@@ -205,7 +224,7 @@ function renderMoneyPrinterWebMcpScript({ csrf } = {}) {
       additionalProperties: false,
     },
     annotations: { readOnlyHint: true, untrustedContentHint: true },
-    execute: () => requestNextTask(),
+    execute: wrapExecute("inspect_next_human_task", requestNextTask),
     }),
     document.modelContext.registerTool({
       name: "add_opportunity",
@@ -223,7 +242,7 @@ function renderMoneyPrinterWebMcpScript({ csrf } = {}) {
         additionalProperties: false,
       },
       annotations: { readOnlyHint: false },
-      execute: addOpportunityRequest,
+      execute: wrapExecute("add_opportunity", addOpportunityRequest),
     }),
     document.modelContext.registerTool({
       name: "inspect_workroom",
@@ -235,7 +254,7 @@ function renderMoneyPrinterWebMcpScript({ csrf } = {}) {
         additionalProperties: false,
       },
       annotations: { readOnlyHint: true, untrustedContentHint: true },
-      execute: inspectWorkroomRequest,
+      execute: wrapExecute("inspect_workroom", inspectWorkroomRequest),
     }),
   ]);
   await initialRegistration;

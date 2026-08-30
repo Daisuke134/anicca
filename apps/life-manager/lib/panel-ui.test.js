@@ -332,6 +332,74 @@ test("Money Printer panel renders one six-lane control room", () => {
   }
 });
 
+test("Money Printer panel renders one visible WebMCP call status region outside the board body", () => {
+  const html = renderPanelPage();
+  const regions = html.match(/<p class="money-webmcp-status"[^>]*data-money-webmcp-status/g) || [];
+  assert.equal(regions.length, 1);
+  assert.match(html, /<p class="money-webmcp-status"[^>]*data-money-webmcp-status[^>]*aria-live="polite"><\/p>/);
+  assert.doesNotMatch(html, /WebMCP ready/);
+  const moneySection = html.match(/<section class="panel-section" data-panel-section="money-printer"[\s\S]*?<\/section>/)?.[0] || "";
+  assert.match(moneySection, /data-panel-body[^>]*>[\s\S]*?<\/div>\s*<p class="money-webmcp-status"/);
+});
+
+test("Money Printer WebMCP call status accepts only exact allowlisted events and survives refresh", async () => {
+  const html = renderPanelPage();
+  const script = html.match(/<script>\s*([\s\S]*?)\s*<\/script>/)[1];
+  const start = script.indexOf("let moneyPrinterRefresh = Promise.resolve();");
+  const end = script.indexOf("\n    function commandForAction", start);
+  assert.ok(start >= 0 && end > start);
+
+  const listeners = {};
+  const status = { textContent: "" };
+  const document = {
+    addEventListener(name, callback) { listeners[name] = callback; },
+    querySelector(selector) {
+      assert.equal(selector, "[data-money-webmcp-status]");
+      return status;
+    },
+  };
+  let reloads = 0;
+  vm.runInNewContext(script.slice(start, end), {
+    Promise,
+    console: { error() {} },
+    document,
+    displayExactKeys(value, expected) {
+      if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+      const actual = Object.keys(value).sort();
+      const wanted = expected.slice().sort();
+      return actual.length === wanted.length && actual.every((key, index) => key === wanted[index]);
+    },
+    loadPanelSection: async (name) => {
+      assert.equal(name, "money-printer");
+      reloads += 1;
+    },
+  });
+  assert.equal(typeof listeners["money-printer:webmcp-call"], "function");
+  assert.equal(status.textContent, "");
+
+  const dispatch = (detail) => listeners["money-printer:webmcp-call"]({ detail });
+  dispatch({ tool: "inspect_money_printer", status: "running" });
+  assert.equal(status.textContent, "inspect_money_printer · running");
+  for (const invalid of [
+    { tool: "inspect_money_printer", status: "succeeded", extra: "ignore" },
+    { tool: "unknown_tool", status: "running" },
+    { tool: "inspect_money_printer", status: "unknown" },
+    null,
+    ["inspect_money_printer", "failed"],
+  ]) {
+    dispatch(invalid);
+    assert.equal(status.textContent, "inspect_money_printer · running");
+  }
+  dispatch({ tool: "record_human_answer", status: "succeeded" });
+  assert.equal(status.textContent, "record_human_answer · succeeded");
+
+  const refresh = { detail: {} };
+  listeners["money-printer:refresh"](refresh);
+  await refresh.detail.promise;
+  assert.equal(reloads, 1);
+  assert.equal(status.textContent, "record_human_answer · succeeded");
+});
+
 test("Money Printer renderer validates currency maps and sorts their display", () => {
   const { render, validate } = emittedMoneyPrinterRenderer();
   const card = { opportunity_ref: MONEY_OPPORTUNITY_REF, title: "Opportunity", status: "DISCOVERED", value_minor: "50000", currency: "JPY", source_url: null };
@@ -456,7 +524,7 @@ test("Money Printer card loader keeps the latest workroom response when an older
 test("Money Printer panel embeds focused WebMCP tools with only page CSRF for the write header", () => {
   const html = renderPanelPage({ csrf: "csrf-value" });
   const scripts = [...html.matchAll(/<script>\s*([\s\S]*?)\s*<\/script>/g)].map((match) => match[1]);
-  const webmcp = scripts.find((script) => script.includes("inspect_money_printer"));
+  const webmcp = scripts.find((script) => script.includes("document.modelContext.registerTool"));
   assert.ok(webmcp);
   assert.match(webmcp, /document\.modelContext\.registerTool\(/);
   assert.match(webmcp, /\/api\/panel\/money-printer/);
@@ -547,6 +615,7 @@ test("PANEL-8h: money-printer refresh rejects failed reloads and recovers on the
     console: { error() {} },
     document: {
       addEventListener(name, callback) {
+        if (name === "money-printer:webmcp-call") return;
         assert.equal(name, "money-printer:refresh");
         listener = callback;
       },

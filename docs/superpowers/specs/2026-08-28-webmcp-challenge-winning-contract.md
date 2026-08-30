@@ -1188,7 +1188,7 @@ One active item at a time。各itemは実物readbackを閉じてから次へ進�
 | U08 | Lancers proposal effect/readbackが現在のDOMで動くか | resolved | proposal `27863414`をofficial readbackし、同じ案件への後続wakeはduplicate skip | post-effect unknownは再送せずreconciliation |
 | U09 | General projectionが既存receipt/taskを正しく表示できるか | code-verified / live pending | B09a–B09dでsafe `job_id/reason_code/version`、open task→same card routing、metric=column、same-workroom task activity、foreign/private field 0をfocused 61/61とfresh adversarial `ship`で確認。productionは旧表示のため未解消扱い | B10–B11後のone-browser final E2Eでmetric 1=column 1、same card Found 0、workroom task 1をreadback。applicationをrevenueへ昇格しない |
 | U10 | Minimal human判定が丸投げになる | live defect confirmed / patch specified | open taskが「qualified human security researcherが利用可能か」を尋ねており、core workを人へ渡す危険を実測。H05で`ineligible` pathを追加し、blockedをidentity/provider interview/CAPTCHA/3DS/private fact/legal authority/physical actionへ限定する | agentが実行可能なresearch、form fill、artifact作成、既知profile入力、別専門家へのcore-work delegationをHumanTaskにしたらfail |
-| U11 | WebMCP toolsが既存browser harnessで発見・実行されるか | initial four + dynamic fifth code-verified / final E2E reserved | top-level initial fourとopen task取得後のanswer toolをsource/focused testと既存Chrome 151 harnessで確認。勝利に不要なclient二重検証は行わず、B12の録画付き一周でvisible call logとsame-state readbackを取る | 新browser harnessを作らず、現在使えるCloakBrowser系経路一つでfail closedする |
+| U11 | WebMCP toolsが既存browser harnessで発見・実行されるか | initial four + dynamic fifth + visible call status code-verified / final E2E reserved | top-level initial fourとopen task取得後のanswer toolをsource/focused testで確認。B11は全executeのexact `tool/status` event、input/result/error/secret 0、allowlist外無視、unsupported ready claim 0をfocused 85/85とfresh adversarial `ship`で確認。勝利に不要なclient二重検証は行わず、B12の録画付き一周でsame-state readbackを取る | 新browser harnessを作らず、現在使えるCloakBrowser系経路一つでfail closedする |
 | U12 | Netlify/Browser security headersがWebMCPを許すか | HTTP resolved / client discovery open | run `33254381157` SUCCESS、canonical page/API 200、origin isolation、Permissions Policy、no iframe registrationをreadback。次にChatGPT/Chrome tool discovery | header/tool discoveryが両方通るまでbrowser gateを閉じない |
 | U13 | Page close後も24/7 workが続くか | worker live / board shows 3 windows / receipt binding open | Board activityに16:00Z、00:00Z、08:00Zのnatural-window groupsを確認。G07で各groupをsame deployed lineageのscheduler receiptへ束縛し、source duplicate最大1を集計する | page-local toolをscheduler代わりにせず、board timestampだけをcycle receiptにしない |
 | U14 | Guest judgeとprivate production stateが混ざる | code-verified / live-open | fixed guest tenant、external-effect deny、guest-only UI focused 93/93 pass。次にclean production sessionでzero private credentials/PII、same build/domain functionsをreadback | private owner receiptはredacted read-only projectionだけ許可 |
@@ -1338,7 +1338,7 @@ Soft targetは一sliceあたりproduction 3 files以下 / 100 LOC以下である
 | B08 | browser evidenceを最終recording runへ束縛する | client、version、URL、observed_at、tool list、video/frame refsを一つのevidence recordへ残す |
 | B09 | open HumanTaskとOpportunityのprojection relationをpatch map B09a–B09dどおり直す | code-verified: focused 61/61、adversarial `ship`。live evidenceはB12でmetric 1、column card 1、Found same card 0、workroom task 1、private fields 0を確認 |
 | B10 | selected workroomをnormal browser UIへ追加する | code-verified: card button→same-origin existing GET→title/status/current safe activity、mixed workroom/private field 0、stale response overwrite 0、focused 82/82、fresh adversarial `ship`。live evidenceはB12 |
-| B11 | WebMCP call activityをvisible UIへ追加する | tool name + running/succeeded/failedだけを表示しinput/result/secret 0 |
+| B11 | WebMCP call activityをvisible UIへ追加する | code-verified: initial blank、exact tool name + running/succeeded/failedだけを`textContent`表示、input/result/raw error/secret 0、focused 85/85、fresh adversarial `ship`。live evidenceはB12 |
 | B12 | 既存browser pathで唯一のfull production E2Eを録画しながら実行する | initial four、open task時five、visible board/workroom/call logとstructured result一致。別browserで再実行しない |
 
 ### 18.5 R — race-free Symphony persistence（Section 14 item 3, slice 1）
@@ -1471,4 +1471,4 @@ Soft targetは一sliceあたりproduction 3 files以下 / 100 LOC以下である
 
 ### 18.13 Immediate next atom
 
-`B11`だけを次に実行する。B09–B10はfocused checksとfresh adversarial `ship`まで完了し、production readbackはB12の唯一のrecording runへ予約する。B11が揃うまでfull browser E2Eを実行せず、新browser harnessを作らない。各atom完了時にこのSectionのstateとSection 17の対応uncertaintyを同じcommitで更新する。
+次は既存`exec/webmcp-submission` branchのR01–R09実装を最新mainへ重ねる前に、migration/runtime-store/test差分とB09のsame-workroom変更の競合を一回だけ監査する。B09–B11はfocused checksとfresh adversarial `ship`まで完了し、production readbackはruntime/API/bridge完成後のB12唯一のrecording runへ予約する。新実装を作り直さず、既存commitをrebase/cherry-pickして直す。各atom完了時にこのSectionのstateとSection 17の対応uncertaintyを同じcommitで更新する。

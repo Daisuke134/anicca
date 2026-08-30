@@ -359,6 +359,7 @@ function renderPanelPage(options = {}) {
     .money-card { width: 100%; margin: 8px 0 0; padding: 10px; border: 1px solid transparent; border-left: 3px solid var(--accent); background: var(--paper-bright); color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
     .money-card:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     .money-card p { margin: 4px 0 0; color: var(--ink-soft); font-size: .7rem; }
+    .money-webmcp-status { margin: 14px 0 0; color: var(--ink-soft); font-size: .78rem; }
 
     .section-head {
       display: flex;
@@ -703,6 +704,7 @@ function renderPanelPage(options = {}) {
       <section class="panel-section" data-panel-section="money-printer" data-state="loading" aria-labelledby="money-printer-title">
         <header class="section-head"><h2 id="money-printer-title">Money Printer</h2><span class="section-kicker">24/7 earning work</span></header>
         <div class="section-body" data-panel-body aria-live="polite"><p class="loading">Money Printerの状態を確認しています。</p></div>
+        <p class="money-webmcp-status" data-money-webmcp-status aria-live="polite"></p>
       </section>
       ${guest ? "" : `<section class="panel-section" data-panel-section="timeline" data-state="loading" aria-labelledby="timeline-title">
         <header class="section-head"><h2 id="timeline-title">今日の timeline</h2><span class="section-kicker">Today</span></header>
@@ -1291,6 +1293,17 @@ function renderPanelPage(options = {}) {
         throw error;
       });
       if (event && event.detail && typeof event.detail === "object") event.detail.promise = moneyPrinterRefresh;
+    });
+
+    const moneyPrinterWebMcpTools = Object.freeze(["inspect_money_printer", "inspect_next_human_task", "record_human_answer", "add_opportunity", "inspect_workroom"]);
+    const moneyPrinterWebMcpStatuses = Object.freeze(["running", "succeeded", "failed"]);
+    document.addEventListener("money-printer:webmcp-call", function (event) {
+      const detail = event && event.detail;
+      if (!displayExactKeys(detail, ["tool", "status"])
+        || !moneyPrinterWebMcpTools.includes(detail.tool)
+        || !moneyPrinterWebMcpStatuses.includes(detail.status)) return;
+      const status = document.querySelector("[data-money-webmcp-status]");
+      if (status) status.textContent = detail.tool + " · " + detail.status;
     });
 
     function commandForAction(action, button) {
