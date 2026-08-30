@@ -1573,7 +1573,7 @@
       },
       "domain": "system",
       "effect_class": "none",
-      "entrypoint": "skills/browser/cdp_persistent_context.py",
+      "entrypoint": "runtime/loop/entry_dispatch.py",
       "label": "ai.anicca.life-manager-daily-driver",
       "log_root": "~/.local/state/life-manager/logs",
       "provider_route": "shared-agent-runner",

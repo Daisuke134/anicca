@@ -22,6 +22,11 @@ def command_for(loop_id: str, root: Path, home: Path) -> list[str]:
         "affiliate-browser": [cloak_python, str(affiliate_browser)],
         "affiliate-impact-browser": [cloak_python, str(affiliate_browser)],
         "affiliate-x-browser": [cloak_python, str(affiliate_browser)],
+        "life-manager-daily-driver": [
+            cloak_python, str(root / "skills/browser/cdp_persistent_context.py"),
+            "--profile", str(home / ".cloak/profiles/daily-driver"),
+            "--port", "9222",
+        ],
         "affiliate-composition": [str(affiliate), "compose", "wake"],
         "affiliate-loop": [str(affiliate), "loop", "wake"],
         "affiliate-source-refresh": [str(affiliate), "sources", "wake"],
