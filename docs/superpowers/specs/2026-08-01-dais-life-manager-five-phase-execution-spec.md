@@ -27,7 +27,7 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 この節は、後段の「現在TODO」「次の一件」「local-only」「self-funded agentは別product」という相反する記述を
 上書きする最新の実行順序SSOTである。後段は実装履歴・organ別acceptanceとして保持するが、次作業の選択には使わない。
 Upworkのterminal evidence、startup context、public claim、GA-01〜13Aは完了または履歴として保持する。
-次の一件はAtomic program ledger Seq 21 `ELZ-C08`で、effect/readback/replay kernelの既存Eliza/Life Manager contractを調査し、現在activeなC08だけを単一行動へ分解する。
+次の一件はAtomic program ledger Seq 22 `ELZ-C09`で、Reflect/restartの既存Eliza/Life Manager contractを調査し、現在activeなC09だけを最小単位へ分解する。
 
 #### 0.0.1 最新基盤決定 — ElizaOSを完全forkし、Life Managerをlocal OSSからmulti-tenant SaaSへ育てる
 
@@ -741,7 +741,7 @@ model/provider/browser判断、DB/scheduler、新engineは追加しない。Dais
 - [x] **C08-02** provider-neutral effect kernelと既存service thin接続を最小実装する — Eliza fork PR #41、merge `1e386bd7…`。new `effect-receipt-kernel.ts`＋既存`index.ts`の2 production fileだけで、Eliza `normalizeEffectReceipt`へ委譲。frozen reference-only request、pre present execute 0/replayed、pre unknown/error execute 0/typed unknown、pre absentだけexecute最大1、post presentだけexact-matched applied receipt成功、post absent/unknown/error再送0、execution explicit known failure保持を実装。plugin typecheck PASS。新test/review/DB/service/action/provider/dependency/model/browser/external effect 0。次はC08-03
 - [x] **C08-03** in-process contractを一回実行する — canonical fork `1e386bd7…`の実`LifeManagerService` kernelをinjected authoritative readbackで一回実行。absent→execute 1→post present/applied、same effect replay additional execute 0/replayed noop、unknown pre execute 0/typed unknown、ack-loss post unknown inspect 2/execute 1/blind retry 0を確認。runtime/typecheck exit 0、review/additional test 0。private log/`effect-receipt-kernel-run.json` mode 0600、receipt SHA256 `38eaf4b8…`。model/DB/browser/marketplace/payment/duplicate effect/secret leak 0。次はC08-04
 - [x] **C08-04** canonical `effect-receipt-kernel.json`をPASSへ固定する — final source 2 file、reuse/run evidence hash、fresh applied execute 1、replay additional execute 0、unknown-pre execute 0、ack-loss execute 1/blind retry 0、runtime/typecheck exit 0を再読出し。review/additional test/model/DB/browser/marketplace/payment/duplicate effect/secret leak 0、open finding 0、revenue false。canonical receipt mode 0600、status=`PASS`、SHA256 `decea1cb…`。次はC08-05
-- [ ] **C08-05** ELZ-C08をDONEにしELZ-C09だけをNEXTへ更新する — Atomic program ledger Seq 21をDONE、Seq 22だけを`IN_PROGRESS — NEXT`へ更新。Phase L順序は不変。次はELZ-C09
+- [x] **C08-05** ELZ-C08をDONEにしELZ-C09だけをNEXTへ更新する — canonical `effect-receipt-kernel.json` status=`PASS`、SHA256 `decea1cb…`、fresh/replay/unknown/ack-lossとeffect/secret leak 0を再読出し。Atomic program ledger Seq 21をDONE、Seq 22だけを`IN_PROGRESS — NEXT`へ更新。Phase L順序は不変。次はELZ-C09
 
 Lancersでまだ新しい収益がないことは、この順序を飛ばす理由にしない。現時点はC08がactiveであり、新forkのgeneral-agent基盤が
 Lancers実環境へ到達していない。Lancersでの新規応募・契約・受領金・銀行着金はPhase C完了後のPhase Lで一つずつ実証する。
@@ -775,8 +775,8 @@ Lancers実環境へ到達していない。Lancersでの新規応募・契約・
 | 18 | ELZ-C05 Goal to reference-only WorkItem | **DONE** | canonical private `goal-workitem-receipt.json` mode 0600、SHA256 `a1da21f2…`。fork `f3c79685…`、one scoped active Goal→one PlanGraph/WorkItem、relation unique 2、Goal writer serialization、same replay、typed conflict、separate-process restart、review open 0、model/provider/marketplace/payment 0 |
 | 19 | ELZ-C06 capability and authorization | **DONE** | canonical private `capability-auth-receipt.json` mode 0600、SHA256 `5df6f3ee…`。fork `2a115b9e…`、provider-neutral manifest、opaque ref、real core consume-once、replay/expired/misbound拒否、exact human boundary、ordinary error保持、review open 0、model/provider/marketplace/payment 0 |
 | 20 | ELZ-C07 bounded model decision | **DONE** | canonical private `specialist-decision-receipt.json` mode 0600、SHA256 `dd8142a8…`。fork `934b6fc8…`、Codex SDK/Luna medium、model-authored candidate/tool/next graph、focused 3/3、typecheck、real runtime final exit 0、owner review waiver、open finding/effect/secret leak 0 |
-| 21 | ELZ-C08 effect/readback/replay kernel | **IN_PROGRESS — NEXT** | presend reconcile→at most one effect→official readback→unknown reconcile→replay-zeroの`effect-receipt-kernel.json` |
-| 22 | ELZ-C09 Reflect and plugin restart | TODO | outcome/cost/time/failureをGoalへ帰属し、plugin restart後も同じstateを読む`reflect-restart-receipt.json` |
+| 21 | ELZ-C08 effect/readback/replay kernel | **DONE** | canonical private `effect-receipt-kernel.json` mode 0600、SHA256 `decea1cb…`。fork `1e386bd7…`、fresh execute 1、replay additional execute 0、unknown-pre execute 0、ack-loss blind retry 0、typecheck、open finding/effect/secret leak 0 |
+| 22 | ELZ-C09 Reflect and plugin restart | **IN_PROGRESS — NEXT** | outcome/cost/time/failureをGoalへ帰属し、plugin restart後も同じstateを読む`reflect-restart-receipt.json` |
 
 ##### Phase L — Lancersを最初の実環境としてbankedまで閉じる
 
