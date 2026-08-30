@@ -55,11 +55,14 @@ function createConnectorBrowserTargetController(options = {}) {
     }
   }
 
-  async function findPage(targetId) {
+  async function findPage(targetId, excludedPages = new Set()) {
     const deadline = Date.now() + bindTimeoutMs;
     do {
       const matches = [];
-      for (const page of context.pages()) {
+      const pages = context.pages();
+      for (let index = pages.length - 1; index >= 0; index -= 1) {
+        const page = pages[index];
+        if (excludedPages.has(page)) continue;
         try {
           if (await targetIdForPage(page) === targetId) matches.push(page);
         } catch {
@@ -85,10 +88,11 @@ function createConnectorBrowserTargetController(options = {}) {
 
   return Object.freeze({
     async create() {
+      const baselinePages = new Set(context.pages());
       const result = await browserCall("Target.createTarget", { url: "about:blank" });
       const targetId = exactTargetId(result && result.targetId);
       try {
-        const page = await findPage(targetId);
+        const page = await findPage(targetId, baselinePages);
         return Object.freeze({
           target_id: targetId,
           page_websocket: `ws://127.0.0.1:9222/devtools/page/${targetId}`,
