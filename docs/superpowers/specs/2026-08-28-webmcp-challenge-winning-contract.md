@@ -1207,7 +1207,7 @@ One active item at a time。各itemは実物readbackを閉じてから次へ進�
 | U27 | Live URL、deploy SHA、repo SHAが一致しない | live source/build identified / final binding open | Netlify canonical URLとRailway build `5c9a8f9...`をreadback。Current mainには後続marketing-only changesがあるため、F05–F07でsubmission candidateを新規one SHAへ再deploy/tagする | SHA不一致またはauth wallならnot ready |
 | U28 | Application receiptを売上と誤認する | design-closed / UI live-open | `ApplicationReceipt`、`ContractReceipt`、`DeliveryReceipt`、`PaymentReceipt`を別型・別columnで表示し、cash receipt不在時はverified money 0 | application/proposal/pendingをrevenueへ昇格しない |
 | U29 | Judgeがclean environmentで再現できない | live-open | fresh browserからone URL、one prompt、tool discovery、reset、visible state、Chrome fallbackを60秒以内に再現 | private credentialや既存sessionが必要ならnot ready |
-| U31 | Symphonyを読んだだけで実runtimeに使っていない | spike-resolved / integration design-closed | official commitをinstall/buildしprivate Issue→isolated Codex→commit/push→comment→closeを実E2E。Production接続はMac mini bridgeがinternal bearer APIからsame jobをatomic claimし、private `Daisuke134/life-manager-workrooms` Issueへmirror、official Symphonyが実行、bridgeがauthor-bound result commentを同じjobへcallbackする。Cloud workerの`general-agent.work` claimはcutover時に外しraceを防ぐ | Symphony内部state、Issue close、agent claimをmoney truthにしない。callback/receipt readbackがなければjobをterminalにしない |
+| U31 | Symphonyを読んだだけで実runtimeに使っていない | spike-resolved / R01–R09 code-verified / production integration open | official commitをinstall/buildしprivate Issue→isolated Codex→commit/push→comment→closeを実E2E。R01–R09はexisting branchを再利用し、Money Printer-only atomic claim、dispatch ledger、issue/result replay fence、completed qualification receipt、HumanTask→same-job round 2をunit 108/108、isolated PostgreSQL 18、fresh adversarial `ship`で確認。R10とinternal API/bridge/cutoverは未完 | Symphony内部state、Issue close、agent claimをmoney truthにしない。callback/receipt readbackがなければjobをterminalにしない |
 | U32 | Official Symphony previewをそのまま公開運用できるか | rejected for public exposure | engineering-preview warning、dependency advisories、1 timing test failureを記録 | trusted local/private orchestratorとして使い、public WebMCP UI/APIはLife Managerだけを公開する |
 | U30 | Judge guestの初回WebMCP writeがCSRFで拒否される | root cause fixed / deploy pending | 初回GET後の`add_opportunity`がfamily-bound CSRFで200、同じidempotency keyのreplayも同じ200、write 1をproduction readback | 新session作成後にfamilyをresolveできなければbroken tokenを描画せずfail closed |
 
@@ -1358,6 +1358,8 @@ Soft targetは一sliceあたりproduction 3 files以下 / 100 LOC以下である
 | R09 | focused unit+Postgres transaction checkを一回通す | claim race winner 1、duplicate issue 0、duplicate result 0、cross-tenant 0、receipt mutation 0 |
 | R10 | migrationをRailway Postgresへ一回applyする | schema/RPC official readback。失敗時は再applyせずmigration historyとpartial objectsをreconcile |
 
+R01–R09はcode-verified。isolated PostgreSQL 18 readbackはclaim winner 1、non-Money claim 0、cloud workerとのrace winner合計1、foreign mutation 0、issue/result duplicate 0、completed receipt 1、receipt mutation/consume replay/old-result replay rejected、same job round 2。B09 safe HumanTask snapshot列は維持し、private field 0。R10 production applyだけ未完。
+
 ### 18.6 A — authenticated internal bridge API（Section 14 item 3, slice 2）
 
 **Files:** create `apps/life-manager/lib/money-printer-symphony-api.js` and its focused test; modify `apps/life-manager/server.js` only for two internal routes。
@@ -1471,4 +1473,4 @@ Soft targetは一sliceあたりproduction 3 files以下 / 100 LOC以下である
 
 ### 18.13 Immediate next atom
 
-次は既存`exec/webmcp-submission` branchのR01–R09実装を最新mainへ重ねる前に、migration/runtime-store/test差分とB09のsame-workroom変更の競合を一回だけ監査する。B09–B11はfocused checksとfresh adversarial `ship`まで完了し、production readbackはruntime/API/bridge完成後のB12唯一のrecording runへ予約する。新実装を作り直さず、既存commitをrebase/cherry-pickして直す。各atom完了時にこのSectionのstateとSection 17の対応uncertaintyを同じcommitで更新する。
+次はR01–R09の既存実装統合をmainへmergeし、R10だけをRailway Postgresへ一回applyしてschema/RPCをofficial readbackする。失敗/unknown時は再applyせずpartial stateをreconcileする。B09–B11とR01–R09はfocused checks、isolated PostgreSQL、fresh adversarial `ship`まで完了し、browser production readbackはruntime/API/bridge完成後のB12唯一のrecording runへ予約する。各atom完了時にこのSectionのstateとSection 17の対応uncertaintyを同じcommitで更新する。
