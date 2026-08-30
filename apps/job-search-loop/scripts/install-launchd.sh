@@ -13,6 +13,8 @@ case "$MODE" in
       ai.anicca.job-search-inbox
       ai.anicca.job-search-learning
       ai.anicca.job-search-health
+      ai.anicca.job-search-mercor
+      ai.anicca.job-search-mercor-browser
     )
     ;;
   --browser-only)
@@ -34,7 +36,7 @@ MERCOR_PROFILE="${JOB_SEARCH_MERCOR_BROWSER_PROFILE:-$HOME/.cloak/profiles/job-s
 MERCOR_PORT="${JOB_SEARCH_MERCOR_BROWSER_PORT:-9334}"
 MERCOR_FINGERPRINT="${JOB_SEARCH_MERCOR_BROWSER_FINGERPRINT:-81234}"
 MERCOR_STATE_NAME="mercor-browser"
-if [[ "$MODE" == "--mercor-browser-only" ]]; then
+if [[ "$MODE" == "--mercor-browser-only" || "$MODE" == "all" ]]; then
   if [[ "$MERCOR_PROFILE" != /* ]]; then
     print -u2 "install-launchd: Mercor browser profile must be absolute"
     exit 2
@@ -91,7 +93,7 @@ value = plistlib.loads(template.read_bytes())
 value["ProgramArguments"] = [str(program)]
 value["StandardOutPath"] = str(stdout)
 value["StandardErrorPath"] = str(stderr)
-if mode == "--mercor-browser-only":
+if template.name == "ai.anicca.job-search-mercor-browser.plist":
     value["EnvironmentVariables"] = {
         "JOB_SEARCH_BROWSER_PROFILE": profile,
         "JOB_SEARCH_BROWSER_PORT": port,
