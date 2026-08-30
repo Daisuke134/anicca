@@ -9,9 +9,11 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import sys
+import tempfile
 from typing import Any
 
 import article_generation_state as generation_state
@@ -24,6 +26,10 @@ MAX_REPAIR_ATTEMPTS = 2
 QUALITY_REPAIR_EVIDENCE_INVALID = "quality-repair-evidence-invalid"
 READER_TRACEBACK_SUFFIX = (
     "QualitySelfHealError: quality reader receipt is missing for ja"
+)
+SOURCE_RECOVERY_REASON = "tracked-active-editorial-repair-source-defect"
+SOURCE_RECOVERY_ERROR_SUFFIX = (
+    "QualitySelfHealError: quality receipt snapshot hash binding failed"
 )
 
 
@@ -39,8 +45,23 @@ def _read_json(path: Path) -> dict[str, Any] | None:
     return value if isinstance(value, dict) else None
 
 
+def _regular_json(path: Path) -> dict[str, Any] | None:
+    if path.is_symlink() or not path.is_file():
+        return None
+    return _read_json(path)
+
+
 def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _receipt_hash(value: dict[str, Any]) -> str:
+    unsigned = {key: item for key, item in value.items() if key != "receipt_sha256"}
+    return hashlib.sha256(
+        json.dumps(
+            unsigned, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+        ).encode("utf-8")
+    ).hexdigest()
 
 
 def _atomic_write(path: Path, value: dict[str, Any]) -> None:
@@ -51,6 +72,59 @@ def _atomic_write(path: Path, value: dict[str, Any]) -> None:
         encoding="utf-8",
     )
     os.replace(temporary, path)
+
+
+def _atomic_create_once(path: Path, value: dict[str, Any]) -> str:
+    """Create a complete regular receipt without ever replacing an existing one."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    descriptor, temporary_name = tempfile.mkstemp(
+        prefix=f".{path.name}.", dir=path.parent
+    )
+    temporary = Path(temporary_name)
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
+            stream.write(
+                json.dumps(value, ensure_ascii=False, separators=(",", ":")) + "\n"
+            )
+            stream.flush()
+            os.fsync(stream.fileno())
+        try:
+            os.link(temporary, path, follow_symlinks=False)
+        except FileExistsError as exc:
+            raise QualityRepairError("quality-repair-source-recovery-exists") from exc
+        temporary_stat = os.lstat(temporary)
+        destination_stat = os.lstat(path)
+        if not (
+            os.path.isfile(temporary)
+            and os.path.isfile(path)
+            and temporary_stat.st_dev == destination_stat.st_dev
+            and temporary_stat.st_ino == destination_stat.st_ino
+            and temporary_stat.st_nlink == destination_stat.st_nlink == 2
+        ):
+            raise QualityRepairError("quality-repair-source-recovery-link-mismatch")
+    finally:
+        try:
+            temporary.unlink()
+        except FileNotFoundError:
+            pass
+    if path.is_symlink() or not path.is_file():
+        raise QualityRepairError("quality-repair-source-recovery-not-regular")
+    destination_stat = os.lstat(path)
+    if (
+        not os.path.isfile(path)
+        or destination_stat.st_dev != temporary_stat.st_dev
+        or destination_stat.st_ino != temporary_stat.st_ino
+        or destination_stat.st_nlink != 1
+    ):
+        raise QualityRepairError("quality-repair-source-recovery-unlink-mismatch")
+    stored = _regular_json(path)
+    if (
+        stored != value
+        or not isinstance(stored.get("receipt_sha256"), str)
+        or stored["receipt_sha256"] != _receipt_hash(stored)
+    ):
+        raise QualityRepairError("quality-repair-source-recovery-content-mismatch")
+    return _sha256(path)
 
 
 def _refused(reason: str) -> dict[str, str]:
@@ -347,7 +421,7 @@ def _qrr_lineage(
     run_dir: Path, ledger: Path, *, adopt: bool
 ) -> dict[str, Any] | None:
     prompt = run_dir / "article-daily-prompt.txt"
-    generation = _read_json(run_dir / "gates/generation-state.json")
+    generation = _regular_json(run_dir / "gates/generation-state.json")
     if (
         prompt.is_symlink()
         or not prompt.is_file()
@@ -444,6 +518,166 @@ def _tracked_editorial_hash_scope_source_defect(
         ):
             return False
     return True
+
+
+def _editorial_source_has_active_repair_authorization() -> bool:
+    source = Path(__file__).resolve().parent / "editorial-gate.sh"
+    if source.is_symlink() or not source.is_file():
+        return False
+    try:
+        text = source.read_text(encoding="utf-8")
+    except OSError:
+        return False
+    return all(
+        marker in text
+        for marker in (
+            "ARTICLE_QUALITY_REPAIR_ACTIVE",
+            "ARTICLE_QUALITY_REPAIR_OWNER_PID",
+            "quality-repair-state.json",
+            'quality_action == "evaluate_reroute"',
+            "owner_is_ancestor",
+            'kill -0 "$ARTICLE_QUALITY_REPAIR_OWNER_PID"',
+            'HIGH_CLAIM_ROOT="$ARTICLE_RUN_DIR/gates/.attempts/editorial-high-$LANG_A"',
+            'mkdir "$HIGH_CLAIM"',
+        )
+    )
+
+
+def _valid_reader_terminal(
+    value: dict[str, Any], lang: str, article_hash: str
+) -> bool:
+    if (
+        value.get("gate") != "reader-testing-gate"
+        or value.get("lang") != lang
+        or value.get("article_sha256") != article_hash
+        or value.get("status") not in {"pass", "revision-required", "advisory"}
+        or isinstance(value.get("attempts"), bool)
+        or not isinstance(value.get("attempts"), int)
+        or not 1 <= value["attempts"] <= 3
+    ):
+        return False
+    status = value["status"]
+    exit_code = value.get("exit_code")
+    non_bool_exit = isinstance(exit_code, int) and not isinstance(exit_code, bool)
+    if status == "pass":
+        payload = value.get("payload")
+        return (
+            non_bool_exit
+            and exit_code == 0
+            and isinstance(payload, dict)
+            and payload.get("verdict") == "PASS"
+        )
+    if status == "revision-required":
+        return non_bool_exit and exit_code != 0
+    if value["attempts"] != MAX_REPAIR_ATTEMPTS + 1:
+        return False
+    return (
+        value.get("reason") == "max-attempts-reached"
+        and "exit_code" not in value
+    ) or (
+        "reason" not in value and non_bool_exit and exit_code != 0
+    )
+
+
+def _tracked_active_editorial_repair_source_defect(
+    run_dir: Path, gates: Path, repair_state: dict[str, Any]
+) -> dict[str, Any] | None:
+    state_path = gates / "quality-repair-state.json"
+    if state_path.is_symlink() or not state_path.is_file():
+        return None
+    if not (
+        repair_state.get("version") == 1
+        and repair_state.get("status") == "terminal-incomplete"
+        and repair_state.get("run_id") == run_dir.name
+        and repair_state.get("repair_epoch") == REPAIR_EPOCH
+        and isinstance(repair_state.get("attempts"), int)
+        and not isinstance(repair_state.get("attempts"), bool)
+        and repair_state.get("attempts") == MAX_REPAIR_ATTEMPTS
+        and repair_state.get("quality_action") == "evaluate_reroute"
+        and repair_state.get("source_defect") == "reader-terminal-receipt"
+    ):
+        return None
+    recovery_path = gates / "quality-repair-source-recovery.json"
+    if recovery_path.exists() or recovery_path.is_symlink():
+        return None
+    canonical_paths = (
+        gates / "quality-self-heal.json",
+        gates / "quality-self-heal-final.json",
+        gates / "terminal-quality-blocked.json",
+        gates / "publication-state.json",
+    )
+    if any(path.exists() or path.is_symlink() for path in canonical_paths):
+        return None
+    error_path = gates / "quality-self-heal-repair.err"
+    if error_path.is_symlink() or not error_path.is_file():
+        return None
+    try:
+        error_text = error_path.read_text(encoding="utf-8")
+        error_sha256 = _sha256(error_path)
+    except (OSError, UnicodeError):
+        return None
+    if error_text not in {
+        SOURCE_RECOVERY_ERROR_SUFFIX,
+        f"{SOURCE_RECOVERY_ERROR_SUFFIX}\n",
+    } and not error_text.endswith(f"\n{SOURCE_RECOVERY_ERROR_SUFFIX}\n"):
+        return None
+    prompt_path = Path(str(repair_state.get("prompt_path", "")))
+    expected_prompt_path = (
+        run_dir
+        / "gates"
+        / "quality-repair"
+        / f"epoch-{REPAIR_EPOCH}"
+        / "repair-prompt.txt"
+    )
+    if (
+        repair_state.get("prompt_path") != str(expected_prompt_path)
+        or prompt_path != expected_prompt_path
+        or expected_prompt_path.is_symlink()
+        or not expected_prompt_path.is_file()
+        or repair_state.get("prompt_sha256") != _sha256(expected_prompt_path)
+    ):
+        return None
+    drafts: dict[str, str] = {}
+    for lang in ("ja", "en"):
+        article = run_dir / f"article-{lang}.md"
+        if article.is_symlink() or not article.is_file():
+            return None
+        try:
+            article_hash = _sha256(article)
+        except OSError:
+            return None
+        drafts[lang] = article_hash
+        identity = _regular_json(gates / f"identity-{lang}.json")
+        editorial = _regular_json(gates / f"editorial-{lang}.json")
+        reader = _regular_json(
+            gates / f"reader-testing-gate-{lang}.terminal.json"
+        )
+        if not (
+            identity
+            and identity.get("verdict") == "PASS"
+            and identity.get("article_sha256") == article_hash
+            and editorial
+            and editorial.get("verdict") == "FAIL"
+            and editorial.get("requested_reasoning_effort") == "high"
+            and isinstance(editorial.get("article_sha256"), str)
+            and re.fullmatch(r"[0-9a-f]{64}", editorial["article_sha256"])
+            and editorial["article_sha256"] != article_hash
+            and reader
+            and _valid_reader_terminal(reader, lang, article_hash)
+        ):
+            return None
+    if not _editorial_source_has_active_repair_authorization():
+        return None
+    source = Path(__file__).resolve().parent / "editorial-gate.sh"
+    try:
+        editorial_source_sha256 = _sha256(source)
+    except OSError:
+        return None
+    return {
+        "drafts": drafts,
+        "error_sha256": error_sha256,
+        "editorial_source_sha256": editorial_source_sha256,
+    }
 
 
 def _tracked_topic_router_reroute_source_defect(
@@ -553,7 +787,7 @@ def plan(run_dir: Path | str, ledger: Path | str) -> dict[str, Any]:
         return _refused("publication-state-exists")
     if ledger_has_public_effect(ledger, run_id):
         return _refused("ledger-row-exists")
-    repair_state = _read_json(gates / "quality-repair-state.json")
+    repair_state = _regular_json(gates / "quality-repair-state.json")
     if repair_state:
         lineage = _qrr_lineage(run_dir, ledger, adopt=False)
         if lineage is None:
@@ -567,7 +801,8 @@ def plan(run_dir: Path | str, ledger: Path | str) -> dict[str, Any]:
             return _refused(QUALITY_REPAIR_EVIDENCE_INVALID)
         prompt_path = Path(str(repair_state.get("prompt_path", "")))
         if (
-            not prompt_path.is_file()
+            prompt_path.is_symlink()
+            or not prompt_path.is_file()
             or repair_state.get("prompt_sha256") != _sha256(prompt_path)
         ):
             return _refused(QUALITY_REPAIR_EVIDENCE_INVALID)
@@ -575,6 +810,26 @@ def plan(run_dir: Path | str, ledger: Path | str) -> dict[str, Any]:
             attempts = int(repair_state.get("attempts", 0))
         except (TypeError, ValueError):
             return _refused(QUALITY_REPAIR_EVIDENCE_INVALID)
+        if repair_state.get("status") == "terminal-incomplete":
+            recovery_path = gates / "quality-repair-source-recovery.json"
+            if recovery_path.exists() or recovery_path.is_symlink():
+                return _refused(
+                    "quality-repair-source-recovery-already-recorded"
+                )
+            recovery_evidence = _tracked_active_editorial_repair_source_defect(
+                run_dir, gates, repair_state
+            )
+            if recovery_evidence is not None:
+                return {
+                    "status": "READY",
+                    "reason": SOURCE_RECOVERY_REASON,
+                    "run_id": run_id,
+                    "run_dir": str(run_dir),
+                    "repair_epoch": REPAIR_EPOCH,
+                    "attempts": attempts,
+                    "prompt_path": str(prompt_path),
+                    "prompt_sha256": repair_state["prompt_sha256"],
+                }
         if _terminal_quality_block(run_dir, ledger) is not None:
             return {
                 "status": "READY",
@@ -996,11 +1251,15 @@ def mark_invoking(
     if (
         decision.get("status") != "READY"
         or decision.get("reason")
-        not in {"prepared-quality-repair", "orphaned-quality-repair"}
+        not in {
+            "prepared-quality-repair",
+            "orphaned-quality-repair",
+            SOURCE_RECOVERY_REASON,
+        }
     ):
         raise QualityRepairError(str(decision.get("reason", "not-prepared")))
     state_path = run_dir / "gates" / "quality-repair-state.json"
-    state = _read_json(state_path)
+    state = _regular_json(state_path)
     if not state:
         raise QualityRepairError("quality-repair-state-missing")
     route = run_dir / "gates" / "topic-route.json"
@@ -1030,9 +1289,12 @@ def mark_invoking(
             raise QualityRepairError("quality-repair-route-changed")
         state["topic_id"] = expected_topic
         state["route_sha256"] = _sha256(route)
-    attempts = int(state.get("attempts", 0)) + 1
-    if attempts > MAX_REPAIR_ATTEMPTS:
-        raise QualityRepairError("quality-repair-attempt-limit")
+    source_recovery = decision.get("reason") == SOURCE_RECOVERY_REASON
+    attempts = int(state.get("attempts", 0))
+    if not source_recovery:
+        attempts += 1
+        if attempts > MAX_REPAIR_ATTEMPTS:
+            raise QualityRepairError("quality-repair-attempt-limit")
     if decision.get("reason") == "orphaned-quality-repair":
         old_prompt = Path(str(state.get("prompt_path", "")))
         old_hash = str(state.get("prompt_sha256", ""))
@@ -1079,6 +1341,36 @@ def mark_invoking(
                 ),
             }
         )
+    if source_recovery:
+        recovery_evidence = _tracked_active_editorial_repair_source_defect(
+            run_dir, run_dir / "gates", state
+        )
+        if recovery_evidence is None:
+            raise QualityRepairError(QUALITY_REPAIR_EVIDENCE_INVALID)
+        recovery_path = run_dir / "gates" / "quality-repair-source-recovery.json"
+        if recovery_path.exists() or recovery_path.is_symlink():
+            raise QualityRepairError("quality-repair-source-recovery-exists")
+        prior_state_sha256 = _sha256(state_path)
+        receipt = {
+            "schema": "writer.quality-repair-source-recovery",
+            "version": 1,
+            "run_id": run_dir.name,
+            "reason": SOURCE_RECOVERY_REASON,
+            "recovery_attempt": 1,
+            "prior_state_sha256": prior_state_sha256,
+            "error_sha256": recovery_evidence["error_sha256"],
+            "editorial_source_sha256": recovery_evidence[
+                "editorial_source_sha256"
+            ],
+            "drafts": recovery_evidence["drafts"],
+            "owner_pid": owner_pid,
+            "created_at": _utc_now(),
+        }
+        receipt["receipt_sha256"] = _receipt_hash(receipt)
+        state["source_recovery_receipt_sha256"] = _atomic_create_once(
+            recovery_path, receipt
+        )
+        _atomic_write(state_path, state)
     state.update(
         {
             "status": "invoking",
