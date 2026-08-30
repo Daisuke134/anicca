@@ -11,6 +11,7 @@ ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "skills/writer-agent/scripts"))
 
 import article_generation_state as generation
+import article_daily_start_control as start_control
 import quality_repair_control as repair
 
 
@@ -325,6 +326,71 @@ class PrepublicationAdoptionTest(unittest.TestCase):
                     decision.get("reason"),
                     "tracked-reader-terminal-receipt-source-defect",
                 )
+
+    def test_production_recovery_owner_and_public_effect_boundary(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            run, run_id, prompt, ledger = self.fixture(root)
+            gates, traceback, quality_path = self.add_reader_traceback(run)
+            generation_state = json.loads((gates / "generation-state.json").read_text(encoding="utf-8"))
+            generation_state["attempts"] = [
+                {"attempt": 1, "status": "interrupted-safe", "return_code": 143, "boundary": "archived-prepublication-artifacts"},
+                {"attempt": 2, "status": "interrupted-safe", "return_code": 143, "boundary": "archived-prepublication-artifacts"},
+                {"attempt": 3, "status": "provider-failed-ambiguous", "return_code": 1, "boundary": "generated-or-staged-artifacts:article-en.md,article-ja.md,headline-image.png"},
+            ]
+            (gates / "generation-state.json").write_text(json.dumps(generation_state) + "\n", encoding="utf-8")
+            ledger_rows = [json.loads(line) for line in ledger.read_text().splitlines()]
+            attempts = generation_state["attempts"]
+            self.assertEqual([(a["attempt"], a["status"], a["return_code"], a["boundary"]) for a in attempts[:2]], [(1, "interrupted-safe", 143, "archived-prepublication-artifacts"), (2, "interrupted-safe", 143, "archived-prepublication-artifacts")])
+            self.assertEqual((attempts[2]["attempt"], attempts[2]["status"], attempts[2]["return_code"]), (3, "provider-failed-ambiguous", 1))
+            self.assertTrue(attempts[2]["boundary"].startswith("generated-or-staged-artifacts:"))
+            self.assertTrue(all(name in attempts[2]["boundary"] for name in ("article-en.md", "article-ja.md", "headline-image.png")))
+            self.assertEqual(len(ledger_rows), 4)
+            self.assertEqual({(row["platform"], row["lang"]) for row in ledger_rows}, {("note", "ja"), ("substack", "ja"), ("substack", "en"), ("x-article", "ja")})
+            self.assertTrue(all(row["published"] is False and row["live_url"] is None for row in ledger_rows))
+            self.assertTrue(all((run / f"article-{lang}.md").is_file() for lang in ("ja", "en")))
+            self.assertTrue((run / "headline-image.png").is_file())
+            self.assertTrue(all(not (gates / f"reader-testing-gate-{lang}.terminal.json").exists() for lang in ("ja", "en")))
+            self.assertEqual(quality_path.read_text(encoding="utf-8"), traceback)
+
+            generation.adopt_prepublication(run, run_id, prompt, ledger)
+            receipt = json.loads((gates / "prepublication-adoption.json").read_text(encoding="utf-8"))
+            self.assertEqual({item["path"]: item["sha256"] for item in receipt["draft_manifest"]}, {"article-ja.md": generation.file_sha256(run / "article-ja.md"), "article-en.md": generation.file_sha256(run / "article-en.md")})
+            self.assertEqual({item["path"]: item["sha256"] for item in receipt["artifact_manifest"] if item["path"] in {"headline-image.png", "gates/quality-self-heal.json"}}, {"headline-image.png": generation.file_sha256(run / "headline-image.png"), "gates/quality-self-heal.json": generation.file_sha256(quality_path)})
+            with patch.object(start_control, "proof", side_effect=start_control.QuarantineError("no proof")):
+                owner = start_control.decide(root, "2026-08-30")
+            self.assertEqual(
+                owner,
+                {
+                    "action": "skip-pending-worker",
+                    "run_id": run_id,
+                    "reason": "same-jst-day-owned-by-quality-repair",
+                },
+            )
+            plan = repair.plan(run, ledger)
+            self.assertEqual({key: plan[key] for key in ("status", "run_id", "source_defect", "reason")}, {"status": "READY", "run_id": run_id, "source_defect": "reader-terminal-receipt", "reason": "tracked-reader-terminal-receipt-source-defect"})
+            self.assertEqual(plan["drafts"], {"ja": generation.file_sha256(run / "article-ja.md"), "en": generation.file_sha256(run / "article-en.md")})
+
+            ledger.write_text(
+                ledger.read_text(encoding="utf-8")
+                + json.dumps(
+                    {
+                        "run_id": run_id,
+                        "platform": "note",
+                        "lang": "ja",
+                        "published": True,
+                        "live_url": "https://note.example/published",
+                        "state": "live",
+                        "reality_gate": "PASS",
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            with patch.object(start_control, "proof", side_effect=start_control.QuarantineError("no proof")):
+                after_effect = start_control.decide(root, "2026-08-30")
+            self.assertEqual(after_effect, {"action": "block-incomplete", "run_id": run_id, "reason": "same-jst-day-unclassified-run"})
+            self.assertEqual(repair.plan(run, ledger), {"status": "REFUSED", "reason": "ledger-row-exists"})
 
     def test_prepared_quality_repair_refuses_post_begin_evidence_drift(self):
         cases = {
