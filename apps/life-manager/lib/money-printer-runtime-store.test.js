@@ -151,6 +151,32 @@ test("R06 only a completed result can consume the dispatch and write the termina
   assert.deepEqual(calls[0].values, [TENANT, dispatch.dispatch_id]);
 });
 
+test("R07 a needs_human result reuses the existing atomic HumanTask transition", async () => {
+  const migration = fs.readFileSync(SYMPHONY_MIGRATION, "utf8");
+  assert.match(migration, /CREATE OR REPLACE FUNCTION public\.consume_lm_symphony_human_task\(/i);
+  assert.match(migration, /result_payload->>'status' <> 'needs_human'/i);
+  assert.match(migration, /SET status = 'queued'[\s\S]*status = 'waiting_agent'/i);
+  assert.match(migration, /FROM public\.create_lm_human_task\(/i);
+  assert.match(migration, /SET status = 'consumed'[\s\S]*consumed_at = clock_timestamp\(\)/i);
+
+  const task = {
+    uid: TENANT, task_id: "b".repeat(64), job_id: `goal:${ID}`, version: 1,
+    question: "Complete the provider interview.", required_format: { type: "confirmation" },
+    reason_code: "provider_interview", resume_ref: `runtime-job://${TENANT}/goal%3A${ID}`,
+    context_refs: { goal_ref: `intent-entry://${TENANT}/${ID}` },
+    human_boundary_ref: `human-boundary://sha256/${"c".repeat(64)}`,
+    status: "open",
+  };
+  const calls = [];
+  const store = createMoneyPrinterRuntimeStore({ query: async (sql, values) => {
+    calls.push({ sql, values });
+    return { rows: [task] };
+  } });
+  assert.deepEqual(await store.consumeSymphonyHumanTask({ uid: TENANT, dispatchId: "d".repeat(64) }), task);
+  assert.match(calls[0].sql, /^\s*SELECT \* FROM public\.consume_lm_symphony_human_task\(\$1, \$2\)/i);
+  assert.deepEqual(calls[0].values, [TENANT, "d".repeat(64)]);
+});
+
 function opportunity() {
   return {
     uid: TENANT, opportunity_id: ID, source_url: "https://public.example/opportunity",

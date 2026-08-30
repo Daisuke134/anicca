@@ -381,3 +381,105 @@ $$;
 
 REVOKE ALL ON FUNCTION public.consume_lm_symphony_completed(text,text) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.consume_lm_symphony_completed(text,text) TO service_role;
+
+CREATE OR REPLACE FUNCTION public.consume_lm_symphony_human_task(
+  p_tenant_id text,
+  p_dispatch_id text
+) RETURNS SETOF public.lm_human_tasks
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_dispatch public.lm_symphony_dispatches%ROWTYPE;
+  v_job public.lm_runtime_jobs%ROWTYPE;
+  v_task public.lm_human_tasks%ROWTYPE;
+  v_task_id text;
+  v_human_boundary_ref text;
+  v_resume_ref text;
+  v_context_refs jsonb;
+  v_opportunity_id text;
+BEGIN
+  IF p_tenant_id IS NULL OR p_tenant_id !~ '^[a-z0-9][a-z0-9._-]{0,199}$'
+    OR p_dispatch_id IS NULL OR p_dispatch_id !~ '^[0-9a-f]{64}$' THEN
+    RAISE EXCEPTION 'symphony human task input invalid';
+  END IF;
+
+  SELECT * INTO v_dispatch
+  FROM public.lm_symphony_dispatches
+  WHERE tenant_id = p_tenant_id AND dispatch_id = p_dispatch_id
+  FOR UPDATE;
+  IF NOT FOUND THEN RETURN; END IF;
+  IF v_dispatch.status NOT IN ('result_ready', 'consumed')
+    OR v_dispatch.result_payload->>'status' <> 'needs_human' THEN
+    RAISE EXCEPTION 'symphony human task conflict';
+  END IF;
+
+  SELECT * INTO v_job
+  FROM public.lm_runtime_jobs
+  WHERE tenant_id = p_tenant_id AND job_id = v_dispatch.job_id
+  FOR UPDATE;
+  IF NOT FOUND OR v_job.job_id !~ '^goal:[0-9a-f]{64}$'
+    OR v_job.input_refs->>'goal_ref' IS NULL THEN
+    RAISE EXCEPTION 'symphony human task runtime job unavailable';
+  END IF;
+  v_opportunity_id := substring(v_job.job_id from 6);
+  v_task_id := encode(digest(
+    p_tenant_id || E'\n' || v_job.job_id || E'\n' || p_dispatch_id || E'\n'
+      || v_dispatch.result_payload->>'reason_code',
+    'sha256'
+  ), 'hex');
+  v_human_boundary_ref := 'human-boundary://sha256/' || encode(digest(
+    p_tenant_id || E'\n' || p_dispatch_id || E'\n' || v_dispatch.result_hash,
+    'sha256'
+  ), 'hex');
+  v_resume_ref := 'runtime-job://' || p_tenant_id || '/' || replace(v_job.job_id, ':', '%3A');
+  v_context_refs := jsonb_build_object(
+    'goal_ref', v_job.input_refs->>'goal_ref',
+    'opportunity_ref', 'opportunity://' || p_tenant_id || '/' || v_opportunity_id,
+    'symphony_dispatch_ref', 'symphony-dispatch://' || p_tenant_id || '/' || p_dispatch_id
+  );
+
+  IF v_dispatch.status = 'consumed' THEN
+    SELECT * INTO v_task FROM public.lm_human_tasks
+    WHERE uid = p_tenant_id AND task_id = v_task_id;
+    IF NOT FOUND THEN RAISE EXCEPTION 'symphony human task readback unavailable'; END IF;
+    RETURN NEXT v_task;
+    RETURN;
+  END IF;
+  IF v_job.status <> 'waiting_agent' THEN
+    RAISE EXCEPTION 'symphony human task runtime job unavailable';
+  END IF;
+
+  UPDATE public.lm_runtime_jobs
+  SET status = 'queued', updated_at = clock_timestamp()
+  WHERE tenant_id = p_tenant_id AND job_id = v_job.job_id AND status = 'waiting_agent';
+  IF NOT FOUND THEN RAISE EXCEPTION 'symphony human task runtime job unavailable'; END IF;
+
+  SELECT * INTO v_task FROM public.create_lm_human_task(
+    p_tenant_id,
+    v_task_id,
+    v_job.job_id,
+    v_dispatch.result_payload->>'reason_code',
+    v_dispatch.result_payload->>'question',
+    v_dispatch.result_payload->'required_format',
+    v_resume_ref,
+    v_context_refs,
+    v_human_boundary_ref
+  );
+  IF NOT FOUND OR v_task.status <> 'open' THEN
+    RAISE EXCEPTION 'symphony human task readback unavailable';
+  END IF;
+
+  UPDATE public.lm_symphony_dispatches
+  SET status = 'consumed',
+      consumed_at = clock_timestamp(),
+      updated_at = clock_timestamp()
+  WHERE tenant_id = p_tenant_id AND dispatch_id = p_dispatch_id AND status = 'result_ready';
+  IF NOT FOUND THEN RAISE EXCEPTION 'symphony human task conflict'; END IF;
+  RETURN NEXT v_task;
+END
+$$;
+
+REVOKE ALL ON FUNCTION public.consume_lm_symphony_human_task(text,text) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.consume_lm_symphony_human_task(text,text) TO service_role;
