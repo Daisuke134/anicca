@@ -27,7 +27,7 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 この節は、後段の「現在TODO」「次の一件」「local-only」「self-funded agentは別product」という相反する記述を
 上書きする最新の実行順序SSOTである。後段は実装履歴・organ別acceptanceとして保持するが、次作業の選択には使わない。
 Upworkのterminal evidence、startup context、public claim、GA-01〜13Aは完了または履歴として保持する。
-次の一件はAtomic program ledger Seq 17 `ELZ-C04`のsubstep `C04-11`で、`ProviderBridgeService`を`plugin-life-manager`へ登録する。
+次の一件はAtomic program ledger Seq 17 `ELZ-C04`のsubstep `C04-12`で、focused provider bridge testのGREENを一回確認する。
 
 #### 0.0.1 最新基盤決定 — ElizaOSを完全forkし、Life Managerをlocal OSSからmulti-tenant SaaSへ育てる
 
@@ -641,7 +641,7 @@ flowchart LR
 - [x] **C04-08** injected private descriptor resolverを実装する — Eliza fork PR #18、merge `8dbe4e04f700d63584eb2fadacf10d25ae55ca05`。opaque refsは非空/512字/controlなし、private descriptorはfixed executable/argv、absolute cwd、bounded env（64件）、timeout最大300秒、buffer最大16MiBを検証してfreeze。public resultへのdescriptor公開、process実行、provider routing、model判断0。次はC04-09
 - [x] **C04-09** bounded `execFile` no-shell runnerを実装する — Eliza fork PR #19、merge `1c16cd47bb296f92797c223e5e6c4e2e468d73a0`。Omarchy patternの`execFile`をshell=false、descriptor-only env/cwd、timeout/maxBuffer、UTF-8で実装し、exit/signal/timedOut/stdout/stderrはprivate process resultへ閉じ込めた。public result/parser/service/provider routing/model判断0。次はC04-10
 - [x] **C04-10** single JSON object、exit/ok整合、raw output抑制を実装する — Eliza fork PR #20、merge `0c50bf9d953c51dd2789725fa891f389ba643454`。opaque refs→private resolve/runを接続し、timeout/nonzeroはtyped failure、exit 0はbounded exact 1-line JSON objectかつ`ok:true`だけsuccess＋SHA256。descriptor/stdout/stderr/signal/env/path/secretはpublic resultへ入れない。service/provider routing/model判断0。次はC04-11
-- [ ] **C04-11** `ProviderBridgeService`を`plugin-life-manager`へ登録する
+- [x] **C04-11** `ProviderBridgeService`を`plugin-life-manager`へ登録する — Eliza fork PR #21、merge `bc0dcae0209a66fc1c357749bc86696e20c00378`。既存plugin service arrayへ一つ追加し、hostがprivate resolverを一度だけ登録、executeはstructured bridge＋default bounded runnerへ委譲、stopでresolver解放。agent action/provider branch/routing/authorization/model/scheduler/queue 0。次はC04-12
 - [ ] **C04-12** focused provider bridge testの成功を一回確認する
 - [ ] **C04-13** 既存Connector JS read-only toolをopaque ref経由で一回実行する
 - [ ] **C04-14** 既存Lancers Python read-only toolをopaque ref経由で一回実行する
