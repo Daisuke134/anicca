@@ -183,6 +183,10 @@ visible UI that the correct filename is present. Review and correct every visibl
 required field and validation message. Do not trust resumed values merely because a
 field is filled. Answer all employer-specific questions by reading their current
 wording and options. Continue across pages until the actual final Review surface.
+Canonical Workday upload example: when the fresh observation exposes both a display
+wrapper such as `Drop file here or Select file` and a separate enabled `Select file`
+control, call `runtime upload` with the exact `Select file` control. Never target the
+drop-zone wrapper when the real file-selection control is visible.
 
 If the job page explicitly says the role is unavailable, call `ineligible` and then
 `report --status not_submitted`. If a visible CAPTCHA or explicit provider outage is
