@@ -32,10 +32,14 @@ unset GIG_IGNORE_DISK_PRESSURE_BLOCK \
   DISK_CONTROL_STATE_DIR \
   OPENCLAW_STATE_DIR \
   LIFE_MANAGER_HOST_STATE_DIR
-if [[ -n "${JOB_SEARCH_BROWSER_STATE_NAME+x}" ]]; then
-  BROWSER_STATE_NAME="$JOB_SEARCH_BROWSER_STATE_NAME"
-elif [[ "${LIFE_MANAGER_LOOP_ID:-}" == "job-search-mercor-browser" ]]; then
+if [[ "${LIFE_MANAGER_LOOP_ID:-}" == "job-search-mercor-browser" ]]; then
+  if [[ -n "${JOB_SEARCH_BROWSER_STATE_NAME+x}" && "$JOB_SEARCH_BROWSER_STATE_NAME" != "mercor-browser" ]]; then
+    print -u2 "job-search browser: Mercor loop requires mercor-browser state"
+    exit 2
+  fi
   BROWSER_STATE_NAME="mercor-browser"
+elif [[ -n "${JOB_SEARCH_BROWSER_STATE_NAME+x}" ]]; then
+  BROWSER_STATE_NAME="$JOB_SEARCH_BROWSER_STATE_NAME"
 else
   BROWSER_STATE_NAME="job-search-browser"
 fi

@@ -27,6 +27,9 @@ class RunBrowserPreflightTests(unittest.TestCase):
             if profile_kind == "symlink":
                 selected_profile = profile_root / "daily-alias"
                 selected_profile.symlink_to(daily_profile, target_is_directory=True)
+            elif profile_kind == "dotdot":
+                (profile_root / "nested").mkdir()
+                selected_profile = profile_root / "nested" / ".." / "job-search-daily"
             elif profile_kind == "port":
                 selected_profile = profile_root / "mercor-profile"
             else:
@@ -100,8 +103,84 @@ class RunBrowserPreflightTests(unittest.TestCase):
     def test_mercor_rejects_daily_profile_symlink_alias_before_profile_mutation(self) -> None:
         self._assert_mercor_rejects_before_profile_mutation("symlink")
 
+    def test_mercor_rejects_daily_profile_dotdot_alias_before_profile_mutation(self) -> None:
+        self._assert_mercor_rejects_before_profile_mutation("dotdot")
+
     def test_mercor_rejects_port_9222_before_profile_mutation(self) -> None:
         self._assert_mercor_rejects_before_profile_mutation("port", port="9222")
+
+    def test_mercor_rejects_conflicting_state_before_guard_or_profile_effects(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            home = root / "home"
+            profile = home / ".cloak" / "profiles" / "conflict-profile"
+            profile.mkdir(parents=True)
+            sentinel = profile / "SingletonLock"
+            sentinel.write_text("keep", encoding="utf-8")
+
+            wrapper = root / "apps" / "job-search-loop" / "scripts" / "run-browser.sh"
+            wrapper.parent.mkdir(parents=True)
+            script = TEXT
+            start = script.index("if ! CANONICAL_HOME=")
+            end = script.index('export HOME="$CANONICAL_HOME"', start) + len(
+                'export HOME="$CANONICAL_HOME"'
+            )
+            wrapper.write_text(
+                script[:start]
+                + 'CANONICAL_HOME="$TEST_CANONICAL_HOME"\nexport HOME="$CANONICAL_HOME"'
+                + script[end:],
+                encoding="utf-8",
+            )
+            guard_marker = root / "guard-ran"
+            guard = root / "skills" / "earn" / "gig" / "scripts" / "gig_disk_guard.py"
+            guard.parent.mkdir(parents=True)
+            guard.write_text(
+                "from pathlib import Path\n"
+                "import os\n"
+                "Path(os.environ[\"GUARD_MARKER\"]).write_text(\"ran\")\n",
+                encoding="utf-8",
+            )
+            chromium = (
+                home
+                / ".cloakbrowser"
+                / "chromium-1"
+                / "Chromium.app"
+                / "Contents"
+                / "MacOS"
+                / "Chromium"
+            )
+            chromium.parent.mkdir(parents=True)
+            chromium.write_text("#!/bin/zsh\nexit 0\n", encoding="utf-8")
+            chromium.chmod(0o700)
+
+            environment = os.environ.copy()
+            for name in (
+                "JOB_SEARCH_BROWSER_STATE_NAME",
+                "JOB_SEARCH_BROWSER_PORT",
+                "JOB_SEARCH_BROWSER_FINGERPRINT",
+                "JOB_SEARCH_BROWSER_PROFILE",
+            ):
+                environment.pop(name, None)
+            environment.update(
+                {
+                    "TEST_CANONICAL_HOME": str(home),
+                    "LIFE_MANAGER_LOOP_ID": "job-search-mercor-browser",
+                    "JOB_SEARCH_BROWSER_STATE_NAME": "job-search-browser",
+                    "JOB_SEARCH_BROWSER_PROFILE": str(profile),
+                    "GUARD_MARKER": str(guard_marker),
+                }
+            )
+            completed = subprocess.run(
+                ["/bin/zsh", str(wrapper)],
+                env=environment,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+
+            self.assertEqual(completed.returncode, 2, completed.stderr)
+            self.assertFalse(guard_marker.exists())
+            self.assertEqual(sentinel.read_text(encoding="utf-8"), "keep")
 
     def test_loop_id_only_reconstructs_mercor_browser_defaults(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
