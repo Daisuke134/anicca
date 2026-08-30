@@ -1372,15 +1372,23 @@ def _cached_paid_decision(root: Path, receipt: Any, prompt: Path,
     return validated
 
 
-def _run_paid_decision_agent(command: list[str], evidence: Path) -> None:
+def _run_paid_decision_agent(command: list[str], evidence: Path) -> tuple[dict[str, Any], int]:
     """Retry once only when a side-effect-free decision result was truncated."""
     for attempt in range(2):
+        started_ns = time.time_ns()
         try:
             _run(command, "paid_work_decision")
-            return
+            return (_consultation_runner_result(
+                evidence, task_label="paid-work-decision", task_class="escalation-agent",
+                model=PAID_DECISION_MODEL, started_ns=started_ns,
+            ), started_ns)
         except Failure:
             if attempt or not _paid_decision_result_was_truncated(evidence):
                 raise
+        except json.JSONDecodeError:
+            if attempt:
+                raise
+    raise Failure("paid_work_decision")
 
 
 def _paid_decision_result_was_truncated(evidence: Path) -> bool:
@@ -1461,20 +1469,15 @@ def _paid_decision(args, item_path: Path, root: Path, base: Path) -> dict[str, A
     evidence = evidence_root / "agent-PAID_WORK_DECISION"
     if evidence.is_symlink():
         raise Failure("paid_work_decision")
-    started_ns = time.time_ns()
     try:
         decision_command = [sys.executable, str(args.agent_runner), "--task-class", "escalation-agent",
               "--prompt-file", str(prompt), "--schema", str(schema), "--evidence-dir", str(evidence),
               "--task-label", "paid-work-decision", "--escalation-reason",
               "Paid delivery routing must use an authorized escalation semantic model.",
               "--loop", _runner_loop_id(), "--workdir", str(root), "--timeout-seconds", "1800", "--read-only"]
-        _run_paid_decision_agent(
-            _private_model_runner(root, decision_command, "paid-work-decision"), evidence)
         try:
-            value = _consultation_runner_result(
-                evidence, task_label="paid-work-decision", task_class="escalation-agent",
-                model=PAID_DECISION_MODEL, started_ns=started_ns,
-            )
+            value, _started_ns = _run_paid_decision_agent(
+                _private_model_runner(root, decision_command, "paid-work-decision"), evidence)
         except Failure as error:
             raise Failure("paid_work_decision") from error
         runner_proof = _decision_runner_proof(evidence)
