@@ -1,20 +1,21 @@
 {
   "schema_version": 1,
   "runtime_root": "skills/writer-agent",
-  "runtime_tree_sha256": "aad2b209163e05e13c17c1a561fea356cc8297e314b803b7a19a5afde39f5590",
-  "runtime_file_count": 479,
+  "runtime_tree_sha256": "ea2745d036fe2ec87ad43d57f3a2a62d773252ff81b520a10eb4ce3bbaa3ef1d",
+  "runtime_file_count": 511,
   "hash_algorithm": "sha256(sorted relative path + NUL + file bytes + NUL; excludes state and cache directories)",
   "source": {
     "repository": "/Users/anicca/Projects/life-manager-main",
     "path": "skills/writer-agent",
-    "commit": "67e74c1f80863def5c6c66cd2d1ec11880dc8258",
-    "status": "Life Manager source-of-truth"
+    "commit": "f592bc31b2d6730143f46ba9d1e7e82c69fcd324",
+    "repair_base": "af2947ce8719a62c0ad157ae8b60179470adf1c1",
+    "status": "loaded immutable release is an ancestor of the recorded origin/main repair base"
   },
   "active_release": {
-    "path": "/Users/anicca/gig/releases/life-manager/current/skills/writer-agent",
-    "tree_sha256": "aad2b209163e05e13c17c1a561fea356cc8297e314b803b7a19a5afde39f5590",
-    "file_count": 479,
-    "status": "Coconala-parity immutable release; launchd-load-pending"
+    "path": "/Users/anicca/loops/releases/20260830T235248-f592bc31/skills/writer-agent",
+    "tree_sha256": "ea2745d036fe2ec87ad43d57f3a2a62d773252ff81b520a10eb4ce3bbaa3ef1d",
+    "file_count": 511,
+    "status": "all 14 installed Writer labels loaded from this immutable release"
   },
   "state": {
     "active": "~/.local/state/life-manager/writer",
@@ -22,7 +23,7 @@
     "credentials": "~/.config/life-manager/accounts",
     "owner_fence": "~/.local/state/life-manager/writer/owner-fence",
     "parity": {
-      "status": "content-hash-match-before-owner-cutover",
+      "status": "all-loaded-labels-share-target-state",
       "source_file_count": 18326,
       "target_file_count": 18326,
       "source_bytes": 590863796,
@@ -75,7 +76,7 @@
     ],
     "reason": "separate ~/.local/bin/writer engine would create a second Writer pipeline",
     "rollback_archive": "~/.local/state/life-manager/rollback/writer-legacy-cli-retired-20260820-a",
-    "launchctl_readback": "rc=141: Reentrancy avoided"
+    "launchctl_readback": "retired labels absent from the loaded Writer label census"
   },
   "path_audit": {
     "installed_writer_launchagents": 14,
@@ -85,37 +86,37 @@
     "external_cli_labels": 0,
     "retired_external_cli_labels": 5,
     "source_tree_script_labels": 6,
-    "status": "release-manifest-written-runtime-verified-load-pending",
-    "reason": "The Coconala release manifest renders all 14 Writer labels against the immutable current release and ~/.local/state/life-manager/writer. A current-release claim lane produced a FILLED queue receipt, and the creator pause gate returned rc=0. launchctl bootstrap/readback remains rc=141, so loaded scheduler state is unproven."
+    "status": "loaded-one-release",
+    "reason": "launchctl readback proves all 14 Writer labels execute release f592bc31b2d6730143f46ba9d1e7e82c69fcd324 and use ~/.local/state/life-manager/writer"
   },
   "external_dependencies": {
     "writer_engine_cli": "/Users/anicca/.local/bin/writer",
     "writer_engine_root": "/Users/anicca/.local/lib/writer-engine",
     "writer_engine_state": "/Users/anicca/.local/share/writer-engine",
     "status": "retained-for-source-and-rollback; not-invoked-by-installed-writer-labels",
-    "loaded_definition_warning": "stale in-memory launchd definitions still invoke old-root paths and fail with ENOENT or the old publication pause gate"
+    "loaded_definition_warning": null
   },
   "owner_fence": {
     "path": "skills/writer-agent/scripts/writer_owner_fence.py",
     "state_path": "~/.local/state/life-manager/writer/owner-fence",
-    "status": "invoked-by-core-plists-not-loaded",
+    "status": "loaded by the core Writer labels",
     "pause_gates": ["article-daily", "article-resume", "zenn-deferred-worker"],
     "fenced_workers": ["article-daily", "article-resume"],
     "legacy_cli_pause_proven": false
   },
   "core_plist_cutover": {
-    "status": "release-written-not-loaded",
+    "status": "loaded-and-read-back",
     "labels": [
       "ai.anicca.article-daily",
       "ai.anicca.article-resume",
       "ai.anicca.article-zenn-retry"
     ],
     "installed_path_readback": "life-manager-code-and-target-state",
-    "launchctl_readback": "rc=141: Reentrancy avoided",
+    "launchctl_readback": "daily, resume, and Zenn ProgramArguments resolve to release f592bc31",
     "rollback_archive": "~/.local/state/life-manager/rollback/writer-core-cutover-20260820-a"
   },
   "worker_plist_cutover": {
-    "status": "release-written-not-loaded",
+    "status": "loaded-and-read-back",
     "labels": [
       "ai.anicca.writer-claim-loop",
       "ai.anicca.writer-money-sync",
@@ -130,45 +131,51 @@
       "ai.anicca.writer-craft-train"
     ],
     "installed_path_readback": "life-manager-code-and-target-state",
-    "launchctl_readback": "rc=141: Reentrancy avoided",
+    "launchctl_readback": "all 11 worker ProgramArguments resolve to release f592bc31",
     "rollback_archives": [
       "~/.local/state/life-manager/rollback/writer-state-workers-cutover-20260820-a",
       "~/.local/state/life-manager/rollback/writer-legacy-path-cutover-20260820-a"
     ]
   },
   "cutover": {
-    "status": "not-ready",
-    "reason": "all 14 generated Writer plist files now point to the immutable current release and target state; current-release demand and creator gates are runtime-verified, but launchd bootstrap/readback is rc=141 and loaded owner, stale-old drain, and scheduler wake remain unproven",
+    "status": "one-loaded-release",
+    "reason": "launchctl-safe preflight passes and all 14 installed Writer labels read back the same immutable release SHA and Writer state root; application-level same-run recovery remains open",
     "publication_paused": false,
     "legacy_roots_must_not_be_deleted": true
   },
   "runtime_blocker": {
-    "status": "launchd-readback-and-stale-loaded-jobs",
-    "observed": "2026-08-20",
+    "status": "resolved",
+    "observed": "current A0 lineage audit",
     "evidence": [
-      "launchctl managerpid/list/print for system, user/501, and gui/501 all return 141: Reentrancy avoided",
-      "launchctl asuser 501 also returns 141: Reentrancy avoided",
-      "dscacheutil cannot resolve user anicca and dscl returns eServerError",
-      "log show cannot connect to logd",
-      "open -n -a /Applications/ChatGPT.app returns kLSNoExecutableErr (-10827)",
-      "writer-claim-loop.err at 23:18:46, article-healthcheck.err at 23:27:17, article-zenn-retry.out at 23:26:29, article-resume.log at 23:30:13, and writer-money-sync/report errors at 23:25:30 show stale loaded jobs invoking /Users/anicca/profitable-claude",
-      "stale claim/money/report/healthcheck jobs fail with ENOENT; stale Zenn job exits on the old publication pause gate",
-      "no Writer process is running at the observation instant"
+      "launchctl-safe preflight reports Aqua manager, uid 501, readable gui/501, and mutation_allowed true",
+      "all 14 Writer labels were rollback-safely installed from /Users/anicca/loops/current",
+      "all 14 loaded ProgramArguments resolve to /Users/anicca/loops/releases/20260830T235248-f592bc31/bin/lm-loop-run",
+      "all 14 loaded LIFE_MANAGER_RELEASE_SHA values equal f592bc31b2d6730143f46ba9d1e7e82c69fcd324",
+      "all 14 loaded ARTICLE_STATE_DIR values equal /Users/anicca/.local/state/life-manager/writer"
     ],
-    "interpretation": "The current session cannot read launchd or Directory Services, and the installed plist set is not the same as the stale in-memory loaded job definitions. A full GUI/bootstrap root cause is not proven; stale jobs are proven by their old-root log paths.",
-    "required_recovery": "Restore a valid user bootstrap, bootout and drain all stale 14 Writer definitions plus the 5 retired CLI labels, read back their loaded ProgramArguments/env, then bootstrap and read back all 14 Life Manager labels before removing the publication pause.",
-    "publication_effect": "blocked-and-fail-closed"
+    "interpretation": "The launchd control plane and Writer release lineage are healthy. The remaining failure is the application-level prepublication adoption gap for run 20260829-165022.",
+    "required_recovery": "Implement section 9.0 A1 through A6 before a natural Writer resume wake.",
+    "publication_effect": "no publication was triggered by the lineage cutover"
   },
   "last_validation": {
-    "release_sha": "67e74c1f80863def5c6c66cd2d1ec11880dc8258",
-    "current_release": "/Users/anicca/gig/releases/life-manager/current",
-    "activate": "current symlink points to the immutable full-repo release published by the watcher; Writer tree matches source runtime commit 67e74c1f80863def5c6c66cd2d1ec11880dc8258; all bootstrap/readback attempts failed with rc=141 Reentrancy avoided",
+    "release_sha": "f592bc31b2d6730143f46ba9d1e7e82c69fcd324",
+    "current_release": "/Users/anicca/loops/current",
+    "activate": "all 14 installed Writer labels load the exact immutable current release and shared Writer state root",
+    "install_event_ids": [
+      "05ab7557010941188a733cbb", "9f936e946d82b4e438b06ba2",
+      "111320f250cc4a36a1c2040f", "b20f99b4b1eb4a6f8f81db4b",
+      "25628afa24791d0272df26ce", "14ce02f35bd1705de4f6d5f8",
+      "28079971102fb3242eda9aeb", "c166072f4cbc6bb0427a7065",
+      "1dd36777ad2c8fa009253a4d", "63f54d79552f70859e8ed7ee",
+      "d987c48192d08eacd3550c93", "6328bc13d683e9bb2c165839",
+      "9eb57bd924cdf0e07332c7b6", "d615220cc0d271ce2919de35"
+    ],
     "bounded_wake": {
       "creator_rc": 0,
       "resume_rc": 0,
-      "publication_pause": true,
+      "publication_pause": false,
       "state_dir": "~/.local/state/life-manager/writer",
-      "observed_behavior": "creator exited before planner/publisher and wrote target pause log; release tree includes the Life Manager runtime path fixes"
+      "observed_behavior": "A0 changes only loaded definitions and does not kickstart daily or resume; application-level recovery remains open"
     }
   }
 }

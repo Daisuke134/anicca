@@ -53,15 +53,28 @@ def validate_pass_result(evidence_dir: Path) -> str | None:
         result = json.loads(result_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return None
-    if result.get("status") != "transport_failed":
+    status = result.get("status")
+    if result.get("submitted") or result.get("submit_unknown"):
         return None
+    retry_in_progress = (
+        status == "in_progress"
+        and result.get("submitted") == []
+        and result.get("submit_unknown") == []
+    )
+    if status != "transport_failed" and not retry_in_progress:
+        return None
+    retry_reason = (
+        "in_progress_without_terminal_outcome"
+        if retry_in_progress
+        else "transport_failed_without_command_failure"
+    )
     try:
         attempt = json.loads(attempts_path.read_text(encoding="utf-8").splitlines()[-1])
         stdout_path = Path(str(attempt.get("stdout_path") or ""))
     except (OSError, json.JSONDecodeError, IndexError):
-        return "transport_failed_without_command_failure"
+        return retry_reason if status == "transport_failed" else None
     if stdout_path.parent != evidence_dir or not stdout_path.is_file():
-        return "transport_failed_without_command_failure"
+        return retry_reason if status == "transport_failed" else None
     for line in stdout_path.read_text(encoding="utf-8").splitlines():
         try:
             event = json.loads(line)
@@ -91,7 +104,7 @@ def validate_pass_result(evidence_dir: Path) -> str | None:
             ):
                 continue
             return None
-    return "transport_failed_without_command_failure"
+    return retry_reason
 
 
 def invoke_runner(
