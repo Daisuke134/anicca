@@ -27,6 +27,10 @@ Pass order:
    inspect up to four additional pages, with a bounded maximum of twelve candidate
    detail pages per wake. Never stop after the first Explore page solely because its
    candidates fail a fact gate; record the exact page/listing evidence and continue.
+   Open each candidate through its live Explore card's visible `Apply` or
+   `1-click apply` control and wait for the listing/application content to render.
+   Do not navigate directly to an `/explore?listingId=...` URL: that route can leave
+   only the Explore shell loaded without the candidate detail.
 4. For a ready listing, save fresh pre-action screenshot and bounded DOM evidence.
    Before clicking, run `python3 -m job_search_loop.mercor_submit_guard` with
    `--fence-ledger`, `--listing-id`, `--title`, `--url`, `--pre-submit-evidence`,
