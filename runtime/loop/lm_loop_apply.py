@@ -14,6 +14,16 @@ from typing import Callable
 from runtime.loop.macos_loop_registry import validate_registry
 
 
+_IMMUTABLE_RELEASE_WORKING_DIRECTORY = re.compile(
+    r"(?:^|/)loops/(?:releases|[^/]+/releases)/"
+    r"[0-9]{8}T[0-9]{6}-[0-9a-f]{8,40}(?:/|$)"
+)
+
+
+def _is_immutable_release_working_directory(value: object) -> bool:
+    return isinstance(value, str) and bool(_IMMUTABLE_RELEASE_WORKING_DIRECTORY.search(value))
+
+
 def _plist(loop_id: str, entry: dict, release_root: Path, release_sha: str) -> bytes:
     executable = str(release_root / entry["entrypoint"])
     loop_runner = str(release_root / "bin/lm-loop-run")
@@ -110,7 +120,10 @@ def _preserve_operational_attributes(new_bytes: bytes, old_bytes: bytes | None) 
         return new_bytes
     old, new = plistlib.loads(old_bytes), plistlib.loads(new_bytes)
     for key in ("WorkingDirectory", "ProcessType", "RunAtLoad", "ThrottleInterval", "Umask", "Nice"):
-        if key in old:
+        if key in old and not (
+            key == "WorkingDirectory"
+            and _is_immutable_release_working_directory(old[key])
+        ):
             new[key] = old[key]
     preserved_env = {
         key: value
