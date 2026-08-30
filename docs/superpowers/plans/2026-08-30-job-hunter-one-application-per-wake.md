@@ -59,7 +59,15 @@ Run `daily-20260830-085920` proves ranking input has zero Japan rows although th
 
 Run `daily-20260830-091914` ranks 188 unfinished official rows plus roughly 646 fresh rows, requiring four model calls and exhausting disk before first fit. When the current official snapshot contains any unfinished rankable Ledger rows, return only that unfinished pool from `snapshot_candidates()`; return fresh unseen rows only when the unfinished pool is empty. Preserve official snapshot validation and all rejected/attempted/submitted exclusions. This is deterministic durable-work ordering, not job-fit judgment.
 
-Deployment state: main-derived sparse release `bd274627` is staged under `/Users/anicca/loops/job-hunting-staging`. Production `~/loops/current` was concurrently changed by another session to `b27815d9`; do not overwrite the shared symlink without explicit coordination. After approval, atomically activate the staged release, apply the five existing Job Hunting labels, read back argv/SHA/cadence, and kick only the existing daily owner.
+Deployment state: main-derived sparse release `bd274627` is loaded explicitly by all five Job Hunting labels; the shared production current was restored for other loops. Mercor and Mercor-browser remain unloaded until Workday 10P3 completes. Red Hat is verified and persisted as source 33.
+
+#### Task 1F: Mix fresh companies into the one-call backlog batch — active
+
+**Files:**
+- Modify: `apps/job-search-loop/job_search_loop/workday_search_loop.py`
+- Modify focused checks in: `apps/job-search-loop/tests/test_workday_qualification.py`
+
+Red Hat official CXS adds 27 Japan-AI results, but unfinished-only batching would hide every fresh source until all 188 backlog rows drain. Build a maximum 400-row ranking batch: keep every unfinished official row first, then fill remaining slots with fresh rows after company interleaving. If unfinished rows already reach 400, rank them in the existing chunk contract; never discard unfinished work. This is context-capacity bookkeeping, not job-fit judgment.
 
 ---
 
