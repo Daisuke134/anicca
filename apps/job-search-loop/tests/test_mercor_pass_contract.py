@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 import subprocess
 import tempfile
+import tomllib
 import unittest
 from unittest.mock import patch
 
@@ -14,6 +15,18 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class MercorPassContractTests(unittest.TestCase):
+    def test_mercor_runs_every_thirty_minutes_in_all_scheduler_declarations(self):
+        registry = json.loads((ROOT.parents[1] / "config" / "loop-registry.json").read_text())
+        self.assertEqual(
+            registry["loops"]["job-search-mercor"]["cadence"]["start_interval_seconds"],
+            1800,
+        )
+        loop = tomllib.loads((ROOT.parents[1] / "loops" / "job-hunter" / "loop.toml").read_text())
+        self.assertEqual(loop["jobs"]["mercor"]["interval_seconds"], 1800)
+        provider_registry = (ROOT.parents[1] / "loops" / "job-hunter" / "registry.yaml").read_text()
+        mercor = provider_registry.split("  - id: mercor\n", 1)[1]
+        self.assertIn("interval_seconds: 1800", mercor)
+
     def _run_shell_with_pass_rc(self, *, pass_rc: int, pass_stderr: str):
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
