@@ -514,6 +514,45 @@ class WorkdayQualificationTests(unittest.TestCase):
                 {"Unfinished", "Held"},
             )
 
+    def test_snapshot_prefers_unfinished_rows_before_fresh_rows(self):
+        source = {
+            "company": "Example",
+            "host": "example.wd1.myworkdayjobs.com",
+            "site": "Careers",
+        }
+        jobs = [
+            {"title": "Fresh", "locationsText": "Tokyo", "externalPath": "/job/Fresh"},
+            {"title": "Unfinished", "locationsText": "Tokyo", "externalPath": "/job/Unfinished"},
+        ]
+        with tempfile.TemporaryDirectory() as directory:
+            ledger_path = Path(directory) / "ledger.sqlite3"
+            ledger = Ledger(ledger_path)
+            application_id = ledger.add_application(
+                "Example",
+                "Unfinished",
+                "https://example.wd1.myworkdayjobs.com/Careers/job/Unfinished",
+            )
+            ledger.transition(application_id, "qualified")
+            ledger.transition(application_id, "materials_ready")
+            ledger.close()
+
+            rows = snapshot_candidates(
+                ledger_path=ledger_path,
+                sources=(source,),
+                fetch_jobs=lambda _source: jobs,
+            )
+
+        self.assertEqual([row["title"] for row in rows], ["Unfinished"])
+
+        with tempfile.TemporaryDirectory() as directory:
+            rows = snapshot_candidates(
+                ledger_path=Path(directory) / "ledger.sqlite3",
+                sources=(source,),
+                fetch_jobs=lambda _source: jobs,
+            )
+
+        self.assertEqual([row["title"] for row in rows], ["Fresh", "Unfinished"])
+
     def test_shortlist_drops_model_invented_url_and_keeps_official_rows(self):
         official = "https://a.wd1.myworkdayjobs.com/Careers/job/A"
         candidates = [{"candidate_id": "candidate-1", "url": official}]

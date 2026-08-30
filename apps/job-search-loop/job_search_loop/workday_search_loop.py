@@ -228,6 +228,11 @@ def snapshot_candidates(
                 """
             )
         }
+        unfinished_urls = {
+            canonical_url(str(row["canonical_url"])).casefold()
+            for row in ledger.pending_materials_ready_applications()
+            if canonical_url(str(row["canonical_url"])).casefold() not in seen
+        }
     finally:
         ledger.close()
     candidates = []
@@ -255,7 +260,10 @@ def snapshot_candidates(
                     "url": url,
                 }
             )
-    return candidates
+    unfinished_candidates = [
+        row for row in candidates if row["url"].casefold() in unfinished_urls
+    ]
+    return unfinished_candidates or candidates
 
 
 def interleave_companies(
