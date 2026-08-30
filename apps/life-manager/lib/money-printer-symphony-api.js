@@ -174,8 +174,8 @@ function safeIssue(row, input) {
   };
 }
 
-function safeResult(row, input, status) {
-  const valid = safeDispatch(row, { uid: input.uid, dispatchId: input.dispatchId }, [status]);
+function safeResult(row, input, statuses) {
+  const valid = safeDispatch(row, { uid: input.uid, dispatchId: input.dispatchId }, Array.isArray(statuses) ? statuses : [statuses]);
   if (valid.result_ref !== input.resultRef || valid.result_hash !== input.resultHash
     || !valid.result_payload || valid.result_payload.status !== input.payload.status) conflict();
   return valid;
@@ -238,7 +238,18 @@ async function processRequest(action, req, res, dependencies) {
       return;
     }
     const row = await store.recordSymphonyResult(input);
-    const ready = safeResult(row, input, "result_ready");
+    const ready = safeResult(row, input, ["result_ready", "consumed"]);
+    if (ready.status === "consumed") {
+      jsonResponse(res, 200, {
+        tenant_id: ready.tenant_id,
+        dispatch_id: ready.dispatch_id,
+        job_id: ready.job_id,
+        status: ready.status,
+        result_ref: ready.result_ref,
+        result_hash: ready.result_hash,
+      });
+      return;
+    }
     if (input.payload.status === "completed") {
       const consumed = await store.consumeSymphonyCompleted({ uid: input.uid, dispatchId: input.dispatchId });
       const finalRow = safeResult(consumed, input, "consumed");

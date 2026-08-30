@@ -339,19 +339,19 @@ test("unexpected store failures return a generic 500 without reflecting the raw 
   assert.doesNotMatch(JSON.stringify(result.body), /database|password|connection/i);
 });
 
-test("duplicate callback conflict never invokes the consume method a second time", async () => {
+test("duplicate completed callback reconciles an already-consumed row without consuming again", async () => {
   let consumeCalls = 0;
   let recordCalls = 0;
   const resultDispatch = { ...dispatch("result_ready"), result_payload: payload("completed") };
+  const consumedDispatch = { ...resultDispatch, status: "consumed" };
   const store = {
     async recordSymphonyResult() {
       recordCalls += 1;
-      if (recordCalls > 1) throw new Error("symphony result conflict");
-      return resultDispatch;
+      return recordCalls === 1 ? resultDispatch : consumedDispatch;
     },
     async consumeSymphonyCompleted() {
       consumeCalls += 1;
-      return { ...resultDispatch, status: "consumed" };
+      return consumedDispatch;
     },
   };
   const body = {
@@ -362,8 +362,44 @@ test("duplicate callback conflict never invokes the consume method a second time
   const first = await call("/api/internal/money-printer/symphony/result", body, {}, store);
   const second = await call("/api/internal/money-printer/symphony/result", body, {}, store);
   assert.equal(first.status, 200);
-  assert.equal(second.status, 409);
+  assert.equal(second.status, 200);
+  assert.deepEqual(second.body, {
+    tenant_id: TENANT, dispatch_id: DISPATCH_ID, job_id: JOB_ID,
+    status: "consumed", result_ref: RESULT_REF, result_hash: RESULT_HASH,
+  });
   assert.equal(consumeCalls, 1);
+});
+
+test("duplicate needs_human callback reconciles safely without a second HumanTask query", async () => {
+  let recordCalls = 0;
+  let humanConsumeCalls = 0;
+  const resultDispatch = { ...dispatch("result_ready"), result_payload: payload("needs_human") };
+  const consumedDispatch = { ...resultDispatch, status: "consumed" };
+  const task = { uid: TENANT, task_id: "a".repeat(64), job_id: JOB_ID, status: "open", version: 1 };
+  const store = {
+    async recordSymphonyResult() {
+      recordCalls += 1;
+      return recordCalls === 1 ? resultDispatch : consumedDispatch;
+    },
+    async consumeSymphonyHumanTask() {
+      humanConsumeCalls += 1;
+      return task;
+    },
+  };
+  const body = {
+    tenant_id: TENANT, dispatch_id: DISPATCH_ID,
+    repo: "Daisuke134/life-manager-workrooms", author: "Daisuke134",
+    result_ref: RESULT_REF, result_hash: RESULT_HASH, payload: payload("needs_human"),
+  };
+  const first = await call("/api/internal/money-printer/symphony/result", body, {}, store);
+  const second = await call("/api/internal/money-printer/symphony/result", body, {}, store);
+  assert.equal(first.status, 200);
+  assert.equal(second.status, 200);
+  assert.deepEqual(second.body, {
+    tenant_id: TENANT, dispatch_id: DISPATCH_ID, job_id: JOB_ID,
+    status: "consumed", result_ref: RESULT_REF, result_hash: RESULT_HASH,
+  });
+  assert.equal(humanConsumeCalls, 1);
 });
 
 test("exact Symphony paths are handled while nearby paths are left for the caller", async () => {
