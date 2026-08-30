@@ -2,9 +2,10 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
-from job_search_loop.agent_runner import AgentRunner, TASK_CLASSES
-from job_search_loop.mercor_pass import build_context, validate_evidence_paths
+from job_search_loop.agent_runner import AgentRunner, PassAlreadyRunning, TASK_CLASSES
+from job_search_loop.mercor_pass import build_context, main, validate_evidence_paths
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -85,6 +86,27 @@ class MercorPassContractTests(unittest.TestCase):
         script = (ROOT / "scripts" / "run-mercor.sh").read_text(encoding="utf-8")
         self.assertIn('find "$EVIDENCE" -type d -exec chmod 700 {} +', script)
         self.assertIn('find "$EVIDENCE" -type f -exec chmod 600 {} +', script)
+
+    def test_busy_runner_returns_75_without_a_result(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            evidence = root / "evidence" / "agent"
+            with patch(
+                "job_search_loop.mercor_pass.run_pass",
+                side_effect=PassAlreadyRunning(),
+            ):
+                self.assertEqual(main([
+                    "--state-root", str(root / "state"),
+                    "--profile", str(root / "profile.json"),
+                    "--resume", str(root / "resume.pdf"),
+                    "--cdp-url", "http://127.0.0.1:9334",
+                    "--prompt", str(root / "prompt.md"),
+                    "--schema", str(root / "schema.json"),
+                    "--evidence-dir", str(evidence),
+                    "--workdir", str(root),
+                    "--run-id", "busy",
+                ]), 75)
+            self.assertFalse((evidence / "mercor-pass-summary.json").exists())
 
     def test_evidence_paths_must_stay_inside_current_private_pass(self):
         with self.subTest("stale evidence path is rejected"):

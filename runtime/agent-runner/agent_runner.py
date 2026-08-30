@@ -13,6 +13,7 @@ import os
 import re
 import signal
 import shutil
+import stat
 import subprocess
 import sys
 import tempfile
@@ -54,6 +55,7 @@ DEFAULT_HISTORY_GENERATIONS = 3
 # Keep a bounded history, and preferentially evict only completed runs.
 DEFAULT_EVIDENCE_MIN_FREE_BYTES = 512 * 1024 * 1024
 DEFAULT_EVIDENCE_MAX_BYTES = 256 * 1024 * 1024
+PROVIDER_LEASE_BUSY = 75
 
 # OpenAI Standard tier, short context, USD per 1M tokens: (input, cached_input, output).
 # Source: https://developers.openai.com/api/docs/pricing (fetched 2026-07-25).
@@ -443,6 +445,31 @@ def append_usage_event(path: Path, event: dict[str, Any]) -> None:
         fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
 
 
+class ProviderLeaseBusy(RuntimeError):
+    pass
+
+
+def acquire_provider_lease(path_value: str) -> int | None:
+    """Acquire the optional provider-owned lock and return its open descriptor."""
+    if not path_value:
+        return None
+    descriptor = os.open(Path(path_value).expanduser(), os.O_RDWR | os.O_CREAT, 0o600)
+    try:
+        os.fchmod(descriptor, 0o600)
+        if not stat.S_ISREG(os.fstat(descriptor).st_mode):
+            raise ValueError("provider lease path must be a regular file")
+        try:
+            fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError as error:
+            if error.errno in (errno.EACCES, errno.EAGAIN):
+                raise ProviderLeaseBusy() from error
+            raise
+        return descriptor
+    except BaseException:
+        os.close(descriptor)
+        raise
+
+
 def terminate_process_tree(process: subprocess.Popen[bytes]) -> None:
     """Terminate a timed-out provider and every child in its process group."""
     if os.name == "posix":
@@ -654,7 +681,8 @@ def install_termination_forwarding() -> None:
 def run_provider_process(command: list[str], *, stdout: Any, stderr: Any,
                          timeout: int, cwd: str, input_bytes: bytes | None,
                          stdin: Any, env: dict[str, str],
-                         completion_path: Path | None = None) -> int:
+                         completion_path: Path | None = None,
+                         lease_fd: int | None = None) -> int:
     """Run one provider in an isolated process group with a hard timeout."""
     global _ACTIVE_PROVIDER_PROCESS
     process = subprocess.Popen(
@@ -665,6 +693,7 @@ def run_provider_process(command: list[str], *, stdout: Any, stderr: Any,
         cwd=cwd,
         env=env,
         start_new_session=os.name == "posix",
+        pass_fds=(lease_fd,) if lease_fd is not None else (),
     )
     _ACTIVE_PROVIDER_PROCESS = process
     try:
@@ -1346,6 +1375,17 @@ def run() -> int:
         print("agent-runner: deterministic tasks have no model candidate", file=sys.stderr)
         return 2
 
+    try:
+        lease_fd = acquire_provider_lease(
+            os.environ.get("LIFE_MANAGER_PROVIDER_LEASE_PATH", "").strip()
+        )
+    except ProviderLeaseBusy:
+        print("agent-runner: provider lease busy", file=sys.stderr)
+        return PROVIDER_LEASE_BUSY
+    except (OSError, ValueError) as error:
+        print(f"agent-runner: provider lease failed: {error}", file=sys.stderr)
+        return 2
+
     evidence_dir = parsed.evidence_dir.resolve()
     # Do this before creating/writing attempt files or launching a billable
     # provider.  A full volume used to make Codex panic while writing its own
@@ -1354,6 +1394,8 @@ def run() -> int:
     try:
         retention = ensure_evidence_capacity(evidence_dir)
     except (OSError, ValueError) as error:
+        if lease_fd is not None:
+            os.close(lease_fd)
         print(f"agent-runner: evidence preflight failed: {error}", file=sys.stderr)
         return 2
     evidence_dir.mkdir(parents=True, exist_ok=True)
@@ -1458,6 +1500,7 @@ def run() -> int:
                             provider, provider_config, task_class=parsed.task_class,
                         ),
                         completion_path=result_path,
+                        lease_fd=lease_fd,
                     )
                 except subprocess.TimeoutExpired:
                     timed_out = True
@@ -1672,6 +1715,8 @@ def run() -> int:
             summary["runtime_event_error"] = str(error)
     atomic_json(summary_path, summary)
     print(json.dumps(summary, ensure_ascii=False, separators=(",", ":")))
+    if lease_fd is not None:
+        os.close(lease_fd)
     if selected and not runtime_event_failed:
         return 0
     return 75 if budget_blocked else 1
