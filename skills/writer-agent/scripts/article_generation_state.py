@@ -211,6 +211,189 @@ def ledger_has_public_effect(ledger: Path, run_id: str) -> bool:
     return False
 
 
+def _adoption_manifests(run_dir: Path) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
+    drafts: list[dict[str, str]] = []
+    for lang in ("ja", "en"):
+        path = run_dir / f"article-{lang}.md"
+        if path.is_symlink() or not path.is_file() or path.stat().st_size == 0:
+            raise GenerationInvariant(f"article-{lang}.md is not a current regular draft")
+        drafts.append({"path": path.name, "sha256": file_sha256(path)})
+
+    excluded = {
+        "gates/.generation-state.json.lock",
+        "gates/generation-state.json",
+        "gates/prepublication-adoption.json",
+    }
+    artifacts: list[dict[str, str]] = []
+    for path in sorted(run_dir.rglob("*"), key=lambda item: item.as_posix()):
+        if path.is_dir() and not path.is_symlink():
+            continue
+        relative = path.relative_to(run_dir).as_posix()
+        selected = (
+            relative.startswith("gates/")
+            and not relative.startswith("gates/judge-broker/")
+            and relative not in excluded
+        ) or (
+            "/" not in relative
+            and relative
+            not in {
+                "article-daily-prompt.txt",
+                "article-ja.md",
+                "article-en.md",
+                "git-hash.txt",
+                "model-stdout.log",
+            }
+        )
+        if not selected:
+            continue
+        if path.is_symlink() or not path.is_file():
+            raise GenerationInvariant(f"adoption artifact is not regular: {relative}")
+        artifacts.append({"path": relative, "sha256": file_sha256(path)})
+    return drafts, artifacts
+
+
+def _adoption_receipt_hash(value: dict[str, Any]) -> str:
+    unsigned = {key: item for key, item in value.items() if key != "receipt_sha256"}
+    return hashlib.sha256(
+        json.dumps(unsigned, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode(
+            "utf-8"
+        )
+    ).hexdigest()
+
+
+def _adoption_receipt_matches(
+    receipt: Any,
+    run_id: str,
+    prompt_sha256: str,
+    drafts: list[dict[str, str]],
+    artifacts: list[dict[str, str]],
+    state_before_sha256: str | None = None,
+) -> bool:
+    return bool(
+        isinstance(receipt, dict)
+        and receipt.get("schema") == "writer.prepublication-adoption"
+        and receipt.get("version") == 1
+        and receipt.get("from_status") == "provider-failed-ambiguous"
+        and receipt.get("to_status") == "quality-repair-ready"
+        and receipt.get("publication_state_absent") is True
+        and receipt.get("public_ledger_rows") == 0
+        and receipt.get("receipt_sha256") == _adoption_receipt_hash(receipt)
+        and receipt.get("artifact_manifest_sha256") == manifest_sha256(artifacts)
+        and receipt.get("run_id") == run_id
+        and receipt.get("prompt_sha256") == prompt_sha256
+        and receipt.get("draft_manifest") == drafts
+        and receipt.get("artifact_manifest") == artifacts
+        and (
+            state_before_sha256 is None
+            or receipt.get("generation_state_before_sha256") == state_before_sha256
+        )
+    )
+
+
+def adopt_prepublication(
+    run_dir: Path, run_id: str, prompt_file: Path, ledger: Path
+) -> dict[str, Any]:
+    resolved = _validate_boundary(run_dir, run_id, prompt_file)
+    state_path = _state_path(resolved)
+    receipt_path = resolved / "gates/prepublication-adoption.json"
+    with _lock(state_path):
+        state = _load(state_path)
+        if (
+            state.get("run_id") != run_id
+            or state.get("run_dir") != str(resolved)
+            or state.get("prompt_path") != str(prompt_file.resolve(strict=True))
+            or state.get("prompt_sha256") != file_sha256(prompt_file)
+        ):
+            raise GenerationInvariant("prompt or run identity changed")
+        publication_state = resolved / "gates/publication-state.json"
+        if publication_state.exists() or publication_state.is_symlink():
+            raise GenerationInvariant("publication-state-exists")
+        if ledger_has_public_effect(ledger, run_id):
+            raise GenerationInvariant("ledger-public-effect-exists")
+        drafts, artifacts = _adoption_manifests(resolved)
+
+        if state.get("status") == "quality-repair-ready":
+            if receipt_path.is_symlink() or not receipt_path.is_file():
+                raise GenerationInvariant("adoption receipt is missing")
+            receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+            transitions = state.get("transitions")
+            transition = transitions[-1] if isinstance(transitions, list) and transitions else {}
+            if (
+                not _adoption_receipt_matches(
+                    receipt, run_id, state["prompt_sha256"], drafts, artifacts
+                )
+                or transition.get("action") != "adopt-prepublication"
+                or transition.get("receipt_sha256") != receipt.get("receipt_sha256")
+            ):
+                raise GenerationInvariant("adoption receipt does not match current evidence")
+            return {"action": "unchanged", "status": "quality-repair-ready"}
+
+        if state.get("status") != "provider-failed-ambiguous":
+            raise GenerationInvariant("generation state is not adoptable")
+        attempts = state.get("attempts")
+        if not isinstance(attempts, list) or not attempts or not isinstance(attempts[-1], dict):
+            raise GenerationInvariant("generation attempts are invalid")
+        maximum = int(state.get("maximum_attempts", MAX_GENERATION_ATTEMPTS))
+        last = attempts[-1]
+        boundary = last.get("boundary")
+        non_resumable = bool(
+            last.get("status") == "provider-failed-ambiguous"
+            and isinstance(last.get("return_code"), int)
+            and last["return_code"] != 0
+            and isinstance(boundary, str)
+            and boundary.startswith("generated-or-staged-artifacts:")
+        )
+        if _charged_attempt_count(state) < maximum and not non_resumable:
+            raise GenerationInvariant("generation attempt remains safely resumable")
+        state_before_sha256 = file_sha256(state_path)
+        if receipt_path.exists() or receipt_path.is_symlink():
+            if receipt_path.is_symlink() or not receipt_path.is_file():
+                raise GenerationInvariant("adoption receipt is not regular")
+            receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+            if not _adoption_receipt_matches(
+                receipt,
+                run_id,
+                state["prompt_sha256"],
+                drafts,
+                artifacts,
+                state_before_sha256,
+            ):
+                raise GenerationInvariant("orphan adoption receipt does not match current evidence")
+            action = "recovered"
+        else:
+            receipt = {
+                "schema": "writer.prepublication-adoption",
+                "version": 1,
+                "run_id": run_id,
+                "adopted_at": utc_now(),
+                "from_status": "provider-failed-ambiguous",
+                "to_status": "quality-repair-ready",
+                "generation_state_before_sha256": state_before_sha256,
+                "prompt_sha256": state["prompt_sha256"],
+                "draft_manifest": drafts,
+                "artifact_manifest": artifacts,
+                "artifact_manifest_sha256": manifest_sha256(artifacts),
+                "publication_state_absent": True,
+                "public_ledger_rows": 0,
+            }
+            receipt["receipt_sha256"] = _adoption_receipt_hash(receipt)
+            _atomic_write(receipt_path, receipt)
+            action = "adopted"
+        state["status"] = "quality-repair-ready"
+        state["updated_at"] = receipt["adopted_at"]
+        state.setdefault("transitions", []).append(
+            {
+                "action": "adopt-prepublication",
+                "at": receipt["adopted_at"],
+                "from_status": receipt["from_status"],
+                "to_status": receipt["to_status"],
+                "receipt_sha256": receipt["receipt_sha256"],
+            }
+        )
+        _atomic_write(state_path, state)
+        return {"action": action, "status": "quality-repair-ready"}
+
+
 def prepublication_empty(run_dir: Path, run_id: str, ledger: Path) -> tuple[bool, str]:
     if (run_dir / "gates" / "publication-state.json").exists():
         return False, "publication-state-exists"
@@ -682,11 +865,18 @@ def resume_decision(
             or state.get("run_dir") != str(resolved)
             or state.get("prompt_path") != str(prompt_file.resolve(strict=True))
             or state.get("prompt_sha256") != file_sha256(prompt_file)
-            or (
-                state.get("status")
-                not in {"provider-failed-safe", "interrupted-safe"}
-                and not _failed_before_publication(state)
-            )
+        ):
+            return {"resumable": False, "reason": "generation-state-not-safe"}
+        if state.get("status") == "quality-repair-ready":
+            return {
+                "resumable": False,
+                "reason": "quality-repair-ready",
+                "status": "quality-repair-ready",
+            }
+        if (
+            state.get("status")
+            not in {"provider-failed-safe", "interrupted-safe"}
+            and not _failed_before_publication(state)
         ):
             return {"resumable": False, "reason": "generation-state-not-safe"}
         attempts = state.get("attempts", [])
@@ -728,6 +918,7 @@ def main() -> int:
     )
     rebind_parser = subparsers.add_parser("rebind-release")
     rebind_parser.add_argument("--current-root", required=True, type=Path)
+    subparsers.add_parser("adopt-prepublication")
     subparsers.add_parser("resume-check")
     args = parser.parse_args()
     common = (args.run_dir, args.run_id, args.prompt_file, args.ledger)
@@ -746,6 +937,8 @@ def main() -> int:
         )
     elif args.command == "rebind-release":
         value = rebind_release(*common, current_root=args.current_root)
+    elif args.command == "adopt-prepublication":
+        value = adopt_prepublication(*common)
     else:
         value = resume_decision(*common)
     print(json.dumps(value, ensure_ascii=False, separators=(",", ":")))
