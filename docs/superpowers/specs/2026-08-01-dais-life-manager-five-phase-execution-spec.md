@@ -27,7 +27,7 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 この節は、後段の「現在TODO」「次の一件」「local-only」「self-funded agentは別product」という相反する記述を
 上書きする最新の実行順序SSOTである。後段は実装履歴・organ別acceptanceとして保持するが、次作業の選択には使わない。
 Upworkのterminal evidence、startup context、public claim、GA-01〜13Aは完了または履歴として保持する。
-次の一件はAtomic program ledger Seq 17 `ELZ-C04`のsubstep `C04-18`で、ELZ-C04をDONEへ更新する。
+次の一件はAtomic program ledger Seq 17 `ELZ-C04`のsubstep `C04-19`で、ELZ-C05をNEXTへ更新する。
 
 #### 0.0.1 最新基盤決定 — ElizaOSを完全forkし、Life Managerをlocal OSSからmulti-tenant SaaSへ育てる
 
@@ -648,7 +648,7 @@ flowchart LR
 - [x] **C04-15** source/result hashを`provider-bridge-receipt.json`へ保存する — final fork `03cbae0b…`のbridge/test/index 3 file hash、Omarchy/Python/JS/reuse/RED/GREEN/live JS/live Python 8 evidence hash、opaque contract、JS/Python 2 success、process attempts 4、auth recovery 1、provider registration/application/RSVP/business-state/evidence/Calendar/Telegram/payment 0をprivate receiptへ固定。mode 0600、status `pending_review`、open findings nullでPASS未先取り。次はC04-16
 - [x] **C04-16** C04差分をfresh adversarial reviewへ一回だけ渡す — fresh Sol verifierはCritical 0/Important 2で、成功payloadとresolver例外からprivate process/credential情報が漏れ得る点、service lifecycleのhost resolver注入証明不足を反証。reserved key/descriptor value拒否、message-free typed failure、real no-shell `start→register→execute→stop` testへ最小修正し、fork PR #23 merge `5ff9d9a…`。focused 2/2 PASS、同reviewer限定recheck `ship`、Critical/Important/open 0。private review/fix receipts mode 0600、canonical receipt status=`review_passed`、SHA256 `751ae4c7…`。次はC04-17
 - [x] **C04-17** C04 receiptをPASSへ更新する — evidence 10件とsource 3件のSHA256、全private receipt mode 0600、fork PR #23 merged commit `5ff9d9a…`、no-shell/structured-only/private leak拒否、JS/Python success 2、remaining process 0、provider business effect/payment 0、review Critical/Important/open 0を再計算。canonical `provider-bridge-receipt.json` status=`PASS`、SHA256 `091935cf…`。次はC04-18
-- [ ] **C04-18** ELZ-C04をDONEへ更新する
+- [x] **C04-18** ELZ-C04をDONEへ更新する — canonical `provider-bridge-receipt.json` status=`PASS`、SHA256 `091935cf…`、review open finding 0、remaining process 0、provider business effect/payment 0を再読出しし、Atomic program ledger Seq 17をDONEへ更新。次はC04-19
 - [ ] **C04-19** ELZ-C05をNEXTへ更新する
 
 Lancersでまだ新しい収益がないことは、この順序を飛ばす理由にしない。現時点はC04がactiveであり、新forkのgeneral-agent基盤が
@@ -679,7 +679,7 @@ Lancers実環境へ到達していない。Lancersでの新規応募・契約・
 | 14 | ELZ-C01 exactly-one plugin registration | DONE | private `plugin-registration-receipt.json` mode 0600。fork PR #1 canonical merge `bd24601e…`。`@elizaos/plugin-life-manager`一つがaction `LIFE_MANAGER_HEALTH`、provider `lifeManagerHealth`、stateless service `LIFE_MANAGER`を各1件登録し、host manifestでenabled/requiredForReady=true。同名二重register後も各1件、second runtime/scheduler/DB/external effect 0 |
 | 15 | ELZ-C02 first model transport preflight | **DONE** | canonical private `model-provider-receipt.json` v2 mode 0600。Eliza既存`@elizaos/plugin-cli-inference` `codex-sdk`＋system Codex `0.151.0`＋Luna medium。初回post-call adapter log failureを同一session readbackし、initialized adapter final callで`runtime.useModel()`が`LIFE_MANAGER_HEALTH/{}`をreturn・exit 0。historical 1＋final 1＝total calls 2、automatic retry 0、fresh review P1 resolved/open 0、API key/GPT-OSS/ClawRouter/marketplace effect 0、owned RAM detached |
 | 16 | ELZ-C03 domain schema and migration | **DONE** | canonical private `domain-schema-receipt.json` mode 0600、SHA256 `99eea2ba…`。fork `7acbf831…`、6 entity/62 columns、15 tenant-scope constraints、2 immutable triggers、PGlite apply＋restart、tests 3/3、review Critical/Important/open 0 |
-| 17 | ELZ-C04 legacy provider bridge contract | **IN_PROGRESS — NEXT** | JS/Python既存toolをopaque refとstructured resultだけで呼び、判断権0の`provider-bridge-receipt.json` |
+| 17 | ELZ-C04 legacy provider bridge contract | **DONE** | canonical private `provider-bridge-receipt.json` mode 0600、SHA256 `091935cf…`。fork `5ff9d9a…`、opaque ref/private resolver、bounded no-shell execFile、structured-only JS/Python live success 2、review Critical/Important/open 0、remaining process/provider business effect/payment 0 |
 | 18 | ELZ-C05 Goal to reference-only WorkItem | TODO | private goal本文をjobへ複製せず、一Goal→一WorkItemの`goal-workitem-receipt.json` |
 | 19 | ELZ-C06 capability and authorization | TODO | manifest、private authorization ref、human-only境界、expiryを固定した`capability-auth-receipt.json` |
 | 20 | ELZ-C07 bounded model decision | TODO | modelが候補/tool/next graphをstructured判断し、regex/keyword/provider judgment 0の`specialist-decision-receipt.json` |
