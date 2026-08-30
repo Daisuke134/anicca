@@ -22,7 +22,7 @@ test("the marketing destination SSOT fixes every retained route and every non-ta
   assert.ok(value.targets.every((row) => row.cadence_jst.length === 3));
   assert.deepEqual(
     value.holds.filter((row) => row.integration_id === null).map((row) => `${row.platform}:${row.postiz_profile}`).sort(),
-    ["tiktok:@anicca.girl", "tiktok:@anicca.jp1", "tiktok:@anicca.videojp"],
+    ["tiktok:@anicca.jp1", "tiktok:@anicca.videojp", "tiktok:@anicca_girl"],
   );
 });
 

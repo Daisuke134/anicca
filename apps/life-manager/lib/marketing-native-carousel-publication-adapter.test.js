@@ -10,11 +10,36 @@ const test = require("node:test");
 const {
   EN_AFFIRMATION_LANE,
   EN_SLIDESHOW_TIKTOK_LANE,
+  JA_MAIN_TIKTOK_LANE,
   buildMarketingNativeCarouselPublicationJob,
   createMarketingNativeCarouselPublicationLoopAdapter,
   executeMarketingNativeCarouselPublicationJob,
   verifyMarketingNativeCarouselPublicationReceipt,
 } = require("./marketing-native-carousel-publication-adapter.js");
+
+test("JA main TikTok lane is the exact recovered Larry sunset carousel", () => {
+  const lane = JA_MAIN_TIKTOK_LANE;
+  const value = buildMarketingNativeCarouselPublicationJob({
+    tenantId: "dais-local", productId: lane.productId, formatId: lane.formatId, form: lane.form,
+    locale: lane.locale, slot: "2026-08-30T13:37:00.000Z", creativeId: lane.creativeId,
+    accountId: lane.accountId, integrationRef: lane.integrationRef, packRef: lane.packRef,
+    mediaRefs: lane.mediaRefs, captionRef: lane.captionRef, approvalRef: lane.approvalRef,
+    postizTokenRef: lane.tokenRef,
+  });
+  assert.equal(lane.accountId, "@anicca.jp");
+  assert.equal(lane.renderer, "larry");
+  assert.equal(lane.formatId, "larry");
+  assert.equal(lane.form, "affirmation-carousel");
+  assert.equal(lane.mediaRefs[0], "object://sha256/16a21cd861d535504bb966a65de5f25f067cb106dc7ad7bc5e9bd89413e4dc57");
+  assert.equal(value.input_refs.tiktok_integration_ref, "integration://postiz/tiktok/cmp9sdev5012voh0y58qs45xc");
+  assert.throws(() => buildMarketingNativeCarouselPublicationJob({
+    tenantId: "dais-local", productId: lane.productId, formatId: "reelclaw-card", form: "nudge-card",
+    locale: lane.locale, slot: "2026-08-30T13:37:00.000Z", creativeId: lane.creativeId,
+    accountId: lane.accountId, integrationRef: lane.integrationRef, packRef: lane.packRef,
+    mediaRefs: lane.mediaRefs, captionRef: lane.captionRef, approvalRef: lane.approvalRef,
+    postizTokenRef: lane.tokenRef,
+  }), /lane identity/i);
+});
 
 test("EN slideshow TikTok lane accepts exact Postiz API photo proof without inventing a URL", () => {
   const lane = EN_SLIDESHOW_TIKTOK_LANE;

@@ -104,3 +104,9 @@ test("every marketing publication boot script loads the private marketing env", 
     );
   }
 });
+
+test("JA main TikTok boot executes the Larry carousel owner", () => {
+  const source = fs.readFileSync(path.join(__dirname, "anicca-main-tiktok-production-boot.sh"), "utf8");
+  assert.match(source, /anicca-larry-ja-canary\.js" run-ja-main-tiktok-production/);
+  assert.doesNotMatch(source, /honne-ja-cycle|run-anicca-main/);
+});
