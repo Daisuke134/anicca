@@ -1,6 +1,17 @@
 #!/usr/bin/env bash
-LIFE_MANAGER_REPO="${LIFE_MANAGER_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}"
-[ -n "$LIFE_MANAGER_REPO" ] || { echo "LIFE_MANAGER_REPO could not be resolved" >&2; exit 2; }
+# Sealed releases do not contain .git; derive the root from this script and validate
+# the repository files this entrypoint needs before continuing.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd -P)" || SCRIPT_DIR=""
+DEFAULT_LIFE_MANAGER_REPO=""
+if [ -n "$SCRIPT_DIR" ]; then
+  DEFAULT_LIFE_MANAGER_REPO="$(cd "$SCRIPT_DIR/../../.." 2>/dev/null && pwd -P)" || DEFAULT_LIFE_MANAGER_REPO=""
+fi
+LIFE_MANAGER_REPO="${LIFE_MANAGER_REPO:-$DEFAULT_LIFE_MANAGER_REPO}"
+if [ -z "$LIFE_MANAGER_REPO" ] || [ ! -d "$LIFE_MANAGER_REPO" ] \
+  || [ ! -f "$LIFE_MANAGER_REPO/skills/earn/capafy-marketing/capafy-goal-monitor.sh" ]; then
+  echo "LIFE_MANAGER_REPO could not be resolved" >&2
+  exit 2
+fi
 export LIFE_MANAGER_REPO
 # capafy-goal-monitor.sh — daily AUTONOMOUS audit of goal (a)-(d) + idempotent auto go-live.
 #
