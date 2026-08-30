@@ -4,8 +4,8 @@
 **Current verified status:** `ai.anicca.job-search-daily` is installed with
 `StartInterval=1800`; this is a 30-minute loop, not an hourly loop. The five existing
 Job Hunter owners load main-derived immutable release
-`20260831T014127-fcb9e691`, source SHA
-`fcb9e69146fa499bfd1697d372c58ac0f6313622`: browser, daily, inbox, learning and
+`20260831T024355-8fa4fc39`, source SHA
+`8fa4fc39e91aa8272352fc75a272484966f00fc8`: browser, daily, inbox, learning and
 health. Same-context preflight returned `status=pass` and
 `mutation_allowed=true`, and loaded-domain readback proves exact-release
 `ProgramArguments`. The HPE `Thank you for your online submission` message now
@@ -84,10 +84,36 @@ begin after a recorded terminal failure. The orchestrator independently rejects
 overlapping transcript items and commands started after a real nonzero completion,
 including passes that claim `submitted` or `submit_unknown`. Focused browser tests
 pass 41/41, runner config tests pass 3/3, `git diff --check` passes, and fresh
-read-only review returns `ship`. Immutable release and real-wake application proof
-remain the active gate.
+read-only review returns `ship`. PR #3368 is merged to main as
+`8fa4fc39e91aa8272352fc75a272484966f00fc8`, immutable release
+`20260831T024355-8fa4fc39` is loaded by the five existing owners, and doctor reports
+166 managed entries with zero missing, unmanaged, or retired-installed owners.
 
-The same wake also proves the loaded runner still has the wrong effective timeout.
+The first release-owned wake, `daily-20260831-024732`, closes the live gate without
+waiting 24 hours. Discovery writes `status=queued_existing`, target 48, confirmed
+count 1, deficit 47, two queued rows, and zero fresh fit-model calls. Compact
+navigation is live: the first `observe` is 1,424 bytes and immediately yields
+`observe -> navigate -> wait`. Cloudera Applied AI Specialist reaches the exact
+password-reset acknowledgement and closes as `email_recovery` with Telegram
+`45116`; the same wake continues. HPE Customer Success Architect signs in, reuses
+the prior application, completes the form, executes the irreversible Submit once
+through `finalize`, and reports `post_submit_verification` with Telegram `45123`.
+The wake then continues to HPE PreSales Architect, records its later
+`transport_failed` separately, and finishes in about 12 minutes. Every runtime
+command in the successful application path exits zero; no overlap, post-nonzero
+command, active-command leak, or terminal marker occurs. The runner uses the live
+1,800-second timeout and exits normally rather than at the old 900-second clamp.
+
+Natural inbox run `inbox-20260831-030409-25134` binds authoritative Gmail message
+`1a053d18b1d769a0` to the HPE Customer Success Architect intent, promotes the exact
+Ledger row from `submit_unknown` to `submitted`, and increases distinct Gmail-backed
+applications in the rolling 24-hour window from 1 to 2. Telegram application and
+receipt ACKs are `45128` and `45129`. The same run's immediate second reconciliation
+returns `reconciled=[]`, proving replay-zero. One of the allowed 1--3 real owner
+wakes therefore closes Task 3E; a 24-hour soak or accumulation of all 48 receipts is
+not a release gate.
+
+Wake `daily-20260831-014238` also proves the loaded runner had the wrong effective timeout.
 The outer orchestrator requests 1,800 seconds, but `attempts.jsonl` records
 `timed_out=true` from `01:43:24` to `01:58:25`, `summary.json` has
 `status=failed` and no result path, launchd exits 1, and the fenced wake report sends
@@ -96,8 +122,9 @@ The outer orchestrator requests 1,800 seconds, but `attempts.jsonl` records
 seconds, while the production runner copied from `runtime/agent-runner/config.json`
 set it to 900 seconds. Task 3E aligns the production config and its explanatory note
 to 1,800 seconds; a focused runner test proves an explicit 1,800-second Job Hunter
-request is not clamped to 900. This does not change the 1,800-second launchd cadence or permit
-overlapping owner wakes.
+request is not clamped to 900. Wake `daily-20260831-024732` then runs for about 12
+minutes and exits normally, proving the effective production clamp is removed. This
+does not change the 1,800-second launchd cadence or permit overlapping owner wakes.
 
 The application Ledger remains the state SSOT and `summary.v2` is rebuilt from its
 event stream on every wake. Every-wake and application-result Telegram delivery uses
@@ -105,8 +132,14 @@ the direct fenced Bot API transport; OpenClaw is not in the daily reporting path
 The active engineering gate is continuous Workday search 10P3. Workday form
 operation, submission fencing, authoritative verification, Ledger recording,
 Telegram reporting, and exact-URL repeated-wake dedupe are live-proven in 10P.
-The acquisition objective is now one real application per 30-minute wake. The
-model must choose the best available role that the candidate can truthfully and
+The operating KPI is 48 distinct Gmail-confirmed applications in the rolling 24-hour
+window. `StartInterval=1800` is only a scheduling interval: launchd does not overlap
+the same running owner, so it does not by itself guarantee 48 completed wakes. The
+per-wake throughput invariant is that each eligible wake completes at least one new
+application through Gmail confirmation, Ledger `submitted`, Telegram ACK, and
+replay-zero; one to three real wakes are sufficient to validate a release, while the
+rolling 48 remains the continuous production KPI. The model must choose the best
+available role that the candidate can truthfully and
 legally pursue; experience gaps, seniority, competition, or an imperfect match are
 positioning inputs, not reasons for a wake to reject every role. Only a hard blocker
 may prevent qualification: the role no longer exists, the candidate cannot legally
