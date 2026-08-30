@@ -111,6 +111,12 @@ function createConnectorBrowserTargetController(options = {}) {
 
     async close(value) {
       const targetId = exactTargetId(value);
+      const inventory = await browserCall("Target.getTargets");
+      if (!inventory || !Array.isArray(inventory.targetInfos)) {
+        unavailable("Connector target inventory unavailable");
+      }
+      const targetIds = inventory.targetInfos.map((target) => exactTargetId(target && target.targetId));
+      if (!targetIds.includes(targetId)) return true;
       const result = await browserCall("Target.closeTarget", { targetId });
       return result && result.success === true;
     },

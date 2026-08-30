@@ -56,6 +56,7 @@ const TECHPLAY_WORKFLOW_VERSION = "techplay_registration_v1";
 const KOKUCHPRO_WORKFLOW_VERSION = "kokuchpro_registration_v1";
 const LUMA_PAGE_STATE = "registration_page_v1";
 const EXPECTED_REGISTRATION_EFFECT = "registered_or_pending";
+const STALE_TARGET_MAX_IDLE_MS = 660_000;
 const PROVIDER_RANK_MAX_DATES = 2;
 const PROVIDER_RANK_MAX_CANDIDATES = 12;
 
@@ -630,9 +631,9 @@ function createProductionBrowserRail(options = {}) {
       const browser = await connectOverCDP(CONNECTOR_CDP_ENDPOINT);
       const controller = createTargetController({ browser, endpoint: CONNECTOR_CDP_ENDPOINT });
       if (!controller || typeof controller.create !== "function" || typeof controller.close !== "function") invalid();
-      const target = await controller.create();
       let ownership = null;
       let receipt = null;
+      let target = null;
       try {
         ownership = createTargetOwnership({
           controller,
@@ -642,8 +643,10 @@ function createProductionBrowserRail(options = {}) {
         if (
           !ownership || typeof ownership.claimExact !== "function"
           || typeof ownership.probe !== "function" || typeof ownership.heartbeat !== "function"
-          || typeof ownership.release !== "function"
+          || typeof ownership.release !== "function" || typeof ownership.reapStale !== "function"
         ) invalid();
+        await ownership.reapStale({ maxIdleMs: STALE_TARGET_MAX_IDLE_MS });
+        target = await controller.create();
         receipt = await ownership.claimExact({
           canonicalUrl: LUMA_DISCOVERY_URL,
           targetId: target.target_id,
