@@ -3393,7 +3393,7 @@ def main() -> int:
             raw_talkroom = inspect_page_with_retry(
                 args.cdp_helper, talkroom_url, TALKROOM_FULL_EXPRESSION,
                 screenshot(args.evidence_dir / f"talkroom-{safe_name(talkroom_id)}.png"),
-                hidden=hidden,
+                hidden=False,
                 capture_buyer_attachments=True,
                 attachment_project_root=args.projects_root.expanduser().resolve() / project_id,
             )

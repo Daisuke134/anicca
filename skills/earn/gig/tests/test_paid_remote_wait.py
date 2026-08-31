@@ -646,7 +646,7 @@ def test_targeted_browser_readbacks_admit_one_hidden_context_at_a_time():
     assert paid.PAID_MAX_PARALLEL_PROJECTS > 1
 
 
-def test_selected_talkroom_readback_honors_hidden_transport(tmp_path, monkeypatch):
+def test_selected_talkroom_readback_uses_visible_transport_for_attachments(tmp_path, monkeypatch):
     snapshot = load("coconala_queue_snapshot")
     seen = []
     args = SimpleNamespace(
@@ -674,7 +674,7 @@ def test_selected_talkroom_readback_honors_hidden_transport(tmp_path, monkeypatc
     monkeypatch.setattr(snapshot, "inspect_page_with_retry", stop_after_transport_selection)
 
     assert snapshot.main() == 1
-    assert seen == [True]
+    assert seen == [False]
 
 
 def test_current_remote_wait_is_fresh(tmp_path):
