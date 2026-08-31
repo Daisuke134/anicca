@@ -98,7 +98,9 @@ def test_cross_day_adoption_precedes_both_quality_plans_and_never_starts_daily(
         "  print(json.dumps({'status':'NONE'}))\n",
     )
     repair_prompt = target / "quality-repair-prompt.txt"
+    owner_recovery_prompt = target / "owner-recovery-prompt.txt"
     _write(repair_prompt, "repair")
+    _write(owner_recovery_prompt, "owner recovery")
     _write(
         scripts / "quality_repair_control.py",
         "import json, os, sys\n"
@@ -117,6 +119,12 @@ def test_cross_day_adoption_precedes_both_quality_plans_and_never_starts_daily(
         f"   print(json.dumps({{'status':'READY','reason':'tracked-active-editorial-repair-source-defect','run_id':{target_id!r},'run_dir':{str(target)!r},'repair_epoch':1,'attempts':1,'prompt_path':{str(repair_prompt)!r},'prompt_sha256':{hashlib.sha256(repair_prompt.read_bytes()).hexdigest()!r}}}))\n"
         "  elif shape == 'source-recovery-wrong-state':\n"
         f"   print(json.dumps({{'status':'READY','reason':'tracked-active-editorial-repair-source-defect','run_id':{target_id!r},'run_dir':{str(target)!r},'repair_epoch':1,'attempts':2,'prompt_path':{str(repair_prompt)!r},'prompt_sha256':{hashlib.sha256(repair_prompt.read_bytes()).hexdigest()!r}}}))\n"
+        "  elif shape == 'owner-recovery':\n"
+        f"   print(json.dumps({{'status':'READY','reason':'tracked-repair-owner-prompt-source-defect','run_id':{target_id!r},'run_dir':{str(target)!r},'repair_epoch':1,'attempts':2,'prompt_path':{str(repair_prompt)!r},'prompt_sha256':{hashlib.sha256(repair_prompt.read_bytes()).hexdigest()!r}}}))\n"
+        "  elif shape == 'owner-recovery-attempt-one':\n"
+        f"   print(json.dumps({{'status':'READY','reason':'tracked-repair-owner-prompt-source-defect','run_id':{target_id!r},'run_dir':{str(target)!r},'repair_epoch':1,'attempts':1,'prompt_path':{str(repair_prompt)!r},'prompt_sha256':{hashlib.sha256(repair_prompt.read_bytes()).hexdigest()!r}}}))\n"
+        "  elif shape == 'owner-recovery-wrong-state':\n"
+        f"   print(json.dumps({{'status':'READY','reason':'tracked-repair-owner-prompt-source-defect','run_id':{target_id!r},'run_dir':{str(target)!r},'repair_epoch':1,'attempts':2,'prompt_path':{str(repair_prompt)!r},'prompt_sha256':{hashlib.sha256(repair_prompt.read_bytes()).hexdigest()!r}}}))\n"
         "  elif shape == 'source-recovery-wrong-run':\n"
         f"   print(json.dumps({{'status':'READY','reason':'tracked-active-editorial-repair-source-defect','run_id':'other-run','run_dir':{str(target)!r},'repair_epoch':1,'attempts':1,'prompt_path':{str(repair_prompt)!r},'prompt_sha256':{hashlib.sha256(repair_prompt.read_bytes()).hexdigest()!r}}}))\n"
         "  elif shape == 'source-recovery-malformed':\n"
@@ -143,7 +151,7 @@ def test_cross_day_adoption_precedes_both_quality_plans_and_never_starts_daily(
         "elif command == 'begin': open(os.environ['CALLS'], 'a').write('quality-begin\\n'); "
         f"print(json.dumps({{'status':'prepared','run_id':{target_id!r},'prompt_path':{str(repair_prompt)!r}}}))\n"
         "elif command == 'invoke': open(os.environ['CALLS'], 'a').write('quality-invoke\\n'); "
-        f"print(json.dumps({{'status':'invoking','run_id':{target_id!r},'prompt_path':{str(repair_prompt)!r}}}))\n"
+        f"print(json.dumps({{'status':'invoking','run_id':{target_id!r},'prompt_path':({str(owner_recovery_prompt)!r} if os.environ.get('QUALITY_PLAN_SHAPE') == 'owner-recovery' else {str(repair_prompt)!r})}}))\n"
         "elif command == 'terminalize': open(os.environ['CALLS'], 'a').write('quality-terminalize\\n'); "
         "print(json.dumps({'status':'ok'}))\n"
         "else: "
@@ -167,7 +175,7 @@ def test_cross_day_adoption_precedes_both_quality_plans_and_never_starts_daily(
     )
     _write(
         runtime / "model-runner.sh",
-        "#!/usr/bin/env bash\nprintf 'model-runner\\n' >> \"$CALLS\"\nexit 97\n",
+        "#!/usr/bin/env bash\nprintf 'model-runner\\n' >> \"$CALLS\"\nprintf '%s\\n' \"$3\" >> \"$PROMPTS\"\nexit 97\n",
         executable=True,
     )
     daily = fake_root / "article-daily.sh"
@@ -191,6 +199,7 @@ def test_cross_day_adoption_precedes_both_quality_plans_and_never_starts_daily(
             "ARTICLE_MODEL_RUNNER": str(runtime / "model-runner.sh"),
             "BASH_ENV": _fake_df_env(tmp_path),
             "CALLS": str(calls),
+            "PROMPTS": str(tmp_path / "prompts"),
         }
     command = ["bash", str(scripts / "article-resume-pending.sh")]
     result = subprocess.run(
@@ -345,6 +354,57 @@ def test_cross_day_adoption_precedes_both_quality_plans_and_never_starts_daily(
     )
     assert invalid_source_recovery_state.returncode == 1
     assert calls.read_text().splitlines() == ["quality-plan"]
+    _write(repair_state, json.dumps(prepared_state))
+
+    owner_recovery_state = dict(prepared_state)
+    owner_recovery_state.update(
+        {
+            "status": "terminal-incomplete",
+            "attempts": 2,
+            "quality_action": "evaluate_reroute",
+            "source_defect": "reader-terminal-receipt",
+        }
+    )
+    _write(repair_state, json.dumps(owner_recovery_state))
+    calls.unlink()
+    owner_recovery = subprocess.run(
+        command,
+        env={
+            **env,
+            "ADOPTION_FAIL": "1",
+            "QUALITY_PLAN_SHAPE": "owner-recovery",
+        },
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert owner_recovery.returncode == 0, owner_recovery.stderr
+    assert calls.read_text().splitlines() == [
+        "quality-plan",
+        "quality-feedback",
+        "quality-invoke",
+        "model-runner",
+    ]
+    assert (tmp_path / "prompts").read_text().splitlines()[-1] == str(owner_recovery_prompt)
+    for shape in ("owner-recovery-attempt-one", "owner-recovery-wrong-state"):
+        state_for_shape = dict(owner_recovery_state)
+        if shape == "owner-recovery-wrong-state":
+            state_for_shape["status"] = "prepared"
+        _write(repair_state, json.dumps(state_for_shape))
+        calls.unlink()
+        invalid_owner_recovery = subprocess.run(
+            command,
+            env={
+                **env,
+                "ADOPTION_FAIL": "1",
+                "QUALITY_PLAN_SHAPE": shape,
+            },
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert invalid_owner_recovery.returncode == 1
+        assert calls.read_text().splitlines() == ["quality-plan"]
     _write(repair_state, json.dumps(prepared_state))
 
     # A terminal-blocked refusal is allowed only with controller rc=1.
