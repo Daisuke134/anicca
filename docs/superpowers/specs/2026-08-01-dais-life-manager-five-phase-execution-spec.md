@@ -1022,16 +1022,16 @@ Calendarを無関係なeventで埋めること自体を成果にしない。
 
 | surface | current measured behavior | required behavior |
 |---|---|---|
-| schedule | native owner exact 1、`StartInterval=3600`。現在のloaded argvはfull release `20260831T170229-b224ba46` / SHA `b224ba46…`だが、直近supervised wake `wake-f64e4ab26c1879c34ba68a97`は`wake_deadline` / exit 1 | 24回の自然hourly receiptで継続証明。manual kickstartと途中reloadはcountしない |
+| schedule | production currentは`20260831T175027-b333d6ff` / SHA `b333d6ff…`、Connector labelはその祖先であるfull release `20260831T170229-b224ba46` / SHA `b224ba46…`、daily-driver labelは`6466fea3…`。native Connector owner exact 1、`StartInterval=3600`、直近自然wake `wake-f64e4ab26c1879c34ba68a97`は`wake_deadline` / exit 1 | manual kickstartと途中reloadを使わず、bundle完成後の自然hourly wake 2回でreplay-zeroを証明する |
 | release completeness | 同一SHAの最初のrelease `20260831T153415-7255b4bb`はproduction依存`playwright-core`を欠き、Calendar read後のbrowser rail生成でexit 2。後続full releaseは3 dependency tree、154,232 entries、789,376,561 bytesを保持し、runtime requireを通る | apply前に全Git blob/mode、locked runtime dependency、required-module importを検証し、不完全releaseをloadedにしない |
 | browser owner | `127.0.0.1:9222`と`[::1]:9222`を別Chromiumが同時listenし、Connectorの固定IPv4 endpointは意図した`daily-driver`ではなく`job-search-daily` profileへ接続する。owned target分離は機能するがprofile identityは不一致 | endpointごとにlistener/profile owner exact 1を証明し、Connectorが宣言済み`browser-profile://cloakbrowser/daily-driver`だけへ接続する |
 | horizon | Calendar、Luma、connpassのactive primary pathはJST day 0〜27の28日 | 28日境界を維持 |
 | profile | YC hackathon→open LT→AI→crypto→startup、`strong/moderate`だけがauto-apply eligible | live候補で品質gateを維持 |
 | live ranking | provider-neutral rankingがactive minimal runnerに接続済み、large inventoryは3件chunk/並列3 | 10分wake内のterminalを維持 |
 | LT | classifier、talk pack、独立transition store、one-effect budgetはactive pathに接続済み | 実open LTのtalk application receiptを1件完成 |
-| provider result | Luma→connpassを尽くし、fallbackにも同じquality gateと160秒completion reserveを適用。KokuchProはlive spinner form対応をmain `b224ba46…`へ統合し、focused/adjacent 301/301とlive no-submit observe→literal `1` fill→postconditionをPASS | 実Luma bundleと次の自然wakeのreplay-zero。fallback実装PASSをapplication成功へ昇格しない |
+| provider result | Luma→connpassを尽くし、fallbackにも同じquality gateと160秒completion reserveを適用。KokuchProはPR #3433のauthenticated participant inventory reconciliationとPR #3434のspinner seat対応をmain `b224ba46…`へ統合した。PR #3433はfocused 71/71、Connector全691/691、live read-only participant inventoryで対象eventのexact URL・時刻・渋谷会場・`registered`を確認した | 既存KokuchPro登録のevidence chainと、その後の自然wake replay-zeroを完成する。fallback実装PASSや候補発見だけをapplication成功へ昇格しない |
 | connpass | official API v2 discoveryのみ。自動申込許可は未回答のためTelegram manual boundary、provider Submit 0 | official responseを監視し、明示許可までSubmit 0 |
-| evidence | KokuchPro event `kokuchpro-event://event/33301feefecb914218e7c2318d9de99e`はpre-submit official readbackで`registered`となりduplicate Submit 0。provider receiptとPNG objectは保存済みだが、Calendar existing readback後の再readbackが`EVIDENCE_CALENDAR_READBACK_FAILED`となり、bundle/positive evidence chainは未完 | official Calendar exact 1を再照合し、同provider receipt/PNG/Calendar/Telegram lineageからbundleをrecoveryする。再登録やabsence推定はしない |
+| evidence | KokuchPro event `kokuchpro-event://event/33301feefecb914218e7c2318d9de99e`は自然wakeのpre-submit official readbackで`registered`、duplicate Submit 0。checkpointはprovider receipt `370bb9be…`とPNG SHA `9c9cdc7a…`（1185×8121）を保存した。`EVIDENCE_CALENDAR_READBACK_FAILED`後のofficial Google Calendar readbackはidempotency 0件、title/canonical URL 0件、Telegram message/photo receipt 0件、applied bundle 0件 | 既存provider checkpointを再利用し、Calendar exact 1→Telegram positive message/photo IDs→同lineage durable bundleを自然wakeでrecoveryする。provider登録を再実行しない |
 
 #### 0.0.3 Atomic TODO SSOT
 
@@ -1106,11 +1106,11 @@ Calendarを無関係なeventで埋めること自体を成果にしない。
 
 - [x] **CG-42** `git fetch`後のclean integration commitで全変更をcanonical `main`へnon-force統合し、remote ancestryとimmutable release bytesを確認する。
 - [x] **CG-43** `bin/launchctl-safe`だけでnative plistをrender/install/reloadし、loaded args、`StartInterval=3600`、native owner exact 1、legacy owner 0、process/lock 0をreadbackする。BrowserとConnectorは互いのcleanupでreleaseを失わないper-loop current rootを使う。Release/install receiptは `docs/evidence/outbound/2026-08-27-connector-hourly-release-install.json`。
-- [ ] **CG-44** existing labelをexact 1回kickstartし、本物のLuma `strong/moderate`候補一件でprovider readback→Calendar exact 1→PNG/receipt→Telegram IDs→bundleを完成する。旧releaseの安全停止とGemini schema修復後のLuma/connpass成功・適格候補0 canaryは `docs/evidence/outbound/2026-08-27-connector-owned-release-canary.json` と `docs/evidence/outbound/2026-08-27-connector-ranking-recovery-canary.json` に保存し、外部作用acceptanceには数えない。
-- [ ] **CG-45** 次の自然hourly wakeで同eventのSubmit 0、Calendar 1、bundle reuse、別candidateへのcontinuationを確認する。
+- [ ] **CG-44** manual kickstartなしの既存hourly ownerで、本物の`strong/moderate`候補一件についてprovider readback→Calendar exact 1→PNG/receipt→Telegram IDs→bundleを完成する。現対象は登録済みKokuchPro eventであり、既存provider checkpointからevidenceだけをreconcileする。旧releaseの安全停止とGemini schema修復後のLuma/connpass成功・適格候補0 canaryは `docs/evidence/outbound/2026-08-27-connector-owned-release-canary.json` と `docs/evidence/outbound/2026-08-27-connector-ranking-recovery-canary.json` に保存し、外部作用acceptanceには数えない。
+- [ ] **CG-45** bundle完成後の自然hourly wake 2回で、同eventのSubmit 0、Calendar exact 1、bundle reuse/no duplicate、別candidateへのcontinuation、single owner、lock/page cleanupを確認する。
 - [x] **CG-46** connpass API live inventoryとaction boundaryをnatural owner wakeで確認する。wake `wake-a27f9e8bba85c87d84dda625`はranking 589,180ms後にboundaryを22,561msで成功し、candidate snapshot `433b9497...`、Telegram provider ID `36655`をmode-0600 immutable receiptへexact 1件保存した。Connpass Submitはpermission未確認のため0。wake reportはdeadlineを正しく`circuit_open / wake_deadline`、positive Telegram ID `36656`として報告した。provider permissionが得られた場合だけ許可methodの実申込bundleを別TODOとして追加する。
 - [ ] **CG-47** open LT候補でtalk application receiptを一件完成し、attendance/talkの各state、Calendar、Telegramを独立readbackする。
-- [ ] **CG-48** 24回の連続hourly receiptでduplicate Submit 0、concurrent owner 0、effect unknownの自動再送0、owned page/lock cleanupを確認する。
+- [ ] **CG-48** bundle完成後の連続した自然hourly receipt 2回でduplicate Submit 0、concurrent owner 0、effect unknownの自動再送0、owned page/lock cleanupを確認する。24時間監視を短期release gateにしない。
 - [x] **CG-49** public sample profile、Connector README/SKILL、install/uninstall手順を28日・hourly・Luma/connpass・LT・permission boundaryへ同期する。
 - [x] **CG-50** secretなしの隔離homeでinstall→render→focused no-effect wake→uninstallを再現し、private state/receiptをpackageしないことを確認する。
 - [ ] **CG-51** final spec state、test/effect receipts、known provider limitsを更新する。完了には、release completeness gate、CDP listener/profile owner exact 1、KokuchPro既登録eventのCalendar/PNG/Telegram/bundle recovery、自然wake terminal、replay-zeroを含める。commit/push、remote readback、Telegram milestoneまで揃って初めてConnector growth sliceをDONEにする。
@@ -1118,8 +1118,8 @@ Calendarを無関係なeventで埋めること自体を成果にしない。
 #### 0.0.3.1 Current operational incident contract
 
 1. **Overview:** Connector code、loaded release、browser profile、provider effect、Calendar evidenceは別々に成功・失敗し得る。loaded label、unit test、provider登録のどれか一つだけで「working」と判定しない。
-2. **Acceptance criteria:** main由来full immutable releaseがrequired runtime importを通し、宣言済みdaily-driver owner exact 1へ接続し、同じnatural wakeでprovider official readback、Calendar exact 1、PNG/receipt、Telegram positive IDs、durable bundleを閉じる。次のnatural wakeはprovider Submit 0、Calendar duplicate 0、bundle reuse exact 1を証明する。
-3. **As-Is / To-Be:** As-IsはKokuchPro official registration `present`、duplicate Submit 0、provider receipt/PNG present、Calendar/bundle incomplete、直近wake exit 1。To-Beは既存provider effectを再実行せずevidenceだけをreconcileし、その後の自然hourly ownerがhealthy terminalとreplay-zeroを残す状態である。
+2. **Acceptance criteria:** main由来full immutable releaseがrequired runtime importを通し、宣言済みdaily-driver profileのlistener exact 1へ接続し、natural wakeでprovider official readback、Calendar exact 1、PNG/receipt、Telegram positive IDs、durable bundleを閉じる。その後の自然wake 2回はprovider Submit 0、Calendar duplicate 0、bundle reuse exact 1、owned page/lock cleanupを証明する。
+3. **As-Is / To-Be:** As-IsはKokuchPro official registration `present`、duplicate Submit 0、provider receipt/PNG present、official Calendar 0、Telegram evidence receipt 0、bundle 0、直近wake exit 1である。さらにIPv4 `127.0.0.1:9222`は`job-search-daily`、IPv6 `[::1]:9222`は宣言済み`daily-driver`が同時listenし、Connectorの固定IPv4 endpointはwrong profileへ接続する。08:05ZのLuma owned target leaseもowner終了後に残存する。To-Beは既存provider effectを再実行せず、browser ownerを宣言済みprofile exact 1へ戻し、公式reaperでstale leaseを閉じ、evidenceだけをreconcileした後、自然hourly ownerがhealthy terminalとreplay-zeroを残す状態である。
 4. **Test matrix:** release completenessはmissing `playwright-core`をapply前に拒否、browser ownershipはdual-listener/wrong-profileを拒否、KokuchProはradioとspinner双方を保持しmixed/duplicate/mutated formを拒否、evidence recoveryはCalendar present/readback transient/replayを検証する。live acceptanceはnatural launchd/provider/Calendar/Telegram/bundle readbackで行う。
 5. **Boundaries:** provider登録を再実行しない。effect unknownをabsenceへ変換しない。Codexが直接Calendar/Telegram/bundleを捏造しない。別profile、別scheduler、legacy OpenClaw cron、all-label applyを回避策にしない。
 6. **Execution order:** current global orderの`CG-28 → CG-44 → CG-45 → CG-47 → CG-48 → CG-51`を維持する。CG-51内ではrelease completeness → browser owner → existing Calendar/evidence reconcile → natural terminal → replay-zero → final readbackの順で閉じる。
@@ -1128,6 +1128,19 @@ Calendarを無関係なeventで埋めること自体を成果にしない。
 |---|---|
 | UI change | none |
 | Judgment | Maestro not required。official launchd、provider、Google Calendar、Telegram、durable bundleのreadbackが必要 |
+
+##### Immediate recovery checklist — CG-44 / CG-45 / CG-51 substeps
+
+このchecklistはglobal CG cursorを並べ替えない。`CG-28 → CG-44 → CG-45 → CG-47 → CG-48 → CG-51`のうち、現在観測中のCG-44/45/51を機械的に閉じる下位手順である。
+
+- [x] **IR-01** PR #3433/#3434を含むimmutable Connector release `b224ba46…`をloaded argvでreadbackし、focused/Connector全testとlive read-only participant inventoryをPASSする。
+- [x] **IR-02** 自然wake `wake-f64e4ab26c1879c34ba68a97`で再Submit 0、official `registered`、provider receipt `370bb9be…`、PNG SHA `9c9cdc7a…`を同一checkpointへ保存する。
+- [x] **IR-03** Calendar failure後にofficial Google Calendarをidempotencyとtitle/canonical URLの両方で読み、対象0件、Telegram evidence receipt 0件、bundle 0件を確認する。
+- [ ] **IR-04** `127.0.0.1:9222`の`job-search-daily`と`[::1]:9222`の`daily-driver`競合を既存owner境界で解消し、Connectorが`browser-profile://cloakbrowser/daily-driver` exact 1だけへ接続する。新browser/profile/schedulerを作らない。
+- [ ] **IR-05** 残存target lease `CCBC4C100AAFF7C75F2EB59D7A4E11C7`をraw削除せず、公式Connector owner/reaper cleanupでowned pageとlockを閉じる。
+- [ ] **IR-06** 次の自然hourly wakeが既存provider checkpointを再利用し、Calendar exact 1→Telegram positive message/photo IDs→durable applied bundle exact 1を同一lineageで完成することをreadbackする。
+- [ ] **IR-07** さらに自然hourly wake 2回で同event Submit 0、Calendar duplicate 0、bundle reused/no duplicate、single owner、lock/page cleanupを確認する。
+- [ ] **IR-08** fresh read-only adversarial reviewer 1名がprovider receipt、PNG SHA、Calendar、Telegram IDs、bundle、2 wake replay-zeroを反証できないことを確認し、active Connector goalをcompleteにしてheartbeatを削除する。
 
 #### 0.0.4 Runtime flow
 
@@ -9607,7 +9620,7 @@ fallback providerを完了可能時間未満で開始しない160,000ms reserve�
 
 origin/main祖先のread-only immutable release `/Users/anicca/loops/connector/releases/20260827T062731-2cd76436`を切り、隔離92/92 test後にhourly native owner exact 1へloadした。official canary `wake-7da1a87dbbe80c08f7815f43`はCalendar 3,395ms、Luma 40,040ms、Connpass 374,794ms、manual action boundary 20,201ms、ranking wall 234,454msで約480秒後に狙ったhealthy terminalへ到達した。Connpass candidate Telegram ID `36827`、wake Telegram ID `36830`、launchd `runs 1 / exit 0 / not running`。Luma inventoryは`35/35/32/11/2`、Connpass inventoryは`283/283/264/125`、bundle `32→32`、新規talk receipt 0、Peatix discovery 0、未許可Connpass Submit 0、Calendar create 0、process/owner lock残留0。性能・manual boundary・release provenanceはacceptするが、候補依存のCG-44/45/47と24自然wakeのCG-48は代用せず未完を維持する。
 
-残るatomic orderは次だけを正本とする。各項目は前項のofficial receiptなしにskipしない。
+以下のlistは進捗520時点の履歴であり、current正本は`0.0.3 Atomic TODO SSOT`と`0.0.3.1 Current operational incident contract`だけである。
 
 1. **CG-28 response watch** official Gmail threadを各監視境界でread-only再取得する。明示許可が届くまではConnpass external Submit 0とmanual Telegram boundaryを維持し、許可が届いた時だけscopeを保存して次の自然wakeから有効化する。
 2. **CG-44 Luma live bundle** 自然hourly wakeで本物のLuma strong/moderate候補を待ち、official registration/pending readback、event Calendar exact 1、PNG/receipt、Telegram IDs、applied bundle exact 1を同一event identityで閉じる。候補不在を過去bundleで代用せず次wakeへ継続する。
@@ -9622,7 +9635,7 @@ origin/main祖先のread-only immutable release `/Users/anicca/loops/connector/r
 
 origin/main祖先のread-only immutable release `/Users/anicca/loops/connector/releases/20260827T064926-b67966ec`は隔離97/97後、single hourly ownerへloadした。manual canary `wake-bbb7c33df6cd4ed64bd6a32e`はLuma 37,085ms、Connpass 342,431ms、manual boundary 37,516ms、Peatix 89,747msを経て約570秒で`completed_no_effect / providers_exhausted / consecutive_failure_count 0`、Telegram candidate `36875`、wake `36877`、launchd exit 0。Luma inventory `35/35/32/11/2`、Connpass `283/283/264/125`、attendance bundle 32、talk bundle/transition 0、未許可Connpass Submit 0、process/owner lock 0。実open LT候補はなく、成功を代用しない。
 
-CG-48のsoak baselineはJST 06:59、loaded launchd `runs=1`はこのmanual canaryのみ。durable countはwake report 217、delivery 229、action 3,055、Connpass boundary 8、attendance bundle 32、talk bundle 0。以後manual kickstartを行わず、同じloaded releaseの`runs=2〜25`だけを24回の自然hourly receiptとして数える。
+進捗521当時のCG-48 soak baselineはJST 06:59、loaded launchd `runs=1`はこのmanual canaryのみ。durable countはwake report 217、delivery 229、action 3,055、Connpass boundary 8、attendance bundle 32、talk bundle 0だった。この旧24回gateは履歴であり、current短期release gateを上書きしない。
 
 ### O1B-25進捗522（Luma long-description ranking repair / soak restart）
 
@@ -9630,4 +9643,4 @@ CG-48のsoak baselineはJST 06:59、loaded launchd `runs=1`はこのmanual canar
 
 origin/main exact SHAのread-only immutable release `/Users/anicca/loops/connector/releases/20260827T171500-57ed7c000`を作成し、single hourly ownerへloadした。manual canary `wake-89092cc25c3296d557b2ee34`はCalendar 42,162ms、Luma discovery 59,251msをsuccessで通過し、Luma rankingは1 request / 8,040ms、inventoryは`26/26/23/9/2`。Connpassは`286/286/286/265/128`、ranking wall 206,418ms、未許可Submit 0のmanual boundaryを維持し、terminalは`completed_no_effect / fallback_deferred_for_wake_budget / consecutive_failure_count 0`、Telegram wake ID `37843`、launchd exit 0、process/owner-lock残留0。旧Luma generic failureは実経路で解消した。
 
-CG-48は旧releaseの失敗列を破棄して再開する。新baselineはloaded launchd `runs=1`（上記manual canaryのみ）、wake report 226、delivery 238、actionはcanary終了時のdurable countを基準にする。以後manual kickstartを行わず、同じreleaseの`runs=2〜25`だけを24回連続の自然hourly receiptとして数える。残るatomic orderは進捗520のCG-28→CG-44→CG-45→CG-47→CG-48→CG-51を維持する。
+進捗522当時は旧releaseの失敗列を破棄し、loaded launchd `runs=1`（上記manual canaryのみ）、wake report 226、delivery 238、actionはcanary終了時のdurable countをbaselineにした。この旧24回gateと当時の残順序は履歴であり、current正本は`0.0.3`と`0.0.3.1`だけである。
