@@ -27,7 +27,7 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 この節は、後段の「現在TODO」「次の一件」「local-only」「self-funded agentは別product」という相反する記述を
 上書きする最新の実行順序SSOTである。後段は実装履歴・organ別acceptanceとして保持するが、次作業の選択には使わない。
 Upworkのterminal evidence、startup context、public claim、GA-01〜13Aは完了または履歴として保持する。
-次の一件はAtomic program ledger Seq 22 `ELZ-C09`で、Reflect/restartの既存Eliza/Life Manager contractを調査し、現在activeなC09だけを最小単位へ分解する。
+次の一件はAtomic program ledger Seq 23 `ELZ-L01`で、Lancersのfresh authと読み取り専用inventoryの既存contractを調査し、現在activeなL01だけを最小単位へ分解する。Phase C（Seq 14〜22）はgeneral-agent基盤として完了済み。
 
 #### 0.0.1 最新基盤決定 — ElizaOSを完全forkし、Life Managerをlocal OSSからmulti-tenant SaaSへ育てる
 
@@ -751,8 +751,8 @@ Goalへread-only帰属し、同じPGlite pathを別processで開いてbyte-stabl
 
 - [x] **C09-01** Goal reflection/restart reuse mapを固定する — canonical fork `1e386bd7…`のschema/Goal persistence/migration/PGlite restart sourceとC05 apply/restart evidenceをSHA256固定。tenant chain、reference-only projection、outcome/failure、cost/currency、time、same PGlite new-process readbackを採用。新table/event store/queue/raw receipt/provider branch/model persistence/restart write/review/TDDを棄却。private `reflect-restart-reuse-map.json` mode 0600、SHA256 `670f51e5…`、model/DB/provider/external effect 0。次はC09-02
 - [x] **C09-02** read-only Goal reflectionと既存service thin接続を実装する — Eliza fork PR #42、merge `1b15a791…`。new `goal-reflection.ts`＋existing `index.ts`の2 production fileだけでtenant-scoped existing Goal→PlanGraph→WorkItem→EffectIntent→OutcomeReceipt→EconomicReceipt chainをread-only投影。Goal ref、OutcomeReceipt/effect refs、outcome/failure code/created time、EconomicReceipt/outcome refs、kind/amount/currency/verification/occurred timeをID stable順でdeep-freeze。raw receipt/statement/provenance/provider/credential/payload、DB write、新table/dependency/service/action/provider/model 0。plugin typecheck PASS、新test/review 0。次はC09-03
-- [ ] **C09-03** same PGliteを別processで再openしreflection同一hashを実証する — process 1でexisting schemaへone Goal chain＋success/failure/cost/time fixtureをwriteしてservice read、close。process 2はwrite 0で同じDB/serviceをreadし、same hash/count/ref、writer/lock 0を確認。typecheck、model/provider/browser/marketplace/payment effect 0。canonical `reflect-restart-receipt.json` status=`PASS`をprivate保存する。次はC09-04
-- [ ] **C09-04** ELZ-C09をDONEにしPhase LのELZ-L01だけをNEXTへ更新する — Atomic program ledger Seq 22をDONE、Seq 23 L01だけを`IN_PROGRESS — NEXT`へ更新。以後Lancers L01→L25順序は不変。次はELZ-L01
+- [x] **C09-03** same PGliteを別processで再openしreflection同一hashを実証する — Eliza fork PR #43、merge `7949acef…`。別`bun` child process 2件がon-disk PGlite dirを順に開き、process 1がmigration適用＋success/failure/cost fixture writeとservice readの後close、process 2はwrite 0で同じdirを再openしsame hash/counts/reflectionを観測。distinct PID `78084`/`78114`、counts `{goals:1, plan_graphs:1, work_items:1, effect_intents:2, outcome_receipts:2, economic_receipts:2}`、canonical private `reflect-restart-receipt.json` mode 0600 status=`PASS`。typecheck exit 0/0 error、fresh adversarial review P0/P1 0（P2 2件は解消: test自身がcanonical pathへ書くよう修正、tsconfig除外は既存規約）。cold PGlite WASM compileが5s既定を超えてgreen testを落とす欠陥をtest timeoutで修正（cold 6.31s fail → 修正後pass）。model/provider/browser/marketplace/payment effect 0。次はC09-04
+- [x] **C09-04** ELZ-C09をDONEにしPhase LのELZ-L01だけをNEXTへ更新する — canonical `reflect-restart-receipt.json` status=`PASS`、fork merge `7949acef…`、typecheck exit 0、review open 0、external effect 0を再読出し。Atomic program ledger Seq 22をDONE、Seq 23 L01だけを`IN_PROGRESS — NEXT`へ更新。以後Lancers L01→L25順序は不変。次はELZ-L01
 
 Lancersでまだ新しい収益がないことは、この順序を飛ばす理由にしない。現時点はC09がactiveであり、新forkのgeneral-agent基盤が
 Lancers実環境へ到達していない。Lancersでの新規応募・契約・受領金・銀行着金はPhase C完了後のPhase Lで一つずつ実証する。
@@ -787,13 +787,13 @@ Lancers実環境へ到達していない。Lancersでの新規応募・契約・
 | 19 | ELZ-C06 capability and authorization | **DONE** | canonical private `capability-auth-receipt.json` mode 0600、SHA256 `5df6f3ee…`。fork `2a115b9e…`、provider-neutral manifest、opaque ref、real core consume-once、replay/expired/misbound拒否、exact human boundary、ordinary error保持、review open 0、model/provider/marketplace/payment 0 |
 | 20 | ELZ-C07 bounded model decision | **DONE** | canonical private `specialist-decision-receipt.json` mode 0600、SHA256 `dd8142a8…`。fork `934b6fc8…`、Codex SDK/Luna medium、model-authored candidate/tool/next graph、focused 3/3、typecheck、real runtime final exit 0、owner review waiver、open finding/effect/secret leak 0 |
 | 21 | ELZ-C08 effect/readback/replay kernel | **DONE** | canonical private `effect-receipt-kernel.json` mode 0600、SHA256 `decea1cb…`。fork `1e386bd7…`、fresh execute 1、replay additional execute 0、unknown-pre execute 0、ack-loss blind retry 0、typecheck、open finding/effect/secret leak 0 |
-| 22 | ELZ-C09 Reflect and plugin restart | **IN_PROGRESS — NEXT** | outcome/cost/time/failureをGoalへ帰属し、plugin restart後も同じstateを読む`reflect-restart-receipt.json` |
+| 22 | ELZ-C09 Reflect and plugin restart | **DONE** | canonical private `reflect-restart-receipt.json` mode 0600 status=`PASS`。fork merge `7949acef…`、別OS process 2件が同じon-disk PGlite dirを順に開き、process 2はwrite 0でsame hash/counts/reflectionを観測、distinct PID、writer/lock 0。typecheck exit 0、fresh adversarial review P0/P1 0、model/provider/browser/marketplace/payment effect 0 |
 
 ##### Phase L — Lancersを最初の実環境としてbankedまで閉じる
 
 | Seq | Atom | 状態 | 原子的完了条件 / named receipt |
 |---:|---|---|---|
-| 23 | ELZ-L01 fresh auth and read-only inventory | TODO | current account/login/opportunity/message/application/contract/financeを二回同値read、provider effect 0の`lancers-preflight-receipt.json` |
+| 23 | ELZ-L01 fresh auth and read-only inventory | **IN_PROGRESS — NEXT** | current account/login/opportunity/message/application/contract/financeを二回同値read、provider effect 0の`lancers-preflight-receipt.json` |
 | 24 | ELZ-L02 Opportunity/ApplicationIntent adapter | TODO | transport、stable entity、fee/currency、readbackだけを持ち、subjective judgment 0の`lancers-adapter-receipt.json` |
 | 25 | ELZ-L03 historical GA-10 fixture parity | TODO | Proposal `27861812`のfixtureをprovider call 0で同じterminal stateへ再生する`lancers-fixture-receipt.json` |
 | 26 | ELZ-L04 fresh authorized application | TODO | fresh candidate/authorization/intentから新Proposal ID一件をofficial readbackする`application-receipt.json` |
