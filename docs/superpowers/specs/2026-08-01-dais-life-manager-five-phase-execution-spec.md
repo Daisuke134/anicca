@@ -1032,8 +1032,8 @@ Calendarを無関係なeventで埋めること自体を成果にしない。
 
 | surface | current measured behavior | required behavior |
 |---|---|---|
-| schedule | production currentは`20260831T193835-aced5c6b` / SHA `aced5c6b…`、Connector labelとdaily-driver labelはfull release `20260831T192828-7ab5a318` / SHA `7ab5a318…`。`7ab5a318`はPR #3452/#3457を祖先に含む。native Connector owner exact 1、`StartInterval=3600`、別session applyでtimer reset後の自然wakeは未発生 | manual kickstartと途中reloadを使わず、最初の自然wakeでevidence recovery、その後2回でreplay-zeroを証明する |
-| cross-loop control plane | Capafy daily/healthcheckをrelease `1b85036d…`へexact-target applyした後、両plistのmtimeが`18:41:38–39 JST`に再変化しlaunchd run counterが0へresetした。loaded argvは同じ`1b85036d…`のためcode rollbackではなくcontrol-plane reloadである | Capafyがこのinstalled generationの自然daily terminalを取得しexplicit cleared messageを送るまで、global `loops/current`を動かさずall-label applyを禁止する。必要なapplyはexact `LIFE_MANAGER_APPLY_TARGET`だけで、Capafy labels/currentを保持する |
+| schedule | global currentは`20260831T195511-7b9257b6`。Connector、daily-driver、Marketing 13 labelsはfull release `20260831T192828-7ab5a318` / SHA `7ab5a318…`、Capafy daily/healthcheckは`20260831T193835-aced5c6b` / SHA `aced5c6b…`へ個別pinされている。native Connector owner exact 1、`StartInterval=3600`だが最新terminalはexit 2。Marketing 13 labelsはruns 0 / never exited | manual kickstartと途中reloadを使わず、各installed generationの最初の自然wakeでterminal/evidenceを取得する。global currentとloaded argvを同一視しない |
+| cross-loop control plane | Capafy R0.2.3のauthoritative installed generationは`aced5c6b…`。daily install event `3eb485675e2c938ba6ea4017`はruns 0 / never exited、health install event `9bb11d92a935ca77ed1a38f7`はruns 3 / exit 0。global currentが`7b9257b6…`へ進んでも両Capafy plist mtimeとloaded argvは`aced5c6b…`を保持している | explicit clearまでCapafy daily/healthcheckをreload、restart、stop、applyしない。targetless/all-label applyは禁止。global currentは両Capafy plist/loaded jobを変えない場合だけ移動可能 |
 | release completeness | 同一SHAの最初のrelease `20260831T153415-7255b4bb`はproduction依存`playwright-core`を欠き、Calendar read後のbrowser rail生成でexit 2。後続full releaseは3 dependency tree、154,232 entries、789,376,561 bytesを保持し、runtime requireを通る | apply前に全Git blob/mode、locked runtime dependency、required-module importを検証し、不完全releaseをloadedにしない |
 | browser owner | `127.0.0.1:9222`は`job-search-daily`、`[::1]:9222`は宣言済み`daily-driver`。PR #3452でproduction rail/target controller/leaseはIPv6 daily-driver exactへ固定し、wrong-profile IPv4を拒否した。Connector全696/696、isolated live targetはpage `1→2→1`、lease 0、provider effect 0 | 最初の自然wakeでloaded release自身がIPv6 targetを所有・cleanupし、job-search/Gig profile非干渉をreadbackする |
 | horizon | Calendar、Luma、connpassのactive primary pathはJST day 0〜27の28日 | 28日境界を維持 |
@@ -1142,10 +1142,10 @@ Calendarを無関係なeventで埋めること自体を成果にしない。
 
 ##### Global control-plane hold — Capafy R0.2.3 coordination
 
-- **State:** Capafy daily/healthcheckのloaded code SHAは維持されているが、外部reloadでrun counterが0へ戻ったため自然terminalは未証明。
-- **Hold:** global `/Users/anicca/loops/current`移動、release cut後のtargetless apply、all-label restart/reconcileを0にする。
-- **Allowed:** read-only監査、既存scheduleの自然wake、Capafy以外を含む将来のexact-target apply。ただしCapafy labels/currentを変えない。
-- **Release condition:** Capafy taskからinstalled generationの自然daily terminal取得後にexplicit quiet/cleared messageを受け取ること。時間経過やprocess不在だけで解除しない。
+- **State:** authoritative generationは`20260831T193835-aced5c6b`。dailyはruns 0 / never exited、healthcheckはruns 3 / exit 0。global currentの後続移動は両loaded jobを変更していない。
+- **Hold:** `ai.anicca.capafy-loop-daily`と`ai.anicca.capafy-loop-healthcheck`のreload、restart、stop、applyを0にする。targetless/all-label applyも0にする。
+- **Allowed:** read-only監査、既存scheduleの自然wake、両Capafy plist/loaded jobを変えないglobal current移動、他labelへのexact-target apply。
+- **Release condition:** `aced5c6b` dailyがruns 1以上かつterminal、healthcheckがexit 0を維持し、official Agent/readback/replay検証が完了した後、Capafy taskからexplicit quiet/cleared messageを受け取ること。時間経過やprocess不在だけで解除しない。
 - **Success boundary:** hold遵守はCapafy business outcome、Connector completion、Marketing publicationの成功証拠ではない。
 
 ##### Immediate recovery checklist — CG-44 / CG-45 / CG-51 substeps
