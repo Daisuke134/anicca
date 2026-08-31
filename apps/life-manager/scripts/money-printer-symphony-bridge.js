@@ -8,13 +8,10 @@ const TENANT_RE = /^[a-z0-9][a-z0-9._-]{0,199}$/;
 const HEX64_RE = /^[0-9a-f]{64}$/;
 const SECRET_RE = /^[A-Za-z0-9_-]{32,256}$/;
 const MONEY_RE = /^[0-9]+$/;
-const COOKIE_NAMES = new Set(["lm_panel_scope", "lm_panel_session", "__Host-lm_panel_session"]);
 const CLAIM_PATH = "/api/internal/money-printer/symphony/claim";
 const ISSUE_PATH = "/api/internal/money-printer/symphony/issue";
 const RESULT_PATH = "/api/internal/money-printer/symphony/result";
 const CLOSE_PATH = "/api/internal/money-printer/symphony/close";
-const GUEST_PATH = "/money-printer";
-const WORKROOM_PATH = "/api/panel/money-printer/workroom";
 const ISSUE_REPO = "Daisuke134/life-manager-workrooms";
 const ISSUE_LABEL = "money-printer";
 const ISSUE_URL_RE = /^https:\/\/github\.com\/Daisuke134\/life-manager-workrooms\/issues\/([1-9][0-9]*)$/;
@@ -41,7 +38,7 @@ const RESULT_READBACK_KEYS = ["tenant_id", "dispatch_id", "job_id", "status", "r
 const HUMAN_RESULT_READBACK_KEYS = [...RESULT_READBACK_KEYS, "task_id", "task_status", "version"];
 const PUBLIC_TEXT_RE = /^[^\u0000-\u001f\u007f]+$/;
 const ISSUE_REF_RE = /^github-issue:\/\/Daisuke134\/life-manager-workrooms\/[1-9][0-9]*$/;
-const CLAIM_BASE_KEYS = ["tenant_id", "dispatch_id", "job_id", "round", "status", "answered_human_boundaries"];
+const CLAIM_BASE_KEYS = ["tenant_id", "dispatch_id", "job_id", "round", "status", "answered_human_boundaries", "workroom"];
 const CLAIM_RECOVERY_KEYS = [...CLAIM_BASE_KEYS, "issue_ref"];
 const CLOSE_READBACK_KEYS = ["tenant_id", "dispatch_id", "job_id", "status", "issue_ref", "result_ref", "result_hash"];
 const RECOVERY_STATUSES = new Set(["mirrored", "result_ready", "consumed"]);
@@ -896,25 +893,10 @@ function claimedDispatch(body, config) {
     round: row.round,
     status: row.status,
     answered_human_boundaries: answeredHumanBoundaries,
+    workroom: row.workroom,
   };
   if (status !== "claimed") dispatch.issue_ref = row.issue_ref;
   return dispatch;
-}
-
-function cookieFrom(response) {
-  const headers = response && response.headers;
-  const values = [];
-  if (headers && typeof headers.getSetCookie === "function") values.push(...headers.getSetCookie());
-  if (headers && typeof headers.raw === "function") values.push(...(headers.raw()["set-cookie"] || []));
-  if (!values.length && headers && typeof headers.get === "function") {
-    const value = headers.get("set-cookie");
-    if (value) values.push(value);
-  }
-  for (const raw of values) {
-    const match = String(raw).match(/(?:^|,\s*)(lm_panel_scope|lm_panel_session|__Host-lm_panel_session)=([^;,\s]+)/);
-    if (match && COOKIE_NAMES.has(match[1])) return `${match[1]}=${match[2]}`;
-  }
-  fail("bridge guest cookie missing");
 }
 
 function expectedJobRef(tenantId, jobId) {
@@ -977,19 +959,9 @@ async function claimMoneyPrinterWorkPacket(config, deps = {}) {
   const dispatch = claimedDispatch(await json(claim), validated);
   if (dispatch === null) return Object.freeze({ status: "idle" });
 
-  const guest = await request(fetchImpl, `${validated.apiBaseUrl}${GUEST_PATH}`, {
-    method: "GET", headers: { accept: "text/html" },
-  }, signal);
-  responseStatus(guest);
-  const cookie = cookieFrom(guest);
-  const workroomUrl = `${validated.apiBaseUrl}${WORKROOM_PATH}?opportunity_id=${dispatch.job_id.slice("goal:".length)}`;
-  const workroom = await request(fetchImpl, workroomUrl, {
-    method: "GET", headers: { accept: "application/json", Cookie: cookie },
-  }, signal);
-  responseStatus(workroom);
   const result = {
     status: dispatch.status,
-    packet: workroomPacket(await json(workroom), validated, dispatch),
+    packet: workroomPacket(dispatch.workroom, validated, dispatch),
   };
   if (dispatch.status !== "claimed") result.issue_ref = dispatch.issue_ref;
   return Object.freeze(result);

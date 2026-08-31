@@ -235,7 +235,33 @@ async function safeClaimWithAnswered(row, uid, store) {
     : safe.round === 1 ? [] : null;
   const answered = answeredHumanBoundaries(rows, { uid: safe.tenant_id, jobId: safe.job_id });
   if ((safe.round === 1 && answered.length !== 0) || (safe.round > 1 && answered.length === 0)) conflict();
-  return Object.freeze({ ...safe, answered_human_boundaries: answered });
+  if (typeof store.readOpportunity !== "function") conflict();
+  const opportunityId = safe.job_id.slice("goal:".length);
+  const opportunity = await store.readOpportunity({
+    uid: safe.tenant_id,
+    opportunity_id: opportunityId,
+    goal_ref: `intent-entry://${safe.tenant_id}/${opportunityId}`,
+  });
+  if (!opportunity || opportunity.uid !== safe.tenant_id
+    || opportunity.opportunity_id !== opportunityId
+    || typeof opportunity.title !== "string" || !opportunity.title.trim() || opportunity.title.length > 300
+    || typeof opportunity.source_url !== "string" || !opportunity.source_url.trim()
+    || typeof opportunity.status !== "string" || !opportunity.status.trim() || opportunity.status.length > 64
+    || (opportunity.value_minor !== null && (typeof opportunity.value_minor !== "string" || !/^[0-9]+$/.test(opportunity.value_minor)))
+    || (opportunity.currency !== null && (typeof opportunity.currency !== "string" || !/^[A-Z]{3}$/.test(opportunity.currency)))) conflict();
+  let source;
+  try { source = new URL(opportunity.source_url); } catch { conflict(); }
+  if (source.protocol !== "https:" || source.username || source.password) conflict();
+  const workroom = Object.freeze({
+    opportunity_id: opportunityId,
+    title: opportunity.title.trim(),
+    source_url: opportunity.source_url.trim(),
+    value_minor: opportunity.value_minor,
+    currency: opportunity.currency,
+    status: opportunity.status.trim(),
+    job_ref: `runtime-job://${encodeURIComponent(safe.tenant_id)}/${encodeURIComponent(safe.job_id)}`,
+  });
+  return Object.freeze({ ...safe, answered_human_boundaries: answered, workroom });
 }
 
 function safeIssue(row, input) {
