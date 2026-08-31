@@ -252,6 +252,7 @@ test("KokuchPro rejects semantically invalid ISO calendar dates", () => {
 const LIST_URL = "https://www.kokuchpro.com/s/area-%E6%9D%B1%E4%BA%AC%E9%83%BD/charge-0/?et=0&start_date=2026-08-12&end_date=2026-08-26&enabled=1&sort=date";
 const LOGIN_URL = "https://www.kokuchpro.com/auth/login/";
 const ENTRY_URL = `${ROOT}entry/`;
+const REGISTERED_ENTRY_URL = `https://www.kokuchpro.com/entry/${"cd".repeat(16)}/`;
 
 function jsonLdDetail(url = ROOT, overrides = {}) {
   const occurrence = url === ROOT ? null : OCCURRENCE;
@@ -549,13 +550,16 @@ test("KokuchPro readback classifies exact absent and auth-required boundaries", 
   assert.deepEqual(await workflow.readProviderState({ page: loginPage, candidate }), { status: "auth_required" });
 });
 
-test("KokuchPro readback accepts canonical registration evidence and a same-event detail page", async () => {
+test("KokuchPro readback accepts equivalent official canonical registration links and a same-event detail page", async () => {
   const candidate = normalizeKokuchProDetail({ binding: binding(), detail: detail(), now: NOW });
   const canonicalPage = readbackPage(ROOT, {
     entry_forms: [],
     password_count: 0,
     login_forms: [],
-    registration_links: [{ href: ENTRY_URL, text: "申込情報を確認する", visible: true }],
+    registration_links: [
+      { href: REGISTERED_ENTRY_URL, text: "申込情報を確認する", visible: true },
+      { href: REGISTERED_ENTRY_URL, text: "申込情報を確認する", visible: true },
+    ],
   });
   const detailUrl = `${ROOT}entry/detail/`;
   const detailPage = readbackPage(detailUrl, {
@@ -578,8 +582,8 @@ test("KokuchPro readback rejects ambiguous or foreign registration evidence", as
     [ROOT, {
       entry_forms: [], password_count: 0, login_forms: [],
       registration_links: [
-        { href: ENTRY_URL, text: "申込情報を確認する", visible: true },
-        { href: ENTRY_URL, text: "申込情報を確認する", visible: true },
+        { href: REGISTERED_ENTRY_URL, text: "申込情報を確認する", visible: true },
+        { href: `https://www.kokuchpro.com/entry/${"ef".repeat(16)}/`, text: "申込情報を確認する", visible: true },
       ],
     }],
     [ROOT, {
