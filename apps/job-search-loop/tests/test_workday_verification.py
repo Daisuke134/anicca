@@ -1,14 +1,21 @@
+import asyncio
 import json
+import os
 import sqlite3
 import tempfile
 import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import AsyncMock, Mock, patch
 
+from job_search_loop.browser_agent.workday_account import MachineWorkdayCredentialStore
+from job_search_loop.workday_account_mail import complete_account_mail
 from job_search_loop.workday_credentials import ensure_credentials
 from job_search_loop.workday_verification import (
     VerificationError,
     VerificationStore,
+    VerificationTarget,
     extract_verification_target,
 )
 
@@ -80,6 +87,99 @@ class WorkdayVerificationTests(unittest.TestCase):
         self.assertNotIn("secret-token-123", serialized)
         self.assertNotIn(ACTIVATION_URL, serialized)
         self.assertEqual(len(receipt["url_sha256"]), 64)
+
+    def test_password_reset_completion_releases_recovery_queue_state(self):
+        credentials = self.root / "machine-credentials.json"
+        credentials.write_text(
+            json.dumps(
+                {
+                    "version": 1,
+                    "credentials": [
+                        {
+                            "service": f"workday:{TENANT}",
+                            "username": "candidate@example.com",
+                            "email": "candidate@example.com",
+                            "password": "Strong-Workday-Password-9!",
+                            "account_status": "recovery_requested",
+                        }
+                    ],
+                }
+            ),
+            encoding="utf-8",
+        )
+        os.chmod(credentials, 0o600)
+        reset_url = f"https://{TENANT}/crowdstrikecareers/passwordreset/token"
+        target = VerificationTarget(
+            "message-reset",
+            TENANT,
+            reset_url,
+            "a" * 64,
+            kind="password_reset",
+        )
+        password = SimpleNamespace(
+            control_type="password",
+            role="textbox",
+            label="New Password",
+            stable_id="id:password",
+            tag="input",
+        )
+        verify = SimpleNamespace(
+            control_type="password",
+            role="textbox",
+            label="Verify New Password",
+            stable_id="id:verify",
+            tag="input",
+        )
+        submit = SimpleNamespace(
+            control_type="button",
+            role="button",
+            label="Reset Password",
+            stable_id="automation:resetPassword",
+            tag="button",
+        )
+        observation = SimpleNamespace(controls=(password, verify, submit))
+        page = Mock(url=reset_url)
+        page.goto = AsyncMock()
+        page.wait_for_timeout = AsyncMock()
+        page.type_target = AsyncMock()
+        page.evaluate = AsyncMock(return_value="password has been reset")
+
+        async def finish_reset(_target):
+            page.url = f"https://{TENANT}/crowdstrikecareers/login"
+
+        page.click_target = AsyncMock(side_effect=finish_reset)
+        session = Mock()
+        session.attach = AsyncMock(return_value=Mock())
+        session.page.return_value = page
+        session.close_owned = AsyncMock()
+        builder = Mock(build=AsyncMock(return_value=observation))
+        with patch(
+            "job_search_loop.workday_account_mail.extract_verification_target_from_gmail",
+            return_value=target,
+        ), patch(
+            "job_search_loop.workday_account_mail.BrowserSession",
+            return_value=session,
+        ), patch(
+            "job_search_loop.workday_account_mail.ObservationBuilder",
+            return_value=builder,
+        ):
+            receipt = asyncio.run(
+                complete_account_mail(
+                    account="candidate@example.com",
+                    thread_id="thread-reset",
+                    message_id="message-reset",
+                    credential_store=credentials,
+                    database=self.database,
+                    endpoint="http://127.0.0.1:9222",
+                    gog="/gog",
+                )
+            )
+
+        self.assertEqual(receipt["status"], "opened")
+        self.assertEqual(
+            MachineWorkdayCredentialStore(credentials).account_status(JOB_URL),
+            "create_submitted",
+        )
 
     def test_untrusted_sender_tenant_scheme_path_and_ambiguity_fail_closed(self):
         cases = [

@@ -127,6 +127,9 @@ async def complete_account_mail(
                 or "password was reset" in visible
             ):
                 raise VerificationError("Workday did not visibly confirm password reset")
+            MachineWorkdayCredentialStore(credential_store).mark_account_status(
+                target.verification_url, "create_submitted"
+            )
         store.mark_opened(target.event_key, fence)
         return target.receipt("opened")
     except Exception:
