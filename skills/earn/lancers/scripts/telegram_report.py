@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 import hashlib
 import importlib.util
 import json
+import os
 from pathlib import Path
 import re
 import subprocess
@@ -26,7 +27,33 @@ STATE = Path.home() / ".local/state/anicca/lancers/application.json"
 DATABASE = STATE.with_name("telegram.sqlite3")
 LEDGER_DATABASE = STATE.with_name("marketplace-ledger.sqlite3")
 STOREFRONT_LOG = STATE.parent / "logs/storefront.stdout.log"
-TARGET = "0000000000"
+CHAT_CONFIG = Path.home() / ".config" / "anicca" / "lancers" / "telegram.env"
+
+
+def _report_chat() -> str:
+    """Where the owner report goes.
+
+    The chat id is not in the repository. It comes from the environment, or
+    from a private config file when the launchd job does not carry it — a
+    placeholder here sends every report to a chat that does not exist, and the
+    outbox records delivery_uncertain forever without anyone noticing.
+    """
+    for key in ("LANCERS_REPORT_CHAT", "GIG_REPORT_CHAT"):
+        value = os.environ.get(key, "").strip()
+        if value:
+            return value
+    try:
+        lines = CHAT_CONFIG.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return ""
+    for raw in lines:
+        name, _, value = raw.partition("=")
+        if name.strip() == "LANCERS_REPORT_CHAT":
+            return value.strip()
+    return ""
+
+
+TARGET = _report_chat()
 TOKYO = ZoneInfo("Asia/Tokyo")
 _LABELS = (("published", "受付中", "/myplan"), ("paused", "受付休止中", "/myplan/paused"), ("hidden", "非表示", "/myplan/archived"), ("draft", "下書き", "/myplan/draft"))
 _DEMAND_LABELS = (("search_impressions", "検索表示"), ("detail_views", "詳細閲覧"), ("favorites", "お気に入り"), ("inquiries", "相談"), ("orders", "注文"))
