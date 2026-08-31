@@ -441,7 +441,7 @@ def require_quality_terminals(
         }
     if advisory_seen and not force_advisory:
         raise InvariantError(
-            "editorial/reader advisory requires five-iteration force receipt"
+            "editorial/reader advisory requires single-evaluation force receipt"
         )
     return receipts
 
@@ -1375,7 +1375,7 @@ class PublicationStore:
                 for receipt in quality_receipts.values()
                 for key in ("editorial_gate", "reader_gate")
             ):
-                payload["quality_force_publish_after_iterations"] = 5
+                payload["quality_force_publish_after_iterations"] = 1
         with self._lock():
             if self.state_path.exists():
                 current = self._read_locked()
@@ -2600,7 +2600,7 @@ class PublicationStore:
             if (
                 receipt.get("editorial_gate") == "ADVISORY"
                 or receipt.get("reader_gate") == "ADVISORY"
-            ) and state.get("quality_force_publish_after_iterations") != 5:
+            ) and state.get("quality_force_publish_after_iterations") != 1:
                 return False
         return True
 

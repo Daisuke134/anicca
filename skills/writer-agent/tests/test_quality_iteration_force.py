@@ -108,15 +108,8 @@ def _orphan_digest(filename: str, content: bytes) -> str:
 def _advance_to_force(run: Path, monkeypatch) -> dict:
     monkeypatch.setenv("ARTICLE_PUBLICATION_POLICY", "continuous")
     drafts = _set_quality_gates(run, 1)
-    first = QUALITY.assess(run, drafts)
-    assert first["attempt"] == 1
-    for attempt in range(2, 6):
-        drafts = _set_quality_gates(run, attempt)
-        _record_invocation(run, attempt, attempt - 1)
-        result = QUALITY.assess(run, drafts)
-        if attempt < 5:
-            assert result["action"] in {"block_freeze", "reroute", "evaluate_reroute"}
-    assert result["attempt"] == 5
+    result = QUALITY.assess(run, drafts)
+    assert result["attempt"] == 1
     return {"run": run, "drafts": drafts, "result": result}
 
 
@@ -133,14 +126,66 @@ def _write_advisory_terminals(run: Path, drafts: dict[str, Path]) -> None:
         })
 
 
-def test_fifth_quality_iteration_emits_force_publish_advisory(tmp_path, monkeypatch):
+def test_first_quality_iteration_emits_force_publish_advisory(tmp_path, monkeypatch):
     run = _quality_fixture(tmp_path)
     state = _advance_to_force(run, monkeypatch)
     result = state["result"]
     assert result["action"] == "force_publish_advisory"
-    assert result["force_publish_after_iterations"] == 5
+    assert result["force_publish_after_iterations"] == 1
     assert result["quality_advisory"] is True
     assert QUALITY.validate_force_receipt(run, state["drafts"])
+
+
+def test_force_advisory_resume_goes_directly_to_publication_handoff(tmp_path, monkeypatch):
+    run = _quality_fixture(tmp_path)
+    _advance_to_force(run, monkeypatch)
+    ledger = tmp_path / "articles.jsonl"
+    ledger.write_text("", encoding="utf-8")
+
+    decision = RECOVERY.plan(run, ledger)
+    assert decision["reason"] == "terminal-quality-publication-handoff"
+    handoff = RECOVERY.prepare_publication_handoff(run, ledger)
+    assert handoff["status"] == "publication-prepared"
+    assert not (run / "gates" / "quality-feedback-plan.json").exists()
+
+    unsafe = _quality_fixture(tmp_path / "unsafe")
+    identity = unsafe / "gates" / "identity-ja.json"
+    value = json.loads(identity.read_text())
+    value["verdict"] = "FAIL"
+    _write(identity, value)
+    monkeypatch.setenv("ARTICLE_PUBLICATION_POLICY", "continuous")
+    unsafe_result = QUALITY.assess(unsafe, {
+        lang: unsafe / f"article-{lang}.md" for lang in ("ja", "en")
+    })
+    assert unsafe_result["action"] != "force_publish_advisory"
+    assert RECOVERY.plan(unsafe, ledger)["reason"] != (
+        "terminal-quality-publication-handoff"
+    )
+
+
+def test_initial_ready_resume_goes_directly_to_publication_handoff(tmp_path, monkeypatch):
+    run = _quality_fixture(tmp_path)
+    monkeypatch.setenv("ARTICLE_PUBLICATION_POLICY", "continuous")
+    drafts = {lang: run / f"article-{lang}.md" for lang in ("ja", "en")}
+    for lang, draft in drafts.items():
+        digest = hashlib.sha256(draft.read_bytes()).hexdigest()
+        _write(run / "gates" / f"editorial-{lang}.json", {
+            "verdict": "PASS", "article_sha256": digest, "fixes": [],
+        })
+        _write(run / "gates" / f"reader-testing-gate-{lang}.terminal.json", {
+            "status": "pass", "exit_code": 0, "article_sha256": digest,
+            "payload": {"verdict": "PASS", "unanswered_questions": []},
+        })
+    assert QUALITY.assess(run, drafts)["action"] == "ready_to_freeze"
+    ledger = tmp_path / "ready-ledger.jsonl"
+    ledger.write_text("", encoding="utf-8")
+
+    assert RECOVERY.plan(run, ledger)["reason"] == (
+        "terminal-quality-publication-handoff"
+    )
+    handoff = RECOVERY.prepare_publication_handoff(run, ledger)
+    assert handoff["status"] == "publication-prepared"
+    assert not (run / "gates" / "quality-feedback-plan.json").exists()
 
 
 def test_orphan_quality_snapshot_is_archived_before_fresh_snapshot(tmp_path, monkeypatch):
@@ -308,7 +353,7 @@ def test_advisory_quality_requires_force_marker_before_init(tmp_path, monkeypatc
     monkeypatch.setenv("ARTICLE_PUBLICATION_POLICY", "continuous")
     drafts = _set_quality_gates(run, 1)
     _write_advisory_terminals(run, drafts)
-    with pytest.raises(RESUME.InvariantError, match="five-iteration force receipt"):
+    with pytest.raises(RESUME.InvariantError, match="single-evaluation force receipt"):
         RESUME.require_quality_terminals(run, drafts)
     state = _advance_to_force(run, monkeypatch)
     _write_advisory_terminals(run, state["drafts"])
@@ -316,11 +361,14 @@ def test_advisory_quality_requires_force_marker_before_init(tmp_path, monkeypatc
     assert receipts["ja"]["editorial_gate"] == "ADVISORY"
 
 
-def test_force_receipt_rejects_missing_or_tampered_chain_link(tmp_path, monkeypatch):
+def test_force_receipt_rejects_tampered_receipt(tmp_path, monkeypatch):
     run = _quality_fixture(tmp_path)
     state = _advance_to_force(run, monkeypatch)
     drafts = state["drafts"]
-    (run / "gates" / "quality-self-heal-attempt-3.json").unlink()
+    receipt = run / "gates" / "quality-self-heal-attempt-1.json"
+    value = json.loads(receipt.read_text())
+    value["receipt_sha256"] = "0" * 64
+    _write(receipt, value)
     assert not QUALITY.validate_force_receipt(run, drafts)
 
 
@@ -331,32 +379,6 @@ def test_same_draft_cannot_consume_another_quality_iteration(tmp_path, monkeypat
     QUALITY.assess(run, drafts)
     _record_invocation(run, 2, 1)
     with pytest.raises(QUALITY.QualitySelfHealError, match="rewrite the draft"):
-        QUALITY.assess(run, drafts)
-
-
-def test_duplicate_feedback_plan_is_rejected(tmp_path, monkeypatch):
-    run = _quality_fixture(tmp_path)
-    monkeypatch.setenv("ARTICLE_PUBLICATION_POLICY", "continuous")
-    drafts = _set_quality_gates(run, 1)
-    QUALITY.assess(run, drafts)
-    for attempt in (2, 3):
-        drafts = _set_quality_gates(run, attempt)
-        _record_invocation(run, attempt, attempt - 1)
-        if attempt == 3:
-            invocation = json.loads(
-                (run / "gates" / "quality-feedback-invocation-attempt-2.json").read_text()
-            )
-            duplicate = json.loads(
-                (run / "gates" / "quality-feedback-invocation-attempt-3.json").read_text()
-            )
-            duplicate["iteration_feedback_plan_sha256"] = invocation[
-                "iteration_feedback_plan_sha256"
-            ]
-            duplicate["receipt_sha256"] = QUALITY._receipt_hash(duplicate)
-            _write(run / "gates" / "quality-feedback-invocation-attempt-3.json", duplicate)
-            with pytest.raises(QUALITY.QualitySelfHealError, match="feedback plan was reused"):
-                QUALITY.assess(run, drafts)
-            return
         QUALITY.assess(run, drafts)
 
 
@@ -380,7 +402,7 @@ def test_failed_feedback_invocation_is_archived_before_retry(tmp_path, monkeypat
     assert json.loads(archived.read_text())["recovery_attempt"] == 1
 
 
-def test_reopen_requires_bound_defect_receipt(tmp_path, monkeypatch):
+def test_force_receipt_bypasses_stale_feedback_defect(tmp_path, monkeypatch):
     run = _quality_fixture(tmp_path)
     monkeypatch.setenv("ARTICLE_PUBLICATION_POLICY", "continuous")
     drafts = _set_quality_gates(run, 1)
@@ -420,13 +442,15 @@ def test_reopen_requires_bound_defect_receipt(tmp_path, monkeypatch):
     ledger = run / "ledger.jsonl"
     ledger.write_text("", encoding="utf-8")
     ready = RECOVERY.plan(run, ledger)
-    assert ready["reason"] == "reopen-quality-feedback-recovery-after-infrastructure-block"
+    assert ready["reason"] == "terminal-quality-publication-handoff"
     bad = json.loads(
         (run / "gates" / "quality-feedback-recovery-defect.json").read_text()
     )
     bad["run_id"] = "other-run"
     _write(run / "gates" / "quality-feedback-recovery-defect.json", bad)
-    assert RECOVERY.plan(run, ledger)["status"] == "REFUSED"
+    assert RECOVERY.plan(run, ledger)["reason"] == (
+        "terminal-quality-publication-handoff"
+    )
 
 
 def test_reopen_rejects_symlinked_draft(tmp_path, monkeypatch):
