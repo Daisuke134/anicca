@@ -90,11 +90,13 @@ class WorkSyncTests(unittest.TestCase):
         # out of read_only_inventory arrives at _post_reply.
         import ast
         tree = ast.parse(WORK_SYNC_PATH.read_text(encoding="utf-8"))
+        # Attribute calls count too, so routing the reply through a module
+        # (application_tick._post_reply(...)) cannot slip past this.
         calls = {
             node.name: {
-                child.func.id
+                child.func.id if isinstance(child.func, ast.Name) else child.func.attr
                 for child in ast.walk(node)
-                if isinstance(child, ast.Call) and isinstance(child.func, ast.Name)
+                if isinstance(child, ast.Call) and isinstance(child.func, (ast.Name, ast.Attribute))
             }
             for node in tree.body
             if isinstance(node, ast.FunctionDef)
