@@ -414,14 +414,26 @@ Latest verified recovery state:
   `https://coconala.com/talkrooms/18211957` with complete history coverage and no customer effect.
 - usa `18214856` is still **not delivered**. There is no NOTE publication URL, no
   `delivery/paid-remote-result.json`, and no Coconala message containing a published NOTE URL. The latest
-  official seller message only says the existing NOTE account was found and will be used. Its current
-  `paid-work-decision.json` remains stale v17 `await_buyer`, so the next Paid natural pass must regenerate
-  v18, use the private seller-owned NOTE/BingX resources, publish the actual 3,000–5,000-character article,
-  verify the public NOTE URL, submit that URL once, read it back, and replay zero.
-- No four-room completion claim is allowed yet. After browser admission is free, the next Paid natural pass
-  must refresh all nine rooms successfully, then start Ryuu, usa, 逃げ因子, and snow project owners
-  concurrently. Official Coconala readbacks remain serialized because the four lanes share one authenticated
-  browser; article/site/report/image production remains parallel in isolated project workspaces.
+  official seller message only says the existing NOTE account was found and will be used. Its decision is now
+  v18 `actionable/remote` with no unresolved input: use the private seller-owned NOTE/BingX resources, publish
+  the actual 3,000–5,000-character article, verify the public NOTE URL, submit that URL once, read it back,
+  and replay zero.
+- Ryu `18211957` is v18 `actionable/remote`, but is still **not complete for the current revision**. The
+  preserved Netlify result proves an older profile-navigation deployment, not the current HOME headings,
+  schedule filters, banners, pricing area, and questionnaire requirements. Paid must update and verify the
+  same authorized live target, reconcile the already-read-back URL messages, and send no duplicate URL.
+- 逃げ因子 `18211838` is v18 `actionable/file` with the confirmed start date and no unresolved input. The
+  earlier scope question and preliminary research are not the contracted source-backed overall/class/
+  racecourse report. Paid must produce and submit that buyer-usable report with formal delivery off.
+- snow `18218780` is v18 `actionable/file` with no unresolved input, but has no `paid-work-result.json` or
+  buyer-visible JPG. Paid must retrieve the supplied TIF, produce the specified full-resolution edit, submit
+  it for review with formal delivery off, and read it back.
+- No four-room completion claim is allowed yet. The latest aggregate is `pending/browser_lease_busy` behind
+  Apply, with effect 0 and failed 0. After browser admission is free, Paid must refresh all nine rooms and
+  start the four project owners concurrently. Official Coconala readbacks remain serialized because the four
+  lanes share one authenticated browser; article/site/report/image production remains parallel in isolated
+  project workspaces. Completion requires actual NOTE publication, current live-site revision, report and JPG
+  submission, exact-room readbacks, aggregate `failed=0`, then a second natural replay with duplicate effects 0.
 
 3. [ ] byusco `18171890`: invalidate the stale note-only decision, consume the latest request,
    publish the reviewed article to the agreed anicca AI blog through the installed owner, read
