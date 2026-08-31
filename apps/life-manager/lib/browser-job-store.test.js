@@ -67,10 +67,77 @@ test("enqueue is idempotent on tenant and Telegram message and returns the exist
 
   assert.deepEqual(result, { created: false, job: existing });
   assert.equal(calls.length, 2);
-  assert.match(calls[0].sql, /ON CONFLICT \(uid, telegram_chat_id, telegram_message_id\) DO NOTHING/i);
+  assert.match(calls[0].sql, /ON CONFLICT DO NOTHING/i);
   assert.match(calls[0].sql, /principal_kind/i);
   assert.equal(calls[0].params[0], "u-1");
   assert.match(calls[1].sql, /WHERE uid = \$1 AND telegram_chat_id = \$2 AND telegram_message_id = \$3/i);
+});
+
+test("a Symphony workroom browser job carries one tenant-bound effect and no Telegram identity", () => {
+  const job = buildBrowserJob({
+    uid: "judge-1",
+    sourceKind: "symphony",
+    sourceRef: `symphony-dispatch://${"a".repeat(64)}`,
+    jobId: `goal:${"b".repeat(64)}`,
+    dispatchId: "a".repeat(64),
+    effectKey: "c".repeat(64),
+    rawPrompt: "Apply to the selected Mercor role",
+    classification: {
+      goal: "Open https://work.mercor.com/explore and inspect the selected role",
+      actionKind: "mercor_application",
+      locale: "en",
+      requiresLogin: true,
+      principalKind: "user_provided",
+    },
+  });
+
+  assert.equal(job.source_kind, "symphony");
+  assert.equal(job.source_ref, `symphony-dispatch://${"a".repeat(64)}`);
+  assert.equal(job.job_id, `goal:${"b".repeat(64)}`);
+  assert.equal(job.dispatch_id, "a".repeat(64));
+  assert.equal(job.effect_key, "c".repeat(64));
+  assert.equal(job.telegram_chat_id, null);
+  assert.equal(job.telegram_message_id, null);
+  assert.equal(job.telegram_update_id, null);
+});
+
+test("Symphony enqueue reconciles replay by tenant and effect key", async () => {
+  const calls = [];
+  const existing = {
+    id: "job-existing",
+    uid: "judge-1",
+    source_kind: "symphony",
+    effect_key: "c".repeat(64),
+    status: "queued",
+  };
+  const query = async (sql, params) => {
+    calls.push({ sql, params });
+    if (/INSERT INTO public\.lm_browser_jobs/i.test(sql)) return { rows: [] };
+    return { rows: [existing] };
+  };
+
+  const result = await enqueueBrowserJob({
+    uid: "judge-1",
+    sourceKind: "symphony",
+    sourceRef: `symphony-dispatch://${"a".repeat(64)}`,
+    jobId: `goal:${"b".repeat(64)}`,
+    dispatchId: "a".repeat(64),
+    effectKey: "c".repeat(64),
+    rawPrompt: "Apply to the selected Mercor role",
+    classification: {
+      goal: "Open https://work.mercor.com/explore and inspect the selected role",
+      actionKind: "mercor_application",
+      locale: "en",
+      requiresLogin: true,
+      principalKind: "user_provided",
+    },
+  }, { query });
+
+  assert.deepEqual(result, { created: false, job: existing });
+  assert.match(calls[0].sql, /source_kind, source_ref, job_id, dispatch_id, effect_key/i);
+  assert.match(calls[0].sql, /ON CONFLICT DO NOTHING/i);
+  assert.match(calls[1].sql, /WHERE uid = \$1 AND effect_key = \$2/i);
+  assert.deepEqual(calls[1].params, ["judge-1", "c".repeat(64)]);
 });
 
 test("claim uses the concurrency-safe RPC with a lease long enough for cloud discovery plus CUA", async () => {

@@ -1,5 +1,11 @@
 # execution-notes.md — sprint-4 M1+M2
 
+## Money Printer cloud Goal — active
+
+- C00 complete: public Money Printer 200/WebMCP、Railway life-call/worker/Steel RUNNING、private Steel health 200、browser jobs ON、required DB tables present。
+- Current blockers measured: local Symphony `entrypoint_exit_1`; local Mercor browser loaded; browser-job production schema remains Telegram-only。
+- C01 code-complete: additive workroom/effect migration + store path、related tests 26/26。Production transaction/apply readback pending。
+
 ## Active /goal
 `GOAL-sprint-4-M1-M2.md` (mailed to Dais via Resend id `0493d1f1-...`).
 

@@ -17,6 +17,8 @@ const AUTH_TRACE_SQL = fs.readFileSync(path.join(
   __dirname,
   "../migrations/2026-07-29-lm-browser-job-auth-trace.sql",
 ), "utf8");
+const WORKROOM_PATH = path.join(__dirname, "../migrations/2026-08-31-lm-browser-job-workrooms.sql");
+const WORKROOM_SQL = fs.existsSync(WORKROOM_PATH) ? fs.readFileSync(WORKROOM_PATH, "utf8") : "";
 
 test("BROWSER-GEN-1 queue is tenant-bound, idempotent, and stores no raw prompt or credential", () => {
   assert.match(SQL, /CREATE TABLE IF NOT EXISTS public\.lm_browser_jobs/i);
@@ -81,4 +83,19 @@ test("auth trace forward migration upgrades the production trace allowlist", () 
   ]);
   assert.match(AUTH_TRACE_SQL, /octet_length\(COALESCE\(p_meta, '\{\}'::jsonb\)::text\) > 8192/i);
   assert.match(AUTH_TRACE_SQL, /jsonb_array_length\(trace\) < 100/i);
+});
+
+test("workroom migration preserves Telegram rows and adds one tenant-bound effect identity", () => {
+  assert.match(WORKROOM_SQL, /ADD COLUMN IF NOT EXISTS source_kind text/i);
+  assert.match(WORKROOM_SQL, /ADD COLUMN IF NOT EXISTS source_ref text/i);
+  assert.match(WORKROOM_SQL, /ADD COLUMN IF NOT EXISTS job_id text/i);
+  assert.match(WORKROOM_SQL, /ADD COLUMN IF NOT EXISTS dispatch_id text/i);
+  assert.match(WORKROOM_SQL, /ADD COLUMN IF NOT EXISTS effect_key text/i);
+  assert.match(WORKROOM_SQL, /SET source_kind = 'telegram'/i);
+  assert.match(WORKROOM_SQL, /SET source_ref = 'telegram-message:\/\/'/i);
+  assert.match(WORKROOM_SQL, /ALTER COLUMN telegram_chat_id DROP NOT NULL/i);
+  assert.match(WORKROOM_SQL, /source_kind IN \('telegram', 'panel', 'symphony'\)/i);
+  assert.match(WORKROOM_SQL, /source_kind = 'telegram'[\s\S]*telegram_chat_id IS NOT NULL[\s\S]*source_kind IN \('panel', 'symphony'\)[\s\S]*telegram_chat_id IS NULL/i);
+  assert.match(WORKROOM_SQL, /CREATE UNIQUE INDEX[\s\S]*\(uid, effect_key\)[\s\S]*WHERE effect_key IS NOT NULL/i);
+  assert.doesNotMatch(WORKROOM_SQL, /\braw_prompt\b|\bpassword\b|\bcookie\b|\bauth_token\b/i);
 });
