@@ -350,6 +350,7 @@ function renderPanelPage(options = {}) {
     .panel-section:nth-child(5) { grid-column: span 12; animation-delay: 320ms; }
     .panel-section:nth-child(6) { grid-column: span 12; animation-delay: 360ms; }
     .panel-section[data-panel-section="money-printer"] { grid-column: span 12; }
+    .panel-section[data-panel-section="automation-hub"] { grid-column: span 12; }
     .money-metrics, .money-board { display: grid; gap: 10px; }
     .money-metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-bottom: 18px; }
     .money-board { grid-template-columns: repeat(6, minmax(9rem, 1fr)); overflow-x: auto; }
@@ -363,6 +364,31 @@ function renderPanelPage(options = {}) {
     .money-human-actions { display: flex; gap: 8px; margin-top: 10px; }
     .money-browser-takeover { width: 100%; height: min(58vh, 520px); margin-top: 12px; border: 1px solid var(--line-dark); }
     .money-webmcp-status { margin: 14px 0 0; color: var(--ink-soft); font-size: .78rem; }
+    .automation-toolbar, .automation-master, .automation-sources { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .automation-toolbar { justify-content: space-between; margin-bottom: 18px; }
+    .automation-search { display: flex; flex: 1 1 24rem; gap: 8px; }
+    .automation-search input, .automation-name { min-width: 0; min-height: 44px; border: 1px solid var(--ink); border-radius: 0; padding: 8px 12px; background: var(--paper-bright); color: var(--ink); font: inherit; }
+    .automation-search input { flex: 1; }
+    .automation-search button, .automation-save, .automation-toggle { min-height: 44px; border: 1px solid var(--ink); padding: 8px 14px; background: var(--ink); color: var(--paper-bright); font: inherit; font-weight: 800; cursor: pointer; }
+    .automation-toggle[aria-checked="true"] { background: var(--success); }
+    .automation-search button:focus-visible, .automation-save:focus-visible, .automation-toggle:focus-visible, .automation-search input:focus-visible, .automation-name:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+    .automation-search button:disabled, .automation-save:disabled, .automation-toggle:disabled { cursor: wait; opacity: .55; }
+    .automation-source { padding: 5px 8px; border: 1px solid var(--line); color: var(--ink-soft); font-size: .68rem; font-weight: 800; }
+    .automation-source[data-status="ready"] { border-color: var(--success); color: var(--success); }
+    .automation-master { justify-content: space-between; margin: 18px 0; padding: 15px; border: 1px solid var(--line-dark); background: var(--paper-bright); }
+    .automation-master-copy { min-width: 0; flex: 1 1 20rem; }
+    .automation-master-copy h3, .automation-master-copy p { margin: 0; }
+    .automation-master-copy p { margin-top: 5px; color: var(--ink-soft); font-size: .75rem; line-height: 1.55; }
+    .automation-stack-editor { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; margin-bottom: 18px; }
+    .automation-catalog { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+    .automation-tool { position: relative; display: grid; gap: 8px; min-height: 160px; padding: 14px; border: 1px solid var(--line); background: var(--paper-bright); }
+    .automation-tool[data-selected="true"] { border-color: var(--success); box-shadow: inset 4px 0 0 var(--success); }
+    .automation-tool h3, .automation-tool p { margin: 0; }
+    .automation-tool p { color: var(--ink-soft); font-size: .73rem; line-height: 1.55; }
+    .automation-tool-meta { display: flex; justify-content: space-between; gap: 8px; font-size: .65rem; font-weight: 800; text-transform: uppercase; }
+    .automation-tool input { width: 20px; height: 20px; margin: auto 0 0; accent-color: var(--success); }
+    .automation-tool a { color: var(--accent); font-size: .7rem; font-weight: 800; }
+    .automation-runtime-note, .automation-status { color: var(--ink-soft); font-size: .75rem; line-height: 1.6; }
 
     .section-head {
       display: flex;
@@ -676,6 +702,7 @@ function renderPanelPage(options = {}) {
       .ledger-cost { text-align: left; }
       .settings-grid { grid-template-columns: 1fr; }
       .control-grid, .settings-controls { grid-template-columns: 1fr; }
+      .automation-catalog, .automation-stack-editor { grid-template-columns: 1fr; }
       .setting-group { padding: 17px 0; border-left: 0; border-top: 1px solid var(--line); }
       .setting-group:first-child { padding-top: 0; border-top: 0; }
       .setting-group:last-child { padding-bottom: 0; }
@@ -709,6 +736,10 @@ function renderPanelPage(options = {}) {
         <div class="section-body" data-panel-body aria-live="polite"><p class="loading">Money Printerの状態を確認しています。</p></div>
         <p class="money-webmcp-status" data-money-webmcp-status aria-live="polite"></p>
       </section>
+      ${guest ? "" : `<section class="panel-section" data-panel-section="automation-hub" data-state="loading" aria-labelledby="automation-hub-title">
+        <header class="section-head"><h2 id="automation-hub-title">Automation Hub</h2><span class="section-kicker">MCP control plane</span></header>
+        <div class="section-body" data-panel-body aria-live="polite"><p class="loading">MCP と automation tool を確認しています。</p></div>
+      </section>`}
       ${guest ? "" : `<section class="panel-section" data-panel-section="timeline" data-state="loading" aria-labelledby="timeline-title">
         <header class="section-head"><h2 id="timeline-title">今日の timeline</h2><span class="section-kicker">Today</span></header>
         <div class="section-body" data-panel-body aria-live="polite"><p class="loading">今日の予定を確認しています。</p></div>
@@ -746,6 +777,7 @@ function renderPanelPage(options = {}) {
 
     const panelEndpoints = Object.freeze({
       "money-printer": "/api/panel/money-printer",
+      ${guest ? "" : '"automation-hub": "/api/panel/automation-hub",'}
       ${guest ? "" : 'timeline: "/api/panel/timeline",'}
       ${guest ? "" : 'scores: "/api/panel/scores",'}
       ${guest ? "" : 'ledger: "/api/panel/ledger",'}
@@ -1084,6 +1116,86 @@ function renderPanelPage(options = {}) {
       return '<div class="settings-grid"><div class="setting-group"><p class="setting-label">CALL LANGUAGE</p><p class="setting-value">' + languageLabel(data.call_language) + '</p></div><div class="setting-group"><p class="setting-label">CALL SCHEDULE</p><p class="setting-value">' + escapeHtml(scheduleText) + '<br><span style="color:var(--ink-soft)">' + escapeHtml(schedule.time_zone || "timezone 未設定") + '</span></p></div><div class="setting-group"><p class="setting-label">接続状態</p><div class="connection-list">' + chips + '</div></div></div>';
     }
 
+    const automationSources = Object.freeze(["mcp-registry", "hugging-face", "product-hunt"]);
+    const automationSourceStates = Object.freeze(["ready", "unavailable", "setup_required"]);
+    const automationConnectionKinds = Object.freeze(["remote_mcp", "package_mcp", "hugging_face_mcp", "discovery_only"]);
+
+    function automationHttpsUrl(value) {
+      if (!displaySafeText(value, false)) return null;
+      try {
+        const url = new URL(value);
+        return url.protocol === "https:" && url.hostname && !url.username && !url.password ? url.toString() : null;
+      } catch { return null; }
+    }
+
+    function validAutomationSecrets(value) {
+      return Array.isArray(value) && value.length <= 20 && value.every(function (item) { return /^[A-Za-z][A-Za-z0-9_-]{0,79}$/.test(item); });
+    }
+
+    function validAutomationCatalogItem(item) {
+      return displayExactKeys(item, ["catalog_id", "source", "name", "description", "connection_kind", "endpoint", "source_url", "version", "required_secrets", "selectable"])
+        && displaySafeText(item.catalog_id, false) && automationSources.includes(item.source)
+        && displaySafeText(item.name, false) && displaySafeText(item.description, true)
+        && automationConnectionKinds.includes(item.connection_kind)
+        && (item.endpoint === null || Boolean(automationHttpsUrl(item.endpoint)))
+        && Boolean(automationHttpsUrl(item.source_url))
+        && (item.version === null || displaySafeText(item.version, false))
+        && validAutomationSecrets(item.required_secrets) && typeof item.selectable === "boolean";
+    }
+
+    function validAutomationStackTool(item) {
+      return displayExactKeys(item, ["catalog_id", "source", "name", "description", "connection_kind", "endpoint", "source_url", "version", "required_secrets"])
+        && validAutomationCatalogItem({ ...item, selectable: true });
+    }
+
+    function validateAutomationHubData(data) {
+      if (!displayExactKeys(data, ["query", "sources", "items", "stack", "limits", "runtime", "csrf"])
+        || !displaySafeText(data.query, false)
+        || !Array.isArray(data.sources) || data.sources.length !== 3
+        || data.sources.some(function (item, index) { return !displayExactKeys(item, ["id", "label", "status", "detail"]) || item.id !== automationSources[index] || !displaySafeText(item.label, false) || !automationSourceStates.includes(item.status) || !displaySafeText(item.detail, false); })
+        || !Array.isArray(data.items) || data.items.length > 36 || data.items.some(function (item) { return !validAutomationCatalogItem(item); })
+        || !displayExactKeys(data.stack, ["id", "name", "desired_state", "observed_state", "revision", "last_error_code", "tools"])
+        || data.stack.id !== "default" || !displaySafeText(data.stack.name, false)
+        || !["off", "on"].includes(data.stack.desired_state)
+        || !["stopped", "pending_start", "running", "pending_stop", "error"].includes(data.stack.observed_state)
+        || !Number.isSafeInteger(data.stack.revision) || data.stack.revision < 0
+        || (data.stack.last_error_code !== null && !displaySafeText(data.stack.last_error_code, false))
+        || !Array.isArray(data.stack.tools) || data.stack.tools.length > 12 || data.stack.tools.some(function (item) { return !validAutomationStackTool(item); })
+        || !displayExactKeys(data.limits, ["max_tools"]) || data.limits.max_tools !== 12
+        || !displayExactKeys(data.runtime, ["mode", "detail"]) || data.runtime.mode !== "approval_control" || !displaySafeText(data.runtime.detail, false)
+        || !displaySafeText(data.csrf, false)) throw new Error("invalid automation-hub payload");
+      return data;
+    }
+
+    let automationHubData = null;
+    let automationCsrf = "";
+
+    function renderAutomationHub(data) {
+      validateAutomationHubData(data);
+      automationHubData = data;
+      automationCsrf = data.csrf;
+      const stack = data.stack;
+      const selected = new Set(stack.tools.map(function (tool) { return tool.catalog_id; }));
+      const catalogIds = new Set(data.items.map(function (tool) { return tool.catalog_id; }));
+      const savedOnly = stack.tools.filter(function (tool) { return !catalogIds.has(tool.catalog_id); }).map(function (tool) { return { ...tool, selectable: true }; });
+      const catalog = data.items.concat(savedOnly);
+      const sources = data.sources.map(function (item) {
+        return '<span class="automation-source" data-status="' + item.status + '" title="' + escapeHtml(item.detail) + '">' + escapeHtml(item.label) + ' · ' + escapeHtml(item.status) + '</span>';
+      }).join("");
+      const locked = stack.desired_state === "on";
+      const cards = catalog.length ? catalog.map(function (tool) {
+        const checked = selected.has(tool.catalog_id);
+        const disabled = locked || !tool.selectable;
+        const secrets = tool.required_secrets.length ? '設定: ' + tool.required_secrets.join(", ") : "追加設定なし";
+        return '<article class="automation-tool" data-selected="' + String(checked) + '"><div class="automation-tool-meta"><span>' + escapeHtml(tool.source) + '</span><span>' + escapeHtml(tool.connection_kind) + '</span></div><h3>' + escapeHtml(tool.name) + '</h3><p>' + escapeHtml(tool.description || "説明なし") + '</p><p>' + escapeHtml(secrets) + '</p><a href="' + escapeHtml(tool.source_url) + '" target="_blank" rel="noopener noreferrer">Source を確認</a><input type="checkbox" data-automation-catalog-id="' + escapeHtml(tool.catalog_id) + '" aria-label="' + escapeHtml(tool.name) + ' を選択"' + (checked ? " checked" : "") + (disabled ? " disabled" : "") + '></article>';
+      }).join("") : '<p class="empty">この検索では候補がありません。別の用途で検索してください。</p>';
+      const observedLabels = { stopped: "停止", pending_start: "起動待ち", running: "稼働中", pending_stop: "停止待ち", error: "エラー" };
+      return '<div class="automation-toolbar"><form class="automation-search" data-automation-search><input id="automation-search" name="q" maxlength="80" value="' + escapeHtml(data.query) + '" aria-label="automation tool を検索" placeholder="例: video, research, CRM"><button type="submit">ツール検索</button></form><div class="automation-sources">' + sources + '</div></div>'
+        + '<div class="automation-master"><div class="automation-master-copy"><h3>' + escapeHtml(stack.name) + '</h3><p>選択 ' + stack.tools.length + '個 · ' + observedLabels[stack.observed_state] + ' · revision ' + stack.revision + '</p></div><button class="automation-toggle" type="button" role="switch" aria-checked="' + String(stack.desired_state === "on") + '" data-automation-toggle' + (stack.tools.length ? "" : " disabled") + '>AUTOMATION ' + (stack.desired_state === "on" ? "ON" : "OFF") + '</button></div>'
+        + '<div class="automation-stack-editor"><input class="automation-name" maxlength="80" value="' + escapeHtml(stack.name) + '" aria-label="automation 名"' + (locked ? " disabled" : "") + '><button class="automation-save" type="button" data-automation-save' + (locked ? " disabled" : "") + '>選択を保存</button></div>'
+        + '<div class="automation-catalog">' + cards + '</div><p class="automation-runtime-note">' + escapeHtml(data.runtime.detail) + ' Product Hunt は候補発見専用で、そのまま実行しません。</p><p class="automation-status" data-automation-status aria-live="polite"></p>';
+    }
+
     let controlCsrf = "";
     const connectionLabels = Object.freeze({ calendar: "Calendar", telegram: "Telegram", location: "Location", call: "Call", email: "Email", wallet: "Payout / wallet" });
 
@@ -1310,10 +1422,11 @@ function renderPanelPage(options = {}) {
       return intake + '<div class="money-metrics">' + metrics + '</div><div class="money-board">' + lanes + '</div><div data-money-human-task><p class="loading">Checking human tasks…</p></div><div class="money-workroom" data-money-workroom><p class="empty">Select an opportunity to inspect its workroom.</p></div>';
     }
 
-    const renderers = Object.freeze({ "money-printer": renderMoneyPrinter, timeline: renderTimeline, scores: renderScores, ledger: renderLedger, gates: renderGates, settings: renderSettings, "control-center": renderControlCenter });
+    const renderers = Object.freeze({ "money-printer": renderMoneyPrinter, "automation-hub": renderAutomationHub, timeline: renderTimeline, scores: renderScores, ledger: renderLedger, gates: renderGates, settings: renderSettings, "control-center": renderControlCenter });
 
-    async function loadPanelSection(name) {
-      const response = await fetch(panelEndpoints[name], { credentials: "same-origin", headers: { Accept: "application/json" } });
+    async function loadPanelSection(name, query) {
+      const endpoint = name === "automation-hub" && query ? panelEndpoints[name] + "?q=" + encodeURIComponent(query) : panelEndpoints[name];
+      const response = await fetch(endpoint, { credentials: "same-origin", headers: { Accept: "application/json" } });
       if (response.status === 401) {
         window.location.reload();
         throw new Error("session expired");
@@ -1323,6 +1436,43 @@ function renderPanelPage(options = {}) {
       if (displayContainsSensitiveValue(data)) throw new Error(name + " unavailable");
       markLoaded(name, renderers[name](data));
       if (name === "money-printer") await loadMoneyHumanTask();
+    }
+
+    async function mutateAutomationHub(body) {
+      const status = document.querySelector("[data-automation-status]");
+      const controls = document.querySelectorAll("[data-panel-section=automation-hub] button, [data-panel-section=automation-hub] input");
+      controls.forEach(function (control) { control.disabled = true; });
+      if (status) status.textContent = "更新しています…";
+      try {
+        const response = await fetch("/api/panel/automation-hub", {
+          method: "POST", credentials: "same-origin",
+          headers: { "content-type": "application/json", "x-lm-csrf": automationCsrf, "idempotency-key": (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + "-automation") },
+          body: JSON.stringify(body),
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || "automation update failed");
+        await loadPanelSection("automation-hub", automationHubData.query);
+      } catch (error) {
+        if (status) status.textContent = error.message === "automation_revision_conflict" ? "別の更新がありました。再読み込みします。" : "更新できませんでした。設定は変更されていません。";
+        await loadPanelSection("automation-hub", automationHubData.query).catch(function () {});
+      }
+    }
+
+    function saveAutomationSelection() {
+      if (!automationHubData || automationHubData.stack.desired_state === "on") return;
+      const name = document.querySelector(".automation-name");
+      const catalogIds = Array.from(document.querySelectorAll("[data-automation-catalog-id]:checked")).map(function (input) { return input.dataset.automationCatalogId; });
+      const status = document.querySelector("[data-automation-status]");
+      if (!name || !name.value.trim() || catalogIds.length < 1 || catalogIds.length > automationHubData.limits.max_tools) {
+        if (status) status.textContent = "1〜" + automationHubData.limits.max_tools + "個のツールと automation 名を指定してください。";
+        return;
+      }
+      mutateAutomationHub({ action: "replace", name: name.value.trim(), catalog_ids: catalogIds, revision: automationHubData.stack.revision });
+    }
+
+    function toggleAutomationStack() {
+      if (!automationHubData || !automationHubData.stack.tools.length) return;
+      mutateAutomationHub({ action: "toggle", enabled: automationHubData.stack.desired_state !== "on", revision: automationHubData.stack.revision });
     }
 
     let moneyPrinterRefresh = Promise.resolve();
@@ -1409,6 +1559,10 @@ function renderPanelPage(options = {}) {
     }
 
     document.addEventListener("click", function (event) {
+      const automationToggle = event.target.closest("[data-automation-toggle]");
+      if (automationToggle) { toggleAutomationStack(); return; }
+      const automationSave = event.target.closest("[data-automation-save]");
+      if (automationSave) { saveAutomationSelection(); return; }
       const humanAnswer = event.target.closest("button[data-money-human-answer]");
       if (humanAnswer) { answerMoneyHumanTask(humanAnswer).catch(function () {}); return; }
       const moneyCard = event.target.closest("button[data-money-opportunity-id]");
@@ -1423,7 +1577,16 @@ function renderPanelPage(options = {}) {
       submitMoneyOpportunity(form);
     });
 ${logoutScript}
+    document.addEventListener("submit", function (event) {
+      const form = event.target.closest("[data-automation-search]");
+      if (!form) return;
+      event.preventDefault();
+      const input = form.querySelector("input[name=q]");
+      loadPanelSection("automation-hub", input ? input.value.trim() : "automation").catch(function () { markError("automation-hub"); });
+    });
     document.addEventListener("change", function (event) {
+      const checkbox = event.target.closest("[data-automation-catalog-id]");
+      if (checkbox) { const card = checkbox.closest(".automation-tool"); if (card) card.dataset.selected = String(checkbox.checked); return; }
       const select = event.target.closest('select[data-action]');
       if (select) runControlAction(select);
     });

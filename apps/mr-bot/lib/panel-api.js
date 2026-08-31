@@ -16,8 +16,9 @@ const { isHelperBlock } = require("./wake-filter.js");
 const { projectMoneyPrinter } = require("./money-printer-projection.js");
 const { answerHumanTask } = require("./money-printer-human-task.js");
 const { createOpportunity } = require("./money-printer-opportunity.js");
+const { buildAutomationHub, createSupabaseAutomationStore, mutateAutomationHub, verifyAutomationStack } = require("./automation-hub.js");
 
-const ENDPOINTS = new Set(["money-printer", "timeline", "scores", "ledger", "gates", "settings"]);
+const ENDPOINTS = new Set(["money-printer", "timeline", "scores", "ledger", "gates", "settings", "automation-hub"]);
 const HUMAN_TASK_NEXT_ENDPOINT = "money-printer/human-task/next";
 const HUMAN_TASK_ANSWER_ENDPOINT = "money-printer/human-task/answer";
 const MONEY_PRINTER_OPPORTUNITY_ENDPOINT = "money-printer/opportunity";
@@ -824,6 +825,59 @@ async function handlePanelApiRequest(req, res, opts = {}) {
   const commandStore = opts.commandStore || createSupabaseCommandStore(opts);
   if (!opts.sessionScopeImpl && !await commandStore.assertCurrentScope(scope)) {
     sendJson(res, 401, { error: "unauthorized" });
+    return;
+  }
+  if (endpoint === "automation-hub") {
+    const automationStore = opts.automationStore || createSupabaseAutomationStore(opts);
+    if (req.method === "GET") {
+      try {
+        const model = await buildAutomationHub(scope, {
+          ...opts,
+          store: automationStore,
+          query: requestUrl.searchParams.get("q") || "automation",
+          discoverCatalog: opts.automationCatalog,
+          productHuntToken: opts.productHuntToken || process.env.PRODUCT_HUNT_TOKEN,
+          huggingFaceToken: opts.huggingFaceToken || process.env.HF_TOKEN,
+        });
+        sendJson(res, 200, { ...model, csrf: scope.csrf || csrfToken(session) });
+      } catch {
+        sendJson(res, 503, { error: "automation_hub_unavailable" });
+      }
+      return;
+    }
+    if (req.method !== "POST") { sendJson(res, 405, { error: "method_not_allowed" }, { Allow: "GET, POST" }); return; }
+    if (!/^application\/json(?:;|$)/i.test(String(req.headers["content-type"] || ""))) { sendJson(res, 415, { error: "json_required" }); return; }
+    const expectedOrigin = String(opts.panelOrigin || opts.panelBaseUrl || "").replace(/\/$/, "");
+    if (!expectedOrigin || String(req.headers.origin || "") !== expectedOrigin) { sendJson(res, 403, { error: "origin_rejected" }); return; }
+    if (!timingEqual(req.headers["x-lm-csrf"], scope.csrf || csrfToken(session))) { sendJson(res, 403, { error: "csrf_rejected" }); return; }
+    const key = String(req.headers["idempotency-key"] || "");
+    if (!/^[A-Za-z0-9._:-]{8,128}$/.test(key)) { sendJson(res, 400, { error: "idempotency_required" }); return; }
+    let claimedReceipt = null;
+    try {
+      const body = await readJson(req);
+      const action = body && body.action === "replace" ? "automation-hub.replace" : "automation-hub.toggle";
+      const receipt = await claimMutationReceipt(scope, key, action, body, commandStore);
+      if (receipt.replay) { sendJson(res, 200, receipt.replay); return; }
+      claimedReceipt = receipt.claimed ? { ...receipt, action } : null;
+      const result = await mutateAutomationHub(scope, body, {
+        ...opts,
+        store: automationStore,
+        resolveTools: opts.automationToolResolver,
+        verifyStack: opts.automationStackVerifier || verifyAutomationStack,
+        secretResolver: opts.automationSecretResolver,
+        huggingFaceToken: opts.huggingFaceToken || process.env.HF_TOKEN,
+      });
+      await commandStore.finishReceipt(scope, key, { requestHash: receipt.requestHash, commandType: action, status: "succeeded", result });
+      claimedReceipt = null;
+      sendJson(res, 200, result);
+    } catch (error) {
+      if (claimedReceipt) {
+        try { await commandStore.finishReceipt(scope, key, { requestHash: claimedReceipt.requestHash, commandType: claimedReceipt.action, status: "failed", result: null }); } catch { /* pending keeps retries blocked */ }
+      }
+      const known = ["invalid_automation_mutation", "invalid_catalog_id", "tool_not_selectable", "automation_configuration_required", "mcp_connection_failed", "unsafe_mcp_endpoint", "automation_revision_conflict", "idempotency_conflict", "idempotency_in_progress", "idempotency_failed"];
+      const status = error && error.status || (String(error && error.message).includes("revision") ? 409 : 502);
+      sendJson(res, status, { error: known.includes(error && error.message) ? error.message : status === 409 ? "automation_revision_conflict" : "automation_hub_unavailable" });
+    }
     return;
   }
   if (endpoint === MONEY_PRINTER_OPPORTUNITY_ENDPOINT) {
