@@ -121,6 +121,32 @@ url_result="$(printf '%s' "{\"agent_id\":\"agent-1\",\"review_url\":\"$URL\"}" |
 [ "$(stat -f '%Lp' "$URL_PATH")" = "600" ] || { echo "FAIL: edit URL mode" >&2; exit 1; }
 [ "$(stat -f '%Lp' "$(dirname "$URL_PATH")")" = "700" ] || { echo "FAIL: edit URL directory mode" >&2; exit 1; }
 [ "$(stat -f '%Lp' "$(dirname "$(dirname "$URL_PATH")")")" = "700" ] || { echo "FAIL: edit URL root directory mode" >&2; exit 1; }
+SHORT_URL='https://api.capafy.ai/E2094258149427924992'
+SHORT_PATH="$STATE_HOME/review-urls/agent-1/short.url"
+short_result="$(printf '%s' "{\"agent_id\":\"agent-1\",\"review_url\":\"$SHORT_URL\"}" | python3 "$URL_HELPER" --agent-id agent-1 --output "$SHORT_PATH")"
+[ "$short_result" = "EDIT_URL_FILE=$SHORT_PATH" ] || { echo "FAIL: short review URL result" >&2; exit 1; }
+[ "$(<"$SHORT_PATH")" = "$SHORT_URL" ] || { echo "FAIL: short review URL bytes changed" >&2; exit 1; }
+[ "$(stat -f '%Lp' "$SHORT_PATH")" = "600" ] || { echo "FAIL: short review URL mode" >&2; exit 1; }
+if [[ "$short_result" == *"$SHORT_URL"* ]]; then
+  echo "FAIL: short review URL leaked to stdout" >&2
+  exit 1
+fi
+for bad_short_url in \
+  'http://api.capafy.ai/E2094258149427924992' \
+  'https://api.capafy.ai:443/E2094258149427924992' \
+  'https://user@api.capafy.ai/E2094258149427924992' \
+  'https://api.capafy.ai/E2094258149427924992?x=1' \
+  'https://api.capafy.ai/E2094258149427924992#fragment' \
+  'https://api.capafy.ai/e2094258149427924992' \
+  'https://api.capafy.ai/Eabcdefghijklmnopqr' \
+  'https://api.capafy.ai/E123456789012345678' \
+  'https://api.capafy.ai/E12345678901234567890' \
+  'https://api.capafy.ai/E2094258149427924992/extra'; do
+  if printf '%s' "{\"agent_id\":\"agent-1\",\"review_url\":\"$bad_short_url\"}" | python3 "$URL_HELPER" --agent-id agent-1 --output "$STATE_HOME/review-urls/agent-1/short-bad.url" >/dev/null 2>&1; then
+    echo "FAIL: invalid short review URL accepted" >&2
+    exit 1
+  fi
+done
 LEGACY_URL='https://capafy.ai/developer/createAgent?source=temp-link&token=123456789&page=edit'
 printf '%s' "{\"agent_id\":\"agent-1\",\"review_url\":\"$LEGACY_URL\"}" | python3 "$URL_HELPER" --agent-id agent-1 --output "$STATE_HOME/review-urls/agent-1/legacy.url" >/dev/null
 [ "$(<"$STATE_HOME/review-urls/agent-1/legacy.url")" = "$LEGACY_URL" ] || { echo "FAIL: legacy edit URL bytes changed" >&2; exit 1; }
