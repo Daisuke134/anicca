@@ -509,6 +509,43 @@ test("KokuchPro workflow gates Calendar once, orders exact coverage first, and f
   assert.equal(Object.isFrozen(audits[0]), true);
 });
 
+test("KokuchPro discovery reconciles registered participant rows before open listing candidates", async () => {
+  const registered = Object.freeze({
+    provider: "kokuchpro",
+    event_ref: `kokuchpro-event://event/${KEY}`,
+    canonical_url: ROOT,
+    title: "Already registered Tokyo event",
+    starts_at: "2026-08-20T10:00:00.000Z",
+    ends_at: "2026-08-20T11:30:00.000Z",
+    venue: "豊島区ホール",
+    address: "東京都豊島区",
+    registration_status: "registered",
+    ticket_id: "registered",
+    ticket_price_status: "free",
+    ticket_price_minor: 0,
+  });
+  const bundleChecks = [];
+  const workflow = createKokuchProDiscoveryWorkflow({
+    now: () => new Date(NOW),
+    readRegisteredCandidates: async () => [registered, registered],
+    readListingBindings: async () => [binding(), binding(OCCURRENCE_URL)],
+    readEventDetail: async (_page, url) => url === ROOT ? detail({}, url) : detail({
+      starts_at: "2026-08-20T21:00:00+09:00",
+      ends_at: "2026-08-20T22:00:00+09:00",
+    }, url),
+    hasAppliedBundle: async (candidate) => { bundleChecks.push(candidate.event_ref); return false; },
+  });
+  const result = await workflow.discoverCandidates({
+    page: {},
+    calendar: [{ kind: "timed", start_at: registered.starts_at, end_at: registered.ends_at }],
+  });
+  assert.deepEqual(result.map((candidate) => [candidate.event_ref, candidate.registration_status]), [
+    [registered.event_ref, "registered"],
+    [`kokuchpro-event://event/${KEY}/${OCCURRENCE}`, "available"],
+  ]);
+  assert.deepEqual(bundleChecks, [registered.event_ref]);
+});
+
 test("KokuchPro audit counts valid in-window timing before remaining eligibility", async () => {
   const first = canonicalKokuchProBinding(ROOT);
   const second = canonicalKokuchProBinding(OCCURRENCE_URL);
