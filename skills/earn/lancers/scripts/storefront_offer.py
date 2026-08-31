@@ -17,7 +17,6 @@ from urllib.parse import urlsplit
 
 HERE = Path(__file__).resolve().parent
 DEFAULT_PRODUCT = HERE.parent / "products" / "monthly-sns-content-ops-v1.json"
-DEFAULT_AVATAR = HERE.parents[2] / "gig-work" / "profile" / "avatar.jpg"
 ORIGIN = "https://www.lancers.jp"
 DEMAND_LABELS = {
     "検索結果の表示人数": "search_impressions",
@@ -38,7 +37,7 @@ def _load(name: str, path: Path) -> Any:
     return module
 
 
-def _product(path: Path) -> tuple[dict[str, Any], Path]:
+def _product(path: Path) -> tuple[dict[str, Any], Path, Path]:
     try: value = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, UnicodeError, ValueError): raise OfferError("product_invalid") from None
     if not isinstance(value, dict): raise OfferError("product_invalid")
@@ -65,8 +64,12 @@ def _product(path: Path) -> tuple[dict[str, Any], Path]:
     if not isinstance(profile, dict) or set(profile) != {"public_path", "subtitle", "description"} or re.fullmatch(r"/profile/[A-Za-z0-9_-]+", str(profile.get("public_path") or "")) is None or not isinstance(profile.get("subtitle"), str) or not 1 <= len(profile["subtitle"]) <= 60 or not isinstance(profile.get("description"), str) or not 1 <= len(profile["description"]) <= 2000: raise OfferError("product_invalid")
     image = (path.parent / value["image_path"]).resolve()
     if not image.is_file() or image.suffix.lower() not in {".png", ".jpg", ".jpeg", ".gif"}: raise OfferError("product_invalid")
+    avatar_path, avatar_sha256 = value.get("profile_avatar_path"), value.get("profile_avatar_sha256")
+    if not isinstance(avatar_path, str) or not avatar_path.strip() or not isinstance(avatar_sha256, str) or re.fullmatch(r"[0-9a-f]{64}", avatar_sha256) is None: raise OfferError("product_invalid")
+    avatar = (path.parent / avatar_path).resolve()
+    if not avatar.is_file() or avatar.suffix.lower() not in {".jpg", ".jpeg", ".png"} or avatar.stat().st_size > 3_000_000 or hashlib.sha256(avatar.read_bytes()).hexdigest() != avatar_sha256: raise OfferError("profile_avatar_invalid")
     value["public_title"] = value["title_stem"] + "ます"
-    return value, image
+    return value, image, avatar
 
 
 def _text(page: Any, selector: str) -> str:
@@ -343,7 +346,7 @@ def _ensure_portfolio(page: Any, product: Mapping[str, Any], image: Path, key: s
 def run(apply: bool, product_path: Path, state_path: Path) -> dict[str, Any]:
     tick = browser = page = None; logged_in = False; result: dict[str, Any] = {"ok": False, "error": "offer_unavailable"}
     try:
-        product, image = _product(product_path); tick = _load("lancers_storefront_offer_tick", HERE / "application_tick.py")
+        product, image, avatar = _product(product_path); tick = _load("lancers_storefront_offer_tick", HERE / "application_tick.py")
         with tick.account_lock(state_path.with_name("work-sync.json")):
             browser = tick._default_browser_factory(tick.CDP_URL); page = tick._new_owned_page(browser)
             if not tick._production_account_ready(page): raise OfferError("account_unavailable")
@@ -357,7 +360,7 @@ def run(apply: bool, product_path: Path, state_path: Path) -> dict[str, Any]:
                     if portfolio["portfolio_effect_count"]:
                         result["action"] = "portfolio_created"; break
                 else:
-                    profile = _profile(page, product, DEFAULT_AVATAR, True); result |= profile
+                    profile = _profile(page, product, avatar, True); result |= profile
                     if profile["profile_effect_count"]: result["action"] = "profile_updated"
             if result.get("ok") is True and result.get("aligned") is True:
                 result["demand"] = _demand(page, product["listing_external_id"])
