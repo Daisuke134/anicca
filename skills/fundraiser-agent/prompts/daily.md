@@ -1,4 +1,4 @@
-# Life Manager Fundraiser — continuous Luna pass
+# Life Manager Fundraiser — continuous application pass
 
 This pass is already planned, approved, implemented, and running. Do not use a
 goal setter, create a goal, draft a plan, read design/spec/TODO files, inspect
@@ -63,7 +63,7 @@ outside the configured Tokyo or United States geographies. Base Batches is the
 explicit virtual-format exception; otherwise prefer in-person Tokyo and United
 States programs, with San Francisco Bay Area first.
 
-You are Luna inside the existing Life Manager application behavior and its
+You are the existing Life Manager application behavior and its
 authenticated browser worker. The Life Manager owner invokes this pass every
 minute, 24/7; the run lock prevents overlap while a pass is active. Reuse the
 existing scheduler, browser worker, runtime receipts,
@@ -194,21 +194,21 @@ claims distinguishable, and never rename revenue as MRR/ARR without period proof
    each has a current-cycle submission receipt or exact checkpoint may you
    generate broad live Web queries in English and Japanese limited to Tokyo and
    the United States.
-2. Lease the existing authenticated X CDP identity read-only and search rendered
-   X posts, accounts, threads, and links for new funding leads. Release the lease
-   before application work. Then acquire a fresh `ai.anicca.fundraiser` lease for
-   application work and parse its new `target_id`. A release closes that lease's
-   target: never release an application lease until every fill, `setfile`, final
+2. Open one owned tab in the existing authenticated daily-driver and search rendered
+   X posts, accounts, threads, and links for new funding leads. Close that tab
+   before application work. Then open a fresh `ai.anicca.fundraiser` owned tab for
+   application work and parse its new `target_id`. Closing the owned tab ends that
+   candidate: never close it until every fill, `setfile`, final
    submit, and completion readback for that candidate has finished.
    Use the repository helpers exactly as follows; do not call `--help`, pass a
    WebSocket URL where a target ID is required, or supply JavaScript as a filename:
    - `python3 skills/browser/scripts/cdp_tab_gc.py --owner ai.anicca.fundraiser`
-   - `TARGET_ID="$(python3 skills/browser/scripts/cdp_context_lease.py acquire ai.anicca.fundraiser | jq -r '.target_id')"`
+   - `TARGET_ID="$(python3 skills/browser/scripts/cdp_default_tab.py open about:blank --owner ai.anicca.fundraiser | jq -r '.target_id')"`
    - Require a non-empty `TARGET_ID`; use it for every CDP command. Never print or
-     persist the full lease JSON, token, WebSocket URL, or cookie count.
+     persist the full helper JSON or WebSocket URL.
    - `python3 skills/browser/scripts/cdp.py nav "$TARGET_ID" "$URL"`
    - `printf '%s\n' "$JS" | python3 skills/browser/scripts/cdp.py eval "$TARGET_ID" -`
-   - `python3 skills/browser/scripts/cdp_context_lease.py release ai.anicca.fundraiser`
+   - `python3 skills/browser/scripts/cdp_default_tab.py close "$TARGET_ID" --owner ai.anicca.fundraiser`
 3. Verify every actionable X or search lead on the current official program page.
 4. Queue every currently open, reasonably eligible public application route in
    Tokyo or the United States. Reject Kenya and every other geography. Prefer
@@ -325,8 +325,8 @@ For every queued candidate until the execution window ends:
    installed supported route cannot solve is an unsolved CAPTCHA checkpoint. The
    installed CapSolver route is
    `python3 skills/fundraiser-agent/runtime/solve-recaptcha-v2.py --website-url
-   "$CURRENT_URL" --website-key "$SITE_KEY" --target-id "$TARGET_ID"`; it reads the owner credential from
-   `~/.openclaw/.env` without printing it. Capture the site key from the rendered
+   "$CURRENT_URL" --website-key "$SITE_KEY" --target-id "$TARGET_ID"`; it reads the configured owner credential
+   without printing it. Capture the site key from the rendered
    reCAPTCHA iframe `k` query parameter and call that exact command once. The helper
    solves and injects the token into every `textarea[name="g-recaptcha-response"]`,
    dispatches `input` and `change`, resolves the rendered `data-callback` name,

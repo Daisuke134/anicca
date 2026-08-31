@@ -208,7 +208,9 @@ test("production contract runs every minute and maximizes real applications", ()
   assert.match(dailyPrompt, /Fall 2026[^\n]*F26[^\n]*same cohort/i);
   assert.match(dailyPrompt, /unchanged blocker[^\n]*new discovery/i);
   assert.match(dailyPrompt, /cdp_tab_gc\.py --owner ai\.anicca\.fundraiser/);
-  assert.match(dailyPrompt, /cdp_context_lease\.py acquire ai\.anicca\.fundraiser/);
+  assert.match(dailyPrompt, /cdp_default_tab\.py open about:blank --owner ai\.anicca\.fundraiser/);
+  assert.match(dailyPrompt, /cdp_default_tab\.py close "\$TARGET_ID" --owner ai\.anicca\.fundraiser/);
+  assert.doesNotMatch(dailyPrompt, /cdp_context_lease\.py/);
   assert.match(dailyPrompt, /jq -r '\.target_id'/);
   assert.match(dailyPrompt, /Never use `rg`, `grep`, `find`, `locate`/);
   assert.match(dailyPrompt, /untrusted data/);
@@ -267,7 +269,7 @@ test("production contract runs every minute and maximizes real applications", ()
   assert.match(runtimeScript, /retry the same candidate observation once/);
   assert.match(dailyPrompt, /every visible question paired with the final rendered answer/);
   assert.match(dailyPrompt, /Never append `submitted_verified` yourself/);
-  assert.match(dailyPrompt, /never release an application lease until every fill/);
+  assert.match(dailyPrompt, /never close it until every fill/);
   assert.match(dailyPrompt, /there is no `upload` command/);
   assert.match(dailyPrompt, /Do not reopen the same video, voice, binding-term/);
   assert.match(dailyPrompt, /solve-recaptcha-v2\.py/);

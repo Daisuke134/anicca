@@ -1,6 +1,7 @@
 import importlib.util
 import io
 import json
+import os
 import re
 import sys
 import tempfile
@@ -410,6 +411,43 @@ class TelegramReportTests(unittest.TestCase):
         ):
             self.assertNotIn(disallowed, inventory)
         self.assertIsNone(re.search(r"(?:^|[^A-Za-z_])open\s*\([^\n]*[,=]\s*['\"]w", inventory))
+
+
+class ReportChatTests(unittest.TestCase):
+    """The chat id is not in the repo, so a placeholder here means silent blindness.
+
+    A wrong id does not raise: the outbox records delivery_uncertain and the
+    owner simply stops hearing from the loop, which is how four days passed
+    before anyone noticed.
+    """
+
+    def test_chat_is_never_the_placeholder(self):
+        report = _load_report()
+
+        self.assertNotEqual(report.TARGET, "0000000000")
+
+    def test_environment_wins_over_the_private_config(self):
+        report = _load_report()
+
+        with patch.dict(os.environ, {"LANCERS_REPORT_CHAT": "111"}, clear=False):
+            self.assertEqual(report._report_chat(), "111")
+
+    def test_falls_back_to_the_private_config_when_launchd_carries_no_chat(self):
+        report = _load_report()
+        with tempfile.TemporaryDirectory() as directory:
+            config = Path(directory) / "telegram.env"
+            config.write_text("LANCERS_REPORT_CHAT=222\n", encoding="utf-8")
+            env = {k: v for k, v in os.environ.items() if k not in ("LANCERS_REPORT_CHAT", "GIG_REPORT_CHAT")}
+            with patch.dict(os.environ, env, clear=True), patch.object(report, "CHAT_CONFIG", config):
+                self.assertEqual(report._report_chat(), "222")
+
+    def test_returns_empty_rather_than_a_guess_when_nothing_is_configured(self):
+        report = _load_report()
+        with tempfile.TemporaryDirectory() as directory:
+            env = {k: v for k, v in os.environ.items() if k not in ("LANCERS_REPORT_CHAT", "GIG_REPORT_CHAT")}
+            missing = Path(directory) / "absent.env"
+            with patch.dict(os.environ, env, clear=True), patch.object(report, "CHAT_CONFIG", missing):
+                self.assertEqual(report._report_chat(), "")
 
 
 if __name__ == "__main__":

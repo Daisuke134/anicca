@@ -575,3 +575,179 @@ Dais 承認のうえ削除した。合計 1.7GB、実測で avail 4659MiB → 69
 （`/Applications/Utilities/Adobe Creative Cloud/.../Adobe Crash Processor` など）。
 `lsof` 上で削除済みファイルを掴んではいない（deleted handle 0）ので容量は握っていないが、
 Creative Cloud 本体を消したはずなのに常駐が残っている状態であり、別途整理が要る。
+
+## 2026-08-31 既存 OSS 掃除ツールの調査（再調査不要。ここに結論がある）
+
+OSS 公開時に「誰の Mac でも容量が尽きない」を成立させるため、既存実装を調べて自分の実装と突き合わせた。
+
+### 調べた対象
+
+| ★ | repo | 性質 |
+|---|---|---|
+| 2818 | `mac-cleanup/mac-cleanup-sh` | 古典。**deprecated** |
+| 2374 | `mac-cleanup/mac-cleanup-py` | 上の後継。Python |
+| 1339 | `caezium/burrow` | 掃除 + app 管理 + ディスク解析 |
+| 458 | `2ykwang/mac-cleanup-go` | TUI |
+| 34 | `himynameisben/macos-disk-cleanup` | **agent 用 skill**。Claude Code / Codex 向け。今回の主参照 |
+
+`himynameisben/macos-disk-cleanup` を `/var/tmp` へ shallow clone して読んだ（1MB）。
+構成は `SKILL.md` + `references/{gotchas.md,locations.md}` + `scripts/disk_scan.sh`。
+
+### 我々の設計と一致していた点
+
+削除を **SAFE / CONFIRM / DANGER** の3段に分け、
+「自動再生成される cache か、ユーザ唯一の副本か」を答えられないなら消さない、という原則。
+これは我々の fail-closed governor（allowlist されたクラス以外は preserve）と同じ結論に独立して到達している。
+
+特に **gotcha #9「削除後すぐ `df` に反映されない。段階ごとに前後差分で帰属せよ、最後に総量を測るな」**は、
+我々が APFS clone で独立に発見した事実（release 2本削除で 0.4GB、4本まとめて 7.1GB）と同じ結論である。
+receipt の `free_before` / `free_after` を正とする現行設計は正しい。
+
+### 我々が既に満たしている罠
+
+| 罠 | 我々の対応 |
+|---|---|
+| #1 container 内 symlink が `du` を嘘つきにする（`Data/*/*` の glob が symlink を貫通して `~/Downloads` を「app のデータ」と誤報告する） | `_bytes` は `followlinks=False` かつ symlink dir を除外。sweep は `path.is_symlink()` を preserve |
+| #2 sparse file は `ls` でなく `du` で測る | receipt reserve の sparse 判定に専用テストあり |
+| #8 `set -e` と `rm -rf` の併用を避け、exit code でなく再測定で検証 | 削除後に `path.exists()` を readback し、失敗は `remove_failed` で preserve |
+| #10 エラー메시지 が安全機構の上書き（`--force`）を誘導してくる | 全経路 fail-closed。probe 失敗は必ず preserve |
+
+### 我々に無いもの＝カタログの広さ
+
+現行 governor が知っている回収クラスは
+`cfo-` 一時ディレクトリ / Chrome code_sign_clone / Sparkle Installation /
+`~/.cache/codex-runtimes` / `~/.cache/whisper` / release 世代のみ。
+OSS 側は**パッケージマネージャと開発ツールの cache を網羅**している。
+
+SAFE 分類（自動再生成、典型サイズ）:
+`~/Library/pnpm/store` 5–20G（`pnpm store prune`）/ `~/.gradle/caches` 2–10G /
+`~/go/pkg/mod` 2–10G（`go clean -modcache`）/ `~/.npm/_cacache` 1–5G /
+`~/.cargo/registry/cache` 1–5G / `~/.cache/uv` 1–5G / `~/Library/Caches/Homebrew` 1–5G /
+`~/Library/Caches/pip` 0.5–2G / `~/Library/Caches/ms-playwright` 1–3G /
+`~/Library/Caches/pnpm` 1–3G / `~/Library/Caches/org.swift.swiftpm` 0.3–1G /
+`~/Library/Developer/Xcode/iOS DeviceSupport` **iOS バージョンごとに 5G** /
+`~/Library/Developer/Xcode/DerivedData` 1–20G / `*-updater` `*.ShipIt` 0.3–2G。
+CONFIRM 分類: Simulator runtime **バージョンごとに 8G**、Chrome の `OptGuideOnDeviceModel` 4G。
+
+### この Mac での実測（2026-08-31）
+
+上記カタログのうち 20MB を超えて存在したのは **`~/.npm/_cacache` 171MB のみ**。
+pnpm store も gradle も Xcode DeviceSupport も DerivedData も存在しない。
+
+**したがってこの Mac の逼迫は package cache 由来ではなく、release 生成と git object の蓄積である**
+という既存の結論が、OSS カタログとの突き合わせでも裏づけられた。
+ただし OSS 利用者の Mac では上記が主因になりうるので、
+governor の回収クラスにカタログを取り込む価値は独立して存在する。
+
+### 採用方針
+
+1. 上の SAFE カタログを allowlist クラスとして governor に追加する。判定は既存の
+   「exact path + owner」方式をそのまま使えるため、discovery に表を1つ足すだけで済む。
+2. `pnpm store prune` や `go clean -modcache` のように**専用コマンドが存在するものは
+   `rm -rf` せずそのコマンドを使う**。参照されている分を残せる。
+3. CONFIRM 相当（Simulator runtime 等）は自動削除の対象にしない。fail-closed を崩さない。
+
+## 2026-08-31 release が減らない本当の理由（前の節の結論を訂正する）
+
+### 訂正1: 「生成側に上限が無い」は誤りだった
+
+`bin/cut-loop-release.sh` には最初から上限がある。
+`KEEP=${LOOPS_KEEP_RELEASES:-5}`、しかも **export の前**に
+`runtime/loop/central_cleanup.py --release-gc-only` を `PRE_KEEP=KEEP-1` で走らせている
+（後で刈ると KEEP+1 個ぶんの空きが要って ENOSPC で install が落ちたため、と註釈がある）。
+
+### 訂正2: retention を二重に実装してしまった
+
+`runtime/loop/central_cleanup.py` の `release_gc()` は既に
+launchd plist 参照（`loaded_release_roots`）、open 判定（`open_release_roots`）、
+`protected-releases.json`、世代数 `keep` の4つを全部見ている。
+本日 `disk_cleanup.py` に足した `RELEASE_RETENTION` は**これの再実装**である。
+書く前に既存を探さなかった。次はカタログ追加の前に `runtime/loop/` を読むこと。
+
+### 実際の原因: 全 release が稼働プロセスに握られている
+
+実測（2026-08-31 20:50 頃）:
+
+```
+releases on disk: 8
+held open:        8   ← 全部
+```
+
+`current` 以外で握られているもの:
+`20260828T204447-6ab86c33`、`20260830T115119-ab7df447`、
+`20260831T181958-70623b6a`、`20260831T202425-e40369d0`、
+`20260831T202939-20671b44`、`20260831T204728-439dc71d`、
+そして `20260831T200346-96810ccc.gc-trash.67654`。
+
+最後のものが決定的で、**gc は削除を試みて `.gc-trash.<pid>` へリネームまで進んだが、
+open だったので消せずに残骸になっている**。3日前の release すら握られたままである。
+
+`release_gc` が open な release を保護するのは正しい（稼働中 loop のコードを消せば壊れる）。
+だが **loop が古い release から動き続けて `current` へ移らない**ため、
+一度作られた release は永久に pin されたままになる。
+この状態では `KEEP=5` は無意味で、8個でも20個でも全部 protected として残る。
+
+**したがって回収側をこれ以上強化しても解決しない。**
+必要なのは「apply した後に対象 job を restart して `current` へ移し、
+古い release の参照を手放させる」ことである。
+`.gc-trash.<pid>` の残骸を回収する後始末も要る（プロセス終了後に再試行する）。
+
+### 補足実測
+
+home 全体の `node_modules` は **156 個**。`~/.npm` 548MB。
+`~/Library/Caches` は本日の掃除後 257MB（掃除前 2559MB）。
+
+## 2026-08-31 release を pin していたのは Chromium の cwd だった（さらに訂正）
+
+前節で「loop が古い release から動き続けて current へ移らない」と書いたが、これも実測で覆った。
+
+### apply は既に restart している
+
+`runtime/loop/lm_loop_apply.py` の `install_one()` は
+plist を atomic write したあと `bootout` → `bootstrap` を行い、
+`_loaded_arguments` が期待値と一致するまで最大3回試行する。
+`_preserve_operational_attributes` には `_is_immutable_release_working_directory` があり、
+plist が release 内の `WorkingDirectory` を持っていた場合はそれを引き継がない。
+`bin/plistgen.py` の既定も `WorkingDirectory: $HOME` である。
+**つまり apply 側の restart と cwd 対策は既に入っている。**
+
+### 実際に掴んでいるもの
+
+`lsof` で current 以外の release を掴むプロセスを引くと:
+
+```
+Chromium  328 個   FD 種別は全て cwd
+```
+
+```
+Chromium 1009 anicca cwd DIR ... /Users/anicca/loops/releases/20260831T181958-70623b6a
+```
+
+**328 個の Chromium プロセスが `cwd` だけで release を掴んでいる。**
+開いているのはディレクトリ 1 個（64 bytes）だが、
+それだけでツリー全体が削除不能になり `release_gc` が protected として残す。
+`.gc-trash.<pid>` の残骸はこの状態で削除を試みた痕跡である。
+
+同時に、長寿命の loop script も自分の release を掴んでいる:
+`skills/writer-agent/article-daily.sh`、`skills/writer-agent/runtime/model-runner.sh`、
+`skills/stripe-revenue-listener/scripts/listen.sh`、
+`skills/self/spawn/scripts/citizens-diff-monitor.sh`、
+`skills/fundraiser-agent/runtime/run.sh`。
+Stripe listener のように設計上長時間走るものは、その間ずっと release を pin する。
+
+### したがって修正箇所は3つ
+
+1. **ブラウザを起動するとき cwd を release の外に置く。** loop script は release 内で動くので、
+   そこから spawn した Chromium は cwd を継承する。子プロセスは親より長く生き残る。
+   起動時に `cwd=$HOME` などを明示するだけで pin は外れる。
+2. **`.gc-trash.<pid>` の残骸を、掴んでいたプロセスが消えた後に再試行して回収する。**
+   現状は一度失敗するとそのまま残る。
+3. 長寿命 loop は release を pin して当然なので、
+   **保持世代数は「稼働中 loop の最長寿命」を下回れない**。
+   `KEEP=5` を減らす方向の調整は無意味で、pin を減らす方が効く。
+
+### 328 個という数自体が別の問題
+
+これは孤児化した Chromium が積み上がっていることを示す。
+容量とは別に、プロセス側の後始末が要る。
+ただしブラウザの停止は隔離 profile / PID を特定してから行うこと。
