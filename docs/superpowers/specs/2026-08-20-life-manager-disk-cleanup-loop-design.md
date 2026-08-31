@@ -1326,3 +1326,61 @@ jq '{observed_at,tier,errors,protected_deletions}' ~/.openclaw/state/last-receip
 
 spec作成、unit test、launchd load、1回の回収だけではDONEではない。Atomic TODO A-01〜A-44が
 順番に完了し、24時間と7日間のproduction observationを満たした時だけDONEとする。
+
+## 2026-08-31 host census — repo clutter reclaim track
+
+この節は自動governorとは別の、**人手で1回だけ回す host reclaim track** の正本である。
+governor loopのAtomic TODO A-01〜A-44の順序へは割り込まない。
+
+### 測定した事実（2026-08-31）
+
+Data volume `/System/Volumes/Data` は 228Gi 中 184Gi 使用、空き **9.8Gi (95%)**。
+`/` の `df` が示す 15Gi は封印されたsystem volumeであり、空き容量の指標として使ってはならない。
+
+home配下（`Library`/`Applications`/`Creative Cloud Files`を除く）の上位:
+
+| dir | size | launchd参照 | repo code参照 | 判定 |
+|---|---|---|---|---|
+| `~/gig` | 8.7G | 52 | 157 | 使用中。内訳 `projects/` 6.0G、`evidence/` 718M、`.git` 433M |
+| `~/loops` | 7.3G | 416 | 14 | production本体。`releases/` 6.0G のうち 2.4G が未参照 |
+| `~/anicca-project` | 6.7G | 3 | 88 | 使用中だが `.worktrees` 3.1G + `.git` 2.2G = 5.3G が git肥大 |
+| `~/Projects` | 6.6G | 14 | 31 | `life-manager-main` 3.7G + `life-manager-eliza-migration` 1.3G + `.worktrees` 1.0G |
+| `~/anicca` | 3.6G | 65 | 6 | 使用中。`.git` 1.4G + `skills/` 1.6G + `.worktrees` 405M |
+| `~/anicca-monk-factory` | 3.1G | 0 | 0 | **不可侵store**。参照ゼロでも削除禁止 |
+| `~/anicca-rtdash` | 2.6G | 0 | 0 | **不可侵store**。参照ゼロでも削除禁止 |
+| `~/profitable-claude` | 2.1G | 2 | 19 | 使用中。`skills/` 1.8G |
+
+### 根本原因
+
+容量を食っているのは放置ファイルではなく、**5つの姉妹repoに散った git object store と worktree の山**である。
+`life-manager-main` の `.git` 1.6G + `.worktrees` 1.2G、`anicca-project` の `.git` 2.2G + `.worktrees` 3.1G、
+`anicca` の `.git` 1.4G、`~/Projects/.worktrees` 1.0G。合計 10G 超が git 由来。
+
+### 安全性の一次証拠
+
+- 古いclone・退役dirを参照する launchd plist は**ゼロ**（216 plist を全grep）。
+- 参照ゼロdir 49件のうち **45件は git管理外**、残る4件（`Capafy-skills`/`MoneyPrinterV2`/`blockrun-cli`/`substack`/`vineyard`）は
+  いずれも **unpushed commit ゼロ**。削除でversion管理された作業は失われない。
+- `~/loops/releases` の5本のうち `20260831T121744-353aebc3` と `20260831T122322-9cf2e1e7` は
+  plist・symlink・`protected-releases.json` のどこからも参照されていない。
+- `protected-releases.json` は存在しない release `20260831T011522-b73c27ca` を指している。
+- `~/loops/x-social-current` と `~/loops/x-social-current.59c62dae` は削除済みreleaseを指す dangling symlink。
+  参照するplistが無いためproductionは動作しており、孤児として除去してよい。
+
+### 実行順序（外側→内側）
+
+Life Manager本体に触る前に、Life Managerと無関係な外側から回収する。
+
+1. 参照ゼロdir群の削除（約2.9G）— `life-manager-repo-v0-retire` 454M、`anicca-portfolio-self-improve` 449M、
+   `anicca-docs-tools` 434M、`vineyard` 373M、`Archive` 298M、`blockrun-cli` 278M、`work` 173M ほか。
+   不可侵store 2件は除外する。
+2. `~/anicca-project` の worktree/git 5.3G を worktree棚卸し＋`git gc` で回収。
+3. `~/anicca` の `.git` 1.4G と `.worktrees` 405M を同様に回収。
+4. `~/gig/projects` 6.0G の内訳を調査し、納品済み成果物と再生成可能artifactを分離する。
+5. ここまで終えてから Life Manager本体（`~/loops` 未参照release 2.4G、`life-manager-main` の
+   worktree 30本と `.git` 1.6G）へ入る。
+
+### Completion claim rule
+
+各stepは「削除した」ではなく、**削除後に `df -k /System/Volumes/Data` を再測し、
+稼働中loopが次のkickstartで正常起動すること**を確認して初めて完了とする。
