@@ -1310,6 +1310,27 @@ test("production calendar reader uses gog for exactly twenty-eight Tokyo calenda
   assert.equal(calls[1][1].now, "2026-08-07T08:30:00.000Z");
 });
 
+test("production calendar reader retries one transient busy-inventory failure", async () => {
+  let attempts = 0;
+  const verifiedInventory = Object.freeze({
+    busy_inventory_id: "google-calendar-busy-inventory:retry",
+    busy_intervals: Object.freeze([]),
+  });
+  const reader = createProductionCalendarReader({
+    now: () => new Date("2026-08-07T08:30:00.000Z"),
+    makeCalendar: () => Object.freeze({ ready: () => true }),
+    async inspectBusyInventory() {
+      attempts += 1;
+      if (attempts === 1) throw new Error("transient calendar read failure");
+      return verifiedInventory;
+    },
+    isVerifiedBusyInventory(value) { return value === verifiedInventory; },
+  });
+
+  assert.deepEqual(await reader.readCalendarGaps(), []);
+  assert.equal(attempts, 2);
+});
+
 test("Tokyo twenty-eight-day horizon has unique local dates and one shared end-exclusive boundary", () => {
   const dates = Array.from({ length: 28 }, (_, offset) => (
     new Date(Date.UTC(2026, 7, 7 + offset)).toISOString().slice(0, 10)
