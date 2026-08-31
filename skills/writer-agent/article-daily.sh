@@ -1041,7 +1041,11 @@ fi
 ARTICLE_MODEL_LOG="$LOG" bash "$ARTICLE_ROOT/runtime/judge-broker.sh" "$RUN_DIR" &
 JUDGE_BROKER_PID=$!
 cleanup_generation_exit() {
-  kill "$JUDGE_BROKER_PID" 2>/dev/null || true
+  if [ -n "${JUDGE_BROKER_PID:-}" ]; then
+    kill -TERM "$JUDGE_BROKER_PID" 2>/dev/null || true
+    wait "$JUDGE_BROKER_PID" 2>/dev/null || true
+    JUDGE_BROKER_PID=""
+  fi
   cleanup_article_locks
 }
 trap 'cleanup_generation_exit' EXIT
@@ -1073,6 +1077,16 @@ fi
 # The foreground model owns the pass until it exits. A provider failure after agent execution
 # starts never replays the complete prompt on another provider because public side effects may exist.
 MODEL_PASS_PID=""
+drain_generation_workers() {
+  local worker_pid
+  for worker_pid in "${MODEL_PASS_PID:-}" "${JUDGE_BROKER_PID:-}"; do
+    [ -n "$worker_pid" ] || continue
+    kill -TERM "$worker_pid" 2>/dev/null || true
+    wait "$worker_pid" 2>/dev/null || true
+  done
+  MODEL_PASS_PID=""
+  JUDGE_BROKER_PID=""
+}
 run_model_pass() {
   local active_prompt_file="${1:-$PROMPT_FILE}" rc
   BOUNDED_EXEC_STOP_PATHS="$HOME/.openclaw/state/disk-writers.stop" \
@@ -1098,11 +1112,7 @@ GENERATION_ATTEMPT_ACTIVE=1
 archive_generation_interruption() {
   local interruption_rc="$1"
   trap - INT TERM
-  if [ -n "${MODEL_PASS_PID:-}" ]; then
-    kill -TERM "$MODEL_PASS_PID" 2>/dev/null || true
-    wait "$MODEL_PASS_PID" 2>/dev/null || true
-    MODEL_PASS_PID=""
-  fi
+  drain_generation_workers
   if [ "$GENERATION_ATTEMPT_ACTIVE" -eq 1 ]; then
     python3 "$GENERATION_STATE" "${GENERATION_ARGS[@]}" \
       archive-interrupted --return-code "$interruption_rc" >>"$LOG" 2>&1 || \
@@ -1122,6 +1132,7 @@ python3 "$GENERATION_STATE" "${GENERATION_ARGS[@]}" begin \
 }
 run_model_pass
 RC=$?
+drain_generation_workers
 if [ "$RC" -eq 124 ] || [ "$RC" -eq 130 ] || [ "$RC" -eq 143 ]; then
   python3 "$GENERATION_STATE" "${GENERATION_ARGS[@]}" \
     archive-interrupted --return-code "$RC" >>"$LOG" 2>&1 || \
